@@ -9,6 +9,7 @@ jobs:
         run: mkdir build
       - name: Install Winlibs
         run: |
+          cd build
           mkdir winlibs
           Invoke-WebRequest -Uri https://github.com/brechtsanders/winlibs_mingw/releases/download/11.1.0-12.0.0-9.0.0-r2/winlibs-x86_64-posix-seh-gcc-11.1.0-llvm-12.0.0-mingw-w64-9.0.0-r2.7z -OutFile ./build/winlibs/libs.7z
           cd winlibs
