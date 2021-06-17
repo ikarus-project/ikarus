@@ -14,6 +14,14 @@ jobs:
           cd winlibs
           7z x libs.7z
           ls
+      - name: Build dependencies 
+        run: |
+          mkdir cmake-build-release
+          cd cmake-build-release
+          ls
+          cmake ../  -DCMAKE_BUILD_TYPE=Release -G "MinGW Makefiles" -DCMAKE_SH="CMAKE_SH-NOTFOUND" -DCMAKE_C_COMPILER=..winlibs\mingw64\bin\gcc.exe -DCMAKE_CXX_COMPILER=..winlibs\mingw64\bin\g++.exe
+          cmake --build . --parallel 9
+          
    #   - name: DownloadDependencies
   #      uses: actions/checkout@master
    #     with:
