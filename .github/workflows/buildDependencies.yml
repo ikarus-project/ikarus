@@ -19,7 +19,7 @@ jobs:
           mkdir cmake-build-release
           cd cmake-build-release
           ls
-          cmake ../  -DCMAKE_BUILD_TYPE=Release -G "MinGW Makefiles" -DCMAKE_SH="CMAKE_SH-NOTFOUND" -DCMAKE_C_COMPILER="D:\a\Ikarus\Ikarus\winlibs\mingw64\bin\gcc.exe" -DCMAKE_CXX_COMPILER="D:\a\Ikarus\Ikarus\winlibs\mingw64\bin\g++.exe"
+          cmake ../  -DCMAKE_BUILD_TYPE=Release -G "MinGW Makefiles" -DCMAKE_SH="CMAKE_SH-NOTFOUND" -DCMAKE_C_COMPILER="D:/a/Ikarus/Ikarus/winlibs/mingw64/bin/gcc.exe" -DCMAKE_CXX_COMPILER="D:\a\Ikarus\Ikarus\winlibs\mingw64\bin\g++.exe"
           cmake --build . --parallel 9
           
    #   - name: DownloadDependencies
