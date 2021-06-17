@@ -16,4 +16,4 @@ jobs:
         working-directory: ./Dependencies
         run: |
           ls
-          \.installIkarusDependencies.sh  
+          D:\a\Ikarus\Ikarus\Dependencies\installIkarusDependencies.sh  
