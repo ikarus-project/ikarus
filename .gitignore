@@ -2,3 +2,8 @@
 /.vscode
 /cpm_modules
 .DS_Store
+.idea/
+/all/cmake-build-debug/
+cmake-build-debug/
+/all/cmake-build-release/
+cmake-build-release/

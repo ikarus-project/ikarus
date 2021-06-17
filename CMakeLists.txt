@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
 # Note: update this to your new project's name and version
 project(
-  Greeter
+  Ikarus
   VERSION 1.0
   LANGUAGES CXX
 )
@@ -26,13 +26,6 @@ include(cmake/CPM.cmake)
 # PackageProject.cmake will be used to make our target installable
 CPMAddPackage("gh:TheLartians/PackageProject.cmake@1.6.0")
 
-CPMAddPackage(
-  NAME fmt
-  GIT_TAG 7.1.3
-  GITHUB_REPOSITORY fmtlib/fmt
-  OPTIONS "FMT_INSTALL YES" # create an installable target
-)
-
 # ---- Add source files ----
 
 # Note: globbing sources is considered bad practice as CMake's generators may not detect new files
@@ -43,19 +36,60 @@ file(GLOB_RECURSE sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/source/
 # ---- Create library ----
 
 # Note: for header-only libraries change all PUBLIC flags to INTERFACE and create an interface
-# target: add_library(Greeter INTERFACE)
-add_library(Greeter ${headers} ${sources})
+# target: add_library(Ikarus INTERFACE)
 
-set_target_properties(Greeter PROPERTIES CXX_STANDARD 17)
+
+add_library(Ikarus ${headers} ${sources})
+
+set_target_properties(Ikarus PROPERTIES CXX_STANDARD 20)
 
 # being a cross-platform target, we enforce standards conformance on MSVC
-target_compile_options(Greeter PUBLIC "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/permissive->")
+target_compile_options(Ikarus PUBLIC "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/permissive->")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  message("debug mode")
+  list(APPEND CMAKE_PREFIX_PATH ${PROJECT_SOURCE_DIR}/../../Ikarus_Dependencies/Dependencies_debug/)
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+  message("release mode")
+  list(APPEND CMAKE_PREFIX_PATH ${PROJECT_SOURCE_DIR}/../../Ikarus_Dependencies/Dependencies_release/)
+endif()
+message("Find Eigen: ")
+find_package(Eigen3 3.3.91 REQUIRED)
+message("Find spdlog: ")
+find_package(spdlog REQUIRED)
+message("Find dune-common: ")
+find_package(dune-common 2.7 REQUIRED)
+message("Find dune-geometry: ")
+find_package(dune-geometry 2.7 REQUIRED)
+message("Find dune-grid: ")
+find_package(dune-grid 2.7 REQUIRED)
+message("Find SuiteSparse: ")
+find_package(SuiteSparse CONFIG REQUIRED)
+message("Find muesli: ")
+find_package(muesli CONFIG REQUIRED)
+message("Find matplotc++: ")
+find_package(Matplot++ CONFIG REQUIRED)
+message("Find PythonLibs: ")
+find_package (Python3 COMPONENTS Interpreter Development)
+message("${Python3_STDLIB}")
+message("Find pybind11: ")
+find_package(pybind11 CONFIG REQUIRED)
+
+
 
 # Link dependencies
-target_link_libraries(Greeter PRIVATE fmt::fmt)
-
+target_link_libraries(Ikarus  PUBLIC Eigen3::Eigen
+        PUBLIC spdlog::spdlog
+        PUBLIC dunecommon
+        PUBLIC dunegeometry
+        PUBLIC dunegrid
+        PUBLIC ${SuiteSparse_LIBRARIES}
+        PUBLIC muesli
+        PUBLIC Matplot++::matplot
+#        PUBLIC Python3::Module
+#        PRIVATE pybind11::headers
+)
 target_include_directories(
-  Greeter PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+  Ikarus PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
                  $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
 )
 
