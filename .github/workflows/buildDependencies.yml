@@ -18,8 +18,10 @@ jobs:
   
       - name: DownloadDependencies
         run: |
-          Invoke-WebRequest -Uri https://github.com/rath3t/IkarusDependencies/blob/master/Dependencies_release.7z -OutFile ./build/Ikarus_Dependencies/Dependencies_release/dependencies.7z
-          cd /build/Ikarus_Dependencies/Dependencies_release
+          cd build
+          mkdir Ikarus_Dependencies
+          Invoke-WebRequest -Uri https://github.com/rath3t/IkarusDependencies/blob/master/Dependencies_release.7z -OutFile ./Ikarus_Dependencies/dependencies.7z
+          cd /Ikarus_Dependencies
           ls
           7z x dependencies.7z
           ls
