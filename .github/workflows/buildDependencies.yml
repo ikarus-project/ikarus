@@ -44,4 +44,4 @@ jobs:
           cmake --build . --parallel 9
       - name: Tests
         working-directory: ./repo/cmake-build-release
-        run: ctest --parallel 4 -C Release
+        run: ctest --verbose --parallel 4 -C Release
