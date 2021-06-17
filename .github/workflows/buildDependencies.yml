@@ -14,4 +14,4 @@ jobs:
           path: ./Dependencies
       - name: BuildDependencies 
         working-directory: ./Dependencies
-        run: .\installIkarusDependencies.sh 
+        run: .\installIkarusDependencies.ps1
