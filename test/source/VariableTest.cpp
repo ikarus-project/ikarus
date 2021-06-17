@@ -78,7 +78,7 @@ TEST(DefaultVariableTest, UnitVectorDirector) {
     EXPECT_THAT(c.getValue(),EigenApproxEqual(Eigen::Vector<double,3>(0.0,0.0,1.0),tol));
 
     c.setValue(Eigen::Vector<double,3>(13.0,-5.0,1.0));
-    EXPECT_THAT(c.getValue(),EigenApproxEqual(Eigen::Vector<double,3>(13.0,-5.0,1.0).normalized(),tol));
+    EXPECT_THAT(c.getValue(),EigenApproxEqual(2*Eigen::Vector<double,3>(13.0,-5.0,1.0).normalized(),tol));
 
     b=a;
     EXPECT_EQ(b,a);
