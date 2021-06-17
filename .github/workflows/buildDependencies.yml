@@ -15,4 +15,3 @@ jobs:
       - name: BuildDependencies 
         working-directory: ./Dependencies
         run: .\installIkarusDependencies.sh 
-        shell: bash
