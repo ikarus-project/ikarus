@@ -17,7 +17,8 @@ jobs:
   
       - name: DownloadDependencies
         run: |
-          Invoke-WebRequest -Uri https://github.com/rath3t/IkarusDependencies/blob/master/Dependencies_release.7z -OutFile dependencies.7z
+          Invoke-WebRequest -Uri https://github.com/rath3t/IkarusDependencies/blob/master/Dependencies_release.7z -OutFile ./dependencies.7z
+          ls
           7z x dependencies.7z
           ls
    #   - name: BuildDependencies 
