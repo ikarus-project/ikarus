@@ -14,6 +14,4 @@ jobs:
           path: ./Dependencies
       - name: BuildDependencies 
         working-directory: ./Dependencies
-        run: |
-          ls
-          powershell .\installIkarusDependencies.sh  
+        run: powershell .\installIkarusDependencies.sh  
