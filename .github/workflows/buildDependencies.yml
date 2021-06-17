@@ -5,10 +5,10 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
       - name: Create Work Dir
         run: mkdir build
       - name: BuildDependencies
         working-directory: ./build
-      - run: git clone https://github.com/rath3t/IkarusDependencies.git
-      - run: IkarusDependencies/installIkarusDependencies.sh
+      - run: | 
+          git clone https://github.com/rath3t/IkarusDependencies.git
+          IkarusDependencies/installIkarusDependencies.sh
