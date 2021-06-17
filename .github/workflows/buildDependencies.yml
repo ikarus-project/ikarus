@@ -7,8 +7,9 @@ jobs:
       - uses: actions/checkout@v2
       - name: Create Work Dir
         run: mkdir build
-      - name: BuildDependencies
+      - name: DownloadDependencies
         working-directory: ./build
-        run: | 
-          git clone https://github.com/rath3t/IkarusDependencies.git
-          IkarusDependencies/installIkarusDependencies.sh
+        run: git clone https://github.com/rath3t/IkarusDependencies.git
+      - name: InstallDependencies
+        working-directory: ./build/IkarusDependencies  
+        run: installIkarusDependencies.sh
