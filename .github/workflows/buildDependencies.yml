@@ -17,7 +17,6 @@ jobs:
   
       - name: DownloadDependencies
         run: |
-          mkdir winlibs
           Invoke-WebRequest -Uri https://github.com/rath3t/IkarusDependencies/blob/master/Dependencies_release.7z -w64-9.0.0-r2.7z -OutFile /dependencies.7z
           7z x dependencies.7z
           ls
