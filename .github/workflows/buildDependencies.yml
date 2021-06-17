@@ -28,8 +28,10 @@ jobs:
           7z x dependencies.7z
           ls
       - name: Build 
-        working-directory: repo 
+       # working-directory: repo 
         run: |
+          ls
+          cd repo
           mkdir cmake-build-release
           ls
           cd cmake-build-release
