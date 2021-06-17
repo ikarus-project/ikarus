@@ -9,6 +9,6 @@ jobs:
         run: mkdir build
       - name: BuildDependencies
         working-directory: ./build
-      - run: | 
+        run: | 
           git clone https://github.com/rath3t/IkarusDependencies.git
           IkarusDependencies/installIkarusDependencies.sh
