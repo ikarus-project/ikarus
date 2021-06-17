@@ -1,7 +1,7 @@
 name: check-Eigen-Version
 on: [push]
 jobs:
-  check-bats-version:
+  check-Eigen-Version:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
