@@ -24,8 +24,7 @@ jobs:
    #   - name: BuildDependencies 
    #     working-directory: ./Dependencies
    #     run: .\installIkarusDependencies.ps1
-      - name: Build dependencies 
-        working-directory: ./Dependencies
+      - name: Build  
         run: |
           mkdir cmake-build-release
           cd cmake-build-release
