@@ -11,5 +11,5 @@ jobs:
         working-directory: ./build
         run: git clone https://github.com/rath3t/IkarusDependencies.git
       - name: InstallDependencies
-        working-directory: ./build/IkarusDependencies  
+        working-directory: ./build/  
         run: installIkarusDependencies.sh
