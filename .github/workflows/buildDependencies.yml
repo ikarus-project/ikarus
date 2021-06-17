@@ -38,3 +38,6 @@ jobs:
           ls
           cmake ../all  -DCMAKE_BUILD_TYPE=Release -G "MinGW Makefiles" -DCMAKE_SH="CMAKE_SH-NOTFOUND" -DCMAKE_C_COMPILER="D:/a/Ikarus/Ikarus/build/winlibs/mingw64/bin/gcc.exe" -DCMAKE_CXX_COMPILER="D:/a/Ikarus/Ikarus/build/winlibs/mingw64/bin/g++.exe"
           cmake --build . --parallel 9
+      - name: Tests
+        working-directory: ./repo/cmake-build-release
+        run: ctest --parallel 4 -C Release
