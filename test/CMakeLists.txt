@@ -33,7 +33,7 @@ endif()
 file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp)
 add_executable(IkarusTests ${sources})
 find_package(Gtest CONFIG REQUIRED)
-target_link_libraries(IkarusTests GTest::gmock_main Ikarus::Ikarus)
+target_link_libraries(IkarusTests PRIVATE GTest::gmock_main PRIVATE Ikarus::Ikarus)
 set_target_properties(IkarusTests PROPERTIES CXX_STANDARD 20)
 
 # enable compiler warnings
@@ -46,15 +46,10 @@ if(NOT TEST_INSTALLED_VERSION)
   endif()
 endif()
 
-# ---- Add GreeterTests ----
-
 enable_testing()
 
-# Note: doctest and similar testing frameworks can automatically configure CMake tests. For other
-# testing frameworks add the tests target instead: add_test(NAME greeterTests COMMAND GreeterTests)
-
 include(Googletest)
-gtest_discover_tests(IkarusTests)
+gtest_add_tests(IkarusTests SOURCES ${sources})
 
 # ---- code coverage ----
 
