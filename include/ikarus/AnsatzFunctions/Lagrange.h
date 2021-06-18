@@ -29,7 +29,7 @@ namespace Ikarus{
     class LagrangeCube {
      public:
         /** \brief Number of shape functions */
-        static constexpr size_t sizeOfShapeFunctions = Dune::power(k+1, dim);
+        static constexpr size_t sizeOfShapeFunctions = Dune::StaticPower<k+1,dim>::power;
 
         /** \brief Type of the point where the ansatzfunction should be evaluated */
         using ParaMeterPointType = Ikarus::FixedVector<ScalarType,dim>;
