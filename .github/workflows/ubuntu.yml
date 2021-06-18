@@ -1,7 +1,7 @@
 name: Ubuntu-GCC-Release
 on: [push]
 jobs:
-  MinGW-GCC-Windows:
+  Ubuntu-GCC-Release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
