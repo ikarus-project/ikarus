@@ -32,7 +32,11 @@ endif()
 
 file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp)
 add_executable(IkarusTests ${sources})
+if(MINGW)
 find_package(Gtest CONFIG REQUIRED)
+else()
+find_package(Gtest REQUIRED)
+endif()
 target_link_libraries(IkarusTests PRIVATE GTest::gmock_main PRIVATE Ikarus::Ikarus)
 set_target_properties(IkarusTests PROPERTIES CXX_STANDARD 20)
 
