@@ -21,25 +21,18 @@ jobs:
           sudo apt install libspdlog-dev -y
           sudo apt install libbenchmark-dev -y
           sudo apt install libgtest-dev -y
-          brew install eigen
-#       - name: Add Winlibs to PATH
-#         run: |
-#            echo "D:/a/Ikarus/Ikarus/build/winlibs/mingw64/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-#            #run: echo "##[add-path]C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin"
-#       - name: Download and extract dependencies
-#         run: |
-#           mkdir Ikarus_Dependencies
-#           Invoke-WebRequest -Uri https://github.com/rath3t/IkarusDependencies/releases/download/v0.3/Dependencies_release.7z -OutFile ./Ikarus_Dependencies/dependencies.7z
-#           cd Ikarus_Dependencies
-#           7z x dependencies.7z -bsp1
-#       - name: Build 
-#        # working-directory: repo 
-#         run: |
-#           cd repo
-#           mkdir cmake-build-release
-#           cd cmake-build-release
-#           cmake ../all  -DCMAKE_BUILD_TYPE=Release -G "MinGW Makefiles" -DCMAKE_SH="CMAKE_SH-NOTFOUND" -DCMAKE_C_COMPILER="D:/a/Ikarus/Ikarus/build/winlibs/mingw64/bin/gcc.exe" -DCMAKE_CXX_COMPILER="D:/a/Ikarus/Ikarus/build/winlibs/mingw64/bin/g++.exe"
-#           cmake --build . --parallel 9
-#       - name: Tests
-#         working-directory: ./repo/cmake-build-release
-#         run: ctest --output-on-failure --parallel 4 -C Release
+      - name: Install dependencies using brew
+        run: |
+          sudo brew install eigen   
+          sudo brew install pybind11
+      - name: Build 
+       # working-directory: repo 
+        run: |
+          cd repo
+          mkdir cmake-build-release
+          cd cmake-build-release
+          cmake ../all  -DCMAKE_BUILD_TYPE=Release -G "MinGW Makefiles" -DCMAKE_SH="CMAKE_SH-NOTFOUND" -DCMAKE_C_COMPILER="D:/a/Ikarus/Ikarus/build/winlibs/mingw64/bin/gcc.exe" -DCMAKE_CXX_COMPILER="D:/a/Ikarus/Ikarus/build/winlibs/mingw64/bin/g++.exe"
+          cmake --build . --parallel 9
+      - name: Tests
+        working-directory: ./repo/cmake-build-release
+        run: ctest --output-on-failure --parallel 4 -C Release
