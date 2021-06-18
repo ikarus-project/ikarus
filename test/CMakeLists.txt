@@ -32,6 +32,8 @@ endif()
 
 file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp)
 add_executable(IkarusTests ${sources})
+
+#list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 if(MINGW)
 find_package(Gtest CONFIG REQUIRED)
 else()
