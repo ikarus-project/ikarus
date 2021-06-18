@@ -51,7 +51,7 @@ endif()
 
 enable_testing()
 
-include(Googletest)
+include(GoogleTest)
 gtest_add_tests(IkarusTests SOURCES ${sources})
 
 # ---- code coverage ----
