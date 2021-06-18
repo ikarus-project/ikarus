@@ -1,0 +1,44 @@
+name: MinGW-GCC-Windows-Release
+on: [push]
+jobs:
+  MinGW-GCC-Windows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+         path: 'repo'
+      - name: Create Work Dir
+        run: mkdir build
+      - name: Install dependencies using apt install
+        run: |
+          sudo apt install gnuplot -y
+          sudo apt install liblapack-dev -y 
+          sudo apt install libblas-dev -y 
+          sudo apt install suitesparse-dev -y
+          sudo apt install libdune-common-dev -y
+          sudo apt install libdune-geometry-dev -y
+          sudo apt install libdune-grid-dev -y
+          sudo apt install libspdlog-dev -y
+          sudo apt install libbenchmark-dev -y
+          sudo apt install libgtest-dev -y
+#       - name: Add Winlibs to PATH
+#         run: |
+#            echo "D:/a/Ikarus/Ikarus/build/winlibs/mingw64/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+#            #run: echo "##[add-path]C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin"
+#       - name: Download and extract dependencies
+#         run: |
+#           mkdir Ikarus_Dependencies
+#           Invoke-WebRequest -Uri https://github.com/rath3t/IkarusDependencies/releases/download/v0.3/Dependencies_release.7z -OutFile ./Ikarus_Dependencies/dependencies.7z
+#           cd Ikarus_Dependencies
+#           7z x dependencies.7z -bsp1
+#       - name: Build 
+#        # working-directory: repo 
+#         run: |
+#           cd repo
+#           mkdir cmake-build-release
+#           cd cmake-build-release
+#           cmake ../all  -DCMAKE_BUILD_TYPE=Release -G "MinGW Makefiles" -DCMAKE_SH="CMAKE_SH-NOTFOUND" -DCMAKE_C_COMPILER="D:/a/Ikarus/Ikarus/build/winlibs/mingw64/bin/gcc.exe" -DCMAKE_CXX_COMPILER="D:/a/Ikarus/Ikarus/build/winlibs/mingw64/bin/g++.exe"
+#           cmake --build . --parallel 9
+#       - name: Tests
+#         working-directory: ./repo/cmake-build-release
+#         run: ctest --output-on-failure --parallel 4 -C Release
