@@ -34,7 +34,7 @@ file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp)
 add_executable(IkarusTests ${sources})
 
 cmake_path(GET CMAKE_CURRENT_SOURCE_DIR PARENT_PATH MY_PARENT_DIR)
-list(APPEND CMAKE_MODULE_PATH ${MY_PARENT_DIR}/cmake/modules)
+list(APPEND CMAKE_PREFIX_PATH ${MY_PARENT_DIR}/cmake/modules)
 message("${CMAKE_MODULE_PATH}")
 if(MINGW)
 find_package(Gtest CONFIG REQUIRED)
