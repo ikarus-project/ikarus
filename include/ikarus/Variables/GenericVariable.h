@@ -5,6 +5,7 @@
 #pragma once
 
 #include <span>
+#include <memory>
 #include <Eigen/Core>
 
 #include "VariableInterface.h"
