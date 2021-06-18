@@ -11,7 +11,7 @@ namespace Ikarus {
 
     ///** \brief Dynamic matrix */
     template< typename ScalarType>
-    using DynMatrix = Eigen::MatrixX<ScalarType>;
+    using DynMatrix = Eigen::Matrix<ScalarType,Eigen::Dynamic,Eigen::Dynamic>;
 
     ///** \brief Fixed size matrix */
     template<typename ScalarType, int rowSize, int colSize>
