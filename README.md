@@ -1,4 +1,4 @@
-[![MinGW-GCC-Windows-Release](https://github.com/rath3t/Ikarus/actions/workflows/windowsMinGW.yml/badge.svg)](https://github.com/rath3t/Ikarus/actions/workflows/windowsMinGW.yml)
+[![Windows-MinGW-GCC--Release](https://github.com/rath3t/Ikarus/actions/workflows/windowsMinGW.yml/badge.svg)](https://github.com/rath3t/Ikarus/actions/workflows/windowsMinGW.yml)
 [![Ubuntu-GCC-Release](https://github.com/rath3t/Ikarus/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/rath3t/Ikarus/actions/workflows/ubuntu.yml)
 [![codecov](https://codecov.io/gh/TheLartians/ModernCppStarter/branch/master/graph/badge.svg)](https://codecov.io/gh/TheLartians/ModernCppStarter)
 
