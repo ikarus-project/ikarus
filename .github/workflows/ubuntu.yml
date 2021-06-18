@@ -21,6 +21,9 @@ jobs:
           sudo apt install -y libspdlog-dev
           sudo apt install -y libbenchmark-dev
           sudo apt install -y libgtest-dev
+          cd /usr/src/googletest
+          sudo cmake .
+          sudo cmake --build . --target install
       - name: Install dependencies using brew
         run: |
           sudo chmod 755 /usr/local/bin
