@@ -7,7 +7,7 @@
 #define IKARUS_LAGRANGE_H
 
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
-#include "dune/common/power.hh"
+#include "dune/common/math.hh"
 /** \brief Lagrange shape functions of arbitrary order on the reference cube \f$[-1,1]^\text{dim}\f$
  *
  * This implementation is taken from https://gitlab.dune-project.org/core/dune-localfunctions/-/blob/master/dune/localfunctions/lagrange/lagrangecube.hh
