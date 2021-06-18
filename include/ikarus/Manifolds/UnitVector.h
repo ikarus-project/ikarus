@@ -75,7 +75,7 @@ namespace Ikarus::Manifold {
             Eigen::Matrix<ctype, valueSize, correctionSize> result;
 
             // Coordinates of the stereographic projection
-            Eigen::Vector<ctype, correctionSize> X;
+            Eigen::Matrix<ctype, correctionSize,1> X;
 
             if (var[valueSize - 1] <= 0) {
 
