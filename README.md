@@ -1,9 +1,5 @@
-[![MinGW-GCC-Windows-Release](https://github.com/rath3t/Ikarus/actions/workflows/buildDependencies.yml/badge.svg)](https://github.com/rath3t/Ikarus/actions/workflows/buildDependencies.yml)
+[![MinGW-GCC-Windows-Release](https://github.com/rath3t/Ikarus/actions/workflows/windowsMinGW.yml/badge.svg)](https://github.com/rath3t/Ikarus/actions/workflows/windowsMinGW.yml)
 [![codecov](https://codecov.io/gh/TheLartians/ModernCppStarter/branch/master/graph/badge.svg)](https://codecov.io/gh/TheLartians/ModernCppStarter)
-
-<p align="center">
-  <img src="https://repository-images.githubusercontent.com/254842585/4dfa7580-7ffb-11ea-99d0-46b8fe2f4170" height="175" width="auto" />
-</p>
 
 # ModernCppStarter
 
