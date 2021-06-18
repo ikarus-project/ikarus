@@ -26,8 +26,14 @@ jobs:
           sudo cmake --build . --target install
       - name: Install dependencies using brew
         run: |
-          sudo chmod 755 /usr/local/bin
-          brew install eigen   
+          git clone https://gitlab.com/libeigen/eigen.git
+          git checkout 3.4
+          mkdir build
+          cd build
+          cmake ../
+          make install
+          #sudo chmod 755 /usr/local/bin
+          #brew install eigen   
           #brew install pybind11
       - name: Install gcc11
         run: |
