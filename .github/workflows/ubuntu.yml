@@ -27,8 +27,9 @@ jobs:
       - name: Install dependencies using brew
         run: |
           git clone https://gitlab.com/libeigen/eigen.git
-          git checkout 3.4
           cd eigen
+          git checkout 3.4
+          ls
           mkdir build
           cd build
           cmake ../
