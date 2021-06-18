@@ -3,7 +3,7 @@
 //
 
 #pragma once
-#include <Dune/geometry/type.hh>
+#include "Dune/geometry/type.hh"
 
 namespace Ikarus::Concepts {
     template<typename GridEntityType>
