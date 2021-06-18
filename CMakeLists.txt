@@ -53,7 +53,7 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
   list(APPEND CMAKE_PREFIX_PATH ${PROJECT_SOURCE_DIR}/../../Ikarus_Dependencies/Dependencies_release/)
 endif()
 
-list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/../cmake")
 message("${PROJECT_SOURCE_DIR}")
 
 message("Find Eigen: ")
