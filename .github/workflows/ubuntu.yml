@@ -28,6 +28,7 @@ jobs:
         run: |
           git clone https://gitlab.com/libeigen/eigen.git
           git checkout 3.4
+          cd eigen
           mkdir build
           cd build
           cmake ../
