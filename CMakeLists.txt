@@ -53,7 +53,7 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
   list(APPEND CMAKE_PREFIX_PATH ${PROJECT_SOURCE_DIR}/../../Ikarus_Dependencies/Dependencies_release/)
 endif()
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(cmake/FindSuiteSparse.cmake)
 
 message("Find Eigen: ")
 find_package(Eigen3 3.3.9 REQUIRED)
