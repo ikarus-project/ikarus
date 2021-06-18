@@ -4,6 +4,7 @@
 
 #pragma once
 #include <concepts>
+#include <Eigen/Core>
 
 namespace Ikarus::Manifold {
 /**
