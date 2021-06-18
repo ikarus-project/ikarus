@@ -54,7 +54,7 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
 endif()
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
-
+message("${PROJECT_SOURCE_DIR}")
 
 message("Find Eigen: ")
 find_package(Eigen3 3.3.9 REQUIRED)
