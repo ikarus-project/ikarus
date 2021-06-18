@@ -64,15 +64,15 @@ message("Find dune-grid: ")
 find_package(dune-grid 2.7 REQUIRED)
 message("Find SuiteSparse: ")
 find_package(SuiteSparse CONFIG REQUIRED)
-message("Find muesli: ")
-find_package(muesli CONFIG REQUIRED)
+#message("Find muesli: ")
+#find_package(muesli CONFIG REQUIRED)
 #message("Find matplotc++: ")
 #find_package(Matplot++ CONFIG REQUIRED)
 message("Find PythonLibs: ")
 find_package (Python3 COMPONENTS Interpreter Development)
 message("${Python3_STDLIB}")
-message("Find pybind11: ")
-find_package(pybind11 CONFIG REQUIRED)
+#message("Find pybind11: ")
+#find_package(pybind11 CONFIG REQUIRED)
 
 
 
@@ -83,7 +83,7 @@ target_link_libraries(Ikarus  PUBLIC Eigen3::Eigen
         PUBLIC dunegeometry
         PUBLIC dunegrid
         PUBLIC ${SuiteSparse_LIBRARIES}
-        PUBLIC muesli
+#        PUBLIC muesli
 #        PUBLIC Matplot++::matplot
 #        PUBLIC Python3::Module
 #        PRIVATE pybind11::headers
