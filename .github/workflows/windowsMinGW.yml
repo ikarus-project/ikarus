@@ -1,7 +1,7 @@
-name: MinGW-GCC-Windows-Release
+name: Windows-MinGW-GCC--Release
 on: [push]
 jobs:
-  MinGW-GCC-Windows:
+  Windows-MinGW-GCC--Release:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
