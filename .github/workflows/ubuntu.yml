@@ -29,13 +29,18 @@ jobs:
           sudo chmod 755 /usr/local/bin
           brew install eigen   
           #brew install pybind11
+      - name: Install gcc11
+        run: |
+          sudo apt install build-essential manpages-dev software-properties-common
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+          sudo apt update && sudo apt install gcc-11 g++-11
       - name: Build 
        # working-directory: repo 
         run: |
           cd repo
           mkdir cmake-build-release
           cd cmake-build-release
-          cmake ../all  -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
+          cmake ../all  -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc-11 -DCMAKE_CXX_COMPILER=g++-11
           cmake --build . --parallel 9
       - name: Tests
         working-directory: ./repo/cmake-build-release
