@@ -1,6 +1,6 @@
 #This file is taken from dune-common
 
-
+message("THIS FILE IS USED")
 
 #[=======================================================================[.rst:
 FindSuiteSparse
