@@ -23,6 +23,7 @@ jobs:
           sudo apt install -y libgtest-dev
       - name: Install dependencies using brew
         run: |
+          chmod 755 /usr/local/bin
           brew install eigen   
           brew install pybind11
       - name: Build 
