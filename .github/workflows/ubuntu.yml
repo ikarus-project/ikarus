@@ -1,4 +1,4 @@
-name: MinGW-GCC-Windows-Release
+name: Ubuntu-GCC-Release
 on: [push]
 jobs:
   MinGW-GCC-Windows:
