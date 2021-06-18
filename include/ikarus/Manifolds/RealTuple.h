@@ -28,10 +28,10 @@ class RealTuple {
   static constexpr int correctionSize = d;
 
   /** \brief VectorType of the values of the manifold */
-  using CoordinateType = Eigen::Vector<ctype, valueSize>;
+  using CoordinateType = Eigen::Matrix<ctype, valueSize,1>;
 
   /** \brief VectorType of the values of the correction living in the tangentspace */
-  using CorrectionType = Eigen::Vector<ctype, correctionSize>;
+  using CorrectionType = Eigen::Matrix<ctype, correctionSize,1>;
 
   RealTuple() = default;
 
