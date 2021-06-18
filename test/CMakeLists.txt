@@ -34,6 +34,7 @@ file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp)
 add_executable(IkarusTests ${sources})
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/modules")
+message("${CMAKE_MODULE_PATH}")
 if(MINGW)
 find_package(Gtest CONFIG REQUIRED)
 else()
@@ -44,12 +45,7 @@ set_target_properties(IkarusTests PROPERTIES CXX_STANDARD 20)
 
 # enable compiler warnings
 if(NOT TEST_INSTALLED_VERSION)
-  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR MINGW)
     target_compile_options(Ikarus PUBLIC -Wall -Wpedantic -Wextra -Werror)
-  elseif(MSVC)
-    target_compile_options(Ikarus PUBLIC /W4 /WX)
-#    target_compile_definitions(IkarusTests PUBLIC DOCTEST_CONFIG_USE_STD_HEADERS)
-  endif()
 endif()
 
 enable_testing()
