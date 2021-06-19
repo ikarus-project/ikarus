@@ -1,5 +1,5 @@
-#ignore:
-#  - "/usr"
+ignore:
+  - "/usr"
 
-#comment:
-#  require_changes: true
+comment:
+  require_changes: true
