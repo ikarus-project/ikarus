@@ -48,5 +48,5 @@ jobs:
           cd repo
           mkdir cmake-build-release
           cd cmake-build-release
-          cmake ../all  -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc-11 -DCMAKE_CXX_COMPILER=g++-11 DUSE_SANITIZER="Address;Memory;MemoryWithOrigins;Undefined;Thread;Leak;Address;Undefined" 
+          cmake ../all  -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc-11 -DCMAKE_CXX_COMPILER=g++-11 -DUSE_SANITIZER="Address;Memory;MemoryWithOrigins;Undefined;Thread;Leak;Address;Undefined" 
           cmake --build . --parallel 9
