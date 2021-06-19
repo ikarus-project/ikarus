@@ -41,6 +41,7 @@ jobs:
           #sudo chmod 755 /usr/local/bin
           #brew install eigen   
           #brew install pybind11
+          cd ..
           rm -r eigen
       - name: Install gcc11
         run: |
