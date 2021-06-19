@@ -9,4 +9,4 @@ addons:
       - clang-format-5.0
 
 script:
-  - ./run-clang-format.py -r include
+  - sudo ./run-clang-format.py -r include
