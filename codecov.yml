@@ -10,8 +10,8 @@ coverage:
 
 
 
-#ignore:
-#  - "test"
+ignore:
+  - "/usr/**/*"
 
 flags:
   projectA:
