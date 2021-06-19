@@ -59,7 +59,7 @@ jobs:
           key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}    
           
       - name: Tests
-        working-directory: ./repo/cmake-build-debug
+        working-directory: ./cmake-build-debug
         run: ctest --output-on-failure --parallel 4 -C Debug
         
       - name: collect code coverage
