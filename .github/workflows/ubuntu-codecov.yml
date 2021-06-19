@@ -40,6 +40,9 @@ jobs:
           sudo make install
           ls
           cd ..
+          lse
+          cd ..
+          ls
           rm -r eigen
       - name: Install gcc11
         run: |
