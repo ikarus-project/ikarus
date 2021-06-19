@@ -24,6 +24,8 @@ jobs:
           cd /usr/src/googletest
           sudo cmake .
           sudo cmake --build . --target install
+          sudo apt-get install -y clang-tidy 
+          sudo apt-get install -y cppcheck  
       - name: Install dependencies using brew
         run: |
           git clone https://gitlab.com/libeigen/eigen.git
