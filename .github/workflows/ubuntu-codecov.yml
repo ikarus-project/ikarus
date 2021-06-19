@@ -38,9 +38,7 @@ jobs:
           cd build
           cmake ../
           sudo make install
-          #sudo chmod 755 /usr/local/bin
-          #brew install eigen   
-          #brew install pybind11
+          ls
           cd ..
           rm -r eigen
       - name: Install gcc11
