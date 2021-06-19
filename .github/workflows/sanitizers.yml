@@ -25,7 +25,12 @@ jobs:
           sudo cmake .
           sudo cmake --build . --target install
           sudo apt-get install -y clang-tidy 
-          sudo apt-get install -y cppcheck  
+          sudo apt-get install -y cppcheck
+          git clone -b clang_10 --single-branch https://github.com/include-what-you-use/include-what-you-use.git
+          mkdir iwyu                                                                                         
+          cd iwyu                                                                                             
+          cmake ../include-what-you-use -DCMAKE_PREFIX_PATH=/usr/lib/cmake/llvm10 -G Ninja -Wno-dev  
+          ninja install
       - name: Install dependencies using brew
         run: |
           git clone https://gitlab.com/libeigen/eigen.git
