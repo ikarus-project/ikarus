@@ -61,6 +61,10 @@ jobs:
       - name: Tests
         working-directory: ./cmake-build-debug
         run: ctest --output-on-failure --parallel 4 -C Debug
-        
+      - name: LS
+        run: |
+           ls
+           cd Ikarus
+           ls
       - name: collect code coverage
         run: bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
