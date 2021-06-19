@@ -20,10 +20,9 @@ jobs:
           sudo apt install -y libdune-grid-dev
           sudo apt install -y libspdlog-dev
           sudo apt install -y libbenchmark-dev
-          sudo apt install -y libgtest-dev
-          cd /usr/src/googletest
-          sudo cmake .
-          sudo cmake --build . --target install
+      - name: Googletest installer
+        uses: MarkusJx/googletest-installer@v1.1
+
       - name: Install dependencies using brew
         run: |
           git clone https://gitlab.com/libeigen/eigen.git
