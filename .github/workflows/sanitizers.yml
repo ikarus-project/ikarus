@@ -24,10 +24,10 @@ jobs:
           cd /usr/src/googletest
           sudo cmake .
           sudo cmake --build . --target install
-          sudo deb http://archive.ubuntu.com/ubuntu/ focal-proposed universe
+          deb http://archive.ubuntu.com/ubuntu/ focal-proposed universe
           sudo apt-get update
           sudo apt-get install -y clang-tidy-12
-          sudo cp  /usr/bin/clang-tidy-11 /usr/bin/clang-tidy
+          sudo cp  /usr/bin/clang-tidy-12 /usr/bin/clang-tidy
           sudo apt-get install -y cppcheck
           sudo apt-get install ninja-build
           sudo apt-get install g++ git cmake musl-dev python3 coreutils
