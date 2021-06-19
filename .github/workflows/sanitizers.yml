@@ -24,13 +24,13 @@ jobs:
           cd /usr/src/googletest
           sudo cmake .
           sudo cmake --build . --target install
-          sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu/ focal-proposed universe"
-          sudo apt-get update
-          sudo apt-get install -y clang-tools-12 clang-tidy-12
-          sudo cp  /usr/bin/clang-tidy-12 /usr/bin/clang-tidy
+          #sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu/ focal-proposed universe"
+          #sudo apt-get update
+          #sudo apt-get install -y clang-tools-12 clang-tidy-12
+          #sudo cp  /usr/bin/clang-tidy-12 /usr/bin/clang-tidy
           sudo apt-get install -y cppcheck
           sudo apt-get install ninja-build
-          sudo apt-get install g++ git cmake musl-dev python3 coreutils
+          #sudo apt-get install g++ git cmake musl-dev python3 coreutils
       - name: Install iwyu
         run: |
           sudo apt-get install iwyu
@@ -63,5 +63,5 @@ jobs:
           cd repo
           mkdir cmake-build-release
           cd cmake-build-release
-          cmake ../all  -DUSE_STATIC_ANALYZER="clang-tidy;iwyu;cppcheck" -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles" -DCMAKE_C_COMPILER=clang-12 -DCMAKE_CXX_COMPILER=clang++-12 -DUSE_SANITIZER="Address;Memory;MemoryWithOrigins;Undefined;Thread;Leak;Address;Undefined" 
+          cmake ../all  -DUSE_STATIC_ANALYZER="iwyu;cppcheck" -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles" -DCMAKE_C_COMPILER=clang-12 -DCMAKE_CXX_COMPILER=clang++-12 -DUSE_SANITIZER="Address;Memory;MemoryWithOrigins;Undefined;Thread;Leak;Address;Undefined" 
           cmake --build . --parallel 9
