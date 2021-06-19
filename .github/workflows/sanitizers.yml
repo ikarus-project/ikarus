@@ -26,6 +26,8 @@ jobs:
           sudo cmake --build . --target install
           sudo apt-get install -y clang-tidy 
           sudo apt-get install -y cppcheck
+      - name: Install iwyu
+        run: |
           git clone -b clang_10 --single-branch https://github.com/include-what-you-use/include-what-you-use.git
           mkdir iwyu                                                                                         
           cd iwyu                                                                                             
