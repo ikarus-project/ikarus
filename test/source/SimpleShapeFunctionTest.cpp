@@ -26,8 +26,8 @@ TEST(SimpleShapeFunction, 1DEvaluation) {
     const std::function<FunctionSignature > N4 = [](const Ikarus::FixedVector2d& paraPoint )->double { return 0.25*(1+paraPoint(0))*(1+paraPoint(1));};
     using AnsatzFunctionQ1 = std::array<const std::function<double(const Ikarus::FixedVector2d&) >,4>;
     AnsatzFunctionQ1 N{N1,N2,N3,N4};
-    EXPECT_EQ (N[0](corners.col(0)),  1.0);
-    EXPECT_EQ (N[0](corners.col(1)),  0.0);
-    EXPECT_EQ (N[0](corners.col(2)),  0.0);
-    EXPECT_EQ (N[0](corners.col(3)),  0.0);
+    EXPECT_EQ(N[0](corners.col(0)), 1.0);
+    EXPECT_EQ(N[0](corners.col(1)), 0.0);
+    EXPECT_EQ(N[0](corners.col(2)), 0.0);
+    EXPECT_EQ(N[0](corners.col(3)), 0.0);
 }
