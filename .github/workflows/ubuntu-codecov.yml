@@ -53,7 +53,7 @@ jobs:
           cd repo
           mkdir cmake-build-debug
           cd cmake-build-debug
-          cmake ../all  -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc-11 -DCMAKE_CXX_COMPILER=g++-11
+          cmake ../test  -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc-11 -DCMAKE_CXX_COMPILER=g++-11 -DENABLE_TEST_COVERAGE=1
           cmake --build . --parallel 9
       - uses: actions/cache@v2
         with:
