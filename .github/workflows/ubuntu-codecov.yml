@@ -41,6 +41,7 @@ jobs:
           #sudo chmod 755 /usr/local/bin
           #brew install eigen   
           #brew install pybind11
+          rm -r eigen
       - name: Install gcc11
         run: |
           sudo apt install build-essential manpages-dev software-properties-common
@@ -63,8 +64,6 @@ jobs:
         run: ctest --output-on-failure --parallel 4 -C Debug
       - name: LS
         run: |
-           ls
-           cd Ikarus
            ls
       - name: collect code coverage
         run: bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
