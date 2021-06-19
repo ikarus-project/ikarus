@@ -5,6 +5,7 @@ env:
   CTEST_OUTPUT_ON_FAILURE: 1
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
+  
 jobs:
   Ubuntu-GCC-Debug-CodeCov:
     runs-on: ubuntu-latest
@@ -59,9 +60,11 @@ jobs:
         with:
           path: "**/cpm_modules"
           key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}    
+          
       - name: Tests
         working-directory: ./repo/cmake-build-debug
         run: ctest --output-on-failure --parallel 4 -C Debug
         
       - name: collect code coverage
+        working-directory: ./repo
         run: bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
