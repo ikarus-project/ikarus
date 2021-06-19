@@ -27,7 +27,7 @@ jobs:
           sudo apt-get install -y clang-tidy 
           sudo apt-get install -y cppcheck
           sudo apt-get install ninja-build
-          sudo apt-get install llvm10-dev llvm10-static clang-dev clang-static g++ git cmake ninja musl-dev python3 coreutils
+          sudo apt-get install llvm10-dev llvm10-static clang-dev clang-static g++ git cmake musl-dev python3 coreutils
       - name: Install iwyu
         run: |
           git clone -b clang_10 --single-branch https://github.com/include-what-you-use/include-what-you-use.git
