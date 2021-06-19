@@ -15,16 +15,16 @@ jobs:
         run: mkdir build
       - name: Install dependencies using apt install
         run: |
-          sudo apt install -y gnuplot 
-          sudo apt install -y liblapack-dev  
-          sudo apt install -y libblas-dev
-          sudo apt install -y libsuitesparse-dev
-          sudo apt install -y libdune-common-dev
-          sudo apt install -y libdune-geometry-dev
-          sudo apt install -y libdune-grid-dev
-          sudo apt install -y libspdlog-dev
-          sudo apt install -y libbenchmark-dev
-          sudo apt install -y libgtest-dev
+          sudo apt-get install -y gnuplot 
+          sudo apt-get install -y liblapack-dev  
+          sudo apt-get install -y libblas-dev
+          sudo apt-get install -y libsuitesparse-dev
+          sudo apt-get install -y libdune-common-dev
+          sudo apt-get install -y libdune-geometry-dev
+          sudo apt-get install -y libdune-grid-dev
+          sudo apt-get install -y libspdlog-dev
+          sudo apt-get install -y libbenchmark-dev
+          sudo apt-get install -y libgtest-dev
           cd /usr/src/googletest
           sudo cmake .
           sudo cmake --build . --target install
@@ -40,7 +40,7 @@ jobs:
           sudo make install
           ls
           cd ..
-          lse
+          ls
           cd ..
           ls
           rm -r eigen
