@@ -71,4 +71,6 @@ jobs:
         run: cmake -Stest -Bbuild -DADD_FORMATTARGET=TRUE
 
       - name: check style
-        run: cmake --build build --target format
+        run: |
+          cmake --build build --target format
+          cmake --build build --target check-format
