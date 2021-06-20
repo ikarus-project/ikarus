@@ -14,7 +14,9 @@ include(../cmake/tools.cmake)
 # ---- Dependencies ----
 
 include(../cmake/CPM.cmake)
+if(FORMAT_TARGETS)
 CPMAddPackage("gh:TheLartians/Format.cmake@1.7.0")
+endif()
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   message("debug mode")
   list(APPEND CMAKE_PREFIX_PATH ${PROJECT_SOURCE_DIR}/../../Ikarus_Dependencies/Dependencies_debug/)
