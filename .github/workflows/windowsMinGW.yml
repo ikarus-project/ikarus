@@ -1,39 +1,50 @@
 name: Windows-MinGW-GCC--Release
 on: [push]
 jobs:
-  Windows-MinGW-GCC--Release:
+  Build:
+    name: ${{ matrix.config.name }}
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - {
+            name: "Windows-Mingw/latest/Release",
+            config: Release,
+          }
+          - {
+            name: "Windows-Mingw/latest/Debug",
+            config: Debug,
+          }
     steps:
-      - uses: actions/checkout@v2
-        with:
-         path: 'repo'
-      - name: Create Work Dir
-        run: mkdir build
-      - name: Download and extract Winlibs
-        run: |
-          cd build
-          mkdir winlibs
-          Invoke-WebRequest -Uri https://github.com/brechtsanders/winlibs_mingw/releases/download/11.1.0-12.0.0-9.0.0-r2/winlibs-x86_64-posix-seh-gcc-11.1.0-llvm-12.0.0-mingw-w64-9.0.0-r2.7z -OutFile ./winlibs/libs.7z
-          cd winlibs
-          7z x libs.7z -bsp1
-      - name: Add Winlibs to PATH
-        run: |
-           echo "D:/a/Ikarus/Ikarus/build/winlibs/mingw64/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-           #run: echo "##[add-path]C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin"
-      - name: Download and extract dependencies
-        run: |
-          mkdir Ikarus_Dependencies
-          Invoke-WebRequest -Uri https://github.com/rath3t/IkarusDependencies/releases/download/v0.3/Dependencies_release.7z -OutFile ./Ikarus_Dependencies/dependencies.7z
-          cd Ikarus_Dependencies
-          7z x dependencies.7z -bsp1
-      - name: Build 
-       # working-directory: repo 
-        run: |
-          cd repo
-          mkdir cmake-build-release
-          cd cmake-build-release
-          cmake ../test  -DCMAKE_BUILD_TYPE=Release -G "MinGW Makefiles" -DCMAKE_SH="CMAKE_SH-NOTFOUND" -DCMAKE_C_COMPILER="D:/a/Ikarus/Ikarus/build/winlibs/mingw64/bin/gcc.exe" -DCMAKE_CXX_COMPILER="D:/a/Ikarus/Ikarus/build/winlibs/mingw64/bin/g++.exe"
-          cmake --build . --parallel 9
-      - name: Tests
-        working-directory: ./repo/cmake-build-release
-        run: ctest --output-on-failure --parallel 4 -C Release
+    - uses: actions/checkout@v2
+      with:
+       path: 'repo'
+    - name: Create Work Dir
+      run: mkdir build
+    - name: Install Winlibs
+      run: |
+        cd build
+        mkdir winlibs
+        Invoke-WebRequest -Uri https://github.com/brechtsanders/winlibs_mingw/releases/download/11.1.0-12.0.0-9.0.0-r2/winlibs-x86_64-posix-seh-gcc-11.1.0-llvm-12.0.0-mingw-w64-9.0.0-r2.7z -OutFile ./winlibs/libs.7z
+        cd winlibs
+        7z x libs.7z -bsp1
+    - name: Add Winlibs to PATH
+      run: |
+        echo "D:/a/Ikarus/Ikarus/build/winlibs/mingw64/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+    - name: Download and extract dependencies
+      run: |
+        mkdir Ikarus_Dependencies
+        Invoke-WebRequest -Uri https://github.com/rath3t/IkarusDependencies/releases/download/v0.3/Dependencies_release.7z -OutFile ./Ikarus_Dependencies/dependencies.7z
+        cd Ikarus_Dependencies
+        7z x dependencies.7z -bsp1
+    - name: Build
+      run: |
+        cd repo
+        mkdir cmake-build-${{ matrix.config.config }}
+        cd cmake-build-${{ matrix.config.config }}
+        cmake ../test  -DCMAKE_BUILD_TYPE=${{ matrix.config.config }} -G "MinGW Makefiles" -DCMAKE_SH="CMAKE_SH-NOTFOUND" -DCMAKE_C_COMPILER="D:/a/Ikarus/Ikarus/build/winlibs/mingw64/bin/gcc.exe" -DCMAKE_CXX_COMPILER="D:/a/Ikarus/Ikarus/build/winlibs/mingw64/bin/g++.exe"
+        cmake --build . --parallel 9
+    - name: Tests
+      working-directory: ./repo/cmake-build-${{ matrix.config.config }}
+      run: ctest --output-on-failure --parallel 4 -C ${{ matrix.config.config }}
