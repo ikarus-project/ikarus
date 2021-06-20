@@ -17,7 +17,7 @@ jobs:
       uses: rath3t/action-clang-format@1.4
       # These are optional (defaults displayed)
       with:
-        scandir: '/../../$GITHUB_WORKSPACE'
+        scandir: '.'
         excludedirs: 'build'
         extensions: 'c,h,C,H,cpp,hpp,cc,hh,c++,h++,cxx,hxx'
         style: 'file'
