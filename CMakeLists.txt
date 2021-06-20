@@ -40,10 +40,12 @@ set_target_properties(Ikarus PROPERTIES CXX_STANDARD 20)
 target_compile_options(Ikarus PUBLIC "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/permissive->")
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   message("debug mode")
-  list(APPEND CMAKE_PREFIX_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../Ikarus_Dependencies/Dependencies_debug/)
+  list(APPEND CMAKE_PREFIX_PATH
+       ${CMAKE_CURRENT_SOURCE_DIR}/../Ikarus_Dependencies/Dependencies_debug/)
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
   message("release mode")
-  list(APPEND CMAKE_PREFIX_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../Ikarus_Dependencies/Dependencies_release/)
+  list(APPEND CMAKE_PREFIX_PATH
+       ${CMAKE_CURRENT_SOURCE_DIR}/../Ikarus_Dependencies/Dependencies_release/)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
@@ -53,31 +55,33 @@ find_package(Eigen3 3.3.9 REQUIRED)
 message("Find spdlog: ")
 find_package(spdlog REQUIRED)
 message("Find dune-common: ")
-find_package(dune-common REQUIRED )
+find_package(dune-common REQUIRED)
 message("Find dune-geometry: ")
-find_package(dune-geometry  REQUIRED)
+find_package(dune-geometry REQUIRED)
 message("Find dune-grid: ")
 find_package(dune-grid REQUIRED)
 message("Find SuiteSparse: ")
 if(MINGW)
-find_package(SuiteSparse CONFIG REQUIRED)
+  find_package(SuiteSparse CONFIG REQUIRED)
 else()
-find_package(SuiteSparse REQUIRED)
+  find_package(SuiteSparse REQUIRED)
 endif()
 
-#message("Find muesli: ")
-#find_package(muesli CONFIG REQUIRED)
+# message("Find muesli: ")
+# find_package(muesli CONFIG REQUIRED)
 message("Find matplotc++: ")
 find_package(Matplot++ CONFIG REQUIRED)
 message("Find PythonLibs: ")
-find_package (Python3 COMPONENTS Interpreter Development)
+find_package(Python3 COMPONENTS Interpreter Development)
 message("${Python3_STDLIB}")
-#message("Find pybind11: ")
-#find_package(pybind11 CONFIG REQUIRED)
+# message("Find pybind11: ")
+# find_package(pybind11 CONFIG REQUIRED)
 
 
 # Link dependencies
-target_link_libraries(Ikarus  PUBLIC Eigen3::Eigen
+target_link_libraries(
+        Ikarus
+        PUBLIC Eigen3::Eigen
         PUBLIC spdlog::spdlog
         PUBLIC dunecommon
         PUBLIC dunegeometry
@@ -90,7 +94,7 @@ target_link_libraries(Ikarus  PUBLIC Eigen3::Eigen
 )
 target_include_directories(
   Ikarus PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-                 $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
+                $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
 )
 
 string(TOLOWER ${PROJECT_NAME}/version.h VERSION_HEADER_LOCATION)

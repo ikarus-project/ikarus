@@ -1,4 +1,4 @@
-#This file is taken from dune-common
+# This file is taken from dune-common
 
 #[=======================================================================[.rst:
 FindSuiteSparse
@@ -85,7 +85,6 @@ set_package_properties("SuiteSparse" PROPERTIES
   DESCRIPTION "A suite of sparse matrix software"
   URL "http://faculty.cse.tamu.edu/davis/suitesparse.html"
 )
-message("THIS FILE IS USED")
 
 # find package dependencies first
 include(CMakeFindDependencyMacro)
