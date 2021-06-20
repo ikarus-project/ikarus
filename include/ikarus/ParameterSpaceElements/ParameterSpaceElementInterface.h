@@ -4,13 +4,12 @@
 
 #pragma once
 
-
 namespace Ikarus::Concepts {
-    template<typename ParameterSpaceElementType>
-    concept ParameterSpaceElement = requires(ParameterSpaceElementType paraElement){
-        paraElement.dim();
-        paraElement.numberOfEdges();
-        paraElement.numberOfSurfaces();
-        paraElement.numberOfVertices();
-    };
-}
+  template <typename ParameterSpaceElementType>
+  concept ParameterSpaceElement = requires(ParameterSpaceElementType paraElement) {
+    paraElement.dim();
+    paraElement.numberOfEdges();
+    paraElement.numberOfSurfaces();
+    paraElement.numberOfVertices();
+  };
+}  // namespace Ikarus::Concepts

@@ -3,11 +3,11 @@
 //
 
 #pragma once
-#include "ikarus/utils/LinearAlgebraTypedefs.h"
-
 #include <memory>
 
-//namespace Ikarus::Concepts {
+#include "ikarus/utils/LinearAlgebraTypedefs.h"
+
+// namespace Ikarus::Concepts {
 //    template <typename FEConceptType>
 //    concept FE = requires (FEConceptType fe){
 //        typename FEConceptType::ctype;
@@ -20,11 +20,11 @@
 //        { fe.initialize() } ->  std::same_as<void>;
 //        { fe.dofSize() } ->  std::same_as<int>;
 //        { fe.getEnergy() } ->  std::same_as<typename FEConceptType::ctype>;
-//        { fe.calculateLocalSystem() } ->  std::same_as<std::pair<typename FEConceptType::VectorType,
-//                                                                                      typename FEConceptType::MatrixType>>;
+//        { fe.calculateLocalSystem() } ->  std::same_as<std::pair<typename
+//        FEConceptType::VectorType,
+//                                                                                      typename
+//                                                                                      FEConceptType::MatrixType>>;
 //        { fe.calculateLHS() } ->  std::same_as<typename FEConceptType::MatrixType>;
 //        { fe.calculateRHS() } ->  std::same_as<typename FEConceptType::VectorType>;
 //        { fe.getDofVector() } ->  std::same_as<typename FEConceptType::DofVectorType>;
 //    };
-
-

@@ -6,15 +6,11 @@
 #define IKARUS_DEFAULTNODE_H
 #include "ikarus/Variables/VariableInterface.h"
 
-
-//template<NodeData NodeDataContainer>
+// template<NodeData NodeDataContainer>
 class DefaultNode  //: public NodeDataContainer
 {
-
 private:
-
-//    std::unordered_set<V> setOfStrs;
+  //    std::unordered_set<V> setOfStrs;
 };
 
-
-#endif //IKARUS_DEFAULTNODE_H
+#endif  // IKARUS_DEFAULTNODE_H

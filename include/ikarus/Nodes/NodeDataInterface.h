@@ -6,18 +6,15 @@
 #define IKARUS_NODEDATAINTERFACE_H
 #include <concepts>
 
-class NodeDataInterface {
-
-};
+class NodeDataInterface {};
 
 namespace Ikarus {
-    template <typename NodeDataInterfaceType>
-    concept NodeData = std::As requires (NodeDataInterfaceType node ){
-        typename Node::ctype;
-        {   node.addDof(grid) } ->  std::same_as<typename FEConceptType::MatrixType>;
-    };
+  template <typename NodeDataInterfaceType>
+  concept NodeData = std::As requires(NodeDataInterfaceType node) {
+    typename Node::ctype;
+    { node.addDof(grid) } -> std::same_as<typename FEConceptType::MatrixType>;
+  };
 
-};
+};  // namespace Ikarus
 
-
-#endif //IKARUS_NODEDATAINTERFACE_H
+#endif  // IKARUS_NODEDATAINTERFACE_H

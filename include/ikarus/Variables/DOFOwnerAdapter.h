@@ -4,31 +4,18 @@
 
 #pragma once
 #include <ikarus/Grids/GridEntities/GridEntitiesInterface.h>
-
 #include <ikarus/Variables/GenericVariable.h>
 #include <ikarus/Variables/VariableInterface.h>
 
-template<Ikarus::Concepts::GridEntity GridEntityType>
-class DOFOwnerAdapter {
- public:
-
+template <Ikarus::Concepts::GridEntity GridEntityType> class DOFOwnerAdapter {
+public:
   using ctype = GridEntityType::ctype;
 
-  DOFOwnerAdapter(GridEntityType& gE)
-  : gridEntity{gE}
+  DOFOwnerAdapter(GridEntityType& gE) : gridEntity { gE }
 
-  void addDOF(Ikarus::Variable::GenericVariable auto&& var)
-  {
-    variableVector.push_back(var);
-  }
+  void addDOF(Ikarus::Variable::GenericVariable auto&& var) { variableVector.push_back(var); }
 
-
-
-
- private:
+private:
   std::vector<Ikarus::Variable::GenericVariable> variableVector;
   GridEntityType* gridEntity;
 };
-
-
-

@@ -5,11 +5,6 @@
 #ifndef IKARUS_CONDITIONINTERFACE_H
 #define IKARUS_CONDITIONINTERFACE_H
 
+class ConditionInterface {};
 
-class ConditionInterface
-{
-
-};
-
-
-#endif //IKARUS_CONDITIONINTERFACE_H
+#endif  // IKARUS_CONDITIONINTERFACE_H

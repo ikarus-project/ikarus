@@ -1,11 +1,12 @@
 //
 // Created by Alex on 25.05.2021.
 //
-#include "gtest/gtest.h"
 #include <gmock/gmock.h>
-
 #include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
+
 #include <dune/geometry/type.hh>
+
+#include "gtest/gtest.h"
 #include "testHelpers.h"
 
 /** @addtogroup Tests
@@ -31,22 +32,20 @@
  *      11              14           17         \n
  */
 TEST(GridTest, GridViewTest) {
-
   using namespace Ikarus::Grid;
   using Grid = SimpleGrid<2, 2>;
   SimpleGridFactory<Grid> gridFactory;
   using vertexType = Ikarus::FixedVector2d;
   std::vector<vertexType> verticesVec;
-  verticesVec.emplace_back(vertexType{0.0, 0.0}); //0
-  verticesVec.emplace_back(vertexType{2.0, 0.0}); //1
-  verticesVec.emplace_back(vertexType{0.0, 2.0}); //2
-  verticesVec.emplace_back(vertexType{2.0, 2.0}); //3
-  verticesVec.emplace_back(vertexType{4.0, 0.0}); //4
-  verticesVec.emplace_back(vertexType{4.0, 2.0}); //5
-  verticesVec.emplace_back(vertexType{6.0, 0.0}); //6
+  verticesVec.emplace_back(vertexType{0.0, 0.0});  // 0
+  verticesVec.emplace_back(vertexType{2.0, 0.0});  // 1
+  verticesVec.emplace_back(vertexType{0.0, 2.0});  // 2
+  verticesVec.emplace_back(vertexType{2.0, 2.0});  // 3
+  verticesVec.emplace_back(vertexType{4.0, 0.0});  // 4
+  verticesVec.emplace_back(vertexType{4.0, 2.0});  // 5
+  verticesVec.emplace_back(vertexType{6.0, 0.0});  // 6
 
-  for (auto &&vert : verticesVec)
-    gridFactory.insertVertex(vert);
+  for (auto &&vert : verticesVec) gridFactory.insertVertex(vert);
 
   Ikarus::DynArrayXi elementIndices;
   elementIndices.resize(4);
@@ -61,9 +60,9 @@ TEST(GridTest, GridViewTest) {
   Grid grid = gridFactory.createGrid();
 
   auto gridView = grid.leafGridView();
-  EXPECT_TRUE(edges(gridView).size()!=0);
-  EXPECT_TRUE(elements(gridView).size()!=0);
-  EXPECT_TRUE(vertices(gridView).size()!=0);
+  EXPECT_TRUE(edges(gridView).size() != 0);
+  EXPECT_TRUE(elements(gridView).size() != 0);
+  EXPECT_TRUE(vertices(gridView).size() != 0);
 
   int expectedEdgeId = 10;
   std::vector<std::array<int, 2>> expectedEdgeVertexId;
@@ -79,9 +78,7 @@ TEST(GridTest, GridViewTest) {
 
   int elementCounter = 0;
   for (auto &&edge : edges(gridView)) {
-    {
-      EXPECT_EQ(edge.getID(), expectedEdgeId++);
-    }
+    { EXPECT_EQ(edge.getID(), expectedEdgeId++); }
 
     int vertexCounter = 0;
     for (auto &&vertex : vertices(edge)) {
@@ -107,7 +104,6 @@ TEST(GridTest, GridViewTest) {
     }
     ++eleCounter;
   }
-
 }
 
 /**
@@ -116,22 +112,20 @@ TEST(GridTest, GridViewTest) {
  *
  */
 TEST(GridTest, GridView3DSurfaceTest) {
-
   using namespace Ikarus::Grid;
   using Grid = SimpleGrid<2, 3>;
   SimpleGridFactory<Grid> gridFactory;
   using vertexType = Ikarus::FixedVector3d;
   std::vector<vertexType> verticesVec;
-  verticesVec.emplace_back(vertexType{0.0, 0.0, -3.0}); //0
-  verticesVec.emplace_back(vertexType{2.0, 0.0, -3.0}); //1
-  verticesVec.emplace_back(vertexType{0.0, 2.0, 3.0}); //2
-  verticesVec.emplace_back(vertexType{2.0, 2.0, -3.0}); //3
-  verticesVec.emplace_back(vertexType{4.0, 0.0, -3.0}); //4
-  verticesVec.emplace_back(vertexType{4.0, 2.0, 3.0}); //5
-  verticesVec.emplace_back(vertexType{6.0, 0.0, -3.0}); //6
+  verticesVec.emplace_back(vertexType{0.0, 0.0, -3.0});  // 0
+  verticesVec.emplace_back(vertexType{2.0, 0.0, -3.0});  // 1
+  verticesVec.emplace_back(vertexType{0.0, 2.0, 3.0});   // 2
+  verticesVec.emplace_back(vertexType{2.0, 2.0, -3.0});  // 3
+  verticesVec.emplace_back(vertexType{4.0, 0.0, -3.0});  // 4
+  verticesVec.emplace_back(vertexType{4.0, 2.0, 3.0});   // 5
+  verticesVec.emplace_back(vertexType{6.0, 0.0, -3.0});  // 6
 
-  for (auto &&vert : verticesVec)
-    gridFactory.insertVertex(vert);
+  for (auto &&vert : verticesVec) gridFactory.insertVertex(vert);
 
   Ikarus::DynArrayXi elementIndices;
   elementIndices.resize(4);
@@ -145,9 +139,9 @@ TEST(GridTest, GridView3DSurfaceTest) {
 
   Grid actualGrid = gridFactory.createGrid();
   auto gridView = actualGrid.leafGridView();
-  EXPECT_TRUE(edges(gridView).size()!=0);
-  EXPECT_TRUE(elements(gridView).size()!=0);
-  EXPECT_TRUE(vertices(gridView).size()!=0);
+  EXPECT_TRUE(edges(gridView).size() != 0);
+  EXPECT_TRUE(elements(gridView).size() != 0);
+  EXPECT_TRUE(vertices(gridView).size() != 0);
 
   for (int i = 0; auto &&vertex : vertices(gridView)) {
     EXPECT_EQ(vertex.type(), Dune::GeometryTypes::vertex);
@@ -179,31 +173,28 @@ TEST(GridTest, GridView3DSurfaceTest) {
   }
 }
 
-
 /**
  * \addtogroup GridTests
  * \test This test checks the insertion of vertices and elements in a SimpleGrid<2,3>
  *
  */
 TEST(GridTest, GridView3DSolidTest) {
-
   using namespace Ikarus::Grid;
   using Grid = SimpleGrid<3, 3>;
   SimpleGridFactory<Grid> gridFactory;
   using vertexType = Ikarus::FixedVector3d;
   std::vector<vertexType> verticesVec;
-  verticesVec.emplace_back(vertexType{0.0, 0.0, -3.0}); //0
-  verticesVec.emplace_back(vertexType{2.0, 0.0, -3.0}); //1
-  verticesVec.emplace_back(vertexType{0.0, 2.0, -3.0}); //2
-  verticesVec.emplace_back(vertexType{2.0, 2.0, -3.0}); //3
-  verticesVec.emplace_back(vertexType{0.0, 0.0, 3.0}); //4
-  verticesVec.emplace_back(vertexType{2.0, 0.0, 3.0}); //5
-  verticesVec.emplace_back(vertexType{0.0, 2.0, 3.0}); //6
-  verticesVec.emplace_back(vertexType{2.0, 2.0, 3.0}); //7
-  verticesVec.emplace_back(vertexType{4.0, 0.0, 3.0}); //8
+  verticesVec.emplace_back(vertexType{0.0, 0.0, -3.0});  // 0
+  verticesVec.emplace_back(vertexType{2.0, 0.0, -3.0});  // 1
+  verticesVec.emplace_back(vertexType{0.0, 2.0, -3.0});  // 2
+  verticesVec.emplace_back(vertexType{2.0, 2.0, -3.0});  // 3
+  verticesVec.emplace_back(vertexType{0.0, 0.0, 3.0});   // 4
+  verticesVec.emplace_back(vertexType{2.0, 0.0, 3.0});   // 5
+  verticesVec.emplace_back(vertexType{0.0, 2.0, 3.0});   // 6
+  verticesVec.emplace_back(vertexType{2.0, 2.0, 3.0});   // 7
+  verticesVec.emplace_back(vertexType{4.0, 0.0, 3.0});   // 8
 
-  for (auto &&vert : verticesVec)
-    gridFactory.insertVertex(vert);
+  for (auto &&vert : verticesVec) gridFactory.insertVertex(vert);
 
   Ikarus::DynArrayXi elementIndices;
   elementIndices.resize(8);
@@ -212,49 +203,47 @@ TEST(GridTest, GridView3DSolidTest) {
   elementIndices.resize(4);
   elementIndices << 1, 8, 3, 5;
   gridFactory.insertElement(Dune::GeometryTypes::tetrahedron, elementIndices);
-//  elementIndices.resize(3);
-//  elementIndices<< 4,6,5;
-//  gridFactory.insertElement(Dune::GeometryTypes::triangle,elementIndices);
+  //  elementIndices.resize(3);
+  //  elementIndices<< 4,6,5;
+  //  gridFactory.insertElement(Dune::GeometryTypes::triangle,elementIndices);
 
   Grid actualGrid = gridFactory.createGrid();
 
   auto gridView = actualGrid.leafGridView();
-  //Element   Edge        VertexIDs
+  // Element   Edge        VertexIDs
   std::vector<std::vector<std::array<int, 2>>> expectedElementEdgeVertexId;
   expectedElementEdgeVertexId.emplace_back();
-  expectedElementEdgeVertexId[0].push_back({0, 4}); //0
-  expectedElementEdgeVertexId[0].push_back({1, 5}); //1
-  expectedElementEdgeVertexId[0].push_back({2, 6}); //2
-  expectedElementEdgeVertexId[0].push_back({3, 7}); //3
-  expectedElementEdgeVertexId[0].push_back({0, 2}); //4
-  expectedElementEdgeVertexId[0].push_back({1, 3}); //5
-  expectedElementEdgeVertexId[0].push_back({0, 1}); //6
-  expectedElementEdgeVertexId[0].push_back({2, 3}); //7
-  expectedElementEdgeVertexId[0].push_back({4, 6}); //8
-  expectedElementEdgeVertexId[0].push_back({5, 7}); //9
-  expectedElementEdgeVertexId[0].push_back({4, 5}); //10
-  expectedElementEdgeVertexId[0].push_back({6, 7}); //11
+  expectedElementEdgeVertexId[0].push_back({0, 4});  // 0
+  expectedElementEdgeVertexId[0].push_back({1, 5});  // 1
+  expectedElementEdgeVertexId[0].push_back({2, 6});  // 2
+  expectedElementEdgeVertexId[0].push_back({3, 7});  // 3
+  expectedElementEdgeVertexId[0].push_back({0, 2});  // 4
+  expectedElementEdgeVertexId[0].push_back({1, 3});  // 5
+  expectedElementEdgeVertexId[0].push_back({0, 1});  // 6
+  expectedElementEdgeVertexId[0].push_back({2, 3});  // 7
+  expectedElementEdgeVertexId[0].push_back({4, 6});  // 8
+  expectedElementEdgeVertexId[0].push_back({5, 7});  // 9
+  expectedElementEdgeVertexId[0].push_back({4, 5});  // 10
+  expectedElementEdgeVertexId[0].push_back({6, 7});  // 11
   expectedElementEdgeVertexId.emplace_back();
-  expectedElementEdgeVertexId[1].push_back({1, 8}); //0
-  expectedElementEdgeVertexId[1].push_back({1, 3}); //1
-  expectedElementEdgeVertexId[1].push_back({3, 8}); //2
-  expectedElementEdgeVertexId[1].push_back({1, 5}); //3
-  expectedElementEdgeVertexId[1].push_back({5, 8}); //4
-  expectedElementEdgeVertexId[1].push_back({3, 5}); //4
+  expectedElementEdgeVertexId[1].push_back({1, 8});  // 0
+  expectedElementEdgeVertexId[1].push_back({1, 3});  // 1
+  expectedElementEdgeVertexId[1].push_back({3, 8});  // 2
+  expectedElementEdgeVertexId[1].push_back({1, 5});  // 3
+  expectedElementEdgeVertexId[1].push_back({5, 8});  // 4
+  expectedElementEdgeVertexId[1].push_back({3, 5});  // 4
   EXPECT_TRUE(!edges(gridView).empty());
   EXPECT_TRUE(!elements(gridView).empty());
 
-
-
-  for(int EleIter=0; auto&& ele : elements(gridView))
-  {
+  for (int EleIter = 0; auto &&ele : elements(gridView)) {
     EXPECT_TRUE(!edges(ele).empty());
     for (int edgeIter = 0; auto &&edge : edges(ele)) {
-
       EXPECT_TRUE(!vertices(edge).empty());
       for (int i = 0; auto &&verticesOfEdge : vertices(edge)) {
-      EXPECT_EQ(verticesOfEdge->getID(),expectedElementEdgeVertexId[EleIter][edgeIter][i]);
-      EXPECT_THAT(verticesOfEdge->getPosition(), EigenApproxEqual(verticesVec[expectedElementEdgeVertexId[EleIter][edgeIter][i]],1e-15));
+        EXPECT_EQ(verticesOfEdge->getID(), expectedElementEdgeVertexId[EleIter][edgeIter][i]);
+        EXPECT_THAT(verticesOfEdge->getPosition(),
+                    EigenApproxEqual(verticesVec[expectedElementEdgeVertexId[EleIter][edgeIter][i]],
+                                     1e-15));
         ++i;
       }
       ++edgeIter;
@@ -267,9 +256,9 @@ TEST(GridTest, GridView3DSolidTest) {
   ++eleIterator;
   EXPECT_EQ(eleIterator->type(), Dune::GeometryTypes::tetrahedron);
 
-  std::vector<int> expectedEdgesAtVertex{3,4,3,5,3,5,3,3,3};
-  for(int i=0; auto&& vertex : vertices(gridView))
-    EXPECT_EQ(edges(vertex).size(),expectedEdgesAtVertex[i++]);
+  std::vector<int> expectedEdgesAtVertex{3, 4, 3, 5, 3, 5, 3, 3, 3};
+  for (int i = 0; auto &&vertex : vertices(gridView))
+    EXPECT_EQ(edges(vertex).size(), expectedEdgesAtVertex[i++]);
 }
 
 TEST(GridTest, GridInsertionException) {
@@ -278,18 +267,17 @@ TEST(GridTest, GridInsertionException) {
   SimpleGridFactory<Grid> gridFactory;
   using vertexType = Ikarus::FixedVector2d;
   std::vector<vertexType> verticesVec;
-  verticesVec.emplace_back(vertexType{0.0, 0.0}); //0
-  verticesVec.emplace_back(vertexType{2.0, 0.0}); //1
-  verticesVec.emplace_back(vertexType{0.0, 2.0}); //2
-  verticesVec.emplace_back(vertexType{2.0, 2.0}); //3
+  verticesVec.emplace_back(vertexType{0.0, 0.0});  // 0
+  verticesVec.emplace_back(vertexType{2.0, 0.0});  // 1
+  verticesVec.emplace_back(vertexType{0.0, 2.0});  // 2
+  verticesVec.emplace_back(vertexType{2.0, 2.0});  // 3
 
-  for (auto &&vert : verticesVec)
-    gridFactory.insertVertex(vert);
+  for (auto &&vert : verticesVec) gridFactory.insertVertex(vert);
 
   Ikarus::DynArrayXi elementIndices;
   elementIndices.resize(4);
   elementIndices << 0, 1, 2, 3;
-  EXPECT_THROW(gridFactory.insertElement(Dune::GeometryTypes::triangle, elementIndices), Dune::GridError);
-
+  EXPECT_THROW(gridFactory.insertElement(Dune::GeometryTypes::triangle, elementIndices),
+               Dune::GridError);
 }
 /*\@}*/

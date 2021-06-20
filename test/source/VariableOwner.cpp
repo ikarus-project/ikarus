@@ -3,7 +3,4 @@
 //
 #include <gtest/gtest.h>
 
-TEST(VariableOwnerTest, RealTuple) {
-
-
-}
+TEST(VariableOwnerTest, RealTuple) {}

@@ -5,16 +5,13 @@
 #ifndef IKARUS_ASSEMBLERINTERFACE_H
 #define IKARUS_ASSEMBLERINTERFACE_H
 
-
-
 namespace Ikarus {
-    template <typename ResidualAssemblerType, typename GridType, typename DofHandlerType>
-    concept ResidualAssembler = requires (ResidualAssemblerType assembler && GridType grid){
-        typename ResidualAssemblerType::ResidualType;
-        { fe.calculateLHS(grid) } ->  std::same_as<typename FEConceptType::MatrixType>;
-    };
+  template <typename ResidualAssemblerType, typename GridType, typename DofHandlerType>
+  concept ResidualAssembler = requires(ResidualAssemblerType assembler&& GridType grid) {
+    typename ResidualAssemblerType::ResidualType;
+    { fe.calculateLHS(grid) } -> std::same_as<typename FEConceptType::MatrixType>;
+  };
 
-};
+};  // namespace Ikarus
 
-
-#endif //IKARUS_ASSEMBLERINTERFACE_H
+#endif  // IKARUS_ASSEMBLERINTERFACE_H
