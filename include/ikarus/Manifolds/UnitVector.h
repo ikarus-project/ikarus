@@ -3,9 +3,9 @@
 //
 
 #pragma once
-#include <ikarus/utils/LinearAlgebraTypedefs.h>
-
 #include <concepts>
+
+#include <ikarus/utils/LinearAlgebraTypedefs.h>
 
 namespace Ikarus::Manifold {
   /**
@@ -104,15 +104,14 @@ namespace Ikarus::Manifold {
     CoordinateType var{CoordinateType::UnitX()};
   };
 
-  template <typename ctype2, int d2>
-  std::ostream &operator<<(std::ostream &s, const UnitVector<ctype2, d2> &var2) {
+  template <typename ctype2, int d2> std::ostream &operator<<(std::ostream &s, const UnitVector<ctype2, d2> &var2) {
     s << var2.getValue();
     return s;
   }
 
-  template <typename ctype2, int d2> [[nodiscard]] UnitVector<ctype2, d2> update(
-      const UnitVector<ctype2, d2> &rt,
-      const typename UnitVector<ctype2, d2>::CorrectionType &correction) {
+  template <typename ctype2, int d2>
+  [[nodiscard]] UnitVector<ctype2, d2> update(const UnitVector<ctype2, d2> &rt,
+                                              const typename UnitVector<ctype2, d2>::CorrectionType &correction) {
     return UnitVector<ctype2, d2>(rt.getValue() + rt.orthonormalFrame() * correction);
   }
 

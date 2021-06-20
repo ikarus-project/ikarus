@@ -4,14 +4,14 @@
 
 #pragma once
 
-#include <Eigen/Core>
 #include <dune/common/fvector.hh>
+
+#include <Eigen/Core>
 
 namespace Ikarus {
 
   ///** \brief Dynamic matrix */
-  template <typename ScalarType> using DynMatrix
-      = Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>;
+  template <typename ScalarType> using DynMatrix = Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>;
 
   ///** \brief Fixed size matrix */
   template <typename ScalarType, int rowSize, int colSize> using FixedMatrix

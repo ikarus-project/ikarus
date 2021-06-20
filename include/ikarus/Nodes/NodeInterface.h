@@ -9,8 +9,7 @@
 
 namespace Ikarus::Concepts {
   template <typename NodeType>
-  concept Node
-      = Ikarus::VariableOwner && Ikarus::VariableOwner && requires(NodeType node, Variable var) {
+  concept Node = Ikarus::VariableOwner && Ikarus::VariableOwner && requires(NodeType node, Variable var) {
     typename Node::ctype;
   };
 

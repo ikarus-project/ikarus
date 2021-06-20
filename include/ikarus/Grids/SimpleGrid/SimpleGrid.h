@@ -3,6 +3,9 @@
 //
 
 #pragma once
+#include <dune/geometry/multilineargeometry.hh>
+#include <dune/geometry/type.hh>
+
 #include <ikarus/AnsatzFunctions/Lagrange.h>
 #include <ikarus/Geometries/SimpleGeometry.h>
 #include <ikarus/Grids/GridEntities/DefaultGridEntities.h>
@@ -10,32 +13,27 @@
 #include <ikarus/Grids/GridViews/SimpleGridView.h>
 #include <ikarus/Nodes/DefaultNode.h>
 
-#include <dune/geometry/multilineargeometry.hh>
-#include <dune/geometry/type.hh>
-
 namespace Ikarus::Grid {
   template <int dim, int dimworld> class SimpleGrid;
   namespace Impl {
     template <int griddim, int wdim, int... codim>
-    static std::tuple<std::vector<DefaultGridEntity<griddim, codim, wdim>>...>
-        GridEntityTupleGenerator(std::integer_sequence<int, codim...>);
+    static std::tuple<std::vector<DefaultGridEntity<griddim, codim, wdim>>...> GridEntityTupleGenerator(
+        std::integer_sequence<int, codim...>);
   }
 
   template <int dim, int dimworld> class SimpleGrid {
-    static_assert(dim <= dimworld,
-                  "The dimension of the grid can not be smaller that the embedding space.");
+    static_assert(dim <= dimworld, "The dimension of the grid can not be smaller that the embedding space.");
 
   public:
     using ctype = double;
     static constexpr int dimension = dim;
     static constexpr int dimensionworld = dimworld;
-    using GridEntityTuple = decltype(Impl::GridEntityTupleGenerator<dim, dimworld>(
-        std::make_integer_sequence<int, dimension + 1>()));
+    using GridEntityTuple
+        = decltype(Impl::GridEntityTupleGenerator<dim, dimworld>(std::make_integer_sequence<int, dimension + 1>()));
     using VertexType = DefaultGridEntity<dim, dim, dimworld>;
     using ElementType = DefaultGridEntity<dim, 0, dimworld>;
 
-    template <int griddim, int cogriddim, int wdim> using Entity
-        = DefaultGridEntity<griddim, cogriddim, wdim>;
+    template <int griddim, int cogriddim, int wdim> using Entity = DefaultGridEntity<griddim, cogriddim, wdim>;
 
     //          using GridView = SimpleGridView<dimension,dimensionworld,SimpleGrid>;
 

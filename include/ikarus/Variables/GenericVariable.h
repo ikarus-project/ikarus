@@ -4,13 +4,14 @@
 
 #pragma once
 
-#include <ikarus/utils/LinearAlgebraTypedefs.h>
+#include "VariableInterface.h"
 
-#include <Eigen/Core>
 #include <memory>
 #include <span>
 
-#include "VariableInterface.h"
+#include <Eigen/Core>
+
+#include <ikarus/utils/LinearAlgebraTypedefs.h>
 
 namespace Ikarus::Variable {
 
@@ -55,12 +56,8 @@ namespace Ikarus::Variable {
       [[nodiscard]] int do_correctionSize() const final { return VAR::correctionSize; }
       [[nodiscard]] size_t do_getTag() const final { return vo.getTag(); };
       [[nodiscard]] Ikarus::DynVectord do_getValue() const final { return vo.getValue(); };
-      void do_update(const Eigen::Ref<const Ikarus::DynVectord> &other) final {
-        return vo.update(other);
-      }
-      void do_setValue(const Eigen::Ref<const Ikarus::DynVectord> &other) final {
-        return vo.setValue(other);
-      }
+      void do_update(const Eigen::Ref<const Ikarus::DynVectord> &other) final { return vo.update(other); }
+      void do_setValue(const Eigen::Ref<const Ikarus::DynVectord> &other) final { return vo.setValue(other); }
       [[nodiscard]] bool do_equalComparison(const GenericVariable &other) const final {
         return (this->do_getTag() == getTag(other));
       };
@@ -69,9 +66,7 @@ namespace Ikarus::Variable {
         return (this->do_getTag() < getTag(other));
       };
 
-      [[nodiscard]] std::unique_ptr<VarBase> clone() const final {
-        return std::make_unique<VarImpl>(*this);
-      }
+      [[nodiscard]] std::unique_ptr<VarBase> clone() const final { return std::make_unique<VarImpl>(*this); }
 
       VAR vo;
     };

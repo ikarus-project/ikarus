@@ -16,22 +16,19 @@ namespace Ikarus {
 
       //        template<int dummydim = mydim, std::enable_if_t<(dummydim>2) ,bool> = true >
       static constexpr int numberOfSurfaces() {
-        static_assert(mydim > 2,
-                      "Cube dimension must be larger than 2 to have surfaces as subentities.");
+        static_assert(mydim > 2, "Cube dimension must be larger than 2 to have surfaces as subentities.");
         return duneReferenceElement.size(mydim - 2);
       }
 
       //        template<int dummydim = mydim, std::enable_if_t<(dummydim>1),bool> = true >
       static constexpr int numberOfEdges() {
-        static_assert(mydim > 1,
-                      "Cube dimension must be larger than 1 to have edges as subentities.");
+        static_assert(mydim > 1, "Cube dimension must be larger than 1 to have edges as subentities.");
         return duneReferenceElement.size(mydim - 1);
       }
       static constexpr int numberOfVertices() { return duneReferenceElement.size(mydim); }
 
     private:
-      inline static const auto duneReferenceElement
-          = Dune::ReferenceElements<double, mydim>::cube();
+      inline static const auto duneReferenceElement = Dune::ReferenceElements<double, mydim>::cube();
     };
 
     inline constexpr auto q1_1d = LinearCube<1>();

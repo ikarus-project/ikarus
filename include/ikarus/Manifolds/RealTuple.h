@@ -3,8 +3,9 @@
 //
 
 #pragma once
-#include <Eigen/Core>
 #include <concepts>
+
+#include <Eigen/Core>
 
 namespace Ikarus::Manifold {
   /**
@@ -61,15 +62,13 @@ namespace Ikarus::Manifold {
     CoordinateType var{CoordinateType::Zero()};
   };
 
-  template <typename ctype2, int d2>
-  std::ostream &operator<<(std::ostream &s, const RealTuple<ctype2, d2> &var2) {
+  template <typename ctype2, int d2> std::ostream &operator<<(std::ostream &s, const RealTuple<ctype2, d2> &var2) {
     s << var2.getValue();
     return s;
   }
 
   template <typename ctype2, int d2, typename CorrectionType>
-  [[nodiscard]] RealTuple<ctype2, d2> update(const RealTuple<ctype2, d2> &rt,
-                                             const CorrectionType &correction) {
+  [[nodiscard]] RealTuple<ctype2, d2> update(const RealTuple<ctype2, d2> &rt, const CorrectionType &correction) {
     return RealTuple<ctype2, d2>(rt.getValue() + correction);
   }
 

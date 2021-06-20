@@ -9,8 +9,7 @@ namespace Ikarus::Grid {
 
   template <int dim, int dimworld, Ikarus::Concepts::Grid GridType> class SimpleGridView {
   public:
-    explicit SimpleGridView(GridType& gridInput, int levelInput = 0)
-        : grid{&gridInput}, level{levelInput} {}
+    explicit SimpleGridView(GridType& gridInput, int levelInput = 0) : grid{&gridInput}, level{levelInput} {}
 
     template <int coDim> auto begin() { return grid->template getSubEntities<coDim>(0).begin(); }
 

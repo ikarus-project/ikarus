@@ -6,8 +6,8 @@
 
 namespace Ikarus::Concepts {
   template <typename ManifoldType>
-  concept Manifold = requires(ManifoldType var, typename ManifoldType::CorrectionType correction,
-                              std::ostream& s, typename ManifoldType::CoordinateType value) {
+  concept Manifold = requires(ManifoldType var, typename ManifoldType::CorrectionType correction, std::ostream& s,
+                              typename ManifoldType::CoordinateType value) {
     typename ManifoldType::ctype;
     ManifoldType::valueSize;
     ManifoldType::correctionSize;

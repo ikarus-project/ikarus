@@ -3,18 +3,19 @@
 //
 
 #pragma once
-#include <ikarus/Grids/GridEntities/GridEntitiesInterface.h>
-
 #include <concepts>
 
-#include "dune/common/classname.hh"
-#include "ikarus/Geometries/GeometryInterface.h"
-#include "ikarus/Variables/VariableDefinitions.h"
-#include "ikarus/utils/LinearAlgebraTypedefs.h"
-#include "spdlog/spdlog.h"
+#include <dune/common/classname.hh>
+
+#include <spdlog/spdlog.h>
+
+#include <ikarus/Geometries/GeometryInterface.h>
+#include <ikarus/Grids/GridEntities/GridEntitiesInterface.h>
+#include <ikarus/Variables/VariableDefinitions.h>
+#include <ikarus/utils/LinearAlgebraTypedefs.h>
+
 namespace Ikarus::PhysicalElements {
-  template <Ikarus::Concepts::GridEntity GridEntityType, std::floating_point ct = double>
-  class ElasticityFE {
+  template <Ikarus::Concepts::GridEntity GridEntityType, std::floating_point ct = double> class ElasticityFE {
   public:
     ElasticityFE(GridEntityType& gE) : gridEntity{&gE} {}
 

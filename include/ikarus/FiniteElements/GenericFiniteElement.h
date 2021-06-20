@@ -12,8 +12,7 @@ namespace Ikarus::PhysicalElements {
   /** \brief A type-erased physical element */
   class GenericFE {
   public:
-    template <typename FE> explicit GenericFE(const FE& fe)
-        : feimpl{std::make_unique<FEImpl<FE> >(fe)} {}
+    template <typename FE> explicit GenericFE(const FE& fe) : feimpl{std::make_unique<FEImpl<FE> >(fe)} {}
 
     ~GenericFE() = default;
     GenericFE(const GenericFE& other) : feimpl{other.feimpl->clone()} {}
@@ -45,18 +44,10 @@ namespace Ikarus::PhysicalElements {
       [[nodiscard]] std::pair<DynVectord, DynMatrixd> do_calculateLocalSystem() const final {
         TRYCALLMEMBERFUNCTION(calculateLocalSystem);
       }
-      [[nodiscard]] DynMatrixd do_calculateLHS() const final {
-        TRYCALLMEMBERFUNCTION(calculateLHS);
-      }
-      [[nodiscard]] DynVectord do_calculateRHS() const final {
-        TRYCALLMEMBERFUNCTION(calculateRHS);
-      };
-      [[nodiscard]] DynArrayXi do_getDofVector() const final {
-        TRYCALLMEMBERFUNCTION(getDofVector);
-      };
-      [[nodiscard]] std::unique_ptr<FEBase> clone() const final {
-        return std::make_unique<FEImpl>(*this);
-      }
+      [[nodiscard]] DynMatrixd do_calculateLHS() const final { TRYCALLMEMBERFUNCTION(calculateLHS); }
+      [[nodiscard]] DynVectord do_calculateRHS() const final { TRYCALLMEMBERFUNCTION(calculateRHS); };
+      [[nodiscard]] DynArrayXi do_getDofVector() const final { TRYCALLMEMBERFUNCTION(getDofVector); };
+      [[nodiscard]] std::unique_ptr<FEBase> clone() const final { return std::make_unique<FEImpl>(*this); }
       FE fe;
     };
 

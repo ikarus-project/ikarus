@@ -7,10 +7,30 @@
   BreakBeforeBraces: Attach
   ColumnLimit: '120'
   ConstructorInitializerAllOnOneLineOrOnePerLine: 'true'
-  IncludeBlocks: Regroup
+  SortIncludes: true
   IndentPPDirectives: AfterHash
   IndentWidth: '2'
   NamespaceIndentation: All
   BreakBeforeBinaryOperators: All
   BreakBeforeTernaryOperators: 'true'
+  IncludeBlocks: Regroup
+  IncludeCategories:
+    - Regex: '^(<|")dune/'
+      Priority: 3
+      SortPriority: 3
+    - Regex: '^(<|")spdlog/'
+      Priority: 4
+      SortPriority: 4
+    - Regex: '^(<|")Eigen/'
+      Priority: 5
+      SortPriority: 5
+    - Regex: '^(<|")ikarus/'
+      Priority: 10
+      SortPriority: 10
+    - Regex:           '<([A-Za-z0-9.\/-_])+>'
+      Priority:        2
+      SortPriority: 2
+    - Regex:           '"([A-Za-z0-9.\/-_])+"'
+      Priority:        1
+      SortPriority: 1
 ...

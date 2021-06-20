@@ -3,9 +3,9 @@
 //
 
 #pragma once
-#include <ikarus/AnsatzFunctions/Lagrange.h>
-
 #include "SimpleGeometry.h"
+
+#include <ikarus/AnsatzFunctions/Lagrange.h>
 
 namespace Ikarus::Geometry {
   template <typename ScalarType, int K> using BrickGeometryK

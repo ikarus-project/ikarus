@@ -2,8 +2,7 @@
 // Created by Alex on 12.05.2021.
 //
 
-#ifndef IKARUS_INTERPOLATOR_H
-#define IKARUS_INTERPOLATOR_H
+#pragma once
 
 #include <numeric>
 
@@ -29,4 +28,3 @@ auto interpolate(const Eigen::MatrixBase<DerivedAnsatzFunctionType>& N,
 //
 //}
 
-#endif  // IKARUS_INTERPOLATOR_H

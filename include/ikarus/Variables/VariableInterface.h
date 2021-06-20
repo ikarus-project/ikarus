@@ -18,8 +18,7 @@ namespace Ikarus::Concepts {
    *
    */
   template <typename VariableType>
-  concept Variable = requires(VariableType var, VariableType var2,
-                              typename VariableType::CorrectionType correction,
+  concept Variable = requires(VariableType var, VariableType var2, typename VariableType::CorrectionType correction,
                               typename VariableType::CoordinateType value) {
     typename VariableType::ctype;
     VariableType::valueSize;

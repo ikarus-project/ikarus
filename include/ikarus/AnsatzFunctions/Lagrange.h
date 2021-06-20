@@ -3,12 +3,11 @@
  * and modified
  */
 
-#ifndef IKARUS_LAGRANGE_H
-#define IKARUS_LAGRANGE_H
-
-#include <ikarus/utils/LinearAlgebraTypedefs.h>
+#pragma once
 
 #include <dune/common/power.hh>
+
+#include <ikarus/utils/LinearAlgebraTypedefs.h>
 /** \brief Lagrange shape functions of arbitrary order on the reference cube \f$[-1,1]^\text{dim}\f$
  *
  * This implementation is taken from
@@ -69,9 +68,7 @@ namespace Ikarus {
     }
 
     //! \brief transform x from -1..1 to 0..1
-    static ParaMeterPointType transformPoint(const ParaMeterPointType& x) {
-      return 0.5 * x.array() + 0.5;
-    }
+    static ParaMeterPointType transformPoint(const ParaMeterPointType& x) { return 0.5 * x.array() + 0.5; }
 
   public:
     //! \brief Evaluate all shape functions
@@ -659,4 +656,3 @@ namespace Ikarus {
 
 }  // namespace Ikarus
 
-#endif  // IKARUS_LAGRANGE_H

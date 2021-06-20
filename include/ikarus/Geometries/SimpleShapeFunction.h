@@ -2,8 +2,7 @@
 // Created by ac120950 on 17.07.2020.
 //
 
-#ifndef FE_DESIGNPATTERN_SIMPLESHAPEFUNCTION_H
-#define FE_DESIGNPATTERN_SIMPLESHAPEFUNCTION_H
+#pragma once
 //#include "../Interfaces/InterfaceShapeFunction.h"
 #include <functional>
 
