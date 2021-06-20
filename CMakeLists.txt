@@ -67,8 +67,8 @@ endif()
 
 #message("Find muesli: ")
 #find_package(muesli CONFIG REQUIRED)
-#message("Find matplotc++: ")
-#find_package(Matplot++ CONFIG REQUIRED)
+message("Find matplotc++: ")
+find_package(Matplot++ CONFIG REQUIRED)
 message("Find PythonLibs: ")
 find_package (Python3 COMPONENTS Interpreter Development)
 message("${Python3_STDLIB}")
@@ -84,7 +84,7 @@ target_link_libraries(Ikarus  PUBLIC Eigen3::Eigen
         PUBLIC dunegrid
         PUBLIC ${SuiteSparse_LIBRARIES}
 #        PUBLIC muesli
-#        PUBLIC Matplot++::matplot
+        PUBLIC Matplot++::matplot
 #        PUBLIC Python3::Module
 #        PRIVATE pybind11::headers
 )
