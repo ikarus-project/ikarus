@@ -38,15 +38,15 @@ set_target_properties(Ikarus PROPERTIES CXX_STANDARD 20)
 
 # being a cross-platform target, we enforce standards conformance on MSVC
 target_compile_options(Ikarus PUBLIC "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/permissive->")
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  message("debug mode")
-  list(APPEND CMAKE_PREFIX_PATH
-       ${CMAKE_CURRENT_SOURCE_DIR}/../Ikarus_Dependencies/Dependencies_debug/)
-elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-  message("release mode")
+#if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+#  message("debug mode")
+#  list(APPEND CMAKE_PREFIX_PATH
+#       ${CMAKE_CURRENT_SOURCE_DIR}/../Ikarus_Dependencies/Dependencies_debug/)
+#elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+#  message("release mode")
   list(APPEND CMAKE_PREFIX_PATH
        ${CMAKE_CURRENT_SOURCE_DIR}/../Ikarus_Dependencies/Dependencies_release/)
-endif()
+#endif()
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 
