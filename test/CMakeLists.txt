@@ -14,7 +14,7 @@ include(../cmake/tools.cmake)
 # ---- Dependencies ----
 
 include(../cmake/CPM.cmake)
-if(FORMAT_TARGETS)
+if(ADD_FORMATTARGET)
 CPMAddPackage("gh:TheLartians/Format.cmake@1.7.0")
 endif()
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
