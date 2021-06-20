@@ -24,14 +24,12 @@ namespace Ikarus::Variable {
   }
 
   std::ostream& operator<<(std::ostream& s, const GenericVariable& var) {
-    s << var.variableImpl->do_getValue() << '\n'
-      << " Tag: " << var.variableImpl->do_getTag() << '\n';
+    s << var.variableImpl->do_getValue() << '\n' << " Tag: " << var.variableImpl->do_getTag() << '\n';
     return s;
   }
   size_t correctionSize(std::span<const GenericVariable> varSpan) {
-    return std::accumulate(
-        varSpan.begin(), varSpan.end(), 0,
-        [](size_t cursize, const GenericVariable& var) { return cursize + correctionSize(var); });
+    return std::accumulate(varSpan.begin(), varSpan.end(), 0,
+                           [](size_t cursize, const GenericVariable& var) { return cursize + correctionSize(var); });
   }
   void update(std::span<GenericVariable> varSpan, const Ikarus::DynVectord& correction) {
     assert(static_cast<Eigen::Index>(correctionSize(varSpan)) == correction.size());
@@ -44,9 +42,8 @@ namespace Ikarus::Variable {
   }
 
   size_t valueSize(std::span<const GenericVariable> varSpan) {
-    return std::accumulate(
-        varSpan.begin(), varSpan.end(), 0,
-        [](size_t cursize, const GenericVariable& var) { return cursize + valueSize(var); });
+    return std::accumulate(varSpan.begin(), varSpan.end(), 0,
+                           [](size_t cursize, const GenericVariable& var) { return cursize + valueSize(var); });
   }
 
 }  // namespace Ikarus::Variable
