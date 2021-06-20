@@ -24,7 +24,44 @@ jobs:
         with:
           path: "**/cpm_modules"
           key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
-
+      - uses: actions/checkout@v2
+        with:
+         path: 'repo'
+      - name: Create Work Dir
+        run: mkdir build
+      - name: Install dependencies using apt install
+        run: |
+          sudo apt install -y gnuplot 
+          sudo apt install -y liblapack-dev  
+          sudo apt install -y libblas-dev
+          sudo apt install -y libsuitesparse-dev
+          sudo apt install -y libdune-common-dev
+          sudo apt install -y libdune-geometry-dev
+          sudo apt install -y libdune-grid-dev
+          sudo apt install -y libspdlog-dev
+          sudo apt install -y libbenchmark-dev
+          sudo apt install -y libgtest-dev
+          cd /usr/src/googletest
+          sudo cmake .
+          sudo cmake --build . --target install
+      - name: Install dependencies using brew
+        run: |
+          git clone https://gitlab.com/libeigen/eigen.git
+          cd eigen
+          git checkout 3.4
+          ls
+          mkdir build
+          cd build
+          cmake ../
+          sudo make install
+          #sudo chmod 755 /usr/local/bin
+          #brew install eigen   
+          #brew install pybind11
+      - name: Install gcc11
+        run: |
+          sudo apt install build-essential manpages-dev software-properties-common
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+          sudo apt update && sudo apt install gcc-11 g++-11
       - name: Install format dependencies
         run: |
           sudo apt install clang-format
