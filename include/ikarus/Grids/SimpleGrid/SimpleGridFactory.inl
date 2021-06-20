@@ -18,7 +18,7 @@ namespace Ikarus::Grid {
    **/
   template <Concepts::Grid GridType>
   void SimpleGridFactory<GridType>::insertElement(const Dune::GeometryType &type, const DynArrayXi &verticesIn) {
-    if (type.dim() == dimension) DUNE_THROW(Dune::GridError, "The inserted element has wrong dimensions!");
+    if (type.dim() != dimension) DUNE_THROW(Dune::GridError, "The inserted element has wrong dimensions!");
 
     elementEdgeIndices.emplace_back();
     if (type.isLine()) {
@@ -109,9 +109,9 @@ namespace Ikarus::Grid {
 
   template <Concepts::Grid GridType> GridType SimpleGridFactory<GridType>::createGrid() {
     GridType grid;
-    if (!verticesPositions.empty())
+    if (verticesPositions.empty())
       DUNE_THROW(Dune::GridError, "verticesPositions vector is empty. Unable to create Grid");
-    if (!elementsVertices.empty()) DUNE_THROW(Dune::GridError, "elements vector is empty. Unable to create Grid");
+    if (elementsVertices.empty()) DUNE_THROW(Dune::GridError, "elements vector is empty. Unable to create Grid");
 
     grid.gridEntities.resize(1);  // resize to hold coarsest grid level
 
