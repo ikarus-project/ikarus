@@ -40,7 +40,10 @@ jobs:
         run: |
           mkdir matplotplusplus
           cd matplotplusplus
-          echo 'ExternalProject_Add(matplotplusplus
+          echo 'cmake_minimum_required(VERSION 3.16)
+                project(matplotplusplus)
+                include(ExternalProject)
+                          ExternalProject_Add(matplotplusplus
                           GIT_REPOSITORY https://github.com/alandefreitas/matplotplusplus.git
                           GIT_TAG master
                           GIT_PROGRESS TRUE
