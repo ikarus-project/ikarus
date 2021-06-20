@@ -124,6 +124,8 @@ nu = 0.3
 ////#include <dune/common/fvector.hh>
 //#include <dune/grid/onedgrid.hh>
 #include <cstdlib>
+float foo(float f,float g) { return (f / g); }
+
 TEST(Dependencies, dunegridEntities) {
   //  using namespace Dune;
   //  FieldVector<double,1> a = -2.0;
@@ -142,7 +144,6 @@ TEST(Dependencies, dunegridEntities) {
   ////      ele.geometry();
   //  }
   // Does not work due to bug in GCC 11.1
-  int a[100];
-  std::cout<<a[110]<<std::endl;
+  foo(1.0f,0.0f);
 
 }
