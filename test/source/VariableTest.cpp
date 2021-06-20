@@ -63,14 +63,13 @@ TEST(DefaultVariableTest, UnitVectorDirector) {
   const auto d = update(a, Eigen::Vector<double, 2>::UnitY());
 
   EXPECT_THAT(d.getValue(), EigenApproxEqual(Eigen::Vector<double, 3>(0.18688672392660707344,
-                                                                      0.97140452079103167815,
-                                                                      -0.14644660940672621363),
-                                             tol));
+                                                                                   0.97140452079103167815,
+                                                                                  -0.14644660940672621363),
+                                                                                   tol));
 
   DIRECTOR3D b{a};
 
-  EXPECT_THAT(b.getValue(),
-              EigenApproxEqual(Eigen::Vector<double, 3>(0.5, 1.0 / sqrt(2), 0.5), tol));
+  EXPECT_THAT(b.getValue(), EigenApproxEqual(Eigen::Vector<double, 3>(0.5, 1.0 / sqrt(2), 0.5), tol));
 
   DIRECTOR3D c{DIRECTOR3D{Eigen::Vector<double, 3>::UnitZ() * 2.0}};  // move constructor test
   EXPECT_THAT(c.getValue(), EigenApproxEqual(Eigen::Vector<double, 3>(0.0, 0.0, 1.0), tol));
@@ -133,8 +132,7 @@ TEST(VariableTest, GenericVariableVectorTest) {
   EXPECT_THAT(getValue(varVec[2]), EigenApproxEqual(Eigen::Vector3d(4, 5, 6), tol));
   EXPECT_THAT(getValue(varVec[3]),
               EigenApproxEqual(Eigen::Vector3d(0.41279806929140905325, 0.50645665044957854928,
-                                               -0.75703329861022516933),
-                               tol));
+                                                     -0.75703329861022516933), tol));
 }
 
 #include <ikarus/Grids/GridEntities/DefaultGridEntities.h>

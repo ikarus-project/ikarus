@@ -19,9 +19,8 @@ if(ADD_FORMATTARGET)
           NAME Format.cmake
           VERSION 1.7.0
           GITHUB_REPOSITORY TheLartians/Format.cmake
-          OPTIONS # set to yes skip cmake formatting
+          OPTIONS
           "FORMAT_SKIP_CMAKE NO"
-          # path to exclude (optional, supports regular expressions)
           "CMAKE_FORMAT_EXCLUDE cmake/"
   )
 endif()
