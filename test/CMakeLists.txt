@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 
 project(IkarusTests LANGUAGES CXX)
 
@@ -37,18 +37,14 @@ add_executable(IkarusTests ${sources})
 cmake_path(GET CMAKE_CURRENT_SOURCE_DIR PARENT_PATH MY_PARENT_DIR)
 list(APPEND CMAKE_PREFIX_PATH ${MY_PARENT_DIR}/cmake/modules)
 message("${CMAKE_MODULE_PATH}")
-#if(MINGW)
+
 find_package(GTest CONFIG REQUIRED)
-#else()
-#find_package(Gtest REQUIRED)
-#endif()
+
 target_link_libraries(IkarusTests PRIVATE GTest::gmock_main PRIVATE Ikarus::Ikarus)
 set_target_properties(IkarusTests PROPERTIES CXX_STANDARD 20)
 
 # enable compiler warnings
-if(NOT TEST_INSTALLED_VERSION)
-    target_compile_options(Ikarus PUBLIC -Wall -Wpedantic -Wextra -Werror)
-endif()
+target_compile_options(Ikarus PUBLIC -Wall -Wpedantic -Wextra -Werror)
 
 enable_testing()
 

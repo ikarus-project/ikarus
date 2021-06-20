@@ -34,11 +34,6 @@ file(GLOB_RECURSE headers CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include
 file(GLOB_RECURSE sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp")
 
 # ---- Create library ----
-
-# Note: for header-only libraries change all PUBLIC flags to INTERFACE and create an interface
-# target: add_library(Ikarus INTERFACE)
-
-
 add_library(Ikarus ${headers} ${sources})
 
 set_target_properties(Ikarus PROPERTIES CXX_STANDARD 20)
@@ -71,6 +66,7 @@ find_package(SuiteSparse CONFIG REQUIRED)
 else()
 find_package(SuiteSparse REQUIRED)
 endif()
+
 #message("Find muesli: ")
 #find_package(muesli CONFIG REQUIRED)
 #message("Find matplotc++: ")
@@ -80,7 +76,6 @@ find_package (Python3 COMPONENTS Interpreter Development)
 message("${Python3_STDLIB}")
 #message("Find pybind11: ")
 #find_package(pybind11 CONFIG REQUIRED)
-
 
 
 # Link dependencies
@@ -100,11 +95,6 @@ target_include_directories(
                  $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
 )
 
-# ---- Create an installable target ----
-# this allows users to install and find the library via `find_package()`.
-
-# the location where the project's version header will be placed should match the project's regular
-# header paths
 string(TOLOWER ${PROJECT_NAME}/version.h VERSION_HEADER_LOCATION)
 
 packageProject(

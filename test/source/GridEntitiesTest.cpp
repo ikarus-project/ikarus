@@ -6,7 +6,7 @@
 //#include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
 //#include <ikarus/Grids/GridEntities/GridEntitiesInterface.h>
 
-//TEST(GridEntityTest, DefaultGridEntities) {
+// TEST(GridEntityTest, DefaultGridEntities) {
 //    using CubeIn3D = Ikarus::DefaultGridEntity<3,0,3>;
 //  CubeIn3D cubeIn3D;
 //  using VertexIn3D = Ikarus::DefaultGridEntity<3,3,3>;

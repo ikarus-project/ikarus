@@ -3,31 +3,23 @@
 //
 
 #pragma once
-#include <concepts>
-#include "ikarus/Geometries/GeometryInterface.h"
-#include "ikarus/utils/LinearAlgebraTypedefs.h"
-#include "ikarus/Variables/VariableDefinitions.h"
 #include <ikarus/Grids/GridEntities/GridEntitiesInterface.h>
 
+#include <concepts>
 
 #include "dune/common/classname.hh"
-
-
+#include "ikarus/Geometries/GeometryInterface.h"
+#include "ikarus/Variables/VariableDefinitions.h"
+#include "ikarus/utils/LinearAlgebraTypedefs.h"
 #include "spdlog/spdlog.h"
-namespace Ikarus::PhysicalElements
-{
-template<Ikarus::Concepts::GridEntity GridEntityType,std::floating_point ct = double>
-class ElasticityFE
-{
- public:
-  ElasticityFE(GridEntityType& gE )
-  : gridEntity{&gE}
-  {}
-
-
+namespace Ikarus::PhysicalElements {
+  template <Ikarus::Concepts::GridEntity GridEntityType, std::floating_point ct = double>
+  class ElasticityFE {
+  public:
+    ElasticityFE(GridEntityType& gE) : gridEntity{&gE} {}
 
     /** \brief Type used for coordinates */
-    using ctype =  ct;
+    using ctype = ct;
 
     /** \brief Type of the Geometry */
     using Geometry = typename GridEntityType::Geometry;
@@ -36,13 +28,13 @@ class ElasticityFE
     static constexpr int coorddimension = Geometry::coorddimension;
 
     /** \brief Dimension of the geometry */
-    static constexpr int mydimension= Geometry::mydimension;
+    static constexpr int mydimension = Geometry::mydimension;
 
     /** \brief Type of the Nodes */
-    using NodeType = Eigen::Matrix<ctype,coorddimension,1>;
+    using NodeType = Eigen::Matrix<ctype, coorddimension, 1>;
 
     /** \brief Type of the ParameterSpace coordinate */
-    using ParameterSpaceType = Eigen::Matrix<ctype,mydimension,1>;
+    using ParameterSpaceType = Eigen::Matrix<ctype, mydimension, 1>;
 
     /** \brief Type of the DofVector */
     using DofVectorType = DynArrayXi;
@@ -56,91 +48,70 @@ class ElasticityFE
     /** \brief Type of the stiffness matrix */
     using MatrixType = DynMatrixd;
 
+    [[nodiscard]] constexpr int dofSize() const { return GridEntityType::dimension; }
 
-    [[nodiscard]] constexpr int dofSize() const
-    {
-        return GridEntityType::dimension;
+    void generateDofs() const {
+      //        std::vector<std::shared_ptr<GenericVariableOwner>> vec;
+      //        for (auto&& node : nodes)
+      //            node->addVariable<Ikarus::DISPLACEMENTD_3D>();
+      //
+      //        for (auto&& edge : edges)
+      //            edge->addVariable<Ikarus::DISPLACEMENTD_3D>();
+      //
+      //        for (auto&& face : faces)
+      //            edge->addVariable<Ikarus::DISPLACEMENTD_3D>();
+
+      //        this->addVariable<Ikarus::EAS>();
     }
 
-    void generateDofs() const
-    {
-//        std::vector<std::shared_ptr<GenericVariableOwner>> vec;
-//        for (auto&& node : nodes)
-//            node->addVariable<Ikarus::DISPLACEMENTD_3D>();
-//
-//        for (auto&& edge : edges)
-//            edge->addVariable<Ikarus::DISPLACEMENTD_3D>();
-//
-//        for (auto&& face : faces)
-//            edge->addVariable<Ikarus::DISPLACEMENTD_3D>();
+    void initialize() { std::cout << "initialize ElasticityFE" << std::endl; }
 
-//        this->addVariable<Ikarus::EAS>();
-
+    [[nodiscard]] std::pair<VectorType, MatrixType> calculateLocalSystem() const {
+      return calculateStiffnessMatrixAndInternalForcesImpl();
     }
 
-    void initialize (
-            )
-    {
-        std::cout<<"initialize ElasticityFE" <<std::endl ;
+    [[nodiscard]] MatrixType calculateLHS() const {
+      return calculateStiffnessMatrixAndInternalForcesImpl<false, true>();
     }
 
-    [[nodiscard]] std::pair<VectorType,MatrixType> calculateLocalSystem  () const
-    {
-        return calculateStiffnessMatrixAndInternalForcesImpl();
+    [[nodiscard]] ctype getEnergy() const { return 0.0; }
+
+    [[nodiscard]] VectorType calculateRHS() const {
+      return calculateStiffnessMatrixAndInternalForcesImpl<true, false>();
     }
 
-    [[nodiscard]] MatrixType calculateLHS() const
-    {
-        return calculateStiffnessMatrixAndInternalForcesImpl<false,true>();
+    template <bool internalForcesFlag = true, bool stiffnessMatrixFlag = true>
+    auto calculateStiffnessMatrixAndInternalForcesImpl() const {
+      if constexpr (internalForcesFlag && stiffnessMatrixFlag) {
+        const VectorType Fint = VectorType::Ones(5);
+        const MatrixType K = MatrixType::Ones(5, 5);
+        return std::make_pair(Fint, K);
+      }
+
+      else if constexpr (internalForcesFlag && !stiffnessMatrixFlag)
+        return VectorType::Ones(5);
+      else if constexpr (!internalForcesFlag && stiffnessMatrixFlag)
+        return MatrixType::Ones(5, 5);
+      else
+        static_assert(internalForcesFlag == false && stiffnessMatrixFlag == false,
+                      "You asked the element: \"Don't return anything\"");
     }
 
-    [[nodiscard]] ctype getEnergy() const
-    {
-        return 0.0;
+    [[nodiscard]] DofVectorType getDofVector() const {
+      // return localDofHandler->getDofVector();
+      DofVectorType dof;
+      dof.setLinSpaced(0, 5);
+      //        for (auto&& node: nodes) {
+      //            dof.emplace_back(node->getDofs(POSITION).ID());
+      //            dof.emplace_back(node->getDofs(DIRECTOR).ID());
+      //            dof.emplace_back(node->getDofs(TEMPERATURE).ID());
+      //        }
+      //        dof[13] = EASPARAMS;
+      return dof;
     }
 
-    [[nodiscard]] VectorType calculateRHS() const
-    {
-        return calculateStiffnessMatrixAndInternalForcesImpl<true,false>();
-    }
+  private:
+    GridEntityType* gridEntity;
+  };
 
-    template<bool internalForcesFlag=true, bool stiffnessMatrixFlag=true>
-    auto calculateStiffnessMatrixAndInternalForcesImpl () const
-    {
-        if constexpr(internalForcesFlag && stiffnessMatrixFlag)
-        {
-            const VectorType Fint = VectorType::Ones(5);
-            const MatrixType  K = MatrixType::Ones(5,5);
-            return std::make_pair(Fint,K);
-        }
-
-        else if constexpr (internalForcesFlag && !stiffnessMatrixFlag)
-            return VectorType::Ones(5);
-        else if constexpr (!internalForcesFlag && stiffnessMatrixFlag)
-            return MatrixType::Ones(5,5);
-        else
-            static_assert(internalForcesFlag==false && stiffnessMatrixFlag== false, "You asked the element: \"Don't return anything\"");
-    }
-
-
-
-    [[nodiscard]] DofVectorType getDofVector() const
-    {
-        // return localDofHandler->getDofVector();
-        DofVectorType dof;
-        dof.setLinSpaced(0,5);
-//        for (auto&& node: nodes) {
-//            dof.emplace_back(node->getDofs(POSITION).ID());
-//            dof.emplace_back(node->getDofs(DIRECTOR).ID());
-//            dof.emplace_back(node->getDofs(TEMPERATURE).ID());
-//        }
-//        dof[13] = EASPARAMS;
-        return dof;
-    }
-
- private:
-  GridEntityType* gridEntity;
-};
-
-}
-
+}  // namespace Ikarus::PhysicalElements

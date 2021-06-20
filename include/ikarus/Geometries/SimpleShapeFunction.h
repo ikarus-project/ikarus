@@ -7,10 +7,9 @@
 //#include "../Interfaces/InterfaceShapeFunction.h"
 #include <functional>
 
-
-//class SimpleShapeFunction {
+// class SimpleShapeFunction {
 //
-//public:
+// public:
 //    typedef Eigen::Vector2d CoordinateType;
 //    typedef double ctype;
 //     typedef std::array<const std::function<double(const CoordinateType&) >,4> FunctionVectorType;
@@ -36,9 +35,8 @@
 //    MatrixType derivative(CoordinateType paraPoint) const{return MatrixType();};
 //    int size() const{return shapeFunctions.size();};
 //
-//private:
+// private:
 //    FunctionVectorType shapeFunctions;
 //};
 
-
-#endif //FE_DESIGNPATTERN_SIMPLESHAPEFUNCTION_H
+#endif  // FE_DESIGNPATTERN_SIMPLESHAPEFUNCTION_H

@@ -18,13 +18,14 @@
 //
 //#include "testHelpers.h"
 //
-//const double tol = 1e-15;
+// const double tol = 1e-15;
 //
-//TEST(GeometryTest, CreateJacobianDeterminantAndJacobian2DFlat) {
-//using namespace Ikarus::Geometry;
+// TEST(GeometryTest, CreateJacobianDeterminantAndJacobian2DFlat) {
+// using namespace Ikarus::Geometry;
 //    const Eigen::Matrix< double, 2, 1 > xieta({-1.0,-1.0});
 //    auto N = Ikarus::LagrangeCube<double,2,1>::getAnsatzFunctions(xieta);
-//    Eigen::Matrix< double, 4, 2 > dN = Ikarus::LagrangeCube<double,2,1>::getAnsatzFunctionJacobian(xieta);
+//    Eigen::Matrix< double, 4, 2 > dN =
+//    Ikarus::LagrangeCube<double,2,1>::getAnsatzFunctionJacobian(xieta);
 //
 //    Eigen::Matrix< double, 2, 4 > x;
 //    x.col(0) << 0,0;
@@ -55,7 +56,7 @@
 //
 //#include <ikarus/Geometries/GeometricElementDefinitions.h>
 //
-//TEST(GeometryTest,WithInteralAnsatzandVertices) {
+// TEST(GeometryTest,WithInteralAnsatzandVertices) {
 //  using namespace Ikarus::Geometry;
 //
 //
@@ -100,22 +101,19 @@
 ////
 ////  const Eigen::Matrix< double, 2, 1 > xieta({-1.0,-1.0});
 ////  auto N = Ikarus::LagrangeCube<double,2,1>::getAnsatzFunction(xieta);
-////  Eigen::Matrix< double, 4, 2 > dN = Ikarus::LagrangeCube<double,2,1>::getAnsatzFunctionJacobian(xieta);
-////  std::cout<<"N: "<<N<<std::endl;
-////  std::cout<<"dN : "<<dN<<std::endl;
+////  Eigen::Matrix< double, 4, 2 > dN =
+///Ikarus::LagrangeCube<double,2,1>::getAnsatzFunctionJacobian(xieta); /  std::cout<<"N:
+///"<<N<<std::endl; /  std::cout<<"dN : "<<dN<<std::endl;
 //////    Eigen::Matrix< double, 2, 4 > dNCorrect;
 ////  Eigen::Matrix< double, 3, 4 > x;
 ////  x.col(0) << 0,0,0;
 ////  x.col(1) << 4,0,0;
 ////  x.col(2) << 0,4,0;
 ////  x.col(3) << 4,4,0;
-////  Eigen::Matrix< double, 2, 3 > JT = Ikarus::SurfaceGeometry<double>::getJacobianTransposed(dN,x );
-////  std::cout<<JT<<std::endl;
-////  std::cout<<"=================="<<std::endl;
-////  std::cout<<dN<<std::endl;
-////  Eigen::Matrix< double, 2, 3 > JTexpected;
-////  JTexpected<<2,0,0,
-////      0,2,0;
+////  Eigen::Matrix< double, 2, 3 > JT = Ikarus::SurfaceGeometry<double>::getJacobianTransposed(dN,x
+///); /  std::cout<<JT<<std::endl; /  std::cout<<"=================="<<std::endl; /
+///std::cout<<dN<<std::endl; /  Eigen::Matrix< double, 2, 3 > JTexpected; /  JTexpected<<2,0,0, /
+///0,2,0;
 ////
 ////  ASSERT_EQ(JTexpected,JT);
 ////}

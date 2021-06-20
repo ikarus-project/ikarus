@@ -3,25 +3,25 @@
 //
 #define EIGEN_MATRIXBASE_PLUGIN "IBB_Eigen_MatrixBaseAddon.h"
 
-#include <vector>
 #include <fstream>
+#include <vector>
 //#include "Geometries/Geometries.h"
 
-#include <Eigen/Core>
-
 #include <gtest/gtest.h>
+
+#include <Eigen/Core>
 
 //#include "spdlog/fmt/ostr.h"
 //#include "spdlog/spdlog.h"
 //#include "spdlog/sinks/basic_file_sink.h"
 //#include "spdlog/sinks/stdout_color_sinks.h"
 
-//void foo() {
+// void foo() {
 //  spdlog::info("Does this appear in the correct logger?");
 //  spdlog::debug("This is a debug statement");
 //}
 
-//TEST(Dependencies, spdlog) {
+// TEST(Dependencies, spdlog) {
 //
 //  auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
 //  console_sink->set_level(spdlog::level::trace);
@@ -74,7 +74,6 @@
 #include <dune/common/parametertreeparser.hh>
 
 TEST(Dependencies, dunecommonInputParser) {
-
   Dune::ParameterTree parameterSet;
 
   std::string testInPutFile = R"xxx(tolerance = 1e-12
@@ -125,23 +124,22 @@ nu = 0.3
 ////#include <dune/common/fvector.hh>
 //#include <dune/grid/onedgrid.hh>
 
-
 TEST(Dependencies, dunegridEntities) {
-//  using namespace Dune;
-//  FieldVector<double,1> a = -2.0;
-//  FieldVector<double,1> b =  3.0;
-//  GridFactory<OneDGrid> gridFactory;
-//  gridFactory.insertVertex(a);
-//  gridFactory.insertVertex(b);
-//  std::vector<unsigned int> verticesIndex ({0,1});
-//
-//  gridFactory.insertElement(GeometryTypes::line,verticesIndex);
-//
-//  std::unique_ptr<OneDGrid> grid = gridFactory.createGrid();
-//  auto gridView = grid->leafGridView();
-//
-//  for (const auto& ele:elements(gridView)) {
-////      ele.geometry();
-//  }
- //Does not work due to bug in GCC 11.1
+  //  using namespace Dune;
+  //  FieldVector<double,1> a = -2.0;
+  //  FieldVector<double,1> b =  3.0;
+  //  GridFactory<OneDGrid> gridFactory;
+  //  gridFactory.insertVertex(a);
+  //  gridFactory.insertVertex(b);
+  //  std::vector<unsigned int> verticesIndex ({0,1});
+  //
+  //  gridFactory.insertElement(GeometryTypes::line,verticesIndex);
+  //
+  //  std::unique_ptr<OneDGrid> grid = gridFactory.createGrid();
+  //  auto gridView = grid->leafGridView();
+  //
+  //  for (const auto& ele:elements(gridView)) {
+  ////      ele.geometry();
+  //  }
+  // Does not work due to bug in GCC 11.1
 }
