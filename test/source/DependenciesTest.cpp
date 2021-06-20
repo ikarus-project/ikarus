@@ -144,6 +144,6 @@ TEST(Dependencies, dunegridEntities) {
   ////      ele.geometry();
   //  }
   // Does not work due to bug in GCC 11.1
-  foo(1.0f,0.0f);
-
+//  foo(1.0f,0.0f);
+  int *i = (int*) malloc(sizeof(int));
 }
