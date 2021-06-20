@@ -15,7 +15,15 @@ include(../cmake/tools.cmake)
 
 include(../cmake/CPM.cmake)
 if(ADD_FORMATTARGET)
-CPMAddPackage("gh:TheLartians/Format.cmake@1.7.0")
+  CPMAddPackage(
+          NAME Format.cmake
+          VERSION 1.7.0
+          GITHUB_REPOSITORY TheLartians/Format.cmake
+          OPTIONS # set to yes skip cmake formatting
+          "FORMAT_SKIP_CMAKE NO"
+          # path to exclude (optional, supports regular expressions)
+          "CMAKE_FORMAT_EXCLUDE cmake/"
+  )
 endif()
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   message("debug mode")
