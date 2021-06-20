@@ -17,7 +17,7 @@ jobs:
       uses: HorstBaerbel/action-clang-format@1.4
       # These are optional (defaults displayed)
       with:
-        scandir: '.'
+        scandir: 'include'
         excludedirs: 'build'
         extensions: 'c,h,C,H,cpp,hpp,cc,hh,c++,h++,cxx,hxx'
         style: 'file'
