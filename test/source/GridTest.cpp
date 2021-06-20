@@ -283,13 +283,15 @@ TEST(GridTest, GridInsertionException) {
   EXPECT_THROW(gridFactory.insertElement(Dune::GeometryTypes::hexahedron, elementIndices),
                Dune::GridError);
 
-  EXPECT_DEATH(gridFactory.insertElement(Dune::GeometryTypes::line, elementIndices),
-               "The inserted element has wrong dimensions!");
-
+  EXPECT_THROW(gridFactory.insertElement(Dune::GeometryTypes::line, elementIndices),
+               Dune::GridError);
   elementIndices.resize(3);
   elementIndices << 0, 1, 2;
+
   EXPECT_THROW(gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, elementIndices),
                Dune::GridError);
+
+
 }
 
 
@@ -297,8 +299,9 @@ TEST(GridTest, GridEmptyGridCreation) {
   using namespace Ikarus::Grid;
   using Grid = SimpleGrid<2, 2>;
   SimpleGridFactory<Grid> gridFactory;
-  EXPECT_DEATH(gridFactory.createGrid(),"verticesPositions vector is empty. Unable to create Grid");
+  EXPECT_THROW(gridFactory.createGrid(),Dune::GridError);
   gridFactory.insertVertex({2.0,1.0});
-  EXPECT_DEATH(gridFactory.createGrid(),"elements vector is empty. Unable to create Grid");
+  EXPECT_THROW(gridFactory.createGrid(),Dune::GridError);
+
 }
 /*\@}*/
