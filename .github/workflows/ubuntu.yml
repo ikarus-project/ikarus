@@ -1,21 +1,8 @@
 name: Ubuntu-GCC-Release
 on: [push]
 jobs:
-  Build:
-    name: ${{ matrix.config.name }}
+  Ubuntu-GCC-Release:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        config:
-          - {
-            name: "Ubuntu/latest/GCC11/Release",
-            config: Release,
-          }
-          - {
-            name: "Ubuntu/latest/GCC11/Debug",
-            config: Debug,
-          }
     steps:
       - uses: actions/checkout@v2
         with:
