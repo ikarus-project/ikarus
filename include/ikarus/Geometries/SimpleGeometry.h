@@ -4,12 +4,13 @@
 
 #pragma once
 
-#include <Eigen/Core>
-#include <Eigen/Dense>
 #include <concepts>
 #include <span>
 
-#include "ikarus/Interpolators/Interpolator.h"
+#include <Eigen/Core>
+#include <Eigen/Dense>
+
+#include <ikarus/Interpolators/Interpolator.h>
 
 namespace Ikarus::Geometry {
 
@@ -38,10 +39,10 @@ namespace Ikarus::Geometry {
      * Matrix If we have a Q1 element in 3D space we have FixedMatrixd<3,4> If we have an element
      * with unknown shape function we have FixedMatrixd<3,Dynamic>
      * */
-    using VertexContainerType = typename std::conditional<
-        ShapeFunctionType::sizeOfShapeFunctions == Ikarus::Dynamic,
-        FixedRowHybridMatrixd<mydimension>,
-        FixedMatrixd<mydimension, ShapeFunctionType::sizeOfShapeFunctions> >::type;
+    using VertexContainerType =
+        typename std::conditional<ShapeFunctionType::sizeOfShapeFunctions == Ikarus::Dynamic,
+                                  FixedRowHybridMatrixd<mydimension>,
+                                  FixedMatrixd<mydimension, ShapeFunctionType::sizeOfShapeFunctions> >::type;
 
     SimpleGeometry(const VertexContainerType& verticesInput) : vertices{verticesInput} {}
 

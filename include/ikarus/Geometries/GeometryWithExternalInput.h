@@ -38,24 +38,21 @@ namespace Ikarus::Geometry {
     using JacobianInverseTransposed = Eigen::Matrix<ctype, coorddimension, mydimension>;
 
     template <typename DerivedAnsatzFunctionType, typename GlobalCoordinateListType>
-    static ctype determinantJacobian(
-        const Eigen::MatrixBase<DerivedAnsatzFunctionType>& dN,
-        const Eigen::MatrixBase<GlobalCoordinateListType>& nodevalueList) {
+    static ctype determinantJacobian(const Eigen::MatrixBase<DerivedAnsatzFunctionType>& dN,
+                                     const Eigen::MatrixBase<GlobalCoordinateListType>& nodevalueList) {
       const auto JT = getJacobianTransposed(dN, nodevalueList);
       return sqrt((JT * JT.transpose()).determinant());
     }
 
     template <typename DerivedAnsatzFunctionType, typename GlobalCoordinateListType>
-    static JacobianTransposed jacobianTransposed(
-        const Eigen::MatrixBase<DerivedAnsatzFunctionType>& dN,
-        const Eigen::MatrixBase<GlobalCoordinateListType>& nodevalueList) {
+    static JacobianTransposed jacobianTransposed(const Eigen::MatrixBase<DerivedAnsatzFunctionType>& dN,
+                                                 const Eigen::MatrixBase<GlobalCoordinateListType>& nodevalueList) {
       static_assert(DerivedAnsatzFunctionType::ColsAtCompileTime == mydimension);
       static_assert(GlobalCoordinateListType::RowsAtCompileTime == coorddimension);
       spdlog::info("{} {}", dN.rows(), nodevalueList.cols());
       assert(dN.rows() == nodevalueList.cols());
       JacobianTransposed JT;
-      for (int i = 0; i < JT.rows(); ++i)
-        JT.row(i) = interpolate(dN.col(i), nodevalueList).transpose();
+      for (int i = 0; i < JT.rows(); ++i) JT.row(i) = interpolate(dN.col(i), nodevalueList).transpose();
 
       return JT;
     }
@@ -64,20 +61,14 @@ namespace Ikarus::Geometry {
     static JacobianInverseTransposed jacobianInverseTransposed(
         const Eigen::MatrixBase<DerivedAnsatzFunctionType>& dN,
         const Eigen::MatrixBase<GlobalCoordinateListType>& nodevalueList) {
-      return getJacobianTransposed(dN, nodevalueList)
-          .completeOrthogonalDecomposition()
-          .pseudoInverse();
+      return getJacobianTransposed(dN, nodevalueList).completeOrthogonalDecomposition().pseudoInverse();
     }
   };
 
   template <typename ScalarType> using BrickGeometry = GeometryWithExternalInput<ScalarType, 3, 3>;
-  template <typename ScalarType> using SurfaceGeometry
-      = GeometryWithExternalInput<ScalarType, 3, 2>;
+  template <typename ScalarType> using SurfaceGeometry = GeometryWithExternalInput<ScalarType, 3, 2>;
   template <typename ScalarType> using PlaneGeometry = GeometryWithExternalInput<ScalarType, 2, 2>;
-  template <typename ScalarType> using Curve3dGeometry
-      = GeometryWithExternalInput<ScalarType, 3, 1>;
-  template <typename ScalarType> using Curve2dGeometry
-      = GeometryWithExternalInput<ScalarType, 2, 1>;
-  template <typename ScalarType> using Curve1dGeometry
-      = GeometryWithExternalInput<ScalarType, 1, 1>;
+  template <typename ScalarType> using Curve3dGeometry = GeometryWithExternalInput<ScalarType, 3, 1>;
+  template <typename ScalarType> using Curve2dGeometry = GeometryWithExternalInput<ScalarType, 2, 1>;
+  template <typename ScalarType> using Curve1dGeometry = GeometryWithExternalInput<ScalarType, 1, 1>;
 }  // namespace Ikarus::Geometry

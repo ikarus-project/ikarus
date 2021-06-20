@@ -2,8 +2,7 @@
 // Created by Alex on 19.05.2021.
 //
 
-#ifndef IKARUS_ASSEMBLERINTERFACE_H
-#define IKARUS_ASSEMBLERINTERFACE_H
+#pragma once
 
 namespace Ikarus {
   template <typename ResidualAssemblerType, typename GridType, typename DofHandlerType>
@@ -13,5 +12,3 @@ namespace Ikarus {
   };
 
 };  // namespace Ikarus
-
-#endif  // IKARUS_ASSEMBLERINTERFACE_H

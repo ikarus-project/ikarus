@@ -3,15 +3,16 @@
 //
 
 #pragma once
+#include <ranges>
+#include <string>
+
+#include <dune/geometry/multilineargeometry.hh>
+#include <dune/geometry/type.hh>
+
 #include <ikarus/Geometries/SimpleGeometry.h>
 #include <ikarus/Grids/GridInterface.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
 #include <ikarus/utils/std/traits.h>
-
-#include <dune/geometry/multilineargeometry.hh>
-#include <dune/geometry/type.hh>
-#include <ranges>
-#include <string>
 
 namespace Ikarus::Grid {
 
@@ -23,8 +24,8 @@ namespace Ikarus::Grid {
         ChildEntityPointerTupleGenerator(std::integer_sequence<int, codim...>);
 
     template <int griddim, int mydim, int wdim, int... codim>
-    static std::tuple<std::vector<DefaultGridEntity<griddim, codim, wdim>*>...>
-        FatherEntityPointerTupleGenerator(std::integer_sequence<int, codim...>);
+    static std::tuple<std::vector<DefaultGridEntity<griddim, codim, wdim>*>...> FatherEntityPointerTupleGenerator(
+        std::integer_sequence<int, codim...>);
   }  // namespace Impl
 
   /**
@@ -78,8 +79,7 @@ namespace Ikarus::Grid {
     /** \brief Returns the number of subEntities of this entity, e.g. a line has two verteces as
      * subtypes */
     [[nodiscard]] unsigned int subEntities(unsigned int codim) const {
-      assert(codim != 0
-             && "Don't ask for subEntities with codim 0 since this is the entity itself.");
+      assert(codim != 0 && "Don't ask for subEntities with codim 0 since this is the entity itself.");
       if constexpr (mydimension == 1)
         return getChildVertices().size();
       else if constexpr (mydimension == 2) {
@@ -95,8 +95,7 @@ namespace Ikarus::Grid {
         else if (codim == 3)
           return getChildEntities<0>().size();
       } else
-        DUNE_THROW(Dune::InvalidStateException,
-                   "the dimension of the entity should be >0. It is" << dimension);
+        DUNE_THROW(Dune::InvalidStateException, "the dimension of the entity should be >0. It is" << dimension);
       return 0;
     }
     /** \brief Return the fundamental geometric type of the entity */
@@ -105,8 +104,8 @@ namespace Ikarus::Grid {
     /** \brief Returns the geometric realization of the entity */
     auto geometry() const {
       std::vector<Dune::FieldVector<double, dimensionworld>> fieldVectorVector;
-      for (const auto& pos : std::ranges::transform_view(
-               getChildVertices(), &DefaultGridEntity<griddim, griddim, wdim>::getPosition))
+      for (const auto& pos :
+           std::ranges::transform_view(getChildVertices(), &DefaultGridEntity<griddim, griddim, wdim>::getPosition))
         fieldVectorVector.push_back(toFieldVector(pos));
 
       return Geometry(type(), fieldVectorVector);
@@ -174,9 +173,8 @@ namespace Ikarus::Grid {
     using Geometry = Dune::MultiLinearGeometry<double, codimension, dimensionworld>;
 
     /** \brief Type of the containter for the grid fathers of this entity */
-    using EntitiesFatherType
-        = decltype(Impl::FatherEntityPointerTupleGenerator<dimension, mydimension, dimensionworld>(
-            std::make_integer_sequence<int, codimension>()));
+    using EntitiesFatherType = decltype(Impl::FatherEntityPointerTupleGenerator<dimension, mydimension, dimensionworld>(
+        std::make_integer_sequence<int, codimension>()));
 
     /** \brief Return copy of the id of this entity */
     size_t getID() { return id; }
@@ -248,9 +246,8 @@ namespace Ikarus::Grid {
     static constexpr int dimensionworld = wdim;
 
     /** \brief Type of the containter for the grid fathers of this entity */
-    using EntitiesFatherType
-        = decltype(Impl::FatherEntityPointerTupleGenerator<dimension, mydimension, dimensionworld>(
-            std::make_integer_sequence<int, codimension>()));
+    using EntitiesFatherType = decltype(Impl::FatherEntityPointerTupleGenerator<dimension, mydimension, dimensionworld>(
+        std::make_integer_sequence<int, codimension>()));
 
     /** \brief Return copy of the id of this entity */
     size_t getID() { return id; }
@@ -284,8 +281,7 @@ namespace Ikarus::Grid {
     /** \brief Returns the number of subEntities of this entity, e.g. a line has two verteces as
      * subtypes */
     [[nodiscard]] unsigned int subEntities(unsigned int codim) const {
-      assert(codim != 0
-             && "Don't ask for subEntities with codim 0 since this is the entity itself.");
+      assert(codim != 0 && "Don't ask for subEntities with codim 0 since this is the entity itself.");
       if constexpr (mydimension == 1) return getChildVertices().size();
       if constexpr (mydimension == 2) {
         if (codim == 1)
@@ -300,8 +296,8 @@ namespace Ikarus::Grid {
     /** \brief Returns the geometric realization of the entity */
     auto geometry() const {
       std::vector<Dune::FieldVector<double, dimensionworld>> fieldVectorVector;
-      for (const auto& pos : std::ranges::transform_view(
-               getChildVertices(), &DefaultGridEntity<griddim, griddim, wdim>::getPosition))
+      for (const auto& pos :
+           std::ranges::transform_view(getChildVertices(), &DefaultGridEntity<griddim, griddim, wdim>::getPosition))
         fieldVectorVector.push_back(toFieldVector(pos));
 
       return Geometry(type(), fieldVectorVector);

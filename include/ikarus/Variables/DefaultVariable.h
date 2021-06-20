@@ -66,22 +66,19 @@ namespace Ikarus::Variable {
   };
 
   template <typename Mani, typename tag> [[nodiscard]] DefaultVariable<Mani, tag> update(
-      const DefaultVariable<Mani, tag>& rt,
-      const typename DefaultVariable<Mani, tag>::CorrectionType& correction) {
+      const DefaultVariable<Mani, tag>& rt, const typename DefaultVariable<Mani, tag>::CorrectionType& correction) {
     auto res{rt};
     res.update(correction);
     return res;
   }
 
   template <typename Mani, typename tag, typename Mani2, typename tag2>
-  constexpr inline bool operator==(const DefaultVariable<Mani, tag>& lhs,
-                                   const DefaultVariable<Mani2, tag2>& rhs) {
+  constexpr inline bool operator==(const DefaultVariable<Mani, tag>& lhs, const DefaultVariable<Mani2, tag2>& rhs) {
     return lhs.getTag() == rhs.getTag();
   }
 
   template <typename Mani, typename tag, typename Mani2, typename tag2>
-  constexpr inline bool operator!=(const DefaultVariable<Mani, tag>& lhs,
-                                   const DefaultVariable<Mani2, tag2>& rhs) {
+  constexpr inline bool operator!=(const DefaultVariable<Mani, tag>& lhs, const DefaultVariable<Mani2, tag2>& rhs) {
     return !(lhs == rhs);
   }
 
