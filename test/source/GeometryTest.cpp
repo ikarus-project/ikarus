@@ -102,7 +102,7 @@
 ////  const Eigen::Matrix< double, 2, 1 > xieta({-1.0,-1.0});
 ////  auto N = Ikarus::LagrangeCube<double,2,1>::getAnsatzFunction(xieta);
 ////  Eigen::Matrix< double, 4, 2 > dN =
-///Ikarus::LagrangeCube<double,2,1>::getAnsatzFunctionJacobian(xieta); /  std::cout<<"N:
+/// Ikarus::LagrangeCube<double,2,1>::getAnsatzFunctionJacobian(xieta); /  std::cout<<"N:
 ///"<<N<<std::endl; /  std::cout<<"dN : "<<dN<<std::endl;
 //////    Eigen::Matrix< double, 2, 4 > dNCorrect;
 ////  Eigen::Matrix< double, 3, 4 > x;
@@ -112,8 +112,8 @@
 ////  x.col(3) << 4,4,0;
 ////  Eigen::Matrix< double, 2, 3 > JT = Ikarus::SurfaceGeometry<double>::getJacobianTransposed(dN,x
 ///); /  std::cout<<JT<<std::endl; /  std::cout<<"=================="<<std::endl; /
-///std::cout<<dN<<std::endl; /  Eigen::Matrix< double, 2, 3 > JTexpected; /  JTexpected<<2,0,0, /
-///0,2,0;
+/// std::cout<<dN<<std::endl; /  Eigen::Matrix< double, 2, 3 > JTexpected; /  JTexpected<<2,0,0, /
+/// 0,2,0;
 ////
 ////  ASSERT_EQ(JTexpected,JT);
 ////}
