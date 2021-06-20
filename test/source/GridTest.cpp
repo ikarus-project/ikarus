@@ -286,7 +286,7 @@ TEST(GridTest, GridInsertionException) {
   EXPECT_DEATH(gridFactory.insertElement(Dune::GeometryTypes::line, elementIndices),
                "The inserted element has wrong dimensions!");
 
-  elementIndices.resize(4);
+  elementIndices.resize(3);
   elementIndices << 0, 1, 2;
   EXPECT_THROW(gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, elementIndices),
                Dune::GridError);
