@@ -52,7 +52,7 @@ jobs:
           mkdir build
           cd build
           cmake ../  -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles"
-          cmake --build . --parallel 9
+          sudo cmake --build . --parallel 9
       - name: Install gcc11
         run: |
           sudo apt install build-essential manpages-dev software-properties-common
