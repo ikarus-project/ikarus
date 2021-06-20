@@ -145,5 +145,5 @@ TEST(Dependencies, dunegridEntities) {
   //  }
   // Does not work due to bug in GCC 11.1
 //  foo(1.0f,0.0f);
-  [[maybe_unused]] int *i = (int*) malloc(sizeof(int));
+//  [[maybe_unused]] int *i = (int*) malloc(sizeof(int));
 }
