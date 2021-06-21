@@ -23,9 +23,7 @@ include(cmake/CPM.cmake)
 
 # PackageProject.cmake will be used to make our target installable
 CPMAddPackage("gh:TheLartians/PackageProject.cmake@1.6.0")
-CPMAddPackage("gh:StableCoder/cmake-scripts#1f822d1fc87c8d7720c074cde8a278b44963c354")
 
-include(${cmake-scripts_SOURCE_DIR}/formatting.cmake)
 
 # ---- Add source files ----
 
@@ -37,27 +35,10 @@ file(GLOB_RECURSE sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/source/
 
 # ---- Create library ----
 add_library(Ikarus ${headers} ${sources})
-if(ADD_FORMATTARGET)
-  clang_format(format_Ikarus ${headers} ${sources})
-  file(GLOB_RECURSE CMAKE_FILES
-          CMakeLists.txt
-          )
-  cmake_format(cmake_format_Ikarus ${CMAKE_FILES})
-#  add_dependencies(format cmake_format_Ikarus)
-endif()
 target_compile_features(Ikarus PRIVATE cxx_std_20)
 
-# being a cross-platform target, we enforce standards conformance on MSVC
-target_compile_options(Ikarus PUBLIC "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/permissive->")
-#if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-#  message("debug mode")
-#  list(APPEND CMAKE_PREFIX_PATH
-#       ${CMAKE_CURRENT_SOURCE_DIR}/../Ikarus_Dependencies/Dependencies_debug/)
-#elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-#  message("release mode")
   list(APPEND CMAKE_PREFIX_PATH
        ${CMAKE_CURRENT_SOURCE_DIR}/../Ikarus_Dependencies/Dependencies_release/)
-#endif()
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 
@@ -78,16 +59,11 @@ else()
   find_package(SuiteSparse REQUIRED)
 endif()
 
-# message("Find muesli: ")
-# find_package(muesli CONFIG REQUIRED)
 message("Find matplotc++: ")
 find_package(Matplot++ CONFIG REQUIRED)
 message("Find PythonLibs: ")
 find_package(Python3 COMPONENTS Interpreter Development)
 message("${Python3_STDLIB}")
-# message("Find pybind11: ")
-# find_package(pybind11 CONFIG REQUIRED)
-
 
 # Link dependencies
 target_link_libraries(

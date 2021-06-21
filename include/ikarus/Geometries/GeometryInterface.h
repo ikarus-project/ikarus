@@ -25,4 +25,3 @@ namespace Ikarus::Concepts {
       } -> std::same_as<typename GeometryEntityType::JacobianInverseTransposed>;
   };
 }  // namespace Ikarus::Concepts
-

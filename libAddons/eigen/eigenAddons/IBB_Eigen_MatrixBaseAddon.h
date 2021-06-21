@@ -20,8 +20,7 @@ inline Derived inverse_33() { return this->inverse(); }
  * \author Alex Müller
  * \version 09.05.2020
  */
-template <typename OtherDerived>
-Derived cross_product(const MatrixBase<OtherDerived>& other) const {
+template <typename OtherDerived> Derived cross_product(const MatrixBase<OtherDerived>& other) const {
   //  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,3)
   //  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(OtherDerived,3)
 
@@ -30,10 +29,8 @@ Derived cross_product(const MatrixBase<OtherDerived>& other) const {
   typename internal::nested_eval<Derived, 2>::type lhs(derived());
   typename internal::nested_eval<OtherDerived, 2>::type rhs(other.derived());
 
-  Matrix<Scalar, 3, 1> thisSurrogate
-      = (Matrix<Scalar, 3, 1>() << lhs.coeff(0), lhs.coeff(1), lhs.coeff(2)).finished();
-  Matrix<Scalar, 3, 1> otherSurrogate
-      = (Matrix<Scalar, 3, 1>() << rhs.coeff(0), rhs.coeff(1), rhs.coeff(2)).finished();
+  Matrix<Scalar, 3, 1> thisSurrogate = (Matrix<Scalar, 3, 1>() << lhs.coeff(0), lhs.coeff(1), lhs.coeff(2)).finished();
+  Matrix<Scalar, 3, 1> otherSurrogate = (Matrix<Scalar, 3, 1>() << rhs.coeff(0), rhs.coeff(1), rhs.coeff(2)).finished();
   return thisSurrogate.cross(otherSurrogate);
 }
 
@@ -42,8 +39,7 @@ Derived cross_product(const MatrixBase<OtherDerived>& other) const {
  * \author Alex Müller
  * \version 22.01.2020
  */
-template <typename OtherDerived>
-inline OtherDerived solve(const MatrixBase<OtherDerived>& rhs) const {
+template <typename OtherDerived> inline OtherDerived solve(const MatrixBase<OtherDerived>& rhs) const {
   return this->partialPivLu().solve(rhs);
 }
 

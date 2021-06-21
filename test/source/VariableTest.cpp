@@ -1,20 +1,21 @@
 //
 // Created by Alex on 21.04.2021.
 //
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
+#include "testHelpers.h"
 
-#include <Eigen/Core>
 #include <array>
 #include <fstream>
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 #include <unordered_set>
 #include <vector>
+
+#include <Eigen/Core>
 
 #include "ikarus/Manifolds/RealTuple.h"
 #include "ikarus/Variables/GenericVariable.h"
 #include "ikarus/Variables/VariableDefinitions.h"
 #include "ikarus/utils/std/algorithms.h"
-#include "testHelpers.h"
 
 TEST(DefaultVariableTest, RealTupleDisplacement) {
   using namespace Ikarus::Variable;
@@ -57,15 +58,13 @@ TEST(DefaultVariableTest, UnitVectorDirector) {
   EXPECT_THAT(a.getValue(), EigenApproxEqual(aExpected, tol));
 
   a = update(a, Eigen::Vector<double, 2>::UnitY());
-  EXPECT_THAT(a.getValue(),
-              EigenApproxEqual(Eigen::Vector<double, 3>(0.5, 1.0 / sqrt(2), 0.5), tol));
+  EXPECT_THAT(a.getValue(), EigenApproxEqual(Eigen::Vector<double, 3>(0.5, 1.0 / sqrt(2), 0.5), tol));
 
   const auto d = update(a, Eigen::Vector<double, 2>::UnitY());
 
-  EXPECT_THAT(d.getValue(), EigenApproxEqual(Eigen::Vector<double, 3>(0.18688672392660707344,
-                                                                                   0.97140452079103167815,
-                                                                                  -0.14644660940672621363),
-                                                                                   tol));
+  EXPECT_THAT(d.getValue(), EigenApproxEqual(Eigen::Vector<double, 3>(0.18688672392660707344, 0.97140452079103167815,
+                                                                      -0.14644660940672621363),
+                                             tol));
 
   DIRECTOR3D b{a};
 
@@ -75,8 +74,7 @@ TEST(DefaultVariableTest, UnitVectorDirector) {
   EXPECT_THAT(c.getValue(), EigenApproxEqual(Eigen::Vector<double, 3>(0.0, 0.0, 1.0), tol));
 
   c.setValue(Eigen::Vector<double, 3>(13.0, -5.0, 1.0));
-  EXPECT_THAT(c.getValue(),
-              EigenApproxEqual(Eigen::Vector<double, 3>(13.0, -5.0, 1.0).normalized(), tol));
+  EXPECT_THAT(c.getValue(), EigenApproxEqual(Eigen::Vector<double, 3>(13.0, -5.0, 1.0).normalized(), tol));
 
   b = a;
   EXPECT_EQ(b, a);
@@ -130,9 +128,9 @@ TEST(VariableTest, GenericVariableVectorTest) {
   EXPECT_THAT(getValue(varVec[0]), EigenApproxEqual(Eigen::Matrix<double, 1, 1>(1), tol));
   EXPECT_THAT(getValue(varVec[1]), EigenApproxEqual(Eigen::Vector2d(2, 3), tol));
   EXPECT_THAT(getValue(varVec[2]), EigenApproxEqual(Eigen::Vector3d(4, 5, 6), tol));
-  EXPECT_THAT(getValue(varVec[3]),
-              EigenApproxEqual(Eigen::Vector3d(0.41279806929140905325, 0.50645665044957854928,
-                                                     -0.75703329861022516933), tol));
+  EXPECT_THAT(
+      getValue(varVec[3]),
+      EigenApproxEqual(Eigen::Vector3d(0.41279806929140905325, 0.50645665044957854928, -0.75703329861022516933), tol));
 }
 
 #include <ikarus/Grids/GridEntities/DefaultGridEntities.h>

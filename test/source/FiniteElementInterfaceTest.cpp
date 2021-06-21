@@ -2,22 +2,22 @@
 // Created by Alex on 21.04.2021.
 //
 #define EIGEN_MATRIXBASE_PLUGIN "IBB_Eigen_MatrixBaseAddon.h"
-#include <gtest/gtest.h>
-
-#include <Eigen/Core>
 #include <array>
 #include <fstream>
+#include <gtest/gtest.h>
 #include <vector>
+
+#include <Eigen/Core>
 
 //
 //
+#include <dune/geometry/type.hh>
+
 #include <ikarus/FiniteElements/ElasticityFE.h>
 #include <ikarus/FiniteElements/GenericFiniteElement.h>
 #include <ikarus/Geometries/GeometryWithExternalInput.h>
 #include <ikarus/Grids/GridEntities/DefaultGridEntities.h>
 #include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
-
-#include <dune/geometry/type.hh>
 
 class TestFE {
 public:
@@ -51,8 +51,7 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
   auto gridView = grid.leafGridView();
   std::vector<Ikarus::PhysicalElements::GenericFE> fes;
 
-  for (auto&& element : elements(gridView))
-    fes.emplace_back(Ikarus::PhysicalElements::ElasticityFE(element));
+  for (auto&& element : elements(gridView)) fes.emplace_back(Ikarus::PhysicalElements::ElasticityFE(element));
 
   Ikarus::DynVectord fint{};
   Ikarus::DynMatrixd K{};
