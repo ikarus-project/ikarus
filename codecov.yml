@@ -1,5 +1,6 @@
 ignore:
   - "/usr"
+  - "test"
 
 comment:
   require_changes: true
