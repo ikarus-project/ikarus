@@ -2,16 +2,15 @@
 // Created by Alex on 21.04.2021.
 //
 #define EIGEN_MATRIXBASE_PLUGIN "IBB_Eigen_MatrixBaseAddon.h"
+#include <gtest/gtest.h>
+
 #include <array>
 #include <fstream>
-#include <gtest/gtest.h>
 #include <vector>
 
-#include <Eigen/Core>
-
-//
-//
 #include <dune/geometry/type.hh>
+
+#include <Eigen/Core>
 
 #include <ikarus/FiniteElements/ElasticityFE.h>
 #include <ikarus/FiniteElements/GenericFiniteElement.h>

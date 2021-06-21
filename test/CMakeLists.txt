@@ -7,16 +7,12 @@ project(IkarusTests LANGUAGES CXX)
 option(ENABLE_TEST_COVERAGE "Enable test coverage" OFF)
 option(TEST_INSTALLED_VERSION "Test the version found by find_package" OFF)
 
-# --- Import tools ----
-
 include(../cmake/tools.cmake)
 
-# ---- Dependencies ----
+list(APPEND CMAKE_PREFIX_PATH
+     ${CMAKE_CURRENT_SOURCE_DIR}/../../Ikarus_Dependencies/Dependencies_release/
+)
 
-include(../cmake/CPM.cmake)
-
-  list(APPEND CMAKE_PREFIX_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../Ikarus_Dependencies/Dependencies_release/)
-#endif()
 include_directories(../libAddons/eigen/eigenAddons)
 if(TEST_INSTALLED_VERSION)
   find_package(Ikarus REQUIRED)
