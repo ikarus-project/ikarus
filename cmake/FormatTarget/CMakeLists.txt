@@ -10,6 +10,3 @@ if(ADD_FORMATTARGET)
     OPTIONS "FORMAT_SKIP_CMAKE NO" "CMAKE_FORMAT_EXCLUDE ../modules/FindSuiteSparse.cmake"
   )
 endif()
-
-
-

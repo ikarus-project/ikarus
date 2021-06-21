@@ -1,5 +1,6 @@
 list(APPEND CMAKE_PREFIX_PATH
-        ${CMAKE_CURRENT_SOURCE_DIR}/../Ikarus_Dependencies/Dependencies_release/)
+     ${CMAKE_CURRENT_SOURCE_DIR}/../Ikarus_Dependencies/Dependencies_release/
+)
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 
@@ -15,9 +16,9 @@ message("Find dune-grid: ")
 find_package(dune-grid REQUIRED)
 message("Find SuiteSparse: ")
 if(MINGW)
-    find_package(SuiteSparse CONFIG REQUIRED)
+  find_package(SuiteSparse CONFIG REQUIRED)
 else()
-    find_package(SuiteSparse REQUIRED)
+  find_package(SuiteSparse REQUIRED)
 endif()
 
 message("Find matplotc++: ")
@@ -26,15 +27,14 @@ message("Find PythonLibs: ")
 find_package(Python3 COMPONENTS Interpreter Development)
 message("${Python3_STDLIB}")
 
-# Link dependencies
 target_link_libraries(
-        Ikarus
-        PUBLIC Eigen3::Eigen
-        PUBLIC spdlog::spdlog
-        PUBLIC dunecommon
-        PUBLIC dunegeometry
-        PUBLIC dunegrid
-        PUBLIC ${SuiteSparse_LIBRARIES}
-        #  PUBLIC muesli
-        PUBLIC Matplot++::matplot
+  Ikarus
+  PUBLIC Eigen3::Eigen
+  PUBLIC spdlog::spdlog
+  PUBLIC dunecommon
+  PUBLIC dunegeometry
+  PUBLIC dunegrid
+  PUBLIC ${SuiteSparse_LIBRARIES}
+  # PUBLIC muesli
+  PUBLIC Matplot++::matplot
 )
