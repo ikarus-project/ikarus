@@ -1,12 +1,13 @@
 //
 // Created by Alex on 21.04.2021.
 //
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
 #include "testHelpers.h"
 
 #include <array>
 #include <fstream>
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
 #include <unordered_set>
 #include <vector>
 

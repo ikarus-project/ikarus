@@ -15,6 +15,9 @@
   BreakBeforeTernaryOperators: 'true'
   IncludeBlocks: Regroup
   IncludeCategories:
+    - Regex: '^(<|")(gmock|gtest)/'
+      Priority: 0
+      SortPriority: 0
     - Regex: '^(<|")dune/'
       Priority: 3
       SortPriority: 3
