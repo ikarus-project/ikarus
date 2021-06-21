@@ -1,13 +1,14 @@
 //
 // Created by Alex on 25.05.2021.
 //
+#include "gtest/gtest.h"
+#include "testHelpers.h"
+
 #include <gmock/gmock.h>
-#include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
 
 #include <dune/geometry/type.hh>
 
-#include "gtest/gtest.h"
-#include "testHelpers.h"
+#include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
 
 /** @addtogroup Tests
  *  This module includes all tests
@@ -242,8 +243,7 @@ TEST(GridTest, GridView3DSolidTest) {
       for (int i = 0; auto &&verticesOfEdge : vertices(edge)) {
         EXPECT_EQ(verticesOfEdge->getID(), expectedElementEdgeVertexId[EleIter][edgeIter][i]);
         EXPECT_THAT(verticesOfEdge->getPosition(),
-                    EigenApproxEqual(verticesVec[expectedElementEdgeVertexId[EleIter][edgeIter][i]],
-                                     1e-15));
+                    EigenApproxEqual(verticesVec[expectedElementEdgeVertexId[EleIter][edgeIter][i]], 1e-15));
         ++i;
       }
       ++edgeIter;
@@ -257,8 +257,7 @@ TEST(GridTest, GridView3DSolidTest) {
   EXPECT_EQ(eleIterator->type(), Dune::GeometryTypes::tetrahedron);
 
   std::vector<int> expectedEdgesAtVertex{3, 4, 3, 5, 3, 5, 3, 3, 3};
-  for (int i = 0; auto &&vertex : vertices(gridView))
-    EXPECT_EQ(edges(vertex).size(), expectedEdgesAtVertex[i++]);
+  for (int i = 0; auto &&vertex : vertices(gridView)) EXPECT_EQ(edges(vertex).size(), expectedEdgesAtVertex[i++]);
 }
 
 TEST(GridTest, GridInsertionException) {
@@ -277,31 +276,23 @@ TEST(GridTest, GridInsertionException) {
   Ikarus::DynArrayXi elementIndices;
   elementIndices.resize(4);
   elementIndices << 0, 1, 2, 3;
-  EXPECT_THROW(gridFactory.insertElement(Dune::GeometryTypes::triangle, elementIndices),
-               Dune::GridError);
+  EXPECT_THROW(gridFactory.insertElement(Dune::GeometryTypes::triangle, elementIndices), Dune::GridError);
 
-  EXPECT_THROW(gridFactory.insertElement(Dune::GeometryTypes::hexahedron, elementIndices),
-               Dune::GridError);
+  EXPECT_THROW(gridFactory.insertElement(Dune::GeometryTypes::hexahedron, elementIndices), Dune::GridError);
 
-  EXPECT_THROW(gridFactory.insertElement(Dune::GeometryTypes::line, elementIndices),
-               Dune::GridError);
+  EXPECT_THROW(gridFactory.insertElement(Dune::GeometryTypes::line, elementIndices), Dune::GridError);
   elementIndices.resize(3);
   elementIndices << 0, 1, 2;
 
-  EXPECT_THROW(gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, elementIndices),
-               Dune::GridError);
-
-
+  EXPECT_THROW(gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, elementIndices), Dune::GridError);
 }
-
 
 TEST(GridTest, GridEmptyGridCreation) {
   using namespace Ikarus::Grid;
   using Grid = SimpleGrid<2, 2>;
   SimpleGridFactory<Grid> gridFactory;
-  EXPECT_THROW(gridFactory.createGrid(),Dune::GridError);
-  gridFactory.insertVertex({2.0,1.0});
-  EXPECT_THROW(gridFactory.createGrid(),Dune::GridError);
-
+  EXPECT_THROW(gridFactory.createGrid(), Dune::GridError);
+  gridFactory.insertVertex({2.0, 1.0});
+  EXPECT_THROW(gridFactory.createGrid(), Dune::GridError);
 }
 /*\@}*/

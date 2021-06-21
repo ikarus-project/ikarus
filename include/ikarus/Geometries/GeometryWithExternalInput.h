@@ -4,10 +4,11 @@
 
 #pragma once
 
-#include <Eigen/Core>
-#include <Eigen/Dense>
 #include <concepts>
 #include <span>
+
+#include <Eigen/Core>
+#include <Eigen/Dense>
 
 #include "ikarus/Interpolators/Interpolator.h"
 

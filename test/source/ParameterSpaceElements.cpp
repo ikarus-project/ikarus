@@ -1,11 +1,11 @@
 //
 // Created by Alex on 25.05.2021.
 //
-#include <ikarus/ParameterSpaceElements/LinearCube.h>
+#include "gtest/gtest.h"
 
 #include <dune/geometry/referenceelements.hh>
 
-#include "gtest/gtest.h"
+#include <ikarus/ParameterSpaceElements/LinearCube.h>
 
 TEST(ParaSpaceElementTest, Test) {
   Ikarus::ElementTypes::LinearCube<1> c1;

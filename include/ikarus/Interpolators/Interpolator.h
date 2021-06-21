@@ -27,4 +27,3 @@ auto interpolate(const Eigen::MatrixBase<DerivedAnsatzFunctionType>& N,
 //                });
 //
 //}
-

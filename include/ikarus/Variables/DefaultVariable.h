@@ -4,8 +4,9 @@
 
 #pragma once
 
-#include "ikarus/Manifolds/ManifoldInterface.h"
 #include <variant>
+
+#include "ikarus/Manifolds/ManifoldInterface.h"
 
 namespace Ikarus::Variable {
 

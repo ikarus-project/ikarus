@@ -4,8 +4,9 @@
 
 #pragma once
 
-#include <Eigen/Sparse>
 #include <memory>
+
+#include <Eigen/Sparse>
 
 template <typename GridType, typename MatrixType> class SimpleOccupationPattern {
   //    void generate()
