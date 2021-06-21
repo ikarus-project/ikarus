@@ -1,10 +1,10 @@
 //
 // Created by Alex on 25.05.2021.
 //
-#include "gtest/gtest.h"
-#include "testHelpers.h"
-
 #include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
+#include "testHelpers.h"
 
 #include <dune/geometry/type.hh>
 
