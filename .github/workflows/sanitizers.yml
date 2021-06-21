@@ -34,11 +34,6 @@ jobs:
       - name: Install iwyu
         run: |
           sudo apt-get install iwyu
-          #git clone -b clang_11 --single-branch https://github.com/include-what-you-use/include-what-you-use.git
-          #mkdir iwyu                                                                                         
-          #cd iwyu                                                                                             
-          #cmake ../include-what-you-use -G Ninja -Wno-dev  -DCMAKE_CXX_COMPILER=clang++   -DCMAKE_C_COMPILER=clang -DLLVM_DIR="$(llvm-config --cmakedir)"
-          #ninja install
       - name: Install eigen 3.4
         run: |
           git clone https://gitlab.com/libeigen/eigen.git
@@ -80,7 +75,7 @@ jobs:
           cd repo
           mkdir cmake-build-release
           cd cmake-build-release
-          cmake ../all  -DUSE_STATIC_ANALYZER="iwyu;cppcheck" -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc-11 -DCMAKE_CXX_COMPILER=g++-11 -DUSE_SANITIZER="Address;Memory;MemoryWithOrigins;Undefined;Thread;Leak;Address;Undefined" 
+          cmake ../all  -DUSE_STATIC_ANALYZER="iwyu;cppcheck" -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc-11 -DCMAKE_CXX_COMPILER=g++-11 -DUSE_SANITIZER="Address;Memory;MemoryWithOrigins;Undefined;Thread;Leak;Address;Undefined" -DIWYU=ON
           cmake --build . --parallel 9
       - name: Tests
         working-directory: ./repo/cmake-build-release
