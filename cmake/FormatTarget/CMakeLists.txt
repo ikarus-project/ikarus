@@ -7,6 +7,6 @@ if(ADD_FORMATTARGET)
     NAME Format.cmake
     VERSION 1.7.0
     GITHUB_REPOSITORY TheLartians/Format.cmake
-    OPTIONS "FORMAT_SKIP_CMAKE NO" "CMAKE_FORMAT_EXCLUDE ../modules/FindSuiteSparse.cmake"
+    OPTIONS "FORMAT_SKIP_CMAKE NO"
   )
 endif()

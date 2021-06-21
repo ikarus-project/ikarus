@@ -1,4 +1,6 @@
-# This file is taken from dune-common
+# This file is taken from
+# https://github.com/dune-project/dune-common/blob/master/cmake/modules/FindSuiteSparse.cmake and
+# modified
 
 #[=======================================================================[.rst:
 FindSuiteSparse
@@ -81,7 +83,8 @@ this module:
 
 # text for feature summary
 include(FeatureSummary)
-set_package_properties("SuiteSparse" PROPERTIES
+set_package_properties(
+  "SuiteSparse" PROPERTIES
   DESCRIPTION "A suite of sparse matrix software"
   URL "http://faculty.cse.tamu.edu/davis/suitesparse.html"
 )
@@ -93,8 +96,19 @@ find_package(BLAS QUIET)
 
 # list of possible component names
 set(SUITESPARSE_COMPONENTS
-  "AMD" "BTF" "CAMD" "CCOLAMD" "CHOLMOD" "COLAMD"
-  "CSparse" "CXSparse" "KLU" "LDL" "SPQR" "UMFPACK")
+    "AMD"
+    "BTF"
+    "CAMD"
+    "CCOLAMD"
+    "CHOLMOD"
+    "COLAMD"
+    "CSparse"
+    "CXSparse"
+    "KLU"
+    "LDL"
+    "SPQR"
+    "UMFPACK"
+)
 
 # Define required and optional component dependencies
 set(SUITESPARSE_CHOLDMOD_REQUIRED_DEPENDENCIES "AMD" "COLAMD" "CCOLAMD")
@@ -110,12 +124,10 @@ set(SUITESPARSE_UMFPACK_OPTIONAL_DEPENDENCIES "CHOLMOD" "CAMD" "CCOLAMD" "COLAMD
 set(SUITESPARSE_UMFPACK_REQUIRES_BLAS TRUE)
 
 # look for library suitesparseconfig
-find_library(SUITESPARSE_CONFIG_LIB "suitesparseconfig"
-  PATH_SUFFIXES "SuiteSparse_config"
-)
+find_library(SUITESPARSE_CONFIG_LIB "suitesparseconfig" PATH_SUFFIXES "SuiteSparse_config")
 # look for header file SuiteSparse_config.h
-find_path(SUITESPARSE_INCLUDE_DIR "SuiteSparse_config.h"
-  PATH_SUFFIXES "suitesparse" "include" "SuiteSparse_config"
+find_path(SUITESPARSE_INCLUDE_DIR "SuiteSparse_config.h" PATH_SUFFIXES "suitesparse" "include"
+                                                                       "SuiteSparse_config"
 )
 
 get_filename_component(SUITESPARSE_LIB_DIR ${SUITESPARSE_CONFIG_LIB} DIRECTORY)
@@ -125,12 +137,14 @@ foreach(_component ${SUITESPARSE_COMPONENTS})
   string(TOLOWER ${_component} _componentLower)
 
   # look for library of the component
-  find_library(${_component}_LIBRARY "${_componentLower}"
+  find_library(
+    ${_component}_LIBRARY "${_componentLower}"
     HINTS ${SUITESPARSE_LIB_DIR}
     PATH_SUFFIXES "${_component}/Lib"
   )
   # look for header file of the component
-  find_path(${_component}_INCLUDE_DIR "${_componentLower}.h"
+  find_path(
+    ${_component}_INCLUDE_DIR "${_componentLower}.h"
     HINTS ${SUITESPARSE_INCLUDE_DIR}
     PATH_SUFFIXES "suitesparse" "include" "${_component}/Include"
   )
@@ -139,43 +153,50 @@ foreach(_component ${SUITESPARSE_COMPONENTS})
 endforeach()
 
 # Look for the header files that have different header file names
-find_path(SPQR_INCLUDE_DIR "SuiteSparseQR.hpp"
+find_path(
+  SPQR_INCLUDE_DIR "SuiteSparseQR.hpp"
   HINTS ${SUITESPARSE_INCLUDE_DIR}
   PATH_SUFFIXES "suitesparse" "include" "SPQR/Include"
 )
-find_path(Mongoose_INCLUDE_DIR "Mongoose.hpp"
+find_path(
+  Mongoose_INCLUDE_DIR "Mongoose.hpp"
   HINTS ${SUITESPARSE_INCLUDE_DIR}
   PATH_SUFFIXES "suitesparse" "include" "Mongoose/Include"
 )
-find_path(GraphBLAS_INCLUDE_DIR "GraphBLAS.h"
+find_path(
+  GraphBLAS_INCLUDE_DIR "GraphBLAS.h"
   HINTS ${SUITESPARSE_INCLUDE_DIR}
   PATH_SUFFIXES "suitesparse" "include" "GraphBLAS/Include"
 )
 
 # check version of SuiteSparse
-find_file(SUITESPARSE_CONFIG_FILE "SuiteSparse_config.h"
+find_file(
+  SUITESPARSE_CONFIG_FILE "SuiteSparse_config.h"
   HINTS ${SUITESPARSE_INCLUDE_DIR}
-  NO_DEFAULT_PATH)
+  NO_DEFAULT_PATH
+)
 if(SUITESPARSE_CONFIG_FILE)
   file(READ "${SUITESPARSE_CONFIG_FILE}" suitesparseconfig)
   string(REGEX REPLACE ".*#define SUITESPARSE_MAIN_VERSION[ ]+([0-9]+).*" "\\1"
-    SUITESPARSE_MAJOR_VERSION  "${suitesparseconfig}")
+                       SUITESPARSE_MAJOR_VERSION "${suitesparseconfig}"
+  )
   string(REGEX REPLACE ".*#define SUITESPARSE_SUB_VERSION[ ]+([0-9]+).*" "\\1"
-    SUITESPARSE_MINOR_VERSION  "${suitesparseconfig}")
+                       SUITESPARSE_MINOR_VERSION "${suitesparseconfig}"
+  )
   string(REGEX REPLACE ".*#define SUITESPARSE_SUBSUB_VERSION[ ]+([0-9]+).*" "\\1"
-    SUITESPARSE_PREFIX_VERSION "${suitesparseconfig}")
+                       SUITESPARSE_PREFIX_VERSION "${suitesparseconfig}"
+  )
   if(SUITESPARSE_MAJOR_VERSION GREATER_EQUAL 0)
     set(SuiteSparse_VERSION "${SUITESPARSE_MAJOR_VERSION}")
   endif()
-  if (SUITESPARSE_MINOR_VERSION GREATER_EQUAL 0)
+  if(SUITESPARSE_MINOR_VERSION GREATER_EQUAL 0)
     set(SuiteSparse_VERSION "${SuiteSparse_VERSION}.${SUITESPARSE_MINOR_VERSION}")
   endif()
-  if (SUITESPARSE_PREFIX_VERSION GREATER_EQUAL 0)
+  if(SUITESPARSE_PREFIX_VERSION GREATER_EQUAL 0)
     set(SuiteSparse_VERSION "${SuiteSparse_VERSION}.${SUITESPARSE_PREFIX_VERSION}")
   endif()
 endif()
 unset(SUITESPARSE_CONFIG_FILE CACHE)
-
 
 # check wether everything was found
 foreach(_component ${SUITESPARSE_COMPONENTS})
@@ -202,25 +223,24 @@ if(SPQR_LIBRARY)
   endif()
 endif()
 
-
 # behave like a CMake module is supposed to behave
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args("SuiteSparse"
-  REQUIRED_VARS
-    SUITESPARSE_CONFIG_LIB SUITESPARSE_INCLUDE_DIR BLAS_FOUND
-  VERSION_VAR
-    SuiteSparse_VERSION
+find_package_handle_standard_args(
+  "SuiteSparse"
+  REQUIRED_VARS SUITESPARSE_CONFIG_LIB SUITESPARSE_INCLUDE_DIR BLAS_FOUND
+  VERSION_VAR SuiteSparse_VERSION
   HANDLE_COMPONENTS
 )
 
-# if both headers and library for all required components are found,
-# then create imported targets for all components
+# if both headers and library for all required components are found, then create imported targets
+# for all components
 if(SuiteSparse_FOUND)
   if(NOT TARGET SuiteSparse::SuiteSparse_config)
     add_library(SuiteSparse::SuiteSparse_config UNKNOWN IMPORTED)
-    set_target_properties(SuiteSparse::SuiteSparse_config PROPERTIES
-      IMPORTED_LOCATION ${SUITESPARSE_CONFIG_LIB}
-      INTERFACE_INCLUDE_DIRECTORIES ${SUITESPARSE_INCLUDE_DIR}
+    set_target_properties(
+      SuiteSparse::SuiteSparse_config
+      PROPERTIES IMPORTED_LOCATION ${SUITESPARSE_CONFIG_LIB} INTERFACE_INCLUDE_DIRECTORIES
+                                                             ${SUITESPARSE_INCLUDE_DIR}
     )
   endif()
 
@@ -228,10 +248,11 @@ if(SuiteSparse_FOUND)
   foreach(_component ${SUITESPARSE_COMPONENTS})
     if(SuiteSparse_${_component}_FOUND AND NOT TARGET SuiteSparse::${_component})
       add_library(SuiteSparse::${_component} UNKNOWN IMPORTED)
-      set_target_properties(SuiteSparse::${_component} PROPERTIES
-        IMPORTED_LOCATION ${${_component}_LIBRARY}
-        INTERFACE_INCLUDE_DIRECTORIES ${${_component}_INCLUDE_DIR}
-        INTERFACE_LINK_LIBRARIES SuiteSparse::SuiteSparse_config
+      set_target_properties(
+        SuiteSparse::${_component}
+        PROPERTIES IMPORTED_LOCATION ${${_component}_LIBRARY}
+                   INTERFACE_INCLUDE_DIRECTORIES ${${_component}_INCLUDE_DIR}
+                   INTERFACE_LINK_LIBRARIES SuiteSparse::SuiteSparse_config
       )
     endif()
   endforeach(_component)
@@ -239,37 +260,35 @@ if(SuiteSparse_FOUND)
   foreach(_component ${SUITESPARSE_COMPONENTS})
     # Link required dependencies
     foreach(_dependency ${SUITESPARSE_${_component}_REQUIRED_DEPENDENCIES})
-      target_link_libraries(SuiteSparse::${_component}
-        INTERFACE SuiteSparse::${_dependency})
+      target_link_libraries(SuiteSparse::${_component} INTERFACE SuiteSparse::${_dependency})
     endforeach(_dependency)
 
     # Link found optional dependencies
     foreach(_dependency ${SUITESPARSE_${_component}_OPTIONAL_DEPENDENCIES})
       if(SuiteSparse_${_dependency}_FOUND)
-        target_link_libraries(SuiteSparse::${_component}
-          INTERFACE SuiteSparse::${_dependency})
+        target_link_libraries(SuiteSparse::${_component} INTERFACE SuiteSparse::${_dependency})
       endif()
     endforeach(_dependency)
 
     # Link BLAS library
     if(SUITESPARSE_${_component}_REQUIRES_BLAS)
       if(TARGET BLAS::BLAS)
-        target_link_libraries(SuiteSparse::${_component}
-          INTERFACE BLAS::BLAS)
+        target_link_libraries(SuiteSparse::${_component} INTERFACE BLAS::BLAS)
       else()
-        target_link_libraries(SuiteSparse::${_component}
-          INTERFACE ${BLAS_LINKER_FLAGS} ${BLAS_LIBRARIES})
+        target_link_libraries(
+          SuiteSparse::${_component} INTERFACE ${BLAS_LINKER_FLAGS} ${BLAS_LIBRARIES}
+        )
       endif()
     endif()
 
     # Link LAPACK library
     if(SUITESPARSE_${_component}_REQUIRES_LAPACK)
       if(TARGET LAPACK::LAPACK)
-        target_link_libraries(SuiteSparse::${_component}
-          INTERFACE LAPACK::LAPACK)
+        target_link_libraries(SuiteSparse::${_component} INTERFACE LAPACK::LAPACK)
       else()
-        target_link_libraries(SuiteSparse::${_component}
-          INTERFACE ${LAPACK_LINKER_FLAGS} ${LAPACK_LIBRARIES})
+        target_link_libraries(
+          SuiteSparse::${_component} INTERFACE ${LAPACK_LINKER_FLAGS} ${LAPACK_LIBRARIES}
+        )
       endif()
     endif()
   endforeach(_component)
@@ -277,14 +296,12 @@ if(SuiteSparse_FOUND)
   # Combine all requested components to an imported target
   if(NOT TARGET SuiteSparse::SuiteSparse)
     add_library(SuiteSparse::SuiteSparse INTERFACE IMPORTED)
-    target_link_libraries(SuiteSparse::SuiteSparse
-      INTERFACE SuiteSparse::SuiteSparse_config)
+    target_link_libraries(SuiteSparse::SuiteSparse INTERFACE SuiteSparse::SuiteSparse_config)
   endif()
   foreach(_component ${SuiteSparse_FIND_COMPONENTS})
     if(SuiteSparse_${_component}_FOUND)
       set(HAVE_SUITESPARSE_${_component} TRUE)
-      target_link_libraries(SuiteSparse::SuiteSparse
-        INTERFACE SuiteSparse::${_component})
+      target_link_libraries(SuiteSparse::SuiteSparse INTERFACE SuiteSparse::${_component})
     endif()
   endforeach(_component)
 endif()
