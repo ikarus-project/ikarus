@@ -1,4 +1,4 @@
-name: Ubuntu-Release
+name: Ubuntu
 on: [push]
 jobs:
   Build:
@@ -93,7 +93,7 @@ jobs:
           cd repo
           mkdir cmake-build-${{ matrix.config.config }}
           cd cmake-build-${{ matrix.config.config }}
-          cmake ../all  -DCMAKE_BUILD_TYPE=${{ matrix.config.config }} -G "Unix Makefiles" -DCMAKE_C_COMPILER=${{ matrix.config.compilerC }} -DCMAKE_CXX_COMPILER=${{ matrix.config.compilerCxx }}
+          cmake ../all  -DCMAKE_BUILD_TYPE=${{ matrix.config.config }} -G "Unix Makefiles" -DCMAKE_C_COMPILER=${{ matrix.config.compilerC }} -DCMAKE_CXX_COMPILER=${{ matrix.config.compilerCxx }} -DCMAKE_CXX_FLAGS="-Wall -Wpedantic -Wextra -Werror"
           cmake --build . --parallel 9
       - name: Tests
         working-directory: ./repo/cmake-build-${{ matrix.config.config }}

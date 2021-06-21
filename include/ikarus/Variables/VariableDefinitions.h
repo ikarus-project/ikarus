@@ -19,27 +19,27 @@ namespace Ikarus::Variable {
     /** \brief Tag to distinguish between variable definitions */
     static constexpr size_t tagValue = IntTag;
   };
-  template <size_t tagval1, size_t tagval2> bool operator<(VariableTag<tagval1> a, VariableTag<tagval2> b) {
+  template <size_t tagval1, size_t tagval2> bool operator<(VariableTag<tagval1>, VariableTag<tagval2>) {
     return tagval1 < tagval2;
   }
 
-  template <size_t tagval1, size_t tagval2> bool operator==(VariableTag<tagval1> a, VariableTag<tagval2> b) {
+  template <size_t tagval1, size_t tagval2> bool operator==(VariableTag<tagval1>, VariableTag<tagval2>) {
     return tagval1 == tagval2;
   }
 
-  template <size_t tagval1, size_t tagval2> bool operator>(VariableTag<tagval1> a, VariableTag<tagval2> b) {
+  template <size_t tagval1, size_t tagval2> bool operator>(VariableTag<tagval1>, VariableTag<tagval2>) {
     return tagval1 > tagval2;
   }
 
-  template <size_t tagval1, size_t tagval2> bool operator!=(VariableTag<tagval1> a, VariableTag<tagval2> b) {
+  template <size_t tagval1, size_t tagval2> bool operator!=(VariableTag<tagval1>, VariableTag<tagval2>) {
     return tagval1 != tagval2;
   }
 
-  template <size_t tagval1, size_t tagval2> bool operator>=(VariableTag<tagval1> a, VariableTag<tagval2> b) {
+  template <size_t tagval1, size_t tagval2> bool operator>=(VariableTag<tagval1>, VariableTag<tagval2>) {
     return tagval1 >= tagval2;
   }
 
-  template <size_t tagval1, size_t tagval2> bool operator<=(VariableTag<tagval1> a, VariableTag<tagval2> b) {
+  template <size_t tagval1, size_t tagval2> bool operator<=(VariableTag<tagval1>, VariableTag<tagval2>) {
     return tagval1 <= tagval2;
   }
 
