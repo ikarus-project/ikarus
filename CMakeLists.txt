@@ -23,6 +23,9 @@ include(cmake/CPM.cmake)
 
 # PackageProject.cmake will be used to make our target installable
 CPMAddPackage("gh:TheLartians/PackageProject.cmake@1.6.0")
+CPMAddPackage("gh:StableCoder/cmake-scripts#1f822d1fc87c8d7720c074cde8a278b44963c354")
+
+include(${cmake-scripts_SOURCE_DIR}/formatting.cmake)
 
 # ---- Add source files ----
 
@@ -31,10 +34,18 @@ CPMAddPackage("gh:TheLartians/PackageProject.cmake@1.6.0")
 file(GLOB_RECURSE headers CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h")
 file(GLOB_RECURSE sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp")
 
+
 # ---- Create library ----
 add_library(Ikarus ${headers} ${sources})
-
-set_target_properties(Ikarus PROPERTIES CXX_STANDARD 20)
+if(ADD_FORMATTARGET)
+  clang_format(format_Ikarus ${headers} ${sources})
+  file(GLOB_RECURSE CMAKE_FILES
+          CMakeLists.txt
+          )
+  cmake_format(cmake_format_Ikarus ${CMAKE_FILES})
+#  add_dependencies(format cmake_format_Ikarus)
+endif()
+target_compile_features(Ikarus PRIVATE cxx_std_20)
 
 # being a cross-platform target, we enforce standards conformance on MSVC
 target_compile_options(Ikarus PUBLIC "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/permissive->")
