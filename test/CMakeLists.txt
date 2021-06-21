@@ -14,21 +14,7 @@ include(../cmake/tools.cmake)
 # ---- Dependencies ----
 
 include(../cmake/CPM.cmake)
-if(FALSE)
-  CPMAddPackage(
-          NAME Format.cmake
-          VERSION 1.7.0
-          GITHUB_REPOSITORY TheLartians/Format.cmake
-          OPTIONS
-          "FORMAT_SKIP_CMAKE NO"
-          "CMAKE_FORMAT_EXCLUDE cmake/"
-  )
-endif()
-#if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-#  message("debug mode")
-#  list(APPEND CMAKE_PREFIX_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../Ikarus_Dependencies/Dependencies_debug/)
-#elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-#  message("release mode")
+
   list(APPEND CMAKE_PREFIX_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../Ikarus_Dependencies/Dependencies_release/)
 #endif()
 include_directories(../libAddons/eigen/eigenAddons)
@@ -49,7 +35,11 @@ message("${CMAKE_MODULE_PATH}")
 
 find_package(GTest CONFIG REQUIRED)
 
-target_link_libraries(IkarusTests PRIVATE GTest::gmock_main PRIVATE Ikarus::Ikarus)
+target_link_libraries(
+  IkarusTests
+  PRIVATE GTest::gmock_main
+  PRIVATE Ikarus::Ikarus
+)
 set_target_properties(IkarusTests PROPERTIES CXX_STANDARD 20)
 
 # enable compiler warnings
