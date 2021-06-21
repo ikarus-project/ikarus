@@ -6,7 +6,6 @@
 #pragma once
 
 #include <dune/common/power.hh>
-
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
 /** \brief Lagrange shape functions of arbitrary order on the reference cube \f$[-1,1]^\text{dim}\f$
  *
