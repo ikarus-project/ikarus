@@ -16,7 +16,7 @@ if(ADD_FORMATTARGET)
 #            )
 #    cmake_format(cmake_format_Ikarus ${CMAKE_FILES})
     #  add_dependencies(format cmake_format_Ikarus)
-
+include(../CPM.cmake)
         CPMAddPackage(
                 NAME Format.cmake
                 VERSION 1.7.0
