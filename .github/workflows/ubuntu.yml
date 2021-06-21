@@ -1,8 +1,37 @@
-name: Ubuntu-GCC-Release
+name: Ubuntu-Release
 on: [push]
 jobs:
-  Ubuntu-GCC-Release:
+  Build:
+    name: ${{ matrix.config.name }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - {
+            name: "Ubuntu-clang/latest/Debug",
+            config: Debug,
+            compilerC: clang-12,
+            compilerCxx: clang++-12,
+          }
+          - {
+            name: "Ubuntu-clang/latest/Release",
+            config: Release,
+            compilerC: clang-12,
+            compilerCxx: clang++-12,
+          }
+          - {
+            name: "Ubuntu-GCC/latest/Debug",
+            config: Debug,
+            compilerC: gcc-11,
+              compilerCxx: g++-11,
+          }
+          - {
+            name: "Ubuntu-GCC/latest/Release",
+            config: Release,
+            compilerC: gcc-11,
+            compilerCxx: g++-11,
+          }
     steps:
       - uses: actions/checkout@v2
         with:
@@ -62,10 +91,10 @@ jobs:
        # working-directory: repo 
         run: |
           cd repo
-          mkdir cmake-build-release
-          cd cmake-build-release
-          cmake ../all  -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc-11 -DCMAKE_CXX_COMPILER=g++-11
+          mkdir cmake-build-${{ matrix.config.config }}
+          cd cmake-build-${{ matrix.config.config }}
+          cmake ../all  -DCMAKE_BUILD_TYPE=${{ matrix.config.config }} -G "Unix Makefiles" -DCMAKE_C_COMPILER=${{ matrix.config.compilerC }} -DCMAKE_CXX_COMPILER=${{ matrix.config.compilerCxx }}
           cmake --build . --parallel 9
       - name: Tests
-        working-directory: ./repo/cmake-build-release
-        run: ctest --output-on-failure --parallel 4 -C Release
+        working-directory: ./repo/cmake-build-${{ matrix.config.config }}
+        run: ctest --output-on-failure --parallel 4 -C ${{ matrix.config.config }}
