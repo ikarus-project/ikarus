@@ -81,7 +81,8 @@ jobs:
           sudo apt update && sudo apt install gcc-11 g++-11
       - name: Install format dependencies
         run: |
-          sudo apt install clang-format
+          sudo apt install clang-format-12
+          cp /usr/bin/clang-format-12 /usr/bin/clang-format
           pip3 install cmake_format==0.6.11 pyyaml
 
       - name: configure
