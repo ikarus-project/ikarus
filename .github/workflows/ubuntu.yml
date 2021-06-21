@@ -24,7 +24,7 @@ jobs:
             name: "Ubuntu-GCC/latest/Debug",
             config: Debug,
             compilerC: gcc-11,
-              compilerCxx: g++-11,
+            compilerCxx: g++-11,
           }
           - {
             name: "Ubuntu-GCC/latest/Release",
@@ -83,6 +83,7 @@ jobs:
           cmake ../  -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles"
           sudo cmake --build . --parallel 9
       - name: Install gcc11
+        if: ${{ matrix.config.compilerC }} == gcc-11
         run: |
           sudo apt install build-essential manpages-dev software-properties-common
           sudo add-apt-repository ppa:ubuntu-toolchain-r/test
