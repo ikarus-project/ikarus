@@ -25,11 +25,9 @@ CPMAddPackage("gh:TheLartians/PackageProject.cmake@1.6.0")
 file(GLOB_RECURSE headers CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h")
 file(GLOB_RECURSE sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp")
 
-
 # ---- Create library ----
 add_library(Ikarus ${headers} ${sources})
 target_compile_features(Ikarus PRIVATE cxx_std_20)
-
 
 include(cmake/AddDependencies.cmake)
 
@@ -50,4 +48,3 @@ packageProject(
   VERSION_HEADER "${VERSION_HEADER_LOCATION}"
   COMPATIBILITY SameMajorVersion
 )
-
