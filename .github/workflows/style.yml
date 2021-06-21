@@ -85,11 +85,9 @@ jobs:
           pip3 install cmake_format==0.6.11 pyyaml
 
       - name: configure
-        run: cmake -Stest -Bbuild -DADD_FORMATTARGET=TRUE
+        run: cmake -S "cmake/FormatTarget" -Bbuild -DADD_FORMATTARGET=TRUE
 
       - name: check style
         run: |
-          cmake --build build --target format_Ikarus
-          cmake --build build --target cmake_format_Ikarus
-#          cmake --build build --target check-format
-#          cmake --build build --target format
+          cmake --build build --target format
+          cmake --build build --target check-format
