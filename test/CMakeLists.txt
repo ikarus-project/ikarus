@@ -14,7 +14,7 @@ include(../cmake/tools.cmake)
 # ---- Dependencies ----
 
 include(../cmake/CPM.cmake)
-if(ADD_FORMATTARGET)
+if(FALSE)
   CPMAddPackage(
           NAME Format.cmake
           VERSION 1.7.0
