@@ -5,6 +5,7 @@
 #pragma once
 
 #include "ikarus/Manifolds/ManifoldInterface.h"
+#include <variant>
 
 namespace Ikarus::Variable {
 
