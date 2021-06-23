@@ -27,8 +27,7 @@ jobs:
           mkdir -p build && cd build
           cmake -G "Unix Makefiles" -DIWYU_LLVM_ROOT_PATH=/usr/lib/llvm-11 ../include-what-you-use
           make
-          make install
-          #sudo apt-get install iwyu
+          sudo make install
       - name: Install dependencies using apt install
         run: |
           sudo apt install -y gnuplot 
