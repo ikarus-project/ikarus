@@ -44,7 +44,7 @@ jobs:
         mkdir cmake-build-${{ matrix.config.config }}
         cd cmake-build-${{ matrix.config.config }}
         cmake ../  -DCMAKE_BUILD_TYPE=${{ matrix.config.config }} -G "MinGW Makefiles" -DCMAKE_SH="CMAKE_SH-NOTFOUND" -DCMAKE_C_COMPILER="D:/a/Ikarus/Ikarus/build/winlibs/mingw64/bin/gcc.exe" -DCMAKE_CXX_COMPILER="D:/a/Ikarus/Ikarus/build/winlibs/mingw64/bin/g++.exe"
-        cmake --build . --parallel 9
+        cmake --build . --parallel 9 --target Ikarustests
     - name: Tests
       working-directory: ./repo/cmake-build-${{ matrix.config.config }}
       run: ctest --output-on-failure --parallel 4 -C ${{ matrix.config.config }}
