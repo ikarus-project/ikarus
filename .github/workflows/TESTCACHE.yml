@@ -44,10 +44,7 @@ jobs:
         with:
           # npm cache files are stored in `~/.npm` on Linux/macOS
           path: |
-            /usr/local/include/matplot
-            /usr/local/lib/cmake/Matplot++
-            /usr/local/lib/Matplot++/libnodesoup.a
-            /usr/local/lib/libmatplot.a
+            ./matplotplusplus
           key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-build-${{ env.cache-name }}-
