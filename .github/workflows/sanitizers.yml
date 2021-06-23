@@ -95,7 +95,7 @@ jobs:
           sudo cmake --build . --parallel 9
       - name: Install gcc11
         run: |
-          sudo apt install build-essential manpages-dev software-properties-common
+          sudo apt install build-essential software-properties-common
           sudo add-apt-repository ppa:ubuntu-toolchain-r/test
           sudo apt update && sudo apt install gcc-11 g++-11
       - name: Build 
@@ -107,6 +107,6 @@ jobs:
           cmake ../  -DUSE_STATIC_ANALYZER=iwyu -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc-11 -DCMAKE_CXX_COMPILER=g++-11 -DUSE_SANITIZER="Address;Memory;MemoryWithOrigins;Undefined;Thread;Leak;Address;Undefined"
           cmake --build . --parallel 9 --target IkarusTests
       - name: Tests
-        working-directory: ./repo/cmake-build-release
+        working-directory: ./repo/cmake-build-debug
         run: ctest --output-on-failure --parallel 4 -C Debug
 
