@@ -35,6 +35,6 @@ include(GoogleTest)
 gtest_discover_tests(IkarusTests)
 
 if(ENABLE_TEST_COVERAGE)
-  target_compile_options(Ikarus PUBLIC -O0 -g -fprofile-arcs -ftest-coverage)
-  target_link_options(Ikarus PUBLIC -fprofile-arcs -ftest-coverage)
+  target_compile_options(IkarusTests PUBLIC -O0 -g -fprofile-arcs -ftest-coverage)
+  target_link_options(IkarusTests PUBLIC -fprofile-arcs -ftest-coverage)
 endif()
