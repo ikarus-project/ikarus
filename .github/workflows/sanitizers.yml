@@ -11,28 +11,23 @@ jobs:
         run: mkdir build
       - name: Install iwyu
         run: |
-          sudo apt remove -y "libclang-10-dev"
-          sudo apt remove -y "clang-10*"
-          sudo apt remove -y "llvm-10*"
-          sudo apt install -y llvm-12-dev
-          sudo apt install -y clang-12
+          sudo apt remove -y "libclang-dev*"
+          sudo apt remove -y "clang*"
+          sudo apt remove -y "llvm*"
+          sudo apt install -y llvm-11-dev
+          sudo apt install -y libclang-11-dev
+          sudo apt install -y clang-11
           mkdir -p iwyu
           cd iwyu
           git clone https://github.com/include-what-you-use/include-what-you-use.git
           cd include-what-you-use
           clang --version
-          git checkout clang_12
+          git checkout clang_11
           cd ..
           mkdir -p build && cd build
-          cmake -G "Unix Makefiles" -DIWYU_LLVM_ROOT_PATH=/usr/lib/llvm-12 ../include-what-you-use
+          cmake -G "Unix Makefiles" -DIWYU_LLVM_ROOT_PATH=/usr/lib/llvm-11 ../include-what-you-use
           make
           sudo make install
-          #          sudo apt remove -y "libclang-dev*"
-          #          sudo apt remove -y "clang*"
-          #          sudo apt remove -y "llvm*"
-          #          sudo apt install -y llvm-11-dev
-          #          sudo apt install -y libclang-11-dev
-          #          sudo apt install -y clang-11
       - name: Install dependencies using apt install
         run: |
           sudo apt install -y gnuplot 
