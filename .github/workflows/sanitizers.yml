@@ -34,22 +34,34 @@ jobs:
       - name: Install iwyu
         run: |
           sudo apt-get install iwyu
+      - name: Cache matplotplusplusAndEigen
+        uses: actions/cache@v2
+        id: cache-matplotplusplusEigen
+        env:
+          cache-name: cache-matplotplusplus
+        with:
+          path: |
+            ./matplotplusplus
+            ./eigen
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - name: Conditionally download eigen 3.4
+        if: "${{ steps.cache-matplotplusplusEigen.outputs.cache-hit != 'true'}}"
+        run: git clone https://gitlab.com/libeigen/eigen.git
       - name: Install eigen 3.4
         run: |
-          git clone https://gitlab.com/libeigen/eigen.git
           cd eigen
           git checkout 3.4
-          ls
-          mkdir build
+          mkdir -p build
           cd build
           cmake ../
           sudo make install
-          #sudo chmod 755 /usr/local/bin
-          #brew install eigen   
-          #brew install pybind11
       - name: Install matplotplusplus
         run: |
-          mkdir matplotplusplus
+          mkdir -p matplotplusplus
           cd matplotplusplus
           echo 'cmake_minimum_required(VERSION 3.16)
                 project(matplotplusplus)
@@ -60,7 +72,7 @@ jobs:
                           GIT_PROGRESS TRUE
                           CMAKE_ARGS     -DBUILD_EXAMPLES=OFF -DBUILD_TESTS=OFF
                           )' > CMakeLists.txt
-          mkdir build
+          mkdir -p build
           cd build
           cmake ../  -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles"
           sudo cmake --build . --parallel 9
@@ -73,10 +85,10 @@ jobs:
        # working-directory: repo 
         run: |
           cd repo
-          mkdir cmake-build-release
-          cd cmake-build-release
+          mkdir cmake-build-debug
+          cd cmake-build-debug
           cmake ../  -DUSE_STATIC_ANALYZER="iwyu;cppcheck" -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc-11 -DCMAKE_CXX_COMPILER=g++-11 -DUSE_SANITIZER="Address;Memory;MemoryWithOrigins;Undefined;Thread;Leak;Address;Undefined"
-          cmake --build . --parallel 9
+          cmake --build . --parallel 9 --target IkarusTests
       - name: Tests
         working-directory: ./repo/cmake-build-release
         run: ctest --output-on-failure --parallel 4 -C Debug
