@@ -7,7 +7,7 @@
 #include <ikarus/FiniteElements/FiniteElementInterface.h>
 #include <ikarus/FiniteElements/PhysicalElementPolicies.h>
 
-namespace Ikarus::PhysicalElements {
+namespace Ikarus::FiniteElements {
 
   /** \brief A type-erased physical element */
   class GenericFE {
@@ -68,4 +68,4 @@ namespace Ikarus::PhysicalElements {
   auto calculateRHS(const GenericFE& fe) { return fe.feimpl->do_calculateRHS(); }
   auto getDofVector(const GenericFE& fe) { return fe.feimpl->do_getDofVector(); }
 
-}  // namespace Ikarus::PhysicalElements
+}  // namespace Ikarus::FiniteElements

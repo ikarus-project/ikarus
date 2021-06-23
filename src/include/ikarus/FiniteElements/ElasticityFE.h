@@ -14,10 +14,10 @@
 #include <ikarus/Variables/VariableDefinitions.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
 
-namespace Ikarus::PhysicalElements {
+namespace Ikarus::FiniteElements {
   template <Ikarus::Concepts::GridEntity GridEntityType, std::floating_point ct = double> class ElasticityFE {
   public:
-    ElasticityFE(GridEntityType& gE) : gridEntity{&gE} {}
+    ElasticityFE(GridEntityType& gE) : elementGridEntity{&gE} {}
 
     /** \brief Type used for coordinates */
     using ctype = ct;
@@ -52,6 +52,9 @@ namespace Ikarus::PhysicalElements {
     [[nodiscard]] constexpr int dofSize() const { return GridEntityType::dimension; }
 
     void generateDofs() const {
+//          for(auto vert: vertices(elementGridEntity))
+
+//           dofVector.push_back(vert.addDof<Ikarus::DISPLACEMENTD_3D>())
       //        std::vector<std::shared_ptr<GenericVariableOwner>> vec;
       //        for (auto&& node : nodes)
       //            node->addVariable<Ikarus::DISPLACEMENTD_3D>();
@@ -112,7 +115,7 @@ namespace Ikarus::PhysicalElements {
     }
 
   private:
-    GridEntityType* gridEntity;
+    GridEntityType* elementGridEntity;
   };
 
 }  // namespace Ikarus::PhysicalElements

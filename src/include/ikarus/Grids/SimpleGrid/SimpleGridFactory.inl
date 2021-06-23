@@ -166,8 +166,6 @@ namespace Ikarus::Grid {
                                        [&vert](auto &vertex) { return vert.getID() == vertex->getID(); })
                   != end(edge.getChildVertices()));
         };
-        //        auto  hasVertex =[&vert](auto& edge){
-        //          return true;};
 
         for (auto &edgeWhichHasTheVertex : std::ranges::filter_view(grid.getEdges(), hasVertex)) {
           vert.template getFatherEntities<dimension - 1>().push_back(&edgeWhichHasTheVertex);

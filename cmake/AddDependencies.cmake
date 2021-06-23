@@ -1,8 +1,6 @@
-list(APPEND CMAKE_PREFIX_PATH
-     ${CMAKE_CURRENT_SOURCE_DIR}/../Ikarus_Dependencies/Dependencies_release/
-)
-
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
+
+set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ON)
 
 message("Find Eigen: ")
 find_package(Eigen3 3.3.9 REQUIRED)
@@ -15,14 +13,9 @@ find_package(dune-geometry REQUIRED)
 message("Find dune-grid: ")
 find_package(dune-grid REQUIRED)
 message("Find SuiteSparse: ")
-if(MINGW)
-  find_package(SuiteSparse CONFIG REQUIRED)
-else()
-  find_package(SuiteSparse REQUIRED)
-endif()
-
+find_package(SuiteSparse REQUIRED)
 message("Find matplotc++: ")
-find_package(Matplot++ CONFIG REQUIRED)
+find_package(Matplot++ REQUIRED)
 message("Find PythonLibs: ")
 find_package(Python3 COMPONENTS Interpreter Development)
 message("${Python3_STDLIB}")
