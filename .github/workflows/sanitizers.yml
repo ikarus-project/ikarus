@@ -33,7 +33,17 @@ jobs:
           #sudo apt-get install g++ git cmake musl-dev python3 coreutils
       - name: Install iwyu
         run: |
-          sudo apt-get install iwyu
+          mkdir -p iwyu
+          git clone https://github.com/include-what-you-use/include-what-you-use.git
+          cd include-what-you-use
+          clang --version
+          git checkout clang_6.0
+          cd ..
+          mkdir build && cd build
+          cmake -G "Unix Makefiles" -DIWYU_LLVM_ROOT_PATH=/usr/lib/llvm-6.0 ../include-what-you-use
+          make
+          make install
+          #sudo apt-get install iwyu
       - name: Cache matplotplusplusAndEigen
         uses: actions/cache@v2
         id: cache-matplotplusplusEigen
