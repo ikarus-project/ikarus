@@ -79,9 +79,11 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
+      - name: Conditionally generate matplotplusplus folder
+        if: "${{ steps.cache-matplotplusplus.outputs.cache-hit != 'true'}}"
+        run: mkdir matplotplusplus
       - name: Install matplotplusplus
         run: |
-          mkdir matplotplusplus
           cd matplotplusplus
           echo 'cmake_minimum_required(VERSION 3.16)
                 project(matplotplusplus)
@@ -92,8 +94,12 @@ jobs:
                           GIT_PROGRESS TRUE
                           CMAKE_ARGS     -DBUILD_EXAMPLES=OFF -DBUILD_TESTS=OFF
                           )' > CMakeLists.txt
-          mkdir build
-          cd build
+      - name: Conditionally generate matplotplusplus folder
+        if: "${{ steps.cache-matplotplusplus.outputs.cache-hit != 'true'}}"
+        run:  mkdir build
+      - name: Install matplotplusplus
+        run: |
+          cd ./matplotplusplus/build
           cmake ../  -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles"
           sudo cmake --build . --parallel 9
       - name: Install gcc11
