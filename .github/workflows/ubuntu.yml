@@ -65,6 +65,20 @@ jobs:
           #sudo chmod 755 /usr/local/bin
           #brew install eigen   
           #brew install pybind11
+      - name: Cache matplotplusplus
+        uses: actions/cache@v2
+        id: cache-matplotplusplus
+        env:
+          cache-name: cache-matplotplusplus
+        with:
+          # npm cache files are stored in `~/.npm` on Linux/macOS
+          path: |
+            ./matplotplusplus
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
       - name: Install matplotplusplus
         run: |
           mkdir matplotplusplus
