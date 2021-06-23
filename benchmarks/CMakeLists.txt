@@ -7,12 +7,14 @@ file(GLOB benchSourceFiles CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.c
 add_executable(IkarusBenchmarks ${benchSourceFiles})
 
 list(APPEND CMAKE_PREFIX_PATH
-        ${CMAKE_CURRENT_SOURCE_DIR}/../../Ikarus_Dependencies/Dependencies_release/
-        )
+     ${CMAKE_CURRENT_SOURCE_DIR}/../../Ikarus_Dependencies/Dependencies_release/
+)
 
-find_package(benchmark  REQUIRED)
+find_package(benchmark REQUIRED)
 
-target_link_libraries(IkarusBenchmarks
-        PRIVATE Ikarus::Ikarus
-        PRIVATE benchmark::benchmark_main)
-target_compile_features(IkarusBenchmarks  PRIVATE cxx_std_20)
+target_link_libraries(
+  IkarusBenchmarks
+  PRIVATE Ikarus::Ikarus
+  PRIVATE benchmark::benchmark_main
+)
+target_compile_features(IkarusBenchmarks PRIVATE cxx_std_20)
