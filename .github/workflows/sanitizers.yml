@@ -19,7 +19,7 @@ jobs:
           git checkout clang_12
           cd ..
           mkdir -p build && cd build
-          cmake -G "Unix Makefiles" -DIWYU_LLVM_ROOT_PATH=/usr/lib/llvm-11 ../include-what-you-use
+          cmake -G "Unix Makefiles" -DIWYU_LLVM_ROOT_PATH=/usr/lib/llvm-12 ../include-what-you-use
           make
           sudo make install
           #          sudo apt remove -y "libclang-dev*"
