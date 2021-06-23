@@ -1,4 +1,4 @@
-name: Ubuntu
+name: TEST
 on: [push]
 jobs:
   Build:
@@ -20,12 +20,12 @@ jobs:
 #            compilerC: clang-12,
 #            compilerCxx: clang++-12,
 #          }
-          - {
-            name: "Ubuntu-GCC/latest/Debug",
-            config: Debug,
-            compilerC: gcc-11,
-            compilerCxx: g++-11,
-          }
+#          - {
+#            name: "Ubuntu-GCC/latest/Debug",
+#            config: Debug,
+#            compilerC: gcc-11,
+#            compilerCxx: g++-11,
+#          }
           - {
             name: "Ubuntu-GCC/latest/Release",
             config: Release,
