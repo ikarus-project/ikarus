@@ -19,7 +19,7 @@ static void ranges1(benchmark::State& state) {
 }
 // Register the function as a benchmark
 BENCHMARK(ranges1)->RangeMultiplier(2)->Range(8, 8 << 10);
-;
+
 
 static void ranges2(benchmark::State& state) {
   auto v = std::ranges::iota_view{1, state.range(0)};
@@ -30,7 +30,7 @@ static void ranges2(benchmark::State& state) {
 }
 // Register the function as a benchmark
 BENCHMARK(ranges2)->RangeMultiplier(2)->Range(8, 8 << 10);
-;
+
 
 static void byhand(benchmark::State& state) {
   auto v = std::ranges::iota_view{1, state.range(0)};
@@ -41,4 +41,4 @@ static void byhand(benchmark::State& state) {
   }
 }
 BENCHMARK(byhand)->RangeMultiplier(2)->Range(8, 8 << 10);
-;
+
