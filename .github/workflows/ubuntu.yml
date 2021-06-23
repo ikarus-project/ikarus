@@ -74,7 +74,7 @@ jobs:
         run: |
           cd eigen
           git checkout 3.4
-          mkdir build
+          mkdir -p build
           cd build
           cmake ../
           sudo make install
@@ -98,9 +98,9 @@ jobs:
       - name: Install gcc11
         if: "${{ matrix.config.compilerC == 'gcc-11'}}"
         run: |
-          sudo apt install build-essential manpages-dev software-properties-common
+          sudo apt-get install build-essential manpages-dev software-properties-common
           sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-          sudo apt update && sudo apt install gcc-11 g++-11
+          sudo apt-get update && sudo apt-get install gcc-11 g++-11
       - name: Build 
        # working-directory: repo 
         run: |
