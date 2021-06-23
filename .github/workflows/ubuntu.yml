@@ -40,47 +40,46 @@ jobs:
         run: mkdir build
       - name: Install dependencies using apt install
         run: |
-          sudo apt install -y gnuplot 
-          sudo apt install -y liblapack-dev  
-          sudo apt install -y libblas-dev
-          sudo apt install -y libsuitesparse-dev
-          sudo apt install -y libdune-common-dev
-          sudo apt install -y libdune-geometry-dev
-          sudo apt install -y libdune-grid-dev
-          sudo apt install -y libspdlog-dev
-          sudo apt install -y libbenchmark-dev
-          sudo apt install -y libgtest-dev
+          sudo apt-get install -y gnuplot
+          sudo apt-get install -y liblapack-dev
+          sudo apt-get install -y libblas-dev
+          sudo apt-get install -y libsuitesparse-dev
+          sudo apt-get install -y libdune-common-dev
+          sudo apt-get install -y libdune-geometry-dev
+          sudo apt-get install -y libdune-grid-dev
+          sudo apt-get install -y libspdlog-dev
+          sudo apt-get install -y libbenchmark-dev
+          sudo apt-get install -y libgtest-dev
           cd /usr/src/googletest
           sudo cmake .
           sudo cmake --build . --target install
+      - name: Cache matplotplusplusAndEigen
+        uses: actions/cache@v2
+        id: cache-matplotplusplusEigen
+        env:
+          cache-name: cache-matplotplusplus
+        with:
+          path: |
+            ./matplotplusplus
+            ./eigen
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - name: Conditionally download eigen 3.4
+        if: "${{ steps.cache-matplotplusplusEigen.outputs.cache-hit != 'true'}}"
+        run: git clone https://gitlab.com/libeigen/eigen.git
       - name: Install eigen 3.4
         run: |
-          git clone https://gitlab.com/libeigen/eigen.git
           cd eigen
           git checkout 3.4
           mkdir build
           cd build
           cmake ../
           sudo make install
-          #sudo chmod 755 /usr/local/bin
-          #brew install eigen   
-          #brew install pybind11
-      - name: Cache matplotplusplus
-        uses: actions/cache@v2
-        id: cache-matplotplusplus
-        env:
-          cache-name: cache-matplotplusplus
-        with:
-          # npm cache files are stored in `~/.npm` on Linux/macOS
-          path: |
-            ./matplotplusplus
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
       - name: Conditionally generate matplotplusplus folder
-        if: "${{ steps.cache-matplotplusplus.outputs.cache-hit != 'true'}}"
+        if: "${{ steps.cache-matplotplusplusEigen.outputs.cache-hit != 'true'}}"
         run: mkdir matplotplusplus
       - name: Install matplotplusplus
         run: |
@@ -94,8 +93,8 @@ jobs:
                           GIT_PROGRESS TRUE
                           CMAKE_ARGS     -DBUILD_EXAMPLES=OFF -DBUILD_TESTS=OFF
                           )' > CMakeLists.txt
-      - name: Conditionally generate matplotplusplus folder
-        if: "${{ steps.cache-matplotplusplus.outputs.cache-hit != 'true'}}"
+      - name: Conditionally generate build folder
+        if: "${{ steps.cache-matplotplusplusEigen.outputs.cache-hit != 'true'}}"
         run:  mkdir build
       - name: Install matplotplusplus
         run: |
