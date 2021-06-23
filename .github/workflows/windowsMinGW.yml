@@ -22,7 +22,21 @@ jobs:
        path: 'repo'
     - name: Create Work Dir
       run: mkdir build
+    - name: Cache Winlibs
+      uses: actions/cache@v2
+      id: cache-matplotplusplusEigen
+      env:
+        cache-name: cache-winlibs
+      with:
+        path: |
+          ./build/winlibs
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
     - name: Install Winlibs
+      if: "${{ steps.cache-winlibs.outputs.cache-hit != 'true'}}"
       run: |
         cd build
         mkdir winlibs
