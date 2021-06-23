@@ -15,7 +15,7 @@ jobs:
           sudo apt remove -y "clang-10*"
           sudo apt remove -y "llvm-10*"
           sudo apt install -y llvm-12-dev
-          sudo apt install -y libclang-12-dev
+          sudo apt install -y "libclang-12*"
           sudo apt install -y clang-12
           mkdir -p iwyu
           cd iwyu
