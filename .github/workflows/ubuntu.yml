@@ -37,7 +37,7 @@ jobs:
         with:
          path: 'repo'
       - name: Create Work Dir
-        run: mkdir build
+        run: mkdir -p build
       - name: Install dependencies using apt install
         run: |
           sudo apt-get install -y gnuplot
@@ -78,11 +78,9 @@ jobs:
           cd build
           cmake ../
           sudo make install
-      - name: Conditionally generate matplotplusplus folder
-        if: "${{ steps.cache-matplotplusplusEigen.outputs.cache-hit != 'true'}}"
-        run: mkdir matplotplusplus
       - name: Install matplotplusplus
         run: |
+          mkdir -p matplotplusplus
           cd matplotplusplus
           echo 'cmake_minimum_required(VERSION 3.16)
                 project(matplotplusplus)
@@ -93,12 +91,8 @@ jobs:
                           GIT_PROGRESS TRUE
                           CMAKE_ARGS     -DBUILD_EXAMPLES=OFF -DBUILD_TESTS=OFF
                           )' > CMakeLists.txt
-      - name: Conditionally generate build folder
-        if: "${{ steps.cache-matplotplusplusEigen.outputs.cache-hit != 'true'}}"
-        run:  mkdir build
-      - name: Install matplotplusplus
-        run: |
-          cd ./matplotplusplus/build
+          mkdir -p build
+          cd build
           cmake ../  -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles"
           sudo cmake --build . --parallel 9
       - name: Install gcc11
