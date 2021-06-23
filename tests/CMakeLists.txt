@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 
 project(IkarusTests LANGUAGES CXX)
-set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ON)
 # ---- Options ----
 
 option(ENABLE_TEST_COVERAGE "Enable test coverage" OFF)
