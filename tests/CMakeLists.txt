@@ -27,7 +27,6 @@ target_link_libraries(
 )
 set_target_properties(IkarusTests PROPERTIES CXX_STANDARD 20)
 
-target_compile_options(Ikarus PUBLIC -Wall -Wpedantic -Wextra -Werror)
 target_compile_options(IkarusTests PUBLIC -Wall -Wpedantic -Wextra -Werror)
 target_compile_features(IkarusTests PRIVATE cxx_std_20)
 
