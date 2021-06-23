@@ -11,9 +11,9 @@ jobs:
         run: mkdir build
       - name: Install iwyu
         run: |
-          sudo apt remove -y "libclang-dev-11"
-          sudo apt remove -y "clang-11"
-          sudo apt remove -y "llvm-11"
+          sudo apt remove -y "libclang-10-dev"
+          sudo apt remove -y "clang-10*"
+          sudo apt remove -y "llvm-10*"
           mkdir -p iwyu
           cd iwyu
           git clone https://github.com/include-what-you-use/include-what-you-use.git
