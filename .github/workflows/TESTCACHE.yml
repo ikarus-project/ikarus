@@ -38,6 +38,7 @@ jobs:
          path: 'repo'
       - name: Cache matplotplusplus
         uses: actions/cache@v2
+        id: cache-matplotplusplus
         env:
           cache-name: cache-matplotplusplus
         with:
@@ -51,7 +52,7 @@ jobs:
       - name: Create Work Dir
         run: mkdir build
       - name: Install matplotplusplus
-        if: "${{ steps.cache-packages.outputs.cache-hit != 'true'}}"
+        if: "${{ steps.cache-matplotplusplus.outputs.cache-hit != 'true'}}"
         run: |
           mkdir matplotplusplus
           cd matplotplusplus
