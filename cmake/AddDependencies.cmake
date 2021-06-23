@@ -1,6 +1,6 @@
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 
-set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ON)
+set(CMAKE_FIND_PACKAGE_PREFER_CONFIG TRUE)
 
 message("Find Eigen: ")
 find_package(Eigen3 3.3.9 REQUIRED)
@@ -13,7 +13,7 @@ find_package(dune-geometry REQUIRED)
 message("Find dune-grid: ")
 find_package(dune-grid REQUIRED)
 message("Find SuiteSparse: ")
-find_package(SuiteSparse REQUIRED)
+find_package(SuiteSparse)
 message("Find matplotc++: ")
 find_package(Matplot++ REQUIRED)
 message("Find PythonLibs: ")
