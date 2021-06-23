@@ -50,8 +50,6 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
-      - name: Create Work Dir
-        run: mkdir build
       - name: Install matplotplusplus
         if: "${{ steps.cache-matplotplusplus.outputs.cache-hit != 'true'}}"
         run: |
