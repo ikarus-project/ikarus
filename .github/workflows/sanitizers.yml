@@ -11,7 +11,7 @@ jobs:
         run: mkdir build
       - name: Install iwyu
         run: |
-          sudo apt-get install llvm-11*
+          sudo apt-get remove llvm-10*
           mkdir -p iwyu
           cd iwyu
           git clone https://github.com/include-what-you-use/include-what-you-use.git
