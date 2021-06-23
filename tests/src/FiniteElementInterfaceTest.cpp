@@ -48,9 +48,9 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
   Grid grid = gridFactory.createGrid();
 
   auto gridView = grid.leafGridView();
-  std::vector<Ikarus::PhysicalElements::GenericFE> fes;
+  std::vector<Ikarus::FiniteElements::GenericFE> fes;
 
-  for (auto&& element : elements(gridView)) fes.emplace_back(Ikarus::PhysicalElements::ElasticityFE(element));
+  for (auto&& element : elements(gridView)) fes.emplace_back(Ikarus::FiniteElements::ElasticityFE(element));
 
   Ikarus::DynVectord fint{};
   Ikarus::DynMatrixd K{};
@@ -65,7 +65,7 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
     std::cout << dofSize(fe) << std::endl;
   }
 
-  Ikarus::PhysicalElements::GenericFE fe((TestFE()));
+  Ikarus::FiniteElements::GenericFE fe((TestFE()));
 
   initialize(fe);
   //  getDofVector(fe);
