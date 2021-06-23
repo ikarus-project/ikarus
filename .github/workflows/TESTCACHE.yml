@@ -46,7 +46,8 @@ jobs:
           path: |
             /usr/local/include/matplot
             /usr/local/lib/cmake/Matplot++
-            /usr/local/lib
+            /usr/local/lib/Matplot++/libnodesoup.a
+            /usr/local/lib/libmatplot.a
           key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-build-${{ env.cache-name }}-
