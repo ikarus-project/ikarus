@@ -52,9 +52,9 @@ namespace Ikarus::FiniteElements {
     [[nodiscard]] constexpr int dofSize() const { return GridEntityType::dimension; }
 
     void generateDofs() const {
-//          for(auto vert: vertices(elementGridEntity))
+      //          for(auto vert: vertices(elementGridEntity))
 
-//           dofVector.push_back(vert.addDof<Ikarus::DISPLACEMENTD_3D>())
+      //           dofVector.push_back(vert.addDof<Ikarus::DISPLACEMENTD_3D>())
       //        std::vector<std::shared_ptr<GenericVariableOwner>> vec;
       //        for (auto&& node : nodes)
       //            node->addVariable<Ikarus::DISPLACEMENTD_3D>();
@@ -118,4 +118,4 @@ namespace Ikarus::FiniteElements {
     GridEntityType* elementGridEntity;
   };
 
-}  // namespace Ikarus::PhysicalElements
+}  // namespace Ikarus::FiniteElements
