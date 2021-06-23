@@ -65,7 +65,7 @@ namespace Ikarus::FiniteElements {
       //        for (auto&& face : faces)
       //            edge->addVariable<Ikarus::DISPLACEMENTD_3D>();
 
-      //        this->addVariable<Ikarus::EAS>();
+      //        this->addVariable<Ikarus::EAS>(); 
     }
 
     void initialize() { std::cout << "initialize ElasticityFE" << std::endl; }
