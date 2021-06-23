@@ -6,7 +6,6 @@ project(
   VERSION 1.0
   LANGUAGES CXX
 )
-include(cmake/tools.cmake)
 
 if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
   message(
