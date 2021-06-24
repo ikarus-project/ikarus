@@ -11,6 +11,10 @@ jobs:
       image: rath3t/ci-ubuntu-21-04
     steps:
       - uses: actions/checkout@v2
+      - name: test vars
+        run: |
+          echo $CI
+          echo $GITHUB_ACTIONS
       - name: Create Work Dir
         run: mkdir build
       - name: Build
