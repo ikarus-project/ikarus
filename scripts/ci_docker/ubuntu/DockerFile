@@ -3,7 +3,10 @@ FROM ubuntu:hirsute
 ENV HOME /root
 ENV DEBIAN_FRONTEND "noninteractive"
 
-RUN apt-get update -y && apt-get upgrade -y && \
+RUN  systemctl unmask snapd.service && \
+     systemctl enable snapd.service && \
+     systemctl start snapd.service && \
+    apt-get update -y && apt-get upgrade -y && \
     apt-get -y install \
         build-essential \
         git \
@@ -23,8 +26,7 @@ RUN apt-get update -y && apt-get upgrade -y && \
         libbenchmark-dev \
         libeigen3-dev \
         libgtest-dev \
-        snapd && \
-        snap install cmake && \
+        snap install cmake --classic && \
         cd /usr/src/googletest && \
         cmake . && \
         cmake --build . --target install && \
