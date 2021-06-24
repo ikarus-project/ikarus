@@ -3,8 +3,6 @@ on: [push]
 
 env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-  CI: true
-  GITHUB_ACTIONS: true
   
 jobs:
   Ubuntu-GCC-Debug-CodeCov:
