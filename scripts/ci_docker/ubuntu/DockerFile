@@ -9,7 +9,6 @@ RUN apt-get update -y && apt-get upgrade -y && \
         git \
         apt-utils \
         software-properties-common \
-        cmake \
         gfortran \
         gcc-11 \
         g++-11 \
@@ -23,7 +22,9 @@ RUN apt-get update -y && apt-get upgrade -y && \
         libspdlog-dev \
         libbenchmark-dev \
         libeigen3-dev \
-        libgtest-dev && \
+        libgtest-dev \
+        snapd && \
+        snap install cmake && \
         cd /usr/src/googletest && \
         cmake . && \
         cmake --build . --target install && \
@@ -31,7 +32,7 @@ RUN apt-get update -y && apt-get upgrade -y && \
         cd matplotplusplus && \
         mkdir -p build && \
         cd build && \
-        cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-O2" -DBUILD_EXAMPLES=OFF -DBUILD_TESTS=OFF && \
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=OFF -DBUILD_TESTS=OFF && \
         cmake --build . --parallel 4 --config Release && \
         cmake --install . && \
         cd ../.. && \
