@@ -2,6 +2,8 @@ FROM ubuntu:hirsute
 
 ENV HOME /root
 ENV DEBIAN_FRONTEND "noninteractive"
+ENV GITHUB_ACTIONS true
+ENV CI true
 
 RUN apt-get update -y && apt-get upgrade -y && \
     apt-get -y install \
@@ -50,7 +52,8 @@ RUN apt-get update -y && apt-get upgrade -y && \
         cmake --build . --parallel 4 --config Release && \
         cmake --install . && \
         cd ../.. && \
-        rm -r matplotplusplus
+        rm -r matplotplusplus && \
+        apt-get auto-remove -y
 CMD [ "/bin/bash" ]
 
 WORKDIR $HOME
