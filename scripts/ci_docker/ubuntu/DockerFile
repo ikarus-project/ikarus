@@ -16,6 +16,8 @@ RUN apt-get update -y && apt-get upgrade -y && \
         gcc-11 \
         g++-11 \
         clang \
+        libclang-12-dev \
+        llvm-12-dev \
         liblapack-dev \
         libblas-dev \
         libsuitesparse-dev \
@@ -25,6 +27,18 @@ RUN apt-get update -y && apt-get upgrade -y && \
         libspdlog-dev \
         libbenchmark-dev \
         libgtest-dev && \
+        cppcheck && \
+        mkdir -p iwyu && \
+        cd iwyu && \
+        git clone https://github.com/include-what-you-use/include-what-you-use.git && \
+        cd include-what-you-use && \
+        clang --version && \
+        git checkout clang_12 && \
+        cd .. && \
+        mkdir -p build && cd build && \
+        cmake -G "Unix Makefiles" -DIWYU_LLVM_ROOT_PATH=/usr/lib/llvm-12 ../include-what-you-use && \
+        make && \
+        make install && \
         cd /usr/src/googletest && \
         cmake . && \
         cmake --build . --target install && \
