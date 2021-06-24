@@ -173,7 +173,6 @@ TEST(GridTest, GridView3DSurfaceTest) {
     }
     ++eleCounter;
   }
-
 }
 
 /**
