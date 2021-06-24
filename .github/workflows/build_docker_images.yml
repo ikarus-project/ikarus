@@ -6,11 +6,13 @@ on:
       - 'master'
     paths:
       - 'scripts/ci_docker/ubuntu/DockerFile'
+      - '.github/workflows/build_docker_images.yml'
   pull_request:
     branches:
       - 'master'
     paths:
       - 'scripts/ci_docker/ubuntu/DockerFile'
+      - '.github/workflows/build_docker_images.yml'
 
 jobs:
   build-docker-ubuntu:
