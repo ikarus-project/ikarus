@@ -3,13 +3,12 @@ FROM ubuntu:hirsute
 ENV HOME /root
 ENV DEBIAN_FRONTEND "noninteractive"
 
-RUN  systemctl unmask snapd.service && \
-     systemctl enable snapd.service && \
-     systemctl start snapd.service && \
-    apt-get update -y && apt-get upgrade -y && \
+RUN apt-get update -y && apt-get upgrade -y && \
     apt-get -y install \
         build-essential \
+        libssl-dev \
         git \
+        wget \
         apt-utils \
         software-properties-common \
         gfortran \
@@ -26,10 +25,16 @@ RUN  systemctl unmask snapd.service && \
         libbenchmark-dev \
         libeigen3-dev \
         libgtest-dev \
-        snap install cmake --classic && \
+        wget https://github.com/Kitware/CMake/releases/download/v3.20.5/cmake-3.20.5.tar.gz && \
+        tar -zxvf cmake-3.20.5.tar.gz && \
+        cd cmake-3.20.5 && \
+        ./bootstrap && \
+        make && \
+        make install && \
         cd /usr/src/googletest && \
         cmake . && \
         cmake --build . --target install && \
+        cd ~/ && \
         git clone https://github.com/alandefreitas/matplotplusplus.git && \
         cd matplotplusplus && \
         mkdir -p build && \
