@@ -35,7 +35,7 @@ RUN apt-get update -y && apt-get upgrade -y && \
         mkdir build && \
         cd build && \
         cmake ../ && \
-        sudo make install && \
+        make install && \
         ls && \
         cd .. && \
         ls && \
