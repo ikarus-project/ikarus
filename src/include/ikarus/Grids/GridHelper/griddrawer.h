@@ -26,5 +26,4 @@ template <typename GridView> void draw(GridView& gridView) {
 
   }
   hold(off);
-  show();
 }
