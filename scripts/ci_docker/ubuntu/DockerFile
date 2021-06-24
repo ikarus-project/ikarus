@@ -25,9 +25,9 @@ RUN apt-get update -y && apt-get upgrade -y && \
         libbenchmark-dev \
         libeigen3-dev \
         libgtest-dev && \
-        wget https://github.com/Kitware/CMake/releases/download/v3.20.5/cmake-3.20.5-linux-x86_64.tar.gz && \
-        tar -zxvf cmake-3.20.5-linux-x86_64.tar.gz && \
-        cd cmake-3.20.5-linux-x86_64 && \
+        wget https://github.com/Kitware/CMake/releases/download/v3.20.5/cmake-3.20.5.tar.gz && \
+        tar -zxvf cmake-3.20.5.tar.gz && \
+        cd cmake-3.20.5 && \
         ./bootstrap && \
         make && \
         make install && \
