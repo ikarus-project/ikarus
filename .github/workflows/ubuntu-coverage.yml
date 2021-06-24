@@ -2,9 +2,7 @@ name: Ubuntu-GCC-Debug-CodeCov
 on: [push]
 
 env:
-  CTEST_OUTPUT_ON_FAILURE: 1
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-  CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
   
 jobs:
   Ubuntu-GCC-Debug-CodeCov:
@@ -21,6 +19,7 @@ jobs:
           cd cmake-build-debug
           cmake ../  -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc-11 -DCMAKE_CXX_COMPILER=g++-11 -DENABLE_TEST_COVERAGE=1
           cmake --build . --parallel 9 --target IkarusTests
+
       - name: Tests
         working-directory: ./cmake-build-debug
         run: ctest --output-on-failure --parallel 4 -C Debug
