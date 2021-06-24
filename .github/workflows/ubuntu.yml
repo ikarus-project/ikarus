@@ -38,8 +38,6 @@ jobs:
       - uses: actions/checkout@v2
         with:
          path: 'repo'
-      - name: Create Work Dir
-        run: mkdir -p build
       - name: Build 
         working-directory: ./repo
         run: |

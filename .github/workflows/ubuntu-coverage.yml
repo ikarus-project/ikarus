@@ -9,73 +9,18 @@ env:
 jobs:
   Ubuntu-GCC-Debug-CodeCov:
     runs-on: ubuntu-latest
+    container:
+      image: rath3t/ci-ubuntu-21-04
     steps:
       - uses: actions/checkout@v2
       - name: Create Work Dir
         run: mkdir build
-      - name: Install dependencies using apt install
-        run: |
-          sudo apt-get install -y gnuplot 
-          sudo apt-get install -y liblapack-dev  
-          sudo apt-get install -y libblas-dev
-          sudo apt-get install -y libsuitesparse-dev
-          sudo apt-get install -y libdune-common-dev
-          sudo apt-get install -y libdune-geometry-dev
-          sudo apt-get install -y libdune-grid-dev
-          sudo apt-get install -y libspdlog-dev
-          sudo apt-get install -y libbenchmark-dev
-          sudo apt-get install -y libgtest-dev
-          cd /usr/src/googletest
-          sudo cmake .
-          sudo cmake --build . --target install
-      - name: Install dependencies using brew
-        run: |
-          git clone https://gitlab.com/libeigen/eigen.git
-          cd eigen
-          git checkout 3.4
-          ls
-          mkdir build
-          cd build
-          cmake ../
-          sudo make install
-          ls
-          cd ..
-          ls
-          cd ..
-          ls
-          rm -r eigen
-      - name: Install matplotplusplus
-        run: |
-          mkdir matplotplusplus
-          cd matplotplusplus
-          echo 'cmake_minimum_required(VERSION 3.16)
-                project(matplotplusplus)
-                include(ExternalProject)
-                          ExternalProject_Add(matplotplusplus
-                          GIT_REPOSITORY https://github.com/alandefreitas/matplotplusplus.git
-                          GIT_TAG master
-                          GIT_PROGRESS TRUE
-                          CMAKE_ARGS     -DBUILD_EXAMPLES=OFF -DBUILD_TESTS=OFF
-                          )' > CMakeLists.txt
-          mkdir build
-          cd build
-          cmake ../  -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles"
-          sudo cmake --build . --parallel 9
-      - name: Install gcc11
-        run: |
-          sudo apt install build-essential software-properties-common
-          sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-          sudo apt update && sudo apt install gcc-11 g++-11
-          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90 --slave /usr/bin/g++ g++ /usr/bin/g++-9 --slave /usr/bin/gcov gcov /usr/bin/gcov-9 --slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-9 --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-9
-          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 110 --slave /usr/bin/g++ g++ /usr/bin/g++-11 --slave /usr/bin/gcov gcov /usr/bin/gcov-11 --slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-11 --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-11
-
       - name: Build
         run: |
           mkdir cmake-build-debug
           cd cmake-build-debug
           cmake ../  -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc-11 -DCMAKE_CXX_COMPILER=g++-11 -DENABLE_TEST_COVERAGE=1
           cmake --build . --parallel 9 --target IkarusTests
-          
       - name: Tests
         working-directory: ./cmake-build-debug
         run: ctest --output-on-failure --parallel 4 -C Debug
