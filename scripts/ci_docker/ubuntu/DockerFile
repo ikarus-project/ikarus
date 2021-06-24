@@ -1,0 +1,24 @@
+FROM ubuntu:hirsute
+
+ENV HOME /root
+
+RUN apt-get update -y && apt-get upgrade -y && \
+    apt-get -y install \
+        cmake \
+        gcc-11 \
+        g++-11 \
+        liblapack-dev \
+        libblas-dev \
+        libsuitesparse-dev \
+        libdune-common-dev \
+        libdune-geometry-dev \
+        libdune-grid-dev \
+        libspdlog-dev \
+        libbenchmark-dev \
+        libgtest-dev \
+        cd /usr/src/googletest
+        cmake .
+        cmake --build . --target install
+CMD [ "/bin/bash" ]
+
+WORKDIR $HOME
