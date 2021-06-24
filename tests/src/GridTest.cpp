@@ -9,6 +9,7 @@
 #include <dune/geometry/type.hh>
 
 #include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
+#include <ikarus/Grids/GridHelper/griddrawer.h>
 
 /** @addtogroup Tests
  *  This module includes all tests
@@ -172,6 +173,7 @@ TEST(GridTest, GridView3DSurfaceTest) {
     }
     ++eleCounter;
   }
+
 }
 
 /**
@@ -258,6 +260,7 @@ TEST(GridTest, GridView3DSolidTest) {
 
   std::vector<int> expectedEdgesAtVertex{3, 4, 3, 5, 3, 5, 3, 3, 3};
   for (int i = 0; auto &&vertex : vertices(gridView)) EXPECT_EQ(edges(vertex).size(), expectedEdgesAtVertex[i++]);
+  draw(gridView);
 }
 
 TEST(GridTest, GridInsertionException) {
