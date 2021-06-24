@@ -15,8 +15,9 @@ list(APPEND CMAKE_PREFIX_PATH
 include_directories(../libAddons/eigen/eigenAddons)
 
 file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
-
+message("GTest")
 find_package(GTest CONFIG REQUIRED)
+message("GTest")
 add_executable(IkarusTests ${sources})
 
 

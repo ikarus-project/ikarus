@@ -23,12 +23,25 @@ RUN apt-get update -y && apt-get upgrade -y && \
         libdune-grid-dev \
         libspdlog-dev \
         libbenchmark-dev \
-        libeigen3-dev \
         libgtest-dev && \
         cd /usr/src/googletest && \
         cmake . && \
         cmake --build . --target install && \
         cd ~/ && \
+        git clone https://gitlab.com/libeigen/eigen.git && \
+        cd eigen && \
+        git checkout 3.4 && \
+        ls && \
+        mkdir build && \
+        cd build && \
+        cmake ../ && \
+        sudo make install && \
+        ls && \
+        cd .. && \
+        ls && \
+        cd .. && \
+        ls && \
+        rm -r eigen && \
         git clone https://github.com/alandefreitas/matplotplusplus.git && \
         cd matplotplusplus && \
         mkdir -p build && \
