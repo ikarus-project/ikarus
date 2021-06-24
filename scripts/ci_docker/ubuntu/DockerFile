@@ -29,6 +29,7 @@ RUN apt-get update -y && apt-get upgrade -y && \
         libbenchmark-dev \
         libgtest-dev \
         gnuplot \
+        gnuplot-x11 \
         curl \
         cppcheck && \
         mkdir -p iwyu && \
