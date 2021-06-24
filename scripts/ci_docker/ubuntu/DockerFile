@@ -26,7 +26,7 @@ RUN apt-get update -y && apt-get upgrade -y && \
         libdune-grid-dev \
         libspdlog-dev \
         libbenchmark-dev \
-        libgtest-dev && \
+        libgtest-dev \
         cppcheck && \
         mkdir -p iwyu && \
         cd iwyu && \
