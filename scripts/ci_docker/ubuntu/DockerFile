@@ -15,9 +15,9 @@ RUN apt-get update -y && apt-get upgrade -y && \
         libdune-grid-dev \
         libspdlog-dev \
         libbenchmark-dev \
-        libgtest-dev
-        cd /usr/src/googletest
-        cmake .
+        libgtest-dev && \
+        cd /usr/src/googletest && \
+        cmake . && \
         cmake --build . --target install
 CMD [ "/bin/bash" ]
 
