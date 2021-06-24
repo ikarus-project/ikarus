@@ -32,7 +32,6 @@ RUN apt-get update -y && apt-get upgrade -y && \
         cd iwyu && \
         git clone https://github.com/include-what-you-use/include-what-you-use.git && \
         cd include-what-you-use && \
-        clang --version && \
         git checkout clang_12 && \
         cd .. && \
         mkdir -p build && cd build && \

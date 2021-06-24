@@ -20,7 +20,6 @@ find_package(GTest CONFIG REQUIRED)
 message("GTest")
 add_executable(IkarusTests ${sources})
 
-
 target_link_libraries(
   IkarusTests
   PRIVATE GTest::gmock_main
