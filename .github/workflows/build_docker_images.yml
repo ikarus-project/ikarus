@@ -5,12 +5,12 @@ on:
     branches:
       - 'master'
     paths:
-      - 'scripts/ci_docker/docker_file_ci_ubuntu_20_04/ubuntu'
+      - 'scripts/ci_docker/ubuntu/DockerFile'
   pull_request:
     branches:
       - 'master'
     paths:
-      - 'scripts/ci_docker/docker_file_ci_ubuntu_20_04/ubuntu'
+      - 'scripts/ci_docker/ubuntu/DockerFile'
 
 jobs:
   build-docker-ubuntu:
