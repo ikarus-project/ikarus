@@ -22,10 +22,20 @@ RUN apt-get update -y && apt-get upgrade -y && \
         libdune-grid-dev \
         libspdlog-dev \
         libbenchmark-dev \
+        libeigen3-dev \
         libgtest-dev && \
         cd /usr/src/googletest && \
         cmake . && \
-        cmake --build . --target install
+        cmake --build . --target install && \
+        git clone https://github.com/alandefreitas/matplotplusplus.git && \
+        mkdir -p build && \
+        cd build && \
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-O2" -DBUILD_EXAMPLES=OFF -DBUILD_TESTS=OFF && \
+        cmake --build . --parallel 4 --config Release && \
+        cmake --install . && \
+        cd .. && \
+        rm -r build && \
+        rm -r matplotplusplus && \
 CMD [ "/bin/bash" ]
 
 WORKDIR $HOME
