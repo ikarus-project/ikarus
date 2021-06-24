@@ -28,6 +28,8 @@ RUN apt-get update -y && apt-get upgrade -y && \
         libspdlog-dev \
         libbenchmark-dev \
         libgtest-dev \
+        gnuplot \
+        curl \
         cppcheck && \
         mkdir -p iwyu && \
         cd iwyu && \
