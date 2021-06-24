@@ -10,7 +10,7 @@ template <typename GridView> void draw(GridView& gridView) {
   std::vector<std::pair<size_t, size_t>> edgesVector;
   hold(on);
   for (auto&& edge : edges(gridView)) {
-    std::array<double,2> xEdge{},yEdge{},zEdge{};
+    std::array<double,2> xEdge{}, yEdge{}, zEdge{};
     for (int i = 0; auto&& vert : vertices(edge)) {
       xEdge[i] = vert->getPosition()[0];
       yEdge[i] = vert->getPosition()[1];
@@ -18,7 +18,7 @@ template <typename GridView> void draw(GridView& gridView) {
       ++i;
     }
 
-    auto l = plot3(xEdge, yEdge, zEdge,"-o");
+    auto l = plot3(xEdge, yEdge, zEdge, "-o");
     l->line_width(2);
     l->color("black");
     l->marker_size(10);
