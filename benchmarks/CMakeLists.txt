@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.18)
 message("Configure googlebenchmarks: ")
 project(IkarusBenchmarks LANGUAGES CXX)
 file(GLOB benchSourceFiles CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
