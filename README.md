@@ -3,7 +3,7 @@
 [![codecov](https://codecov.io/gh/rath3t/Ikarus/branch/master/graph/badge.svg?token=8UZR0T8C8H)](https://codecov.io/gh/rath3t/Ikarus)
 [![Ubuntu-GCC-Sanitizers](https://github.com/rath3t/Ikarus/actions/workflows/sanitizers.yml/badge.svg)](https://github.com/rath3t/Ikarus/actions/workflows/sanitizers.yml)
 [![Style](https://github.com/rath3t/Ikarus/actions/workflows/style.yml/badge.svg)](https://github.com/rath3t/Ikarus/actions/workflows/style.yml)
-# ModernCppStarter
+# Ikarus
 
 Setting  up a  new C++ project usually requires a significant amount of preparation and boilerplate code, even more so for modern C++ projects with tests, executables and continuous integration.
 This template is the result of learnings from many previous projects and should help reduce the work required to setup up a modern C++ project.
