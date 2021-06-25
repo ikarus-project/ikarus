@@ -1,11 +1,3 @@
-though there is no official powershell core support for aspnet:3.1-nanoserver-1809, there is an official powershell core support for pure nanoserver-18.09, see this with the image tag: lts-nanoserver-1809
-
-So, the last thing you need to do is:
-
-Just follow microsoft's suggestion to include powershell core when build your own image.
-
-Next is the Dockerfile about how nanoserver-18.09 to include powershell core, you could copy this to write your own dockerfile to add powershell core to your aspnet:3.1-nanoserver-1809:
-
 # escape=`
 # Args used by from statements must be defined here:
 ARG InstallerVersion=nanoserver
@@ -93,6 +85,8 @@ RUN pwsh `
 
 # re-enable telemetry
 ENV POWERSHELL_TELEMETRY_OPTOUT="0"
+
+CMD ["pwsh.exe"]
 
 
 FROM mcr.microsoft.com/windows/nanoserver:1809-amd64
