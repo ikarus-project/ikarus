@@ -97,7 +97,7 @@ SHELL ["cmd", "/S", "/C"]
 ENV global:progressPreference 'silentlyContinue'
 
 RUN powershell.exe -Command \
-    Invoke-WebRequest -Uri http://chocolatey.org/install.ps1 -OutFile install.ps1; \
+    curl.exe -o install.ps1 http://chocolatey.org/install.ps1; \
     install.ps1
 
 #install 7z
