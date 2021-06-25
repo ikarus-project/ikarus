@@ -1,7 +1,7 @@
-name: Ubuntu-GCC-Sanitizers
+name: Ubuntu-Sanitizers
 on: [push]
 jobs:
-  Ubuntu-GCC-Sanitizers:
+  Ubuntu-Sanitizers:
     runs-on: ubuntu-latest
     container:
       image: rath3t/ci-ubuntu-21-04
