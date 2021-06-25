@@ -4,8 +4,8 @@ ENV HOME /root
 ENV DEBIAN_FRONTEND "noninteractive"
 ENV CI true
 
-RUN apt-get update -y && apt-get upgrade -y && \
-    apt-get -y install \
+RUN apt-get update -q -y && apt-get upgrade -y && \
+    apt-get -y install --no-install-recommends \
         build-essential \
         libssl-dev \
         git \
@@ -72,7 +72,10 @@ RUN apt-get update -y && apt-get upgrade -y && \
         apt-get auto-remove -y && \
         apt-get clean && \
         rm -rvf /var/lib/apt/lists/* && \
-        rm -rvf /var/cache/apt/archives/*
+        rm -rvf /var/cache/apt/archives/* && \
+        apt-get -y remove  \
+        software-properties-common \
+        wget
 CMD [ "/bin/bash" ]
 
 WORKDIR $HOME
