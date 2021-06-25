@@ -19,7 +19,7 @@ RUN powershell.exe -Command \
     choco install -y choco-cleaner --no-progress; \
     choco install -y git --no-progress; \
     choco install -y cmake --no-progress; \
-    Choco-Cleaner.ps1   
+    choco-cleaner.bat 
     
 #install winlibs
 RUN powershell.exe -Command \
