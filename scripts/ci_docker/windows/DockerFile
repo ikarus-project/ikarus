@@ -1,0 +1,62 @@
+FROM mcr.microsoft.com/windows/servercore:ltsc2019
+
+
+# Restore the default Windows shell for correct batch processing below.
+SHELL ["cmd", "/S", "/C"]
+
+# Download the Build Tools bootstrapper.
+RUN powershell.exe -Command \
+	mkdir c:\TEMP; \
+    wget https://aka.ms/vs/16/release/vs_buildtools.exe -OutFile c:\TEMP\vs_buildtools.exe
+
+#install chocolatey
+RUN powershell.exe -Command \
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
+    iex ((New-Object System.Net.WebClient).DownloadString('http://chocolatey.org/install.ps1'))
+
+#install 7z
+RUN powershell.exe -Command \
+    choco install -y 7zip.install
+
+#install git
+RUN powershell.exe -Command \
+    choco install -y git
+
+#install cmake
+RUN powershell.exe -Command \
+    choco install -y cmake
+
+#install winlibs
+RUN powershell.exe -Command \
+    cd C:; \
+    mkdir winlibs; \
+    Invoke-WebRequest -Uri https://github.com/brechtsanders/winlibs_mingw/releases/download/11.1.0-12.0.0-9.0.0-r2/winlibs-x86_64-posix-seh-gcc-11.1.0-llvm-12.0.0-mingw-w64-9.0.0-r2.7z -OutFile winlibs/libs.7z; \
+    cd winlibs; \
+    7z x libs.7z; \
+    rm libs.7z; \
+
+#Add winlibs to path
+RUN powershell.exe -Command \
+     echo "C:/winlibs/mingw64/bin" | Out-File -FilePath $env:PATH -Encoding utf8 -Append
+
+#Download and install dependencies
+RUN powershell.exe -Command \
+    cd C:; \
+    mkdir Ikarus_Dependencies; \
+    Invoke-WebRequest -Uri https://github.com/rath3t/IkarusDependencies/releases/download/v0.3/Dependencies_release.7z -OutFile Ikarus_Dependencies/dependencies.7z; \
+    cd Ikarus_Dependencies; \
+    7z x dependencies.7z; \
+    rm dependencies.7z; \
+
+#set env variables
+# ENV CMAKE c:\\cmake\\cmake-3.14.1-win64-x64\\bin\\cmake.exe
+# ENV SEVEN_ZIP c:\\7zip\\7z.exe
+# ENV VCVARS  \"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat\"
+# ENV BOOST c:\\boost\\boost_1_71_0
+# ENV BLAS c:\\libs\\libblas.lib
+# ENV LAPACK c:\\libs\\liblapack.lib
+# ENV PYTHONROOT c:\\python
+
+
+# Default to PowerShell if no other command specified.
+ENTRYPOINT ["powershell.exe", "-NoLogo", "-ExecutionPolicy", "Bypass", "-Command", "c:\\scripts\\start.ps1"]

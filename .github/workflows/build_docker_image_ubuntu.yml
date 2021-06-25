@@ -6,13 +6,13 @@ on:
       - 'master'
     paths:
       - 'scripts/ci_docker/ubuntu/DockerFile'
-      - '.github/workflows/build_docker_images.yml'
+      - '.github/workflows/build_docker_image_ubuntu.yml'
   pull_request:
     branches:
       - 'master'
     paths:
       - 'scripts/ci_docker/ubuntu/DockerFile'
-      - '.github/workflows/build_docker_images.yml'
+      - '.github/workflows/build_docker_image_ubuntu.yml'
 
 jobs:
   build-docker-ubuntu:
@@ -29,5 +29,4 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Publish the Docker image
         if: ${{ github.event_name == 'push'}}
-        # only push the new image when the changes are merged to master
         run: docker push rath3t/ci-ubuntu-21-04
