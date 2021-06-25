@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/windows/nanoserver:20H2
+FROM mcr.microsoft.com/windows/nanoserver
 
 
 # Restore the default Windows shell for correct batch processing below.
