@@ -5,7 +5,7 @@ ENV DEBIAN_FRONTEND "noninteractive"
 ENV CI true
 
 RUN apt-get update -y && apt-get upgrade -y && \
-    apt-get -y install -no-install-recommends \
+    apt-get -y install --no-install-recommends \
         build-essential \
         libssl-dev \
         git \
