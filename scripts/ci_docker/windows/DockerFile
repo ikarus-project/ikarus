@@ -15,16 +15,12 @@ RUN powershell.exe -Command \
 
 #install 7z
 RUN powershell.exe -Command \
-    choco install -y 7zip.install --no-progress
-
-#install git
-RUN powershell.exe -Command \
-    choco install -y git --no-progress
-
-#install cmake
-RUN powershell.exe -Command \
-    choco install -y cmake --no-progress
-
+    choco install -y 7zip.install --no-progress; \
+    choco install -y choco-cleaner --no-progress; \
+    choco install -y git --no-progress; \
+    choco install -y cmake --no-progress; \
+    C:\ProgramData\chocolatey\bin\Choco-Cleaner.ps1   
+    
 #install winlibs
 RUN powershell.exe -Command \
     cd C:; \
