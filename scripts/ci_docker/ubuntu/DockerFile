@@ -70,7 +70,9 @@ RUN apt-get update -y && apt-get upgrade -y && \
         cd ../.. && \
         rm -r matplotplusplus && \
         apt-get auto-remove -y && \
-        apt-get clean
+        apt-get clean && \
+        rm -rvf /var/lib/apt/lists/* && \
+        rm -rvf /var/cache/apt/archives/*
 CMD [ "/bin/bash" ]
 
 WORKDIR $HOME
