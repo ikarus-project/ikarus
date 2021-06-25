@@ -1,6 +1,6 @@
 # escape=`
 # Args used by from statements must be defined here:
-ARG InstallerVersion=nanoserver
+ARG InstallerVersion=nanoserver:1809-amd64
 ARG InstallerRepo=mcr.microsoft.com/powershell
 ARG NanoServerRepo=mcr.microsoft.com/windows/nanoserver
 
@@ -89,7 +89,7 @@ ENV POWERSHELL_TELEMETRY_OPTOUT="0"
 CMD ["pwsh.exe"]
 
 
-FROM mcr.microsoft.com/windows/nanoserver:1809-amd64
+#FROM mcr.microsoft.com/windows/nanoserver:1809-amd64
 
 
 # Restore the default Windows shell for correct batch processing below.
@@ -97,8 +97,8 @@ SHELL ["cmd", "/S", "/C"]
 ENV global:progressPreference 'silentlyContinue'
 
 RUN powershell.exe -Command \
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
-    iex ((New-Object System.Net.WebClient).DownloadString('http://chocolatey.org/install.ps1'))
+    Invoke-WebRequest -Uri http://chocolatey.org/install.ps1 -OutFile install.ps1; \
+    install.ps1
 
 #install 7z
 RUN powershell.exe -Command \
