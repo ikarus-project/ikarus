@@ -33,7 +33,7 @@ RUN powershell.exe -Command \
     Invoke-WebRequest -Uri https://github.com/brechtsanders/winlibs_mingw/releases/download/11.1.0-12.0.0-9.0.0-r2/winlibs-x86_64-posix-seh-gcc-11.1.0-llvm-12.0.0-mingw-w64-9.0.0-r2.7z -OutFile winlibs/libs.7z; \
     cd winlibs; \
     7z x libs.7z; \
-    rm libs.7z; \
+    rm libs.7z
 
 #Add winlibs to path
 RUN powershell.exe -Command \
@@ -46,7 +46,7 @@ RUN powershell.exe -Command \
     Invoke-WebRequest -Uri https://github.com/rath3t/IkarusDependencies/releases/download/v0.3/Dependencies_release.7z -OutFile Ikarus_Dependencies/dependencies.7z; \
     cd Ikarus_Dependencies; \
     7z x dependencies.7z; \
-    rm dependencies.7z; \
+    rm dependencies.7z
 
 #set env variables
 # ENV CMAKE c:\\cmake\\cmake-3.14.1-win64-x64\\bin\\cmake.exe
@@ -59,4 +59,4 @@ RUN powershell.exe -Command \
 
 
 # Default to PowerShell if no other command specified.
-ENTRYPOINT ["powershell.exe", "-NoLogo", "-ExecutionPolicy", "Bypass", "-Command", "c:\\scripts\\start.ps1"]
+ENTRYPOINT ["powershell.exe", "-NoLogo", "-ExecutionPolicy", "Bypass"]
