@@ -5,6 +5,10 @@ FROM mcr.microsoft.com/windows/servercore:ltsc2019
 SHELL ["cmd", "/S", "/C"]
 ENV global:progressPreference 'silentlyContinue'
 #install chocolatey
+
+#Add winlibs to path
+RUN setx path "%path%;C:\winlibs\mingw64\bin"
+
 RUN powershell.exe -Command \
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
     iex ((New-Object System.Net.WebClient).DownloadString('http://chocolatey.org/install.ps1'))
@@ -30,9 +34,7 @@ RUN powershell.exe -Command \
     7z x libs.7z; \
     rm libs.7z
 
-#Add winlibs to path
-RUN powershell.exe -Command \
-     echo "C:/winlibs/mingw64/bin" ^| Out-File -FilePath $env:PATH -Encoding utf8 -Append
+
 
 #Download and install dependencies
 RUN powershell.exe -Command \
