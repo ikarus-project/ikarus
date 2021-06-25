@@ -9,7 +9,6 @@
 #include <dune/geometry/type.hh>
 
 #include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
-#include <ikarus/Grids/GridHelper/griddrawer.h>
 
 /** @addtogroup Tests
  *  This module includes all tests
