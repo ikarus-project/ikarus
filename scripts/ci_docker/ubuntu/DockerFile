@@ -69,7 +69,8 @@ RUN apt-get update -y && apt-get upgrade -y && \
         cmake --install . && \
         cd ../.. && \
         rm -r matplotplusplus && \
-        apt-get auto-remove -y
+        apt-get auto-remove -y && \
+        apt-get clean
 CMD [ "/bin/bash" ]
 
 WORKDIR $HOME
