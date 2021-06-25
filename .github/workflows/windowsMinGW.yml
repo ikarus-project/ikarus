@@ -23,7 +23,7 @@ jobs:
     - name: test docker
       run: |
         docker pull rath3t/ci-windows
-        docker run ci-windows
+        docker run ci-windows -d
     - name: Cache Winlibs
       uses: actions/cache@v2
       id: cache-winlibs
