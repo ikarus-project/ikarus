@@ -4,10 +4,6 @@ FROM mcr.microsoft.com/windows/servercore:ltsc2019
 # Restore the default Windows shell for correct batch processing below.
 SHELL ["cmd", "/S", "/C"]
 ENV global:progressPreference 'silentlyContinue'
-#install chocolatey
-
-#Add winlibs to path
-RUN setx path "%path%;C:\winlibs\mingw64\bin"
 
 RUN powershell.exe -Command \
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
@@ -19,36 +15,21 @@ RUN powershell.exe -Command \
     choco install -y choco-cleaner --no-progress; \
     choco install -y git --no-progress; \
     choco install -y cmake --no-progress; \
-    choco-cleaner.bat 
-    
-#install winlibs
-RUN powershell.exe -Command \
+    choco-cleaner.bat; \
+    choco uninstall choco-cleaner -x -y; \
     cd C:; \
     mkdir winlibs; \
     Invoke-WebRequest -Uri https://github.com/brechtsanders/winlibs_mingw/releases/download/11.1.0-12.0.0-9.0.0-r2/winlibs-x86_64-posix-seh-gcc-11.1.0-llvm-12.0.0-mingw-w64-9.0.0-r2.7z -OutFile winlibs/libs.7z; \
     cd winlibs; \
     7z x libs.7z; \
-    rm libs.7z
-
-
-
-#Download and install dependencies
-RUN powershell.exe -Command \
+    rm libs.7z; \
+    setx path "%path%;C:\winlibs\mingw64\bin"; \ 
     cd C:; \
     mkdir Ikarus_Dependencies; \
     Invoke-WebRequest -Uri https://github.com/rath3t/IkarusDependencies/releases/download/v0.3/Dependencies_release.7z -OutFile Ikarus_Dependencies/dependencies.7z; \
     cd Ikarus_Dependencies; \
     7z x dependencies.7z; \
     rm dependencies.7z
-
-#set env variables
-# ENV CMAKE c:\\cmake\\cmake-3.14.1-win64-x64\\bin\\cmake.exe
-# ENV SEVEN_ZIP c:\\7zip\\7z.exe
-# ENV VCVARS  \"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat\"
-# ENV BOOST c:\\boost\\boost_1_71_0
-# ENV BLAS c:\\libs\\libblas.lib
-# ENV LAPACK c:\\libs\\liblapack.lib
-# ENV PYTHONROOT c:\\python
 
 
 # Default to PowerShell if no other command specified.
