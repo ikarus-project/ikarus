@@ -20,9 +20,9 @@ jobs:
     - uses: actions/checkout@v2
       with:
        path: 'repo'
-    - name: test docker
-      run: |
-        docker pull rath3t/ci-windows
+#     - name: test docker
+#       run: |
+#         docker pull rath3t/ci-windows
         
     - name: Cache Winlibs
       uses: actions/cache@v2
