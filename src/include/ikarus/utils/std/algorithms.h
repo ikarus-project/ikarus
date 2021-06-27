@@ -11,11 +11,12 @@ void makeUniqueAndSort(std::ranges::random_access_range auto& varVec) {
   varVec.erase(std::unique(varVec.begin(), varVec.end()), varVec.end());
 }
 
-template <typename Value> auto appendUnique(std::ranges::random_access_range auto& c, Value&& v) {
+template <typename Value>
+auto appendUnique(std::ranges::random_access_range auto& c, Value&& v) {
   static_assert(std::is_same_v<typename decltype(begin(c))::value_type, std::remove_reference_t<decltype(v)>>);
   const auto it = find(begin(c), end(c), v);
   size_t index = std::distance(begin(c), it);
-  if (it == end(c)) c.push_back(move(v));
+  if (it == end(c)) c.push_back(std::forward<Value>(v));
 
   assert(!c.empty());
   return index;

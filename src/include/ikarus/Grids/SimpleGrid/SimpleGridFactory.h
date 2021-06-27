@@ -3,21 +3,15 @@
 //
 
 #pragma once
-//#include <map>
 #include <unordered_set>
-
-//#include <dune/geometry/type.hh>
-//#include <dune/geometry/referenceelement.hh>
-//#include <dune/geometry/referenceelements.hh>
 
 #include <ikarus/Grids/GridInterface.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
 #include <ikarus/utils/std/algorithms.h>
 
-//#include <ikarus/ParameterSpaceElements/ParameterSpaceElementInterface.h>
-
 namespace Ikarus::Grid {
-  template <Concepts::Grid GridType> class SimpleGridFactory {
+  template <Concepts::Grid GridType>
+  class SimpleGridFactory {
   private:
     /** \brief dimension of the grid */
     static const int dimension = GridType::dimension;

@@ -17,8 +17,8 @@ namespace Ikarus::Variable {
 
   class GenericVariable {
   public:
-    template <Concepts::Variable VAR> explicit GenericVariable(const VAR &vo)
-        : variableImpl{std::make_unique<VarImpl<VAR> >(vo)} {}
+    template <Concepts::Variable VAR>
+    explicit GenericVariable(const VAR &vo) : variableImpl{std::make_unique<VarImpl<VAR> >(vo)} {}
 
     ~GenericVariable() = default;
 
@@ -49,7 +49,8 @@ namespace Ikarus::Variable {
       [[nodiscard]] virtual std::unique_ptr<VarBase> clone() const = 0;  // Prototype Design Pattern
     };
 
-    template <typename VAR> struct VarImpl : public VarBase {
+    template <typename VAR>
+    struct VarImpl : public VarBase {
       explicit VarImpl(VAR voarg) : vo{voarg} {};
 
       [[nodiscard]] int do_valueSize() const final { return VAR::valueSize; }

@@ -5,18 +5,21 @@
 #pragma once
 #include <ranges>
 #include <string>
+#include <vector>
 
 #include <dune/geometry/multilineargeometry.hh>
 #include <dune/geometry/type.hh>
 
-#include <ikarus/Geometries/SimpleGeometry.h>
+#include <ikarus/Geometries/GeometryInterface.h>
 #include <ikarus/Grids/GridInterface.h>
+#include <ikarus/Variables/DofOwnerDecorator.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
 #include <ikarus/utils/std/traits.h>
 
 namespace Ikarus::Grid {
 
-  template <int griddim, int cogriddim, int wdim> class DefaultGridEntity;
+  template <int griddim, int cogriddim, int wdim>
+  class DefaultGridEntity;
 
   namespace Impl {
     template <int griddim, int mydim, int wdim, int... codim>
@@ -37,7 +40,8 @@ namespace Ikarus::Grid {
    * \note Partial template specialization for entities with codim == 0
    * These entities have no grid father
    **/
-  template <int griddim, int wdim> class DefaultGridEntity<griddim, 0, wdim> {
+  template <int griddim, int wdim>
+  class DefaultGridEntity<griddim, 0, wdim> : public Ikarus::Variable::DofOwnerDecorator {
   public:
     DefaultGridEntity(int levelInput, size_t idInput) : levelIndex{levelInput}, id{idInput} {}
 
@@ -45,12 +49,14 @@ namespace Ikarus::Grid {
 
     const auto& getChildVertices() const { return std::get<0>(entitiesChildren); }
 
-    template <int dimEnt> auto& getChildEntities() {
+    template <int dimEnt>
+    auto& getChildEntities() {
       static_assert(dimEnt >= 0 && dimEnt < griddim, "You asked for a non-existing ChildEntity!");
       return std::get<dimEnt>(entitiesChildren);
     }
 
-    template <int dimEnt> const auto& getChildEntities() const {
+    template <int dimEnt>
+    const auto& getChildEntities() const {
       static_assert(dimEnt >= 0 && dimEnt < griddim, "You asked for a non-existing ChildEntity!");
       return std::get<dimEnt>(entitiesChildren);
     }
@@ -68,7 +74,7 @@ namespace Ikarus::Grid {
     /** \brief Know dimension of the entity */
     static constexpr int dimensionworld = wdim;
 
-    /** \brief Check if this entity has Children */
+    /** \brief Type of the geometry of this entity */
     using Geometry = Dune::MultiLinearGeometry<double, codimension, dimensionworld>;
 
     /** \brief Type of the containter for the grid childrens of this entity */
@@ -108,14 +114,14 @@ namespace Ikarus::Grid {
            std::ranges::transform_view(getChildVertices(), &DefaultGridEntity<griddim, griddim, wdim>::getPosition))
         fieldVectorVector.push_back(toFieldVector(pos));
 
-      return Geometry(type(), fieldVectorVector);
+      return Ikarus::Geometry::IGeometry(Geometry(type(), fieldVectorVector));
     }
 
     /** \brief Return copy of the id of this entity */
-    size_t getID() { return id; }
+    [[nodiscard]] size_t getID() const { return id; }
 
     /** \brief Get refínement level where this entity belongs to*/
-    int level() { return levelIndex; }
+    [[nodiscard]] int level() const { return levelIndex; }
 
     /** \brief The refinement level to which this entity belongs */
     int levelIndex{};
@@ -142,14 +148,16 @@ namespace Ikarus::Grid {
    * \note Partial template specialization for entities with codim == griddim
    * These entities have no grid children, since they are vertices!
    **/
-  template <int griddim, int wdim> class DefaultGridEntity<griddim, griddim, wdim> {
+  template <int griddim, int wdim>
+  class DefaultGridEntity<griddim, griddim, wdim> : public Ikarus::Variable::DofOwnerDecorator {
   public:
     DefaultGridEntity(int levelInput, const FixedVector<double, wdim>& vecInput, size_t idInput)
         : levelIndex{levelInput}, id{idInput}, position{vecInput} {}
 
     auto& getFatherElements() { return std::get<0>(entitiesFathers); }
 
-    template <int coDimsubEnt> auto& getFatherEntities() {
+    template <int coDimsubEnt>
+    auto& getFatherEntities() {
       static_assert(coDimsubEnt >= 0 && coDimsubEnt <= griddim - 1,
                     "You asked for a non-existing FatherEntity!");  // TODO Fatherentities
       return std::get<coDimsubEnt>(entitiesFathers);
@@ -169,7 +177,7 @@ namespace Ikarus::Grid {
     /** \brief Know dimension of the entity */
     static constexpr int dimensionworld = wdim;
 
-    /** \brief Check if this entity has Children */
+    /** \brief Type of the geometry of this entity */
     using Geometry = Dune::MultiLinearGeometry<double, codimension, dimensionworld>;
 
     /** \brief Type of the containter for the grid fathers of this entity */
@@ -177,10 +185,10 @@ namespace Ikarus::Grid {
         std::make_integer_sequence<int, codimension>()));
 
     /** \brief Return copy of the id of this entity */
-    size_t getID() { return id; }
+    [[nodiscard]] size_t getID() const { return id; }
 
     /** \brief Get refínement level where this entity belongs to*/
-    int level() { return levelIndex; }
+    [[nodiscard]] int level() const { return levelIndex; }
 
     /** \brief Return position of this vertex */
     const FixedVector<double, wdim>& getPosition() { return position; }
@@ -225,7 +233,8 @@ namespace Ikarus::Grid {
    * \note Partial template specialization for entities with codim != griddim and codim != 0
    * These entities live inbetween the vertices and elements, i.e. edges,surface
    **/
-  template <int griddim, int cogriddim, int wdim> class DefaultGridEntity {
+  template <int griddim, int cogriddim, int wdim>
+  class DefaultGridEntity : public Ikarus::Variable::DofOwnerDecorator {
   public:
     DefaultGridEntity(int levelInput, size_t idInput) : levelIndex{levelInput}, id{idInput} {}
 
@@ -250,10 +259,10 @@ namespace Ikarus::Grid {
         std::make_integer_sequence<int, codimension>()));
 
     /** \brief Return copy of the id of this entity */
-    size_t getID() { return id; }
+    size_t getID() const { return id; }
 
     /** \brief Get refínement level where this entity belongs to*/
-    int level() { return levelIndex; }
+    int level() const { return levelIndex; }
 
     /** \brief The refinement level to which this entity belongs */
     int levelIndex{};
@@ -261,15 +270,17 @@ namespace Ikarus::Grid {
     /** \brief The index of this element on the leaf level */
     int leafIndex{};
 
-    /** \brief Check if this entity has Children */
+    /** \brief Type of the geometry of this entity */
     using Geometry = Dune::MultiLinearGeometry<double, codimension, dimensionworld>;
 
-    template <int dimEnt> auto& getChildEntities() {
+    template <int dimEnt>
+    auto& getChildEntities() {
       static_assert(dimEnt >= 0 && dimEnt < griddim, "You asked for a non-existing ChildEntity!");
       return std::get<dimEnt>(entitiesChildren);
     }
 
-    template <int dimEnt> const auto& getChildEntities() const {
+    template <int dimEnt>
+    const auto& getChildEntities() const {
       static_assert(dimEnt >= 0 && dimEnt < griddim, "You asked for a non-existing ChildEntity!");
       return std::get<dimEnt>(entitiesChildren);
     }
@@ -300,7 +311,7 @@ namespace Ikarus::Grid {
            std::ranges::transform_view(getChildVertices(), &DefaultGridEntity<griddim, griddim, wdim>::getPosition))
         fieldVectorVector.push_back(toFieldVector(pos));
 
-      return Geometry(type(), fieldVectorVector);
+      return Ikarus::Geometry::IGeometry(Geometry(type(), fieldVectorVector));
     }
     /** \brief Return copy of the id of this entity */
   private:

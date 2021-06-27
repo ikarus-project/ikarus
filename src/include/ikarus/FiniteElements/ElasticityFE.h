@@ -1,6 +1,25 @@
+
+// /*
+//  *  This file is part of the Ikarus distribution (https://github.com/rath3t/Ikarus).
+//  *  Copyright (c) 2021 Alexander Müller.
+//  *  Institut fuer Baustatik und Baudynamik
+//  *  Universität Stuttgart
+//  *
+//  *  This library is free software; you can redistribute it and/or
+//  *   modify it under the terms of the GNU Lesser General Public
+//  *   License as published by the Free Software Foundation; either
+//  *   version 2.1 of the License, or (at your option) any later version.
 //
-// Created by Alex on 10.05.2021.
+// *   This library is distributed in the hope that it will be useful,
+// *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+// *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// *   Lesser General Public License for more details.
 //
+// *   You should have received a copy of the GNU Lesser General Public
+// *   License along with this library; if not, write to the Free Software
+// *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
+// *  USA
+// *
 
 #pragma once
 #include <concepts>
@@ -9,27 +28,32 @@
 
 #include <spdlog/spdlog.h>
 
-#include <ikarus/Geometries/GeometryInterface.h>
-#include <ikarus/Grids/GridEntities/GridEntitiesInterface.h>
+//#include <ikarus/Variables/GenericVariable.h>
 #include <ikarus/Variables/VariableDefinitions.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
 
+namespace Ikarus::Variable {
+  class GenericVariable;
+}
+
 namespace Ikarus::FiniteElements {
-  template <Ikarus::Concepts::GridEntity GridEntityType, std::floating_point ct = double> class ElasticityFE {
+  template <typename GridElementEntityType, std::floating_point ct = double>
+  class ElasticityFE {
   public:
-    ElasticityFE(GridEntityType& gE) : elementGridEntity{&gE} {}
+    explicit ElasticityFE(GridElementEntityType& gE) : elementGridEntity{gE} {
+      if constexpr (coorddimension == 3)
+        for (auto&& vertex : vertices(elementGridEntity))
+          vertex->addDof(Ikarus::Variable::DISPLACEMENT3D());
+    }
 
     /** \brief Type used for coordinates */
     using ctype = ct;
 
-    /** \brief Type of the Geometry */
-    using Geometry = typename GridEntityType::Geometry;
-
     /** \brief Dimension of the world space */
-    static constexpr int coorddimension = Geometry::coorddimension;
+    static constexpr int coorddimension = GridElementEntityType::dimensionworld;
 
     /** \brief Dimension of the geometry */
-    static constexpr int mydimension = Geometry::mydimension;
+    static constexpr int mydimension = GridElementEntityType::mydimension;
 
     /** \brief Type of the Nodes */
     using NodeType = Eigen::Matrix<ctype, coorddimension, 1>;
@@ -38,7 +62,7 @@ namespace Ikarus::FiniteElements {
     using ParameterSpaceType = Eigen::Matrix<ctype, mydimension, 1>;
 
     /** \brief Type of the DofVector */
-    using DofVectorType = DynArrayXi;
+    using DofVectorType = std::vector<Ikarus::Variable::GenericVariable*>;
 
     /** \brief Type of the Dofs / SolutionType
      * using NodalSolutionType = Displacement<ctype,coorddimension>;*/
@@ -49,23 +73,11 @@ namespace Ikarus::FiniteElements {
     /** \brief Type of the stiffness matrix */
     using MatrixType = DynMatrixd;
 
-    [[nodiscard]] constexpr int dofSize() const { return GridEntityType::dimension; }
+    [[nodiscard]] constexpr int dofSize() const { return 3; }
 
     void generateDofs() const {
-      //          for(auto vert: vertices(elementGridEntity))
-
-      //           dofVector.push_back(vert.addDof<Ikarus::DISPLACEMENTD_3D>())
-      //        std::vector<std::shared_ptr<GenericVariableOwner>> vec;
-      //        for (auto&& node : nodes)
-      //            node->addVariable<Ikarus::DISPLACEMENTD_3D>();
-      //
-      //        for (auto&& edge : edges)
-      //            edge->addVariable<Ikarus::DISPLACEMENTD_3D>();
-      //
-      //        for (auto&& face : faces)
-      //            edge->addVariable<Ikarus::DISPLACEMENTD_3D>();
-
-      //        this->addVariable<Ikarus::EAS>();
+      //      std::vector<std::pair<
+      //      for(auto&& vertex : vertices(elementGridEntity))
     }
 
     void initialize() { std::cout << "initialize ElasticityFE" << std::endl; }
@@ -88,7 +100,7 @@ namespace Ikarus::FiniteElements {
     auto calculateStiffnessMatrixAndInternalForcesImpl() const {
       if constexpr (internalForcesFlag && stiffnessMatrixFlag) {
         const VectorType Fint = VectorType::Ones(5);
-        const MatrixType K = MatrixType::Ones(5, 5);
+        const MatrixType K    = MatrixType::Ones(5, 5);
         return std::make_pair(Fint, K);
       }
 
@@ -101,21 +113,17 @@ namespace Ikarus::FiniteElements {
                       "You asked the element: \"Don't return anything\"");
     }
 
-    [[nodiscard]] DofVectorType getDofVector() const {
-      // return localDofHandler->getDofVector();
+    [[nodiscard]] DofVectorType getDofVector() {
       DofVectorType dof;
-      dof.setLinSpaced(0, 5);
-      //        for (auto&& node: nodes) {
-      //            dof.emplace_back(node->getDofs(POSITION).ID());
-      //            dof.emplace_back(node->getDofs(DIRECTOR).ID());
-      //            dof.emplace_back(node->getDofs(TEMPERATURE).ID());
-      //        }
-      //        dof[13] = EASPARAMS;
+      for (auto&& vertex : vertices(elementGridEntity)) {
+        dof.insert(end(dof), begin(vertex->getDofs()), end(vertex->getDofs()));
+      }
+
       return dof;
     }
 
   private:
-    GridEntityType* elementGridEntity;
+    GridElementEntityType elementGridEntity;
   };
 
 }  // namespace Ikarus::FiniteElements

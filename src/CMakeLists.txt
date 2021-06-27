@@ -37,6 +37,8 @@ target_include_directories(
                          $<INSTALL_INTERFACE:include>
 )
 
+target_compile_options(${PROJECT_NAME} PUBLIC -fmodules-ts --compile)
+
 add_library(Ikarus::Ikarus ALIAS Ikarus)
 
 include(GNUInstallDirs)
