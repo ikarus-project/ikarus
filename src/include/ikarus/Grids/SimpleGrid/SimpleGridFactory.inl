@@ -123,7 +123,7 @@ namespace Ikarus::Grid {
       typename GridType::VertexType newVertex(0, vert.vertex, grid.getNextFreeId());
       newVertex.leafIndex = vert.index;
       newVertex.levelIndex = vert.index;
-      grid.getVertices().push_back(std::move(newVertex));
+      grid.getVertices().push_back(newVertex);
     }
 
     // add element and set vertex pointer of elements
@@ -132,12 +132,13 @@ namespace Ikarus::Grid {
 
       for (auto &vertID : eleVertices) newElement.getChildVertices().emplace_back(&grid.getVertices()[vertID]);
 
-      grid.getElements().push_back(std::move(newElement));
+      grid.getElements().push_back(newElement);
     }
 
     // set elements pointers of vertex
-    for (auto &element : grid.getElements())
-      for (auto &vert : vertices(element)) vert->getFatherElements().emplace_back(&element);
+//    for (auto &element : grid.getElements())
+//      for (auto &vert : vertices(element))
+//        vert.getFatherElements().emplace_back(&element);
 
     // add edges to the grid
     if constexpr (GridType::dimension > 1) {
@@ -160,17 +161,17 @@ namespace Ikarus::Grid {
       // add edge pointers to vertices
       // set elements pointers of vertex
 
-      for (auto &&vert : grid.getVertices()) {
-        auto hasVertex = [&vert](auto &edge) {
-          return (std::ranges::find_if(edge.getChildVertices(),
-                                       [&vert](auto &vertex) { return vert.getID() == vertex->getID(); })
-                  != end(edge.getChildVertices()));
-        };
-
-        for (auto &edgeWhichHasTheVertex : std::ranges::filter_view(grid.getEdges(), hasVertex)) {
-          vert.template getFatherEntities<dimension - 1>().push_back(&edgeWhichHasTheVertex);
-        }
-      }
+//      for (auto &&vert : grid.getVertices()) {
+//        auto hasVertex = [&vert](auto &edge) {
+//          return (std::ranges::find_if(edge.getChildVertices(),
+//                                       [&vert](auto &vertex) { return vert.getID() == vertex->getID(); })
+//                  != end(edge.getChildVertices()));
+//        };
+//
+//        for (auto &edgeWhichHasTheVertex : std::ranges::filter_view(grid.getEdges(), hasVertex)) {
+//          vert.template getFatherEntities<dimension - 1>().push_back(&edgeWhichHasTheVertex);
+//        }
+//      }
     }
 
     return grid;

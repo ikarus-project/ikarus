@@ -53,7 +53,8 @@ namespace Ikarus::Geometry {
       spdlog::info("{} {}", dN.rows(), nodevalueList.cols());
       assert(dN.rows() == nodevalueList.cols());
       JacobianTransposed JT;
-      for (int i = 0; i < JT.rows(); ++i) JT.row(i) = interpolate(dN.col(i), nodevalueList).transpose();
+      for (int i = 0; i < JT.rows(); ++i)
+        JT.row(i) = interpolate(dN.col(i), nodevalueList).transpose();
 
       return JT;
     }
@@ -66,10 +67,16 @@ namespace Ikarus::Geometry {
     }
   };
 
-  template <typename ScalarType> using BrickGeometry = GeometryWithExternalInput<ScalarType, 3, 3>;
-  template <typename ScalarType> using SurfaceGeometry = GeometryWithExternalInput<ScalarType, 3, 2>;
-  template <typename ScalarType> using PlaneGeometry = GeometryWithExternalInput<ScalarType, 2, 2>;
-  template <typename ScalarType> using Curve3dGeometry = GeometryWithExternalInput<ScalarType, 3, 1>;
-  template <typename ScalarType> using Curve2dGeometry = GeometryWithExternalInput<ScalarType, 2, 1>;
-  template <typename ScalarType> using Curve1dGeometry = GeometryWithExternalInput<ScalarType, 1, 1>;
+  template <typename ScalarType>
+  using BrickGeometry = GeometryWithExternalInput<ScalarType, 3, 3>;
+  template <typename ScalarType>
+  using SurfaceGeometry = GeometryWithExternalInput<ScalarType, 3, 2>;
+  template <typename ScalarType>
+  using PlaneGeometry = GeometryWithExternalInput<ScalarType, 2, 2>;
+  template <typename ScalarType>
+  using Curve3dGeometry = GeometryWithExternalInput<ScalarType, 3, 1>;
+  template <typename ScalarType>
+  using Curve2dGeometry = GeometryWithExternalInput<ScalarType, 2, 1>;
+  template <typename ScalarType>
+  using Curve1dGeometry = GeometryWithExternalInput<ScalarType, 1, 1>;
 }  // namespace Ikarus::Geometry

@@ -13,9 +13,7 @@
 #include <Eigen/Core>
 
 #include <ikarus/FiniteElements/ElasticityFE.h>
-#include <ikarus/FiniteElements/GenericFiniteElement.h>
-#include <ikarus/Geometries/GeometryWithExternalInput.h>
-#include <ikarus/Grids/GridEntities/DefaultGridEntities.h>
+#include <ikarus/FiniteElements/InterfaceFiniteElement.h>
 #include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
 
 class TestFE {
@@ -36,7 +34,8 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
   verticesVec.emplace_back(vertexType{4.0, 0.0});  // 4
   verticesVec.emplace_back(vertexType{4.0, 2.0});  // 5
 
-  for (auto&& vert : verticesVec) gridFactory.insertVertex(vert);
+  for (auto&& vert : verticesVec)
+    gridFactory.insertVertex(vert);
 
   Ikarus::DynArrayXi elementIndices;
   elementIndices.resize(4);
@@ -48,9 +47,10 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
   Grid grid = gridFactory.createGrid();
 
   auto gridView = grid.leafGridView();
-  std::vector<Ikarus::FiniteElements::GenericFE> fes;
+  std::vector<Ikarus::FiniteElements::IFiniteElement> fes;
 
-  for (auto&& element : elements(gridView)) fes.emplace_back(Ikarus::FiniteElements::ElasticityFE(element));
+  for (auto&& element : elements(gridView))
+    fes.emplace_back(Ikarus::FiniteElements::ElasticityFE(element));
 
   Ikarus::DynVectord fint{};
   Ikarus::DynMatrixd K{};
@@ -65,7 +65,7 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
     std::cout << dofSize(fe) << std::endl;
   }
 
-  Ikarus::FiniteElements::GenericFE fe((TestFE()));
+  Ikarus::FiniteElements::IFiniteElement fe((TestFE()));
 
   initialize(fe);
   //  getDofVector(fe);

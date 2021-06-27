@@ -46,7 +46,8 @@ TEST(GridTest, GridViewTest) {
   verticesVec.emplace_back(vertexType{4.0, 2.0});  // 5
   verticesVec.emplace_back(vertexType{6.0, 0.0});  // 6
 
-  for (auto &&vert : verticesVec) gridFactory.insertVertex(vert);
+  for (auto &&vert : verticesVec)
+    gridFactory.insertVertex(vert);
 
   Ikarus::DynArrayXi elementIndices;
   elementIndices.resize(4);
@@ -126,7 +127,8 @@ TEST(GridTest, GridView3DSurfaceTest) {
   verticesVec.emplace_back(vertexType{4.0, 2.0, 3.0});   // 5
   verticesVec.emplace_back(vertexType{6.0, 0.0, -3.0});  // 6
 
-  for (auto &&vert : verticesVec) gridFactory.insertVertex(vert);
+  for (auto &&vert : verticesVec)
+    gridFactory.insertVertex(vert);
 
   Ikarus::DynArrayXi elementIndices;
   elementIndices.resize(4);
@@ -195,7 +197,8 @@ TEST(GridTest, GridView3DSolidTest) {
   verticesVec.emplace_back(vertexType{2.0, 2.0, 3.0});   // 7
   verticesVec.emplace_back(vertexType{4.0, 0.0, 3.0});   // 8
 
-  for (auto &&vert : verticesVec) gridFactory.insertVertex(vert);
+  for (auto &&vert : verticesVec)
+    gridFactory.insertVertex(vert);
 
   Ikarus::DynArrayXi elementIndices;
   elementIndices.resize(8);
@@ -257,7 +260,8 @@ TEST(GridTest, GridView3DSolidTest) {
   EXPECT_EQ(eleIterator->type(), Dune::GeometryTypes::tetrahedron);
 
   std::vector<int> expectedEdgesAtVertex{3, 4, 3, 5, 3, 5, 3, 3, 3};
-  for (int i = 0; auto &&vertex : vertices(gridView)) EXPECT_EQ(edges(vertex).size(), expectedEdgesAtVertex[i++]);
+  for (int i = 0; auto &&vertex : vertices(gridView))
+    EXPECT_EQ(edges(vertex).size(), expectedEdgesAtVertex[i++]);
 }
 
 TEST(GridTest, GridInsertionException) {
@@ -271,7 +275,8 @@ TEST(GridTest, GridInsertionException) {
   verticesVec.emplace_back(vertexType{0.0, 2.0});  // 2
   verticesVec.emplace_back(vertexType{2.0, 2.0});  // 3
 
-  for (auto &&vert : verticesVec) gridFactory.insertVertex(vert);
+  for (auto &&vert : verticesVec)
+    gridFactory.insertVertex(vert);
 
   Ikarus::DynArrayXi elementIndices;
   elementIndices.resize(4);

@@ -5,4 +5,7 @@
 #pragma once
 
 /** \brief A traits which returns false if template is instiantiated, handy für static_assert */
-template <typename... Args> bool dependentFalse() { return false; }
+template <typename... Args>
+bool dependentFalse() {
+  return false;
+}

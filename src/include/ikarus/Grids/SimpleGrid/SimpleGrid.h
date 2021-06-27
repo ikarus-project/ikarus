@@ -4,14 +4,8 @@
 
 #pragma once
 #include <dune/geometry/multilineargeometry.hh>
-#include <dune/geometry/type.hh>
-
-#include <ikarus/AnsatzFunctions/Lagrange.h>
-#include <ikarus/Geometries/SimpleGeometry.h>
 #include <ikarus/Grids/GridEntities/DefaultGridEntities.h>
-#include <ikarus/Grids/GridInterface.h>
 #include <ikarus/Grids/GridViews/SimpleGridView.h>
-#include <ikarus/Nodes/DefaultNode.h>
 
 namespace Ikarus::Grid {
   template <int dim, int dimworld> class SimpleGrid;

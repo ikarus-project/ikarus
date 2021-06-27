@@ -14,7 +14,8 @@ namespace Ikarus::Manifold {
    * \tparam ct The type used for the scalar coordinate values, e.g. double,float
    * \tparam d Dimension of the embedding space of the manifold
    */
-  template <std::floating_point ct, int d> class UnitVector {
+  template <std::floating_point ct, int d>
+  class UnitVector {
   public:
     /** \brief Type used for coordinates */
     using ctype = ct;
@@ -74,11 +75,13 @@ namespace Ikarus::Manifold {
 
       if (var[valueSize - 1] <= 0) {
         // Stereographic projection from the north pole onto R^{N-1}
-        for (size_t i = 0; i < valueSize - 1; i++) X[i] = var[i] / (1 - var[valueSize - 1]);
+        for (size_t i = 0; i < valueSize - 1; i++)
+          X[i] = var[i] / (1 - var[valueSize - 1]);
 
       } else {
         // Stereographic projection from the south pole onto R^{N-1}
-        for (size_t i = 0; i < valueSize - 1; i++) X[i] = var[i] / (1 + var[valueSize - 1]);
+        for (size_t i = 0; i < valueSize - 1; i++)
+          X[i] = var[i] / (1 + var[valueSize - 1]);
       }
 
       ctype RSquared = X.squaredNorm();
@@ -88,14 +91,17 @@ namespace Ikarus::Manifold {
           // Note: the matrix is the transpose of the one in the paper
           result(j, i) = 2 * (i == j) * (1 + RSquared) - 4 * X[i] * X[j];
 
-      for (size_t j = 0; j < valueSize - 1; j++) result(valueSize - 1, j) = 4 * X[j];
+      for (size_t j = 0; j < valueSize - 1; j++)
+        result(valueSize - 1, j) = 4 * X[j];
 
       // Upper hemisphere: adapt formulas so it is the stereographic projection from the south pole
       if (var[valueSize - 1] > 0)
-        for (size_t j = 0; j < valueSize - 1; j++) result(valueSize - 1, j) *= -1;
+        for (size_t j = 0; j < valueSize - 1; j++)
+          result(valueSize - 1, j) *= -1;
 
       // normalize the rows to make the orthogonal basis orthonormal
-      for (size_t i = 0; i < valueSize - 1; i++) result.col(i).normalize();
+      for (size_t i = 0; i < valueSize - 1; i++)
+        result.col(i).normalize();
 
       return result;
     }
@@ -104,7 +110,8 @@ namespace Ikarus::Manifold {
     CoordinateType var{CoordinateType::UnitX()};
   };
 
-  template <typename ctype2, int d2> std::ostream &operator<<(std::ostream &s, const UnitVector<ctype2, d2> &var2) {
+  template <typename ctype2, int d2>
+  std::ostream &operator<<(std::ostream &s, const UnitVector<ctype2, d2> &var2) {
     s << var2.getValue();
     return s;
   }

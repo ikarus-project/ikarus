@@ -15,6 +15,8 @@
 
 namespace Ikarus::Variable {
 
+  using VariableTagType = size_t;
+
   template <size_t IntTag> struct VariableTag {
     /** \brief Tag to distinguish between variable definitions */
     static constexpr size_t tagValue = IntTag;

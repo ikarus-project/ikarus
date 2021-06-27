@@ -27,7 +27,8 @@
   */
 namespace Ikarus {
 
-  template <class ScalarType, unsigned int dim, unsigned int k> class LagrangeCube {
+  template <class ScalarType, unsigned int dim, unsigned int k>
+  class LagrangeCube {
   public:
     /** \brief Number of shape functions */
     static constexpr size_t sizeOfShapeFunctions = Dune::StaticPower<k + 1, dim>::power;
@@ -95,7 +96,8 @@ namespace Ikarus {
           N[i] = 1.0;
 
           // dimension by dimension
-          for (unsigned int j = 0; j < dim; j++) N[i] *= getAnsatzFunctionImpl(alpha[j], x[j]);
+          for (unsigned int j = 0; j < dim; j++)
+            N[i] *= getAnsatzFunctionImpl(alpha[j], x[j]);
         }
       return N;  // transform back to -1..1
     }

@@ -7,7 +7,8 @@
 #include <matplot/matplot.h>
 #include <ranges>
 #include <set>
-template <typename GridView> void draw(GridView& gridView) {
+template <typename GridView>
+void draw(GridView& gridView) {
   using namespace matplot;
   auto f = figure(true);
   auto ax = gca();

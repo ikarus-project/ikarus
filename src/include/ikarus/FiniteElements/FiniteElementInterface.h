@@ -3,9 +3,9 @@
 //
 
 #pragma once
-#include <memory>
-
-#include "ikarus/utils/LinearAlgebraTypedefs.h"
+//#include <memory>
+//
+//#include "ikarus/utils/LinearAlgebraTypedefs.h"
 
 // namespace Ikarus::Concepts {
 //    template <typename FEConceptType>

@@ -15,7 +15,8 @@ namespace Ikarus::Manifold {
    * \tparam d Dimension of the embedding space of the manifold
    */
 
-  template <std::floating_point ct, int d> class RealTuple {
+  template <std::floating_point ct, int d>
+  class RealTuple {
   public:
     /** \brief Type used for coordinates */
     using ctype = ct;
@@ -62,7 +63,8 @@ namespace Ikarus::Manifold {
     CoordinateType var{CoordinateType::Zero()};
   };
 
-  template <typename ctype2, int d2> std::ostream &operator<<(std::ostream &s, const RealTuple<ctype2, d2> &var2) {
+  template <typename ctype2, int d2>
+  std::ostream &operator<<(std::ostream &s, const RealTuple<ctype2, d2> &var2) {
     s << var2.getValue();
     return s;
   }

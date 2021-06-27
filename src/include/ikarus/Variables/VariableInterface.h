@@ -23,6 +23,7 @@ namespace Ikarus::Concepts {
     typename VariableType::ctype;
     VariableType::valueSize;
     VariableType::correctionSize;
+    VariableType::tagvalue;
     typename VariableType::CoordinateType;
     typename VariableType::CorrectionType;
     { var.getValue() } -> std::convertible_to<typename VariableType::CoordinateType>;

@@ -20,7 +20,8 @@ int main() {
   verticesVec.emplace_back(vertexType{2.0, 2.0, 3.0});   // 7
   verticesVec.emplace_back(vertexType{4.0, 0.0, 3.0});   // 8
 
-  for (auto &&vert : verticesVec) gridFactory.insertVertex(vert);
+  for (auto &&vert : verticesVec)
+    gridFactory.insertVertex(vert);
 
   Ikarus::DynArrayXi elementIndices;
   elementIndices.resize(8);

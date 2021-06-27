@@ -20,7 +20,8 @@ inline Derived inverse_33() { return this->inverse(); }
  * \author Alex Müller
  * \version 09.05.2020
  */
-template <typename OtherDerived> Derived cross_product(const MatrixBase<OtherDerived>& other) const {
+template <typename OtherDerived>
+Derived cross_product(const MatrixBase<OtherDerived>& other) const {
   //  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,3)
   //  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(OtherDerived,3)
 
@@ -39,7 +40,8 @@ template <typename OtherDerived> Derived cross_product(const MatrixBase<OtherDer
  * \author Alex Müller
  * \version 22.01.2020
  */
-template <typename OtherDerived> inline OtherDerived solve(const MatrixBase<OtherDerived>& rhs) const {
+template <typename OtherDerived>
+inline OtherDerived solve(const MatrixBase<OtherDerived>& rhs) const {
   return this->partialPivLu().solve(rhs);
 }
 

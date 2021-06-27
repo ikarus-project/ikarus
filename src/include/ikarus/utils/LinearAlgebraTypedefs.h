@@ -11,42 +11,51 @@
 namespace Ikarus {
 
   ///** \brief Dynamic matrix */
-  template <typename ScalarType> using DynMatrix = Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>;
+  template <typename ScalarType>
+  using DynMatrix = Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>;
 
   ///** \brief Fixed size matrix */
-  template <typename ScalarType, int rowSize, int colSize> using FixedMatrix
-      = Eigen::Matrix<ScalarType, rowSize, colSize>;
+  template <typename ScalarType, int rowSize, int colSize>
+  using FixedMatrix = Eigen::Matrix<ScalarType, rowSize, colSize>;
 
   ///** \brief Dynamic size vector */
-  template <typename ScalarType> using DynVector = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
+  template <typename ScalarType>
+  using DynVector = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
 
   ///** \brief Fixed size vector */
-  template <typename ScalarType, int size> using FixedVector = Eigen::Matrix<ScalarType, size, 1>;
+  template <typename ScalarType, int size>
+  using FixedVector = Eigen::Matrix<ScalarType, size, 1>;
 
   ///** \brief Dynamic size eigen array */
   using DynArrayXi = Eigen::ArrayXi;
 
   ///** \brief Fixed size eigen array */
-  template <typename ScalarType, int rowSize, int colSize> using FixedArray
-      = Eigen::Array<ScalarType, rowSize, colSize>;
+  template <typename ScalarType, int rowSize, int colSize>
+  using FixedArray = Eigen::Array<ScalarType, rowSize, colSize>;
 
   ///** \brief Fixed size vector with doubles */
-  template <int size> using FixedVectord = FixedVector<double, size>;
+  template <int size>
+  using FixedVectord = FixedVector<double, size>;
 
   ///** \brief Fixed size vector with int components */
-  template <int size> using FixedVectori = FixedVector<int, size>;
+  template <int size>
+  using FixedVectori = FixedVector<int, size>;
 
   ///** \brief Fixed size matrix with doubles */
-  template <int rowSize, int colSize> using FixedMatrixd = FixedMatrix<double, rowSize, colSize>;
+  template <int rowSize, int colSize>
+  using FixedMatrixd = FixedMatrix<double, rowSize, colSize>;
 
   ///** \brief Fixed size matrix with int components */
-  template <int rowSize, int colSize> using FixedMatrixi = FixedMatrix<int, rowSize, colSize>;
+  template <int rowSize, int colSize>
+  using FixedMatrixi = FixedMatrix<int, rowSize, colSize>;
 
   ///** \brief Partial fixed size double  matrix with \f$rowSize \times n\f$ components */
-  template <int rowSize> using FixedRowHybridMatrixd = FixedMatrixd<rowSize, Eigen::Dynamic>;
+  template <int rowSize>
+  using FixedRowHybridMatrixd = FixedMatrixd<rowSize, Eigen::Dynamic>;
 
   ///** \brief Partial fixed size double  matrix with \colSize \times n\f$ components */
-  template <int colSize> using FixedColHybridMatrixd = FixedMatrixd<Eigen::Dynamic, colSize>;
+  template <int colSize>
+  using FixedColHybridMatrixd = FixedMatrixd<Eigen::Dynamic, colSize>;
 
   ///** \brief Partial fixed size double  matrix with \f$2 \times n\f$ components */
   using HybridMatrix2Xd = FixedRowHybridMatrixd<2>;
@@ -112,7 +121,8 @@ namespace Ikarus {
   template <typename ScalarType, int size>
   Dune::FieldVector<ScalarType, size> toFieldVector(const FixedVector<ScalarType, size>& vec) {
     Dune::FieldVector<ScalarType, size> fieldvec;
-    for (int i = 0; i < size; ++i) fieldvec[i] = vec[i];
+    for (int i = 0; i < size; ++i)
+      fieldvec[i] = vec[i];
     return fieldvec;
   }
 

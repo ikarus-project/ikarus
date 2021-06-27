@@ -14,7 +14,8 @@ static void ranges1(benchmark::State& state) {
   auto v = std::ranges::iota_view{1, state.range(0)};
 
   for (auto _ : state) {
-    for (int i : v | std::views::filter(isPrime)) benchmark::DoNotOptimize(i);
+    for (int i : v | std::views::filter(isPrime))
+      benchmark::DoNotOptimize(i);
   }
 }
 // Register the function as a benchmark
@@ -24,7 +25,8 @@ static void ranges2(benchmark::State& state) {
   auto v = std::ranges::iota_view{1, state.range(0)};
 
   for (auto _ : state) {
-    for (int i : std::ranges::filter_view(v, isPrime)) benchmark::DoNotOptimize(i);
+    for (int i : std::ranges::filter_view(v, isPrime))
+      benchmark::DoNotOptimize(i);
   }
 }
 // Register the function as a benchmark
