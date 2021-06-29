@@ -50,7 +50,6 @@ namespace Ikarus::Geometry {
                                                  const Eigen::MatrixBase<GlobalCoordinateListType>& nodevalueList) {
       static_assert(DerivedAnsatzFunctionType::ColsAtCompileTime == mydimension);
       static_assert(GlobalCoordinateListType::RowsAtCompileTime == coorddimension);
-      spdlog::info("{} {}", dN.rows(), nodevalueList.cols());
       assert(dN.rows() == nodevalueList.cols());
       JacobianTransposed JT;
       for (int i = 0; i < JT.rows(); ++i)

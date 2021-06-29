@@ -6,7 +6,7 @@
 #include <complex>
 #include <vector>
 
-#include "spdlog/spdlog.h"
+//#include "spdlog/spdlog.h"
 #define EIGEN_MATRIXBASE_PLUGIN "IBB_Eigen_MatrixBaseAddon.h"
 #include "gtest/gtest.h"
 #include <gmock/gmock.h>
@@ -85,6 +85,46 @@ TEST(GeometryTest, WithInteralAnsatzandVertices) {
 
   EXPECT_EQ(2.0, detJ);
 }
+
+
+
+TEST(GeometryTest, WithInteralAnsatzandVerticesQuadratic) {
+  using namespace Ikarus::Geometry;
+
+  const Eigen::Matrix<double, 2, 1> xieta({-0.35, 0.8,});
+
+  Eigen::Matrix<double, 2, 9> x;
+  x.col(0) << 0, 0;
+  x.col(1) << 3, 0;
+  x.col(2) << 7, 0;
+  x.col(3) << 0, 1;
+  x.col(4) << 2, 2;
+  x.col(5) << 4, 3;
+  x.col(6) << -1, 1;
+  x.col(7) << 2, 7;
+  x.col(8) << 10, 10;
+  QuadraticPlaneGeometry<double> geoEle(x);
+
+  Eigen::Matrix<double, 2, 2> JT = geoEle.jacobianTransposed(xieta);
+
+  Eigen::Matrix2d JTexpected;
+  JTexpected << 3.168000000, 4.356000000, -1.033500000, 4.173625000;
+
+  EXPECT_THAT(JT, EigenApproxEqual(JTexpected, tol));
+
+  Eigen::Matrix2d JTinv = geoEle.jacobianInverseTransposed(xieta);
+
+  Eigen::Matrix2d JTinvexpected;
+  JTinvexpected << .23547912798317758380, -.24576886555325923030, 0.58310863762464052920e-1, .17874099312964307658;
+
+  EXPECT_THAT(JTinv, EigenApproxEqual(JTinvexpected, tol));
+
+  double detJ = geoEle.determinantJacobian(xieta);
+
+  EXPECT_DOUBLE_EQ(17.72397000, detJ);
+}
+
+
 
 TEST(GeometryTest, CreateJacobianDeterminantAndJacobian2DSurfIn3D) {
   const Eigen::Matrix<double, 2, 1> xieta({-1.0, -1.0});
