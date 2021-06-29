@@ -58,7 +58,7 @@ namespace Ikarus::Geometry {
     };
 
     JacobianTransposedType jacobianTransposed(const LocalCoordinate& x) {
-      auto dN = shapeFunctions.getAnsatzFunctionJacobian(x);
+      auto dN = shapeFunctions.evaluateJacobian(x);
       assert(dN.rows() == vertices.cols());
 
       static_assert(JacobianTransposedType::RowsAtCompileTime == mydimension,

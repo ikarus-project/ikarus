@@ -12,7 +12,7 @@ namespace Ikarus::Geometry {
   using BrickGeometryK = Geometry::SimpleGeometry<ScalarType, 3, 3, Ikarus::LagrangeCube<ScalarType, 3, K>>;
 
   template <typename ScalarType>
-  using BrickGeometry1 = Geometry::SimpleGeometry<ScalarType, 3, 3, Ikarus::LagrangeCube<ScalarType, 3, 1>>;
+  using LinearBrickGeometry = Geometry::SimpleGeometry<ScalarType, 3, 3, Ikarus::LagrangeCube<ScalarType, 3, 1>>;
 
   // template<typename ScalarType>
   // using LinearBrickGeometry = SimpleGeometry<ScalarType, 3, 3,Ikarus::LagrangeCube<ScalarType,>;
