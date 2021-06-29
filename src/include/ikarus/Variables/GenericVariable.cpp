@@ -2,16 +2,35 @@
 // Created by Alex on 25.05.2021.
 //
 
+#include "VariableDefinitions.h"
+
 #include <ikarus/Variables/GenericVariable.h>
 
 namespace Ikarus::Variable {
 
   int valueSize(const GenericVariable& vo) { return vo.variableImpl->do_valueSize(); }
   int correctionSize(const GenericVariable& vo) { return vo.variableImpl->do_correctionSize(); }
-  void update(GenericVariable& vo, const Eigen::Ref<const Ikarus::DynVectord>& correction) {
-    return vo.variableImpl->do_update(correction);
+
+  GenericVariable& operator+=(GenericVariable& vo, const GenericVariable::UpdateType& correction) {
+    vo.variableImpl->do_assignAdd(correction);
+    return vo;
   }
-  void setValue(GenericVariable& vo, const Eigen::Ref<const Ikarus::DynVectord>& value) {
+
+  GenericVariable& operator+=(GenericVariable* vo, const GenericVariable::UpdateType& correction) {
+    return ((*vo) += correction);
+  }
+
+  GenericVariable operator+(GenericVariable& vo, const GenericVariable::UpdateType& correction) {
+    GenericVariable res{vo};
+    res.variableImpl->do_assignAdd(correction);
+    return res;
+  }
+
+  GenericVariable operator+(GenericVariable* vo, const GenericVariable::UpdateType& correction) {
+    return ((*vo) + correction);
+  }
+
+  void setValue(GenericVariable& vo, const GenericVariable::UpdateType& value) {
     return vo.variableImpl->do_setValue(value);
   }
   Ikarus::DynVectord getValue(const GenericVariable& vo) { return vo.variableImpl->do_getValue(); }
@@ -24,7 +43,7 @@ namespace Ikarus::Variable {
   }
 
   std::ostream& operator<<(std::ostream& s, const GenericVariable& var) {
-    s << var.variableImpl->do_getValue() << '\n' << " Tag: " << var.variableImpl->do_getTag() << '\n';
+    s << var.variableImpl->do_getValue().transpose() << '\n' << " Tag: " << getName(var)<< '\n';
     return s;
   }
   size_t correctionSize(std::span<const GenericVariable> varSpan) {
@@ -36,7 +55,7 @@ namespace Ikarus::Variable {
     // update Variable
     Eigen::Index posHelper = 0;
     std::for_each(varSpan.begin(), varSpan.end(), [&](GenericVariable& var) {
-      update(var, correction.segment(posHelper, correctionSize(var)));
+      var += correction.segment(posHelper, correctionSize(var));
       posHelper += correctionSize(var);
     });
   }
@@ -44,6 +63,10 @@ namespace Ikarus::Variable {
   size_t valueSize(std::span<const GenericVariable> varSpan) {
     return std::accumulate(varSpan.begin(), varSpan.end(), 0,
                            [](size_t cursize, const GenericVariable& var) { return cursize + valueSize(var); });
+  }
+
+  std::string getName(const GenericVariable &var){
+    return Ikarus::Variable::variableNames [getTag(var)];
   }
 
 }  // namespace Ikarus::Variable

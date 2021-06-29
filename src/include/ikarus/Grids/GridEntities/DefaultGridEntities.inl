@@ -10,11 +10,16 @@ namespace Ikarus::Grid {
   }
 
   template <int griddim, int cogriddim, int wdim>
+  auto vertices(DefaultGridEntity<griddim, cogriddim, wdim> const * const  gridEntity) {
+    return std::span(gridEntity->getChildVertices().begin(), gridEntity->getChildVertices().end());
+  }
+
+  template <int griddim, int cogriddim, int wdim>
   auto vertices(DefaultGridEntity<griddim, cogriddim, wdim>& gridEntity) {
     if constexpr (cogriddim!=griddim)
     return std::span(gridEntity.getChildVertices().begin(), gridEntity.getChildVertices().end());
     else
-      throw std::logic_error("Vertices do not orvide an iterator over vertices");
+      throw std::logic_error("Vertices do not offer an iterator over vertices");
   }
 
   template <int griddim, int cogriddim, int wdim>
@@ -22,7 +27,7 @@ namespace Ikarus::Grid {
     if constexpr (cogriddim!=griddim)
       return std::span(gridEntity.getChildVertices().begin(), gridEntity.getChildVertices().end());
     else
-      throw std::logic_error("Vertices do not orvide an iterator over vertices");
+      throw std::logic_error("Vertices do not offer an iterator over vertices");
   }
 
   // TODO: Check if possible With Children and Father inversed

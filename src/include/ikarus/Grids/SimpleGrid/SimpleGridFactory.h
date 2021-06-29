@@ -3,9 +3,6 @@
 //
 
 #pragma once
-#include <unordered_set>
-
-#include <ikarus/Grids/GridInterface.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
 #include <ikarus/utils/std/algorithms.h>
 
@@ -39,7 +36,7 @@ namespace Ikarus::Grid {
 
     void insertVertexIndicesinEdge(std::array<int, 2>&& indices) {
       std::ranges::sort(indices);
-      auto index = appendUnique(edgesVertexIndices, indices);
+      auto index = Ikarus::stl::appendUnique(edgesVertexIndices, indices);
       elementEdgeIndices.back().push_back(index);
     }
 

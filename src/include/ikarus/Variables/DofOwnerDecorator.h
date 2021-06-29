@@ -11,7 +11,7 @@
 namespace Ikarus::Variable {
   class DofOwnerDecorator {
   public:
-    void addDof(Ikarus::Concepts::Variable auto&& var) { appendUnique(vars, Ikarus::Variable::GenericVariable(var)); }
+    void addDof(Ikarus::Concepts::Variable auto&& var) { Ikarus::stl::appendUnique(vars, Ikarus::Variable::GenericVariable(var)); }
 
     [[nodiscard]] auto& getDof(Ikarus::Concepts::Variable auto&& var) {
       // find using Tag

@@ -10,7 +10,7 @@
 
 namespace Ikarus::Variable {
 
-  template <Concepts::Manifold Mani, std::totally_ordered tag> class DefaultVariable {
+  template <Concepts::Manifold Mani, int tag> class DefaultVariable {
   public:
     /** \brief Type of the underlying manifold, usually Realtuple */
     using ManifoldType = Mani;
@@ -30,17 +30,14 @@ namespace Ikarus::Variable {
     /** \brief VectorType of the values of the correction */
     using CorrectionType = typename ManifoldType::CorrectionType;
 
-    /** \brief Type of the tag to distinguish variables  */
-    using TagType = tag;
-
     /** \brief Value of the tag to distinguish variables  */
-    static constexpr auto tagvalue = TagType::tagValue;
+    static constexpr auto tagvalue = tag;
 
-    DefaultVariable() = default;
-    ~DefaultVariable() = default;                                      // destructor
+    DefaultVariable()                       = default;
+    ~DefaultVariable()                      = default;                 // destructor
     DefaultVariable(const DefaultVariable&) = default;                 // copy constructor
     DefaultVariable& operator=(const DefaultVariable&) = default;      // copy assignment
-    DefaultVariable(DefaultVariable&&) noexcept = default;             // move constructor
+    DefaultVariable(DefaultVariable&&) noexcept        = default;      // move constructor
     DefaultVariable& operator=(DefaultVariable&&) noexcept = default;  // move assignment
 
     /** \brief Copy-Constructor from the values in terms of coordinateType */
@@ -67,24 +64,25 @@ namespace Ikarus::Variable {
     ManifoldType var{};
   };
 
-  template <typename Mani, typename tag> [[nodiscard]] DefaultVariable<Mani, tag> update(
+  template <typename Mani, int tag>
+  [[nodiscard]] DefaultVariable<Mani, tag> update(
       const DefaultVariable<Mani, tag>& rt, const typename DefaultVariable<Mani, tag>::CorrectionType& correction) {
     auto res{rt};
     res.update(correction);
     return res;
   }
 
-  template <typename Mani, typename tag, typename Mani2, typename tag2>
+  template <typename Mani, int tag, typename Mani2, int tag2>
   constexpr inline bool operator==(const DefaultVariable<Mani, tag>& lhs, const DefaultVariable<Mani2, tag2>& rhs) {
     return lhs.getTag() == rhs.getTag();
   }
 
-  template <typename Mani, typename tag, typename Mani2, typename tag2>
+  template <typename Mani, int tag, typename Mani2, int tag2>
   constexpr inline bool operator!=(const DefaultVariable<Mani, tag>& lhs, const DefaultVariable<Mani2, tag2>& rhs) {
     return !(lhs == rhs);
   }
 
-  template <typename Mani, typename tag>
+  template <typename Mani, int tag>
   std::ostream& operator<<(std::ostream& s, const DefaultVariable<Mani, tag>& var) {
     s << var.getValue();
     return s;
