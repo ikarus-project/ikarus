@@ -3,7 +3,8 @@
 //
 
 #pragma once
-#include <ikarus/FiniteElements/PhysicalElementPolicies.h>
+#include <ikarus/FiniteElements/FiniteElementPolicies.h>
+#include <ikarus/utils/LinearAlgebraTypedefs.h>
 
 namespace Ikarus::Variable {
   class GenericVariable;
@@ -13,7 +14,7 @@ namespace Ikarus::FiniteElements {
   /** \brief A type-erased finite element */
   class IFiniteElement {
   public:
-    using DofVectorType = std::vector<Ikarus::Variable::GenericVariable*>;
+    using DofVectorType = std::vector<std::pair<size_t ,std::vector<Ikarus::Variable::VariablesTags>>>;
     template <typename FE>
     explicit IFiniteElement(const FE& fe) : feimpl{std::make_unique<FEImpl<FE> >(fe)} {}
 
