@@ -1,0 +1,94 @@
+# Project information
+site_name: ikarus
+site_description: ikarus documentation.
+site_author: Allan leal
+site_url: https://rath3t.github.io
+
+# Repository
+repo_name: rath3t/Ikarus
+repo_url: https://github.com/rath3t/Ikarus
+
+# Copyright
+copyright: 'Copyright &copy; 2021 Alexander Müller'
+
+# Configuration
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: teal
+      accent: pink
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - scheme: slate
+      primary: teal
+      accent: pink
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+
+
+
+# Path where the markdown files are
+docs_dir: 'docs'
+
+# Navigation
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Tutorials:
+    - Grid: grid.md
+#  - FAQ: faq.md
+#  - About: about.md
+
+# Customization
+extra_css:
+  - stylesheets/extra.css
+
+# Extensions
+markdown_extensions:
+  - admonition
+  - abbr
+  - attr_list
+  - def_list
+  - footnotes
+  - meta
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.critic
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.highlight:
+      linenums: true
+      linenums_style: pymdownx-inline
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      repo_url_shorthand: true
+      user: squidfunk
+      repo: mkdocs-material
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid-experimental
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+extra_javascript:
+  - javascripts/config.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+  -

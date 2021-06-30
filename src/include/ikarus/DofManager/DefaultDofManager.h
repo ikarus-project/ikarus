@@ -101,7 +101,7 @@ namespace Ikarus::DofHandler {
       size_t dofsize = 0;
       for (auto&& vert : vertices(ele)) {
         auto vertID = vert->getID();
-        dofsize += Ikarus::Variable::correctionSize(varVec.dofVecimpl.at(variableIndexMap[vertID]));
+        dofsize += Ikarus::Variable::correctionSize(varVec.dofVecimpl.at(variableIndexMap.at(vertID)));
       }
       return dofsize;
     }
@@ -112,8 +112,8 @@ namespace Ikarus::DofHandler {
       size_t posHelper = 0;
       for (auto&& vert : vertices(ele)) {
         auto vertID = vert->getID();
-        auto sizeOfVar = varVec.variableIndices[vertID].size();
-        indices.template segment(posHelper,sizeOfVar) = varVec.variableIndices[vertID];
+        auto sizeOfVar = varVec.variableIndices[variableIndexMap.at(vertID)].size();
+        indices.template segment(posHelper,sizeOfVar) = varVec.variableIndices[variableIndexMap.at(vertID)];
         posHelper += sizeOfVar;
       }
       return indices;
@@ -124,7 +124,7 @@ namespace Ikarus::DofHandler {
       std::vector<Ikarus::Variable::IVariable*> elementVariables;
       for (auto&& vert : vertices(ele)) {
         auto vertID           = vert->getID();
-        auto& entityDofVector = varVec.dofVecimpl.at(variableIndexMap[vertID]);
+        auto& entityDofVector = varVec.dofVecimpl.at(variableIndexMap.at(vertID));
         auto pointerRange     = Ikarus::stl::transformValueRangeToPointerRange(entityDofVector);
         elementVariables.insert(elementVariables.end(), pointerRange.begin(), pointerRange.end());
       }

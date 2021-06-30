@@ -8,6 +8,7 @@
 
 #include <dune/geometry/type.hh>
 
+#include <ikarus/Grids/GridHelper/griddrawer.h>
 #include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
 
 /** @addtogroup Tests
@@ -63,7 +64,7 @@ TEST(GridTest, GridViewTest) {
 
   auto gridView = grid.leafGridView();
   EXPECT_TRUE(edges(gridView).size() != 0);
-  EXPECT_TRUE(elements(gridView).size() != 0);
+  EXPECT_TRUE(volumes(gridView).size() != 0);
   EXPECT_TRUE(vertices(gridView).size() != 0);
 
   int expectedEdgeId = 10;
@@ -97,7 +98,7 @@ TEST(GridTest, GridViewTest) {
   expectedElementEdgeIds.push_back({17, 15, 18});
 
   int eleCounter = 0;
-  for (auto &&singleElement : elements(gridView)) {
+  for (auto &&singleElement : volumes(gridView)) {
     int edgeCounter = 0;
     for (auto &&edge : edges(singleElement)) {
       EXPECT_EQ(edge->type(), Dune::GeometryTypes::line);
@@ -106,6 +107,7 @@ TEST(GridTest, GridViewTest) {
     }
     ++eleCounter;
   }
+  draw(gridView);
 }
 
 /**
@@ -143,7 +145,7 @@ TEST(GridTest, GridView3DSurfaceTest) {
   Grid actualGrid = gridFactory.createGrid();
   auto gridView = actualGrid.leafGridView();
   EXPECT_TRUE(edges(gridView).size() != 0);
-  EXPECT_TRUE(elements(gridView).size() != 0);
+  EXPECT_TRUE(volumes(gridView).size() != 0);
   EXPECT_TRUE(vertices(gridView).size() != 0);
 
   for (int i = 0; auto &&vertex : vertices(gridView)) {
@@ -152,7 +154,7 @@ TEST(GridTest, GridView3DSurfaceTest) {
     ++i;
   }
 
-  auto &&eleIterator = elements(gridView).begin();
+  auto &&eleIterator = volumes(gridView).begin();
   EXPECT_EQ(eleIterator->type(), Dune::GeometryTypes::quadrilateral);
   ++eleIterator;
   EXPECT_EQ(eleIterator->type(), Dune::GeometryTypes::quadrilateral);
@@ -165,7 +167,7 @@ TEST(GridTest, GridView3DSurfaceTest) {
   expectedElementEdgeIds.push_back({17, 15, 18});
 
   int eleCounter = 0;
-  for (auto &singleElement : elements(gridView)) {
+  for (auto &singleElement : volumes(gridView)) {
     int edgeCounter = 0;
     for (auto &&edge : edges(singleElement)) {
       EXPECT_EQ(edge->type(), Dune::GeometryTypes::line);
@@ -237,9 +239,9 @@ TEST(GridTest, GridView3DSolidTest) {
   expectedElementEdgeVertexId[1].push_back({5, 8});  // 4
   expectedElementEdgeVertexId[1].push_back({3, 5});  // 4
   EXPECT_TRUE(!edges(gridView).empty());
-  EXPECT_TRUE(!elements(gridView).empty());
+  EXPECT_TRUE(!volumes(gridView).empty());
 
-  for (int EleIter = 0; auto &&ele : elements(gridView)) {
+  for (int EleIter = 0; auto &&ele : volumes(gridView)) {
     EXPECT_TRUE(!edges(ele).empty());
     for (int edgeIter = 0; auto &&edge : edges(ele)) {
       EXPECT_TRUE(!vertices(edge).empty());
@@ -254,14 +256,14 @@ TEST(GridTest, GridView3DSolidTest) {
     ++EleIter;
   }
 
-  auto &&eleIterator = elements(gridView).begin();
+  auto &&eleIterator = volumes(gridView).begin();
   EXPECT_EQ(eleIterator->type(), Dune::GeometryTypes::hexahedron);
   ++eleIterator;
   EXPECT_EQ(eleIterator->type(), Dune::GeometryTypes::tetrahedron);
 
   std::vector<int> expectedEdgesAtVertex{3, 4, 3, 5, 3, 5, 3, 3, 3};
   for (int i = 0; auto &&vertex : vertices(gridView))
-    EXPECT_EQ(edges(vertex).size(), expectedEdgesAtVertex[i++]);
+    EXPECT_EQ(volumes(vertex).size(), expectedEdgesAtVertex[i++]);
 }
 
 TEST(GridTest, GridInsertionException) {
