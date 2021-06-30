@@ -44,9 +44,6 @@ namespace Ikarus::FiniteElements {
   class ElasticityFE {
   public:
     explicit ElasticityFE(GridElementEntityType& gE) : elementGridEntity{&gE} {
-      if constexpr (coorddimension == 3)
-        for (auto&& vertex : vertices(elementGridEntity))
-          vertex->addDof(Ikarus::Variable::DISPLACEMENT3D());
     }
 
     /** \brief Type used for coordinates */
@@ -118,7 +115,6 @@ namespace Ikarus::FiniteElements {
 
     [[nodiscard]] DofVectorType getEntityVariablePairs() {
       DofVectorType dofs;
-
       for (auto&& vertex : vertices(elementGridEntity)) {
         if constexpr (coorddimension == 3)
           dofs.push_back({vertex->getID(), {Ikarus::Variable::displacement3d}});

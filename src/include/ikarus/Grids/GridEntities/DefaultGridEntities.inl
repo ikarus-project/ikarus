@@ -33,10 +33,16 @@ namespace Ikarus::Grid {
   // TODO: Check if possible With Children and Father inversed
 
   template <int griddim, int cogriddim, int wdim>
-  auto elements(DefaultGridEntity<griddim, cogriddim, wdim>* gridEntity) {
+  auto volumes(DefaultGridEntity<griddim, cogriddim, wdim>* gridEntity) {
     static_assert(cogriddim != 0, "Elements themself can not return span to iterate over themself");
     return std::span(gridEntity->getFatherElements().begin(), gridEntity->getFatherElements().end());
   }
+
+template <int griddim, int cogriddim, int wdim>
+auto volumes(DefaultGridEntity<griddim, cogriddim, wdim>& gridEntity) {
+  static_assert(cogriddim != 0, "Elements themself can not return span to iterate over themself");
+  return std::span(gridEntity.getFatherElements().begin(), gridEntity.getFatherElements().end());
+}
 
   template <int griddim, int cogriddim, int wdim> auto edges(DefaultGridEntity<griddim, cogriddim, wdim>* gridEntity) {
     if constexpr (griddim == cogriddim)  // gridEntity is a vertex!
@@ -58,7 +64,7 @@ namespace Ikarus::Grid {
 
   template <int griddim, int cogriddim, int wdim>
   auto surfaces(DefaultGridEntity<griddim, cogriddim, wdim>& gridEntity) {
-    return gridEntity.template getChildEntities<1>();
+    return std::span(gridEntity.template getChildEntities<1>().begin(), gridEntity.template getChildEntities<1>().end());
   }
 
   /** \brief Return the fundamental geometric type of the entity, specialization for elements (codim==0) */

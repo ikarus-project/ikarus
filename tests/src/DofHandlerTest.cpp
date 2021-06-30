@@ -43,15 +43,16 @@ TEST(DofHandler, DofHandlertest) {
   Grid grid = gridFactory.createGrid();
 
   auto gridView = grid.leafGridView();
+
   std::vector<Ikarus::FiniteElements::IFiniteElement> fes;
 
-  for (auto&& ge : elements(gridView))
+  for (auto&& ge : volumes(gridView))
     fes.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge));
 
   auto dh = Ikarus::DofHandler::DefaultDofManager(fes, gridView);
   dh.createDofList();
 
-  auto&& ge         = elements(gridView).begin();
+  auto&& ge         = volumes(gridView).begin();
   auto VariableList = dh.elementVariables(ge[0]);
 
   for (auto&& var : VariableList)
@@ -59,7 +60,7 @@ TEST(DofHandler, DofHandlertest) {
 
   EXPECT_THAT(VariableList.size(), 4);
 
-  for (auto&& geR : elements(gridView)) {
+  for (auto&& geR : volumes(gridView)) {
     EXPECT_THAT(dh.elementDofVectorSize(geR), 8);
   }
 
