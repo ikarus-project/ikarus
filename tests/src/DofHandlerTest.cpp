@@ -12,7 +12,7 @@
 
 #include <Eigen/Core>
 
-#include <ikarus/DofHandler/DefaultDofHandler.h>
+#include <ikarus/DofManager/DefaultDofManager.h>
 #include <ikarus/FiniteElements/ElasticityFE.h>
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
 #include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
@@ -48,7 +48,7 @@ TEST(DofHandler, DofHandlertest) {
   for (auto&& ge : elements(gridView))
     fes.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge));
 
-  auto dh = Ikarus::DofHandler::DefaultDofHandler(fes, gridView);
+  auto dh = Ikarus::DofHandler::DefaultDofManager(fes, gridView);
   dh.createDofList();
 
   auto&& ge         = elements(gridView).begin();

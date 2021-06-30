@@ -3,15 +3,16 @@
 //
 
 #pragma once
-#include <ikarus/Variables/GenericVariable.h>
+#include <ranges>
+
+#include <ikarus/Variables/InterfaceVariable.h>
 #include <ikarus/Variables/VariableInterface.h>
 #include <ikarus/utils/std/algorithms.h>
-#include <ranges>
 
 namespace Ikarus::Variable {
   class DofOwnerDecorator {
   public:
-    void addDof(Ikarus::Concepts::Variable auto&& var) { Ikarus::stl::appendUnique(vars, Ikarus::Variable::GenericVariable(var)); }
+    void addDof(Ikarus::Concepts::Variable auto&& var) { Ikarus::stl::appendUnique(vars, Ikarus::Variable::IVariable(var)); }
 
     [[nodiscard]] auto& getDof(Ikarus::Concepts::Variable auto&& var) {
       // find using Tag
@@ -23,8 +24,8 @@ namespace Ikarus::Variable {
       return (*it);
     }
 
-    std::vector<Ikarus::Variable::GenericVariable*> getDofs() {
-      std::vector<Ikarus::Variable::GenericVariable*> pVars;
+    std::vector<Ikarus::Variable::IVariable*> getDofs() {
+      std::vector<Ikarus::Variable::IVariable*> pVars;
 
       for(auto&& var: vars)
         pVars.push_back(&var);
@@ -33,7 +34,7 @@ namespace Ikarus::Variable {
     }
 
   private:
-    std::vector<Ikarus::Variable::GenericVariable> vars;
+    std::vector<Ikarus::Variable::IVariable> vars;
   };
 
 }  // namespace Ikarus::Variable
