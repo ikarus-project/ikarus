@@ -36,7 +36,7 @@
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
 
 namespace Ikarus::Variable {
-  class GenericVariable;
+  class IVariable;
 }
 
 namespace Ikarus::FiniteElements {
@@ -116,7 +116,7 @@ namespace Ikarus::FiniteElements {
                       "You asked the element: \"Don't return anything\"");
     }
 
-    [[nodiscard]] DofVectorType getDofVector() {
+    [[nodiscard]] DofVectorType getEntityVariablePairs() {
       DofVectorType dofs;
 
       for (auto&& vertex : vertices(elementGridEntity)) {
@@ -128,8 +128,6 @@ namespace Ikarus::FiniteElements {
 
       return dofs;
     }
-
-    auto getGridEntity() { return elementGridEntity; }
 
   private:
     GridElementEntityType const* const elementGridEntity;

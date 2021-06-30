@@ -14,7 +14,7 @@
 #include <Eigen/Core>
 
 #include "ikarus/Manifolds/RealTuple.h"
-#include "ikarus/Variables/GenericVariable.h"
+#include "ikarus/Variables/InterfaceVariable.h"
 #include "ikarus/Variables/VariableDefinitions.h"
 #include "ikarus/utils/std/algorithms.h"
 
@@ -94,7 +94,7 @@ TEST(VariableTest, GenericVariableVectorTest) {
   DISPLACEMENT2D e;
   DIRECTOR3D f{DIRECTOR3D::CoordinateType::UnitZ()};
 
-  std::vector<GenericVariable> varVec;
+  std::vector<IVariable> varVec;
   varVec.emplace_back(a);
   varVec.emplace_back(b);
   varVec.emplace_back(c);
@@ -133,7 +133,6 @@ TEST(VariableTest, GenericVariableVectorTest) {
       getValue(varVec[3]),
       EigenApproxEqual(Eigen::Vector3d(0.41279806929140905325, 0.50645665044957854928, -0.75703329861022516933), tol));
 
-  std::cout<<varVec[0]<<std::endl;
 }
 
 #include <ikarus/Grids/GridEntities/DefaultGridEntities.h>

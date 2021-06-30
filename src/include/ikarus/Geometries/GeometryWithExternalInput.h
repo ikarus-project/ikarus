@@ -11,10 +11,12 @@
 #include <Eigen/Dense>
 
 #include "ikarus/Interpolators/Interpolator.h"
+#include <ikarus/utils/LinearAlgebraHelper.h>
 
 namespace Ikarus::Geometry {
 
-  template <typename ct, int wdim, int geodim, std::enable_if_t<geodim <= wdim, bool> = true>
+  template <typename ct, int wdim, int geodim>
+  requires requires { geodim <= wdim; }
   class GeometryWithExternalInput {
   public:
     /** \brief Type used for coordinates */
@@ -63,6 +65,16 @@ namespace Ikarus::Geometry {
         const Eigen::MatrixBase<DerivedAnsatzFunctionType>& dN,
         const Eigen::MatrixBase<GlobalCoordinateListType>& nodevalueList) {
       return jacobianTransposed(dN, nodevalueList).completeOrthogonalDecomposition().pseudoInverse();
+    }
+
+    template <typename DerivedAnsatzFunctionType, typename GlobalCoordinateListType>
+    static DerivedAnsatzFunctionType transformCurvLinearDerivativesToCartesian(
+        const Eigen::MatrixBase<DerivedAnsatzFunctionType>& dN,
+        const Eigen::MatrixBase<GlobalCoordinateListType>& nodevalueList) {
+      const JacobianTransposed jT     = jacobianTransposed(dN, nodevalueList);
+      const auto jCart = Ikarus::LinearAlgebra::orthonormalizeMatrixColumns(jT.transpose());
+
+      return dN * (jT * jCart).inverse().transpose() ;
     }
   };
 

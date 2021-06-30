@@ -8,7 +8,7 @@
 
 #include "ikarus/Manifolds/RealTuple.h"
 #include "ikarus/Manifolds/UnitVector.h"
-#include <ikarus/Variables/GenericVariable.h>
+#include <ikarus/Variables/InterfaceVariable.h>
 #include <ikarus/Variables/VariableInterface.h>
 
 #define IKARUS_REGISTER_VARIABLE(Manifold, ScalarType, Size, Tag, tagname) \
@@ -49,17 +49,17 @@ namespace Ikarus::Variable {
     static auto createVariable(VariablesTags tag) {
       switch (tag) {
         case displacement1d:
-          return GenericVariable(DISPLACEMENT1D());
+          return IVariable(DISPLACEMENT1D());
         case displacement2d:
-          return GenericVariable(DISPLACEMENT2D());
+          return IVariable(DISPLACEMENT2D());
         case displacement3d:
-          return GenericVariable(DISPLACEMENT3D());
+          return IVariable(DISPLACEMENT3D());
         case director2d:
-          return GenericVariable(DIRECTOR2D());
+          return IVariable(DIRECTOR2D());
         case director3d:
-          return GenericVariable(DIRECTOR3D());
+          return IVariable(DIRECTOR3D());
         case pressure:
-          return GenericVariable(PRESSURE());
+          return IVariable(PRESSURE());
         default:
           throw std::logic_error("none variable not implemented. This should be an variable with empty size.");
       }

@@ -8,14 +8,12 @@
 #include <unordered_set>
 
 #include <ikarus/FiniteElements/FiniteElementPolicies.h>
-#include <ikarus/Variables/GenericVariable.h>
+#include <ikarus/Variables/InterfaceVariable.h>
 #include <ikarus/Variables/VariableDefinitions.h>
 #include <ikarus/utils/std/algorithms.h>
 #include <ikarus/utils/std/hashs.h>
 
 namespace Ikarus::DofHandler {
-  //  template <typename FEContainer, typename GridViewType>
-  //  class DefaultDofHandler;
 
   class VariableVector {
   public:
@@ -31,16 +29,15 @@ namespace Ikarus::DofHandler {
     auto getValues() { return std::ranges::join_view(dofVecimpl); }
 
   private:
-    std::vector<Eigen::ArrayXi> elementWiseDofList;
-    std::vector<std::vector<Ikarus::Variable::GenericVariable>> dofVecimpl;
+    std::vector<std::vector<Ikarus::Variable::IVariable>> dofVecimpl;
     std::vector<Eigen::ArrayXi> variableIndices;
     size_t dofSizeValue;
     bool dofSizeCalculated{false};
 
     template <typename FEContainer, typename GridViewType>
-    requires Concepts::HasgetDofVector<typename std::remove_cvref_t<FEContainer>::value_type> || Concepts::
-        HasFreegetDofVector<typename std::remove_cvref_t<FEContainer>::value_type>
-    friend class DefaultDofHandler;
+    requires Concepts::HasgetEntityVariablePairs<typename std::remove_cvref_t<FEContainer>::value_type> || Concepts::
+        HasFreegetEntityVariablePairs<typename std::remove_cvref_t<FEContainer>::value_type>
+    friend class DefaultDofManager;
 
     friend VariableVector& operator+=(VariableVector& varVecArg, Eigen::VectorXd& correction);
   };
@@ -54,16 +51,16 @@ namespace Ikarus::DofHandler {
   }
 
   template <typename FEContainer, typename GridViewType>
-  requires Concepts::HasgetDofVector<typename std::remove_cvref_t<FEContainer>::value_type> || Concepts::
-      HasFreegetDofVector<typename std::remove_cvref_t<FEContainer>::value_type>
-  class DefaultDofHandler {
+  requires Concepts::HasgetEntityVariablePairs<typename std::remove_cvref_t<FEContainer>::value_type> || Concepts::
+  HasFreegetEntityVariablePairs<typename std::remove_cvref_t<FEContainer>::value_type>
+  class DefaultDofManager {
   public:
     using DofSet        = std::unordered_map<size_t, std::unordered_set<Ikarus::Variable::VariablesTags>>;
     using IndexMap      = std::unordered_map<size_t, size_t>;
-    using DofVector     = std::vector<std::vector<Ikarus::Variable::GenericVariable>>;
+    using DofVector     = std::vector<std::vector<Ikarus::Variable::IVariable>>;
     using VariableIndex = std::vector<Eigen::ArrayXi>;
 
-    DefaultDofHandler(FEContainer& feContainer, GridViewType& gv) : fe_container_{feContainer}, gv_{gv} {}
+    DefaultDofManager(FEContainer& feContainer, GridViewType& gv) : fe_container_{feContainer}, gv_{gv} {}
 
     void createDofList() {
       size_t indexCounter = 0;
@@ -73,7 +70,7 @@ namespace Ikarus::DofHandler {
       varVec.dofSizeCalculated = false;
       DofSet dofSet;
       for (auto&& fe : fe_container_) {
-        auto eleDofs = getDofVector(fe);  // get list of entity id and list of variable tags
+        auto eleDofs = getEntityVariablePairs(fe);  // get list of entity id and list of variable tags
         for (auto&& [entityID, dofTagVector] : eleDofs)
           // Create set of Dofs for each grid entity
           dofSet[entityID].insert(begin(dofTagVector), end(dofTagVector));
@@ -124,7 +121,7 @@ namespace Ikarus::DofHandler {
 
     template <typename FEType>
     auto elementVariables(FEType& ele) {
-      std::vector<Ikarus::Variable::GenericVariable*> elementVariables;
+      std::vector<Ikarus::Variable::IVariable*> elementVariables;
       for (auto&& vert : vertices(ele)) {
         auto vertID           = vert->getID();
         auto& entityDofVector = varVec.dofVecimpl.at(variableIndexMap[vertID]);

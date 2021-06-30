@@ -122,16 +122,30 @@ TEST(GeometryTest, WithInteralAnsatzandVerticesQuadratic) {
   double detJ = geoEle.determinantJacobian(xieta);
 
   EXPECT_DOUBLE_EQ(17.72397000, detJ);
+
+
+  auto dNCart = geoEle.transformCurvLinearDerivativesToCartesian(xieta);
+
+  Eigen::Matrix<double,9,2> dNCartExpected;
+  dNCartExpected<<0.12624897551105789618e-1,  0.10920614574095834274e-1,
+                 -0.10396974453851826743e-1,  0.88743757452822190506e-1,
+                 -0.22279230972539628740e-2, -0.84966090236083447561e-2,
+                 -0.56812038979976053284e-1, -0.67091418924707847485e-1,
+                  0.46786385042333220342e-1, -.46601333523387006079,
+                  0.10025653937642832933e-1, 0.46876684807592948154e-1,
+                  -.11362407795995210656   , .18889292229356298362,
+                  0.93572770084666440706e-1, .26796901006332354172,
+                  0.20051307875285665863e-1, -0.61801626009211245234e-1;
+
+  EXPECT_THAT(dNCart, EigenApproxEqual(dNCartExpected, tol));
 }
 
 
 
 TEST(GeometryTest, CreateJacobianDeterminantAndJacobian2DSurfIn3D) {
   const Eigen::Matrix<double, 2, 1> xieta({-1.0, -1.0});
-  auto N                         = Ikarus::LagrangeCube<double, 2, 1>::evaluateFunction(xieta);
   Eigen::Matrix<double, 4, 2> dN = Ikarus::LagrangeCube<double, 2, 1>::evaluateJacobian(xieta);
-  std::cout << "N:" << N << std::endl;
-  std::cout << "dN : " << dN << std::endl;
+
   Eigen::Matrix<double, 2, 4> dNCorrect;
   Eigen::Matrix<double, 3, 4> x;
   x.col(0) << 0, 0, 0;
@@ -139,9 +153,6 @@ TEST(GeometryTest, CreateJacobianDeterminantAndJacobian2DSurfIn3D) {
   x.col(2) << 0, 4, 0;
   x.col(3) << 4, 4, 0;
   Eigen::Matrix<double, 2, 3> JT = Ikarus::Geometry::ExternalSurfaceGeometry<double>::jacobianTransposed(dN, x);
-  std::cout << JT << std::endl;
-  std::cout << "==================" << std::endl;
-  std::cout << dN << std::endl;
   Eigen::Matrix<double, 2, 3> JTexpected;
   JTexpected << 2, 0, 0, 0, 2, 0;
 
