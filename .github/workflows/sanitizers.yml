@@ -1,5 +1,8 @@
 name: Ubuntu-Sanitizers
-on: [push]
+on:
+  push:
+    paths-ignore:
+      - 'docs/**'
 jobs:
   Ubuntu-Sanitizers:
     runs-on: ubuntu-latest

@@ -5,10 +5,14 @@ on:
     branches:
       - master
       - main
+    paths-ignore:
+      - 'docs/**'
   pull_request:
     branches:
       - master
       - main
+    paths-ignore:
+      - 'docs/**'
 
 env:
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
