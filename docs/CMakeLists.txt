@@ -1,3 +1,4 @@
+cmake_minimum_required(VERSION 3.18)
 add_custom_target(site
         COMMAND mkdocs build
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/site ${CMAKE_CURRENT_BINARY_DIR}/site
