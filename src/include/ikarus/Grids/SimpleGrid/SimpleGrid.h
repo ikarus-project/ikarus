@@ -70,4 +70,3 @@ namespace Ikarus::Grid {
 
 #include <ikarus/Grids/SimpleGrid/SimpleGridFactory.h>
 
-//#include "SimpleGrid.inl"

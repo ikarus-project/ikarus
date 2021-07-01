@@ -44,13 +44,13 @@ namespace Ikarus::Concepts {
   };
 
   template <typename PhysicalType>
-  concept HasgetDofVector = requires(PhysicalType pfe) {
-    pfe.getDofVector();
+  concept HasgetEntityVariablePairs = requires(PhysicalType pfe) {
+    pfe.getEntityVariablePairs();
   };
 
   template <typename PhysicalType>
-  concept HasFreegetDofVector = requires(PhysicalType pfe) {
-    getDofVector(pfe);
+  concept HasFreegetEntityVariablePairs = requires(PhysicalType pfe) {
+    getEntityVariablePairs(pfe);
   };
 
   template <typename PhysicalType>

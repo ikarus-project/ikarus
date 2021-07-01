@@ -3,7 +3,7 @@ file(
   RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
   CONFIGURE_DEPENDS include/ikarus/*.cpp
 )
-
+message("${sources}")
 cmake_minimum_required(VERSION 3.18)
 project(
   Ikarus

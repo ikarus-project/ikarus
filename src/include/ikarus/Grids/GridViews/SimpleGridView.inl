@@ -8,13 +8,18 @@
 
 namespace Ikarus::Grid {
   template <int dim, int dimworld, Ikarus::Concepts::Grid GridType>
-  auto elements(SimpleGridView<dim, dimworld, GridType> &gridView) {
+  auto volumes(SimpleGridView<dim, dimworld, GridType> &gridView) {
     return std::span(gridView.template begin<0>(), gridView.template end<0>());
   }
 
-  template <int dim, int dimworld, Ikarus::Concepts::Grid GridType, std::enable_if_t<(dim > 1), bool> = true>
+  template <int dim, int dimworld, Ikarus::Concepts::Grid GridType> requires requires {dim > 1;}
   auto edges(SimpleGridView<dim, dimworld, GridType> &gridView) {
     return std::span(gridView.template begin<dim - 1>(), gridView.template end<dim - 1>());
+  }
+
+  template <int dim, int dimworld, Ikarus::Concepts::Grid GridType> requires requires {dim > 2;}
+  auto surfaces(SimpleGridView<dim, dimworld, GridType> &gridView) {
+    return std::span(gridView.template begin<dim - 2>(), gridView.template end<dim - 2>());
   }
 
   template <int dim, int dimworld, Ikarus::Concepts::Grid GridType>

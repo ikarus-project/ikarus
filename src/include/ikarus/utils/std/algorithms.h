@@ -5,7 +5,8 @@
 #pragma once
 
 // This file contains stl-like algorithms
-
+#include <ranges>
+namespace Ikarus::stl{
 void makeUniqueAndSort(std::ranges::random_access_range auto& varVec) {
   sort(varVec.begin(), varVec.end());
   varVec.erase(std::unique(varVec.begin(), varVec.end()), varVec.end());
@@ -27,15 +28,11 @@ void printContent(Container& varVec) {
   std::ranges::for_each(varVec, [](auto& var) { std::cout << var << '\n'; });
 }
 
-///// \url https://codereview.stackexchange.com/questions/171999/specializing-stdhash-for-stdarray
-// template<class T, size_t N>
-// struct std::hash<std::array<T, N>> {
-//  auto operator() (const std::array<T, N>& key) const {
-//    std::hash<T> hasher;
-//    size_t result = 144451;
-//    for(size_t i = 0; i < N; ++i) {
-//      result = result * 31 + hasher(key[i]);
-//    }
-//    return result;
-//  }
-//};
+template <class Container>
+auto transformValueRangeToPointerRange(Container& varVec)
+{
+  auto transformValueToPointer = [](auto&& obj){ return &obj;};
+  return  (std::ranges::subrange(varVec.begin(), varVec.end()) | std::views::transform(transformValueToPointer));
+}
+
+}

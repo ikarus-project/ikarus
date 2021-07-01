@@ -23,27 +23,27 @@
 
 #pragma once
 #include <concepts>
+#include <iostream>
 
 #include <dune/common/classname.hh>
 
 #include <spdlog/spdlog.h>
 
 //#include <ikarus/Variables/GenericVariable.h>
+#include <dune/geometry/type.hh>
+
 #include <ikarus/Variables/VariableDefinitions.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
 
 namespace Ikarus::Variable {
-  class GenericVariable;
+  class IVariable;
 }
 
 namespace Ikarus::FiniteElements {
   template <typename GridElementEntityType, std::floating_point ct = double>
   class ElasticityFE {
   public:
-    explicit ElasticityFE(GridElementEntityType& gE) : elementGridEntity{gE} {
-      if constexpr (coorddimension == 3)
-        for (auto&& vertex : vertices(elementGridEntity))
-          vertex->addDof(Ikarus::Variable::DISPLACEMENT3D());
+    explicit ElasticityFE(GridElementEntityType& gE) : elementGridEntity{&gE} {
     }
 
     /** \brief Type used for coordinates */
@@ -62,7 +62,7 @@ namespace Ikarus::FiniteElements {
     using ParameterSpaceType = Eigen::Matrix<ctype, mydimension, 1>;
 
     /** \brief Type of the DofVector */
-    using DofVectorType = std::vector<Ikarus::Variable::GenericVariable*>;
+    using DofVectorType = std::vector<std::pair<size_t, std::vector<Ikarus::Variable::VariablesTags>>>;
 
     /** \brief Type of the Dofs / SolutionType
      * using NodalSolutionType = Displacement<ctype,coorddimension>;*/
@@ -90,7 +90,7 @@ namespace Ikarus::FiniteElements {
       return calculateStiffnessMatrixAndInternalForcesImpl<false, true>();
     }
 
-    [[nodiscard]] ctype getEnergy() const { return 0.0; }
+    [[nodiscard]] double getEnergy() const { return 0.0; }
 
     [[nodiscard]] VectorType calculateRHS() const {
       return calculateStiffnessMatrixAndInternalForcesImpl<true, false>();
@@ -113,17 +113,20 @@ namespace Ikarus::FiniteElements {
                       "You asked the element: \"Don't return anything\"");
     }
 
-    [[nodiscard]] DofVectorType getDofVector() {
-      DofVectorType dof;
+    [[nodiscard]] DofVectorType getEntityVariablePairs() {
+      DofVectorType dofs;
       for (auto&& vertex : vertices(elementGridEntity)) {
-        dof.insert(end(dof), begin(vertex->getDofs()), end(vertex->getDofs()));
+        if constexpr (coorddimension == 3)
+          dofs.push_back({vertex->getID(), {Ikarus::Variable::displacement3d}});
+        else if constexpr (coorddimension == 2)
+          dofs.push_back({vertex->getID(), {Ikarus::Variable::displacement2d}});
       }
 
-      return dof;
+      return dofs;
     }
 
   private:
-    GridElementEntityType elementGridEntity;
+    GridElementEntityType const* const elementGridEntity;
   };
 
 }  // namespace Ikarus::FiniteElements

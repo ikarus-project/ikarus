@@ -1,0 +1,26 @@
+name: Docs
+on: [push]
+jobs:
+  Build:
+    name: ${{ matrix.config.name }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Mkdocs
+        run: |
+          pip install mkdocs
+          pip install mkdocs-material
+          pip install mkdocs-macros-plugin
+      - name: Build Website
+        run: |
+          cd docs
+          cmake -B .build
+          cmake --build .build --target site
+      - name: Deploy Website
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          personal_token: ${{ secrets.ORGANIZATION_TOKEN }}
+          external_repository: IkarusRepo/Ikarus.github.io
+          publish_dir: ./docs/site
+          publish_branch: master
+          commit_message: ${{ github.event.head_commit.message }}

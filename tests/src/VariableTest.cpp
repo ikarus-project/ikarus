@@ -14,25 +14,25 @@
 #include <Eigen/Core>
 
 #include "ikarus/Manifolds/RealTuple.h"
-#include "ikarus/Variables/GenericVariable.h"
+#include "ikarus/Variables/InterfaceVariable.h"
 #include "ikarus/Variables/VariableDefinitions.h"
 #include "ikarus/utils/std/algorithms.h"
 
 TEST(DefaultVariableTest, RealTupleDisplacement) {
   using namespace Ikarus::Variable;
-  DISPLACEMENT3D a;
+  auto a = VariableFactory::createVariable(Ikarus::Variable::displacement3d);
 
-  a.update(Eigen::Vector<double, 3>::UnitX());
-  EXPECT_EQ(a.getValue(), (Eigen::Vector<double, 3>::UnitX()));
+  a+=Eigen::Vector<double, 3>::UnitX();
+  EXPECT_EQ(getValue(a), (Eigen::Vector<double, 3>::UnitX()));
 
-  a = update(a, Eigen::Vector<double, 3>::UnitY());
-  EXPECT_EQ(a.getValue(), (Eigen::Vector<double, 3>(1.0, 1.0, 0.0)));
+  a+=Eigen::Vector<double, 3>::UnitY();
+  EXPECT_EQ(getValue(a), (Eigen::Vector<double, 3>(1.0, 1.0, 0.0)));
 
-  auto d = update(a, Eigen::Vector<double, 3>::UnitY());
-  EXPECT_EQ(d.getValue(), (Eigen::Vector<double, 3>(1.0, 2.0, 0.0)));
+  auto d = a + Eigen::Vector<double, 3>::UnitY();
+  EXPECT_EQ(getValue(d), (Eigen::Vector<double, 3>(1.0, 2.0, 0.0)));
 
-  DISPLACEMENT3D b{a};
-  EXPECT_EQ(b.getValue(), (Eigen::Vector<double, 3>(1.0, 1.0, 0.0)));
+  auto b{a};
+  EXPECT_EQ(getValue(b), (Eigen::Vector<double, 3>(1.0, 1.0, 0.0)));
 
   DISPLACEMENT3D c{DISPLACEMENT3D{Eigen::Vector<double, 3>::UnitZ()}};  // move constructor test
   EXPECT_EQ(c.getValue(), (Eigen::Vector<double, 3>(0.0, 0.0, 1.0)));
@@ -42,11 +42,11 @@ TEST(DefaultVariableTest, RealTupleDisplacement) {
 
   b = a;
   EXPECT_EQ(b, a);
-  EXPECT_EQ(b.getValue(), a.getValue());
+  EXPECT_EQ(getValue(b) , getValue(a));
   auto testVec = Eigen::Vector<double, 3>(127.0, -5.0, 1.0);
-  b.setValue(testVec);
+  setValue(b,testVec);
 
-  EXPECT_EQ(b.getValue(), testVec);
+  EXPECT_EQ(getValue(b), testVec);
 }
 
 static constexpr double tol = 1e-15;
@@ -94,7 +94,7 @@ TEST(VariableTest, GenericVariableVectorTest) {
   DISPLACEMENT2D e;
   DIRECTOR3D f{DIRECTOR3D::CoordinateType::UnitZ()};
 
-  std::vector<GenericVariable> varVec;
+  std::vector<IVariable> varVec;
   varVec.emplace_back(a);
   varVec.emplace_back(b);
   varVec.emplace_back(c);
@@ -110,13 +110,13 @@ TEST(VariableTest, GenericVariableVectorTest) {
 
   Eigen::Vector2d corr;
   corr << 1, 1;
-  update(varVec[5], corr);
+  varVec[5] += corr;
 
   Eigen::Vector3d varVec4Expected({1, 1, 1});
   varVec4Expected.normalize();
   EXPECT_THAT(getValue(varVec[5]), EigenApproxEqual(varVec4Expected, tol));
 
-  makeUniqueAndSort(varVec);
+  Ikarus::stl::makeUniqueAndSort(varVec);
 
   EXPECT_EQ(valueSize(varVec), 9);
   EXPECT_EQ(correctionSize(varVec), 8);
@@ -132,6 +132,7 @@ TEST(VariableTest, GenericVariableVectorTest) {
   EXPECT_THAT(
       getValue(varVec[3]),
       EigenApproxEqual(Eigen::Vector3d(0.41279806929140905325, 0.50645665044957854928, -0.75703329861022516933), tol));
+
 }
 
 #include <ikarus/Grids/GridEntities/DefaultGridEntities.h>

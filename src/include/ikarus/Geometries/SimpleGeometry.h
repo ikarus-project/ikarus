@@ -10,13 +10,17 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
+#include <ikarus/Geometries/GeometryWithExternalInput.h>
 #include <ikarus/Interpolators/Interpolator.h>
 
 namespace Ikarus::Geometry {
 
-  template <typename ct, int wdim, int geodim, typename ShapeFunctionType,
-            std::enable_if_t<geodim <= wdim, bool> = true>
+  template <typename ct, int wdim, int geodim, typename ShapeFunctionType>
+  requires requires { geodim <= wdim; }
   class SimpleGeometry {
+  private:
+    using ExternalGeometry = GeometryWithExternalInput<ct, wdim, geodim>;
+
   public:
     /** \brief Type used for coordinates */
     using ctype = ct;
@@ -53,26 +57,19 @@ namespace Ikarus::Geometry {
     using JacobianInverseTransposed = Eigen::Matrix<ctype, coorddimension, mydimension>;
 
     ctype determinantJacobian(const LocalCoordinate& x) {
-      const auto JT = jacobianTransposed(x);
-      return sqrt((JT * JT.transpose()).determinant());
+      return ExternalGeometry::determinantJacobian(shapeFunctions.evaluateJacobian(x), vertices);
     };
 
     JacobianTransposedType jacobianTransposed(const LocalCoordinate& x) {
-      auto dN = shapeFunctions.getAnsatzFunctionJacobian(x);
-      assert(dN.rows() == vertices.cols());
-
-      static_assert(JacobianTransposedType::RowsAtCompileTime == mydimension,
-                    "Mismatch between shape function derivatives and the space of the geometry.");
-
-      JacobianTransposedType JT;
-      for (size_t i = 0; i < JacobianTransposedType::RowsAtCompileTime; ++i)
-        JT.row(i) = interpolate(dN.col(i), vertices).transpose();
-
-      return JT;
+      return ExternalGeometry::jacobianTransposed(shapeFunctions.evaluateJacobian(x), vertices);
     }
 
     JacobianInverseTransposed jacobianInverseTransposed(const LocalCoordinate& x) {
-      return jacobianTransposed(x).completeOrthogonalDecomposition().pseudoInverse();
+      return ExternalGeometry::jacobianInverseTransposed(shapeFunctions.evaluateJacobian(x), vertices);
+    }
+
+    typename ShapeFunctionType::JacobianType transformCurvLinearDerivativesToCartesian(const LocalCoordinate& x) {
+      return ExternalGeometry::transformCurvLinearDerivativesToCartesian(shapeFunctions.evaluateJacobian(x), vertices);
     }
 
   private:
