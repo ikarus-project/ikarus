@@ -8,6 +8,11 @@ jobs:
       - uses: actions/checkout@v2
         with:
          path: 'repo'
+      - name: Setup Mkdocs
+        run: |
+          pip install mkdocs
+          pip install mkdocs-material
+          pip install mkdocs-macros-plugin
       - name: Build Website
         working-directory: ./repo
         run: |
