@@ -1,7 +1,7 @@
 //
 // Created by Alex on 26.05.2021.
 //
-
+#pragma once
 #include <dune/grid/common/exceptions.hh>
 
 #include <ikarus/utils/std/algorithms.h>
@@ -17,7 +17,7 @@ namespace Ikarus::Grid {
    *
    **/
   template <Concepts::Grid GridType>
-  void SimpleGridFactory<GridType>::insertElement(const Dune::GeometryType &type, const DynArrayXi &verticesIn) {
+  void SimpleGridFactory<GridType>::insertElement(const Dune::GeometryType &type, std::span<size_t> verticesIn) {
     if (type.dim() != dimension) DUNE_THROW(Dune::GridError, "The inserted element has wrong dimensions!");
 
     elementEdgeIndices.emplace_back();
@@ -26,7 +26,6 @@ namespace Ikarus::Grid {
         DUNE_THROW(Dune::GridError, "You have requested to enter a line, but you"
                                         << " have provided " << verticesIn.size() << " vertices!");
     } else if (type.isTriangle()) {
-      // Everything alright
       if (verticesIn.size() != 3)
         DUNE_THROW(Dune::GridError, "You have requested to enter a triangle, but you"
                                         << " have provided " << verticesIn.size() << " vertices!");
@@ -100,14 +99,17 @@ namespace Ikarus::Grid {
     } else {
       DUNE_THROW(Dune::GridError, "You cannot insert a " << type << " into a SimpleGrid<" << dimensionworld << ">!");
     }
-    elementsVertices.emplace_back(verticesIn);
+    for (auto&& vert :verticesIn)
+      elementsVertices.emplace_back(vert);
   }
 
-  template <Concepts::Grid GridType> void SimpleGridFactory<GridType>::insertVertex(const VertexCoordinateType &pos) {
+  template <Concepts::Grid GridType>
+  void SimpleGridFactory<GridType>::insertVertex(const VertexCoordinateType &pos) {
     verticesPositions.template emplace_back(SimpleGridFactory::VertexIndexPair{pos, vertexIndex++});
   }
 
-  template <Concepts::Grid GridType> GridType SimpleGridFactory<GridType>::createGrid() {
+  template <Concepts::Grid GridType>
+  GridType SimpleGridFactory<GridType>::createGrid() {
     GridType grid;
     if (verticesPositions.empty())
       DUNE_THROW(Dune::GridError, "verticesPositions vector is empty. Unable to create Grid");
@@ -121,7 +123,7 @@ namespace Ikarus::Grid {
     // add vertices to the grid
     for (auto &vert : verticesPositions) {
       typename GridType::VertexType newVertex(0, vert.vertex, grid.getNextFreeId());
-      newVertex.leafIndex = vert.index;
+      newVertex.leafIndex  = vert.index;
       newVertex.levelIndex = vert.index;
       grid.getVertices().push_back(newVertex);
     }
@@ -130,15 +132,16 @@ namespace Ikarus::Grid {
     for (auto &eleVertices : elementsVertices) {
       typename GridType::ElementType newElement(0, grid.getNextFreeId());
 
-      for (auto &vertID : eleVertices) newElement.getChildVertices().emplace_back(&grid.getVertices()[vertID]);
+      for (auto &vertID : eleVertices)
+        newElement.getChildVertices().emplace_back(&grid.getVertices()[vertID]);
 
       grid.getElements().push_back(newElement);
     }
 
-    // set elements pointers of vertex
-//    for (auto &element : grid.getElements())
-//      for (auto &vert : vertices(element))
-//        vert.getFatherElements().emplace_back(&element);
+     //set elements pointers of vertex
+        for (auto &element : grid.getElements())
+          for (auto &vert : vertices(element))
+            vert->getFatherElements().emplace_back(&element);
 
     // add edges to the grid
     if constexpr (GridType::dimension > 1) {
@@ -158,20 +161,20 @@ namespace Ikarus::Grid {
         ++eIt;
       }
 
-      // add edge pointers to vertices
+       //add edge pointers to vertices
       // set elements pointers of vertex
 
-//      for (auto &&vert : grid.getVertices()) {
-//        auto hasVertex = [&vert](auto &edge) {
-//          return (std::ranges::find_if(edge.getChildVertices(),
-//                                       [&vert](auto &vertex) { return vert.getID() == vertex->getID(); })
-//                  != end(edge.getChildVertices()));
-//        };
-//
-//        for (auto &edgeWhichHasTheVertex : std::ranges::filter_view(grid.getEdges(), hasVertex)) {
-//          vert.template getFatherEntities<dimension - 1>().push_back(&edgeWhichHasTheVertex);
-//        }
-//      }
+            for (auto &&vert : grid.getVertices()) {
+              auto hasVertex = [&vert](auto &edge) {
+                return (std::ranges::find_if(edge.getChildVertices(),
+                                             [&vert](auto &vertex) { return vert.getID() == vertex->getID(); })
+                        != end(edge.getChildVertices()));
+              };
+
+              for (auto &edgeWhichHasTheVertex : std::ranges::filter_view(grid.getEdges(), hasVertex)) {
+                vert.template getFatherEntities<dimension - 1>().push_back(&edgeWhichHasTheVertex);
+              }
+            }
     }
 
     return grid;

@@ -3,6 +3,7 @@
 //
 
 #pragma once
+#include <ostream>
 
 namespace Ikarus::Concepts {
   template <typename ManifoldType>

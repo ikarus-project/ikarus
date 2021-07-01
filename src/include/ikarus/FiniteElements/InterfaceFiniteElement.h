@@ -3,19 +3,20 @@
 //
 
 #pragma once
-#include <ikarus/FiniteElements/PhysicalElementPolicies.h>
+#include <ikarus/FiniteElements/FiniteElementPolicies.h>
+#include <ikarus/utils/LinearAlgebraTypedefs.h>
 
 namespace Ikarus::Variable {
-  class GenericVariable;
+  class IVariable;
 }
 namespace Ikarus::FiniteElements {
 
   /** \brief A type-erased finite element */
   class IFiniteElement {
   public:
-    using DofVectorType = std::vector<Ikarus::Variable::GenericVariable*>;
+    using DofVectorType = std::vector<std::pair<size_t, std::vector<Ikarus::Variable::VariablesTags>>>;
     template <typename FE>
-    explicit IFiniteElement(const FE& fe) : feimpl{std::make_unique<FEImpl<FE> >(fe)} {}
+    explicit IFiniteElement(const FE& fe) : feimpl{std::make_unique<FEImpl<FE>>(fe)} {}
 
     ~IFiniteElement() = default;
     IFiniteElement(const IFiniteElement& other) : feimpl{other.feimpl->clone()} {}
@@ -36,8 +37,8 @@ namespace Ikarus::FiniteElements {
       [[nodiscard]] virtual std::pair<DynVectord, DynMatrixd> do_calculateLocalSystem() const = 0;
       [[nodiscard]] virtual DynMatrixd do_calculateLHS() const                                = 0;
       [[nodiscard]] virtual DynVectord do_calculateRHS() const                                = 0;
-      [[nodiscard]] virtual DofVectorType do_getDofVector()                                   = 0;
-      [[nodiscard]] virtual std::unique_ptr<FEBase> clone() const = 0;
+      [[nodiscard]] virtual DofVectorType do_getEntityVariablePairs()                         = 0;
+      [[nodiscard]] virtual std::unique_ptr<FEBase> clone() const                             = 0;
     };
 
     template <typename FE>
@@ -50,7 +51,7 @@ namespace Ikarus::FiniteElements {
       }
       [[nodiscard]] DynMatrixd do_calculateLHS() const final { TRYCALLFUNCTION(calculateLHS); }
       [[nodiscard]] DynVectord do_calculateRHS() const final { TRYCALLFUNCTION(calculateRHS); }
-      [[nodiscard]] DofVectorType do_getDofVector() final { TRYCALLFUNCTION(getDofVector); }
+      [[nodiscard]] DofVectorType do_getEntityVariablePairs() final { TRYCALLFUNCTION(getEntityVariablePairs); }
       [[nodiscard]] std::unique_ptr<FEBase> clone() const final { return std::make_unique<FEImpl>(*this); }
       FE fe;
     };
@@ -62,7 +63,7 @@ namespace Ikarus::FiniteElements {
     friend auto calculateLocalSystem(const IFiniteElement& fe);
     friend auto calculateLHS(const IFiniteElement& fe);
     friend auto calculateRHS(const IFiniteElement& fe);
-    friend auto getDofVector(IFiniteElement& fe);
+    friend auto getEntityVariablePairs(IFiniteElement& fe);
   };
 
   void initialize(IFiniteElement& fe) { fe.feimpl->do_initialize(); }
@@ -70,6 +71,6 @@ namespace Ikarus::FiniteElements {
   auto calculateLocalSystem(const IFiniteElement& fe) { return fe.feimpl->do_calculateLocalSystem(); }
   auto calculateLHS(const IFiniteElement& fe) { return fe.feimpl->do_calculateLHS(); }
   auto calculateRHS(const IFiniteElement& fe) { return fe.feimpl->do_calculateRHS(); }
-  auto getDofVector(IFiniteElement& fe) { return fe.feimpl->do_getDofVector(); }
+  auto getEntityVariablePairs(IFiniteElement& fe) { return fe.feimpl->do_getEntityVariablePairs(); }
 
 }  // namespace Ikarus::FiniteElements

@@ -41,7 +41,7 @@ namespace Ikarus::Grid {
    * These entities have no grid father
    **/
   template <int griddim, int wdim>
-  class DefaultGridEntity<griddim, 0, wdim> : public Ikarus::Variable::DofOwnerDecorator {
+  class DefaultGridEntity<griddim, 0, wdim>  {
   public:
     DefaultGridEntity(int levelInput, size_t idInput) : levelIndex{levelInput}, id{idInput} {}
 
@@ -149,7 +149,7 @@ namespace Ikarus::Grid {
    * These entities have no grid children, since they are vertices!
    **/
   template <int griddim, int wdim>
-  class DefaultGridEntity<griddim, griddim, wdim> : public Ikarus::Variable::DofOwnerDecorator {
+  class DefaultGridEntity<griddim, griddim, wdim> {
   public:
     DefaultGridEntity(int levelInput, const FixedVector<double, wdim>& vecInput, size_t idInput)
         : levelIndex{levelInput}, id{idInput}, position{vecInput} {}
@@ -234,7 +234,7 @@ namespace Ikarus::Grid {
    * These entities live inbetween the vertices and elements, i.e. edges,surface
    **/
   template <int griddim, int cogriddim, int wdim>
-  class DefaultGridEntity : public Ikarus::Variable::DofOwnerDecorator {
+  class DefaultGridEntity  {
   public:
     DefaultGridEntity(int levelInput, size_t idInput) : levelIndex{levelInput}, id{idInput} {}
 

@@ -15,9 +15,8 @@ list(APPEND CMAKE_PREFIX_PATH
 include_directories(../libAddons/eigen/eigenAddons)
 
 file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
-message("GTest")
+
 find_package(GTest CONFIG REQUIRED)
-message("GTest")
 add_executable(IkarusTests ${sources})
 
 target_link_libraries(
@@ -27,7 +26,13 @@ target_link_libraries(
 )
 set_target_properties(IkarusTests PROPERTIES CXX_STANDARD 20)
 
-target_compile_options(IkarusTests PUBLIC -Wall -Wpedantic -Wextra -Werror -fconcepts-diagnostics-depth=3)
+target_compile_options(IkarusTests PUBLIC -Wall -Wpedantic -Wextra -Werror)
+
+if(MINGW)
+  target_compile_options(IkarusTests PUBLIC -Wa,-mbig-obj)
+endif()
+
+
 target_compile_features(IkarusTests PRIVATE cxx_std_20)
 
 include(GoogleTest)

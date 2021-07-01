@@ -11,10 +11,12 @@
 #include <Eigen/Dense>
 
 #include "ikarus/Interpolators/Interpolator.h"
+#include <ikarus/utils/LinearAlgebraHelper.h>
 
 namespace Ikarus::Geometry {
 
-  template <typename ct, int wdim, int geodim, std::enable_if_t<geodim <= wdim, bool> = true>
+  template <typename ct, int wdim, int geodim>
+  requires requires { geodim <= wdim; }
   class GeometryWithExternalInput {
   public:
     /** \brief Type used for coordinates */
@@ -41,7 +43,7 @@ namespace Ikarus::Geometry {
     template <typename DerivedAnsatzFunctionType, typename GlobalCoordinateListType>
     static ctype determinantJacobian(const Eigen::MatrixBase<DerivedAnsatzFunctionType>& dN,
                                      const Eigen::MatrixBase<GlobalCoordinateListType>& nodevalueList) {
-      const auto JT = getJacobianTransposed(dN, nodevalueList);
+      const auto JT = jacobianTransposed(dN, nodevalueList);
       return sqrt((JT * JT.transpose()).determinant());
     }
 
@@ -50,7 +52,6 @@ namespace Ikarus::Geometry {
                                                  const Eigen::MatrixBase<GlobalCoordinateListType>& nodevalueList) {
       static_assert(DerivedAnsatzFunctionType::ColsAtCompileTime == mydimension);
       static_assert(GlobalCoordinateListType::RowsAtCompileTime == coorddimension);
-      spdlog::info("{} {}", dN.rows(), nodevalueList.cols());
       assert(dN.rows() == nodevalueList.cols());
       JacobianTransposed JT;
       for (int i = 0; i < JT.rows(); ++i)
@@ -63,20 +64,30 @@ namespace Ikarus::Geometry {
     static JacobianInverseTransposed jacobianInverseTransposed(
         const Eigen::MatrixBase<DerivedAnsatzFunctionType>& dN,
         const Eigen::MatrixBase<GlobalCoordinateListType>& nodevalueList) {
-      return getJacobianTransposed(dN, nodevalueList).completeOrthogonalDecomposition().pseudoInverse();
+      return jacobianTransposed(dN, nodevalueList).completeOrthogonalDecomposition().pseudoInverse();
+    }
+
+    template <typename DerivedAnsatzFunctionType, typename GlobalCoordinateListType>
+    static DerivedAnsatzFunctionType transformCurvLinearDerivativesToCartesian(
+        const Eigen::MatrixBase<DerivedAnsatzFunctionType>& dN,
+        const Eigen::MatrixBase<GlobalCoordinateListType>& nodevalueList) {
+      const JacobianTransposed jT     = jacobianTransposed(dN, nodevalueList);
+      const auto jCart = Ikarus::LinearAlgebra::orthonormalizeMatrixColumns(jT.transpose());
+
+      return dN * (jT * jCart).inverse().transpose() ;
     }
   };
 
   template <typename ScalarType>
-  using BrickGeometry = GeometryWithExternalInput<ScalarType, 3, 3>;
+  using ExternalBrickGeometry = GeometryWithExternalInput<ScalarType, 3, 3>;
   template <typename ScalarType>
-  using SurfaceGeometry = GeometryWithExternalInput<ScalarType, 3, 2>;
+  using ExternalSurfaceGeometry = GeometryWithExternalInput<ScalarType, 3, 2>;
   template <typename ScalarType>
-  using PlaneGeometry = GeometryWithExternalInput<ScalarType, 2, 2>;
+  using ExternalPlaneGeometry = GeometryWithExternalInput<ScalarType, 2, 2>;
   template <typename ScalarType>
-  using Curve3dGeometry = GeometryWithExternalInput<ScalarType, 3, 1>;
+  using ExternalCurve3dGeometry = GeometryWithExternalInput<ScalarType, 3, 1>;
   template <typename ScalarType>
-  using Curve2dGeometry = GeometryWithExternalInput<ScalarType, 2, 1>;
+  using ExternalCurve2dGeometry = GeometryWithExternalInput<ScalarType, 2, 1>;
   template <typename ScalarType>
-  using Curve1dGeometry = GeometryWithExternalInput<ScalarType, 1, 1>;
+  using ExternalCurve1dGeometry = GeometryWithExternalInput<ScalarType, 1, 1>;
 }  // namespace Ikarus::Geometry

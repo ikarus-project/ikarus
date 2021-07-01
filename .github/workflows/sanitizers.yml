@@ -1,5 +1,9 @@
 name: Ubuntu-Sanitizers
-on: [push]
+on:
+  push:
+    paths-ignore:
+      - 'docs/**'
+      - '.github/workflows/ghpages.yml'
 jobs:
   Ubuntu-Sanitizers:
     runs-on: ubuntu-latest

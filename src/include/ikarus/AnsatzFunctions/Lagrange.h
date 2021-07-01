@@ -155,7 +155,7 @@ namespace Ikarus {
       std::array<unsigned int, dim> alpha;
       for (unsigned int j = 0; j < dim; j++) {
         alpha[j] = i % (k + 1);
-        i = i / (k + 1);
+        i        = i / (k + 1);
       }
       return alpha;
     }

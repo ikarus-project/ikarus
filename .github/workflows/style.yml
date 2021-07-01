@@ -5,10 +5,16 @@ on:
     branches:
       - master
       - main
+    paths-ignore:
+      - 'docs/**'
+      - '.github/workflows/ghpages.yml'
   pull_request:
     branches:
       - master
       - main
+    paths-ignore:
+      - 'docs/**'
+      - '.github/workflows/ghpages.yml'
 
 env:
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
