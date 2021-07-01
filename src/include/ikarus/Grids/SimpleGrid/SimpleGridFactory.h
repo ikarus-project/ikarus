@@ -23,7 +23,7 @@ namespace Ikarus::Grid {
     using VertexCoordinateType = FixedVector<double, dimensionworld>;
 
   public:
-    void insertElement(const Dune::GeometryType& type, const DynArrayXi& vertices);
+    void insertElement(const Dune::GeometryType& type, const std::span<size_t> vertices);
     void insertVertex(const VertexCoordinateType& pos);
 
     GridType createGrid();
@@ -31,20 +31,20 @@ namespace Ikarus::Grid {
   private:
     struct VertexIndexPair {
       FixedVector<double, dimensionworld> vertex;
-      unsigned int index;
+      size_t index;
     };
 
-    void insertVertexIndicesinEdge(std::array<int, 2>&& indices) {
+    void insertVertexIndicesinEdge(std::vector<size_t>&& indices) {
       std::ranges::sort(indices);
       auto index = Ikarus::stl::appendUnique(edgesVertexIndices, indices);
       elementEdgeIndices.back().push_back(index);
     }
 
     /** \brief Counter that creates the vertex indices */
-    unsigned int vertexIndex{};
-    std::vector<std::array<int, 2>> edgesVertexIndices;
+    size_t vertexIndex{};
+    std::vector<std::vector<size_t>> edgesVertexIndices;
     std::vector<VertexIndexPair> verticesPositions;
-    std::vector<DynArrayXi> elementsVertices;
+    std::vector<std::vector<size_t>> elementsVertices;
     std::vector<std::vector<size_t>> elementEdgeIndices;
   };
 
