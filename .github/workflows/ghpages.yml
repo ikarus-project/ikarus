@@ -11,7 +11,6 @@ jobs:
       - name: Build Website
         working-directory: ./repo
         run: |
-          source activate autodiff
           cmake -S /docs -B .build
           cmake --build .build --target site
       - name: Deploy Website
