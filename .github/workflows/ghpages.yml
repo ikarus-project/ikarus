@@ -21,6 +21,6 @@ jobs:
         with:
           personal_token: ${{ secrets.ORGANIZATION_TOKEN }}
           external_repository: IkarusRepo/Ikarus.github.io
-          publish_dir: ./site
+          publish_dir: ./docs/site
           publish_branch: master
           commit_message: ${{ github.event.head_commit.message }}
