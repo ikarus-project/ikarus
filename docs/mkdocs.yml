@@ -31,7 +31,7 @@ theme:
 
 
 # Path where the markdown files are
-docs_dir: 'site'
+docs_dir: 'website'
 
 # Navigation
 nav:

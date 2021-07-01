@@ -33,7 +33,7 @@ TEST(DofHandler, DofHandlertest) {
   for (auto&& vert : verticesVec)
     gridFactory.insertVertex(vert);
 
-  Ikarus::DynArrayXi elementIndices;
+  std::vector<size_t> elementIndices;
   elementIndices.resize(4);
   elementIndices << 0, 1, 2, 3;
   gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, elementIndices);
