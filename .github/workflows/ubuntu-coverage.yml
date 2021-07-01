@@ -3,6 +3,7 @@ on:
   push:
     paths-ignore:
       - 'docs/**'
+      - '.github/workflows/ghpages.yml'
 env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   
