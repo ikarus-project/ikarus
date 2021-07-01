@@ -1,6 +1,8 @@
 name: Ubuntu-GCC-Debug-CodeCov
-on: [push]
-
+on:
+  push:
+    paths-ignore:
+      - 'docs/**'
 env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   
