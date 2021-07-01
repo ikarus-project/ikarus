@@ -13,7 +13,8 @@ jobs:
           pip install mkdocs-macros-plugin
       - name: Build Website
         run: |
-          cmake -S docs -B .build
+          cd docs
+          cmake -B .build
           cmake --build .build --target site
       - name: Deploy Website
         uses: peaceiris/actions-gh-pages@v3
@@ -21,5 +22,5 @@ jobs:
           personal_token: ${{ secrets.ORGANIZATION_TOKEN }}
           external_repository: IkarusRepo/Ikarus.github.io
           publish_dir: ./.build/docs/site
-          publish_branch: master 
+          publish_branch: master
           commit_message: ${{ github.event.head_commit.message }}
