@@ -50,14 +50,14 @@ TEST(GridTest, GridViewTest) {
   for (auto &&vert : verticesVec)
     gridFactory.insertVertex(vert);
 
-  Ikarus::DynArrayXi elementIndices;
+  std::vector<size_t> elementIndices;
   elementIndices.resize(4);
-  elementIndices << 0, 1, 2, 3;
+  elementIndices = {0, 1, 2, 3};
   gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, elementIndices);
-  elementIndices << 1, 4, 3, 5;
+  elementIndices = {1, 4, 3, 5};
   gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, elementIndices);
   elementIndices.resize(3);
-  elementIndices << 4, 6, 5;
+  elementIndices = {4, 6, 5};
   gridFactory.insertElement(Dune::GeometryTypes::triangle, elementIndices);
 
   Grid grid = gridFactory.createGrid();
@@ -107,7 +107,7 @@ TEST(GridTest, GridViewTest) {
     }
     ++eleCounter;
   }
-  draw(gridView);
+
 }
 
 /**
@@ -132,14 +132,14 @@ TEST(GridTest, GridView3DSurfaceTest) {
   for (auto &&vert : verticesVec)
     gridFactory.insertVertex(vert);
 
-  Ikarus::DynArrayXi elementIndices;
+  std::vector<size_t> elementIndices;
   elementIndices.resize(4);
-  elementIndices << 0, 1, 2, 3;
+  elementIndices = {0, 1, 2, 3};
   gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, elementIndices);
-  elementIndices << 1, 4, 3, 5;
+  elementIndices = {1, 4, 3, 5};
   gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, elementIndices);
   elementIndices.resize(3);
-  elementIndices << 4, 6, 5;
+  elementIndices = {4, 6, 5};
   gridFactory.insertElement(Dune::GeometryTypes::triangle, elementIndices);
 
   Grid actualGrid = gridFactory.createGrid();
@@ -202,12 +202,12 @@ TEST(GridTest, GridView3DSolidTest) {
   for (auto &&vert : verticesVec)
     gridFactory.insertVertex(vert);
 
-  Ikarus::DynArrayXi elementIndices;
+  std::vector<size_t> elementIndices;
   elementIndices.resize(8);
-  elementIndices << 0, 1, 2, 3, 4, 5, 6, 7;
+  elementIndices =  {0, 1, 2, 3, 4, 5, 6, 7};
   gridFactory.insertElement(Dune::GeometryTypes::hexahedron, elementIndices);
   elementIndices.resize(4);
-  elementIndices << 1, 8, 3, 5;
+  elementIndices = {1, 8, 3, 5};
   gridFactory.insertElement(Dune::GeometryTypes::tetrahedron, elementIndices);
   //  elementIndices.resize(3);
   //  elementIndices<< 4,6,5;
@@ -263,7 +263,7 @@ TEST(GridTest, GridView3DSolidTest) {
 
   std::vector<int> expectedEdgesAtVertex{3, 4, 3, 5, 3, 5, 3, 3, 3};
   for (int i = 0; auto &&vertex : vertices(gridView))
-    EXPECT_EQ(volumes(vertex).size(), expectedEdgesAtVertex[i++]);
+    EXPECT_EQ(edges(vertex).size(), expectedEdgesAtVertex[i++]);
 }
 
 TEST(GridTest, GridInsertionException) {
@@ -280,16 +280,16 @@ TEST(GridTest, GridInsertionException) {
   for (auto &&vert : verticesVec)
     gridFactory.insertVertex(vert);
 
-  Ikarus::DynArrayXi elementIndices;
+  std::vector<size_t> elementIndices;
   elementIndices.resize(4);
-  elementIndices << 0, 1, 2, 3;
+  elementIndices = {0, 1, 2, 3};
   EXPECT_THROW(gridFactory.insertElement(Dune::GeometryTypes::triangle, elementIndices), Dune::GridError);
 
   EXPECT_THROW(gridFactory.insertElement(Dune::GeometryTypes::hexahedron, elementIndices), Dune::GridError);
 
   EXPECT_THROW(gridFactory.insertElement(Dune::GeometryTypes::line, elementIndices), Dune::GridError);
   elementIndices.resize(3);
-  elementIndices << 0, 1, 2;
+  elementIndices = {0, 1, 2};
 
   EXPECT_THROW(gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, elementIndices), Dune::GridError);
 }

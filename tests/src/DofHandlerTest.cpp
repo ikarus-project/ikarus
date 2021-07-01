@@ -35,9 +35,9 @@ TEST(DofHandler, DofHandlertest) {
 
   std::vector<size_t> elementIndices;
   elementIndices.resize(4);
-  elementIndices << 0, 1, 2, 3;
+  elementIndices = {0, 1, 2, 3};
   gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, elementIndices);
-  elementIndices << 1, 4, 3, 5;
+  elementIndices = {1, 4, 3, 5};
   gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, elementIndices);
 
   Grid grid = gridFactory.createGrid();
