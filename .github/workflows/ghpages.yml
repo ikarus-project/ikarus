@@ -11,13 +11,13 @@ jobs:
       - name: Build Website
         working-directory: ./repo
         run: |
-          cmake -S .docs -B .build
+          cmake -S docs -B .build
           cmake --build .build --target site
       - name: Deploy Website
         uses: peaceiris/actions-gh-pages@v3
         with:
           personal_token: ${{ secrets.ORGANIZATION_TOKEN }}
-          external_repository: autodiff/autodiff.github.io
+          external_repository: IkarusRepo/Ikarus.github.io
           publish_dir: ./.build/docs/site
           publish_branch: master
           commit_message: ${{ github.event.head_commit.message }}
