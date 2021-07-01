@@ -1,0 +1,24 @@
+name: Docs
+on: [push]
+jobs:
+  Build:
+    name: ${{ matrix.config.name }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+         path: 'repo'
+      - name: Build Website
+        working-directory: ./repo
+        run: |
+          source activate autodiff
+          cmake -S /docs -B .build
+          cmake --build .build --target site
+      - name: Deploy Website
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          personal_token: ${{ secrets.ORGANIZATION_TOKEN }}
+          external_repository: autodiff/autodiff.github.io
+          publish_dir: ./.build/docs/site
+          publish_branch: master
+          commit_message: ${{ github.event.head_commit.message }}

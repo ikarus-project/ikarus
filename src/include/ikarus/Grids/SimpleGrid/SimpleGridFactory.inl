@@ -17,7 +17,7 @@ namespace Ikarus::Grid {
    *
    **/
   template <Concepts::Grid GridType>
-  void SimpleGridFactory<GridType>::insertElement(const Dune::GeometryType &type, const DynArrayXi &verticesIn) {
+  void SimpleGridFactory<GridType>::insertElement(const Dune::GeometryType &type, std::span<size_t> verticesIn) {
     if (type.dim() != dimension) DUNE_THROW(Dune::GridError, "The inserted element has wrong dimensions!");
 
     elementEdgeIndices.emplace_back();
@@ -26,7 +26,6 @@ namespace Ikarus::Grid {
         DUNE_THROW(Dune::GridError, "You have requested to enter a line, but you"
                                         << " have provided " << verticesIn.size() << " vertices!");
     } else if (type.isTriangle()) {
-      // Everything alright
       if (verticesIn.size() != 3)
         DUNE_THROW(Dune::GridError, "You have requested to enter a triangle, but you"
                                         << " have provided " << verticesIn.size() << " vertices!");
@@ -100,7 +99,8 @@ namespace Ikarus::Grid {
     } else {
       DUNE_THROW(Dune::GridError, "You cannot insert a " << type << " into a SimpleGrid<" << dimensionworld << ">!");
     }
-    elementsVertices.emplace_back(verticesIn);
+    for (auto&& vert :verticesIn)
+      elementsVertices.emplace_back(vert);
   }
 
   template <Concepts::Grid GridType>

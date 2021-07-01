@@ -8,7 +8,7 @@ int main() {
   using namespace Ikarus::Grid;
   using Grid = SimpleGrid<3, 3>;
   SimpleGridFactory<Grid> gridFactory;
-  using vertexType = Ikarus::FixedVector3d;
+  using vertexType = Eigen::Vector3d;
   std::vector<vertexType> verticesVec;
   verticesVec.emplace_back(vertexType{0.0, 0.0, -3.0});  // 0
   verticesVec.emplace_back(vertexType{2.0, 0.0, -3.0});  // 1
@@ -20,20 +20,23 @@ int main() {
   verticesVec.emplace_back(vertexType{2.0, 2.0, 3.0});   // 7
   verticesVec.emplace_back(vertexType{4.0, 0.0, 3.0});   // 8
 
-  for (auto &&vert : verticesVec)
+  for (auto&& vert : verticesVec)
     gridFactory.insertVertex(vert);
 
-  Ikarus::DynArrayXi elementIndices;
+  std::vector<size_t> elementIndices;
   elementIndices.resize(8);
-  elementIndices << 0, 1, 2, 3, 4, 5, 6, 7;
+
+  elementIndices = {0, 1, 2, 3, 4, 5, 6, 7};
   gridFactory.insertElement(Dune::GeometryTypes::hexahedron, elementIndices);
   elementIndices.resize(4);
-  elementIndices << 1, 8, 3, 5;
+  elementIndices = {1, 8, 3, 5};
   gridFactory.insertElement(Dune::GeometryTypes::tetrahedron, elementIndices);
 
-  Grid actualGrid = gridFactory.createGrid();
+  Grid grid = gridFactory.createGrid();
 
-  auto gridView = actualGrid.leafGridView();
+  auto gridView = grid.leafGridView();
 
+  for(auto&& vertex : vertices(gridView))
+    vertex.
   draw(gridView);
 }
