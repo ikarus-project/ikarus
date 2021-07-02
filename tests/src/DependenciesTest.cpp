@@ -126,7 +126,7 @@ nu = 0.3
 #include <cstdlib>
 float foo(float f, float g) { return (f / g); }
 
-TEST(Dependencies, dunegridEntities) {
+//TEST(Dependencies, dunegridEntities) {
   //  using namespace Dune;
   //  FieldVector<double,1> a = -2.0;
   //  FieldVector<double,1> b =  3.0;
@@ -146,4 +146,4 @@ TEST(Dependencies, dunegridEntities) {
   // Does not work due to bug in GCC 11.1
   //  foo(1.0f,0.0f);
   //  [[maybe_unused]] int *i = (int*) malloc(sizeof(int));
-}
+//}
