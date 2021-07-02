@@ -14,18 +14,18 @@ jobs:
       fail-fast: false
       matrix:
         config:
-           - {
-             name: "Ubuntu-clang/latest/Debug",
-             config: Debug,
-             compilerC: clang-12,
-             compilerCxx: clang++-12,
+          - {
+            name: "Ubuntu-clang/latest/Debug",
+            config: Debug,
+            compilerC: clang-12,
+            compilerCxx: clang++-12,
            }
-           - {
-             name: "Ubuntu-clang/latest/Release",
-             config: Release,
-             compilerC: clang-12,
-             compilerCxx: clang++-12,
-          }
+          - {
+            name: "Ubuntu-clang/latest/Release",
+            config: Release,
+            compilerC: clang-12,
+            compilerCxx: clang++-12,
+           }
           - {
             name: "Ubuntu-GCC/latest/Debug",
             config: Debug,
