@@ -10,7 +10,7 @@
 #include <fstream>
 #include <vector>
 
-#include <Eigen/Core> // IWYU pragma: export
+#include <Eigen/Core>
 
 #include <ikarus/DofManager/DefaultDofManager.h>
 #include <ikarus/FiniteElements/ElasticityFE.h>
