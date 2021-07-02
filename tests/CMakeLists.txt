@@ -29,7 +29,7 @@ set_target_properties(IkarusTests PROPERTIES CXX_STANDARD 20)
 target_compile_options(IkarusTests PUBLIC -Wall -Wpedantic -Wextra -Werror)
 
 if(MINGW)
-  target_compile_options(IkarusTests PUBLIC -Wa,-mbig-obj)
+  target_compile_options(IkarusTests PUBLIC -Wa,-mbig-obj -flto -fno-fat-lto-objects)
 endif()
 
 
