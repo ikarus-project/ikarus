@@ -8,12 +8,12 @@
 
 //#include "spdlog/spdlog.h"
 #define EIGEN_MATRIXBASE_PLUGIN "IBB_Eigen_MatrixBaseAddon.h"
-#include "gtest/gtest.h"
-#include <gmock/gmock.h>
+#include <gtest/gtest.h> // IWYU pragma: keep
+#include <gmock/gmock.h> // IWYU pragma: keep
 
 #include "testHelpers.h"
 
-#include <Eigen/Core>
+#include <Eigen/Core> // IWYU pragma: keep
 
 #include "ikarus/AnsatzFunctions/Lagrange.h"
 #include "ikarus/Geometries/GeometryWithExternalInput.h"
