@@ -19,7 +19,7 @@ RUN apt-get update -q -y && apt-get upgrade -y && \
         clang \
         clang-tidy \
         libclang-12-dev \
-        libc++-dev \
+        libc++-12-dev \
         llvm-12-dev \
         liblapack-dev \
         libblas-dev \
