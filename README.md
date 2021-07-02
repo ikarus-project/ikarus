@@ -4,6 +4,7 @@
 [![Ubuntu-Sanitizers](https://github.com/IkarusRepo/Ikarus/actions/workflows/sanitizers.yml/badge.svg)](https://github.com/IkarusRepo/Ikarus/actions/workflows/sanitizers.yml)
 [![CodeStyle](https://github.com/IkarusRepo/Ikarus/actions/workflows/style.yml/badge.svg)](https://github.com/IkarusRepo/Ikarus/actions/workflows/style.yml)
 [![Docs](https://github.com/IkarusRepo/Ikarus/actions/workflows/ghpages.yml/badge.svg)](https://github.com/IkarusRepo/Ikarus/actions/workflows/ghpages.yml)
+[![CodeFactor](https://www.codefactor.io/repository/github/ikarusrepo/ikarus/badge/master)](https://www.codefactor.io/repository/github/ikarusrepo/ikarus/overview/master)
 # Ikarus
  
  
