@@ -38,4 +38,4 @@
 //    FunctionVectorType shapeFunctions;
 //};
 
-#endif  // FE_DESIGNPATTERN_SIMPLESHAPEFUNCTION_H
+//#endif  // FE_DESIGNPATTERN_SIMPLESHAPEFUNCTION_H
