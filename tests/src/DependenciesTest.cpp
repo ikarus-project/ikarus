@@ -7,9 +7,9 @@
 #include <vector>
 //#include "Geometries/Geometries.h"
 
-#include <gtest/gtest.h> // IWYU pragma: keep
+#include <gtest/gtest.h> // IWYU pragma: export
 
-#include <Eigen/Core> // IWYU pragma: keep
+#include <Eigen/Core> // IWYU pragma: export
 
 //#include "spdlog/fmt/ostr.h"
 //#include "spdlog/spdlog.h"
