@@ -31,14 +31,16 @@ namespace Ikarus::FiniteElements {
 
   private:
     struct FEBase {
-      virtual ~FEBase()                                                                       = default;
-      virtual void do_initialize()                                                            = 0;
-      [[nodiscard]] virtual int do_dofSize() const                                            = 0;
-      [[nodiscard]] virtual std::pair<DynVectord, DynMatrixd> do_calculateLocalSystem() const = 0;
-      [[nodiscard]] virtual DynMatrixd do_calculateLHS() const                                = 0;
-      [[nodiscard]] virtual DynVectord do_calculateRHS() const                                = 0;
-      [[nodiscard]] virtual DofVectorType do_getEntityVariablePairs()                         = 0;
-      [[nodiscard]] virtual std::unique_ptr<FEBase> clone() const                             = 0;
+      virtual ~FEBase()                            = default;
+      virtual void do_initialize()                 = 0;
+      [[nodiscard]] virtual int do_dofSize() const = 0;
+      [[nodiscard]] virtual std::pair<DynVectord, DynMatrixd> do_calculateLocalSystem(
+          const ElementVectorAffordances& vecA, const ElementMatrixAffordances& matA) const            = 0;
+      [[nodiscard]] virtual DynMatrixd do_calculateMatrix(const ElementMatrixAffordances& matA) const  = 0;
+      [[nodiscard]] virtual DynVectord do_calculateVector(const ElementVectorAffordances& vecA) const  = 0;
+      [[nodiscard]] virtual double do_calculateScalar(const ElementScalarAffordances& scalA) const = 0;
+      [[nodiscard]] virtual DofVectorType do_getEntityVariablePairs()                                  = 0;
+      [[nodiscard]] virtual std::unique_ptr<FEBase> clone() const                                      = 0;
     };
 
     template <typename FE>
@@ -46,11 +48,19 @@ namespace Ikarus::FiniteElements {
       explicit FEImpl(FE fearg) : fe{fearg} {};
       void do_initialize() final { TRYCALLFUNCTIONDONTTHROW(initialize); }
       [[nodiscard]] int do_dofSize() const final { TRYCALLFUNCTION(dofSize); }
-      [[nodiscard]] std::pair<DynVectord, DynMatrixd> do_calculateLocalSystem() const final {
-        TRYCALLFUNCTION(calculateLocalSystem);
+      [[nodiscard]] std::pair<DynVectord, DynMatrixd> do_calculateLocalSystem(
+          const ElementVectorAffordances& vecA, const ElementMatrixAffordances& matA) const final {
+        TRYCALLFUNCTION(calculateLocalSystem, vecA, matA);
       }
-      [[nodiscard]] DynMatrixd do_calculateLHS() const final { TRYCALLFUNCTION(calculateLHS); }
-      [[nodiscard]] DynVectord do_calculateRHS() const final { TRYCALLFUNCTION(calculateRHS); }
+      [[nodiscard]] DynMatrixd do_calculateMatrix(const ElementMatrixAffordances& matA) const final {
+        TRYCALLFUNCTION(calculateMatrix, matA);
+      }
+      [[nodiscard]] DynVectord do_calculateVector(const ElementVectorAffordances& vecA) const final {
+        TRYCALLFUNCTION(calculateVector, vecA);
+      }
+      [[nodiscard]] double do_calculateScalar(const ElementScalarAffordances& scalA) const final {
+        TRYCALLFUNCTION(calculateScalar, scalA);
+      }
       [[nodiscard]] DofVectorType do_getEntityVariablePairs() final { TRYCALLFUNCTION(getEntityVariablePairs); }
       [[nodiscard]] std::unique_ptr<FEBase> clone() const final { return std::make_unique<FEImpl>(*this); }
       FE fe;
@@ -60,17 +70,29 @@ namespace Ikarus::FiniteElements {
 
     friend void initialize(IFiniteElement& fe);
     friend int dofSize(const IFiniteElement& fe);
-    friend auto calculateLocalSystem(const IFiniteElement& fe);
-    friend auto calculateLHS(const IFiniteElement& fe);
-    friend auto calculateRHS(const IFiniteElement& fe);
+    friend auto calculateLocalSystem(const IFiniteElement& fe, const ElementVectorAffordances& vecA,
+                                     const ElementMatrixAffordances& matA);
+    friend auto calculateMatrix(const IFiniteElement& fe, const ElementMatrixAffordances& matA);
+    friend auto calculateVector(const IFiniteElement& fe, const ElementVectorAffordances& vecA);
+    friend auto calculateScalar(const IFiniteElement& fe, const ElementScalarAffordances& scalA);
     friend auto getEntityVariablePairs(IFiniteElement& fe);
   };
 
   void initialize(IFiniteElement& fe) { fe.feimpl->do_initialize(); }
   int dofSize(const IFiniteElement& fe) { return fe.feimpl->do_dofSize(); }
-  auto calculateLocalSystem(const IFiniteElement& fe) { return fe.feimpl->do_calculateLocalSystem(); }
-  auto calculateLHS(const IFiniteElement& fe) { return fe.feimpl->do_calculateLHS(); }
-  auto calculateRHS(const IFiniteElement& fe) { return fe.feimpl->do_calculateRHS(); }
+  auto calculateLocalSystem(const IFiniteElement& fe, const ElementVectorAffordances& vecA,
+                            const ElementMatrixAffordances& matA) {
+    return fe.feimpl->do_calculateLocalSystem(vecA, matA);
+  }
+  auto calculateMatrix(const IFiniteElement& fe, const ElementMatrixAffordances& matA) {
+    return fe.feimpl->do_calculateMatrix(matA);
+  }
+  auto calculateVector(const IFiniteElement& fe, const ElementVectorAffordances& vecA) {
+    return fe.feimpl->do_calculateVector(vecA);
+  }
+  auto calculateScalar(const IFiniteElement& fe, const ElementScalarAffordances& scalA) {
+    return fe.feimpl->do_calculateScalar(scalA);
+  }
   auto getEntityVariablePairs(IFiniteElement& fe) { return fe.feimpl->do_getEntityVariablePairs(); }
 
 }  // namespace Ikarus::FiniteElements

@@ -6,11 +6,14 @@
 
 namespace Ikarus::Concepts {
 
-#define TRYCALLFUNCTION(Str)                             \
+
+
+
+#define TRYCALLFUNCTION(Str,...)                             \
   if constexpr (Ikarus::Concepts::Has##Str<FE>)          \
-    return fe.Str();                                     \
+    return fe.Str(__VA_ARGS__);                                     \
   else if constexpr (Ikarus::Concepts::HasFree##Str<FE>) \
-    return Str(fe);                                      \
+    return Str(fe, ## __VA_ARGS__);                                      \
   else                                                   \
     DUNE_THROW(Dune::InvalidStateException,              \
                "The member function \"" << #Str << "\" is not implemented by this element");
@@ -24,22 +27,32 @@ namespace Ikarus::Concepts {
     return;
 
   template <typename PhysicalType>
-  concept HascalculateLHS = requires(PhysicalType pfe) {
+  concept HascalculateMatrix = requires(PhysicalType pfe) {
     pfe.calculateLHS();
   };
 
   template <typename PhysicalType>
-  concept HasFreecalculateLHS = requires(PhysicalType pfe) {
+  concept HasFreecalculateMatrix = requires(PhysicalType pfe) {
     calculateLHS(pfe);
   };
 
   template <typename PhysicalType>
-  concept HascalculateRHS = requires(PhysicalType pfe) {
+  concept HascalculateScalar = requires(PhysicalType pfe) {
+    pfe.calculateScalar();
+  };
+
+  template <typename PhysicalType>
+  concept HasFreecalculateScalar = requires(PhysicalType pfe) {
+    calculateScalar(pfe);
+  };
+
+  template <typename PhysicalType>
+  concept HascalculateVector = requires(PhysicalType pfe) {
     pfe.calculateRHS();
   };
 
   template <typename PhysicalType>
-  concept HasFreecalculateRHS = requires(PhysicalType pfe) {
+  concept HasFreecalculateVector = requires(PhysicalType pfe) {
     calculateRHS(pfe);
   };
 
@@ -83,3 +96,33 @@ namespace Ikarus::Concepts {
     initialize(pfe);
   };
 }  // namespace Ikarus::Concepts
+
+
+namespace Ikarus::FiniteElements
+{
+  enum class ElementVectorAffordances
+  {
+    internalforces
+  };
+
+  enum class ElementMatrixAffordances
+  {
+    stiffnessMatrix,
+    dStiffnessMatrixdBucklingVector,
+    massMatrix
+  };
+
+  enum class ElementScalarAffordances
+  {
+    potentialEnergy
+  };
+
+  inline constexpr ElementVectorAffordances internalforces = ElementVectorAffordances::internalforces;
+
+  inline constexpr ElementMatrixAffordances stiffnessMatrix = ElementMatrixAffordances::stiffnessMatrix;
+  inline constexpr ElementMatrixAffordances dStiffnessMatrixdBucklingVector = ElementMatrixAffordances::dStiffnessMatrixdBucklingVector;
+  inline constexpr ElementMatrixAffordances massMatrix = ElementMatrixAffordances::massMatrix;
+
+  inline constexpr ElementScalarAffordances potentialEnergy = ElementScalarAffordances::potentialEnergy;
+
+}

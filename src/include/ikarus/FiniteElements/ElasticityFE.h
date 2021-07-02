@@ -82,17 +82,17 @@ namespace Ikarus::FiniteElements {
 
     void initialize() { std::cout << "initialize ElasticityFE" << std::endl; }
 
-    [[nodiscard]] std::pair<VectorType, MatrixType> calculateLocalSystem() const {
+    [[nodiscard]] std::pair<VectorType, MatrixType> calculateLocalSystem(const ElementVectorAffordances& vecA,const ElementMatrixAffordances& matA) const {
       return calculateStiffnessMatrixAndInternalForcesImpl();
     }
 
-    [[nodiscard]] MatrixType calculateLHS() const {
+    [[nodiscard]] MatrixType calculateMatrix(const ElementMatrixAffordances& ) const {
       return calculateStiffnessMatrixAndInternalForcesImpl<false, true>();
     }
 
-    [[nodiscard]] double getEnergy() const { return 0.0; }
+    [[nodiscard]] double calculateScalar(const ElementScalarAffordances&) const { return 0.0; }
 
-    [[nodiscard]] VectorType calculateRHS() const {
+    [[nodiscard]] VectorType calculateVector(const ElementVectorAffordances&) const {
       return calculateStiffnessMatrixAndInternalForcesImpl<true, false>();
     }
 
