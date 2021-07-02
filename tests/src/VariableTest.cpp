@@ -1,8 +1,8 @@
 //
 // Created by Alex on 21.04.2021.
 //
-#include <gmock/gmock.h> // IWYU pragma: keep
-#include <gtest/gtest.h> // IWYU pragma: keep
+#include <gmock/gmock.h> // IWYU pragma: export
+#include <gtest/gtest.h> // IWYU pragma: export
 
 #include "testHelpers.h"
 
@@ -11,7 +11,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include <Eigen/Core> // IWYU pragma: keep
+#include <Eigen/Core> // IWYU pragma: export
 
 #include "ikarus/Manifolds/RealTuple.h"
 #include "ikarus/Variables/InterfaceVariable.h"
