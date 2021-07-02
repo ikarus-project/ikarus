@@ -19,14 +19,14 @@ jobs:
             config: Debug,
             compilerC: clang-12,
             compilerCxx: clang++-12,
-            lib: -stdlib=libc++,
+            lib: "-stdlib=libc++",
            }
           - {
             name: "Ubuntu-clang/latest/Release",
             config: Release,
             compilerC: clang-12,
             compilerCxx: clang++-12,
-            lib: -stdlib=libc++,
+            lib: "2-stdlib=libc++",
            }
           - {
             name: "Ubuntu-GCC/latest/Debug",
