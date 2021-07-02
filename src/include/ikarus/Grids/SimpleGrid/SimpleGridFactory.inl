@@ -17,7 +17,7 @@ namespace Ikarus::Grid {
    *
    **/
   template <Concepts::Grid GridType>
-  void SimpleGridFactory<GridType>::insertElement(const Dune::GeometryType &type,const std::vector<size_t>& verticesIn) {
+  void SimpleGridFactory<GridType>::insertElement(const Dune::GeometryType &type,const std::span<size_t> verticesIn) {
     if (type.dim() != dimension) DUNE_THROW(Dune::GridError, "The inserted element has wrong dimensions!");
 
     elementEdgeIndices.emplace_back();
@@ -100,7 +100,7 @@ namespace Ikarus::Grid {
       DUNE_THROW(Dune::GridError, "You cannot insert a " << type << " into a SimpleGrid<" << dimensionworld << ">!");
     }
 
-      elementsVertices.push_back(verticesIn);
+      elementsVertices.emplace_back(verticesIn.begin(),verticesIn.end());
   }
 
   template <Concepts::Grid GridType>

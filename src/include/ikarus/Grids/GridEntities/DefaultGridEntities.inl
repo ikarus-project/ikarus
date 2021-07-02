@@ -44,6 +44,8 @@ auto volumes(DefaultGridEntity<griddim, cogriddim, wdim>& gridEntity) {
   return std::span(gridEntity.getFatherElements().begin(), gridEntity.getFatherElements().end());
 }
 
+
+
   template <int griddim, int cogriddim, int wdim> auto edges(DefaultGridEntity<griddim, cogriddim, wdim>* gridEntity) {
     if constexpr (griddim == cogriddim)  // gridEntity is a vertex!
       return std::span(gridEntity->template getFatherEntities<griddim - 1>().begin(),
@@ -64,8 +66,14 @@ auto volumes(DefaultGridEntity<griddim, cogriddim, wdim>& gridEntity) {
 
   template <int griddim, int cogriddim, int wdim>
   auto surfaces(DefaultGridEntity<griddim, cogriddim, wdim>& gridEntity) {
-    return std::span(gridEntity.template getChildEntities<1>().begin(), gridEntity.template getChildEntities<1>().end());
+    return std::span(gridEntity.template getChildEntities<2>().begin(), gridEntity.template getChildEntities<2>().end());
   }
+
+
+template <int griddim, int cogriddim, int wdim,size_t dimE> requires requires {griddim>=dimE;}
+auto entities(DefaultGridEntity<griddim, cogriddim, wdim>& gridEntity,Dune::index_constant<dimE>&) {
+  return std::span(gridEntity.template getChildEntities<dimE>().begin(), gridEntity.template getChildEntities<dimE>().end());
+}
 
   /** \brief Return the fundamental geometric type of the entity, specialization for elements (codim==0) */
   template <int griddim, int wdim> Dune::GeometryType DefaultGridEntity<griddim, 0, wdim>::type() const {

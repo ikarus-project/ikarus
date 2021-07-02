@@ -7,6 +7,9 @@
 #include <ranges>
 #include <unordered_set>
 
+#include <dune/common/hybridutilities.hh>
+#include <dune/geometry/dimension.hh>
+
 #include <ikarus/FiniteElements/FiniteElementPolicies.h>
 #include <ikarus/Variables/InterfaceVariable.h>
 #include <ikarus/Variables/VariableDefinitions.h>
@@ -19,7 +22,7 @@ namespace Ikarus::DofHandler {
   public:
     size_t correctionSize() {
       if (!dofSizeCalculated) {
-        dofSizeValue = std::accumulate(begin(variableIndices), end(variableIndices), 0,
+        dofSizeValue      = std::accumulate(begin(variableIndices), end(variableIndices), 0,
                                        [](size_t acc, auto&& varVecLoc) { return acc + varVecLoc.size(); });
         dofSizeCalculated = true;
       }
@@ -43,7 +46,6 @@ namespace Ikarus::DofHandler {
   };
 
   VariableVector& operator+=(VariableVector& varVecArg, Eigen::VectorXd& correction) {
-
     assert(static_cast<long long int>(varVecArg.correctionSize()) == correction.size());
     for (size_t variableIndex = 0; auto&& var : std::ranges::join_view(varVecArg.dofVecimpl))
       var += correction(varVecArg.variableIndices[variableIndex++]);
@@ -52,7 +54,7 @@ namespace Ikarus::DofHandler {
 
   template <typename FEContainer, typename GridViewType>
   requires Concepts::HasgetEntityVariablePairs<typename std::remove_cvref_t<FEContainer>::value_type> || Concepts::
-  HasFreegetEntityVariablePairs<typename std::remove_cvref_t<FEContainer>::value_type>
+      HasFreegetEntityVariablePairs<typename std::remove_cvref_t<FEContainer>::value_type>
   class DefaultDofManager {
   public:
     using DofSet        = std::unordered_map<size_t, std::unordered_set<Ikarus::Variable::VariablesTags>>;
@@ -75,11 +77,13 @@ namespace Ikarus::DofHandler {
           // Create set of Dofs for each grid entity
           dofSet[entityID].insert(begin(dofTagVector), end(dofTagVector));
       }
-      std::vector<std::pair<size_t, std::unordered_set<Ikarus::Variable::VariablesTags>>> dofVector2(begin(dofSet),end(dofSet)) ;
-      std::ranges::sort(dofVector2,[](auto&& a , auto && b){ return a.first<b.first; })  ;
+      std::vector<std::pair<size_t, std::unordered_set<Ikarus::Variable::VariablesTags>>> dofVector2(begin(dofSet),
+                                                                                                     end(dofSet));
+      std::ranges::sort(dofVector2, [](auto&& a, auto&& b) { return a.first < b.first; });
 
       for (auto&& [entityID, dofTagVector] : dofVector2) {
         variableIndexMap[entityID] = indexCounter++;
+
         varVec.dofVecimpl.emplace_back();
         for (auto&& var : dofTagVector | std::views::transform(&Ikarus::Variable::VariableFactory::createVariable))
           varVec.dofVecimpl.back().push_back(var);
@@ -96,13 +100,34 @@ namespace Ikarus::DofHandler {
 
     size_t correctionSize() { return varVec.correctionSize(); }
 
+  private:
+    bool hasIndex(size_t iD) {
+      try {
+        variableIndexMap.at(iD);
+        return true;
+      } catch (const std::out_of_range&) {
+        return false;
+      }
+    }
+
+  public:
     template <typename FEType>
     size_t elementDofVectorSize(FEType& ele) {
       size_t dofsize = 0;
-      for (auto&& vert : vertices(ele)) {
-        auto vertID = vert->getID();
-        dofsize += Ikarus::Variable::correctionSize(varVec.dofVecimpl.at(variableIndexMap.at(vertID)));
-      }
+
+      auto dofsizeIncrementFromEntity = [this](auto&& ent) {
+        auto entID = ent->getID();
+        if (hasIndex(entID))
+          return Ikarus::Variable::correctionSize(varVec.dofVecimpl.at(variableIndexMap.at(entID)));
+        else
+          return size_t{0};
+      };
+      constexpr size_t dim = FEType::dimension;
+      // Loop over all entities of the grid and collect the sizes of their degrees of freedom
+      Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<dim>()), [&](auto i) {
+        for (auto&& ent : entities(ele, i))
+          dofsize += dofsizeIncrementFromEntity(ent);
+      });
       return dofsize;
     }
 
@@ -110,12 +135,23 @@ namespace Ikarus::DofHandler {
     auto elementDofIndices(FEType& ele) {
       Eigen::ArrayXi indices(elementDofVectorSize(ele));
       size_t posHelper = 0;
-      for (auto&& vert : vertices(ele)) {
-        auto vertID = vert->getID();
-        auto sizeOfVar = varVec.variableIndices[variableIndexMap.at(vertID)].size();
-        indices.template segment(posHelper,sizeOfVar) = varVec.variableIndices[variableIndexMap.at(vertID)];
-        posHelper += sizeOfVar;
-      }
+
+      auto dofIndicesFromEntity = [this, &posHelper, &indices](auto&& ent) {
+        auto entID = ent->getID();
+        if (hasIndex(entID)) {
+          auto sizeOfVar                                 = varVec.variableIndices[variableIndexMap.at(entID)].size();
+          indices.template segment(posHelper, sizeOfVar) = varVec.variableIndices[variableIndexMap.at(entID)];
+          posHelper += sizeOfVar;
+        }
+      };
+
+      constexpr size_t dim = FEType::dimension;
+      // Loop over all entities of the grid and collect the indices of their degrees of freedom
+      Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<dim>()), [&](auto i) {
+        for (auto&& ent : entities(ele, i))
+          dofIndicesFromEntity(ent);
+      });
+
       return indices;
     }
 

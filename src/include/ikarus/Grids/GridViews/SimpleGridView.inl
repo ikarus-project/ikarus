@@ -27,4 +27,9 @@ namespace Ikarus::Grid {
     return std::span(gridView.template begin<dim>(), gridView.template end<dim>());
   }
 
+    template <int dim, int dimworld, Ikarus::Concepts::Grid GridType,size_t dimE> requires requires {dim>=dimE;}
+  auto entities(SimpleGridView<dim, dimworld, GridType> &gridView,Dune::index_constant<dimE>&) {
+    return std::span(gridView.template begin<dim-dimE>(), gridView.template end<dim-dimE>());
+  }
+
 }  // namespace Ikarus::Grid
