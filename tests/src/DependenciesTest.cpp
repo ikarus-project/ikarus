@@ -121,29 +121,3 @@ nu = 0.3
   EXPECT_EQ(integrationType, "Gauss");
 }
 
-////#include <dune/common/fvector.hh>
-//#include <dune/grid/onedgrid.hh>
-#include <cstdlib>
-float foo(float f, float g) { return (f / g); }
-
-//TEST(Dependencies, dunegridEntities) {
-  //  using namespace Dune;
-  //  FieldVector<double,1> a = -2.0;
-  //  FieldVector<double,1> b =  3.0;
-  //  GridFactory<OneDGrid> gridFactory;
-  //  gridFactory.insertVertex(a);
-  //  gridFactory.insertVertex(b);
-  //  std::vector<unsigned int> verticesIndex ({0,1});
-  //
-  //  gridFactory.insertElement(GeometryTypes::line,verticesIndex);
-  //
-  //  std::unique_ptr<OneDGrid> grid = gridFactory.createGrid();
-  //  auto gridView = grid->leafGridView();
-  //
-  //  for (const auto& ele:elements(gridView)) {
-  ////      ele.geometry();
-  //  }
-  // Does not work due to bug in GCC 11.1
-  //  foo(1.0f,0.0f);
-  //  [[maybe_unused]] int *i = (int*) malloc(sizeof(int));
-//}
