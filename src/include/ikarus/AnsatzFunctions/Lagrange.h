@@ -13,7 +13,7 @@
  * This implementation is taken from
  https://gitlab.dune-project.org/core/dune-localfunctions/-/blob/master/dune/localfunctions/lagrange/lagrangecube.hh
  * and modified using Eigen Types
-
+ 
     Lagrange shape functions of arbitrary order have the property that
     \f$\hat\phi^i(x_j) = \delta_{i,j}\f$ for certain points \f$x_j\f$.
 
