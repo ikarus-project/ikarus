@@ -1,5 +1,10 @@
 name: Docs
-on: [push]
+
+on:
+  push:
+    branches:
+      - master
+      
 jobs:
   Build:
     name: ${{ matrix.config.name }}
