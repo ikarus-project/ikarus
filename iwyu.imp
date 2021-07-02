@@ -1,0 +1,3 @@
+[
+{ include: ["@<gtest/.*>", "public", "<gtest/gtest.h>", "public"] }
+]
