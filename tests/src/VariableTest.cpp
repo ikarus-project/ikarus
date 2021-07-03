@@ -91,6 +91,14 @@ TEST(DefaultVariableTest, UnitVectorDirector) {
   b.setValue(testVec);
 
   EXPECT_THAT(b.getValue(), EigenApproxEqual(testVec.normalized(), tol));
+
+  auto e{std::move(a)};
+
+  e.setValue(Eigen::Vector<double, 3>(0.0, 0.0, -1.0));
+
+  e = update(e, Eigen::Vector<double, 2>::UnitY());
+  const auto eExpected = Eigen::Vector<double, 3>(0 , 1.0/ sqrt(2), -1.0 / sqrt(2));
+  EXPECT_THAT(e.getValue(), EigenApproxEqual(eExpected, tol));
 }
 
 TEST(VariableTest, GenericVariableVectorTest) {
