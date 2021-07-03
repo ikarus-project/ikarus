@@ -82,10 +82,10 @@ namespace Ikarus::Grid {
         = decltype(Impl::ChildEntityPointerTupleGenerator<dimension, mydimension, dimensionworld>(
             std::make_integer_sequence<int, mydimension>()));
 
-    /** \brief Returns the number of subEntities of this entity, e.g. a line has two verteces as
+    /** \brief Returns the number of subEntities of this entity, e.g. a line has two vertices as
      * subtypes */
     [[nodiscard]] unsigned int subEntities(unsigned int codim) const {
-      assert(codim != 0 && "Don't ask for subEntities with codim 0 since this is the entity itself.");
+      assert(codim <= 3 && codim > 0 && "Only subentities with 0< codim <= 3 supported");
       if constexpr (mydimension == 1)
         return getChildVertices().size();
       else if constexpr (mydimension == 2) {
@@ -93,16 +93,16 @@ namespace Ikarus::Grid {
           return getChildEntities<1>().size();
         else if (codim == 2)
           return getChildEntities<0>().size();
-      } else if constexpr (mydimension == 3) {
+        else  // codim = 3
+          throw std::logic_error("A entity with dimension 2 does not have subentities with codim 3!");
+      } else {  //(mydimension == 3)
         if (codim == 1)
           return getChildEntities<2>().size();
         else if (codim == 2)
           return getChildEntities<1>().size();
-        else if (codim == 3)
+        else  // codim = 3
           return getChildEntities<0>().size();
-      } else
-        DUNE_THROW(Dune::InvalidStateException, "the dimension of the entity should be >0. It is" << dimension);
-      return 0;
+      }
     }
     /** \brief Return the fundamental geometric type of the entity */
     Dune::GeometryType type() const;
@@ -292,7 +292,8 @@ namespace Ikarus::Grid {
     /** \brief Returns the number of subEntities of this entity, e.g. a line has two verteces as
      * subtypes */
     [[nodiscard]] unsigned int subEntities(unsigned int codim) const {
-      assert(codim != 0 && "Don't ask for subEntities with codim 0 since this is the entity itself.");
+      assert(codim > 0 && codim <= 2 && "Two dimensional entities only have subentities in 0<codimension<=2.");
+
       if constexpr (mydimension == 1) return getChildVertices().size();
       if constexpr (mydimension == 2) {
         if (codim == 1)

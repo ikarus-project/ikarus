@@ -32,8 +32,10 @@ jobs:
         working-directory: ./cmake-build-debug
         run: ctest --output-on-failure --parallel 4 -C Debug
 
-      - name: collect code coverage
-        run: |
-          curl -s https://codecov.io/bash > .codecov
-          chmod +x .codecov
-          ./.codecov
+      - uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: tests
+          directory: ./
+          fail_ci_if_error: true # optional (default = false)
+          verbose: true # optional (default = false)

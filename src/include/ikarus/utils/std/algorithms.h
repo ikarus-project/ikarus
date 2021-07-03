@@ -19,7 +19,6 @@ namespace Ikarus::stl {
     size_t index  = std::distance(begin(c), it);
     if (it == end(c)) c.push_back(std::forward<Value>(v));
 
-    assert(!c.empty());
     return index;
   }
 
