@@ -34,13 +34,13 @@ namespace Ikarus {
     static constexpr size_t sizeOfShapeFunctions = Dune::StaticPower<k + 1, dim>::power;
 
     /** \brief Type of the point where the ansatzfunction should be evaluated */
-    using ParaMeterPointType = Ikarus::FixedVector<ScalarType, dim>;
+    using ParaMeterPointType = Eigen::Vector<ScalarType, dim>;
 
     /** \brief VectorType of evaluated Ansatzfunctions */
-    using VectorType = Ikarus::FixedVector<ScalarType, sizeOfShapeFunctions>;
+    using VectorType = Eigen::Vector<ScalarType, sizeOfShapeFunctions>;
 
     /** \brief Type of the Jacbian of the Ansatz Functions */
-    using JacobianType = Ikarus::FixedMatrix<ScalarType, sizeOfShapeFunctions, dim>;
+    using JacobianType = Eigen::Matrix<ScalarType, sizeOfShapeFunctions, dim>;
 
     static constexpr size_t size() { return sizeOfShapeFunctions; }
 
@@ -188,13 +188,13 @@ namespace Ikarus {
   //  static constexpr size_t sizeOfShapeFunctions = Dune::binomial(k+dim,dim);
   //
   //  /** \brief Type of the point where the ansatzfunction should be evaluated */
-  //  using ParaMeterPointType = Ikarus::FixedVector<ScalarType,dim>;
+  //  using ParaMeterPointType = Eigen::Vector<ScalarType,dim>;
   //
   //  /** \brief VectorType of evaluated Ansatzfunctions */
-  //  using VectorType = Ikarus::FixedVector<ScalarType,sizeOfShapeFunctions>;
+  //  using VectorType = Eigen::Vector<ScalarType,sizeOfShapeFunctions>;
   //
   //  /** \brief Type of the Jacbian of the Ansatz Functions */
-  //  using JacobianType = Ikarus::FixedMatrix<ScalarType,sizeOfShapeFunctions,dim>;
+  //  using JacobianType = Eigen::Matrix<ScalarType,sizeOfShapeFunctions,dim>;
   //
   //
   //  /** \brief Number of shape functions

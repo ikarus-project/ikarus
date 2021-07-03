@@ -27,10 +27,10 @@ namespace Ikarus::Manifold {
     static constexpr int correctionSize = d - 1;
 
     /** \brief VectorType of the values of the manifold */
-    using CoordinateType = typename Ikarus::FixedVector<ctype, valueSize>;
+    using CoordinateType = typename Eigen::Vector<ctype, valueSize>;
 
     /** \brief VectorType of the values of the correction living in the tangentspace */
-    using CorrectionType = typename Ikarus::FixedVector<ctype, correctionSize>;
+    using CorrectionType = typename Eigen::Vector<ctype, correctionSize>;
 
     UnitVector() = default;
 

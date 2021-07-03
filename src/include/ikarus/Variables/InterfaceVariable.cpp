@@ -26,7 +26,7 @@ namespace Ikarus::Variable {
   IVariable operator+(IVariable* vo, const IVariable::UpdateType& correction) { return ((*vo) + correction); }
 
   void setValue(IVariable& vo, const IVariable::UpdateType& value) { return vo.variableImpl->do_setValue(value); }
-  Ikarus::DynVectord getValue(const IVariable& vo) { return vo.variableImpl->do_getValue(); }
+  IVariable::CoordinateType getValue(const IVariable& vo) { return vo.variableImpl->do_getValue(); }
   size_t getTag(const IVariable& var) { return var.variableImpl->do_getTag(); }
   bool operator==(const IVariable& var, const IVariable& other) { return var.variableImpl->do_equalComparison(other); }
   bool operator<(const IVariable& var, const IVariable& other) { return var.variableImpl->do_lessComparison(other); }
@@ -39,7 +39,7 @@ namespace Ikarus::Variable {
     return std::accumulate(varSpan.begin(), varSpan.end(), size_t{0},
                            [](size_t cursize, const IVariable& var) { return cursize + correctionSize(var); });
   }
-  void update(std::span<IVariable> varSpan, const Ikarus::DynVectord& correction) {
+  void update(std::span<IVariable> varSpan, const Eigen::VectorXd& correction) {
     assert(static_cast<Eigen::Index>(correctionSize(varSpan)) == correction.size());
     // update Variable
     Eigen::Index posHelper = 0;

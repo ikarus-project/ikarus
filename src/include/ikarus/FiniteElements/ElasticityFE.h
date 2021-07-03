@@ -68,10 +68,10 @@ namespace Ikarus::FiniteElements {
      * using NodalSolutionType = Displacement<ctype,coorddimension>;*/
 
     /** \brief Type of the internal forces */
-    using VectorType = DynVectord;
+    using VectorType = Eigen::VectorXd;
 
     /** \brief Type of the stiffness matrix */
-    using MatrixType = DynMatrixd;
+    using MatrixType = Eigen::MatrixXd;
 
     [[nodiscard]] constexpr int dofSize() const {
       if constexpr (coorddimension == 3)

@@ -33,7 +33,7 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
 
   using Grid = SimpleGrid<2, 2>;
   SimpleGridFactory<Grid> gridFactory;
-  using vertexType = Ikarus::FixedVector2d;
+  using vertexType = Eigen::Vector2d;
   std::vector<vertexType> verticesVec;
   verticesVec.emplace_back(vertexType{0.0, 0.0});  // 0
   verticesVec.emplace_back(vertexType{2.0, 0.0});  // 1
@@ -60,8 +60,8 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
   for (auto&& element : volumes(gridView))
     fes.emplace_back(Ikarus::FiniteElements::ElasticityFE(element));
 
-  Ikarus::DynVectord fint{};
-  Ikarus::DynMatrixd K{};
+  Eigen::VectorXd fint{};
+  Eigen::MatrixXd K{};
   fint.setZero(8);
   K.setZero(8, 8);
   for (auto&& fe : fes) {
