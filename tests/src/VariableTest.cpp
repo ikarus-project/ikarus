@@ -22,7 +22,7 @@ TEST(DefaultVariableTest, RealTupleDisplacement) {
   using namespace Ikarus::Variable;
   auto a = VariableFactory::createVariable(Ikarus::Variable::displacement3d);
   auto q = a;
-  auto p = std::move(q);
+  const auto p = std::move(q);
   a += Eigen::Vector<double, 3>::UnitX();
   EXPECT_EQ(getValue(a), (Eigen::Vector<double, 3>::UnitX()));
 
@@ -49,7 +49,7 @@ TEST(DefaultVariableTest, RealTupleDisplacement) {
 
   EXPECT_EQ(getValue(b), testVec);
   for (auto&& varTag : Ikarus::Variable::AllTags)
-    auto h = VariableFactory::createVariable(varTag);
+     auto h = VariableFactory::createVariable(varTag);
 
   std::stringstream testStream;
   testStream << b;

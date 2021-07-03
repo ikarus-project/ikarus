@@ -74,6 +74,7 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
     EXPECT_EQ(calculateMatrix(fe, stiffness).cols(), 8);
     EXPECT_EQ(calculateMatrix(fe, stiffness).rows(), 8);
     EXPECT_THROW(calculateMatrix(fe, mass), std::logic_error);
+    EXPECT_THROW(calculateLocalSystem(fe, mass,forces), std::logic_error);
     EXPECT_EQ(KEle.rows(), 8);
     EXPECT_EQ(KEle.cols(), 8);
     EXPECT_EQ(fintEle.size(), 8);
@@ -82,8 +83,19 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
   Ikarus::FiniteElements::IFiniteElement fe((TestFE()));
 
   initialize(fe);
-  auto entityIDDofPair = getEntityVariablePairs(fe);
-  for (auto&& [entityID, var] : entityIDDofPair) {
-    std::cout << entityID << " " << var[0] << std::endl;
+  const auto entityIDDofPair = getEntityVariablePairs(fes[0]);
+  std::vector<std::pair<size_t,Ikarus::Variable::VariablesTags>> idtagExpected;
+  idtagExpected.emplace_back(0,Ikarus::Variable::displacement2d);
+  idtagExpected.emplace_back(1,Ikarus::Variable::displacement2d);
+  idtagExpected.emplace_back(2,Ikarus::Variable::displacement2d);
+  idtagExpected.emplace_back(3,Ikarus::Variable::displacement2d);
+  for (int i = 0; auto&& [entityID, var] : entityIDDofPair) {
+    EXPECT_EQ(entityID,idtagExpected[i].first);
+    EXPECT_EQ(var.size(),1);
+    EXPECT_EQ(var[0],idtagExpected[i].second);
+    ++i;
   }
+
+
+  auto feT{fes[0]}; // test copy assignment
 }
