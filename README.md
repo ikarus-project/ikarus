@@ -1,4 +1,5 @@
 # Ikarus
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/14270805c7b44743ad17b3c3c9cb436e)](https://app.codacy.com/gh/IkarusRepo/Ikarus?utm_source=github.com&utm_medium=referral&utm_content=IkarusRepo/Ikarus&utm_campaign=Badge_Grade_Settings)
 [![Windows-MinGW-GCC](https://github.com/IkarusRepo/Ikarus/actions/workflows/windowsMinGW.yml/badge.svg)](https://github.com/IkarusRepo/Ikarus/actions/workflows/windowsMinGW.yml)
 [![Ubuntu](https://github.com/IkarusRepo/Ikarus/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/IkarusRepo/Ikarus/actions/workflows/ubuntu.yml)
 [![codecov](https://codecov.io/gh/IkarusRepo/Ikarus/branch/master/graph/badge.svg?token=zJgggitPMc)](https://codecov.io/gh/IkarusRepo/Ikarus)
