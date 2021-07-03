@@ -4,6 +4,7 @@
 
 #pragma once
 #include <memory>
+#include <iostream>
 
 #include <ikarus/FiniteElements/FiniteElementPolicies.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>

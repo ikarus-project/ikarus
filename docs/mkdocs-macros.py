@@ -18,7 +18,7 @@ def declare_variables(variables, macro):
             text = "".join(lines)
         else:
             text = f.read()
-        if linenumbers == False:
+        if linenumbers is False:
             textblock = f'```{{ .{language} .annotate}}\n{text}\n```'
         else:
             textblock = f'```{{ .{language} linenums="1" .annotate}} \n{text}\n```'
