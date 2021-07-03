@@ -45,12 +45,12 @@ namespace Ikarus::FiniteElements {
       virtual void do_initialize()                 = 0;
       [[nodiscard]] virtual int do_dofSize() const = 0;
       [[nodiscard]] virtual std::pair<Eigen::MatrixXd, Eigen::VectorXd> do_calculateLocalSystem(
-          const ElementMatrixAffordances& matA, const ElementVectorAffordances& vecA) const           = 0;
+          const ElementMatrixAffordances& matA, const ElementVectorAffordances& vecA) const                = 0;
       [[nodiscard]] virtual Eigen::MatrixXd do_calculateMatrix(const ElementMatrixAffordances& matA) const = 0;
       [[nodiscard]] virtual Eigen::VectorXd do_calculateVector(const ElementVectorAffordances& vecA) const = 0;
-      [[nodiscard]] virtual double do_calculateScalar(const ElementScalarAffordances& scalA) const    = 0;
-      [[nodiscard]] virtual DofVectorType do_getEntityVariablePairs() const                           = 0;
-      [[nodiscard]] virtual std::unique_ptr<FEBase> clone() const                                     = 0;
+      [[nodiscard]] virtual double do_calculateScalar(const ElementScalarAffordances& scalA) const         = 0;
+      [[nodiscard]] virtual DofVectorType do_getEntityVariablePairs() const                                = 0;
+      [[nodiscard]] virtual std::unique_ptr<FEBase> clone() const                                          = 0;
     };
 
     template <typename FE>
@@ -81,8 +81,8 @@ namespace Ikarus::FiniteElements {
     friend void initialize(IFiniteElement& fe);
     friend int dofSize(const IFiniteElement& fe);
     friend std::pair<Eigen::MatrixXd, Eigen::VectorXd> calculateLocalSystem(const IFiniteElement& fe,
-                                                                  const ElementMatrixAffordances& matA,
-                                                                  const ElementVectorAffordances& vecA);
+                                                                            const ElementMatrixAffordances& matA,
+                                                                            const ElementVectorAffordances& vecA);
     friend Eigen::MatrixXd calculateMatrix(const IFiniteElement& fe, const ElementMatrixAffordances& matA);
     friend Eigen::VectorXd calculateVector(const IFiniteElement& fe, const ElementVectorAffordances& vecA);
     friend double calculateScalar(const IFiniteElement& fe, const ElementScalarAffordances& scalA);
@@ -91,8 +91,9 @@ namespace Ikarus::FiniteElements {
 
   void initialize(IFiniteElement& fe);
   int dofSize(const IFiniteElement& fe);
-  std::pair<Eigen::MatrixXd, Eigen::VectorXd> calculateLocalSystem(const IFiniteElement& fe, const ElementMatrixAffordances& matA,
-                                                         const ElementVectorAffordances& vecA);
+  std::pair<Eigen::MatrixXd, Eigen::VectorXd> calculateLocalSystem(const IFiniteElement& fe,
+                                                                   const ElementMatrixAffordances& matA,
+                                                                   const ElementVectorAffordances& vecA);
   Eigen::MatrixXd calculateMatrix(const IFiniteElement& fe, const ElementMatrixAffordances& matA);
   Eigen::VectorXd calculateVector(const IFiniteElement& fe, const ElementVectorAffordances& vecA);
   double calculateScalar(const IFiniteElement& fe, const ElementScalarAffordances& scalA);
