@@ -95,7 +95,7 @@ namespace Ikarus::Grid {
           return getChildEntities<0>().size();
         else  // codim = 3
           throw std::logic_error("A entity with dimension 2 does not have subentities with codim 3!");
-      } else {
+      } else  { //(mydimension == 3)
         if (codim == 1)
           return getChildEntities<2>().size();
         else if (codim == 2)
