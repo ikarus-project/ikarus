@@ -32,9 +32,6 @@ jobs:
         working-directory: ./cmake-build-debug
         run: ctest --output-on-failure --parallel 4 -C Debug
 
-      - name: Find gcov
-        run: find / -type f -name "*.gcov"
-
       - uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -42,3 +39,5 @@ jobs:
           directory: ./cmake-build-debug/coverage
           fail_ci_if_error: true # optional (default = false)
           verbose: true # optional (default = false)
+      - name: Find gcov
+        run: find / -type f -name "*.gcov"          
