@@ -32,8 +32,10 @@ jobs:
         working-directory: ./cmake-build-debug
         run: ctest --output-on-failure --parallel 4 -C Debug
 
-      - name: collect code coverage
-        run: |
-          curl -Os https://uploader.codecov.io/latest/linux/codecov
-          chmod +x codecov
-          ./codecov -t ${CODECOV_TOKEN} -R ./cmake-build-debug
+      - uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: unittests # optional
+          directory: ./src/include/ikarus
+          fail_ci_if_error: true # optional (default = false)
+          verbose: true # optional (default = false)
