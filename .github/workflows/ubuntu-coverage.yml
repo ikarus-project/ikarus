@@ -36,6 +36,6 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: unittests # optional
-          directory: ./src/include/ikarus
+          directory: ./cmake-build-debug/coverage
           fail_ci_if_error: true # optional (default = false)
           verbose: true # optional (default = false)
