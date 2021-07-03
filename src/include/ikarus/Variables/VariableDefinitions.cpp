@@ -9,4 +9,4 @@ namespace Ikarus::Variable {
     s << variableNames[static_cast<int>(varTag)];
     return s;
   }
-}
+}  // namespace Ikarus::Variable
