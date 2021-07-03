@@ -292,7 +292,7 @@ namespace Ikarus::Grid {
     /** \brief Returns the number of subEntities of this entity, e.g. a line has two verteces as
      * subtypes */
     [[nodiscard]] unsigned int subEntities(unsigned int codim) const {
-      assert(codim > 0 && codim <= 2 && "Don't ask for subEntities with codim 0 since this is the entity itself.");
+      assert(codim > 0 && codim <= 2 && "Two dimensional entities only have subentities in 0<codimension<=2.");
 
       if constexpr (mydimension == 1) return getChildVertices().size();
       if constexpr (mydimension == 2) {
