@@ -22,10 +22,10 @@ TEST(DefaultVariableTest, RealTupleDisplacement) {
   using namespace Ikarus::Variable;
   auto a = VariableFactory::createVariable(Ikarus::Variable::displacement3d);
 
-  a+=Eigen::Vector<double, 3>::UnitX();
+  a += Eigen::Vector<double, 3>::UnitX();
   EXPECT_EQ(getValue(a), (Eigen::Vector<double, 3>::UnitX()));
 
-  a+=Eigen::Vector<double, 3>::UnitY();
+  a += Eigen::Vector<double, 3>::UnitY();
   EXPECT_EQ(getValue(a), (Eigen::Vector<double, 3>(1.0, 1.0, 0.0)));
 
   auto d = a + Eigen::Vector<double, 3>::UnitY();
@@ -42,9 +42,9 @@ TEST(DefaultVariableTest, RealTupleDisplacement) {
 
   b = a;
   EXPECT_EQ(b, a);
-  EXPECT_EQ(getValue(b) , getValue(a));
+  EXPECT_EQ(getValue(b), getValue(a));
   auto testVec = Eigen::Vector<double, 3>(127.0, -5.0, 1.0);
-  setValue(b,testVec);
+  setValue(b, testVec);
 
   EXPECT_EQ(getValue(b), testVec);
 }
@@ -132,7 +132,6 @@ TEST(VariableTest, GenericVariableVectorTest) {
   EXPECT_THAT(
       getValue(varVec[3]),
       EigenApproxEqual(Eigen::Vector3d(0.41279806929140905325, 0.50645665044957854928, -0.75703329861022516933), tol));
-
 }
 
 #include <ikarus/Grids/GridEntities/DefaultGridEntities.h>
