@@ -26,12 +26,12 @@
 #include <iostream>
 
 #include <dune/common/classname.hh>
+#include <dune/geometry/type.hh>
 
 #include <spdlog/spdlog.h>
 
-//#include <ikarus/Variables/GenericVariable.h>
-#include <dune/geometry/type.hh>
-
+#include <ikarus/FiniteElements/FiniteElementPolicies.h>
+#include <ikarus/FiniteElements/InterfaceFiniteElement.h>
 #include <ikarus/Variables/VariableDefinitions.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
 
@@ -40,11 +40,11 @@ namespace Ikarus::Variable {
 }
 
 namespace Ikarus::FiniteElements {
+
   template <typename GridElementEntityType, std::floating_point ct = double>
   class ElasticityFE {
   public:
-    explicit ElasticityFE(GridElementEntityType& gE) : elementGridEntity{&gE} {
-    }
+    explicit ElasticityFE(GridElementEntityType& gE) : elementGridEntity{&gE} {}
 
     /** \brief Type used for coordinates */
     using ctype = ct;
@@ -62,7 +62,7 @@ namespace Ikarus::FiniteElements {
     using ParameterSpaceType = Eigen::Matrix<ctype, mydimension, 1>;
 
     /** \brief Type of the DofVector */
-    using DofVectorType = std::vector<std::pair<size_t, std::vector<Ikarus::Variable::VariablesTags>>>;
+    using DofVectorType = typename IFiniteElement::DofVectorType;
 
     /** \brief Type of the Dofs / SolutionType
      * using NodalSolutionType = Displacement<ctype,coorddimension>;*/
@@ -73,20 +73,24 @@ namespace Ikarus::FiniteElements {
     /** \brief Type of the stiffness matrix */
     using MatrixType = DynMatrixd;
 
-    [[nodiscard]] constexpr int dofSize() const { return 3; }
-
-    void generateDofs() const {
-      //      std::vector<std::pair<
-      //      for(auto&& vertex : vertices(elementGridEntity))
+    [[nodiscard]] constexpr int dofSize() const {
+      if constexpr (coorddimension == 3)
+        return vertices(elementGridEntity).size() * 3;
+      else if constexpr (coorddimension == 2)
+        return vertices(elementGridEntity).size() * 2;
     }
 
     void initialize() { std::cout << "initialize ElasticityFE" << std::endl; }
 
-    [[nodiscard]] std::pair<VectorType, MatrixType> calculateLocalSystem(const ElementVectorAffordances& vecA,const ElementMatrixAffordances& matA) const {
-      return calculateStiffnessMatrixAndInternalForcesImpl();
+    [[nodiscard]] std::pair<MatrixType, VectorType> calculateLocalSystem(const ElementMatrixAffordances& matA,
+                                                                         const ElementVectorAffordances& vecA) const {
+      if (matA == stiffness && vecA == forces)
+        return calculateStiffnessMatrixAndInternalForcesImpl();
+      else
+        throw std::logic_error("This element can not handle your affordance! ");
     }
 
-    [[nodiscard]] MatrixType calculateMatrix(const ElementMatrixAffordances& ) const {
+    [[nodiscard]] MatrixType calculateMatrix(const ElementMatrixAffordances&) const {
       return calculateStiffnessMatrixAndInternalForcesImpl<false, true>();
     }
 
@@ -99,21 +103,21 @@ namespace Ikarus::FiniteElements {
     template <bool internalForcesFlag = true, bool stiffnessMatrixFlag = true>
     auto calculateStiffnessMatrixAndInternalForcesImpl() const {
       if constexpr (internalForcesFlag && stiffnessMatrixFlag) {
-        const VectorType Fint = VectorType::Ones(5);
-        const MatrixType K    = MatrixType::Ones(5, 5);
-        return std::make_pair(Fint, K);
+        const VectorType Fint = VectorType::Ones(8);
+        const MatrixType K    = MatrixType::Ones(8, 8);
+        return std::make_pair(K, Fint);
       }
 
       else if constexpr (internalForcesFlag && !stiffnessMatrixFlag)
-        return VectorType::Ones(5);
+        return VectorType::Ones(8);
       else if constexpr (!internalForcesFlag && stiffnessMatrixFlag)
-        return MatrixType::Ones(5, 5);
+        return MatrixType::Ones(8, 8);
       else
         static_assert(internalForcesFlag == false && stiffnessMatrixFlag == false,
                       "You asked the element: \"Don't return anything\"");
     }
 
-    [[nodiscard]] DofVectorType getEntityVariablePairs() {
+    [[nodiscard]] DofVectorType getEntityVariablePairs() const {
       DofVectorType dofs;
       for (auto&& vertex : vertices(elementGridEntity)) {
         if constexpr (coorddimension == 3)

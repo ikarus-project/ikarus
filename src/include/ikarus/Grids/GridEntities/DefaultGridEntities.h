@@ -41,7 +41,7 @@ namespace Ikarus::Grid {
    * These entities have no grid father
    **/
   template <int griddim, int wdim>
-  class DefaultGridEntity<griddim, 0, wdim>  {
+  class DefaultGridEntity<griddim, 0, wdim> {
   public:
     DefaultGridEntity(int levelInput, size_t idInput) : levelIndex{levelInput}, id{idInput} {}
 
@@ -234,7 +234,7 @@ namespace Ikarus::Grid {
    * These entities live inbetween the vertices and elements, i.e. edges,surface
    **/
   template <int griddim, int cogriddim, int wdim>
-  class DefaultGridEntity  {
+  class DefaultGridEntity {
   public:
     DefaultGridEntity(int levelInput, size_t idInput) : levelIndex{levelInput}, id{idInput} {}
 

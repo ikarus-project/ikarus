@@ -6,13 +6,15 @@
 #include <ranges>
 
 #include <ikarus/Variables/InterfaceVariable.h>
-#include <ikarus/Variables/VariableInterface.h>
+#include <ikarus/Variables/VariablePolicies.h>
 #include <ikarus/utils/std/algorithms.h>
 
 namespace Ikarus::Variable {
   class DofOwnerDecorator {
   public:
-    void addDof(Ikarus::Concepts::Variable auto&& var) { Ikarus::stl::appendUnique(vars, Ikarus::Variable::IVariable(var)); }
+    void addDof(Ikarus::Concepts::Variable auto&& var) {
+      Ikarus::stl::appendUnique(vars, Ikarus::Variable::IVariable(var));
+    }
 
     [[nodiscard]] auto& getDof(Ikarus::Concepts::Variable auto&& var) {
       // find using Tag
@@ -27,7 +29,7 @@ namespace Ikarus::Variable {
     std::vector<Ikarus::Variable::IVariable*> getDofs() {
       std::vector<Ikarus::Variable::IVariable*> pVars;
 
-      for(auto&& var: vars)
+      for (auto&& var : vars)
         pVars.push_back(&var);
 
       return pVars;

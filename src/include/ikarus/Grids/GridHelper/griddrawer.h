@@ -10,7 +10,7 @@
 template <typename GridView>
 void draw(GridView& gridView) {
   using namespace matplot;
-  auto f = figure(true);
+  auto f  = figure(true);
   auto ax = gca();
   hold(ax, true);
   for (auto&& edge : edges(gridView)) {

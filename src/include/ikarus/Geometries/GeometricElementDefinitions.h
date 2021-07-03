@@ -17,8 +17,7 @@ namespace Ikarus::Geometry {
   template <typename ScalarType>
   using QuadraticBrickGeometry = Geometry::SimpleGeometry<ScalarType, 3, 3, Ikarus::LagrangeCube<ScalarType, 3, 2>>;
 
-
-    template <typename ScalarType, int K>
+  template <typename ScalarType, int K>
   using PlaneGeometryK = Geometry::SimpleGeometry<ScalarType, 2, 2, Ikarus::LagrangeCube<ScalarType, 2, K>>;
 
   template <typename ScalarType>

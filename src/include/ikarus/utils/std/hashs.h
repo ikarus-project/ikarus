@@ -11,10 +11,9 @@
  *  https://www.techiedelight.com/use-std-pair-key-std-unordered_map-cpp/
  *  https://stackoverflow.com/questions/39370214/how-to-properly-hash-a-pair-of-pointers
  */
-struct pair_hash_naive
-{
-  template <class T1, class T2> requires (!std::same_as<T1,T2>)
-  std::size_t operator() (const std::pair<T1, T2> &pair) const {
+struct pair_hash_naive {
+  template <class T1, class T2>
+  requires(!std::same_as<T1, T2>) std::size_t operator()(const std::pair<T1, T2> &pair) const {
     return std::hash<T1>()(pair.first) ^ std::hash<T2>()(pair.second);
   }
 };
@@ -33,22 +32,19 @@ struct pair_hash_naive
 
 // MurmurHash3 was written by Austin Appleby, and is placed in the public
 // domain. The author hereby disclaims copyright to this source code.
-struct pair_hash_boost
-{
+struct pair_hash_boost {
 private:
   template <typename SizeT>
-  inline void hash_combine_impl(SizeT& seed, SizeT value)
-  {
-    seed ^= value + 0x9e3779b9 + (seed<<6) + (seed>>2);
+  inline void hash_combine_impl(SizeT &seed, SizeT value) {
+    seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
   }
+
 public:
   template <class T1, class T2>
-  std::size_t operator() (const std::pair<T1, T2> &pair) const {
+  std::size_t operator()(const std::pair<T1, T2> &pair) const {
     std::size_t seed = 0;
     hash_combine_impl(seed, pair.first);
     hash_combine_impl(seed, pair.second);
     return seed;
   }
-
-
 };

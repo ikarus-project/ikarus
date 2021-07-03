@@ -1,7 +1,6 @@
 //
 // Created by Alex on 21.04.2021.
 //
-#define EIGEN_MATRIXBASE_PLUGIN "IBB_Eigen_MatrixBaseAddon.h"
 
 #include <gmock/gmock.h>
 

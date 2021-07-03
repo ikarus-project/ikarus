@@ -36,7 +36,7 @@ int main() {
 
   auto gridView = grid.leafGridView();
 
-//  for(auto&& vertex : vertices(gridView))
-//    vertex.
+  //  for(auto&& vertex : vertices(gridView))
+  //    vertex.
   draw(gridView);
 }

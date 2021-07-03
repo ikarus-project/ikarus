@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <ikarus/Variables/VariableInterface.h>
+#include <ikarus/Variables/VariablePolicies.h>
 
 namespace Ikarus::Concepts {
   template <typename VariableOwnerType>

@@ -4,9 +4,4 @@
 
 #pragma once
 
-class ResidualAssembler {
-
-
-
-
-};
+class ResidualAssembler {};

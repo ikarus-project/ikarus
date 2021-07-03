@@ -11,7 +11,7 @@
 ///*
 // * See API design for C++, Martin Reddy, Chapter 3.3
 // */
-//namespace Ikarus::FiniteElements {
+// namespace Ikarus::FiniteElements {
 //
 //  class FiniteElementFactory {
 //  public:

@@ -37,5 +37,3 @@
 // private:
 //    FunctionVectorType shapeFunctions;
 //};
-
-//#endif  // FE_DESIGNPATTERN_SIMPLESHAPEFUNCTION_H
