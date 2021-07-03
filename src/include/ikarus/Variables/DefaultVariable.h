@@ -85,7 +85,7 @@ namespace Ikarus::Variable {
 
   template <typename Mani, int tag>
   std::ostream& operator<<(std::ostream& s, const DefaultVariable<Mani, tag>& var) {
-    s << var.getValue();
+    s << var.getValue().transpose() << "\n";
     return s;
   }
 

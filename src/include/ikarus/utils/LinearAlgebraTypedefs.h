@@ -10,7 +10,6 @@
 
 namespace Ikarus {
 
-
   template <typename ScalarType, int size>
   Dune::FieldVector<ScalarType, size> toFieldVector(const Eigen::Vector<ScalarType, size>& vec) {
     Dune::FieldVector<ScalarType, size> fieldvec;

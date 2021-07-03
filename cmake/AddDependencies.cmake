@@ -1,5 +1,27 @@
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/modules")
 
+if(MINGW)
+  # cmake-format: off
+  include(FetchContent)
+  set(ikarusDepInstallDir ${CMAKE_SOURCE_DIR}/../Ikarus_Dependencies)
+  FetchContent_Declare(
+    ikarusDependencies
+    URL https://github.com/IkarusRepo/IkarusDependencies/releases/download/v0.3/Dependencies_release.7z
+    PREFIX        ${ikarusDepInstallDir}
+    DOWNLOAD_DIR  ${ikarusDepInstallDir}/src
+    SOURCE_DIR    ${ikarusDepInstallDir}/Dependencies_release
+    INSTALL_COMMAND ""
+    BUILD_COMMAND ""
+    CONFIGURE_COMMAND ""
+  )
+  # cmake-format: on
+  FetchContent_GetProperties(ikarusDependencies)
+  if(NOT ikarusDependencies_POPULATED)
+    FetchContent_Populate(ikarusDependencies)
+  endif()
+  FetchContent_MakeAvailable(ikarusDependencies)
+endif()
+
 message("Find Eigen: ")
 find_package(Eigen3 3.3.9 REQUIRED)
 message("Find spdlog: ")

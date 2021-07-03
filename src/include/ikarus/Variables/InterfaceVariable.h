@@ -20,8 +20,9 @@ namespace Ikarus::Variable {
     explicit IVariable(const VAR &vo) : variableImpl{std::make_unique<VarImpl<VAR> >(vo)} {}
 
     ~IVariable() = default;
-
     IVariable(const IVariable &other) : variableImpl{other.variableImpl->clone()} {}
+    IVariable &operator=(IVariable &&) noexcept = default;
+    IVariable(IVariable &&) noexcept            = default;
 
     IVariable &operator=(const IVariable &other) {
       IVariable tmp(other);  // Temporary-swap idiom
@@ -29,11 +30,8 @@ namespace Ikarus::Variable {
       return *this;
     }
 
-    IVariable(IVariable &&) noexcept = default;
-
-    IVariable &operator=(IVariable &&) noexcept = default;
-    using UpdateType                            = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 8, 1>;
-    using CoordinateType                            = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 8, 1>;
+    using UpdateType     = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 8, 1>;
+    using CoordinateType = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 8, 1>;
 
   private:
     struct VarBase {
@@ -45,9 +43,9 @@ namespace Ikarus::Variable {
       [[nodiscard]] virtual bool do_lessComparison(const IVariable &other) const  = 0;
       virtual void do_assignAdd(const UpdateType &other)                          = 0;
       virtual void do_setValue(const UpdateType &other)                           = 0;
-      [[nodiscard]] virtual CoordinateType do_getValue() const                = 0;
+      [[nodiscard]] virtual CoordinateType do_getValue() const                    = 0;
       [[nodiscard]] virtual size_t do_getTag() const                              = 0;
-      [[nodiscard]] virtual std::unique_ptr<VarBase> clone() const                = 0;  // Prototype Design Pattern
+      [[nodiscard]] virtual std::unique_ptr<VarBase> clone() const                = 0;
     };
 
     template <typename VAR>
