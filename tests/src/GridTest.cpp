@@ -108,17 +108,17 @@ TEST(GridTest, GridViewTest) {
     ++eleCounter;
   }
   auto ele1 = volumes(gridView).begin();
-  EXPECT_THROW([[maybe_unused]] auto e = ele1->subEntities(3),std::logic_error);
-  EXPECT_EQ(ele1->subEntities(2),4);
-  EXPECT_EQ(ele1->subEntities(1),4);
+  EXPECT_THROW([[maybe_unused]] auto e = ele1->subEntities(3), std::logic_error);
+  EXPECT_EQ(ele1->subEntities(2), 4);
+  EXPECT_EQ(ele1->subEntities(1), 4);
   ++ele1;
-  EXPECT_THROW([[maybe_unused]] auto e = ele1->subEntities(3),std::logic_error);
-  EXPECT_EQ(ele1->subEntities(2),4);
-  EXPECT_EQ(ele1->subEntities(1),4);
+  EXPECT_THROW([[maybe_unused]] auto e = ele1->subEntities(3), std::logic_error);
+  EXPECT_EQ(ele1->subEntities(2), 4);
+  EXPECT_EQ(ele1->subEntities(1), 4);
   ++ele1;
-  EXPECT_THROW([[maybe_unused]] auto e = ele1->subEntities(3),std::logic_error);
-  EXPECT_EQ(ele1->subEntities(2),3);
-  EXPECT_EQ(ele1->subEntities(1),3);
+  EXPECT_THROW([[maybe_unused]] auto e = ele1->subEntities(3), std::logic_error);
+  EXPECT_EQ(ele1->subEntities(2), 3);
+  EXPECT_EQ(ele1->subEntities(1), 3);
 }
 
 /**
@@ -188,17 +188,17 @@ TEST(GridTest, GridView3DSurfaceTest) {
     ++eleCounter;
   }
   auto ele1 = volumes(gridView).begin();
-  EXPECT_THROW([[maybe_unused]] auto e = ele1->subEntities(3),std::logic_error);
-  EXPECT_EQ(ele1->subEntities(2),4);
-  EXPECT_EQ(ele1->subEntities(1),4);
+  EXPECT_THROW([[maybe_unused]] auto e = ele1->subEntities(3), std::logic_error);
+  EXPECT_EQ(ele1->subEntities(2), 4);
+  EXPECT_EQ(ele1->subEntities(1), 4);
   ++ele1;
-  EXPECT_THROW([[maybe_unused]] auto e = ele1->subEntities(3),std::logic_error);
-  EXPECT_EQ(ele1->subEntities(2),4);
-  EXPECT_EQ(ele1->subEntities(1),4);
+  EXPECT_THROW([[maybe_unused]] auto e = ele1->subEntities(3), std::logic_error);
+  EXPECT_EQ(ele1->subEntities(2), 4);
+  EXPECT_EQ(ele1->subEntities(1), 4);
   ++ele1;
-  EXPECT_THROW([[maybe_unused]] auto e = ele1->subEntities(3),std::logic_error);
-  EXPECT_EQ(ele1->subEntities(2),3);
-  EXPECT_EQ(ele1->subEntities(1),3);
+  EXPECT_THROW([[maybe_unused]] auto e = ele1->subEntities(3), std::logic_error);
+  EXPECT_EQ(ele1->subEntities(2), 3);
+  EXPECT_EQ(ele1->subEntities(1), 3);
 }
 
 /**
@@ -286,9 +286,9 @@ TEST(GridTest, GridView3DSolidTest) {
     EXPECT_EQ(edges(vertex).size(), expectedEdgesAtVertex[i++]);
 
   auto ele1 = volumes(gridView).begin();
-  EXPECT_EQ(ele1->subEntities(3),8);
-  EXPECT_EQ(ele1->subEntities(2),12);
-//  EXPECT_EQ(ele1->subEntities(1),6);
+  EXPECT_EQ(ele1->subEntities(3), 8);
+  EXPECT_EQ(ele1->subEntities(2), 12);
+  //  EXPECT_EQ(ele1->subEntities(1),6);
 }
 
 TEST(GridTest, GridInsertionException) {
