@@ -45,8 +45,8 @@ namespace Ikarus::Geometry {
      * */
     using VertexContainerType =
         typename std::conditional<ShapeFunctionType::sizeOfShapeFunctions == Eigen::Dynamic,
-                                  Eigen::Matrix<double,mydimension,Eigen::Dynamic>,
-                                  Eigen::Matrix<double,mydimension, ShapeFunctionType::sizeOfShapeFunctions> >::type;
+                                  Eigen::Matrix<double, mydimension, Eigen::Dynamic>,
+                                  Eigen::Matrix<double, mydimension, ShapeFunctionType::sizeOfShapeFunctions> >::type;
 
     SimpleGeometry(const VertexContainerType& verticesInput) : vertices{verticesInput} {}
 
