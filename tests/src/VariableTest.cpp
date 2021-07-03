@@ -58,7 +58,7 @@ TEST(DefaultVariableTest, RealTupleDisplacement) {
 
   std::stringstream testStream2;
   testStream2 << c;
-  EXPECT_EQ(testStream2.str(), "13  -5   1\n");
+  EXPECT_EQ(testStream2.str(), "13 -5  1\n");
 }
 
 static constexpr double tol = 1e-15;
@@ -102,7 +102,7 @@ TEST(DefaultVariableTest, UnitVectorDirector) {
 
   e = update(e, Eigen::Vector<double, 2>::UnitY());
 
-  const auto eExpected = Eigen::Vector<double, 3>(0 , 1.0/ sqrt(2), -1.0 / sqrt(2));
+  const auto eExpected = Eigen::Vector<double, 3>(0, 1.0 / sqrt(2), -1.0 / sqrt(2));
   EXPECT_THAT(e.getValue(), EigenApproxEqual(eExpected, tol));
 }
 

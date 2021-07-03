@@ -158,12 +158,22 @@ namespace Ikarus::DofHandler {
     template <typename FEType>
     auto elementVariables(FEType& ele) {
       std::vector<Ikarus::Variable::IVariable*> elementVariables;
-      for (auto&& vert : vertices(ele)) {
-        auto vertID           = vert->getID();
-        auto& entityDofVector = varVec.dofVecimpl.at(variableIndexMap.at(vertID));
-        auto pointerRange     = Ikarus::stl::transformValueRangeToPointerRange(entityDofVector);
-        elementVariables.insert(elementVariables.end(), pointerRange.begin(), pointerRange.end());
-      }
+
+      auto variablesOfEntity = [this, &elementVariables](auto&& ent) {
+        auto entID = ent->getID();
+        if (hasIndex(entID)) {
+          auto& entityDofVector = varVec.dofVecimpl.at(variableIndexMap.at(entID));
+          auto pointerRange     = Ikarus::stl::transformValueRangeToPointerRange(entityDofVector);
+          elementVariables.insert(elementVariables.end(), pointerRange.begin(), pointerRange.end());
+        }
+      };
+
+      constexpr size_t dim = FEType::dimension;
+      Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<dim>()), [&](auto i) {
+        for (auto&& ent : entities(ele, i))
+          variablesOfEntity(ent);
+      });
+
       return elementVariables;
     }
 

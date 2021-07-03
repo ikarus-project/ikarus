@@ -40,18 +40,3 @@ parse:
         flags: []
       spelling: CPMFindPackage
       kwargs: *cpmaddpackagekwargs
-    packageproject:
-      pargs:
-        nargs: '*'
-        flags: []
-      spelling: packageProject
-      kwargs:
-        NAME: 1
-        VERSION: 1
-        NAMESPACE: 1
-        INCLUDE_DIR: 1
-        INCLUDE_DESTINATION: 1
-        BINARY_DIR: 1
-        COMPATIBILITY: 1
-        VERSION_HEADER: 1
-        DEPENDENCIES: +
