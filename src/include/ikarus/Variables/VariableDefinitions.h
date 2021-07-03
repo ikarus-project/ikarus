@@ -23,6 +23,8 @@ namespace Ikarus::Variable {
     pressure
   };
 
+
+
   inline constexpr VariablesTags none           = VariablesTags::none;
   inline constexpr VariablesTags displacement1d = VariablesTags::displacement1d;
   inline constexpr VariablesTags displacement2d = VariablesTags::displacement2d;
@@ -30,6 +32,8 @@ namespace Ikarus::Variable {
   inline constexpr VariablesTags director2d     = VariablesTags::director2d;
   inline constexpr VariablesTags director3d     = VariablesTags::director3d;
   inline constexpr VariablesTags pressure       = VariablesTags::pressure;
+
+  inline constexpr VariablesTags AllTags[] = { none, displacement1d, displacement2d, displacement3d, director2d, director3d, pressure };
 
   using Manifold::RealTuple;
   using Manifold::UnitVector;

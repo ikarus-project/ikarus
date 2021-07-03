@@ -94,7 +94,7 @@ namespace Ikarus::FiniteElements {
       return calculateStiffnessMatrixAndInternalForcesImpl<false, true>();
     }
 
-    [[nodiscard]] double calculateScalar(const ElementScalarAffordances&) const { return 0.0; }
+    [[nodiscard]] double calculateScalar(const ElementScalarAffordances&) const { return 13.0; }
 
     [[nodiscard]] VectorType calculateVector(const ElementVectorAffordances&) const {
       return calculateStiffnessMatrixAndInternalForcesImpl<true, false>();

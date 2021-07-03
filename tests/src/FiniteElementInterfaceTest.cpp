@@ -70,8 +70,10 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
     const auto [KEle, fintEle] = calculateLocalSystem(fe, stiffness, forces);
     EXPECT_EQ(dofSize(fe), 8);
     EXPECT_EQ(calculateVector(fe, forces).size(), 8);
+    EXPECT_DOUBLE_EQ(calculateScalar(fe, potentialEnergy), 13.0);
     EXPECT_EQ(calculateMatrix(fe, stiffness).cols(), 8);
     EXPECT_EQ(calculateMatrix(fe, stiffness).rows(), 8);
+    EXPECT_THROW(calculateMatrix(fe, mass),std::logic_error);
     EXPECT_EQ(KEle.rows(), 8);
     EXPECT_EQ(KEle.cols(), 8);
     EXPECT_EQ(fintEle.size(), 8);
