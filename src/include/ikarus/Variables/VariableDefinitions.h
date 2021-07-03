@@ -14,7 +14,6 @@
 namespace Ikarus::Variable {
 
   enum class VariablesTags : int {
-    none,
     displacement1d,
     displacement2d,
     displacement3d,
@@ -24,8 +23,6 @@ namespace Ikarus::Variable {
   };
 
 
-
-  inline constexpr VariablesTags none           = VariablesTags::none;
   inline constexpr VariablesTags displacement1d = VariablesTags::displacement1d;
   inline constexpr VariablesTags displacement2d = VariablesTags::displacement2d;
   inline constexpr VariablesTags displacement3d = VariablesTags::displacement3d;
@@ -33,7 +30,7 @@ namespace Ikarus::Variable {
   inline constexpr VariablesTags director3d     = VariablesTags::director3d;
   inline constexpr VariablesTags pressure       = VariablesTags::pressure;
 
-  inline constexpr VariablesTags AllTags[] = { none, displacement1d, displacement2d, displacement3d, director2d, director3d, pressure };
+  inline constexpr VariablesTags AllTags[] = {  displacement1d, displacement2d, displacement3d, director2d, director3d, pressure };
 
   using Manifold::RealTuple;
   using Manifold::UnitVector;
@@ -62,7 +59,7 @@ namespace Ikarus::Variable {
         case pressure:
           return IVariable(PRESSURE());
         default:
-          throw std::logic_error("none variable not implemented. This should be an variable with empty size.");
+          throw std::logic_error("Variable not implemented.");
       }
     }
 
@@ -71,14 +68,14 @@ namespace Ikarus::Variable {
   };
 
   // TODO: change this when gcc supports std::string,std::vector constexpr
-  constexpr std::array<const char*, 7> createVariableMap() {
-    std::array<const char*, 7> m{"none",       "displacement1d", "displacement2d", "displacement3d",
+  constexpr std::array<const char*, 6> createVariableMap() {
+    std::array<const char*, 6> m{      "displacement1d", "displacement2d", "displacement3d",
                                  "director2d", "director3d",     "pressure"};
 
     return m;
   }
 
-  inline constexpr std::array<const char*, 7> variableNames = createVariableMap();
+  inline constexpr std::array<const char*, 6> variableNames = createVariableMap();
 
   std::ostream& operator<<(std::ostream& s, const VariablesTags& varTag);
 
