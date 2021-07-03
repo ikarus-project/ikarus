@@ -37,7 +37,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: unittests # optional
           directory: ./cmake-build-debug/coverage
-          fail_ci_if_error: true # optional (default = false)
+          fail_ci_if_error: false # optional (default = false)
           verbose: true # optional (default = false)
       - name: Find gcov
         run: find / -type f -name "*.gcov"          
