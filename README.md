@@ -13,7 +13,3 @@ This project tries to provide a easy to read and easy to use finite element fram
 It is heavily inspired by [DUNE](https://dune-project.org/), the book [DUNE — The Distributed and Unified Numerics Environment](https://www.springer.com/gp/book/9783030597016), [deal.II](https://www.dealii.org/), [Kratos](https://github.com/KratosMultiphysics/Kratos) and [Autodiff](https://autodiff.github.io/).
 
 Our documentation resides at https://ikarusrepo.github.io/.
-  
-
-
-

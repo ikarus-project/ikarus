@@ -29,4 +29,4 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Publish the Docker image
         if: ${{ github.event_name == 'push'}}
-        run: docker push rath3t/ci-ubuntu-21-04
+        run: docker push rath3t/ci-ubuntu-21-04 
