@@ -12,7 +12,7 @@ def declare_variables(variables, macro):
     def inputcode(filename, language, linenumbers=False, startline=0, endline=None):
         filename = '../' + filename  # file path must be given relative to root directory
         f = open(filename, 'r')
-        if startline != 0 or endline != None:
+        if startline != 0 or endline is None:
             lines = f.readlines()
             lines = lines[startline:endline]
             text = "".join(lines)
