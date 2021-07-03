@@ -90,8 +90,11 @@ namespace Ikarus::FiniteElements {
         throw std::logic_error("This element can not handle your affordance! ");
     }
 
-    [[nodiscard]] MatrixType calculateMatrix(const ElementMatrixAffordances&) const {
+    [[nodiscard]] MatrixType calculateMatrix(const ElementMatrixAffordances& matA) const {
+      if (matA == stiffness)
       return calculateStiffnessMatrixAndInternalForcesImpl<false, true>();
+      else
+        throw std::logic_error("This element can not handle your affordance! ");
     }
 
     [[nodiscard]] double calculateScalar(const ElementScalarAffordances&) const { return 13.0; }

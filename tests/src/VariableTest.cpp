@@ -50,8 +50,10 @@ TEST(DefaultVariableTest, RealTupleDisplacement) {
   EXPECT_EQ(getValue(b), testVec);
   for (auto&& varTag : Ikarus::Variable::AllTags)
     auto h = VariableFactory::createVariable(varTag);
-  std::stringstream  testStream;
-  testStream<<b;
+
+  std::stringstream testStream;
+  testStream << b;
+  EXPECT_EQ(testStream.str(), "127  -5   1\n Tag: displacement3d\n");
 }
 
 static constexpr double tol = 1e-15;
