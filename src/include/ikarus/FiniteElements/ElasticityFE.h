@@ -92,7 +92,7 @@ namespace Ikarus::FiniteElements {
 
     [[nodiscard]] MatrixType calculateMatrix(const ElementMatrixAffordances& matA) const {
       if (matA == stiffness)
-      return calculateStiffnessMatrixAndInternalForcesImpl<false, true>();
+        return calculateStiffnessMatrixAndInternalForcesImpl<false, true>();
       else
         throw std::logic_error("This element can not handle your affordance! ");
     }

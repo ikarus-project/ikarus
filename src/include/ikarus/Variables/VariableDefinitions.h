@@ -13,15 +13,7 @@
 
 namespace Ikarus::Variable {
 
-  enum class VariablesTags : int {
-    displacement1d,
-    displacement2d,
-    displacement3d,
-    director2d,
-    director3d,
-    pressure
-  };
-
+  enum class VariablesTags : int { displacement1d, displacement2d, displacement3d, director2d, director3d, pressure };
 
   inline constexpr VariablesTags displacement1d = VariablesTags::displacement1d;
   inline constexpr VariablesTags displacement2d = VariablesTags::displacement2d;
@@ -30,7 +22,8 @@ namespace Ikarus::Variable {
   inline constexpr VariablesTags director3d     = VariablesTags::director3d;
   inline constexpr VariablesTags pressure       = VariablesTags::pressure;
 
-  inline constexpr VariablesTags AllTags[] = {  displacement1d, displacement2d, displacement3d, director2d, director3d, pressure };
+  inline constexpr VariablesTags AllTags[]
+      = {displacement1d, displacement2d, displacement3d, director2d, director3d, pressure};
 
   using Manifold::RealTuple;
   using Manifold::UnitVector;
@@ -69,8 +62,8 @@ namespace Ikarus::Variable {
 
   // TODO: change this when gcc supports std::string,std::vector constexpr
   constexpr std::array<const char*, 6> createVariableMap() {
-    std::array<const char*, 6> m{      "displacement1d", "displacement2d", "displacement3d",
-                                 "director2d", "director3d",     "pressure"};
+    std::array<const char*, 6> m{"displacement1d", "displacement2d", "displacement3d",
+                                 "director2d",     "director3d",     "pressure"};
 
     return m;
   }
