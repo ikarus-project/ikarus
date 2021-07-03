@@ -1,9 +1,12 @@
-component_depth: 1
+component_depth: 4
 languages:
 - name: cpp
   production:
+    include:
+      - /src/.*\.cpp
+      - /src/.*\.h
     exclude:
-      - .*/tests/.*\.cpp
+      - /tests/.*\.cpp
   test:
     include:
-      - .*/tests/.*\.cpp
+      - /tests/.*\.cpp
