@@ -6,7 +6,7 @@ on:
       - '.github/workflows/ghpages.yml'
 env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-  
+
 jobs:
   Ubuntu-GCC-Debug-CodeCov:
     runs-on: ubuntu-latest

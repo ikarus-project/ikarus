@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - master
-      
+
 jobs:
   Build:
     name: ${{ matrix.config.name }}
