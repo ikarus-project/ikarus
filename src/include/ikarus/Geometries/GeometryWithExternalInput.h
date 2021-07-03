@@ -71,10 +71,10 @@ namespace Ikarus::Geometry {
     static DerivedAnsatzFunctionType transformCurvLinearDerivativesToCartesian(
         const Eigen::MatrixBase<DerivedAnsatzFunctionType>& dN,
         const Eigen::MatrixBase<GlobalCoordinateListType>& nodevalueList) {
-      const JacobianTransposed jT     = jacobianTransposed(dN, nodevalueList);
-      const auto jCart = Ikarus::LinearAlgebra::orthonormalizeMatrixColumns(jT.transpose());
+      const JacobianTransposed jT = jacobianTransposed(dN, nodevalueList);
+      const auto jCart            = Ikarus::LinearAlgebra::orthonormalizeMatrixColumns(jT.transpose());
 
-      return dN * (jT * jCart).inverse().transpose() ;
+      return dN * (jT * jCart).inverse().transpose();
     }
   };
 

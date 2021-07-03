@@ -23,7 +23,7 @@ namespace Ikarus::Grid {
     using VertexCoordinateType = FixedVector<double, dimensionworld>;
 
   public:
-    void insertElement(const Dune::GeometryType& type,const  std::span<size_t> vertices);
+    void insertElement(const Dune::GeometryType& type, const std::span<size_t> vertices);
     void insertVertex(const VertexCoordinateType& pos);
 
     GridType createGrid();

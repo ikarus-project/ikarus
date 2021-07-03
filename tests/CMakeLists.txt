@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 
 project(IkarusTests LANGUAGES CXX)
-# ---- Options ----
 
 option(ENABLE_TEST_COVERAGE "Enable test coverage" OFF)
 option(TEST_INSTALLED_VERSION "Test the version found by find_package" OFF)
@@ -26,12 +25,11 @@ target_link_libraries(
 )
 set_target_properties(IkarusTests PROPERTIES CXX_STANDARD 20)
 
-target_compile_options(IkarusTests PUBLIC -Wall -Wpedantic -Wextra -Werror)
+target_compile_options(IkarusTests PUBLIC -Wall -Wpedantic -Wextra -Werror -fuse-ld=lld)
 
 if(MINGW)
-  target_compile_options(IkarusTests PUBLIC -Wa,-mbig-obj -flto -fno-fat-lto-objects)
+  target_compile_options(IkarusTests PUBLIC -Wa,-mbig-obj)
 endif()
-
 
 target_compile_features(IkarusTests PRIVATE cxx_std_20)
 

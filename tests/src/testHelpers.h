@@ -10,8 +10,7 @@ MATCHER_P2(EigenApproxEqual, expect, prec,
   return arg.isApprox(expect, prec);
 }
 
-
 MATCHER_P(EigenExactEqual, expect,
-           std::string(negation ? "isn't" : "is") + " equal to" + ::testing::PrintToString(expect)) {
+          std::string(negation ? "isn't" : "is") + " equal to" + ::testing::PrintToString(expect)) {
   return ((arg == expect) == true).all();
 }

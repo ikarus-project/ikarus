@@ -2,9 +2,8 @@
 // Created by Alex on 25.05.2021.
 //
 
-#include "VariableDefinitions.h"
-
 #include <ikarus/Variables/InterfaceVariable.h>
+#include <ikarus/Variables/VariableDefinitions.h>
 
 namespace Ikarus::Variable {
 
@@ -16,9 +15,7 @@ namespace Ikarus::Variable {
     return vo;
   }
 
-  IVariable& operator+=(IVariable* vo, const IVariable::UpdateType& correction) {
-    return ((*vo) += correction);
-  }
+  IVariable& operator+=(IVariable* vo, const IVariable::UpdateType& correction) { return ((*vo) += correction); }
 
   IVariable operator+(IVariable& vo, const IVariable::UpdateType& correction) {
     IVariable res{vo};
@@ -26,28 +23,20 @@ namespace Ikarus::Variable {
     return res;
   }
 
-  IVariable operator+(IVariable* vo, const IVariable::UpdateType& correction) {
-    return ((*vo) + correction);
-  }
+  IVariable operator+(IVariable* vo, const IVariable::UpdateType& correction) { return ((*vo) + correction); }
 
-  void setValue(IVariable& vo, const IVariable::UpdateType& value) {
-    return vo.variableImpl->do_setValue(value);
-  }
+  void setValue(IVariable& vo, const IVariable::UpdateType& value) { return vo.variableImpl->do_setValue(value); }
   Ikarus::DynVectord getValue(const IVariable& vo) { return vo.variableImpl->do_getValue(); }
   size_t getTag(const IVariable& var) { return var.variableImpl->do_getTag(); }
-  bool operator==(const IVariable& var, const IVariable& other) {
-    return var.variableImpl->do_equalComparison(other);
-  }
-  bool operator<(const IVariable& var, const IVariable& other) {
-    return var.variableImpl->do_lessComparison(other);
-  }
+  bool operator==(const IVariable& var, const IVariable& other) { return var.variableImpl->do_equalComparison(other); }
+  bool operator<(const IVariable& var, const IVariable& other) { return var.variableImpl->do_lessComparison(other); }
 
   std::ostream& operator<<(std::ostream& s, const IVariable& var) {
-    s << var.variableImpl->do_getValue().transpose() << '\n' << " Tag: " << getName(var)<< '\n';
+    s << var.variableImpl->do_getValue().transpose() << '\n' << " Tag: " << getName(var) << '\n';
     return s;
   }
   size_t correctionSize(std::span<const IVariable> varSpan) {
-    return std::accumulate(varSpan.begin(), varSpan.end(), 0,
+    return std::accumulate(varSpan.begin(), varSpan.end(), size_t{0},
                            [](size_t cursize, const IVariable& var) { return cursize + correctionSize(var); });
   }
   void update(std::span<IVariable> varSpan, const Ikarus::DynVectord& correction) {
@@ -61,12 +50,10 @@ namespace Ikarus::Variable {
   }
 
   size_t valueSize(std::span<const IVariable> varSpan) {
-    return std::accumulate(varSpan.begin(), varSpan.end(), 0,
+    return std::accumulate(varSpan.begin(), varSpan.end(), size_t{0},
                            [](size_t cursize, const IVariable& var) { return cursize + valueSize(var); });
   }
 
-  std::string getName(const IVariable&var){
-    return Ikarus::Variable::variableNames [getTag(var)];
-  }
+  std::string getName(const IVariable& var) { return Ikarus::Variable::variableNames[getTag(var)]; }
 
 }  // namespace Ikarus::Variable

@@ -8,8 +8,8 @@
 
 //#include "spdlog/spdlog.h"
 #define EIGEN_MATRIXBASE_PLUGIN "IBB_Eigen_MatrixBaseAddon.h"
-#include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include "testHelpers.h"
 
@@ -86,12 +86,13 @@ TEST(GeometryTest, WithInteralAnsatzandVertices) {
   EXPECT_EQ(2.0, detJ);
 }
 
-
-
 TEST(GeometryTest, WithInteralAnsatzandVerticesQuadratic) {
   using namespace Ikarus::Geometry;
 
-  const Eigen::Matrix<double, 2, 1> xieta({-0.35, 0.8,});
+  const Eigen::Matrix<double, 2, 1> xieta({
+      -0.35,
+      0.8,
+  });
 
   Eigen::Matrix<double, 2, 9> x;
   x.col(0) << 0, 0;
@@ -123,24 +124,17 @@ TEST(GeometryTest, WithInteralAnsatzandVerticesQuadratic) {
 
   EXPECT_DOUBLE_EQ(17.72397000, detJ);
 
-
   auto dNCart = geoEle.transformCurvLinearDerivativesToCartesian(xieta);
 
-  Eigen::Matrix<double,9,2> dNCartExpected;
-  dNCartExpected<<0.12624897551105789618e-1,  0.10920614574095834274e-1,
-                 -0.10396974453851826743e-1,  0.88743757452822190506e-1,
-                 -0.22279230972539628740e-2, -0.84966090236083447561e-2,
-                 -0.56812038979976053284e-1, -0.67091418924707847485e-1,
-                  0.46786385042333220342e-1, -.46601333523387006079,
-                  0.10025653937642832933e-1, 0.46876684807592948154e-1,
-                  -.11362407795995210656   , .18889292229356298362,
-                  0.93572770084666440706e-1, .26796901006332354172,
-                  0.20051307875285665863e-1, -0.61801626009211245234e-1;
+  Eigen::Matrix<double, 9, 2> dNCartExpected;
+  dNCartExpected << 0.12624897551105789618e-1, 0.10920614574095834274e-1, -0.10396974453851826743e-1,
+      0.88743757452822190506e-1, -0.22279230972539628740e-2, -0.84966090236083447561e-2, -0.56812038979976053284e-1,
+      -0.67091418924707847485e-1, 0.46786385042333220342e-1, -.46601333523387006079, 0.10025653937642832933e-1,
+      0.46876684807592948154e-1, -.11362407795995210656, .18889292229356298362, 0.93572770084666440706e-1,
+      .26796901006332354172, 0.20051307875285665863e-1, -0.61801626009211245234e-1;
 
   EXPECT_THAT(dNCart, EigenApproxEqual(dNCartExpected, tol));
 }
-
-
 
 TEST(GeometryTest, CreateJacobianDeterminantAndJacobian2DSurfIn3D) {
   const Eigen::Matrix<double, 2, 1> xieta({-1.0, -1.0});

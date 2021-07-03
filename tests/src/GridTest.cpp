@@ -107,7 +107,6 @@ TEST(GridTest, GridViewTest) {
     }
     ++eleCounter;
   }
-
 }
 
 /**
@@ -143,7 +142,7 @@ TEST(GridTest, GridView3DSurfaceTest) {
   gridFactory.insertElement(Dune::GeometryTypes::triangle, elementIndices);
 
   Grid actualGrid = gridFactory.createGrid();
-  auto gridView = actualGrid.leafGridView();
+  auto gridView   = actualGrid.leafGridView();
   EXPECT_TRUE(edges(gridView).size() != 0);
   EXPECT_TRUE(volumes(gridView).size() != 0);
   EXPECT_TRUE(vertices(gridView).size() != 0);
@@ -204,7 +203,7 @@ TEST(GridTest, GridView3DSolidTest) {
 
   std::vector<size_t> elementIndices;
   elementIndices.resize(8);
-  elementIndices =  {0, 1, 2, 3, 4, 5, 6, 7};
+  elementIndices = {0, 1, 2, 3, 4, 5, 6, 7};
   gridFactory.insertElement(Dune::GeometryTypes::hexahedron, elementIndices);
   elementIndices.resize(4);
   elementIndices = {1, 8, 3, 5};

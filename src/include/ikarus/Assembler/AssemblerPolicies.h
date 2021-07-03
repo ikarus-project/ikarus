@@ -4,9 +4,7 @@
 
 #pragma once
 
-
-namespace Ikarus::Solving
-{
+namespace Ikarus::Solving {
   template <typename AsssemblerType>
   concept HasAssembleMatrix = requires(AsssemblerType as, ElementMatrixAffordances matA) {
     as.assembleMatrix(matA);
@@ -22,5 +20,4 @@ namespace Ikarus::Solving
     as.assembleScalar(scalA);
   };
 
-
-}
+}  // namespace Ikarus::Solving

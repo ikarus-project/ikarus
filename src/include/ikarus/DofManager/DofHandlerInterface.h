@@ -8,7 +8,7 @@
 //
 //#include "ikarus/Variables/VariableInterface.h"
 //
-//namespace Ikarus {
+// namespace Ikarus {
 //  template <typename DofHandlerType>
 //  concept DofHandlerConcept = requires(DofHandlerType dh, GenericVariable var, GenericVariableOwner d) {
 //    dh.generateOccupationPattern();

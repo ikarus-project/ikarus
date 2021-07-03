@@ -30,7 +30,7 @@ Derived cross_product(const MatrixBase<OtherDerived>& other) const {
   typename internal::nested_eval<Derived, 2>::type lhs(derived());
   typename internal::nested_eval<OtherDerived, 2>::type rhs(other.derived());
 
-  Matrix<Scalar, 3, 1> thisSurrogate = (Matrix<Scalar, 3, 1>() << lhs.coeff(0), lhs.coeff(1), lhs.coeff(2)).finished();
+  Matrix<Scalar, 3, 1> thisSurrogate  = (Matrix<Scalar, 3, 1>() << lhs.coeff(0), lhs.coeff(1), lhs.coeff(2)).finished();
   Matrix<Scalar, 3, 1> otherSurrogate = (Matrix<Scalar, 3, 1>() << rhs.coeff(0), rhs.coeff(1), rhs.coeff(2)).finished();
   return thisSurrogate.cross(otherSurrogate);
 }

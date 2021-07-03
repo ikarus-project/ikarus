@@ -3,20 +3,36 @@
 //
 
 #pragma once
+#include <ikarus/FiniteElements/FiniteElementPolicies.h>
+
+namespace Ikarus::FiniteElements {
+  enum class ElementVectorAffordances { forces };
+
+  enum class ElementMatrixAffordances { stiffness, stiffnessdiffBucklingVector, mass };
+
+  enum class ElementScalarAffordances { potentialEnergy };
+
+  inline constexpr ElementVectorAffordances forces = ElementVectorAffordances::forces;
+
+  inline constexpr ElementMatrixAffordances stiffness = ElementMatrixAffordances::stiffness;
+  inline constexpr ElementMatrixAffordances stiffnessdiffBucklingVector
+      = ElementMatrixAffordances::stiffnessdiffBucklingVector;
+  inline constexpr ElementMatrixAffordances mass = ElementMatrixAffordances::mass;
+
+  inline constexpr ElementScalarAffordances potentialEnergy = ElementScalarAffordances::potentialEnergy;
+
+}  // namespace Ikarus::FiniteElements
 
 namespace Ikarus::Concepts {
 
-
-
-
-#define TRYCALLFUNCTION(Str,...)                             \
+#define TRYCALLFUNCTION(Str, ...)                        \
   if constexpr (Ikarus::Concepts::Has##Str<FE>)          \
-    return fe.Str(__VA_ARGS__);                                     \
+    return fe.Str(__VA_ARGS__);                          \
   else if constexpr (Ikarus::Concepts::HasFree##Str<FE>) \
-    return Str(fe, ## __VA_ARGS__);                                      \
+    return Str(fe, ##__VA_ARGS__);                       \
   else                                                   \
     DUNE_THROW(Dune::InvalidStateException,              \
-               "The member function \"" << #Str << "\" is not implemented by this element");
+               "The member/free function \"" << #Str << "\" is not implemented by this element");
 
 #define TRYCALLFUNCTIONDONTTHROW(Str)                    \
   if constexpr (Ikarus::Concepts::Has##Str<FE>)          \
@@ -26,103 +42,86 @@ namespace Ikarus::Concepts {
   else                                                   \
     return;
 
-  template <typename PhysicalType>
-  concept HascalculateMatrix = requires(PhysicalType pfe) {
-    pfe.calculateLHS();
+  template <typename FiniteElement>
+  concept HascalculateMatrix = requires(FiniteElement fe, Ikarus::FiniteElements::ElementMatrixAffordances matA) {
+    fe.calculateMatrix(matA);
   };
 
-  template <typename PhysicalType>
-  concept HasFreecalculateMatrix = requires(PhysicalType pfe) {
-    calculateLHS(pfe);
+  template <typename FiniteElement>
+  concept HasFreecalculateMatrix = requires(FiniteElement fe, Ikarus::FiniteElements::ElementMatrixAffordances matA) {
+    calculateMatrix(fe, matA);
   };
 
-  template <typename PhysicalType>
-  concept HascalculateScalar = requires(PhysicalType pfe) {
-    pfe.calculateScalar();
+  template <typename FiniteElement>
+  concept HascalculateScalar = requires(FiniteElement fe, Ikarus::FiniteElements::ElementScalarAffordances scalA) {
+    fe.calculateScalar(scalA);
   };
 
-  template <typename PhysicalType>
-  concept HasFreecalculateScalar = requires(PhysicalType pfe) {
-    calculateScalar(pfe);
+  template <typename FiniteElement>
+  concept HasFreecalculateScalar = requires(FiniteElement fe, Ikarus::FiniteElements::ElementScalarAffordances scalA) {
+    calculateScalar(fe, scalA);
   };
 
-  template <typename PhysicalType>
-  concept HascalculateVector = requires(PhysicalType pfe) {
-    pfe.calculateRHS();
+  template <typename FiniteElement>
+  concept HascalculateVector = requires(FiniteElement fe, Ikarus::FiniteElements::ElementVectorAffordances vecA) {
+    fe.calculateVector(vecA);
   };
 
-  template <typename PhysicalType>
-  concept HasFreecalculateVector = requires(PhysicalType pfe) {
-    calculateRHS(pfe);
+  template <typename FiniteElement>
+  concept HasFreecalculateVector = requires(FiniteElement fe, Ikarus::FiniteElements::ElementVectorAffordances vecA) {
+    calculateVector(fe, vecA);
   };
 
-  template <typename PhysicalType>
-  concept HasgetEntityVariablePairs = requires(PhysicalType pfe) {
-    pfe.getEntityVariablePairs();
+  template <typename FiniteElement>
+  concept HasgetEntityVariablePairs = requires(FiniteElement fe) {
+    fe.getEntityVariablePairs();
   };
 
-  template <typename PhysicalType>
-  concept HasFreegetEntityVariablePairs = requires(PhysicalType pfe) {
-    getEntityVariablePairs(pfe);
+  template <typename FiniteElement>
+  concept HasFreegetEntityVariablePairs = requires(FiniteElement fe) {
+    getEntityVariablePairs(fe);
   };
 
-  template <typename PhysicalType>
-  concept HasdofSize = requires(PhysicalType pfe) {
-    pfe.dofSize();
+  template <typename FiniteElement>
+  concept HasSomegetEntityVariablePairs
+      = HasgetEntityVariablePairs<FiniteElement> || HasFreegetEntityVariablePairs<FiniteElement>;
+
+  template <typename FiniteElement>
+  concept HasdofSize = requires(FiniteElement fe) {
+    fe.dofSize();
   };
 
-  template <typename PhysicalType>
-  concept HasFreedofSize = requires(PhysicalType pfe) {
-    dofSize(pfe);
+  template <typename FiniteElement>
+  concept HasFreedofSize = requires(FiniteElement fe) {
+    dofSize(fe);
   };
 
-  template <typename PhysicalType>
-  concept HascalculateLocalSystem = requires(PhysicalType pfe) {
-    pfe.calculateLocalSystem();
+  template <typename FiniteElement>
+  concept HascalculateLocalSystem = requires(FiniteElement fe, Ikarus::FiniteElements::ElementMatrixAffordances matA,
+                                             Ikarus::FiniteElements::ElementVectorAffordances vecA) {
+    fe.calculateLocalSystem(matA, vecA);
   };
 
-  template <typename PhysicalType>
-  concept HasFreecalculateLocalSystem = requires(PhysicalType pfe) {
-    calculateLocalSystem(pfe);
+  template <typename FiniteElement>
+  concept HasFreecalculateLocalSystem
+      = requires(FiniteElement fe, Ikarus::FiniteElements::ElementMatrixAffordances matA,
+                 Ikarus::FiniteElements::ElementVectorAffordances vecA) {
+    calculateLocalSystem(fe, matA, vecA);
   };
 
-  template <typename PhysicalType>
-  concept Hasinitialize = requires(PhysicalType pfe) {
-    pfe.initialize();
+  template <typename FiniteElement>
+  concept Hasinitialize = requires(FiniteElement fe) {
+    fe.initialize();
   };
 
-  template <typename PhysicalType>
-  concept HasFreeinitialize = requires(PhysicalType pfe) {
-    initialize(pfe);
+  template <typename FiniteElement>
+  concept HasFreeinitialize = requires(FiniteElement fe) {
+    initialize(fe);
   };
+
+  template <typename FiniteElement>
+  concept MinimalFiniteElementLinearAlgebraAffordances
+      = HasFreecalculateScalar<FiniteElement> || HasFreecalculateVector<FiniteElement> || HasFreecalculateMatrix<
+          FiniteElement> || HascalculateScalar<FiniteElement> || HascalculateVector<FiniteElement> || HascalculateMatrix<FiniteElement>;
+
 }  // namespace Ikarus::Concepts
-
-
-namespace Ikarus::FiniteElements
-{
-  enum class ElementVectorAffordances
-  {
-    internalforces
-  };
-
-  enum class ElementMatrixAffordances
-  {
-    stiffnessMatrix,
-    dStiffnessMatrixdBucklingVector,
-    massMatrix
-  };
-
-  enum class ElementScalarAffordances
-  {
-    potentialEnergy
-  };
-
-  inline constexpr ElementVectorAffordances internalforces = ElementVectorAffordances::internalforces;
-
-  inline constexpr ElementMatrixAffordances stiffnessMatrix = ElementMatrixAffordances::stiffnessMatrix;
-  inline constexpr ElementMatrixAffordances dStiffnessMatrixdBucklingVector = ElementMatrixAffordances::dStiffnessMatrixdBucklingVector;
-  inline constexpr ElementMatrixAffordances massMatrix = ElementMatrixAffordances::massMatrix;
-
-  inline constexpr ElementScalarAffordances potentialEnergy = ElementScalarAffordances::potentialEnergy;
-
-}

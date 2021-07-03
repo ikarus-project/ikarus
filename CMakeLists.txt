@@ -16,8 +16,6 @@ endif()
 
 add_definitions(-Wall -Wpedantic -Wextra -Werror -m64)
 
-
-
 add_subdirectory(src)
 add_subdirectory(examples)
 add_subdirectory(benchmarks)
