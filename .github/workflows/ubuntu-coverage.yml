@@ -33,7 +33,7 @@ jobs:
         run: ctest --output-on-failure --parallel 4 -C Debug
 
       - name: Find gcov
-        run: find . -type f -name "*.gcov"
+        run: find / -type f -name "*.gcov"
 
       - uses: codecov/codecov-action@v1
         with:
