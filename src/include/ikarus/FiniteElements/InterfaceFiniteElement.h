@@ -44,10 +44,10 @@ namespace Ikarus::FiniteElements {
       virtual ~FEBase()                            = default;
       virtual void do_initialize()                 = 0;
       [[nodiscard]] virtual int do_dofSize() const = 0;
-      [[nodiscard]] virtual std::pair<DynMatrixd, DynVectord> do_calculateLocalSystem(
+      [[nodiscard]] virtual std::pair<Eigen::MatrixXd, Eigen::VectorXd> do_calculateLocalSystem(
           const ElementMatrixAffordances& matA, const ElementVectorAffordances& vecA) const           = 0;
-      [[nodiscard]] virtual DynMatrixd do_calculateMatrix(const ElementMatrixAffordances& matA) const = 0;
-      [[nodiscard]] virtual DynVectord do_calculateVector(const ElementVectorAffordances& vecA) const = 0;
+      [[nodiscard]] virtual Eigen::MatrixXd do_calculateMatrix(const ElementMatrixAffordances& matA) const = 0;
+      [[nodiscard]] virtual Eigen::VectorXd do_calculateVector(const ElementVectorAffordances& vecA) const = 0;
       [[nodiscard]] virtual double do_calculateScalar(const ElementScalarAffordances& scalA) const    = 0;
       [[nodiscard]] virtual DofVectorType do_getEntityVariablePairs() const                           = 0;
       [[nodiscard]] virtual std::unique_ptr<FEBase> clone() const                                     = 0;
@@ -58,14 +58,14 @@ namespace Ikarus::FiniteElements {
       explicit FEImpl(FE fearg) : fe{fearg} {};
       void do_initialize() final { TRYCALLFUNCTIONDONTTHROW(initialize); }
       [[nodiscard]] int do_dofSize() const final { TRYCALLFUNCTION(dofSize); }
-      [[nodiscard]] std::pair<DynMatrixd, DynVectord> do_calculateLocalSystem(
+      [[nodiscard]] std::pair<Eigen::MatrixXd, Eigen::VectorXd> do_calculateLocalSystem(
           const ElementMatrixAffordances& matA, const ElementVectorAffordances& vecA) const final {
         TRYCALLFUNCTION(calculateLocalSystem, matA, vecA);
       }
-      [[nodiscard]] DynMatrixd do_calculateMatrix(const ElementMatrixAffordances& matA) const final {
+      [[nodiscard]] Eigen::MatrixXd do_calculateMatrix(const ElementMatrixAffordances& matA) const final {
         TRYCALLFUNCTION(calculateMatrix, matA);
       }
-      [[nodiscard]] DynVectord do_calculateVector(const ElementVectorAffordances& vecA) const final {
+      [[nodiscard]] Eigen::VectorXd do_calculateVector(const ElementVectorAffordances& vecA) const final {
         TRYCALLFUNCTION(calculateVector, vecA);
       }
       [[nodiscard]] double do_calculateScalar(const ElementScalarAffordances& scalA) const final {
@@ -80,21 +80,21 @@ namespace Ikarus::FiniteElements {
 
     friend void initialize(IFiniteElement& fe);
     friend int dofSize(const IFiniteElement& fe);
-    friend std::pair<DynMatrixd, DynVectord> calculateLocalSystem(const IFiniteElement& fe,
+    friend std::pair<Eigen::MatrixXd, Eigen::VectorXd> calculateLocalSystem(const IFiniteElement& fe,
                                                                   const ElementMatrixAffordances& matA,
                                                                   const ElementVectorAffordances& vecA);
-    friend DynMatrixd calculateMatrix(const IFiniteElement& fe, const ElementMatrixAffordances& matA);
-    friend DynVectord calculateVector(const IFiniteElement& fe, const ElementVectorAffordances& vecA);
+    friend Eigen::MatrixXd calculateMatrix(const IFiniteElement& fe, const ElementMatrixAffordances& matA);
+    friend Eigen::VectorXd calculateVector(const IFiniteElement& fe, const ElementVectorAffordances& vecA);
     friend double calculateScalar(const IFiniteElement& fe, const ElementScalarAffordances& scalA);
     friend DofVectorType getEntityVariablePairs(const IFiniteElement& fe);
   };
 
   void initialize(IFiniteElement& fe);
   int dofSize(const IFiniteElement& fe);
-  std::pair<DynMatrixd, DynVectord> calculateLocalSystem(const IFiniteElement& fe, const ElementMatrixAffordances& matA,
+  std::pair<Eigen::MatrixXd, Eigen::VectorXd> calculateLocalSystem(const IFiniteElement& fe, const ElementMatrixAffordances& matA,
                                                          const ElementVectorAffordances& vecA);
-  DynMatrixd calculateMatrix(const IFiniteElement& fe, const ElementMatrixAffordances& matA);
-  DynVectord calculateVector(const IFiniteElement& fe, const ElementVectorAffordances& vecA);
+  Eigen::MatrixXd calculateMatrix(const IFiniteElement& fe, const ElementMatrixAffordances& matA);
+  Eigen::VectorXd calculateVector(const IFiniteElement& fe, const ElementVectorAffordances& vecA);
   double calculateScalar(const IFiniteElement& fe, const ElementScalarAffordances& scalA);
   IFiniteElement::DofVectorType getEntityVariablePairs(const IFiniteElement& fe);
 

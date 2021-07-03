@@ -151,7 +151,7 @@ namespace Ikarus::Grid {
   template <int griddim, int wdim>
   class DefaultGridEntity<griddim, griddim, wdim> {
   public:
-    DefaultGridEntity(int levelInput, const FixedVector<double, wdim>& vecInput, size_t idInput)
+    DefaultGridEntity(int levelInput, const Eigen::Vector<double, wdim>& vecInput, size_t idInput)
         : levelIndex{levelInput}, id{idInput}, position{vecInput} {}
 
     auto& getFatherElements() { return std::get<0>(entitiesFathers); }
@@ -191,7 +191,7 @@ namespace Ikarus::Grid {
     [[nodiscard]] int level() const { return levelIndex; }
 
     /** \brief Return position of this vertex */
-    const FixedVector<double, wdim>& getPosition() { return position; }
+    const Eigen::Vector<double, wdim>& getPosition() { return position; }
 
     /** \brief The index of this element on the level it belongs to */
     int levelIndex{};
@@ -221,7 +221,7 @@ namespace Ikarus::Grid {
     std::vector<DefaultGridEntity<dimension, codimension, dimensionworld>*> levelEntitiesChildren;
 
     /** \brief The position of the vertex */
-    FixedVector<double, wdim> position{};
+    Eigen::Vector<double, wdim> position{};
   };
   //
   //

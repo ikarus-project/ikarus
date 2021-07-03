@@ -7,14 +7,14 @@
 namespace Ikarus::FiniteElements {
   void initialize(IFiniteElement& fe) { fe.feimpl->do_initialize(); }
   int dofSize(const IFiniteElement& fe) { return fe.feimpl->do_dofSize(); }
-  std::pair<DynMatrixd, DynVectord> calculateLocalSystem(const IFiniteElement& fe, const ElementMatrixAffordances& matA,
+  std::pair<Eigen::MatrixXd, Eigen::VectorXd> calculateLocalSystem(const IFiniteElement& fe, const ElementMatrixAffordances& matA,
                                                          const ElementVectorAffordances& vecA) {
     return fe.feimpl->do_calculateLocalSystem(matA, vecA);
   }
-  DynMatrixd calculateMatrix(const IFiniteElement& fe, const ElementMatrixAffordances& matA) {
+  Eigen::MatrixXd calculateMatrix(const IFiniteElement& fe, const ElementMatrixAffordances& matA) {
     return fe.feimpl->do_calculateMatrix(matA);
   }
-  DynVectord calculateVector(const IFiniteElement& fe, const ElementVectorAffordances& vecA) {
+  Eigen::VectorXd calculateVector(const IFiniteElement& fe, const ElementVectorAffordances& vecA) {
     return fe.feimpl->do_calculateVector(vecA);
   }
   double calculateScalar(const IFiniteElement& fe, const ElementScalarAffordances& scalA) {

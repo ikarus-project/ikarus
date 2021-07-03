@@ -33,6 +33,7 @@ namespace Ikarus::Variable {
 
     IVariable &operator=(IVariable &&) noexcept = default;
     using UpdateType                            = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 8, 1>;
+    using CoordinateType                            = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 8, 1>;
 
   private:
     struct VarBase {
@@ -44,7 +45,7 @@ namespace Ikarus::Variable {
       [[nodiscard]] virtual bool do_lessComparison(const IVariable &other) const  = 0;
       virtual void do_assignAdd(const UpdateType &other)                          = 0;
       virtual void do_setValue(const UpdateType &other)                           = 0;
-      [[nodiscard]] virtual Ikarus::DynVectord do_getValue() const                = 0;
+      [[nodiscard]] virtual CoordinateType do_getValue() const                = 0;
       [[nodiscard]] virtual size_t do_getTag() const                              = 0;
       [[nodiscard]] virtual std::unique_ptr<VarBase> clone() const                = 0;  // Prototype Design Pattern
     };
@@ -56,7 +57,7 @@ namespace Ikarus::Variable {
       [[nodiscard]] int do_valueSize() const final { return VAR::valueSize; }
       [[nodiscard]] int do_correctionSize() const final { return VAR::correctionSize; }
       [[nodiscard]] size_t do_getTag() const final { return vo.getTag(); };
-      [[nodiscard]] Ikarus::DynVectord do_getValue() const final { return vo.getValue(); };
+      [[nodiscard]] CoordinateType do_getValue() const final { return vo.getValue(); };
       void do_assignAdd(const UpdateType &other) final { vo.update(other); }
       void do_setValue(const UpdateType &other) final { return vo.setValue(other); }
       [[nodiscard]] bool do_equalComparison(const IVariable &other) const final {
@@ -77,7 +78,7 @@ namespace Ikarus::Variable {
     friend IVariable &operator+=(IVariable &vo, const UpdateType &correction);
     friend IVariable operator+(IVariable &vo, const UpdateType &correction);
     friend void setValue(IVariable &vo, const UpdateType &value);
-    friend Ikarus::DynVectord getValue(const IVariable &vo);
+    friend CoordinateType getValue(const IVariable &vo);
     friend int valueSize(const IVariable &vo);
     friend int correctionSize(const IVariable &vo);
     friend bool operator==(const IVariable &var, const IVariable &other);
@@ -91,7 +92,7 @@ namespace Ikarus::Variable {
   IVariable operator+(IVariable &vo, const IVariable::UpdateType &correction);
   IVariable operator+(IVariable *vo, const IVariable::UpdateType &correction);
   void setValue(IVariable &vo, const IVariable::UpdateType &value);
-  Ikarus::DynVectord getValue(const IVariable &vo);
+  IVariable::CoordinateType getValue(const IVariable &vo);
   int valueSize(const IVariable &vo);
   int correctionSize(const IVariable &vo);
   bool operator==(const IVariable &var, const IVariable &other);
@@ -101,5 +102,5 @@ namespace Ikarus::Variable {
   std::ostream &operator<<(std::ostream &s, const IVariable &var);
   size_t valueSize(std::span<const IVariable> varSpan);
   size_t correctionSize(std::span<const IVariable> varSpan);
-  void update(std::span<IVariable> varSpan, const Ikarus::DynVectord &correction);
+  void update(std::span<IVariable> varSpan, const Eigen::VectorXd &correction);
 }  // namespace Ikarus::Variable

@@ -20,7 +20,7 @@ namespace Ikarus::Grid {
     using ctype = typename GridType::ctype;
 
     /** \brief Type used by the grid for the vertex coordinates */
-    using VertexCoordinateType = FixedVector<double, dimensionworld>;
+    using VertexCoordinateType = Eigen::Vector<double, dimensionworld>;
 
   public:
     void insertElement(const Dune::GeometryType& type, const std::span<size_t> vertices);
@@ -30,7 +30,7 @@ namespace Ikarus::Grid {
 
   private:
     struct VertexIndexPair {
-      FixedVector<double, dimensionworld> vertex;
+      Eigen::Vector<double, dimensionworld> vertex;
       size_t index;
     };
 

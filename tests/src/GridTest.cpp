@@ -37,7 +37,7 @@ TEST(GridTest, GridViewTest) {
   using namespace Ikarus::Grid;
   using Grid = SimpleGrid<2, 2>;
   SimpleGridFactory<Grid> gridFactory;
-  using vertexType = Ikarus::FixedVector2d;
+  using vertexType = Eigen::Vector2d;
   std::vector<vertexType> verticesVec;
   verticesVec.emplace_back(vertexType{0.0, 0.0});  // 0
   verticesVec.emplace_back(vertexType{2.0, 0.0});  // 1
@@ -118,7 +118,7 @@ TEST(GridTest, GridView3DSurfaceTest) {
   using namespace Ikarus::Grid;
   using Grid = SimpleGrid<2, 3>;
   SimpleGridFactory<Grid> gridFactory;
-  using vertexType = Ikarus::FixedVector3d;
+  using vertexType = Eigen::Vector3d;
   std::vector<vertexType> verticesVec;
   verticesVec.emplace_back(vertexType{0.0, 0.0, -3.0});  // 0
   verticesVec.emplace_back(vertexType{2.0, 0.0, -3.0});  // 1
@@ -186,7 +186,7 @@ TEST(GridTest, GridView3DSolidTest) {
   using namespace Ikarus::Grid;
   using Grid = SimpleGrid<3, 3>;
   SimpleGridFactory<Grid> gridFactory;
-  using vertexType = Ikarus::FixedVector3d;
+  using vertexType = Eigen::Vector3d;
   std::vector<vertexType> verticesVec;
   verticesVec.emplace_back(vertexType{0.0, 0.0, -3.0});  // 0
   verticesVec.emplace_back(vertexType{2.0, 0.0, -3.0});  // 1
@@ -208,9 +208,6 @@ TEST(GridTest, GridView3DSolidTest) {
   elementIndices.resize(4);
   elementIndices = {1, 8, 3, 5};
   gridFactory.insertElement(Dune::GeometryTypes::tetrahedron, elementIndices);
-  //  elementIndices.resize(3);
-  //  elementIndices<< 4,6,5;
-  //  gridFactory.insertElement(Dune::GeometryTypes::triangle,elementIndices);
 
   Grid actualGrid = gridFactory.createGrid();
 
@@ -269,7 +266,7 @@ TEST(GridTest, GridInsertionException) {
   using namespace Ikarus::Grid;
   using Grid = SimpleGrid<2, 2>;
   SimpleGridFactory<Grid> gridFactory;
-  using vertexType = Ikarus::FixedVector2d;
+  using vertexType = Eigen::Vector2d;
   std::vector<vertexType> verticesVec;
   verticesVec.emplace_back(vertexType{0.0, 0.0});  // 0
   verticesVec.emplace_back(vertexType{2.0, 0.0});  // 1

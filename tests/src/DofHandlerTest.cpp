@@ -20,7 +20,7 @@ TEST(DofHandler, DofHandlertest) {
   using namespace Ikarus::Grid;
   using Grid = SimpleGrid<2, 2>;
   SimpleGridFactory<Grid> gridFactory;
-  using vertexType = Ikarus::FixedVector2d;
+  using vertexType = Eigen::Vector2d;
   std::vector<vertexType> verticesVec;
   verticesVec.emplace_back(vertexType{0.0, 0.0});  // 0
   verticesVec.emplace_back(vertexType{2.0, 0.0});  // 1
