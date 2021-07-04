@@ -21,4 +21,4 @@ This is the documentation website of the project IKARUS.
 
 ```
 
-![My Diagram](diagrams/UML.drawio.svg)
+![My Diagram](diagrams/UML.drawio)
