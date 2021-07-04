@@ -5,6 +5,7 @@
 #pragma once
 
 // This file contains stl-like algorithms
+#include <iostream>
 #include <ranges>
 namespace Ikarus::stl {
   void makeUniqueAndSort(std::ranges::random_access_range auto& varVec) {
@@ -22,9 +23,8 @@ namespace Ikarus::stl {
     return index;
   }
 
-#include <iostream>
   template <class Container>  // TODO: create concept for this
-  void printContent(std::ostream& os,Container& varVec) {
+  void printContent(std::ostream& os, Container& varVec) {
     std::ranges::for_each(varVec, [&os](auto& var) { os << var << '\n'; });
   }
 

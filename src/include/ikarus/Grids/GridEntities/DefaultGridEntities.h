@@ -204,7 +204,7 @@ namespace Ikarus::Grid {
 
     /** \brief Returns the number of subEntities of this entity, e.g. a line has two verteces as
      * subtypes */
-    unsigned int subEntities(unsigned int codim) const { return 0; }
+    unsigned int subEntities(unsigned int) const { return 0; }
 
     /** \brief Returns the geometric realization of the entity */
     auto geometry() const { return Geometry(type(), position); }

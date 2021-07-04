@@ -50,7 +50,7 @@ TEST(Assembler, VectorAssemblerTest) {
   for (auto&& ge : volumes(gridView))
     fes.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge));
 
-  auto dh = Ikarus::DofHandler::DefaultDofManager(fes, gridView);
+  auto dh = Ikarus::DofManager::DefaultDofManager(fes, gridView);
   dh.createElementDofRelationship();
 
   //auto vectorAssembler = Ikarus::Assembler:VectorAssembler(dh);
