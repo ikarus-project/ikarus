@@ -11,12 +11,12 @@
 
 #include <Eigen/Core>
 
+#include <ikarus/Assembler/ResidualAssembler.h>
 #include <ikarus/DofManager/DefaultDofManager.h>
 #include <ikarus/FiniteElements/ElasticityFE.h>
+#include <ikarus/FiniteElements/FiniteElementPolicies.h>
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
 #include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
-#include <ikarus/Assembler/ResidualAssembler.h>
-
 
 TEST(Assembler, VectorAssemblerTest) {
   using namespace Ikarus::Grid;
@@ -53,6 +53,9 @@ TEST(Assembler, VectorAssemblerTest) {
   auto dh = Ikarus::DofManager::DefaultDofManager(fes, gridView);
   dh.createElementDofRelationship();
 
-  //auto vectorAssembler = Ikarus::Assembler:VectorAssembler(dh);
-
+  auto vectorAssembler = Ikarus::Assembler::VectorAssembler(dh);
+  auto fint            = vectorAssembler.getVector(Ikarus::FiniteElements::forces);
+  EXPECT_EQ(fint.size(), 12);
+  Eigen::VectorXd fintExpected = (Eigen::VectorXd(12) << 1, 1, 2, 2, 1, 1, 2, 2, 1, 1, 1, 1).finished();
+  EXPECT_THAT(fint, EigenApproxEqual(fintExpected,1e-15));
 }

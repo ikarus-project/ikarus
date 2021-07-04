@@ -18,6 +18,12 @@ namespace Ikarus::FiniteElements {
   Eigen::VectorXd calculateVector(const IFiniteElement& fe, const ElementVectorAffordances& vecA) {
     return fe.feimpl->do_calculateVector(vecA);
   }
+  Eigen::VectorXd calculateVector(const IFiniteElement* fe, const ElementVectorAffordances& vecA)
+  {
+    return calculateVector((*fe),vecA);
+  }
+
+
   double calculateScalar(const IFiniteElement& fe, const ElementScalarAffordances& scalA) {
     return fe.feimpl->do_calculateScalar(scalA);
   }
