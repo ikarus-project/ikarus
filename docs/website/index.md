@@ -20,3 +20,5 @@ This is the documentation website of the project IKARUS.
 ```cpp
 
 ```
+
+![My Diagram](diagrams/UML.drawio.svg)
