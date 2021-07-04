@@ -176,7 +176,7 @@ namespace Ikarus::DofManager {
 
     auto elementDofsVariableTuple() {
       constexpr int gridDim = GridViewType::dimension;
-      return std::ranges::transform_view(entities(gridView_, Dune::index_constant<gridDim>()), [&](auto&& ge) {
+      return std::ranges::transform_view(entities((*gridView_), Dune::index_constant<gridDim>()), [&](auto&& ge) {
         auto elementsDegreesOfFreedom = elementDofIndices(ge);
         auto elementsVariables        = elementVariables(ge);
         return std::make_tuple(gridEntityFEmap[ge.getID()], elementsDegreesOfFreedom, elementsVariables);

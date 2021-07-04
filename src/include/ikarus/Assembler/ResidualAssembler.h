@@ -8,10 +8,13 @@
 namespace Ikarus::Assembler {
   template <typename DofManagerType>
   class VectorAssembler {
-    explicit VectorAssembler(DofManagerType& dofManager) : dofManager_{dofManager} {}
+  public:
+    explicit VectorAssembler(DofManagerType& dofManager) : dofManager_{&dofManager} {}
 
-    auto getVector(Ikarus::FiniteElements::ElementVectorAffordances& vectorAffordances) {
-      for (const auto&& [fe, dofs, vars] : dofManager_->elementDofsVariableTuple) {
+    auto getVector(Ikarus::FiniteElements::ElementVectorAffordances vectorAffordances) {
+      vec.setZero(dofManager_->correctionSize());
+      for ( auto [fe, dofs, vars] : dofManager_->elementDofsVariableTuple()) {
+        vec(dofs) += calculateVector(fe,vectorAffordances);
       }
       return vec;
     }

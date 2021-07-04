@@ -99,6 +99,7 @@ namespace Ikarus::FiniteElements {
                                                                    const ElementVectorAffordances& vecA);
   Eigen::MatrixXd calculateMatrix(const IFiniteElement& fe, const ElementMatrixAffordances& matA);
   Eigen::VectorXd calculateVector(const IFiniteElement& fe, const ElementVectorAffordances& vecA);
+  Eigen::VectorXd calculateVector(const IFiniteElement* fe, const ElementVectorAffordances& vecA);
   double calculateScalar(const IFiniteElement& fe, const ElementScalarAffordances& scalA);
   IFiniteElement::DofVectorType getEntityVariablePairs(const IFiniteElement& fe);
   size_t getEntityID(const IFiniteElement& fe);
