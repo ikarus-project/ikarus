@@ -49,7 +49,7 @@ TEST(DofHandler, DofHandlertest) {
     fes.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge));
 
   auto dh = Ikarus::DofHandler::DefaultDofManager(fes, gridView);
-  dh.createDofList();
+  dh.createElementDofRelationship();
 
   auto&& ge         = volumes(gridView).begin();
   auto VariableList = dh.elementVariables(ge[0]);

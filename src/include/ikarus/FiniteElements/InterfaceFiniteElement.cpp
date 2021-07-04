@@ -24,4 +24,8 @@ namespace Ikarus::FiniteElements {
   IFiniteElement::DofVectorType getEntityVariablePairs(const IFiniteElement& fe) {
     return fe.feimpl->do_getEntityVariablePairs();
   }
+  size_t getEntityID(const IFiniteElement& fe)
+  {
+    return fe.feimpl->do_getEntityID();
+  }
 }  // namespace Ikarus::FiniteElements

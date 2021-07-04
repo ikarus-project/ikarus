@@ -22,9 +22,10 @@ namespace Ikarus::stl {
     return index;
   }
 
+#include <iostream>
   template <class Container>  // TODO: create concept for this
-  void printContent(Container& varVec) {
-    std::ranges::for_each(varVec, [](auto& var) { std::cout << var << '\n'; });
+  void printContent(std::ostream& os,Container& varVec) {
+    std::ranges::for_each(varVec, [&os](auto& var) { os << var << '\n'; });
   }
 
   template <class Container>
