@@ -93,5 +93,6 @@ extra_javascript:
 
 plugins:
   - search
+  - drawio-exporter
   - macros:
       module_name: mkdocs-macros
