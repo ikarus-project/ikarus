@@ -3,5 +3,21 @@
 //
 
 #pragma once
+#include <ikarus/FiniteElements/FiniteElementPolicies.h>
 
-class ResidualAssembler {};
+namespace Ikarus::Assembler {
+  template <typename DofManagerType>
+  class VectorAssembler {
+    explicit VectorAssembler(DofManagerType& dofManager) : dofManager_{dofManager} {}
+
+    auto getVector(Ikarus::FiniteElements::ElementVectorAffordances& vectorAffordances) {
+      for (const auto&& [fe, dofs, vars] : dofManager_->elementDofsVariableTuple) {
+      }
+      return vec;
+    }
+
+  private:
+    DofManagerType* dofManager_;
+    Eigen::VectorXd vec;
+  };
+}  // namespace Ikarus::Assembler

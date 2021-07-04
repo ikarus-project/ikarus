@@ -50,6 +50,7 @@ namespace Ikarus::FiniteElements {
       [[nodiscard]] virtual Eigen::VectorXd do_calculateVector(const ElementVectorAffordances& vecA) const = 0;
       [[nodiscard]] virtual double do_calculateScalar(const ElementScalarAffordances& scalA) const         = 0;
       [[nodiscard]] virtual DofVectorType do_getEntityVariablePairs() const                                = 0;
+      [[nodiscard]] virtual size_t do_getEntityID() const                                = 0;
       [[nodiscard]] virtual std::unique_ptr<FEBase> clone() const                                          = 0;
     };
 
@@ -72,6 +73,7 @@ namespace Ikarus::FiniteElements {
         TRYCALLFUNCTION(calculateScalar, scalA);
       }
       [[nodiscard]] DofVectorType do_getEntityVariablePairs() const final { TRYCALLFUNCTION(getEntityVariablePairs); }
+      [[nodiscard]] size_t do_getEntityID() const final { TRYCALLFUNCTION(getEntityID); }
       [[nodiscard]] std::unique_ptr<FEBase> clone() const final { return std::make_unique<FEImpl>(*this); }
       FE fe;
     };
@@ -87,6 +89,7 @@ namespace Ikarus::FiniteElements {
     friend Eigen::VectorXd calculateVector(const IFiniteElement& fe, const ElementVectorAffordances& vecA);
     friend double calculateScalar(const IFiniteElement& fe, const ElementScalarAffordances& scalA);
     friend DofVectorType getEntityVariablePairs(const IFiniteElement& fe);
+    friend size_t getEntityID(const IFiniteElement& fe);
   };
 
   void initialize(IFiniteElement& fe);
@@ -98,5 +101,6 @@ namespace Ikarus::FiniteElements {
   Eigen::VectorXd calculateVector(const IFiniteElement& fe, const ElementVectorAffordances& vecA);
   double calculateScalar(const IFiniteElement& fe, const ElementScalarAffordances& scalA);
   IFiniteElement::DofVectorType getEntityVariablePairs(const IFiniteElement& fe);
+  size_t getEntityID(const IFiniteElement& fe);
 
 }  // namespace Ikarus::FiniteElements

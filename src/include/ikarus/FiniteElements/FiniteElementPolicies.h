@@ -97,6 +97,16 @@ namespace Ikarus::Concepts {
   };
 
   template <typename FiniteElement>
+  concept HasgetEntityID = requires(FiniteElement fe) {
+    fe.getEntityID();
+  };
+
+  template <typename FiniteElement>
+  concept HasFreegetEntityID = requires(FiniteElement fe) {
+    getEntityID(fe);
+  };
+
+  template <typename FiniteElement>
   concept HascalculateLocalSystem = requires(FiniteElement fe, Ikarus::FiniteElements::ElementMatrixAffordances matA,
                                              Ikarus::FiniteElements::ElementVectorAffordances vecA) {
     fe.calculateLocalSystem(matA, vecA);

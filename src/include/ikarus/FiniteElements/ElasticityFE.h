@@ -132,6 +132,9 @@ namespace Ikarus::FiniteElements {
       return dofs;
     }
 
+    [[nodiscard]] size_t getEntityID() const
+    {return elementGridEntity->getID();}
+
   private:
     GridElementEntityType const* const elementGridEntity;
   };
