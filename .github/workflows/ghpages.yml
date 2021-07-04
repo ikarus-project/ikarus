@@ -17,7 +17,9 @@ jobs:
           pip install mkdocs-material
           pip install mkdocs-macros-plugin
           pip install mkdocs-drawio-exporter
-          snap install drawio
+          wget https://github.com/jgraph/drawio-desktop/releases/download/v12.3.2/draw.io-amd64-12.3.2.deb
+          sudo dpkg -i draw.io-amd64-12.3.2.deb
+          sudo apt -y -f install
       - name: Build Website
         run: |
           cd docs
