@@ -18,8 +18,9 @@ jobs:
           pip install mkdocs-macros-plugin
           pip install mkdocs-drawio-exporter
           wget https://github.com/jgraph/drawio-desktop/releases/download/v14.6.13/drawio-amd64-14.6.13.deb
+          sudo apt-get install libappindicator3-1
           sudo dpkg -i drawio-amd64-14.6.13.deb
-          sudo apt -y -f install
+          sudo apt-get -y -f install
       - name: Build Website
         run: |
           cd docs
