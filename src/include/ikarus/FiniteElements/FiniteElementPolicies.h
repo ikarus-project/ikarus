@@ -3,7 +3,12 @@
 //
 
 #pragma once
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
 #include <ikarus/FiniteElements/FiniteElementPolicies.h>
+#endif
 
 namespace Ikarus::FiniteElements {
   enum class ElementVectorAffordances { forces };

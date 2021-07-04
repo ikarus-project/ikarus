@@ -5,6 +5,7 @@ project(IkarusTests LANGUAGES CXX)
 option(ENABLE_TEST_COVERAGE "Enable test coverage" OFF)
 option(TEST_INSTALLED_VERSION "Test the version found by find_package" OFF)
 
+set(IWYU_ARGS "-Xiwyu --mapping_file=iwyu.imp")
 include(../cmake/tools.cmake)
 
 list(APPEND CMAKE_PREFIX_PATH
@@ -25,7 +26,7 @@ target_link_libraries(
 )
 set_target_properties(IkarusTests PROPERTIES CXX_STANDARD 20)
 
-target_compile_options(IkarusTests PUBLIC -Wall -Wpedantic -Wextra -Werror -fuse-ld=lld)
+target_compile_options(IkarusTests PUBLIC -Wall -Wpedantic -Wextra -Werror)
 
 if(MINGW)
   target_compile_options(IkarusTests PUBLIC -Wa,-mbig-obj)
