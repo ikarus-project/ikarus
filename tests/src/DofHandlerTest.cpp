@@ -49,21 +49,19 @@ TEST(DofHandler, DofHandlertest) {
     fes.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge));
 
   auto dh = Ikarus::DofManager::DefaultDofManager(fes, gridView);
-  dh.createElementDofRelationship();
 
-  auto&& ge         = volumes(gridView).begin();
-  auto VariableList = dh.elementVariables(ge[0]);
+  auto VariableList = dh.elementVariables()[0];
 
   for (auto&& var : VariableList)
     var += Eigen::Vector<double, 2>::UnitX();
 
   EXPECT_THAT(VariableList.size(), 4);
 
-  for (auto&& geR : volumes(gridView)) {
-    EXPECT_THAT(dh.elementDofVectorSize(geR), 8);
+  for (auto&& eleDofVecSize : dh.elementDofVectorSize()) {
+    EXPECT_THAT(eleDofVecSize, 8);
   }
 
-  auto VariableList2 = dh.elementVariables(ge[1]);
+  auto VariableList2 = dh.elementVariables()[1];
 
   EXPECT_THAT(getValue((*VariableList2[0])), EigenApproxEqual(Eigen::Vector<double, 2>::UnitX(), 1e-15));
   EXPECT_THAT(getValue((*VariableList2[1])), EigenApproxEqual(Eigen::Vector<double, 2>::Zero(), 1e-15));
@@ -91,8 +89,8 @@ TEST(DofHandler, DofHandlertest) {
   for (int i = 0; auto& var : x.getValues())
     EXPECT_THAT(getValue(var), EigenApproxEqual(xExpected[i++], 1e-15));
 
-  auto dofIndicesOfFirstElement  = dh.elementDofIndices(ge[0]);
-  auto dofIndicesOfSecondElement = dh.elementDofIndices(ge[1]);
+  auto dofIndicesOfFirstElement  = dh.elementDofs()[0];
+  auto dofIndicesOfSecondElement = dh.elementDofs()[1];
 
   std::array<Eigen::ArrayXi, 2> expectedIndices;
   expectedIndices[0].resize(8);

@@ -4,27 +4,27 @@
 
 #pragma once
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
-#include <ikarus/FiniteElements/FiniteElementPolicies.h>
-#endif
+//#include <ikarus/FiniteElements/InterfaceFiniteElement.h>
+#include <ikarus/Variables/InterfaceVariable.h>
+//#ifdef __clang__
+//#  pragma clang diagnostic push
+//#  pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+//#endif
 
 namespace Ikarus::FiniteElements {
-  enum class ElementVectorAffordances { forces };
+  enum class VectorAffordances { forces };
 
-  enum class ElementMatrixAffordances { stiffness, stiffnessdiffBucklingVector, mass };
+  enum class MatrixAffordances { stiffness, materialstiffness, geometricstiffness, stiffnessdiffBucklingVector, mass };
 
-  enum class ElementScalarAffordances { potentialEnergy };
+  enum class ScalarAffordances { potentialEnergy };
 
-  inline constexpr ElementVectorAffordances forces = ElementVectorAffordances::forces;
+  inline constexpr VectorAffordances forces = VectorAffordances::forces;
 
-  inline constexpr ElementMatrixAffordances stiffness = ElementMatrixAffordances::stiffness;
-  inline constexpr ElementMatrixAffordances stiffnessdiffBucklingVector
-      = ElementMatrixAffordances::stiffnessdiffBucklingVector;
-  inline constexpr ElementMatrixAffordances mass = ElementMatrixAffordances::mass;
+  inline constexpr MatrixAffordances stiffness                   = MatrixAffordances::stiffness;
+  inline constexpr MatrixAffordances stiffnessdiffBucklingVector = MatrixAffordances::stiffnessdiffBucklingVector;
+  inline constexpr MatrixAffordances mass                        = MatrixAffordances::mass;
 
-  inline constexpr ElementScalarAffordances potentialEnergy = ElementScalarAffordances::potentialEnergy;
+  inline constexpr ScalarAffordances potentialEnergy = ScalarAffordances::potentialEnergy;
 
 }  // namespace Ikarus::FiniteElements
 
@@ -48,33 +48,45 @@ namespace Ikarus::Concepts {
     return;
 
   template <typename FiniteElement>
-  concept HascalculateMatrix = requires(FiniteElement fe, Ikarus::FiniteElements::ElementMatrixAffordances matA) {
-    fe.calculateMatrix(matA);
+  concept HascalculateMatrix
+      = requires(FiniteElement fe, std::vector<Ikarus::Variable::IVariable*> vars,
+                 Ikarus::FiniteElements::MatrixAffordances matA) {
+    fe.calculateMatrix(vars, matA);
   };
 
   template <typename FiniteElement>
-  concept HasFreecalculateMatrix = requires(FiniteElement fe, Ikarus::FiniteElements::ElementMatrixAffordances matA) {
-    calculateMatrix(fe, matA);
+  concept HasFreecalculateMatrix
+      = requires(FiniteElement fe, std::vector<Ikarus::Variable::IVariable*> vars,
+                 Ikarus::FiniteElements::MatrixAffordances matA) {
+    calculateMatrix(fe, vars, matA);
   };
 
   template <typename FiniteElement>
-  concept HascalculateScalar = requires(FiniteElement fe, Ikarus::FiniteElements::ElementScalarAffordances scalA) {
-    fe.calculateScalar(scalA);
+  concept HascalculateScalar
+      = requires(FiniteElement fe, std::vector<Ikarus::Variable::IVariable*> vars,
+                 Ikarus::FiniteElements::ScalarAffordances scalA) {
+    fe.calculateScalar(vars, scalA);
   };
 
   template <typename FiniteElement>
-  concept HasFreecalculateScalar = requires(FiniteElement fe, Ikarus::FiniteElements::ElementScalarAffordances scalA) {
-    calculateScalar(fe, scalA);
+  concept HasFreecalculateScalar
+      = requires(FiniteElement fe, std::vector<Ikarus::Variable::IVariable*> vars,
+                 Ikarus::FiniteElements::ScalarAffordances scalA) {
+    calculateScalar(fe, vars, scalA);
   };
 
   template <typename FiniteElement>
-  concept HascalculateVector = requires(FiniteElement fe, Ikarus::FiniteElements::ElementVectorAffordances vecA) {
-    fe.calculateVector(vecA);
+  concept HascalculateVector
+      = requires(FiniteElement fe, std::vector<Ikarus::Variable::IVariable*> vars,
+                 Ikarus::FiniteElements::VectorAffordances vecA) {
+    fe.calculateVector(vars, vecA);
   };
 
   template <typename FiniteElement>
-  concept HasFreecalculateVector = requires(FiniteElement fe, Ikarus::FiniteElements::ElementVectorAffordances vecA) {
-    calculateVector(fe, vecA);
+  concept HasFreecalculateVector
+      = requires(FiniteElement fe, std::vector<Ikarus::Variable::IVariable*> vars,
+                 Ikarus::FiniteElements::VectorAffordances vecA) {
+    calculateVector(fe, vars, vecA);
   };
 
   template <typename FiniteElement>
@@ -112,16 +124,17 @@ namespace Ikarus::Concepts {
   };
 
   template <typename FiniteElement>
-  concept HascalculateLocalSystem = requires(FiniteElement fe, Ikarus::FiniteElements::ElementMatrixAffordances matA,
-                                             Ikarus::FiniteElements::ElementVectorAffordances vecA) {
-    fe.calculateLocalSystem(matA, vecA);
+  concept HascalculateLocalSystem
+      = requires(FiniteElement fe, std::vector<Ikarus::Variable::IVariable*> vars,
+                 Ikarus::FiniteElements::MatrixAffordances matA, Ikarus::FiniteElements::VectorAffordances vecA) {
+    fe.calculateLocalSystem(vars, matA, vecA);
   };
 
   template <typename FiniteElement>
   concept HasFreecalculateLocalSystem
-      = requires(FiniteElement fe, Ikarus::FiniteElements::ElementMatrixAffordances matA,
-                 Ikarus::FiniteElements::ElementVectorAffordances vecA) {
-    calculateLocalSystem(fe, matA, vecA);
+      = requires(FiniteElement fe, std::vector<Ikarus::Variable::IVariable*> vars,
+                 Ikarus::FiniteElements::MatrixAffordances matA, Ikarus::FiniteElements::VectorAffordances vecA) {
+    calculateLocalSystem(fe, vars, matA, vecA);
   };
 
   template <typename FiniteElement>

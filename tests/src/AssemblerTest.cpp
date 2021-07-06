@@ -11,14 +11,14 @@
 
 #include <Eigen/Core>
 
-#include <ikarus/Assembler/ResidualAssembler.h>
+#include <ikarus/Assembler/SimpleAssemblers.h>
 #include <ikarus/DofManager/DefaultDofManager.h>
 #include <ikarus/FiniteElements/ElasticityFE.h>
 #include <ikarus/FiniteElements/FiniteElementPolicies.h>
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
 #include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
 
-TEST(Assembler, VectorAssemblerTest) {
+TEST(Assembler, SimpleAssemblersTest) {
   using namespace Ikarus::Grid;
   using Grid = SimpleGrid<2, 2>;
   SimpleGridFactory<Grid> gridFactory;
@@ -51,11 +51,35 @@ TEST(Assembler, VectorAssemblerTest) {
     fes.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge));
 
   auto dh = Ikarus::DofManager::DefaultDofManager(fes, gridView);
-  dh.createElementDofRelationship();
 
   auto vectorAssembler = Ikarus::Assembler::VectorAssembler(dh);
   auto fint            = vectorAssembler.getVector(Ikarus::FiniteElements::forces);
   EXPECT_EQ(fint.size(), 12);
   Eigen::VectorXd fintExpected = (Eigen::VectorXd(12) << 1, 1, 2, 2, 1, 1, 2, 2, 1, 1, 1, 1).finished();
   EXPECT_THAT(fint, EigenApproxEqual(fintExpected,1e-15));
+
+  auto denseMatrixAssembler = Ikarus::Assembler::DenseMatrixAssembler(dh);
+  auto K            = denseMatrixAssembler.getMatrix(Ikarus::FiniteElements::stiffness);
+  EXPECT_EQ(K.rows(), 12);
+  EXPECT_EQ(K.cols(), 12);
+  Eigen::MatrixXd KExpected = (Eigen::MatrixXd(12,12) <<
+  1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0,
+  1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0,
+  1, 1, 2, 2, 1, 1, 2, 2, 1, 1, 1, 1,
+  1, 1, 2, 2, 1, 1, 2, 2, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0,
+  1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0,
+  1, 1, 2, 2, 1, 1, 2, 2, 1, 1, 1, 1,
+  1, 1, 2, 2, 1, 1, 2, 2, 1, 1, 1, 1,
+  0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1,
+  0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1,
+  0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1,
+  0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1).finished();
+  EXPECT_THAT(K, EigenApproxEqual(KExpected,1e-15));
+
+  auto sparseMatrixAssembler = Ikarus::Assembler::SparseMatrixAssembler(dh);
+  auto KSparse            = sparseMatrixAssembler.getMatrix(Ikarus::FiniteElements::stiffness);
+
+  EXPECT_THAT(KSparse, EigenApproxEqual(KExpected,1e-15));
+  EXPECT_THAT(KSparse, EigenApproxEqual(K,1e-15));
 }
