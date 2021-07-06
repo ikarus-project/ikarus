@@ -28,7 +28,7 @@ namespace Ikarus::Grid {
     using GridEntityTuple
         = decltype(Impl::GridEntityTupleGenerator<dim, dimworld>(std::make_integer_sequence<int, dimension + 1>()));
     using VertexType  = DefaultGridEntity<dim, dim, dimworld>;
-    using ElementType = DefaultGridEntity<dim, 0, dimworld>;
+    using RootEntity = DefaultGridEntity<dim, 0, dimworld>;
 
     template <int griddim, int cogriddim, int wdim>
     using Entity = DefaultGridEntity<griddim, cogriddim, wdim>;

@@ -61,8 +61,11 @@ namespace Ikarus::FiniteElements {
     /** \brief Type of the ParameterSpace coordinate */
     using ParameterSpaceType = Eigen::Matrix<ctype, mydimension, 1>;
 
+    /** \brief Type of the Pairs of gridEntities and variable tags */
+    using DofPairVectorType = typename IFiniteElement::DofPairVectorType;
+
     /** \brief Type of the DofVector */
-    using DofVectorType = typename IFiniteElement::DofVectorType;
+    using VariableVectorType = typename IFiniteElement::VariableVectorType;
 
     /** \brief Type of the Dofs / SolutionType
      * using NodalSolutionType = Displacement<ctype,coorddimension>;*/
@@ -82,24 +85,24 @@ namespace Ikarus::FiniteElements {
 
     void initialize() { std::cout << "initialize ElasticityFE" << std::endl; }
 
-    [[nodiscard]] std::pair<MatrixType, VectorType> calculateLocalSystem(const ElementMatrixAffordances& matA,
-                                                                         const ElementVectorAffordances& vecA) const {
+    [[nodiscard]] std::pair<MatrixType, VectorType> calculateLocalSystem([[maybe_unused]] VariableVectorType& vars,const MatrixAffordances& matA,
+                                                                         const VectorAffordances& vecA) const {
       if (matA == stiffness && vecA == forces)
         return calculateStiffnessMatrixAndInternalForcesImpl();
       else
         throw std::logic_error("This element can not handle your affordance! ");
     }
 
-    [[nodiscard]] MatrixType calculateMatrix(const ElementMatrixAffordances& matA) const {
+    [[nodiscard]] MatrixType calculateMatrix([[maybe_unused]] VariableVectorType& vars,const MatrixAffordances& matA) const {
       if (matA == stiffness)
         return calculateStiffnessMatrixAndInternalForcesImpl<false, true>();
       else
         throw std::logic_error("This element can not handle your affordance! ");
     }
 
-    [[nodiscard]] double calculateScalar(const ElementScalarAffordances&) const { return 13.0; }
+    [[nodiscard]] double calculateScalar([[maybe_unused]] VariableVectorType& vars,const ScalarAffordances&) const { return 13.0; }
 
-    [[nodiscard]] VectorType calculateVector(const ElementVectorAffordances&) const {
+    [[nodiscard]] VectorType calculateVector([[maybe_unused]] VariableVectorType& vars,const VectorAffordances&) const {
       return calculateStiffnessMatrixAndInternalForcesImpl<true, false>();
     }
 
@@ -120,8 +123,8 @@ namespace Ikarus::FiniteElements {
                       "You asked the element: \"Don't return anything\"");
     }
 
-    [[nodiscard]] DofVectorType getEntityVariablePairs() const {
-      DofVectorType dofs;
+    [[nodiscard]] DofPairVectorType getEntityVariablePairs() const {
+      DofPairVectorType dofs;
       for (auto&& vertex : vertices(elementGridEntity)) {
         if constexpr (coorddimension == 3)
           dofs.push_back({vertex->getID(), {Ikarus::Variable::displacement3d}});

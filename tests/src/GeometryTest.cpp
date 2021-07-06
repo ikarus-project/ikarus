@@ -6,8 +6,7 @@
 #include <complex>
 #include <vector>
 
-//#include "spdlog/spdlog.h"
-#define EIGEN_MATRIXBASE_PLUGIN "IBB_Eigen_MatrixBaseAddon.h"
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

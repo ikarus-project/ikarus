@@ -46,22 +46,19 @@ namespace Ikarus::DofManager {
     friend VariableVector& operator+=(VariableVector& varVecArg, Eigen::VectorXd& correction);
   };
 
-  VariableVector& operator+=(VariableVector& varVecArg, Eigen::VectorXd& correction) ;
-
+  VariableVector& operator+=(VariableVector& varVecArg, Eigen::VectorXd& correction);
 
   template <typename FEContainer, typename GridViewType>
   requires Concepts::HasgetEntityVariablePairs<typename std::remove_cvref_t<FEContainer>::value_type> || Concepts::
       HasFreegetEntityVariablePairs<typename std::remove_cvref_t<FEContainer>::value_type>
   class DefaultDofManager {
   public:
-    using DofSet        = std::unordered_map<size_t, std::unordered_set<Ikarus::Variable::VariablesTags>>;
-    using IndexMap      = std::unordered_map<size_t, size_t>;
-    using DofVector     = std::vector<std::vector<Ikarus::Variable::IVariable>>;
-    using VariableIndex = std::vector<Eigen::ArrayXi>;
+    using DofSet                 = std::unordered_map<size_t, std::unordered_set<Ikarus::Variable::VariablesTags>>;
+    using EntityVariablePair     = std::pair<size_t, std::unordered_set<Ikarus::Variable::VariablesTags>>;
+    using IndexMap               = std::unordered_map<size_t, size_t>;
+    static constexpr int gridDim = GridViewType::dimension;
 
-    DefaultDofManager(FEContainer& feContainer, GridViewType& gv) : fe_container_{&feContainer}, gridView_{&gv} {}
-
-    void createElementDofRelationship() {
+    DefaultDofManager(FEContainer& feContainer, GridViewType& gv) : fe_container_{&feContainer}, gridView_{&gv} {
       size_t indexCounter = 0;
       variableIndexMap.clear();
       indexSet.clear();
@@ -75,11 +72,10 @@ namespace Ikarus::DofManager {
           // Create set of Dofs for each grid entity
           dofSet[entityID].insert(begin(dofTagVector), end(dofTagVector));
       }
-      std::vector<std::pair<size_t, std::unordered_set<Ikarus::Variable::VariablesTags>>> dofVector2(begin(dofSet),
-                                                                                                     end(dofSet));
-      std::ranges::sort(dofVector2, [](auto&& a, auto&& b) { return a.first < b.first; });
+      std::vector<EntityVariablePair> dofVector(begin(dofSet), end(dofSet));
+      std::ranges::sort(dofVector, [](auto&& a, auto&& b) { return a.first < b.first; });
 
-      for (auto&& [entityID, dofTagVector] : dofVector2) {
+      for (auto&& [entityID, dofTagVector] : dofVector) {
         variableIndexMap[entityID] = indexCounter++;
 
         varVec.dofVecimpl.emplace_back();
@@ -97,6 +93,11 @@ namespace Ikarus::DofManager {
       isElementDofRelationshipCreated = true;
     }
 
+//    void reinit() {
+//      DefaultDofManager tmp(fe_container_, gridView_);
+//      (*this) = tmp;
+//    }
+
     size_t correctionSize() {
       if (isElementDofRelationshipCreated == true)
         return varVec.correctionSize();
@@ -104,30 +105,32 @@ namespace Ikarus::DofManager {
         throw std::logic_error("You first need to call createElementDofRelationship before this");
     }
 
-  public:
-    template <typename GridEntityType>
-    size_t elementDofVectorSize(GridEntityType& ele) {
-      size_t dofsize = 0;
+    auto elementDofs() {
+      return transform_viewOverElements([this](auto& ele) { return this->dofsOfSingleElement(ele); });
+    };
 
-      auto dofsizeIncrementFromEntity = [this](auto&& ent) {
-        auto entID = ent->getID();
-        if (hasIndex(entID))
-          return Ikarus::Variable::correctionSize(varVec.dofVecimpl.at(variableIndexMap.at(entID)));
-        else
-          return size_t{0};
-      };
-      constexpr size_t dim = GridEntityType::dimension;
-      // Loop over all entities of the grid and collect the sizes of their degrees of freedom
-      Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<dim>()), [&](auto i) {
-        for (auto&& ent : entities(ele, i))
-          dofsize += dofsizeIncrementFromEntity(ent);
-        dofsize += dofsizeIncrementFromEntity(&ele);
+    auto elementVariables() {
+      return transform_viewOverElements([this](auto& ele) { return this->elementVariables(ele); });
+    };
+
+    auto elementDofVectorSize() {
+      return transform_viewOverElements([this](auto& ele) { return this->elementDofVectorSize(ele); });
+    };
+
+    auto elementDofsVariableTuple() {
+      return transform_viewOverElements([&](auto&& ge) {
+        auto elementsDegreesOfFreedom = dofsOfSingleElement(ge);
+        auto elementsVariables        = elementVariables(ge);
+        return std::make_tuple(gridEntityFEmap[ge.getID()], elementsDegreesOfFreedom, elementsVariables);
       });
-      return dofsize;
     }
 
+    auto& getVariables() { return varVec; };
+    auto getGridView() { return gridView_; };
+
+  private:
     template <typename GridEntityType>
-    auto elementDofIndices(GridEntityType& ele) {
+    auto dofsOfSingleElement(GridEntityType& ele) {
       Eigen::ArrayXi indices(elementDofVectorSize(ele));
       size_t posHelper = 0;
 
@@ -139,15 +142,8 @@ namespace Ikarus::DofManager {
           posHelper += sizeOfVar;
         }
       };
-
-      constexpr size_t dim = GridEntityType::dimension;
-      // Loop over all entities of the grid and collect the indices of their degrees of freedom
-      Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<dim>()), [&](auto i) {
-        for (auto&& ent : entities(ele, i))
-          dofIndicesFromEntity(ent);
-        dofIndicesFromEntity(&ele);
-      });
-
+      forEachSubEntity(ele, dofIndicesFromEntity);
+      dofIndicesFromEntity(&ele);
       return indices;
     }
 
@@ -174,18 +170,34 @@ namespace Ikarus::DofManager {
       return elementVariables;
     }
 
-    auto elementDofsVariableTuple() {
-      constexpr int gridDim = GridViewType::dimension;
-      return std::ranges::transform_view(entities((*gridView_), Dune::index_constant<gridDim>()), [&](auto&& ge) {
-        auto elementsDegreesOfFreedom = elementDofIndices(ge);
-        auto elementsVariables        = elementVariables(ge);
-        return std::make_tuple(gridEntityFEmap[ge.getID()], elementsDegreesOfFreedom, elementsVariables);
+    template <typename GridEntityType>
+    size_t elementDofVectorSize(GridEntityType& ele) {
+      size_t dofsize = 0;
+
+      auto dofsizeIncrementFromEntity = [this](auto&& ent) {
+        auto entID = ent->getID();
+        if (hasIndex(entID))
+          return Ikarus::Variable::correctionSize(varVec.dofVecimpl.at(variableIndexMap.at(entID)));
+        else
+          return size_t{0};
+      };
+
+      auto accumulateDofSize = [&](auto ent) { dofsize += dofsizeIncrementFromEntity(ent); };
+      forEachSubEntity(ele, accumulateDofSize);
+      dofsize += dofsizeIncrementFromEntity(&ele);
+      return dofsize;
+    }
+    template <class Functype>
+    auto transform_viewOverElements(Functype fn) {
+      return std::ranges::transform_view(entities((*gridView_), Dune::index_constant<gridDim>()), fn);
+    }
+    template <typename GridEntityType, typename FuncType>
+    auto forEachSubEntity(GridEntityType gridEntity, FuncType fn) {
+      Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<gridDim>()), [&](auto i) {
+        for (auto&& ent : entities(gridEntity, i))
+          fn(ent);
       });
     }
-
-    auto& getVariables() { return varVec; }
-
-  private:
     bool hasIndex(size_t iD) {
       try {
         variableIndexMap.at(iD);

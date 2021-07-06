@@ -130,7 +130,7 @@ namespace Ikarus::Grid {
 
     // add element and set vertex pointer of elements
     for (auto &eleVertices : elementsVertices) {
-      typename GridType::ElementType newElement(0, grid.getNextFreeId());
+      typename GridType::RootEntity newElement(0, grid.getNextFreeId());
 
       for (auto &vertID : eleVertices)
         newElement.getChildVertices().emplace_back(&grid.getVertices()[vertID]);
