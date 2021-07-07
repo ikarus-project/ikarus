@@ -10,14 +10,37 @@
 #include <Eigen/Sparse>
 
 namespace Ikarus::Assembler {
+
+  template <typename DofManagerType>
+  class ScalarAssembler {
+  public:
+    explicit ScalarAssembler(DofManagerType& dofManager) : dofManager_{&dofManager}, scal{0} {}
+
+    double& getScalar(Ikarus::FiniteElements::ScalarAffordances scalarAffordances) {
+      return getScalarImpl(scalarAffordances);
+    }
+
+  private:
+    double& getScalarImpl(Ikarus::FiniteElements::ScalarAffordances scalarAffordances) {
+      scal = 0;
+      for (auto [fe,  dofs, vars] : dofManager_->elementDofsVariableTuple())
+        scal += calculateScalar(fe, vars, scalarAffordances);
+      return scal;
+    }
+
+  private:
+    DofManagerType* dofManager_;
+    double scal{};
+  };
+
   template <typename DofManagerType>
   class VectorAssembler {
   public:
     explicit VectorAssembler(DofManagerType& dofManager)
         : dofManager_{&dofManager}, vec{Eigen::VectorXd::Zero(dofManager_->correctionSize())} {}
 
-    Eigen::VectorXd& getVector(Ikarus::FiniteElements::VectorAffordances VectorAffordances) {
-      return getVectorImpl(VectorAffordances);
+    Eigen::VectorXd& getVector(Ikarus::FiniteElements::VectorAffordances vectorAffordances) {
+      return getVectorImpl(vectorAffordances);
     }
 
   private:
@@ -26,7 +49,7 @@ namespace Ikarus::Assembler {
       for (auto [fe, dofs, vars] : dofManager_->elementDofsVariableTuple()) {
         assert(dofs.size() == calculateVector(fe, vars, vecAffordances).size()
                && "The returned vector has wrong rowSize!");
-        vec(dofs) += calculateVector(fe,vars, vecAffordances);
+        vec(dofs) += calculateVector(fe, vars, vecAffordances);
       }
       return vec;
     }

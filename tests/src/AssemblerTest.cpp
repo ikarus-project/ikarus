@@ -82,4 +82,9 @@ TEST(Assembler, SimpleAssemblersTest) {
 
   EXPECT_THAT(KSparse, EigenApproxEqual(KExpected,1e-15));
   EXPECT_THAT(KSparse, EigenApproxEqual(K,1e-15));
+
+  auto scalarAssembler = Ikarus::Assembler::ScalarAssembler(dh);
+  auto w = scalarAssembler.getScalar(Ikarus::FiniteElements::potentialEnergy);
+  EXPECT_DOUBLE_EQ(w,26.0);
+
 }
