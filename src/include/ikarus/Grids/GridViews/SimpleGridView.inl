@@ -35,4 +35,9 @@ namespace Ikarus::Grid {
     return std::span(gridView.template begin<dim - dimE>(), gridView.template end<dim - dimE>());
   }
 
+  template <int dim, int dimworld, Ikarus::Concepts::Grid GridType>
+  auto rootEntities(SimpleGridView<dim, dimworld, GridType> &gridView) {
+    return std::span(gridView.template begin<0>(), gridView.template end<0>());
+  }
+
 }  // namespace Ikarus::Grid

@@ -125,6 +125,8 @@ namespace Ikarus::FiniteElements {
                                   const VectorAffordances& vecA);
   double calculateScalar(const IFiniteElement& fe, IFiniteElement::VariableVectorType& vars,
                          const ScalarAffordances& scalA);
+  double calculateScalar(const IFiniteElement* fe, IFiniteElement::VariableVectorType& vars,
+                         const ScalarAffordances& scalA);
   IFiniteElement::DofPairVectorType getEntityVariablePairs(const IFiniteElement& fe);
   size_t getEntityID(const IFiniteElement& fe);
 
