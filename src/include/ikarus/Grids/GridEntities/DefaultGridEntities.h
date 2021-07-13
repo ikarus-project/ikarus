@@ -107,6 +107,7 @@ namespace Ikarus::Grid {
   /**
    * \brief DefaultGridEntity
    *
+   * \tparam  cogriddim=griddim  The codimension of the entity.
    * \tparam  griddim  The dimension of the grid
    * \tparam  cogriddim=griddim  The codimension of the entity. Here
    * \tparam  wdim  The dimension of the world space where the grid is embedded
@@ -155,6 +156,7 @@ namespace Ikarus::Grid {
 
     /** \brief The index of this element on the level it belongs to */
     int levelIndex{};
+
 
     /** \brief Return the fundamental geometric type of the entity */
     [[nodiscard]] Dune::GeometryType type() const { return Dune::GeometryTypes::vertex; }
