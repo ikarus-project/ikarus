@@ -320,6 +320,9 @@ TEST(GridTest, GridView3DSolidTest) {
     }
     ++EleIter;
   }
+  std::vector<int> expectedSurfacesAtVertex{3, 6, 3, 3, 3, 6, 3, 3, 3};
+  for (int i = 0; auto &&vertex : vertices(gridView))
+    EXPECT_EQ(surfaces(vertex).size(), expectedSurfacesAtVertex[i++]);
 }
 
 TEST(GridTest, GridInsertionException) {
