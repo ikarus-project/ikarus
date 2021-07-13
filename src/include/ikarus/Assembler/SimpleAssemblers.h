@@ -47,7 +47,7 @@ namespace Ikarus::Assembler {
     Eigen::VectorXd& getVectorImpl(Ikarus::FiniteElements::VectorAffordances vecAffordances) {
       vec.setZero(dofManager_->correctionSize());
       for (auto [fe, dofIndices, vars] : dofManager_->elementDofsVariableTuple()) {
-        assert(dofs.size() == calculateVector(fe, vars, vecAffordances).size()
+        assert(dofIndices.size() == calculateVector(fe, vars, vecAffordances).size()
                && "The returned vector has wrong rowSize!");
         vec(dofIndices) += calculateVector(fe, vars, vecAffordances);
       }
