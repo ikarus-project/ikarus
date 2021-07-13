@@ -1,4 +1,4 @@
-name: Windows-MinGW-GCC
+name: Windows
 on:
   push:
     paths-ignore:
@@ -13,11 +13,11 @@ jobs:
       matrix:
         config:
           - {
-            name: "Windows-Mingw/latest/Release",
+            name: "GCC-Release",
             config: Release,
           }
           - {
-            name: "Windows-Mingw/latest/Debug",
+            name: "GCC-Debug",
             config: Debug,
           }
     steps:

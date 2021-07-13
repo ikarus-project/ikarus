@@ -1,4 +1,4 @@
-name: Ubuntu-GCC-Debug-CodeCov
+name: Ubuntu
 on:
   push:
     paths-ignore:
@@ -8,7 +8,7 @@ env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
 jobs:
-  Ubuntu-GCC-Debug-CodeCov:
+  GCC-Debug-CodeCov:
     runs-on: ubuntu-latest
     container:
       image: rath3t/ci-ubuntu-21-04

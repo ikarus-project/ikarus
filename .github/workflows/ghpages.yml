@@ -7,7 +7,6 @@ on:
 
 jobs:
   Build:
-    name: ${{ matrix.config.name }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

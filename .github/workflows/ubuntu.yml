@@ -15,28 +15,28 @@ jobs:
       matrix:
         config:
 #          - {
-#            name: "Ubuntu-clang/latest/Debug",
+#            name: "Clang-Debug",
 #            config: Debug,
 #            compilerC: clang-12,
 #            compilerCxx: clang++-12,
 #            lib: "-stdlib=libc++",
 #           }
 #          - {
-#            name: "Ubuntu-clang/latest/Release",
+#            name: "Clang-Release",
 #            config: Release,
 #            compilerC: clang-12,
 #            compilerCxx: clang++-12,
 #            lib: "-stdlib=libc++",
 #           }
           - {
-            name: "Ubuntu-GCC/latest/Debug",
+            name: "GCC-Debug",
             config: Debug,
             compilerC: gcc-11,
             compilerCxx: g++-11,
             lib: ""
           }
           - {
-            name: "Ubuntu-GCC/latest/Release",
+            name: "GCC-Release",
             config: Release,
             compilerC: gcc-11,
             compilerCxx: g++-11,
