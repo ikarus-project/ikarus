@@ -33,8 +33,6 @@ namespace Ikarus::Grid {
     template <int griddim, int cogriddim, int wdim>
     using Entity = DefaultGridEntity<griddim, cogriddim, wdim>;
 
-    //          using GridView = SimpleGridView<dimension,dimensionworld,SimpleGrid>;
-
     template <int codim>
     struct Codim {
       using Geometry = Dune::MultiLinearGeometry<ctype, codim, dimensionworld>;

@@ -154,11 +154,3 @@ TEST(VariableTest, GenericVariableVectorTest) {
       getValue(varVec[3]),
       EigenApproxEqual(Eigen::Vector3d(0.41279806929140905325, 0.50645665044957854928, -0.75703329861022516933), tol));
 }
-
-#include <ikarus/Grids/GridEntities/DefaultGridEntities.h>
-TEST(VariableTest, GenericVariableWithFEandGridEntity) {
-  using namespace Ikarus::Variable;
-  DISPLACEMENT3D a;
-
-  Ikarus::Grid::DefaultGridEntity<3, 0, 3> gridEntity;
-}
