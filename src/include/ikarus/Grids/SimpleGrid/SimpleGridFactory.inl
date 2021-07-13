@@ -123,7 +123,6 @@ namespace Ikarus::Grid {
     // add vertices to the grid
     for (auto &vert : verticesPositions) {
       typename GridType::VertexType newVertex(0, vert.vertex, grid.getNextFreeId());
-      newVertex.leafIndex  = vert.index;
       newVertex.levelIndex = vert.index;
       grid.getVertices().push_back(newVertex);
     }
