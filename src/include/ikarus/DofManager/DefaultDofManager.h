@@ -218,7 +218,6 @@ namespace Ikarus::DofManager {
     bool isElementDofRelationshipCreated{false};
     IndexMap variableIndexMap;
     std::unordered_map<size_t, Ikarus::FiniteElements::IFiniteElement*> gridEntityFEmap;
-    std::vector<std::pair<size_t, std::vector<size_t>>> indexSet;
     VariableVector varVec;
   };
 

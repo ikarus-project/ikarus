@@ -33,7 +33,7 @@ namespace Ikarus::Variable {
   using DISPLACEMENT3D = DefaultVariable<RealTuple<double, 3>, static_cast<int>(displacement3d)>;
   using DIRECTOR2D     = DefaultVariable<UnitVector<double, 2>, static_cast<int>(director2d)>;
   using DIRECTOR3D     = DefaultVariable<UnitVector<double, 3>, static_cast<int>(director3d)>;
-  using PRESSURE       = DefaultVariable<UnitVector<double, 3>, static_cast<int>(pressure)>;
+  using PRESSURE       = DefaultVariable<RealTuple<double, 1>, static_cast<int>(pressure)>;
 
   class VariableFactory {
   public:
