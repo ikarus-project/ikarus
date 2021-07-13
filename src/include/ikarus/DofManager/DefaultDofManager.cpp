@@ -10,4 +10,4 @@ namespace Ikarus::DofManager {
       var += correction(varVecArg.variableIndices[variableIndex++]);
     return varVecArg;
   }
-}
+}  // namespace Ikarus::DofManager

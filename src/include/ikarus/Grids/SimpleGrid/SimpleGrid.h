@@ -43,9 +43,7 @@ namespace Ikarus::Grid {
     auto& getEdges(int level = 0) { return getSubEntities<dim - 1>(level); }
 
     auto& getSurfaces(int level = 0) requires requires { dim - 2 > 0; }
-    {
-      return getSubEntities<dim - 2>(level);
-    }
+    { return getSubEntities<dim - 2>(level); }
 
     template <int subEnt>
     auto& getSubEntities(int level = 0) {

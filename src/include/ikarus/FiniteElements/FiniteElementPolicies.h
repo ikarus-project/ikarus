@@ -48,44 +48,38 @@ namespace Ikarus::Concepts {
     return;
 
   template <typename FiniteElement>
-  concept HascalculateMatrix
-      = requires(FiniteElement fe, std::vector<Ikarus::Variable::IVariable*> vars,
-                 Ikarus::FiniteElements::MatrixAffordances matA) {
+  concept HascalculateMatrix = requires(FiniteElement fe, std::vector<Ikarus::Variable::IVariable*> vars,
+                                        Ikarus::FiniteElements::MatrixAffordances matA) {
     fe.calculateMatrix(vars, matA);
   };
 
   template <typename FiniteElement>
-  concept HasFreecalculateMatrix
-      = requires(FiniteElement fe, std::vector<Ikarus::Variable::IVariable*> vars,
-                 Ikarus::FiniteElements::MatrixAffordances matA) {
+  concept HasFreecalculateMatrix = requires(FiniteElement fe, std::vector<Ikarus::Variable::IVariable*> vars,
+                                            Ikarus::FiniteElements::MatrixAffordances matA) {
     calculateMatrix(fe, vars, matA);
   };
 
   template <typename FiniteElement>
-  concept HascalculateScalar
-      = requires(FiniteElement fe, std::vector<Ikarus::Variable::IVariable*> vars,
-                 Ikarus::FiniteElements::ScalarAffordances scalA) {
+  concept HascalculateScalar = requires(FiniteElement fe, std::vector<Ikarus::Variable::IVariable*> vars,
+                                        Ikarus::FiniteElements::ScalarAffordances scalA) {
     fe.calculateScalar(vars, scalA);
   };
 
   template <typename FiniteElement>
-  concept HasFreecalculateScalar
-      = requires(FiniteElement fe, std::vector<Ikarus::Variable::IVariable*> vars,
-                 Ikarus::FiniteElements::ScalarAffordances scalA) {
+  concept HasFreecalculateScalar = requires(FiniteElement fe, std::vector<Ikarus::Variable::IVariable*> vars,
+                                            Ikarus::FiniteElements::ScalarAffordances scalA) {
     calculateScalar(fe, vars, scalA);
   };
 
   template <typename FiniteElement>
-  concept HascalculateVector
-      = requires(FiniteElement fe, std::vector<Ikarus::Variable::IVariable*> vars,
-                 Ikarus::FiniteElements::VectorAffordances vecA) {
+  concept HascalculateVector = requires(FiniteElement fe, std::vector<Ikarus::Variable::IVariable*> vars,
+                                        Ikarus::FiniteElements::VectorAffordances vecA) {
     fe.calculateVector(vars, vecA);
   };
 
   template <typename FiniteElement>
-  concept HasFreecalculateVector
-      = requires(FiniteElement fe, std::vector<Ikarus::Variable::IVariable*> vars,
-                 Ikarus::FiniteElements::VectorAffordances vecA) {
+  concept HasFreecalculateVector = requires(FiniteElement fe, std::vector<Ikarus::Variable::IVariable*> vars,
+                                            Ikarus::FiniteElements::VectorAffordances vecA) {
     calculateVector(fe, vars, vecA);
   };
 
