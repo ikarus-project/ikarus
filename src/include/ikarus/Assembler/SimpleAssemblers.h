@@ -23,7 +23,7 @@ namespace Ikarus::Assembler {
   private:
     double& getScalarImpl(Ikarus::FiniteElements::ScalarAffordances scalarAffordances) {
       scal = 0;
-      for (auto [fe,  dofs, vars] : dofManager_->elementDofsVariableTuple())
+      for (auto [fe, dofs, vars] : dofManager_->elementDofsVariableTuple())
         scal += calculateScalar(fe, vars, scalarAffordances);
       return scal;
     }

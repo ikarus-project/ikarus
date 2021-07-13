@@ -13,7 +13,7 @@ namespace Ikarus::Grid {
     explicit SimpleGridView(GridType& gridInput, int levelInput = 0) : grid{&gridInput}, level{levelInput} {}
 
     static constexpr int dimension = GridType::dimension;
-    using RootEntity = typename GridType::RootEntity;
+    using RootEntity               = typename GridType::RootEntity;
 
     template <int coDim>
     auto begin() {

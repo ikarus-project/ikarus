@@ -2,15 +2,14 @@
 // Created by Alex on 21.04.2021.
 //
 
-#include <array>
-#include <complex>
-#include <vector>
-
-
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "testHelpers.h"
+
+#include <array>
+#include <complex>
+#include <vector>
 
 #include <Eigen/Core>
 

@@ -163,7 +163,6 @@ namespace Ikarus::Grid {
     /** \brief The index of this element on the level it belongs to */
     int levelIndex{};
 
-
     /** \brief Return the fundamental geometric type of the entity */
     Dune::GeometryType type() const { return Dune::GeometryTypes::vertex; }
 

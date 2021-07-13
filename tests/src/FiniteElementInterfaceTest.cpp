@@ -93,21 +93,21 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
     EXPECT_EQ(fintEle.size(), 8);
   }
 
-Ikarus::FiniteElements::IFiniteElement fe((TestFE()));
+  Ikarus::FiniteElements::IFiniteElement fe((TestFE()));
 
-initialize(fe);
-const auto entityIDDofPair = getEntityVariablePairs(fes[0]);
-std::vector<std::pair<size_t, Ikarus::Variable::VariablesTags>> idtagExpected;
-idtagExpected.emplace_back(0, Ikarus::Variable::displacement2d);
-idtagExpected.emplace_back(1, Ikarus::Variable::displacement2d);
-idtagExpected.emplace_back(2, Ikarus::Variable::displacement2d);
-idtagExpected.emplace_back(3, Ikarus::Variable::displacement2d);
-for (int i = 0; auto&& [entityID, var] : entityIDDofPair) {
-  EXPECT_EQ(entityID, idtagExpected[i].first);
-  EXPECT_EQ(var.size(), 1);
-  EXPECT_EQ(var[0], idtagExpected[i].second);
-  ++i;
-}
+  initialize(fe);
+  const auto entityIDDofPair = getEntityVariablePairs(fes[0]);
+  std::vector<std::pair<size_t, Ikarus::Variable::VariablesTags>> idtagExpected;
+  idtagExpected.emplace_back(0, Ikarus::Variable::displacement2d);
+  idtagExpected.emplace_back(1, Ikarus::Variable::displacement2d);
+  idtagExpected.emplace_back(2, Ikarus::Variable::displacement2d);
+  idtagExpected.emplace_back(3, Ikarus::Variable::displacement2d);
+  for (int i = 0; auto&& [entityID, var] : entityIDDofPair) {
+    EXPECT_EQ(entityID, idtagExpected[i].first);
+    EXPECT_EQ(var.size(), 1);
+    EXPECT_EQ(var[0], idtagExpected[i].second);
+    ++i;
+  }
 
-auto feT{fes[0]};  // test copy assignment
+  auto feT{fes[0]};  // test copy assignment
 }

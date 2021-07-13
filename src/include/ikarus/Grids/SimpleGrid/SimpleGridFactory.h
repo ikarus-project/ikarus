@@ -40,8 +40,8 @@ namespace Ikarus::Grid {
       elementEdgeIndices.back().push_back(index);
     }
 
-    void storeVerticesIndicesOfEdges(const Dune::GeometryType &type,std::span<size_t> verticesIn);
-    void createVerticesIndicesToSurfaceIndices(const Dune::GeometryType &type,std::span<size_t> verticesIn);
+    void storeVerticesIndicesOfEdges(const Dune::GeometryType& type, std::span<size_t> verticesIn);
+    void storeVerticesIndicesToSurfaceIndices(const Dune::GeometryType& type, std::span<size_t> verticesIn);
 
     void insertVertexIndicesinSurface(std::vector<size_t>&& indices) {
       std::ranges::sort(indices);

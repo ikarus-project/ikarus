@@ -85,7 +85,8 @@ namespace Ikarus::FiniteElements {
 
     void initialize() { std::cout << "initialize ElasticityFE" << std::endl; }
 
-    [[nodiscard]] std::pair<MatrixType, VectorType> calculateLocalSystem([[maybe_unused]] VariableVectorType& vars,const MatrixAffordances& matA,
+    [[nodiscard]] std::pair<MatrixType, VectorType> calculateLocalSystem([[maybe_unused]] VariableVectorType& vars,
+                                                                         const MatrixAffordances& matA,
                                                                          const VectorAffordances& vecA) const {
       if (matA == stiffness && vecA == forces)
         return calculateStiffnessMatrixAndInternalForcesImpl();
@@ -93,16 +94,20 @@ namespace Ikarus::FiniteElements {
         throw std::logic_error("This element can not handle your affordance! ");
     }
 
-    [[nodiscard]] MatrixType calculateMatrix([[maybe_unused]] VariableVectorType& vars,const MatrixAffordances& matA) const {
+    [[nodiscard]] MatrixType calculateMatrix([[maybe_unused]] VariableVectorType& vars,
+                                             const MatrixAffordances& matA) const {
       if (matA == stiffness)
         return calculateStiffnessMatrixAndInternalForcesImpl<false, true>();
       else
         throw std::logic_error("This element can not handle your affordance! ");
     }
 
-    [[nodiscard]] double calculateScalar([[maybe_unused]] VariableVectorType& vars,const ScalarAffordances&) const { return 13.0; }
+    [[nodiscard]] double calculateScalar([[maybe_unused]] VariableVectorType& vars, const ScalarAffordances&) const {
+      return 13.0;
+    }
 
-    [[nodiscard]] VectorType calculateVector([[maybe_unused]] VariableVectorType& vars,const VectorAffordances&) const {
+    [[nodiscard]] VectorType calculateVector([[maybe_unused]] VariableVectorType& vars,
+                                             const VectorAffordances&) const {
       return calculateStiffnessMatrixAndInternalForcesImpl<true, false>();
     }
 
@@ -135,8 +140,7 @@ namespace Ikarus::FiniteElements {
       return dofs;
     }
 
-    [[nodiscard]] size_t getEntityID() const
-    {return elementGridEntity->getID();}
+    [[nodiscard]] size_t getEntityID() const { return elementGridEntity->getID(); }
 
   private:
     GridElementEntityType const* const elementGridEntity;

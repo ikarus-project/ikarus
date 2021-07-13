@@ -295,10 +295,10 @@ TEST(GridTest, GridView3DSolidTest) {
   expectedElementSurfaceVertexId.emplace_back();
   expectedElementSurfaceVertexId[0].push_back({0, 2, 4, 6});  // 0
   expectedElementSurfaceVertexId[0].push_back({1, 3, 5, 7});  // 1
-  expectedElementSurfaceVertexId[0].push_back({0, 1, 4, 5});        // 2
-  expectedElementSurfaceVertexId[0].push_back({2, 3, 6, 7});        // 3
-  expectedElementSurfaceVertexId[0].push_back({0, 1, 2, 3});        // 4
-  expectedElementSurfaceVertexId[0].push_back({4, 5, 6, 7});        // 5
+  expectedElementSurfaceVertexId[0].push_back({0, 1, 4, 5});  // 2
+  expectedElementSurfaceVertexId[0].push_back({2, 3, 6, 7});  // 3
+  expectedElementSurfaceVertexId[0].push_back({0, 1, 2, 3});  // 4
+  expectedElementSurfaceVertexId[0].push_back({4, 5, 6, 7});  // 5
 
   expectedElementSurfaceVertexId.emplace_back();
   expectedElementSurfaceVertexId[1].push_back({1, 3, 8});  // 0
