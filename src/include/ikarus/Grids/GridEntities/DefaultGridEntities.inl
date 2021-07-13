@@ -123,8 +123,12 @@ namespace Ikarus::Grid {
 
   template <int griddim, int cogriddim, int wdim>
   auto surfaces(DefaultGridEntity<griddim, cogriddim, wdim>& gridEntity) {
-    return std::span(gridEntity.template getChildEntities<2>().begin(),
-                     gridEntity.template getChildEntities<2>().end());
+    if constexpr (griddim == cogriddim)  // gridEntity is a vertex!
+      return std::span(gridEntity.template getFatherEntities<griddim - 2>().begin(),
+                       gridEntity.template getFatherEntities<griddim - 2>().end());
+    else
+      return std::span(gridEntity.template getChildEntities<2>().begin(),
+                       gridEntity.template getChildEntities<2>().end());
   }
 
   template <int griddim, int cogriddim, int wdim, size_t dimE>
