@@ -17,9 +17,100 @@ namespace Ikarus::Grid {
    *
    **/
   template <Concepts::Grid GridType>
-  void SimpleGridFactory<GridType>::insertElement(const Dune::GeometryType &type,const std::span<size_t> verticesIn) {
+  void SimpleGridFactory<GridType>::insertElement(const Dune::GeometryType &type, const std::span<size_t> verticesIn) {
     if (type.dim() != dimension) DUNE_THROW(Dune::GridError, "The inserted element has wrong dimensions!");
 
+    storeVerticesIndicesOfEdges(type, verticesIn);
+    if constexpr (dimension > 1) createVerticesIndicesToSurfaceIndices(type, verticesIn);
+
+    elementsVertices.emplace_back(verticesIn.begin(), verticesIn.end());
+  }
+
+  template <Concepts::Grid GridType>
+  void SimpleGridFactory<GridType>::insertVertex(const VertexCoordinateType &pos) {
+    verticesPositions.template emplace_back(SimpleGridFactory::VertexIndexPair{pos, vertexIndex++});
+  }
+
+  template <Concepts::Grid GridType>
+  GridType SimpleGridFactory<GridType>::createGrid() {
+    GridType grid;
+    if (verticesPositions.empty())
+      DUNE_THROW(Dune::GridError, "verticesPositions vector is empty. Unable to create Grid");
+    if (elementsVertices.empty()) DUNE_THROW(Dune::GridError, "elements vector is empty. Unable to create Grid");
+
+    grid.gridEntities.resize(1);  // resize to hold coarsest grid level
+
+    grid.getVertices().reserve(verticesPositions.size());
+    grid.getElements().reserve(elementsVertices.size());
+
+    // add vertices to the grid
+    for (auto &vert : verticesPositions) {
+      typename GridType::VertexType newVertex(0, vert.vertex, grid.getNextFreeId());
+      newVertex.levelIndex = vert.index;
+      grid.getVertices().push_back(newVertex);
+    }
+
+    // add element and set vertex pointer of elements
+    for (auto &eleVertices : elementsVertices) {
+      typename GridType::RootEntity newElement(0, grid.getNextFreeId());
+
+      for (auto &vertID : eleVertices)
+        newElement.getChildVertices().emplace_back(&grid.getVertices()[vertID]);
+
+      grid.getElements().push_back(newElement);
+    }
+
+    // set elements pointers of vertex
+    for (auto &element : grid.getElements())
+      for (auto &vert : vertices(element))
+        vert->getFatherElements().emplace_back(&element);
+
+    // add edges to the grid
+    if constexpr (GridType::dimension > 1) {
+      for (auto &edge : edgesVertexIndices) {
+        grid.template getSubEntities<dimension - 1>().emplace_back(0, grid.getNextFreeId());
+        auto &newEdge = grid.getEdges().back();
+
+        for (auto &&verticesIndicesOfEdge : edge) {
+          newEdge.getChildVertices().push_back(&grid.getVertices()[verticesIndicesOfEdge]);
+          grid.getVertices()[verticesIndicesOfEdge].template getFatherEntities<dimension - 1>().push_back(&newEdge);
+        }
+      }
+
+      auto eIt = grid.getElements().begin();
+      // add edges pointers to the elements
+      for (auto &elementedgeIndexPerElement : elementEdgeIndices) {
+        for (auto &elementedgeIndex : elementedgeIndexPerElement)
+          eIt->template getChildEntities<1>().push_back(&grid.getEdges()[elementedgeIndex]);
+        ++eIt;
+      }
+    }
+    if constexpr (GridType::dimension > 2) {
+      for (auto &surf : surfaceVertexIndices) {
+        grid.template getSubEntities<dimension - 2>().emplace_back(0, grid.getNextFreeId());
+        auto &newSurface = grid.getSurfaces().back();
+
+        for (auto &&verticesIndicesOfSurface : surf) {
+          newSurface.getChildVertices().push_back(&grid.getVertices()[verticesIndicesOfSurface]);
+          grid.getVertices()[verticesIndicesOfSurface].template getFatherEntities<dimension - 2>().push_back(
+              &newSurface);
+        }
+      }
+
+      auto eIt = grid.getElements().begin();
+      // add surface pointers to the elements
+      for (auto &elementSurfaceIndexPerElement : elementSurfaceIndices) {
+        for (auto &elementSurfaceIndex : elementSurfaceIndexPerElement)
+          eIt->template getChildEntities<2>().push_back(&grid.getSurfaces()[elementSurfaceIndex]);
+        ++eIt;
+      }
+    }
+    return grid;
+  }
+
+  template <Concepts::Grid GridType>
+  void SimpleGridFactory<GridType>::storeVerticesIndicesOfEdges(const Dune::GeometryType &type,
+                                                                const std::span<size_t> verticesIn) {
     elementEdgeIndices.emplace_back();
     if (type.isLine()) {
       if (verticesIn.size() != 2)
@@ -99,84 +190,62 @@ namespace Ikarus::Grid {
     } else {
       DUNE_THROW(Dune::GridError, "You cannot insert a " << type << " into a SimpleGrid<" << dimensionworld << ">!");
     }
-
-      elementsVertices.emplace_back(verticesIn.begin(),verticesIn.end());
   }
 
   template <Concepts::Grid GridType>
-  void SimpleGridFactory<GridType>::insertVertex(const VertexCoordinateType &pos) {
-    verticesPositions.template emplace_back(SimpleGridFactory::VertexIndexPair{pos, vertexIndex++});
-  }
+  void SimpleGridFactory<GridType>::createVerticesIndicesToSurfaceIndices(const Dune::GeometryType &type,
+                                                                          const std::span<size_t> verticesIn) {
+    elementSurfaceIndices.emplace_back();
+    if (type.isLine()) {
+      DUNE_THROW(Dune::GridError, "A line does not have surfaces.");
+    } else if (type.isTriangle()) {
+      if (verticesIn.size() != 3) DUNE_THROW(Dune::GridError, "A triangle does not have surfaces.");
+    } else if (type.isQuadrilateral()) {
+      if (verticesIn.size() != 4) DUNE_THROW(Dune::GridError, "A qudarilateral does not have surfaces.");
 
-  template <Concepts::Grid GridType>
-  GridType SimpleGridFactory<GridType>::createGrid() {
-    GridType grid;
-    if (verticesPositions.empty())
-      DUNE_THROW(Dune::GridError, "verticesPositions vector is empty. Unable to create Grid");
-    if (elementsVertices.empty()) DUNE_THROW(Dune::GridError, "elements vector is empty. Unable to create Grid");
+    } else if (type.isTetrahedron()) {
+      if (verticesIn.size() != 4)
+        DUNE_THROW(Dune::GridError, "You have requested to enter a tetrahedron, but you"
+                                        << " have provided " << verticesIn.size() << " vertices!");
+      insertVertexIndicesinSurface({verticesIn[0], verticesIn[1], verticesIn[2]});  // 0
+      insertVertexIndicesinSurface({verticesIn[0], verticesIn[1], verticesIn[3]});  // 1
+      insertVertexIndicesinSurface({verticesIn[0], verticesIn[2], verticesIn[3]});  // 2
+      insertVertexIndicesinSurface({verticesIn[1], verticesIn[2], verticesIn[3]});  // 3
 
-    grid.gridEntities.resize(1);  // resize to hold coarsest grid level
+    } else if (type.isPyramid()) {
+      if (verticesIn.size() != 5)
+        DUNE_THROW(Dune::GridError, "You have requested to enter a pyramid, but you"
+                                        << " have provided " << verticesIn.size() << " vertices!");
+      insertVertexIndicesinSurface({verticesIn[0], verticesIn[1], verticesIn[2], verticesIn[3]});  // 0
+      insertVertexIndicesinSurface({verticesIn[0], verticesIn[2], verticesIn[4]});                 // 1
+      insertVertexIndicesinSurface({verticesIn[1], verticesIn[3], verticesIn[4]});                 // 2
+      insertVertexIndicesinSurface({verticesIn[0], verticesIn[1], verticesIn[4]});                 // 3
+      insertVertexIndicesinSurface({verticesIn[2], verticesIn[3], verticesIn[4]});                 // 4
 
-    grid.getVertices().reserve(verticesPositions.size());
-    grid.getElements().reserve(elementsVertices.size());
+    } else if (type.isPrism()) {
+      if (verticesIn.size() != 6)
+        DUNE_THROW(Dune::GridError, "You have requested to enter a prism, but you"
+                                        << " have provided " << verticesIn.size() << " vertices!");
+      insertVertexIndicesinSurface({verticesIn[0], verticesIn[1], verticesIn[3], verticesIn[4]});  // 0
+      insertVertexIndicesinSurface({verticesIn[0], verticesIn[2], verticesIn[3], verticesIn[5]});  // 1
+      insertVertexIndicesinSurface({verticesIn[1], verticesIn[2], verticesIn[4], verticesIn[5]});  // 2
+      insertVertexIndicesinSurface({verticesIn[0], verticesIn[1], verticesIn[2]});                 // 3
+      insertVertexIndicesinSurface({verticesIn[3], verticesIn[4], verticesIn[5]});                 // 4
 
-    // add vertices to the grid
-    for (auto &vert : verticesPositions) {
-      typename GridType::VertexType newVertex(0, vert.vertex, grid.getNextFreeId());
-      newVertex.levelIndex = vert.index;
-      grid.getVertices().push_back(newVertex);
+    } else if (type.isHexahedron()) {
+      if (verticesIn.size() != 8)
+        DUNE_THROW(Dune::GridError, "You have requested to enter a hexahedron, but you"
+                                        << " have provided " << verticesIn.size() << " vertices!");
+      insertVertexIndicesinSurface({verticesIn[0], verticesIn[2], verticesIn[4], verticesIn[6]});  // 0
+      insertVertexIndicesinSurface({verticesIn[1], verticesIn[3], verticesIn[5], verticesIn[7]});  // 1
+      insertVertexIndicesinSurface({verticesIn[0], verticesIn[1], verticesIn[4], verticesIn[5]});  // 2
+      insertVertexIndicesinSurface({verticesIn[2], verticesIn[3], verticesIn[6], verticesIn[7]});  // 3
+      insertVertexIndicesinSurface({verticesIn[0], verticesIn[1], verticesIn[2], verticesIn[3]});  // 4
+      insertVertexIndicesinSurface({verticesIn[4], verticesIn[5], verticesIn[6], verticesIn[7]});  // 5
+
+    } else {
+      DUNE_THROW(Dune::GridError, "You cannot insert a " << type << " into a SimpleGrid<" << dimensionworld << ">!");
     }
-
-    // add element and set vertex pointer of elements
-    for (auto &eleVertices : elementsVertices) {
-      typename GridType::RootEntity newElement(0, grid.getNextFreeId());
-
-      for (auto &vertID : eleVertices)
-        newElement.getChildVertices().emplace_back(&grid.getVertices()[vertID]);
-
-      grid.getElements().push_back(newElement);
-    }
-
-     //set elements pointers of vertex
-        for (auto &element : grid.getElements())
-          for (auto &vert : vertices(element))
-            vert->getFatherElements().emplace_back(&element);
-
-    // add edges to the grid
-    if constexpr (GridType::dimension > 1) {
-      for (auto &edge : edgesVertexIndices) {
-        grid.template getSubEntities<dimension - 1>().emplace_back(0, grid.getNextFreeId());
-        auto &newEdge = grid.getEdges().back();
-
-        newEdge.getChildVertices().push_back(&grid.getVertices()[edge[0]]);
-        newEdge.getChildVertices().push_back(&grid.getVertices()[edge[1]]);
-      }
-
-      auto eIt = grid.getElements().begin();
-      // add edges pointers to the elements
-      for (auto &elementedgeIndexPerElement : elementEdgeIndices) {
-        for (auto &elementedgeIndex : elementedgeIndexPerElement)
-          eIt->template getChildEntities<1>().push_back(&grid.getEdges()[elementedgeIndex]);
-        ++eIt;
-      }
-
-       //add edge pointers to vertices
-      // set elements pointers of vertex
-
-            for (auto &&vert : grid.getVertices()) {
-              auto hasVertex = [&vert](auto &edge) {
-                return (std::ranges::find_if(edge.getChildVertices(),
-                                             [&vert](auto &vertex) { return vert.getID() == vertex->getID(); })
-                        != end(edge.getChildVertices()));
-              };
-
-              for (auto &edgeWhichHasTheVertex : std::ranges::filter_view(grid.getEdges(), hasVertex)) {
-                vert.template getFatherEntities<dimension - 1>().push_back(&edgeWhichHasTheVertex);
-              }
-            }
-    }
-
-    return grid;
   }
 
 }  // namespace Ikarus::Grid

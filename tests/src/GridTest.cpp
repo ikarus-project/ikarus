@@ -288,7 +288,38 @@ TEST(GridTest, GridView3DSolidTest) {
   auto ele1 = volumes(gridView).begin();
   EXPECT_EQ(ele1->subEntities(3), 8);
   EXPECT_EQ(ele1->subEntities(2), 12);
-  //  EXPECT_EQ(ele1->subEntities(1),6);
+  EXPECT_EQ(ele1->subEntities(1), 6);
+
+  // surface tests
+  std::vector<std::vector<std::vector<int>>> expectedElementSurfaceVertexId;
+  expectedElementSurfaceVertexId.emplace_back();
+  expectedElementSurfaceVertexId[0].push_back({0, 2, 4, 6});  // 0
+  expectedElementSurfaceVertexId[0].push_back({1, 3, 5, 7});  // 1
+  expectedElementSurfaceVertexId[0].push_back({0, 1, 4, 5});        // 2
+  expectedElementSurfaceVertexId[0].push_back({2, 3, 6, 7});        // 3
+  expectedElementSurfaceVertexId[0].push_back({0, 1, 2, 3});        // 4
+  expectedElementSurfaceVertexId[0].push_back({4, 5, 6, 7});        // 5
+
+  expectedElementSurfaceVertexId.emplace_back();
+  expectedElementSurfaceVertexId[1].push_back({1, 3, 8});  // 0
+  expectedElementSurfaceVertexId[1].push_back({1, 5, 8});  // 1
+  expectedElementSurfaceVertexId[1].push_back({1, 3, 5});  // 2
+  expectedElementSurfaceVertexId[1].push_back({3, 5, 8});  // 3
+
+  for (int EleIter = 0; auto &&ele : volumes(gridView)) {
+    EXPECT_TRUE(!edges(ele).empty());
+    for (int surfIter = 0; auto &&surf : surfaces(ele)) {
+      EXPECT_TRUE(!vertices(surf).empty());
+      for (int i = 0; auto &&verticesOfSurface : vertices(surf)) {
+        EXPECT_EQ(verticesOfSurface->getID(), expectedElementSurfaceVertexId[EleIter][surfIter][i]);
+        EXPECT_THAT(verticesOfSurface->getPosition(),
+                    EigenApproxEqual(verticesVec[expectedElementSurfaceVertexId[EleIter][surfIter][i]], 1e-15));
+        ++i;
+      }
+      ++surfIter;
+    }
+    ++EleIter;
+  }
 }
 
 TEST(GridTest, GridInsertionException) {

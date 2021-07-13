@@ -27,7 +27,7 @@ namespace Ikarus::Grid {
     static constexpr int dimensionworld = dimworld;
     using GridEntityTuple
         = decltype(Impl::GridEntityTupleGenerator<dim, dimworld>(std::make_integer_sequence<int, dimension + 1>()));
-    using VertexType  = DefaultGridEntity<dim, dim, dimworld>;
+    using VertexType = DefaultGridEntity<dim, dim, dimworld>;
     using RootEntity = DefaultGridEntity<dim, 0, dimworld>;
 
     template <int griddim, int cogriddim, int wdim>
@@ -49,9 +49,11 @@ namespace Ikarus::Grid {
       ;
     }
 
-    auto& getEdges(int level = 0) {
-      static_assert(dim - 1 > 0);
-      return getSubEntities<dim - 1>(level);
+    auto& getEdges(int level = 0) { return getSubEntities<dim - 1>(level); }
+
+    auto& getSurfaces(int level = 0) requires requires { dim - 2 > 0; }
+    {
+      return getSubEntities<dim - 2>(level);
     }
 
     template <int subEnt>
