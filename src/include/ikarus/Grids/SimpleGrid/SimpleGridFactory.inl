@@ -12,7 +12,7 @@ namespace Ikarus::Grid {
     if (type.dim() != dimension) DUNE_THROW(Dune::GridError, "The inserted element has wrong dimensions!");
 
     storeVerticesIndicesOfEdges(type, verticesIn);
-    if constexpr (dimension > 1) storeVerticesIndicesOfSurfaces(type, verticesIn);
+    if constexpr (dimension > 1) storeVerticesIndicesToSurfaceIndices(type, verticesIn);
 
     elementsVertices.emplace_back(verticesIn.begin(), verticesIn.end());
   }
@@ -109,98 +109,6 @@ namespace Ikarus::Grid {
    * The numbering of vertices, edges, surfaces correspond to \cite sander2020dune Fig 5.12, 5.13
    *
    **/
-  template <Concepts::Grid GridType>
-  void SimpleGridFactory<GridType>::insertElement(const Dune::GeometryType &type, const std::span<size_t> verticesIn) {
-    if (type.dim() != dimension) DUNE_THROW(Dune::GridError, "The inserted element has wrong dimensions!");
-
-    storeVerticesIndicesOfEdges(type, verticesIn);
-    if constexpr (dimension > 1) storeVerticesIndicesToSurfaceIndices(type, verticesIn);
-
-    elementsVertices.emplace_back(verticesIn.begin(), verticesIn.end());
-  }
-
-  template <Concepts::Grid GridType>
-  void SimpleGridFactory<GridType>::insertVertex(const VertexCoordinateType &pos) {
-    verticesPositions.template emplace_back(SimpleGridFactory::VertexIndexPair{pos, vertexIndex++});
-  }
-
-  template <Concepts::Grid GridType>
-  GridType SimpleGridFactory<GridType>::createGrid() {
-    GridType grid;
-    if (verticesPositions.empty())
-      DUNE_THROW(Dune::GridError, "verticesPositions vector is empty. Unable to create Grid");
-    if (elementsVertices.empty()) DUNE_THROW(Dune::GridError, "elements vector is empty. Unable to create Grid");
-
-    grid.gridEntities.resize(1);  // resize to hold coarsest grid level
-
-    grid.getVertices().reserve(verticesPositions.size());
-    grid.getElements().reserve(elementsVertices.size());
-
-    // add vertices to the grid
-    for (auto &vert : verticesPositions) {
-      typename GridType::VertexType newVertex(0, vert.vertex, grid.getNextFreeId());
-      newVertex.levelIndex = vert.index;
-      grid.getVertices().push_back(newVertex);
-    }
-
-    // add element and set vertex pointer of elements
-    for (auto &eleVertices : elementsVertices) {
-      typename GridType::RootEntity newElement(0, grid.getNextFreeId());
-
-      for (auto &vertID : eleVertices)
-        newElement.getChildVertices().emplace_back(&grid.getVertices()[vertID]);
-
-      grid.getElements().push_back(newElement);
-    }
-
-    // set elements pointers of vertex
-    for (auto &element : grid.getElements())
-      for (auto &vert : vertices(element))
-        vert->getFatherElements().emplace_back(&element);
-
-    // add edges to the grid
-    if constexpr (GridType::dimension > 1) {
-      for (auto &edge : edgesVertexIndices) {
-        grid.template getSubEntities<dimension - 1>().emplace_back(0, grid.getNextFreeId());
-        auto &newEdge = grid.getEdges().back();
-
-        for (auto &&verticesIndicesOfEdge : edge) {
-          newEdge.getChildVertices().push_back(&grid.getVertices()[verticesIndicesOfEdge]);
-          grid.getVertices()[verticesIndicesOfEdge].template getFatherEntities<dimension - 1>().push_back(&newEdge);
-        }
-      }
-
-      auto eIt = grid.getElements().begin();
-      // add edges pointers to the elements
-      for (auto &elementedgeIndexPerElement : elementEdgeIndices) {
-        for (auto &elementedgeIndex : elementedgeIndexPerElement)
-          eIt->template getChildEntities<1>().push_back(&grid.getEdges()[elementedgeIndex]);
-        ++eIt;
-      }
-    }
-    if constexpr (GridType::dimension > 2) {
-      for (auto &surf : surfaceVertexIndices) {
-        grid.template getSubEntities<dimension - 2>().emplace_back(0, grid.getNextFreeId());
-        auto &newSurface = grid.getSurfaces().back();
-
-        for (auto &&verticesIndicesOfSurface : surf) {
-          newSurface.getChildVertices().push_back(&grid.getVertices()[verticesIndicesOfSurface]);
-          grid.getVertices()[verticesIndicesOfSurface].template getFatherEntities<dimension - 2>().push_back(
-              &newSurface);
-        }
-      }
-
-      auto eIt = grid.getElements().begin();
-      // add surface pointers to the elements
-      for (auto &elementSurfaceIndexPerElement : elementSurfaceIndices) {
-        for (auto &elementSurfaceIndex : elementSurfaceIndexPerElement)
-          eIt->template getChildEntities<2>().push_back(&grid.getSurfaces()[elementSurfaceIndex]);
-        ++eIt;
-      }
-    }
-    return grid;
-  }
-
   template <Concepts::Grid GridType>
   void SimpleGridFactory<GridType>::storeVerticesIndicesOfEdges(const Dune::GeometryType &type,
                                                                 const std::span<size_t> verticesIn) {

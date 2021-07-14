@@ -88,12 +88,6 @@ namespace Ikarus::Grid {
   }
 
   template <int griddim, int cogriddim, int wdim>
-  auto volumes(DefaultGridEntity<griddim, cogriddim, wdim>* gridEntity) {
-    static_assert(cogriddim != 0, "Elements themself can not return span to iterate over themself");
-    return std::span(gridEntity->getFatherElements().begin(), gridEntity->getFatherElements().end());
-  }
-
-  template <int griddim, int cogriddim, int wdim>
   auto volumes(DefaultGridEntity<griddim, cogriddim, wdim>& gridEntity) {
     static_assert(cogriddim != 0, "Elements themself can not return span to iterate over themself");
     return std::span(gridEntity.getFatherElements().begin(), gridEntity.getFatherElements().end());

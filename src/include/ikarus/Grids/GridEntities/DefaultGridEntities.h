@@ -107,7 +107,6 @@ namespace Ikarus::Grid {
   /**
    * \brief DefaultGridEntity
    *
-   * \tparam  cogriddim=griddim  The codimension of the entity.
    * \tparam  griddim  The dimension of the grid
    * \tparam  cogriddim=griddim  The codimension of the entity. Here
    * \tparam  wdim  The dimension of the world space where the grid is embedded
