@@ -67,7 +67,7 @@ namespace Ikarus::Grid {
   }
 
   template <int griddim, int cogriddim, int wdim>
-  auto vertices(DefaultGridEntity<griddim, cogriddim, wdim> const* const gridEntity) {
+  auto vertices(DefaultGridEntity<griddim, cogriddim, wdim> const * const gridEntity) {
     return std::span(gridEntity->getChildVertices().begin(), gridEntity->getChildVertices().end());
   }
 
@@ -87,29 +87,16 @@ namespace Ikarus::Grid {
       throw std::logic_error("Vertices do not offer an iterator over vertices");
   }
 
-  // TODO: Check if possible With Children and Father inversed
-
-  template <int griddim, int cogriddim, int wdim>
-  auto volumes(DefaultGridEntity<griddim, cogriddim, wdim>* gridEntity) {
-    static_assert(cogriddim != 0, "Elements themself can not return span to iterate over themself");
-    return std::span(gridEntity->getFatherElements().begin(), gridEntity->getFatherElements().end());
-  }
-
   template <int griddim, int cogriddim, int wdim>
   auto volumes(DefaultGridEntity<griddim, cogriddim, wdim>& gridEntity) {
     static_assert(cogriddim != 0, "Elements themself can not return span to iterate over themself");
     return std::span(gridEntity.getFatherElements().begin(), gridEntity.getFatherElements().end());
   }
 
-  template <int griddim, int cogriddim, int wdim>
-  auto edges(DefaultGridEntity<griddim, cogriddim, wdim>* gridEntity) {
-    if constexpr (griddim == cogriddim)  // gridEntity is a vertex!
-      return std::span(gridEntity->template getFatherEntities<griddim - 1>().begin(),
-                       gridEntity->template getFatherEntities<griddim - 1>().end());
-    else
-      return std::span(gridEntity->template getChildEntities<1>().begin(),
-                       gridEntity->template getChildEntities<1>().end());
-  }
+template <int griddim, int cogriddim, int wdim>
+auto volumes(DefaultGridEntity<griddim, cogriddim, wdim>* gridEntity) {
+  return volumes(*gridEntity);
+}
 
   template <int griddim, int cogriddim, int wdim>
   auto edges(DefaultGridEntity<griddim, cogriddim, wdim>& gridEntity) {
@@ -119,6 +106,11 @@ namespace Ikarus::Grid {
     else
       return std::span(gridEntity.template getChildEntities<1>().begin(),
                        gridEntity.template getChildEntities<1>().end());
+  }
+
+  template <int griddim, int cogriddim, int wdim>
+  auto edges(DefaultGridEntity<griddim, cogriddim, wdim>* gridEntity) {
+    return edges(*gridEntity);
   }
 
   template <int griddim, int cogriddim, int wdim>
