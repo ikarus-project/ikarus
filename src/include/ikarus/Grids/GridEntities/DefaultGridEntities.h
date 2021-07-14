@@ -35,14 +35,20 @@ namespace Ikarus::Grid {
    * \brief DefaultGridEntity
    *
    * \tparam  griddim  The dimension of the grid
+   * \tparam  cogriddim=0  The codimension of the entity
    * \tparam  wdim  The dimension of the world space where the grid is embedded
    *
    * \note Partial template specialization for entities with codim == 0
-   * These entities have no grid father
+   * These entities have no father
    **/
   template <int griddim, int wdim>
   class DefaultGridEntity<griddim, 0, wdim> {
   public:
+    static constexpr int dimension      = griddim;
+    static constexpr int codimension    = 0;
+    static constexpr int mydimension    = dimension;
+    static constexpr int dimensionworld = wdim;
+
     DefaultGridEntity(int levelInput, size_t idInput) : levelIndex{levelInput}, id{idInput} {}
 
     auto& getChildVertices() { return std::get<0>(entitiesChildren); }
@@ -60,22 +66,10 @@ namespace Ikarus::Grid {
       return std::get<dimEnt>(entitiesChildren);
     }
 
-    /** \brief Dimension of the grid */
-    static constexpr int dimension = griddim;
-
-    /** \brief The codimension of the entity */
-    static constexpr int codimension = 0;
-
-    /** \brief Know dimension of the entity */
-    static constexpr int mydimension = dimension;
-
-    /** \brief Know dimension of the entity */
-    static constexpr int dimensionworld = wdim;
-
     /** \brief Type of the geometry of this entity */
     using Geometry = Dune::MultiLinearGeometry<double, codimension, dimensionworld>;
 
-    /** \brief Type of the containter for the grid childrens of this entity */
+    /** \brief Type of the containter for the grid childrens of this entity, it stores only pointers to the entities. */
     using EntitiesChildernType
         = decltype(Impl::ChildEntityPointerTupleGenerator<dimension, mydimension, dimensionworld>(
             std::make_integer_sequence<int, mydimension>()));
@@ -105,12 +99,17 @@ namespace Ikarus::Grid {
     /** \brief Childrens of the entity on the current grid , i.e. surfaces of a cube*/
     EntitiesChildernType entitiesChildren;
 
-    /** \brief Childrens of the entity on a finer grid , i.e. subcubes of a cube*/
+    /** \brief Childrens of the entity on a finer grid , i.e. subcubes of a cube, it stores only pointers to the
+     * entities.*/
     std::vector<DefaultGridEntity<dimension, 0, dimensionworld>*> levelEntitiesChildren;
   };
 
   /**
    * \brief DefaultGridEntity
+   *
+   * \tparam  griddim  The dimension of the grid
+   * \tparam  cogriddim=griddim  The codimension of the entity. Here
+   * \tparam  wdim  The dimension of the world space where the grid is embedded
    *
    * \note Partial template specialization for entities with codim == griddim
    * These entities have no grid children, since they are vertices!
@@ -118,6 +117,11 @@ namespace Ikarus::Grid {
   template <int griddim, int wdim>
   class DefaultGridEntity<griddim, griddim, wdim> {
   public:
+    static constexpr int dimension      = griddim;
+    static constexpr int codimension    = griddim;
+    static constexpr int mydimension    = 0;
+    static constexpr int dimensionworld = wdim;
+
     DefaultGridEntity(int levelInput, const Eigen::Vector<double, wdim>& vecInput, size_t idInput)
         : levelIndex{levelInput}, id{idInput}, position{vecInput} {}
 
@@ -132,17 +136,6 @@ namespace Ikarus::Grid {
     DefaultGridEntity() = default;
 
     static_assert(true, "DefaultGridEntity not implemented for this mydim / griddim combination  ");
-    /** \brief Dimension of the grid */
-    static constexpr int dimension = griddim;
-
-    /** \brief The codimension of the entity */
-    static constexpr int codimension = griddim;
-
-    /** \brief Know dimension of the entity */
-    static constexpr int mydimension = 0;
-
-    /** \brief Know dimension of the entity */
-    static constexpr int dimensionworld = wdim;
 
     /** \brief Type of the geometry of this entity */
     using Geometry = Dune::MultiLinearGeometry<double, codimension, dimensionworld>;
@@ -164,11 +157,11 @@ namespace Ikarus::Grid {
     int levelIndex{};
 
     /** \brief Return the fundamental geometric type of the entity */
-    Dune::GeometryType type() const { return Dune::GeometryTypes::vertex; }
+    [[nodiscard]] Dune::GeometryType type() const { return Dune::GeometryTypes::vertex; }
 
     /** \brief Returns the number of subEntities of this entity, e.g. a line has two verteces as
      * subtypes */
-    unsigned int subEntities(unsigned int) const { return 0; }
+    [[nodiscard]] unsigned int subEntities(unsigned int) const { return 0; }
 
     /** \brief Returns the geometric realization of the entity */
     auto geometry() const { return Geometry(type(), position); }
@@ -197,27 +190,18 @@ namespace Ikarus::Grid {
   template <int griddim, int cogriddim, int wdim>
   class DefaultGridEntity {
   public:
-    DefaultGridEntity(int levelInput, size_t idInput) : levelIndex{levelInput}, id{idInput} {}
-
-    DefaultGridEntity() = default;
-
-    /** \brief Dimension of the grid */
-    static constexpr int dimension = griddim;
-
-    /** \brief The codimension of the entity */
-    static constexpr int codimension = cogriddim;
-
-    /** \brief Know dimension of the entity */
-    static constexpr int mydimension = griddim - cogriddim;
-
-    /** \brief Know dimension of the entity */
+    static constexpr int dimension      = griddim;
+    static constexpr int codimension    = cogriddim;
+    static constexpr int mydimension    = griddim - cogriddim;
     static constexpr int dimensionworld = wdim;
 
+    DefaultGridEntity(int levelInput, size_t idInput) : levelIndex{levelInput}, id{idInput} {}
+
     /** \brief Return copy of the id of this entity */
-    size_t getID() const { return id; }
+    [[nodiscard]] size_t getID() const { return id; }
 
     /** \brief Get refínement level where this entity belongs to*/
-    int level() const { return levelIndex; }
+    [[nodiscard]] int level() const { return levelIndex; }
 
     /** \brief Type of the geometry of this entity */
     using Geometry = Dune::MultiLinearGeometry<double, codimension, dimensionworld>;
