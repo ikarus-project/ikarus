@@ -12,7 +12,7 @@ namespace Ikarus::Grid {
     if (type.dim() != dimension) DUNE_THROW(Dune::GridError, "The inserted element has wrong dimensions!");
 
     storeVerticesIndicesOfEdges(type, verticesIn);
-    if constexpr (dimension > 1) storeVerticesIndicesToSurfaceIndices(type, verticesIn);
+    if constexpr (dimension > 1) storeVerticesIndicesOfSurfaces(type, verticesIn);
 
     elementsVertices.emplace_back(verticesIn.begin(), verticesIn.end());
   }
@@ -199,7 +199,7 @@ namespace Ikarus::Grid {
    *
    **/
   template <Concepts::Grid GridType>
-  void SimpleGridFactory<GridType>::storeVerticesIndicesToSurfaceIndices(const Dune::GeometryType &type,
+  void SimpleGridFactory<GridType>::storeVerticesIndicesOfSurfaces(const Dune::GeometryType &type,
                                                                          std::span<size_t> verticesIn) {
     elementSurfaceIndices.emplace_back();
     if (type.isLine()) {
