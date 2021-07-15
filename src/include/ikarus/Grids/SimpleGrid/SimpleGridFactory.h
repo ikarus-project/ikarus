@@ -29,34 +29,23 @@ namespace Ikarus::Grid {
     GridType createGrid();
 
   private:
+    void insertVertexIndicesinEdge(std::vector<size_t>&& indices);
+    void insertVertexIndicesinSurface(std::vector<size_t>&& indices);
+
+    void storeVerticesIndicesOfEdges(const Dune::GeometryType& type, std::span<size_t> verticesIn);
+    void storeVerticesIndicesOfSurfaces(const Dune::GeometryType& type, std::span<size_t> verticesIn);
+
     struct VertexIndexPair {
       Eigen::Vector<double, dimensionworld> vertex;
       size_t index;
     };
-
-    void insertVertexIndicesinEdge(std::vector<size_t>&& indices) {
-      std::ranges::sort(indices);
-      auto index = Ikarus::stl::appendUnique(edgesVertexIndices, indices);
-      elementEdgeIndices.back().push_back(index);
-    }
-
-    void storeVerticesIndicesOfEdges(const Dune::GeometryType& type, std::span<size_t> verticesIn);
-    void storeVerticesIndicesToSurfaceIndices(const Dune::GeometryType& type, std::span<size_t> verticesIn);
-
-    void insertVertexIndicesinSurface(std::vector<size_t>&& indices) {
-      std::ranges::sort(indices);
-      auto index = Ikarus::stl::appendUnique(surfaceVertexIndices, indices);
-      elementSurfaceIndices.back().push_back(index);
-    }
-
-    /** \brief Counter that creates the vertex indices */
-    size_t vertexIndex{};
+    std::vector<VertexIndexPair> verticesPositions;
     std::vector<std::vector<size_t>> edgesVertexIndices;
     std::vector<std::vector<size_t>> surfaceVertexIndices;
-    std::vector<VertexIndexPair> verticesPositions;
     std::vector<std::vector<size_t>> elementsVertices;
     std::vector<std::vector<size_t>> elementEdgeIndices;
     std::vector<std::vector<size_t>> elementSurfaceIndices;
+    size_t vertexIndex{};
   };
 
 }  // namespace Ikarus::Grid
