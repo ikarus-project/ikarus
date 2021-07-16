@@ -13,6 +13,6 @@ This project tries to provide a easy to read and easy to use finite element fram
 It is heavily inspired by the finite element softwares [DUNE](https://dune-project.org/), the book [DUNE — The Distributed and Unified Numerics Environment](https://www.springer.com/gp/book/9783030597016),
 [deal.II](https://www.dealii.org/) and [Kratos](https://github.com/KratosMultiphysics/Kratos).
 
-Concerning the and [Autodiff](https://autodiff.github.io/) 
+Concerning the design of CI and the documentation we were inspired by [Autodiff](https://autodiff.github.io/)  and [Kratos](https://github.com/KratosMultiphysics/Kratos).
 
-Our documentation resides at https://ikarusrepo.github.io/.
+The documentation resides at https://ikarusrepo.github.io/.
