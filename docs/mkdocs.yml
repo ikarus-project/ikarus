@@ -37,9 +37,12 @@ docs_dir: 'website'
 nav:
   - Home: index.md
   - Installation: installation.md
+  - How to edit the documentation: howToEdit.md
   - Tutorials:
-    - Grid: grid.md
-#  - FAQ: faq.md
+    - Overview:
+    - Grid: Tutorials/tutGrid.md
+  - Theory and Implementation:
+    - Overview: theory/theoreticalBackgroundImplementation.md
 #  - About: about.md
 
 # Customization
