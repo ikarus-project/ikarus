@@ -11,7 +11,7 @@ the underlying thoughts and theoretical aspects.
 
 If you are rather interested in the theoretical background 
 and implementation details, visit the
-[theory section](../theory/theoreticalBackgoundImplementation.md).
+[theory section](../theory/theoryOverview.md).
 
 ## Topics
 

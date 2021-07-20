@@ -41,11 +41,11 @@ nav:
   - Installation: installation.md
   - How to edit the documentation: howToEdit.md
   - Tutorials:
-    - Overview:  tutorials/tutorialsOverview.md
-    - Grid: tutorials/tutGrid.md
+    - Overview: tutorials/tutorialsOverview.md
+    - Grid    : tutorials/tutGrid.md
   - Theory and Implementation:
-    - Overview:  theory/theoreticalBackgroundImplementation.md
-##  - About: about.md
+    - Overview: theory/theoryOverview.md
+    - Geometry: theory/theoryGeometry.md
 
 # Customization
 extra_css:

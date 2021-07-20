@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - Ikarus cloned on your computer, 
-  see [the installation page](installation.md/#clone-ikarus).
+  see [the installation page](../installation/#clone-ikarus).
 
 ## Edit a page
 - Open Ikarus in Clion
