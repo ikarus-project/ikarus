@@ -47,7 +47,7 @@ TEST(Assembler, SimpleAssemblersTest) {
 
   std::vector<Ikarus::FiniteElements::IFiniteElement> fes;
 
-  for (auto&& ge : volumes(gridView))
+  for (auto&& ge : surfaces(gridView))
     fes.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge));
 
   auto dh = Ikarus::DofManager::DefaultDofManager(fes, gridView);
