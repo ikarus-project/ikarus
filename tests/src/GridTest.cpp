@@ -64,7 +64,7 @@ TEST(GridTest, GridViewTest) {
 
   auto gridView = grid.leafGridView();
   EXPECT_TRUE(edges(gridView).size() != 0);
-  EXPECT_TRUE(volumes(gridView).size() != 0);
+  EXPECT_TRUE(surfaces(gridView).size() != 0);
   EXPECT_TRUE(vertices(gridView).size() != 0);
 
   int expectedEdgeId = 10;
@@ -98,7 +98,7 @@ TEST(GridTest, GridViewTest) {
   expectedElementEdgeIds.push_back({17, 15, 18});
 
   int eleCounter = 0;
-  for (auto &&singleElement : volumes(gridView)) {
+  for (auto &&singleElement : surfaces(gridView)) {
     int edgeCounter = 0;
     for (auto &&edge : edges(singleElement)) {
       EXPECT_EQ(edge->type(), Dune::GeometryTypes::line);
@@ -107,7 +107,7 @@ TEST(GridTest, GridViewTest) {
     }
     ++eleCounter;
   }
-  auto ele1 = volumes(gridView).begin();
+  auto ele1 = surfaces(gridView).begin();
   EXPECT_THROW([[maybe_unused]] auto e = ele1->subEntities(3), std::logic_error);
   EXPECT_EQ(ele1->subEntities(2), 4);
   EXPECT_EQ(ele1->subEntities(1), 4);
@@ -156,7 +156,7 @@ TEST(GridTest, GridView3DSurfaceTest) {
   Grid actualGrid = gridFactory.createGrid();
   auto gridView   = actualGrid.leafGridView();
   EXPECT_TRUE(edges(gridView).size() != 0);
-  EXPECT_TRUE(volumes(gridView).size() != 0);
+  EXPECT_TRUE(surfaces(gridView).size() != 0);
   EXPECT_TRUE(vertices(gridView).size() != 0);
 
   for (int i = 0; auto &&vertex : vertices(gridView)) {
@@ -165,7 +165,7 @@ TEST(GridTest, GridView3DSurfaceTest) {
     ++i;
   }
 
-  auto &&eleIterator = volumes(gridView).begin();
+  auto &&eleIterator = surfaces(gridView).begin();
   EXPECT_EQ(eleIterator->type(), Dune::GeometryTypes::quadrilateral);
   ++eleIterator;
   EXPECT_EQ(eleIterator->type(), Dune::GeometryTypes::quadrilateral);
@@ -178,7 +178,7 @@ TEST(GridTest, GridView3DSurfaceTest) {
   expectedElementEdgeIds.push_back({17, 15, 18});
 
   int eleCounter = 0;
-  for (auto &singleElement : volumes(gridView)) {
+  for (auto &singleElement : surfaces(gridView)) {
     int edgeCounter = 0;
     for (auto &&edge : edges(singleElement)) {
       EXPECT_EQ(edge->type(), Dune::GeometryTypes::line);
@@ -187,7 +187,7 @@ TEST(GridTest, GridView3DSurfaceTest) {
     }
     ++eleCounter;
   }
-  auto ele1 = volumes(gridView).begin();
+  auto ele1 = surfaces(gridView).begin();
   EXPECT_THROW([[maybe_unused]] auto e = ele1->subEntities(3), std::logic_error);
   EXPECT_EQ(ele1->subEntities(2), 4);
   EXPECT_EQ(ele1->subEntities(1), 4);
