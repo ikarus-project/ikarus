@@ -27,12 +27,8 @@ namespace Ikarus::Grid {
 
   template <int dimension, int dimensionworld>
   SimpleGrid<dimension,dimensionworld> SimpleGridFactory<dimension,dimensionworld>::createGrid() {
-    SimpleGrid<dimension,dimensionworld> grid(verticesPositions,edgesVertexIndices,surfaceVertexIndices,
+    return SimpleGrid<dimension,dimensionworld>(verticesPositions,edgesVertexIndices,surfaceVertexIndices,
                                                elementsVertices,elementEdgeIndices,elementSurfaceIndices);
-
-
-
-    return grid;
   }
 
   /**

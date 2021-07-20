@@ -140,8 +140,6 @@ namespace Ikarus::Grid {
 
     unsigned int getNextFreeId() { return freeIdCounter++; }
 
-    //template<int dimension, int dimensionworld>
-    //friend class SimpleGridFactory<dimension, dimensionworld>;
     friend class SimpleGridView<dim, dimworld, SimpleGrid>;
 
     std::vector<GridEntityTuple> gridEntities;
