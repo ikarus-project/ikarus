@@ -59,7 +59,7 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
   auto gridView = grid.leafGridView();
   std::vector<Ikarus::FiniteElements::IFiniteElement> fes;
 
-  for (auto&& element : volumes(gridView))
+  for (auto&& element : surfaces(gridView))
     fes.emplace_back(Ikarus::FiniteElements::ElasticityFE(element));
 
   Eigen::VectorXd fint{};
