@@ -19,7 +19,7 @@ namespace Ikarus::Grid {
 
   template <int dim, int dimworld>
   class SimpleGrid {
-    static_assert(dim <= dimworld, "The dimension of the grid can not be smaller that the embedding space.");
+    static_assert(dim <= dimworld, "The dimension of the grid can not be larger then the embedding space.");
 
   public:
     using ctype                         = double;
