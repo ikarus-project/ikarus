@@ -14,6 +14,8 @@ copyright: 'Copyright &copy; 2021 Alexander Müller'
 # Configuration
 theme:
   name: material
+  features:
+    - navigation.instant
   palette:
     - scheme: default
       primary: teal
@@ -39,11 +41,11 @@ nav:
   - Installation: installation.md
   - How to edit the documentation: howToEdit.md
   - Tutorials:
-    - Overview:
-    - Grid: Tutorials/tutGrid.md
+    - Overview:  tutorials/tutorialsOverview.md
+    - Grid: tutorials/tutGrid.md
   - Theory and Implementation:
-    - Overview: theory/theoreticalBackgroundImplementation.md
-#  - About: about.md
+    - Overview:  theory/theoreticalBackgroundImplementation.md
+##  - About: about.md
 
 # Customization
 extra_css:
