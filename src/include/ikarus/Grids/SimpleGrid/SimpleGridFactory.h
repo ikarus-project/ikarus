@@ -7,18 +7,9 @@
 #include <ikarus/utils/std/algorithms.h>
 
 namespace Ikarus::Grid {
-  template <Concepts::Grid GridType>
+  template <int dimensionworld,int dimension>
   class SimpleGridFactory {
   private:
-    /** \brief dimension of the grid */
-    static const int dimension = GridType::dimension;
-
-    /** \brief The grid world dimension */
-    static const int dimensionworld = GridType::dimensionworld;
-
-    /** \brief Type used by the grid for coordinates */
-    using ctype = typename GridType::ctype;
-
     /** \brief Type used by the grid for the vertex coordinates */
     using VertexCoordinateType = Eigen::Vector<double, dimensionworld>;
 
@@ -26,7 +17,7 @@ namespace Ikarus::Grid {
     void insertElement(const Dune::GeometryType& type, std::span<size_t> vertices);
     void insertVertex(const VertexCoordinateType& pos);
 
-    GridType createGrid();
+    SimpleGrid<dimensionworld,dimension> createGrid();
 
   private:
     void insertVertexIndicesinEdge(std::vector<size_t>&& indices);

@@ -6,9 +6,11 @@
 
 #include <ikarus/utils/std/algorithms.h>
 namespace Ikarus::Grid {
+  template <int dimensionworld, int dimension>
+  using GridType = SimpleGrid<dimensionworld,dimension>;
 
-  template <Concepts::Grid GridType>
-  void SimpleGridFactory<GridType>::insertElement(const Dune::GeometryType &type, const std::span<size_t> verticesIn) {
+  template <int dimensionworld, int dimension>
+  void SimpleGridFactory<dimensionworld,dimension>::insertElement(const Dune::GeometryType &type, const std::span<size_t> verticesIn) {
     if (type.dim() != dimension) DUNE_THROW(Dune::GridError, "The inserted element has wrong dimensions!");
 
     storeVerticesIndicesOfEdges(type, verticesIn);
@@ -17,14 +19,14 @@ namespace Ikarus::Grid {
     elementsVertices.emplace_back(verticesIn.begin(), verticesIn.end());
   }
 
-  template <Concepts::Grid GridType>
-  void SimpleGridFactory<GridType>::insertVertex(const VertexCoordinateType &pos) {
+  template <int dimensionworld, int dimension>
+  void SimpleGridFactory<dimensionworld,dimension>::insertVertex(const VertexCoordinateType &pos) {
     verticesPositions.template emplace_back(SimpleGridFactory::VertexIndexPair{pos, vertexIndex++});
   }
 
-  template <Concepts::Grid GridType>
-  GridType SimpleGridFactory<GridType>::createGrid() {
-    GridType grid;
+  template <int dimensionworld, int dimension>
+  SimpleGrid<dimensionworld,dimension> SimpleGridFactory<dimensionworld,dimension>::createGrid() {
+    SimpleGrid<dimensionworld,dimension> grid;
     if (verticesPositions.empty())
       DUNE_THROW(Dune::GridError, "verticesPositions vector is empty. Unable to create Grid");
     if (elementsVertices.empty()) DUNE_THROW(Dune::GridError, "elements vector is empty. Unable to create Grid");
@@ -36,14 +38,14 @@ namespace Ikarus::Grid {
 
     // add vertices to the grid
     for (auto &vert : verticesPositions) {
-      typename GridType::VertexType newVertex(0, vert.vertex, grid.getNextFreeId());
+      typename SimpleGrid<dimensionworld,dimension>::VertexType newVertex(0, vert.vertex, grid.getNextFreeId());
       newVertex.levelIndex = vert.index;
       grid.getVertices().push_back(newVertex);
     }
 
     // add element and set vertex pointer of elements
     for (auto &eleVertices : elementsVertices) {
-      typename GridType::RootEntity newElement(0, grid.getNextFreeId());
+      typename SimpleGrid<dimensionworld,dimension>::RootEntity newElement(0, grid.getNextFreeId());
 
       for (auto &vertID : eleVertices)
         newElement.getChildVertices().emplace_back(&grid.getVertices()[vertID]);
@@ -57,7 +59,7 @@ namespace Ikarus::Grid {
         vert->getFatherElements().emplace_back(&element);
 
     // add edges to the grid
-    if constexpr (GridType::dimension > 1) {
+    if constexpr (SimpleGrid<dimensionworld,dimension>::dimension > 1) {
       for (auto &edge : edgesVertexIndices) {
         grid.template getSubEntities<dimension - 1>().emplace_back(0, grid.getNextFreeId());
         auto &newEdge = grid.getEdges().back();
@@ -79,7 +81,7 @@ namespace Ikarus::Grid {
       }
     }
     // add surfaces to the grid
-    if constexpr (GridType::dimension > 2) {
+    if constexpr (SimpleGrid<dimensionworld,dimension>::dimension > 2) {
       for (auto &surf : surfaceVertexIndices) {
         grid.template getSubEntities<dimension - 2>().emplace_back(0, grid.getNextFreeId());
         auto &newSurface = grid.getSurfaces().back();
@@ -109,8 +111,8 @@ namespace Ikarus::Grid {
    * The numbering of vertices, edges, surfaces correspond to \cite sander2020dune Fig 5.12, 5.13
    *
    **/
-  template <Concepts::Grid GridType>
-  void SimpleGridFactory<GridType>::storeVerticesIndicesOfEdges(const Dune::GeometryType &type,
+  template <int dimensionworld, int dimension>
+  void SimpleGridFactory<dimensionworld,dimension>::storeVerticesIndicesOfEdges(const Dune::GeometryType &type,
                                                                 const std::span<size_t> verticesIn) {
     elementEdgeIndices.emplace_back();
     if (type.isLine()) {
@@ -198,8 +200,8 @@ namespace Ikarus::Grid {
    * The numbering of vertices, edges, surfaces correspond to \cite sander2020dune Fig 5.12, 5.13
    *
    **/
-  template <Concepts::Grid GridType>
-  void SimpleGridFactory<GridType>::storeVerticesIndicesOfSurfaces(const Dune::GeometryType &type,
+  template <int dimensionworld, int dimension>
+  void SimpleGridFactory<dimensionworld,dimension>::storeVerticesIndicesOfSurfaces(const Dune::GeometryType &type,
                                                                          std::span<size_t> verticesIn) {
     elementSurfaceIndices.emplace_back();
     if (type.isLine()) {
@@ -254,15 +256,15 @@ namespace Ikarus::Grid {
     }
   }
 
-  template <Concepts::Grid GridType>
-  void SimpleGridFactory<GridType>::insertVertexIndicesinEdge(std::vector<size_t>&& indices) {
+  template <int dimensionworld, int dimension>
+  void SimpleGridFactory<dimensionworld,dimension>::insertVertexIndicesinEdge(std::vector<size_t>&& indices) {
     std::ranges::sort(indices);
     auto index = Ikarus::stl::appendUnique(edgesVertexIndices, indices);
     elementEdgeIndices.back().push_back(index);
   }
 
-  template <Concepts::Grid GridType>
-  void SimpleGridFactory<GridType>::insertVertexIndicesinSurface(std::vector<size_t>&& indices) {
+  template <int dimensionworld, int dimension>
+  void SimpleGridFactory<dimensionworld,dimension>::insertVertexIndicesinSurface(std::vector<size_t>&& indices) {
     std::ranges::sort(indices);
     auto index = Ikarus::stl::appendUnique(surfaceVertexIndices, indices);
     elementSurfaceIndices.back().push_back(index);
