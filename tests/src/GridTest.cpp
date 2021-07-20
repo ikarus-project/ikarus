@@ -36,7 +36,7 @@
 TEST(GridTest, GridViewTest) {
   using namespace Ikarus::Grid;
   using Grid = SimpleGrid<2, 2>;
-  SimpleGridFactory<Grid> gridFactory;
+  SimpleGridFactory<2,2> gridFactory;
   using vertexType = Eigen::Vector2d;
   std::vector<vertexType> verticesVec;
   verticesVec.emplace_back(0.0, 0.0);  // 0
@@ -129,7 +129,7 @@ TEST(GridTest, GridViewTest) {
 TEST(GridTest, GridView3DSurfaceTest) {
   using namespace Ikarus::Grid;
   using Grid = SimpleGrid<2, 3>;
-  SimpleGridFactory<Grid> gridFactory;
+  SimpleGridFactory<2,3> gridFactory;
   using vertexType = Eigen::Vector3d;
   std::vector<vertexType> verticesVec;
   verticesVec.emplace_back(0.0, 0.0, -3.0);  // 0
@@ -209,7 +209,7 @@ TEST(GridTest, GridView3DSurfaceTest) {
 TEST(GridTest, GridView3DSolidTest) {
   using namespace Ikarus::Grid;
   using Grid = SimpleGrid<3, 3>;
-  SimpleGridFactory<Grid> gridFactory;
+  SimpleGridFactory<3,3> gridFactory;
   using vertexType = Eigen::Vector3d;
   std::vector<vertexType> verticesVec;
   verticesVec.emplace_back(0.0, 0.0, -3.0);  // 0
@@ -327,8 +327,7 @@ TEST(GridTest, GridView3DSolidTest) {
 
 TEST(GridTest, GridInsertionException) {
   using namespace Ikarus::Grid;
-  using Grid = SimpleGrid<2, 2>;
-  SimpleGridFactory<Grid> gridFactory;
+  SimpleGridFactory<2,2> gridFactory;
   using vertexType = Eigen::Vector2d;
   std::vector<vertexType> verticesVec;
   verticesVec.emplace_back(0.0, 0.0);  // 0
@@ -355,8 +354,7 @@ TEST(GridTest, GridInsertionException) {
 
 TEST(GridTest, GridEmptyGridCreation) {
   using namespace Ikarus::Grid;
-  using Grid = SimpleGrid<2, 2>;
-  SimpleGridFactory<Grid> gridFactory;
+  SimpleGridFactory<2,2> gridFactory;
   EXPECT_THROW(gridFactory.createGrid(), Dune::GridError);
   gridFactory.insertVertex({2.0, 1.0});
   EXPECT_THROW(gridFactory.createGrid(), Dune::GridError);

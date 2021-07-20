@@ -21,7 +21,7 @@
 TEST(Assembler, SimpleAssemblersTest) {
   using namespace Ikarus::Grid;
   using Grid = SimpleGrid<2, 2>;
-  SimpleGridFactory<Grid> gridFactory;
+  SimpleGridFactory<2,2> gridFactory;
   using vertexType = Eigen::Vector2d;
   std::vector<vertexType> verticesVec;
   verticesVec.emplace_back(vertexType{0.0, 0.0});  // 0
