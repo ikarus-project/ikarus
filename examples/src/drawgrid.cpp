@@ -10,15 +10,15 @@ int main() {
   SimpleGridFactory<Grid> gridFactory;
   using vertexType = Eigen::Vector3d;
   std::vector<vertexType> verticesVec;
-  verticesVec.emplace_back(vertexType{0.0, 0.0, -3.0});  // 0
-  verticesVec.emplace_back(vertexType{2.0, 0.0, -3.0});  // 1
-  verticesVec.emplace_back(vertexType{0.0, 2.0, -3.0});  // 2
-  verticesVec.emplace_back(vertexType{2.0, 2.0, -3.0});  // 3
-  verticesVec.emplace_back(vertexType{0.0, 0.0, 3.0});   // 4
-  verticesVec.emplace_back(vertexType{2.0, 0.0, 3.0});   // 5
-  verticesVec.emplace_back(vertexType{0.0, 2.0, 3.0});   // 6
-  verticesVec.emplace_back(vertexType{2.0, 2.0, 3.0});   // 7
-  verticesVec.emplace_back(vertexType{4.0, 0.0, 3.0});   // 8
+  verticesVec.emplace_back(0.0, 0.0, -3.0);  // 0
+  verticesVec.emplace_back(2.0, 0.0, -3.0);  // 1
+  verticesVec.emplace_back(0.0, 2.0, -3.0);  // 2
+  verticesVec.emplace_back(2.0, 2.0, -3.0);  // 3
+  verticesVec.emplace_back(0.0, 0.0, +3.0);  // 4
+  verticesVec.emplace_back(2.0, 0.0, +3.0);  // 5
+  verticesVec.emplace_back(0.0, 2.0, +3.0);  // 6
+  verticesVec.emplace_back(2.0, 2.0, +3.0);  // 7
+  verticesVec.emplace_back(4.0, 0.0, +3.0);  // 8
 
   for (auto&& vert : verticesVec)
     gridFactory.insertVertex(vert);
@@ -36,7 +36,5 @@ int main() {
 
   auto gridView = grid.leafGridView();
 
-  //  for(auto&& vertex : vertices(gridView))
-  //    vertex.
   draw(gridView);
 }
