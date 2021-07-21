@@ -2,12 +2,13 @@
 // Created by Alex on 26.05.2021.
 //
 #pragma once
+
 #include <dune/grid/common/exceptions.hh>
 
 #include <ikarus/utils/std/algorithms.h>
 namespace Ikarus::Grid {
   template <int dimension, int dimensionworld>
-  using GridType = SimpleGrid<dimension,dimensionworld>;
+  using GridType = SimpleGrid<dimension, dimensionworld>;
 
   template <int dimension, int dimensionworld>
   void SimpleGridFactory<dimension,dimensionworld>::insertElement(Ikarus::GeometryType type, const std::span<size_t> verticesIn) {
@@ -20,14 +21,88 @@ namespace Ikarus::Grid {
   }
 
   template <int dimension, int dimensionworld>
-  void SimpleGridFactory<dimension,dimensionworld>::insertVertex(const VertexCoordinateType &pos) {
-    verticesPositions.template emplace_back(SimpleGridTypedefs::VertexIndexPair{pos, vertexIndex++});
+  void SimpleGridFactory<dimension, dimensionworld>::insertVertex(const VertexCoordinateType &pos) {
+    verticesPositions.template emplace_back(VertexIndexPair{pos, vertexIndex++});
   }
 
   template <int dimension, int dimensionworld>
-  SimpleGrid<dimension,dimensionworld> SimpleGridFactory<dimension,dimensionworld>::createGrid() {
-    return SimpleGrid<dimension,dimensionworld>(verticesPositions,edgesVertexIndices,surfaceVertexIndices,
-                                               elementsVertices,elementEdgeIndices,elementSurfaceIndices);
+  auto SimpleGridFactory<dimension, dimensionworld>::createGrid() {
+    using GridType = SimpleGrid<dimension, dimensionworld>;
+    using GridEntitiesContainer = typename GridType::GridEntitiesContainer;
+
+    size_t uniqueId = 0;
+    if (verticesPositions.empty())
+      DUNE_THROW(Dune::GridError, "verticesPositions vector is empty. Unable to create Grid");
+    if (elementsVertices.empty()) DUNE_THROW(Dune::GridError, "elements vector is empty. Unable to create Grid");
+
+    GridEntitiesContainer* gridEntityContainer = new GridEntitiesContainer(verticesPositions.size(),elementsVertices.size());
+
+    // add vertices to the grid
+    for (auto &vert : verticesPositions) {
+      gridEntityContainer->getVertices().emplace_back(0, vert.vertex, uniqueId++);
+      auto& newVertex = gridEntityContainer->getVertices().back();
+      newVertex.levelIndex = vert.index;
+    }
+
+    // add element and set vertex pointer of elements
+    for (auto &eleVertices : elementsVertices) {
+      gridEntityContainer->getRootEntities().emplace_back(0,uniqueId++);
+      auto& newElement = gridEntityContainer->getRootEntities().back();
+      for (auto &vertID : eleVertices)
+        newElement.getChildVertices().emplace_back(&gridEntityContainer->getVertices()[vertID]);
+    }
+
+    // collect all elements pointers of each vertex
+    for (auto &element : gridEntityContainer->getRootEntities())
+      for (auto &vert : vertices(element))
+        vert->getFatherElements().emplace_back(&element);
+
+    // add edges to the grid
+    if constexpr (GridType::dimension > 1) {
+      for (auto &edge : edgesVertexIndices) {
+        gridEntityContainer->getEdges().emplace_back(0, uniqueId++);
+        auto &newEdge = gridEntityContainer->getEdges().back();
+
+        for (auto &&verticesIndicesOfEdge : edge) {
+          // add vertex pointers to edge
+          newEdge.getChildVertices().push_back(&gridEntityContainer->getVertices()[verticesIndicesOfEdge]);
+          // add edge pointers to vertices
+          gridEntityContainer->getVertices()[verticesIndicesOfEdge].template getFatherEntities<dimension - 1>().push_back(&newEdge);
+        }
+      }
+
+      auto eIt = gridEntityContainer->getRootEntities().begin();
+      // add edge pointers to elements
+      for (auto &elementedgeIndexPerElement : elementEdgeIndices) {
+        for (auto &elementedgeIndex : elementedgeIndexPerElement)
+          eIt->template getChildEntities<1>().push_back(&gridEntityContainer->getEdges()[elementedgeIndex]);
+        ++eIt;
+      }
+    }
+    // add surfaces to the grid
+    if constexpr (GridType::dimension > 2) {
+      for (auto &surf : surfaceVertexIndices) {
+        gridEntityContainer->template getSubEntities<dimension - 2>().emplace_back(0, uniqueId++);
+        auto &newSurface = gridEntityContainer->getSurfaces().back();
+
+        for (auto &&verticesIndicesOfSurface : surf) {
+          // add vertex pointers to surface
+          newSurface.getChildVertices().push_back(&gridEntityContainer->getVertices()[verticesIndicesOfSurface]);
+          // add surface pointers to vertices
+          gridEntityContainer->getVertices()[verticesIndicesOfSurface].template getFatherEntities<dimension - 2>().push_back(
+              &newSurface);
+        }
+      }
+
+      auto eIt = gridEntityContainer->getRootEntities().begin();
+      // add surface pointers to the elements
+      for (auto &elementSurfaceIndexPerElement : elementSurfaceIndices) {
+        for (auto &elementSurfaceIndex : elementSurfaceIndexPerElement)
+          eIt->template getChildEntities<2>().push_back(&gridEntityContainer->getSurfaces()[elementSurfaceIndex]);
+        ++eIt;
+      }
+    }
+    return GridType(std::move(gridEntityContainer),uniqueId);
   }
 
   /**
@@ -181,14 +256,14 @@ namespace Ikarus::Grid {
   }
 
   template <int dimension, int dimensionworld>
-  void SimpleGridFactory<dimension,dimensionworld>::insertVertexIndicesinEdge(std::vector<size_t>&& indices) {
+  void SimpleGridFactory<dimension, dimensionworld>::insertVertexIndicesinEdge(std::vector<size_t> &&indices) {
     std::ranges::sort(indices);
     auto index = Ikarus::stl::appendUnique(edgesVertexIndices, indices);
     elementEdgeIndices.back().push_back(index);
   }
 
   template <int dimension, int dimensionworld>
-  void SimpleGridFactory<dimension,dimensionworld>::insertVertexIndicesinSurface(std::vector<size_t>&& indices) {
+  void SimpleGridFactory<dimension, dimensionworld>::insertVertexIndicesinSurface(std::vector<size_t> &&indices) {
     std::ranges::sort(indices);
     auto index = Ikarus::stl::appendUnique(surfaceVertexIndices, indices);
     elementSurfaceIndices.back().push_back(index);

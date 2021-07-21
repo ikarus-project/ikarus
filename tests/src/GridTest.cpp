@@ -64,9 +64,9 @@ TEST(GridTest, GridViewTest) {
   Grid grid = gridFactory.createGrid();
 
   auto gridView = grid.leafGridView();
-  EXPECT_TRUE(edges(gridView).size() != 0);
-  EXPECT_TRUE(surfaces(gridView).size() != 0);
-  EXPECT_TRUE(vertices(gridView).size() != 0);
+  EXPECT_EQ(edges(gridView).size() , 9);
+  EXPECT_EQ(surfaces(gridView).size() , 3);
+  EXPECT_EQ(vertices(gridView).size() , 7);
 
   int expectedEdgeId = 10;
   std::vector<std::array<int, 2>> expectedEdgeVertexId;
@@ -156,9 +156,9 @@ TEST(GridTest, GridView3DSurfaceTest) {
 
   Grid actualGrid = gridFactory.createGrid();
   auto gridView   = actualGrid.leafGridView();
-  EXPECT_TRUE(edges(gridView).size() != 0);
-  EXPECT_TRUE(surfaces(gridView).size() != 0);
-  EXPECT_TRUE(vertices(gridView).size() != 0);
+  EXPECT_EQ(edges(gridView).size() , 9);
+  EXPECT_EQ(surfaces(gridView).size() , 3);
+  EXPECT_EQ(vertices(gridView).size() , 7);
 
   for (int i = 0; auto &&vertex : vertices(gridView)) {
     EXPECT_EQ(vertex.type(), Ikarus::GeometryType::vertex);

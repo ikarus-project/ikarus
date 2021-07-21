@@ -5,7 +5,6 @@
 #pragma once
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
 #include <ikarus/utils/std/algorithms.h>
-#include "SimpleGridTypedefs.h"
 #include <ikarus/Geometries/GeometryType.h>
 
 namespace Ikarus::Grid {
@@ -19,9 +18,13 @@ namespace Ikarus::Grid {
     void insertElement(Ikarus::GeometryType type, std::span<size_t> vertices);
     void insertVertex(const VertexCoordinateType& pos);
 
-    SimpleGrid<dimension,dimensionworld> createGrid();
+    auto createGrid();
 
   private:
+    struct VertexIndexPair {
+      Eigen::Vector<double, dimensionworld> vertex;
+      size_t index;
+    };
     void insertVertexIndicesinEdge(std::vector<size_t>&& indices);
     void insertVertexIndicesinSurface(std::vector<size_t>&& indices);
 
@@ -29,7 +32,7 @@ namespace Ikarus::Grid {
     void storeVerticesIndicesOfSurfaces(Ikarus::GeometryType type, std::span<size_t> verticesIn);
 
 
-    std::vector<SimpleGridTypedefs::VertexIndexPair<dimensionworld>> verticesPositions;
+    std::vector<VertexIndexPair> verticesPositions;
     std::vector<std::vector<size_t>> edgesVertexIndices;
     std::vector<std::vector<size_t>> surfaceVertexIndices;
     std::vector<std::vector<size_t>> elementsVertices;

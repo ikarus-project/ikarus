@@ -13,16 +13,15 @@ namespace Ikarus::Grid {
     explicit SimpleGridView(GridType& gridInput, int levelInput = 0) : grid{&gridInput}, level{levelInput} {}
 
     static constexpr int dimension = GridType::dimension;
-    using RootEntity               = typename GridType::RootEntity;
 
     template <int coDim>
     auto begin() {
-      return grid->template getSubEntities<coDim>(0).begin();
+      return grid->gridEntitiesContainer->template getSubEntities<coDim>(0).begin();
     }
 
     template <int coDim>
     auto end() {
-      return grid->template getSubEntities<coDim>(0).end();
+      return grid->gridEntitiesContainer->template getSubEntities<coDim>(0).end();
     }
 
   private:
