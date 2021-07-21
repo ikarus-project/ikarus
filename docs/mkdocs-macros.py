@@ -1,6 +1,6 @@
 "These macros are taken and modified from https://github.com/autodiff/autodiff"
 
-def declare_variables(variables, macro):
+def define_env(env):
     """
     This is the hook for the functions
 
@@ -8,7 +8,7 @@ def declare_variables(variables, macro):
     - macro: a decorator function, to declare a macro.
     """
 
-    @macro
+    @env.macro
     def inputcode(filename, language, linenumbers=False, startline=0, endline=None):
         filename = '../' + filename  # file path must be given relative to root directory
         f = open(filename, 'r')
@@ -24,6 +24,6 @@ def declare_variables(variables, macro):
             textblock = f'```{{ .{language} linenums="1" .annotate}} \n{text}\n```'
         return textblock
 
-    @macro
+    @env.macro
     def inputcpp(filename,linenumbers=False, startline=0, endline=None):
         return inputcode(filename, 'cpp', linenumbers, startline, endline)

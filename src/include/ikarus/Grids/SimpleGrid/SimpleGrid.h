@@ -30,17 +30,6 @@ namespace Ikarus::Grid {
     using VertexType  = DefaultGridEntity<dim, dim, dimworld>;
     using RootEntity = DefaultGridEntity<dim, 0, dimworld>;
 
-    template <int griddim, int cogriddim, int wdim>
-    using Entity = DefaultGridEntity<griddim, cogriddim, wdim>;
-
-    //          using GridView = SimpleGridView<dimension,dimensionworld,SimpleGrid>;
-
-    template <int codim>
-    struct Codim {
-      using Geometry = Dune::MultiLinearGeometry<ctype, codim, dimensionworld>;
-      using Entity   = DefaultGridEntity<dim, codim, dimworld>;
-    };
-
     auto leafGridView() { return SimpleGridView<dimension, dimensionworld, SimpleGrid>(*this, 0); }
 
   private:
