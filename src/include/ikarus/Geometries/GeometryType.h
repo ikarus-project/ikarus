@@ -41,7 +41,7 @@ namespace Ikarus {
           "Dimension of the given type couldn't be obtained. Check function 'dimension' in GeometryType.h");
     }
   }
-
+  // LCOV_EXCL_START
   inline std::string print(GeometryType type) {
     switch (type) {
       case GeometryType::vertex:
@@ -74,7 +74,7 @@ namespace Ikarus {
     os << print(type);
     return os;
   }
-
+  // LCOV_EXCL_STOP
   // This function is necessary to work with Ikarus Geometry-Types in the GridEntity implementation based on Dune
   inline Dune::GeometryType duneType(Ikarus::GeometryType ikarusType) {
     switch (ikarusType) {
