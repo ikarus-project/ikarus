@@ -13,18 +13,11 @@ namespace Ikarus::Grid {
   }
 
   template <int dim, int dimworld, Ikarus::Concepts::Grid GridType>
-  requires(dim >= 1) auto edges(SimpleGridView<dim, dimworld, GridType> &gridView) {
-    return std::span(gridView.template begin<dim - 1>(), gridView.template end<dim - 1>());
-  }
-
-  template <int dim, int dimworld, Ikarus::Concepts::Grid GridType>
   requires(dim >= 2) auto surfaces(SimpleGridView<dim, dimworld, GridType> &gridView) {
     return std::span(gridView.template begin<dim - 2>(), gridView.template end<dim - 2>());
   }
-
   template <int dim, int dimworld, Ikarus::Concepts::Grid GridType>
-  requires requires { dim >= 1; }
-  auto edges(SimpleGridView<dim, dimworld, GridType> &gridView) {
+  requires(dim >= 1) auto edges(SimpleGridView<dim, dimworld, GridType> &gridView) {
     return std::span(gridView.template begin<dim - 1>(), gridView.template end<dim - 1>());
   }
 
@@ -34,8 +27,8 @@ namespace Ikarus::Grid {
   }
 
   template <int dim, int dimworld, Ikarus::Concepts::Grid GridType, size_t dimE>
-  requires( dim >= dimE)
-  auto entities(SimpleGridView<dim, dimworld, GridType> &gridView, Dune::index_constant<dimE> &&) {
+  requires(dim >= dimE) auto entities(SimpleGridView<dim, dimworld, GridType> &gridView,
+                                      Dune::index_constant<dimE> &&) {
     return std::span(gridView.template begin<dim - dimE>(), gridView.template end<dim - dimE>());
   }
 

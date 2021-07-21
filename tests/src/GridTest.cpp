@@ -167,7 +167,7 @@ TEST(GridTest, GridView3DSurfaceTest) {
   }
 
   auto &&eleIterator = surfaces(gridView).begin();
-  EXPECT_EQ(eleIterator->type(), Dune::GeometryTypes::quadrilateral);
+  EXPECT_EQ(eleIterator->type(), Ikarus::GeometryType::linearQuadrilateral);
   ++eleIterator;
   EXPECT_EQ(eleIterator->type(), Ikarus::GeometryType::linearQuadrilateral);
   ++eleIterator;
