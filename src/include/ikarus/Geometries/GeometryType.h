@@ -27,20 +27,29 @@ namespace Ikarus {
   inline bool isPrism(GeometryType type) { return type == Ikarus::GeometryType::prism; }
   inline bool isLinearHexahedron(GeometryType type) { return type == Ikarus::GeometryType::linearHexahedron; }
 
+
   inline int dimension(GeometryType type) {
-    if (isVertex(type)) {
-      return 0;
-    } else if (isLinearLine(type) || isQuadraticLine(type) || isCubicLine(type)) {
-      return 1;
-    } else if (isLinearTriangle(type) || isLinearQuadrilateral(type)) {
-      return 2;
-    } else if (isLinearTetrahedron(type) || isPyramid(type) || isPrism(type) || isLinearHexahedron(type)) {
-      return 3;
-    } else {
-      throw std::runtime_error(
-          "Dimension of the given type couldn't be obtained. Check function 'dimension' in GeometryType.h");
+    switch (type) {
+      case GeometryType::vertex:
+        return 0;
+      case GeometryType::linearLine:
+      case GeometryType::quadraticLine:
+      case GeometryType::cubicLine:
+        return 1;
+      case GeometryType::linearTriangle:
+      case GeometryType::linearQuadrilateral:
+        return 2;
+      case GeometryType::linearTetrahedron:
+      case GeometryType::pyramid:
+      case GeometryType::prism:
+      case GeometryType::linearHexahedron:
+        return 3;
+      default:
+        throw std::runtime_error(
+            "Dimension of the given type couldn't be obtained. Check function 'dimension' in GeometryType.h");
     }
   }
+
   // LCOV_EXCL_START
   inline std::string print(GeometryType type) {
     switch (type) {
