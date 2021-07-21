@@ -8,9 +8,9 @@
 
 #include <dune/geometry/type.hh>
 
+#include <ikarus/Geometries/GeometryType.h>
 #include <ikarus/Grids/GridHelper/griddrawer.h>
 #include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
-#include <ikarus/Geometries/GeometryType.h>
 
 /** @addtogroup Tests
  *  This module includes all tests
@@ -37,7 +37,7 @@
 TEST(GridTest, GridViewTest) {
   using namespace Ikarus::Grid;
   using Grid = SimpleGrid<2, 2>;
-  SimpleGridFactory<2,2> gridFactory;
+  SimpleGridFactory<2, 2> gridFactory;
   using vertexType = Eigen::Vector2d;
   std::vector<vertexType> verticesVec;
   verticesVec.emplace_back(0.0, 0.0);  // 0
@@ -64,9 +64,9 @@ TEST(GridTest, GridViewTest) {
   Grid grid = gridFactory.createGrid();
 
   auto gridView = grid.leafGridView();
-  EXPECT_EQ(edges(gridView).size() , 9);
-  EXPECT_EQ(surfaces(gridView).size() , 3);
-  EXPECT_EQ(vertices(gridView).size() , 7);
+  EXPECT_EQ(edges(gridView).size(), 9);
+  EXPECT_EQ(surfaces(gridView).size(), 3);
+  EXPECT_EQ(vertices(gridView).size(), 7);
 
   int expectedEdgeId = 10;
   std::vector<std::array<int, 2>> expectedEdgeVertexId;
@@ -130,7 +130,7 @@ TEST(GridTest, GridViewTest) {
 TEST(GridTest, GridView3DSurfaceTest) {
   using namespace Ikarus::Grid;
   using Grid = SimpleGrid<2, 3>;
-  SimpleGridFactory<2,3> gridFactory;
+  SimpleGridFactory<2, 3> gridFactory;
   using vertexType = Eigen::Vector3d;
   std::vector<vertexType> verticesVec;
   verticesVec.emplace_back(0.0, 0.0, -3.0);  // 0
@@ -156,9 +156,9 @@ TEST(GridTest, GridView3DSurfaceTest) {
 
   Grid actualGrid = gridFactory.createGrid();
   auto gridView   = actualGrid.leafGridView();
-  EXPECT_EQ(edges(gridView).size() , 9);
-  EXPECT_EQ(surfaces(gridView).size() , 3);
-  EXPECT_EQ(vertices(gridView).size() , 7);
+  EXPECT_EQ(edges(gridView).size(), 9);
+  EXPECT_EQ(surfaces(gridView).size(), 3);
+  EXPECT_EQ(vertices(gridView).size(), 7);
 
   for (int i = 0; auto &&vertex : vertices(gridView)) {
     EXPECT_EQ(vertex.type(), Ikarus::GeometryType::vertex);
@@ -210,18 +210,18 @@ TEST(GridTest, GridView3DSurfaceTest) {
 TEST(GridTest, GridView3DSolidTest) {
   using namespace Ikarus::Grid;
   using Grid = SimpleGrid<3, 3>;
-  SimpleGridFactory<3,3> gridFactory;
+  SimpleGridFactory<3, 3> gridFactory;
   using vertexType = Eigen::Vector3d;
   std::vector<vertexType> verticesVec;
   verticesVec.emplace_back(0.0, 0.0, -3.0);  // 0
   verticesVec.emplace_back(2.0, 0.0, -3.0);  // 1
   verticesVec.emplace_back(0.0, 2.0, -3.0);  // 2
   verticesVec.emplace_back(2.0, 2.0, -3.0);  // 3
-  verticesVec.emplace_back(0.0, 0.0, +3.0);   // 4
-  verticesVec.emplace_back(2.0, 0.0, +3.0);   // 5
-  verticesVec.emplace_back(0.0, 2.0, +3.0);   // 6
-  verticesVec.emplace_back(2.0, 2.0, +3.0);   // 7
-  verticesVec.emplace_back(4.0, 0.0, +3.0);   // 8
+  verticesVec.emplace_back(0.0, 0.0, +3.0);  // 4
+  verticesVec.emplace_back(2.0, 0.0, +3.0);  // 5
+  verticesVec.emplace_back(0.0, 2.0, +3.0);  // 6
+  verticesVec.emplace_back(2.0, 2.0, +3.0);  // 7
+  verticesVec.emplace_back(4.0, 0.0, +3.0);  // 8
 
   for (auto &&vert : verticesVec)
     gridFactory.insertVertex(vert);
@@ -328,7 +328,7 @@ TEST(GridTest, GridView3DSolidTest) {
 
 TEST(GridTest, GridInsertionException) {
   using namespace Ikarus::Grid;
-  SimpleGridFactory<2,2> gridFactory;
+  SimpleGridFactory<2, 2> gridFactory;
   using vertexType = Eigen::Vector2d;
   std::vector<vertexType> verticesVec;
   verticesVec.emplace_back(0.0, 0.0);  // 0
@@ -355,7 +355,7 @@ TEST(GridTest, GridInsertionException) {
 
 TEST(GridTest, GridEmptyGridCreation) {
   using namespace Ikarus::Grid;
-  SimpleGridFactory<2,2> gridFactory;
+  SimpleGridFactory<2, 2> gridFactory;
   EXPECT_THROW(gridFactory.createGrid(), Dune::GridError);
   gridFactory.insertVertex({2.0, 1.0});
   EXPECT_THROW(gridFactory.createGrid(), Dune::GridError);

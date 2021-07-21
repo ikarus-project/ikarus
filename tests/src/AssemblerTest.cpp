@@ -16,13 +16,13 @@
 #include <ikarus/FiniteElements/ElasticityFE.h>
 #include <ikarus/FiniteElements/FiniteElementPolicies.h>
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
-#include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
 #include <ikarus/Geometries/GeometryType.h>
+#include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
 
 TEST(Assembler, SimpleAssemblersTest) {
   using namespace Ikarus::Grid;
   using Grid = SimpleGrid<2, 2>;
-  SimpleGridFactory<2,2> gridFactory;
+  SimpleGridFactory<2, 2> gridFactory;
   using vertexType = Eigen::Vector2d;
   std::vector<vertexType> verticesVec;
   verticesVec.emplace_back(vertexType{0.0, 0.0});  // 0

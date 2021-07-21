@@ -3,9 +3,9 @@
 //
 
 #pragma once
+#include <ikarus/Geometries/GeometryType.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
 #include <ikarus/utils/std/algorithms.h>
-#include <ikarus/Geometries/GeometryType.h>
 
 namespace Ikarus::Grid {
   template <int dimension, int dimensionworld>
@@ -30,7 +30,6 @@ namespace Ikarus::Grid {
 
     void storeVerticesIndicesOfEdges(Ikarus::GeometryType type, std::span<size_t> verticesIn);
     void storeVerticesIndicesOfSurfaces(Ikarus::GeometryType type, std::span<size_t> verticesIn);
-
 
     std::vector<VertexIndexPair> verticesPositions;
     std::vector<std::vector<size_t>> edgesVertexIndices;

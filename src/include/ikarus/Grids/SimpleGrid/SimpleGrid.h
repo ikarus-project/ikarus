@@ -42,6 +42,7 @@ namespace Ikarus::Grid {
         static_assert(subEnt >= 0 && subEnt <= dim, "You asked for a non-existing subEntity!");
         return std::get<subEnt>(gridEntities[level]);
       }
+
     private:
       std::vector<GridEntityTuple> gridEntities;
     };

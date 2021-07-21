@@ -11,11 +11,11 @@
 #include <dune/geometry/type.hh>
 
 #include <ikarus/Geometries/GeometryInterface.h>
+#include <ikarus/Geometries/GeometryType.h>
 #include <ikarus/Grids/GridInterface.h>
 #include <ikarus/Variables/DofOwnerDecorator.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
 #include <ikarus/utils/std/traits.h>
-#include <ikarus/Geometries/GeometryType.h>
 
 namespace Ikarus::Grid {
 
