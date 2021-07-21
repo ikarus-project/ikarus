@@ -10,6 +10,7 @@
 
 #include <ikarus/Grids/GridHelper/griddrawer.h>
 #include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
+#include <ikarus/Geometries/GeometryType.h>
 
 /** @addtogroup Tests
  *  This module includes all tests
@@ -53,12 +54,12 @@ TEST(GridTest, GridViewTest) {
   std::vector<size_t> elementIndices;
   elementIndices.resize(4);
   elementIndices = {0, 1, 2, 3};
-  gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, elementIndices);
+  gridFactory.insertElement(Ikarus::GeometryType::linearQuadrilateral, elementIndices);
   elementIndices = {1, 4, 3, 5};
-  gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, elementIndices);
+  gridFactory.insertElement(Ikarus::GeometryType::linearQuadrilateral, elementIndices);
   elementIndices.resize(3);
   elementIndices = {4, 6, 5};
-  gridFactory.insertElement(Dune::GeometryTypes::triangle, elementIndices);
+  gridFactory.insertElement(Ikarus::GeometryType::linearTriangle, elementIndices);
 
   Grid grid = gridFactory.createGrid();
 
@@ -85,7 +86,7 @@ TEST(GridTest, GridViewTest) {
 
     int vertexCounter = 0;
     for (auto &&vertex : vertices(edge)) {
-      EXPECT_EQ(vertex->type(), Dune::GeometryTypes::vertex);
+      EXPECT_EQ(vertex->type(), Ikarus::GeometryType::vertex);
       EXPECT_EQ(vertex->getID(), expectedEdgeVertexId[elementCounter][vertexCounter]);
       ++vertexCounter;
     }
@@ -101,7 +102,7 @@ TEST(GridTest, GridViewTest) {
   for (auto &&singleElement : surfaces(gridView)) {
     int edgeCounter = 0;
     for (auto &&edge : edges(singleElement)) {
-      EXPECT_EQ(edge->type(), Dune::GeometryTypes::line);
+      EXPECT_EQ(edge->type(), Ikarus::GeometryType::linearLine);
       EXPECT_EQ(edge->getID(), expectedElementEdgeIds[eleCounter][edgeCounter]);
       ++edgeCounter;
     }
@@ -146,12 +147,12 @@ TEST(GridTest, GridView3DSurfaceTest) {
   std::vector<size_t> elementIndices;
   elementIndices.resize(4);
   elementIndices = {0, 1, 2, 3};
-  gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, elementIndices);
+  gridFactory.insertElement(Ikarus::GeometryType::linearQuadrilateral, elementIndices);
   elementIndices = {1, 4, 3, 5};
-  gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, elementIndices);
+  gridFactory.insertElement(Ikarus::GeometryType::linearQuadrilateral, elementIndices);
   elementIndices.resize(3);
   elementIndices = {4, 6, 5};
-  gridFactory.insertElement(Dune::GeometryTypes::triangle, elementIndices);
+  gridFactory.insertElement(Ikarus::GeometryType::linearTriangle, elementIndices);
 
   Grid actualGrid = gridFactory.createGrid();
   auto gridView   = actualGrid.leafGridView();
@@ -160,7 +161,7 @@ TEST(GridTest, GridView3DSurfaceTest) {
   EXPECT_TRUE(vertices(gridView).size() != 0);
 
   for (int i = 0; auto &&vertex : vertices(gridView)) {
-    EXPECT_EQ(vertex.type(), Dune::GeometryTypes::vertex);
+    EXPECT_EQ(vertex.type(), Ikarus::GeometryType::vertex);
     EXPECT_EQ(vertex.getPosition(), verticesVec[i]);
     ++i;
   }
@@ -168,9 +169,9 @@ TEST(GridTest, GridView3DSurfaceTest) {
   auto &&eleIterator = surfaces(gridView).begin();
   EXPECT_EQ(eleIterator->type(), Dune::GeometryTypes::quadrilateral);
   ++eleIterator;
-  EXPECT_EQ(eleIterator->type(), Dune::GeometryTypes::quadrilateral);
+  EXPECT_EQ(eleIterator->type(), Ikarus::GeometryType::linearQuadrilateral);
   ++eleIterator;
-  EXPECT_EQ(eleIterator->type(), Dune::GeometryTypes::triangle);
+  EXPECT_EQ(eleIterator->type(), Ikarus::GeometryType::linearTriangle);
 
   std::vector<std::vector<int>> expectedElementEdgeIds;
   expectedElementEdgeIds.push_back({10, 11, 12, 13});
@@ -181,7 +182,7 @@ TEST(GridTest, GridView3DSurfaceTest) {
   for (auto &singleElement : surfaces(gridView)) {
     int edgeCounter = 0;
     for (auto &&edge : edges(singleElement)) {
-      EXPECT_EQ(edge->type(), Dune::GeometryTypes::line);
+      EXPECT_EQ(edge->type(), Ikarus::GeometryType::linearLine);
       EXPECT_EQ(edge->getID(), expectedElementEdgeIds[eleCounter][edgeCounter]);
       ++edgeCounter;
     }
@@ -228,10 +229,10 @@ TEST(GridTest, GridView3DSolidTest) {
   std::vector<size_t> elementIndices;
   elementIndices.resize(8);
   elementIndices = {0, 1, 2, 3, 4, 5, 6, 7};
-  gridFactory.insertElement(Dune::GeometryTypes::hexahedron, elementIndices);
+  gridFactory.insertElement(Ikarus::GeometryType::linearHexahedron, elementIndices);
   elementIndices.resize(4);
   elementIndices = {1, 8, 3, 5};
-  gridFactory.insertElement(Dune::GeometryTypes::tetrahedron, elementIndices);
+  gridFactory.insertElement(Ikarus::GeometryType::linearTetrahedron, elementIndices);
 
   Grid actualGrid = gridFactory.createGrid();
 
@@ -277,9 +278,9 @@ TEST(GridTest, GridView3DSolidTest) {
   }
 
   auto &&eleIterator = volumes(gridView).begin();
-  EXPECT_EQ(eleIterator->type(), Dune::GeometryTypes::hexahedron);
+  EXPECT_EQ(eleIterator->type(), Ikarus::GeometryType::linearHexahedron);
   ++eleIterator;
-  EXPECT_EQ(eleIterator->type(), Dune::GeometryTypes::tetrahedron);
+  EXPECT_EQ(eleIterator->type(), Ikarus::GeometryType::linearTetrahedron);
 
   std::vector<int> expectedEdgesAtVertex{3, 4, 3, 5, 3, 5, 3, 3, 3};
   for (int i = 0; auto &&vertex : vertices(gridView))
@@ -341,15 +342,15 @@ TEST(GridTest, GridInsertionException) {
   std::vector<size_t> elementIndices;
   elementIndices.resize(4);
   elementIndices = {0, 1, 2, 3};
-  EXPECT_THROW(gridFactory.insertElement(Dune::GeometryTypes::triangle, elementIndices), Dune::GridError);
+  EXPECT_THROW(gridFactory.insertElement(Ikarus::GeometryType::linearTriangle, elementIndices), Dune::GridError);
 
-  EXPECT_THROW(gridFactory.insertElement(Dune::GeometryTypes::hexahedron, elementIndices), Dune::GridError);
+  EXPECT_THROW(gridFactory.insertElement(Ikarus::GeometryType::linearHexahedron, elementIndices), Dune::GridError);
 
-  EXPECT_THROW(gridFactory.insertElement(Dune::GeometryTypes::line, elementIndices), Dune::GridError);
+  EXPECT_THROW(gridFactory.insertElement(Ikarus::GeometryType::linearLine, elementIndices), Dune::GridError);
   elementIndices.resize(3);
   elementIndices = {0, 1, 2};
 
-  EXPECT_THROW(gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, elementIndices), Dune::GridError);
+  EXPECT_THROW(gridFactory.insertElement(Ikarus::GeometryType::linearQuadrilateral, elementIndices), Dune::GridError);
 }
 
 TEST(GridTest, GridEmptyGridCreation) {

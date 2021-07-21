@@ -17,6 +17,7 @@
 #include <ikarus/FiniteElements/FiniteElementPolicies.h>
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
 #include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
+#include <ikarus/Geometries/GeometryType.h>
 
 TEST(Assembler, SimpleAssemblersTest) {
   using namespace Ikarus::Grid;
@@ -37,9 +38,9 @@ TEST(Assembler, SimpleAssemblersTest) {
   std::vector<size_t> elementIndices;
   elementIndices.resize(4);
   elementIndices = {0, 1, 2, 3};
-  gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, elementIndices);
+  gridFactory.insertElement(Ikarus::GeometryType::linearQuadrilateral, elementIndices);
   elementIndices = {1, 4, 3, 5};
-  gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, elementIndices);
+  gridFactory.insertElement(Ikarus::GeometryType::linearQuadrilateral, elementIndices);
 
   Grid grid = gridFactory.createGrid();
 

@@ -15,6 +15,7 @@
 #include <ikarus/Variables/DofOwnerDecorator.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
 #include <ikarus/utils/std/traits.h>
+#include <ikarus/Geometries/GeometryType.h>
 
 namespace Ikarus::Grid {
 
@@ -79,7 +80,7 @@ namespace Ikarus::Grid {
     [[nodiscard]] unsigned int subEntities(unsigned int codim) const;
 
     /** \brief Return the fundamental geometric type of the entity */
-    [[nodiscard]] Dune::GeometryType type() const;
+    [[nodiscard]] Ikarus::GeometryType type() const;
 
     /** \brief Returns the geometric realization of the entity */
     auto geometry() const;
@@ -157,14 +158,14 @@ namespace Ikarus::Grid {
     int levelIndex{};
 
     /** \brief Return the fundamental geometric type of the entity */
-    [[nodiscard]] Dune::GeometryType type() const { return Dune::GeometryTypes::vertex; }
+    [[nodiscard]] Ikarus::GeometryType type() const { return Ikarus::GeometryType::vertex; }
 
     /** \brief Returns the number of subEntities of this entity, e.g. a line has two verteces as
      * subtypes */
     [[nodiscard]] unsigned int subEntities(unsigned int) const { return 0; }
 
     /** \brief Returns the geometric realization of the entity */
-    auto geometry() const { return Geometry(type(), position); }
+    auto geometry() const { return Geometry(duneType(type()), position); }
 
   private:
     /** \brief A persistent id of this entity*/
@@ -226,7 +227,7 @@ namespace Ikarus::Grid {
     [[nodiscard]] unsigned int subEntities(unsigned int codim) const;
 
     /** \brief Return the fundamental geometric type of the entity */
-    [[nodiscard]] Dune::GeometryType type() const;
+    [[nodiscard]] Ikarus::GeometryType type() const;
 
     /** \brief Returns the geometric realization of the entity */
     auto geometry() const;

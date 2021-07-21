@@ -5,14 +5,13 @@
 #include <dune/grid/common/exceptions.hh>
 
 #include <ikarus/utils/std/algorithms.h>
-#include "SimpleGridTypedefs.h"
 namespace Ikarus::Grid {
   template <int dimension, int dimensionworld>
   using GridType = SimpleGrid<dimension,dimensionworld>;
 
   template <int dimension, int dimensionworld>
-  void SimpleGridFactory<dimension,dimensionworld>::insertElement(const Dune::GeometryType &type, const std::span<size_t> verticesIn) {
-    if (type.dim() != dimension) DUNE_THROW(Dune::GridError, "The inserted element has wrong dimensions!");
+  void SimpleGridFactory<dimension,dimensionworld>::insertElement(Ikarus::GeometryType type, const std::span<size_t> verticesIn) {
+    if (Ikarus::dimension(type) != dimension) DUNE_THROW(Dune::GridError, "The inserted element has wrong dimensions!");
 
     storeVerticesIndicesOfEdges(type, verticesIn);
     if constexpr (dimension > 1) storeVerticesIndicesOfSurfaces(type, verticesIn);
@@ -37,21 +36,21 @@ namespace Ikarus::Grid {
    *
    **/
   template <int dimension, int dimensionworld>
-  void SimpleGridFactory<dimension,dimensionworld>::storeVerticesIndicesOfEdges(const Dune::GeometryType &type,
+  void SimpleGridFactory<dimension,dimensionworld>::storeVerticesIndicesOfEdges(Ikarus::GeometryType type,
                                                                 const std::span<size_t> verticesIn) {
     elementEdgeIndices.emplace_back();
-    if (type.isLine()) {
+    if (isLinearLine(type)) {
       if (verticesIn.size() != 2)
         DUNE_THROW(Dune::GridError, "You have requested to enter a line, but you"
                                         << " have provided " << verticesIn.size() << " vertices!");
-    } else if (type.isTriangle()) {
+    } else if (isLinearTriangle(type)) {
       if (verticesIn.size() != 3)
         DUNE_THROW(Dune::GridError, "You have requested to enter a triangle, but you"
                                         << " have provided " << verticesIn.size() << " vertices!");
       insertVertexIndicesinEdge({verticesIn[0], verticesIn[1]});  // 0
       insertVertexIndicesinEdge({verticesIn[0], verticesIn[2]});  // 1
       insertVertexIndicesinEdge({verticesIn[1], verticesIn[2]});  // 2
-    } else if (type.isQuadrilateral()) {
+    } else if (isLinearQuadrilateral(type)) {
       if (verticesIn.size() != 4)
         DUNE_THROW(Dune::GridError, "You have requested to enter a quadrilateral, but you"
                                         << " have provided " << verticesIn.size() << " vertices!");
@@ -60,7 +59,7 @@ namespace Ikarus::Grid {
       insertVertexIndicesinEdge({verticesIn[1], verticesIn[3]});  // 2
       insertVertexIndicesinEdge({verticesIn[3], verticesIn[2]});  // 3
 
-    } else if (type.isTetrahedron()) {
+    } else if (isLinearTetrahedron(type)) {
       if (verticesIn.size() != 4)
         DUNE_THROW(Dune::GridError, "You have requested to enter a tetrahedron, but you"
                                         << " have provided " << verticesIn.size() << " vertices!");
@@ -71,7 +70,7 @@ namespace Ikarus::Grid {
       insertVertexIndicesinEdge({verticesIn[1], verticesIn[3]});  // 4
       insertVertexIndicesinEdge({verticesIn[2], verticesIn[3]});  // 5
 
-    } else if (type.isPyramid()) {
+    } else if (isPyramid(type)) {
       if (verticesIn.size() != 5)
         DUNE_THROW(Dune::GridError, "You have requested to enter a pyramid, but you"
                                         << " have provided " << verticesIn.size() << " vertices!");
@@ -84,7 +83,7 @@ namespace Ikarus::Grid {
       insertVertexIndicesinEdge({verticesIn[2], verticesIn[4]});  // 6
       insertVertexIndicesinEdge({verticesIn[3], verticesIn[4]});  // 7
 
-    } else if (type.isPrism()) {
+    } else if (isPrism(type)) {
       if (verticesIn.size() != 6)
         DUNE_THROW(Dune::GridError, "You have requested to enter a prism, but you"
                                         << " have provided " << verticesIn.size() << " vertices!");
@@ -98,7 +97,7 @@ namespace Ikarus::Grid {
       insertVertexIndicesinEdge({verticesIn[5], verticesIn[3]});  // 7
       insertVertexIndicesinEdge({verticesIn[4], verticesIn[5]});  // 8
 
-    } else if (type.isHexahedron()) {
+    } else if (isLinearHexahedron(type)) {
       if (verticesIn.size() != 8)
         DUNE_THROW(Dune::GridError, "You have requested to enter a hexahedron, but you"
                                         << " have provided " << verticesIn.size() << " vertices!");
@@ -126,17 +125,17 @@ namespace Ikarus::Grid {
    *
    **/
   template <int dimension, int dimensionworld>
-  void SimpleGridFactory<dimension,dimensionworld>::storeVerticesIndicesOfSurfaces(const Dune::GeometryType &type,
+  void SimpleGridFactory<dimension,dimensionworld>::storeVerticesIndicesOfSurfaces(Ikarus::GeometryType type,
                                                                          std::span<size_t> verticesIn) {
     elementSurfaceIndices.emplace_back();
-    if (type.isLine()) {
+    if (isLinearLine(type)) {
       DUNE_THROW(Dune::GridError, "A line does not have surfaces.");
-    } else if (type.isTriangle()) {
+    } else if (isLinearTriangle(type)) {
       if (verticesIn.size() != 3) DUNE_THROW(Dune::GridError, "A triangle does not have surfaces.");
-    } else if (type.isQuadrilateral()) {
+    } else if (isLinearQuadrilateral(type)) {
       if (verticesIn.size() != 4) DUNE_THROW(Dune::GridError, "A qudarilateral does not have surfaces.");
 
-    } else if (type.isTetrahedron()) {
+    } else if (isLinearTetrahedron(type)) {
       if (verticesIn.size() != 4)
         DUNE_THROW(Dune::GridError, "You have requested to enter a tetrahedron, but you"
                                         << " have provided " << verticesIn.size() << " vertices!");
@@ -145,7 +144,7 @@ namespace Ikarus::Grid {
       insertVertexIndicesinSurface({verticesIn[0], verticesIn[2], verticesIn[3]});  // 2
       insertVertexIndicesinSurface({verticesIn[1], verticesIn[2], verticesIn[3]});  // 3
 
-    } else if (type.isPyramid()) {
+    } else if (isPyramid(type)) {
       if (verticesIn.size() != 5)
         DUNE_THROW(Dune::GridError, "You have requested to enter a pyramid, but you"
                                         << " have provided " << verticesIn.size() << " vertices!");
@@ -155,7 +154,7 @@ namespace Ikarus::Grid {
       insertVertexIndicesinSurface({verticesIn[0], verticesIn[1], verticesIn[4]});                 // 3
       insertVertexIndicesinSurface({verticesIn[2], verticesIn[3], verticesIn[4]});                 // 4
 
-    } else if (type.isPrism()) {
+    } else if (isPrism(type)) {
       if (verticesIn.size() != 6)
         DUNE_THROW(Dune::GridError, "You have requested to enter a prism, but you"
                                         << " have provided " << verticesIn.size() << " vertices!");
@@ -165,7 +164,7 @@ namespace Ikarus::Grid {
       insertVertexIndicesinSurface({verticesIn[0], verticesIn[1], verticesIn[2]});                 // 3
       insertVertexIndicesinSurface({verticesIn[3], verticesIn[4], verticesIn[5]});                 // 4
 
-    } else if (type.isHexahedron()) {
+    } else if (isLinearHexahedron(type)) {
       if (verticesIn.size() != 8)
         DUNE_THROW(Dune::GridError, "You have requested to enter a hexahedron, but you"
                                         << " have provided " << verticesIn.size() << " vertices!");
