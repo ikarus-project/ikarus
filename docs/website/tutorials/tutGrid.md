@@ -9,6 +9,7 @@ dimension and it provides an unstructured grid with arbitrary element types of t
 It uses two mandatory non-type template integers. The first integer denotes the largest possible dimension of a `GridEntity` 
 and the second integer denotes the embedding space of the grid. E.g. `SimpleGrid<2,3>` contains surfaces,edges,vertices living in three dimensions.
 
+![umlDiagram](../diagrams/UMLGrid.drawio)
 ### SimpleGrid example
 We go step by step through the following code.
 
@@ -55,7 +56,7 @@ Dune::GeometryType type();
                    // Number of subentities, e.g. a line has two vertices
 unsigned int       subEntities();
 ```
-For the interface of `GeometryType` see [Geometry](geometry.md).
+For the interface of `GeometryType` see [Geometry](../theory/theoryGrid.md).
 
 
 !!! warning
