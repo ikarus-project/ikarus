@@ -46,6 +46,8 @@ nav:
   - Theory and Implementation:
     - Overview: theory/theoryOverview.md
     - Geometry: theory/theoryGeometry.md
+    - Grid: theory/theoryGrid.md
+    - Finite Elements: theory/theoryFiniteElement.md
 
 # Customization
 extra_css:

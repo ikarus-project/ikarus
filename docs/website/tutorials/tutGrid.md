@@ -56,7 +56,7 @@ Dune::GeometryType type();
                    // Number of subentities, e.g. a line has two vertices
 unsigned int       subEntities();
 ```
-For the interface of `GeometryType` see [Geometry](../theory/theoryGeometry.md).
+For the interface of `GeometryType` see [Geometry](../theory/theoryGrid.md).
 
 
 !!! warning
