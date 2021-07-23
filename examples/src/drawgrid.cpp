@@ -6,7 +6,7 @@
 
 int main() {
   using namespace Ikarus::Grid;
-  SimpleGridFactory<3,3> gridFactory;
+  SimpleGridFactory<3, 3> gridFactory;
   using vertexType = Eigen::Vector3d;
   std::vector<vertexType> verticesVec;
   verticesVec.emplace_back(0.0, 0.0, -3.0);  // 0
