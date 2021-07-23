@@ -6,8 +6,7 @@
 
 int main() {
   using namespace Ikarus::Grid;
-  using Grid = SimpleGrid<3, 3>;
-  SimpleGridFactory<Grid> gridFactory;
+  SimpleGridFactory<3,3> gridFactory;
   using vertexType = Eigen::Vector3d;
   std::vector<vertexType> verticesVec;
   verticesVec.emplace_back(0.0, 0.0, -3.0);  // 0
@@ -27,12 +26,12 @@ int main() {
   elementIndices.resize(8);
 
   elementIndices = {0, 1, 2, 3, 4, 5, 6, 7};
-  gridFactory.insertElement(Dune::GeometryTypes::hexahedron, elementIndices);
+  gridFactory.insertElement(Ikarus::GeometryType::linearHexahedron, elementIndices);
   elementIndices.resize(4);
   elementIndices = {1, 8, 3, 5};
-  gridFactory.insertElement(Dune::GeometryTypes::tetrahedron, elementIndices);
+  gridFactory.insertElement(Ikarus::GeometryType::linearTetrahedron, elementIndices);
 
-  Grid grid = gridFactory.createGrid();
+  auto grid = gridFactory.createGrid();
 
   auto gridView = grid.leafGridView();
 
