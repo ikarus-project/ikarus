@@ -27,7 +27,6 @@ namespace Ikarus {
   inline bool isPrism(GeometryType type) { return type == Ikarus::GeometryType::prism; }
   inline bool isLinearHexahedron(GeometryType type) { return type == Ikarus::GeometryType::linearHexahedron; }
 
-
   inline int dimension(GeometryType type) {
     switch (type) {
       case GeometryType::vertex:

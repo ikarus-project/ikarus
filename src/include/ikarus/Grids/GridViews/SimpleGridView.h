@@ -12,7 +12,7 @@ namespace Ikarus::Grid {
   template <int dim, int dimworld>
   class SimpleGridView {
   public:
-    using GridType = SimpleGrid<dim,dimworld>;
+    using GridType = SimpleGrid<dim, dimworld>;
 
     explicit SimpleGridView(GridType& gridInput, int levelInput = 0) : grid{&gridInput}, level{levelInput} {}
 

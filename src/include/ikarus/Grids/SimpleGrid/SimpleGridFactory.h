@@ -16,7 +16,7 @@ namespace Ikarus::Grid {
 
     /** \brief Type of the Grid which this factory constructs*/
     using GridType = SimpleGrid<dimension, dimensionworld>;
-    
+
     void insertElement(Ikarus::GeometryType type, std::span<size_t> vertices);
     void insertVertex(const VertexCoordinateType& pos);
 
@@ -34,11 +34,11 @@ namespace Ikarus::Grid {
     void storeVerticesIndicesOfSurfaces(Ikarus::GeometryType type, std::span<size_t> verticesIn);
 
     std::vector<VertexIndexPair> verticesPositions;
-    std::vector<std::vector<size_t>> edgesVertexIndices; //the vertex indices for each edge
-    std::vector<std::vector<size_t>> surfaceVertexIndices; //the vertex indices for each surface
-    std::vector<std::vector<size_t>> elementsVertices; //the vertex indices for each element
-    std::vector<std::vector<size_t>> elementEdgeIndices; //the edge indices for each element
-    std::vector<std::vector<size_t>> elementSurfaceIndices; //the surface indices for each element
+    std::vector<std::vector<size_t>> edgesVertexIndices;     // the vertex indices for each edge
+    std::vector<std::vector<size_t>> surfaceVertexIndices;   // the vertex indices for each surface
+    std::vector<std::vector<size_t>> elementsVertices;       // the vertex indices for each element
+    std::vector<std::vector<size_t>> elementEdgeIndices;     // the edge indices for each element
+    std::vector<std::vector<size_t>> elementSurfaceIndices;  // the surface indices for each element
     size_t vertexIndex{};
   };
 

@@ -19,7 +19,7 @@
 
 class TestFE {
 public:
-  static void initialize() {  }
+  static void initialize() {}
   [[nodiscard]] static Ikarus::FiniteElements::IFiniteElement::DofPairVectorType getEntityVariablePairs() {
     return Ikarus::FiniteElements::IFiniteElement::DofPairVectorType{};
   }

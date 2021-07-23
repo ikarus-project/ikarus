@@ -31,9 +31,9 @@ namespace Ikarus::Grid {
       /** Rule of five: Since the gridEntities have pointer to their subentities we can not allow this to be copyable */
       GridEntitiesContainer(const GridEntitiesContainer&) = delete;
       GridEntitiesContainer& operator=(const GridEntitiesContainer&) = delete;
-      GridEntitiesContainer& operator=( GridEntitiesContainer&&)  noexcept = default;
-      GridEntitiesContainer( GridEntitiesContainer&&)  noexcept = default;
-      ~GridEntitiesContainer()                                       = default;
+      GridEntitiesContainer& operator=(GridEntitiesContainer&&) noexcept = default;
+      GridEntitiesContainer(GridEntitiesContainer&&) noexcept            = default;
+      ~GridEntitiesContainer()                                           = default;
 
       /** \brief  The GridEntityTupleGenerator generates a tuple of grid entities which can be of different size
        * depending on the dimension of the grid, e.g. a grid of dimension 3 has volumes, surfaces, edges and vertices,
