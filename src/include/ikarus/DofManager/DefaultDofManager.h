@@ -199,7 +199,7 @@ namespace Ikarus::DofManager {
       return std::ranges::transform_view(rootEntities(*gridView_), fn);
     }
     template <typename GridEntityType, typename FuncType>
-    auto forEachSubEntity(GridEntityType gridEntity, FuncType fn) {
+    auto forEachSubEntity(GridEntityType& gridEntity, FuncType fn) {
       Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<gridDim>()), [&](auto i) {
         for (auto&& ent : entities(gridEntity, i))
           fn(ent);

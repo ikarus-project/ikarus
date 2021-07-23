@@ -28,6 +28,17 @@ namespace Ikarus::Grid {
         getRootEntities().reserve(elementsize);
       }
 
+      /** Rule of five: Since the gridEntities have pointer to their subentities we can not allow this to be copyable */
+      GridEntitiesContainer(const GridEntitiesContainer&) = delete;
+      GridEntitiesContainer& operator=(const GridEntitiesContainer&) = delete;
+      GridEntitiesContainer& operator=( GridEntitiesContainer&&)  noexcept = default;
+      GridEntitiesContainer( GridEntitiesContainer&&)  noexcept = default;
+      ~GridEntitiesContainer()                                       = default;
+
+      /** \brief  The GridEntityTupleGenerator generates a tuple of grid entities which can be of different size
+       * depending on the dimension of the grid, e.g. a grid of dimension 3 has volumes, surfaces, edges and vertices,
+       * whereas a grid with dimension 1 only has edges and vertices
+       */
       using GridEntityTuple
           = decltype(Impl::GridEntityTupleGenerator<dim, wdim>(std::make_integer_sequence<int, dim + 1>()));
 
@@ -58,16 +69,16 @@ namespace Ikarus::Grid {
     static constexpr int dimensionworld = dimworld;
     using GridEntitiesContainer         = Impl::GridEntitiesContainer<dim, dimworld>;
 
-    SimpleGrid(GridEntitiesContainer* gridEntCont, size_t id) : gridEntitiesContainer{gridEntCont}, freeIdCounter{id} {}
+    SimpleGrid(GridEntitiesContainer&& gridEntCont, size_t id)
+        : gridEntitiesContainer{std::forward<GridEntitiesContainer>(gridEntCont)}, freeIdCounter{id} {}
 
-    auto leafGridView() { return SimpleGridView<dimension, dimensionworld, SimpleGrid>(*this, 0); }
+    auto leafGridView() { return SimpleGridView<dimension, dimensionworld>(*this, 0); }
 
   private:
     size_t getNextFreeId() { return freeIdCounter++; }
+    friend class SimpleGridView<dim, dimworld>;
 
-    friend class SimpleGridView<dim, dimworld, SimpleGrid>;
-
-    std::unique_ptr<GridEntitiesContainer> gridEntitiesContainer;
+    GridEntitiesContainer gridEntitiesContainer;
 
     size_t freeIdCounter{};
   };

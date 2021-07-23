@@ -10,11 +10,13 @@
 namespace Ikarus::Grid {
   template <int dimension, int dimensionworld>
   class SimpleGridFactory {
-  private:
+  public:
     /** \brief Type used by the grid for the vertex coordinates */
     using VertexCoordinateType = Eigen::Vector<double, dimensionworld>;
 
-  public:
+    /** \brief Type of the Grid which this factory constructs*/
+    using GridType = SimpleGrid<dimension, dimensionworld>;
+    
     void insertElement(Ikarus::GeometryType type, std::span<size_t> vertices);
     void insertVertex(const VertexCoordinateType& pos);
 

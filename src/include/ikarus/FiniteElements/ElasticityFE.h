@@ -83,7 +83,7 @@ namespace Ikarus::FiniteElements {
         return vertices(elementGridEntity).size() * 2;
     }
 
-    void initialize() { std::cout << "initialize ElasticityFE" << std::endl; }
+    void initialize() {}
 
     [[nodiscard]] std::pair<MatrixType, VectorType> calculateLocalSystem([[maybe_unused]] VariableVectorType& vars,
                                                                          const MatrixAffordances& matA,

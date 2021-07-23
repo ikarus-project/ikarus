@@ -12,7 +12,6 @@
 
 #include <ikarus/Geometries/GeometryInterface.h>
 #include <ikarus/Geometries/GeometryType.h>
-#include <ikarus/Grids/GridInterface.h>
 #include <ikarus/Variables/DofOwnerDecorator.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
 #include <ikarus/utils/utils/traits.h>
@@ -23,10 +22,18 @@ namespace Ikarus::Grid {
   class DefaultGridEntity;
 
   namespace Impl {
+    /** \brief  The ChildEntityPointerTupleGenerator generates a tuple of grid subentities, which can be of different
+     * size depending on the dimension of the entity, e.g. a entity of dimension 3 has surfaces, edges and vertices as
+     * children whereas a entity with dimension 1 only has vertices as children
+     */
     template <int griddim, int mydim, int wdim, int... codim>
     static std::tuple<std::vector<DefaultGridEntity<griddim, griddim - codim, wdim>*>...>
         ChildEntityPointerTupleGenerator(std::integer_sequence<int, codim...>);
 
+    /** \brief  The FatherEntityPointerTupleGenerator generates a tuple of grid entities, which can be of different
+     * size depending on the codimension of the entity, e.g. a entity with codimension 3 has volumes, surfaces and edges
+     * as fathers whereas a entity with codimension 1 only has edges as fathers
+     */
     template <int griddim, int mydim, int wdim, int... codim>
     static std::tuple<std::vector<DefaultGridEntity<griddim, codim, wdim>*>...> FatherEntityPointerTupleGenerator(
         std::integer_sequence<int, codim...>);
@@ -154,9 +161,6 @@ namespace Ikarus::Grid {
     /** \brief Return position of this vertex */
     const Eigen::Vector<double, wdim>& getPosition() { return position; }
 
-    /** \brief The index of this element on the level it belongs to */
-    int levelIndex{};
-
     /** \brief Return the fundamental geometric type of the entity */
     [[nodiscard]] Ikarus::GeometryType type() const { return Ikarus::GeometryType::vertex; }
 
@@ -168,6 +172,8 @@ namespace Ikarus::Grid {
     auto geometry() const { return Geometry(duneType(type()), position); }
 
   private:
+    /** \brief The index of this element on the level it belongs to */
+    int levelIndex{};
     /** \brief A persistent id of this entity*/
     size_t id{};
 
@@ -201,7 +207,7 @@ namespace Ikarus::Grid {
     /** \brief Return copy of the id of this entity */
     [[nodiscard]] size_t getID() const { return id; }
 
-    /** \brief Get refínement level where this entity belongs to*/
+    /** \brief Get refinement level where this entity belongs to*/
     [[nodiscard]] int level() const { return levelIndex; }
 
     /** \brief Type of the geometry of this entity */
