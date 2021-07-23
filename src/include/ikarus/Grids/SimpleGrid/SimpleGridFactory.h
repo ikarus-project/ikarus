@@ -5,7 +5,7 @@
 #pragma once
 #include <ikarus/Geometries/GeometryType.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
-#include <ikarus/utils/std/algorithms.h>
+#include <ikarus/utils/utils/algorithms.h>
 
 namespace Ikarus::Grid {
   template <int dimension, int dimensionworld>
@@ -32,11 +32,11 @@ namespace Ikarus::Grid {
     void storeVerticesIndicesOfSurfaces(Ikarus::GeometryType type, std::span<size_t> verticesIn);
 
     std::vector<VertexIndexPair> verticesPositions;
-    std::vector<std::vector<size_t>> edgesVertexIndices;
-    std::vector<std::vector<size_t>> surfaceVertexIndices;
-    std::vector<std::vector<size_t>> elementsVertices;
-    std::vector<std::vector<size_t>> elementEdgeIndices;
-    std::vector<std::vector<size_t>> elementSurfaceIndices;
+    std::vector<std::vector<size_t>> edgesVertexIndices; //the vertex indices for each edge
+    std::vector<std::vector<size_t>> surfaceVertexIndices; //the vertex indices for each surface
+    std::vector<std::vector<size_t>> elementsVertices; //the vertex indices for each element
+    std::vector<std::vector<size_t>> elementEdgeIndices; //the edge indices for each element
+    std::vector<std::vector<size_t>> elementSurfaceIndices; //the surface indices for each element
     size_t vertexIndex{};
   };
 

@@ -5,7 +5,7 @@
 
 #include <dune/grid/common/exceptions.hh>
 
-#include <ikarus/utils/std/algorithms.h>
+#include <ikarus/utils/utils/algorithms.h>
 namespace Ikarus::Grid {
   template <int dimension, int dimensionworld>
   using GridType = SimpleGrid<dimension, dimensionworld>;
@@ -258,14 +258,14 @@ namespace Ikarus::Grid {
   template <int dimension, int dimensionworld>
   void SimpleGridFactory<dimension, dimensionworld>::insertVertexIndicesinEdge(std::vector<size_t> &&indices) {
     std::ranges::sort(indices);
-    auto index = Ikarus::stl::appendUnique(edgesVertexIndices, indices);
+    auto index = Ikarus::utils::appendUnique(edgesVertexIndices, indices);
     elementEdgeIndices.back().push_back(index);
   }
 
   template <int dimension, int dimensionworld>
   void SimpleGridFactory<dimension, dimensionworld>::insertVertexIndicesinSurface(std::vector<size_t> &&indices) {
     std::ranges::sort(indices);
-    auto index = Ikarus::stl::appendUnique(surfaceVertexIndices, indices);
+    auto index = Ikarus::utils::appendUnique(surfaceVertexIndices, indices);
     elementSurfaceIndices.back().push_back(index);
   }
 }  // namespace Ikarus::Grid

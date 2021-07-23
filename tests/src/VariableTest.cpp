@@ -16,7 +16,7 @@
 #include "ikarus/Manifolds/RealTuple.h"
 #include "ikarus/Variables/InterfaceVariable.h"
 #include "ikarus/Variables/VariableDefinitions.h"
-#include "ikarus/utils/std/algorithms.h"
+#include "ikarus/utils/utils/algorithms.h"
 
 TEST(DefaultVariableTest, RealTupleDisplacement) {
   using namespace Ikarus::Variable;
@@ -137,7 +137,7 @@ TEST(VariableTest, GenericVariableVectorTest) {
   varVec4Expected.normalize();
   EXPECT_THAT(getValue(varVec[5]), EigenApproxEqual(varVec4Expected, tol));
 
-  Ikarus::stl::makeUniqueAndSort(varVec);
+  Ikarus::utils::makeUniqueAndSort(varVec);
 
   EXPECT_EQ(valueSize(varVec), 9);
   EXPECT_EQ(correctionSize(varVec), 8);

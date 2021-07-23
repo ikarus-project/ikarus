@@ -7,7 +7,7 @@
 // This file contains stl-like algorithms
 #include <iostream>
 #include <ranges>
-namespace Ikarus::stl {
+namespace Ikarus::utils {
   void makeUniqueAndSort(std::ranges::random_access_range auto& varVec) {
     sort(varVec.begin(), varVec.end());
     varVec.erase(std::unique(varVec.begin(), varVec.end()), varVec.end());

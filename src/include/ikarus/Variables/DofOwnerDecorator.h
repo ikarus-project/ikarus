@@ -7,13 +7,13 @@
 
 #include <ikarus/Variables/InterfaceVariable.h>
 #include <ikarus/Variables/VariablePolicies.h>
-#include <ikarus/utils/std/algorithms.h>
+#include <ikarus/utils/utils/algorithms.h>
 
 namespace Ikarus::Variable {
   class DofOwnerDecorator {
   public:
     void addDof(Ikarus::Concepts::Variable auto&& var) {
-      Ikarus::stl::appendUnique(vars, Ikarus::Variable::IVariable(var));
+      Ikarus::utils::appendUnique(vars, Ikarus::Variable::IVariable(var));
     }
 
     [[nodiscard]] auto& getDof(Ikarus::Concepts::Variable auto&& var) {
