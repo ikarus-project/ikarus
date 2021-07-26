@@ -14,8 +14,8 @@
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
 #include <ikarus/Variables/InterfaceVariable.h>
 #include <ikarus/Variables/VariableDefinitions.h>
-#include <ikarus/utils/std/algorithms.h>
-#include <ikarus/utils/std/hashs.h>
+#include <ikarus/utils/utils/algorithms.h>
+#include <ikarus/utils/utils/hashs.h>
 
 namespace Ikarus::DofManager {
 
@@ -162,7 +162,7 @@ namespace Ikarus::DofManager {
         auto entID = ent->getID();
         if (hasIndex(entID)) {
           auto& entityDofVector = varVec.dofVecimpl.at(variableIndexMap.at(entID));
-          auto pointerRange     = Ikarus::stl::transformValueRangeToPointerRange(entityDofVector);
+          auto pointerRange     = Ikarus::utils::transformValueRangeToPointerRange(entityDofVector);
           elementVariables.insert(elementVariables.end(), pointerRange.begin(), pointerRange.end());
         }
       };
@@ -199,7 +199,7 @@ namespace Ikarus::DofManager {
       return std::ranges::transform_view(rootEntities(*gridView_), fn);
     }
     template <typename GridEntityType, typename FuncType>
-    auto forEachSubEntity(GridEntityType gridEntity, FuncType fn) {
+    auto forEachSubEntity(GridEntityType& gridEntity, FuncType fn) {
       Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<gridDim>()), [&](auto i) {
         for (auto&& ent : entities(gridEntity, i))
           fn(ent);

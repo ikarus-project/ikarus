@@ -6,8 +6,8 @@
 
 #include <memory>
 
-#include <ikarus/utils/LinearAlgebraTypedefs.h>
 #include <ikarus/FiniteElements/FiniteElementPolicies.h>
+#include <ikarus/utils/LinearAlgebraTypedefs.h>
 
 namespace Ikarus::Variable {
   class IVariable;
