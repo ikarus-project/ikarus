@@ -16,12 +16,13 @@
 #include <ikarus/FiniteElements/ElasticityFE.h>
 #include <ikarus/FiniteElements/FiniteElementPolicies.h>
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
+#include <ikarus/Geometries/GeometryType.h>
 #include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
 
 TEST(Assembler, SimpleAssemblersTest) {
   using namespace Ikarus::Grid;
   using Grid = SimpleGrid<2, 2>;
-  SimpleGridFactory<Grid> gridFactory;
+  SimpleGridFactory<2, 2> gridFactory;
   using vertexType = Eigen::Vector2d;
   std::vector<vertexType> verticesVec;
   verticesVec.emplace_back(vertexType{0.0, 0.0});  // 0
@@ -37,9 +38,9 @@ TEST(Assembler, SimpleAssemblersTest) {
   std::vector<size_t> elementIndices;
   elementIndices.resize(4);
   elementIndices = {0, 1, 2, 3};
-  gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, elementIndices);
+  gridFactory.insertElement(Ikarus::GeometryType::linearQuadrilateral, elementIndices);
   elementIndices = {1, 4, 3, 5};
-  gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, elementIndices);
+  gridFactory.insertElement(Ikarus::GeometryType::linearQuadrilateral, elementIndices);
 
   Grid grid = gridFactory.createGrid();
 
@@ -56,13 +57,14 @@ TEST(Assembler, SimpleAssemblersTest) {
   auto fint            = vectorAssembler.getVector(Ikarus::FiniteElements::forces);
   EXPECT_EQ(fint.size(), 12);
   Eigen::VectorXd fintExpected = (Eigen::VectorXd(12) << 1, 1, 2, 2, 1, 1, 2, 2, 1, 1, 1, 1).finished();
-  EXPECT_THAT(fint, EigenApproxEqual(fintExpected,1e-15));
+  EXPECT_THAT(fint, EigenApproxEqual(fintExpected, 1e-15));
 
   auto denseMatrixAssembler = Ikarus::Assembler::DenseMatrixAssembler(dh);
-  auto K            = denseMatrixAssembler.getMatrix(Ikarus::FiniteElements::stiffness);
+  auto K                    = denseMatrixAssembler.getMatrix(Ikarus::FiniteElements::stiffness);
   EXPECT_EQ(K.rows(), 12);
   EXPECT_EQ(K.cols(), 12);
-  Eigen::MatrixXd KExpected = (Eigen::MatrixXd(12,12) <<
+  Eigen::MatrixXd KExpected
+      = (Eigen::MatrixXd(12, 12) <<  // clang-format off
   1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0,
   1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0,
   1, 1, 2, 2, 1, 1, 2, 2, 1, 1, 1, 1,
@@ -74,17 +76,16 @@ TEST(Assembler, SimpleAssemblersTest) {
   0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1,
   0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1,
   0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1,
-  0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1).finished();
-  EXPECT_THAT(K, EigenApproxEqual(KExpected,1e-15));
+  0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1).finished();  // clang-format on
+  EXPECT_THAT(K, EigenApproxEqual(KExpected, 1e-15));
 
   auto sparseMatrixAssembler = Ikarus::Assembler::SparseMatrixAssembler(dh);
-  auto KSparse            = sparseMatrixAssembler.getMatrix(Ikarus::FiniteElements::stiffness);
+  auto KSparse               = sparseMatrixAssembler.getMatrix(Ikarus::FiniteElements::stiffness);
 
-  EXPECT_THAT(KSparse, EigenApproxEqual(KExpected,1e-15));
-  EXPECT_THAT(KSparse, EigenApproxEqual(K,1e-15));
+  EXPECT_THAT(KSparse, EigenApproxEqual(KExpected, 1e-15));
+  EXPECT_THAT(KSparse, EigenApproxEqual(K, 1e-15));
 
   auto scalarAssembler = Ikarus::Assembler::ScalarAssembler(dh);
-  auto w = scalarAssembler.getScalar(Ikarus::FiniteElements::potentialEnergy);
-  EXPECT_DOUBLE_EQ(w,26.0);
-
+  auto w               = scalarAssembler.getScalar(Ikarus::FiniteElements::potentialEnergy);
+  EXPECT_DOUBLE_EQ(w, 26.0);
 }

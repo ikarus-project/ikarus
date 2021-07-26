@@ -3,49 +3,43 @@
 //
 
 #pragma once
+#include <ikarus/Geometries/GeometryType.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
-#include <ikarus/utils/std/algorithms.h>
+#include <ikarus/utils/utils/algorithms.h>
 
 namespace Ikarus::Grid {
-  template <Concepts::Grid GridType>
+  template <int dimension, int dimensionworld>
   class SimpleGridFactory {
-  private:
-    /** \brief dimension of the grid */
-    static const int dimension = GridType::dimension;
-
-    /** \brief The grid world dimension */
-    static const int dimensionworld = GridType::dimensionworld;
-
-    /** \brief Type used by the grid for coordinates */
-    using ctype = typename GridType::ctype;
-
+  public:
     /** \brief Type used by the grid for the vertex coordinates */
     using VertexCoordinateType = Eigen::Vector<double, dimensionworld>;
 
-  public:
-    void insertElement(const Dune::GeometryType& type, const std::span<size_t> vertices);
+    /** \brief Type of the Grid which this factory constructs*/
+    using GridType = SimpleGrid<dimension, dimensionworld>;
+
+    void insertElement(Ikarus::GeometryType type, std::span<size_t> vertices);
     void insertVertex(const VertexCoordinateType& pos);
 
-    GridType createGrid();
+    auto createGrid();
 
   private:
     struct VertexIndexPair {
       Eigen::Vector<double, dimensionworld> vertex;
       size_t index;
     };
+    void insertVertexIndicesinEdge(std::vector<size_t>&& indices);
+    void insertVertexIndicesinSurface(std::vector<size_t>&& indices);
 
-    void insertVertexIndicesinEdge(std::vector<size_t>&& indices) {
-      std::ranges::sort(indices);
-      auto index = Ikarus::stl::appendUnique(edgesVertexIndices, indices);
-      elementEdgeIndices.back().push_back(index);
-    }
+    void storeVerticesIndicesOfEdges(Ikarus::GeometryType type, std::span<size_t> verticesIn);
+    void storeVerticesIndicesOfSurfaces(Ikarus::GeometryType type, std::span<size_t> verticesIn);
 
-    /** \brief Counter that creates the vertex indices */
-    size_t vertexIndex{};
-    std::vector<std::vector<size_t>> edgesVertexIndices;
     std::vector<VertexIndexPair> verticesPositions;
-    std::vector<std::vector<size_t>> elementsVertices;
-    std::vector<std::vector<size_t>> elementEdgeIndices;
+    std::vector<std::vector<size_t>> edgesVertexIndices;     // the vertex indices for each edge
+    std::vector<std::vector<size_t>> surfaceVertexIndices;   // the vertex indices for each surface
+    std::vector<std::vector<size_t>> elementsVertices;       // the vertex indices for each element
+    std::vector<std::vector<size_t>> elementEdgeIndices;     // the edge indices for each element
+    std::vector<std::vector<size_t>> elementSurfaceIndices;  // the surface indices for each element
+    size_t vertexIndex{};
   };
 
 }  // namespace Ikarus::Grid

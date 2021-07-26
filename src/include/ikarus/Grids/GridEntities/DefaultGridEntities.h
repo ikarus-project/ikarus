@@ -11,10 +11,10 @@
 #include <dune/geometry/type.hh>
 
 #include <ikarus/Geometries/GeometryInterface.h>
-#include <ikarus/Grids/GridInterface.h>
+#include <ikarus/Geometries/GeometryType.h>
 #include <ikarus/Variables/DofOwnerDecorator.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
-#include <ikarus/utils/std/traits.h>
+#include <ikarus/utils/utils/traits.h>
 
 namespace Ikarus::Grid {
 
@@ -22,10 +22,18 @@ namespace Ikarus::Grid {
   class DefaultGridEntity;
 
   namespace Impl {
+    /** \brief  The ChildEntityPointerTupleGenerator generates a tuple of grid subentities, which can be of different
+     * size depending on the dimension of the entity, e.g. a entity of dimension 3 has surfaces, edges and vertices as
+     * children whereas a entity with dimension 1 only has vertices as children
+     */
     template <int griddim, int mydim, int wdim, int... codim>
     static std::tuple<std::vector<DefaultGridEntity<griddim, griddim - codim, wdim>*>...>
         ChildEntityPointerTupleGenerator(std::integer_sequence<int, codim...>);
 
+    /** \brief  The FatherEntityPointerTupleGenerator generates a tuple of grid entities, which can be of different
+     * size depending on the codimension of the entity, e.g. a entity with codimension 3 has volumes, surfaces and edges
+     * as fathers whereas a entity with codimension 1 only has edges as fathers
+     */
     template <int griddim, int mydim, int wdim, int... codim>
     static std::tuple<std::vector<DefaultGridEntity<griddim, codim, wdim>*>...> FatherEntityPointerTupleGenerator(
         std::integer_sequence<int, codim...>);
@@ -35,18 +43,23 @@ namespace Ikarus::Grid {
    * \brief DefaultGridEntity
    *
    * \tparam  griddim  The dimension of the grid
+   * \tparam  cogriddim=0  The codimension of the entity
    * \tparam  wdim  The dimension of the world space where the grid is embedded
    *
    * \note Partial template specialization for entities with codim == 0
-   * These entities have no grid father
+   * These entities have no father
    **/
   template <int griddim, int wdim>
   class DefaultGridEntity<griddim, 0, wdim> {
   public:
+    static constexpr int dimension      = griddim;
+    static constexpr int codimension    = 0;
+    static constexpr int mydimension    = dimension;
+    static constexpr int dimensionworld = wdim;
+
     DefaultGridEntity(int levelInput, size_t idInput) : levelIndex{levelInput}, id{idInput} {}
 
     auto& getChildVertices() { return std::get<0>(entitiesChildren); }
-
     const auto& getChildVertices() const { return std::get<0>(entitiesChildren); }
 
     template <int dimEnt>
@@ -61,61 +74,23 @@ namespace Ikarus::Grid {
       return std::get<dimEnt>(entitiesChildren);
     }
 
-    DefaultGridEntity() = default;  // TODO Rule of Five?
-    /** \brief Dimension of the grid */
-    static constexpr int dimension = griddim;
-
-    /** \brief The codimension of the entity */
-    static constexpr int codimension = 0;
-
-    /** \brief Know dimension of the entity */
-    static constexpr int mydimension = dimension;
-
-    /** \brief Know dimension of the entity */
-    static constexpr int dimensionworld = wdim;
-
     /** \brief Type of the geometry of this entity */
     using Geometry = Dune::MultiLinearGeometry<double, codimension, dimensionworld>;
 
-    /** \brief Type of the containter for the grid childrens of this entity */
+    /** \brief Type of the containter for the grid childrens of this entity, it stores only pointers to the entities. */
     using EntitiesChildernType
         = decltype(Impl::ChildEntityPointerTupleGenerator<dimension, mydimension, dimensionworld>(
             std::make_integer_sequence<int, mydimension>()));
 
     /** \brief Returns the number of subEntities of this entity, e.g. a line has two vertices as
      * subtypes */
-    [[nodiscard]] unsigned int subEntities(unsigned int codim) const {
-      assert(codim <= 3 && codim > 0 && "Only subentities with 0< codim <= 3 supported");
-      if constexpr (mydimension == 1)
-        return getChildVertices().size();
-      else if constexpr (mydimension == 2) {
-        if (codim == 1)
-          return getChildEntities<1>().size();
-        else if (codim == 2)
-          return getChildEntities<0>().size();
-        else  // codim = 3
-          throw std::logic_error("A entity with dimension 2 does not have subentities with codim 3!");
-      } else {  //(mydimension == 3)
-        if (codim == 1)
-          return getChildEntities<2>().size();
-        else if (codim == 2)
-          return getChildEntities<1>().size();
-        else  // codim = 3
-          return getChildEntities<0>().size();
-      }
-    }
+    [[nodiscard]] unsigned int subEntities(unsigned int codim) const;
+
     /** \brief Return the fundamental geometric type of the entity */
-    Dune::GeometryType type() const;
+    [[nodiscard]] Ikarus::GeometryType type() const;
 
     /** \brief Returns the geometric realization of the entity */
-    auto geometry() const {
-      std::vector<Dune::FieldVector<double, dimensionworld>> fieldVectorVector;
-      for (const auto& pos :
-           std::ranges::transform_view(getChildVertices(), &DefaultGridEntity<griddim, griddim, wdim>::getPosition))
-        fieldVectorVector.push_back(toFieldVector(pos));
-
-      return Ikarus::Geometry::IGeometry(Geometry(type(), fieldVectorVector));
-    }
+    auto geometry() const;
 
     /** \brief Return copy of the id of this entity */
     [[nodiscard]] size_t getID() const { return id; }
@@ -123,27 +98,26 @@ namespace Ikarus::Grid {
     /** \brief Get refínement level where this entity belongs to*/
     [[nodiscard]] int level() const { return levelIndex; }
 
+  private:
     /** \brief The refinement level to which this entity belongs */
     int levelIndex{};
-
-    /** \brief The index of this element on the leaf level */
-    int leafIndex{};
-
-  private:
     /** \brief A persistent id of this entity*/
     size_t id{};
 
     /** \brief Childrens of the entity on the current grid , i.e. surfaces of a cube*/
     EntitiesChildernType entitiesChildren;
 
-    /** \brief Childrens of the entity on a finer grid , i.e. subcubes of a cube*/
+    /** \brief Childrens of the entity on a finer grid , i.e. subcubes of a cube, it stores only pointers to the
+     * entities.*/
     std::vector<DefaultGridEntity<dimension, 0, dimensionworld>*> levelEntitiesChildren;
   };
 
   /**
    * \brief DefaultGridEntity
    *
-   * \param  griddim  The
+   * \tparam  griddim  The dimension of the grid
+   * \tparam  cogriddim=griddim  The codimension of the entity. Here
+   * \tparam  wdim  The dimension of the world space where the grid is embedded
    *
    * \note Partial template specialization for entities with codim == griddim
    * These entities have no grid children, since they are vertices!
@@ -151,6 +125,11 @@ namespace Ikarus::Grid {
   template <int griddim, int wdim>
   class DefaultGridEntity<griddim, griddim, wdim> {
   public:
+    static constexpr int dimension      = griddim;
+    static constexpr int codimension    = griddim;
+    static constexpr int mydimension    = 0;
+    static constexpr int dimensionworld = wdim;
+
     DefaultGridEntity(int levelInput, const Eigen::Vector<double, wdim>& vecInput, size_t idInput)
         : levelIndex{levelInput}, id{idInput}, position{vecInput} {}
 
@@ -165,17 +144,6 @@ namespace Ikarus::Grid {
     DefaultGridEntity() = default;
 
     static_assert(true, "DefaultGridEntity not implemented for this mydim / griddim combination  ");
-    /** \brief Dimension of the grid */
-    static constexpr int dimension = griddim;
-
-    /** \brief The codimension of the entity */
-    static constexpr int codimension = griddim;
-
-    /** \brief Know dimension of the entity */
-    static constexpr int mydimension = 0;
-
-    /** \brief Know dimension of the entity */
-    static constexpr int dimensionworld = wdim;
 
     /** \brief Type of the geometry of this entity */
     using Geometry = Dune::MultiLinearGeometry<double, codimension, dimensionworld>;
@@ -193,23 +161,19 @@ namespace Ikarus::Grid {
     /** \brief Return position of this vertex */
     const Eigen::Vector<double, wdim>& getPosition() { return position; }
 
-    /** \brief The index of this element on the level it belongs to */
-    int levelIndex{};
-
-    /** \brief The index of this element on the leaf level */
-    int leafIndex{};
-
     /** \brief Return the fundamental geometric type of the entity */
-    Dune::GeometryType type() const { return Dune::GeometryTypes::vertex; }
+    [[nodiscard]] Ikarus::GeometryType type() const { return Ikarus::GeometryType::vertex; }
 
     /** \brief Returns the number of subEntities of this entity, e.g. a line has two verteces as
      * subtypes */
-    unsigned int subEntities(unsigned int) const { return 0; }
+    [[nodiscard]] unsigned int subEntities(unsigned int) const { return 0; }
 
     /** \brief Returns the geometric realization of the entity */
-    auto geometry() const { return Geometry(type(), position); }
+    auto geometry() const { return Geometry(duneType(type()), position); }
 
   private:
+    /** \brief The index of this element on the level it belongs to */
+    int levelIndex{};
     /** \brief A persistent id of this entity*/
     size_t id{};
 
@@ -223,12 +187,9 @@ namespace Ikarus::Grid {
     /** \brief The position of the vertex */
     Eigen::Vector<double, wdim> position{};
   };
-  //
-  //
+
   /**
    * \brief DefaultGridEntity
-   *
-   * \param  griddim  The
    *
    * \note Partial template specialization for entities with codim != griddim and codim != 0
    * These entities live inbetween the vertices and elements, i.e. edges,surface
@@ -236,39 +197,18 @@ namespace Ikarus::Grid {
   template <int griddim, int cogriddim, int wdim>
   class DefaultGridEntity {
   public:
-    DefaultGridEntity(int levelInput, size_t idInput) : levelIndex{levelInput}, id{idInput} {}
-
-    auto& getFatherElements() { return std::get<0>(entitiesFathers); }
-
-    DefaultGridEntity() = default;
-
-    /** \brief Dimension of the grid */
-    static constexpr int dimension = griddim;
-
-    /** \brief The codimension of the entity */
-    static constexpr int codimension = cogriddim;
-
-    /** \brief Know dimension of the entity */
-    static constexpr int mydimension = griddim - cogriddim;
-
-    /** \brief Know dimension of the entity */
+    static constexpr int dimension      = griddim;
+    static constexpr int codimension    = cogriddim;
+    static constexpr int mydimension    = griddim - cogriddim;
     static constexpr int dimensionworld = wdim;
 
-    /** \brief Type of the containter for the grid fathers of this entity */
-    using EntitiesFatherType = decltype(Impl::FatherEntityPointerTupleGenerator<dimension, mydimension, dimensionworld>(
-        std::make_integer_sequence<int, codimension>()));
+    DefaultGridEntity(int levelInput, size_t idInput) : levelIndex{levelInput}, id{idInput} {}
 
     /** \brief Return copy of the id of this entity */
-    size_t getID() const { return id; }
+    [[nodiscard]] size_t getID() const { return id; }
 
-    /** \brief Get refínement level where this entity belongs to*/
-    int level() const { return levelIndex; }
-
-    /** \brief The refinement level to which this entity belongs */
-    int levelIndex{};
-
-    /** \brief The index of this element on the leaf level */
-    int leafIndex{};
+    /** \brief Get refinement level where this entity belongs to*/
+    [[nodiscard]] int level() const { return levelIndex; }
 
     /** \brief Type of the geometry of this entity */
     using Geometry = Dune::MultiLinearGeometry<double, codimension, dimensionworld>;
@@ -286,45 +226,29 @@ namespace Ikarus::Grid {
     }
 
     const auto& getChildVertices() const { return std::get<0>(entitiesChildren); }
-
     auto& getChildVertices() { return std::get<0>(entitiesChildren); }
 
     /** \brief Returns the number of subEntities of this entity, e.g. a line has two verteces as
      * subtypes */
-    [[nodiscard]] unsigned int subEntities(unsigned int codim) const {
-      assert(codim > 0 && codim <= 2 && "Two dimensional entities only have subentities in 0<codimension<=2.");
+    [[nodiscard]] unsigned int subEntities(unsigned int codim) const;
 
-      if constexpr (mydimension == 1) return getChildVertices().size();
-      if constexpr (mydimension == 2) {
-        if (codim == 1)
-          return getChildEntities<1>().size();
-        else if (codim == 2)
-          return getChildEntities<0>().size();
-      }
-    }
     /** \brief Return the fundamental geometric type of the entity */
-    [[nodiscard]] Dune::GeometryType type() const;
+    [[nodiscard]] Ikarus::GeometryType type() const;
 
     /** \brief Returns the geometric realization of the entity */
-    auto geometry() const {
-      std::vector<Dune::FieldVector<double, dimensionworld>> fieldVectorVector;
-      for (const auto& pos :
-           std::ranges::transform_view(getChildVertices(), &DefaultGridEntity<griddim, griddim, wdim>::getPosition))
-        fieldVectorVector.push_back(toFieldVector(pos));
+    auto geometry() const;
 
-      return Ikarus::Geometry::IGeometry(Geometry(type(), fieldVectorVector));
-    }
     /** \brief Return copy of the id of this entity */
   private:
+    /** \brief The refinement level to which this entity belongs */
+    int levelIndex{};
+
     /** \brief A persistent id of this entity*/
     size_t id{};
 
     /** \brief Childrens of the entity on the current grid , i.e. surfaces of a cube*/
     decltype(Impl::ChildEntityPointerTupleGenerator<dimension, mydimension, dimensionworld>(
         std::make_integer_sequence<int, mydimension>())) entitiesChildren;
-
-    /** \brief Childrens of the entity on the current grid , i.e. surfaces of a cube*/
-    EntitiesFatherType entitiesFathers;
 
     /** \brief Childrens of the entity on a finer grid , i.e. subcubes of a cube*/
     std::vector<DefaultGridEntity<dimension, codimension, dimensionworld>*> levelEntitiesChildren;

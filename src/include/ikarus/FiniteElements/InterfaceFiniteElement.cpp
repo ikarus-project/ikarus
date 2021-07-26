@@ -43,12 +43,10 @@ namespace Ikarus::FiniteElements {
 
   double calculateScalar(const IFiniteElement* fe, IFiniteElement::VariableVectorType& vars,
                          const ScalarAffordances& scalA) {
-    return calculateScalar((*fe),vars,scalA);
+    return calculateScalar((*fe), vars, scalA);
   }
   IFiniteElement::DofPairVectorType getEntityVariablePairs(const IFiniteElement& fe) {
     return fe.feimpl->do_getEntityVariablePairs();
   }
   size_t getEntityID(const IFiniteElement& fe) { return fe.feimpl->do_getEntityID(); }
 }  // namespace Ikarus::FiniteElements
-
-

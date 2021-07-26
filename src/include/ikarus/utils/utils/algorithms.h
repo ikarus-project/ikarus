@@ -7,12 +7,13 @@
 // This file contains stl-like algorithms
 #include <iostream>
 #include <ranges>
-namespace Ikarus::stl {
+namespace Ikarus::utils {
   void makeUniqueAndSort(std::ranges::random_access_range auto& varVec) {
     sort(varVec.begin(), varVec.end());
     varVec.erase(std::unique(varVec.begin(), varVec.end()), varVec.end());
   }
 
+  /** If the value is not in the range, it is appended*/
   template <typename Value>
   auto appendUnique(std::ranges::random_access_range auto& c, Value&& v) {
     static_assert(std::is_same_v<typename decltype(begin(c))::value_type, std::remove_reference_t<decltype(v)>>);
@@ -34,4 +35,4 @@ namespace Ikarus::stl {
     return (std::ranges::subrange(varVec.begin(), varVec.end()) | std::views::transform(transformValueToPointer));
   }
 
-}  // namespace Ikarus::stl
+}  // namespace Ikarus::utils

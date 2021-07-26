@@ -14,11 +14,12 @@
 
 #include <ikarus/FiniteElements/ElasticityFE.h>
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
+#include <ikarus/Geometries/GeometryType.h>
 #include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
 
 class TestFE {
 public:
-  static void initialize() { std::cout << "initcalled" << std::endl; }
+  static void initialize() {}
   [[nodiscard]] static Ikarus::FiniteElements::IFiniteElement::DofPairVectorType getEntityVariablePairs() {
     return Ikarus::FiniteElements::IFiniteElement::DofPairVectorType{};
   }
@@ -34,7 +35,7 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
   using namespace Ikarus::FiniteElements;
 
   using Grid = SimpleGrid<2, 2>;
-  SimpleGridFactory<Grid> gridFactory;
+  SimpleGridFactory<2, 2> gridFactory;
   using vertexType = Eigen::Vector2d;
   std::vector<vertexType> verticesVec;
   verticesVec.emplace_back(vertexType{0.0, 0.0});  // 0
@@ -50,9 +51,9 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
   std::vector<size_t> elementIndices;
   elementIndices.resize(4);
   elementIndices = {0, 1, 2, 3};
-  gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, elementIndices);
+  gridFactory.insertElement(Ikarus::GeometryType::linearQuadrilateral, elementIndices);
   elementIndices = {1, 4, 3, 5};
-  gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, elementIndices);
+  gridFactory.insertElement(Ikarus::GeometryType::linearQuadrilateral, elementIndices);
 
   Grid grid = gridFactory.createGrid();
 
@@ -93,21 +94,21 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
     EXPECT_EQ(fintEle.size(), 8);
   }
 
-Ikarus::FiniteElements::IFiniteElement fe((TestFE()));
+  Ikarus::FiniteElements::IFiniteElement fe((TestFE()));
 
-initialize(fe);
-const auto entityIDDofPair = getEntityVariablePairs(fes[0]);
-std::vector<std::pair<size_t, Ikarus::Variable::VariablesTags>> idtagExpected;
-idtagExpected.emplace_back(0, Ikarus::Variable::displacement2d);
-idtagExpected.emplace_back(1, Ikarus::Variable::displacement2d);
-idtagExpected.emplace_back(2, Ikarus::Variable::displacement2d);
-idtagExpected.emplace_back(3, Ikarus::Variable::displacement2d);
-for (int i = 0; auto&& [entityID, var] : entityIDDofPair) {
-  EXPECT_EQ(entityID, idtagExpected[i].first);
-  EXPECT_EQ(var.size(), 1);
-  EXPECT_EQ(var[0], idtagExpected[i].second);
-  ++i;
-}
+  initialize(fe);
+  const auto entityIDDofPair = getEntityVariablePairs(fes[0]);
+  std::vector<std::pair<size_t, Ikarus::Variable::VariablesTags>> idtagExpected;
+  idtagExpected.emplace_back(0, Ikarus::Variable::displacement2d);
+  idtagExpected.emplace_back(1, Ikarus::Variable::displacement2d);
+  idtagExpected.emplace_back(2, Ikarus::Variable::displacement2d);
+  idtagExpected.emplace_back(3, Ikarus::Variable::displacement2d);
+  for (int i = 0; auto&& [entityID, var] : entityIDDofPair) {
+    EXPECT_EQ(entityID, idtagExpected[i].first);
+    EXPECT_EQ(var.size(), 1);
+    EXPECT_EQ(var[0], idtagExpected[i].second);
+    ++i;
+  }
 
-auto feT{fes[0]};  // test copy assignment
+  auto feT{fes[0]};  // test copy assignment
 }

@@ -16,7 +16,7 @@
 #include "ikarus/Manifolds/RealTuple.h"
 #include "ikarus/Variables/InterfaceVariable.h"
 #include "ikarus/Variables/VariableDefinitions.h"
-#include "ikarus/utils/std/algorithms.h"
+#include "ikarus/utils/utils/algorithms.h"
 
 TEST(DefaultVariableTest, RealTupleDisplacement) {
   using namespace Ikarus::Variable;
@@ -137,7 +137,7 @@ TEST(VariableTest, GenericVariableVectorTest) {
   varVec4Expected.normalize();
   EXPECT_THAT(getValue(varVec[5]), EigenApproxEqual(varVec4Expected, tol));
 
-  Ikarus::stl::makeUniqueAndSort(varVec);
+  Ikarus::utils::makeUniqueAndSort(varVec);
 
   EXPECT_EQ(valueSize(varVec), 9);
   EXPECT_EQ(correctionSize(varVec), 8);
@@ -153,12 +153,4 @@ TEST(VariableTest, GenericVariableVectorTest) {
   EXPECT_THAT(
       getValue(varVec[3]),
       EigenApproxEqual(Eigen::Vector3d(0.41279806929140905325, 0.50645665044957854928, -0.75703329861022516933), tol));
-}
-
-#include <ikarus/Grids/GridEntities/DefaultGridEntities.h>
-TEST(VariableTest, GenericVariableWithFEandGridEntity) {
-  using namespace Ikarus::Variable;
-  DISPLACEMENT3D a;
-
-  Ikarus::Grid::DefaultGridEntity<3, 0, 3> gridEntity;
 }
