@@ -22,3 +22,7 @@ add_subdirectory(benchmarks)
 enable_testing()
 add_subdirectory(tests)
 add_subdirectory(cmake/FormatTarget)
+
+if(BUILD_DOCS)
+  add_subdirectory(docs/BuildLocally)
+endif()

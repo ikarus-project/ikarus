@@ -40,6 +40,7 @@ nav:
   - Home: index.md
   - Installation: installation.md
   - How to edit the documentation: howToEdit.md
+  - Build the documentation locally: BuildTheDocumentationLocally.md
   - Tutorials:
     - Overview: tutorials/tutorialsOverview.md
     - Grid    : tutorials/tutGrid.md
