@@ -1,4 +1,4 @@
-name: Ubuntu
+name: CodeCoverage
 on:
   push:
     paths-ignore:
