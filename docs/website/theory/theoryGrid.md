@@ -1,7 +1,5 @@
 # Description of the grid
 
-![umlDiagram](diagrams/UMLGrid.drawio)
-
 In finite element simulations, we often talk about elements and meshes. What we commonly refer to as "element"
 consists of various aspects with different tasks, e.g.
 - provide a unique identifier (element number)
@@ -19,8 +17,8 @@ The grid description will be explained using the following example
 ![img.png](images/sampleProblemGrid.png)
 
 ## Grid
-The grid is a collection of grid entities. In the example above, the grid consists of four surfaces, 
-ten edges and eight vertices, i.e. it consists of 22 grid entities. Since it is some work to construct all
+The grid is a collection of grid entities. In the example above, the grid consists of three surfaces, 
+ten edges and eight vertices, i.e. it consists of 21 grid entities. Since it is some work to construct all
 these quantities and their relations, there is the [grid factory](theoryGrid.md#grid-factory) 
 which does this job.
 
