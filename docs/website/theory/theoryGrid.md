@@ -14,7 +14,12 @@ decoupled from the task to provide physical meaning. The following content is on
 **description of the element geometry**. Details on 
 [the implementation of physical quantities can be found here](theoryFiniteElement.md).
 
-The grid description will be explained using the following example
+This page explains the relationship and the ideas behind everything that has to do with the grid. 
+The relationship is visualized in the following diagram:
+
+![umlDiagram](../diagrams/UMLGrid.drawio)
+
+On this page, we will go through it using the following example:
 ![img.png](images/sampleProblemGrid.png)
 
 ## Grid
@@ -49,6 +54,7 @@ Some **restrictions** apply:
 
 - You can't insert grid entities of different dimensions into the same `SimpleGrid`
 - Other types than the ones mentioned above are not supported
+- The world dimension is limited to 3.
 
 ## Grid entity
 A grid entity provides all information related to the element geometry. 
