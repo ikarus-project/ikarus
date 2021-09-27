@@ -97,9 +97,6 @@ supposed to be used together with the grid implementation `SimpleGrid`.
 It is based on three template parameters `griddim`(dimension of the grid), `cogriddim`(???) and 
 `wdim`(dimension of the world).
 
-@ Alex: Could you explain the implementation details here? 
-How are the private quantities (e.g. entitiesFathers) constructed?
-
 ## Grid factory
 To construct a grid, a grid factory can be used. To construct a grid, vertices and element
 definitions are inserted into the factory. The grid is then constructed by the `createGrid()` function.
@@ -114,7 +111,6 @@ definitions are inserted into the factory. The grid is then constructed by the `
 ### Implementation of grid factory
 `SimpleGridFactory`: Constructs a `SimpleGrid`. The same restrictions apply as stated above for `SimpleGrid`. 
 
-@ Alex: Could you explain some details about the implementation here?
 
 ## Grid view
 
@@ -131,6 +127,4 @@ certain grid objects:
 
 ### Implementation of grid view
 
-`SimpleGridView`: Provides iterators for `SimpleGrid`. 
-
-@ Alex: Ideas behind the implementation?
+`SimpleGridView`: Provides iterators for `SimpleGrid`.
