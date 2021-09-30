@@ -17,23 +17,18 @@ namespace Ikarus::Variable {
   class IVariable {
   public:
     template <Concepts::Variable VAR>
-    explicit IVariable(const VAR &vo) : variableImpl{std::make_unique<VarImpl<VAR> >(vo)} {}
-
-    ~IVariable() = default;
-    IVariable(const IVariable &other) : variableImpl{other.variableImpl->clone()} {}
-    IVariable &operator=(IVariable &&) noexcept = default;
-    IVariable(IVariable &&) noexcept            = default;
-
-    IVariable &operator=(const IVariable &other) {
-      IVariable tmp(other);  // Temporary-swap idiom
-      std::swap(variableImpl, tmp.variableImpl);
-      return *this;
+    explicit IVariable(const VAR &vo)
+    {
+      new ( pimpl() ) VarImpl<VAR>( vo );
     }
+
 
     using UpdateType     = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 8, 1>;
     using CoordinateType = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 8, 1>;
 
   private:
+
+
     struct VarBase {
       virtual ~VarBase() = default;
 
@@ -44,13 +39,16 @@ namespace Ikarus::Variable {
       virtual void do_assignAdd(const UpdateType &other)                          = 0;
       virtual void do_setValue(const UpdateType &other)                           = 0;
       [[nodiscard]] virtual CoordinateType do_getValue() const                    = 0;
-      [[nodiscard]] virtual size_t do_getTag() const                              = 0;
-      [[nodiscard]] virtual std::unique_ptr<VarBase> clone() const                = 0;
+      [[nodiscard]] virtual int do_getTag() const                                 = 0;
+      virtual void clone(VarBase* bPtr) const                = 0;
     };
 
     template <typename VAR>
     struct VarImpl : public VarBase {
-      explicit VarImpl(VAR voarg) : vo{voarg} {};
+      explicit VarImpl(VAR voarg) : vo{voarg}
+      {
+        static_assert(sizeof(CoordinateType)>sizeof(VarImpl),"The size of your variable is two large increase the CoordinateType size");
+      };
 
       [[nodiscard]] int do_valueSize() const final { return VAR::valueSize; }
       [[nodiscard]] int do_correctionSize() const final { return VAR::correctionSize; }
@@ -66,12 +64,31 @@ namespace Ikarus::Variable {
         return (this->do_getTag() < getTag(other));
       };
 
-      [[nodiscard]] std::unique_ptr<VarBase> clone() const final { return std::make_unique<VarImpl>(*this); }
+      void clone(VarBase* bPtr) const final { new (bPtr) VarImpl( *this ); }
 
       VAR vo;
     };
 
-    std::unique_ptr<VarBase> variableImpl;  // Pimpl idiom / Bridge Design Pattern
+    [[nodiscard]] VarBase* pimpl()
+    {
+      return reinterpret_cast<VarBase*>( &variableImpldata );
+    };
+
+    [[nodiscard]] const VarBase* pimpl() const
+    {
+      return reinterpret_cast<const VarBase*>( &variableImpldata );
+    };
+
+   public:
+    //Rule of Five
+    ~IVariable() { pimpl()->~VarBase(); } //destructor
+    IVariable(const IVariable &other) {other.pimpl()->clone( pimpl() );} //copy-constructor
+    IVariable& operator=( const IVariable& other) { pimpl()->~VarBase(); other.pimpl()->clone( pimpl() ); return *this; } //copy-assignment
+    IVariable& operator=(IVariable &&) noexcept = default; //move-assignment
+    IVariable(IVariable &&) noexcept            = default; //move-constructor
+   private:
+
+    std::aligned_storage_t<sizeof(CoordinateType), alignof(CoordinateType)>  variableImpldata;
 
     friend IVariable &operator+=(IVariable &vo, const UpdateType &correction);
     friend IVariable operator+(IVariable &vo, const UpdateType &correction);
