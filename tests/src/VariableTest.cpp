@@ -49,7 +49,7 @@ TEST(DefaultVariableTest, RealTupleDisplacement) {
   setValue(b, testVec);
 
   EXPECT_EQ(getValue(b), testVec);
-  for (auto&& varTag : Ikarus::Variable::AllTags)
+  for (auto&& varTag : Ikarus::Variable::AllVariableTags)
     auto h = VariableFactory::createVariable(varTag);
 
   std::stringstream testStream;

@@ -38,6 +38,7 @@ namespace Ikarus::Grid {
     std::vector<std::vector<size_t>> surfaceVertexIndices;   // the vertex indices for each surface
     std::vector<std::vector<size_t>> elementsVertices;       // the vertex indices for each element
     std::vector<std::vector<size_t>> elementEdgeIndices;     // the edge indices for each element
+    std::vector<std::vector<size_t>> surfaceEdgeIndices;     // the edge indices for each surface
     std::vector<std::vector<size_t>> elementSurfaceIndices;  // the surface indices for each element
     size_t vertexIndex{};
   };

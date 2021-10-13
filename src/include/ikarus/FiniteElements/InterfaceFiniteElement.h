@@ -5,8 +5,10 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 
-#include <ikarus/FiniteElements/FiniteElementPolicies.h>
+#include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
+#include <ikarus/Grids/EntityHelperFunctions.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
 
 namespace Ikarus::Variable {
@@ -22,29 +24,30 @@ namespace Ikarus::FiniteElements {
   /** \brief A type-erased finite element */
   class IFiniteElement {
   public:
-    using DofPairVectorType  = std::vector<std::pair<size_t, std::vector<Ikarus::Variable::VariablesTags>>>;
-    using VariableVectorType = std::vector<Ikarus::Variable::IVariable*>;
+    using DofPairVectorType  = std::vector<DofAtEntity>;
+    using VariableVectorType = FEValues;
+    using DataVectorType     = typename std::optional<std::reference_wrapper<VariableVectorType>>;
 
     template <typename FE>
-    explicit IFiniteElement(const FE& fe) : feimpl{std::make_unique<FEImpl<FE>>(fe)} {
+    explicit IFiniteElement(const FE &fe) : feimpl{std::make_unique<FEImpl<FE>>(fe)} {
       static_assert(Concepts::MinimalFiniteElementLinearAlgebraAffordances<FE>,
                     "Your element should at least provide one of the following three functions: "
                     "calculateScalar,calculateVector,calculateMatrix. These can be free or member functions.");
-      static_assert(Concepts::HasSomegetEntityVariablePairs<FE>,
-                    "Your element should provide the function: getEntityVariablePairs to provide degrees of freedom "
-                    "definitions.");
+      //    static_assert(Concepts::HasSomegetEntityVariableTuple<FE>,
+      //                  "Your element should provide the function: getEntityVariableTuple to provide degrees of
+      //                  freedom " "definitions.");
     }
 
     ~IFiniteElement() = default;
-    IFiniteElement(const IFiniteElement& other) : feimpl{other.feimpl->clone()} {}
-    IFiniteElement& operator=(const IFiniteElement& other) {
+    IFiniteElement(const IFiniteElement &other) : feimpl{other.feimpl->clone()} {}
+    IFiniteElement &operator=(const IFiniteElement &other) {
       IFiniteElement tmp(other);
       std::swap(feimpl, tmp.feimpl);
       return *this;
     }
 
-    IFiniteElement(IFiniteElement&&) noexcept = default;
-    IFiniteElement& operator=(IFiniteElement&&) noexcept = default;
+    IFiniteElement(IFiniteElement &&) noexcept = default;
+    IFiniteElement &operator=(IFiniteElement &&) noexcept = default;
 
   private:
     struct FEBase {
@@ -52,16 +55,19 @@ namespace Ikarus::FiniteElements {
       virtual void do_initialize()                 = 0;
       [[nodiscard]] virtual int do_dofSize() const = 0;
       [[nodiscard]] virtual std::pair<Eigen::MatrixXd, Eigen::VectorXd> do_calculateLocalSystem(
-          VariableVectorType& vars, const MatrixAffordances& matA, const VectorAffordances& vecA) const = 0;
-      [[nodiscard]] virtual Eigen::MatrixXd do_calculateMatrix(VariableVectorType& vars,
-                                                               const MatrixAffordances& matA) const     = 0;
-      [[nodiscard]] virtual Eigen::VectorXd do_calculateVector(VariableVectorType& vars,
-                                                               const VectorAffordances& vecA) const     = 0;
-      [[nodiscard]] virtual double do_calculateScalar(VariableVectorType& vars,
-                                                      const ScalarAffordances& scalA) const             = 0;
-      [[nodiscard]] virtual DofPairVectorType do_getEntityVariablePairs() const                         = 0;
-      [[nodiscard]] virtual size_t do_getEntityID() const                                               = 0;
-      [[nodiscard]] virtual std::unique_ptr<FEBase> clone() const                                       = 0;
+          const MatrixAffordances &matA, const VectorAffordances &vecA, VariableVectorType &vars,
+          DataVectorType &) const                                                          = 0;
+      [[nodiscard]] virtual Eigen::MatrixXd do_calculateMatrix(const MatrixAffordances &matA, VariableVectorType &vars,
+                                                               DataVectorType &data) const = 0;
+      [[nodiscard]] virtual Eigen::VectorXd do_calculateVector(const VectorAffordances &vecA, VariableVectorType &vars,
+                                                               DataVectorType &data) const = 0;
+      [[nodiscard]] virtual double do_calculateScalar(const ScalarAffordances &scalA, VariableVectorType &vars,
+                                                      DataVectorType &data) const          = 0;
+      [[nodiscard]] virtual DofPairVectorType do_getEntityVariableTuple() const            = 0;
+      [[nodiscard]] virtual unsigned int do_subEntities(unsigned int codim) const          = 0;
+      [[nodiscard]] virtual size_t do_subIndex(int i, unsigned int codim) const            = 0;
+      [[nodiscard]] virtual unsigned int do_dimension() const                              = 0;
+      [[nodiscard]] virtual std::unique_ptr<FEBase> clone() const                          = 0;
     };
 
     template <typename FE>
@@ -69,65 +75,87 @@ namespace Ikarus::FiniteElements {
       explicit FEImpl(FE fearg) : fe{fearg} {};
       void do_initialize() final { TRYCALLFUNCTIONDONTTHROW(initialize); }
       [[nodiscard]] int do_dofSize() const final { TRYCALLFUNCTION(dofSize); }
-      [[nodiscard]] std::pair<Eigen::MatrixXd, Eigen::VectorXd> do_calculateLocalSystem(
-          VariableVectorType& vars, const MatrixAffordances& matA, const VectorAffordances& vecA) const final {
-        TRYCALLFUNCTION(calculateLocalSystem, vars, matA, vecA);
+      [[nodiscard]] std::pair<Eigen::MatrixXd, Eigen::VectorXd> do_calculateLocalSystem(const MatrixAffordances &matA,
+                                                                                        const VectorAffordances &vecA,
+                                                                                        VariableVectorType &vars,
+                                                                                        DataVectorType &data
+                                                                                        = std::nullopt) const final {
+        if (data) {
+          TRYCALLFUNCTION(calculateLocalSystem, matA, vecA, vars, data);
+        } else
+          TRYCALLFUNCTIONWITHOUTDATA(calculateLocalSystem, matA, vecA, vars);
       }
-      [[nodiscard]] Eigen::MatrixXd do_calculateMatrix(VariableVectorType& vars,
-                                                       const MatrixAffordances& matA) const final {
-        TRYCALLFUNCTION(calculateMatrix, vars, matA);
+      [[nodiscard]] Eigen::MatrixXd do_calculateMatrix(const MatrixAffordances &matA, VariableVectorType &vars,
+                                                       DataVectorType &data = std::nullopt) const final {
+        if (data) {
+          TRYCALLFUNCTION(calculateMatrix, matA, vars, data);
+        } else
+          TRYCALLFUNCTIONWITHOUTDATA(calculateMatrix, matA, vars);
       }
-      [[nodiscard]] Eigen::VectorXd do_calculateVector(VariableVectorType& vars,
-                                                       const VectorAffordances& vecA) const final {
-        TRYCALLFUNCTION(calculateVector, vars, vecA);
+      [[nodiscard]] Eigen::VectorXd do_calculateVector(const VectorAffordances &vecA, VariableVectorType &vars,
+                                                       DataVectorType &data = std::nullopt) const final {
+        if (data) {
+          TRYCALLFUNCTION(calculateVector, vecA, vars, data);
+        } else
+          TRYCALLFUNCTIONWITHOUTDATA(calculateVector, vecA, vars);
       }
-      [[nodiscard]] double do_calculateScalar(VariableVectorType& vars, const ScalarAffordances& scalA) const final {
-        TRYCALLFUNCTION(calculateScalar, vars, scalA);
+      [[nodiscard]] double do_calculateScalar(const ScalarAffordances &scalA, VariableVectorType &vars,
+                                              DataVectorType &data = std::nullopt) const final {
+        if (data) {
+          TRYCALLFUNCTION(calculateScalar, scalA, vars, data);
+        } else
+          TRYCALLFUNCTIONWITHOUTDATA(calculateScalar, scalA, vars);
       }
-      [[nodiscard]] DofPairVectorType do_getEntityVariablePairs() const final {
-        TRYCALLFUNCTION(getEntityVariablePairs);
+      [[nodiscard]] DofPairVectorType do_getEntityVariableTuple() const final {
+        TRYCALLFUNCTION(getEntityVariableTuple);
       }
-      [[nodiscard]] size_t do_getEntityID() const final { TRYCALLFUNCTION(getEntityID); }
+      [[nodiscard]] unsigned int do_subEntities(unsigned int codim) const final { TRYCALLFUNCTION(subEntities, codim); }
+      [[nodiscard]] size_t do_subIndex(int i, unsigned int codim) const final { TRYCALLFUNCTION(subIndex, i, codim); }
+      [[nodiscard]] unsigned int do_dimension() const final { TRYCALLFUNCTION(dimension); }
       [[nodiscard]] std::unique_ptr<FEBase> clone() const final { return std::make_unique<FEImpl>(*this); }
       FE fe;
     };
 
     std::unique_ptr<FEBase> feimpl;
 
-    friend void initialize(IFiniteElement& fe);
-    friend int dofSize(const IFiniteElement& fe);
-    friend std::pair<Eigen::MatrixXd, Eigen::VectorXd> calculateLocalSystem(const IFiniteElement& fe,
-                                                                            VariableVectorType& vars,
-                                                                            const MatrixAffordances& matA,
-                                                                            const VectorAffordances& vecA);
-    friend Eigen::MatrixXd calculateMatrix(const IFiniteElement& fe, VariableVectorType& vars,
-                                           const MatrixAffordances& matA);
-    friend Eigen::VectorXd calculateVector(const IFiniteElement& fe, VariableVectorType& vars,
-                                           const VectorAffordances& vecA);
-    friend double calculateScalar(const IFiniteElement& fe, VariableVectorType& vars, const ScalarAffordances& scalA);
-    friend DofPairVectorType getEntityVariablePairs(const IFiniteElement& fe);
-    friend size_t getEntityID(const IFiniteElement& fe);
+    friend void initialize(IFiniteElement &fe);
+    friend int dofSize(const IFiniteElement &fe);
+    friend std::pair<Eigen::MatrixXd, Eigen::VectorXd> calculateLocalSystem(const IFiniteElement &fe,
+                                                                            const MatrixAffordances &matA,
+                                                                            const VectorAffordances &vecA,
+                                                                            VariableVectorType &vars,
+                                                                            DataVectorType data);
+
+    friend Eigen::MatrixXd calculateMatrix(const IFiniteElement &fe, const MatrixAffordances &matA,
+                                           VariableVectorType &vars, DataVectorType data);
+    friend Eigen::VectorXd calculateVector(const IFiniteElement &fe, const VectorAffordances &vecA,
+                                           VariableVectorType &vars, DataVectorType data);
+    friend double calculateScalar(const IFiniteElement &fe, const ScalarAffordances &scalA, VariableVectorType &vars,
+                                  DataVectorType data);
+    friend DofPairVectorType getEntityVariableTuple(const IFiniteElement &fe);
+    friend unsigned int subEntities(const IFiniteElement &fe, unsigned int codim);
+    friend unsigned int dimension(const IFiniteElement &fe);
+    friend size_t subIndex(const IFiniteElement &fe, int i, unsigned int codim);
   };
 
-  void initialize(IFiniteElement& fe);
-  int dofSize(const IFiniteElement& fe);
-  std::pair<Eigen::MatrixXd, Eigen::VectorXd> calculateLocalSystem(const IFiniteElement& fe,
-                                                                   IFiniteElement::VariableVectorType& vars,
-                                                                   const MatrixAffordances& matA,
-                                                                   const VectorAffordances& vecA);
-  Eigen::MatrixXd calculateMatrix(const IFiniteElement& fe, IFiniteElement::VariableVectorType& vars,
-                                  const MatrixAffordances& matA);
-  Eigen::MatrixXd calculateMatrix(const IFiniteElement* fe, IFiniteElement::VariableVectorType& vars,
-                                  const MatrixAffordances& matA);
-  Eigen::VectorXd calculateVector(const IFiniteElement& fe, IFiniteElement::VariableVectorType& vars,
-                                  const VectorAffordances& vecA);
-  Eigen::VectorXd calculateVector(const IFiniteElement* fe, IFiniteElement::VariableVectorType& vars,
-                                  const VectorAffordances& vecA);
-  double calculateScalar(const IFiniteElement& fe, IFiniteElement::VariableVectorType& vars,
-                         const ScalarAffordances& scalA);
-  double calculateScalar(const IFiniteElement* fe, IFiniteElement::VariableVectorType& vars,
-                         const ScalarAffordances& scalA);
-  IFiniteElement::DofPairVectorType getEntityVariablePairs(const IFiniteElement& fe);
-  size_t getEntityID(const IFiniteElement& fe);
+  void initialize(IFiniteElement &fe);
+  int dofSize(const IFiniteElement &fe);
+  std::pair<Eigen::MatrixXd, Eigen::VectorXd> calculateLocalSystem(const IFiniteElement &fe,
+                                                                   const MatrixAffordances &matA,
+                                                                   const VectorAffordances &vecA,
+                                                                   IFiniteElement::VariableVectorType &vars,
+                                                                   IFiniteElement::DataVectorType data = std::nullopt);
+  Eigen::MatrixXd calculateMatrix(const IFiniteElement &fe, const MatrixAffordances &matA,
+                                  IFiniteElement::VariableVectorType &vars,
+                                  IFiniteElement::DataVectorType data = std::nullopt);
+  Eigen::VectorXd calculateVector(const IFiniteElement &fe, const VectorAffordances &vecA,
+                                  IFiniteElement::VariableVectorType &vars,
+                                  IFiniteElement::DataVectorType data = std::nullopt);
+  double calculateScalar(const IFiniteElement &fe, const ScalarAffordances &scalA,
+                         IFiniteElement::VariableVectorType &vars, IFiniteElement::DataVectorType data = std::nullopt);
+  IFiniteElement::DofPairVectorType getEntityVariableTuple(const IFiniteElement &fe);
+  unsigned int subEntities(const IFiniteElement &fe, unsigned int codim);
+  size_t subIndex(const IFiniteElement &fe, int i, unsigned int codim);
+  unsigned int dimension(const IFiniteElement &fe);
 
 }  // namespace Ikarus::FiniteElements

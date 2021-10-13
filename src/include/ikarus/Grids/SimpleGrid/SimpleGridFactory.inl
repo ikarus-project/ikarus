@@ -11,7 +11,8 @@ namespace Ikarus::Grid {
   using GridType = SimpleGrid<dimension, dimensionworld>;
 
   template <int dimension, int dimensionworld>
-  void SimpleGridFactory<dimension,dimensionworld>::insertElement(Ikarus::GeometryType type, const std::span<size_t> verticesIn) {
+  void SimpleGridFactory<dimension, dimensionworld>::insertElement(Ikarus::GeometryType type,
+                                                                   const std::span<size_t> verticesIn) {
     if (Ikarus::dimension(type) != dimension) DUNE_THROW(Dune::GridError, "The inserted element has wrong dimensions!");
 
     storeVerticesIndicesOfEdges(type, verticesIn);
@@ -27,14 +28,14 @@ namespace Ikarus::Grid {
 
   template <int dimension, int dimensionworld>
   auto SimpleGridFactory<dimension, dimensionworld>::createGrid() {
-    using GridEntitiesContainer = typename SimpleGridFactory<dimension, dimensionworld>::GridType::GridEntitiesContainer;
+    using GridEntitiesContainer =
+        typename SimpleGridFactory<dimension, dimensionworld>::GridType::GridEntitiesContainer;
 
     size_t uniqueId = 0;
-    if (verticesPositions.empty())
-      DUNE_THROW(Dune::GridError, "verticesPositions vector is empty. Unable to create Grid");
-    if (elementsVertices.empty()) DUNE_THROW(Dune::GridError, "elements vector is empty. Unable to create Grid");
+    if (verticesPositions.empty()) DUNE_THROW(Dune::GridError, "verticesPositions vector is empty. Unable to add Grid");
+    if (elementsVertices.empty()) DUNE_THROW(Dune::GridError, "elements vector is empty. Unable to add Grid");
 
-    GridEntitiesContainer gridEntityContainer(verticesPositions.size(),elementsVertices.size());
+    GridEntitiesContainer gridEntityContainer(verticesPositions.size(), elementsVertices.size());
 
     // add vertices to the grid
     for (auto &vert : verticesPositions)
@@ -42,16 +43,16 @@ namespace Ikarus::Grid {
 
     // add element and set vertex pointer of elements
     for (auto &eleVertices : elementsVertices) {
-      gridEntityContainer.getRootEntities().emplace_back(0,uniqueId++);
-      auto& newElement = gridEntityContainer.getRootEntities().back();
+      gridEntityContainer.getRootEntities().emplace_back(0, uniqueId++);
+      auto &newElement = gridEntityContainer.getRootEntities().back();
       for (auto &vertID : eleVertices)
         newElement.getChildVertices().emplace_back(&gridEntityContainer.getVertices()[vertID]);
     }
 
     // collect all elements pointers of each vertex
-    for (auto &element : gridEntityContainer.getRootEntities())
-      for (auto &vert : vertices(element))
-        vert->getFatherElements().emplace_back(&element);
+    for (auto&& element : gridEntityContainer.getRootEntities())
+      for (auto&& vert : vertices(element))
+        vert.getFatherElements().emplace_back(&element);
 
     // add edges to the grid
     if constexpr (GridType::dimension > 1) {
@@ -63,7 +64,9 @@ namespace Ikarus::Grid {
           // add vertex pointers to edge
           newEdge.getChildVertices().push_back(&gridEntityContainer.getVertices()[verticesIndicesOfEdge]);
           // add edge pointers to vertices
-          gridEntityContainer.getVertices()[verticesIndicesOfEdge].template getFatherEntities<dimension - 1>().push_back(&newEdge);
+          gridEntityContainer.getVertices()[verticesIndicesOfEdge]
+              .template getFatherEntities<dimension - 1>()
+              .push_back(&newEdge);
         }
       }
 
@@ -85,8 +88,9 @@ namespace Ikarus::Grid {
           // add vertex pointers to surface
           newSurface.getChildVertices().push_back(&gridEntityContainer.getVertices()[verticesIndicesOfSurface]);
           // add surface pointers to vertices
-          gridEntityContainer.getVertices()[verticesIndicesOfSurface].template getFatherEntities<dimension - 2>().push_back(
-              &newSurface);
+          gridEntityContainer.getVertices()[verticesIndicesOfSurface]
+              .template getFatherEntities<dimension - 2>()
+              .push_back(&newSurface);
         }
       }
 
@@ -97,8 +101,18 @@ namespace Ikarus::Grid {
           eIt->template getChildEntities<2>().push_back(&gridEntityContainer.getSurfaces()[elementSurfaceIndex]);
         ++eIt;
       }
+
+      auto sIt = gridEntityContainer.getSurfaces().begin();
+      // add edge pointers to the surfaces
+      for (auto &surfaceEdgeIndicesPerElement : surfaceEdgeIndices) {
+        for (auto &surfaceEdgeIndex : surfaceEdgeIndicesPerElement)
+        {
+          sIt->template getChildEntities<1>().push_back(&gridEntityContainer.getEdges()[surfaceEdgeIndex]);
+        }
+        ++sIt;
+      }
     }
-    return GridType(std::move(gridEntityContainer),uniqueId);
+    return GridType(std::move(gridEntityContainer), uniqueId);
   }
 
   /**
@@ -107,8 +121,8 @@ namespace Ikarus::Grid {
    *
    **/
   template <int dimension, int dimensionworld>
-  void SimpleGridFactory<dimension,dimensionworld>::storeVerticesIndicesOfEdges(Ikarus::GeometryType type,
-                                                                const std::span<size_t> verticesIn) {
+  void SimpleGridFactory<dimension, dimensionworld>::storeVerticesIndicesOfEdges(Ikarus::GeometryType type,
+                                                                                 const std::span<size_t> verticesIn) {
     elementEdgeIndices.emplace_back();
     if (isLinearLine(type)) {
       if (verticesIn.size() != 2)
@@ -141,6 +155,25 @@ namespace Ikarus::Grid {
       insertVertexIndicesinEdge({verticesIn[1], verticesIn[3]});  // 4
       insertVertexIndicesinEdge({verticesIn[2], verticesIn[3]});  // 5
 
+      if constexpr (dimension > 2) {
+        surfaceEdgeIndices.emplace_back();  // 0
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 6));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 5));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 4));
+        surfaceEdgeIndices.emplace_back();  // 1
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 6));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 3));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 2));
+        surfaceEdgeIndices.emplace_back();  // 2
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 5));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 3));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 1));
+        surfaceEdgeIndices.emplace_back();  // 3
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 4));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 2));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 1));
+      }
+
     } else if (isPyramid(type)) {
       if (verticesIn.size() != 5)
         DUNE_THROW(Dune::GridError, "You have requested to enter a pyramid, but you"
@@ -153,6 +186,30 @@ namespace Ikarus::Grid {
       insertVertexIndicesinEdge({verticesIn[1], verticesIn[4]});  // 5
       insertVertexIndicesinEdge({verticesIn[2], verticesIn[4]});  // 6
       insertVertexIndicesinEdge({verticesIn[3], verticesIn[4]});  // 7
+
+      if constexpr (dimension > 2) {
+        surfaceEdgeIndices.emplace_back();  // 0
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 9));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 8));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 7));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 6));
+        surfaceEdgeIndices.emplace_back();  // 1
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 9));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 4));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 2));
+        surfaceEdgeIndices.emplace_back();  // 2
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 7));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 3));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 1));
+        surfaceEdgeIndices.emplace_back();  // 3
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 6));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 4));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 3));
+        surfaceEdgeIndices.emplace_back();  // 4
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 5));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 2));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 1));
+      }
 
     } else if (isPrism(type)) {
       if (verticesIn.size() != 6)
@@ -167,7 +224,31 @@ namespace Ikarus::Grid {
       insertVertexIndicesinEdge({verticesIn[3], verticesIn[4]});  // 6
       insertVertexIndicesinEdge({verticesIn[5], verticesIn[3]});  // 7
       insertVertexIndicesinEdge({verticesIn[4], verticesIn[5]});  // 8
-
+      if constexpr (dimension > 2) {
+        surfaceEdgeIndices.emplace_back();  // 0
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 9));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 8));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 6));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 3));
+        surfaceEdgeIndices.emplace_back();  // 1
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 9));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 7));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 5));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 2));
+        surfaceEdgeIndices.emplace_back();  // 2
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 8));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 7));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 4));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 1));
+        surfaceEdgeIndices.emplace_back();  // 3
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 6));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 5));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 4));
+        surfaceEdgeIndices.emplace_back();  // 4
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 3));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 2));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 1));
+      }
     } else if (isLinearHexahedron(type)) {
       if (verticesIn.size() != 8)
         DUNE_THROW(Dune::GridError, "You have requested to enter a hexahedron, but you"
@@ -185,6 +266,39 @@ namespace Ikarus::Grid {
       insertVertexIndicesinEdge({verticesIn[4], verticesIn[5]});  // 10
       insertVertexIndicesinEdge({verticesIn[7], verticesIn[6]});  // 11
 
+      if constexpr (dimension > 2) {
+        surfaceEdgeIndices.emplace_back();  // 0
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 12));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 10));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() -  8));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() -  4));
+        surfaceEdgeIndices.emplace_back();  // 1
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 11));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() -  9));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() -  7));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() -  3));
+        surfaceEdgeIndices.emplace_back();  // 2
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 12));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 11));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() -  6));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() -  2));
+        surfaceEdgeIndices.emplace_back();  // 3
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() - 10));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() -  9));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() -  5));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() -  1));
+        surfaceEdgeIndices.emplace_back();  // 4
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() -  8));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() -  7));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() -  6));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() -  5));
+        surfaceEdgeIndices.emplace_back();  // 4
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() -  4));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() -  3));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() -  2));
+        surfaceEdgeIndices.back().emplace_back(*(elementEdgeIndices.back().end() -  1));
+      }
+
     } else {
       DUNE_THROW(Dune::GridError, "You cannot insert a " << type << " into a SimpleGrid<" << dimensionworld << ">!");
     }
@@ -196,8 +310,8 @@ namespace Ikarus::Grid {
    *
    **/
   template <int dimension, int dimensionworld>
-  void SimpleGridFactory<dimension,dimensionworld>::storeVerticesIndicesOfSurfaces(Ikarus::GeometryType type,
-                                                                         std::span<size_t> verticesIn) {
+  void SimpleGridFactory<dimension, dimensionworld>::storeVerticesIndicesOfSurfaces(Ikarus::GeometryType type,
+                                                                                    std::span<size_t> verticesIn) {
     elementSurfaceIndices.emplace_back();
     if (isLinearLine(type)) {
       DUNE_THROW(Dune::GridError, "A line does not have surfaces.");

@@ -76,7 +76,18 @@ namespace Ikarus::Grid {
 
   private:
     size_t getNextFreeId() { return freeIdCounter++; }
-    friend class SimpleGridView<dim, dimworld>;
+    friend class SimpleGridView<dimension, dimensionworld>;
+    friend class SimpleGridIndexSet<SimpleGrid<dimension, dimensionworld>>;
+
+    template <class EntityType>
+    size_t getEntityID(const EntityType& entity) const {
+      return entity.getID();
+    }
+
+    template <class EntityType>
+    size_t getEntityID(EntityType* const entity) const {
+      return getEntityID(*entity);
+    }
 
     GridEntitiesContainer gridEntitiesContainer;
 
