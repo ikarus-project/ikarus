@@ -26,7 +26,7 @@ namespace Ikarus::Concepts {
     VariableType::tagvalue;
     typename VariableType::CoordinateType;
     typename VariableType::CorrectionType;
-    { var.getValue() } -> std::convertible_to<typename VariableType::CoordinateType>;
+    { var.getValue() } -> std::same_as<typename VariableType::CoordinateType>;
     { var.setValue(value) } -> std::same_as<void>;
     { var.update(correction) } -> std::same_as<void>;
     { var == var2 } -> std::same_as<bool>;

@@ -36,9 +36,9 @@ TEST(NonLinearOperator, SimpleOperator) {
   EXPECT_DOUBLE_EQ(x, xExpected);
 }
 
-Eigen::VectorXd fv( Eigen::VectorXd& x, Eigen::MatrixXd& A, Eigen::VectorXd& b) { return b+ A*x; }
+Eigen::VectorXd fv(Eigen::VectorXd& x, Eigen::MatrixXd& A, Eigen::VectorXd& b) { return b + A * x; }
 Eigen::MatrixXd dfv([[maybe_unused]] Eigen::VectorXd& x, Eigen::MatrixXd& A, [[maybe_unused]] Eigen::VectorXd& b) {
-  return  A;
+  return A;
 }
 
 TEST(NonLinearOperator, VectorValuedOperator) {
@@ -46,13 +46,13 @@ TEST(NonLinearOperator, VectorValuedOperator) {
 
   x << 1, 2, 3;
   Eigen::VectorXd b(3);
-  b<< 5,7,8;
-  Eigen::MatrixXd A(3,3);
-  A = Eigen::MatrixXd::Identity(3,3)*13;
+  b << 5, 7, 8;
+  Eigen::MatrixXd A(3, 3);
+  A = Eigen::MatrixXd::Identity(3, 3) * 13;
 
-  auto fvLambda = [&](auto&& x){return fv(x,A,b); };
-  auto dfvLambda = [&](auto&& x){return dfv(x,A,b); };
-  auto nonLinOp = NonLinearOperator(fvLambda, dfvLambda, x);
+  auto fvLambda  = [&](auto&& x) { return fv(x, A, b); };
+  auto dfvLambda = [&](auto&& x) { return dfv(x, A, b); };
+  auto nonLinOp  = NonLinearOperator(fvLambda, dfvLambda, x);
 
   auto& val      = nonLinOp.value();
   auto& jacobian = nonLinOp.derivative();
@@ -62,10 +62,10 @@ TEST(NonLinearOperator, VectorValuedOperator) {
   const int maxIter = 20;
   int iter          = 0;
   while (val.norm() > eps && iter < maxIter) {
-    x -= jacobian.inverse()*val;
+    x -= jacobian.inverse() * val;
     nonLinOp.updateAll();
     ++iter;
   }
-    EXPECT_EQ(iter, 1); // Linear System should be solved in one step
-    EXPECT_THAT(b, EigenApproxEqual(-A*x,1e-15));
+  EXPECT_EQ(iter, 1);  // Linear System should be solved in one step
+  EXPECT_THAT(b, EigenApproxEqual(-A * x, 1e-15));
 }

@@ -12,41 +12,31 @@ namespace Ikarus::FiniteElements {
   void initialize(IFiniteElement& fe) { fe.feimpl->do_initialize(); }
   int dofSize(const IFiniteElement& fe) { return fe.feimpl->do_dofSize(); }
   std::pair<Eigen::MatrixXd, Eigen::VectorXd> calculateLocalSystem(const IFiniteElement& fe,
-                                                                   IFiniteElement::VariableVectorType& vars,
                                                                    const MatrixAffordances& matA,
-                                                                   const VectorAffordances& vecA) {
-    return fe.feimpl->do_calculateLocalSystem(vars, matA, vecA);
+                                                                   const VectorAffordances& vecA,
+                                                                   IFiniteElement::VariableVectorType& vars,
+                                                                   IFiniteElement::DataVectorType data) {
+    return fe.feimpl->do_calculateLocalSystem(matA, vecA, vars, data);
   }
-  Eigen::MatrixXd calculateMatrix(const IFiniteElement& fe, IFiniteElement::VariableVectorType& vars,
-                                  const MatrixAffordances& matA) {
-    return fe.feimpl->do_calculateMatrix(vars, matA);
-  }
-
-  Eigen::MatrixXd calculateMatrix(const IFiniteElement* fe, IFiniteElement::VariableVectorType& vars,
-                                  const MatrixAffordances& matA) {
-    return calculateMatrix((*fe), vars, matA);
+  Eigen::MatrixXd calculateMatrix(const IFiniteElement& fe, const MatrixAffordances& matA,
+                                  IFiniteElement::VariableVectorType& vars, IFiniteElement::DataVectorType data) {
+    return fe.feimpl->do_calculateMatrix(matA, vars, data);
   }
 
-  Eigen::VectorXd calculateVector(const IFiniteElement& fe, IFiniteElement::VariableVectorType& vars,
-                                  const VectorAffordances& vecA) {
-    return fe.feimpl->do_calculateVector(vars, vecA);
-  }
-  Eigen::VectorXd calculateVector(const IFiniteElement* fe, IFiniteElement::VariableVectorType& vars,
-                                  const VectorAffordances& vecA) {
-    return calculateVector((*fe), vars, vecA);
+  Eigen::VectorXd calculateVector(const IFiniteElement& fe, const VectorAffordances& vecA,
+                                  IFiniteElement::VariableVectorType& vars, IFiniteElement::DataVectorType data) {
+    return fe.feimpl->do_calculateVector(vecA, vars, data);
   }
 
-  double calculateScalar(const IFiniteElement& fe, IFiniteElement::VariableVectorType& vars,
-                         const ScalarAffordances& scalA) {
-    return fe.feimpl->do_calculateScalar(vars, scalA);
+  double calculateScalar(const IFiniteElement& fe, const ScalarAffordances& scalA,
+                         IFiniteElement::VariableVectorType& vars, IFiniteElement::DataVectorType data) {
+    return fe.feimpl->do_calculateScalar(scalA, vars, data);
   }
 
-  double calculateScalar(const IFiniteElement* fe, IFiniteElement::VariableVectorType& vars,
-                         const ScalarAffordances& scalA) {
-    return calculateScalar((*fe), vars, scalA);
+  IFiniteElement::DofPairVectorType getEntityVariableTuple(const IFiniteElement& fe) {
+    return fe.feimpl->do_getEntityVariableTuple();
   }
-  IFiniteElement::DofPairVectorType getEntityVariablePairs(const IFiniteElement& fe) {
-    return fe.feimpl->do_getEntityVariablePairs();
-  }
-  size_t getEntityID(const IFiniteElement& fe) { return fe.feimpl->do_getEntityID(); }
+  unsigned int subEntities(const IFiniteElement& fe, unsigned int codim) { return fe.feimpl->do_subEntities(codim); }
+  size_t subIndex(const IFiniteElement& fe, int i, unsigned int codim) { return fe.feimpl->do_subIndex(i, codim); }
+  unsigned int dimension(const IFiniteElement& fe) { return fe.feimpl->do_dimension(); }
 }  // namespace Ikarus::FiniteElements

@@ -11,14 +11,15 @@
 
 #include <Eigen/Core>
 
-#include <ikarus/DofManager/DefaultDofManager.h>
+#include <ikarus/FEManager/DefaultFEManager.h>
 #include <ikarus/FiniteElements/ElasticityFE.h>
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
 #include <ikarus/Geometries/GeometryType.h>
 #include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
 
-TEST(DofHandler, DofHandlertest) {
+TEST(FEManager, FEManagertest) {
   using namespace Ikarus::Grid;
+  using namespace Ikarus::Variable;
   using Grid = SimpleGrid<2, 2>;
   SimpleGridFactory<2, 2> gridFactory;
   using vertexType = Eigen::Vector2d;
@@ -46,12 +47,15 @@ TEST(DofHandler, DofHandlertest) {
 
   std::vector<Ikarus::FiniteElements::IFiniteElement> fes;
 
+  EXPECT_EQ(surfaces(gridView).size(), 2);
   for (auto&& ge : surfaces(gridView))
-    fes.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge));
+    fes.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge, gridView.indexSet()));
 
-  auto dh = Ikarus::DofManager::DefaultDofManager(fes, gridView);
+  auto dh = Ikarus::FEManager::DefaultFEManager(fes, gridView);
 
-  auto VariableList = dh.elementVariables()[0];
+  auto VariableList = dh.elementVariables()[0].get(Ikarus::EntityType::vertex);
+
+  EXPECT_THROW(dh.elementDofsVariableDataTuple(), std::logic_error);
 
   for (auto&& var : VariableList)
     var += Eigen::Vector<double, 2>::UnitX();
@@ -62,12 +66,12 @@ TEST(DofHandler, DofHandlertest) {
     EXPECT_THAT(eleDofVecSize, 8);
   }
 
-  auto VariableList2 = dh.elementVariables()[1];
+  auto VariableList2 = dh.elementVariables()[1].get(Ikarus::EntityType::vertex);
 
-  EXPECT_THAT(getValue((*VariableList2[0])), EigenApproxEqual(Eigen::Vector<double, 2>::UnitX(), 1e-15));
-  EXPECT_THAT(getValue((*VariableList2[1])), EigenApproxEqual(Eigen::Vector<double, 2>::Zero(), 1e-15));
-  EXPECT_THAT(getValue((*VariableList2[2])), EigenApproxEqual(Eigen::Vector<double, 2>::UnitX(), 1e-15));
-  EXPECT_THAT(getValue((*VariableList2[3])), EigenApproxEqual(Eigen::Vector<double, 2>::Zero(), 1e-15));
+  EXPECT_THAT(getValue(VariableList2[0]), EigenApproxEqual(Eigen::Vector<double, 2>::UnitX(), 1e-15));
+  EXPECT_THAT(getValue(VariableList2[1]), EigenApproxEqual(Eigen::Vector<double, 2>::Zero(), 1e-15));
+  EXPECT_THAT(getValue(VariableList2[2]), EigenApproxEqual(Eigen::Vector<double, 2>::UnitX(), 1e-15));
+  EXPECT_THAT(getValue(VariableList2[3]), EigenApproxEqual(Eigen::Vector<double, 2>::Zero(), 1e-15));
 
   EXPECT_THAT(dh.correctionSize(), vertices(gridView).size() * 2);
   Eigen::VectorXd D(vertices(gridView).size() * 2);

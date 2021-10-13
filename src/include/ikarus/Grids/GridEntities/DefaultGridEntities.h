@@ -12,11 +12,13 @@
 
 #include <ikarus/Geometries/GeometryInterface.h>
 #include <ikarus/Geometries/GeometryType.h>
-#include <ikarus/Variables/DofOwnerDecorator.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
 #include <ikarus/utils/utils/traits.h>
 
 namespace Ikarus::Grid {
+
+  template <int dim, int dimworld>
+  class SimpleGrid;
 
   template <int griddim, int cogriddim, int wdim>
   class DefaultGridEntity;
@@ -92,17 +94,18 @@ namespace Ikarus::Grid {
     /** \brief Returns the geometric realization of the entity */
     auto geometry() const;
 
-    /** \brief Return copy of the id of this entity */
-    [[nodiscard]] size_t getID() const { return id; }
-
     /** \brief Get refínement level where this entity belongs to*/
     [[nodiscard]] int level() const { return levelIndex; }
 
   private:
+    friend class SimpleGrid<griddim, wdim>;
     /** \brief The refinement level to which this entity belongs */
     int levelIndex{};
     /** \brief A persistent id of this entity*/
     size_t id{};
+
+    /** \brief Return copy of the id of this entity */
+    [[nodiscard]] size_t getID() const { return id; }
 
     /** \brief Childrens of the entity on the current grid , i.e. surfaces of a cube*/
     EntitiesChildernType entitiesChildren;
@@ -152,9 +155,6 @@ namespace Ikarus::Grid {
     using EntitiesFatherType = decltype(Impl::FatherEntityPointerTupleGenerator<dimension, mydimension, dimensionworld>(
         std::make_integer_sequence<int, codimension>()));
 
-    /** \brief Return copy of the id of this entity */
-    [[nodiscard]] size_t getID() const { return id; }
-
     /** \brief Get refínement level where this entity belongs to*/
     [[nodiscard]] int level() const { return levelIndex; }
 
@@ -172,10 +172,14 @@ namespace Ikarus::Grid {
     auto geometry() const { return Geometry(duneType(type()), position); }
 
   private:
+    friend class SimpleGrid<griddim, wdim>;
     /** \brief The index of this element on the level it belongs to */
     int levelIndex{};
     /** \brief A persistent id of this entity*/
     size_t id{};
+
+    /** \brief Return copy of the id of this entity */
+    [[nodiscard]] size_t getID() const { return id; }
 
     /** \brief Childrens of the entity on the current grid , i.e. surfaces of a cube*/
     EntitiesFatherType entitiesFathers;
@@ -203,9 +207,6 @@ namespace Ikarus::Grid {
     static constexpr int dimensionworld = wdim;
 
     DefaultGridEntity(int levelInput, size_t idInput) : levelIndex{levelInput}, id{idInput} {}
-
-    /** \brief Return copy of the id of this entity */
-    [[nodiscard]] size_t getID() const { return id; }
 
     /** \brief Get refinement level where this entity belongs to*/
     [[nodiscard]] int level() const { return levelIndex; }
@@ -240,11 +241,15 @@ namespace Ikarus::Grid {
 
     /** \brief Return copy of the id of this entity */
   private:
+    friend class SimpleGrid<griddim, wdim>;
     /** \brief The refinement level to which this entity belongs */
     int levelIndex{};
 
     /** \brief A persistent id of this entity*/
     size_t id{};
+
+    /** \brief Return copy of the id of this entity */
+    [[nodiscard]] size_t getID() const { return id; }
 
     /** \brief Childrens of the entity on the current grid , i.e. surfaces of a cube*/
     decltype(Impl::ChildEntityPointerTupleGenerator<dimension, mydimension, dimensionworld>(

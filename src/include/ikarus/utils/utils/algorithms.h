@@ -24,15 +24,21 @@ namespace Ikarus::utils {
     return index;
   }
 
-  template <class Container>  // TODO: create concept for this
+  template <class Container>  // TODO: add concept for this
   void printContent(std::ostream& os, Container& varVec) {
     std::ranges::for_each(varVec, [&os](auto& var) { os << var << '\n'; });
   }
 
   template <class Container>
-  auto transformValueRangeToPointerRange(Container& varVec) {
+  auto transformValueRangeToPointerRange(Container& cont) {
     auto transformValueToPointer = [](auto&& obj) { return &obj; };
-    return (std::ranges::subrange(varVec.begin(), varVec.end()) | std::views::transform(transformValueToPointer));
+    return (std::ranges::subrange(cont.begin(), cont.end()) | std::views::transform(transformValueToPointer));
+  }
+
+  template <class Container>
+  auto transformPointerRangeToReferenceRange(Container& cont) {
+    auto transformValueToPointer = [](auto&& obj) -> auto& { return *obj; };
+    return (std::ranges::subrange(cont.begin(), cont.end()) | std::views::transform(transformValueToPointer));
   }
 
 }  // namespace Ikarus::utils

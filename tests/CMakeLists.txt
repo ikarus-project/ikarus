@@ -27,6 +27,7 @@ target_link_libraries(
 set_target_properties(IkarusTests PROPERTIES CXX_STANDARD 20)
 
 target_compile_options(IkarusTests PUBLIC -Wall -Wpedantic -Wextra -Werror)
+target_compile_options(IkarusTests PUBLIC -fconcepts-diagnostics-depth=5)
 
 if(MINGW)
   target_compile_options(IkarusTests PUBLIC -Wa,-mbig-obj)
