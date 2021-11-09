@@ -155,6 +155,12 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
   Ikarus::FEValues feDataValues;
   feDataValues.set(Ikarus::EntityType::vertex, datas);
 
+  EXPECT_THAT(feDataValues.get(Ikarus::EntityType::vertex).size(), 1);
+  EXPECT_THAT(feDataValues.get(Ikarus::EntityType::edge).size(), 0);
+  EXPECT_THAT(feDataValues.get(Ikarus::EntityType::surface).size(), 0);
+  EXPECT_THAT(feDataValues.get(Ikarus::EntityType::volume).size(), 0);
+  EXPECT_THAT(feDataValues.get(Ikarus::EntityType::generic).size(), 0);
+
   EXPECT_DOUBLE_EQ(calculateScalar(fe, potentialEnergy, feValues, feDataValues), 30.0);
   datas[0] = VariableFactory::createVariable(displacement1d);
   EXPECT_DOUBLE_EQ(calculateScalar(fe, potentialEnergy, feValues, feDataValues), 5.0);

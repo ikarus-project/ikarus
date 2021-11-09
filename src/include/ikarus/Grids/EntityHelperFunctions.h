@@ -80,10 +80,8 @@ namespace Ikarus {
           return surfaceData;
         case EntityType::volume:
           return volumeData;
-        case EntityType::generic:
+        default:  //     EntityType::generic:
           return genericData;
-        default:
-          throw std::logic_error("This should be impossible to end uo here.");
       }
     }
 

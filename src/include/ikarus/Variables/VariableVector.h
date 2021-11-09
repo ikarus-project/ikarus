@@ -80,15 +80,10 @@ namespace Ikarus::Variable {
     auto variablesOfSingleElement(const typename FEContainer::value_type &fe) {
       Ikarus::FEValues elementVariables;
 
-      //      auto getVariableofEntity = [this](auto &&i) -> auto & { return variablesForEachEntity[i]; };
       auto feSubIndicesRange = feIndexSet.subIndices(fe);
       for (auto &feSubIndex : feSubIndicesRange) {
         const auto &entityType = entityTypes.at(feSubIndex);
-        //        auto& variableVector = variablesForEachEntity[feSubIndex]
         elementVariables.set(entityType, variablesForEachEntity[feSubIndex]);
-        //        auto vectorOfVariablePointers = Ikarus::utils::transformValueRangeToPointerRange(variableVector);
-        //        elementVariables.insert(elementVariables.end(), vectorOfVariablePointers.begin(),
-        //                                vectorOfVariablePointers.end());
       }
       return elementVariables;
     }
