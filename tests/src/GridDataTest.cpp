@@ -277,7 +277,8 @@ TEST(GridDataInterfaceTest, SimpleIndexSetTest) {
 
     auto dh = Ikarus::FEManager::DefaultFEManager(fes, gridView, gridData);
 
-    for (int eleIndex = 0, surfIndex = 0; auto&& [fe, eledof, eleVars, eleData] : dh.elementDofsVariableDataTuple()) {
+    for (int eleIndex = 0, surfIndex = 0;
+         auto&& [fe, eledof, eleVars, eleData] : dh.elementIndicesVariableDataTuple()) {
       for (int varIndex = 0; auto&& eleSubData : eleData)
         EXPECT_THAT(*eleSubData, VariableFactory::createVariable(surfaceExpectedSubVars[eleIndex][varIndex++]));
       if (surfIndex == 5) ++eleIndex;

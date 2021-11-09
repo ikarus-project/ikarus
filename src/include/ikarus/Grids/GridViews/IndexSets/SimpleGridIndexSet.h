@@ -28,21 +28,22 @@ public:
   }
 
   template <typename Entity>
-  size_t subIndex(const Entity& entity, int i, unsigned int codim) const {
+  size_t subIndex(const Entity& entity, int subEntityNumber, unsigned int codim) const {
     constexpr size_t entityDimension = std::remove_pointer_t<Entity>::mydimension;
     //    constexpr size_t worldDimension  = std::remove_pointer_t<Entity>::dimensionworld;
     assert(codim <= worldDimension);
     if constexpr (entityDimension > 1)
-      if (worldDimension - codim == 1) return index(*entity.template getChildEntities<1>()[i]);  // edges
+      if (worldDimension - codim == 1) return index(*entity.template getChildEntities<1>()[subEntityNumber]);  // edges
 
     if constexpr (entityDimension > 2)
-      if (worldDimension - codim == 2) return index(*entity.template getChildEntities<2>()[i]);  // surfaces
+      if (worldDimension - codim == 2)
+        return index(*entity.template getChildEntities<2>()[subEntityNumber]);  // surfaces
 
     if (worldDimension - codim == 0)
-      return index(*entity.template getChildEntities<0>()[i]);  // these are vertices
-    else                                                        // codim==0
+      return index(*entity.template getChildEntities<0>()[subEntityNumber]);  // these are vertices
+    else                                                                      // codim==0
     {
-      assert(i == 0 && "There exists only one index per entity");
+      assert(subEntityNumber == 0 && "Your choice of entity and codim means that you request the id the entity itself. This is only valid for i==0 since each entity has only one unique index");
       return index(entity);
     }
   }

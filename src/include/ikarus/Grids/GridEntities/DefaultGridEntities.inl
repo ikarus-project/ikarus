@@ -31,14 +31,16 @@ namespace Ikarus::Grid {
 
   template <int griddim, int cogriddim, int wdim>
   [[nodiscard]] unsigned int DefaultGridEntity<griddim, cogriddim, wdim>::subEntities(unsigned int codim) const {
-    assert(codim > 1 && codim <= 3 && "Two dimensional entities only have subentities in 0<codimension<=2.");
+    assert(codim > 0 && codim <= 3 && "The number of subentities you requested does not make sense.");
 
-    if constexpr (mydimension == 1) return getChildVertices().size();
+    if  (griddim - codim== 0) return getChildVertices().size();
     if constexpr (mydimension == 2) {
-      if (wdim - codim == 1)
+      if (griddim - codim == 1)
         return getChildEntities<1>().size();
-      else if (wdim - codim == 0)
-        return getChildEntities<0>().size();
+    }
+    else if constexpr (mydimension == 3) {
+      if (griddim - codim == 2)
+        return getChildEntities<2>().size();
     }
     return 0;
   }

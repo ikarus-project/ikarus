@@ -41,11 +41,11 @@ namespace Ikarus::Variable {
 
       variablesForEachEntity.resize(dofVector.size());
       // creating vector of variables and save in variableIndexMap to which entity the belong
-      for (auto &&[entityID, typeAnddofTagVector] : dofVector) {
-        auto &&[entityType, dofTagVector] = typeAnddofTagVector;
-        const auto &entityIndex           = feIndexSet.indexOfEntity(entityID);
-        entityTypes[entityIndex]          = entityType;
-        for (auto &&var : dofTagVector | std::views::transform(&Ikarus::Variable::VariableFactory::createVariable))
+      for (auto &&[entityID, typeAnddofTagSet] : dofVector) {
+        auto &&[entityType, dofTagSet] = typeAnddofTagSet;
+        const auto &entityIndex        = feIndexSet.indexOfEntity(entityID);
+        entityTypes[entityIndex]       = entityType;
+        for (auto &&var : dofTagSet | std::views::transform(&Ikarus::Variable::VariableFactory::createVariable))
           variablesForEachEntity[entityIndex].emplace_back(var);
       }
 
@@ -109,6 +109,13 @@ namespace Ikarus::Variable {
       assert(static_cast<long long int>(correctionSize()) == correction.size());
       for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(this->variablesForEachEntity))
         var += correction(variableIndices[variableIndex++]);
+      return *this;
+    }
+
+    VariableVector &operator-=(const Eigen::VectorXd &correction) {
+      assert(static_cast<long long int>(correctionSize()) == correction.size());
+      for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(this->variablesForEachEntity))
+        var -= correction(variableIndices[variableIndex++]);
       return *this;
     }
     template <class Functype>

@@ -18,7 +18,7 @@ namespace Ikarus::Assembler {
   template <typename DofManagerType>
   class ScalarAssembler {
   public:
-    explicit ScalarAssembler(DofManagerType& dofManager) : feManager_{&dofManager}, scal{0} {}
+    explicit ScalarAssembler(DofManagerType& dofManager) : feManager_{&dofManager} {}
 
     double& getScalar(Ikarus::FiniteElements::ScalarAffordances scalarAffordances) {
       return getScalarImpl(scalarAffordances);
@@ -26,23 +26,22 @@ namespace Ikarus::Assembler {
 
   private:
     double& getScalarImpl(Ikarus::FiniteElements::ScalarAffordances scalarAffordances) {
-      scal = 0;
-      for (auto [fe, dofs, vars] : feManager_->elementDofsVariableTuple()) {
+      scal = 0.0;
+      for (auto [fe, dofs, vars] : feManager_->elementIndicesVariableTuple()) {
         scal += calculateScalar(fe, scalarAffordances, vars);
       }
       return scal;
     }
 
-  private:
     DofManagerType* feManager_;
-    double scal{};
+    double scal{0.0};
   };
 
   template <typename DofManagerType>
   class VectorAssembler {
   public:
     explicit VectorAssembler(DofManagerType& dofManager)
-        : feManager_{&dofManager}, vec{Eigen::VectorXd::Zero(feManager_->correctionSize())} {}
+        : feManager_{&dofManager}, vec{Eigen::VectorXd::Zero(feManager_->numberOfDegreesOfFreedom())} {}
 
     Eigen::VectorXd& getVector(Ikarus::FiniteElements::VectorAffordances vectorAffordances) {
       return getVectorImpl(vectorAffordances);
@@ -50,8 +49,8 @@ namespace Ikarus::Assembler {
 
   private:
     Eigen::VectorXd& getVectorImpl(Ikarus::FiniteElements::VectorAffordances vecAffordances) {
-      vec.setZero(feManager_->correctionSize());
-      for (auto&& [fe, dofIndices, vars] : feManager_->elementDofsVariableTuple()) {
+      vec.setZero(feManager_->numberOfDegreesOfFreedom());
+      for (auto&& [fe, dofIndices, vars] : feManager_->elementIndicesVariableTuple()) {
         assert(dofIndices.size() == calculateVector(fe, vecAffordances, vars).size()
                && "The returned vector has wrong rowSize!");
         vec(dofIndices) += calculateVector(fe, vecAffordances, vars);
@@ -59,7 +58,6 @@ namespace Ikarus::Assembler {
       return vec;
     }
 
-  private:
     DofManagerType* feManager_;
     Eigen::VectorXd vec{};
   };
@@ -69,7 +67,7 @@ namespace Ikarus::Assembler {
   public:
     explicit DenseMatrixAssembler(DofManagerType& dofManager)
         : feManager_{&dofManager},
-          mat{Eigen::MatrixXd::Zero(feManager_->correctionSize(), feManager_->correctionSize())} {}
+          mat{Eigen::MatrixXd::Zero(feManager_->numberOfDegreesOfFreedom(), feManager_->numberOfDegreesOfFreedom())} {}
 
     Eigen::MatrixXd& getMatrix(Ikarus::FiniteElements::MatrixAffordances MatrixAffordances) {
       return getMatrixImpl(MatrixAffordances);
@@ -77,8 +75,8 @@ namespace Ikarus::Assembler {
 
   private:
     Eigen::MatrixXd& getMatrixImpl(Ikarus::FiniteElements::MatrixAffordances matAffordances) {
-      mat.setZero(feManager_->correctionSize(), feManager_->correctionSize());
-      for (auto [fe, dofs, vars] : feManager_->elementDofsVariableTuple()) {
+      mat.setZero(feManager_->numberOfDegreesOfFreedom(), feManager_->numberOfDegreesOfFreedom());
+      for (auto [fe, dofs, vars] : feManager_->elementIndicesVariableTuple()) {
         assert(dofs.size() == calculateMatrix(fe, matAffordances, vars).rows()
                && "The returned matrix has wrong rowSize!");
         assert(dofs.size() == calculateMatrix(fe, matAffordances, vars).cols()
@@ -88,7 +86,6 @@ namespace Ikarus::Assembler {
       return mat;
     }
 
-  private:
     DofManagerType* feManager_;
     Eigen::MatrixXd mat{};
   };
@@ -108,7 +105,7 @@ namespace Ikarus::Assembler {
       if (!arelinearDofsPerElementCreated) createlinearDofsPerElement();
       spMat.coeffs().setZero();
       Eigen::MatrixXd A;
-      for (size_t elementIndex = 0; auto [fe, dofs, vars] : feManager_->elementDofsVariableTuple()) {
+      for (size_t elementIndex = 0; auto [fe, dofs, vars] : feManager_->elementIndicesVariableTuple()) {
         A = calculateMatrix(fe, MatrixAffordances, vars);
         assert(dofs.size() == A.rows() && "The returned matrix has wrong rowSize!");
         assert(dofs.size() == A.cols() && "The returned matrix has wrong colSize!");
@@ -121,7 +118,7 @@ namespace Ikarus::Assembler {
 
     // https://stackoverflow.com/questions/59192659/efficiently-use-eigen-for-repeated-sparse-matrix-assembly-in-nonlinear-finite-el
     void createOccupationPattern() {
-      spMat.resize(feManager_->correctionSize(), feManager_->correctionSize());
+      spMat.resize(feManager_->numberOfDegreesOfFreedom(), feManager_->numberOfDegreesOfFreedom());
       std::vector<Eigen::Triplet<double>> vectorOfTriples;
       int estimateOfConnectivity = 6;
       vectorOfTriples.reserve(estimateOfConnectivity * vertices((*feManager_->getGridView())).size());
@@ -145,7 +142,6 @@ namespace Ikarus::Assembler {
       }
     }
 
-  private:
     bool isOccupationPatternCreated{false};
     bool arelinearDofsPerElementCreated{false};
     DofManagerType* feManager_;
