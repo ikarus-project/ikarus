@@ -50,7 +50,7 @@ TEST(DefaultVariableTest, RealTupleDisplacement) {
 
   EXPECT_EQ(getValue(b), testVec);
   for (auto&& varTag : Ikarus::Variable::AllVariableTags)
-    auto h = VariableFactory::createVariable(varTag);
+    auto h = VariableFactory::createVariable(varTag);  // check if all variables can be created
 
   std::stringstream testStream;
   testStream << b;

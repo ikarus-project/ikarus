@@ -27,7 +27,7 @@ namespace Ikarus {
   inline constexpr auto RootEntities = RootEntitiesStruct{};
 
   template <typename EntityTypeG, int gridDim>
-  static consteval int resolveEntityType() {
+  static consteval int determineEntityDimension() {
     using EntityType = std::decay_t<EntityTypeG>;
     //  std::cout<<Dune::className(EntityType{})<<std::endl;
     if constexpr (std::is_same_v<EntityType, VerticesStruct> || std::is_same_v<EntityType, EntitiesWithCoDim<gridDim>>)

@@ -90,10 +90,6 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
     vars.emplace_back(VariableFactory::createVariable(displacement2d));
     vars.emplace_back(VariableFactory::createVariable(displacement2d));
 
-    std::vector<IVariable*> varsP;
-    varsP.resize(4);
-    for (int i = 0; auto& varP : varsP)
-      varP = &vars[i++];
     Ikarus::FEValues feValues;
     feValues.set(Ikarus::EntityType::vertex, vars);
 
@@ -110,9 +106,6 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
     EXPECT_EQ(fintEle.size(), 8);
   }
 
-  Ikarus::FiniteElements::IFiniteElement fe((TestFE()));
-
-  initialize(fe);
   const auto entityIDDofPair = getEntityVariableTuple(fes[0]);
   std::vector<std::pair<size_t, Ikarus::Variable::VariablesTags>> idtagExpected;
   idtagExpected.emplace_back(0, Ikarus::Variable::displacement2d);
@@ -136,21 +129,12 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
   vars.emplace_back(VariableFactory::createVariable(displacement2d));
   vars.emplace_back(VariableFactory::createVariable(displacement2d));
 
-  std::vector<IVariable*> varsP;
-  varsP.resize(4);
-  for (int i = 0; auto& varP : varsP)
-    varP = &vars[i++];
-
   Ikarus::FEValues feValues;
   feValues.set(Ikarus::EntityType::vertex, vars);
 
   std::vector<IVariable> datas;
   datas.emplace_back(VariableFactory::createVariable(displacement2d));
   datas[0] += Eigen::Vector2d(15, 2);
-  std::vector<IVariable*> datasP;
-  datasP.resize(1);
-  for (int i = 0; auto& dataP : datasP)
-    dataP = &datas[i++];
 
   Ikarus::FEValues feDataValues;
   feDataValues.set(Ikarus::EntityType::vertex, datas);
@@ -161,6 +145,9 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
   EXPECT_THAT(feDataValues.get(Ikarus::EntityType::volume).size(), 0);
   EXPECT_THAT(feDataValues.get(Ikarus::EntityType::generic).size(), 0);
 
+  Ikarus::FiniteElements::IFiniteElement fe((TestFE()));
+  initialize(fe);
+  // check behaviour of dummy fe calculate scalar funktion before adding data and after
   EXPECT_DOUBLE_EQ(calculateScalar(fe, potentialEnergy, feValues, feDataValues), 30.0);
   datas[0] = VariableFactory::createVariable(displacement1d);
   EXPECT_DOUBLE_EQ(calculateScalar(fe, potentialEnergy, feValues, feDataValues), 5.0);

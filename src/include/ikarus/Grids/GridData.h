@@ -48,15 +48,11 @@ public:
   }
 
   template <typename... DataArgs, typename... Args>
-  void add(const Data<DataArgs...> &data, const At<Args...> &at) {
-    static_assert(sizeof...(DataArgs) >= 1);
-
+  requires(sizeof...(DataArgs) >= 1 && sizeof...(Args) >= 1
+           && sizeof...(DataArgs) == sizeof...(Args)) void add(const Data<DataArgs...> &data, const At<Args...> &at) {
     constexpr auto n = sizeof...(Args);
-    static_assert(n >= 1);
-    static_assert(n == sizeof...(DataArgs), "The entity types and datatype size should be the same!");
-
     Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<n>()), [&](const auto i) {
-      static constexpr int entityTypeId = Ikarus::resolveEntityType<decltype(std::get<i>(at.args)), gridDim>();
+      static constexpr int entityTypeId = Ikarus::determineEntityDimension<decltype(std::get<i>(at.args)), gridDim>();
       resizeIfEmpty(entityTypeId);
 
       for (auto &vectorOfEntityVariables : variablesForEachEntity[entityTypeId]) {
@@ -73,15 +69,13 @@ public:
   }
 
   template <typename... DataArgs, typename... Args>
-  void remove(const Data<DataArgs...> &data, const At<Args...> &at) {
-    static_assert(sizeof...(DataArgs) >= 1);
-
+  requires(sizeof...(DataArgs) >= 1 && sizeof...(Args) >= 1
+           && sizeof...(DataArgs) == sizeof...(Args)) void remove(const Data<DataArgs...> &data,
+                                                                  const At<Args...> &at) {
     constexpr auto n = sizeof...(Args);
-    static_assert(n >= 1);
-    static_assert(n == sizeof...(DataArgs), "The entity types and datatype size should be the same!");
 
     Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<n>()), [&](const auto i) {
-      static constexpr int entityTypeId = Ikarus::resolveEntityType<decltype(std::get<i>(at.args)), gridDim>();
+      static constexpr int entityTypeId = Ikarus::determineEntityDimension<decltype(std::get<i>(at.args)), gridDim>();
       resizeIfEmpty(entityTypeId);
 
       for (auto &vectorOfEntityVariables : variablesForEachEntity[entityTypeId]) {

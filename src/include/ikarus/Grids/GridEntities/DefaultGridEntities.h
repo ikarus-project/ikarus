@@ -146,8 +146,6 @@ namespace Ikarus::Grid {
     }
     DefaultGridEntity() = default;
 
-    static_assert(true, "DefaultGridEntity not implemented for this mydim / griddim combination  ");
-
     /** \brief Type of the geometry of this entity */
     using Geometry = Dune::MultiLinearGeometry<double, codimension, dimensionworld>;
 

@@ -26,14 +26,12 @@ namespace Ikarus::FEManager {
       HasFreegetEntityVariableTuple<typename std::decay_t<FEContainer>::value_type>
   class DefaultFEManager {
   public:
-    // Dimension of the grid
-    static constexpr int gridDim = GridViewType::dimension;
-    using GridDataType           = GridData<typename GridViewType::IndexSetType>;
+    using GridDataType = GridData<typename GridViewType::IndexSetType>;
     DefaultFEManager(FEContainer& feContainer, GridViewType& gv,
                      std::optional<std::reference_wrapper<GridDataType>> gridData = std::nullopt)
         : gridView_{&gv}, gridData_{gridData}, varVec{feContainer} {}
 
-    size_t correctionSize() { return varVec.correctionSize(); }
+    size_t numberOfDegreesOfFreedom() { return varVec.correctionSize(); }
 
     auto elementDofs() { return varVec.elementDofs(); };
 
@@ -41,22 +39,22 @@ namespace Ikarus::FEManager {
 
     auto elementDofVectorSize() { return varVec.elementDofVectorSize(); };
 
-    auto elementDofsVariableTuple() {
+    auto elementIndicesVariableTuple() {
       return varVec.transform_viewOverElements([&](auto& fe) {
-        auto elementsVariables        = varVec.variablesOfSingleElement(fe);
-        auto elementsDegreesOfFreedom = varVec.dofIndicesOfSingleElement(fe);
-        return std::make_tuple(std::ref(fe), elementsDegreesOfFreedom, elementsVariables);
+        auto elementsVariables = varVec.variablesOfSingleElement(fe);
+        auto elementsIndices   = varVec.dofIndicesOfSingleElement(fe);
+        return std::make_tuple(std::ref(fe), elementsIndices, elementsVariables);
       });
     }
 
-    auto elementDofsVariableDataTuple() {
+    auto elementIndicesVariableDataTuple() {
       if (gridData_.has_value())
         return varVec.transform_viewOverElements([&](auto& fe) {
-          auto elementsVariables        = varVec.variablesOfSingleElement(fe);
-          auto elementsDegreesOfFreedom = varVec.dofIndicesOfSingleElement(fe);
-          auto elementData              = gridData_.value().get().getAllSubEntityDataOfFE(fe);
+          auto elementsVariables = varVec.variablesOfSingleElement(fe);
+          auto elementsIndices   = varVec.dofIndicesOfSingleElement(fe);
+          auto elementData       = gridData_.value().get().getAllSubEntityDataOfFE(fe);
 
-          return std::make_tuple(std::ref(fe), elementsDegreesOfFreedom, elementsVariables, elementData);
+          return std::make_tuple(std::ref(fe), elementsIndices, elementsVariables, elementData);
         });
       else
         throw std::logic_error(
