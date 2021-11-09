@@ -9,7 +9,7 @@ file(
 project(
   Ikarus
   VERSION 1.0
-  LANGUAGES CXX
+  LANGUAGES C CXX
 )
 
 add_library(${PROJECT_NAME} ${sources})
