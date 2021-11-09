@@ -92,7 +92,13 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
 
     Ikarus::FEValues feValues;
     feValues.set(Ikarus::EntityType::vertex, vars);
+    feValues.set(Ikarus::EntityType::edge, vars);
+    feValues.set(Ikarus::EntityType::surface, vars);
+    feValues.set(Ikarus::EntityType::volume, vars);
+    feValues.set(Ikarus::EntityType::generic, vars);
 
+    //test FE withoutData
+    {
     const auto [KEle, fintEle] = calculateLocalSystem(fe, stiffness, forces, feValues);
     EXPECT_EQ(dofSize(fe), 8);
     EXPECT_EQ(calculateVector(fe, forces, feValues).size(), 8);
@@ -104,6 +110,34 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
     EXPECT_EQ(KEle.rows(), 8);
     EXPECT_EQ(KEle.cols(), 8);
     EXPECT_EQ(fintEle.size(), 8);
+    }
+    feValues.set(Ikarus::EntityType::vertex, vars[0]);
+    feValues.set(Ikarus::EntityType::edge, vars[0]);
+    feValues.set(Ikarus::EntityType::surface, vars[0]);
+    feValues.set(Ikarus::EntityType::volume, vars[0]);
+    feValues.set(Ikarus::EntityType::generic, vars[0]);
+
+    Ikarus::FEValues dataFeValues;
+    dataFeValues.set(Ikarus::EntityType::vertex, vars);
+    dataFeValues.set(Ikarus::EntityType::edge, vars);
+    dataFeValues.set(Ikarus::EntityType::surface, vars);
+    dataFeValues.set(Ikarus::EntityType::volume, vars);
+    dataFeValues.set(Ikarus::EntityType::generic, vars);
+
+    {
+      const auto [KEle, fintEle] = calculateLocalSystem(fe, stiffness, forces, feValues,dataFeValues);
+      EXPECT_EQ(dofSize(fe), 8);
+      EXPECT_EQ(calculateVector(fe, forces, feValues,dataFeValues).size(), 8);
+      EXPECT_DOUBLE_EQ(calculateScalar(fe, potentialEnergy, feValues,dataFeValues), 13.0);
+      EXPECT_EQ(calculateMatrix(fe, stiffness, feValues,dataFeValues).cols(), 8);
+      EXPECT_EQ(calculateMatrix(fe, stiffness, feValues,dataFeValues).rows(), 8);
+      EXPECT_THROW(calculateMatrix(fe, mass, feValues,dataFeValues), std::logic_error);
+      EXPECT_THROW(calculateLocalSystem(fe, mass, forces, feValues,dataFeValues), std::logic_error);
+      EXPECT_EQ(KEle.rows(), 8);
+      EXPECT_EQ(KEle.cols(), 8);
+      EXPECT_EQ(fintEle.size(), 8);
+    }
+
   }
 
   const auto entityIDDofPair = getEntityVariableTuple(fes[0]);

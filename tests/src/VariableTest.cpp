@@ -52,6 +52,9 @@ TEST(DefaultVariableTest, RealTupleDisplacement) {
   for (auto&& varTag : Ikarus::Variable::AllVariableTags)
     auto h = VariableFactory::createVariable(varTag);  // check if all variables can be created
 
+  //creating variables with uknown tag is illega
+  EXPECT_THROW(VariableFactory::createVariable(static_cast<Ikarus::Variable::VariablesTags>(-15)), std::logic_error);
+
   std::stringstream testStream;
   testStream << b;
   EXPECT_EQ(testStream.str(), "127  -5   1\n Tag: displacement3d\n");
