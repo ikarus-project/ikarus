@@ -31,4 +31,6 @@ sudo apt install libasound2 xvfb
   
 - [Click on this link](http://127.0.0.1:8000/)
 - Now you should see a live preview of the documentation in your browser
+- You can edit the documentation in CLion. `STRG` + `s` saves the documentation and updates it in
+  your browser window.
 - Cancel the build process to stop the live preview
