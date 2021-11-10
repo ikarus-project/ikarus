@@ -23,3 +23,32 @@
 website. Add `MyAdditionalPage.md` where you want it to appear
 - Create a pull request
 - Once the pull request is accepted, the website is automatically updated
+
+## Insert a latex formula
+`$$ \mathbf{X} \left( \xi,\eta \right) = \begin{bmatrix} \xi^2 \\ 5\xi\eta \end{bmatrix} $$` 
+is compiled to
+
+$$ \mathbf{X} \left( \xi,\eta \right) = \begin{bmatrix} \xi^2 \\ 5\xi\eta \end{bmatrix} $$
+
+## Insert C++ code
+Look at the markdown file of this page to see how C++ code can be inserted.
+```cpp
+double complicatedCalculation(double number, double anotherNumber) 
+{
+  return number*anotherNumber;
+};
+```
+
+## Insert a table
+Look at the markdown file of this page to see how a table can be inserted.
+
+| Grid Entity Interface        ||
+| :------------ | :-----------: |
+| `#!cpp GridViewType leafGridView()`     |
+| `#!cpp GridViewType levelGridView(int levl)`     |
+
+## Insert a warning
+This should only be done in case it is really important:
+!!! warning
+    Note that the **four** spaces at the beginning of this line are essential for the warning to be displayed
+    correctly.
