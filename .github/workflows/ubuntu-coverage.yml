@@ -32,7 +32,7 @@ jobs:
         working-directory: ./cmake-build-debug
         run: ctest --output-on-failure --parallel 4 -C Debug
 
-      - uses: codecov/codecov-action@v1
+      - uses: codecov/codecov-action@v2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: tests
