@@ -33,14 +33,13 @@ jobs:
         run: |
           ctest --output-on-failure --parallel 4 -C Debug
           cd ..
+          gcov -abcfu $(find ./cmake-build-debug/tests/CMakeFiles/IkarusTests.dir/src -type f -name "*.gcno" | sed  's/gcno//g')
           ls
-          find . -type f -name \*.cpp
-          gcov *.cpp
 
-      - uses: codecov/codecov-action@v2
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: tests
-          directory: ./cmake-build-debug/
           fail_ci_if_error: true # optional (default = false)
           verbose: true # optional (default = false)

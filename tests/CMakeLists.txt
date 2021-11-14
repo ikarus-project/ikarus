@@ -40,6 +40,6 @@ gtest_discover_tests(IkarusTests)
 
 if(ENABLE_TEST_COVERAGE)
   message("Enable Test Coverage")
-  target_compile_options(IkarusTests PUBLIC -O0 -g -fprofile-arcs -ftest-coverage)
+  target_compile_options(IkarusTests PUBLIC -O0 -g -fprofile-arcs -ftest-coverage -fPIC)
   target_link_options(IkarusTests PUBLIC -fprofile-arcs -ftest-coverage)
 endif()
