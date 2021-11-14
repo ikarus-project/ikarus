@@ -13,7 +13,7 @@
 
 namespace Ikarus::Variable {
   class IVariable;
-  enum class VariablesTags;
+  enum class VariableTags;
 }  // namespace Ikarus::Variable
 
 namespace Ikarus::FiniteElements {
@@ -52,7 +52,6 @@ namespace Ikarus::FiniteElements {
   private:
     struct FEBase {
       virtual ~FEBase()                            = default;
-      virtual void do_initialize()                 = 0;
       [[nodiscard]] virtual int do_dofSize() const = 0;
       [[nodiscard]] virtual std::pair<Eigen::MatrixXd, Eigen::VectorXd> do_calculateLocalSystem(
           const MatrixAffordances &matA, const VectorAffordances &vecA, VariableVectorType &vars,
@@ -73,7 +72,6 @@ namespace Ikarus::FiniteElements {
     template <typename FE>
     struct FEImpl : public FEBase {
       explicit FEImpl(FE fearg) : fe{fearg} {};
-      void do_initialize() final { TRYCALLFUNCTIONDONTTHROW(initialize); }
       [[nodiscard]] int do_dofSize() const final { TRYCALLFUNCTION(dofSize); }
       [[nodiscard]] std::pair<Eigen::MatrixXd, Eigen::VectorXd> do_calculateLocalSystem(const MatrixAffordances &matA,
                                                                                         const VectorAffordances &vecA,
@@ -138,7 +136,6 @@ namespace Ikarus::FiniteElements {
     friend size_t subIndex(const IFiniteElement &fe, int i, unsigned int codim);
   };
 
-  void initialize(IFiniteElement &fe);
   int dofSize(const IFiniteElement &fe);
   std::pair<Eigen::MatrixXd, Eigen::VectorXd> calculateLocalSystem(const IFiniteElement &fe,
                                                                    const MatrixAffordances &matA,

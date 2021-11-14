@@ -13,7 +13,7 @@
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
 
 namespace Ikarus::Variable {
-  enum class VariablesTags;
+  enum class VariableTags;
 
   class IVariable {
   public:
@@ -76,6 +76,8 @@ namespace Ikarus::Variable {
 
     friend IVariable &operator+=(IVariable &vo, const UpdateType &correction);
     friend IVariable operator+(IVariable &vo, const UpdateType &correction);
+    friend IVariable &operator-=(IVariable &vo, const UpdateType &correction);
+    friend IVariable operator-(IVariable &vo, const UpdateType &correction);
     friend void setValue(IVariable &vo, const UpdateType &value);
     friend CoordinateType getValue(const IVariable &vo);
     friend int valueSize(const IVariable &vo);
@@ -90,6 +92,10 @@ namespace Ikarus::Variable {
   IVariable &operator+=(IVariable *vo, const IVariable::UpdateType &correction);
   IVariable operator+(IVariable &vo, const IVariable::UpdateType &correction);
   IVariable operator+(IVariable *vo, const IVariable::UpdateType &correction);
+  IVariable &operator-=(IVariable &vo, const IVariable::UpdateType &correction);
+  IVariable &operator-=(IVariable *vo, const IVariable::UpdateType &correction);
+  IVariable operator-(IVariable &vo, const IVariable::UpdateType &correction);
+  IVariable operator-(IVariable *vo, const IVariable::UpdateType &correction);
   void setValue(IVariable &vo, const IVariable::UpdateType &value);
   IVariable::CoordinateType getValue(const IVariable &vo);
   IVariable::CoordinateType getValue(const IVariable *vo);
@@ -104,6 +110,6 @@ namespace Ikarus::Variable {
   size_t valueSize(std::span<const IVariable> varSpan);
   size_t correctionSize(std::span<const IVariable> varSpan);
   void update(std::span<IVariable> varSpan, const Eigen::VectorXd &correction);
-  bool isType(const IVariable &vo, Ikarus::Variable::VariablesTags tag);
-  bool isType(IVariable *vo, Ikarus::Variable::VariablesTags tag);
+  bool isType(const IVariable &vo, Ikarus::Variable::VariableTags tag);
+  bool isType(IVariable *vo, Ikarus::Variable::VariableTags tag);
 }  // namespace Ikarus::Variable

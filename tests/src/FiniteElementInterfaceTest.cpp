@@ -17,6 +17,8 @@
 #include <ikarus/Geometries/GeometryType.h>
 #include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
 
+using namespace Ikarus;
+
 class TestFE {
 public:
   static void initialize() {}
@@ -24,10 +26,10 @@ public:
     return Ikarus::FiniteElements::IFiniteElement::DofPairVectorType{};
   }
 
-  static double calculateScalar(const Ikarus::FiniteElements::ScalarAffordances&, Ikarus::FEValues&,
-                                std::optional<std::reference_wrapper<Ikarus::FEValues>>& data) {
+  static double calculateScalar(const Ikarus::FiniteElements::ScalarAffordances&, Ikarus::FiniteElements::FEValues&,
+                                std::optional<std::reference_wrapper<FiniteElements::FEValues>>& data) {
     if (data)
-      if (isType(data->get().get(Ikarus::EntityType::vertex)[0], Ikarus::Variable::VariablesTags::displacement2d))
+      if (isType(data->get().get(Ikarus::EntityType::vertex)[0], Ikarus::Variable::VariableTags::displacement2d))
         return getValue(data->get().get(Ikarus::EntityType::vertex)[0])[0]
                * getValue(data->get().get(Ikarus::EntityType::vertex)[0])[1];
     return 5;
@@ -41,7 +43,7 @@ public:
     return Ikarus::FiniteElements::IFiniteElement::DofPairVectorType{};
   }
 
-  static double calculateScalar(const Ikarus::FiniteElements::ScalarAffordances&, Ikarus::FEValues&) { return 5; }
+  static double calculateScalar(const FiniteElements::ScalarAffordances&, FiniteElements::FEValues&) { return 5; }
 };
 
 TEST(FiniteElementInterfaceTest, createGenericFEList) {
@@ -82,70 +84,66 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
   fint.setZero(8);
   K.setZero(8, 8);
   for (auto&& fe : fes) {
-    initialize(fe);
     using namespace Ikarus::Variable;
     std::vector<IVariable> vars;
-    vars.emplace_back(VariableFactory::createVariable(displacement2d));
-    vars.emplace_back(VariableFactory::createVariable(displacement2d));
-    vars.emplace_back(VariableFactory::createVariable(displacement2d));
-    vars.emplace_back(VariableFactory::createVariable(displacement2d));
+    vars.emplace_back(VariableFactory::createVariable(VariableTags::displacement2d));
+    vars.emplace_back(VariableFactory::createVariable(VariableTags::displacement2d));
+    vars.emplace_back(VariableFactory::createVariable(VariableTags::displacement2d));
+    vars.emplace_back(VariableFactory::createVariable(VariableTags::displacement2d));
 
-    Ikarus::FEValues feValues;
-    feValues.set(Ikarus::EntityType::vertex, vars);
-    feValues.set(Ikarus::EntityType::edge, vars);
-    feValues.set(Ikarus::EntityType::surface, vars);
-    feValues.set(Ikarus::EntityType::volume, vars);
-    feValues.set(Ikarus::EntityType::generic, vars);
+    FiniteElements::FEValues feValues;
+    feValues.add(Ikarus::EntityType::vertex, vars);
+    feValues.add(Ikarus::EntityType::edge, vars);
+    feValues.add(Ikarus::EntityType::surface, vars);
+    feValues.add(Ikarus::EntityType::volume, vars);
 
-    //test FE withoutData
+    // test FE withoutData
     {
-    const auto [KEle, fintEle] = calculateLocalSystem(fe, stiffness, forces, feValues);
-    EXPECT_EQ(dofSize(fe), 8);
-    EXPECT_EQ(calculateVector(fe, forces, feValues).size(), 8);
-    EXPECT_DOUBLE_EQ(calculateScalar(fe, potentialEnergy, feValues), 13.0);
-    EXPECT_EQ(calculateMatrix(fe, stiffness, feValues).cols(), 8);
-    EXPECT_EQ(calculateMatrix(fe, stiffness, feValues).rows(), 8);
-    EXPECT_THROW(calculateMatrix(fe, mass, feValues), std::logic_error);
-    EXPECT_THROW(calculateLocalSystem(fe, mass, forces, feValues), std::logic_error);
-    EXPECT_EQ(KEle.rows(), 8);
-    EXPECT_EQ(KEle.cols(), 8);
-    EXPECT_EQ(fintEle.size(), 8);
-    }
-    feValues.set(Ikarus::EntityType::vertex, vars[0]);
-    feValues.set(Ikarus::EntityType::edge, vars[0]);
-    feValues.set(Ikarus::EntityType::surface, vars[0]);
-    feValues.set(Ikarus::EntityType::volume, vars[0]);
-    feValues.set(Ikarus::EntityType::generic, vars[0]);
-
-    Ikarus::FEValues dataFeValues;
-    dataFeValues.set(Ikarus::EntityType::vertex, vars);
-    dataFeValues.set(Ikarus::EntityType::edge, vars);
-    dataFeValues.set(Ikarus::EntityType::surface, vars);
-    dataFeValues.set(Ikarus::EntityType::volume, vars);
-    dataFeValues.set(Ikarus::EntityType::generic, vars);
-
-    {
-      const auto [KEle, fintEle] = calculateLocalSystem(fe, stiffness, forces, feValues,dataFeValues);
+      const auto [KEle, fintEle] = calculateLocalSystem(fe, stiffness, forces, feValues);
       EXPECT_EQ(dofSize(fe), 8);
-      EXPECT_EQ(calculateVector(fe, forces, feValues,dataFeValues).size(), 8);
-      EXPECT_DOUBLE_EQ(calculateScalar(fe, potentialEnergy, feValues,dataFeValues), 13.0);
-      EXPECT_EQ(calculateMatrix(fe, stiffness, feValues,dataFeValues).cols(), 8);
-      EXPECT_EQ(calculateMatrix(fe, stiffness, feValues,dataFeValues).rows(), 8);
-      EXPECT_THROW(calculateMatrix(fe, mass, feValues,dataFeValues), std::logic_error);
-      EXPECT_THROW(calculateLocalSystem(fe, mass, forces, feValues,dataFeValues), std::logic_error);
+      EXPECT_EQ(calculateVector(fe, forces, feValues).size(), 8);
+      EXPECT_DOUBLE_EQ(calculateScalar(fe, potentialEnergy, feValues), 13.0);
+      EXPECT_EQ(calculateMatrix(fe, stiffness, feValues).cols(), 8);
+      EXPECT_EQ(calculateMatrix(fe, stiffness, feValues).rows(), 8);
+      EXPECT_THROW(calculateMatrix(fe, mass, feValues), std::logic_error);
+      EXPECT_THROW(calculateLocalSystem(fe, mass, forces, feValues), std::logic_error);
       EXPECT_EQ(KEle.rows(), 8);
       EXPECT_EQ(KEle.cols(), 8);
       EXPECT_EQ(fintEle.size(), 8);
     }
+    feValues.add(Ikarus::EntityType::vertex, vars[0]);
+    feValues.add(Ikarus::EntityType::edge, vars[0]);
+    feValues.add(Ikarus::EntityType::surface, vars[0]);
+    feValues.add(Ikarus::EntityType::volume, vars[0]);
 
+    FiniteElements::FEValues dataFeValues;
+    dataFeValues.add(Ikarus::EntityType::vertex, vars);
+    dataFeValues.add(Ikarus::EntityType::edge, vars);
+    dataFeValues.add(Ikarus::EntityType::surface, vars);
+    dataFeValues.add(Ikarus::EntityType::volume, vars);
+
+    {
+      const auto [KEle, fintEle] = calculateLocalSystem(fe, stiffness, forces, feValues, dataFeValues);
+      EXPECT_EQ(dofSize(fe), 8);
+      EXPECT_EQ(calculateVector(fe, forces, feValues, dataFeValues).size(), 8);
+      EXPECT_DOUBLE_EQ(calculateScalar(fe, potentialEnergy, feValues, dataFeValues), 13.0);
+      EXPECT_EQ(calculateMatrix(fe, stiffness, feValues, dataFeValues).cols(), 8);
+      EXPECT_EQ(calculateMatrix(fe, stiffness, feValues, dataFeValues).rows(), 8);
+      EXPECT_THROW(calculateMatrix(fe, mass, feValues, dataFeValues), std::logic_error);
+      EXPECT_THROW(calculateLocalSystem(fe, mass, forces, feValues, dataFeValues), std::logic_error);
+      EXPECT_EQ(KEle.rows(), 8);
+      EXPECT_EQ(KEle.cols(), 8);
+      EXPECT_EQ(fintEle.size(), 8);
+    }
   }
 
   const auto entityIDDofPair = getEntityVariableTuple(fes[0]);
-  std::vector<std::pair<size_t, Ikarus::Variable::VariablesTags>> idtagExpected;
-  idtagExpected.emplace_back(0, Ikarus::Variable::displacement2d);
-  idtagExpected.emplace_back(1, Ikarus::Variable::displacement2d);
-  idtagExpected.emplace_back(2, Ikarus::Variable::displacement2d);
-  idtagExpected.emplace_back(3, Ikarus::Variable::displacement2d);
+  using namespace Ikarus::Variable;
+  std::vector<std::pair<size_t, Ikarus::Variable::VariableTags>> idtagExpected;
+  idtagExpected.emplace_back(0, VariableTags::displacement2d);
+  idtagExpected.emplace_back(1, VariableTags::displacement2d);
+  idtagExpected.emplace_back(2, VariableTags::displacement2d);
+  idtagExpected.emplace_back(3, VariableTags::displacement2d);
   for (int i = 0; auto&& [entityID, entityType, varVec] : entityIDDofPair) {
     EXPECT_EQ(entityID, idtagExpected[i].first);
     EXPECT_EQ(varVec.size(), 1);
@@ -158,36 +156,33 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
 
   using namespace Ikarus::Variable;
   std::vector<IVariable> vars;
-  vars.emplace_back(VariableFactory::createVariable(displacement2d));
-  vars.emplace_back(VariableFactory::createVariable(displacement2d));
-  vars.emplace_back(VariableFactory::createVariable(displacement2d));
-  vars.emplace_back(VariableFactory::createVariable(displacement2d));
+  vars.emplace_back(VariableFactory::createVariable(VariableTags::displacement2d));
+  vars.emplace_back(VariableFactory::createVariable(VariableTags::displacement2d));
+  vars.emplace_back(VariableFactory::createVariable(VariableTags::displacement2d));
+  vars.emplace_back(VariableFactory::createVariable(VariableTags::displacement2d));
 
-  Ikarus::FEValues feValues;
-  feValues.set(Ikarus::EntityType::vertex, vars);
+  FiniteElements::FEValues feValues;
+  feValues.add(Ikarus::EntityType::vertex, vars);
 
   std::vector<IVariable> datas;
-  datas.emplace_back(VariableFactory::createVariable(displacement2d));
+  datas.emplace_back(VariableFactory::createVariable(VariableTags::displacement2d));
   datas[0] += Eigen::Vector2d(15, 2);
 
-  Ikarus::FEValues feDataValues;
-  feDataValues.set(Ikarus::EntityType::vertex, datas);
+  FiniteElements::FEValues feDataValues;
+  feDataValues.add(Ikarus::EntityType::vertex, datas);
 
   EXPECT_THAT(feDataValues.get(Ikarus::EntityType::vertex).size(), 1);
   EXPECT_THAT(feDataValues.get(Ikarus::EntityType::edge).size(), 0);
   EXPECT_THAT(feDataValues.get(Ikarus::EntityType::surface).size(), 0);
   EXPECT_THAT(feDataValues.get(Ikarus::EntityType::volume).size(), 0);
-  EXPECT_THAT(feDataValues.get(Ikarus::EntityType::generic).size(), 0);
 
   Ikarus::FiniteElements::IFiniteElement fe((TestFE()));
-  initialize(fe);
-  // check behaviour of dummy fe calculate scalar funktion before adding data and after
+  // check behaviour of dummy fe calculate scalar function before adding data and after
   EXPECT_DOUBLE_EQ(calculateScalar(fe, potentialEnergy, feValues, feDataValues), 30.0);
-  datas[0] = VariableFactory::createVariable(displacement1d);
+  datas[0] = VariableFactory::createVariable(VariableTags::displacement1d);
   EXPECT_DOUBLE_EQ(calculateScalar(fe, potentialEnergy, feValues, feDataValues), 5.0);
 
   Ikarus::FiniteElements::IFiniteElement fe2((TestFE2()));  // check if element without optional data is accepted
 
-  initialize(fe2);
   EXPECT_DOUBLE_EQ(calculateScalar(fe2, potentialEnergy, feValues), 5.0);
 }

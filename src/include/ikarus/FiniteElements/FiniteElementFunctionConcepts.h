@@ -7,7 +7,8 @@
 //#include <ikarus/FiniteElements/InterfaceFiniteElement.h>
 #include <optional>
 
-#include <ikarus/Grids/EntityHelperFunctions.h>
+//#include <ikarus/Grids/EntityHelperFunctions.h>
+#include <ikarus/FiniteElements/FEValues.h>
 #include <ikarus/Variables/InterfaceVariable.h>
 #ifdef __clang__
 #  pragma clang diagnostic push
@@ -19,7 +20,7 @@ namespace Ikarus::FiniteElements {
   struct DofAtEntity {
     int entityID;
     std::optional<EntityType> entityType;
-    std::vector<Variable::VariablesTags> variableVector;
+    std::vector<Variable::VariableTags> variableVector;
   };
 
   enum class VectorAffordances { forces };
@@ -68,79 +69,79 @@ namespace Ikarus::Concepts {
 
   template <typename FiniteElement>
   concept HascalculateMatrix
-      = requires(FiniteElement fe, Ikarus::FiniteElements::MatrixAffordances matA, Ikarus::FEValues vars,
-                 std::optional<std::reference_wrapper<Ikarus::FEValues>>& data) {
+      = requires(FiniteElement fe, Ikarus::FiniteElements::MatrixAffordances matA, FiniteElements::FEValues vars,
+                 std::optional<std::reference_wrapper<FiniteElements::FEValues>>& data) {
     fe.calculateMatrix(matA, vars, data);
   };
 
   template <typename FiniteElement>
   concept HasFreecalculateMatrix
-      = requires(FiniteElement fe, Ikarus::FiniteElements::MatrixAffordances matA, Ikarus::FEValues vars,
-                 std::optional<std::reference_wrapper<Ikarus::FEValues>>& data) {
+      = requires(FiniteElement fe, Ikarus::FiniteElements::MatrixAffordances matA, FiniteElements::FEValues vars,
+                 std::optional<std::reference_wrapper<FiniteElements::FEValues>>& data) {
     calculateMatrix(fe, matA, vars, data);
   };
 
   template <typename FiniteElement>
   concept HascalculateMatrixWithOutData
-      = requires(FiniteElement fe, Ikarus::FiniteElements::MatrixAffordances matA, Ikarus::FEValues vars) {
+      = requires(FiniteElement fe, Ikarus::FiniteElements::MatrixAffordances matA, FiniteElements::FEValues vars) {
     fe.calculateMatrix(matA, vars);
   };
 
   template <typename FiniteElement>
   concept HasFreecalculateMatrixWithOutData
-      = requires(FiniteElement fe, Ikarus::FiniteElements::MatrixAffordances matA, Ikarus::FEValues vars) {
+      = requires(FiniteElement fe, Ikarus::FiniteElements::MatrixAffordances matA, FiniteElements::FEValues vars) {
     calculateMatrix(fe, matA, vars);
   };
 
   template <typename FiniteElement>
   concept HascalculateScalar
-      = requires(FiniteElement fe, Ikarus::FiniteElements::ScalarAffordances scalA, Ikarus::FEValues vars,
-                 std::optional<std::reference_wrapper<Ikarus::FEValues>>& data) {
+      = requires(FiniteElement fe, Ikarus::FiniteElements::ScalarAffordances scalA, FiniteElements::FEValues vars,
+                 std::optional<std::reference_wrapper<FiniteElements::FEValues>>& data) {
     fe.calculateScalar(scalA, vars, data);
   };
 
   template <typename FiniteElement>
   concept HasFreecalculateScalar
-      = requires(FiniteElement fe, Ikarus::FiniteElements::ScalarAffordances scalA, Ikarus::FEValues vars,
-                 std::optional<std::reference_wrapper<Ikarus::FEValues>>& data) {
+      = requires(FiniteElement fe, Ikarus::FiniteElements::ScalarAffordances scalA, FiniteElements::FEValues vars,
+                 std::optional<std::reference_wrapper<FiniteElements::FEValues>>& data) {
     calculateScalar(fe, scalA, vars, data);
   };
 
   template <typename FiniteElement>
   concept HascalculateScalarWithOutData
-      = requires(FiniteElement fe, Ikarus::FiniteElements::ScalarAffordances scalA, Ikarus::FEValues vars) {
+      = requires(FiniteElement fe, Ikarus::FiniteElements::ScalarAffordances scalA, FiniteElements::FEValues vars) {
     fe.calculateScalar(scalA, vars);
   };
 
   template <typename FiniteElement>
   concept HasFreecalculateScalarWithOutData
-      = requires(FiniteElement fe, Ikarus::FiniteElements::ScalarAffordances scalA, Ikarus::FEValues vars) {
+      = requires(FiniteElement fe, Ikarus::FiniteElements::ScalarAffordances scalA, FiniteElements::FEValues vars) {
     calculateScalar(fe, scalA, vars);
   };
 
   template <typename FiniteElement>
   concept HascalculateVector
-      = requires(FiniteElement fe, Ikarus::FiniteElements::VectorAffordances vecA, Ikarus::FEValues vars,
-                 std::optional<std::reference_wrapper<Ikarus::FEValues>>& data) {
+      = requires(FiniteElement fe, Ikarus::FiniteElements::VectorAffordances vecA, FiniteElements::FEValues vars,
+                 std::optional<std::reference_wrapper<FiniteElements::FEValues>>& data) {
     fe.calculateVector(vecA, vars, data);
   };
 
   template <typename FiniteElement>
   concept HasFreecalculateVector
-      = requires(FiniteElement fe, Ikarus::FiniteElements::VectorAffordances vecA, Ikarus::FEValues vars,
-                 std::optional<std::reference_wrapper<Ikarus::FEValues>>& data) {
+      = requires(FiniteElement fe, Ikarus::FiniteElements::VectorAffordances vecA, FiniteElements::FEValues vars,
+                 std::optional<std::reference_wrapper<FiniteElements::FEValues>>& data) {
     calculateVector(fe, vecA, vars, data);
   };
 
   template <typename FiniteElement>
   concept HascalculateVectorWithOutData
-      = requires(FiniteElement fe, Ikarus::FiniteElements::VectorAffordances vecA, Ikarus::FEValues vars) {
+      = requires(FiniteElement fe, Ikarus::FiniteElements::VectorAffordances vecA, FiniteElements::FEValues vars) {
     fe.calculateVector(vecA, vars);
   };
 
   template <typename FiniteElement>
   concept HasFreecalculateVectorWithOutData
-      = requires(FiniteElement fe, Ikarus::FiniteElements::VectorAffordances vecA, Ikarus::FEValues vars) {
+      = requires(FiniteElement fe, Ikarus::FiniteElements::VectorAffordances vecA, FiniteElements::FEValues vars) {
     calculateVector(fe, vecA, vars);
   };
 
@@ -179,30 +180,32 @@ namespace Ikarus::Concepts {
   };
 
   template <typename FiniteElement>
-  concept HascalculateLocalSystem = requires(FiniteElement fe, Ikarus::FiniteElements::MatrixAffordances matA,
-                                             Ikarus::FiniteElements::VectorAffordances vecA, Ikarus::FEValues vars,
-                                             std::optional<std::reference_wrapper<Ikarus::FEValues>>& data) {
+  concept HascalculateLocalSystem
+      = requires(FiniteElement fe, Ikarus::FiniteElements::MatrixAffordances matA,
+                 Ikarus::FiniteElements::VectorAffordances vecA, FiniteElements::FEValues vars,
+                 std::optional<std::reference_wrapper<FiniteElements::FEValues>>& data) {
     fe.calculateLocalSystem(matA, vecA, vars, data);
   };
 
   template <typename FiniteElement>
-  concept HasFreecalculateLocalSystem = requires(FiniteElement fe, Ikarus::FiniteElements::MatrixAffordances matA,
-                                                 Ikarus::FiniteElements::VectorAffordances vecA, Ikarus::FEValues vars,
-                                                 std::optional<std::reference_wrapper<Ikarus::FEValues>>& data) {
+  concept HasFreecalculateLocalSystem
+      = requires(FiniteElement fe, Ikarus::FiniteElements::MatrixAffordances matA,
+                 Ikarus::FiniteElements::VectorAffordances vecA, FiniteElements::FEValues vars,
+                 std::optional<std::reference_wrapper<FiniteElements::FEValues>>& data) {
     calculateLocalSystem(fe, matA, vecA, vars, data);
   };
 
   template <typename FiniteElement>
   concept HascalculateLocalSystemWithOutData
       = requires(FiniteElement fe, Ikarus::FiniteElements::MatrixAffordances matA,
-                 Ikarus::FiniteElements::VectorAffordances vecA, Ikarus::FEValues vars) {
+                 Ikarus::FiniteElements::VectorAffordances vecA, FiniteElements::FEValues vars) {
     fe.calculateLocalSystem(matA, vecA, vars);
   };
 
   template <typename FiniteElement>
   concept HasFreecalculateLocalSystemWithOutData
       = requires(FiniteElement fe, Ikarus::FiniteElements::MatrixAffordances matA,
-                 Ikarus::FiniteElements::VectorAffordances vecA, Ikarus::FEValues vars) {
+                 Ikarus::FiniteElements::VectorAffordances vecA, FiniteElements::FEValues vars) {
     calculateLocalSystem(fe, matA, vecA, vars);
   };
 

@@ -5,7 +5,7 @@
 
 #include <ikarus/Variables/VariableDefinitions.h>
 namespace Ikarus::Variable {
-  std::ostream& operator<<(std::ostream& s, const VariablesTags& varTag) {
+  std::ostream& operator<<(std::ostream& s, const VariableTags& varTag) {
     s << variableNames[static_cast<int>(varTag)];
     return s;
   }

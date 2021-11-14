@@ -44,7 +44,7 @@ namespace Ikarus::Grid {
   private:
     GridType* grid;
     int level;
-    const std::unique_ptr<IndexSetType> indexSet_;
+    const std::shared_ptr<IndexSetType> indexSet_;
   };
 }  // namespace Ikarus::Grid
 
