@@ -9,7 +9,6 @@
 
 namespace Ikarus::FiniteElements {
 
-  void initialize(IFiniteElement& fe) { fe.feimpl->do_initialize(); }
   int dofSize(const IFiniteElement& fe) { return fe.feimpl->do_dofSize(); }
   std::pair<Eigen::MatrixXd, Eigen::VectorXd> calculateLocalSystem(const IFiniteElement& fe,
                                                                    const MatrixAffordances& matA,

@@ -34,6 +34,7 @@ namespace Ikarus::FEManager {
     size_t numberOfDegreesOfFreedom() { return varVec.correctionSize(); }
 
     auto elementDofs() { return varVec.elementDofs(); };
+    void addData(GridDataType& gridData) { gridData_ = gridData; }
 
     auto elementVariables() { return varVec.elementVariables(); };
 

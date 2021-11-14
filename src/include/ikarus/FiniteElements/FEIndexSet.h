@@ -21,7 +21,7 @@ public:
 
   size_t index(const FEType &fe) { return indexContainer_[&fe]; }
 
-  auto subIndices(const FEType &fe) const {
+  auto variableIndices(const FEType &fe) const {
     auto getSubIndex = [&subIndexCont = subIndexContainer_](const auto &entityIDDof) {
       return subIndexCont.at(entityIDDof.entityID);
     };

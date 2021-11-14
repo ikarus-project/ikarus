@@ -10,12 +10,18 @@ namespace Ikarus::Variable {
   int valueSize(const IVariable& vo) { return vo.variableImpl->do_valueSize(); }
   int correctionSize(const IVariable& vo) { return vo.variableImpl->do_correctionSize(); }
 
+  IVariable& operator-=(IVariable& vo, const IVariable::UpdateType& correction) {
+    vo.variableImpl->do_assignAdd(-correction);
+    return vo;
+  }
+
   IVariable& operator+=(IVariable& vo, const IVariable::UpdateType& correction) {
     vo.variableImpl->do_assignAdd(correction);
     return vo;
   }
 
   IVariable& operator+=(IVariable* vo, const IVariable::UpdateType& correction) { return ((*vo) += correction); }
+  IVariable& operator-=(IVariable* vo, const IVariable::UpdateType& correction) { return ((*vo) -= correction); }
 
   IVariable operator+(IVariable& vo, const IVariable::UpdateType& correction) {
     IVariable res{vo};
@@ -23,7 +29,14 @@ namespace Ikarus::Variable {
     return res;
   }
 
+  IVariable operator-(IVariable& vo, const IVariable::UpdateType& correction) {
+    IVariable res{vo};
+    res.variableImpl->do_assignAdd(-correction);
+    return res;
+  }
+
   IVariable operator+(IVariable* vo, const IVariable::UpdateType& correction) { return ((*vo) + correction); }
+  IVariable operator-(IVariable* vo, const IVariable::UpdateType& correction) { return ((*vo) - correction); }
 
   void setValue(IVariable& vo, const IVariable::UpdateType& value) { return vo.variableImpl->do_setValue(value); }
   IVariable::CoordinateType getValue(const IVariable& vo) { return vo.variableImpl->do_getValue(); }
@@ -63,7 +76,7 @@ namespace Ikarus::Variable {
 
   std::string getName(const IVariable& var) { return Ikarus::Variable::variableNames[getTag(var)]; }
 
-  bool isType(const IVariable& vo, Ikarus::Variable::VariablesTags tag) { return getTag(vo) == static_cast<int>(tag); }
-  bool isType(IVariable* vo, Ikarus::Variable::VariablesTags tag) { return isType(*vo, tag); }
+  bool isType(const IVariable& vo, Ikarus::Variable::VariableTags tag) { return getTag(vo) == static_cast<int>(tag); }
+  bool isType(IVariable* vo, Ikarus::Variable::VariableTags tag) { return isType(*vo, tag); }
 
 }  // namespace Ikarus::Variable

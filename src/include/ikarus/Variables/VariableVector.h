@@ -19,7 +19,7 @@ namespace Ikarus::Variable {
     explicit VariableVector(const FEContainer &feContainer) : feContainer_{&feContainer}, feIndexSet{feContainer} {
       struct EntityTypeAndVarTagSet {
         Ikarus::EntityType type;
-        std::unordered_set<Ikarus::Variable::VariablesTags> unorderedSet;
+        std::unordered_set<Ikarus::Variable::VariableTags> unorderedSet;
       };
       using DofSet = std::unordered_map<size_t, EntityTypeAndVarTagSet>;
       DofSet dofSet;
@@ -78,12 +78,12 @@ namespace Ikarus::Variable {
     auto getValues() { return std::ranges::join_view(variablesForEachEntity); };
 
     auto variablesOfSingleElement(const typename FEContainer::value_type &fe) {
-      Ikarus::FEValues elementVariables;
+      FiniteElements::FEValues elementVariables;
 
-      auto feSubIndicesRange = feIndexSet.subIndices(fe);
+      auto feSubIndicesRange = feIndexSet.variableIndices(fe);
       for (auto &feSubIndex : feSubIndicesRange) {
         const auto &entityType = entityTypes.at(feSubIndex);
-        elementVariables.set(entityType, variablesForEachEntity[feSubIndex]);
+        elementVariables.add(entityType, variablesForEachEntity[feSubIndex]);
       }
       return elementVariables;
     }
@@ -95,7 +95,7 @@ namespace Ikarus::Variable {
 
       auto eleDofs = Ikarus::FiniteElements::getEntityVariableTuple(fe);
 
-      for (auto &&entityID : feIndexSet.subIndices(fe)) {
+      for (auto &&entityID : feIndexSet.variableIndices(fe)) {
         auto &currentIndices = variableIndices[feIndexSet.indexOfEntity(entityID)];
         indices.template segment(posHelper, currentIndices.size()) = currentIndices;
         posHelper += currentIndices.size();

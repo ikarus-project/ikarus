@@ -136,13 +136,13 @@ namespace Ikarus::FiniteElements {
     [[nodiscard]] DofTupleVectorType getEntityVariableTuple() const {
       DofTupleVectorType entDofTupleVector(vertices(*elementGridEntity).size());
       using namespace Ikarus::Variable;
-      VariablesTags dofType;
+      VariableTags dofType;
       if constexpr (coorddimension == 3)
-        dofType = displacement3d;
+        dofType = VariableTags::displacement3d;
       else if constexpr (coorddimension == 2)
-        dofType = displacement2d;
+        dofType = VariableTags::displacement2d;
       else if constexpr (coorddimension == 1)
-        dofType = displacement1d;
+        dofType = VariableTags::displacement1d;
       else
         static_assert(coorddimension > 3 || coorddimension < 1, "This element has an impossible coorddimension.");
       for (int id = 0; auto &entityDofTuple : entDofTupleVector) {

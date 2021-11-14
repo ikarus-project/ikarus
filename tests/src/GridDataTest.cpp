@@ -69,12 +69,12 @@ TEST(GridDataInterfaceTest, createDataOnEntities) {
 
   GridData gridData(gridView.indexSet());
 
-  gridData.add(data(velocity2d), at(Vertices));
-  gridData.add(data(pressure), at(RootEntities));
-  gridData.add(data(displacement2d), at(EntitiesWithCoDim<2>()));
-  gridData.add(data(edgeLength), at(EntitiesWithCoDim<1>()));
+  gridData.add(data(VariableTags::velocity2d), EntityType::vertex);
+  gridData.add(data(VariableTags::pressure), EntityType::surface);
+  gridData.add(data(VariableTags::displacement2d), EntitiesWithCoDim<2>());
+  gridData.add(data(VariableTags::edgeLength), EntitiesWithCoDim<1>());
 
-  std::array<VariablesTags, 2> expectedVarTags({velocity2d, displacement2d});
+  std::array<VariableTags, 2> expectedVarTags({VariableTags::velocity2d, VariableTags::displacement2d});
   for (auto& vertex : vertices(gridView)) {
     auto& vertexData = gridData.getData(vertex);
     for (int i = 0; auto& vertexVar : vertexData)
@@ -84,69 +84,25 @@ TEST(GridDataInterfaceTest, createDataOnEntities) {
   for (auto& surface : surfaces(gridView)) {
     auto& surfaceData = gridData.getData(surface);
     for (auto& surfaceVar : surfaceData)
-      EXPECT_THAT(getTag(surfaceVar), static_cast<int>(pressure));
+      EXPECT_THAT(getTag(surfaceVar), static_cast<int>(VariableTags::pressure));
   }
 
   for (auto& edge : edges(gridView)) {
     auto& edgeData = gridData.getData(edge);
     for (auto& edgeVar : edgeData)
-      EXPECT_THAT(getTag(edgeVar), static_cast<int>(edgeLength));
+      EXPECT_THAT(getTag(edgeVar), static_cast<int>(VariableTags::edgeLength));
   }
 
-  gridData.remove(data(velocity2d), at(Vertices));
+  gridData.remove(data(VariableTags::velocity2d), EntityType::vertex);
 
   for (auto& vertex : vertices(gridView)) {
     auto& vertexData = gridData.getData(vertex);
     for (auto& vertexVar : vertexData)
-      EXPECT_THAT(getTag(vertexVar), static_cast<int>(displacement2d));
+      EXPECT_THAT(getTag(vertexVar), static_cast<int>(VariableTags::displacement2d));
   }
 }
 
 TEST(GridDataInterfaceTest, SimpleIndexSetTest) {
-  {
-    using namespace Ikarus::Grid;
-    using namespace Ikarus::FiniteElements;
-    using namespace Ikarus::Variable;
-
-    using Grid = SimpleGrid<2, 2>;
-    SimpleGridFactory<2, 2> gridFactory;
-    using vertexType = Eigen::Vector2d;
-    std::vector<vertexType> verticesVec;
-    verticesVec.emplace_back(vertexType{0.0, 0.0});  // 0
-    verticesVec.emplace_back(vertexType{2.0, 0.0});  // 1
-    verticesVec.emplace_back(vertexType{0.0, 2.0});  // 2
-    verticesVec.emplace_back(vertexType{2.0, 2.0});  // 3
-    verticesVec.emplace_back(vertexType{4.0, 0.0});  // 4
-    verticesVec.emplace_back(vertexType{4.0, 2.0});  // 5
-
-    for (auto&& vert : verticesVec)
-      gridFactory.insertVertex(vert);
-
-    std::vector<size_t> elementIndices;
-    elementIndices.resize(4);
-    elementIndices = {0, 1, 2, 3};
-    gridFactory.insertElement(Ikarus::GeometryType::linearQuadrilateral, elementIndices);
-    elementIndices = {1, 4, 3, 5};
-    gridFactory.insertElement(Ikarus::GeometryType::linearQuadrilateral, elementIndices);
-
-    Grid grid = gridFactory.createGrid();
-
-    auto gridView = grid.leafGridView();
-
-    auto indexSet = gridView.indexSet();
-
-    std::array<std::array<int, 4>, 2> expectedVertexIndices{{{0, 1, 2, 3}, {1, 4, 3, 5}}};
-    std::array<std::array<int, 4>, 2> expectedEdgeIndices{{{0, 1, 2, 3}, {2, 4, 5, 6}}};
-    for (int surfIndex = 0; auto&& surf : surfaces(gridView)) {
-      for (size_t i = 0; i < surf.subEntities(2); ++i)
-        EXPECT_THAT(expectedVertexIndices[surfIndex][i], indexSet.subIndex(surf, i, 2));
-      for (size_t i = 0; i < surf.subEntities(1); ++i)
-        EXPECT_THAT(expectedEdgeIndices[surfIndex][i], indexSet.subIndex(surf, i, 1));
-      EXPECT_THROW([[maybe_unused]] auto i = surf.subEntities(0), std::logic_error);
-      ++surfIndex;
-    }
-  }
-
   {
     using namespace Ikarus::Grid;
     using Grid = SimpleGrid<2, 2>;
@@ -243,30 +199,35 @@ TEST(GridDataInterfaceTest, SimpleIndexSetTest) {
 
     GridData gridData(indexSet);
     using namespace Ikarus::Variable;
-    gridData.add(data(velocity1d), at(Vertices));
-    gridData.add(data(pressure, datatuple(edgeLength, displacement1d)), at(Surfaces, Edges));
+    gridData.add(data(VariableTags::velocity1d), EntityType::vertex);
+    gridData.add(data(VariableTags::pressure), EntityType::surface);
+    gridData.add(data(VariableTags::edgeLength, VariableTags::displacement1d), EntityType::edge);
 
-    std::array<std::vector<VariablesTags>, 2> surfaceExpectedSubVars(
+    std::array<std::vector<VariableTags>, 2> surfaceExpectedSubVars(
         {{
-             velocity1d, velocity1d, velocity1d, velocity1d,  //  4 vertices for each surface of the linearHexahedron
-             edgeLength,                                      // 4 edges with 2 vars each
-             displacement1d, edgeLength, displacement1d, edgeLength, displacement1d, edgeLength, displacement1d,
-             pressure  // the var on the surface itself
+             VariableTags::velocity1d, VariableTags::velocity1d, VariableTags::velocity1d,
+             VariableTags::velocity1d,  //  4 vertices for each surface of the linearHexahedron
+             VariableTags::edgeLength,  // 4 edges with 2 vars each
+             VariableTags::displacement1d, VariableTags::edgeLength, VariableTags::displacement1d,
+             VariableTags::edgeLength, VariableTags::displacement1d, VariableTags::edgeLength,
+             VariableTags::displacement1d,
+             VariableTags::pressure  // the var on the surface itself
          },
          {
-             velocity1d,  //  3 vertices for each surface of the lineartetrahedron
-             velocity1d, velocity1d,
-             edgeLength,  // 3 edges with 2 vars each
-             displacement1d, edgeLength, displacement1d, edgeLength, displacement1d,
-             pressure  // the var on the surface itself
+             VariableTags::velocity1d,  //  3 vertices for each surface of the lineartetrahedron
+             VariableTags::velocity1d, VariableTags::velocity1d,
+             VariableTags::edgeLength,  // 3 edges with 2 vars each
+             VariableTags::displacement1d, VariableTags::edgeLength, VariableTags::displacement1d,
+             VariableTags::edgeLength, VariableTags::displacement1d,
+             VariableTags::pressure  // the var on the surface itself
          }});
     for (int eleIndex = 0; auto&& ele : rootEntities(gridView)) {
       for (auto&& surface : surfaces(ele)) {
         auto surfaceSubData = gridData.getAllSubEntityData(surface);
-        EXPECT_THAT(gridData.getData(surface)[0], VariableFactory::createVariable(pressure));
+        EXPECT_THAT(gridData.getData(surface)[0], VariableFactory::createVariable(VariableTags::pressure));
         EXPECT_THAT(1, gridData.getData(surface).size());
-        for (int varIndex = 0; auto surfaceSubVars : surfaceSubData)
-          EXPECT_THAT(*surfaceSubVars, VariableFactory::createVariable(surfaceExpectedSubVars[eleIndex][varIndex++]));
+        for (int varIndex = 0; auto surfaceSubVars : surfaceSubData.get(EntityType::surface))
+          EXPECT_THAT(surfaceSubVars, VariableFactory::createVariable(surfaceExpectedSubVars[eleIndex][varIndex++]));
       }
       ++eleIndex;
     }
@@ -279,8 +240,8 @@ TEST(GridDataInterfaceTest, SimpleIndexSetTest) {
 
     for (int eleIndex = 0, surfIndex = 0;
          auto&& [fe, eledof, eleVars, eleData] : dh.elementIndicesVariableDataTuple()) {
-      for (int varIndex = 0; auto&& eleSubData : eleData)
-        EXPECT_THAT(*eleSubData, VariableFactory::createVariable(surfaceExpectedSubVars[eleIndex][varIndex++]));
+      for (int varIndex = 0; auto&& eleSubData : eleData.get(EntityType::surface))
+        EXPECT_THAT(eleSubData, VariableFactory::createVariable(surfaceExpectedSubVars[eleIndex][varIndex++]));
       if (surfIndex == 5) ++eleIndex;
       ++surfIndex;
     }
