@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 
-project(IkarusTests LANGUAGES CXX)
+project(IkarusTests LANGUAGES C CXX)
 
 option(ENABLE_TEST_COVERAGE "Enable test coverage" OFF)
 option(TEST_INSTALLED_VERSION "Test the version found by find_package" OFF)
@@ -27,6 +27,7 @@ target_link_libraries(
 set_target_properties(IkarusTests PROPERTIES CXX_STANDARD 20)
 
 target_compile_options(IkarusTests PUBLIC -Wall -Wpedantic -Wextra -Werror)
+target_compile_options(IkarusTests PUBLIC -fconcepts-diagnostics-depth=5)
 
 if(MINGW)
   target_compile_options(IkarusTests PUBLIC -Wa,-mbig-obj)
@@ -38,6 +39,7 @@ include(GoogleTest)
 gtest_discover_tests(IkarusTests)
 
 if(ENABLE_TEST_COVERAGE)
-  target_compile_options(IkarusTests PUBLIC -O0 -g -fprofile-arcs -ftest-coverage)
+  message("Enable Test Coverage")
+  target_compile_options(IkarusTests PUBLIC -O0 -g -fprofile-arcs -ftest-coverage -fPIC)
   target_link_options(IkarusTests PUBLIC -fprofile-arcs -ftest-coverage)
 endif()

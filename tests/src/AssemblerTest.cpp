@@ -12,9 +12,9 @@
 #include <Eigen/Core>
 
 #include <ikarus/Assembler/SimpleAssemblers.h>
-#include <ikarus/DofManager/DefaultDofManager.h>
+#include <ikarus/FEManager/DefaultFEManager.h>
 #include <ikarus/FiniteElements/ElasticityFE.h>
-#include <ikarus/FiniteElements/FiniteElementPolicies.h>
+#include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
 #include <ikarus/Geometries/GeometryType.h>
 #include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
@@ -46,12 +46,14 @@ TEST(Assembler, SimpleAssemblersTest) {
 
   auto gridView = grid.leafGridView();
 
+  const auto indexSet = gridView.indexSet();
+
   std::vector<Ikarus::FiniteElements::IFiniteElement> fes;
 
   for (auto&& ge : surfaces(gridView))
-    fes.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge));
+    fes.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge, indexSet));
 
-  auto dh = Ikarus::DofManager::DefaultDofManager(fes, gridView);
+  auto dh = Ikarus::FEManager::DefaultFEManager(fes, gridView);
 
   auto vectorAssembler = Ikarus::Assembler::VectorAssembler(dh);
   auto fint            = vectorAssembler.getVector(Ikarus::FiniteElements::forces);
