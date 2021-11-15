@@ -16,9 +16,9 @@ void draw(GridView& gridView) {
   for (auto&& edge : edges(gridView)) {
     std::array<double, 2> xEdge{}, yEdge{}, zEdge{};
     for (int i = 0; auto&& vert : vertices(edge)) {
-      xEdge[i] = vert->getPosition()[0];
-      yEdge[i] = vert->getPosition()[1];
-      zEdge[i] = vert->getPosition()[2];
+      xEdge[i] = vert.getPosition()[0];
+      yEdge[i] = vert.getPosition()[1];
+      zEdge[i] = vert.getPosition()[2];
       ++i;
     }
 

@@ -68,7 +68,7 @@ TEST(GridTest, GridViewTest) {
   EXPECT_EQ(surfaces(gridView).size(), 3);
   EXPECT_EQ(vertices(gridView).size(), 7);
 
-  int expectedEdgeId = 10;
+  int expectedEdgeId = 0;
   std::vector<std::array<int, 2>> expectedEdgeVertexId;
   expectedEdgeVertexId.push_back({0, 2});
   expectedEdgeVertexId.push_back({0, 1});
@@ -80,14 +80,16 @@ TEST(GridTest, GridViewTest) {
   expectedEdgeVertexId.push_back({4, 6});
   expectedEdgeVertexId.push_back({5, 6});
 
+  const auto indexSet = gridView.indexSet();
+
   int elementCounter = 0;
-  for (auto &&edge : edges(gridView)) {
-    { EXPECT_EQ(edge.getID(), expectedEdgeId++); }
+  for (auto edge : edges(gridView)) {
+    { EXPECT_EQ(indexSet.index(edge), expectedEdgeId++); }
 
     int vertexCounter = 0;
-    for (auto &&vertex : vertices(edge)) {
-      EXPECT_EQ(vertex->type(), Ikarus::GeometryType::vertex);
-      EXPECT_EQ(vertex->getID(), expectedEdgeVertexId[elementCounter][vertexCounter]);
+    for (auto vertex : vertices(edge)) {
+      EXPECT_EQ(vertex.type(), Ikarus::GeometryType::vertex);
+      EXPECT_EQ(indexSet.index(vertex), expectedEdgeVertexId[elementCounter][vertexCounter]);
       ++vertexCounter;
     }
     ++elementCounter;
@@ -99,11 +101,10 @@ TEST(GridTest, GridViewTest) {
   expectedElementEdgeIds.push_back({17, 15, 18});
 
   int eleCounter = 0;
-  for (auto &&singleElement : surfaces(gridView)) {
+  for (auto singleElement : surfaces(gridView)) {
     int edgeCounter = 0;
-    for (auto &&edge : edges(singleElement)) {
-      EXPECT_EQ(edge->type(), Ikarus::GeometryType::linearLine);
-      EXPECT_EQ(edge->getID(), expectedElementEdgeIds[eleCounter][edgeCounter]);
+    for (auto edge : edges(singleElement)) {
+      EXPECT_EQ(edge.type(), Ikarus::GeometryType::linearLine);
       ++edgeCounter;
     }
     ++eleCounter;
@@ -174,16 +175,18 @@ TEST(GridTest, GridView3DSurfaceTest) {
   EXPECT_EQ(eleIterator->type(), Ikarus::GeometryType::linearTriangle);
 
   std::vector<std::vector<int>> expectedElementEdgeIds;
-  expectedElementEdgeIds.push_back({10, 11, 12, 13});
-  expectedElementEdgeIds.push_back({12, 14, 15, 16});
-  expectedElementEdgeIds.push_back({17, 15, 18});
+  expectedElementEdgeIds.push_back({0, 1, 2, 3});
+  expectedElementEdgeIds.push_back({2, 4, 5, 6});
+  expectedElementEdgeIds.push_back({7, 5, 8});
+
+  const auto indexSet = gridView.indexSet();
 
   int eleCounter = 0;
   for (auto &singleElement : surfaces(gridView)) {
     int edgeCounter = 0;
-    for (auto &&edge : edges(singleElement)) {
-      EXPECT_EQ(edge->type(), Ikarus::GeometryType::linearLine);
-      EXPECT_EQ(edge->getID(), expectedElementEdgeIds[eleCounter][edgeCounter]);
+    for (auto edge : edges(singleElement)) {
+      EXPECT_EQ(edge.type(), Ikarus::GeometryType::linearLine);
+      EXPECT_EQ(indexSet.index(edge), expectedElementEdgeIds[eleCounter][edgeCounter]);
       ++edgeCounter;
     }
     ++eleCounter;
@@ -262,13 +265,15 @@ TEST(GridTest, GridView3DSolidTest) {
   EXPECT_TRUE(!edges(gridView).empty());
   EXPECT_TRUE(!volumes(gridView).empty());
 
-  for (int EleIter = 0; auto &&ele : volumes(gridView)) {
+  const auto indexSet = gridView.indexSet();
+
+  for (int EleIter = 0; auto ele : volumes(gridView)) {
     EXPECT_TRUE(!edges(ele).empty());
-    for (int edgeIter = 0; auto &&edge : edges(ele)) {
+    for (int edgeIter = 0; auto edge : edges(ele)) {
       EXPECT_TRUE(!vertices(edge).empty());
       for (int i = 0; auto &&verticesOfEdge : vertices(edge)) {
-        EXPECT_EQ(verticesOfEdge->getID(), expectedElementEdgeVertexId[EleIter][edgeIter][i]);
-        EXPECT_THAT(verticesOfEdge->getPosition(),
+        EXPECT_EQ(indexSet.index(verticesOfEdge), expectedElementEdgeVertexId[EleIter][edgeIter][i]);
+        EXPECT_THAT(verticesOfEdge.getPosition(),
                     EigenApproxEqual(verticesVec[expectedElementEdgeVertexId[EleIter][edgeIter][i]], 1e-15));
         ++i;
       }
@@ -307,22 +312,39 @@ TEST(GridTest, GridView3DSolidTest) {
   expectedElementSurfaceVertexId[1].push_back({1, 3, 5});  // 2
   expectedElementSurfaceVertexId[1].push_back({3, 5, 8});  // 3
 
-  for (int EleIter = 0; auto &&ele : volumes(gridView)) {
+  std::vector<std::vector<std::vector<int>>> expectedElementSurfaceEdgeId;
+  expectedElementSurfaceEdgeId.emplace_back();
+  expectedElementSurfaceEdgeId[0].push_back({0, 2, 4, 8});    // 0
+  expectedElementSurfaceEdgeId[0].push_back({1, 3, 5, 9});    // 1
+  expectedElementSurfaceEdgeId[0].push_back({0, 1, 6, 10});   // 2
+  expectedElementSurfaceEdgeId[0].push_back({2, 3, 7, 11});   // 3
+  expectedElementSurfaceEdgeId[0].push_back({4, 5, 6, 7});    // 4
+  expectedElementSurfaceEdgeId[0].push_back({8, 9, 10, 11});  // 5
+  expectedElementSurfaceEdgeId.emplace_back();
+  expectedElementSurfaceEdgeId[1].push_back({12, 5, 13});   // 0
+  expectedElementSurfaceEdgeId[1].push_back({12, 1, 14});   // 1
+  expectedElementSurfaceEdgeId[1].push_back({5, 1, 15});    // 2
+  expectedElementSurfaceEdgeId[1].push_back({13, 14, 15});  // 3
+
+  for (int EleIter = 0; auto ele : volumes(gridView)) {
     EXPECT_TRUE(!edges(ele).empty());
-    for (int surfIter = 0; auto &&surf : surfaces(ele)) {
+    for (int surfIter = 0; auto surf : surfaces(ele)) {
       EXPECT_TRUE(!vertices(surf).empty());
-      for (int i = 0; auto &&verticesOfSurface : vertices(surf)) {
-        EXPECT_EQ(verticesOfSurface->getID(), expectedElementSurfaceVertexId[EleIter][surfIter][i]);
-        EXPECT_THAT(verticesOfSurface->getPosition(),
+      for (int i = 0; auto verticesOfSurface : vertices(surf)) {
+        EXPECT_EQ(indexSet.index(verticesOfSurface), expectedElementSurfaceVertexId[EleIter][surfIter][i]);
+        EXPECT_THAT(verticesOfSurface.getPosition(),
                     EigenApproxEqual(verticesVec[expectedElementSurfaceVertexId[EleIter][surfIter][i]], 1e-15));
         ++i;
       }
+      for (int i = 0; auto &&edgesOfSurface : edges(surf))
+        EXPECT_EQ(indexSet.index(edgesOfSurface), expectedElementSurfaceEdgeId[EleIter][surfIter][i++]);
+
       ++surfIter;
     }
     ++EleIter;
   }
   std::vector<int> expectedSurfacesAtVertex{3, 6, 3, 6, 3, 6, 3, 3, 3};
-  for (int i = 0; auto &&vertex : vertices(gridView))
+  for (int i = 0; auto vertex : vertices(gridView))
     EXPECT_EQ(surfaces(vertex).size(), expectedSurfacesAtVertex[i++]);
 }
 

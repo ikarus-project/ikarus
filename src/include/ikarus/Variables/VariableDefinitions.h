@@ -13,44 +13,59 @@
 
 namespace Ikarus::Variable {
 
-  enum class VariablesTags : int { displacement1d, displacement2d, displacement3d, director2d, director3d, pressure };
+  // These can be used as variables of some fe solver, i.e. "Degrees of Freedom" or just as data
+  enum class VariableTags : int {
+    displacement1d,
+    displacement2d,
+    displacement3d,
+    director2d,
+    director3d,
+    pressure,
+    velocity1d,
+    velocity2d,
+    edgeLength
+  };
 
-  inline constexpr VariablesTags displacement1d = VariablesTags::displacement1d;
-  inline constexpr VariablesTags displacement2d = VariablesTags::displacement2d;
-  inline constexpr VariablesTags displacement3d = VariablesTags::displacement3d;
-  inline constexpr VariablesTags director2d     = VariablesTags::director2d;
-  inline constexpr VariablesTags director3d     = VariablesTags::director3d;
-  inline constexpr VariablesTags pressure       = VariablesTags::pressure;
-
-  inline constexpr VariablesTags AllTags[]
-      = {displacement1d, displacement2d, displacement3d, director2d, director3d, pressure};
+  inline constexpr VariableTags AllVariableTags[]
+      = {VariableTags::displacement1d, VariableTags::displacement2d, VariableTags::displacement3d,
+         VariableTags::director2d,     VariableTags::director3d,     VariableTags::pressure,
+         VariableTags::velocity1d,     VariableTags::velocity2d,     VariableTags::edgeLength};
 
   using Manifold::RealTuple;
   using Manifold::UnitVector;
 
-  using DISPLACEMENT1D = DefaultVariable<RealTuple<double, 1>, static_cast<int>(displacement1d)>;
-  using DISPLACEMENT2D = DefaultVariable<RealTuple<double, 2>, static_cast<int>(displacement2d)>;
-  using DISPLACEMENT3D = DefaultVariable<RealTuple<double, 3>, static_cast<int>(displacement3d)>;
-  using DIRECTOR2D     = DefaultVariable<UnitVector<double, 2>, static_cast<int>(director2d)>;
-  using DIRECTOR3D     = DefaultVariable<UnitVector<double, 3>, static_cast<int>(director3d)>;
-  using PRESSURE       = DefaultVariable<RealTuple<double, 1>, static_cast<int>(pressure)>;
+  using DISPLACEMENT1D = DefaultVariable<RealTuple<double, 1>, static_cast<int>(VariableTags::displacement1d)>;
+  using DISPLACEMENT2D = DefaultVariable<RealTuple<double, 2>, static_cast<int>(VariableTags::displacement2d)>;
+  using DISPLACEMENT3D = DefaultVariable<RealTuple<double, 3>, static_cast<int>(VariableTags::displacement3d)>;
+  using DIRECTOR2D     = DefaultVariable<UnitVector<double, 2>, static_cast<int>(VariableTags::director2d)>;
+  using DIRECTOR3D     = DefaultVariable<UnitVector<double, 3>, static_cast<int>(VariableTags::director3d)>;
+  using PRESSURE       = DefaultVariable<RealTuple<double, 1>, static_cast<int>(VariableTags::pressure)>;
+  using VELOCITY1D     = DefaultVariable<RealTuple<double, 1>, static_cast<int>(VariableTags::velocity1d)>;
+  using VELOCITY2D     = DefaultVariable<RealTuple<double, 2>, static_cast<int>(VariableTags::velocity2d)>;
+  using EDGELENGTH     = DefaultVariable<RealTuple<double, 1>, static_cast<int>(VariableTags::edgeLength)>;
 
   class VariableFactory {
   public:
-    static auto createVariable(VariablesTags tag) {
+    static auto createVariable(VariableTags tag) {
       switch (tag) {
-        case displacement1d:
+        case VariableTags::displacement1d:
           return IVariable(DISPLACEMENT1D());
-        case displacement2d:
+        case VariableTags::displacement2d:
           return IVariable(DISPLACEMENT2D());
-        case displacement3d:
+        case VariableTags::displacement3d:
           return IVariable(DISPLACEMENT3D());
-        case director2d:
+        case VariableTags::director2d:
           return IVariable(DIRECTOR2D());
-        case director3d:
+        case VariableTags::director3d:
           return IVariable(DIRECTOR3D());
-        case pressure:
+        case VariableTags::pressure:
           return IVariable(PRESSURE());
+        case VariableTags::velocity1d:
+          return IVariable(VELOCITY1D());
+        case VariableTags::velocity2d:
+          return IVariable(VELOCITY2D());
+        case VariableTags::edgeLength:
+          return IVariable(EDGELENGTH());
         default:
           throw std::logic_error("Variable not implemented.");
       }
@@ -61,15 +76,15 @@ namespace Ikarus::Variable {
   };
 
   // TODO: change this when gcc supports std::string,std::vector constexpr
-  constexpr std::array<const char*, 6> createVariableMap() {
-    std::array<const char*, 6> m{"displacement1d", "displacement2d", "displacement3d",
-                                 "director2d",     "director3d",     "pressure"};
+  constexpr std::array<const char*, 9> createVariableMap() {
+    std::array<const char*, 9> m{"displacement1d", "displacement2d", "displacement3d", "director2d", "director3d",
+                                 "pressure",       "velocity1d",     "velocity2d",     "edgeLength"};
 
     return m;
   }
 
-  inline constexpr std::array<const char*, 6> variableNames = createVariableMap();
+  inline constexpr std::array<const char*, 9> variableNames = createVariableMap();
 
-  std::ostream& operator<<(std::ostream& s, const VariablesTags& varTag);
+  std::ostream& operator<<(std::ostream& s, const VariableTags& varTag);
 
 }  // namespace Ikarus::Variable

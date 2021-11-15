@@ -13,6 +13,7 @@
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
 
 namespace Ikarus::Variable {
+  enum class VariableTags;
 
   class IVariable {
   public:
@@ -44,7 +45,7 @@ namespace Ikarus::Variable {
       virtual void do_assignAdd(const UpdateType &other)                          = 0;
       virtual void do_setValue(const UpdateType &other)                           = 0;
       [[nodiscard]] virtual CoordinateType do_getValue() const                    = 0;
-      [[nodiscard]] virtual size_t do_getTag() const                              = 0;
+      [[nodiscard]] virtual int do_getTag() const                                 = 0;
       [[nodiscard]] virtual std::unique_ptr<VarBase> clone() const                = 0;
     };
 
@@ -54,7 +55,7 @@ namespace Ikarus::Variable {
 
       [[nodiscard]] int do_valueSize() const final { return VAR::valueSize; }
       [[nodiscard]] int do_correctionSize() const final { return VAR::correctionSize; }
-      [[nodiscard]] size_t do_getTag() const final { return vo.getTag(); };
+      [[nodiscard]] int do_getTag() const final { return vo.getTag(); };
       [[nodiscard]] CoordinateType do_getValue() const final { return vo.getValue(); };
       void do_assignAdd(const UpdateType &other) final { vo.update(other); }
       void do_setValue(const UpdateType &other) final { return vo.setValue(other); }
@@ -75,13 +76,15 @@ namespace Ikarus::Variable {
 
     friend IVariable &operator+=(IVariable &vo, const UpdateType &correction);
     friend IVariable operator+(IVariable &vo, const UpdateType &correction);
+    friend IVariable &operator-=(IVariable &vo, const UpdateType &correction);
+    friend IVariable operator-(IVariable &vo, const UpdateType &correction);
     friend void setValue(IVariable &vo, const UpdateType &value);
     friend CoordinateType getValue(const IVariable &vo);
     friend int valueSize(const IVariable &vo);
     friend int correctionSize(const IVariable &vo);
     friend bool operator==(const IVariable &var, const IVariable &other);
     friend bool operator<(const IVariable &var, const IVariable &other);
-    friend size_t getTag(const IVariable &var);
+    friend int getTag(const IVariable &var);
     friend std::ostream &operator<<(std::ostream &s, const IVariable &var);
   };
 
@@ -89,16 +92,24 @@ namespace Ikarus::Variable {
   IVariable &operator+=(IVariable *vo, const IVariable::UpdateType &correction);
   IVariable operator+(IVariable &vo, const IVariable::UpdateType &correction);
   IVariable operator+(IVariable *vo, const IVariable::UpdateType &correction);
+  IVariable &operator-=(IVariable &vo, const IVariable::UpdateType &correction);
+  IVariable &operator-=(IVariable *vo, const IVariable::UpdateType &correction);
+  IVariable operator-(IVariable &vo, const IVariable::UpdateType &correction);
+  IVariable operator-(IVariable *vo, const IVariable::UpdateType &correction);
   void setValue(IVariable &vo, const IVariable::UpdateType &value);
   IVariable::CoordinateType getValue(const IVariable &vo);
+  IVariable::CoordinateType getValue(const IVariable *vo);
   int valueSize(const IVariable &vo);
   int correctionSize(const IVariable &vo);
   bool operator==(const IVariable &var, const IVariable &other);
   bool operator<(const IVariable &var, const IVariable &other);
-  size_t getTag(const IVariable &var);
+  int getTag(const IVariable &var);
   std::string getName(const IVariable &var);
   std::ostream &operator<<(std::ostream &s, const IVariable &var);
+  std::ostream &operator<<(std::ostream &s, const IVariable *var);
   size_t valueSize(std::span<const IVariable> varSpan);
   size_t correctionSize(std::span<const IVariable> varSpan);
   void update(std::span<IVariable> varSpan, const Eigen::VectorXd &correction);
+  bool isType(const IVariable &vo, Ikarus::Variable::VariableTags tag);
+  bool isType(IVariable *vo, Ikarus::Variable::VariableTags tag);
 }  // namespace Ikarus::Variable

@@ -8,8 +8,6 @@
 
 #include <dune/geometry/type.hh>
 
-#include <ikarus/Geometries/GeometryInterface.h>
-
 #include <ikarus/FiniteElements/FiniteElementInterface.h>
 #include <ikarus/FiniteElements/PhysicalElementPolicies.h>
 #include <ikarus/Geometries/GeometryInterface.h>
