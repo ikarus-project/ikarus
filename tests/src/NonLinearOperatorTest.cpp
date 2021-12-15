@@ -16,7 +16,8 @@ auto df(double& x) { return x + 1; }
 
 TEST(NonLinearOperator, SimpleOperator) {
   double x      = 13;
-  auto nonLinOp = NonLinearOperator(&f, &df, x);
+
+  Ikarus::NonLinearOperator nonLinOp(&f, derivatives(&df), parameter(x));
 
   auto& val      = nonLinOp.value();
   auto& gradient = nonLinOp.derivative();
@@ -52,7 +53,7 @@ TEST(NonLinearOperator, VectorValuedOperator) {
 
   auto fvLambda  = [&](auto&& x) { return fv(x, A, b); };
   auto dfvLambda = [&](auto&& x) { return dfv(x, A, b); };
-  auto nonLinOp  = NonLinearOperator(fvLambda, dfvLambda, x);
+  auto nonLinOp  = Ikarus::NonLinearOperator(fvLambda, derivatives(dfvLambda), parameter(x));
 
   auto& val      = nonLinOp.value();
   auto& jacobian = nonLinOp.derivative();
@@ -68,4 +69,47 @@ TEST(NonLinearOperator, VectorValuedOperator) {
   }
   EXPECT_EQ(iter, 1);  // Linear System should be solved in one step
   EXPECT_THAT(b, EigenApproxEqual(-A * x, 1e-15));
+}
+
+
+double f2v(Eigen::VectorXd& x, Eigen::MatrixXd& A, Eigen::VectorXd& b) { return x.dot(b + A * x); }
+Eigen::VectorXd df2v([[maybe_unused]] Eigen::VectorXd& x, Eigen::MatrixXd& A, [[maybe_unused]] Eigen::VectorXd& b) {
+  return 2*A*x + b;
+}
+Eigen::MatrixXd ddf2v([[maybe_unused]] Eigen::VectorXd& x, Eigen::MatrixXd& A, [[maybe_unused]] Eigen::VectorXd& b) {
+  return 2*A;
+}
+
+TEST(NonLinearOperator, SecondOrderVectorValuedOperator) {
+  Eigen::VectorXd x(3);
+
+  x << 1, 2, 3;
+  Eigen::VectorXd b(3);
+  b << 5, 7, 8;
+  Eigen::MatrixXd A(3, 3);
+  A = Eigen::MatrixXd::Identity(3, 3) * 13;
+
+  auto fvLambda  = [&](auto&& x) { return f2v(x, A, b); };
+  auto dfvLambda = [&](auto&& x) { return df2v(x, A, b); };
+  auto ddfvLambda = [&](auto&& x) { return ddf2v(x, A, b); };
+  auto nonLinOp  = Ikarus::NonLinearOperator(fvLambda, derivatives(dfvLambda,ddfvLambda), parameter(x));
+
+  auto& val      = nonLinOp.value();
+  auto& residual = nonLinOp.derivative();
+  auto& hessian = nonLinOp.secondDerivative();
+
+  // Newton method test find root of first derivative
+  const double eps  = 1e-14;
+  const int maxIter = 20;
+  int iter          = 0;
+  while (residual.norm() > eps && iter < maxIter) {
+    x -= hessian.inverse() * residual;
+    nonLinOp.updateAll();
+    std::cout<<val<<std::endl;
+    ++iter;
+  }
+
+  EXPECT_EQ(iter, 1);  // Linear System should be solved in one step
+  EXPECT_EQ(val, -2.6538461538461533);  // Linear System should be solved in one step
+  EXPECT_THAT(b, EigenApproxEqual(-2*A * x, 1e-15));
 }
