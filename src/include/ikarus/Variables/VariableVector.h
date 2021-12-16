@@ -67,6 +67,10 @@ namespace Ikarus::Variable {
       return transform_viewOverElements([this](const auto &fe) { return this->variablesOfSingleElement(fe); });
     };
 
+    auto elementVariables() const {
+      return transform_viewOverElements([this](const auto &fe) { return this->variablesOfSingleElement(fe); });
+    };
+
     auto elementDofVectorSize() {
       return transform_viewOverElements([this](const auto &fe) { return dofSize(fe); });
     };
@@ -76,11 +80,38 @@ namespace Ikarus::Variable {
     };
 
     auto getValues() { return std::ranges::join_view(variablesForEachEntity); };
+    auto getValues() const { return std::ranges::join_view(variablesForEachEntity); };
+    auto size() const {
+      auto v   = std::ranges::join_view(variablesForEachEntity);
+      int size = std::accumulate(v.begin(), v.end(), 0, [](auto &&acc, auto &&var) { return acc + valueSize(var); });
+      return size;
+    };
+
+    Eigen::VectorXd getUnderlyingVector() const {
+      Eigen::VectorXd vec(size());
+      for (int offset = 0; auto &&v : this->getValues()) {
+        const auto curvar                  = getValue(v);
+        vec.segment(offset, curvar.size()) = curvar;
+        offset += curvar.size();
+      }
+      return vec;
+    }
 
     auto variablesOfSingleElement(const typename FEContainer::value_type &fe) {
       FiniteElements::FEValues elementVariables;
 
-      auto feSubIndicesRange = feIndexSet.variableIndices(fe);
+      auto feSubIndicesRange = feIndexSet.variableIDs(fe);
+      for (auto &feSubIndex : feSubIndicesRange) {
+        const auto &entityType = entityTypes.at(feSubIndex);
+        elementVariables.add(entityType, variablesForEachEntity[feSubIndex]);
+      }
+      return elementVariables;
+    }
+
+    auto variablesOfSingleElement(const typename FEContainer::value_type &fe) const {
+      FiniteElements::FEValues elementVariables;
+
+      auto feSubIndicesRange = feIndexSet.variableIDs(fe);
       for (auto &feSubIndex : feSubIndicesRange) {
         const auto &entityType = entityTypes.at(feSubIndex);
         elementVariables.add(entityType, variablesForEachEntity[feSubIndex]);
@@ -95,15 +126,17 @@ namespace Ikarus::Variable {
 
       auto eleDofs = Ikarus::FiniteElements::getEntityVariableTuple(fe);
 
-      for (auto &&entityID : feIndexSet.variableIndices(fe)) {
-        auto &currentIndices = variableIndices[feIndexSet.indexOfEntity(entityID)];
+      for (auto &&entityID : feIndexSet.variableIDs(fe)) {
+        auto &currentIndices                                       = variableIndices[entityID];
         indices.template segment(posHelper, currentIndices.size()) = currentIndices;
         posHelper += currentIndices.size();
       }
       return indices;
     }
 
-    size_t correctionSize() { return dofSizeValue; }
+    [[nodiscard]] size_t correctionSize() const { return dofSizeValue; }
+    [[nodiscard]] size_t elementSize() const { return feContainer_->size(); }
+    const auto &getFeContainer() const { return *feContainer_; }
 
     VariableVector &operator+=(const Eigen::VectorXd &correction) {
       assert(static_cast<long long int>(correctionSize()) == correction.size());
@@ -123,12 +156,26 @@ namespace Ikarus::Variable {
       return std::ranges::transform_view(*feContainer_, fn);
     }
 
+    template <class Functype>
+    auto transform_viewOverElements(Functype fn) const {
+      return std::ranges::transform_view(*feContainer_, fn);
+    }
+
   private:
-    std::vector<std::vector<Ikarus::Variable::IVariable>> variablesForEachEntity;
+    mutable std::vector<std::vector<Ikarus::Variable::IVariable>> variablesForEachEntity;
     std::unordered_map<size_t, Ikarus::EntityType> entityTypes;
     std::vector<Eigen::ArrayXi> variableIndices;
     size_t dofSizeValue{};
     FEContainer const *feContainer_;
     FEIndexSet<FEContainer> feIndexSet;
   };
+
+  template <class FEContainer>
+  inline std::ostream &operator<<(std::ostream &o, const VariableVector<FEContainer> &var) {
+    for (auto &&v : var.getValues()) {
+      o << getValue(v) << std::endl;
+    }
+    return o;
+  }
+
 }  // namespace Ikarus::Variable

@@ -26,10 +26,14 @@
 #include <iostream>
 
 #include <dune/common/classname.hh>
+#include <dune/geometry/quadraturerules.hh>
 #include <dune/geometry/type.hh>
+#include <dune/localfunctions/lagrange.hh>
 
 #include <spdlog/spdlog.h>
 
+#include "ikarus/AnsatzFunctions/Lagrange.h"
+#include "ikarus/utils/LinearAlgebraHelper.h"
 #include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
 #include <ikarus/Variables/VariableDefinitions.h>
@@ -44,8 +48,8 @@ namespace Ikarus::FiniteElements {
   template <typename GridElementEntityType, typename IndexSetType, std::floating_point ct = double>
   class ElasticityFE {
   public:
-    ElasticityFE(GridElementEntityType &gE, const IndexSetType &indexSet)
-        : elementGridEntity{&gE}, indexSet_{&indexSet} {}
+    ElasticityFE(GridElementEntityType &gE, const IndexSetType &indexSet, double emod, double nu)
+        : elementGridEntity{&gE}, indexSet_{&indexSet}, emod_{emod}, nu_{nu} {}
 
     /** \brief Type used for coordinates */
     using ctype = ct;
@@ -95,7 +99,7 @@ namespace Ikarus::FiniteElements {
                                                                          [[maybe_unused]] DataVectorType data
                                                                          = std::nullopt) const {
       if (matA == stiffness && vecA == forces)
-        return calculateStiffnessMatrixAndInternalForcesImpl();
+        return calculateStiffnessMatrixAndInternalForcesImpl(matA, vecA, vars, data);
       else
         throw std::logic_error("This element can not handle your affordance! ");
     }
@@ -103,7 +107,7 @@ namespace Ikarus::FiniteElements {
     [[nodiscard]] MatrixType calculateMatrix(const MatrixAffordances &matA, [[maybe_unused]] VariableVectorType &vars,
                                              [[maybe_unused]] const DataVectorType &data = std::nullopt) const {
       if (matA == stiffness)
-        return calculateStiffnessMatrixAndInternalForcesImpl<false, true>();
+        return calculateStiffnessMatrixAndInternalForcesImpl<false, true>(matA, VectorAffordances::forces, vars, data);
       else
         throw std::logic_error("This element can not handle your affordance! ");
     }
@@ -113,22 +117,67 @@ namespace Ikarus::FiniteElements {
       return 13.0;
     }
 
-    [[nodiscard]] VectorType calculateVector(const VectorAffordances &, [[maybe_unused]] VariableVectorType &vars,
+    [[nodiscard]] VectorType calculateVector(const VectorAffordances &vecA, [[maybe_unused]] VariableVectorType &vars,
                                              [[maybe_unused]] const DataVectorType &data = std::nullopt) const {
-      return calculateStiffnessMatrixAndInternalForcesImpl<true, false>();
+      return calculateStiffnessMatrixAndInternalForcesImpl<true, false>(MatrixAffordances::stiffness, vecA, vars, data);
     }
 
     template <bool internalForcesFlag = true, bool stiffnessMatrixFlag = true>
-    auto calculateStiffnessMatrixAndInternalForcesImpl() const {
+    auto calculateStiffnessMatrixAndInternalForcesImpl([[maybe_unused]] const MatrixAffordances &matA,
+                                                       [[maybe_unused]] const VectorAffordances &vecA,
+                                                       [[maybe_unused]] VariableVectorType &vars,
+                                                       [[maybe_unused]] DataVectorType data = std::nullopt) const {
       if constexpr (internalForcesFlag && stiffnessMatrixFlag) {
-        const VectorType Fint = VectorType::Ones(8);
-        const MatrixType K    = MatrixType::Ones(8, 8);
+        const auto rule = Dune::QuadratureRules<ctype, mydimension>::rule(duneType(elementGridEntity->type()), 2);
+
+        VectorType Fint(dofSize());
+        MatrixType K(dofSize(), dofSize());
+        for (auto &gp : rule) {
+          const auto dN         = Ikarus::LagrangeCube<double, 2, 1>::evaluateJacobian(toEigenVector(gp.position()));
+          const auto vertexdisp = vars.get(EntityType::vertex);
+          const auto geo        = elementGridEntity->geometry();
+          static_assert(std::remove_cvref_t<decltype(gp.position())>::dimension == 2);
+          const auto refJacobian = geo.jacobianInverseTransposed(gp.position());
+          //          Eigen::Vector2d u
+          //          vol += integrationElement(gp.position()) * gp.weight();
+        }
+
         return std::make_pair(K, Fint);
-      } else if constexpr (internalForcesFlag && !stiffnessMatrixFlag)
+      } else if constexpr (internalForcesFlag && !stiffnessMatrixFlag) {
         return VectorType::Ones(8);
-      else if constexpr (!internalForcesFlag && stiffnessMatrixFlag)
-        return MatrixType::Ones(8, 8);
-      else
+      } else if constexpr (!internalForcesFlag && stiffnessMatrixFlag) {
+        VectorType Fint(dofSize());
+        MatrixType K(dofSize(), dofSize());
+        MatrixType Bop((mydimension * (mydimension + 1)) / 2, dofSize());
+        K.setZero();
+        Bop.setZero();
+        const auto rule = Dune::QuadratureRules<ctype, mydimension>::rule(duneType(elementGridEntity->type()), 2);
+        double vol      = 0;
+        Eigen::Matrix3d C;
+        const double fac = emod_ / (1 - nu_ * nu_);
+        C(0, 0) = C(1, 1) = 1;
+        C(0, 1) = C(1, 0) = nu_;
+        C(2, 2)           = (1 - nu_) / 2;
+        C *= fac;
+        for (auto &gp : rule) {
+          const auto vertexdisp  = vars.get(EntityType::vertex);
+          const auto geo         = elementGridEntity->geometry();
+          const auto refJacobian = toEigenMatrix(geo.jacobianTransposed(gp.position()));
+          Eigen::Matrix<double, 4, mydimension> dN
+              = Ikarus::LagrangeCube<double, mydimension, 1>::evaluateJacobian(toEigenVector(gp.position()));
+          dN *= (refJacobian * Ikarus::LinearAlgebra::orthonormalizeMatrixColumns(refJacobian.transpose())).inverse();
+
+          for (int i = 0; i < dN.rows(); ++i)
+            for (int j = 0; j < mydimension; ++j) {
+              Bop(j, mydimension * i + j)           = dN(i, j);
+              Bop(mydimension, mydimension * i + j) = dN(i, (j == 0) ? 1 : 0);
+            }
+
+          K += (Bop.transpose() * C * Bop) * geo.integrationElement(gp.position()) * gp.weight();
+          vol += geo.integrationElement(gp.position()) * gp.weight();
+        }
+        return K;
+      } else
         static_assert(internalForcesFlag == false && stiffnessMatrixFlag == false,
                       "You asked the element: \"Don't return anything\"");
     }
@@ -164,6 +213,8 @@ namespace Ikarus::FiniteElements {
   private:
     GridElementEntityType const *const elementGridEntity;
     IndexSetType const *const indexSet_;
+    double emod_;
+    double nu_;
   };
 
 }  // namespace Ikarus::FiniteElements

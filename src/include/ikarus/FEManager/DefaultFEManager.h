@@ -37,6 +37,12 @@ namespace Ikarus::FEManager {
     void addData(GridDataType& gridData) { gridData_ = gridData; }
 
     auto elementVariables() { return varVec.elementVariables(); };
+    auto elementVariables() const { return varVec.elementVariables(); };
+    auto elementVariables(const typename std::decay_t<FEContainer>::value_type& fe) const {
+      return varVec.variablesOfSingleElement(fe);
+    };
+    auto size() const { return varVec.elementSize(); };
+    const auto& getFeContainer() const { return varVec.getFeContainer(); };
 
     auto elementDofVectorSize() { return varVec.elementDofVectorSize(); };
 

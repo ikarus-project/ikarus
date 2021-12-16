@@ -14,8 +14,19 @@ namespace Ikarus::Grid {
   requires(dim >= 2) auto& surfaces(SimpleGridView<dim, dimworld> &gridView) {
     return gridView.template getEntities<dim - 2>();
   }
+
+  template <int dim, int dimworld>
+  requires(dim >= 2) const auto& surfaces(const SimpleGridView<dim, dimworld> &gridView) {
+    return gridView.template getEntities<dim - 2>();
+  }
+
   template <int dim, int dimworld>
   requires(dim >= 1) auto& edges(SimpleGridView<dim, dimworld> &gridView) {
+    return gridView.template getEntities<dim - 1>();
+  }
+
+  template <int dim, int dimworld>
+  requires(dim >= 1) const auto& edges(const SimpleGridView<dim, dimworld> &gridView) {
     return gridView.template getEntities<dim - 1>();
   }
 

@@ -3,17 +3,16 @@
 //
 
 #pragma once
-#include <ikarus/utils/observer.h>
 #include <string>
+
 #include "spdlog/spdlog.h"
+
+#include <ikarus/utils/observer.h>
 
 enum class ControlMessages { BEGIN, ITERATION_ENDED, LOADSTEP_ENDED, RESIDUALNORM_UPDATED, END };
 
-
-
 class ControlLogger : public IObserver<ControlMessages> {
 public:
-
   void updateImpl(ControlMessages message) override {
     switch (message) {
       case ControlMessages::ITERATION_ENDED:
@@ -21,11 +20,11 @@ public:
         break;
       case ControlMessages::LOADSTEP_ENDED:
         spdlog::info("============================================\n");
-        spdlog::info("Loadstep has ended" );
+        spdlog::info("Loadstep has ended");
         spdlog::info("============================================\n");
         break;
       default:
-        break; //   default: do nothing when notified
+        break;  //   default: do nothing when notified
     }
   }
 
@@ -38,5 +37,4 @@ public:
         break;
     }
   }
-
 };
