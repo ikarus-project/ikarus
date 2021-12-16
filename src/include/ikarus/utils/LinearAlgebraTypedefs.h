@@ -19,12 +19,16 @@ namespace Ikarus {
     return fieldvec;
   }
 
+  /** \brief Views a dune fieldvector as an Eigen::Vector, no copies take place! */
   template <typename ScalarType, int size>
-  Eigen::Vector<ScalarType, size> toEigenVector(const Dune::FieldVector<ScalarType, size>& vec) {
-    Eigen::Vector<ScalarType, size> eigenvec;
-    for (int i = 0; i < size; ++i)
-      eigenvec[i] = vec[i];
-    return eigenvec;
+  Eigen::Map<const Eigen::Vector<ScalarType, size>> toEigenVector(const Dune::FieldVector<ScalarType, size>& vec) {
+    return {vec.data(),size};
+  }
+
+  /** \brief Views a const dune fieldvector as a const Eigen::Vector, no copies take place! */
+  template <typename ScalarType, int size>
+  Eigen::Map<Eigen::Vector<ScalarType, size>> toEigenVector(Dune::FieldVector<ScalarType, size>& vec) {
+    return {vec.data(),size};
   }
 
   template <typename ScalarType, int size1, int size2>

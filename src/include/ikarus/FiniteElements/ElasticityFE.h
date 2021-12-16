@@ -28,7 +28,6 @@
 #include <dune/common/classname.hh>
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/geometry/type.hh>
-#include <dune/localfunctions/lagrange.hh>
 
 #include <spdlog/spdlog.h>
 
@@ -55,16 +54,16 @@ namespace Ikarus::FiniteElements {
     using ctype = ct;
 
     /** \brief Dimension of the world space */
-    static constexpr int coorddimension = GridElementEntityType::dimensionworld;
+    static constexpr int worlddim = GridElementEntityType::dimensionworld;
 
     /** \brief Dimension of the geometry */
-    static constexpr int mydimension = GridElementEntityType::mydimension;
+    static constexpr int mydim = GridElementEntityType::mydimension;
 
     /** \brief Type of the Nodes coordinate */
-    using NodeType = Eigen::Matrix<ctype, coorddimension, 1>;
+    using NodeType = Eigen::Matrix<ctype, worlddim, 1>;
 
     /** \brief Type of the ParameterSpace coordinate */
-    using ParameterSpaceType = Eigen::Matrix<ctype, mydimension, 1>;
+    using ParameterSpaceType = Eigen::Matrix<ctype, mydim, 1>;
 
     /** \brief Type of the Pairs of gridEntities and variable tags */
     using DofTupleVectorType = typename IFiniteElement::DofPairVectorType;
@@ -76,7 +75,7 @@ namespace Ikarus::FiniteElements {
     using DataVectorType = typename IFiniteElement::DataVectorType;
 
     /** \brief Type of the Dofs / SolutionType
-     * using NodalSolutionType = Displacement<ctype,coorddimension>;*/
+     * using NodalSolutionType = Displacement<ctype,worlddim>;*/
 
     /** \brief Type of the internal forces */
     using VectorType = Eigen::VectorXd;
@@ -85,9 +84,9 @@ namespace Ikarus::FiniteElements {
     using MatrixType = Eigen::MatrixXd;
 
     [[nodiscard]] constexpr int dofSize() const {
-      if constexpr (coorddimension == 3)
+      if constexpr (worlddim == 3)
         return vertices(*elementGridEntity).size() * 3;
-      else if constexpr (coorddimension == 2)
+      else if constexpr (worlddim == 2)
         return vertices(*elementGridEntity).size() * 2;
     }
 
@@ -128,7 +127,7 @@ namespace Ikarus::FiniteElements {
                                                        [[maybe_unused]] VariableVectorType &vars,
                                                        [[maybe_unused]] DataVectorType data = std::nullopt) const {
       if constexpr (internalForcesFlag && stiffnessMatrixFlag) {
-        const auto rule = Dune::QuadratureRules<ctype, mydimension>::rule(duneType(elementGridEntity->type()), 2);
+        const auto rule = Dune::QuadratureRules<ctype, mydim>::rule(duneType(elementGridEntity->type()), 2);
 
         VectorType Fint(dofSize());
         MatrixType K(dofSize(), dofSize());
@@ -148,10 +147,10 @@ namespace Ikarus::FiniteElements {
       } else if constexpr (!internalForcesFlag && stiffnessMatrixFlag) {
         VectorType Fint(dofSize());
         MatrixType K(dofSize(), dofSize());
-        MatrixType Bop((mydimension * (mydimension + 1)) / 2, dofSize());
+        MatrixType Bop((mydim * (mydim + 1)) / 2, dofSize());
         K.setZero();
         Bop.setZero();
-        const auto rule = Dune::QuadratureRules<ctype, mydimension>::rule(duneType(elementGridEntity->type()), 2);
+        const auto rule = Dune::QuadratureRules<ctype, mydim>::rule(duneType(elementGridEntity->type()), 2);
         double vol      = 0;
         Eigen::Matrix3d C;
         const double fac = emod_ / (1 - nu_ * nu_);
@@ -160,19 +159,29 @@ namespace Ikarus::FiniteElements {
         C(2, 2)           = (1 - nu_) / 2;
         C *= fac;
         for (auto &gp : rule) {
-          const auto vertexdisp  = vars.get(EntityType::vertex);
-          const auto geo         = elementGridEntity->geometry();
-          const auto refJacobian = toEigenMatrix(geo.jacobianTransposed(gp.position()));
-          Eigen::Matrix<double, 4, mydimension> dN
-              = Ikarus::LagrangeCube<double, mydimension, 1>::evaluateJacobian(toEigenVector(gp.position()));
-          dN *= (refJacobian * Ikarus::LinearAlgebra::orthonormalizeMatrixColumns(refJacobian.transpose())).inverse();
+          const auto vertexdisp = vars.get(EntityType::vertex);
+          const auto geo        = elementGridEntity->geometry();
+          const auto J          = toEigenMatrix(geo.jacobianTransposed(gp.position()));
+          Eigen::Matrix<double, 4, mydim> dN
+              = Ikarus::LagrangeCube<double, mydim, 1>::evaluateJacobian(toEigenVector(gp.position()));
+          dN *= (J * Ikarus::LinearAlgebra::orthonormalizeMatrixColumns(J.transpose())).inverse();
 
-          for (int i = 0; i < dN.rows(); ++i)
-            for (int j = 0; j < mydimension; ++j) {
-              Bop(j, mydimension * i + j)           = dN(i, j);
-              Bop(mydimension, mydimension * i + j) = dN(i, (j == 0) ? 1 : 0);
+          for (int i = 0; i < dN.rows(); ++i) {
+            for (int j = 0; j < mydim; ++j)
+              Bop(j, mydim * i + j) = dN(i, j);
+
+            for (int s = 0; s < mydim * (mydim - 1) / 2; ++s)  // loop over off-diagonal strains
+            {
+              std::array<int, 2> curdim{};
+              for (int c = 0, d = 0; d < mydim; ++d) {
+                if (d == 2 - s) continue;
+                curdim[c++] = d;
+              }
+              for (int k = 0; k < 2; ++k)
+                Bop(s + mydim, mydim * i + curdim[k]) = dN(i, curdim[(k + 1) % 2]);
+              //              Bop(s + mydimension, mydimension * i + curdim[1]) = dN(i, curdim[0]);
             }
-
+          }
           K += (Bop.transpose() * C * Bop) * geo.integrationElement(gp.position()) * gp.weight();
           vol += geo.integrationElement(gp.position()) * gp.weight();
         }
@@ -186,16 +195,16 @@ namespace Ikarus::FiniteElements {
       DofTupleVectorType entDofTupleVector(vertices(*elementGridEntity).size());
       using namespace Ikarus::Variable;
       VariableTags dofType;
-      if constexpr (coorddimension == 3)
+      if constexpr (worlddim == 3)
         dofType = VariableTags::displacement3d;
-      else if constexpr (coorddimension == 2)
+      else if constexpr (worlddim == 2)
         dofType = VariableTags::displacement2d;
-      else if constexpr (coorddimension == 1)
+      else if constexpr (worlddim == 1)
         dofType = VariableTags::displacement1d;
       else
-        static_assert(coorddimension > 3 || coorddimension < 1, "This element has an impossible coorddimension.");
+        static_assert(worlddim > 3 || worlddim < 1, "This element has an impossible worlddim.");
       for (int id = 0; auto &entityDofTuple : entDofTupleVector) {
-        entityDofTuple.entityID = indexSet_->subIndex(*elementGridEntity, id++, coorddimension);
+        entityDofTuple.entityID = indexSet_->subIndex(*elementGridEntity, id++, worlddim);
         entityDofTuple.variableVector.assign(1, dofType);
         entityDofTuple.entityType = EntityType::vertex;
       }
@@ -208,7 +217,7 @@ namespace Ikarus::FiniteElements {
       return indexSet_->subIndex(*elementGridEntity, i, codim);
     }
 
-    [[nodiscard]] unsigned int dimension() const { return mydimension; }
+    [[nodiscard]] unsigned int dimension() const { return mydim; }
 
   private:
     GridElementEntityType const *const elementGridEntity;
