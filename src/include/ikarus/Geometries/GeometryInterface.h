@@ -10,7 +10,7 @@
 //  concept Geometry = requires(
 //      GeometryEntityType&& geoEntity,
 //      Eigen::Matrix<typename GeometryEntityType::ctype, Eigen::Dynamic, GeometryEntityType::mydimension> dN,
-//      Eigen::Matrix<typename GeometryEntityType::ctype, GeometryEntityType::coorddimension, Eigen::Dynamic> x) {
+//      Eigen::Matrix<typename GeometryEntityType::ctype, GeometryEntityType::worlddim, Eigen::Dynamic> x) {
 ////    { geoEntity.determinantJacobian(dN, x) } -> std::same_as<typename GeometryEntityType::ctype>;
 ////    { geoEntity.jacobianTransposed(dN, x) } -> std::same_as<typename GeometryEntityType::JacobianTransposed>;
 ////    {
