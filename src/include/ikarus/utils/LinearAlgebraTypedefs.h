@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <dune/common/fmatrix.hh>
 #include <dune/common/fvector.hh>
 
 #include <Eigen/Core>
@@ -16,6 +17,23 @@ namespace Ikarus {
     for (int i = 0; i < size; ++i)
       fieldvec[i] = vec[i];
     return fieldvec;
+  }
+
+  template <typename ScalarType, int size>
+  Eigen::Vector<ScalarType, size> toEigenVector(const Dune::FieldVector<ScalarType, size>& vec) {
+    Eigen::Vector<ScalarType, size> eigenvec;
+    for (int i = 0; i < size; ++i)
+      eigenvec[i] = vec[i];
+    return eigenvec;
+  }
+
+  template <typename ScalarType, int size1, int size2>
+  Eigen::Matrix<ScalarType, size1, size2> toEigenMatrix(const Dune::FieldMatrix<ScalarType, size1, size2>& mat) {
+    Eigen::Matrix<ScalarType, size1, size2> eigenmatrix;
+    for (int i = 0; i < size1; ++i)
+      for (int j = 0; j < size2; ++j)
+        eigenmatrix(i, j) = mat[i][j];
+    return eigenmatrix;
   }
 
 }  // namespace Ikarus

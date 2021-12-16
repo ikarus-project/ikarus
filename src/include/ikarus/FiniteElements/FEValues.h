@@ -13,9 +13,22 @@ namespace Ikarus::FiniteElements {
     using EntityDataVectorType = std::vector<std::reference_wrapper<Ikarus::Variable::IVariable>>;
 
   public:
-    const auto get(const EntityType& eT, Ikarus::Variable::VariableTags varTag) const;
+    auto get(const EntityType& eT, Ikarus::Variable::VariableTags varTag) const {
+      auto tagFilter = [&varTag](auto&& var) { return isType(var, varTag); };
+      switch (eT) {
+        case EntityType::vertex:
+          return vertexData | std::views::filter(tagFilter);
+        case EntityType::edge:
+          return edgeData | std::views::filter(tagFilter);
+        case EntityType::surface:
+          return surfaceData | std::views::filter(tagFilter);
+        case EntityType::volume:
+          return volumeData | std::views::filter(tagFilter);
+      }
+      __builtin_unreachable();
+    }
 
-    EntityDataVectorType& get(const EntityType& eT);
+    const EntityDataVectorType& get(const EntityType& eT) const;
 
     void add(const EntityType& eT, Ikarus::Variable::IVariable& var);
 

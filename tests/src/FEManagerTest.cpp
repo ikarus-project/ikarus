@@ -48,7 +48,7 @@ TEST(FEManager, FEManagertest) {
   std::vector<Ikarus::FiniteElements::IFiniteElement> feContainer;
 
   for (auto&& ge : surfaces(gridView))
-    feContainer.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge, gridView.indexSet()));
+    feContainer.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge, gridView.indexSet(), 1000, 0.3));
 
   auto feManager = Ikarus::FEManager::DefaultFEManager(feContainer, gridView);
 

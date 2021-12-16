@@ -68,13 +68,9 @@ namespace Ikarus {
       return result;
     }
 
-    //! \brief transform x from -1..1 to 0..1
-    static ParaMeterPointType transformPoint(const ParaMeterPointType& x) { return 0.5 * x.array() + 0.5; }
-
   public:
     //! \brief Evaluate all shape functions
-    constexpr static VectorType evaluateFunction(const ParaMeterPointType& x01) {
-      const ParaMeterPointType x(transformPoint(x01));
+    constexpr static VectorType evaluateFunction(const ParaMeterPointType& x) {
       VectorType N = VectorType::Zero();
 
       // Specialization for zero-order case
@@ -99,7 +95,7 @@ namespace Ikarus {
           for (unsigned int j = 0; j < dim; j++)
             N[i] *= getAnsatzFunctionImpl(alpha[j], x[j]);
         }
-      return N;  // transform back to -1..1
+      return N;
     }
 
     /** \brief Evaluate Jacobian of all shape functions
@@ -107,8 +103,7 @@ namespace Ikarus {
      * \param x Point in the reference cube where to evaluation the Jacobians
      * \param[out] out The Jacobians of all shape functions at the point x
      */
-    static JacobianType evaluateJacobian(const ParaMeterPointType& x01) {
-      const ParaMeterPointType x(transformPoint(x01));
+    static JacobianType evaluateJacobian(const ParaMeterPointType& x) {
       // Specialization for k==0
       if constexpr (k == 0) return JacobianType::Zero();
       JacobianType dN{};
@@ -148,7 +143,7 @@ namespace Ikarus {
           }
         }
       }
-      return dN / 2;
+      return dN;
     }
 
     static constexpr std::array<unsigned int, dim> multiindex(unsigned int i) {

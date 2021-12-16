@@ -3,12 +3,12 @@
 //
 
 #pragma once
-#include <ikarus/utils/utils/traits.h>
 #include <dune/common/hybridutilities.hh>
+
+#include <ikarus/utils/utils/traits.h>
 
 template <typename Fun, typename... Args>
 using ReturnType = std::invoke_result_t<Fun, Args...>;
-
 
 template <typename... Args>
 struct Parameter {
@@ -22,7 +22,7 @@ auto parameter(Args&&... args) {
 
 template <typename... Args>
 struct Derivatives {
-  std::tuple<std::reference_wrapper<std::remove_cvref_t<Args>>...>  args;
+  std::tuple<std::reference_wrapper<std::remove_cvref_t<Args>>...> args;
 };
 
 template <typename... Args>
@@ -34,38 +34,31 @@ namespace Ikarus {
   template <typename TypeListOne, typename TypeListTwo, typename TypeListThree>
   class NonLinearOperator {
   public:
-    NonLinearOperator(const TypeListOne& valueFunc,
-                      const TypeListTwo& derivativesFunctions,
-                      const TypeListThree& args){}
-
+    NonLinearOperator(const TypeListOne& valueFunc, const TypeListTwo& derivativesFunctions,
+                      const TypeListThree& args) {}
   };
 
   template <typename ValueFuncType, typename... DerivativeArgs, typename... ParameterArgs>
   class NonLinearOperator<ValueFuncType, Derivatives<DerivativeArgs...>, Parameter<ParameterArgs...>> {
   public:
-
-     NonLinearOperator(const ValueFuncType& valueFunc,
-                               const Derivatives<DerivativeArgs...>& derivativesFunctions,
-                               const Parameter<ParameterArgs...>& parameter)
-    : valueFunction_{valueFunc},
-      derivatives_{derivativesFunctions.args} ,
-       args_{parameter.args}{
-           updateAll();
+    NonLinearOperator(const ValueFuncType& valueFunc, const Derivatives<DerivativeArgs...>& derivativesFunctions,
+                      const Parameter<ParameterArgs...>& parameter)
+        : valueFunction_{valueFunc}, derivatives_{derivativesFunctions.args}, args_{parameter.args} {
+      updateAll();
     }
 
     void updateAll() {
-      value_                             = std::apply(valueFunction_, args_);
-      Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<sizeof...(DerivativeArgs)>()), [&](const auto i) {
-        std::get<i>(derivativesEvaluated_) = std::apply(std::get<i>(derivatives_), args_);
-      });
+      value_ = std::apply(valueFunction_, args_);
+      Dune::Hybrid::forEach(
+          Dune::Hybrid::integralRange(Dune::index_constant<sizeof...(DerivativeArgs)>()),
+          [&](const auto i) { std::get<i>(derivativesEvaluated_) = std::apply(std::get<i>(derivatives_), args_); });
     }
-    template<int n>
-    void update()
-    {
-      if constexpr (n==0)
-        value_                             = std::apply(valueFunction_, args_);
+    template <int n>
+    void update() {
+      if constexpr (n == 0)
+        value_ = std::apply(valueFunction_, args_);
       else
-        std::get<n-1>(derivativesEvaluated_) = std::apply(std::get<n-1>(derivatives_), args_);
+        std::get<n - 1>(derivativesEvaluated_) = std::apply(std::get<n - 1>(derivatives_), args_);
     }
     using ValueReturnType = ReturnType<ValueFuncType, ParameterArgs&...>;
 
@@ -77,10 +70,9 @@ namespace Ikarus {
       return std::get<n - 1>(derivativesEvaluated_);
     }
 
-  private :
-      ValueFuncType valueFunction_;
-    std::tuple<std::reference_wrapper<std::remove_cvref_t<DerivativeArgs>>...>  derivatives_;
-    std::tuple<std::reference_wrapper<std::remove_cvref_t<ParameterArgs>>...>  args_;
+  private : ValueFuncType valueFunction_;
+    std::tuple<std::reference_wrapper<std::remove_cvref_t<DerivativeArgs>>...> derivatives_;
+    std::tuple<std::reference_wrapper<std::remove_cvref_t<ParameterArgs>>...> args_;
     ValueReturnType value_;
     std::tuple<ReturnType<DerivativeArgs, ParameterArgs&...>...> derivativesEvaluated_;
   };

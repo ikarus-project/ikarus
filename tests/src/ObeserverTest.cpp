@@ -8,24 +8,17 @@
 
 #include <ikarus/utils/controlLogger.h>
 
-class Control : public IObservable<ControlMessages>
-{
+class Control : public IObservable<ControlMessages> {
 public:
-  void solve()
-  {}
-
+  void solve() {}
 };
 
 TEST(Observer, ControlObserver) {
-
   auto controlObserver = std::make_shared<ControlLogger>();
   Control control;
   control.subscribeAll(controlObserver);
 
-control.notify(ControlMessages::LOADSTEP_ENDED);
-control.notify(ControlMessages::ITERATION_ENDED);
-control.notify(ControlMessages::RESIDUALNORM_UPDATED,5.0);
-
+  control.notify(ControlMessages::LOADSTEP_ENDED);
+  control.notify(ControlMessages::ITERATION_ENDED);
+  control.notify(ControlMessages::RESIDUALNORM_UPDATED, 5.0);
 }
-
-

@@ -20,7 +20,7 @@ const double tol = 1e-15;
 
 TEST(GeometryTest, CreateJacobianDeterminantAndJacobian2DFlat) {
   using namespace Ikarus::Geometry;
-  const Eigen::Matrix<double, 2, 1> xieta({-1.0, -1.0});
+  const Eigen::Matrix<double, 2, 1> xieta({0.0, 0.0});
 
   Eigen::Matrix<double, 4, 2> dN = Ikarus::LagrangeCube<double, 2, 1>::evaluateJacobian(xieta);
 
@@ -32,19 +32,19 @@ TEST(GeometryTest, CreateJacobianDeterminantAndJacobian2DFlat) {
   Eigen::Matrix<double, 2, 2> JT = ExternalPlaneGeometry<double>::jacobianTransposed(dN, x);
 
   Eigen::Matrix2d JTexpected;
-  JTexpected << 2, 0, 0, 2;
+  JTexpected << 4, 0, 0, 4;
   EXPECT_EQ(JTexpected, JT);
 
   Eigen::Matrix2d JTinv = ExternalPlaneGeometry<double>::jacobianInverseTransposed(dN, x);
 
   Eigen::Matrix2d JTinvexpected;
-  JTinvexpected << 0.5, 0.0, 0.0, 0.5;
+  JTinvexpected << 0.25, 0.0, 0.0, 0.25;
 
   EXPECT_EQ(JTinvexpected, JTinv);
 
-  double detJ = ExternalPlaneGeometry<double>::determinantJacobian(dN, x);
+  const double detJ = ExternalPlaneGeometry<double>::determinantJacobian(dN, x);
 
-  EXPECT_EQ(4.0, detJ);
+  EXPECT_EQ(16.0, detJ);
 }
 
 #include <ikarus/Geometries/GeometricElementDefinitions.h>
@@ -52,7 +52,7 @@ TEST(GeometryTest, CreateJacobianDeterminantAndJacobian2DFlat) {
 TEST(GeometryTest, WithInteralAnsatzandVertices) {
   using namespace Ikarus::Geometry;
 
-  const Eigen::Matrix<double, 3, 1> xieta({-1.0, -1.0, -1.0});
+  const Eigen::Matrix<double, 3, 1> xieta({0.0, 0.0, 0.0});
 
   Eigen::Matrix<double, 3, 8> x;
   x.col(0) << 0, 0, 0;
@@ -68,28 +68,28 @@ TEST(GeometryTest, WithInteralAnsatzandVertices) {
   Eigen::Matrix<double, 3, 3> JT = geoEle.jacobianTransposed(xieta);
 
   Eigen::Matrix3d JTexpected;
-  JTexpected << 2, 0, 0, 0, 2, 0, 0, 0, 0.5;
+  JTexpected << 4, 0, 0, 0, 4, 0, 0, 0, 1;
 
   EXPECT_THAT(JT, EigenApproxEqual(JTexpected, tol));
 
   Eigen::Matrix3d JTinv = geoEle.jacobianInverseTransposed(xieta);
 
   Eigen::Matrix3d JTinvexpected;
-  JTinvexpected << 0.5, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 2.0;
+  JTinvexpected << 0.25, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0, 1.0;
 
   EXPECT_THAT(JTinv, EigenApproxEqual(JTinvexpected, tol));
 
   double detJ = geoEle.determinantJacobian(xieta);
 
-  EXPECT_EQ(2.0, detJ);
+  EXPECT_EQ(16.0, detJ);
 }
 
 TEST(GeometryTest, WithInteralAnsatzandVerticesQuadratic) {
   using namespace Ikarus::Geometry;
 
   const Eigen::Matrix<double, 2, 1> xieta({
-      -0.35,
-      0.8,
+      0.325,
+      0.9,
   });
 
   Eigen::Matrix<double, 2, 9> x;
@@ -107,20 +107,19 @@ TEST(GeometryTest, WithInteralAnsatzandVerticesQuadratic) {
   Eigen::Matrix<double, 2, 2> JT = geoEle.jacobianTransposed(xieta);
 
   Eigen::Matrix2d JTexpected;
-  JTexpected << 3.168000000, 4.356000000, -1.033500000, 4.173625000;
+  JTexpected << 6.336000000, 8.712000000, -2.06700000, 8.34725000;
 
   EXPECT_THAT(JT, EigenApproxEqual(JTexpected, tol));
 
   Eigen::Matrix2d JTinv = geoEle.jacobianInverseTransposed(xieta);
 
   Eigen::Matrix2d JTinvexpected;
-  JTinvexpected << .23547912798317758380, -.24576886555325923030, 0.58310863762464052920e-1, .17874099312964307658;
-
+  JTinvexpected << 0.1177395639915888, -0.1228844327766296, 0.02915543188123201, 0.08937049656482153;
   EXPECT_THAT(JTinv, EigenApproxEqual(JTinvexpected, tol));
 
   double detJ = geoEle.determinantJacobian(xieta);
 
-  EXPECT_DOUBLE_EQ(17.72397000, detJ);
+  EXPECT_DOUBLE_EQ(70.895880000000005, detJ);
 
   auto dNCart = geoEle.transformCurvLinearDerivativesToCartesian(xieta);
 
@@ -146,7 +145,7 @@ TEST(GeometryTest, CreateJacobianDeterminantAndJacobian2DSurfIn3D) {
   x.col(3) << 4, 4, 0;
   Eigen::Matrix<double, 2, 3> JT = Ikarus::Geometry::ExternalSurfaceGeometry<double>::jacobianTransposed(dN, x);
   Eigen::Matrix<double, 2, 3> JTexpected;
-  JTexpected << 2, 0, 0, 0, 2, 0;
+  JTexpected << 4, 0, 0, 0, 4, 0;
 
   ASSERT_EQ(JTexpected, JT);
 }
