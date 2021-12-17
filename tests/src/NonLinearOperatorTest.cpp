@@ -203,7 +203,7 @@ TEST(NonLinearOperator, GridLoadControlTest) {
   EXPECT_EQ(x.size(), K.rows());
 
   const Eigen::VectorXd DExpected
-      = (Eigen::VectorXd(D.size()) << // clang-format off
+      = (Eigen::VectorXd(D.size()) <<  // clang-format off
                      0,                     0,    0.0164851890835871,                     0,  0.001965773386162552,
  -0.001667201218069932,   0.01128335946342303,  0.001162955868264214,  0.003066026312401127, -0.002957921126533793,
   0.005928558345036764,  0.002053086270565305,  0.003749546029349699, -0.003843850843882211, 0.0005055017822511749,
@@ -221,5 +221,5 @@ TEST(NonLinearOperator, GridLoadControlTest) {
   -0.07423566623294452,    0.9044693949758897).finished();  // clang-format on
 
   EXPECT_THAT(D, EigenApproxEqual(DExpected, 1e-15));
-  //    drawDeformed(gridView,feManager);
+//  drawDeformed(gridView, feManager);
 }

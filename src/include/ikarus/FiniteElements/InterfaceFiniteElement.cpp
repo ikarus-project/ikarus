@@ -11,25 +11,19 @@ namespace Ikarus::FiniteElements {
 
   int dofSize(const IFiniteElement& fe) { return fe.feimpl->do_dofSize(); }
   std::pair<Eigen::MatrixXd, Eigen::VectorXd> calculateLocalSystem(const IFiniteElement& fe,
-                                                                   const MatrixAffordances& matA,
-                                                                   const VectorAffordances& vecA,
-                                                                   IFiniteElement::VariableVectorType& vars,
-                                                                   IFiniteElement::DataVectorType data) {
-    return fe.feimpl->do_calculateLocalSystem(matA, vecA, vars, data);
+                                                                   const IFiniteElement::FEParameterType & par) {
+    return fe.feimpl->do_calculateLocalSystem(par);
   }
-  Eigen::MatrixXd calculateMatrix(const IFiniteElement& fe, const MatrixAffordances& matA,
-                                  IFiniteElement::VariableVectorType& vars, IFiniteElement::DataVectorType data) {
-    return fe.feimpl->do_calculateMatrix(matA, vars, data);
+  Eigen::MatrixXd calculateMatrix(const IFiniteElement& fe, const IFiniteElement::FEParameterType & par) {
+    return fe.feimpl->do_calculateMatrix(par);
   }
 
-  Eigen::VectorXd calculateVector(const IFiniteElement& fe, const VectorAffordances& vecA,
-                                  IFiniteElement::VariableVectorType& vars, IFiniteElement::DataVectorType data) {
-    return fe.feimpl->do_calculateVector(vecA, vars, data);
+  Eigen::VectorXd calculateVector(const IFiniteElement& fe, const IFiniteElement::FEParameterType & par) {
+    return fe.feimpl->do_calculateVector(par);
   }
 
-  double calculateScalar(const IFiniteElement& fe, const ScalarAffordances& scalA,
-                         IFiniteElement::VariableVectorType& vars, IFiniteElement::DataVectorType data) {
-    return fe.feimpl->do_calculateScalar(scalA, vars, data);
+  double calculateScalar(const IFiniteElement& fe, const IFiniteElement::FEParameterType & par) {
+    return fe.feimpl->do_calculateScalar(par);
   }
 
   IFiniteElement::DofPairVectorType getEntityVariableTuple(const IFiniteElement& fe) {
