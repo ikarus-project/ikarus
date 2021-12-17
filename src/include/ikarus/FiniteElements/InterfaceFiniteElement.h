@@ -25,7 +25,7 @@ namespace Ikarus::FiniteElements {
   class IFiniteElement {
   public:
     using DofPairVectorType  = std::vector<DofAtEntity>;
-    using FEParameterType = FEParameter;
+    using FERequirementType  = FErequirements;
 //    using DataVectorType     = typename std::optional<std::reference_wrapper<VariableVectorType>>;
 
     template <typename FE>
@@ -51,10 +51,10 @@ namespace Ikarus::FiniteElements {
       virtual ~FEBase()                            = default;
       [[nodiscard]] virtual int do_dofSize() const = 0;
       [[nodiscard]] virtual std::pair<Eigen::MatrixXd, Eigen::VectorXd> do_calculateLocalSystem(
-          const FEParameterType & par) const                                                          = 0;
-      [[nodiscard]] virtual Eigen::MatrixXd do_calculateMatrix(const FEParameterType & par) const = 0;
-      [[nodiscard]] virtual Eigen::VectorXd do_calculateVector(const FEParameterType & par) const = 0;
-      [[nodiscard]] virtual double do_calculateScalar(const FEParameterType & par) const          = 0;
+          const FERequirementType & par) const                                                          = 0;
+      [[nodiscard]] virtual Eigen::MatrixXd do_calculateMatrix(const FERequirementType & par) const = 0;
+      [[nodiscard]] virtual Eigen::VectorXd do_calculateVector(const FERequirementType & par) const = 0;
+      [[nodiscard]] virtual double do_calculateScalar(const FERequirementType & par) const          = 0;
       [[nodiscard]] virtual DofPairVectorType do_getEntityVariableTuple() const            = 0;
       [[nodiscard]] virtual unsigned int do_subEntities(unsigned int codim) const          = 0;
       [[nodiscard]] virtual size_t do_subIndex(int i, unsigned int codim) const            = 0;
@@ -66,16 +66,16 @@ namespace Ikarus::FiniteElements {
     struct FEImpl : public FEBase {
       explicit FEImpl(FE fearg) : fe{fearg} {};
       [[nodiscard]] int do_dofSize() const final { TRYCALLFUNCTION(dofSize); }
-      [[nodiscard]] std::pair<Eigen::MatrixXd, Eigen::VectorXd> do_calculateLocalSystem(const FEParameterType & par) const final {
+      [[nodiscard]] std::pair<Eigen::MatrixXd, Eigen::VectorXd> do_calculateLocalSystem(const FERequirementType & par) const final {
           TRYCALLFUNCTION(calculateLocalSystem, par);
       }
-      [[nodiscard]] Eigen::MatrixXd do_calculateMatrix(const FEParameterType & par) const final {
+      [[nodiscard]] Eigen::MatrixXd do_calculateMatrix(const FERequirementType & par) const final {
           TRYCALLFUNCTION(calculateMatrix,par);
       }
-      [[nodiscard]] Eigen::VectorXd do_calculateVector(const FEParameterType & par) const final {
+      [[nodiscard]] Eigen::VectorXd do_calculateVector(const FERequirementType & par) const final {
           TRYCALLFUNCTION(calculateVector, par);
       }
-      [[nodiscard]] double do_calculateScalar(const FEParameterType & par) const final {
+      [[nodiscard]] double do_calculateScalar(const FERequirementType & par) const final {
           TRYCALLFUNCTION(calculateScalar, par);
       }
       [[nodiscard]] DofPairVectorType do_getEntityVariableTuple() const final {
@@ -92,11 +92,11 @@ namespace Ikarus::FiniteElements {
 
     friend void initialize(IFiniteElement &fe);
     friend int dofSize(const IFiniteElement &fe);
-    friend std::pair<Eigen::MatrixXd, Eigen::VectorXd> calculateLocalSystem(const IFiniteElement &fe,const FEParameterType & par);
+    friend std::pair<Eigen::MatrixXd, Eigen::VectorXd> calculateLocalSystem(const IFiniteElement &fe,const FERequirementType & par);
 
-    friend Eigen::MatrixXd calculateMatrix(const IFiniteElement &fe,const FEParameterType & par);
-    friend Eigen::VectorXd calculateVector(const IFiniteElement &fe,const FEParameterType & par);
-    friend double calculateScalar(const IFiniteElement &fe,const FEParameterType & par);
+    friend Eigen::MatrixXd calculateMatrix(const IFiniteElement &fe,const FERequirementType & par);
+    friend Eigen::VectorXd calculateVector(const IFiniteElement &fe,const FERequirementType & par);
+    friend double calculateScalar(const IFiniteElement &fe,const FERequirementType & par);
     friend DofPairVectorType getEntityVariableTuple(const IFiniteElement &fe);
     friend unsigned int subEntities(const IFiniteElement &fe, unsigned int codim);
     friend unsigned int dimension(const IFiniteElement &fe);
@@ -104,10 +104,10 @@ namespace Ikarus::FiniteElements {
   };
 
   int dofSize(const IFiniteElement &fe);
-  std::pair<Eigen::MatrixXd, Eigen::VectorXd> calculateLocalSystem(const IFiniteElement &fe,const IFiniteElement::FEParameterType & par);
-  Eigen::MatrixXd calculateMatrix(const IFiniteElement &fe,const IFiniteElement::FEParameterType & part);
-  Eigen::VectorXd calculateVector(const IFiniteElement &fe,const IFiniteElement::FEParameterType & par);
-  double calculateScalar(const IFiniteElement &fe,const IFiniteElement::FEParameterType & par);
+  std::pair<Eigen::MatrixXd, Eigen::VectorXd> calculateLocalSystem(const IFiniteElement &fe,const IFiniteElement::FERequirementType & par);
+  Eigen::MatrixXd calculateMatrix(const IFiniteElement &fe,const IFiniteElement::FERequirementType & part);
+  Eigen::VectorXd calculateVector(const IFiniteElement &fe,const IFiniteElement::FERequirementType & par);
+  double calculateScalar(const IFiniteElement &fe,const IFiniteElement::FERequirementType & par);
   IFiniteElement::DofPairVectorType getEntityVariableTuple(const IFiniteElement &fe);
   unsigned int subEntities(const IFiniteElement &fe, unsigned int codim);
   size_t subIndex(const IFiniteElement &fe, int i, unsigned int codim);

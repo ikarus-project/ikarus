@@ -12,7 +12,8 @@
 #include "ikarus/Assembler/SimpleAssemblers.h"
 #include "ikarus/FEManager/DefaultFEManager.h"
 #include "ikarus/FiniteElements/ElasticityFE.h"
-#include "ikarus/Grids/GridHelper/griddrawer.h"
+#include <ikarus/FiniteElements/ForceLoad.h>
+#include <ikarus/Grids/GridHelper/griddrawer.h>
 #include <ikarus/LinearAlgebra/NonLinearOperator.h>
 
 #include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
@@ -52,6 +53,8 @@ TEST(LoadControlTest, GridLoadControlTest) {
 
   for (auto&& ge : rootEntities(gridView))
     feContainer.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge, gridView.indexSet(), 1000, 0.0));
+
+  feContainer.emplace_back(Ikarus::FiniteElements::ForceLoad(*(edges(gridView).end()), gridView.indexSet()));
 
   auto feManager = Ikarus::FEManager::DefaultFEManager(feContainer, gridView);
 

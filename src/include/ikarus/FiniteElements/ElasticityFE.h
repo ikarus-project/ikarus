@@ -69,13 +69,13 @@ namespace Ikarus::FiniteElements {
     using DofTupleVectorType = typename IFiniteElement::DofPairVectorType;
 
     /** \brief Type of the FE parameters */
-    using FEParameterType = typename IFiniteElement::FEParameterType;
+    using FERequirementType = typename IFiniteElement::FERequirementType;
 
     /** \brief Type of the Variables */
-    using VariableVectorType = typename FEParameterType::VariableType;
+    using VariableVectorType = typename FERequirementType::VariableType;
 
     /** \brief Type of the DataVector */
-    using DataVectorType = typename FEParameterType::DataType ;
+    using DataVectorType = typename FERequirementType::DataType ;
 
     /** \brief Type of the Dofs / SolutionType
      * using NodalSolutionType = Displacement<ctype,worlddim>;*/
@@ -95,35 +95,38 @@ namespace Ikarus::FiniteElements {
 
     void initialize() {}
 
-    [[nodiscard]] std::pair<MatrixType, VectorType> calculateLocalSystem(const FEParameterType& par) const {
+    [[nodiscard]] std::pair<MatrixType, VectorType> calculateLocalSystem(const FERequirementType & par) const {
       if (par.matrixAffordances == stiffness && par.vectorAffordances == forces)
         return calculateStiffnessMatrixAndInternalForcesImpl(par);
       else
         throw std::logic_error("This element can not handle your affordance! ");
     }
 
-    [[nodiscard]] MatrixType calculateMatrix(const FEParameterType& par) const {
+    [[nodiscard]] MatrixType calculateMatrix(const FERequirementType & par) const {
       if (par.matrixAffordances == stiffness)
         return calculateStiffnessMatrixAndInternalForcesImpl<false, true>(par);
       else
         throw std::logic_error("This element can not handle your affordance! ");
     }
 
-    [[nodiscard]] double calculateScalar([[maybe_unused]]  const FEParameterType& par) const {
+    [[nodiscard]] double calculateScalar([[maybe_unused]]  const FERequirementType & par) const {
       return 13.0;
     }
 
-    [[nodiscard]] VectorType calculateVector(const FEParameterType& par) const {
+    [[nodiscard]] VectorType calculateVector(const FERequirementType & par) const {
       return calculateStiffnessMatrixAndInternalForcesImpl<true, false>(par);
     }
 
     template <bool internalForcesFlag = true, bool stiffnessMatrixFlag = true>
-    auto calculateStiffnessMatrixAndInternalForcesImpl([[maybe_unused]] const FEParameterType& par) const {
+    auto calculateStiffnessMatrixAndInternalForcesImpl([[maybe_unused]] const FERequirementType &req) const {
+
       if constexpr (internalForcesFlag && stiffnessMatrixFlag) {
         const auto rule = Dune::QuadratureRules<ctype, mydim>::rule(duneType(elementGridEntity->type()), 2);
 
         VectorType Fint(dofSize());
         MatrixType K(dofSize(), dofSize());
+        Fint.setZero();
+        K.setZero();
         for (auto &gp : rule) {
           const auto dN         = Ikarus::LagrangeCube<double, 2, 1>::evaluateJacobian(toEigenVector(gp.position()));
           const auto geo        = elementGridEntity->geometry();
@@ -136,7 +139,7 @@ namespace Ikarus::FiniteElements {
         return std::make_pair(K, Fint);
       } else if constexpr (internalForcesFlag && !stiffnessMatrixFlag) {
         return VectorType::Ones(8);
-      } else if constexpr (!internalForcesFlag && stiffnessMatrixFlag) {
+      } else if constexpr (not internalForcesFlag && stiffnessMatrixFlag) {
         VectorType Fint(dofSize());
         MatrixType K(dofSize(), dofSize());
         MatrixType Bop((mydim * (mydim + 1)) / 2, dofSize());
@@ -145,6 +148,7 @@ namespace Ikarus::FiniteElements {
         const auto rule = Dune::QuadratureRules<ctype, mydim>::rule(duneType(elementGridEntity->type()), 2);
         double vol      = 0;
         Eigen::Matrix3d C;
+        C.setZero();
         const double fac = emod_ / (1 - nu_ * nu_);
         C(0, 0) = C(1, 1) = 1;
         C(0, 1) = C(1, 0) = nu_;
