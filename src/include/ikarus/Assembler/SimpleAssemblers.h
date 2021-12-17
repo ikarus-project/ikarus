@@ -28,7 +28,10 @@ namespace Ikarus::Assembler {
     double& getScalarImpl(Ikarus::FiniteElements::ScalarAffordances scalarAffordances) {
       scal = 0.0;
       for (auto [fe, dofs, vars] : feManager_->elementIndicesVariableTuple()) {
-        scal += calculateScalar(fe, scalarAffordances, vars);
+        FiniteElements::FEParameter feParameter;
+        feParameter.scalarAffordances = scalarAffordances;
+        feParameter.variables         = vars;
+        scal += calculateScalar(fe, feParameter);
       }
       return scal;
     }
@@ -51,9 +54,12 @@ namespace Ikarus::Assembler {
     Eigen::VectorXd& getVectorImpl(Ikarus::FiniteElements::VectorAffordances vecAffordances) {
       vec.setZero(feManager_->numberOfDegreesOfFreedom());
       for (auto&& [fe, dofIndices, vars] : feManager_->elementIndicesVariableTuple()) {
-        assert(dofIndices.size() == calculateVector(fe, vecAffordances, vars).size()
+        FiniteElements::FEParameter feParameter;
+        feParameter.vectorAffordances = vecAffordances;
+        feParameter.variables         = vars;
+        assert(dofIndices.size() == calculateVector(fe, feParameter).size()
                && "The returned vector has wrong rowSize!");
-        vec(dofIndices) += calculateVector(fe, vecAffordances, vars);
+        vec(dofIndices) += calculateVector(fe, feParameter);
       }
       return vec;
     }
@@ -77,11 +83,14 @@ namespace Ikarus::Assembler {
     Eigen::MatrixXd& getMatrixImpl(Ikarus::FiniteElements::MatrixAffordances matAffordances) {
       mat.setZero(feManager_->numberOfDegreesOfFreedom(), feManager_->numberOfDegreesOfFreedom());
       for (auto [fe, dofs, vars] : feManager_->elementIndicesVariableTuple()) {
-        assert(dofs.size() == calculateMatrix(fe, matAffordances, vars).rows()
+        FiniteElements::FEParameter feParameter;
+        feParameter.matrixAffordances = matAffordances;
+        feParameter.variables         = vars;
+        assert(dofs.size() == calculateMatrix(fe, feParameter).rows()
                && "The returned matrix has wrong rowSize!");
-        assert(dofs.size() == calculateMatrix(fe, matAffordances, vars).cols()
+        assert(dofs.size() == calculateMatrix(fe, feParameter).cols()
                && "The returned matrix has wrong colSize!");
-        mat(dofs, dofs) += calculateMatrix(fe, matAffordances, vars);
+        mat(dofs, dofs) += calculateMatrix(fe, feParameter);
       }
       return mat;
     }
@@ -100,13 +109,16 @@ namespace Ikarus::Assembler {
     }
 
   private:
-    Eigen::SparseMatrix<double>& getMatrixImpl(Ikarus::FiniteElements::MatrixAffordances MatrixAffordances) {
+    Eigen::SparseMatrix<double>& getMatrixImpl(Ikarus::FiniteElements::MatrixAffordances matrixAffordances) {
       if (!isOccupationPatternCreated) createOccupationPattern();
       if (!arelinearDofsPerElementCreated) createlinearDofsPerElement();
       spMat.coeffs().setZero();
       Eigen::MatrixXd A;
       for (size_t elementIndex = 0; auto [fe, dofs, vars] : feManager_->elementIndicesVariableTuple()) {
-        A = calculateMatrix(fe, MatrixAffordances, vars);
+        FiniteElements::FEParameter feParameter;
+        feParameter.matrixAffordances = matrixAffordances;
+        feParameter.variables         = vars;
+        A = calculateMatrix(fe, feParameter);
         assert(dofs.size() == A.rows() && "The returned matrix has wrong rowSize!");
         assert(dofs.size() == A.cols() && "The returned matrix has wrong colSize!");
         for (Eigen::Index linearIndex = 0; double matrixEntry : A.reshaped())

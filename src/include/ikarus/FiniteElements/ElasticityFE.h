@@ -68,11 +68,14 @@ namespace Ikarus::FiniteElements {
     /** \brief Type of the Pairs of gridEntities and variable tags */
     using DofTupleVectorType = typename IFiniteElement::DofPairVectorType;
 
-    /** \brief Type of the DofVector */
-    using VariableVectorType = typename IFiniteElement::VariableVectorType;
+    /** \brief Type of the FE parameters */
+    using FEParameterType = typename IFiniteElement::FEParameterType;
+
+    /** \brief Type of the Variables */
+    using VariableVectorType = typename FEParameterType::VariableType;
 
     /** \brief Type of the DataVector */
-    using DataVectorType = typename IFiniteElement::DataVectorType;
+    using DataVectorType = typename FEParameterType::DataType ;
 
     /** \brief Type of the Dofs / SolutionType
      * using NodalSolutionType = Displacement<ctype,worlddim>;*/
@@ -92,40 +95,30 @@ namespace Ikarus::FiniteElements {
 
     void initialize() {}
 
-    [[nodiscard]] std::pair<MatrixType, VectorType> calculateLocalSystem(const MatrixAffordances &matA,
-                                                                         const VectorAffordances &vecA,
-                                                                         [[maybe_unused]] VariableVectorType &vars,
-                                                                         [[maybe_unused]] DataVectorType data
-                                                                         = std::nullopt) const {
-      if (matA == stiffness && vecA == forces)
-        return calculateStiffnessMatrixAndInternalForcesImpl(matA, vecA, vars, data);
+    [[nodiscard]] std::pair<MatrixType, VectorType> calculateLocalSystem(const FEParameterType& par) const {
+      if (par.matrixAffordances == stiffness && par.vectorAffordances == forces)
+        return calculateStiffnessMatrixAndInternalForcesImpl(par);
       else
         throw std::logic_error("This element can not handle your affordance! ");
     }
 
-    [[nodiscard]] MatrixType calculateMatrix(const MatrixAffordances &matA, [[maybe_unused]] VariableVectorType &vars,
-                                             [[maybe_unused]] const DataVectorType &data = std::nullopt) const {
-      if (matA == stiffness)
-        return calculateStiffnessMatrixAndInternalForcesImpl<false, true>(matA, VectorAffordances::forces, vars, data);
+    [[nodiscard]] MatrixType calculateMatrix(const FEParameterType& par) const {
+      if (par.matrixAffordances == stiffness)
+        return calculateStiffnessMatrixAndInternalForcesImpl<false, true>(par);
       else
         throw std::logic_error("This element can not handle your affordance! ");
     }
 
-    [[nodiscard]] double calculateScalar(const ScalarAffordances &, [[maybe_unused]] VariableVectorType &vars,
-                                         [[maybe_unused]] const DataVectorType &data = std::nullopt) const {
+    [[nodiscard]] double calculateScalar([[maybe_unused]]  const FEParameterType& par) const {
       return 13.0;
     }
 
-    [[nodiscard]] VectorType calculateVector(const VectorAffordances &vecA, [[maybe_unused]] VariableVectorType &vars,
-                                             [[maybe_unused]] const DataVectorType &data = std::nullopt) const {
-      return calculateStiffnessMatrixAndInternalForcesImpl<true, false>(MatrixAffordances::stiffness, vecA, vars, data);
+    [[nodiscard]] VectorType calculateVector(const FEParameterType& par) const {
+      return calculateStiffnessMatrixAndInternalForcesImpl<true, false>(par);
     }
 
     template <bool internalForcesFlag = true, bool stiffnessMatrixFlag = true>
-    auto calculateStiffnessMatrixAndInternalForcesImpl([[maybe_unused]] const MatrixAffordances &matA,
-                                                       [[maybe_unused]] const VectorAffordances &vecA,
-                                                       [[maybe_unused]] VariableVectorType &vars,
-                                                       [[maybe_unused]] DataVectorType data = std::nullopt) const {
+    auto calculateStiffnessMatrixAndInternalForcesImpl([[maybe_unused]] const FEParameterType& par) const {
       if constexpr (internalForcesFlag && stiffnessMatrixFlag) {
         const auto rule = Dune::QuadratureRules<ctype, mydim>::rule(duneType(elementGridEntity->type()), 2);
 
@@ -133,7 +126,6 @@ namespace Ikarus::FiniteElements {
         MatrixType K(dofSize(), dofSize());
         for (auto &gp : rule) {
           const auto dN         = Ikarus::LagrangeCube<double, 2, 1>::evaluateJacobian(toEigenVector(gp.position()));
-          const auto vertexdisp = vars.get(EntityType::vertex);
           const auto geo        = elementGridEntity->geometry();
           static_assert(std::remove_cvref_t<decltype(gp.position())>::dimension == 2);
           const auto refJacobian = geo.jacobianInverseTransposed(gp.position());
@@ -159,7 +151,6 @@ namespace Ikarus::FiniteElements {
         C(2, 2)           = (1 - nu_) / 2;
         C *= fac;
         for (auto &gp : rule) {
-          const auto vertexdisp = vars.get(EntityType::vertex);
           const auto geo        = elementGridEntity->geometry();
           const auto J          = toEigenMatrix(geo.jacobianTransposed(gp.position()));
           Eigen::Matrix<double, 4, mydim> dN
