@@ -5,7 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "testHelpers.h"
-
+#define EIGEN_SPARSEMATRIX_PLUGIN "eigenSparseAddon.h"
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
@@ -21,7 +21,9 @@ auto df(double& x) { return x + 1; }
 TEST(NonLinearOperator, SimpleOperator) {
   double x = 13;
 
-  Ikarus::NonLinearOperator nonLinOp(&f, derivatives(&df), parameter(x));
+  auto fvLambda  = [&](auto&& x) { return f(x); };
+  auto dfvLambda = [&](auto&& x) { return df(x); };
+  Ikarus::NonLinearOperator nonLinOp(fvLambda, derivatives(dfvLambda), parameter(x));
 
   auto& val      = nonLinOp.value();
   auto& gradient = nonLinOp.derivative();
@@ -169,8 +171,8 @@ TEST(NonLinearOperator, GridLoadControlTest) {
   Ikarus::NonLinearOperator nonLinearOperator(fintFunction, derivatives(KFunction), parameter());
   Ikarus::NonLinearOperator nonLinearOperatorWithSparseMatrix(fintFunction, derivatives(KFunctionSparse), parameter());
 
-  auto K             = nonLinearOperator.derivative();
-  const auto Ksparse = nonLinearOperatorWithSparseMatrix.derivative();
+  auto& K             = nonLinearOperator.derivative();
+  auto& Ksparse = nonLinearOperatorWithSparseMatrix.derivative();
   EXPECT_THAT(Ksparse, EigenApproxEqual(K, 1e-15));
 
   Eigen::ColPivHouseholderQR<Eigen::MatrixXd> decomp(K);
@@ -178,16 +180,16 @@ TEST(NonLinearOperator, GridLoadControlTest) {
   EXPECT_EQ(rank, K.cols() - 3);
   EXPECT_EQ(rank, K.rows() - 3);
   for (int i = 1; i < K.cols(); ++i) {
-    K(i, 0) = 0.0;
-    K(i, 1) = 0.0;
-    K(i, 3) = 0.0;
-    K(0, i) = 0.0;
-    K(1, i) = 0.0;
-    K(3, i) = 0.0;
+    K.coeffRef(i, 0) = 0.0;
+    K.coeffRef(i, 1) = 0.0;
+    K.coeffRef(i, 3) = 0.0;
+    K.coeffRef(0, i) = 0.0;
+    K.coeffRef(1, i) = 0.0;
+    K.coeffRef(3, i) = 0.0;
   }
-  K(0, 0) = 1;
-  K(1, 1) = 1;
-  K(3, 3) = 1;
+  K.coeffRef(0, 0) = 1;
+  K.coeffRef(1, 1) = 1;
+  K.coeffRef(3, 3) = 1;
   decomp.compute(K);
   rank = decomp.rank();
   EXPECT_EQ(rank, K.cols());
@@ -220,6 +222,6 @@ TEST(NonLinearOperator, GridLoadControlTest) {
      0.903738477407708,  -0.01220627723080757,    0.9039079699348371,  -0.04314837701125365,    0.9041544598306273,
   -0.07423566623294452,    0.9044693949758897).finished();  // clang-format on
 
-  EXPECT_THAT(D, EigenApproxEqual(DExpected, 1e-15));
-//  drawDeformed(gridView, feManager);
+  EXPECT_THAT(D, EigenApproxEqual(DExpected, 1e-12));
+  //  drawDeformed(gridView, feManager);
 }

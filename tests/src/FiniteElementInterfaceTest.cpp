@@ -26,7 +26,7 @@ public:
     return Ikarus::FiniteElements::IFiniteElement::DofPairVectorType{};
   }
 
-  static double calculateScalar(const Ikarus::FiniteElements::FEParameter& par) {
+  static double calculateScalar(const Ikarus::FiniteElements::FErequirements& par) {
     if (par.data)
       if (isType(par.data->get().get(Ikarus::EntityType::vertex)[0], Ikarus::Variable::VariableTags::displacement2d))
         return getValue(par.data->get().get(Ikarus::EntityType::vertex)[0])[0]
@@ -42,7 +42,7 @@ public:
     return Ikarus::FiniteElements::IFiniteElement::DofPairVectorType{};
   }
 
-  static double calculateScalar([[maybe_unused]] const Ikarus::FiniteElements::FEParameter& par) { return 5; }
+  static double calculateScalar([[maybe_unused]] const Ikarus::FiniteElements::FErequirements& par) { return 5; }
 };
 
 TEST(FiniteElementInterfaceTest, createGenericFEList) {
@@ -98,7 +98,7 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
 
     // test FE withoutData
     {
-      FEParameter feParameter;
+      FErequirements feParameter;
       feParameter.scalarAffordances = potentialEnergy;
       feParameter.vectorAffordances = forces;
       feParameter.matrixAffordances = stiffness;
@@ -128,7 +128,7 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
     dataFeValues.add(Ikarus::EntityType::volume, vars);
 
     {
-      FEParameter feParameter;
+      FErequirements feParameter;
       feParameter.scalarAffordances = potentialEnergy;
       feParameter.vectorAffordances = forces;
       feParameter.matrixAffordances = stiffness;
@@ -190,7 +190,7 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
 
   Ikarus::FiniteElements::IFiniteElement fe((TestFE()));
   // check behaviour of dummy fe calculate scalar function before adding data and after
-  FEParameter feParameter;
+  FErequirements feParameter;
   feParameter.scalarAffordances = potentialEnergy;
   feParameter.vectorAffordances = forces;
   feParameter.matrixAffordances = stiffness;

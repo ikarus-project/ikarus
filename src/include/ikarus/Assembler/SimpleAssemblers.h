@@ -28,7 +28,7 @@ namespace Ikarus::Assembler {
     double& getScalarImpl(Ikarus::FiniteElements::ScalarAffordances scalarAffordances) {
       scal = 0.0;
       for (auto [fe, dofs, vars] : feManager_->elementIndicesVariableTuple()) {
-        FiniteElements::FEParameter feParameter;
+        FiniteElements::FErequirements feParameter;
         feParameter.scalarAffordances = scalarAffordances;
         feParameter.variables         = vars;
         scal += calculateScalar(fe, feParameter);
@@ -54,7 +54,7 @@ namespace Ikarus::Assembler {
     Eigen::VectorXd& getVectorImpl(Ikarus::FiniteElements::VectorAffordances vecAffordances) {
       vec.setZero(feManager_->numberOfDegreesOfFreedom());
       for (auto&& [fe, dofIndices, vars] : feManager_->elementIndicesVariableTuple()) {
-        FiniteElements::FEParameter feParameter;
+        FiniteElements::FErequirements feParameter;
         feParameter.vectorAffordances = vecAffordances;
         feParameter.variables         = vars;
         assert(dofIndices.size() == calculateVector(fe, feParameter).size()
@@ -83,7 +83,7 @@ namespace Ikarus::Assembler {
     Eigen::MatrixXd& getMatrixImpl(Ikarus::FiniteElements::MatrixAffordances matAffordances) {
       mat.setZero(feManager_->numberOfDegreesOfFreedom(), feManager_->numberOfDegreesOfFreedom());
       for (auto [fe, dofs, vars] : feManager_->elementIndicesVariableTuple()) {
-        FiniteElements::FEParameter feParameter;
+        FiniteElements::FErequirements feParameter;
         feParameter.matrixAffordances = matAffordances;
         feParameter.variables         = vars;
         assert(dofs.size() == calculateMatrix(fe, feParameter).rows()
@@ -115,7 +115,7 @@ namespace Ikarus::Assembler {
       spMat.coeffs().setZero();
       Eigen::MatrixXd A;
       for (size_t elementIndex = 0; auto [fe, dofs, vars] : feManager_->elementIndicesVariableTuple()) {
-        FiniteElements::FEParameter feParameter;
+        FiniteElements::FErequirements feParameter;
         feParameter.matrixAffordances = matrixAffordances;
         feParameter.variables         = vars;
         A = calculateMatrix(fe, feParameter);

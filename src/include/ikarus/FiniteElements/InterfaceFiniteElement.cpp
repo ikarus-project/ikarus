@@ -11,18 +11,18 @@ namespace Ikarus::FiniteElements {
 
   int dofSize(const IFiniteElement& fe) { return fe.feimpl->do_dofSize(); }
   std::pair<Eigen::MatrixXd, Eigen::VectorXd> calculateLocalSystem(const IFiniteElement& fe,
-                                                                   const IFiniteElement::FEParameterType & par) {
+                                                                   const IFiniteElement::FERequirementType& par) {
     return fe.feimpl->do_calculateLocalSystem(par);
   }
-  Eigen::MatrixXd calculateMatrix(const IFiniteElement& fe, const IFiniteElement::FEParameterType & par) {
+  Eigen::MatrixXd calculateMatrix(const IFiniteElement& fe, const IFiniteElement::FERequirementType& par) {
     return fe.feimpl->do_calculateMatrix(par);
   }
 
-  Eigen::VectorXd calculateVector(const IFiniteElement& fe, const IFiniteElement::FEParameterType & par) {
+  Eigen::VectorXd calculateVector(const IFiniteElement& fe, const IFiniteElement::FERequirementType& par) {
     return fe.feimpl->do_calculateVector(par);
   }
 
-  double calculateScalar(const IFiniteElement& fe, const IFiniteElement::FEParameterType & par) {
+  double calculateScalar(const IFiniteElement& fe, const IFiniteElement::FERequirementType& par) {
     return fe.feimpl->do_calculateScalar(par);
   }
 
