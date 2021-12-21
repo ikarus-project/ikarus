@@ -76,7 +76,7 @@ namespace Ikarus::Variable {
     };
 
     auto elementDofs() {
-      return transform_viewOverElements([this](const auto &fe) { return this->dofIndicesOfSingleElement(fe); });
+      return transform_viewOverElements([this](const auto &fe) { return this->dofIndicesOfElement(fe); });
     };
 
     auto getValues() { return std::ranges::join_view(variablesForEachEntity); };
@@ -87,7 +87,7 @@ namespace Ikarus::Variable {
       return size;
     };
 
-    Eigen::VectorXd getUnderlyingVector() const {
+    [[nodiscard]] Eigen::VectorXd getUnderlyingVector() const {
       Eigen::VectorXd vec(size());
       for (int offset = 0; auto &&v : this->getValues()) {
         const auto curvar                  = getValue(v);
@@ -119,8 +119,8 @@ namespace Ikarus::Variable {
       return elementVariables;
     }
 
-    auto dofIndicesOfSingleElement(const typename FEContainer::value_type &fe) {
-      Eigen::ArrayXi indices(dofSize(fe));
+    auto dofIndicesOfElement(const typename FEContainer::value_type &fe) const {
+      Eigen::ArrayX<size_t> indices(dofSize(fe));
       indices.setZero();
       size_t posHelper = 0;
 
@@ -132,6 +132,10 @@ namespace Ikarus::Variable {
         posHelper += currentIndices.size();
       }
       return indices;
+    }
+
+    const auto& dofIndicesOfEntity(const size_t& gridIndexOfEntity) const{
+      return variableIndices[gridIndexOfEntity];
     }
 
     [[nodiscard]] size_t correctionSize() const { return dofSizeValue; }
@@ -164,7 +168,7 @@ namespace Ikarus::Variable {
   private:
     mutable std::vector<std::vector<Ikarus::Variable::IVariable>> variablesForEachEntity;
     std::unordered_map<size_t, Ikarus::EntityType> entityTypes;
-    std::vector<Eigen::ArrayXi> variableIndices;
+    std::vector<Eigen::ArrayX<size_t>> variableIndices;
     size_t dofSizeValue{};
     FEContainer const *feContainer_;
     FEIndexSet<FEContainer> feIndexSet;

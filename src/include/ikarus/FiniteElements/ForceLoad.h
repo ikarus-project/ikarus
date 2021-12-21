@@ -1,6 +1,3 @@
-//
-// Created by lex on 17/12/2021.
-//
 
 #pragma once
 #include <concepts>
@@ -8,52 +5,40 @@
 namespace Ikarus::FiniteElements {
 
     template <typename GridElementEntityType, typename IndexSetType, std::floating_point ct = double>
-    class ForceLoad {
+    class ForceLoad : public FEVertexDisplacement<GridElementEntityType,IndexSetType>{
     public:
-      /** \brief Type used for coordinates */
-      using ctype = ct;
-
-      /** \brief Dimension of the world space */
-      static constexpr int worlddim = GridElementEntityType::dimensionworld;
-
-      /** \brief Dimension of the geometry */
-      static constexpr int mydim = GridElementEntityType::mydimension;
-
-      /** \brief Type of the Nodes coordinate */
-      using NodeType = Eigen::Matrix<ctype, worlddim, 1>;
-
-      /** \brief Type of the ParameterSpace coordinate */
-      using ParameterSpaceType = Eigen::Matrix<ctype, mydim, 1>;
-
-      /** \brief Type of the Pairs of gridEntities and variable tags */
-      using DofTupleVectorType = typename IFiniteElement::DofPairVectorType;
-
-      /** \brief Type of the FE parameters */
-      using FERequirementType = typename IFiniteElement::FERequirementType;
-
-      /** \brief Type of the Variables */
-      using VariableVectorType = typename FERequirementType::VariableType;
-
-      /** \brief Type of the DataVector */
-      using DataVectorType = typename FERequirementType::DataType;
-
-      /** \brief Type of the Dofs / SolutionType
-     * using NodalSolutionType = Displacement<ctype,worlddim>;*/
-
-      /** \brief Type of the internal forces */
-      using VectorType = Eigen::VectorXd;
-
-      /** \brief Type of the stiffness matrix */
-      using MatrixType = Eigen::MatrixXd;
-
+      using Traits = FETraits<GridElementEntityType>;
+      using Base = FEVertexDisplacement<GridElementEntityType,IndexSetType>;
+      using Base::getEntityVariableTuple;
       ForceLoad(GridElementEntityType &gE, const IndexSetType &indexSet)
-          : elementGridEntity{&gE}, indexSet_{&indexSet} {}
+          :  Base(gE,indexSet),elementGridEntity{&gE}, indexSet_{&indexSet} {}
 
-      [[nodiscard]] VectorType calculateVector(const FERequirementType &par) const { return calculateVectorImpl(par); }
+      [[nodiscard]] typename Traits::VectorType calculateVector(const typename Traits::FERequirementType &req) const { return calculateVectorImpl(req); }
+      [[nodiscard]] typename Traits::MatrixType calculateMatrix([[maybe_unused]] const typename Traits::FERequirementType &req) const { return typename Traits::MatrixType(this->dofSize(),this->dofSize()); }
 
-      [[nodiscard]] VectorType calculateVectorImpl([[maybe_unused]] const FERequirementType &req) const {
+      [[nodiscard]] typename Traits::VectorType calculateVectorImpl([[maybe_unused]] const typename Traits::FERequirementType &req) const {
         assert(req.parameter.contains(FEParameter::loadfactor));
-        return VectorType{};
+        const auto rule = Dune::QuadratureRules<double, Traits::mydim>::rule(duneType(elementGridEntity->type()), 2);
+        typename Traits::VectorType Fext(this->dofSize());
+        Fext.setZero();
+
+        auto f = [&]([[maybe_unused]] auto& gpPos){
+          Eigen::Vector<double,Traits::dimension> feval;
+          feval.setZero();
+          auto globalCoords = elementGridEntity->geometry().global(gpPos);
+          feval[1]= 1.0*getValue(req.parameter.at(FEParameter::loadfactor))[0]*1; //globalCoords [0]
+
+          return feval;};
+        for (auto &gp : rule) {
+          const auto N = Ikarus::LagrangeCube<double, Traits::mydim, 1>::evaluateFunction(toEigenVector(gp.position()));
+
+          for (int vertexCounter =0; auto Ni : N) {
+          Fext.template segment<Traits::dimension>(vertexCounter) -= Ni*f(gp.position());
+              vertexCounter+=Traits::dimension;
+          }
+        }
+        std::cout<<Fext<<std::endl;
+        return Fext;
       }
 
     private:

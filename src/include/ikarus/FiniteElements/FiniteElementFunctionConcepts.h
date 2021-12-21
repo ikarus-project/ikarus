@@ -7,7 +7,7 @@
 //#include <ikarus/FiniteElements/InterfaceFiniteElement.h>
 #include <optional>
 
-//#include <ikarus/Grids/EntityHelperFunctions.h>
+#include <ikarus/Variables/ParameterFactory.h>
 #include <ikarus/FiniteElements/FEValues.h>
 #include <ikarus/Variables/InterfaceVariable.h>
 #ifdef __clang__
@@ -36,10 +36,6 @@ namespace Ikarus::FiniteElements {
     mass
   };
 
-  enum class FEParameter {
-    noParameter,
-    loadfactor
-  };
 
   enum class ScalarAffordances { noAffordance, potentialEnergy };
 
@@ -56,7 +52,7 @@ namespace Ikarus::FiniteElements {
     using DataType = typename std::optional<std::reference_wrapper<FEValues>>;
     std::optional<std::reference_wrapper<VariableType>> variables;
     DataType data{std::nullopt};
-    std::map<FEParameter,std::reference_wrapper<VariableType>> parameter;
+    std::map<decltype(FEParameterValuePair::type),decltype(FEParameterValuePair::value)> parameter;
     ScalarAffordances scalarAffordances{ScalarAffordances::noAffordance};
     VectorAffordances vectorAffordances{VectorAffordances::noAffordance};
     MatrixAffordances matrixAffordances{MatrixAffordances::noAffordance};

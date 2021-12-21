@@ -3,27 +3,37 @@
 //
 
 #pragma once
-
+#include <map>
+#include <Eigen/Core>
 template <typename MessageType>
 class IObserver {
 public:
   virtual ~IObserver() = default;
   void update(MessageType message) {
     assert(MessageType::END != message && "The END enum type should not be used");
+    assert(MessageType::BEGIN != message && "The BEGIN enum type should not be used");
     updateImpl(message);
   };
   void update(MessageType message, double val) {
     assert(MessageType::END != message && "The END enum type should not be used");
+    assert(MessageType::BEGIN != message && "The BEGIN enum type should not be used");
     updateImpl(message, val);
+  };
+
+  void update(MessageType message, const Eigen::VectorXd& vec) {
+    assert(MessageType::END != message && "The END enum type should not be used");
+    assert(MessageType::BEGIN != message && "The BEGIN enum type should not be used");
+    updateImpl(message, vec);
   };
 
 protected:
   virtual void updateImpl([[maybe_unused]] MessageType message){};
   virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] double val){};
+  virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] const Eigen::VectorXd& vec){};
 };
 
 template <typename MessageType>
-MessageType& operator++(MessageType& e) {
+MessageType& increment(MessageType& e) {
   if (e == MessageType::END) {
     throw std::out_of_range("for MessageType& operator ++ (MessageType&)");
   }
@@ -35,7 +45,7 @@ template <typename MessageType>
 class IObservable {
 public:
   IObservable() {
-    for (MessageType msg = MessageType::BEGIN; msg != MessageType::END; ++msg)
+    for (MessageType msg = MessageType::BEGIN; msg != MessageType::END; increment(msg))
       messages_.push_back(msg);
   }
   virtual ~IObservable() = default;
@@ -46,6 +56,8 @@ public:
   void notify(MessageType message);
   template <std::floating_point ScalarType>
   void notify(MessageType message, ScalarType val);
+  template <std::floating_point ScalarType>
+  void notify(MessageType message, Eigen::VectorX<ScalarType> val);
 
 private:
   //  virtual subscribeImpl(MessageType message, std::shared_ptr<IObserver<MessageType>> observer);
@@ -95,4 +107,12 @@ void IObservable<MessageType>::notify(MessageType message, ScalarType val) {
   auto vectorOfObserversOfASpecificMessage = observers_[message];
   for (auto&& obs : vectorOfObserversOfASpecificMessage)
     obs->update(message, val);
+}
+
+template <typename MessageType>
+template <std::floating_point ScalarType>
+void IObservable<MessageType>::notify(MessageType message, Eigen::VectorX<ScalarType> vec) {
+  auto vectorOfObserversOfASpecificMessage = observers_[message];
+  for (auto&& obs : vectorOfObserversOfASpecificMessage)
+    obs->update(message, vec);
 }

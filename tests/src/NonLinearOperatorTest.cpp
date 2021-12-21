@@ -13,6 +13,7 @@
 #include "ikarus/FEManager/DefaultFEManager.h"
 #include "ikarus/FiniteElements/ElasticityFE.h"
 #include "ikarus/Grids/GridHelper/griddrawer.h"
+#include "ikarus/LinearAlgebra/DirichletConditionManager.h"
 #include <ikarus/LinearAlgebra/NonLinearOperator.h>
 
 auto f(double& x) { return 0.5 * x * x + x - 2; }
@@ -23,7 +24,7 @@ TEST(NonLinearOperator, SimpleOperator) {
 
   auto fvLambda  = [&](auto&& x) { return f(x); };
   auto dfvLambda = [&](auto&& x) { return df(x); };
-  Ikarus::NonLinearOperator nonLinOp(fvLambda, derivatives(dfvLambda), parameter(x));
+  Ikarus::NonLinearOperator nonLinOp(linearAlgebraFunctions(fvLambda,dfvLambda), parameter(x));
 
   auto& val      = nonLinOp.value();
   auto& gradient = nonLinOp.derivative();
@@ -59,7 +60,7 @@ TEST(NonLinearOperator, VectorValuedOperator) {
 
   auto fvLambda  = [&](auto&& x) { return fv(x, A, b); };
   auto dfvLambda = [&](auto&& x) { return dfv(x, A, b); };
-  auto nonLinOp  = Ikarus::NonLinearOperator(fvLambda, derivatives(dfvLambda), parameter(x));
+  auto nonLinOp  = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda,dfvLambda), parameter(x));
 
   auto& val      = nonLinOp.value();
   auto& jacobian = nonLinOp.derivative();
@@ -97,7 +98,7 @@ TEST(NonLinearOperator, SecondOrderVectorValuedOperator) {
   auto fvLambda   = [&](auto&& x) { return f2v(x, A, b); };
   auto dfvLambda  = [&](auto&& x) { return df2v(x, A, b); };
   auto ddfvLambda = [&](auto&& x) { return ddf2v(x, A, b); };
-  auto nonLinOp   = Ikarus::NonLinearOperator(fvLambda, derivatives(dfvLambda, ddfvLambda), parameter(x));
+  auto nonLinOp   = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
 
   auto& val      = nonLinOp.value();
   auto& residual = nonLinOp.derivative();
@@ -157,19 +158,19 @@ TEST(NonLinearOperator, GridLoadControlTest) {
     feContainer.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge, gridView.indexSet(), 1000, 0.0));
 
   auto feManager = Ikarus::FEManager::DefaultFEManager(feContainer, gridView);
+  Ikarus::DirichletConditionManager dirichletConditionManager(feManager);
+  auto vectorAssembler = Ikarus::Assembler::VectorAssembler(feManager,dirichletConditionManager);
 
-  auto vectorAssembler = Ikarus::Assembler::VectorAssembler(feManager);
-
-  auto denseMatrixAssembler  = Ikarus::Assembler::DenseMatrixAssembler(feManager);
+  auto denseMatrixAssembler  = Ikarus::Assembler::DenseMatrixAssembler(feManager,dirichletConditionManager);
   auto sparseMatrixAssembler = Ikarus::Assembler::SparseMatrixAssembler(feManager);
 
   auto& x = feManager.getVariables();
 
-  const auto fintFunction = [&]() { return vectorAssembler.getVector(Ikarus::FiniteElements::forces); };
+  auto fintFunction = [&]() { return vectorAssembler.getVector(Ikarus::FiniteElements::forces); };
   auto KFunction          = [&]() { return denseMatrixAssembler.getMatrix(Ikarus::FiniteElements::stiffness); };
   auto KFunctionSparse    = [&]() { return sparseMatrixAssembler.getMatrix(Ikarus::FiniteElements::stiffness); };
-  Ikarus::NonLinearOperator nonLinearOperator(fintFunction, derivatives(KFunction), parameter());
-  Ikarus::NonLinearOperator nonLinearOperatorWithSparseMatrix(fintFunction, derivatives(KFunctionSparse), parameter());
+  Ikarus::NonLinearOperator nonLinearOperator(linearAlgebraFunctions(fintFunction, KFunction), parameter());
+  Ikarus::NonLinearOperator nonLinearOperatorWithSparseMatrix(linearAlgebraFunctions(fintFunction, KFunctionSparse), parameter());
 
   auto& K             = nonLinearOperator.derivative();
   auto& Ksparse = nonLinearOperatorWithSparseMatrix.derivative();

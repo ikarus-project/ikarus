@@ -7,14 +7,18 @@
 
 #include "spdlog/spdlog.h"
 
-#include <ikarus/utils/observer.h>
+#include "ikarus/utils/Observer/observer.h"
+#include "ikarus/utils/Observer/observerMessages.h"
 
-enum class ControlMessages { BEGIN, ITERATION_ENDED, LOADSTEP_ENDED, RESIDUALNORM_UPDATED, END };
+
 
 class ControlLogger : public IObserver<ControlMessages> {
 public:
   void updateImpl(ControlMessages message) override {
     switch (message) {
+      case ControlMessages::CONTROL_STARTED:
+        spdlog::info("Control started");
+        break;
       case ControlMessages::ITERATION_ENDED:
         spdlog::info("Iteration has ended");
         break;
@@ -22,6 +26,9 @@ public:
         spdlog::info("============================================\n");
         spdlog::info("Loadstep has ended");
         spdlog::info("============================================\n");
+        break;
+      case ControlMessages::SOLUTION_CHANGED:
+        spdlog::info("ControlMessages::SOLUTION_CHANGED");
         break;
       default:
         break;  //   default: do nothing when notified
@@ -36,5 +43,9 @@ public:
       default:
         break;
     }
+  }
+
+  void updateImpl(ControlMessages message, const Eigen::VectorXd& vec) override {
+
   }
 };
