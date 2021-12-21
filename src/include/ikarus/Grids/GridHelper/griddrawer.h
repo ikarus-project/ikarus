@@ -60,7 +60,7 @@ void drawDeformed(const GridView& gridView, const FEManager& feManager) {
   hold(ax, true);
   auto fe = feManager.getFeContainer().begin();
 
-  std::array<std::array<int, 2>, 4> edgeID;
+  std::array<std::array<int, 2>, 4> edgeID{};
   edgeID[0] = {0, 2};
   edgeID[1] = {0, 1};
   edgeID[2] = {1, 3};
@@ -87,5 +87,5 @@ void drawDeformed(const GridView& gridView, const FEManager& feManager) {
     }
     ++fe;
   }
-  f1->show();
+  f1->draw();
 }

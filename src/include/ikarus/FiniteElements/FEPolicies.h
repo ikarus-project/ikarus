@@ -3,6 +3,7 @@
 //
 
 #pragma once
+#include <ikarus/FiniteElements/InterfaceFiniteElement.h>
 
 namespace Ikarus::FiniteElements {
 
@@ -16,6 +17,9 @@ namespace Ikarus::FiniteElements {
 
     /** \brief Dimension of the geometry */
     static constexpr int mydim = GridElementEntityType::mydimension;
+
+    /** \brief Dimension of the grid */
+    static constexpr int dimension = GridElementEntityType::dimension;
 
     /** \brief Type of the Nodes coordinate */
     using NodeType = Eigen::Matrix<ctype, worlddim, 1>;
@@ -58,6 +62,13 @@ namespace Ikarus::FiniteElements {
 
     /** \brief Dimension of the world space */
     static constexpr int worlddim = GridElementEntityType::dimensionworld;
+
+    [[nodiscard]] constexpr int dofSize() const {
+      if constexpr (worlddim == 3)
+        return vertices(*elementGridEntity).size() * 3;
+      else if constexpr (worlddim == 2)
+        return vertices(*elementGridEntity).size() * 2;
+    }
 
     [[nodiscard]] DofTupleVectorType getEntityVariableTuple() const {
       DofTupleVectorType entDofTupleVector(vertices(*elementGridEntity).size());

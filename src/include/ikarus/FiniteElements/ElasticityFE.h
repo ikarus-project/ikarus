@@ -33,11 +33,11 @@
 
 #include "ikarus/AnsatzFunctions/Lagrange.h"
 #include "ikarus/utils/LinearAlgebraHelper.h"
+#include <ikarus/FiniteElements/FEPolicies.h>
 #include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
 #include <ikarus/Variables/VariableDefinitions.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
-#include <ikarus/FiniteElements/FEPolicies.h>
 
 namespace Ikarus::Variable {
   class IVariable;
@@ -46,74 +46,62 @@ namespace Ikarus::Variable {
 namespace Ikarus::FiniteElements {
 
   template <typename GridElementEntityType, typename IndexSetType>
-  class ElasticityFE  : public FEVertexDisplacement<GridElementEntityType,IndexSetType>{
+  class ElasticityFE : public FEVertexDisplacement<GridElementEntityType, IndexSetType> {
   public:
-    using Base = FEVertexDisplacement<GridElementEntityType,IndexSetType>;
+    using Base = FEVertexDisplacement<GridElementEntityType, IndexSetType>;
     ElasticityFE(GridElementEntityType &gE, const IndexSetType &indexSet, double emod, double nu)
-        : Base(gE,indexSet),elementGridEntity{&gE}, indexSet_{&indexSet}, emod_{emod}, nu_{nu} {}
+        : Base(gE, indexSet), elementGridEntity{&gE}, indexSet_{&indexSet}, emod_{emod}, nu_{nu} {}
 
     using Traits = FETraits<GridElementEntityType>;
-    using Base::getEntityVariableTuple;
-
-    [[nodiscard]] constexpr int dofSize() const {
-      if constexpr (Traits::worlddim == 3)
-        return vertices(*elementGridEntity).size() * 3;
-      else if constexpr (Traits::worlddim == 2)
-        return vertices(*elementGridEntity).size() * 2;
-    }
 
     void initialize() {}
 
-    [[nodiscard]] std::pair<typename Traits::MatrixType, typename Traits::VectorType> calculateLocalSystem(const typename Traits::FERequirementType & par) const {
+    [[nodiscard]] std::pair<typename Traits::MatrixType, typename Traits::VectorType> calculateLocalSystem(
+        const typename Traits::FERequirementType &par) const {
       if (par.matrixAffordances == stiffness && par.vectorAffordances == forces)
         return calculateStiffnessMatrixAndInternalForcesImpl(par);
       else
         throw std::logic_error("This element can not handle your affordance! ");
     }
 
-    [[nodiscard]] typename Traits::MatrixType calculateMatrix(const typename Traits::FERequirementType & par) const {
+    [[nodiscard]] typename Traits::MatrixType calculateMatrix(const typename Traits::FERequirementType &par) const {
       if (par.matrixAffordances == stiffness)
         return calculateStiffnessMatrixAndInternalForcesImpl<false, true>(par);
       else
         throw std::logic_error("This element can not handle your affordance! ");
     }
 
-    [[nodiscard]] double calculateScalar([[maybe_unused]]  const typename Traits::FERequirementType & par) const {
+    [[nodiscard]] double calculateScalar([[maybe_unused]] const typename Traits::FERequirementType &req) const {
       return 13.0;
     }
 
-    [[nodiscard]] typename Traits::VectorType calculateVector(const typename Traits::FERequirementType & par) const {
-      return calculateStiffnessMatrixAndInternalForcesImpl<true, false>(par);
+    [[nodiscard]] typename Traits::VectorType calculateVector(const typename Traits::FERequirementType &req) const {
+      return calculateStiffnessMatrixAndInternalForcesImpl<true, false>(req);
     }
 
     template <bool internalForcesFlag = true, bool stiffnessMatrixFlag = true>
-    auto calculateStiffnessMatrixAndInternalForcesImpl([[maybe_unused]] const typename Traits::FERequirementType &req) const {
-
+    auto calculateStiffnessMatrixAndInternalForcesImpl(
+        [[maybe_unused]] const typename Traits::FERequirementType &req) const {
       if constexpr (internalForcesFlag && stiffnessMatrixFlag) {
         const auto rule = Dune::QuadratureRules<double, Traits::mydim>::rule(duneType(elementGridEntity->type()), 2);
-
-        typename Traits::VectorType Fint(dofSize());
-        typename Traits::MatrixType K(dofSize(), dofSize());
+        typename Traits::VectorType Fint(this->dofSize());
+        typename Traits::MatrixType K(this->dofSize(), this->dofSize());
         Fint.setZero();
         K.setZero();
-        for (auto &gp : rule) {
-          const auto dN         = Ikarus::LagrangeCube<double, 2, 1>::evaluateJacobian(toEigenVector(gp.position()));
-          const auto geo        = elementGridEntity->geometry();
-          static_assert(std::remove_cvref_t<decltype(gp.position())>::dimension == 2);
-          const auto refJacobian = geo.jacobianInverseTransposed(gp.position());
-          //          Eigen::Vector2d u
-          //          vol += integrationElement(gp.position()) * gp.weight();
-        }
-
         return std::make_pair(K, Fint);
       } else if constexpr (internalForcesFlag && !stiffnessMatrixFlag) {
-        return Traits::VectorType::Ones(8);
+        Eigen::VectorXd d(this->dofSize());
+        auto dv = req.variables.value().get().get(EntityType::vertex);
+        for (int pos=0, i = 0; i < this->dofSize()/2; ++i) {
+
+          d.template segment<Traits::mydim>(pos) = Variable::getValue(dv[i]);
+          pos+=Traits::mydim;
+        }
+        Eigen::VectorXd fint = calculateStiffnessMatrixAndInternalForcesImpl<false, true>(req)*d;
+        return fint;
       } else if constexpr (not internalForcesFlag && stiffnessMatrixFlag) {
-        typename Traits::VectorType Fint(dofSize());
-        typename Traits::MatrixType K(dofSize(), dofSize());
-        typename Traits::MatrixType Bop((Traits::mydim * (Traits::mydim + 1)) / 2, dofSize());
+        typename Traits::MatrixType K(this->dofSize(), this->dofSize());
         K.setZero();
-        Bop.setZero();
         const auto rule = Dune::QuadratureRules<double, Traits::mydim>::rule(duneType(elementGridEntity->type()), 2);
         Eigen::Matrix3d C;
         C.setZero();
@@ -123,29 +111,13 @@ namespace Ikarus::FiniteElements {
         C(2, 2)           = (1 - nu_) / 2;
         C *= fac;
         for (auto &gp : rule) {
-          const auto geo        = elementGridEntity->geometry();
-          const auto J          = toEigenMatrix(geo.jacobianTransposed(gp.position()));
-          Eigen::Matrix<double, 4,  Traits::mydim> dN
-              = Ikarus::LagrangeCube<double,  Traits::mydim, 1>::evaluateJacobian(toEigenVector(gp.position()));
+          const auto geo = elementGridEntity->geometry();
+          const auto J   = toEigenMatrix(geo.jacobianTransposed(gp.position()));
+          Eigen::Matrix<double, 4, Traits::mydim> dN
+              = Ikarus::LagrangeCube<double, Traits::mydim, 1>::evaluateJacobian(toEigenVector(gp.position()));
           dN *= (J * Ikarus::LinearAlgebra::orthonormalizeMatrixColumns(J.transpose())).inverse();
-
-          for (int i = 0; i < dN.rows(); ++i) {
-            for (int j = 0; j <  Traits::mydim; ++j)
-              Bop(j,  Traits::mydim * i + j) = dN(i, j);
-
-            for (int s = 0; s <  Traits::mydim * ( Traits::mydim - 1) / 2; ++s)  // loop over off-diagonal strains
-            {
-              std::array<int, 2> curdim{};
-              for (int c = 0, d = 0; d <  Traits::mydim; ++d) {
-                if (d == 2 - s) continue;
-                curdim[c++] = d;
-              }
-              for (int k = 0; k < 2; ++k)
-                Bop(s +  Traits::mydim,  Traits::mydim * i + curdim[k]) = dN(i, curdim[(k + 1) % 2]);
-              //              Bop(s + mydimension, mydimension * i + curdim[1]) = dN(i, curdim[0]);
-            }
-          }
-          K += (Bop.transpose() * C * Bop) * geo.integrationElement(gp.position()) * gp.weight();
+          const auto bop = boperator(dN);
+          K += (bop.transpose() * C * bop) * geo.integrationElement(gp.position()) * gp.weight();
         }
         return K;
       } else
@@ -158,9 +130,30 @@ namespace Ikarus::FiniteElements {
       return indexSet_->subIndex(*elementGridEntity, i, codim);
     }
 
-    [[nodiscard]] unsigned int dimension() const { return  Traits::mydim; }
+    [[nodiscard]] unsigned int dimension() const { return Traits::mydim; }
 
   private:
+    auto boperator(const Eigen::Matrix<double, 4, Traits::mydim> &dN) const {
+      typename Traits::MatrixType Bop((Traits::mydim * (Traits::mydim + 1)) / 2, this->dofSize());
+      Bop.setZero();
+      for (int i = 0; i < dN.rows(); ++i) {
+        for (int j = 0; j < Traits::mydim; ++j)
+          Bop(j, Traits::mydim * i + j) = dN(i, j);
+
+        for (int s = 0; s < Traits::mydim * (Traits::mydim - 1) / 2; ++s)  // loop over off-diagonal strains
+        {
+          std::array<int, 2> curdim{};
+          for (int c = 0, d = 0; d < Traits::mydim; ++d) {
+            if (d == 2 - s) continue;
+            curdim[c++] = d;
+          }
+          for (int k = 0; k < 2; ++k)
+            Bop(s + Traits::mydim, Traits::mydim * i + curdim[k]) = dN(i, curdim[(k + 1) % 2]);
+          //              Bop(s + mydimension, mydimension * i + curdim[1]) = dN(i, curdim[0]);
+        }
+      }
+      return Bop;
+    }
     GridElementEntityType const *const elementGridEntity;
     IndexSetType const *const indexSet_;
     double emod_;

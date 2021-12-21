@@ -6,7 +6,7 @@
 
 #include "testHelpers.h"
 
-#include <ikarus/utils/controlLogger.h>
+#include "ikarus/utils/Observer/controlLogger.h"
 
 class Control : public IObservable<ControlMessages> {
 public:

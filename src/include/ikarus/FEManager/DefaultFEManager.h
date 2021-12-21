@@ -31,7 +31,7 @@ namespace Ikarus::FEManager {
                      std::optional<std::reference_wrapper<GridDataType>> gridData = std::nullopt)
         : gridView_{&gv}, gridData_{gridData}, varVec{feContainer} {}
 
-    size_t numberOfDegreesOfFreedom() { return varVec.correctionSize(); }
+    size_t numberOfDegreesOfFreedom() const { return varVec.correctionSize(); }
 
     auto elementDofs() { return varVec.elementDofs(); };
     void addData(GridDataType& gridData) { gridData_ = gridData; }
@@ -46,10 +46,13 @@ namespace Ikarus::FEManager {
 
     auto elementDofVectorSize() { return varVec.elementDofVectorSize(); };
 
-    auto elementIndicesVariableTuple() {
+    template<typename Entity>
+    auto dofIndicesOfEntity(const Entity &ge ) const {return varVec.dofIndicesOfEntity(gridView_->indexSet().index(ge));}
+
+    auto elementIndicesVariableTuple() const {
       return varVec.transform_viewOverElements([&](auto& fe) {
         auto elementsVariables = varVec.variablesOfSingleElement(fe);
-        auto elementsIndices   = varVec.dofIndicesOfSingleElement(fe);
+        auto elementsIndices   = varVec.dofIndicesOfElement(fe);
         return std::make_tuple(std::ref(fe), elementsIndices, elementsVariables);
       });
     }
@@ -58,7 +61,7 @@ namespace Ikarus::FEManager {
       if (gridData_.has_value())
         return varVec.transform_viewOverElements([&](auto& fe) {
           auto elementsVariables = varVec.variablesOfSingleElement(fe);
-          auto elementsIndices   = varVec.dofIndicesOfSingleElement(fe);
+          auto elementsIndices   = varVec.dofIndicesOfElement(fe);
           auto elementData       = gridData_.value().get().getAllSubEntityDataOfFE(fe);
 
           return std::make_tuple(std::ref(fe), elementsIndices, elementsVariables, elementData);
