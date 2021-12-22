@@ -64,15 +64,25 @@ namespace Ikarus::FiniteElements {
         throw std::logic_error("This element can not handle your affordance! ");
     }
 
-    [[nodiscard]] typename Traits::MatrixType calculateMatrix(const typename Traits::FERequirementType &par) const {
-      if (par.matrixAffordances == stiffness)
-        return calculateStiffnessMatrixAndInternalForcesImpl<false, true>(par);
+    [[nodiscard]] typename Traits::MatrixType calculateMatrix(const typename Traits::FERequirementType &req) const {
+      if (req.matrixAffordances == stiffness)
+        return calculateStiffnessMatrixAndInternalForcesImpl<false, true>(req);
       else
         throw std::logic_error("This element can not handle your affordance! ");
     }
 
     [[nodiscard]] double calculateScalar([[maybe_unused]] const typename Traits::FERequirementType &req) const {
-      return 13.0;
+      if (req.scalarAffordances == potentialEnergy) {
+        Eigen::VectorXd d(this->dofSize());
+        auto dv = req.variables.value().get().get(EntityType::vertex);
+        for (int pos = 0, i = 0; i < this->dofSize() / 2; ++i) {
+          d.template segment<Traits::mydim>(pos) = Variable::getValue(dv[i]);
+          pos += Traits::mydim;
+        }
+        return 0.5 * d.dot(calculateStiffnessMatrixAndInternalForcesImpl<false, true>(req) * d);
+      } else
+        throw std::logic_error("This element can not handle your scalar affordance! ");
+
     }
 
     [[nodiscard]] typename Traits::VectorType calculateVector(const typename Traits::FERequirementType &req) const {

@@ -67,7 +67,7 @@ static void byhand(benchmark::State& state) {
     benchmark::ClobberMemory();
   }
 }
-BENCHMARK(byhand)->DenseRange(2, 100, 10);
+BENCHMARK(byhand)->RangeMultiplier(2)->Range(1<<1, 1<<10)->Complexity();
 
 static void eigenIndexing(benchmark::State& state) {
   using namespace Ikarus::Grid;
@@ -128,4 +128,4 @@ static void eigenIndexing(benchmark::State& state) {
     benchmark::ClobberMemory();
   }
 }
-BENCHMARK(eigenIndexing)->DenseRange(2, 100, 10);
+BENCHMARK(eigenIndexing)->RangeMultiplier(2)->Range(1<<1, 1<<10)->Complexity();
