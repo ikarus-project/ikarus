@@ -46,8 +46,10 @@ namespace Ikarus::FEManager {
 
     auto elementDofVectorSize() { return varVec.elementDofVectorSize(); };
 
-    template<typename Entity>
-    auto dofIndicesOfEntity(const Entity &ge ) const {return varVec.dofIndicesOfEntity(gridView_->indexSet().index(ge));}
+    template <typename Entity>
+    auto dofIndicesOfEntity(const Entity& ge) const {
+      return varVec.dofIndicesOfEntity(gridView_->indexSet().index(ge));
+    }
 
     auto elementIndicesVariableTuple() const {
       return varVec.transform_viewOverElements([&](auto& fe) {

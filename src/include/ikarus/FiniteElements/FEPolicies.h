@@ -7,8 +7,8 @@
 
 namespace Ikarus::FiniteElements {
 
-  template<typename GridElementEntityType>
-  struct FETraits{
+  template <typename GridElementEntityType>
+  struct FETraits {
     /** \brief Type used for coordinates */
     using ctype = double;
 
@@ -37,7 +37,7 @@ namespace Ikarus::FiniteElements {
     using VariableVectorType = typename FERequirementType::VariableType;
 
     /** \brief Type of the DataVector */
-    using DataVectorType = typename FERequirementType::DataType ;
+    using DataVectorType = typename FERequirementType::DataType;
 
     /** \brief Type of the Dofs / SolutionType
      * using NodalSolutionType = Displacement<ctype,worlddim>;*/
@@ -49,10 +49,8 @@ namespace Ikarus::FiniteElements {
     using MatrixType = Eigen::MatrixXd;
   };
 
-
   template <typename GridElementEntityType, typename IndexSetType>
   class FEVertexDisplacement {
-
   public:
     FEVertexDisplacement(GridElementEntityType &gE, const IndexSetType &indexSet)
         : elementGridEntity{&gE}, indexSet_{&indexSet} {}
@@ -95,4 +93,4 @@ namespace Ikarus::FiniteElements {
     GridElementEntityType const *const elementGridEntity;
     IndexSetType const *const indexSet_;
   };
-}
+}  // namespace Ikarus::FiniteElements

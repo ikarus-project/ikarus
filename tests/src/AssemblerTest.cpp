@@ -10,9 +10,9 @@
 #include <vector>
 
 #include <Eigen/Core>
-#include <ikarus/Assembler/SimpleAssemblers.h>
 
 #include "ikarus/LinearAlgebra/DirichletConditionManager.h"
+#include <ikarus/Assembler/SimpleAssemblers.h>
 #include <ikarus/FEManager/DefaultFEManager.h>
 #include <ikarus/FiniteElements/ElasticityFE.h>
 #include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
@@ -50,9 +50,9 @@ TEST(Assembler, SimpleAssemblersTest) {
   const auto indexSet = gridView.indexSet();
 
   std::vector<Ikarus::FiniteElements::IFiniteElement> fes;
-
+  const double Emodul = 1000;
   for (auto&& ge : surfaces(gridView))
-    fes.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge, indexSet, 1000, 0.3));
+    fes.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge, indexSet, Emodul, 0.3));
 
   auto feManager = Ikarus::FEManager::DefaultFEManager(fes, gridView);
 
@@ -61,6 +61,7 @@ TEST(Assembler, SimpleAssemblersTest) {
   dirichletConditionManager.addConstraint(vertices(gridView).front(), 0);
   dirichletConditionManager.addConstraint(vertices(gridView).back(), 1);
   dirichletConditionManager.addConstraint(vertices(gridView).at(3), 1);
+  dirichletConditionManager.finalize();
 
   auto vectorAssembler = Ikarus::Assembler::VectorAssembler(feManager, dirichletConditionManager);
   auto fint            = vectorAssembler.getVector(Ikarus::FiniteElements::forces);
@@ -96,7 +97,7 @@ TEST(Assembler, SimpleAssemblersTest) {
 
   auto scalarAssembler = Ikarus::Assembler::ScalarAssembler(feManager);
   auto w               = scalarAssembler.getScalar(Ikarus::FiniteElements::potentialEnergy);
-  EXPECT_DOUBLE_EQ(w, 26.0);
+  EXPECT_DOUBLE_EQ(w, 0.0);
 
   // Reduced tests
   const auto& fintRed = vectorAssembler.getReducedVector(Ikarus::FiniteElements::forces);
@@ -117,7 +118,15 @@ TEST(Assembler, SimpleAssemblersTest) {
                                   dirichletConditionManager.freeIndices().end());
 
   KExpectedRed = KExpectedRed(keepIndices, keepIndices).eval();
-//  KExpectedRed = KExpectedRed(Eigen::all, keepIndices).eval();
+  //  KExpectedRed = KExpectedRed(Eigen::all, keepIndices).eval();
 
   EXPECT_THAT(KRed, EigenApproxEqual(KExpectedRed, 1e-15));
+
+  auto& x = feManager.getVariables();
+  Eigen::VectorXd D(feManager.numberOfDegreesOfFreedom());
+  D.setOnes();
+  x += D;
+
+  w = scalarAssembler.getScalar(Ikarus::FiniteElements::potentialEnergy);
+  EXPECT_NEAR(w, 0.0, 1e-16 * Emodul);
 }

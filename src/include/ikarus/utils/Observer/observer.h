@@ -4,6 +4,7 @@
 
 #pragma once
 #include <map>
+
 #include <Eigen/Core>
 template <typename MessageType>
 class IObserver {

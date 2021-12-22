@@ -31,25 +31,25 @@ namespace Ikarus {
       hasDirichletBoundaryCondition_.insert(
           {gridEntityIndices[localVariableIndex],
            {gridEntityIndices[localVariableIndex], spaceFunctionType, timeFunctionType}});
-      isFinalized_=false;
+      isFinalized_ = false;
     }
 
     [[nodiscard]] bool isConstrained(size_t i) const { return hasDirichletBoundaryCondition_.contains(i); }
 
-    size_t constraintsBelow(size_t i) const {
+    [[nodiscard]] size_t constraintsBelow(size_t i) const {
       assert(isFinalized_ && "You have to call the finalize method before you can use constraintsBelow");
       return constraintsBelow_[i];
     }
 
-    void finalize()
-    {
+    void finalize() {
       if (not isFinalized_) {
-        constraintsBelow_ .reserve(feManager_->numberOfDegreesOfFreedom());
+        constraintsBelow_.reserve(feManager_->numberOfDegreesOfFreedom());
         for (auto iv : std::ranges::iota_view{size_t(0), feManager_->numberOfDegreesOfFreedom()}) {
-          constraintsBelow_.emplace_back(std::distance(hasDirichletBoundaryCondition_.begin(), hasDirichletBoundaryCondition_.lower_bound(iv)));
+          constraintsBelow_.emplace_back(
+              std::distance(hasDirichletBoundaryCondition_.begin(), hasDirichletBoundaryCondition_.lower_bound(iv)));
         }
       }
-      isFinalized_=true;
+      isFinalized_ = true;
     }
 
     auto getValue(size_t i) const {

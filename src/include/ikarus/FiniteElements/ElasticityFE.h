@@ -82,7 +82,6 @@ namespace Ikarus::FiniteElements {
         return 0.5 * d.dot(calculateStiffnessMatrixAndInternalForcesImpl<false, true>(req) * d);
       } else
         throw std::logic_error("This element can not handle your scalar affordance! ");
-
     }
 
     [[nodiscard]] typename Traits::VectorType calculateVector(const typename Traits::FERequirementType &req) const {
@@ -102,12 +101,11 @@ namespace Ikarus::FiniteElements {
       } else if constexpr (internalForcesFlag && !stiffnessMatrixFlag) {
         Eigen::VectorXd d(this->dofSize());
         auto dv = req.variables.value().get().get(EntityType::vertex);
-        for (int pos=0, i = 0; i < this->dofSize()/2; ++i) {
-
+        for (int pos = 0, i = 0; i < this->dofSize() / 2; ++i) {
           d.template segment<Traits::mydim>(pos) = Variable::getValue(dv[i]);
-          pos+=Traits::mydim;
+          pos += Traits::mydim;
         }
-        Eigen::VectorXd fint = calculateStiffnessMatrixAndInternalForcesImpl<false, true>(req)*d;
+        Eigen::VectorXd fint = calculateStiffnessMatrixAndInternalForcesImpl<false, true>(req) * d;
         return fint;
       } else if constexpr (not internalForcesFlag && stiffnessMatrixFlag) {
         typename Traits::MatrixType K(this->dofSize(), this->dofSize());

@@ -106,7 +106,7 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
       const auto [KEle, fintEle]    = calculateLocalSystem(fe, feParameter);
       EXPECT_EQ(dofSize(fe), 8);
       EXPECT_EQ(calculateVector(fe, feParameter).size(), 8);
-      EXPECT_DOUBLE_EQ(calculateScalar(fe, feParameter), 13.0);
+      EXPECT_DOUBLE_EQ(calculateScalar(fe, feParameter), 0.0);
       EXPECT_EQ(calculateMatrix(fe, feParameter).cols(), 8);
       EXPECT_EQ(calculateMatrix(fe, feParameter).rows(), 8);
       feParameter.matrixAffordances = mass;
@@ -137,7 +137,7 @@ TEST(FiniteElementInterfaceTest, createGenericFEList) {
       const auto [KEle, fintEle]    = calculateLocalSystem(fe, feParameter);
       EXPECT_EQ(dofSize(fe), 8);
       EXPECT_EQ(calculateVector(fe, feParameter).size(), 8);
-      EXPECT_DOUBLE_EQ(calculateScalar(fe, feParameter), 13.0);
+      EXPECT_DOUBLE_EQ(calculateScalar(fe, feParameter), 0.0);
       EXPECT_EQ(calculateMatrix(fe, feParameter).cols(), 8);
       EXPECT_EQ(calculateMatrix(fe, feParameter).rows(), 8);
       feParameter.matrixAffordances = mass;

@@ -171,7 +171,9 @@ namespace Ikarus::Assembler {
           else {
             for (int c = 0; c < dofs.size(); ++c) {
               if (dirichletManager_->isConstrained(dofs[c])) continue;
-              matRed(dofs[r]-dirichletManager_->constraintsBelow(dofs[r]), dofs[c]-dirichletManager_->constraintsBelow(dofs[c])) += eleMat(r, c);
+              matRed(dofs[r] - dirichletManager_->constraintsBelow(dofs[r]),
+                     dofs[c] - dirichletManager_->constraintsBelow(dofs[c]))
+                  += eleMat(r, c);
             }
           }
         }
