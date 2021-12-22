@@ -114,6 +114,7 @@ static void eigenIndexing(benchmark::State& state) {
   dirichletConditionManager.addConstraint(vertices(gridView).front(), 0);
   dirichletConditionManager.addConstraint(vertices(gridView).back(), 1);
   dirichletConditionManager.addConstraint(vertices(gridView).at(3), 1);
+  dirichletConditionManager.finalize();
 
   auto denseMatrixAssembler = Ikarus::Assembler::DenseMatrixAssembler(feManager, dirichletConditionManager);
   const std::vector<size_t> keepIndices(dirichletConditionManager.freeIndices().begin(),
