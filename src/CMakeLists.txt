@@ -27,7 +27,7 @@ target_link_libraries(
   PUBLIC dunecommon
   PUBLIC dunegeometry
   PUBLIC dunegrid
-  PUBLIC ${SuiteSparse_LIBRARIES}
+  PUBLIC SuiteSparse::SuiteSparse
   # PUBLIC muesli
   PUBLIC Matplot++::matplot
   # PUBLIC Python3::Module PRIVATE pybind11::headers
