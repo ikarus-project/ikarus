@@ -27,6 +27,7 @@
 
 TEST(LinearSolverTest, LinearSolverTest1) {
   using namespace Ikarus::Grid;
+  using namespace Ikarus;
   using Grid = SimpleGrid<2, 2>;
   SimpleGridFactory<2, 2> gridFactory;
   using vertexType = Eigen::Vector2d;
@@ -61,8 +62,6 @@ TEST(LinearSolverTest, LinearSolverTest1) {
   for (auto&& ge : rootEntities(gridView))
     feContainer.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge, gridView.indexSet(), 1000, 0.0));
 
-  feContainer.emplace_back(Ikarus::FiniteElements::ForceLoad(*(edges(gridView).end() - 1), gridView.indexSet()));
-
   auto feManager = Ikarus::FEManager::DefaultFEManager(feContainer, gridView);
 
   Ikarus::DirichletConditionManager dirichletConditionManager(feManager);
@@ -78,9 +77,19 @@ TEST(LinearSolverTest, LinearSolverTest1) {
 
   auto& x = feManager.getVariables();
 
-  Ikarus::ILinearSolver<double> solver((Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>>()));
-  auto& b = vectorAssembler.getReducedVector(Ikarus::FiniteElements::forces);
-  auto& A = denseMatrixAssembler.getReducedMatrix(Ikarus::FiniteElements::stiffness);
+  Ikarus::ILinearSolver<double> solver(SolverTypeTag::LDLT);
+  auto& b = vectorAssembler.getReducedVector(FiniteElements::forces);
+  b[3]=1;
+  auto& A = denseMatrixAssembler.getReducedMatrix(FiniteElements::stiffness);
   solver.compute(A);
   auto sol = solver.solve(b);
+  std::cout<<sol.transpose()<<std::endl;
+
+  auto& Asparse = sparseMatrixAssembler.getMatrix(FiniteElements::stiffness);
+  Ikarus::ILinearSolver<double> solverCG(SolverTypeTag::ConjugateGradient);
+  solver.compute(Asparse);
+  auto sol2 = solver.solve(b);
+
+  solver.compute(Asparse);
+
 }

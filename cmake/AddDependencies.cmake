@@ -60,9 +60,7 @@ target_link_libraries(
   PUBLIC dunecommon
   PUBLIC dunegeometry
   PUBLIC dunegrid
-  PUBLIC ${SuiteSparse_LIBRARIES}
-  PUBLIC UMFPACK
-  PUBLIC CHOLMOD
+  PUBLIC SuiteSparse::SuiteSparse
   # PUBLIC muesli
   PUBLIC Matplot++::matplot
   PUBLIC autodiff::autodiff
