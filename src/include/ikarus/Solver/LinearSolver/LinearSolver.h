@@ -37,8 +37,8 @@ namespace Ikarus {
     CompleteOrthogonalDecomposition,
     LLT,
     LDLT,
-    BDCSVD,
-    JacobiSVD
+    //    BDCSVD,
+    //    JacobiSVD
   };
   template <SolverTypeTag solverTypeTag, typename ScalarType = double, typename... SolverOptions>
   class LinearSolveFactory {
@@ -122,11 +122,11 @@ namespace Ikarus {
         case SolverTypeTag::LLT:
           solverimpl = std::make_unique<SolverImpl<LLT<DenseMatrixType>>>();
           break;
-        case SolverTypeTag::BDCSVD:
-          solverimpl = std::make_unique<SolverImpl<BDCSVD<DenseMatrixType>>>();
-          break;
-        case SolverTypeTag::JacobiSVD:
-          solverimpl = std::make_unique<SolverImpl<JacobiSVD<DenseMatrixType>>>();
+          //        case SolverTypeTag::BDCSVD:
+          //          solverimpl = std::make_unique<SolverImpl<BDCSVD<DenseMatrixType>>>();
+          //          break;
+          //        case SolverTypeTag::JacobiSVD:
+          //          solverimpl = std::make_unique<SolverImpl<JacobiSVD<DenseMatrixType>>>();
           break;
         case SolverTypeTag::LDLT:
           solverimpl = std::make_unique<SolverImpl<LDLT<DenseMatrixType>>>();
@@ -171,23 +171,18 @@ namespace Ikarus {
       void factorize(const SparseMatrixType& A) override {
         if constexpr (requires(Solver sol) { sol.factorize(A); }) solver.factorize(A);
       }
-      void compute(const SparseMatrixType& A) requires std::is_base_of_v<Eigen::SparseSolverBase<Solver>, Solver>{
-//        if constexpr (std::is_base_of_v<Eigen::SparseSolverBase<Solver>, Solver>)
+      void compute(const SparseMatrixType& A) {
+        if constexpr (std::is_base_of_v<Eigen::SparseSolverBase<Solver>, Solver>)
           solver.compute(A);
-//        else
-//          throw std::logic_error("This solver does not support solving with sparse matrices.");
+        else
+          throw std::logic_error("This solver does not support solving with sparse matrices.");
       }
-      void compute(const DenseMatrixType& A) requires std::is_base_of_v<Eigen::SVDBase<Solver>, Solver>{
-        //        if constexpr (std::is_base_of_v<Eigen::SparseSolverBase<Solver>, Solver>)
-        solver.compute(A);
-        //        else
-        //          throw std::logic_error("This solver does not support solving with sparse matrices.");
-      }
-      void compute(const DenseMatrixType& A) requires std::is_base_of_v<Eigen::SolverBase<Solver>, Solver>{
-//        if constexpr (std::is_base_of_v<Eigen::SolverBase<Solver>, Solver>)
+
+      void compute(const DenseMatrixType& A) {
+        if constexpr (std::is_base_of_v<Eigen::SolverBase<Solver>, Solver>)
           solver.compute(A);
-//        else
-//          throw std::logic_error("This solver does not support solving with dense matrices.");
+        else
+          throw std::logic_error("This solver does not support solving with dense matrices.");
       }
       [[nodiscard]] Eigen::VectorX<ScalarType> solve(const Eigen::VectorX<ScalarType>& b) const override {
         return solver.solve(b);
