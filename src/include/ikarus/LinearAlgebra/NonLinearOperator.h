@@ -34,15 +34,14 @@ namespace Ikarus {
   template <typename TypeListTwo, typename TypeListThree>
   class NonLinearOperator {
   public:
-    NonLinearOperator(const TypeListTwo& derivativesFunctions,
-                      const TypeListThree& args) {}
+    NonLinearOperator(const TypeListTwo& derivativesFunctions, const TypeListThree& args) {}
   };
 
   template <typename... DerivativeArgs, typename... ParameterArgs>
   class NonLinearOperator<LinearAlgebraFunctions<DerivativeArgs...>, Parameter<ParameterArgs...>> {
   public:
     explicit NonLinearOperator(const LinearAlgebraFunctions<DerivativeArgs...>& derivativesFunctions,
-                               const Parameter<ParameterArgs...>& parameterI )
+                               const Parameter<ParameterArgs...>& parameterI)
         : derivatives_{derivativesFunctions.args}, args_{parameterI.args} {
       updateAll();
     }
@@ -54,18 +53,17 @@ namespace Ikarus {
     }
     template <int n>
     void update() {
-        std::get<n>(derivativesEvaluated_) = std::apply(std::get<n>(derivatives_), args_);
+      std::get<n>(derivativesEvaluated_) = std::apply(std::get<n>(derivatives_), args_);
     }
     auto& value() requires(sizeof...(DerivativeArgs) > 0) { return std::get<0>(derivativesEvaluated_); }
     auto& derivative() requires(sizeof...(DerivativeArgs) > 1) { return std::get<1>(derivativesEvaluated_); }
     auto& secondDerivative() requires(sizeof...(DerivativeArgs) > 2) { return std::get<2>(derivativesEvaluated_); }
     template <int n>
-    auto& nthDerivative() requires(sizeof...(DerivativeArgs) > n ) {
+    auto& nthDerivative() requires(sizeof...(DerivativeArgs) > n) {
       return std::get<n>(derivativesEvaluated_);
     }
 
-  private :
-    std::tuple<std::reference_wrapper<std::remove_cvref_t<DerivativeArgs>>...> derivatives_;
+  private : std::tuple<std::reference_wrapper<std::remove_cvref_t<DerivativeArgs>>...> derivatives_;
     std::tuple<std::reference_wrapper<std::remove_cvref_t<ParameterArgs>>...> args_;
     std::tuple<ReturnType<DerivativeArgs, ParameterArgs&...>...> derivativesEvaluated_;
   };

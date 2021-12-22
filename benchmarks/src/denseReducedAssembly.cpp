@@ -2,6 +2,7 @@
 //#define EIGEN_SPARSEMATRIX_PLUGIN "libAddons/eigen/eigenSparseAddon.h"
 #include <fstream>
 #include <vector>
+
 #include <Eigen/Core>
 
 #include "ikarus/LinearAlgebra/DirichletConditionManager.h"
@@ -63,11 +64,11 @@ static void byhand(benchmark::State& state) {
 
   for (auto _ : state) {
     Eigen::MatrixXd K;
-    benchmark::DoNotOptimize(K= denseMatrixAssembler.getReducedMatrix(Ikarus::FiniteElements::stiffness));
+    benchmark::DoNotOptimize(K = denseMatrixAssembler.getReducedMatrix(Ikarus::FiniteElements::stiffness));
     benchmark::ClobberMemory();
   }
 }
-BENCHMARK(byhand)->RangeMultiplier(2)->Range(1<<1, 1<<10)->Complexity();
+BENCHMARK(byhand)->RangeMultiplier(2)->Range(1 << 1, 1 << 10)->Complexity();
 
 static void eigenIndexing(benchmark::State& state) {
   using namespace Ikarus::Grid;
@@ -118,14 +119,13 @@ static void eigenIndexing(benchmark::State& state) {
   const std::vector<size_t> keepIndices(dirichletConditionManager.freeIndices().begin(),
                                         dirichletConditionManager.freeIndices().end());
   for (auto _ : state) {
-
     Eigen::MatrixXd K;
     Eigen::MatrixXd Kred;
 
-    benchmark::DoNotOptimize(K=denseMatrixAssembler.getMatrix(Ikarus::FiniteElements::stiffness));
+    benchmark::DoNotOptimize(K = denseMatrixAssembler.getMatrix(Ikarus::FiniteElements::stiffness));
     benchmark::DoNotOptimize(Kred = K(keepIndices, keepIndices));
-//    benchmark::DoNotOptimize(K = K(Eigen::all, keepIndices).eval());
+    //    benchmark::DoNotOptimize(K = K(Eigen::all, keepIndices).eval());
     benchmark::ClobberMemory();
   }
 }
-BENCHMARK(eigenIndexing)->RangeMultiplier(2)->Range(1<<1, 1<<10)->Complexity();
+BENCHMARK(eigenIndexing)->RangeMultiplier(2)->Range(1 << 1, 1 << 10)->Complexity();

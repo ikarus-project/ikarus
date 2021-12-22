@@ -134,9 +134,7 @@ namespace Ikarus::Variable {
       return indices;
     }
 
-    const auto& dofIndicesOfEntity(const size_t& gridIndexOfEntity) const{
-      return variableIndices[gridIndexOfEntity];
-    }
+    const auto &dofIndicesOfEntity(const size_t &gridIndexOfEntity) const { return variableIndices[gridIndexOfEntity]; }
 
     [[nodiscard]] size_t correctionSize() const { return dofSizeValue; }
     [[nodiscard]] size_t elementSize() const { return feContainer_->size(); }

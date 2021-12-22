@@ -10,8 +10,6 @@
 #include "ikarus/utils/Observer/observer.h"
 #include "ikarus/utils/Observer/observerMessages.h"
 
-
-
 class ControlLogger : public IObserver<ControlMessages> {
 public:
   void updateImpl(ControlMessages message) override {
@@ -45,7 +43,5 @@ public:
     }
   }
 
-  void updateImpl(ControlMessages message, const Eigen::VectorXd& vec) override {
-
-  }
+  void updateImpl(ControlMessages message, const Eigen::VectorXd& vec) override {}
 };

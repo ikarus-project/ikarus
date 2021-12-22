@@ -24,7 +24,7 @@ TEST(NonLinearOperator, SimpleOperator) {
 
   auto fvLambda  = [&](auto&& x) { return f(x); };
   auto dfvLambda = [&](auto&& x) { return df(x); };
-  Ikarus::NonLinearOperator nonLinOp(linearAlgebraFunctions(fvLambda,dfvLambda), parameter(x));
+  Ikarus::NonLinearOperator nonLinOp(linearAlgebraFunctions(fvLambda, dfvLambda), parameter(x));
 
   auto& val      = nonLinOp.value();
   auto& gradient = nonLinOp.derivative();
@@ -60,7 +60,7 @@ TEST(NonLinearOperator, VectorValuedOperator) {
 
   auto fvLambda  = [&](auto&& x) { return fv(x, A, b); };
   auto dfvLambda = [&](auto&& x) { return dfv(x, A, b); };
-  auto nonLinOp  = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda,dfvLambda), parameter(x));
+  auto nonLinOp  = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda, dfvLambda), parameter(x));
 
   auto& val      = nonLinOp.value();
   auto& jacobian = nonLinOp.derivative();
@@ -159,20 +159,21 @@ TEST(NonLinearOperator, GridLoadControlTest) {
 
   auto feManager = Ikarus::FEManager::DefaultFEManager(feContainer, gridView);
   Ikarus::DirichletConditionManager dirichletConditionManager(feManager);
-  auto vectorAssembler = Ikarus::Assembler::VectorAssembler(feManager,dirichletConditionManager);
+  auto vectorAssembler = Ikarus::Assembler::VectorAssembler(feManager, dirichletConditionManager);
 
-  auto denseMatrixAssembler  = Ikarus::Assembler::DenseMatrixAssembler(feManager,dirichletConditionManager);
+  auto denseMatrixAssembler  = Ikarus::Assembler::DenseMatrixAssembler(feManager, dirichletConditionManager);
   auto sparseMatrixAssembler = Ikarus::Assembler::SparseMatrixAssembler(feManager);
 
   auto& x = feManager.getVariables();
 
-  auto fintFunction = [&]() { return vectorAssembler.getVector(Ikarus::FiniteElements::forces); };
-  auto KFunction          = [&]() { return denseMatrixAssembler.getMatrix(Ikarus::FiniteElements::stiffness); };
-  auto KFunctionSparse    = [&]() { return sparseMatrixAssembler.getMatrix(Ikarus::FiniteElements::stiffness); };
+  auto fintFunction    = [&]() { return vectorAssembler.getVector(Ikarus::FiniteElements::forces); };
+  auto KFunction       = [&]() { return denseMatrixAssembler.getMatrix(Ikarus::FiniteElements::stiffness); };
+  auto KFunctionSparse = [&]() { return sparseMatrixAssembler.getMatrix(Ikarus::FiniteElements::stiffness); };
   Ikarus::NonLinearOperator nonLinearOperator(linearAlgebraFunctions(fintFunction, KFunction), parameter());
-  Ikarus::NonLinearOperator nonLinearOperatorWithSparseMatrix(linearAlgebraFunctions(fintFunction, KFunctionSparse), parameter());
+  Ikarus::NonLinearOperator nonLinearOperatorWithSparseMatrix(linearAlgebraFunctions(fintFunction, KFunctionSparse),
+                                                              parameter());
 
-  auto& K             = nonLinearOperator.derivative();
+  auto& K       = nonLinearOperator.derivative();
   auto& Ksparse = nonLinearOperatorWithSparseMatrix.derivative();
   EXPECT_THAT(Ksparse, EigenApproxEqual(K, 1e-15));
 

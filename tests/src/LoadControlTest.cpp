@@ -15,9 +15,9 @@
 #include "ikarus/Controlroutines/LoadControl.h"
 #include "ikarus/FEManager/DefaultFEManager.h"
 #include "ikarus/FiniteElements/ElasticityFE.h"
+#include "ikarus/LinearAlgebra/DirichletConditionManager.h"
 #include "ikarus/utils/Observer/controlLogger.h"
 #include "ikarus/utils/Observer/gridDrawerObserver.h"
-#include "ikarus/LinearAlgebra/DirichletConditionManager.h"
 #include <ikarus/FiniteElements/ForceLoad.h>
 #include <ikarus/Grids/GridHelper/griddrawer.h>
 #include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
@@ -65,9 +65,9 @@ TEST(LoadControlTest, GridLoadControlTest) {
 
   Ikarus::DirichletConditionManager dirichletConditionManager(feManager);
 
-  auto vectorAssembler = Ikarus::Assembler::VectorAssembler(feManager,dirichletConditionManager);
+  auto vectorAssembler = Ikarus::Assembler::VectorAssembler(feManager, dirichletConditionManager);
 
-  auto denseMatrixAssembler  = Ikarus::Assembler::DenseMatrixAssembler(feManager,dirichletConditionManager);
+  auto denseMatrixAssembler  = Ikarus::Assembler::DenseMatrixAssembler(feManager, dirichletConditionManager);
   auto sparseMatrixAssembler = Ikarus::Assembler::SparseMatrixAssembler(feManager);
 
   auto& x = feManager.getVariables();
@@ -84,9 +84,10 @@ TEST(LoadControlTest, GridLoadControlTest) {
   //  Ikarus::NonLinearOperator nonLinearOperatorWithSparseMatrix(fintFunction, derivatives(KFunctionSparse),
   //  parameter());
   auto controlObserver = std::make_shared<ControlLogger>();
-  auto gridDrawerObserver = std::make_shared<GridDrawerObserver<decltype(gridView),decltype(feManager)>>(gridView,feManager);
+  //  auto gridDrawerObserver =
+  //  std::make_shared<GridDrawerObserver<decltype(gridView),decltype(feManager)>>(gridView,feManager);
   Ikarus::LoadControl lc(feManager, linearAlgebraFunctions(fintFunction, KFunction), 10);
   lc.subscribeAll(controlObserver);
-  lc.subscribe(ControlMessages::SOLUTION_CHANGED,gridDrawerObserver);
+  //  lc.subscribe(ControlMessages::SOLUTION_CHANGED,gridDrawerObserver);
   lc.run();
 }
