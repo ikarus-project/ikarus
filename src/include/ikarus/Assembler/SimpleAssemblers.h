@@ -109,7 +109,7 @@ namespace Ikarus::Assembler {
             ++i;
             continue;
           } else
-            vecRed(dofIndex - reducedCounter) += f[i++];
+            vecRed(dofIndex - dirichletManager_->constraintsBelow(dofIndex)) += f[i++];
         }
       }
       return vecRed;
