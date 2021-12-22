@@ -87,9 +87,10 @@ TEST(LinearSolverTest, LinearSolverTest1) {
 
   auto& Asparse = sparseMatrixAssembler.getMatrix(FiniteElements::stiffness);
   Ikarus::ILinearSolver<double> solverCG(SolverTypeTag::ConjugateGradient);
-  solver.compute(Asparse);
-  auto sol2 = solver.solve(b);
-
-  solver.compute(Asparse);
+  solverCG.compute(Asparse);
+  b = vectorAssembler.getVector(FiniteElements::forces);
+  auto sol2 = solverCG.solve(b);
+  std::cout<<sol2.transpose()<<std::endl;
+  EXPECT_THROW(solver.compute(Asparse),std::logic_error);
 
 }
