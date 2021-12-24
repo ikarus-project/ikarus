@@ -73,7 +73,7 @@ TEST(LinearSolverTest, LinearSolverTest1) {
   auto vectorAssembler = Ikarus::Assembler::VectorAssembler(feManager, dirichletConditionManager);
 
   auto denseMatrixAssembler  = Ikarus::Assembler::DenseMatrixAssembler(feManager, dirichletConditionManager);
-  auto sparseMatrixAssembler = Ikarus::Assembler::SparseMatrixAssembler(feManager);
+  auto sparseMatrixAssembler = Ikarus::Assembler::SparseMatrixAssembler(feManager,dirichletConditionManager);
 
   auto& x = feManager.getVariables();
 
@@ -93,4 +93,9 @@ TEST(LinearSolverTest, LinearSolverTest1) {
   std::cout<<sol2.transpose()<<std::endl;
   EXPECT_THROW(solver.compute(Asparse),std::logic_error);
 
+  Ikarus::ILinearSolver<double> solver3(SolverTypeTag::CholmodSupernodalLLT);
+  solver3.compute(Asparse);
+  auto sol3 = solverCG.solve(b);
+  std::cout<<sol3.transpose()<<std::endl;
+  EXPECT_THAT(sol2, EigenApproxEqual(sol3, 1e-14));
 }
