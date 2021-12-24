@@ -68,7 +68,7 @@ TEST(LoadControlTest, GridLoadControlTest) {
   auto vectorAssembler = Ikarus::Assembler::VectorAssembler(feManager, dirichletConditionManager);
 
   auto denseMatrixAssembler  = Ikarus::Assembler::DenseMatrixAssembler(feManager, dirichletConditionManager);
-  auto sparseMatrixAssembler = Ikarus::Assembler::SparseMatrixAssembler(feManager);
+  auto sparseMatrixAssembler = Ikarus::Assembler::SparseMatrixAssembler(feManager,dirichletConditionManager);
 
   auto& x = feManager.getVariables();
 

@@ -34,9 +34,6 @@ namespace Ikarus {
         int iter   = 0;
         while (rNorm > tol && iter <= maxInter) {
           auto& residual = nonLinearOperator.value();
-          //          std::cout<<"residual"<<std::endl;
-          //          std::cout<<residual<<std::endl;
-          //          std::cout<<"residual"<<std::endl;
           auto& K = nonLinearOperator.derivative();
           for (int i = 1; i < K.cols(); ++i) {
             K.coeffRef(i, 0) = 0.0;
@@ -50,7 +47,7 @@ namespace Ikarus {
           K.coeffRef(1, 1) = 1;
           K.coeffRef(3, 3) = 1;
 
-          const Eigen::VectorXd D = K.ldlt().solve(-residual);
+          const Eigen::VectorXd D = -K.ldlt().solve(residual);
           x += D;
           //          std::cout<<"D.transpose()"<<std::endl;
           //          std::cout<<D.transpose()<<std::endl;
