@@ -16,12 +16,25 @@ namespace Ikarus {
   class LoadControl : public IObservable<ControlMessages> {
   public:
     LoadControl(FEManager& feManager,
-                const LinearAlgebraFunctions<LinearAlgebraFunctionArgs...>& linearAlgebraFunctions, const int loadSteps)
-        : feManager_{&feManager}, linearAlgebraFunctions_{linearAlgebraFunctions}, loadSteps_{loadSteps} {}
+                const LinearAlgebraFunctions<LinearAlgebraFunctionArgs...>& linearAlgebraFunctions, const int loadSteps,
+                const std::pair<double, double>& tbeginEnd)
+        : feManager_{&feManager},
+          linearAlgebraFunctions_{linearAlgebraFunctions},
+          loadSteps_{loadSteps},
+          tBegin_{tbeginEnd.first},
+          tEnd_{tbeginEnd.second},
+          timeStepSize_{(tEnd_ - tBegin_) / loadSteps_} {}
+
+//    template<typename LoadFunction>
+//    void setLoadFunction(LoadFunction&& loadfunction)
+//                         {
+//      loadFunction_         = loadfunction;
+//
+//}
 
     void run() {
       this->notify(ControlMessages::CONTROL_STARTED);
-      auto lambda = Ikarus::FEParameterFactory::createParameter(Ikarus::FEParameter::loadfactor, 1);
+      auto lambda = Ikarus::FEParameterFactory::createParameter(Ikarus::FEParameter::time, 1);
       Eigen::VectorXd lambdav(1);
       lambdav[0] = 0.1;
       setValue(lambda.value, lambdav);
@@ -33,27 +46,12 @@ namespace Ikarus {
         auto rNorm = nonLinearOperator.value().norm();
         int iter   = 0;
         while (rNorm > tol && iter <= maxInter) {
-          auto& residual = nonLinearOperator.value();
-          auto& K = nonLinearOperator.derivative();
-          for (int i = 1; i < K.cols(); ++i) {
-            K.coeffRef(i, 0) = 0.0;
-            K.coeffRef(i, 1) = 0.0;
-            K.coeffRef(i, 3) = 0.0;
-            K.coeffRef(0, i) = 0.0;
-            K.coeffRef(1, i) = 0.0;
-            K.coeffRef(3, i) = 0.0;
-          }
-          K.coeffRef(0, 0) = 1;
-          K.coeffRef(1, 1) = 1;
-          K.coeffRef(3, 3) = 1;
+          const auto& residual = nonLinearOperator.value();
+          const auto& K        = nonLinearOperator.derivative();
 
           const Eigen::VectorXd D = -K.ldlt().solve(residual);
           x += D;
-          //          std::cout<<"D.transpose()"<<std::endl;
-          //          std::cout<<D.transpose()<<std::endl;
-          //          std::cout<<residual.transpose()<<std::endl;
           nonLinearOperator.updateAll();
-          //          std::cout<<residual.transpose()<<std::endl;
           rNorm = residual.norm();
           this->notify(ControlMessages::RESIDUALNORM_UPDATED, rNorm);
           this->notify(ControlMessages::SOLUTION_CHANGED);
@@ -71,5 +69,8 @@ namespace Ikarus {
     FEManager* feManager_;
     LinearAlgebraFunctions<LinearAlgebraFunctionArgs...> linearAlgebraFunctions_;
     int loadSteps_;
+    double tBegin_;
+    double tEnd_;
+    double timeStepSize_;
   };
 }  // namespace Ikarus

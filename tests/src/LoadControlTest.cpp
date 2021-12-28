@@ -59,11 +59,16 @@ TEST(LoadControlTest, GridLoadControlTest) {
   for (auto&& ge : rootEntities(gridView))
     feContainer.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge, gridView.indexSet(), 1000, 0.0));
 
-  feContainer.emplace_back(Ikarus::FiniteElements::ForceLoad(*(edges(gridView).end() - 1), gridView.indexSet()));
+  auto spaceFunction = [](const Eigen::Vector2d& v)-> Eigen::Vector2d{Eigen::Vector2d f{}; f[1]=1; return f;};
+  feContainer.emplace_back(Ikarus::FiniteElements::ForceLoad(*(edges(gridView).end() - 1), gridView.indexSet(),spaceFunction));
 
   auto feManager = Ikarus::FEManager::DefaultFEManager(feContainer, gridView);
 
   Ikarus::DirichletConditionManager dirichletConditionManager(feManager);
+  dirichletConditionManager.addConstraint(vertices(gridView).front(), 0);
+  dirichletConditionManager.addConstraint(vertices(gridView).back(), 1);
+  dirichletConditionManager.addConstraint(vertices(gridView).at(3), 1);
+  dirichletConditionManager.finalize();
 
   auto vectorAssembler = Ikarus::Assembler::VectorAssembler(feManager, dirichletConditionManager);
 
@@ -75,18 +80,18 @@ TEST(LoadControlTest, GridLoadControlTest) {
   //  auto lambdaTest = Ikarus::FEParameterFactory::createParameter(Ikarus::FEParameter::loadfactor,1);
 
   [[maybe_unused]] auto fintFunction
-      = [&](auto&& lambda) { return vectorAssembler.getVector(Ikarus::FiniteElements::forces, lambda); };
+      = [&](auto&& lambda) { return vectorAssembler.getReducedVector(Ikarus::FiniteElements::forces, lambda); };
   [[maybe_unused]] auto KFunction
-      = [&](auto&& lambda) { return denseMatrixAssembler.getMatrix(Ikarus::FiniteElements::stiffness, lambda); };
+      = [&](auto&& lambda) { return denseMatrixAssembler.getReducedMatrix(Ikarus::FiniteElements::stiffness, lambda); };
   [[maybe_unused]] auto KFunctionSparse
-      = [&](auto&& lambda) { return sparseMatrixAssembler.getMatrix(Ikarus::FiniteElements::stiffness, lambda); };
+      = [&](auto&& lambda) { return sparseMatrixAssembler.getReducedMatrix(Ikarus::FiniteElements::stiffness, lambda); };
   //  Ikarus::NonLinearOperator nonLinearOperator(fintFunction, derivatives(KFunction), parameter());
   //  Ikarus::NonLinearOperator nonLinearOperatorWithSparseMatrix(fintFunction, derivatives(KFunctionSparse),
   //  parameter());
   auto controlObserver = std::make_shared<ControlLogger>();
   //  auto gridDrawerObserver =
   //  std::make_shared<GridDrawerObserver<decltype(gridView),decltype(feManager)>>(gridView,feManager);
-  Ikarus::LoadControl lc(feManager, linearAlgebraFunctions(fintFunction, KFunction), 10);
+  Ikarus::LoadControl lc(feManager, linearAlgebraFunctions(fintFunction, KFunction), 10,{0,1});
   lc.subscribeAll(controlObserver);
   //  lc.subscribe(ControlMessages::SOLUTION_CHANGED,gridDrawerObserver);
   lc.run();

@@ -21,8 +21,8 @@ namespace Ikarus::FiniteElements {
     /** \brief Dimension of the grid */
     static constexpr int dimension = GridElementEntityType::dimension;
 
-    /** \brief Type of the Nodes coordinate */
-    using NodeType = Eigen::Matrix<ctype, worlddim, 1>;
+    /** \brief Type of the  coordinate */
+    using GlobalCoordinates = Eigen::Matrix<ctype, worlddim, 1>;
 
     /** \brief Type of the ParameterSpace coordinate */
     using ParameterSpaceType = Eigen::Matrix<ctype, mydim, 1>;
