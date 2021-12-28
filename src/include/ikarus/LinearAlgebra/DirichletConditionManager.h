@@ -14,14 +14,14 @@ namespace Ikarus {
   class DirichletConditionManager {
   public:
     static constexpr int gridDim = 2;
-    using SpaceFunctionType      = std::function<double(Eigen::Vector<double, gridDim>&)>;
+//    using SpaceFunctionType      = std::function<double(Eigen::Vector<double, gridDim>&)>;
     using TimeFunctionType       = std::function<double(double&)>;
     explicit DirichletConditionManager(const FEManager& feManager) : feManager_{&feManager} {}
 
     template <class GridEntity>
     void addConstraint(
         const GridEntity& gridEntity, const int localVariableIndex,
-        const SpaceFunctionType spaceFunctionType = []([[maybe_unused]] auto&& v) { return 1.0; },
+//        const SpaceFunctionType spaceFunctionType = []([[maybe_unused]] auto&& v) { return 1.0; },
         const TimeFunctionType timeFunctionType   = []([[maybe_unused]] auto&& v) { return 1.0; }) {
       auto gridEntityIndices = feManager_->dofIndicesOfEntity(gridEntity);
       assert(
@@ -30,7 +30,7 @@ namespace Ikarus {
              "count.");
       hasDirichletBoundaryCondition_.insert(
           {gridEntityIndices[localVariableIndex],
-           {gridEntityIndices[localVariableIndex], spaceFunctionType, timeFunctionType}});
+           {gridEntityIndices[localVariableIndex], timeFunctionType}});
       isFinalized_ = false;
     }
 
@@ -73,7 +73,7 @@ namespace Ikarus {
     bool isFinalized_;
     struct DirichletConstrainedDof {
       size_t index;
-      SpaceFunctionType spaceFunctionType;
+//      SpaceFunctionType spaceFunctionType;
       TimeFunctionType timeFunctionType;
     };
     std::map<size_t, DirichletConstrainedDof> hasDirichletBoundaryCondition_;

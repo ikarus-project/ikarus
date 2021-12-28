@@ -11,8 +11,10 @@ namespace Ikarus::FiniteElements {
     using Traits = FETraits<GridElementEntityType>;
     using Base   = FEVertexDisplacement<GridElementEntityType, IndexSetType>;
     using Base::getEntityVariableTuple;
-    ForceLoad(GridElementEntityType &gE, const IndexSetType &indexSet)
-        : Base(gE, indexSet), elementGridEntity{&gE}, indexSet_{&indexSet} {}
+    using GlobalCoordinates = typename Traits::GlobalCoordinates;
+    template<typename SpaceFunction,typename TimeFunctionReturnType=double,typename TimeFunctionParameterType=double>
+    ForceLoad(GridElementEntityType &gE, const IndexSetType &indexSet,SpaceFunction&& spaceFunction,std::function<TimeFunctionReturnType(TimeFunctionParameterType)> timeFunction = []( double t)-> double{return t;})
+        : Base(gE, indexSet), elementGridEntity{&gE}, indexSet_{&indexSet},spaceFunction_{spaceFunction},timeFunction_{timeFunction} {}
 
     [[nodiscard]] typename Traits::VectorType calculateVector(const typename Traits::FERequirementType &req) const {
       return calculateVectorImpl(req);
@@ -24,24 +26,16 @@ namespace Ikarus::FiniteElements {
 
     [[nodiscard]] typename Traits::VectorType calculateVectorImpl(
         [[maybe_unused]] const typename Traits::FERequirementType &req) const {
-      assert(req.parameter.contains(FEParameter::loadfactor));
+      assert(req.parameter.contains(FEParameter::time));
       const auto rule = Dune::QuadratureRules<double, Traits::mydim>::rule(duneType(elementGridEntity->type()), 2);
       typename Traits::VectorType Fext(this->dofSize());
       Fext.setZero();
-
-      auto f = [&]([[maybe_unused]] auto &gpPos) {
-        Eigen::Vector<double, Traits::dimension> feval;
-        feval.setZero();
-        auto globalCoords = elementGridEntity->geometry().global(gpPos);
-        feval[1]          = 1.0 * getValue(req.parameter.at(FEParameter::loadfactor))[0] * 1;  // globalCoords [0]
-
-        return feval;
-      };
+      const auto ft= timeFunction_(getValue(req.parameter.at(FEParameter::time))[0]);
       for (auto &gp : rule) {
         const auto N = Ikarus::LagrangeCube<double, Traits::mydim, 1>::evaluateFunction(toEigenVector(gp.position()));
 
         for (int vertexCounter = 0; auto Ni : N) {
-          Fext.template segment<Traits::dimension>(vertexCounter) -= Ni * f(gp.position());
+          Fext.template segment<Traits::dimension>(vertexCounter) -= Ni * spaceFunction_(toEigenVector(elementGridEntity->geometry().global(gp.position())))*ft;
           vertexCounter += Traits::dimension;
         }
       }
@@ -51,6 +45,8 @@ namespace Ikarus::FiniteElements {
   private:
     GridElementEntityType const *const elementGridEntity;
     IndexSetType const *const indexSet_;
+    std::function<GlobalCoordinates(const GlobalCoordinates&)> spaceFunction_;
+    std::function<double(double)> timeFunction_;
   };
 
 }  // namespace Ikarus::FiniteElements
