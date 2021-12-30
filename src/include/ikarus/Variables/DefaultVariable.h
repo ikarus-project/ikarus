@@ -61,6 +61,12 @@ namespace Ikarus::Variable {
 
     void update(const CorrectionType& correction) { var.update(correction); }
 
+    /** \brief Access to data by const reference */
+    const ctype& operator[](int i) const  { return var[i]; }
+
+    /** \brief Access to data by const reference */
+    ctype& operator[](int i)  { return var[i]; }
+
   private:
     ManifoldType var{};
   };

@@ -31,36 +31,37 @@ namespace Ikarus {
 //      loadFunction_         = loadfunction;
 //
 //}
+    void newtonRaphson( auto& nonLinearOperator, auto& x)
+    {
+      const double tol   = 1e-10;
+      const int maxInter = 2;
+      auto rNorm = nonLinearOperator.value().norm();
+      int iter   = 0;
+      while (rNorm > tol && iter <= maxInter) {
+        const auto& residual = nonLinearOperator.value();
+        const auto& K        = nonLinearOperator.derivative();
+
+        const Eigen::VectorXd D = -K.ldlt().solve(residual);
+        x += D;
+        nonLinearOperator.updateAll();
+        rNorm = residual.norm();
+        this->notify(ControlMessages::RESIDUALNORM_UPDATED, rNorm);
+        this->notify(ControlMessages::SOLUTION_CHANGED);
+        this->notify(ControlMessages::ITERATION_ENDED);
+        ++iter;
+      }
+    }
 
     void run() {
       this->notify(ControlMessages::CONTROL_STARTED);
-      auto lambda = Ikarus::FEParameterFactory::createParameter(Ikarus::FEParameter::time, 1);
-      Eigen::VectorXd lambdav(1);
-      lambdav[0] = 0.1;
-      setValue(lambda.value, lambdav);
-      Ikarus::NonLinearOperator nonLinearOperator(linearAlgebraFunctions_, parameter(lambda));
+      auto time = Ikarus::FEParameterFactory::createParameter(Ikarus::FEParameter::time, 1);
+      time.value[0] = timeStepSize_;
+      Ikarus::NonLinearOperator nonLinearOperator(linearAlgebraFunctions_, parameter(time));
       auto& x            = feManager_->getVariables();
-      const double tol   = 1e-10;
-      const int maxInter = 2;
-      for (int ls = 0; ls < loadSteps_; ++ls) {
-        auto rNorm = nonLinearOperator.value().norm();
-        int iter   = 0;
-        while (rNorm > tol && iter <= maxInter) {
-          const auto& residual = nonLinearOperator.value();
-          const auto& K        = nonLinearOperator.derivative();
 
-          const Eigen::VectorXd D = -K.ldlt().solve(residual);
-          x += D;
-          nonLinearOperator.updateAll();
-          rNorm = residual.norm();
-          this->notify(ControlMessages::RESIDUALNORM_UPDATED, rNorm);
-          this->notify(ControlMessages::SOLUTION_CHANGED);
-          this->notify(ControlMessages::ITERATION_ENDED);
-          ++iter;
-        }
-        lambdav[0] += 0.1;
-        setValue(lambda.value, lambdav);
-        this->notify(ControlMessages::LOADSTEP_ENDED);
+      for (int ls = 0; ls < loadSteps_; ++ls) {
+        newtonRaphson(nonLinearOperator,x);
+        time.value[0] += timeStepSize_;
         this->notify(ControlMessages::LOADSTEP_ENDED);
       }
     }

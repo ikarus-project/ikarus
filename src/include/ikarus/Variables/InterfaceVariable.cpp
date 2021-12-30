@@ -79,4 +79,8 @@ namespace Ikarus::Variable {
   bool isType(const IVariable& vo, Ikarus::Variable::VariableTags tag) { return getTag(vo) == static_cast<int>(tag); }
   bool isType(IVariable* vo, Ikarus::Variable::VariableTags tag) { return isType(*vo, tag); }
 
+  double& IVariable::operator[](int i) {
+    return this->variableImpl->operator[](i);
+  }
+
 }  // namespace Ikarus::Variable
