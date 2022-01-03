@@ -61,7 +61,7 @@ namespace Ikarus {
 
   enum class MatrixTypeTag { Dense, Sparse };
 
-  /** \brief A type-erased solver templated with the matix type */
+  /** \brief A type-erased solver templated with the scalar type of the linear system */
   template <typename ScalarType>
   class ILinearSolver {
   public:
