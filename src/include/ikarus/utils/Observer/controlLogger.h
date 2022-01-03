@@ -17,8 +17,6 @@ public:
       case ControlMessages::CONTROL_STARTED:
         spdlog::info("Control started");
         break;
-      case ControlMessages::ITERATION_ENDED:
-        spdlog::info("Iteration has ended");
         break;
       case ControlMessages::LOADSTEP_ENDED:
         spdlog::info("============================================\n");
@@ -34,13 +32,13 @@ public:
   }
 
   void updateImpl(ControlMessages message, double val) override {
-    switch (message) {
-      case ControlMessages::RESIDUALNORM_UPDATED:
-        spdlog::info("Residual norm is {:03.2f}", val);
-        break;
-      default:
-        break;
-    }
+//    switch (message) {
+//      case ControlMessages::RESIDUALNORM_UPDATED:
+//        spdlog::info("Residual norm is {:03.2f}", val);
+//        break;
+//      default:
+//        break;
+//    }
   }
 
   void updateImpl(ControlMessages message, const Eigen::VectorXd& vec) override {}

@@ -63,7 +63,7 @@ target_link_libraries(
   PUBLIC dunecommon
   PUBLIC dunegeometry
   PUBLIC dunegrid
-  PUBLIC SuiteSparseIncludeDirective
+  PUBLIC ${SuiteSparseIncludeDirective}
   # PUBLIC muesli
   PUBLIC Matplot++::matplot
   PUBLIC autodiff::autodiff

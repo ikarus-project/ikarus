@@ -153,6 +153,31 @@ namespace Ikarus::Variable {
         var -= correction(variableIndices[variableIndex++]);
       return *this;
     }
+
+    template<typename Range> requires (!std::is_same_v<Range,Eigen::VectorXd>)
+    VariableVector &operator+=(Range&& r) {
+      assert(static_cast<decltype(r.size())>(correctionSize()) == r.size());
+      for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(this->variablesForEachEntity)) {
+        const auto& variableIndices_ = variableIndices[variableIndex++];
+        for (int i = 0; i < variableIndices_.size(); ++i) {
+          var[i]+= r[variableIndices_[i]];
+        }
+      }
+      return *this;
+    }
+
+    template<typename Range> requires (!std::is_same_v<Range,Eigen::VectorXd>)
+    VariableVector &operator-=(Range&& r) {
+      assert(static_cast<decltype(r.size())>(correctionSize()) == r.size());
+      for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(this->variablesForEachEntity)) {
+        const auto& variableIndices_ = variableIndices[variableIndex++];
+        for (int i = 0; i < variableIndices_.size(); ++i) {
+          var[i]-= r[variableIndices_[i]];
+        }
+      }
+      return *this;
+    }
+
     template <class Functype>
     auto transform_viewOverElements(Functype fn) {
       return std::ranges::transform_view(*feContainer_, fn);

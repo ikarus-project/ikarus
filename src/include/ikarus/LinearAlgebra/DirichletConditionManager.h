@@ -68,6 +68,20 @@ namespace Ikarus {
              | std::views::filter([&](auto&& i) { return !isConstrained(i); });
     }
 
+    auto viewAsFullVector(const Eigen::VectorXd& v)
+    {
+      // int contCounter=0;
+      return  std::ranges::iota_view{std::size_t{0}, feManager_->numberOfDegreesOfFreedom()} |  std::views::transform([this,&v,contCounter=0] (int i)mutable{
+               // std::cout<<std::endl<<i<<" "<<isContrained[i]<<" "<<v[i]<<std::endl;
+               if (this->isConstrained(i))
+               {
+                 ++contCounter;
+                 return 0.0;}
+               else
+                 return v[i-contCounter];
+             });
+    }
+
   private:
     std::vector<size_t> constraintsBelow_;
     bool isFinalized_;

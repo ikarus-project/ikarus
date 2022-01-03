@@ -91,7 +91,7 @@ TEST(LoadControlTest, GridLoadControlTest) {
   auto controlObserver = std::make_shared<ControlLogger>();
   //  auto gridDrawerObserver =
   //  std::make_shared<GridDrawerObserver<decltype(gridView),decltype(feManager)>>(gridView,feManager);
-  Ikarus::LoadControl lc(feManager, linearAlgebraFunctions(fintFunction, KFunction), 10,{0,1});
+  Ikarus::LoadControl lc(feManager,dirichletConditionManager, linearAlgebraFunctions(fintFunction, KFunction), 10,{0,1});
   lc.subscribeAll(controlObserver);
   //  lc.subscribe(ControlMessages::SOLUTION_CHANGED,gridDrawerObserver);
   lc.run();

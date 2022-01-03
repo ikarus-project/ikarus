@@ -18,7 +18,7 @@ TEST(Observer, ControlObserver) {
   Control control;
   control.subscribeAll(controlObserver);
 
+  control.notify(ControlMessages::CONTROL_STARTED);
   control.notify(ControlMessages::LOADSTEP_ENDED);
-  control.notify(ControlMessages::ITERATION_ENDED);
-  control.notify(ControlMessages::RESIDUALNORM_UPDATED, 5.0);
+  control.notify(ControlMessages::SOLUTION_CHANGED);
 }
