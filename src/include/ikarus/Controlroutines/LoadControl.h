@@ -12,13 +12,14 @@
 
 namespace Ikarus {
 
-  template <typename FEManager, typename... LinearAlgebraFunctionArgs>
+  template <typename FEManager, typename DirichletManager, typename... LinearAlgebraFunctionArgs>
   class LoadControl : public IObservable<ControlMessages> {
   public:
-    LoadControl(FEManager& feManager,
+    LoadControl(FEManager& feManager,DirichletManager& dirichletManager,
                 const LinearAlgebraFunctions<LinearAlgebraFunctionArgs...>& linearAlgebraFunctions, const int loadSteps,
                 const std::pair<double, double>& tbeginEnd)
         : feManager_{&feManager},
+          dirichletManager_{&dirichletManager},
           linearAlgebraFunctions_{linearAlgebraFunctions},
           loadSteps_{loadSteps},
           tBegin_{tbeginEnd.first},
@@ -42,12 +43,12 @@ namespace Ikarus {
         const auto& K        = nonLinearOperator.derivative();
 
         const Eigen::VectorXd D = -K.ldlt().solve(residual);
-        x += D;
+        x += dirichletManager_->viewAsFullVector(D);
         nonLinearOperator.updateAll();
         rNorm = residual.norm();
-        this->notify(ControlMessages::RESIDUALNORM_UPDATED, rNorm);
+//        this->notify(ControlMessages::RESIDUALNORM_UPDATED, rNorm);
         this->notify(ControlMessages::SOLUTION_CHANGED);
-        this->notify(ControlMessages::ITERATION_ENDED);
+//        this->notify(ControlMessages::ITERATION_ENDED);
         ++iter;
       }
     }
@@ -68,6 +69,7 @@ namespace Ikarus {
 
   private:
     FEManager* feManager_;
+    DirichletManager* dirichletManager_;
     LinearAlgebraFunctions<LinearAlgebraFunctionArgs...> linearAlgebraFunctions_;
     int loadSteps_;
     double tBegin_;
