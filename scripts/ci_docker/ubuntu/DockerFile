@@ -77,8 +77,7 @@ RUN apt-get update -q -y && apt-get upgrade -y && \
         rm -rvf /var/lib/apt/lists/* && \
         rm -rvf /var/cache/apt/archives/* && \
         apt-get -y remove  \
-        software-properties-common \
-        wget
+        software-properties-common
 CMD [ "/bin/bash" ]
 
 WORKDIR $HOME
