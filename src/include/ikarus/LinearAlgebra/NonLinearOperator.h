@@ -63,8 +63,20 @@ namespace Ikarus {
       return std::get<n>(derivativesEvaluated_);
     }
 
-  private : std::tuple<std::reference_wrapper<std::remove_cvref_t<DerivativeArgs>>...> derivatives_;
+    template <int... Derivatives>
+    auto subOperator() {
+      return Ikarus::NonLinearOperator(linearAlgebraFunctions(std::get<Derivatives>(derivatives_)...),
+                                       std::apply(parameter<ParameterArgs...>, args_));
+    }
+
+    using FunctionLinearAlgebraTuple = std::tuple<ReturnType<DerivativeArgs, ParameterArgs&...>...>;
+    using ValueType                  = std::tuple_element_t<0, FunctionLinearAlgebraTuple>;
+    using ValueParameterType         = std::tuple_element_t<0, FunctionLinearAlgebraTuple>;
+
+  private:
+
+    std::tuple<std::reference_wrapper<std::remove_cvref_t<DerivativeArgs>>...> derivatives_;
     std::tuple<std::reference_wrapper<std::remove_cvref_t<ParameterArgs>>...> args_;
-    std::tuple<ReturnType<DerivativeArgs, ParameterArgs&...>...> derivativesEvaluated_;
+    FunctionLinearAlgebraTuple derivativesEvaluated_;
   };
 }  // namespace Ikarus

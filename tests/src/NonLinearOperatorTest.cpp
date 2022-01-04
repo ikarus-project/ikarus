@@ -14,34 +14,42 @@
 #include "ikarus/FiniteElements/ElasticityFE.h"
 #include "ikarus/Grids/GridHelper/griddrawer.h"
 #include "ikarus/LinearAlgebra/DirichletConditionManager.h"
+#include "ikarus/Solver/NonLinearSolver/NewtonRaphson.hpp"
 #include <ikarus/LinearAlgebra/NonLinearOperator.h>
 
 auto f(double& x) { return 0.5 * x * x + x - 2; }
 auto df(double& x) { return x + 1; }
 
-TEST(NonLinearOperator, SimpleOperator) {
+template<typename NonLinearOperatorImpl,typename SolutionType>
+void checkNewtonRhapson(NonLinearOperatorImpl& nonLinearOperator,SolutionType& x,double tol, int maxIter,int iterExpected,const SolutionType& xExpected)
+{
+  Ikarus::NewtonRaphson nr(nonLinearOperator);
+  nr.setup({tol,maxIter});
+  const auto solverInfo = nr.solve(x);
+
+  if constexpr (std::is_same_v<SolutionType,double>)
+    EXPECT_DOUBLE_EQ(x, xExpected);
+  else
+    EXPECT_THAT(x, EigenApproxEqual(xExpected, 1e-15));
+
+  EXPECT_EQ(solverInfo.sucess, true);
+  EXPECT_LE(solverInfo.residualnorm, tol);
+  EXPECT_EQ(solverInfo.iterations, iterExpected);
+}
+
+TEST(NonLinearOperator, SimpleOperatorNewtonRhapsonTest) {
   double x = 13;
 
   auto fvLambda  = [&](auto&& x) { return f(x); };
   auto dfvLambda = [&](auto&& x) { return df(x); };
   Ikarus::NonLinearOperator nonLinOp(linearAlgebraFunctions(fvLambda, dfvLambda), parameter(x));
 
-  auto& val      = nonLinOp.value();
-  auto& gradient = nonLinOp.derivative();
-
   // Newton method test
   const double eps  = 1e-14;
   const int maxIter = 20;
-  int iter          = 0;
-  while (val > eps && iter < maxIter) {
-    x -= val / gradient;
-    nonLinOp.updateAll();
-    ++iter;
-  }
-  EXPECT_DOUBLE_EQ(val, 0.0);
-  double xExpected = std::sqrt(5.0) - 1.0;
-  EXPECT_DOUBLE_EQ(gradient, df(xExpected));
-  EXPECT_DOUBLE_EQ(x, xExpected);
+  const double xExpected = std::sqrt(5.0) - 1.0;
+
+  checkNewtonRhapson(nonLinOp,x,eps,maxIter,7,xExpected);
 }
 
 Eigen::VectorXd fv(Eigen::VectorXd& x, Eigen::MatrixXd& A, Eigen::VectorXd& b) { return b + A * x; }
@@ -49,9 +57,9 @@ Eigen::MatrixXd dfv([[maybe_unused]] Eigen::VectorXd& x, Eigen::MatrixXd& A, [[m
   return A;
 }
 
-TEST(NonLinearOperator, VectorValuedOperator) {
-  Eigen::VectorXd x(3);
 
+TEST(NonLinearOperator, VectorValuedOperatorNewtonMethod) {
+  Eigen::VectorXd x(3);
   x << 1, 2, 3;
   Eigen::VectorXd b(3);
   b << 5, 7, 8;
@@ -62,20 +70,10 @@ TEST(NonLinearOperator, VectorValuedOperator) {
   auto dfvLambda = [&](auto&& x) { return dfv(x, A, b); };
   auto nonLinOp  = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda, dfvLambda), parameter(x));
 
-  auto& val      = nonLinOp.value();
-  auto& jacobian = nonLinOp.derivative();
-
   // Newton method test
   const double eps  = 1e-14;
   const int maxIter = 20;
-  int iter          = 0;
-  while (val.norm() > eps && iter < maxIter) {
-    x -= jacobian.inverse() * val;
-    nonLinOp.updateAll();
-    ++iter;
-  }
-  EXPECT_EQ(iter, 1);  // Linear System should be solved in one step
-  EXPECT_THAT(b, EigenApproxEqual(-A * x, 1e-15));
+  checkNewtonRhapson(nonLinOp,x,eps,maxIter,1,(-A.ldlt().solve(b)).eval());
 }
 
 double f2v(Eigen::VectorXd& x, Eigen::MatrixXd& A, Eigen::VectorXd& b) { return x.dot(b + A * x); }
@@ -98,25 +96,14 @@ TEST(NonLinearOperator, SecondOrderVectorValuedOperator) {
   auto fvLambda   = [&](auto&& x) { return f2v(x, A, b); };
   auto dfvLambda  = [&](auto&& x) { return df2v(x, A, b); };
   auto ddfvLambda = [&](auto&& x) { return ddf2v(x, A, b); };
-  auto nonLinOp   = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
-
-  auto& val      = nonLinOp.value();
-  auto& residual = nonLinOp.derivative();
-  auto& hessian  = nonLinOp.secondDerivative();
-
+  auto nonLinOp   = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda,dfvLambda, ddfvLambda), parameter(x));
+  auto subOperator = nonLinOp.subOperator<1,2>();
   // Newton method test find root of first derivative
   const double eps  = 1e-14;
   const int maxIter = 20;
-  int iter          = 0;
-  while (residual.norm() > eps && iter < maxIter) {
-    x -= hessian.inverse() * residual;
-    nonLinOp.updateAll();
-    ++iter;
-  }
-
-  EXPECT_EQ(iter, 1);                   // Linear System should be solved in one step
-  EXPECT_EQ(val, -2.6538461538461533);  // Linear System should be solved in one step
-  EXPECT_THAT(b, EigenApproxEqual(-2 * A * x, 1e-15));
+  checkNewtonRhapson(subOperator,x,eps,maxIter,1,(-0.5*A.ldlt().solve(b)).eval());
+  nonLinOp.update<0>();
+  EXPECT_DOUBLE_EQ(nonLinOp.value(), -2.6538461538461533);
 }
 
 #include <ikarus/Grids/SimpleGrid/SimpleGrid.h>

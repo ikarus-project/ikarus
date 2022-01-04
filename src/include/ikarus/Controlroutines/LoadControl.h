@@ -7,6 +7,7 @@
 
 #include "ikarus/LinearAlgebra/NonLinearOperator.h"
 #include "ikarus/Variables/ParameterFactory.h"
+#include "ikarus/Solver/NonLinearSolver/NewtonRaphson.hpp"
 #include <ikarus/utils/Observer/observer.h>
 #include <ikarus/utils/Observer/observerMessages.h>
 
@@ -26,12 +27,6 @@ namespace Ikarus {
           tEnd_{tbeginEnd.second},
           timeStepSize_{(tEnd_ - tBegin_) / loadSteps_} {}
 
-//    template<typename LoadFunction>
-//    void setLoadFunction(LoadFunction&& loadfunction)
-//                         {
-//      loadFunction_         = loadfunction;
-//
-//}
     void newtonRaphson( auto& nonLinearOperator, auto& x)
     {
       const double tol   = 1e-10;
@@ -46,9 +41,7 @@ namespace Ikarus {
         x += dirichletManager_->viewAsFullVector(D);
         nonLinearOperator.updateAll();
         rNorm = residual.norm();
-//        this->notify(ControlMessages::RESIDUALNORM_UPDATED, rNorm);
         this->notify(ControlMessages::SOLUTION_CHANGED);
-//        this->notify(ControlMessages::ITERATION_ENDED);
         ++iter;
       }
     }
@@ -60,8 +53,10 @@ namespace Ikarus {
       Ikarus::NonLinearOperator nonLinearOperator(linearAlgebraFunctions_, parameter(time));
       auto& x            = feManager_->getVariables();
 
+      NewtonRaphson nr(nonLinearOperator,[this](auto&&x, auto&& D){ x+=dirichletManager_->viewAsFullVector(D);});
       for (int ls = 0; ls < loadSteps_; ++ls) {
-        newtonRaphson(nonLinearOperator,x);
+        nr.solve(x);
+        std::cout<<x<<std::endl;
         time.value[0] += timeStepSize_;
         this->notify(ControlMessages::LOADSTEP_ENDED);
       }
