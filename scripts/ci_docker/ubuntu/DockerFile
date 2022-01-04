@@ -1,4 +1,4 @@
-FROM ubuntu:hirsute
+FROM debian:bookworm
 
 ENV HOME /root
 ENV DEBIAN_FRONTEND "noninteractive"
@@ -18,10 +18,10 @@ RUN apt-get update -q -y && apt-get upgrade -y && \
         gcovr \
         clang \
         clang-tidy \
-        libclang-12-dev \
-        libc++-12-dev \
-        libc++abi-12-dev \
-        llvm-12-dev \
+                libclang-13-dev \
+                libc++-13-dev \
+                libc++abi-13-dev \
+                llvm-13-dev \
         liblapack-dev \
         libblas-dev \
         libsuitesparse-dev \
@@ -39,10 +39,10 @@ RUN apt-get update -q -y && apt-get upgrade -y && \
         cd iwyu && \
         git clone https://github.com/include-what-you-use/include-what-you-use.git && \
         cd include-what-you-use && \
-        git checkout clang_12 && \
+        git checkout clang_13 && \
         cd .. && \
         mkdir -p build && cd build && \
-        cmake -G "Unix Makefiles" -DIWYU_LLVM_ROOT_PATH=/usr/lib/llvm-12 ../include-what-you-use && \
+        cmake -G "Unix Makefiles" -DIWYU_LLVM_ROOT_PATH=/usr/lib/llvm-13 ../include-what-you-use && \
         make && \
         make install && \
         cd /usr/src/googletest && \
