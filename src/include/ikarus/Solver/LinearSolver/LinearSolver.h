@@ -202,6 +202,12 @@ namespace Ikarus {
       solverimpl->compute(A);
       return *this;
     }
+    template <typename MatrixType>
+    requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
+    inline void analyzePattern(const MatrixType& A) {
+      solverimpl->analyzePattern(A);
+    }
+
 
     [[nodiscard]] Eigen::VectorX<ScalarType> solve(const Eigen::VectorX<ScalarType>& b) { return solverimpl->solve(b); }
   };

@@ -20,10 +20,9 @@
 auto f(double& x) { return 0.5 * x * x + x - 2; }
 auto df(double& x) { return x + 1; }
 
-template<typename NonLinearOperatorImpl,typename SolutionType>
-void checkNewtonRhapson(NonLinearOperatorImpl& nonLinearOperator,SolutionType& x,double tol, int maxIter,int iterExpected,const SolutionType& xExpected)
+template<typename SolutionType, typename NewtonRhapson>
+void checkNewtonRhapson(NewtonRhapson &nr,SolutionType& x,double tol, int maxIter,int iterExpected,const SolutionType& xExpected)
 {
-  Ikarus::NewtonRaphson nr(nonLinearOperator);
   nr.setup({tol,maxIter});
   const auto solverInfo = nr.solve(x);
 
@@ -49,7 +48,9 @@ TEST(NonLinearOperator, SimpleOperatorNewtonRhapsonTest) {
   const int maxIter = 20;
   const double xExpected = std::sqrt(5.0) - 1.0;
 
-  checkNewtonRhapson(nonLinOp,x,eps,maxIter,7,xExpected);
+  Ikarus::NewtonRaphson nr(nonLinOp);
+
+  checkNewtonRhapson(nr,x,eps,maxIter,7,xExpected);
 }
 
 Eigen::VectorXd fv(Eigen::VectorXd& x, Eigen::MatrixXd& A, Eigen::VectorXd& b) { return b + A * x; }
@@ -73,7 +74,8 @@ TEST(NonLinearOperator, VectorValuedOperatorNewtonMethod) {
   // Newton method test
   const double eps  = 1e-14;
   const int maxIter = 20;
-  checkNewtonRhapson(nonLinOp,x,eps,maxIter,1,(-A.ldlt().solve(b)).eval());
+  Ikarus::NewtonRaphson nr(nonLinOp,Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::LDLT));
+  checkNewtonRhapson(nr,x,eps,maxIter,1,(-A.ldlt().solve(b)).eval());
 }
 
 double f2v(Eigen::VectorXd& x, Eigen::MatrixXd& A, Eigen::VectorXd& b) { return x.dot(b + A * x); }
@@ -101,7 +103,8 @@ TEST(NonLinearOperator, SecondOrderVectorValuedOperator) {
   // Newton method test find root of first derivative
   const double eps  = 1e-14;
   const int maxIter = 20;
-  checkNewtonRhapson(subOperator,x,eps,maxIter,1,(-0.5*A.ldlt().solve(b)).eval());
+  Ikarus::NewtonRaphson nr(subOperator,Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::LDLT));
+  checkNewtonRhapson(nr,x,eps,maxIter,1,(-0.5*A.ldlt().solve(b)).eval());
   nonLinOp.update<0>();
   EXPECT_DOUBLE_EQ(nonLinOp.value(), -2.6538461538461533);
 }
