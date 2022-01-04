@@ -31,7 +31,7 @@ namespace Ikarus::FEManager {
                      std::optional<std::reference_wrapper<GridDataType>> gridData = std::nullopt)
         : gridView_{&gv}, gridData_{gridData}, varVec{feContainer} {}
 
-    size_t numberOfDegreesOfFreedom() const { return varVec.correctionSize(); }
+    [[nodiscard]] size_t numberOfDegreesOfFreedom() const { return varVec.correctionSize(); }
 
     auto elementDofs() { return varVec.elementDofs(); };
     void addData(GridDataType& gridData) { gridData_ = gridData; }

@@ -31,8 +31,8 @@ TEST(LoadControlTest, GridLoadControlTest) {
   std::vector<vertexType> verticesVec;
   const double L    = 10;
   const double h    = 1;
-  const size_t elex = 5;
-  const size_t eley = 5;
+  const size_t elex = 2;
+  const size_t eley = 2;
   for (size_t j = 0; j < eley + 1; ++j) {
     for (size_t i = 0; i < elex + 1; ++i)
       verticesVec.emplace_back(vertexType{i * L / (elex), j * h / (eley)});
@@ -60,7 +60,7 @@ TEST(LoadControlTest, GridLoadControlTest) {
     feContainer.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge, gridView.indexSet(), 1000, 0.0));
 
   auto spaceFunction = [](const Eigen::Vector2d& v)-> Eigen::Vector2d{Eigen::Vector2d f{}; f[1]=1; return f;};
-  feContainer.emplace_back(Ikarus::FiniteElements::ForceLoad(*(edges(gridView).end() - 1), gridView.indexSet(),spaceFunction));
+  feContainer.emplace_back(Ikarus::FiniteElements::ForceLoad(edges(gridView).back(), gridView.indexSet(),spaceFunction));
 
   auto feManager = Ikarus::FEManager::DefaultFEManager(feContainer, gridView);
 
@@ -77,17 +77,13 @@ TEST(LoadControlTest, GridLoadControlTest) {
 
   auto& x = feManager.getVariables();
 
-  //  auto lambdaTest = Ikarus::FEParameterFactory::createParameter(Ikarus::FEParameter::loadfactor,1);
-
   [[maybe_unused]] auto fintFunction
       = [&](auto&& lambda) { return vectorAssembler.getReducedVector(Ikarus::FiniteElements::forces, lambda); };
   [[maybe_unused]] auto KFunction
       = [&](auto&& lambda) { return denseMatrixAssembler.getReducedMatrix(Ikarus::FiniteElements::stiffness, lambda); };
   [[maybe_unused]] auto KFunctionSparse
       = [&](auto&& lambda) { return sparseMatrixAssembler.getReducedMatrix(Ikarus::FiniteElements::stiffness, lambda); };
-  //  Ikarus::NonLinearOperator nonLinearOperator(fintFunction, derivatives(KFunction), parameter());
-  //  Ikarus::NonLinearOperator nonLinearOperatorWithSparseMatrix(fintFunction, derivatives(KFunctionSparse),
-  //  parameter());
+
   auto controlObserver = std::make_shared<ControlLogger>();
   //  auto gridDrawerObserver =
   //  std::make_shared<GridDrawerObserver<decltype(gridView),decltype(feManager)>>(gridView,feManager);
