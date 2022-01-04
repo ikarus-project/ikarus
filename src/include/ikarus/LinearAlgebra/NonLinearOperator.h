@@ -31,10 +31,10 @@ auto linearAlgebraFunctions(Args&&... args) {
 }
 
 namespace Ikarus {
-  template <typename TypeListTwo, typename TypeListThree>
+  template <typename TypeListOne, typename TypeListTwo>
   class NonLinearOperator {
   public:
-    NonLinearOperator(const TypeListTwo& derivativesFunctions, const TypeListThree& args) {}
+    NonLinearOperator(const TypeListOne& derivativesFunctions, const TypeListTwo& args) {}
   };
 
   template <typename... DerivativeArgs, typename... ParameterArgs>

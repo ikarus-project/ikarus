@@ -83,19 +83,16 @@ TEST(LinearSolverTest, LinearSolverTest1) {
   auto& A = denseMatrixAssembler.getReducedMatrix(FiniteElements::stiffness);
   solver.compute(A);
   auto sol = solver.solve(b);
-  std::cout<<sol.transpose()<<std::endl;
 
   auto& Asparse = sparseMatrixAssembler.getMatrix(FiniteElements::stiffness);
   Ikarus::ILinearSolver<double> solverCG(SolverTypeTag::ConjugateGradient);
   solverCG.compute(Asparse);
   b = vectorAssembler.getVector(FiniteElements::forces);
   auto sol2 = solverCG.solve(b);
-  std::cout<<sol2.transpose()<<std::endl;
   EXPECT_THROW(solver.compute(Asparse),std::logic_error);
 
   Ikarus::ILinearSolver<double> solver3(SolverTypeTag::CholmodSupernodalLLT);
   solver3.compute(Asparse);
   auto sol3 = solverCG.solve(b);
-  std::cout<<sol3.transpose()<<std::endl;
   EXPECT_THAT(sol2, EigenApproxEqual(sol3, 1e-14));
 }
