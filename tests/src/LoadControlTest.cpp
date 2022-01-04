@@ -99,4 +99,6 @@ TEST(LoadControlTest, GridLoadControlTest) {
   lc.subscribeAll(controlObserver);
   //  lc.subscribe(ControlMessages::SOLUTION_CHANGED,gridDrawerObserver);
   lc.run();
+
+  
 }
