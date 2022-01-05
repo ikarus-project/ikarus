@@ -23,9 +23,6 @@ public:
         spdlog::info("Loadstep has ended");
         spdlog::info("============================================\n");
         break;
-      case ControlMessages::SOLUTION_CHANGED:
-        spdlog::info("ControlMessages::SOLUTION_CHANGED");
-        break;
       default:
         break;  //   default: do nothing when notified
     }

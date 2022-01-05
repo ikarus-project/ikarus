@@ -21,6 +21,12 @@ public:
     updateImpl(message, val);
   };
 
+  void update(MessageType message, int intVal, double val1, double val2) {
+    assert(MessageType::END != message && "The END enum type should not be used");
+    assert(MessageType::BEGIN != message && "The BEGIN enum type should not be used");
+    updateImpl(message, intVal,val1,val2);
+  };
+
   void update(MessageType message, const Eigen::VectorXd& vec) {
     assert(MessageType::END != message && "The END enum type should not be used");
     assert(MessageType::BEGIN != message && "The BEGIN enum type should not be used");
@@ -30,6 +36,7 @@ public:
 protected:
   virtual void updateImpl([[maybe_unused]] MessageType message){};
   virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] double val){};
+  virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] int intVal, [[maybe_unused]] double val1, [[maybe_unused]] double val2){};
   virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] const Eigen::VectorXd& vec){};
 };
 
@@ -57,6 +64,7 @@ public:
   void notify(MessageType message);
   template <std::floating_point ScalarType>
   void notify(MessageType message, ScalarType val);
+  void notify(MessageType message, int intVal,double val1,double val2);
   template <std::floating_point ScalarType>
   void notify(MessageType message, Eigen::VectorX<ScalarType> val);
 
@@ -108,6 +116,13 @@ void IObservable<MessageType>::notify(MessageType message, ScalarType val) {
   auto vectorOfObserversOfASpecificMessage = observers_[message];
   for (auto&& obs : vectorOfObserversOfASpecificMessage)
     obs->update(message, val);
+}
+
+template <typename MessageType>
+void IObservable<MessageType>::notify(MessageType message,int intVal, double val1, double val2) {
+  auto vectorOfObserversOfASpecificMessage = observers_[message];
+  for (auto&& obs : vectorOfObserversOfASpecificMessage)
+    obs->update(message, intVal,val1,val2);
 }
 
 template <typename MessageType>

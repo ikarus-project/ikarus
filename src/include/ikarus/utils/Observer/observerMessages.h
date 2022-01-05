@@ -16,9 +16,12 @@ enum class ControlMessages {
 
 enum class NonLinearSolverMessages {
   BEGIN,
+  INIT,
   ITERATION_STARTED,
   ITERATION_ENDED,
   RESIDUALNORM_UPDATED,
+  CORRECTIONNORM_UPDATED,
   SOLUTION_CHANGED,
+  FINISHED_SUCESSFULLY,
   END
 };

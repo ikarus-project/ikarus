@@ -133,12 +133,8 @@ namespace Ikarus {
           break;
       }
     }
-    //  template <typename SolverTypeTag>
-    //  explicit ILinearSolver(SolverType &&solver) :
-    //  solverimpl{std::make_unique<SolverImpl<SolverType>>(std::move(solver))} {  }
 
-    ~ILinearSolver() = default;
-    //  ILinearSolver(const ILinearSolver& other) : solverimpl{other.solverimpl->clone()} {}
+    ~ILinearSolver()       = default;
     ILinearSolver& operator=(const ILinearSolver& other) {
       ILinearSolver tmp(other);
       std::swap(solverimpl, tmp.solverimpl);
@@ -153,8 +149,8 @@ namespace Ikarus {
       virtual ~SolverBase() = default;
       //    [[nodiscard]] virtual std::unique_ptr<SolverBase> clone() const                                  = 0;
       virtual void analyzePattern(const DenseMatrixType&) const {};
-      virtual void analyzePattern(const SparseMatrixType&) = 0;
-      virtual void factorize(const DenseMatrixType&) const {};
+      virtual void analyzePattern(const SparseMatrixType&)                              = 0;
+      virtual void factorize(const DenseMatrixType&)                                    = 0;
       virtual void factorize(const SparseMatrixType&)                                   = 0;
       virtual void compute(const SparseMatrixType&)                                     = 0;
       virtual void compute(const DenseMatrixType&)                                      = 0;
@@ -170,6 +166,13 @@ namespace Ikarus {
       }
       void factorize(const SparseMatrixType& A) override {
         if constexpr (requires(Solver sol) { sol.factorize(A); }) solver.factorize(A);
+      }
+
+      // Dense Solver do not have a factorize method therefore for
+      // our interface we just call compute for dense matrices
+      void factorize(const DenseMatrixType& A) override {
+        if constexpr (requires(Solver sol) { sol.compute(A); } && std::is_base_of_v<Eigen::SolverBase<Solver>, Solver>)
+          solver.compute(A);
       }
       void compute(const SparseMatrixType& A) {
         if constexpr (std::is_base_of_v<Eigen::SparseSolverBase<Solver>, Solver>)
@@ -188,8 +191,6 @@ namespace Ikarus {
         return solver.solve(b);
       }
 
-      //    [[nodiscard]] std::unique_ptr<SolverBase> clone() const final { return std::make_unique<SolverImpl>(*this);
-      //    }
       Solver solver;
     };
 
@@ -204,10 +205,11 @@ namespace Ikarus {
     }
     template <typename MatrixType>
     requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
-    inline void analyzePattern(const MatrixType& A) {
-      solverimpl->analyzePattern(A);
-    }
+    inline void analyzePattern(const MatrixType& A) { solverimpl->analyzePattern(A); }
 
+    template <typename MatrixType>
+    requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
+    inline void factorize(const MatrixType& A) { solverimpl->factorize(A); }
 
     [[nodiscard]] Eigen::VectorX<ScalarType> solve(const Eigen::VectorX<ScalarType>& b) { return solverimpl->solve(b); }
   };
