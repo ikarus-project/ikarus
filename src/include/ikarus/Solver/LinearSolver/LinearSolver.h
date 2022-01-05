@@ -56,7 +56,7 @@ namespace Ikarus {
   public:
     using MatrixType = Eigen::MatrixX<ScalarType>;
 
-    void analyzePattern(const MatrixType& mat){};
+    void analyzePattern(const MatrixType&){};
   };
 
   enum class MatrixTypeTag { Dense, Sparse };
