@@ -65,7 +65,12 @@ namespace Ikarus {
       }
     }
 
-  private:
+    void subscribeToNonLinearSolver(std::shared_ptr<IObserver<NonLinearSolverMessages>> observer)
+    {
+      nonLinearSolver.subscribeAll(observer);
+    }
+
+        private:
     FEManager* feManager_;
     DirichletManager* dirichletManager_;
     LinearAlgebraFunctions<LinearAlgebraFunctionArgs...> linearAlgebraFunctions_;

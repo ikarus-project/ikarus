@@ -18,6 +18,7 @@
 #include "ikarus/LinearAlgebra/DirichletConditionManager.h"
 #include "ikarus/utils/Observer/controlLogger.h"
 #include "ikarus/utils/Observer/gridDrawerObserver.h"
+#include "ikarus/utils/Observer/nonLinearSolverLogger.h"
 #include <ikarus/FiniteElements/ForceLoad.h>
 #include <ikarus/Grids/GridHelper/griddrawer.h>
 #include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
@@ -31,8 +32,8 @@ TEST(LoadControlTest, GridLoadControlTest) {
   std::vector<vertexType> verticesVec;
   const double L    = 10;
   const double h    = 1;
-  const size_t elex = 2;
-  const size_t eley = 2;
+  const size_t elex = 5;
+  const size_t eley = 5;
   for (size_t j = 0; j < eley + 1; ++j) {
     for (size_t i = 0; i < elex + 1; ++i)
       verticesVec.emplace_back(vertexType{i * L / (elex), j * h / (eley)});
@@ -91,12 +92,14 @@ TEST(LoadControlTest, GridLoadControlTest) {
   };
 
   auto controlObserver = std::make_shared<ControlLogger>();
+  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
   //  auto gridDrawerObserver =
   //  std::make_shared<GridDrawerObserver<decltype(gridView),decltype(feManager)>>(gridView,feManager);
   auto lc = makeLoadControl<Ikarus::NewtonRaphson>(
       feManager, dirichletConditionManager, linearAlgebraFunctions(fintFunction, KFunctionSparse),
       Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::SparseLU), 10, {0, 1});
   lc.subscribeAll(controlObserver);
+  lc.subscribeToNonLinearSolver(nonLinearSolverObserver);
   //  lc.subscribe(ControlMessages::SOLUTION_CHANGED,gridDrawerObserver);
   lc.run();
 

@@ -32,16 +32,6 @@ namespace Ikarus {
   public:
     using LinearSolverStdFunctionType = std::function<typename NonLinearOperatorImpl::ValueType(
         const typename NonLinearOperatorImpl::ValueType&, const typename NonLinearOperatorImpl::ValueType&)>;
-    //    explicit NewtonRaphson(
-    //        const NonLinearOperatorImpl& p_nonLinearOperator, LinearSolver p_linearSolver=[](const typename
-    //        NonLinearOperatorImpl::ValueType& a,
-    //                                                                                            const typename
-    //                                                                                            NonLinearOperatorImpl::ValueType&
-    //                                                                                            b) { return a / b; },
-    //        UpdateFunction p_updateFunction = [](typename NonLinearOperatorImpl::ValueType& a,
-    //                                             const typename NonLinearOperatorImpl::ValueType& b) { a += b; })
-    //        : nonLinearOperator{p_nonLinearOperator}, linearSolver{std::move(p_linearSolver)},
-    //        updateFunction{p_updateFunction} {}
 
     explicit NewtonRaphson(
         const NonLinearOperatorImpl& p_nonLinearOperator,
@@ -56,24 +46,30 @@ namespace Ikarus {
     void setup(const NonlinearSolverSettings& p_settings) { settings = p_settings; }
     template <typename SolutionType>
     SolverInformation solve(SolutionType& x) {
-      std::cout<<"Solve:"<<std::endl;
+      this->notify(NonLinearSolverMessages::INIT);
+      SolverInformation solverInformation;
+      solverInformation.sucess       = true;
       nonLinearOperator.updateAll();
       const auto& rx = nonLinearOperator.value();
       const auto& Ax = nonLinearOperator.derivative();
       auto rNorm     = norm(rx);
+      decltype(rNorm) dNorm;
       int iter{0};
       if constexpr (!std::is_same_v<LinearSolver, LinearSolverStdFunctionType>)
         linearSolver.analyzePattern(Ax);
       while (rNorm > settings.tol && iter <= settings.maxIter) {
         this->notify(NonLinearSolverMessages::ITERATION_STARTED);
         if constexpr (!std::is_same_v<LinearSolver, LinearSolverStdFunctionType>) {
-          linearSolver.compute(Ax);
+          linearSolver.factorize(Ax);
           const Eigen::VectorXd D = -linearSolver.solve(rx);
+          dNorm = D.norm();
           updateFunction(x, D);
         } else {
           const auto D = -linearSolver(rx, Ax);
+          dNorm = D;
           updateFunction(x, D);
         }
+        this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, dNorm);
         this->notify(NonLinearSolverMessages::SOLUTION_CHANGED);
         nonLinearOperator.updateAll();
         rNorm = norm(rx);
@@ -81,10 +77,9 @@ namespace Ikarus {
         this->notify(NonLinearSolverMessages::ITERATION_ENDED);
         ++iter;
       }
-      SolverInformation solverInformation;
       solverInformation.iterations   = iter;
       solverInformation.residualnorm = rNorm;
-      solverInformation.sucess       = true;
+      this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY,iter,rNorm,settings.tol);
       return solverInformation;
     }
 
