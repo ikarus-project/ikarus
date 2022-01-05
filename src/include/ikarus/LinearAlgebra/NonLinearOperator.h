@@ -34,7 +34,7 @@ namespace Ikarus {
   template <typename TypeListOne, typename TypeListTwo>
   class NonLinearOperator {
   public:
-    NonLinearOperator(const TypeListOne& derivativesFunctions, const TypeListTwo& args) {}
+    NonLinearOperator([[maybe_unused]] const TypeListOne& derivativesFunctions, [[maybe_unused]]  const TypeListTwo& args) {}
   };
 
   template <typename... DerivativeArgs, typename... ParameterArgs>
