@@ -36,10 +36,9 @@
 #include <ikarus/FiniteElements/FEPolicies.h>
 #include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
+#include <ikarus/Geometries/GeometryWithExternalInput.h>
 #include <ikarus/Variables/VariableDefinitions.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
-#include <ikarus/Geometries/GeometryWithExternalInput.h>
-
 
 namespace Ikarus::Variable {
   class IVariable;
@@ -56,7 +55,7 @@ namespace Ikarus::FiniteElements {
 
     using Traits = FETraits<GridElementEntityType>;
 
-    using DeformedGeometry = Ikarus::Geometry::GeometryWithExternalInput<double,Traits::mydim,Traits::dimension>;
+    using DeformedGeometry = Ikarus::Geometry::GeometryWithExternalInput<double, Traits::mydim, Traits::dimension>;
 
     void initialize() {}
 
@@ -125,22 +124,22 @@ namespace Ikarus::FiniteElements {
         for (auto &gp : rule) {
           const auto geo = elementGridEntity->geometry();
           const auto J   = toEigenMatrix(geo.jacobianTransposed(gp.position()));
-          Eigen::Matrix<double,Traits::dimension,4> x;
+          Eigen::Matrix<double, Traits::dimension, 4> x;
 
           auto dv = req.variables.value().get().get(EntityType::vertex);
           for (int pos = 0, i = 0; i < 4; ++i) {
-            x.col(i) = Variable::getValue(dv[i])+ toEigenVector(geo.corner(0));
+            x.col(i) = Variable::getValue(dv[i]) + toEigenVector(geo.corner(0));
           }
           const DeformedGeometry deformedgeo;
 
           Eigen::Matrix<double, 4, Traits::mydim> dN
               = Ikarus::LagrangeCube<double, Traits::mydim, 1>::evaluateJacobian(toEigenVector(gp.position()));
           const auto Jloc = Ikarus::LinearAlgebra::orthonormalizeMatrixColumns(J.transpose());
-//          dN *= (J * Jloc).inverse();
-          const auto j  = deformedgeo.jacobianTransposed(dN,x);
-          const Eigen::Matrix<double,Traits::mydim,Traits::mydim> F = Jloc.transpose()*j*(J.inverse())*Jloc;
+          //          dN *= (J * Jloc).inverse();
+          const auto j                                                = deformedgeo.jacobianTransposed(dN, x);
+          const Eigen::Matrix<double, Traits::mydim, Traits::mydim> F = Jloc.transpose() * j * (J.inverse()) * Jloc;
           dN *= (J * Jloc).inverse();
-          const auto bop = boperator(dN,F);
+          const auto bop = boperator(dN, F);
           K += (bop.transpose() * C * bop) * geo.integrationElement(gp.position()) * gp.weight();
         }
         return K;
@@ -157,26 +156,21 @@ namespace Ikarus::FiniteElements {
     [[nodiscard]] unsigned int dimension() const { return Traits::mydim; }
 
   private:
-    auto boperator(const Eigen::Matrix<double, 4, Traits::mydim> &dN,const Eigen::Matrix<double,Traits::mydim,Traits::mydim>& F ) const {
+    auto boperator(const Eigen::Matrix<double, 4, Traits::mydim> &dN,
+                   const Eigen::Matrix<double, Traits::mydim, Traits::mydim> &F) const {
       typename Traits::MatrixType Bop((Traits::mydim * (Traits::mydim + 1)) / 2, this->dofSize());
       Bop.setZero();
       for (int i = 0; i < dN.rows(); ++i) {
-        Bop.block<Traits::mydim,Traits::mydim>(0,Traits::mydim * i ) = F.transpose();
-        for (int j = 0; j < Traits::mydim; ++j)
-          for (int k = 0; k < Traits::mydim; ++k)
-            Bop(j, Traits::mydim * i + k) *= dN(i, j);
 
-        for (int s = 0; s < Traits::mydim * (Traits::mydim - 1) / 2; ++s)  // loop over off-diagonal strains
-        {
-          std::array<int, 2> curdim{};
-          for (int c = 0, d = 0; d < Traits::mydim; ++d) {
-            if (d == 2 - s) continue;
-            curdim[c++] = d;
-          }
-          for (int k = 0; k < 2; ++k)
-            Bop(s + Traits::mydim, Traits::mydim * i + curdim[k]) = dN(i, curdim[(k + 1) % 2]);
-          //              Bop(s + mydimension, mydimension * i + curdim[1]) = dN(i, curdim[0]);
-        }
+        auto currentBlock = Bop.template block<(Traits::mydim * (Traits::mydim + 1)) / 2, Traits::mydim>(
+            0, Traits::mydim * i);
+
+        currentBlock.template block<1, Traits::mydim>(0, 0) = (F.col(0) * dN(i, 0)).transpose();
+        currentBlock.template block<1, Traits::mydim>(1, 0) = (F.col(1) * dN(i, 1)).transpose();
+        currentBlock.template block<1, Traits::mydim>(2, 0) = (F.col(2) * dN(i, 2)).transpose();
+        currentBlock.template block<1, Traits::mydim>(3, 0) = (F.col(0) * dN(i, 1) + F.col(1) * dN(i, 0)).transpose();
+        currentBlock.template block<1, Traits::mydim>(4, 0) = (F.col(1) * dN(i, 2) + F.col(2) * dN(i, 1)).transpose();
+        currentBlock.template block<1, Traits::mydim>(5, 0) = (F.col(0) * dN(i, 2) + F.col(2) * dN(i, 0)).transpose();
       }
       return Bop;
     }
