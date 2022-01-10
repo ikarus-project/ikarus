@@ -60,11 +60,8 @@ namespace Ikarus {
       while (rNorm > settings.tol && iter <= settings.maxIter) {
         this->notify(NonLinearSolverMessages::ITERATION_STARTED);
         if constexpr (!std::is_same_v<LinearSolver, LinearSolverStdFunctionType>) {
-//          std::cout<<"Solver"<<std::endl;
-//          std::cout<<Ax<<std::endl;
           linearSolver.factorize(Ax);
           const Eigen::VectorXd D = -linearSolver.solve(rx);
-//          std::cout<<"D:"<<D.transpose()<<std::endl;
           dNorm = D.norm();
           updateFunction(x, D);
         } else {
@@ -76,7 +73,6 @@ namespace Ikarus {
         this->notify(NonLinearSolverMessages::SOLUTION_CHANGED);
         nonLinearOperator().updateAll();
         rNorm = norm(rx);
-        std::cout<<"Rnorm"<<rNorm<<std::endl;
         this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, rNorm);
         this->notify(NonLinearSolverMessages::ITERATION_ENDED);
         ++iter;
