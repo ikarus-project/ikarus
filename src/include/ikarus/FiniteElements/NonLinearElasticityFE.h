@@ -39,6 +39,8 @@
 #include <ikarus/Geometries/GeometryWithExternalInput.h>
 #include <ikarus/Variables/VariableDefinitions.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
+#include <autodiff/forward/dual.hpp>
+#include <autodiff/forward/dual/eigen.hpp>
 
 namespace Ikarus::Variable {
   class IVariable;
@@ -87,6 +89,71 @@ namespace Ikarus::FiniteElements {
         throw std::logic_error("This element can not handle your scalar affordance! ");
     }
 
+    template <class ScalarType>
+    ScalarType calculateScalarImpl(const typename Traits::FERequirementType &req, Eigen::VectorX<ScalarType>& dx) const
+    {
+      ScalarType energy =0.0;
+
+      Eigen::Matrix<ScalarType, Traits::dimension, 4> dxM;
+      for (int pos = 0, i = 0; i < 4; ++i) {
+        dxM.col(i) = dx.template segment<Traits::dimension>(pos);
+        pos+=Traits::dimension;
+      }
+
+      const auto rule = Dune::QuadratureRules<double, Traits::mydim>::rule(duneType(elementGridEntity->type()), 2);
+      Eigen::Matrix3<ScalarType> C;
+      C.setZero();
+      const double fac = emod_ / (1 - nu_ * nu_);
+      C(0, 0) = C(1, 1) = 1;
+      C(0, 1) = C(1, 0) = nu_;
+      C(2, 2)           = (1 - nu_) / 2;
+      C *= fac;
+      for (auto &gp : rule) {
+        const auto geo = elementGridEntity->geometry();
+        const auto J   = toEigenMatrix(geo.jacobianTransposed(gp.position()));
+//        std::cout<<"J:\n"<<J<<std::endl;
+        Eigen::Matrix<ScalarType, Traits::dimension, 4> x;
+
+        auto dv = req.variables.value().get().get(EntityType::vertex);
+        for (int pos = 0, i = 0; i < 4; ++i) {
+//          std::cout<<Variable::getValue(dv[i])<<" a"<<toEigenVector(geo.corner(i))<< "< "<<dxM.col(i)<<std::endl;
+          x.col(i) = Variable::getValue(dv[i]) + toEigenVector(geo.corner(i))+dxM.col(i);
+        }
+        const Ikarus::Geometry::GeometryWithExternalInput<ScalarType, Traits::mydim, Traits::dimension> deformedgeo;
+
+        Eigen::Matrix<ScalarType, 4, Traits::mydim> dN
+            = Ikarus::LagrangeCube<double, Traits::mydim, 1>::evaluateJacobian(toEigenVector(gp.position())).template cast<ScalarType>();
+        const auto Jloc = Ikarus::LinearAlgebra::orthonormalizeMatrixColumns(J.transpose());
+        //          dN *= (J * Jloc).inverse();
+        const auto j                                                = deformedgeo.jacobianTransposed(dN, x);
+        const Eigen::Matrix<ScalarType, Traits::mydim, Traits::mydim> F = Jloc.transpose() * j * (J.inverse()) * Jloc;
+        dN *= (J * Jloc).inverse();
+//        const auto bop = boperator(dN, F);
+        //          std::cout<<"FinFint:\n"<<F<<std::endl;
+        const auto E
+            = (0.5 * (F.transpose() * F - Eigen::Matrix<ScalarType, Traits::mydim, Traits::mydim>::Identity())).eval();
+        Eigen::Vector<ScalarType, (Traits::mydim * (Traits::mydim + 1)) / 2> EVoigt;
+        for (int i = 0; i < Traits::mydim; ++i)
+          EVoigt(i) = E(i, i);
+
+        if constexpr (Traits::mydim > 1) EVoigt(Traits::mydim) = E(0, 1) * 2;
+        if constexpr (Traits::mydim > 2) {
+          EVoigt(Traits::mydim + 1) = E(0, 2) * 2;
+          EVoigt(Traits::mydim + 2) = E(1, 2) * 2;
+
+        }
+//                  std::cout<<"EinFint:\n"<<E<<std::endl;
+//                  std::cout<<"EVoigtinFint:\n"<<EVoigt<<std::endl;
+//                  std::cout<<"C:\n"<<C<<std::endl;
+//                  std::cout<<"F:\n"<<F<<std::endl;
+//                  std::cout<<"dN:\n"<<dN<<std::endl;
+//
+//                  std::cout<<"j:\n"<<j<<std::endl;
+        energy += EVoigt.dot(  C * EVoigt) * geo.integrationElement(gp.position()) * gp.weight();
+      }
+      return energy;
+    }
+
     [[nodiscard]] typename Traits::VectorType calculateVector(const typename Traits::FERequirementType &req) const {
       return calculateStiffnessMatrixAndInternalForcesImpl<true, false>(req);
     }
@@ -102,92 +169,99 @@ namespace Ikarus::FiniteElements {
         K.setZero();
         return std::make_pair(K, Fint);
       } else if constexpr (internalForcesFlag && !stiffnessMatrixFlag) {
-        typename Traits::VectorType Fint(this->dofSize());
-        Fint.setZero();
-        const auto rule = Dune::QuadratureRules<double, Traits::mydim>::rule(duneType(elementGridEntity->type()), 2);
-        Eigen::Matrix3d C;
-        C.setZero();
-        const double fac = emod_ / (1 - nu_ * nu_);
-        C(0, 0) = C(1, 1) = 1;
-        C(0, 1) = C(1, 0) = nu_;
-        C(2, 2)           = (1 - nu_) / 2;
-        C *= fac;
-        for (auto &gp : rule) {
-          const auto geo = elementGridEntity->geometry();
-          const auto J   = toEigenMatrix(geo.jacobianTransposed(gp.position()));
-          Eigen::Matrix<double, Traits::dimension, 4> x;
-
-          auto dv = req.variables.value().get().get(EntityType::vertex);
-          for (int pos = 0, i = 0; i < 4; ++i) {
-            x.col(i) = Variable::getValue(dv[i]) + toEigenVector(geo.corner(i));
-          }
-          const DeformedGeometry deformedgeo;
-
-          Eigen::Matrix<double, 4, Traits::mydim> dN
-              = Ikarus::LagrangeCube<double, Traits::mydim, 1>::evaluateJacobian(toEigenVector(gp.position()));
-          const auto Jloc = Ikarus::LinearAlgebra::orthonormalizeMatrixColumns(J.transpose());
-          //          dN *= (J * Jloc).inverse();
-          const auto j                                                = deformedgeo.jacobianTransposed(dN, x);
-          const Eigen::Matrix<double, Traits::mydim, Traits::mydim> F = Jloc.transpose() * j * (J.inverse()) * Jloc;
-                    dN *= (J * Jloc).inverse();
-          const auto bop = boperator(dN, F);
-//          std::cout<<"FinFint:\n"<<F<<std::endl;
-          const auto E
-              = (0.5 * (F.transpose() * F - Eigen::Matrix<double, Traits::mydim, Traits::mydim>::Identity())).eval();
-          Eigen::Vector<double, (Traits::mydim * (Traits::mydim + 1)) / 2> EVoigt;
-          for (int i = 0; i < Traits::mydim; ++i)
-            EVoigt(i) = E(i, i);
-
-          if constexpr (Traits::mydim > 1) EVoigt(Traits::mydim) = E(0, 1) * 2;
-          if constexpr (Traits::mydim > 2) {
-            EVoigt(Traits::mydim + 1) = E(0, 2) * 2;
-            EVoigt(Traits::mydim + 2) = E(1, 2) * 2;
-
-          }
-//          std::cout<<"EinFint:\n"<<E<<std::endl;
-//          std::cout<<"EVoigtinFint:\n"<<EVoigt<<std::endl;
-          Fint += (bop.transpose() * C * EVoigt) * geo.integrationElement(gp.position()) * gp.weight();
-        }
-//        std::cout << "F:\n" << Fint.transpose() << std::endl;
-        return Fint;
+//        typename Traits::VectorType Fint(this->dofSize());
+//        Fint.setZero();
+//        const auto rule = Dune::QuadratureRules<double, Traits::mydim>::rule(duneType(elementGridEntity->type()), 2);
+//        Eigen::Matrix3d C;
+//        C.setZero();
+//        const double fac = emod_ / (1 - nu_ * nu_);
+//        C(0, 0) = C(1, 1) = 1;
+//        C(0, 1) = C(1, 0) = nu_;
+//        C(2, 2)           = (1 - nu_) / 2;
+//        C *= fac;
+//        for (auto &gp : rule) {
+//          const auto geo = elementGridEntity->geometry();
+//          const auto J   = toEigenMatrix(geo.jacobianTransposed(gp.position()));
+//          Eigen::Matrix<double, Traits::dimension, 4> x;
+//
+//          auto dv = req.variables.value().get().get(EntityType::vertex);
+//          for (int pos = 0, i = 0; i < 4; ++i) {
+//            x.col(i) = Variable::getValue(dv[i]) + toEigenVector(geo.corner(i));
+//          }
+//          const DeformedGeometry deformedgeo;
+//
+//          Eigen::Matrix<double, 4, Traits::mydim> dN
+//              = Ikarus::LagrangeCube<double, Traits::mydim, 1>::evaluateJacobian(toEigenVector(gp.position()));
+//          const auto Jloc = Ikarus::LinearAlgebra::orthonormalizeMatrixColumns(J.transpose());
+//          //          dN *= (J * Jloc).inverse();
+//          const auto j                                                = deformedgeo.jacobianTransposed(dN, x);
+//          const Eigen::Matrix<double, Traits::mydim, Traits::mydim> F = Jloc.transpose() * j * (J.inverse()) * Jloc;
+//                    dN *= (J * Jloc).inverse();
+//          const auto bop = boperator(dN, F);
+////          std::cout<<"FinFint:\n"<<F<<std::endl;
+//          const auto E
+//              = (0.5 * (F.transpose() * F - Eigen::Matrix<double, Traits::mydim, Traits::mydim>::Identity())).eval();
+//          Eigen::Vector<double, (Traits::mydim * (Traits::mydim + 1)) / 2> EVoigt;
+//          for (int i = 0; i < Traits::mydim; ++i)
+//            EVoigt(i) = E(i, i);
+//
+//          if constexpr (Traits::mydim > 1) EVoigt(Traits::mydim) = E(0, 1) * 2;
+//          if constexpr (Traits::mydim > 2) {
+//            EVoigt(Traits::mydim + 1) = E(0, 2) * 2;
+//            EVoigt(Traits::mydim + 2) = E(1, 2) * 2;
+//
+//          }
+////          std::cout<<"EinFint:\n"<<E<<std::endl;
+////          std::cout<<"EVoigtinFint:\n"<<EVoigt<<std::endl;
+//          Fint += (bop.transpose() * C * EVoigt) * geo.integrationElement(gp.position()) * gp.weight();
+//        }
+////        std::cout << "F:\n" << Fint.transpose() << std::endl;
+Eigen::VectorXdual dx;
+dx.setZero(8);
+        auto lambda=  [&](Eigen::VectorXdual& x){ return calculateScalarImpl<autodiff::dual>(req,x);};
+        return gradient(lambda,wrt(dx),at(dx));
       } else if constexpr (not internalForcesFlag && stiffnessMatrixFlag) {
-        typename Traits::MatrixType K(this->dofSize(), this->dofSize());
-        K.setZero();
-        const auto rule = Dune::QuadratureRules<double, Traits::mydim>::rule(duneType(elementGridEntity->type()), 2);
-        Eigen::Matrix3d C;
-        C.setZero();
-        const double fac = emod_ / (1 - nu_ * nu_);
-        C(0, 0) = C(1, 1) = 1;
-        C(0, 1) = C(1, 0) = nu_;
-        C(2, 2)           = (1 - nu_) / 2;
-        C *= fac;
-        for (auto &gp : rule) {
-          const auto geo = elementGridEntity->geometry();
-          const auto J   = toEigenMatrix(geo.jacobianTransposed(gp.position()));
-          Eigen::Matrix<double, Traits::dimension, 4> x;
-
-          auto dv = req.variables.value().get().get(EntityType::vertex);
-          for (int i = 0; i < 4; ++i) {
-            x.col(i) = Variable::getValue(dv[i]) + toEigenVector(geo.corner(i));
-          }
-          std::cout<<"x:\n"<<x<<std::endl;
-          const DeformedGeometry deformedgeo;
-
-          Eigen::Matrix<double, 4, Traits::mydim> dN
-              = Ikarus::LagrangeCube<double, Traits::mydim, 1>::evaluateJacobian(toEigenVector(gp.position()));
-          const auto Jloc = Ikarus::LinearAlgebra::orthonormalizeMatrixColumns(J.transpose());
-          //          dN *= (J * Jloc).inverse();
-          const auto j                                                = deformedgeo.jacobianTransposed(dN, x);
-          const Eigen::Matrix<double, Traits::mydim, Traits::mydim> F = Jloc.transpose() * j * (J.inverse()) * Jloc;
-                    dN *= (J * Jloc).inverse();
-          const auto bop = boperator(dN, F);
-//                    std::cout<<"F:\n"<<F<<std::endl;
-          //          std::cout<<"B:\n"<<bop<<std::endl;
-          //          std::cout<<"C:\n"<<C<<std::endl;
-          K += (bop.transpose() * C * bop) * geo.integrationElement(gp.position()) * gp.weight();
-        }
-        //        std::cout<<"K:\n"<<K<<std::endl;
-        return K;
+//        typename Traits::MatrixType K(this->dofSize(), this->dofSize());
+//        K.setZero();
+//        const auto rule = Dune::QuadratureRules<double, Traits::mydim>::rule(duneType(elementGridEntity->type()), 2);
+//        Eigen::Matrix3d C;
+//        C.setZero();
+//        const double fac = emod_ / (1 - nu_ * nu_);
+//        C(0, 0) = C(1, 1) = 1;
+//        C(0, 1) = C(1, 0) = nu_;
+//        C(2, 2)           = (1 - nu_) / 2;
+//        C *= fac;
+//        for (auto &gp : rule) {
+//          const auto geo = elementGridEntity->geometry();
+//          const auto J   = toEigenMatrix(geo.jacobianTransposed(gp.position()));
+//          Eigen::Matrix<double, Traits::dimension, 4> x;
+//
+//          auto dv = req.variables.value().get().get(EntityType::vertex);
+//          for (int i = 0; i < 4; ++i) {
+//            x.col(i) = Variable::getValue(dv[i]) + toEigenVector(geo.corner(i));
+//          }
+//          std::cout<<"x:\n"<<x<<std::endl;
+//          const DeformedGeometry deformedgeo;
+//
+//          Eigen::Matrix<double, 4, Traits::mydim> dN
+//              = Ikarus::LagrangeCube<double, Traits::mydim, 1>::evaluateJacobian(toEigenVector(gp.position()));
+//          const auto Jloc = Ikarus::LinearAlgebra::orthonormalizeMatrixColumns(J.transpose());
+//          //          dN *= (J * Jloc).inverse();
+//          const auto j                                                = deformedgeo.jacobianTransposed(dN, x);
+//          const Eigen::Matrix<double, Traits::mydim, Traits::mydim> F = Jloc.transpose() * j * (J.inverse()) * Jloc;
+//                    dN *= (J * Jloc).inverse();
+//          const auto bop = boperator(dN, F);
+////                    std::cout<<"F:\n"<<F<<std::endl;
+//          //          std::cout<<"B:\n"<<bop<<std::endl;
+//          //          std::cout<<"C:\n"<<C<<std::endl;
+//          K += (bop.transpose() * C * bop) * geo.integrationElement(gp.position()) * gp.weight();
+//        }
+//        //        std::cout<<"K:\n"<<K<<std::endl;
+//        return K;
+Eigen::VectorXdual2nd dx;
+dx.setZero(8);
+auto lambda=  [&](Eigen::VectorXdual2nd& x){ return calculateScalarImpl<autodiff::dual2nd>(req,x);};
+return hessian(lambda,wrt(dx),at(dx));
       } else
         static_assert(internalForcesFlag == false && stiffnessMatrixFlag == false,
                       "You asked the element: \"Don't return anything\"");

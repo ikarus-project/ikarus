@@ -88,4 +88,5 @@ void drawDeformed(const GridView& gridView, const FEManager& feManager) {
     ++fe;
   }
   f1->draw();
+  sleep(5);
 }

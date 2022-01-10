@@ -24,7 +24,7 @@ public:
         spdlog::info("  i ResidualNorm CorrectionNorm");
         break;
       case NonLinearSolverMessages::ITERATION_ENDED:
-        spdlog::info("{:03d} {:>12.2e} {:14.2e}",iters, rNorm,dNorm);
+        spdlog::info("{:>3d} {:>12.2e} {:14.2e}",iters, rNorm,dNorm);
         ++iters;
         break;
       default:

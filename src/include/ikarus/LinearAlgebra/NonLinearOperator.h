@@ -49,7 +49,7 @@ auto linearAlgebraFunctions(Args&&... args) {
 namespace Ikarus {
   template <typename T>
   auto forwardasReferenceWrapperIfIsReference(T&& t) {
-    if constexpr (std::is_reference_v<decltype(t)>)
+    if constexpr (std::is_lvalue_reference_v<decltype(t)>)
       return std::ref(t);
     else
       return t;
@@ -148,6 +148,6 @@ namespace Ikarus {
   private:
     std::tuple<std::reference_wrapper<std::remove_cvref_t<DerivativeArgs>>...> derivatives_;
     std::tuple<std::reference_wrapper<std::remove_cvref_t<ParameterArgs>>...> args_;
-    FunctionReturnValuesWrapper derivativesEvaluated_;
+    FunctionReturnValuesWrapper derivativesEvaluated_{};
   };
 }  // namespace Ikarus

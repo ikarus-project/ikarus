@@ -134,7 +134,7 @@ namespace Ikarus::Variable {
       return indices;
     }
 
-    const auto &dofIndicesOfEntity(const size_t &gridIndexOfEntity) const { return variableIndices[gridIndexOfEntity]; }
+    const auto &dofIndicesOfEntity(const size_t &gridIndexOfEntity) const { return variableIndices[feIndexSet.indexOfEntity(gridIndexOfEntity)]; }
 
     [[nodiscard]] size_t correctionSize() const { return dofSizeValue; }
     [[nodiscard]] size_t elementSize() const { return feContainer_->size(); }
@@ -142,11 +142,10 @@ namespace Ikarus::Variable {
 
     VariableVector &operator+=(const Eigen::VectorXd &correction) {
       if (static_cast<decltype(correction.size())>(correctionSize()) == correction.size())
-      for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(this->variablesForEachEntity))
-        var += correction(variableIndices[variableIndex++]);
+        for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(this->variablesForEachEntity))
+          var += correction(variableIndices[variableIndex++]);
       return *this;
     }
-
 
     VariableVector &operator-=(const Eigen::VectorXd &correction) {
       assert(static_cast<long long int>(correctionSize()) == correction.size());
@@ -155,26 +154,24 @@ namespace Ikarus::Variable {
       return *this;
     }
 
-    template<typename Range> requires (!std::is_same_v<Range,Eigen::VectorXd>)
-    VariableVector &operator+=(Range&& r) {
+    template <typename Range>
+    requires(!std::is_same_v<Range, Eigen::VectorXd>) VariableVector &operator+=(Range &&r) {
       assert(static_cast<decltype(r.size())>(correctionSize()) == r.size());
       for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(this->variablesForEachEntity)) {
-        const auto& variableIndices_ = variableIndices[variableIndex++];
-        for (int i = 0; i < variableIndices_.size(); ++i) {
-          var[i]+= r[variableIndices_[i]];
-        }
+        const auto &variableIndices_ = variableIndices[variableIndex++];
+        for (int i = 0; i < variableIndices_.size(); ++i)
+          var[i] += r[variableIndices_[i]];
       }
       return *this;
     }
 
-    template<typename Range> requires (!std::is_same_v<Range,Eigen::VectorXd>)
-    VariableVector &operator-=(Range&& r) {
+    template <typename Range>
+    requires(!std::is_same_v<Range, Eigen::VectorXd>) VariableVector &operator-=(Range &&r) {
       assert(static_cast<decltype(r.size())>(correctionSize()) == r.size());
       for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(this->variablesForEachEntity)) {
-        const auto& variableIndices_ = variableIndices[variableIndex++];
-        for (int i = 0; i < variableIndices_.size(); ++i) {
-          var[i]-= r[variableIndices_[i]];
-        }
+        const auto &variableIndices_ = variableIndices[variableIndex++];
+        for (int i = 0; i < variableIndices_.size(); ++i)
+          var[i] -= r[variableIndices_[i]];
       }
       return *this;
     }
@@ -191,10 +188,12 @@ namespace Ikarus::Variable {
 
   private:
     template <class FEContainer1>
-    friend VariableVector<FEContainer1> operator+(const VariableVector<FEContainer1>& varVec,const Eigen::VectorXd &correction) ;
-        mutable std::vector<std::vector<Ikarus::Variable::IVariable>> variablesForEachEntity;
-        template<typename FEContainer1,typename Range> requires (!std::is_same_v<Range,Eigen::VectorXd>)
-            friend VariableVector<FEContainer1> operator+(const VariableVector<FEContainer1>& varVec,Range&& r);
+    friend VariableVector<FEContainer1> operator+(const VariableVector<FEContainer1> &varVec,
+                                                  const Eigen::VectorXd &correction);
+    mutable std::vector<std::vector<Ikarus::Variable::IVariable>> variablesForEachEntity;
+    template <typename FEContainer1, typename Range>
+    requires(!std::is_same_v<Range, Eigen::VectorXd>) friend VariableVector<FEContainer1> operator+(
+        const VariableVector<FEContainer1> &varVec, Range &&r);
     std::unordered_map<size_t, Ikarus::EntityType> entityTypes;
     std::vector<Eigen::ArrayX<size_t>> variableIndices;
     size_t dofSizeValue{};
@@ -203,23 +202,24 @@ namespace Ikarus::Variable {
   };
 
   template <class FEContainer>
-  VariableVector<FEContainer> operator+(const VariableVector<FEContainer>& varVec,const Eigen::VectorXd &correction) {
-    VariableVector res=varVec;
-    assert (static_cast<decltype(correction.size())>(res.correctionSize()) == correction.size());
-      for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(res.variablesForEachEntity))
-        var += correction(res.variableIndices[variableIndex++]);
+  VariableVector<FEContainer> operator+(const VariableVector<FEContainer> &varVec, const Eigen::VectorXd &correction) {
+    VariableVector res = varVec;
+    assert(static_cast<decltype(correction.size())>(res.correctionSize()) == correction.size());
+    for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(res.variablesForEachEntity))
+      var += correction(res.variableIndices[variableIndex++]);
     return res;
   }
 
-  template<typename FEContainer,typename Range> requires (!std::is_same_v<Range,Eigen::VectorXd>)
-      VariableVector<FEContainer> operator+(const VariableVector<FEContainer>& varVec,Range&& r) {
-    VariableVector res=varVec;
+  template <typename FEContainer, typename Range>
+  requires(!std::is_same_v<Range, Eigen::VectorXd>) VariableVector<FEContainer>
+  operator+(const VariableVector<FEContainer> &varVec, Range &&r) {
+    VariableVector res = varVec;
     assert(static_cast<decltype(r.size())>(varVec.correctionSize()) == r.size());
     for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(res.variablesForEachEntity)) {
-      const auto& variableIndices_ = res.variableIndices[variableIndex++];
-      for (int i = 0; i < variableIndices_.size(); ++i) {
-        var[i]+= r[variableIndices_[i]];
-      }
+      const auto &variableIndices_ = res.variableIndices[variableIndex++];
+      for (int i = 0; i < variableIndices_.size(); ++i)
+        var[i] += r[variableIndices_[i]];
+
     }
     return res;
   }
