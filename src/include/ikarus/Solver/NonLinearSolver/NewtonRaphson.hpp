@@ -39,7 +39,7 @@ namespace Ikarus {
                                            const typename NonLinearOperatorImpl::ValueType& b) { return a / b; },
         UpdateFunction p_updateFunction = [](typename NonLinearOperatorImpl::ValueType& a,
                                              const typename NonLinearOperatorImpl::ValueType& b) { a += b; })
-        : nonLinearOperator{p_nonLinearOperator},
+        : nonLinearOperator_{p_nonLinearOperator},
           linearSolver{std::move(p_linearSolver)},
           updateFunction{p_updateFunction} {}
 
@@ -49,9 +49,9 @@ namespace Ikarus {
       this->notify(NonLinearSolverMessages::INIT);
       SolverInformation solverInformation;
       solverInformation.sucess       = true;
-      nonLinearOperator.updateAll();
-      const auto& rx = nonLinearOperator.value();
-      const auto& Ax = nonLinearOperator.derivative();
+      nonLinearOperator().updateAll();
+      const auto& rx = nonLinearOperator().value();
+      const auto& Ax = nonLinearOperator().derivative();
       auto rNorm     = norm(rx);
       decltype(rNorm) dNorm;
       int iter{0};
@@ -60,8 +60,11 @@ namespace Ikarus {
       while (rNorm > settings.tol && iter <= settings.maxIter) {
         this->notify(NonLinearSolverMessages::ITERATION_STARTED);
         if constexpr (!std::is_same_v<LinearSolver, LinearSolverStdFunctionType>) {
+//          std::cout<<"Solver"<<std::endl;
+//          std::cout<<Ax<<std::endl;
           linearSolver.factorize(Ax);
           const Eigen::VectorXd D = -linearSolver.solve(rx);
+//          std::cout<<"D:"<<D.transpose()<<std::endl;
           dNorm = D.norm();
           updateFunction(x, D);
         } else {
@@ -71,8 +74,9 @@ namespace Ikarus {
         }
         this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, dNorm);
         this->notify(NonLinearSolverMessages::SOLUTION_CHANGED);
-        nonLinearOperator.updateAll();
+        nonLinearOperator().updateAll();
         rNorm = norm(rx);
+        std::cout<<"Rnorm"<<rNorm<<std::endl;
         this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, rNorm);
         this->notify(NonLinearSolverMessages::ITERATION_ENDED);
         ++iter;
@@ -83,8 +87,10 @@ namespace Ikarus {
       return solverInformation;
     }
 
+    auto& nonLinearOperator()
+    {return nonLinearOperator_;}
   private:
-    NonLinearOperatorImpl nonLinearOperator;
+    NonLinearOperatorImpl nonLinearOperator_;
     LinearSolver linearSolver;
     UpdateFunction updateFunction;
     NonlinearSolverSettings settings;
