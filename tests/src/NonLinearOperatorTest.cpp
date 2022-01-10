@@ -15,14 +15,13 @@
 #include "ikarus/Grids/GridHelper/griddrawer.h"
 #include "ikarus/LinearAlgebra/DirichletConditionManager.h"
 #include "ikarus/Solver/NonLinearSolver/NewtonRaphson.hpp"
+#include "ikarus/utils/Observer/nonLinearSolverLogger.h"
 #include <ikarus/LinearAlgebra/NonLinearOperator.h>
 
-auto f(double& x) { return 0.5 * x * x + x - 2; }
-auto df(double& x) { return x + 1; }
-
-template<typename SolutionType, typename NewtonRhapson>
-void checkNewtonRhapson(NewtonRhapson &nr,SolutionType& x,double tol, int maxIter,int iterExpected,const SolutionType& xExpected)
+template<typename SolutionType,typename SolutionTypeExpected, typename NewtonRhapson>
+void checkNewtonRhapson(NewtonRhapson &nr,SolutionType& x,double tol, int maxIter,int iterExpected,const SolutionTypeExpected& xExpected)
 {
+
   nr.setup({tol,maxIter});
   const auto solverInfo = nr.solve(x);
 
@@ -35,6 +34,10 @@ void checkNewtonRhapson(NewtonRhapson &nr,SolutionType& x,double tol, int maxIte
   EXPECT_LE(solverInfo.residualnorm, tol);
   EXPECT_EQ(solverInfo.iterations, iterExpected);
 }
+
+
+auto f(double& x) { return 0.5 * x * x + x - 2; }
+auto df(double& x) { return x + 1; }
 
 TEST(NonLinearOperator, SimpleOperatorNewtonRhapsonTest) {
   double x = 13;
@@ -107,6 +110,55 @@ TEST(NonLinearOperator, SecondOrderVectorValuedOperator) {
   checkNewtonRhapson(nr,x,eps,maxIter,1,(-0.5*A.ldlt().solve(b)).eval());
   nonLinOp.update<0>();
   EXPECT_DOUBLE_EQ(nonLinOp.value(), -2.6538461538461533);
+}
+
+#include <autodiff/forward/dual.hpp>
+#include <autodiff/forward/dual/eigen.hpp>
+using namespace autodiff;
+template<typename ScalarType>
+ScalarType f2vNL(const Eigen::VectorX<ScalarType>& x, Eigen::MatrixXd& A, Eigen::VectorXd& b) { return x.array().sin().matrix().dot( x); }
+
+
+Eigen::VectorXd df2vNL(Eigen::VectorX<autodiff::dual>& x, Eigen::MatrixXd& A, [[maybe_unused]] Eigen::VectorXd& b) {
+  return autodiff::gradient( f2vNL<autodiff::dual> ,wrt(x),at(x,A,b));
+}
+
+
+Eigen::MatrixXd ddf2vNL(Eigen::VectorX<autodiff::dual2nd>& x, Eigen::MatrixXd& A, [[maybe_unused]] Eigen::VectorXd& b) {
+  return autodiff::hessian( f2vNL<autodiff::dual2nd> ,wrt(x),at(x,A,b));
+}
+
+
+TEST(NonLinearOperator, SecondOrderVectorValuedOperatorNonlinearAutodiff) {
+  Eigen::VectorXd x(3);
+
+  x << 1, 2, 3;
+  Eigen::VectorXd b(3);
+  b << 5, 7, 8;
+  Eigen::MatrixXd A(3, 3);
+  A = Eigen::MatrixXd::Identity(3, 3) * 13;
+std::cout<<"T1"<<std::endl;
+  auto fvLambda   = [&](auto&& x) { std::cout<<"e"<<std::endl; return f2vNL<double>(x, A, b); };
+  auto dfvLambda  = [&](auto&& x) { std::cout<<"de"<<std::endl;  auto xR = x.template cast<autodiff::dual>().eval(); return df2vNL(xR, A, b); };
+  auto ddfvLambda = [&](auto&& x) { std::cout<<"dde"<<std::endl;  auto xR = x.template cast<autodiff::dual2nd>().eval(); return ddf2vNL(xR, A, b); };
+  std::cout<<"T2"<<std::endl;
+  auto nonLinOp   = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda,dfvLambda, ddfvLambda), parameter(x));
+  std::cout<<"T3"<<std::endl;
+  auto subOperator = nonLinOp.subOperator<1,2>();
+  std::cout<<"T4"<<std::endl;
+  // Newton method test find root of first derivative
+  const double eps  = 1e-14;
+  const int maxIter = 20;
+  Ikarus::NewtonRaphson nr(subOperator,Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::LDLT));
+  std::cout<<"T5"<<std::endl;
+  const Eigen::Vector3d xSol(-4.9131804394348836888,2.0287578381104342236,2.0287578381104342236);
+//  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
+//  nr.subscribeAll(nonLinearSolverObserver);
+  std::cout<<"T6"<<std::endl;
+  checkNewtonRhapson(nr,x,eps,maxIter,5,xSol);
+  std::cout<<"T7"<<std::endl;
+  nonLinOp.update<0>();
+  EXPECT_DOUBLE_EQ(nonLinOp.value(), -1.1750584073929625716);
 }
 
 #include <ikarus/Grids/SimpleGrid/SimpleGrid.h>

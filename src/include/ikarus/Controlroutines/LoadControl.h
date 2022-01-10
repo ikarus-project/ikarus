@@ -33,34 +33,30 @@ namespace Ikarus {
   //                const std::pair<double, double>& tbeginEnd) {}
   //  };
 
-  template <template <typename, typename, typename> class NonLinearSolver, typename FEManager, typename ScalarType,
+  template < typename NonLinearSolver, typename FEManager,
             typename DirichletManager, typename... LinearAlgebraFunctionArgs>
   class LoadControl : public IObservable<ControlMessages> {
   public:
     LoadControl(FEManager& feManager, DirichletManager& dirichletManager,
-                const LinearAlgebraFunctions<LinearAlgebraFunctionArgs...>& linearAlgebraFunctions,
-                Ikarus::ILinearSolver<ScalarType>&& linearSolver, const int loadSteps,
+                NonLinearSolver&& p_nonLinearSolver, const int loadSteps,
                 const std::pair<double, double>& tbeginEnd)
         : feManager_{&feManager},
           dirichletManager_{&dirichletManager},
-          linearAlgebraFunctions_{linearAlgebraFunctions},
-          time_{Ikarus::FEParameterFactory::createParameter(Ikarus::FEParameter::time, 1)},
-          nonLinearSolver{NonLinearOperatorType(linearAlgebraFunctions_, parameter(time_)), std::move(linearSolver),
-                          [this](decltype(feManager_->getVariables())& x, const Eigen::VectorX<ScalarType>& D) {
-                            x += dirichletManager_->viewAsFullVector(D);
-                          }},
+          nonLinearSolver{std::move(p_nonLinearSolver)},
           loadSteps_{loadSteps},
-          tBegin_{tbeginEnd.first},
-          tEnd_{tbeginEnd.second},
-          timeStepSize_{(tEnd_ - tBegin_) / loadSteps_} {}
+          parameterBegin_{tbeginEnd.first},
+          parameterEnd_{tbeginEnd.second},
+          stepSize_{(parameterEnd_ - parameterBegin_) / loadSteps_} {}
 
     void run() {
       this->notify(ControlMessages::CONTROL_STARTED);
-      time_.value[0] = timeStepSize_;
+      auto& loadParameter = nonLinearSolver.nonLinearOperator().template nthParameter<0>();
+      loadParameter.value[0] = 0.0;
       auto& x        = feManager_->getVariables();
-      for (int ls = 0; ls < loadSteps_; ++ls) {
+      for (int ls = 0; ls < loadSteps_+1; ++ls) {
         nonLinearSolver.solve(x);
-        time_.value[0] += timeStepSize_;
+        this->notify(ControlMessages::SOLUTION_CHANGED);
+        loadParameter.value[0] += stepSize_;
         this->notify(ControlMessages::LOADSTEP_ENDED);
       }
     }
@@ -74,25 +70,22 @@ namespace Ikarus {
     FEManager* feManager_;
     DirichletManager* dirichletManager_;
     LinearAlgebraFunctions<LinearAlgebraFunctionArgs...> linearAlgebraFunctions_;
-    FEParameterValuePair time_;
-    using NonLinearOperatorType
-        = Ikarus::NonLinearOperator<LinearAlgebraFunctions<LinearAlgebraFunctionArgs...>, decltype(parameter(time_))>;
-    NonLinearSolver<NonLinearOperatorType, Ikarus::ILinearSolver<ScalarType>,
-                    std::function<void(decltype(feManager_->getVariables())&, const Eigen::VectorX<ScalarType>&)>>
-        nonLinearSolver;
+//    FEParameterValuePair time_;
+//    using NonLinearSolver
+        NonLinearSolver    nonLinearSolver;
     int loadSteps_;
-    double tBegin_;
-    double tEnd_;
-    double timeStepSize_;
+    double parameterBegin_;
+    double parameterEnd_;
+    double stepSize_;
   };
 
-  template <template <typename, typename, typename> class NonLinearSolver, typename FEManager, typename ScalarType,
-            typename DirichletManager, typename... LinearAlgebraFunctionArgs>
-  auto makeLoadControl(FEManager& feManager, DirichletManager& dirichletManager,
-                       const LinearAlgebraFunctions<LinearAlgebraFunctionArgs...>& linearAlgebraFunctions,
-                       Ikarus::ILinearSolver<ScalarType>&& linearSolver, const int loadSteps,
-                       const std::pair<double, double>& tbeginEnd) {
-    return LoadControl<NonLinearSolver, FEManager, ScalarType, DirichletManager, LinearAlgebraFunctionArgs...>(
-        feManager, dirichletManager, linearAlgebraFunctions, std::move(linearSolver), loadSteps, tbeginEnd);
-  }
+//  template <template <typename, typename, typename> class NonLinearSolver, typename FEManager, typename ScalarType,
+//            typename DirichletManager, typename... LinearAlgebraFunctionArgs>
+//  auto makeLoadControl(FEManager& feManager, DirichletManager& dirichletManager,
+//                       const LinearAlgebraFunctions<LinearAlgebraFunctionArgs...>& linearAlgebraFunctions,
+//                       Ikarus::ILinearSolver<ScalarType>&& linearSolver, const int loadSteps,
+//                       const std::pair<double, double>& tbeginEnd) {
+//    return LoadControl<NonLinearSolver, FEManager, ScalarType, DirichletManager, LinearAlgebraFunctionArgs...>(
+//        feManager, dirichletManager, linearAlgebraFunctions, std::move(linearSolver), loadSteps, tbeginEnd);
+//  }
 }  // namespace Ikarus

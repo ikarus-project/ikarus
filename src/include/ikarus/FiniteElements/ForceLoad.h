@@ -21,7 +21,7 @@ namespace Ikarus::FiniteElements {
     }
     [[nodiscard]] typename Traits::MatrixType calculateMatrix(
         [[maybe_unused]] const typename Traits::FERequirementType &req) const {
-      return typename Traits::MatrixType(this->dofSize(), this->dofSize());
+      return Traits::MatrixType::Zero(this->dofSize(), this->dofSize());
     }
 
     [[nodiscard]] typename Traits::VectorType calculateVectorImpl(

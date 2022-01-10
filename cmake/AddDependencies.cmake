@@ -43,6 +43,9 @@ find_package(autodiff REQUIRED)
 
 message("Find SuiteSparse: ")
 
+find_package(autodiff REQUIRED)
+message("Find autodiff: ")
+
 if(MINGW OR MSVC)
   find_package(SuiteSparse CONFIG REQUIRED CHOLMOD UMFPACK)
   set(SuiteSparseIncludeDirective ${SuiteSparse_LIBRARIES})

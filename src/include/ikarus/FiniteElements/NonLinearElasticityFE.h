@@ -102,14 +102,54 @@ namespace Ikarus::FiniteElements {
         K.setZero();
         return std::make_pair(K, Fint);
       } else if constexpr (internalForcesFlag && !stiffnessMatrixFlag) {
-        Eigen::VectorXd d(this->dofSize());
-        auto dv = req.variables.value().get().get(EntityType::vertex);
-        for (int pos = 0, i = 0; i < this->dofSize() / 2; ++i) {
-          d.template segment<Traits::mydim>(pos) = Variable::getValue(dv[i]);
-          pos += Traits::mydim;
+        typename Traits::VectorType Fint(this->dofSize());
+        Fint.setZero();
+        const auto rule = Dune::QuadratureRules<double, Traits::mydim>::rule(duneType(elementGridEntity->type()), 2);
+        Eigen::Matrix3d C;
+        C.setZero();
+        const double fac = emod_ / (1 - nu_ * nu_);
+        C(0, 0) = C(1, 1) = 1;
+        C(0, 1) = C(1, 0) = nu_;
+        C(2, 2)           = (1 - nu_) / 2;
+        C *= fac;
+        for (auto &gp : rule) {
+          const auto geo = elementGridEntity->geometry();
+          const auto J   = toEigenMatrix(geo.jacobianTransposed(gp.position()));
+          Eigen::Matrix<double, Traits::dimension, 4> x;
+
+          auto dv = req.variables.value().get().get(EntityType::vertex);
+          for (int pos = 0, i = 0; i < 4; ++i) {
+            x.col(i) = Variable::getValue(dv[i]) + toEigenVector(geo.corner(i));
+          }
+          const DeformedGeometry deformedgeo;
+
+          Eigen::Matrix<double, 4, Traits::mydim> dN
+              = Ikarus::LagrangeCube<double, Traits::mydim, 1>::evaluateJacobian(toEigenVector(gp.position()));
+          const auto Jloc = Ikarus::LinearAlgebra::orthonormalizeMatrixColumns(J.transpose());
+          //          dN *= (J * Jloc).inverse();
+          const auto j                                                = deformedgeo.jacobianTransposed(dN, x);
+          const Eigen::Matrix<double, Traits::mydim, Traits::mydim> F = Jloc.transpose() * j * (J.inverse()) * Jloc;
+                    dN *= (J * Jloc).inverse();
+          const auto bop = boperator(dN, F);
+//          std::cout<<"FinFint:\n"<<F<<std::endl;
+          const auto E
+              = (0.5 * (F.transpose() * F - Eigen::Matrix<double, Traits::mydim, Traits::mydim>::Identity())).eval();
+          Eigen::Vector<double, (Traits::mydim * (Traits::mydim + 1)) / 2> EVoigt;
+          for (int i = 0; i < Traits::mydim; ++i)
+            EVoigt(i) = E(i, i);
+
+          if constexpr (Traits::mydim > 1) EVoigt(Traits::mydim) = E(0, 1) * 2;
+          if constexpr (Traits::mydim > 2) {
+            EVoigt(Traits::mydim + 1) = E(0, 2) * 2;
+            EVoigt(Traits::mydim + 2) = E(1, 2) * 2;
+
+          }
+//          std::cout<<"EinFint:\n"<<E<<std::endl;
+//          std::cout<<"EVoigtinFint:\n"<<EVoigt<<std::endl;
+          Fint += (bop.transpose() * C * EVoigt) * geo.integrationElement(gp.position()) * gp.weight();
         }
-        Eigen::VectorXd fint = calculateStiffnessMatrixAndInternalForcesImpl<false, true>(req) * d;
-        return fint;
+//        std::cout << "F:\n" << Fint.transpose() << std::endl;
+        return Fint;
       } else if constexpr (not internalForcesFlag && stiffnessMatrixFlag) {
         typename Traits::MatrixType K(this->dofSize(), this->dofSize());
         K.setZero();
@@ -127,9 +167,10 @@ namespace Ikarus::FiniteElements {
           Eigen::Matrix<double, Traits::dimension, 4> x;
 
           auto dv = req.variables.value().get().get(EntityType::vertex);
-          for (int pos = 0, i = 0; i < 4; ++i) {
-            x.col(i) = Variable::getValue(dv[i]) + toEigenVector(geo.corner(0));
+          for (int i = 0; i < 4; ++i) {
+            x.col(i) = Variable::getValue(dv[i]) + toEigenVector(geo.corner(i));
           }
+          std::cout<<"x:\n"<<x<<std::endl;
           const DeformedGeometry deformedgeo;
 
           Eigen::Matrix<double, 4, Traits::mydim> dN
@@ -138,10 +179,14 @@ namespace Ikarus::FiniteElements {
           //          dN *= (J * Jloc).inverse();
           const auto j                                                = deformedgeo.jacobianTransposed(dN, x);
           const Eigen::Matrix<double, Traits::mydim, Traits::mydim> F = Jloc.transpose() * j * (J.inverse()) * Jloc;
-          dN *= (J * Jloc).inverse();
+                    dN *= (J * Jloc).inverse();
           const auto bop = boperator(dN, F);
+//                    std::cout<<"F:\n"<<F<<std::endl;
+          //          std::cout<<"B:\n"<<bop<<std::endl;
+          //          std::cout<<"C:\n"<<C<<std::endl;
           K += (bop.transpose() * C * bop) * geo.integrationElement(gp.position()) * gp.weight();
         }
+        //        std::cout<<"K:\n"<<K<<std::endl;
         return K;
       } else
         static_assert(internalForcesFlag == false && stiffnessMatrixFlag == false,
@@ -161,16 +206,19 @@ namespace Ikarus::FiniteElements {
       typename Traits::MatrixType Bop((Traits::mydim * (Traits::mydim + 1)) / 2, this->dofSize());
       Bop.setZero();
       for (int i = 0; i < dN.rows(); ++i) {
+        auto currentBlock
+            = Bop.template block<(Traits::mydim * (Traits::mydim + 1)) / 2, Traits::mydim>(0, Traits::mydim * i);
 
-        auto currentBlock = Bop.template block<(Traits::mydim * (Traits::mydim + 1)) / 2, Traits::mydim>(
-            0, Traits::mydim * i);
+        for (int j = 0; j < Traits::mydim; ++j)
+          currentBlock.template block<1, Traits::mydim>(j, 0) = (F.col(j) * dN(i, j)).transpose();
 
-        currentBlock.template block<1, Traits::mydim>(0, 0) = (F.col(0) * dN(i, 0)).transpose();
-        currentBlock.template block<1, Traits::mydim>(1, 0) = (F.col(1) * dN(i, 1)).transpose();
-        currentBlock.template block<1, Traits::mydim>(2, 0) = (F.col(2) * dN(i, 2)).transpose();
-        currentBlock.template block<1, Traits::mydim>(3, 0) = (F.col(0) * dN(i, 1) + F.col(1) * dN(i, 0)).transpose();
-        currentBlock.template block<1, Traits::mydim>(4, 0) = (F.col(1) * dN(i, 2) + F.col(2) * dN(i, 1)).transpose();
-        currentBlock.template block<1, Traits::mydim>(5, 0) = (F.col(0) * dN(i, 2) + F.col(2) * dN(i, 0)).transpose();
+        if constexpr (Traits::mydim > 1)
+          currentBlock.template block<1, Traits::mydim>(Traits::mydim, 0)
+              = (F.col(0) * dN(i, 1) + F.col(1) * dN(i, 0)).transpose();
+        if constexpr (Traits::mydim > 2) {
+          currentBlock.template block<1, Traits::mydim>(4, 0) = (F.col(1) * dN(i, 2) + F.col(2) * dN(i, 1)).transpose();
+          currentBlock.template block<1, Traits::mydim>(5, 0) = (F.col(0) * dN(i, 2) + F.col(2) * dN(i, 0)).transpose();
+        }
       }
       return Bop;
     }

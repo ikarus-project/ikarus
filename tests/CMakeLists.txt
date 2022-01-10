@@ -22,7 +22,7 @@ add_executable(IkarusTests ${sources})
 target_link_libraries(
   IkarusTests
   PRIVATE GTest::gmock_main
-  PRIVATE Ikarus::Ikarus
+  PUBLIC Ikarus::Ikarus
 )
 set_target_properties(IkarusTests PROPERTIES CXX_STANDARD 20)
 

@@ -20,18 +20,19 @@ list(APPEND CMAKE_PREFIX_PATH
 )
 include(../cmake/AddDependencies.cmake)
 
-target_link_libraries(
-  ${PROJECT_NAME}
-  PUBLIC Eigen3::Eigen
-  PUBLIC spdlog::spdlog
-  PUBLIC dunecommon
-  PUBLIC dunegeometry
-  PUBLIC dunegrid
-  PUBLIC SuiteSparse::SuiteSparse
-  # PUBLIC muesli
-  PUBLIC Matplot++::matplot
-  # PUBLIC Python3::Module PRIVATE pybind11::headers
-)
+#target_link_libraries(
+#  ${PROJECT_NAME}
+#  PUBLIC Eigen3::Eigen
+#  PUBLIC spdlog::spdlog
+#  PUBLIC dunecommon
+#  PUBLIC dunegeometry
+#  PUBLIC dunegrid
+#  PUBLIC SuiteSparse::SuiteSparse
+#  # PUBLIC muesli
+#  PUBLIC Matplot++::matplot
+#  PUBLIC autodiff
+#  # PUBLIC Python3::Module PRIVATE pybind11::headers
+#)
 
 target_include_directories(
   ${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
