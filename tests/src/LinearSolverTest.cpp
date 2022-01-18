@@ -94,5 +94,5 @@ TEST(LinearSolverTest, LinearSolverTest1) {
   Ikarus::ILinearSolver<double> solver3(SolverTypeTag::CholmodSupernodalLLT);
   solver3.compute(Asparse);
   const auto sol3 = solver3.solve(b);
-  EXPECT_THAT(sol3, EigenApproxEqual(sol2, 1e-12));
+  EXPECT_THAT(sol3, EigenApproxEqual(sol2, 1e-11));
 }
