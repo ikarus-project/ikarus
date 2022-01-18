@@ -42,10 +42,6 @@ message("Find autodiff: ")
 find_package(autodiff REQUIRED)
 
 message("Find SuiteSparse: ")
-
-find_package(autodiff REQUIRED)
-message("Find autodiff: ")
-
 if(MINGW OR MSVC)
   find_package(SuiteSparse CONFIG REQUIRED CHOLMOD UMFPACK)
   set(SuiteSparseIncludeDirective ${SuiteSparse_LIBRARIES})
@@ -67,7 +63,7 @@ target_link_libraries(
   PUBLIC dunegeometry
   PUBLIC dunegrid
   PUBLIC ${SuiteSparseIncludeDirective}
-  # PUBLIC muesli
+#   PUBLIC muesli
   PUBLIC Matplot++::matplot
   PUBLIC autodiff::autodiff
   PUBLIC gfortran
