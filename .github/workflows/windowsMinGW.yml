@@ -57,7 +57,7 @@ jobs:
       if: "${{ steps.cache-winlibs-dep.outputs.cache-hit != 'true'}}"
       run: |
         mkdir Ikarus_Dependencies
-        Invoke-WebRequest -Uri https://github.com/IkarusRepo/IkarusDependencies/releases/download/v0.3/Dependencies_release.7z -OutFile ./Ikarus_Dependencies/dependencies.7z
+        Invoke-WebRequest -Uri https://github.com/IkarusRepo/IkarusDependencies/releases/download/v0.4/Dependencies_release.7z -OutFile ./Ikarus_Dependencies/dependencies.7z
         cd Ikarus_Dependencies
         7z x dependencies.7z -bsp1
         rm dependencies.7z

@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Build the Docker image
-        run: docker build . --file scripts/ci_docker/windows/DockerFile --tag rath3t/ci-windows
+        run: docker build . --file scripts/ci_docker/windows/DockerFile  --tag rath3t/ci-windows
       - name: Docker Login
         uses: azure/docker-login@v1
         with:

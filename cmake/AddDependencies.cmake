@@ -32,6 +32,13 @@ message("Find dune-geometry: ")
 find_package(dune-geometry REQUIRED)
 message("Find dune-grid: ")
 find_package(dune-grid REQUIRED)
+
+#message("Find muesli: ")
+#find_package(muesli REQUIRED)
+
+message("Find autodiff: ")
+find_package(autodiff REQUIRED)
+
 message("Find SuiteSparse: ")
 if(MINGW OR MSVC)
   find_package(SuiteSparse CONFIG REQUIRED)
@@ -45,13 +52,15 @@ find_package(Python3 COMPONENTS Interpreter Development)
 message("${Python3_STDLIB}")
 
 target_link_libraries(
-  Ikarus
+  ${PROJECT_NAME}
   PUBLIC Eigen3::Eigen
   PUBLIC spdlog::spdlog
   PUBLIC dunecommon
   PUBLIC dunegeometry
   PUBLIC dunegrid
-  PUBLIC ${SuiteSparse_LIBRARIES}
-  # PUBLIC muesli
+  PUBLIC ${SuiteSparseIncludeDirective}
+#   PUBLIC muesli
   PUBLIC Matplot++::matplot
+  PUBLIC autodiff::autodiff
+  PUBLIC gfortran
 )
