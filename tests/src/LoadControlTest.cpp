@@ -122,7 +122,7 @@ TEST(LoadControlTest, GridLoadControlTest) {
              [&dirichletConditionManager](decltype(feManager.getVariables())& x, const Eigen::VectorX<double>& D) {
         x += dirichletConditionManager.viewAsFullVector(D);
              });
-  nr.subscribe(nonLinearSolverObserver);
+  nr.subscribeAll(nonLinearSolverObserver);
 
   auto lc = Ikarus::LoadControl(feManager, dirichletConditionManager, std::move(nr), 10, {0, 5000});
   //  auto lc = makeLoadControl<Ikarus::NewtonRaphson>(
