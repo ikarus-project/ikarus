@@ -1,22 +1,27 @@
 # escape=`
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 # Args used by from statements must be defined here:
-ARG InstallerVersion=nanoserver:1809-amd64
+ARG InstallerVersion=nanoserver
+ARG dockerHost=mcr.microsoft.com
 ARG InstallerRepo=mcr.microsoft.com/powershell
-ARG NanoServerRepo=mcr.microsoft.com/windows/nanoserver
+ARG NanoServerRepo=windows/nanoserver
+ARG tag=ltsc2022
 
 # Use server core as an installer container to extract PowerShell,
 # As this is a multi-stage build, this stage will eventually be thrown away
 FROM ${InstallerRepo}:$InstallerVersion  AS installer-env
 
 # Arguments for installing PowerShell, must be defined in the container they are used
-ARG PS_VERSION=7.0.0-rc.1
+ARG PS_VERSION=7.0.0
 
 ARG PS_PACKAGE_URL=https://github.com/PowerShell/PowerShell/releases/download/v$PS_VERSION/PowerShell-$PS_VERSION-win-x64.zip
 
+SHELL ["pwsh", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+
 # disable telemetry
 ENV POWERSHELL_TELEMETRY_OPTOUT="1"
-
-SHELL ["pwsh", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
 ARG PS_PACKAGE_URL_BASE64
 
@@ -39,9 +44,7 @@ RUN Write-host "Verifying valid Version..."; `
     Expand-Archive /installer/powershell.zip -DestinationPath \PowerShell
 
 # Install PowerShell into NanoServer
-FROM ${NanoServerRepo}:1809
-
-ARG IMAGE_NAME=mcr.microsoft.com/powershell
+FROM mcr.microsoft.com/${NanoServerRepo}:${tag}
 
 # Copy PowerShell Core from the installer container
 ENV ProgramFiles="C:\Program Files" `
@@ -51,7 +54,7 @@ ENV ProgramFiles="C:\Program Files" `
     PSCORE="$ProgramFiles\PowerShell\pwsh.exe" `
     # Set the default windows path so we can use it
     WindowsPATH="C:\Windows\system32;C:\Windows" `
-    POWERSHELL_DISTRIBUTION_CHANNEL="PSDocker-NanoServer-1809"
+    POWERSHELL_DISTRIBUTION_CHANNEL="PSDocker-NanoServer-ltsc2022"
 
 ### Begin workaround ###
 # Note that changing user on nanoserver is not recommended
@@ -88,40 +91,37 @@ ENV POWERSHELL_TELEMETRY_OPTOUT="0"
 
 CMD ["pwsh.exe"]
 
+# FROM mcr.microsoft.com/windows/nanoserver:ltsc2022
+# RUN pwsh -Command `
+#     Install-PackageProvider ChocolateyGet -Force -Scope CurrentUser; `
+#     Install-Package -ProviderName ChocolateyGet chocolatey,dotnet4.6 -Scope CurrentUser
 
-#FROM mcr.microsoft.com/windows/nanoserver:1809-amd64
+RUN pwsh -Command `
+    mkdir installer; `
+    cd installer; `
+    Invoke-WebRequest -Uri http://chocolatey.org/install.ps1 -OutFile install.ps1; `
+    ls; `
+    ./install.ps1
 
-
-# Restore the default Windows shell for correct batch processing below.
-SHELL ["cmd", "/S", "/C"]
-ENV global:progressPreference 'silentlyContinue'
-
-RUN powershell.exe -Command \
-    curl.exe -o install.ps1 http://chocolatey.org/install.ps1; \
-    install.ps1
-
-#install 7z
-RUN powershell.exe -Command \
-    choco install -y 7zip.install --no-progress; \
-    choco install -y choco-cleaner --no-progress; \
-    choco install -y git --no-progress; \
-    choco install -y cmake --no-progress; \
-    choco-cleaner.bat; \
-    choco uninstall choco-cleaner -x -y; \
-    cd C:; \
-    mkdir winlibs; \
-    Invoke-WebRequest -Uri https://github.com/brechtsanders/winlibs_mingw/releases/download/11.1.0-12.0.0-9.0.0-r2/winlibs-x86_64-posix-seh-gcc-11.1.0-llvm-12.0.0-mingw-w64-9.0.0-r2.7z -OutFile winlibs/libs.7z; \
-    cd winlibs; \
-    7z x libs.7z; \
-    rm libs.7z; \
-    setx path "%path%;C:\winlibs\mingw64\bin"; \ 
-    cd C:; \
-    mkdir Ikarus_Dependencies; \
-    Invoke-WebRequest -Uri https://github.com/rath3t/IkarusDependencies/releases/download/v0.3/Dependencies_release.7z -OutFile Ikarus_Dependencies/dependencies.7z; \
-    cd Ikarus_Dependencies; \
-    7z x dependencies.7z; \
+RUN pwsh -Command `
+    choco install -y 7zip.install --no-progress; `
+    choco install -y choco-cleaner --no-progress; `
+    choco install -y git --no-progress; `
+    choco install -y cmake --no-progress; `
+    choco-cleaner.bat; `
+    choco uninstall choco-cleaner -x -y; `
+    cd C:; `
+    mkdir winlibs; `
+    Invoke-WebRequest -Uri https://github.com/brechtsanders/winlibs_mingw/releases/download/11.1.0-12.0.0-9.0.0-r2/winlibs-x86_64-posix-seh-gcc-11.1.0-llvm-12.0.0-mingw-w64-9.0.0-r2.7z -OutFile winlibs/libs.7z; `
+    cd winlibs; `
+    7z x libs.7z; `
+    rm libs.7z; `
+    setx path "%path%;C:\winlibs\mingw64\bin"; `
+    cd C:; `
+    mkdir Ikarus_Dependencies; `
+    Invoke-WebRequest -Uri https://github.com/rath3t/IkarusDependencies/releases/download/v0.41/Dependencies_release.7z -OutFile Ikarus_Dependencies/dependencies.7z; `
+    cd Ikarus_Dependencies; `
+    7z x dependencies.7z; `
     rm dependencies.7z
 
-
-# Default to PowerShell if no other command specified.
 ENTRYPOINT ["powershell.exe", "-NoLogo", "-ExecutionPolicy", "Bypass"]
