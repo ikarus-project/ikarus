@@ -33,7 +33,7 @@ target_compile_options(
 target_compile_options(IkarusTests PUBLIC -fconcepts-diagnostics-depth=5)
 
 if(MINGW)
-  target_compile_options(IkarusTests PUBLIC -Wa,-mbig-obj)
+  target_compile_options(IkarusTests PUBLIC -Wa,-mbig-obj -Wl,--stack,32000000)
 endif()
 
 target_compile_features(IkarusTests PRIVATE cxx_std_20)
