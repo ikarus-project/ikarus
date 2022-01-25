@@ -6,7 +6,7 @@ if(MINGW)
   set(ikarusDepInstallDir ${CMAKE_SOURCE_DIR}/../Ikarus_Dependencies)
   FetchContent_Declare(
     ikarusDependencies
-    URL https://github.com/IkarusRepo/IkarusDependencies/releases/download/v0.3/Dependencies_release.7z
+    URL https://github.com/IkarusRepo/IkarusDependencies/releases/download/v0.41/Dependencies_release.7z
     PREFIX        ${ikarusDepInstallDir}
     DOWNLOAD_DIR  ${ikarusDepInstallDir}/src
     SOURCE_DIR    ${ikarusDepInstallDir}/Dependencies_release
@@ -22,6 +22,8 @@ if(MINGW)
   FetchContent_MakeAvailable(ikarusDependencies)
 endif()
 
+message("Find MPI: ")
+find_package(MPI QUIET)
 message("Find Eigen: ")
 find_package(Eigen3 3.3.9 REQUIRED)
 message("Find spdlog: ")
