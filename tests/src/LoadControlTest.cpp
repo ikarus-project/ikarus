@@ -71,7 +71,7 @@ TEST(LoadControlTest, GridLoadControlTest) {
 
   for (auto& edge : edges(gridView)) {
     if (std::abs(edge.geometry().center()[1]) > h - 0.01) {
-      std::cout << "edge.geometry().center() " << edge.geometry().center() << std::endl;
+      //      std::cout << "edge.geometry().center() " << edge.geometry().center() << std::endl;
       feContainer.emplace_back(Ikarus::FiniteElements::ForceLoad(edge, gridView.indexSet(), spaceFunction));
     }
   }
@@ -81,7 +81,7 @@ TEST(LoadControlTest, GridLoadControlTest) {
   Ikarus::DirichletConditionManager dirichletConditionManager(feManager);
   for (auto& vertex : vertices(gridView)) {
     if (std::abs(vertex.geometry().corner(0)[1]) < 1e-8) {
-      std::cout << "AddConstraint at " << vertex.geometry().corner(0) << std::endl;
+      //      std::cout << "AddConstraint at " << vertex.geometry().corner(0) << std::endl;
       dirichletConditionManager.addConstraint(vertex, 0);
       dirichletConditionManager.addConstraint(vertex, 1);
     }

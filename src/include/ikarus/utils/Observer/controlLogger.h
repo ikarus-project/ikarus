@@ -17,11 +17,18 @@ public:
       case ControlMessages::CONTROL_STARTED:
         spdlog::info("Control started");
         break;
+      case ControlMessages::STEP_STARTED:
+        spdlog::info("============================================");
+        spdlog::info("Controlstep has started");
+        spdlog::info("============================================");
         break;
-      case ControlMessages::LOADSTEP_ENDED:
-        spdlog::info("============================================\n");
-        spdlog::info("Loadstep has ended");
-        spdlog::info("============================================\n");
+      case ControlMessages::STEP_ENDED:
+        spdlog::info("============================================");
+        spdlog::info("Controlstep has ended");
+        break;
+      case ControlMessages::CONTROL_ENDED:
+        spdlog::info("Control ended");
+        spdlog::info("============================================");
         break;
       default:
         break;  //   default: do nothing when notified

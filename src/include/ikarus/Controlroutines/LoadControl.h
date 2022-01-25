@@ -53,10 +53,11 @@ namespace Ikarus {
       loadParameter.value[0] = 0.0;
       auto& x                = feManager_->getVariables();
       for (int ls = 0; ls < loadSteps_ + 1; ++ls) {
+        this->notify(ControlMessages::STEP_STARTED);
         nonLinearSolver.solve(x);
         this->notify(ControlMessages::SOLUTION_CHANGED);
         loadParameter.value[0] += stepSize_;
-        this->notify(ControlMessages::LOADSTEP_ENDED);
+        this->notify(ControlMessages::STEP_ENDED);
       }
     }
 
