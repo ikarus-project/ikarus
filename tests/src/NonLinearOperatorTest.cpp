@@ -18,11 +18,10 @@
 #include "ikarus/utils/Observer/nonLinearSolverLogger.h"
 #include <ikarus/LinearAlgebra/NonLinearOperator.h>
 
-template<typename SolutionType,typename SolutionTypeExpected, typename NewtonRhapson>
-void checkNewtonRhapson(NewtonRhapson &nr,SolutionType& x,double tol, int maxIter,int iterExpected,const SolutionTypeExpected& xExpected)
-{
-
-  nr.setup({tol,maxIter});
+template <typename SolutionType, typename SolutionTypeExpected, typename NewtonRhapson>
+void checkNewtonRhapson(NewtonRhapson& nr, SolutionType& x, double tolerance, int maxIter, int iterExpected,
+                        const SolutionTypeExpected& xExpected) {
+  nr.setup({tolerance, maxIter});
   const auto solverInfo = nr.solve(x);
 
   if constexpr (std::is_same_v<SolutionType, double>)
@@ -31,7 +30,7 @@ void checkNewtonRhapson(NewtonRhapson &nr,SolutionType& x,double tol, int maxIte
     EXPECT_THAT(x, EigenApproxEqual(xExpected, 1e-15));
 
   EXPECT_EQ(solverInfo.sucess, true);
-  EXPECT_LE(solverInfo.residualnorm, tol);
+  EXPECT_LE(solverInfo.residualnorm, tolerance);
   EXPECT_EQ(solverInfo.iterations, iterExpected);
 }
 

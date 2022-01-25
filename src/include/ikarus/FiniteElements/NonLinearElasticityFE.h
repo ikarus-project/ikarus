@@ -115,10 +115,9 @@ namespace Ikarus::FiniteElements {
         Eigen::Matrix<ScalarType, Traits::dimension, 4> x;
 
         auto dv = req.variables.value().get().get(EntityType::vertex);
-        for (int pos = 0, i = 0; i < 4; ++i) {
-//          std::cout<<Variable::getValue(dv[i])<<" a"<<toEigenVector(geo.corner(i))<< "< "<<dxM.col(i)<<std::endl;
-          x.col(i) = Variable::getValue(dv[i]) + toEigenVector(geo.corner(i))+dxM.col(i);
-        }
+        for (int i = 0; i < 4; ++i)
+          x.col(i) = Variable::getValue(dv[i]) + toEigenVector(geo.corner(i)) + dxM.col(i);
+
         const Ikarus::Geometry::GeometryWithExternalInput<ScalarType, Traits::mydim, Traits::dimension> deformedgeo;
 
         Eigen::Matrix<ScalarType, 4, Traits::mydim> dN
@@ -128,8 +127,7 @@ namespace Ikarus::FiniteElements {
         const auto j    = deformedgeo.jacobianTransposed(dN, x);
         const Eigen::Matrix<ScalarType, Traits::mydim, Traits::mydim> F = Jloc.transpose() * j * (J.inverse()) * Jloc;
         dN *= (J * Jloc).inverse();
-//        const auto bop = boperator(dN, F);
-        //          std::cout<<"FinFint:\n"<<F<<std::endl;
+
         const auto E
             = (0.5 * (F.transpose() * F - Eigen::Matrix<ScalarType, Traits::mydim, Traits::mydim>::Identity())).eval();
         Eigen::Vector<ScalarType, (Traits::mydim * (Traits::mydim + 1)) / 2> EVoigt;
@@ -141,14 +139,8 @@ namespace Ikarus::FiniteElements {
           EVoigt(Traits::mydim + 1) = E(0, 2) * 2;
           EVoigt(Traits::mydim + 2) = E(1, 2) * 2;
         }
-//                  std::cout<<"EinFint:\n"<<E<<std::endl;
-//                  std::cout<<"EVoigtinFint:\n"<<EVoigt<<std::endl;
-//                  std::cout<<"C:\n"<<C<<std::endl;
-//                  std::cout<<"F:\n"<<F<<std::endl;
-//                  std::cout<<"dN:\n"<<dN<<std::endl;
-//
-//                  std::cout<<"j:\n"<<j<<std::endl;
-        energy += EVoigt.dot(  C * EVoigt) * geo.integrationElement(gp.position()) * gp.weight();
+
+        energy += EVoigt.dot(C * EVoigt) * geo.integrationElement(gp.position()) * gp.weight();
       }
       return energy;
     }

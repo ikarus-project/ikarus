@@ -63,7 +63,7 @@ TEST(LoadControlTest, GridLoadControlTest) {
   for (auto&& ge : rootEntities(gridView))
     feContainer.emplace_back(Ikarus::FiniteElements::NonLinearElasticityFE(ge, gridView.indexSet(), 1000, 0.3));
 
-  auto spaceFunction = [](const Eigen::Vector2d& v) -> Eigen::Vector2d {
+  auto spaceFunction = [](const Eigen::Vector2d&) -> Eigen::Vector2d {
     Eigen::Vector2d f{};
     f[1] = 1;
     return f;
@@ -92,8 +92,6 @@ TEST(LoadControlTest, GridLoadControlTest) {
 
   auto denseMatrixAssembler  = Ikarus::Assembler::DenseMatrixAssembler(feManager, dirichletConditionManager);
   auto sparseMatrixAssembler = Ikarus::Assembler::SparseMatrixAssembler(feManager, dirichletConditionManager);
-
-  auto& x = feManager.getVariables();
 
   [[maybe_unused]] auto fintFunction = [&](auto&& lambda) -> auto& {
     return vectorAssembler.getReducedVector(Ikarus::FiniteElements::forces, lambda);

@@ -27,9 +27,9 @@ public:
     }
   }
 
-  void updateImpl(ControlMessages message, double val) override {}
+  void updateImpl(ControlMessages, double) override {}
 
-  void updateImpl(ControlMessages message, const Eigen::VectorXd& vec) override {}
+  void updateImpl(ControlMessages, const Eigen::VectorXd&) override {}
 
 private:
   GridView const* gridView_;
