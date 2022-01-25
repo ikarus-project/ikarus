@@ -5,23 +5,23 @@ on:
     branches:
       - 'master'
     paths:
-      - 'scripts/ci_docker/ubuntu/DockerFile'
-      - '.github/workflows/build_docker_image_ubuntu.yml'
+      - 'scripts/ci_docker/debian/DockerFile'
+      - '.github/workflows/build_docker_image_debian.yml'
   pull_request:
     branches:
       - 'master'
     paths:
-      - 'scripts/ci_docker/ubuntu/DockerFile'
-      - '.github/workflows/build_docker_image_ubuntu.yml'
+      - 'scripts/ci_docker/debian/DockerFile'
+      - '.github/workflows/build_docker_image_debian.yml'
 
 jobs:
-  build-docker-ubuntu:
+  build-docker-debian:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
       - name: Build the Docker image
-        run: docker build . --file scripts/ci_docker/ubuntu/DockerFile --tag rath3t/ci-ubuntu-21-04
+        run: docker build . --file scripts/ci_docker/debian/DockerFile --tag rath3t/ci-debian-bookworm
       - name: Docker Login
         uses: azure/docker-login@v1
         with:
@@ -29,4 +29,4 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Publish the Docker image
         if: ${{ github.event_name == 'push'}}
-        run: docker push rath3t/ci-ubuntu-21-04
+        run: docker push rath3t/ci-debian-bookworm

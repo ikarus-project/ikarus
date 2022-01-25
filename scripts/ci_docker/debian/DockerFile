@@ -72,6 +72,13 @@ RUN apt-get update -q -y && apt-get upgrade -y && \
         cmake --install . && \
         cd ../.. && \
         rm -r matplotplusplus && \
+        git clone https://github.com/autodiff/autodiff && \
+        cd autodiff/ && \
+        mkdir .build && \
+        cd .build/ && \
+        cmake .. -DAUTODIFF_BUILD_PYTHON=0 -DAUTODIFF_BUILD_EXAMPLES=0 -DAUTODIFF_BUILD_DOCS=0 -DAUTODIFF_BUILD_TESTS=0 && \
+        cmake --build . --target install && \
+        cd ../.. && \
         apt-get auto-remove -y && \
         apt-get clean && \
         rm -rvf /var/lib/apt/lists/* && \
