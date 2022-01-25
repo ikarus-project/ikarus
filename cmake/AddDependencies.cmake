@@ -35,8 +35,7 @@ find_package(dune-geometry REQUIRED)
 message("Find dune-grid: ")
 find_package(dune-grid REQUIRED)
 
-#message("Find muesli: ")
-#find_package(muesli REQUIRED)
+# message("Find muesli: ") find_package(muesli REQUIRED)
 
 message("Find autodiff: ")
 find_package(autodiff REQUIRED)
@@ -63,7 +62,7 @@ target_link_libraries(
   PUBLIC dunegeometry
   PUBLIC dunegrid
   PUBLIC ${SuiteSparseIncludeDirective}
-#   PUBLIC muesli
+  # PUBLIC muesli
   PUBLIC Matplot++::matplot
   PUBLIC autodiff::autodiff
   PUBLIC gfortran
