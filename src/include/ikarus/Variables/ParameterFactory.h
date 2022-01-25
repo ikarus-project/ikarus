@@ -7,7 +7,7 @@
 #include "VariableDefinitions.h"
 
 namespace Ikarus {
-  enum class FEParameter { noParameter, loadfactor,time };
+  enum class FEParameter { noParameter, loadfactor, time };
 
   struct FEParameterValuePair {
     FEParameter type{FEParameter::noParameter};

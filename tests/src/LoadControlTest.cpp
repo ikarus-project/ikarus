@@ -70,9 +70,8 @@ TEST(LoadControlTest, GridLoadControlTest) {
   };
 
   for (auto& edge : edges(gridView)) {
-    if (std::abs(edge.geometry().center()[1]) > h -0.01)
-    {
-      std::cout<<"edge.geometry().center() "<<edge.geometry().center()<<std::endl;
+    if (std::abs(edge.geometry().center()[1]) > h - 0.01) {
+      std::cout << "edge.geometry().center() " << edge.geometry().center() << std::endl;
       feContainer.emplace_back(Ikarus::FiniteElements::ForceLoad(edge, gridView.indexSet(), spaceFunction));
     }
   }
@@ -118,10 +117,10 @@ TEST(LoadControlTest, GridLoadControlTest) {
   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::SparseLU);
   auto nonLinOp  = Ikarus::NonLinearOperator(linearAlgebraFunctions(fintFunction, KFunctionSparse), parameter(time));
   auto nr        = Ikarus::NewtonRaphson(
-             nonLinOp, std::move(linSolver),
-             [&dirichletConditionManager](decltype(feManager.getVariables())& x, const Eigen::VectorX<double>& D) {
+      nonLinOp, std::move(linSolver),
+      [&dirichletConditionManager](decltype(feManager.getVariables())& x, const Eigen::VectorX<double>& D) {
         x += dirichletConditionManager.viewAsFullVector(D);
-             });
+      });
   nr.subscribeAll(nonLinearSolverObserver);
 
   auto lc = Ikarus::LoadControl(feManager, dirichletConditionManager, std::move(nr), 10, {0, 5000});
@@ -129,7 +128,7 @@ TEST(LoadControlTest, GridLoadControlTest) {
   //      feManager, dirichletConditionManager, linearAlgebraFunctions(fintFunction, KFunctionSparse),
   //      Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::SparseLU), 10, {0, 1});
   lc.subscribeAll(controlObserver);
-//  lc.subscribeToNonLinearSolver(nonLinearSolverObserver);
-//  lc.subscribe(ControlMessages::SOLUTION_CHANGED, gridDrawerObserver);
+  //  lc.subscribeToNonLinearSolver(nonLinearSolverObserver);
+  //  lc.subscribe(ControlMessages::SOLUTION_CHANGED, gridDrawerObserver);
   lc.run();
 }

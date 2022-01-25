@@ -60,10 +60,10 @@ namespace Ikarus::Manifold {
     void update(const CorrectionType &correction) noexcept { var += correction; }
 
     /** \brief Access to data by const reference */
-    const ctype& operator[](int i) const  { return var[i]; }
+    const ctype &operator[](int i) const { return var[i]; }
 
     /** \brief Access to data by const reference */
-    ctype& operator[](int i)  { return var[i]; }
+    ctype &operator[](int i) { return var[i]; }
 
   private:
     CoordinateType var{CoordinateType::Zero()};

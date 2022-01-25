@@ -28,15 +28,15 @@ public:
     }
   }
 
-  void updateImpl(ControlMessages message, double val) override {
-//    switch (message) {
-//      case ControlMessages::RESIDUALNORM_UPDATED:
-//        spdlog::info("Residual norm is {:03.2f}", val);
-//        break;
-//      default:
-//        break;
-//    }
+  void updateImpl(ControlMessages, double) override {
+    //    switch (message) {
+    //      case ControlMessages::RESIDUALNORM_UPDATED:
+    //        spdlog::info("Residual norm is {:03.2f}", val);
+    //        break;
+    //      default:
+    //        break;
+    //    }
   }
 
-  void updateImpl(ControlMessages message, const Eigen::VectorXd& vec) override {}
+  void updateImpl(ControlMessages, const Eigen::VectorXd&) override {}
 };
