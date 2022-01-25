@@ -58,7 +58,7 @@ public:
     }
   }
 
-  void updateImpl(NonLinearSolverMessages message, const Eigen::VectorXd& vec) override {}
+  void updateImpl(NonLinearSolverMessages, const Eigen::VectorXd&) override {}
 
 private:
   int iters{0};

@@ -74,8 +74,6 @@ TEST(LinearSolverTest, LinearSolverTest1) {
   auto denseMatrixAssembler  = Ikarus::Assembler::DenseMatrixAssembler(feManager, dirichletConditionManager);
   auto sparseMatrixAssembler = Ikarus::Assembler::SparseMatrixAssembler(feManager, dirichletConditionManager);
 
-  auto& x = feManager.getVariables();
-
   Ikarus::ILinearSolver<double> solver(SolverTypeTag::LDLT);
   auto& b       = vectorAssembler.getReducedVector(FiniteElements::forces);
   b[3]          = 1;
