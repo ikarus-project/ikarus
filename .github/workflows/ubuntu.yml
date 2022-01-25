@@ -1,4 +1,4 @@
-name: Ubuntu
+name: Debian
 on:
   push:
     paths-ignore:
@@ -9,7 +9,7 @@ jobs:
     name: ${{ matrix.config.name }}
     runs-on: ubuntu-latest
     container:
-      image: rath3t/ci-ubuntu-21-04
+      image: rath3t/ci-debian-bookworm
     strategy:
       fail-fast: false
       matrix:

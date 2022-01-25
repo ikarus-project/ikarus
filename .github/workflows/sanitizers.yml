@@ -8,7 +8,7 @@ jobs:
   Ubuntu-Sanitizers:
     runs-on: ubuntu-latest
     container:
-      image: rath3t/ci-ubuntu-21-04
+      image: rath3t/ci-debian-bookworm
     steps:
       - uses: actions/checkout@v2
         with:
