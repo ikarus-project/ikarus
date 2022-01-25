@@ -19,6 +19,6 @@ TEST(Observer, ControlObserver) {
   control.subscribeAll(controlObserver);
 
   control.notify(ControlMessages::CONTROL_STARTED);
-  control.notify(ControlMessages::LOADSTEP_ENDED);
+  control.notify(ControlMessages::STEP_ENDED);
   control.notify(ControlMessages::SOLUTION_CHANGED);
 }

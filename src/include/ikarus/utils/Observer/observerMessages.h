@@ -4,15 +4,7 @@
 
 #pragma once
 
-enum class ControlMessages {
-  BEGIN,
-  CONTROL_STARTED,
-  CONTROL_ENDED,
-  LOADSTEP_STARTED,
-  LOADSTEP_ENDED,
-  SOLUTION_CHANGED,
-  END
-};
+enum class ControlMessages { BEGIN, CONTROL_STARTED, CONTROL_ENDED, STEP_STARTED, STEP_ENDED, SOLUTION_CHANGED, END };
 
 enum class NonLinearSolverMessages {
   BEGIN,
