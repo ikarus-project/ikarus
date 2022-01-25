@@ -133,7 +133,7 @@ TEST(NonLinearOperator, SecondOrderVectorValuedOperatorNonlinearAutodiff) {
   b << 5, 7, 8;
   Eigen::MatrixXd A(3, 3);
   A = Eigen::MatrixXd::Identity(3, 3) * 13;
-  std::cout << "T1" << std::endl;
+
   auto fvLambda  = [&](auto&& x) { return f2vNL<double>(x, A, b); };
   auto dfvLambda = [&](auto&& x) {
     auto xR = x.template cast<autodiff::dual>().eval();
@@ -143,22 +143,22 @@ TEST(NonLinearOperator, SecondOrderVectorValuedOperatorNonlinearAutodiff) {
     auto xR = x.template cast<autodiff::dual2nd>().eval();
     return ddf2vNL(xR, A, b);
   };
-  std::cout << "T2" << std::endl;
+
   auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
-  std::cout << "T3" << std::endl;
+
   auto subOperator = nonLinOp.subOperator<1, 2>();
-  std::cout << "T4" << std::endl;
+
   // Newton method test find root of first derivative
   const double eps  = 1e-14;
   const int maxIter = 20;
   Ikarus::NewtonRaphson nr(subOperator, Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::LDLT));
-  std::cout << "T5" << std::endl;
+
   const Eigen::Vector3d xSol(-4.9131804394348836888, 2.0287578381104342236, 2.0287578381104342236);
   auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
   nr.subscribeAll(nonLinearSolverObserver);
-  std::cout << "T6" << std::endl;
+
   checkNewtonRhapson(nr, x, eps, maxIter, 5, xSol);
-  std::cout << "T7" << std::endl;
+
   nonLinOp.update<0>();
   EXPECT_DOUBLE_EQ(nonLinOp.value(), -1.1750584073929625716);
 }
