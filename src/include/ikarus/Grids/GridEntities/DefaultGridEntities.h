@@ -169,8 +169,9 @@ namespace Ikarus::Grid {
     /** \brief Returns the geometric realization of the entity */
     Geometry geometry() const {
       std::vector<Dune::FieldVector<double, dimensionworld>> fieldVectorVector;
-          fieldVectorVector.push_back(toFieldVector(position));
-      return Geometry(duneType(type()), fieldVectorVector); }
+      fieldVectorVector.push_back(toFieldVector(position));
+      return Geometry(duneType(type()), fieldVectorVector);
+    }
 
   private:
     friend class SimpleGrid<griddim, wdim>;

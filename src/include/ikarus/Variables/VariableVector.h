@@ -134,7 +134,9 @@ namespace Ikarus::Variable {
       return indices;
     }
 
-    const auto &dofIndicesOfEntity(const size_t &gridIndexOfEntity) const { return variableIndices[feIndexSet.indexOfEntity(gridIndexOfEntity)]; }
+    const auto &dofIndicesOfEntity(const size_t &gridIndexOfEntity) const {
+      return variableIndices[feIndexSet.indexOfEntity(gridIndexOfEntity)];
+    }
 
     [[nodiscard]] size_t correctionSize() const { return dofSizeValue; }
     [[nodiscard]] size_t elementSize() const { return feContainer_->size(); }
@@ -219,7 +221,6 @@ namespace Ikarus::Variable {
       const auto &variableIndices_ = res.variableIndices[variableIndex++];
       for (int i = 0; i < variableIndices_.size(); ++i)
         var[i] += r[variableIndices_[i]];
-
     }
     return res;
   }

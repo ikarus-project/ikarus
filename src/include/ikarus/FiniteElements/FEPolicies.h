@@ -61,9 +61,7 @@ namespace Ikarus::FiniteElements {
     /** \brief Dimension of the world space */
     static constexpr int worlddim = GridElementEntityType::dimensionworld;
 
-    [[nodiscard]] constexpr int dofSize() const {
-        return vertices(*elementGridEntity).size() * worlddim;
-    }
+    [[nodiscard]] constexpr int dofSize() const { return vertices(*elementGridEntity).size() * worlddim; }
 
     [[nodiscard]] DofTupleVectorType getEntityVariableTuple() const {
       DofTupleVectorType entDofTupleVector(vertices(*elementGridEntity).size());

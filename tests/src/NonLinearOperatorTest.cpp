@@ -25,7 +25,7 @@ void checkNewtonRhapson(NewtonRhapson &nr,SolutionType& x,double tol, int maxIte
   nr.setup({tol,maxIter});
   const auto solverInfo = nr.solve(x);
 
-  if constexpr (std::is_same_v<SolutionType,double>)
+  if constexpr (std::is_same_v<SolutionType, double>)
     EXPECT_DOUBLE_EQ(x, xExpected);
   else
     EXPECT_THAT(x, EigenApproxEqual(xExpected, 1e-15));
@@ -34,7 +34,6 @@ void checkNewtonRhapson(NewtonRhapson &nr,SolutionType& x,double tol, int maxIte
   EXPECT_LE(solverInfo.residualnorm, tol);
   EXPECT_EQ(solverInfo.iterations, iterExpected);
 }
-
 
 auto f(double& x) { return 0.5 * x * x + x - 2; }
 auto df(double& x) { return x + 1; }
@@ -47,20 +46,19 @@ TEST(NonLinearOperator, SimpleOperatorNewtonRhapsonTest) {
   Ikarus::NonLinearOperator nonLinOp(linearAlgebraFunctions(fvLambda, dfvLambda), parameter(x));
 
   // Newton method test
-  const double eps  = 1e-14;
-  const int maxIter = 20;
+  const double eps       = 1e-14;
+  const int maxIter      = 20;
   const double xExpected = std::sqrt(5.0) - 1.0;
 
   Ikarus::NewtonRaphson nr(nonLinOp);
 
-  checkNewtonRhapson(nr,x,eps,maxIter,7,xExpected);
+  checkNewtonRhapson(nr, x, eps, maxIter, 7, xExpected);
 }
 
 Eigen::VectorXd fv(Eigen::VectorXd& x, Eigen::MatrixXd& A, Eigen::VectorXd& b) { return b + A * x; }
 Eigen::MatrixXd dfv([[maybe_unused]] Eigen::VectorXd& x, Eigen::MatrixXd& A, [[maybe_unused]] Eigen::VectorXd& b) {
   return A;
 }
-
 
 TEST(NonLinearOperator, VectorValuedOperatorNewtonMethod) {
   Eigen::VectorXd x(3);
@@ -77,8 +75,8 @@ TEST(NonLinearOperator, VectorValuedOperatorNewtonMethod) {
   // Newton method test
   const double eps  = 1e-14;
   const int maxIter = 20;
-  Ikarus::NewtonRaphson nr(nonLinOp,Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::LDLT));
-  checkNewtonRhapson(nr,x,eps,maxIter,1,(-A.ldlt().solve(b)).eval());
+  Ikarus::NewtonRaphson nr(nonLinOp, Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::LDLT));
+  checkNewtonRhapson(nr, x, eps, maxIter, 1, (-A.ldlt().solve(b)).eval());
 }
 
 double f2v(Eigen::VectorXd& x, Eigen::MatrixXd& A, Eigen::VectorXd& b) { return x.dot(b + A * x); }
@@ -98,16 +96,16 @@ TEST(NonLinearOperator, SecondOrderVectorValuedOperator) {
   Eigen::MatrixXd A(3, 3);
   A = Eigen::MatrixXd::Identity(3, 3) * 13;
 
-  auto fvLambda   = [&](auto&& x) { return f2v(x, A, b); };
-  auto dfvLambda  = [&](auto&& x) { return df2v(x, A, b); };
-  auto ddfvLambda = [&](auto&& x) { return ddf2v(x, A, b); };
-  auto nonLinOp   = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda,dfvLambda, ddfvLambda), parameter(x));
-  auto subOperator = nonLinOp.subOperator<1,2>();
+  auto fvLambda    = [&](auto&& x) { return f2v(x, A, b); };
+  auto dfvLambda   = [&](auto&& x) { return df2v(x, A, b); };
+  auto ddfvLambda  = [&](auto&& x) { return ddf2v(x, A, b); };
+  auto nonLinOp    = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
+  auto subOperator = nonLinOp.subOperator<1, 2>();
   // Newton method test find root of first derivative
   const double eps  = 1e-14;
   const int maxIter = 20;
-  Ikarus::NewtonRaphson nr(subOperator,Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::LDLT));
-  checkNewtonRhapson(nr,x,eps,maxIter,1,(-0.5*A.ldlt().solve(b)).eval());
+  Ikarus::NewtonRaphson nr(subOperator, Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::LDLT));
+  checkNewtonRhapson(nr, x, eps, maxIter, 1, (-0.5 * A.ldlt().solve(b)).eval());
   nonLinOp.update<0>();
   EXPECT_DOUBLE_EQ(nonLinOp.value(), -2.6538461538461533);
 }
@@ -115,19 +113,18 @@ TEST(NonLinearOperator, SecondOrderVectorValuedOperator) {
 #include <autodiff/forward/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
 using namespace autodiff;
-template<typename ScalarType>
-ScalarType f2vNL(const Eigen::VectorX<ScalarType>& x, Eigen::MatrixXd& A, Eigen::VectorXd& b) { return x.array().sin().matrix().dot( x); }
-
+template <typename ScalarType>
+ScalarType f2vNL(const Eigen::VectorX<ScalarType>& x, Eigen::MatrixXd&, Eigen::VectorXd&) {
+  return x.array().sin().matrix().dot(x);
+}
 
 Eigen::VectorXd df2vNL(Eigen::VectorX<autodiff::dual>& x, Eigen::MatrixXd& A, [[maybe_unused]] Eigen::VectorXd& b) {
-  return autodiff::gradient( f2vNL<autodiff::dual> ,wrt(x),at(x,A,b));
+  return autodiff::gradient(f2vNL<autodiff::dual>, wrt(x), at(x, A, b));
 }
-
 
 Eigen::MatrixXd ddf2vNL(Eigen::VectorX<autodiff::dual2nd>& x, Eigen::MatrixXd& A, [[maybe_unused]] Eigen::VectorXd& b) {
-  return autodiff::hessian( f2vNL<autodiff::dual2nd> ,wrt(x),at(x,A,b));
+  return autodiff::hessian(f2vNL<autodiff::dual2nd>, wrt(x), at(x, A, b));
 }
-
 
 TEST(NonLinearOperator, SecondOrderVectorValuedOperatorNonlinearAutodiff) {
   Eigen::VectorXd x(3);
@@ -137,26 +134,32 @@ TEST(NonLinearOperator, SecondOrderVectorValuedOperatorNonlinearAutodiff) {
   b << 5, 7, 8;
   Eigen::MatrixXd A(3, 3);
   A = Eigen::MatrixXd::Identity(3, 3) * 13;
-std::cout<<"T1"<<std::endl;
-  auto fvLambda   = [&](auto&& x) {  return f2vNL<double>(x, A, b); };
-  auto dfvLambda  = [&](auto&& x) {   auto xR = x.template cast<autodiff::dual>().eval(); return df2vNL(xR, A, b); };
-  auto ddfvLambda = [&](auto&& x) {  auto xR = x.template cast<autodiff::dual2nd>().eval(); return ddf2vNL(xR, A, b); };
-  std::cout<<"T2"<<std::endl;
-  auto nonLinOp   = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda,dfvLambda, ddfvLambda), parameter(x));
-  std::cout<<"T3"<<std::endl;
-  auto subOperator = nonLinOp.subOperator<1,2>();
-  std::cout<<"T4"<<std::endl;
+  std::cout << "T1" << std::endl;
+  auto fvLambda  = [&](auto&& x) { return f2vNL<double>(x, A, b); };
+  auto dfvLambda = [&](auto&& x) {
+    auto xR = x.template cast<autodiff::dual>().eval();
+    return df2vNL(xR, A, b);
+  };
+  auto ddfvLambda = [&](auto&& x) {
+    auto xR = x.template cast<autodiff::dual2nd>().eval();
+    return ddf2vNL(xR, A, b);
+  };
+  std::cout << "T2" << std::endl;
+  auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
+  std::cout << "T3" << std::endl;
+  auto subOperator = nonLinOp.subOperator<1, 2>();
+  std::cout << "T4" << std::endl;
   // Newton method test find root of first derivative
   const double eps  = 1e-14;
   const int maxIter = 20;
-  Ikarus::NewtonRaphson nr(subOperator,Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::LDLT));
-  std::cout<<"T5"<<std::endl;
-  const Eigen::Vector3d xSol(-4.9131804394348836888,2.0287578381104342236,2.0287578381104342236);
+  Ikarus::NewtonRaphson nr(subOperator, Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::LDLT));
+  std::cout << "T5" << std::endl;
+  const Eigen::Vector3d xSol(-4.9131804394348836888, 2.0287578381104342236, 2.0287578381104342236);
   auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
   nr.subscribeAll(nonLinearSolverObserver);
-  std::cout<<"T6"<<std::endl;
-  checkNewtonRhapson(nr,x,eps,maxIter,5,xSol);
-  std::cout<<"T7"<<std::endl;
+  std::cout << "T6" << std::endl;
+  checkNewtonRhapson(nr, x, eps, maxIter, 5, xSol);
+  std::cout << "T7" << std::endl;
   nonLinOp.update<0>();
   EXPECT_DOUBLE_EQ(nonLinOp.value(), -1.1750584073929625716);
 }
@@ -204,7 +207,7 @@ TEST(NonLinearOperator, GridLoadControlTest) {
   auto vectorAssembler = Ikarus::Assembler::VectorAssembler(feManager, dirichletConditionManager);
 
   auto denseMatrixAssembler  = Ikarus::Assembler::DenseMatrixAssembler(feManager, dirichletConditionManager);
-  auto sparseMatrixAssembler = Ikarus::Assembler::SparseMatrixAssembler(feManager,dirichletConditionManager);
+  auto sparseMatrixAssembler = Ikarus::Assembler::SparseMatrixAssembler(feManager, dirichletConditionManager);
 
   auto& x = feManager.getVariables();
 

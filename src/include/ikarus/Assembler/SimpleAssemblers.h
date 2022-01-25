@@ -187,7 +187,7 @@ namespace Ikarus::Assembler {
     Eigen::MatrixXd matRed{};
   };
 
-  template <typename FEManager,typename DirichletManager>
+  template <typename FEManager, typename DirichletManager>
   class SparseMatrixAssembler {
   public:
     explicit SparseMatrixAssembler(FEManager& dofManager, const DirichletManager& dirichletManager)
@@ -227,7 +227,8 @@ namespace Ikarus::Assembler {
     }
 
     Eigen::SparseMatrix<double>& getReducedMatrixImpl(Ikarus::FiniteElements::MatrixAffordances matrixAffordances,
-                                               const std::optional<FEParameterValuePair>& feParameter = std::nullopt) {
+                                                      const std::optional<FEParameterValuePair>& feParameter
+                                                      = std::nullopt) {
       if (!isReducedOccupationPatternCreated) createReducedOccupationPattern();
       if (!arelinearReducedDofsPerElementCreated) createlinearDofsPerElementReduced();
       spMatReduced.coeffs().setZero();
@@ -256,7 +257,6 @@ namespace Ikarus::Assembler {
       return spMatReduced;
     }
 
-
     // https://stackoverflow.com/questions/59192659/efficiently-use-eigen-for-repeated-sparse-matrix-assembly-in-nonlinear-finite-el
     void createOccupationPattern() {
       spMat.resize(feManager_->numberOfDegreesOfFreedom(), feManager_->numberOfDegreesOfFreedom());
@@ -274,7 +274,8 @@ namespace Ikarus::Assembler {
 
     // https://stackoverflow.com/questions/59192659/efficiently-use-eigen-for-repeated-sparse-matrix-assembly-in-nonlinear-finite-el
     void createReducedOccupationPattern() {
-      spMatReduced.resize(dirichletManager_->numberOfReducedDegreesOfFreedom(), dirichletManager_->numberOfReducedDegreesOfFreedom());
+      spMatReduced.resize(dirichletManager_->numberOfReducedDegreesOfFreedom(),
+                          dirichletManager_->numberOfReducedDegreesOfFreedom());
       std::vector<Eigen::Triplet<double>> vectorOfTriples;
       const int estimateOfConnectivity = 8;
       vectorOfTriples.reserve(estimateOfConnectivity * vertices((*feManager_->getGridView())).size());
@@ -305,24 +306,24 @@ namespace Ikarus::Assembler {
             elementLinearIndices.back()[linearIndexOfElement++] = spMat.getLinearIndex(r, c);
         ++eleIndex;
       }
-      arelinearDofsPerElementCreated=true;
+      arelinearDofsPerElementCreated = true;
     }
 
     // This function save the indices of each element in the underlying vector which stores the sparse matrix entries
     void createlinearDofsPerElementReduced() {
-      for ( auto&& dofs : feManager_->elementDofs()) {
+      for (auto&& dofs : feManager_->elementDofs()) {
         elementLinearReducedIndices.emplace_back();
         for (int r = 0; r < dofs.size(); ++r) {
-          if (dirichletManager_->isConstrained(dofs[r]))
-            continue;
+          if (dirichletManager_->isConstrained(dofs[r])) continue;
           for (int c = 0; c < dofs.size(); ++c) {
             if (dirichletManager_->isConstrained(dofs[c])) continue;
-            elementLinearReducedIndices.back().push_back(spMatReduced.getLinearIndex(dofs[r] - dirichletManager_->constraintsBelow(dofs[r]),dofs[c] - dirichletManager_->constraintsBelow(dofs[c])));
+            elementLinearReducedIndices.back().push_back(
+                spMatReduced.getLinearIndex(dofs[r] - dirichletManager_->constraintsBelow(dofs[r]),
+                                            dofs[c] - dirichletManager_->constraintsBelow(dofs[c])));
           }
         }
       }
-      arelinearReducedDofsPerElementCreated=true;
-
+      arelinearReducedDofsPerElementCreated = true;
     }
 
     Eigen::SparseMatrix<double> spMat;

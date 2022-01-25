@@ -89,7 +89,7 @@ TEST(Assembler, SimpleAssemblersTest) {
                   0,                  0, -178.5714285714286, -247.2527472527473,                  0,                  0,  13.73626373626373,  54.94505494505496, -13.73626373626373, -302.1978021978022,  178.5714285714286,  494.5054945054945).finished();  // clang-format on
   EXPECT_THAT(K, EigenApproxEqual(KExpected, 1e-15));
 
-  auto sparseMatrixAssembler = Ikarus::Assembler::SparseMatrixAssembler(feManager,dirichletConditionManager);
+  auto sparseMatrixAssembler = Ikarus::Assembler::SparseMatrixAssembler(feManager, dirichletConditionManager);
   auto KSparse               = sparseMatrixAssembler.getMatrix(Ikarus::FiniteElements::stiffness);
 
   EXPECT_THAT(KSparse, EigenApproxEqual(KExpected, 1e-15));

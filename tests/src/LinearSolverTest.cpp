@@ -24,7 +24,6 @@
 #include <ikarus/LinearAlgebra/NonLinearOperator.h>
 #include <ikarus/Solver/LinearSolver/LinearSolver.h>
 
-
 TEST(LinearSolverTest, LinearSolverTest1) {
   using namespace Ikarus::Grid;
   using namespace Ikarus;
@@ -73,13 +72,13 @@ TEST(LinearSolverTest, LinearSolverTest1) {
   auto vectorAssembler = Ikarus::Assembler::VectorAssembler(feManager, dirichletConditionManager);
 
   auto denseMatrixAssembler  = Ikarus::Assembler::DenseMatrixAssembler(feManager, dirichletConditionManager);
-  auto sparseMatrixAssembler = Ikarus::Assembler::SparseMatrixAssembler(feManager,dirichletConditionManager);
+  auto sparseMatrixAssembler = Ikarus::Assembler::SparseMatrixAssembler(feManager, dirichletConditionManager);
 
   auto& x = feManager.getVariables();
 
   Ikarus::ILinearSolver<double> solver(SolverTypeTag::LDLT);
-  auto& b = vectorAssembler.getReducedVector(FiniteElements::forces);
-  b[3]=1;
+  auto& b       = vectorAssembler.getReducedVector(FiniteElements::forces);
+  b[3]          = 1;
   const auto& A = denseMatrixAssembler.getReducedMatrix(FiniteElements::stiffness);
   solver.compute(A);
   const auto sol = solver.solve(b);
@@ -89,7 +88,7 @@ TEST(LinearSolverTest, LinearSolverTest1) {
   Ikarus::ILinearSolver<double> solverCG(SolverTypeTag::ConjugateGradient);
   solverCG.compute(Asparse);
   const auto sol2 = solverCG.solve(b);
-  EXPECT_THROW(solver.compute(Asparse),std::logic_error);
+  EXPECT_THROW(solver.compute(Asparse), std::logic_error);
 
   Ikarus::ILinearSolver<double> solver3(SolverTypeTag::CholmodSupernodalLLT);
   solver3.compute(Asparse);

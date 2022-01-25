@@ -162,13 +162,13 @@ namespace Ikarus {
       //    explicit SolverImpl() = default;;
       //          explicit SolverImpl(Solver& solverarg) : solver{solverarg} {};
       void analyzePattern(const SparseMatrixType& A) override {
-//        std::cout << "solver.SparseanalyzePattern(A)" << std::endl;
+        //        std::cout << "solver.SparseanalyzePattern(A)" << std::endl;
         if constexpr (requires(Solver sol) { sol.analyzePattern(A); }) solver.analyzePattern(A);
       }
       void factorize(const SparseMatrixType& A) override {
-//        std::cout << "solver.Sparsefactorize(A)" << std::endl;
+        //        std::cout << "solver.Sparsefactorize(A)" << std::endl;
         if constexpr (requires(Solver sol) { sol.factorize(A); }) {
-//          std::cout << "solver.Sparsefactorize(A) inside" << std::endl;
+          //          std::cout << "solver.Sparsefactorize(A) inside" << std::endl;
           solver.factorize(A);
         }
       }
@@ -176,12 +176,12 @@ namespace Ikarus {
       // Dense Solver do not have a factorize method therefore for
       // our interface we just call compute for dense matrices
       void factorize(const DenseMatrixType& A) override {
-//        std::cout << "solver.Densefactorize(A)" << std::endl;
+        //        std::cout << "solver.Densefactorize(A)" << std::endl;
         if constexpr (requires(Solver sol) { sol.compute(A); } && std::is_base_of_v<Eigen::SolverBase<Solver>, Solver>)
           solver.compute(A);
       }
       void compute(const SparseMatrixType& A) {
-//        std::cout << "solver.computeSparse(A)" << std::endl;
+        //        std::cout << "solver.computeSparse(A)" << std::endl;
         if constexpr (std::is_base_of_v<Eigen::SparseSolverBase<Solver>, Solver>)
           solver.compute(A);
         else
@@ -189,7 +189,7 @@ namespace Ikarus {
       }
 
       void compute(const DenseMatrixType& A) {
-//        std::cout << "solver.computeDense(A)" << std::endl;
+        //        std::cout << "solver.computeDense(A)" << std::endl;
         if constexpr (std::is_base_of_v<Eigen::SolverBase<Solver>, Solver>)
           solver.compute(A);
         else
@@ -208,26 +208,26 @@ namespace Ikarus {
     template <typename MatrixType>
     requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
     inline ILinearSolver& compute(const MatrixType& A) {
-//      std::cout << "compute(A)" << std::endl;
+      //      std::cout << "compute(A)" << std::endl;
       solverimpl->compute(A);
       return *this;
     }
     template <typename MatrixType>
     requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
     inline void analyzePattern(const MatrixType& A) {
-//      std::cout << "analyzePattern(A)" << std::endl;
+      //      std::cout << "analyzePattern(A)" << std::endl;
       solverimpl->analyzePattern(A);
     }
 
     template <typename MatrixType>
     requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
     inline void factorize(const MatrixType& A) {
-//      std::cout << "factorize(A)" << std::endl;
+      //      std::cout << "factorize(A)" << std::endl;
       solverimpl->factorize(A);
     }
 
     [[nodiscard]] Eigen::VectorX<ScalarType> solve(const Eigen::VectorX<ScalarType>& b) {
-//      std::cout << "solve(A)" << std::endl;
+      //      std::cout << "solve(A)" << std::endl;
       return solverimpl->solve(b);
     }
   };

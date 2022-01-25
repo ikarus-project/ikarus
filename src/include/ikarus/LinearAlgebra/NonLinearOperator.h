@@ -102,26 +102,26 @@ namespace Ikarus {
     using FunctionReturnType = std::tuple_element_t<n, FunctionReturnValues>;
 
     auto& value() requires(sizeof...(DerivativeArgs) > 0) {
-      if constexpr (requires{ std::get<0>(derivativesEvaluated_).get();})
+      if constexpr (requires { std::get<0>(derivativesEvaluated_).get(); })
         return std::get<0>(derivativesEvaluated_).get();
       else
         return std::get<0>(derivativesEvaluated_);
     }
     auto& derivative() & requires(sizeof...(DerivativeArgs) > 1) {
-      if constexpr (requires{ std::get<1>(derivativesEvaluated_).get();})
-      return std::get<1>(derivativesEvaluated_).get();
+      if constexpr (requires { std::get<1>(derivativesEvaluated_).get(); })
+        return std::get<1>(derivativesEvaluated_).get();
       else
-      return std::get<1>(derivativesEvaluated_);
+        return std::get<1>(derivativesEvaluated_);
     }
-    auto& secondDerivative()  requires(sizeof...(DerivativeArgs) > 2) {
-      if constexpr (requires{ std::get<2>(derivativesEvaluated_).get();})
+    auto& secondDerivative() requires(sizeof...(DerivativeArgs) > 2) {
+      if constexpr (requires { std::get<2>(derivativesEvaluated_).get(); })
         return std::get<2>(derivativesEvaluated_).get();
       else
         return std::get<2>(derivativesEvaluated_);
     }
     template <int n>
-    auto& nthDerivative()  requires(sizeof...(DerivativeArgs) > n) {
-      if constexpr (requires{ std::get<n>(derivativesEvaluated_).get();})
+    auto& nthDerivative() requires(sizeof...(DerivativeArgs) > n) {
+      if constexpr (requires { std::get<n>(derivativesEvaluated_).get(); })
         return std::get<n>(derivativesEvaluated_).get();
       else
         return std::get<n>(derivativesEvaluated_);
