@@ -8,6 +8,7 @@
 #include <dune/common/fvector.hh>
 
 #include <Eigen/Core>
+#include <dune/common/diagonalmatrix.hh>
 
 namespace Ikarus {
 
@@ -39,5 +40,14 @@ namespace Ikarus {
         eigenmatrix(i, j) = mat[i][j];
     return eigenmatrix;
   }
+
+
+template <typename ScalarType, int size1>
+Eigen::Matrix<ScalarType, size1, size1> toEigenMatrix(const Dune::DiagonalMatrix<ScalarType, size1>& mat) {
+  Eigen::Matrix<ScalarType, size1, size1> eigenmatrix;
+  for (int i = 0; i < size1; ++i)
+      eigenmatrix(i, i) = mat[i][i];
+  return eigenmatrix;
+}
 
 }  // namespace Ikarus

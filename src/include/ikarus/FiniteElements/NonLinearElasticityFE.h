@@ -41,6 +41,7 @@
 #include <ikarus/Geometries/GeometryWithExternalInput.h>
 #include <ikarus/Variables/VariableDefinitions.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
+#include <ikarus/Geometries/GeometryType.h>
 
 namespace Ikarus::Variable {
   class IVariable;

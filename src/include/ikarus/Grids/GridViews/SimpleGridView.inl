@@ -40,6 +40,11 @@ namespace Ikarus::Grid {
     return gridView.template getEntities<dim - dimE>();
   }
 
+template <int dim, int dimworld, size_t dimE>
+requires(dim >= dimE) auto& entities(SimpleGridView<dim, dimworld> const &gridView, Dune::index_constant<dimE> &&) {
+  return gridView.template getEntities<dim - dimE>();
+}
+
   template <int dim, int dimworld>
   auto& rootEntities(SimpleGridView<dim, dimworld> &gridView) {
     return gridView.template getEntities<0>();

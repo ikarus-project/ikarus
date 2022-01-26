@@ -190,8 +190,11 @@ namespace Ikarus::Assembler {
   template <typename FEManager, typename DirichletManager>
   class SparseMatrixAssembler {
   public:
+
     explicit SparseMatrixAssembler(FEManager& dofManager, const DirichletManager& dirichletManager)
         : feManager_{&dofManager}, dirichletManager_{&dirichletManager} {}
+
+    using GridView = typename FEManager::GridView;
 
     Eigen::SparseMatrix<double>& getMatrix(Ikarus::FiniteElements::MatrixAffordances MatrixAffordances,
                                            const std::optional<FEParameterValuePair>& feParameter = std::nullopt) {
@@ -262,7 +265,8 @@ namespace Ikarus::Assembler {
       spMat.resize(feManager_->numberOfDegreesOfFreedom(), feManager_->numberOfDegreesOfFreedom());
       std::vector<Eigen::Triplet<double>> vectorOfTriples;
       int estimateOfConnectivity = 8;
-      vectorOfTriples.reserve(estimateOfConnectivity * vertices((*feManager_->getGridView())).size());
+      using std::size;
+      vectorOfTriples.reserve(estimateOfConnectivity * feManager_->getGridView()->size(GridView::dimension));
       for (auto&& dofsOfElement : feManager_->elementDofs())
         for (auto&& c : dofsOfElement)
           for (auto&& r : dofsOfElement)
@@ -278,7 +282,9 @@ namespace Ikarus::Assembler {
                           dirichletManager_->numberOfReducedDegreesOfFreedom());
       std::vector<Eigen::Triplet<double>> vectorOfTriples;
       const int estimateOfConnectivity = 8;
-      vectorOfTriples.reserve(estimateOfConnectivity * vertices((*feManager_->getGridView())).size());
+      using std::size;
+
+      vectorOfTriples.reserve(estimateOfConnectivity * feManager_->getGridView()->size(GridView::dimension));
       for (auto&& dofs : feManager_->elementDofs()) {
         for (int r = 0; r < dofs.size(); ++r) {
           if (dirichletManager_->isConstrained(dofs[r]))
