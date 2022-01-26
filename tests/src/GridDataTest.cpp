@@ -65,7 +65,7 @@ TEST(GridDataInterfaceTest, createDataOnEntities) {
   std::vector<Ikarus::FiniteElements::IFiniteElement> fes;
 
   for (auto&& element : surfaces(gridView))
-    fes.emplace_back(Ikarus::FiniteElements::ElasticityFE(element, gridView.indexSet()));
+    fes.emplace_back(Ikarus::FiniteElements::ElasticityFE(element, gridView.indexSet(), 1000, 0.3));
 
   GridData gridData(gridView.indexSet());
 
@@ -234,7 +234,7 @@ TEST(GridDataInterfaceTest, SimpleIndexSetTest) {
     std::vector<Ikarus::FiniteElements::IFiniteElement> fes;
 
     for (auto&& ge : surfaces(gridView))
-      fes.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge, gridView.indexSet()));
+      fes.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge, gridView.indexSet(), 1000, 0.3));
 
     auto dh = Ikarus::FEManager::DefaultFEManager(fes, gridView, gridData);
 

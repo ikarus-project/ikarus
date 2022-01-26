@@ -1,0 +1,49 @@
+//
+// Created by lex on 14/12/2021.
+//
+
+#pragma once
+#include <string>
+
+#include "spdlog/spdlog.h"
+
+#include "ikarus/utils/Observer/observer.h"
+#include "ikarus/utils/Observer/observerMessages.h"
+
+class ControlLogger : public IObserver<ControlMessages> {
+public:
+  void updateImpl(ControlMessages message) override {
+    switch (message) {
+      case ControlMessages::CONTROL_STARTED:
+        spdlog::info("Control started");
+        break;
+      case ControlMessages::STEP_STARTED:
+        spdlog::info("============================================");
+        spdlog::info("Controlstep has started");
+        spdlog::info("============================================");
+        break;
+      case ControlMessages::STEP_ENDED:
+        spdlog::info("============================================");
+        spdlog::info("Controlstep has ended");
+        break;
+      case ControlMessages::CONTROL_ENDED:
+        spdlog::info("Control ended");
+        spdlog::info("============================================");
+        break;
+      default:
+        break;  //   default: do nothing when notified
+    }
+  }
+
+  void updateImpl(ControlMessages, double) override {
+    //    switch (message) {
+    //      case ControlMessages::RESIDUALNORM_UPDATED:
+    //        spdlog::info("Residual norm is {:03.2f}", val);
+    //        break;
+    //      default:
+    //        break;
+    //    }
+  }
+
+  void updateImpl(ControlMessages, const Eigen::VectorXd&) override {}
+};

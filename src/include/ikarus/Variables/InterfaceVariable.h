@@ -34,6 +34,8 @@ namespace Ikarus::Variable {
     using UpdateType     = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 8, 1>;
     using CoordinateType = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 8, 1>;
 
+    double &operator[](int i);
+
   private:
     struct VarBase {
       virtual ~VarBase() = default;
@@ -46,6 +48,8 @@ namespace Ikarus::Variable {
       virtual void do_setValue(const UpdateType &other)                           = 0;
       [[nodiscard]] virtual CoordinateType do_getValue() const                    = 0;
       [[nodiscard]] virtual int do_getTag() const                                 = 0;
+      [[nodiscard]] virtual const double &operator[](int i) const                 = 0;
+      [[nodiscard]] virtual double &operator[](int i)                             = 0;
       [[nodiscard]] virtual std::unique_ptr<VarBase> clone() const                = 0;
     };
 
@@ -67,6 +71,9 @@ namespace Ikarus::Variable {
         return (this->do_getTag() < getTag(other));
       };
 
+      [[nodiscard]] const double &operator[](int i) const final { return vo[i]; };
+      [[nodiscard]] double &operator[](int i) final { return vo[i]; };
+
       [[nodiscard]] std::unique_ptr<VarBase> clone() const final { return std::make_unique<VarImpl>(*this); }
 
       VAR vo;
@@ -78,6 +85,7 @@ namespace Ikarus::Variable {
     friend IVariable operator+(IVariable &vo, const UpdateType &correction);
     friend IVariable &operator-=(IVariable &vo, const UpdateType &correction);
     friend IVariable operator-(IVariable &vo, const UpdateType &correction);
+
     friend void setValue(IVariable &vo, const UpdateType &value);
     friend CoordinateType getValue(const IVariable &vo);
     friend int valueSize(const IVariable &vo);

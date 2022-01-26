@@ -45,7 +45,7 @@ namespace Ikarus::Grid {
     return 0;
   }
   template <int griddim, int wdim>
-  auto transformVertexPositionToDuneFieldVectorVector(std::span<DefaultGridEntity<griddim, 0, wdim>>&& vertices) {
+  auto transformVertexPositionToDuneFieldVector(const std::vector< DefaultGridEntity<griddim, griddim, wdim>*  >& vertices)  {
     std::vector<Dune::FieldVector<double, wdim>> fieldVectorVector;
     for (const auto& pos :
          std::ranges::transform_view(vertices, &DefaultGridEntity<griddim, griddim, wdim>::getPosition))
@@ -54,18 +54,25 @@ namespace Ikarus::Grid {
   }
 
   template <int griddim, int cogriddim, int wdim>
-  auto DefaultGridEntity<griddim, cogriddim, wdim>::geometry() const {
+  typename DefaultGridEntity<griddim, cogriddim, wdim>::Geometry DefaultGridEntity<griddim, cogriddim, wdim>::geometry() const {
     std::vector<Dune::FieldVector<double, dimensionworld>> fieldVectorVector
-        = transformVertexPositionToDuneFieldVectorVector(getChildVertices());
-    return Ikarus::Geometry::IGeometry(Geometry(duneType(type()), fieldVectorVector));
+        = transformVertexPositionToDuneFieldVector(getChildVertices());
+    return DefaultGridEntity<griddim, cogriddim, wdim>::Geometry(duneType(type()), fieldVectorVector);
   }
 
   template <int griddim, int wdim>
-  auto DefaultGridEntity<griddim, 0, wdim>::geometry() const {
+  typename DefaultGridEntity<griddim, 0, wdim>::Geometry DefaultGridEntity<griddim, 0, wdim>::geometry() const {
     std::vector<Dune::FieldVector<double, dimensionworld>> fieldVectorVector
-        = transformVertexPositionToDuneFieldVectorVector(getChildVertices());
-    return Ikarus::Geometry::IGeometry(Geometry(duneType(type()), fieldVectorVector));
+        = transformVertexPositionToDuneFieldVector(getChildVertices());
+    return DefaultGridEntity<griddim, 0, wdim>::Geometry(duneType(type()), fieldVectorVector);
   }
+
+//  template <int griddim, int wdim>
+//  typename DefaultGridEntity<griddim, 0, wdim>::Geometry DefaultGridEntity<griddim, 0, wdim>::geometry() const {
+//    std::vector<Dune::FieldVector<double, dimensionworld>> fieldVectorVector
+//        = transformVertexPositionToDuneFieldVector(getChildVertices());
+//    return DefaultGridEntity<griddim, 0, wdim>::Geometry(duneType(type()), fieldVectorVector);
+//  }
 
   template <int griddim, int cogriddim, int wdim>
   auto vertices(DefaultGridEntity<griddim, cogriddim, wdim>& gridEntity) {
@@ -91,6 +98,14 @@ namespace Ikarus::Grid {
 
   template <int griddim, int cogriddim, int wdim>
   auto edges(DefaultGridEntity<griddim, cogriddim, wdim>& gridEntity) {
+    if constexpr (griddim == cogriddim)  // gridEntity is a vertex!
+      return Ikarus::utils::transformPointerRangeToReferenceRange(gridEntity.template getFatherEntities<griddim - 1>());
+    else
+      return Ikarus::utils::transformPointerRangeToReferenceRange(gridEntity.template getChildEntities<1>());
+  }
+
+  template <int griddim, int cogriddim, int wdim>
+  auto edges(const DefaultGridEntity<griddim, cogriddim, wdim>& gridEntity) {
     if constexpr (griddim == cogriddim)  // gridEntity is a vertex!
       return Ikarus::utils::transformPointerRangeToReferenceRange(gridEntity.template getFatherEntities<griddim - 1>());
     else

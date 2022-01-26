@@ -22,15 +22,18 @@ add_executable(IkarusTests ${sources})
 target_link_libraries(
   IkarusTests
   PRIVATE GTest::gmock_main
-  PRIVATE Ikarus::Ikarus
+  PUBLIC Ikarus::Ikarus
 )
 set_target_properties(IkarusTests PROPERTIES CXX_STANDARD 20)
 
-target_compile_options(IkarusTests PUBLIC -Wall -Wpedantic -Wextra -Werror)
+target_compile_options(
+  IkarusTests PUBLIC -Wall -Wpedantic -Wextra -Werror
+                     # -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable
+)
 target_compile_options(IkarusTests PUBLIC -fconcepts-diagnostics-depth=5)
 
 if(MINGW)
-  target_compile_options(IkarusTests PUBLIC -Wa,-mbig-obj)
+  target_compile_options(IkarusTests PUBLIC -Wa,-mbig-obj -ftrack-macro-expansion=0)
 endif()
 
 target_compile_features(IkarusTests PRIVATE cxx_std_20)
@@ -40,6 +43,6 @@ gtest_discover_tests(IkarusTests)
 
 if(ENABLE_TEST_COVERAGE)
   message("Enable Test Coverage")
-  target_compile_options(IkarusTests PUBLIC -O0 -g -fprofile-arcs -ftest-coverage -fPIC)
+  target_compile_options(IkarusTests PUBLIC -O0 -fprofile-arcs -ftest-coverage -fPIC)
   target_link_options(IkarusTests PUBLIC -fprofile-arcs -ftest-coverage)
 endif()

@@ -35,17 +35,18 @@ find_package(dune-geometry REQUIRED)
 message("Find dune-grid: ")
 find_package(dune-grid REQUIRED)
 
-#message("Find muesli: ")
-#find_package(muesli REQUIRED)
+# message("Find muesli: ") find_package(muesli REQUIRED)
 
 message("Find autodiff: ")
 find_package(autodiff REQUIRED)
 
 message("Find SuiteSparse: ")
 if(MINGW OR MSVC)
-  find_package(SuiteSparse CONFIG REQUIRED)
+  find_package(SuiteSparse CONFIG REQUIRED CHOLMOD UMFPACK)
+  set(SuiteSparseIncludeDirective ${SuiteSparse_LIBRARIES})
 else()
-  find_package(SuiteSparse REQUIRED)
+  find_package(SuiteSparse REQUIRED CHOLMOD UMFPACK)
+  set(SuiteSparseIncludeDirective "SuiteSparse::SuiteSparse")
 endif()
 message("Find matplotc++: ")
 find_package(Matplot++ REQUIRED)
@@ -61,7 +62,7 @@ target_link_libraries(
   PUBLIC dunegeometry
   PUBLIC dunegrid
   PUBLIC ${SuiteSparseIncludeDirective}
-#   PUBLIC muesli
+  # PUBLIC muesli
   PUBLIC Matplot++::matplot
   PUBLIC autodiff::autodiff
   PUBLIC gfortran

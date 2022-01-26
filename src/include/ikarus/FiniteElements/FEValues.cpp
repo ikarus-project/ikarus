@@ -5,22 +5,8 @@
 #include <ikarus/FiniteElements/FEValues.h>
 
 namespace Ikarus::FiniteElements {
-  const auto FEValues::get(const EntityType& eT, Ikarus::Variable::VariableTags varTag) const {
-    auto tagFilter = [&varTag](auto&& var) { return isType(var, varTag); };
-    switch (eT) {
-      case EntityType::vertex:
-        return vertexData | std::views::filter(tagFilter);
-      case EntityType::edge:
-        return edgeData | std::views::filter(tagFilter);
-      case EntityType::surface:
-        return surfaceData | std::views::filter(tagFilter);
-      case EntityType::volume:
-        return volumeData | std::views::filter(tagFilter);
-    }
-    __builtin_unreachable();
-  }
 
-  FEValues::EntityDataVectorType& FEValues::get(const EntityType& eT) {
+  const FEValues::EntityDataVectorType& FEValues::get(const EntityType& eT) const {
     switch (eT) {
       case EntityType::vertex:
         return vertexData;

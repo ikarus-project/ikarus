@@ -20,7 +20,8 @@ namespace Ikarus::Grid {
           level{levelInput},
           indexSet_{std::make_unique<SimpleGridIndexSet<GridType>>(gridInput, levelInput)} {}
 
-    static constexpr int dimension = dim;
+    static constexpr int dimension      = dim;
+    static constexpr int dimensionworld = dimworld;
 
     template <int coDim>
     auto begin() {
@@ -29,6 +30,11 @@ namespace Ikarus::Grid {
 
     template <int coDim>
     auto& getEntities() {
+      return grid->gridEntitiesContainer.template getSubEntities<coDim>(0);
+    }
+
+    template <int coDim>
+    const auto& getEntities() const {
       return grid->gridEntitiesContainer.template getSubEntities<coDim>(0);
     }
 
