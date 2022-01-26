@@ -59,6 +59,12 @@ namespace Ikarus::Manifold {
     /** \brief Update the manifold by an correction vector of size correctionSize */
     void update(const CorrectionType &correction) noexcept { var += correction; }
 
+    /** \brief Access to data by const reference */
+    const ctype &operator[](int i) const { return var[i]; }
+
+    /** \brief Access to data by const reference */
+    ctype &operator[](int i) { return var[i]; }
+
   private:
     CoordinateType var{CoordinateType::Zero()};
   };

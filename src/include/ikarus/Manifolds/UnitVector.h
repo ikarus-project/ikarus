@@ -55,6 +55,12 @@ namespace Ikarus::Manifold {
     /** \brief Set the coordinates of the manifold by r_value reference */
     void setValue(CoordinateType &&vec) { var = std::move(vec.normalized()); }
 
+    /** \brief Access to data by const reference */
+    const ctype &operator[](int i) const { return var[i]; }
+
+    /** \brief Access to data by const reference */
+    ctype &operator[](int i) { return var[i]; }
+
     /** \brief Update the manifold by an correction vector of size correctionSize
      * For the unit vector in R^3 the correction are of size 2
      * Therefore, we need an basis for the tangent space.

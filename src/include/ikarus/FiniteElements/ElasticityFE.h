@@ -26,10 +26,14 @@
 #include <iostream>
 
 #include <dune/common/classname.hh>
+#include <dune/geometry/quadraturerules.hh>
 #include <dune/geometry/type.hh>
 
 #include <spdlog/spdlog.h>
 
+#include "ikarus/AnsatzFunctions/Lagrange.h"
+#include "ikarus/utils/LinearAlgebraHelper.h"
+#include <ikarus/FiniteElements/FEPolicies.h>
 #include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
 #include <ikarus/Variables/VariableDefinitions.h>
@@ -41,117 +45,92 @@ namespace Ikarus::Variable {
 
 namespace Ikarus::FiniteElements {
 
-  template <typename GridElementEntityType, typename IndexSetType, std::floating_point ct = double>
-  class ElasticityFE {
+  template <typename GridElementEntityType, typename IndexSetType>
+  class ElasticityFE : public FEVertexDisplacement<GridElementEntityType, IndexSetType> {
   public:
-    ElasticityFE(GridElementEntityType &gE, const IndexSetType &indexSet)
-        : elementGridEntity{&gE}, indexSet_{&indexSet} {}
+    using Base = FEVertexDisplacement<GridElementEntityType, IndexSetType>;
+    ElasticityFE(GridElementEntityType &gE, const IndexSetType &indexSet, double emod, double nu)
+        : Base(gE, indexSet), elementGridEntity{&gE}, indexSet_{&indexSet}, emod_{emod}, nu_{nu} {}
 
-    /** \brief Type used for coordinates */
-    using ctype = ct;
-
-    /** \brief Dimension of the world space */
-    static constexpr int coorddimension = GridElementEntityType::dimensionworld;
-
-    /** \brief Dimension of the geometry */
-    static constexpr int mydimension = GridElementEntityType::mydimension;
-
-    /** \brief Type of the Nodes coordinate */
-    using NodeType = Eigen::Matrix<ctype, coorddimension, 1>;
-
-    /** \brief Type of the ParameterSpace coordinate */
-    using ParameterSpaceType = Eigen::Matrix<ctype, mydimension, 1>;
-
-    /** \brief Type of the Pairs of gridEntities and variable tags */
-    using DofTupleVectorType = typename IFiniteElement::DofPairVectorType;
-
-    /** \brief Type of the DofVector */
-    using VariableVectorType = typename IFiniteElement::VariableVectorType;
-
-    /** \brief Type of the DataVector */
-    using DataVectorType = typename IFiniteElement::DataVectorType;
-
-    /** \brief Type of the Dofs / SolutionType
-     * using NodalSolutionType = Displacement<ctype,coorddimension>;*/
-
-    /** \brief Type of the internal forces */
-    using VectorType = Eigen::VectorXd;
-
-    /** \brief Type of the stiffness matrix */
-    using MatrixType = Eigen::MatrixXd;
-
-    [[nodiscard]] constexpr int dofSize() const {
-      if constexpr (coorddimension == 3)
-        return vertices(*elementGridEntity).size() * 3;
-      else if constexpr (coorddimension == 2)
-        return vertices(*elementGridEntity).size() * 2;
-    }
+    using Traits = FETraits<GridElementEntityType>;
 
     void initialize() {}
 
-    [[nodiscard]] std::pair<MatrixType, VectorType> calculateLocalSystem(const MatrixAffordances &matA,
-                                                                         const VectorAffordances &vecA,
-                                                                         [[maybe_unused]] VariableVectorType &vars,
-                                                                         [[maybe_unused]] DataVectorType data
-                                                                         = std::nullopt) const {
-      if (matA == stiffness && vecA == forces)
-        return calculateStiffnessMatrixAndInternalForcesImpl();
+    [[nodiscard]] std::pair<typename Traits::MatrixType, typename Traits::VectorType> calculateLocalSystem(
+        const typename Traits::FERequirementType &par) const {
+      if (par.matrixAffordances == stiffness && par.vectorAffordances == forces)
+        return calculateStiffnessMatrixAndInternalForcesImpl(par);
       else
         throw std::logic_error("This element can not handle your affordance! ");
     }
 
-    [[nodiscard]] MatrixType calculateMatrix(const MatrixAffordances &matA, [[maybe_unused]] VariableVectorType &vars,
-                                             [[maybe_unused]] const DataVectorType &data = std::nullopt) const {
-      if (matA == stiffness)
-        return calculateStiffnessMatrixAndInternalForcesImpl<false, true>();
+    [[nodiscard]] typename Traits::MatrixType calculateMatrix(const typename Traits::FERequirementType &req) const {
+      if (req.matrixAffordances == stiffness)
+        return calculateStiffnessMatrixAndInternalForcesImpl<false, true>(req);
       else
         throw std::logic_error("This element can not handle your affordance! ");
     }
 
-    [[nodiscard]] double calculateScalar(const ScalarAffordances &, [[maybe_unused]] VariableVectorType &vars,
-                                         [[maybe_unused]] const DataVectorType &data = std::nullopt) const {
-      return 13.0;
+    [[nodiscard]] double calculateScalar([[maybe_unused]] const typename Traits::FERequirementType &req) const {
+      if (req.scalarAffordances == potentialEnergy) {
+        Eigen::VectorXd d(this->dofSize());
+        auto dv = req.variables.value().get().get(EntityType::vertex);
+        for (int pos = 0, i = 0; i < this->dofSize() / 2; ++i) {
+          d.template segment<Traits::mydim>(pos) = Variable::getValue(dv[i]);
+          pos += Traits::mydim;
+        }
+        return 0.5 * d.dot(calculateStiffnessMatrixAndInternalForcesImpl<false, true>(req) * d);
+      } else
+        throw std::logic_error("This element can not handle your scalar affordance! ");
     }
 
-    [[nodiscard]] VectorType calculateVector(const VectorAffordances &, [[maybe_unused]] VariableVectorType &vars,
-                                             [[maybe_unused]] const DataVectorType &data = std::nullopt) const {
-      return calculateStiffnessMatrixAndInternalForcesImpl<true, false>();
+    [[nodiscard]] typename Traits::VectorType calculateVector(const typename Traits::FERequirementType &req) const {
+      return calculateStiffnessMatrixAndInternalForcesImpl<true, false>(req);
     }
 
     template <bool internalForcesFlag = true, bool stiffnessMatrixFlag = true>
-    auto calculateStiffnessMatrixAndInternalForcesImpl() const {
+    auto calculateStiffnessMatrixAndInternalForcesImpl(
+        [[maybe_unused]] const typename Traits::FERequirementType &req) const {
       if constexpr (internalForcesFlag && stiffnessMatrixFlag) {
-        const VectorType Fint = VectorType::Ones(8);
-        const MatrixType K    = MatrixType::Ones(8, 8);
+        const auto rule = Dune::QuadratureRules<double, Traits::mydim>::rule(duneType(elementGridEntity->type()), 2);
+        typename Traits::VectorType Fint(this->dofSize());
+        typename Traits::MatrixType K(this->dofSize(), this->dofSize());
+        Fint.setZero();
+        K.setZero();
         return std::make_pair(K, Fint);
-      } else if constexpr (internalForcesFlag && !stiffnessMatrixFlag)
-        return VectorType::Ones(8);
-      else if constexpr (!internalForcesFlag && stiffnessMatrixFlag)
-        return MatrixType::Ones(8, 8);
-      else
+      } else if constexpr (internalForcesFlag && !stiffnessMatrixFlag) {
+        Eigen::VectorXd d(this->dofSize());
+        auto dv = req.variables.value().get().get(EntityType::vertex);
+        for (int pos = 0, i = 0; i < this->dofSize() / 2; ++i) {
+          d.template segment<Traits::mydim>(pos) = Variable::getValue(dv[i]);
+          pos += Traits::mydim;
+        }
+        Eigen::VectorXd fint = calculateStiffnessMatrixAndInternalForcesImpl<false, true>(req) * d;
+        return fint;
+      } else if constexpr (not internalForcesFlag && stiffnessMatrixFlag) {
+        typename Traits::MatrixType K(this->dofSize(), this->dofSize());
+        K.setZero();
+        const auto rule = Dune::QuadratureRules<double, Traits::mydim>::rule(duneType(elementGridEntity->type()), 2);
+        Eigen::Matrix3d C;
+        C.setZero();
+        const double fac = emod_ / (1 - nu_ * nu_);
+        C(0, 0) = C(1, 1) = 1;
+        C(0, 1) = C(1, 0) = nu_;
+        C(2, 2)           = (1 - nu_) / 2;
+        C *= fac;
+        for (auto &gp : rule) {
+          const auto geo = elementGridEntity->geometry();
+          const auto J   = toEigenMatrix(geo.jacobianTransposed(gp.position()));
+          Eigen::Matrix<double, 4, Traits::mydim> dN
+              = Ikarus::LagrangeCube<double, Traits::mydim, 1>::evaluateJacobian(toEigenVector(gp.position()));
+          dN *= (J * Ikarus::LinearAlgebra::orthonormalizeMatrixColumns(J.transpose())).inverse();
+          const auto bop = boperator(dN);
+          K += (bop.transpose() * C * bop) * geo.integrationElement(gp.position()) * gp.weight();
+        }
+        return K;
+      } else
         static_assert(internalForcesFlag == false && stiffnessMatrixFlag == false,
                       "You asked the element: \"Don't return anything\"");
-    }
-
-    [[nodiscard]] DofTupleVectorType getEntityVariableTuple() const {
-      DofTupleVectorType entDofTupleVector(vertices(*elementGridEntity).size());
-      using namespace Ikarus::Variable;
-      VariableTags dofType;
-      if constexpr (coorddimension == 3)
-        dofType = VariableTags::displacement3d;
-      else if constexpr (coorddimension == 2)
-        dofType = VariableTags::displacement2d;
-      else if constexpr (coorddimension == 1)
-        dofType = VariableTags::displacement1d;
-      else
-        static_assert(coorddimension > 3 || coorddimension < 1, "This element has an impossible coorddimension.");
-      for (int id = 0; auto &entityDofTuple : entDofTupleVector) {
-        entityDofTuple.entityID = indexSet_->subIndex(*elementGridEntity, id++, coorddimension);
-        entityDofTuple.variableVector.assign(1, dofType);
-        entityDofTuple.entityType = EntityType::vertex;
-      }
-
-      return entDofTupleVector;
     }
 
     [[nodiscard]] unsigned int subEntities(unsigned int codim) const { return elementGridEntity->subEntities(codim); }
@@ -159,11 +138,34 @@ namespace Ikarus::FiniteElements {
       return indexSet_->subIndex(*elementGridEntity, i, codim);
     }
 
-    [[nodiscard]] unsigned int dimension() const { return mydimension; }
+    [[nodiscard]] unsigned int dimension() const { return Traits::mydim; }
 
   private:
+    auto boperator(const Eigen::Matrix<double, 4, Traits::mydim> &dN) const {
+      typename Traits::MatrixType Bop((Traits::mydim * (Traits::mydim + 1)) / 2, this->dofSize());
+      Bop.setZero();
+      for (int i = 0; i < dN.rows(); ++i) {
+        for (int j = 0; j < Traits::mydim; ++j)
+          Bop(j, Traits::mydim * i + j) = dN(i, j);
+
+        for (int s = 0; s < Traits::mydim * (Traits::mydim - 1) / 2; ++s)  // loop over off-diagonal strains
+        {
+          std::array<int, 2> curdim{};
+          for (int c = 0, d = 0; d < Traits::mydim; ++d) {
+            if (d == 2 - s) continue;
+            curdim[c++] = d;
+          }
+          for (int k = 0; k < 2; ++k)
+            Bop(s + Traits::mydim, Traits::mydim * i + curdim[k]) = dN(i, curdim[(k + 1) % 2]);
+          //              Bop(s + mydimension, mydimension * i + curdim[1]) = dN(i, curdim[0]);
+        }
+      }
+      return Bop;
+    }
     GridElementEntityType const *const elementGridEntity;
     IndexSetType const *const indexSet_;
+    double emod_;
+    double nu_;
   };
 
 }  // namespace Ikarus::FiniteElements

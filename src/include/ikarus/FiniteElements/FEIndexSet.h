@@ -21,10 +21,8 @@ public:
 
   size_t index(const FEType &fe) { return indexContainer_[&fe]; }
 
-  auto variableIndices(const FEType &fe) const {
-    auto getSubIndex = [&subIndexCont = subIndexContainer_](const auto &entityIDDof) {
-      return subIndexCont.at(entityIDDof.entityID);
-    };
+  auto variableIDs(const FEType &fe) const {
+    auto getSubIndex      = [&](const auto &entityIDDof) { return this->indexOfEntity(entityIDDof.entityID); };
     auto entityIDDofRange = Ikarus::FiniteElements::getEntityVariableTuple(fe);
     auto res              = std::ranges::transform_view(entityIDDofRange, getSubIndex);
     auto res2             = std::vector<size_t>(res.begin(), res.end());

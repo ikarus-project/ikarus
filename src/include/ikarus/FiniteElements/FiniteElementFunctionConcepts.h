@@ -7,9 +7,9 @@
 //#include <ikarus/FiniteElements/InterfaceFiniteElement.h>
 #include <optional>
 
-//#include <ikarus/Grids/EntityHelperFunctions.h>
 #include <ikarus/FiniteElements/FEValues.h>
 #include <ikarus/Variables/InterfaceVariable.h>
+#include <ikarus/Variables/ParameterFactory.h>
 #ifdef __clang__
 #  pragma clang diagnostic push
 #  pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
@@ -23,11 +23,18 @@ namespace Ikarus::FiniteElements {
     std::vector<Variable::VariableTags> variableVector;
   };
 
-  enum class VectorAffordances { forces };
+  enum class VectorAffordances { noAffordance, forces };
 
-  enum class MatrixAffordances { stiffness, materialstiffness, geometricstiffness, stiffnessdiffBucklingVector, mass };
+  enum class MatrixAffordances {
+    noAffordance,
+    stiffness,
+    materialstiffness,
+    geometricstiffness,
+    stiffnessdiffBucklingVector,
+    mass
+  };
 
-  enum class ScalarAffordances { potentialEnergy };
+  enum class ScalarAffordances { noAffordance, potentialEnergy };
 
   inline constexpr VectorAffordances forces = VectorAffordances::forces;
 
@@ -36,6 +43,17 @@ namespace Ikarus::FiniteElements {
   inline constexpr MatrixAffordances mass                        = MatrixAffordances::mass;
 
   inline constexpr ScalarAffordances potentialEnergy = ScalarAffordances::potentialEnergy;
+
+  struct FErequirements {
+    using VariableType = FEValues;
+    using DataType     = typename std::optional<std::reference_wrapper<FEValues>>;
+    std::optional<std::reference_wrapper<VariableType>> variables;
+    DataType data{std::nullopt};
+    std::map<decltype(FEParameterValuePair::type), decltype(FEParameterValuePair::value)> parameter;
+    ScalarAffordances scalarAffordances{ScalarAffordances::noAffordance};
+    VectorAffordances vectorAffordances{VectorAffordances::noAffordance};
+    MatrixAffordances matrixAffordances{MatrixAffordances::noAffordance};
+  };
 
 }  // namespace Ikarus::FiniteElements
 
@@ -50,15 +68,6 @@ namespace Ikarus::Concepts {
     DUNE_THROW(Dune::InvalidStateException,              \
                "The member/free function \"" << #Str << "\" is not implemented by this element");
 
-#define TRYCALLFUNCTIONWITHOUTDATA(Str, ...)                          \
-  if constexpr (Ikarus::Concepts::Has##Str##WithOutData<FE>)          \
-    return fe.Str(__VA_ARGS__);                                       \
-  else if constexpr (Ikarus::Concepts::HasFree##Str##WithOutData<FE>) \
-    return Str(fe, ##__VA_ARGS__);                                    \
-  else                                                                \
-    DUNE_THROW(Dune::InvalidStateException,                           \
-               "The member/free function \"" << #Str << "\" is not implemented by this element");
-
 #define TRYCALLFUNCTIONDONTTHROW(Str)                    \
   if constexpr (Ikarus::Concepts::Has##Str<FE>)          \
     return fe.Str();                                     \
@@ -68,81 +77,63 @@ namespace Ikarus::Concepts {
     return;
 
   template <typename FiniteElement>
-  concept HascalculateMatrix
-      = requires(FiniteElement fe, Ikarus::FiniteElements::MatrixAffordances matA, FiniteElements::FEValues vars,
-                 std::optional<std::reference_wrapper<FiniteElements::FEValues>>& data) {
-    fe.calculateMatrix(matA, vars, data);
+  concept HascalculateMatrix = requires(FiniteElement fe, Ikarus::FiniteElements::FErequirements req) {
+    fe.calculateMatrix(req);
   };
 
   template <typename FiniteElement>
-  concept HasFreecalculateMatrix
-      = requires(FiniteElement fe, Ikarus::FiniteElements::MatrixAffordances matA, FiniteElements::FEValues vars,
-                 std::optional<std::reference_wrapper<FiniteElements::FEValues>>& data) {
-    calculateMatrix(fe, matA, vars, data);
+  concept HasFreecalculateMatrix = requires(FiniteElement fe, Ikarus::FiniteElements::FErequirements req) {
+    calculateMatrix(fe, req);
   };
 
   template <typename FiniteElement>
-  concept HascalculateMatrixWithOutData
-      = requires(FiniteElement fe, Ikarus::FiniteElements::MatrixAffordances matA, FiniteElements::FEValues vars) {
-    fe.calculateMatrix(matA, vars);
+  concept HascalculateMatrixWithOutData = requires(FiniteElement fe, Ikarus::FiniteElements::FErequirements req) {
+    fe.calculateMatrix(req);
   };
 
   template <typename FiniteElement>
-  concept HasFreecalculateMatrixWithOutData
-      = requires(FiniteElement fe, Ikarus::FiniteElements::MatrixAffordances matA, FiniteElements::FEValues vars) {
-    calculateMatrix(fe, matA, vars);
+  concept HasFreecalculateMatrixWithOutData = requires(FiniteElement fe, Ikarus::FiniteElements::FErequirements req) {
+    calculateMatrix(fe, req);
   };
 
   template <typename FiniteElement>
-  concept HascalculateScalar
-      = requires(FiniteElement fe, Ikarus::FiniteElements::ScalarAffordances scalA, FiniteElements::FEValues vars,
-                 std::optional<std::reference_wrapper<FiniteElements::FEValues>>& data) {
-    fe.calculateScalar(scalA, vars, data);
+  concept HascalculateScalar = requires(FiniteElement fe, Ikarus::FiniteElements::FErequirements req) {
+    fe.calculateScalar(req);
   };
 
   template <typename FiniteElement>
-  concept HasFreecalculateScalar
-      = requires(FiniteElement fe, Ikarus::FiniteElements::ScalarAffordances scalA, FiniteElements::FEValues vars,
-                 std::optional<std::reference_wrapper<FiniteElements::FEValues>>& data) {
-    calculateScalar(fe, scalA, vars, data);
+  concept HasFreecalculateScalar = requires(FiniteElement fe, Ikarus::FiniteElements::FErequirements req) {
+    calculateScalar(fe, req);
   };
 
   template <typename FiniteElement>
-  concept HascalculateScalarWithOutData
-      = requires(FiniteElement fe, Ikarus::FiniteElements::ScalarAffordances scalA, FiniteElements::FEValues vars) {
-    fe.calculateScalar(scalA, vars);
+  concept HascalculateScalarWithOutData = requires(FiniteElement fe, Ikarus::FiniteElements::FErequirements req) {
+    fe.calculateScalar(req);
   };
 
   template <typename FiniteElement>
-  concept HasFreecalculateScalarWithOutData
-      = requires(FiniteElement fe, Ikarus::FiniteElements::ScalarAffordances scalA, FiniteElements::FEValues vars) {
-    calculateScalar(fe, scalA, vars);
+  concept HasFreecalculateScalarWithOutData = requires(FiniteElement fe, Ikarus::FiniteElements::FErequirements req) {
+    calculateScalar(fe, req);
   };
 
   template <typename FiniteElement>
-  concept HascalculateVector
-      = requires(FiniteElement fe, Ikarus::FiniteElements::VectorAffordances vecA, FiniteElements::FEValues vars,
-                 std::optional<std::reference_wrapper<FiniteElements::FEValues>>& data) {
-    fe.calculateVector(vecA, vars, data);
+  concept HascalculateVector = requires(FiniteElement fe, Ikarus::FiniteElements::FErequirements req) {
+    fe.calculateVector(req);
   };
 
   template <typename FiniteElement>
-  concept HasFreecalculateVector
-      = requires(FiniteElement fe, Ikarus::FiniteElements::VectorAffordances vecA, FiniteElements::FEValues vars,
-                 std::optional<std::reference_wrapper<FiniteElements::FEValues>>& data) {
-    calculateVector(fe, vecA, vars, data);
+  concept HasFreecalculateVector = requires(FiniteElement fe, Ikarus::FiniteElements::FErequirements req) {
+    calculateVector(fe, req);
   };
 
   template <typename FiniteElement>
-  concept HascalculateVectorWithOutData
-      = requires(FiniteElement fe, Ikarus::FiniteElements::VectorAffordances vecA, FiniteElements::FEValues vars) {
-    fe.calculateVector(vecA, vars);
+  concept HascalculateVectorWithOutData = requires(FiniteElement fe, Ikarus::FiniteElements::FErequirements req) {
+    fe.calculateVector(req);
   };
 
   template <typename FiniteElement>
-  concept HasFreecalculateVectorWithOutData
-      = requires(FiniteElement fe, Ikarus::FiniteElements::VectorAffordances vecA, FiniteElements::FEValues vars) {
-    calculateVector(fe, vecA, vars);
+  concept HasFreecalculateVectorWithOutData = requires(FiniteElement fe, Ikarus::FiniteElements::FErequirements req) {
+    calculateVector(fe, req);
   };
 
   template <typename FiniteElement>
@@ -180,33 +171,24 @@ namespace Ikarus::Concepts {
   };
 
   template <typename FiniteElement>
-  concept HascalculateLocalSystem
-      = requires(FiniteElement fe, Ikarus::FiniteElements::MatrixAffordances matA,
-                 Ikarus::FiniteElements::VectorAffordances vecA, FiniteElements::FEValues vars,
-                 std::optional<std::reference_wrapper<FiniteElements::FEValues>>& data) {
-    fe.calculateLocalSystem(matA, vecA, vars, data);
+  concept HascalculateLocalSystem = requires(FiniteElement fe, Ikarus::FiniteElements::FErequirements req) {
+    fe.calculateLocalSystem(req);
   };
 
   template <typename FiniteElement>
-  concept HasFreecalculateLocalSystem
-      = requires(FiniteElement fe, Ikarus::FiniteElements::MatrixAffordances matA,
-                 Ikarus::FiniteElements::VectorAffordances vecA, FiniteElements::FEValues vars,
-                 std::optional<std::reference_wrapper<FiniteElements::FEValues>>& data) {
-    calculateLocalSystem(fe, matA, vecA, vars, data);
+  concept HasFreecalculateLocalSystem = requires(FiniteElement fe, Ikarus::FiniteElements::FErequirements req) {
+    calculateLocalSystem(fe, req);
   };
 
   template <typename FiniteElement>
-  concept HascalculateLocalSystemWithOutData
-      = requires(FiniteElement fe, Ikarus::FiniteElements::MatrixAffordances matA,
-                 Ikarus::FiniteElements::VectorAffordances vecA, FiniteElements::FEValues vars) {
-    fe.calculateLocalSystem(matA, vecA, vars);
+  concept HascalculateLocalSystemWithOutData = requires(FiniteElement fe, Ikarus::FiniteElements::FErequirements req) {
+    fe.calculateLocalSystem(req);
   };
 
   template <typename FiniteElement>
   concept HasFreecalculateLocalSystemWithOutData
-      = requires(FiniteElement fe, Ikarus::FiniteElements::MatrixAffordances matA,
-                 Ikarus::FiniteElements::VectorAffordances vecA, FiniteElements::FEValues vars) {
-    calculateLocalSystem(fe, matA, vecA, vars);
+      = requires(FiniteElement fe, Ikarus::FiniteElements::FErequirements req) {
+    calculateLocalSystem(fe, req);
   };
 
   template <typename FiniteElement>

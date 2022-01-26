@@ -77,7 +77,7 @@ namespace Ikarus::Grid {
     }
 
     /** \brief Type of the geometry of this entity */
-    using Geometry = Dune::MultiLinearGeometry<double, codimension, dimensionworld>;
+    using Geometry = Dune::MultiLinearGeometry<double, mydimension, dimensionworld>;
 
     /** \brief Type of the containter for the grid childrens of this entity, it stores only pointers to the entities. */
     using EntitiesChildernType
@@ -92,7 +92,7 @@ namespace Ikarus::Grid {
     [[nodiscard]] Ikarus::GeometryType type() const;
 
     /** \brief Returns the geometric realization of the entity */
-    auto geometry() const;
+    Geometry geometry() const;
 
     /** \brief Get refínement level where this entity belongs to*/
     [[nodiscard]] int level() const { return levelIndex; }
@@ -147,7 +147,7 @@ namespace Ikarus::Grid {
     DefaultGridEntity() = default;
 
     /** \brief Type of the geometry of this entity */
-    using Geometry = Dune::MultiLinearGeometry<double, codimension, dimensionworld>;
+    using Geometry = Dune::MultiLinearGeometry<double, mydimension, dimensionworld>;
 
     /** \brief Type of the containter for the grid fathers of this entity */
     using EntitiesFatherType = decltype(Impl::FatherEntityPointerTupleGenerator<dimension, mydimension, dimensionworld>(
@@ -167,7 +167,11 @@ namespace Ikarus::Grid {
     [[nodiscard]] unsigned int subEntities(unsigned int) const { return 0; }
 
     /** \brief Returns the geometric realization of the entity */
-    auto geometry() const { return Geometry(duneType(type()), position); }
+    Geometry geometry() const {
+      std::vector<Dune::FieldVector<double, dimensionworld>> fieldVectorVector;
+      fieldVectorVector.push_back(toFieldVector(position));
+      return Geometry(duneType(type()), fieldVectorVector);
+    }
 
   private:
     friend class SimpleGrid<griddim, wdim>;
@@ -210,7 +214,7 @@ namespace Ikarus::Grid {
     [[nodiscard]] int level() const { return levelIndex; }
 
     /** \brief Type of the geometry of this entity */
-    using Geometry = Dune::MultiLinearGeometry<double, codimension, dimensionworld>;
+    using Geometry = Dune::MultiLinearGeometry<double, mydimension, dimensionworld>;
 
     template <int dimEnt>
     auto& getChildEntities() {
@@ -235,7 +239,7 @@ namespace Ikarus::Grid {
     [[nodiscard]] Ikarus::GeometryType type() const;
 
     /** \brief Returns the geometric realization of the entity */
-    auto geometry() const;
+    Geometry geometry() const;
 
     /** \brief Return copy of the id of this entity */
   private:

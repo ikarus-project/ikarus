@@ -23,13 +23,17 @@ namespace Ikarus::Variable {
     pressure,
     velocity1d,
     velocity2d,
-    edgeLength
+    edgeLength,
+    parameter1d,
+    parameter2d,
+    parameter3d
   };
 
   inline constexpr VariableTags AllVariableTags[]
       = {VariableTags::displacement1d, VariableTags::displacement2d, VariableTags::displacement3d,
          VariableTags::director2d,     VariableTags::director3d,     VariableTags::pressure,
-         VariableTags::velocity1d,     VariableTags::velocity2d,     VariableTags::edgeLength};
+         VariableTags::velocity1d,     VariableTags::velocity2d,     VariableTags::edgeLength,
+         VariableTags::parameter1d,    VariableTags::parameter2d,    VariableTags::parameter3d};
 
   using Manifold::RealTuple;
   using Manifold::UnitVector;
@@ -43,6 +47,9 @@ namespace Ikarus::Variable {
   using VELOCITY1D     = DefaultVariable<RealTuple<double, 1>, static_cast<int>(VariableTags::velocity1d)>;
   using VELOCITY2D     = DefaultVariable<RealTuple<double, 2>, static_cast<int>(VariableTags::velocity2d)>;
   using EDGELENGTH     = DefaultVariable<RealTuple<double, 1>, static_cast<int>(VariableTags::edgeLength)>;
+  using PARAMETER1D    = DefaultVariable<RealTuple<double, 1>, static_cast<int>(VariableTags::parameter1d)>;
+  using PARAMETER2D    = DefaultVariable<RealTuple<double, 2>, static_cast<int>(VariableTags::parameter2d)>;
+  using PARAMETER3D    = DefaultVariable<RealTuple<double, 3>, static_cast<int>(VariableTags::parameter3d)>;
 
   class VariableFactory {
   public:
@@ -66,6 +73,12 @@ namespace Ikarus::Variable {
           return IVariable(VELOCITY2D());
         case VariableTags::edgeLength:
           return IVariable(EDGELENGTH());
+        case VariableTags::parameter1d:
+          return IVariable(PARAMETER1D());
+        case VariableTags::parameter2d:
+          return IVariable(PARAMETER2D());
+        case VariableTags::parameter3d:
+          return IVariable(PARAMETER3D());
         default:
           throw std::logic_error("Variable not implemented.");
       }

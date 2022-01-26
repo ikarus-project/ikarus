@@ -48,7 +48,7 @@ TEST(FEManager, FEManagertest) {
   std::vector<Ikarus::FiniteElements::IFiniteElement> feContainer;
 
   for (auto&& ge : surfaces(gridView))
-    feContainer.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge, gridView.indexSet()));
+    feContainer.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge, gridView.indexSet(), 1000, 0.3));
 
   auto feManager = Ikarus::FEManager::DefaultFEManager(feContainer, gridView);
 
@@ -115,7 +115,7 @@ TEST(FEManager, FEManagertest) {
   auto dofIndicesOfFirstElement  = feManager.elementDofs()[0];
   auto dofIndicesOfSecondElement = feManager.elementDofs()[1];
 
-  std::array<Eigen::ArrayXi, 2> expectedIndices;
+  std::array<Eigen::ArrayX<size_t>, 2> expectedIndices;
   expectedIndices[0].resize(8);
   expectedIndices[1].resize(8);
   std::iota(expectedIndices[0].begin(), expectedIndices[0].end(), 0);
