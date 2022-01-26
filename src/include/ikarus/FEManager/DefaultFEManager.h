@@ -26,10 +26,11 @@ namespace Ikarus::FEManager {
       HasFreegetEntityVariableTuple<typename std::decay_t<FEContainer>::value_type>
   class DefaultFEManager {
   public:
-    using GridDataType = GridData<typename GridViewType::IndexSetType>;
+    using GridView = GridViewType;
+    using GridDataType = GridData<typename GridViewType::IndexSet>;
     DefaultFEManager(FEContainer& feContainer, GridViewType& gv,
                      std::optional<std::reference_wrapper<GridDataType>> gridData = std::nullopt)
-        : gridView_{&gv}, gridData_{gridData}, varVec{feContainer} {}
+        : gridView_{&gv}, gridData_{gridData}, varVec{feContainer} {      std::cout<<"DefaultFEManager"<<std::endl;}
 
     [[nodiscard]] size_t numberOfDegreesOfFreedom() const { return varVec.correctionSize(); }
 

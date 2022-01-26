@@ -13,7 +13,7 @@ namespace Ikarus::FiniteElements {
     using ctype = double;
 
     /** \brief Dimension of the world space */
-    static constexpr int worlddim = GridElementEntityType::dimensionworld;
+    static constexpr int worlddim = GridElementEntityType::Geometry::coorddimension;
 
     /** \brief Dimension of the geometry */
     static constexpr int mydim = GridElementEntityType::mydimension;
@@ -58,13 +58,15 @@ namespace Ikarus::FiniteElements {
     /** \brief Type of the Pairs of gridEntities and variable tags */
     using DofTupleVectorType = typename IFiniteElement::DofPairVectorType;
 
-    /** \brief Dimension of the world space */
-    static constexpr int worlddim = GridElementEntityType::dimensionworld;
+    using Traits = FETraits<GridElementEntityType>;
 
-    [[nodiscard]] constexpr int dofSize() const { return vertices(*elementGridEntity).size() * worlddim; }
+    /** \brief Dimension of the world space */
+    static constexpr int worlddim = Traits::worlddim;
+
+    [[nodiscard]] constexpr int dofSize() const { return elementGridEntity->subEntities(Traits::dimension) * worlddim; }
 
     [[nodiscard]] DofTupleVectorType getEntityVariableTuple() const {
-      DofTupleVectorType entDofTupleVector(vertices(*elementGridEntity).size());
+      DofTupleVectorType entDofTupleVector(elementGridEntity->subEntities(Traits::dimension));
       using namespace Ikarus::Variable;
       VariableTags dofType;
       if constexpr (worlddim == 3)

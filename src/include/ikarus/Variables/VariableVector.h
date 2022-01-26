@@ -17,10 +17,12 @@ namespace Ikarus::Variable {
   class VariableVector {
   public:
     explicit VariableVector(const FEContainer &feContainer) : feContainer_{&feContainer}, feIndexSet{feContainer} {
+      std::cout<<"VariableVector0"<<std::endl;
       struct EntityTypeAndVarTagSet {
         Ikarus::EntityType type;
         std::unordered_set<Ikarus::Variable::VariableTags> unorderedSet;
       };
+      std::cout<<"VariableVector1"<<std::endl;
       using DofSet = std::unordered_map<size_t, EntityTypeAndVarTagSet>;
       DofSet dofSet;
       for (auto &&fe : feContainer)
@@ -31,14 +33,14 @@ namespace Ikarus::Variable {
           entitySetEntry.type   = entityType.value();
           entitySetEntry.unorderedSet.insert(begin(dofTypes), end(dofTypes));
         }
-
+      std::cout<<"VariableVector2"<<std::endl;
       // A vector of pairs of a entity id and the corresponding unique variable tags
       using EntityVariablePairVector = std::vector<std::pair<size_t, EntityTypeAndVarTagSet>>;
 
       EntityVariablePairVector dofVector(begin(dofSet), end(dofSet));
       // sort vector to have increasing ids of entities
       std::ranges::sort(dofVector, [](auto &&a, auto &&b) { return a.first < b.first; });
-
+      std::cout<<"VariableVector3"<<std::endl;
       variablesForEachEntity.resize(dofVector.size());
       // creating vector of variables and save in variableIndexMap to which entity the belong
       for (auto &&[entityID, typeAnddofTagSet] : dofVector) {
@@ -48,11 +50,11 @@ namespace Ikarus::Variable {
         for (auto &&var : dofTagSet | std::views::transform(&Ikarus::Variable::VariableFactory::createVariable))
           variablesForEachEntity[entityIndex].emplace_back(var);
       }
-
+      std::cout<<"VariableVector4"<<std::endl;
       // find out how much dofs we actually have
       for (auto &&var : getValues())
         dofSizeValue += Ikarus::Variable::correctionSize(var);
-
+      std::cout<<"VariableVector5"<<std::endl;
       size_t indexCounter = 0;
       // add increasing degrees of freedom integer indices
       variableIndices.resize(dofVector.size());
@@ -61,6 +63,7 @@ namespace Ikarus::Variable {
         std::iota(var.begin(), var.end(), indexCounter);
         indexCounter += var.size();
       }
+      std::cout<<"VariableVector6"<<std::endl;
     }
 
     auto elementVariables() {
