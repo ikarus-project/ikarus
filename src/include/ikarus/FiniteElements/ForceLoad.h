@@ -19,7 +19,7 @@ namespace Ikarus::FiniteElements {
         std::function<TimeFunctionReturnType(TimeFunctionParameterType)> timeFunction
         = [](double t) -> double { return t; })
         : Base(gE, indexSet),
-          elementGridEntity{&gE},
+          elementGridEntity{gE},
           indexSet_{&indexSet},
           spaceFunction_{spaceFunction},
           timeFunction_{timeFunction} {}
@@ -35,7 +35,7 @@ namespace Ikarus::FiniteElements {
     [[nodiscard]] typename Traits::VectorType calculateVectorImpl(
         [[maybe_unused]] const typename Traits::FERequirementType &req) const {
       assert(req.parameter.contains(FEParameter::time));
-      const auto rule = Dune::QuadratureRules<double, Traits::mydim>::rule(duneType(elementGridEntity->type()), 2);
+      const auto rule = Dune::QuadratureRules<double, Traits::mydim>::rule(duneType(elementGridEntity.type()), 2);
       typename Traits::VectorType Fext(this->dofSize());
       Fext.setZero();
       const auto ft = timeFunction_(getValue(req.parameter.at(FEParameter::time))[0]);
@@ -44,7 +44,7 @@ namespace Ikarus::FiniteElements {
 
         for (int vertexCounter = 0; auto Ni : N) {
           Fext.template segment<Traits::dimension>(vertexCounter)
-              -= Ni * spaceFunction_(toEigenVector(elementGridEntity->geometry().global(gp.position()))) * ft;
+              -= Ni * spaceFunction_(toEigenVector(elementGridEntity.geometry().global(gp.position()))) * ft;
           vertexCounter += Traits::dimension;
         }
       }
@@ -52,7 +52,7 @@ namespace Ikarus::FiniteElements {
     }
 
   private:
-    GridElementEntityType const *const elementGridEntity;
+    GridElementEntityType elementGridEntity;
     IndexSetType const *const indexSet_;
     std::function<GlobalCoordinates(const GlobalCoordinates &)> spaceFunction_;
     std::function<double(double)> timeFunction_;
