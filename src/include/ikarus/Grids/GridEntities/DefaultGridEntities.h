@@ -70,6 +70,18 @@ namespace Ikarus::Grid {
       return std::get<dimEnt>(entitiesChildren);
     }
 
+    template <int Codim>
+    auto& subEntity(int i) {
+      static_assert(Codim >= 0 && Codim <= griddim, "You asked for a non-existing ChildEntity!");
+      return *std::get<griddim-Codim>(entitiesChildren)[i];
+    }
+
+    template <int Codim>
+    auto& subEntity(int i) const {
+      static_assert(Codim >= 0 && Codim <= griddim, "You asked for a non-existing ChildEntity!");
+      return *std::get<griddim-Codim>(entitiesChildren)[i];
+    }
+
     template <int dimEnt>
     const auto& getChildEntities() const {
       static_assert(dimEnt >= 0 && dimEnt < griddim, "You asked for a non-existing ChildEntity!");

@@ -50,7 +50,7 @@ namespace Ikarus::FiniteElements {
   public:
     using Base = FEVertexDisplacement<GridElementEntityType, IndexSetType>;
     ElasticityFE(GridElementEntityType &gE, const IndexSetType &indexSet, double emod, double nu)
-        : Base(gE, indexSet), elementGridEntity{&gE}, indexSet_{&indexSet}, emod_{emod}, nu_{nu} {}
+        : Base(gE, indexSet), elementGridEntity{gE}, indexSet_{&indexSet}, emod_{emod}, nu_{nu} {}
 
     using Traits = FETraits<GridElementEntityType>;
 
@@ -92,7 +92,7 @@ namespace Ikarus::FiniteElements {
     auto calculateStiffnessMatrixAndInternalForcesImpl(
         [[maybe_unused]] const typename Traits::FERequirementType &req) const {
       if constexpr (internalForcesFlag && stiffnessMatrixFlag) {
-        const auto rule = Dune::QuadratureRules<double, Traits::mydim>::rule(duneType(elementGridEntity->type()), 2);
+        const auto rule = Dune::QuadratureRules<double, Traits::mydim>::rule(duneType(elementGridEntity.type()), 2);
         typename Traits::VectorType Fint(this->dofSize());
         typename Traits::MatrixType K(this->dofSize(), this->dofSize());
         Fint.setZero();
@@ -110,7 +110,7 @@ namespace Ikarus::FiniteElements {
       } else if constexpr (not internalForcesFlag && stiffnessMatrixFlag) {
         typename Traits::MatrixType K(this->dofSize(), this->dofSize());
         K.setZero();
-        const auto rule = Dune::QuadratureRules<double, Traits::mydim>::rule(duneType(elementGridEntity->type()), 2);
+        const auto rule = Dune::QuadratureRules<double, Traits::mydim>::rule(duneType(elementGridEntity.type()), 2);
         Eigen::Matrix3d C;
         C.setZero();
         const double fac = emod_ / (1 - nu_ * nu_);
@@ -119,7 +119,7 @@ namespace Ikarus::FiniteElements {
         C(2, 2)           = (1 - nu_) / 2;
         C *= fac;
         for (auto &gp : rule) {
-          const auto geo = elementGridEntity->geometry();
+          const auto geo = elementGridEntity.geometry();
           const auto J   = toEigenMatrix(geo.jacobianTransposed(gp.position()));
           Eigen::Matrix<double, 4, Traits::mydim> dN
               = Ikarus::LagrangeCube<double, Traits::mydim, 1>::evaluateJacobian(toEigenVector(gp.position()));
@@ -133,9 +133,9 @@ namespace Ikarus::FiniteElements {
                       "You asked the element: \"Don't return anything\"");
     }
 
-    [[nodiscard]] unsigned int subEntities(unsigned int codim) const { return elementGridEntity->subEntities(codim); }
+    [[nodiscard]] unsigned int subEntities(unsigned int codim) const { return elementGridEntity.subEntities(codim); }
     [[nodiscard]] unsigned int subIndex(int i, unsigned int codim) const {
-      return indexSet_->subIndex(*elementGridEntity, i, codim);
+      return indexSet_->subIndex(elementGridEntity, i, codim);
     }
 
     [[nodiscard]] unsigned int dimension() const { return Traits::mydim; }
@@ -162,7 +162,7 @@ namespace Ikarus::FiniteElements {
       }
       return Bop;
     }
-    GridElementEntityType const *const elementGridEntity;
+    GridElementEntityType elementGridEntity;
     IndexSetType const *const indexSet_;
     double emod_;
     double nu_;

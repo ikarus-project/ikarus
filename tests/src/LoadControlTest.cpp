@@ -33,8 +33,8 @@ TEST(LoadControlTest, GridLoadControlTest) {
   std::vector<vertexType> verticesVec;
   const double L    = 10;
   const double h    = 1;
-  const size_t elex = 10;
-  const size_t eley = 10;
+  const size_t elex = 2;
+  const size_t eley = 2;
   for (size_t j = 0; j < eley + 1; ++j) {
     for (size_t i = 0; i < elex + 1; ++i)
       verticesVec.emplace_back(vertexType{i * L / (elex), j * h / (eley)});
@@ -127,6 +127,6 @@ TEST(LoadControlTest, GridLoadControlTest) {
   //      Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::SparseLU), 10, {0, 1});
   lc.subscribeAll(controlObserver);
   //  lc.subscribeToNonLinearSolver(nonLinearSolverObserver);
-  //  lc.subscribe(ControlMessages::SOLUTION_CHANGED, gridDrawerObserver);
+    lc.subscribe(ControlMessages::SOLUTION_CHANGED, gridDrawerObserver);
   lc.run();
 }

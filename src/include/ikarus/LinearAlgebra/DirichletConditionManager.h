@@ -23,13 +23,23 @@ namespace Ikarus {
         const GridEntity& gridEntity, const int localVariableIndex,
         //        const SpaceFunctionType spaceFunctionType = []([[maybe_unused]] auto&& v) { return 1.0; },
         const TimeFunctionType timeFunctionType = []([[maybe_unused]] auto&& v) { return 1.0; }) {
+
       auto gridEntityIndices = feManager_->dofIndicesOfEntity(gridEntity);
+      std::cout<<"gridEntityIndices.transpose()"<<std::endl;
+      std::cout<<gridEntityIndices.transpose()<<std::endl;
+      std::cout<<"localVariableIndex"<<std::endl;
+      std::cout<<localVariableIndex<<std::endl;
+      std::cout<<"gridEntityIndices[localVariableIndex]"<<std::endl;
+      std::cout<<gridEntityIndices[localVariableIndex]<<std::endl;
       assert(
           localVariableIndex < gridEntityIndices.size()
           && "The index of the degree of freedom you want to constrain is larger then the underlying variable dof "
              "count.");
+
+
       hasDirichletBoundaryCondition_.insert(
           {gridEntityIndices[localVariableIndex], {gridEntityIndices[localVariableIndex], timeFunctionType}});
+      std::cout<<"========="<<std::endl;
       isFinalized_ = false;
     }
 
@@ -79,9 +89,9 @@ namespace Ikarus {
 
   private:
     std::vector<size_t> constraintsBelow_;
-    bool isFinalized_;
+    bool isFinalized_{false};
     struct DirichletConstrainedDof {
-      size_t index;
+      size_t index{};
       //      SpaceFunctionType spaceFunctionType;
       TimeFunctionType timeFunctionType;
     };

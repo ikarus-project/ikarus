@@ -165,12 +165,23 @@ namespace Ikarus::Assembler {
         const auto eleMat = calculateMatrix(fe, fErequirements);
         assert(dofs.size() == eleMat.rows() && "The returned matrix has wrong rowSize!");
         assert(dofs.size() == eleMat.cols() && "The returned matrix has wrong colSize!");
+        std::cout<<"dofs: "<<dofs.transpose()<<std::endl;
         for (int r = 0; r < dofs.size(); ++r) {
-          if (dirichletManager_->isConstrained(dofs[r]))
+          std::cout<<"r: "<<r<<" dofs[r]:"<<dofs[r];
+          if (dirichletManager_->isConstrained(dofs[r])) {
+            std::cout<<"skipped"<<std::endl;
             continue;
-          else {
+          } else {
             for (int c = 0; c < dofs.size(); ++c) {
-              if (dirichletManager_->isConstrained(dofs[c])) continue;
+              std::cout<<"c: "<<r<<" dofs[c]:"<<dofs[c];
+              if (dirichletManager_->isConstrained(dofs[c])) {
+                std::cout<<"skipped"<<std::endl;
+                continue;
+              }
+              std::cout<<"\ndirichletManager_->constraintsBelow(dofs[r]: "<<dirichletManager_->constraintsBelow(dofs[r]);
+              std::cout<<"\ndirichletManager_->constraintsBelow(dofs[c]: "<<dirichletManager_->constraintsBelow(dofs[c]);
+              std::cout<<"\nrrealindex"<<dofs[r] - dirichletManager_->constraintsBelow(dofs[r])<<std::endl;
+              std::cout<<"\ncrealindex"<<dofs[c] - dirichletManager_->constraintsBelow(dofs[c])<<std::endl;
               matRed(dofs[r] - dirichletManager_->constraintsBelow(dofs[r]),
                      dofs[c] - dirichletManager_->constraintsBelow(dofs[c]))
                   += eleMat(r, c);

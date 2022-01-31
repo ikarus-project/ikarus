@@ -53,7 +53,7 @@ namespace Ikarus::FiniteElements {
   class FEVertexDisplacement {
   public:
     FEVertexDisplacement(GridElementEntityType &gE, const IndexSetType &indexSet)
-        : elementGridEntity{&gE}, indexSet_{&indexSet} {}
+        : elementGridEntity{gE}, indexSet_{&indexSet} {}
 
     /** \brief Type of the Pairs of gridEntities and variable tags */
     using DofTupleVectorType = typename IFiniteElement::DofPairVectorType;
@@ -63,10 +63,10 @@ namespace Ikarus::FiniteElements {
     /** \brief Dimension of the world space */
     static constexpr int worlddim = Traits::worlddim;
 
-    [[nodiscard]] constexpr int dofSize() const { return elementGridEntity->subEntities(Traits::dimension) * worlddim; }
+    [[nodiscard]] constexpr int dofSize() const { return elementGridEntity.subEntities(Traits::dimension) * worlddim; }
 
     [[nodiscard]] DofTupleVectorType getEntityVariableTuple() const {
-      DofTupleVectorType entDofTupleVector(elementGridEntity->subEntities(Traits::dimension));
+      DofTupleVectorType entDofTupleVector(elementGridEntity.subEntities(Traits::dimension));
       using namespace Ikarus::Variable;
       VariableTags dofType;
       if constexpr (worlddim == 3)
@@ -78,16 +78,18 @@ namespace Ikarus::FiniteElements {
       else
         static_assert(worlddim > 3 || worlddim < 1, "This element has an impossible worlddim.");
       for (int id = 0; auto &entityDofTuple : entDofTupleVector) {
-        entityDofTuple.entityID = indexSet_->subIndex(*elementGridEntity, id++, worlddim);
+        if constexpr (requires{ elementGridEntity->template subEntity<Traits::dimension>(id);})
+          std::cout<<"id: "<<id<<" "<<"Coords: "<<elementGridEntity.template subEntity<Traits::dimension>(id).geometry().corner(0)<<" globID "<<indexSet_->subIndex(*elementGridEntity, id, Traits::dimension)<<std::endl;
+        entityDofTuple.entityID = indexSet_->subIndex(elementGridEntity, id++, Traits::mydim);
+
         entityDofTuple.variableVector.assign(1, dofType);
         entityDofTuple.entityType = EntityType::vertex;
       }
-
       return entDofTupleVector;
     }
 
   private:
-    GridElementEntityType const *const elementGridEntity;
+    GridElementEntityType elementGridEntity;
     IndexSetType const *const indexSet_;
   };
 }  // namespace Ikarus::FiniteElements

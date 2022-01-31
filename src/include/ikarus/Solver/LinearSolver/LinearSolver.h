@@ -208,7 +208,9 @@ namespace Ikarus {
     template <typename MatrixType>
     requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
     inline ILinearSolver& compute(const MatrixType& A) {
-      //      std::cout << "compute(A)" << std::endl;
+//            std::cout << "compute(A)" << std::endl;
+//            std::cout <<"r,c: "<< A.rows()<<" "<<A.cols() << std::endl;
+//            std::cout << A << std::endl;
       solverimpl->compute(A);
       return *this;
     }
@@ -227,7 +229,8 @@ namespace Ikarus {
     }
 
     [[nodiscard]] Eigen::VectorX<ScalarType> solve(const Eigen::VectorX<ScalarType>& b) {
-      //      std::cout << "solve(A)" << std::endl;
+//            std::cout << "solve(A)" << std::endl;
+//            std::cout << b.transpose()<< std::endl;
       return solverimpl->solve(b);
     }
   };
