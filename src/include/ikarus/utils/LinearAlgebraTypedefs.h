@@ -45,6 +45,7 @@ namespace Ikarus {
 template <typename ScalarType, int size1>
 Eigen::Matrix<ScalarType, size1, size1> toEigenMatrix(const Dune::DiagonalMatrix<ScalarType, size1>& mat) {
   Eigen::Matrix<ScalarType, size1, size1> eigenmatrix;
+  eigenmatrix.setZero();
   for (int i = 0; i < size1; ++i)
       eigenmatrix(i, i) = mat[i][i];
   return eigenmatrix;
