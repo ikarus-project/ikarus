@@ -13,26 +13,6 @@
 
 namespace Ikarus {
 
-  //  template <typename... Args>
-  //  struct NonLinearSolverArguments {
-  //    std::tuple<std::reference_wrapper<std::remove_cvref_t<Args>>...> args;
-  //  };
-  //
-  //  template <typename... Args>
-  //  auto nonlinearSolverArguments(Args&&... args) {
-  //    return NonLinearSolverArguments<Args&&...>{std::forward_as_tuple(std::forward<Args>(args)...)};
-  //  }
-
-  //  template <template <typename, typename, typename> class NonLinearSolver, typename FEManager,
-  //            typename DirichletManager, typename TypeListOne, typename TypeListTwo>
-  //  class LoadControl {
-  //  public:
-  //    LoadControl(FEManager& feManager, DirichletManager& dirichletManager, const TypeListOne&
-  //    nonLinearSolverArguments,
-  //                const TypeListTwo& linearAlgebraFunctions, const int loadSteps,
-  //                const std::pair<double, double>& tbeginEnd) {}
-  //  };
-
   template <typename NonLinearSolver, typename FEManager, typename DirichletManager,
             typename... LinearAlgebraFunctionArgs>
   class LoadControl : public IObservable<ControlMessages> {
@@ -48,10 +28,19 @@ namespace Ikarus {
           stepSize_{(parameterEnd_ - parameterBegin_) / loadSteps_} {}
 
     void run() {
+      auto& nonOp = nonLinearSolver.nonLinearOperator();
       this->notify(ControlMessages::CONTROL_STARTED);
-      auto& loadParameter    = nonLinearSolver.nonLinearOperator().template nthParameter<0>();
+      auto& loadParameter    = nonOp.template nthParameter<0>();
+      //assemble u
+//      auto& PredictRHS    = nonOp.value()(u=(0,0,0,0,uhat));
+
       loadParameter.value[0] = 0.0;
       auto& x                = feManager_->getVariables();
+//      x+=u=(0,0,0,0,uhat);
+//      nonOp.update<0>();
+//      x += nonOp.deriv().solve(-nonOp.value()),
+//      nonLinearSolver.solve(x);
+//      x += nonOp.value().solve(PredictRHS);
       for (int ls = 0; ls < loadSteps_ + 1; ++ls) {
         this->notify(ControlMessages::STEP_STARTED);
         nonLinearSolver.solve(x);

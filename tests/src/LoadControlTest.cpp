@@ -91,15 +91,16 @@ TEST(LoadControlTest, GridLoadControlTest) {
   auto vectorAssembler = Ikarus::Assembler::VectorAssembler(feManager, dirichletConditionManager);
 
   auto denseMatrixAssembler  = Ikarus::Assembler::DenseMatrixAssembler(feManager, dirichletConditionManager);
+
   auto sparseMatrixAssembler = Ikarus::Assembler::SparseMatrixAssembler(feManager, dirichletConditionManager);
 
-  [[maybe_unused]] auto fintFunction = [&](auto&& lambda) -> auto& {
+  auto fintFunction = [&](auto&& lambda) -> auto& {
     return vectorAssembler.getReducedVector(Ikarus::FiniteElements::forces, lambda);
   };
-  [[maybe_unused]] auto KFunction = [&](auto&& lambda) -> auto& {
+  auto KFunction = [&](auto&& lambda) -> auto& {
     return denseMatrixAssembler.getReducedMatrix(Ikarus::FiniteElements::stiffness, lambda);
   };
-  [[maybe_unused]] auto KFunctionSparse = [&](auto&& lambda) -> auto& {
+  auto KFunctionSparse = [&](auto&& lambda) -> auto& {
     return sparseMatrixAssembler.getReducedMatrix(Ikarus::FiniteElements::stiffness, lambda);
   };
 

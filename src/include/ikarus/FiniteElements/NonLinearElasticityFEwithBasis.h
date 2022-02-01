@@ -110,7 +110,7 @@ namespace Ikarus::FiniteElements {
     template <class ScalarType>
     ScalarType calculateScalarImpl([[maybe_unused]] const Eigen::VectorXd& displacements, const double& lambda, Eigen::VectorX<ScalarType>& dx) const {
       Eigen::VectorX<ScalarType> localDisp(localView_.size());
-
+      localDisp.setZero();
       auto first_child = localView_.tree().child(0);
       const auto& fe = first_child.finiteElement();
 
@@ -138,7 +138,8 @@ namespace Ikarus::FiniteElements {
         const auto geo = localView_.element().geometry();
         const auto J   = toEigenMatrix(geo.jacobianTransposed(gp.position()));
         //        std::cout<<"J:\n"<<J<<std::endl;
-        Eigen::Matrix<ScalarType, Traits::dimension, 4> x;
+        Eigen::Matrix<ScalarType, Traits::dimension, Eigen::Dynamic> x;
+        x.resize(Eigen::NoChange,fe.size());
         x.setZero();
         for (auto i = 0U; i < fe.size(); ++i)
           x.col(i) = dxM.col(i) + toEigenVector(geo.corner(i)) ;
@@ -162,6 +163,7 @@ namespace Ikarus::FiniteElements {
             dN(i,j) = dNM[i][0][j];
           }
         }
+
         const auto Jloc = Ikarus::LinearAlgebra::orthonormalizeMatrixColumns(J.transpose());
         const auto j    = deformedgeo.jacobianTransposed(dN, x);
         const Eigen::Matrix<ScalarType, Traits::mydim, Traits::mydim> F = Jloc.transpose() * j * (J.inverse()) * Jloc;
@@ -183,6 +185,15 @@ namespace Ikarus::FiniteElements {
         fext.setZero();
         fext[0] = 0;
         fext[1] = lambda;
+//        std::cout<<"N: ";
+//        for (auto i = 0U; i < NM.size(); ++i)
+//          std::cout<<NM[i]<<" ";
+//        std::cout<<std::endl;
+//        std::cout<<"dN:"<<dN<<std::endl;
+//        std::cout<<"J:"<<J<<std::endl;
+//        std::cout<<"F:"<<F<<std::endl;
+//        std::cout<<"j:"<<j<<std::endl;
+//        std::cout<<"Jloc:"<<Jloc<<std::endl;
         energy += EVoigt.dot(C * EVoigt) * geo.integrationElement(gp.position()) * gp.weight();
         energy -= xv.dot(fext) * geo.integrationElement(gp.position()) * gp.weight();
       }
