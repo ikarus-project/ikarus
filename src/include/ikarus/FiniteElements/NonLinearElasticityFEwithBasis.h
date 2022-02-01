@@ -100,7 +100,7 @@ namespace Ikarus::FiniteElements {
       auto f = [&](Eigen::VectorXdual &x) { return calculateScalarImpl<autodiff::dual>(displacements,lambda, x); };
       const auto g = gradient(f, wrt(dx), at(dx));
       Eigen::VectorXd gE;
-      gE.setZero();
+      gE.setZero(localView_.size());
       for (auto i = 0U; i < localView_.size(); ++i) {
         gE[i] = g[i];
       }
@@ -111,19 +111,18 @@ namespace Ikarus::FiniteElements {
     ScalarType calculateScalarImpl([[maybe_unused]] const Eigen::VectorXd& displacements, const double& lambda, Eigen::VectorX<ScalarType>& dx) const {
       Eigen::VectorX<ScalarType> localDisp(localView_.size());
 
-
       auto first_child = localView_.tree().child(0);
       const auto& fe = first_child.finiteElement();
 
-
-      for(int k2 = 0; k2< Traits::mydim; ++k2)
-      for(int i = 0; i< fe.size(); ++i)
-        localDisp[i] =  dx[localView_.tree().child(k2).localIndex(i)]+ displacements[localView_.index(i)[0]];
+        for(auto i = 0U; i< fe.size(); ++i)
+          for(auto k2 = 0U; k2< Traits::mydim; ++k2)
+        localDisp[2*i+k2] =  dx[localView_.tree().child(k2).localIndex(i)]+ displacements[localView_.index(localView_.tree().child(k2).localIndex(i))[0]];
       ScalarType energy = 0.0;
 
       Eigen::Matrix<ScalarType, Traits::dimension, 4> dxM;
-      for (int pos = 0, i = 0; i < localDisp.size(); ++i) {
-        dxM.col(i) = localDisp.template segment<Traits::dimension>(pos);
+      dxM.setZero();
+      for (auto pos = 0U, i = 0U; i < fe.size(); ++i) {
+        dxM.col(i) = localDisp.template segment<Traits::mydim>(pos);
         pos += Traits::dimension;
       }
       const int order = 2*(fe.localBasis().order());
@@ -140,8 +139,8 @@ namespace Ikarus::FiniteElements {
         const auto J   = toEigenMatrix(geo.jacobianTransposed(gp.position()));
         //        std::cout<<"J:\n"<<J<<std::endl;
         Eigen::Matrix<ScalarType, Traits::dimension, 4> x;
-
-        for (int i = 0; i < localDisp.size(); ++i)
+        x.setZero();
+        for (auto i = 0U; i < fe.size(); ++i)
           x.col(i) = dxM.col(i) + toEigenVector(geo.corner(i)) ;
 
         const Ikarus::Geometry::GeometryWithExternalInput<ScalarType, Traits::mydim, Traits::dimension> deformedgeo;
@@ -156,8 +155,9 @@ namespace Ikarus::FiniteElements {
           xv+= x.col(i)*NM[i];
         }
         Eigen::Matrix<double, Eigen::Dynamic, Traits::mydim> dN;
-        dN.resize(localDisp.size(),Eigen::NoChange);
-        for (int i = 0; i < localDisp.size(); ++i) {
+        dN.resize(fe.size(),Eigen::NoChange);
+        dN.setZero();
+        for (auto i = 0U; i < fe.size(); ++i) {
           for (int j = 0; j < Traits::mydim; ++j) {
             dN(i,j) = dNM[i][0][j];
           }
@@ -170,6 +170,7 @@ namespace Ikarus::FiniteElements {
         const auto E
             = (0.5 * (F.transpose() * F - Eigen::Matrix<ScalarType, Traits::mydim, Traits::mydim>::Identity())).eval();
         Eigen::Vector<ScalarType, (Traits::mydim * (Traits::mydim + 1)) / 2> EVoigt;
+        EVoigt.setZero();
         for (int i = 0; i < Traits::mydim; ++i)
           EVoigt(i) = E(i, i);
 
@@ -180,10 +181,10 @@ namespace Ikarus::FiniteElements {
         }
         Eigen::Vector<double,Traits::worlddim> fext;
         fext.setZero();
-        fext[0] = lambda;
-        fext[1] = 0;
+        fext[0] = 0;
+        fext[1] = lambda;
         energy += EVoigt.dot(C * EVoigt) * geo.integrationElement(gp.position()) * gp.weight();
-//        energy -= xv.dot(fext) * geo.integrationElement(gp.position()) * gp.weight();
+        energy -= xv.dot(fext) * geo.integrationElement(gp.position()) * gp.weight();
       }
       return energy;
     }

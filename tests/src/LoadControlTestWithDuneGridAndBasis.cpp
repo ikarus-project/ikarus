@@ -166,15 +166,15 @@ private:
       auto first_child = localView.tree().child(0);
       for (auto i = 0U; i < localView.size(); ++i)
         for (auto j = 0U; j < localView.size(); ++j) {
-          std::cout<<"LocalIndices: "<<localView.index(i)<<" "<<localView.index(j)<<" "<<i<<" "<<j<<std::endl;
+//          std::cout<<"LocalIndices: "<<localView.index(i)<<" "<<localView.index(j)<<" "<<i<<" "<<j<<std::endl;
 
           mat(localView.index(i)[0], localView.index(j)[0]) += matLoc(i, j);
         }
     }
     auto mat2 = mat;
-    std::cout<<mat2<<std::endl;
-    Eigen::FullPivLU<Eigen::MatrixXd> lu(mat2);
-    std::cout<<"FullTRank: "<<lu.rank()<<std::endl;
+//    std::cout<<mat2<<std::endl;
+//    Eigen::FullPivLU<Eigen::MatrixXd> lu(mat2);
+//    std::cout<<"FullTRank: "<<lu.rank()<<std::endl;
     localView.unbind();
     for (auto i = 0U; i < 4; ++i)
       mat.col(i).setZero();
@@ -221,8 +221,8 @@ GTEST_TEST(LoadControlTestWithUGGrid, GridLoadControlTestWithUGGrid) {
   std::vector<vertexType> verticesVec;
   const double L    = 1;
   const double h    = 1;
-  const size_t elex = 2;
-  const size_t eley = 1;
+  const size_t elex = 10;
+  const size_t eley = 10;
 
   Dune::FieldVector<double, 2> bbox = {L, h};
   std::array<int, 2> eles           = {elex, eley};
@@ -242,96 +242,100 @@ GTEST_TEST(LoadControlTestWithUGGrid, GridLoadControlTestWithUGGrid) {
   draw(gridView);
   std::cout << "1" << std::endl;
 
-  std::cout << "2" << std::endl;
-  //  for (auto&& ge : rootEntities(gridView))
-  //    feContainer.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge, gridView.indexSet(), 1000, 0.0));
-  std::cout << "==============================" << std::endl;
-  auto localView = basis.localView();
-  Eigen::MatrixXd testM(basis.size(),basis.size());
-  testM.setZero();
-    for (int eleId = 0; auto& ge : elements(basis.gridView())) {
-      localView.bind(ge);
-//      auto first_child = ;
-      const auto&  fe_localC = localView.tree().child(0);
-      const auto& fe_local = fe_localC.finiteElement();
-      for (auto i = 0U; i < ge.subEntities(2); ++i) {
-        auto vertex = ge.subEntity<2>(i);
-        std::cout<<"VertexCoords: "<<vertex.geometry().center()<<"vertexID: "<<gridView.indexSet().index(vertex)<<std::endl;
-        auto localCoordsOfVertex = ge.geometry().local(vertex.geometry().center());
-        std::cout<<"LocalCoordinatesOF Vertex: "<<localCoordsOfVertex<<std::endl;
-        std::vector<Dune::FieldVector<double,1>> N;
-        fe_local.localBasis().evaluateFunction(localCoordsOfVertex,N);
-        std::cout<<"N[j] ";
-        for (auto j = 0U; j < N.size(); ++j) {
-          std::cout<<N[j]<<" ";
-        }
-        std::cout<<std::endl;
-      }
-      Eigen::MatrixXd testLocal(localView.size(),localView.size());
-      testLocal.setConstant(eleId+1);
-      std::cout<<testLocal<<std::endl;
-      std::cout<<"fe_local.size(): "<<fe_local.size()<<std::endl;
-//      for (int k1 = 0; k1 < gridDim; ++k1) {
-          for (auto i = 0U; i < fe_local.size(); ++i){
-        for (int k2 = 0; k2 < gridDim; ++k2) {
-//            for (auto j = 0U; j < localView.size(); ++j) {
-              auto row = localView.tree().child(k2).localIndex(i);
-//              auto col = localView.tree().localIndex(j);
-
-              std::cout << "GlobalIds: " << localView.index(row) << " "  << " " << i << " "
-                        << " LocalIds: " << row << " "  << std::endl;
-
-//              testM(localView.index(row)[0], localView.index(col)[0]) += testLocal(row, col);
-            }
-        }
+//  std::cout << "2" << std::endl;
+//  //  for (auto&& ge : rootEntities(gridView))
+//  //    feContainer.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge, gridView.indexSet(), 1000, 0.0));
+//  std::cout << "==============================" << std::endl;
+//  auto localView = basis.localView();
+//  Eigen::MatrixXd testM(basis.size(),basis.size());
+//  testM.setZero();
+//    for (int eleId = 0; auto& ge : elements(basis.gridView())) {
+//      localView.bind(ge);
+////      auto first_child = ;
+//      const auto&  fe_localC = localView.tree().child(0);
+//      const auto& fe_local = fe_localC.finiteElement();
+//      for (auto i = 0U; i < ge.subEntities(2); ++i) {
+//        auto vertex = ge.subEntity<2>(i);
+//        std::cout<<"VertexCoords: "<<vertex.geometry().center()<<"vertexID: "<<gridView.indexSet().index(vertex)<<std::endl;
+//        auto localCoordsOfVertex = ge.geometry().local(vertex.geometry().center());
+//        std::cout<<"LocalCoordinatesOF Vertex: "<<localCoordsOfVertex<<std::endl;
+//        std::vector<Dune::FieldVector<double,1>> N;
+//        fe_local.localBasis().evaluateFunction(localCoordsOfVertex,N);
+//        std::cout<<"N[j] ";
+//        for (auto j = 0U; j < N.size(); ++j) {
+//          std::cout<<N[j]<<" ";
 //        }
+//        std::cout<<std::endl;
 //      }
-      eleId++;
-    }
-    std::cout<<testM<<std::endl;
+//      Eigen::MatrixXd testLocal(localView.size(),localView.size());
+//      testLocal.setConstant(eleId+1);
+//      std::cout<<testLocal<<std::endl;
+//      std::cout<<"fe_local.size(): "<<fe_local.size()<<std::endl;
+////      for (int k1 = 0; k1 < gridDim; ++k1) {
+//          for (auto i = 0U; i < fe_local.size(); ++i){
+//        for (int k2 = 0; k2 < gridDim; ++k2) {
+////            for (auto j = 0U; j < localView.size(); ++j) {
+//              auto row = localView.tree().child(k2).localIndex(i);
+////              auto col = localView.tree().localIndex(j);
+//
+//              std::cout << "GlobalIds: " << localView.index(row) << " "  << " " << i << " "
+//                        << " LocalIds: " << row << " "  << std::endl;
+//
+////              testM(localView.index(row)[0], localView.index(col)[0]) += testLocal(row, col);
+//            }
+//        }
+////        }
+////      }
+//      eleId++;
+//    }
+//    std::cout<<testM<<std::endl;
 
-    
+
   //        mat(localView.index(i), localView.index(j)) += matLoc(i, j);
 
 
-//  auto denseAssembler = DenseAssemblerFromBasis(basis);
+  auto denseAssembler = DenseAssemblerFromBasis(basis);
 
-//  Eigen::VectorXd d(basis.size());
-//  d.setZero();
-//  double lambda = 0.0;
+  Eigen::VectorXd d(basis.size());
+  d.setZero();
+  double lambda = 0.0;
 
 
-//  Dune::SubsamplingVTKWriter<GridView> vtkWriter(gridView, Dune::refinementLevels(2));
-//  vtkWriter.addVertexData(d, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, gridDim));
-//  vtkWriter.write("TestDuneBasis_0");
-//
-//  double fac = 0.0001;
-//  for (int ls = 1; ls < 10; ++ls) {
-//          Eigen::FullPivLU<Eigen::MatrixXd> lu;
-//          for (int i = 0; i < 5; ++i) {
-//            const auto& K = denseAssembler.getMatrix(d, lambda);
-//            lu.compute(K);
-//            const auto& r = denseAssembler.getVector(d, lambda);
-//            const auto dd = lu.solve(r);
-//            d-= dd;
+  Dune::SubsamplingVTKWriter<GridView> vtkWriter(gridView, Dune::refinementLevels(2));
+//  Dune::VTKWriter<GridView> vtkWriter(gridView);
+  vtkWriter.addVertexData(d, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, gridDim));
+  vtkWriter.write("TestDuneBasis_0");
+
+  double fac = 100;
+  for (int ls = 1; ls < 10; ++ls) {
+          Eigen::FullPivLU<Eigen::MatrixXd> lu;
+          for (int i = 0; i < 20; ++i) {
+            const auto& K = denseAssembler.getMatrix(d, lambda);
+            lu.compute(K);
+            const auto& r = denseAssembler.getVector(d, lambda);
+            const auto dd = lu.solve(r);
+            d-= dd;
 //            std::cout<<d.transpose()<<std::endl;
 //            std::cout<<dd.transpose()<<std::endl;
 //            std::cout<<r.transpose()<<std::endl;
 //            std::cout<<K<<std::endl;
-//            std::cout<<"Rnorm: "<<r.norm()<<"    "<<"dnorm: "<<dd.norm()<<"    "<<"Rank: "<<lu.rank()<<" Dofs: "<<lu.rows()<<std::endl;
-//            if(r.norm()<1e-8) break;
-//          }
-//    std::vector<Eigen::Vector<double,2>> dv;
-//    dv.reserve(d.size()/2);
-//    for (auto pos=0U,i = 0U; i < dv.size(); ++i) {
-//      dv[i]= d.template segment<2>(pos);
-//                  pos+=2;
-//    }
-//    auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Eigen::Vector2d>(basis,d);
-//    Dune::SubsamplingVTKWriter<GridView> vtkWriterI(gridView, Dune::refinementLevels(1));
-//    vtkWriterI.addVertexData(disp, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, gridDim));
-//    vtkWriterI.write("TestDuneBasis_" + std::to_string(ls));
-//    lambda+=fac;
-//  }
+            std::cout<<"Rnorm: "<<r.norm()<<"    "<<"dnorm: "<<dd.norm()<<"    "<<"Rank: "<<lu.rank()<<" Dofs: "<<lu.rows()<<std::endl;
+            if(r.norm()<1e-8) break;
+          }
+    std::vector<Dune::FieldVector<double,2>> dv;
+    dv.reserve(d.size()/2);
+    for (auto pos=0U,i = 0U; i < dv.size(); ++i) {
+      dv[i]= d(pos);
+      dv[i+1]= d(pos+1);
+                  pos+=2;
+    }
+    std::cout<<d.transpose()<<std::endl;
+    auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double,2>>(basis,d);
+    Dune::SubsamplingVTKWriter<GridView> vtkWriterI(gridView, Dune::refinementLevels(2));
+//    Dune::VTKWriter<GridView> vtkWriterI(gridView);
+    vtkWriterI.addVertexData(disp, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, gridDim));
+    vtkWriterI.write("TestDuneBasis_" + std::to_string(ls));
+    lambda+=fac;
+  }
 
 }

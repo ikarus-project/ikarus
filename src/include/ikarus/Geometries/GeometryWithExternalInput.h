@@ -12,6 +12,7 @@
 
 #include "ikarus/Interpolators/Interpolator.h"
 #include <ikarus/utils/LinearAlgebraHelper.h>
+#include <iostream>
 
 namespace Ikarus::Geometry {
 
