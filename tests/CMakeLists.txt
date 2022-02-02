@@ -28,8 +28,7 @@ set_target_properties(IkarusTests PROPERTIES CXX_STANDARD 20)
 
 target_compile_options(
   IkarusTests PUBLIC -Wall -Wpedantic -Wextra -Werror
-                      -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-deprecated-copy
-)
+                      -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-deprecated-copy )
 target_compile_options(IkarusTests PUBLIC -fconcepts-diagnostics-depth=5)
 
 if(MINGW)
