@@ -33,7 +33,6 @@ message("Find spdlog: ")
 find_package(spdlog REQUIRED)
 #message("Find alugrid: ")
 
-list(APPEND CMAKE_PREFIX_PATH "/home/lex/Dokumente/dune/")
 
 find_package(dune-alugrid REQUIRED)
 message("====================")
@@ -46,6 +45,7 @@ message("Find dune-common: ")
 find_package(dune-common REQUIRED)
 message("Find dune-geometry: ")
 find_package(dune-geometry REQUIRED)
+message(${dune-iga_DIR})
 message("Find dune-iga: ")
 find_package(dune-iga REQUIRED)
 set(HAVE_UG true)
@@ -54,10 +54,9 @@ find_package(dune-uggrid REQUIRED)
 #message("${HAVE_UG}")
 message("Find dune-grid: ")
 find_package(dune-grid REQUIRED)
+message("Find dune-typetree: ")
+find_package(dune-typetree REQUIRED)
 
-
-message("${HAVE_UG}")
-message("${HAVE_UG}")
 # message("Find muesli: ") find_package(muesli REQUIRED)
 
 message("Find autodiff: ")
@@ -82,8 +81,8 @@ target_link_libraries(
   PUBLIC Eigen3::Eigen
   PUBLIC METIS::METIS
   PUBLIC spdlog::spdlog
-  PUBLIC dunealugrid
   PUBLIC dunecommon
+  PUBLIC dunealugrid
   PUBLIC dunegeometry
   PUBLIC dunegrid
   PUBLIC duneuggrid

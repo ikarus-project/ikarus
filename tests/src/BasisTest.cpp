@@ -18,9 +18,18 @@
 #include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
+#include <dune/typetree/powernode.hh>
+#include <dune/typetree/leafnode.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
+#include <dune/functions/functionspacebases/compositebasis.hh>
+#include <dune/functions/functionspacebases/subspacebasis.hh>
 
-TEST(FEManager, FEManagertest) {
+struct TestNode : public Dune::TypeTree::LeafNode
+{
+
+};
+
+TEST(Basis, Basistest) {
     using Grid = Dune::YaspGrid<2>;
     const double L    = 1;
     const double h    = 1;
@@ -35,12 +44,35 @@ TEST(FEManager, FEManagertest) {
   std::vector<Ikarus::FiniteElements::IFiniteElement> feContainer;
 
   using namespace Dune::Functions::BasisFactory;
-  auto basis = makeBasis(gridView, power<2>(lagrange<1>(), FlatInterleaved()));
+  using namespace Dune::Indices;
+  constexpr int p = 1;
+  auto basis = makeBasis(gridView, composite(power<2>(lagrange<p>(), FlatInterleaved()),lagrange<p-1>()));
+  auto dispBasis = subspaceBasis(basis,_0);
+  auto pressureBasis = subspaceBasis(basis,_1);
   auto localView = basis.localView();
+  auto localViewOfDisplacement = dispBasis.localView();
+  auto localViewOfPressure = pressureBasis.localView();
   for (auto& e :elements(gridView)) {
     localView.bind(e);
+    localViewOfDisplacement.bind(e);
+    localViewOfPressure.bind(e);
 
-    std::cout<<localView.size()<<std::endl;
+    EXPECT_EQ(localView.size(),9); // Total Ansatzfunctions (Dofs)
+    EXPECT_EQ(localViewOfDisplacement.size(),9);  // Total Ansatzfunctions (Dofs)
+    EXPECT_EQ(localViewOfPressure.size(),9);  // Total Ansatzfunctions (Dofs)
+    EXPECT_EQ(localView.tree().size(),9);  // Total Ansatzfunctions (Dofs)
+    EXPECT_EQ(localViewOfDisplacement.tree().size(),8); //Displacement Ansatzfunctions (DispDofs)
+    EXPECT_EQ(localViewOfPressure.tree().size(),1); //Pressure Ansatzfunctions (PressureDofs)
+    EXPECT_EQ(localViewOfDisplacement.tree().degree(),2); //How many displacement childs are there?
+    EXPECT_EQ(localViewOfPressure.tree().degree(),0); //How many pressure childs are there?
+    EXPECT_EQ(localViewOfDisplacement.tree().child(0).degree(),0);
+    EXPECT_EQ(localViewOfDisplacement.tree().child(1).degree(),0);
+//    EXPECT_EQ(localViewOfDisplacement.tree().child(1).isLeaf,true);
+//    EXPECT_EQ(localViewOfDisplacement.tree().isComposite,false);
+
   }
+
+  TestNode tn;
+  EXPECT_EQ(tn.isComposite,false);
 
 }
