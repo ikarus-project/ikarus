@@ -8,6 +8,7 @@
 
 #include <dune/alugrid/grid.hh>
 #include <dune/grid/yaspgrid.hh>
+#include <dune/iga/nurbsgrid.hh>
 
 #include "spdlog/spdlog.h"
 
@@ -210,16 +211,40 @@ private:
 
 GTEST_TEST(LoadControlTestWithUGGrid, GridLoadControlTestWithUGGrid) {
   constexpr int gridDim = 2;
-    using Grid            = Dune::ALUGrid<gridDim, 2, Dune::cube, Dune::nonconforming>;
-    auto grid             = Dune::GmshReader<Grid>::read("../../tests/src/testFiles/unstructuredTest.msh", false);
+//    using Grid            = Dune::ALUGrid<gridDim, 2, Dune::simplex, Dune::conforming>;
+//    auto grid             = Dune::GmshReader<Grid>::read("../../tests/src/testFiles/unstructuredTrianglesfine.msh", false);
+//
+//
+  constexpr auto dimworld              = 2;
+  const std::array<int, gridDim> order = {2, 2};
 
+  const std::array<std::vector<double>, gridDim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+  //  const std::vector<std::vector<FieldVector<double, dimworld> > > controlPointsold
+  //      = {{{0, 0, 1}, {1, 0, 1}, {2, 0, 2}}, {{0, 1, 0}, {1, 1, 0}, {2, 1, 0}}, {{0, 2, 1}, {1, 2, 2}, {2, 2, 2}}};
+  using ControlPoint = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointType;
 
-//  using namespace Ikarus::Grid;
+  const std::vector<std::vector<ControlPoint>> controlPoints
+      = {{{.p = {0, 0}, .w = 2}, {.p = {1, 0}, .w = 2}, {.p = {2, 0}, .w = 1}},
+         {{.p = {0, 1}, .w = 1}, {.p = {1, 1}, .w = 4}, {.p = {2, 1}, .w = 1}},
+         {{.p = {0, 2}, .w = 1}, {.p = {1, 2}, .w = 2}, {.p = {2, 2}, .w = 4}}};
+
+  std::array<int, gridDim> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
+
+  auto controlNet = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  using Grid = Dune::IGA::NURBSGrid<gridDim,dimworld>;
+
+  Dune::IGA::NURBSPatchData<gridDim, dimworld> patchData;
+  patchData.knotSpans = knotSpans;
+  patchData.degree            = order;
+  patchData.controlPoints = controlNet;
+  auto grid = std::make_shared<Grid>(patchData);
+  grid->globalRefine(3);
+
 //  using Grid = Dune::YaspGrid<gridDim>;
 //  const double L    = 1;
 //  const double h    = 1;
-//  const size_t elex = 2;
-//  const size_t eley = 2;
+//  const size_t elex = 20;
+//  const size_t eley = 20;
 //
 //  Dune::FieldVector<double, 2> bbox = {L, h};
 //  std::array<int, 2> eles           = {elex, eley};
@@ -238,7 +263,6 @@ GTEST_TEST(LoadControlTestWithUGGrid, GridLoadControlTestWithUGGrid) {
   std::cout << gridView.size(0) << " elements" << std::endl;
 
   draw(gridView);
-  std::cout << "1" << std::endl;
 
   auto denseAssembler = DenseAssemblerFromBasis(basis);
 
@@ -247,7 +271,7 @@ GTEST_TEST(LoadControlTestWithUGGrid, GridLoadControlTestWithUGGrid) {
   double lambda = 0.0;
 
 
-  Dune::SubsamplingVTKWriter<GridView> vtkWriter(gridView, Dune::refinementLevels(2));
+  Dune::SubsamplingVTKWriter<GridView> vtkWriter(gridView, Dune::refinementLevels(5));
 //  Dune::VTKWriter<GridView> vtkWriter(gridView);
   vtkWriter.addVertexData(d, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, gridDim));
   vtkWriter.write("TestDuneBasisUS_0");
@@ -260,8 +284,7 @@ GTEST_TEST(LoadControlTestWithUGGrid, GridLoadControlTestWithUGGrid) {
             lu.compute(K);
             const auto& r = denseAssembler.getVector(d, lambda);
             const auto dd = lu.solve(r);
-            d-= dd;
-//            std::cout<<K<<std::endl;
+            d-= lu.solve(r);
             std::cout<<"Rnorm: "<<r.norm()<<"    "<<"dnorm: "<<dd.norm()<<"    "<<"Rank: "<<lu.rank()<<" Dofs: "<<lu.rows()<<std::endl;
             if(r.norm()<1e-8) break;
           }
@@ -275,7 +298,7 @@ GTEST_TEST(LoadControlTestWithUGGrid, GridLoadControlTestWithUGGrid) {
     }
     std::cout<<d.transpose()<<std::endl;
     auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double,2>>(basis,d);
-    Dune::SubsamplingVTKWriter<GridView> vtkWriterI(gridView, Dune::refinementLevels(2));
+    Dune::SubsamplingVTKWriter<GridView> vtkWriterI(gridView, Dune::refinementLevels(5));
 //    Dune::VTKWriter<GridView> vtkWriterI(gridView);
     vtkWriterI.addVertexData(disp, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, gridDim));
     vtkWriterI.write("TestDuneBasisUS_" + std::to_string(ls));
