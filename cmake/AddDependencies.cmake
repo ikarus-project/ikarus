@@ -39,13 +39,15 @@ message("====================")
 message(${dune-alugrid_INCLUDE_DIRS})
 message("====================")
 target_include_directories(${PROJECT_NAME} PUBLIC ${dune-alugrid_INCLUDE_DIRS})
-message("Find dune-functions: ")
-find_package(dune-functions REQUIRED)
+
 message("Find dune-common: ")
 find_package(dune-common REQUIRED)
+message("Find dune-typetree: ")
+find_package(dune-typetree REQUIRED)
 message("Find dune-geometry: ")
 find_package(dune-geometry REQUIRED)
-message(${dune-iga_DIR})
+message("Find dune-functions: ")
+find_package(dune-functions REQUIRED)
 message("Find dune-iga: ")
 find_package(dune-iga REQUIRED)
 set(HAVE_UG true)
@@ -54,8 +56,7 @@ find_package(dune-uggrid REQUIRED)
 #message("${HAVE_UG}")
 message("Find dune-grid: ")
 find_package(dune-grid REQUIRED)
-message("Find dune-typetree: ")
-find_package(dune-typetree REQUIRED)
+
 
 # message("Find muesli: ") find_package(muesli REQUIRED)
 
@@ -82,8 +83,8 @@ target_link_libraries(
   PUBLIC METIS::METIS
   PUBLIC spdlog::spdlog
   PUBLIC dunecommon
-  PUBLIC dunealugrid
   PUBLIC dunegeometry
+  PUBLIC dunealugrid
   PUBLIC dunegrid
   PUBLIC duneuggrid
   PUBLIC ${SuiteSparseIncludeDirective}

@@ -14,6 +14,7 @@ namespace Ikarus::Grid {
   public:
     using GridType = SimpleGrid<dim, dimworld>;
     using IndexSet = SimpleGridIndexSet<GridType>;
+    using ctype = typename GridType::ctype;
 
     explicit SimpleGridView(GridType& gridInput, int levelInput = 0)
         : grid{&gridInput},

@@ -4,6 +4,7 @@
 
 #pragma once
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
+#include <ikarus/utils/concepts.h>
 
 namespace Ikarus::FiniteElements {
 
@@ -49,47 +50,96 @@ namespace Ikarus::FiniteElements {
     using MatrixType = Eigen::MatrixXd;
   };
 
-  template <typename GridElementEntityType, typename IndexSetType>
+//  template <typename GridElementEntityType, typename IndexSetType>
+//  class FEVertexDisplacement {
+//  public:
+//    FEVertexDisplacement(GridElementEntityType &gE, const IndexSetType &indexSet)
+//        : elementGridEntity{gE}, indexSet_{&indexSet} {}
+//
+//    /** \brief Type of the Pairs of gridEntities and variable tags */
+//    using DofTupleVectorType = typename IFiniteElement::DofPairVectorType;
+//
+//    using Traits = FETraits<GridElementEntityType>;
+//
+//    /** \brief Dimension of the world space */
+//    static constexpr int worlddim = Traits::worlddim;
+//
+//    [[nodiscard]] constexpr int dofSize() const { return elementGridEntity.subEntities(Traits::dimension) * worlddim; }
+//
+//    [[nodiscard]] DofTupleVectorType getEntityVariableTuple() const {
+//      DofTupleVectorType entDofTupleVector(elementGridEntity.subEntities(Traits::dimension));
+//      using namespace Ikarus::Variable;
+//      VariableTags dofType;
+//      if constexpr (worlddim == 3)
+//        dofType = VariableTags::displacement3d;
+//      else if constexpr (worlddim == 2)
+//        dofType = VariableTags::displacement2d;
+//      else if constexpr (worlddim == 1)
+//        dofType = VariableTags::displacement1d;
+//      else
+//        static_assert(worlddim > 3 || worlddim < 1, "This element has an impossible worlddim.");
+//      for (int id = 0; auto &entityDofTuple : entDofTupleVector) {
+//        if constexpr (requires { elementGridEntity->template subEntity<Traits::dimension>(id); })
+//          std::cout << "id: " << id << " "
+//                    << "Coords: " << elementGridEntity.template subEntity<Traits::dimension>(id).geometry().corner(0)
+//                    << " globID " << indexSet_->subIndex(*elementGridEntity, id, Traits::dimension) << std::endl;
+//        entityDofTuple.entityID = indexSet_->subIndex(elementGridEntity, id++, Traits::mydim);
+//
+//        entityDofTuple.variableVector.assign(1, dofType);
+//        entityDofTuple.entityType = EntityType::vertex;
+//      }
+//      return entDofTupleVector;
+//    }
+//
+//  private:
+//    GridElementEntityType elementGridEntity;
+//    IndexSetType const *const indexSet_;
+//  };
+
+  template <typename LocalView>
   class FEVertexDisplacement {
   public:
-    FEVertexDisplacement(GridElementEntityType &gE, const IndexSetType &indexSet)
-        : elementGridEntity{gE}, indexSet_{&indexSet} {}
+    explicit FEVertexDisplacement(LocalView &p_localView) : localView{p_localView} {
+      static_assert(Ikarus::Concepts::PowerBasis<typename LocalView::GlobalBasis>, "You didn't pass a localview of a power basis to this method");
+      static_assert(LocalView::GlobalBasis::PreBasis::Node::CHILDREN == worlddim,
+                    "The power basis children number does not coincide with the world space where the grid entity is "
+                    "embedded into!");
+    }
 
     /** \brief Type of the Pairs of gridEntities and variable tags */
-    using DofTupleVectorType = typename IFiniteElement::DofPairVectorType;
-
-    using Traits = FETraits<GridElementEntityType>;
+    using DofTupleVectorType    = typename IFiniteElement::DofPairVectorType;
+    using GridElementEntityType = typename LocalView::Element;
+    using Traits                = FETraits<GridElementEntityType>;
 
     /** \brief Dimension of the world space */
     static constexpr int worlddim = Traits::worlddim;
 
-    [[nodiscard]] constexpr int dofSize() const { return elementGridEntity.subEntities(Traits::dimension) * worlddim; }
+    [[nodiscard]] constexpr int dofSizeImpl() const { return localView.size(); }
 
-    [[nodiscard]] DofTupleVectorType getEntityVariableTuple() const {
-      DofTupleVectorType entDofTupleVector(elementGridEntity.subEntities(Traits::dimension));
+    [[nodiscard]] DofTupleVectorType getEntityVariableTupleForDisp() const {
+      const auto& fe = localView.tree().child(0).finiteElement();
       using namespace Ikarus::Variable;
-      VariableTags dofType;
-      if constexpr (worlddim == 3)
-        dofType = VariableTags::displacement3d;
-      else if constexpr (worlddim == 2)
-        dofType = VariableTags::displacement2d;
-      else if constexpr (worlddim == 1)
-        dofType = VariableTags::displacement1d;
-      else
-        static_assert(worlddim > 3 || worlddim < 1, "This element has an impossible worlddim.");
-      for (int id = 0; auto &entityDofTuple : entDofTupleVector) {
-        if constexpr (requires{ elementGridEntity->template subEntity<Traits::dimension>(id);})
-          std::cout<<"id: "<<id<<" "<<"Coords: "<<elementGridEntity.template subEntity<Traits::dimension>(id).geometry().corner(0)<<" globID "<<indexSet_->subIndex(*elementGridEntity, id, Traits::dimension)<<std::endl;
-        entityDofTuple.entityID = indexSet_->subIndex(elementGridEntity, id++, Traits::mydim);
-
-        entityDofTuple.variableVector.assign(1, dofType);
-        entityDofTuple.entityType = EntityType::vertex;
+            VariableTags dofType;
+            if constexpr (worlddim == 3)
+              dofType = VariableTags::displacement3d;
+            else if constexpr (worlddim == 2)
+              dofType = VariableTags::displacement2d;
+            else if constexpr (worlddim == 1)
+              dofType = VariableTags::displacement1d;
+      DofTupleVectorType dofTupleVectorType;
+      for (int i = 0; i < fe.size(); ++i) {
+        dofTupleVectorType.emplace_back();
+        auto& currentVariable = dofTupleVectorType.back();
+        currentVariable.variableVector.push_back(dofType);
+        currentVariable.indices.resize(worlddim);
+        for (int j = 0; j < worlddim; ++j) {
+          currentVariable.indices[j] = localView.index((localView.tree().child(j).localIndex(i)));
+        }
       }
-      return entDofTupleVector;
+      return dofTupleVectorType;
     }
 
   private:
-    GridElementEntityType elementGridEntity;
-    IndexSetType const *const indexSet_;
+    LocalView localView;
   };
 }  // namespace Ikarus::FiniteElements

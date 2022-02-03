@@ -26,7 +26,7 @@ namespace Ikarus::Variable {
       using DofSet = std::unordered_map<size_t, EntityTypeAndVarTagSet>;
       DofSet dofSet;
       for (auto &&fe : feContainer)
-        for (auto &&[entityID, entityType, dofTypes] :
+        for (auto &&[indices, dofTypes] :
              Ikarus::FiniteElements::getEntityVariableTuple(fe))  // Create set of Dofs for each grid entity
         {
           auto &&entitySetEntry = dofSet[entityID];

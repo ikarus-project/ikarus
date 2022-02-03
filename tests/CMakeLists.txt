@@ -14,7 +14,7 @@ list(APPEND CMAKE_PREFIX_PATH
 
 include_directories(../libAddons/eigen/eigenAddons)
 
-file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
+file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/AssemblerTest.cpp)
 
 find_package(GTest CONFIG REQUIRED)
 add_executable(IkarusTests ${sources})
@@ -27,8 +27,7 @@ target_link_libraries(
 set_target_properties(IkarusTests PROPERTIES CXX_STANDARD 20)
 
 target_compile_options(
-  IkarusTests PUBLIC -Wall -Wpedantic -Wextra -Werror
-                      -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-deprecated-copy )
+  IkarusTests PUBLIC -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-deprecated-copy )
 target_compile_options(IkarusTests PUBLIC -fconcepts-diagnostics-depth=5)
 
 if(MINGW)

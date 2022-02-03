@@ -5,6 +5,8 @@
 #pragma once
 
 #include <dune/grid/common/partitionset.hh>
+#include <dune/geometry/dimension.hh>
+#include <ranges>
 namespace Dune
 {
 
