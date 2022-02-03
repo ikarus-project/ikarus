@@ -19,18 +19,18 @@
 #include <ikarus/utils/utils/algorithms.h>
 #include <ikarus/utils/utils/hashs.h>
 
-namespace Ikarus::FEManager {
+namespace Ikarus {
 
-  template <typename FEContainer, typename GridViewType>
+  template <typename FEContainer,typename Basis>
   requires Concepts::HasgetEntityVariableTuple<typename std::decay_t<FEContainer>::value_type> || Concepts::
       HasFreegetEntityVariableTuple<typename std::decay_t<FEContainer>::value_type>
   class DefaultFEManager {
   public:
-    using GridView = GridViewType;
-    using GridDataType = GridData<typename GridViewType::IndexSet>;
-    DefaultFEManager(FEContainer& feContainer, GridViewType& gv,
+    using GridView = typename Basis::GridView;
+    using GridDataType = GridData<typename GridView::IndexSet>;
+    DefaultFEManager(FEContainer& feContainer, const Basis& p_basis,
                      std::optional<std::reference_wrapper<GridDataType>> gridData = std::nullopt)
-        : gridView_{&gv}, gridData_{gridData}, varVec{feContainer} {      std::cout<<"DefaultFEManager"<<std::endl;}
+        : basis{p_basis}, gridData_{gridData}, varVec{feContainer,p_basis} {      }
 
     [[nodiscard]] size_t numberOfDegreesOfFreedom() const { return varVec.correctionSize(); }
 
@@ -47,10 +47,10 @@ namespace Ikarus::FEManager {
 
     auto elementDofVectorSize() { return varVec.elementDofVectorSize(); };
 
-    template <typename Entity>
-    auto dofIndicesOfEntity(const Entity& ge) const {
-      return varVec.dofIndicesOfEntity(gridView_->indexSet().index(ge));
-    }
+//    template <typename Entity>
+//    auto dofIndicesOfEntity(const Entity& ge) const {
+//      return varVec.dofIndicesOfEntity(gridView_->indexSet().index(ge));
+//    }
 
     auto elementIndicesVariableTuple() const {
       return varVec.transform_viewOverElements([&](auto& fe) {
@@ -75,10 +75,10 @@ namespace Ikarus::FEManager {
     }
 
     auto& getVariables() { return varVec; };
-    auto getGridView() { return gridView_; };
+    auto getGridView() { return basis->gridView(); };
 
   private:
-    GridViewType* gridView_;
+    Basis const *  basis;
     std::optional<std::reference_wrapper<GridDataType>> gridData_;
     Ikarus::Variable::VariableVector<FEContainer> varVec;
   };

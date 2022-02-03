@@ -9,61 +9,37 @@
 #include <unordered_set>
 
 #include <ikarus/FiniteElements/FEIndexSet.h>
+#include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
 #include <ikarus/utils/utils/algorithms.h>
 
 namespace Ikarus::Variable {
 
-  template <class FEContainer>
+  template <class FEContainer, class Basis>
   class VariableVector {
   public:
-    explicit VariableVector(const FEContainer &feContainer) : feContainer_{&feContainer}, feIndexSet{feContainer} {
-      std::cout<<"VariableVector0"<<std::endl;
-      struct EntityTypeAndVarTagSet {
-        Ikarus::EntityType type;
-        std::unordered_set<Ikarus::Variable::VariableTags> unorderedSet;
-      };
-      std::cout<<"VariableVector1"<<std::endl;
-      using DofSet = std::unordered_map<size_t, EntityTypeAndVarTagSet>;
+    explicit VariableVector(const FEContainer &feContainer, const Basis &p_basis)
+        : feContainer_{&feContainer}, basis{p_basis} {
+      std::cout << "VariableVector1" << std::endl;
+      using DofSet = std::map<Ikarus::FiniteElements::VariableIndicesPair::Indices,
+                              std::unordered_set<Ikarus::Variable::VariableTags>>;
       DofSet dofSet;
-      for (auto &&fe : feContainer)
-        for (auto &&[indices, dofTypes] :
-             Ikarus::FiniteElements::getEntityVariableTuple(fe))  // Create set of Dofs for each grid entity
-        {
-          auto &&entitySetEntry = dofSet[entityID];
-          entitySetEntry.type   = entityType.value();
+      for (auto &&fe : feContainer) {
+        auto localView = basis.localView();
+        localView.bind(fe.getEntity());
+        for (auto &&[indices, dofTypes] : Ikarus::FiniteElements::getEntityVariableTuple(fe)) {
+          auto &&entitySetEntry = dofSet[indices];
           entitySetEntry.unorderedSet.insert(begin(dofTypes), end(dofTypes));
         }
-      std::cout<<"VariableVector2"<<std::endl;
-      // A vector of pairs of a entity id and the corresponding unique variable tags
-      using EntityVariablePairVector = std::vector<std::pair<size_t, EntityTypeAndVarTagSet>>;
+      }
+      std::cout << "VariableVector2" << std::endl;
 
-      EntityVariablePairVector dofVector(begin(dofSet), end(dofSet));
-      // sort vector to have increasing ids of entities
-      std::ranges::sort(dofVector, [](auto &&a, auto &&b) { return a.first < b.first; });
-      std::cout<<"VariableVector3"<<std::endl;
-      variablesForEachEntity.resize(dofVector.size());
-      // creating vector of variables and save in variableIndexMap to which entity the belong
-      for (auto &&[entityID, typeAnddofTagSet] : dofVector) {
-        auto &&[entityType, dofTagSet] = typeAnddofTagSet;
-        const auto &entityIndex        = feIndexSet.indexOfEntity(entityID);
-        entityTypes[entityIndex]       = entityType;
-        for (auto &&var : dofTagSet | std::views::transform(&Ikarus::Variable::VariableFactory::createVariable))
-          variablesForEachEntity[entityIndex].emplace_back(var);
+      variablesForEachNode.resize(dofSet.size());
+      for (int i = 0; i < variablesForEachNode.size(); ++i) {
+        auto viewOverTagsAsVariable = dofSet[i] | std::views::transform([](auto &&tag) {
+                                        return Ikarus::Variable::VariableFactory::createVariable(tag);
+                                      });
+        variablesForEachNode[i].template emplace(begin(viewOverTagsAsVariable), end(viewOverTagsAsVariable));
       }
-      std::cout<<"VariableVector4"<<std::endl;
-      // find out how much dofs we actually have
-      for (auto &&var : getValues())
-        dofSizeValue += Ikarus::Variable::correctionSize(var);
-      std::cout<<"VariableVector5"<<std::endl;
-      size_t indexCounter = 0;
-      // add increasing degrees of freedom integer indices
-      variableIndices.resize(dofVector.size());
-      for (int i = 0; auto &&var : variableIndices) {
-        var.resize(Ikarus::Variable::correctionSize(this->variablesForEachEntity[i++]));
-        std::iota(var.begin(), var.end(), indexCounter);
-        indexCounter += var.size();
-      }
-      std::cout<<"VariableVector6"<<std::endl;
     }
 
     auto elementVariables() {
@@ -82,10 +58,10 @@ namespace Ikarus::Variable {
       return transform_viewOverElements([this](const auto &fe) { return this->dofIndicesOfElement(fe); });
     };
 
-    auto getValues() { return std::ranges::join_view(variablesForEachEntity); };
-    auto getValues() const { return std::ranges::join_view(variablesForEachEntity); };
+    auto getValues() { return std::ranges::join_view(variablesForEachNode); };
+    auto getValues() const { return std::ranges::join_view(variablesForEachNode); };
     auto size() const {
-      auto v   = std::ranges::join_view(variablesForEachEntity);
+      auto v   = std::ranges::join_view(variablesForEachNode);
       int size = std::accumulate(v.begin(), v.end(), 0, [](auto &&acc, auto &&var) { return acc + valueSize(var); });
       return size;
     };
@@ -101,12 +77,15 @@ namespace Ikarus::Variable {
     }
 
     auto variablesOfSingleElement(const typename FEContainer::value_type &fe) {
-      FiniteElements::FEValues elementVariables;
+      std::vector<Ikarus::Variable::IVariable> elementVariables;
+
+      auto localView = basis->localView();
+      localView.bind(fe.getEntity());
 
       auto feSubIndicesRange = feIndexSet.variableIDs(fe);
       for (auto &feSubIndex : feSubIndicesRange) {
         const auto &entityType = entityTypes.at(feSubIndex);
-        elementVariables.add(entityType, variablesForEachEntity[feSubIndex]);
+        elementVariables.add(entityType, variablesForEachNode[feSubIndex]);
       }
       return elementVariables;
     }
@@ -117,7 +96,7 @@ namespace Ikarus::Variable {
       auto feSubIndicesRange = feIndexSet.variableIDs(fe);
       for (auto &feSubIndex : feSubIndicesRange) {
         const auto &entityType = entityTypes.at(feSubIndex);
-        elementVariables.add(entityType, variablesForEachEntity[feSubIndex]);
+        elementVariables.add(entityType, variablesForEachNode[variablesForEachEntityfeSubIndex]);
       }
       return elementVariables;
     }
@@ -147,14 +126,14 @@ namespace Ikarus::Variable {
 
     VariableVector &operator+=(const Eigen::VectorXd &correction) {
       if (static_cast<decltype(correction.size())>(correctionSize()) == correction.size())
-        for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(this->variablesForEachEntity))
+        for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(this->variablesForEachNode))
           var += correction(variableIndices[variableIndex++]);
       return *this;
     }
 
     VariableVector &operator-=(const Eigen::VectorXd &correction) {
       assert(static_cast<long long int>(correctionSize()) == correction.size());
-      for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(this->variablesForEachEntity))
+      for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(this->variablesForEachNode))
         var -= correction(variableIndices[variableIndex++]);
       return *this;
     }
@@ -162,7 +141,7 @@ namespace Ikarus::Variable {
     template <typename Range>
     requires(!std::is_same_v<Range, Eigen::VectorXd>) VariableVector &operator+=(Range &&r) {
       assert(static_cast<decltype(r.size())>(correctionSize()) == r.size());
-      for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(this->variablesForEachEntity)) {
+      for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(this->variablesForEachNode)) {
         const auto &variableIndices_ = variableIndices[variableIndex++];
         for (int i = 0; i < variableIndices_.size(); ++i)
           var[i] += r[variableIndices_[i]];
@@ -173,7 +152,7 @@ namespace Ikarus::Variable {
     template <typename Range>
     requires(!std::is_same_v<Range, Eigen::VectorXd>) VariableVector &operator-=(Range &&r) {
       assert(static_cast<decltype(r.size())>(correctionSize()) == r.size());
-      for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(this->variablesForEachEntity)) {
+      for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(this->variablesForEachNode)) {
         const auto &variableIndices_ = variableIndices[variableIndex++];
         for (int i = 0; i < variableIndices_.size(); ++i)
           var[i] -= r[variableIndices_[i]];
@@ -195,22 +174,23 @@ namespace Ikarus::Variable {
     template <class FEContainer1>
     friend VariableVector<FEContainer1> operator+(const VariableVector<FEContainer1> &varVec,
                                                   const Eigen::VectorXd &correction);
-    mutable std::vector<std::vector<Ikarus::Variable::IVariable>> variablesForEachEntity;
+    mutable std::vector<std::vector<Ikarus::Variable::IVariable>> variablesForEachNode;
     template <typename FEContainer1, typename Range>
     requires(!std::is_same_v<Range, Eigen::VectorXd>) friend VariableVector<FEContainer1> operator+(
         const VariableVector<FEContainer1> &varVec, Range &&r);
-    std::unordered_map<size_t, Ikarus::EntityType> entityTypes;
     std::vector<Eigen::ArrayX<size_t>> variableIndices;
     size_t dofSizeValue{};
     FEContainer const *feContainer_;
-    FEIndexSet<FEContainer> feIndexSet;
+    Basis const *basis;
+    std::map<typename FEContainer::value_type const *, size_t> feIndexContainer;
+    //    FEIndexSet<FEContainer> feIndexSet;
   };
 
   template <class FEContainer>
   VariableVector<FEContainer> operator+(const VariableVector<FEContainer> &varVec, const Eigen::VectorXd &correction) {
     VariableVector res = varVec;
     assert(static_cast<decltype(correction.size())>(res.correctionSize()) == correction.size());
-    for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(res.variablesForEachEntity))
+    for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(res.variablesForEachNode))
       var += correction(res.variableIndices[variableIndex++]);
     return res;
   }
@@ -220,7 +200,7 @@ namespace Ikarus::Variable {
   operator+(const VariableVector<FEContainer> &varVec, Range &&r) {
     VariableVector res = varVec;
     assert(static_cast<decltype(r.size())>(varVec.correctionSize()) == r.size());
-    for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(res.variablesForEachEntity)) {
+    for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(res.variablesForEachNode)) {
       const auto &variableIndices_ = res.variableIndices[variableIndex++];
       for (int i = 0; i < variableIndices_.size(); ++i)
         var[i] += r[variableIndices_[i]];

@@ -21,6 +21,19 @@ namespace Ikarus::Concepts {
   concept FlatIndexBasis = FlatLexicographicBasis<Basis> or FlatInterLeavedBasis<Basis>;
 
   template <typename Basis>
+  concept BlockedInterLeavedBasis = requires {
+    std::is_same_v<typename Basis::PreBasis::IndexMergingStrategy, Dune::Functions::BasisFactory::BlockedInterleaved>;
+  };
+
+  template <typename Basis>
+  concept BlockedLexicographicBasis = requires {
+    std::is_same_v<typename Basis::PreBasis::IndexMergingStrategy, Dune::Functions::BasisFactory::BlockedLexicographic>;
+  };
+
+  template <typename Basis>
+  concept BlockedIndexBasis = BlockedLexicographicBasis<Basis> or BlockedInterLeavedBasis<Basis>;
+
+  template <typename Basis>
   concept PowerBasis = requires {
     Basis::PreBasis::Node::isPower==true;
   };

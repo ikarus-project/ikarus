@@ -17,9 +17,13 @@
 
 namespace Ikarus::FiniteElements {
 
-  struct DofAtEntity {
-    Eigen::Matrix<int,Eigen::Dynamic,1,20,1> indices;
-    std::vector<Variable::VariableTags> variableVector;
+  struct VariableIndicesPair {
+    using VariableVector = std::vector<Variable::VariableTags>;
+    using Indices = Eigen::Matrix<size_t,Eigen::Dynamic,1,20,1>;
+    Indices indices;
+    VariableVector variableVector;
+
+
   };
 
   enum class VectorAffordances { noAffordance, forces };
