@@ -1,7 +1,8 @@
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/modules")
-
+#list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/modules")
+message("====================")
 if(MINGW)
   # cmake-format: off
+  message("WTF")
   include(FetchContent)
   set(ikarusDepInstallDir ${CMAKE_SOURCE_DIR}/../Ikarus_Dependencies)
   FetchContent_Declare(
@@ -21,9 +22,19 @@ if(MINGW)
   endif()
   FetchContent_MakeAvailable(ikarusDependencies)
 endif()
-#list(APPEND CMAKE_PREFIX_PATH "/home/alex/Documents/dune/dune-alugrid/build-cmake/")
+#message(${CMAKE_MODULE_PATH})
+#set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/home/alex/Documents/dune/dune-alugrid/build-cmake/")
+#set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/home/alex/Documents/dune/dune-functions/build-cmake/")
+#set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/home/alex/Documents/dune/dune-common/build-cmake/")
+#set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/home/alex/Documents/dune/dune-geometry/build-cmake/")
+#set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/home/alex/Documents/dune/dune-iga/build-cmake/")
+#set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/home/alex/Documents/dune/dune-uggrid/build-cmake/")
+#set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/home/alex/Documents/dune/dune-grid/build-cmake/")
+#set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/home/alex/Documents/dune/dune-typetree/build-cmake/")
 message("Find MPI: ")
 find_package(MPI QUIET)
+message("====================")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/modules")
 
 message("Find METIS: ")
 find_package(METIS REQUIRED)
@@ -50,10 +61,8 @@ message("Find dune-functions: ")
 find_package(dune-functions REQUIRED)
 message("Find dune-iga: ")
 find_package(dune-iga REQUIRED)
-set(HAVE_UG true)
 message("Find dune-uggrid: ")
 find_package(dune-uggrid REQUIRED)
-#message("${HAVE_UG}")
 message("Find dune-grid: ")
 find_package(dune-grid REQUIRED)
 
@@ -86,11 +95,16 @@ target_link_libraries(
   PUBLIC dunegeometry
   PUBLIC dunealugrid
   PUBLIC dunegrid
-  PUBLIC duneuggrid
+#  PUBLIC duneuggrid
   PUBLIC ${SuiteSparseIncludeDirective}
   # PUBLIC muesli
   PUBLIC Matplot++::matplot
   PUBLIC autodiff::autodiff
   PUBLIC gfortran
 )
-message("${HAVE_UG}")
+
+get_target_property(OUT ${PROJECT_NAME} HEADER_FILE_ONLY)
+message("====================")
+message(STATUS ${OUT})
+message(STATUS ${PROJECT_NAME})
+message("====================")

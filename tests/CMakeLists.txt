@@ -8,9 +8,11 @@ option(TEST_INSTALLED_VERSION "Test the version found by find_package" OFF)
 set(IWYU_ARGS "-Xiwyu --mapping_file=iwyu.imp")
 include(../cmake/tools.cmake)
 
+if(MINGW)
 list(APPEND CMAKE_PREFIX_PATH
      ${CMAKE_CURRENT_SOURCE_DIR}/../../Ikarus_Dependencies/Dependencies_release/
 )
+endif()
 
 include_directories(../libAddons/eigen/eigenAddons)
 
@@ -27,7 +29,8 @@ target_link_libraries(
 set_target_properties(IkarusTests PROPERTIES CXX_STANDARD 20)
 
 target_compile_options(
-  IkarusTests PUBLIC -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-deprecated-copy )
+  IkarusTests PUBLIC -Wall -Wpedantic -Wextra
+                      -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-deprecated-copy )
 target_compile_options(IkarusTests PUBLIC -fconcepts-diagnostics-depth=5)
 
 if(MINGW)

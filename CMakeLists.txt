@@ -14,7 +14,7 @@ if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
   )
 endif()
 
-add_definitions(-Wall -Wpedantic -Wextra -Werror -m64)
+add_definitions(-Wall -Wpedantic -Wextra -m64)
 
 add_subdirectory(src)
 add_subdirectory(examples)

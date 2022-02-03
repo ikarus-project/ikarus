@@ -24,7 +24,7 @@ namespace Ikarus::FiniteElements {
   /** \brief A type-erased finite element */
   class IFiniteElement {
   public:
-    using DofPairVectorType = std::vector<DofAtEntity>;
+    using DofPairVectorType = std::vector<VariableIndicesPair>;
     using FERequirementType = FErequirements;
     //    using DataVectorType     = typename std::optional<std::reference_wrapper<VariableVectorType>>;
 
