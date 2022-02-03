@@ -38,6 +38,7 @@
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
 #include <ikarus/Variables/VariableDefinitions.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
+#include <ikarus/Grids/dunegridHelper.h>
 
 namespace Ikarus::Variable {
   class IVariable;
@@ -45,12 +46,13 @@ namespace Ikarus::Variable {
 
 namespace Ikarus::FiniteElements {
 
-  template <typename GridElementEntityType, typename IndexSetType>
-  class ElasticityFE : public FEVertexDisplacement<GridElementEntityType, IndexSetType> {
+  template <typename LocalView>
+  class ElasticityFE : public FEVertexDisplacement<LocalView> {
   public:
-    using Base = FEVertexDisplacement<GridElementEntityType, IndexSetType>;
-    ElasticityFE(GridElementEntityType &gE, const IndexSetType &indexSet, double emod, double nu)
-        : Base(gE, indexSet), elementGridEntity{gE}, indexSet_{&indexSet}, emod_{emod}, nu_{nu} {}
+    using Base = FEVertexDisplacement<LocalView>;
+    using GridElementEntityType = typename LocalView::Element;
+    ElasticityFE(LocalView& p_localView , double emod, double nu)
+        : Base(p_localView), localView{p_localView}, emod_{emod}, nu_{nu} {}
 
     using Traits = FETraits<GridElementEntityType>;
 
@@ -73,9 +75,9 @@ namespace Ikarus::FiniteElements {
 
     [[nodiscard]] double calculateScalar([[maybe_unused]] const typename Traits::FERequirementType &req) const {
       if (req.scalarAffordances == potentialEnergy) {
-        Eigen::VectorXd d(this->dofSize());
+        Eigen::VectorXd d(this->dofSizeImpl());
         auto dv = req.variables.value().get().get(EntityType::vertex);
-        for (int pos = 0, i = 0; i < this->dofSize() / 2; ++i) {
+        for (int pos = 0, i = 0; i < this->dofSizeImpl() / 2; ++i) {
           d.template segment<Traits::mydim>(pos) = Variable::getValue(dv[i]);
           pos += Traits::mydim;
         }
@@ -92,25 +94,25 @@ namespace Ikarus::FiniteElements {
     auto calculateStiffnessMatrixAndInternalForcesImpl(
         [[maybe_unused]] const typename Traits::FERequirementType &req) const {
       if constexpr (internalForcesFlag && stiffnessMatrixFlag) {
-        const auto rule = Dune::QuadratureRules<double, Traits::mydim>::rule(duneType(elementGridEntity.type()), 2);
-        typename Traits::VectorType Fint(this->dofSize());
-        typename Traits::MatrixType K(this->dofSize(), this->dofSize());
+        const auto rule = Dune::QuadratureRules<double, Traits::mydim>::rule(duneType(localView.element().type()), 2);
+        typename Traits::VectorType Fint(this->dofSizeImpl());
+        typename Traits::MatrixType K(this->dofSizeImpl(), this->dofSizeImpl());
         Fint.setZero();
         K.setZero();
         return std::make_pair(K, Fint);
       } else if constexpr (internalForcesFlag && !stiffnessMatrixFlag) {
-        Eigen::VectorXd d(this->dofSize());
+        Eigen::VectorXd d(this->dofSizeImpl());
         auto dv = req.variables.value().get().get(EntityType::vertex);
-        for (int pos = 0, i = 0; i < this->dofSize() / 2; ++i) {
+        for (int pos = 0, i = 0; i < this->dofSizeImpl() / 2; ++i) {
           d.template segment<Traits::mydim>(pos) = Variable::getValue(dv[i]);
           pos += Traits::mydim;
         }
         Eigen::VectorXd fint = calculateStiffnessMatrixAndInternalForcesImpl<false, true>(req) * d;
         return fint;
       } else if constexpr (not internalForcesFlag && stiffnessMatrixFlag) {
-        typename Traits::MatrixType K(this->dofSize(), this->dofSize());
+        typename Traits::MatrixType K(this->dofSizeImpl(), this->dofSizeImpl());
         K.setZero();
-        const auto rule = Dune::QuadratureRules<double, Traits::mydim>::rule(duneType(elementGridEntity.type()), 2);
+        const auto rule = Dune::QuadratureRules<double, Traits::mydim>::rule(duneType(localView.element().type()), 2);
         Eigen::Matrix3d C;
         C.setZero();
         const double fac = emod_ / (1 - nu_ * nu_);
@@ -119,7 +121,7 @@ namespace Ikarus::FiniteElements {
         C(2, 2)           = (1 - nu_) / 2;
         C *= fac;
         for (auto &gp : rule) {
-          const auto geo = elementGridEntity.geometry();
+          const auto geo = localView.element().geometry();
           const auto J   = toEigenMatrix(geo.jacobianTransposed(gp.position()));
           Eigen::Matrix<double, 4, Traits::mydim> dN
               = Ikarus::LagrangeCube<double, Traits::mydim, 1>::evaluateJacobian(toEigenVector(gp.position()));
@@ -133,16 +135,12 @@ namespace Ikarus::FiniteElements {
                       "You asked the element: \"Don't return anything\"");
     }
 
-    [[nodiscard]] unsigned int subEntities(unsigned int codim) const { return elementGridEntity.subEntities(codim); }
-    [[nodiscard]] unsigned int subIndex(int i, unsigned int codim) const {
-      return indexSet_->subIndex(elementGridEntity, i, codim);
-    }
-
+    [[nodiscard]] unsigned int subEntities(unsigned int codim) const { return localView.element().subEntities(codim); }
     [[nodiscard]] unsigned int dimension() const { return Traits::mydim; }
 
   private:
     auto boperator(const Eigen::Matrix<double, 4, Traits::mydim> &dN) const {
-      typename Traits::MatrixType Bop((Traits::mydim * (Traits::mydim + 1)) / 2, this->dofSize());
+      typename Traits::MatrixType Bop((Traits::mydim * (Traits::mydim + 1)) / 2, this->dofSizeImpl());
       Bop.setZero();
       for (int i = 0; i < dN.rows(); ++i) {
         for (int j = 0; j < Traits::mydim; ++j)
@@ -162,8 +160,7 @@ namespace Ikarus::FiniteElements {
       }
       return Bop;
     }
-    GridElementEntityType elementGridEntity;
-    IndexSetType const *const indexSet_;
+    LocalView localView;
     double emod_;
     double nu_;
   };

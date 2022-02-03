@@ -142,11 +142,12 @@ TEST(LoadControlTestWithYaspGrid, GridLoadControlTestWithYaspGrid) {
 
 #include "ikarus/FiniteElements/NonLinearElasticityFEwithBasis.h"
 #include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
+#include <ikarus/utils/concepts.h>
 
-template <typename Basis>
-class DenseAssemblerFromBasis {
+template <Ikarus::Concepts::FlatIndexBasis Basis>
+class DenseFlatAssembler {
 public:
-  explicit DenseAssemblerFromBasis(const Basis& basis) : basis_{&basis} {}
+  explicit DenseFlatAssembler(const Basis& basis) : basis_{&basis} {  }
 
   Eigen::MatrixXd& getMatrix(const Eigen::VectorXd& displacement, const double& lambda) {
     return getMatrixImpl(displacement, lambda);
@@ -167,15 +168,9 @@ private:
       auto first_child = localView.tree().child(0);
       for (auto i = 0U; i < localView.size(); ++i)
         for (auto j = 0U; j < localView.size(); ++j) {
-//          std::cout<<"LocalIndices: "<<localView.index(i)<<" "<<localView.index(j)<<" "<<i<<" "<<j<<std::endl;
-
           mat(localView.index(i)[0], localView.index(j)[0]) += matLoc(i, j);
         }
     }
-    auto mat2 = mat;
-//    std::cout<<mat2<<std::endl;
-//    Eigen::FullPivLU<Eigen::MatrixXd> lu(mat2);
-//    std::cout<<"FullTRank: "<<lu.rank()<<std::endl;
     localView.unbind();
     for (auto i = 0U; i < 4; ++i)
       mat.col(i).setZero();
@@ -183,8 +178,6 @@ private:
       mat.row(i).setZero();
     for (auto i = 0U; i < 4; ++i)
       mat(i, i) = 1;
-//    std::cout << mat << std::endl;
-//    std::cout << "============================================" << std::endl;
     return mat;
   }
 
@@ -264,7 +257,9 @@ GTEST_TEST(LoadControlTestWithUGGrid, GridLoadControlTestWithUGGrid) {
 
   draw(gridView);
 
-  auto denseAssembler = DenseAssemblerFromBasis(basis);
+
+
+  auto denseAssembler = DenseFlatAssembler(basis);
 
   Eigen::VectorXd d(basis.size());
   d.setZero();

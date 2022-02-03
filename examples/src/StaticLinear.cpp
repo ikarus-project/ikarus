@@ -32,9 +32,9 @@
 #include "ikarus/FiniteElements/NonLinearElasticityFEwithBasis.h"
 #include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
 template <typename Basis>
-class DenseAssemblerFromBasis {
+class DensePowerBasisAssembler {
 public:
-  explicit DenseAssemblerFromBasis(const Basis& basis) : basis_{&basis} {}
+  explicit DensePowerBasisAssembler(const Basis& basis) : basis_{&basis} {}
 
   Eigen::MatrixXd& getMatrix(const Eigen::VectorXd& displacement, const double& lambda) {
     return getMatrixImpl(displacement, lambda);
@@ -129,7 +129,7 @@ int main() {
   draw(gridView);
   std::cout << "1" << std::endl;
 
-  auto denseAssembler = DenseAssemblerFromBasis(basis);
+  auto denseAssembler = DensePowerBasisAssembler(basis);
 
   Eigen::VectorXd d(basis.size());
   d.setZero();

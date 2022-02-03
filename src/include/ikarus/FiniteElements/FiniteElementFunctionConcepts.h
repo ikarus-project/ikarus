@@ -18,8 +18,7 @@
 namespace Ikarus::FiniteElements {
 
   struct DofAtEntity {
-    int entityID;
-    std::optional<EntityType> entityType;
+    Eigen::Matrix<int,Eigen::Dynamic,1,20,1> indices;
     std::vector<Variable::VariableTags> variableVector;
   };
 

@@ -54,7 +54,8 @@ namespace Ikarus::FiniteElements {
   public:
     //    using Base = FEVertexDisplacement<GridElementEntityType, IndexSetType>;
     NonLinearElasticityFEWithLocalBasis(LocalView& localView, double emod, double nu)
-        : localView_{localView}, emod_{emod}, nu_{nu} {}
+        : localView_{localView}, emod_{emod}, nu_{nu} {
+    }
 
     struct Traits {
       using GridEntity = typename LocalView::Element;
