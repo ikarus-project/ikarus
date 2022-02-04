@@ -134,6 +134,7 @@
 // }
 
 #include <dune/functions/functionspacebases/basistags.hh>
+#include <dune/functions/functionspacebases/boundarydofs.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
@@ -144,10 +145,11 @@
 #include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
 #include <ikarus/utils/concepts.h>
 
-template <Ikarus::Concepts::FlatIndexBasis Basis>
+template <Ikarus::Concepts::FlatIndexBasis Basis, typename FEContainer>
 class DenseFlatAssembler {
 public:
-  explicit DenseFlatAssembler(const Basis& basis) : basis_{&basis} {}
+  explicit DenseFlatAssembler(const Basis& basis, const FEContainer& fes, const std::vector<bool>& dirichFlags)
+      : basis_{&basis}, feContainer{&fes}, dirichletFlags{&dirichFlags} {}
 
   Eigen::MatrixXd& getMatrix(const Eigen::VectorXd& displacement, const double& lambda) {
     return getMatrixImpl(displacement, lambda);
@@ -163,7 +165,7 @@ private:
     auto localView = basis_->localView();
     for (auto& ge : elements(basis_->gridView())) {
       localView.bind(ge);
-      Ikarus::FiniteElements::NonLinearElasticityFEWithLocalBasis<decltype(localView)> fe(localView, 1000, 0.0);
+      Ikarus::FiniteElements::NonLinearElasticityFEWithLocalBasis fe(localView, 1000, 0.0);
       auto matLoc      = fe.calculateMatrix(displacement, lambda);
       auto first_child = localView.tree().child(0);
       for (auto i = 0U; i < localView.size(); ++i)
@@ -172,12 +174,12 @@ private:
         }
     }
     localView.unbind();
-    for (auto i = 0U; i < 4; ++i)
-      mat.col(i).setZero();
-    for (auto i = 0U; i < 4; ++i)
-      mat.row(i).setZero();
-    for (auto i = 0U; i < 4; ++i)
-      mat(i, i) = 1;
+    for (auto i = 0U; i < basis_->size(); ++i)
+      if (dirichletFlags->at(i)) mat.col(i).setZero();
+    for (auto i = 0U; i < basis_->size(); ++i)
+      if (dirichletFlags->at(i)) mat.row(i).setZero();
+    for (auto i = 0U; i < basis_->size(); ++i)
+      if (dirichletFlags->at(i)) mat(i, i) = 1;
     return mat;
   }
 
@@ -187,17 +189,20 @@ private:
 
     for (auto& ge : elements(basis_->gridView())) {
       localView.bind(ge);
-      auto first_child = localView.tree().child(0);
       Ikarus::FiniteElements::NonLinearElasticityFEWithLocalBasis<decltype(localView)> fe(localView, 1000, 0.0);
       auto vecLocal = fe.calculateVector(displacement, lambda);
       for (auto i = 0U; i < localView.size(); ++i)
         vec(localView.index(i)[0]) += vecLocal(i);
     }
-    for (auto i = 0U; i < 4; ++i)
-      vec[i] = 0;
+    for (auto i = 0U; i < basis_->size(); ++i) {
+      if (dirichletFlags->at(i)) vec[i] = 0;
+    }
+
     return vec;
   }
   Basis const* basis_;
+  FEContainer const* feContainer;
+  std::vector<bool> const* dirichletFlags;
   Eigen::MatrixXd mat{};
   Eigen::VectorXd vec{};
 };
@@ -233,7 +238,7 @@ GTEST_TEST(LoadControlTestWithUGGrid, GridLoadControlTestWithUGGrid) {
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
   auto grid               = std::make_shared<Grid>(patchData);
-  grid->globalRefine(3);
+  grid->globalRefine(5);
 
   //  using Grid = Dune::YaspGrid<gridDim>;
   //  const double L    = 1;
@@ -259,8 +264,39 @@ GTEST_TEST(LoadControlTestWithUGGrid, GridLoadControlTestWithUGGrid) {
   std::cout << gridView.size(0) << " elements" << std::endl;
 
   draw(gridView);
+  std::vector<Ikarus::FiniteElements::NonLinearElasticityFEWithLocalBasis<decltype(basis)::LocalView>> fes;
+  auto localView = basis.localView();
+  for (auto& ge : elements(basis.gridView())) {
+    localView.bind(ge);
+    fes.emplace_back(localView, 1000, 0.0);
+  }
 
-  auto denseAssembler = DenseFlatAssembler(basis);
+  std::vector<bool> dirichletFlags(basis.size());
+
+  Dune::Functions::forEachBoundaryDOF(basis, [&](auto&& localIndex, auto&& localView) {
+    const Dune::FieldVector<double, 2> localCoordinate = {0.0, 0.5};
+    const auto inElementLocalCoords = localView.element().geometry().global(localCoordinate);
+//    std::cout << "edgeCenter: " << inElementLocalCoords << std::endl;
+    if (std::abs(inElementLocalCoords[1]) > 1e-8)  // Only Fix Lower Edge
+      return;
+    auto& fe = localView.tree().child(0).finiteElement();
+    std::vector<Dune::FieldVector<double, 1>> N;
+    fe.localBasis().evaluateFunction(localCoordinate, N);
+    for (size_t j = 0; j < N.size(); ++j) {
+//      std::cout << N[j][0] << " ";
+      if (N[j][0] > 1e-8) {
+        for (size_t k = 0; k < localView.tree().CHILDREN; ++k) {
+          auto localFixedDof                                = localView.tree().child(k).localIndex(j);
+          dirichletFlags[localView.index(localFixedDof)[0]] = true;
+        }
+      }
+    }
+//    std::cout << std::endl;
+  });
+//  for (auto&& flag : dirichletFlags)
+//    std::cout << flag << std::endl;
+
+  auto denseAssembler = DenseFlatAssembler(basis, fes, dirichletFlags);
 
   Eigen::VectorXd d(basis.size());
   d.setZero();
@@ -271,7 +307,7 @@ GTEST_TEST(LoadControlTestWithUGGrid, GridLoadControlTestWithUGGrid) {
   vtkWriter.addVertexData(d, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, gridDim));
   vtkWriter.write("TestDuneBasisUSIGA_0");
 
-  double fac = 1;
+  double fac = 100;
   for (int ls = 1; ls < 20; ++ls) {
     Eigen::FullPivLU<Eigen::MatrixXd> lu;
     for (int i = 0; i < 20; ++i) {
@@ -281,11 +317,10 @@ GTEST_TEST(LoadControlTestWithUGGrid, GridLoadControlTestWithUGGrid) {
       const auto dd = lu.solve(r);
       d -= lu.solve(r);
       std::cout << "Rnorm: " << r.norm() << "    "
-                << "dnorm: " << dd.norm() << "    "
-                << "Rank: " << lu.rank() << " Dofs: " << lu.rows() << std::endl;
+                << "dnorm: " << dd.norm() << "    "  << std::endl;
       if (r.norm() < 1e-8) break;
     }
-    std::cout<<"=============="<<std::endl;
+    std::cout << "==============" << std::endl;
     auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis, d);
     Dune::SubsamplingVTKWriter<GridView> vtkWriterI(gridView, Dune::refinementLevels(1));
     //    Dune::VTKWriter<GridView> vtkWriterI(gridView);
