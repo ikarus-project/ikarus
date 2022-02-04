@@ -63,8 +63,8 @@ namespace Ikarus {
           const Eigen::VectorXd D = -linearSolver.solve(rx);
           dNorm                   = D.norm();
           if constexpr (requires {x.transpose();})
-            std::cout<<"x: "<<x.transpose()<<std::endl;
-          std::cout<<"D: "<<D.transpose()<<std::endl;
+//            std::cout<<"x: "<<x.transpose()<<std::endl;
+//          std::cout<<"D: "<<D.transpose()<<std::endl;
           updateFunction(x, D);
 
         } else {
