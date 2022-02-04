@@ -25,7 +25,7 @@ namespace Ikarus {
   };
   template <typename NonLinearOperatorImpl,
             typename LinearSolver   = std::function<typename NonLinearOperatorImpl::ValueType(
-                const typename NonLinearOperatorImpl::ValueType&, const typename NonLinearOperatorImpl::ValueType&)>,
+                  const typename NonLinearOperatorImpl::ValueType&, const typename NonLinearOperatorImpl::ValueType&)>,
             typename UpdateFunction = std::function<void(typename NonLinearOperatorImpl::ValueType&,
                                                          const typename NonLinearOperatorImpl::ValueType&)> >
   class NewtonRaphson : public IObservable<NonLinearSolverMessages> {
@@ -43,18 +43,25 @@ namespace Ikarus {
           linearSolver{std::move(p_linearSolver)},
           updateFunction{p_updateFunction} {}
 
+    using NonLinearOperator = NonLinearOperatorImpl;
+
     void setup(const NonlinearSolverSettings& p_settings) { settings = p_settings; }
-    template <typename SolutionType>
-    SolverInformation solve(SolutionType& x) {
+    struct NoPredictor {};
+    template <typename SolutionType = NoPredictor>
+    requires std::is_same_v<SolutionType, NoPredictor> || std::is_same_v<SolutionType,
+                                                                         typename NonLinearOperatorImpl::ValueType>
+        SolverInformation solve(const SolutionType& dx_predictor = NoPredictor{}) {
       this->notify(NonLinearSolverMessages::INIT);
       SolverInformation solverInformation;
       solverInformation.sucess = true;
       nonLinearOperator().updateAll();
       const auto& rx = nonLinearOperator().value();
       const auto& Ax = nonLinearOperator().derivative();
+      auto& x        = nonLinearOperator().template nthParameter<1>();
       auto rNorm     = norm(rx);
       decltype(rNorm) dNorm;
       int iter{0};
+      if constexpr (not std::is_same_v<SolutionType, NoPredictor>) updateFunction(x, dx_predictor);
       if constexpr (!std::is_same_v<LinearSolver, LinearSolverStdFunctionType>) linearSolver.analyzePattern(Ax);
       while (rNorm > settings.tol && iter <= settings.maxIter) {
         this->notify(NonLinearSolverMessages::ITERATION_STARTED);
@@ -62,9 +69,8 @@ namespace Ikarus {
           linearSolver.factorize(Ax);
           const Eigen::VectorXd D = -linearSolver.solve(rx);
           dNorm                   = D.norm();
-          if constexpr (requires {x.transpose();})
-//            std::cout<<"x: "<<x.transpose()<<std::endl;
-//          std::cout<<"D: "<<D.transpose()<<std::endl;
+          //            std::cout<<"x: "<<x.transpose()<<std::endl;
+          //          std::cout<<"D: "<<D.transpose()<<std::endl;
           updateFunction(x, D);
 
         } else {

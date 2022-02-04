@@ -79,16 +79,4 @@ namespace Ikarus::Geometry {
     }
   };
 
-  template <typename ScalarType>
-  using ExternalBrickGeometry = GeometryWithExternalInput<ScalarType, 3, 3>;
-  template <typename ScalarType>
-  using ExternalSurfaceGeometry = GeometryWithExternalInput<ScalarType, 3, 2>;
-  template <typename ScalarType>
-  using ExternalPlaneGeometry = GeometryWithExternalInput<ScalarType, 2, 2>;
-  template <typename ScalarType>
-  using ExternalCurve3dGeometry = GeometryWithExternalInput<ScalarType, 3, 1>;
-  template <typename ScalarType>
-  using ExternalCurve2dGeometry = GeometryWithExternalInput<ScalarType, 2, 1>;
-  template <typename ScalarType>
-  using ExternalCurve1dGeometry = GeometryWithExternalInput<ScalarType, 1, 1>;
 }  // namespace Ikarus::Geometry
