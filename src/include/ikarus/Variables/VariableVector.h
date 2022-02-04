@@ -14,31 +14,37 @@
 
 namespace Ikarus::Variable {
 
-  template <class FEContainer, class Basis>
+  template <class FEContainer>
   class VariableVector {
   public:
-    explicit VariableVector(const FEContainer &feContainer, const Basis &p_basis)
-        : feContainer_{&feContainer}, basis{p_basis} {
+    explicit VariableVector(const FEContainer &feContainer) : feContainer_{&feContainer} {
       std::cout << "VariableVector1" << std::endl;
       using DofSet = std::map<Ikarus::FiniteElements::VariableIndicesPair::Indices,
                               std::unordered_set<Ikarus::Variable::VariableTags>>;
       DofSet dofSet;
       for (auto &&fe : feContainer) {
-        auto localView = basis.localView();
-        localView.bind(fe.getEntity());
         for (auto &&[indices, dofTypes] : Ikarus::FiniteElements::getEntityVariableTuple(fe)) {
           auto &&entitySetEntry = dofSet[indices];
           entitySetEntry.unorderedSet.insert(begin(dofTypes), end(dofTypes));
         }
       }
-      std::cout << "VariableVector2" << std::endl;
 
-      variablesForEachNode.resize(dofSet.size());
-      for (int i = 0; i < variablesForEachNode.size(); ++i) {
-        auto viewOverTagsAsVariable = dofSet[i] | std::views::transform([](auto &&tag) {
-                                        return Ikarus::Variable::VariableFactory::createVariable(tag);
-                                      });
-        variablesForEachNode[i].template emplace(begin(viewOverTagsAsVariable), end(viewOverTagsAsVariable));
+      for (int pos = 0; auto &[indices, varTagsSet] : dofSet) {
+        auto viewOverTags = varTagsSet | std::views::transform([](auto &&tag) {
+                              return Ikarus::Variable::VariableFactory::createVariable(tag);
+                            });
+        for (auto var : viewOverTags) {
+          variablesForEachNode.push_back(std::move(var));
+          auto &currentVar = variablesForEachNode.back();
+          variableID.insert({&currentVar, variablesForEachNode.size() - 1});
+          auto corsize = correctionSize(currentVar);
+          Eigen::Matrix<size_t, Eigen::Dynamic, 1, 8, 1> indicesOfvariable;
+          for (int i = 0; i < corsize; ++i)
+            indicesOfvariable(i) = indices[i + pos];
+          pos += corsize;
+          variableIndices.insert({&currentVar, indicesOfvariable});
+          variableOfIndices.insert({indicesOfvariable,&currentVar });
+        }
       }
     }
 
@@ -58,11 +64,11 @@ namespace Ikarus::Variable {
       return transform_viewOverElements([this](const auto &fe) { return this->dofIndicesOfElement(fe); });
     };
 
-    auto getValues() { return std::ranges::join_view(variablesForEachNode); };
-    auto getValues() const { return std::ranges::join_view(variablesForEachNode); };
+    auto getValues() { return variablesForEachNode; };
+    auto getValues() const { return variablesForEachNode; };
     auto size() const {
-      auto v   = std::ranges::join_view(variablesForEachNode);
-      int size = std::accumulate(v.begin(), v.end(), 0, [](auto &&acc, auto &&var) { return acc + valueSize(var); });
+      int size = std::accumulate(variablesForEachNode.begin(), variablesForEachNode.end(), 0,
+                                 [](auto &&acc, auto &&var) { return acc + valueSize(var); });
       return size;
     };
 
@@ -77,15 +83,10 @@ namespace Ikarus::Variable {
     }
 
     auto variablesOfSingleElement(const typename FEContainer::value_type &fe) {
-      std::vector<Ikarus::Variable::IVariable> elementVariables;
+      std::vector<Ikarus::Variable::IVariable*> elementVariables;
 
-      auto localView = basis->localView();
-      localView.bind(fe.getEntity());
+      for (auto &&[indices, dofTypes] : Ikarus::FiniteElements::getEntityVariableTuple(fe)) {
 
-      auto feSubIndicesRange = feIndexSet.variableIDs(fe);
-      for (auto &feSubIndex : feSubIndicesRange) {
-        const auto &entityType = entityTypes.at(feSubIndex);
-        elementVariables.add(entityType, variablesForEachNode[feSubIndex]);
       }
       return elementVariables;
     }
@@ -93,34 +94,20 @@ namespace Ikarus::Variable {
     auto variablesOfSingleElement(const typename FEContainer::value_type &fe) const {
       FiniteElements::FEValues elementVariables;
 
-      auto feSubIndicesRange = feIndexSet.variableIDs(fe);
-      for (auto &feSubIndex : feSubIndicesRange) {
-        const auto &entityType = entityTypes.at(feSubIndex);
-        elementVariables.add(entityType, variablesForEachNode[variablesForEachEntityfeSubIndex]);
-      }
+      //      auto feSubIndicesRange = feIndexSet.variableIDs(fe);
+      //      for (auto &feSubIndex : feSubIndicesRange) {
+      //        const auto &entityType = entityTypes.at(feSubIndex);
+      //        elementVariables.add(entityType, variablesForEachNode[variablesForEachEntityfeSubIndex]);
+      //      }
       return elementVariables;
     }
 
-    auto dofIndicesOfElement(const typename FEContainer::value_type &fe) const {
-      Eigen::ArrayX<size_t> indices(dofSize(fe));
-      indices.setZero();
-      size_t posHelper = 0;
-
-      auto eleDofs = Ikarus::FiniteElements::getEntityVariableTuple(fe);
-
-      for (auto &&entityID : feIndexSet.variableIDs(fe)) {
-        auto &currentIndices                                       = variableIndices[entityID];
-        indices.template segment(posHelper, currentIndices.size()) = currentIndices;
-        posHelper += currentIndices.size();
-      }
-      return indices;
-    }
-
-    const auto &dofIndicesOfEntity(const size_t &gridIndexOfEntity) const {
-      return variableIndices[feIndexSet.indexOfEntity(gridIndexOfEntity)];
-    }
-
-    [[nodiscard]] size_t correctionSize() const { return dofSizeValue; }
+    auto correctionSize() const {
+      int size = std::accumulate(variablesForEachNode.begin(), variablesForEachNode.end(), 0,
+                                 [](auto &&acc, auto &&var) { return acc + Variable::correctionSize(var); });
+      return size;
+    };
+    //    [[nodiscard]] size_t correctionSize() const { return dofSizeValue; }
     [[nodiscard]] size_t elementSize() const { return feContainer_->size(); }
     const auto &getFeContainer() const { return *feContainer_; }
 
@@ -174,16 +161,15 @@ namespace Ikarus::Variable {
     template <class FEContainer1>
     friend VariableVector<FEContainer1> operator+(const VariableVector<FEContainer1> &varVec,
                                                   const Eigen::VectorXd &correction);
-    mutable std::vector<std::vector<Ikarus::Variable::IVariable>> variablesForEachNode;
+
+    mutable std::vector<Ikarus::Variable::IVariable> variablesForEachNode;
     template <typename FEContainer1, typename Range>
     requires(!std::is_same_v<Range, Eigen::VectorXd>) friend VariableVector<FEContainer1> operator+(
         const VariableVector<FEContainer1> &varVec, Range &&r);
-    std::vector<Eigen::ArrayX<size_t>> variableIndices;
-    size_t dofSizeValue{};
+    std::map<Variable::IVariable *, Eigen::Matrix<size_t, Eigen::Dynamic, 1, 8, 1>> variableIndices;
+    std::map<Eigen::Matrix<size_t, Eigen::Dynamic, 1, 8, 1>,Variable::IVariable * > variableOfIndices;
+    std::map<Variable::IVariable *, size_t> variableID;
     FEContainer const *feContainer_;
-    Basis const *basis;
-    std::map<typename FEContainer::value_type const *, size_t> feIndexContainer;
-    //    FEIndexSet<FEContainer> feIndexSet;
   };
 
   template <class FEContainer>
