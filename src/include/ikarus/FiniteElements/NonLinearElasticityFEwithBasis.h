@@ -31,9 +31,6 @@
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/geometry/type.hh>
 
-#include <spdlog/spdlog.h>
-
-#include "ikarus/AnsatzFunctions/Lagrange.h"
 #include "ikarus/utils/LinearAlgebraHelper.h"
 #include <ikarus/FiniteElements/FEPolicies.h>
 #include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>

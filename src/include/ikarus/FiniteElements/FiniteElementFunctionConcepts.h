@@ -7,7 +7,6 @@
 //#include <ikarus/FiniteElements/InterfaceFiniteElement.h>
 #include <optional>
 
-#include <ikarus/FiniteElements/FEValues.h>
 #include <ikarus/Variables/InterfaceVariable.h>
 #include <ikarus/Variables/ParameterFactory.h>
 #ifdef __clang__
@@ -46,10 +45,10 @@ namespace Ikarus::FiniteElements {
   inline constexpr ScalarAffordances potentialEnergy = ScalarAffordances::potentialEnergy;
 
   struct FErequirements {
-    using VariableType = FEValues;
-    using DataType     = typename std::optional<std::reference_wrapper<FEValues>>;
-    std::optional<std::reference_wrapper<VariableType>> variables;
-    DataType data{std::nullopt};
+//    using VariableType = FEValues;
+//    using DataType     = typename std::optional<std::reference_wrapper<FEValues>>;
+//    std::optional<std::reference_wrapper<VariableType>> variables;
+//    DataType data{std::nullopt};
     std::map<decltype(FEParameterValuePair::type), decltype(FEParameterValuePair::value)> parameter;
     ScalarAffordances scalarAffordances{ScalarAffordances::noAffordance};
     VectorAffordances vectorAffordances{VectorAffordances::noAffordance};
