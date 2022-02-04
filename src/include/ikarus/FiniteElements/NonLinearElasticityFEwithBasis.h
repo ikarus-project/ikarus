@@ -32,6 +32,7 @@
 #include <dune/geometry/type.hh>
 
 #include "ikarus/utils/LinearAlgebraHelper.h"
+#include "ikarus/LocalBasis/localBasis.h"
 #include <ikarus/FiniteElements/FEPolicies.h>
 #include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
@@ -98,21 +99,16 @@ namespace Ikarus::FiniteElements {
       C(2, 2)           = (1 - nu_) / 2;
       C *= emod_ / (1 - nu_ * nu_);
       const auto geo = localView_->element().geometry();
+      Ikarus::LocalBasis localBasis(fe.localBasis());
+      Eigen::Matrix<double, Eigen::Dynamic, Traits::mydim> dN;
+      Eigen::VectorXd N;
       for (auto& gp : rule) {
         const auto J = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
-        std::vector<Dune::FieldMatrix<double, 1, Traits::mydim>> dNM;
-        fe.localBasis().evaluateJacobian(gp.position(), dNM);
-        std::vector<Dune::FieldVector<double, 1>> NM;
-        fe.localBasis().evaluateFunction(gp.position(), NM);
+        localBasis.evaluateFunctionAndJacobian(gp.position(),N,dN);
         const Eigen::Vector<double, Traits::worlddim> X     = toEigenVector(geo.global(gp.position()));
         Eigen::Vector<ScalarType, Traits::worlddim> x = X;
-        for (size_t i = 0; i < NM.size(); ++i)
-          x += disp.col(i) * NM[i];
-        Eigen::Matrix<double, Eigen::Dynamic, Traits::mydim> dN;
-        dN.setZero(fe.size(), Eigen::NoChange);
-        for (auto i = 0U; i < fe.size(); ++i)
-          for (int j = 0; j < Traits::mydim; ++j)
-            dN(i, j) = dNM[i][0][j];
+        for (int i = 0; i < N.size(); ++i)
+          x += disp.col(i) * N[i];
 
         dN *= J.inverse();
         const auto H      = DefoGeo<ScalarType>::jacobianTransposed(dN, disp).eval();
