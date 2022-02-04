@@ -20,7 +20,7 @@
 
 #include "ikarus/LinearAlgebra/DirichletConditionManager.h"
 #include <ikarus/Assembler/SimpleAssemblers.h>
-#include <ikarus/FEManager/DefaultFEManager.h>
+//#include <ikarus/FEManager/DefaultFEManager.h>
 #include <ikarus/FiniteElements/ElasticityFE.h>
 #include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
@@ -118,7 +118,7 @@ TEST(Assembler, SimpleAssemblersTest) {
   }
 
 
-//  Ikarus::DefaultFEManager feManager(fes,gridView)
+//  Ikarus::DefaultFEManager feManager(fes,gridView);
 
 //  std::cout<< decltype(localView2)<<std::endl;
 

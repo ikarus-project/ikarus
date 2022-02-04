@@ -16,7 +16,7 @@ endif()
 
 include_directories(../libAddons/eigen/eigenAddons)
 
-file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/AssemblerTest.cpp)
+file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/AssemblerTest.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/LoadControlTestWithDuneGridAndBasis.cpp)
 
 find_package(GTest CONFIG REQUIRED)
 add_executable(IkarusTests ${sources})

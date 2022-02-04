@@ -38,6 +38,7 @@
 #include <ikarus/FiniteElements/FEPolicies.h>
 #include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
+#include <ikarus/FiniteElements/physicsHelper.h>
 #include <ikarus/Geometries/GeometryType.h>
 #include <ikarus/Geometries/GeometryWithExternalInput.h>
 #include <ikarus/Variables/VariableDefinitions.h>
@@ -54,121 +55,82 @@ namespace Ikarus::FiniteElements {
   public:
     //    using Base = FEVertexDisplacement<GridElementEntityType, IndexSetType>;
     NonLinearElasticityFEWithLocalBasis(LocalView& localView, double emod, double nu)
-        : localView_{localView}, emod_{emod}, nu_{nu} {
-    }
+        : localView_{&localView}, emod_{emod}, nu_{nu} {}
 
-    struct Traits {
-      using GridEntity = typename LocalView::Element;
-      /** \brief Dimension of the world space */
-      static constexpr int worlddim = GridEntity::Geometry::coorddimension;
-
-      /** \brief Dimension of the geometry */
-      static constexpr int mydim = GridEntity::mydimension;
-
-      /** \brief Dimension of the grid */
-      static constexpr int dimension = GridEntity::dimension;
-
-      /** \brief Type of the internal forces */
-      using VectorType = Eigen::VectorXd;
-
-      /** \brief Type of the stiffness matrix */
-      using MatrixType = Eigen::MatrixXd;
-
-      /** \brief Type of the FE parameters */
-      using FERequirementType = typename IFiniteElement::FERequirementType;
-    };
+    using Traits = TraitsFromLocalView<LocalView>;
+    template <typename ST>
+    using DefoGeo = Ikarus::Geometry::GeometryWithExternalInput<ST, Traits::mydim, Traits::dimension>;
 
     [[nodiscard]] typename Traits::MatrixType calculateMatrix(const Eigen::VectorXd& displacements,
                                                               const double& lambda) const {
-      Eigen::VectorXdual2nd dx(localView_.size());
+      Eigen::VectorXdual2nd dx(localView_->size());
       dx.setZero();
-      auto f
-          = [&](Eigen::VectorXdual2nd& x) { return calculateScalarImpl<autodiff::dual2nd>(displacements, lambda, x); };
+      auto f = [&](auto& x) { return calculateScalarImpl<autodiff::dual2nd>(displacements, lambda, x); };
       return hessian(f, wrt(dx), at(dx));
     }
 
     [[nodiscard]] typename Traits::VectorType calculateVector(const Eigen::VectorXd& displacements,
                                                               const double& lambda) const {
-      Eigen::VectorXdual dx(localView_.size());
+      Eigen::VectorXdual dx(localView_->size());
       dx.setZero();
-      auto f = [&](Eigen::VectorXdual& x) { return calculateScalarImpl<autodiff::dual>(displacements, lambda, x); };
+      auto f = [&](auto& x) { return calculateScalarImpl<autodiff::dual>(displacements, lambda, x); };
       return gradient(f, wrt(dx), at(dx));
     }
 
     template <class ScalarType>
     ScalarType calculateScalarImpl([[maybe_unused]] const Eigen::VectorXd& displacements, const double& lambda,
                                    Eigen::VectorX<ScalarType>& dx) const {
-      Eigen::VectorX<ScalarType> localDisp(localView_.size());
+      Eigen::VectorX<ScalarType> localDisp(localView_->size());
       localDisp.setZero();
-      auto first_child = localView_.tree().child(0);
-      const auto& fe   = first_child.finiteElement();
-      Eigen::Matrix<ScalarType, Traits::dimension, Eigen::Dynamic> dxM;
-      dxM.setZero(Eigen::NoChange, fe.size());
+      auto& first_child = localView_->tree().child(0);
+      const auto& fe    = first_child.finiteElement();
+      Eigen::Matrix<ScalarType, Traits::dimension, Eigen::Dynamic> disp;
+      disp.setZero(Eigen::NoChange, fe.size());
       for (auto i = 0U; i < fe.size(); ++i)
         for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
-          dxM.col(i)(k2) = dx[localView_.tree().child(k2).localIndex(i)]
-                           + displacements[localView_.index(localView_.tree().child(k2).localIndex(i))[0]];
+          disp.col(i)(k2) = dx[localView_->tree().child(k2).localIndex(i)]
+                            + displacements[localView_->index(localView_->tree().child(k2).localIndex(i))[0]];
       ScalarType energy = 0.0;
 
       const int order = 2 * (fe.localBasis().order());
-      const auto rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
+      const auto rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_->element().type(), order);
       Eigen::Matrix3<ScalarType> C;
       C.setZero();
       C(0, 0) = C(1, 1) = 1;
       C(0, 1) = C(1, 0) = nu_;
       C(2, 2)           = (1 - nu_) / 2;
       C *= emod_ / (1 - nu_ * nu_);
+      const auto geo = localView_->element().geometry();
       for (auto& gp : rule) {
-        const auto geo = localView_.element().geometry();
-        const auto J   = toEigenMatrix(geo.jacobianTransposed(gp.position()));
-        Eigen::Matrix<ScalarType, Traits::dimension, Eigen::Dynamic> x;
-        x.setZero(Eigen::NoChange, fe.size());
-        for (auto i = 0U; i < fe.size(); ++i)
-          x.col(i) = dxM.col(i) + toEigenVector(geo.corner(i));
-
-        using DefoGeo = Ikarus::Geometry::GeometryWithExternalInput<ScalarType, Traits::mydim, Traits::dimension>;
-
+        const auto J = toEigenMatrix(geo.jacobianTransposed(gp.position()));
         std::vector<Dune::FieldMatrix<double, 1, Traits::mydim>> dNM;
         fe.localBasis().evaluateJacobian(gp.position(), dNM);
         std::vector<Dune::FieldVector<double, 1>> NM;
         fe.localBasis().evaluateFunction(gp.position(), NM);
-        Eigen::Vector<ScalarType, Traits::worlddim> xv;
-        xv.setZero();
+        Eigen::Vector<double, Traits::worlddim> X     = toEigenVector(geo.global(gp.position()));
+        Eigen::Vector<ScalarType, Traits::worlddim> x = X;
         for (size_t i = 0; i < NM.size(); ++i)
-          xv += x.col(i) * NM[i];
+          x += disp.col(i) * NM[i];
         Eigen::Matrix<double, Eigen::Dynamic, Traits::mydim> dN;
         dN.setZero(fe.size(), Eigen::NoChange);
         for (auto i = 0U; i < fe.size(); ++i)
           for (int j = 0; j < Traits::mydim; ++j)
             dN(i, j) = dNM[i][0][j];
 
-        const auto Jloc = Ikarus::LinearAlgebra::orthonormalizeMatrixColumns(J.transpose());
-        const auto j    = DefoGeo::jacobianTransposed(dN, x);
+        dN *= J.inverse();
+        const auto H      = DefoGeo<ScalarType>::jacobianTransposed(dN, disp).transpose().eval();
+        const auto E      = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
+        const auto EVoigt = toVoigt(E);
 
-        const Eigen::Matrix<ScalarType, Traits::mydim, Traits::mydim> F = Jloc.transpose() * j * (J.inverse()) * Jloc;
-        dN *= (J * Jloc).inverse();
-
-        const auto E
-            = (0.5 * (F.transpose() * F - Eigen::Matrix<ScalarType, Traits::mydim, Traits::mydim>::Identity())).eval();
-        Eigen::Vector<ScalarType, (Traits::mydim * (Traits::mydim + 1)) / 2> EVoigt;
-        EVoigt.setZero();
-        for (int i = 0; i < Traits::mydim; ++i)
-          EVoigt(i) = E(i, i);
-
-        if constexpr (Traits::mydim > 1) EVoigt(Traits::mydim) = E(0, 1) * 2;
-        if constexpr (Traits::mydim > 2) {
-          EVoigt(Traits::mydim + 1) = E(0, 2) * 2;
-          EVoigt(Traits::mydim + 2) = E(1, 2) * 2;
-        }
         Eigen::Vector<double, Traits::worlddim> fext;
         fext.setZero();
         fext[1] = lambda;
-        energy += (EVoigt.dot(C * EVoigt) - xv.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
+        energy += (EVoigt.dot(C * EVoigt) - x.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
       }
       return energy;
     }
 
-    LocalView localView_;
+    LocalView const* localView_;
     double emod_;
     double nu_;
   };
