@@ -65,26 +65,28 @@ namespace Ikarus::FiniteElements {
     template <typename FE>
     struct FEImpl : public FEBase {
       explicit FEImpl(FE fearg) : fe{fearg} {};
-      [[nodiscard]] int do_dofSize() const final { TRYCALLFUNCTION(dofSize); }
+      [[nodiscard]] int do_dofSize() const final { TRYCALLFUNCTIONANDRETURN(dofSize); }
       [[nodiscard]] std::pair<Eigen::MatrixXd, Eigen::VectorXd> do_calculateLocalSystem(
           const FERequirementType &par) const final {
-        TRYCALLFUNCTION(calculateLocalSystem, par);
+        TRYCALLFUNCTIONANDRETURN(calculateLocalSystem, par);
       }
       [[nodiscard]] Eigen::MatrixXd do_calculateMatrix(const FERequirementType &par) const final {
-        TRYCALLFUNCTION(calculateMatrix, par);
+        TRYCALLFUNCTIONANDRETURN(calculateMatrix, par);
       }
       [[nodiscard]] Eigen::VectorXd do_calculateVector(const FERequirementType &par) const final {
-        TRYCALLFUNCTION(calculateVector, par);
+        TRYCALLFUNCTIONANDRETURN(calculateVector, par);
       }
       [[nodiscard]] double do_calculateScalar(const FERequirementType &par) const final {
-        TRYCALLFUNCTION(calculateScalar, par);
+        TRYCALLFUNCTIONANDRETURN(calculateScalar, par);
       }
       [[nodiscard]] DofPairVectorType do_getEntityVariableTuple() const final {
-        TRYCALLFUNCTION(getEntityVariableTuple);
+        TRYCALLFUNCTIONANDRETURN(getEntityVariableTuple);
       }
-      [[nodiscard]] unsigned int do_subEntities(unsigned int codim) const final { TRYCALLFUNCTION(subEntities, codim); }
-      [[nodiscard]] size_t do_subIndex(int i, unsigned int codim) const final { TRYCALLFUNCTION(subIndex, i, codim); }
-      [[nodiscard]] unsigned int do_dimension() const final { TRYCALLFUNCTION(dimension); }
+      [[nodiscard]] unsigned int do_subEntities(unsigned int codim) const final {
+        TRYCALLFUNCTIONANDRETURN(subEntities, codim); }
+      [[nodiscard]] size_t do_subIndex(int i, unsigned int codim) const final {
+        TRYCALLFUNCTIONANDRETURN(subIndex, i, codim); }
+      [[nodiscard]] unsigned int do_dimension() const final { TRYCALLFUNCTIONANDRETURN(dimension); }
       [[nodiscard]] std::unique_ptr<FEBase> clone() const final { return std::make_unique<FEImpl>(*this); }
       FE fe;
     };

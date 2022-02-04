@@ -136,13 +136,13 @@ namespace Ikarus::FiniteElements {
       else if constexpr (worlddim == 1)
         dofType = VariableTags::displacement1d;
       DofTupleVectorType dofTupleVectorType;
-      for (int i = 0; i < fe.size(); ++i) {
+      for (size_t i = 0; i < fe.size(); ++i) {
         dofTupleVectorType.emplace_back();
         auto& currentVariable = dofTupleVectorType.back();
         currentVariable.variableVector.push_back(dofType);
         // The zeros index of the multiIndex returns the flat index of the displacement degrees of freedom
         for (int j = 0; j < worlddim; ++j) {
-          currentVariable.indices[i*worlddim+j] = localView.index((localView.tree().child(j).localIndex(i)))[0];
+          currentVariable.indices.push_back(localView.index((localView.tree().child(j).localIndex(i)))[0]);
         }
       }
       return dofTupleVectorType;

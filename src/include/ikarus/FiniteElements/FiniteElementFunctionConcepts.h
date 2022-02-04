@@ -19,11 +19,9 @@ namespace Ikarus::FiniteElements {
 
   struct VariableIndicesPair {
     using VariableVector = std::vector<Variable::VariableTags>;
-    using Indices = Eigen::Matrix<size_t,Eigen::Dynamic,1,20,1>;
+    using Indices = std::vector<size_t>;
     Indices indices;
     VariableVector variableVector;
-
-
   };
 
   enum class VectorAffordances { noAffordance, forces };
@@ -62,19 +60,20 @@ namespace Ikarus::FiniteElements {
 
 namespace Ikarus::Concepts {
 
-#define TRYCALLFUNCTION(Str, ...)                        \
-  if constexpr (Ikarus::Concepts::Has##Str<FE>)          \
+#define TRYCALLFUNCTIONANDRETURN(Str, ...)                        \
+  if constexpr (Ikarus::Concepts::Has##Str<decltype(fe)>)          \
     return fe.Str(__VA_ARGS__);                          \
-  else if constexpr (Ikarus::Concepts::HasFree##Str<FE>) \
+  else if constexpr (Ikarus::Concepts::HasFree##Str<decltype(fe)>) \
     return Str(fe, ##__VA_ARGS__);                       \
   else                                                   \
     DUNE_THROW(Dune::InvalidStateException,              \
                "The member/free function \"" << #Str << "\" is not implemented by this element");
 
+
 #define TRYCALLFUNCTIONDONTTHROW(Str)                    \
-  if constexpr (Ikarus::Concepts::Has##Str<FE>)          \
+  if constexpr (Ikarus::Concepts::Has##Str<decltype(fe)>)          \
     return fe.Str();                                     \
-  else if constexpr (Ikarus::Concepts::HasFree##Str<FE>) \
+  else if constexpr (Ikarus::Concepts::HasFree##Str<decltype(fe)>) \
     return Str(fe);                                      \
   else                                                   \
     return;

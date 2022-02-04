@@ -23,9 +23,10 @@ namespace Ikarus::Variable {
                               std::unordered_set<Ikarus::Variable::VariableTags>>;
       DofSet dofSet;
       for (auto &&fe : feContainer) {
-        for (auto &&[indices, dofTypes] : Ikarus::FiniteElements::getEntityVariableTuple(fe)) {
+        const auto feVarTuple = [](auto& fe){TRYCALLFUNCTIONANDRETURN(getEntityVariableTuple)};
+        for (auto &&[indices, dofTypes] :feVarTuple(fe) ) {
           auto &&entitySetEntry = dofSet[indices];
-          entitySetEntry.unorderedSet.insert(begin(dofTypes), end(dofTypes));
+          entitySetEntry.insert(begin(dofTypes), end(dofTypes));
         }
       }
 
@@ -37,13 +38,15 @@ namespace Ikarus::Variable {
           variablesForEachNode.push_back(std::move(var));
           auto &currentVar = variablesForEachNode.back();
           variableID.insert({&currentVar, variablesForEachNode.size() - 1});
-          auto corsize = correctionSize(currentVar);
-          Eigen::Matrix<size_t, Eigen::Dynamic, 1, 8, 1> indicesOfvariable;
+          auto corsize = Variable::correctionSize(currentVar);
+          Eigen::Matrix<size_t, Eigen::Dynamic, 1,0, 8, 1> indicesOfvariable;
+          indicesOfvariable.resize(corsize);
           for (int i = 0; i < corsize; ++i)
             indicesOfvariable(i) = indices[i + pos];
           pos += corsize;
           variableIndices.insert({&currentVar, indicesOfvariable});
-          variableOfIndices.insert({indicesOfvariable,&currentVar });
+          std::vector<size_t> indicesOfvariableAsVector(indicesOfvariable.begin(),indicesOfvariable.end());
+          variableOfIndices.insert({indicesOfvariableAsVector, &currentVar});
         }
       }
     }
@@ -83,22 +86,51 @@ namespace Ikarus::Variable {
     }
 
     auto variablesOfSingleElement(const typename FEContainer::value_type &fe) {
-      std::vector<Ikarus::Variable::IVariable*> elementVariables;
+      std::vector<Ikarus::Variable::IVariable const*> elementVariables;
 
-      for (auto &&[indices, dofTypes] : Ikarus::FiniteElements::getEntityVariableTuple(fe)) {
+      const auto feVarTuple = [](auto& fe){TRYCALLFUNCTIONANDRETURN(getEntityVariableTuple)};
+      for (int pos = 0;auto &&[indices, dofTypes] :feVarTuple(fe) ) {
+        for (auto& tag : dofTypes) {
+          const int corrSize = Variable::correctionSize(Ikarus::Variable::VariableFactory::createVariable(tag));
+          std::vector<size_t> indicesForLookUp(indices.begin()+pos, indices.begin()+pos+corrSize);
+          elementVariables.push_back(variableOfIndices.at(indicesForLookUp));
+          pos+=corrSize;
+        }
+
 
       }
       return elementVariables;
     }
 
-    auto variablesOfSingleElement(const typename FEContainer::value_type &fe) const {
-      FiniteElements::FEValues elementVariables;
+    auto dofIndicesOfElement(const typename FEContainer::value_type &fe) const {
+      const auto feVarTuple = [](auto& fe){TRYCALLFUNCTIONANDRETURN(getEntityVariableTuple)};
+      const auto dofSizeFunctor = [](auto& fe){TRYCALLFUNCTIONANDRETURN(dofSize)};
+      Eigen::VectorX<size_t> indicesAll(dofSizeFunctor(fe));
+      for(int pos=0; auto [ indices,dofType] : feVarTuple(fe))
+      {
+        for (size_t i = 0; i < indices.size(); ++i)
+          indicesAll[pos+i] = indices[i];
+        pos+=indices.size();
 
-      //      auto feSubIndicesRange = feIndexSet.variableIDs(fe);
-      //      for (auto &feSubIndex : feSubIndicesRange) {
-      //        const auto &entityType = entityTypes.at(feSubIndex);
-      //        elementVariables.add(entityType, variablesForEachNode[variablesForEachEntityfeSubIndex]);
-      //      }
+      }
+      return indicesAll;
+    }
+
+
+    auto variablesOfSingleElement(const typename FEContainer::value_type &fe) const {
+      std::vector<Ikarus::Variable::IVariable const *> elementVariables;
+
+      const auto feVarTuple = [](auto& fe){TRYCALLFUNCTIONANDRETURN(getEntityVariableTuple)};
+      for (int pos = 0;auto &&[indices, dofTypes] :feVarTuple(fe) ) {
+        for (auto& tag : dofTypes) {
+          const int corrSize = Variable::correctionSize(Ikarus::Variable::VariableFactory::createVariable(tag));
+          std::vector<size_t> indicesForLookUp(indices.begin()+pos, indices.begin()+pos+corrSize);
+          elementVariables.push_back(variableOfIndices.at(indicesForLookUp));
+          pos+=corrSize;
+        }
+
+
+    }
       return elementVariables;
     }
 
@@ -113,25 +145,27 @@ namespace Ikarus::Variable {
 
     VariableVector &operator+=(const Eigen::VectorXd &correction) {
       if (static_cast<decltype(correction.size())>(correctionSize()) == correction.size())
-        for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(this->variablesForEachNode))
-          var += correction(variableIndices[variableIndex++]);
+        for (auto &&var : std::ranges::join_view(this->variablesForEachNode))
+          var += correction(variableIndices[&var]);
       return *this;
     }
 
     VariableVector &operator-=(const Eigen::VectorXd &correction) {
       assert(static_cast<long long int>(correctionSize()) == correction.size());
       for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(this->variablesForEachNode))
-        var -= correction(variableIndices[variableIndex++]);
+        var -= correction(variableIndices[&var]);
       return *this;
     }
 
     template <typename Range>
     requires(!std::is_same_v<Range, Eigen::VectorXd>) VariableVector &operator+=(Range &&r) {
       assert(static_cast<decltype(r.size())>(correctionSize()) == r.size());
-      for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(this->variablesForEachNode)) {
-        const auto &variableIndices_ = variableIndices[variableIndex++];
+      for ( auto &&var : std::ranges::join_view(this->variablesForEachNode)) {
+        const auto &variableIndices_ = variableIndices[&var];
+        Eigen::VectorXd localCorrection(variableIndices_.size());
         for (int i = 0; i < variableIndices_.size(); ++i)
-          var[i] += r[variableIndices_[i]];
+          localCorrection[i] += r[variableIndices_[i]];
+        var += localCorrection;
       }
       return *this;
     }
@@ -139,10 +173,12 @@ namespace Ikarus::Variable {
     template <typename Range>
     requires(!std::is_same_v<Range, Eigen::VectorXd>) VariableVector &operator-=(Range &&r) {
       assert(static_cast<decltype(r.size())>(correctionSize()) == r.size());
-      for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(this->variablesForEachNode)) {
-        const auto &variableIndices_ = variableIndices[variableIndex++];
+      for ( auto &&var : std::ranges::join_view(this->variablesForEachNode)) {
+        const auto &variableIndices_ = variableIndices[&var];
+        Eigen::VectorXd localCorrection(variableIndices_.size());
         for (int i = 0; i < variableIndices_.size(); ++i)
-          var[i] -= r[variableIndices_[i]];
+          localCorrection[i] += r[variableIndices_[i]];
+        var -= localCorrection;
       }
       return *this;
     }
@@ -166,8 +202,8 @@ namespace Ikarus::Variable {
     template <typename FEContainer1, typename Range>
     requires(!std::is_same_v<Range, Eigen::VectorXd>) friend VariableVector<FEContainer1> operator+(
         const VariableVector<FEContainer1> &varVec, Range &&r);
-    std::map<Variable::IVariable *, Eigen::Matrix<size_t, Eigen::Dynamic, 1, 8, 1>> variableIndices;
-    std::map<Eigen::Matrix<size_t, Eigen::Dynamic, 1, 8, 1>,Variable::IVariable * > variableOfIndices;
+    std::map<Variable::IVariable *, Eigen::Matrix<size_t, Eigen::Dynamic, 1,0, 8, 1>> variableIndices;
+    std::map<std::vector<size_t>, Variable::IVariable const *> variableOfIndices;
     std::map<Variable::IVariable *, size_t> variableID;
     FEContainer const *feContainer_;
   };
@@ -188,8 +224,10 @@ namespace Ikarus::Variable {
     assert(static_cast<decltype(r.size())>(varVec.correctionSize()) == r.size());
     for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(res.variablesForEachNode)) {
       const auto &variableIndices_ = res.variableIndices[variableIndex++];
+      Eigen::VectorXd localCorrection(variableIndices_.size());
       for (int i = 0; i < variableIndices_.size(); ++i)
-        var[i] += r[variableIndices_[i]];
+        localCorrection[i] += r[variableIndices_[i]];
+      var += localCorrection;
     }
     return res;
   }

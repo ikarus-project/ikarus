@@ -30,7 +30,7 @@ namespace Ikarus {
     using GridDataType = GridData<typename GridView::IndexSet>;
     DefaultFEManager(FEContainer& feContainer, const Basis& p_basis,
                      std::optional<std::reference_wrapper<GridDataType>> gridData = std::nullopt)
-        : basis{p_basis}, gridData_{gridData}, varVec{feContainer,p_basis} {      }
+        : basis{&p_basis}, gridData_{gridData}, varVec{feContainer} {      }
 
     [[nodiscard]] size_t numberOfDegreesOfFreedom() const { return varVec.correctionSize(); }
 
