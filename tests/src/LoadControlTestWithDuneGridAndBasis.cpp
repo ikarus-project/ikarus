@@ -15,124 +15,9 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
-//#include "ikarus/Assembler/SimpleAssemblers.h"
-//#include "ikarus/Controlroutines/LoadControl.h"
-//#include "ikarus/FEManager/DefaultFEManager.h"
-//#include "ikarus/FiniteElements/ElasticityFE.h"
-//#include "ikarus/FiniteElements/NonLinearElasticityFE.h"
-//#include "ikarus/LinearAlgebra/DirichletConditionManager.h"
-//#include "ikarus/utils/Observer/controlLogger.h"
-//#include "ikarus/utils/Observer/gridDrawerObserver.h"
-//#include "ikarus/utils/Observer/nonLinearSolverLogger.h"
-//#include <ikarus/FiniteElements/ForceLoad.h>
 #include <ikarus/Grids/GridHelper/griddrawer.h>
-//#include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
+
 #include <ikarus/LinearAlgebra/NonLinearOperator.h>
-
-// TEST(LoadControlTestWithYaspGrid, GridLoadControlTestWithYaspGrid) {
-//   using namespace Ikarus::Grid;
-//   using Grid = Dune::YaspGrid<2>;
-//   //   gridFactory;
-//   using vertexType = Eigen::Vector2d;
-//   std::vector<vertexType> verticesVec;
-//   const double L    = 10;
-//   const double h    = 1;
-//   const size_t elex = 2;
-//   const size_t eley = 2;
-//
-//   Dune::FieldVector<double, 2> bbox = {L, h};
-//   std::array<int, 2> eles           = {elex, eley};
-//   Grid grid(bbox, eles);
-//   auto gridView = grid.leafGridView();
-//
-//   draw(gridView);
-//   std::cout << "1" << std::endl;
-//   std::vector<Ikarus::FiniteElements::IFiniteElement> feContainer;
-//   std::cout << "2" << std::endl;
-//   //  for (auto&& ge : rootEntities(gridView))
-//   //    feContainer.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge, gridView.indexSet(), 1000, 0.0));
-//   std::cout << "==============================" << std::endl;
-//   const auto& indexSet = gridView.indexSet();
-//   for (auto&& ge : elements(gridView)) {
-//     for (unsigned int id = 0; id < ge.subEntities(2); ++id) {
-//       auto vertex = ge.template subEntity<2>(id);
-//       std::cout << "id: " << id << " "
-//                 << "Coords: " << vertex.geometry().corner(0) << " globID: " << indexSet.index(vertex) << " "
-//                 << indexSet.subIndex(ge, id, 2) << std::endl;
-//     }
-//     feContainer.emplace_back(Ikarus::FiniteElements::NonLinearElasticityFE(ge, gridView.indexSet(), 1000, 0.3));
-//   }
-//   std::cout << "==============================" << std::endl;
-//   std::cout << "3" << std::endl;
-//   auto spaceFunction = [](const Eigen::Vector2d&) -> Eigen::Vector2d {
-//     Eigen::Vector2d f{};
-//     f[1] = 1;
-//     return f;
-//   };
-//   std::cout << "4" << std::endl;
-//   for (auto& edge : edges(gridView)) {
-//     if (std::abs(edge.geometry().center()[1]) > h - 0.01) {
-//       std::cout << "edge.geometry().center() " << edge.geometry().center() << std::endl;
-//       feContainer.emplace_back(Ikarus::FiniteElements::ForceLoad(edge, gridView.indexSet(), spaceFunction));
-//     }
-//   }
-//   std::cout << "5" << std::endl;
-//   auto feManager = Ikarus::FEManager::DefaultFEManager(feContainer, gridView);
-//   std::cout << "6" << std::endl;
-//   Ikarus::DirichletConditionManager dirichletConditionManager(feManager);
-//   for (auto& vertex : vertices(gridView)) {
-//     if (std::abs(vertex.geometry().corner(0)[1]) < 1e-8) {
-//       //      std::cout << "AddConstraint at " << vertex.geometry().corner(0) << std::endl;
-//       dirichletConditionManager.addConstraint(vertex, 0);
-//       dirichletConditionManager.addConstraint(vertex, 1);
-//     }
-//   }
-//   std::cout << "====asdasdasdasd=====" << std::endl;
-//   dirichletConditionManager.finalize();
-//   std::cout << "7" << std::endl;
-//   auto vectorAssembler = Ikarus::Assembler::VectorAssembler(feManager, dirichletConditionManager);
-//
-//   auto denseMatrixAssembler  = Ikarus::Assembler::DenseMatrixAssembler(feManager, dirichletConditionManager);
-//   auto sparseMatrixAssembler = Ikarus::Assembler::SparseMatrixAssembler(feManager, dirichletConditionManager);
-//   std::cout << "8" << std::endl;
-//   [[maybe_unused]] auto fintFunction = [&](auto&& lambda) -> auto& {
-//     return vectorAssembler.getReducedVector(Ikarus::FiniteElements::forces, lambda);
-//   };
-//   [[maybe_unused]] auto KFunction = [&](auto&& lambda) -> auto& {
-//     return denseMatrixAssembler.getReducedMatrix(Ikarus::FiniteElements::stiffness, lambda);
-//   };
-//   [[maybe_unused]] auto KFunctionSparse = [&](auto&& lambda) -> auto& {
-//     return sparseMatrixAssembler.getReducedMatrix(Ikarus::FiniteElements::stiffness, lambda);
-//   };
-//
-//   auto controlObserver         = std::make_shared<ControlLogger>();
-//   auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
-//   auto gridDrawerObserver
-//       = std::make_shared<GridDrawerObserver<decltype(gridView), decltype(feManager)>>(gridView, feManager);
-//   auto time          = Ikarus::FEParameterFactory::createParameter(Ikarus::FEParameter::time, 1);
-//   time.value[0]      = 0.0;
-//   auto& Fint         = fintFunction(time);
-//   const int dofsFree = ((elex + 1) * (eley + 1) - (elex + 1)) * 2;
-//   EXPECT_EQ(Fint.size(), dofsFree);
-//   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::SparseLU);
-//   auto nonLinOp  = Ikarus::NonLinearOperator(linearAlgebraFunctions(fintFunction, KFunctionSparse), parameter(time));
-//   auto nr        = Ikarus::NewtonRaphson(
-//              nonLinOp, std::move(linSolver),
-//              [&dirichletConditionManager](decltype(feManager.getVariables())& x, const Eigen::VectorX<double>& D) {
-//         x += dirichletConditionManager.viewAsFullVector(D);
-//              });
-//   nr.subscribeAll(nonLinearSolverObserver);
-//
-//   auto lc = Ikarus::LoadControl(feManager, dirichletConditionManager, std::move(nr), 10, {0, 5000});
-//   //  auto lc = makeLoadControl<Ikarus::NewtonRaphson>(
-//   //      feManager, dirichletConditionManager, linearAlgebraFunctions(fintFunction, KFunctionSparse),
-//   //      Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::SparseLU), 10, {0, 1});
-//   lc.subscribeAll(controlObserver);
-//   //  lc.subscribeToNonLinearSolver(nonLinearSolverObserver);
-//   lc.subscribe(ControlMessages::SOLUTION_CHANGED, gridDrawerObserver);
-//   lc.run();
-// }
-
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
@@ -142,7 +27,6 @@
 #include <dune/grid/io/file/vtk/vtkwriter.hh>
 
 #include "ikarus/FiniteElements/NonLinearElasticityFEwithBasis.h"
-#include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
 #include <ikarus/utils/concepts.h>
 
 template <Ikarus::Concepts::FlatIndexBasis Basis, typename FEContainer>
@@ -249,8 +133,6 @@ GTEST_TEST(LoadControlTestWithUGGrid, GridLoadControlTestWithUGGrid) {
   //  Dune::FieldVector<double, 2> bbox = {L, h};
   //  std::array<int, 2> eles           = {elex, eley};
   //  auto grid                         = std::make_shared<Grid>(bbox, eles);
-
-  //  auto nurbs = grid.getPreBasis();
 
   using GridView    = typename Grid::LeafGridView;
   GridView gridView = grid->leafGridView();
