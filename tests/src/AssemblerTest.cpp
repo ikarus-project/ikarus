@@ -20,7 +20,7 @@
 
 #include "ikarus/LinearAlgebra/DirichletConditionManager.h"
 #include <ikarus/Assembler/SimpleAssemblers.h>
-//#include <ikarus/FEManager/DefaultFEManager.h>
+#include <ikarus/FEManager/DefaultFEManager.h>
 #include <ikarus/FiniteElements/ElasticityFE.h>
 #include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
@@ -102,7 +102,6 @@ TEST(Assembler, SimpleAssemblersTest) {
       } else {
         auto& node = localView2.tree().child(_1,0);
         localIndexI = node.localIndex(i);
-
       }
       auto multiIndex = localView2.index(localIndexI);
       std::cout<<multiIndex<<std::endl;
@@ -118,8 +117,17 @@ TEST(Assembler, SimpleAssemblersTest) {
   }
 
 
-//  Ikarus::DefaultFEManager feManager(fes,gridView);
+  Ikarus::DefaultFEManager feManager(fes,basis);
 
+    Ikarus::DirichletConditionManager dirichletConditionManager(feManager);
+
+    dirichletConditionManager.addConstraint(*vertices(gridView).begin(), 0);
+    dirichletConditionManager.finalize();
+
+    auto vectorAssembler = Ikarus::Assembler::VectorAssembler(feManager, dirichletConditionManager);
+
+
+    std::cout<<vectorAssembler.getVector(Ikarus::FiniteElements::VectorAffordances::forces);
 //  std::cout<< decltype(localView2)<<std::endl;
 
 //
