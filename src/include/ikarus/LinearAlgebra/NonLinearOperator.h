@@ -143,7 +143,7 @@ namespace Ikarus {
                            std::reference_wrapper<std::remove_cvref_t<ReturnType<DerivativeArgs, ParameterArgs&...>>>,
                            std::remove_cvref_t<ReturnType<DerivativeArgs, ParameterArgs&...>>>...>;
 
-    using ValueType = std::tuple_element_t<0, FunctionReturnValues>;
+    using ValueType = std::remove_cvref_t<std::tuple_element_t<0, FunctionReturnValues>>;
 
   private:
     std::tuple<std::reference_wrapper<std::remove_cvref_t<DerivativeArgs>>...> derivatives_;

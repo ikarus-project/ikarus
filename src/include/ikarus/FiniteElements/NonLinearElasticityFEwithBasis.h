@@ -102,12 +102,12 @@ namespace Ikarus::FiniteElements {
       C *= emod_ / (1 - nu_ * nu_);
       const auto geo = localView_->element().geometry();
       for (auto& gp : rule) {
-        const auto J = toEigenMatrix(geo.jacobianTransposed(gp.position()));
+        const auto J = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
         std::vector<Dune::FieldMatrix<double, 1, Traits::mydim>> dNM;
         fe.localBasis().evaluateJacobian(gp.position(), dNM);
         std::vector<Dune::FieldVector<double, 1>> NM;
         fe.localBasis().evaluateFunction(gp.position(), NM);
-        Eigen::Vector<double, Traits::worlddim> X     = toEigenVector(geo.global(gp.position()));
+        const Eigen::Vector<double, Traits::worlddim> X     = toEigenVector(geo.global(gp.position()));
         Eigen::Vector<ScalarType, Traits::worlddim> x = X;
         for (size_t i = 0; i < NM.size(); ++i)
           x += disp.col(i) * NM[i];
@@ -118,13 +118,14 @@ namespace Ikarus::FiniteElements {
             dN(i, j) = dNM[i][0][j];
 
         dN *= J.inverse();
-        const auto H      = DefoGeo<ScalarType>::jacobianTransposed(dN, disp).transpose().eval();
+        const auto H      = DefoGeo<ScalarType>::jacobianTransposed(dN, disp).eval();
         const auto E      = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
         const auto EVoigt = toVoigt(E);
 
         Eigen::Vector<double, Traits::worlddim> fext;
         fext.setZero();
         fext[1] = lambda;
+        fext[0] = lambda;
         energy += (EVoigt.dot(C * EVoigt) - x.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
       }
       return energy;
