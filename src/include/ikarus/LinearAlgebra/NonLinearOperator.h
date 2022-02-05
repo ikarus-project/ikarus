@@ -155,8 +155,14 @@ namespace Ikarus {
         std::conditional_t<std::is_reference_v<ReturnType<DerivativeArgs, ParameterArgs&...>>,
                            std::reference_wrapper<std::remove_cvref_t<ReturnType<DerivativeArgs, ParameterArgs&...>>>,
                            std::remove_cvref_t<ReturnType<DerivativeArgs, ParameterArgs&...>>>...>;
-    std::tuple<std::reference_wrapper<std::remove_cvref_t<DerivativeArgs>>...> derivatives_;
-    std::tuple<std::reference_wrapper<std::remove_cvref_t<ParameterArgs>>...> args_;
+    std::tuple<std::conditional_t<std::is_reference_v<DerivativeArgs>,
+                                  std::reference_wrapper<std::remove_cvref_t<DerivativeArgs>>,
+                                  std::remove_cvref_t<DerivativeArgs>>...>
+        derivatives_;
+    std::tuple<std::conditional_t<std::is_reference_v<ParameterArgs>,
+                                  std::reference_wrapper<std::remove_cvref_t<ParameterArgs>>,
+                                  std::remove_cvref_t<ParameterArgs>>...>
+        args_;
     FunctionReturnValuesWrapper derivativesEvaluated_{};
   };
 }  // namespace Ikarus
