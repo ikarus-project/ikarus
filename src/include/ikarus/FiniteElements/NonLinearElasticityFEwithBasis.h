@@ -74,6 +74,13 @@ namespace Ikarus::FiniteElements {
       return gradient(f, wrt(dx), at(dx));
     }
 
+    [[nodiscard]] typename Traits::ScalarType calculateScalar(const Eigen::VectorXd& displacements,
+                                                              const double& lambda) const {
+      Eigen::VectorXd dx(localView_->size());
+      return calculateScalarImpl(displacements, lambda, dx);
+    }
+
+  private:
     template <class ScalarType>
     ScalarType calculateScalarImpl([[maybe_unused]] const Eigen::VectorXd& displacements, const double& lambda,
                                    Eigen::VectorX<ScalarType>& dx) const {
