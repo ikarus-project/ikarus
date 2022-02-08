@@ -39,6 +39,9 @@ namespace Ikarus
 
     /** \brief Type of the stiffness matrix */
     using MatrixType = Eigen::MatrixXd;
+
+    /** \brief Type of the stiffness matrix */
+    using ScalarType = typename GridEntity::Geometry::ctype;
   };
 
 }
