@@ -37,7 +37,6 @@
 #include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
 #include <ikarus/FiniteElements/physicsHelper.h>
-#include <ikarus/Geometries/GeometryType.h>
 #include <ikarus/Geometries/GeometryWithExternalInput.h>
 #include <ikarus/Variables/VariableDefinitions.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
@@ -91,7 +90,7 @@ namespace Ikarus::FiniteElements {
       ScalarType energy = 0.0;
 
       const int order = 2 * (fe.localBasis().order());
-      const auto rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_->element().type(), order);
+      const auto& rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_->element().type(), order);
       Eigen::Matrix3<ScalarType> C;
       C.setZero();
       C(0, 0) = C(1, 1) = 1;
