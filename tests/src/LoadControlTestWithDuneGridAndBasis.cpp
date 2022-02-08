@@ -121,7 +121,7 @@ GTEST_TEST(LoadControlTestWithUGGrid, GridLoadControlTestWithUGGrid) {
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
   auto grid               = std::make_shared<Grid>(patchData);
-  grid->globalRefine(3);
+  grid->globalRefine(5);
 
   //  using Grid = Dune::YaspGrid<gridDim>;
   //  const double L    = 1;
@@ -154,7 +154,7 @@ GTEST_TEST(LoadControlTestWithUGGrid, GridLoadControlTestWithUGGrid) {
 
   std::vector<bool> dirichletFlags(basis.size());
 
-  Dune::Functions::forEachBoundaryDOF(basis, [&](auto&& localIndex, auto&& localView) {
+  Dune::Functions::forEachBoundaryDOF(basis, [&]([[maybe_unused]] auto&& localIndex, auto&& localView) {
     const Dune::FieldVector<double, 2> localCoordinate = {0.0, 0.5};
     const auto inElementLocalCoords                    = localView.element().geometry().global(localCoordinate);
     if (std::abs(inElementLocalCoords[1]) > 1e-8)  // Only Fix Lower Edge
