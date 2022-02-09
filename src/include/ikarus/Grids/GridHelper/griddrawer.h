@@ -24,7 +24,7 @@ void draw(const GridView& gridView) {
   auto ax = gca();
   hold(ax, true);
   if constexpr (GridView::dimensionworld == 3) {
-    for (auto&& edge : edges(gridView)) {
+    for (auto&& edge : subentities(gridView,Dune::Dim<1>())) {
       std::array<double, 2> xEdge{}, yEdge{}, zEdge{};
       for (int i = 0; i< 2; ++i) {
         auto vertCoords = edge.geometry().corner(i);

@@ -55,7 +55,6 @@ private:
       localView.bind(ge);
       Ikarus::FiniteElements::NonLinearElasticityFEWithLocalBasis fe(localView, 1000, 0.3);
       auto matLoc      = fe.calculateMatrix(displacement, lambda);
-      auto first_child = localView.tree().child(0);
       for (auto i = 0U; i < localView.size(); ++i)
         for (auto j = 0U; j < localView.size(); ++j) {
           mat(localView.index(i)[0], localView.index(j)[0]) += matLoc(i, j);
