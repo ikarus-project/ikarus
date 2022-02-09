@@ -3,7 +3,6 @@
 //
 
 #pragma once
-#include <ikarus/Geometries/GeometryType.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
 #include <ikarus/utils/utils/algorithms.h>
 
@@ -17,7 +16,7 @@ namespace Ikarus::Grid {
     /** \brief Type of the Grid which this factory constructs*/
     using GridType = SimpleGrid<dimension, dimensionworld>;
 
-    void insertElement(Ikarus::GeometryType type, std::span<size_t> vertices);
+    void insertElement(Dune::GeometryType type, std::span<size_t> vertices);
     void insertVertex(const VertexCoordinateType& pos);
 
     auto createGrid();
@@ -30,8 +29,8 @@ namespace Ikarus::Grid {
     void insertVertexIndicesinEdge(std::vector<size_t>&& indices);
     void insertVertexIndicesinSurface(std::vector<size_t>&& indices);
 
-    void storeVerticesIndicesOfEdges(Ikarus::GeometryType type, std::span<size_t> verticesIn);
-    void storeVerticesIndicesOfSurfaces(Ikarus::GeometryType type, std::span<size_t> verticesIn);
+    void storeVerticesIndicesOfEdges(Dune::GeometryType type, std::span<size_t> verticesIn);
+    void storeVerticesIndicesOfSurfaces(Dune::GeometryType type, std::span<size_t> verticesIn);
 
     std::vector<VertexIndexPair> verticesPositions;
     std::vector<std::vector<size_t>> edgesVertexIndices;     // the vertex indices for each edge
