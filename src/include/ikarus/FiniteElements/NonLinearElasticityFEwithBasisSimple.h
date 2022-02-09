@@ -48,35 +48,36 @@ namespace Ikarus::Variable {
 namespace Ikarus::FiniteElements {
 
   template <typename LocalView>
-  class NonLinearElasticityFEWithLocalBasis : FEDisplacement<LocalView> {
+  class NonLinearElasticityFEWithLocalBasis {
   public:
-        using Base = FEDisplacement<LocalView>;
-        using Base::globalIndices;
-        using FERequirementType = FErequirements<Eigen::VectorXd>;
+    //    using Base = FEVertexDisplacement<GridElementEntityType, IndexSetType>;
     NonLinearElasticityFEWithLocalBasis(LocalView& localView, double emod, double nu)
-        : Base(localView), localView_{&localView}, emod_{emod}, nu_{nu} {}
+        : localView_{&localView}, emod_{emod}, nu_{nu} {}
 
     using Traits = TraitsFromLocalView<LocalView>;
     template <typename ST>
     using DefoGeo = Ikarus::Geometry::GeometryWithExternalInput<ST, Traits::mydim, Traits::dimension>;
 
-    [[nodiscard]] typename Traits::MatrixType calculateMatrix(const FERequirementType &par) const {
+    [[nodiscard]] typename Traits::MatrixType calculateMatrix(const Eigen::VectorXd& displacements,
+                                                              const double& lambda) const {
       Eigen::VectorXdual2nd dx(localView_->size());
       dx.setZero();
-      auto f = [&](auto& x) { return calculateScalarImpl<autodiff::dual2nd>(par.sols[0], par.parameter.at(FEParameter::loadfactor), x); };
+      auto f = [&](auto& x) { return calculateScalarImpl<autodiff::dual2nd>(displacements, lambda, x); };
       return hessian(f, wrt(dx), at(dx));
     }
 
-    [[nodiscard]] typename Traits::VectorType calculateVector(const FERequirementType &par) const {
+    [[nodiscard]] typename Traits::VectorType calculateVector(const Eigen::VectorXd& displacements,
+                                                              const double& lambda) const {
       Eigen::VectorXdual dx(localView_->size());
       dx.setZero();
-      auto f = [&](auto& x) { return calculateScalarImpl<autodiff::dual>(par.sols[0], par.parameter.at(FEParameter::loadfactor), x); };
+      auto f = [&](auto& x) { return calculateScalarImpl<autodiff::dual>(displacements, lambda, x); };
       return gradient(f, wrt(dx), at(dx));
     }
 
-    [[nodiscard]] typename Traits::ScalarType calculateScalar(const FERequirementType &par) const {
+    [[nodiscard]] typename Traits::ScalarType calculateScalar(const Eigen::VectorXd& displacements,
+                                                              const double& lambda) const {
       Eigen::VectorXd dx(localView_->size());
-      return calculateScalarImpl(par.sols[0], par.parameter.at(FEParameter::loadfactor), dx);
+      return calculateScalarImpl(displacements, lambda, dx);
     }
 
   private:

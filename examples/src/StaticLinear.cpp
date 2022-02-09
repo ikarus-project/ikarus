@@ -29,7 +29,7 @@
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 
-#include "ikarus/FiniteElements/NonLinearElasticityFEwithBasis.h"
+#include "ikarus/FiniteElements/NonLinearElasticityFEwithBasisSimple.h"
 #include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
 template <typename Basis>
 class DensePowerBasisAssembler {

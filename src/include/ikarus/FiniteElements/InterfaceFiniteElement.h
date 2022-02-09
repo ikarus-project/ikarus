@@ -21,11 +21,13 @@ namespace Ikarus::FiniteElements {
   enum class VectorAffordances;
   enum class ScalarAffordances;
 
-  /** \brief A type-erased finite element */
+  /** \brief A type-erased finite element but templated over the localView and the passed SolutionType*/
+  template<typename LocalView, typename SolutionVectorType>
   class IFiniteElement {
   public:
     using DofPairVectorType = std::vector<VariableIndicesPair>;
-    using FERequirementType = FErequirements;
+    using FERequirementType = FErequirements<SolutionVectorType>;
+    using GlobalIndex = typename  LocalView::MultiIndex;
     //    using DataVectorType     = typename std::optional<std::reference_wrapper<VariableVectorType>>;
 
     template <typename FE>
@@ -49,23 +51,19 @@ namespace Ikarus::FiniteElements {
   private:
     struct FEBase {
       virtual ~FEBase()                            = default;
-      [[nodiscard]] virtual int do_dofSize() const = 0;
       [[nodiscard]] virtual std::pair<Eigen::MatrixXd, Eigen::VectorXd> do_calculateLocalSystem(
           const FERequirementType &par) const                                                      = 0;
       [[nodiscard]] virtual Eigen::MatrixXd do_calculateMatrix(const FERequirementType &par) const = 0;
+//      virtual void do_bind(const LocalView &localView) const = 0;
       [[nodiscard]] virtual Eigen::VectorXd do_calculateVector(const FERequirementType &par) const = 0;
       [[nodiscard]] virtual double do_calculateScalar(const FERequirementType &par) const          = 0;
-      [[nodiscard]] virtual DofPairVectorType do_getEntityVariableTuple() const                    = 0;
-      [[nodiscard]] virtual unsigned int do_subEntities(unsigned int codim) const                  = 0;
-      [[nodiscard]] virtual size_t do_subIndex(int i, unsigned int codim) const                    = 0;
-      [[nodiscard]] virtual unsigned int do_dimension() const                                      = 0;
+      [[nodiscard]] virtual std::vector<GlobalIndex> do_globalIndices() const                    = 0;
       [[nodiscard]] virtual std::unique_ptr<FEBase> clone() const                                  = 0;
     };
 
     template <typename FE>
     struct FEImpl : public FEBase {
       explicit FEImpl(FE fearg) : fe{fearg} {};
-      [[nodiscard]] int do_dofSize() const final { TRYCALLFUNCTIONANDRETURN(dofSize); }
       [[nodiscard]] std::pair<Eigen::MatrixXd, Eigen::VectorXd> do_calculateLocalSystem(
           const FERequirementType &par) const final {
         TRYCALLFUNCTIONANDRETURN(calculateLocalSystem, par);
@@ -79,43 +77,24 @@ namespace Ikarus::FiniteElements {
       [[nodiscard]] double do_calculateScalar(const FERequirementType &par) const final {
         TRYCALLFUNCTIONANDRETURN(calculateScalar, par);
       }
-      [[nodiscard]] DofPairVectorType do_getEntityVariableTuple() const final {
-        TRYCALLFUNCTIONANDRETURN(getEntityVariableTuple);
+      [[nodiscard]] std::vector<GlobalIndex> do_globalIndices() const final {
+        TRYCALLFUNCTIONANDRETURN(globalIndices);
       }
-      [[nodiscard]] unsigned int do_subEntities(unsigned int codim) const final {
-        TRYCALLFUNCTIONANDRETURN(subEntities, codim); }
-      [[nodiscard]] size_t do_subIndex(int i, unsigned int codim) const final {
-        TRYCALLFUNCTIONANDRETURN(subIndex, i, codim); }
-      [[nodiscard]] unsigned int do_dimension() const final { TRYCALLFUNCTIONANDRETURN(dimension); }
+
       [[nodiscard]] std::unique_ptr<FEBase> clone() const final { return std::make_unique<FEImpl>(*this); }
       FE fe;
     };
 
     std::unique_ptr<FEBase> feimpl;
 
-    friend void initialize(IFiniteElement &fe);
-    friend int dofSize(const IFiniteElement &fe);
-    friend std::pair<Eigen::MatrixXd, Eigen::VectorXd> calculateLocalSystem(const IFiniteElement &fe,
-                                                                            const FERequirementType &par);
-
-    friend Eigen::MatrixXd calculateMatrix(const IFiniteElement &fe, const FERequirementType &par);
-    friend Eigen::VectorXd calculateVector(const IFiniteElement &fe, const FERequirementType &par);
-    friend double calculateScalar(const IFiniteElement &fe, const FERequirementType &par);
-    friend DofPairVectorType getEntityVariableTuple(const IFiniteElement &fe);
-    friend unsigned int subEntities(const IFiniteElement &fe, unsigned int codim);
-    friend unsigned int dimension(const IFiniteElement &fe);
-    friend size_t subIndex(const IFiniteElement &fe, int i, unsigned int codim);
+  public:
+    std::pair<Eigen::MatrixXd, Eigen::VectorXd> calculateLocalSystem( const FERequirementType &par) const ;
+    Eigen::MatrixXd calculateMatrix( const FERequirementType &par) const ;
+    Eigen::VectorXd calculateVector( const FERequirementType &par) const;
+    double calculateScalar( const FERequirementType &par) const;
+    std::vector<GlobalIndex> globalIndices()const;
   };
 
-  int dofSize(const IFiniteElement &fe);
-  std::pair<Eigen::MatrixXd, Eigen::VectorXd> calculateLocalSystem(const IFiniteElement &fe,
-                                                                   const IFiniteElement::FERequirementType &par);
-  Eigen::MatrixXd calculateMatrix(const IFiniteElement &fe, const IFiniteElement::FERequirementType &part);
-  Eigen::VectorXd calculateVector(const IFiniteElement &fe, const IFiniteElement::FERequirementType &par);
-  double calculateScalar(const IFiniteElement &fe, const IFiniteElement::FERequirementType &par);
-  IFiniteElement::DofPairVectorType getEntityVariableTuple(const IFiniteElement &fe);
-  unsigned int subEntities(const IFiniteElement &fe, unsigned int codim);
-  size_t subIndex(const IFiniteElement &fe, int i, unsigned int codim);
-  unsigned int dimension(const IFiniteElement &fe);
+#include "InterfaceFiniteElement.inl"
 
 }  // namespace Ikarus::FiniteElements
