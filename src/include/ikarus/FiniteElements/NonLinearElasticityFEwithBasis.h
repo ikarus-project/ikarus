@@ -91,7 +91,7 @@ namespace Ikarus::FiniteElements {
       disp.setZero(Eigen::NoChange, fe.size());
       for (auto i = 0U; i < fe.size(); ++i)
         for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
-          disp.col(i)(k2) = dx[localView_->tree().child(k2).localIndex(i)]
+          disp.col(i)(k2) = dx[i*2+k2]
                             + displacements[localView_->index(localView_->tree().child(k2).localIndex(i))[0]];
       ScalarType energy = 0.0;
 

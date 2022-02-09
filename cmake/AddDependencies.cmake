@@ -52,7 +52,8 @@ message("====================")
 target_include_directories(${PROJECT_NAME} PUBLIC ${dune-alugrid_INCLUDE_DIRS})
 
 message("Find dune-common: ")
-find_package(dune-common REQUIRED)
+find_package(dune-common 2.8 REQUIRED)
+
 message("Find dune-typetree: ")
 find_package(dune-typetree REQUIRED)
 message("Find dune-geometry: ")
