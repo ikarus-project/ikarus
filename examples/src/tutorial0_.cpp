@@ -5,49 +5,27 @@
 #include <../../config.h>
 #include <autodiff/forward/dual/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
-#include <numbers>
+#include <matplot/matplot.h>
 
 #include <dune/foamgrid/foamgrid.hh>
-#include <dune/foamgrid/foamgrid/foamgridfactory.hh>
+//#include <dune/foamgrid/foamgrid/foamgridfactory.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
-#include <dune/geometry/quadraturerules.hh>
-#include <dune/iga/igaalgorithms.hh>
-#include <dune/iga/nurbsgrid.hh>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
 #include "ikarus/LocalBasis/localBasis.h"
+#include <ikarus/FiniteElements/AutodiffFE.h>
 #include <ikarus/Grids/GridHelper/griddrawer.h>
 
+#include <dune/grid/io/file/vtk/vtkwriter.hh>
+#include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
+
 struct Truss {
-  constexpr static const double EA = 1000;
-
-  template <typename LocalView>
-  static double calculateEnergy(const LocalView& localView, const std::vector<double>& d) {
-    return calculateEnergyImpl<double>(localView, d);
-  }
-
-  template <typename LocalView>
-  static auto stiffnessMatrix(const LocalView& localView, const std::vector<double>& d) {
-    Eigen::Vector4dual2nd dx(localView.size());
-    dx.setZero();
-    auto f = [&](auto& x) { return calculateEnergyImpl(localView, d, x); };
-    return hessian(f, wrt(dx), at(dx));
-  }
-
-  template <typename LocalView>
-  static auto internalForces(const LocalView& localView, const std::vector<double>& d) {
-    Eigen::Vector4dual dx(localView.size());
-    dx.setZero();
-    auto f = [&](auto& x) { return calculateEnergyImpl(localView, d, x); };
-    return gradient(f, wrt(dx), at(dx));
-  }
-
-private:
+  constexpr static const double EA = 100;
   template <typename LocalView, class Scalar>
-  static Scalar calculateEnergyImpl(const LocalView& localView, const std::vector<double>& d,
+  static Scalar calculateScalarImpl(const LocalView& localView, const Eigen::VectorXd& d,
                                     const Eigen::Vector4<Scalar>& dx) {
     Scalar energy = 0.0;
     auto& ele     = localView.element();
@@ -71,9 +49,11 @@ private:
 
     const Scalar Egl = 1.0 / 2.0 * (lsquared - LRefsquared) / LRefsquared;
 
-    energy = 1.0 / 2.0 * EA * Egl * Egl * sqrt(LRefsquared);
+    energy = 1.0 / 2.0 * EA/sqrt(LRefsquared) * Egl * Egl ;
     return energy;
   }
+
+  
 };
 
 int main() {
@@ -91,33 +71,88 @@ int main() {
 
   using namespace Dune::Functions::BasisFactory;
   auto basis = makeBasis(gridView, power<2>(lagrange<1>(), FlatInterleaved()));
-  std::vector<double> u(basis.size());
+  Eigen::VectorXd u(basis.size());
   std::fill(u.begin(), u.end(), 0.0);
   std::cout << "Size: " << u.size() << std::endl;
   Eigen::Matrix<double, 6, 6> K;
   Eigen::Matrix<double, 6, 1> R;
-  K.setZero();
-  R.setZero();
-  auto localView = basis.localView();
 
-  for (auto& ele : elements(gridView)) {
-    localView.bind(ele);
-    const auto FintEle = Truss::internalForces(localView, u);
-    const auto Kele    = Truss::stiffnessMatrix(localView, u);
-    std::vector<double> indices;
-    for (auto i = 0U; i < localView.size(); ++i) {
-      R(localView.index(i)[0]) += FintEle(i);
-      for (auto j = 0U; j < localView.size(); ++j) {
-        K(localView.index(i)[0], localView.index(j)[0]) += Kele(i, j);
+  auto localView          = basis.localView();
+  auto stiffnessAndForces = [&](auto& uL, const double lambda) {
+    K.setZero();
+    R.setZero();
+    for (auto& ele : elements(gridView)) {
+      localView.bind(ele);
+      const auto FintEle = Ikarus::AutoDiffFE<Truss>::calculateVector(localView, uL);
+      const auto Kele    = Ikarus::AutoDiffFE<Truss>::calculateMatrix(localView, uL);
+      for (auto i = 0U; i < localView.size(); ++i) {
+        R(localView.index(i)[0]) += FintEle(i);
+        for (auto j = 0U; j < localView.size(); ++j)
+          K(localView.index(i)[0], localView.index(j)[0]) += Kele(i, j);
       }
     }
+    Eigen::Matrix<double, 2, 2> Kred = K({2, 3}, {2, 3});
+    Eigen::Vector<double, 2> Rred    = R({2, 3});
+    Rred[1] -= -lambda;
+    return std::make_tuple(Kred, Rred);
+  };
+
+  double lambla = 1;
+
+  const auto [Kred_, Rred_] = stiffnessAndForces(u, lambla);
+
+  std::cout << Kred_ << std::endl;
+  std::cout << Rred_ << std::endl;
+  std::cout << Kred_.fullPivLu().rank() << std::endl;
+
+  const int loadSteps       = 60;
+  const double lambdaFactor = 0.5;
+  Eigen::Matrix3Xd lambdaAndDisp;
+  lambdaAndDisp.setZero(Eigen::NoChange, loadSteps);
+  for (int ls = 0; ls < loadSteps; ++ls) {
+    std::cout << "====" << ls << "====" << std::endl;
+    for (int iter = 0; iter < 100; ++iter) {
+      const auto [Kred, Rred] = stiffnessAndForces(u, lambla);
+      u.segment<2>(2) -= Kred.inverse() * Rred;
+      std::cout << " Rnorm: " << Rred.norm() << std::endl;
+      if (Rred.norm() < 1e-8) break;
+    }
+    lambdaAndDisp(0, ls) = lambla;
+    lambdaAndDisp(1, ls) = u[2];
+    lambdaAndDisp(2, ls) = u[3];
+    lambla += lambdaFactor;
+
+    auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double,2>>(basis,u);
+    Dune::VTKWriter vtkWriter(gridView);
+    vtkWriter.addVertexData(disp, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
+    vtkWriter.write("TestTruss" + std::to_string(ls));
+
+
   }
 
-  std::cout << K << std::endl;
-  std::cout << K.fullPivLu().rank() << std::endl;
-  std::cout << R << std::endl;
+  using namespace matplot;
+  Eigen::VectorXd lambdaVec = lambdaAndDisp.row(0);
+  Eigen::VectorXd dVec      = -lambdaAndDisp.row(2);
+  auto f                    = figure(true);
+//  plot();
+  title("Load-DisplacementCurve");
+  xlabel("y-Displacement");
+  ylabel("LoadFactor");
 
-  Eigen::Matrix<double, 2, 2> Kred = K({2, 3}, {2, 3});
-  std::cout << Kred << std::endl;
-  std::cout << Kred.fullPivLu().rank() << std::endl;
+  auto analyticalSol = [&](auto& w) {
+    const double Ltruss = std::sqrt(h*h + L*L);
+    return Truss::EA * Dune::power(h, 3) / Dune::power(Ltruss, 3)
+           * (w / h - 1.5 * Dune::power(w / h, 2) + 0.5 * Dune::power(w / h, 3));
+  };
+
+  std::vector<double> x = linspace(0.0,dVec.maxCoeff());
+  std::vector<double> y1 = transform(x, [&](auto x) { return analyticalSol(x); });
+  auto p = plot(x, y1,dVec, lambdaVec);
+  p[0]->line_width(2);
+  p[1]->line_width(2);
+  p[1]->marker(line_spec::marker_style::asterisk);
+      show();
+
+
+
 }
