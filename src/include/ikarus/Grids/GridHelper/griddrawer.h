@@ -56,7 +56,7 @@ void draw(const GridView& gridView) {
     }
   }
 
-  f->draw();
+  f->show();
 }
 
 template <typename GridView, typename FEManager>

@@ -4,18 +4,16 @@
 
 #include <../../config.h>
 #include <autodiff/forward/dual/dual.hpp>
-#include <autodiff/forward/dual/eigen.hpp>
+
 #include <matplot/matplot.h>
 
 #include <dune/foamgrid/foamgrid.hh>
-//#include <dune/foamgrid/foamgrid/foamgridfactory.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
-#include "ikarus/LocalBasis/localBasis.h"
 #include <ikarus/FiniteElements/AutodiffFE.h>
 #include <ikarus/Grids/GridHelper/griddrawer.h>
 
@@ -35,11 +33,9 @@ struct Truss {
     Eigen::Matrix<Scalar, 2, 2> u;
     u.setZero();
     for (int i = 0; i < 2; ++i)
-      for (int k2 = 0; k2 < 2; ++k2) {
-        //        std::cout<<"i,k2: "<<i<<" "<<k2<<" "<<localView.tree().child(k2).localIndex(i)<<std::endl;
+      for (int k2 = 0; k2 < 2; ++k2)
         u.col(i)(k2) = dx[localView.tree().child(k2).localIndex(i)]
                        + d[localView.index(localView.tree().child(k2).localIndex(i))[0]];
-      }
 
     const Eigen::Vector2<Scalar> x1 = X1 + u.col(0);
     const Eigen::Vector2<Scalar> x2 = X2 + u.col(1);
@@ -97,7 +93,7 @@ int main() {
     return std::make_tuple(Kred, Rred);
   };
 
-  double lambla = 1;
+  double lambla = 0;
 
   const auto [Kred_, Rred_] = stiffnessAndForces(u, lambla);
 
@@ -139,14 +135,14 @@ int main() {
   xlabel("y-Displacement");
   ylabel("LoadFactor");
 
-  auto analyticalSol = [&](auto& w) {
+  auto analyticalLoadDisplacementCurve = [&](auto& w) {
     const double Ltruss = std::sqrt(h*h + L*L);
     return Truss::EA * Dune::power(h, 3) / Dune::power(Ltruss, 3)
            * (w / h - 1.5 * Dune::power(w / h, 2) + 0.5 * Dune::power(w / h, 3));
   };
 
   std::vector<double> x = linspace(0.0,dVec.maxCoeff());
-  std::vector<double> y1 = transform(x, [&](auto x) { return analyticalSol(x); });
+  std::vector<double> y1 = transform(x, [&](auto x) { return analyticalLoadDisplacementCurve(x); });
   auto p = plot(x, y1,dVec, lambdaVec);
   p[0]->line_width(2);
   p[1]->line_width(2);
