@@ -68,7 +68,7 @@ int main() {
   using namespace Dune::Functions::BasisFactory;
   auto basis = makeBasis(gridView, power<2>(lagrange<1>(), FlatInterleaved()));
   Eigen::VectorXd u(basis.size());
-  std::fill(u.begin(), u.end(), 0.0);
+  u.setZero();
   std::cout << "Size: " << u.size() << std::endl;
   Eigen::Matrix<double, 6, 6> K;
   Eigen::Matrix<double, 6, 1> R;
@@ -121,6 +121,7 @@ int main() {
     auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double,2>>(basis,u);
     Dune::VTKWriter vtkWriter(gridView);
     vtkWriter.addVertexData(disp, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
+    vtkWriter
     vtkWriter.write("TestTruss" + std::to_string(ls));
 
 
