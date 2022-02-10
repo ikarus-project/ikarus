@@ -1,7 +1,7 @@
 //
 // Created by Alex on 21.07.2021.
 //
-#include "config.h"
+#include <../../config.h>
 #include <numbers>
 
 #include <dune/geometry/quadraturerules.hh>
@@ -11,8 +11,8 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
-#include <ikarus/Grids/GridHelper/griddrawer.h>
 #include "ikarus/LocalBasis/localBasis.h"
+#include <ikarus/Grids/GridHelper/griddrawer.h>
 
 int main() {
   constexpr int griddim                                    = 2;
@@ -42,19 +42,24 @@ int main() {
   auto gridView = grid.leafGridView();
   draw(gridView);
   using namespace Dune::Functions::BasisFactory;
-  auto basis     = makeBasis(gridView, gridView.getPreBasis());
+  auto basis = makeBasis(gridView, gridView.getPreBasis());
   std::vector<double> w(basis.size());
   auto localView = basis.localView();
 
+  auto dirichletPredicate = [](auto p) { return std::sin(p[0]); };
+  std::vector<double> uhat(basis.size());
+
+  Dune::Functions::interpolate(basis, uhat, dirichletPredicate);
   for (auto& ele : elements(gridView)) {
     localView.bind(ele);
     auto& fe = localView.tree().finiteElement();
     Ikarus::LocalBasis localBasis(fe.localBasis());
-    const auto& rule = Dune::QuadratureRules<double, 2>::rule(ele.type(), 2);
-    for (auto& gp :rule) {
-
+    const auto& rule = Dune::QuadratureRules<double, 2>::rule(ele.type(), 2 * fe.order());
+    for (auto& gp : rule) {
       localBasis.evaluateFunctionAndJacobian()
-    }
 
+          energy
+          += localBasis.
+    }
   }
 }
