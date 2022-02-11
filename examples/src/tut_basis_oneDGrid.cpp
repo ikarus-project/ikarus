@@ -4,6 +4,7 @@
 #include <../../config.h>
 #include <numbers>
 
+
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/grid/onedgrid.hh>
@@ -18,31 +19,32 @@
 
 
 int main(){
-  constexpr int griddim                                    = 2;
+  constexpr int griddim = 1;
   const double L = 1;
   Dune::OneDGrid grid(10, 0, L);
-  grid.globalRefine(2);
+  //grid.globalRefine(2);
   auto gridView = grid.leafGridView();
+  std::cout << gridView.dimensionworld << "\n";
   draw(gridView);
   using namespace Dune::Functions::BasisFactory;
   auto basis = makeBasis(gridView, lagrange<1>());
   std::vector<double> w(basis.size());
-  auto localView = basis.localView();
+  auto basisView = basis.localView();
 
-  auto dirichletPredicate = [](auto p) { return std::sin(p[0]); };
-  std::vector<double> uhat(basis.size());
-  
-//
-//  for (auto& ele : elements(gridView)) {
-//    localView.bind(ele);
-//    auto& fe = localView.tree().finiteElement();
-//    Ikarus::LocalBasis localBasis(fe.localBasis());
-//    const auto& rule = Dune::QuadratureRules<double, 2>::rule(ele.type(), 2 * fe.order());
+
+  for (auto& ele : elements(gridView)) {
+    basisView.bind(ele);
+    auto& fe = basisView.tree().finiteElement();
+    Ikarus::LocalBasis localBasis(fe.localBasis());
+    const auto& rule = Dune::QuadratureRules<double, 1>::rule(ele.type(),2,Dune::QuadratureType::GaussLegendre);
+//    for (auto& gp : rule) {
+//      std::cout << gp.position() << "\n";
+//    }
 //    for (auto& gp : rule) {
 //      localBasis.evaluateFunctionAndJacobian()
 //
 //          energy
 //          += localBasis.
 //    }
-//  }
+  }
 }
