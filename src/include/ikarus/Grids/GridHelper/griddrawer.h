@@ -56,6 +56,23 @@ void draw(const GridView& gridView) {
     }
   }
 
+  else if constexpr (GridView::dimensionworld == 1) {
+    for (auto&& edge : elements(gridView)) {
+      std::array<double, 2> xEdge{}, yEdge{};
+      for (int i = 0; i< 2; ++i) {
+        auto vertCoords = edge.geometry().corner(i);
+        xEdge[i] = vertCoords[0];
+        yEdge[i] = 0.0;
+      }
+
+      auto l = ax->plot(xEdge, yEdge, "-o");
+      l->line_width(2);
+      l->color("black");
+      l->marker_size(10);
+      l->marker_face_color("red");
+    }
+  }
+
   f->show();
 }
 
