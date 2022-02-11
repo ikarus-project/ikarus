@@ -2,12 +2,11 @@
 message("====================")
 if(MINGW)
   # cmake-format: off
-  message("WTF")
   include(FetchContent)
   set(ikarusDepInstallDir ${CMAKE_SOURCE_DIR}/../Ikarus_Dependencies)
   FetchContent_Declare(
     ikarusDependencies
-    URL https://github.com/IkarusRepo/IkarusDependencies/releases/download/v0.41/Dependencies_release.7z
+    URL https://github.com/IkarusRepo/IkarusDependencies/releases/download/v0.51/Dependencies_release.7z
     PREFIX        ${ikarusDepInstallDir}
     DOWNLOAD_DIR  ${ikarusDepInstallDir}/src
     SOURCE_DIR    ${ikarusDepInstallDir}/Dependencies_release
@@ -52,7 +51,7 @@ message("====================")
 target_include_directories(${PROJECT_NAME} PUBLIC ${dune-alugrid_INCLUDE_DIRS})
 
 message("Find dune-common: ")
-find_package(dune-common 2.8 REQUIRED)
+find_package(dune-common REQUIRED)
 
 message("Find dune-typetree: ")
 find_package(dune-typetree REQUIRED)
@@ -62,8 +61,8 @@ message("Find dune-functions: ")
 find_package(dune-functions REQUIRED)
 message("Find dune-iga: ")
 find_package(dune-iga REQUIRED)
-message("Find dune-uggrid: ")
-find_package(dune-uggrid REQUIRED)
+#message("Find dune-uggrid: ")
+#find_package(dune-uggrid REQUIRED)
 message("Find dune-grid: ")
 find_package(dune-grid REQUIRED)
 
