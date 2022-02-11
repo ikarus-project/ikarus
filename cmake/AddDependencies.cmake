@@ -6,7 +6,7 @@ if(MINGW)
   set(ikarusDepInstallDir ${CMAKE_SOURCE_DIR}/../Ikarus_Dependencies)
   FetchContent_Declare(
     ikarusDependencies
-    URL https://github.com/IkarusRepo/IkarusDependencies/releases/download/v0.6/Dependencies_release.7z
+    URL https://github.com/IkarusRepo/IkarusDependencies/releases/download/v0.6.1/Dependencies_release.7z
     PREFIX        ${ikarusDepInstallDir}
     DOWNLOAD_DIR  ${ikarusDepInstallDir}/src
     SOURCE_DIR    ${ikarusDepInstallDir}/Dependencies_release
@@ -33,8 +33,10 @@ message("Find Eigen: ")
 find_package(Eigen3 3.3.9 REQUIRED)
 message("Find spdlog: ")
 find_package(spdlog REQUIRED)
-message("Find alugrid: ")
+message("Find dune-alugrid: ")
 find_package(dune-alugrid REQUIRED)
+message("Find dune-foamgrid: ")
+find_package(dune-foamgrid REQUIRED)
 message("====================")
 message(${dune-alugrid_INCLUDE_DIRS})
 message("====================")

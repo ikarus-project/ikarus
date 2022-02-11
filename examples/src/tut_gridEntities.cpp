@@ -42,7 +42,7 @@ int main() {
     grid->globalRefine(1);
 
     auto gridViewRefined = grid->leafGridView();
-    std::cout << "This gridview cotains: ";
+    std::cout << "This gridview contains: ";
     std::cout << gridViewRefined.size(0) << " elements" << std::endl;
     draw(gridViewRefined);
     for (auto& element : elements(gridViewRefined)) {
