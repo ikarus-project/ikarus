@@ -27,7 +27,7 @@ public:
     switch (message) {
       case ControlMessages::SOLUTION_CHANGED: {
         auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<
-            Dune::FieldVector<double, Basis::LocalView::Tree::CHILDREN>>(*basis, *solution);
+            Dune::FieldVector<double, Basis::LocalView::Tree::CHILDREN==0? 1 :Basis::LocalView::Tree::CHILDREN>>(*basis, *solution);
         vtkWriter.addVertexData(disp, Dune::VTK::FieldInfo(solutionName, Dune::VTK::FieldInfo::Type::vector,
                                                            Basis::LocalView::Tree::CHILDREN));
         vtkWriter.write(prefixString + std::to_string(step++));

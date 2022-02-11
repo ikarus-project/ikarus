@@ -11,25 +11,30 @@ namespace Ikarus {
   //// The class constructor can only be called from the templated class.
   template <typename RealElement>
   class AutoDiffFE {
+
   public:
-    template <typename LocalView>
-    static double calculateScalar(const LocalView& localView, const Eigen::VectorXd& d) {
-      return RealElement::template calculateScalarImpl<double>(localView, d);
+    template <typename LocalView, typename Derived>
+    static double calculateScalar(const LocalView& localView, const Eigen::MatrixBase<Derived>& d, const double& lambda) {
+      using namespace autodiff;
+      Eigen::Vector<double,Derived::RowsAtCompileTime> dx(localView.size());
+      return RealElement::template calculateScalarImpl(localView, d, dx,lambda);
     }
 
-    template <typename LocalView>
-    static auto calculateMatrix(const LocalView& localView, const Eigen::VectorXd& d) {
-      Eigen::Vector4dual2nd dx(localView.size());
+    template <typename LocalView, typename Derived>
+    static auto calculateMatrix(const LocalView& localView, const Eigen::MatrixBase<Derived>& d, const double& lambda) {
+      using namespace autodiff;
+      Eigen::Vector<dual2nd,Derived::RowsAtCompileTime> dx(localView.size());
       dx.setZero();
-      auto f = [&](auto& x) { return RealElement::template calculateScalarImpl(localView, d, x); };
+      auto f = [&](auto& x) { return RealElement::template calculateScalarImpl(localView, d, x,lambda); };
       return hessian(f, wrt(dx), at(dx));
     }
 
-    template <typename LocalView>
-    static auto calculateVector(const LocalView& localView, const Eigen::VectorXd& d) {
-      Eigen::Vector4dual dx(localView.size());
+    template <typename LocalView, typename Derived>
+    static auto calculateVector(const LocalView& localView, const Eigen::MatrixBase<Derived>& d, const double& lambda) {
+      using namespace autodiff;
+      Eigen::Vector<dual,Derived::RowsAtCompileTime> dx(localView.size());
       dx.setZero();
-      auto f = [&](auto& x) { return RealElement::template calculateScalarImpl(localView, d, x); };
+      auto f = [&](auto& x) { return RealElement::template calculateScalarImpl(localView, d, x,lambda); };
       return gradient(f, wrt(dx), at(dx));
     }
   };

@@ -77,6 +77,7 @@ namespace Ikarus::FiniteElements {
     [[nodiscard]] typename Traits::ScalarType calculateScalar(const Eigen::VectorXd& displacements,
                                                               const double& lambda) const {
       Eigen::VectorXd dx(localView_->size());
+      dx.setZero();
       return calculateScalarImpl(displacements, lambda, dx);
     }
 
