@@ -69,8 +69,6 @@ namespace Ikarus {
           linearSolver.factorize(Ax);
           const Eigen::VectorXd D = -linearSolver.solve(rx);
           dNorm                   = D.norm();
-          //            std::cout<<"x: "<<x.transpose()<<std::endl;
-          //          std::cout<<"D: "<<D.transpose()<<std::endl;
           updateFunction(x, D);
 
         } else {

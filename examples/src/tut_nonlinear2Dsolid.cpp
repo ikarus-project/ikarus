@@ -111,9 +111,9 @@ private:
 int main(){
   constexpr int gridDim = 2;
   /// ALUGrid Example
-  //        using Grid            = Dune::ALUGrid<gridDim, 2, Dune::simplex, Dune::conforming>;
-  //        auto grid             =
-  //        Dune::GmshReader<Grid>::read("../../tests/src/testFiles/unstructuredTrianglesfine.msh", false);
+          using Grid            = Dune::ALUGrid<gridDim, 2, Dune::simplex, Dune::conforming>;
+          auto grid             =
+          Dune::GmshReader<Grid>::read("../../tests/src/testFiles/unstructuredTrianglesfine.msh", false);
 
   /// IGA Grid Example
 //  constexpr auto dimworld              = 2;
@@ -139,18 +139,18 @@ int main(){
 //  patchData.degree        = order;
 //  patchData.controlPoints = controlNet;
 //  auto grid               = std::make_shared<Grid>(patchData);
-//  grid->globalRefine(5);
+//  grid->globalRefine(2);
 
   /// YaspGrid Example
-    using Grid        = Dune::YaspGrid<gridDim>;
-    const double L    = 1;
-    const double h    = 1;
-    const size_t elex = 1;
-    const size_t eley = 1;
-
-    Dune::FieldVector<double, 2> bbox = {L, h};
-    std::array<int, 2> eles           = {elex, eley};
-    auto grid                         = std::make_shared<Grid>(bbox, eles);
+//    using Grid        = Dune::YaspGrid<gridDim>;
+//    const double L    = 1;
+//    const double h    = 1;
+//    const size_t elex = 1;
+//    const size_t eley = 1;
+//
+//    Dune::FieldVector<double, 2> bbox = {L, h};
+//    std::array<int, 2> eles           = {elex, eley};
+//    auto grid                         = std::make_shared<Grid>(bbox, eles);
 
   using GridView    = typename Grid::LeafGridView;
   GridView gridView = grid->leafGridView();
@@ -176,7 +176,6 @@ int main(){
 
   Ikarus::markDirichletBoundaryDofs(basis, dirichletFlags,
                                     [](auto&& centerCoord) { return (std::abs(centerCoord[1]) < 1e-8); });
-  Ikarus::utils::printContent(std::cout, dirichletFlags);
   auto denseAssembler = DenseFlatAssembler(basis, fes, dirichletFlags);
 
   Eigen::VectorXd d;
@@ -186,7 +185,6 @@ int main(){
   auto fintFunction   = [&](auto&& lambda, auto&& disp) -> auto& { return denseAssembler.getVector(disp, lambda); };
   auto KFunction      = [&](auto&& lambda, auto&& disp) -> auto& { return denseAssembler.getMatrix(disp, lambda); };
   auto energyFunction = [&](auto&& lambda, auto&& disp) -> auto { return denseAssembler.getScalar(disp, lambda); };
-  std::cout<<KFunction(lambda,d)<<std::endl;
 
   auto nonLinOp  = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, fintFunction, KFunction),
                                              parameter(lambda, d));
