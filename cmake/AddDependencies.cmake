@@ -6,7 +6,7 @@ if(MINGW)
   set(ikarusDepInstallDir ${CMAKE_SOURCE_DIR}/../Ikarus_Dependencies)
   FetchContent_Declare(
     ikarusDependencies
-    URL https://github.com/IkarusRepo/IkarusDependencies/releases/download/v0.51/Dependencies_release.7z
+    URL https://github.com/IkarusRepo/IkarusDependencies/releases/download/v0.6/Dependencies_release.7z
     PREFIX        ${ikarusDepInstallDir}
     DOWNLOAD_DIR  ${ikarusDepInstallDir}/src
     SOURCE_DIR    ${ikarusDepInstallDir}/Dependencies_release
@@ -21,15 +21,7 @@ if(MINGW)
   endif()
   FetchContent_MakeAvailable(ikarusDependencies)
 endif()
-#message(${CMAKE_MODULE_PATH})
-#set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/home/alex/Documents/dune/dune-alugrid/build-cmake/")
-#set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/home/alex/Documents/dune/dune-functions/build-cmake/")
-#set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/home/alex/Documents/dune/dune-common/build-cmake/")
-#set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/home/alex/Documents/dune/dune-geometry/build-cmake/")
-#set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/home/alex/Documents/dune/dune-iga/build-cmake/")
-#set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/home/alex/Documents/dune/dune-uggrid/build-cmake/")
-#set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/home/alex/Documents/dune/dune-grid/build-cmake/")
-#set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/home/alex/Documents/dune/dune-typetree/build-cmake/")
+
 message("Find MPI: ")
 find_package(MPI QUIET)
 message("====================")
@@ -41,9 +33,7 @@ message("Find Eigen: ")
 find_package(Eigen3 3.3.9 REQUIRED)
 message("Find spdlog: ")
 find_package(spdlog REQUIRED)
-#message("Find alugrid: ")
-
-
+message("Find alugrid: ")
 find_package(dune-alugrid REQUIRED)
 message("====================")
 message(${dune-alugrid_INCLUDE_DIRS})
@@ -71,7 +61,11 @@ find_package(dune-grid REQUIRED)
 
 message("Find autodiff: ")
 find_package(autodiff REQUIRED)
-
+set(BLA_VENDER OpenBLAS)
+message("Find blas: ")
+find_package(BLAS REQUIRED)
+message("Find lapack: ")
+find_package(LAPACK REQUIRED)
 message("Find SuiteSparse: ")
 if(MINGW OR MSVC)
   find_package(SuiteSparse CONFIG REQUIRED CHOLMOD UMFPACK METIS)
@@ -86,10 +80,14 @@ message("Find PythonLibs: ")
 find_package(Python3 COMPONENTS Interpreter Development)
 message("${Python3_STDLIB}")
 
+
+
 target_link_libraries(
   ${PROJECT_NAME}
   PUBLIC Eigen3::Eigen
   PUBLIC METIS::METIS
+  PUBLIC LAPACK::LAPACK
+  PUBLIC BLAS::BLAS
   PUBLIC spdlog::spdlog
   PUBLIC dunecommon
   PUBLIC dunegeometry
