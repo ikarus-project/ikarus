@@ -121,17 +121,14 @@ int main() {
     auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double,2>>(basis,u);
     Dune::VTKWriter vtkWriter(gridView);
     vtkWriter.addVertexData(disp, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
-    vtkWriter
     vtkWriter.write("TestTruss" + std::to_string(ls));
-
-
   }
 
   using namespace matplot;
   Eigen::VectorXd lambdaVec = lambdaAndDisp.row(0);
   Eigen::VectorXd dVec      = -lambdaAndDisp.row(2);
   auto f                    = figure(true);
-//  plot();
+
   title("Load-DisplacementCurve");
   xlabel("y-Displacement");
   ylabel("LoadFactor");
@@ -148,8 +145,5 @@ int main() {
   p[0]->line_width(2);
   p[1]->line_width(2);
   p[1]->marker(line_spec::marker_style::asterisk);
-      show();
-
-
-
+  show();
 }
