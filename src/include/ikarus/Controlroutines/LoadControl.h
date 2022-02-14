@@ -41,7 +41,7 @@ namespace Ikarus {
       //      x += nonOp.deriv().solve(-nonOp.value()),
       //      nonLinearSolver.solve(x);
       //      x += nonOp.value().solve(PredictRHS);
-      for (int ls = 0; ls < loadSteps_; ++ls) {
+      for (int ls = 0; ls < loadSteps_+1; ++ls) {
         this->notify(ControlMessages::STEP_STARTED);
         nonLinearSolver.solve();
         this->notify(ControlMessages::SOLUTION_CHANGED);

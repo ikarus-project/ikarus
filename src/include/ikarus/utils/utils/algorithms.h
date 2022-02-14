@@ -25,7 +25,7 @@ namespace Ikarus::utils {
   }
 
   template <class Container>  // TODO: add concept for this
-  void printContent(std::ostream& os, Container& varVec) {
+  void printContent( Container& varVec,std::ostream& os=std::cout) {
     std::ranges::for_each(varVec, [&os](auto&& var) { os << var << '\n'; });
   }
 

@@ -15,6 +15,7 @@
 
 template <typename Basis>  // Check basis
 class ControlSubsamplingVertexVTKWriter : public IObserver<ControlMessages> {
+  static constexpr int components = Basis::LocalView::Tree::CHILDREN==0? 1 :Basis::LocalView::Tree::CHILDREN;
 public:
   ControlSubsamplingVertexVTKWriter(const Basis& p_basis, const Eigen::VectorXd& sol, int refinementLevels)
       : basis{&p_basis}, vtkWriter(p_basis.gridView(), Dune::refinementLevels(refinementLevels)), solution{&sol} {}
@@ -27,9 +28,9 @@ public:
     switch (message) {
       case ControlMessages::SOLUTION_CHANGED: {
         auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<
-            Dune::FieldVector<double, Basis::LocalView::Tree::CHILDREN==0? 1 :Basis::LocalView::Tree::CHILDREN>>(*basis, *solution);
+            Dune::FieldVector<double, components>>(*basis, *solution);
         vtkWriter.addVertexData(disp, Dune::VTK::FieldInfo(solutionName, Dune::VTK::FieldInfo::Type::vector,
-                                                           Basis::LocalView::Tree::CHILDREN));
+                                                           components));
         vtkWriter.write(prefixString + std::to_string(step++));
       } break;
       default:
