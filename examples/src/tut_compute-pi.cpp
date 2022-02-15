@@ -68,7 +68,7 @@ int main() {
   draw(gridView);
 
   double area1 = 0.0;
-  for (auto& element : elements(gridView)) {
+  for (auto element : elements(gridView)) {
     area1 += element.geometry().volume();
   }
 
@@ -77,16 +77,26 @@ int main() {
   for (auto& element : elements(gridView)) {
     const auto& rule = Dune::QuadratureRules<double, 2>::rule(element.type(), 1, Dune::QuadratureType::GaussLegendre);
     for (auto& gp : rule)
-      //      area2 += element.geometry().integrationElement(gp.position()) * gp.weight();
-      area2 += f(element.geometry().global(gp.position())) * element.geometry().integrationElement(gp.position())
-               * gp.weight();  // integrationElement --> JacobiDeterminant
+            area2 += element.geometry().integrationElement(gp.position()) * gp.weight();
+//      area2 += f(element.geometry().global(gp.position())) * element.geometry().integrationElement(gp.position())
+//               * gp.weight();  // integrationElement --> JacobiDeterminant
   }
 
-  std::cout << area1 << " " << area2 << std::endl;
-
+  std::cout <<  "Area2 " << area2<<" " << std::numbers::pi << std::endl;
+  bool adaptive      = true;
   for (int i = 0; i < 3; ++i) {
     area1 = 0.0;
-    grid->globalRefine(1);
+
+      for (const auto& element : elements(grid->leafGridView()))
+      {
+        auto center = element.geometry().center();
+        if (element.hasBoundaryIntersections())
+          grid->mark(1,element);
+      }
+
+      grid->preAdapt();
+      grid->adapt();
+      grid->postAdapt();
 
     auto gridViewRefined = grid->leafGridView();
     std::cout << "This gridview contains: ";
@@ -96,7 +106,7 @@ int main() {
     for (auto& element : elements(gridViewRefined)) {
       area1 += element.geometry().volume();
     }
-    std::cout << area1 << " " << std::numbers::pi << std::endl;
+    std::cout <<"area1"<< area1 << " " << std::numbers::pi << std::endl;
   }
 
   double circumference = 0.0;
