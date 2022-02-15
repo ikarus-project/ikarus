@@ -4,7 +4,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-
 #include <dune/alugrid/grid.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
@@ -54,7 +53,7 @@ private:
     for (auto& ge : elements(basis_->gridView())) {
       localView.bind(ge);
       Ikarus::FiniteElements::NonLinearElasticityFEWithLocalBasis fe(localView, 1000, 0.3);
-      auto matLoc      = fe.calculateMatrix(displacement, lambda);
+      auto matLoc = fe.calculateMatrix(displacement, lambda);
       for (auto i = 0U; i < localView.size(); ++i)
         for (auto j = 0U; j < localView.size(); ++j) {
           mat(localView.index(i)[0], localView.index(j)[0]) += matLoc(i, j);
@@ -80,9 +79,8 @@ private:
       for (auto i = 0U; i < localView.size(); ++i)
         vec(localView.index(i)[0]) += vecLocal(i);
     }
-    for (auto i = 0U; i < basis_->size(); ++i) {
+    for (auto i = 0U; i < basis_->size(); ++i)
       if (dirichletFlags->at(i)) vec[i] = 0;
-    }
 
     return vec;
   }
@@ -108,49 +106,48 @@ private:
   Eigen::VectorXd vec{};
 };
 
-int main(){
+int main() {
   constexpr int gridDim = 2;
   /// ALUGrid Example
-          using Grid            = Dune::ALUGrid<gridDim, 2, Dune::simplex, Dune::conforming>;
-          auto grid             =
-          Dune::GmshReader<Grid>::read("../../tests/src/testFiles/unstructuredTrianglesfine.msh", false);
+  using Grid = Dune::ALUGrid<gridDim, 2, Dune::simplex, Dune::conforming>;
+  auto grid  = Dune::GmshReader<Grid>::read("../../tests/src/testFiles/unstructuredTrianglesfine.msh", false);
 
   /// IGA Grid Example
-//  constexpr auto dimworld              = 2;
-//  const std::array<int, gridDim> order = {2, 2};
-//
-//  const std::array<std::vector<double>, gridDim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
-//
-//  using ControlPoint = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointType;
-//
-//  const std::vector<std::vector<ControlPoint>> controlPoints
-//      = {{{.p = {0, 0}, .w = 5}, {.p = {0.5, 0}, .w = 1}, {.p = {1, 0}, .w = 1}},
-//         {{.p = {0, 0.5}, .w = 1}, {.p = {0.5, 0.5}, .w = 10}, {.p = {1, 0.5}, .w = 1}},
-//         {{.p = {0, 1}, .w = 1}, {.p = {0.5, 1}, .w = 1}, {.p = {1, 1}, .w = 1}}};
-//
-//  std::array<int, gridDim> dimsize
-//      = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
-//
-//  auto controlNet = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
-//  using Grid      = Dune::IGA::NURBSGrid<gridDim, dimworld>;
-//
-//  Dune::IGA::NURBSPatchData<gridDim, dimworld> patchData;
-//  patchData.knotSpans     = knotSpans;
-//  patchData.degree        = order;
-//  patchData.controlPoints = controlNet;
-//  auto grid               = std::make_shared<Grid>(patchData);
-//  grid->globalRefine(2);
+  //  constexpr auto dimworld              = 2;
+  //  const std::array<int, gridDim> order = {2, 2};
+  //
+  //  const std::array<std::vector<double>, gridDim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+  //
+  //  using ControlPoint = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointType;
+  //
+  //  const std::vector<std::vector<ControlPoint>> controlPoints
+  //      = {{{.p = {0, 0}, .w = 5}, {.p = {0.5, 0}, .w = 1}, {.p = {1, 0}, .w = 1}},
+  //         {{.p = {0, 0.5}, .w = 1}, {.p = {0.5, 0.5}, .w = 10}, {.p = {1, 0.5}, .w = 1}},
+  //         {{.p = {0, 1}, .w = 1}, {.p = {0.5, 1}, .w = 1}, {.p = {1, 1}, .w = 1}}};
+  //
+  //  std::array<int, gridDim> dimsize
+  //      = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
+  //
+  //  auto controlNet = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  //  using Grid      = Dune::IGA::NURBSGrid<gridDim, dimworld>;
+  //
+  //  Dune::IGA::NURBSPatchData<gridDim, dimworld> patchData;
+  //  patchData.knotSpans     = knotSpans;
+  //  patchData.degree        = order;
+  //  patchData.controlPoints = controlNet;
+  //  auto grid               = std::make_shared<Grid>(patchData);
+  //  grid->globalRefine(2);
 
   /// YaspGrid Example
-//    using Grid        = Dune::YaspGrid<gridDim>;
-//    const double L    = 1;
-//    const double h    = 1;
-//    const size_t elex = 1;
-//    const size_t eley = 1;
-//
-//    Dune::FieldVector<double, 2> bbox = {L, h};
-//    std::array<int, 2> eles           = {elex, eley};
-//    auto grid                         = std::make_shared<Grid>(bbox, eles);
+  //    using Grid        = Dune::YaspGrid<gridDim>;
+  //    const double L    = 1;
+  //    const double h    = 1;
+  //    const size_t elex = 1;
+  //    const size_t eley = 1;
+  //
+  //    Dune::FieldVector<double, 2> bbox = {L, h};
+  //    std::array<int, 2> eles           = {elex, eley};
+  //    auto grid                         = std::make_shared<Grid>(bbox, eles);
 
   using GridView    = typename Grid::LeafGridView;
   GridView gridView = grid->leafGridView();
@@ -186,8 +183,8 @@ int main(){
   auto KFunction      = [&](auto&& lambda, auto&& disp) -> auto& { return denseAssembler.getMatrix(disp, lambda); };
   auto energyFunction = [&](auto&& lambda, auto&& disp) -> auto { return denseAssembler.getScalar(disp, lambda); };
 
-  auto nonLinOp  = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, fintFunction, KFunction),
-                                             parameter(lambda, d));
+  auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, fintFunction, KFunction),
+                                            parameter(lambda, d));
 
   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
 

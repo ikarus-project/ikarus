@@ -2,8 +2,10 @@
 // Created by Alex on 21.07.2021.
 //
 #include <../../config.h>
+#include <matplot/matplot.h>
 #include <numbers>
 
+#include <dune/common/indices.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/iga/igaalgorithms.hh>
@@ -72,19 +74,20 @@ struct KirchhoffPlate {
 
       const auto Jinv
           = Ikarus::toEigenMatrix(ele.geometry().jacobianInverseTransposed(gp.position())).transpose().eval();
-//      std::cout << Jinv << std::endl;
+      //      std::cout << Jinv << std::endl;
       Eigen::VectorXd dN_xx(fe.size());
       Eigen::VectorXd dN_yy(fe.size());
       Eigen::VectorXd dN_xy(fe.size());
       for (auto i = 0U; i < fe.size(); ++i) {
         dN_xx[i] = dN_xixi[i] * Dune::power(Jinv(0, 0), 2) + dN_etaeta[i] * Dune::power(Jinv(0, 1), 2);
         dN_yy[i] = dN_etaeta[i] * Dune::power(Jinv(1, 1), 2) + dN_xixi[i] * Dune::power(Jinv(1, 0), 2);
-        dN_xy[i] = (Jinv(1, 0)*dN_etaeta[i] + dN_xieta[i]*Jinv(0, 0))*Jinv(1, 1) + Jinv(0, 1)*(Jinv(1, 0)*dN_xieta[i] + dN_xixi[i]*Jinv(0, 0));
+        dN_xy[i] = (Jinv(1, 0) * dN_etaeta[i] + dN_xieta[i] * Jinv(0, 0)) * Jinv(1, 1)
+                   + Jinv(0, 1) * (Jinv(1, 0) * dN_xieta[i] + dN_xixi[i] * Jinv(0, 0));
       }
       Eigen::Vector<Scalar, 3> kappa;
       kappa(0) = dN_xx.dot(wNodal);
       kappa(1) = dN_yy.dot(wNodal);
-      kappa(2) = 2*dN_xy.dot(wNodal);
+      kappa(2) = 2 * dN_xy.dot(wNodal);
       Scalar w = N.dot(wNodal);
 
       energy
@@ -92,28 +95,28 @@ struct KirchhoffPlate {
     }
 
     const double penaltyFactor = 1e8;
-        if (ele.hasBoundaryIntersections())
-          for (auto& intersection : intersections(localView.globalBasis().gridView(), ele))
-            if (intersection.boundary()) {
-              const auto& rule1 = Dune::QuadratureRules<double, 1>::rule(intersection.type(), 2 * localBasis.order());
-              for (auto& gp : rule1) {
-                const auto& gpInElement = intersection.geometryInInside().global(gp.position());
-                std::vector<Dune::FieldMatrix<double, 1, 2>> dN_xi_eta;
-                localBasis.evaluateJacobian(gpInElement, dN_xi_eta);
-                Eigen::VectorXd dN_x(fe.size());
-                Eigen::VectorXd dN_y(fe.size());
-                const auto Jinv
-                    = Ikarus::toEigenMatrix(ele.geometry().jacobianInverseTransposed(gpInElement)).transpose().eval();
-                for (auto i = 0U; i < fe.size(); ++i) {
-                  dN_x[i] = dN_xi_eta[i][0][0] * Jinv(0, 0) + dN_xi_eta[i][0][1] * Jinv(0, 1);
-                  dN_y[i] = dN_xi_eta[i][0][0] * Jinv(1, 0) + dN_xi_eta[i][0][1] * Jinv(1, 1);
-                }
-                Scalar w_x = dN_x.dot(wNodal);
-                Scalar w_y = dN_y.dot(wNodal);
-
-                energy += 0.5 * penaltyFactor * (w_x * w_x + w_y * w_y);
-              }
+    if (ele.hasBoundaryIntersections())
+      for (auto& intersection : intersections(localView.globalBasis().gridView(), ele))
+        if (intersection.boundary()) {
+          const auto& rule1 = Dune::QuadratureRules<double, 1>::rule(intersection.type(), 2 * localBasis.order());
+          for (auto& gp : rule1) {
+            const auto& gpInElement = intersection.geometryInInside().global(gp.position());
+            std::vector<Dune::FieldMatrix<double, 1, 2>> dN_xi_eta;
+            localBasis.evaluateJacobian(gpInElement, dN_xi_eta);
+            Eigen::VectorXd dN_x(fe.size());
+            Eigen::VectorXd dN_y(fe.size());
+            const auto Jinv
+                = Ikarus::toEigenMatrix(ele.geometry().jacobianInverseTransposed(gpInElement)).transpose().eval();
+            for (auto i = 0U; i < fe.size(); ++i) {
+              dN_x[i] = dN_xi_eta[i][0][0] * Jinv(0, 0) + dN_xi_eta[i][0][1] * Jinv(0, 1);
+              dN_y[i] = dN_xi_eta[i][0][0] * Jinv(1, 0) + dN_xi_eta[i][0][1] * Jinv(1, 1);
             }
+            Scalar w_x = dN_x.dot(wNodal);
+            Scalar w_y = dN_y.dot(wNodal);
+
+            energy += 0.0*0.5 * penaltyFactor * (w_x * w_x + w_y * w_y);
+          }
+        }
 
     return energy;
   }
@@ -208,86 +211,120 @@ int main() {
 
   std::array<int, griddim> dimsize = {2, 2};
 
-  auto controlNet = Dune::IGA::NURBSPatchData<griddim, dimworld>::ControlPointNetType(dimsize, controlPoints);
-  using Grid      = Dune::IGA::NURBSGrid<griddim, dimworld>;
+  std::vector<double> dofsVec;
+  std::vector<double> l2Evcector;
+  for (int ref = 0; ref < 6; ++ref) {
+    auto controlNet = Dune::IGA::NURBSPatchData<griddim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+    using Grid      = Dune::IGA::NURBSGrid<griddim, dimworld>;
 
-  Dune::IGA::NURBSPatchData<griddim, dimworld> patchData;
-  patchData.knotSpans     = knotSpans;
-  patchData.degree        = {1, 1};
-  patchData.controlPoints = controlNet;
-  patchData               = Dune::IGA::degreeElevate(patchData, 0, 1);
-  patchData               = Dune::IGA::degreeElevate(patchData, 1, 1);
-  Grid grid(patchData);
-  grid.globalRefine(3);
-  auto gridView = grid.leafGridView();
-  draw(gridView);
-  using namespace Dune::Functions::BasisFactory;
-  auto basis = makeBasis(gridView, gridView.getPreBasis());
-  std::vector<double> w(basis.size());
-  auto localView = basis.localView();
+    Dune::IGA::NURBSPatchData<griddim, dimworld> patchData;
+    patchData.knotSpans     = knotSpans;
+    patchData.degree        = {1, 1};
+    patchData.controlPoints = controlNet;
+    patchData               = Dune::IGA::degreeElevate(patchData, 0, 1);
+    patchData               = Dune::IGA::degreeElevate(patchData, 1, 1);
+    Grid grid(patchData);
+    grid.globalRefine(ref);
+    auto gridView = grid.leafGridView();
+    draw(gridView);
+    using namespace Dune::Functions::BasisFactory;
+    auto basis = makeBasis(gridView, gridView.getPreBasis());
+    std::vector<double> w(basis.size());
 
-  auto dirichletPredicate = [](auto p) { return std::sin(p[0]); };
-  std::vector<double> uhat(basis.size());
+    auto dirichletPredicate = [](auto p) { return std::sin(p[0]); };
+    std::vector<double> uhat(basis.size());
 
-  std::vector<bool> dirichletFlags(basis.size());
-  std::fill(dirichletFlags.begin(), dirichletFlags.end(), false);
+    std::vector<bool> dirichletFlags(basis.size());
+    std::fill(dirichletFlags.begin(), dirichletFlags.end(), false);
 
-  Dune::Functions::forEachBoundaryDOF(basis, [&](auto&& index) { dirichletFlags[index] = true; });
-  auto denseAssembler = DenseFlatAssembler(basis, dirichletFlags);
+    Dune::Functions::forEachBoundaryDOF(basis, [&](auto&& index) { dirichletFlags[index] = true; });
+    auto denseAssembler = DenseFlatAssembler(basis, dirichletFlags);
 
-  Eigen::VectorXd d;
-  d.setZero(basis.size());
-  double lambda = 0.0;
+    Eigen::VectorXd d;
+    d.setZero(basis.size());
+    double lambda = 0.0;
 
-  auto energyFunction = [&](auto&& lambda, auto&& disp) -> auto { return denseAssembler.getScalar(disp, lambda); };
-  auto fintFunction   = [&](auto&& lambda, auto&& disp) -> auto& { return denseAssembler.getVector(disp, lambda); };
-  auto KFunction      = [&](auto&& lambda, auto&& disp) -> auto& { return denseAssembler.getMatrix(disp, lambda); };
+    auto energyFunction = [&](auto&& lambda, auto&& disp) -> auto { return denseAssembler.getScalar(disp, lambda); };
+    auto fintFunction   = [&](auto&& lambda, auto&& disp) -> auto& { return denseAssembler.getVector(disp, lambda); };
+    auto KFunction      = [&](auto&& lambda, auto&& disp) -> auto& { return denseAssembler.getMatrix(disp, lambda); };
 
-  auto nonLinOp  = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, fintFunction, KFunction),
-                                             parameter(lambda, d));
-  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
+    auto nonLinOp  = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, fintFunction, KFunction),
+                                               parameter(lambda, d));
+    auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
 
-  auto nr                      = Ikarus::NewtonRaphson(nonLinOp.subOperator<1, 2>(), std::move(linSolver));
-  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
+    auto nr                      = Ikarus::NewtonRaphson(nonLinOp.subOperator<1, 2>(), std::move(linSolver));
+    auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
 
-  auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<decltype(basis)>>(basis, d, 2);
-  vtkWriter->setFileNamePrefix("TestKLplate");
-  vtkWriter->setVertexSolutionName("displacement");
-  nr.subscribeAll(nonLinearSolverObserver);
+    auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<decltype(basis)>>(basis, d, 2);
+    vtkWriter->setFileNamePrefix("TestKLplate");
+    vtkWriter->setVertexSolutionName("displacement");
+    nr.subscribeAll(nonLinearSolverObserver);
 
-  const double totalLoad = 2000;
-  auto lc                = Ikarus::LoadControl(std::move(nr), 1, {0, totalLoad});
+    const double totalLoad = 2000;
+    auto lc                = Ikarus::LoadControl(std::move(nr), 1, {0, totalLoad});
 
-  lc.subscribeAll(vtkWriter);
-  std::cout << "Energy before: " << nonLinOp.value() << std::endl;
-  lc.run();
-  nonLinOp.update<0>();
-  std::cout << "Energy after: " << nonLinOp.value() << std::endl;
+    lc.subscribeAll(vtkWriter);
+    std::cout << "Energy before: " << nonLinOp.value() << std::endl;
+    lc.run();
+    nonLinOp.update<0>();
+    std::cout << "Energy after: " << nonLinOp.value() << std::endl;
 
+    const double D = KirchhoffPlate::Emodul * Dune::power(KirchhoffPlate::thickness, 3)
+                     / (12 * (1 - Dune::power(KirchhoffPlate::nu, 2)));
+    auto wxy =
+        [&](auto x,
+            auto
+                y) {  // https://en.wikipedia.org/wiki/Bending_of_plates#Simply-supported_plate_with_uniformly-distributed_load
+          double w                = 0.0;
+          const int seriesFactors = 40;
+          const double pi         = std::numbers::pi;
+          auto isOdd              = std::views::filter([](auto i) { return i % 2 != 0; });
+          auto oddFactors         = std::ranges::iota_view(1, seriesFactors) | isOdd;
+          for (auto m : oddFactors) {
+            for (auto n : oddFactors) {
+              w += std::sin(m * pi * x / Lx) * std::sin(n * pi * y / Ly)
+                   / (m * n * Dune::power(m * m / (Lx * Lx) + n * n / (Ly * Ly), 2));
+            }
+          }
+          return 16 * totalLoad / (Dune::power(pi, 6) * D) * w;
+        };
+//    std::cout << wxy(Lx / 2.0, Ly / 2.0) << std::endl;
 
-  const double D = KirchhoffPlate::Emodul * Dune::power(KirchhoffPlate::thickness, 3)
-                   / (12 * (1 - Dune::power(KirchhoffPlate::nu, 2)));
-  auto wxy = [&](auto x, auto y) { //https://en.wikipedia.org/wiki/Bending_of_plates#Simply-supported_plate_with_uniformly-distributed_load
-    double w                = 0.0;
-    const int seriesFactors = 40;
-    const double pi         = std::numbers::pi;
-    auto isOdd              = std::views::filter([](auto i) { return i % 2 != 0; });
-    auto oddFactors = std::ranges::iota_view(1, seriesFactors) | isOdd;
-    for (auto m : oddFactors) {
-      for (auto n : oddFactors) {
-        w += std::sin(m * pi * x / Lx) * std::sin(n * pi * y / Ly)
-             / (m * n * Dune::power(m * m / (Lx * Lx) + n * n / (Ly * Ly), 2));
+    const double wCenterClamped = 1.265319087
+                                  / (D / (totalLoad * Dune::power(Lx, 4))
+                                     * 1000.0);  // clamped sol http://faculty.ce.berkeley.edu/rlt/reports/clamp.pdf
+//    std::cout << wCenterClamped << std::endl;
+    auto disp      = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 1>>(basis, d);
+    auto localDisp = localFunction(disp);
+    auto localView = basis.localView();
+
+    double l2_error = 0.0;
+    for (auto& ele : elements(gridView)) {
+      localDisp.bind(ele);
+      localView.bind(ele);
+      const auto geo   = localView.element().geometry();
+      const auto& rule = Dune::QuadratureRules<double, 2>::rule(
+          ele.type(), 2 * localView.tree().finiteElement().localBasis().order());
+      for (auto gp : rule) {
+        const auto gpGlobalPos = geo.global(gp.position());
+        const auto w_ex        = wxy(gpGlobalPos[0], gpGlobalPos[1]);
+        const auto w_fe        = localDisp(gp.position());
+        l2_error += Dune::power(w_ex - w_fe, 2) * ele.geometry().integrationElement(gp.position()) * gp.weight();
       }
     }
+    l2_error = std::sqrt(l2_error);
+    std::cout << "l2_error: " << l2_error << "Dofs:: " << basis.size() << std::endl;
+    dofsVec.push_back(basis.size());
+    l2Evcector.push_back(l2_error);
+  }
+  using namespace matplot;
+  auto f  = figure(true);
+  auto ax = gca();
+  ax->y_axis().label("L2_error");
 
-    return 16 * totalLoad / (Dune::power(pi, 6) * D) * w;
-  };
-  std::cout << wxy(Lx / 2.0, Ly / 2.0) << std::endl;
-//clamped sol http://faculty.ce.berkeley.edu/rlt/reports/clamp.pdf
-
-  const double wCenterClamped = 1.265319087 /(D/(totalLoad*Dune::power(Lx,4))*1000.0);
-  std::cout<<wCenterClamped<<std::endl;
-  auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 1>>(basis, d);
-
-
+  ax->x_axis().label("#Dofs");
+  auto p = ax->loglog(dofsVec, l2Evcector);
+  p->line_width(2);
+  p->marker(line_spec::marker_style::asterisk);
+  show();
 }
