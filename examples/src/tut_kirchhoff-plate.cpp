@@ -307,6 +307,7 @@ int main() {
           ele.type(), 2 * localView.tree().finiteElement().localBasis().order());
       for (auto gp : rule) {
         const auto gpGlobalPos = geo.global(gp.position());
+        ele.
         const auto w_ex        = wxy(gpGlobalPos[0], gpGlobalPos[1]);
         const auto w_fe        = localDisp(gp.position());
         l2_error += Dune::power(w_ex - w_fe, 2) * ele.geometry().integrationElement(gp.position()) * gp.weight();
