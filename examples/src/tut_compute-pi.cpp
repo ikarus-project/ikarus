@@ -3,7 +3,7 @@
 //
 #include <../../config.h>
 #include <numbers>
-
+#define ALUGRIDDEBUG false
 #include <dune/alugrid/grid.hh>
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/grid/common/boundarysegment.hh>
@@ -66,21 +66,24 @@ int main(int argc, char** argv) {
 
   using namespace Dune;
   constexpr int gridDim = 2;
-  Dune::GridFactory<Dune::ALUGrid<gridDim, 2, Dune::simplex, Dune::conforming>> gridFactory;
+  Dune::GridFactory<Dune::ALUGrid<gridDim, 2, Dune::cube, Dune::nonconforming>> gridFactory;
   const double h = 1.0;
   const double L = 1.0;
-  std::array<FieldVector<double, 2>, 3> corners0
-      = {{{-sqrt(2) / 2, -sqrt(2) / 2}, {sqrt(2) / 2, -sqrt(2) / 2}, {0, 1}}};
+  std::array<FieldVector<double, 2>, 4> corners0
+      = {{{-sqrt(2) / 2, -sqrt(2) / 2}, {sqrt(2) / 2, -sqrt(2) / 2}, {sqrt(2) / 2, sqrt(2) / 2}, {-sqrt(2) / 2, sqrt(2) / 2}}};
   gridFactory.insertVertex(corners0[0]);
   gridFactory.insertVertex(corners0[1]);
   gridFactory.insertVertex(corners0[2]);
+  gridFactory.insertVertex(corners0[3]);
 
   auto parametrization = [](const FieldVector<double, 2>& x) -> FieldVector<double, 2> { return x / x.two_norm(); };
 
-  gridFactory.insertElement(Dune::GeometryTypes::triangle, {0, 1, 2});
+  gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {0, 1, 3,2});
   gridFactory.insertBoundarySegment({0, 1}, std::make_shared<BS>(corners0[0],corners0[1]));
-//  gridFactory.insertBoundarySegment({1, 2}, std::make_shared<BS>(corners0[1],corners0[2]));
-//  gridFactory.insertBoundarySegment({2, 0}, std::make_shared<BS>(corners0[2],corners0[0]));
+  gridFactory.insertBoundarySegment({1, 2}, std::make_shared<BS>(corners0[1],corners0[2]));
+  gridFactory.insertBoundarySegment({0, 3}, std::make_shared<BS>(corners0[0],corners0[3]));
+  gridFactory.insertBoundarySegment({3, 2}, std::make_shared<BS>(corners0[3],corners0[2]));
+
 
   auto grid     = gridFactory.createGrid();
   auto gridView = grid->leafGridView();
