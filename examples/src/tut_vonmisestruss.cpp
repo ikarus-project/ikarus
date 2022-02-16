@@ -24,7 +24,7 @@ struct Truss {
   constexpr static const double EA = 100;
   template <typename LocalView, class Scalar>
   static Scalar calculateScalarImpl(const LocalView& localView, const Eigen::VectorXd& d,
-                                    const Eigen::Vector4<Scalar>& dx) {
+                                    const Eigen::VectorX<Scalar>& dx,const double& lambda) {
     Scalar energy = 0.0;
     auto& ele     = localView.element();
     const auto X1 = Ikarus::toEigenVector(ele.geometry().corner(0));
@@ -49,7 +49,6 @@ struct Truss {
     return energy;
   }
 
-  
 };
 
 int main() {

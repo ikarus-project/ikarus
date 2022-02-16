@@ -14,43 +14,11 @@
 
 #include <ikarus/Grids/GridHelper/griddrawer.h>
 
-/**
- * \brief Mapping from R^d to the graph of a given function
- */
-template <int dim, int dimworld>
-class GraphMapping {
-  // Element corners in the global parameter domain
-  std::array<Dune::FieldVector<double, dim>, dim + 1> corners_;
-
-  std::function<Dune::FieldVector<double, 2>(Dune::FieldVector<double, 2>)> graph_;
-
-public:
-  GraphMapping(std::array<Dune::FieldVector<double, dim>, dim + 1> corners,
-               std::function<Dune::FieldVector<double, 2>(Dune::FieldVector<double, 2>)> graph)
-      : corners_(corners), graph_(graph) {}
-
-  /**
-   * \brief Function evaluation.
-   *
-   * \param x Argument for function evaluation.
-   * \param y Result of function evaluation.
-   */
-  Dune::FieldVector<double, dimworld> operator()(const Dune::FieldVector<double, dim>& x) const {
-    // Linear interpolation between the corners
-    auto globalX = corners_[0];
-    for (size_t i = 0; i < x.size(); i++)
-      for (int j = 0; j < dim; j++)
-        globalX[j] += x[i] * (corners_[i + 1][j] - corners_[0][j]);
-    return graph_(globalX);
-  }
-};
 
 struct UnitCircleBoundary : Dune::BoundarySegment<2, 2, double> {
   UnitCircleBoundary(const Dune::FieldVector<double, 2>& a ,const Dune::FieldVector<double, 2>& b) : corners{{a,b}} {}
   Dune::FieldVector<double, 2> operator()(const Dune::FieldVector<double, 1>& local) const override {
     Dune::FieldVector<double, 2> result = {0, 0};
-//    result = corners[0] + local[0]*(corners[1]-corners[0]);
-//    return result/result.two_norm();
     double omega = std::acos(corners[0]*corners[1]);
     return std::sin((1-local[0])*omega)/sin(omega)*corners[0]+ sin(local[0]*omega)/sin(omega)*corners[1];
   }

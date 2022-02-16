@@ -30,99 +30,7 @@
 #include <ikarus/utils/concepts.h>
 #include <ikarus/utils/utils/algorithms.h>
 
-template <Ikarus::Concepts::FlatIndexBasis Basis, typename FEContainer>
-class DenseFlatAssembler {
-public:
-  using RequirementType = typename FEContainer::value_type::FERequirementType;
-  explicit DenseFlatAssembler(const Basis& basis, const FEContainer& fes, const std::vector<bool>& dirichFlags)
-      : basis_{&basis}, feContainer{fes}, dirichletFlags{&dirichFlags} {}
 
-  Eigen::MatrixXd& getMatrix(const Ikarus::MatrixAffordances& p_matrixAffordances,const Eigen::VectorXd& displacement, const double& lambda) {
-    return getMatrixImpl(p_matrixAffordances,displacement, lambda);
-  }
-
-  Eigen::VectorXd& getVector(const Ikarus::VectorAffordances& p_vectorAffordances,const Eigen::VectorXd& displacement, const double& lambda) {
-    return getVectorImpl(p_vectorAffordances,displacement, lambda);
-  }
-
-  double getScalar(const Ikarus::ScalarAffordances & p_scalarAffordances,const Eigen::VectorXd& displacement, const double& lambda) {
-    return getScalarImpl(p_scalarAffordances,displacement, lambda);
-  }
-
-private:
-  Eigen::MatrixXd& getMatrixImpl(const Ikarus::MatrixAffordances& p_matrixAffordances,const Eigen::VectorXd& displacement, const double& lambda) {
-    mat.setZero(basis_->size(), basis_->size());
-    RequirementType requirements;
-    requirements.matrixAffordances = p_matrixAffordances;
-    requirements.sols.emplace_back(displacement);
-    requirements.parameter.insert({Ikarus::FEParameter::loadfactor,lambda});
-    for (auto& fe : feContainer) {
-      auto matLoc      = fe.calculateMatrix(requirements);
-      auto globalIndices = fe.globalIndices();
-      for (auto i = 0; auto idi : fe.globalIndices()) {
-        for (auto j = 0; auto idj : fe.globalIndices()) {
-          mat(idi[0], idj[0]) += matLoc(i, j);
-          ++j;
-        }
-        ++i;
-      }
-    }
-    for (auto i = 0U; i < basis_->size(); ++i)
-      if (dirichletFlags->at(i)) mat.col(i).setZero();
-    for (auto i = 0U; i < basis_->size(); ++i)
-      if (dirichletFlags->at(i)) mat.row(i).setZero();
-    for (auto i = 0U; i < basis_->size(); ++i)
-      if (dirichletFlags->at(i)) mat(i, i) = 1;
-    return mat;
-  }
-
-  Eigen::VectorXd& getVectorImpl(const Ikarus::VectorAffordances& p_vectorAffordances, const Eigen::VectorXd& displacement, const double& lambda) {
-    vec.setZero(basis_->size());
-    auto localView = basis_->localView();
-    RequirementType requirements;
-    requirements.vectorAffordances = p_vectorAffordances;
-    requirements.sols.emplace_back(displacement);
-    requirements.parameter.insert({Ikarus::FEParameter::loadfactor,lambda});
-    for (auto& fe : feContainer) {
-//      Ikarus::FiniteElements::NonLinearElasticityFEWithLocalBasis<decltype(localView)> fe(localView, 1000, 0.3);
-
-      auto vecLocal = fe.calculateVector(requirements);
-      for (int i = 0;auto id : fe.globalIndices()) {
-        vec(id[0]) += vecLocal(i);
-        ++i;
-      }
-    }
-    for (auto i = 0U; i < basis_->size(); ++i) {
-      if (dirichletFlags->at(i)) vec[i] = 0;
-    }
-
-    return vec;
-  }
-
-  double getScalarImpl(const Ikarus::ScalarAffordances& p_scalarAffordances,const Eigen::VectorXd& displacement, const double& lambda) {
-    double scalar = 0.0;
-    vec.setZero(basis_->size());
-    RequirementType requirements;
-    requirements.scalarAffordances = p_scalarAffordances;
-    requirements.sols.emplace_back(displacement);
-    requirements.parameter.insert({Ikarus::FEParameter::loadfactor,lambda});
-    auto localView = basis_->localView();
-
-    for (auto& ge : elements(basis_->gridView())) {
-      localView.bind(ge);
-      Ikarus::FiniteElements::NonLinearElasticityFEWithLocalBasis<decltype(localView)> fe(localView, 1000, 0.3);
-      for (auto i = 0U; i < localView.size(); ++i)
-        scalar += fe.calculateScalar(requirements);
-    }
-
-    return scalar;
-  }
-  Basis const* basis_;
-  FEContainer const& feContainer;
-  std::vector<bool> const* dirichletFlags;
-  Eigen::MatrixXd mat{};
-  Eigen::VectorXd vec{};
-};
 
 GTEST_TEST(LoadControlTestWithUGGrid, GridLoadControlTestWithUGGrid) {
   using namespace Ikarus;
@@ -196,7 +104,7 @@ GTEST_TEST(LoadControlTestWithUGGrid, GridLoadControlTestWithUGGrid) {
 
   Ikarus::markDirichletBoundaryDofs(basis, dirichletFlags,
                                     [](auto&& centerCoord) { return (std::abs(centerCoord[1]) < 1e-8); });
-  Ikarus::utils::printContent(std::cout, dirichletFlags);
+  Ikarus::utils::printContent(dirichletFlags);
   auto denseAssembler = DenseFlatAssembler(basis, fes, dirichletFlags);
 
   Eigen::VectorXd d;
