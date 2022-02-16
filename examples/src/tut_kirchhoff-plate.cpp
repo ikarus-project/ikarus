@@ -79,9 +79,10 @@ struct KirchhoffPlate {
       Eigen::VectorXd dN_xx(fe.size());
       Eigen::VectorXd dN_yy(fe.size());
       Eigen::VectorXd dN_xy(fe.size());
+      using Dune::power;
       for (auto i = 0U; i < fe.size(); ++i) {
-        dN_xx[i] = dN_xixi[i] * Dune::power(Jinv(0, 0), 2) + dN_etaeta[i] * Dune::power(Jinv(0, 1), 2);
-        dN_yy[i] = dN_etaeta[i] * Dune::power(Jinv(1, 1), 2) + dN_xixi[i] * Dune::power(Jinv(1, 0), 2);
+        dN_xx[i] = dN_xixi[i] * power(Jinv(0, 0), 2) + dN_etaeta[i] * power(Jinv(0, 1), 2);
+        dN_yy[i] = dN_etaeta[i] * power(Jinv(1, 1), 2) + dN_xixi[i] * power(Jinv(1, 0), 2);
         dN_xy[i] = (Jinv(1, 0) * dN_etaeta[i] + dN_xieta[i] * Jinv(0, 0)) * Jinv(1, 1)
                    + Jinv(0, 1) * (Jinv(1, 0) * dN_xieta[i] + dN_xixi[i] * Jinv(0, 0));
       }
@@ -198,7 +199,7 @@ private:
 };
 
 int main() {
-  ///Create IGA Grid
+  /// Create IGA Grid
   using namespace Ikarus;
   constexpr int griddim                                    = 2;
   constexpr int dimworld                                   = 2;
@@ -216,109 +217,111 @@ int main() {
   std::vector<double> dofsVec;
   std::vector<double> l2Evcector;
 
-    auto controlNet = Dune::IGA::NURBSPatchData<griddim, dimworld>::ControlPointNetType(dimsize, controlPoints);
-    using Grid      = Dune::IGA::NURBSGrid<griddim, dimworld>;
+  auto controlNet = Dune::IGA::NURBSPatchData<griddim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  using Grid      = Dune::IGA::NURBSGrid<griddim, dimworld>;
 
-    Dune::IGA::NURBSPatchData<griddim, dimworld> patchData;
-    patchData.knotSpans     = knotSpans;
-    patchData.degree        = {1, 1};
-    patchData.controlPoints = controlNet;
-    patchData               = Dune::IGA::degreeElevate(patchData, 0, 1);
-    patchData               = Dune::IGA::degreeElevate(patchData, 1, 1);
-    Grid grid(patchData);
-    grid.globalRefine(2);
-    auto gridView = grid.leafGridView();
-    draw(gridView);
-    using namespace Dune::Functions::BasisFactory;
-    auto basis = makeBasis(gridView, gridView.getPreBasis());
-    std::vector<double> w(basis.size());
+  Dune::IGA::NURBSPatchData<griddim, dimworld> patchData;
+  patchData.knotSpans     = knotSpans;
+  patchData.degree        = {1, 1};
+  patchData.controlPoints = controlNet;
+  patchData               = Dune::IGA::degreeElevate(patchData, 0, 1);
+  patchData               = Dune::IGA::degreeElevate(patchData, 1, 1);
+  Grid grid(patchData);
+  for (int ref = 0; ref < 10; ++ref) {
 
-    auto dirichletPredicate = [](auto p) { return std::sin(p[0]); };
-    std::vector<double> uhat(basis.size());
+  grid.globalRefine(1);
+  auto gridView = grid.leafGridView();
+//  draw(gridView);
+  using namespace Dune::Functions::BasisFactory;
+  auto basis = makeBasis(gridView, gridView.getPreBasis());
+  std::vector<double> w(basis.size());
 
-    std::vector<bool> dirichletFlags(basis.size());
-    std::fill(dirichletFlags.begin(), dirichletFlags.end(), false);
+  auto dirichletPredicate = [](auto p) { return std::sin(p[0]); };
+  std::vector<double> uhat(basis.size());
 
-    Dune::Functions::forEachBoundaryDOF(basis, [&](auto&& index) { dirichletFlags[index] = true; });
-    auto denseAssembler = DenseFlatAssembler(basis, dirichletFlags);
+  std::vector<bool> dirichletFlags(basis.size());
+  std::fill(dirichletFlags.begin(), dirichletFlags.end(), false);
 
-    Eigen::VectorXd d;
-    d.setZero(basis.size());
-    double lambda = 0.0;
+  Dune::Functions::forEachBoundaryDOF(basis, [&](auto&& index) { dirichletFlags[index] = true; });
+  auto denseAssembler = DenseFlatAssembler(basis, dirichletFlags);
 
-    auto energyFunction = [&](auto&& lambda, auto&& disp) -> auto { return denseAssembler.getScalar(disp, lambda); };
-    auto fintFunction   = [&](auto&& lambda, auto&& disp) -> auto& { return denseAssembler.getVector(disp, lambda); };
-    auto KFunction      = [&](auto&& lambda, auto&& disp) -> auto& { return denseAssembler.getMatrix(disp, lambda); };
+  Eigen::VectorXd d;
+  d.setZero(basis.size());
+  double lambda = 0.0;
 
-    auto nonLinOp  = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, fintFunction, KFunction),
-                                               parameter(lambda, d));
-    auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
+  auto energyFunction = [&](auto&& lambda, auto&& disp) -> auto { return denseAssembler.getScalar(disp, lambda); };
+  auto fintFunction   = [&](auto&& lambda, auto&& disp) -> auto& { return denseAssembler.getVector(disp, lambda); };
+  auto KFunction      = [&](auto&& lambda, auto&& disp) -> auto& { return denseAssembler.getMatrix(disp, lambda); };
 
-    auto nr                      = Ikarus::NewtonRaphson(nonLinOp.subOperator<1, 2>(), std::move(linSolver));
-    auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
+  auto nonLinOp  = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, fintFunction, KFunction),
+                                             parameter(lambda, d));
+  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
 
-    auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<decltype(basis)>>(basis, d, 2);
-    vtkWriter->setFileNamePrefix("TestKLplate");
-    vtkWriter->setVertexSolutionName("displacement");
-    nr.subscribeAll(nonLinearSolverObserver);
+  auto nr                      = Ikarus::NewtonRaphson(nonLinOp.subOperator<1, 2>(), std::move(linSolver));
+  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
 
-    const double totalLoad = 2000;
-    auto lc                = Ikarus::LoadControl(std::move(nr), 20, {0, totalLoad});
+  auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<decltype(basis)>>(basis, d, 2);
+  vtkWriter->setFileNamePrefix("TestKLplate");
+  vtkWriter->setVertexSolutionName("displacement");
+  nr.subscribeAll(nonLinearSolverObserver);
 
-    lc.subscribe(ControlMessages::SOLUTION_CHANGED,vtkWriter);
-    std::cout << "Energy before: " << nonLinOp.value() << std::endl;
-    lc.run();
-    nonLinOp.update<0>();
-    std::cout << "Energy after: " << nonLinOp.value() << std::endl;
+  const double totalLoad = 2000;
+  auto lc                = Ikarus::LoadControl(std::move(nr), 1, {0, totalLoad});
 
-    const double D = KirchhoffPlate::Emodul * Dune::power(KirchhoffPlate::thickness, 3)
-                     / (12 * (1 - Dune::power(KirchhoffPlate::nu, 2)));
-    auto wxy =
-        [&](auto x,
-            auto
-                y) {  // https://en.wikipedia.org/wiki/Bending_of_plates#Simply-supported_plate_with_uniformly-distributed_load
-          double w                = 0.0;
-          const int seriesFactors = 40;
-          const double pi         = std::numbers::pi;
-          auto isOdd              = std::views::filter([](auto i) { return i % 2 != 0; });
-          auto oddFactors         = std::ranges::iota_view(1, seriesFactors) | isOdd;
-          for (auto m : oddFactors) {
-            for (auto n : oddFactors) {
-              w += std::sin(m * pi * x / Lx) * std::sin(n * pi * y / Ly)
-                   / (m * n * Dune::power(m * m / (Lx * Lx) + n * n / (Ly * Ly), 2));
-            }
+  lc.subscribe(ControlMessages::SOLUTION_CHANGED, vtkWriter);
+  std::cout << "Energy before: " << nonLinOp.value() << std::endl;
+  lc.run();
+  nonLinOp.update<0>();
+  std::cout << "Energy after: " << nonLinOp.value() << std::endl;
+
+  const double D = KirchhoffPlate::Emodul * Dune::power(KirchhoffPlate::thickness, 3)
+                   / (12 * (1 - Dune::power(KirchhoffPlate::nu, 2)));
+  auto wxy =
+      [&](auto x,
+          auto
+              y) {  // https://en.wikipedia.org/wiki/Bending_of_plates#Simply-supported_plate_with_uniformly-distributed_load
+        double w                = 0.0;
+        const int seriesFactors = 40;
+        const double pi         = std::numbers::pi;
+        auto isOdd              = std::views::filter([](auto i) { return i % 2 != 0; });
+        auto oddFactors         = std::ranges::iota_view(1, seriesFactors) | isOdd;
+        for (auto m : oddFactors) {
+          for (auto n : oddFactors) {
+            w += std::sin(m * pi * x / Lx) * std::sin(n * pi * y / Ly)
+                 / (m * n * Dune::power(m * m / (Lx * Lx) + n * n / (Ly * Ly), 2));
           }
-          return 16 * totalLoad / (Dune::power(pi, 6) * D) * w;
-        };
-//    std::cout << wxy(Lx / 2.0, Ly / 2.0) << std::endl;
+        }
+        return 16 * totalLoad / (Dune::power(pi, 6) * D) * w;
+      };
+  //    std::cout << wxy(Lx / 2.0, Ly / 2.0) << std::endl;
 
-    const double wCenterClamped = 1.265319087
-                                  / (D / (totalLoad * Dune::power(Lx, 4))
-                                     * 1000.0);  // clamped sol http://faculty.ce.berkeley.edu/rlt/reports/clamp.pdf
-//    std::cout << wCenterClamped << std::endl;
-    auto disp      = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 1>>(basis, d);
-    auto localDisp = localFunction(disp);
-    auto localView = basis.localView();
+  const double wCenterClamped = 1.265319087
+                                / (D / (totalLoad * Dune::power(Lx, 4))
+                                   * 1000.0);  // clamped sol http://faculty.ce.berkeley.edu/rlt/reports/clamp.pdf
+                                               //    std::cout << wCenterClamped << std::endl;
+  auto disp      = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 1>>(basis, d);
+  auto localDisp = localFunction(disp);
+  auto localView = basis.localView();
 
-    double l2_error = 0.0;
-    for (auto& ele : elements(gridView)) {
-      localDisp.bind(ele);
-      localView.bind(ele);
-      const auto geo   = localView.element().geometry();
-      const auto& rule = Dune::QuadratureRules<double, 2>::rule(
-          ele.type(), 2 * localView.tree().finiteElement().localBasis().order());
-      for (auto gp : rule) {
-        const auto gpGlobalPos = geo.global(gp.position());
-        const auto w_ex        = wxy(gpGlobalPos[0], gpGlobalPos[1]);
-        const auto w_fe        = localDisp(gp.position());
-        l2_error += Dune::power(w_ex - w_fe, 2) * ele.geometry().integrationElement(gp.position()) * gp.weight();
-      }
+  double l2_error = 0.0;
+  for (auto& ele : elements(gridView)) {
+    localDisp.bind(ele);
+    localView.bind(ele);
+    const auto geo = localView.element().geometry();
+    const auto& rule
+        = Dune::QuadratureRules<double, 2>::rule(ele.type(), 2 * localView.tree().finiteElement().localBasis().order());
+    for (auto gp : rule) {
+      const auto gpGlobalPos = geo.global(gp.position());
+      const auto w_ex        = wxy(gpGlobalPos[0], gpGlobalPos[1]);
+      const auto w_fe        = localDisp(gp.position());
+      l2_error += Dune::power(w_ex - w_fe, 2) * ele.geometry().integrationElement(gp.position()) * gp.weight();
     }
-    l2_error = std::sqrt(l2_error);
-    std::cout << "l2_error: " << l2_error << "Dofs:: " << basis.size() << std::endl;
-    dofsVec.push_back(basis.size());
-    l2Evcector.push_back(l2_error);
-
+  }
+  l2_error = std::sqrt(l2_error);
+  std::cout << "l2_error: " << l2_error << " Dofs:: " << basis.size() << std::endl;
+  dofsVec.push_back(basis.size());
+  l2Evcector.push_back(l2_error);
+}
   using namespace matplot;
   auto f  = figure(true);
   auto ax = gca();
