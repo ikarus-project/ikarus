@@ -27,23 +27,22 @@ struct UnitCircleBoundary : Dune::BoundarySegment<2, 2, double> {
 };
 
 int main(int argc, char** argv) {
-  // use MPI helper to initialize MPI
+
   Dune::MPIHelper::instance(argc, argv);
 
+  /// Create grid from 6 triagnles align in unit disc
   using namespace Dune;
   constexpr int gridDim = 2;
-  Dune::GridFactory<Dune::ALUGrid<gridDim, 2, Dune::simplex, Dune::nonconforming>> gridFactory;
-  const double h = 1.0;
-  const double L = 1.0;
+  Dune::GridFactory<Dune::ALUGrid<gridDim, 2, Dune::simplex, Dune::conforming>> gridFactory;
 //  std::array<FieldVector<double, 2>, 4> corners0 = {{{-sqrt(2) / 2, -sqrt(2) / 2}, {sqrt(2) / 2, -sqrt(2) / 2}, {sqrt(2) / 2, sqrt(2) / 2}, {-sqrt(2) / 2, sqrt(2) / 2}}};
   Eigen::Vector2d v(1,0);
   std::array<FieldVector<double, 2>, 6> corners0;
   Eigen::Rotation2D<double> R;
   R.angle() = 0.0;
-  for (int i = 0; i < corners0.size(); ++i) {
+  for (auto& corner : corners0) {
    Eigen::Vector2d a = (R.toRotationMatrix()*v);
-   corners0[i][0]=a[0];
-   corners0[i][1]=a[1];
+   corner[0]=a[0];
+   corner[1]=a[1];
    R.angle() += 60.0/180.0 * std::numbers::pi;
   }
 
@@ -55,14 +54,14 @@ int main(int argc, char** argv) {
   gridFactory.insertVertex(corners0[4]);
   gridFactory.insertVertex(corners0[5]);
 
-  auto parametrization = [](const FieldVector<double, 2>& x) -> FieldVector<double, 2> { return x / x.two_norm(); };
-
   gridFactory.insertElement(Dune::GeometryTypes::triangle, {0, 1, 2});
   gridFactory.insertElement(Dune::GeometryTypes::triangle, {0, 2, 3});
   gridFactory.insertElement(Dune::GeometryTypes::triangle, {0, 3, 4});
   gridFactory.insertElement(Dune::GeometryTypes::triangle, {0, 4, 5});
   gridFactory.insertElement(Dune::GeometryTypes::triangle, {0, 5, 6});
   gridFactory.insertElement(Dune::GeometryTypes::triangle, {0, 6, 1});
+
+  /// Create boundary segments which map the boundaries onto the unit circle
   gridFactory.insertBoundarySegment({1, 2}, std::make_shared<UnitCircleBoundary>(corners0[0],corners0[1]));
   gridFactory.insertBoundarySegment({2, 3}, std::make_shared<UnitCircleBoundary>(corners0[1],corners0[2]));
   gridFactory.insertBoundarySegment({3, 4}, std::make_shared<UnitCircleBoundary>(corners0[2],corners0[3]));
@@ -76,24 +75,24 @@ int main(int argc, char** argv) {
   draw(gridView);
 
   double area1 = 0.0;
-  for (auto element : elements(gridView)) {
+  for (const auto& element : elements(gridView)) {
     area1 += element.geometry().volume();
   }
 
   auto f       = [](auto&& global) { return sqrt(global[0] * global[0] + global[1] * global[1]); };
   double area2 = 0.0;
   for (auto& element : elements(gridView)) {
-    const auto& rule = Dune::QuadratureRules<double, 2>::rule(element.type(), 10, Dune::QuadratureType::GaussLegendre);
+    const auto& rule = Dune::QuadratureRules<double, 2>::rule(element.type(), 1, Dune::QuadratureType::GaussLegendre);
     for (auto& gp : rule)
       area2 += element.geometry().integrationElement(gp.position()) * gp.weight();
   }
 
   std::cout << "Area2 " << area2 << " " << std::numbers::pi << std::endl;
-  bool adaptive = true;
   for (int i = 0; i < 10; ++i) {
     area1 = 0.0;
+    /// Refine grid entities if they live at the boundary
 //    grid->globalRefine(1);
-    for (auto ele :elements(grid->leafGridView())) {
+    for (const auto& ele :elements(grid->leafGridView())) {
       if(ele.hasBoundaryIntersections())
         grid->mark(1,ele);
     }
@@ -109,9 +108,9 @@ int main(int argc, char** argv) {
       area1 += element.geometry().volume();
 
     std::cout << "area1 " << area1 << " " << std::numbers::pi << std::endl;
-    draw(gridViewRefined);
+//    draw(gridViewRefined);
   }
-
+  /// Calculate circumference and compare to pi
   double circumference = 0.0;
   for (auto& element : elements(grid->leafGridView()))
     if (element.hasBoundaryIntersections())
