@@ -13,6 +13,7 @@
 #include <ikarus/Grids/GridHelper/griddrawer.h>
 
 int main() {
+  /// Create ALUGrid from gmsh file
   constexpr int gridDim = 2;
   using Grid            = Dune::ALUGrid<gridDim, 2, Dune::simplex, Dune::conforming>;
   auto grid             = Dune::GmshReader<Grid>::read("../../examples/src/testFiles/circleCoarse.msh", false);
@@ -20,11 +21,13 @@ int main() {
 
   draw(gridView);
 
+  /// Calculate area from volume function of elements
   double area1 = 0.0;
   for (auto& element : elements(gridView)) {
     area1 += element.geometry().volume();
   }
 
+  /// Integrate function using integration rule on grid
   auto f       = [](auto&& global) { return sqrt(global[0] * global[0] + global[1] * global[1]); };
   double area2 = 0.0;
   for (auto& element : elements(gridView)) {
@@ -37,6 +40,7 @@ int main() {
 
   std::cout << area1 << " " << area2 << std::endl;
 
+  /// Naive refinement of grid and compare calculated area to pi
   for (int i = 0; i < 3; ++i) {
     area1 = 0.0;
     grid->globalRefine(1);
@@ -51,11 +55,12 @@ int main() {
     std::cout << area1 << " " << std::numbers::pi << std::endl;
   }
 
+  /// Calculate circumference and compare to pi
   double circumference = 0.0;
   for (auto& element : elements(gridView))
     if (element.hasBoundaryIntersections())
       for (auto& intersection : intersections(gridView, element))
         if (intersection.boundary()) circumference += intersection.geometry().volume();
 
-  std::cout << circumference << std::endl;
+  std::cout << circumference << " " << std::numbers::pi << std::endl;
 }

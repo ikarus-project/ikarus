@@ -74,12 +74,23 @@ namespace Ikarus::FiniteElements {
       return globalIndices;
     }
 
+    [[nodiscard]] std::vector<GlobalIndex> localIndices() const {
+      const auto& fe = localView.tree().child(0).finiteElement();
+      std::vector<GlobalIndex> globalIndices;
+      for (size_t i = 0; i < fe.size(); ++i) {
+        for (int j = 0; j < worlddim; ++j) {
+          globalIndices.push_back((localView.tree().child(j).localIndex(i)));
+        }
+      }
+      return globalIndices;
+    }
+
     const GridElementEntityType& getEntity()
     {
       return localView.element();
     }
 
   private:
-    LocalView const& localView;
+    LocalView localView;
   };
 }  // namespace Ikarus::FiniteElements

@@ -57,6 +57,7 @@ struct KirchhoffPlate {
     const auto& localBasis = fe.localBasis();
 
     const auto& rule = Dune::QuadratureRules<double, 2>::rule(ele.type(), 2 * localBasis.order());
+    /// Calculate Kirchhoff plate energy
     for (auto& gp : rule) {
       //      std::vector<Dune::FieldMatrix<double, 1, 2>> dN_xi_eta;
       std::vector<Dune::FieldVector<double, 1>> dN_xixi;
@@ -94,6 +95,7 @@ struct KirchhoffPlate {
           += (0.5 * kappa.dot(D * kappa) - w * lambda) * ele.geometry().integrationElement(gp.position()) * gp.weight();
     }
 
+    /// Clamp boundary using penalty method
     const double penaltyFactor = 1e8;
     if (ele.hasBoundaryIntersections())
       for (auto& intersection : intersections(localView.globalBasis().gridView(), ele))
@@ -171,9 +173,8 @@ private:
       for (auto i = 0U; i < localView.size(); ++i)
         vec(localView.index(i)[0]) += vecLocal(i);
     }
-    for (auto i = 0U; i < basis_->size(); ++i) {
+    for (auto i = 0U; i < basis_->size(); ++i)
       if (dirichletFlags->at(i)) vec[i] = 0;
-    }
 
     return vec;
   }
@@ -197,6 +198,7 @@ private:
 };
 
 int main() {
+  ///Create IGA Grid
   using namespace Ikarus;
   constexpr int griddim                                    = 2;
   constexpr int dimworld                                   = 2;
@@ -213,7 +215,7 @@ int main() {
 
   std::vector<double> dofsVec;
   std::vector<double> l2Evcector;
-  for (int ref = 0; ref < 6; ++ref) {
+
     auto controlNet = Dune::IGA::NURBSPatchData<griddim, dimworld>::ControlPointNetType(dimsize, controlPoints);
     using Grid      = Dune::IGA::NURBSGrid<griddim, dimworld>;
 
@@ -224,7 +226,7 @@ int main() {
     patchData               = Dune::IGA::degreeElevate(patchData, 0, 1);
     patchData               = Dune::IGA::degreeElevate(patchData, 1, 1);
     Grid grid(patchData);
-    grid.globalRefine(ref);
+    grid.globalRefine(2);
     auto gridView = grid.leafGridView();
     draw(gridView);
     using namespace Dune::Functions::BasisFactory;
@@ -261,9 +263,9 @@ int main() {
     nr.subscribeAll(nonLinearSolverObserver);
 
     const double totalLoad = 2000;
-    auto lc                = Ikarus::LoadControl(std::move(nr), 1, {0, totalLoad});
+    auto lc                = Ikarus::LoadControl(std::move(nr), 20, {0, totalLoad});
 
-    lc.subscribeAll(vtkWriter);
+    lc.subscribe(ControlMessages::SOLUTION_CHANGED,vtkWriter);
     std::cout << "Energy before: " << nonLinOp.value() << std::endl;
     lc.run();
     nonLinOp.update<0>();
@@ -307,7 +309,6 @@ int main() {
           ele.type(), 2 * localView.tree().finiteElement().localBasis().order());
       for (auto gp : rule) {
         const auto gpGlobalPos = geo.global(gp.position());
-        ele.
         const auto w_ex        = wxy(gpGlobalPos[0], gpGlobalPos[1]);
         const auto w_fe        = localDisp(gp.position());
         l2_error += Dune::power(w_ex - w_fe, 2) * ele.geometry().integrationElement(gp.position()) * gp.weight();
@@ -317,7 +318,7 @@ int main() {
     std::cout << "l2_error: " << l2_error << "Dofs:: " << basis.size() << std::endl;
     dofsVec.push_back(basis.size());
     l2Evcector.push_back(l2_error);
-  }
+
   using namespace matplot;
   auto f  = figure(true);
   auto ax = gca();
