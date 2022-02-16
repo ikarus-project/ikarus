@@ -37,12 +37,11 @@ namespace Ikarus::FiniteElements {
     using MatrixType = Eigen::MatrixXd;
   };
 
-
   template <typename LocalView>
   class FEDisplacement {
   public:
-    using RootBasis = typename LocalView::GlobalBasis;
-    using GlobalIndex = typename  LocalView::MultiIndex;
+    using RootBasis   = typename LocalView::GlobalBasis;
+    using GlobalIndex = typename LocalView::MultiIndex;
     explicit FEDisplacement(const LocalView& p_localView) : localView{p_localView} {
       static_assert(Ikarus::Concepts::PowerBasis<RootBasis>,
                     "You didn't pass a localview of a power basis to this method");
@@ -85,10 +84,49 @@ namespace Ikarus::FiniteElements {
       return globalIndices;
     }
 
-    const GridElementEntityType& getEntity()
-    {
-      return localView.element();
+    const GridElementEntityType& getEntity() { return localView.element(); }
+
+  private:
+    LocalView localView;
+  };
+
+  template <typename LocalView>
+  class ScalarFieldFE {
+  public:
+    using RootBasis   = typename LocalView::GlobalBasis;
+    using GlobalIndex = typename LocalView::MultiIndex;
+    explicit ScalarFieldFE(const LocalView& p_localView) : localView{p_localView} {
+      static_assert(RootBasis::PreBasis::Node::CHILDREN == 0, "This is no scalar basis!");
     }
+
+    /** \brief Type of the Pairs of gridEntities and variable tags */
+    using GridElementEntityType = typename LocalView::Element;
+    using Traits                = FETraits<GridElementEntityType>;
+
+    /** \brief Dimension of the world space */
+    static constexpr int worlddim = Traits::worlddim;
+
+    [[nodiscard]] constexpr int dofSizeImpl() const { return localView.size(); }
+
+    [[nodiscard]] std::vector<GlobalIndex> globalIndices() const {
+      const auto& fe = localView.tree().finiteElement();
+      std::vector<GlobalIndex> globalIndices;
+      for (size_t i = 0; i < fe.size(); ++i)
+        globalIndices.push_back(localView.index(localView.tree().localIndex(i)));
+
+      return globalIndices;
+    }
+
+    [[nodiscard]] std::vector<GlobalIndex> localIndices() const {
+      const auto& fe = localView.tree().finiteElement();
+      std::vector<GlobalIndex> globalIndices;
+      for (size_t i = 0; i < fe.size(); ++i)
+        globalIndices.push_back((localView.tree().localIndex(i)));
+
+      return globalIndices;
+    }
+
+    const GridElementEntityType& getEntity() { return localView.element(); }
 
   private:
     LocalView localView;

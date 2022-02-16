@@ -357,7 +357,7 @@ namespace Ikarus {
 //  };
 
 
-  template <Ikarus::Concepts::FlatIndexBasis Basis, typename FEContainer>
+  template <typename Basis, typename FEContainer> //requires Ikarus::Concepts::FlatIndexBasis<Basis>
   class DenseFlatAssembler {
   public:
     using RequirementType = typename FEContainer::value_type::FERequirementType;
@@ -385,6 +385,9 @@ namespace Ikarus {
       requirements.parameter.insert({Ikarus::FEParameter::loadfactor,lambda});
       for (auto& fe : feContainer) {
         auto matLoc      = fe.calculateMatrix(requirements);
+        std::cout<<"matLoc"<<std::endl;
+        std::cout<<matLoc<<std::endl;
+        Ikarus::utils::printContent(fe.globalIndices());
         auto globalIndices = fe.globalIndices();
         for (auto i = 0; auto idi : fe.globalIndices()) {
           for (auto j = 0; auto idj : fe.globalIndices()) {
