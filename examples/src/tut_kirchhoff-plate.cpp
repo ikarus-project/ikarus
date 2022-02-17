@@ -175,7 +175,8 @@ int main() {
   patchData = Dune::IGA::degreeElevate(patchData, 0, 1);
   patchData = Dune::IGA::degreeElevate(patchData, 1, 1);
   Grid grid(patchData);
-  for (int ref = 0; ref < 5; ++ref) {
+  grid.globalRefine(0);
+  for (int ref = 0; ref < 1; ++ref) {
     auto gridView = grid.leafGridView();
     //    draw(gridView);
     using namespace Dune::Functions::BasisFactory;
@@ -223,7 +224,7 @@ int main() {
 
     /// Create vtk writer observer, it writes the function w into a vtk file when the control routine signals
     /// SOLUTION_CHANGED
-    auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<decltype(basis)>>(basis, w, 2);
+    auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<decltype(basis)>>(basis, w, 1);
     vtkWriter->setFileNamePrefix("TestKplate");
     vtkWriter->setVertexSolutionName("displacement");
     nr.subscribeAll(nonLinearSolverObserver);
@@ -284,14 +285,14 @@ int main() {
     grid.globalRefine(1);
   }
   /// Draw L_2 error over dofs count
-  using namespace matplot;
-  auto f  = figure(true);
-  auto ax = gca();
-  ax->y_axis().label("L2_error");
-
-  ax->x_axis().label("#Dofs");
-  auto p = ax->loglog(dofsVec, l2Evcector);
-  p->line_width(2);
-  p->marker(line_spec::marker_style::asterisk);
-  show();
+//  using namespace matplot;
+//  auto f  = figure(true);
+//  auto ax = gca();
+//  ax->y_axis().label("L2_error");
+//
+//  ax->x_axis().label("#Dofs");
+//  auto p = ax->loglog(dofsVec, l2Evcector);
+//  p->line_width(2);
+//  p->marker(line_spec::marker_style::asterisk);
+//  show();
 }
