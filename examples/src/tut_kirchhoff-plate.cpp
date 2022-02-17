@@ -40,6 +40,7 @@ struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<LV>, Ikarus::AutoD
       : BaseDisp(localView),
         BaseAD(localView),
         localView_{localView},
+        geometry_{localView.element().geometry()},
         Emodul{p_Emodul},
         nu{p_nu},
         thickness{p_thickness} {}
@@ -89,7 +90,7 @@ struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<LV>, Ikarus::AutoD
       localBasis.partial({0, 2}, gp.position(), dN_etaeta);
 
       const auto Jinv
-          = Ikarus::toEigenMatrix(ele.geometry().jacobianInverseTransposed(gp.position())).transpose().eval();
+          = Ikarus::toEigenMatrix(geometry_.jacobianInverseTransposed(gp.position())).transpose().eval();
       //      std::cout << Jinv << std::endl;
       Eigen::VectorXd dN_xx(fe.size());
       Eigen::VectorXd dN_yy(fe.size());
@@ -108,7 +109,7 @@ struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<LV>, Ikarus::AutoD
       Scalar w = N.dot(wNodal);
 
       energy
-          += (0.5 * kappa.dot(D * kappa) - w * lambda) * ele.geometry().integrationElement(gp.position()) * gp.weight();
+          += (0.5 * kappa.dot(D * kappa) - w * lambda) * geometry_.integrationElement(gp.position()) * gp.weight();
     }
 
     /// Clamp boundary using penalty method
@@ -124,7 +125,7 @@ struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<LV>, Ikarus::AutoD
 //            Eigen::VectorXd dN_x(fe.size());
 //            Eigen::VectorXd dN_y(fe.size());
 //            const auto Jinv
-//                = Ikarus::toEigenMatrix(ele.geometry().jacobianInverseTransposed(gpInElement)).transpose().eval();
+//                = Ikarus::toEigenMatrix(geometry_.jacobianInverseTransposed(gpInElement)).transpose().eval();
 //            for (auto i = 0U; i < fe.size(); ++i) {
 //              dN_x[i] = dN_xi_eta[i][0][0] * Jinv(0, 0) + dN_xi_eta[i][0][1] * Jinv(0, 1);
 //              dN_y[i] = dN_xi_eta[i][0][0] * Jinv(1, 0) + dN_xi_eta[i][0][1] * Jinv(1, 1);
@@ -141,7 +142,8 @@ struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<LV>, Ikarus::AutoD
 
 private:
   LocalView localView_;
-  double Emodul;
+  typename LocalView::Element::Geometry geometry_;
+      double Emodul;
   double nu;
   double thickness;
 };
@@ -176,7 +178,7 @@ int main() {
   patchData = Dune::IGA::degreeElevate(patchData, 1, 1);
   Grid grid(patchData);
   grid.globalRefine(0);
-  for (int ref = 0; ref < 1; ++ref) {
+  for (int ref = 0; ref < 6; ++ref) {
     auto gridView = grid.leafGridView();
     //    draw(gridView);
     using namespace Dune::Functions::BasisFactory;
