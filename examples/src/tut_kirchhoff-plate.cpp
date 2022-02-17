@@ -111,29 +111,29 @@ struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<LV>, Ikarus::AutoD
     }
 
     /// Clamp boundary using penalty method
-    const double penaltyFactor = 1e8;
-    if (ele.hasBoundaryIntersections())
-      for (auto& intersection : intersections(localView_.globalBasis().gridView(), ele))
-        if (intersection.boundary()) {
-          const auto& rule1 = Dune::QuadratureRules<double, 1>::rule(intersection.type(), 2 * localBasis.order());
-          for (auto& gp : rule1) {
-            const auto& gpInElement = intersection.geometryInInside().global(gp.position());
-            std::vector<Dune::FieldMatrix<double, 1, 2>> dN_xi_eta;
-            localBasis.evaluateJacobian(gpInElement, dN_xi_eta);
-            Eigen::VectorXd dN_x(fe.size());
-            Eigen::VectorXd dN_y(fe.size());
-            const auto Jinv
-                = Ikarus::toEigenMatrix(ele.geometry().jacobianInverseTransposed(gpInElement)).transpose().eval();
-            for (auto i = 0U; i < fe.size(); ++i) {
-              dN_x[i] = dN_xi_eta[i][0][0] * Jinv(0, 0) + dN_xi_eta[i][0][1] * Jinv(0, 1);
-              dN_y[i] = dN_xi_eta[i][0][0] * Jinv(1, 0) + dN_xi_eta[i][0][1] * Jinv(1, 1);
-            }
-            const Scalar w_x = dN_x.dot(wNodal);
-            const Scalar w_y = dN_y.dot(wNodal);
-
-            energy += 0.0 * 0.5 * penaltyFactor * (w_x * w_x + w_y * w_y);
-          }
-        }
+//    const double penaltyFactor = 1e8;
+//    if (ele.hasBoundaryIntersections())
+//      for (auto& intersection : intersections(localView_.globalBasis().gridView(), ele))
+//        if (intersection.boundary()) {
+//          const auto& rule1 = Dune::QuadratureRules<double, 1>::rule(intersection.type(), 2 * localBasis.order());
+//          for (auto& gp : rule1) {
+//            const auto& gpInElement = intersection.geometryInInside().global(gp.position());
+//            std::vector<Dune::FieldMatrix<double, 1, 2>> dN_xi_eta;
+//            localBasis.evaluateJacobian(gpInElement, dN_xi_eta);
+//            Eigen::VectorXd dN_x(fe.size());
+//            Eigen::VectorXd dN_y(fe.size());
+//            const auto Jinv
+//                = Ikarus::toEigenMatrix(ele.geometry().jacobianInverseTransposed(gpInElement)).transpose().eval();
+//            for (auto i = 0U; i < fe.size(); ++i) {
+//              dN_x[i] = dN_xi_eta[i][0][0] * Jinv(0, 0) + dN_xi_eta[i][0][1] * Jinv(0, 1);
+//              dN_y[i] = dN_xi_eta[i][0][0] * Jinv(1, 0) + dN_xi_eta[i][0][1] * Jinv(1, 1);
+//            }
+//            const Scalar w_x = dN_x.dot(wNodal);
+//            const Scalar w_y = dN_y.dot(wNodal);
+//
+//            energy += 0.0 * 0.5 * penaltyFactor * (w_x * w_x + w_y * w_y);
+//          }
+//        }
 
     return energy;
   }
@@ -213,8 +213,7 @@ int main() {
     auto KFunction = [&](auto&& lambdaL, auto&& wL) -> auto& {
       return denseAssembler.getMatrix(stiffness, wL, lambdaL);
     };
-    std::cout<<KFunction(lambda,w)<<std::endl;
-    std::cout<<fintFunction(lambda,w)<<std::endl;
+
     auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, fintFunction, KFunction),
                                               parameter(lambda, w));
     /// Create linear solver from tag
@@ -237,10 +236,9 @@ int main() {
     lc.run();
 
     const double D = Emod * Dune::power(thickness, 3) / (12 * (1 - Dune::power(nu, 2)));
-    auto wxy =
-        [&](auto x,
-            auto
-                y) {  // https://en.wikipedia.org/wiki/Bending_of_plates#Simply-supported_plate_with_uniformly-distributed_load
+    // https://en.wikipedia.org/wiki/Bending_of_plates#Simply-supported_plate_with_uniformly-distributed_load
+    auto wxy = [&](auto x,
+            auto y) {
           double w                = 0.0;
           const int seriesFactors = 40;
           const double pi         = std::numbers::pi;
@@ -282,14 +280,14 @@ int main() {
     dofsVec.push_back(basis.size());
     l2Evcector.push_back(l2_error);
   }
-  using namespace matplot;
-  auto f  = figure(true);
-  auto ax = gca();
-  ax->y_axis().label("L2_error");
-
-  ax->x_axis().label("#Dofs");
-  auto p = ax->loglog(dofsVec, l2Evcector);
-  p->line_width(2);
-  p->marker(line_spec::marker_style::asterisk);
-  show();
+//  using namespace matplot;
+//  auto f  = figure(true);
+//  auto ax = gca();
+//  ax->y_axis().label("L2_error");
+//
+//  ax->x_axis().label("#Dofs");
+//  auto p = ax->loglog(dofsVec, l2Evcector);
+//  p->line_width(2);
+//  p->marker(line_spec::marker_style::asterisk);
+//  show();
 }
