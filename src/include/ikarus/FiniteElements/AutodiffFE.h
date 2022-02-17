@@ -49,7 +49,7 @@ namespace Ikarus {
   public:
     //    using LocalView = typename RealElement::LocalView;
     using Traits = TraitsFromLocalView<LocalView>;
-    AutoDiffFEClean(const LocalView& localView) : localView_{localView} {}
+    explicit AutoDiffFEClean(const LocalView& localView) : localView_{localView} {}
     using FERequirementType = FErequirements<Eigen::VectorXd>;
     [[nodiscard]] typename Traits::MatrixType calculateMatrix(const FERequirementType& par) const {
       Eigen::VectorXdual2nd dx(localView_.size());

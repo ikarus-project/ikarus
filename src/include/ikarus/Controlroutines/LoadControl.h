@@ -48,6 +48,7 @@ namespace Ikarus {
         loadParameter += stepSize_;
         this->notify(ControlMessages::STEP_ENDED);
       }
+      this->notify(ControlMessages::CONTROL_ENDED);
     }
 
   private:
