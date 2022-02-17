@@ -21,6 +21,7 @@
 #include "ikarus/utils/Observer/controlVTKWriter.h"
 #include "ikarus/utils/Observer/nonLinearSolverLogger.h"
 #include "ikarus/utils/utils/algorithms.h"
+#include "ikarus/utils/Observer/LoadControlObserver.h"
 #include <ikarus/Assembler/SimpleAssemblers.h>
 #include <ikarus/FiniteElements/AutodiffFE.h>
 #include <ikarus/FiniteElements/FEPolicies.h>
@@ -57,12 +58,12 @@ struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<LV>, Ikarus::AutoD
 
   template <class Scalar>
   Scalar calculateScalarImpl(const FERequirementType& par, const Eigen::VectorX<Scalar>& dx) const {
-    const auto& wGlobal      = par.sols[0].get();
-    const auto& lambda = par.parameter.at(Ikarus::FEParameter::loadfactor);
-    const auto D       = constitutiveMatrix(Emodul, nu, thickness);
-    Scalar energy      = 0.0;
-    auto& ele          = localView_.element();
-    auto& fe           = localView_.tree().finiteElement();
+    const auto& wGlobal = par.sols[0].get();
+    const auto& lambda  = par.parameter.at(Ikarus::FEParameter::loadfactor);
+    const auto D        = constitutiveMatrix(Emodul, nu, thickness);
+    Scalar energy       = 0.0;
+    auto& ele           = localView_.element();
+    auto& fe            = localView_.tree().finiteElement();
     Eigen::VectorX<Scalar> wNodal;
     wNodal.setZero(fe.size());
     for (auto i = 0U; i < fe.size(); ++i)
@@ -174,15 +175,14 @@ int main() {
   patchData = Dune::IGA::degreeElevate(patchData, 0, 1);
   patchData = Dune::IGA::degreeElevate(patchData, 1, 1);
   Grid grid(patchData);
-  for (int ref = 0; ref < 4; ++ref) {
-    grid.globalRefine(0);
+  for (int ref = 0; ref < 5; ++ref) {
     auto gridView = grid.leafGridView();
     //    draw(gridView);
     using namespace Dune::Functions::BasisFactory;
     /// Create nurbs basis with extracted preBase from grid
     auto basis = makeBasis(gridView, gridView.getPreBasis());
+    /// Fix complete boundary (simply supported plate)
     std::vector<bool> dirichletFlags(basis.size(), false);
-
     Dune::Functions::forEachBoundaryDOF(basis, [&](auto&& index) { dirichletFlags[index] = true; });
 
     /// Create finite elements
@@ -213,7 +213,6 @@ int main() {
     auto KFunction = [&](auto&& lambdaL, auto&& wL) -> auto& {
       return denseAssembler.getMatrix(stiffness, wL, lambdaL);
     };
-
     auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, fintFunction, KFunction),
                                               parameter(lambda, w));
     /// Create linear solver from tag
@@ -229,36 +228,39 @@ int main() {
     vtkWriter->setVertexSolutionName("displacement");
     nr.subscribeAll(nonLinearSolverObserver);
 
+    /// Run Load control
     const double totalLoad = 2000;
     auto lc                = Ikarus::LoadControl(std::move(nr), 1, {0, totalLoad});
-
-    lc.subscribeAll(vtkWriter);
+    auto loadControlObserver = std::make_shared<Ikarus::LoadControlObserver>();
+    lc.subscribeAll({vtkWriter,loadControlObserver});
     lc.run();
 
+    /// Create analytical solution function for the simply supported case
     const double D = Emod * Dune::power(thickness, 3) / (12 * (1 - Dune::power(nu, 2)));
     // https://en.wikipedia.org/wiki/Bending_of_plates#Simply-supported_plate_with_uniformly-distributed_load
-    auto wxy = [&](auto x,
-            auto y) {
-          double w                = 0.0;
-          const int seriesFactors = 40;
-          const double pi         = std::numbers::pi;
-          auto isOdd              = std::views::filter([](auto i) { return i % 2 != 0; });
-          auto oddFactors         = std::ranges::iota_view(1, seriesFactors) | isOdd;
-          for (auto m : oddFactors)
-            for (auto n : oddFactors)
-              w += sin(m * pi * x / Lx) * sin(n * pi * y / Ly)
-                   / (m * n * Dune::power(m * m / (Lx * Lx) + n * n / (Ly * Ly), 2));
+    auto wxy = [&](auto x, auto y) {
+      double w                = 0.0;
+      const int seriesFactors = 40;
+      const double pi         = std::numbers::pi;
+      auto oddFactors         = std::ranges::iota_view(1, seriesFactors) | std::views::filter([](auto i) { return i % 2 != 0; });
+      for (auto m : oddFactors)
+        for (auto n : oddFactors)
+          w += sin(m * pi * x / Lx) * sin(n * pi * y / Ly)
+               / (m * n * Dune::power(m * m / (Lx * Lx) + n * n / (Ly * Ly), 2));
 
-          return 16 * totalLoad / (Dune::power(pi, 6) * D) * w;
-        };
+      return 16 * totalLoad / (Dune::power(pi, 6) * D) * w;
+    };
     //    std::cout << wxy(Lx / 2.0, Ly / 2.0) << std::endl;
 
+    /// Displacement at center of clamped square plate
     const double wCenterClamped = 1.265319087
                                   / (D / (totalLoad * Dune::power(Lx, 4))
                                      * 1000.0);  // clamped sol http://faculty.ce.berkeley.edu/rlt/reports/clamp.pdf
                                                  //    std::cout << wCenterClamped << std::endl;
     auto disp       = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 1>>(basis, w);
     auto localDisp  = localFunction(disp);
+
+    /// Calculate L_2 error for simply supported case
     double l2_error = 0.0;
     for (auto& ele : elements(gridView)) {
       localView.bind(ele);
@@ -279,15 +281,17 @@ int main() {
     std::cout << "l2_error: " << l2_error << " Dofs:: " << basis.size() << std::endl;
     dofsVec.push_back(basis.size());
     l2Evcector.push_back(l2_error);
+    grid.globalRefine(1);
   }
-//  using namespace matplot;
-//  auto f  = figure(true);
-//  auto ax = gca();
-//  ax->y_axis().label("L2_error");
-//
-//  ax->x_axis().label("#Dofs");
-//  auto p = ax->loglog(dofsVec, l2Evcector);
-//  p->line_width(2);
-//  p->marker(line_spec::marker_style::asterisk);
-//  show();
+  /// Draw L_2 error over dofs count
+  using namespace matplot;
+  auto f  = figure(true);
+  auto ax = gca();
+  ax->y_axis().label("L2_error");
+
+  ax->x_axis().label("#Dofs");
+  auto p = ax->loglog(dofsVec, l2Evcector);
+  p->line_width(2);
+  p->marker(line_spec::marker_style::asterisk);
+  show();
 }

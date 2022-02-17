@@ -46,6 +46,7 @@ namespace Ikarus {
     using NonLinearOperator = NonLinearOperatorImpl;
 
     void setup(const NonlinearSolverSettings& p_settings) { settings = p_settings; }
+
     struct NoPredictor {};
     template <typename SolutionType = NoPredictor>
     requires std::is_same_v<SolutionType, NoPredictor> || std::is_same_v<SolutionType,
