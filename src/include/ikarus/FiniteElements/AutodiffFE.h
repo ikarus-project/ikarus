@@ -65,6 +65,15 @@ namespace Ikarus {
       return gradient(f, wrt(dx), at(dx));
     }
 
+    [[nodiscard]] auto calculateLocalSystem(const FERequirementType& par) const {
+      Eigen::VectorXdual2nd dx(localView_.size());
+      dx.setZero();
+      auto f = [&](auto& x) { return this->underlying().calculateScalarImpl(par, x); };
+      Eigen::VectorXd g;
+      Eigen::MatrixXd h = hessian(f, wrt(dx), at(dx),g);
+      return std::make_tuple(h,g);
+    }
+
     [[nodiscard]] typename Traits::ScalarType calculateScalar(const FERequirementType& par) const {
       Eigen::VectorXd dx(localView_.size());
 

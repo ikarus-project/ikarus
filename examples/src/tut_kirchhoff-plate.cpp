@@ -18,10 +18,10 @@
 #include "ikarus/Controlroutines/LoadControl.h"
 #include "ikarus/LocalBasis/localBasis.h"
 #include "ikarus/Solver/NonLinearSolver/NewtonRaphson.hpp"
+#include "ikarus/utils/Observer/LoadControlObserver.h"
 #include "ikarus/utils/Observer/controlVTKWriter.h"
 #include "ikarus/utils/Observer/nonLinearSolverLogger.h"
 #include "ikarus/utils/utils/algorithms.h"
-#include "ikarus/utils/Observer/LoadControlObserver.h"
 #include <ikarus/Assembler/SimpleAssemblers.h>
 #include <ikarus/FiniteElements/AutodiffFE.h>
 #include <ikarus/FiniteElements/FEPolicies.h>
@@ -89,8 +89,7 @@ struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<LV>, Ikarus::AutoD
       localBasis.partial({1, 1}, gp.position(), dN_xieta);
       localBasis.partial({0, 2}, gp.position(), dN_etaeta);
 
-      const auto Jinv
-          = Ikarus::toEigenMatrix(geometry_.jacobianInverseTransposed(gp.position())).transpose().eval();
+      const auto Jinv = Ikarus::toEigenMatrix(geometry_.jacobianInverseTransposed(gp.position())).transpose().eval();
       //      std::cout << Jinv << std::endl;
       Eigen::VectorXd dN_xx(fe.size());
       Eigen::VectorXd dN_yy(fe.size());
@@ -108,34 +107,33 @@ struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<LV>, Ikarus::AutoD
       kappa(2) = 2 * dN_xy.dot(wNodal);
       Scalar w = N.dot(wNodal);
 
-      energy
-          += (0.5 * kappa.dot(D * kappa) - w * lambda) * geometry_.integrationElement(gp.position()) * gp.weight();
+      energy += (0.5 * kappa.dot(D * kappa) - w * lambda) * geometry_.integrationElement(gp.position()) * gp.weight();
     }
 
     /// Clamp boundary using penalty method
-//    const double penaltyFactor = 1e8;
-//    if (ele.hasBoundaryIntersections())
-//      for (auto& intersection : intersections(localView_.globalBasis().gridView(), ele))
-//        if (intersection.boundary()) {
-//          const auto& rule1 = Dune::QuadratureRules<double, 1>::rule(intersection.type(), 2 * localBasis.order());
-//          for (auto& gp : rule1) {
-//            const auto& gpInElement = intersection.geometryInInside().global(gp.position());
-//            std::vector<Dune::FieldMatrix<double, 1, 2>> dN_xi_eta;
-//            localBasis.evaluateJacobian(gpInElement, dN_xi_eta);
-//            Eigen::VectorXd dN_x(fe.size());
-//            Eigen::VectorXd dN_y(fe.size());
-//            const auto Jinv
-//                = Ikarus::toEigenMatrix(geometry_.jacobianInverseTransposed(gpInElement)).transpose().eval();
-//            for (auto i = 0U; i < fe.size(); ++i) {
-//              dN_x[i] = dN_xi_eta[i][0][0] * Jinv(0, 0) + dN_xi_eta[i][0][1] * Jinv(0, 1);
-//              dN_y[i] = dN_xi_eta[i][0][0] * Jinv(1, 0) + dN_xi_eta[i][0][1] * Jinv(1, 1);
-//            }
-//            const Scalar w_x = dN_x.dot(wNodal);
-//            const Scalar w_y = dN_y.dot(wNodal);
-//
-//            energy += 0.0 * 0.5 * penaltyFactor * (w_x * w_x + w_y * w_y);
-//          }
-//        }
+    //    const double penaltyFactor = 1e8;
+    //    if (ele.hasBoundaryIntersections())
+    //      for (auto& intersection : intersections(localView_.globalBasis().gridView(), ele))
+    //        if (intersection.boundary()) {
+    //          const auto& rule1 = Dune::QuadratureRules<double, 1>::rule(intersection.type(), 2 * localBasis.order());
+    //          for (auto& gp : rule1) {
+    //            const auto& gpInElement = intersection.geometryInInside().global(gp.position());
+    //            std::vector<Dune::FieldMatrix<double, 1, 2>> dN_xi_eta;
+    //            localBasis.evaluateJacobian(gpInElement, dN_xi_eta);
+    //            Eigen::VectorXd dN_x(fe.size());
+    //            Eigen::VectorXd dN_y(fe.size());
+    //            const auto Jinv
+    //                = Ikarus::toEigenMatrix(geometry_.jacobianInverseTransposed(gpInElement)).transpose().eval();
+    //            for (auto i = 0U; i < fe.size(); ++i) {
+    //              dN_x[i] = dN_xi_eta[i][0][0] * Jinv(0, 0) + dN_xi_eta[i][0][1] * Jinv(0, 1);
+    //              dN_y[i] = dN_xi_eta[i][0][0] * Jinv(1, 0) + dN_xi_eta[i][0][1] * Jinv(1, 1);
+    //            }
+    //            const Scalar w_x = dN_x.dot(wNodal);
+    //            const Scalar w_y = dN_y.dot(wNodal);
+    //
+    //            energy += 0.0 * 0.5 * penaltyFactor * (w_x * w_x + w_y * w_y);
+    //          }
+    //        }
 
     return energy;
   }
@@ -143,7 +141,7 @@ struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<LV>, Ikarus::AutoD
 private:
   LocalView localView_;
   typename LocalView::Element::Geometry geometry_;
-      double Emodul;
+  double Emodul;
   double nu;
   double thickness;
 };
@@ -178,7 +176,7 @@ int main() {
   patchData = Dune::IGA::degreeElevate(patchData, 1, 1);
   Grid grid(patchData);
   grid.globalRefine(0);
-  for (int ref = 0; ref < 6; ++ref) {
+  for (int ref = 0; ref < 5; ++ref) {
     auto gridView = grid.leafGridView();
     //    draw(gridView);
     using namespace Dune::Functions::BasisFactory;
@@ -228,14 +226,14 @@ int main() {
     /// SOLUTION_CHANGED
     auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<decltype(basis)>>(basis, w, 1);
     vtkWriter->setFileNamePrefix("TestKplate");
-    vtkWriter->setVertexSolutionName("displacement");
+    vtkWriter->setFieldInfo("w",Dune::VTK::FieldInfo::Type::scalar,1);
     nr.subscribeAll(nonLinearSolverObserver);
 
     /// Run Load control
-    const double totalLoad = 2000;
-    auto lc                = Ikarus::LoadControl(std::move(nr), 1, {0, totalLoad});
+    const double totalLoad   = 2000;
+    auto lc                  = Ikarus::LoadControl(std::move(nr), 1, {0, totalLoad});
     auto loadControlObserver = std::make_shared<Ikarus::LoadControlObserver>();
-    lc.subscribeAll({vtkWriter,loadControlObserver});
+    lc.subscribeAll({vtkWriter, loadControlObserver});
     lc.run();
 
     /// Create analytical solution function for the simply supported case
@@ -245,7 +243,8 @@ int main() {
       double w                = 0.0;
       const int seriesFactors = 40;
       const double pi         = std::numbers::pi;
-      auto oddFactors         = std::ranges::iota_view(1, seriesFactors) | std::views::filter([](auto i) { return i % 2 != 0; });
+      auto oddFactors
+          = std::ranges::iota_view(1, seriesFactors) | std::views::filter([](auto i) { return i % 2 != 0; });
       for (auto m : oddFactors)
         for (auto n : oddFactors)
           w += sin(m * pi * x / Lx) * sin(n * pi * y / Ly)
@@ -256,12 +255,11 @@ int main() {
     //    std::cout << wxy(Lx / 2.0, Ly / 2.0) << std::endl;
 
     /// Displacement at center of clamped square plate
-    const double wCenterClamped = 1.265319087
-                                  / (D / (totalLoad * Dune::power(Lx, 4))
-                                     * 1000.0);  // clamped sol http://faculty.ce.berkeley.edu/rlt/reports/clamp.pdf
-                                                 //    std::cout << wCenterClamped << std::endl;
-    auto disp       = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 1>>(basis, w);
-    auto localDisp  = localFunction(disp);
+    // clamped sol http://faculty.ce.berkeley.edu/rlt/reports/clamp.pdf
+    const double wCenterClamped = 1.265319087 / (D / (totalLoad * Dune::power(Lx, 4)) * 1000.0);
+    //    std::cout << wCenterClamped << std::endl;
+    auto disp      = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 1>>(basis, w);
+    auto localDisp = localFunction(disp);
 
     /// Calculate L_2 error for simply supported case
     double l2_error = 0.0;
@@ -287,14 +285,14 @@ int main() {
     grid.globalRefine(1);
   }
   /// Draw L_2 error over dofs count
-//  using namespace matplot;
-//  auto f  = figure(true);
-//  auto ax = gca();
-//  ax->y_axis().label("L2_error");
-//
-//  ax->x_axis().label("#Dofs");
-//  auto p = ax->loglog(dofsVec, l2Evcector);
-//  p->line_width(2);
-//  p->marker(line_spec::marker_style::asterisk);
-//  show();
+  //  using namespace matplot;
+  //  auto f  = figure(true);
+  //  auto ax = gca();
+  //  ax->y_axis().label("L2_error");
+  //
+  //  ax->x_axis().label("#Dofs");
+  //  auto p = ax->loglog(dofsVec, l2Evcector);
+  //  p->line_width(2);
+  //  p->marker(line_spec::marker_style::asterisk);
+  //  show();
 }
