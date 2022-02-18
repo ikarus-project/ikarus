@@ -49,6 +49,30 @@ struct Truss {
     return energy;
   }
 
+  template <typename LocalView>
+  static double calculateNormalForce(const LocalView& localView, const Eigen::VectorXd& d, bool pk2)
+  {
+    auto& ele     = localView.element();
+    const auto X1 = Ikarus::toEigenVector(ele.geometry().corner(0));
+    const auto X2 = Ikarus::toEigenVector(ele.geometry().corner(1));
+
+    Eigen::Matrix<double, 2, 2> u;
+    u.setZero();
+    for (int i = 0; i < 2; ++i)
+      for (int k2 = 0; k2 < 2; ++k2)
+        u.col(i)(k2) = d[localView.index(localView.tree().child(k2).localIndex(i))[0]];
+
+    const Eigen::Vector2<double> x1 = X1 + u.col(0);
+    const Eigen::Vector2<double> x2 = X2 + u.col(1);
+
+    const double LRefsquared = (X1 - X2).squaredNorm();
+    const double lsquared    = (x1 - x2).squaredNorm();
+
+    const double Egl = 0.5 * (lsquared - LRefsquared) / LRefsquared;
+    double N = pk2==true ? EA * Egl : sqrt(lsquared)/sqrt(LRefsquared) * EA* Egl;
+    return N;
+  }
+
 };
 
 int main() {
@@ -89,6 +113,7 @@ int main() {
     Eigen::Matrix<double, 2, 2> Kred = K({2, 3}, {2, 3});
     Eigen::Vector<double, 2> Rred    = R({2, 3});
     Rred[1] -= -lambda;
+    Rred[0] -= -lambda;
     return std::make_tuple(Kred, Rred);
   };
 

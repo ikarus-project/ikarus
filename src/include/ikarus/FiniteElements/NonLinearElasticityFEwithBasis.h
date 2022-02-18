@@ -31,8 +31,8 @@
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/geometry/type.hh>
 
-#include "ikarus/utils/LinearAlgebraHelper.h"
 #include "ikarus/LocalBasis/localBasis.h"
+#include "ikarus/utils/LinearAlgebraHelper.h"
 #include <ikarus/FiniteElements/FEPolicies.h>
 #include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
@@ -40,78 +40,59 @@
 #include <ikarus/Geometries/GeometryWithExternalInput.h>
 #include <ikarus/Variables/VariableDefinitions.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
-
-namespace Ikarus::Variable {
-  class IVariable;
-}
+#include <ikarus/FiniteElements/AutodiffFE.h>
 
 namespace Ikarus::FiniteElements {
 
   template <typename LocalView>
-  class NonLinearElasticityFEWithLocalBasis : FEDisplacement<LocalView> {
+  class NonLinearElasticityFEWithLocalBasis : public FEDisplacement<LocalView>, public Ikarus::AutoDiffFEClean<NonLinearElasticityFEWithLocalBasis<LocalView>, LocalView> {
   public:
-        using Base = FEDisplacement<LocalView>;
-        using Base::globalIndices;
-        using FERequirementType = FErequirements<Eigen::VectorXd>;
+    using BaseDisp          = Ikarus::FiniteElements::FEDisplacement<LocalView>;
+    using BaseAD            = Ikarus::AutoDiffFEClean<NonLinearElasticityFEWithLocalBasis<LocalView>, LocalView>;
+    friend BaseAD ;
+    using FERequirementType = FErequirements<Eigen::VectorXd>;
     NonLinearElasticityFEWithLocalBasis(LocalView& localView, double emod, double nu)
-        : Base(localView), localView_{&localView}, emod_{emod}, nu_{nu} {}
+        :  BaseDisp(localView), BaseAD(localView), localView_{localView}, emod_{emod}, nu_{nu} {}
 
     using Traits = TraitsFromLocalView<LocalView>;
     template <typename ST>
     using DefoGeo = Ikarus::Geometry::GeometryWithExternalInput<ST, Traits::mydim, Traits::dimension>;
 
-    [[nodiscard]] typename Traits::MatrixType calculateMatrix(const FERequirementType &par) const {
-      Eigen::VectorXdual2nd dx(localView_->size());
-      dx.setZero();
-      auto f = [&](auto& x) { return calculateScalarImpl<autodiff::dual2nd>(par.sols[0], par.parameter.at(FEParameter::loadfactor), x); };
-      return hessian(f, wrt(dx), at(dx));
-    }
-
-    [[nodiscard]] typename Traits::VectorType calculateVector(const FERequirementType &par) const {
-      Eigen::VectorXdual dx(localView_->size());
-      dx.setZero();
-      auto f = [&](auto& x) { return calculateScalarImpl<autodiff::dual>(par.sols[0], par.parameter.at(FEParameter::loadfactor), x); };
-      return gradient(f, wrt(dx), at(dx));
-    }
-
-    [[nodiscard]] typename Traits::ScalarType calculateScalar(const FERequirementType &par) const {
-      Eigen::VectorXd dx(localView_->size());
-      return calculateScalarImpl(par.sols[0], par.parameter.at(FEParameter::loadfactor), dx);
-    }
-
   private:
     template <class ScalarType>
-    ScalarType calculateScalarImpl([[maybe_unused]] const Eigen::VectorXd& displacements, const double& lambda,
+    ScalarType calculateScalarImpl(const FERequirementType& par,
                                    Eigen::VectorX<ScalarType>& dx) const {
-      Eigen::VectorX<ScalarType> localDisp(localView_->size());
+      const auto& d      = par.sols[0].get();
+      const auto& lambda = par.parameter.at(FEParameter::loadfactor);
+      Eigen::VectorX<ScalarType> localDisp(localView_.size());
       localDisp.setZero();
-      auto& first_child = localView_->tree().child(0);
+      auto& first_child = localView_.tree().child(0);
       const auto& fe    = first_child.finiteElement();
       Eigen::Matrix<ScalarType, Traits::dimension, Eigen::Dynamic> disp;
       disp.setZero(Eigen::NoChange, fe.size());
       for (auto i = 0U; i < fe.size(); ++i)
         for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
-          disp.col(i)(k2) = dx[i*2+k2]
-                            + displacements[localView_->index(localView_->tree().child(k2).localIndex(i))[0]];
+          disp.col(i)(k2)
+              = dx[i * 2 + k2] + d[localView_.index(localView_.tree().child(k2).localIndex(i))[0]];
       ScalarType energy = 0.0;
 
-      const int order = 2 * (fe.localBasis().order());
-      const auto& rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_->element().type(), order);
+      const int order  = 2 * (fe.localBasis().order());
+      const auto& rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
       Eigen::Matrix3<ScalarType> C;
       C.setZero();
       C(0, 0) = C(1, 1) = 1;
       C(0, 1) = C(1, 0) = nu_;
       C(2, 2)           = (1 - nu_) / 2;
       C *= emod_ / (1 - nu_ * nu_);
-      const auto geo = localView_->element().geometry();
+      const auto geo = localView_.element().geometry();
       Ikarus::LocalBasis localBasis(fe.localBasis());
       Eigen::Matrix<double, Eigen::Dynamic, Traits::mydim> dN;
       Eigen::VectorXd N;
       for (auto& gp : rule) {
         const auto J = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
-        localBasis.evaluateFunctionAndJacobian(gp.position(),N,dN);
-        const Eigen::Vector<double, Traits::worlddim> X     = toEigenVector(geo.global(gp.position()));
-        Eigen::Vector<ScalarType, Traits::worlddim> x = X;
+        localBasis.evaluateFunctionAndJacobian(gp.position(), N, dN);
+        const Eigen::Vector<double, Traits::worlddim> X = toEigenVector(geo.global(gp.position()));
+        Eigen::Vector<ScalarType, Traits::worlddim> x   = X;
         for (int i = 0; i < N.size(); ++i)
           x += disp.col(i) * N[i];
 
@@ -129,7 +110,7 @@ namespace Ikarus::FiniteElements {
       return energy;
     }
 
-    LocalView const* localView_;
+    LocalView localView_;
     double emod_;
     double nu_;
   };

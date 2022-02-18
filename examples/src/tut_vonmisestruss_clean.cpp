@@ -34,26 +34,28 @@ template <typename LV>
 struct Truss : Ikarus::FiniteElements::FEDisplacement<LV>, Ikarus::AutoDiffFEClean<Truss<LV>, LV> {
   using BaseDisp          = Ikarus::FiniteElements::FEDisplacement<LV>;
   using BaseAD            = Ikarus::AutoDiffFEClean<Truss<LV>, LV>;
+  friend BaseAD ;
   using LocalView         = LV;
   using FERequirementType = typename BaseAD::FERequirementType;
   using Traits            = TraitsFromLocalView<LocalView>;
   Truss(const LocalView& localView, double p_EA)
       : BaseDisp(localView), BaseAD(localView), localView_{localView}, EA{p_EA} {}
 
+private:
   template <class Scalar>
-  Scalar calculateScalarImpl(const FERequirementType &par,const Eigen::VectorX<Scalar>& dx) const  {
-    const auto& d = par.sols[0].get();
+  Scalar calculateScalarImpl(const FERequirementType& par, const Eigen::VectorX<Scalar>& dx) const {
+    const auto& d      = par.sols[0].get();
     const auto& lambda = par.parameter.at(FEParameter::loadfactor);
 
     auto& ele     = localView_.element();
     const auto X1 = Ikarus::toEigenVector(ele.geometry().corner(0));
     const auto X2 = Ikarus::toEigenVector(ele.geometry().corner(1));
 
-    Eigen::Matrix<Scalar, 2, 2> u;
+    Eigen::Matrix<Scalar, Traits::worlddim, 2> u;
     u.setZero();
     for (int i = 0; i < 2; ++i)
-      for (int k2 = 0; k2 < 2; ++k2)
-        u.col(i)(k2) = dx[2*i+k2] + d[localView_.index(localView_.tree().child(k2).localIndex(i))[0]];
+      for (int k2 = 0; k2 < Traits::worlddim; ++k2)
+        u.col(i)(k2) = dx[Traits::worlddim * i + k2] + d[localView_.index(localView_.tree().child(k2).localIndex(i))[0]];
 
     const Eigen::Vector2<Scalar> x1 = X1 + u.col(0);
     const Eigen::Vector2<Scalar> x2 = X2 + u.col(1);
@@ -90,17 +92,17 @@ int main() {
   auto basis = makeBasis(gridView, power<2>(lagrange<1>(), FlatInterleaved()));
 
   /// Create finite elements
-  auto localView = basis.localView();
-  const double EA      = 100;
+  auto localView  = basis.localView();
+  const double EA = 100;
   std::vector<Truss<decltype(localView)>> fes;
   for (auto& ele : elements(gridView)) {
     localView.bind(ele);
     fes.emplace_back(localView, EA);
   }
 
-  /// Fix dirichlet nodes
-  std::vector<bool> dirichletFlags(basis.size());
-  std::fill(dirichletFlags.begin(), dirichletFlags.end(), false);
+  /// Collect dirichlet nodes
+  std::vector<bool> dirichletFlags(basis.size(),false);
+//  std::fill(dirichletFlags.begin(), dirichletFlags.end(), false);
   Dune::Functions::forEachBoundaryDOF(basis, [&](auto&& index) { dirichletFlags[index] = true; });
 
   /// Create assembler
@@ -137,15 +139,15 @@ int main() {
   lambdaAndDisp.setZero(Eigen::NoChange, loadSteps + 1);
   /// Create Observer which executes when control routines messages SOLUTION_CHANGED
   auto lvkObserver = std::make_shared<Ikarus::GenericControlObserver>(ControlMessages::SOLUTION_CHANGED, [&](int step) {
-          lambdaAndDisp(0, step) = lambda;
-          lambdaAndDisp(1, step) = d[2];
-          lambdaAndDisp(2, step) = d[3];
-        });
+    lambdaAndDisp(0, step) = lambda;
+    lambdaAndDisp(1, step) = d[2];
+    lambdaAndDisp(2, step) = d[3];
+  });
 
   /// Create Observer which writes vtk files when control routines messages SOLUTION_CHANGED
   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<decltype(basis)>>(basis, d, 2);
+  vtkWriter->setFieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2);
   vtkWriter->setFileNamePrefix("TestTruss");
-  vtkWriter->setVertexSolutionName("displacement");
   nr.subscribeAll(nonLinearSolverObserver);
 
   /// Create loadcontrol

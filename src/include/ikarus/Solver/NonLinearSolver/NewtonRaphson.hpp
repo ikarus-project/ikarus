@@ -71,7 +71,6 @@ namespace Ikarus {
           const Eigen::VectorXd D = -linearSolver.solve(rx);
           dNorm                   = D.norm();
           updateFunction(x, D);
-
         } else {
           const auto D = -linearSolver(rx, Ax);
           dNorm        = D;
