@@ -41,8 +41,8 @@ int main() {
   using ControlPoint = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointType;
 
   const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {0, 0}, .w = 5}, {.p = {0.5, 0}, .w = 1}, {.p = {1, 0}, .w = 1}},
-         {{.p = {0, 0.5}, .w = 1}, {.p = {0.5, 0.5}, .w = 10}, {.p = {1, 0.5}, .w = 1}},
+      = {{{.p = {0, 0}, .w = 1}, {.p = {0.5, 0}, .w = 1}, {.p = {1, 0}, .w = 1}},
+         {{.p = {0, 0.5}, .w = 1}, {.p = {0.5, 0.5}, .w = 1}, {.p = {1, 0.5}, .w = 1}},
          {{.p = {0, 1}, .w = 1}, {.p = {0.5, 1}, .w = 1}, {.p = {1, 1}, .w = 1}}};
 
   std::array<int, gridDim> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
@@ -81,11 +81,10 @@ int main() {
 
   draw(gridView);
   auto localView = basis.localView();
-  std::vector<Ikarus::FiniteElements::NonLinearElasticityFEWithLocalBasis<decltype(localView)>> fes;
-  for (auto& element : elements(gridView)) {
-    localView.bind(element);
-    fes.emplace_back(localView, 1000, 0.3);
-  }
+  std::vector<Ikarus::FiniteElements::NonLinearElasticityFEWithLocalBasis<decltype(basis)>> fes;
+  for (auto& element : elements(gridView))
+    fes.emplace_back(basis,element, 1000, 0.3);
+
 
   std::vector<bool> dirichletFlags(basis.size(), false);
 
