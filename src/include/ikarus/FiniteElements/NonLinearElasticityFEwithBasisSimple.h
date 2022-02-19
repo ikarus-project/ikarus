@@ -112,10 +112,11 @@ namespace Ikarus::FiniteElements {
       for (auto& gp : rule) {
         const auto J = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
         localBasis.evaluateFunctionAndJacobian(gp.position(),N,dN);
-        Eigen::Vector<ScalarType, Traits::worlddim> u;
-        u.setZero();
+        const Eigen::Vector<double, Traits::worlddim> X     = toEigenVector(geo.global(gp.position()));
+        Eigen::Vector<ScalarType, Traits::worlddim> x = X;
+
         for (int i = 0; i < N.size(); ++i)
-          u += disp.col(i) * N[i];
+          x += disp.col(i) * N[i];
 
         dN *= J.inverse();
         const auto H      = DefoGeo<ScalarType>::jacobianTransposed(dN, disp).eval();
@@ -126,7 +127,7 @@ namespace Ikarus::FiniteElements {
         fext.setZero();
         fext[1] = lambda;
         fext[0] = lambda;
-        energy += (EVoigt.dot(C * EVoigt) - u.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
+        energy += (EVoigt.dot(C * EVoigt) - x.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
       }
       return energy;
     }

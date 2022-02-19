@@ -44,12 +44,14 @@ namespace Ikarus {
     }
   };
 
-  template <typename RealElement, typename LocalView>
+  template <typename RealElement, typename Basis>
   class AutoDiffFEClean {
   public:
-    //    using LocalView = typename RealElement::LocalView;
+    using LocalView = typename Basis::LocalView;
     using Traits = TraitsFromLocalView<LocalView>;
-    explicit AutoDiffFEClean(const LocalView& localView) : localView_{localView} {}
+    explicit AutoDiffFEClean(const Basis& basis,typename LocalView::Element& element) : localView_{basis.localView()} {
+      localView_.bind(element);
+    }
     using FERequirementType = FErequirements<Eigen::VectorXd>;
     [[nodiscard]] typename Traits::MatrixType calculateMatrix(const FERequirementType& par) const {
       Eigen::VectorXdual2nd dx(localView_.size());

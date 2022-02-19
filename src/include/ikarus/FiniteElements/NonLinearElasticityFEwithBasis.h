@@ -44,15 +44,19 @@
 
 namespace Ikarus::FiniteElements {
 
-  template <typename LocalView>
-  class NonLinearElasticityFEWithLocalBasis : public FEDisplacement<LocalView>, public Ikarus::AutoDiffFEClean<NonLinearElasticityFEWithLocalBasis<LocalView>, LocalView> {
+  template <typename Basis>
+  class NonLinearElasticityFEWithLocalBasis : public FEDisplacement<Basis>, public Ikarus::AutoDiffFEClean<NonLinearElasticityFEWithLocalBasis<Basis>, Basis> {
   public:
-    using BaseDisp          = Ikarus::FiniteElements::FEDisplacement<LocalView>;
-    using BaseAD            = Ikarus::AutoDiffFEClean<NonLinearElasticityFEWithLocalBasis<LocalView>, LocalView>;
+    using BaseDisp          = Ikarus::FiniteElements::FEDisplacement<Basis>; //Handles globalIndices function
+    using BaseAD            = Ikarus::AutoDiffFEClean<NonLinearElasticityFEWithLocalBasis<Basis>, Basis>;
     friend BaseAD ;
     using FERequirementType = FErequirements<Eigen::VectorXd>;
-    NonLinearElasticityFEWithLocalBasis(LocalView& localView, double emod, double nu)
-        :  BaseDisp(localView), BaseAD(localView), localView_{localView}, emod_{emod}, nu_{nu} {}
+    using LocalView = typename Basis::LocalView;
+    NonLinearElasticityFEWithLocalBasis(Basis& globalBasis,typename LocalView::Element& element, double emod, double nu)
+        :  BaseDisp(globalBasis,element), BaseAD(globalBasis,element), localView_{globalBasis.localView()}, emod_{emod}, nu_{nu} {
+
+      localView_.bind(element);
+    }
 
     using Traits = TraitsFromLocalView<LocalView>;
     template <typename ST>
@@ -104,7 +108,7 @@ namespace Ikarus::FiniteElements {
         Eigen::Vector<double, Traits::worlddim> fext;
         fext.setZero();
         fext[1] = lambda;
-        fext[0] = lambda;
+        fext[0] = lambda*0;
         energy += (EVoigt.dot(C * EVoigt) - x.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
       }
       return energy;

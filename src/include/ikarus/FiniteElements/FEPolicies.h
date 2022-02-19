@@ -37,12 +37,13 @@ namespace Ikarus::FiniteElements {
     using MatrixType = Eigen::MatrixXd;
   };
 
-  template <typename LocalView>
+  template <typename Basis>
   class FEDisplacement {
   public:
-    using RootBasis   = typename LocalView::GlobalBasis;
+    using RootBasis   = Basis;
+    using LocalView= typename Basis::LocalView;
     using GlobalIndex = typename LocalView::MultiIndex;
-    explicit FEDisplacement(const LocalView& p_localView) : localView{p_localView} {
+    explicit FEDisplacement(const Basis& p_basis,typename LocalView::Element& element) : localView{p_basis.localView()} {
       static_assert(Ikarus::Concepts::PowerBasis<RootBasis>,
                     "You didn't pass a localview of a power basis to this method");
       static_assert(RootBasis::PreBasis::Node::CHILDREN == worlddim,
@@ -51,6 +52,8 @@ namespace Ikarus::FiniteElements {
       static_assert(
           Ikarus::Concepts::FlatIndexBasis<RootBasis>,
           "The Index merging strategy of the basis you passed has to be FlatLexicographic or FlatInterLeaved");
+
+      localView.bind(element);
     }
 
     /** \brief Type of the Pairs of gridEntities and variable tags */
