@@ -109,7 +109,7 @@ namespace Ikarus::FiniteElements {
         fext.setZero();
         fext[1] = lambda;
         fext[0] = lambda*0;
-        energy += (EVoigt.dot(C * EVoigt) - x.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
+        energy += (0.5*EVoigt.dot(C * EVoigt) - x.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
       }
       return energy;
     }
