@@ -93,13 +93,15 @@ namespace Ikarus::FiniteElements {
     LocalView localView;
   };
 
-  template <typename LocalView>
+  template <typename Basis>
   class ScalarFieldFE {
   public:
-    using RootBasis   = typename LocalView::GlobalBasis;
+    using RootBasis   = Basis;
+    using LocalView = typename Basis::LocalView;
     using GlobalIndex = typename LocalView::MultiIndex;
-    explicit ScalarFieldFE(const LocalView& p_localView) : localView{p_localView} {
+    explicit ScalarFieldFE(const Basis& basis,const typename LocalView::Element& element) : localView{basis.localView()} {
       static_assert(RootBasis::PreBasis::Node::CHILDREN == 0, "This is no scalar basis!");
+      localView.bind(element);
     }
 
     /** \brief Type of the Pairs of gridEntities and variable tags */
