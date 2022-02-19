@@ -49,26 +49,28 @@ namespace Ikarus {
   public:
     using LocalView = typename Basis::LocalView;
     using Traits = TraitsFromLocalView<LocalView>;
-    explicit AutoDiffFEClean(const Basis& basis,typename LocalView::Element& element) : localView_{basis.localView()} {
-      localView_.bind(element);
+    explicit AutoDiffFEClean(const Basis& basis,const typename LocalView::Element& element) {
+      auto localView = basis.localView();
+      localView.bind(element);
+      localdofSize=localView.size();
     }
     using FERequirementType = FErequirements<Eigen::VectorXd>;
     [[nodiscard]] typename Traits::MatrixType calculateMatrix(const FERequirementType& par) const {
-      Eigen::VectorXdual2nd dx(localView_.size());
+      Eigen::VectorXdual2nd dx(localdofSize);
       dx.setZero();
       auto f = [&](auto& x) { return this->underlying().calculateScalarImpl(par, x); };
       return hessian(f, wrt(dx), at(dx));
     }
 
     [[nodiscard]] typename Traits::VectorType calculateVector(const FERequirementType& par) const {
-      Eigen::VectorXdual dx(localView_.size());
+      Eigen::VectorXdual dx(localdofSize);
       dx.setZero();
       auto f = [&](auto& x) { return this->underlying().calculateScalarImpl(par, x); };
       return gradient(f, wrt(dx), at(dx));
     }
 
     [[nodiscard]] auto calculateLocalSystem(const FERequirementType& par) const {
-      Eigen::VectorXdual2nd dx(localView_.size());
+      Eigen::VectorXdual2nd dx(localdofSize);
       dx.setZero();
       auto f = [&](auto& x) { return this->underlying().calculateScalarImpl(par, x); };
       Eigen::VectorXd g;
@@ -77,7 +79,7 @@ namespace Ikarus {
     }
 
     [[nodiscard]] typename Traits::ScalarType calculateScalar(const FERequirementType& par) const {
-      Eigen::VectorXd dx(localView_.size());
+      Eigen::VectorXd dx(localdofSize);
 
       return this->underlying().calculateScalarImpl(par, dx);
     }
@@ -88,7 +90,8 @@ namespace Ikarus {
       return static_cast<RealElement const&>(*this);
     }
 
-    LocalView localView_;
+
+    int localdofSize{};
   };
 
 }  // namespace Ikarus

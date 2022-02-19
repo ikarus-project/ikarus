@@ -29,21 +29,25 @@
 #include <ikarus/LinearAlgebra/NonLinearOperator.h>
 #include <ikarus/utils/concepts.h>
 
-template <typename LV>
-struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<LV>, Ikarus::AutoDiffFEClean<KirchhoffPlate<LV>, LV> {
-  using BaseDisp          = Ikarus::FiniteElements::ScalarFieldFE<LV>;
-  using BaseAD            = Ikarus::AutoDiffFEClean<KirchhoffPlate<LV>, LV>;
-  using LocalView         = LV;
+template <typename Basis>
+struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<Basis>,
+                        Ikarus::AutoDiffFEClean<KirchhoffPlate<Basis>, Basis> {
+  using BaseDisp          = Ikarus::FiniteElements::ScalarFieldFE<Basis>;
+  using BaseAD            = Ikarus::AutoDiffFEClean<KirchhoffPlate<Basis>, Basis>;
+  using LocalView         = typename Basis::LocalView;
   using FERequirementType = typename BaseAD::FERequirementType;
 
-  KirchhoffPlate(const LocalView& localView, double p_Emodul, double p_nu, double p_thickness)
-      : BaseDisp(localView),
-        BaseAD(localView),
-        localView_{localView},
-        geometry_{localView.element().geometry()},
+  KirchhoffPlate(const Basis& basis, const typename LocalView::Element& element, double p_Emodul, double p_nu,
+                 double p_thickness)
+      : BaseDisp(basis,element),
+        BaseAD(basis,element),
+        localView_{basis.localView()},
         Emodul{p_Emodul},
         nu{p_nu},
-        thickness{p_thickness} {}
+        thickness{p_thickness} {
+    localView_.bind(element);
+    geometry_=localView_.element().geometry();
+  }
 
   static Eigen::Matrix<double, 3, 3> constitutiveMatrix(double Emod, double p_nu, double p_thickness) {
     const double factor = Emod * Dune::power(p_thickness, 3) / (12.0 * (1.0 - p_nu * p_nu));
@@ -191,11 +195,9 @@ int main() {
     const double Emod      = 2.1e8;
     const double nu        = 0.3;
     const double thickness = 0.1;
-    std::vector<KirchhoffPlate<decltype(localView)>> fes;
-    for (auto& ele : elements(gridView)) {
-      localView.bind(ele);
-      fes.emplace_back(localView, Emod, nu, thickness);
-    }
+    std::vector<KirchhoffPlate<decltype(basis)>> fes;
+    for (auto& ele : elements(gridView))
+      fes.emplace_back(basis, ele, Emod, nu, thickness);
 
     /// Create assembler
     auto denseAssembler = DenseFlatAssembler(basis, fes, dirichletFlags);
@@ -226,7 +228,7 @@ int main() {
     /// SOLUTION_CHANGED
     auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<decltype(basis)>>(basis, w, 1);
     vtkWriter->setFileNamePrefix("TestKplate");
-    vtkWriter->setFieldInfo("w",Dune::VTK::FieldInfo::Type::scalar,1);
+    vtkWriter->setFieldInfo("w", Dune::VTK::FieldInfo::Type::scalar, 1);
     nr.subscribeAll(nonLinearSolverObserver);
 
     /// Run Load control
@@ -285,14 +287,14 @@ int main() {
     grid.globalRefine(1);
   }
   /// Draw L_2 error over dofs count
-  //  using namespace matplot;
-  //  auto f  = figure(true);
-  //  auto ax = gca();
-  //  ax->y_axis().label("L2_error");
-  //
-  //  ax->x_axis().label("#Dofs");
-  //  auto p = ax->loglog(dofsVec, l2Evcector);
-  //  p->line_width(2);
-  //  p->marker(line_spec::marker_style::asterisk);
-  //  show();
+    using namespace matplot;
+    auto f  = figure(true);
+    auto ax = gca();
+    ax->y_axis().label("L2_error");
+
+    ax->x_axis().label("#Dofs");
+    auto p = ax->loglog(dofsVec, l2Evcector);
+    p->line_width(2);
+    p->marker(line_spec::marker_style::asterisk);
+    show();
 }
