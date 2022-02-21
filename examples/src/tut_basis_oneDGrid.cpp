@@ -36,12 +36,12 @@ void exampleTrussElement(){
   draw(gridView);
   using namespace Dune::Functions::BasisFactory;
   auto basis = makeBasis(gridView, lagrange<polynomialOrder>());
-  auto basisView = basis.localView();
+  auto localView = basis.localView();
 
 
   for (auto& ele : elements(gridView)) {
-    basisView.bind(ele);
-    auto& fe = basisView.tree().finiteElement();
+    localView.bind(ele);
+    auto& fe = localView.tree().finiteElement();
     Ikarus::LocalBasis localBasis(fe.localBasis());
     const auto& rule = Dune::QuadratureRules<double, 1>::rule(ele.type(),numGP,Dune::QuadratureType::GaussLegendre);
 
@@ -60,11 +60,11 @@ void exampleTrussElement(){
   }
 }
 
-Eigen::MatrixXd TimoshenkoBeamStiffness (auto basisView, auto gridElement, auto quadratureRule, const Eigen::Matrix2d& C){
+Eigen::MatrixXd TimoshenkoBeamStiffness (auto localView, auto gridElement, auto quadratureRule, const Eigen::Matrix2d& C){
   using namespace Dune::Indices;
 
-  Ikarus::LocalBasis basisW(basisView.tree().child(_0).finiteElement().localBasis());
-  Ikarus::LocalBasis basisPhi(basisView.tree().child(_1).finiteElement().localBasis());
+  Ikarus::LocalBasis basisW(localView.tree().child(_0).finiteElement().localBasis());
+  Ikarus::LocalBasis basisPhi(localView.tree().child(_1).finiteElement().localBasis());
 
   // Determinant of Jacobian, obtained from gridElement
   auto detJ = gridElement.geometry().volume();
@@ -91,14 +91,14 @@ Eigen::MatrixXd TimoshenkoBeamStiffness (auto basisView, auto gridElement, auto 
     Eigen::MatrixXd B = Eigen::MatrixXd::Zero(2,numDofsPerEle);
 
     // fill columns of B-Operator related to w-DOFs
-    for (unsigned int i = 0; i < basisView.tree().child(_0).size(); ++i) {
-      B(1,basisView.tree().child(_0).localIndex(i)) = dNwDxi[i]/detJ;
+    for (unsigned int i = 0; i < localView.tree().child(_0).size(); ++i) {
+      B(1,localView.tree().child(_0).localIndex(i)) = dNwDxi[i]/detJ;
     }
 
     // fill columns of B-Operator related to phi-DOFs
-    for (unsigned int i = 0; i < basisView.tree().child(_1).size(); ++i) {
-      B(0,basisView.tree().child(_1).localIndex(i)) = dNphiDxi[i]/detJ;
-      B(1,basisView.tree().child(_1).localIndex(i)) = NphiDxi[i];
+    for (unsigned int i = 0; i < localView.tree().child(_1).size(); ++i) {
+      B(0,localView.tree().child(_1).localIndex(i)) = dNphiDxi[i]/detJ;
+      B(1,localView.tree().child(_1).localIndex(i)) = NphiDxi[i];
     }
 
     // integration of stiffness matrix
@@ -192,7 +192,7 @@ void exampleTimoshenkoBeam() {
 
   // Basis with different orders for w (first) and phi (second)
   auto basis     = makeBasis(gridView, composite(lagrange<polynomialOrderW>(), lagrange<polynomialOrderPhi>(), FlatLexicographic()));
-  auto basisView = basis.localView();
+  auto localView = basis.localView();
 
   // global stiffness matrix and force vector
   auto numDofs              = basis.size();
@@ -200,18 +200,18 @@ void exampleTimoshenkoBeam() {
   Eigen::MatrixXd K_Glob    = Eigen::MatrixXd::Zero(numDofs, numDofs);
 
   for (auto& ele : elements(gridView)) {
-    basisView.bind(ele);
+    localView.bind(ele);
 
     // Define the integration rule
     const auto& rule = Dune::QuadratureRules<double, 1>::rule(ele.type(), numGP, Dune::QuadratureType::GaussLegendre);
 
     // get local stiffness matrix
-    auto K_local = TimoshenkoBeamStiffness(basisView,ele,rule, C);
+    auto K_local = TimoshenkoBeamStiffness(localView,ele,rule, C);
 
     // Adding local stiffness the global stiffness
-    for (auto i = 0U; i < basisView.size(); ++i)
-      for (auto j = 0U; j < basisView.size(); ++j)
-        K_Glob(basisView.index(i)[0], basisView.index(j)[0]) += K_local(i,j);
+    for (auto i = 0U; i < localView.size(); ++i)
+      for (auto j = 0U; j < localView.size(); ++j)
+        K_Glob(localView.index(i)[0], localView.index(j)[0]) += K_local(i,j);
   }
 
   // apply load on the right-hand side
