@@ -4,6 +4,7 @@
 #include <../../config.h>
 #include <numbers>
 
+#include <dune/common/float_cmp.hh>
 #include <dune/common/indices.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
@@ -28,16 +29,15 @@ void exampleTrussElement(){
   const double EA = 1.0;
   const int numElements = 10;
   const int numGP = 2;
-  constexpr int polynomialOrder = 2;
   Dune::OneDGrid grid(numElements, 0, L);
-  //grid.globalRefine(2);
   auto gridView = grid.leafGridView();
-  std::cout << gridView.dimensionworld << "\n";
-  draw(gridView);
+ //draw(gridView);
   using namespace Dune::Functions::BasisFactory;
-  auto basis = makeBasis(gridView, lagrange<polynomialOrder>());
+  auto basis = makeBasis(gridView, lagrange<1>());
   auto localView = basis.localView();
 
+  auto numDofs = basis.size();
+  Eigen::MatrixXd K_Glob = Eigen::MatrixXd::Zero(numDofs, numDofs);
 
   for (auto& ele : elements(gridView)) {
     localView.bind(ele);
@@ -45,9 +45,9 @@ void exampleTrussElement(){
     Ikarus::LocalBasis localBasis(fe.localBasis());
     const auto& rule = Dune::QuadratureRules<double, 1>::rule(ele.type(),numGP,Dune::QuadratureType::GaussLegendre);
 
-    Eigen::VectorXd dNdxi = Eigen::VectorXd::Zero(polynomialOrder+1);
-    Eigen::MatrixXd K = Eigen::MatrixXd::Zero(polynomialOrder+1,polynomialOrder+1);
-    Eigen::VectorXd B = Eigen::VectorXd::Zero(polynomialOrder+1);
+    Eigen::VectorXd dNdxi = Eigen::VectorXd::Zero(2);
+    Eigen::MatrixXd K = Eigen::MatrixXd::Zero(2,2);
+    Eigen::VectorXd B = Eigen::VectorXd::Zero(2);
 
     auto detJ = ele.geometry().integrationElement(0.0);
     for (auto& gp : rule) {
@@ -55,9 +55,28 @@ void exampleTrussElement(){
       B = dNdxi/detJ;
       K += EA*B*B.transpose()*detJ*gp.weight();
     }
-    std::cout << "The stiffness matrix is: " << "\n";
-    std::cout << K << "\n";
+
+    // Adding local stiffness the global stiffness
+    for (auto i = 0U; i < localView.size(); ++i)
+      for (auto j = 0U; j < localView.size(); ++j)
+        K_Glob(localView.index(i)[0], localView.index(j)[0]) += K(i,j);
   }
+
+  // external force (1 one the right end)
+  Eigen::VectorXd F_ExtGlobRed = Eigen::VectorXd::Zero(numDofs-1);
+  F_ExtGlobRed(numDofs-2) = 1.0;
+
+  // reduce stiffness matrix (fix left end)
+  const Eigen::MatrixXd K_GlobRed =
+      K_Glob(Eigen::seq(1,Eigen::last),Eigen::seq(1,Eigen::last));
+
+  // solve the linear system
+  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
+  linSolver.factorize(K_GlobRed);
+  const Eigen::VectorXd D_GlobRed = linSolver.solve(F_ExtGlobRed);
+
+  std::cout << "Displacement: " << D_GlobRed(Eigen::last) << "\n";
+
 }
 
 Eigen::MatrixXd TimoshenkoBeamStiffness (auto localView, auto gridElement, auto quadratureRule, const Eigen::Matrix2d& C){
@@ -117,7 +136,7 @@ unsigned int getGlobalDofIdImpl(const auto& basis, const double position){
   for(auto& element : elements(gridView)){
     localView.bind(element);
     for (unsigned int i = 0; i < element.subEntities(1); ++i) {
-      if (element.template subEntity<1>(i).geometry().center() == position)
+      if (Dune::FloatCmp::eq(element.template subEntity<1>(i).geometry().center()[0],position,1e-8))
       {
         auto& localIndex = seDOFs.bind(localView,i,1);
         assert(localIndex.size() == 1 && "It is expected that only one w-DOF is associated with a vertex");
@@ -245,6 +264,6 @@ void exampleTimoshenkoBeam() {
 }
 
   int main(){
-  // exampleTrussElement();
+  exampleTrussElement();
   exampleTimoshenkoBeam();
 }
