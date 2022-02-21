@@ -46,6 +46,10 @@ namespace Ikarus {
       evaluateFunction(local, N);
       evaluateJacobian(local, dN);
     }
+    
+    unsigned int size(){
+      return duneLocalBasis->size();
+    }
 
   private:
     std::vector<JacobianType> dNdune;
