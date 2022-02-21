@@ -9,8 +9,8 @@
 #include <dune/functions/functionspacebases/boundarydofs.hh>
 #include <dune/functions/functionspacebases/compositebasis.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
-#include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/subspacebasis.hh>
+#include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/grid/onedgrid.hh>
 
@@ -67,7 +67,7 @@ Eigen::MatrixXd TimoshenkoBeamStiffness (auto basisView, auto gridElement, auto 
   Ikarus::LocalBasis basisPhi(basisView.tree().child(_1).finiteElement().localBasis());
 
   // Determinant of Jacobian, obtained from gridElement
-  auto detJ = gridElement.geometry().integrationElement(0.0);
+  auto detJ = gridElement.geometry().volume();
 
   // get number of DOFs for w and phi
   auto numDofsW = basisW.size();
@@ -138,22 +138,20 @@ unsigned int getGlobalDofId(TimoschenkoBeam requestedQuantity, const auto& basis
     throw std::runtime_error("The requested quantity is not supported");
 }
 
-void plotDeformedTimoschenkoBeam(auto& basis, auto& gridView, auto& dofVector){
+void plotDeformedTimoschenkoBeam(auto& gridView, auto& globalDispW){
   using namespace matplot;
-  using namespace Dune::Indices;
   auto f  = figure(true);
   auto ax = gca();
   hold(ax, true);
-  auto subBasisView = subspaceBasis(basis,_0).localView();
-  auto seDOFs = subEntityDOFs(basis);
+
+  auto wLocal = localFunction(globalDispW);
   for (auto& edge : elements(gridView)) {
-    subBasisView.bind(edge);
+    wLocal.bind(edge);
     std::array<double, 2> xEdge{}, yEdge{};
-    for (unsigned int i = 0; i < edge.subEntities(1); ++i) {
-      auto localIndex = seDOFs.bind(subBasisView,i,1);
-      assert(localIndex.size() == 1 && "It is expected that only one w-DOF is associated with a vertex");
-      xEdge[i] = edge.template subEntity<1>(i).geometry().center();
-      yEdge[i] = -dofVector[subBasisView.index(localIndex[0])[0]];
+    for (unsigned int i = 0; i < 2; ++i){
+      xEdge[i] = edge.geometry().corner(i);
+      auto localCoord = edge.geometry().local(xEdge[i]);
+      yEdge[i] = -wLocal(localCoord);
     }
 
     auto l = ax->plot(xEdge, yEdge, "-o");
@@ -171,6 +169,7 @@ void exampleTimoshenkoBeam() {
 
   using namespace Dune::Functions::BasisFactory;
   using namespace Dune::Functions;
+  using namespace Dune::Functions::BasisBuilder;
   using namespace Dune::Indices;
   const double b                   = 1;
   const double L                   = 5;
@@ -238,7 +237,10 @@ void exampleTimoshenkoBeam() {
   std::cout << "Bernoulli solution for displacement at L: " << F*L*L*L/(3.0*EI) << "\n";
 
   // plot the result
-  plotDeformedTimoschenkoBeam(basis,gridView,D_Glob);
+  auto wGlobal
+      = makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 1>>(subspaceBasis(basis,_0),D_Glob);
+  plotDeformedTimoschenkoBeam(gridView,wGlobal);
+
 
 }
 
