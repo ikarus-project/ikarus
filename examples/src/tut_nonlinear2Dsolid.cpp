@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
   /// ALUGrid Example
       using Grid = Dune::ALUGrid<gridDim, 2, Dune::simplex, Dune::conforming>;
       auto grid  = Dune::GmshReader<Grid>::read("../../tests/src/testFiles/unstructuredTrianglesfine.msh", false);
-
+grid->globalRefine(2);
   /// IGA Grid Example
 //  constexpr auto dimworld              = 2;
 //  const std::array<int, gridDim> order = {2, 2};
@@ -99,6 +99,8 @@ int main(int argc, char **argv) {
                                     [](auto&& centerCoord) { return (std::abs(centerCoord[1]) < 1e-8); });
   auto denseAssembler = DenseFlatSimpleAssembler(basis, fes, dirichletFlags);
 
+  auto sparseAssembler = SparseFlatAssembler(basis, fes, dirichletFlags);
+
   Eigen::VectorXd d;
   d.setZero(basis.size());
   double lambda = 0.0;
@@ -106,9 +108,21 @@ int main(int argc, char **argv) {
   auto residualFunction = [&](auto&& lambdaLocal, auto&& disp) -> auto& {
     return denseAssembler.getVector(forces, disp, lambdaLocal);
   };
+
+
+//  auto KFunction = [&](auto&& lambdaLocal, auto&& disp) -> auto& {
+//    return denseAssembler.getMatrix(stiffness, disp, lambdaLocal);
+//  };
+
   auto KFunction = [&](auto&& lambdaLocal, auto&& disp) -> auto& {
-    return denseAssembler.getMatrix(stiffness, disp, lambdaLocal);
+    Ikarus::FErequirements req;
+    req.sols.emplace_back(disp);
+    req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
+    req.matrixAffordances = Ikarus::MatrixAffordances::stiffness;
+    return sparseAssembler.getMatrix( req);
   };
+
+
   auto energyFunction = [&](auto&& lambdaLocal, auto&& disp) -> auto {
     return denseAssembler.getScalar(potentialEnergy, disp, lambdaLocal);
   };
@@ -116,7 +130,7 @@ int main(int argc, char **argv) {
   auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, residualFunction, KFunction),
                                             parameter(lambda, d));
 
-  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
+  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::s_SimplicialLDLT);
 
   auto nr                      = Ikarus::NewtonRaphson(nonLinOp.subOperator<1, 2>(), std::move(linSolver));
   auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();

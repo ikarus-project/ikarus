@@ -163,7 +163,7 @@ namespace Ikarus {
         }
       }
 
-      // Dense Solver do not have a factorize method therefore for
+      // Dense Solvers do not have a factorize method therefore
       // our interface we just call compute for dense matrices
       void factorize(const DenseMatrixType& A) override {
         //        std::cout << "solver.Densefactorize(A)" << std::endl;
@@ -179,7 +179,7 @@ namespace Ikarus {
       }
 
       void compute(const DenseMatrixType& A) {
-        //        std::cout << "solver.computeDense(A)" << std::endl;
+
         if constexpr (std::is_base_of_v<Eigen::SolverBase<Solver>, Solver>)
           solver.compute(A);
         else

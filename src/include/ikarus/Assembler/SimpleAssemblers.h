@@ -16,6 +16,13 @@
 
 namespace Ikarus {
 
+  namespace Impl {
+    template <typename FEContainer>
+    requires requires { {std::declval<typename FEContainer::value_type>().globalIndices()}; }
+    auto dofsOfElements(const FEContainer& feContainer) {
+      return feContainer | std::views::transform([](auto&& fe) { return fe.globalIndices(); });
+    }
+  }  // namespace Impl
   //
   //  template <typename FEManager, typename DirichletManager>
   //  class DenseMatrixAssembler {
@@ -109,12 +116,11 @@ namespace Ikarus {
       constraintsBelow_.reserve(basis_->size());
       size_t counter = 0;
       for (auto iv : std::ranges::iota_view{size_t(0), basis_->size()}) {
-        if(dirichFlags[iv])
-          ++counter;
-        constraintsBelow_.emplace_back(counter--);
+        constraintsBelow_.emplace_back(counter);
+        if (dirichFlags[iv]) ++counter;
       }
 
-      fixedDofs = std::ranges::count(dirichFlags,true);
+      fixedDofs = std::ranges::count(dirichFlags, true);
     }
 
     using GridView = typename Basis::GridView;
@@ -135,16 +141,18 @@ namespace Ikarus {
       Eigen::MatrixXd A;
       for (size_t elementIndex = 0; const auto& fe : feContainer) {
         A = fe.calculateMatrix(fErequirements);
-        assert(std::sqrt(elementLinearIndices[elementIndex].size()) == A.rows() && "The returned matrix has wrong rowSize!");
-        assert(std::sqrt(elementLinearIndices[elementIndex].size()) == A.cols() && "The returned matrix has wrong colSize!");
+        assert(std::sqrt(elementLinearIndices[elementIndex].size()) == A.rows()
+               && "The returned matrix has wrong rowSize!");
+        assert(std::sqrt(elementLinearIndices[elementIndex].size()) == A.cols()
+               && "The returned matrix has wrong colSize!");
         for (Eigen::Index linearIndex = 0; double matrixEntry : A.reshaped())
           spMat.coeffs()(elementLinearIndices[elementIndex][linearIndex++]) += matrixEntry;
         ++elementIndex;
       }
       for (auto i = 0U; i < basis_->size(); ++i)
-        if (dirichletFlags->at(i)) spMat.col(i)*=0;
+        if (dirichletFlags->at(i)) spMat.col(i) *= 0;
       for (auto i = 0U; i < basis_->size(); ++i)
-        if (dirichletFlags->at(i)) spMat.row(i)*=0;
+        if (dirichletFlags->at(i)) spMat.row(i) *= 0;
       for (auto i = 0U; i < basis_->size(); ++i)
         if (dirichletFlags->at(i)) spMat.diagonal()[i] = 1;
       return spMat;
@@ -158,15 +166,15 @@ namespace Ikarus {
       for (size_t elementIndex = 0; const auto& fe : feContainer) {
         A               = fe.calculateMatrix(fErequirements);
         const auto dofs = fe.globalIndices();
-        assert(dofs.size() == A.rows() && "The returned matrix has wrong rowSize!");
-        assert(dofs.size() == A.cols() && "The returned matrix has wrong colSize!");
+        assert(dofs.size() == static_cast<unsigned>(A.rows()) && "The returned matrix has wrong rowSize!");
+        assert(dofs.size() == static_cast<unsigned>(A.cols()) && "The returned matrix has wrong colSize!");
         Eigen::Index linearIndex = 0;
-        for (int r = 0; r < dofs.size(); ++r) {
-          if (dirichletFlags[dofs[r]])
+        for (auto r = 0U; r < dofs.size(); ++r) {
+          if (dirichletFlags->at(dofs[r]))
             continue;
           else {
-            for (int c = 0; c < dofs.size(); ++c) {
-              if (dirichletFlags[dofs[c]]) continue;
+            for (auto c = 0U; c < dofs.size(); ++c) {
+              if (dirichletFlags->at(dofs[c])) continue;
               spMatReduced.coeffs()(elementLinearReducedIndices[elementIndex][linearIndex++]) += A(r, c);
             }
           }
@@ -199,17 +207,17 @@ namespace Ikarus {
       const int estimateOfConnectivity = 8;
       using std::size;
 
-      vectorOfTriples.reserve(estimateOfConnectivity * basis_->GridView()->size(GridView::dimension));
+      vectorOfTriples.reserve(estimateOfConnectivity * basis_->gridView().size(GridView::dimension));
       for (auto& fe : feContainer) {
         const auto dofs = fe.globalIndices();
-        for (int r = 0; r < dofs.size(); ++r) {
-          if (dirichletFlags[dofs[r]])
+        for (auto r = 0U; r < dofs.size(); ++r) {
+          if (dirichletFlags->at(dofs[r]))
             continue;
           else {
-            for (int c = 0; c < dofs.size(); ++c) {
-              if (dirichletFlags[dofs[c]]) continue;
-              vectorOfTriples.emplace_back(dofs[r] - constraintsBelow_[dofs[r]],
-                                           dofs[c] - constraintsBelow_[dofs[c]], 0.0);
+            for (auto c = 0U; c < dofs.size(); ++c) {
+              if (dirichletFlags->at(dofs[c])) continue;
+              vectorOfTriples.emplace_back(dofs[r] - constraintsBelow_[dofs[r]], dofs[c] - constraintsBelow_[dofs[c]],
+                                           0.0);
             }
           }
         }
@@ -221,7 +229,7 @@ namespace Ikarus {
 
     // This function save the indices of each element in the underlying vector which stores the sparse matrix entries
     void createlinearDofsPerElement() {
-      for (auto&& dofsOfElement : dofsOfElements()) {
+      for (auto&& dofsOfElement : Impl::dofsOfElements(feContainer)) {
         elementLinearIndices.emplace_back(Dune::Power<2>::eval(dofsOfElement.size()));
         for (Eigen::Index linearIndexOfElement = 0; auto&& c : dofsOfElement)
           for (auto&& r : dofsOfElement)
@@ -232,15 +240,14 @@ namespace Ikarus {
 
     // This function save the indices of each element in the underlying vector which stores the sparse matrix entries
     void createlinearDofsPerElementReduced() {
-      for (auto&& dofs : dofsOfElements()) {
+      for (auto&& dofs : Impl::dofsOfElements(feContainer)) {
         elementLinearReducedIndices.emplace_back();
-        for (int r = 0; r < dofs.size(); ++r) {
-          if (dirichletFlags[dofs[r]]) continue;
-          for (int c = 0; c < dofs.size(); ++c) {
-            if (dirichletFlags[dofs[c]]) continue;
-            elementLinearReducedIndices.back().push_back(
-                spMatReduced.getLinearIndex(dofs[r] - constraintsBelow_(dofs[r]),
-                                            dofs[c] - constraintsBelow_(dofs[c])));
+        for (auto r = 0U; r < dofs.size(); ++r) {
+          if (dirichletFlags->at(dofs[r])) continue;
+          for (auto c = 0U; c < dofs.size(); ++c) {
+            if (dirichletFlags->at(dofs[c])) continue;
+            elementLinearReducedIndices.back().push_back(spMatReduced.getLinearIndex(
+                dofs[r] - constraintsBelow_[dofs[r]], dofs[c] - constraintsBelow_[dofs[c]]));
           }
         }
       }
@@ -252,12 +259,6 @@ namespace Ikarus {
     size_t size(int i = 0) { return basis_->size(); }
 
   private:
-    auto dofsOfElements()
-    {
-      return feContainer | std::views::transform([](auto&& fe){ return fe.globalIndices();});
-    }
-
-
     Eigen::SparseMatrix<double> spMat;
     Eigen::SparseMatrix<double> spMatReduced;
     bool isOccupationPatternCreated{false};
@@ -283,16 +284,13 @@ namespace Ikarus {
       constraintsBelow_.reserve(basis->size());
       size_t counter = 0;
       for (auto iv : std::ranges::iota_view{size_t(0), basis->size()}) {
-        if(dirichFlags[iv])
-          ++counter;
+        if (dirichFlags[iv]) ++counter;
         constraintsBelow_.emplace_back(counter--);
       }
-      fixedDofs = std::ranges::count(dirichFlags,true);
+      fixedDofs = std::ranges::count(dirichFlags, true);
     }
 
-    Eigen::VectorXd& getVector(const RequirementType& fErequirements) {
-      return getVectorImpl(fErequirements);
-    }
+    Eigen::VectorXd& getVector(const RequirementType& fErequirements) { return getVectorImpl(fErequirements); }
 
     Eigen::VectorXd& getReducedVector(const RequirementType& fErequirements) {
       return getReducedVectorImpl(fErequirements);
@@ -331,7 +329,7 @@ namespace Ikarus {
       vecRed.setZero(reducedSize());
       int reducedCounter = 0;
       for (auto& fe : feContainer) {
-        const auto f = fe.calculateVector(fErequirements);
+        const auto f    = fe.calculateVector(fErequirements);
         const auto dofs = f.globalIndices();
         assert(dofs.size() == f.size() && "The returned vector has wrong rowSize!");
         for (int i = 0; auto&& dofIndex : dofs) {
@@ -365,9 +363,7 @@ namespace Ikarus {
     ScalarAssembler(const Basis& basis, const FEContainer& fes, const std::vector<bool>& dirichFlags)
         : basis_{&basis}, feContainer{fes}, dirichletFlags{&dirichFlags} {}
 
-    double& getScalar(const RequirementType& fErequirements) {
-      return getScalarImpl(fErequirements);
-    }
+    double& getScalar(const RequirementType& fErequirements) { return getScalarImpl(fErequirements); }
 
   private:
     double& getScalarImpl(const RequirementType& fErequirements) {
@@ -468,7 +464,7 @@ namespace Ikarus {
       requirements.parameter.insert({Ikarus::FEParameter::loadfactor, lambda});
 
       for (auto& fe : feContainer)
-          scalar += fe.calculateScalar(requirements);
+        scalar += fe.calculateScalar(requirements);
 
       return scalar;
     }
@@ -484,21 +480,102 @@ namespace Ikarus {
   public:
     using RequirementType = typename FEContainer::value_type::FERequirementType;
     explicit DenseFlatAssembler(const Basis& basis, const FEContainer& fes, const std::vector<bool>& dirichFlags)
-        : basis_{&basis}, feContainer{fes}, dirichletFlags{&dirichFlags} {}
-
-    Eigen::MatrixXd& getMatrix(const RequirementType& fErequirements) {
-      return getMatrixImpl(fErequirements);
+        : basis_{&basis}, feContainer{fes}, dirichletFlags{&dirichFlags} {
+      constraintsBelow_.reserve(basis_->size());
+      size_t counter = 0;
+      for (auto iv : std::ranges::iota_view{size_t(0), basis_->size()}) {
+        constraintsBelow_.emplace_back(counter);
+        if (dirichFlags[iv]) ++counter;
+      }
+      fixedDofs = std::ranges::count(dirichFlags, true);
     }
 
-    Eigen::VectorXd& getVector(const RequirementType& fErequirements) {
-      return getVectorImpl(fErequirements);
+    Eigen::MatrixXd& getMatrix(const RequirementType& fErequirements) { return getMatrixImpl(fErequirements); }
+
+    Eigen::VectorXd& getVector(const RequirementType& fErequirements) { return getVectorImpl(fErequirements); }
+
+    double getScalar(const RequirementType& fErequirements) { return getScalarImpl(fErequirements); }
+
+    Eigen::MatrixXd& getReducedMatrix(const RequirementType& fErequirements) {
+      return getReducedMatrixImpl(fErequirements);
     }
 
-    double getScalar(const RequirementType& fErequirements) {
-      return getScalarImpl(fErequirements);
+    Eigen::VectorXd& getReducedVector(const RequirementType& fErequirements) {
+      return getReducedVectorImpl(fErequirements);
+    }
+
+    auto createFullVector(const Eigen::VectorXd& reducedVector) {
+      assert(reducedVector.size() == static_cast<Eigen::Index>(this->reducedSize())
+             && "The reduced vector you passed has the wrong dimensions.");
+      Eigen::Index reducedCounter = 0;
+      Eigen::VectorXd fullVec(basis_->size());
+      for (Eigen::Index i = 0; i < fullVec.size(); ++i) {
+        if (dirichletFlags->at(i)) {
+          ++reducedCounter;
+          fullVec[i] = 0.0;
+          continue;
+        } else
+          fullVec[i] = reducedVector[i - reducedCounter];
+      }
+      return fullVec;
     }
 
   private:
+    Eigen::VectorXd& getVectorImpl(const RequirementType& fErequirements) {
+      vec.setZero(basis_->size());
+      for (auto& fe : feContainer)
+        vec(fe.globalIndices()) += fe.calculateVector(fErequirements);
+
+      return vec;
+    }
+
+    Eigen::VectorXd& getReducedVectorImpl(const RequirementType& fErequirements) {
+      vecRed.setZero(reducedSize());
+      int reducedCounter = 0;
+      for (auto& fe : feContainer) {
+        const auto f    = fe.calculateVector(fErequirements);
+        const auto dofs = fe.globalIndices();
+        assert(dofs.size() == f.size() && "The returned vector has wrong rowSize!");
+        for (int i = 0; auto&& dofIndex : dofs) {
+          if (dirichletFlags->at(dofIndex)) {
+            ++reducedCounter;
+            ++i;
+            continue;
+          } else
+            vecRed(dofIndex - constraintsBelow_[dofIndex]) += f[i++];
+        }
+      }
+      return vecRed;
+    }
+    Eigen::MatrixXd& getReducedMatrixImpl(const RequirementType& fErequirements) {
+      matRed.setZero(reducedSize(), reducedSize());
+      for (auto& fe : feContainer) {
+        const auto eleMat = fe.calculateMatrix(fErequirements);
+        const auto dofs = fe.globalIndices();
+        assert(dofs.size() == static_cast<unsigned>(eleMat.rows()) && "The returned matrix has wrong rowSize!");
+        assert(dofs.size() == static_cast<unsigned>(eleMat.cols()) && "The returned matrix has wrong colSize!");
+        for (auto r = 0U; r < dofs.size(); ++r) {
+          if (dirichletFlags->at(dofs[r])) {
+            continue;
+          } else {
+            for (auto c = 0U; c < dofs.size(); ++c) {
+              if (dirichletFlags->at(dofs[c])) {
+                continue;
+              }
+              matRed(dofs[r] - constraintsBelow_[dofs[r]],
+                     dofs[c] - constraintsBelow_[dofs[c]])
+                  += eleMat(r, c);
+            }
+          }
+        }
+      }
+      return matRed;
+    }
+
+    size_t reducedSize(int i = 0) { return basis_->size() - fixedDofs; }
+
+    size_t size(int i = 0) { return basis_->size(); }
+
     Eigen::MatrixXd& getMatrixImpl(const RequirementType& fErequirements) {
       mat.setZero(basis_->size(), basis_->size());
       for (auto& fe : feContainer) {
@@ -521,36 +598,24 @@ namespace Ikarus {
       return mat;
     }
 
-    Eigen::VectorXd& getVectorImpl(const RequirementType& fErequirements) {
-      vec.setZero(basis_->size());
-      for (auto& fe : feContainer) {
-
-        auto vecLocal = fe.calculateVector(fErequirements);
-        for (int i = 0; auto id : fe.globalIndices()) {
-          vec(id[0]) += vecLocal(i);
-          ++i;
-        }
-      }
-      for (auto i = 0U; i < basis_->size(); ++i) {
-        if (dirichletFlags->at(i)) vec[i] = 0;
-      }
-
-      return vec;
-    }
 
     double getScalarImpl(const RequirementType& fErequirements) {
       double scalar = 0.0;
 
       for (auto& fe : feContainer)
-          scalar += fe.calculateScalar(fErequirements);
+        scalar += fe.calculateScalar(fErequirements);
 
       return scalar;
     }
     Basis const* basis_;
     FEContainer const& feContainer;
     std::vector<bool> const* dirichletFlags;
+    std::vector<size_t> constraintsBelow_;
     Eigen::MatrixXd mat{};
+    Eigen::MatrixXd matRed{};
     Eigen::VectorXd vec{};
+    Eigen::VectorXd vecRed{};
+    size_t fixedDofs{};
   };
 
 }  // namespace Ikarus

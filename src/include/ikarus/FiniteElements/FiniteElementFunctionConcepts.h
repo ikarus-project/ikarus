@@ -50,7 +50,7 @@ namespace Ikarus {
     ParameterType parameter;
     ScalarAffordances scalarAffordances{ScalarAffordances::noAffordance};
     VectorAffordances vectorAffordances{VectorAffordances::noAffordance};
-    MatrixAffordances matrixAffordances{MatrixAffordances::noAffordance};
+    VectorAffordances matrixAffordances{MatrixAffordances::noAffordance};
   };
 
 }  // namespace Ikarus::FiniteElements

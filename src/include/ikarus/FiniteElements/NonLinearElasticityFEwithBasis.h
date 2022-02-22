@@ -33,6 +33,7 @@
 
 #include "ikarus/LocalBasis/localBasis.h"
 #include "ikarus/utils/LinearAlgebraHelper.h"
+#include <ikarus/FiniteElements/AutodiffFE.h>
 #include <ikarus/FiniteElements/FEPolicies.h>
 #include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
@@ -40,25 +41,30 @@
 #include <ikarus/Geometries/GeometryWithExternalInput.h>
 #include <ikarus/Variables/VariableDefinitions.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
-#include <ikarus/FiniteElements/AutodiffFE.h>
 
 namespace Ikarus::FiniteElements {
 
   template <typename Basis>
-  class NonLinearElasticityFEWithLocalBasis : public FEDisplacement<Basis>, public Ikarus::AutoDiffFEClean<NonLinearElasticityFEWithLocalBasis<Basis>, Basis> {
+  class NonLinearElasticityFEWithLocalBasis
+      : public FEDisplacement<Basis>,
+        public Ikarus::AutoDiffFEClean<NonLinearElasticityFEWithLocalBasis<Basis>, Basis> {
   public:
-    using BaseDisp          = Ikarus::FiniteElements::FEDisplacement<Basis>; //Handles globalIndices function
-    using BaseAD            = Ikarus::AutoDiffFEClean<NonLinearElasticityFEWithLocalBasis<Basis>, Basis>;
-    friend BaseAD ;
+    using BaseDisp = Ikarus::FiniteElements::FEDisplacement<Basis>;  // Handles globalIndices function
+    using BaseAD   = Ikarus::AutoDiffFEClean<NonLinearElasticityFEWithLocalBasis<Basis>, Basis>;
+    friend BaseAD;
     using FERequirementType = FErequirements<Eigen::VectorXd>;
-    using LocalView = typename Basis::LocalView;
-    NonLinearElasticityFEWithLocalBasis(Basis& globalBasis,const typename LocalView::Element& element, double emod, double nu)
-        :  BaseDisp(globalBasis,element), BaseAD(globalBasis,element), localView_{globalBasis.localView()}, emod_{emod}, nu_{nu} {
-
+    using LocalView         = typename Basis::LocalView;
+    NonLinearElasticityFEWithLocalBasis(Basis& globalBasis, const typename LocalView::Element& element, double emod,
+                                        double nu)
+        : BaseDisp(globalBasis, element),
+          BaseAD(globalBasis, element),
+          localView_{globalBasis.localView()},
+          emod_{emod},
+          nu_{nu} {
       localView_.bind(element);
-      const int order  = 2 * (localView_.tree().child(0).finiteElement().localBasis().order());
-      localBasis = Ikarus::LocalBasis(localView_.tree().child(0).finiteElement().localBasis());
-      localBasis.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order),0,1);
+      const int order = 2 * (localView_.tree().child(0).finiteElement().localBasis().order());
+      localBasis      = Ikarus::LocalBasis(localView_.tree().child(0).finiteElement().localBasis());
+      localBasis.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order), 0, 1);
     }
 
     using Traits = TraitsFromLocalView<LocalView>;
@@ -67,8 +73,7 @@ namespace Ikarus::FiniteElements {
 
   private:
     template <class ScalarType>
-    ScalarType calculateScalarImpl(const FERequirementType& par,
-                                   Eigen::VectorX<ScalarType>& dx) const {
+    ScalarType calculateScalarImpl(const FERequirementType& par, Eigen::VectorX<ScalarType>& dx) const {
       const auto& d      = par.sols[0].get();
       const auto& lambda = par.parameter.at(FEParameter::loadfactor);
       Eigen::VectorX<ScalarType> localDisp(localView_.size());
@@ -79,8 +84,7 @@ namespace Ikarus::FiniteElements {
       disp.setZero(Eigen::NoChange, fe.size());
       for (auto i = 0U; i < fe.size(); ++i)
         for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
-          disp.col(i)(k2)
-              = dx[i * 2 + k2] + d[localView_.index(localView_.tree().child(k2).localIndex(i))[0]];
+          disp.col(i)(k2) = dx[i * 2 + k2] + d[localView_.index(localView_.tree().child(k2).localIndex(i))[0]];
       ScalarType energy = 0.0;
 
       const int order  = 2 * (fe.localBasis().order());
@@ -92,34 +96,38 @@ namespace Ikarus::FiniteElements {
       C(2, 2)           = (1 - nu_) / 2;
       C *= emod_ / (1 - nu_ * nu_);
       const auto geo = localView_.element().geometry();
-//      Ikarus::LocalBasis localBasis(fe.localBasis());
-//      Eigen::Matrix<double, Eigen::Dynamic, Traits::mydim> dN;
-//      Eigen::VectorXd N;
-      for (const auto& [index, gp ,N, dN] : localBasis.viewOverFunctionAndJacobian()) {
+      //      Ikarus::LocalBasis localBasis(fe.localBasis());
+      //      Eigen::Matrix<double, Eigen::Dynamic, Traits::mydim> dN;
+      //      Eigen::VectorXd N;
+      for (const auto& [index, gp, N, dN] : localBasis.viewOverFunctionAndJacobian()) {
         const auto J = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
-//        localBasis.evaluateFunctionAndJacobian(gp.position(), N, dN);
+        //        localBasis.evaluateFunctionAndJacobian(gp.position(), N, dN);
         const Eigen::Vector<double, Traits::worlddim> X = toEigenVector(geo.global(gp.position()));
         Eigen::Vector<ScalarType, Traits::worlddim> x   = X;
         for (int i = 0; i < N.size(); ++i)
           x += disp.col(i) * N[i];
 
-        const auto H      = DefoGeo<ScalarType>::jacobianTransposed(dN*J.inverse(), disp).eval();
+        const auto H      = DefoGeo<ScalarType>::jacobianTransposed(dN * J.inverse(), disp).eval();
         const auto E      = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
         const auto EVoigt = toVoigt(E);
 
         Eigen::Vector<double, Traits::worlddim> fext;
         fext.setZero();
-        fext[1] = 2*lambda;
+        fext[1] = 2 * lambda;
         fext[0] = lambda;
-        energy += (0.5*EVoigt.dot(C * EVoigt) - x.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
+        energy += (0.5 * EVoigt.dot(C * EVoigt) - x.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
       }
       return energy;
     }
 
     LocalView localView_;
-    Ikarus::LocalBasis< std::remove_cvref_t<decltype( std::declval<LocalView>().tree().child(0).finiteElement().localBasis())>> localBasis;
+    Ikarus::LocalBasis<
+        std::remove_cvref_t<decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis())>>
+        localBasis;
     double emod_;
     double nu_;
   };
+
+
 
 }  // namespace Ikarus::FiniteElements

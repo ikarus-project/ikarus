@@ -44,4 +44,34 @@ namespace Ikarus
     using ScalarType = typename GridEntity::Geometry::ctype;
   };
 
+  struct EmodulAndNu {
+    double emodul;
+    double nu;
+  };
+
+  template <typename ValuePair>
+  struct ConvertLameConstants {
+    ConvertLameConstants(ValuePair&& p_vp) : vp(p_vp) {}
+
+
+    double toLambda() {
+      if constexpr (std::is_same_v<ValuePair, EmodulAndNu>) {
+        auto& E  = vp.emodul;
+        auto& nu = vp.nu;
+        return E * nu / ((1 + nu) * (1 - 2 * nu));
+      }
+      else assert(false && "Your LameParameter request is not implemented");
+    }
+    ValuePair vp;
+  };
+
+  //  template <typename ValuePair, typename ConvertTo>
+  //  double convertLameConstants(ValuePair&& p_vp, ConvertTo&& convertTo )
+  //  {
+  //    return ConvertLameConstants(p_vp).t
+  //  }
+
+
 }
+
+
