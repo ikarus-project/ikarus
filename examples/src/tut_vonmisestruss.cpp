@@ -145,6 +145,17 @@ int main() {
     auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double,2>>(basis,u);
     Dune::VTKWriter vtkWriter(gridView);
     vtkWriter.addVertexData(disp, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
+
+    auto& indexSet = gridView.indexSet();
+    std::vector<double> Nsigma(indexSet.size(0));
+    std::vector<double> NPK2(indexSet.size(0));
+    for (auto& ele : elements(gridView)) {
+      localView.bind(ele);
+      Nsigma[indexSet.index(ele)] = Truss::calculateNormalForce(localView,u,false);
+      NPK2[indexSet.index(ele)] = Truss::calculateNormalForce(localView,u,true);
+    }
+    vtkWriter.addCellData(Nsigma,"Nsigma",1);
+    vtkWriter.addCellData(NPK2,"NPK2",1);
     vtkWriter.write("TestTruss" + std::to_string(ls));
   }
 

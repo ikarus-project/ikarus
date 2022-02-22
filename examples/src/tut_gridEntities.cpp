@@ -11,6 +11,7 @@
 #include <Eigen/Dense>
 
 #include <ikarus/Grids/GridHelper/griddrawer.h>
+#include <dune/grid/io/file/vtk/vtkwriter.hh>
 
 int main() {
   /// Create ALUGrid from gmsh file
@@ -23,9 +24,8 @@ int main() {
 
   /// Calculate area from volume function of elements
   double area1 = 0.0;
-  for (auto& element : elements(gridView)) {
+  for (auto& element : elements(gridView))
     area1 += element.geometry().volume();
-  }
 
   /// Integrate function using integration rule on grid
   auto f       = [](auto&& global) { return sqrt(global[0] * global[0] + global[1] * global[1]); };
@@ -61,6 +61,18 @@ int main() {
     if (element.hasBoundaryIntersections())
       for (auto& intersection : intersections(gridView, element))
         if (intersection.boundary()) circumference += intersection.geometry().volume();
+
+  std::vector<double> areas;
+  areas.resize(gridView.size(0));
+
+  auto& indexSet = gridView.indexSet();
+  for (auto& ele : elements(gridView))
+    areas[indexSet.index(ele)] = ele.geometry().volume();
+
+  Dune::VTKWriter vtkWriter(gridView);
+  vtkWriter.addCellData(areas,"area", 1);
+  vtkWriter.write("TestGridEntitites");
+
 
   std::cout << circumference << " " << std::numbers::pi << std::endl;
 }

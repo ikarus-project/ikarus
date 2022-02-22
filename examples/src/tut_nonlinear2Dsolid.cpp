@@ -29,33 +29,33 @@ int main() {
   using namespace Ikarus;
   constexpr int gridDim = 2;
   /// ALUGrid Example
-  //    using Grid = Dune::ALUGrid<gridDim, 2, Dune::simplex, Dune::conforming>;
-  //    auto grid  = Dune::GmshReader<Grid>::read("../../tests/src/testFiles/unstructuredTrianglesfine.msh", false);
+      using Grid = Dune::ALUGrid<gridDim, 2, Dune::simplex, Dune::conforming>;
+      auto grid  = Dune::GmshReader<Grid>::read("../../tests/src/testFiles/unstructuredTrianglesfine.msh", false);
 
   /// IGA Grid Example
-  constexpr auto dimworld              = 2;
-  const std::array<int, gridDim> order = {2, 2};
-
-  const std::array<std::vector<double>, gridDim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
-
-  using ControlPoint = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointType;
-
-  const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {0, 0}, .w = 1}, {.p = {0.5, 0}, .w = 1}, {.p = {1, 0}, .w = 1}},
-         {{.p = {0, 0.5}, .w = 1}, {.p = {0.5, 0.5}, .w = 1}, {.p = {1, 0.5}, .w = 1}},
-         {{.p = {0, 1}, .w = 1}, {.p = {0.5, 1}, .w = 1}, {.p = {1, 1}, .w = 1}}};
-
-  std::array<int, gridDim> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
-
-  auto controlNet = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
-  using Grid      = Dune::IGA::NURBSGrid<gridDim, dimworld>;
-
-  Dune::IGA::NURBSPatchData<gridDim, dimworld> patchData;
-  patchData.knotSpans     = knotSpans;
-  patchData.degree        = order;
-  patchData.controlPoints = controlNet;
-  auto grid               = std::make_shared<Grid>(patchData);
-  grid->globalRefine(2);
+//  constexpr auto dimworld              = 2;
+//  const std::array<int, gridDim> order = {2, 2};
+//
+//  const std::array<std::vector<double>, gridDim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+//
+//  using ControlPoint = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointType;
+//
+//  const std::vector<std::vector<ControlPoint>> controlPoints
+//      = {{{.p = {0, 0}, .w = 5}, {.p = {0.5, 0}, .w = 1}, {.p = {1, 0}, .w = 1}},
+//         {{.p = {0, 0.5}, .w = 1}, {.p = {0.5, 0.5}, .w = 10}, {.p = {1, 0.5}, .w = 1}},
+//         {{.p = {0, 1}, .w = 1}, {.p = {0.5, 1}, .w = 1}, {.p = {1, 1}, .w = 1}}};
+//
+//  std::array<int, gridDim> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
+//
+//  auto controlNet = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+//  using Grid      = Dune::IGA::NURBSGrid<gridDim, dimworld>;
+//
+//  Dune::IGA::NURBSPatchData<gridDim, dimworld> patchData;
+//  patchData.knotSpans     = knotSpans;
+//  patchData.degree        = order;
+//  patchData.controlPoints = controlNet;
+//  auto grid               = std::make_shared<Grid>(patchData);
+//  grid->globalRefine(3);
 
   /// YaspGrid Example
   //  using Grid        = Dune::YaspGrid<gridDim>;
@@ -71,8 +71,8 @@ int main() {
   auto gridView = grid->leafGridView();
 
   using namespace Dune::Functions::BasisFactory;
-    auto basis = makeBasis(gridView, power<gridDim>(gridView.getPreBasis(), FlatInterleaved()));
-//  auto basis = makeBasis(gridView, power<gridDim>(lagrange<1>(), FlatInterleaved()));
+//    auto basis = makeBasis(gridView, power<gridDim>(gridView.getPreBasis(), FlatInterleaved()));
+  auto basis = makeBasis(gridView, power<gridDim>(lagrange<1>(), FlatInterleaved()));
   std::cout << "This gridview cotains: " << std::endl;
   std::cout << gridView.size(2) << " vertices" << std::endl;
   std::cout << gridView.size(1) << " edges" << std::endl;
@@ -82,9 +82,14 @@ int main() {
   draw(gridView);
   auto localView = basis.localView();
   std::vector<Ikarus::FiniteElements::NonLinearElasticityFEWithLocalBasis<decltype(basis)>> fes;
-  for (auto& element : elements(gridView))
-    fes.emplace_back(basis,element, 1000, 0.3);
+  for (auto& element : elements(gridView)) {
+    localView.bind(element);
+    auto& first_child = localView.tree().child(0);
+    const auto& fe    = first_child.finiteElement();
+    Ikarus::LocalBasis localBasis(fe.localBasis());
 
+    fes.emplace_back(basis, element, 1000, 0.3);
+  }
 
   std::vector<bool> dirichletFlags(basis.size(), false);
 
