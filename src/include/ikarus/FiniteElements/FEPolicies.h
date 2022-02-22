@@ -43,7 +43,7 @@ namespace Ikarus::FiniteElements {
     using RootBasis   = Basis;
     using LocalView= typename Basis::LocalView;
     using GlobalIndex = typename LocalView::MultiIndex;
-    explicit FEDisplacement(const Basis& p_basis,typename LocalView::Element& element) : localView{p_basis.localView()} {
+    explicit FEDisplacement(const Basis& p_basis,const typename LocalView::Element& element) : localView{p_basis.localView()} {
       static_assert(Ikarus::Concepts::PowerBasis<RootBasis>,
                     "You didn't pass a localview of a power basis to this method");
       static_assert(RootBasis::PreBasis::Node::CHILDREN == worlddim,

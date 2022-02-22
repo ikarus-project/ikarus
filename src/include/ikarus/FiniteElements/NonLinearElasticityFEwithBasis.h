@@ -52,10 +52,13 @@ namespace Ikarus::FiniteElements {
     friend BaseAD ;
     using FERequirementType = FErequirements<Eigen::VectorXd>;
     using LocalView = typename Basis::LocalView;
-    NonLinearElasticityFEWithLocalBasis(Basis& globalBasis,typename LocalView::Element& element, double emod, double nu)
+    NonLinearElasticityFEWithLocalBasis(Basis& globalBasis,const typename LocalView::Element& element, double emod, double nu)
         :  BaseDisp(globalBasis,element), BaseAD(globalBasis,element), localView_{globalBasis.localView()}, emod_{emod}, nu_{nu} {
 
       localView_.bind(element);
+      const int order  = 2 * (localView_.tree().child(0).finiteElement().localBasis().order());
+      localBasis = Ikarus::LocalBasis(localView_.tree().child(0).finiteElement().localBasis());
+      localBasis.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order),0,1);
     }
 
     using Traits = TraitsFromLocalView<LocalView>;
@@ -89,32 +92,32 @@ namespace Ikarus::FiniteElements {
       C(2, 2)           = (1 - nu_) / 2;
       C *= emod_ / (1 - nu_ * nu_);
       const auto geo = localView_.element().geometry();
-      Ikarus::LocalBasis localBasis(fe.localBasis());
-      Eigen::Matrix<double, Eigen::Dynamic, Traits::mydim> dN;
-      Eigen::VectorXd N;
-      for (auto& gp : rule) {
+//      Ikarus::LocalBasis localBasis(fe.localBasis());
+//      Eigen::Matrix<double, Eigen::Dynamic, Traits::mydim> dN;
+//      Eigen::VectorXd N;
+      for (const auto& [index, gp ,N, dN] : localBasis.viewOverFunctionAndJacobian()) {
         const auto J = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
-        localBasis.evaluateFunctionAndJacobian(gp.position(), N, dN);
+//        localBasis.evaluateFunctionAndJacobian(gp.position(), N, dN);
         const Eigen::Vector<double, Traits::worlddim> X = toEigenVector(geo.global(gp.position()));
         Eigen::Vector<ScalarType, Traits::worlddim> x   = X;
         for (int i = 0; i < N.size(); ++i)
           x += disp.col(i) * N[i];
 
-        dN *= J.inverse();
-        const auto H      = DefoGeo<ScalarType>::jacobianTransposed(dN, disp).eval();
+        const auto H      = DefoGeo<ScalarType>::jacobianTransposed(dN*J.inverse(), disp).eval();
         const auto E      = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
         const auto EVoigt = toVoigt(E);
 
         Eigen::Vector<double, Traits::worlddim> fext;
         fext.setZero();
-        fext[1] = lambda;
-        fext[0] = lambda*0;
-        energy += (EVoigt.dot(C * EVoigt) - x.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
+        fext[1] = 2*lambda;
+        fext[0] = lambda;
+        energy += (0.5*EVoigt.dot(C * EVoigt) - x.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
       }
       return energy;
     }
 
     LocalView localView_;
+    Ikarus::LocalBasis< std::remove_cvref_t<decltype( std::declval<LocalView>().tree().child(0).finiteElement().localBasis())>> localBasis;
     double emod_;
     double nu_;
   };

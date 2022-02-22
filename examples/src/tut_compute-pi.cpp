@@ -108,7 +108,7 @@ int main(int argc, char** argv) {
       area1 += element.geometry().volume();
 
     std::cout << "area1 " << area1 << " " << std::numbers::pi << std::endl;
-//    draw(gridViewRefined);
+    draw(gridViewRefined);
   }
   /// Calculate circumference and compare to pi
   double circumference = 0.0;
