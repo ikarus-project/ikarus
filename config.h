@@ -2,6 +2,8 @@
    It was generated from config_collected.h.cmake which in turn is generated automatically
    from the config.h.cmake files of modules this module depends on. */
 
+#define EIGEN_SPARSEMATRIX_PLUGIN "eigenSparseAddon.h"
+
 /* Define to 1 if you have module ikarus available */
 #define HAVE_IKARUS 1
 

@@ -113,7 +113,7 @@ int main() {
     Eigen::Matrix<double, 2, 2> Kred = K({2, 3}, {2, 3});
     Eigen::Vector<double, 2> Rred    = R({2, 3});
     Rred[1] -= -lambda;
-    Rred[0] -= -lambda;
+    Rred[0] -= -lambda*0;
     return std::make_tuple(Kred, Rred);
   };
 

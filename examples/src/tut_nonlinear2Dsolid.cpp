@@ -2,6 +2,7 @@
 // Created by Alex on 21.07.2021.
 //
 
+#include "../../config.h"
 #include <dune/alugrid/grid.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
@@ -25,7 +26,8 @@
 #include <ikarus/LinearAlgebra/NonLinearOperator.h>
 #include <ikarus/utils/utils/algorithms.h>
 
-int main() {
+int main(int argc, char **argv) {
+  Dune::MPIHelper::instance(argc,argv);
   using namespace Ikarus;
   constexpr int gridDim = 2;
   /// ALUGrid Example
@@ -95,7 +97,7 @@ int main() {
 
   Ikarus::markDirichletBoundaryDofs(basis, dirichletFlags,
                                     [](auto&& centerCoord) { return (std::abs(centerCoord[1]) < 1e-8); });
-  auto denseAssembler = DenseFlatAssembler(basis, fes, dirichletFlags);
+  auto denseAssembler = DenseFlatSimpleAssembler(basis, fes, dirichletFlags);
 
   Eigen::VectorXd d;
   d.setZero(basis.size());

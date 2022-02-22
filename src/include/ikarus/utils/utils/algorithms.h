@@ -41,4 +41,5 @@ namespace Ikarus::utils {
     return (std::ranges::subrange(cont.begin(), cont.end()) | std::views::transform(transformValueToPointer));
   }
 
+
 }  // namespace Ikarus::utils

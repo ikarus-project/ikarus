@@ -200,7 +200,7 @@ int main() {
       fes.emplace_back(basis, ele, Emod, nu, thickness);
 
     /// Create assembler
-    auto denseAssembler = DenseFlatAssembler(basis, fes, dirichletFlags);
+    auto denseAssembler = DenseFlatSimpleAssembler(basis, fes, dirichletFlags);
 
     /// Create non-linear operator with potential energy
     Eigen::VectorXd w;

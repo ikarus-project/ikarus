@@ -30,16 +30,18 @@
 #include <ikarus/Variables/ParameterFactory.h>
 
 using namespace Ikarus;
-template <typename LV>
-struct Truss : Ikarus::FiniteElements::FEDisplacement<LV>, Ikarus::AutoDiffFEClean<Truss<LV>, LV> {
-  using BaseDisp          = Ikarus::FiniteElements::FEDisplacement<LV>;
-  using BaseAD            = Ikarus::AutoDiffFEClean<Truss<LV>, LV>;
-  friend BaseAD ;
-  using LocalView         = LV;
+template <typename Basis>
+struct Truss : Ikarus::FiniteElements::FEDisplacement<Basis>, Ikarus::AutoDiffFEClean<Truss<Basis>, Basis> {
+  using BaseDisp          = Ikarus::FiniteElements::FEDisplacement<Basis>;
+  using BaseAD            = Ikarus::AutoDiffFEClean<Truss<Basis>, Basis>;
+  friend BaseAD;
+  using LocalView         = typename Basis::LocalView;
   using FERequirementType = typename BaseAD::FERequirementType;
   using Traits            = TraitsFromLocalView<LocalView>;
-  Truss(const LocalView& localView, double p_EA)
-      : BaseDisp(localView), BaseAD(localView), localView_{localView}, EA{p_EA} {}
+  Truss(const Basis& basis,const typename LocalView::Element & element, double p_EA)
+      : BaseDisp(basis,element), BaseAD(basis,element), localView_{basis.localView()}, EA{p_EA} {
+    localView_.bind(element);
+  }
 
 private:
   template <class Scalar>
@@ -92,21 +94,18 @@ int main() {
   auto basis = makeBasis(gridView, power<2>(lagrange<1>(), FlatInterleaved()));
 
   /// Create finite elements
-  auto localView  = basis.localView();
   const double EA = 100;
-  std::vector<Truss<decltype(localView)>> fes;
-  for (auto& ele : elements(gridView)) {
-    localView.bind(ele);
-    fes.emplace_back(localView, EA);
-  }
+  std::vector<Truss<decltype(basis)>> fes;
+  for (auto& ele : elements(gridView))
+    fes.emplace_back(basis,ele, EA);
+
 
   /// Collect dirichlet nodes
   std::vector<bool> dirichletFlags(basis.size(),false);
-//  std::fill(dirichletFlags.begin(), dirichletFlags.end(), false);
   Dune::Functions::forEachBoundaryDOF(basis, [&](auto&& index) { dirichletFlags[index] = true; });
 
   /// Create assembler
-  auto denseFlatAssembler = DenseFlatAssembler(basis, fes, dirichletFlags);
+  auto denseFlatAssembler = DenseFlatSimpleAssembler(basis, fes, dirichletFlags);
 
   /// Create non-linear operator
   double lambda = 0;

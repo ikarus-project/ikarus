@@ -2,6 +2,7 @@
 // Created by Alex on 21.07.2021.
 //
 #include <gmock/gmock.h>
+#include "../../config.h"
 #include <gtest/gtest.h>
 
 #include "testHelpers.h"
@@ -25,6 +26,7 @@
 #include "ikarus/basis/basishelper.h"
 #include "ikarus/utils/Observer/controlVTKWriter.h"
 #include "ikarus/utils/Observer/nonLinearSolverLogger.h"
+#include "ikarus/Assembler/SimpleAssemblers.h"
 #include <ikarus/Grids/GridHelper/griddrawer.h>
 #include <ikarus/LinearAlgebra/NonLinearOperator.h>
 #include <ikarus/utils/concepts.h>
@@ -92,20 +94,17 @@ GTEST_TEST(LoadControlTestWithUGGrid, GridLoadControlTestWithUGGrid) {
   draw(gridView);
 
 
-  std::vector<Ikarus::FiniteElements::IFiniteElement<decltype(basis)::LocalView,Eigen::VectorXd>> fes;
+  std::vector<Ikarus::FiniteElements::NonLinearElasticityFEWithLocalBasis<decltype(basis)>> fes;
   auto localView = basis.localView();
-  for (auto& element : elements(basis.gridView())) {
-    localView.bind(element);
-//    decltype(localView)::MultiIndex
-    fes.emplace_back(Ikarus::FiniteElements::NonLinearElasticityFEWithLocalBasis<decltype(localView)>(localView, 1000, 0.3));
-  }
+  for (auto& element : elements(basis.gridView()))
+    fes.emplace_back(basis,element, 1000, 0.3);
 
   std::vector<bool> dirichletFlags(basis.size());
 
   Ikarus::markDirichletBoundaryDofs(basis, dirichletFlags,
                                     [](auto&& centerCoord) { return (std::abs(centerCoord[1]) < 1e-8); });
   Ikarus::utils::printContent(dirichletFlags);
-  auto denseAssembler = DenseFlatAssembler(basis, fes, dirichletFlags);
+  auto denseAssembler = DenseFlatSimpleAssembler(basis, fes, dirichletFlags);
 
   Eigen::VectorXd d;
   d.setZero(basis.size());
@@ -124,7 +123,7 @@ GTEST_TEST(LoadControlTestWithUGGrid, GridLoadControlTestWithUGGrid) {
 
   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<decltype(basis)>>(basis, d, 2);
   vtkWriter->setFileNamePrefix("TestIGA");
-  vtkWriter->setVertexSolutionName("displacement");
+  vtkWriter->setFieldInfo("displacement",Dune::VTK::FieldInfo::Type::vector,2);
   nr.subscribeAll(nonLinearSolverObserver);
 
   auto lc = Ikarus::LoadControl(std::move(nr), 20, {0, 2000});
