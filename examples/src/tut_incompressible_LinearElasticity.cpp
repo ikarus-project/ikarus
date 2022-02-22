@@ -176,7 +176,7 @@ int main(int argc, char** argv) {
                                     [](auto&& centerCoord) { return (std::abs(centerCoord[1]) < 1e-8); });
 
   /// Create assembler
-  auto sparseFlatAssembler = SparseFlatAssembler(basis, fes, dirichletFlags);
+  auto sparseFlatAssembler = DenseFlatAssembler(basis, fes, dirichletFlags);
   auto denseFlatAssembler  = DenseFlatAssembler(basis, fes, dirichletFlags);
 
   /// Create non-linear operator
