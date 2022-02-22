@@ -11,7 +11,6 @@
 
 #include "ikarus/Assembler/SimpleAssemblers.h"
 #include "ikarus/Grids/GridHelper/griddrawer.h"
-#include "ikarus/LinearAlgebra/DirichletConditionManager.h"
 #include "ikarus/Solver/NonLinearSolver/NewtonRaphson.hpp"
 #include "ikarus/utils/Observer/nonLinearSolverLogger.h"
 #include <ikarus/LinearAlgebra/NonLinearOperator.h>

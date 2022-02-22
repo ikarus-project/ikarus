@@ -54,14 +54,7 @@ int main() {
     }
     std::cout << area1 << " " << std::numbers::pi << std::endl;
   }
-
-  /// Calculate circumference and compare to pi
-  double circumference = 0.0;
-  for (auto& element : elements(gridView))
-    if (element.hasBoundaryIntersections())
-      for (auto& intersection : intersections(gridView, element))
-        if (intersection.boundary()) circumference += intersection.geometry().volume();
-
+  /// write element areas to vtk
   std::vector<double> areas;
   areas.resize(gridView.size(0));
 
@@ -73,6 +66,12 @@ int main() {
   vtkWriter.addCellData(areas,"area", 1);
   vtkWriter.write("TestGridEntitites");
 
+  /// Calculate circumference and compare to pi
+  double circumference = 0.0;
+  for (auto& element : elements(gridView))
+    if (element.hasBoundaryIntersections())
+      for (auto& intersection : intersections(gridView, element))
+        if (intersection.boundary()) circumference += intersection.geometry().volume();
 
   std::cout << circumference << " " << std::numbers::pi << std::endl;
 }
