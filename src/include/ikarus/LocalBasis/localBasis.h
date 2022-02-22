@@ -50,6 +50,10 @@ namespace Ikarus {
       evaluateFunction(local, N);
       evaluateJacobian(local, dN);
     }
+    
+    unsigned int size(){
+      return duneLocalBasis->size();
+    }
 
     template <typename IntegrationRule, typename... Ints>
     requires std::conjunction_v<std::is_convertible<int, Ints>...>
