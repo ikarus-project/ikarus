@@ -111,7 +111,7 @@ private:
 
       const auto gradu      = DefoGeo<ScalarType>::jacobianTransposed(dNdisp * J.inverse(), disp).eval();
       const auto symgradu   = sym(gradu);
-      const ScalarType divU = gradu(0, 0) + gradu(1, 1);
+      const ScalarType divU = gradu.diagonal().sum();
 
       Eigen::Vector<double, Traits::worlddim> fext;
       fext.setZero();
@@ -120,7 +120,7 @@ private:
 
       energy += (0.5 * (2 * mu_ * symgradu.squaredNorm() - 1 / lambdaMat * Dune::power(pressure, 2)) + pressure * divU
                  - x.dot(fext))
-                * geo.integrationElement(gp.position()) * gp.weight();
+                * geo.integrationElement(gp.position()) * gp.weight(); //plane strain for 2D
     }
     return energy;
   }

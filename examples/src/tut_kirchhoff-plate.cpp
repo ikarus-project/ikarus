@@ -39,14 +39,14 @@ struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<Basis>,
 
   KirchhoffPlate(const Basis& basis, const typename LocalView::Element& element, double p_Emodul, double p_nu,
                  double p_thickness)
-      : BaseDisp(basis,element),
-        BaseAD(basis,element),
+      : BaseDisp(basis, element),
+        BaseAD(basis, element),
         localView_{basis.localView()},
         Emodul{p_Emodul},
         nu{p_nu},
         thickness{p_thickness} {
     localView_.bind(element);
-    geometry_=localView_.element().geometry();
+    geometry_ = localView_.element().geometry();
   }
 
   static Eigen::Matrix<double, 3, 3> constitutiveMatrix(double Emod, double p_nu, double p_thickness) {
@@ -62,7 +62,7 @@ struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<Basis>,
   }
 
   template <class Scalar>
-  Scalar calculateScalarImpl(const FERequirementType& par, const Eigen::VectorX<Scalar>& dx) const {
+  [[nodiscard]] Scalar calculateScalarImpl(const FERequirementType& par, const Eigen::VectorX<Scalar>& dx) const {
     const auto& wGlobal = par.sols[0].get();
     const auto& lambda  = par.parameter.at(Ikarus::FEParameter::loadfactor);
     const auto D        = constitutiveMatrix(Emodul, nu, thickness);
@@ -86,7 +86,6 @@ struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<Basis>,
       std::vector<Dune::FieldVector<double, 1>> N_dune;
       Eigen::VectorXd N(fe.size());
 
-      //      localBasis.evaluateJacobian(gp.position(), dN_xi_eta);
       localBasis.evaluateFunction(gp.position(), N_dune);
       std::ranges::copy(N_dune, N.begin());
       localBasis.partial({2, 0}, gp.position(), dN_xixi);
@@ -94,7 +93,7 @@ struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<Basis>,
       localBasis.partial({0, 2}, gp.position(), dN_etaeta);
 
       const auto Jinv = Ikarus::toEigenMatrix(geometry_.jacobianInverseTransposed(gp.position())).transpose().eval();
-      //      std::cout << Jinv << std::endl;
+
       Eigen::VectorXd dN_xx(fe.size());
       Eigen::VectorXd dN_yy(fe.size());
       Eigen::VectorXd dN_xy(fe.size());
@@ -179,8 +178,8 @@ int main() {
   patchData = Dune::IGA::degreeElevate(patchData, 0, 1);
   patchData = Dune::IGA::degreeElevate(patchData, 1, 1);
   Grid grid(patchData);
-  grid.globalRefine(0);
-  for (int ref = 0; ref < 3; ++ref) {
+
+  for (int ref = 0; ref < 5; ++ref) {
     auto gridView = grid.leafGridView();
     //    draw(gridView);
     using namespace Dune::Functions::BasisFactory;
@@ -207,36 +206,26 @@ int main() {
     w.setZero(basis.size());
     double lambda = 0.0;
 
-    auto energyFunction = [&](auto&& lambdaL, auto&& wL) -> auto {
-      return denseAssembler.getScalar(potentialEnergy, wL, lambdaL);
-    };
     auto fintFunction = [&](auto&& lambdaL, auto&& wL) -> auto& {
       return denseAssembler.getVector(forces, wL, lambdaL);
     };
     auto KFunction = [&](auto&& lambdaL, auto&& wL) -> auto& {
       return denseAssembler.getMatrix(stiffness, wL, lambdaL);
     };
-    auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, fintFunction, KFunction),
-                                              parameter(lambda, w));
-    /// Create linear solver from tag
-    auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
-    /// Create Newton-Rhapson method and pass first and second derivative as new nonlinear operator
-    auto nr                      = Ikarus::NewtonRaphson(nonLinOp.subOperator<1, 2>(), std::move(linSolver));
-    auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
 
-    /// Create vtk writer observer, it writes the function w into a vtk file when the control routine signals
-    /// SOLUTION_CHANGED
-    auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<decltype(basis)>>(basis, w, 1);
-    vtkWriter->setFileNamePrefix("TestKplate");
-    vtkWriter->setFieldInfo("w", Dune::VTK::FieldInfo::Type::scalar, 1);
-    nr.subscribeAll(nonLinearSolverObserver);
+    const double totalLoad = 2000;
+    const auto& K  = KFunction(totalLoad, w);
+    const auto& R  = fintFunction(totalLoad, w);
+    Eigen::LDLT<Eigen::MatrixXd> solver;
+    solver.compute(K);
+    w -= solver.solve(R);
 
-    /// Run Load control
-    const double totalLoad   = 2000;
-    auto lc                  = Ikarus::LoadControl(std::move(nr), 1, {0, totalLoad});
-    auto loadControlObserver = std::make_shared<Ikarus::LoadControlObserver>();
-    lc.subscribeAll({vtkWriter, loadControlObserver});
-    lc.run();
+    //Output solution to vtk
+    auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<double>(basis, w);
+    Dune::SubsamplingVTKWriter vtkWriter(gridView,Dune::refinementLevels(2));
+    vtkWriter.addVertexData(w, Dune::VTK::FieldInfo("w", Dune::VTK::FieldInfo::Type::scalar, 1));
+    vtkWriter.write("Test_KPlate");
+
 
     /// Create analytical solution function for the simply supported case
     const double D = Emod * Dune::power(thickness, 3) / (12 * (1 - Dune::power(nu, 2)));
@@ -260,8 +249,8 @@ int main() {
     // clamped sol http://faculty.ce.berkeley.edu/rlt/reports/clamp.pdf
     const double wCenterClamped = 1.265319087 / (D / (totalLoad * Dune::power(Lx, 4)) * 1000.0);
     //    std::cout << wCenterClamped << std::endl;
-    auto disp      = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 1>>(basis, w);
-    auto localDisp = localFunction(disp);
+    auto wGlobalFunction      = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 1>>(basis, w);
+    auto localDisp = localFunction(wGlobalFunction);
 
     /// Calculate L_2 error for simply supported case
     double l2_error = 0.0;
@@ -287,14 +276,14 @@ int main() {
     grid.globalRefine(1);
   }
   /// Draw L_2 error over dofs count
-    using namespace matplot;
-    auto f  = figure(true);
-    auto ax = gca();
-    ax->y_axis().label("L2_error");
+  using namespace matplot;
+  auto f  = figure(true);
+  auto ax = gca();
+  ax->y_axis().label("L2_error");
 
-    ax->x_axis().label("#Dofs");
-    auto p = ax->loglog(dofsVec, l2Evcector);
-    p->line_width(2);
-    p->marker(line_spec::marker_style::asterisk);
-    show();
+  ax->x_axis().label("#Dofs");
+  auto p = ax->loglog(dofsVec, l2Evcector);
+  p->line_width(2);
+  p->marker(line_spec::marker_style::asterisk);
+  show();
 }
