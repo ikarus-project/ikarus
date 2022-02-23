@@ -30,21 +30,34 @@ struct OneDimensionalTrussElement {
   using LocalView         = typename Basis::LocalView;
   using GlobalIndex       = typename LocalView::MultiIndex;
   using FERequirementType = Ikarus::FErequirements<Eigen::VectorXd>;
-  OneDimensionalTrussElement(const Basis& basis, const typename LocalView::Element& element, double p_EA) {
+  OneDimensionalTrussElement(const Basis& basis, const typename LocalView::Element& element,
+                             double p_EA) {
+    // create local view and bind it to an element
     LocalView localView = basis.localView();
     localView.bind(element);
+
+    // calculate and store stiffness matrix
     double detJ = element.geometry().integrationElement(0.0);
     calculateStiffnessMatrix(localView, detJ, p_EA);
+
+    // store glocal indices
     calculateGlobalIndices(localView);
   }
 
-  [[nodiscard]] Eigen::Matrix2d calculateMatrix(const Ikarus::FErequirements<Eigen::VectorXd>& requirements) const {
+  // Assembler requires calculateMatrix function
+  [[nodiscard]] Eigen::Matrix2d calculateMatrix(const FERequirementType& requirements) const {
     if (requirements.matrixAffordances == Ikarus::stiffness)
       return stiffnessMatrix_;
     else
       throw std::runtime_error("The requested matrix type is not implemented;");
   }
 
+  // Assembler requires globalIndices function
+  [[nodiscard]] std::vector<GlobalIndex> globalIndices() const {
+    return globalIndices_;
+  }
+
+  // function to calculate the stiffness matrix
   void calculateStiffnessMatrix(LocalView localView, double detJ, double EA) {
     auto& fe = localView.tree().finiteElement();
     Ikarus::LocalBasis localBasis(fe.localBasis());
@@ -61,15 +74,14 @@ struct OneDimensionalTrussElement {
     }
   }
 
+  // function to get the global indices from the local view
   void calculateGlobalIndices(LocalView localView) {
     const auto& fe = localView.tree().finiteElement();
     for (size_t i = 0; i < fe.size(); ++i)
       globalIndices_.push_back(localView.index(localView.tree().localIndex(i)));
   }
 
-  [[nodiscard]] std::vector<GlobalIndex> globalIndices() const {
-    return globalIndices_;
-  }
+
 private:
   Eigen::Matrix2d stiffnessMatrix_;
   std::vector<GlobalIndex> globalIndices_;
@@ -80,35 +92,44 @@ void exampleTrussElement(){
   const double L = 1;
   const double EA = 1.0;
   const int numElements = 10;
-  const int numGP = 2;
+  const int numGP = 1;
+
+  // create a grid and grid view
   Dune::OneDGrid grid(numElements, 0, L);
   auto gridView = grid.leafGridView();
- //draw(gridView);
+  draw(gridView);
+
+  // create a basis and a local view
   using namespace Dune::Functions::BasisFactory;
   auto basis = makeBasis(gridView, lagrange<1>());
   auto localView = basis.localView();
 
+  // initialize the global stiffness matrix
   auto numDofs = basis.size();
   Eigen::MatrixXd K_Glob = Eigen::MatrixXd::Zero(numDofs, numDofs);
 
+  // loop over all elements
   for (auto& ele : elements(gridView)) {
+    // bind basis to element and create local basis
     localView.bind(ele);
     auto& fe = localView.tree().finiteElement();
     Ikarus::LocalBasis localBasis(fe.localBasis());
-    const auto& rule = Dune::QuadratureRules<double, 1>::rule(ele.type(),numGP,Dune::QuadratureType::GaussLegendre);
 
-    Eigen::VectorXd dNdxi = Eigen::VectorXd::Zero(2);
+    // define quadrature rule
+    const auto& rule = Dune::QuadratureRules<double, 1>::
+        rule(ele.type(),numGP,Dune::QuadratureType::GaussLegendre);
+
+    // integration point loop
     Eigen::MatrixXd K = Eigen::MatrixXd::Zero(2,2);
-    Eigen::VectorXd B = Eigen::VectorXd::Zero(2);
-
-    auto detJ = ele.geometry().integrationElement(0.0);
     for (auto& gp : rule) {
+      auto detJ = ele.geometry().integrationElement(0.0);
+      Eigen::VectorXd dNdxi = Eigen::VectorXd::Zero(2);
       localBasis.evaluateJacobian(gp.position(),dNdxi);
-      B = dNdxi/detJ;
+      Eigen::VectorXd B = dNdxi/detJ;
       K += EA*B*B.transpose()*detJ*gp.weight();
     }
 
-    // Adding local stiffness the global stiffness
+    // Adding local stiffness to the global stiffness
     for (auto i = 0U; i < localView.size(); ++i)
       for (auto j = 0U; j < localView.size(); ++j)
         K_Glob(localView.index(i)[0], localView.index(j)[0]) += K(i,j);
@@ -118,7 +139,7 @@ void exampleTrussElement(){
   Eigen::VectorXd F_ExtGlobRed = Eigen::VectorXd::Zero(numDofs-1);
   F_ExtGlobRed(numDofs-2) = 1.0;
 
-  // reduce stiffness matrix (fix left end)
+  // reduce stiffness matrix (fix left end, i.e. fix first dof)
   const Eigen::MatrixXd K_GlobRed =
       K_Glob(Eigen::seq(1,Eigen::last),Eigen::seq(1,Eigen::last));
 
@@ -127,7 +148,7 @@ void exampleTrussElement(){
   linSolver.factorize(K_GlobRed);
   const Eigen::VectorXd D_GlobRed = linSolver.solve(F_ExtGlobRed);
 
-  std::cout << "Displacement: " << D_GlobRed(Eigen::last) << "\n";
+  std::cout << "Displacement: " << D_GlobRed(Eigen::last) << "; exact solution: " << L/EA << "\n";
 
 }
 
@@ -137,10 +158,13 @@ void exampleTrussElementWithAssembler(){
   const double L = 1;
   const double EA = 1.0;
   const int numElements = 10;
-  const int numGP = 2;
+
+  // grid
   Dune::OneDGrid grid(numElements, 0, L);
   auto gridView = grid.leafGridView();
-  //draw(gridView);
+  draw(gridView);
+
+  // basis
   using namespace Dune::Functions::BasisFactory;
   auto basis = makeBasis(gridView, lagrange<1>());
   auto numDofs = basis.size();
@@ -148,7 +172,6 @@ void exampleTrussElementWithAssembler(){
   // create vector of truss elements
   using BasisType = decltype(basis);
   std::vector<OneDimensionalTrussElement<BasisType>> trussElements;
-
   for (auto& ele : elements(gridView)) {
     trussElements.emplace_back(basis,ele,EA);
   }
@@ -171,7 +194,7 @@ void exampleTrussElementWithAssembler(){
   linSolver.factorize(K_GlobRed);
   const Eigen::VectorXd D_GlobRed = linSolver.solve(F_ExtGlobRed);
 
-  std::cout << "Displacement: " << D_GlobRed(Eigen::last) << "\n";
+  std::cout << "Displacement: " << D_GlobRed(Eigen::last) << "; exact solution: " << L/EA << "\n";
 
 }
 
@@ -362,5 +385,5 @@ void exampleTimoshenkoBeam() {
   int main(){
   exampleTrussElement();
   exampleTrussElementWithAssembler();
-  exampleTimoshenkoBeam();
+  //exampleTimoshenkoBeam();
 }
