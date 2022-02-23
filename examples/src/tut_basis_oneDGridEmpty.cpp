@@ -145,20 +145,15 @@ void exampleTrussElementWithAssembler(){
   // create assembler and assemble stiffness matrix
 
   // external force (1 one the right end)
-  Eigen::VectorXd F_ExtGlobRed = Eigen::VectorXd::Zero(numDofs);
-  F_ExtGlobRed(numDofs-1) = 1.0;
 
   // solve the linear system
-  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
-  linSolver.factorize(K_GlobRed);
-  const Eigen::VectorXd D_GlobRed = linSolver.solve(F_ExtGlobRed);
 
-  std::cout << "Displacement: " << D_GlobRed(Eigen::last) << "; exact solution: " << L/EA << "\n";
+  // solution output
 
 }
 
 
   int main(){
   exampleTrussElement();
-  exampleTrussElementWithAssembler();
+  // exampleTrussElementWithAssembler();
 }
