@@ -90,7 +90,7 @@ namespace Ikarus::FiniteElements {
       const int order  = 2 * (fe.localBasis().order());
       const auto& rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
       Eigen::Matrix3<ScalarType> C;
-      C.setZero();
+      C.setZero(); //plane stress
       C(0, 0) = C(1, 1) = 1;
       C(0, 1) = C(1, 0) = nu_;
       C(2, 2)           = (1 - nu_) / 2;

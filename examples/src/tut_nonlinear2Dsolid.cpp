@@ -30,10 +30,10 @@ int main(int argc, char **argv) {
   Dune::MPIHelper::instance(argc,argv);
   using namespace Ikarus;
   constexpr int gridDim = 2;
-  /// ALUGrid Example
+//  /// ALUGrid Example
       using Grid = Dune::ALUGrid<gridDim, 2, Dune::simplex, Dune::conforming>;
       auto grid  = Dune::GmshReader<Grid>::read("../../tests/src/testFiles/unstructuredTrianglesfine.msh", false);
-grid->globalRefine(2);
+grid->globalRefine(1);
   /// IGA Grid Example
 //  constexpr auto dimworld              = 2;
 //  const std::array<int, gridDim> order = {2, 2};
@@ -60,15 +60,15 @@ grid->globalRefine(2);
 //  grid->globalRefine(3);
 
   /// YaspGrid Example
-  //  using Grid        = Dune::YaspGrid<gridDim>;
-  //  const double L    = 1;
-  //  const double h    = 1;
-  //  const size_t elex = 10;
-  //  const size_t eley = 10;
-  //
-  //  Dune::FieldVector<double, 2> bbox = {L, h};
-  //  std::array<int, 2> eles           = {elex, eley};
-  //  auto grid                         = std::make_shared<Grid>(bbox, eles);
+//    using Grid        = Dune::YaspGrid<gridDim>;
+//    const double L    = 1;
+//    const double h    = 1;
+//    const size_t elex = 10;
+//    const size_t eley = 10;
+//
+//    Dune::FieldVector<double, 2> bbox = {L, h};
+//    std::array<int, 2> eles           = {elex, eley};
+//    auto grid                         = std::make_shared<Grid>(bbox, eles);
 
   auto gridView = grid->leafGridView();
 
@@ -84,14 +84,8 @@ grid->globalRefine(2);
   draw(gridView);
   auto localView = basis.localView();
   std::vector<Ikarus::FiniteElements::NonLinearElasticityFEWithLocalBasis<decltype(basis)>> fes;
-  for (auto& element : elements(gridView)) {
-    localView.bind(element);
-    auto& first_child = localView.tree().child(0);
-    const auto& fe    = first_child.finiteElement();
-    Ikarus::LocalBasis localBasis(fe.localBasis());
-
+  for (auto& element : elements(gridView))
     fes.emplace_back(basis, element, 1000, 0.3);
-  }
 
   std::vector<bool> dirichletFlags(basis.size(), false);
 

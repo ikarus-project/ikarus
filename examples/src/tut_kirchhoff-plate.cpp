@@ -180,7 +180,7 @@ int main() {
   patchData = Dune::IGA::degreeElevate(patchData, 1, 1);
   Grid grid(patchData);
   grid.globalRefine(0);
-  for (int ref = 0; ref < 5; ++ref) {
+  for (int ref = 0; ref < 3; ++ref) {
     auto gridView = grid.leafGridView();
     //    draw(gridView);
     using namespace Dune::Functions::BasisFactory;

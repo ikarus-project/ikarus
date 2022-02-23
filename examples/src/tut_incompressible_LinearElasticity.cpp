@@ -42,9 +42,8 @@ struct Solid : Ikarus::AutoDiffFEClean<Solid<Basis>, Basis> {
       : BaseAD(basis, element), localView_{basis.localView()}, emod_{emod}, nu_{nu} {
     localView_.bind(element);
 
-    bulkMod   = emod_ / (3 * (1 - 2 * nu_));
     mu_       = emod_ / (2 * (1 + nu_));
-    lambdaMat = emod_ * nu_ / ((1 + nu_) * (1 - 2 * nu_));
+    lambdaMat = convertLameConstants({.emodul = emod_, .nu = nu_}).toLamesFirstParameter();
   }
 
   using GlobalIndex = typename LocalView::MultiIndex;
@@ -68,7 +67,8 @@ private:
   template <typename ST>
   using DefoGeo = Ikarus::Geometry::GeometryWithExternalInput<ST, Traits::mydim, Traits::dimension>;
   template <class ScalarType>
-  [[nodiscard]] ScalarType calculateScalarImpl(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx) const {
+  [[nodiscard]] ScalarType calculateScalarImpl(const FERequirementType& par,
+                                               const Eigen::VectorX<ScalarType>& dx) const {
     const auto& d      = par.sols[0].get();
     const auto& lambda = par.parameter.at(FEParameter::loadfactor);
     Eigen::VectorX<ScalarType> localDisp(localView_.size());
@@ -116,10 +116,9 @@ private:
       Eigen::Vector<double, Traits::worlddim> fext;
       fext.setZero();
       fext[1] = lambda;
-      fext[0] = 0*lambda;
-      //      energy += (0.5 * 2*mu_ *symgradu.squaredNorm() - 0.5* 1/bulkMod * Dune::power(pressure,2) + pressure*divU
-      //      - x.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
-      energy += (0.5 * (2 * mu_ * symgradu.squaredNorm() - 1 / lambdaMat * Dune::power(pressure, 2) )+ pressure * divU
+      fext[0] = 0 * lambda;
+
+      energy += (0.5 * (2 * mu_ * symgradu.squaredNorm() - 1 / lambdaMat * Dune::power(pressure, 2)) + pressure * divU
                  - x.dot(fext))
                 * geo.integrationElement(gp.position()) * gp.weight();
     }
@@ -130,7 +129,6 @@ private:
   LocalView localView_;
   double emod_;
   double nu_;
-  double bulkMod;
   double mu_;
   double lambdaMat;
 };
@@ -142,21 +140,21 @@ int main(int argc, char** argv) {
   using namespace Ikarus;
   constexpr int gridDim = 2;
   //  /// ALUGrid Example
-  //  using Grid = Dune::ALUGrid<gridDim, 2, Dune::cube, Dune::nonconforming>;
-  //  auto grid  = Dune::GmshReader<Grid>::read("../../tests/src/testFiles/unstructuredQuadscoarse.msh", false);
-  ////  grid->globalRefine(2);
-  //  auto gridView = grid->leafGridView();
-  using Grid        = Dune::YaspGrid<gridDim>;
-  const double L    = 1;
-  const double h    = 1;
-  const size_t elex = 10;
-  const size_t eley = 10;
+//  using Grid = Dune::ALUGrid<gridDim, 2, Dune::cube, Dune::nonconforming>;
+//  auto grid  = Dune::GmshReader<Grid>::read("../../tests/src/testFiles/unstructuredQuadscoarse.msh", false);
+//  grid->globalRefine(1);
+//  auto gridView = grid->leafGridView();
+    using Grid        = Dune::YaspGrid<gridDim>;
+    const double L    = 1;
+    const double h    = 1;
+    const size_t elex = 20;
+    const size_t eley = 20;
 
-  Dune::FieldVector<double, 2> bbox = {L, h};
-  std::array<int, 2> eles           = {elex, eley};
-  auto grid                         = std::make_shared<Grid>(bbox, eles);
-  auto gridView                     = grid->leafGridView();
-  draw(gridView);
+    Dune::FieldVector<double, 2> bbox = {L, h};
+    std::array<int, 2> eles           = {elex, eley};
+    auto grid                         = std::make_shared<Grid>(bbox, eles);
+    auto gridView                     = grid->leafGridView();
+  //  draw(gridView);
 
   using namespace Dune::Functions::BasisFactory;
   /// Construct basis
@@ -172,11 +170,14 @@ int main(int argc, char** argv) {
 
   /// Collect dirichlet nodes
   std::vector<bool> dirichletFlags(basis.size(), false);
-  Ikarus::markDirichletBoundaryDofs(subspaceBasis(basis, _0), dirichletFlags,
-                                    [](auto&& centerCoord) { return (std::abs(centerCoord[1]) < 1e-8); });
+  Ikarus::markDirichletBoundaryDofs(subspaceBasis(basis, _0), dirichletFlags, [](auto&& centerCoord) {
+    return (std::abs(centerCoord[1]) < 1e-8) ;
+           //or (std::abs(centerCoord[0]) < 1e-8)
+          // or (std::abs(centerCoord[0]) > 1 - 1e-8);
+  });
 
   /// Create assembler
-  auto sparseFlatAssembler = DenseFlatAssembler(basis, fes, dirichletFlags);
+  auto sparseFlatAssembler = SparseFlatAssembler(basis, fes, dirichletFlags);
   auto denseFlatAssembler  = DenseFlatAssembler(basis, fes, dirichletFlags);
 
   /// Create non-linear operator
@@ -199,27 +200,33 @@ int main(int argc, char** argv) {
     return sparseFlatAssembler.getReducedMatrix(req);
   };
 
-
   auto K = KFunction(1, d);
   auto R = fintFunction(1, d);
-  Eigen::FullPivLU<decltype(K)> ld;
-  std::cout << K << std::endl;
+  //  Eigen::FullPivLU<decltype(K)> ld;
+  Eigen::SparseLU<decltype(K)> ld;
+  //  std::cout << K << std::endl;
   ld.compute(K);
-  std::cout <<"Rows: "<< K.rows() << std::endl;
-  std::cout <<"Rank: "<< ld.rank() << std::endl;
+  if (ld.info() != Eigen::Success) {
+    assert(false && "Failed Compute");
+  }
+  std::cout << "Rows: " << K.rows() << std::endl;
+  //  std::cout <<"Rank: "<< ld.rank() << std::endl;
   std::cout << "=======================" << std::endl;
   d -= denseFlatAssembler.createFullVector(ld.solve(R));
-  Ikarus::utils::printContent(dirichletFlags);
-  std::cout << "=======================" << std::endl;
-  std::cout << R << std::endl;
-  std::cout << "=======================" << std::endl;
-  std::cout << d << std::endl;
+  if (ld.info() != Eigen::Success) {
+    assert(false && "Failed Solve");
+  }
+//  Ikarus::utils::printContent(dirichletFlags);
+  //  std::cout << "=======================" << std::endl;
+  //  std::cout << R << std::endl;
+  //  std::cout << "=======================" << std::endl;
+  //  std::cout << d << std::endl;
 
   /// Postprocess
   auto disp
       = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(subspaceBasis(basis, _0), d);
   auto pressure = Dune::Functions::makeDiscreteGlobalBasisFunction<double>(subspaceBasis(basis, _1), d);
-  Dune::VTKWriter vtkWriter(gridView,Dune::VTK::nonconforming);
+  Dune::VTKWriter vtkWriter(gridView, Dune::VTK::nonconforming);
   vtkWriter.addVertexData(disp, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
   vtkWriter.addVertexData(pressure, Dune::VTK::FieldInfo("pressure", Dune::VTK::FieldInfo::Type::scalar, 1));
 
