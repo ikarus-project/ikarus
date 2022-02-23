@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
   Eigen::Rotation2D<double> R;
   R.angle() = 0.0;
   for (auto& corner : corners0) {
-   Eigen::Vector2d a = (R.toRotationMatrix()*v);
+   Eigen::Vector2d a = R*v;
    corner[0]=a[0];
    corner[1]=a[1];
    R.angle() += 60.0/180.0 * std::numbers::pi;
