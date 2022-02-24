@@ -19,16 +19,22 @@ RUN apt-get update -q -y && apt-get upgrade -y && \
         clang \
         libmetis-dev \
         clang-tidy \
-                libclang-13-dev \
-                libc++-13-dev \
-                libc++abi-13-dev \
-                llvm-13-dev \
+        libclang-13-dev \
+        libc++-13-dev \
+        libc++abi-13-dev \
+        llvm-13-dev \
         liblapack-dev \
         libblas-dev \
         libsuitesparse-dev \
         libdune-common-dev \
         libdune-geometry-dev \
         libdune-grid-dev \
+        libdune-functions-dev \
+        libdune-typetree-dev \
+        libdune-localfunctions-dev \
+        libdune-uggrid-dev \
+        libdune-grid-glue-dev \
+        libdune-istl-dev \
         libspdlog-dev \
         libbenchmark-dev \
         libgtest-dev \
@@ -80,6 +86,16 @@ RUN apt-get update -q -y && apt-get upgrade -y && \
         cmake .. -DAUTODIFF_BUILD_PYTHON=0 -DAUTODIFF_BUILD_EXAMPLES=0 -DAUTODIFF_BUILD_DOCS=0 -DAUTODIFF_BUILD_TESTS=0 && \
         cmake --build . --target install && \
         cd ../.. && \
+        mkdir dune && \
+        cd dune && \
+        git clone https://gitlab.dune-project.org/extensions/dune-alugrid.git && \
+        cd dune-alugrid && \
+        git checkout releases/2.8 && \
+        cd .. && \
+        git clone https://github.com/rath3t/dune-iga.git && \
+        dunecontrol cmake "-DCMAKE_BUILD_TYPE=Release" && \
+        dunecontrol make && \
+        dunecontrol make install && \
         apt-get auto-remove -y && \
         apt-get clean && \
         rm -rvf /var/lib/apt/lists/* && \
