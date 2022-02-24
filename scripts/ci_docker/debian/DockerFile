@@ -80,6 +80,14 @@ RUN apt-get update -q -y && apt-get upgrade -y && \
         cmake .. -DAUTODIFF_BUILD_PYTHON=0 -DAUTODIFF_BUILD_EXAMPLES=0 -DAUTODIFF_BUILD_DOCS=0 -DAUTODIFF_BUILD_TESTS=0 && \
         cmake --build . --target install && \
         cd ../.. && \
+        mkdir dune && \
+        cd dune && \
+        git clone https://gitlab.dune-project.org/extensions/dune-alugrid.git && \
+        git clone https://github.com/rath3t/dune-iga.git && \
+        dunecontrol --cmake-opts="CMAKE_FLAGS=`-DCMAKE_BUILD_TYPE=Release`" --module=dune-alugrid all && \
+        dunecontrol --cmake-opts="CMAKE_FLAGS=`-DCMAKE_BUILD_TYPE=Release`" --module=dune-iga all && \
+        dunecontrol --opts=dune.opts --module=dune-alugrid make install && \
+        dunecontrol --opts=dune.opts --module=dune-iga make install && \
         apt-get auto-remove -y && \
         apt-get clean && \
         rm -rvf /var/lib/apt/lists/* && \
