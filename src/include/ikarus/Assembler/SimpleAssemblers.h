@@ -551,7 +551,7 @@ namespace Ikarus {
       matRed.setZero(reducedSize(), reducedSize());
       for (auto& fe : feContainer) {
         const auto eleMat = fe.calculateMatrix(fErequirements);
-        const auto dofs = fe.globalIndices();
+        const auto dofs   = fe.globalIndices();
         assert(dofs.size() == static_cast<unsigned>(eleMat.rows()) && "The returned matrix has wrong rowSize!");
         assert(dofs.size() == static_cast<unsigned>(eleMat.cols()) && "The returned matrix has wrong colSize!");
         for (auto r = 0U; r < dofs.size(); ++r) {
@@ -562,9 +562,7 @@ namespace Ikarus {
               if (dirichletFlags->at(dofs[c])) {
                 continue;
               }
-              matRed(dofs[r] - constraintsBelow_[dofs[r]],
-                     dofs[c] - constraintsBelow_[dofs[c]])
-                  += eleMat(r, c);
+              matRed(dofs[r] - constraintsBelow_[dofs[r]], dofs[c] - constraintsBelow_[dofs[c]]) += eleMat(r, c);
             }
           }
         }
@@ -597,7 +595,6 @@ namespace Ikarus {
         if (dirichletFlags->at(i)) mat(i, i) = 1;
       return mat;
     }
-
 
     double getScalarImpl(const RequirementType& fErequirements) {
       double scalar = 0.0;

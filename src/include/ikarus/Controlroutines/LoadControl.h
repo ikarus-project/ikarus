@@ -22,8 +22,12 @@ namespace Ikarus {
           parameterBegin_{tbeginEnd.first},
           parameterEnd_{tbeginEnd.second},
           stepSize_{(parameterEnd_ - parameterBegin_) / loadSteps_} {
-      static_assert(requires { nonLinearSolver.nonLinearOperator().lastParameter() = 0.0; nonLinearSolver.nonLinearOperator().lastParameter() += 0.0;},
-                    "The last parameter (load factor) must be assignable and incremenntable with a double!");
+      static_assert(
+          requires {
+            nonLinearSolver.nonLinearOperator().lastParameter() = 0.0;
+            nonLinearSolver.nonLinearOperator().lastParameter() += 0.0;
+          },
+          "The last parameter (load factor) must be assignable and incremenntable with a double!");
     }
 
     void run() {
@@ -41,7 +45,7 @@ namespace Ikarus {
       //      x += nonOp.deriv().solve(-nonOp.value()),
       //      nonLinearSolver.solve(x);
       //      x += nonOp.value().solve(PredictRHS);
-      for (int ls = 0; ls < loadSteps_+1; ++ls) {
+      for (int ls = 0; ls < loadSteps_ + 1; ++ls) {
         this->notify(ControlMessages::STEP_STARTED);
         nonLinearSolver.solve();
         this->notify(ControlMessages::SOLUTION_CHANGED);

@@ -8,6 +8,7 @@
 #include <dune/common/indices.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
 #include <dune/functions/functionspacebases/subspacebasis.hh>
+#include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/iga/igaalgorithms.hh>
 #include <dune/iga/nurbsgrid.hh>
@@ -98,6 +99,7 @@ struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<Basis>,
       Eigen::VectorXd dN_yy(fe.size());
       Eigen::VectorXd dN_xy(fe.size());
       using Dune::power;
+      std::cout << Jinv << std::endl;
       for (auto i = 0U; i < fe.size(); ++i) {
         dN_xx[i] = dN_xixi[i] * power(Jinv(0, 0), 2) + dN_etaeta[i] * power(Jinv(0, 1), 2);
         dN_yy[i] = dN_etaeta[i] * power(Jinv(1, 1), 2) + dN_xixi[i] * power(Jinv(1, 0), 2);
@@ -161,7 +163,7 @@ int main() {
   const double Lx = 1;
   const double Ly = 1;
   const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {0, 0}, .w = 1}, {.p = {Lx, 0}, .w = 1}}, {{.p = {0, Ly}, .w = 1}, {.p = {Lx, Ly}, .w = 1}}};
+      = {{{.p = {0, 0}, .w = 1}, {.p = {0, Ly}, .w = 1}}, {{.p = {Lx, 0}, .w = 1}, {.p = {Lx, Ly}, .w = 1}}};
 
   std::array<int, griddim> dimsize = {2, 2};
 
@@ -206,23 +208,22 @@ int main() {
     w.setZero(basis.size());
 
     const double totalLoad = 2000;
-    const auto& K  = denseAssembler.getMatrix(stiffness, w, totalLoad);
-    const auto& R  = denseAssembler.getVector(forces, w, totalLoad);
+    const auto& K          = denseAssembler.getMatrix(stiffness, w, totalLoad);
+    const auto& R          = denseAssembler.getVector(forces, w, totalLoad);
     Eigen::LDLT<Eigen::MatrixXd> solver;
     solver.compute(K);
     w -= solver.solve(R);
 
-    //Output solution to vtk
+    // Output solution to vtk
     auto wGlobalFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<double>(basis, w);
-    Dune::SubsamplingVTKWriter vtkWriter(gridView,Dune::refinementLevels(2));
+    Dune::SubsamplingVTKWriter vtkWriter(gridView, Dune::refinementLevels(2));
     vtkWriter.addVertexData(wGlobalFunc, Dune::VTK::FieldInfo("w", Dune::VTK::FieldInfo::Type::scalar, 1));
     vtkWriter.write("Test_KPlate");
-
 
     /// Create analytical solution function for the simply supported case
     const double D = Emod * Dune::power(thickness, 3) / (12 * (1 - Dune::power(nu, 2)));
     // https://en.wikipedia.org/wiki/Bending_of_plates#Simply-supported_plate_with_uniformly-distributed_load
-    auto wxy = [&](auto x, auto y) {
+    auto wAna = [&](auto x) {
       double w                = 0.0;
       const int seriesFactors = 40;
       const double pi         = std::numbers::pi;
@@ -230,7 +231,7 @@ int main() {
           = std::ranges::iota_view(1, seriesFactors) | std::views::filter([](auto i) { return i % 2 != 0; });
       for (auto m : oddFactors)
         for (auto n : oddFactors)
-          w += sin(m * pi * x / Lx) * sin(n * pi * y / Ly)
+          w += sin(m * pi * x[0] / Lx) * sin(n * pi * x[1] / Ly)
                / (m * n * Dune::power(m * m / (Lx * Lx) + n * n / (Ly * Ly), 2));
 
       return 16 * totalLoad / (Dune::power(pi, 6) * D) * w;
@@ -241,22 +242,25 @@ int main() {
     // clamped sol http://faculty.ce.berkeley.edu/rlt/reports/clamp.pdf
     const double wCenterClamped = 1.265319087 / (D / (totalLoad * Dune::power(Lx, 4)) * 1000.0);
     //    std::cout << wCenterClamped << std::endl;
-    auto wGlobalFunction      = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 1>>(basis, w);
-    auto localDisp = localFunction(wGlobalFunction);
+    auto wGlobalFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 1>>(basis, w);
+    auto wGlobalAnalyticFunction = Dune::Functions::makeAnalyticGridViewFunction(wAna, gridView);
+    auto localw                  = localFunction(wGlobalFunction);
+    auto localwAna               = localFunction(wGlobalAnalyticFunction);
 
     /// Calculate L_2 error for simply supported case
     double l2_error = 0.0;
     for (auto& ele : elements(gridView)) {
       localView.bind(ele);
-      localDisp.bind(ele);
+      localw.bind(ele);
+      localwAna.bind(ele);
       const auto geo   = localView.element().geometry();
       const auto& rule = Dune::QuadratureRules<double, 2>::rule(
           ele.type(), 2 * localView.tree().finiteElement().localBasis().order());
       for (auto gp : rule) {
         const auto gpGlobalPos = geo.global(gp.position());
 
-        const auto w_ex = wxy(gpGlobalPos[0], gpGlobalPos[1]);
-        const auto w_fe = localDisp(gp.position());
+        const auto w_ex = localwAna(gp.position());
+        const auto w_fe = localw(gp.position());
         l2_error += Dune::power(w_ex - w_fe, 2) * ele.geometry().integrationElement(gp.position()) * gp.weight();
       }
     }

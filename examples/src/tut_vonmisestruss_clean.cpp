@@ -32,14 +32,14 @@
 using namespace Ikarus;
 template <typename Basis>
 struct Truss : Ikarus::FiniteElements::FEDisplacement<Basis>, Ikarus::AutoDiffFEClean<Truss<Basis>, Basis> {
-  using BaseDisp          = Ikarus::FiniteElements::FEDisplacement<Basis>;
-  using BaseAD            = Ikarus::AutoDiffFEClean<Truss<Basis>, Basis>;
+  using BaseDisp = Ikarus::FiniteElements::FEDisplacement<Basis>;
+  using BaseAD   = Ikarus::AutoDiffFEClean<Truss<Basis>, Basis>;
   friend BaseAD;
   using LocalView         = typename Basis::LocalView;
   using FERequirementType = typename BaseAD::FERequirementType;
   using Traits            = TraitsFromLocalView<LocalView>;
-  Truss(const Basis& basis,const typename LocalView::Element & element, double p_EA)
-      : BaseDisp(basis,element), BaseAD(basis,element), localView_{basis.localView()}, EA{p_EA} {
+  Truss(const Basis& basis, const typename LocalView::Element& element, double p_EA)
+      : BaseDisp(basis, element), BaseAD(basis, element), localView_{basis.localView()}, EA{p_EA} {
     localView_.bind(element);
   }
 
@@ -57,7 +57,8 @@ private:
     u.setZero();
     for (int i = 0; i < 2; ++i)
       for (int k2 = 0; k2 < Traits::worlddim; ++k2)
-        u.col(i)(k2) = dx[Traits::worlddim * i + k2] + d[localView_.index(localView_.tree().child(k2).localIndex(i))[0]];
+        u.col(i)(k2)
+            = dx[Traits::worlddim * i + k2] + d[localView_.index(localView_.tree().child(k2).localIndex(i))[0]];
 
     const Eigen::Vector2<Scalar> x1 = X1 + u.col(0);
     const Eigen::Vector2<Scalar> x2 = X2 + u.col(1);
@@ -97,11 +98,10 @@ int main() {
   const double EA = 100;
   std::vector<Truss<decltype(basis)>> fes;
   for (auto& ele : elements(gridView))
-    fes.emplace_back(basis,ele, EA);
-
+    fes.emplace_back(basis, ele, EA);
 
   /// Collect dirichlet nodes
-  std::vector<bool> dirichletFlags(basis.size(),false);
+  std::vector<bool> dirichletFlags(basis.size(), false);
   Dune::Functions::forEachBoundaryDOF(basis, [&](auto&& index) { dirichletFlags[index] = true; });
 
   /// Create assembler
@@ -112,16 +112,16 @@ int main() {
   Eigen::VectorXd d;
   d.setZero(basis.size());
 
-  auto fintFunction = [&](auto&& u,auto&& lambdalocal) -> auto& {
+  auto fintFunction = [&](auto&& u, auto&& lambdalocal) -> auto& {
     auto& R = denseFlatAssembler.getVector(forces, u, lambdalocal);
     R[3] -= -lambdalocal;
     return R;
   };
-  auto KFunction = [&](auto&& u,auto&& lambdalocal) -> auto& {
+  auto KFunction = [&](auto&& u, auto&& lambdalocal) -> auto& {
     return denseFlatAssembler.getMatrix(stiffness, u, lambdalocal);
   };
 
-  auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(fintFunction, KFunction), parameter(d,lambda));
+  auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(fintFunction, KFunction), parameter(d, lambda));
 
   /// Choose linear solver
   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);

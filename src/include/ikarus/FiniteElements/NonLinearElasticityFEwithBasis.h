@@ -90,24 +90,22 @@ namespace Ikarus::FiniteElements {
       const int order  = 2 * (fe.localBasis().order());
       const auto& rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
       Eigen::Matrix3<ScalarType> C;
-      C.setZero(); //plane stress
+      C.setZero();  // plane stress
       C(0, 0) = C(1, 1) = 1;
       C(0, 1) = C(1, 0) = nu_;
       C(2, 2)           = (1 - nu_) / 2;
       C *= emod_ / (1 - nu_ * nu_);
       const auto geo = localView_.element().geometry();
-      //      Ikarus::LocalBasis localBasis(fe.localBasis());
-      //      Eigen::Matrix<double, Eigen::Dynamic, Traits::mydim> dN;
-      //      Eigen::VectorXd N;
+
       for (const auto& [index, gp, N, dN] : localBasis.viewOverFunctionAndJacobian()) {
         const auto J = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
-        //        localBasis.evaluateFunctionAndJacobian(gp.position(), N, dN);
-        const Eigen::Vector<double, Traits::worlddim> X = toEigenVector(geo.global(gp.position()));
-        Eigen::Vector<ScalarType, Traits::worlddim> x   = X;
+        Eigen::Vector<ScalarType, Traits::worlddim> u;
+        u.setZero();
         for (int i = 0; i < N.size(); ++i)
-          x += disp.col(i) * N[i];
+          u += disp.col(i) * N[i];
 
-        const auto H      = DefoGeo<ScalarType>::jacobianTransposed(dN * J.inverse(), disp).eval();
+        const auto dNdx   = (dN * J.inverse()).eval();
+        const auto H      = DefoGeo<ScalarType>::jacobianTransposed(dNdx, disp).eval();
         const auto E      = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
         const auto EVoigt = toVoigt(E);
 
@@ -115,7 +113,7 @@ namespace Ikarus::FiniteElements {
         fext.setZero();
         fext[1] = 2 * lambda;
         fext[0] = lambda;
-        energy += (0.5 * EVoigt.dot(C * EVoigt) - x.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
+        energy += (0.5 * EVoigt.dot(C * EVoigt) - u.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
       }
       return energy;
     }
@@ -127,7 +125,5 @@ namespace Ikarus::FiniteElements {
     double emod_;
     double nu_;
   };
-
-
 
 }  // namespace Ikarus::FiniteElements

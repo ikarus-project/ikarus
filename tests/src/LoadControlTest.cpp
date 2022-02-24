@@ -24,7 +24,7 @@
 //#include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
 //#include <ikarus/LinearAlgebra/NonLinearOperator.h>
 //
-//TEST(LoadControlTest, GridLoadControlTest) {
+// TEST(LoadControlTest, GridLoadControlTest) {
 //  using namespace Ikarus::Grid;
 //  using Grid = SimpleGrid<2, 2>;
 //  SimpleGridFactory<2, 2> gridFactory;

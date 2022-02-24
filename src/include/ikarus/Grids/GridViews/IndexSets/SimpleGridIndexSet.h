@@ -36,8 +36,7 @@ public:
       if (dimension - codim == 1) return index(*entity.template getChildEntities<1>()[subEntityNumber]);  // edges
 
     if constexpr (entityDimension > 2)
-      if (dimension - codim == 2)
-        return index(*entity.template getChildEntities<2>()[subEntityNumber]);  // surfaces
+      if (dimension - codim == 2) return index(*entity.template getChildEntities<2>()[subEntityNumber]);  // surfaces
 
     if (dimension - codim == 0)
       return index(*entity.template getChildEntities<0>()[subEntityNumber]);  // these are vertices

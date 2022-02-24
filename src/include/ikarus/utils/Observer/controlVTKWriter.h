@@ -21,8 +21,9 @@ public:
   ControlSubsamplingVertexVTKWriter(const Basis& p_basis, const Eigen::VectorXd& sol, int refinementLevels = 0)
       : basis{&p_basis}, vtkWriter(p_basis.gridView(), Dune::refinementLevels(refinementLevels)), solution{&sol} {}
 
-  auto setFieldInfo(std::string&& name, Dune::VTK::FieldInfo::Type type, std::size_t size, Dune::VTK::Precision prec = Dune::VTK::Precision::float32) {
-    fieldInfo      = Dune::VTK::FieldInfo(std::move(name),type,size,prec);
+  auto setFieldInfo(std::string&& name, Dune::VTK::FieldInfo::Type type, std::size_t size,
+                    Dune::VTK::Precision prec = Dune::VTK::Precision::float32) {
+    fieldInfo      = Dune::VTK::FieldInfo(std::move(name), type, size, prec);
     isFieldInfoSet = true;
   }
 
@@ -50,7 +51,7 @@ private:
   Dune::SubsamplingVTKWriter<typename Basis::GridView> vtkWriter;
   Eigen::VectorXd const* solution;
   int step{0};
-  Dune::VTK::FieldInfo fieldInfo{"Default",Dune::VTK::FieldInfo::Type::scalar,1};
+  Dune::VTK::FieldInfo fieldInfo{"Default", Dune::VTK::FieldInfo::Type::scalar, 1};
   std::string prefixString{};
   bool isFieldInfoSet{false};
 };

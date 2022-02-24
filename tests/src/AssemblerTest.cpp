@@ -60,19 +60,19 @@ TEST(Assembler, SimpleAssemblersTest) {
     auto& Kdense          = denseFlatAssembler.getMatrix(req);
     auto& K               = sparseFlatAssembler.getMatrix(req);
 
-    const auto fixedDofs = std::ranges::count(dirichFlags,true);
+    const auto fixedDofs = std::ranges::count(dirichFlags, true);
     EXPECT_THAT(K, EigenApproxEqual(Kdense, 1e-15));
-    EXPECT_THAT(K.rows(), 2*gridView.size(2));
-    EXPECT_THAT(K.cols(), 2*gridView.size(2));
-    const int boundaryNodes = (eles[0]*Dune::power(2,i)+1)*2+(eles[1]*Dune::power(2,i)+1)*2-4;
-    EXPECT_EQ(fixedDofs, 2*boundaryNodes);
+    EXPECT_THAT(K.rows(), 2 * gridView.size(2));
+    EXPECT_THAT(K.cols(), 2 * gridView.size(2));
+    const int boundaryNodes = (eles[0] * Dune::power(2, i) + 1) * 2 + (eles[1] * Dune::power(2, i) + 1) * 2 - 4;
+    EXPECT_EQ(fixedDofs, 2 * boundaryNodes);
 
-    auto& KdenseRed          = denseFlatAssembler.getReducedMatrix(req);
-    auto& KRed               = sparseFlatAssembler.getReducedMatrix(req);
+    auto& KdenseRed = denseFlatAssembler.getReducedMatrix(req);
+    auto& KRed      = sparseFlatAssembler.getReducedMatrix(req);
 
     EXPECT_THAT(KRed, EigenApproxEqual(KdenseRed, 1e-15));
-    EXPECT_THAT(KRed.rows(), 2*gridView.size(2)-fixedDofs);
-    EXPECT_THAT(KRed.cols(), 2*gridView.size(2)-fixedDofs);
+    EXPECT_THAT(KRed.rows(), 2 * gridView.size(2) - fixedDofs);
+    EXPECT_THAT(KRed.cols(), 2 * gridView.size(2) - fixedDofs);
 
     grid->globalRefine(1);
   }

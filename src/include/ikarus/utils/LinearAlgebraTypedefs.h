@@ -4,11 +4,11 @@
 
 #pragma once
 
+#include <dune/common/diagonalmatrix.hh>
 #include <dune/common/fmatrix.hh>
 #include <dune/common/fvector.hh>
 
 #include <Eigen/Core>
-#include <dune/common/diagonalmatrix.hh>
 
 namespace Ikarus {
 
@@ -49,14 +49,13 @@ namespace Ikarus {
     return eigenmatrix;
   }
 
-
-template <typename ScalarType, int size1>
-Eigen::Matrix<ScalarType, size1, size1> toEigenMatrix(const Dune::DiagonalMatrix<ScalarType, size1>& mat) {
-  Eigen::Matrix<ScalarType, size1, size1> eigenmatrix;
-  eigenmatrix.setZero();
-  for (int i = 0; i < size1; ++i)
+  template <typename ScalarType, int size1>
+  Eigen::Matrix<ScalarType, size1, size1> toEigenMatrix(const Dune::DiagonalMatrix<ScalarType, size1>& mat) {
+    Eigen::Matrix<ScalarType, size1, size1> eigenmatrix;
+    eigenmatrix.setZero();
+    for (int i = 0; i < size1; ++i)
       eigenmatrix(i, i) = mat[i][i];
-  return eigenmatrix;
-}
+    return eigenmatrix;
+  }
 
 }  // namespace Ikarus

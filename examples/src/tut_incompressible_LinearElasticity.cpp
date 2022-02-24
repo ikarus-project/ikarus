@@ -120,7 +120,7 @@ private:
 
       energy += (0.5 * (2 * mu_ * symgradu.squaredNorm() - 1 / lambdaMat * Dune::power(pressure, 2)) + pressure * divU
                  - x.dot(fext))
-                * geo.integrationElement(gp.position()) * gp.weight(); //plane strain for 2D
+                * geo.integrationElement(gp.position()) * gp.weight();  // plane strain for 2D
     }
     return energy;
   }
@@ -140,20 +140,20 @@ int main(int argc, char** argv) {
   using namespace Ikarus;
   constexpr int gridDim = 2;
   //  /// ALUGrid Example
-//  using Grid = Dune::ALUGrid<gridDim, 2, Dune::cube, Dune::nonconforming>;
-//  auto grid  = Dune::GmshReader<Grid>::read("../../tests/src/testFiles/unstructuredQuadscoarse.msh", false);
-//  grid->globalRefine(1);
-//  auto gridView = grid->leafGridView();
-    using Grid        = Dune::YaspGrid<gridDim>;
-    const double L    = 1;
-    const double h    = 1;
-    const size_t elex = 20;
-    const size_t eley = 20;
+  //  using Grid = Dune::ALUGrid<gridDim, 2, Dune::cube, Dune::nonconforming>;
+  //  auto grid  = Dune::GmshReader<Grid>::read("../../tests/src/testFiles/unstructuredQuadscoarse.msh", false);
+  //  grid->globalRefine(1);
+  //  auto gridView = grid->leafGridView();
+  using Grid        = Dune::YaspGrid<gridDim>;
+  const double L    = 1;
+  const double h    = 1;
+  const size_t elex = 20;
+  const size_t eley = 20;
 
-    Dune::FieldVector<double, 2> bbox = {L, h};
-    std::array<int, 2> eles           = {elex, eley};
-    auto grid                         = std::make_shared<Grid>(bbox, eles);
-    auto gridView                     = grid->leafGridView();
+  Dune::FieldVector<double, 2> bbox = {L, h};
+  std::array<int, 2> eles           = {elex, eley};
+  auto grid                         = std::make_shared<Grid>(bbox, eles);
+  auto gridView                     = grid->leafGridView();
   //  draw(gridView);
 
   using namespace Dune::Functions::BasisFactory;
@@ -171,9 +171,9 @@ int main(int argc, char** argv) {
   /// Collect dirichlet nodes
   std::vector<bool> dirichletFlags(basis.size(), false);
   Ikarus::markDirichletBoundaryDofs(subspaceBasis(basis, _0), dirichletFlags, [](auto&& centerCoord) {
-    return (std::abs(centerCoord[1]) < 1e-8) ;
-           //or (std::abs(centerCoord[0]) < 1e-8)
-          // or (std::abs(centerCoord[0]) > 1 - 1e-8);
+    return (std::abs(centerCoord[1]) < 1e-8);
+    // or (std::abs(centerCoord[0]) < 1e-8)
+    // or (std::abs(centerCoord[0]) > 1 - 1e-8);
   });
 
   /// Create assembler
@@ -202,25 +202,16 @@ int main(int argc, char** argv) {
 
   auto K = KFunction(1, d);
   auto R = fintFunction(1, d);
-  //  Eigen::FullPivLU<decltype(K)> ld;
   Eigen::SparseLU<decltype(K)> ld;
-  //  std::cout << K << std::endl;
   ld.compute(K);
   if (ld.info() != Eigen::Success) {
     assert(false && "Failed Compute");
   }
-  std::cout << "Rows: " << K.rows() << std::endl;
-  //  std::cout <<"Rank: "<< ld.rank() << std::endl;
-  std::cout << "=======================" << std::endl;
+
   d -= denseFlatAssembler.createFullVector(ld.solve(R));
   if (ld.info() != Eigen::Success) {
     assert(false && "Failed Solve");
   }
-//  Ikarus::utils::printContent(dirichletFlags);
-  //  std::cout << "=======================" << std::endl;
-  //  std::cout << R << std::endl;
-  //  std::cout << "=======================" << std::endl;
-  //  std::cout << d << std::endl;
 
   /// Postprocess
   auto disp

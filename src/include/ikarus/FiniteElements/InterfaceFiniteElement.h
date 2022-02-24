@@ -22,12 +22,12 @@ namespace Ikarus::FiniteElements {
   enum class ScalarAffordances;
 
   /** \brief A type-erased finite element but templated over the localView and the passed SolutionType*/
-  template<typename LocalView, typename SolutionVectorType>
+  template <typename LocalView, typename SolutionVectorType>
   class IFiniteElement {
   public:
     using DofPairVectorType = std::vector<VariableIndicesPair>;
     using FERequirementType = FErequirements<SolutionVectorType>;
-    using GlobalIndex = typename  LocalView::MultiIndex;
+    using GlobalIndex       = typename LocalView::MultiIndex;
     //    using DataVectorType     = typename std::optional<std::reference_wrapper<VariableVectorType>>;
 
     template <typename FE>
@@ -45,19 +45,19 @@ namespace Ikarus::FiniteElements {
       return *this;
     }
 
-    IFiniteElement(IFiniteElement &&) noexcept = default;
+    IFiniteElement(IFiniteElement &&) noexcept            = default;
     IFiniteElement &operator=(IFiniteElement &&) noexcept = default;
 
   private:
     struct FEBase {
-      virtual ~FEBase()                            = default;
+      virtual ~FEBase() = default;
       [[nodiscard]] virtual std::pair<Eigen::MatrixXd, Eigen::VectorXd> do_calculateLocalSystem(
           const FERequirementType &par) const                                                      = 0;
       [[nodiscard]] virtual Eigen::MatrixXd do_calculateMatrix(const FERequirementType &par) const = 0;
-//      virtual void do_bind(const LocalView &localView) const = 0;
+      //      virtual void do_bind(const LocalView &localView) const = 0;
       [[nodiscard]] virtual Eigen::VectorXd do_calculateVector(const FERequirementType &par) const = 0;
       [[nodiscard]] virtual double do_calculateScalar(const FERequirementType &par) const          = 0;
-      [[nodiscard]] virtual std::vector<GlobalIndex> do_globalIndices() const                    = 0;
+      [[nodiscard]] virtual std::vector<GlobalIndex> do_globalIndices() const                      = 0;
       [[nodiscard]] virtual std::unique_ptr<FEBase> clone() const                                  = 0;
     };
 
@@ -77,9 +77,7 @@ namespace Ikarus::FiniteElements {
       [[nodiscard]] double do_calculateScalar(const FERequirementType &par) const final {
         TRYCALLFUNCTIONANDRETURN(calculateScalar, par);
       }
-      [[nodiscard]] std::vector<GlobalIndex> do_globalIndices() const final {
-        TRYCALLFUNCTIONANDRETURN(globalIndices);
-      }
+      [[nodiscard]] std::vector<GlobalIndex> do_globalIndices() const final { TRYCALLFUNCTIONANDRETURN(globalIndices); }
 
       [[nodiscard]] std::unique_ptr<FEBase> clone() const final { return std::make_unique<FEImpl>(*this); }
       FE fe;
@@ -88,11 +86,11 @@ namespace Ikarus::FiniteElements {
     std::unique_ptr<FEBase> feimpl;
 
   public:
-    std::pair<Eigen::MatrixXd, Eigen::VectorXd> calculateLocalSystem( const FERequirementType &par) const ;
-    Eigen::MatrixXd calculateMatrix( const FERequirementType &par) const ;
-    Eigen::VectorXd calculateVector( const FERequirementType &par) const;
-    double calculateScalar( const FERequirementType &par) const;
-    std::vector<GlobalIndex> globalIndices()const;
+    std::pair<Eigen::MatrixXd, Eigen::VectorXd> calculateLocalSystem(const FERequirementType &par) const;
+    Eigen::MatrixXd calculateMatrix(const FERequirementType &par) const;
+    Eigen::VectorXd calculateVector(const FERequirementType &par) const;
+    double calculateScalar(const FERequirementType &par) const;
+    std::vector<GlobalIndex> globalIndices() const;
   };
 
 #include "InterfaceFiniteElement.inl"

@@ -41,9 +41,10 @@ namespace Ikarus::FiniteElements {
   class FEDisplacement {
   public:
     using RootBasis   = Basis;
-    using LocalView= typename Basis::LocalView;
+    using LocalView   = typename Basis::LocalView;
     using GlobalIndex = typename LocalView::MultiIndex;
-    explicit FEDisplacement(const Basis& p_basis,const typename LocalView::Element& element) : localView{p_basis.localView()} {
+    explicit FEDisplacement(const Basis& p_basis, const typename LocalView::Element& element)
+        : localView{p_basis.localView()} {
       static_assert(Ikarus::Concepts::PowerBasis<RootBasis>,
                     "You didn't pass a localview of a power basis to this method");
       static_assert(RootBasis::PreBasis::Node::CHILDREN == worlddim,
@@ -97,9 +98,10 @@ namespace Ikarus::FiniteElements {
   class ScalarFieldFE {
   public:
     using RootBasis   = Basis;
-    using LocalView = typename Basis::LocalView;
+    using LocalView   = typename Basis::LocalView;
     using GlobalIndex = typename LocalView::MultiIndex;
-    explicit ScalarFieldFE(const Basis& basis,const typename LocalView::Element& element) : localView{basis.localView()} {
+    explicit ScalarFieldFE(const Basis& basis, const typename LocalView::Element& element)
+        : localView{basis.localView()} {
       static_assert(RootBasis::PreBasis::Node::CHILDREN == 0, "This is no scalar basis!");
       localView.bind(element);
     }

@@ -6,12 +6,12 @@
 
 #include <dune/alugrid/grid.hh>
 #include <dune/geometry/quadraturerules.hh>
+#include <dune/grid/io/file/vtk/vtkwriter.hh>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
 #include <ikarus/Grids/GridHelper/griddrawer.h>
-#include <dune/grid/io/file/vtk/vtkwriter.hh>
 
 int main() {
   /// Create ALUGrid from gmsh file
@@ -63,7 +63,7 @@ int main() {
     areas[indexSet.index(ele)] = ele.geometry().volume();
 
   Dune::VTKWriter vtkWriter(gridView);
-  vtkWriter.addCellData(areas,"area", 1);
+  vtkWriter.addCellData(areas, "area", 1);
   vtkWriter.write("TestGridEntitites");
 
   /// Calculate circumference and compare to pi

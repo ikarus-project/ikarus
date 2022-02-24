@@ -116,6 +116,7 @@ Eigen::MatrixXd TimoshenkoBeamStiffness(auto localView, auto gridElement, auto q
     // fill columns of B-Operator related to w-DOFs
     for (unsigned int i = 0; i < localView.tree().child(_0).size(); ++i) {
       B(1, localView.tree().child(_0).localIndex(i)) = dNwDxi[i] / detJ;
+      Fext(1, localView.tree().child(_0).localIndex(i)) += Nw[i] * fevaluated
     }
 
     // fill columns of B-Operator related to phi-DOFs
@@ -175,8 +176,7 @@ void plotDeformedTimoschenkoBeam(auto& gridView, auto& basis, auto& d_glob, doub
 
   using namespace matplot;
   auto f = figure(true);
-  f->size(1000, 1000);
-  tiledlayout(1, 2);
+  tiledlayout(1, 4);
   auto ax1 = nexttile();
   auto ax2 = nexttile();
   hold(ax1, true);
@@ -196,11 +196,11 @@ void plotDeformedTimoschenkoBeam(auto& gridView, auto& basis, auto& d_glob, doub
     phiLocal.bind(edge);
     phiLocalAnalytic.bind(edge);
     localView.bind(edge);
-    x_L     = transform(x, [&](auto x) { return edge.geometry().global({x}); });
-    yw      = transform(x, [&](auto x) { return wLocal({x}); });
-    ywAna   = transform(x, [&](auto x) { return wLocalAnalytic({x}); });
-    yphi    = transform(x, [&](auto x) { return phiLocal({x}); });
-    yphiAna = transform(x, [&](auto x) { return phiLocalAnalytic({x}); });
+    x_L     = transform(x, [&](auto x) { return edge.geometry().global(x); });
+    yw      = transform(x, [&](auto x) { return wLocal(x); });
+    ywAna   = transform(x, [&](auto x) { return wLocalAnalytic(x); });
+    yphi    = transform(x, [&](auto x) { return phiLocal(x); });
+    yphiAna = transform(x, [&](auto x) { return phiLocalAnalytic(x); });
     auto l0 = ax1->plot(x_L, yw);
     l0->line_width(2);
     l0->color("blue");
@@ -224,19 +224,19 @@ void plotDeformedTimoschenkoBeam(auto& gridView, auto& basis, auto& d_glob, doub
 
 void exampleTimoshenkoBeam() {
   const double b  = 1;
-  const double L  = 1e3;
+  const double L  = 5;
   const double E  = 1;
   const double G  = 1;
-  const double t  = 1e-3;
+  const double t  = 1;
   const double EI = E * b * t * t * t / 12.0;
   const double GA = G * b * t;
-  const double F  = 0.1 * t * t * t;
-  Eigen::Matrix2d C;
+  const double F  = 0.1;
+  auto distrub Eigen::Matrix2d C;
   C << EI, 0, 0, GA;
-  const int numElements            = 2;
-  constexpr int polynomialOrderW   = 3;
-  constexpr int polynomialOrderPhi = 5;
-  const int maxOrder               = 20;  // std::max(2*(polynomialOrderW-1),2*polynomialOrderPhi);
+  const int numElements            = 5;
+  const int numGP                  = 2;
+  constexpr int polynomialOrderW   = 1;
+  constexpr int polynomialOrderPhi = 1;
   Dune::OneDGrid grid(numElements, 0, L);
   auto gridView = grid.leafGridView();
   draw(gridView);
@@ -255,8 +255,7 @@ void exampleTimoshenkoBeam() {
     localView.bind(ele);
 
     // Define the integration rule
-    const auto& rule
-        = Dune::QuadratureRules<double, 1>::rule(ele.type(), maxOrder, Dune::QuadratureType::GaussLegendre);
+    const auto& rule = Dune::QuadratureRules<double, 1>::rule(ele.type(), numGP, Dune::QuadratureType::GaussLegendre);
 
     // get local stiffness matrix
     auto K_local = TimoshenkoBeamStiffness(localView, ele, rule, C);
@@ -268,7 +267,7 @@ void exampleTimoshenkoBeam() {
   }
 
   // apply load on the right-hand side
-  F_ExtGlob(getGlobalDofId(TimoschenkoBeam::w, basis, L)) = F;
+  F_ExtGlob(getGlobalDofId(TimoschenkoBeam::w, basis, 5)) = F;
 
   // clamp left-hand side
   std::vector<unsigned int> fixedDofs{getGlobalDofId(TimoschenkoBeam::w, basis, 0.0),
@@ -283,7 +282,7 @@ void exampleTimoshenkoBeam() {
   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
   linSolver.factorize(K_Glob);
   const Eigen::VectorXd D_Glob = linSolver.solve(F_ExtGlob);
-  std::cout << D_Glob.transpose() << std::endl;
+
   // analytical solution
   std::cout << "Bernoulli solution for displacement at L: " << F * L * L * L / (3.0 * EI) << "\n";
 
