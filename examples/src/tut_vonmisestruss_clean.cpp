@@ -112,16 +112,16 @@ int main() {
   Eigen::VectorXd d;
   d.setZero(basis.size());
 
-  auto fintFunction = [&](auto&& lambdalocal, auto&& u) -> auto& {
+  auto fintFunction = [&](auto&& u,auto&& lambdalocal) -> auto& {
     auto& R = denseFlatAssembler.getVector(forces, u, lambdalocal);
     R[3] -= -lambdalocal;
     return R;
   };
-  auto KFunction = [&](auto&& lambdalocal, auto&& u) -> auto& {
+  auto KFunction = [&](auto&& u,auto&& lambdalocal) -> auto& {
     return denseFlatAssembler.getMatrix(stiffness, u, lambdalocal);
   };
 
-  auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(fintFunction, KFunction), parameter(lambda, d));
+  auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(fintFunction, KFunction), parameter(d,lambda));
 
   /// Choose linear solver
   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);

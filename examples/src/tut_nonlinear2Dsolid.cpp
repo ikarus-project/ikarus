@@ -99,7 +99,7 @@ grid->globalRefine(1);
   d.setZero(basis.size());
   double lambda = 0.0;
 
-  auto residualFunction = [&](auto&& lambdaLocal, auto&& disp) -> auto& {
+  auto residualFunction = [&](auto&& disp,auto&& lambdaLocal) -> auto& {
     return denseAssembler.getVector(forces, disp, lambdaLocal);
   };
 
@@ -108,7 +108,7 @@ grid->globalRefine(1);
 //    return denseAssembler.getMatrix(stiffness, disp, lambdaLocal);
 //  };
 
-  auto KFunction = [&](auto&& lambdaLocal, auto&& disp) -> auto& {
+  auto KFunction = [&](auto&& disp,auto&& lambdaLocal) -> auto& {
     Ikarus::FErequirements req;
     req.sols.emplace_back(disp);
     req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
@@ -117,12 +117,12 @@ grid->globalRefine(1);
   };
 
 
-  auto energyFunction = [&](auto&& lambdaLocal, auto&& disp) -> auto {
+  auto energyFunction = [&](auto&& disp,auto&& lambdaLocal) -> auto {
     return denseAssembler.getScalar(potentialEnergy, disp, lambdaLocal);
   };
 
   auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, residualFunction, KFunction),
-                                            parameter(lambda, d));
+                                            parameter(d,lambda));
 
   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::s_SimplicialLDLT);
 
