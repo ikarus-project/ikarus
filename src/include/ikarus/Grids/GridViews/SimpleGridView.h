@@ -12,8 +12,9 @@ namespace Ikarus::Grid {
   template <int dim, int dimworld>
   class SimpleGridView {
   public:
-    using GridType     = SimpleGrid<dim, dimworld>;
-    using IndexSetType = SimpleGridIndexSet<GridType>;
+    using GridType = SimpleGrid<dim, dimworld>;
+    using IndexSet = SimpleGridIndexSet<GridType>;
+    using ctype    = typename GridType::ctype;
 
     explicit SimpleGridView(GridType& gridInput, int levelInput = 0)
         : grid{&gridInput},
@@ -50,7 +51,7 @@ namespace Ikarus::Grid {
   private:
     GridType* grid;
     int level;
-    const std::shared_ptr<IndexSetType> indexSet_;
+    const std::shared_ptr<IndexSet> indexSet_;
   };
 }  // namespace Ikarus::Grid
 

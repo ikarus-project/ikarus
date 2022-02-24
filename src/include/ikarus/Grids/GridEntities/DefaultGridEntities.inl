@@ -2,7 +2,6 @@
 #include <ranges>
 #include <span>
 
-#include <ikarus/Geometries/GeometryType.h>
 #include <ikarus/utils/utils/algorithms.h>
 
 namespace Ikarus::Grid {
@@ -64,7 +63,7 @@ namespace Ikarus::Grid {
   typename DefaultGridEntity<griddim, 0, wdim>::Geometry DefaultGridEntity<griddim, 0, wdim>::geometry() const {
     std::vector<Dune::FieldVector<double, dimensionworld>> fieldVectorVector
         = transformVertexPositionToDuneFieldVector(getChildVertices());
-    return DefaultGridEntity<griddim, 0, wdim>::Geometry(duneType(type()), fieldVectorVector);
+    return DefaultGridEntity<griddim, 0, wdim>::Geometry(type(), fieldVectorVector);
   }
 
 //  template <int griddim, int wdim>
@@ -128,13 +127,13 @@ namespace Ikarus::Grid {
 
   /** \brief Return the fundamental geometric type of the entity, specialization for elements (codim==0) */
   template <int griddim, int wdim>
-  Ikarus::GeometryType DefaultGridEntity<griddim, 0, wdim>::type() const {
+  Dune::GeometryType DefaultGridEntity<griddim, 0, wdim>::type() const {
     switch (mydimension) {
       case 0:
         DUNE_THROW(Dune::InvalidStateException, "The type of this element should not be only a vertex");
         ;
       case 1:
-        return Ikarus::GeometryType::linearLine;
+        return Dune::GeometryTypes::line;
       case 2:
         switch (subEntities(dimension)) {
           case 0:
@@ -142,22 +141,22 @@ namespace Ikarus::Grid {
           case 2:
             DUNE_THROW(Dune::NotImplemented, "This should be a line and should be alread caught in case 1.");
           case 3:
-            return Ikarus::GeometryType::linearTriangle;
+            return Dune::GeometryTypes::triangle;
           case 4:
-            return Ikarus::GeometryType::linearQuadrilateral;
+            return Dune::GeometryTypes::quadrilateral;
           default:
             DUNE_THROW(Dune::NotImplemented, "There is no fundamental geometry type for more than 4 vertices.");
         }
       case 3:
         switch (subEntities(dimension)) {
           case 4:
-            return Ikarus::GeometryType::linearTetrahedron;
+            return Dune::GeometryTypes::tetrahedron;
           case 5:
-            return Ikarus::GeometryType::pyramid;
+            return Dune::GeometryTypes::pyramid;
           case 6:
-            return Ikarus::GeometryType::prism;
+            return Dune::GeometryTypes::prism;
           case 8:
-            return Ikarus::GeometryType::linearHexahedron;
+            return Dune::GeometryTypes::hexahedron;
           default:
             DUNE_THROW(Dune::NotImplemented, "There is no fundamental geometry type for these number of.");
         }
@@ -168,13 +167,13 @@ namespace Ikarus::Grid {
 
   /** \brief Return the fundamental geometric type of the entity, general  */
   template <int griddim, int cogriddim, int wdim>
-  Ikarus::GeometryType DefaultGridEntity<griddim, cogriddim, wdim>::type() const {
+  Dune::GeometryType DefaultGridEntity<griddim, cogriddim, wdim>::type() const {
     switch (mydimension) {
       case 0:
         DUNE_THROW(Dune::InvalidStateException, "The type of this subEntity should not be only a vertex");
         ;
       case 1:
-        return Ikarus::GeometryType::linearLine;
+        return Dune::GeometryTypes::line;
       case 2:
         switch (subEntities(dimension)) {
           case 0:
@@ -182,9 +181,9 @@ namespace Ikarus::Grid {
           case 2:
             DUNE_THROW(Dune::NotImplemented, "This should be a line and should be alread caught in case 1.");
           case 3:
-            return Ikarus::GeometryType::linearTriangle;
+            return Dune::GeometryTypes::triangle;
           case 4:
-            return Ikarus::GeometryType::linearQuadrilateral;
+            return Dune::GeometryTypes::quadrilateral;
           default:
             DUNE_THROW(Dune::NotImplemented, "There is no fundamental geometry type for more than 4 vertices.");
         }

@@ -10,8 +10,6 @@
 #include <dune/geometry/multilineargeometry.hh>
 #include <dune/geometry/type.hh>
 
-#include <ikarus/Geometries/GeometryInterface.h>
-#include <ikarus/Geometries/GeometryType.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
 #include <ikarus/utils/utils/traits.h>
 
@@ -70,6 +68,18 @@ namespace Ikarus::Grid {
       return std::get<dimEnt>(entitiesChildren);
     }
 
+    template <int Codim>
+    auto& subEntity(int i) {
+      static_assert(Codim >= 0 && Codim <= griddim, "You asked for a non-existing ChildEntity!");
+      return *std::get<griddim - Codim>(entitiesChildren)[i];
+    }
+
+    template <int Codim>
+    auto& subEntity(int i) const {
+      static_assert(Codim >= 0 && Codim <= griddim, "You asked for a non-existing ChildEntity!");
+      return *std::get<griddim - Codim>(entitiesChildren)[i];
+    }
+
     template <int dimEnt>
     const auto& getChildEntities() const {
       static_assert(dimEnt >= 0 && dimEnt < griddim, "You asked for a non-existing ChildEntity!");
@@ -89,7 +99,7 @@ namespace Ikarus::Grid {
     [[nodiscard]] unsigned int subEntities(unsigned int codim) const;
 
     /** \brief Return the fundamental geometric type of the entity */
-    [[nodiscard]] Ikarus::GeometryType type() const;
+    [[nodiscard]] Dune::GeometryType type() const;
 
     /** \brief Returns the geometric realization of the entity */
     Geometry geometry() const;
@@ -160,7 +170,7 @@ namespace Ikarus::Grid {
     const Eigen::Vector<double, wdim>& getPosition() { return position; }
 
     /** \brief Return the fundamental geometric type of the entity */
-    [[nodiscard]] Ikarus::GeometryType type() const { return Ikarus::GeometryType::vertex; }
+    [[nodiscard]] Dune::GeometryType type() const { return Dune::GeometryTypes::vertex; }
 
     /** \brief Returns the number of subEntities of this entity, e.g. a line has two verteces as
      * subtypes */
@@ -236,7 +246,7 @@ namespace Ikarus::Grid {
     [[nodiscard]] unsigned int subEntities(unsigned int codim) const;
 
     /** \brief Return the fundamental geometric type of the entity */
-    [[nodiscard]] Ikarus::GeometryType type() const;
+    [[nodiscard]] Dune::GeometryType type() const;
 
     /** \brief Returns the geometric realization of the entity */
     Geometry geometry() const;

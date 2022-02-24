@@ -3,7 +3,10 @@
 //
 
 #pragma once
+//#include <dune/functions/functionspacebases/basistags.hh>
+
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
+#include <ikarus/utils/concepts.h>
 
 namespace Ikarus::FiniteElements {
 
@@ -13,7 +16,7 @@ namespace Ikarus::FiniteElements {
     using ctype = double;
 
     /** \brief Dimension of the world space */
-    static constexpr int worlddim = GridElementEntityType::dimensionworld;
+    static constexpr int worlddim = GridElementEntityType::Geometry::coorddimension;
 
     /** \brief Dimension of the geometry */
     static constexpr int mydim = GridElementEntityType::mydimension;
@@ -27,21 +30,6 @@ namespace Ikarus::FiniteElements {
     /** \brief Type of the ParameterSpace coordinate */
     using ParameterSpaceType = Eigen::Matrix<ctype, mydim, 1>;
 
-    /** \brief Type of the Pairs of gridEntities and variable tags */
-    using DofTupleVectorType = typename IFiniteElement::DofPairVectorType;
-
-    /** \brief Type of the FE parameters */
-    using FERequirementType = typename IFiniteElement::FERequirementType;
-
-    /** \brief Type of the Variables */
-    using VariableVectorType = typename FERequirementType::VariableType;
-
-    /** \brief Type of the DataVector */
-    using DataVectorType = typename FERequirementType::DataType;
-
-    /** \brief Type of the Dofs / SolutionType
-     * using NodalSolutionType = Displacement<ctype,worlddim>;*/
-
     /** \brief Type of the internal forces */
     using VectorType = Eigen::VectorXd;
 
@@ -49,43 +37,105 @@ namespace Ikarus::FiniteElements {
     using MatrixType = Eigen::MatrixXd;
   };
 
-  template <typename GridElementEntityType, typename IndexSetType>
-  class FEVertexDisplacement {
+  template <typename Basis>
+  class FEDisplacement {
   public:
-    FEVertexDisplacement(GridElementEntityType &gE, const IndexSetType &indexSet)
-        : elementGridEntity{&gE}, indexSet_{&indexSet} {}
+    using RootBasis   = Basis;
+    using LocalView   = typename Basis::LocalView;
+    using GlobalIndex = typename LocalView::MultiIndex;
+    explicit FEDisplacement(const Basis& p_basis, const typename LocalView::Element& element)
+        : localView{p_basis.localView()} {
+      static_assert(Ikarus::Concepts::PowerBasis<RootBasis>,
+                    "You didn't pass a localview of a power basis to this method");
+      static_assert(RootBasis::PreBasis::Node::CHILDREN == worlddim,
+                    "The power basis children number does not coincide with the world space where the grid entity is "
+                    "embedded into!");
+      static_assert(
+          Ikarus::Concepts::FlatIndexBasis<RootBasis>,
+          "The Index merging strategy of the basis you passed has to be FlatLexicographic or FlatInterLeaved");
 
-    /** \brief Type of the Pairs of gridEntities and variable tags */
-    using DofTupleVectorType = typename IFiniteElement::DofPairVectorType;
-
-    /** \brief Dimension of the world space */
-    static constexpr int worlddim = GridElementEntityType::dimensionworld;
-
-    [[nodiscard]] constexpr int dofSize() const { return vertices(*elementGridEntity).size() * worlddim; }
-
-    [[nodiscard]] DofTupleVectorType getEntityVariableTuple() const {
-      DofTupleVectorType entDofTupleVector(vertices(*elementGridEntity).size());
-      using namespace Ikarus::Variable;
-      VariableTags dofType;
-      if constexpr (worlddim == 3)
-        dofType = VariableTags::displacement3d;
-      else if constexpr (worlddim == 2)
-        dofType = VariableTags::displacement2d;
-      else if constexpr (worlddim == 1)
-        dofType = VariableTags::displacement1d;
-      else
-        static_assert(worlddim > 3 || worlddim < 1, "This element has an impossible worlddim.");
-      for (int id = 0; auto &entityDofTuple : entDofTupleVector) {
-        entityDofTuple.entityID = indexSet_->subIndex(*elementGridEntity, id++, worlddim);
-        entityDofTuple.variableVector.assign(1, dofType);
-        entityDofTuple.entityType = EntityType::vertex;
-      }
-
-      return entDofTupleVector;
+      localView.bind(element);
     }
 
+    /** \brief Type of the Pairs of gridEntities and variable tags */
+    using GridElementEntityType = typename LocalView::Element;
+    using Traits                = FETraits<GridElementEntityType>;
+
+    /** \brief Dimension of the world space */
+    static constexpr int worlddim = Traits::worlddim;
+
+    [[nodiscard]] constexpr int dofSizeImpl() const { return localView.size(); }
+
+    [[nodiscard]] std::vector<GlobalIndex> globalIndices() const {
+      const auto& fe = localView.tree().child(0).finiteElement();
+      std::vector<GlobalIndex> globalIndices;
+      for (size_t i = 0; i < fe.size(); ++i) {
+        for (int j = 0; j < worlddim; ++j) {
+          globalIndices.push_back(localView.index((localView.tree().child(j).localIndex(i))));
+        }
+      }
+      return globalIndices;
+    }
+
+    [[nodiscard]] std::vector<GlobalIndex> localIndices() const {
+      const auto& fe = localView.tree().child(0).finiteElement();
+      std::vector<GlobalIndex> globalIndices;
+      for (size_t i = 0; i < fe.size(); ++i) {
+        for (int j = 0; j < worlddim; ++j) {
+          globalIndices.push_back((localView.tree().child(j).localIndex(i)));
+        }
+      }
+      return globalIndices;
+    }
+
+    const GridElementEntityType& getEntity() { return localView.element(); }
+
   private:
-    GridElementEntityType const *const elementGridEntity;
-    IndexSetType const *const indexSet_;
+    LocalView localView;
+  };
+
+  template <typename Basis>
+  class ScalarFieldFE {
+  public:
+    using RootBasis   = Basis;
+    using LocalView   = typename Basis::LocalView;
+    using GlobalIndex = typename LocalView::MultiIndex;
+    explicit ScalarFieldFE(const Basis& basis, const typename LocalView::Element& element)
+        : localView{basis.localView()} {
+      static_assert(RootBasis::PreBasis::Node::CHILDREN == 0, "This is no scalar basis!");
+      localView.bind(element);
+    }
+
+    /** \brief Type of the Pairs of gridEntities and variable tags */
+    using GridElementEntityType = typename LocalView::Element;
+    using Traits                = FETraits<GridElementEntityType>;
+
+    /** \brief Dimension of the world space */
+    static constexpr int worlddim = Traits::worlddim;
+
+    [[nodiscard]] constexpr int dofSizeImpl() const { return localView.size(); }
+
+    [[nodiscard]] std::vector<GlobalIndex> globalIndices() const {
+      const auto& fe = localView.tree().finiteElement();
+      std::vector<GlobalIndex> globalIndices;
+      for (size_t i = 0; i < fe.size(); ++i)
+        globalIndices.push_back(localView.index(localView.tree().localIndex(i)));
+
+      return globalIndices;
+    }
+
+    [[nodiscard]] std::vector<GlobalIndex> localIndices() const {
+      const auto& fe = localView.tree().finiteElement();
+      std::vector<GlobalIndex> globalIndices;
+      for (size_t i = 0; i < fe.size(); ++i)
+        globalIndices.push_back((localView.tree().localIndex(i)));
+
+      return globalIndices;
+    }
+
+    const GridElementEntityType& getEntity() { return localView.element(); }
+
+  private:
+    LocalView localView;
   };
 }  // namespace Ikarus::FiniteElements

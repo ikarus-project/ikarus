@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <dune/common/diagonalmatrix.hh>
 #include <dune/common/fmatrix.hh>
 #include <dune/common/fvector.hh>
 
@@ -19,10 +20,18 @@ namespace Ikarus {
     return fieldvec;
   }
 
-  /** \brief Views a dune fieldvector as an Eigen::Vector, no copies take place! */
+  /** \brief Views a dune fieldvector as an Eigen::Vector as Map, no copies take place! */
   template <typename ScalarType, int size>
-  Eigen::Map<const Eigen::Vector<ScalarType, size>> toEigenVector(const Dune::FieldVector<ScalarType, size>& vec) {
+  Eigen::Map<const Eigen::Vector<ScalarType, size>> toEigenVectorMap(const Dune::FieldVector<ScalarType, size>& vec) {
     return {vec.data(), size};
+  }
+
+  template <typename ScalarType, int size>
+  Eigen::Vector<ScalarType, size> toEigenVector(const Dune::FieldVector<ScalarType, size>& vec) {
+    Eigen::Vector<ScalarType, size> eigenVector;
+    for (int i = 0; i < size; ++i)
+      eigenVector(i) = vec[i];
+    return eigenVector;
   }
 
   /** \brief Views a const dune fieldvector as a const Eigen::Vector, no copies take place! */
@@ -37,6 +46,15 @@ namespace Ikarus {
     for (int i = 0; i < size1; ++i)
       for (int j = 0; j < size2; ++j)
         eigenmatrix(i, j) = mat[i][j];
+    return eigenmatrix;
+  }
+
+  template <typename ScalarType, int size1>
+  Eigen::Matrix<ScalarType, size1, size1> toEigenMatrix(const Dune::DiagonalMatrix<ScalarType, size1>& mat) {
+    Eigen::Matrix<ScalarType, size1, size1> eigenmatrix;
+    eigenmatrix.setZero();
+    for (int i = 0; i < size1; ++i)
+      eigenmatrix(i, i) = mat[i][i];
     return eigenmatrix;
   }
 

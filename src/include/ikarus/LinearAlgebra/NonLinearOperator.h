@@ -72,7 +72,10 @@ namespace Ikarus {
   class NonLinearOperator {
   public:
     NonLinearOperator([[maybe_unused]] const TypeListOne& derivativesFunctions,
-                      [[maybe_unused]] const TypeListTwo& args) {}
+                      [[maybe_unused]] const TypeListTwo& args) {
+      static_assert(!sizeof(TypeListOne),
+                    "This type should not be instantiated. check that your arguments satisfies the template below");
+    }
   };
 
   template <typename... DerivativeArgs, typename... ParameterArgs>
@@ -96,10 +99,17 @@ namespace Ikarus {
     void update() {
       std::get<n>(derivativesEvaluated_) = applyAndRemoveReferenceWrapper(std::get<n>(derivatives_), args_);
     }
-    using FunctionReturnValues = std::tuple<ReturnType<DerivativeArgs, ParameterArgs&...>...>;
 
+  private:
+    using FunctionReturnValues = std::tuple<ReturnType<DerivativeArgs, ParameterArgs&...>...>;
+    using ParameterValues      = std::tuple<ParameterArgs...>;
+
+  public:
     template <int n>
     using FunctionReturnType = std::tuple_element_t<n, FunctionReturnValues>;
+
+    template <int n>
+    using Parameter = std::remove_cvref_t<std::tuple_element_t<n, ParameterValues>>;
 
     auto& value() requires(sizeof...(DerivativeArgs) > 0) {
       if constexpr (requires { std::get<0>(derivativesEvaluated_).get(); })
@@ -134,20 +144,30 @@ namespace Ikarus {
     }
 
     template <int n>
-    auto& nthParameter() requires(sizeof...(ParameterArgs) > n) {
+    auto& nthParameter() requires(sizeof...(ParameterArgs) >= n) {
       return std::get<n>(args_).get();
     }
 
+    auto& lastParameter() { return std::get<sizeof...(ParameterArgs) - 1>(args_).get(); }
+    auto& firstParameter() { return std::get<0>(args_).get(); }
+    auto& secondParameter() requires(sizeof...(ParameterArgs) > 1) { return std::get<1>(args_).get(); }
+
+    using ValueType      = std::remove_cvref_t<std::tuple_element_t<0, FunctionReturnValues>>;
+    using DerivativeType = std::remove_cvref_t<std::tuple_element_t<1, FunctionReturnValues>>;
+
+  private:
     using FunctionReturnValuesWrapper = std::tuple<
         std::conditional_t<std::is_reference_v<ReturnType<DerivativeArgs, ParameterArgs&...>>,
                            std::reference_wrapper<std::remove_cvref_t<ReturnType<DerivativeArgs, ParameterArgs&...>>>,
                            std::remove_cvref_t<ReturnType<DerivativeArgs, ParameterArgs&...>>>...>;
-
-    using ValueType = std::tuple_element_t<0, FunctionReturnValues>;
-
-  private:
-    std::tuple<std::reference_wrapper<std::remove_cvref_t<DerivativeArgs>>...> derivatives_;
-    std::tuple<std::reference_wrapper<std::remove_cvref_t<ParameterArgs>>...> args_;
+    std::tuple<std::conditional_t<std::is_reference_v<DerivativeArgs>,
+                                  std::reference_wrapper<std::remove_cvref_t<DerivativeArgs>>,
+                                  std::remove_cvref_t<DerivativeArgs>>...>
+        derivatives_;
+    std::tuple<std::conditional_t<std::is_reference_v<ParameterArgs>,
+                                  std::reference_wrapper<std::remove_cvref_t<ParameterArgs>>,
+                                  std::remove_cvref_t<ParameterArgs>>...>
+        args_;
     FunctionReturnValuesWrapper derivativesEvaluated_{};
   };
 }  // namespace Ikarus

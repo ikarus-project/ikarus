@@ -34,10 +34,10 @@ namespace Ikarus::Manifold {
 
     UnitVector() = default;
 
-    ~UnitVector()                  = default;                 // destructor
-    UnitVector(const UnitVector &) = default;                 // copy constructor
-    UnitVector &operator=(const UnitVector &) = default;      // copy assignment
-    UnitVector(UnitVector &&) noexcept        = default;      // move constructor
+    ~UnitVector()                                 = default;  // destructor
+    UnitVector(const UnitVector &)                = default;  // copy constructor
+    UnitVector &operator=(const UnitVector &)     = default;  // copy assignment
+    UnitVector(UnitVector &&) noexcept            = default;  // move constructor
     UnitVector &operator=(UnitVector &&) noexcept = default;  // move assignment
 
     /** \brief Copy-Constructor from the values in terms of coordinateType */
