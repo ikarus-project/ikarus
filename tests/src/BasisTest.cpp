@@ -39,7 +39,8 @@ GTEST_TEST(Basis, Basistest) {
   using namespace Dune::Functions::BasisFactory;
   using namespace Dune::Indices;
   constexpr int p = 1;
-  auto basis      = makeBasis(gridView, composite(power<2>(lagrange<p>(), FlatInterleaved()), lagrange<p - 1>()));
+  auto basis      = makeBasis(gridView,
+                         composite(power<2>(lagrange<p>(), FlatInterleaved()), lagrange<p - 1>(), FlatLexicographic()));
   EXPECT_TRUE((std::is_same_v<std::tuple_element_t<0, decltype(basis)::PreBasis::SubPreBases>::IndexMergingStrategy,
                               Dune::Functions::BasisFactory::FlatInterleaved>));
   auto dispBasis               = subspaceBasis(basis, _0);
@@ -63,6 +64,7 @@ GTEST_TEST(Basis, Basistest) {
     EXPECT_EQ(localViewOfPressure.tree().degree(), 0);      // How many pressure childs are there?
     EXPECT_EQ(localViewOfDisplacement.tree().child(0).degree(), 0);
     EXPECT_EQ(localViewOfDisplacement.tree().child(1).degree(), 0);
-    EXPECT_EQ(localViewOfDisplacement.globalBasis().dimension(), 9);
+    EXPECT_EQ(localViewOfDisplacement.globalBasis().dimension(), 14);  // How many dofs do we have in total?
+    EXPECT_EQ(basis.dimension(), basis.size());                        // size and dimension cooincide for Flat basis
   }
 }
