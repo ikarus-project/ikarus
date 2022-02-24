@@ -35,6 +35,14 @@ void newtonRhapsonVeryBasicExample() {
   std::cout << "expected solution: " << xExpected << "\n";
 }
 
+class OurFirstObserver : public IObserver<NonLinearSolverMessages> {
+public:
+  void updateImpl(NonLinearSolverMessages message) override {
+    if (message == NonLinearSolverMessages::ITERATION_STARTED)
+      std::cout << "Yeah, the iteration started. Let's go!\n";
+  }
+};
+
 void newtonRhapsonBasicExampleWithLogger() {
   double x = 13;
 
@@ -50,14 +58,19 @@ void newtonRhapsonBasicExampleWithLogger() {
   nr.setup({eps, maxIter});
 
   // create observer and subscribe to Newton-Rhapson
-  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
-  nr.subscribe(NonLinearSolverMessages::FINISHED_SUCESSFULLY, nonLinearSolverObserver);
+  auto ourSimpleObserver = std::make_shared<OurFirstObserver>();
+  nr.subscribe(NonLinearSolverMessages::ITERATION_STARTED,ourSimpleObserver);
+  //nr.subscribeAll(ourSimpleObserver);
+  //auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
+  //nr.subscribe(NonLinearSolverMessages::FINISHED_SUCESSFULLY, nonLinearSolverObserver);
   // nr.subscribeAll(nonLinearSolverObserver);
 
   const auto solverInfo = nr.solve(x);
 
   std::cout << "solution: " << x << "\n";
 }
+
+
 
 int main() {
   // newtonRhapsonVeryBasicExample();
