@@ -29,7 +29,6 @@ using namespace Dune::Functions::BasisBuilder;
 using namespace Dune::Indices;
 
 void exampleTrussElement() {
-  constexpr int griddim = 1;
   const double L        = 1;
   const double EA       = 1.0;
   const int numElements = 10;
@@ -116,7 +115,6 @@ Eigen::MatrixXd TimoshenkoBeamStiffness(auto localView, auto gridElement, auto q
     // fill columns of B-Operator related to w-DOFs
     for (unsigned int i = 0; i < localView.tree().child(_0).size(); ++i) {
       B(1, localView.tree().child(_0).localIndex(i)) = dNwDxi[i] / detJ;
-      Fext(1, localView.tree().child(_0).localIndex(i)) += Nw[i] * fevaluated
     }
 
     // fill columns of B-Operator related to phi-DOFs
@@ -231,7 +229,7 @@ void exampleTimoshenkoBeam() {
   const double EI = E * b * t * t * t / 12.0;
   const double GA = G * b * t;
   const double F  = 0.1;
-  auto distrub Eigen::Matrix2d C;
+  Eigen::Matrix2d C;
   C << EI, 0, 0, GA;
   const int numElements            = 5;
   const int numGP                  = 2;
@@ -243,7 +241,7 @@ void exampleTimoshenkoBeam() {
 
   // Basis with different orders for w (first) and phi (second)
   auto basis     = makeBasis(gridView,
-                             composite(lagrange<polynomialOrderW>(), lagrange<polynomialOrderPhi>(), FlatLexicographic()));
+                         composite(lagrange<polynomialOrderW>(), lagrange<polynomialOrderPhi>(), FlatLexicographic()));
   auto localView = basis.localView();
 
   // global stiffness matrix and force vector

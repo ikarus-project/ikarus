@@ -7,6 +7,7 @@
 #include <ikarus/utils/concepts.h>
 
 #define EIGEN_SPARSEMATRIX_PLUGIN "eigenSparseAddon.h"
+#include <ranges>
 #include <utility>
 
 #include <dune/common/power.hh>
@@ -535,7 +536,7 @@ namespace Ikarus {
       for (auto& fe : feContainer) {
         const auto f    = fe.calculateVector(fErequirements);
         const auto dofs = fe.globalIndices();
-        assert(dofs.size() == f.size() && "The returned vector has wrong rowSize!");
+        assert(static_cast<long int>(dofs.size()) == f.size() && "The returned vector has wrong rowSize!");
         for (int i = 0; auto&& dofIndex : dofs) {
           if (dirichletFlags->at(dofIndex)) {
             ++reducedCounter;

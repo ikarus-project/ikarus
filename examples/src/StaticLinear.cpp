@@ -17,16 +17,11 @@
 
 #include "ikarus/Assembler/SimpleAssemblers.h"
 #include "ikarus/Controlroutines/LoadControl.h"
-#include "ikarus/FEManager/DefaultFEManager.h"
-#include "ikarus/FiniteElements/ElasticityFE.h"
-#include "ikarus/FiniteElements/NonLinearElasticityFE.h"
 #include "ikarus/FiniteElements/NonLinearElasticityFEwithBasisSimple.h"
-#include "ikarus/LinearAlgebra/DirichletConditionManager.h"
 #include "ikarus/utils/Observer/controlLogger.h"
 #include "ikarus/utils/Observer/gridDrawerObserver.h"
 #include "ikarus/utils/Observer/nonLinearSolverLogger.h"
 #include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
-#include <ikarus/FiniteElements/ForceLoad.h>
 #include <ikarus/Grids/GridHelper/griddrawer.h>
 #include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
 #include <ikarus/LinearAlgebra/NonLinearOperator.h>
