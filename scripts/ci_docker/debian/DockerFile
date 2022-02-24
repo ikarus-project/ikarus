@@ -19,16 +19,22 @@ RUN apt-get update -q -y && apt-get upgrade -y && \
         clang \
         libmetis-dev \
         clang-tidy \
-                libclang-13-dev \
-                libc++-13-dev \
-                libc++abi-13-dev \
-                llvm-13-dev \
+        libclang-13-dev \
+        libc++-13-dev \
+        libc++abi-13-dev \
+        llvm-13-dev \
         liblapack-dev \
         libblas-dev \
         libsuitesparse-dev \
         libdune-common-dev \
         libdune-geometry-dev \
         libdune-grid-dev \
+        libdune-functions-dev \
+        libdune-typetree-dev \
+        libdune-localfunctions-dev \
+        libdune-uggrid-dev \
+        libdune-grid-glue-dev \
+        libdune-istl-dev \
         libspdlog-dev \
         libbenchmark-dev \
         libgtest-dev \
