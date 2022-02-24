@@ -32,16 +32,7 @@ struct OneDimensionalTrussElement {
   using FERequirementType = Ikarus::FErequirements<Eigen::VectorXd>;
   OneDimensionalTrussElement(const Basis& basis, const typename LocalView::Element& element,
                              double p_EA) {
-    // create local view and bind it to an element
-    LocalView localView = basis.localView();
-    localView.bind(element);
-
-    // calculate and store stiffness matrix
-    double detJ = element.geometry().integrationElement(0.0);
-    calculateStiffnessMatrix(localView, detJ, p_EA);
-
-    // store glocal indices
-    calculateGlobalIndices(localView);
+    // constructor
   }
 
   // Assembler requires calculateMatrix function
@@ -55,30 +46,6 @@ struct OneDimensionalTrussElement {
   // Assembler requires globalIndices function
   [[nodiscard]] std::vector<GlobalIndex> globalIndices() const {
     return globalIndices_;
-  }
-
-  // function to calculate the stiffness matrix
-  void calculateStiffnessMatrix(LocalView localView, double detJ, double EA) {
-    auto& fe = localView.tree().finiteElement();
-    Ikarus::LocalBasis localBasis(fe.localBasis());
-    const auto& rule = Dune::QuadratureRules<double, 1>::
-        rule(Dune::GeometryTypes::simplex(1),1,Dune::QuadratureType::GaussLegendre);
-
-    Eigen::Vector2d dNdxi;
-    stiffnessMatrix_.setZero();
-
-    for (auto& gp : rule) {
-      localBasis.evaluateJacobian(gp.position(),dNdxi);
-      Eigen::Vector2d B = dNdxi/detJ;
-      stiffnessMatrix_ += EA*B*B.transpose()*detJ*gp.weight();
-    }
-  }
-
-  // function to get the global indices from the local view
-  void calculateGlobalIndices(LocalView localView) {
-    const auto& fe = localView.tree().finiteElement();
-    for (size_t i = 0; i < fe.size(); ++i)
-      globalIndices_.push_back(localView.index(localView.tree().localIndex(i)));
   }
 
 
@@ -95,32 +62,61 @@ void exampleTrussElement(){
   const int numGP = 1;
 
   // create a grid and grid view
+  Dune::OneDGrid grid(numElements, 0, L);
+  auto gridView = grid.leafGridView();
+  draw(gridView);
 
   // create a basis and a local view
+  using namespace Dune::Functions::BasisFactory;
+  auto basis = makeBasis(gridView, lagrange<1>());
+  auto localView = basis.localView();
 
   // initialize the global stiffness matrix
+  auto numDofs = basis.size();
+  Eigen::MatrixXd K_Glob = Eigen::MatrixXd::Zero(numDofs, numDofs);
 
-  // loop over all elements
-
-    // bind basis to element and create local basis
+  for (auto& ele : elements(gridView)){
+    localView.bind(ele);
+    auto& fe = localView.tree().finiteElement();
+    Ikarus::LocalBasis localBasis(fe.localBasis());
 
     // define quadrature rule
+    const auto& rule = Dune::QuadratureRules<double, 1>::
+        rule(ele.type(),numGP,Dune::QuadratureType::GaussLegendre);
 
     // integration point loop
-
+    Eigen::MatrixXd K = Eigen::MatrixXd::Zero(2,2);
+    for (auto& gp : rule) {
+      auto detJ = ele.geometry().integrationElement(0.0);
+      Eigen::VectorXd dNdxi = Eigen::VectorXd::Zero(2);
+      localBasis.evaluateJacobian(gp.position(),dNdxi);
+      Eigen::VectorXd B = dNdxi/detJ;
+      K += EA*B*B.transpose()*detJ*gp.weight();
+    }
 
     // Adding local stiffness to the global stiffness
-
+    for (auto i = 0U; i < localView.size(); ++i)
+      for (auto j = 0U; j < localView.size(); ++j)
+        K_Glob(localView.index(i)[0], localView.index(j)[0]) += K(i,j);
+  }
 
   // external force (1 one the right end)
+  Eigen::VectorXd F_ExtGlobRed = Eigen::VectorXd::Zero(numDofs-1);
+  F_ExtGlobRed(numDofs-2) = 1.0;
 
   // reduce stiffness matrix (fix left end, i.e. fix first dof)
+  const Eigen::MatrixXd K_GlobRed =
+      K_Glob(Eigen::seq(1,Eigen::last),Eigen::seq(1,Eigen::last));
 
   // solve the linear system
+  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
+  linSolver.factorize(K_GlobRed);
+  const Eigen::VectorXd D_GlobRed = linSolver.solve(F_ExtGlobRed);
 
-  // output the displacement
+  std::cout << "Displacement: " << D_GlobRed(Eigen::last) << "; exact solution: " << L/EA << "\n";
 
-}
+  }
+
 
 
 void exampleTrussElementWithAssembler(){
@@ -145,15 +141,21 @@ void exampleTrussElementWithAssembler(){
   // create assembler and assemble stiffness matrix
 
   // external force (1 one the right end)
+  Eigen::VectorXd F_ExtGlobRed = Eigen::VectorXd::Zero(numDofs);
+  F_ExtGlobRed(numDofs-1) = 1.0;
 
   // solve the linear system
+  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
+  linSolver.factorize(K_GlobRed);
+  const Eigen::VectorXd D_GlobRed = linSolver.solve(F_ExtGlobRed);
 
-  // solution output
+  std::cout << "Displacement: " << D_GlobRed(Eigen::last) << "; exact solution: " << L/EA << "\n";
+
 
 }
 
 
   int main(){
-  exampleTrussElement();
-  // exampleTrussElementWithAssembler();
+  //exampleTrussElement();
+  exampleTrussElementWithAssembler();
 }
