@@ -20,6 +20,7 @@ RUN apt-get update -q -y && apt-get upgrade -y && \
         libmetis-dev \
         clang-tidy \
         libclang-13-dev \
+        clang-format-13 \
         libc++-13-dev \
         libc++abi-13-dev \
         llvm-13-dev \
@@ -95,6 +96,8 @@ RUN apt-get update -q -y && apt-get upgrade -y && \
         dunecontrol cmake "-DCMAKE_BUILD_TYPE=Release" && \
         dunecontrol make && \
         dunecontrol make install && \
+        cd .. && \
+        rm -rf dune && \
         apt-get auto-remove -y && \
         apt-get clean && \
         rm -rvf /var/lib/apt/lists/* && \

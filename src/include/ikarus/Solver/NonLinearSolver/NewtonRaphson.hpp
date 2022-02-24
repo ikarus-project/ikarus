@@ -33,7 +33,7 @@ namespace Ikarus {
 
   template <typename NonLinearOperatorImpl,
             typename LinearSolver   = std::function<typename NonLinearOperatorImpl::ValueType(
-                  const typename NonLinearOperatorImpl::ValueType&, const typename NonLinearOperatorImpl::ValueType&)>,
+                const typename NonLinearOperatorImpl::ValueType&, const typename NonLinearOperatorImpl::ValueType&)>,
             typename UpdateFunction = std::function<void(typename NonLinearOperatorImpl::ValueType&,
                                                          const typename NonLinearOperatorImpl::ValueType&)>>
   class NewtonRaphson : public IObservable<NonLinearSolverMessages> {

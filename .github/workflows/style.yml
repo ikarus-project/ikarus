@@ -35,8 +35,8 @@ jobs:
          path: 'repo'
       - name: Install format dependencies
         run: |
-          sudo cp /usr/bin/clang-format-14 /usr/bin/clang-format
-          pip3 install cmake_format==0.6.13 pyyaml
+          sudo cp /usr/bin/clang-format-12 /usr/bin/clang-format
+          pip install cmake_format==0.6.13 pyyaml
 
       - name: configure
         run: cmake -S "cmake/FormatTarget" -Bbuild -DADD_FORMATTARGET=TRUE
