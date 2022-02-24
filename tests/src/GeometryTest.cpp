@@ -71,7 +71,7 @@ TEST(GeometryTest, CreateJacobianDeterminantAndJacobian2DSurfIn3D) {
   x.col(1) << 4, 0, 0;
   x.col(2) << 0, 4, 0;
   x.col(3) << 4, 4, 0;
-  Eigen::Matrix<double, 2, 3> JT = Ikarus::Geometry::GeometryWithExternalInput<double, 2, 2>::jacobianTransposed(dN, x);
+  Eigen::Matrix<double, 2, 3> JT = Ikarus::Geometry::GeometryWithExternalInput<double, 3, 2>::jacobianTransposed(dN, x);
   Eigen::Matrix<double, 2, 3> JTexpected;
   JTexpected << 4, 0, 0, 0, 4, 0;
 

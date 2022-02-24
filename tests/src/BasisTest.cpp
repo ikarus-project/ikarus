@@ -36,8 +36,6 @@ GTEST_TEST(Basis, Basistest) {
   auto grid                         = std::make_shared<Grid>(bbox, eles);
   auto gridView                     = grid->leafGridView();
 
-  std::vector<Ikarus::FiniteElements::IFiniteElement> feContainer;
-
   using namespace Dune::Functions::BasisFactory;
   using namespace Dune::Indices;
   constexpr int p = 1;
@@ -55,11 +53,6 @@ GTEST_TEST(Basis, Basistest) {
     localViewOfDisplacement.bind(e);
     localViewOfPressure.bind(e);
 
-    std::cout << localView.tree().treeIndex() << std::endl;
-    std::cout << localViewOfDisplacement.tree().treeIndex() << std::endl;
-    std::cout << localViewOfDisplacement.tree().child(0).treeIndex() << std::endl;
-    std::cout << localViewOfDisplacement.tree().child(1).treeIndex() << std::endl;
-    std::cout << localViewOfPressure.tree().treeIndex() << std::endl;
     EXPECT_EQ(localView.size(), 9);                         // Total Ansatzfunctions (Dofs)
     EXPECT_EQ(localViewOfDisplacement.size(), 9);           // Total Ansatzfunctions (Dofs)
     EXPECT_EQ(localViewOfPressure.size(), 9);               // Total Ansatzfunctions (Dofs)

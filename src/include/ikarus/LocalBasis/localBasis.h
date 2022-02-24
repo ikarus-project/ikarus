@@ -7,6 +7,7 @@
 
 #include <dune/common/fmatrix.hh>
 #include <dune/common/fvector.hh>
+#include <dune/geometry/quadraturerules.hh>
 
 #include <Eigen/Core>
 
@@ -54,9 +55,8 @@ namespace Ikarus {
     unsigned int size() { return duneLocalBasis->size(); }
 
     template <typename IntegrationRule, typename... Ints>
-      requires std::conjunction_v<std::is_convertible<int, Ints>
-                                  ...> void
-      bind(IntegrationRule&& p_rule, Ints&&... ints) {
+    requires std::conjunction_v<std::is_convertible<int, Ints>...>
+    void bind(IntegrationRule&& p_rule, Ints&&... ints) {
       rule             = p_rule;
       boundDerivatives = std::vector<int>({std::forward<Ints>(ints)...});
       Nbound           = std::make_optional(std::vector<Eigen::VectorX<RangeFieldType>>{});

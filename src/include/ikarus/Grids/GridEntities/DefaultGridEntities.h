@@ -99,7 +99,7 @@ namespace Ikarus::Grid {
     [[nodiscard]] unsigned int subEntities(unsigned int codim) const;
 
     /** \brief Return the fundamental geometric type of the entity */
-    [[nodiscard]] Ikarus::GeometryType type() const;
+    [[nodiscard]] Dune::GeometryType type() const;
 
     /** \brief Returns the geometric realization of the entity */
     Geometry geometry() const;

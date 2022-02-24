@@ -26,7 +26,8 @@ namespace Ikarus {
           requires {
             nonLinearSolver.nonLinearOperator().lastParameter() = 0.0;
             nonLinearSolver.nonLinearOperator().lastParameter() += 0.0;
-          }, "The last parameter (load factor) must be assignable and incremenntable with a double!");
+          },
+          "The last parameter (load factor) must be assignable and incremenntable with a double!");
     }
 
     void run() {
