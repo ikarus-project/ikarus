@@ -23,15 +23,26 @@ namespace Ikarus {
     double residualnorm{0.0};
     int iterations{0};
   };
+
+  template <typename LinearSolver, typename MatrixType, typename VectorType>
+  concept LinearSolverC = requires(LinearSolver& linearSolver, MatrixType& Ax, VectorType& vec) {
+    linearSolver.analyzePattern(Ax);
+    linearSolver.factorize(Ax);
+    linearSolver.solve(vec);
+  };
+
   template <typename NonLinearOperatorImpl,
             typename LinearSolver   = std::function<typename NonLinearOperatorImpl::ValueType(
-                const typename NonLinearOperatorImpl::ValueType&, const typename NonLinearOperatorImpl::ValueType&)>,
+                  const typename NonLinearOperatorImpl::ValueType&, const typename NonLinearOperatorImpl::ValueType&)>,
             typename UpdateFunction = std::function<void(typename NonLinearOperatorImpl::ValueType&,
-                                                         const typename NonLinearOperatorImpl::ValueType&)> >
+                                                         const typename NonLinearOperatorImpl::ValueType&)>>
   class NewtonRaphson : public IObservable<NonLinearSolverMessages> {
   public:
-    using LinearSolverStdFunctionType = std::function<typename NonLinearOperatorImpl::ValueType(
+    using LinearSolverScalarFunctionType = std::function<typename NonLinearOperatorImpl::ValueType(
         const typename NonLinearOperatorImpl::ValueType&, const typename NonLinearOperatorImpl::ValueType&)>;
+
+    static constexpr bool isLinearSolver = LinearSolverC<LinearSolver, typename NonLinearOperatorImpl::DerivativeType,
+                                                         typename NonLinearOperatorImpl::ValueType>;
 
     explicit NewtonRaphson(
         const NonLinearOperatorImpl& p_nonLinearOperator,
@@ -43,29 +54,37 @@ namespace Ikarus {
           linearSolver{std::move(p_linearSolver)},
           updateFunction{p_updateFunction} {}
 
+    using NonLinearOperator = NonLinearOperatorImpl;
+
     void setup(const NonlinearSolverSettings& p_settings) { settings = p_settings; }
-    template <typename SolutionType>
-    SolverInformation solve(SolutionType& x) {
+
+    struct NoPredictor {};
+    template <typename SolutionType = NoPredictor>
+    requires std::is_same_v<SolutionType, NoPredictor> || std::is_convertible_v<
+        SolutionType, std::remove_cvref_t<typename NonLinearOperatorImpl::ValueType>>
+        SolverInformation solve(const SolutionType& dx_predictor = NoPredictor{}) {
       this->notify(NonLinearSolverMessages::INIT);
       SolverInformation solverInformation;
       solverInformation.sucess = true;
       nonLinearOperator().updateAll();
       const auto& rx = nonLinearOperator().value();
       const auto& Ax = nonLinearOperator().derivative();
+      auto& x        = nonLinearOperator().firstParameter();
       auto rNorm     = norm(rx);
       decltype(rNorm) dNorm;
       int iter{0};
-      if constexpr (!std::is_same_v<LinearSolver, LinearSolverStdFunctionType>) linearSolver.analyzePattern(Ax);
+      if constexpr (not std::is_same_v<SolutionType, NoPredictor>) updateFunction(x, dx_predictor);
+      if constexpr (isLinearSolver) linearSolver.analyzePattern(Ax);
       while (rNorm > settings.tol && iter <= settings.maxIter) {
         this->notify(NonLinearSolverMessages::ITERATION_STARTED);
-        if constexpr (!std::is_same_v<LinearSolver, LinearSolverStdFunctionType>) {
+        if constexpr (isLinearSolver) {
           linearSolver.factorize(Ax);
           const Eigen::VectorXd D = -linearSolver.solve(rx);
           dNorm                   = D.norm();
           updateFunction(x, D);
         } else {
           const auto D = -linearSolver(rx, Ax);
-          dNorm        = D;
+          dNorm        = norm(D);
           updateFunction(x, D);
         }
         this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, dNorm);

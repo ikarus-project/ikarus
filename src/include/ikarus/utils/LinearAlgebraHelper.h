@@ -36,3 +36,8 @@ requires(!std::floating_point<Derived>) auto norm(const Eigen::MatrixBase<Derive
 
 /** \brief Helper Free Function to have the same interface as for Eigen Vector Types */
 auto norm(const std::floating_point auto& v) { return std::abs(v); }
+
+template <typename Derived>
+Derived sym(const Eigen::MatrixBase<Derived>& A) {
+  return 0.5 * (A.transpose() + A.transpose());
+}

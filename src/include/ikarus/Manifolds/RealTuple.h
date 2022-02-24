@@ -35,10 +35,10 @@ namespace Ikarus::Manifold {
 
     RealTuple() = default;
 
-    ~RealTuple()                 = default;                 // destructor
-    RealTuple(const RealTuple &) = default;                 // copy constructor
-    RealTuple &operator=(const RealTuple &) = default;      // copy assignment
-    RealTuple(RealTuple &&) noexcept        = default;      // move constructor
+    ~RealTuple()                                = default;  // destructor
+    RealTuple(const RealTuple &)                = default;  // copy constructor
+    RealTuple &operator=(const RealTuple &)     = default;  // copy assignment
+    RealTuple(RealTuple &&) noexcept            = default;  // move constructor
     RealTuple &operator=(RealTuple &&) noexcept = default;  // move assignment
 
     /** \brief Copy-Constructor from the values in terms of coordinateType */

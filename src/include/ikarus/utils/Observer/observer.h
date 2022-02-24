@@ -60,6 +60,7 @@ public:
   virtual ~IObservable() = default;
   void subscribe(MessageType message, std::shared_ptr<IObserver<MessageType>> observer);
   void subscribeAll(std::shared_ptr<IObserver<MessageType>> observer);
+  void subscribeAll(std::initializer_list<std::shared_ptr<IObserver<MessageType>>> observers);
   void unSubscribe(MessageType message, std::shared_ptr<IObserver<MessageType>> observer);
   void unSubscribeAll(std::shared_ptr<IObserver<MessageType>> observer);
   void notify(MessageType message);
@@ -90,6 +91,13 @@ template <typename MessageType>
 void IObservable<MessageType>::subscribeAll(std::shared_ptr<IObserver<MessageType>> observer) {
   for (auto& msg : messages_)
     subscribe(msg, observer);
+}
+
+template <typename MessageType>
+void IObservable<MessageType>::subscribeAll(std::initializer_list<std::shared_ptr<IObserver<MessageType>>> observers) {
+  for (auto& observer : observers)
+    for (auto& msg : messages_)
+      subscribe(msg, observer);
 }
 
 template <typename MessageType>

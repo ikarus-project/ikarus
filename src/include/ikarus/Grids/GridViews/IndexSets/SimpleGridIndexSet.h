@@ -31,15 +31,14 @@ public:
   size_t subIndex(const Entity& entity, int subEntityNumber, unsigned int codim) const {
     constexpr size_t entityDimension = std::remove_pointer_t<Entity>::mydimension;
     //    constexpr size_t worldDimension  = std::remove_pointer_t<Entity>::dimensionworld;
-    assert(codim <= worldDimension);
+    assert(codim <= dimension);
     if constexpr (entityDimension > 1)
-      if (worldDimension - codim == 1) return index(*entity.template getChildEntities<1>()[subEntityNumber]);  // edges
+      if (dimension - codim == 1) return index(*entity.template getChildEntities<1>()[subEntityNumber]);  // edges
 
     if constexpr (entityDimension > 2)
-      if (worldDimension - codim == 2)
-        return index(*entity.template getChildEntities<2>()[subEntityNumber]);  // surfaces
+      if (dimension - codim == 2) return index(*entity.template getChildEntities<2>()[subEntityNumber]);  // surfaces
 
-    if (worldDimension - codim == 0)
+    if (dimension - codim == 0)
       return index(*entity.template getChildEntities<0>()[subEntityNumber]);  // these are vertices
     else                                                                      // codim==0
     {

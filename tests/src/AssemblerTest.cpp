@@ -1,135 +1,79 @@
 //
 // Created by Alex on 21.04.2021.
 //
-
 #include <gmock/gmock.h>
 
+#include "../../config.h"
 #include "testHelpers.h"
 
 #include <fstream>
 #include <vector>
 
+#include <dune/functions/functionspacebases/basistags.hh>
+#include <dune/functions/functionspacebases/boundarydofs.hh>
+#include <dune/functions/functionspacebases/compositebasis.hh>
+#include <dune/functions/functionspacebases/lagrangebasis.hh>
+#include <dune/functions/functionspacebases/powerbasis.hh>
+#include <dune/functions/functionspacebases/subspacebasis.hh>
+#include <dune/grid/yaspgrid.hh>
+
 #include <Eigen/Core>
 
-#include "ikarus/LinearAlgebra/DirichletConditionManager.h"
 #include <ikarus/Assembler/SimpleAssemblers.h>
-#include <ikarus/FEManager/DefaultFEManager.h>
-#include <ikarus/FiniteElements/ElasticityFE.h>
 #include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
-#include <ikarus/FiniteElements/InterfaceFiniteElement.h>
-#include <ikarus/Geometries/GeometryType.h>
-#include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
+#include <ikarus/FiniteElements/NonLinearElasticityFEwithBasis.h>
 
 TEST(Assembler, SimpleAssemblersTest) {
-  using namespace Ikarus::Grid;
-  using Grid = SimpleGrid<2, 2>;
-  SimpleGridFactory<2, 2> gridFactory;
-  using vertexType = Eigen::Vector2d;
-  std::vector<vertexType> verticesVec;
-  verticesVec.emplace_back(vertexType{0.0, 0.0});  // 0
-  verticesVec.emplace_back(vertexType{2.0, 0.0});  // 1
-  verticesVec.emplace_back(vertexType{0.0, 2.0});  // 2
-  verticesVec.emplace_back(vertexType{2.0, 2.0});  // 3
-  verticesVec.emplace_back(vertexType{4.0, 0.0});  // 4
-  verticesVec.emplace_back(vertexType{4.0, 2.0});  // 5
+  using Grid = Dune::YaspGrid<2>;
 
-  for (auto&& vert : verticesVec)
-    gridFactory.insertVertex(vert);
+  Dune::FieldVector<double, 2> bbox = {4, 2};
+  std::array<int, 2> eles           = {2, 1};
+  auto grid                         = std::make_shared<Grid>(bbox, eles);
 
-  std::vector<size_t> elementIndices;
-  elementIndices.resize(4);
-  elementIndices = {0, 1, 2, 3};
-  gridFactory.insertElement(Ikarus::GeometryType::linearQuadrilateral, elementIndices);
-  elementIndices = {1, 4, 3, 5};
-  gridFactory.insertElement(Ikarus::GeometryType::linearQuadrilateral, elementIndices);
+  for (int i = 0; i < 4; ++i) {
+    auto gridView = grid->leafGridView();
 
-  Grid grid = gridFactory.createGrid();
+    using namespace Dune::Functions::BasisFactory;
+    auto basis = makeBasis(gridView, power<2>(lagrange<1>(), FlatInterleaved()));
 
-  auto gridView = grid.leafGridView();
+    const auto& indexSet = gridView.indexSet();
 
-  const auto indexSet = gridView.indexSet();
+    std::vector<Ikarus::FiniteElements::NonLinearElasticityFEWithLocalBasis<decltype(basis)>> fes;
+    const double Emodul = 1000;
 
-  std::vector<Ikarus::FiniteElements::IFiniteElement> fes;
-  const double Emodul = 1000;
-  for (auto&& ge : surfaces(gridView))
-    fes.emplace_back(Ikarus::FiniteElements::ElasticityFE(ge, indexSet, Emodul, 0.3));
+    for (auto&& ge : elements(gridView))
+      fes.emplace_back(basis, ge, Emodul, 0.3);
 
-  auto feManager = Ikarus::FEManager::DefaultFEManager(fes, gridView);
+    std::vector<bool> dirichFlags(basis.size(), false);
 
-  Ikarus::DirichletConditionManager dirichletConditionManager(feManager);
+    Dune::Functions::forEachBoundaryDOF(basis, [&](auto&& indexGlobal) { dirichFlags[indexGlobal] = true; });
 
-  dirichletConditionManager.addConstraint(vertices(gridView).front(), 0);
-  dirichletConditionManager.addConstraint(vertices(gridView).back(), 1);
-  dirichletConditionManager.addConstraint(vertices(gridView).at(3), 1);
-  dirichletConditionManager.finalize();
+    Ikarus::SparseFlatAssembler sparseFlatAssembler(basis, fes, dirichFlags);
+    Ikarus::DenseFlatAssembler denseFlatAssembler(basis, fes, dirichFlags);
 
-  auto vectorAssembler = Ikarus::Assembler::VectorAssembler(feManager, dirichletConditionManager);
-  auto fint            = vectorAssembler.getVector(Ikarus::FiniteElements::forces);
-  EXPECT_EQ(fint.size(), 12);
-  const Eigen::VectorXd fintExpected = (Eigen::VectorXd(12) << 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).finished();
-  EXPECT_THAT(fint, EigenApproxEqual(fintExpected, 1e-15));
+    Ikarus::FErequirements req;
+    Eigen::VectorXd d(basis.size());
+    d.setRandom();
+    req.sols.emplace_back(d);
+    req.parameter.insert({Ikarus::FEParameter::loadfactor, 0});
+    req.matrixAffordances = Ikarus::MatrixAffordances::stiffness;
+    auto& Kdense          = denseFlatAssembler.getMatrix(req);
+    auto& K               = sparseFlatAssembler.getMatrix(req);
 
-  auto denseMatrixAssembler = Ikarus::Assembler::DenseMatrixAssembler(feManager, dirichletConditionManager);
-  auto K                    = denseMatrixAssembler.getMatrix(Ikarus::FiniteElements::stiffness);
-  EXPECT_EQ(K.rows(), 12);
-  EXPECT_EQ(K.cols(), 12);
-  const Eigen::MatrixXd KExpected
-      = (Eigen::MatrixXd(12, 12) <<  // clang-format off
-  494.5054945054946,  178.5714285714286, -302.1978021978022, -13.73626373626373,  54.94505494505495,  13.73626373626373, -247.2527472527473, -178.5714285714286,                  0,                  0,                  0,                  0,
-  178.5714285714286,  494.5054945054946,  13.73626373626373,  54.94505494505495, -13.73626373626373, -302.1978021978022, -178.5714285714286, -247.2527472527473,                  0,                  0,                  0,                  0,
- -302.1978021978023,  13.73626373626372,  989.0109890109891,                  0, -247.2527472527473,  178.5714285714286,  109.8901098901099, -7.10542735760e-15, -302.1978021978022, -13.73626373626373, -247.2527472527473, -178.5714285714286,
- -13.73626373626373,  54.94505494505495,                  0,  989.0109890109891,  178.5714285714286, -247.2527472527473, -3.55271367880e-15, -604.3956043956044,  13.73626373626373,  54.94505494505495, -178.5714285714286, -247.2527472527473,
-  54.94505494505495, -13.73626373626373, -247.2527472527473,  178.5714285714286,  494.5054945054945, -178.5714285714286, -302.1978021978022,  13.73626373626374,                  0,                  0,                  0,                  0,
-  13.73626373626373, -302.1978021978023,  178.5714285714286, -247.2527472527473, -178.5714285714286,  494.5054945054945, -13.73626373626373,  54.94505494505495,                  0,                  0,                  0,                  0,
- -247.2527472527473, -178.5714285714286,  109.8901098901099, -2.48689957516e-14, -302.1978021978022, -13.73626373626373,  989.0109890109891,                  0, -247.2527472527473,  178.5714285714286, -302.1978021978022,  13.73626373626374,
- -178.5714285714286, -247.2527472527473, -1.06581410364e-14, -604.3956043956046,  13.73626373626373,  54.94505494505495,                  0,  989.0109890109891,  178.5714285714286, -247.2527472527473, -13.73626373626372,  54.94505494505496,
-                  0,                  0, -302.1978021978023,  13.73626373626373,                  0,                  0, -247.2527472527473,  178.5714285714286,  494.5054945054945, -178.5714285714286,  54.94505494505495, -13.73626373626373,
-                  0,                  0, -13.73626373626373,  54.94505494505495,                  0,                  0,  178.5714285714286, -247.2527472527473, -178.5714285714286,  494.5054945054945,  13.73626373626374, -302.1978021978022,
-                  0,                  0, -247.2527472527473, -178.5714285714286,                  0,                  0, -302.1978021978022, -13.73626373626372,  54.94505494505495,  13.73626373626373,  494.5054945054945,  178.5714285714286,
-                  0,                  0, -178.5714285714286, -247.2527472527473,                  0,                  0,  13.73626373626373,  54.94505494505496, -13.73626373626373, -302.1978021978022,  178.5714285714286,  494.5054945054945).finished();  // clang-format on
-  EXPECT_THAT(K, EigenApproxEqual(KExpected, 1e-15));
+    const auto fixedDofs = std::ranges::count(dirichFlags, true);
+    EXPECT_THAT(K, EigenApproxEqual(Kdense, 1e-15));
+    EXPECT_THAT(K.rows(), 2 * gridView.size(2));
+    EXPECT_THAT(K.cols(), 2 * gridView.size(2));
+    const int boundaryNodes = (eles[0] * Dune::power(2, i) + 1) * 2 + (eles[1] * Dune::power(2, i) + 1) * 2 - 4;
+    EXPECT_EQ(fixedDofs, 2 * boundaryNodes);
 
-  auto sparseMatrixAssembler = Ikarus::Assembler::SparseMatrixAssembler(feManager, dirichletConditionManager);
-  auto KSparse               = sparseMatrixAssembler.getMatrix(Ikarus::FiniteElements::stiffness);
+    auto& KdenseRed = denseFlatAssembler.getReducedMatrix(req);
+    auto& KRed      = sparseFlatAssembler.getReducedMatrix(req);
 
-  EXPECT_THAT(KSparse, EigenApproxEqual(KExpected, 1e-15));
-  EXPECT_THAT(KSparse, EigenApproxEqual(K, 1e-15));
+    EXPECT_THAT(KRed, EigenApproxEqual(KdenseRed, 1e-15));
+    EXPECT_THAT(KRed.rows(), 2 * gridView.size(2) - fixedDofs);
+    EXPECT_THAT(KRed.cols(), 2 * gridView.size(2) - fixedDofs);
 
-  auto scalarAssembler = Ikarus::Assembler::ScalarAssembler(feManager);
-  auto w               = scalarAssembler.getScalar(Ikarus::FiniteElements::potentialEnergy);
-  EXPECT_DOUBLE_EQ(w, 0.0);
-
-  // Reduced tests
-  const auto& fintRed = vectorAssembler.getReducedVector(Ikarus::FiniteElements::forces);
-
-  EXPECT_EQ(fintRed.size(), fint.size() - 3);
-
-  Eigen::VectorXd testVector = Eigen::VectorXd::LinSpaced(9, 1, 9);
-  const auto fullVector      = vectorAssembler.createFullVector(testVector);
-
-  EXPECT_EQ(fullVector.size(), fint.size());
-  const Eigen::VectorXd fullVectorExpected = (Eigen::VectorXd(12) << 0, 1, 2, 3, 4, 5, 6, 0, 7, 8, 9, 0).finished();
-  EXPECT_THAT(fullVector, EigenApproxEqual(fullVectorExpected, 1e-15));
-
-  const auto& KRed = denseMatrixAssembler.getReducedMatrix(Ikarus::FiniteElements::stiffness);
-
-  Eigen::MatrixXd KExpectedRed = KExpected;
-  std::vector<size_t> keepIndices(dirichletConditionManager.freeIndices().begin(),
-                                  dirichletConditionManager.freeIndices().end());
-
-  KExpectedRed = KExpectedRed(keepIndices, keepIndices).eval();
-
-  EXPECT_THAT(KRed, EigenApproxEqual(KExpectedRed, 1e-15));
-
-  auto& x = feManager.getVariables();
-  Eigen::VectorXd D(feManager.numberOfDegreesOfFreedom());
-  D.setOnes();
-  x += D;
-
-  w = scalarAssembler.getScalar(Ikarus::FiniteElements::potentialEnergy);
-  EXPECT_NEAR(w, 0.0, 1e-16 * Emodul);
-
-  const auto& KRedSparse = sparseMatrixAssembler.getReducedMatrix(Ikarus::FiniteElements::stiffness);
-
-  EXPECT_THAT(KRedSparse, EigenApproxEqual(KExpectedRed, 1e-15));
+    grid->globalRefine(1);
+  }
 }

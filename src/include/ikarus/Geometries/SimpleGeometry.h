@@ -76,17 +76,4 @@ namespace Ikarus::Geometry {
     ShapeFunctionType shapeFunctions;
     VertexContainerType vertices;
   };
-
-  // template<typename ScalarType>
-  // using LinearBrickGeometry = SimpleGeometry<ScalarType, 3, 3,>;
-  // template<typename ScalarType>
-  // using SurfaceGeometry = SimpleGeometry<ScalarType, 3, 2>;
-  // template<typename ScalarType>
-  // using PlaneGeometry = SimpleGeometry<ScalarType, 2, 2>;
-  // template<typename ScalarType>
-  // using Curve3dGeometry = SimpleGeometry<ScalarType, 3, 1>;
-  // template<typename ScalarType>
-  // using Curve2dGeometry = SimpleGeometry<ScalarType, 2, 1>;
-  // template<typename ScalarType>
-  // using Curve1dGeometry = SimpleGeometry<ScalarType, 1, 1>;
 }  // namespace Ikarus::Geometry

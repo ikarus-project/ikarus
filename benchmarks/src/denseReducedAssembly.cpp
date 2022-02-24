@@ -7,7 +7,6 @@
 
 #include "ikarus/LinearAlgebra/DirichletConditionManager.h"
 #include <ikarus/Assembler/SimpleAssemblers.h>
-#include <ikarus/FEManager/DefaultFEManager.h>
 #include <ikarus/FiniteElements/ElasticityFE.h>
 #include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
