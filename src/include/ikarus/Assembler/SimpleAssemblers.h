@@ -18,7 +18,9 @@ namespace Ikarus {
 
   namespace Impl {
     template <typename FEContainer>
-    requires requires { {std::declval<typename FEContainer::value_type>().globalIndices()}; }
+      requires requires {
+                 { std::declval<typename FEContainer::value_type>().globalIndices() };
+               }
     auto dofsOfElements(const FEContainer& feContainer) {
       return feContainer | std::views::transform([](auto&& fe) { return fe.globalIndices(); });
     }

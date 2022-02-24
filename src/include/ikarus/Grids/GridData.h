@@ -32,12 +32,14 @@ public:
   }
 
   template <typename... DataArgs, int codim>
-  requires(sizeof...(DataArgs) >= 1) void add(const Data<DataArgs...> &data, Ikarus::EntitiesWithCoDim<codim> &&) {
+    requires(sizeof...(DataArgs) >= 1)
+  void add(const Data<DataArgs...> &data, Ikarus::EntitiesWithCoDim<codim> &&) {
     add(data, Ikarus::getEntityTypeFromCodim(gridDim, codim));
   }
 
   template <typename... DataArgs>
-  requires(sizeof...(DataArgs) >= 1) void add(const Data<DataArgs...> &data, const Ikarus::EntityType &at) {
+    requires(sizeof...(DataArgs) >= 1)
+  void add(const Data<DataArgs...> &data, const Ikarus::EntityType &at) {
     constexpr auto n = sizeof...(DataArgs);
     Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<n>()), [&](const auto i) {
       const int entityTypeId = Ikarus::determineEntityDimension(at);
@@ -52,7 +54,8 @@ public:
   }
 
   template <typename... DataArgs>
-  requires(sizeof...(DataArgs) >= 1) void remove(const Data<DataArgs...> &data, const Ikarus::EntityType &at) {
+    requires(sizeof...(DataArgs) >= 1)
+  void remove(const Data<DataArgs...> &data, const Ikarus::EntityType &at) {
     constexpr auto n = sizeof...(DataArgs);
     Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<n>()), [&](const auto i) {
       const int entityTypeId = Ikarus::determineEntityDimension(at);

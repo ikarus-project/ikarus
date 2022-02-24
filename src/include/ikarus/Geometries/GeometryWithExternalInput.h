@@ -17,7 +17,7 @@
 namespace Ikarus::Geometry {
 
   template <typename ct, int wdim, int geodim>
-  requires requires { geodim <= wdim; }
+    requires requires { geodim <= wdim; }
   class GeometryWithExternalInput {
   public:
     /** \brief Type used for coordinates */

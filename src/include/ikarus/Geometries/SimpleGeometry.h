@@ -16,7 +16,7 @@
 namespace Ikarus::Geometry {
 
   template <typename ct, int wdim, int geodim, typename ShapeFunctionType>
-  requires requires { geodim <= wdim; }
+    requires requires { geodim <= wdim; }
   class SimpleGeometry {
   private:
     using ExternalGeometry = GeometryWithExternalInput<ct, wdim, geodim>;
