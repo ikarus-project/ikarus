@@ -124,14 +124,14 @@ namespace Ikarus {
       }
     }
 
-    ~ILinearSolver()       = default;
+    ~ILinearSolver() = default;
     ILinearSolver& operator=(const ILinearSolver& other) {
       ILinearSolver tmp(other);
       std::swap(solverimpl, tmp.solverimpl);
       return *this;
     }
 
-    ILinearSolver(ILinearSolver&&) noexcept = default;
+    ILinearSolver(ILinearSolver&&) noexcept            = default;
     ILinearSolver& operator=(ILinearSolver&&) noexcept = default;
 
   private:

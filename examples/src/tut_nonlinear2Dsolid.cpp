@@ -112,7 +112,7 @@ int main(int argc, char** argv) {
     return sparseAssembler.getMatrix(req);
   };
 
-  auto energyFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto {
+  auto energyFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto{
     return denseAssembler.getScalar(potentialEnergy, disp, lambdaLocal);
   };
 

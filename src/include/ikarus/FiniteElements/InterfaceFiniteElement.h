@@ -45,7 +45,7 @@ namespace Ikarus::FiniteElements {
       return *this;
     }
 
-    IFiniteElement(IFiniteElement &&) noexcept = default;
+    IFiniteElement(IFiniteElement &&) noexcept            = default;
     IFiniteElement &operator=(IFiniteElement &&) noexcept = default;
 
   private:
