@@ -27,7 +27,7 @@ namespace Ikarus {
     template <typename Derived>
     void evaluateFunction(const DomainType& local, Eigen::PlainObjectBase<Derived>& N) {
       duneLocalBasis->evaluateFunction(local, Ndune);
-      N.resize(Ndune.size(),1);
+      N.resize(Ndune.size(), 1);
       N.setZero();
       for (size_t i = 0; i < Ndune.size(); ++i)
         N[i] = Ndune[i][0];
@@ -50,10 +50,8 @@ namespace Ikarus {
       evaluateFunction(local, N);
       evaluateJacobian(local, dN);
     }
-    
-    unsigned int size(){
-      return duneLocalBasis->size();
-    }
+
+    unsigned int size() { return duneLocalBasis->size(); }
 
     template <typename IntegrationRule, typename... Ints>
     requires std::conjunction_v<std::is_convertible<int, Ints>...>
@@ -68,9 +66,9 @@ namespace Ikarus {
 
       for (int i = 0; auto& gp : rule.value()) {
         Eigen::Matrix<double, Eigen::Dynamic, gridDim> dN;
-        if (std::ranges::binary_search(boundDerivatives.value(), 0))
-          evaluateFunction(gp.position(), Nbound.value()[i]);
-        if (std::ranges::binary_search(boundDerivatives.value(), 1)) evaluateJacobian(gp.position(), dNbound.value()[i]);
+        if (std::ranges::binary_search(boundDerivatives.value(), 0)) evaluateFunction(gp.position(), Nbound.value()[i]);
+        if (std::ranges::binary_search(boundDerivatives.value(), 1))
+          evaluateJacobian(gp.position(), dNbound.value()[i]);
         ++i;
       }
     }

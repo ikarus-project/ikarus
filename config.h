@@ -7,74 +7,56 @@
 /* Define to 1 if you have module ikarus available */
 #define HAVE_IKARUS 1
 
-
 /* Define to 1 if you have module dune-common available */
 #define HAVE_DUNE_COMMON 1
-
 
 /* Define to 1 if you have module dune-uggrid available */
 #define HAVE_DUNE_UGGRID 1
 
-
 /* Define to 1 if you have module dune-geometry available */
 #define HAVE_DUNE_GEOMETRY 1
-
 
 /* Define to 1 if you have module dune-typetree available */
 #define HAVE_DUNE_TYPETREE 1
 
-
 /* Define to 1 if you have module dune-istl available */
 #define HAVE_DUNE_ISTL 1
-
 
 /* Define to 1 if you have module dune-localfunctions available */
 #define HAVE_DUNE_LOCALFUNCTIONS 1
 
-
 /* Define to 1 if you have module dune-grid available */
 #define HAVE_DUNE_GRID 1
-
 
 /* Define to 1 if you have module dune-python available */
 #define HAVE_DUNE_PYTHON 0
 
-
 /* Define to 1 if you have module dune-foamgrid available */
 #define HAVE_DUNE_FOAMGRID 1
-
 
 /* Define to 1 if you have module dune-alugrid available */
 #define HAVE_DUNE_ALUGRID 1
 
-
 /* Define to 1 if you have module dune-polygongrid available */
 #define HAVE_DUNE_POLYGONGRID 0
-
 
 /* Define to 1 if you have module dune-spgrid available */
 #define HAVE_DUNE_SPGRID 0
 
-
 /* Define to 1 if you have module dune-functions available */
 #define HAVE_DUNE_FUNCTIONS 1
-
 
 /* Define to 1 if you have module dune-vtk available */
 #define HAVE_DUNE_VTK 1
 
-
 /* Define to 1 if you have module dune-curvedgeometry available */
 #define HAVE_DUNE_CURVEDGEOMETRY 1
-
 
 /* Define to 1 if you have module dune-iga available */
 #define HAVE_DUNE_IGA 1
 
-
 /* Define to 1 if you have module dune-curvedgrid available */
 #define HAVE_DUNE_CURVEDGRID 1
-
 
 /* begin private */
 /* Define to the version of dune-common */
@@ -121,11 +103,11 @@
 
 /* Deactivate cxx bindings for MPI */
 #if defined(HAVE_MPI) && HAVE_MPI
-#define MPICH_SKIP_MPICXX 1
-#define OMPI_SKIP_MPICXX 1
-#define MPI_NO_CPPBIND 1
-#define MPIPP_H
-#define _MPICC_H
+#  define MPICH_SKIP_MPICXX 1
+#  define OMPI_SKIP_MPICXX 1
+#  define MPI_NO_CPPBIND 1
+#  define MPIPP_H
+#  define _MPICC_H
 #endif
 
 /* Define if you have the GNU GMP library. The value should be ENABLE_GMP
@@ -142,9 +124,6 @@
 
 /* Define to 1 if you have the Threading Building Blocks (TBB) library */
 /* #undef HAVE_TBB */
-
-
-
 
 /* old feature support macros which were tested until 2.7, kept around for one more release */
 /* As these are now always supported due to the new compiler requirements, they are directly */
@@ -222,8 +201,6 @@
 /* Used to call lapack functions */
 #define LAPACK_NEEDS_UNDERLINE
 
-
-
 /* Define to the version of dune-common */
 #define DUNE_UGGRID_VERSION "2.8.0"
 
@@ -249,10 +226,6 @@
 
 /* end private section */
 
-
-
-
-
 /* Define to the version of dune-geometry */
 #define DUNE_GEOMETRY_VERSION "2.8.0"
 
@@ -265,10 +238,6 @@
 /* Define to the revision of dune-geometry */
 #define DUNE_GEOMETRY_VERSION_REVISION 0
 
-
-
-
-
 /* Define to the version of dune-typetree */
 #define DUNE_TYPETREE_VERSION "2.8.0"
 
@@ -280,11 +249,6 @@
 
 /* Define to the revision of dune-typetree */
 #define DUNE_TYPETREE_VERSION_REVISION 0
-
-
-
-
-
 
 /* Define to ENABLE_SUPERLU if the SuperLU library is available */
 #define HAVE_SUPERLU ENABLE_SUPERLU
@@ -311,10 +275,6 @@
 /* Enable/Disable the backwards compatibility of the category enum/method in dune-istl solvers, preconditioner, etc. */
 #define DUNE_ISTL_SUPPORT_OLD_CATEGORY_INTERFACE 1
 
-
-
-
-
 /* Define to the version of dune-localfunctions */
 #define DUNE_LOCALFUNCTIONS_VERSION "2.8.0"
 
@@ -326,10 +286,6 @@
 
 /* Define to the revision of dune-localfunctions */
 #define DUNE_LOCALFUNCTIONS_VERSION_REVISION 0
-
-
-
-
 
 /* Define to the version of dune-grid */
 #define DUNE_GRID_VERSION "2.8.0"
@@ -365,13 +321,6 @@
 
 /* Define to 1 if you have mkstemp function */
 #define HAVE_MKSTEMP 1
-
-
-
-
-
-
-
 
 #define DUNE_ALUGRID_VERSION "2.8.0"
 
@@ -409,14 +358,10 @@
 /* #undef HAVE_DUNE_GRID_TESTGRIDS */
 
 /* Grid type magic for DGF parser */
- 
+
 /* ALUGRID_CONFORM not available, enable with cmake variable DUNE_GRID_GRIDTYPE_SELECTOR=ON */
 /* ALUGRID_CUBE not available, enable with cmake variable DUNE_GRID_GRIDTYPE_SELECTOR=ON */
 /* ALUGRID_SIMPLEX not available, enable with cmake variable DUNE_GRID_GRIDTYPE_SELECTOR=ON */
-
-
-
-
 
 /* Define to the version of dune-functions */
 #define DUNE_FUNCTIONS_VERSION "2.8.0"
@@ -429,11 +374,6 @@
 
 /* Define to the revision of dune-functions */
 #define DUNE_FUNCTIONS_VERSION_REVISION 0
-
-
-
-
-
 
 /* Define to the version of dune-vtk */
 #define DUNE_VTK_VERSION "2.8"
@@ -450,11 +390,6 @@
 /* Define if you have the ZLIB library.  */
 #define HAVE_VTK_ZLIB ENABLE_VTK_ZLIB
 
-
-
-
-
-
 /* Define to the version of dune-curvedgeometry */
 #define DUNE_CURVEDGEOMETRY_VERSION "2.8"
 
@@ -466,11 +401,6 @@
 
 /* Define to the revision of dune-curvedgeometry */
 #define DUNE_CURVEDGEOMETRY_VERSION_REVISION 0
-
-
-
-
-
 
 /* Define to the version of dune-iga */
 #define DUNE_IGA_VERSION "1.0"
@@ -484,11 +414,6 @@
 /* Define to the revision of dune-iga */
 #define DUNE_IGA_VERSION_REVISION 0
 
-
-
-
-
-
 /* Define to the version of dune-curvedgrid */
 #define DUNE_CURVEDGRID_VERSION "2.8"
 
@@ -500,8 +425,6 @@
 
 /* Define to the revision of dune-curvedgrid */
 #define DUNE_CURVEDGRID_VERSION_REVISION 0
-
-
 
 /* begin ikarus
    put the definitions for config.h specific to
@@ -547,7 +470,7 @@
 
 /* end ikarus
    Everything below here will be overwritten
-*/ 
+*/
 
 /* Grid type magic for DGF parser */
 
@@ -555,4 +478,3 @@
 /* UGGRID not available, enable with cmake variable DUNE_GRID_GRIDTYPE_SELECTOR=ON */
 /* ONEDGRID not available, enable with cmake variable DUNE_GRID_GRIDTYPE_SELECTOR=ON */
 /* YASPGRID not available, enable with cmake variable DUNE_GRID_GRIDTYPE_SELECTOR=ON */
-

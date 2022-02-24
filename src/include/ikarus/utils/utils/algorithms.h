@@ -25,7 +25,7 @@ namespace Ikarus::utils {
   }
 
   template <class Container>  // TODO: add concept for this
-  void printContent( Container&& varVec,std::ostream& os=std::cout) {
+  void printContent(Container&& varVec, std::ostream& os = std::cout) {
     std::ranges::for_each(varVec, [&os](auto&& var) { os << var << '\n'; });
   }
 
@@ -40,6 +40,5 @@ namespace Ikarus::utils {
     auto transformValueToPointer = [](auto&& obj) -> auto& { return *obj; };
     return (std::ranges::subrange(cont.begin(), cont.end()) | std::views::transform(transformValueToPointer));
   }
-
 
 }  // namespace Ikarus::utils

@@ -1,6 +1,13 @@
 #include <cmath>
 #include <matplot/matplot.h>
+
 #include <dune/alugrid/grid.hh>
+#include <dune/functions/functionspacebases/basistags.hh>
+#include <dune/functions/functionspacebases/lagrangebasis.hh>
+#include <dune/functions/functionspacebases/powerbasis.hh>
+#include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
+#include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
+#include <dune/grid/io/file/vtk/vtkwriter.hh>
 #include <dune/grid/yaspgrid.hh>
 
 #include "spdlog/spdlog.h"
@@ -13,24 +20,16 @@
 #include "ikarus/FEManager/DefaultFEManager.h"
 #include "ikarus/FiniteElements/ElasticityFE.h"
 #include "ikarus/FiniteElements/NonLinearElasticityFE.h"
+#include "ikarus/FiniteElements/NonLinearElasticityFEwithBasisSimple.h"
 #include "ikarus/LinearAlgebra/DirichletConditionManager.h"
 #include "ikarus/utils/Observer/controlLogger.h"
 #include "ikarus/utils/Observer/gridDrawerObserver.h"
 #include "ikarus/utils/Observer/nonLinearSolverLogger.h"
+#include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
 #include <ikarus/FiniteElements/ForceLoad.h>
 #include <ikarus/Grids/GridHelper/griddrawer.h>
 #include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
 #include <ikarus/LinearAlgebra/NonLinearOperator.h>
-
-#include <dune/functions/functionspacebases/basistags.hh>
-#include <dune/functions/functionspacebases/lagrangebasis.hh>
-#include <dune/functions/functionspacebases/powerbasis.hh>
-#include <dune/grid/io/file/vtk/vtkwriter.hh>
-#include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
-#include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
-
-#include "ikarus/FiniteElements/NonLinearElasticityFEwithBasisSimple.h"
-#include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
 template <typename Basis>
 class DensePowerBasisAssembler {
 public:
@@ -51,11 +50,12 @@ private:
     for (auto& ge : elements(basis_->gridView())) {
       localView.bind(ge);
       Ikarus::FiniteElements::NonLinearElasticityFEWithLocalBasis<decltype(localView)> fe(localView, 1000, 0.0);
-      auto matLoc = fe.calculateMatrix(displacement, lambda);
+      auto matLoc      = fe.calculateMatrix(displacement, lambda);
       auto first_child = localView.tree().child(0);
       for (auto i = 0U; i < localView.size(); ++i)
         for (auto j = 0U; j < localView.size(); ++j) {
-          //          std::cout<<"LocalIndices: "<<localView.index(i)<<" "<<localView.index(j)<<" "<<i<<" "<<j<<std::endl;
+          //          std::cout<<"LocalIndices: "<<localView.index(i)<<" "<<localView.index(j)<<" "<<i<<"
+          //          "<<j<<std::endl;
 
           mat(localView.index(i)[0], localView.index(j)[0]) += matLoc(i, j);
         }
@@ -97,24 +97,22 @@ private:
   Eigen::VectorXd vec{};
 };
 
-
-
 int main() {
   constexpr int gridDim = 2;
-//  using Grid            = Dune::ALUGrid<gridDim, 2, Dune::simplex, Dune::conforming>;
-//  auto grid             = Dune::GmshReader<Grid>::read("../../tests/src/testFiles/unstructuredTrianglesfine.msh", false);
-//  using GridView        = typename Grid::LeafGridView;
+  //  using Grid            = Dune::ALUGrid<gridDim, 2, Dune::simplex, Dune::conforming>;
+  //  auto grid             = Dune::GmshReader<Grid>::read("../../tests/src/testFiles/unstructuredTrianglesfine.msh",
+  //  false); using GridView        = typename Grid::LeafGridView;
 
-    using namespace Ikarus::Grid;
-    using Grid = Dune::YaspGrid<gridDim>;
-    const double L    = 1;
-    const double h    = 1;
-    const size_t elex = 10;
-    const size_t eley = 10;
+  using namespace Ikarus::Grid;
+  using Grid        = Dune::YaspGrid<gridDim>;
+  const double L    = 1;
+  const double h    = 1;
+  const size_t elex = 10;
+  const size_t eley = 10;
 
-    Dune::FieldVector<double, 2> bbox = {L, h};
-    std::array<int, 2> eles           = {elex, eley};
-    auto grid                         = std::make_shared<Grid>(bbox, eles);
+  Dune::FieldVector<double, 2> bbox = {L, h};
+  std::array<int, 2> eles           = {elex, eley};
+  auto grid                         = std::make_shared<Grid>(bbox, eles);
 
   using GridView    = typename Grid::LeafGridView;
   GridView gridView = grid->leafGridView();
@@ -135,7 +133,6 @@ int main() {
   d.setZero();
   double lambda = 0.0;
 
-
   Dune::SubsamplingVTKWriter<GridView> vtkWriter(gridView, Dune::refinementLevels(2));
   //  Dune::VTKWriter<GridView> vtkWriter(gridView);
   vtkWriter.addVertexData(d, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, gridDim));
@@ -149,24 +146,26 @@ int main() {
       lu.compute(K);
       const auto& r = denseAssembler.getVector(d, lambda);
       const auto dd = lu.solve(r);
-      d-= dd;
-      std::cout<<"Rnorm: "<<r.norm()<<"    "<<"dnorm: "<<dd.norm()<<"    "<<"Rank: "<<lu.rank()<<" Dofs: "<<lu.rows()<<std::endl;
-      if(r.norm()<1e-8) break;
+      d -= dd;
+      std::cout << "Rnorm: " << r.norm() << "    "
+                << "dnorm: " << dd.norm() << "    "
+                << "Rank: " << lu.rank() << " Dofs: " << lu.rows() << std::endl;
+      if (r.norm() < 1e-8) break;
     }
-    std::vector<Dune::FieldVector<double,2>> dv;
-    dv.reserve(d.size()/2);
-    for (auto pos=0U,i = 0U; i < dv.size(); ++i) {
-      dv[i]= d(pos);
-      dv[i+1]= d(pos+1);
-      pos+=2;
+    std::vector<Dune::FieldVector<double, 2>> dv;
+    dv.reserve(d.size() / 2);
+    for (auto pos = 0U, i = 0U; i < dv.size(); ++i) {
+      dv[i]     = d(pos);
+      dv[i + 1] = d(pos + 1);
+      pos += 2;
     }
-    std::cout<<d.transpose()<<std::endl;
-    auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double,2>>(basis,d);
+    std::cout << d.transpose() << std::endl;
+    auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis, d);
     Dune::SubsamplingVTKWriter<GridView> vtkWriterI(gridView, Dune::refinementLevels(2));
     //    Dune::VTKWriter<GridView> vtkWriterI(gridView);
     vtkWriterI.addVertexData(disp, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, gridDim));
     vtkWriterI.write("TestDuneBasis_" + std::to_string(ls));
-    lambda+=fac;
+    lambda += fac;
   }
   return 0;
 }

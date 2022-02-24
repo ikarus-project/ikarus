@@ -48,11 +48,11 @@ namespace Ikarus {
   class AutoDiffFEClean {
   public:
     using LocalView = typename Basis::LocalView;
-    using Traits = TraitsFromLocalView<LocalView>;
-    explicit AutoDiffFEClean(const Basis& basis,const typename LocalView::Element& element) {
+    using Traits    = TraitsFromLocalView<LocalView>;
+    explicit AutoDiffFEClean(const Basis& basis, const typename LocalView::Element& element) {
       auto localView = basis.localView();
       localView.bind(element);
-      localdofSize=localView.size();
+      localdofSize = localView.size();
     }
     using FERequirementType = FErequirements<Eigen::VectorXd>;
     [[nodiscard]] typename Traits::MatrixType calculateMatrix(const FERequirementType& par) const {
@@ -74,8 +74,8 @@ namespace Ikarus {
       dx.setZero();
       auto f = [&](auto& x) { return this->underlying().calculateScalarImpl(par, x); };
       Eigen::VectorXd g;
-      Eigen::MatrixXd h = hessian(f, wrt(dx), at(dx),g);
-      return std::make_tuple(h,g);
+      Eigen::MatrixXd h = hessian(f, wrt(dx), at(dx), g);
+      return std::make_tuple(h, g);
     }
 
     [[nodiscard]] typename Traits::ScalarType calculateScalar(const FERequirementType& par) const {
@@ -89,7 +89,6 @@ namespace Ikarus {
     {
       return static_cast<RealElement const&>(*this);
     }
-
 
     int localdofSize{};
   };

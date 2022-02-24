@@ -14,7 +14,7 @@
 namespace Ikarus {
   class GenericControlObserver : public IObserver<ControlMessages> {
   public:
-    template<typename F>
+    template <typename F>
     GenericControlObserver(ControlMessages p_message, F&& p_f) : message{p_message}, f{p_f} {}
     void updateImpl(ControlMessages p_message) override {
       if (p_message == message) {

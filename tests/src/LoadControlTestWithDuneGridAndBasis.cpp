@@ -2,9 +2,9 @@
 // Created by Alex on 21.07.2021.
 //
 #include <gmock/gmock.h>
-#include "../../config.h"
 #include <gtest/gtest.h>
 
+#include "../../config.h"
 #include "testHelpers.h"
 
 #include <dune/alugrid/grid.hh>
@@ -20,53 +20,51 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
+#include "ikarus/Assembler/SimpleAssemblers.h"
 #include "ikarus/Controlroutines/LoadControl.h"
 #include "ikarus/FiniteElements/NonLinearElasticityFEwithBasis.h"
 #include "ikarus/Solver/NonLinearSolver/NewtonRaphson.hpp"
 #include "ikarus/basis/basishelper.h"
 #include "ikarus/utils/Observer/controlVTKWriter.h"
 #include "ikarus/utils/Observer/nonLinearSolverLogger.h"
-#include "ikarus/Assembler/SimpleAssemblers.h"
 #include <ikarus/Grids/GridHelper/griddrawer.h>
 #include <ikarus/LinearAlgebra/NonLinearOperator.h>
 #include <ikarus/utils/concepts.h>
 #include <ikarus/utils/utils/algorithms.h>
 
-
-
 GTEST_TEST(LoadControlTestWithUGGrid, GridLoadControlTestWithUGGrid) {
   using namespace Ikarus;
   constexpr int gridDim = 2;
   /// ALUGrid Example
-//        using Grid            = Dune::ALUGrid<gridDim, 2, Dune::simplex, Dune::conforming>;
-//        auto grid             =
-//        Dune::GmshReader<Grid>::read("../../tests/src/testFiles/unstructuredTrianglesfine.msh", false);
+  //        using Grid            = Dune::ALUGrid<gridDim, 2, Dune::simplex, Dune::conforming>;
+  //        auto grid             =
+  //        Dune::GmshReader<Grid>::read("../../tests/src/testFiles/unstructuredTrianglesfine.msh", false);
 
   /// IGA Grid Example
-//  constexpr auto dimworld              = 2;
-//  const std::array<int, gridDim> order = {2, 2};
-//
-//  const std::array<std::vector<double>, gridDim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
-//
-//  using ControlPoint = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointType;
-//
-//  const std::vector<std::vector<ControlPoint>> controlPoints
-//      = {{{.p = {0, 0}, .w = 5}, {.p = {0.5, 0}, .w = 1}, {.p = {1, 0}, .w = 1}},
-//         {{.p = {0, 0.5}, .w = 1}, {.p = {0.5, 0.5}, .w = 10}, {.p = {1, 0.5}, .w = 1}},
-//         {{.p = {0, 1}, .w = 1}, {.p = {0.5, 1}, .w = 1}, {.p = {1, 1}, .w = 1}}};
-//
-//  std::array<int, gridDim> dimsize
-//      = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
-//
-//  auto controlNet = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
-//  using Grid      = Dune::IGA::NURBSGrid<gridDim, dimworld>;
-//
-//  Dune::IGA::NURBSPatchData<gridDim, dimworld> patchData;
-//  patchData.knotSpans     = knotSpans;
-//  patchData.degree        = order;
-//  patchData.controlPoints = controlNet;
-//  auto grid               = std::make_shared<Grid>(patchData);
-//  grid->globalRefine(5);
+  //  constexpr auto dimworld              = 2;
+  //  const std::array<int, gridDim> order = {2, 2};
+  //
+  //  const std::array<std::vector<double>, gridDim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+  //
+  //  using ControlPoint = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointType;
+  //
+  //  const std::vector<std::vector<ControlPoint>> controlPoints
+  //      = {{{.p = {0, 0}, .w = 5}, {.p = {0.5, 0}, .w = 1}, {.p = {1, 0}, .w = 1}},
+  //         {{.p = {0, 0.5}, .w = 1}, {.p = {0.5, 0.5}, .w = 10}, {.p = {1, 0.5}, .w = 1}},
+  //         {{.p = {0, 1}, .w = 1}, {.p = {0.5, 1}, .w = 1}, {.p = {1, 1}, .w = 1}}};
+  //
+  //  std::array<int, gridDim> dimsize
+  //      = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
+  //
+  //  auto controlNet = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  //  using Grid      = Dune::IGA::NURBSGrid<gridDim, dimworld>;
+  //
+  //  Dune::IGA::NURBSPatchData<gridDim, dimworld> patchData;
+  //  patchData.knotSpans     = knotSpans;
+  //  patchData.degree        = order;
+  //  patchData.controlPoints = controlNet;
+  //  auto grid               = std::make_shared<Grid>(patchData);
+  //  grid->globalRefine(5);
 
   /// YaspGrid Example
   using Grid        = Dune::YaspGrid<gridDim>;
@@ -93,11 +91,10 @@ GTEST_TEST(LoadControlTestWithUGGrid, GridLoadControlTestWithUGGrid) {
 
   draw(gridView);
 
-
   std::vector<Ikarus::FiniteElements::NonLinearElasticityFEWithLocalBasis<decltype(basis)>> fes;
   auto localView = basis.localView();
   for (auto& element : elements(basis.gridView()))
-    fes.emplace_back(basis,element, 1000, 0.3);
+    fes.emplace_back(basis, element, 1000, 0.3);
 
   std::vector<bool> dirichletFlags(basis.size());
 
@@ -110,10 +107,16 @@ GTEST_TEST(LoadControlTestWithUGGrid, GridLoadControlTestWithUGGrid) {
   d.setZero(basis.size());
   double lambda = 0.0;
 
-  auto fintFunction   = [&](auto&& lambda, auto&& disp) -> auto& { return denseAssembler.getVector(forces,disp, lambda); };
-  auto KFunction      = [&](auto&& lambda, auto&& disp) -> auto& { return denseAssembler.getMatrix(stiffness,disp, lambda); };
-  auto energyFunction = [&](auto&& lambda, auto&& disp) -> auto { return denseAssembler.getScalar(potentialEnergy,disp, lambda); };
-  std::cout<<KFunction(lambda,d)<<std::endl;
+  auto fintFunction = [&](auto&& lambda, auto&& disp) -> auto& {
+    return denseAssembler.getVector(forces, disp, lambda);
+  };
+  auto KFunction = [&](auto&& lambda, auto&& disp) -> auto& {
+    return denseAssembler.getMatrix(stiffness, disp, lambda);
+  };
+  auto energyFunction = [&](auto&& lambda, auto&& disp) -> auto{
+    return denseAssembler.getScalar(potentialEnergy, disp, lambda);
+  };
+  std::cout << KFunction(lambda, d) << std::endl;
   auto nonLinOp  = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, fintFunction, KFunction),
                                              parameter(lambda, d));
   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
@@ -123,7 +126,7 @@ GTEST_TEST(LoadControlTestWithUGGrid, GridLoadControlTestWithUGGrid) {
 
   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<decltype(basis)>>(basis, d, 2);
   vtkWriter->setFileNamePrefix("TestIGA");
-  vtkWriter->setFieldInfo("displacement",Dune::VTK::FieldInfo::Type::vector,2);
+  vtkWriter->setFieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2);
   nr.subscribeAll(nonLinearSolverObserver);
 
   auto lc = Ikarus::LoadControl(std::move(nr), 20, {0, 2000});

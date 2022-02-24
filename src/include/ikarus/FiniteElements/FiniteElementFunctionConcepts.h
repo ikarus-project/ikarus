@@ -44,7 +44,8 @@ namespace Ikarus {
 
   inline constexpr ScalarAffordances potentialEnergy = ScalarAffordances::potentialEnergy;
 
-  template <typename SolutionVectorType=Eigen::VectorXd, typename ParameterType =std::map<decltype(FEParameterValuePair::type), double>>
+  template <typename SolutionVectorType = Eigen::VectorXd,
+            typename ParameterType      = std::map<decltype(FEParameterValuePair::type), double>>
   struct FErequirements {
     std::vector<std::reference_wrapper<const SolutionVectorType>> sols;
     ParameterType parameter;
@@ -53,7 +54,7 @@ namespace Ikarus {
     MatrixAffordances matrixAffordances{MatrixAffordances::noAffordance};
   };
 
-}  // namespace Ikarus::FiniteElements
+}  // namespace Ikarus
 
 namespace Ikarus::Concepts {
 

@@ -35,6 +35,6 @@ namespace Ikarus::Concepts {
 
   template <typename Basis>
   concept PowerBasis = requires {
-    Basis::PreBasis::Node::isPower==true;
+    Basis::PreBasis::Node::isPower == true;
   };
 }  // namespace Ikarus::Concepts

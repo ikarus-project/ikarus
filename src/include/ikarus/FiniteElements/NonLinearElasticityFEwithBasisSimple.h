@@ -31,8 +31,8 @@
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/geometry/type.hh>
 
-#include "ikarus/utils/LinearAlgebraHelper.h"
 #include "ikarus/LocalBasis/localBasis.h"
+#include "ikarus/utils/LinearAlgebraHelper.h"
 #include <ikarus/FiniteElements/FEPolicies.h>
 #include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
@@ -97,7 +97,7 @@ namespace Ikarus::FiniteElements {
                             + displacements[localView_->index(localView_->tree().child(k2).localIndex(i))[0]];
       ScalarType energy = 0.0;
 
-      const int order = 2 * (fe.localBasis().order());
+      const int order  = 2 * (fe.localBasis().order());
       const auto& rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_->element().type(), order);
       Eigen::Matrix3<ScalarType> C;
       C.setZero();
@@ -111,9 +111,9 @@ namespace Ikarus::FiniteElements {
       Eigen::VectorXd N;
       for (auto& gp : rule) {
         const auto J = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
-        localBasis.evaluateFunctionAndJacobian(gp.position(),N,dN);
-        const Eigen::Vector<double, Traits::worlddim> X     = toEigenVector(geo.global(gp.position()));
-        Eigen::Vector<ScalarType, Traits::worlddim> x = X;
+        localBasis.evaluateFunctionAndJacobian(gp.position(), N, dN);
+        const Eigen::Vector<double, Traits::worlddim> X = toEigenVector(geo.global(gp.position()));
+        Eigen::Vector<ScalarType, Traits::worlddim> x   = X;
 
         for (int i = 0; i < N.size(); ++i)
           x += disp.col(i) * N[i];
@@ -127,7 +127,7 @@ namespace Ikarus::FiniteElements {
         fext.setZero();
         fext[1] = lambda;
         fext[0] = lambda;
-        energy += (0.5*EVoigt.dot(C * EVoigt) - x.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
+        energy += (0.5 * EVoigt.dot(C * EVoigt) - x.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
       }
       return energy;
     }

@@ -148,11 +148,7 @@ namespace Ikarus {
       return std::get<n>(args_).get();
     }
 
-    auto& lastParameter() {
-      return std::get<sizeof...(ParameterArgs)-1>(args_).get();
-    }
-
-
+    auto& lastParameter() { return std::get<sizeof...(ParameterArgs) - 1>(args_).get(); }
 
     using ValueType = std::remove_cvref_t<std::tuple_element_t<0, FunctionReturnValues>>;
 

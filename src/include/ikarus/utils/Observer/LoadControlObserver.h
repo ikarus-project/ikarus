@@ -16,7 +16,6 @@
 namespace Ikarus {
   class LoadControlObserver : public IObserver<ControlMessages> {
   public:
-
     void updateImpl(ControlMessages message) override {
       switch (message) {
         case ControlMessages::CONTROL_STARTED: {
@@ -32,6 +31,5 @@ namespace Ikarus {
 
     void updateImpl(ControlMessages, double) override {}
     void updateImpl(ControlMessages, const Eigen::VectorXd&) override {}
-
   };
 }  // namespace Ikarus
