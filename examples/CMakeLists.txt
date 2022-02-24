@@ -10,6 +10,7 @@ foreach(programSourceFile ${programSourceFiles})
   target_link_libraries(${programName} PRIVATE Ikarus::Ikarus)
   set_target_properties(${programName} PROPERTIES CXX_STANDARD 20 OUTPUT_NAME "Ikarus")
   target_compile_options(
-          ${programName} PUBLIC      -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-deprecated-copy
+    ${programName} PUBLIC -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable
+                          -Wno-deprecated-copy
   )
 endforeach()

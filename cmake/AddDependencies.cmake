@@ -1,4 +1,4 @@
-#list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/modules")
+# list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/modules")
 message("====================")
 if(MINGW)
   # cmake-format: off
@@ -53,11 +53,9 @@ message("Find dune-functions: ")
 find_package(dune-functions REQUIRED)
 message("Find dune-iga: ")
 find_package(dune-iga REQUIRED)
-#message("Find dune-uggrid: ")
-#find_package(dune-uggrid REQUIRED)
+# message("Find dune-uggrid: ") find_package(dune-uggrid REQUIRED)
 message("Find dune-grid: ")
 find_package(dune-grid REQUIRED)
-
 
 # message("Find muesli: ") find_package(muesli REQUIRED)
 
@@ -82,8 +80,6 @@ message("Find PythonLibs: ")
 find_package(Python3 COMPONENTS Interpreter Development)
 message("${Python3_STDLIB}")
 
-
-
 target_link_libraries(
   ${PROJECT_NAME}
   PUBLIC Eigen3::Eigen
@@ -95,7 +91,7 @@ target_link_libraries(
   PUBLIC dunegeometry
   PUBLIC dunealugrid
   PUBLIC dunegrid
-#  PUBLIC duneuggrid
+  # PUBLIC duneuggrid
   PUBLIC ${SuiteSparseIncludeDirective}
   # PUBLIC muesli
   PUBLIC Matplot++::matplot

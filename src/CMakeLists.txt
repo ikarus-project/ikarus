@@ -16,9 +16,9 @@ add_library(${PROJECT_NAME} ${sources})
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
 if(MINGW)
-list(APPEND CMAKE_PREFIX_PATH
-     ${CMAKE_CURRENT_SOURCE_DIR}/../../Ikarus_Dependencies/Dependencies_release/
-)
+  list(APPEND CMAKE_PREFIX_PATH
+       ${CMAKE_CURRENT_SOURCE_DIR}/../../Ikarus_Dependencies/Dependencies_release/
+  )
 endif()
 include(../cmake/AddDependencies.cmake)
 
