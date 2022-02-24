@@ -22,14 +22,14 @@ namespace Ikarus {
           parameterBegin_{tbeginEnd.first},
           parameterEnd_{tbeginEnd.second},
           stepSize_{(parameterEnd_ - parameterBegin_) / loadSteps_} {
-      static_assert(std::is_floating_point_v<typename NonLinearSolver::NonLinearOperator::template Parameter<0>>,
-                    "The first parameter (load factor) must be a scalar floating point type!");
+      static_assert(requires { nonLinearSolver.nonLinearOperator().lastParameter() = 0.0; nonLinearSolver.nonLinearOperator().lastParameter() += 0.0;},
+                    "The last parameter (load factor) must be assignable and incremenntable with a double!");
     }
 
     void run() {
       auto& nonOp = nonLinearSolver.nonLinearOperator();
       this->notify(ControlMessages::CONTROL_STARTED);
-      auto& loadParameter = nonOp.template nthParameter<0>();
+      auto& loadParameter = nonOp.lastParameter();
       //      auto& x             = nonOp.template nthParameter<1>();
       // assemble u
       //      auto& PredictRHS    = nonOp.value()(u=(0,0,0,0,uhat));

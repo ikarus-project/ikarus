@@ -58,7 +58,7 @@ namespace Ikarus {
       nonLinearOperator().updateAll();
       const auto& rx = nonLinearOperator().value();
       const auto& Ax = nonLinearOperator().derivative();
-      auto& x        = nonLinearOperator().template nthParameter<1>();
+      auto& x        = nonLinearOperator().template nthParameter<0>();
       auto rNorm     = norm(rx);
       decltype(rNorm) dNorm;
       int iter{0};
