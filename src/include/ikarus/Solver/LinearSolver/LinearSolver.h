@@ -195,7 +195,7 @@ namespace Ikarus {
 
   public:
     template <typename MatrixType>
-    requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
+      requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
     inline ILinearSolver& compute(const MatrixType& A) {
       //            std::cout << "compute(A)" << std::endl;
       //            std::cout <<"r,c: "<< A.rows()<<" "<<A.cols() << std::endl;
@@ -204,14 +204,14 @@ namespace Ikarus {
       return *this;
     }
     template <typename MatrixType>
-    requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
+      requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
     inline void analyzePattern(const MatrixType& A) {
       //      std::cout << "analyzePattern(A)" << std::endl;
       solverimpl->analyzePattern(A);
     }
 
     template <typename MatrixType>
-    requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
+      requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
     inline void factorize(const MatrixType& A) {
       //      std::cout << "factorize(A)" << std::endl;
       solverimpl->factorize(A);

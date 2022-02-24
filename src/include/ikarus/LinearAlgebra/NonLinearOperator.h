@@ -111,26 +111,34 @@ namespace Ikarus {
     template <int n>
     using Parameter = std::remove_cvref_t<std::tuple_element_t<n, ParameterValues>>;
 
-    auto& value() requires(sizeof...(DerivativeArgs) > 0) {
+    auto& value()
+      requires(sizeof...(DerivativeArgs) > 0)
+    {
       if constexpr (requires { std::get<0>(derivativesEvaluated_).get(); })
         return std::get<0>(derivativesEvaluated_).get();
       else
         return std::get<0>(derivativesEvaluated_);
     }
-    auto& derivative() & requires(sizeof...(DerivativeArgs) > 1) {
+    auto& derivative() &
+          requires(sizeof...(DerivativeArgs) > 1)
+    {
       if constexpr (requires { std::get<1>(derivativesEvaluated_).get(); })
         return std::get<1>(derivativesEvaluated_).get();
       else
         return std::get<1>(derivativesEvaluated_);
     }
-    auto& secondDerivative() requires(sizeof...(DerivativeArgs) > 2) {
+    auto& secondDerivative()
+      requires(sizeof...(DerivativeArgs) > 2)
+    {
       if constexpr (requires { std::get<2>(derivativesEvaluated_).get(); })
         return std::get<2>(derivativesEvaluated_).get();
       else
         return std::get<2>(derivativesEvaluated_);
     }
     template <int n>
-    auto& nthDerivative() requires(sizeof...(DerivativeArgs) >= n) {
+    auto& nthDerivative()
+      requires(sizeof...(DerivativeArgs) >= n)
+    {
       if constexpr (requires { std::get<n>(derivativesEvaluated_).get(); })
         return std::get<n>(derivativesEvaluated_).get();
       else
@@ -144,7 +152,9 @@ namespace Ikarus {
     }
 
     template <int n>
-    auto& nthParameter() requires(sizeof...(ParameterArgs) >= n) {
+    auto& nthParameter()
+      requires(sizeof...(ParameterArgs) >= n)
+    {
       return std::get<n>(args_).get();
     }
 

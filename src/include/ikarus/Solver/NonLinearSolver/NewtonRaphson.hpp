@@ -49,9 +49,9 @@ namespace Ikarus {
 
     struct NoPredictor {};
     template <typename SolutionType = NoPredictor>
-    requires std::is_same_v<SolutionType, NoPredictor> || std::is_same_v<SolutionType,
-                                                                         typename NonLinearOperatorImpl::ValueType>
-        SolverInformation solve(const SolutionType& dx_predictor = NoPredictor{}) {
+      requires std::is_same_v<SolutionType,
+                              NoPredictor> || std::is_same_v<SolutionType, typename NonLinearOperatorImpl::ValueType>
+    SolverInformation solve(const SolutionType& dx_predictor = NoPredictor{}) {
       this->notify(NonLinearSolverMessages::INIT);
       SolverInformation solverInformation;
       solverInformation.sucess = true;

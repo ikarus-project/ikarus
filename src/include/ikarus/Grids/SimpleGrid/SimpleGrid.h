@@ -43,9 +43,21 @@ namespace Ikarus::Grid {
           = decltype(Impl::GridEntityTupleGenerator<dim, wdim>(std::make_integer_sequence<int, dim + 1>()));
 
       auto& getRootEntities(int level = 0) { return getSubEntities<0>(level); }
-      auto& getVolumes(int level = 0) requires(dim >= 3) { return getSubEntities<dim - 3>(level); }
-      auto& getSurfaces(int level = 0) requires(dim >= 2) { return getSubEntities<dim - 2>(level); }
-      auto& getEdges(int level = 0) requires(dim >= 1) { return getSubEntities<dim - 1>(level); }
+      auto& getVolumes(int level = 0)
+        requires(dim >= 3)
+      {
+        return getSubEntities<dim - 3>(level);
+      }
+      auto& getSurfaces(int level = 0)
+        requires(dim >= 2)
+      {
+        return getSubEntities<dim - 2>(level);
+      }
+      auto& getEdges(int level = 0)
+        requires(dim >= 1)
+      {
+        return getSubEntities<dim - 1>(level);
+      }
       auto& getVertices(int level = 0) { return getSubEntities<dim>(level); }
 
       template <int subEnt>

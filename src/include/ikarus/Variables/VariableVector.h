@@ -151,7 +151,8 @@ namespace Ikarus::Variable {
     }
 
     template <typename Range>
-    requires(!std::is_same_v<Range, Eigen::VectorXd>) VariableVector &operator+=(Range &&r) {
+      requires(!std::is_same_v<Range, Eigen::VectorXd>)
+    VariableVector &operator+=(Range &&r) {
       assert(static_cast<decltype(r.size())>(correctionSize()) == r.size());
       for (auto &&var : std::ranges::join_view(this->variablesForEachNode)) {
         const auto &variableIndices_ = variableIndices[&var];
@@ -164,7 +165,8 @@ namespace Ikarus::Variable {
     }
 
     template <typename Range>
-    requires(!std::is_same_v<Range, Eigen::VectorXd>) VariableVector &operator-=(Range &&r) {
+      requires(!std::is_same_v<Range, Eigen::VectorXd>)
+    VariableVector &operator-=(Range &&r) {
       assert(static_cast<decltype(r.size())>(correctionSize()) == r.size());
       for (auto &&var : std::ranges::join_view(this->variablesForEachNode)) {
         const auto &variableIndices_ = variableIndices[&var];
@@ -193,8 +195,8 @@ namespace Ikarus::Variable {
 
     mutable std::vector<Ikarus::Variable::IVariable> variablesForEachNode;
     template <typename FEContainer1, typename Range>
-    requires(!std::is_same_v<Range, Eigen::VectorXd>) friend VariableVector<FEContainer1> operator+(
-        const VariableVector<FEContainer1> &varVec, Range &&r);
+      requires(!std::is_same_v<Range, Eigen::VectorXd>)
+    friend VariableVector<FEContainer1> operator+(const VariableVector<FEContainer1> &varVec, Range &&r);
     std::map<Variable::IVariable *, Eigen::Matrix<size_t, Eigen::Dynamic, 1, 0, 8, 1>> variableIndices;
     std::map<std::vector<size_t>, Variable::IVariable const *> variableOfIndices;
     std::map<Variable::IVariable *, size_t> variableID;
@@ -211,8 +213,8 @@ namespace Ikarus::Variable {
   }
 
   template <typename FEContainer, typename Range>
-  requires(!std::is_same_v<Range, Eigen::VectorXd>) VariableVector<FEContainer>
-  operator+(const VariableVector<FEContainer> &varVec, Range &&r) {
+    requires(!std::is_same_v<Range, Eigen::VectorXd>)
+  VariableVector<FEContainer> operator+(const VariableVector<FEContainer> &varVec, Range &&r) {
     VariableVector res = varVec;
     assert(static_cast<decltype(r.size())>(varVec.correctionSize()) == r.size());
     for (size_t variableIndex = 0; auto &&var : std::ranges::join_view(res.variablesForEachNode)) {
