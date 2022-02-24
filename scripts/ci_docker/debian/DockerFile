@@ -89,9 +89,8 @@ RUN apt-get update -q -y && apt-get upgrade -y && \
         mkdir dune && \
         cd dune && \
         git clone https://gitlab.dune-project.org/extensions/dune-alugrid.git && \
-        cd dune-alugrid && \
-        git checkout releases/2.8 && \
-        cd .. && \
+        git clone https://gitlab.dune-project.org/extensions/dune-foamgrid.git && \
+        dunecontrol git checkout releases/2.8 && \
         git clone https://github.com/rath3t/dune-iga.git && \
         dunecontrol cmake "-DCMAKE_BUILD_TYPE=Release" && \
         dunecontrol make && \
