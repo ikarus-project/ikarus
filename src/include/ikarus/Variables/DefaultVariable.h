@@ -34,11 +34,11 @@ namespace Ikarus::Variable {
     /** \brief Value of the tag to distinguish variables  */
     static constexpr auto tagvalue = tag;
 
-    DefaultVariable()                       = default;
-    ~DefaultVariable()                      = default;                 // destructor
-    DefaultVariable(const DefaultVariable&) = default;                 // copy constructor
-    DefaultVariable& operator=(const DefaultVariable&) = default;      // copy assignment
-    DefaultVariable(DefaultVariable&&) noexcept        = default;      // move constructor
+    DefaultVariable()                                      = default;
+    ~DefaultVariable()                                     = default;  // destructor
+    DefaultVariable(const DefaultVariable&)                = default;  // copy constructor
+    DefaultVariable& operator=(const DefaultVariable&)     = default;  // copy assignment
+    DefaultVariable(DefaultVariable&&) noexcept            = default;  // move constructor
     DefaultVariable& operator=(DefaultVariable&&) noexcept = default;  // move assignment
 
     /** \brief Copy-Constructor from the values in terms of coordinateType */

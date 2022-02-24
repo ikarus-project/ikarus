@@ -189,8 +189,9 @@ namespace Ikarus {
         assert(false && "Your LameParameter request is not implemented");
     }
 
-  private : friend ConvertLameConstants<YoungsModulusAndPoissonsRatio> convertLameConstants(
-                const YoungsModulusAndPoissonsRatio& p_vp);
+  private:
+    friend ConvertLameConstants<YoungsModulusAndPoissonsRatio> convertLameConstants(
+        const YoungsModulusAndPoissonsRatio& p_vp);
     friend ConvertLameConstants<YoungsModulusAndShearModulus> convertLameConstants(
         const YoungsModulusAndShearModulus& p_vp);
 

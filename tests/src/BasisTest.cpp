@@ -40,7 +40,7 @@ GTEST_TEST(Basis, Basistest) {
   using namespace Dune::Indices;
   constexpr int p = 1;
   auto basis      = makeBasis(gridView,
-                         composite(power<2>(lagrange<p>(), FlatInterleaved()), lagrange<p - 1>(), FlatLexicographic()));
+                              composite(power<2>(lagrange<p>(), FlatInterleaved()), lagrange<p - 1>(), FlatLexicographic()));
   EXPECT_TRUE((std::is_same_v<std::tuple_element_t<0, decltype(basis)::PreBasis::SubPreBases>::IndexMergingStrategy,
                               Dune::Functions::BasisFactory::FlatInterleaved>));
   auto dispBasis               = subspaceBasis(basis, _0);
