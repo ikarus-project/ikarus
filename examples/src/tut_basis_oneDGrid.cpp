@@ -175,15 +175,14 @@ void plotDeformedTimoschenkoBeam(auto& gridView, auto& basis, auto& d_glob, doub
 
   using namespace matplot;
   auto f = figure(true);
-  f->size(1000, 1000);
   tiledlayout(1, 2);
   auto ax1 = nexttile();
   auto ax2 = nexttile();
   hold(ax1, true);
   hold(ax2, true);
 
-  auto wLocal           = localFunction(wGlobal);
   auto localView        = basis.localView();
+  auto wLocal           = localFunction(wGlobal);
   auto phiLocal         = localFunction(phiGlobal);
   auto wLocalAnalytic   = localFunction(wGlobalAnalytic);
   auto phiLocalAnalytic = localFunction(phiGlobalAnalytic);
@@ -201,6 +200,7 @@ void plotDeformedTimoschenkoBeam(auto& gridView, auto& basis, auto& d_glob, doub
     ywAna   = transform(x, [&](auto x) { return wLocalAnalytic({x}); });
     yphi    = transform(x, [&](auto x) { return phiLocal({x}); });
     yphiAna = transform(x, [&](auto x) { return phiLocalAnalytic({x}); });
+
     auto l0 = ax1->plot(x_L, yw);
     l0->line_width(2);
     l0->color("blue");
@@ -208,12 +208,11 @@ void plotDeformedTimoschenkoBeam(auto& gridView, auto& basis, auto& d_glob, doub
     auto l0_ana = ax1->plot(x_L, ywAna);
     l0_ana->line_width(2);
     l0_ana->color("red");
-    //    l->marker_size(5);
-    //    l->marker_face_color("red");
 
     auto l1 = ax2->plot(x_L, yphi);
     l1->line_width(2);
     l1->color("blue");
+
     auto l1_ana = ax2->plot(x_L, yphiAna);
     l1_ana->line_width(2);
     l1_ana->color("red");
@@ -222,28 +221,25 @@ void plotDeformedTimoschenkoBeam(auto& gridView, auto& basis, auto& d_glob, doub
   f->show();
 }
 
-void exampleTimoshenkoBeam() {
+void exampleTimoshenkoBeam(const int polynomialOrderW, const int polynomialOrderPhi,const int numElements) {
   const double b  = 1;
   const double L  = 1e3;
-  const double E  = 1;
-  const double G  = 1;
+  const double E  = 1e8;
+  const double G  = E/2;
   const double t  = 1e-3;
   const double EI = E * b * t * t * t / 12.0;
   const double GA = G * b * t;
   const double F  = 0.1 * t * t * t;
   Eigen::Matrix2d C;
   C << EI, 0, 0, GA;
-  const int numElements            = 2;
-  constexpr int polynomialOrderW   = 3;
-  constexpr int polynomialOrderPhi = 5;
-  const int maxOrder               = 20;  // std::max(2*(polynomialOrderW-1),2*polynomialOrderPhi);
+  const int maxOrderIntegration    = std::max(2*(polynomialOrderW-1),2*polynomialOrderPhi);
   Dune::OneDGrid grid(numElements, 0, L);
   auto gridView = grid.leafGridView();
-  draw(gridView);
+  //draw(gridView);
 
   // Basis with different orders for w (first) and phi (second)
   auto basis     = makeBasis(gridView,
-                             composite(lagrange<polynomialOrderW>(), lagrange<polynomialOrderPhi>(), FlatLexicographic()));
+                             composite(lagrange(polynomialOrderW), lagrange(polynomialOrderPhi), FlatLexicographic()));
   auto localView = basis.localView();
 
   // global stiffness matrix and force vector
@@ -255,8 +251,8 @@ void exampleTimoshenkoBeam() {
     localView.bind(ele);
 
     // Define the integration rule
-    const auto& rule
-        = Dune::QuadratureRules<double, 1>::rule(ele.type(), maxOrder, Dune::QuadratureType::GaussLegendre);
+    const auto& rule = Dune::QuadratureRules<double, 1>::
+            rule(ele.type(), maxOrderIntegration, Dune::QuadratureType::GaussLegendre);
 
     // get local stiffness matrix
     auto K_local = TimoshenkoBeamStiffness(localView, ele, rule, C);
@@ -283,9 +279,8 @@ void exampleTimoshenkoBeam() {
   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
   linSolver.factorize(K_Glob);
   const Eigen::VectorXd D_Glob = linSolver.solve(F_ExtGlob);
-  std::cout << D_Glob.transpose() << std::endl;
   // analytical solution
-  std::cout << "Bernoulli solution for displacement at L: " << F * L * L * L / (3.0 * EI) << "\n";
+  //std::cout << "Bernoulli solution for displacement at L: " << F * L * L * L / (3.0 * EI) << "\n";
 
   // plot the result
 
@@ -294,5 +289,8 @@ void exampleTimoshenkoBeam() {
 
 int main() {
   //  exampleTrussElement();
-  exampleTimoshenkoBeam();
+  exampleTimoshenkoBeam(1,1,1);
+  exampleTimoshenkoBeam(2,1,1);
+  exampleTimoshenkoBeam(2,2,1);
+  exampleTimoshenkoBeam(3,2,1);
 }

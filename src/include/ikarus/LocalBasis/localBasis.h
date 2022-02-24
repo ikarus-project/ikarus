@@ -3,6 +3,7 @@
 //
 
 #pragma once
+#include <ranges>
 #include <vector>
 
 #include <dune/common/fmatrix.hh>
