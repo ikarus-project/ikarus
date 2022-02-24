@@ -97,7 +97,7 @@ namespace Ikarus::FiniteElements {
       C *= emod_ / (1 - nu_ * nu_);
       const auto geo = localView_.element().geometry();
 
-      for (const auto& [index, gp, N, dN] : localBasis.viewOverFunctionAndJacobian()) {
+      for (const auto& [gpIndex, gp, N, dN] : localBasis.viewOverFunctionAndJacobian()) {
         const auto J = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
         Eigen::Vector<ScalarType, Traits::worlddim> u;
         u.setZero();

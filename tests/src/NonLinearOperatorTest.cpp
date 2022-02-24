@@ -17,9 +17,9 @@
 
 template <typename SolutionType, typename SolutionTypeExpected, typename NewtonRhapson>
 void checkNewtonRhapson(NewtonRhapson& nr, SolutionType& x, double tolerance, int maxIter, int iterExpected,
-                        const SolutionTypeExpected& xExpected) {
+                        const SolutionTypeExpected& xExpected, const auto& x_Predictor) {
   nr.setup({tolerance, maxIter});
-  const auto solverInfo = nr.solve(x);
+  const auto solverInfo = nr.solve(x_Predictor);
 
   if constexpr (std::is_same_v<SolutionType, double>)
     EXPECT_DOUBLE_EQ(x, xExpected);
@@ -48,21 +48,21 @@ TEST(NonLinearOperator, SimpleOperatorNewtonRhapsonTest) {
 
   Ikarus::NewtonRaphson nr(nonLinOp);
 
-  checkNewtonRhapson(nr, x, eps, maxIter, 7, xExpected);
+  checkNewtonRhapson(nr, x, eps, maxIter, 7, xExpected, 0.0);
 }
 
-Eigen::VectorXd fv(Eigen::VectorXd& x, Eigen::MatrixXd& A, Eigen::VectorXd& b) { return b + A * x; }
-Eigen::MatrixXd dfv([[maybe_unused]] Eigen::VectorXd& x, Eigen::MatrixXd& A, [[maybe_unused]] Eigen::VectorXd& b) {
+Eigen::Vector3d fv(Eigen::Vector3d& x, Eigen::Matrix3d& A, Eigen::Vector3d& b) { return b + A * x; }
+Eigen::Matrix3d dfv([[maybe_unused]] Eigen::Vector3d& x, Eigen::Matrix3d& A, [[maybe_unused]] Eigen::Vector3d& b) {
   return A;
 }
 
 TEST(NonLinearOperator, VectorValuedOperatorNewtonMethod) {
-  Eigen::VectorXd x(3);
+  Eigen::Vector3d x;
   x << 1, 2, 3;
-  Eigen::VectorXd b(3);
+  Eigen::Vector3d b;
   b << 5, 7, 8;
-  Eigen::MatrixXd A(3, 3);
-  A = Eigen::MatrixXd::Identity(3, 3) * 13;
+  Eigen::Matrix3d A;
+  A = Eigen::Matrix3d::Identity() * 13;
 
   auto fvLambda  = [&](auto&& x) { return fv(x, A, b); };
   auto dfvLambda = [&](auto&& x) { return dfv(x, A, b); };
@@ -71,8 +71,8 @@ TEST(NonLinearOperator, VectorValuedOperatorNewtonMethod) {
   // Newton method test
   const double eps  = 1e-14;
   const int maxIter = 20;
-  Ikarus::NewtonRaphson nr(nonLinOp, Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT));
-  checkNewtonRhapson(nr, x, eps, maxIter, 1, (-A.ldlt().solve(b)).eval());
+  Ikarus::NewtonRaphson nr(nonLinOp, [&](auto& r, auto& A_) { return A.inverse() * r; });  // special linear solver
+  checkNewtonRhapson(nr, x, eps, maxIter, 1, (-A.ldlt().solve(b)).eval(), Eigen::Vector3d::Zero().eval());
 }
 
 double f2v(Eigen::VectorXd& x, Eigen::MatrixXd& A, Eigen::VectorXd& b) { return x.dot(b + A * x); }
@@ -92,16 +92,20 @@ TEST(NonLinearOperator, SecondOrderVectorValuedOperator) {
   Eigen::MatrixXd A(3, 3);
   A = Eigen::MatrixXd::Identity(3, 3) * 13;
 
-  auto fvLambda    = [&](auto&& x) { return f2v(x, A, b); };
-  auto dfvLambda   = [&](auto&& x) { return df2v(x, A, b); };
-  auto ddfvLambda  = [&](auto&& x) { return ddf2v(x, A, b); };
+  auto fvLambda    = [&](auto&& xL) { return f2v(xL, A, b); };
+  auto dfvLambda   = [&](auto&& xL) { return df2v(xL, A, b); };
+  auto ddfvLambda  = [&](auto&& xL) { return ddf2v(xL, A, b); };
   auto nonLinOp    = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
   auto subOperator = nonLinOp.subOperator<1, 2>();
   // Newton method test find root of first derivative
   const double eps  = 1e-14;
   const int maxIter = 20;
-  Ikarus::NewtonRaphson nr(subOperator, Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::LDLT));
-  checkNewtonRhapson(nr, x, eps, maxIter, 1, (-0.5 * A.ldlt().solve(b)).eval());
+  Ikarus::NewtonRaphson nr(subOperator, Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT));
+  checkNewtonRhapson(nr, x, eps, maxIter, 1, (-0.5 * A.ldlt().solve(b)).eval(), Eigen::VectorXd::Zero(3).eval());
+  nonLinOp.update<0>();
+  EXPECT_DOUBLE_EQ(nonLinOp.value(), -2.6538461538461533);
+  x << 1, 2, 3;  // Restart and check with predictor
+  checkNewtonRhapson(nr, x, eps, maxIter, 2, (-0.5 * A.ldlt().solve(b)).eval(), x);
   nonLinOp.update<0>();
   EXPECT_DOUBLE_EQ(nonLinOp.value(), -2.6538461538461533);
 }
@@ -154,7 +158,7 @@ TEST(NonLinearOperator, SecondOrderVectorValuedOperatorNonlinearAutodiff) {
   auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
   nr.subscribeAll(nonLinearSolverObserver);
 
-  checkNewtonRhapson(nr, x, eps, maxIter, 5, xSol);
+  checkNewtonRhapson(nr, x, eps, maxIter, 5, xSol, Eigen::VectorXd::Zero(3).eval());
 
   nonLinOp.update<0>();
   EXPECT_DOUBLE_EQ(nonLinOp.value(), -1.1750584073929625716);

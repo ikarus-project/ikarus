@@ -63,7 +63,7 @@ namespace Ikarus::Grid {
   typename DefaultGridEntity<griddim, 0, wdim>::Geometry DefaultGridEntity<griddim, 0, wdim>::geometry() const {
     std::vector<Dune::FieldVector<double, dimensionworld>> fieldVectorVector
         = transformVertexPositionToDuneFieldVector(getChildVertices());
-    return DefaultGridEntity<griddim, 0, wdim>::Geometry(duneType(type()), fieldVectorVector);
+    return DefaultGridEntity<griddim, 0, wdim>::Geometry(type(), fieldVectorVector);
   }
 
 //  template <int griddim, int wdim>

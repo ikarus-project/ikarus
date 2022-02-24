@@ -13,7 +13,7 @@ namespace Ikarus::Grid {
   template <int dimension, int dimensionworld>
   void SimpleGridFactory<dimension, dimensionworld>::insertElement(Dune::GeometryType type,
                                                                    const std::span<size_t> verticesIn) {
-    if (Ikarus::dimension(type) != dimension) DUNE_THROW(Dune::GridError, "The inserted element has wrong dimensions!");
+    if (type.dim() != dimension) DUNE_THROW(Dune::GridError, "The inserted element has wrong dimensions!");
 
     storeVerticesIndicesOfEdges(type, verticesIn);
     if constexpr (dimension > 1) storeVerticesIndicesOfSurfaces(type, verticesIn);
