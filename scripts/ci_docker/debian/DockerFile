@@ -17,6 +17,7 @@ RUN apt-get update -q -y && apt-get upgrade -y && \
         g++-11 \
         gcovr \
         clang \
+        libmetis-dev \
         clang-tidy \
                 libclang-13-dev \
                 libc++-13-dev \
