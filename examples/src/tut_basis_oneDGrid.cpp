@@ -162,33 +162,6 @@ unsigned int getGlobalDofId(TimoschenkoBeam requestedQuantity, const auto& basis
     throw std::runtime_error("The requested quantity is not supported");
 }
 
-auto localDerivative(auto& localView, auto& D_glob, auto& localCoord)
-{
-  auto detJ = localView.element().geometry().volume();
-  using namespace Dune::Indices;
-  auto& feW = localView.tree().child(_0).finiteElement();
-  auto& fePhi = localView.tree().child(_1).finiteElement();
-  Ikarus::LocalBasis basisW(feW.localBasis());
-  Ikarus::LocalBasis basisPhi(fePhi.localBasis());
-
-  Eigen::VectorXd dNwDxi   = Eigen::VectorXd::Zero(basisW.size());
-  Eigen::VectorXd wN   = Eigen::VectorXd::Zero(basisW.size());
-  Eigen::VectorXd dNphiDxi = Eigen::VectorXd::Zero(basisPhi.size());
-  Eigen::VectorXd phiN = Eigen::VectorXd::Zero(basisPhi.size());
-
-  basisW.evaluateJacobian(localCoord, dNwDxi);
-  basisPhi.evaluateJacobian(localCoord, dNphiDxi);
-
-  for (int i = 0; i < basisW.size(); ++i)
-    wN[i] = D_glob[localView.index(localView.tree().child(_0).localIndex(i))[0]];
-  for (int i = 0; i < basisPhi.size(); ++i)
-    phiN[i] = D_glob[localView.index(localView.tree().child(_1).localIndex(i))[0]];
-
-   double dwdx = wN.dot(dNwDxi)/detJ;
-   double dphidx = phiN.dot(dNphiDxi)/detJ;
-   return std::make_pair(dwdx,dphidx);
-}
-
 
 void plotDeformedTimoschenkoBeam(auto& gridView,auto& basis, auto& d_glob,double EI,double GA,double L,double F) {
   using namespace Dune::Indices;
