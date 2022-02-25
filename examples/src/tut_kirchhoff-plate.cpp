@@ -80,7 +80,6 @@ struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<Basis>,
     const auto& rule = Dune::QuadratureRules<double, 2>::rule(ele.type(), 2 * localBasis.order());
     /// Calculate Kirchhoff plate energy
     for (auto& gp : rule) {
-      //      std::vector<Dune::FieldMatrix<double, 1, 2>> dN_xi_eta;
       std::vector<Dune::FieldVector<double, 1>> dN_xixi;
       std::vector<Dune::FieldVector<double, 1>> dN_xieta;
       std::vector<Dune::FieldVector<double, 1>> dN_etaeta;
@@ -99,12 +98,10 @@ struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<Basis>,
       Eigen::VectorXd dN_yy(fe.size());
       Eigen::VectorXd dN_xy(fe.size());
       using Dune::power;
-      std::cout << Jinv << std::endl;
       for (auto i = 0U; i < fe.size(); ++i) {
-        dN_xx[i] = dN_xixi[i] * power(Jinv(0, 0), 2) + dN_etaeta[i] * power(Jinv(0, 1), 2);
-        dN_yy[i] = dN_etaeta[i] * power(Jinv(1, 1), 2) + dN_xixi[i] * power(Jinv(1, 0), 2);
-        dN_xy[i] = (Jinv(1, 0) * dN_etaeta[i] + dN_xieta[i] * Jinv(0, 0)) * Jinv(1, 1)
-                   + Jinv(0, 1) * (Jinv(1, 0) * dN_xieta[i] + dN_xixi[i] * Jinv(0, 0));
+        dN_xx[i] = dN_xixi[i] * power(Jinv(0, 0), 2);
+        dN_yy[i] = dN_etaeta[i] * power(Jinv(1, 1), 2);
+        dN_xy[i] =  dN_xieta[i] * Jinv(0, 0) * Jinv(1, 1);
       }
       Eigen::Vector<Scalar, 3> kappa;
       kappa(0) = dN_xx.dot(wNodal);
@@ -116,29 +113,29 @@ struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<Basis>,
     }
 
     /// Clamp boundary using penalty method
-    //    const double penaltyFactor = 1e8;
-    //    if (ele.hasBoundaryIntersections())
-    //      for (auto& intersection : intersections(localView_.globalBasis().gridView(), ele))
-    //        if (intersection.boundary()) {
-    //          const auto& rule1 = Dune::QuadratureRules<double, 1>::rule(intersection.type(), 2 * localBasis.order());
-    //          for (auto& gp : rule1) {
-    //            const auto& gpInElement = intersection.geometryInInside().global(gp.position());
-    //            std::vector<Dune::FieldMatrix<double, 1, 2>> dN_xi_eta;
-    //            localBasis.evaluateJacobian(gpInElement, dN_xi_eta);
-    //            Eigen::VectorXd dN_x(fe.size());
-    //            Eigen::VectorXd dN_y(fe.size());
-    //            const auto Jinv
-    //                = Ikarus::toEigenMatrix(geometry_.jacobianInverseTransposed(gpInElement)).transpose().eval();
-    //            for (auto i = 0U; i < fe.size(); ++i) {
-    //              dN_x[i] = dN_xi_eta[i][0][0] * Jinv(0, 0) + dN_xi_eta[i][0][1] * Jinv(0, 1);
-    //              dN_y[i] = dN_xi_eta[i][0][0] * Jinv(1, 0) + dN_xi_eta[i][0][1] * Jinv(1, 1);
-    //            }
-    //            const Scalar w_x = dN_x.dot(wNodal);
-    //            const Scalar w_y = dN_y.dot(wNodal);
-    //
-    //            energy += 0.0 * 0.5 * penaltyFactor * (w_x * w_x + w_y * w_y);
-    //          }
-    //        }
+        const double penaltyFactor = 1e8;
+        if (ele.hasBoundaryIntersections())
+          for (auto& intersection : intersections(localView_.globalBasis().gridView(), ele))
+            if (intersection.boundary()) {
+              const auto& rule1 = Dune::QuadratureRules<double, 1>::rule(intersection.type(), 2 * localBasis.order());
+              for (auto& gp : rule1) {
+                const auto& gpInElement = intersection.geometryInInside().global(gp.position());
+                std::vector<Dune::FieldMatrix<double, 1, 2>> dN_xi_eta;
+                localBasis.evaluateJacobian(gpInElement, dN_xi_eta);
+                Eigen::VectorXd dN_x(fe.size());
+                Eigen::VectorXd dN_y(fe.size());
+                const auto Jinv
+                    = Ikarus::toEigenMatrix(geometry_.jacobianInverseTransposed(gpInElement)).transpose().eval();
+                for (auto i = 0U; i < fe.size(); ++i) {
+                  dN_x[i] = dN_xi_eta[i][0][0] * Jinv(0, 0);
+                  dN_y[i] = dN_xi_eta[i][0][1] * Jinv(1, 1);
+                }
+                const Scalar w_x = dN_x.dot(wNodal);
+                const Scalar w_y = dN_y.dot(wNodal);
+
+                energy += 0.0 * 0.5 * penaltyFactor * (w_x * w_x + w_y * w_y);
+              }
+            }
 
     return energy;
   }

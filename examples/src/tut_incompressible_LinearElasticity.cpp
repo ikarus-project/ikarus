@@ -204,14 +204,12 @@ int main(int argc, char** argv) {
   auto R = fintFunction(1, d);
   Eigen::SparseLU<decltype(K)> ld;
   ld.compute(K);
-  if (ld.info() != Eigen::Success) {
+  if (ld.info() != Eigen::Success)
     assert(false && "Failed Compute");
-  }
 
   d -= denseFlatAssembler.createFullVector(ld.solve(R));
-  if (ld.info() != Eigen::Success) {
+  if (ld.info() != Eigen::Success)
     assert(false && "Failed Solve");
-  }
 
   /// Postprocess
   auto disp
