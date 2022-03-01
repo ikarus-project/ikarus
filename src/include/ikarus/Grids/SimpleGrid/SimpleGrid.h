@@ -29,8 +29,8 @@ namespace Ikarus::Grid {
       }
 
       /** Rule of five: Since the gridEntities have pointer to their subentities we can not allow this to be copyable */
-      GridEntitiesContainer(const GridEntitiesContainer&)                = delete;
-      GridEntitiesContainer& operator=(const GridEntitiesContainer&)     = delete;
+      GridEntitiesContainer(const GridEntitiesContainer&) = delete;
+      GridEntitiesContainer& operator=(const GridEntitiesContainer&) = delete;
       GridEntitiesContainer& operator=(GridEntitiesContainer&&) noexcept = default;
       GridEntitiesContainer(GridEntitiesContainer&&) noexcept            = default;
       ~GridEntitiesContainer()                                           = default;
