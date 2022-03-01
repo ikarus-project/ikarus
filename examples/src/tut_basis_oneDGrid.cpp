@@ -29,7 +29,6 @@ using namespace Dune::Functions::BasisBuilder;
 using namespace Dune::Indices;
 
 void exampleTrussElement() {
-  constexpr int griddim = 1;
   const double L        = 1;
   const double EA       = 1.0;
   const int numElements = 10;
@@ -238,8 +237,7 @@ void exampleTimoshenkoBeam(const int polynomialOrderW, const int polynomialOrder
   //draw(gridView);
 
   // Basis with different orders for w (first) and phi (second)
-  auto basis     = makeBasis(gridView,
-                             composite(lagrange(polynomialOrderW), lagrange(polynomialOrderPhi), FlatLexicographic()));
+  auto basis     = makeBasis(gridView,composite(lagrange(polynomialOrderW), lagrange(polynomialOrderPhi), FlatLexicographic()));
   auto localView = basis.localView();
 
   // global stiffness matrix and force vector
