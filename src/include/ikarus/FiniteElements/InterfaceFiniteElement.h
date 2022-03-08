@@ -54,7 +54,7 @@ namespace Ikarus::FiniteElements {
       [[nodiscard]] virtual std::pair<Eigen::MatrixXd, Eigen::VectorXd> do_calculateLocalSystem(
           const FERequirementType &par) const                                                      = 0;
       [[nodiscard]] virtual Eigen::MatrixXd do_calculateMatrix(const FERequirementType &par) const = 0;
-      //      virtual void do_bind(const LocalView &localView) const = 0;
+      //      virtual void do_bind(const LocalViewEmbedded &localView) const = 0;
       [[nodiscard]] virtual Eigen::VectorXd do_calculateVector(const FERequirementType &par) const = 0;
       [[nodiscard]] virtual double do_calculateScalar(const FERequirementType &par) const          = 0;
       [[nodiscard]] virtual std::vector<GlobalIndex> do_globalIndices() const                      = 0;

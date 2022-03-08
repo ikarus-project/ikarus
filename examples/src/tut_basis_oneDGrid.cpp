@@ -236,7 +236,7 @@ void exampleTimoshenkoBeam(const int polynomialOrderW, const int polynomialOrder
   auto gridView = grid.leafGridView();
   //draw(gridView);
 
-  // Basis with different orders for w (first) and phi (second)
+  // BasisEmbedded with different orders for w (first) and phi (second)
   auto basis     = makeBasis(gridView,composite(lagrange(polynomialOrderW), lagrange(polynomialOrderPhi), FlatLexicographic()));
   auto localView = basis.localView();
 

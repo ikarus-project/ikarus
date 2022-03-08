@@ -44,7 +44,7 @@ namespace Ikarus {
     }
   };
 
-  template <typename RealElement, typename Basis>
+  template <typename RealElement, typename Basis,typename FERequirementTypeImpl = FErequirements<Eigen::VectorXd>>
   class AutoDiffFEClean {
   public:
     using LocalView = typename Basis::LocalView;

@@ -44,7 +44,7 @@ namespace Ikarus {
 
   inline constexpr ScalarAffordances potentialEnergy = ScalarAffordances::potentialEnergy;
 
-  template <typename SolutionVectorType = Eigen::VectorXd,
+  template <typename SolutionVectorType = Eigen::Ref<Eigen::VectorXd>,
             typename ParameterType      = std::map<decltype(FEParameterValuePair::type), double>>
   struct FErequirements {
     std::vector<std::reference_wrapper<const SolutionVectorType>> sols;

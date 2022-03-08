@@ -109,7 +109,7 @@ namespace Ikarus {
   //  };
   //
 
-  template <typename Basis, typename FEContainer>  // requires Ikarus::Concepts::FlatIndexBasis<Basis>
+  template <typename Basis, typename FEContainer>  // requires Ikarus::Concepts::FlatIndexBasis<BasisEmbedded>
   class SparseFlatAssembler {
     using RequirementType = typename FEContainer::value_type::FERequirementType;
     using GlobalIndex = typename FEContainer::value_type::GlobalIndex;
@@ -400,7 +400,7 @@ namespace Ikarus {
     double scal{0.0};
   };
 
-  template <typename Basis, typename FEContainer>  // requires Ikarus::Concepts::FlatIndexBasis<Basis>
+  template <typename Basis, typename FEContainer>  // requires Ikarus::Concepts::FlatIndexBasis<BasisEmbedded>
   class DenseFlatSimpleAssembler {
   public:
     using RequirementType = typename FEContainer::value_type::FERequirementType;
@@ -502,7 +502,7 @@ namespace Ikarus {
     Eigen::VectorXd vec{};
   };
 
-  template <typename Basis, typename FEContainer>  // requires Ikarus::Concepts::FlatIndexBasis<Basis>
+  template <typename Basis, typename FEContainer>  // requires Ikarus::Concepts::FlatIndexBasis<BasisEmbedded>
   class DenseFlatAssembler {
   public:
     using RequirementType = typename FEContainer::value_type::FERequirementType;
