@@ -5,7 +5,7 @@
 #include <ikarus/Variables/InterfaceVariable.h>
 #include <ikarus/Variables/VariableDefinitions.h>
 
-namespace Ikarus::Variable {
+namespace Ikarus {
 
   int valueSize(const IVariable& vo) { return vo.variableImpl->do_valueSize(); }
   int correctionSize(const IVariable& vo) { return vo.variableImpl->do_correctionSize(); }
@@ -74,10 +74,10 @@ namespace Ikarus::Variable {
                            [](size_t cursize, const IVariable& var) { return cursize + valueSize(var); });
   }
 
-  std::string getName(const IVariable& var) { return Ikarus::Variable::variableNames[getTag(var)]; }
+  std::string getName(const IVariable& var) { return Ikarus::variableNames[getTag(var)]; }
 
-  bool isType(const IVariable& vo, Ikarus::Variable::VariableTags tag) { return getTag(vo) == static_cast<int>(tag); }
-  bool isType(IVariable* vo, Ikarus::Variable::VariableTags tag) { return isType(*vo, tag); }
+  bool isType(const IVariable& vo, Ikarus::VariableTags tag) { return getTag(vo) == static_cast<int>(tag); }
+  bool isType(IVariable* vo, Ikarus::VariableTags tag) { return isType(*vo, tag); }
 
   double& IVariable::operator[](int i) { return this->variableImpl->operator[](i); }
 

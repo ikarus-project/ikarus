@@ -11,7 +11,7 @@
 #include <ikarus/Variables/InterfaceVariable.h>
 #include <ikarus/Variables/VariablePolicies.h>
 
-namespace Ikarus::Variable {
+namespace Ikarus {
 
   // These can be used as variables of some fe solver, i.e. "Degrees of Freedom" or just as data
   enum class VariableTags : int {

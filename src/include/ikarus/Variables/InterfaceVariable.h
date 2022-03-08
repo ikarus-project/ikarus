@@ -12,7 +12,7 @@
 #include <ikarus/Variables/VariablePolicies.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
 
-namespace Ikarus::Variable {
+namespace Ikarus {
   enum class VariableTags;
 
   class IVariable {
@@ -118,6 +118,6 @@ namespace Ikarus::Variable {
   size_t valueSize(std::span<const IVariable> varSpan);
   size_t correctionSize(std::span<const IVariable> varSpan);
   void update(std::span<IVariable> varSpan, const Eigen::VectorXd &correction);
-  bool isType(const IVariable &vo, Ikarus::Variable::VariableTags tag);
-  bool isType(IVariable *vo, Ikarus::Variable::VariableTags tag);
+  bool isType(const IVariable &vo, Ikarus::VariableTags tag);
+  bool isType(IVariable *vo, Ikarus::VariableTags tag);
 }  // namespace Ikarus::Variable
