@@ -51,6 +51,8 @@ namespace Ikarus::FiniteElements {
   public:
     using BaseDisp = Ikarus::FiniteElements::FEDisplacement<Basis>;  // Handles globalIndices function
     using BaseAD   = Ikarus::AutoDiffFEClean<NonLinearElasticityFEWithLocalBasis<Basis>, Basis>;
+    using BaseAD::size;
+    using GlobalIndex   = typename FEDisplacement<Basis>::GlobalIndex ;
     friend BaseAD;
     using FERequirementType = FErequirements<Eigen::VectorXd>;
     using LocalView         = typename Basis::LocalView;

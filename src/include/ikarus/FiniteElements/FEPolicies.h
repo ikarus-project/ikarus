@@ -33,6 +33,9 @@ namespace Ikarus::FiniteElements {
     /** \brief Type of the internal forces */
     using VectorType = Eigen::VectorXd;
 
+    /** \brief Type of the internal forces */
+    using ScalarType = ctype;
+
     /** \brief Type of the stiffness matrix */
     using MatrixType = Eigen::MatrixXd;
   };
@@ -64,28 +67,15 @@ namespace Ikarus::FiniteElements {
     /** \brief Dimension of the world space */
     static constexpr int worlddim = Traits::worlddim;
 
-    [[nodiscard]] constexpr int dofSizeImpl() const { return localView.size(); }
+    [[nodiscard]] constexpr int size() const { return localView.size(); }
 
-    [[nodiscard]] std::vector<GlobalIndex> globalIndices() const {
+ void globalIndices(std::vector<GlobalIndex>& globalIndices) const {
       const auto& fe = localView.tree().child(0).finiteElement();
-      std::vector<GlobalIndex> globalIndices;
       for (size_t i = 0; i < fe.size(); ++i) {
         for (int j = 0; j < worlddim; ++j) {
           globalIndices.push_back(localView.index((localView.tree().child(j).localIndex(i))));
         }
       }
-      return globalIndices;
-    }
-
-    [[nodiscard]] std::vector<GlobalIndex> localIndices() const {
-      const auto& fe = localView.tree().child(0).finiteElement();
-      std::vector<GlobalIndex> globalIndices;
-      for (size_t i = 0; i < fe.size(); ++i) {
-        for (int j = 0; j < worlddim; ++j) {
-          globalIndices.push_back((localView.tree().child(j).localIndex(i)));
-        }
-      }
-      return globalIndices;
     }
 
     const GridElementEntityType& getEntity() { return localView.element(); }
@@ -113,15 +103,13 @@ namespace Ikarus::FiniteElements {
     /** \brief Dimension of the world space */
     static constexpr int worlddim = Traits::worlddim;
 
-    [[nodiscard]] constexpr int dofSizeImpl() const { return localView.size(); }
+    [[nodiscard]]  int size() const { return localView.size(); }
 
-    [[nodiscard]] std::vector<GlobalIndex> globalIndices() const {
+    void globalIndices(std::vector<GlobalIndex>&  globalIndices) const {
       const auto& fe = localView.tree().finiteElement();
-      std::vector<GlobalIndex> globalIndices;
       for (size_t i = 0; i < fe.size(); ++i)
         globalIndices.push_back(localView.index(localView.tree().localIndex(i)));
 
-      return globalIndices;
     }
 
     [[nodiscard]] std::vector<GlobalIndex> localIndices() const {
