@@ -36,67 +36,31 @@ constexpr int gridDim               = 2;
 constexpr int directorDim           = 3;
 constexpr int directorCorrectionDim = directorDim - 1;
 
-struct UnitCircleBoundary : Dune::BoundarySegment<2, 2, double> {
-  UnitCircleBoundary(const Dune::FieldVector<double, 2>& a, const Dune::FieldVector<double, 2>& b) : corners{{a, b}} {}
-  Dune::FieldVector<double, 2> operator()(const Dune::FieldVector<double, 1>& local) const override {
-    Dune::FieldVector<double, 2> result = {0, 0};
-    double omega                        = std::acos(corners[0] * corners[1]);
-    return std::sin((1 - local[0]) * omega) / sin(omega) * corners[0] + sin(local[0] * omega) / sin(omega) * corners[1];
-  }
-
-  std::array<Dune::FieldVector<double, 2>, 2> corners;
-};
-
 int main(int argc, char** argv) {
   Dune::MPIHelper::instance(argc, argv);
   using namespace Ikarus;
-
+  Ikarus::FiniteElements::MagneticMaterial mat({.A = 1.0e-11, .K = 2e4, .ms = 1.432e6});
+  const double lx              = sqrt(2 * mat.A / (mat.mu0 * mat.ms * mat.ms));
+  const double lengthUnit      = 1e-9;
+  const double sizedom1InMeter = 60 * lengthUnit;
+  const double sizedom1        = sizedom1InMeter / lx;
+  const double sizedom2        = sizedom1;
   //  //  /// ALUGrid Example
-  //  using Grid = Dune::ALUGrid<gridDim, 2, Dune::simplex, Dune::conforming>;
-  //  auto grid             = Dune::GmshReader<Grid>::read("../../examples/src/testFiles/circleCoarse.msh", false);
-  //  grid->globalRefine(1);
-  /// IGA Grid Example
-  Dune::GridFactory<Dune::ALUGrid<gridDim, 2, Dune::cube, Dune::nonconforming>> gridFactory;
-  //  std::array<FieldVector<double, 2>, 4> corners0 = {{{-sqrt(2) / 2, -sqrt(2) / 2}, {sqrt(2) / 2, -sqrt(2) / 2},
-  //  {sqrt(2) / 2, sqrt(2) / 2}, {-sqrt(2) / 2, sqrt(2) / 2}}};
-  Eigen::Vector2d v(1, 0);
-  std::array<Dune::FieldVector<double, 2>, 6> corners0;
-  Eigen::Rotation2D<double> R;
-  R.angle() = 0.0;
-  for (auto& corner : corners0) {
-    Eigen::Vector2d a = R * v;
-    corner[0]         = a[0];
-    corner[1]         = a[1];
-    R.angle() += 60.0 / 180.0 * std::numbers::pi;
-  }
+  using Grid        = Dune::YaspGrid<gridDim>;
+  const double Lx   = sizedom1;
+  const double Ly   = sizedom2;
+  const size_t elex = 1;
+  const size_t eley = 1;
 
-  gridFactory.insertVertex({0, 0});
-  gridFactory.insertVertex({1, 0});
-  gridFactory.insertVertex({0, 1});
-  gridFactory.insertVertex({1, 1});
-  //  gridFactory.insertVertex(corners0[2]);
-  //  gridFactory.insertVertex(corners0[3]);
-  //  gridFactory.insertVertex(corners0[4]);
-  //  gridFactory.insertVertex(corners0[5]);
+  Dune::FieldVector<double, 2> bbox = {Lx, Ly};
+  std::array<int, 2> eles           = {elex, eley};
+  auto grid                         = std::make_shared<Grid>(bbox, eles);
 
-  gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {0, 1, 2, 3});
-  //  gridFactory.insertElement(Dune::GeometryTypes::triangle, {0, 2, 3});
-  //  gridFactory.insertElement(Dune::GeometryTypes::triangle, {0, 3, 4});
-  //  gridFactory.insertElement(Dune::GeometryTypes::triangle, {0, 4, 5});
-  //  gridFactory.insertElement(Dune::GeometryTypes::triangle, {0, 5, 6});
-  //  gridFactory.insertElement(Dune::GeometryTypes::triangle, {0, 6, 1});
-
-  /// Create boundary segments which map the boundaries onto the unit circle
-  //  gridFactory.insertBoundarySegment({1, 2}, std::make_shared<UnitCircleBoundary>(corners0[0], corners0[1]));
-  //  gridFactory.insertBoundarySegment({2, 3}, std::make_shared<UnitCircleBoundary>(corners0[1], corners0[2]));
-  //  gridFactory.insertBoundarySegment({3, 4}, std::make_shared<UnitCircleBoundary>(corners0[2], corners0[3]));
-  //  gridFactory.insertBoundarySegment({4, 5}, std::make_shared<UnitCircleBoundary>(corners0[3], corners0[4]));
-  //  gridFactory.insertBoundarySegment({5, 6}, std::make_shared<UnitCircleBoundary>(corners0[4], corners0[5]));
-  //  gridFactory.insertBoundarySegment({6, 1}, std::make_shared<UnitCircleBoundary>(corners0[5], corners0[0]));
-
-  auto grid = gridFactory.createGrid();
   grid->globalRefine(5);
   auto gridView = grid->leafGridView();
+
+  spdlog::info("The exchange length is {}.", lx);
+  spdlog::info("The domain has a length of {}.", sizedom1);
 
   using namespace Dune::Functions::BasisFactory;
   auto basisEmbedded = makeBasis(gridView, power<directorDim>(lagrange<magnetizationOrder>(), BlockedInterleaved()));
@@ -107,9 +71,8 @@ int main(int argc, char** argv) {
   std::cout << gridView.size(0) << " elements" << std::endl;
   std::cout << basisRie.size() << " Dofs" << std::endl;
 
-  draw(gridView);
+//  draw(gridView);
 
-  Ikarus::FiniteElements::MagneticMaterial mat({.A=1.0e-11,.K = 2e4, .ms = 1.432e6});
   std::vector<Ikarus::FiniteElements::MicroMagneticsWithVectorPotential<decltype(basisEmbedded), decltype(basisRie)>>
       fes;
   auto volumeLoad = [](auto& globalCoord, auto& lamb) {
@@ -126,35 +89,30 @@ int main(int argc, char** argv) {
   using DirectorVector = Dune::BlockVector<Ikarus::UnitVector<double, directorDim>>;
   DirectorVector mBlocked(basisEmbedded.size());
   for (auto& msingle : mBlocked) {
-    msingle.setValue(Eigen::Vector<double, directorDim>::Random());
+    msingle.setValue(Eigen::Vector<double, directorDim>::UnitX());
   }
-  auto mEigen = Ikarus::LinearAlgebra::viewAsFlatEigenVector(mBlocked);
-
 
   std::vector<bool> dirichletFlagsEmbedded(basisEmbedded.size(), false);
   std::vector<bool> dirichletFlags(basisRie.size(), false);
 
   Dune::Functions::forEachBoundaryDOF(basisEmbedded, [&](auto&& localIndex, auto&& localView, auto&& intersection) {
     dirichletFlagsEmbedded[localView.index(localIndex)[0]] = true;
-    if(intersection.geometry().center()[1]<1e-8)
-      mBlocked[localView.index(localIndex)[0]].setValue( Eigen::Vector<double,directorDim>::UnitX());
-    else if(intersection.geometry().center()[1]>1-1e-8)
-      mBlocked[localView.index(localIndex)[0]].setValue(Eigen::Vector<double,directorDim>::UnitX());
-    else if(intersection.geometry().center()[0]>1-1e-8)
-      mBlocked[localView.index(localIndex)[0]].setValue(Eigen::Vector<double,directorDim>::UnitY());
-    else if(intersection.geometry().center()[0]<1e-8)
-      mBlocked[localView.index(localIndex)[0]].setValue(-Eigen::Vector<double,directorDim>::UnitZ());
+    if (intersection.geometry().center()[1] < 1e-8)
+      mBlocked[localView.index(localIndex)[0]].setValue(Eigen::Vector<double, directorDim>::UnitX());
+    else if (intersection.geometry().center()[1] > Ly - 1e-8)
+      mBlocked[localView.index(localIndex)[0]].setValue(Eigen::Vector<double, directorDim>::UnitX());
+    else if (intersection.geometry().center()[0] > Lx - 1e-8)
+      mBlocked[localView.index(localIndex)[0]].setValue(Eigen::Vector<double, directorDim>::UnitY());
+    else if (intersection.geometry().center()[0] < 1e-8)
+      mBlocked[localView.index(localIndex)[0]].setValue(-Eigen::Vector<double, directorDim>::UnitZ());
   });
 
   Dune::Functions::forEachBoundaryDOF(basisRie, [&](auto&& localIndex, auto&& localView, auto&& intersection) {
     dirichletFlags[localView.index(localIndex)[0]] = true;
-
   });
 
   auto denseAssembler  = DenseFlatAssembler(basisRie, fes, dirichletFlags);
   auto sparseAssembler = SparseFlatAssembler(basisRie, fes, dirichletFlags);
-
-
 
   double lambda = 0.0;
 
@@ -181,41 +139,40 @@ int main(int argc, char** argv) {
     req.matrixAffordances = Ikarus::MatrixAffordances::stiffness;
     return denseAssembler.getScalar(req);
   };
-  std::cout << mBlocked;
+
   auto& h = hessianFunction(mBlocked, lambda);
-std::cout << h << std::endl;
+//  std::cout << h << std::endl;
 
   auto& g = residualFunction(mBlocked, lambda);
- std::cout << g << std::endl;
+//  std::cout << g << std::endl;
 
   auto e = energyFunction(mBlocked, lambda);
- std::cout << e << std::endl;
+//  std::cout << e << std::endl;
 
-  assert(g.size() == gridView.size(2) * directorCorrectionDim - std::ranges::count(dirichletFlags,true) && "The returned gradient has incorrect size");
+  assert(g.size() == gridView.size(2) * directorCorrectionDim - std::ranges::count(dirichletFlags, true)
+         && "The returned gradient has incorrect size");
 
   auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, residualFunction, hessianFunction),
                                             parameter(mBlocked, lambda));
 
   auto updateFunction = std::function([&](DirectorVector& x, const Eigen::VectorXd& d) {
-    auto dFull= denseAssembler.createFullVector(d);
+    auto dFull = denseAssembler.createFullVector(d);
     for (auto i = 0U; i < x.size(); ++i) {
       size_t indexStartI = i * x[0].correctionSize;
-      if(dirichletFlagsEmbedded[i]==true) {
+      if (dirichletFlagsEmbedded[i]) {
         continue;
       }
       x[i] += dFull.segment<directorCorrectionDim>(indexStartI);
     }
   });
 
-  (checkGradient(nonLinOp, true,updateFunction));
+//  checkGradient(nonLinOp, true, updateFunction);
+//  checkHessian(nonLinOp, true, updateFunction);
 
-  (checkHessian(nonLinOp, true,updateFunction));
+  if (not Dune::FloatCmp::eq(nonLinOp.value(), e)) throw std::logic_error("Dune::FloatCmp::eq(nonLinOp.value(), e)");
+  if (not nonLinOp.derivative().isApprox(g)) throw std::logic_error("nonLinOp.derivative().isApprox(g)");
+  if (not nonLinOp.secondDerivative().isApprox(h)) throw std::logic_error("nonLinOp.secondDerivative().isApprox(h)");
 
-
-  assert(Dune::FloatCmp::eq(nonLinOp.value() ,e));
-  assert(nonLinOp.derivative().isApprox(g));
-  assert(nonLinOp.secondDerivative().isApprox(h));
-  //
   auto nr = Ikarus::makeTrustRegion(nonLinOp, updateFunction);
   nr->setup({.verbosity = 1,
              .maxiter   = 100000,
@@ -233,7 +190,7 @@ std::cout << h << std::endl;
 
   //  lc.subscribeAll(vtkWriter);
   std::cout << "Energy before: " << nonLinOp.value() << std::endl;
-//  std::cout << mBlocked;
+  //  std::cout << mBlocked;
   lc.run();
   nonLinOp.update<0>();
   std::cout << "Energy after: " << nonLinOp.value() << std::endl;
@@ -243,8 +200,8 @@ std::cout << h << std::endl;
   vtkWriter.addVertexData(wGlobalFunc, Dune::VTK::FieldInfo("m", Dune::VTK::FieldInfo::Type::vector, directorDim));
   vtkWriter.write("Magnet");
 
-  for(auto& mS : mBlocked)
-    if(not Dune::FloatCmp::eq(mS.getValue().norm(),1.0))
-      std::cout<<"wrong director found "<<mS.getValue().transpose()<<std::endl;
-//  std::cout << mBlocked;
+  for (auto& mS : mBlocked)
+    if (not Dune::FloatCmp::eq(mS.getValue().norm(), 1.0))
+      std::cout << "wrong director found " << mS.getValue().transpose() << std::endl;
+  //  std::cout << mBlocked;
 }

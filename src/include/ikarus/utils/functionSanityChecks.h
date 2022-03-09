@@ -49,9 +49,7 @@ bool checkGradient(
   };
 
   using namespace matplot;
-  auto f   = figure(true);
-  auto ax1 = gca();
-  hold(ax1, true);
+
   std::vector<double> t = logspace(-8, 0, 100);
   Eigen::Map<Eigen::VectorXd> tE(t.data(), t.size());
   std::vector<double> ftevaluated = transform(t, ftfunc);
@@ -69,6 +67,9 @@ bool checkGradient(
     spdlog::info("The gradient seems wrong.");
 
   if (draw) {
+    auto f   = figure(true);
+    auto ax1 = gca();
+    hold(ax1, true);
     std::vector<double> tOfRange(rangeSize);
     std::vector<double> fInRange(rangeSize);
     auto tET = tE(range);
@@ -137,9 +138,7 @@ bool checkHessian(
     return value;
   };
   using namespace matplot;
-  auto f   = figure(true);
-  auto ax1 = gca();
-  hold(ax1, true);
+
   std::vector<double> t = logspace(-8, 0, 100);
   Eigen::Map<Eigen::VectorXd> tE(t.data(), t.size());
   std::vector<double> ftevaluated = transform(t, ftfunc);
@@ -158,6 +157,9 @@ bool checkHessian(
     spdlog::info("The Hessian seems wrong.");
 
   if (draw) {
+    auto f   = figure(true);
+    auto ax1 = gca();
+    hold(ax1, true);
     std::vector<double> tOfRange(rangeSize);
     std::vector<double> fInRange(rangeSize);
     auto tET = tE(range);

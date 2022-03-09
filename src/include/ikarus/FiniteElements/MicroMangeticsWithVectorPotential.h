@@ -72,9 +72,9 @@ namespace Ikarus::FiniteElements {
           material{p_material} {
       localView_.bind(element);
       localViewReduced.bind(element);
-      const int order = 4 * localView_.tree().child(0).finiteElement().localBasis().order();
-//      std::cout<<"Order:"<<order<<std::endl;
-      localBasis      = Ikarus::LocalBasis(localView_.tree().child(0).finiteElement().localBasis());
+      const int order = 3 * localView_.tree().child(0).finiteElement().localBasis().order();
+      //      std::cout<<"Order:"<<order<<std::endl;
+      localBasis = Ikarus::LocalBasis(localView_.tree().child(0).finiteElement().localBasis());
       localBasis.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order), 0, 1);
     }
 
@@ -100,18 +100,21 @@ namespace Ikarus::FiniteElements {
       Eigen::VectorXd g;
       autodiff::dual2nd e;
       hessian(f, wrt(dx), at(dx), e, g, h);
+
       const auto& m  = par.sols[0].get();
       const auto& fe = localView_.tree().child(0).finiteElement();
       for (auto i = 0U; i < fe.size(); ++i) {
         const size_t indexRedI  = i * directorCorrectionDim;
         const size_t indexI     = i * directorDim;
         const auto globalIndexI = localView_.index(localView_.tree().child(0).localIndex(i));
-        const auto BLAIT        = m[globalIndexI[0]].orthonormalFrame().transpose();
+        const Eigen::Matrix<double, directorCorrectionDim, directorDim> BLAIT
+            = m[globalIndexI[0]].orthonormalFrame().transpose();
         for (auto j = 0U; j < fe.size(); ++j) {
           const size_t indexRedJ  = j * directorCorrectionDim;
           const size_t indexJ     = j * directorDim;
           const auto globalIndexJ = localView_.index(localView_.tree().child(0).localIndex(j));
           const auto BLAJ         = m[globalIndexJ[0]].orthonormalFrame();
+
           hred.template block<directorCorrectionDim, directorCorrectionDim>(indexRedI, indexRedJ)
               = BLAIT * h.block<directorDim, directorDim>(indexI, indexJ) * BLAJ;
         }
@@ -121,7 +124,7 @@ namespace Ikarus::FiniteElements {
       }
     }
 
-    int size() const { return localViewReduced.size(); }
+    [[nodiscard]] int size() const { return localViewReduced.size(); }
 
     void calculateVector(const FERequirementType& par, typename Traits::VectorType& rieGrad) const {
       Eigen::VectorXdual dx(localView_.size());
@@ -184,12 +187,13 @@ namespace Ikarus::FiniteElements {
             = (Eigen::Matrix<ScalarType, directorDim, directorDim>::Identity()
                - normalizedMag * normalizedMag.transpose())
               / mLength;
-        const auto dNdx  = (dN * J.inverse()).eval();
-        Eigen::Matrix<ScalarType,directorDim,Traits::mydim> gradm = (DefoGeo<ScalarType>::jacobianTransposed(dNdx, mN).transpose());
+        const auto dNdx = (dN * J.inverse()).eval();
+        Eigen::Matrix<ScalarType, directorDim, Traits::mydim> gradm
+            = (DefoGeo<ScalarType>::jacobianTransposed(dNdx, mN).transpose());
         gradm = Pm * gradm;
 
         const Eigen::Vector<double, directorDim> Hbar = volumeLoad(toEigenVector(gp.position()), lambda);
-        energy += (0.5 * (gradm.transpose() * gradm).trace() - 2 * normalizedMag.dot(Hbar) / material.ms)
+        energy += (0.5 * (gradm.transpose() * gradm).trace() - 0.0 * 2 * normalizedMag.dot(Hbar) / material.ms)
                   * geo.integrationElement(gp.position()) * gp.weight();
       }
       return energy;

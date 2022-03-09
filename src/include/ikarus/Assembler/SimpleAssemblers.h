@@ -178,11 +178,11 @@ namespace Ikarus {
         assert(dofs.size() == static_cast<unsigned>(A.cols()) && "The returned matrix has wrong colSize!");
         Eigen::Index linearIndex = 0;
         for (auto r = 0U; r < dofs.size(); ++r) {
-          if (dirichletFlags->at(dofs[r]))
+          if (dirichletFlags->at(dofs[r][0]))
             continue;
           else {
             for (auto c = 0U; c < dofs.size(); ++c) {
-              if (dirichletFlags->at(dofs[c])) continue;
+              if (dirichletFlags->at(dofs[c][0])) continue;
               spMatReduced.coeffs()(elementLinearReducedIndices[elementIndex][linearIndex++]) += A(r, c);
             }
           }
@@ -225,12 +225,12 @@ namespace Ikarus {
         dofs.resize(0);
         fe.globalIndices(dofs);
         for (auto r = 0U; r < dofs.size(); ++r) {
-          if (dirichletFlags->at(dofs[r]))
+          if (dirichletFlags->at(dofs[r][0]))
             continue;
           else {
             for (auto c = 0U; c < dofs.size(); ++c) {
-              if (dirichletFlags->at(dofs[c])) continue;
-              vectorOfTriples.emplace_back(dofs[r] - constraintsBelow_[dofs[r]], dofs[c] - constraintsBelow_[dofs[c]],
+              if (dirichletFlags->at(dofs[c][0])) continue;
+              vectorOfTriples.emplace_back(dofs[r][0] - constraintsBelow_[dofs[r][0]], dofs[c][0] - constraintsBelow_[dofs[c][0]],
                                            0.0);
             }
           }
@@ -250,7 +250,7 @@ namespace Ikarus {
         elementLinearIndices.emplace_back(Dune::Power<2>::eval(dofs.size()));
         for (Eigen::Index linearIndexOfElement = 0; auto&& c : dofs)
           for (auto&& r : dofs)
-            elementLinearIndices.back()[linearIndexOfElement++] = spMat.getLinearIndex(r, c);
+            elementLinearIndices.back()[linearIndexOfElement++] = spMat.getLinearIndex(r[0], c[0]);
       }
       arelinearDofsPerElementCreated = true;
     }
@@ -263,11 +263,11 @@ namespace Ikarus {
         fe.globalIndices(dofs);
         elementLinearReducedIndices.emplace_back();
         for (auto r = 0U; r < dofs.size(); ++r) {
-          if (dirichletFlags->at(dofs[r])) continue;
+          if (dirichletFlags->at(dofs[r][0])) continue;
           for (auto c = 0U; c < dofs.size(); ++c) {
-            if (dirichletFlags->at(dofs[c])) continue;
+            if (dirichletFlags->at(dofs[c][0])) continue;
             elementLinearReducedIndices.back().push_back(spMatReduced.getLinearIndex(
-                dofs[r] - constraintsBelow_[dofs[r]], dofs[c] - constraintsBelow_[dofs[c]]));
+                dofs[r][0] - constraintsBelow_[dofs[r][0]], dofs[c][0] - constraintsBelow_[dofs[c][0]]));
           }
         }
       }
@@ -365,7 +365,7 @@ namespace Ikarus {
             ++i;
             continue;
           } else
-            vecRed(dofIndex - constraintsBelow_[dofIndex]) += f[i++];
+            vecRed(dofIndex[0] - constraintsBelow_[dofIndex[0]]) += f[i++];
         }
       }
       return vecRed;
@@ -575,12 +575,12 @@ namespace Ikarus {
         fe.globalIndices(dofs);
         assert(static_cast<long int>(dofs.size()) == vecLocal.size() && "The returned vector has wrong rowSize!");
         for (int i = 0; auto&& dofIndex : dofs) {
-          if (dirichletFlags->at(dofIndex)) {
+          if (dirichletFlags->at(dofIndex[0])) {
             ++reducedCounter;
             ++i;
             continue;
           } else
-            vecRed(dofIndex - constraintsBelow_[dofIndex]) += vecLocal[i++];
+            vecRed(dofIndex[0] - constraintsBelow_[dofIndex[0]]) += vecLocal[i++];
         }
       }
       return vecRed;
@@ -597,14 +597,14 @@ namespace Ikarus {
         assert(dofs.size() == static_cast<unsigned>(matLocal.rows()) && "The returned matrix has wrong rowSize!");
         assert(dofs.size() == static_cast<unsigned>(matLocal.cols()) && "The returned matrix has wrong colSize!");
         for (auto r = 0U; r < dofs.size(); ++r) {
-          if (dirichletFlags->at(dofs[r])) {
+          if (dirichletFlags->at(dofs[r][0])) {
             continue;
           } else {
             for (auto c = 0U; c < dofs.size(); ++c) {
-              if (dirichletFlags->at(dofs[c])) {
+              if (dirichletFlags->at(dofs[c][0])) {
                 continue;
               }
-              matRed(dofs[r] - constraintsBelow_[dofs[r]], dofs[c] - constraintsBelow_[dofs[c]]) += matLocal(r, c);
+              matRed(dofs[r][0] - constraintsBelow_[dofs[r][0]], dofs[c][0] - constraintsBelow_[dofs[c][0]]) += matLocal(r, c);
             }
           }
         }
