@@ -14,6 +14,7 @@
 #include "ikarus/Solver/NonLinearSolver/NewtonRaphson.hpp"
 #include "ikarus/utils/Observer/nonLinearSolverLogger.h"
 #include <ikarus/LinearAlgebra/NonLinearOperator.h>
+#include <ikarus/utils/functionSanityChecks.h>
 
 template <typename SolutionType, typename SolutionTypeExpected, typename NewtonRhapson>
 void checkNewtonRhapson(NewtonRhapson& nr, SolutionType& x, double tolerance, int maxIter, int iterExpected,
@@ -96,6 +97,8 @@ TEST(NonLinearOperator, SecondOrderVectorValuedOperator) {
   auto dfvLambda   = [&](auto&& xL) { return df2v(xL, A, b); };
   auto ddfvLambda  = [&](auto&& xL) { return ddf2v(xL, A, b); };
   auto nonLinOp    = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
+
+  EXPECT_TRUE(checkGradient(nonLinOp,false));
   auto subOperator = nonLinOp.subOperator<1, 2>();
   // Newton method test find root of first derivative
   const double eps  = 1e-14;
@@ -135,17 +138,20 @@ TEST(NonLinearOperator, SecondOrderVectorValuedOperatorNonlinearAutodiff) {
   Eigen::MatrixXd A(3, 3);
   A = Eigen::MatrixXd::Identity(3, 3) * 13;
 
-  auto fvLambda  = [&](auto&& x) { return f2vNL<double>(x, A, b); };
-  auto dfvLambda = [&](auto&& x) {
-    auto xR = x.template cast<autodiff::dual>().eval();
+  auto fvLambda  = [&](auto&& x_) { return f2vNL<double>(x_, A, b); };
+  auto dfvLambda = [&](auto&& x_) {
+    auto xR = x_.template cast<autodiff::dual>().eval();
     return df2vNL(xR, A, b);
   };
-  auto ddfvLambda = [&](auto&& x) {
-    auto xR = x.template cast<autodiff::dual2nd>().eval();
+  auto ddfvLambda = [&](auto&& x_) {
+    auto xR = x_.template cast<autodiff::dual2nd>().eval();
     return ddf2vNL(xR, A, b);
   };
 
   auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
+
+  EXPECT_TRUE(checkGradient(nonLinOp,false));
+  EXPECT_TRUE(checkHessian(nonLinOp,false));
 
   auto subOperator = nonLinOp.subOperator<1, 2>();
 
