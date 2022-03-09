@@ -94,6 +94,7 @@ bool checkGradient(
     title("Gradient check");
     f->show();
   }
+  nonLinOp.template updateAll();
   return checkPassed;
 }
 
@@ -182,5 +183,6 @@ bool checkHessian(
     title("Hessian check");
     f->show();
   }
+  nonLinOp.template updateAll();
   return checkPassed;
 }

@@ -102,31 +102,25 @@ namespace Ikarus::FiniteElements {
       hessian(f, wrt(dx), at(dx), e, g, h);
       Eigen::MatrixXd rieHess(localViewReduced.size(), localViewReduced.size());
       const auto& m = par.sols[0].get();
-      std::vector<Ikarus::UnitVector<double, directorDim> const*> mLocal;
-      auto& first_child = localView_.tree().child(0);
-      const auto& fe    = first_child.finiteElement();
+      const auto& fe    = localView_.tree().child(0).finiteElement();
       for (auto i = 0U; i < fe.size(); ++i) {
-        auto globalIndex = localView_.index(localView_.tree().child(0).localIndex(i));
-        mLocal.push_back( &m[globalIndex[0]]);
-//        std::cout<<*mLocal.back()<<std::endl;
-      }
-      for (int i = 0; auto& mSingleI : mLocal) {
-        size_t indexRedI = i * directorCorrectionDim;
-        size_t indexI    = i * directorDim;
-        auto BLAIT       = mSingleI->orthonormalFrame().transpose();
-        for (int j = 0; auto& mSingleJ : mLocal) {
-          size_t indexRedJ = j * directorCorrectionDim;
-          size_t indexJ    = j * directorDim;
-          auto BLAJ        = mSingleJ->orthonormalFrame();
+        const size_t indexRedI = i * directorCorrectionDim;
+        const size_t indexI    = i * directorDim;
+        const auto globalIndexI = localView_.index(localView_.tree().child(0).localIndex(i));
+        const auto BLAIT       = m[globalIndexI[0]].orthonormalFrame().transpose();
+        for (auto j = 0U; j < fe.size(); ++j) {
+          const size_t indexRedJ = j * directorCorrectionDim;
+          const size_t indexJ    = j * directorDim;
+          const auto globalIndexJ = localView_.index(localView_.tree().child(0).localIndex(j));
+          const auto BLAJ        = m[globalIndexJ[0]].orthonormalFrame();
           rieHess.block<directorCorrectionDim, directorCorrectionDim>(indexRedI, indexRedJ)
               = BLAIT * h.block<directorDim, directorDim>(indexI, indexJ) * BLAJ;
-          ++j;
         }
         rieHess.block<directorCorrectionDim, directorCorrectionDim>(indexRedI, indexRedI)
-            -= mSingleI->getValue().dot(g.template segment<directorDim>(indexI))
+            -= m[globalIndexI[0]].getValue().dot(g.template segment<directorDim>(indexI))
                * Eigen::Matrix<double, directorCorrectionDim, directorCorrectionDim>::Identity();
-        ++i;
       }
+
       return rieHess;
     }
 
@@ -142,16 +136,13 @@ namespace Ikarus::FiniteElements {
       std::vector<Ikarus::UnitVector<double, directorDim> const*> mLocal;
       auto& first_child = localView_.tree().child(0);
       const auto& fe    = first_child.finiteElement();
+
       for (auto i = 0U; i < fe.size(); ++i) {
         auto globalIndex = localView_.index(localView_.tree().child(0).localIndex(i));
-        mLocal.push_back( &m[globalIndex[0]]);
-      }
-
-      for (int i = 0; auto& mSingle : mLocal) {
         size_t indexRed = i * directorCorrectionDim;
         size_t index    = i * directorDim;
         rieGrad.template segment<directorCorrectionDim>(indexRed)
-            = mSingle->orthonormalFrame().transpose() * eukGrad.template segment<directorDim>(index);
+            = m[globalIndex[0]].orthonormalFrame().transpose() * eukGrad.template segment<directorDim>(index);
       }
       return rieGrad;
     }
@@ -204,7 +195,7 @@ namespace Ikarus::FiniteElements {
         const auto gradm = (Pm * DefoGeo<ScalarType>::jacobianTransposed(dNdx, mN).transpose()).eval();
 
         const Eigen::Vector<double, directorDim> Hbar = volumeLoad(toEigenVector(gp.position()), lambda);
-        energy += (0.5 * (gradm.transpose() * gradm).trace() - 0*mVn.dot(Hbar)) * geo.integrationElement(gp.position())
+        energy += (0.5 * (gradm.transpose() * gradm).trace() - mVn.dot(Hbar)) * geo.integrationElement(gp.position())
                   * gp.weight();
       }
       return energy;

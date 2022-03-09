@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
   //  gridFactory.insertBoundarySegment({6, 1}, std::make_shared<UnitCircleBoundary>(corners0[5], corners0[0]));
 
   auto grid = gridFactory.createGrid();
-
+  grid->globalRefine(5);
   auto gridView = grid->leafGridView();
 
   using namespace Dune::Functions::BasisFactory;
@@ -115,24 +115,13 @@ int main(int argc, char** argv) {
   auto volumeLoad = [](auto& globalCoord, auto& lamb) {
     Eigen::Vector<double, directorDim> fext;
     fext.setZero();
-    fext[1] = 2 * lamb;
     fext[0] = lamb;
+    fext[1] = lamb;
     return fext;
   };
 
   for (auto& element : elements(gridView))
     fes.emplace_back(basisEmbedded, basisRie, element, mat, volumeLoad);
-
-  std::vector<bool> dirichletFlags(basisRie.size(), false);
-
-  Dune::Functions::forEachBoundaryDOF(basisRie, [&](auto&& localIndex, auto&& localView, auto&& intersection) {
-    if (std::abs(intersection.geometry().center()[1]) < 1e-8) {
-      dirichletFlags[localView.index(localIndex)[0]] = true;
-    }
-  });
-
-  auto denseAssembler  = DenseFlatAssembler(basisRie, fes, dirichletFlags);
-  auto sparseAssembler = SparseFlatAssembler(basisRie, fes, dirichletFlags);
 
   using DirectorVector = Dune::BlockVector<Ikarus::UnitVector<double, directorDim>>;
   DirectorVector mBlocked(basisEmbedded.size());
@@ -141,6 +130,25 @@ int main(int argc, char** argv) {
   }
   auto mEigen = Ikarus::LinearAlgebra::viewAsFlatEigenVector(mBlocked);
 
+
+  std::vector<bool> dirichletFlagsEmbedded(basisEmbedded.size(), false);
+
+//  Dune::Functions::forEachBoundaryDOF(basisEmbedded, [&](auto&& localIndex, auto&& localView, auto&& intersection) {
+//    dirichletFlagsEmbedded[localView.index(localIndex)[0]] = true;
+//
+//
+//  });
+  std::vector<bool> dirichletFlags(basisRie.size(), false);
+//  Dune::Functions::forEachBoundaryDOF(basisRie, [&](auto&& localIndex, auto&& localView, auto&& intersection) {
+//    dirichletFlags[localView.index(localIndex)[0]] = true;
+//
+//  });
+
+  auto denseAssembler  = DenseFlatAssembler(basisRie, fes, dirichletFlags);
+  auto sparseAssembler = SparseFlatAssembler(basisRie, fes, dirichletFlags);
+
+
+
   double lambda = 0.0;
 
   auto residualFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
@@ -148,7 +156,7 @@ int main(int argc, char** argv) {
     req.sols.emplace_back(disp);
     req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
     req.matrixAffordances = Ikarus::MatrixAffordances::stiffness;
-    return denseAssembler.getVector(req);
+    return denseAssembler.getReducedVector(req);
   };
 
   auto hessianFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
@@ -156,7 +164,7 @@ int main(int argc, char** argv) {
     req.sols.emplace_back(disp);
     req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
     req.matrixAffordances = Ikarus::MatrixAffordances::stiffness;
-    return sparseAssembler.getMatrix(req);
+    return sparseAssembler.getReducedMatrix(req);
   };
 
   auto energyFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto {
@@ -181,26 +189,27 @@ int main(int argc, char** argv) {
   auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, residualFunction, hessianFunction),
                                             parameter(mBlocked, lambda));
 
-  assert(checkHessian(nonLinOp, true,std::function([&](DirectorVector& x, const Eigen::VectorXd& d) {
-                         auto dispEigen = Ikarus::LinearAlgebra::viewAsFlatEigenVector(x);
-                         for (auto i = 0U; i < x.size(); ++i) {
-                           size_t indexStartI = i * x[0].correctionSize;
-                           x[i] += d.segment<directorCorrectionDim>(indexStartI);
-                         }
-                       })));
+  auto updateFunction = std::function([&](DirectorVector& x, const Eigen::VectorXd& d) {
+    auto dFull= denseAssembler.createFullVector(d);
+    for (auto i = 0U; i < x.size(); ++i) {
+      size_t indexStartI = i * x[0].correctionSize;
+      if(dirichletFlagsEmbedded[i]==true) {
+        continue;
+      }
+      x[i] += dFull.segment<directorCorrectionDim>(indexStartI);
+    }
+  });
+
+  (checkGradient(nonLinOp, true,updateFunction));
+
+  (checkHessian(nonLinOp, true,updateFunction));
 
 
-  assert(nonLinOp.value() == e);
+  assert(Dune::FloatCmp::eq(nonLinOp.value() ,e));
   assert(nonLinOp.derivative().isApprox(g));
   assert(nonLinOp.secondDerivative().isApprox(h));
   //
-  auto nr = Ikarus::makeTrustRegion(nonLinOp, std::function([&](DirectorVector& x, const Eigen::VectorXd& d) {
-                                      auto dispEigen = Ikarus::LinearAlgebra::viewAsFlatEigenVector(x);
-                                      for (auto i = 0U; i < x.size(); ++i) {
-                                        size_t indexStartI = i * x[0].correctionSize;
-                                        x[i] += d.segment<directorCorrectionDim>(indexStartI);
-                                      }
-                                    }));
+  auto nr = Ikarus::makeTrustRegion(nonLinOp, updateFunction);
   nr->setup({.verbosity = 1,
              .maxiter   = 100000,
              .grad_tol  = 1e-8,
@@ -213,19 +222,19 @@ int main(int argc, char** argv) {
 
   //  nr.subscribeAll(nonLinearSolverObserver);
 
-  auto lc = Ikarus::LoadControl(nr, 1, {0, 1});
+  auto lc = Ikarus::LoadControl(nr, 1, {0, 10});
 
   //  lc.subscribeAll(vtkWriter);
   std::cout << "Energy before: " << nonLinOp.value() << std::endl;
-  std::cout << mBlocked;
+//  std::cout << mBlocked;
   lc.run();
   nonLinOp.update<0>();
   std::cout << "Energy after: " << nonLinOp.value() << std::endl;
   auto wGlobalFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, directorDim>>(
       basisEmbedded, mBlocked);
   Dune::SubsamplingVTKWriter vtkWriter(gridView, Dune::refinementLevels(1));
-  vtkWriter.addVertexData(wGlobalFunc, Dune::VTK::FieldInfo("m", Dune::VTK::FieldInfo::Type::scalar, directorDim));
+  vtkWriter.addVertexData(wGlobalFunc, Dune::VTK::FieldInfo("m", Dune::VTK::FieldInfo::Type::vector, directorDim));
   vtkWriter.write("Magnet");
 
-  std::cout << mBlocked;
+//  std::cout << mBlocked;
 }
