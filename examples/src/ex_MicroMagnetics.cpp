@@ -109,14 +109,14 @@ int main(int argc, char** argv) {
 
   draw(gridView);
 
-  Ikarus::FiniteElements::MagneticMaterial mat({.K = 2e4, .ms = 1.432e6});
+  Ikarus::FiniteElements::MagneticMaterial mat({.A=1.0e-11,.K = 2e4, .ms = 1.432e6});
   std::vector<Ikarus::FiniteElements::MicroMagneticsWithVectorPotential<decltype(basisEmbedded), decltype(basisRie)>>
       fes;
   auto volumeLoad = [](auto& globalCoord, auto& lamb) {
     Eigen::Vector<double, directorDim> fext;
     fext.setZero();
-    fext[0] = lamb;
-    fext[1] = lamb;
+    fext[0] = 0;
+    fext[1] = 0;
     return fext;
   };
 
@@ -132,17 +132,24 @@ int main(int argc, char** argv) {
 
 
   std::vector<bool> dirichletFlagsEmbedded(basisEmbedded.size(), false);
-
-//  Dune::Functions::forEachBoundaryDOF(basisEmbedded, [&](auto&& localIndex, auto&& localView, auto&& intersection) {
-//    dirichletFlagsEmbedded[localView.index(localIndex)[0]] = true;
-//
-//
-//  });
   std::vector<bool> dirichletFlags(basisRie.size(), false);
-//  Dune::Functions::forEachBoundaryDOF(basisRie, [&](auto&& localIndex, auto&& localView, auto&& intersection) {
-//    dirichletFlags[localView.index(localIndex)[0]] = true;
-//
-//  });
+
+  Dune::Functions::forEachBoundaryDOF(basisEmbedded, [&](auto&& localIndex, auto&& localView, auto&& intersection) {
+    dirichletFlagsEmbedded[localView.index(localIndex)[0]] = true;
+    if(intersection.geometry().center()[1]<1e-8)
+      mBlocked[localView.index(localIndex)[0]].setValue( Eigen::Vector<double,directorDim>::UnitX());
+    else if(intersection.geometry().center()[1]>1-1e-8)
+      mBlocked[localView.index(localIndex)[0]].setValue(Eigen::Vector<double,directorDim>::UnitX());
+    else if(intersection.geometry().center()[0]>1-1e-8)
+      mBlocked[localView.index(localIndex)[0]].setValue(Eigen::Vector<double,directorDim>::UnitY());
+    else if(intersection.geometry().center()[0]<1e-8)
+      mBlocked[localView.index(localIndex)[0]].setValue(-Eigen::Vector<double,directorDim>::UnitZ());
+  });
+
+  Dune::Functions::forEachBoundaryDOF(basisRie, [&](auto&& localIndex, auto&& localView, auto&& intersection) {
+    dirichletFlags[localView.index(localIndex)[0]] = true;
+
+  });
 
   auto denseAssembler  = DenseFlatAssembler(basisRie, fes, dirichletFlags);
   auto sparseAssembler = SparseFlatAssembler(basisRie, fes, dirichletFlags);
@@ -176,15 +183,15 @@ int main(int argc, char** argv) {
   };
   std::cout << mBlocked;
   auto& h = hessianFunction(mBlocked, lambda);
-  std::cout << h << std::endl;
+std::cout << h << std::endl;
 
   auto& g = residualFunction(mBlocked, lambda);
-  std::cout << g << std::endl;
+ std::cout << g << std::endl;
 
   auto e = energyFunction(mBlocked, lambda);
-  std::cout << e << std::endl;
+ std::cout << e << std::endl;
 
-  assert(g.size() == gridView.size(2) * directorCorrectionDim && "The returned gradient has incorrect size");
+  assert(g.size() == gridView.size(2) * directorCorrectionDim - std::ranges::count(dirichletFlags,true) && "The returned gradient has incorrect size");
 
   auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, residualFunction, hessianFunction),
                                             parameter(mBlocked, lambda));
@@ -232,9 +239,12 @@ int main(int argc, char** argv) {
   std::cout << "Energy after: " << nonLinOp.value() << std::endl;
   auto wGlobalFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, directorDim>>(
       basisEmbedded, mBlocked);
-  Dune::SubsamplingVTKWriter vtkWriter(gridView, Dune::refinementLevels(1));
+  Dune::VTKWriter vtkWriter(gridView);
   vtkWriter.addVertexData(wGlobalFunc, Dune::VTK::FieldInfo("m", Dune::VTK::FieldInfo::Type::vector, directorDim));
   vtkWriter.write("Magnet");
 
+  for(auto& mS : mBlocked)
+    if(not Dune::FloatCmp::eq(mS.getValue().norm(),1.0))
+      std::cout<<"wrong director found "<<mS.getValue().transpose()<<std::endl;
 //  std::cout << mBlocked;
 }

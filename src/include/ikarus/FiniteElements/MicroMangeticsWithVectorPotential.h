@@ -46,6 +46,7 @@
 namespace Ikarus::FiniteElements {
 
   struct MagneticMaterial {
+    double A{0.0};
     double K{0.0};
     double mu0{4 * ::std::numbers::pi * 1e-7};
     double ms{0.0};
@@ -71,7 +72,8 @@ namespace Ikarus::FiniteElements {
           material{p_material} {
       localView_.bind(element);
       localViewReduced.bind(element);
-      const int order = 2;
+      const int order = 4 * localView_.tree().child(0).finiteElement().localBasis().order();
+//      std::cout<<"Order:"<<order<<std::endl;
       localBasis      = Ikarus::LocalBasis(localView_.tree().child(0).finiteElement().localBasis());
       localBasis.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order), 0, 1);
     }
@@ -81,18 +83,16 @@ namespace Ikarus::FiniteElements {
     using DefoGeo = Ikarus::Geometry::GeometryWithExternalInput<ST, directorDim, Traits::mydim>;
 
     using GlobalIndex = typename LocalViewReduced::MultiIndex;
-    [[nodiscard]] std::vector<GlobalIndex> globalIndices() const {
+    void globalIndices(std::vector<GlobalIndex>& globalIndices) const {
       const auto& fe = localViewReduced.tree().child(0).finiteElement();
-      std::vector<GlobalIndex> globalIndices;
       for (size_t i = 0; i < fe.size(); ++i) {
         for (int j = 0; j < directorCorrectionDim; ++j) {
           globalIndices.push_back(localViewReduced.index((localViewReduced.tree().child(j).localIndex(i))));
         }
       }
-      return globalIndices;
     }
 
-    [[nodiscard]] typename Traits::MatrixType calculateMatrix(const FERequirementType& par) const {
+    void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& hred) const {
       Eigen::VectorXdual2nd dx(localView_.size());
       dx.setZero();
       auto f = [&](auto& x) { return this->calculateScalarImpl(par, x); };
@@ -100,38 +100,36 @@ namespace Ikarus::FiniteElements {
       Eigen::VectorXd g;
       autodiff::dual2nd e;
       hessian(f, wrt(dx), at(dx), e, g, h);
-      Eigen::MatrixXd rieHess(localViewReduced.size(), localViewReduced.size());
-      const auto& m = par.sols[0].get();
-      const auto& fe    = localView_.tree().child(0).finiteElement();
+      const auto& m  = par.sols[0].get();
+      const auto& fe = localView_.tree().child(0).finiteElement();
       for (auto i = 0U; i < fe.size(); ++i) {
-        const size_t indexRedI = i * directorCorrectionDim;
-        const size_t indexI    = i * directorDim;
+        const size_t indexRedI  = i * directorCorrectionDim;
+        const size_t indexI     = i * directorDim;
         const auto globalIndexI = localView_.index(localView_.tree().child(0).localIndex(i));
-        const auto BLAIT       = m[globalIndexI[0]].orthonormalFrame().transpose();
+        const auto BLAIT        = m[globalIndexI[0]].orthonormalFrame().transpose();
         for (auto j = 0U; j < fe.size(); ++j) {
-          const size_t indexRedJ = j * directorCorrectionDim;
-          const size_t indexJ    = j * directorDim;
+          const size_t indexRedJ  = j * directorCorrectionDim;
+          const size_t indexJ     = j * directorDim;
           const auto globalIndexJ = localView_.index(localView_.tree().child(0).localIndex(j));
-          const auto BLAJ        = m[globalIndexJ[0]].orthonormalFrame();
-          rieHess.block<directorCorrectionDim, directorCorrectionDim>(indexRedI, indexRedJ)
+          const auto BLAJ         = m[globalIndexJ[0]].orthonormalFrame();
+          hred.template block<directorCorrectionDim, directorCorrectionDim>(indexRedI, indexRedJ)
               = BLAIT * h.block<directorDim, directorDim>(indexI, indexJ) * BLAJ;
         }
-        rieHess.block<directorCorrectionDim, directorCorrectionDim>(indexRedI, indexRedI)
+        hred.template block<directorCorrectionDim, directorCorrectionDim>(indexRedI, indexRedI)
             -= m[globalIndexI[0]].getValue().dot(g.template segment<directorDim>(indexI))
                * Eigen::Matrix<double, directorCorrectionDim, directorCorrectionDim>::Identity();
       }
-
-      return rieHess;
     }
 
-    [[nodiscard]] typename Traits::VectorType calculateVector(const FERequirementType& par) const {
+    int size() const { return localViewReduced.size(); }
+
+    void calculateVector(const FERequirementType& par, typename Traits::VectorType& rieGrad) const {
       Eigen::VectorXdual dx(localView_.size());
       dx.setZero();
-      auto f       = [&](auto& x) { return this->calculateScalarImpl(par, x); };
+      auto f = [&](auto& x) { return this->calculateScalarImpl(par, x); };
       Eigen::VectorXd eukGrad;
       autodiff::dual e;
-      autodiff::gradient(f, wrt(dx), at(dx),e,eukGrad);
-      Eigen::VectorXd rieGrad(localViewReduced.size());
+      autodiff::gradient(f, wrt(dx), at(dx), e, eukGrad);
       const auto& m = par.sols[0].get();
       std::vector<Ikarus::UnitVector<double, directorDim> const*> mLocal;
       auto& first_child = localView_.tree().child(0);
@@ -139,12 +137,11 @@ namespace Ikarus::FiniteElements {
 
       for (auto i = 0U; i < fe.size(); ++i) {
         auto globalIndex = localView_.index(localView_.tree().child(0).localIndex(i));
-        size_t indexRed = i * directorCorrectionDim;
-        size_t index    = i * directorDim;
+        size_t indexRed  = i * directorCorrectionDim;
+        size_t index     = i * directorDim;
         rieGrad.template segment<directorCorrectionDim>(indexRed)
             = m[globalIndex[0]].orthonormalFrame().transpose() * eukGrad.template segment<directorDim>(index);
       }
-      return rieGrad;
     }
 
     [[nodiscard]] typename Traits::ScalarType calculateScalar(const FERequirementType& par) const {
@@ -164,39 +161,36 @@ namespace Ikarus::FiniteElements {
       const auto& fe    = first_child.finiteElement();
       Eigen::Matrix<ScalarType, directorDim, Eigen::Dynamic> mN;
       mN.setZero(Eigen::NoChange, fe.size());
-      for (auto i = 0U; i < fe.size(); ++i)
-      {  auto globalIndex = localView_.index(localView_.tree().child(0).localIndex(i));
-          //          std::cout<<globalIndex[0]<<" "<<globalIndex[1]<<" "<<"i: "<< i <<" k2: "<<k2<<std::endl;
-          mN.col(i) = dx.template segment<directorDim>(i*directorDim) + m[globalIndex[0]].getValue();
-        }
+      for (auto i = 0U; i < fe.size(); ++i) {
+        auto globalIndex = localView_.index(localView_.tree().child(0).localIndex(i));
+        mN.col(i)        = dx.template segment<directorDim>(i * directorDim) + m[globalIndex[0]].getValue();
+      }
 
-//      std::cout << "mN" << std::endl;
-//      std::cout << mN << std::endl;
       ScalarType energy = 0.0;
-      const int order   = 2 * (fe.localBasis().order());
-//      const auto& rule  = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
 
       const auto geo = localView_.element().geometry();
 
       for (const auto& [gpIndex, gp, N, dN] : localBasis.viewOverFunctionAndJacobian()) {
         const auto J = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
-        Eigen::Vector<ScalarType, directorDim> mV;
-        mV.setZero();
+        Eigen::Vector<ScalarType, directorDim> magnetizationEuk;
+        magnetizationEuk.setZero();
 
         for (int i = 0; i < N.size(); ++i)
-          mV += mN.col(i) * N[i];
-         Eigen::Vector<ScalarType, directorDim> mVn = mV;
-         mVn.normalize();
-//        std::cout<<mVn<<std::endl;
-        const ScalarType mLength                         = mV.norm();
+          magnetizationEuk += mN.col(i) * N[i];
+        const Eigen::Vector<ScalarType, directorDim> normalizedMag = magnetizationEuk.normalized();
+
+        const ScalarType mLength = magnetizationEuk.norm();
         const Eigen::Matrix<ScalarType, directorDim, directorDim> Pm
-            = (Eigen::Matrix<ScalarType, directorDim, directorDim>::Identity() - mVn * mVn.transpose()) / mLength;
+            = (Eigen::Matrix<ScalarType, directorDim, directorDim>::Identity()
+               - normalizedMag * normalizedMag.transpose())
+              / mLength;
         const auto dNdx  = (dN * J.inverse()).eval();
-        const auto gradm = (Pm * DefoGeo<ScalarType>::jacobianTransposed(dNdx, mN).transpose()).eval();
+        Eigen::Matrix<ScalarType,directorDim,Traits::mydim> gradm = (DefoGeo<ScalarType>::jacobianTransposed(dNdx, mN).transpose());
+        gradm = Pm * gradm;
 
         const Eigen::Vector<double, directorDim> Hbar = volumeLoad(toEigenVector(gp.position()), lambda);
-        energy += (0.5 * (gradm.transpose() * gradm).trace() - mVn.dot(Hbar)) * geo.integrationElement(gp.position())
-                  * gp.weight();
+        energy += (0.5 * (gradm.transpose() * gradm).trace() - 2 * normalizedMag.dot(Hbar) / material.ms)
+                  * geo.integrationElement(gp.position()) * gp.weight();
       }
       return energy;
     }
@@ -206,8 +200,7 @@ namespace Ikarus::FiniteElements {
     Ikarus::LocalBasis<
         std::remove_cvref_t<decltype(std::declval<LocalViewEmbedded>().tree().child(0).finiteElement().localBasis())>>
         localBasis;
-    std::function<Eigen::Vector<double, directorDim>(const Eigen::Vector<double, Traits::mydim>&,
-                                                          const double&)>
+    std::function<Eigen::Vector<double, directorDim>(const Eigen::Vector<double, Traits::mydim>&, const double&)>
         volumeLoad;
     MagneticMaterial material;
   };
