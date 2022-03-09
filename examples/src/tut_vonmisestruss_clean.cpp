@@ -34,6 +34,7 @@ template <typename Basis>
 struct Truss : Ikarus::FiniteElements::FEDisplacement<Basis>, Ikarus::AutoDiffFEClean<Truss<Basis>, Basis> {
   using BaseDisp = Ikarus::FiniteElements::FEDisplacement<Basis>;
   using BaseAD   = Ikarus::AutoDiffFEClean<Truss<Basis>, Basis>;
+  using BaseAD::size;
   friend BaseAD;
   using LocalView         = typename Basis::LocalView;
   using FERequirementType = typename BaseAD::FERequirementType;

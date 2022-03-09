@@ -47,9 +47,8 @@ struct Solid : Ikarus::AutoDiffFEClean<Solid<Basis>, Basis> {
   }
 
   using GlobalIndex = typename LocalView::MultiIndex;
-  [[nodiscard]] std::vector<GlobalIndex> globalIndices() const {
+  void globalIndices(std::vector<GlobalIndex>& globalIndices) const {
     const auto& feDisp = localView_.tree().child(_0, 0).finiteElement();
-    std::vector<GlobalIndex> globalIndices;
     for (size_t i = 0; i < feDisp.size(); ++i) {
       for (int j = 0; j < Traits::worlddim; ++j) {
         globalIndices.push_back(localView_.index((localView_.tree().child(_0, j).localIndex(i))));
@@ -60,7 +59,6 @@ struct Solid : Ikarus::AutoDiffFEClean<Solid<Basis>, Basis> {
       globalIndices.push_back(localView_.index((localView_.tree().child(_1).localIndex(i))));
     }
 
-    return globalIndices;
   }
 
 private:

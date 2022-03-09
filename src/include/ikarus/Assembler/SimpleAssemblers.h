@@ -19,9 +19,13 @@ namespace Ikarus {
 
   namespace Impl {
     template <typename FEContainer>
-    requires requires { {std::declval<typename FEContainer::value_type>().globalIndices()}; }
+    requires requires { {std::declval<typename FEContainer::value_type>().globalIndices(std::declval<std::vector<typename FEContainer::value_type::GlobalIndex>&>())}; }
     auto dofsOfElements(const FEContainer& feContainer) {
-      return feContainer | std::views::transform([](auto&& fe) { return fe.globalIndices(); });
+      std::vector<typename FEContainer::value_type::GlobalIndex> dofs;
+      return feContainer | std::views::transform([dofs = move(dofs)]  (auto&& fe)mutable {
+               dofs.resize(0);
+               fe.globalIndices(dofs);
+               return dofs; });
     }
   }  // namespace Impl
   //
@@ -108,8 +112,7 @@ namespace Ikarus {
   template <typename Basis, typename FEContainer>  // requires Ikarus::Concepts::FlatIndexBasis<Basis>
   class SparseFlatAssembler {
     using RequirementType = typename FEContainer::value_type::FERequirementType;
-    //  using ScalarAssembler = ScalarAssembler<Basis, FEContainer>;
-    //  using VectorAssembler = VectorFlatAssembler<Basis, FEContainer>;
+    using GlobalIndex = typename FEContainer::value_type::GlobalIndex;
 
   public:
     SparseFlatAssembler(const Basis& basis, const FEContainer& fes, const std::vector<bool>& dirichFlags)
@@ -141,7 +144,8 @@ namespace Ikarus {
       spMat.coeffs().setZero();
       Eigen::MatrixXd A;
       for (size_t elementIndex = 0; const auto& fe : feContainer) {
-        A = fe.calculateMatrix(fErequirements);
+        A.setZero(fe.size(),fe.size());
+        fe.calculateMatrix(fErequirements,A);
         assert(std::sqrt(elementLinearIndices[elementIndex].size()) == A.rows()
                && "The returned matrix has wrong rowSize!");
         assert(std::sqrt(elementLinearIndices[elementIndex].size()) == A.cols()
@@ -164,9 +168,12 @@ namespace Ikarus {
       if (!arelinearReducedDofsPerElementCreated) createlinearDofsPerElementReduced();
       spMatReduced.coeffs().setZero();
       Eigen::MatrixXd A;
+      std::vector<GlobalIndex> dofs;
       for (size_t elementIndex = 0; const auto& fe : feContainer) {
-        A               = fe.calculateMatrix(fErequirements);
-        const auto dofs = fe.globalIndices();
+        A.setZero(fe.size(),fe.size());
+        dofs.resize(0);
+        fe.calculateMatrix(fErequirements,A);
+        fe.globalIndices(dofs);
         assert(dofs.size() == static_cast<unsigned>(A.rows()) && "The returned matrix has wrong rowSize!");
         assert(dofs.size() == static_cast<unsigned>(A.cols()) && "The returned matrix has wrong colSize!");
         Eigen::Index linearIndex = 0;
@@ -192,10 +199,14 @@ namespace Ikarus {
       int estimateOfConnectivity = 8;
       using std::size;
       vectorOfTriples.reserve(estimateOfConnectivity * basis_->gridView().size(GridView::dimension));
-      for (auto&& fe : feContainer)
-        for (auto idi : fe.globalIndices())
-          for (auto idj : fe.globalIndices())
-            vectorOfTriples.emplace_back(idi, idj, 0.0);
+      std::vector<GlobalIndex> dofs;
+      for (auto&& fe : feContainer) {
+        dofs.resize(0);
+        fe.globalIndices(dofs);
+        for (auto idi : dofs)
+          for (auto idj : dofs)
+            vectorOfTriples.emplace_back(idi[0], idj[0], 0.0);
+      }
 
       spMat.setFromTriplets(vectorOfTriples.begin(), vectorOfTriples.end());
       isOccupationPatternCreated = true;
@@ -209,8 +220,10 @@ namespace Ikarus {
       using std::size;
 
       vectorOfTriples.reserve(estimateOfConnectivity * basis_->gridView().size(GridView::dimension));
+      std::vector<GlobalIndex> dofs;
       for (auto& fe : feContainer) {
-        const auto dofs = fe.globalIndices();
+        dofs.resize(0);
+        fe.globalIndices(dofs);
         for (auto r = 0U; r < dofs.size(); ++r) {
           if (dirichletFlags->at(dofs[r]))
             continue;
@@ -278,7 +291,7 @@ namespace Ikarus {
   template <typename Basis, typename FEContainer>
   class VectorFlatAssembler {
     using RequirementType = typename FEContainer::value_type::FERequirementType;
-
+    using GlobalIndex = typename FEContainer::value_type::GlobalIndex;
   public:
     VectorFlatAssembler(const Basis& basis, const FEContainer& fes, const std::vector<bool>& dirichFlags)
         : basis_{&basis}, feContainer{fes}, dirichletFlags{&dirichFlags} {
@@ -320,8 +333,15 @@ namespace Ikarus {
   private:
     Eigen::VectorXd& getVectorImpl(const RequirementType& fErequirements) {
       vec.setZero(basis_->size());
-      for (auto& fe : feContainer)
-        vec(fe.globalIndices()) += fe.calculateVector(fErequirements);
+      Eigen::VectorXd vecLocal;
+      std::vector<GlobalIndex> dofs;
+      for (auto& fe : feContainer) {
+        dofs.resize(0);
+        vecLocal.setZero(fe.size());
+        fe.globalIndices(dofs);
+        fe.calculateVector(fErequirements,vecLocal);
+        vec(dofs) += vecLocal;
+      }
 
       return vec;
     }
@@ -384,6 +404,7 @@ namespace Ikarus {
   class DenseFlatSimpleAssembler {
   public:
     using RequirementType = typename FEContainer::value_type::FERequirementType;
+    using GlobalIndex = typename FEContainer::value_type::GlobalIndex;
     explicit DenseFlatSimpleAssembler(const Basis& basis, const FEContainer& fes, const std::vector<bool>& dirichFlags)
         : basis_{&basis}, feContainer{fes}, dirichletFlags{&dirichFlags} {}
 
@@ -410,12 +431,16 @@ namespace Ikarus {
       requirements.matrixAffordances = p_matrixAffordances;
       requirements.sols.emplace_back(displacement);
       requirements.parameter.insert({Ikarus::FEParameter::loadfactor, lambda});
+      Eigen::MatrixXd matLocal;
+      std::vector<GlobalIndex> dofs;
       for (auto& fe : feContainer) {
-        auto matLoc        = fe.calculateMatrix(requirements);
-        auto globalIndices = fe.globalIndices();
-        for (auto i = 0; auto idi : fe.globalIndices()) {
-          for (auto j = 0; auto idj : fe.globalIndices()) {
-            mat(idi[0], idj[0]) += matLoc(i, j);
+        matLocal.setZero(fe.size(),fe.size());
+        fe.calculateMatrix(requirements,matLocal);
+        dofs.resize(0);
+        fe.globalIndices(dofs);
+        for (auto i = 0; auto idi : dofs) {
+          for (auto j = 0; auto idj : dofs) {
+            mat(idi[0], idj[0]) += matLocal(i, j);
             ++j;
           }
           ++i;
@@ -438,12 +463,14 @@ namespace Ikarus {
       requirements.vectorAffordances = p_vectorAffordances;
       requirements.sols.emplace_back(displacement);
       requirements.parameter.insert({Ikarus::FEParameter::loadfactor, lambda});
+      Eigen::VectorXd vecLocal;
+      std::vector<GlobalIndex> dofs;
       for (auto& fe : feContainer) {
-        //      Ikarus::FiniteElements::NonLinearElasticityFEWithLocalBasis<decltype(localView)> fe(localView, 1000,
-        //      0.3);
-
-        auto vecLocal = fe.calculateVector(requirements);
-        for (int i = 0; auto id : fe.globalIndices()) {
+        vecLocal.setZero(fe.size());
+        dofs.resize(0);
+        fe.calculateVector(requirements,vecLocal);
+        fe.globalIndices(dofs);
+        for (int i = 0; auto id : dofs) {
           vec(id[0]) += vecLocal(i);
           ++i;
         }
@@ -480,6 +507,7 @@ namespace Ikarus {
   class DenseFlatAssembler {
   public:
     using RequirementType = typename FEContainer::value_type::FERequirementType;
+    using GlobalIndex = typename FEContainer::value_type::GlobalIndex;
     explicit DenseFlatAssembler(const Basis& basis, const FEContainer& fes, const std::vector<bool>& dirichFlags)
         : basis_{&basis}, feContainer{fes}, dirichletFlags{&dirichFlags} {
       constraintsBelow_.reserve(basis_->size());
@@ -533,28 +561,36 @@ namespace Ikarus {
     Eigen::VectorXd& getReducedVectorImpl(const RequirementType& fErequirements) {
       vecRed.setZero(reducedSize());
       int reducedCounter = 0;
+      Eigen::VectorXd vecLocal;
+      std::vector<GlobalIndex> dofs;
       for (auto& fe : feContainer) {
-        const auto f    = fe.calculateVector(fErequirements);
-        const auto dofs = fe.globalIndices();
-        assert(static_cast<long int>(dofs.size()) == f.size() && "The returned vector has wrong rowSize!");
+        vecLocal.setZero(fe.size());
+        dofs.resize(0);
+        fe.calculateVector(fErequirements,vecLocal);
+        fe.globalIndices(dofs);
+        assert(static_cast<long int>(dofs.size()) == vecLocal.size() && "The returned vector has wrong rowSize!");
         for (int i = 0; auto&& dofIndex : dofs) {
           if (dirichletFlags->at(dofIndex)) {
             ++reducedCounter;
             ++i;
             continue;
           } else
-            vecRed(dofIndex - constraintsBelow_[dofIndex]) += f[i++];
+            vecRed(dofIndex - constraintsBelow_[dofIndex]) += vecLocal[i++];
         }
       }
       return vecRed;
     }
     Eigen::MatrixXd& getReducedMatrixImpl(const RequirementType& fErequirements) {
       matRed.setZero(reducedSize(), reducedSize());
+      Eigen::MatrixXd matLocal;
+      std::vector<GlobalIndex> dofs;
       for (auto& fe : feContainer) {
-        const auto eleMat = fe.calculateMatrix(fErequirements);
-        const auto dofs   = fe.globalIndices();
-        assert(dofs.size() == static_cast<unsigned>(eleMat.rows()) && "The returned matrix has wrong rowSize!");
-        assert(dofs.size() == static_cast<unsigned>(eleMat.cols()) && "The returned matrix has wrong colSize!");
+        matLocal.setZero(fe.size(),fe.size());
+        dofs.resize(0);
+        fe.calculateMatrix(fErequirements,matLocal);
+        fe.globalIndices(dofs);
+        assert(dofs.size() == static_cast<unsigned>(matLocal.rows()) && "The returned matrix has wrong rowSize!");
+        assert(dofs.size() == static_cast<unsigned>(matLocal.cols()) && "The returned matrix has wrong colSize!");
         for (auto r = 0U; r < dofs.size(); ++r) {
           if (dirichletFlags->at(dofs[r])) {
             continue;
@@ -563,7 +599,7 @@ namespace Ikarus {
               if (dirichletFlags->at(dofs[c])) {
                 continue;
               }
-              matRed(dofs[r] - constraintsBelow_[dofs[r]], dofs[c] - constraintsBelow_[dofs[c]]) += eleMat(r, c);
+              matRed(dofs[r] - constraintsBelow_[dofs[r]], dofs[c] - constraintsBelow_[dofs[c]]) += matLocal(r, c);
             }
           }
         }
@@ -577,12 +613,16 @@ namespace Ikarus {
 
     Eigen::MatrixXd& getMatrixImpl(const RequirementType& fErequirements) {
       mat.setZero(basis_->size(), basis_->size());
+      Eigen::MatrixXd matLocal;
+      std::vector<GlobalIndex> dofs;
       for (auto& fe : feContainer) {
-        auto matLoc        = fe.calculateMatrix(fErequirements);
-        auto globalIndices = fe.globalIndices();
-        for (auto i = 0; auto idi : fe.globalIndices()) {
-          for (auto j = 0; auto idj : fe.globalIndices()) {
-            mat(idi[0], idj[0]) += matLoc(i, j);
+        matLocal.setZero(fe.size(),fe.size());
+        dofs.resize(0);
+        fe.calculateMatrix(fErequirements,matLocal);
+        fe.globalIndices(dofs);
+        for (auto i = 0; auto idi : dofs) {
+          for (auto j = 0; auto idj : dofs) {
+            mat(idi[0], idj[0]) += matLocal(i, j);
             ++j;
           }
           ++i;
