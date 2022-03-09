@@ -55,27 +55,28 @@ namespace Ikarus {
       localdofSize = localView.size();
     }
     using FERequirementType = FErequirements<Eigen::VectorXd>;
-    [[nodiscard]] typename Traits::MatrixType calculateMatrix(const FERequirementType& par) const {
+    void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& h) const {
       Eigen::VectorXdual2nd dx(localdofSize);
+      Eigen::VectorXd g;
+      autodiff::dual2nd e;
       dx.setZero();
       auto f = [&](auto& x) { return this->underlying().calculateScalarImpl(par, x); };
-      return hessian(f, wrt(dx), at(dx));
+      hessian(f, wrt(dx), at(dx), e, g, h);
     }
 
-    [[nodiscard]] typename Traits::VectorType calculateVector(const FERequirementType& par) const {
+    void calculateVector(const FERequirementType& par, typename Traits::VectorType& g) const {
       Eigen::VectorXdual dx(localdofSize);
       dx.setZero();
+      autodiff::dual e;
       auto f = [&](auto& x) { return this->underlying().calculateScalarImpl(par, x); };
-      return gradient(f, wrt(dx), at(dx));
+      gradient(f, wrt(dx), at(dx),e,g);
     }
 
-    [[nodiscard]] auto calculateLocalSystem(const FERequirementType& par) const {
+    void calculateLocalSystem(const FERequirementType& par, typename Traits::MatrixType& h, typename Traits::VectorType& g) const {
       Eigen::VectorXdual2nd dx(localdofSize);
       dx.setZero();
       auto f = [&](auto& x) { return this->underlying().calculateScalarImpl(par, x); };
-      Eigen::VectorXd g;
-      Eigen::MatrixXd h = hessian(f, wrt(dx), at(dx), g);
-      return std::make_tuple(h, g);
+      hessian(f, wrt(dx), at(dx), g,h);
     }
 
     [[nodiscard]] typename Traits::ScalarType calculateScalar(const FERequirementType& par) const {
@@ -83,6 +84,8 @@ namespace Ikarus {
 
       return this->underlying().calculateScalarImpl(par, dx);
     }
+
+    size_t size()const {return localdofSize;}
 
   private:
     RealElement const& underlying() const  // CRTP

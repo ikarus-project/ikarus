@@ -35,6 +35,7 @@ struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<Basis>,
                         Ikarus::AutoDiffFEClean<KirchhoffPlate<Basis>, Basis> {
   using BaseDisp          = Ikarus::FiniteElements::ScalarFieldFE<Basis>;
   using BaseAD            = Ikarus::AutoDiffFEClean<KirchhoffPlate<Basis>, Basis>;
+  using BaseAD::size;
   using LocalView         = typename Basis::LocalView;
   using FERequirementType = typename BaseAD::FERequirementType;
 
