@@ -62,7 +62,7 @@ bool checkGradient(
   const auto [poly, range]           = Ikarus::findLineSegment(tE.array().log10(), yE.array().log10(), rangeSize);
   spdlog::info("Gradient check:");
   spdlog::info("The slope should be 2. It seems to be {}.", poly.coefficients()[1]);
-  bool checkPassed = Dune::FloatCmp::eq(2.0, poly.coefficients()[1], 1e-4);
+  const bool checkPassed = Dune::FloatCmp::eq(2.0, poly.coefficients()[1], 1e-4);
   if (checkPassed)
     spdlog::info("We consider this as sufficient.");
   else
@@ -150,7 +150,7 @@ bool checkHessian(
   const auto [poly, range]           = Ikarus::findLineSegment(tE.array().log10(), yE.array().log10(), rangeSize);
   spdlog::info("Hessian check:");
   spdlog::info("The slope should be 3. It seems to be {}.", poly.coefficients()[1]);
-  bool checkPassed = Dune::FloatCmp::eq(3.0, poly.coefficients()[1], 1e-3);
+  const bool checkPassed = Dune::FloatCmp::eq(3.0, poly.coefficients()[1], 1e-2);
 
   if (checkPassed)
     spdlog::info("We consider this as sufficient.");

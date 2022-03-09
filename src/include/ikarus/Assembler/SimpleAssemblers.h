@@ -17,17 +17,17 @@
 
 namespace Ikarus {
 
-  namespace Impl {
-    template <typename FEContainer>
-    requires requires { {std::declval<typename FEContainer::value_type>().globalIndices(std::declval<std::vector<typename FEContainer::value_type::GlobalIndex>&>())}; }
-    auto dofsOfElements(const FEContainer& feContainer) {
-      std::vector<typename FEContainer::value_type::GlobalIndex> dofs;
-      return feContainer | std::views::transform([dofs = move(dofs)]  (auto&& fe)mutable {
-               dofs.resize(0);
-               fe.globalIndices(dofs);
-               return dofs; });
-    }
-  }  // namespace Impl
+//  namespace Impl {
+//    template <typename FEContainer>
+//    requires requires { {std::declval<typename FEContainer::value_type>().globalIndices(std::declval<std::vector<typename FEContainer::value_type::GlobalIndex>&>())}; }
+//    auto dofsOfElements(const FEContainer& feContainer) {
+//      std::vector<typename FEContainer::value_type::GlobalIndex> dofs;
+//      return feContainer | std::views::transform([dofs = move(dofs)]  (auto&& fe)mutable {
+//               dofs.resize(0);
+//               fe.globalIndices(dofs);
+//               return dofs; });
+//    }
+//  }  // namespace Impl
   //
   //  template <typename FEManager, typename DirichletManager>
   //  class DenseMatrixAssembler {
@@ -243,10 +243,13 @@ namespace Ikarus {
 
     // This function save the indices of each element in the underlying vector which stores the sparse matrix entries
     void createlinearDofsPerElement() {
-      for (auto&& dofsOfElement : Impl::dofsOfElements(feContainer)) {
-        elementLinearIndices.emplace_back(Dune::Power<2>::eval(dofsOfElement.size()));
-        for (Eigen::Index linearIndexOfElement = 0; auto&& c : dofsOfElement)
-          for (auto&& r : dofsOfElement)
+      std::vector<GlobalIndex> dofs;
+      for (auto&& fe : feContainer) {
+        dofs.resize(0);
+        fe.globalIndices(dofs);
+        elementLinearIndices.emplace_back(Dune::Power<2>::eval(dofs.size()));
+        for (Eigen::Index linearIndexOfElement = 0; auto&& c : dofs)
+          for (auto&& r : dofs)
             elementLinearIndices.back()[linearIndexOfElement++] = spMat.getLinearIndex(r, c);
       }
       arelinearDofsPerElementCreated = true;
@@ -254,7 +257,10 @@ namespace Ikarus {
 
     // This function save the indices of each element in the underlying vector which stores the sparse matrix entries
     void createlinearDofsPerElementReduced() {
-      for (auto&& dofs : Impl::dofsOfElements(feContainer)) {
+      std::vector<GlobalIndex> dofs;
+      for (auto&& fe : feContainer) {
+        dofs.resize(0);
+        fe.globalIndices(dofs);
         elementLinearReducedIndices.emplace_back();
         for (auto r = 0U; r < dofs.size(); ++r) {
           if (dirichletFlags->at(dofs[r])) continue;
