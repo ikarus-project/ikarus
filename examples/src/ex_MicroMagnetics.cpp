@@ -181,7 +181,7 @@ int main(int argc, char** argv) {
   auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, residualFunction, hessianFunction),
                                             parameter(mBlocked, lambda));
 
-  assert(checkGradient(nonLinOp, std::function([&](DirectorVector& x, const Eigen::VectorXd& d) {
+  assert(checkHessian(nonLinOp, true,std::function([&](DirectorVector& x, const Eigen::VectorXd& d) {
                          auto dispEigen = Ikarus::LinearAlgebra::viewAsFlatEigenVector(x);
                          for (auto i = 0U; i < x.size(); ++i) {
                            size_t indexStartI = i * x[0].correctionSize;
