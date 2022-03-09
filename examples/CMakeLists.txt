@@ -4,6 +4,8 @@ project(IkarusExamples LANGUAGES CXX)
 
 file(GLOB programSourceFiles CONFIGURE_DEPENDS src/*.cpp)
 include_directories(../libAddons/eigen/eigenAddons)
+ADD_CUSTOM_TARGET(AllExamples)
+
 foreach(programSourceFile ${programSourceFiles})
   get_filename_component(programName ${programSourceFile} NAME_WLE)
   add_executable(${programName} ${programSourceFile})
@@ -13,4 +15,5 @@ foreach(programSourceFile ${programSourceFiles})
     ${programName} PUBLIC -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable
                           -Wno-deprecated-copy
   )
+  ADD_DEPENDENCIES(AllExamples ${programName})
 endforeach()
