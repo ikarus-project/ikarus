@@ -41,7 +41,7 @@ namespace Ikarus {
     int debug        = 0;
     double grad_tol  = 1e-6;
     double corr_tol  = 1e-6;
-    double rho_prime = 0.1;
+    double rho_prime = 0.01;
     bool useRand     = false;
     double rho_reg   = 1e6;
     double Delta_bar = 100;
@@ -58,6 +58,7 @@ namespace Ikarus {
   struct AlgoInfo {
     int consecutive_TRplus  = 0;
     int consecutive_TRminus = 0;
+    int consecutive_Rejected = 0;
     std::string stopReasonString;
     std::string trstr;
     std::string accstr;
@@ -253,11 +254,16 @@ namespace Ikarus {
 
           info.acceptProposal = true;
           info.accstr         = "acc";
-
+          info.consecutive_Rejected=0;
         } else {
           info.acceptProposal = false;
           info.accstr         = "REJ";
+
+          if (info.consecutive_Rejected >= 5)
+            innerInfo.Delta /=2;
+          else
           innerInfo.Delta     = std::min(innerInfo.Delta, stats.etaNorm / 2.0);
+              ++info.consecutive_Rejected;
         }
 
         stats.outerIter++;
