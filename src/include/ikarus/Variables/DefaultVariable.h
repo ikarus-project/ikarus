@@ -8,7 +8,7 @@
 
 #include "ikarus/Manifolds/ManifoldInterface.h"
 
-namespace Ikarus::Variable {
+namespace Ikarus {
 
   template <Concepts::Manifold Mani, int tag>
   class DefaultVariable {

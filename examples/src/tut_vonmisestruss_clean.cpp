@@ -128,8 +128,8 @@ int main() {
   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
 
   /// Create Nonlinear solver for controlroutine, i.e. a Newton-Rahpson object
-  auto nr = Ikarus::NewtonRaphson(nonLinOp, std::move(linSolver));
-  nr.setup({.tol = 1e-8, .maxIter = 100});
+  auto nr = Ikarus::makeNewtonRaphson(nonLinOp, std::move(linSolver));
+  nr->setup({.tol = 1e-8, .maxIter = 100});
 
   /// Create Observer to write information of the non-linear solver on the console
   auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
@@ -148,7 +148,7 @@ int main() {
   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<decltype(basis)>>(basis, d, 2);
   vtkWriter->setFieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2);
   vtkWriter->setFileNamePrefix("TestTruss");
-  nr.subscribeAll(nonLinearSolverObserver);
+  nr->subscribeAll(nonLinearSolverObserver);
 
   /// Create loadcontrol
   auto lc = Ikarus::LoadControl(std::move(nr), loadSteps, {0, 30});

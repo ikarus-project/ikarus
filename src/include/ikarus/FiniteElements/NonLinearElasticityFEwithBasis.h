@@ -56,11 +56,14 @@ namespace Ikarus::FiniteElements {
     friend BaseAD;
     using FERequirementType = FErequirements<Eigen::VectorXd>;
     using LocalView         = typename Basis::LocalView;
+
+    template <typename VolumeLoad>
     NonLinearElasticityFEWithLocalBasis(Basis& globalBasis, const typename LocalView::Element& element, double emod,
-                                        double nu)
+                                        double nu,const VolumeLoad& p_volumeLoad)
         : BaseDisp(globalBasis, element),
           BaseAD(globalBasis, element),
           localView_{globalBasis.localView()},
+          volumeLoad(p_volumeLoad),
           emod_{emod},
           nu_{nu} {
       localView_.bind(element);
@@ -88,7 +91,6 @@ namespace Ikarus::FiniteElements {
         for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
           disp.col(i)(k2) = dx[i * 2 + k2] + d[localView_.index(localView_.tree().child(k2).localIndex(i))[0]];
       ScalarType energy = 0.0;
-
       const int order  = 2 * (fe.localBasis().order());
       const auto& rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
       Eigen::Matrix3<ScalarType> C;
@@ -111,10 +113,7 @@ namespace Ikarus::FiniteElements {
         const auto E      = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
         const auto EVoigt = toVoigt(E);
 
-        Eigen::Vector<double, Traits::worlddim> fext;
-        fext.setZero();
-        fext[1] = 2 * lambda;
-        fext[0] = lambda;
+        Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(toEigenVector(gp.position()),lambda);
         energy += (0.5 * EVoigt.dot(C * EVoigt) - u.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
       }
       return energy;
@@ -124,6 +123,7 @@ namespace Ikarus::FiniteElements {
     Ikarus::LocalBasis<
         std::remove_cvref_t<decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis())>>
         localBasis;
+    std::function<Eigen::Vector<double,Traits::worlddim>(const Eigen::Vector<double,Traits::worlddim>&, const double&)> volumeLoad;
     double emod_;
     double nu_;
   };

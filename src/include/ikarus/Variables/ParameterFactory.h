@@ -11,21 +11,21 @@ namespace Ikarus {
 
   struct FEParameterValuePair {
     FEParameter type{FEParameter::noParameter};
-    Ikarus::Variable::IVariable value;
+    Ikarus::IVariable value;
   };
 
   struct FEParameterFactory {
     auto static createParameter(FEParameter&& feParameter, const int dimension) {
       switch (dimension) {
         case 1:
-          return FEParameterValuePair({feParameter, Ikarus::Variable::VariableFactory::createVariable(
-                                                        Ikarus::Variable::VariableTags::parameter1d)});
+          return FEParameterValuePair({feParameter, Ikarus::VariableFactory::createVariable(
+                                                        Ikarus::VariableTags::parameter1d)});
         case 2:
-          return FEParameterValuePair({feParameter, Ikarus::Variable::VariableFactory::createVariable(
-                                                        Ikarus::Variable::VariableTags::parameter2d)});
+          return FEParameterValuePair({feParameter, Ikarus::VariableFactory::createVariable(
+                                                        Ikarus::VariableTags::parameter2d)});
         case 3:
-          return FEParameterValuePair({feParameter, Ikarus::Variable::VariableFactory::createVariable(
-                                                        Ikarus::Variable::VariableTags::parameter3d)});
+          return FEParameterValuePair({feParameter, Ikarus::VariableFactory::createVariable(
+                                                        Ikarus::VariableTags::parameter3d)});
         default:
           assert(false && "You passed the wrong dimension size to FEParameterFactory::createParameter");
           __builtin_unreachable();

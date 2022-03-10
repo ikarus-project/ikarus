@@ -17,7 +17,7 @@
 namespace Ikarus {
 
   struct VariableIndicesPair {
-    using VariableVector = std::vector<Variable::VariableTags>;
+    using VariableVector = std::vector<VariableTags>;
     using Indices        = std::vector<size_t>;
     Indices indices;
     VariableVector variableVector;

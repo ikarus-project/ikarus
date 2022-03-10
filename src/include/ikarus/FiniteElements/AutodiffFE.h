@@ -81,6 +81,7 @@ namespace Ikarus {
 
     [[nodiscard]] typename Traits::ScalarType calculateScalar(const FERequirementType& par) const {
       Eigen::VectorXd dx(localdofSize);
+      dx.setZero();
 
       return this->underlying().calculateScalarImpl(par, dx);
     }
