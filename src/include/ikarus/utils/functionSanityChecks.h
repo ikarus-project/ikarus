@@ -49,9 +49,7 @@ bool checkGradient(
   };
 
   using namespace matplot;
-  auto f   = figure(true);
-  auto ax1 = gca();
-  hold(ax1, true);
+
   std::vector<double> t = logspace(-8, 0, 100);
   Eigen::Map<Eigen::VectorXd> tE(t.data(), t.size());
   std::vector<double> ftevaluated = transform(t, ftfunc);
@@ -62,13 +60,16 @@ bool checkGradient(
   const auto [poly, range]           = Ikarus::findLineSegment(tE.array().log10(), yE.array().log10(), rangeSize);
   spdlog::info("Gradient check:");
   spdlog::info("The slope should be 2. It seems to be {}.", poly.coefficients()[1]);
-  bool checkPassed = Dune::FloatCmp::eq(2.0, poly.coefficients()[1], 1e-4);
+  const bool checkPassed = Dune::FloatCmp::eq(2.0, poly.coefficients()[1], 1e-4);
   if (checkPassed)
     spdlog::info("We consider this as sufficient.");
   else
     spdlog::info("The gradient seems wrong.");
 
   if (draw) {
+    auto f   = figure(true);
+    auto ax1 = gca();
+    hold(ax1, true);
     std::vector<double> tOfRange(rangeSize);
     std::vector<double> fInRange(rangeSize);
     auto tET = tE(range);
@@ -94,6 +95,7 @@ bool checkGradient(
     title("Gradient check");
     f->show();
   }
+  nonLinOp.template updateAll();
   return checkPassed;
 }
 
@@ -136,9 +138,7 @@ bool checkHessian(
     return value;
   };
   using namespace matplot;
-  auto f   = figure(true);
-  auto ax1 = gca();
-  hold(ax1, true);
+
   std::vector<double> t = logspace(-8, 0, 100);
   Eigen::Map<Eigen::VectorXd> tE(t.data(), t.size());
   std::vector<double> ftevaluated = transform(t, ftfunc);
@@ -149,7 +149,7 @@ bool checkHessian(
   const auto [poly, range]           = Ikarus::findLineSegment(tE.array().log10(), yE.array().log10(), rangeSize);
   spdlog::info("Hessian check:");
   spdlog::info("The slope should be 3. It seems to be {}.", poly.coefficients()[1]);
-  bool checkPassed = Dune::FloatCmp::eq(3.0, poly.coefficients()[1], 1e-3);
+  const bool checkPassed = Dune::FloatCmp::eq(3.0, poly.coefficients()[1], 1e-2);
 
   if (checkPassed)
     spdlog::info("We consider this as sufficient.");
@@ -157,6 +157,9 @@ bool checkHessian(
     spdlog::info("The Hessian seems wrong.");
 
   if (draw) {
+    auto f   = figure(true);
+    auto ax1 = gca();
+    hold(ax1, true);
     std::vector<double> tOfRange(rangeSize);
     std::vector<double> fInRange(rangeSize);
     auto tET = tE(range);
@@ -182,5 +185,6 @@ bool checkHessian(
     title("Hessian check");
     f->show();
   }
+  nonLinOp.template updateAll();
   return checkPassed;
 }

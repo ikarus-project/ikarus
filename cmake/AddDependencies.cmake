@@ -45,7 +45,7 @@ message("Find METIS: ")
 find_package(METIS REQUIRED)
 message("Find SUPERLU: ")
 find_package(SUPERLU REQUIRED)
-
+add_definitions(-DEIGEN_INITIALIZE_MATRICES_BY_NAN)
 message("Find Eigen: ")
 find_package(Eigen3 3.3.9 REQUIRED)
 message("Find spdlog: ")

@@ -135,7 +135,7 @@ TYPED_TEST(NonLinearElasticityLoadControlNRandTR, ComputeMaxDisp) {
   };
 
   auto KFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
-    Ikarus::FErequirements req;
+    Ikarus::FErequirements<Eigen::VectorXd> req;
     req.sols.emplace_back(disp);
     req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
     req.matrixAffordances = Ikarus::MatrixAffordances::stiffness;

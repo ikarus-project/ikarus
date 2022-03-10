@@ -57,7 +57,7 @@ TEST(Assembler, SimpleAssemblersTest) {
     Ikarus::SparseFlatAssembler sparseFlatAssembler(basis, fes, dirichFlags);
     Ikarus::DenseFlatAssembler denseFlatAssembler(basis, fes, dirichFlags);
 
-    Ikarus::FErequirements req;
+    Ikarus::FErequirements<Eigen::VectorXd> req;
     Eigen::VectorXd d(basis.size());
     d.setRandom();
     req.sols.emplace_back(d);
