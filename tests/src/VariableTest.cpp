@@ -19,7 +19,7 @@
 #include "ikarus/utils/utils/algorithms.h"
 
 TEST(DefaultVariableTest, RealTupleDisplacement) {
-  using namespace Ikarus::Variable;
+  using namespace Ikarus;
   auto a = VariableFactory::createVariable(VariableTags::displacement3d);
   auto q = a;
 
@@ -49,11 +49,11 @@ TEST(DefaultVariableTest, RealTupleDisplacement) {
   setValue(b, testVec);
 
   EXPECT_EQ(getValue(b), testVec);
-  for (auto&& varTag : Ikarus::Variable::AllVariableTags)
+  for (auto&& varTag : Ikarus::AllVariableTags)
     auto h = VariableFactory::createVariable(varTag);  // check if all variables can be created
 
   // creating variables with unknown tag is illegal
-  EXPECT_THROW(VariableFactory::createVariable(static_cast<Ikarus::Variable::VariableTags>(-15)), std::logic_error);
+  EXPECT_THROW(VariableFactory::createVariable(static_cast<Ikarus::VariableTags>(-15)), std::logic_error);
 
   std::stringstream testStream;
   testStream << b;
@@ -67,7 +67,7 @@ TEST(DefaultVariableTest, RealTupleDisplacement) {
 static constexpr double tol = 1e-15;
 
 TEST(DefaultVariableTest, UnitVectorDirector) {
-  using namespace Ikarus::Variable;
+  using namespace Ikarus;
   DIRECTOR3D a{DIRECTOR3D::CoordinateType::UnitZ()};
   a.update(Eigen::Vector<double, 2>::UnitX());
   const auto aExpected = Eigen::Vector<double, 3>(1.0 / sqrt(2), 0.0, 1.0 / sqrt(2));
@@ -110,7 +110,7 @@ TEST(DefaultVariableTest, UnitVectorDirector) {
 }
 
 TEST(VariableTest, GenericVariableVectorTest) {
-  using namespace Ikarus::Variable;
+  using namespace Ikarus;
   DISPLACEMENT3D a;
   DISPLACEMENT2D b;
   DISPLACEMENT1D c;

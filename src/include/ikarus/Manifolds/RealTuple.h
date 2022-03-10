@@ -20,6 +20,7 @@ namespace Ikarus::Manifold {
   public:
     /** \brief Type used for coordinates */
     using ctype = ct;
+    using field_type = ct;
 
     /** \brief Size of how much values are needed to store the manifold */
     static constexpr int valueSize = d;
@@ -64,6 +65,19 @@ namespace Ikarus::Manifold {
 
     /** \brief Access to data by const reference */
     ctype &operator[](int i) { return var[i]; }
+
+    auto &operator+=(const CorrectionType &correction) {
+      this->update(correction);
+      return *this;
+    }
+
+    /** \brief size */
+    size_t size() const{ return var.size(); }
+    auto begin() { return var.begin(); }
+    auto end() { return var.end(); }
+
+    auto begin() const { return var.begin(); }
+    auto end()const { return var.end(); }
 
   private:
     CoordinateType var{CoordinateType::Zero()};

@@ -19,6 +19,7 @@
 #include "ikarus/Controlroutines/LoadControl.h"
 #include "ikarus/FiniteElements/NonLinearElasticityFEwithBasis.h"
 #include "ikarus/Solver/NonLinearSolver/NewtonRaphson.hpp"
+#include "ikarus/Solver/NonLinearSolver/TrustRegion.hpp"
 #include "ikarus/basis/basishelper.h"
 #include "ikarus/utils/Observer/controlVTKWriter.h"
 #include "ikarus/utils/Observer/nonLinearSolverLogger.h"
@@ -115,24 +116,27 @@ int main(int argc, char** argv) {
     return sparseAssembler.getMatrix(req);
   };
 
-  auto energyFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto {
-    return denseAssembler.getScalar(potentialEnergy, disp, lambdaLocal);
+  auto energyFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto {
+    return denseAssembler.getScalar(potentialEnergy, disp_, lambdaLocal);
   };
 
   auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, residualFunction, KFunction),
                                             parameter(d, lambda));
 
-  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::s_SimplicialLDLT);
+//  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::s_SimplicialLDLT);
 
-  auto nr                      = Ikarus::NewtonRaphson(nonLinOp.subOperator<1, 2>(), std::move(linSolver));
-  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
+//  auto nr                      = Ikarus::NewtonRaphson(nonLinOp.subOperator<1, 2>(), std::move(linSolver));
+  auto nr                      = Ikarus::makeTrustRegion(nonLinOp);
+  nr->setup({.verbosity = 1, .maxiter = 30, .grad_tol = 1e-8, .corr_tol = 1e-8,.useRand=false,.rho_reg=1e6, .Delta0 = 1});
+
+//  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
 
   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<decltype(basis)>>(basis, d, 2);
   vtkWriter->setFileNamePrefix("Test2Dsolid");
   vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 2);
-  nr.subscribeAll(nonLinearSolverObserver);
+//  nr.subscribeAll(nonLinearSolverObserver);
 
-  auto lc = Ikarus::LoadControl(std::move(nr), 20, {0, 2000});
+  auto lc = Ikarus::LoadControl(nr, 20, {0, 2000});
 
   lc.subscribeAll(vtkWriter);
   std::cout << "Energy before: " << nonLinOp.value() << std::endl;

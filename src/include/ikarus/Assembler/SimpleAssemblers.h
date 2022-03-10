@@ -485,7 +485,6 @@ namespace Ikarus {
     double getScalarImpl(const Ikarus::ScalarAffordances& p_scalarAffordances, const Eigen::VectorXd& displacement,
                          const double& lambda) {
       double scalar = 0.0;
-      vec.setZero(basis_->size());
       RequirementType requirements;
       requirements.scalarAffordances = p_scalarAffordances;
       requirements.sols.emplace_back(displacement);

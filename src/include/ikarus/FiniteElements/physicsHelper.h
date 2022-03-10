@@ -209,20 +209,10 @@ namespace Ikarus {
     }
     ValuePair vp;
   };
-  ConvertLameConstants<YoungsModulusAndPoissonsRatio> convertLameConstants(const YoungsModulusAndPoissonsRatio& p_vp) {
-    return {p_vp};
-  }
-  ConvertLameConstants<YoungsModulusAndShearModulus> convertLameConstants(const YoungsModulusAndShearModulus& p_vp) {
-    return {p_vp};
-  }
-
-  ConvertLameConstants<YoungsModulusAndBulkModulus> convertLameConstants(const YoungsModulusAndBulkModulus& p_vp) {
-    return {p_vp};
-  }
-
+  ConvertLameConstants<YoungsModulusAndPoissonsRatio> convertLameConstants(const YoungsModulusAndPoissonsRatio& p_vp);
+  ConvertLameConstants<YoungsModulusAndShearModulus> convertLameConstants(const YoungsModulusAndShearModulus& p_vp);
+  ConvertLameConstants<YoungsModulusAndBulkModulus> convertLameConstants(const YoungsModulusAndBulkModulus& p_vp);
   ConvertLameConstants<BulkModulusAndLamesFirstParameter> convertLameConstants(
-      const BulkModulusAndLamesFirstParameter& p_vp) {
-    return {p_vp};
-  }
+      const BulkModulusAndLamesFirstParameter& p_vp);
 
 }  // namespace Ikarus
