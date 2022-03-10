@@ -17,17 +17,17 @@
 
 namespace Ikarus {
 
-  namespace Impl {
-    template <typename FEContainer>
-    requires requires { {std::declval<typename FEContainer::value_type>().globalIndices(std::declval<std::vector<typename FEContainer::value_type::GlobalIndex>&>())}; }
-    auto dofsOfElements(const FEContainer& feContainer) {
-      std::vector<typename FEContainer::value_type::GlobalIndex> dofs;
-      return feContainer | std::views::transform([dofs = move(dofs)]  (auto&& fe)mutable {
-               dofs.resize(0);
-               fe.globalIndices(dofs);
-               return dofs; });
-    }
-  }  // namespace Impl
+//  namespace Impl {
+//    template <typename FEContainer>
+//    requires requires { {std::declval<typename FEContainer::value_type>().globalIndices(std::declval<std::vector<typename FEContainer::value_type::GlobalIndex>&>())}; }
+//    auto dofsOfElements(const FEContainer& feContainer) {
+//      std::vector<typename FEContainer::value_type::GlobalIndex> dofs;
+//      return feContainer | std::views::transform([dofs = move(dofs)]  (auto&& fe)mutable {
+//               dofs.resize(0);
+//               fe.globalIndices(dofs);
+//               return dofs; });
+//    }
+//  }  // namespace Impl
   //
   //  template <typename FEManager, typename DirichletManager>
   //  class DenseMatrixAssembler {
@@ -109,7 +109,7 @@ namespace Ikarus {
   //  };
   //
 
-  template <typename Basis, typename FEContainer>  // requires Ikarus::Concepts::FlatIndexBasis<Basis>
+  template <typename Basis, typename FEContainer>  // requires Ikarus::Concepts::FlatIndexBasis<BasisEmbedded>
   class SparseFlatAssembler {
     using RequirementType = typename FEContainer::value_type::FERequirementType;
     using GlobalIndex = typename FEContainer::value_type::GlobalIndex;
@@ -178,11 +178,11 @@ namespace Ikarus {
         assert(dofs.size() == static_cast<unsigned>(A.cols()) && "The returned matrix has wrong colSize!");
         Eigen::Index linearIndex = 0;
         for (auto r = 0U; r < dofs.size(); ++r) {
-          if (dirichletFlags->at(dofs[r]))
+          if (dirichletFlags->at(dofs[r][0]))
             continue;
           else {
             for (auto c = 0U; c < dofs.size(); ++c) {
-              if (dirichletFlags->at(dofs[c])) continue;
+              if (dirichletFlags->at(dofs[c][0])) continue;
               spMatReduced.coeffs()(elementLinearReducedIndices[elementIndex][linearIndex++]) += A(r, c);
             }
           }
@@ -225,12 +225,12 @@ namespace Ikarus {
         dofs.resize(0);
         fe.globalIndices(dofs);
         for (auto r = 0U; r < dofs.size(); ++r) {
-          if (dirichletFlags->at(dofs[r]))
+          if (dirichletFlags->at(dofs[r][0]))
             continue;
           else {
             for (auto c = 0U; c < dofs.size(); ++c) {
-              if (dirichletFlags->at(dofs[c])) continue;
-              vectorOfTriples.emplace_back(dofs[r] - constraintsBelow_[dofs[r]], dofs[c] - constraintsBelow_[dofs[c]],
+              if (dirichletFlags->at(dofs[c][0])) continue;
+              vectorOfTriples.emplace_back(dofs[r][0] - constraintsBelow_[dofs[r][0]], dofs[c][0] - constraintsBelow_[dofs[c][0]],
                                            0.0);
             }
           }
@@ -243,25 +243,31 @@ namespace Ikarus {
 
     // This function save the indices of each element in the underlying vector which stores the sparse matrix entries
     void createlinearDofsPerElement() {
-      for (auto&& dofsOfElement : Impl::dofsOfElements(feContainer)) {
-        elementLinearIndices.emplace_back(Dune::Power<2>::eval(dofsOfElement.size()));
-        for (Eigen::Index linearIndexOfElement = 0; auto&& c : dofsOfElement)
-          for (auto&& r : dofsOfElement)
-            elementLinearIndices.back()[linearIndexOfElement++] = spMat.getLinearIndex(r, c);
+      std::vector<GlobalIndex> dofs;
+      for (auto&& fe : feContainer) {
+        dofs.resize(0);
+        fe.globalIndices(dofs);
+        elementLinearIndices.emplace_back(Dune::Power<2>::eval(dofs.size()));
+        for (Eigen::Index linearIndexOfElement = 0; auto&& c : dofs)
+          for (auto&& r : dofs)
+            elementLinearIndices.back()[linearIndexOfElement++] = spMat.getLinearIndex(r[0], c[0]);
       }
       arelinearDofsPerElementCreated = true;
     }
 
     // This function save the indices of each element in the underlying vector which stores the sparse matrix entries
     void createlinearDofsPerElementReduced() {
-      for (auto&& dofs : Impl::dofsOfElements(feContainer)) {
+      std::vector<GlobalIndex> dofs;
+      for (auto&& fe : feContainer) {
+        dofs.resize(0);
+        fe.globalIndices(dofs);
         elementLinearReducedIndices.emplace_back();
         for (auto r = 0U; r < dofs.size(); ++r) {
-          if (dirichletFlags->at(dofs[r])) continue;
+          if (dirichletFlags->at(dofs[r][0])) continue;
           for (auto c = 0U; c < dofs.size(); ++c) {
-            if (dirichletFlags->at(dofs[c])) continue;
+            if (dirichletFlags->at(dofs[c][0])) continue;
             elementLinearReducedIndices.back().push_back(spMatReduced.getLinearIndex(
-                dofs[r] - constraintsBelow_[dofs[r]], dofs[c] - constraintsBelow_[dofs[c]]));
+                dofs[r][0] - constraintsBelow_[dofs[r][0]], dofs[c][0] - constraintsBelow_[dofs[c][0]]));
           }
         }
       }
@@ -359,7 +365,7 @@ namespace Ikarus {
             ++i;
             continue;
           } else
-            vecRed(dofIndex - constraintsBelow_[dofIndex]) += f[i++];
+            vecRed(dofIndex[0] - constraintsBelow_[dofIndex[0]]) += f[i++];
         }
       }
       return vecRed;
@@ -400,7 +406,7 @@ namespace Ikarus {
     double scal{0.0};
   };
 
-  template <typename Basis, typename FEContainer>  // requires Ikarus::Concepts::FlatIndexBasis<Basis>
+  template <typename Basis, typename FEContainer>  // requires Ikarus::Concepts::FlatIndexBasis<BasisEmbedded>
   class DenseFlatSimpleAssembler {
   public:
     using RequirementType = typename FEContainer::value_type::FERequirementType;
@@ -502,7 +508,7 @@ namespace Ikarus {
     Eigen::VectorXd vec{};
   };
 
-  template <typename Basis, typename FEContainer>  // requires Ikarus::Concepts::FlatIndexBasis<Basis>
+  template <typename Basis, typename FEContainer>  // requires Ikarus::Concepts::FlatIndexBasis<BasisEmbedded>
   class DenseFlatAssembler {
   public:
     using RequirementType = typename FEContainer::value_type::FERequirementType;
@@ -569,12 +575,12 @@ namespace Ikarus {
         fe.globalIndices(dofs);
         assert(static_cast<long int>(dofs.size()) == vecLocal.size() && "The returned vector has wrong rowSize!");
         for (int i = 0; auto&& dofIndex : dofs) {
-          if (dirichletFlags->at(dofIndex)) {
+          if (dirichletFlags->at(dofIndex[0])) {
             ++reducedCounter;
             ++i;
             continue;
           } else
-            vecRed(dofIndex - constraintsBelow_[dofIndex]) += vecLocal[i++];
+            vecRed(dofIndex[0] - constraintsBelow_[dofIndex[0]]) += vecLocal[i++];
         }
       }
       return vecRed;
@@ -591,14 +597,14 @@ namespace Ikarus {
         assert(dofs.size() == static_cast<unsigned>(matLocal.rows()) && "The returned matrix has wrong rowSize!");
         assert(dofs.size() == static_cast<unsigned>(matLocal.cols()) && "The returned matrix has wrong colSize!");
         for (auto r = 0U; r < dofs.size(); ++r) {
-          if (dirichletFlags->at(dofs[r])) {
+          if (dirichletFlags->at(dofs[r][0])) {
             continue;
           } else {
             for (auto c = 0U; c < dofs.size(); ++c) {
-              if (dirichletFlags->at(dofs[c])) {
+              if (dirichletFlags->at(dofs[c][0])) {
                 continue;
               }
-              matRed(dofs[r] - constraintsBelow_[dofs[r]], dofs[c] - constraintsBelow_[dofs[c]]) += matLocal(r, c);
+              matRed(dofs[r][0] - constraintsBelow_[dofs[r][0]], dofs[c][0] - constraintsBelow_[dofs[c][0]]) += matLocal(r, c);
             }
           }
         }

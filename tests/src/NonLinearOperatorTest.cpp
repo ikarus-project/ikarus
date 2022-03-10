@@ -99,6 +99,8 @@ TEST(NonLinearOperator, SecondOrderVectorValuedOperator) {
   auto nonLinOp    = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
 
   EXPECT_TRUE(checkGradient(nonLinOp,false));
+  EXPECT_TRUE(checkHessian(nonLinOp,false));
+
   auto subOperator = nonLinOp.subOperator<1, 2>();
   // Newton method test find root of first derivative
   const double eps  = 1e-14;
@@ -115,6 +117,8 @@ TEST(NonLinearOperator, SecondOrderVectorValuedOperator) {
 
 #include <autodiff/forward/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
+
+
 using namespace autodiff;
 template <typename ScalarType>
 ScalarType f2vNL(const Eigen::VectorX<ScalarType>& x, Eigen::MatrixXd&, Eigen::VectorXd&) {

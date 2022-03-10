@@ -86,8 +86,15 @@ int main(int argc, char** argv) {
   draw(gridView);
   auto localView = basis.localView();
   std::vector<Ikarus::FiniteElements::NonLinearElasticityFEWithLocalBasis<decltype(basis)>> fes;
+  auto volumeLoad = [](auto& globalCoord, auto& lamb)
+  {Eigen::Vector2d fext;
+    fext.setZero();
+    fext[1] = 2 * lamb;
+    fext[0] = lamb;
+    return fext;
+  };
   for (auto& element : elements(gridView))
-    fes.emplace_back(basis, element, 1000, 0.3);
+    fes.emplace_back(basis, element, 1000, 0.3,volumeLoad);
 
   std::vector<bool> dirichletFlags(basis.size(), false);
 
