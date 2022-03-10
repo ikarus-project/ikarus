@@ -61,7 +61,7 @@ find_package(dune-grid REQUIRED)
 
 message("Find autodiff: ")
 find_package(autodiff REQUIRED)
-set(BLA_VENDER OpenBLAS)
+set(BLA_VENDOR OpenBLAS)
 message("Find blas: ")
 find_package(BLAS REQUIRED)
 message("Find lapack: ")
