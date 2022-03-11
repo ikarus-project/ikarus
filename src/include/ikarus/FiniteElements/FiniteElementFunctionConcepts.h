@@ -100,13 +100,13 @@ namespace Ikarus::Concepts {
   template <typename FiniteElement>
   concept HascalculateVector = requires(FiniteElement fe, typename FiniteElement::FERequirementType req,
                                         typename FiniteElement::Traits::VectorType vec) {
-    fe.calculateVector(req,vec);
+    fe.calculateVector(req, vec);
   };
 
   template <typename FiniteElement>
   concept HasFreecalculateVector = requires(FiniteElement fe, typename FiniteElement::FERequirementType req,
                                             typename FiniteElement::Traits::VectorType vec) {
-    calculateVector(fe, req,vec);
+    calculateVector(fe, req, vec);
   };
 
   template <typename FiniteElement>
@@ -123,17 +123,17 @@ namespace Ikarus::Concepts {
   concept HasSomeglobalIndices = HasglobalIndices<FiniteElement> || HasFreeglobalIndices<FiniteElement>;
 
   template <typename FiniteElement>
-  concept HascalculateLocalSystem = requires(FiniteElement fe, typename FiniteElement::FERequirementType req,
-                                             typename FiniteElement::Traits::MatrixType mat,
-                                             typename FiniteElement::Traits::VectorType vec) {
-    fe.calculateLocalSystem(req,mat,vec);
+  concept HascalculateLocalSystem
+      = requires(FiniteElement fe, typename FiniteElement::FERequirementType req,
+                 typename FiniteElement::Traits::MatrixType mat, typename FiniteElement::Traits::VectorType vec) {
+    fe.calculateLocalSystem(req, mat, vec);
   };
 
   template <typename FiniteElement>
-  concept HasFreecalculateLocalSystem = requires(FiniteElement fe, typename FiniteElement::FERequirementType req,
-                                                 typename FiniteElement::Traits::MatrixType mat,
-                                                 typename FiniteElement::Traits::VectorType vec) {
-    calculateLocalSystem(fe, req,mat,vec);
+  concept HasFreecalculateLocalSystem
+      = requires(FiniteElement fe, typename FiniteElement::FERequirementType req,
+                 typename FiniteElement::Traits::MatrixType mat, typename FiniteElement::Traits::VectorType vec) {
+    calculateLocalSystem(fe, req, mat, vec);
   };
 
   template <typename FiniteElement>

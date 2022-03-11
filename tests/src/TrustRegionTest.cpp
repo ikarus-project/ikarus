@@ -250,8 +250,8 @@ ScalarType f3RBlocked(const MultiTypeVector& mT, const Eigen::VectorX<ScalarType
   dualDir += dx(Eigen::seq(dualDisp.size(), Eigen::last));
   ScalarType energy = 0;
   for (auto i = 0U; i < dir.size(); ++i) {
-    energy += Dune::power(dualDir(i*3), 2);
-    energy += Dune::power(dualDir(i*3+1), 2);
+    energy += Dune::power(dualDir(i * 3), 2);
+    energy += Dune::power(dualDir(i * 3 + 1), 2);
   }
   return energy + dualDisp.squaredNorm() + dualDisp.dot(dualDir);
 }
@@ -303,7 +303,7 @@ auto ddf3RBlocked(const MultiTypeVector& mT) {
   for (auto i = 0U; i < dir.size(); ++i) {
     Eigen::Index indexStartI  = dispE.size() + i * dir[0].correctionSize;
     Eigen::Index indexStartIE = dispE.size() + i * dir[0].valueSize;
-    auto BLAI           = dir[i].orthonormalFrame();
+    auto BLAI                 = dir[i].orthonormalFrame();
     for (auto j = 0U; j < dir.size(); ++j) {
       auto BLAJ = dir[j].orthonormalFrame();
 
@@ -322,34 +322,34 @@ auto ddf3RBlocked(const MultiTypeVector& mT) {
   }
 
   for (auto i = 0U; i < disp.size(); ++i) {
-    Eigen::Index indexStartI  = i * disp[0].correctionSize;
+    Eigen::Index indexStartI = i * disp[0].correctionSize;
     for (auto j = 0U; j < dir.size(); ++j) {
-      auto BLAJ = dir[j].orthonormalFrame();
-      Eigen::Index indexStartJ  = dispE.size() + j * dir[0].correctionSize;
-      Eigen::Index indexStartJE = dispE.size() + j * dir[0].valueSize;
-      Eigen::Matrix<double,3,2> blockIJ = h.block<3, 3>(indexStartI, indexStartJE) * BLAJ;
-      A.insert(indexStartI, indexStartJ) = blockIJ(0, 0);
-      A.insert(indexStartI+1, indexStartJ) = blockIJ(1, 0);
-      A.insert(indexStartI+2, indexStartJ) = blockIJ(2, 0);
-      A.insert(indexStartI, indexStartJ+1) = blockIJ(0, 1);
-      A.insert(indexStartI+1, indexStartJ+1) = blockIJ(1, 1);
-      A.insert(indexStartI+2, indexStartJ+1) = blockIJ(2, 1);
+      auto BLAJ                                  = dir[j].orthonormalFrame();
+      Eigen::Index indexStartJ                   = dispE.size() + j * dir[0].correctionSize;
+      Eigen::Index indexStartJE                  = dispE.size() + j * dir[0].valueSize;
+      Eigen::Matrix<double, 3, 2> blockIJ        = h.block<3, 3>(indexStartI, indexStartJE) * BLAJ;
+      A.insert(indexStartI, indexStartJ)         = blockIJ(0, 0);
+      A.insert(indexStartI + 1, indexStartJ)     = blockIJ(1, 0);
+      A.insert(indexStartI + 2, indexStartJ)     = blockIJ(2, 0);
+      A.insert(indexStartI, indexStartJ + 1)     = blockIJ(0, 1);
+      A.insert(indexStartI + 1, indexStartJ + 1) = blockIJ(1, 1);
+      A.insert(indexStartI + 2, indexStartJ + 1) = blockIJ(2, 1);
     }
   }
 
   for (auto i = 0U; i < dir.size(); ++i) {
     Eigen::Index indexStartI  = dispE.size() + i * dir[0].correctionSize;
     Eigen::Index indexStartIE = dispE.size() + i * dir[0].valueSize;
-    auto BLAI = dir[i].orthonormalFrame();
+    auto BLAI                 = dir[i].orthonormalFrame();
     for (auto j = 0U; j < disp.size(); ++j) {
-      Eigen::Index indexStartJ  = j * disp[0].correctionSize;
-      Eigen::Matrix<double,2,3> blockIJ = BLAI.transpose()*h.block<3, 3>(indexStartIE, indexStartJ);
-      A.insert(indexStartI, indexStartJ) = blockIJ(0, 0);
-      A.insert(indexStartI, indexStartJ+1) = blockIJ(0, 1);
-      A.insert(indexStartI, indexStartJ+2) = blockIJ(0, 2);
-      A.insert(indexStartI+1, indexStartJ) = blockIJ(1, 0);
-      A.insert(indexStartI+1, indexStartJ+1) = blockIJ(1, 1);
-      A.insert(indexStartI+1, indexStartJ+2) = blockIJ(1, 2);
+      Eigen::Index indexStartJ                   = j * disp[0].correctionSize;
+      Eigen::Matrix<double, 2, 3> blockIJ        = BLAI.transpose() * h.block<3, 3>(indexStartIE, indexStartJ);
+      A.insert(indexStartI, indexStartJ)         = blockIJ(0, 0);
+      A.insert(indexStartI, indexStartJ + 1)     = blockIJ(0, 1);
+      A.insert(indexStartI, indexStartJ + 2)     = blockIJ(0, 2);
+      A.insert(indexStartI + 1, indexStartJ)     = blockIJ(1, 0);
+      A.insert(indexStartI + 1, indexStartJ + 1) = blockIJ(1, 1);
+      A.insert(indexStartI + 1, indexStartJ + 2) = blockIJ(1, 2);
     }
   }
 
@@ -394,7 +394,7 @@ TEST(TrustRegion, TrustRegionRiemanianUnitSphereAndDispBlocked) {
   //
   //
   Ikarus::TrustRegion tr3(nonLinOp, std::function([](MultiTypeVector& x, const Eigen::VectorXd& d) {
-                            auto dispEigen     = Ikarus::LinearAlgebra::viewAsFlatEigenVector(x[_0]);
+                            auto dispEigen = Ikarus::LinearAlgebra::viewAsFlatEigenVector(x[_0]);
                             for (auto i = 0U; i < x[_0].size(); ++i) {
                               size_t indexStartI = i * x[_0][0].correctionSize;
                               x[_0][i] += d.segment<3>(indexStartI);
@@ -414,7 +414,7 @@ TEST(TrustRegion, TrustRegionRiemanianUnitSphereAndDispBlocked) {
   EXPECT_DOUBLE_EQ(nonLinOp.value(), -0.5);
 
   for (auto& director : mT[_1])
-    EXPECT_THAT(director.getValue(),EigenApproxEqual(Eigen::Vector3d::UnitZ(),1e-15));
+    EXPECT_THAT(director.getValue(), EigenApproxEqual(Eigen::Vector3d::UnitZ(), 1e-15));
   for (auto& displacement : mT[_0])
-    EXPECT_THAT(displacement.getValue(),EigenApproxEqual(-0.5*Eigen::Vector3d::UnitZ(),1e-14));
+    EXPECT_THAT(displacement.getValue(), EigenApproxEqual(-0.5 * Eigen::Vector3d::UnitZ(), 1e-14));
 }

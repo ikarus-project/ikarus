@@ -81,4 +81,4 @@ namespace Ikarus {
 
   double& IVariable::operator[](int i) { return this->variableImpl->operator[](i); }
 
-}  // namespace Ikarus::Variable
+}  // namespace Ikarus

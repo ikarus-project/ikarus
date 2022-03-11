@@ -33,8 +33,8 @@
 template <typename Basis>
 struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<Basis>,
                         Ikarus::AutoDiffFEClean<KirchhoffPlate<Basis>, Basis> {
-  using BaseDisp          = Ikarus::FiniteElements::ScalarFieldFE<Basis>;
-  using BaseAD            = Ikarus::AutoDiffFEClean<KirchhoffPlate<Basis>, Basis>;
+  using BaseDisp = Ikarus::FiniteElements::ScalarFieldFE<Basis>;
+  using BaseAD   = Ikarus::AutoDiffFEClean<KirchhoffPlate<Basis>, Basis>;
   using BaseAD::size;
   using LocalView         = typename Basis::LocalView;
   using FERequirementType = typename BaseAD::FERequirementType;
@@ -102,7 +102,7 @@ struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<Basis>,
       for (auto i = 0U; i < fe.size(); ++i) {
         dN_xx[i] = dN_xixi[i] * power(Jinv(0, 0), 2);
         dN_yy[i] = dN_etaeta[i] * power(Jinv(1, 1), 2);
-        dN_xy[i] =  dN_xieta[i] * Jinv(0, 0) * Jinv(1, 1);
+        dN_xy[i] = dN_xieta[i] * Jinv(0, 0) * Jinv(1, 1);
       }
       Eigen::Vector<Scalar, 3> kappa;
       kappa(0) = dN_xx.dot(wNodal);
@@ -114,29 +114,29 @@ struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<Basis>,
     }
 
     /// Clamp boundary using penalty method
-        const double penaltyFactor = 1e8;
-        if (ele.hasBoundaryIntersections())
-          for (auto& intersection : intersections(localView_.globalBasis().gridView(), ele))
-            if (intersection.boundary()) {
-              const auto& rule1 = Dune::QuadratureRules<double, 1>::rule(intersection.type(), 2 * localBasis.order());
-              for (auto& gp : rule1) {
-                const auto& gpInElement = intersection.geometryInInside().global(gp.position());
-                std::vector<Dune::FieldMatrix<double, 1, 2>> dN_xi_eta;
-                localBasis.evaluateJacobian(gpInElement, dN_xi_eta);
-                Eigen::VectorXd dN_x(fe.size());
-                Eigen::VectorXd dN_y(fe.size());
-                const auto Jinv
-                    = Ikarus::toEigenMatrix(geometry_.jacobianInverseTransposed(gpInElement)).transpose().eval();
-                for (auto i = 0U; i < fe.size(); ++i) {
-                  dN_x[i] = dN_xi_eta[i][0][0] * Jinv(0, 0);
-                  dN_y[i] = dN_xi_eta[i][0][1] * Jinv(1, 1);
-                }
-                const Scalar w_x = dN_x.dot(wNodal);
-                const Scalar w_y = dN_y.dot(wNodal);
-
-                energy += 0.0 * 0.5 * penaltyFactor * (w_x * w_x + w_y * w_y);
-              }
+    const double penaltyFactor = 1e8;
+    if (ele.hasBoundaryIntersections())
+      for (auto& intersection : intersections(localView_.globalBasis().gridView(), ele))
+        if (intersection.boundary()) {
+          const auto& rule1 = Dune::QuadratureRules<double, 1>::rule(intersection.type(), 2 * localBasis.order());
+          for (auto& gp : rule1) {
+            const auto& gpInElement = intersection.geometryInInside().global(gp.position());
+            std::vector<Dune::FieldMatrix<double, 1, 2>> dN_xi_eta;
+            localBasis.evaluateJacobian(gpInElement, dN_xi_eta);
+            Eigen::VectorXd dN_x(fe.size());
+            Eigen::VectorXd dN_y(fe.size());
+            const auto Jinv
+                = Ikarus::toEigenMatrix(geometry_.jacobianInverseTransposed(gpInElement)).transpose().eval();
+            for (auto i = 0U; i < fe.size(); ++i) {
+              dN_x[i] = dN_xi_eta[i][0][0] * Jinv(0, 0);
+              dN_y[i] = dN_xi_eta[i][0][1] * Jinv(1, 1);
             }
+            const Scalar w_x = dN_x.dot(wNodal);
+            const Scalar w_y = dN_y.dot(wNodal);
+
+            energy += 0.0 * 0.5 * penaltyFactor * (w_x * w_x + w_y * w_y);
+          }
+        }
 
     return energy;
   }

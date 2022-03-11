@@ -120,4 +120,4 @@ namespace Ikarus {
   void update(std::span<IVariable> varSpan, const Eigen::VectorXd &correction);
   bool isType(const IVariable &vo, Ikarus::VariableTags tag);
   bool isType(IVariable *vo, Ikarus::VariableTags tag);
-}  // namespace Ikarus::Variable
+}  // namespace Ikarus

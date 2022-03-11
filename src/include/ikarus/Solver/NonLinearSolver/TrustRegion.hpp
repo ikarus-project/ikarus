@@ -56,8 +56,8 @@ namespace Ikarus {
     dontStop
   };
   struct AlgoInfo {
-    int consecutive_TRplus  = 0;
-    int consecutive_TRminus = 0;
+    int consecutive_TRplus   = 0;
+    int consecutive_TRminus  = 0;
     int consecutive_Rejected = 0;
     std::string stopReasonString;
     std::string trstr;
@@ -252,18 +252,18 @@ namespace Ikarus {
                 "convergence of the gradient norm.",
                 stats.energyProposal - stats.energy, stats.etaNorm);
 
-          info.acceptProposal = true;
-          info.accstr         = "acc";
-          info.consecutive_Rejected=0;
+          info.acceptProposal       = true;
+          info.accstr               = "acc";
+          info.consecutive_Rejected = 0;
         } else {
           info.acceptProposal = false;
           info.accstr         = "REJ";
 
           if (info.consecutive_Rejected >= 5)
-            innerInfo.Delta /=2;
+            innerInfo.Delta /= 2;
           else
-          innerInfo.Delta     = std::min(innerInfo.Delta, stats.etaNorm / 2.0);
-              ++info.consecutive_Rejected;
+            innerInfo.Delta = std::min(innerInfo.Delta, stats.etaNorm / 2.0);
+          ++info.consecutive_Rejected;
         }
 
         stats.outerIter++;

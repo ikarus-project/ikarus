@@ -100,4 +100,4 @@ namespace Ikarus {
 
   std::ostream& operator<<(std::ostream& s, const VariableTags& varTag);
 
-}  // namespace Ikarus::Variable
+}  // namespace Ikarus

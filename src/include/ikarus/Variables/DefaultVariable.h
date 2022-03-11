@@ -95,4 +95,4 @@ namespace Ikarus {
     return s;
   }
 
-}  // namespace Ikarus::Variable
+}  // namespace Ikarus

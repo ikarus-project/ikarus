@@ -243,7 +243,7 @@ void plotDeformedTimoschenkoBeam(auto& gridView, auto& basis, auto& d_glob, doub
   f->draw();
 }
 
-void exampleTimoshenkoBeam(int polynomialOrderW,int polynomialOrderPhi, int numElements) {
+void exampleTimoshenkoBeam(int polynomialOrderW, int polynomialOrderPhi, int numElements) {
   const double b       = 1;
   const double L       = 5;
   const double E       = 1;
@@ -260,15 +260,15 @@ void exampleTimoshenkoBeam(int polynomialOrderW,int polynomialOrderPhi, int numE
   Eigen::Matrix2d C;
   C << EI, 0, 0, GA;
 
-  const int numGP                  = std::max(2*(polynomialOrderW-1),2*polynomialOrderPhi);
+  const int numGP = std::max(2 * (polynomialOrderW - 1), 2 * polynomialOrderPhi);
   Dune::OneDGrid grid(numElements, 0, L);
   auto gridView        = grid.leafGridView();
   auto qFunctionGlobal = makeAnalyticGridViewFunction(qFunction, gridView);
-//  draw(gridView);
+  //  draw(gridView);
 
   // BasisEmbedded with different orders for w (first) and phi (second)
-  auto basis     = makeBasis(gridView,
-                             composite(lagrange(polynomialOrderW), lagrange(polynomialOrderPhi), FlatLexicographic()));
+  auto basis
+      = makeBasis(gridView, composite(lagrange(polynomialOrderW), lagrange(polynomialOrderPhi), FlatLexicographic()));
   auto localView = basis.localView();
 
   // global stiffness matrix and force vector
@@ -320,17 +320,17 @@ void exampleTimoshenkoBeam(int polynomialOrderW,int polynomialOrderPhi, int numE
 
 int main() {
   //  exampleTrussElement();
-  exampleTimoshenkoBeam(1,1,1);
-  exampleTimoshenkoBeam(2,1,1);
-  exampleTimoshenkoBeam(2,2,1);
-  exampleTimoshenkoBeam(3,2,1);
-  exampleTimoshenkoBeam(3,3,1);
-  exampleTimoshenkoBeam(4,3,1);
-  exampleTimoshenkoBeam(4,4,1);
-  exampleTimoshenkoBeam(5,4,1);
-  exampleTimoshenkoBeam(5,5,1);
-  exampleTimoshenkoBeam(6,5,1);
-  exampleTimoshenkoBeam(6,6,1);
+  exampleTimoshenkoBeam(1, 1, 1);
+  exampleTimoshenkoBeam(2, 1, 1);
+  exampleTimoshenkoBeam(2, 2, 1);
+  exampleTimoshenkoBeam(3, 2, 1);
+  exampleTimoshenkoBeam(3, 3, 1);
+  exampleTimoshenkoBeam(4, 3, 1);
+  exampleTimoshenkoBeam(4, 4, 1);
+  exampleTimoshenkoBeam(5, 4, 1);
+  exampleTimoshenkoBeam(5, 5, 1);
+  exampleTimoshenkoBeam(6, 5, 1);
+  exampleTimoshenkoBeam(6, 6, 1);
 
-std::cout<<"end"<<std::endl;
+  std::cout << "end" << std::endl;
 }

@@ -180,5 +180,4 @@ int main() {
   p[1]->line_width(2);
   p[1]->marker(line_spec::marker_style::asterisk);
   show();
-
 }
