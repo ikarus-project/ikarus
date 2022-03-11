@@ -38,7 +38,7 @@ docs_dir: 'website'
 # Navigation
 nav:
   - Home: index.md
-  - Installation: installation.md
+  - Installation: get.md
   - How to edit the documentation: howToEdit.md
   - Build the documentation locally: BuildTheDocumentationLocally.md
   - Tutorials:
