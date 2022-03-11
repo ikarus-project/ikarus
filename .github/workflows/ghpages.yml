@@ -16,9 +16,9 @@ jobs:
           pip install mkdocs-material
           pip install mkdocs-macros-plugin
           pip install mkdocs-drawio-exporter
-          wget https://github.com/jgraph/drawio-desktop/releases/download/v14.6.13/drawio-amd64-14.6.13.deb
-          sudo apt-get install libappindicator3-1
-          sudo dpkg -i drawio-amd64-14.6.13.deb
+          wget https://github.com/jgraph/drawio-desktop/releases/download/v16.5.1/drawio-amd64-16.5.1.deb
+          sudo apt-get install libayatana-appindicator3-1
+          sudo dpkg -i drawio-amd64-16.5.1.deb
           sudo apt-get -y -f install
           sudo apt install libasound2 xvfb
       - name: Build Website
