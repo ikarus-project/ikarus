@@ -1,11 +1,12 @@
 # Installation of Ikarus
 
 # Install in WSL on Windows
-In the windows powershell
-```sh 
-wsl --install
-wsl --set-default-version 2
-```
+- In the windows powershell as admin
+  ```sh 
+  wsl --install
+  wsl --set-default-version 2 #(Is not needed for Windows 11)
+  ```
+- Reboot
 ### Install debian
 - Install from [WindowsAppStore](https://www.microsoft.com/en-us/p/debian/9msvkqc78pk6#activetab=pivot:overviewtab)
 - Execute the debian app
@@ -69,6 +70,7 @@ wsl --set-default-version 2
   sudo cp /usr/bin/clang-format-12 /usr/bin/clang-format && \
   cd /usr/local/bin && \
   sudo ln -s $HOME/.local/bin/cmake-format cmake-format && \
+  sudo ln -s $HOME/.local/bin/mkdocs mkdocs && \
   cd ~ && \
   mkdir -p iwyu && \
   cd iwyu && \
@@ -130,23 +132,7 @@ wsl --set-default-version 2
   - Add with the `+`-sign a WSL configuration
   - Make sure it is used as default (Move it up with the arrow buttons otherwise)
   - 
-
-
-# [[Deprecated]] Install directly on Windows
-##  Get a working C++ environment
-
-- CLion needs to be installed on your computer.
-- Download MinGW with GCC 11 (C++ compiler) from [Winlibs](https://winlibs.com/). Choose
-  - `GCC 11.1.0 + LLVM/Clang/LLD/LLDB 12.0.0 + MinGW-w64 9.0.0 - release 2`
-  -  Win64.
-  - 7-zip or zip makes no difference
-- Unpack it in any location of your choice
-- Tell CLion to use the recently downloaded GCC. In CLion
-  - Go to `File --> Settings --> Build, Execution, Deployment --> Toolchains`
-  - In the field `Environment`, copy the path where you unpacked the download
-    e.g. `C:\myFolder\mySubFolder\mingw64`
-  - CLion should now detect CMake, the compilers and the debugger   
-
+  
 ## Clone Ikarus
 
 - Clone the Ikarus repository as you do it with any other repository (e.g. using GitKraken)
