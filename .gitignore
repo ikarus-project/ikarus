@@ -7,4 +7,4 @@ cmake-build-debug/
 cmake-build-release/
 cmake-build-relwithdebinfo/
 docs/website/drawio-exporter
-docs/__pycache__
+docs/__pycache__/
