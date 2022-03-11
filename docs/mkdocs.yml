@@ -16,6 +16,7 @@ theme:
   name: material
   features:
     - navigation.instant
+    - content.code.annotate
   palette:
     - scheme: default
       primary: teal
@@ -38,9 +39,10 @@ docs_dir: 'website'
 # Navigation
 nav:
   - Home: index.md
-  - Installation: get.md
-  - How to edit the documentation: howToEdit.md
-  - Build the documentation locally: BuildTheDocumentationLocally.md
+  - Download: download.md
+  - Documentation:
+    - How to edit the documentation: documentation/howToEdit.md
+    - Build the documentation locally: documentation/BuildTheDocumentationLocally.md
   - Tutorials:
     - Overview: tutorials/tutorialsOverview.md
     - Grid    : tutorials/tutGrid.md
@@ -49,6 +51,9 @@ nav:
     - Geometry: theory/theoryGeometry.md
     - Grid: theory/theoryGrid.md
     - Finite Elements: theory/theoryFiniteElement.md
+  - Examples:
+      - Integrate pi: examples/integrate_pi.md
+
 
 # Customization
 extra_css:
@@ -73,10 +78,12 @@ markdown_extensions:
   - pymdownx.critic
   - pymdownx.details
   - pymdownx.inlinehilite
+  - pymdownx.snippets
   - pymdownx.emoji:
       emoji_index: !!python/name:materialx.emoji.twemoji
       emoji_generator: !!python/name:materialx.emoji.to_svg
   - pymdownx.highlight:
+      anchor_linenums: true
   - pymdownx.keys
   - pymdownx.magiclink:
       repo_url_shorthand: true
