@@ -99,7 +99,6 @@ TEST(NonLinearOperator, SecondOrderVectorValuedOperator) {
   auto nonLinOp    = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
 
   EXPECT_TRUE(checkGradient(nonLinOp,false));
-  EXPECT_TRUE(checkHessian(nonLinOp,false));
 
   auto subOperator = nonLinOp.subOperator<1, 2>();
   // Newton method test find root of first derivative
