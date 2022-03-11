@@ -2,6 +2,7 @@
 
 # Install in WSL on Windows
 - In the windows powershell as admin
+- Install VM-platform feature ind Windows-Features
   ```sh 
   wsl --install
   wsl --set-default-version 2 #(Is not needed for Windows 11)
@@ -11,7 +12,7 @@
 - Install from [WindowsAppStore](https://www.microsoft.com/en-us/p/debian/9msvkqc78pk6#activetab=pivot:overviewtab)
 - Execute the debian app
 - Give yourself a username and password
-- Execute `sed -i 's/bullseye/bookworm/g' /etc/apt/sources.lists`
+- Execute `sudo sed -i 's/bullseye/bookworm/g' /etc/apt/sources.list`
 - Execute 
   ```sh 
   sudo apt update && \
@@ -57,11 +58,11 @@
   gnuplot-x11 \
   curl \
   cppcheck && \
-  wget https://github.com/jgraph/drawio-desktop/releases/download/v16.5.1/drawio-amd64-16.5.1.deb && \
-  sudo apt-get install libayatana-appindicator3-1 && \
-  sudo dpkg -i drawio-amd64-16.5.1.deb && \
+  sudo apt-get install libayatana-appindicator3-1 -y && \
   sudo apt-get -y -f install && \
   sudo apt install libasound2 xvfb -y && \
+  wget https://github.com/jgraph/drawio-desktop/releases/download/v16.5.1/drawio-amd64-16.5.1.deb && \
+  sudo dpkg -i drawio-amd64-16.5.1.deb && \
   pip install cmakelang==0.6.13 pyyaml && \
   pip install mkdocs && \
   pip install mkdocs-material && \
@@ -85,7 +86,7 @@
   cd /usr/src/googletest && \
   cmake . && \
   sudo cmake --build . --target install && \
-  cd ~/ && \
+  cd ~ && \
   git clone https://gitlab.com/libeigen/eigen.git && \
   cd eigen && \
   git checkout 3.4 && \
@@ -93,9 +94,8 @@
   cd build && \
   cmake ../ && \
   sudo make install && \
-  cd .. && \
-  cd .. && \
-  rm -r eigen && \
+  cd ~ && \
+  rm -rf eigen && \
   git clone https://github.com/alandefreitas/matplotplusplus.git && \
   cd matplotplusplus && \
   mkdir -p build && \
@@ -103,8 +103,8 @@
   cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=OFF -DBUILD_TESTS=OFF && \
   cmake --build . --parallel 4 --config Release && \
   sudo cmake --install . && \
-  cd ../.. && \
-  rm -r matplotplusplus && \
+  cd ~ && \
+  rm -rf matplotplusplus && \
   git clone https://github.com/autodiff/autodiff && \
   cd autodiff/ && \
   mkdir .build && \
@@ -126,12 +126,14 @@
   sudo apt-get auto-remove -y && \
   sudo apt-get clean
   ```
-
+  ```sh
+  wget https://raw.githubusercontent.com/JetBrains/clion-wsl/master/ubuntu_setup_env.sh && bash ubuntu_setup_env.sh
+  ```
 - In Clion setting:
   - Build, Execution, Deployment --> Toolchains
   - Add with the `+`-sign a WSL configuration
   - Make sure it is used as default (Move it up with the arrow buttons otherwise)
-  - 
+  
   
 ## Clone Ikarus
 
