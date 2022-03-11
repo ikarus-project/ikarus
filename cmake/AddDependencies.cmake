@@ -26,18 +26,19 @@ message("Find MPI: ")
 find_package(MPI QUIET)
 message("====================")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/modules")
-if(NOT (dune-common_DIR OR dune-common_ROOT OR
-        "${CMAKE_PREFIX_PATH}" MATCHES ".*dune-common.*"))
-  string(REPLACE  ${CMAKE_PROJECT_NAME} dune-common dune-common_DIR
-          ${PROJECT_BINARY_DIR})
+if(NOT
+   (dune-common_DIR
+    OR dune-common_ROOT
+    OR "${CMAKE_PREFIX_PATH}" MATCHES ".*dune-common.*")
+)
+  string(REPLACE ${CMAKE_PROJECT_NAME} dune-common dune-common_DIR ${PROJECT_BINARY_DIR})
 endif()
 message("Find dune-common: ")
 find_package(dune-common REQUIRED)
 
-#find dune-common and set the module path
+# find dune-common and set the module path
 find_package(dune-common REQUIRED)
-list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules"
-        ${dune-common_MODULE_PATH})
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules" ${dune-common_MODULE_PATH})
 
 include(DuneMacros)
 
@@ -58,8 +59,6 @@ message("====================")
 message(${dune-alugrid_INCLUDE_DIRS})
 message("====================")
 target_include_directories(${PROJECT_NAME} PUBLIC ${dune-alugrid_INCLUDE_DIRS})
-
-
 
 message("Find dune-typetree: ")
 find_package(dune-typetree REQUIRED)
@@ -115,9 +114,3 @@ target_link_libraries(
   PUBLIC autodiff::autodiff
   PUBLIC gfortran
 )
-
-get_target_property(OUT ${PROJECT_NAME} HEADER_FILE_ONLY)
-message("====================")
-message(STATUS ${OUT})
-message(STATUS ${PROJECT_NAME})
-message("====================")
