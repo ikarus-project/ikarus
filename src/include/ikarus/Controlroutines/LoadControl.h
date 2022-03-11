@@ -20,7 +20,8 @@ namespace Ikarus {
   template <typename NonLinearSolver>
   class LoadControl : public IObservable<ControlMessages> {
   public:
-    LoadControl(const std::shared_ptr<NonLinearSolver>& p_nonLinearSolver, int loadSteps, const std::pair<double, double>& tbeginEnd)
+    LoadControl(const std::shared_ptr<NonLinearSolver>& p_nonLinearSolver, int loadSteps,
+                const std::pair<double, double>& tbeginEnd)
         : nonLinearSolver{p_nonLinearSolver},
           loadSteps_{loadSteps},
           parameterBegin_{tbeginEnd.first},
@@ -42,18 +43,16 @@ namespace Ikarus {
 
       loadParameter = 0.0;
       this->notify(ControlMessages::STEP_STARTED);
-       auto solverInfo = nonLinearSolver->solve();
-      if(not solverInfo.sucess)
-        return info;
+      auto solverInfo = nonLinearSolver->solve();
+      if (not solverInfo.sucess) return info;
       this->notify(ControlMessages::SOLUTION_CHANGED);
       this->notify(ControlMessages::STEP_ENDED);
 
-      for (int ls = 0; ls < loadSteps_ ; ++ls) {
+      for (int ls = 0; ls < loadSteps_; ++ls) {
         this->notify(ControlMessages::STEP_STARTED);
         loadParameter += stepSize_;
         solverInfo = nonLinearSolver->solve();
-        if(not solverInfo.sucess)
-          return info;
+        if (not solverInfo.sucess) return info;
         this->notify(ControlMessages::SOLUTION_CHANGED);
         this->notify(ControlMessages::STEP_ENDED);
       }

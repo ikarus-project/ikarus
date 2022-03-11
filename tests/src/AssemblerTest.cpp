@@ -40,15 +40,15 @@ TEST(Assembler, SimpleAssemblersTest) {
 
     std::vector<Ikarus::FiniteElements::NonLinearElasticityFEWithLocalBasis<decltype(basis)>> fes;
     const double Emodul = 1000;
-    auto volumeLoad = [](const auto& globalCoord, const auto& lamb)
-    {Eigen::Vector2d fext;
+    auto volumeLoad     = [](const auto& globalCoord, const auto& lamb) {
+      Eigen::Vector2d fext;
       fext.setZero();
       fext[1] = 2 * lamb;
       fext[0] = lamb;
       return fext;
     };
     for (auto&& ge : elements(gridView))
-      fes.emplace_back(basis, ge, Emodul, 0.3,volumeLoad);
+      fes.emplace_back(basis, ge, Emodul, 0.3, volumeLoad);
 
     std::vector<bool> dirichFlags(basis.size(), false);
 

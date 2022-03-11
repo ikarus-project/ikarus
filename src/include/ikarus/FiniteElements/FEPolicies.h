@@ -69,7 +69,7 @@ namespace Ikarus::FiniteElements {
 
     [[nodiscard]] constexpr int size() const { return localView.size(); }
 
- void globalIndices(std::vector<GlobalIndex>& globalIndices) const {
+    void globalIndices(std::vector<GlobalIndex>& globalIndices) const {
       const auto& fe = localView.tree().child(0).finiteElement();
       for (size_t i = 0; i < fe.size(); ++i) {
         for (int j = 0; j < worlddim; ++j) {
@@ -103,13 +103,12 @@ namespace Ikarus::FiniteElements {
     /** \brief Dimension of the world space */
     static constexpr int worlddim = Traits::worlddim;
 
-    [[nodiscard]]  int size() const { return localView.size(); }
+    [[nodiscard]] int size() const { return localView.size(); }
 
-    void globalIndices(std::vector<GlobalIndex>&  globalIndices) const {
+    void globalIndices(std::vector<GlobalIndex>& globalIndices) const {
       const auto& fe = localView.tree().finiteElement();
       for (size_t i = 0; i < fe.size(); ++i)
         globalIndices.push_back(localView.index(localView.tree().localIndex(i)));
-
     }
 
     [[nodiscard]] std::vector<GlobalIndex> localIndices() const {

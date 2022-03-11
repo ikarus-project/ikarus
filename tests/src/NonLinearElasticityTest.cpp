@@ -2,8 +2,8 @@
 // Created by Alex on 21.07.2021.
 //
 #include <gmock/gmock.h>
-#include "../../config.h"
 
+#include "../../config.h"
 #include "testHelpers.h"
 #define EIGEN_SPARSEMATRIX_PLUGIN "eigenSparseAddon.h"
 #include <dune/alugrid/grid.hh>
@@ -90,7 +90,7 @@ public:
   decltype(createGrid<T>()) value_;
 };
 using GridTypes = ::testing::Types<Grids::Yasp, Grids::Alu, Grids::Iga>;
-//using GridTypes = ::testing::Types<Grids::Yasp>;
+// using GridTypes = ::testing::Types<Grids::Yasp>;
 
 TYPED_TEST_SUITE(NonLinearElasticityLoadControlNRandTR, GridTypes);
 
@@ -105,15 +105,15 @@ TYPED_TEST(NonLinearElasticityLoadControlNRandTR, ComputeMaxDisp) {
 
   auto localView = basis.localView();
   std::vector<Ikarus::FiniteElements::NonLinearElasticityFEWithLocalBasis<decltype(basis)>> fes;
-  auto volumeLoad = [](auto& globalCoord, auto& lamb)
-  {Eigen::Vector2d fext;
+  auto volumeLoad = [](auto& globalCoord, auto& lamb) {
+    Eigen::Vector2d fext;
     fext.setZero();
     fext[1] = 2 * lamb;
     fext[0] = lamb;
     return fext;
   };
   for (auto& element : elements(gridView))
-    fes.emplace_back(basis, element, 1000, 0.3,volumeLoad);
+    fes.emplace_back(basis, element, 1000, 0.3, volumeLoad);
 
   std::vector<bool> dirichletFlags(basis.size(), false);
 
@@ -155,7 +155,7 @@ TYPED_TEST(NonLinearElasticityLoadControlNRandTR, ComputeMaxDisp) {
   tr->setup({.verbosity = 1,
              .maxiter   = 1000,
              .grad_tol  = gradTol,
-             .corr_tol  = 1e-16, //everything should converge to the gradient tolerance
+             .corr_tol  = 1e-16,  // everything should converge to the gradient tolerance
              .useRand   = false,
              .rho_reg   = 1e8,
              .Delta0    = 1});
@@ -169,13 +169,13 @@ TYPED_TEST(NonLinearElasticityLoadControlNRandTR, ComputeMaxDisp) {
   const auto controlInfo = lc.run();
   nonLinOp.template update<0>();
   const auto maxDisp = std::ranges::max(d);
-  if(std::is_same_v<TypeParam , Grids::Yasp>) {
+  if (std::is_same_v<TypeParam, Grids::Yasp>) {
     EXPECT_DOUBLE_EQ(nonLinOp.value(), -1.4809559783564966e+03);
     EXPECT_DOUBLE_EQ(maxDisp, 0.786567027108460048);
-  } else if(std::is_same_v<TypeParam , Grids::Alu>) {
-    EXPECT_DOUBLE_EQ(nonLinOp.value(), -1.4842107484533601e+03 );
+  } else if (std::is_same_v<TypeParam, Grids::Alu>) {
+    EXPECT_DOUBLE_EQ(nonLinOp.value(), -1.4842107484533601e+03);
     EXPECT_DOUBLE_EQ(maxDisp, 0.78426066482258983);
-  } else if(std::is_same_v<TypeParam , Grids::Iga>) {
+  } else if (std::is_same_v<TypeParam, Grids::Iga>) {
     EXPECT_DOUBLE_EQ(nonLinOp.value(), -8.1142552237939071e+02);
     EXPECT_DOUBLE_EQ(maxDisp, 0.615624125459537153);
   }

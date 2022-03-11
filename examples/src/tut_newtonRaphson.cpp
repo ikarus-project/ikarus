@@ -9,7 +9,7 @@ auto f(double& x) { return 0.5 * x * x + x - 2; }
 auto df(double& x) { return x + 1; }
 
 void newtonRaphsonVeryBasicExample() {
-  double x = 13;
+  double x               = 13;
   const double eps       = 1e-10;
   const int maxIter      = 20;
   const double xExpected = std::sqrt(5.0) - 1.0;
@@ -19,16 +19,14 @@ void newtonRaphsonVeryBasicExample() {
   Ikarus::NonLinearOperator nonLinOp(linearAlgebraFunctions(fvLambda, dfvLambda), parameter(x));
 
   int iterCount = 1;
-  while(abs(nonLinOp.value()) > eps and iterCount <= maxIter){
-    x -= nonLinOp.value()/nonLinOp.derivative();
+  while (abs(nonLinOp.value()) > eps and iterCount <= maxIter) {
+    x -= nonLinOp.value() / nonLinOp.derivative();
     nonLinOp.updateAll();
     iterCount++;
 
     std::cout << "nonlinearOperator, value(): " << nonLinOp.value() << "\n";
     std::cout << "nonlinearOperator, x: " << nonLinOp.firstParameter() << "\n";
   }
-
-
 
   for (int i = 0; i < maxIter; ++i) {
     x -= nonLinOp.value() / nonLinOp.derivative();
@@ -50,8 +48,7 @@ void newtonRaphsonVeryBasicExample() {
 class OurFirstObserver : public IObserver<NonLinearSolverMessages> {
 public:
   void updateImpl(NonLinearSolverMessages message) override {
-    if (message == NonLinearSolverMessages::ITERATION_STARTED)
-      std::cout << "Yeah, the iteration started. Let's go!\n";
+    if (message == NonLinearSolverMessages::ITERATION_STARTED) std::cout << "Yeah, the iteration started. Let's go!\n";
   }
 };
 
@@ -71,18 +68,16 @@ void newtonRaphsonBasicExampleWithLogger() {
 
   // create observer and subscribe to Newton-Rhapson
   auto ourSimpleObserver = std::make_shared<OurFirstObserver>();
-  nr.subscribe(NonLinearSolverMessages::ITERATION_STARTED,ourSimpleObserver);
-  //nr.subscribeAll(ourSimpleObserver);
-  //auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
-  //nr.subscribe(NonLinearSolverMessages::FINISHED_SUCESSFULLY, nonLinearSolverObserver);
+  nr.subscribe(NonLinearSolverMessages::ITERATION_STARTED, ourSimpleObserver);
+  // nr.subscribeAll(ourSimpleObserver);
+  // auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
+  // nr.subscribe(NonLinearSolverMessages::FINISHED_SUCESSFULLY, nonLinearSolverObserver);
   // nr.subscribeAll(nonLinearSolverObserver);
 
   const auto solverInfo = nr.solve(x);
 
   std::cout << "solution: " << x << "\n";
 }
-
-
 
 int main() {
   newtonRaphsonVeryBasicExample();

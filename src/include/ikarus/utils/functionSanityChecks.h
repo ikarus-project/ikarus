@@ -2,7 +2,6 @@
 // Created by alex on 3/8/22.
 //
 
-
 #pragma once
 #include <functional>
 #include <matplot/matplot.h>

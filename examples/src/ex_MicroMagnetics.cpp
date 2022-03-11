@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
   std::cout << gridView.size(0) << " elements" << std::endl;
   std::cout << basisRie.size() << " Dofs" << std::endl;
 
-//  draw(gridView);
+  //  draw(gridView);
 
   std::vector<Ikarus::FiniteElements::MicroMagneticsWithVectorPotential<decltype(basisEmbedded), decltype(basisRie)>>
       fes;
@@ -141,13 +141,13 @@ int main(int argc, char** argv) {
   };
 
   auto& h = hessianFunction(mBlocked, lambda);
-//  std::cout << h << std::endl;
+  //  std::cout << h << std::endl;
 
   auto& g = residualFunction(mBlocked, lambda);
-//  std::cout << g << std::endl;
+  //  std::cout << g << std::endl;
 
   auto e = energyFunction(mBlocked, lambda);
-//  std::cout << e << std::endl;
+  //  std::cout << e << std::endl;
 
   assert(g.size() == gridView.size(2) * directorCorrectionDim - std::ranges::count(dirichletFlags, true)
          && "The returned gradient has incorrect size");
@@ -166,8 +166,8 @@ int main(int argc, char** argv) {
     }
   });
 
-//  checkGradient(nonLinOp, true, updateFunction);
-//  checkHessian(nonLinOp, true, updateFunction);
+  //  checkGradient(nonLinOp, true, updateFunction);
+  //  checkHessian(nonLinOp, true, updateFunction);
 
   if (not Dune::FloatCmp::eq(nonLinOp.value(), e)) throw std::logic_error("Dune::FloatCmp::eq(nonLinOp.value(), e)");
   if (not nonLinOp.derivative().isApprox(g)) throw std::logic_error("nonLinOp.derivative().isApprox(g)");

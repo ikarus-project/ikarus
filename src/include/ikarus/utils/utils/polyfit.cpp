@@ -8,7 +8,9 @@ namespace Ikarus {
    * This function returns the polynom fitted onto the data pased in in the least square sense.
    * It also return the least square error.
    */
-  std::tuple<Dune::Functions::Polynomial<double>,double> polyfit(const Eigen::Ref<const Eigen::VectorXd>& x, const Eigen::Ref<const Eigen::VectorXd>  &y, const int deg) {
+  std::tuple<Dune::Functions::Polynomial<double>, double> polyfit(const Eigen::Ref<const Eigen::VectorXd>& x,
+                                                                  const Eigen::Ref<const Eigen::VectorXd>& y,
+                                                                  const int deg) {
     Eigen::MatrixXd A = Eigen::MatrixXd::Ones(x.size(), deg + 1);
     for (int j = 1; j < deg + 1; ++j)
       A.col(j) = A.col(j - 1).cwiseProduct(x);
@@ -19,6 +21,6 @@ namespace Ikarus {
 
     std::vector<double> coeffsSTD(coeffs.begin(), coeffs.end());
     Dune::Functions::Polynomial<double> poly(std::move(coeffsSTD));
-    return std::make_tuple(poly,(A*coeffs-y).norm());
+    return std::make_tuple(poly, (A * coeffs - y).norm());
   }
 }  // namespace Ikarus

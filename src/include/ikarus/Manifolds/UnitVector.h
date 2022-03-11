@@ -18,7 +18,7 @@ namespace Ikarus::Manifold {
   class UnitVector {
   public:
     /** \brief Type used for coordinates */
-    using ctype = ct;
+    using ctype      = ct;
     using field_type = ct;
 
     /** \brief Size of how much values are needed to store the manifold */
@@ -63,14 +63,13 @@ namespace Ikarus::Manifold {
     ctype &operator[](int i) { return var[i]; }
 
     /** \brief size */
-    size_t size()const  { return var.size(); }
-
+    size_t size() const { return var.size(); }
 
     auto begin() { return var.begin(); }
     auto end() { return var.end(); }
 
     auto begin() const { return var.begin(); }
-    auto end()const { return var.end(); }
+    auto end() const { return var.end(); }
 
     /** \brief Update the manifold by an correction vector of size correctionSize
      * For the unit vector in R^3 the correction are of size 2
@@ -84,7 +83,7 @@ namespace Ikarus::Manifold {
 
     /** \brief Compute an orthonormal basis of the tangent space of S^n.
      * Taken from Oliver Sander dune-gfe */
-     Eigen::Matrix<ctype, valueSize, correctionSize> orthonormalFrame() const {
+    Eigen::Matrix<ctype, valueSize, correctionSize> orthonormalFrame() const {
       Eigen::Matrix<ctype, valueSize, correctionSize> result;
 
       // Coordinates of the stereographic projection
@@ -147,7 +146,7 @@ namespace Ikarus::Manifold {
   template <typename ctype2, int d2>
   [[nodiscard]] UnitVector<ctype2, d2> operator+(const UnitVector<ctype2, d2> &rt,
                                                  const typename UnitVector<ctype2, d2>::CorrectionType &correction) {
-    return UnitVector<ctype2, d2>(rt.getValue() + rt.orthonormalFrame()  * correction);
+    return UnitVector<ctype2, d2>(rt.getValue() + rt.orthonormalFrame() * correction);
   }
 
 }  // namespace Ikarus::Manifold

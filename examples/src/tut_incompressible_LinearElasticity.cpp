@@ -58,7 +58,6 @@ struct Solid : Ikarus::AutoDiffFEClean<Solid<Basis>, Basis> {
     for (size_t i = 0; i < fePressure.size(); ++i) {
       globalIndices.push_back(localView_.index((localView_.tree().child(_1).localIndex(i))));
     }
-
   }
 
 private:
@@ -202,12 +201,10 @@ int main(int argc, char** argv) {
   auto R = fintFunction(1, d);
   Eigen::SparseLU<decltype(K)> ld;
   ld.compute(K);
-  if (ld.info() != Eigen::Success)
-    assert(false && "Failed Compute");
+  if (ld.info() != Eigen::Success) assert(false && "Failed Compute");
 
   d -= denseFlatAssembler.createFullVector(ld.solve(R));
-  if (ld.info() != Eigen::Success)
-    assert(false && "Failed Solve");
+  if (ld.info() != Eigen::Success) assert(false && "Failed Solve");
 
   /// Postprocess
   auto disp

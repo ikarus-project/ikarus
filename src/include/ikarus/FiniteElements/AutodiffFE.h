@@ -44,7 +44,7 @@ namespace Ikarus {
     }
   };
 
-  template <typename RealElement, typename Basis,typename FERequirementTypeImpl = FErequirements<Eigen::VectorXd>>
+  template <typename RealElement, typename Basis, typename FERequirementTypeImpl = FErequirements<Eigen::VectorXd>>
   class AutoDiffFEClean {
   public:
     using LocalView = typename Basis::LocalView;
@@ -69,14 +69,15 @@ namespace Ikarus {
       dx.setZero();
       autodiff::dual e;
       auto f = [&](auto& x) { return this->underlying().calculateScalarImpl(par, x); };
-      gradient(f, wrt(dx), at(dx),e,g);
+      gradient(f, wrt(dx), at(dx), e, g);
     }
 
-    void calculateLocalSystem(const FERequirementType& par, typename Traits::MatrixType& h, typename Traits::VectorType& g) const {
+    void calculateLocalSystem(const FERequirementType& par, typename Traits::MatrixType& h,
+                              typename Traits::VectorType& g) const {
       Eigen::VectorXdual2nd dx(localdofSize);
       dx.setZero();
       auto f = [&](auto& x) { return this->underlying().calculateScalarImpl(par, x); };
-      hessian(f, wrt(dx), at(dx), g,h);
+      hessian(f, wrt(dx), at(dx), g, h);
     }
 
     [[nodiscard]] typename Traits::ScalarType calculateScalar(const FERequirementType& par) const {
@@ -86,7 +87,7 @@ namespace Ikarus {
       return this->underlying().calculateScalarImpl(par, dx);
     }
 
-    size_t size()const {return localdofSize;}
+    size_t size() const { return localdofSize; }
 
   private:
     RealElement const& underlying() const  // CRTP

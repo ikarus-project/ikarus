@@ -220,24 +220,25 @@ void plotDeformedTimoschenkoBeam(auto& gridView, auto& basis, auto& d_glob, doub
   f->show();
 }
 
-void exampleTimoshenkoBeam(const int polynomialOrderW, const int polynomialOrderPhi,const int numElements) {
+void exampleTimoshenkoBeam(const int polynomialOrderW, const int polynomialOrderPhi, const int numElements) {
   const double b  = 1;
   const double L  = 1e3;
   const double E  = 1e8;
-  const double G  = E/2;
+  const double G  = E / 2;
   const double t  = 1e-3;
   const double EI = E * b * t * t * t / 12.0;
   const double GA = G * b * t;
   const double F  = 0.1 * t * t * t;
   Eigen::Matrix2d C;
   C << EI, 0, 0, GA;
-  const int maxOrderIntegration    = std::max(2*(polynomialOrderW-1),2*polynomialOrderPhi);
+  const int maxOrderIntegration = std::max(2 * (polynomialOrderW - 1), 2 * polynomialOrderPhi);
   Dune::OneDGrid grid(numElements, 0, L);
   auto gridView = grid.leafGridView();
-  //draw(gridView);
+  // draw(gridView);
 
   // BasisEmbedded with different orders for w (first) and phi (second)
-  auto basis     = makeBasis(gridView,composite(lagrange(polynomialOrderW), lagrange(polynomialOrderPhi), FlatLexicographic()));
+  auto basis
+      = makeBasis(gridView, composite(lagrange(polynomialOrderW), lagrange(polynomialOrderPhi), FlatLexicographic()));
   auto localView = basis.localView();
 
   // global stiffness matrix and force vector
@@ -249,8 +250,8 @@ void exampleTimoshenkoBeam(const int polynomialOrderW, const int polynomialOrder
     localView.bind(ele);
 
     // Define the integration rule
-    const auto& rule = Dune::QuadratureRules<double, 1>::
-            rule(ele.type(), maxOrderIntegration, Dune::QuadratureType::GaussLegendre);
+    const auto& rule
+        = Dune::QuadratureRules<double, 1>::rule(ele.type(), maxOrderIntegration, Dune::QuadratureType::GaussLegendre);
 
     // get local stiffness matrix
     auto K_local = TimoshenkoBeamStiffness(localView, ele, rule, C);
@@ -278,7 +279,7 @@ void exampleTimoshenkoBeam(const int polynomialOrderW, const int polynomialOrder
   linSolver.factorize(K_Glob);
   const Eigen::VectorXd D_Glob = linSolver.solve(F_ExtGlob);
   // analytical solution
-  //std::cout << "Bernoulli solution for displacement at L: " << F * L * L * L / (3.0 * EI) << "\n";
+  // std::cout << "Bernoulli solution for displacement at L: " << F * L * L * L / (3.0 * EI) << "\n";
 
   // plot the result
 
@@ -287,8 +288,8 @@ void exampleTimoshenkoBeam(const int polynomialOrderW, const int polynomialOrder
 
 int main() {
   //  exampleTrussElement();
-  exampleTimoshenkoBeam(1,1,1);
-  exampleTimoshenkoBeam(2,1,1);
-  exampleTimoshenkoBeam(2,2,1);
-  exampleTimoshenkoBeam(3,2,1);
+  exampleTimoshenkoBeam(1, 1, 1);
+  exampleTimoshenkoBeam(2, 1, 1);
+  exampleTimoshenkoBeam(2, 2, 1);
+  exampleTimoshenkoBeam(3, 2, 1);
 }
