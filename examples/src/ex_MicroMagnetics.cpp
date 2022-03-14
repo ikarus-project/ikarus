@@ -34,6 +34,7 @@ constexpr int magnetizationOrder    = 1;
 constexpr int vectorPotOrder        = 1;
 constexpr int gridDim               = 2;
 constexpr int directorDim           = 3;
+constexpr int vectorPotDim          = gridDim == 2 ? 1 : 3;
 constexpr int directorCorrectionDim = directorDim - 1;
 
 int main(int argc, char** argv) {
@@ -45,7 +46,7 @@ int main(int argc, char** argv) {
   const double sizedom1InMeter = 60 * lengthUnit;
   const double sizedom1        = sizedom1InMeter / lx;
   const double sizedom2        = sizedom1;
-  //  //  /// ALUGrid Example
+
   using Grid        = Dune::YaspGrid<gridDim>;
   const double Lx   = sizedom1;
   const double Ly   = sizedom2;
@@ -56,7 +57,7 @@ int main(int argc, char** argv) {
   std::array<int, 2> eles           = {elex, eley};
   auto grid                         = std::make_shared<Grid>(bbox, eles);
 
-  grid->globalRefine(5);
+  grid->globalRefine(1);
   auto gridView = grid->leafGridView();
 
   spdlog::info("The exchange length is {}.", lx);
@@ -64,7 +65,23 @@ int main(int argc, char** argv) {
 
   using namespace Dune::Functions::BasisFactory;
   auto basisEmbedded = makeBasis(gridView, power<directorDim>(lagrange<magnetizationOrder>(), BlockedInterleaved()));
+  auto basisEmbeddedC
+      = makeBasis(gridView, composite(power<directorDim>(lagrange<magnetizationOrder>(), BlockedInterleaved()),
+                                      power<vectorPotDim+1>(lagrange<vectorPotOrder>(), FlatInterleaved()),FlatLexicographic{}));
+  auto localViewC = basisEmbeddedC.localView();
+  for (auto& element : elements(gridView))
+  {
+    using namespace Dune::Indices;
+    localViewC.bind(element);
+    std::cout<<"_0,0,0: "<<localViewC.index(localViewC.tree().child(_0,0).localIndex(0))<<std::endl;
+    std::cout<<"_0,1,0: "<<localViewC.index(localViewC.tree().child(_0,1).localIndex(0))<<std::endl;
+    std::cout<<"_1,0,0: "<<localViewC.index(localViewC.tree().child(_1,0).localIndex(0))<<std::endl;
+    std::cout<<"_1,0,0: "<<localViewC.index(localViewC.tree().child(_1,1).localIndex(0))<<std::endl;
+  }
   auto basisRie = makeBasis(gridView, power<directorCorrectionDim>(lagrange<magnetizationOrder>(), FlatInterleaved()));
+  auto basisRieC
+      = makeBasis(gridView, composite(power<directorDim>(lagrange<magnetizationOrder>(), FlatInterleaved()),
+                                      power<vectorPotDim>(lagrange<vectorPotOrder>(), FlatInterleaved()),FlatLexicographic{}));
   std::cout << "This gridview cotains: " << std::endl;
   std::cout << gridView.size(2) << " vertices" << std::endl;
   std::cout << gridView.size(1) << " edges" << std::endl;
@@ -78,8 +95,8 @@ int main(int argc, char** argv) {
   auto volumeLoad = [](auto& globalCoord, auto& lamb) {
     Eigen::Vector<double, directorDim> fext;
     fext.setZero();
-    fext[0] = 0;
-    fext[1] = 0;
+    fext[0] = lamb;
+    fext[1] = lamb;
     return fext;
   };
 
@@ -102,7 +119,7 @@ int main(int argc, char** argv) {
     else if (intersection.geometry().center()[1] > Ly - 1e-8)
       mBlocked[localView.index(localIndex)[0]].setValue(Eigen::Vector<double, directorDim>::UnitX());
     else if (intersection.geometry().center()[0] > Lx - 1e-8)
-      mBlocked[localView.index(localIndex)[0]].setValue(Eigen::Vector<double, directorDim>::UnitY());
+      mBlocked[localView.index(localIndex)[0]].setValue(Eigen::Vector<double, directorDim>::UnitZ());
     else if (intersection.geometry().center()[0] < 1e-8)
       mBlocked[localView.index(localIndex)[0]].setValue(-Eigen::Vector<double, directorDim>::UnitZ());
   });
@@ -186,7 +203,7 @@ int main(int argc, char** argv) {
 
   //  nr.subscribeAll(nonLinearSolverObserver);
 
-  auto lc = Ikarus::LoadControl(nr, 1, {0, 10});
+  auto lc = Ikarus::LoadControl(nr, 1, {0, 1000});
 
   //  lc.subscribeAll(vtkWriter);
   std::cout << "Energy before: " << nonLinOp.value() << std::endl;
