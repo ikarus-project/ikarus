@@ -24,6 +24,7 @@
 #include "ikarus/basis/basishelper.h"
 #include "ikarus/utils/Observer/controlVTKWriter.h"
 #include "ikarus/utils/Observer/nonLinearSolverLogger.h"
+#include "ikarus/utils/Observer/genericControlObserver.h"
 #include <ikarus/Assembler/SimpleAssemblers.h>
 #include <ikarus/Grids/GridHelper/griddrawer.h>
 #include <ikarus/LinearAlgebra/NonLinearOperator.h>
@@ -57,17 +58,17 @@ int main(int argc, char** argv) {
   std::array<int, 2> eles           = {elex, eley};
   auto grid                         = std::make_shared<Grid>(bbox, eles);
 
-  grid->globalRefine(1);
+  grid->globalRefine(5);
   auto gridView = grid->leafGridView();
 
   spdlog::info("The exchange length is {}.", lx);
   spdlog::info("The domain has a length of {}.", sizedom1);
 
   using namespace Dune::Functions::BasisFactory;
-  auto basisEmbedded = makeBasis(gridView, power<directorDim>(lagrange<magnetizationOrder>(), BlockedInterleaved()));
+//  auto basisEmbedded = makeBasis(gridView, power<directorDim>(lagrange<magnetizationOrder>(), BlockedInterleaved()));
   auto basisEmbeddedC
       = makeBasis(gridView, composite(power<directorDim>(lagrange<magnetizationOrder>(), BlockedInterleaved()),
-                                      power<vectorPotDim+1>(lagrange<vectorPotOrder>(), FlatInterleaved()),FlatLexicographic{}));
+                                      power<vectorPotDim>(lagrange<vectorPotOrder>(), FlatInterleaved()),FlatLexicographic{}));
   auto localViewC = basisEmbeddedC.localView();
   for (auto& element : elements(gridView))
   {
@@ -78,7 +79,7 @@ int main(int argc, char** argv) {
     std::cout<<"_1,0,0: "<<localViewC.index(localViewC.tree().child(_1,0).localIndex(0))<<std::endl;
     std::cout<<"_1,0,0: "<<localViewC.index(localViewC.tree().child(_1,1).localIndex(0))<<std::endl;
   }
-  auto basisRie = makeBasis(gridView, power<directorCorrectionDim>(lagrange<magnetizationOrder>(), FlatInterleaved()));
+//  auto basisRie = makeBasis(gridView, power<directorCorrectionDim>(lagrange<magnetizationOrder>(), FlatInterleaved()));
   auto basisRieC
       = makeBasis(gridView, composite(power<directorDim>(lagrange<magnetizationOrder>(), FlatInterleaved()),
                                       power<vectorPotDim>(lagrange<vectorPotOrder>(), FlatInterleaved()),FlatLexicographic{}));
@@ -86,11 +87,11 @@ int main(int argc, char** argv) {
   std::cout << gridView.size(2) << " vertices" << std::endl;
   std::cout << gridView.size(1) << " edges" << std::endl;
   std::cout << gridView.size(0) << " elements" << std::endl;
-  std::cout << basisRie.size() << " Dofs" << std::endl;
+  std::cout << basisRieC.size() << " Dofs" << std::endl;
 
   //  draw(gridView);
 
-  std::vector<Ikarus::FiniteElements::MicroMagneticsWithVectorPotential<decltype(basisEmbedded), decltype(basisRie)>>
+  std::vector<Ikarus::FiniteElements::MicroMagneticsWithVectorPotential<decltype(basisEmbeddedC), decltype(basisRieC)>>
       fes;
   auto volumeLoad = [](auto& globalCoord, auto& lamb) {
     Eigen::Vector<double, directorDim> fext;
@@ -101,7 +102,7 @@ int main(int argc, char** argv) {
   };
 
   for (auto& element : elements(gridView))
-    fes.emplace_back(basisEmbedded, basisRie, element, mat, volumeLoad);
+    fes.emplace_back(basisEmbeddedC, basisRieC, element, mat, volumeLoad);
 
   using DirectorVector = Dune::BlockVector<Ikarus::UnitVector<double, directorDim>>;
   DirectorVector mBlocked(basisEmbedded.size());
@@ -109,11 +110,11 @@ int main(int argc, char** argv) {
     msingle.setValue(Eigen::Vector<double, directorDim>::UnitX());
   }
 
-  std::vector<bool> dirichletFlagsEmbedded(basisEmbedded.size(), false);
-  std::vector<bool> dirichletFlags(basisRie.size(), false);
+  std::vector<bool> dirichletFlagsEmbedded(basisEmbeddedC.size(), false);
+  std::vector<bool> dirichletFlags(basisRieC.size(), false);
 
-  Dune::Functions::forEachBoundaryDOF(basisEmbedded, [&](auto&& localIndex, auto&& localView, auto&& intersection) {
-    dirichletFlagsEmbedded[localView.index(localIndex)[0]] = true;
+  Dune::Functions::forEachBoundaryDOF(subSpaceBasis(basisEmbedded,Dune::Indices::_1), [&](auto&& globalIndex) {
+    dirichletFlagsEmbedded[globalIndex[0]] = true;
     if (intersection.geometry().center()[1] < 1e-8)
       mBlocked[localView.index(localIndex)[0]].setValue(Eigen::Vector<double, directorDim>::UnitX());
     else if (intersection.geometry().center()[1] > Ly - 1e-8)
@@ -174,17 +175,11 @@ int main(int argc, char** argv) {
 
   auto updateFunction = std::function([&](DirectorVector& x, const Eigen::VectorXd& d) {
     auto dFull = denseAssembler.createFullVector(d);
-    for (auto i = 0U; i < x.size(); ++i) {
-      size_t indexStartI = i * x[0].correctionSize;
-      if (dirichletFlagsEmbedded[i]) {
-        continue;
-      }
-      x[i] += dFull.segment<directorCorrectionDim>(indexStartI);
-    }
+    x += dFull;
   });
 
-  //  checkGradient(nonLinOp, true, updateFunction);
-  //  checkHessian(nonLinOp, true, updateFunction);
+    checkGradient(nonLinOp, true, updateFunction);
+    checkHessian(nonLinOp, true, updateFunction);
 
   if (not Dune::FloatCmp::eq(nonLinOp.value(), e)) throw std::logic_error("Dune::FloatCmp::eq(nonLinOp.value(), e)");
   if (not nonLinOp.derivative().isApprox(g)) throw std::logic_error("nonLinOp.derivative().isApprox(g)");
@@ -203,19 +198,24 @@ int main(int argc, char** argv) {
 
   //  nr.subscribeAll(nonLinearSolverObserver);
 
-  auto lc = Ikarus::LoadControl(nr, 1, {0, 1000});
+  auto lc = Ikarus::LoadControl(nr, 100, {0, 100000});
 
   //  lc.subscribeAll(vtkWriter);
   std::cout << "Energy before: " << nonLinOp.value() << std::endl;
-  //  std::cout << mBlocked;
+  std::cout << "Energy after: " << nonLinOp.value() << std::endl;
+
+
+  auto writerObserver = std::make_shared<Ikarus::GenericControlObserver>(ControlMessages::STEP_ENDED,[&](auto i){
+    auto wGlobalFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, directorDim>>(
+        basisEmbedded, mBlocked);
+    Dune::VTKWriter vtkWriter(gridView);
+    vtkWriter.addVertexData(wGlobalFunc, Dune::VTK::FieldInfo("m", Dune::VTK::FieldInfo::Type::vector, directorDim));
+    vtkWriter.write(std::string("Magnet") + std::to_string(i));
+  });
+  lc.subscribeAll(writerObserver);
   lc.run();
   nonLinOp.update<0>();
-  std::cout << "Energy after: " << nonLinOp.value() << std::endl;
-  auto wGlobalFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, directorDim>>(
-      basisEmbedded, mBlocked);
-  Dune::VTKWriter vtkWriter(gridView);
-  vtkWriter.addVertexData(wGlobalFunc, Dune::VTK::FieldInfo("m", Dune::VTK::FieldInfo::Type::vector, directorDim));
-  vtkWriter.write("Magnet");
+
 
   for (auto& mS : mBlocked)
     if (not Dune::FloatCmp::eq(mS.getValue().norm(), 1.0))

@@ -58,6 +58,7 @@ namespace Ikarus::FiniteElements {
     static constexpr int directorCorrectionDim = directorDim - 1;
     using DirectorVector                       = Dune::BlockVector<Ikarus::UnitVector<double, directorDim>>;
 
+
     using FERequirementType = FErequirements<DirectorVector>;
     using LocalViewEmbedded = typename BasisEmbedded::LocalView;
     using LocalViewReduced  = typename BasisReduced::LocalView;

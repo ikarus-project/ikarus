@@ -9,8 +9,8 @@
 #include "ikarus/Solver/LinearSolver/LinearSolver.h"
 #include "ikarus/utils/LinearAlgebraHelper.h"
 #include "ikarus/utils/Observer/observerMessages.h"
+#include <ikarus/LinearAlgebra/linearAlgebraHelper.h>
 #include <ikarus/utils/Observer/observer.h>
-
 namespace Ikarus {
 
   struct NonlinearSolverSettings {
@@ -34,7 +34,9 @@ namespace Ikarus {
   template <typename NonLinearOperatorImpl,
             typename LinearSolver = std::function<typename NonLinearOperatorImpl::ValueType(
                 const typename NonLinearOperatorImpl::ValueType&, const typename NonLinearOperatorImpl::ValueType&)>,
-            typename UpdateType   = typename NonLinearOperatorImpl::template Parameter<0>>
+            typename UpdateType
+            = std::conditional_t<std::is_floating_point_v<typename NonLinearOperatorImpl::template Parameter<0>>,
+                                 typename NonLinearOperatorImpl::template Parameter<0>, Eigen::VectorXd>>
   class NewtonRaphson : public IObservable<NonLinearSolverMessages> {
   public:
     using LinearSolverScalarFunctionType = std::function<typename NonLinearOperatorImpl::ValueType(
@@ -50,8 +52,11 @@ namespace Ikarus {
         const NonLinearOperatorImpl& p_nonLinearOperator,
         LinearSolver&& p_linearSolver = [](const typename NonLinearOperatorImpl::ValueType& a,
                                            const typename NonLinearOperatorImpl::ValueType& b) { return a / b; },
-        std::function<void(ResultType&, const UpdateType&)> p_updateFunction
-        = [](ResultType& a, const UpdateType& b) { a += b; })
+        std::function<void(ResultType&, const UpdateType&)> p_updateFunction =
+            [](ResultType& a, const UpdateType& b) {
+              using Ikarus::operator+=;
+              a += b;
+            })
         : nonLinearOperator_{p_nonLinearOperator},
           linearSolver{std::move(p_linearSolver)},
           updateFunction{p_updateFunction} {
@@ -119,13 +124,18 @@ namespace Ikarus {
   template <typename NonLinearOperatorImpl,
             typename LinearSolver = std::function<typename NonLinearOperatorImpl::ValueType(
                 const typename NonLinearOperatorImpl::ValueType&, const typename NonLinearOperatorImpl::ValueType&)>,
-            typename UpdateType   = typename NonLinearOperatorImpl::template Parameter<0>>
-  auto makeNewtonRaphson(
+            typename UpdateType
+            = std::conditional_t<std::is_floating_point_v<typename NonLinearOperatorImpl::template Parameter<0>>,
+                                 typename NonLinearOperatorImpl::template Parameter<0>, Eigen::VectorXd>>
+ auto makeNewtonRaphson(
       const NonLinearOperatorImpl& p_nonLinearOperator,
       LinearSolver&& p_linearSolver = [](const typename NonLinearOperatorImpl::ValueType& a,
                                          const typename NonLinearOperatorImpl::ValueType& b) { return a / b; },
-      std::function<void(typename NonLinearOperatorImpl::template Parameter<0>&, const UpdateType&)> p_updateFunction
-      = [](typename NonLinearOperatorImpl::template Parameter<0>& a, const UpdateType& b) { a += b; }) {
+      std::function<void(typename NonLinearOperatorImpl::template Parameter<0>&, const UpdateType&)> p_updateFunction =
+          [](typename NonLinearOperatorImpl::template Parameter<0>& a, const UpdateType& b) {
+            using Ikarus::operator+=;
+            a += b;
+          }) {
     return std::make_shared<NewtonRaphson<NonLinearOperatorImpl, LinearSolver, UpdateType>>(
         p_nonLinearOperator, std::move(p_linearSolver), std::move(p_updateFunction));
   }
