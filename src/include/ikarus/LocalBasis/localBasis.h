@@ -27,7 +27,7 @@ namespace Ikarus {
     using JacobianType           = typename DuneLocalBasis::Traits::JacobianType;
 
     template <typename Derived>
-    void evaluateFunction(const DomainType& local, Eigen::PlainObjectBase<Derived>& N) {
+    void evaluateFunction(const DomainType& local, Eigen::PlainObjectBase<Derived>& N) const {
       duneLocalBasis->evaluateFunction(local, Ndune);
       N.resize(Ndune.size(), 1);
       N.setZero();
@@ -36,7 +36,7 @@ namespace Ikarus {
     }
 
     template <typename Derived>
-    void evaluateJacobian(const DomainType& local, Eigen::PlainObjectBase<Derived>& dN) {
+    void evaluateJacobian(const DomainType& local, Eigen::PlainObjectBase<Derived>& dN) const{
       duneLocalBasis->evaluateJacobian(local, dNdune);
       dN.setZero();
       dN.resize(dNdune.size(), gridDim);
@@ -48,7 +48,7 @@ namespace Ikarus {
 
     template <typename Derived1, typename Derived2>
     void evaluateFunctionAndJacobian(const DomainType& local, Eigen::PlainObjectBase<Derived1>& N,
-                                     Eigen::PlainObjectBase<Derived2>& dN) {
+                                     Eigen::PlainObjectBase<Derived2>& dN)const  {
       evaluateFunction(local, N);
       evaluateJacobian(local, dN);
     }
@@ -99,8 +99,8 @@ namespace Ikarus {
     }
 
   private:
-    std::vector<JacobianType> dNdune;
-    std::vector<RangeType> Ndune;
+    mutable std::vector<JacobianType> dNdune;
+    mutable std::vector<RangeType> Ndune;
     DuneLocalBasis const* duneLocalBasis;
     std::optional<std::vector<int>> boundDerivatives;
     std::optional<std::vector<Eigen::VectorX<RangeFieldType>>> Nbound;

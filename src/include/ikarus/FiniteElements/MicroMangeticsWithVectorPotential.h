@@ -32,6 +32,7 @@
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/geometry/type.hh>
 
+#include "ikarus/Geometries/SimpleLocalFunction.h"
 #include "ikarus/LocalBasis/localBasis.h"
 #include "ikarus/utils/LinearAlgebraHelper.h"
 #include <ikarus/FiniteElements/AutodiffFE.h>
@@ -45,6 +46,27 @@
 
 namespace Ikarus::FiniteElements {
 
+  namespace Impl {
+    template <typename ScalarType, int FieldSize, int worlddim>
+    Eigen::Vector<ScalarType, 3> jacobianToCurl(const Eigen::Matrix<ScalarType, FieldSize, worlddim>& jaco) {
+      Eigen::Vector<ScalarType, 3> curl;
+      if constexpr (FieldSize == 3 and worlddim == 3) {
+        curl[0] = jaco(2, 1) - jaco(1, 2);
+        curl[1] = jaco(0, 2) - jaco(2, 0);
+        curl[2] = jaco(1, 0) - jaco(0, 1);
+      } else if constexpr (FieldSize == 3 and worlddim == 2) {
+        curl[0] = jaco(2, 1);
+        curl[1] = -jaco(2, 0);
+        curl[2] = jaco(1, 0) - jaco(0, 1);
+      } else if constexpr (FieldSize == 1 and worlddim == 2) {
+        curl[0] = jaco(0, 1);
+        curl[1] = -jaco(0, 0);
+        curl[2] = 0;
+      }
+      return curl;
+    }
+  }  // namespace Impl
+
   struct MagneticMaterial {
     double A{0.0};
     double K{0.0};
@@ -54,12 +76,14 @@ namespace Ikarus::FiniteElements {
   template <typename BasisEmbedded, typename BasisReduced>
   class MicroMagneticsWithVectorPotential {
   public:
-    static constexpr int directorDim           = BasisEmbedded::PreBasis::Node::CHILDREN;
+    static constexpr int directorDim           = BasisEmbedded::PreBasis::template SubPreBasis<0>::Node::CHILDREN;
+    static constexpr int vectorPotDim          = BasisEmbedded::PreBasis::template SubPreBasis<1>::Node::CHILDREN;
     static constexpr int directorCorrectionDim = directorDim - 1;
     using DirectorVector                       = Dune::BlockVector<Ikarus::UnitVector<double, directorDim>>;
+    using VectorPotVector                      = Dune::BlockVector<Ikarus::RealTuple<double, vectorPotDim>>;
+    using MultiTypeVector                      = Dune::MultiTypeBlockVector<DirectorVector, VectorPotVector>;
 
-
-    using FERequirementType = FErequirements<DirectorVector>;
+    using FERequirementType = FErequirements<MultiTypeVector>;
     using LocalViewEmbedded = typename BasisEmbedded::LocalView;
     using LocalViewReduced  = typename BasisReduced::LocalView;
 
@@ -73,79 +97,129 @@ namespace Ikarus::FiniteElements {
           material{p_material} {
       localView_.bind(element);
       localViewReduced.bind(element);
-      const int order = 3 * localView_.tree().child(0).finiteElement().localBasis().order();
+      const int order = 3 * localView_.tree().child(Dune::Indices::_0, 0).finiteElement().localBasis().order();
       //      std::cout<<"Order:"<<order<<std::endl;
-      localBasis = Ikarus::LocalBasis(localView_.tree().child(0).finiteElement().localBasis());
-      localBasis.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order), 0, 1);
+      localBasisMag = Ikarus::LocalBasis(localView_.tree().child(Dune::Indices::_0, 0).finiteElement().localBasis());
+      localBasisMag.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order), 0, 1);
+      localBasisVecPot = Ikarus::LocalBasis(localView_.tree().child(Dune::Indices::_1, 0).finiteElement().localBasis());
+      localBasisVecPot.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order), 0,
+                            1);
     }
 
     using Traits = TraitsFromLocalView<LocalViewEmbedded>;
     template <typename ST>
-    using DefoGeo = Ikarus::Geometry::GeometryWithExternalInput<ST, directorDim, Traits::mydim>;
+    using LocalFuncMag = Ikarus::Geometry::SimpleLocalFunction<ST, directorDim, Traits::mydim>;
+    template <typename ST>
+    using LocalFuncVecPot = Ikarus::Geometry::SimpleLocalFunction<ST, vectorPotDim, Traits::mydim>;
 
     using GlobalIndex = typename LocalViewReduced::MultiIndex;
     void globalIndices(std::vector<GlobalIndex>& globalIndices) const {
-      const auto& fe = localViewReduced.tree().child(0).finiteElement();
+      using namespace Dune::Indices;
+      const auto& fe = localViewReduced.tree().child(_0, 0).finiteElement();
       for (size_t i = 0; i < fe.size(); ++i) {
         for (int j = 0; j < directorCorrectionDim; ++j) {
-          globalIndices.push_back(localViewReduced.index((localViewReduced.tree().child(j).localIndex(i))));
+          globalIndices.push_back(localViewReduced.index((localViewReduced.tree().child(_0, j).localIndex(i))));
+        }
+      }
+      const auto& fe2 = localViewReduced.tree().child(_1, 0).finiteElement();
+      for (size_t i = 0; i < fe2.size(); ++i) {
+        for (int j = 0; j < vectorPotDim; ++j) {
+          globalIndices.push_back(localViewReduced.index((localViewReduced.tree().child(_1, j).localIndex(i))));
         }
       }
     }
 
     void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& hred) const {
-      Eigen::VectorXdual2nd dx(localView_.size());
-      dx.setZero();
+      using namespace Dune::Indices;
+      dx2nd.resize(localView_.size());
+      dx2nd.setZero();
       auto f = [&](auto& x) { return this->calculateScalarImpl(par, x); };
-      Eigen::MatrixXd h;
-      Eigen::VectorXd g;
       autodiff::dual2nd e;
-      hessian(f, wrt(dx), at(dx), e, g, h);
+      hessian(f, wrt(dx2nd), at(dx2nd), e, eukGrad, hEuk);
 
-      const auto& m  = par.sols[0].get();
-      const auto& fe = localView_.tree().child(0).finiteElement();
-      for (auto i = 0U; i < fe.size(); ++i) {
+      const auto& m        = par.sols[0].get()[_0];
+      const auto& feMag    = localView_.tree().child(_0, 0).finiteElement();
+      const auto& feVecPot = localView_.tree().child(_1, 0).finiteElement();
+      for (auto i = 0U; i < feMag.size(); ++i) {
         const size_t indexRedI  = i * directorCorrectionDim;
         const size_t indexI     = i * directorDim;
-        const auto globalIndexI = localView_.index(localView_.tree().child(0).localIndex(i));
+        const auto globalIndexI = localView_.index(localView_.tree().child(_0, 0).localIndex(i));
         const Eigen::Matrix<double, directorCorrectionDim, directorDim> BLAIT
-            = m[globalIndexI[0]].orthonormalFrame().transpose();
-        for (auto j = 0U; j < fe.size(); ++j) {
+            = m[globalIndexI[1]].orthonormalFrame().transpose();
+        for (auto j = 0U; j < feMag.size(); ++j) {
           const size_t indexRedJ  = j * directorCorrectionDim;
           const size_t indexJ     = j * directorDim;
-          const auto globalIndexJ = localView_.index(localView_.tree().child(0).localIndex(j));
-          const auto BLAJ         = m[globalIndexJ[0]].orthonormalFrame();
+          const auto globalIndexJ = localView_.index(localView_.tree().child(_0, 0).localIndex(j));
+          const auto BLAJ         = m[globalIndexJ[1]].orthonormalFrame();
 
           hred.template block<directorCorrectionDim, directorCorrectionDim>(indexRedI, indexRedJ)
-              = BLAIT * h.block<directorDim, directorDim>(indexI, indexJ) * BLAJ;
+              = BLAIT * hEuk.block<directorDim, directorDim>(indexI, indexJ) * BLAJ;
         }
         hred.template block<directorCorrectionDim, directorCorrectionDim>(indexRedI, indexRedI)
-            -= m[globalIndexI[0]].getValue().dot(g.template segment<directorDim>(indexI))
+            -= m[globalIndexI[1]].getValue().dot(eukGrad.template segment<directorDim>(indexI))
                * Eigen::Matrix<double, directorCorrectionDim, directorCorrectionDim>::Identity();
       }
+
+      const int magHessianSize = feMag.size() * directorCorrectionDim;
+      const int magFullHessianSize = feMag.size() * directorDim;
+
+      for (auto i = 0U; i < feMag.size(); ++i) {
+        const size_t indexRedI  = i * directorCorrectionDim;
+        const size_t indexI     = i * directorDim;
+        const auto globalIndexI = localView_.index(localView_.tree().child(_0, 0).localIndex(i));
+        const Eigen::Matrix<double, directorCorrectionDim, directorDim> BLAIT
+            = m[globalIndexI[1]].orthonormalFrame().transpose();
+        for (auto j = 0U; j < feVecPot.size(); ++j) {
+          const size_t indexRedJ = magHessianSize + j * vectorPotDim;
+          const size_t indexJ = magFullHessianSize + j * vectorPotDim;
+          hred.template block<directorCorrectionDim, vectorPotDim>(indexRedI, indexRedJ)
+              = BLAIT * hEuk.block<directorDim, vectorPotDim>(indexI, indexJ);
+        }
+      }
+
+      for (auto i = 0U; i < feVecPot.size(); ++i) {
+        const size_t indexRedI = magHessianSize + i * vectorPotDim;
+        const size_t indexI = magFullHessianSize + i * vectorPotDim;
+        for (auto j = 0U; j < feMag.size(); ++j) {
+          const size_t indexRedJ  = j * directorCorrectionDim;
+          const size_t indexJ     = j * directorDim;
+          const auto globalIndexJ = localView_.index(localView_.tree().child(_0, 0).localIndex(j));
+          const auto BLAJ         = m[globalIndexJ[1]].orthonormalFrame();
+
+          hred.template block<vectorPotDim, directorCorrectionDim>(indexRedI, indexRedJ)
+              = hEuk.block<vectorPotDim, directorDim>(indexI, indexJ) * BLAJ;
+        }
+      }
+
+      hred(Eigen::seq(magHessianSize, Eigen::last), Eigen::seq(magHessianSize, Eigen::last))
+          = hEuk(Eigen::seq(magFullHessianSize, Eigen::last), Eigen::seq(magFullHessianSize, Eigen::last));
     }
 
     [[nodiscard]] int size() const { return localViewReduced.size(); }
 
     void calculateVector(const FERequirementType& par, typename Traits::VectorType& rieGrad) const {
-      Eigen::VectorXdual dx(localView_.size());
-      dx.setZero();
+      using namespace Dune::Indices;
+      dx1st.resize(localView_.size());
+      dx1st.setZero();
       auto f = [&](auto& x) { return this->calculateScalarImpl(par, x); };
-      Eigen::VectorXd eukGrad;
-      autodiff::dual e;
-      autodiff::gradient(f, wrt(dx), at(dx), e, eukGrad);
-      const auto& m = par.sols[0].get();
-      std::vector<Ikarus::UnitVector<double, directorDim> const*> mLocal;
-      auto& first_child = localView_.tree().child(0);
-      const auto& fe    = first_child.finiteElement();
 
-      for (auto i = 0U; i < fe.size(); ++i) {
-        auto globalIndex = localView_.index(localView_.tree().child(0).localIndex(i));
+      autodiff::dual e;
+      autodiff::gradient(f, wrt(dx1st), at(dx1st), e, eukGrad);
+      const auto& m = par.sols[0].get()[_0];
+      std::vector<Ikarus::UnitVector<double, directorDim> const*> mLocal;
+      auto& first_child = localView_.tree().child(_0, 0);
+      const auto& feMag = first_child.finiteElement();
+
+      const int magElementEntries    = feMag.size() * directorDim;
+      const int magRedElementEntries = feMag.size() * directorCorrectionDim;
+      for (auto i = 0U; i < feMag.size(); ++i) {
+        auto globalIndex = localView_.index(localView_.tree().child(_0, 0).localIndex(i));
         size_t indexRed  = i * directorCorrectionDim;
         size_t index     = i * directorDim;
         rieGrad.template segment<directorCorrectionDim>(indexRed)
-            = m[globalIndex[0]].orthonormalFrame().transpose() * eukGrad.template segment<directorDim>(index);
+            = m[globalIndex[1]].orthonormalFrame().transpose() * eukGrad.template segment<directorDim>(index);
       }
+      rieGrad(Eigen::seq(magRedElementEntries, Eigen::last)) = eukGrad(Eigen::seq(magElementEntries, Eigen::last));
     }
 
     [[nodiscard]] typename Traits::ScalarType calculateScalar(const FERequirementType& par) const {
@@ -157,54 +231,112 @@ namespace Ikarus::FiniteElements {
 
   private:
     template <class ScalarType>
-    ScalarType calculateScalarImpl(const FERequirementType& par, Eigen::VectorX<ScalarType>& dx) const {
-      const auto& m      = par.sols[0].get();
+    ScalarType calculateScalarImpl(const FERequirementType& par, Eigen::VectorX<ScalarType>& dx_) const {
+      using namespace Dune::Indices;
+      const auto& mNodal = par.sols[0].get()[_0];
+      const auto& ANodal = par.sols[0].get()[_1];
       const auto& lambda = par.parameter.at(FEParameter::loadfactor);
 
-      auto& first_child = localView_.tree().child(0);
-      const auto& fe    = first_child.finiteElement();
+      auto& child0    = localView_.tree().child(_0, 0);
+      const auto& fe0 = child0.finiteElement();
+      auto& child1    = localView_.tree().child(_1, 0);
+
+      const auto& fe1 = child1.finiteElement();
       Eigen::Matrix<ScalarType, directorDim, Eigen::Dynamic> mN;
-      mN.setZero(Eigen::NoChange, fe.size());
-      for (auto i = 0U; i < fe.size(); ++i) {
-        auto globalIndex = localView_.index(localView_.tree().child(0).localIndex(i));
-        mN.col(i)        = dx.template segment<directorDim>(i * directorDim) + m[globalIndex[0]].getValue();
+      Eigen::Matrix<ScalarType, vectorPotDim, Eigen::Dynamic> AN;
+      mN.setZero(Eigen::NoChange, fe0.size());
+      AN.setZero(Eigen::NoChange, fe1.size());
+      for (auto i = 0U; i < fe0.size(); ++i) {
+        auto globalIndex = localView_.index(localView_.tree().child(_0, 0).localIndex(i));
+        mN.col(i)        = dx_.template segment<directorDim>(i * directorDim) + mNodal[globalIndex[1]].getValue();
+      }
+
+      const int magElementEntries = fe0.size() * directorDim;
+      for (auto i = 0U; i < fe1.size(); ++i) {
+        auto globalIndex = localView_.index(localView_.tree().child(_1, 0).localIndex(i));
+        AN.col(i)        = dx_.template segment<vectorPotDim>(magElementEntries + i * vectorPotDim)
+                    + ANodal[globalIndex[1]].getValue();
       }
 
       ScalarType energy = 0.0;
 
       const auto geo = localView_.element().geometry();
 
-      for (const auto& [gpIndex, gp, N, dN] : localBasis.viewOverFunctionAndJacobian()) {
+      const int order = 3 * localView_.tree().child(Dune::Indices::_0, 0).finiteElement().localBasis().order();
+
+      const auto& rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
+
+      for (const auto& gp : rule) {
+        localBasisMag.template evaluateFunctionAndJacobian(gp.position(), Nm, dNm);
+        localBasisVecPot.template evaluateFunctionAndJacobian(gp.position(), NA, dNA);
+
         const auto J = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
         Eigen::Vector<ScalarType, directorDim> magnetizationEuk;
+        Eigen::Vector<ScalarType, vectorPotDim> vectorPot;
         magnetizationEuk.setZero();
 
-        for (int i = 0; i < N.size(); ++i)
-          magnetizationEuk += mN.col(i) * N[i];
+        for (int i = 0; i < Nm.size(); ++i)
+          magnetizationEuk += mN.col(i) * Nm[i];
         const Eigen::Vector<ScalarType, directorDim> normalizedMag = magnetizationEuk.normalized();
+
+        vectorPot.setZero();
+
+        for (int i = 0; i < Nm.size(); ++i)
+          vectorPot += AN.col(i) * NA[i];
 
         const ScalarType mLength = magnetizationEuk.norm();
         const Eigen::Matrix<ScalarType, directorDim, directorDim> Pm
             = (Eigen::Matrix<ScalarType, directorDim, directorDim>::Identity()
                - normalizedMag * normalizedMag.transpose())
               / mLength;
-        const auto dNdx = (dN * J.inverse()).eval();
+        const auto dNmdx = (dNm * J.inverse()).eval();
+        const auto dNAdx = (dNA * J.inverse()).eval();
         Eigen::Matrix<ScalarType, directorDim, Traits::mydim> gradm
-            = (DefoGeo<ScalarType>::jacobianTransposed(dNdx, mN).transpose());
+            = (LocalFuncMag<ScalarType>::jacobianTransposed(dNmdx, mN).transpose());
         gradm = Pm * gradm;
+        Eigen::Matrix<ScalarType, vectorPotDim, Traits::mydim> gradA
+            = (LocalFuncVecPot<ScalarType>::jacobianTransposed(dNAdx, AN).transpose());
 
+        const Eigen::Vector<ScalarType, 3> curlA(gradA(0,1),-gradA(0,0),0);
+        const ScalarType divA                    = 0;
+        //        std::cout<<"mN::"<<mN<<std::endl;
+        //        std::cout<<"AN::"<<AN<<std::endl;
+        //        std::cout<<"normalizedMag::"<<normalizedMag.transpose()<<std::endl;
+        //        std::cout<<"magnetizationEuk::"<<magnetizationEuk.transpose()<<std::endl;
+        //        std::cout<<"Pm::"<<Pm<<std::endl;
+        //        std::cout<<"gradm::"<<gradm.transpose()<<std::endl;
+        //        std::cout<<"dNm::"<<dNm<<std::endl;
+        //        std::cout<<"dNmdx::"<<dNmdx<<std::endl;
+        //        std::cout<<"gradA::"<<gradA.transpose()<<std::endl;
+//                std::cout<<"curlA::"<<curlA.transpose()<<std::endl;
+        //        std::cout<<"divA::"<<divA<<std::endl;
         const Eigen::Vector<double, directorDim> Hbar = volumeLoad(toEigenVector(gp.position()), lambda);
+        //        std::cout<<"Hbar::"<<Hbar<<std::endl;
         energy += (0.5 * (gradm.transpose() * gradm).trace() - 2 * normalizedMag.dot(Hbar) / material.ms)
-                  * geo.integrationElement(gp.position()) * gp.weight();
+                  * geo.integrationElement(gp.position()) * gp.weight();  // exchange and zeeman energy
+
+        energy += (0.5 * curlA.squaredNorm() - normalizedMag.dot(curlA) + divA * divA)
+                  * geo.integrationElement(gp.position()) * gp.weight();  // demag energy
       }
       return energy;
     }
+    mutable Eigen::MatrixXd hEuk;
+    mutable Eigen::VectorXd eukGrad;
+    mutable Eigen::VectorXdual2nd dx2nd;
+    mutable Eigen::VectorXdual dx1st;
+    mutable Eigen::VectorXd Nm;
+    mutable Eigen::Matrix<double, Eigen::Dynamic, Traits::mydim> dNm;
+    mutable Eigen::VectorXd NA;
+    mutable Eigen::Matrix<double, Eigen::Dynamic, Traits::mydim> dNA;
 
     LocalViewEmbedded localView_;
     LocalViewReduced localViewReduced;
-    Ikarus::LocalBasis<
-        std::remove_cvref_t<decltype(std::declval<LocalViewEmbedded>().tree().child(0).finiteElement().localBasis())>>
-        localBasis;
+    Ikarus::LocalBasis<std::remove_cvref_t<
+        decltype(std::declval<LocalViewEmbedded>().tree().child(Dune::Indices::_0, 0).finiteElement().localBasis())>>
+        localBasisMag;
+    Ikarus::LocalBasis<std::remove_cvref_t<
+        decltype(std::declval<LocalViewEmbedded>().tree().child(Dune::Indices::_1, 0).finiteElement().localBasis())>>
+        localBasisVecPot;
     std::function<Eigen::Vector<double, directorDim>(const Eigen::Vector<double, Traits::mydim>&, const double&)>
         volumeLoad;
     MagneticMaterial material;

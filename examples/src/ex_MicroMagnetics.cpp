@@ -10,6 +10,7 @@
 #include <dune/functions/functionspacebases/compositebasis.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
+#include <dune/functions/functionspacebases/subspacebasis.hh>
 #include <dune/grid/yaspgrid.hh>
 #include <dune/iga/nurbsgrid.hh>
 
@@ -38,6 +39,11 @@ constexpr int directorDim           = 3;
 constexpr int vectorPotDim          = gridDim == 2 ? 1 : 3;
 constexpr int directorCorrectionDim = directorDim - 1;
 
+
+using DirectorVector     = Dune::BlockVector<Ikarus::UnitVector<double, directorDim>>;
+using VectorPotVector = Dune::BlockVector<Ikarus::RealTuple<double, vectorPotDim>>;
+using MultiTypeVector    = Dune::MultiTypeBlockVector<DirectorVector, VectorPotVector>;
+
 int main(int argc, char** argv) {
   Dune::MPIHelper::instance(argc, argv);
   using namespace Ikarus;
@@ -46,19 +52,19 @@ int main(int argc, char** argv) {
   const double lengthUnit      = 1e-9;
   const double sizedom1InMeter = 60 * lengthUnit;
   const double sizedom1        = sizedom1InMeter / lx;
-  const double sizedom2        = sizedom1;
+  const double sizedom2        = sizedom1/2;
 
   using Grid        = Dune::YaspGrid<gridDim>;
   const double Lx   = sizedom1;
   const double Ly   = sizedom2;
-  const size_t elex = 1;
+  const size_t elex = 2;
   const size_t eley = 1;
 
   Dune::FieldVector<double, 2> bbox = {Lx, Ly};
   std::array<int, 2> eles           = {elex, eley};
   auto grid                         = std::make_shared<Grid>(bbox, eles);
 
-  grid->globalRefine(5);
+  grid->globalRefine(8);
   auto gridView = grid->leafGridView();
 
   spdlog::info("The exchange length is {}.", lx);
@@ -68,20 +74,12 @@ int main(int argc, char** argv) {
 //  auto basisEmbedded = makeBasis(gridView, power<directorDim>(lagrange<magnetizationOrder>(), BlockedInterleaved()));
   auto basisEmbeddedC
       = makeBasis(gridView, composite(power<directorDim>(lagrange<magnetizationOrder>(), BlockedInterleaved()),
-                                      power<vectorPotDim>(lagrange<vectorPotOrder>(), FlatInterleaved()),FlatLexicographic{}));
-  auto localViewC = basisEmbeddedC.localView();
-  for (auto& element : elements(gridView))
-  {
-    using namespace Dune::Indices;
-    localViewC.bind(element);
-    std::cout<<"_0,0,0: "<<localViewC.index(localViewC.tree().child(_0,0).localIndex(0))<<std::endl;
-    std::cout<<"_0,1,0: "<<localViewC.index(localViewC.tree().child(_0,1).localIndex(0))<<std::endl;
-    std::cout<<"_1,0,0: "<<localViewC.index(localViewC.tree().child(_1,0).localIndex(0))<<std::endl;
-    std::cout<<"_1,0,0: "<<localViewC.index(localViewC.tree().child(_1,1).localIndex(0))<<std::endl;
-  }
+                                      power<vectorPotDim>(lagrange<vectorPotOrder>(), BlockedInterleaved()),BlockedLexicographic{}));
+
+
 //  auto basisRie = makeBasis(gridView, power<directorCorrectionDim>(lagrange<magnetizationOrder>(), FlatInterleaved()));
   auto basisRieC
-      = makeBasis(gridView, composite(power<directorDim>(lagrange<magnetizationOrder>(), FlatInterleaved()),
+      = makeBasis(gridView, composite(power<directorCorrectionDim>(lagrange<magnetizationOrder>(), FlatInterleaved()),
                                       power<vectorPotDim>(lagrange<vectorPotOrder>(), FlatInterleaved()),FlatLexicographic{}));
   std::cout << "This gridview cotains: " << std::endl;
   std::cout << gridView.size(2) << " vertices" << std::endl;
@@ -104,86 +102,83 @@ int main(int argc, char** argv) {
   for (auto& element : elements(gridView))
     fes.emplace_back(basisEmbeddedC, basisRieC, element, mat, volumeLoad);
 
-  using DirectorVector = Dune::BlockVector<Ikarus::UnitVector<double, directorDim>>;
-  DirectorVector mBlocked(basisEmbedded.size());
+  DirectorVector mBlocked(basisEmbeddedC.size({Dune::Indices::_0}));
   for (auto& msingle : mBlocked) {
-    msingle.setValue(Eigen::Vector<double, directorDim>::UnitX());
+    msingle.setValue(Eigen::Vector<double, directorDim>::Random());
   }
 
-  std::vector<bool> dirichletFlagsEmbedded(basisEmbeddedC.size(), false);
+  VectorPotVector  aBlocked(basisEmbeddedC.size({Dune::Indices::_1}));
+  for (auto& asingle : aBlocked) {
+    asingle.setValue(Eigen::Vector<double, vectorPotDim>::Zero());
+  }
+
+  MultiTypeVector mAndABlocked(mBlocked,aBlocked);
+
   std::vector<bool> dirichletFlags(basisRieC.size(), false);
-
-  Dune::Functions::forEachBoundaryDOF(subSpaceBasis(basisEmbedded,Dune::Indices::_1), [&](auto&& globalIndex) {
-    dirichletFlagsEmbedded[globalIndex[0]] = true;
-    if (intersection.geometry().center()[1] < 1e-8)
-      mBlocked[localView.index(localIndex)[0]].setValue(Eigen::Vector<double, directorDim>::UnitX());
-    else if (intersection.geometry().center()[1] > Ly - 1e-8)
-      mBlocked[localView.index(localIndex)[0]].setValue(Eigen::Vector<double, directorDim>::UnitX());
-    else if (intersection.geometry().center()[0] > Lx - 1e-8)
-      mBlocked[localView.index(localIndex)[0]].setValue(Eigen::Vector<double, directorDim>::UnitZ());
-    else if (intersection.geometry().center()[0] < 1e-8)
-      mBlocked[localView.index(localIndex)[0]].setValue(-Eigen::Vector<double, directorDim>::UnitZ());
+  std::cout<<"dirichletFlags.size()"<<dirichletFlags.size()<<std::endl;
+  //Fix vector potential on the whole boundary
+  Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basisRieC,Dune::Indices::_1), [&](auto&& globalIndex) {
+    dirichletFlags[globalIndex[0]] = true;
   });
+//  std::cout<<"==========="<<std::endl;
+//  Ikarus::utils::printContent(dirichletFlags);
+//  std::cout<<"==========="<<std::endl;
+  assert(aBlocked.size() == gridView.size(2));
+  assert(mBlocked.size() == gridView.size(2));
 
-  Dune::Functions::forEachBoundaryDOF(basisRie, [&](auto&& localIndex, auto&& localView, auto&& intersection) {
-    dirichletFlags[localView.index(localIndex)[0]] = true;
-  });
 
-  auto denseAssembler  = DenseFlatAssembler(basisRie, fes, dirichletFlags);
-  auto sparseAssembler = SparseFlatAssembler(basisRie, fes, dirichletFlags);
+  auto denseAssembler  = DenseFlatAssembler(basisRieC, fes, dirichletFlags);
+  auto sparseAssembler = SparseFlatAssembler(basisRieC, fes, dirichletFlags);
 
   double lambda = 0.0;
 
   auto residualFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
-    Ikarus::FErequirements<DirectorVector> req;
+    Ikarus::FErequirements<MultiTypeVector> req;
     req.sols.emplace_back(disp);
     req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
-    req.matrixAffordances = Ikarus::MatrixAffordances::stiffness;
     return denseAssembler.getReducedVector(req);
   };
 
   auto hessianFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
-    Ikarus::FErequirements<DirectorVector> req;
+    Ikarus::FErequirements<MultiTypeVector> req;
     req.sols.emplace_back(disp);
     req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
-    req.matrixAffordances = Ikarus::MatrixAffordances::stiffness;
     return sparseAssembler.getReducedMatrix(req);
   };
 
   auto energyFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto {
-    Ikarus::FErequirements<DirectorVector> req;
+    Ikarus::FErequirements<MultiTypeVector> req;
     req.sols.emplace_back(disp);
     req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
-    req.matrixAffordances = Ikarus::MatrixAffordances::stiffness;
     return denseAssembler.getScalar(req);
   };
 
-  auto& h = hessianFunction(mBlocked, lambda);
-  //  std::cout << h << std::endl;
+//  auto& h = hessianFunction(mAndABlocked, lambda);
+//    std::cout <<"hbig"<< h << std::endl;
+//
+//  auto& g = residualFunction(mAndABlocked, lambda);
+//    std::cout <<"g"<< g << std::endl;
+//
+//  auto e = energyFunction(mAndABlocked, lambda);
+//    std::cout <<"e"<< e << std::endl;
 
-  auto& g = residualFunction(mBlocked, lambda);
-  //  std::cout << g << std::endl;
-
-  auto e = energyFunction(mBlocked, lambda);
-  //  std::cout << e << std::endl;
-
-  assert(g.size() == gridView.size(2) * directorCorrectionDim - std::ranges::count(dirichletFlags, true)
-         && "The returned gradient has incorrect size");
+//  assert(g.size() == gridView.size(2) * directorCorrectionDim +gridView.size(2) * vectorPotDim - std::ranges::count(dirichletFlags, true)
+//         && "The returned gradient has incorrect size");
 
   auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, residualFunction, hessianFunction),
-                                            parameter(mBlocked, lambda));
+                                            parameter(mAndABlocked, lambda));
 
-  auto updateFunction = std::function([&](DirectorVector& x, const Eigen::VectorXd& d) {
+  auto updateFunction = std::function([&](MultiTypeVector & multiTypeVector, const Eigen::VectorXd& d) {
     auto dFull = denseAssembler.createFullVector(d);
-    x += dFull;
+    multiTypeVector += dFull;
   });
 
     checkGradient(nonLinOp, true, updateFunction);
     checkHessian(nonLinOp, true, updateFunction);
 
-  if (not Dune::FloatCmp::eq(nonLinOp.value(), e)) throw std::logic_error("Dune::FloatCmp::eq(nonLinOp.value(), e)");
-  if (not nonLinOp.derivative().isApprox(g)) throw std::logic_error("nonLinOp.derivative().isApprox(g)");
-  if (not nonLinOp.secondDerivative().isApprox(h)) throw std::logic_error("nonLinOp.secondDerivative().isApprox(h)");
+//  if (not Dune::FloatCmp::eq(nonLinOp.value(), e)) throw std::logic_error("Dune::FloatCmp::eq(nonLinOp.value(), e)");
+//  if (not nonLinOp.derivative().isApprox(g)) throw std::logic_error("nonLinOp.derivative().isApprox(g)");
+//  if (not nonLinOp.secondDerivative().isApprox(h)) throw std::logic_error("nonLinOp.secondDerivative().isApprox(h)");
 
   auto nr = Ikarus::makeTrustRegion(nonLinOp, updateFunction);
   nr->setup({.verbosity = 1,
@@ -194,10 +189,6 @@ int main(int argc, char** argv) {
              .rho_reg   = 1e6,
              .Delta0    = 1});
 
-  //  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
-
-  //  nr.subscribeAll(nonLinearSolverObserver);
-
   auto lc = Ikarus::LoadControl(nr, 100, {0, 100000});
 
   //  lc.subscribeAll(vtkWriter);
@@ -206,10 +197,13 @@ int main(int argc, char** argv) {
 
 
   auto writerObserver = std::make_shared<Ikarus::GenericControlObserver>(ControlMessages::STEP_ENDED,[&](auto i){
-    auto wGlobalFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, directorDim>>(
-        basisEmbedded, mBlocked);
+    auto mGlobalFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, directorDim>>(
+        Dune::Functions::subspaceBasis(basisEmbeddedC,Dune::Indices::_0), mAndABlocked);
+    auto AGlobalFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, directorDim>>(
+        Dune::Functions::subspaceBasis(basisEmbeddedC,Dune::Indices::_1), mAndABlocked);
     Dune::VTKWriter vtkWriter(gridView);
-    vtkWriter.addVertexData(wGlobalFunc, Dune::VTK::FieldInfo("m", Dune::VTK::FieldInfo::Type::vector, directorDim));
+    vtkWriter.addVertexData(mGlobalFunc, Dune::VTK::FieldInfo("m", Dune::VTK::FieldInfo::Type::vector, directorDim));
+    vtkWriter.addVertexData(AGlobalFunc, Dune::VTK::FieldInfo("A", Dune::VTK::FieldInfo::Type::vector, directorDim));
     vtkWriter.write(std::string("Magnet") + std::to_string(i));
   });
   lc.subscribeAll(writerObserver);

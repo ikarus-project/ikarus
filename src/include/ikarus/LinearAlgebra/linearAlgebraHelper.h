@@ -22,11 +22,9 @@ size_t correctionSize(const Dune::BlockVector<Type>& a) requires requires { Type
 
 template <typename Type, typename Derived>
 Dune::BlockVector<Type>& operator+=(Dune::BlockVector<Type>& a, const Eigen::MatrixBase<Derived>& b) requires(
-    Ikarus::Concepts::AddAssignAble<Type, decltype(b.segment(0, 0))>and requires() { Type::correctionSize; }) {
-  for (auto i = 0U; i < a.size(); ++i) {
-    size_t indexStartI = i * Type::correctionSize;
-    a[i] += b.template segment<Type::correctionSize>(indexStartI);
-  }
+    Ikarus::Concepts::AddAssignAble<Type, decltype(b.template segment<Type::correctionSize>(0))>and requires() { Type::correctionSize; }) {
+  for (auto i = 0U; i < a.size(); ++i)
+    a[i] += b.template segment<Type::correctionSize>(i * Type::correctionSize);
   return a;
 }
 
