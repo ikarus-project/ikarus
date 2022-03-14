@@ -193,7 +193,7 @@ namespace Ikarus::FiniteElements {
         gradm = Pm * gradm;
 
         const Eigen::Vector<double, directorDim> Hbar = volumeLoad(toEigenVector(gp.position()), lambda);
-        energy += (0.5 * (gradm.transpose() * gradm).trace() - 0.0 * 2 * normalizedMag.dot(Hbar) / material.ms)
+        energy += (0.5 * (gradm.transpose() * gradm).trace() - 2 * normalizedMag.dot(Hbar) / material.ms)
                   * geo.integrationElement(gp.position()) * gp.weight();
       }
       return energy;
