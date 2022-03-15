@@ -14,7 +14,7 @@ namespace Ikarus::Manifold {
    * \tparam ct The type used for the scalar coordinate values, e.g. double,float
    * \tparam d Dimension of the embedding space of the manifold
    */
-  template <std::floating_point ct, int d>
+  template <typename ct, int d>
   class UnitVector {
   public:
     /** \brief Type used for coordinates */
@@ -81,14 +81,29 @@ namespace Ikarus::Manifold {
       var.normalize();  // projection-based retraction
     }
 
-    static Eigen::Matrix<ctype, valueSize,valueSize> derivativeOfProjection(const Eigen::Vector<ctype, valueSize>& p)
-    {
+    static Eigen::Matrix<ctype, valueSize, valueSize> derivativeOfProjectionWRTposition(
+        const Eigen::Vector<ctype, valueSize> &p) {
       const ctype normSquared = p.squaredNorm();
-      const ctype norm = std::sqrt(normSquared);
+      const ctype norm        = std::sqrt(normSquared);
 
-      Eigen::Matrix<ctype, valueSize,valueSize> result= (Eigen::Matrix<ctype, valueSize,valueSize>::Identity()-(p*p.transpose())/normSquared)/norm;
+      Eigen::Matrix<ctype, valueSize, valueSize> result
+          = (Eigen::Matrix<ctype, valueSize, valueSize>::Identity() - (p * p.transpose()) / normSquared) / norm;
 
       return result;
+    }
+
+    static Eigen::Matrix<ctype, valueSize, valueSize> secondDerivativeOfProjectionWRTpositionANDspatial(
+        const Eigen::Vector<ctype, valueSize> &p, const Eigen::Ref<const Eigen::Vector<ctype, valueSize>> &along) {
+      const ctype normSquared                  = p.squaredNorm();
+      const ctype norm                         = std::sqrt(normSquared);
+      const Eigen::Vector<ctype, valueSize> pN = p/norm;
+
+      Eigen::Matrix<ctype, valueSize, valueSize> Q_along
+          = 1 / normSquared
+            * (pN.dot(along) * (3 * pN * pN.transpose() - Eigen::Matrix<ctype, valueSize, valueSize>::Identity())
+               - along * pN.transpose() - pN * along.transpose());
+
+      return Q_along;
     }
 
     /** \brief Compute an orthonormal basis of the tangent space of S^n.
