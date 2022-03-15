@@ -81,6 +81,16 @@ namespace Ikarus::Manifold {
       var.normalize();  // projection-based retraction
     }
 
+    static Eigen::Matrix<ctype, valueSize,valueSize> derivativeOfProjection(const Eigen::Vector<ctype, valueSize>& p)
+    {
+      const ctype normSquared = p.squaredNorm();
+      const ctype norm = std::sqrt(normSquared);
+
+      Eigen::Matrix<ctype, valueSize,valueSize> result= (Eigen::Matrix<ctype, valueSize,valueSize>::Identity()-(p*p.transpose())/normSquared)/norm;
+
+      return result;
+    }
+
     /** \brief Compute an orthonormal basis of the tangent space of S^n.
      * Taken from Oliver Sander dune-gfe */
     Eigen::Matrix<ctype, valueSize, correctionSize> orthonormalFrame() const {

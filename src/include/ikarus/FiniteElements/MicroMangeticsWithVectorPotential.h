@@ -83,9 +83,10 @@ namespace Ikarus::FiniteElements {
     using VectorPotVector                      = Dune::BlockVector<Ikarus::RealTuple<double, vectorPotDim>>;
     using MultiTypeVector                      = Dune::MultiTypeBlockVector<DirectorVector, VectorPotVector>;
 
-    using FERequirementType = FErequirements<MultiTypeVector>;
-    using LocalViewEmbedded = typename BasisEmbedded::LocalView;
-    using LocalViewReduced  = typename BasisReduced::LocalView;
+    using FERequirementType      = FErequirements<MultiTypeVector>;
+    using ResultRequirementsType = ResultRequirements<FERequirementType>;
+    using LocalViewEmbedded      = typename BasisEmbedded::LocalView;
+    using LocalViewReduced       = typename BasisReduced::LocalView;
 
     template <typename VolumeLoad>
     MicroMagneticsWithVectorPotential(BasisEmbedded& globalBasis, BasisReduced& globalBasisRed,
@@ -135,8 +136,13 @@ namespace Ikarus::FiniteElements {
       dx2nd.setZero();
       auto f = [&](auto& x) { return this->calculateScalarImpl(par, x); };
       autodiff::dual2nd e;
-      hessian(f, wrt(dx2nd), at(dx2nd), e, eukGrad, hEuk);
-
+      autodiff::hessian(f, wrt(dx2nd), at(dx2nd), e, eukGrad, hEuk);
+      Eigen::MatrixXd hessTest;
+      hessTest.template resizeLike(hEuk);
+      calculateEuclideanHessian(par, hessTest);
+      std::cout<<hessTest<<std::endl;
+      std::cout<<hEuk<<std::endl;
+      calculateEuclideanGradient(par, eukGrad);
       const auto& m        = par.sols[0].get()[_0];
       const auto& feMag    = localView_.tree().child(_0, 0).finiteElement();
       const auto& feVecPot = localView_.tree().child(_1, 0).finiteElement();
@@ -160,7 +166,7 @@ namespace Ikarus::FiniteElements {
                * Eigen::Matrix<double, directorCorrectionDim, directorCorrectionDim>::Identity();
       }
 
-      const int magHessianSize = feMag.size() * directorCorrectionDim;
+      const int magHessianSize     = feMag.size() * directorCorrectionDim;
       const int magFullHessianSize = feMag.size() * directorDim;
 
       for (auto i = 0U; i < feMag.size(); ++i) {
@@ -171,7 +177,7 @@ namespace Ikarus::FiniteElements {
             = m[globalIndexI[1]].orthonormalFrame().transpose();
         for (auto j = 0U; j < feVecPot.size(); ++j) {
           const size_t indexRedJ = magHessianSize + j * vectorPotDim;
-          const size_t indexJ = magFullHessianSize + j * vectorPotDim;
+          const size_t indexJ    = magFullHessianSize + j * vectorPotDim;
           hred.template block<directorCorrectionDim, vectorPotDim>(indexRedI, indexRedJ)
               = BLAIT * hEuk.block<directorDim, vectorPotDim>(indexI, indexJ);
         }
@@ -179,7 +185,7 @@ namespace Ikarus::FiniteElements {
 
       for (auto i = 0U; i < feVecPot.size(); ++i) {
         const size_t indexRedI = magHessianSize + i * vectorPotDim;
-        const size_t indexI = magFullHessianSize + i * vectorPotDim;
+        const size_t indexI    = magFullHessianSize + i * vectorPotDim;
         for (auto j = 0U; j < feMag.size(); ++j) {
           const size_t indexRedJ  = j * directorCorrectionDim;
           const size_t indexJ     = j * directorDim;
@@ -204,7 +210,9 @@ namespace Ikarus::FiniteElements {
       auto f = [&](auto& x) { return this->calculateScalarImpl(par, x); };
 
       autodiff::dual e;
-      autodiff::gradient(f, wrt(dx1st), at(dx1st), e, eukGrad);
+      //      autodiff::gradient(f, wrt(dx1st), at(dx1st), e, eukGrad);
+      //      std::cout<<eukGrad.transpose()<<std::endl;
+      calculateEuclideanGradient(par, eukGrad);
       const auto& m = par.sols[0].get()[_0];
       std::vector<Ikarus::UnitVector<double, directorDim> const*> mLocal;
       auto& first_child = localView_.tree().child(_0, 0);
@@ -229,7 +237,342 @@ namespace Ikarus::FiniteElements {
       return this->calculateScalarImpl(par, dx);
     }
 
+    void calculateAt(const ResultRequirementsType& res, const Eigen::Vector<double, Traits::mydim>& local,
+                     Eigen::VectorXd& result) const {
+      using namespace Dune::Indices;
+      const auto& mNodal = res.req.sols[0].get()[_0];
+      const auto& ANodal = res.req.sols[0].get()[_1];
+      const auto& lambda = res.req.parameter.at(FEParameter::loadfactor);
+
+      auto& child0    = localView_.tree().child(_0, 0);
+      const auto& fe0 = child0.finiteElement();
+      auto& child1    = localView_.tree().child(_1, 0);
+
+      const auto& fe1 = child1.finiteElement();
+      Eigen::Matrix<double, directorDim, Eigen::Dynamic> mN;
+      Eigen::Matrix<double, vectorPotDim, Eigen::Dynamic> AN;
+      mN.setZero(Eigen::NoChange, fe0.size());
+      AN.setZero(Eigen::NoChange, fe1.size());
+      for (auto i = 0U; i < fe0.size(); ++i) {
+        auto globalIndex = localView_.index(localView_.tree().child(_0, 0).localIndex(i));
+        mN.col(i)        = mNodal[globalIndex[1]].getValue();
+      }
+
+      const int magElementEntries = fe0.size() * directorDim;
+      for (auto i = 0U; i < fe1.size(); ++i) {
+        auto globalIndex = localView_.index(localView_.tree().child(_1, 0).localIndex(i));
+        AN.col(i)        = ANodal[globalIndex[1]].getValue();
+      }
+
+      const auto geo = localView_.element().geometry();
+
+      const int order = 4 * localView_.tree().child(Dune::Indices::_0, 0).finiteElement().localBasis().order();
+
+      const auto& rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
+
+      auto gp = toFieldVector(local);
+      localBasisMag.template evaluateFunctionAndJacobian(gp, Nm, dNm);
+      localBasisVecPot.template evaluateFunctionAndJacobian(gp, NA, dNA);
+
+      const auto J = toEigenMatrix(geo.jacobianTransposed(gp)).transpose().eval();
+      Eigen::Vector<double, directorDim> magnetizationEuk;
+      Eigen::Vector<double, vectorPotDim> vectorPot;
+      magnetizationEuk.setZero();
+
+      for (int i = 0; i < Nm.size(); ++i)
+        magnetizationEuk += mN.col(i) * Nm[i];
+      const Eigen::Vector<double, directorDim> normalizedMag = magnetizationEuk.normalized();
+
+      vectorPot.setZero();
+
+      for (int i = 0; i < Nm.size(); ++i)
+        vectorPot += AN.col(i) * NA[i];
+
+      const double mLength = magnetizationEuk.norm();
+      const Eigen::Matrix<double, directorDim, directorDim> Pm
+          = (Eigen::Matrix<double, directorDim, directorDim>::Identity() - normalizedMag * normalizedMag.transpose())
+            / mLength;
+      const auto dNmdx = (dNm * J.inverse()).eval();
+      const auto dNAdx = (dNA * J.inverse()).eval();
+      Eigen::Matrix<double, directorDim, Traits::mydim> gradm
+          = (LocalFuncMag<double>::jacobianTransposed(dNmdx, mN).transpose());
+      gradm = Pm * gradm;
+      Eigen::Matrix<double, vectorPotDim, Traits::mydim> gradA
+          = (LocalFuncVecPot<double>::jacobianTransposed(dNAdx, AN).transpose());
+
+      const Eigen::Vector<double, 3> curlA(gradA(0, 1), -gradA(0, 0), 0);
+      const double divA                             = 0;
+      const Eigen::Vector<double, directorDim> Hbar = volumeLoad(toEigenVector(gp), lambda);
+      switch (res.resType) {
+        case ResultType::gradientNormOfMagnetization:
+          result.resize(1);
+          result[0] = (gradm.transpose() * gradm).trace();
+          break;
+        default:
+          DUNE_THROW(Dune::NotImplemented, "This result type is not implemented by this element");
+      }
+    }
+
   private:
+    void calculateEuclideanGradient(const FERequirementType& par, typename Traits::VectorType& eukGrad_) const {
+      eukGrad_.setZero();
+      using namespace Dune::Indices;
+      const auto& mNodal = par.sols[0].get()[_0];
+      const auto& ANodal = par.sols[0].get()[_1];
+      const auto& lambda = par.parameter.at(FEParameter::loadfactor);
+
+      auto& child0    = localView_.tree().child(_0, 0);
+      const auto& fe0 = child0.finiteElement();
+      auto& child1    = localView_.tree().child(_1, 0);
+
+      const auto& fe1 = child1.finiteElement();
+      Eigen::Matrix<double, directorDim, Eigen::Dynamic> mN;
+      Eigen::Matrix<double, vectorPotDim, Eigen::Dynamic> AN;
+      mN.setZero(Eigen::NoChange, fe0.size());
+      AN.setZero(Eigen::NoChange, fe1.size());
+      for (auto i = 0U; i < fe0.size(); ++i) {
+        auto globalIndex = localView_.index(localView_.tree().child(_0, 0).localIndex(i));
+        mN.col(i)        = mNodal[globalIndex[1]].getValue();
+      }
+
+      const int magElementEntries = fe0.size() * directorDim;
+      for (auto i = 0U; i < fe1.size(); ++i) {
+        auto globalIndex = localView_.index(localView_.tree().child(_1, 0).localIndex(i));
+        AN.col(i)        = ANodal[globalIndex[1]].getValue();
+      }
+
+      const auto geo = localView_.element().geometry();
+
+      const int order = 4 * localView_.tree().child(Dune::Indices::_0, 0).finiteElement().localBasis().order();
+
+      const auto& rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
+
+      for (const auto& gp : rule) {
+        localBasisMag.template evaluateFunctionAndJacobian(gp.position(), Nm, dNm);
+        localBasisVecPot.template evaluateFunctionAndJacobian(gp.position(), NA, dNA);
+
+        const auto J = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
+        Eigen::Vector<double, directorDim> magnetizationEuk;
+        Eigen::Vector<double, vectorPotDim> vectorPot;
+        magnetizationEuk.setZero();
+
+        for (int i = 0; i < Nm.size(); ++i)
+          magnetizationEuk += mN.col(i) * Nm[i];
+        const Eigen::Vector<double, directorDim> normalizedMag = magnetizationEuk.normalized();
+
+        vectorPot.setZero();
+
+        for (int i = 0; i < Nm.size(); ++i)
+          vectorPot += AN.col(i) * NA[i];
+
+        const double mLength = magnetizationEuk.norm();
+        const Eigen::Matrix<double, directorDim, directorDim> Pm
+            = (Eigen::Matrix<double, directorDim, directorDim>::Identity() - normalizedMag * normalizedMag.transpose())
+              / mLength;
+        const auto dNmdx = (dNm * J.inverse()).eval();
+        const auto dNAdx = (dNA * J.inverse()).eval();
+        Eigen::Matrix<double, directorDim, Traits::mydim> gradw
+            = (LocalFuncMag<double>::jacobianTransposed(dNmdx, mN).transpose());
+        const Eigen::Matrix<double, directorDim, Traits::mydim> gradm = Pm * gradw;
+        Eigen::Matrix<double, vectorPotDim, Traits::mydim> gradA
+            = (LocalFuncVecPot<double>::jacobianTransposed(dNAdx, AN).transpose());
+
+        const Eigen::Vector<double, 3> curlA(gradA(0, 1), -gradA(0, 0), 0);
+        const double divA        = 0;
+        const double invwsquared = mLength * mLength;
+        const Eigen::Matrix<double, directorDim, directorDim> eye
+            = Eigen::Matrix<double, directorDim, directorDim>::Identity();
+        const Eigen::Matrix<double, directorDim, directorDim> Q1
+            = 1 / invwsquared
+              * (normalizedMag.dot(gradw.col(0)) * (3 * (normalizedMag * normalizedMag.transpose()) - eye)
+                 - gradw.col(0) * normalizedMag.transpose() - normalizedMag * gradw.col(0).transpose());
+        const Eigen::Matrix<double, directorDim, directorDim> Q2
+            = 1 / invwsquared
+              * (normalizedMag.dot(gradw.col(1)) * (3 * (normalizedMag * normalizedMag.transpose()) - eye)
+                 - gradw.col(1) * normalizedMag.transpose() - normalizedMag * gradw.col(1).transpose());
+
+        const Eigen::Vector<double, directorDim> Hbar = volumeLoad(toEigenVector(gp.position()), lambda);
+        //        std::cout<<"Hbar::"<<Hbar<<std::endl;
+        for (size_t i = 0; i < fe0.size(); ++i) {
+          const int index                                           = i * directorDim;
+          const Eigen::Matrix<double, directorDim, directorDim> WI1 = Q1 * Nm[i] + Pm * dNmdx(i, 0);
+          const Eigen::Matrix<double, directorDim, directorDim> WI2 = Q2 * Nm[i] + Pm * dNmdx(i, 1);
+          eukGrad_.template segment<directorDim>(index)
+              += ((WI1 * gradm.col(0) + WI2 * gradm.col(1) - Pm * curlA * Nm[i]))
+                 * geo.integrationElement(gp.position()) * gp.weight();
+
+          eukGrad_.template segment<directorDim>(index)
+              -= (Pm * Hbar * Nm[i] / material.ms) * geo.integrationElement(gp.position()) * gp.weight();
+        }
+        const int magEukSize = fe0.size() * directorDim;
+        for (size_t i = 0; i < fe1.size(); ++i) {
+          const int index = magEukSize + i * vectorPotDim;
+          Eigen::Vector<double, directorDim> gradCurlA_dI;
+          if constexpr (directorDim == 3) {
+            gradCurlA_dI[0] = dNAdx(i, 1);
+            gradCurlA_dI[1] = -dNAdx(i, 0);
+            gradCurlA_dI[2] = 0;
+          } else if constexpr (directorDim == 2) {
+            gradCurlA_dI[0] = dNAdx(i, 1);
+            gradCurlA_dI[1] = -dNAdx(i, 0);
+          }
+          eukGrad_.template segment<vectorPotDim>(index).array()
+              += (-gradCurlA_dI.dot(normalizedMag) + gradCurlA_dI.dot(curlA)) * geo.integrationElement(gp.position())
+                 * gp.weight();
+        }
+      }
+      std::cout << eukGrad_.transpose() << std::endl;
+    }
+
+    void calculateEuclideanHessian(const FERequirementType& par, typename Traits::MatrixType& eukHess_) const {
+      eukHess_.setZero();
+      using namespace Dune::Indices;
+      const auto& mNodal = par.sols[0].get()[_0];
+      const auto& ANodal = par.sols[0].get()[_1];
+      const auto& lambda = par.parameter.at(FEParameter::loadfactor);
+
+      auto& child0    = localView_.tree().child(_0, 0);
+      const auto& fe0 = child0.finiteElement();
+      auto& child1    = localView_.tree().child(_1, 0);
+
+      const auto& fe1 = child1.finiteElement();
+      Eigen::Matrix<double, directorDim, Eigen::Dynamic> mN;
+      Eigen::Matrix<double, vectorPotDim, Eigen::Dynamic> AN;
+      mN.setZero(Eigen::NoChange, fe0.size());
+      AN.setZero(Eigen::NoChange, fe1.size());
+      for (auto i = 0U; i < fe0.size(); ++i) {
+        auto globalIndex = localView_.index(localView_.tree().child(_0, 0).localIndex(i));
+        mN.col(i)        = mNodal[globalIndex[1]].getValue();
+      }
+
+      const int magElementEntries = fe0.size() * directorDim;
+      for (auto i = 0U; i < fe1.size(); ++i) {
+        auto globalIndex = localView_.index(localView_.tree().child(_1, 0).localIndex(i));
+        AN.col(i)        = ANodal[globalIndex[1]].getValue();
+      }
+
+      const auto geo = localView_.element().geometry();
+
+      const int order = 4 * localView_.tree().child(Dune::Indices::_0, 0).finiteElement().localBasis().order();
+
+      const auto& rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
+
+      for (const auto& gp : rule) {
+        localBasisMag.template evaluateFunctionAndJacobian(gp.position(), Nm, dNm);
+        localBasisVecPot.template evaluateFunctionAndJacobian(gp.position(), NA, dNA);
+
+        const auto J = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
+        Eigen::Vector<double, directorDim> magnetizationEuk;
+        Eigen::Vector<double, vectorPotDim> vectorPot;
+        magnetizationEuk.setZero();
+
+        for (int i = 0; i < Nm.size(); ++i)
+          magnetizationEuk += mN.col(i) * Nm[i];
+        const Eigen::Vector<double, directorDim> normalizedMag = magnetizationEuk.normalized();
+
+        vectorPot.setZero();
+
+        for (int i = 0; i < Nm.size(); ++i)
+          vectorPot += AN.col(i) * NA[i];
+
+        const double mLength = magnetizationEuk.norm();
+        const Eigen::Matrix<double, directorDim, directorDim> Pm
+            = (Eigen::Matrix<double, directorDim, directorDim>::Identity() - normalizedMag * normalizedMag.transpose())
+              / mLength;
+        const auto dNmdx = (dNm * J.inverse()).eval();
+        const auto dNAdx = (dNA * J.inverse()).eval();
+        Eigen::Matrix<double, directorDim, Traits::mydim> gradw
+            = (LocalFuncMag<double>::jacobianTransposed(dNmdx, mN).transpose());
+        const Eigen::Matrix<double, directorDim, Traits::mydim> gradm = Pm * gradw;
+        Eigen::Matrix<double, vectorPotDim, Traits::mydim> gradA
+            = (LocalFuncVecPot<double>::jacobianTransposed(dNAdx, AN).transpose());
+
+        const Eigen::Vector<double, 3> curlA(gradA(0, 1), -gradA(0, 0), 0);
+        const double divA           = 0;
+        const double invLength = 1/mLength;
+        const double invwsquared    = invLength * invLength;
+        using DirectorMatrix        = Eigen::Matrix<double, directorDim, directorDim>;
+        const DirectorMatrix eye    = DirectorMatrix::Identity();
+        const DirectorMatrix mdyadm = normalizedMag * normalizedMag.transpose();
+        const DirectorMatrix Q1
+            =  invwsquared
+              * (normalizedMag.dot(gradw.col(0)) * (3 * (mdyadm)-eye) - gradw.col(0) * normalizedMag.transpose()
+                 - normalizedMag * gradw.col(0).transpose());
+        const DirectorMatrix Q2
+            =  invwsquared
+              * (normalizedMag.dot(gradw.col(1)) * (3 * (mdyadm)-eye) - gradw.col(1) * normalizedMag.transpose()
+                 - normalizedMag * gradw.col(1).transpose());
+
+        const DirectorMatrix Id3minus5tdyadt = eye - 5.0 * mdyadm;
+        const double normwcubinv             =  invwsquared * invLength;
+        const DirectorMatrix td1dyadt        = gradm.col(0) * normalizedMag.transpose();
+        const DirectorMatrix td2dyadt        = gradm.col(1) * normalizedMag.transpose();
+
+        const double td1scalwd1 = gradm.col(0).dot(gradw.col(0));
+        const double td1scalwd2 = gradm.col(0).dot(gradw.col(1));
+        const double td2scalwd1 = gradm.col(1).dot(gradw.col(0));
+        const double td2scalwd2 = gradm.col(1).dot(gradw.col(1));
+        const double tscalwd1   = normalizedMag.dot(gradw.col(0));
+        const double tscalwd2   = normalizedMag.dot(gradw.col(1));
+        DirectorMatrix chi11d   = normwcubinv
+                                * (3 * tscalwd1 * td1dyadt + 3 * (0.5 * td1scalwd1 * mdyadm)
+                                   - gradm.col(0) * gradw.col(0).transpose() - td1scalwd1 * 0.5 * eye);
+        chi11d                = (chi11d + chi11d.transpose()).eval();
+        DirectorMatrix chi22d = normwcubinv
+                                * (3 * tscalwd2 * td2dyadt + 3 * (0.5 * td2scalwd2 * mdyadm)
+                                   - gradm.col(1) * gradw.col(1).transpose() - td2scalwd2 * 0.5 * eye);
+        chi22d                = (chi22d + chi22d.transpose()).eval();
+        DirectorMatrix chi12d = normwcubinv
+                                * (3 * tscalwd2 * td1dyadt + 3 * (0.5 * td1scalwd2 * mdyadm)
+                                   - gradm.col(0) * gradw.col(1).transpose() - td1scalwd2 * 0.5 * eye);
+        chi12d                = (chi12d + chi12d.transpose()).eval();
+        DirectorMatrix chi21d = normwcubinv
+                                * (3 * tscalwd1 * td2dyadt + 3 * (0.5 * td2scalwd1 * mdyadm)
+                                   - gradm.col(1) * gradw.col(0).transpose() - td2scalwd1 * 0.5 * eye);
+        chi21d = (chi21d + chi21d.transpose()).eval();
+
+        const DirectorMatrix S1d    =  invwsquared * (-td1dyadt - (normalizedMag * gradm.col(0).transpose()));
+        const DirectorMatrix S2d    =  invwsquared * (-td2dyadt - (normalizedMag * gradm.col(1).transpose()));
+        const DirectorMatrix chifac = chi11d + chi22d + chi12d + chi21d;
+
+        const Eigen::Vector<double, directorDim> Hbar = volumeLoad(toEigenVector(gp.position()), lambda);
+        //        std::cout<<"Hbar::"<<Hbar<<std::endl;
+        for (size_t i = 0; i < fe0.size(); ++i) {
+          const int indexI                                          = i * directorDim;
+          const Eigen::Matrix<double, directorDim, directorDim> WI1 = Q1 * Nm[i] + Pm * dNmdx(i, 0);
+          const Eigen::Matrix<double, directorDim, directorDim> WI2 = Q2 * Nm[i] + Pm * dNmdx(i, 1);
+          for (size_t j = 0; j < fe0.size(); ++j) {
+            const int indexJ                                          = j * directorDim;
+            const Eigen::Matrix<double, directorDim, directorDim> WJ1 = Q1 * Nm[j] + Pm * dNmdx(j, 0);
+            const Eigen::Matrix<double, directorDim, directorDim> WJ2 = Q2 * Nm[j] + Pm * dNmdx(j, 1);
+            const double NdN1                                         = dNmdx(j, 0) * Nm[i] + Nm[j] * dNmdx(i, 0);
+            const double NdN2                                         = dNmdx(j, 1) * Nm[i] + Nm[j] * dNmdx(i, 1);
+            eukHess_.template block<directorDim, directorDim>(indexI, indexJ)
+                += WI1 * WJ1 + WI2 * WJ2 + (WI1 * WJ2 + WI2 * WJ1) + Nm[i] * Nm[j] * chifac
+                   + (S1d * NdN1 + S2d * NdN2 + (S1d * NdN2 + S2d * NdN1));
+
+          }
+        }
+//        const int magEukSize = fe0.size() * directorDim;
+//        for (size_t i = 0; i < fe1.size(); ++i) {
+//          const int index = magEukSize + i * vectorPotDim;
+//          Eigen::Vector<double, directorDim> gradCurlA_dI;
+//          if constexpr (directorDim == 3) {
+//            gradCurlA_dI[0] = dNAdx(i, 1);
+//            gradCurlA_dI[1] = -dNAdx(i, 0);
+//            gradCurlA_dI[2] = 0;
+//          } else if constexpr (directorDim == 2) {
+//            gradCurlA_dI[0] = dNAdx(i, 1);
+//            gradCurlA_dI[1] = -dNAdx(i, 0);
+//          }
+//          eukGrad_.template segment<vectorPotDim>(index).array()
+//              += (-gradCurlA_dI.dot(normalizedMag) + gradCurlA_dI.dot(curlA)) * geo.integrationElement(gp.position())
+//                 * gp.weight();
+//        }
+      }
+
+    }
+
     template <class ScalarType>
     ScalarType calculateScalarImpl(const FERequirementType& par, Eigen::VectorX<ScalarType>& dx_) const {
       using namespace Dune::Indices;
@@ -262,7 +605,7 @@ namespace Ikarus::FiniteElements {
 
       const auto geo = localView_.element().geometry();
 
-      const int order = 3 * localView_.tree().child(Dune::Indices::_0, 0).finiteElement().localBasis().order();
+      const int order = 4 * localView_.tree().child(Dune::Indices::_0, 0).finiteElement().localBasis().order();
 
       const auto& rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
 
@@ -297,8 +640,8 @@ namespace Ikarus::FiniteElements {
         Eigen::Matrix<ScalarType, vectorPotDim, Traits::mydim> gradA
             = (LocalFuncVecPot<ScalarType>::jacobianTransposed(dNAdx, AN).transpose());
 
-        const Eigen::Vector<ScalarType, 3> curlA(gradA(0,1),-gradA(0,0),0);
-        const ScalarType divA                    = 0;
+        const Eigen::Vector<ScalarType, 3> curlA(gradA(0, 1), -gradA(0, 0), 0);
+        const ScalarType divA = 0;
         //        std::cout<<"mN::"<<mN<<std::endl;
         //        std::cout<<"AN::"<<AN<<std::endl;
         //        std::cout<<"normalizedMag::"<<normalizedMag.transpose()<<std::endl;
@@ -308,18 +651,19 @@ namespace Ikarus::FiniteElements {
         //        std::cout<<"dNm::"<<dNm<<std::endl;
         //        std::cout<<"dNmdx::"<<dNmdx<<std::endl;
         //        std::cout<<"gradA::"<<gradA.transpose()<<std::endl;
-//                std::cout<<"curlA::"<<curlA.transpose()<<std::endl;
+        //                std::cout<<"curlA::"<<curlA.transpose()<<std::endl;
         //        std::cout<<"divA::"<<divA<<std::endl;
         const Eigen::Vector<double, directorDim> Hbar = volumeLoad(toEigenVector(gp.position()), lambda);
         //        std::cout<<"Hbar::"<<Hbar<<std::endl;
-        energy += (0.5 * (gradm.transpose() * gradm).trace() - 2 * normalizedMag.dot(Hbar) / material.ms)
+        energy += (0.5 * (gradm.transpose() * gradm).trace() - 0*2 * normalizedMag.dot(Hbar) / material.ms)
                   * geo.integrationElement(gp.position()) * gp.weight();  // exchange and zeeman energy
 
-        energy += (0.5 * curlA.squaredNorm() - normalizedMag.dot(curlA) + divA * divA)
+        energy += (0.5 * curlA.squaredNorm() - 0*normalizedMag.dot(curlA) + divA * divA)
                   * geo.integrationElement(gp.position()) * gp.weight();  // demag energy
       }
       return energy;
     }
+
     mutable Eigen::MatrixXd hEuk;
     mutable Eigen::VectorXd eukGrad;
     mutable Eigen::VectorXdual2nd dx2nd;
