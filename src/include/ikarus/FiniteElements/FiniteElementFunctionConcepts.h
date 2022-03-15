@@ -6,6 +6,7 @@
 
 //#include <ikarus/FiniteElements/InterfaceFiniteElement.h>
 #include <optional>
+#include <map>
 
 #include <ikarus/Variables/InterfaceVariable.h>
 #include <ikarus/Variables/ParameterFactory.h>
@@ -36,6 +37,11 @@ namespace Ikarus {
 
   enum class ScalarAffordances { noAffordance, potentialEnergy };
 
+  enum class ResultType { noType, magnetization, gradientNormOfMagnetization, vectorPotential };
+
+  std::string getResultType(const ResultType& res);
+
+
   inline constexpr VectorAffordances forces = VectorAffordances::forces;
 
   inline constexpr MatrixAffordances stiffness                   = MatrixAffordances::stiffness;
@@ -52,6 +58,14 @@ namespace Ikarus {
     ScalarAffordances scalarAffordances{ScalarAffordances::noAffordance};
     VectorAffordances vectorAffordances{VectorAffordances::noAffordance};
     MatrixAffordances matrixAffordances{MatrixAffordances::noAffordance};
+  };
+
+  template <typename FErequirementsType = FErequirements<Eigen::VectorXd>>
+  struct ResultRequirements
+  {
+    FErequirementsType req;
+    ResultType resType;
+
   };
 
 }  // namespace Ikarus

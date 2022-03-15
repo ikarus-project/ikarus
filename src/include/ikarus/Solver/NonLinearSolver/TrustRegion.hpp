@@ -45,7 +45,7 @@ namespace Ikarus {
     double rho_prime = 0.01;
     bool useRand     = false;
     double rho_reg   = 1e6;
-    double Delta_bar = 100;
+    double Delta_bar = std::numeric_limits<double>::infinity();
     double Delta0    = 10;
   };
 

@@ -36,7 +36,7 @@ namespace Ikarus {
     }
 
     template <typename Derived>
-    void evaluateJacobian(const DomainType& local, Eigen::PlainObjectBase<Derived>& dN) const{
+    void evaluateJacobian(const DomainType& local, Eigen::PlainObjectBase<Derived>& dN) const {
       duneLocalBasis->evaluateJacobian(local, dNdune);
       dN.setZero();
       dN.resize(dNdune.size(), gridDim);
@@ -48,7 +48,7 @@ namespace Ikarus {
 
     template <typename Derived1, typename Derived2>
     void evaluateFunctionAndJacobian(const DomainType& local, Eigen::PlainObjectBase<Derived1>& N,
-                                     Eigen::PlainObjectBase<Derived2>& dN)const  {
+                                     Eigen::PlainObjectBase<Derived2>& dN) const {
       evaluateFunction(local, N);
       evaluateJacobian(local, dN);
     }
@@ -75,9 +75,17 @@ namespace Ikarus {
       }
     }
 
-    const auto& getFunction(long unsigned i) const { return Nbound.value()[i]; }
+    const auto& getFunction(long unsigned i) const {
+      if (not Nbound) throw std::logic_error("You have to bind the basis first");
+      return Nbound.value()[i];
+    }
 
-    const auto& getJacobian(long unsigned i) const { return dNbound.value()[i]; }
+    const auto& getJacobian(long unsigned i) const {
+      if (not dNbound) throw std::logic_error("You have to bind the basis first");
+      return dNbound.value()[i];
+    }
+
+    bool isBound()const {return (dNbound and Nbound);}
 
     struct FunctionAndJacobian {
       long unsigned index;
