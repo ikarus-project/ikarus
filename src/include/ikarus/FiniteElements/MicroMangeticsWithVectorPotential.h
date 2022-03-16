@@ -35,7 +35,7 @@
 #include "ikarus/Geometries/SimpleLocalFunction.h"
 #include "ikarus/LocalBasis/localBasis.h"
 #include "ikarus/utils/LinearAlgebraHelper.h"
-#include <ikarus/FiniteElements/AutodiffFE.h>
+#include "ikarus/Geometries/ProjectionBasedLocalFunction.h"
 #include <ikarus/FiniteElements/FEPolicies.h>
 #include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
@@ -98,8 +98,7 @@ namespace Ikarus::FiniteElements {
           material{p_material} {
       localView_.bind(element);
       localViewReduced.bind(element);
-      const int order = 3 * localView_.tree().child(Dune::Indices::_0, 0).finiteElement().localBasis().order();
-      //      std::cout<<"Order:"<<order<<std::endl;
+      order=4 * localView_.tree().child(Dune::Indices::_0, 0).finiteElement().localBasis().order();
       localBasisMag = Ikarus::LocalBasis(localView_.tree().child(Dune::Indices::_0, 0).finiteElement().localBasis());
       localBasisMag.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order), 0, 1);
       localBasisVecPot = Ikarus::LocalBasis(localView_.tree().child(Dune::Indices::_1, 0).finiteElement().localBasis());
@@ -136,12 +135,12 @@ namespace Ikarus::FiniteElements {
       dx2nd.setZero();
       auto f = [&](auto& x) { return this->calculateScalarImpl(par, x); };
       autodiff::dual2nd e;
-      autodiff::hessian(f, wrt(dx2nd), at(dx2nd), e, eukGrad, hEuk);
+      autodiff::hessian(f, autodiff::wrt(dx2nd), at(dx2nd), e, eukGrad, hEuk);
       Eigen::MatrixXd hessTest;
       hessTest.template resizeLike(hEuk);
       calculateEuclideanHessian(par, hessTest);
-      std::cout<<hessTest<<std::endl;
-      std::cout<<hEuk<<std::endl;
+      //      std::cout<<hessTest<<std::endl;
+      //      std::cout<<hEuk<<std::endl;
       calculateEuclideanGradient(par, eukGrad);
       const auto& m        = par.sols[0].get()[_0];
       const auto& feMag    = localView_.tree().child(_0, 0).finiteElement();
@@ -210,9 +209,12 @@ namespace Ikarus::FiniteElements {
       auto f = [&](auto& x) { return this->calculateScalarImpl(par, x); };
 
       autodiff::dual e;
-      //      autodiff::gradient(f, wrt(dx1st), at(dx1st), e, eukGrad);
-      //      std::cout<<eukGrad.transpose()<<std::endl;
+      autodiff::gradient(f, autodiff::wrt(dx1st), at(dx1st), e, eukGrad);
+      std::cout << "eukGrad.transpose()" << std::endl;
+      std::cout << eukGrad.transpose() << std::endl;
       calculateEuclideanGradient(par, eukGrad);
+      std::cout << "eukGrad.transpose()2" << std::endl;
+      std::cout << eukGrad.transpose() << std::endl;
       const auto& m = par.sols[0].get()[_0];
       std::vector<Ikarus::UnitVector<double, directorDim> const*> mLocal;
       auto& first_child = localView_.tree().child(_0, 0);
@@ -265,10 +267,6 @@ namespace Ikarus::FiniteElements {
       }
 
       const auto geo = localView_.element().geometry();
-
-      const int order = 4 * localView_.tree().child(Dune::Indices::_0, 0).finiteElement().localBasis().order();
-
-      const auto& rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
 
       auto gp = toFieldVector(local);
       localBasisMag.template evaluateFunctionAndJacobian(gp, Nm, dNm);
@@ -326,13 +324,12 @@ namespace Ikarus::FiniteElements {
       auto& child1    = localView_.tree().child(_1, 0);
 
       const auto& fe1 = child1.finiteElement();
-      Eigen::Matrix<double, directorDim, Eigen::Dynamic> mN;
+      Dune::BlockVector< std::remove_cvref_t<decltype(mNodal[0])>> mN(fe0.size());
       Eigen::Matrix<double, vectorPotDim, Eigen::Dynamic> AN;
-      mN.setZero(Eigen::NoChange, fe0.size());
       AN.setZero(Eigen::NoChange, fe1.size());
       for (auto i = 0U; i < fe0.size(); ++i) {
         auto globalIndex = localView_.index(localView_.tree().child(_0, 0).localIndex(i));
-        mN.col(i)        = mNodal[globalIndex[1]].getValue();
+        mN[i]        = mNodal[globalIndex[1]];
       }
 
       const int magElementEntries = fe0.size() * directorDim;
@@ -342,67 +339,55 @@ namespace Ikarus::FiniteElements {
       }
 
       const auto geo = localView_.element().geometry();
-
-      const int order = 4 * localView_.tree().child(Dune::Indices::_0, 0).finiteElement().localBasis().order();
-
+      using namespace Ikarus::DerivativeDirections;
       const auto& rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
-
-      for (const auto& gp : rule) {
-        localBasisMag.template evaluateFunctionAndJacobian(gp.position(), Nm, dNm);
+      Ikarus::ProjectionBasedLocalFunction magnetLocalFunction(localBasisMag, mN);
+      for (const auto& [gpIndex,gp] : magnetLocalFunction.viewOverIntegrationPoints()) {
         localBasisVecPot.template evaluateFunctionAndJacobian(gp.position(), NA, dNA);
 
         const auto J = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
-        Eigen::Vector<double, directorDim> magnetizationEuk;
         Eigen::Vector<double, vectorPotDim> vectorPot;
-        magnetizationEuk.setZero();
 
-        for (int i = 0; i < Nm.size(); ++i)
-          magnetizationEuk += mN.col(i) * Nm[i];
-        const Eigen::Vector<double, directorDim> normalizedMag = magnetizationEuk.normalized();
+        const Eigen::Vector<double, directorDim> normalizedMag = magnetLocalFunction.evaluateFunction(gpIndex).getValue();
 
         vectorPot.setZero();
 
         for (int i = 0; i < Nm.size(); ++i)
           vectorPot += AN.col(i) * NA[i];
 
-        const double mLength = magnetizationEuk.norm();
-        const Eigen::Matrix<double, directorDim, directorDim> Pm
-            = (Eigen::Matrix<double, directorDim, directorDim>::Identity() - normalizedMag * normalizedMag.transpose())
-              / mLength;
         const auto dNmdx = (dNm * J.inverse()).eval();
         const auto dNAdx = (dNA * J.inverse()).eval();
-        Eigen::Matrix<double, directorDim, Traits::mydim> gradw
-            = (LocalFuncMag<double>::jacobianTransposed(dNmdx, mN).transpose());
-        const Eigen::Matrix<double, directorDim, Traits::mydim> gradm = Pm * gradw;
+//        Eigen::Matrix<double, directorDim, Traits::mydim> gradw
+//            = (LocalFuncMag<double>::jacobianTransposed(dNmdx, mN).transpose());
+        const Eigen::Matrix<double, directorDim, Traits::mydim> gradm = magnetLocalFunction.evaluateDerivative(gpIndex, wrt(spatial));
+        std::cout<<gradm<<std::endl;
         Eigen::Matrix<double, vectorPotDim, Traits::mydim> gradA
             = (LocalFuncVecPot<double>::jacobianTransposed(dNAdx, AN).transpose());
 
         const Eigen::Vector<double, 3> curlA(gradA(0, 1), -gradA(0, 0), 0);
         const double divA        = 0;
-        const double invwsquared = mLength * mLength;
-        const Eigen::Matrix<double, directorDim, directorDim> eye
-            = Eigen::Matrix<double, directorDim, directorDim>::Identity();
-        const Eigen::Matrix<double, directorDim, directorDim> Q1
-            = 1 / invwsquared
-              * (normalizedMag.dot(gradw.col(0)) * (3 * (normalizedMag * normalizedMag.transpose()) - eye)
-                 - gradw.col(0) * normalizedMag.transpose() - normalizedMag * gradw.col(0).transpose());
-        const Eigen::Matrix<double, directorDim, directorDim> Q2
-            = 1 / invwsquared
-              * (normalizedMag.dot(gradw.col(1)) * (3 * (normalizedMag * normalizedMag.transpose()) - eye)
-                 - gradw.col(1) * normalizedMag.transpose() - normalizedMag * gradw.col(1).transpose());
+//        const Eigen::Matrix<double, directorDim, directorDim> Q1
+//            = 1 / invwsquared
+//              * (normalizedMag.dot(gradw.col(0)) * (3 * (normalizedMag * normalizedMag.transpose()) - eye)
+//                 - gradw.col(0) * normalizedMag.transpose() - normalizedMag * gradw.col(0).transpose());
+//        const Eigen::Matrix<double, directorDim, directorDim> Q2
+//            = 1 / invwsquared
+//              * (normalizedMag.dot(gradw.col(1)) * (3 * (normalizedMag * normalizedMag.transpose()) - eye)
+//                 - gradw.col(1) * normalizedMag.transpose() - normalizedMag * gradw.col(1).transpose());
 
         const Eigen::Vector<double, directorDim> Hbar = volumeLoad(toEigenVector(gp.position()), lambda);
         //        std::cout<<"Hbar::"<<Hbar<<std::endl;
+
         for (size_t i = 0; i < fe0.size(); ++i) {
           const int index                                           = i * directorDim;
-          const Eigen::Matrix<double, directorDim, directorDim> WI1 = Q1 * Nm[i] + Pm * dNmdx(i, 0);
-          const Eigen::Matrix<double, directorDim, directorDim> WI2 = Q2 * Nm[i] + Pm * dNmdx(i, 1);
+          const auto WI = magnetLocalFunction.evaluateDerivative(gpIndex, wrt(spatial, coeffs), coeffIndices(i));
+          const auto PmI = magnetLocalFunction.evaluateDerivative(gpIndex, wrt(coeffs), coeffIndices(i));
           eukGrad_.template segment<directorDim>(index)
-              += ((WI1 * gradm.col(0) + WI2 * gradm.col(1) - Pm * curlA * Nm[i]))
-                 * geo.integrationElement(gp.position()) * gp.weight();
+              += ((WI[0] * gradm.col(0) + WI[1] * gradm.col(1) - PmI * curlA))
+                 * geo.integrationElement(gp.position()) * gp.weight()*0;
 
           eukGrad_.template segment<directorDim>(index)
-              -= (Pm * Hbar * Nm[i] / material.ms) * geo.integrationElement(gp.position()) * gp.weight();
+              -= (PmI * Hbar / material.ms) * geo.integrationElement(gp.position()) * gp.weight();
         }
         const int magEukSize = fe0.size() * directorDim;
         for (size_t i = 0; i < fe1.size(); ++i) {
@@ -421,7 +406,7 @@ namespace Ikarus::FiniteElements {
                  * gp.weight();
         }
       }
-      std::cout << eukGrad_.transpose() << std::endl;
+//      std::cout << eukGrad_.transpose() << std::endl;
     }
 
     void calculateEuclideanHessian(const FERequirementType& par, typename Traits::MatrixType& eukHess_) const {
@@ -452,8 +437,6 @@ namespace Ikarus::FiniteElements {
       }
 
       const auto geo = localView_.element().geometry();
-
-      const int order = 4 * localView_.tree().child(Dune::Indices::_0, 0).finiteElement().localBasis().order();
 
       const auto& rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
 
@@ -489,22 +472,22 @@ namespace Ikarus::FiniteElements {
 
         const Eigen::Vector<double, 3> curlA(gradA(0, 1), -gradA(0, 0), 0);
         const double divA           = 0;
-        const double invLength = 1/mLength;
+        const double invLength      = 1 / mLength;
         const double invwsquared    = invLength * invLength;
         using DirectorMatrix        = Eigen::Matrix<double, directorDim, directorDim>;
         const DirectorMatrix eye    = DirectorMatrix::Identity();
         const DirectorMatrix mdyadm = normalizedMag * normalizedMag.transpose();
         const DirectorMatrix Q1
-            =  invwsquared
+            = invwsquared
               * (normalizedMag.dot(gradw.col(0)) * (3 * (mdyadm)-eye) - gradw.col(0) * normalizedMag.transpose()
                  - normalizedMag * gradw.col(0).transpose());
         const DirectorMatrix Q2
-            =  invwsquared
+            = invwsquared
               * (normalizedMag.dot(gradw.col(1)) * (3 * (mdyadm)-eye) - gradw.col(1) * normalizedMag.transpose()
                  - normalizedMag * gradw.col(1).transpose());
 
         const DirectorMatrix Id3minus5tdyadt = eye - 5.0 * mdyadm;
-        const double normwcubinv             =  invwsquared * invLength;
+        const double normwcubinv             = invwsquared * invLength;
         const DirectorMatrix td1dyadt        = gradm.col(0) * normalizedMag.transpose();
         const DirectorMatrix td2dyadt        = gradm.col(1) * normalizedMag.transpose();
 
@@ -531,8 +514,8 @@ namespace Ikarus::FiniteElements {
                                    - gradm.col(1) * gradw.col(0).transpose() - td2scalwd1 * 0.5 * eye);
         chi21d = (chi21d + chi21d.transpose()).eval();
 
-        const DirectorMatrix S1d    =  invwsquared * (-td1dyadt - (normalizedMag * gradm.col(0).transpose()));
-        const DirectorMatrix S2d    =  invwsquared * (-td2dyadt - (normalizedMag * gradm.col(1).transpose()));
+        const DirectorMatrix S1d    = invwsquared * (-td1dyadt - (normalizedMag * gradm.col(0).transpose()));
+        const DirectorMatrix S2d    = invwsquared * (-td2dyadt - (normalizedMag * gradm.col(1).transpose()));
         const DirectorMatrix chifac = chi11d + chi22d + chi12d + chi21d;
 
         const Eigen::Vector<double, directorDim> Hbar = volumeLoad(toEigenVector(gp.position()), lambda);
@@ -550,27 +533,26 @@ namespace Ikarus::FiniteElements {
             eukHess_.template block<directorDim, directorDim>(indexI, indexJ)
                 += WI1 * WJ1 + WI2 * WJ2 + (WI1 * WJ2 + WI2 * WJ1) + Nm[i] * Nm[j] * chifac
                    + (S1d * NdN1 + S2d * NdN2 + (S1d * NdN2 + S2d * NdN1));
-
           }
         }
-//        const int magEukSize = fe0.size() * directorDim;
-//        for (size_t i = 0; i < fe1.size(); ++i) {
-//          const int index = magEukSize + i * vectorPotDim;
-//          Eigen::Vector<double, directorDim> gradCurlA_dI;
-//          if constexpr (directorDim == 3) {
-//            gradCurlA_dI[0] = dNAdx(i, 1);
-//            gradCurlA_dI[1] = -dNAdx(i, 0);
-//            gradCurlA_dI[2] = 0;
-//          } else if constexpr (directorDim == 2) {
-//            gradCurlA_dI[0] = dNAdx(i, 1);
-//            gradCurlA_dI[1] = -dNAdx(i, 0);
-//          }
-//          eukGrad_.template segment<vectorPotDim>(index).array()
-//              += (-gradCurlA_dI.dot(normalizedMag) + gradCurlA_dI.dot(curlA)) * geo.integrationElement(gp.position())
-//                 * gp.weight();
-//        }
+        //        const int magEukSize = fe0.size() * directorDim;
+        //        for (size_t i = 0; i < fe1.size(); ++i) {
+        //          const int index = magEukSize + i * vectorPotDim;
+        //          Eigen::Vector<double, directorDim> gradCurlA_dI;
+        //          if constexpr (directorDim == 3) {
+        //            gradCurlA_dI[0] = dNAdx(i, 1);
+        //            gradCurlA_dI[1] = -dNAdx(i, 0);
+        //            gradCurlA_dI[2] = 0;
+        //          } else if constexpr (directorDim == 2) {
+        //            gradCurlA_dI[0] = dNAdx(i, 1);
+        //            gradCurlA_dI[1] = -dNAdx(i, 0);
+        //          }
+        //          eukGrad_.template segment<vectorPotDim>(index).array()
+        //              += (-gradCurlA_dI.dot(normalizedMag) + gradCurlA_dI.dot(curlA)) *
+        //              geo.integrationElement(gp.position())
+        //                 * gp.weight();
+        //        }
       }
-
     }
 
     template <class ScalarType>
@@ -604,8 +586,6 @@ namespace Ikarus::FiniteElements {
       ScalarType energy = 0.0;
 
       const auto geo = localView_.element().geometry();
-
-      const int order = 4 * localView_.tree().child(Dune::Indices::_0, 0).finiteElement().localBasis().order();
 
       const auto& rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
 
@@ -655,7 +635,7 @@ namespace Ikarus::FiniteElements {
         //        std::cout<<"divA::"<<divA<<std::endl;
         const Eigen::Vector<double, directorDim> Hbar = volumeLoad(toEigenVector(gp.position()), lambda);
         //        std::cout<<"Hbar::"<<Hbar<<std::endl;
-        energy += (0.5 * (gradm.transpose() * gradm).trace() - 0*2 * normalizedMag.dot(Hbar) / material.ms)
+        energy += (0.5 * (gradm.transpose() * gradm).trace()*0 -  2 * normalizedMag.dot(Hbar) / material.ms)
                   * geo.integrationElement(gp.position()) * gp.weight();  // exchange and zeeman energy
 
         energy += (0.5 * curlA.squaredNorm() - 0*normalizedMag.dot(curlA) + divA * divA)
@@ -684,6 +664,7 @@ namespace Ikarus::FiniteElements {
     std::function<Eigen::Vector<double, directorDim>(const Eigen::Vector<double, Traits::mydim>&, const double&)>
         volumeLoad;
     MagneticMaterial material;
+    unsigned int order{};
   };
 
 }  // namespace Ikarus::FiniteElements

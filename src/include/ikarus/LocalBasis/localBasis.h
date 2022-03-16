@@ -106,6 +106,23 @@ namespace Ikarus {
       }
     }
 
+    struct IntegrationPointsAndIndex {
+      long unsigned index;
+      const Dune::QuadraturePoint<DomainFieldType, gridDim>& ip;
+    };
+    auto viewOverIntegrationPoints() const {
+      assert(Nbound.value().size() == dNbound.value().size()
+             && "Number of intergrationpoint evaluations does not match.");
+      if (Nbound and dNbound)
+        return std::views::iota(0UL, Nbound.value().size()) | std::views::transform([&](auto&& i_) {
+                 return IntegrationPointsAndIndex(i_, rule.value()[i_]);
+               });
+      else {
+        assert(false && "You need to call bind first");
+        __builtin_unreachable();
+      }
+    }
+
   private:
     mutable std::vector<JacobianType> dNdune;
     mutable std::vector<RangeType> Ndune;

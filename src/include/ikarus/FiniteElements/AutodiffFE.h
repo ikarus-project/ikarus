@@ -61,7 +61,7 @@ namespace Ikarus {
       autodiff::dual2nd e;
       dx.setZero();
       auto f = [&](auto& x) { return this->underlying().calculateScalarImpl(par, x); };
-      hessian(f, wrt(dx), at(dx), e, g, h);
+      hessian(f, autodiff::wrt(dx), at(dx), e, g, h);
     }
 
     void calculateVector(const FERequirementType& par, typename Traits::VectorType& g) const {
@@ -69,7 +69,7 @@ namespace Ikarus {
       dx.setZero();
       autodiff::dual e;
       auto f = [&](auto& x) { return this->underlying().calculateScalarImpl(par, x); };
-      gradient(f, wrt(dx), at(dx), e, g);
+      gradient(f, autodiff::wrt(dx), at(dx), e, g);
     }
 
     void calculateLocalSystem(const FERequirementType& par, typename Traits::MatrixType& h,
@@ -77,7 +77,7 @@ namespace Ikarus {
       Eigen::VectorXdual2nd dx(localdofSize);
       dx.setZero();
       auto f = [&](auto& x) { return this->underlying().calculateScalarImpl(par, x); };
-      hessian(f, wrt(dx), at(dx), g, h);
+      hessian(f, autodiff::wrt(dx), at(dx), g, h);
     }
 
     [[nodiscard]] typename Traits::ScalarType calculateScalar(const FERequirementType& par) const {
