@@ -141,7 +141,7 @@ int main(int argc, char** argv) {
   auto denseAssembler  = DenseFlatAssembler(basisRieC, fes, dirichletFlags);
   auto sparseAssembler = SparseFlatAssembler(basisRieC, fes, dirichletFlags);
 
-  double lambda = 0.0;
+  double lambda = 1.0;
 
   auto residualFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
     Ikarus::FErequirements<MultiTypeVector> req;

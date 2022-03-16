@@ -81,6 +81,7 @@ TEST(LocalFunction, ProjectionBasedUnitVector) {
 
       const auto& jaco = localF.evaluateDerivative(gpIndex, directoreval, wrt(spatial));
       const auto jaco2 = localF.evaluateDerivative(gpIndex, wrt(spatial));
+      EXPECT_THAT(jaco2, EigenApproxEqual(jaco, 1e-15));
       auto localFdual_ = [&](auto& x) { return localFdual(x, gpIndex); };
       Eigen::VectorXdual xv(vasMat.cols() * vasMat.rows());
       xv.setZero();
@@ -100,6 +101,16 @@ TEST(LocalFunction, ProjectionBasedUnitVector) {
         std::cout << Warray4[1] << std::endl;
         for (int j = 0; j < 2; ++j) {
           EXPECT_THAT(Warray[j], EigenApproxEqual(Warray2[j], 1e-15));
+        }
+
+        const auto& dN = localBasis.getJacobian(gpIndex);
+        auto JacoEmbedded     = (Ikarus::LinearAlgebra::viewAsEigenMatrixFixedDyn(vBlockedLocal) * dN).eval();
+        for (int dir = 0; dir < 2; ++dir) {
+          EXPECT_THAT(Warray2[dir],
+                      EigenApproxEqual(Ikarus::UnitVector<double, 2>::secondDerivativeOfProjectionWRTposition(directorEmbedded, JacoEmbedded.col(dir)) * localBasis.getFunction(gpIndex)[i]
+                                           + Ikarus::UnitVector<double, 2>::derivativeOfProjectionWRTposition(directorEmbedded)
+                                                 * localBasis.getJacobian(gpIndex)(i, dir)
+                                           , 1e-15));
         }
 
         EXPECT_THAT(jacobianWRTCoeffs,
