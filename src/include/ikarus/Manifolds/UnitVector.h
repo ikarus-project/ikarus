@@ -92,11 +92,11 @@ namespace Ikarus::Manifold {
       return result;
     }
 
-    static Eigen::Matrix<ctype, valueSize, valueSize> secondDerivativeOfProjectionWRTpositionANDspatial(
+    static Eigen::Matrix<ctype, valueSize, valueSize> secondDerivativeOfProjectionWRTposition(
         const Eigen::Vector<ctype, valueSize> &p, const Eigen::Ref<const Eigen::Vector<ctype, valueSize>> &along) {
       const ctype normSquared                  = p.squaredNorm();
       const ctype norm                         = std::sqrt(normSquared);
-      const Eigen::Vector<ctype, valueSize> pN = p/norm;
+      const Eigen::Vector<ctype, valueSize> pN = p / norm;
 
       Eigen::Matrix<ctype, valueSize, valueSize> Q_along
           = 1 / normSquared
@@ -104,6 +104,31 @@ namespace Ikarus::Manifold {
                - along * pN.transpose() - pN * along.transpose());
 
       return Q_along;
+    }
+
+    static Eigen::Matrix<ctype, valueSize, valueSize> thirdDerivativeOfProjectionWRTposition(
+        const Eigen::Vector<ctype, valueSize> &p,
+        const Eigen::Ref<const Eigen::Vector<ctype, valueSize>> &along1,
+        const Eigen::Ref<const Eigen::Vector<ctype, valueSize>> &along2) {
+      using FieldMat                           = Eigen::Matrix<ctype, valueSize, valueSize>;
+      const ctype normSquared                  = p.squaredNorm();
+      const ctype norm                         = std::sqrt(normSquared);
+      const Eigen::Vector<ctype, valueSize> pN = p / norm;
+      const ctype tscala1                      = pN.dot(along1);
+      const ctype tscalwd1                     = pN.dot(along2);
+      const ctype a1scalwd1                    = along1.dot(along2);
+      const ctype normwcubinv                  = 1 / (normSquared * norm);
+      const FieldMat a1dyadt                   = along1 * pN.transpose();
+      const FieldMat wd1dyadt                  = along2 * pN.transpose();
+      const FieldMat tDyadict                  = pN * pN.transpose();
+      const FieldMat Id3minus5tdyadt           = FieldMat::Identity() - 5.0 * tDyadict;
+      FieldMat Chi_along
+          = normwcubinv
+            * (3.0 * tscalwd1 * (a1dyadt + 0.5 * tscala1 * Id3minus5tdyadt)
+               + 3.0 * (0.5 * a1scalwd1 * tDyadict + tscala1 * wd1dyadt) - along1 * along2.transpose()
+               - a1scalwd1 * 0.5 * FieldMat::Identity());
+      Chi_along = (Chi_along + Chi_along.transpose()).eval();
+      return Chi_along;
     }
 
     /** \brief Compute an orthonormal basis of the tangent space of S^n.

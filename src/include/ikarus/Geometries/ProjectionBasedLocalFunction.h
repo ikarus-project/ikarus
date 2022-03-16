@@ -24,12 +24,12 @@ namespace Ikarus {
 
   template <typename... Args>
   struct CoeffIndices {
-    std::array<std::common_type_t<Args>..., sizeof...(Args)> args;
+    std::array<std::common_type_t<std::remove_cvref_t<Args>...>, sizeof...(Args)> args;
   };
 
   template <typename... Args>
   auto coeffIndices(Args&&... args) {
-    return CoeffIndices<Args&&...>{std::forward<Args>(args)...};
+    return CoeffIndices<Args&&...>({std::forward<Args>(args)...});
   }
 
   template <typename... Args>
@@ -40,6 +40,16 @@ namespace Ikarus {
   template <typename... Args>
   auto wrt(Args&&... args) {
     return Wrt<Args&&...>{std::forward_as_tuple(std::forward<Args>(args)...)};
+  }
+
+  template <typename... Args>
+  struct Along {
+    std::tuple<Args...> args;
+  };
+
+  template <typename... Args>
+  auto along(Args&&... args) {
+    return Along<Args&&...>{std::forward_as_tuple(std::forward<Args>(args)...)};
   }
 
   struct Counter {
@@ -68,7 +78,7 @@ namespace Ikarus {
   class ProjectionBasedLocalFunction {
   public:
     using DomainType = typename DuneBasis::Traits::DomainType;
-    ProjectionBasedLocalFunction(Ikarus::LocalBasis<DuneBasis>& basis_, const CoeffContainer& coeffs_)
+    ProjectionBasedLocalFunction(const Ikarus::LocalBasis<DuneBasis>& basis_, const CoeffContainer& coeffs_)
         : basis{basis_}, coeffs{coeffs_}, coeffsAsMat{Ikarus::LinearAlgebra::viewAsEigenMatrixFixedDyn(coeffs)} {}
     /** \brief Type used for coordinates */
     using ctype = typename CoeffContainer::value_type::ctype;
@@ -103,25 +113,11 @@ namespace Ikarus {
       return evaluateFunctionImpl(N);
     }
 
-    Jacobian evaluateDerivative(long unsigned i, const Manifold& val) const {
-      assert(basis.isBound() && "You have to bind the basis first");
-      Jacobian J = evaluateEmbeddingJacobianImpl(i);
-
-      GlobalE valE = evaluateEmbeddingFunctionImpl(basis.getFunction(i));
-      return Manifold::derivativeOfProjectionWRTposition(valE) * J;
-    }
-
-    Jacobian evaluateDerivative(long unsigned i) const {
-      Manifold val = evaluateFunctionImpl(basis.getFunction(i));
-      return evaluateDerivative(i, val);
-    }
-
     template <typename... Args, typename... Indices>
-    requires((countInTuple<Wrt<Args...>>().coeffDerivatives > 0)
+    requires((countInTuple<Wrt<Args...>>().coeffDerivatives == 1)
              and (countInTuple<Wrt<Args...>>().coeffDerivatives
-                  == sizeof...(Indices))) auto evaluateDerivative(long unsigned gpIndex, const Manifold& val,
-                                                                  Wrt<Args...>&& args,
-                                                                  CoeffIndices<Indices...>&& coeffsIndices) const {
+                  == 1)) auto evaluateDerivative(long unsigned gpIndex, const Manifold& val, Wrt<Args...>&& args,
+                                                 CoeffIndices<Indices...>&& coeffsIndices) const {
       constexpr Counter counter = countInTuple<Wrt<Args...>>();
       if constexpr (counter.coeffDerivatives == 0 and counter.spatialDerivatives == 1) {
         return evaluateDerivative(gpIndex, val);
@@ -132,6 +128,20 @@ namespace Ikarus {
       }
     }
 
+    template <typename... Args, typename... AlongArgs, typename... Indices>
+    requires((countInTuple<Wrt<Args...>>().coeffDerivatives == 2)
+             and (countInTuple<Wrt<Args...>>().coeffDerivatives
+                  == 2)) auto evaluateDerivative(long unsigned gpIndex, const Manifold& val, Wrt<Args...>&& args,
+                                                 Along<AlongArgs...>&& along,
+                                                 CoeffIndices<Indices...>&& coeffsIndices) const {
+      constexpr Counter counter = countInTuple<Wrt<Args...>>();
+      if constexpr (counter.coeffDerivatives == 2 and counter.spatialDerivatives == 0) {
+        return evaluateSecondDerivativeWRTCoeffs(gpIndex, val, std::get<0>(along.args), coeffsIndices.args);
+      }else if constexpr (counter.coeffDerivatives == 2 and counter.spatialDerivatives == 1) {
+        return evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatial(gpIndex, val, std::get<0>(along.args), coeffsIndices.args);
+      }
+    }
+
     auto evaluateDerivativeWRTCoeffsANDSpatial(const long unsigned gpIndex, const Manifold& val,
                                                int coeffsIndex) const {
       const GlobalE valE = evaluateEmbeddingFunctionImpl(basis.getFunction(gpIndex));
@@ -139,7 +149,7 @@ namespace Ikarus {
       const auto Pm      = Manifold::derivativeOfProjectionWRTposition(valE);
       std::array<FieldMat, gridDim> Warray;
       for (int i = 0; i < gridDim; ++i) {
-        const auto Qi = Manifold::secondDerivativeOfProjectionWRTpositionANDspatial(valE, J.col(i));
+        const auto Qi = Manifold::secondDerivativeOfProjectionWRTposition(valE, J.col(i));
         Warray[i]     = Qi * basis.getFunction(gpIndex)[coeffsIndex] + Pm * basis.getJacobian(gpIndex)(coeffsIndex, i);
       }
 
@@ -151,6 +161,35 @@ namespace Ikarus {
       return (Manifold::derivativeOfProjectionWRTposition(valE) * basis.getFunction(gpIndex)[coeffsIndex]).eval();
     }
 
+    auto evaluateSecondDerivativeWRTCoeffs(const long unsigned gpIndex, const Manifold& val,
+                                           const Eigen::Vector<ctype, coeffdimension>& along,
+                                           const std::array<size_t, gridDim>& coeffsIndex) const {
+      const GlobalE valE = evaluateEmbeddingFunctionImpl(basis.getFunction(gpIndex));
+      FieldMat Snn       = Manifold::secondDerivativeOfProjectionWRTposition(valE, along)
+                     * basis.getFunction(gpIndex)[coeffsIndex[0]] * basis.getFunction(gpIndex)[coeffsIndex[1]];
+
+      return Snn;
+    }
+
+    auto evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatial(const long unsigned gpIndex, const Manifold& val,
+                                                            const Eigen::Vector<ctype, coeffdimension>& along,
+                                                            const std::array<size_t, gridDim>& coeffsIndex) const {
+      const GlobalE valE = evaluateEmbeddingFunctionImpl(basis.getFunction(gpIndex));
+      const Jacobian J   = evaluateEmbeddingJacobianImpl(gpIndex);
+      const auto S       = Manifold::secondDerivativeOfProjectionWRTposition(valE, along);
+      std::array<FieldMat, gridDim> ChiArray;
+      for (int i = 0; i < gridDim; ++i) {
+        const auto chi    = Manifold::thirdDerivativeOfProjectionWRTposition(valE, along, J.col(i));
+        const auto& NI    = basis.getFunction(gpIndex)[coeffsIndex[0]];
+        const auto& NJ    = basis.getFunction(gpIndex)[coeffsIndex[1]];
+        const auto& dNIdi = basis.getJacobian(gpIndex)(coeffsIndex[0], i);
+        const auto& dNJdi = basis.getJacobian(gpIndex)(coeffsIndex[1], i);
+        ChiArray[i]       = chi * NI * NJ + S * (dNIdi * NJ + dNJdi * NI);
+      }
+
+      return ChiArray;
+    }
+
     template <typename... Args>
     requires(countInTuple<Wrt<Args...>>().coeffDerivatives == 0) Jacobian
         evaluateDerivative(long unsigned i, const Manifold& val, Wrt<Args...>&& args)
@@ -158,7 +197,7 @@ namespace Ikarus {
       constexpr Counter counter = countInTuple<Wrt<Args...>>();
       static_assert(counter.spatialDerivatives < 2, "This currently only supports first order spatial derivatives");
       if constexpr (counter.spatialDerivatives == 1) {
-        return evaluateDerivative(i, val);
+        return evaluateFirstSpatialDerivative(i, val);
       } else
         __builtin_unreachable();
     }
@@ -173,14 +212,40 @@ namespace Ikarus {
 
     template <typename... Args, typename... Indices>
     requires(countInTuple<Wrt<Args...>>().coeffDerivatives
-             > 0) auto evaluateDerivative(long unsigned gpIndex, Wrt<Args...>&& args,
-                                          CoeffIndices<Indices...>&& coeffsIndices) const {
+             == 1) auto evaluateDerivative(long unsigned gpIndex, Wrt<Args...>&& args,
+                                           CoeffIndices<Indices...>&& coeffsIndices) const {
       Manifold val = evaluateFunctionImpl(basis.getFunction(gpIndex));
       return evaluateDerivative(gpIndex, val, std::forward<Wrt<Args...>>(args),
                                 std::forward<CoeffIndices<Indices...>>(coeffsIndices));
     }
 
+    template <typename... Args, typename... AlongArgs, typename... Indices>
+    requires(countInTuple<Wrt<Args...>>().coeffDerivatives
+             == 2) auto evaluateDerivative(long unsigned gpIndex, Wrt<Args...>&& args, Along<AlongArgs...>&& along,
+                                           CoeffIndices<Indices...>&& coeffsIndices) const {
+      Manifold val = evaluateFunctionImpl(basis.getFunction(gpIndex));
+      return evaluateDerivative(gpIndex, val, std::forward<Wrt<Args...>>(args),
+                                std::forward<Along<AlongArgs...>>(along),
+                                std::forward<CoeffIndices<Indices...>>(coeffsIndices));
+    }
+
+    auto viewOverIntegrationPoints()
+    {
+      return basis.viewOverIntegrationPoints();
+    }
   private:
+    Jacobian evaluateFirstSpatialDerivative(long unsigned i, const Manifold& val) const {
+      assert(basis.isBound() && "You have to bind the basis first");
+      Jacobian J = evaluateEmbeddingJacobianImpl(i);
+
+      GlobalE valE = evaluateEmbeddingFunctionImpl(basis.getFunction(i));
+      return Manifold::derivativeOfProjectionWRTposition(valE) * J;
+    }
+
+    Jacobian evaluateFirstSpatialDerivative(long unsigned i) const {
+      Manifold val = evaluateFunctionImpl(basis.getFunction(i));
+      return evaluateFirstSpatialDerivative(i, val);
+    }
     Manifold evaluateFunctionImpl(const Eigen::VectorXd& N) const { return Manifold(evaluateEmbeddingFunctionImpl(N)); }
     Jacobian evaluateEmbeddingJacobianImpl(long unsigned i) const {
       assert(basis.isBound() && "You have to bind the basis first");
