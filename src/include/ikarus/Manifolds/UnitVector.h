@@ -83,17 +83,19 @@ namespace Ikarus::Manifold {
 
     static Eigen::Matrix<ctype, valueSize, valueSize> derivativeOfProjectionWRTposition(
         const Eigen::Vector<ctype, valueSize> &p) {
-      const ctype normSquared = p.squaredNorm();
-      const ctype norm        = std::sqrt(normSquared);
+      const ctype normSquared                  = p.squaredNorm();
+      const ctype norm                         = std::sqrt(normSquared);
+      const Eigen::Vector<ctype, valueSize> pN = p / norm;
 
       Eigen::Matrix<ctype, valueSize, valueSize> result
-          = (Eigen::Matrix<ctype, valueSize, valueSize>::Identity() - (p * p.transpose()) / normSquared) / norm;
+          = (Eigen::Matrix<ctype, valueSize, valueSize>::Identity() - pN * pN.transpose()) / norm;
 
       return result;
     }
 
+    template<typename Derived>
     static Eigen::Matrix<ctype, valueSize, valueSize> secondDerivativeOfProjectionWRTposition(
-        const Eigen::Vector<ctype, valueSize> &p, const Eigen::Ref<const Eigen::Vector<ctype, valueSize>> &along) {
+        const Eigen::Vector<ctype, valueSize> &p, const Eigen::MatrixBase<Derived> &along) {
       const ctype normSquared                  = p.squaredNorm();
       const ctype norm                         = std::sqrt(normSquared);
       const Eigen::Vector<ctype, valueSize> pN = p / norm;
@@ -107,8 +109,7 @@ namespace Ikarus::Manifold {
     }
 
     static Eigen::Matrix<ctype, valueSize, valueSize> thirdDerivativeOfProjectionWRTposition(
-        const Eigen::Vector<ctype, valueSize> &p,
-        const Eigen::Ref<const Eigen::Vector<ctype, valueSize>> &along1,
+        const Eigen::Vector<ctype, valueSize> &p, const Eigen::Ref<const Eigen::Vector<ctype, valueSize>> &along1,
         const Eigen::Ref<const Eigen::Vector<ctype, valueSize>> &along2) {
       using FieldMat                           = Eigen::Matrix<ctype, valueSize, valueSize>;
       const ctype normSquared                  = p.squaredNorm();
@@ -122,11 +123,10 @@ namespace Ikarus::Manifold {
       const FieldMat wd1dyadt                  = along2 * pN.transpose();
       const FieldMat tDyadict                  = pN * pN.transpose();
       const FieldMat Id3minus5tdyadt           = FieldMat::Identity() - 5.0 * tDyadict;
-      FieldMat Chi_along
-          = normwcubinv
-            * (3.0 * tscalwd1 * (a1dyadt + 0.5 * tscala1 * Id3minus5tdyadt)
-               + 3.0 * (0.5 * a1scalwd1 * tDyadict + tscala1 * wd1dyadt) - along1 * along2.transpose()
-               - a1scalwd1 * 0.5 * FieldMat::Identity());
+      FieldMat Chi_along                       = normwcubinv
+                           * (3.0 * tscalwd1 * (a1dyadt + 0.5 * tscala1 * Id3minus5tdyadt)
+                              + 3.0 * (0.5 * a1scalwd1 * tDyadict + tscala1 * wd1dyadt) - along1 * along2.transpose()
+                              - a1scalwd1 * 0.5 * FieldMat::Identity());
       Chi_along = (Chi_along + Chi_along.transpose()).eval();
       return Chi_along;
     }
