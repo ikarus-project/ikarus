@@ -9,7 +9,7 @@
 
 namespace Ikarus::Manifold {
   /**
-   * \brief Manifold of Euklidean space \f$\mathbb{R}^d\f$
+   * \brief FunctionReturnType of Euklidean space \f$\mathbb{R}^d\f$
    *
    * \tparam ct The type used for the scalar coordinate values, e.g. double, float
    * \tparam d Dimension of the embedding space of the manifold
@@ -94,4 +94,4 @@ namespace Ikarus::Manifold {
     return RealTuple<ctype2, d2>(rt.getValue() + correction);
   }
 
-}  // namespace Ikarus::Manifold
+}  // namespace Ikarus::FunctionReturnType

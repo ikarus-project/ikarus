@@ -242,7 +242,7 @@ namespace Ikarus {
       isReducedOccupationPatternCreated = true;
     }
 
-    // This function save the indices of each element in the underlying vector which stores the sparse matrix entries
+    // This function save the indices of each element in the impl vector which stores the sparse matrix entries
     void createlinearDofsPerElement() {
       std::vector<GlobalIndex> dofs;
       for (auto&& fe : feContainer) {
@@ -256,7 +256,7 @@ namespace Ikarus {
       arelinearDofsPerElementCreated = true;
     }
 
-    // This function save the indices of each element in the underlying vector which stores the sparse matrix entries
+    // This function save the indices of each element in the impl vector which stores the sparse matrix entries
     void createlinearDofsPerElementReduced() {
       std::vector<GlobalIndex> dofs;
       for (auto&& fe : feContainer) {

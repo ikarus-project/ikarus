@@ -9,7 +9,7 @@
 
 namespace Ikarus::Manifold {
   /**
-   * \brief Manifold of unit vectors \f$\mathcal{S}^{d-1}\f$ embedded into space \f$\mathbb{R}^d\f$
+   * \brief FunctionReturnType of unit vectors \f$\mathcal{S}^{d-1}\f$ embedded into space \f$\mathbb{R}^d\f$
    *
    * \tparam ct The type used for the scalar coordinate values, e.g. double,float
    * \tparam d Dimension of the embedding space of the manifold
@@ -199,4 +199,4 @@ namespace Ikarus::Manifold {
     return UnitVector<ctype2, d2>(rt.getValue() + rt.orthonormalFrame() * correction);
   }
 
-}  // namespace Ikarus::Manifold
+}  // namespace Ikarus::FunctionReturnType

@@ -15,16 +15,20 @@
 namespace Ikarus {
   template <typename DuneLocalBasis>
   class LocalBasis {
+    using RangeDuneType              = typename DuneLocalBasis::Traits::RangeType;
+    using JacobianDuneType           = typename DuneLocalBasis::Traits::JacobianType;
   public:
     LocalBasis(const DuneLocalBasis& p_basis) : duneLocalBasis{&p_basis} {}
     LocalBasis() = default;
 
     static constexpr int gridDim = DuneLocalBasis::Traits::dimDomain;
     using DomainType             = typename DuneLocalBasis::Traits::DomainType;
-    using RangeType              = typename DuneLocalBasis::Traits::RangeType;
+
     using DomainFieldType        = typename DuneLocalBasis::Traits::DomainFieldType;
     using RangeFieldType         = typename DuneLocalBasis::Traits::RangeFieldType;
-    using JacobianType           = typename DuneLocalBasis::Traits::JacobianType;
+
+    using JacobianType           = Eigen::Matrix<RangeFieldType, Eigen::Dynamic, gridDim>;
+    using AnsatzFunctionType           = Eigen::VectorX<RangeFieldType>;
 
     template <typename Derived>
     void evaluateFunction(const DomainType& local, Eigen::PlainObjectBase<Derived>& N) const {
@@ -124,8 +128,8 @@ namespace Ikarus {
     }
 
   private:
-    mutable std::vector<JacobianType> dNdune;
-    mutable std::vector<RangeType> Ndune;
+    mutable std::vector<JacobianDuneType> dNdune;
+    mutable std::vector<RangeDuneType> Ndune;
     DuneLocalBasis const* duneLocalBasis;
     std::optional<std::vector<int>> boundDerivatives;
     std::optional<std::vector<Eigen::VectorX<RangeFieldType>>> Nbound;

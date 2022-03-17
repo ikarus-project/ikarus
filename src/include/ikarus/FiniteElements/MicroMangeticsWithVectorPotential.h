@@ -32,15 +32,15 @@
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/geometry/type.hh>
 
-#include "ikarus/Geometries/ProjectionBasedLocalFunction.h"
-#include "ikarus/Geometries/SimpleLocalFunction.h"
+#include "ikarus/LocalFunctions//ProjectionBasedLocalFunction.h"
+#include "ikarus/LocalFunctions/SimpleLocalFunction.h"
 #include "ikarus/LocalBasis/localBasis.h"
 #include "ikarus/utils/LinearAlgebraHelper.h"
 #include <ikarus/FiniteElements/FEPolicies.h>
 #include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
 #include <ikarus/FiniteElements/physicsHelper.h>
-#include <ikarus/Geometries/GeometryWithExternalInput.h>
+#include <ikarus/LocalFunctions/GeometryWithExternalInput.h>
 #include <ikarus/Variables/VariableDefinitions.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
 
@@ -375,7 +375,7 @@ namespace Ikarus::FiniteElements {
 //                Eigen::Matrix<double, directorDim, Traits::mydim> gradw
 //                    = (LocalFuncMag<double>::jacobianTransposed(dNmdx, mN).transpose());
         const Eigen::Matrix<double, directorDim, Traits::mydim> gradm
-            = magnetLocalFunction.evaluateDerivative(gpIndex, wrt(spatial));
+            = magnetLocalFunction.evaluateDerivative(gpIndex, wrt(spatial), transformWith(J.inverse().eval()));
         //        std::cout<<gradm<<std::endl;
         Eigen::Matrix<double, vectorPotDim, Traits::mydim> gradA
             = (LocalFuncVecPot<double>::jacobianTransposed(dNAdx, AN).transpose());
