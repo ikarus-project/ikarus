@@ -41,17 +41,29 @@ namespace Ikarus {
     using GlobalE  = typename Manifold::CoordinateType;
   /** \brief Type for the transposed Jacobian matrix */
     using Jacobian           = typename Traits::Jacobian;
+    using JacobianColType           = typename Traits::JacobianColType;
     using FieldMat           = typename Traits::FieldMat;
     using AnsatzFunctionType           = typename Traits::AnsatzFunctionType;
     using AnsatzFunctionJacobian           = typename Traits::AnsatzFunctionJacobian;
     using TransformMatrix           = typename Traits::TransformMatrix;
 
-  private:
-    Jacobian evaluateDerivativeWRTSpaceImpl(const AnsatzFunctionType& N,const AnsatzFunctionJacobian & dN, const Manifold& val) const {
-      Jacobian J = evaluateEmbeddingJacobianImpl(dN);
 
+    void setCoefficients(const CoeffContainer& otherCoeffs)
+    {
+      coeffs = otherCoeffs;
+    }
+  private:
+    Jacobian evaluateDerivativeWRTSpaceAllImpl(const AnsatzFunctionType& N,const AnsatzFunctionJacobian & dN) const {
+      Jacobian J = evaluateEmbeddingJacobianImpl(dN);
       GlobalE valE = evaluateEmbeddingFunctionImpl(N);
       return Manifold::derivativeOfProjectionWRTposition(valE) * J;
+    }
+
+
+    JacobianColType evaluateDerivativeWRTSpaceSingleImpl(const AnsatzFunctionType& N,const AnsatzFunctionJacobian & dN,int spaceIndex) const {
+      JacobianColType Jcol = evaluateEmbeddingJacobianColImpl(dN,spaceIndex);
+      GlobalE valE = evaluateEmbeddingFunctionImpl(N);
+      return Manifold::derivativeOfProjectionWRTposition(valE) * Jcol;
     }
 
     auto evaluateDerivativeWRTCoeffsImpl(const long unsigned gpIndex, const Manifold& val, int coeffsIndex) const {
@@ -106,14 +118,24 @@ namespace Ikarus {
     }
 
     Manifold evaluateFunctionImpl(const AnsatzFunctionType & N) const { return Manifold(evaluateEmbeddingFunctionImpl(N)); }
+
+    JacobianColType evaluateEmbeddingJacobianColImpl(const AnsatzFunctionJacobian& dN,int spaceIndex) const {
+      JacobianColType Jcol     = coeffsAsMat * dN.col(spaceIndex);
+      return Jcol;
+    }
+
+
     Jacobian evaluateEmbeddingJacobianImpl(const AnsatzFunctionJacobian& dN) const {
       Jacobian J     = coeffsAsMat * dN;
       return J;
     }
 
+
+
     GlobalE evaluateEmbeddingFunctionImpl(const Eigen::VectorXd& N) const { return coeffsAsMat * N; }
+
     const Ikarus::LocalBasis<DuneBasis>& basis;
-    const CoeffContainer& coeffs;
+    CoeffContainer coeffs;
     const decltype(Ikarus::LinearAlgebra::viewAsEigenMatrixFixedDyn(coeffs)) coeffsAsMat;
   };
 
@@ -121,26 +143,20 @@ namespace Ikarus {
   template <typename DuneBasis, typename CoeffContainer>
   struct LocalFunctionTraits<ProjectionBasedLocalFunction<DuneBasis,CoeffContainer> > {
 
-//    /** \brief Type used for coordinates */
     using ctype = typename CoeffContainer::value_type::ctype;
-//    /** \brief Dimension of the coeffs */
     static constexpr int manifoldEmbeddingDim = CoeffContainer::value_type::valueSize;
-//
-//    /** \brief Dimension of the grid */
+
     static constexpr int gridDim = Ikarus::LocalBasis<DuneBasis>::gridDim;
-//
-//    /** \brief Type for coordinate vector in world space */
+
     using FunctionReturnType = typename CoeffContainer::value_type;
 
     using Jacobian           = Eigen::Matrix<ctype, manifoldEmbeddingDim, gridDim>;
-
     using FieldMat           = Eigen::Matrix<ctype, manifoldEmbeddingDim, manifoldEmbeddingDim>;
     using AnsatzFunctionJacobian = typename Ikarus::LocalBasis<DuneBasis>::JacobianType;
     using AnsatzFunctionType = typename Ikarus::LocalBasis<DuneBasis>::AnsatzFunctionType;
     using DomainType = typename DuneBasis::Traits::DomainType;
-//
-//    /** \brief Type for the transposed inverse Jacobian matrix */
     using TransformMatrix           = Eigen::Matrix<ctype, gridDim, gridDim>;
+    using JacobianColType        = typename Eigen::internal::plain_col_type<Jacobian>::type;
     };
 
 }  // namespace Ikarus
