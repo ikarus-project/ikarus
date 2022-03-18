@@ -17,7 +17,7 @@
 
 #include <Eigen/Core>
 
-#include "ikarus/Geometries/GeometryWithExternalInput.h"
+#include "ikarus/LocalFunctions/GeometryWithExternalInput.h"
 #include "ikarus/LocalBasis/localBasis.h"
 
 const double tol = 1e-15;

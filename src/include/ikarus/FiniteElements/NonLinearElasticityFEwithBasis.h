@@ -38,7 +38,7 @@
 #include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
 #include <ikarus/FiniteElements/InterfaceFiniteElement.h>
 #include <ikarus/FiniteElements/physicsHelper.h>
-#include <ikarus/Geometries/GeometryWithExternalInput.h>
+#include <ikarus/LocalFunctions/GeometryWithExternalInput.h>
 #include <ikarus/Variables/VariableDefinitions.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
 
