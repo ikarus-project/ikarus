@@ -149,14 +149,17 @@ namespace Ikarus {
     //
 
     //
-    //    /** \brief Function to forward the call of no spatial derivative and two derivative wrt. coefficients.
-    //     * You have to pass a along argument which specifies the direction wher this derivative is applied */
-    //    template <typename... Args, typename... AlongArgs, typename... Indices>
-    //    requires(hasCoeff<Wrt<Args...>, 2> and HasNoSpatial<Wrt<Args...>, gridDim>) auto evaluateDerivative(
-    //        long unsigned gpIndex, const FunctionReturnType& val, Wrt<Args...>&& args, Along<AlongArgs...>&& along,
-    //        CoeffIndices<Indices...>&& coeffsIndices) const {
-    //      return impl().evaluateSecondDerivativeWRTCoeffs(gpIndex, val, std::get<0>(along.args), coeffsIndices.args);
-    //    }
+        /** \brief Function to forward the call of no spatial derivative and two derivative wrt. coefficients.
+           * You have to pass a along argument which specifies the direction wher this derivative is applied
+          */
+        template <typename... Args, typename... AlongArgs, typename... Indices,typename DomainTypeOrIntegrationPointIndex>
+        requires(hasCoeff<Wrt<Args...>, 2> and DerivativeDirections::HasNoSpatial<Wrt<Args...>, gridDim>) auto evaluateDerivative(
+            const DomainTypeOrIntegrationPointIndex& localOrIpId, Wrt<Args...>&& args, Along<AlongArgs...>&& along,
+            CoeffIndices<Indices...>&& coeffsIndices) const {
+          const auto& [N, dN] = evaluateFunctionAndDerivativeWithIPorCoord(localOrIpId);
+
+          return impl().evaluateSecondDerivativeWRTCoeffs(N, dN, std::get<0>(along.args), coeffsIndices.args);
+        }
     //
     //    /** \brief Function to forward the call of one spatial derivative and two derivative wrt. coefficients.
     //     * You have to pass a along argument which specifies the direction wher this derivative is applied */
