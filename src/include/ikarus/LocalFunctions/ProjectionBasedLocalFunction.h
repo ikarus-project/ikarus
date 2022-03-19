@@ -72,18 +72,19 @@ namespace Ikarus {
       return (Manifold::derivativeOfProjectionWRTposition(valE) * N[coeffsIndex]).eval();
     }
 
-    auto evaluateSecondDerivativeWRTCoeffs(const AnsatzFunctionType& N, [[maybe_unused]] const AnsatzFunctionJacobian&, const AlongType& along,
+    auto evaluateSecondDerivativeWRTCoeffs(const AnsatzFunctionType& N, [[maybe_unused]] const AnsatzFunctionJacobian&,
+                                           const AlongType& along,
                                            const std::array<size_t, gridDim>& coeffsIndex) const {
       const GlobalE valE = evaluateEmbeddingFunctionImpl(N);
-      FieldMat Snn       = Manifold::secondDerivativeOfProjectionWRTposition(valE, along)
-                     * N[coeffsIndex[0]] * N[coeffsIndex[1]];
+      FieldMat Snn
+          = Manifold::secondDerivativeOfProjectionWRTposition(valE, along) * N[coeffsIndex[0]] * N[coeffsIndex[1]];
 
       return Snn;
     }
 
     auto evaluateDerivativeWRTCoeffsANDSpatialImpl(const AnsatzFunctionType& N,
                                                    [[maybe_unused]] const AnsatzFunctionJacobian& dN,
-                                                int coeffsIndex) const {
+                                                   int coeffsIndex) const {
       const GlobalE valE = evaluateEmbeddingFunctionImpl(N);
       const Jacobian J   = evaluateEmbeddingJacobianImpl(dN);
       const FieldMat Pm  = Manifold::derivativeOfProjectionWRTposition(valE);
@@ -98,11 +99,10 @@ namespace Ikarus {
 
     auto evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(const AnsatzFunctionType& N,
                                                          [[maybe_unused]] const AnsatzFunctionJacobian& dN,
-                                                         int coeffsIndex,
-                                                         const int spatialIndex) const {
-      const GlobalE valE  = evaluateEmbeddingFunctionImpl(N);
+                                                         int coeffsIndex, const int spatialIndex) const {
+      const GlobalE valE         = evaluateEmbeddingFunctionImpl(N);
       const JacobianColType Jcol = evaluateEmbeddingJacobianColImpl(dN, spatialIndex);
-      const FieldMat Pm   = Manifold::derivativeOfProjectionWRTposition(valE);
+      const FieldMat Pm          = Manifold::derivativeOfProjectionWRTposition(valE);
       FieldMat W;
       const auto Qi = Manifold::secondDerivativeOfProjectionWRTposition(valE, Jcol);
       W             = Qi * N[coeffsIndex] + Pm * dN(coeffsIndex, spatialIndex);
@@ -110,25 +110,43 @@ namespace Ikarus {
       return W;
     }
 
-    auto evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialImpl(const long unsigned gpIndex, const Manifold& val,
+    auto evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialImpl(const AnsatzFunctionType& N,
+                                                                [[maybe_unused]] const AnsatzFunctionJacobian& dN,
                                                                 const AlongType& along,
-                                                                const TransformMatrix& transformJ,
                                                                 const std::array<size_t, gridDim>& coeffsIndex) const {
-      const AnsatzFunctionJacobian dN = (basis.getJacobian(gpIndex) * transformJ).eval();
-      const GlobalE valE              = evaluateEmbeddingFunctionImpl(basis.getFunction(gpIndex));
-      const Jacobian J                = evaluateEmbeddingJacobianImpl(dN);
-      const FieldMat S                = Manifold::secondDerivativeOfProjectionWRTposition(valE, along);
+      const GlobalE valE = evaluateEmbeddingFunctionImpl(N);
+      const Jacobian J   = evaluateEmbeddingJacobianImpl(dN);
+      const FieldMat S   = Manifold::secondDerivativeOfProjectionWRTposition(valE, along);
       std::array<FieldMat, gridDim> ChiArray;
       for (int i = 0; i < gridDim; ++i) {
         const auto chi    = Manifold::thirdDerivativeOfProjectionWRTposition(valE, along, J.col(i));
-        const auto& NI    = basis.getFunction(gpIndex)[coeffsIndex[0]];
-        const auto& NJ    = basis.getFunction(gpIndex)[coeffsIndex[1]];
+        const auto& NI    = N[coeffsIndex[0]];
+        const auto& NJ    = N[coeffsIndex[1]];
         const auto& dNIdi = dN(coeffsIndex[0], i);
         const auto& dNJdi = dN(coeffsIndex[1], i);
         ChiArray[i]       = chi * NI * NJ + S * (dNIdi * NJ + dNJdi * NI);
       }
 
       return ChiArray;
+    }
+
+    auto evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialSingleImpl(const AnsatzFunctionType& N,
+                                                                [[maybe_unused]] const AnsatzFunctionJacobian& dN,
+                                                                const AlongType& along,
+                                                                const std::array<size_t, gridDim>& coeffsIndex,
+                                                                const int spatialIndex) const {
+      const GlobalE valE = evaluateEmbeddingFunctionImpl(N);
+      const Jacobian J   = evaluateEmbeddingJacobianImpl(dN);
+      const FieldMat S   = Manifold::secondDerivativeOfProjectionWRTposition(valE, along);
+      FieldMat Chi;
+      const auto chi    = Manifold::thirdDerivativeOfProjectionWRTposition(valE, along, J.col(spatialIndex));
+      const auto& NI    = N[coeffsIndex[0]];
+      const auto& NJ    = N[coeffsIndex[1]];
+      const auto& dNIdi = dN(coeffsIndex[0], spatialIndex);
+      const auto& dNJdi = dN(coeffsIndex[1], spatialIndex);
+      Chi               = chi * NI * NJ + S * (dNIdi * NJ + dNJdi * NI);
+
+      return Chi;
     }
 
     Manifold evaluateFunctionImpl(const AnsatzFunctionType& N) const {
