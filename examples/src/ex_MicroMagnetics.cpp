@@ -57,8 +57,8 @@ int main(int argc, char** argv) {
     const double Lx   = sizedom1;
     const double Ly   = sizedom2;
     const double Lz   = sizedom2;
-    const size_t elex = 1;
-    const size_t eley = 1;
+    const size_t elex = 2;
+    const size_t eley = 2;
     const size_t elez = 1;
 
     Dune::FieldVector<double, gridDim> bbox;

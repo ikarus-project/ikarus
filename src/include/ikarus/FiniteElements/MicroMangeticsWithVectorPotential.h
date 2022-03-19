@@ -131,16 +131,24 @@ namespace Ikarus::FiniteElements {
 
     void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& hred) const {
       using namespace Dune::Indices;
+
+      Eigen::MatrixXd hessTest;
+      hessTest.resize(localView_.size(),localView_.size());
+      eukGrad.resize(localView_.size());
       dx2nd.resize(localView_.size());
       dx2nd.setZero();
       auto f = [&](auto& x) { return this->calculateScalarImpl(par, x); };
       autodiff::dual2nd e;
       autodiff::hessian(f, autodiff::wrt(dx2nd), at(dx2nd), e, eukGrad, hEuk);
-      Eigen::MatrixXd hessTest;
-      hessTest.template resizeLike(hEuk);
       calculateEuclideanHessian(par, hessTest);
       std::cout << hessTest << std::endl;
       std::cout << hEuk << std::endl;
+       auto diff = (hEuk-hessTest ).eval();
+       for (auto& id :diff.reshaped()) {
+         if(std::abs(id)<1e-15)
+           id = 0;
+       }
+      std::cout << diff << std::endl;
       hEuk = hessTest;
 //      calculateEuclideanGradient(par, eukGrad);
       const auto& m        = par.sols[0].get()[_0];
@@ -211,11 +219,11 @@ namespace Ikarus::FiniteElements {
 
       autodiff::dual e;
       autodiff::gradient(f, autodiff::wrt(dx1st), at(dx1st), e, eukGrad);
-      std::cout << "eukGrad.transpose()" << std::endl;
-      std::cout << eukGrad.transpose() << std::endl;
+//      std::cout << "eukGrad.transpose()" << std::endl;
+//      std::cout << eukGrad.transpose() << std::endl;
       calculateEuclideanGradient(par, eukGrad);
-      std::cout << "eukGrad.transpose()2" << std::endl;
-      std::cout << eukGrad.transpose() << std::endl;
+//      std::cout << "eukGrad.transpose()2" << std::endl;
+//      std::cout << eukGrad.transpose() << std::endl;
       const auto& m = par.sols[0].get()[_0];
       std::vector<Ikarus::UnitVector<double, directorDim> const*> mLocal;
       auto& first_child = localView_.tree().child(_0, 0);
@@ -358,7 +366,7 @@ namespace Ikarus::FiniteElements {
         const auto dNAdx = (dNA * J.inverse()).eval();
 
         const Eigen::Matrix<double, directorDim, Traits::mydim> gradm
-            = magnetLocalFunction.evaluateDerivative(gpIndex, wrt(spatial), transformWith(J.inverse().eval()));
+            = magnetLocalFunction.evaluateDerivative(gpIndex, wrt(spatialall), transformWith(J.inverse().eval()));
         Eigen::Matrix<double, vectorPotDim, Traits::mydim> gradA
             = (LocalFuncVecPot<double>::jacobianTransposed(dNAdx, AN).transpose());
 
@@ -368,16 +376,16 @@ namespace Ikarus::FiniteElements {
 
         for (size_t i = 0; i < fe0.size(); ++i) {
           const int index = i * directorDim;
-          const auto WI   = magnetLocalFunction.evaluateDerivative(gpIndex, normalizedMag, wrt(spatial, coeffs),
+          const auto WI   = magnetLocalFunction.evaluateDerivative(gpIndex, wrt(spatialall, coeffs),
                                                                    transformWith(J.inverse().eval()), coeffIndices(i));
-          const auto PmI = magnetLocalFunction.evaluateDerivative(gpIndex, normalizedMag, wrt(coeffs), coeffIndices(i));
+          const auto PmI  = magnetLocalFunction.evaluateDerivative(gpIndex, wrt(coeffs), coeffIndices(i));
           Eigen::Vector<double, directorDim> tmp;
           tmp.setZero();
           for (int j = 0; j < Traits ::mydim; ++j)
             tmp += WI[j] * gradm.col(j);
 
-          eukGrad_.template segment<directorDim>(index) += (tmp -  0*PmI * curlA) * weight;
-          eukGrad_.template segment<directorDim>(index) -= ( 2 * PmI * Hbar / material.ms) * weight;
+          eukGrad_.template segment<directorDim>(index) += (tmp -  PmI * curlA) * weight;
+          eukGrad_.template segment<directorDim>(index) -= (2 * PmI * Hbar / material.ms) * weight;
         }
         const int magEukSize = fe0.size() * directorDim;
         for (size_t i = 0; i < fe1.size(); ++i) {
@@ -392,7 +400,7 @@ namespace Ikarus::FiniteElements {
             gradCurlA_dI[1] = -dNAdx(i, 0);
           }
           eukGrad_.template segment<vectorPotDim>(index).array()
-              += (-gradCurlA_dI.dot(normalizedMag.getValue())*0 + 0*gradCurlA_dI.dot(curlA)) * weight;
+              += (-gradCurlA_dI.dot(normalizedMag.getValue()) +  gradCurlA_dI.dot(curlA)) * weight;
         }
       }
     }
@@ -436,7 +444,7 @@ namespace Ikarus::FiniteElements {
         const auto J             = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
         const auto Jinv          = J.inverse().eval();
         const auto normalizedMag = mLocalF.evaluateFunction(gpIndex);
-        const auto gradm         = mLocalF.evaluateDerivative(gpIndex, wrt(spatial), transformWith(Jinv));
+        const auto gradm         = mLocalF.evaluateDerivative(gpIndex, wrt(spatialall), transformWith(Jinv));
         Eigen::Vector<double, vectorPotDim> vectorPot;
 
         vectorPot.setZero();
@@ -455,48 +463,56 @@ namespace Ikarus::FiniteElements {
         const Eigen::Vector<double, directorDim> Hbar = volumeLoad(toEigenVector(gp.position()), lambda);
         for (size_t i = 0; i < fe0.size(); ++i) {
           const int indexI = i * directorDim;
-          const auto WI = mLocalF.evaluateDerivative(gpIndex, normalizedMag, wrt(spatial<all>, coeffs), transformWith(Jinv),
-                                                     coeffIndices(i));
+          const auto WI
+              = mLocalF.evaluateDerivative(gpIndex, wrt(spatialall, coeffs), transformWith(Jinv), coeffIndices(i));
           for (size_t j = 0; j < fe0.size(); ++j) {
             const int indexJ = j * directorDim;
-            const auto WJ    = mLocalF.evaluateDerivative(gpIndex, normalizedMag, wrt(spatial<all>, coeffs),
-                                                          transformWith(Jinv), coeffIndices(j));
-            const auto gradd1
-                = mLocalF.evaluateDerivative(gpIndex, normalizedMag, wrt(spatial<0>, coeffs, coeffs), along(gradm.col(0)),
-                                             transformWith(Jinv), coeffIndices(i, j));
-            const auto gradd2
-                = mLocalF.evaluateDerivative(gpIndex, normalizedMag, wrt(spatial<1>, coeffs, coeffs), along(gradm.col(1)),
-                                             transformWith(Jinv), coeffIndices(i, j));
+            const auto WJ
+                = mLocalF.evaluateDerivative(gpIndex, wrt(spatialall, coeffs), transformWith(Jinv), coeffIndices(j));
+            const auto gradd1 = mLocalF.evaluateDerivative(gpIndex, wrt(spatial0, coeffs, coeffs), along(gradm.col(0)),
+                                                           transformWith(Jinv), coeffIndices(i, j));
+            const auto gradd2 = mLocalF.evaluateDerivative(gpIndex, wrt(spatial1, coeffs, coeffs), along(gradm.col(1)),
+                                                           transformWith(Jinv), coeffIndices(i, j));
 
-            const auto mddHbar = mLocalF.evaluateDerivative(gpIndex, normalizedMag, wrt(coeffs, coeffs), along(Hbar),
-                                                            coeffIndices(i, j));
-            const auto mddcurlA = mLocalF.evaluateDerivative(gpIndex, normalizedMag, wrt(coeffs, coeffs), along(curlA),
-                                                            coeffIndices(i, j));
+            const auto mddHbar
+                = mLocalF.evaluateDerivative(gpIndex, wrt(coeffs, coeffs), along(Hbar), coeffIndices(i, j));
+            const auto mddcurlA
+                = mLocalF.evaluateDerivative(gpIndex, wrt(coeffs, coeffs), along(curlA), coeffIndices(i, j));
             eukHess_.template block<directorDim, directorDim>(indexI, indexJ)
-                += (WI[0] * WJ[0] + WI[1] * WJ[1] + 0*(WI[0] * WJ[1] + WI[1] * WJ[0]) + gradd1[0] + gradd2[1])
-                   * weight;
+                += (WI[0] * WJ[0] + WI[1] * WJ[1] + gradd1 + gradd2) * weight;
 
-            eukHess_.template block<directorDim, directorDim>(indexI, indexJ) -= 2*mddHbar/ material.ms * weight ;
-            eukHess_.template block<directorDim, directorDim>(indexI, indexJ) -= 0*mddcurlA* weight ;
+            eukHess_.template block<directorDim, directorDim>(indexI, indexJ) -= 2 * mddHbar / material.ms * weight;
+            eukHess_.template block<directorDim, directorDim>(indexI, indexJ) -=  mddcurlA * weight;
           }
         }
-        //        const int magEukSize = fe0.size() * directorDim;
-        //        for (size_t i = 0; i < fe1.size(); ++i) {
-        //          const int index = magEukSize + i * vectorPotDim;
-        //          Eigen::Vector<double, directorDim> gradCurlA_dI;
-        //          if constexpr (directorDim == 3) {
-        //            gradCurlA_dI[0] = dNAdx(i, 1);
-        //            gradCurlA_dI[1] = -dNAdx(i, 0);
-        //            gradCurlA_dI[2] = 0;
-        //          } else if constexpr (directorDim == 2) {
-        //            gradCurlA_dI[0] = dNAdx(i, 1);
-        //            gradCurlA_dI[1] = -dNAdx(i, 0);
-        //          }
-        //          eukGrad_.template segment<vectorPotDim>(index).array()
-        //              += (-gradCurlA_dI.dot(normalizedMag) + gradCurlA_dI.dot(curlA)) *
-        //              geo.integrationElement(gp.position())
-        //                 * gp.weight();
-        //        }
+                const int magEukSize = fe0.size() * directorDim;
+                for (size_t i = 0; i < fe1.size(); ++i) {
+                  const int indexI = magEukSize + i * vectorPotDim;
+                  Eigen::Vector<double, directorDim> gradCurlA_dI;
+                  if constexpr (directorDim == 3) {
+                    gradCurlA_dI[0] = dNAdx(i, 1);
+                    gradCurlA_dI[1] = -dNAdx(i, 0);
+                    gradCurlA_dI[2] = 0;
+                  } else if constexpr (directorDim == 2) {
+                    gradCurlA_dI[0] = dNAdx(i, 1);
+                    gradCurlA_dI[1] = -dNAdx(i, 0);
+                  }
+                  for (size_t j = 0; j < fe1.size(); ++j) {
+                    const int indexJ = magEukSize + j * vectorPotDim;
+                    Eigen::Vector<double, directorDim> gradCurlA_dJ;
+                    if constexpr (directorDim == 3) {
+                      gradCurlA_dJ[0] = dNAdx(j, 1);
+                      gradCurlA_dJ[1] = -dNAdx(j, 0);
+                      gradCurlA_dJ[2] = 0;
+                    } else if constexpr (directorDim == 2) {
+                      gradCurlA_dJ[0] = dNAdx(j, 1);
+                      gradCurlA_dJ[1] = -dNAdx(j, 0);
+                    }
+                    eukHess_.template block<vectorPotDim, vectorPotDim>(indexI,indexJ)
+                        += (gradCurlA_dI.transpose()*gradCurlA_dJ) * geo.integrationElement(gp.position())
+                           * gp.weight();
+                  }
+                }
       }
     }
 
@@ -569,11 +585,11 @@ namespace Ikarus::FiniteElements {
         const ScalarType divA = 0;
 
         const Eigen::Vector<double, directorDim> Hbar = volumeLoad(toEigenVector(gp.position()), lambda);
-        energy += (0.5 * (gradm.transpose() * gradm).trace() -  2 * normalizedMag.dot(Hbar) / material.ms)
+        energy += (0.5 * (gradm.transpose() * gradm).trace() - 2 * normalizedMag.dot(Hbar) / material.ms)
                   * geo.integrationElement(gp.position()) * gp.weight();  // exchange and zeeman energy
 
-        energy += (0.5 * curlA.squaredNorm()* 0 - 0*normalizedMag.dot(curlA) + divA * divA)
-                  * geo.integrationElement(gp.position()) * gp.weight() ;  // demag energy
+        energy += (0.5 * curlA.squaredNorm()  -  normalizedMag.dot(curlA) + divA * divA)
+                  * geo.integrationElement(gp.position()) * gp.weight();  // demag energy
       }
       return energy;
     }
