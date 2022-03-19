@@ -72,11 +72,11 @@ namespace Ikarus {
       return (Manifold::derivativeOfProjectionWRTposition(valE) * N[coeffsIndex]).eval();
     }
 
-    auto evaluateSecondDerivativeWRTCoeffs(const long unsigned gpIndex, const Manifold& val, const AlongType& along,
+    auto evaluateSecondDerivativeWRTCoeffs(const AnsatzFunctionType& N, [[maybe_unused]] const AnsatzFunctionJacobian&, const AlongType& along,
                                            const std::array<size_t, gridDim>& coeffsIndex) const {
-      const GlobalE valE = evaluateEmbeddingFunctionImpl(basis.getFunction(gpIndex));
+      const GlobalE valE = evaluateEmbeddingFunctionImpl(N);
       FieldMat Snn       = Manifold::secondDerivativeOfProjectionWRTposition(valE, along)
-                     * basis.getFunction(gpIndex)[coeffsIndex[0]] * basis.getFunction(gpIndex)[coeffsIndex[1]];
+                     * N[coeffsIndex[0]] * N[coeffsIndex[1]];
 
       return Snn;
     }
