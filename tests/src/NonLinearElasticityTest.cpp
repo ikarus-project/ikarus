@@ -19,13 +19,12 @@
 #include <Eigen/Core>
 
 #include "ikarus/Controlroutines/LoadControl.h"
-#include "ikarus/FiniteElements/NonLinearElasticityFEwithBasis.h"
+#include "ikarus/FiniteElements/Mechanics/NonLinearElasticityFEwithBasis.h"
 #include "ikarus/Solver/NonLinearSolver/NewtonRaphson.hpp"
 #include "ikarus/Solver/NonLinearSolver/TrustRegion.hpp"
-#include "ikarus/basis/basishelper.h"
 #include "ikarus/utils/Observer/controlVTKWriter.h"
 #include <ikarus/Assembler/SimpleAssemblers.h>
-#include <ikarus/Grids/GridHelper/griddrawer.h>
+#include "ikarus/utils/drawing/griddrawer.h"
 #include <ikarus/LinearAlgebra/NonLinearOperator.h>
 #include <ikarus/utils/utils/algorithms.h>
 
@@ -169,15 +168,15 @@ TYPED_TEST(NonLinearElasticityLoadControlNRandTR, ComputeMaxDisp) {
   const auto controlInfo = lc.run();
   nonLinOp.template update<0>();
   const auto maxDisp = std::ranges::max(d);
-  if (std::is_same_v<TypeParam, Grids::Yasp>) {
+  if constexpr (std::is_same_v<TypeParam, Grids::Yasp>) {
     EXPECT_DOUBLE_EQ(nonLinOp.value(), -1.4809559783564966e+03);
-    EXPECT_DOUBLE_EQ(maxDisp, 0.786567027108460048);
-  } else if (std::is_same_v<TypeParam, Grids::Alu>) {
-    EXPECT_DOUBLE_EQ(nonLinOp.value(), -1.4842107484533601e+03);
-    EXPECT_DOUBLE_EQ(maxDisp, 0.78426066482258983);
-  } else if (std::is_same_v<TypeParam, Grids::Iga>) {
-    EXPECT_DOUBLE_EQ(nonLinOp.value(), -8.1142552237939071e+02);
-    EXPECT_DOUBLE_EQ(maxDisp, 0.615624125459537153);
+    EXPECT_NEAR(maxDisp, 0.786567027108460048,1e-12);
+  } else if constexpr (std::is_same_v<TypeParam, Grids::Alu>) {
+    EXPECT_NEAR(nonLinOp.value(), -1.4842107484533601e+03,1e-12);
+    EXPECT_NEAR(maxDisp, 0.78426066482258983,1e-15);
+  } else if constexpr (std::is_same_v<TypeParam, Grids::Iga>) {
+    EXPECT_NEAR(nonLinOp.value(), -8.1142552237939071e+02,1e-12);
+    EXPECT_NEAR(maxDisp, 0.615624125459537153,1e-15);
   }
 
   nonLinOp.template update<1>();

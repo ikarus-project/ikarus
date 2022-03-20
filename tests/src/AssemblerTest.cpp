@@ -20,8 +20,8 @@
 #include <Eigen/Core>
 
 #include <ikarus/Assembler/SimpleAssemblers.h>
-#include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
-#include <ikarus/FiniteElements/NonLinearElasticityFEwithBasis.h>
+#include "ikarus/FiniteElements/Interface/FiniteElementFunctionConcepts.h"
+#include "ikarus/FiniteElements/Mechanics/NonLinearElasticityFEwithBasis.h"
 
 TEST(Assembler, SimpleAssemblersTest) {
   using Grid = Dune::YaspGrid<2>;
@@ -40,7 +40,7 @@ TEST(Assembler, SimpleAssemblersTest) {
 
     std::vector<Ikarus::FiniteElements::NonLinearElasticityFEWithLocalBasis<decltype(basis)>> fes;
     const double Emodul = 1000;
-    auto volumeLoad     = [](const auto& globalCoord, const auto& lamb) {
+    auto volumeLoad     = [](const auto& globalCoord, const auto& lamb) { //FIXME makeAnalytic globa function
       Eigen::Vector2d fext;
       fext.setZero();
       fext[1] = 2 * lamb;

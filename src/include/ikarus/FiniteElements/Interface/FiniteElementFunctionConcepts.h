@@ -8,8 +8,8 @@
 #include <optional>
 #include <map>
 
-#include <ikarus/Variables/InterfaceVariable.h>
-#include <ikarus/Variables/ParameterFactory.h>
+#include "ikarus/Variables/InterfaceVariable.h"
+#include "ikarus/Variables/ParameterFactory.h"
 #ifdef __clang__
 #  pragma clang diagnostic push
 #  pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"

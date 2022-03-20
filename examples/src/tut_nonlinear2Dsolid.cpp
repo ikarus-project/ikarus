@@ -17,14 +17,13 @@
 #include <Eigen/Core>
 
 #include "ikarus/Controlroutines/LoadControl.h"
-#include "ikarus/FiniteElements/NonLinearElasticityFEwithBasis.h"
+#include "ikarus/FiniteElements/Mechanics/NonLinearElasticityFEwithBasis.h"
 #include "ikarus/Solver/NonLinearSolver/NewtonRaphson.hpp"
 #include "ikarus/Solver/NonLinearSolver/TrustRegion.hpp"
-#include "ikarus/basis/basishelper.h"
 #include "ikarus/utils/Observer/controlVTKWriter.h"
 #include "ikarus/utils/Observer/nonLinearSolverLogger.h"
 #include <ikarus/Assembler/SimpleAssemblers.h>
-#include <ikarus/Grids/GridHelper/griddrawer.h>
+#include "ikarus/utils/drawing/griddrawer.h"
 #include <ikarus/LinearAlgebra/NonLinearOperator.h>
 #include <ikarus/utils/utils/algorithms.h>
 

@@ -6,7 +6,7 @@
 #include <autodiff/forward/dual/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
 
-#include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
+#include "ikarus/FiniteElements/Interface/FiniteElementFunctionConcepts.h"
 #include <ikarus/FiniteElements/physicsHelper.h>
 
 namespace Ikarus {

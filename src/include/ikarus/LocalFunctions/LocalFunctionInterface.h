@@ -191,7 +191,7 @@ namespace Ikarus {
           = DerivativeDirections::countInTuple<Wrt<Args...>, gridDim>();
       constexpr int spatialIndex = DerivativeDirections::findSingleSpatial(counter.spatialDerivatives);
       if constexpr (spatialIndex < gridDim)
-        return impl().template evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialSingleImpl(
+        return impl().evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialSingleImpl(
             N, dNTransformed, std::get<0>(along.args), coeffsIndices.args, spatialIndex);
       else if constexpr (counter.coeffDerivatives == 2 and counter.spatialall == 1)
         return impl().evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialImpl(N, dNTransformed, std::get<0>(along.args),
@@ -239,7 +239,7 @@ namespace Ikarus {
       if constexpr (counter.spatialall == 1)
         return impl().evaluateDerivativeWRTSpaceAllImpl(N, dNTransformed);
       else if constexpr (singleSpatial < gridDim)
-        return impl().template evaluateDerivativeWRTSpaceSingleImpl(N, dNTransformed, singleSpatial);
+        return impl().evaluateDerivativeWRTSpaceSingleImpl(N, dNTransformed, singleSpatial);
       else
         static_assert((singleSpatial < gridDim) or (counter.spatialall == 1),
                       "This currently only supports first order spatial derivatives");
@@ -278,7 +278,7 @@ namespace Ikarus {
           = DerivativeDirections::countInTuple<Wrt<Args...>, gridDim>();
       constexpr int spatialIndex = DerivativeDirections::findSingleSpatial(counter.spatialDerivatives);
       if constexpr (spatialIndex < gridDim)
-        return impl().template evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(N, dNTransformed, coeffsIndices.args[0],
+        return impl().evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(N, dNTransformed, coeffsIndices.args[0],
                                                                                spatialIndex);
       else if constexpr (counter.coeffDerivatives == 1 and counter.spatialall == 1)
         return impl().evaluateDerivativeWRTCoeffsANDSpatialImpl(N, dNTransformed, coeffsIndices.args[0]);

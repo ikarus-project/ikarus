@@ -11,7 +11,6 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
-#include "ikarus/Interpolators/Interpolator.h"
 #include <ikarus/utils/LinearAlgebraHelper.h>
 
 namespace Ikarus::Geometry {
@@ -56,7 +55,7 @@ namespace Ikarus::Geometry {
       assert(dN.rows() == nodevalueList.cols());
       JacobianTransposed JT;
       for (int i = 0; i < JT.rows(); ++i)
-        JT.row(i) = interpolate(dN.col(i), nodevalueList).transpose();
+        JT.row(i) = (nodevalueList*dN.col(i) ).transpose();
 
       return JT;
     }

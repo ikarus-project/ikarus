@@ -7,9 +7,8 @@
 #include <memory>
 #include <optional>
 
-#include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
-#include <ikarus/Grids/EntityHelperFunctions.h>
-#include <ikarus/utils/LinearAlgebraTypedefs.h>
+#include "FiniteElementFunctionConcepts.h"
+#include "ikarus/utils/LinearAlgebraTypedefs.h"
 
 namespace Ikarus::Variable {
   class IVariable;
