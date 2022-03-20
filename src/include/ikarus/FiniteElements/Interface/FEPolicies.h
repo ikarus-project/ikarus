@@ -5,8 +5,8 @@
 #pragma once
 //#include <dune/functions/functionspacebases/basistags.hh>
 
-#include <ikarus/FiniteElements/InterfaceFiniteElement.h>
-#include <ikarus/utils/concepts.h>
+#include "InterfaceFiniteElement.h"
+#include "ikarus/utils/concepts.h"
 
 namespace Ikarus::FiniteElements {
 
@@ -109,15 +109,6 @@ namespace Ikarus::FiniteElements {
       const auto& fe = localView.tree().finiteElement();
       for (size_t i = 0; i < fe.size(); ++i)
         globalIndices.push_back(localView.index(localView.tree().localIndex(i)));
-    }
-
-    [[nodiscard]] std::vector<GlobalIndex> localIndices() const {
-      const auto& fe = localView.tree().finiteElement();
-      std::vector<GlobalIndex> globalIndices;
-      for (size_t i = 0; i < fe.size(); ++i)
-        globalIndices.push_back((localView.tree().localIndex(i)));
-
-      return globalIndices;
     }
 
     const GridElementEntityType& getEntity() { return localView.element(); }

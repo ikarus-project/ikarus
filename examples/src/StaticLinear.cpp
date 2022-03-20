@@ -17,13 +17,12 @@
 
 #include "ikarus/Assembler/SimpleAssemblers.h"
 #include "ikarus/Controlroutines/LoadControl.h"
-#include "ikarus/FiniteElements/NonLinearElasticityFEwithBasisSimple.h"
+#include "ikarus/FiniteElements/Mechanics/NonLinearElasticityFEwithBasisSimple.h"
 #include "ikarus/utils/Observer/controlLogger.h"
 #include "ikarus/utils/Observer/gridDrawerObserver.h"
 #include "ikarus/utils/Observer/nonLinearSolverLogger.h"
-#include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
-#include <ikarus/Grids/GridHelper/griddrawer.h>
-#include <ikarus/Grids/SimpleGrid/SimpleGrid.h>
+#include "ikarus/FiniteElements/Interface/FiniteElementFunctionConcepts.h"
+#include "ikarus/utils/drawing/griddrawer.h"
 #include <ikarus/LinearAlgebra/NonLinearOperator.h>
 template <typename Basis>
 class DensePowerBasisAssembler {
@@ -98,7 +97,6 @@ int main() {
   //  auto grid             = Dune::GmshReader<Grid>::read("../../tests/src/testFiles/unstructuredTrianglesfine.msh",
   //  false); using GridView        = typename Grid::LeafGridView;
 
-  using namespace Ikarus::Grid;
   using Grid        = Dune::YaspGrid<gridDim>;
   const double L    = 1;
   const double h    = 1;

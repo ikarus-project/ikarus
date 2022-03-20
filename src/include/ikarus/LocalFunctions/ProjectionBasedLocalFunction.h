@@ -12,7 +12,6 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
-#include "ikarus/Interpolators/Interpolator.h"
 #include <ikarus/LocalBasis/localBasis.h>
 #include <ikarus/utils/LinearAlgebraHelper.h>
 
@@ -50,7 +49,7 @@ namespace Ikarus {
     using AnsatzFunctionJacobian = typename Traits::AnsatzFunctionJacobian;
     using TransformMatrix        = typename Traits::TransformMatrix;
 
-    void setCoefficients(const CoeffContainer& otherCoeffs) { coeffs = otherCoeffs; }
+    auto& coefficientsRef() { return coeffs; }
 
   private:
     Jacobian evaluateDerivativeWRTSpaceAllImpl(const AnsatzFunctionType& N, const AnsatzFunctionJacobian& dN) const {
@@ -131,10 +130,10 @@ namespace Ikarus {
     }
 
     auto evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialSingleImpl(const AnsatzFunctionType& N,
-                                                                [[maybe_unused]] const AnsatzFunctionJacobian& dN,
-                                                                const AlongType& along,
-                                                                const std::array<size_t, gridDim>& coeffsIndex,
-                                                                const int spatialIndex) const {
+                                                                      [[maybe_unused]] const AnsatzFunctionJacobian& dN,
+                                                                      const AlongType& along,
+                                                                      const std::array<size_t, gridDim>& coeffsIndex,
+                                                                      const int spatialIndex) const {
       const GlobalE valE = evaluateEmbeddingFunctionImpl(N);
       const Jacobian J   = evaluateEmbeddingJacobianImpl(dN);
       const FieldMat S   = Manifold::secondDerivativeOfProjectionWRTposition(valE, along);

@@ -20,12 +20,11 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
-#include "ikarus/basis/basishelper.h"
 #include "ikarus/utils/utils/algorithms.h"
 #include <ikarus/Assembler/SimpleAssemblers.h>
 #include <ikarus/FiniteElements/AutodiffFE.h>
-#include <ikarus/Geometries/GeometryWithExternalInput.h>
-#include <ikarus/Grids/GridHelper/griddrawer.h>
+#include <ikarus/LocalFunctions/GeometryWithExternalInput.h>
+#include "ikarus/utils/drawing/griddrawer.h"
 #include <ikarus/LocalBasis/localBasis.h>
 #include <ikarus/Variables/ParameterFactory.h>
 
@@ -167,11 +166,11 @@ int main(int argc, char** argv) {
 
   /// Collect dirichlet nodes
   std::vector<bool> dirichletFlags(basis.size(), false);
-  Ikarus::markDirichletBoundaryDofs(subspaceBasis(basis, _0), dirichletFlags, [](auto&& centerCoord) {
-    return (std::abs(centerCoord[1]) < 1e-8);
-    // or (std::abs(centerCoord[0]) < 1e-8)
-    // or (std::abs(centerCoord[0]) > 1 - 1e-8);
-  });
+  forEachBoundaryDOF(subspaceBasis(basis, _0),[&](auto&& localIndex, auto&& localView, auto&& intersection)
+                     {
+                       if (std::abs(intersection.geometry().center()[1])<1e-8)
+                         dirichletFlags[localView.index(localIndex)[0]]= true;
+                     });
 
   /// Create assembler
   auto sparseFlatAssembler = SparseFlatAssembler(basis, fes, dirichletFlags);

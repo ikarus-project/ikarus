@@ -5,7 +5,7 @@
 #include <map>
 #include <utility>
 
-#include <ikarus/FiniteElements/InterfaceFiniteElement.h>
+#include "InterfaceFiniteElement.h"
 
 template <typename LocalView, typename SolutionType>
 Eigen::MatrixXd IFiniteElement<LocalView,SolutionType>::calculateMatrix(

@@ -22,25 +22,25 @@
 // *
 
 #pragma once
-#include <autodiff/forward/dual.hpp>
-#include <autodiff/forward/dual/eigen.hpp>
-#include <concepts>
-#include <iostream>
+#include "../../../../../../../../../usr/local/include/autodiff/forward/dual.hpp"
+#include "../../../../../../../../../usr/local/include/autodiff/forward/dual/eigen.hpp"
+#include "../../../../../../../../../usr/include/c++/11/concepts"
+#include "../../../../../../../../../usr/include/c++/11/iostream"
 
-#include <dune/common/classname.hh>
-#include <dune/geometry/quadraturerules.hh>
-#include <dune/geometry/type.hh>
+#include "../../../../../../../../../usr/local/include/dune/common/classname.hh"
+#include "../../../../../../../../../usr/local/include/dune/geometry/quadraturerules.hh"
+#include "../../../../../../../../../usr/local/include/dune/geometry/type.hh"
 
-#include "ikarus/LocalBasis/localBasis.h"
-#include "ikarus/utils/LinearAlgebraHelper.h"
-#include <ikarus/FiniteElements/AutodiffFE.h>
-#include <ikarus/FiniteElements/FEPolicies.h>
-#include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
-#include <ikarus/FiniteElements/InterfaceFiniteElement.h>
-#include <ikarus/FiniteElements/physicsHelper.h>
-#include <ikarus/LocalFunctions/GeometryWithExternalInput.h>
-#include <ikarus/Variables/VariableDefinitions.h>
-#include <ikarus/utils/LinearAlgebraTypedefs.h>
+#include "../../LocalBasis/localBasis.h"
+#include "../../utils/LinearAlgebraHelper.h"
+#include "../AutodiffFE.h"
+#include "ikarus/FiniteElements/Interface/FEPolicies.h"
+#include "ikarus/FiniteElements/Interface/FiniteElementFunctionConcepts.h"
+#include "ikarus/FiniteElements/Interface/InterfaceFiniteElement.h"
+#include "../physicsHelper.h"
+#include "../../LocalFunctions/GeometryWithExternalInput.h"
+#include "../../Variables/VariableDefinitions.h"
+#include "../../utils/LinearAlgebraTypedefs.h"
 
 namespace Ikarus::FiniteElements {
 

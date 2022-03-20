@@ -23,9 +23,6 @@
 #include <Eigen/Core>
 
 #include "ikarus/LinearAlgebra/NonLinearOperator.h"
-#include "ikarus/LocalBasis/localBasis.h"
-#include "ikarus/LocalFunctions/GeometryWithExternalInput.h"
-#include "ikarus/utils/utils/algorithms.h"
 #include <ikarus/LocalFunctions/ProjectionBasedLocalFunction.h>
 #include <ikarus/LocalFunctions/SimpleLocalFunction.h>
 #include <ikarus/Variables/VariableDefinitions.h>
@@ -33,7 +30,24 @@
 
 const double tol = 1e-15;
 using namespace Dune::Functions::BasisFactory;
-TEST(LocalFunction, ProjectionBasedUnitVector) {
+
+template <typename T>
+class LocalFunctionProjectionBasedUnitVector : public testing::Test {
+public:
+  static constexpr int size = T::value;
+
+};
+using test_types = ::testing::Types<
+                                                        std::integral_constant<std::size_t,2>,
+                                                        std::integral_constant<std::size_t,3>,
+                                                        std::integral_constant<std::size_t,4>,
+    std::integral_constant<std::size_t,5>>;
+
+
+TYPED_TEST_SUITE(LocalFunctionProjectionBasedUnitVector, test_types);
+
+TYPED_TEST(LocalFunctionProjectionBasedUnitVector, ProjectionBasedUnitVector) {
+  constexpr int size = TypeParam::value;
   using namespace Ikarus;
   using Grid        = Dune::YaspGrid<2>;
   const double Lx   = 7;
@@ -47,9 +61,9 @@ TEST(LocalFunction, ProjectionBasedUnitVector) {
 
   auto gridView = grid->leafGridView();
   auto basis    = makeBasis(gridView, power<3>(lagrange<1>(), BlockedInterleaved()));
-  Dune::BlockVector<Ikarus::UnitVector<double, 2>> vBlocked(basis.size());
+  Dune::BlockVector<Ikarus::UnitVector<double, size>> vBlocked(basis.size());
   for (auto& vsingle : vBlocked) {
-    vsingle.setValue(0.1 * Eigen::Vector<double, 2>::Random() + Eigen::Vector<double, 2>::UnitX());
+    vsingle.setValue(0.1 * Eigen::Vector<double, size>::Random() + Eigen::Vector<double, size>::UnitX());
   }
   auto localView = basis.localView();
   for (auto& ele : elements(gridView)) {
@@ -58,9 +72,9 @@ TEST(LocalFunction, ProjectionBasedUnitVector) {
     auto localBasis  = Ikarus::LocalBasis(localView.tree().child(0).finiteElement().localBasis());
     const auto& rule = Dune::QuadratureRules<double, 2>::rule(localView.element().type(), 3);
     localBasis.bind(rule, 0, 1);
-    Dune::BlockVector<Ikarus::UnitVector<double, 2>> vBlockedLocal(fe.size());
-    Dune::BlockVector<Ikarus::UnitVector<autodiff::dual, 2>> vBlockedLocalDual(fe.size());
-    Dune::BlockVector<Ikarus::UnitVector<autodiff::dual2nd, 2>> vBlockedLocalDual2nd(fe.size());
+    Dune::BlockVector<Ikarus::UnitVector<double, size>> vBlockedLocal(fe.size());
+    Dune::BlockVector<Ikarus::UnitVector<autodiff::dual, size>> vBlockedLocalDual(fe.size());
+    Dune::BlockVector<Ikarus::UnitVector<autodiff::dual2nd, size>> vBlockedLocalDual2nd(fe.size());
     for (size_t i = 0; i < fe.size(); ++i) {
       auto globalIndex = localView.index(localView.tree().child(0).localIndex(i));
       vBlockedLocal[i] = vBlocked[globalIndex[0]];
@@ -69,32 +83,22 @@ TEST(LocalFunction, ProjectionBasedUnitVector) {
     }
     auto localF     = Ikarus::ProjectionBasedLocalFunction(localBasis, vBlockedLocal);
     auto localFdual = [&](auto& x, int gpI) {
-      Dune::BlockVector<Ikarus::UnitVector<autodiff::dual, 2>> v = vBlockedLocalDual;
+      Dune::BlockVector<Ikarus::UnitVector<autodiff::dual, size>> v = vBlockedLocalDual;
 
       Ikarus::LinearAlgebra::viewAsFlatEigenVector(v) += x;
       auto localF_ = Ikarus::ProjectionBasedLocalFunction(localBasis, v);
       return localF_.evaluateFunction(gpI).getValue();
     };
 
-//    auto localFdual2nd = [&](auto& x, int gpI) {
-//      Dune::BlockVector<Ikarus::UnitVector<autodiff::dual2nd, 2>> v = vBlockedLocalDual2nd;
-//
-//      Ikarus::LinearAlgebra::viewAsFlatEigenVector(v) += x;
-//      auto localF_ = Ikarus::ProjectionBasedLocalFunction(localBasis, v);
-//      return localF_.evaluateFunction(gpI).getValue();
-//    };
-
     const auto vasMat = Ikarus::LinearAlgebra::viewAsEigenMatrixFixedDyn(vBlockedLocal);
     using namespace Ikarus::DerivativeDirections;
     for (int gpIndex = 0; auto& gp : rule) {
       const auto& directorCached             = localF.evaluateFunction(gpIndex).getValue();
-      const Eigen::Vector2d directorEmbedded = vasMat * localBasis.getFunction(gpIndex);
+      const Eigen::Vector<double,size> directorEmbedded = vasMat * localBasis.getFunction(gpIndex);
       const auto& directoreval               = localF.evaluateFunction(gp.position());
 
       const auto J    = toEigenMatrix(ele.geometry().jacobianTransposed(gp.position())).transpose().eval();
       const auto Jinv = J.inverse().eval();
-      //      const auto& jaco = localF.evaluateDerivative(gpIndex, directoreval, wrt(spatial<all>),
-      //      transformWith(Jinv));
       const auto jaco2 = localF.evaluateDerivative(gpIndex, wrt(spatialall), transformWith(Jinv));
 
       const auto jaco2e     = localF.evaluateDerivative(gp.position(), wrt(spatialall), transformWith(Jinv));
@@ -126,18 +130,12 @@ TEST(LocalFunction, ProjectionBasedUnitVector) {
       auto localFdual_ = [&](auto& x) { return localFdual(x, gpIndex); };
       Eigen::VectorXdual xv(vasMat.cols() * vasMat.rows());
       xv.setZero();
-      const Eigen::MatrixXd Jdual   = jacobian(localFdual_, autodiff::wrt(xv), at(xv));
+      const Eigen::MatrixXd Jdual = jacobian(localFdual_, autodiff::wrt(xv), at(xv));
 
-//      auto localFdual2nd_ = [&](auto& x) { return localFdual(x, gpIndex)[0]; };
-//      Eigen::VectorXdual2nd xv2nd(vasMat.cols() * vasMat.rows());
-//      xv.setZero();
-//      const Eigen::MatrixXd Jdual2nd   = hessian(localFdual2nd_, autodiff::wrt(xv2nd), at(xv2nd));
-
-
-      const Eigen::Vector2d testVec = Eigen::Vector2d::UnitX();
+      const Eigen::Vector<double,size> testVec = Eigen::Vector<double,size> ::UnitX();
       for (size_t i = 0; i < fe.size(); ++i) {
         const auto jacobianWRTCoeffs = localF.evaluateDerivative(gpIndex, wrt(coeffs), coeffIndices(i));
-        EXPECT_THAT(jacobianWRTCoeffs, EigenApproxEqual(Jdual.block<2, 2>(0, i * 2), 1e-15));
+        EXPECT_THAT(jacobianWRTCoeffs, EigenApproxEqual(Jdual.block<size, size>(0, i * size), 1e-15));
 
         const auto Warray
             = localF.evaluateDerivative(gpIndex, wrt(coeffs, spatialall), transformWith(Jinv), coeffIndices(i));
@@ -162,59 +160,29 @@ TEST(LocalFunction, ProjectionBasedUnitVector) {
 
         EXPECT_THAT(Warrayun[0], EigenApproxEqual(W0un, 1e-15));
         EXPECT_THAT(Warrayun[1], EigenApproxEqual(W1un, 1e-15));
-        //        const auto Warray2 = localF.evaluateDerivative(gpIndex, wrt(spatial<all>, coeffs), coeffIndices(i));
-        const auto Sun
-            = localF.evaluateDerivative(gpIndex, wrt(coeffs, coeffs), along(testVec), coeffIndices(i, i));
+        const auto Sun = localF.evaluateDerivative(gpIndex, wrt(coeffs, coeffs), along(testVec), coeffIndices(i, i));
 
-        const auto S
-            = localF.evaluateDerivative(gpIndex, wrt(coeffs, coeffs), along(testVec), transformWith(Jinv), coeffIndices(i, i));
+        const auto S = localF.evaluateDerivative(gpIndex, wrt(coeffs, coeffs), along(testVec), transformWith(Jinv),
+                                                 coeffIndices(i, i));
 
+        const auto chi = localF.evaluateDerivative(gpIndex, wrt(spatialall, coeffs, coeffs), along(testVec),
+                                                   transformWith(Jinv), coeffIndices(i, i));
 
-        const auto chi
-            = localF.evaluateDerivative(gpIndex, wrt(spatialall,coeffs, coeffs), along(testVec), transformWith(Jinv), coeffIndices(i, i));
+        const auto chi0 = localF.evaluateDerivative(gpIndex, wrt(spatial0, coeffs, coeffs), along(testVec),
+                                                    transformWith(Jinv), coeffIndices(i, i));
 
-        const auto chi0
-            = localF.evaluateDerivative(gpIndex, wrt(spatial0,coeffs, coeffs), along(testVec), transformWith(Jinv), coeffIndices(i, i));
-
-        const auto chi1
-            = localF.evaluateDerivative(gpIndex, wrt(spatial1,coeffs, coeffs), along(testVec), transformWith(Jinv), coeffIndices(i, i));
+        const auto chi1 = localF.evaluateDerivative(gpIndex, wrt(spatial1, coeffs, coeffs), along(testVec),
+                                                    transformWith(Jinv), coeffIndices(i, i));
 
         EXPECT_THAT(chi[0], EigenApproxEqual(chi0, 1e-15));
         EXPECT_THAT(chi[1], EigenApproxEqual(chi1, 1e-15));
-        ////        const auto Warray4
-        ////            = localF.evaluateDerivative(gpIndex, wrt(spatial<all>, coeffs, coeffs), along(testVec),
-        /// coeffIndices(i, i));
-        //        std::cout << Warray4[0] << std::endl;
-        //        std::cout << Warray4[1] << std::endl;
-        //        for (int j = 0; j < 2; ++j) {
-        //          EXPECT_THAT(Warray[j], EigenApproxEqual(Warray2[j], 1e-15));
-        //        }
-        //
-        //        const auto& dN = localBasis.getJacobian(gpIndex);
-        //        auto JacoEmbedded     = (Ikarus::LinearAlgebra::viewAsEigenMatrixFixedDyn(vBlockedLocal) * dN).eval();
-        //        for (int dir = 0; dir < 2; ++dir) {
-        //          EXPECT_THAT(Warray2[dir],
-        //                      EigenApproxEqual(Ikarus::UnitVector<double,
-        //                      2>::secondDerivativeOfProjectionWRTposition(directorEmbedded, JacoEmbedded.col(dir)) *
-        //                      localBasis.getFunction(gpIndex)[i]
-        //                                           + Ikarus::UnitVector<double,
-        //                                           2>::derivativeOfProjectionWRTposition(directorEmbedded)
-        //                                                 * localBasis.getJacobian(gpIndex)(i, dir)
-        //                                           , 1e-15));
-        //        }
-
-        //        EXPECT_THAT(jacobianWRTCoeffs,
-        //                    EigenApproxEqual(Ikarus::UnitVector<double,
-        //                    2>::derivativeOfProjectionWRTposition(directorEmbedded)
-        //                                         * localBasis.getFunction(gpIndex)[i],
-        //                                     1e-15));
       }
 
       EXPECT_DOUBLE_EQ(directorCached.norm(), 1.0);
       EXPECT_DOUBLE_EQ(directoreval.getValue().norm(), 1.0);
       EXPECT_THAT(directorCached, EigenApproxEqual(directoreval.getValue(), 1e-15));
-      //      EXPECT_NEAR((directoreval.getValue().transpose() * jaco).norm(), 0.0, 1e-15);
-      EXPECT_NEAR((Ikarus::UnitVector<double, 2>::derivativeOfProjectionWRTposition(directoreval.getValue())
+      EXPECT_NEAR((directoreval.getValue().transpose() * jaco2).norm(), 0.0, 1e-15);
+      EXPECT_NEAR((Ikarus::UnitVector<double, size>::derivativeOfProjectionWRTposition(directoreval.getValue())
                    * directoreval.getValue())
                       .norm(),
                   0.0, 1e-15);

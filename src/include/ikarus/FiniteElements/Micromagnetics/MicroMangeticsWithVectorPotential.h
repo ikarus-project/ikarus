@@ -36,13 +36,13 @@
 #include "ikarus/LocalFunctions/ProjectionBasedLocalFunction.h"
 #include "ikarus/LocalFunctions/SimpleLocalFunction.h"
 #include "ikarus/utils/LinearAlgebraHelper.h"
-#include <ikarus/FiniteElements/FEPolicies.h>
-#include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
-#include <ikarus/FiniteElements/InterfaceFiniteElement.h>
-#include <ikarus/FiniteElements/physicsHelper.h>
-#include <ikarus/LocalFunctions/GeometryWithExternalInput.h>
-#include <ikarus/Variables/VariableDefinitions.h>
-#include <ikarus/utils/LinearAlgebraTypedefs.h>
+#include "ikarus/FiniteElements/Interface/FEPolicies.h"
+#include "ikarus/FiniteElements/Interface/FiniteElementFunctionConcepts.h"
+#include "ikarus/FiniteElements/Interface/InterfaceFiniteElement.h"
+#include "ikarus/FiniteElements/physicsHelper.h"
+#include "ikarus/LocalFunctions/GeometryWithExternalInput.h"
+#include "ikarus/Variables/VariableDefinitions.h"
+#include "ikarus/utils/LinearAlgebraTypedefs.h"
 
 namespace Ikarus::FiniteElements {
 

@@ -19,15 +19,12 @@
 #include <Eigen/Core>
 
 #include "ikarus/Controlroutines/LoadControl.h"
-#include "ikarus/FiniteElements/MicroMangeticsWithVectorPotential.h"
-#include "ikarus/Solver/NonLinearSolver/NewtonRaphson.hpp"
+#include "ikarus/FiniteElements/Micromagnetics/MicroMangeticsWithVectorPotential.h"
 #include "ikarus/Solver/NonLinearSolver/TrustRegion.hpp"
-#include "ikarus/basis/basishelper.h"
 #include "ikarus/utils/Observer/controlVTKWriter.h"
 #include "ikarus/utils/Observer/genericControlObserver.h"
-#include "ikarus/utils/Observer/nonLinearSolverLogger.h"
 #include <ikarus/Assembler/SimpleAssemblers.h>
-#include <ikarus/Grids/GridHelper/griddrawer.h>
+#include "ikarus/utils/drawing/griddrawer.h"
 #include <ikarus/LinearAlgebra/NonLinearOperator.h>
 #include <ikarus/utils/functionSanityChecks.h>
 #include <ikarus/utils/utils/algorithms.h>
