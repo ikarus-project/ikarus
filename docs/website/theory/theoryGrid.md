@@ -14,13 +14,11 @@ decoupled from the task to provide physical meaning. The following content is on
 **description of the element geometry**. Details on 
 [the implementation of physical quantities can be found here](theoryFiniteElement.md).
 
-This page explains the relationship and the ideas behind everything that has to do with the grid. 
-The relationship is visualized in the following diagram:
 
-![umlDiagram](../diagrams/UMLGrid.drawio)
 
 On this page, we will go through it using the following example:
 ![img.png](images/sampleProblemGrid.png)
+![umlDiagram](diagrams/UMLGrid.drawio)
 
 ## Grid
 The grid is a collection of grid entities. In the example above, the grid consists of three surfaces, 
