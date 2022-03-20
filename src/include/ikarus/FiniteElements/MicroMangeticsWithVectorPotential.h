@@ -135,22 +135,22 @@ namespace Ikarus::FiniteElements {
       Eigen::MatrixXd hessTest;
       hessTest.resize(localView_.size(),localView_.size());
       eukGrad.resize(localView_.size());
-      dx2nd.resize(localView_.size());
-      dx2nd.setZero();
-      auto f = [&](auto& x) { return this->calculateScalarImpl(par, x); };
-      autodiff::dual2nd e;
-      autodiff::hessian(f, autodiff::wrt(dx2nd), at(dx2nd), e, eukGrad, hEuk);
+//      dx2nd.resize(localView_.size());
+//      dx2nd.setZero();
+//      auto f = [&](auto& x) { return this->calculateScalarImpl(par, x); };
+//      autodiff::dual2nd e;
+//      autodiff::hessian(f, autodiff::wrt(dx2nd), at(dx2nd), e, eukGrad, hEuk);
       calculateEuclideanHessian(par, hessTest);
-      std::cout << hessTest << std::endl;
-      std::cout << hEuk << std::endl;
-       auto diff = (hEuk-hessTest ).eval();
-       for (auto& id :diff.reshaped()) {
-         if(std::abs(id)<1e-15)
-           id = 0;
-       }
-      std::cout << diff << std::endl;
+//      std::cout << hessTest << std::endl;
+//      std::cout << hEuk << std::endl;
+//       auto diff = (hEuk-hessTest ).eval();
+//       for (auto& id :diff.reshaped()) {
+//         if(std::abs(id)<1e-15)
+//           id = 0;
+//       }
+//      std::cout << diff << std::endl;
       hEuk = hessTest;
-//      calculateEuclideanGradient(par, eukGrad);
+      calculateEuclideanGradient(par, eukGrad);
       const auto& m        = par.sols[0].get()[_0];
       const auto& feMag    = localView_.tree().child(_0, 0).finiteElement();
       const auto& feVecPot = localView_.tree().child(_1, 0).finiteElement();
@@ -511,6 +511,28 @@ namespace Ikarus::FiniteElements {
                     eukHess_.template block<vectorPotDim, vectorPotDim>(indexI,indexJ)
                         += (gradCurlA_dI.transpose()*gradCurlA_dJ) * geo.integrationElement(gp.position())
                            * gp.weight();
+                  }
+                }
+
+                for (size_t i = 0; i < fe0.size(); ++i) {
+                  const int indexI = i * directorDim;
+                  const auto PmI  = mLocalF.evaluateDerivative(gpIndex, wrt(coeffs), coeffIndices(i));
+                  for (size_t j = 0; j < fe1.size(); ++j) {
+                    const int indexJ = magEukSize + j * vectorPotDim;
+                    Eigen::Vector<double, directorDim> gradCurlA_dJ;
+                    if constexpr (directorDim == 3) {
+                      gradCurlA_dJ[0] = dNAdx(j, 1);
+                      gradCurlA_dJ[1] = -dNAdx(j, 0);
+                      gradCurlA_dJ[2] = 0;
+                    } else if constexpr (directorDim == 2) {
+                      gradCurlA_dJ[0] = dNAdx(j, 1);
+                      gradCurlA_dJ[1] = -dNAdx(j, 0);
+                    }
+                    eukHess_.template block<directorDim, vectorPotDim>(indexI,indexJ)
+                        -= (PmI*gradCurlA_dJ) * geo.integrationElement(gp.position())
+                           * gp.weight();
+
+                    eukHess_.template block<vectorPotDim,directorDim >(indexJ,indexI) = eukHess_.template block<directorDim, vectorPotDim>(indexI,indexJ).transpose();
                   }
                 }
       }
