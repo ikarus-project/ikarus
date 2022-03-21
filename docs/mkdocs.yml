@@ -108,6 +108,8 @@ extra_javascript:
 
 plugins:
   - search
-  - drawio-exporter
+  - drawio-exporter:
+      drawio_args:
+        - --no-sandbox
   - macros:
       module_name: mkdocs-macros
