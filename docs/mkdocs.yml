@@ -45,12 +45,15 @@ nav:
     - Build the documentation locally: documentation/BuildTheDocumentationLocally.md
   - Tutorials:
     - Overview: tutorials/tutorialsOverview.md
-    - Grid    : tutorials/tutGrid.md
   - Theory and Implementation:
     - Overview: theory/theoryOverview.md
     - Geometry: theory/theoryGeometry.md
     - Grid: theory/theoryGrid.md
-    - Finite Elements: theory/theoryFiniteElement.md
+    - Finite Elements: theory/FiniteElements.md
+    - Assembler: theory/Assembler.md
+    - Control routines: theory/ControlRoutines.md
+    - Local basis: theory/LocalBasis.md
+    - Local function: theory/LocalFunctions.md
   - Examples:
       - Integrate pi: examples/integrate_pi.md
 
@@ -102,7 +105,7 @@ markdown_extensions:
   - pymdownx.tilde
 
 extra_javascript:
-  - javascripts/config.js
+#  - javascripts/config.js
   - https://polyfill.io/v3/polyfill.min.js?features=es6
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
 

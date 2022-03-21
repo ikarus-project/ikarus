@@ -114,7 +114,7 @@ namespace Ikarus {
       long unsigned index;
       const Dune::QuadraturePoint<DomainFieldType, gridDim>& ip;
     };
-    auto viewOverIntegrationPoints() const {
+    auto viewOverIntegrationPoints() const { //FIXME dont construct this on the fly
       assert(Nbound.value().size() == dNbound.value().size()
              && "Number of intergrationpoint evaluations does not match.");
       if (Nbound and dNbound)

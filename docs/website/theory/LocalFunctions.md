@@ -1,64 +1,46 @@
-# Theoretical Background and Implementation Details
+# Local functions
 
-This section explains the theoretical background and implementation details 
-of various parts of the code. It is dedicated to users who want to extend
-or modifiy the implemented functionality or who want to learn more about 
-the impl thoughts and theoretical aspects.
+This section explains the concept of local functions.
 
-If you are rather interested in the practical use of several aspects, visit
-the [tutorial section](../tutorials/tutorialsOverview.md).
+Local functions are functions which are bound to single grid elements.
+Therefore they are constructed from some local basis and a coefficient vector.
 
-## Seperation of interface and implementation
-On many of the theory pages you will find a description of an interface and 
-a discussion of the implementation. What interface and implementation means is 
-explained here with the example of a car.
-
-### Interface of a car
-Let's first define the interface of a car. A car is from a certain brand and it 
-has a maximum velocity. The interface of a car is then:
-
-- `brand()`: a function which returns the brand as a string
-- `maxvelocity()`: a function which returns the maximum velocity as a double
-
-This can be written in a more formalized way, e.g. as a C++20 concept, but we currently write it 
-in this documentation as shown above.
-
-Everything that wants to be a car has to have a member function `brand()` which
-returns a string and a member function `maxVeloctiy()` which returns a double.
-
-### Implementation of a car
-Let's now implement a car.
+# Theory
+Local functions need to be evaluated in the local coordinate system $\mathbb{\xi} \in \mathbb{R}^n$:
+$$
+f: \boldsymbol{\xi}^n \rightarrow \mathbb{R}^m
+$$
+## Interface
+Local functions provide the following interface
 ```cpp
-class MyCar
-{
-  public:
-  std::string brand() {return "MyBrand";}
-  double maxVelocity() 
-  {
-    double velocity;
-    // calculate maximum velocity with some complicated calculations
-    return velocity;
-  }
-};
+  FunctionReturnType evaluateFunction(const DomainType& local);
+  FunctionReturnType evaluateFunction(const unsigned int& integrationPointIndex);
+  auto evaluateDerivative(const DomainType& local,...);
+  auto evaluateDerivative(const unsigned int& integrationPointIndex,...);
+  auto viewOverIntegrationPoints(); // (1)
 ```
-The class `MyCar` fulfills the car interface and is a therefore considered a car.
-There can be many classes that fulfill the car interface, e.g. someone else could
-arrive and implement `class AnotherCar`.
+1. This return a vector of structs of the integration point and its index. Therefore the syntax is usually `#!cpp for (const auto& [gpIndex, gp] : localFunction.viewOverIntegrationPoints()) {...}`
 
-### Summary
-- Interface: Defines a set of requirements
-- Implementation: A specific class which fulfills the interface
-
-## Member functions and free functions
-In this documentation, we also list free functions as a part of the interface. This is indicated
-by the arguments in the list of interface functions. An example: If there is something like
-
-- `brand(car)`
-
-in the interface list, this means that there has to be a function which gets a car object as argument
-and returns the name of the brand. An implementation for `MyCar` then looks like this:
+The $...$ in the `evaluateDerivative` function call are several variadic templates.
+In action this looks like
 ```cpp
-std::string brand(MyCar carObject) {return "MyBrand";}
+  localFunction.evaluateDerivative(gpIndex, wrt(spatialall)); 
+  localFunction.evaluateDerivative(gpIndex, wrt(spatialall), transformWith(Jinv)); 
 ```
-This function is called a free function because it isn't part of the class MyCar but it is free
-(and could be defined in another file then the class MyCar).
+
+## Implementations
+The following local functions are currently available:
+
+## Implementations
+In the following we sumerize the local functions that are currently available.
+In the follwing table $N^i(\boldsymbol{\xi})$ are the ansatz functions.
+
+| Name             | Description                                                                     | Note                                                                                                                                 |
+|:-----------------|:--------------------------------------------------------------------------------|:-------------------------------------------------------------------------------------------------------------------------------------|
+| Linear           | $x = \sum_{i=1}^n N^i(\boldsymbol{\xi}) \boldsymbol{x}_i $                      |                                                                                                                                      |
+| Projection-Based | $x = P(\sum_{i=1}^n N^i(\boldsymbol{\xi}) \boldsymbol{x}_i )$                   | Here $P: \mathbb{R}^m \rightarrow \mathcal{M}$ is an operator that projects <br /> the usual linear interpolation onto some manifold |
+| `PUT`            | :material-check-all: Update resource                                            | :material-check-all: Update resource                                                                                                 |
+| `DELETE`         | :material-close:     Delete resource                                            | :material-close:     Delete resource                                                                                                 |
+
+
+## How to implement your own local functions
