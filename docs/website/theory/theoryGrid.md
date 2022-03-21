@@ -12,12 +12,11 @@ In the code, there is not one single class which performs all these tasks. Diffe
 different classes, which are described in the following. Especially, the description of the geometry is
 decoupled from the task to provide physical meaning. The following content is only about the 
 **description of the element geometry**. Details on 
-[the implementation of physical quantities can be found here](theoryFiniteElement.md).
+[the implementation of physical quantities can be found here](FiniteElements.md).
 
 
 
 On this page, we will go through it using the following example:
-![img.png](images/sampleProblemGrid.png)
 ![umlDiagram](diagrams/UMLGrid.drawio)
 
 ## Grid
