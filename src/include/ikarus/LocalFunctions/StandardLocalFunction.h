@@ -18,35 +18,39 @@
 namespace Ikarus {
 
   template <typename DuneBasis, typename CoeffContainer>
-  class SimpleLocalFunction : public LocalFunctionInterface<SimpleLocalFunction<DuneBasis, CoeffContainer>> {
-    using Base = LocalFunctionInterface<SimpleLocalFunction<DuneBasis, CoeffContainer>>;
+  class StandardLocalFunction : public LocalFunctionInterface<StandardLocalFunction<DuneBasis, CoeffContainer>> {
+    using Base = LocalFunctionInterface<StandardLocalFunction<DuneBasis, CoeffContainer>>;
 
   public:
     friend Base;
-    SimpleLocalFunction(const Ikarus::LocalBasis<DuneBasis>& basis_, const CoeffContainer& coeffs_)
+    StandardLocalFunction(const Ikarus::LocalBasis<DuneBasis>& basis_, const CoeffContainer& coeffs_)
         : basis{basis_}, coeffs{coeffs_}, coeffsAsMat{Ikarus::LinearAlgebra::viewAsEigenMatrixFixedDyn(coeffs)} {}
 
-    using Traits = LocalFunctionTraits<SimpleLocalFunction>;
-    //    using DomainType = typename Traits::DomainType;
+    using Traits = LocalFunctionTraits<StandardLocalFunction>;
     /** \brief Type used for coordinates */
     using ctype = typename Traits::ctype;
     //    /** \brief Dimension of the coeffs */
-    static constexpr int manifoldEmbeddingDim = Traits::manifoldEmbeddingDim;
-
+    static constexpr int valueSize = Traits::valueSize;
     /** \brief Dimension of the grid */
     static constexpr int gridDim = Traits::gridDim;
-
     /** \brief Type for coordinate vector in world space */
-    using Manifold  = typename Traits::FunctionReturnType;
-    using AlongType = Eigen::Vector<ctype, manifoldEmbeddingDim>;
-    using GlobalE   = typename Manifold::CoordinateType;
-    /** \brief Type for the transposed Jacobian matrix */
-    using Jacobian               = typename Traits::Jacobian;
-    using JacobianColType        = typename Traits::JacobianColType;
-    using FieldMat               = typename Traits::FieldMat;
-    using AnsatzFunctionType     = typename Traits::AnsatzFunctionType;
+    using FunctionReturnType = typename Traits::FunctionReturnType;
+    /** \brief Type for the directional derivatives */
+    using AlongType = Eigen::Vector<ctype, valueSize>;
+    /** \brief Type for the coordinates to store the return value */
+    using GlobalE = typename FunctionReturnType::CoordinateType;
+    /** \brief Type for the Jacobian matrix */
+    using Jacobian = typename Traits::Jacobian;
+    /** \brief Type for a column of the Jacobian matrix */
+    using JacobianColType = typename Traits::JacobianColType;
+    /** \brief Type for the derivatives wrT the coeffiecients */
+    using CoeffDerivMatrix = typename Traits::CoeffDerivMatrix;
+    /** \brief Type for ansatz function values */
+    using AnsatzFunctionType = typename Traits::AnsatzFunctionType;
+    /** \brief Type for the Jacobian of the ansatz function values */
     using AnsatzFunctionJacobian = typename Traits::AnsatzFunctionJacobian;
-    using TransformMatrix        = typename Traits::TransformMatrix;
+    /** \brief Matrix to transform the ansatz function Jacobian to world coordinates*/
+    using TransformMatrix = typename Traits::TransformMatrix;
 
     auto& coefficientsRef() { return coeffs; }
 
@@ -62,19 +66,19 @@ namespace Ikarus {
 
     auto evaluateDerivativeWRTCoeffsImpl(const AnsatzFunctionType& N, [[maybe_unused]] const AnsatzFunctionJacobian&,
                                          int coeffsIndex) const {
-      Eigen::DiagonalMatrix<ctype, manifoldEmbeddingDim> mat;
-      mat.setIdentity(manifoldEmbeddingDim);
-      mat *= N[coeffsIndex];
+      CoeffDerivMatrix mat;
+      mat.setIdentity(valueSize);
+      mat.diagonal() *= N[coeffsIndex];
       return mat;
     }
 
     auto evaluateDerivativeWRTCoeffsANDSpatialImpl(const AnsatzFunctionType& N,
                                                    [[maybe_unused]] const AnsatzFunctionJacobian& dN,
                                                    int coeffsIndex) const {
-      std::array<Eigen::DiagonalMatrix<ctype, manifoldEmbeddingDim>, gridDim> Warray;
+      std::array<CoeffDerivMatrix, gridDim> Warray;
       for (int dir = 0; dir < gridDim; ++dir) {
-        Warray[dir].setIdentity(manifoldEmbeddingDim);
-        Warray[dir] *= dN(coeffsIndex, dir);
+        Warray[dir].setIdentity(valueSize);
+        Warray[dir].diagonal() *= dN(coeffsIndex, dir);
       }
 
       return Warray;
@@ -83,16 +87,16 @@ namespace Ikarus {
     auto evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(const AnsatzFunctionType& N,
                                                          [[maybe_unused]] const AnsatzFunctionJacobian& dN,
                                                          int coeffsIndex, const int spatialIndex) const {
-      Eigen::DiagonalMatrix<ctype, manifoldEmbeddingDim> W;
-      W.setIdentity(manifoldEmbeddingDim);
-      W *= dN(coeffsIndex, spatialIndex);
+      CoeffDerivMatrix W;
+      W.setIdentity(valueSize);
+      W.diagonal() *= dN(coeffsIndex, spatialIndex);
 
       return W;
     }
 
 
-    Manifold evaluateFunctionImpl(const AnsatzFunctionType& N) const {
-      return Manifold(coeffsAsMat * N);
+    FunctionReturnType evaluateFunctionImpl(const AnsatzFunctionType& N) const {
+      return FunctionReturnType(coeffsAsMat * N);
     }
 
 
@@ -102,20 +106,28 @@ namespace Ikarus {
   };
 
   template <typename DuneBasis, typename CoeffContainer>
-  struct LocalFunctionTraits<SimpleLocalFunction<DuneBasis, CoeffContainer>> {
+  struct LocalFunctionTraits<StandardLocalFunction<DuneBasis, CoeffContainer>> {
+    /** \brief Type used for coordinates */
     using ctype                               = typename CoeffContainer::value_type::ctype;
-    static constexpr int manifoldEmbeddingDim = CoeffContainer::value_type::valueSize;
-
+    /** \brief Dimension of the coeffs */
+    static constexpr int valueSize = CoeffContainer::value_type::valueSize;
+    /** \brief Dimension of the grid */
     static constexpr int gridDim = Ikarus::LocalBasis<DuneBasis>::gridDim;
-
+    /** \brief Type for the return value */
     using FunctionReturnType = typename CoeffContainer::value_type;
-
-    using Jacobian               = Eigen::Matrix<ctype, manifoldEmbeddingDim, gridDim>;
-    using FieldMat               = Eigen::Matrix<ctype, manifoldEmbeddingDim, manifoldEmbeddingDim>;
+    /** \brief Type for the Jacobian matrix */
+    using Jacobian               = Eigen::Matrix<ctype, valueSize, gridDim>;
+    /** \brief Type for the derivatives wrt. the coeffiecients */
+    using CoeffDerivMatrix       = Eigen::DiagonalMatrix<ctype, valueSize>;
+    /** \brief Type for the Jacobian of the ansatz function values */
     using AnsatzFunctionJacobian = typename Ikarus::LocalBasis<DuneBasis>::JacobianType;
+    /** \brief Type for ansatz function values */
     using AnsatzFunctionType     = typename Ikarus::LocalBasis<DuneBasis>::AnsatzFunctionType;
+    /** \brief Type for the points for evaluation, usually the integration points */
     using DomainType             = typename DuneBasis::Traits::DomainType;
+    /** \brief Matrix to transform the ansatz function Jacobian to world coordinates*/
     using TransformMatrix        = Eigen::Matrix<ctype, gridDim, gridDim>;
+    /** \brief Type for a column of the Jacobian matrix */
     using JacobianColType        = typename Eigen::internal::plain_col_type<Jacobian>::type;
   };
 

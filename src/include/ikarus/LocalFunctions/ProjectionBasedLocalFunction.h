@@ -28,68 +28,99 @@ namespace Ikarus {
         : basis{basis_}, coeffs{coeffs_}, coeffsAsMat{Ikarus::LinearAlgebra::viewAsEigenMatrixFixedDyn(coeffs)} {}
 
     using Traits = LocalFunctionTraits<ProjectionBasedLocalFunction>;
-    //    using DomainType = typename Traits::DomainType;
+
     /** \brief Type used for coordinates */
     using ctype = typename Traits::ctype;
     //    /** \brief Dimension of the coeffs */
-    static constexpr int manifoldEmbeddingDim = Traits::manifoldEmbeddingDim;
-
+    static constexpr int valueSize = Traits::valueSize;
     /** \brief Dimension of the grid */
     static constexpr int gridDim = Traits::gridDim;
-
     /** \brief Type for coordinate vector in world space */
-    using Manifold  = typename Traits::FunctionReturnType;
-    using AlongType = Eigen::Vector<ctype, manifoldEmbeddingDim>;
-    using GlobalE   = typename Manifold::CoordinateType;
-    /** \brief Type for the transposed Jacobian matrix */
-    using Jacobian               = typename Traits::Jacobian;
-    using JacobianColType        = typename Traits::JacobianColType;
-    using FieldMat               = typename Traits::FieldMat;
-    using AnsatzFunctionType     = typename Traits::AnsatzFunctionType;
+    using FunctionReturnType = typename Traits::FunctionReturnType;
+    /** \brief Type for the directional derivatives */
+    using AlongType = Eigen::Vector<ctype, valueSize>;
+    /** \brief Type for the coordinates to store the return value */
+    using GlobalE = typename FunctionReturnType::CoordinateType;
+    /** \brief Type for the Jacobian matrix */
+    using Jacobian = typename Traits::Jacobian;
+    /** \brief Type for a column of the Jacobian matrix */
+    using JacobianColType = typename Traits::JacobianColType;
+    /** \brief Type for the derivatives wrT the coeffiecients */
+    using CoeffDerivMatrix = typename Traits::CoeffDerivMatrix;
+    /** \brief Type for ansatz function values */
+    using AnsatzFunctionType = typename Traits::AnsatzFunctionType;
+    /** \brief Type for the Jacobian of the ansatz function values */
     using AnsatzFunctionJacobian = typename Traits::AnsatzFunctionJacobian;
-    using TransformMatrix        = typename Traits::TransformMatrix;
+    /** \brief Matrix to transform the ansatz function Jacobian to world coordinates*/
+    using TransformMatrix = typename Traits::TransformMatrix;
 
     auto& coefficientsRef() { return coeffs; }
 
   private:
+    static auto tryToCallDerivativeOfProjectionWRTposition(const GlobalE& valE) {
+      if constexpr (requires { FunctionReturnType::derivativeOfProjectionWRTposition(valE); })
+        return FunctionReturnType::derivativeOfProjectionWRTposition(valE);
+      else
+        static_assert(
+            requires { FunctionReturnType::derivativeOfProjectionWRTposition(valE); },
+            " Your passed manifold does not implement derivativeOfProjectionWRTposition.");
+    }
+
+    static auto tryToCallSecondDerivativeOfProjectionWRTposition(const GlobalE& valE, const AlongType& along) {
+      if constexpr (requires { FunctionReturnType::secondDerivativeOfProjectionWRTposition(valE, along); })
+        return FunctionReturnType::secondDerivativeOfProjectionWRTposition(valE, along);
+      else
+        static_assert(
+            requires { FunctionReturnType::secondDerivativeOfProjectionWRTposition(valE, along); },
+            " Your passed manifold does not implement derivativeOfProjectionWRTposition.");
+    }
+
+    static auto tryToCallThirdDerivativeOfProjectionWRTposition(const GlobalE& valE, const AlongType& along,
+                                                                const Eigen::Ref<const AlongType>& along2) {
+      if constexpr (requires { FunctionReturnType::thirdDerivativeOfProjectionWRTposition(valE, along, along2); })
+        return FunctionReturnType::thirdDerivativeOfProjectionWRTposition(valE, along, along2);
+      else
+        static_assert(
+            requires { FunctionReturnType::thirdDerivativeOfProjectionWRTposition(valE, along, along2); },
+            " Your passed manifold does not implement derivativeOfProjectionWRTposition.");
+    }
+
     Jacobian evaluateDerivativeWRTSpaceAllImpl(const AnsatzFunctionType& N, const AnsatzFunctionJacobian& dN) const {
       Jacobian J   = evaluateEmbeddingJacobianImpl(dN);
       GlobalE valE = evaluateEmbeddingFunctionImpl(N);
-      return Manifold::derivativeOfProjectionWRTposition(valE) * J;
+      return tryToCallDerivativeOfProjectionWRTposition(valE) * J;
     }
 
     JacobianColType evaluateDerivativeWRTSpaceSingleImpl(const AnsatzFunctionType& N, const AnsatzFunctionJacobian& dN,
                                                          int spaceIndex) const {
       JacobianColType Jcol = evaluateEmbeddingJacobianColImpl(dN, spaceIndex);
       GlobalE valE         = evaluateEmbeddingFunctionImpl(N);
-      return Manifold::derivativeOfProjectionWRTposition(valE) * Jcol;
+      return tryToCallDerivativeOfProjectionWRTposition(valE) * Jcol;
     }
 
     auto evaluateDerivativeWRTCoeffsImpl(const AnsatzFunctionType& N, [[maybe_unused]] const AnsatzFunctionJacobian&,
                                          int coeffsIndex) const {
       GlobalE valE = evaluateEmbeddingFunctionImpl(N);
-      return (Manifold::derivativeOfProjectionWRTposition(valE) * N[coeffsIndex]).eval();
+      return (tryToCallDerivativeOfProjectionWRTposition(valE) * N[coeffsIndex]).eval();
     }
 
-    auto evaluateSecondDerivativeWRTCoeffs(const AnsatzFunctionType& N, [[maybe_unused]] const AnsatzFunctionJacobian&,
-                                           const AlongType& along,
-                                           const std::array<size_t, gridDim>& coeffsIndex) const {
+    CoeffDerivMatrix evaluateSecondDerivativeWRTCoeffs(const AnsatzFunctionType& N,
+                                                       [[maybe_unused]] const AnsatzFunctionJacobian&,
+                                                       const AlongType& along,
+                                                       const std::array<size_t, gridDim>& coeffsIndex) const {
       const GlobalE valE = evaluateEmbeddingFunctionImpl(N);
-      FieldMat Snn
-          = Manifold::secondDerivativeOfProjectionWRTposition(valE, along) * N[coeffsIndex[0]] * N[coeffsIndex[1]];
-
-      return Snn;
+      return tryToCallSecondDerivativeOfProjectionWRTposition(valE, along) * N[coeffsIndex[0]] * N[coeffsIndex[1]];
     }
 
     auto evaluateDerivativeWRTCoeffsANDSpatialImpl(const AnsatzFunctionType& N,
                                                    [[maybe_unused]] const AnsatzFunctionJacobian& dN,
                                                    int coeffsIndex) const {
-      const GlobalE valE = evaluateEmbeddingFunctionImpl(N);
-      const Jacobian J   = evaluateEmbeddingJacobianImpl(dN);
-      const FieldMat Pm  = Manifold::derivativeOfProjectionWRTposition(valE);
-      std::array<FieldMat, gridDim> Warray;
+      const GlobalE valE        = evaluateEmbeddingFunctionImpl(N);
+      const Jacobian J          = evaluateEmbeddingJacobianImpl(dN);
+      const CoeffDerivMatrix Pm = tryToCallDerivativeOfProjectionWRTposition(valE);
+      std::array<CoeffDerivMatrix, gridDim> Warray;
       for (int dir = 0; dir < gridDim; ++dir) {
-        const auto Qi = Manifold::secondDerivativeOfProjectionWRTposition(valE, J.col(dir));
+        const auto Qi = tryToCallSecondDerivativeOfProjectionWRTposition(valE, J.col(dir));
         Warray[dir]   = Qi * N[coeffsIndex] + Pm * dN(coeffsIndex, dir);
       }
 
@@ -101,9 +132,9 @@ namespace Ikarus {
                                                          int coeffsIndex, const int spatialIndex) const {
       const GlobalE valE         = evaluateEmbeddingFunctionImpl(N);
       const JacobianColType Jcol = evaluateEmbeddingJacobianColImpl(dN, spatialIndex);
-      const FieldMat Pm          = Manifold::derivativeOfProjectionWRTposition(valE);
-      FieldMat W;
-      const auto Qi = Manifold::secondDerivativeOfProjectionWRTposition(valE, Jcol);
+      const CoeffDerivMatrix Pm  = tryToCallDerivativeOfProjectionWRTposition(valE);
+      CoeffDerivMatrix W;
+      const auto Qi = tryToCallSecondDerivativeOfProjectionWRTposition(valE, Jcol);
       W             = Qi * N[coeffsIndex] + Pm * dN(coeffsIndex, spatialIndex);
 
       return W;
@@ -113,12 +144,12 @@ namespace Ikarus {
                                                                 [[maybe_unused]] const AnsatzFunctionJacobian& dN,
                                                                 const AlongType& along,
                                                                 const std::array<size_t, gridDim>& coeffsIndex) const {
-      const GlobalE valE = evaluateEmbeddingFunctionImpl(N);
-      const Jacobian J   = evaluateEmbeddingJacobianImpl(dN);
-      const FieldMat S   = Manifold::secondDerivativeOfProjectionWRTposition(valE, along);
-      std::array<FieldMat, gridDim> ChiArray;
+      const GlobalE valE       = evaluateEmbeddingFunctionImpl(N);
+      const Jacobian J         = evaluateEmbeddingJacobianImpl(dN);
+      const CoeffDerivMatrix S = tryToCallSecondDerivativeOfProjectionWRTposition(valE, along);
+      std::array<CoeffDerivMatrix, gridDim> ChiArray;
       for (int i = 0; i < gridDim; ++i) {
-        const auto chi    = Manifold::thirdDerivativeOfProjectionWRTposition(valE, along, J.col(i));
+        const auto chi    = tryToCallThirdDerivativeOfProjectionWRTposition(valE, along, J.col(i));
         const auto& NI    = N[coeffsIndex[0]];
         const auto& NJ    = N[coeffsIndex[1]];
         const auto& dNIdi = dN(coeffsIndex[0], i);
@@ -134,11 +165,11 @@ namespace Ikarus {
                                                                       const AlongType& along,
                                                                       const std::array<size_t, gridDim>& coeffsIndex,
                                                                       const int spatialIndex) const {
-      const GlobalE valE = evaluateEmbeddingFunctionImpl(N);
-      const Jacobian J   = evaluateEmbeddingJacobianImpl(dN);
-      const FieldMat S   = Manifold::secondDerivativeOfProjectionWRTposition(valE, along);
-      FieldMat Chi;
-      const auto chi    = Manifold::thirdDerivativeOfProjectionWRTposition(valE, along, J.col(spatialIndex));
+      const GlobalE valE       = evaluateEmbeddingFunctionImpl(N);
+      const Jacobian J         = evaluateEmbeddingJacobianImpl(dN);
+      const CoeffDerivMatrix S = tryToCallSecondDerivativeOfProjectionWRTposition(valE, along);
+      CoeffDerivMatrix Chi;
+      const auto chi    = tryToCallThirdDerivativeOfProjectionWRTposition(valE, along, J.col(spatialIndex));
       const auto& NI    = N[coeffsIndex[0]];
       const auto& NJ    = N[coeffsIndex[1]];
       const auto& dNIdi = dN(coeffsIndex[0], spatialIndex);
@@ -148,8 +179,8 @@ namespace Ikarus {
       return Chi;
     }
 
-    Manifold evaluateFunctionImpl(const AnsatzFunctionType& N) const {
-      return Manifold(evaluateEmbeddingFunctionImpl(N));
+    FunctionReturnType evaluateFunctionImpl(const AnsatzFunctionType& N) const {
+      return FunctionReturnType(evaluateEmbeddingFunctionImpl(N));
     }
 
     JacobianColType evaluateEmbeddingJacobianColImpl(const AnsatzFunctionJacobian& dN, int spaceIndex) const {
@@ -171,20 +202,28 @@ namespace Ikarus {
 
   template <typename DuneBasis, typename CoeffContainer>
   struct LocalFunctionTraits<ProjectionBasedLocalFunction<DuneBasis, CoeffContainer>> {
-    using ctype                               = typename CoeffContainer::value_type::ctype;
-    static constexpr int manifoldEmbeddingDim = CoeffContainer::value_type::valueSize;
-
-    static constexpr int gridDim = Ikarus::LocalBasis<DuneBasis>::gridDim;
-
-    using FunctionReturnType = typename CoeffContainer::value_type;
-
-    using Jacobian               = Eigen::Matrix<ctype, manifoldEmbeddingDim, gridDim>;
-    using FieldMat               = Eigen::Matrix<ctype, manifoldEmbeddingDim, manifoldEmbeddingDim>;
-    using AnsatzFunctionJacobian = typename Ikarus::LocalBasis<DuneBasis>::JacobianType;
-    using AnsatzFunctionType     = typename Ikarus::LocalBasis<DuneBasis>::AnsatzFunctionType;
-    using DomainType             = typename DuneBasis::Traits::DomainType;
-    using TransformMatrix        = Eigen::Matrix<ctype, gridDim, gridDim>;
-    using JacobianColType        = typename Eigen::internal::plain_col_type<Jacobian>::type;
+      /** \brief Type used for coordinates */
+      using ctype                               = typename CoeffContainer::value_type::ctype;
+      /** \brief Dimension of the coeffs */
+      static constexpr int valueSize = CoeffContainer::value_type::valueSize;
+      /** \brief Dimension of the grid */
+      static constexpr int gridDim = Ikarus::LocalBasis<DuneBasis>::gridDim;
+      /** \brief Type for the return value */
+      using FunctionReturnType = typename CoeffContainer::value_type;
+      /** \brief Type for the Jacobian matrix */
+      using Jacobian               = Eigen::Matrix<ctype, valueSize, gridDim>;
+      /** \brief Type for the derivatives wrt. the coeffiecients */
+      using CoeffDerivMatrix       = Eigen::Matrix<ctype, valueSize,valueSize>;
+      /** \brief Type for the Jacobian of the ansatz function values */
+      using AnsatzFunctionJacobian = typename Ikarus::LocalBasis<DuneBasis>::JacobianType;
+      /** \brief Type for ansatz function values */
+      using AnsatzFunctionType     = typename Ikarus::LocalBasis<DuneBasis>::AnsatzFunctionType;
+      /** \brief Type for the points for evaluation, usually the integration points */
+      using DomainType             = typename DuneBasis::Traits::DomainType;
+      /** \brief Matrix to transform the ansatz function Jacobian to world coordinates*/
+      using TransformMatrix        = Eigen::Matrix<ctype, gridDim, gridDim>;
+      /** \brief Type for a column of the Jacobian matrix */
+      using JacobianColType        = typename Eigen::internal::plain_col_type<Jacobian>::type;
   };
 
 }  // namespace Ikarus
