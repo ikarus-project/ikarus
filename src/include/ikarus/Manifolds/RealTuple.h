@@ -15,7 +15,7 @@ namespace Ikarus::Manifold {
    * \tparam d Dimension of the embedding space of the manifold
    */
 
-  template <std::floating_point ct, int d>
+  template <typename ct, int d>
   class RealTuple {
   public:
     /** \brief Type used for coordinates */
@@ -41,6 +41,13 @@ namespace Ikarus::Manifold {
     RealTuple &operator=(const RealTuple &) = default;      // copy assignment
     RealTuple(RealTuple &&) noexcept        = default;      // move constructor
     RealTuple &operator=(RealTuple &&) noexcept = default;  // move assignment
+
+
+    template<typename OtherType>
+    struct Rebind{
+      using type = RealTuple<OtherType,valueSize>;
+    };
+
 
     /** \brief Copy-Constructor from the values in terms of coordinateType */
     explicit RealTuple(const CoordinateType &vec) noexcept : var{vec} {}

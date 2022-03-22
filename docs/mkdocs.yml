@@ -40,22 +40,24 @@ docs_dir: 'website'
 nav:
   - Home: index.md
   - Download: download.md
+  - How to contribute: howtocontribute.md
   - Documentation:
     - How to edit the documentation: documentation/howToEdit.md
     - Build the documentation locally: documentation/BuildTheDocumentationLocally.md
   - Tutorials:
     - Overview: tutorials/tutorialsOverview.md
   - Theory and Implementation:
-    - Overview: theory/theoryOverview.md
-    - Geometry: theory/theoryGeometry.md
-    - Grid: theory/theoryGrid.md
-    - Finite Elements: theory/FiniteElements.md
-    - Assembler: theory/Assembler.md
-    - Control routines: theory/ControlRoutines.md
-    - Local basis: theory/LocalBasis.md
-    - Local function: theory/LocalFunctions.md
+    - Overview: 01_theory/theoryOverview.md
+    - Geometry: 01_theory/theoryGeometry.md
+    - Grid: 01_theory/theoryGrid.md
+    - Finite Elements: 01_theory/FiniteElements.md
+    - Assembler: 01_theory/Assembler.md
+    - Control routines: 01_theory/ControlRoutines.md
+    - Local basis: 01_theory/LocalBasis.md
+    - Local function: 01_theory/LocalFunctions.md
   - Examples:
       - Integrate pi: examples/integrate_pi.md
+  - Literature: 99_Literature/99_Literature.md
 
 
 # Customization
@@ -105,7 +107,7 @@ markdown_extensions:
   - pymdownx.tilde
 
 extra_javascript:
-#  - javascripts/config.js
+  - javascripts/mathjax.js
   - https://polyfill.io/v3/polyfill.min.js?features=es6
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
 
@@ -114,3 +116,5 @@ plugins:
   - drawio-exporter
   - macros:
       module_name: mkdocs-macros
+  - bibtex:
+      bib_file: "literature.bib"

@@ -71,6 +71,11 @@ namespace Ikarus::Manifold {
     auto begin() const { return var.begin(); }
     auto end() const { return var.end(); }
 
+    template<typename OtherType>
+    struct Rebind{
+      using type = UnitVector<OtherType,valueSize>;
+    };
+
     /** \brief Update the manifold by an correction vector of size correctionSize
      * For the unit vector in R^3 the correction are of size 2
      * Therefore, we need an basis for the tangent space.

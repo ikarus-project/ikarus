@@ -128,6 +128,7 @@ namespace Ikarus {
     using Jacobian               = typename Traits::Jacobian;
     using JacobianColType        = typename Traits::JacobianColType;
     using AnsatzFunctionJacobian = typename Traits::AnsatzFunctionJacobian;
+    using CoeffDerivMatrix = typename Traits::CoeffDerivMatrix;
     static constexpr int gridDim = Traits::gridDim;
 
     template <typename WrtType, int I>
@@ -164,7 +165,7 @@ namespace Ikarus {
         dN = dNraw * std::get<0>(transArgs.args);
       else
         dN = dNraw;
-      return impl().evaluateSecondDerivativeWRTCoeffs(N, dN, std::get<0>(along.args), coeffsIndices.args);
+      return tryCallSecondDerivativeWRTCoeffs(N, dN, std::get<0>(along.args), coeffsIndices.args);
     }
 
     template <typename... Args, typename... AlongArgs, typename... Indices, typename DomainTypeOrIntegrationPointIndex>
@@ -299,6 +300,14 @@ namespace Ikarus {
     auto viewOverIntegrationPoints() { return impl().basis.viewOverIntegrationPoints(); }
 
   private:
+    auto tryCallSecondDerivativeWRTCoeffs(const auto& N, const auto& dN, const auto& along,const auto& coeffs) const
+    {
+      if constexpr (requires {impl().evaluateSecondDerivativeWRTCoeffs(N, dN, along, coeffs);})
+      return impl().evaluateSecondDerivativeWRTCoeffs(N, dN, along, coeffs);
+      else
+        static_assert(requires {impl().evaluateSecondDerivativeWRTCoeffs(N, dN, along, coeffs);},"Your function does not have evaluateSecondDerivativeWRTCoeffs. Maybe this is on purpose and this would yield a zeroMatrix?");
+    }
+
     mutable AnsatzFunctionJacobian dNTransformed;
 
     LocalFunctionImpl const& impl() const  // CRTP

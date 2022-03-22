@@ -34,7 +34,7 @@
 
 #include "ikarus/LocalBasis/localBasis.h"
 #include "ikarus/LocalFunctions/ProjectionBasedLocalFunction.h"
-#include "ikarus/LocalFunctions/SimpleLocalFunction.h"
+#include "ikarus/LocalFunctions/StandardLocalFunction.h"
 #include "ikarus/utils/LinearAlgebraHelper.h"
 #include "ikarus/FiniteElements/Interface/FEPolicies.h"
 #include "ikarus/FiniteElements/Interface/FiniteElementFunctionConcepts.h"

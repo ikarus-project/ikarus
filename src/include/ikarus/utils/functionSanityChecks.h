@@ -59,15 +59,17 @@ bool checkGradient(
   std::vector<double> fexpectedSlope = transform(t, [](auto t) { return t * t; });
   const int rangeSize                = 10;
   const auto [poly, range]           = Ikarus::findLineSegment(tE.array().log10(), yE.array().log10(), rangeSize);
-  spdlog::info("Gradient check:");
-  spdlog::info("The slope should be 2. It seems to be {}.", poly.coefficients()[1]);
+
   const bool checkPassed = Dune::FloatCmp::eq(2.0, poly.coefficients()[1], 1e-4);
-  if (checkPassed)
-    spdlog::info("We consider this as sufficient.");
-  else
-    spdlog::info("The gradient seems wrong.");
 
   if (draw) {
+    spdlog::info("Gradient check:");
+    spdlog::info("The slope should be 2. It seems to be {}.", poly.coefficients()[1]);
+    if (checkPassed)
+      spdlog::info("We consider this as sufficient.");
+    else
+      spdlog::info("The gradient seems wrong.");
+
     auto f   = figure(true);
     auto ax1 = gca();
     hold(ax1, true);
@@ -112,14 +114,14 @@ bool checkJacobian(
   auto& x         = nonLinOp.firstParameter();
   const auto xOld = x;
   UpdateType b;
-  b.resizeLike(nonLinOp.derivative().col(0));
+  b.resizeLike(nonLinOp.derivative().row(0).transpose());
   b.setRandom();
   b /= b.norm();
 
   nonLinOp.template updateAll();
   const auto e = nonLinOp.value();
 
-  const auto jacofv = nonLinOp.derivative()*b;
+  const auto jacofv = nonLinOp.derivative() * b;
 
   auto ftfunc = [&](auto t) {
     p_updateFunction(x, t * b);
@@ -139,15 +141,17 @@ bool checkJacobian(
   std::vector<double> fexpectedSlope = transform(t, [](auto t) { return t * t; });
   const int rangeSize                = 10;
   const auto [poly, range]           = Ikarus::findLineSegment(tE.array().log10(), yE.array().log10(), rangeSize);
-  spdlog::info("Gradient check:");
-  spdlog::info("The slope should be 2. It seems to be {}.", poly.coefficients()[1]);
+
   const bool checkPassed = Dune::FloatCmp::eq(2.0, poly.coefficients()[1], 1e-4);
-  if (checkPassed)
-    spdlog::info("We consider this as sufficient.");
-  else
-    spdlog::info("The gradient seems wrong.");
 
   if (draw) {
+    spdlog::info("Gradient check:");
+    spdlog::info("The slope should be 2. It seems to be {}.", poly.coefficients()[1]);
+    if (checkPassed)
+      spdlog::info("We consider this as sufficient.");
+    else
+      spdlog::info("The gradient seems wrong.");
+
     auto f   = figure(true);
     auto ax1 = gca();
     hold(ax1, true);
@@ -228,16 +232,17 @@ bool checkHessian(
   std::vector<double> fexpectedSlope = transform(t, [](auto t) { return t * t * t; });
   const int rangeSize                = 10;
   const auto [poly, range]           = Ikarus::findLineSegment(tE.array().log10(), yE.array().log10(), rangeSize);
-  spdlog::info("Hessian check:");
-  spdlog::info("The slope should be 3. It seems to be {}.", poly.coefficients()[1]);
+
   const bool checkPassed = Dune::FloatCmp::eq(3.0, poly.coefficients()[1], 1e-2);
 
-  if (checkPassed)
-    spdlog::info("We consider this as sufficient.");
-  else
-    spdlog::info("The Hessian seems wrong.");
-
   if (draw) {
+    spdlog::info("Hessian check:");
+    spdlog::info("The slope should be 3. It seems to be {}.", poly.coefficients()[1]);
+    if (checkPassed)
+      spdlog::info("We consider this as sufficient.");
+    else
+      spdlog::info("The Hessian seems wrong.");
+
     auto f   = figure(true);
     auto ax1 = gca();
     hold(ax1, true);
