@@ -89,7 +89,8 @@ namespace Ikarus::Manifold {
     static Eigen::Matrix<ctype, valueSize, valueSize> derivativeOfProjectionWRTposition(
         const Eigen::Vector<ctype, valueSize> &p) {
       const ctype normSquared                  = p.squaredNorm();
-      const ctype norm                         = std::sqrt(normSquared);
+      using std::sqrt;
+      const ctype norm                         = sqrt(normSquared);
       const Eigen::Vector<ctype, valueSize> pN = p / norm;
 
       Eigen::Matrix<ctype, valueSize, valueSize> result
@@ -102,7 +103,8 @@ namespace Ikarus::Manifold {
     static Eigen::Matrix<ctype, valueSize, valueSize> secondDerivativeOfProjectionWRTposition(
         const Eigen::Vector<ctype, valueSize> &p, const Eigen::MatrixBase<Derived> &along) {
       const ctype normSquared                  = p.squaredNorm();
-      const ctype norm                         = std::sqrt(normSquared);
+      using std::sqrt;
+      const ctype norm                         = sqrt(normSquared);
       const Eigen::Vector<ctype, valueSize> pN = p / norm;
 
       Eigen::Matrix<ctype, valueSize, valueSize> Q_along
@@ -118,7 +120,8 @@ namespace Ikarus::Manifold {
         const Eigen::Ref<const Eigen::Vector<ctype, valueSize>> &along2) {
       using FieldMat                           = Eigen::Matrix<ctype, valueSize, valueSize>;
       const ctype normSquared                  = p.squaredNorm();
-      const ctype norm                         = std::sqrt(normSquared);
+      using std::sqrt;
+      const ctype norm                         = sqrt(normSquared);
       const Eigen::Vector<ctype, valueSize> pN = p / norm;
       const ctype tscala1                      = pN.dot(along1);
       const ctype tscalwd1                     = pN.dot(along2);

@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "../../config.h"
+#include "common.h"
 #include "testHelpers.h"
 
 #include <array>
@@ -27,25 +28,16 @@
 #include <ikarus/LocalFunctions/StandardLocalFunction.h>
 #include <ikarus/Variables/VariableDefinitions.h>
 #include <ikarus/utils/functionSanityChecks.h>
-#include "common.h"
 const double tol = 1e-15;
 using namespace Dune::Functions::BasisFactory;
-
-
-
 
 template <typename T>
 class LocalFunctionProjectionBasedUnitVector : public testing::Test {
 public:
   static constexpr int size = T::value;
-
 };
-using test_types = ::testing::Types<
-                                                        std::integral_constant<std::size_t,2>,
-                                                        std::integral_constant<std::size_t,3>,
-                                                        std::integral_constant<std::size_t,4>,
-    std::integral_constant<std::size_t,5>>;
-
+using test_types = ::testing::Types<std::integral_constant<std::size_t, 2>, std::integral_constant<std::size_t, 3>,
+                                    std::integral_constant<std::size_t, 4>, std::integral_constant<std::size_t, 5>>;
 
 TYPED_TEST_SUITE(LocalFunctionProjectionBasedUnitVector, test_types);
 
@@ -88,12 +80,12 @@ TYPED_TEST(LocalFunctionProjectionBasedUnitVector, ProjectionBasedUnitVector) {
     const auto vasMat = Ikarus::LinearAlgebra::viewAsEigenMatrixFixedDyn(vBlockedLocal);
     using namespace Ikarus::DerivativeDirections;
     for (int gpIndex = 0; auto& gp : rule) {
-      const auto& directorCached             = localF.evaluateFunction(gpIndex).getValue();
-      const Eigen::Vector<double,size> directorEmbedded = vasMat * localBasis.getFunction(gpIndex);
-      const auto& directoreval               = localF.evaluateFunction(gp.position());
+      const auto& directorCached                         = localF.evaluateFunction(gpIndex).getValue();
+      const Eigen::Vector<double, size> directorEmbedded = vasMat * localBasis.getFunction(gpIndex);
+      const auto& directoreval                           = localF.evaluateFunction(gp.position());
 
-      const auto J    = toEigenMatrix(ele.geometry().jacobianTransposed(gp.position())).transpose().eval();
-      const auto Jinv = J.inverse().eval();
+      const auto J     = toEigenMatrix(ele.geometry().jacobianTransposed(gp.position())).transpose().eval();
+      const auto Jinv  = J.inverse().eval();
       const auto jaco2 = localF.evaluateDerivative(gpIndex, wrt(spatialall), transformWith(Jinv));
 
       const auto jaco2e     = localF.evaluateDerivative(gp.position(), wrt(spatialall), transformWith(Jinv));
@@ -127,7 +119,7 @@ TYPED_TEST(LocalFunctionProjectionBasedUnitVector, ProjectionBasedUnitVector) {
       xv.setZero();
       const Eigen::MatrixXd Jdual = jacobian(localFdual_, autodiff::wrt(xv), at(xv));
 
-      const Eigen::Vector<double,size> testVec = Eigen::Vector<double,size> ::UnitX();
+      const Eigen::Vector<double, size> testVec = Eigen::Vector<double, size>::UnitX();
       for (size_t i = 0; i < fe.size(); ++i) {
         const auto jacobianWRTCoeffs = localF.evaluateDerivative(gpIndex, wrt(coeffs), coeffIndices(i));
         EXPECT_THAT(jacobianWRTCoeffs, EigenApproxEqual(Jdual.block<size, size>(0, i * size), 1e-15));
@@ -187,23 +179,18 @@ TYPED_TEST(LocalFunctionProjectionBasedUnitVector, ProjectionBasedUnitVector) {
   }
 }
 
-
 template <typename T>
 class LocalFunctionVector : public testing::Test {
 public:
   using Manifold = T;
-
 };
-using test_types_1 = ::testing::Types<
-    Ikarus::RealTuple<double, 1>,
-    Ikarus::RealTuple<double, 2>,
-    Ikarus::RealTuple<double, 3>>;
-
+using test_types_1
+    = ::testing::Types<Ikarus::RealTuple<double, 1>, Ikarus::RealTuple<double, 2>, Ikarus::RealTuple<double, 3>>;
 
 TYPED_TEST_SUITE(LocalFunctionVector, test_types_1);
 
-TYPED_TEST(LocalFunctionVector,Test1) {
-  using Manifold = typename TestFixture::Manifold;
+TYPED_TEST(LocalFunctionVector, Test1) {
+  using Manifold     = typename TestFixture::Manifold;
   constexpr int size = Manifold::valueSize;
   using namespace Ikarus;
   auto grid = createGrid<Grids::Yasp>();
@@ -242,12 +229,12 @@ TYPED_TEST(LocalFunctionVector,Test1) {
     const auto vasMat = Ikarus::LinearAlgebra::viewAsEigenMatrixFixedDyn(vBlockedLocal);
     using namespace Ikarus::DerivativeDirections;
     for (int gpIndex = 0; auto& gp : rule) {
-      const auto& directorCached             = localF.evaluateFunction(gpIndex).getValue();
-      const Eigen::Vector<double,size> directorEmbedded = vasMat * localBasis.getFunction(gpIndex);
-      const auto& directoreval               = localF.evaluateFunction(gp.position());
+      const auto& directorCached                         = localF.evaluateFunction(gpIndex).getValue();
+      const Eigen::Vector<double, size> directorEmbedded = vasMat * localBasis.getFunction(gpIndex);
+      const auto& directoreval                           = localF.evaluateFunction(gp.position());
 
-      const auto J    = toEigenMatrix(ele.geometry().jacobianTransposed(gp.position())).transpose().eval();
-      const auto Jinv = J.inverse().eval();
+      const auto J     = toEigenMatrix(ele.geometry().jacobianTransposed(gp.position())).transpose().eval();
+      const auto Jinv  = J.inverse().eval();
       const auto jaco2 = localF.evaluateDerivative(gpIndex, wrt(spatialall), transformWith(Jinv));
 
       const auto jaco2e     = localF.evaluateDerivative(gp.position(), wrt(spatialall), transformWith(Jinv));
@@ -281,7 +268,7 @@ TYPED_TEST(LocalFunctionVector,Test1) {
       xv.setZero();
       const Eigen::MatrixXd Jdual = jacobian(localFdual_, autodiff::wrt(xv), at(xv));
 
-      const Eigen::Vector<double,size> testVec = Eigen::Vector<double,size> ::UnitX();
+      const Eigen::Vector<double, size> testVec = Eigen::Vector<double, size>::UnitX();
       for (size_t i = 0; i < fe.size(); ++i) {
         const auto jacobianWRTCoeffs = localF.evaluateDerivative(gpIndex, wrt(coeffs), coeffIndices(i));
         EXPECT_THAT(jacobianWRTCoeffs, EigenApproxEqual(Jdual.block<size, size>(0, i * size), 1e-15));
@@ -311,10 +298,10 @@ TYPED_TEST(LocalFunctionVector,Test1) {
         EXPECT_THAT(Warrayun[1], EigenApproxEqual(W1un, 1e-15));
       }
 
-
       EXPECT_THAT(directorCached, EigenApproxEqual(directoreval.getValue(), 1e-15));
 
       ++gpIndex;
     }
   }
 }
+
