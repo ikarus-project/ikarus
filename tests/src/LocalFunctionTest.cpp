@@ -66,7 +66,7 @@ TYPED_TEST(LocalFunctionProjectionBasedUnitVector, ProjectionBasedUnitVector) {
     const auto& fe   = localView.tree().child(0).finiteElement();
     auto localBasis  = Ikarus::LocalBasis(localView.tree().child(0).finiteElement().localBasis());
     const auto& rule = Dune::QuadratureRules<double, 2>::rule(localView.element().type(), 3);
-    localBasis.bind(rule, 0, 1);
+    localBasis.bind(rule, bindDerivatives(0, 1));
     Dune::BlockVector<Ikarus::UnitVector<double, size>> vBlockedLocal(fe.size());
     Dune::BlockVector<Ikarus::UnitVector<autodiff::dual, size>> vBlockedLocalDual(fe.size());
     Dune::BlockVector<Ikarus::UnitVector<autodiff::dual2nd, size>> vBlockedLocalDual2nd(fe.size());
@@ -220,7 +220,7 @@ TYPED_TEST(LocalFunctionVector,Test1) {
     const auto& fe   = localView.tree().child(0).finiteElement();
     auto localBasis  = Ikarus::LocalBasis(localView.tree().child(0).finiteElement().localBasis());
     const auto& rule = Dune::QuadratureRules<double, 2>::rule(localView.element().type(), 3);
-    localBasis.bind(rule, 0, 1);
+    localBasis.bind(rule, bindDerivatives(0, 1));
     Dune::BlockVector<Manifold> vBlockedLocal(fe.size());
     Dune::BlockVector<typename Manifold::template Rebind<autodiff::dual>::type> vBlockedLocalDual(fe.size());
     Dune::BlockVector<typename Manifold::template Rebind<autodiff::dual2nd>::type> vBlockedLocalDual2nd(fe.size());
