@@ -69,7 +69,7 @@ namespace Ikarus::FiniteElements {
       localView_.bind(element);
       const int order = 2 * (localView_.tree().child(0).finiteElement().localBasis().order());
       localBasis      = Ikarus::LocalBasis(localView_.tree().child(0).finiteElement().localBasis());
-      localBasis.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order), 0, 1);
+      localBasis.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order), bindDerivatives(0, 1));
     }
 
     using Traits = TraitsFromLocalView<LocalView>;

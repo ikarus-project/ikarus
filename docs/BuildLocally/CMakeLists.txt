@@ -12,7 +12,7 @@ add_custom_target(
   WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
 )
 else()
-    add_custom_target(
+add_custom_target(
             localSite
             COMMAND ${MKDOCS_EXECUTABLE} serve
             WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."

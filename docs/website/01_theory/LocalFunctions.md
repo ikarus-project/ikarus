@@ -5,8 +5,7 @@ This section explains the concept of local functions.
 Local functions are functions which are bound to single grid elements.
 Therefore they are constructed from some local basis and a coefficient vector.
 
-# Theory
-Local functions need to be evaluated in the local coordinate system $\mathbb{\xi} \in T_{\text{ref}} \subset \mathbb{R}^d$:
+Usually local functions need to be evaluated in the local coordinate system $\mathbb{\xi} \in \mathbb{R}^n$:
 $$
 f: \boldsymbol{\xi}^n \rightarrow T_{\text{ref}}
 $$
@@ -19,9 +18,13 @@ Local functions provide the following interface
   auto evaluateDerivative(const DomainType& local,...);
   auto evaluateDerivative(const unsigned int& integrationPointIndex,...);
   auto viewOverIntegrationPoints(); // (1)
+  
+  template <typename IntegrationRule, typename... Ints>
+  void bind(IntegrationRule&& p_rule, Derivatives<Ints...>&& ints) { // (2)
 ```
 
 1. This return a vector of structs of the integration point and its index. Therefore the syntax is usually `#!cpp for (const auto& [gpIndex, gp] : localFunction.viewOverIntegrationPoints()) {...}`
+2. This function is passed through to the given `localBasis`. See [Link](LocalBasis.md)
 
 The $...$ in the `evaluateDerivative` function call are several variadic templates. They encapsulate several functionality which we show in detail in the following.
 ## Derivatives w.r.t. space
@@ -166,9 +169,8 @@ In the follwing table $N^i(\boldsymbol{\xi})$ are the ansatz functions.
 
 | Name                      | Interpolation formula                                         | Note                                                                                                                                                                                                                                                      | Header |
 |:--------------------------|:--------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--|
-| Standard                    | $$ \boldsymbol{x} = \sum_{i=1}^n N^i(\boldsymbol{\xi}) \boldsymbol{x}_i $$     |                                                                                                                                                                                                                                                           | `StandardLocalFunction.h`|
-| Projection-Based[@grohs_ProjectionBasedFinite2019] | $$ \boldsymbol{x} = P\left(\sum_{i=1}^n N^i(\boldsymbol{\xi}) \boldsymbol{x}_i \right) $$ | This is one version of geometric finite elements. These are finite elements suited for interpolation on manifolds. \ Here $P: \mathbb{R}^m \rightarrow \mathcal{M}$ is an operator that projects <br /> the usual linear interpolation onto some manifold | `ProjectionBasedLocalFunction.h`|
-
+| Standard                    | $$ \boldsymbol{x} = \sum_{i=1}^n N^i(\boldsymbol{\xi}) \boldsymbol{x}_i  $$     |                                                                                                                                                                                                                                                           | `StandardLocalFunction.h`|
+| Projection-Based[@grohs_ProjectionBasedFinite2019] | $$ \boldsymbol{x} = P\left(\sum_{i=1}^n N^i(\boldsymbol{\xi}) \boldsymbol{x}_i \right) $$ | This is one version of geometric finite elements. These are finite elements suited for interpolation on manifolds. Here $P: \mathbb{R}^m \rightarrow \mathcal{M}$ is an operator that projects <br /> the usual linear interpolation onto some manifold | `ProjectionBasedLocalFunction.h`|
 
 ## How to implement your own local functions
 If you are interested in implementing your own local function we have prepared the file
