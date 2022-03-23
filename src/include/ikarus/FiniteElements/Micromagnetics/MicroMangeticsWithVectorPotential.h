@@ -100,10 +100,9 @@ namespace Ikarus::FiniteElements {
       localViewReduced.bind(element);
       order         = 4 * localView_.tree().child(Dune::Indices::_0, 0).finiteElement().localBasis().order();
       localBasisMag = Ikarus::LocalBasis(localView_.tree().child(Dune::Indices::_0, 0).finiteElement().localBasis());
-      localBasisMag.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order), 0, 1);
+      localBasisMag.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order), bindDerivatives(0, 1));
       localBasisVecPot = Ikarus::LocalBasis(localView_.tree().child(Dune::Indices::_1, 0).finiteElement().localBasis());
-      localBasisVecPot.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order), 0,
-                            1);
+      localBasisVecPot.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order), bindDerivatives(0, 1));
     }
 
     using Traits = TraitsFromLocalView<LocalViewEmbedded>;
@@ -211,10 +210,10 @@ namespace Ikarus::FiniteElements {
       using namespace Dune::Indices;
       dx1st.resize(localView_.size());
       dx1st.setZero();
-      auto f = [&](auto& x) { return this->calculateScalarImpl(par, x); };
-
-      autodiff::dual e;
-      autodiff::gradient(f, autodiff::wrt(dx1st), at(dx1st), e, eukGrad);
+//      auto f = [&](auto& x) { return this->calculateScalarImpl(par, x); };
+//
+//      autodiff::dual e;
+//      autodiff::gradient(f, autodiff::wrt(dx1st), at(dx1st), e, eukGrad);
       //      std::cout << "eukGrad.transpose()" << std::endl;
       //      std::cout << eukGrad.transpose() << std::endl;
       calculateEuclideanGradient(par, eukGrad);
@@ -556,8 +555,6 @@ namespace Ikarus::FiniteElements {
         const auto normalizedMag = magnetLocalFunction.evaluateFunction(gp.position()).getValue();
         const auto vectorPot = vectorPotLocalFunction.evaluateFunction(gp.position()).getValue();
 
-        const auto dNmdx = (dNm * J.inverse()).eval();
-        const auto dNAdx = (dNA * J.inverse()).eval();
         const Eigen::Matrix<double, directorDim, Traits::mydim> gradm
             = magnetLocalFunction.evaluateDerivative(gp.position(), wrt(spatialall), transformWith(Jinv));
         const Eigen::Matrix<double, vectorPotDim, Traits::mydim> gradA

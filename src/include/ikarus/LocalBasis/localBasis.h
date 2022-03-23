@@ -28,7 +28,7 @@ namespace Ikarus {
     using RangeDuneType              = typename DuneLocalBasis::Traits::RangeType;
     using JacobianDuneType           = typename DuneLocalBasis::Traits::JacobianType;
   public:
-    LocalBasis(const DuneLocalBasis& p_basis) : duneLocalBasis{&p_basis} {}
+    explicit LocalBasis(const DuneLocalBasis& p_basis) : duneLocalBasis{&p_basis} {}
     LocalBasis() = default;
 
     static constexpr int gridDim = DuneLocalBasis::Traits::dimDomain;

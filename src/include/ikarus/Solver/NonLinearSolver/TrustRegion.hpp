@@ -374,7 +374,8 @@ namespace Ikarus {
 
     void solveInnerProblem() {
       truncatedConjugateGradient.setInfo(innerInfo);
-      truncatedConjugateGradient.compute(hessian());
+      truncatedConjugateGradient.factorize(hessian());
+//      std::cout<<hessian()<<std::endl;
       eta       = truncatedConjugateGradient.solveWithGuess(-gradient(), eta);
       innerInfo = truncatedConjugateGradient.getInfo();
     }

@@ -61,6 +61,7 @@ nav:
   - Examples:
       - Integrate pi: examples/integrate_pi.md
   - Literature: 99_Literature/99_Literature.md
+  - C++ recommendations: cppRec.md
 
 
 # Customization
@@ -102,7 +103,8 @@ markdown_extensions:
         - name: mermaid
           class: mermaid-experimental
           format: !!python/name:pymdownx.superfences.fence_code_format
-  - pymdownx.tabbed
+  - pymdownx.tabbed:
+      alternate_style: true
   - pymdownx.tasklist:
       custom_checkbox: true
   - pymdownx.tilde

@@ -28,10 +28,24 @@ void bind(IntegrationRule&& p_rule, Derivatives<Ints...>&& ints) { // (2)
 
 The "..." in the `evaluateDerivative` function call are several variadic templates.
 In action this looks like
-```cpp
+
+
+=== "using integration point coordinates"
+
+``` c++
 using namespace Ikarus::DerivativeDirections;
-localFunction.evaluateDerivative(gpIndex, wrt(spatialall)); // (1) 
+localFunction.evaluateDerivative(gpIndex, wrt(spatialall)); // (1)
 localFunction.evaluateDerivative(gpIndex, wrt(spatialall), transformWith(Jinv)); // (2)
+```
+1. Compute the spatial Jacobian of localFunction
+2. Compute the spatial Jacobian of localFunction and transform it to physical coordinates
+
+=== "using integration point index"
+
+``` c++
+using namespace Ikarus::DerivativeDirections;
+localFunction.evaluateDerivative(gp.position(), wrt(spatialall)); // (1)
+localFunction.evaluateDerivative(gp.position(), wrt(spatialall), transformWith(Jinv)); // (2)
 ```
 
 1. Compute the spatial Jacobian of localFunction
