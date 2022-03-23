@@ -38,7 +38,7 @@
 #include <ikarus/FiniteElements/Interface/FiniteElementFunctionConcepts.h>
 #include <ikarus/FiniteElements/Interface/InterfaceFiniteElement.h>
 #include <ikarus/FiniteElements/physicsHelper.h>
-#include <ikarus/LocalFunctions/GeometryWithExternalInput.h>
+#include <ikarus/LocalFunctions/StandardLocalFunction.h>
 #include <ikarus/Variables/VariableDefinitions.h>
 #include <ikarus/utils/LinearAlgebraTypedefs.h>
 
@@ -73,8 +73,6 @@ namespace Ikarus::FiniteElements {
     }
 
     using Traits = TraitsFromLocalView<LocalView>;
-    template <typename ST>
-    using DefoGeo = Ikarus::Geometry::GeometryWithExternalInput<ST, Traits::mydim, Traits::dimension>;
 
   private:
     template <class ScalarType>
@@ -85,11 +83,12 @@ namespace Ikarus::FiniteElements {
       localDisp.setZero();
       auto& first_child = localView_.tree().child(0);
       const auto& fe    = first_child.finiteElement();
-      Eigen::Matrix<ScalarType, Traits::dimension, Eigen::Dynamic> disp;
-      disp.setZero(Eigen::NoChange, fe.size());
+      Dune::BlockVector<Ikarus::RealTuple<ScalarType, Traits::dimension>> disp(fe.size());
+
       for (auto i = 0U; i < fe.size(); ++i)
         for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
-          disp.col(i)(k2) = dx[i * 2 + k2] + d[localView_.index(localView_.tree().child(k2).localIndex(i))[0]];
+          disp[i][k2] = dx[i * 2 + k2] + d[localView_.index(localView_.tree().child(k2).localIndex(i))[0]];
+
       ScalarType energy = 0.0;
       const int order   = 2 * (fe.localBasis().order());
       const auto& rule  = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
@@ -100,16 +99,11 @@ namespace Ikarus::FiniteElements {
       C(2, 2)           = (1 - nu_) / 2;
       C *= emod_ / (1 - nu_ * nu_);
       const auto geo = localView_.element().geometry();
-
-      for (const auto& [gpIndex, gp, N, dN] : localBasis.viewOverFunctionAndJacobian()) {
+      Ikarus::StandardLocalFunction uFunction(localBasis,disp)  ;
+      for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints() ) {
         const auto J = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
-        Eigen::Vector<ScalarType, Traits::worlddim> u;
-        u.setZero();
-        for (int i = 0; i < N.size(); ++i)
-          u += disp.col(i) * N[i];
-
-        const auto dNdx   = (dN * J.inverse()).eval();
-        const auto H      = DefoGeo<ScalarType>::jacobianTransposed(dNdx, disp).eval();
+        const auto u = uFunction.evaluateFunction(gpIndex).getValue();
+        const auto H      = uFunction.evaluateDerivative(gpIndex, wrt(DerivativeDirections::spatialall), transformWith(J.inverse().eval()));
         const auto E      = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
         const auto EVoigt = toVoigt(E);
 

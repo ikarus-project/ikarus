@@ -123,6 +123,7 @@ namespace Ikarus {
   public:
     using Traits                 = LocalFunctionTraits<LocalFunctionImpl>;
     using DomainType             = typename Traits::DomainType;
+    using ctype             = typename Traits::ctype;
     using FunctionReturnType     = typename Traits::FunctionReturnType;
     using AnsatzFunctionType     = typename Traits::AnsatzFunctionType;
     using Jacobian               = typename Traits::Jacobian;
@@ -202,7 +203,7 @@ namespace Ikarus {
     template <typename... TransformArgs>
     void transformDerivatives(const AnsatzFunctionJacobian& dNraw, TransformWith<TransformArgs...>&& transArgs) const {
       if constexpr (sizeof...(TransformArgs) > 0)
-        dNTransformed = dNraw * std::get<0>(transArgs.args);
+        dNTransformed = dNraw.template cast<ctype>() * std::get<0>(transArgs.args); // The cast here is only necessary since the autodiff types are not working otherwise, see Issue https://github.com/autodiff/autodiff/issues/73
       else
         dNTransformed = dNraw;
     }

@@ -203,7 +203,7 @@ namespace Ikarus {
   template <typename DuneBasis, typename CoeffContainer>
   struct LocalFunctionTraits<ProjectionBasedLocalFunction<DuneBasis, CoeffContainer>> {
       /** \brief Type used for coordinates */
-      using ctype                               = typename CoeffContainer::value_type::ctype;
+      using ctype    = typename CoeffContainer::value_type::ctype;
       /** \brief Dimension of the coeffs */
       static constexpr int valueSize = CoeffContainer::value_type::valueSize;
       /** \brief Dimension of the grid */
