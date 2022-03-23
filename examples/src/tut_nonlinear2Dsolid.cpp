@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
   using namespace Dune::Functions::BasisFactory;
   auto basis = makeBasis(gridView, power<gridDim>(gridView.getPreBasis(), FlatInterleaved()));
   //  auto basis = makeBasis(gridView, power<gridDim>(lagrange<1>(), FlatInterleaved()));
-  std::cout << "This gridview cotains: " << std::endl;
+  std::cout << "This gridview contains: " << std::endl;
   std::cout << gridView.size(2) << " vertices" << std::endl;
   std::cout << gridView.size(1) << " edges" << std::endl;
   std::cout << gridView.size(0) << " elements" << std::endl;

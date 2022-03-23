@@ -4,6 +4,7 @@
 
 #pragma once
 #include <concepts>
+#include "ikarus/LocalBasis/localBasis.h"
 namespace Ikarus {
   namespace DerivativeDirections {
     constexpr std::integral_constant<int, -1> coeffs = {};
@@ -134,6 +135,14 @@ namespace Ikarus {
 
     template <typename WrtType, int I>
     static constexpr bool hasCoeff = DerivativeDirections::HasCoeff<WrtType, gridDim, I>;
+
+    /** \brief Forward the binding to the local basis */
+    template <typename IntegrationRule, typename... Ints>
+    requires std::conjunction_v<std::is_convertible<int, Ints>...>
+    void bind(IntegrationRule&& p_rule, Ikarus::Derivatives<Ints...>&& ints) {
+      impl().basis.bind(std::forward<IntegrationRule>(p_rule),std::forward<Ikarus::Derivatives<Ints...>>(ints));
+    }
+
 
     /** \brief Return the function value at the i-th bound integration point*/
     FunctionReturnType evaluateFunction(long unsigned i) {
