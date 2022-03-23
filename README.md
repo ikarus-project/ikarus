@@ -13,7 +13,7 @@ This project tries to provide an easy to read and an easy to use finite element 
 It is heavily inspired by the finite element softwares [DUNE](https://dune-project.org/), the book [DUNE — The Distributed and Unified Numerics Environment](https://www.springer.com/gp/book/9783030597016),
 [deal.II](https://www.dealii.org/) and [Kratos](https://github.com/KratosMultiphysics/Kratos).
 
-We favor value semantics and readability is the main concern.
+We favor value semantics and readability.
 
 Concerning the design of CI and the documentation we were inspired by [Autodiff](https://autodiff.github.io/)  and [Kratos](https://github.com/KratosMultiphysics/Kratos).
 

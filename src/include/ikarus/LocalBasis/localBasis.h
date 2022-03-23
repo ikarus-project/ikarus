@@ -1,10 +1,7 @@
-//
-// Created by lex on 04/02/2022.
-//
-
 #pragma once
 #include <ranges>
 #include <vector>
+#include <set>
 
 #include <dune/common/fmatrix.hh>
 #include <dune/common/fvector.hh>
@@ -13,6 +10,19 @@
 #include <Eigen/Core>
 
 namespace Ikarus {
+
+  template <typename... Args>
+  struct Derivatives {
+    std::set<int> args;
+  };
+
+  template <typename... Ints>
+  requires std::conjunction_v<std::is_convertible<int, Ints>...>
+  auto bindDerivatives(Ints&&... ints) {
+    return Derivatives<Ints&&...>({std::forward<Ints>(ints)...});
+  }
+
+
   template <typename DuneLocalBasis>
   class LocalBasis {
     using RangeDuneType              = typename DuneLocalBasis::Traits::RangeType;
@@ -61,19 +71,18 @@ namespace Ikarus {
 
     template <typename IntegrationRule, typename... Ints>
     requires std::conjunction_v<std::is_convertible<int, Ints>...>
-    void bind(IntegrationRule&& p_rule, Ints&&... ints) {
+    void bind(IntegrationRule&& p_rule, Derivatives<Ints...>&& ints) {
       rule             = p_rule;
-      boundDerivatives = std::vector<int>({std::forward<Ints>(ints)...});
+      boundDerivatives = ints.args;
       Nbound           = std::make_optional(std::vector<Eigen::VectorX<RangeFieldType>>{});
       dNbound          = std::make_optional(std::vector<Eigen::Matrix<RangeFieldType, Eigen::Dynamic, gridDim>>{});
       dNbound.value().resize(rule.value().size());
       Nbound.value().resize(rule.value().size());
-      std::ranges::sort(boundDerivatives.value());
 
       for (int i = 0; auto& gp : rule.value()) {
-        Eigen::Matrix<double, Eigen::Dynamic, gridDim> dN;
-        if (std::ranges::binary_search(boundDerivatives.value(), 0)) evaluateFunction(gp.position(), Nbound.value()[i]);
-        if (std::ranges::binary_search(boundDerivatives.value(), 1))
+        if (boundDerivatives.value().contains(0))
+          evaluateFunction(gp.position(), Nbound.value()[i]);
+        if (boundDerivatives.value().contains(1))
           evaluateJacobian(gp.position(), dNbound.value()[i]);
         ++i;
       }
@@ -131,7 +140,7 @@ namespace Ikarus {
     mutable std::vector<JacobianDuneType> dNdune;
     mutable std::vector<RangeDuneType> Ndune;
     DuneLocalBasis const* duneLocalBasis;
-    std::optional<std::vector<int>> boundDerivatives;
+    std::optional<std::set<int>> boundDerivatives;
     std::optional<std::vector<Eigen::VectorX<RangeFieldType>>> Nbound;
     std::optional<std::vector<Eigen::Matrix<RangeFieldType, Eigen::Dynamic, gridDim>>> dNbound;
     std::optional<Dune::QuadratureRule<DomainFieldType, gridDim>> rule;
