@@ -54,8 +54,8 @@ int main(int argc, char** argv) {
     const double Lx   = sizedom1;
     const double Ly   = sizedom2;
     const double Lz   = sizedom2;
-    const size_t elex = 100;
-    const size_t eley = 100;
+    const size_t elex = 2;
+    const size_t eley = 2;
     const size_t elez = 1;
 
     Dune::FieldVector<double, gridDim> bbox;
@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
     grid->globalRefine(0);
   auto gridView = grid->leafGridView();
 
-  draw(gridView);
+//  draw(gridView);
   spdlog::info("The exchange length is {}.", lx);
   spdlog::info("The domain has a length of {}.", sizedom1);
 
@@ -189,7 +189,7 @@ int main(int argc, char** argv) {
   //  e)"); if (not nonLinOp.derivative().isApprox(g)) throw std::logic_error("nonLinOp.derivative().isApprox(g)"); if
   //  (not nonLinOp.secondDerivative().isApprox(h)) throw std::logic_error("nonLinOp.secondDerivative().isApprox(h)");
 
-  auto nr = Ikarus::makeTrustRegion(nonLinOp, updateFunction);
+  auto nr = Ikarus::makeTrustRegion< decltype(nonLinOp),PreConditioner::DiagonalPreconditioner>(nonLinOp, updateFunction);
   nr->setup({.verbosity = 1,
              .maxiter   = 100000,
              .grad_tol  = 1e-8,
