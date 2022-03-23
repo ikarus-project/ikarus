@@ -11,7 +11,7 @@ the impl thoughts and theoretical aspects.
 
 If you are rather interested in the theoretical background 
 and implementation details, visit the
-[theory section](../01_theory/theoryOverview.md).
+[theory section](../01_theory/interfaceVSimplementation.md).
 
 ## Topics
 

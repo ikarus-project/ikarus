@@ -1,5 +1,5 @@
 # Project information
-site_name: ikarus
+site_name: Ikarus
 site_description: ikarus documentation.
 site_author: Alexander Müller
 site_url: https://IkarusRepo.github.io
@@ -14,18 +14,20 @@ copyright: 'Copyright &copy; 2021 Alexander Müller'
 # Configuration
 theme:
   name: material
+  logo: images/logo_white.svg
+  favicon: images/logo_blue.svg
   features:
     - navigation.instant
     - content.code.annotate
   palette:
     - scheme: default
-      primary: teal
+      primary: light blue
       accent: pink
       toggle:
         icon: material/toggle-switch-off-outline
         name: Switch to dark mode
     - scheme: slate
-      primary: teal
+      primary: light blue
       accent: pink
       toggle:
         icon: material/toggle-switch
@@ -47,7 +49,8 @@ nav:
   - Tutorials:
     - Overview: tutorials/tutorialsOverview.md
   - Theory and Implementation:
-    - Overview: 01_theory/theoryOverview.md
+    - Overview: 01_theory/overview.md
+    - Interface vs. Implementation: 01_theory/interfaceVSimplementation.md
     - Geometry: 01_theory/theoryGeometry.md
     - Grid: 01_theory/theoryGrid.md
     - Finite Elements: 01_theory/FiniteElements.md
