@@ -56,8 +56,10 @@ Look at the markdown file of this page to see how a table can be inserted.
 | `#!cpp GridViewType leafGridView()`     |
 | `#!cpp GridViewType levelGridView(int levl)`     |
 
-## Insert a warning
-This should only be done in case it is really important:
-!!! warning
+
+!!! warning "Insert a warning"
     Note that the **four** spaces at the beginning of this line are essential for the warning to be displayed
     correctly.
+
+!!! note "References"
+    For available features in the documentation see [Mkdocs-Material](https://squidfunk.github.io/mkdocs-material/) and [Mkdocs](https://www.mkdocs.org/user-guide/).

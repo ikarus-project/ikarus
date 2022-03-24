@@ -410,26 +410,18 @@ namespace Ikarus::FiniteElements {
             const int indexJ = j * directorDim;
             const auto WJ
                 = mLocalF.evaluateDerivative(gpIndex, wrt(spatialall, coeffs), transformWith(Jinv), coeffIndices(j));
-//            const auto gradd1 = mLocalF.evaluateDerivative(gpIndex, wrt(spatial(0), coeffs, coeffs), along(gradm.col(0)),
-//                                                           transformWith(Jinv), coeffIndices(i, j));
-//            const auto gradd2 = mLocalF.evaluateDerivative(gpIndex, wrt(spatial(1), coeffs, coeffs), along(gradm.col(1)),
-//                                                           transformWith(Jinv), coeffIndices(i, j));
 
             const auto mddHbar
-                = mLocalF.evaluateDerivative(gpIndex, wrt(coeffs, coeffs), along(Hbar), coeffIndices(i, j));
-            const auto mddcurlA
-                = mLocalF.evaluateDerivative(gpIndex, wrt(coeffs, coeffs), along(curlA), coeffIndices(i, j));
+                = mLocalF.evaluateDerivative(gpIndex, wrt(coeffs, coeffs), along(2*Hbar/ material.ms+curlA), coeffIndices(i, j));
+
             Eigen::Matrix<double,directorDim,directorDim> tmp;
             tmp.setZero();
-            for (int k = 0; k < Traits::mydim; ++k) {
+            for (int k = 0; k < Traits::mydim; ++k)
               tmp+=WI[k]*WJ[k] +mLocalF.evaluateDerivative(gpIndex, wrt(spatial(k), coeffs, coeffs), along(gradm.col(k)),
                                                                 transformWith(Jinv), coeffIndices(i, j));;
-            }
-            eukHess_.template block<directorDim, directorDim>(indexI, indexJ)
-                += tmp * weight;
 
-            eukHess_.template block<directorDim, directorDim>(indexI, indexJ) -= 2 * mddHbar / material.ms * weight;
-            eukHess_.template block<directorDim, directorDim>(indexI, indexJ) -= mddcurlA * weight;
+            eukHess_.template block<directorDim, directorDim>(indexI, indexJ) += tmp * weight;
+            eukHess_.template block<directorDim, directorDim>(indexI, indexJ) -=  mddHbar* weight;
           }
         }
         const int magEukSize = fe0.size() * directorDim;

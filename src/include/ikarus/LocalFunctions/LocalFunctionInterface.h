@@ -218,7 +218,8 @@ namespace Ikarus {
       const auto& [N, dNraw] = evaluateFunctionAndDerivativeWithIPorCoord(localOrIpId);
       transformDerivatives(dNraw, std::forward<TransformWith<TransformArgs...>>(transArgs));
       const DerivativeDirections::Counter<gridDim> counter
-          = DerivativeDirections::countDynamicSpatialDerivativesInTuple<Wrt<Args...>, gridDim>(std::forward<Wrt<Args...>>(args));
+          = DerivativeDirections::countDynamicSpatialDerivativesInTuple<Wrt<Args...>, gridDim>(
+              std::forward<Wrt<Args...>>(args));
       constexpr DerivativeDirections::Counter<gridDim> counterExpr
           = DerivativeDirections::countInTuple<Wrt<Args...>, gridDim>();
       const int spatialIndex = DerivativeDirections::findSingleSpatial(counter.spatialDerivatives);
@@ -235,11 +236,7 @@ namespace Ikarus {
     template <typename... TransformArgs>
     void transformDerivatives(const AnsatzFunctionJacobian& dNraw, TransformWith<TransformArgs...>&& transArgs) const {
       if constexpr (sizeof...(TransformArgs) > 0)
-        dNTransformed
-            = dNraw.template cast<ctype>()
-              * std::get<0>(
-                  transArgs.args);  // The cast here is only necessary since the autodiff types are not working
-                                    // otherwise, see Issue https://github.com/autodiff/autodiff/issues/73
+        dNTransformed = dNraw * std::get<0>(transArgs.args);
       else
         dNTransformed = dNraw;
     }
@@ -271,7 +268,8 @@ namespace Ikarus {
                                                              TransformWith<TransformArgs...>&& transArgs) const {
       const auto& [N, dN] = evaluateFunctionAndDerivativeWithIPorCoord(localOrIpId);
       const DerivativeDirections::Counter<gridDim> counter
-          = DerivativeDirections::countDynamicSpatialDerivativesInTuple<Wrt<Args...>, gridDim>(std::forward<Wrt<Args...>>(args));
+          = DerivativeDirections::countDynamicSpatialDerivativesInTuple<Wrt<Args...>, gridDim>(
+              std::forward<Wrt<Args...>>(args));
       constexpr DerivativeDirections::Counter<gridDim> counterConstExpr
           = DerivativeDirections::countInTuple<Wrt<Args...>, gridDim>();
       // Check if a matrix is given to transform derivatives. Otherwise we do nothing
@@ -316,7 +314,8 @@ namespace Ikarus {
       const auto& [N, dNraw] = evaluateFunctionAndDerivativeWithIPorCoord(localOrIpId);
       transformDerivatives(dNraw, std::forward<TransformWith<TransformArgs...>>(transArgs));
       const DerivativeDirections::Counter<gridDim> counter
-          = DerivativeDirections::countDynamicSpatialDerivativesInTuple<Wrt<Args...>, gridDim>(std::forward<Wrt<Args...>>(args));
+          = DerivativeDirections::countDynamicSpatialDerivativesInTuple<Wrt<Args...>, gridDim>(
+              std::forward<Wrt<Args...>>(args));
       constexpr DerivativeDirections::Counter<gridDim> counterExpr
           = DerivativeDirections::countInTuple<Wrt<Args...>, gridDim>();
       const int spatialIndex = DerivativeDirections::findSingleSpatial(counter.spatialDerivatives);

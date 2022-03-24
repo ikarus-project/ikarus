@@ -54,7 +54,8 @@ namespace Ikarus {
 
   private:
     Jacobian evaluateDerivativeWRTSpaceAllImpl(const AnsatzFunctionType& N, const AnsatzFunctionJacobian& dN) const {
-      return coeffsAsMat * dN;
+      return coeffsAsMat * dN.template cast<ctype >(); // The cast here is only necessary since the autodiff types are not working
+                                                       // otherwise, see Issue https://github.com/autodiff/autodiff/issues/73
     }
 
     JacobianColType evaluateDerivativeWRTSpaceSingleImpl(const AnsatzFunctionType&, const AnsatzFunctionJacobian& dN,
