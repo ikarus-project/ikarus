@@ -149,7 +149,10 @@ namespace Ikarus {
     using JacobianColType        = typename Traits::JacobianColType;
     using AnsatzFunctionJacobian = typename Traits::AnsatzFunctionJacobian;
     using CoeffDerivMatrix       = typename Traits::CoeffDerivMatrix;
+    /** \brief Matrix to transform the ansatz function Jacobian to world coordinates*/
+
     static constexpr int gridDim = Traits::gridDim;
+    using TransformMatrix        = Eigen::Matrix<double, gridDim, gridDim>;
 
     template <typename WrtType, int I>
     static constexpr bool hasCoeff = DerivativeDirections::HasCoeff<WrtType, gridDim, I>;
@@ -163,7 +166,7 @@ namespace Ikarus {
 
     /** \brief Return the function value at the i-th bound integration point*/
     FunctionReturnType evaluateFunction(long unsigned i) {
-      const auto& N = impl().basis.getFunction(i);
+      const auto& N = impl().basis.evaluateFunction(i);
       return impl().evaluateFunctionImpl(N);
     }
 
@@ -188,7 +191,7 @@ namespace Ikarus {
 
       // Check if a matrix is given to transform derivatives. Otherwise we do nothing
       if constexpr (sizeof...(TransformArgs) > 0) {
-        AnsatzFunctionJacobian dN = dNraw * std::get<0>(transArgs.args);
+        AnsatzFunctionJacobian dN = (dNraw * std::get<0>(transArgs.args)).eval();
         return tryCallSecondDerivativeWRTCoeffs(N, dN, std::get<0>(along.args), coeffsIndices.args);
       } else
         return tryCallSecondDerivativeWRTCoeffs(N, dNraw, std::get<0>(along.args), coeffsIndices.args);
@@ -250,8 +253,8 @@ namespace Ikarus {
         impl().basis.evaluateFunction(localOrIpId, N);
         return std::make_tuple(N, dN);
       } else if constexpr (std::numeric_limits<DomainTypeOrIntegrationPointIndex>::is_integer) {
-        const AnsatzFunctionJacobian& dN = impl().basis.getJacobian(localOrIpId);
-        const AnsatzFunctionType& N      = impl().basis.getFunction(localOrIpId);
+        const AnsatzFunctionJacobian& dN = impl().basis.evaluateJacobian(localOrIpId);
+        const AnsatzFunctionType& N      = impl().basis.evaluateFunction(localOrIpId);
         return std::make_tuple(std::ref(N), std::ref(dN));
       } else
         static_assert(std::is_same_v<DomainTypeOrIntegrationPointIndex,

@@ -5,10 +5,12 @@ This section explains the concept of local functions.
 Local functions are functions which are bound to single grid elements.
 Therefore they are constructed from some local basis and a coefficient vector.
 
-Usually local functions need to be evaluated in the local coordinate system $\mathbb{\xi} \in \mathbb{R}^n$:
+Usually local functions need to be evaluated in the local coordinate system \( \mathbb{\xi} \in \mathbb{R}^n \) :
+
 $$
 f: \boldsymbol{\xi}^n \rightarrow T_{\text{ref}}
 $$
+
 where $T_{\text{ref}}$ is the reference element, e.g. for a cube $T_{\text{ref}}= [0,1]^d$.
 ## Interface
 Local functions provide the following interface
@@ -20,7 +22,7 @@ auto evaluateDerivative(const unsigned int& integrationPointIndex,...);
 auto viewOverIntegrationPoints(); // (1)
 
 template <typename IntegrationRule, typename... Ints>
-void bind(IntegrationRule&& p_rule, Derivatives<Ints...>&& ints) { // (2)
+void bind(IntegrationRule&& p_rule, Derivatives<Ints...>&& ints); // (2)
 ```
 
 1. This return a vector of structs of the integration point and its index. Therefore the syntax is usually `#!cpp for (const auto& [gpIndex, gp] : localFunction.viewOverIntegrationPoints()) {...}`
@@ -34,6 +36,7 @@ In action this looks like
 
     ``` c++
     using namespace Ikarus::DerivativeDirections;
+    localFunction.bind(rule, bindDerivatives(0,1));    
     for(auto& [gpIndex, gp] : localFunction.viewOverIntegrationPoints()){
       localFunction.evaluateDerivative(gpIndex, wrt(spatialall)); // (1)
       localFunction.evaluateDerivative(gpIndex, wrt(spatialall), transformWith(Jinv)); // (2)
@@ -231,8 +234,62 @@ In the follwing table $N^i(\boldsymbol{\xi})$ are the ansatz functions.
 If you are interested in implementing your own local function we have prepared the file
 [`ikarus/LocalFunctions/LocalFunctionTemplate.h`](https://github.com/IkarusRepo/Ikarus/src/include/ikarus/LocalFunctions/LocalFunctionTemplate.h).
 
-You can copy the file rename the class to your preferred name and the implement the following functions
+You can copy the file rename the class to your preferred name and then implement the following functions. If you don't need a function you need to delete the corresponding function.
+Then if someone calls the corresponding derivative the call fails at compile time.
 
-{{ inputcpp('src/include/ikarus/LocalFunctions/LocalFunctionTemplate.h',true,57,107) }}
+```cpp
+Jacobian evaluateDerivativeWRTSpaceAllImpl(const AnsatzFunctionType& N, 
+                                           const AnsatzFunctionJacobian& dN) const {...} // (1)
+
+JacobianColType evaluateDerivativeWRTSpaceSingleImpl(const AnsatzFunctionType& N, 
+                                                     const AnsatzFunctionJacobian& dN,
+                                                     int spaceIndex) const {...} // (2)
+
+
+CoeffDerivMatrix evaluateDerivativeWRTCoeffsImpl(const AnsatzFunctionType& N,
+                                                 const AnsatzFunctionJacobian& dN,
+                                                 int coeffsIndex) const {...} // (3)
+
+CoeffDerivMatrix evaluateSecondDerivativeWRTCoeffs(const AnsatzFunctionType& N,
+                                                   const AnsatzFunctionJacobian&,
+                                                   const AlongType& along,
+                                                   const std::array<size_t, gridDim>& coeffsIndex) const {...} // (4)
+
+std::array<CoeffDerivMatrix, gridDim> 
+        evaluateDerivativeWRTCoeffsANDSpatialImpl(const AnsatzFunctionType& N, 
+                                                  const AnsatzFunctionJacobian& dN, 
+                                                  int coeffsIndex) const {...} // (5)
+
+
+CoeffDerivMatrix evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(const AnsatzFunctionType& N,
+                                                                 const AnsatzFunctionJacobian& dN,
+                                                                 const int coeffsIndex, 
+                                                                 const int spatialIndex) const {...} // (6)
+
+
+std::array<CoeffDerivMatrix, gridDim> 
+        evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialImpl(const AnsatzFunctionType& N, 
+                                                               const AnsatzFunctionJacobian& dN, 
+                                                               const AlongType& along,
+                                                               const std::array<size_t, gridDim>& coeffsIndex
+                                                               ) const {...} // (7)
+                                                                                             
+CoeffDerivMatrix 
+        evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialSingleImpl(const AnsatzFunctionType& N, 
+                                                                     const AnsatzFunctionJacobian& dN, 
+                                                                     const AlongType& along,
+                                                                     const std::array<size_t, gridDim>& coeffsIndex, c
+                                                                     const int spatialIndex) const {...} // (8)
+```
+
+1. This is called by `localFunction.evaluateDerivative(..., wrt(spatialall))`.
+2. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i)))`.
+3. This is called by `localFunction.evaluateDerivative(..., wrt(coeff))`.
+4. This is called by `localFunction.evaluateDerivative(..., wrt(coeff,coeff))`.
+5. This is called by `localFunction.evaluateDerivative(..., wrt(spatialall,coeff))`.
+6. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i),coeff))`.
+7. This is called by `localFunction.evaluateDerivative(..., wrt(spatialall,coeff,coeff))`.
+7. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i),coeff,coeff))`.
+
 
 \bibliography

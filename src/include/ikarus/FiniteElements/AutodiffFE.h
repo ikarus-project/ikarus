@@ -12,48 +12,12 @@
 namespace Ikarus {
   ////This element can not be used on its own but it should be inherited from
   //// The class constructor can only be called from the templated class.
-  template <typename RealElement>
-  class AutoDiffFE {
-  public:
-    template <typename LocalView, typename Derived>
-    static double calculateScalar(const LocalView& localView, const Eigen::MatrixBase<Derived>& d,
-                                  const double& lambda = 0) {
-      using namespace autodiff;
-      Eigen::Vector<double, Derived::RowsAtCompileTime> dx(localView.size());
-      return RealElement::calculateScalarImpl(localView, d, dx, lambda);
-    }
-
-    template <typename LocalView, typename Derived>
-    static auto calculateMatrix(const LocalView& localView, const Eigen::MatrixBase<Derived>& d,
-                                const double& lambda = 0) {
-      using namespace autodiff;
-      Eigen::Vector<dual2nd, Derived::RowsAtCompileTime> dx(localView.size());
-      dx.setZero();
-      auto f = [&](auto& x) { return RealElement::calculateScalarImpl(localView, d, x, lambda); };
-      return hessian(f, wrt(dx), at(dx));
-    }
-
-    template <typename LocalView, typename Derived>
-    static auto calculateVector(const LocalView& localView, const Eigen::MatrixBase<Derived>& d,
-                                const double& lambda = 0) {
-      using namespace autodiff;
-      Eigen::Vector<dual, Derived::RowsAtCompileTime> dx(localView.size());
-      dx.setZero();
-      auto f = [&](auto& x) { return RealElement::calculateScalarImpl(localView, d, x, lambda); };
-      return gradient(f, wrt(dx), at(dx));
-    }
-  };
-
-  template <typename RealElement, typename Basis, typename FERequirementTypeImpl = FErequirements<Eigen::VectorXd>>
+   template <typename RealElement, typename Basis, typename FERequirementTypeImpl = FErequirements<Eigen::VectorXd>>
   class AutoDiffFEClean {
   public:
     using LocalView = typename Basis::LocalView;
     using Traits    = TraitsFromLocalView<LocalView>;
-    explicit AutoDiffFEClean(const Basis& basis, const typename LocalView::Element& element) {
-      auto localView = basis.localView();
-      localView.bind(element);
-      localdofSize = localView.size();
-    }
+
     using FERequirementType = FErequirements<Eigen::VectorXd>;
     void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& h) const {
       Eigen::VectorXdual2nd dx(localdofSize);
@@ -88,6 +52,13 @@ namespace Ikarus {
     }
 
     size_t size() const { return localdofSize; }
+
+  protected:
+    explicit AutoDiffFEClean(const Basis& basis, const typename LocalView::Element& element) {
+      auto localView = basis.localView();
+      localView.bind(element);
+      localdofSize = localView.size();
+    }
 
   private:
     RealElement const& underlying() const  // CRTP
