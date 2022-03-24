@@ -14,8 +14,6 @@ decoupled from the task to provide physical meaning. The following content is on
 **description of the element geometry**. Details on 
 [the implementation of physical quantities can be found here](FiniteElements.md).
 
-
-
 On this page, we will go through it using the following example:
 ![umlDiagram](diagrams/UMLGrid.drawio)
 
@@ -30,90 +28,23 @@ which does this job.
 i.e. an object which can iterate over the grid. 
 
 ### Available grid implementations
-`SimpleGrid`: Currently the only available grid implementation. To construct it, use `SimpleGridFactory`,
- as a grid view use `SimpleGridView`.
-It has the following **capabilities**:
-
-- It is a template: `SimpleGrid<dim,wdim>` where `dim` is the dimension of the grid entities and 
-   `wdim` is the dimension of the world. Dimension of grid entity in this case means:
-    - dim=1: e.g. truss elements, beams (one element-internal coordinate xi exists)
-    - dim=2: e.g. plate elements (two element-internal coordinates xi and eta exist)
-    - dim=3: 3d elements
-- All meaningful combinations up to three dimensions can be instantiated, e.g. 
-  truss elements (dim=1) in 2d (wdim=2)
-- Different types of grid entities are supported in the same grid as long as they have the 
-  dimension specified by `dim` (for details on these types see TODO):
-    - dim=1: linearLine
-    - dim=2: linearTriangle, linearQuadrilateral
-    - dim=3: linearTetrahedron, pyramid, prism, linearHexahedron
-
-Some **restrictions** apply:
-
-- You can't insert grid entities of different dimensions into the same `SimpleGrid`
-- Other types than the ones mentioned above are not supported
-- The world dimension is limited to 3.
+All grids that satisfy the dune::grid interface can be used. For an overview of the available dune::grids, we refer to [link](https://www.dune-project.org/doc/grids/).
+Additionally there exists an iga grid [dune-iga](https://github.com/rath3t/dune-iga).
 
 ## Grid entity
-A grid entity provides all information related to the element geometry. 
-
-### Interface of grid entity
-
-A grid entity has the following properties: 
-
-- `geometry()`: returns the geometrical realization, i.e. an object that satisfies the
-   geometry interface. Further details about this interface and what the returned object is able to do
-  can be found on the [geometry theory page](theoryGeometry.md).
-- `type()`: returns the geometrical type, e.g. it can be a vertex, a linear line 
-   defined by two point or a quadrilateral with linear edges. 
-   The difference between `type()` and `geometry()` is that `type()` only returns a name whereas
-   `geometry()` returns an object with functionality.
-- `vertices(gridEntity)`, `edges(gridEntity)`, `surfaces(gridEntity)` and `volumes(gridEntity)`:
-   Each entity has sub-entities of lower dimension. In the example above, surface S1 has the following
-   sub-entities: four edges (number 1,2,4,6) and four vertices (number 1,2,4,5). `vertices(S1)`
-   returns a span of vertices. The other functions work similarly.
-- `entities(gridEntity, dimension)` does the same as the functions above, i.e.
-    - `entities(gridEntity, 0)` does the same as `vertices(gridEntity)`.
-    - `entities(gridEntity, 1)` does the same as `edges(gridEntity)`.
-    - ...
-- `subEntities(codimension)` returns the number of subentities. Codimension in this case is the dimension
-   of the grid entity minus the dimension of the requested subentity. Example: The grid entity 
-   is a 3d volume. subEntities(1) returns the number of surfaces of this volume because codimension=1
-   means your query is about the subentities one dimension lower than the object itself.
-- `getID()`: returns a unique identifier
-
-
-### Implementation of grid entity
-There is currently one implementation of the GridEntity interface available, which is `DefaultGridEntity`. It is
-supposed to be used together with the grid implementation `SimpleGrid`.
-```cpp
-  template <int griddim, int cogriddim, int wdim>
-  class DefaultGridEntity {
-    // ...
-  };
-```
-It is based on three template parameters `griddim`(dimension of the grid), `cogriddim`(???) and 
-`wdim`(dimension of the world).
+For the interface of grid entities we refer to [@sander2020dune] Chapter 5.3.
 
 ## Grid factory
 To construct a grid, a grid factory can be used. To construct a grid, vertices and element
 definitions are inserted into the factory. The grid is then constructed by the `createGrid()` function.
 
 ### Interface of the grid factory
-
-- `insertVertex(Eigen::Vector<double, dimensionworld>)`: Vertices are inserted as a Eigen::Vector
-  of double. Its size is equal to the dimensions of the world (e.g. 2 if it is a 2d simulation etc.)
-- `insertElement(Ikarus::GeometryType type, std::span<size_t> vertices)`: An element is defined
- by its geometrical type and the vertex numbers. For the ordering of the node numbers, see ToDo
-
-### Implementation of grid factory
-`SimpleGridFactory`: Constructs a `SimpleGrid`. The same restrictions apply as stated above for `SimpleGrid`. 
-
+- `insertVertex(const Dune::FieldVector<double, dimensionworld>&)`: Vertices are inserted as a Dune::FieldVector
+  of doubles. Its size is equal to the dimensions of the world (e.g. 2 if it is a 2d simulation etc.)
+- `insertElement(Dune::GeometryType type, std::span<size_t> vertices)`: An element is defined
+ by its geometrical type and the vertex numbers. For the ordering of the node numbers, see [@sander2020dune] Fig. 5.13.
 
 ## Grid view
-
-
-### Interface of grid view
-
 The interface of a grid view consists of four free functions. Each of them provides a span of
 certain grid objects:
 
@@ -122,6 +53,4 @@ certain grid objects:
 - `surfaces(GridView)`: returns a span of all surfaces in this grid
 - `volumes(GridView)`: returns a span of all volumes in this grid
 
-### Implementation of grid view
-
-`SimpleGridView`: Provides iterators for `SimpleGrid`.
+\bibliography

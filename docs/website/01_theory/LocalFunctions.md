@@ -149,6 +149,10 @@ $$
 \frac{\partial^2 ([\operatorname{grad}_\boldsymbol{x} f(\boldsymbol{\xi})]_{ij} q_i )}{\partial \boldsymbol{x}_k\partial \boldsymbol{x}_l}.
 $$
 
+
+!!! warning "Warning"
+    Currently only first order spatial derivatives and second order derivatives w.r.t. the coefficients are supported.
+
 ## Example Dirichlet energy
 This examples shows how the energy, gradient and Hessian of a [dirichlet energy](https://en.wikipedia.org/wiki/Dirichlet_energy) can be calculated.
 $$

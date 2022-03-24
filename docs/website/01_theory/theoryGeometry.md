@@ -1,13 +1,6 @@
-# Geometry type and description
+# Geometry
 
-## Geometry type
-## Geometry description
-As described in the [interface of the grid entity on the grid theory page](theoryGrid.md#interface-of-grid-entity),
-a grid entity has to be able to provide a geometry description, i.e. it has to
-return an object which satisfies the geometry interface described below.
+For the notion of geometry of the grid entities we rely on the definitions of dune. For details, see
+[@sander2020dune] Chapter 5.3.
 
-### Geometry interface
-ToDo: description of the geometry interface
-
-### Geometry implementation
-ToDo: description of the available implementations
+\bibliography
