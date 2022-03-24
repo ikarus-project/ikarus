@@ -265,7 +265,6 @@ namespace Ikarus::FiniteElements {
           = vectorPotLocalFunction.evaluateDerivative(gp, wrt(spatialall), transformWith(Jinv));
 
       const Eigen::Vector<double, 3> curlA(gradA(0, 1), -gradA(0, 0), 0);
-      const double divA                             = 0;
       const Eigen::Vector<double, directorDim> Hbar = volumeLoad(toEigenVector(gp), lambda);
       switch (res.resType) {
         case ResultType::gradientNormOfMagnetization:

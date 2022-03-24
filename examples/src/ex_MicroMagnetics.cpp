@@ -130,13 +130,8 @@ int main(int argc, char** argv) {
   Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basisRieC, Dune::Indices::_1),
                                       [&](auto&& globalIndex) { dirichletFlags[globalIndex[0]] = true; });
 
-  assert(aBlocked.size() == gridView.size(2));
-  assert(mBlocked.size() == gridView.size(2));
-  std::cout << "CP1" << std::endl;
-
   auto denseAssembler  = DenseFlatAssembler(basisRieC, fes, dirichletFlags);
   auto sparseAssembler = SparseFlatAssembler(basisRieC, fes, dirichletFlags);
-  std::cout << "CP2" << std::endl;
   double lambda = 1.0;
 
 
@@ -160,7 +155,7 @@ int main(int argc, char** argv) {
     req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
     return denseAssembler.getScalar(req);
   };
-  std::cout << "CP3" << std::endl;
+
   //  auto& h = hessianFunction(mAndABlocked, lambda);
   //    std::cout <<"hbig"<< h << std::endl;
   //
@@ -181,14 +176,10 @@ int main(int argc, char** argv) {
     auto dFull = denseAssembler.createFullVector(d);
     multiTypeVector += dFull;
   });
-  std::cout << "CP5" << std::endl;
+
   checkGradient(nonLinOp, true, updateFunction);
-  std::cout << "CP6" << std::endl;
   checkHessian(nonLinOp, true, updateFunction);
-  std::cout << "CP7" << std::endl;
-  //  if (not Dune::FloatCmp::eq(nonLinOp.value(), e)) throw std::logic_error("Dune::FloatCmp::eq(nonLinOp.value(),
-  //  e)"); if (not nonLinOp.derivative().isApprox(g)) throw std::logic_error("nonLinOp.derivative().isApprox(g)"); if
-  //  (not nonLinOp.secondDerivative().isApprox(h)) throw std::logic_error("nonLinOp.secondDerivative().isApprox(h)");
+
 
   auto nr = Ikarus::makeTrustRegion(nonLinOp, updateFunction);
 //  auto nr = Ikarus::makeTrustRegion< decltype(nonLinOp),PreConditioner::DiagonalPreconditioner>(nonLinOp, updateFunction);
@@ -201,10 +192,6 @@ int main(int argc, char** argv) {
              .Delta0    = 1000});
 
   auto lc = Ikarus::LoadControl(nr, 1, {0, 100000});
-
-  //  lc.subscribeAll(vtkWriter);
-  std::cout << "Energy before: " << nonLinOp.value() << std::endl;
-  std::cout << "Energy after: " << nonLinOp.value() << std::endl;
 
   auto scalarMagnBasis = makeBasis(gridView, lagrange<magnetizationOrder>());
   auto localViewScalarMagnBasis = scalarMagnBasis.localView();
@@ -230,8 +217,7 @@ int main(int argc, char** argv) {
     std::vector<double> gradMEvaluatedAtNodes(basisRieC.size());
     auto ele = gridView.template begin<0>();
     Eigen::VectorXd result;
-    for (size_t j=0; j< fes.size(); ++j) {
-      const auto& fe = fes[j];
+    for (auto & fe : fes) {
       localViewScalarMagnBasis.bind(*ele);
       for (int c = 0; c < ele->geometry().corners(); ++c) {
         auto coord = toEigenVector(ele->geometry().corner(c));
