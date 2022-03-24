@@ -74,7 +74,7 @@ namespace Ikarus {
     CoeffDerivMatrix evaluateSecondDerivativeWRTCoeffs(const AnsatzFunctionType& N,
                                                        [[maybe_unused]] const AnsatzFunctionJacobian&,
                                                        const AlongType& along,
-                                                       const std::array<size_t, gridDim>& coeffsIndex) const {
+                                                       const std::array<size_t, 2>& coeffsIndex) const {
       return CoeffDerivMatrix();
     }
 
@@ -83,7 +83,7 @@ namespace Ikarus {
       return std::array<CoeffDerivMatrix, gridDim>();
     }
 
-    auto evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(const AnsatzFunctionType& N,
+    CoeffDerivMatrix evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(const AnsatzFunctionType& N,
                                                          [[maybe_unused]] const AnsatzFunctionJacobian& dN,
                                                          int coeffsIndex, const int spatialIndex) const {
       return CoeffDerivMatrix();
@@ -91,13 +91,13 @@ namespace Ikarus {
 
     std::array<CoeffDerivMatrix, gridDim> evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialImpl(
         const AnsatzFunctionType& N, [[maybe_unused]] const AnsatzFunctionJacobian& dN, const AlongType& along,
-        const std::array<size_t, gridDim>& coeffsIndex) const {
+        const std::array<size_t, 2>& coeffsIndex) const {
       return std::array<CoeffDerivMatrix, gridDim>();
     }
 
     CoeffDerivMatrix evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialSingleImpl(
         const AnsatzFunctionType& N, [[maybe_unused]] const AnsatzFunctionJacobian& dN, const AlongType& along,
-        const std::array<size_t, gridDim>& coeffsIndex, const int spatialIndex) const {
+        const std::array<size_t, 2>& coeffsIndex, const int spatialIndex) const {
       return CoeffDerivMatrix();
     }
 

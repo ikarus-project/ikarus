@@ -51,8 +51,6 @@ namespace Ikarus {
     using AnsatzFunctionType = typename Traits::AnsatzFunctionType;
     /** \brief Type for the Jacobian of the ansatz function values */
     using AnsatzFunctionJacobian = typename Traits::AnsatzFunctionJacobian;
-    /** \brief Matrix to transform the ansatz function Jacobian to world coordinates*/
-    using TransformMatrix = typename Traits::TransformMatrix;
 
     auto& coefficientsRef() { return coeffs; }
 
@@ -107,7 +105,7 @@ namespace Ikarus {
     CoeffDerivMatrix evaluateSecondDerivativeWRTCoeffs(const AnsatzFunctionType& N,
                                                        [[maybe_unused]] const AnsatzFunctionJacobian&,
                                                        const AlongType& along,
-                                                       const std::array<size_t, gridDim>& coeffsIndex) const {
+                                                       const std::array<size_t, 2>& coeffsIndex) const {
       const GlobalE valE = evaluateEmbeddingFunctionImpl(N);
       return tryToCallSecondDerivativeOfProjectionWRTposition(valE, along) * N[coeffsIndex[0]] * N[coeffsIndex[1]];
     }
@@ -127,7 +125,7 @@ namespace Ikarus {
       return Warray;
     }
 
-    auto evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(const AnsatzFunctionType& N,
+    CoeffDerivMatrix evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(const AnsatzFunctionType& N,
                                                          [[maybe_unused]] const AnsatzFunctionJacobian& dN,
                                                          int coeffsIndex, const int spatialIndex) const {
       const GlobalE valE         = evaluateEmbeddingFunctionImpl(N);
@@ -143,7 +141,7 @@ namespace Ikarus {
     auto evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialImpl(const AnsatzFunctionType& N,
                                                                 [[maybe_unused]] const AnsatzFunctionJacobian& dN,
                                                                 const AlongType& along,
-                                                                const std::array<size_t, gridDim>& coeffsIndex) const {
+                                                                const std::array<size_t, 2>& coeffsIndex) const {
       const GlobalE valE       = evaluateEmbeddingFunctionImpl(N);
       const Jacobian J         = evaluateEmbeddingJacobianImpl(dN);
       const CoeffDerivMatrix S = tryToCallSecondDerivativeOfProjectionWRTposition(valE, along);
@@ -163,7 +161,7 @@ namespace Ikarus {
     auto evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialSingleImpl(const AnsatzFunctionType& N,
                                                                       [[maybe_unused]] const AnsatzFunctionJacobian& dN,
                                                                       const AlongType& along,
-                                                                      const std::array<size_t, gridDim>& coeffsIndex,
+                                                                      const std::array<size_t, 2>& coeffsIndex,
                                                                       const int spatialIndex) const {
       const GlobalE valE       = evaluateEmbeddingFunctionImpl(N);
       const Jacobian J         = evaluateEmbeddingJacobianImpl(dN);
@@ -202,28 +200,26 @@ namespace Ikarus {
 
   template <typename DuneBasis, typename CoeffContainer>
   struct LocalFunctionTraits<ProjectionBasedLocalFunction<DuneBasis, CoeffContainer>> {
-      /** \brief Type used for coordinates */
-      using ctype    = typename CoeffContainer::value_type::ctype;
-      /** \brief Dimension of the coeffs */
-      static constexpr int valueSize = CoeffContainer::value_type::valueSize;
-      /** \brief Dimension of the grid */
-      static constexpr int gridDim = Ikarus::LocalBasis<DuneBasis>::gridDim;
-      /** \brief Type for the return value */
-      using FunctionReturnType = typename CoeffContainer::value_type;
-      /** \brief Type for the Jacobian matrix */
-      using Jacobian               = Eigen::Matrix<ctype, valueSize, gridDim>;
-      /** \brief Type for the derivatives wrt. the coeffiecients */
-      using CoeffDerivMatrix       = Eigen::Matrix<ctype, valueSize,valueSize>;
-      /** \brief Type for the Jacobian of the ansatz function values */
-      using AnsatzFunctionJacobian = typename Ikarus::LocalBasis<DuneBasis>::JacobianType;
-      /** \brief Type for ansatz function values */
-      using AnsatzFunctionType     = typename Ikarus::LocalBasis<DuneBasis>::AnsatzFunctionType;
-      /** \brief Type for the points for evaluation, usually the integration points */
-      using DomainType             = typename DuneBasis::Traits::DomainType;
-      /** \brief Matrix to transform the ansatz function Jacobian to world coordinates*/
-      using TransformMatrix        = Eigen::Matrix<ctype, gridDim, gridDim>;
-      /** \brief Type for a column of the Jacobian matrix */
-      using JacobianColType        = typename Eigen::internal::plain_col_type<Jacobian>::type;
+    /** \brief Type used for coordinates */
+    using ctype = typename CoeffContainer::value_type::ctype;
+    /** \brief Dimension of the coeffs */
+    static constexpr int valueSize = CoeffContainer::value_type::valueSize;
+    /** \brief Dimension of the grid */
+    static constexpr int gridDim = Ikarus::LocalBasis<DuneBasis>::gridDim;
+    /** \brief Type for the return value */
+    using FunctionReturnType = typename CoeffContainer::value_type;
+    /** \brief Type for the Jacobian matrix */
+    using Jacobian = Eigen::Matrix<ctype, valueSize, gridDim>;
+    /** \brief Type for the derivatives wrt. the coeffiecients */
+    using CoeffDerivMatrix = Eigen::Matrix<ctype, valueSize, valueSize>;
+    /** \brief Type for the Jacobian of the ansatz function values */
+    using AnsatzFunctionJacobian = typename Ikarus::LocalBasis<DuneBasis>::JacobianType;
+    /** \brief Type for ansatz function values */
+    using AnsatzFunctionType = typename Ikarus::LocalBasis<DuneBasis>::AnsatzFunctionType;
+    /** \brief Type for the points for evaluation, usually the integration points */
+    using DomainType = typename DuneBasis::Traits::DomainType;
+    /** \brief Type for a column of the Jacobian matrix */
+    using JacobianColType = typename Eigen::internal::plain_col_type<Jacobian>::type;
   };
 
 }  // namespace Ikarus

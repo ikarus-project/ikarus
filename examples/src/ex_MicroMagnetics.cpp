@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
     const double Lx   = sizedom1;
     const double Ly   = sizedom2;
     const double Lz   = sizedom2;
-    const size_t elex = 5;
+    const size_t elex = 1000;
     const size_t eley = elex/2;
     const size_t elez = 1;
 

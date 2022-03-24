@@ -79,8 +79,7 @@ namespace Ikarus::FiniteElements {
     ScalarType calculateScalarImpl(const FERequirementType& par, Eigen::VectorX<ScalarType>& dx) const {
       const auto& d      = par.sols[0].get();
       const auto& lambda = par.parameter.at(FEParameter::loadfactor);
-      Eigen::VectorX<ScalarType> localDisp(localView_.size());
-      localDisp.setZero();
+
       auto& first_child = localView_.tree().child(0);
       const auto& fe    = first_child.finiteElement();
       Dune::BlockVector<Ikarus::RealTuple<ScalarType, Traits::dimension>> disp(fe.size());
@@ -99,16 +98,16 @@ namespace Ikarus::FiniteElements {
       C(2, 2)           = (1 - nu_) / 2;
       C *= emod_ / (1 - nu_ * nu_);
       const auto geo = localView_.element().geometry();
-      Ikarus::StandardLocalFunction uFunction(localBasis,disp)  ;
+      Ikarus::StandardLocalFunction uFunction(localBasis,disp);
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints() ) {
         const auto J = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
         const auto u = uFunction.evaluateFunction(gpIndex).getValue();
         const auto H      = uFunction.evaluateDerivative(gpIndex, wrt(DerivativeDirections::spatialall), transformWith(J.inverse().eval()));
-        const auto E      = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
-        const auto EVoigt = toVoigt(E);
+//        const auto E      = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
+//        const auto EVoigt = toVoigt(E);
 
-        Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(toEigenVector(gp.position()), lambda);
-        energy += (0.5 * EVoigt.dot(C * EVoigt) - u.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
+//        Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(toEigenVector(gp.position()), lambda);
+//        energy += (0.5 * EVoigt.dot(C * EVoigt) - u.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
       }
       return energy;
     }

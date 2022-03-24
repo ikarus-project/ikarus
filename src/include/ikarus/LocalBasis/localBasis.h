@@ -88,12 +88,12 @@ namespace Ikarus {
       }
     }
 
-    const auto& getFunction(long unsigned i) const {
+    const auto& evaluateFunction(long unsigned i) const {
       if (not Nbound) throw std::logic_error("You have to bind the basis first");
       return Nbound.value()[i];
     }
 
-    const auto& getJacobian(long unsigned i) const {
+    const auto& evaluateJacobian(long unsigned i) const {
       if (not dNbound) throw std::logic_error("You have to bind the basis first");
       return dNbound.value()[i];
     }

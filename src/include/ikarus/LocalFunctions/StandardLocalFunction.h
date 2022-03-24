@@ -49,8 +49,6 @@ namespace Ikarus {
     using AnsatzFunctionType = typename Traits::AnsatzFunctionType;
     /** \brief Type for the Jacobian of the ansatz function values */
     using AnsatzFunctionJacobian = typename Traits::AnsatzFunctionJacobian;
-    /** \brief Matrix to transform the ansatz function Jacobian to world coordinates*/
-    using TransformMatrix = typename Traits::TransformMatrix;
 
     auto& coefficientsRef() { return coeffs; }
 
@@ -64,7 +62,7 @@ namespace Ikarus {
       return coeffsAsMat * dN.col(spaceIndex);
     }
 
-    auto evaluateDerivativeWRTCoeffsImpl(const AnsatzFunctionType& N, [[maybe_unused]] const AnsatzFunctionJacobian&,
+    CoeffDerivMatrix evaluateDerivativeWRTCoeffsImpl(const AnsatzFunctionType& N, [[maybe_unused]] const AnsatzFunctionJacobian&,
                                          int coeffsIndex) const {
       CoeffDerivMatrix mat;
       mat.setIdentity(valueSize);
@@ -72,7 +70,7 @@ namespace Ikarus {
       return mat;
     }
 
-    auto evaluateDerivativeWRTCoeffsANDSpatialImpl(const AnsatzFunctionType& N,
+    std::array<CoeffDerivMatrix, gridDim> evaluateDerivativeWRTCoeffsANDSpatialImpl(const AnsatzFunctionType& N,
                                                    [[maybe_unused]] const AnsatzFunctionJacobian& dN,
                                                    int coeffsIndex) const {
       std::array<CoeffDerivMatrix, gridDim> Warray;
@@ -84,7 +82,7 @@ namespace Ikarus {
       return Warray;
     }
 
-    auto evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(const AnsatzFunctionType& N,
+    CoeffDerivMatrix evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(const AnsatzFunctionType& N,
                                                          [[maybe_unused]] const AnsatzFunctionJacobian& dN,
                                                          int coeffsIndex, const int spatialIndex) const {
       CoeffDerivMatrix W;
@@ -125,8 +123,6 @@ namespace Ikarus {
     using AnsatzFunctionType     = typename Ikarus::LocalBasis<DuneBasis>::AnsatzFunctionType;
     /** \brief Type for the points for evaluation, usually the integration points */
     using DomainType             = typename DuneBasis::Traits::DomainType;
-    /** \brief Matrix to transform the ansatz function Jacobian to world coordinates*/
-    using TransformMatrix        = Eigen::Matrix<ctype, gridDim, gridDim>;
     /** \brief Type for a column of the Jacobian matrix */
     using JacobianColType        = typename Eigen::internal::plain_col_type<Jacobian>::type;
   };
