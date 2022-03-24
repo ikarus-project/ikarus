@@ -374,8 +374,21 @@ namespace Ikarus {
 
     void solveInnerProblem() {
       truncatedConjugateGradient.setInfo(innerInfo);
+      int attempts = 0;
       truncatedConjugateGradient.factorize(hessian());
-//      std::cout<<hessian()<<std::endl;
+      // If the preconditioner is IncompleteCholesky the factorization may fail if we have negative diagonal entries and
+      // the initial shift is too small. Therefore, if the factorization fails we increase the intial shift by a factor
+      // of 5.
+      if constexpr (preConditioner == PreConditioner::IncompleteCholesky) {
+        while (truncatedConjugateGradient.info() != Eigen::Success) {
+          choleskyInitialShift *= 5;
+          truncatedConjugateGradient.preconditioner().setInitialShift(choleskyInitialShift);
+          truncatedConjugateGradient.factorize(hessian());
+          if (attempts > 5) throw std::logic_error("Factorization of preconditioner failed!");
+          ++attempts;
+        }
+        if (truncatedConjugateGradient.info() == Eigen::Success) choleskyInitialShift = 1e-3;
+      }
       eta       = truncatedConjugateGradient.solveWithGuess(-gradient(), eta);
       innerInfo = truncatedConjugateGradient.getInfo();
     }
@@ -387,6 +400,7 @@ namespace Ikarus {
     UpdateType Heta;
     Options options;
     AlgoInfo info;
+    double choleskyInitialShift = 1e-3;
     Eigen::TCGInfo<double> innerInfo;
     Stats stats;
     static constexpr double eps = 0.0001220703125;  // 0.0001220703125 is sqrt(sqrt(maschine-precision))

@@ -54,8 +54,8 @@ int main(int argc, char** argv) {
     const double Lx   = sizedom1;
     const double Ly   = sizedom2;
     const double Lz   = sizedom2;
-    const size_t elex = 2;
-    const size_t eley = 2;
+    const size_t elex = 5;
+    const size_t eley = elex/2;
     const size_t elez = 1;
 
     Dune::FieldVector<double, gridDim> bbox;
@@ -119,7 +119,7 @@ int main(int argc, char** argv) {
 
   VectorPotVector aBlocked(basisEmbeddedC.size({Dune::Indices::_1}));
   for (auto& asingle : aBlocked) {
-    asingle.setValue(Eigen::Vector<double, vectorPotDim>::Random());
+    asingle.setValue(Eigen::Vector<double, vectorPotDim>::Zero());
   }
 
   MultiTypeVector mAndABlocked(mBlocked, aBlocked);
@@ -129,16 +129,16 @@ int main(int argc, char** argv) {
   // Fix vector potential on the whole boundary
   Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basisRieC, Dune::Indices::_1),
                                       [&](auto&& globalIndex) { dirichletFlags[globalIndex[0]] = true; });
-  std::cout << "===========" << std::endl;
-  Ikarus::utils::printContent(dirichletFlags);
-  std::cout << "===========" << std::endl;
+
   assert(aBlocked.size() == gridView.size(2));
   assert(mBlocked.size() == gridView.size(2));
+  std::cout << "CP1" << std::endl;
 
   auto denseAssembler  = DenseFlatAssembler(basisRieC, fes, dirichletFlags);
   auto sparseAssembler = SparseFlatAssembler(basisRieC, fes, dirichletFlags);
-
+  std::cout << "CP2" << std::endl;
   double lambda = 1.0;
+
 
   auto residualFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
     Ikarus::FErequirements<MultiTypeVector> req;
@@ -160,7 +160,7 @@ int main(int argc, char** argv) {
     req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
     return denseAssembler.getScalar(req);
   };
-
+  std::cout << "CP3" << std::endl;
   //  auto& h = hessianFunction(mAndABlocked, lambda);
   //    std::cout <<"hbig"<< h << std::endl;
   //
@@ -176,20 +176,22 @@ int main(int argc, char** argv) {
 
   auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, residualFunction, hessianFunction),
                                             parameter(mAndABlocked, lambda));
-
+  std::cout << "CP4" << std::endl;
   auto updateFunction = std::function([&](MultiTypeVector& multiTypeVector, const Eigen::VectorXd& d) {
     auto dFull = denseAssembler.createFullVector(d);
     multiTypeVector += dFull;
   });
-
+  std::cout << "CP5" << std::endl;
   checkGradient(nonLinOp, true, updateFunction);
+  std::cout << "CP6" << std::endl;
   checkHessian(nonLinOp, true, updateFunction);
-
+  std::cout << "CP7" << std::endl;
   //  if (not Dune::FloatCmp::eq(nonLinOp.value(), e)) throw std::logic_error("Dune::FloatCmp::eq(nonLinOp.value(),
   //  e)"); if (not nonLinOp.derivative().isApprox(g)) throw std::logic_error("nonLinOp.derivative().isApprox(g)"); if
   //  (not nonLinOp.secondDerivative().isApprox(h)) throw std::logic_error("nonLinOp.secondDerivative().isApprox(h)");
 
-  auto nr = Ikarus::makeTrustRegion< decltype(nonLinOp),PreConditioner::DiagonalPreconditioner>(nonLinOp, updateFunction);
+  auto nr = Ikarus::makeTrustRegion(nonLinOp, updateFunction);
+//  auto nr = Ikarus::makeTrustRegion< decltype(nonLinOp),PreConditioner::DiagonalPreconditioner>(nonLinOp, updateFunction);
   nr->setup({.verbosity = 1,
              .maxiter   = 100000,
              .grad_tol  = 1e-8,
