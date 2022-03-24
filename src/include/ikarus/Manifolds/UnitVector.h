@@ -88,9 +88,7 @@ namespace Ikarus::Manifold {
 
     static Eigen::Matrix<ctype, valueSize, valueSize> derivativeOfProjectionWRTposition(
         const Eigen::Vector<ctype, valueSize> &p) {
-      const ctype normSquared                  = p.squaredNorm();
-      using std::sqrt;
-      const ctype norm                         = sqrt(normSquared);
+      const ctype norm                  = p.norm();
       const Eigen::Vector<ctype, valueSize> pN = p / norm;
 
       Eigen::Matrix<ctype, valueSize, valueSize> result
@@ -102,7 +100,7 @@ namespace Ikarus::Manifold {
     template<typename Derived>
     static Eigen::Matrix<ctype, valueSize, valueSize> secondDerivativeOfProjectionWRTposition(
         const Eigen::Vector<ctype, valueSize> &p, const Eigen::MatrixBase<Derived> &along) {
-      const ctype normSquared                  = p.squaredNorm();
+      const ctype normSquared                  = p.norm();
       using std::sqrt;
       const ctype norm                         = sqrt(normSquared);
       const Eigen::Vector<ctype, valueSize> pN = p / norm;

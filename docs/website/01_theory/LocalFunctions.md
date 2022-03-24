@@ -30,26 +30,31 @@ The "..." in the `evaluateDerivative` function call are several variadic templat
 In action this looks like
 
 
+=== "Usage with integration point index"
+
+    ``` c++
+    using namespace Ikarus::DerivativeDirections;
+    for(auto& [gpIndex, gp] : localFunction.viewOverIntegrationPoints()){
+      localFunction.evaluateDerivative(gpIndex, wrt(spatialall)); // (1)
+      localFunction.evaluateDerivative(gpIndex, wrt(spatialall), transformWith(Jinv)); // (2)
+    }
+    ```
+
+    1. Compute the spatial Jacobian of localFunction
+    2. Compute the spatial Jacobian of localFunction and transform it to physical coordinates
+
 === "using integration point coordinates"
 
-``` c++
-using namespace Ikarus::DerivativeDirections;
-localFunction.evaluateDerivative(gpIndex, wrt(spatialall)); // (1)
-localFunction.evaluateDerivative(gpIndex, wrt(spatialall), transformWith(Jinv)); // (2)
-```
-1. Compute the spatial Jacobian of localFunction
-2. Compute the spatial Jacobian of localFunction and transform it to physical coordinates
+    ``` c++
+    using namespace Ikarus::DerivativeDirections;
+    for(auto& gp : rule){
+      localFunction.evaluateDerivative(gp.position(), wrt(spatialall)); // (1)
+      localFunction.evaluateDerivative(gp.position(), wrt(spatialall), transformWith(Jinv)); // (2)
+    }
+    ```
 
-=== "using integration point index"
-
-``` c++
-using namespace Ikarus::DerivativeDirections;
-localFunction.evaluateDerivative(gp.position(), wrt(spatialall)); // (1)
-localFunction.evaluateDerivative(gp.position(), wrt(spatialall), transformWith(Jinv)); // (2)
-```
-
-1. Compute the spatial Jacobian of localFunction
-2. Compute the spatial Jacobian of localFunction and transform it to physical coordinates
+    1. Compute the spatial Jacobian of localFunction
+    2. Compute the spatial Jacobian of localFunction and transform it to physical coordinates
 
 where the first call implements
 
@@ -67,17 +72,15 @@ $$
 where $J$ is the Jacobian of the mapping from the reference element $T_{\text{ref}}$ to the element living in physical space $T$.
 For details see [@sander2020dune] page 22.
 
-Instead of passing `spatialall` to `wrt(..)`, there are other helper such
+Instead of passing `spatialall` to `wrt(..)`, there are other helper such as
 
 ```cpp
-localFunction.evaluateDerivative(gpIndex, wrt(spatial0)); // (1) 
-localFunction.evaluateDerivative(gpIndex, wrt(spatial1)); // (2)
-localFunction.evaluateDerivative(gpIndex, wrt(spatial<n>{})); // (3)
+localFunction.evaluateDerivative(gpIndex, wrt(spatial(0))); // (1) 
+localFunction.evaluateDerivative(gpIndex, wrt(spatial(1))); // (2)
 ```
 
 1. Compute the first column of the spatial Jacobian of localFunction
 2. Compute the second column of the spatial Jacobian of localFunction
-3. Compute the n column of the spatial Jacobian of localFunction
 
 which can also be combined with `transformWith(Jinv)`.
 
@@ -85,38 +88,53 @@ which can also be combined with `transformWith(Jinv)`.
 ```cpp
 localFunction.evaluateDerivative(gpIndex, wrt(coeffs), coeffIndices(j));
 ```
-which implements for simple interpolation in vector space valued functions $f(\boldsymbol{\xi}) = \sum_{i=1}^n N^i(\boldsymbol{\xi}) \boldsymbol{x}_i$
+which implements for simple interpolation in vector space valued functions,e.g. $f(\boldsymbol{\xi}) = \sum_{I=1}^n N^I(\boldsymbol{\xi}) \boldsymbol{x}_I$ the following
 
 $$
- \frac{\partial f(\boldsymbol{\xi})}{\partial \boldsymbol{x}_j}
+[\boldsymbol{A}]_{ij}  = A_{ij} =  \frac{\partial f_i(\boldsymbol{\xi})}{\partial \boldsymbol{x}_j}
 $$
+
+and the second derivative
 
 ```cpp
 localFunction.evaluateDerivative(gpIndex, wrt(coeffs,coeffs), along(q), coeffIndices(j,k));
 ```
 
 $$
-\frac{\partial^2 (\boldsymbol{q} \cdot f(\boldsymbol{\xi}))}{\partial \boldsymbol{x}_j\partial \boldsymbol{x}_k}
+[\boldsymbol{B}]_{jk} =  B_{jk} = q_i A_{ijk} =  \frac{\partial^2 (q_i  f_i(\boldsymbol{\xi}))}{\partial \boldsymbol{x}_j\partial \boldsymbol{x}_k}
 $$
 
-where $\boldsymbol{q}$ is an arbitrary vector of the same size as $f$, i.e. it is the direction of the derivative in this case. If we would not pass the vector the result would be a third order tensor for a vector valued function $f$.
+where $\boldsymbol{q}$ is an arbitrary vector of the same size as $f$, i.e. it is the direction of the derivative in this case. $ \boldsymbol{A} $ and $ \boldsymbol{B} $ is simply the returned matrix and they do not have a special meaning. If we would not pass the vector the result would be a third order tensor for a vector valued function $f$.
 Therefore the simply return a matrix. This helps for readablilty and for speed. See the [example](#example-dirichlet-energy) for details.
 ## Derivatives w.r.t. coefficients and spatial derivatives
 Spatial derivatives and derivatives w.r.t. the coefficients can be combined. Therefore, it is legal to call
 
 ```cpp
-localFunction.evaluateDerivative(gpIndex, wrt(coeffs,coeffs,spatialall), along(q), coeffIndices(j,k));
-localFunction.evaluateDerivative(gpIndex, wrt(coeffs,coeffs,spatial0), along(q), coeffIndices(j,k));
-localFunction.evaluateDerivative(gpIndex, wrt(coeffs,coeffs,spatial1), along(q), coeffIndices(j,k));
+auto B = localFunction.evaluateDerivative(gpIndex, wrt(coeffs,coeffs,spatialall), along(q), coeffIndices(j,k));
+auto B0 = localFunction.evaluateDerivative(gpIndex, wrt(coeffs,coeffs,spatial(0)), along(q), coeffIndices(j,k));
+auto B1 = localFunction.evaluateDerivative(gpIndex, wrt(coeffs,coeffs,spatial(1)), along(q), coeffIndices(j,k));
 ```
 
 The first line is then equivalent to
 
 $$
-\frac{\partial^2 (\operatorname{grad}_\boldsymbol{\xi} f(\boldsymbol{\xi}) \boldsymbol{q} )}{\partial \boldsymbol{x}_j\partial \boldsymbol{x}_k}.
+[\boldsymbol{B}]_{jkl} =  \boldsymbol{B}_{jkl} = q_i A_{ijkl} =  \frac{\partial^2 ([\operatorname{grad}_\boldsymbol{\xi} f(\boldsymbol{\xi})]_{ij} q_i )}{\partial \boldsymbol{x}_k\partial \boldsymbol{x}_l}.
 $$
 
-Again this can also be combined with `transformWith()` as
+this returns an object where the first index contains the spatial derivative w.r.t. $\xi_0$.
+Thus we have 
+
+\begin{align}
+\boldsymbol{B}[0]_{kl} = \frac{\partial^2 ([\operatorname{grad}_{\boldsymbol{\xi}_0} f(\xi)]_{ij} q_i )}{\partial \boldsymbol{x}_k\partial \boldsymbol{x}_l}, \\
+\boldsymbol{B}[1]_{kl} = \frac{\partial^2 ([\operatorname{grad}_{\boldsymbol{\xi}_1} f(\xi)]_{ij} q_i )}{\partial \boldsymbol{x}_k\partial \boldsymbol{x}_l}.
+\end{align}
+
+these objects are also returned of the second and third line above are used directly.
+
+In the end if we want to access th
+
+
+Again all of these function calls can be combined with `transformWith()` as
 
 ```cpp
 localFunction.evaluateDerivative(gpIndex, wrt(coeffs,coeffs,spatialall), along(q),transformWith(Jinv), coeffIndices(j,k));
@@ -125,7 +143,7 @@ localFunction.evaluateDerivative(gpIndex, wrt(coeffs,coeffs,spatialall), along(q
 which computes
 
 $$
-\frac{\partial^2 (\operatorname{grad}_\boldsymbol{x} f(\boldsymbol{\xi}) \boldsymbol{q} )}{\partial \boldsymbol{x}_j\partial \boldsymbol{x}_k}.
+\frac{\partial^2 ([\operatorname{grad}_\boldsymbol{x} f(\boldsymbol{\xi})]_{ij} q_i )}{\partial \boldsymbol{x}_k\partial \boldsymbol{x}_l}.
 $$
 
 ## Example Dirichlet energy
@@ -201,7 +219,7 @@ auto hessianDirichletEnergy(Matrix& h) {
 ```
 
 ## Implementations
-In the following we sumerize the local functions that are currently available.
+In the following we summarize the local functions that are currently available.
 In the follwing table $N^i(\boldsymbol{\xi})$ are the ansatz functions.
 
 | Name                      | Interpolation formula                                         | Note                                                                                                                                                                                                                                                      | Header |

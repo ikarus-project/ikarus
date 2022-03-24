@@ -61,7 +61,7 @@ nav:
   - Examples:
       - Integrate pi: examples/integrate_pi.md
   - Literature: 99_Literature/99_Literature.md
-  - C++ recommendations: cppRec.md
+  - C++ recommendations: cppRef.md
 
 
 # Customization
