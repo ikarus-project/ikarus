@@ -266,18 +266,23 @@ namespace Ikarus::FiniteElements {
       const Eigen::Matrix<double, vectorPotDim, Traits::mydim> gradA
           = vectorPotLocalFunction.evaluateDerivative(gp, wrt(spatialall), transformWith(Jinv));
 
-      const Eigen::Vector<double, 3> curlA(gradA(0, 1), -gradA(0, 0), 0);
+      const Eigen::Vector<double, 3> curlA          = Impl::jacobianToCurl(gradA);
       const Eigen::Vector<double, directorDim> Hbar = volumeLoad(toEigenVector(gp), lambda);
       switch (res.resType) {
         case ResultType::gradientNormOfMagnetization:
           result.resize(1);
-          result[0] = isInside ? gradm.norm()  : 0.0;
+          result[0] = isInside ? gradm.norm() : 0.0;
           break;
-        case ResultType::curlOfVectorPotential:
-          result.resize(3);
-          result[0] = curlA[0];
-          result[1] = curlA[1];
-          result[2] = curlA[2];
+        case ResultType::BField:
+          result.setZero(3);
+          result[0]
+              = material.mu0 * ( curlA[0] +normalizedMag[0] * isInside);
+          result[1]
+              = material.mu0 * ( curlA[1] + normalizedMag[1] * isInside);
+          if constexpr (directorDim == 3)
+            result[2]
+                = material.mu0 * ( curlA[2] +  normalizedMag[2] * isInside);
+
           break;
         default:
           DUNE_THROW(Dune::NotImplemented, "This result type is not implemented by this element");
@@ -329,7 +334,7 @@ namespace Ikarus::FiniteElements {
         const Eigen::Matrix<double, vectorPotDim, Traits::mydim> gradA
             = vectorPotLocalFunction.evaluateDerivative(gpIndex, wrt(spatialall), transformWith(Jinv));
 
-        const Eigen::Vector<double, 3> curlA = Impl::jacobianToCurl(gradA);
+        const Eigen::Vector<double, directorDim> curlA = Impl::jacobianToCurl(gradA).template segment<directorDim>(0);
 
         const Eigen::Vector<double, directorDim> Hbar = volumeLoad(toEigenVector(gp.position()), lambda);
 
@@ -409,7 +414,7 @@ namespace Ikarus::FiniteElements {
         Eigen::Matrix<double, vectorPotDim, Traits::mydim> gradA
             = vectorPotLocalFunction.evaluateDerivative(gpIndex, wrt(spatialall), transformWith(Jinv));
 
-        const Eigen::Vector<double, 3> curlA = Impl::jacobianToCurl(gradA);
+        const Eigen::Vector<double, directorDim> curlA = Impl::jacobianToCurl(gradA).template segment<directorDim>(0);
 
         const Eigen::Vector<double, directorDim> Hbar = volumeLoad(toEigenVector(gp.position()), lambda);
         if (isInside) {
@@ -439,11 +444,15 @@ namespace Ikarus::FiniteElements {
         }
         const int magEukSize = fe0.size() * directorDim;
         for (size_t i = 0; i < fe1.size(); ++i) {
-          const int indexI                                      = magEukSize + i * vectorPotDim;
-          const Eigen::Vector<double, directorDim> gradCurlA_dI = Impl::jacobianToCurl(dNAdx.row(i));
+          const int indexI = magEukSize + i * vectorPotDim;
+          const Eigen::Vector<double, directorDim> gradCurlA_dI
+              = Impl::jacobianToCurl(dNAdx.row(i)).template segment<directorDim>(0);
+          ;
           for (size_t j = 0; j < fe1.size(); ++j) {
-            const int indexJ                                      = magEukSize + j * vectorPotDim;
-            const Eigen::Vector<double, directorDim> gradCurlA_dJ = Impl::jacobianToCurl(dNAdx.row(j));
+            const int indexJ = magEukSize + j * vectorPotDim;
+            const Eigen::Vector<double, directorDim> gradCurlA_dJ
+                = Impl::jacobianToCurl(dNAdx.row(j)).template segment<directorDim>(0);
+            ;
             eukHess_.template block<vectorPotDim, vectorPotDim>(indexI, indexJ)
                 += (gradCurlA_dI.transpose() * gradCurlA_dJ) * geo.integrationElement(gp.position()) * gp.weight();
           }
@@ -453,8 +462,9 @@ namespace Ikarus::FiniteElements {
           const int indexI = i * directorDim;
           const auto PmI   = mLocalF.evaluateDerivative(gpIndex, wrt(coeffs), coeffIndices(i));
           for (size_t j = 0; j < fe1.size(); ++j) {
-            const int indexJ                                      = magEukSize + j * vectorPotDim;
-            const Eigen::Vector<double, directorDim> gradCurlA_dJ = Impl::jacobianToCurl(dNAdx.row(j));
+            const int indexJ = magEukSize + j * vectorPotDim;
+            const Eigen::Vector<double, directorDim> gradCurlA_dJ
+                = Impl::jacobianToCurl(dNAdx.row(j)).template segment<directorDim>(0);
             if (isInside)
               eukHess_.template block<directorDim, vectorPotDim>(indexI, indexJ)
                   -= (PmI * gradCurlA_dJ) * geo.integrationElement(gp.position()) * gp.weight();
@@ -515,7 +525,8 @@ namespace Ikarus::FiniteElements {
         const Eigen::Matrix<double, vectorPotDim, Traits::mydim> gradA
             = vectorPotLocalFunction.evaluateDerivative(gp.position(), wrt(spatialall), transformWith(Jinv));
 
-        const Eigen::Vector<ScalarType, 3> curlA(gradA(0, 1), -gradA(0, 0), 0);
+        const Eigen::Vector<ScalarType, directorDim> curlA
+            = Impl::jacobianToCurl(gradA).template segment<directorDim>(0);
         const ScalarType divA = 0;
 
         const Eigen::Vector<double, directorDim> Hbar = volumeLoad(toEigenVector(gp.position()), lambda);

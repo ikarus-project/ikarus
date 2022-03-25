@@ -34,7 +34,7 @@
 constexpr int magnetizationOrder    = 1;
 constexpr int vectorPotOrder        = 1;
 constexpr int gridDim               = 2;
-constexpr int directorDim           = 3;
+constexpr int directorDim           = 2;
 constexpr int vectorPotDim          = gridDim == 2 ? 1 : 3;
 constexpr int directorCorrectionDim = directorDim - 1;
 
@@ -52,8 +52,8 @@ int main(int argc, char** argv) {
   const double sizedom1InMeter = 30 * lengthUnit;
   const double sizedom1        = sizedom1InMeter / lx;
   const double sizedom2        = sizedom1 / 2;
-  const double freeSpaceX      = sizedom1 * 10;
-  const double freeSpaceY      = sizedom1 * 5;
+  const double freeSpaceX      = sizedom1 * 8;
+  const double freeSpaceY      = sizedom1 * 4;
 
   //  const double a = 100*1e-4/ lx;
   //  const double sizedom1        = 2*a ;
@@ -62,24 +62,21 @@ int main(int argc, char** argv) {
   //  const double freeSpaceY        = 5*a;
 
   auto isInsidePredicate = [&](auto&& coord) {
-    if (coord[0] > freeSpaceX / 2 + sizedom1 / 2 + 1e-8
-        or coord[0] < freeSpaceX / 2 - sizedom1 / 2 - 1e-8)
+    if (coord[0] > freeSpaceX / 2 + sizedom1 / 2 + 1e-8 or coord[0] < freeSpaceX / 2 - sizedom1 / 2 - 1e-8)
       return false;
-    else if (coord[1] > freeSpaceY / 2 + sizedom2 / 2 + 1e-8
-             or coord[1] < freeSpaceY / 2 - sizedom2 / 2 - 1e-8)
+    else if (coord[1] > freeSpaceY / 2 + sizedom2 / 2 + 1e-8 or coord[1] < freeSpaceY / 2 - sizedom2 / 2 - 1e-8)
       return false;
     else
       return true;
   };
 
   using Grid        = Dune::YaspGrid<gridDim>;
-  const size_t elex = 120;
+  const size_t elex = 60;
   const size_t eley = elex / 2;
   const size_t elez = 1;
   const double Lx   = freeSpaceX;
   const double Ly   = freeSpaceY;
   const double Lz   = freeSpaceY;
-
 
   Dune::FieldVector<double, gridDim> bbox;
   std::array<int, gridDim> eles{};
@@ -139,7 +136,12 @@ int main(int argc, char** argv) {
 
   DirectorVector mBlocked(basisEmbeddedC.size({Dune::Indices::_0}));
   for (auto& msingle : mBlocked) {
-    msingle.setValue(0.1 * Eigen::Vector<double, directorDim>::Random() + Eigen::Vector<double, directorDim>::UnitZ());
+    if constexpr (directorDim == 3)
+      msingle.setValue(0.1 * Eigen::Vector<double, directorDim>::Random()
+                       + Eigen::Vector<double, directorDim>::UnitZ());
+    else
+      msingle.setValue(0.1 * Eigen::Vector<double, directorDim>::Random()
+                       + Eigen::Vector<double, directorDim>::UnitX());
   }
 
   VectorPotVector aBlocked(basisEmbeddedC.size({Dune::Indices::_1}));
@@ -164,7 +166,7 @@ int main(int argc, char** argv) {
     for (const auto& intersection : intersections(gridViewMagn, element))
       if (!isInsidePredicate(intersection.geometry().center())) {
         for (auto localIndex : seDOFs.bind(localView, intersection))
-          dirichletFlags[localView.index(localIndex)[0]];//=true;
+          dirichletFlags[localView.index(localIndex)[0]];  //=true;
       }
   }
 
@@ -179,7 +181,7 @@ int main(int argc, char** argv) {
         if (!isInsidePredicate(intersection.geometry().center())) {
           auto b = mAndABlocked[Dune::Indices::_0][localView2.index(localIndex)[1]].begin();
           auto e = mAndABlocked[Dune::Indices::_0][localView2.index(localIndex)[1]].end();
-//                    std::fill(b,e,0.0);
+          //                    std::fill(b,e,0.0);
         }
   }
 
@@ -249,7 +251,7 @@ int main(int argc, char** argv) {
   auto localViewScalarMagnBasis = scalarMagnBasis.localView();
 
   std::vector<double> gradMNodalRes(scalarMagnBasis.size());
-  std::vector<Dune::FieldVector<double,3>> curlANodalRes(scalarMagnBasis.size());
+  std::vector<Dune::FieldVector<double, 3>> curlANodalRes(scalarMagnBasis.size());
 
   auto writerObserver = std::make_shared<Ikarus::GenericControlObserver>(ControlMessages::STEP_ENDED, [&](auto i) {
     auto mGlobalFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, directorDim>>(
@@ -271,9 +273,8 @@ int main(int argc, char** argv) {
     Eigen::VectorXd result;
     for (auto& fe : fes) {
       localViewScalarMagnBasis.bind(*ele);
-      const auto& fe2 = localViewScalarMagnBasis.tree().finiteElement();
-      const auto& referenceElement
-          = Dune::ReferenceElements<double, gridDim>::general(ele->type());
+      const auto& fe2              = localViewScalarMagnBasis.tree().finiteElement();
+      const auto& referenceElement = Dune::ReferenceElements<double, gridDim>::general(ele->type());
       for (auto c = 0UL; c < fe2.size(); ++c) {
         const auto fineKey                        = fe2.localCoefficients().localKey(c);
         const auto nodalPositionInChildCoordinate = referenceElement.position(fineKey.subEntity(), fineKey.codim());
@@ -286,33 +287,33 @@ int main(int argc, char** argv) {
       ++ele;
     }
 
-    auto scalarMagnBasis2          = makeBasis(gridView, power<3>(lagrangeDG<vectorPotOrder>()));
+    auto scalarMagnBasis2          = makeBasis(gridView, power<3>(lagrangeDG<vectorPotOrder>(), BlockedInterleaved{}));
     auto localViewScalarMagnBasis2 = scalarMagnBasis2.localView();
-    auto ele2 = elements(gridView).begin();
+    auto ele2                      = elements(gridView).begin();
+    resultRequirements.resType     = ResultType::BField;
     for (auto& fe : fes) {
       localViewScalarMagnBasis2.bind(*ele2);
-      const auto& fe2 = localViewScalarMagnBasis2.tree().child(0).finiteElement();
-      const auto& referenceElement
-          = Dune::ReferenceElements<double, gridDim>::general(ele2->type());
+      const auto& fe2              = localViewScalarMagnBasis2.tree().child(0).finiteElement();
+      const auto& referenceElement = Dune::ReferenceElements<double, gridDim>::general(ele2->type());
       for (auto c = 0UL; c < fe2.size(); ++c) {
         const auto fineKey                        = fe2.localCoefficients().localKey(c);
         const auto nodalPositionInChildCoordinate = referenceElement.position(fineKey.subEntity(), fineKey.codim());
 
         auto coord = toEigenVector(nodalPositionInChildCoordinate);
 
-        resultRequirements.resType = ResultType::curlOfVectorPotential;
         fe.calculateAt(resultRequirements, coord, result);
-          curlANodalRes[localViewScalarMagnBasis2.index(localViewScalarMagnBasis2.tree().child(0).localIndex(c))[0]] = Dune::FieldVector<double,3>({result[0], result[1], result[2]});
-
+        curlANodalRes[localViewScalarMagnBasis2.index(localViewScalarMagnBasis2.tree().child(0).localIndex(c))[0]]
+            = Dune::FieldVector<double, 3>({result[0], result[1], result[2]});
       }
       ++ele2;
     }
 
     auto gradmGlobalFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<double>(scalarMagnBasis, gradMNodalRes);
-    auto curlAGlobalFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double,3>>(scalarMagnBasis, curlANodalRes);
+    auto curlAGlobalFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(
+        scalarMagnBasis, curlANodalRes);
 
     vtkWriter.addVertexData(gradmGlobalFunc, Dune::VTK::FieldInfo("gradMNorm", Dune::VTK::FieldInfo::Type::scalar, 1));
-    vtkWriter.addVertexData(curlAGlobalFunc, Dune::VTK::FieldInfo("curlA", Dune::VTK::FieldInfo::Type::vector, 3));
+    vtkWriter.addVertexData(curlAGlobalFunc, Dune::VTK::FieldInfo("B", Dune::VTK::FieldInfo::Type::vector, 3));
     auto isInsideFunc = Dune::Functions::makeAnalyticGridViewFunction(isInsidePredicate, gridView);
     vtkWriter.addCellData(isInsideFunc, Dune::VTK::FieldInfo("isInside", Dune::VTK::FieldInfo::Type::scalar, 1));
     vtkWriter.write(std::string("Magnet") + std::to_string(i));
