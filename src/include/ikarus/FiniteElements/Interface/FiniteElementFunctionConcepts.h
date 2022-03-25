@@ -37,7 +37,7 @@ namespace Ikarus {
 
   enum class ScalarAffordances { noAffordance, potentialEnergy };
 
-  enum class ResultType { noType, magnetization, gradientNormOfMagnetization, vectorPotential, curlOfVectorPotential };
+  enum class ResultType { noType, magnetization, gradientNormOfMagnetization, vectorPotential, BField };
 
   std::string getResultType(const ResultType& res);
 
