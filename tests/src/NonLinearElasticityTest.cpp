@@ -19,7 +19,7 @@
 #include <Eigen/Core>
 
 #include "ikarus/Controlroutines/LoadControl.h"
-#include "ikarus/FiniteElements/Mechanics/NonLinearElasticityFEwithBasis.h"
+#include "ikarus/FiniteElements/Mechanics/NonLinearElasticityFE.h"
 #include "ikarus/Solver/NonLinearSolver/NewtonRaphson.hpp"
 #include "ikarus/Solver/NonLinearSolver/TrustRegion.hpp"
 #include "ikarus/utils/Observer/controlVTKWriter.h"

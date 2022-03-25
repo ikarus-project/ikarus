@@ -8,13 +8,7 @@
 #include "ikarus/LocalBasis/localBasis.h"
 namespace Ikarus {
   namespace DerivativeDirections {
-    constexpr std::integral_constant<int, -1> coeffs = {};
-
-    //    template <int i>
-    //    requires(i >= 0 and i < 3) using spatial             = std::integral_constant<int, i>;
-    //    constexpr spatial<0> spatial0                        = {};
-    //    constexpr spatial<1> spatial1                        = {};
-    //    constexpr spatial<2> spatial2                        = {};
+    constexpr std::integral_constant<int, -1> coeffs     = {};
     constexpr std::integral_constant<int, -2> spatialall = {};
 
     struct spatialPartial {
@@ -22,12 +16,11 @@ namespace Ikarus {
       int index{};
     };
 
-    spatialPartial spatial(int i) { return {i}; }
+    spatialPartial spatial(int i);
 
     template <int Dim>
     struct Counter {
       int coeffDerivatives{};
-      std::array<int, Dim> spatialDerivatives{};
       int spatialall{};
       int dynamicspatial{};
     };
@@ -53,13 +46,12 @@ namespace Ikarus {
     }
 
     template <typename WrtType, int gridDim>
-    Counter<gridDim> countDynamicSpatialDerivativesInTuple(const WrtType& wrt) {
-      Counter<gridDim> counter{};
+    std::array<int, gridDim> countDynamicSpatialDerivativesInTuple(const WrtType& wrt) {
+      std::array<int, gridDim> counter{};
       Dune::Hybrid::forEach(
           Dune::Hybrid::integralRange(Dune::index_constant<std::tuple_size_v<decltype(WrtType::args)>>()), [&](auto i) {
             using currentDerivType = std::tuple_element_t<i, typename WrtType::Args>;
-            if constexpr (std::is_same_v<currentDerivType, spatialPartial>)
-              ++counter.spatialDerivatives[std::get<i>(wrt.args).index];
+            if constexpr (std::is_same_v<currentDerivType, spatialPartial>) ++counter[std::get<i>(wrt.args).index];
           });
       return counter;
     }
@@ -88,8 +80,13 @@ namespace Ikarus {
         = (countInTuple<WrtType, gridDim>().dynamicspatial == 0 and countInTuple<WrtType, gridDim>().spatialall == 0);
 
     template <typename WrtType, int gridDim>
-    concept HasOneSpatial
-        = (countInTuple<WrtType, gridDim>().dynamicspatial == 1 or countInTuple<WrtType, gridDim>().spatialall == 1);
+    concept HasOneSpatialAll = countInTuple<WrtType, gridDim>().spatialall == 1;
+
+    template <typename WrtType, int gridDim>
+    concept HasOneSpatialSingle = (countInTuple<WrtType, gridDim>().dynamicspatial == 1);
+
+    template <typename WrtType, int gridDim>
+    concept HasOneSpatial = HasOneSpatialSingle<WrtType, gridDim> or HasOneSpatialAll<WrtType, gridDim>;
 
   }  // namespace DerivativeDirections
 
@@ -138,6 +135,47 @@ namespace Ikarus {
   struct LocalFunctionTraits;
 
   template <typename LocalFunctionImpl>
+  concept HasevaluateSecondDerivativeWRTCoeffs = requires(LocalFunctionImpl func) {
+    func.evaluateSecondDerivativeWRTCoeffs(
+        std::declval<typename LocalFunctionTraits<LocalFunctionImpl>::AnsatzFunctionType>(),
+        std::declval<typename LocalFunctionTraits<LocalFunctionImpl>::AnsatzFunctionJacobian>(),
+        std::declval<typename LocalFunctionTraits<LocalFunctionImpl>::AlongType>(),
+        std::declval<std::array<size_t, LocalFunctionTraits<LocalFunctionImpl>::gridDim>>());
+  };
+
+  template <typename LocalFunctionImpl>
+  concept HasevaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialImpl = requires(LocalFunctionImpl func) {
+    func.evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialImpl(
+        std::declval<typename LocalFunctionTraits<LocalFunctionImpl>::AnsatzFunctionType>(),
+        std::declval<typename LocalFunctionTraits<LocalFunctionImpl>::AnsatzFunctionJacobian>(),
+        std::declval<typename LocalFunctionTraits<LocalFunctionImpl>::AlongType>(),
+        std::declval<std::array<size_t, LocalFunctionTraits<LocalFunctionImpl>::gridDim>>());
+  };
+
+  template <typename LocalFunctionImpl>
+  concept HasevaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialSingleImpl = requires(LocalFunctionImpl func) {
+    func.evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialSingleImpl(
+        std::declval<typename LocalFunctionTraits<LocalFunctionImpl>::AnsatzFunctionType>(),
+        std::declval<typename LocalFunctionTraits<LocalFunctionImpl>::AnsatzFunctionJacobian>(),
+        std::declval<typename LocalFunctionTraits<LocalFunctionImpl>::AlongType>(),
+        std::declval<std::array<size_t, LocalFunctionTraits<LocalFunctionImpl>::gridDim>>(), std::declval<int>());
+  };
+
+  template <typename LocalFunctionImpl>
+  concept HasevaluateDerivativeWRTSpaceAllImpl = requires(LocalFunctionImpl func) {
+    func.evaluateDerivativeWRTSpaceAllImpl(
+        std::declval<typename LocalFunctionTraits<LocalFunctionImpl>::AnsatzFunctionType>(),
+        std::declval<typename LocalFunctionTraits<LocalFunctionImpl>::AnsatzFunctionJacobian>());
+  };
+
+  template <typename LocalFunctionImpl>
+  concept HasevaluateDerivativeWRTSpaceSingleImpl = requires(LocalFunctionImpl func) {
+    func.evaluateDerivativeWRTSpaceSingleImpl(
+        std::declval<typename LocalFunctionTraits<LocalFunctionImpl>::AnsatzFunctionType>(),
+        std::declval<typename LocalFunctionTraits<LocalFunctionImpl>::AnsatzFunctionJacobian>(), std::declval<int>());
+  };
+
+  template <typename LocalFunctionImpl>
   class LocalFunctionInterface {
   public:
     using Traits                 = LocalFunctionTraits<LocalFunctionImpl>;
@@ -149,7 +187,15 @@ namespace Ikarus {
     using JacobianColType        = typename Traits::JacobianColType;
     using AnsatzFunctionJacobian = typename Traits::AnsatzFunctionJacobian;
     using CoeffDerivMatrix       = typename Traits::CoeffDerivMatrix;
-    /** \brief Matrix to transform the ansatz function Jacobian to world coordinates*/
+
+    // Check the capabilities of derived implementation
+    static constexpr bool hasSecondDerivativeWRTCoeffs = HasevaluateSecondDerivativeWRTCoeffs<LocalFunctionImpl>;
+    static constexpr bool hasThirdDerivativeWRTCoeffsTwoTimesAndSpatialImpl
+        = HasevaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialImpl<LocalFunctionImpl>;
+    static constexpr bool hasevaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialSingleImpl
+        = HasevaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialSingleImpl<LocalFunctionImpl>;
+    static constexpr bool hasevaluateDerivativeWRTSpaceAllImpl = HasevaluateDerivativeWRTSpaceAllImpl<LocalFunctionImpl>;
+    static constexpr bool hasevaluateDerivativeWRTSpaceSingleImpl = HasevaluateDerivativeWRTSpaceSingleImpl<LocalFunctionImpl>;
 
     static constexpr int gridDim = Traits::gridDim;
     using TransformMatrix        = Eigen::Matrix<double, gridDim, gridDim>;
@@ -182,59 +228,76 @@ namespace Ikarus {
      */
     template <typename... Args, typename... TransformArgs, typename... AlongArgs, typename... Indices,
               typename DomainTypeOrIntegrationPointIndex>
-    requires(hasCoeff<Wrt<Args...>, 2>and DerivativeDirections::HasNoSpatial<
-             Wrt<Args...>, gridDim>) auto evaluateDerivative(const DomainTypeOrIntegrationPointIndex& localOrIpId,
-                                                             Wrt<Args...>&& args, Along<AlongArgs...>&& along,
-                                                             TransformWith<TransformArgs...>&& transArgs,
-                                                             CoeffIndices<Indices...>&& coeffsIndices) const {
+    requires(
+        hasCoeff<Wrt<Args...>, 2>and DerivativeDirections::HasNoSpatial<Wrt<Args...>, gridDim>and
+            hasSecondDerivativeWRTCoeffs) auto evaluateDerivative(const DomainTypeOrIntegrationPointIndex& localOrIpId,
+                                                                  Wrt<Args...>&& args, Along<AlongArgs...>&& along,
+                                                                  TransformWith<TransformArgs...>&& transArgs,
+                                                                  CoeffIndices<Indices...>&& coeffsIndices) const {
       const auto& [N, dNraw] = evaluateFunctionAndDerivativeWithIPorCoord(localOrIpId);
 
       // Check if a matrix is given to transform derivatives. Otherwise we do nothing
       if constexpr (sizeof...(TransformArgs) > 0) {
         AnsatzFunctionJacobian dN = (dNraw * std::get<0>(transArgs.args)).eval();
-        return tryCallSecondDerivativeWRTCoeffs(N, dN, std::get<0>(along.args), coeffsIndices.args);
+        return impl().evaluateSecondDerivativeWRTCoeffs(N, dN, std::get<0>(along.args), coeffsIndices.args);
       } else
-        return tryCallSecondDerivativeWRTCoeffs(N, dNraw, std::get<0>(along.args), coeffsIndices.args);
+        return impl().evaluateSecondDerivativeWRTCoeffs(N, dNraw, std::get<0>(along.args), coeffsIndices.args);
     }
 
+    /** \brief Function to forward the call of no spatial derivative and two derivative wrt. coefficients.
+     * You have to pass a along argument which specifies the direction wher this derivative is applied
+     * Specialization when no transformWith is passed
+     */
     template <typename... Args, typename... AlongArgs, typename... Indices, typename DomainTypeOrIntegrationPointIndex>
-    requires(hasCoeff<Wrt<Args...>, 2>and DerivativeDirections::HasNoSpatial<
-             Wrt<Args...>, gridDim>) auto evaluateDerivative(const DomainTypeOrIntegrationPointIndex& localOrIpId,
-                                                             Wrt<Args...>&& args, Along<AlongArgs...>&& along,
-                                                             CoeffIndices<Indices...>&& coeffsIndices) const {
+    requires(hasCoeff<Wrt<Args...>, 2>and DerivativeDirections::HasNoSpatial<Wrt<Args...>, gridDim>and
+                 HasevaluateSecondDerivativeWRTCoeffs<
+                     LocalFunctionImpl>) auto evaluateDerivative(const DomainTypeOrIntegrationPointIndex& localOrIpId,
+                                                                 Wrt<Args...>&& args, Along<AlongArgs...>&& along,
+                                                                 CoeffIndices<Indices...>&& coeffsIndices) const {
       return evaluateDerivative(localOrIpId, std::forward<Wrt<Args...>>(args), std::forward<Along<AlongArgs...>>(along),
                                 transformWith(), std::forward<CoeffIndices<Indices...>>(coeffsIndices));
     }
-    //
-    /** \brief Function to forward the call of one spatial derivative and two derivative wrt. coefficients.
-     * You have to pass a along argument which specifies the direction wher this derivative is applied */
+
+    /** \brief Function to forward the call of one spatial derivative in all directions and two derivative wrt.
+     * coefficients. You have to pass a along argument which specifies the direction where this derivative is applied */
     template <typename... Args, typename... TransformArgs, typename... AlongArgs, typename... Indices,
               typename DomainTypeOrIntegrationPointIndex>
-    requires(hasCoeff<Wrt<Args...>, 2>and DerivativeDirections::HasOneSpatial<
-             Wrt<Args...>, gridDim>) auto evaluateDerivative(const DomainTypeOrIntegrationPointIndex& localOrIpId,
+    requires(hasCoeff<Wrt<Args...>, 2>and DerivativeDirections::HasOneSpatialAll<
+             Wrt<Args...>, gridDim> and hasThirdDerivativeWRTCoeffsTwoTimesAndSpatialImpl)
+        auto evaluateDerivative(const DomainTypeOrIntegrationPointIndex& localOrIpId,
                                                              Wrt<Args...>&& args, Along<AlongArgs...>&& along,
                                                              TransformWith<TransformArgs...>&& transArgs,
                                                              CoeffIndices<Indices...>&& coeffsIndices) const {
       const auto& [N, dNraw] = evaluateFunctionAndDerivativeWithIPorCoord(localOrIpId);
-      transformDerivatives(dNraw, std::forward<TransformWith<TransformArgs...>>(transArgs));
-      const DerivativeDirections::Counter<gridDim> counter
+      maytransformDerivatives(dNraw, std::forward<TransformWith<TransformArgs...>>(transArgs));
+
+      return impl().evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialImpl(N, dNTransformed, std::get<0>(along.args),
+                                                                           coeffsIndices.args);
+    }
+
+    /** \brief Function to forward the call of one spatial derivative in a single directions and two derivative wrt.
+     * coefficients. You have to pass a along argument which specifies the direction where this derivative is applied */
+    template <typename... Args, typename... TransformArgs, typename... AlongArgs, typename... Indices,
+              typename DomainTypeOrIntegrationPointIndex>
+    requires(hasCoeff<Wrt<Args...>, 2> and DerivativeDirections::HasOneSpatialSingle<
+             Wrt<Args...>, gridDim> and hasevaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialSingleImpl)
+        auto evaluateDerivative(const DomainTypeOrIntegrationPointIndex& localOrIpId,
+                                                             Wrt<Args...>&& args, Along<AlongArgs...>&& along,
+                                                             TransformWith<TransformArgs...>&& transArgs,
+                                                             CoeffIndices<Indices...>&& coeffsIndices) const {
+      const auto& [N, dNraw] = evaluateFunctionAndDerivativeWithIPorCoord(localOrIpId);
+      maytransformDerivatives(dNraw, std::forward<TransformWith<TransformArgs...>>(transArgs));
+
+      const std::array<int, gridDim> counter
           = DerivativeDirections::countDynamicSpatialDerivativesInTuple<Wrt<Args...>, gridDim>(
               std::forward<Wrt<Args...>>(args));
-      constexpr DerivativeDirections::Counter<gridDim> counterExpr
-          = DerivativeDirections::countInTuple<Wrt<Args...>, gridDim>();
-      const int spatialIndex = DerivativeDirections::findSingleSpatial(counter.spatialDerivatives);
-      if (spatialIndex < gridDim)
-        return impl().evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialSingleImpl(
-            N, dNTransformed, std::get<0>(along.args), coeffsIndices.args, spatialIndex);
-      else if constexpr (counterExpr.coeffDerivatives == 2 and counterExpr.spatialall == 1)
-        return impl().evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialImpl(N, dNTransformed, std::get<0>(along.args),
-                                                                             coeffsIndices.args);
-      else
-        __builtin_unreachable();
+      const int spatialIndex = DerivativeDirections::findSingleSpatial(counter);
+      return impl().evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialSingleImpl(
+          N, dNTransformed, std::get<0>(along.args), coeffsIndices.args, spatialIndex);
     }
 
     template <typename... TransformArgs>
-    void transformDerivatives(const AnsatzFunctionJacobian& dNraw, TransformWith<TransformArgs...>&& transArgs) const {
+    void maytransformDerivatives(const AnsatzFunctionJacobian& dNraw, TransformWith<TransformArgs...>&& transArgs) const {
       if constexpr (sizeof...(TransformArgs) > 0)
         dNTransformed = dNraw * std::get<0>(transArgs.args);
       else
@@ -260,28 +323,40 @@ namespace Ikarus {
                       "derivative should be evaluated");
     }
 
-    /** \brief Function to forward the call of one spatial derivative and no derivative wrt. coefficients  */
+    /** \brief Function to forward the call of one spatial derivative in all directions and no derivative wrt. coefficients  */
     template <typename... Args, typename... TransformArgs, typename DomainTypeOrIntegrationPointIndex>
-    requires(hasCoeff<Wrt<Args...>, 0>and DerivativeDirections::HasOneSpatial<
-             Wrt<Args...>, gridDim>) auto evaluateDerivative(const DomainTypeOrIntegrationPointIndex& localOrIpId,
+    requires(hasCoeff<Wrt<Args...>, 0>and DerivativeDirections::HasOneSpatialAll<
+             Wrt<Args...>, gridDim> and hasevaluateDerivativeWRTSpaceAllImpl) auto evaluateDerivative(const DomainTypeOrIntegrationPointIndex& localOrIpId,
                                                              Wrt<Args...>&& args,
                                                              TransformWith<TransformArgs...>&& transArgs) const {
       const auto& [N, dN] = evaluateFunctionAndDerivativeWithIPorCoord(localOrIpId);
-      const DerivativeDirections::Counter<gridDim> counter
-          = DerivativeDirections::countDynamicSpatialDerivativesInTuple<Wrt<Args...>, gridDim>(
-              std::forward<Wrt<Args...>>(args));
+
       constexpr DerivativeDirections::Counter<gridDim> counterConstExpr
           = DerivativeDirections::countInTuple<Wrt<Args...>, gridDim>();
-      // Check if a matrix is given to transform derivatives. Otherwise we do nothing
-      transformDerivatives(dN, std::forward<TransformWith<TransformArgs...>>(transArgs));
-      const auto singleSpatial = DerivativeDirections::findSingleSpatial<gridDim>(counter.spatialDerivatives);
-      if constexpr (counterConstExpr.spatialall == 1)
-        return impl().evaluateDerivativeWRTSpaceAllImpl(N, dNTransformed);
-      else if (singleSpatial < gridDim)
-        return impl().evaluateDerivativeWRTSpaceSingleImpl(N, dNTransformed, singleSpatial);
-      else
-        static_assert((singleSpatial < gridDim) or (counterConstExpr.spatialall == 1),
-                      "This currently only supports first order spatial derivatives");
+
+      maytransformDerivatives(dN, std::forward<TransformWith<TransformArgs...>>(transArgs));
+
+      return impl().evaluateDerivativeWRTSpaceAllImpl(N, dNTransformed);
+    }
+
+    /** \brief Function to forward the call of one spatial derivative in a single directions and no derivative wrt. coefficients  */
+    template <typename... Args, typename... TransformArgs, typename DomainTypeOrIntegrationPointIndex>
+    requires(hasCoeff<Wrt<Args...>, 0>and DerivativeDirections::HasOneSpatialSingle<
+             Wrt<Args...>, gridDim> and hasevaluateDerivativeWRTSpaceSingleImpl) auto evaluateDerivative(const DomainTypeOrIntegrationPointIndex& localOrIpId,
+                                                             Wrt<Args...>&& args,
+                                                             TransformWith<TransformArgs...>&& transArgs) const {
+      const auto& [N, dN] = evaluateFunctionAndDerivativeWithIPorCoord(localOrIpId);
+
+      constexpr DerivativeDirections::Counter<gridDim> counterConstExpr
+          = DerivativeDirections::countInTuple<Wrt<Args...>, gridDim>();
+
+      maytransformDerivatives(dN, std::forward<TransformWith<TransformArgs...>>(transArgs));
+
+      const std::array<int, gridDim> counter
+            = DerivativeDirections::countDynamicSpatialDerivativesInTuple<Wrt<Args...>, gridDim>(
+                std::forward<Wrt<Args...>>(args));
+      auto singleSpatial = DerivativeDirections::findSingleSpatial<gridDim>(counter);
+      return impl().evaluateDerivativeWRTSpaceSingleImpl(N, dNTransformed, singleSpatial);
     }
 
     /** \brief Function to forward the call of one spatial derivative and no derivative wrt. coefficients and No
@@ -303,27 +378,37 @@ namespace Ikarus {
       return impl().evaluateDerivativeWRTCoeffsImpl(N, dN, coeffsIndices.args[0]);
     }
 
-    /** \brief Function to forward the call of one spatial derivative and one derivative wrt. coefficients  */
+    /** \brief Function to forward the call of one spatial derivative in all directions and one derivative wrt. coefficients  */
     template <typename... Args, typename... TransformArgs, typename... Indices,
               typename DomainTypeOrIntegrationPointIndex>
-    requires(hasCoeff<Wrt<Args...>, 1>and DerivativeDirections::HasOneSpatial<
+    requires(hasCoeff<Wrt<Args...>, 1>and DerivativeDirections::HasOneSpatialAll<
              Wrt<Args...>, gridDim>) auto evaluateDerivative(const DomainTypeOrIntegrationPointIndex& localOrIpId,
                                                              Wrt<Args...>&& args,
                                                              TransformWith<TransformArgs...>&& transArgs,
                                                              CoeffIndices<Indices...>&& coeffsIndices) const {
       const auto& [N, dNraw] = evaluateFunctionAndDerivativeWithIPorCoord(localOrIpId);
-      transformDerivatives(dNraw, std::forward<TransformWith<TransformArgs...>>(transArgs));
-      const DerivativeDirections::Counter<gridDim> counter
-          = DerivativeDirections::countDynamicSpatialDerivativesInTuple<Wrt<Args...>, gridDim>(
-              std::forward<Wrt<Args...>>(args));
-      constexpr DerivativeDirections::Counter<gridDim> counterExpr
-          = DerivativeDirections::countInTuple<Wrt<Args...>, gridDim>();
-      const int spatialIndex = DerivativeDirections::findSingleSpatial(counter.spatialDerivatives);
-      if constexpr (counterExpr.coeffDerivatives == 1 and counterExpr.spatialall != 1)
+      maytransformDerivatives(dNraw, std::forward<TransformWith<TransformArgs...>>(transArgs));
+
+      return impl().evaluateDerivativeWRTCoeffsANDSpatialImpl(N, dNTransformed, coeffsIndices.args[0]);
+    }
+
+    /** \brief Function to forward the call of one spatial derivative in a single direction and one derivative wrt. coefficients  */
+    template <typename... Args, typename... TransformArgs, typename... Indices,
+              typename DomainTypeOrIntegrationPointIndex>
+    requires(hasCoeff<Wrt<Args...>, 1>and DerivativeDirections::HasOneSpatialSingle<
+             Wrt<Args...>, gridDim>) auto evaluateDerivative(const DomainTypeOrIntegrationPointIndex& localOrIpId,
+                                                             Wrt<Args...>&& args,
+                                                             TransformWith<TransformArgs...>&& transArgs,
+                                                             CoeffIndices<Indices...>&& coeffsIndices) const {
+      const auto& [N, dNraw] = evaluateFunctionAndDerivativeWithIPorCoord(localOrIpId);
+      maytransformDerivatives(dNraw, std::forward<TransformWith<TransformArgs...>>(transArgs));
+
+      const std::array<int, gridDim> counter
+            = DerivativeDirections::countDynamicSpatialDerivativesInTuple<Wrt<Args...>, gridDim>(
+                std::forward<Wrt<Args...>>(args));
+        const int spatialIndex = DerivativeDirections::findSingleSpatial(counter);
         return impl().evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(N, dNTransformed, coeffsIndices.args[0],
                                                                       spatialIndex);
-      else if constexpr (counterExpr.coeffDerivatives == 1 and counterExpr.spatialall == 1)
-        return impl().evaluateDerivativeWRTCoeffsANDSpatialImpl(N, dNTransformed, coeffsIndices.args[0]);
     }
 
     /** \brief Function to forward the call of one spatial derivative and one derivative wrt. coefficients  and no

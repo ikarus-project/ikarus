@@ -21,7 +21,7 @@
 
 #include <ikarus/Assembler/SimpleAssemblers.h>
 #include "ikarus/FiniteElements/Interface/FiniteElementFunctionConcepts.h"
-#include "ikarus/FiniteElements/Mechanics/NonLinearElasticityFEwithBasis.h"
+#include "ikarus/FiniteElements/Mechanics/NonLinearElasticityFE.h"
 
 TEST(Assembler, SimpleAssemblersTest) {
   using Grid = Dune::YaspGrid<2>;

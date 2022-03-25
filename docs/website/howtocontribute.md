@@ -29,6 +29,7 @@ If your are interested the following task are vacant.
 * Nonlinear Reissner-Mindlin shell [@muller2022consistent]
 * Kirchhoff-Love shell
 * 3D-Beam
+* Implement forces and stiffness matrix of `NonLinearElasticityFE`
 
 ### Local Basis 
 * Support second derivatives

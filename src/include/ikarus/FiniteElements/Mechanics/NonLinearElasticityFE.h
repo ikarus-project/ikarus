@@ -103,11 +103,11 @@ namespace Ikarus::FiniteElements {
         const auto J = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
         const auto u = uFunction.evaluateFunction(gpIndex).getValue();
         const auto H      = uFunction.evaluateDerivative(gpIndex, wrt(DerivativeDirections::spatialall), transformWith(J.inverse().eval()));
-//        const auto E      = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
-//        const auto EVoigt = toVoigt(E);
+        const auto E      = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
+        const auto EVoigt = toVoigt(E);
 
-//        Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(toEigenVector(gp.position()), lambda);
-//        energy += (0.5 * EVoigt.dot(C * EVoigt) - u.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
+        Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(toEigenVector(gp.position()), lambda);
+        energy += (0.5 * EVoigt.dot(C * EVoigt) - u.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
       }
       return energy;
     }
