@@ -17,7 +17,7 @@ template <typename IntegrationRule, typename... Ints>
 void bind(IntegrationRule&& p_rule, Derivatives<Ints...>&& ints);
 ```
 
-1. Using duck-typing the constructor assume a dune local basis.
+1. Using the concept `Concepts::DuneLocalBasis`  the constructor only accepts local basis that satisfies this concept. This also allows a local basis which behave lik a local basis of dune in the spirit of duck-typing.
 2. This return a vector of structs of the integration point and its index. Therefore the syntax is usually `#!cpp for (const auto& [gpIndex, gp] : localFunction.viewOverIntegrationPoints()) {...}`
 
 The first two function calls of `evaluateFunction`  and `evaluateDerivative` can be used to calculate the function values 

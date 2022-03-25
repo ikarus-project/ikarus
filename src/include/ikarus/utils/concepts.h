@@ -30,6 +30,20 @@ namespace Ikarus::Concepts {
     std::is_same_v<typename Basis::PreBasis::IndexMergingStrategy, Dune::Functions::BasisFactory::BlockedLexicographic>;
   };
 
+  template <typename DuneLocalBasisImpl>
+  concept DuneLocalBasis = requires (DuneLocalBasisImpl& duneLocalBasis){
+    typename DuneLocalBasisImpl::Traits::RangeType;
+    typename DuneLocalBasisImpl::Traits::JacobianType;
+    DuneLocalBasisImpl::Traits::dimDomain;
+    typename DuneLocalBasisImpl::Traits::DomainType;
+
+    typename DuneLocalBasisImpl::Traits::DomainFieldType;
+    typename DuneLocalBasisImpl::Traits::RangeFieldType;
+
+    duneLocalBasis.evaluateFunction(std::declval<typename DuneLocalBasisImpl::Traits::DomainType>(), std::declval<std::vector<typename DuneLocalBasisImpl::Traits::RangeType>&>());
+    duneLocalBasis.evaluateJacobian(std::declval<typename DuneLocalBasisImpl::Traits::DomainType>(), std::declval<std::vector<typename DuneLocalBasisImpl::Traits::JacobianType>&>());
+  };
+
   template <typename Basis>
   concept BlockedIndexBasis = BlockedLexicographicBasis<Basis> or BlockedInterLeavedBasis<Basis>;
 

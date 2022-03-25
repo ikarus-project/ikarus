@@ -37,6 +37,7 @@ target_compile_options(
          -Wno-unused-parameter
          -Wno-unused-but-set-variable
          -Wno-deprecated-copy
+         -ftemplate-backtrace-limit=0
 )
 target_compile_options(IkarusTests PUBLIC -fconcepts-diagnostics-depth=5)
 

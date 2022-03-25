@@ -1,13 +1,15 @@
 #pragma once
 #include <ranges>
-#include <vector>
 #include <set>
+#include <vector>
 
 #include <dune/common/fmatrix.hh>
 #include <dune/common/fvector.hh>
 #include <dune/geometry/quadraturerules.hh>
 
 #include <Eigen/Core>
+
+#include <ikarus/utils/concepts.h>
 
 namespace Ikarus {
 
@@ -18,15 +20,13 @@ namespace Ikarus {
 
   template <typename... Ints>
   requires std::conjunction_v<std::is_convertible<int, Ints>...>
-  auto bindDerivatives(Ints&&... ints) {
-    return Derivatives<Ints&&...>({std::forward<Ints>(ints)...});
-  }
+  auto bindDerivatives(Ints&&... ints) { return Derivatives<Ints&&...>({std::forward<Ints>(ints)...}); }
 
-
-  template <typename DuneLocalBasis>
+  template <Concepts::DuneLocalBasis DuneLocalBasis>
   class LocalBasis {
-    using RangeDuneType              = typename DuneLocalBasis::Traits::RangeType;
-    using JacobianDuneType           = typename DuneLocalBasis::Traits::JacobianType;
+    using RangeDuneType    = typename DuneLocalBasis::Traits::RangeType;
+    using JacobianDuneType = typename DuneLocalBasis::Traits::JacobianType;
+
   public:
     explicit LocalBasis(const DuneLocalBasis& p_basis) : duneLocalBasis{&p_basis} {}
     LocalBasis() = default;
@@ -34,11 +34,11 @@ namespace Ikarus {
     static constexpr int gridDim = DuneLocalBasis::Traits::dimDomain;
     using DomainType             = typename DuneLocalBasis::Traits::DomainType;
 
-    using DomainFieldType        = typename DuneLocalBasis::Traits::DomainFieldType;
-    using RangeFieldType         = typename DuneLocalBasis::Traits::RangeFieldType;
+    using DomainFieldType = typename DuneLocalBasis::Traits::DomainFieldType;
+    using RangeFieldType  = typename DuneLocalBasis::Traits::RangeFieldType;
 
-    using JacobianType           = Eigen::Matrix<RangeFieldType, Eigen::Dynamic, gridDim>;
-    using AnsatzFunctionType           = Eigen::VectorX<RangeFieldType>;
+    using JacobianType       = Eigen::Matrix<RangeFieldType, Eigen::Dynamic, gridDim>;
+    using AnsatzFunctionType = Eigen::VectorX<RangeFieldType>;
 
     template <typename Derived>
     void evaluateFunction(const DomainType& local, Eigen::PlainObjectBase<Derived>& N) const {
@@ -80,10 +80,8 @@ namespace Ikarus {
       Nbound.value().resize(rule.value().size());
 
       for (int i = 0; auto& gp : rule.value()) {
-        if (boundDerivatives.value().contains(0))
-          evaluateFunction(gp.position(), Nbound.value()[i]);
-        if (boundDerivatives.value().contains(1))
-          evaluateJacobian(gp.position(), dNbound.value()[i]);
+        if (boundDerivatives.value().contains(0)) evaluateFunction(gp.position(), Nbound.value()[i]);
+        if (boundDerivatives.value().contains(1)) evaluateJacobian(gp.position(), dNbound.value()[i]);
         ++i;
       }
     }
@@ -98,13 +96,13 @@ namespace Ikarus {
       return dNbound.value()[i];
     }
 
-    bool isBound()const {return (dNbound and Nbound);}
+    bool isBound() const { return (dNbound and Nbound); }
 
     struct FunctionAndJacobian {
-      long unsigned index;
-      const Dune::QuadraturePoint<DomainFieldType, gridDim>& ip;
-      const Eigen::VectorX<RangeFieldType>& N;
-      const Eigen::Matrix<RangeFieldType, Eigen::Dynamic, gridDim>& dN;
+      long unsigned index{};
+      const Dune::QuadraturePoint<DomainFieldType, gridDim>& ip{};
+      const Eigen::VectorX<RangeFieldType>& N{};
+      const Eigen::Matrix<RangeFieldType, Eigen::Dynamic, gridDim>& dN{};
     };
     auto viewOverFunctionAndJacobian() const {
       assert(Nbound.value().size() == dNbound.value().size()
@@ -120,16 +118,15 @@ namespace Ikarus {
     }
 
     struct IntegrationPointsAndIndex {
-      long unsigned index;
-      const Dune::QuadraturePoint<DomainFieldType, gridDim>& ip;
+      long unsigned index{};
+      const Dune::QuadraturePoint<DomainFieldType, gridDim>& ip{};
     };
-    auto viewOverIntegrationPoints() const { //FIXME dont construct this on the fly
+    auto viewOverIntegrationPoints() const {  // FIXME dont construct this on the fly
       assert(Nbound.value().size() == dNbound.value().size()
              && "Number of intergrationpoint evaluations does not match.");
       if (Nbound and dNbound)
-        return std::views::iota(0UL, Nbound.value().size()) | std::views::transform([&](auto&& i_) {
-                 return IntegrationPointsAndIndex(i_, rule.value()[i_]);
-               });
+        return std::views::iota(0UL, Nbound.value().size())
+               | std::views::transform([&](auto&& i_) { return IntegrationPointsAndIndex(i_, rule.value()[i_]); });
       else {
         assert(false && "You need to call bind first");
         __builtin_unreachable();
@@ -137,12 +134,12 @@ namespace Ikarus {
     }
 
   private:
-    mutable std::vector<JacobianDuneType> dNdune;
-    mutable std::vector<RangeDuneType> Ndune;
+    mutable std::vector<JacobianDuneType> dNdune{};
+    mutable std::vector<RangeDuneType> Ndune{};
     DuneLocalBasis const* duneLocalBasis;
     std::optional<std::set<int>> boundDerivatives;
-    std::optional<std::vector<Eigen::VectorX<RangeFieldType>>> Nbound;
-    std::optional<std::vector<Eigen::Matrix<RangeFieldType, Eigen::Dynamic, gridDim>>> dNbound;
+    std::optional<std::vector<Eigen::VectorX<RangeFieldType>>> Nbound{};
+    std::optional<std::vector<Eigen::Matrix<RangeFieldType, Eigen::Dynamic, gridDim>>> dNbound{};
     std::optional<Dune::QuadratureRule<DomainFieldType, gridDim>> rule;
   };
 

@@ -38,7 +38,7 @@ namespace Ikarus {
     /** \brief Type for coordinate vector in world space */
     using FunctionReturnType = typename Traits::FunctionReturnType;
     /** \brief Type for the directional derivatives */
-    using AlongType = Eigen::Vector<ctype, valueSize>;
+    using AlongType = typename Traits::AlongType;
     /** \brief Type for the coordinates to store the return value */
     using GlobalE = typename FunctionReturnType::CoordinateType;
     /** \brief Type for the Jacobian matrix */
@@ -220,6 +220,8 @@ namespace Ikarus {
     using DomainType = typename DuneBasis::Traits::DomainType;
     /** \brief Type for a column of the Jacobian matrix */
     using JacobianColType = typename Eigen::internal::plain_col_type<Jacobian>::type;
+    /** \brief Type for the directional derivatives */
+    using AlongType = Eigen::Vector<ctype, valueSize>;
   };
 
 }  // namespace Ikarus
