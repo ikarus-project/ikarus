@@ -10,7 +10,7 @@
 #include <Eigen/Dense>
 
 #include "ikarus/Assembler/SimpleAssemblers.h"
-#include "ikarus/Grids/GridHelper/griddrawer.h"
+#include "ikarus/utils/drawing/griddrawer.h"
 #include "ikarus/Solver/NonLinearSolver/NewtonRaphson.hpp"
 #include "ikarus/utils/Observer/nonLinearSolverLogger.h"
 #include <ikarus/LinearAlgebra/NonLinearOperator.h>

@@ -20,8 +20,7 @@
 #include <Eigen/Dense>
 
 #include "ikarus/LocalBasis/localBasis.h"
-#include "ikarus/basis/basishelper.h"
-#include <ikarus/Grids/GridHelper/griddrawer.h>
+#include "ikarus/utils/drawing/griddrawer.h"
 #include <ikarus/Solver/LinearSolver/LinearSolver.h>
 using namespace Dune::Functions::BasisFactory;
 using namespace Dune::Functions;

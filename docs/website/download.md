@@ -8,6 +8,10 @@
   wsl --set-default-version 2 #(Is not needed for Windows 11)
   ```
 - Reboot
+- Install debian from `.tar` file
+  ```sh 
+  wsl --import debian <install location> debian_bookworm.tar
+  ```
 ### Install debian
 - Install from [WindowsAppStore](https://www.microsoft.com/en-us/p/debian/9msvkqc78pk6#activetab=pivot:overviewtab)
 - Execute the debian app

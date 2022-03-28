@@ -28,6 +28,39 @@ namespace Ikarus::LinearAlgebra {
 
     return vec;
   }
+
+  template <typename ValueType>
+  auto viewAsEigenMatrixAsDynFixed(Dune::BlockVector<ValueType>& blockedVector) {
+    Eigen::Map<Eigen::Matrix<typename ValueType::field_type,Eigen::Dynamic,ValueType::valueSize,Eigen::RowMajor>> vec(&blockedVector.begin()->begin().operator*(),
+                                                                   blockedVector.size(),blockedVector[0].size());
+
+    return vec;
+  }
+
+  template <typename ValueType>
+  auto viewAsEigenMatrixFixedDyn(Dune::BlockVector<ValueType>& blockedVector) {
+    Eigen::Map<Eigen::Matrix<typename ValueType::field_type,ValueType::valueSize,Eigen::Dynamic>> vec(&blockedVector.begin()->begin().operator*(),blockedVector[0].size(),
+                                                                                                         blockedVector.size());
+
+    return vec;
+  }
+
+  template <typename ValueType>
+  auto viewAsEigenMatrixAsDynFixed(const Dune::BlockVector<ValueType>& blockedVector) {
+    Eigen::Map<const Eigen::Matrix<typename ValueType::field_type,Eigen::Dynamic,ValueType::valueSize,Eigen::RowMajor>> vec(&blockedVector.begin()->begin().operator*(),
+                                                                                                                         blockedVector.size(),blockedVector[0].size());
+
+    return vec;
+  }
+
+  template <typename ValueType>
+  auto viewAsEigenMatrixFixedDyn(const Dune::BlockVector<ValueType>& blockedVector) {
+    Eigen::Map<const Eigen::Matrix<typename ValueType::field_type,ValueType::valueSize,Eigen::Dynamic>> vec(&blockedVector.begin()->begin().operator*(),blockedVector[0].size(),
+                                                                                                        blockedVector.size());
+
+    return vec;
+  }
+
   template <typename ValueType>
   auto viewAsFlatEigenVector(const Dune::BlockVector<ValueType>& blockedVector) {
     Eigen::Map<const Eigen::VectorX<typename ValueType::field_type>> vec(
