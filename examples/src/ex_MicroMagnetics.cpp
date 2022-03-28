@@ -30,11 +30,12 @@
 #include <ikarus/LinearAlgebra/NonLinearOperator.h>
 #include <ikarus/utils/functionSanityChecks.h>
 #include <ikarus/utils/utils/algorithms.h>
+#include <dune/common/parametertreeparser.hh>
 
 constexpr int magnetizationOrder    = 1;
 constexpr int vectorPotOrder        = 1;
 constexpr int gridDim               = 2;
-constexpr int directorDim           = 2;
+constexpr int directorDim           = 3;
 constexpr int vectorPotDim          = gridDim == 2 ? 1 : 3;
 constexpr int directorCorrectionDim = directorDim - 1;
 
@@ -44,6 +45,14 @@ using MultiTypeVector = Dune::MultiTypeBlockVector<DirectorVector, VectorPotVect
 
 int main(int argc, char** argv) {
   Dune::MPIHelper::instance(argc, argv);
+  Dune::ParameterTree parameterSet;
+  Dune::ParameterTreeParser::readINITree(argv[1], parameterSet);
+
+  const Dune::ParameterTree &gridParameters = parameterSet.sub("GridParameters");
+
+  const auto refinement        = gridParameters.get<int>("refinement");
+
+
   using namespace Ikarus;
   Ikarus::FiniteElements::MagneticMaterial mat({.A = 1.0e-11, .K = 2e4, .ms = 1.432e6});
   //  Ikarus::FiniteElements::MagneticMaterial mat({.A = 2.0e-11, .K = 1e-3, .ms = 8e2});
@@ -61,37 +70,44 @@ int main(int argc, char** argv) {
   //  const double freeSpaceX        = 10*a;
   //  const double freeSpaceY        = 5*a;
 
+//  auto isInsidePredicate = [&](auto&& coord) {
+//    if (coord[0] > freeSpaceX / 2 + sizedom1 / 2 + 1e-8 or coord[0] < freeSpaceX / 2 - sizedom1 / 2 - 1e-8)
+//      return false;
+//    else if (coord[1] > freeSpaceY / 2 + sizedom2 / 2 + 1e-8 or coord[1] < freeSpaceY / 2 - sizedom2 / 2 - 1e-8)
+//      return false;
+//    else
+//      return true;
+//  };
+
   auto isInsidePredicate = [&](auto&& coord) {
-    if (coord[0] > freeSpaceX / 2 + sizedom1 / 2 + 1e-8 or coord[0] < freeSpaceX / 2 - sizedom1 / 2 - 1e-8)
-      return false;
-    else if (coord[1] > freeSpaceY / 2 + sizedom2 / 2 + 1e-8 or coord[1] < freeSpaceY / 2 - sizedom2 / 2 - 1e-8)
+    if (Dune::power(coord[0],2)+ Dune::power(coord[1],2)-1e-8> Dune::power(0.5,2))
       return false;
     else
       return true;
   };
 
-  using Grid        = Dune::YaspGrid<gridDim>;
-  const size_t elex = 60;
-  const size_t eley = elex / 2;
-  const size_t elez = 1;
-  const double Lx   = freeSpaceX;
-  const double Ly   = freeSpaceY;
-  const double Lz   = freeSpaceY;
+//  using Grid        = Dune::YaspGrid<gridDim>;
+//  const size_t elex = 60;
+//  const size_t eley = elex / 2;
+//  const size_t elez = 1;
+//  const double Lx   = freeSpaceX;
+//  const double Ly   = freeSpaceY;
+//  const double Lz   = freeSpaceY;
+//
+//  Dune::FieldVector<double, gridDim> bbox;
+//  std::array<int, gridDim> eles{};
+//  if constexpr (gridDim == 2) {
+//    bbox = {Lx, Ly};
+//    eles = {elex, eley};
+//  } else if constexpr (gridDim == 3) {
+//  }
+//
+//  auto grid = std::make_shared<Grid>(bbox, eles);
 
-  Dune::FieldVector<double, gridDim> bbox;
-  std::array<int, gridDim> eles{};
-  if constexpr (gridDim == 2) {
-    bbox = {Lx, Ly};
-    eles = {elex, eley};
-  } else if constexpr (gridDim == 3) {
-  }
+    using Grid = Dune::ALUGrid<2, 2, Dune::simplex, Dune::conforming>;
+    auto grid  = Dune::GmshReader<Grid>::read("../../examples/src/testFiles/magnetCircle.msh", false,false);
 
-  auto grid = std::make_shared<Grid>(bbox, eles);
-
-  //  using Grid = Dune::ALUGrid<gridDim, 2, Dune::simplex, Dune::conforming>;
-  //  auto grid  = Dune::GmshReader<Grid>::read("../../examples/src/testFiles/circle.msh", false);
-
-  grid->globalRefine(0);
+  grid->globalRefine(refinement);
   auto gridView = grid->leafGridView();
 
   //  draw(gridView);

@@ -1,0 +1,13 @@
+
+
+[GridParameters]
+refinement = 2
+
+[materialParameters]
+mu = 2.7191e+4
+lambda = 4.4364e+4
+
+Emod = 1000
+nu = 0.3
+
+[]
