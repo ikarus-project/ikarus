@@ -3,7 +3,7 @@ name: Docs
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   Build:
@@ -16,6 +16,7 @@ jobs:
           pip install mkdocs-material
           pip install mkdocs-macros-plugin
           pip install mkdocs-drawio-exporter
+          pip install mkdocs-bibtex
           wget https://github.com/jgraph/drawio-desktop/releases/download/v16.5.1/drawio-amd64-16.5.1.deb
           sudo apt-get install libayatana-appindicator3-1
           sudo dpkg -i drawio-amd64-16.5.1.deb
