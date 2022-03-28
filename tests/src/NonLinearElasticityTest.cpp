@@ -6,81 +6,29 @@
 #include "../../config.h"
 #include "testHelpers.h"
 #define EIGEN_SPARSEMATRIX_PLUGIN "eigenSparseAddon.h"
-#include <dune/alugrid/grid.hh>
+
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
-#include <dune/grid/yaspgrid.hh>
-#include <dune/iga/nurbsgrid.hh>
+
+#include "common.h"
 
 #include "spdlog/spdlog.h"
 
 #include <Eigen/Core>
 
 #include "ikarus/Controlroutines/LoadControl.h"
-#include "ikarus/FiniteElements/NonLinearElasticityFEwithBasis.h"
+#include "ikarus/FiniteElements/Mechanics/NonLinearElasticityFE.h"
 #include "ikarus/Solver/NonLinearSolver/NewtonRaphson.hpp"
 #include "ikarus/Solver/NonLinearSolver/TrustRegion.hpp"
-#include "ikarus/basis/basishelper.h"
 #include "ikarus/utils/Observer/controlVTKWriter.h"
 #include <ikarus/Assembler/SimpleAssemblers.h>
-#include <ikarus/Grids/GridHelper/griddrawer.h>
+#include "ikarus/utils/drawing/griddrawer.h"
 #include <ikarus/LinearAlgebra/NonLinearOperator.h>
 #include <ikarus/utils/utils/algorithms.h>
 
-namespace Grids {
-  struct Yasp {};
-  struct Alu {};
-  struct Iga {};
-}  // namespace Grids
 
-template <typename GridType>
-auto createGrid() {
-  //  //  /// ALUGrid Example
-  if constexpr (std::is_same_v<GridType, Grids::Alu>) {
-    using Grid = Dune::ALUGrid<2, 2, Dune::simplex, Dune::conforming>;
-    auto grid  = Dune::GmshReader<Grid>::read("../../tests/src/testFiles/unstructuredTrianglesfine.msh", false);
-    grid->globalRefine(0);
-    return grid;
-  } else if constexpr (std::is_same_v<GridType, Grids::Yasp>) {
-    using Grid        = Dune::YaspGrid<2>;
-    const double L    = 1;
-    const double h    = 1;
-    const size_t elex = 10;
-    const size_t eley = 10;
-
-    Dune::FieldVector<double, 2> bbox = {L, h};
-    std::array<int, 2> eles           = {elex, eley};
-    auto grid                         = std::make_shared<Grid>(bbox, eles);
-    return grid;
-  } else if constexpr (std::is_same_v<GridType, Grids::Iga>) {
-    constexpr auto dimworld        = 2;
-    const std::array<int, 2> order = {2, 2};
-
-    const std::array<std::vector<double>, 2> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
-
-    using ControlPoint = Dune::IGA::NURBSPatchData<2, dimworld>::ControlPointType;
-
-    const std::vector<std::vector<ControlPoint>> controlPoints
-        = {{{.p = {0, 0}, .w = 5}, {.p = {0.5, 0}, .w = 1}, {.p = {1, 0}, .w = 1}},
-           {{.p = {0, 0.5}, .w = 1}, {.p = {0.5, 0.5}, .w = 10}, {.p = {1, 0.5}, .w = 1}},
-           {{.p = {0, 1}, .w = 1}, {.p = {0.5, 1}, .w = 1}, {.p = {1, 1}, .w = 1}}};
-
-    std::array<int, 2> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
-
-    auto controlNet = Dune::IGA::NURBSPatchData<2, dimworld>::ControlPointNetType(dimsize, controlPoints);
-    using Grid      = Dune::IGA::NURBSGrid<2, dimworld>;
-
-    Dune::IGA::NURBSPatchData<2, dimworld> patchData;
-    patchData.knotSpans     = knotSpans;
-    patchData.degree        = order;
-    patchData.controlPoints = controlNet;
-    auto grid               = std::make_shared<Grid>(patchData);
-    grid->globalRefine(1);
-    return grid;
-  }
-}
 
 template <typename T>
 class NonLinearElasticityLoadControlNRandTR : public testing::Test {
@@ -169,15 +117,15 @@ TYPED_TEST(NonLinearElasticityLoadControlNRandTR, ComputeMaxDisp) {
   const auto controlInfo = lc.run();
   nonLinOp.template update<0>();
   const auto maxDisp = std::ranges::max(d);
-  if (std::is_same_v<TypeParam, Grids::Yasp>) {
+  if constexpr (std::is_same_v<TypeParam, Grids::Yasp>) {
     EXPECT_DOUBLE_EQ(nonLinOp.value(), -1.4809559783564966e+03);
-    EXPECT_DOUBLE_EQ(maxDisp, 0.786567027108460048);
-  } else if (std::is_same_v<TypeParam, Grids::Alu>) {
-    EXPECT_DOUBLE_EQ(nonLinOp.value(), -1.4842107484533601e+03);
-    EXPECT_DOUBLE_EQ(maxDisp, 0.78426066482258983);
-  } else if (std::is_same_v<TypeParam, Grids::Iga>) {
-    EXPECT_DOUBLE_EQ(nonLinOp.value(), -8.1142552237939071e+02);
-    EXPECT_DOUBLE_EQ(maxDisp, 0.615624125459537153);
+    EXPECT_NEAR(maxDisp, 0.786567027108460048,1e-12);
+  } else if constexpr (std::is_same_v<TypeParam, Grids::Alu>) {
+    EXPECT_NEAR(nonLinOp.value(), -1.4842107484533601e+03,1e-12);
+    EXPECT_NEAR(maxDisp, 0.78426066482258983,1e-15);
+  } else if constexpr (std::is_same_v<TypeParam, Grids::Iga>) {
+    EXPECT_NEAR(nonLinOp.value(), -8.1142552237939071e+02,1e-12);
+    EXPECT_NEAR(maxDisp, 0.615624125459537153,1e-15);
   }
 
   nonLinOp.template update<1>();

@@ -7,7 +7,7 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
-#include <ikarus/Grids/GridHelper/griddrawer.h>
+#include "ikarus/utils/drawing/griddrawer.h"
 
 int main() {
   constexpr int gridDim = 2;  // (1)

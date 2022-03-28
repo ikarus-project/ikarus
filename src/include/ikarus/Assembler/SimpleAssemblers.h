@@ -3,7 +3,7 @@
 //
 
 #pragma once
-#include <ikarus/FiniteElements/FiniteElementFunctionConcepts.h>
+#include "ikarus/FiniteElements/Interface/FiniteElementFunctionConcepts.h"
 #include <ikarus/utils/concepts.h>
 
 #define EIGEN_SPARSEMATRIX_PLUGIN "eigenSparseAddon.h"
@@ -17,100 +17,7 @@
 
 namespace Ikarus {
 
-  //  namespace Impl {
-  //    template <typename FEContainer>
-  //    requires requires { {std::declval<typename
-  //    FEContainer::value_type>().globalIndices(std::declval<std::vector<typename
-  //    FEContainer::value_type::GlobalIndex>&>())}; } auto dofsOfElements(const FEContainer& feContainer) {
-  //      std::vector<typename FEContainer::value_type::GlobalIndex> dofs;
-  //      return feContainer | std::views::transform([dofs = move(dofs)]  (auto&& fe)mutable {
-  //               dofs.resize(0);
-  //               fe.globalIndices(dofs);
-  //               return dofs; });
-  //    }
-  //  }  // namespace Impl
-  //
-  //  template <typename FEManager, typename DirichletManager>
-  //  class DenseMatrixAssembler {
-  //  public:
-  //    explicit DenseMatrixAssembler(FEManager& dofManager, const DirichletManager& dirichletManager)
-  //        : feManager_{&dofManager}, dirichletManager_{&dirichletManager} {}
-  //
-  //    Eigen::MatrixXd& getMatrix(Ikarus::FiniteElements::MatrixAffordances MatrixAffordances,
-  //                               const std::optional<FEParameterValuePair>& feParameter = std::nullopt) {
-  //      return getMatrixImpl(MatrixAffordances, feParameter);
-  //    }
-  //
-  //    Eigen::MatrixXd& getReducedMatrix(Ikarus::FiniteElements::MatrixAffordances MatrixAffordances,
-  //                                      const std::optional<FEParameterValuePair>& feParameter = std::nullopt) {
-  //      return getReducedMatrixImpl(MatrixAffordances, feParameter);
-  //    }
-  //
-  //  private:
-  //    Eigen::MatrixXd& getMatrixImpl(Ikarus::FiniteElements::MatrixAffordances matAffordances,
-  //                                   const std::optional<FEParameterValuePair>& feParameter = std::nullopt) {
-  //      mat.setZero(feManager_->numberOfDegreesOfFreedom(), feManager_->numberOfDegreesOfFreedom());
-  //      for (auto [fe, dofs, vars] : feManager_->elementIndicesVariableTuple()) {
-  //        FiniteElements::FErequirements fErequirements;
-  //        fErequirements.matrixAffordances = matAffordances;
-  //        fErequirements.variables         = vars;
-  //        if (feParameter) fErequirements.parameter.insert({feParameter.value().type, feParameter.value().value});
-  //        assert(dofs.size() == calculateMatrix(fe, fErequirements).rows() && "The returned matrix has wrong
-  //        rowSize!"); assert(dofs.size() == calculateMatrix(fe, fErequirements).cols() && "The returned matrix has
-  //        wrong colSize!"); mat(dofs, dofs) += calculateMatrix(fe, fErequirements);
-  //      }
-  //      return mat;
-  //    }
-  //
-  //    Eigen::MatrixXd& getReducedMatrixImpl(Ikarus::FiniteElements::MatrixAffordances matAffordances,
-  //                                          const std::optional<FEParameterValuePair>& feParameter = std::nullopt) {
-  //      matRed.setZero(dirichletManager_->numberOfReducedDegreesOfFreedom(),
-  //                     dirichletManager_->numberOfReducedDegreesOfFreedom());
-  //      for (auto [fe, dofs, vars] : feManager_->elementIndicesVariableTuple()) {
-  //        FiniteElements::FErequirements fErequirements;
-  //        fErequirements.matrixAffordances = matAffordances;
-  //        fErequirements.variables         = vars;
-  //        if (feParameter) fErequirements.parameter.insert({feParameter.value().type, feParameter.value().value});
-  //        const auto eleMat = calculateMatrix(fe, fErequirements);
-  //        assert(dofs.size() == eleMat.rows() && "The returned matrix has wrong rowSize!");
-  //        assert(dofs.size() == eleMat.cols() && "The returned matrix has wrong colSize!");
-  //        std::cout<<"dofs: "<<dofs.transpose()<<std::endl;
-  //        for (int r = 0; r < dofs.size(); ++r) {
-  //          std::cout<<"r: "<<r<<" dofs[r]:"<<dofs[r];
-  //          if (dirichletManager_->isConstrained(dofs[r])) {
-  //            std::cout<<"skipped"<<std::endl;
-  //            continue;
-  //          } else {
-  //            for (int c = 0; c < dofs.size(); ++c) {
-  //              std::cout<<"c: "<<r<<" dofs[c]:"<<dofs[c];
-  //              if (dirichletManager_->isConstrained(dofs[c])) {
-  //                std::cout<<"skipped"<<std::endl;
-  //                continue;
-  //              }
-  //              std::cout<<"\ndirichletManager_->constraintsBelow(dofs[r]:
-  //              "<<dirichletManager_->constraintsBelow(dofs[r]);
-  //              std::cout<<"\ndirichletManager_->constraintsBelow(dofs[c]:
-  //              "<<dirichletManager_->constraintsBelow(dofs[c]); std::cout<<"\nrrealindex"<<dofs[r] -
-  //              dirichletManager_->constraintsBelow(dofs[r])<<std::endl; std::cout<<"\ncrealindex"<<dofs[c] -
-  //              dirichletManager_->constraintsBelow(dofs[c])<<std::endl; matRed(dofs[r] -
-  //              dirichletManager_->constraintsBelow(dofs[r]),
-  //                     dofs[c] - dirichletManager_->constraintsBelow(dofs[c]))
-  //                  += eleMat(r, c);
-  //            }
-  //          }
-  //        }
-  //      }
-  //      return matRed;
-  //    }
-  //
-  //    FEManager* feManager_;
-  //    DirichletManager const* dirichletManager_;
-  //    Eigen::MatrixXd mat{};
-  //    Eigen::MatrixXd matRed{};
-  //  };
-  //
-
-  template <typename Basis, typename FEContainer>  // requires Ikarus::Concepts::FlatIndexBasis<BasisEmbedded>
+  template <typename Basis, typename FEContainer>
   class SparseFlatAssembler {
     using RequirementType = typename FEContainer::value_type::FERequirementType;
     using GlobalIndex     = typename FEContainer::value_type::GlobalIndex;
@@ -242,7 +149,7 @@ namespace Ikarus {
       isReducedOccupationPatternCreated = true;
     }
 
-    // This function save the indices of each element in the underlying vector which stores the sparse matrix entries
+    // This function save the indices of each element in the impl vector which stores the sparse matrix entries
     void createlinearDofsPerElement() {
       std::vector<GlobalIndex> dofs;
       for (auto&& fe : feContainer) {
@@ -256,7 +163,7 @@ namespace Ikarus {
       arelinearDofsPerElementCreated = true;
     }
 
-    // This function save the indices of each element in the underlying vector which stores the sparse matrix entries
+    // This function save the indices of each element in the impl vector which stores the sparse matrix entries
     void createlinearDofsPerElementReduced() {
       std::vector<GlobalIndex> dofs;
       for (auto&& fe : feContainer) {

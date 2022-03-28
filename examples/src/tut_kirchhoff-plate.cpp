@@ -25,8 +25,8 @@
 #include "ikarus/utils/utils/algorithms.h"
 #include <ikarus/Assembler/SimpleAssemblers.h>
 #include <ikarus/FiniteElements/AutodiffFE.h>
-#include <ikarus/FiniteElements/FEPolicies.h>
-#include <ikarus/Grids/GridHelper/griddrawer.h>
+#include "ikarus/FiniteElements/Interface/FEPolicies.h"
+#include "ikarus/utils/drawing/griddrawer.h"
 #include <ikarus/LinearAlgebra/NonLinearOperator.h>
 #include <ikarus/utils/concepts.h>
 

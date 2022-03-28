@@ -37,6 +37,7 @@ target_compile_options(
          -Wno-unused-parameter
          -Wno-unused-but-set-variable
          -Wno-deprecated-copy
+         -ftemplate-backtrace-limit=0
 )
 target_compile_options(IkarusTests PUBLIC -fconcepts-diagnostics-depth=5)
 
@@ -54,3 +55,4 @@ if(ENABLE_TEST_COVERAGE)
   target_compile_options(IkarusTests PUBLIC -O0 -fprofile-arcs -ftest-coverage -fPIC)
   target_link_options(IkarusTests PUBLIC -fprofile-arcs -ftest-coverage)
 endif()
+

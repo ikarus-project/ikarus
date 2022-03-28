@@ -13,7 +13,7 @@ namespace Ikarus {
   template <Concepts::Manifold Mani, int tag>
   class DefaultVariable {
   public:
-    /** \brief Type of the underlying manifold, usually Realtuple */
+    /** \brief Type of the impl manifold, usually Realtuple */
     using ManifoldType = Mani;
 
     /** \brief Size of how much values are needed to store the variable */

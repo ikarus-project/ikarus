@@ -15,7 +15,7 @@ namespace Impl {
   constexpr decltype(auto) applyAndRemoveRefererenceWrapper(F&& f, Tuple&& t, std::index_sequence<I...>) {
     return std::invoke(
         std::forward<F>(f),
-        std::get<I>(std::forward<Tuple>(t)).get()...);  //.get gets the underlying type of std::referenceWrapper
+        std::get<I>(std::forward<Tuple>(t)).get()...);  //.get gets the impl type of std::referenceWrapper
   }
 }  // namespace Impl
 

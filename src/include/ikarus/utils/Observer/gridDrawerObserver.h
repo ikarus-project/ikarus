@@ -7,7 +7,7 @@
 
 #include "spdlog/spdlog.h"
 
-#include "ikarus/Grids/GridHelper/griddrawer.h"
+#include "ikarus/utils/drawing/griddrawer.h"
 #include "ikarus/utils/Observer/observer.h"
 #include "ikarus/utils/Observer/observerMessages.h"
 

@@ -48,16 +48,16 @@ TEST(TrustRegion, TrustRegion1) {
   EXPECT_THAT(x, EigenApproxEqual(xExpected, 1e-15));
 }
 
-static constexpr double a      = 1.0;
-static constexpr double b      = 100.0;
-static constexpr double offset = -1;
+static constexpr double a_      = 1.0;
+static constexpr double b_      = 100.0;
+static constexpr double offset_ = -1;
 auto rosenbrock(const Eigen::Vector2d& x) {
-  return Dune::power(a - x[0], 2) + b * Dune::power(x[1] - x[0] * x[0], 2) + offset;
+  return Dune::power(a_ - x[0], 2) + b_ * Dune::power(x[1] - x[0] * x[0], 2) + offset_;
 }
 auto rosenbrockdx(const Eigen::Vector2d& x) {
   Eigen::Vector2d r;
-  r[0] = -2 * a + 2 * x[0] - 4 * b * (-x[0] * x[0] + x[1]) * x[0];
-  r[1] = 2 * b * (-x[0] * x[0] + x[1]);
+  r[0] = -2 * a_ + 2 * x[0] - 4 * b_ * (-x[0] * x[0] + x[1]) * x[0];
+  r[1] = 2 * b_ * (-x[0] * x[0] + x[1]);
   return r;
 }
 
@@ -67,9 +67,9 @@ auto rosenbrockddx(const Eigen::Vector2d& x) {
   A.insert(0, 1);
   A.insert(1, 0);
   A.insert(1, 1);
-  A.coeffRef(0, 0) = 2 + 8 * b * x[0] * x[0] - 4 * b * (-x[0] * x[0] + x[1]);
-  A.coeffRef(0, 1) = A.coeffRef(1, 0) = -4 * b * x[0];
-  A.coeffRef(1, 1)                    = 2 * b;
+  A.coeffRef(0, 0) = 2 + 8 * b_ * x[0] * x[0] - 4 * b_ * (-x[0] * x[0] + x[1]);
+  A.coeffRef(0, 1) = A.coeffRef(1, 0) = -4 * b_ * x[0];
+  A.coeffRef(1, 1)                    = 2 * b_;
 
   return A;
 }
@@ -85,7 +85,7 @@ TEST(TrustRegion, TrustRegion2) {
   const double eps   = 1e-10;
   const int maxIter_ = 30;
   Eigen::Vector2d xExpected;
-  xExpected << a, a * a;
+  xExpected << a_, a_ * a_;
 
   Ikarus::TrustRegion tr(nonLinOp);
   tr.setup({.verbosity = 1, .maxiter = maxIter_, .grad_tol = eps, .Delta0 = 1});
@@ -96,7 +96,7 @@ TEST(TrustRegion, TrustRegion2) {
   EXPECT_LT(solverInfo.gradienNorm, eps);
   EXPECT_THAT(x, EigenApproxEqual(xExpected, eps));
   nonLinOp.update<0>();
-  EXPECT_DOUBLE_EQ(nonLinOp.value(), offset);
+  EXPECT_DOUBLE_EQ(nonLinOp.value(), offset_);
 }
 
 #include <autodiff/forward/dual.hpp>
@@ -356,8 +356,11 @@ auto ddf3RBlocked(const MultiTypeVector& mT) {
   return A;
 }
 
+
+
 TEST(TrustRegion, TrustRegionRiemanianUnitSphereAndDispBlocked) {
   using namespace Dune::Indices;
+  using namespace Ikarus;
   DisplacementVector disp;
   disp.resize(2);
   disp[0].setValue(Eigen::Vector3d::UnitY());
@@ -393,17 +396,7 @@ TEST(TrustRegion, TrustRegionRiemanianUnitSphereAndDispBlocked) {
   EXPECT_THAT(ddfvLambda(mT), EigenApproxEqual(nonLinOp.secondDerivative(), 1e-15));
   //
   //
-  Ikarus::TrustRegion tr3(nonLinOp, std::function([](MultiTypeVector& x, const Eigen::VectorXd& d) {
-                            auto dispEigen = Ikarus::LinearAlgebra::viewAsFlatEigenVector(x[_0]);
-                            for (auto i = 0U; i < x[_0].size(); ++i) {
-                              size_t indexStartI = i * x[_0][0].correctionSize;
-                              x[_0][i] += d.segment<3>(indexStartI);
-                            }
-                            for (auto i = 0U; i < x[_1].size(); ++i) {
-                              size_t indexStartI = dispEigen.size() + i * x[_1][0].correctionSize;
-                              x[_1][i] += d.segment<2>(indexStartI);
-                            }
-                          }));
+  Ikarus::TrustRegion tr3(nonLinOp);
   constexpr double tol = 1e-12;
   tr3.setup({.verbosity = 1, .maxiter = 1000, .grad_tol = tol, .corr_tol = tol, .Delta0 = 0.1});
   const auto solverInfo3 = tr3.solve();
