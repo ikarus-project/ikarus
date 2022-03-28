@@ -51,18 +51,20 @@ int main(int argc, char** argv) {
   const Dune::ParameterTree &gridParameters = parameterSet.sub("GridParameters");
 
   const auto refinement        = gridParameters.get<int>("refinement");
+  const auto innerRadius        = gridParameters.get<double>("innerRadius");
+  const auto mshfilepath        = gridParameters.get<std::string>("mshfilepath");
 
 
   using namespace Ikarus;
   Ikarus::FiniteElements::MagneticMaterial mat({.A = 1.0e-11, .K = 2e4, .ms = 1.432e6});
   //  Ikarus::FiniteElements::MagneticMaterial mat({.A = 2.0e-11, .K = 1e-3, .ms = 8e2});
   const double lx              = sqrt(2 * mat.A / (mat.mu0 * mat.ms * mat.ms));
-  const double lengthUnit      = 1e-9;
-  const double sizedom1InMeter = 30 * lengthUnit;
-  const double sizedom1        = sizedom1InMeter / lx;
-  const double sizedom2        = sizedom1 / 2;
-  const double freeSpaceX      = sizedom1 * 8;
-  const double freeSpaceY      = sizedom1 * 4;
+//  const double lengthUnit      = 1e-9;
+//  const double sizedom1InMeter = 30 * lengthUnit;
+//  const double sizedom1        = sizedom1InMeter / lx;
+//  const double sizedom2        = sizedom1 / 2;
+//  const double freeSpaceX      = sizedom1 * 8;
+//  const double freeSpaceY      = sizedom1 * 4;
 
   //  const double a = 100*1e-4/ lx;
   //  const double sizedom1        = 2*a ;
@@ -79,8 +81,16 @@ int main(int argc, char** argv) {
 //      return true;
 //  };
 
+//  auto isInsidePredicate = [&](auto&& coord) {
+//    if (Dune::power(coord[0],2)+ Dune::power(coord[1],2)-1e-8> Dune::power(0.5,2))
+//      return false;
+//    else
+//      return true;
+//  };
+
+  std::cout<<"InnerRadius is "<< innerRadius<< std::endl;
   auto isInsidePredicate = [&](auto&& coord) {
-    if (Dune::power(coord[0],2)+ Dune::power(coord[1],2)-1e-8> Dune::power(0.5,2))
+    if (Dune::power(coord[0],2)+ Dune::power(coord[1],2)-1e-8> Dune::power(innerRadius,2) )
       return false;
     else
       return true;
@@ -105,14 +115,14 @@ int main(int argc, char** argv) {
 //  auto grid = std::make_shared<Grid>(bbox, eles);
 
     using Grid = Dune::ALUGrid<2, 2, Dune::simplex, Dune::conforming>;
-    auto grid  = Dune::GmshReader<Grid>::read("../../examples/src/testFiles/magnetCircle.msh", false,false);
+    auto grid  = Dune::GmshReader<Grid>::read(mshfilepath, false,false);
 
   grid->globalRefine(refinement);
   auto gridView = grid->leafGridView();
 
   //  draw(gridView);
   spdlog::info("The exchange length is {}.", lx);
-  spdlog::info("The domain has a length of {}.", sizedom1);
+//  spdlog::info("The domain has a length of {}.", sizedom1);
 
   using namespace Dune::Functions::BasisFactory;
   //  auto basisEmbedded = makeBasis(gridView, power<directorDim>(lagrange<magnetizationOrder>(),
@@ -145,10 +155,16 @@ int main(int argc, char** argv) {
     return fext;
   };
 
+  int insideCounter=0;
   for (auto& element : elements(gridView)) {
     auto geoCoord = element.geometry().center();
-    fes.emplace_back(basisEmbeddedC, basisRieC, element, mat, volumeLoad, isInsidePredicate(geoCoord));
+    const bool isInside = isInsidePredicate(geoCoord);
+    fes.emplace_back(basisEmbeddedC, basisRieC, element, mat, volumeLoad,isInside );
+    if(isInside)
+      ++insideCounter;
   }
+
+  std::cout<<"There are " << insideCounter<< " Elements inside"<<std::endl;
 
   DirectorVector mBlocked(basisEmbeddedC.size({Dune::Indices::_0}));
   for (auto& msingle : mBlocked) {
@@ -182,7 +198,7 @@ int main(int argc, char** argv) {
     for (const auto& intersection : intersections(gridViewMagn, element))
       if (!isInsidePredicate(intersection.geometry().center())) {
         for (auto localIndex : seDOFs.bind(localView, intersection))
-          dirichletFlags[localView.index(localIndex)[0]];  //=true;
+          dirichletFlags[localView.index(localIndex)[0]]=true;
       }
   }
 
@@ -197,7 +213,7 @@ int main(int argc, char** argv) {
         if (!isInsidePredicate(intersection.geometry().center())) {
           auto b = mAndABlocked[Dune::Indices::_0][localView2.index(localIndex)[1]].begin();
           auto e = mAndABlocked[Dune::Indices::_0][localView2.index(localIndex)[1]].end();
-          //                    std::fill(b,e,0.0);
+                              std::fill(b,e,0.0);
         }
   }
 

@@ -1,7 +1,11 @@
 
 
+
+
 [GridParameters]
 refinement = 2
+mshfilepath = /mshfiles/magnetCircle_r2sqrt2R6_2_sqrt2.msh
+innerRadius = 2.121320343559643
 
 [materialParameters]
 mu = 2.7191e+4
