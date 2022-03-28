@@ -126,3 +126,5 @@ plugins:
       module_name: mkdocs-macros
   - bibtex:
       bib_file: "literature.bib"
+
+dev_addr: '0.0.0.0:8000'
