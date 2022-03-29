@@ -2,9 +2,10 @@
 // Created by Alex on 21.07.2021.
 //
 
-#include "../../config.h"
+#include <config.h>
 
-#include <dune/alugrid/grid.hh>
+
+
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
 #include <dune/functions/functionspacebases/compositebasis.hh>
@@ -14,7 +15,11 @@
 #include <dune/functions/functionspacebases/subspacebasis.hh>
 #include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
 #include <dune/grid/yaspgrid.hh>
-#include <dune/iga/nurbsgrid.hh>
+
+//#include <dune/fufem/dunepython.hh>
+
+#include <dune/alu
+
 
 #include "spdlog/spdlog.h"
 
@@ -34,7 +39,7 @@
 
 constexpr int magnetizationOrder    = 1;
 constexpr int vectorPotOrder        = 1;
-constexpr int gridDim               = 2;
+constexpr int gridDim               = 3;
 constexpr int directorDim           = 3;
 constexpr int vectorPotDim          = gridDim == 2 ? 1 : 3;
 constexpr int directorCorrectionDim = directorDim - 1;
@@ -49,10 +54,17 @@ int main(int argc, char** argv) {
   Dune::ParameterTreeParser::readINITree(argv[1], parameterSet);
 
   const Dune::ParameterTree &gridParameters = parameterSet.sub("GridParameters");
+  const Dune::ParameterTree &controlParameters = parameterSet.sub("ControlParameters");
 
   const auto refinement        = gridParameters.get<int>("refinement");
   const auto innerRadius        = gridParameters.get<double>("innerRadius");
   const auto mshfilepath        = gridParameters.get<std::string>("mshfilepath");
+  const auto loadSteps        = controlParameters.get<int>("loadSteps");
+  const auto loadFactorRange        = controlParameters.get< std::array<double,2> >("loadFactorRange");
+
+
+  std::string dirichletVerticesPredicateText = std::string("lambda x: (") + parameterSet.get<std::string>("dirichletVerticesPredicate") + std::string(")");
+  auto pythonDirichletVertices = Dune::Python::make_function<bool>(Dune::Python::evaluate(dirichletVerticesPredicateText));
 
 
   using namespace Ikarus;
@@ -90,7 +102,7 @@ int main(int argc, char** argv) {
 
   std::cout<<"InnerRadius is "<< innerRadius<< std::endl;
   auto isInsidePredicate = [&](auto&& coord) {
-    if (Dune::power(coord[0],2)+ Dune::power(coord[1],2)-1e-8> Dune::power(innerRadius,2) )
+    if (Dune::power(coord[0],2)+ Dune::power(coord[1],2)-1e-4> Dune::power(innerRadius,2) )
       return false;
     else
       return true;
@@ -114,7 +126,7 @@ int main(int argc, char** argv) {
 //
 //  auto grid = std::make_shared<Grid>(bbox, eles);
 
-    using Grid = Dune::ALUGrid<2, 2, Dune::simplex, Dune::conforming>;
+    using Grid = Dune::ALUGrid<gridDim, gridDim, Dune::simplex, Dune::conforming>;
     auto grid  = Dune::GmshReader<Grid>::read(mshfilepath, false,false);
 
   grid->globalRefine(refinement);
@@ -150,8 +162,8 @@ int main(int argc, char** argv) {
   auto volumeLoad = [](auto& globalCoord, auto& lamb) {
     Eigen::Vector<double, directorDim> fext;
     fext.setZero();
-    fext[0] = lamb;
-    fext[1] = lamb;
+    fext[0] = 0;
+    fext[1] = 0;
     return fext;
   };
 
@@ -195,11 +207,22 @@ int main(int argc, char** argv) {
   const auto& gridViewMagn = magnetBasis.gridView();
   for (auto&& element : elements(gridViewMagn)) {
     localView.bind(element);
-    for (const auto& intersection : intersections(gridViewMagn, element))
-      if (!isInsidePredicate(intersection.geometry().center())) {
-        for (auto localIndex : seDOFs.bind(localView, intersection))
-          dirichletFlags[localView.index(localIndex)[0]]=true;
+    for (const auto& intersection : intersections(gridViewMagn, element)) {
+      bool isIntersectionInside = false;
+
+      for (int i = 0; i <  intersection.geometry().corners(); ++i) {
+        if (isInsidePredicate(intersection.geometry().corner(i))) {
+          isIntersectionInside = true;
+          break;
+        } else
+          isIntersectionInside = false;
       }
+
+      if (!isIntersectionInside) {
+        for (auto localIndex : seDOFs.bind(localView, intersection))
+          dirichletFlags[localView.index(localIndex)[0]] = true;
+      }
+    }
   }
 
   auto magnetBasisBlocked   = Dune::Functions::subspaceBasis(basisEmbeddedC, Dune::Indices::_0);
@@ -209,17 +232,28 @@ int main(int argc, char** argv) {
   for (auto&& element : elements(gridViewMagn2)) {
     localView2.bind(element);
     for (const auto& intersection : intersections(gridViewMagn2, element))
-      for (auto localIndex : seDOFs2.bind(localView2, intersection))
-        if (!isInsidePredicate(intersection.geometry().center())) {
+      for (auto localIndex : seDOFs2.bind(localView2, intersection)){
+        bool isIntersectionInside = false;
+
+    for (int i = 0; i <  intersection.geometry().corners(); ++i) {
+      if (isInsidePredicate(intersection.geometry().corner(i))) {
+        isIntersectionInside = true;
+        break;
+      } else
+        isIntersectionInside = false;
+    }
+
+    if (!isIntersectionInside) {
           auto b = mAndABlocked[Dune::Indices::_0][localView2.index(localIndex)[1]].begin();
           auto e = mAndABlocked[Dune::Indices::_0][localView2.index(localIndex)[1]].end();
                               std::fill(b,e,0.0);
         }
   }
+  }
 
   auto denseAssembler  = DenseFlatAssembler(basisRieC, fes, dirichletFlags);
   auto sparseAssembler = SparseFlatAssembler(basisRieC, fes, dirichletFlags);
-  double lambda        = 1.0;
+  double lambda        = 0.0;
 
   auto residualFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
     Ikarus::FErequirements<MultiTypeVector> req;
@@ -277,13 +311,14 @@ int main(int argc, char** argv) {
              .rho_reg   = 1e6,
              .Delta0    = 1000});
 
-  auto lc = Ikarus::LoadControl(nr, 1, {0, 100000});
+  auto lc = Ikarus::LoadControl(nr, loadSteps, loadFactorRange);
 
   auto scalarMagnBasis          = makeBasis(gridView, lagrangeDG<magnetizationOrder>());
   auto localViewScalarMagnBasis = scalarMagnBasis.localView();
 
   std::vector<double> gradMNodalRes(scalarMagnBasis.size());
-  std::vector<Dune::FieldVector<double, 3>> curlANodalRes(scalarMagnBasis.size());
+  std::vector<Dune::FieldVector<double, 3>> BfieldNodalRes(scalarMagnBasis.size());
+  std::vector<Dune::FieldVector<double, 3>> HfieldNodalRes(scalarMagnBasis.size());
 
   auto writerObserver = std::make_shared<Ikarus::GenericControlObserver>(ControlMessages::STEP_ENDED, [&](auto i) {
     auto mGlobalFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, directorDim>>(
@@ -322,7 +357,6 @@ int main(int argc, char** argv) {
     auto scalarMagnBasis2          = makeBasis(gridView, power<3>(lagrangeDG<vectorPotOrder>(), BlockedInterleaved{}));
     auto localViewScalarMagnBasis2 = scalarMagnBasis2.localView();
     auto ele2                      = elements(gridView).begin();
-    resultRequirements.resType     = ResultType::BField;
     for (auto& fe : fes) {
       localViewScalarMagnBasis2.bind(*ele2);
       const auto& fe2              = localViewScalarMagnBasis2.tree().child(0).finiteElement();
@@ -333,29 +367,36 @@ int main(int argc, char** argv) {
 
         auto coord = toEigenVector(nodalPositionInChildCoordinate);
 
+        resultRequirements.resType     = ResultType::BField;
         fe.calculateAt(resultRequirements, coord, result);
-        curlANodalRes[localViewScalarMagnBasis2.index(localViewScalarMagnBasis2.tree().child(0).localIndex(c))[0]]
+        BfieldNodalRes[localViewScalarMagnBasis2.index(localViewScalarMagnBasis2.tree().child(0).localIndex(c))[0]]
+            = Dune::FieldVector<double, 3>({result[0], result[1], result[2]});
+        resultRequirements.resType     = ResultType::HField;
+        fe.calculateAt(resultRequirements, coord, result);
+        HfieldNodalRes[localViewScalarMagnBasis2.index(localViewScalarMagnBasis2.tree().child(0).localIndex(c))[0]]
             = Dune::FieldVector<double, 3>({result[0], result[1], result[2]});
       }
       ++ele2;
     }
 
     auto gradmGlobalFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<double>(scalarMagnBasis, gradMNodalRes);
-    auto curlAGlobalFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(
-        scalarMagnBasis, curlANodalRes);
+    auto bFieldGlobalFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(
+        scalarMagnBasis2, BfieldNodalRes);
+    auto hFieldGlobalFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(
+        scalarMagnBasis2, HfieldNodalRes);
 
     vtkWriter.addVertexData(gradmGlobalFunc, Dune::VTK::FieldInfo("gradMNorm", Dune::VTK::FieldInfo::Type::scalar, 1));
-    vtkWriter.addVertexData(curlAGlobalFunc, Dune::VTK::FieldInfo("B", Dune::VTK::FieldInfo::Type::vector, 3));
+    vtkWriter.addVertexData(bFieldGlobalFunc, Dune::VTK::FieldInfo("B", Dune::VTK::FieldInfo::Type::vector, 3));
+    vtkWriter.addVertexData(hFieldGlobalFunc, Dune::VTK::FieldInfo("H", Dune::VTK::FieldInfo::Type::vector, 3));
     auto isInsideFunc = Dune::Functions::makeAnalyticGridViewFunction(isInsidePredicate, gridView);
     vtkWriter.addCellData(isInsideFunc, Dune::VTK::FieldInfo("isInside", Dune::VTK::FieldInfo::Type::scalar, 1));
     vtkWriter.write(std::string("Magnet") + std::to_string(i));
+
+    std::cout<<"Writing "<<std::string("Magnet") + std::to_string(i)<< " to file. The load factor is "<< lambda<<std::endl;
   });
   lc.subscribeAll(writerObserver);
   lc.run();
   nonLinOp.update<0>();
-
-  for (auto& mS : mBlocked)
-    if (not Dune::FloatCmp::eq(mS.getValue().norm(), 1.0))
-      std::cout << "wrong director found " << mS.getValue().transpose() << std::endl;
-  //  std::cout << mBlocked;
+  const double volume = std::numbers::pi*Dune::power(innerRadius,2);
+  spdlog::info("Energy: {}, Volume: {}, Energy/(0.5*V): {}",nonLinOp.value(),volume,nonLinOp.value()/(0.5*volume));
 }

@@ -1,11 +1,12 @@
-
-
-
-
 [GridParameters]
-refinement = 2
-mshfilepath = /mshfiles/magnetCircle_r2sqrt2R6_2_sqrt2.msh
-innerRadius = 2.121320343559643
+refinement = 0
+mshfilepath = /mshfiles/magnetSphere.msh
+innerRadius = 0.5 # 2.8284271247461903 # 4.242640687119286
+innerDomainPredicate = "[x[0] < 0.01, x[0] < 0.01 or x[0] > 199.99, x[0] < 0.01 or x[0] > 199.99]"
+
+[ControlParameters]
+loadSteps        = 0
+loadFactorRange   = 0.0 10000.0
 
 [materialParameters]
 mu = 2.7191e+4
@@ -13,5 +14,7 @@ lambda = 4.4364e+4
 
 Emod = 1000
 nu = 0.3
+
+
 
 []

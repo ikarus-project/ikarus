@@ -21,18 +21,18 @@ namespace Ikarus {
   class LoadControl : public IObservable<ControlMessages> {
   public:
     LoadControl(const std::shared_ptr<NonLinearSolver>& p_nonLinearSolver, int loadSteps,
-                const std::pair<double, double>& tbeginEnd)
+                const std::array<double,2>& tbeginEnd)
         : nonLinearSolver{p_nonLinearSolver},
           loadSteps_{loadSteps},
-          parameterBegin_{tbeginEnd.first},
-          parameterEnd_{tbeginEnd.second},
+          parameterBegin_{tbeginEnd[0]},
+          parameterEnd_{tbeginEnd[1]},
           stepSize_{(parameterEnd_ - parameterBegin_) / loadSteps_} {
       static_assert(
           requires {
             nonLinearSolver->nonLinearOperator().lastParameter() = 0.0;
             nonLinearSolver->nonLinearOperator().lastParameter() += 0.0;
           },
-          "The last parameter (load factor) must be assignable and incremenntable with a double!");
+          "The last parameter (load factor) must be assignable and incrementable with a double!");
     }
 
     LoadControlInformation run() {

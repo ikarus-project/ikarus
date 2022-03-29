@@ -140,7 +140,7 @@ namespace Ikarus {
         std::declval<typename LocalFunctionTraits<LocalFunctionImpl>::AnsatzFunctionType>(),
         std::declval<typename LocalFunctionTraits<LocalFunctionImpl>::AnsatzFunctionJacobian>(),
         std::declval<typename LocalFunctionTraits<LocalFunctionImpl>::AlongType>(),
-        std::declval<std::array<size_t, LocalFunctionTraits<LocalFunctionImpl>::gridDim>>());
+        std::declval<std::array<size_t, 2>>());
   };
 
   template <typename LocalFunctionImpl>
@@ -149,7 +149,7 @@ namespace Ikarus {
         std::declval<typename LocalFunctionTraits<LocalFunctionImpl>::AnsatzFunctionType>(),
         std::declval<typename LocalFunctionTraits<LocalFunctionImpl>::AnsatzFunctionJacobian>(),
         std::declval<typename LocalFunctionTraits<LocalFunctionImpl>::AlongType>(),
-        std::declval<std::array<size_t, LocalFunctionTraits<LocalFunctionImpl>::gridDim>>());
+        std::declval<std::array<size_t, 2>>());
   };
 
   template <typename LocalFunctionImpl>
@@ -158,7 +158,7 @@ namespace Ikarus {
         std::declval<typename LocalFunctionTraits<LocalFunctionImpl>::AnsatzFunctionType>(),
         std::declval<typename LocalFunctionTraits<LocalFunctionImpl>::AnsatzFunctionJacobian>(),
         std::declval<typename LocalFunctionTraits<LocalFunctionImpl>::AlongType>(),
-        std::declval<std::array<size_t, LocalFunctionTraits<LocalFunctionImpl>::gridDim>>(), std::declval<int>());
+        std::declval<std::array<size_t, 2>>(), std::declval<int>());
   };
 
   template <typename LocalFunctionImpl>
@@ -245,7 +245,7 @@ namespace Ikarus {
     }
 
     /** \brief Function to forward the call of no spatial derivative and two derivative wrt. coefficients.
-     * You have to pass a along argument which specifies the direction wher this derivative is applied
+     * You have to pass a along argument which specifies the direction where this derivative is applied
      * Specialization when no transformWith is passed
      */
     template <typename... Args, typename... AlongArgs, typename... Indices, typename DomainTypeOrIntegrationPointIndex>

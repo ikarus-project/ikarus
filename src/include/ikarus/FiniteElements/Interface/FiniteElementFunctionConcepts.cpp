@@ -17,6 +17,12 @@ namespace Ikarus {
       case ResultType::gradientNormOfMagnetization:
         return "gradientNormOfMagnetization";
         break;
+      case ResultType::BField:
+        return "BField";
+        break;
+      case ResultType::HField:
+        return "HField";
+        break;
     }
     __builtin_unreachable();
   }
