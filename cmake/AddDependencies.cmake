@@ -40,7 +40,7 @@ find_package(Eigen3 3.3.9 REQUIRED)
 message("Find spdlog: ")
 find_package(spdlog REQUIRED)
 #message("Find dune-alugrid: ")
-find_package(dune-alugrid REQUIRED)
+#find_package(dune-alugrid REQUIRED)
 #message("Find dune-foamgrid: ")
 #find_package(dune-foamgrid REQUIRED)
 #message("====================")
@@ -98,7 +98,7 @@ message("============================")
 message("${DUNE_LIBS}")
 message("============================")
 target_link_dune_default_libraries(${PROJECT_NAME}) # link compiled dune libs
-include_directories(/usr/local/include/dune) # include dune headers from costum installed headers
+#include_directories(/usr/local/include/dune) # include dune headers from costum installed headers
 add_dune_all_flags(${PROJECT_NAME})
 target_link_libraries(
   ${PROJECT_NAME}

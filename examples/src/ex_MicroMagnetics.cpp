@@ -15,10 +15,11 @@
 #include <dune/functions/functionspacebases/subspacebasis.hh>
 #include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
 #include <dune/grid/yaspgrid.hh>
+#include <dune/alugrid/grid.hh>
 
-//#include <dune/fufem/dunepython.hh>
+#include <dune/fufem/dunepython.hh>
 
-#include <dune/fufem/python/common.hh>
+
 
 
 #include "spdlog/spdlog.h"
@@ -64,7 +65,7 @@ int main(int argc, char** argv) {
 
 
   std::string dirichletVerticesPredicateText = std::string("lambda x: (") + parameterSet.get<std::string>("dirichletVerticesPredicate") + std::string(")");
-  auto pythonDirichletVertices = Dune::Python::make_function<bool>(Dune::Python::evaluate(dirichletVerticesPredicateText));
+  auto pythonDirichletVertices = Python::make_function<bool>(Python::evaluate(dirichletVerticesPredicateText));
 
 
   using namespace Ikarus;
