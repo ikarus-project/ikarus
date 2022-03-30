@@ -18,7 +18,7 @@
 
 //#include <dune/fufem/dunepython.hh>
 
-#include <dune/
+#include <dune/fufem/python/common.hh>
 
 
 #include "spdlog/spdlog.h"

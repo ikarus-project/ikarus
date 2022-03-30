@@ -20,29 +20,21 @@ add_definitions(-Wall -Wpedantic -Wextra -m64)
 find_package(dune-common REQUIRED)
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules"
         ${dune-common_MODULE_PATH})
-find_package(dune-fufem REQUIRED)
-list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules"
-        ${dune-fufem_MODULE_PATH})
-message("${dune-fufem_MODULE_PATH}")
-message("${dune-common_MODULE_PATH}")
-message("${CMAKE_MODULE_PATH}")
 include(DuneMacros)
-include(DuneFufemMacros)
-dune_project()
 
+dune_project()
 dune_enable_all_packages()
 
-find_package(SuiteSparse OPTIONAL_COMPONENTS CHOLMOD UMFPACK)
-include(AddSuiteSparseFlags)
-
+#find_package(SuiteSparse OPTIONAL_COMPONENTS CHOLMOD UMFPACK)
+#include(AddSuiteSparseFlags)
 
 add_subdirectory(src)
 add_subdirectory(examples)
 add_subdirectory(benchmarks)
-enable_testing()
 add_subdirectory(tests)
 add_subdirectory(cmake/FormatTarget)
 
+enable_testing()
 if(BUILD_DOCS)
   message("Build docs locally target ENABLED")
   add_subdirectory(docs/BuildLocally)

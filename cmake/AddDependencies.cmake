@@ -46,7 +46,7 @@ find_package(dune-alugrid REQUIRED)
 #message("====================")
 #message(${dune-alugrid_INCLUDE_DIRS})
 #message("====================")
-target_include_directories(${PROJECT_NAME} PUBLIC ${dune-alugrid_INCLUDE_DIRS})
+
 message("====================")
 message("${dune-alugrid_INCLUDE_DIRS}")
 message("====================")
@@ -94,9 +94,12 @@ message("Find matplotc++: ")
 find_package(Matplot++ REQUIRED)
 message("Find PythonLibs: ")
 
-
-
-
+message("============================")
+message("${DUNE_LIBS}")
+message("============================")
+target_link_dune_default_libraries(${PROJECT_NAME}) # link compiled dune libs
+include_directories(/usr/local/include/dune) # include dune headers from costum installed headers
+add_dune_all_flags(${PROJECT_NAME})
 target_link_libraries(
   ${PROJECT_NAME}
   PUBLIC Eigen3::Eigen
@@ -104,7 +107,7 @@ target_link_libraries(
   PUBLIC spdlog::spdlog
 #  PUBLIC dunecommon
 #  PUBLIC dunegeometry
-  PUBLIC dunealugrid
+#  PUBLIC dunealugrid
 #  PUBLIC dunegrid
 #  PUBLIC dunefufem
 #  PUBLIC duneuggrid
