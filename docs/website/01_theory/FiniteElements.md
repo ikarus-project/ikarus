@@ -1,23 +1,21 @@
 # Finite elements
 
-This section explains the interface of finite elements.
+Several disciplines associate to finite elements different meanings.
+In Ikarus finite elements have two different tasks.
+The first one is to provide the evaluation of scalars, vectors and matrices. 
+These are associated to an algebraic representation of discrete energies, weak forms or bilinear forms
+These algebraic objects are usually constructed using some combination of [local function](LocalFunctions.md) and 
+parameters steeming from the underlying physical problem, e.g. load factor, Young's modulus or viscocity.
 
-Several disciplines associate to finite elements different things
+The second task of finite elements is to evaluate derived results in the element parameter space. E.g. stresses or geometric quantities.
 
-Usually local functions need to be evaluated in the local coordinate system \( \mathbb{\xi} \in \mathbb{R}^n \) :
-
-$$
-f: \boldsymbol{\xi}^n \rightarrow T_{\text{ref}}
-$$
-
-where $T_{\text{ref}}$ is the reference element, e.g. for a cube $T_{\text{ref}}= [0,1]^d$.
 ## Interface
 Local functions provide the following interface
 ```cpp
-FunctionReturnType evaluateFunction(const DomainType& local);
-FunctionReturnType evaluateFunction(const unsigned int& integrationPointIndex);
-auto evaluateDerivative(const DomainType& local,...);
-auto evaluateDerivative(const unsigned int& integrationPointIndex,...);
+void evaluateScalar(const DomainType& local);
+void evaluateVector(const unsigned int& integrationPointIndex);
+void evaluateMatrix(const DomainType& local,...);
+void globalIndices(const unsigned int& integrationPointIndex,...);
 auto viewOverIntegrationPoints(); // (1)
 
 template <typename IntegrationRule, typename... Ints>
