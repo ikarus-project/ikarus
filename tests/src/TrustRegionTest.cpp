@@ -1,9 +1,9 @@
 //
 // Created by Alex on 21.04.2021.
 //
+
 #include <gmock/gmock.h>
 
-#include "../../config.h"
 #include "testHelpers.h"
 
 #include "ikarus/Solver/NonLinearSolver/TrustRegion.hpp"
@@ -355,8 +355,6 @@ auto ddf3RBlocked(const MultiTypeVector& mT) {
 
   return A;
 }
-
-
 
 TEST(TrustRegion, TrustRegionRiemanianUnitSphereAndDispBlocked) {
   using namespace Dune::Indices;

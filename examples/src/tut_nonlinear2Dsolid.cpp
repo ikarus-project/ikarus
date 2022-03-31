@@ -2,7 +2,7 @@
 // Created by Alex on 21.07.2021.
 //
 
-#include "../../config.h"
+#include <config.h>
 
 #include <dune/alugrid/grid.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
@@ -129,24 +129,24 @@ int main(int argc, char** argv) {
   auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, residualFunction, KFunction),
                                             parameter(d, lambda));
 
-  //  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::s_SimplicialLDLT);
+    auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::s_UmfPackLU);
 
-  //  auto nr                      = Ikarus::NewtonRaphson(nonLinOp.subOperator<1, 2>(), std::move(linSolver));
-  auto nr = Ikarus::makeTrustRegion(nonLinOp);
-  nr->setup({.verbosity = 1,
-             .maxiter   = 30,
-             .grad_tol  = 1e-8,
-             .corr_tol  = 1e-8,
-             .useRand   = false,
-             .rho_reg   = 1e6,
-             .Delta0    = 1});
+    auto nr                      = Ikarus::makeNewtonRaphson(nonLinOp.subOperator<1, 2>(), std::move(linSolver));
+//  auto nr = Ikarus::makeTrustRegion(nonLinOp);
+//  nr->setup({.verbosity = 1,
+//             .maxiter   = 30,
+//             .grad_tol  = 1e-8,
+//             .corr_tol  = 1e-8,
+//             .useRand   = false,
+//             .rho_reg   = 1e6,
+//             .Delta0    = 1});
 
-  //  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
+    auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
 
   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<decltype(basis)>>(basis, d, 2);
   vtkWriter->setFileNamePrefix("Test2Dsolid");
   vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 2);
-  //  nr.subscribeAll(nonLinearSolverObserver);
+    nr->subscribeAll(nonLinearSolverObserver);
 
   auto lc = Ikarus::LoadControl(nr, 20, {0, 2000});
 

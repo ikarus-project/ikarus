@@ -70,50 +70,49 @@ message("====================")
 message("Find autodiff: ")
 find_package(autodiff REQUIRED)
 
-set(BLA_VENDOR OpenBLAS)
-find_package(BLAS REQUIRED)
-find_package(LAPACK REQUIRED)
-include(AddBLASLapackFlags)
-find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
+#set(BLA_VENDOR OpenBLAS)
+#find_package(BLAS REQUIRED)
+#find_package(LAPACK REQUIRED)
+#include(AddBLASLapackFlags)
+#find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 #find_package(dune-fufem REQUIRED)
-#list(APPEND CMAKE_MODULE_PATH  ${dune-fufem_MODULE_PATH})
-#message("${CMAKE_MODULE_PATH}")
+#include(AddPythonLibsFlags)
 
-include(AddPythonLibsFlags)
-#message("Find SuiteSparse: ")
-#if(MINGW OR MSVC)
-#  find_package(SuiteSparse CONFIG REQUIRED CHOLMOD UMFPACK METIS)
-#  set(SuiteSparseIncludeDirective ${SuiteSparse_LIBRARIES})
-#else()
-#  find_package(SuiteSparse OPTIONAL_COMPONENTS UMFPACK)
-#  include(AddSuiteSparseFlags)
-#
-#  set(SuiteSparseIncludeDirective "SuiteSparse::SuiteSparse")
-#endif()
 message("Find matplotc++: ")
 find_package(Matplot++ REQUIRED)
-message("Find PythonLibs: ")
+dune_register_package_flags(
+        INCLUDE_DIRS
+        ${Eigen3_INCLUDE_DIRS}
+        ${spdlog_INCLUDE_DIRS}
+        ${matplot_INCLUDE_DIRS}
+        ${autodiff_INCLUDE_DIRS}
+#        ${dune-fufem_INCLUDE_DIRS}
 
-message("============================")
-message("${DUNE_LIBS}")
-message("============================")
+        LIBRARIES
+        Eigen3::Eigen
+        spdlog::spdlog
+        Matplot++::matplot
+        autodiff::autodiff
+        )
+
 target_link_dune_default_libraries(${PROJECT_NAME}) # link compiled dune libs
 #include_directories(/usr/local/include/dune) # include dune headers from costum installed headers
 add_dune_all_flags(${PROJECT_NAME})
-target_link_libraries(
-  ${PROJECT_NAME}
-  PUBLIC Eigen3::Eigen
-  PUBLIC SuperLU::SuperLU
-  PUBLIC spdlog::spdlog
-#  PUBLIC dunecommon
-#  PUBLIC dunegeometry
-#  PUBLIC dunealugrid
-#  PUBLIC dunegrid
-#  PUBLIC dunefufem
-#  PUBLIC duneuggrid
-#  PUBLIC ${SuiteSparse_LIBRARIES}
-  # PUBLIC muesli
-  PUBLIC Matplot++::matplot
-  PUBLIC autodiff::autodiff
-  PUBLIC gfortran
-)
+add_dune_pythonlibs_flags(${PROJECT_NAME})
+#target_link_libraries(
+#  ${PROJECT_NAME}
+##  PUBLIC Eigen3::Eigen
+##  PUBLIC SuperLU::SuperLU
+##  PUBLIC spdlog::spdlog
+##  PUBLIC dunecommon
+##  PUBLIC dunegeometry
+##  PUBLIC dunealugrid
+##  PUBLIC dunegrid
+##  PUBLIC dunefufem
+##  PUBLIC duneuggrid
+##  PUBLIC ${SuiteSparse_LIBRARIES}
+#  # PUBLIC muesli
+##  PUBLIC Matplot++::matplot
+##  PUBLIC autodiff::autodiff
+##  PUBLIC gfortran
+#)

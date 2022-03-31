@@ -3,7 +3,6 @@
 //
 #include <gmock/gmock.h>
 
-#include "../../config.h"
 #include "testHelpers.h"
 #define EIGEN_SPARSEMATRIX_PLUGIN "eigenSparseAddon.h"
 

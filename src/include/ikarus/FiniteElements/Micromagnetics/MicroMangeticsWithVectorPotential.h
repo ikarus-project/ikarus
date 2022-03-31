@@ -120,7 +120,7 @@ namespace Ikarus::FiniteElements {
           isInside{p_isInside} {
       localView_.bind(element);
       localViewReduced.bind(element);
-      order         = 4 * localView_.tree().child(Dune::Indices::_0, 0).finiteElement().localBasis().order();
+      order         = 2 * localView_.tree().child(Dune::Indices::_0, 0).finiteElement().localBasis().order();
       localBasisMag = Ikarus::LocalBasis(localView_.tree().child(Dune::Indices::_0, 0).finiteElement().localBasis());
       localBasisMag.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order),
                          bindDerivatives(0, 1));

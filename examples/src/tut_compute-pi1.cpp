@@ -1,7 +1,7 @@
 //
 // Created by Alex on 21.07.2021.
 //
-#include <../../config.h>
+#include <config.h>
 #include <numbers>
 
 #include <dune/alugrid/grid.hh>

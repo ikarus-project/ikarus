@@ -2,7 +2,7 @@
 // Created by Alex on 21.07.2021.
 //
 
-#include "../../config.h"
+#include <config.h>
 
 #include <autodiff/forward/dual/dual.hpp>
 #include <matplot/matplot.h>
@@ -18,7 +18,6 @@
 #include <dune/grid/io/file/vtk/vtkwriter.hh>
 #include <ikarus/FiniteElements/AutodiffFE.h>
 #include <Eigen/Core>
-#include <Eigen/Dense>
 
 #include "ikarus/utils/utils/algorithms.h"
 #include <ikarus/Assembler/SimpleAssemblers.h>

@@ -14,7 +14,7 @@ copyright: 'Copyright &copy; 2021 The Ikarus Developers'
 # Configuration
 theme:
   name: material
-  logo: images/logo_dummy.svg
+  logo: images/logo_white.svg
   favicon: images/logo_dummy.svg
   features:
     - navigation.instant

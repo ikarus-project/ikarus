@@ -1,9 +1,9 @@
 //
 // Created by Alex on 21.04.2021.
 //
-#include <gmock/gmock.h>
+#include <config.h>
 
-#include "../../config.h"
+#include <gmock/gmock.h>
 
 #include <dune/common/parallel/mpihelper.hh>
 

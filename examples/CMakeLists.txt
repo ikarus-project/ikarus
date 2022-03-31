@@ -11,8 +11,6 @@ foreach(programSourceFile ${programSourceFiles})
   add_executable(${programName} ${programSourceFile})
   target_link_libraries(${programName} PUBLIC Ikarus::Ikarus)
   set_target_properties(${programName} PROPERTIES CXX_STANDARD 20 OUTPUT_NAME "Ikarus")
-
-
   add_dune_pythonlibs_flags(${programName})
   target_compile_options(
     ${programName} PUBLIC -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable

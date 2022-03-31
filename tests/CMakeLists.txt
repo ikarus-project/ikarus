@@ -51,10 +51,6 @@ include(GoogleTest)
 
 gtest_discover_tests(IkarusTests)
 
-include(DuneMacros)
-target_link_dune_default_libraries(IkarusTests)
-add_dune_pythonlibs_flags(IkarusTests)
-
 if(ENABLE_TEST_COVERAGE)
   message("Enable Test Coverage")
   target_compile_options(IkarusTests PUBLIC -O0 -fprofile-arcs -ftest-coverage -fPIC)

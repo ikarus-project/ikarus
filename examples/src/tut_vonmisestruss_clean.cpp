@@ -2,7 +2,7 @@
 // Created by Alex on 21.07.2021.
 //
 
-#include <../../config.h>
+#include <config.h>
 #include <autodiff/forward/dual/dual.hpp>
 #include <matplot/matplot.h>
 

@@ -1,27 +1,24 @@
 //
 // Created by Alex on 21.04.2021.
 //
+
 #include <gmock/gmock.h>
 
-#include "../../config.h"
 #include "testHelpers.h"
 
-#include <fstream>
 #include <vector>
 
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
-#include <dune/functions/functionspacebases/compositebasis.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
-#include <dune/functions/functionspacebases/subspacebasis.hh>
 #include <dune/grid/yaspgrid.hh>
 
 #include <Eigen/Core>
 
-#include <ikarus/Assembler/SimpleAssemblers.h>
 #include "ikarus/FiniteElements/Interface/FiniteElementFunctionConcepts.h"
 #include "ikarus/FiniteElements/Mechanics/NonLinearElasticityFE.h"
+#include <ikarus/Assembler/SimpleAssemblers.h>
 
 TEST(Assembler, SimpleAssemblersTest) {
   using Grid = Dune::YaspGrid<2>;
@@ -40,7 +37,7 @@ TEST(Assembler, SimpleAssemblersTest) {
 
     std::vector<Ikarus::FiniteElements::NonLinearElasticityFEWithLocalBasis<decltype(basis)>> fes;
     const double Emodul = 1000;
-    auto volumeLoad     = [](const auto& globalCoord, const auto& lamb) { //FIXME makeAnalytic globa function
+    auto volumeLoad     = [](const auto& globalCoord, const auto& lamb) {  // FIXME makeAnalytic globa function
       Eigen::Vector2d fext;
       fext.setZero();
       fext[1] = 2 * lamb;
