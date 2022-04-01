@@ -4,7 +4,9 @@
 .DS_Store
 .idea/
 cmake-build-debug/
+cmake-build-debug-dockerfull/
 cmake-build-release/
+cmake-build-release-dockerfull/
 cmake-build-relwithdebinfo/
 docs/website/drawio-exporter
 *.pyc

@@ -9,7 +9,7 @@ project(
 add_definitions(-Wall -Wpedantic -Wextra -m64)
 
 #find dune packages to make cmake modules available
-find_package(dune-common REQUIRED)
+find_package(dune-common REQUIRED EXCLUDE_FROM_ALL)
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules"
         ${dune-common_MODULE_PATH})
 include(DuneMacros)
