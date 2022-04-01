@@ -101,6 +101,10 @@ namespace Ikarus {
       return CoeffDerivMatrix{};
     }
 
+    FunctionReturnType evaluateFunctionImpl(const AnsatzFunctionType& N) const {
+      return FunctionReturnType(coeffsAsMat * N);
+    }
+
     const Ikarus::LocalBasis<DuneBasis>& basis;
     CoeffContainer coeffs;
     const decltype(Ikarus:: ::viewAsEigenMatrixFixedDyn(coeffs)) coeffsAsMat;
