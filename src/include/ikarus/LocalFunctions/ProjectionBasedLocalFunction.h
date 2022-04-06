@@ -196,14 +196,14 @@ namespace Ikarus {
         ChiArrayEuk[i]       = chi * NI * NJ + S * (dNIdi * NJ + dNJdi * NI);
       }
       if (coeffsIndex[0]==coeffsIndex[1]) { // Riemannian Hessian Weingarten map correction
-        std::array<CoeffDerivEukMatrix, gridDim> Warray =evaluateDerivativeWRTCoeffsANDSpatialEukImpl(N,dN,coeffsIndex[0]);
+        const std::array<CoeffDerivEukMatrix, gridDim> Warray =evaluateDerivativeWRTCoeffsANDSpatialEukImpl(N,dN,coeffsIndex[0]);
         for (int i = 0; i < gridDim; ++i) {
           ChiArrayEuk[i] -=  coeffs[coeffsIndex[0]].getValue().dot(Warray[i]*along) * CoeffDerivEukMatrix::Identity();
         }
       }
 
       std::array<CoeffDerivMatrix, gridDim> ChiArrayRie;
-      const auto BLA0T = coeffs[coeffsIndex[0]].orthonormalFrame().transpose();
+      const auto BLA0T = coeffs[coeffsIndex[0]].orthonormalFrame().transpose().eval();
       const auto BLA1 = coeffs[coeffsIndex[1]].orthonormalFrame();
       for (int i = 0; i < gridDim; ++i)
         ChiArrayRie[i] = BLA0T*ChiArrayEuk[i]*BLA1;
@@ -218,20 +218,19 @@ namespace Ikarus {
       const GlobalE valE       = evaluateEmbeddingFunctionImpl(N);
       const Jacobian J         = evaluateEmbeddingJacobianImpl(dN);
       const CoeffDerivEukMatrix S = tryToCallSecondDerivativeOfProjectionWRTposition(valE, along);
-      CoeffDerivEukMatrix Chi;
       const auto chi    = tryToCallThirdDerivativeOfProjectionWRTposition(valE, along, J.col(spatialIndex));
       const auto& NI    = N[coeffsIndex[0]];
       const auto& NJ    = N[coeffsIndex[1]];
       const auto& dNIdi = dN(coeffsIndex[0], spatialIndex);
       const auto& dNJdi = dN(coeffsIndex[1], spatialIndex);
-      Chi               = chi * NI * NJ + S * (dNIdi * NJ + dNJdi * NI);
+      CoeffDerivEukMatrix Chi               = chi * NI * NJ + S * (dNIdi * NJ + dNJdi * NI);
 
       if (coeffsIndex[0]==coeffsIndex[1]) { // Riemannian Hessian Weingarten map correction
-        CoeffDerivEukMatrix W =evaluateDerivativeWRTCoeffsANDSpatialSingleEukImpl(N,dN,coeffsIndex[0],spatialIndex);
+        const CoeffDerivEukMatrix W =evaluateDerivativeWRTCoeffsANDSpatialSingleEukImpl(N,dN,coeffsIndex[0],spatialIndex);
         Chi -=  coeffs[coeffsIndex[0]].getValue().dot(W*along) * CoeffDerivEukMatrix::Identity();
 
       }
-      return coeffs[coeffsIndex[0]].orthonormalFrame().transpose()*Chi*coeffs[coeffsIndex[1]].orthonormalFrame();;
+      return (coeffs[coeffsIndex[0]].orthonormalFrame().transpose()*Chi*coeffs[coeffsIndex[1]].orthonormalFrame()).eval();
     }
 
     FunctionReturnType evaluateFunctionImpl(const AnsatzFunctionType& N) const {

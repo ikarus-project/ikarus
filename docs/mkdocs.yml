@@ -59,6 +59,7 @@ nav:
     - Control routines: 01_theory/ControlRoutines.md
     - Local basis: 01_theory/LocalBasis.md
     - Local functions: 01_theory/LocalFunctions.md
+    - Manifolds: 01_theory/Manifolds.md
   - Examples:
       - Integrate pi: examples/integrate_pi.md
   - Literature: 99_Literature/99_Literature.md

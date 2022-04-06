@@ -5,10 +5,10 @@ This section explains the concept of local functions.
 Local functions are functions which are bound to single grid elements.
 Therefore they are constructed from some local basis and a coefficient vector.
 
-Usually local functions need to be evaluated in the local coordinate system \( \mathbb{\xi} \in \mathbb{R}^n \) :
+Usually local functions need to be evaluated in the local coordinate system \( \mathbb{\xi} \in T_{\text{ref}} \subset\mathbb{R}^n \) :
 
 $$
-f: \boldsymbol{\xi}^n \rightarrow T_{\text{ref}}
+f: \boldsymbol{\xi}^n \rightarrow \mathbb{R}^m
 $$
 
 where $T_{\text{ref}}$ is the reference element, e.g. for a cube $T_{\text{ref}}= [0,1]^d$.
@@ -242,6 +242,8 @@ You can copy the file rename the class to your preferred name and then implement
 Then if someone calls the corresponding derivative the call fails at compile time.
 
 ```cpp
+FunctionReturnType evaluateEmbeddingFunctionImpl(const Eigen::VectorXd& N) const { return FunctionReturnType{}; } // (0)
+
 Jacobian evaluateDerivativeWRTSpaceAllImpl(const AnsatzFunctionType& N, 
                                            const AnsatzFunctionJacobian& dN) const {...} // (1)
 
@@ -286,6 +288,7 @@ CoeffDerivMatrix
                                                                      const int spatialIndex) const {...} // (8)
 ```
 
+0. This is called by `localFunction.evaluateFunction(...)`.
 1. This is called by `localFunction.evaluateDerivative(..., wrt(spatialall))`.
 2. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i)))`.
 3. This is called by `localFunction.evaluateDerivative(..., wrt(coeff))`.
@@ -293,7 +296,7 @@ CoeffDerivMatrix
 5. This is called by `localFunction.evaluateDerivative(..., wrt(spatialall,coeff))`.
 6. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i),coeff))`.
 7. This is called by `localFunction.evaluateDerivative(..., wrt(spatialall,coeff,coeff))`.
-7. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i),coeff,coeff))`.
+8. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i),coeff,coeff))`.
 
 
 \bibliography

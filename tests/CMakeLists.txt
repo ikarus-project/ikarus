@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 project(IkarusTests LANGUAGES C CXX)
 
 option(ENABLE_TEST_COVERAGE "Enable test coverage" OFF)
-option(TEST_INSTALLED_VERSION "Test the version found by find_package" OFF)
 
 set(IWYU_ARGS "-Xiwyu --mapping_file=iwyu.imp")
 include(../cmake/tools.cmake)

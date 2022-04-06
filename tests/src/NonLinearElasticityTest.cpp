@@ -70,27 +70,34 @@ TYPED_TEST(NonLinearElasticityLoadControlNRandTR, ComputeMaxDisp) {
     }
   });
 
-  auto denseAssembler  = DenseFlatSimpleAssembler(basis, fes, dirichletFlags);
   auto sparseAssembler = SparseFlatAssembler(basis, fes, dirichletFlags);
 
   Eigen::VectorXd d;
   d.setZero(basis.size());
   double lambda = 0.0;
 
-  auto residualFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
-    return denseAssembler.getVector(forces, disp, lambdaLocal);
+  auto residualFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
+    Ikarus::FErequirements<Eigen::VectorXd> req;
+    req.sols.emplace_back(disp_);
+    req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
+    req.vectorAffordances = Ikarus::VectorAffordances::forces;
+    return sparseAssembler.getVector(req);
   };
 
-  auto KFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
+  auto KFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
     Ikarus::FErequirements<Eigen::VectorXd> req;
-    req.sols.emplace_back(disp);
+    req.sols.emplace_back(disp_);
     req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
     req.matrixAffordances = Ikarus::MatrixAffordances::stiffness;
     return sparseAssembler.getMatrix(req);
   };
 
-  auto energyFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto {
-    return denseAssembler.getScalar(potentialEnergy, disp_, lambdaLocal);
+  auto energyFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
+    Ikarus::FErequirements<Eigen::VectorXd> req;
+    req.sols.emplace_back(disp_);
+    req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
+    req.scalarAffordances = Ikarus::ScalarAffordances::potentialEnergy;
+    return sparseAssembler.getScalar(req);
   };
 
   auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, residualFunction, KFunction),
