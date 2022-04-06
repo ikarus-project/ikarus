@@ -1,23 +1,96 @@
 # Installation of Ikarus
 
-# Install in WSL on Windows
-- In the windows powershell as admin
-- Install VM-platform feature ind Windows-Features
+!!! warning "Change links on this website when final accounts for repository and docker container are fixed and remove this warning."
+
+Graphical output is currently not supported on Windows 10 (but will probably be available in the future). Therefore,
+working on Windows 11 is recommended.
+
+The installations on Windows relies on WSL 2, i.e. although working with Windows, the code is compiled and executed in Linux.
+
+## Installation on Windows using Docker Container
+1. Install WSL: Open the PowerShell as an admin and execute the following commands. Reboot afterwards, if requested.
+```sh
+wsl --install
+wsl --set-default-version 2 #(Is not needed for Windows 11)
+```
+2. [Download and install Docker for Windows](https://docs.docker.com/desktop/windows/install/).
+  During the installation, select the option "Install requred Windows components for WSL 2"
+3. Install debian from [WindowsAppStore](https://www.microsoft.com/en-us/p/debian/9msvkqc78pk6#activetab=pivot:overviewtab)
+    1. Open the debian app
+    2. Give yourself a username and password
+    3. Close the debian app
+4. Open the PowerShell and execute:
+```sh
+wsl --list --all
+```
+`Debian` should appear as one of the available Linux distributions.
+5. In the PowerShell execute:
+```sh
+wsl --setdefault Debian
+```
+6. Try to start Docker. If it works, continue with the next step. If a message occurs that you are not allowed to use docker because
+    you are not in the docker user group, follow [these instructions](https://icij.gitbook.io/datashare/faq-errors/you-are-not-allowed-to-use-docker-you-must-be-in-the-docker-users-group-.-what-should-i-do).
+    In short:
+    1. Open **Computerverwaltung** as admin
+    2. Go to **Lokale Benutzer und Gruppen** and find **docker-users**
+    3. Add your Account (or a group of which you are a member) to the group.
+    4. Restart your computer
+7. In Docker, go to Settings --> General and select autostart for docker
+    (otherwise you have to start it manually each time you want to work with Ikarus).
+8. In the Docker settings, select that Docker uses your WSL2 distribution Debian as shown in the picture.
+    ![DockerWslSettings.png](images/Installation/DockerWslSettings.png)
+
+    In cases docker says that you don't have a WSL 2 distribution, go to the PowerShell and execute
+```sh
+wsl --set-default-version 2 #(just to be sure that you didn't forgot this at the beginning)
+wsl --set-version Debian 2 #(Converts debian to version 2)
+```
+You should now be able to change the docker settings according to the picture above.
+
+9. Open the PowerShell and execute:
+```sh
+docker pull rath3t/ikarus-debian-bookworm:latest
+```
+6. Download and install [CLion EAP Version](https://www.jetbrains.com/clion/nextversion/).
+7. In CLion EAP Version, go to **File** and **Settings** and apply the following settings for the toolchain:
+    ![img.png](images/Installation/CLionToolchainSettings.png)
+    Edit the Container settings and paste the following command into `Run options`:
+```
+-e DISPLAY=:0 -v \\wsl$\debian\mnt\wslg\.X11-unix:/tmp/.X11-unix -v \\wsl$\debian\mnt\wslg:/mnt/wslg -p 8000:8000
+```
+8. [Clone Ikarus](#clone-ikarus)
+
+## Clone Ikarus
+
+- Clone the Ikarus repository as you do it with any other repository (e.g. using GitKraken)
+- ToDo: Describe here how to access it from Github.com
+- Open the CMake tab `CMake` in the CLion footer:
+  ![ClionFooter.png](images/Installation/ClionFooter.png)
+- Click on `Reload CMake project` (refresh symbol)  
+  ![ReloadCmakeProject.png](images/Installation/ReloadCmakeProject.png)
+- CMake now detects all required sources automatically. The output should look similar to
+  the screenshot below
+  ![CMakeOutput.png](images/Installation/CMakeOutput.png)
+
+## Installation on Windows using WSL
+!!! warning "This installation procedure is not recommended"
+    The installation using Docker described above has several advantages and should be the standard.
+    This section will be removed in the future
+1. Install WSL: Open the PowerShell as an admin and execute the following commands. Reboot afterwards, if requested.
   ```sh 
   wsl --install
   wsl --set-default-version 2 #(Is not needed for Windows 11)
   ```
-- Reboot
-- Install debian from `.tar` file
+2. Install debian from `.tar` file OR alternatively (3)
   ```sh 
   wsl --import debian <install location> debian_bookworm.tar
   ```
-### Install debian
-- Install from [WindowsAppStore](https://www.microsoft.com/en-us/p/debian/9msvkqc78pk6#activetab=pivot:overviewtab)
-- Execute the debian app
-- Give yourself a username and password
-- Execute `sudo sed -i 's/bullseye/bookworm/g' /etc/apt/sources.list`
-- Execute 
+3. Install debian manually
+    1. Install from [WindowsAppStore](https://www.microsoft.com/en-us/p/debian/9msvkqc78pk6#activetab=pivot:overviewtab)
+    2. Open the debian app
+    3. Give yourself a username and password
+    4. Execute in debian `sudo sed -i 's/bullseye/bookworm/g' /etc/apt/sources.list`
+    5. Execute the following list of commands in debian
   ```sh 
   sudo apt update && \
   sudo apt full-upgrade -y && \
@@ -133,27 +206,6 @@
   ```sh
   wget https://raw.githubusercontent.com/JetBrains/clion-wsl/master/ubuntu_setup_env.sh && bash ubuntu_setup_env.sh
   ```
-- In Clion setting:
-  - Build, Execution, Deployment --> Toolchains
-  - Add with the `+`-sign a WSL configuration
-  - Make sure it is used as default (Move it up with the arrow buttons otherwise)
-  
-  
-## Clone Ikarus
-
-- Clone the Ikarus repository as you do it with any other repository (e.g. using GitKraken)
-- ToDo: Describe here how to access it from Github.com
-- Open the CMake tab `CMake` in the CLion footer: 
-  ![ClionFooter.png](images/Installation/ClionFooter.png)
-- Click on `Reload CMake project` (refresh symbol)  
-![ReloadCmakeProject.png](images/Installation/ReloadCmakeProject.png)
-- CMake now detects all required sources automatically. The output should look similar to
-the screenshot below
-![CMakeOutput.png](images/Installation/CMakeOutput.png)
-  
-
-## Further reading:
-As the next step: We recommend to read the following pages:
-- ToDo
-- ToDo
-- ...
+6. In Clion, go to **File** and **Settings** and apply the following settings for the toolchain:
+  - Build, Execution, Deployment --> Toolchains: Add with the `+`-sign a WSL configuration
+  - Make sure it is used as defaultm i.e. it has to be the first item in the list. Move it up with the arrow buttons otherwise.

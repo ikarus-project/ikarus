@@ -63,6 +63,7 @@ nav:
       - Integrate pi: examples/integrate_pi.md
   - Literature: 99_Literature/99_Literature.md
   - C++ recommendations: cppRef.md
+  - Advanced Topics: AdvancedTopics.md
 
 
 # Customization
