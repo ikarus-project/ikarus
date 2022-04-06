@@ -17,18 +17,18 @@
 #include <Eigen/Dense>
 
 #include "ikarus/Controlroutines/LoadControl.h"
+#include "ikarus/FiniteElements/Interface/FEPolicies.h"
 #include "ikarus/LocalBasis/localBasis.h"
-#include "ikarus/Solver/NonLinearSolver/NewtonRaphson.hpp"
+#include "ikarus/Solver/NonLinearSolver/NewtonRaphson.hh"
 #include "ikarus/utils/Observer/LoadControlObserver.h"
 #include "ikarus/utils/Observer/controlVTKWriter.h"
 #include "ikarus/utils/Observer/nonLinearSolverLogger.h"
-#include "ikarus/utils/utils/algorithms.h"
-#include <ikarus/Assembler/SimpleAssemblers.h>
-#include <ikarus/FiniteElements/AutodiffFE.h>
-#include "ikarus/FiniteElements/Interface/FEPolicies.h"
 #include "ikarus/utils/drawing/griddrawer.h"
-#include <ikarus/LinearAlgebra/NonLinearOperator.h>
-#include <ikarus/utils/concepts.h>
+#include "ikarus/utils/utils/algorithms.h"
+#include <ikarus/Assembler/simpleAssemblers.hh>
+#include <ikarus/FiniteElements/AutodiffFE.hh>
+#include <ikarus/LinearAlgebra/NonLinearOperator.hh>
+#include <ikarus/utils/concepts.hh>
 
 template <typename Basis>
 struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<Basis>,

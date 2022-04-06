@@ -1,7 +1,7 @@
 //
 // Created by alex on 3/18/22.
 //
-#include "findLineSegment.h"
+#include "findLineSegment.hh"
 
 namespace Ikarus {
   /*

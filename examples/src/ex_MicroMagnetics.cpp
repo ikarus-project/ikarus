@@ -2,7 +2,7 @@
 // Created by Alex on 21.07.2021.
 //
 
-#include <config.h>
+#include <config.hh>
 
 #include <dune/alugrid/grid.hh>
 #include <dune/common/parametertreeparser.hh>
@@ -23,14 +23,14 @@
 
 #include "ikarus/Controlroutines/LoadControl.h"
 #include "ikarus/FiniteElements/Micromagnetics/MicroMangeticsWithVectorPotential.h"
-#include "ikarus/Solver/NonLinearSolver/TrustRegion.hpp"
+#include "ikarus/Solver/NonLinearSolver/TrustRegion.hh"
 #include "ikarus/utils/Observer/controlVTKWriter.h"
 #include "ikarus/utils/Observer/genericControlObserver.h"
 #include "ikarus/utils/drawing/griddrawer.h"
-#include <ikarus/Assembler/SimpleAssemblers.h>
-#include <ikarus/LinearAlgebra/NonLinearOperator.h>
-#include <ikarus/utils/functionSanityChecks.h>
-#include <ikarus/utils/utils/algorithms.h>
+#include <ikarus/Assembler/simpleAssemblers.hh>
+#include <ikarus/LinearAlgebra/NonLinearOperator.hh>
+#include <ikarus/utils/functionSanityChecks.hh>
+#include <ikarus/utils/utils/algorithms.hh>
 
 constexpr int magnetizationOrder    = 1;
 constexpr int vectorPotOrder        = 1;

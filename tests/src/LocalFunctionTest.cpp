@@ -1,11 +1,13 @@
 //
 // Created by Alex on 21.04.2021.
 //
+#include <config.h>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "common.h"
-#include "testHelpers.h"
+#include "common.hh"
+#include "testHelpers.hh"
 
 #include <array>
 #include <autodiff/forward/dual.hpp>
@@ -22,11 +24,12 @@
 
 #include <Eigen/Core>
 
-#include "ikarus/LinearAlgebra/NonLinearOperator.h"
-#include <ikarus/LocalFunctions/ProjectionBasedLocalFunction.h>
-#include <ikarus/LocalFunctions/StandardLocalFunction.h>
-#include <ikarus/Variables/VariableDefinitions.h>
-#include <ikarus/utils/functionSanityChecks.h>
+#include <ikarus/linearAlgebra/nonLinearOperator.hh>
+#include <ikarus/localFunctions/projectionBasedLocalFunction.hh>
+#include <ikarus/localFunctions/standardLocalFunction.hh>
+#include <ikarus/utils/functionSanityChecks.hh>
+#include <ikarus/variables/variableDefinitions.hh>
+
 const double tol = 1e-15;
 using namespace Dune::Functions::BasisFactory;
 
@@ -121,7 +124,9 @@ TYPED_TEST(LocalFunctionProjectionBasedUnitVector, ProjectionBasedUnitVector) {
       const Eigen::Vector<double, size> testVec = Eigen::Vector<double, size>::UnitX();
       for (size_t i = 0; i < fe.size(); ++i) {
         const auto jacobianWRTCoeffs = localF.evaluateDerivative(gpIndex, wrt(coeffs), coeffIndices(i));
-        EXPECT_THAT(jacobianWRTCoeffs, EigenApproxEqual((vBlockedLocal[i].orthonormalFrame()).transpose()*Jdual.block<size, size>(0, i * size), 1e-15));
+        EXPECT_THAT(jacobianWRTCoeffs, EigenApproxEqual((vBlockedLocal[i].orthonormalFrame()).transpose()
+                                                            * Jdual.block<size, size>(0, i * size),
+                                                        1e-15));
 
         const auto Warray
             = localF.evaluateDerivative(gpIndex, wrt(coeffs, spatialall), transformWith(Jinv), coeffIndices(i));
@@ -130,8 +135,10 @@ TYPED_TEST(LocalFunctionProjectionBasedUnitVector, ProjectionBasedUnitVector) {
         for (int j = 0; j < 2; ++j)
           EXPECT_THAT(Warray[j], EigenApproxEqual(Warray2[j], 1e-15));
 
-        const auto W0 = localF.evaluateDerivative(gpIndex, wrt(coeffs, spatial(0)), transformWith(Jinv), coeffIndices(i));
-        const auto W1 = localF.evaluateDerivative(gpIndex, wrt(coeffs, spatial(1)), transformWith(Jinv), coeffIndices(i));
+        const auto W0
+            = localF.evaluateDerivative(gpIndex, wrt(coeffs, spatial(0)), transformWith(Jinv), coeffIndices(i));
+        const auto W1
+            = localF.evaluateDerivative(gpIndex, wrt(coeffs, spatial(1)), transformWith(Jinv), coeffIndices(i));
 
         EXPECT_THAT(Warray[0], EigenApproxEqual(W0, 1e-15));
         EXPECT_THAT(Warray[1], EigenApproxEqual(W1, 1e-15));
@@ -279,8 +286,10 @@ TYPED_TEST(LocalFunctionVector, Test1) {
         for (int j = 0; j < 2; ++j)
           EXPECT_THAT(Warray[j], EigenApproxEqual(Warray2[j], 1e-15));
 
-        const auto W0 = localF.evaluateDerivative(gpIndex, wrt(coeffs, spatial(0)), transformWith(Jinv), coeffIndices(i));
-        const auto W1 = localF.evaluateDerivative(gpIndex, wrt(coeffs, spatial(1)), transformWith(Jinv), coeffIndices(i));
+        const auto W0
+            = localF.evaluateDerivative(gpIndex, wrt(coeffs, spatial(0)), transformWith(Jinv), coeffIndices(i));
+        const auto W1
+            = localF.evaluateDerivative(gpIndex, wrt(coeffs, spatial(1)), transformWith(Jinv), coeffIndices(i));
 
         EXPECT_THAT(Warray[0], EigenApproxEqual(W0, 1e-15));
         EXPECT_THAT(Warray[1], EigenApproxEqual(W1, 1e-15));
@@ -303,4 +312,3 @@ TYPED_TEST(LocalFunctionVector, Test1) {
     }
   }
 }
-

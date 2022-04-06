@@ -42,4 +42,12 @@ If your are interested the following task are vacant.
 
 [^KLNote]: This is usually needed for a Kirchhoff-Love shell implementation, see [@kiendlKLshell].
 
+
+### Code style
+* The directories and filenames use `camelCase`
+* The source files have a `cpp` extension and the header files `hh`.
+* Every public member function or free function needs a brief description `/* */`
+* We also use a `clang-format` file which needs to be executed in each file before a PR can be merged
+
+
 \bibliography 

@@ -1,7 +1,7 @@
 //
 // Created by Alex on 21.07.2021.
 //
-#include <config.h>
+#include <config.hh>
 #include <numbers>
 
 #include <dune/common/float_cmp.hh>
@@ -21,7 +21,7 @@
 
 #include "ikarus/LocalBasis/localBasis.h"
 #include "ikarus/utils/drawing/griddrawer.h"
-#include <ikarus/Solver/LinearSolver/LinearSolver.h>
+#include <ikarus/Solver/LinearSolver/LinearSolver.hh>
 using namespace Dune::Functions::BasisFactory;
 using namespace Dune::Functions;
 using namespace Dune::Functions::BasisBuilder;

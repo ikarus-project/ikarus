@@ -9,6 +9,7 @@
   ColumnLimit: 120
   ConstructorInitializerAllOnOneLineOrOnePerLine: true
   SortIncludes: true
+  ReferenceAlignment: Left
   IndentPPDirectives: AfterHash
   AlignConsecutiveAssignments: Consecutive
   IndentWidth: '2'

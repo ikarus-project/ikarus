@@ -4,7 +4,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "testHelpers.h"
+#include "testHelpers.hh"
 
 #include <array>
 #include <fstream>
@@ -13,10 +13,10 @@
 
 #include <Eigen/Core>
 
-#include "ikarus/Manifolds/RealTuple.h"
-#include "ikarus/Variables/InterfaceVariable.h"
-#include "ikarus/Variables/VariableDefinitions.h"
-#include "ikarus/utils/utils/algorithms.h"
+#include <ikarus/manifolds/realTuple.hh>
+#include <ikarus/variables/interfaceVariable.hh>
+#include <ikarus/variables/variableDefinitions.hh>
+#include <ikarus/utils/utils/algorithms.hh>
 
 TEST(DefaultVariableTest, RealTupleDisplacement) {
   using namespace Ikarus;

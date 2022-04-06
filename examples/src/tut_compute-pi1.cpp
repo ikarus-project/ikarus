@@ -1,7 +1,7 @@
 //
 // Created by Alex on 21.07.2021.
 //
-#include <config.h>
+#include <config.hh>
 #include <numbers>
 
 #include <dune/alugrid/grid.hh>
@@ -12,7 +12,8 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
-#include "ikarus/utils/drawing/griddrawer.h"
+#include <ikarus/utils/drawing/griddrawer.hh>
+#include <ikarus/Grids/gridHelper.hh>
 
 struct UnitCircleBoundary : Dune::BoundarySegment<2, 2, double> {
   UnitCircleBoundary(const Dune::FieldVector<double, 2>& a, const Dune::FieldVector<double, 2>& b) : corners{{a, b}} {}

@@ -2,9 +2,10 @@
 // Created by Alex on 21.04.2021.
 //
 
+#include <config.h>
 #include <gmock/gmock.h>
 
-#include "testHelpers.h"
+#include "testHelpers.hh"
 
 #include <vector>
 
@@ -16,9 +17,9 @@
 
 #include <Eigen/Core>
 
-#include "ikarus/FiniteElements/Interface/FiniteElementFunctionConcepts.h"
-#include "ikarus/FiniteElements/Mechanics/NonLinearElasticityFE.h"
-#include <ikarus/Assembler/SimpleAssemblers.h>
+#include <ikarus/assembler/simpleAssemblers.hh>
+#include <ikarus/finiteElements/interface/finiteElementFunctionConcepts.hh>
+#include <ikarus/finiteElements/mechanics/nonLinearElasticityFE.hh>
 
 TEST(Assembler, SimpleAssemblersTest) {
   using Grid = Dune::YaspGrid<2>;

@@ -4,13 +4,13 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "testHelpers.h"
+#include "testHelpers.hh"
 
 #include <matplot/matplot.h>
 
 #include <Eigen/Core>
 
-#include <ikarus/utils/utils/polyfit.h>
+#include <ikarus/utils/utils/polyfit.hh>
 
 TEST(PolyFitTest, PolyFitTest1) {
   Eigen::VectorXd x = Eigen::VectorXd::LinSpaced(10, 0, 10);
@@ -21,8 +21,6 @@ TEST(PolyFitTest, PolyFitTest1) {
   EXPECT_DOUBLE_EQ(poly.coefficients()[1], 1.8);
   EXPECT_LT(normE, 1e-14);
 }
-
-#include <ikarus/utils/drawing/matplotHelper.h>
 
 TEST(PolyFitTest, PolyFitTest2) {
   const double factor = 7.6;

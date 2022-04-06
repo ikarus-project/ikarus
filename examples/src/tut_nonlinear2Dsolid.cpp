@@ -18,14 +18,14 @@
 
 #include "ikarus/Controlroutines/LoadControl.h"
 #include "ikarus/FiniteElements/Mechanics/NonLinearElasticityFE.h"
-#include "ikarus/Solver/NonLinearSolver/NewtonRaphson.hpp"
-#include "ikarus/Solver/NonLinearSolver/TrustRegion.hpp"
+#include "ikarus/Solver/NonLinearSolver/NewtonRaphson.hh"
+#include "ikarus/Solver/NonLinearSolver/TrustRegion.hh"
 #include "ikarus/utils/Observer/controlVTKWriter.h"
 #include "ikarus/utils/Observer/nonLinearSolverLogger.h"
-#include <ikarus/Assembler/SimpleAssemblers.h>
+#include <ikarus/Assembler/SimpleAssemblers.hh>
 #include "ikarus/utils/drawing/griddrawer.h"
-#include <ikarus/LinearAlgebra/NonLinearOperator.h>
-#include <ikarus/utils/utils/algorithms.h>
+#include <ikarus/LinearAlgebra/NonLinearOperator.hh>
+#include <ikarus/utils/utils/algorithms.hh>
 
 int main(int argc, char** argv) {
   Dune::MPIHelper::instance(argc, argv);

@@ -3,7 +3,7 @@
 //
 
 #include <config.h>
-#include <autodiff/forward/dual/dual.hpp>
+#include <autodiff/forward/dual/dual.hh>
 #include <matplot/matplot.h>
 
 #include <dune/foamgrid/foamgrid.hh>
@@ -19,15 +19,15 @@
 #include "ikarus/Controlroutines/LoadControl.h"
 #include "ikarus/LinearAlgebra/NonLinearOperator.h"
 #include "ikarus/Solver/LinearSolver/LinearSolver.h"
-#include "ikarus/Solver/NonLinearSolver/NewtonRaphson.hpp"
+#include "ikarus/Solver/NonLinearSolver/NewtonRaphson.hh"
 #include "ikarus/utils/Observer/controlVTKWriter.h"
 #include "ikarus/utils/Observer/genericControlObserver.h"
 #include "ikarus/utils/Observer/nonLinearSolverLogger.h"
-#include <ikarus/Assembler/SimpleAssemblers.h>
-#include <ikarus/FiniteElements/AutodiffFE.h>
+#include <ikarus/Assembler/SimpleAssemblers.hh>
+#include <ikarus/FiniteElements/AutodiffFE.hh>
 #include "ikarus/FiniteElements/Interface/FEPolicies.h"
 #include "ikarus/utils/drawing/griddrawer.h"
-#include <ikarus/Variables/ParameterFactory.h>
+#include <ikarus/Variables/ParameterFactory.hh>
 
 using namespace Ikarus;
 template <typename Basis>

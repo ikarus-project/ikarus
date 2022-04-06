@@ -4,7 +4,7 @@
 
 #include <config.h>
 
-#include <autodiff/forward/dual/dual.hpp>
+#include <autodiff/forward/dual/dual.hh>
 #include <matplot/matplot.h>
 
 #include <dune/alugrid/grid.hh>
@@ -16,16 +16,16 @@
 #include <dune/functions/functionspacebases/subspacebasis.hh>
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/grid/io/file/vtk/vtkwriter.hh>
-#include <ikarus/FiniteElements/AutodiffFE.h>
+#include <ikarus/FiniteElements/AutodiffFE.hh>
 #include <Eigen/Core>
 
 #include "ikarus/utils/utils/algorithms.h"
-#include <ikarus/Assembler/SimpleAssemblers.h>
+#include <ikarus/Assembler/simpleAssemblers.hh>
 
-#include <ikarus/LocalFunctions/StandardLocalFunction.h>
+#include <ikarus/LocalFunctions/StandardLocalFunction.hh>
 #include "ikarus/utils/drawing/griddrawer.h"
-#include <ikarus/LocalBasis/localBasis.h>
-#include <ikarus/Variables/ParameterFactory.h>
+#include <ikarus/LocalBasis/localBasis.hh>
+#include <ikarus/Variables/ParameterFactory.hh>
 
 using namespace Ikarus;
 using namespace Dune::Indices;

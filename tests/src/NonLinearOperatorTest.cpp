@@ -1,20 +1,22 @@
 //
 // Created by Alex on 21.07.2021.
 //
+#include <config.h>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "testHelpers.h"
-#define EIGEN_SPARSEMATRIX_PLUGIN "eigenSparseAddon.h"
+#include "testHelpers.hh"
+
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
-#include "ikarus/Assembler/SimpleAssemblers.h"
-#include "ikarus/utils/drawing/griddrawer.h"
-#include "ikarus/Solver/NonLinearSolver/NewtonRaphson.hpp"
-#include "ikarus/utils/Observer/nonLinearSolverLogger.h"
-#include <ikarus/LinearAlgebra/NonLinearOperator.h>
-#include <ikarus/utils/functionSanityChecks.h>
+#include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
+#include <ikarus/assembler/simpleAssemblers.hh>
+#include <ikarus/utils/observer/nonLinearSolverLogger.hh>
+#include <ikarus/utils/drawing/griddrawer.hh>
+#include <ikarus/linearAlgebra/nonLinearOperator.hh>
+#include <ikarus/utils/functionSanityChecks.hh>
 
 template <typename SolutionType, typename SolutionTypeExpected, typename NewtonRhapson>
 void checkNewtonRhapson(NewtonRhapson& nr, SolutionType& x, double tolerance, int maxIter, int iterExpected,

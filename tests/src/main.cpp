@@ -1,7 +1,7 @@
 //
 // Created by Alex on 21.04.2021.
 //
-#include <config.h>
+#include <config.hh>
 
 #include <gmock/gmock.h>
 

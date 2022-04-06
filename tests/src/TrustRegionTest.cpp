@@ -4,11 +4,11 @@
 
 #include <gmock/gmock.h>
 
-#include "testHelpers.h"
+#include "testHelpers.hh"
 
-#include "ikarus/Solver/NonLinearSolver/TrustRegion.hpp"
-#include <ikarus/LinearAlgebra/NonLinearOperator.h>
-#include <ikarus/Variables/VariableDefinitions.h>
+#include <ikarus/solver/nonLinearSolver/trustRegion.hh>
+#include <ikarus/linearAlgebra/nonLinearOperator.hh>
+#include <ikarus/variables/variableDefinitions.hh>
 
 auto f(const Eigen::Vector<double, 1>& x) { return 0.5 * x[0] * x[0]; }
 auto df(const Eigen::Vector<double, 1>& x) {
