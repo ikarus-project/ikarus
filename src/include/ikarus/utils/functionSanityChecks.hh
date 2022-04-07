@@ -70,33 +70,33 @@ bool checkGradient(
     else
       spdlog::info("The gradient seems wrong.");
 
-//    auto f   = figure(true);
-//    auto ax1 = gca();
-//    hold(ax1, true);
-//    std::vector<double> tOfRange(rangeSize);
-//    std::vector<double> fInRange(rangeSize);
-//    auto tET = tE(range);
-//    auto yET = yE(range);
-//
-//    for (int i = 0; auto r : tET) {
-//      tOfRange[i] = r;
-//      fInRange[i] = yET[i];
-//      ++i;
-//    }
-//
-//    auto l0          = ax1->loglog(t, ftevaluated);
-//    auto lexpected   = ax1->loglog(t, fexpectedSlope, "--");
-//    auto lFoundRange = ax1->loglog(tOfRange, fInRange);
-//    l0->line_width(2);
-//    lexpected->line_width(2);
-//    lFoundRange->line_width(4);
-//    lFoundRange->color("magenta");
-//    l0->color("blue");
-//    lexpected->color("red");
-//    xlabel("h");
-//    ylabel("Approximation error ");
-//    title("Gradient check");
-//    f->show();
+    //    auto f   = figure(true);
+    //    auto ax1 = gca();
+    //    hold(ax1, true);
+    //    std::vector<double> tOfRange(rangeSize);
+    //    std::vector<double> fInRange(rangeSize);
+    //    auto tET = tE(range);
+    //    auto yET = yE(range);
+    //
+    //    for (int i = 0; auto r : tET) {
+    //      tOfRange[i] = r;
+    //      fInRange[i] = yET[i];
+    //      ++i;
+    //    }
+    //
+    //    auto l0          = ax1->loglog(t, ftevaluated);
+    //    auto lexpected   = ax1->loglog(t, fexpectedSlope, "--");
+    //    auto lFoundRange = ax1->loglog(tOfRange, fInRange);
+    //    l0->line_width(2);
+    //    lexpected->line_width(2);
+    //    lFoundRange->line_width(4);
+    //    lFoundRange->color("magenta");
+    //    l0->color("blue");
+    //    lexpected->color("red");
+    //    xlabel("h");
+    //    ylabel("Approximation error ");
+    //    title("Gradient check");
+    //    f->show();
   }
   nonLinOp.template updateAll();
   return checkPassed;

@@ -65,9 +65,9 @@ namespace Ikarus::Manifold {
     auto begin() const { return var.begin(); }
     auto end() const { return var.end(); }
 
-    template<typename OtherType>
-    struct Rebind{
-      using type = UnitVector<OtherType,valueSize>;
+    template <typename OtherType>
+    struct Rebind {
+      using type = UnitVector<OtherType, valueSize>;
     };
 
     /** \brief Update the manifold by an correction vector of size correctionSize
@@ -82,7 +82,7 @@ namespace Ikarus::Manifold {
 
     static Eigen::Matrix<ctype, valueSize, valueSize> derivativeOfProjectionWRTposition(
         const Eigen::Vector<ctype, valueSize> &p) {
-      const ctype norm                  = p.norm();
+      const ctype norm                         = p.norm();
       const Eigen::Vector<ctype, valueSize> pN = p / norm;
 
       Eigen::Matrix<ctype, valueSize, valueSize> result
@@ -91,10 +91,10 @@ namespace Ikarus::Manifold {
       return result;
     }
 
-    template<typename Derived>
+    template <typename Derived>
     static Eigen::Matrix<ctype, valueSize, valueSize> secondDerivativeOfProjectionWRTposition(
         const Eigen::Vector<ctype, valueSize> &p, const Eigen::MatrixBase<Derived> &along) {
-      const ctype normSquared                  = p.squaredNorm();
+      const ctype normSquared = p.squaredNorm();
       using std::sqrt;
       const ctype norm                         = sqrt(normSquared);
       const Eigen::Vector<ctype, valueSize> pN = p / norm;
@@ -110,8 +110,8 @@ namespace Ikarus::Manifold {
     static Eigen::Matrix<ctype, valueSize, valueSize> thirdDerivativeOfProjectionWRTposition(
         const Eigen::Vector<ctype, valueSize> &p, const Eigen::Ref<const Eigen::Vector<ctype, valueSize>> &along1,
         const Eigen::Ref<const Eigen::Vector<ctype, valueSize>> &along2) {
-      using FieldMat                           = Eigen::Matrix<ctype, valueSize, valueSize>;
-      const ctype normSquared                  = p.squaredNorm();
+      using FieldMat          = Eigen::Matrix<ctype, valueSize, valueSize>;
+      const ctype normSquared = p.squaredNorm();
       using std::sqrt;
       const ctype norm                         = sqrt(normSquared);
       const Eigen::Vector<ctype, valueSize> pN = p / norm;
@@ -199,4 +199,4 @@ namespace Ikarus::Manifold {
     return UnitVector<ctype2, d2>(rt.getValue() + rt.orthonormalFrame() * correction);
   }
 
-}  // namespace Ikarus::FunctionReturnType
+}  // namespace Ikarus::Manifold

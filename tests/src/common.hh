@@ -4,9 +4,9 @@
 
 #pragma once
 
+#include <dune/alugrid/grid.hh>
 #include <dune/grid/yaspgrid.hh>
 #include <dune/iga/nurbsgrid.hh>
-#include <dune/alugrid/grid.hh>
 namespace Grids {
   struct Yasp {};
   struct Alu {};

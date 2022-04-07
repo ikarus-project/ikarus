@@ -3,6 +3,7 @@
 //
 
 #include <config.h>
+
 #include <gmock/gmock.h>
 
 #include "testHelpers.hh"

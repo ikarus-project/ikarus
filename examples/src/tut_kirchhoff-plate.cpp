@@ -2,6 +2,7 @@
 // Created by Alex on 21.07.2021.
 //
 #include <config.h>
+
 #include <matplot/matplot.h>
 #include <numbers>
 
@@ -16,19 +17,19 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
-#include "ikarus/Controlroutines/LoadControl.h"
-#include "ikarus/FiniteElements/Interface/FEPolicies.h"
-#include "ikarus/LocalBasis/localBasis.h"
-#include "ikarus/Solver/NonLinearSolver/NewtonRaphson.hh"
-#include "ikarus/utils/Observer/LoadControlObserver.h"
-#include "ikarus/utils/Observer/controlVTKWriter.h"
-#include "ikarus/utils/Observer/nonLinearSolverLogger.h"
-#include "ikarus/utils/drawing/griddrawer.h"
-#include "ikarus/utils/utils/algorithms.h"
-#include <ikarus/Assembler/simpleAssemblers.hh>
-#include <ikarus/FiniteElements/AutodiffFE.hh>
-#include <ikarus/LinearAlgebra/NonLinearOperator.hh>
+#include <ikarus/assembler/simpleAssemblers.hh>
+#include <ikarus/controlRoutines/loadControl.hh>
+#include <ikarus/finiteElements/autodiffFE.hh>
+#include <ikarus/finiteElements/interface/fEPolicies.hh>
+#include <ikarus/linearAlgebra/nonLinearOperator.hh>
+#include <ikarus/localBasis/localBasis.hh>
+#include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
 #include <ikarus/utils/concepts.hh>
+#include <ikarus/utils/drawing/griddrawer.hh>
+#include <ikarus/utils/observer/controlVTKWriter.hh>
+#include <ikarus/utils/observer/loadControlObserver.hh>
+#include <ikarus/utils/observer/nonLinearSolverLogger.hh>
+#include <ikarus/utils/utils/algorithms.hh>
 
 template <typename Basis>
 struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<Basis>,
@@ -199,15 +200,33 @@ int main() {
       fes.emplace_back(basis, ele, Emod, nu, thickness);
 
     /// Create assembler
-    auto denseAssembler = DenseFlatSimpleAssembler(basis, fes, dirichletFlags);
+    auto denseAssembler = DenseFlatAssembler(basis, fes, dirichletFlags);
 
     /// Create non-linear operator with potential energy
     Eigen::VectorXd w;
     w.setZero(basis.size());
 
     const double totalLoad = 2000;
-    const auto& K          = denseAssembler.getMatrix(stiffness, w, totalLoad);
-    const auto& R          = denseAssembler.getVector(forces, w, totalLoad);
+
+    auto kFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
+      Ikarus::FErequirements req;
+      req.sols.emplace_back(disp);
+      req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
+      req.matrixAffordances = Ikarus::MatrixAffordances::stiffness;
+      return denseAssembler.getMatrix(req);
+    };
+
+    auto rFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
+      Ikarus::FErequirements req;
+      req.sols.emplace_back(disp);
+      req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
+      req.vectorAffordances = Ikarus::VectorAffordances::forces;
+      return denseAssembler.getVector(req);
+    };
+
+
+    const auto& K          = kFunction(w, totalLoad);
+    const auto& R          = rFunction(w, totalLoad);
     Eigen::LDLT<Eigen::MatrixXd> solver;
     solver.compute(K);
     w -= solver.solve(R);

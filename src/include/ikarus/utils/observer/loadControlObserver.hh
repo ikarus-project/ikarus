@@ -10,8 +10,8 @@
 
 #include <spdlog/spdlog.h>
 
-#include <ikarus/utils/Observer/observer.hh>
-#include <ikarus/utils/Observer/observerMessages.hh>
+#include <ikarus/utils/observer/observer.hh>
+#include <ikarus/utils/observer/observerMessages.hh>
 
 namespace Ikarus {
   class LoadControlObserver : public IObserver<ControlMessages> {

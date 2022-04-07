@@ -8,7 +8,9 @@ namespace Ikarus {
    * This function is inspired from
    * https://github.com/NicolasBoumal/manopt/blob/master/manopt/tools/identify_linear_piece.m
    */
-  std::tuple<Dune::Functions::Polynomial<double>, decltype(Eigen::seq(0,0))> findLineSegment(const Eigen::VectorXd& x, const Eigen::VectorXd& y, int segmentSize) {
+  std::tuple<Dune::Functions::Polynomial<double>, decltype(Eigen::seq(0, 0))> findLineSegment(const Eigen::VectorXd& x,
+                                                                                              const Eigen::VectorXd& y,
+                                                                                              int segmentSize) {
     Eigen::VectorXd errors = Eigen::VectorXd::Zero(x.size() - segmentSize);
     std::vector<Dune::Functions::Polynomial<double>> lines;
     for (int i = 0; i < errors.size(); ++i) {

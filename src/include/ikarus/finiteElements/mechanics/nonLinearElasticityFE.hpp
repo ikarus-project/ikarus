@@ -32,14 +32,14 @@
 #include <dune/geometry/type.hh>
 
 #include <ikarus/LocalBasis/localBasis.hh>
-#include <ikarus/utils/LinearAlgebraHelper.hh>
+#include <ikarus/LocalFunctions/StandardLocalFunction.hh>
+#include <ikarus/Variables/VariableDefinitions.hh>
 #include <ikarus/finiteElements/autodiffFE.hh>
 #include <ikarus/finiteElements/interface/fEPolicies.hh>
 #include <ikarus/finiteElements/interface/finiteElementFunctionConcepts.hh>
 #include <ikarus/finiteElements/interface/interfaceFiniteElement.hh>
 #include <ikarus/finiteElements/physicsHelper.hh>
-#include <ikarus/LocalFunctions/StandardLocalFunction.hh>
-#include <ikarus/Variables/VariableDefinitions.hh>
+#include <ikarus/utils/LinearAlgebraHelper.hh>
 #include <ikarus/utils/LinearAlgebraTypedefs.hh>
 
 namespace Ikarus::FiniteElements {
@@ -69,7 +69,8 @@ namespace Ikarus::FiniteElements {
       localView_.bind(element);
       const int order = 2 * (localView_.tree().child(0).finiteElement().localBasis().order());
       localBasis      = Ikarus::LocalBasis(localView_.tree().child(0).finiteElement().localBasis());
-      localBasis.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order), bindDerivatives(0, 1));
+      localBasis.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order),
+                      bindDerivatives(0, 1));
     }
 
     using Traits = TraitsFromLocalView<LocalView>;
@@ -98,11 +99,12 @@ namespace Ikarus::FiniteElements {
       C(2, 2)           = (1 - nu_) / 2;
       C *= emod_ / (1 - nu_ * nu_);
       const auto geo = localView_.element().geometry();
-      Ikarus::StandardLocalFunction uFunction(localBasis,disp);
-      for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints() ) {
-        const auto J = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
-        const auto u = uFunction.evaluateFunction(gpIndex).getValue();
-        const auto H      = uFunction.evaluateDerivative(gpIndex, wrt(DerivativeDirections::spatialall), transformWith(J.inverse().eval()));
+      Ikarus::StandardLocalFunction uFunction(localBasis, disp);
+      for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
+        const auto J      = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
+        const auto u      = uFunction.evaluateFunction(gpIndex).getValue();
+        const auto H      = uFunction.evaluateDerivative(gpIndex, wrt(DerivativeDirections::spatialall),
+                                                    transformWith(J.inverse().eval()));
         const auto E      = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
         const auto EVoigt = toVoigt(E);
 

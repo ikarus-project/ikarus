@@ -2,11 +2,10 @@
 // Created by Alex on 21.04.2021.
 //
 
+#include <gtest/gtest.h>
+
 #include <fstream>
 #include <vector>
-
-
-#include <gtest/gtest.h>
 
 #include "spdlog/fmt/ostr.h"
 #include "spdlog/sinks/basic_file_sink.h"

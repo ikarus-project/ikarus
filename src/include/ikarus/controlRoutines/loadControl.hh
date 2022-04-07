@@ -7,9 +7,9 @@
 
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
-#include <ikarus/variables/parameterFactory.hh>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observerMessages.hh>
+#include <ikarus/variables/parameterFactory.hh>
 
 namespace Ikarus {
 
@@ -21,7 +21,7 @@ namespace Ikarus {
   class LoadControl : public IObservable<ControlMessages> {
   public:
     LoadControl(const std::shared_ptr<NonLinearSolver>& p_nonLinearSolver, int loadSteps,
-                const std::array<double,2>& tbeginEnd)
+                const std::array<double, 2>& tbeginEnd)
         : nonLinearSolver{p_nonLinearSolver},
           loadSteps_{loadSteps},
           parameterBegin_{tbeginEnd[0]},

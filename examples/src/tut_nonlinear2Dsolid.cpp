@@ -16,15 +16,15 @@
 
 #include <Eigen/Core>
 
-#include "ikarus/Controlroutines/LoadControl.h"
-#include "ikarus/FiniteElements/Mechanics/NonLinearElasticityFE.h"
-#include "ikarus/Solver/NonLinearSolver/NewtonRaphson.hh"
-#include "ikarus/Solver/NonLinearSolver/TrustRegion.hh"
-#include "ikarus/utils/Observer/controlVTKWriter.h"
-#include "ikarus/utils/Observer/nonLinearSolverLogger.h"
-#include <ikarus/Assembler/SimpleAssemblers.hh>
-#include "ikarus/utils/drawing/griddrawer.h"
-#include <ikarus/LinearAlgebra/NonLinearOperator.hh>
+#include <ikarus/assembler/simpleAssemblers.hh>
+#include <ikarus/controlRoutines/loadControl.hh>
+#include <ikarus/finiteElements/mechanics/nonLinearElasticityFE.hh>
+#include <ikarus/linearAlgebra/nonLinearOperator.hh>
+#include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
+#include <ikarus/solver/nonLinearSolver/trustRegion.hh>
+#include <ikarus/utils/observer/controlVTKWriter.hh>
+#include <ikarus/utils/observer/nonLinearSolverLogger.hh>
+#include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/utils/utils/algorithms.hh>
 
 int main(int argc, char** argv) {
@@ -103,7 +103,6 @@ int main(int argc, char** argv) {
     }
   });
 
-  auto denseAssembler  = DenseFlatSimpleAssembler(basis, fes, dirichletFlags);
   auto sparseAssembler = SparseFlatAssembler(basis, fes, dirichletFlags);
 
   Eigen::VectorXd d;
@@ -111,7 +110,11 @@ int main(int argc, char** argv) {
   double lambda = 0.0;
 
   auto residualFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
-    return denseAssembler.getVector(forces, disp, lambdaLocal);
+    Ikarus::FErequirements req;
+    req.sols.emplace_back(disp);
+    req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
+    req.vectorAffordances = Ikarus::VectorAffordances::forces;
+    return sparseAssembler.getVector(req);
   };
 
   auto KFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
@@ -122,31 +125,35 @@ int main(int argc, char** argv) {
     return sparseAssembler.getMatrix(req);
   };
 
-  auto energyFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto {
-    return denseAssembler.getScalar(potentialEnergy, disp_, lambdaLocal);
+  auto energyFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
+    Ikarus::FErequirements req;
+    req.sols.emplace_back(disp_);
+    req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
+    req.scalarAffordances = Ikarus::ScalarAffordances::potentialEnergy;
+    return sparseAssembler.getScalar(req);
   };
 
   auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, residualFunction, KFunction),
                                             parameter(d, lambda));
 
-    auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::s_UmfPackLU);
+  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::s_UmfPackLU);
 
-    auto nr                      = Ikarus::makeNewtonRaphson(nonLinOp.subOperator<1, 2>(), std::move(linSolver));
-//  auto nr = Ikarus::makeTrustRegion(nonLinOp);
-//  nr->setup({.verbosity = 1,
-//             .maxiter   = 30,
-//             .grad_tol  = 1e-8,
-//             .corr_tol  = 1e-8,
-//             .useRand   = false,
-//             .rho_reg   = 1e6,
-//             .Delta0    = 1});
+  auto nr = Ikarus::makeNewtonRaphson(nonLinOp.subOperator<1, 2>(), std::move(linSolver));
+  //  auto nr = Ikarus::makeTrustRegion(nonLinOp);
+  //  nr->setup({.verbosity = 1,
+  //             .maxiter   = 30,
+  //             .grad_tol  = 1e-8,
+  //             .corr_tol  = 1e-8,
+  //             .useRand   = false,
+  //             .rho_reg   = 1e6,
+  //             .Delta0    = 1});
 
-    auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
+  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
 
   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<decltype(basis)>>(basis, d, 2);
   vtkWriter->setFileNamePrefix("Test2Dsolid");
   vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 2);
-    nr->subscribeAll(nonLinearSolverObserver);
+  nr->subscribeAll(nonLinearSolverObserver);
 
   auto lc = Ikarus::LoadControl(nr, 20, {0, 2000});
 

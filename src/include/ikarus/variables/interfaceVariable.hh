@@ -9,8 +9,8 @@
 
 #include <Eigen/Core>
 
-#include <ikarus/variables/variablePolicies.hh>
 #include <ikarus/utils/linearAlgebraTypedefs.hh>
+#include <ikarus/variables/variablePolicies.hh>
 
 namespace Ikarus {
   enum class VariableTags;

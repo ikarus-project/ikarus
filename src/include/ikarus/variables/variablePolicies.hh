@@ -34,4 +34,3 @@ namespace Ikarus::Concepts {
   };
 
 }  // namespace Ikarus::Concepts
-

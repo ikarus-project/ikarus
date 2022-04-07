@@ -3,9 +3,6 @@
 //
 
 #pragma once
-#include <ikarus/finiteElements/interface/finiteElementFunctionConcepts.hh>
-#include <ikarus/utils/concepts.hh>
-
 #include <ranges>
 #include <utility>
 
@@ -13,6 +10,9 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
+
+#include <ikarus/finiteElements/interface/finiteElementFunctionConcepts.hh>
+#include <ikarus/utils/concepts.hh>
 
 namespace Ikarus {
 
@@ -174,7 +174,6 @@ namespace Ikarus {
     std::vector<std::vector<Eigen::Index>> elementLinearIndices;
     std::vector<std::vector<Eigen::Index>> elementLinearReducedIndices;
   };
-
 
   /** DenseFlatAssembler assembles matrix quantities using a flat basis Indexing strategy
    * The matrix is stored in a dense matrix format. This format is exploited during the assembly process

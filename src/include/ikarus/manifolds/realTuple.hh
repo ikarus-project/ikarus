@@ -36,9 +36,9 @@ namespace Ikarus::Manifold {
 
     RealTuple() = default;
 
-    template<typename OtherType>
-    struct Rebind{
-      using type = RealTuple<OtherType,valueSize>;
+    template <typename OtherType>
+    struct Rebind {
+      using type = RealTuple<OtherType, valueSize>;
     };
 
     /** \brief Copy-Constructor from the values in terms of coordinateType */
@@ -93,4 +93,4 @@ namespace Ikarus::Manifold {
     return RealTuple<ctype2, d2>(rt.getValue() + correction);
   }
 
-}  // namespace Ikarus::FunctionReturnType
+}  // namespace Ikarus::Manifold

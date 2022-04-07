@@ -51,12 +51,10 @@ namespace Impl {
 
 }  // namespace Impl
 
-
 template <typename... Args>
 auto parameter(Args&&... args) {
   return Impl::Parameter<Args&&...>{std::forward_as_tuple(std::forward<Args>(args)...)};
 }
-
 
 template <typename... Args>
 auto linearAlgebraFunctions(Args&&... args) {
@@ -123,31 +121,17 @@ namespace Ikarus {
     }
 
     /* Returns the value of the zeros function, e.g. the energy value */
-    auto& value()
-      requires(sizeof...(DerivativeArgs) > 0)
-    {
-      return nthDerivative<0>();
-    }
+    auto& value() requires(sizeof...(DerivativeArgs) > 0) { return nthDerivative<0>(); }
 
     /* Returns the derivative value, e.g. the gradient of an energy */
-    auto& derivative() &
-          requires(sizeof...(DerivativeArgs) > 1)
-    {
-      return nthDerivative<1>();
-    }
+    auto& derivative() & requires(sizeof...(DerivativeArgs) > 1) { return nthDerivative<1>(); }
 
     /* Returns the second derivative value, e.g. the Hessian of an energy */
-    auto& secondDerivative()
-      requires(sizeof...(DerivativeArgs) > 2)
-    {
-      return nthDerivative<2>();
-    }
+    auto& secondDerivative() requires(sizeof...(DerivativeArgs) > 2) { return nthDerivative<2>(); }
 
     /* Returns the n-th derivative value */
     template <int n>
-    auto& nthDerivative()
-      requires(sizeof...(DerivativeArgs) > n)
-    {
+    auto& nthDerivative() requires(sizeof...(DerivativeArgs) > n) {
       if constexpr (requires { std::get<n>(derivativesEvaluated_).get(); })
         return std::get<n>(derivativesEvaluated_).get();
       else
@@ -157,22 +141,12 @@ namespace Ikarus {
     /* Returns the last parameter value */
     auto& lastParameter() { return nthParameter<sizeof...(ParameterArgs) - 1>(); }
     /* Returns the first parameter value */
-    auto& firstParameter()
-      requires(sizeof...(ParameterArgs) > 0)
-    {
-      return nthParameter<0>();
-    }
+    auto& firstParameter() requires(sizeof...(ParameterArgs) > 0) { return nthParameter<0>(); }
     /* Returns the second parameter value */
-    auto& secondParameter()
-      requires(sizeof...(ParameterArgs) > 1)
-    {
-      return nthParameter<1>();
-    }
+    auto& secondParameter() requires(sizeof...(ParameterArgs) > 1) { return nthParameter<1>(); }
     /* Returns the n-th parameter value */
     template <int n>
-    auto& nthParameter()
-      requires(sizeof...(ParameterArgs) >= n)
-    {
+    auto& nthParameter() requires(sizeof...(ParameterArgs) >= n) {
       return std::get<n>(args_).get();
     }
 

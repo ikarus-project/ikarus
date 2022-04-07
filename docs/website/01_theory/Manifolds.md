@@ -1,17 +1,17 @@
 # Manifold elements
-Usually optimization problems are defined in terms of some cost 
+##  Introduction
+Usually optimization problems are defined in terms of some cost
 function.
 
-##  Introduction
 $$
  \min_{\boldsymbol{x} \in \mathcal{M}} f(\boldsymbol{x} )
 $$
 where \( f: \mathcal{M} \rightarrow \mathbb{R} \).
 
-Usually \( \mathcal{M} \) is here an euclidean vector space \( \mathbb{R} \).
+Usually \( \mathcal{M} \) is here an Euclidean vector space \( \mathbb{R} \).
 
 In a finite element context, if we solve e.g. 2d elasticity problems we have a 
-two-dimensional displacement for each node. Thus if we have \(n \) node we optimize in \( {\mathbb{R}^2}^n  \).
+two-dimensional displacement for each node. Thus if we have \(n \) nodes we optimize in \( {\mathbb{R}^2}^n  \).
 
 For this case the nodal degrees of freedom should be wrapped in `#!cpp Ikarus::RealTuple<double,2>`.
 
@@ -53,7 +53,6 @@ namespace Ikarus::Concepts {
         Ikarus::UnitVector<double,3> b; 
         b+= Eigen::Vector2d::UnitX();
      ```
-
 
 ## Implementations
 | Name                      | Formal definition                                         | Note                                                                                                                                                                                                                                                      | Header |

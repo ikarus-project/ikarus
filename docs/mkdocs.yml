@@ -60,6 +60,7 @@ nav:
     - Local basis: 01_theory/LocalBasis.md
     - Local functions: 01_theory/LocalFunctions.md
     - Manifolds: 01_theory/Manifolds.md
+    - Solvers: 01_theory/Solvers.md
   - Examples:
       - Integrate pi: examples/integrate_pi.md
   - Literature: 99_Literature/99_Literature.md

@@ -5,12 +5,12 @@
 #pragma once
 #include <iostream>
 
+#include <ikarus/linearAlgebra/linearAlgebraHelper.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/linearSolver/linearSolver.hh>
 #include <ikarus/utils/linearAlgebraHelper.hh>
-#include <ikarus/utils/observer/observerMessages.hh>
-#include <ikarus/linearAlgebra/linearAlgebraHelper.hh>
 #include <ikarus/utils/observer/observer.hh>
+#include <ikarus/utils/observer/observerMessages.hh>
 
 namespace Ikarus {
 
@@ -128,12 +128,12 @@ namespace Ikarus {
             typename UpdateType
             = std::conditional_t<std::is_floating_point_v<typename NonLinearOperatorImpl::template ParameterValue<0>>,
                                  typename NonLinearOperatorImpl::template ParameterValue<0>, Eigen::VectorXd>>
- auto makeNewtonRaphson(
+  auto makeNewtonRaphson(
       const NonLinearOperatorImpl& p_nonLinearOperator,
       LinearSolver&& p_linearSolver = [](const typename NonLinearOperatorImpl::ValueType& a,
                                          const typename NonLinearOperatorImpl::ValueType& b) { return a / b; },
-      std::function<void(typename NonLinearOperatorImpl::template Parameter<0>&, const UpdateType&)> p_updateFunction =
-          [](typename NonLinearOperatorImpl::template Parameter<0>& a, const UpdateType& b) {
+      std::function<void(typename NonLinearOperatorImpl::template ParameterValue<0>&, const UpdateType&)> p_updateFunction =
+          [](typename NonLinearOperatorImpl::template ParameterValue<0>& a, const UpdateType& b) {
             using Ikarus::operator+=;
             a += b;
           }) {

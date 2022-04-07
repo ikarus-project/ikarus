@@ -2,7 +2,7 @@
 // Created by Alex on 21.07.2021.
 //
 
-#include <config.hh>
+#include <config.h>
 
 #include <dune/alugrid/grid.hh>
 #include <dune/common/parametertreeparser.hh>
@@ -21,14 +21,14 @@
 
 #include <Eigen/Core>
 
-#include "ikarus/Controlroutines/LoadControl.h"
-#include "ikarus/FiniteElements/Micromagnetics/MicroMangeticsWithVectorPotential.h"
-#include "ikarus/Solver/NonLinearSolver/TrustRegion.hh"
-#include "ikarus/utils/Observer/controlVTKWriter.h"
-#include "ikarus/utils/Observer/genericControlObserver.h"
-#include "ikarus/utils/drawing/griddrawer.h"
-#include <ikarus/Assembler/simpleAssemblers.hh>
-#include <ikarus/LinearAlgebra/NonLinearOperator.hh>
+#include <ikarus/controlRoutines/loadControl.hh>
+#include <ikarus/finiteElements/micromagnetics/microMangeticsWithVectorPotential.hh>
+#include <ikarus/solver/nonLinearSolver/trustRegion.hh>
+#include <ikarus/utils/observer/controlVTKWriter.hh>
+#include <ikarus/utils/observer/genericControlObserver.hh>
+#include <ikarus/utils/drawing/griddrawer.hh>
+#include <ikarus/assembler/simpleAssemblers.hh>
+#include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/utils/functionSanityChecks.hh>
 #include <ikarus/utils/utils/algorithms.hh>
 
@@ -48,8 +48,8 @@ int main(int argc, char** argv) {
   Dune::ParameterTree parameterSet;
   Dune::ParameterTreeParser::readINITree(argv[1], parameterSet);
 
-  const Dune::ParameterTree& gridParameters    = parameterSet.sub("GridParameters");
-  const Dune::ParameterTree& controlParameters = parameterSet.sub("ControlParameters");
+  const Dune::ParameterTree& gridParameters     = parameterSet.sub("GridParameters");
+  const Dune::ParameterTree& controlParameters  = parameterSet.sub("ControlParameters");
   const Dune::ParameterTree& materialParameters = parameterSet.sub("MaterialParameters");
 
   const auto refinement      = gridParameters.get<int>("refinement");
@@ -58,8 +58,8 @@ int main(int argc, char** argv) {
   const auto loadSteps       = controlParameters.get<int>("loadSteps");
   const auto loadFactorRange = controlParameters.get<std::array<double, 2>>("loadFactorRange");
 
-  const auto A = materialParameters.get<double>("A");
-  const auto K = materialParameters.get<double>("K");
+  const auto A  = materialParameters.get<double>("A");
+  const auto K  = materialParameters.get<double>("K");
   const auto ms = materialParameters.get<double>("ms");
 
   Python::start();
@@ -106,12 +106,12 @@ int main(int argc, char** argv) {
   //  };
 
   std::cout << "InnerRadius is " << innerRadius << std::endl;
-//  auto isInsidePredicate = [&](auto&& coord) {
-//    if (Dune::power(coord[0], 2) + Dune::power(coord[1], 2) - 1e-4 > Dune::power(innerRadius, 2))
-//      return false;
-//    else
-//      return true;
-//  };
+  //  auto isInsidePredicate = [&](auto&& coord) {
+  //    if (Dune::power(coord[0], 2) + Dune::power(coord[1], 2) - 1e-4 > Dune::power(innerRadius, 2))
+  //      return false;
+  //    else
+  //      return true;
+  //  };
 
   //  using Grid        = Dune::YaspGrid<gridDim>;
   //  const size_t elex = 60;

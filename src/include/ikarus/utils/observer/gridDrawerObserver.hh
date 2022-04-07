@@ -7,9 +7,9 @@
 
 #include <spdlog/spdlog.h>
 
-#include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/utils/Observer/observer.hh>
 #include <ikarus/utils/Observer/observerMessages.hh>
+#include <ikarus/utils/drawing/griddrawer.hh>
 
 template <typename GridView, typename FEManager>
 class GridDrawerObserver : public IObserver<ControlMessages> {

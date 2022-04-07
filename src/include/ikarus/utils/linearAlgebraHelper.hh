@@ -32,38 +32,43 @@ namespace Ikarus::LinearAlgebra {
     return vec;
   }
 
-  /** \brief View Dune::BlockVector as a Eigen::Matrix with dynamic rows and fixed columns depending on the size of  the ValueType*/
+  /** \brief View Dune::BlockVector as a Eigen::Matrix with dynamic rows and fixed columns depending on the size of  the
+   * ValueType*/
   template <typename ValueType>
   auto viewAsEigenMatrixAsDynFixed(Dune::BlockVector<ValueType>& blockedVector) {
-    Eigen::Map<Eigen::Matrix<typename ValueType::field_type,Eigen::Dynamic,ValueType::valueSize,Eigen::RowMajor>> vec(&blockedVector.begin()->begin().operator*(),
-                                                                   blockedVector.size(),blockedVector[0].size());
+    Eigen::Map<Eigen::Matrix<typename ValueType::field_type, Eigen::Dynamic, ValueType::valueSize, Eigen::RowMajor>>
+        vec(&blockedVector.begin()->begin().operator*(), blockedVector.size(), blockedVector[0].size());
 
     return vec;
   }
 
-  /** \brief Const view Dune::BlockVector as a Eigen::Matrix with dynamic rows and fixed columns depending on the size of  the ValueType */
+  /** \brief Const view Dune::BlockVector as a Eigen::Matrix with dynamic rows and fixed columns depending on the size
+   * of  the ValueType */
   template <typename ValueType>
   auto viewAsEigenMatrixAsDynFixed(const Dune::BlockVector<ValueType>& blockedVector) {
-    Eigen::Map<const Eigen::Matrix<typename ValueType::field_type,Eigen::Dynamic,ValueType::valueSize,Eigen::RowMajor>> vec(&blockedVector.begin()->begin().operator*(),
-                                                                                                                               blockedVector.size(),blockedVector[0].size());
+    Eigen::Map<
+        const Eigen::Matrix<typename ValueType::field_type, Eigen::Dynamic, ValueType::valueSize, Eigen::RowMajor>>
+        vec(&blockedVector.begin()->begin().operator*(), blockedVector.size(), blockedVector[0].size());
 
     return vec;
   }
 
-  /** \brief View Dune::BlockVector as a Eigen::Matrix with fixed rows depending on the size of  the ValueType and dynamics columns */
+  /** \brief View Dune::BlockVector as a Eigen::Matrix with fixed rows depending on the size of  the ValueType and
+   * dynamics columns */
   template <typename ValueType>
   auto viewAsEigenMatrixFixedDyn(Dune::BlockVector<ValueType>& blockedVector) {
-    Eigen::Map<Eigen::Matrix<typename ValueType::field_type,ValueType::valueSize,Eigen::Dynamic>> vec(&blockedVector.begin()->begin().operator*(),blockedVector[0].size(),
-                                                                                                         blockedVector.size());
+    Eigen::Map<Eigen::Matrix<typename ValueType::field_type, ValueType::valueSize, Eigen::Dynamic>> vec(
+        &blockedVector.begin()->begin().operator*(), blockedVector[0].size(), blockedVector.size());
 
     return vec;
   }
 
-  /** \brief Const view Dune::BlockVector as a Eigen::Matrix with fixed rows depending on the size of  the ValueType and dynamics columns */
+  /** \brief Const view Dune::BlockVector as a Eigen::Matrix with fixed rows depending on the size of  the ValueType and
+   * dynamics columns */
   template <typename ValueType>
   auto viewAsEigenMatrixFixedDyn(const Dune::BlockVector<ValueType>& blockedVector) {
-    Eigen::Map<const Eigen::Matrix<typename ValueType::field_type,ValueType::valueSize,Eigen::Dynamic>> vec(&blockedVector.begin()->begin().operator*(),blockedVector[0].size(),
-                                                                                                        blockedVector.size());
+    Eigen::Map<const Eigen::Matrix<typename ValueType::field_type, ValueType::valueSize, Eigen::Dynamic>> vec(
+        &blockedVector.begin()->begin().operator*(), blockedVector[0].size(), blockedVector.size());
 
     return vec;
   }
@@ -94,5 +99,5 @@ Derived sym(const Eigen::MatrixBase<Derived>& A) {
 /** \brief Returns the skew part of a matrix*/
 template <typename Derived>
 Derived skew(const Eigen::MatrixBase<Derived>& A) {
-  return 0.5 * (A- A.transpose());
+  return 0.5 * (A - A.transpose());
 }

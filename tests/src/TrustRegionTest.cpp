@@ -6,8 +6,8 @@
 
 #include "testHelpers.hh"
 
-#include <ikarus/solver/nonLinearSolver/trustRegion.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
+#include <ikarus/solver/nonLinearSolver/trustRegion.hh>
 #include <ikarus/variables/variableDefinitions.hh>
 
 auto f(const Eigen::Vector<double, 1>& x) { return 0.5 * x[0] * x[0]; }

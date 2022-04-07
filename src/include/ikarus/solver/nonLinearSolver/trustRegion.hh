@@ -16,12 +16,12 @@
 
 #include <Eigen/Sparse>
 
-#include <ikarus/linearAlgebra/nonLinearOperator.hh>
-#include <ikarus/utils/linearAlgebraHelper.hh>
-#include <ikarus/utils/observer/observerMessages.hh>
 #include <ikarus/linearAlgebra/linearAlgebraHelper.hh>
+#include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/linearAlgebra/truncatedConjugateGradient.hh>
+#include <ikarus/utils/linearAlgebraHelper.hh>
 #include <ikarus/utils/observer/observer.hh>
+#include <ikarus/utils/observer/observerMessages.hh>
 #include <ikarus/utils/utils/traits.hh>
 
 namespace Ikarus {
@@ -423,7 +423,8 @@ namespace Ikarus {
                                  typename NonLinearOperatorImpl::template ParameterValue<0>, Eigen::VectorXd>>
   std::shared_ptr<TrustRegion<NonLinearOperatorImpl, preConditioner, UpdateType>> makeTrustRegion(
       const NonLinearOperatorImpl& p_nonLinearOperator,
-      std::function<void(typename NonLinearOperatorImpl::template ParameterValue<0>&, const UpdateType&)> p_updateFunction
+      std::function<void(typename NonLinearOperatorImpl::template ParameterValue<0>&, const UpdateType&)>
+          p_updateFunction
       = [](typename NonLinearOperatorImpl::template ParameterValue<0>& a, const UpdateType& b) {
           using Ikarus::operator+=;
           a += b;

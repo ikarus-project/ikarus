@@ -22,11 +22,8 @@ namespace Ikarus {
 
   /* Helper function to pass integers. These indicate which derivatives should be precomputed */
   template <typename... Ints>
-    requires std::conjunction_v<std::is_convertible<int, Ints>
-                                ...> auto
-    bindDerivatives(Ints&&... ints) {
-    return Impl::Derivatives<Ints&&...>({std::forward<Ints>(ints)...});
-  }
+  requires std::conjunction_v<std::is_convertible<int, Ints>...>
+  auto bindDerivatives(Ints&&... ints) { return Impl::Derivatives<Ints&&...>({std::forward<Ints>(ints)...}); }
 
   /* Convenient wrapper to store a dune local basis. It is possible to precompute derivatives */
   template <Concepts::DuneLocalBasis DuneLocalBasis>
@@ -65,9 +62,8 @@ namespace Ikarus {
 
     /* Binds this basis to a given integration rule */
     template <typename IntegrationRule, typename... Ints>
-      requires std::conjunction_v<std::is_convertible<int, Ints>
-                                  ...> void
-      bind(IntegrationRule&& p_rule, Impl::Derivatives<Ints...>&& ints);
+    requires std::conjunction_v<std::is_convertible<int, Ints>...>
+    void bind(IntegrationRule&& p_rule, Impl::Derivatives<Ints...>&& ints);
 
     /* Returns a reference to the ansatz functions evaluated at the given integration point index */
     const auto& evaluateFunction(long unsigned ipIndex) const {

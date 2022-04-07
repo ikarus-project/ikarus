@@ -37,7 +37,8 @@ namespace Ikarus {
     /** \brief Type for the return value */
     using FunctionReturnType = typename Traits::FunctionReturnType;
     /** \brief Type for the directional derivatives */
-    using AlongType = typename Traits::AlongType;;
+    using AlongType = typename Traits::AlongType;
+    ;
     /** \brief Type for the coordinates to store the return value */
     using GlobalE = typename FunctionReturnType::CoordinateType;
     /** \brief Type for the Jacobian matrix */
@@ -86,8 +87,8 @@ namespace Ikarus {
     }
 
     CoeffDerivMatrix evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(const AnsatzFunctionType& N,
-                                                         [[maybe_unused]] const AnsatzFunctionJacobian& dN,
-                                                         int coeffsIndex, const int spatialIndex) const {
+                                                                     [[maybe_unused]] const AnsatzFunctionJacobian& dN,
+                                                                     int coeffsIndex, const int spatialIndex) const {
       return CoeffDerivMatrix{};
     }
 

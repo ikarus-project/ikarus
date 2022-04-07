@@ -9,10 +9,11 @@ namespace Ikarus {
   /*
    * See https://www.fluentcpp.com/2016/12/08/strong-types-for-strong-interfaces/
    */
-  template < typename Parameter, typename... T>
+  template <typename Parameter, typename... T>
   class NamedType {
     using CommonType = std::common_type_t<T...>;
-    using ValueType = std::conditional_t<sizeof...(T)==1,CommonType ,std::array<CommonType, sizeof...(T)>>;
+    using ValueType  = std::conditional_t<sizeof...(T) == 1, CommonType, std::array<CommonType, sizeof...(T)>>;
+
   public:
     explicit NamedType(ValueType const& value) : value_(value) {}
     explicit NamedType(ValueType&& value) : value_(std::move(value)) {}

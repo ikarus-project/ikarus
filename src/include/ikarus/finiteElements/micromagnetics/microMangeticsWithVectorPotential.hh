@@ -22,8 +22,8 @@
 // *
 
 #pragma once
-#include <autodiff/forward/dual.hh>
-#include <autodiff/forward/dual/eigen.hh>
+#include <autodiff/forward/dual.hpp>
+#include <autodiff/forward/dual/eigen.hpp>
 #include <concepts>
 #include <iostream>
 #include <numbers>
@@ -32,16 +32,16 @@
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/geometry/type.hh>
 
-#include "ikarus/FiniteElements/Interface/FEPolicies.h"
-#include "ikarus/FiniteElements/Interface/FiniteElementFunctionConcepts.h"
-#include "ikarus/FiniteElements/Interface/InterfaceFiniteElement.h"
-#include "ikarus/FiniteElements/physicsHelper.h"
-#include "ikarus/LocalBasis/localBasis.h"
-#include "ikarus/LocalFunctions/ProjectionBasedLocalFunction.h"
-#include "ikarus/LocalFunctions/StandardLocalFunction.h"
-#include "ikarus/Variables/variableDefinitions.hpp"
-#include "ikarus/utils/LinearAlgebraHelper.h"
-#include "ikarus/utils/LinearAlgebraTypedefs.h"
+#include <ikarus/finiteElements/interface/fEPolicies.hh>
+#include <ikarus/finiteElements/interface/finiteElementFunctionConcepts.hh>
+#include <ikarus/finiteElements/interface/interfaceFiniteElement.hh>
+#include <ikarus/finiteElements/physicsHelper.hh>
+#include <ikarus/localBasis/localBasis.hh>
+#include <ikarus/localFunctions/projectionBasedLocalFunction.hh>
+#include <ikarus/localFunctions/standardLocalFunction.hh>
+#include <ikarus/variables/variableDefinitions.hh>
+#include <ikarus/utils/linearAlgebraHelper.hh>
+#include <ikarus/utils/linearAlgebraTypedefs.hh>
 
 namespace Ikarus::FiniteElements {
 
@@ -69,22 +69,19 @@ namespace Ikarus::FiniteElements {
 
     template <typename Derived>
     auto vecToSkewMatrix(const Eigen::MatrixBase<Derived>& vec) {
-      constexpr int FieldSize  = Derived::ColsAtCompileTime ;
-      Eigen::Matrix<typename Derived::Scalar, 3,FieldSize==2 ? 1 : 3> skew;
-      static_assert(Derived::RowsAtCompileTime==1);
+      constexpr int FieldSize = Derived::ColsAtCompileTime;
+      Eigen::Matrix<typename Derived::Scalar, 3, FieldSize == 2 ? 1 : 3> skew;
+      static_assert(Derived::RowsAtCompileTime == 1);
 
       if constexpr (FieldSize == 2) {
         skew[0] = vec(1);
         skew[1] = -vec(0);
         skew[2] = 0;
       } else if constexpr (FieldSize == 3) {
-        skew<< 0, -vec(2),  vec(1),
-          vec(2),       0, -vec(0),
-         -vec(1),  vec(0),      0;
+        skew << 0, -vec(2), vec(1), vec(2), 0, -vec(0), -vec(1), vec(0), 0;
       }
       return skew;
     }
-
 
   }  // namespace Impl
 
@@ -182,7 +179,7 @@ namespace Ikarus::FiniteElements {
 
       for (const auto& [gpIndex, gp] : mLocalF.viewOverIntegrationPoints()) {
         const double weight = geo.integrationElement(gp.position()) * gp.weight();
-        localBasisVecPot.template evaluateJacobian(gp.position(),  dNA);
+        localBasisVecPot.template evaluateJacobian(gp.position(), dNA);
 
         const auto J             = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
         const auto Jinv          = J.inverse().eval();
@@ -224,17 +221,15 @@ namespace Ikarus::FiniteElements {
         }
         const int magEukSize = fe0.size() * directorCorrectionDim;
         for (size_t i = 0; i < fe1.size(); ++i) {
-          const int indexI = magEukSize + i * vectorPotDim;
-          const Eigen::Matrix<double, directorDim,vectorPotDim> gradCurlA_dI
-              = Impl::vecToSkewMatrix(dNAdx.row(i));
+          const int indexI                                                    = magEukSize + i * vectorPotDim;
+          const Eigen::Matrix<double, directorDim, vectorPotDim> gradCurlA_dI = Impl::vecToSkewMatrix(dNAdx.row(i));
           ;
           for (size_t j = 0; j < fe1.size(); ++j) {
-            const int indexJ = magEukSize + j * vectorPotDim;
-            const Eigen::Matrix<double, directorDim,vectorPotDim> gradCurlA_dJ
-                = Impl::vecToSkewMatrix(dNAdx.row(j));
+            const int indexJ                                                    = magEukSize + j * vectorPotDim;
+            const Eigen::Matrix<double, directorDim, vectorPotDim> gradCurlA_dJ = Impl::vecToSkewMatrix(dNAdx.row(j));
             ;
             hred.template block<vectorPotDim, vectorPotDim>(indexI, indexJ)
-                += (gradCurlA_dI.transpose()*gradCurlA_dJ) * geo.integrationElement(gp.position()) * gp.weight();
+                += (gradCurlA_dI.transpose() * gradCurlA_dJ) * geo.integrationElement(gp.position()) * gp.weight();
           }
         }
 
@@ -242,9 +237,8 @@ namespace Ikarus::FiniteElements {
           const int indexI = i * directorCorrectionDim;
           const auto PmI   = mLocalF.evaluateDerivative(gpIndex, wrt(coeffs), coeffIndices(i));
           for (size_t j = 0; j < fe1.size(); ++j) {
-            const int indexJ = magEukSize + j * vectorPotDim;
-            const Eigen::Matrix<double, directorDim,vectorPotDim> gradCurlA_dJ
-                = Impl::vecToSkewMatrix(dNAdx.row(j));
+            const int indexJ                                                    = magEukSize + j * vectorPotDim;
+            const Eigen::Matrix<double, directorDim, vectorPotDim> gradCurlA_dJ = Impl::vecToSkewMatrix(dNAdx.row(j));
             if (isInside)
               hred.template block<directorCorrectionDim, vectorPotDim>(indexI, indexJ)
                   -= (PmI * gradCurlA_dJ) * geo.integrationElement(gp.position()) * gp.weight();
@@ -290,7 +284,7 @@ namespace Ikarus::FiniteElements {
 
       for (const auto& [gpIndex, gp] : magnetLocalFunction.viewOverIntegrationPoints()) {
         const double weight = geo.integrationElement(gp.position()) * gp.weight();
-        localBasisVecPot.evaluateJacobian(gp.position(),  dNA);
+        localBasisVecPot.evaluateJacobian(gp.position(), dNA);
         const auto J             = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
         const auto Jinv          = J.inverse().eval();
         const auto normalizedMag = magnetLocalFunction.evaluateFunction(gpIndex).getValue();
@@ -310,7 +304,7 @@ namespace Ikarus::FiniteElements {
           for (size_t i = 0; i < fe0.size(); ++i) {
             const int index = i * directorCorrectionDim;
             const auto WI   = magnetLocalFunction.evaluateDerivative(gpIndex, wrt(spatialall, coeffs),
-                                                                     transformWith(Jinv), coeffIndices(i));
+                                                                   transformWith(Jinv), coeffIndices(i));
             const auto PmI  = magnetLocalFunction.evaluateDerivative(gpIndex, wrt(coeffs), coeffIndices(i));
             Eigen::Vector<double, directorCorrectionDim> tmp;
             tmp.setZero();
@@ -323,10 +317,10 @@ namespace Ikarus::FiniteElements {
         }
         const int magEukSize = fe0.size() * directorCorrectionDim;
         for (size_t i = 0; i < fe1.size(); ++i) {
-          const int index = magEukSize + i * vectorPotDim;
-          const Eigen::Matrix<double, directorDim,vectorPotDim> gradCurlA_dI = Impl::vecToSkewMatrix(dNAdx.row(i));
+          const int index                                                     = magEukSize + i * vectorPotDim;
+          const Eigen::Matrix<double, directorDim, vectorPotDim> gradCurlA_dI = Impl::vecToSkewMatrix(dNAdx.row(i));
           rieGrad.template segment<vectorPotDim>(index)
-              += (-gradCurlA_dI.transpose()*(normalizedMag * isInside) + gradCurlA_dI.transpose()*(curlA)) * weight;
+              += (-gradCurlA_dI.transpose() * (normalizedMag * isInside) + gradCurlA_dI.transpose() * (curlA)) * weight;
         }
       }
     }
@@ -366,8 +360,8 @@ namespace Ikarus::FiniteElements {
       const auto geo = localView_.element().geometry();
 
       auto gp = toFieldVector(local);
-//      localBasisMag.template evaluateFunctionAndJacobian(gp, Nm, dNm);
-//      localBasisVecPot.template evaluateFunctionAndJacobian(gp, NA, dNA);
+      //      localBasisMag.template evaluateFunctionAndJacobian(gp, Nm, dNm);
+      //      localBasisVecPot.template evaluateFunctionAndJacobian(gp, NA, dNA);
 
       using namespace Ikarus::DerivativeDirections;
       Ikarus::ProjectionBasedLocalFunction magnetLocalFunction(localBasisMag, mN);
@@ -462,7 +456,7 @@ namespace Ikarus::FiniteElements {
 
         const Eigen::Vector<double, directorDim> Hbar = volumeLoad(toEigenVector(gp.position()), lambda);
         if (isInside)
-          energy += (0.5 * (gradm.transpose() * gradm).trace() - 2 * normalizedMag.dot(Hbar) / material.ms + 0.5*1)
+          energy += (0.5 * (gradm.transpose() * gradm).trace() - 2 * normalizedMag.dot(Hbar) / material.ms + 0.5 * 1)
                     * geo.integrationElement(gp.position()) * gp.weight();  // exchange and zeeman energy
 
         energy += (0.5 * curlA.squaredNorm() - isInside * normalizedMag.dot(curlA))

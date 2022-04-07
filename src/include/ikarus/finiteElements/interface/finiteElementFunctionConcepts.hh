@@ -37,10 +37,9 @@ namespace Ikarus {
 
   enum class ScalarAffordances { noAffordance, potentialEnergy };
 
-  enum class ResultType { noType, magnetization, gradientNormOfMagnetization, vectorPotential, BField,HField };
+  enum class ResultType { noType, magnetization, gradientNormOfMagnetization, vectorPotential, BField, HField };
 
   std::string getResultType(const ResultType& res);
-
 
   inline constexpr VectorAffordances forces = VectorAffordances::forces;
 
@@ -61,11 +60,9 @@ namespace Ikarus {
   };
 
   template <typename FErequirementsType = FErequirements<Eigen::VectorXd>>
-  struct ResultRequirements
-  {
+  struct ResultRequirements {
     FErequirementsType req;
     ResultType resType;
-
   };
 
 }  // namespace Ikarus

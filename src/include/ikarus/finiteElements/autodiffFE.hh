@@ -12,7 +12,7 @@
 namespace Ikarus {
   ////This element can not be used on its own but it should be inherited from
   //// The class constructor can only be called from the templated class.
-   template <typename RealElement, typename Basis, typename FERequirementTypeImpl = FErequirements<Eigen::VectorXd>>
+  template <typename RealElement, typename Basis, typename FERequirementTypeImpl = FErequirements<Eigen::VectorXd>>
   class AutoDiffFEClean {
   public:
     using LocalView = typename Basis::LocalView;

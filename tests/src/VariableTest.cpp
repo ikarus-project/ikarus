@@ -14,9 +14,9 @@
 #include <Eigen/Core>
 
 #include <ikarus/manifolds/realTuple.hh>
+#include <ikarus/utils/utils/algorithms.hh>
 #include <ikarus/variables/interfaceVariable.hh>
 #include <ikarus/variables/variableDefinitions.hh>
-#include <ikarus/utils/utils/algorithms.hh>
 
 TEST(DefaultVariableTest, RealTupleDisplacement) {
   using namespace Ikarus;

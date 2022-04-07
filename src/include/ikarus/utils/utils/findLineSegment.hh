@@ -12,6 +12,7 @@ namespace Ikarus {
    * This function is inspired from
    * https://github.com/NicolasBoumal/manopt/blob/master/manopt/tools/identify_linear_piece.m
    */
-  std::tuple<Dune::Functions::Polynomial<double>, decltype(Eigen::seq(0,0))>
-  findLineSegment(const Eigen::VectorXd& x, const Eigen::VectorXd& y, int segmentSize);
+  std::tuple<Dune::Functions::Polynomial<double>, decltype(Eigen::seq(0, 0))> findLineSegment(const Eigen::VectorXd& x,
+                                                                                              const Eigen::VectorXd& y,
+                                                                                              int segmentSize);
 }  // namespace Ikarus
