@@ -17,11 +17,11 @@
  * The checkgradient function is inspired by http://sma.epfl.ch/~nboumal/book/  Chapter 4.8 and
  * https://github.com/NicolasBoumal/manopt/blob/master/manopt/tools/checkdiff.m
  */
-template <typename NonlinearOperator, typename UpdateType = typename NonlinearOperator::template Parameter<0>>
+template <typename NonlinearOperator, typename UpdateType = typename NonlinearOperator::template ParameterValue<0>>
 bool checkGradient(
     NonlinearOperator& nonLinOp, bool draw = true,
-    std::function<void(typename NonlinearOperator::template Parameter<0>&, const UpdateType&)> p_updateFunction
-    = [](typename NonlinearOperator::template Parameter<0>& a, const UpdateType& b) { a += b; }) {
+    std::function<void(typename NonlinearOperator::template ParameterValue<0>&, const UpdateType&)> p_updateFunction
+    = [](typename NonlinearOperator::template ParameterValue<0>& a, const UpdateType& b) { a += b; }) {
   auto& x         = nonLinOp.firstParameter();
   const auto xOld = x;
   UpdateType b;
@@ -106,11 +106,11 @@ bool checkGradient(
  * The checkgradient function is inspired by http://sma.epfl.ch/~nboumal/book/  Chapter 4.8 and
  * https://github.com/NicolasBoumal/manopt/blob/master/manopt/tools/checkdiff.m
  */
-template <typename NonlinearOperator, typename UpdateType = typename NonlinearOperator::template Parameter<0>>
+template <typename NonlinearOperator, typename UpdateType = typename NonlinearOperator::template ParameterValue<0>>
 bool checkJacobian(
     NonlinearOperator& nonLinOp, bool draw = true,
-    std::function<void(typename NonlinearOperator::template Parameter<0>&, const UpdateType&)> p_updateFunction
-    = [](typename NonlinearOperator::template Parameter<0>& a, const UpdateType& b) { a += b; }) {
+    std::function<void(typename NonlinearOperator::template ParameterValue<0>&, const UpdateType&)> p_updateFunction
+    = [](typename NonlinearOperator::template ParameterValue<0>& a, const UpdateType& b) { a += b; }) {
   auto& x         = nonLinOp.firstParameter();
   const auto xOld = x;
   UpdateType b;
@@ -188,11 +188,11 @@ bool checkJacobian(
  * The checkgradient function is inspired by http://sma.epfl.ch/~nboumal/book/  Chapter 6.8 and
  * https://github.com/NicolasBoumal/manopt/blob/master/manopt/tools/checkhessian.m
  */
-template <typename NonlinearOperator, typename UpdateType = typename NonlinearOperator::template Parameter<0>>
+template <typename NonlinearOperator, typename UpdateType = typename NonlinearOperator::template ParameterValue<0>>
 bool checkHessian(
     NonlinearOperator& nonLinOp, bool draw = true,
-    std::function<void(typename NonlinearOperator::template Parameter<0>&, const UpdateType&)> p_updateFunction
-    = [](typename NonlinearOperator::template Parameter<0>& a, const UpdateType& b) { a += b; }) {
+    std::function<void(typename NonlinearOperator::template ParameterValue<0>&, const UpdateType&)> p_updateFunction
+    = [](typename NonlinearOperator::template ParameterValue<0>& a, const UpdateType& b) { a += b; }) {
   auto& x         = nonLinOp.firstParameter();
   const auto xOld = x;
   UpdateType b;
@@ -243,33 +243,33 @@ bool checkHessian(
     else
       spdlog::info("The Hessian seems wrong.");
 
-//    auto f   = figure(true);
-//    auto ax1 = gca();
-//    hold(ax1, true);
-//    std::vector<double> tOfRange(rangeSize);
-//    std::vector<double> fInRange(rangeSize);
-//    auto tET = tE(range);
-//    auto yET = yE(range);
-//
-//    for (int i = 0; auto r : tET) {
-//      tOfRange[i] = r;
-//      fInRange[i] = yET[i];
-//      ++i;
-//    }
-//
-//    auto l0          = ax1->loglog(t, ftevaluated);
-//    auto lexpected   = ax1->loglog(t, fexpectedSlope, "--");
-//    auto lFoundRange = ax1->loglog(tOfRange, fInRange);
-//    l0->line_width(2);
-//    lexpected->line_width(2);
-//    lFoundRange->line_width(4);
-//    lFoundRange->color("magenta");
-//    l0->color("blue");
-//    lexpected->color("red");
-//    xlabel("h");
-//    ylabel("Approximation error ");
-//    title("Hessian check");
-//    f->show();
+    auto f   = figure(true);
+    auto ax1 = gca();
+    hold(ax1, true);
+    std::vector<double> tOfRange(rangeSize);
+    std::vector<double> fInRange(rangeSize);
+    auto tET = tE(range);
+    auto yET = yE(range);
+
+    for (int i = 0; auto r : tET) {
+      tOfRange[i] = r;
+      fInRange[i] = yET[i];
+      ++i;
+    }
+
+    auto l0          = ax1->loglog(t, ftevaluated);
+    auto lexpected   = ax1->loglog(t, fexpectedSlope, "--");
+    auto lFoundRange = ax1->loglog(tOfRange, fInRange);
+    l0->line_width(2);
+    lexpected->line_width(2);
+    lFoundRange->line_width(4);
+    lFoundRange->color("magenta");
+    l0->color("blue");
+    lexpected->color("red");
+    xlabel("h");
+    ylabel("Approximation error ");
+    title("Hessian check");
+    f->show();
   }
   nonLinOp.template updateAll();
   return checkPassed;

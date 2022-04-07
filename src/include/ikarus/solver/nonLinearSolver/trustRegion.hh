@@ -85,11 +85,11 @@ namespace Ikarus {
 
   template <typename NonLinearOperatorImpl, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
             typename UpdateType
-            = std::conditional_t<std::is_floating_point_v<typename NonLinearOperatorImpl::template Parameter<0>>,
-                                 typename NonLinearOperatorImpl::template Parameter<0>, Eigen::VectorXd>>
+            = std::conditional_t<std::is_floating_point_v<typename NonLinearOperatorImpl::template ParameterValue<0>>,
+                                 typename NonLinearOperatorImpl::template ParameterValue<0>, Eigen::VectorXd>>
   class TrustRegion : public IObservable<NonLinearSolverMessages> {
   public:
-    using ResultType         = typename NonLinearOperatorImpl::template Parameter<0>;
+    using ResultType         = typename NonLinearOperatorImpl::template ParameterValue<0>;
     using UpdateFunctionType = std::function<void(ResultType&, const UpdateType&)>;
     using ScalarType         = std::remove_cvref_t<typename NonLinearOperatorImpl::template FunctionReturnType<0>>;
     using MatrixType         = std::remove_cvref_t<typename NonLinearOperatorImpl::template FunctionReturnType<2>>;
@@ -395,7 +395,7 @@ namespace Ikarus {
 
     NonLinearOperatorImpl nonLinearOperator_;
     UpdateFunctionType updateFunction;
-    typename NonLinearOperatorImpl::template Parameter<0> xOld;
+    typename NonLinearOperatorImpl::template ParameterValue<0> xOld;
     UpdateType eta;
     UpdateType Heta;
     Options options;
@@ -419,12 +419,12 @@ namespace Ikarus {
 
   template <typename NonLinearOperatorImpl, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
             typename UpdateType
-            = std::conditional_t<std::is_floating_point_v<typename NonLinearOperatorImpl::template Parameter<0>>,
-                                 typename NonLinearOperatorImpl::template Parameter<0>, Eigen::VectorXd>>
+            = std::conditional_t<std::is_floating_point_v<typename NonLinearOperatorImpl::template ParameterValue<0>>,
+                                 typename NonLinearOperatorImpl::template ParameterValue<0>, Eigen::VectorXd>>
   std::shared_ptr<TrustRegion<NonLinearOperatorImpl, preConditioner, UpdateType>> makeTrustRegion(
       const NonLinearOperatorImpl& p_nonLinearOperator,
-      std::function<void(typename NonLinearOperatorImpl::template Parameter<0>&, const UpdateType&)> p_updateFunction
-      = [](typename NonLinearOperatorImpl::template Parameter<0>& a, const UpdateType& b) {
+      std::function<void(typename NonLinearOperatorImpl::template ParameterValue<0>&, const UpdateType&)> p_updateFunction
+      = [](typename NonLinearOperatorImpl::template ParameterValue<0>& a, const UpdateType& b) {
           using Ikarus::operator+=;
           a += b;
         }) {

@@ -206,8 +206,8 @@ namespace Ikarus {
     /** \brief Forward the binding to the local basis */
     template <typename IntegrationRule, typename... Ints>
     requires std::conjunction_v<std::is_convertible<int, Ints>...>
-    void bind(IntegrationRule&& p_rule, Ikarus::Derivatives<Ints...>&& ints) {
-      impl().basis.bind(std::forward<IntegrationRule>(p_rule), std::forward<Ikarus::Derivatives<Ints...>>(ints));
+    void bind(IntegrationRule&& p_rule, Impl::Derivatives<Ints...>&& ints) {
+      impl().basis.bind(std::forward<IntegrationRule>(p_rule), std::forward<Impl::Derivatives<Ints...>>(ints));
     }
 
     /** \brief Return the function value at the i-th bound integration point*/

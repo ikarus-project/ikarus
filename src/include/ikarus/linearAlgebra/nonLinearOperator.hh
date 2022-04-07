@@ -17,36 +17,14 @@ namespace Impl {
         std::forward<F>(f),
         std::get<I>(std::forward<Tuple>(t)).get()...);  //.get gets the impl type of std::referenceWrapper
   }
-}  // namespace Impl
 
-template <class F, class Tuple>
-constexpr decltype(auto) applyAndRemoveReferenceWrapper(F&& f, Tuple&& t) {
-  return Impl::applyAndRemoveRefererenceWrapper(
-      std::forward<F>(f), std::forward<Tuple>(t),
-      std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<Tuple>>>{});
-}
+  template <class F, class Tuple>
+  constexpr decltype(auto) applyAndRemoveReferenceWrapper(F&& f, Tuple&& t) {
+    return applyAndRemoveRefererenceWrapper(
+        std::forward<F>(f), std::forward<Tuple>(t),
+        std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<Tuple>>>{});
+  }
 
-template <typename... Args>
-struct Parameter {
-  std::tuple<std::reference_wrapper<std::remove_cvref_t<Args>>...> args;
-};
-
-template <typename... Args>
-auto parameter(Args&&... args) {
-  return Parameter<Args&&...>{std::forward_as_tuple(std::forward<Args>(args)...)};
-}
-
-template <typename... Args>
-struct LinearAlgebraFunctions {
-  std::tuple<std::reference_wrapper<std::remove_cvref_t<Args>>...> args;
-};
-
-template <typename... Args>
-auto linearAlgebraFunctions(Args&&... args) {
-  return LinearAlgebraFunctions<Args&&...>{std::forward_as_tuple(std::forward<Args>(args)...)};
-}
-
-namespace Ikarus {
   template <typename T>
   auto forwardasReferenceWrapperIfIsReference(T&& t) {
     if constexpr (std::is_lvalue_reference_v<decltype(t)>)
@@ -56,14 +34,41 @@ namespace Ikarus {
   }
 
   template <class Pars, class Tuple, std::size_t... I>
-  constexpr decltype(auto) testF(Tuple&& t, Pars&& p, std::index_sequence<I...>) {
+  constexpr decltype(auto) makeTupleOfValuesAndReferences(Tuple&& t, Pars&& p, std::index_sequence<I...>) {
     return std::make_tuple(
         forwardasReferenceWrapperIfIsReference(applyAndRemoveReferenceWrapper(std::get<I>(t), p.args))...);
   }
+
+  template <typename... Args>
+  struct LinearAlgebraFunctions {
+    std::tuple<std::reference_wrapper<std::remove_cvref_t<Args>>...> args;
+  };
+
+  template <typename... Args>
+  struct Parameter {
+    std::tuple<std::reference_wrapper<std::remove_cvref_t<Args>>...> args;
+  };
+
+}  // namespace Impl
+
+
+template <typename... Args>
+auto parameter(Args&&... args) {
+  return Impl::Parameter<Args&&...>{std::forward_as_tuple(std::forward<Args>(args)...)};
+}
+
+
+template <typename... Args>
+auto linearAlgebraFunctions(Args&&... args) {
+  return Impl::LinearAlgebraFunctions<Args&&...>{std::forward_as_tuple(std::forward<Args>(args)...)};
+}
+
+namespace Ikarus {
+
   template <typename... DerivativeArgs, typename... ParameterArgs>
-  auto initResults(const LinearAlgebraFunctions<DerivativeArgs...>& derivativesFunctions,
-                   const Parameter<ParameterArgs...>& parameterI) {
-    return testF(
+  auto initResults(const Impl::LinearAlgebraFunctions<DerivativeArgs...>& derivativesFunctions,
+                   const Impl::Parameter<ParameterArgs...>& parameterI) {
+    return Impl::makeTupleOfValuesAndReferences(
         derivativesFunctions.args, parameterI,
         std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<decltype(derivativesFunctions.args)>>>{});
   }
@@ -78,29 +83,10 @@ namespace Ikarus {
     }
   };
 
+  /* NonLinearOperator is a class taking linear algebra function and their arguments.
+   * The fcuntion are assumed to be derivatvies of each other. */
   template <typename... DerivativeArgs, typename... ParameterArgs>
-  class NonLinearOperator<LinearAlgebraFunctions<DerivativeArgs...>, Parameter<ParameterArgs...>> {
-  public:
-    explicit NonLinearOperator(const LinearAlgebraFunctions<DerivativeArgs...>& derivativesFunctions,
-                               const Parameter<ParameterArgs...>& parameterI)
-        : derivatives_{derivativesFunctions.args},
-          args_{parameterI.args},
-          derivativesEvaluated_(initResults(derivativesFunctions, parameterI)) {
-      updateAll();
-    }
-
-    void updateAll() {
-      Dune::Hybrid::forEach(
-          Dune::Hybrid::integralRange(Dune::index_constant<sizeof...(DerivativeArgs)>()), [&](const auto i) {
-            std::get<i>(derivativesEvaluated_) = applyAndRemoveReferenceWrapper(std::get<i>(derivatives_), args_);
-          });
-    }
-    template <int n>
-    void update() {
-      std::get<n>(derivativesEvaluated_) = applyAndRemoveReferenceWrapper(std::get<n>(derivatives_), args_);
-    }
-
-  private:
+  class NonLinearOperator<Impl::LinearAlgebraFunctions<DerivativeArgs...>, Impl::Parameter<ParameterArgs...>> {
     using FunctionReturnValues = std::tuple<ReturnType<DerivativeArgs, ParameterArgs&...>...>;
     using ParameterValues      = std::tuple<ParameterArgs...>;
 
@@ -109,51 +95,93 @@ namespace Ikarus {
     using FunctionReturnType = std::tuple_element_t<n, FunctionReturnValues>;
 
     template <int n>
-    using Parameter = std::remove_cvref_t<std::tuple_element_t<n, ParameterValues>>;
+    using ParameterValue = std::remove_cvref_t<std::tuple_element_t<n, ParameterValues>>;
 
-    auto& value() requires(sizeof...(DerivativeArgs) > 0) {
-      if constexpr (requires { std::get<0>(derivativesEvaluated_).get(); })
-        return std::get<0>(derivativesEvaluated_).get();
-      else
-        return std::get<0>(derivativesEvaluated_);
+    using ValueType      = std::remove_cvref_t<std::tuple_element_t<0, FunctionReturnValues>>;
+    using DerivativeType = std::remove_cvref_t<std::tuple_element_t<1, FunctionReturnValues>>;
+
+    explicit NonLinearOperator(const Impl::LinearAlgebraFunctions<DerivativeArgs...>& derivativesFunctions,
+                               const Impl::Parameter<ParameterArgs...>& parameterI)
+        : derivatives_{derivativesFunctions.args},
+          args_{parameterI.args},
+          derivativesEvaluated_(initResults(derivativesFunctions, parameterI)) {
+      updateAll();
     }
-    auto& derivative() & requires(sizeof...(DerivativeArgs) > 1) {
-      if constexpr (requires { std::get<1>(derivativesEvaluated_).get(); })
-        return std::get<1>(derivativesEvaluated_).get();
-      else
-        return std::get<1>(derivativesEvaluated_);
+
+    /* Evaluates all functions. Usually called if the parameters changes */
+    void updateAll() {
+      Dune::Hybrid::forEach(
+          Dune::Hybrid::integralRange(Dune::index_constant<sizeof...(DerivativeArgs)>()), [&](const auto i) {
+            std::get<i>(derivativesEvaluated_) = Impl::applyAndRemoveReferenceWrapper(std::get<i>(derivatives_), args_);
+          });
     }
-    auto& secondDerivative() requires(sizeof...(DerivativeArgs) > 2) {
-      if constexpr (requires { std::get<2>(derivativesEvaluated_).get(); })
-        return std::get<2>(derivativesEvaluated_).get();
-      else
-        return std::get<2>(derivativesEvaluated_);
-    }
+
+    /* Evaluates the n-th function */
     template <int n>
-    auto& nthDerivative() requires(sizeof...(DerivativeArgs) > n) {
+    void update() {
+      std::get<n>(derivativesEvaluated_) = Impl::applyAndRemoveReferenceWrapper(std::get<n>(derivatives_), args_);
+    }
+
+    /* Returns the value of the zeros function, e.g. the energy value */
+    auto& value()
+      requires(sizeof...(DerivativeArgs) > 0)
+    {
+      return nthDerivative<0>();
+    }
+
+    /* Returns the derivative value, e.g. the gradient of an energy */
+    auto& derivative() &
+          requires(sizeof...(DerivativeArgs) > 1)
+    {
+      return nthDerivative<1>();
+    }
+
+    /* Returns the second derivative value, e.g. the Hessian of an energy */
+    auto& secondDerivative()
+      requires(sizeof...(DerivativeArgs) > 2)
+    {
+      return nthDerivative<2>();
+    }
+
+    /* Returns the n-th derivative value */
+    template <int n>
+    auto& nthDerivative()
+      requires(sizeof...(DerivativeArgs) > n)
+    {
       if constexpr (requires { std::get<n>(derivativesEvaluated_).get(); })
         return std::get<n>(derivativesEvaluated_).get();
       else
         return std::get<n>(derivativesEvaluated_);
     }
 
-    template <int... Derivatives>
-    auto subOperator() {
-      return Ikarus::NonLinearOperator(linearAlgebraFunctions(std::get<Derivatives>(derivatives_)...),
-                                       applyAndRemoveReferenceWrapper(parameter<ParameterArgs...>, args_));
+    /* Returns the last parameter value */
+    auto& lastParameter() { return nthParameter<sizeof...(ParameterArgs) - 1>(); }
+    /* Returns the first parameter value */
+    auto& firstParameter()
+      requires(sizeof...(ParameterArgs) > 0)
+    {
+      return nthParameter<0>();
     }
-
+    /* Returns the second parameter value */
+    auto& secondParameter()
+      requires(sizeof...(ParameterArgs) > 1)
+    {
+      return nthParameter<1>();
+    }
+    /* Returns the n-th parameter value */
     template <int n>
-    auto& nthParameter() requires(sizeof...(ParameterArgs) >= n) {
+    auto& nthParameter()
+      requires(sizeof...(ParameterArgs) >= n)
+    {
       return std::get<n>(args_).get();
     }
 
-    auto& lastParameter() { return std::get<sizeof...(ParameterArgs) - 1>(args_).get(); }
-    auto& firstParameter() { return std::get<0>(args_).get(); }
-    auto& secondParameter() requires(sizeof...(ParameterArgs) > 1) { return std::get<1>(args_).get(); }
-
-    using ValueType      = std::remove_cvref_t<std::tuple_element_t<0, FunctionReturnValues>>;
-    using DerivativeType = std::remove_cvref_t<std::tuple_element_t<1, FunctionReturnValues>>;
+    /* Returns a new NonLinearOperator from the given indices */
+    template <int... Derivatives>
+    auto subOperator() {
+      return Ikarus::NonLinearOperator(linearAlgebraFunctions(std::get<Derivatives>(derivatives_)...),
+                                       Impl::applyAndRemoveReferenceWrapper(parameter<ParameterArgs...>, args_));
+    }
 
   private:
     using FunctionReturnValuesWrapper = std::tuple<

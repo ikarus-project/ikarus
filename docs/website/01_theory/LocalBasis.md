@@ -27,7 +27,7 @@ In contrast to this there exists two other methods that receive an integration p
 These methods return a const reference to the evaluated ansatz function values and derivatives.
 
 These method depend on an earlier call to `bind(...)`. This binds the local basis to one quadrature rule and caches the passed `bindDerivatives(..)`.
-Therefore, to bind to a integration rule and cache the value and the ansatz function jacobian one can call:
+Therefore, to bind to an integration rule and cache the value and the ansatz function jacobian one would call:
 
 === "Usage with integration point index"
 

@@ -16,7 +16,6 @@ namespace Ikarus::Concepts {
     typename ManifoldType::CorrectionType;
     { var.getValue() } -> std::convertible_to<typename ManifoldType::CoordinateType>;
     { var.setValue(value) } -> std::same_as<void>;
-    { var[i] } -> std::same_as<typename ManifoldType::ctype&>;
     { var.update(correction) } -> std::same_as<void>;
     { s << var } -> std::same_as<std::ostream&>;
   };

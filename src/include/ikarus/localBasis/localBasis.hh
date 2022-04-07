@@ -13,15 +13,22 @@
 
 namespace Ikarus {
 
-  template <typename... Args>
-  struct Derivatives {
-    std::set<int> args;
-  };
+  namespace Impl {
+    template <typename... Args>
+    struct Derivatives {
+      std::set<int> args;
+    };
+  }  // namespace Impl
 
+  /* Helper function to pass integers. These indicate which derivatives should be precomputed */
   template <typename... Ints>
-  requires std::conjunction_v<std::is_convertible<int, Ints>...>
-  auto bindDerivatives(Ints&&... ints) { return Derivatives<Ints&&...>({std::forward<Ints>(ints)...}); }
+    requires std::conjunction_v<std::is_convertible<int, Ints>
+                                ...> auto
+    bindDerivatives(Ints&&... ints) {
+    return Impl::Derivatives<Ints&&...>({std::forward<Ints>(ints)...});
+  }
 
+  /* Convenient wrapper to store a dune local basis. It is possible to precompute derivatives */
   template <Concepts::DuneLocalBasis DuneLocalBasis>
   class LocalBasis {
     using RangeDuneType    = typename DuneLocalBasis::Traits::RangeType;
@@ -40,62 +47,41 @@ namespace Ikarus {
     using JacobianType       = Eigen::Matrix<RangeFieldType, Eigen::Dynamic, gridDim>;
     using AnsatzFunctionType = Eigen::VectorX<RangeFieldType>;
 
+    /* Evaluates the ansatz functions into the given Eigen Vector N */
     template <typename Derived>
-    void evaluateFunction(const DomainType& local, Eigen::PlainObjectBase<Derived>& N) const {
-      duneLocalBasis->evaluateFunction(local, Ndune);
-      N.resize(Ndune.size(), 1);
-      N.setZero();
-      for (size_t i = 0; i < Ndune.size(); ++i)
-        N[i] = Ndune[i][0];
-    }
+    void evaluateFunction(const DomainType& local, Eigen::PlainObjectBase<Derived>& N) const;
 
+    /* Evaluates the ansatz functions derivatives into the given Eigen Matrix dN */
     template <typename Derived>
-    void evaluateJacobian(const DomainType& local, Eigen::PlainObjectBase<Derived>& dN) const {
-      duneLocalBasis->evaluateJacobian(local, dNdune);
-      dN.setZero();
-      dN.resize(dNdune.size(), gridDim);
+    void evaluateJacobian(const DomainType& local, Eigen::PlainObjectBase<Derived>& dN) const;
 
-      for (auto i = 0U; i < dNdune.size(); ++i)
-        for (int j = 0; j < gridDim; ++j)
-          dN(i, j) = dNdune[i][0][j];
-    }
-
+    /* Evaluates the ansatz functions and derivatives into the given Eigen Vector/Matrix N,dN */
     template <typename Derived1, typename Derived2>
     void evaluateFunctionAndJacobian(const DomainType& local, Eigen::PlainObjectBase<Derived1>& N,
-                                     Eigen::PlainObjectBase<Derived2>& dN) const {
-      evaluateFunction(local, N);
-      evaluateJacobian(local, dN);
-    }
+                                     Eigen::PlainObjectBase<Derived2>& dN) const;
 
+    /* Returns the number of ansatz functions */
     unsigned int size() { return duneLocalBasis->size(); }
 
+    /* Binds this basis to a given integration rule */
     template <typename IntegrationRule, typename... Ints>
-    requires std::conjunction_v<std::is_convertible<int, Ints>...>
-    void bind(IntegrationRule&& p_rule, Derivatives<Ints...>&& ints) {
-      rule             = p_rule;
-      boundDerivatives = ints.args;
-      Nbound           = std::make_optional(std::vector<Eigen::VectorX<RangeFieldType>>{});
-      dNbound          = std::make_optional(std::vector<Eigen::Matrix<RangeFieldType, Eigen::Dynamic, gridDim>>{});
-      dNbound.value().resize(rule.value().size());
-      Nbound.value().resize(rule.value().size());
+      requires std::conjunction_v<std::is_convertible<int, Ints>
+                                  ...> void
+      bind(IntegrationRule&& p_rule, Impl::Derivatives<Ints...>&& ints);
 
-      for (int i = 0; auto& gp : rule.value()) {
-        if (boundDerivatives.value().contains(0)) evaluateFunction(gp.position(), Nbound.value()[i]);
-        if (boundDerivatives.value().contains(1)) evaluateJacobian(gp.position(), dNbound.value()[i]);
-        ++i;
-      }
-    }
-
-    const auto& evaluateFunction(long unsigned i) const {
+    /* Returns a reference to the ansatz functions evaluated at the given integration point index */
+    const auto& evaluateFunction(long unsigned ipIndex) const {
       if (not Nbound) throw std::logic_error("You have to bind the basis first");
-      return Nbound.value()[i];
+      return Nbound.value()[ipIndex];
     }
 
+    /* Returns a reference to the ansatz functions derivatives evaluated at the given integration point index */
     const auto& evaluateJacobian(long unsigned i) const {
       if (not dNbound) throw std::logic_error("You have to bind the basis first");
       return dNbound.value()[i];
     }
 
+    /* Returns true if the local basis is currently bound to an integration rule */
     bool isBound() const { return (dNbound and Nbound); }
 
     struct FunctionAndJacobian {
@@ -104,6 +90,9 @@ namespace Ikarus {
       const Eigen::VectorX<RangeFieldType>& N{};
       const Eigen::Matrix<RangeFieldType, Eigen::Dynamic, gridDim>& dN{};
     };
+
+    /* Returns a view over the integration point index, the point itself, and the ansatz function and ansatz function
+     * derivatives at the very same point */
     auto viewOverFunctionAndJacobian() const {
       assert(Nbound.value().size() == dNbound.value().size()
              && "Number of intergrationpoint evaluations does not match.");
@@ -121,6 +110,8 @@ namespace Ikarus {
       long unsigned index{};
       const Dune::QuadraturePoint<DomainFieldType, gridDim>& ip{};
     };
+
+    /* Returns a view over the integration point index and the point itself */
     auto viewOverIntegrationPoints() const {  // FIXME dont construct this on the fly
       assert(Nbound.value().size() == dNbound.value().size()
              && "Number of intergrationpoint evaluations does not match.");
@@ -144,3 +135,5 @@ namespace Ikarus {
   };
 
 }  // namespace Ikarus
+
+#include "localBasis.inl"

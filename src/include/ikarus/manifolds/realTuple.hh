@@ -36,18 +36,10 @@ namespace Ikarus::Manifold {
 
     RealTuple() = default;
 
-    ~RealTuple()                 = default;                 // destructor
-    RealTuple(const RealTuple &) = default;                 // copy constructor
-    RealTuple &operator=(const RealTuple &) = default;      // copy assignment
-    RealTuple(RealTuple &&) noexcept        = default;      // move constructor
-    RealTuple &operator=(RealTuple &&) noexcept = default;  // move assignment
-
-
     template<typename OtherType>
     struct Rebind{
       using type = RealTuple<OtherType,valueSize>;
     };
-
 
     /** \brief Copy-Constructor from the values in terms of coordinateType */
     explicit RealTuple(const CoordinateType &vec) noexcept : var{vec} {}
@@ -79,7 +71,7 @@ namespace Ikarus::Manifold {
     }
 
     /** \brief size */
-    size_t size() const { return var.size(); }
+    [[nodiscard]] size_t size() const { return var.size(); }
     auto begin() { return var.begin(); }
     auto end() { return var.end(); }
 

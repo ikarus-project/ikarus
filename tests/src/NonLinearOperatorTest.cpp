@@ -74,7 +74,7 @@ TEST(NonLinearOperator, VectorValuedOperatorNewtonMethod) {
   // Newton method test
   const double eps  = 1e-14;
   const int maxIter = 20;
-  Ikarus::NewtonRaphson nr(nonLinOp, [&](auto& r, auto& A_) { return A.inverse() * r; });  // special linear solver
+  Ikarus::NewtonRaphson nr(nonLinOp, [&](auto& r, auto& A_) { return A_.inverse() * r; });  // special linear solver
   checkNewtonRhapson(nr, x, eps, maxIter, 1, (-A.ldlt().solve(b)).eval(), Eigen::Vector3d::Zero().eval());
 }
 

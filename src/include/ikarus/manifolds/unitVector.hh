@@ -35,12 +35,6 @@ namespace Ikarus::Manifold {
 
     UnitVector() = default;
 
-    ~UnitVector()                  = default;                 // destructor
-    UnitVector(const UnitVector &) = default;                 // copy constructor
-    UnitVector &operator=(const UnitVector &) = default;      // copy assignment
-    UnitVector(UnitVector &&) noexcept        = default;      // move constructor
-    UnitVector &operator=(UnitVector &&) noexcept = default;  // move assignment
-
     /** \brief Copy-Constructor from the values in terms of coordinateType */
     explicit UnitVector(const CoordinateType &vec) noexcept : var{vec.normalized()} {}
 
@@ -63,7 +57,7 @@ namespace Ikarus::Manifold {
     ctype &operator[](int i) { return var[i]; }
 
     /** \brief size */
-    size_t size() const { return var.size(); }
+    [[nodiscard]] size_t size() const { return var.size(); }
 
     auto begin() { return var.begin(); }
     auto end() { return var.end(); }
