@@ -8,7 +8,7 @@ These algebraic objects are usually constructed using some combination of [local
 parameters steeming from the underlying physical problem, e.g. load factor, Young's modulus or viscocity.
 
 The second task of finite elements is to evaluate derived results in the element parameter space. E.g. stresses or geometric quantities.
-
+This boils down to the following interface.
 ## Interface
 Local functions provide the following interface
 ```cpp

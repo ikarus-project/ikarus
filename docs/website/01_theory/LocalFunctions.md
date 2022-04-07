@@ -121,21 +121,18 @@ auto B1 = localFunction.evaluateDerivative(gpIndex, wrt(coeffs,coeffs,spatial(1)
 The first line is then equivalent to
 
 $$
-[\boldsymbol{B}]_{jkl} =  \boldsymbol{B}_{jkl} = q_i A_{ijkl} =  \frac{\partial^2 ([\operatorname{grad}_\boldsymbol{\xi} f(\boldsymbol{\xi})]_{ij} q_i )}{\partial \boldsymbol{x}_k\partial \boldsymbol{x}_l}.
+[\boldsymbol{B}]_{ljk} =  B_{ljk} = q_i A_{iljk} =  \frac{\partial^2 ([\operatorname{grad}_\boldsymbol{\xi} f(\boldsymbol{\xi})]_{il} q_i )}{\partial \boldsymbol{x}_j\partial \boldsymbol{x}_k}.
 $$
 
 this returns an object where the first index contains the spatial derivative w.r.t. $\xi_0$.
 Thus we have 
 
 \begin{align}
-\boldsymbol{B}[0]_{kl} = \frac{\partial^2 ([\operatorname{grad}_{\boldsymbol{\xi}_0} f(\xi)]_{ij} q_i )}{\partial \boldsymbol{x}_k\partial \boldsymbol{x}_l}, \\
-\boldsymbol{B}[1]_{kl} = \frac{\partial^2 ([\operatorname{grad}_{\boldsymbol{\xi}_1} f(\xi)]_{ij} q_i )}{\partial \boldsymbol{x}_k\partial \boldsymbol{x}_l}.
+\boldsymbol{B}[0]_{jk} = \frac{\partial^2 ([\operatorname{grad}_{\xi^0} f(\xi)]_{i} q_i )}{\partial \boldsymbol{x}_j\partial \boldsymbol{x}_k}, \\
+\boldsymbol{B}[1]_{jk} = \frac{\partial^2 ([\operatorname{grad}_{\xi^1} f(\xi)]_{i} q_i )}{\partial \boldsymbol{x}_j\partial \boldsymbol{x}_k}.
 \end{align}
 
-these objects are also returned of the second and third line above are used directly.
-
-In the end if we want to access th
-
+These objects are also returned when the second and third line above are used.
 
 Again all of these function calls can be combined with `transformWith()` as
 
@@ -146,7 +143,7 @@ localFunction.evaluateDerivative(gpIndex, wrt(coeffs,coeffs,spatialall), along(q
 which computes
 
 $$
-\frac{\partial^2 ([\operatorname{grad}_\boldsymbol{x} f(\boldsymbol{\xi})]_{ij} q_i )}{\partial \boldsymbol{x}_k\partial \boldsymbol{x}_l}.
+\frac{\partial^2 ([\operatorname{grad}_\boldsymbol{x} f(\boldsymbol{\xi})]_{il} q_i )}{\partial \boldsymbol{x}_j\partial \boldsymbol{x}_k}.
 $$
 
 

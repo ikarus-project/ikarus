@@ -11,7 +11,7 @@ AssemblerName(const Basis& basis, const FEContainer& fes, const std::vector<bool
 
 - `basis` is the basis that was used to construct the finite elements. ToDo add comment about FLAT.
 - `fes` is a container that contains all the finite elements that should be assembled
-- `dirichFlags` is of type `std::vector<bool>`. `dirichFlags[i] = 1` means that degree of freedom i is fixed. 
+- `dirichFlags` is of type `#!cpp std::vector<bool>`. `#!cpp dirichFlags[i] = true` means that degree of freedom i is fixed. 
     The corresponding row / column / entry will be eliminated when you ask for reduced matrix / vector. 
 
 ## SparseFlatAssembler

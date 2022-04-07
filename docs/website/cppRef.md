@@ -1,5 +1,5 @@
 # C++ recommendations
-As you may know by now Ikarus is written in C++. On this page we summerize recommendation tzo dig deeper into C++ coding.
+As you may know by now Ikarus is written in C++. On this page we summerize recommendation to dig deeper into C++ coding.
 
 ### Should i write a member function or a free- function?
 Scott Meyers recommends the following algorithm: [Link](http://cpptips.com/nmemfunc_encap)
@@ -16,13 +16,11 @@ Scott Meyers recommends the following algorithm: [Link](http://cpptips.com/nmemf
 2. [Jason Turner's collection of best practices](https://lefticus.gitbooks.io/cpp-best-practices)
 3. [More C++ idioms](https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms)
 
-
 ## Further references
 
 1. [Cppcon Videos](https://www.youtube.com/user/CppCon) These videos are released after every conference. For beginners the Back to basics track can be recommended.
 2. [Godblot](https://godbolt.org/) Online compiler with assembler output. Nice to test fast if something would be fast or slow. 
 Also Eigen can be added. Also any other header found on the internet can be include with the link.
-
 
 ## Books
 [@gamma1995design]

@@ -66,6 +66,7 @@ nav:
   - Literature: 99_Literature/99_Literature.md
   - C++ recommendations: cppRef.md
   - Advanced Topics: AdvancedTopics.md
+  - Gallery: 02_gallery/gallery.md
 
 
 # Customization
