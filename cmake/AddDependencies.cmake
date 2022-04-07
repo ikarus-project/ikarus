@@ -17,18 +17,17 @@ find_package(autodiff REQUIRED)
 message("Find matplotc++: ")
 find_package(Matplot++ REQUIRED)
 dune_register_package_flags(
-        INCLUDE_DIRS
-        ${Eigen3_INCLUDE_DIRS}
-        ${spdlog_INCLUDE_DIRS}
-        ${matplot_INCLUDE_DIRS}
-        ${autodiff_INCLUDE_DIRS}
-
-        LIBRARIES
-        Eigen3::Eigen
-        spdlog::spdlog
-        Matplot++::matplot
-        autodiff::autodiff
-        )
+  INCLUDE_DIRS
+  ${Eigen3_INCLUDE_DIRS}
+  ${spdlog_INCLUDE_DIRS}
+  ${matplot_INCLUDE_DIRS}
+  ${autodiff_INCLUDE_DIRS}
+  LIBRARIES
+  Eigen3::Eigen
+  spdlog::spdlog
+  Matplot++::matplot
+  autodiff::autodiff
+)
 
 target_link_dune_default_libraries(${PROJECT_NAME}) # link compiled dune libs
 add_dune_all_flags(${PROJECT_NAME})

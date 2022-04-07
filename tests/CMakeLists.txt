@@ -56,4 +56,3 @@ if(ENABLE_TEST_COVERAGE)
 
   target_link_options(IkarusTests PUBLIC -fprofile-arcs -ftest-coverage)
 endif()
-
