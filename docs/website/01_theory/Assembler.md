@@ -49,11 +49,44 @@ It offers only one function
 ```cpp
 double& getScalar(const RequirementType& fErequirements)
 ```
+This assembler can be used when you are only interested in a scalar quantity 
+and assembling of matrices or vectors is not relevant for you.
 The available requirements are explained in [the available requirements section](#available-requirements) below.
 `dirichletFlags` is not used in this assembler.
 
 ## DenseFlatSimpleAssembler
+It offers the functions
+```cpp
+Eigen::MatrixXd& getMatrix(const Ikarus::MatrixAffordances& p_matrixAffordances,
+                               const Eigen::VectorXd& displacement, const double& lambda) 
+Eigen::VectorXd& getVector(const Ikarus::VectorAffordances& p_vectorAffordances,
+                               const Eigen::VectorXd& displacement, const double& lambda)
+double getScalar(const Ikarus::ScalarAffordances& p_scalarAffordances, const Eigen::VectorXd& displacement,
+                     const double& lambda)
+```
+This assembler should be used when your assembling process requires displacement, e.g. if you are using nonlinear load control.
+The result are dense matrices.
+`p_matrixAffordances` describes what matrix you want to assemble, see [the available requirements section](#available-requirements).
+`displacement` is the global displacement vector of the state that you want to assemble
+`lambda` is the load factor you want to use
+
 
 ## DenseFlatAssembler
+It offers the functions
+```cpp
+Eigen::MatrixXd& getMatrix(const RequirementType& fErequirements)
+Eigen::MatrixXd& getReducedMatrix(const RequirementType& fErequirements)
+
+Eigen::VectorXd& getVector(const RequirementType& fErequirements)
+Eigen::VectorXd& getReducedVector(const RequirementType& fErequirements)
+
+double getScalar(const RequirementType& fErequirements)
+
+auto createFullVector(const Eigen::VectorXd& reducedVector)
+```
+One function is only available in this assembler and was therefore not yet discussed: `createFullVector`.
+You can used it to expand a vector of reduced size (e.g from solving the linear system) to a vector of full size 
+where entries corresponding to the fixed degrees of freedom are set to zero. 
+
 
 ## Available requirements
