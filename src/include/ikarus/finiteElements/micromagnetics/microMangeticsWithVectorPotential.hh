@@ -39,9 +39,9 @@
 #include <ikarus/localBasis/localBasis.hh>
 #include <ikarus/localFunctions/projectionBasedLocalFunction.hh>
 #include <ikarus/localFunctions/standardLocalFunction.hh>
-#include <ikarus/variables/variableDefinitions.hh>
 #include <ikarus/utils/linearAlgebraHelper.hh>
 #include <ikarus/utils/linearAlgebraTypedefs.hh>
+#include <ikarus/variables/variableDefinitions.hh>
 
 namespace Ikarus::FiniteElements {
 

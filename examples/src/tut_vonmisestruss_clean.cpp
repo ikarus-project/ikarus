@@ -17,7 +17,9 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
+#include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/controlRoutines/loadControl.hh>
+#include <ikarus/finiteElements/autodiffFE.hh>
 #include <ikarus/finiteElements/interface/fEPolicies.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/linearSolver/linearSolver.hh>
@@ -26,8 +28,6 @@
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 #include <ikarus/utils/observer/genericControlObserver.hh>
 #include <ikarus/utils/observer/nonLinearSolverLogger.hh>
-#include <ikarus/assembler/simpleAssemblers.hh>
-#include <ikarus/finiteElements/autodiffFE.hh>
 #include <ikarus/variables/parameterFactory.hh>
 
 using namespace Ikarus;
@@ -114,13 +114,12 @@ int main() {
   Eigen::VectorXd d;
   d.setZero(basis.size());
 
-
   auto RFunction = [&](auto&& u, auto&& lambdaLocal) -> auto& {
     Ikarus::FErequirements req;
     req.sols.emplace_back(u);
     req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
     req.vectorAffordances = Ikarus::VectorAffordances::forces;
-    auto& R = denseFlatAssembler.getVector(req);
+    auto& R               = denseFlatAssembler.getVector(req);
     R[3] -= -lambdaLocal;
     return R;
   };

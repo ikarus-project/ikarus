@@ -132,7 +132,9 @@ namespace Ikarus {
       const NonLinearOperatorImpl& p_nonLinearOperator,
       LinearSolver&& p_linearSolver = [](const typename NonLinearOperatorImpl::ValueType& a,
                                          const typename NonLinearOperatorImpl::ValueType& b) { return a / b; },
-      std::function<void(typename NonLinearOperatorImpl::template ParameterValue<0>&, const UpdateType&)> p_updateFunction =
+      std::function<void(typename NonLinearOperatorImpl::template ParameterValue<0>&, const UpdateType&)>
+          p_updateFunction
+      =
           [](typename NonLinearOperatorImpl::template ParameterValue<0>& a, const UpdateType& b) {
             using Ikarus::operator+=;
             a += b;

@@ -22,9 +22,9 @@
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
 #include <ikarus/solver/nonLinearSolver/trustRegion.hh>
+#include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 #include <ikarus/utils/observer/nonLinearSolverLogger.hh>
-#include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/utils/utils/algorithms.hh>
 
 int main(int argc, char** argv) {

@@ -21,15 +21,15 @@
 
 #include <Eigen/Core>
 
+#include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/controlRoutines/loadControl.hh>
 #include <ikarus/finiteElements/micromagnetics/microMangeticsWithVectorPotential.hh>
+#include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/nonLinearSolver/trustRegion.hh>
+#include <ikarus/utils/drawing/griddrawer.hh>
+#include <ikarus/utils/functionSanityChecks.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 #include <ikarus/utils/observer/genericControlObserver.hh>
-#include <ikarus/utils/drawing/griddrawer.hh>
-#include <ikarus/assembler/simpleAssemblers.hh>
-#include <ikarus/linearAlgebra/nonLinearOperator.hh>
-#include <ikarus/utils/functionSanityChecks.hh>
 #include <ikarus/utils/utils/algorithms.hh>
 
 constexpr int magnetizationOrder    = 1;

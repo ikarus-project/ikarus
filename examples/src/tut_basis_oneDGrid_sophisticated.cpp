@@ -21,8 +21,8 @@
 #include <Eigen/Dense>
 
 #include <ikarus/localBasis/localBasis.hh>
-#include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/solver/linearSolver/linearSolver.hh>
+#include <ikarus/utils/drawing/griddrawer.hh>
 using namespace Dune::Functions::BasisFactory;
 using namespace Dune::Functions;
 using namespace Dune::Functions::BasisBuilder;

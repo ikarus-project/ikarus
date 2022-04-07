@@ -224,9 +224,8 @@ int main() {
       return denseAssembler.getVector(req);
     };
 
-
-    const auto& K          = kFunction(w, totalLoad);
-    const auto& R          = rFunction(w, totalLoad);
+    const auto& K = kFunction(w, totalLoad);
+    const auto& R = rFunction(w, totalLoad);
     Eigen::LDLT<Eigen::MatrixXd> solver;
     solver.compute(K);
     w -= solver.solve(R);
