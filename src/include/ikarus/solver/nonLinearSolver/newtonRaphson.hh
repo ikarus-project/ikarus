@@ -14,7 +14,7 @@
 
 namespace Ikarus {
 
-  struct NonlinearSolverSettings {
+  struct NewtonRaphsonSettings {
     double tol{1e-8};
     int maxIter{20};
   };
@@ -29,7 +29,7 @@ namespace Ikarus {
   concept LinearSolverC = requires(LinearSolver& linearSolver, MatrixType& Ax, VectorType& vec) {
     linearSolver.analyzePattern(Ax);
     linearSolver.factorize(Ax);
-    linearSolver.solve(vec);
+    linearSolver.solve(vec,vec);
   };
 
   template <typename NonLinearOperatorImpl,
@@ -67,7 +67,7 @@ namespace Ikarus {
 
     using NonLinearOperator = NonLinearOperatorImpl;
 
-    void setup(const NonlinearSolverSettings& p_settings) { settings = p_settings; }
+    void setup(const NewtonRaphsonSettings& p_settings) { settings = p_settings; }
 
     struct NoPredictor {};
     template <typename SolutionType = NoPredictor>
@@ -90,7 +90,7 @@ namespace Ikarus {
         this->notify(NonLinearSolverMessages::ITERATION_STARTED);
         if constexpr (isLinearSolver) {
           linearSolver.factorize(Ax);
-          corr  = -linearSolver.solve(rx);
+          linearSolver.solve(corr,-rx);
           dNorm = corr.norm();
           updateFunction(x, corr);
         } else {
@@ -119,7 +119,7 @@ namespace Ikarus {
     typename NonLinearOperatorImpl::ValueType corr;
     LinearSolver linearSolver;
     UpdateFunctionType updateFunction;
-    NonlinearSolverSettings settings;
+    NewtonRaphsonSettings settings;
   };
 
   template <typename NonLinearOperatorImpl,

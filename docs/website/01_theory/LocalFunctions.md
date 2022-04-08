@@ -25,7 +25,7 @@ template <typename IntegrationRule, typename... Ints>
 void bind(IntegrationRule&& p_rule, Derivatives<Ints...>&& ints); // (2)
 ```
 
-1. This return a vector of structs of the integration point and its index. Therefore the syntax is usually `#!cpp for (const auto& [gpIndex, gp] : localFunction.viewOverIntegrationPoints()) {...}`
+1. This returns a vector of structs of the integration point and its index. Therefore the syntax is usually `#!cpp for (const auto& [gpIndex, gp] : localFunction.viewOverIntegrationPoints()) {...}`
 2. This function is passed through to the given `localBasis`. See [Link](LocalBasis.md)
 
 The "..." in the `evaluateDerivative` function call are several variadic templates.

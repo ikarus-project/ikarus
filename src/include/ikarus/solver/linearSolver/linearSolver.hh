@@ -19,16 +19,16 @@
 namespace Ikarus {
 
   enum class SolverTypeTag {
-    s_ConjugateGradient,
-    s_LeastSquaresConjugateGradient,
-    s_BiCGSTAB,
-    s_SimplicialLLT,
-    s_SimplicialLDLT,
-    s_SparseLU,
-    s_SparseQR,
-    s_CholmodSupernodalLLT,
-    s_UmfPackLU,
-    s_SuperLU,
+    si_ConjugateGradient,
+    si_LeastSquaresConjugateGradient,
+    si_BiCGSTAB,
+    sd_SimplicialLLT,
+    sd_SimplicialLDLT,
+    sd_SparseLU,
+    sd_SparseQR,
+    sd_CholmodSupernodalLLT,
+    sd_UmfPackLU,
+    sd_SuperLU,
     d_PartialPivLU,
     d_FullPivLU,
     d_HouseholderQR,
@@ -37,22 +37,12 @@ namespace Ikarus {
     d_CompleteOrthogonalDecomposition,
     d_LLT,
     d_LDLT,
-    //    BDCSVD,
-    //    JacobiSVD
-  };
-
-  template <typename SolverType, typename ScalarType = double>
-  class DenseLinearSolver {
-  public:
-    using MatrixType = Eigen::MatrixX<ScalarType>;
-
-    void analyzePattern(const MatrixType&){};
   };
 
   enum class MatrixTypeTag { Dense, Sparse };
 
   /** \brief A type-erased solver templated with the scalar type of the linear system */
-  template <typename ScalarType>
+  template <typename ScalarType = double >
   class ILinearSolver {
   public:
     using SparseMatrixType = Eigen::SparseMatrix<ScalarType>;
@@ -60,34 +50,34 @@ namespace Ikarus {
     explicit ILinearSolver(const SolverTypeTag& solverTypeTag) {
       using namespace Eigen;
       switch (solverTypeTag) {
-        case SolverTypeTag::s_ConjugateGradient:
+        case SolverTypeTag::si_ConjugateGradient:
           solverimpl = std::make_unique<SolverImpl<ConjugateGradient<SparseMatrixType, Lower | Upper>>>();
           break;
-        case SolverTypeTag::s_LeastSquaresConjugateGradient:
+        case SolverTypeTag::si_LeastSquaresConjugateGradient:
           solverimpl = std::make_unique<SolverImpl<LeastSquaresConjugateGradient<SparseMatrixType>>>();
           break;
-        case SolverTypeTag::s_BiCGSTAB:
+        case SolverTypeTag::si_BiCGSTAB:
           solverimpl = std::make_unique<SolverImpl<BiCGSTAB<SparseMatrixType>>>();
           break;
-        case SolverTypeTag::s_SimplicialLLT:
+        case SolverTypeTag::sd_SimplicialLLT:
           solverimpl = std::make_unique<SolverImpl<SimplicialLLT<SparseMatrixType>>>();
           break;
-        case SolverTypeTag::s_SimplicialLDLT:
+        case SolverTypeTag::sd_SimplicialLDLT:
           solverimpl = std::make_unique<SolverImpl<SimplicialLDLT<SparseMatrixType>>>();
           break;
-        case SolverTypeTag::s_SparseLU:
+        case SolverTypeTag::sd_SparseLU:
           solverimpl = std::make_unique<SolverImpl<SparseLU<SparseMatrixType>>>();
           break;
-        case SolverTypeTag::s_SparseQR:
+        case SolverTypeTag::sd_SparseQR:
           solverimpl = std::make_unique<SolverImpl<SparseQR<SparseMatrixType, COLAMDOrdering<int>>>>();
           break;
-        case SolverTypeTag::s_CholmodSupernodalLLT:
+        case SolverTypeTag::sd_CholmodSupernodalLLT:
           solverimpl = std::make_unique<SolverImpl<CholmodSupernodalLLT<SparseMatrixType>>>();
           break;
-        case SolverTypeTag::s_UmfPackLU:
+        case SolverTypeTag::sd_UmfPackLU:
           solverimpl = std::make_unique<SolverImpl<UmfPackLU<SparseMatrixType>>>();
           break;
-        case SolverTypeTag::s_SuperLU:
+        case SolverTypeTag::sd_SuperLU:
           throw std::logic_error("Not implemented yet.");
           break;
           // Dense Solver
@@ -144,29 +134,24 @@ namespace Ikarus {
       virtual void factorize(const SparseMatrixType&)                                   = 0;
       virtual void compute(const SparseMatrixType&)                                     = 0;
       virtual void compute(const DenseMatrixType&)                                      = 0;
-      virtual Eigen::VectorX<ScalarType> solve(const Eigen::VectorX<ScalarType>&) const = 0;
+      virtual void solve(Eigen::VectorX<ScalarType>&x, const Eigen::VectorX<ScalarType>&) const = 0;
     };
 
     template <typename Solver>
     struct SolverImpl : public SolverBase {
-      //    explicit SolverImpl() = default;;
-      //          explicit SolverImpl(Solver& solverarg) : solver{solverarg} {};
+
       void analyzePattern(const SparseMatrixType& A) override {
-        //        std::cout << "solver.SparseanalyzePattern(A)" << std::endl;
         if constexpr (requires(Solver sol) { sol.analyzePattern(A); }) solver.analyzePattern(A);
       }
+
       void factorize(const SparseMatrixType& A) override {
-        //        std::cout << "solver.Sparsefactorize(A)" << std::endl;
-        if constexpr (requires(Solver sol) { sol.factorize(A); }) {
-          //          std::cout << "solver.Sparsefactorize(A) inside" << std::endl;
+        if constexpr (requires(Solver sol) { sol.factorize(A); })
           solver.factorize(A);
-        }
       }
 
       // Dense Solvers do not have a factorize method therefore
       // our interface we just call compute for dense matrices
       void factorize(const DenseMatrixType& A) override {
-        //        std::cout << "solver.Densefactorize(A)" << std::endl;
         if constexpr (requires(Solver sol) { sol.compute(A); } && std::is_base_of_v<Eigen::SolverBase<Solver>, Solver>)
           solver.compute(A);
       }
@@ -184,8 +169,9 @@ namespace Ikarus {
         else
           throw std::logic_error("This solver does not support solving with dense matrices.");
       }
-      [[nodiscard]] Eigen::VectorX<ScalarType> solve(const Eigen::VectorX<ScalarType>& b) const override {
-        return solver.solve(b);
+
+      void solve(Eigen::VectorX<ScalarType>&x, const Eigen::VectorX<ScalarType>& b) const override {
+        x = solver.solve(b);
       }
 
       Solver solver;
@@ -217,10 +203,8 @@ namespace Ikarus {
       solverimpl->factorize(A);
     }
 
-    [[nodiscard]] Eigen::VectorX<ScalarType> solve(const Eigen::VectorX<ScalarType>& b) {
-      //            std::cout << "solve(A)" << std::endl;
-      //            std::cout << b.transpose()<< std::endl;
-      return solverimpl->solve(b);
+    void solve(Eigen::VectorX<ScalarType>&x, const Eigen::VectorX<ScalarType>& b) {
+      solverimpl->solve(x,b);
     }
   };
 

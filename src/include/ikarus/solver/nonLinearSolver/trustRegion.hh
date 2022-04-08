@@ -34,7 +34,7 @@ namespace Ikarus {
 
   enum class PreConditioner { IncompleteCholesky, IdentityPreconditioner, DiagonalPreconditioner };
 
-  struct Options {
+  struct TrustRegionSettings {
     int verbosity    = 5;
     double maxtime   = std::numeric_limits<double>::infinity();
     int miniter      = 3;
@@ -110,7 +110,7 @@ namespace Ikarus {
 
     using NonLinearOperator = NonLinearOperatorImpl;
 
-    void setup(const Options& p_settings) {
+    void setup(const TrustRegionSettings& p_settings) {
       options = p_settings;
       assert(options.rho_prime < 0.25 && "options.rho_prime must be strictly smaller than 1/4.");
       assert(options.Delta_bar > 0 && "options.Delta_bar must be positive.");
@@ -398,7 +398,7 @@ namespace Ikarus {
     typename NonLinearOperatorImpl::template ParameterValue<0> xOld;
     UpdateType eta;
     UpdateType Heta;
-    Options options;
+    TrustRegionSettings options;
     AlgoInfo info;
     double choleskyInitialShift = 1e-3;
     Eigen::TCGInfo<double> innerInfo;

@@ -17,6 +17,8 @@ namespace Ikarus {
     bool sucess{false};
   };
 
+  /**  The loadControl control routine simply increases the last parameter of a nonlinear operator and then calls
+   * a nonlinear solver, e.g. Newton's method */
   template <typename NonLinearSolver>
   class LoadControl : public IObservable<ControlMessages> {
   public:

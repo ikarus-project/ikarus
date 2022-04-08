@@ -8,7 +8,7 @@ $$
 $$
 where \( f: \mathcal{M} \rightarrow \mathbb{R} \).
 
-Usually \( \mathcal{M} \) is here an Euclidean vector space \( \mathbb{R} \).
+Usually \( \mathcal{M} \) is an Euclidean vector space \( \mathbb{R}^n \).
 
 In a finite element context, if we solve e.g. 2d elasticity problems we have a 
 two-dimensional displacement for each node. Thus if we have \(n \) nodes we optimize in \( {\mathbb{R}^2}^n  \).
@@ -55,7 +55,7 @@ namespace Ikarus::Concepts {
      ```
 
 ## Implementations
-| Name                      | Formal definition                                         | Note                                                                                                                                                                                                                                                      | Header |
+| Name                      | Formal definition                                         | Notes                                                                                                                                                                                                                                                      | Header |
 |:--------------------------|:--------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--|
 | \(n\)-th dimensional Euclidean space                    | $$ \boldsymbol{x} \in \mathbb{R}^n  $$     |           | `realTuple.hh`|
 | Unit sphere | $$ \boldsymbol{x} \in \mathcal{S}^{n-1}, \quad \mathcal{S}^{n-1} = \left\\{ \boldsymbol{x} \in \mathbb{R}^n :  \boldsymbol{x}\cdot  \boldsymbol{x}  = 1 \right\\}  $$  |  | `unitVector.hh`|
