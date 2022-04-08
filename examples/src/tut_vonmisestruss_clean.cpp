@@ -2,7 +2,8 @@
 // Created by Alex on 21.07.2021.
 //
 
-#include <../../config.h>
+#include <config.h>
+
 #include <autodiff/forward/dual/dual.hpp>
 #include <matplot/matplot.h>
 
@@ -16,18 +17,18 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
-#include "ikarus/Controlroutines/LoadControl.h"
-#include "ikarus/LinearAlgebra/NonLinearOperator.h"
-#include "ikarus/Solver/LinearSolver/LinearSolver.h"
-#include "ikarus/Solver/NonLinearSolver/NewtonRaphson.hpp"
-#include "ikarus/utils/Observer/controlVTKWriter.h"
-#include "ikarus/utils/Observer/genericControlObserver.h"
-#include "ikarus/utils/Observer/nonLinearSolverLogger.h"
-#include <ikarus/Assembler/SimpleAssemblers.h>
-#include <ikarus/FiniteElements/AutodiffFE.h>
-#include "ikarus/FiniteElements/Interface/FEPolicies.h"
-#include "ikarus/utils/drawing/griddrawer.h"
-#include <ikarus/Variables/ParameterFactory.h>
+#include <ikarus/assembler/simpleAssemblers.hh>
+#include <ikarus/controlRoutines/loadControl.hh>
+#include <ikarus/finiteElements/autodiffFE.hh>
+#include <ikarus/finiteElements/interface/fEPolicies.hh>
+#include <ikarus/linearAlgebra/nonLinearOperator.hh>
+#include <ikarus/solver/linearSolver/linearSolver.hh>
+#include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
+#include <ikarus/utils/drawing/griddrawer.hh>
+#include <ikarus/utils/observer/controlVTKWriter.hh>
+#include <ikarus/utils/observer/genericControlObserver.hh>
+#include <ikarus/utils/observer/nonLinearSolverLogger.hh>
+#include <ikarus/variables/parameterFactory.hh>
 
 using namespace Ikarus;
 template <typename Basis>
@@ -106,20 +107,28 @@ int main() {
   Dune::Functions::forEachBoundaryDOF(basis, [&](auto&& index) { dirichletFlags[index] = true; });
 
   /// Create assembler
-  auto denseFlatAssembler = DenseFlatSimpleAssembler(basis, fes, dirichletFlags);
+  auto denseFlatAssembler = DenseFlatAssembler(basis, fes, dirichletFlags);
 
   /// Create non-linear operator
   double lambda = 0;
   Eigen::VectorXd d;
   d.setZero(basis.size());
 
-  auto RFunction = [&](auto&& u, auto&& lambdalocal) -> auto& {
-    auto& R = denseFlatAssembler.getVector(forces, u, lambdalocal);
-    R[3] -= -lambdalocal;
+  auto RFunction = [&](auto&& u, auto&& lambdaLocal) -> auto& {
+    Ikarus::FErequirements req;
+    req.sols.emplace_back(u);
+    req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
+    req.vectorAffordances = Ikarus::VectorAffordances::forces;
+    auto& R               = denseFlatAssembler.getVector(req);
+    R[3] -= -lambdaLocal;
     return R;
   };
-  auto KFunction = [&](auto&& u, auto&& lambdalocal) -> auto& {
-    return denseFlatAssembler.getMatrix(stiffness, u, lambdalocal);
+  auto KFunction = [&](auto&& u, auto&& lambdaLocal) -> auto& {
+    Ikarus::FErequirements req;
+    req.sols.emplace_back(u);
+    req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
+    req.matrixAffordances = Ikarus::MatrixAffordances::stiffness;
+    return denseFlatAssembler.getMatrix(req);
   };
 
   auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(RFunction, KFunction), parameter(d, lambda));

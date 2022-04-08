@@ -1,7 +1,7 @@
 //
 // Created by lex on 08/03/2022.
 //
-#include "polyfit.h"
+#include "polyfit.hh"
 namespace Ikarus {
 
   /*

@@ -2,7 +2,7 @@
 // Created by Alex on 21.07.2021.
 //
 
-#include "../../config.h"
+#include <config.h>
 
 #include <autodiff/forward/dual/dual.hpp>
 #include <matplot/matplot.h>
@@ -16,17 +16,16 @@
 #include <dune/functions/functionspacebases/subspacebasis.hh>
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/grid/io/file/vtk/vtkwriter.hh>
-#include <ikarus/FiniteElements/AutodiffFE.h>
+
 #include <Eigen/Core>
-#include <Eigen/Dense>
 
-#include "ikarus/utils/utils/algorithms.h"
-#include <ikarus/Assembler/SimpleAssemblers.h>
-
-#include <ikarus/LocalFunctions/StandardLocalFunction.h>
-#include "ikarus/utils/drawing/griddrawer.h"
-#include <ikarus/LocalBasis/localBasis.h>
-#include <ikarus/Variables/ParameterFactory.h>
+#include <ikarus/assembler/simpleAssemblers.hh>
+#include <ikarus/finiteElements/autodiffFE.hh>
+#include <ikarus/localBasis/localBasis.hh>
+#include <ikarus/localFunctions/standardLocalFunction.hh>
+#include <ikarus/utils/drawing/griddrawer.hh>
+#include <ikarus/utils/utils/algorithms.hh>
+#include <ikarus/variables/parameterFactory.hh>
 
 using namespace Ikarus;
 using namespace Dune::Indices;
@@ -103,7 +102,7 @@ private:
 
       ScalarType pressure = pN.dot(Npressure);
 
-      const auto gradu      = (disp *dNdisp.template cast<ScalarType>() * J.inverse()).eval();
+      const auto gradu      = (disp * dNdisp.template cast<ScalarType>() * J.inverse()).eval();
       const auto symgradu   = sym(gradu);
       const ScalarType divU = gradu.trace();
 
@@ -164,11 +163,9 @@ int main(int argc, char** argv) {
 
   /// Collect dirichlet nodes
   std::vector<bool> dirichletFlags(basis.size(), false);
-  forEachBoundaryDOF(subspaceBasis(basis, _0),[&](auto&& localIndex, auto&& localView, auto&& intersection)
-                     {
-                       if (std::abs(intersection.geometry().center()[1])<1e-8)
-                         dirichletFlags[localView.index(localIndex)[0]]= true;
-                     });
+  forEachBoundaryDOF(subspaceBasis(basis, _0), [&](auto&& localIndex, auto&& localView, auto&& intersection) {
+    if (std::abs(intersection.geometry().center()[1]) < 1e-8) dirichletFlags[localView.index(localIndex)[0]] = true;
+  });
 
   /// Create assembler
   auto sparseFlatAssembler = SparseFlatAssembler(basis, fes, dirichletFlags);

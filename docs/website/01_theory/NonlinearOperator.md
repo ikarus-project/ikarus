@@ -1,1 +1,1 @@
-# Assembler
+# Non-linear operator

@@ -17,6 +17,9 @@
   BreakBeforeTernaryOperators: 'true'
   IncludeBlocks: Regroup
   IncludeCategories:
+    - Regex: 'config.h'
+      Priority: -1
+      SortPriority: -1
     - Regex: '^(<|")(gmock|gtest)/'
       Priority: 0
       SortPriority: 0

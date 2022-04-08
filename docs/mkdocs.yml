@@ -14,7 +14,7 @@ copyright: 'Copyright &copy; 2021 The Ikarus Developers'
 # Configuration
 theme:
   name: material
-  logo: images/logo_dummy.svg
+  logo: images/logo_white.svg
   favicon: images/logo_dummy.svg
   features:
     - navigation.instant
@@ -59,10 +59,14 @@ nav:
     - Control routines: 01_theory/ControlRoutines.md
     - Local basis: 01_theory/LocalBasis.md
     - Local functions: 01_theory/LocalFunctions.md
+    - Manifolds: 01_theory/Manifolds.md
+    - Solvers: 01_theory/Solvers.md
   - Examples:
       - Integrate pi: examples/integrate_pi.md
   - Literature: 99_Literature/99_Literature.md
   - C++ recommendations: cppRef.md
+  - Advanced Topics: AdvancedTopics.md
+  - Gallery: 02_gallery/gallery.md
 
 
 # Customization
