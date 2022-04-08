@@ -1,9 +1,9 @@
 //
 // Created by ac120950 on 23.02.2022.
 //
-#include "ikarus/Solver/NonLinearSolver/NewtonRaphson.hpp"
-#include "ikarus/utils/Observer/nonLinearSolverLogger.h"
-#include <ikarus/LinearAlgebra/NonLinearOperator.h>
+#include <ikarus/linearAlgebra/nonLinearOperator.hh>
+#include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
+#include <ikarus/utils/observer/nonLinearSolverLogger.hh>
 
 auto f(double& x) { return 0.5 * x * x + x - 2; }
 auto df(double& x) { return x + 1; }

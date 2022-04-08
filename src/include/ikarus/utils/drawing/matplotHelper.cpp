@@ -2,7 +2,7 @@
 // Created by ac126718 on 11.03.2022.
 //
 
-#include "matplotHelper.h"
+#include "matplotHelper.hh"
 
 namespace Ikarus::plot {
   void draw_xy(const Eigen::VectorXd& x, const Eigen::VectorXd& y) {

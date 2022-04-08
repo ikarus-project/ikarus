@@ -1,7 +1,8 @@
 //
 // Created by Alex on 21.07.2021.
 //
-#include <../../config.h>
+#include <config.h>
+
 #include <numbers>
 
 #include <dune/common/float_cmp.hh>
@@ -19,9 +20,9 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
-#include "ikarus/LocalBasis/localBasis.h"
-#include "ikarus/utils/drawing/griddrawer.h"
-#include <ikarus/Solver/LinearSolver/LinearSolver.h>
+#include <ikarus/localBasis/localBasis.hh>
+#include <ikarus/solver/linearSolver/linearSolver.hh>
+#include <ikarus/utils/drawing/griddrawer.hh>
 using namespace Dune::Functions::BasisFactory;
 using namespace Dune::Functions;
 using namespace Dune::Functions::BasisBuilder;

@@ -8,18 +8,13 @@ file(
 
 project(
   Ikarus
-  VERSION 1.0
+  VERSION 0.1
   LANGUAGES C CXX
 )
 
-add_library(${PROJECT_NAME} ${sources})
+dune_add_library(${PROJECT_NAME} ${sources})
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
-if(MINGW)
-  list(APPEND CMAKE_PREFIX_PATH
-       ${CMAKE_CURRENT_SOURCE_DIR}/../../Ikarus_Dependencies/Dependencies_release/
-  )
-endif()
 include(../cmake/AddDependencies.cmake)
 
 target_include_directories(
@@ -28,9 +23,3 @@ target_include_directories(
 )
 
 add_library(Ikarus::Ikarus ALIAS Ikarus)
-
-include(GNUInstallDirs)
-install(TARGETS Ikarus EXPORT IkarusTargets)
-# install_targets(Ikarus) install(DIRECTORY include/ikarus DESTINATION include COMPONENT Devel )
-
-# configure_and_install(${CMAKE_SCRIPTS_ROOT}/simple-config.cmake.in Ikarus SameMajorVersion)

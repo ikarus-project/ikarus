@@ -5,10 +5,10 @@ This section explains the concept of local functions.
 Local functions are functions which are bound to single grid elements.
 Therefore they are constructed from some local basis and a coefficient vector.
 
-Usually local functions need to be evaluated in the local coordinate system \( \mathbb{\xi} \in \mathbb{R}^n \) :
+Usually local functions need to be evaluated in the local coordinate system \( \mathbb{\xi} \in T_{\text{ref}} \subset\mathbb{R}^n \) :
 
 $$
-f: \boldsymbol{\xi}^n \rightarrow T_{\text{ref}}
+f: \boldsymbol{\xi}^n \rightarrow \mathbb{R}^m
 $$
 
 where $T_{\text{ref}}$ is the reference element, e.g. for a cube $T_{\text{ref}}= [0,1]^d$.
@@ -25,7 +25,7 @@ template <typename IntegrationRule, typename... Ints>
 void bind(IntegrationRule&& p_rule, Derivatives<Ints...>&& ints); // (2)
 ```
 
-1. This return a vector of structs of the integration point and its index. Therefore the syntax is usually `#!cpp for (const auto& [gpIndex, gp] : localFunction.viewOverIntegrationPoints()) {...}`
+1. This returns a vector of structs of the integration point and its index. Therefore the syntax is usually `#!cpp for (const auto& [gpIndex, gp] : localFunction.viewOverIntegrationPoints()) {...}`
 2. This function is passed through to the given `localBasis`. See [Link](LocalBasis.md)
 
 The "..." in the `evaluateDerivative` function call are several variadic templates.
@@ -121,21 +121,18 @@ auto B1 = localFunction.evaluateDerivative(gpIndex, wrt(coeffs,coeffs,spatial(1)
 The first line is then equivalent to
 
 $$
-[\boldsymbol{B}]_{jkl} =  \boldsymbol{B}_{jkl} = q_i A_{ijkl} =  \frac{\partial^2 ([\operatorname{grad}_\boldsymbol{\xi} f(\boldsymbol{\xi})]_{ij} q_i )}{\partial \boldsymbol{x}_k\partial \boldsymbol{x}_l}.
+[\boldsymbol{B}]_{ljk} =  B_{ljk} = q_i A_{iljk} =  \frac{\partial^2 ([\operatorname{grad}_\boldsymbol{\xi} f(\boldsymbol{\xi})]_{il} q_i )}{\partial \boldsymbol{x}_j\partial \boldsymbol{x}_k}.
 $$
 
 this returns an object where the first index contains the spatial derivative w.r.t. $\xi_0$.
 Thus we have 
 
 \begin{align}
-\boldsymbol{B}[0]_{kl} = \frac{\partial^2 ([\operatorname{grad}_{\boldsymbol{\xi}_0} f(\xi)]_{ij} q_i )}{\partial \boldsymbol{x}_k\partial \boldsymbol{x}_l}, \\
-\boldsymbol{B}[1]_{kl} = \frac{\partial^2 ([\operatorname{grad}_{\boldsymbol{\xi}_1} f(\xi)]_{ij} q_i )}{\partial \boldsymbol{x}_k\partial \boldsymbol{x}_l}.
+\boldsymbol{B}[0]_{jk} = \frac{\partial^2 ([\operatorname{grad}_{\xi^0} f(\xi)]_{i} q_i )}{\partial \boldsymbol{x}_j\partial \boldsymbol{x}_k}, \\
+\boldsymbol{B}[1]_{jk} = \frac{\partial^2 ([\operatorname{grad}_{\xi^1} f(\xi)]_{i} q_i )}{\partial \boldsymbol{x}_j\partial \boldsymbol{x}_k}.
 \end{align}
 
-these objects are also returned of the second and third line above are used directly.
-
-In the end if we want to access th
-
+These objects are also returned when the second and third line above are used.
 
 Again all of these function calls can be combined with `transformWith()` as
 
@@ -146,7 +143,7 @@ localFunction.evaluateDerivative(gpIndex, wrt(coeffs,coeffs,spatialall), along(q
 which computes
 
 $$
-\frac{\partial^2 ([\operatorname{grad}_\boldsymbol{x} f(\boldsymbol{\xi})]_{ij} q_i )}{\partial \boldsymbol{x}_k\partial \boldsymbol{x}_l}.
+\frac{\partial^2 ([\operatorname{grad}_\boldsymbol{x} f(\boldsymbol{\xi})]_{il} q_i )}{\partial \boldsymbol{x}_j\partial \boldsymbol{x}_k}.
 $$
 
 
@@ -231,8 +228,8 @@ In the follwing table $N^i(\boldsymbol{\xi})$ are the ansatz functions.
 
 | Name                      | Interpolation formula                                         | Note                                                                                                                                                                                                                                                      | Header |
 |:--------------------------|:--------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--|
-| Standard                    | $$ \boldsymbol{x} = \sum_{i=1}^n N^i(\boldsymbol{\xi}) \boldsymbol{x}_i  $$     |                                                                                                                                                                                                                                                           | `StandardLocalFunction.h`|
-| Projection-Based[@grohs_ProjectionBasedFinite2019] | $$ \boldsymbol{x} = P\left(\sum_{i=1}^n N^i(\boldsymbol{\xi}) \boldsymbol{x}_i \right) $$ | This is one version of geometric finite elements. These are finite elements suited for interpolation on manifolds. Here $P: \mathbb{R}^m \rightarrow \mathcal{M}$ is an operator that projects <br /> the usual linear interpolation onto some manifold | `ProjectionBasedLocalFunction.h`|
+| Standard                    | $$ \boldsymbol{x} = \sum_{i=1}^n N^i(\boldsymbol{\xi}) \boldsymbol{x}_i  $$     |                                                                                                                                                                                                                                                           | `standardLocalFunction.hh`|
+| Projection-Based[@grohs_ProjectionBasedFinite2019] | $$ \boldsymbol{x} = P\left(\sum_{i=1}^n N^i(\boldsymbol{\xi}) \boldsymbol{x}_i \right) $$ | This is one version of geometric finite elements. These are finite elements suited for interpolation on manifolds. Here $P: \mathbb{R}^m \rightarrow \mathcal{M}$ is an operator that projects <br /> the usual linear interpolation onto some manifold | `projectionBasedLocalFunction.hh`|
 
 ## How to implement your own local functions
 If you are interested in implementing your own local function we have prepared the file
@@ -242,6 +239,8 @@ You can copy the file rename the class to your preferred name and then implement
 Then if someone calls the corresponding derivative the call fails at compile time.
 
 ```cpp
+FunctionReturnType evaluateEmbeddingFunctionImpl(const Eigen::VectorXd& N) const { return FunctionReturnType{}; } // (0)
+
 Jacobian evaluateDerivativeWRTSpaceAllImpl(const AnsatzFunctionType& N, 
                                            const AnsatzFunctionJacobian& dN) const {...} // (1)
 
@@ -286,6 +285,7 @@ CoeffDerivMatrix
                                                                      const int spatialIndex) const {...} // (8)
 ```
 
+0. This is called by `localFunction.evaluateFunction(...)`.
 1. This is called by `localFunction.evaluateDerivative(..., wrt(spatialall))`.
 2. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i)))`.
 3. This is called by `localFunction.evaluateDerivative(..., wrt(coeff))`.
@@ -293,7 +293,7 @@ CoeffDerivMatrix
 5. This is called by `localFunction.evaluateDerivative(..., wrt(spatialall,coeff))`.
 6. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i),coeff))`.
 7. This is called by `localFunction.evaluateDerivative(..., wrt(spatialall,coeff,coeff))`.
-7. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i),coeff,coeff))`.
+8. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i),coeff,coeff))`.
 
 
 \bibliography

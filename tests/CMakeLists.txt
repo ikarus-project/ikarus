@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 project(IkarusTests LANGUAGES C CXX)
 
 option(ENABLE_TEST_COVERAGE "Enable test coverage" OFF)
-option(TEST_INSTALLED_VERSION "Test the version found by find_package" OFF)
 
 set(IWYU_ARGS "-Xiwyu --mapping_file=iwyu.imp")
 include(../cmake/tools.cmake)
@@ -48,11 +47,12 @@ endif()
 target_compile_features(IkarusTests PRIVATE cxx_std_20)
 
 include(GoogleTest)
+
 gtest_discover_tests(IkarusTests)
 
 if(ENABLE_TEST_COVERAGE)
   message("Enable Test Coverage")
   target_compile_options(IkarusTests PUBLIC -O0 -fprofile-arcs -ftest-coverage -fPIC)
+
   target_link_options(IkarusTests PUBLIC -fprofile-arcs -ftest-coverage)
 endif()
-

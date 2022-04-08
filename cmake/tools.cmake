@@ -1,3 +1,6 @@
+# This files originally steems from
+# https://github.com/TheLartians/ModernCppStarter/blob/master/cmake/tools.cmake
+
 # this file contains a list of tools that can be activated and downloaded on-demand each tool is
 # enabled during configuration by passing an additional `-DUSE_<TOOL>=<VALUE>` argument to CMake
 
