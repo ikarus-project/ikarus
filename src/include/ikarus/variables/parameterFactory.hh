@@ -8,6 +8,7 @@
 
 namespace Ikarus {
   enum class FEParameter { noParameter, loadfactor, time };
+  enum class FESolutions { noSol, displacement, velocity, director, magnetizationAndVectorPotential };
 
   struct FEParameterValuePair {
     FEParameter type{FEParameter::noParameter};

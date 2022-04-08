@@ -18,6 +18,7 @@
 
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/controlRoutines/loadControl.hh>
+#include <ikarus/finiteElements/feRequirements.hh>
 #include <ikarus/finiteElements/mechanics/nonLinearElasticityFE.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
@@ -110,33 +111,36 @@ int main(int argc, char** argv) {
   double lambda = 0.0;
 
   auto residualFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
-    Ikarus::FErequirements req;
-    req.sols.emplace_back(disp);
-    req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
-    req.vectorAffordances = Ikarus::VectorAffordances::forces;
+    Ikarus::FErequirements req = FErequirementsBuilder()
+                                     .setSolution(Ikarus::FESolutions::displacement, disp)
+                                     .setParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+                                     .setAffordance(Ikarus::VectorAffordances::forces)
+                                     .build();
     return sparseAssembler.getVector(req);
   };
 
   auto KFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
-    Ikarus::FErequirements req;
-    req.sols.emplace_back(disp);
-    req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
-    req.matrixAffordances = Ikarus::MatrixAffordances::stiffness;
+    Ikarus::FErequirements req = FErequirementsBuilder()
+                                     .setSolution(Ikarus::FESolutions::displacement, disp)
+                                     .setParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+                                     .setAffordance(Ikarus::MatrixAffordances::stiffness)
+                                     .build();
     return sparseAssembler.getMatrix(req);
   };
 
   auto energyFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
-    Ikarus::FErequirements req;
-    req.sols.emplace_back(disp_);
-    req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
-    req.scalarAffordances = Ikarus::ScalarAffordances::potentialEnergy;
+    Ikarus::FErequirements req = FErequirementsBuilder()
+                                     .setSolution(Ikarus::FESolutions::displacement, disp_)
+                                     .setParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+                                     .setAffordance(Ikarus::ScalarAffordances::mechanicalPotentialEnergy)
+                                     .build();
     return sparseAssembler.getScalar(req);
   };
 
   auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, residualFunction, KFunction),
                                             parameter(d, lambda));
 
-  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::s_UmfPackLU);
+  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_UmfPackLU);
 
   auto nr = Ikarus::makeNewtonRaphson(nonLinOp.subOperator<1, 2>(), std::move(linSolver));
   //  auto nr = Ikarus::makeTrustRegion(nonLinOp);

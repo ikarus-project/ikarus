@@ -30,6 +30,7 @@
 #include <ikarus/utils/observer/loadControlObserver.hh>
 #include <ikarus/utils/observer/nonLinearSolverLogger.hh>
 #include <ikarus/utils/utils/algorithms.hh>
+#include "../../src/include/ikarus/variables/parameterFactory.hh"
 
 template <typename Basis>
 struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<Basis>,
@@ -66,8 +67,8 @@ struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<Basis>,
 
   template <class Scalar>
   [[nodiscard]] Scalar calculateScalarImpl(const FERequirementType& par, const Eigen::VectorX<Scalar>& dx) const {
-    const auto& wGlobal = par.sols[0].get();
-    const auto& lambda  = par.parameter.at(Ikarus::FEParameter::loadfactor);
+    const auto& wGlobal = par.getSolution(Ikarus::FESolutions::displacement);
+    const auto& lambda  = par.getParameter(Ikarus::FEParameter::loadfactor);
     const auto D        = constitutiveMatrix(Emodul, nu, thickness);
     Scalar energy       = 0.0;
     auto& ele           = localView_.element();
@@ -208,20 +209,14 @@ int main() {
 
     const double totalLoad = 2000;
 
-    auto kFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
-      Ikarus::FErequirements req;
-      req.sols.emplace_back(disp);
-      req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
-      req.matrixAffordances = Ikarus::MatrixAffordances::stiffness;
-      return denseAssembler.getMatrix(req);
+    auto kFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
+      Ikarus::FErequirements req = FErequirementsBuilder().setSolution(Ikarus::FESolutions::displacement,disp_).setParameter(Ikarus::FEParameter::loadfactor, lambdaLocal).setAffordance(Ikarus::MatrixAffordances::stiffness).build();
+        return denseAssembler.getMatrix(req);
     };
 
-    auto rFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
-      Ikarus::FErequirements req;
-      req.sols.emplace_back(disp);
-      req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
-      req.vectorAffordances = Ikarus::VectorAffordances::forces;
-      return denseAssembler.getVector(req);
+    auto rFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
+        Ikarus::FErequirements req = FErequirementsBuilder().setSolution(Ikarus::FESolutions::displacement,disp_).setParameter(Ikarus::FEParameter::loadfactor, lambdaLocal).setAffordance(Ikarus::VectorAffordances::forces).build();
+        return denseAssembler.getVector(req);
     };
 
     const auto& K = kFunction(w, totalLoad);
@@ -240,17 +235,17 @@ int main() {
     const double D = Emod * Dune::power(thickness, 3) / (12 * (1 - Dune::power(nu, 2)));
     // https://en.wikipedia.org/wiki/Bending_of_plates#Simply-supported_plate_with_uniformly-distributed_load
     auto wAna = [&](auto x) {
-      double w                = 0.0;
-      const int seriesFactors = 40;
-      const double pi         = std::numbers::pi;
-      auto oddFactors
-          = std::ranges::iota_view(1, seriesFactors) | std::views::filter([](auto i) { return i % 2 != 0; });
-      for (auto m : oddFactors)
-        for (auto n : oddFactors)
-          w += sin(m * pi * x[0] / Lx) * sin(n * pi * x[1] / Ly)
-               / (m * n * Dune::power(m * m / (Lx * Lx) + n * n / (Ly * Ly), 2));
+        double w                = 0.0;
+        const int seriesFactors = 40;
+        const double pi         = std::numbers::pi;
+        auto oddFactors
+            = std::ranges::iota_view(1, seriesFactors) | std::views::filter([](auto i) { return i % 2 != 0; });
+        for (auto m : oddFactors)
+          for (auto n : oddFactors)
+            w += sin(m * pi * x[0] / Lx) * sin(n * pi * x[1] / Ly)
+                 / (m * n * Dune::power(m * m / (Lx * Lx) + n * n / (Ly * Ly), 2));
 
-      return 16 * totalLoad / (Dune::power(pi, 6) * D) * w;
+        return 16 * totalLoad / (Dune::power(pi, 6) * D) * w;
     };
     //    std::cout << wxy(Lx / 2.0, Ly / 2.0) << std::endl;
 
@@ -266,19 +261,19 @@ int main() {
     /// Calculate L_2 error for simply supported case
     double l2_error = 0.0;
     for (auto& ele : elements(gridView)) {
-      localView.bind(ele);
-      localw.bind(ele);
-      localwAna.bind(ele);
-      const auto geo   = localView.element().geometry();
-      const auto& rule = Dune::QuadratureRules<double, 2>::rule(
-          ele.type(), 2 * localView.tree().finiteElement().localBasis().order());
-      for (auto gp : rule) {
-        const auto gpGlobalPos = geo.global(gp.position());
+        localView.bind(ele);
+        localw.bind(ele);
+        localwAna.bind(ele);
+        const auto geo   = localView.element().geometry();
+        const auto& rule = Dune::QuadratureRules<double, 2>::rule(
+            ele.type(), 2 * localView.tree().finiteElement().localBasis().order());
+        for (auto gp : rule) {
+          const auto gpGlobalPos = geo.global(gp.position());
 
-        const auto w_ex = localwAna(gp.position());
-        const auto w_fe = localw(gp.position());
-        l2_error += Dune::power(w_ex - w_fe, 2) * ele.geometry().integrationElement(gp.position()) * gp.weight();
-      }
+          const auto w_ex = localwAna(gp.position());
+          const auto w_fe = localw(gp.position());
+          l2_error += Dune::power(w_ex - w_fe, 2) * ele.geometry().integrationElement(gp.position()) * gp.weight();
+        }
     }
 
     l2_error = std::sqrt(l2_error);
@@ -286,16 +281,16 @@ int main() {
     dofsVec.push_back(basis.size());
     l2Evcector.push_back(l2_error);
     grid.globalRefine(1);
-  }
-  /// Draw L_2 error over dofs count
-  using namespace matplot;
-  auto f  = figure(true);
-  auto ax = gca();
-  ax->y_axis().label("L2_error");
+    }
+    /// Draw L_2 error over dofs count
+    using namespace matplot;
+    auto f  = figure(true);
+    auto ax = gca();
+    ax->y_axis().label("L2_error");
 
-  ax->x_axis().label("#Dofs");
-  auto p = ax->loglog(dofsVec, l2Evcector);
-  p->line_width(2);
-  p->marker(line_spec::marker_style::asterisk);
-  show();
-}
+    ax->x_axis().label("#Dofs");
+    auto p = ax->loglog(dofsVec, l2Evcector);
+    p->line_width(2);
+    p->marker(line_spec::marker_style::asterisk);
+    show();
+  }

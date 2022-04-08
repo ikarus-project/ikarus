@@ -260,23 +260,18 @@ int main(int argc, char** argv) {
   double lambda        = 0.0;
 
   auto residualFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
-    Ikarus::FErequirements<MultiTypeVector> req;
-    req.sols.emplace_back(disp);
-    req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
+    Ikarus::FErequirements req = FErequirementsBuilder<MultiTypeVector>().setSolution(Ikarus::FESolutions::displacement,disp).setParameter(Ikarus::FEParameter::loadfactor, lambdaLocal).setAffordance(Ikarus::VectorAffordances::microMagneticForces).build();
     return denseAssembler.getReducedVector(req);
   };
 
   auto hessianFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
-    Ikarus::FErequirements<MultiTypeVector> req;
-    req.sols.emplace_back(disp);
-    req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
+    Ikarus::FErequirements req = FErequirementsBuilder<MultiTypeVector>().setSolution(Ikarus::FESolutions::displacement,disp).setParameter(Ikarus::FEParameter::loadfactor, lambdaLocal).setAffordance(Ikarus::MatrixAffordances::microMagneticHessian).build();
     return sparseAssembler.getReducedMatrix(req);
   };
 
   auto energyFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto {
-    Ikarus::FErequirements<MultiTypeVector> req;
-    req.sols.emplace_back(disp);
-    req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
+    Ikarus::FErequirements req = FErequirementsBuilder<MultiTypeVector>().setSolution(Ikarus::FESolutions::displacement,disp).setParameter(Ikarus::FEParameter::loadfactor, lambdaLocal).setAffordance(Ikarus::ScalarAffordances::microMagneticPotentialEnergy).build();
+
     return denseAssembler.getScalar(req);
   };
 
@@ -320,10 +315,10 @@ int main(int argc, char** argv) {
     vtkWriter.addVertexData(mGlobalFunc, Dune::VTK::FieldInfo("m", Dune::VTK::FieldInfo::Type::vector, directorDim));
     vtkWriter.addVertexData(AGlobalFunc, Dune::VTK::FieldInfo("A", Dune::VTK::FieldInfo::Type::vector, vectorPotDim));
 
-    Ikarus::ResultRequirements<Ikarus::FErequirements<MultiTypeVector>> resultRequirements;
-    resultRequirements.req.sols.emplace_back(mAndABlocked);
-    resultRequirements.req.parameter.insert({Ikarus::FEParameter::loadfactor, lambda});
-    resultRequirements.resType = ResultType::gradientNormOfMagnetization;
+    auto resultRequirements = Ikarus::ResultRequirementsBuilder<MultiTypeVector>()
+        .setSolution(Ikarus::FESolutions::magnetizationAndVectorPotential,mAndABlocked)
+        .setParameter(Ikarus::FEParameter::loadfactor, lambda)
+        .setResult(ResultType::gradientNormOfMagnetization);
     auto localmFunction        = localFunction(mGlobalFunc);
 
     auto ele = elements(gridView).begin();

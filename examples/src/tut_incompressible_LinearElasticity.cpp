@@ -62,8 +62,8 @@ private:
   template <class ScalarType>
   [[nodiscard]] ScalarType calculateScalarImpl(const FERequirementType& par,
                                                const Eigen::VectorX<ScalarType>& dx) const {
-    const auto& d      = par.sols[0].get();
-    const auto& lambda = par.parameter.at(FEParameter::loadfactor);
+    const auto& d      = par.getSolution(Ikarus::FESolutions::displacement);
+    const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
     Eigen::VectorX<ScalarType> localDisp(localView_.size());
     localDisp.setZero();
     auto& displacementNode = localView_.tree().child(_0, 0);
@@ -176,23 +176,17 @@ int main(int argc, char** argv) {
   Eigen::VectorXd d;
   d.setZero(basis.size());
 
-  auto fintFunction = [&](auto&& lambdalocal, auto&& dLocal) -> auto& {
-    Ikarus::FErequirements req;
-    req.sols.emplace_back(dLocal);
-    req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdalocal});
-    req.vectorAffordances = Ikarus::VectorAffordances::forces;
+  auto fintFunction = [&](auto&& lambdaLocal, auto&& dLocal) -> auto& {
+    Ikarus::FErequirements req = FErequirementsBuilder().setSolution(Ikarus::FESolutions::displacement,dLocal).setParameter(Ikarus::FEParameter::loadfactor, lambdaLocal).setAffordance(Ikarus::VectorAffordances::forces).build();
     return denseFlatAssembler.getReducedVector(req);
   };
-  auto KFunction = [&](auto&& lambdalocal, auto&& dLocal) -> auto& {
-    Ikarus::FErequirements req;
-    req.sols.emplace_back(dLocal);
-    req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdalocal});
-    req.vectorAffordances = Ikarus::VectorAffordances::forces;
+  auto KFunction = [&](auto&& lambdaLocal, auto&& dLocal) -> auto& {
+    Ikarus::FErequirements req = FErequirementsBuilder().setSolution(Ikarus::FESolutions::displacement,dLocal).setParameter(Ikarus::FEParameter::loadfactor, lambdaLocal).setAffordance(Ikarus::MatrixAffordances::stiffness).build();
     return sparseFlatAssembler.getReducedMatrix(req);
   };
 
-  auto K = KFunction(1, d);
-  auto R = fintFunction(1, d);
+  auto K = KFunction(1.0, d);
+  auto R = fintFunction(1.0, d);
   Eigen::SparseLU<decltype(K)> ld;
   ld.compute(K);
   if (ld.info() != Eigen::Success) assert(false && "Failed Compute");

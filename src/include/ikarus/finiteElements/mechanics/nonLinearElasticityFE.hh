@@ -77,9 +77,9 @@ namespace Ikarus::FiniteElements {
 
   private:
     template <class ScalarType>
-    ScalarType calculateScalarImpl(const FERequirementType& par, Eigen::VectorX<ScalarType>& dx) const {
-      const auto& d      = par.sols[0].get();
-      const auto& lambda = par.parameter.at(FEParameter::loadfactor);
+    ScalarType calculateScalarImpl(const FERequirementType& req, Eigen::VectorX<ScalarType>& dx) const {
+      const auto& d      = req.getSolution(Ikarus::FESolutions::displacement);
+      const auto& lambda = req.getParameter(Ikarus::FEParameter::loadfactor);
 
       auto& first_child = localView_.tree().child(0);
       const auto& fe    = first_child.finiteElement();
