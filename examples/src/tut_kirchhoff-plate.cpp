@@ -19,8 +19,9 @@
 
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/controlRoutines/loadControl.hh>
-#include <ikarus/finiteElements/autodiffFE.hh>
-#include <ikarus/finiteElements/interface/fEPolicies.hh>
+#include <ikarus/finiteElements/feBases/autodiffFE.hh>
+#include <ikarus/finiteElements/feBases/scalarFE.hh>
+#include <ikarus/finiteElements/interface/feTraits.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/localBasis/localBasis.hh>
 #include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
@@ -30,12 +31,11 @@
 #include <ikarus/utils/observer/loadControlObserver.hh>
 #include <ikarus/utils/observer/nonLinearSolverLogger.hh>
 #include <ikarus/utils/utils/algorithms.hh>
-#include "../../src/include/ikarus/variables/parameterFactory.hh"
 
 template <typename Basis>
-struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<Basis>,
+struct KirchhoffPlate : Ikarus::ScalarFieldFE<Basis>,
                         Ikarus::AutoDiffFEClean<KirchhoffPlate<Basis>, Basis> {
-  using BaseDisp = Ikarus::FiniteElements::ScalarFieldFE<Basis>;
+  using BaseDisp = Ikarus::ScalarFieldFE<Basis>;
   using BaseAD   = Ikarus::AutoDiffFEClean<KirchhoffPlate<Basis>, Basis>;
   using BaseAD::size;
   using LocalView         = typename Basis::LocalView;

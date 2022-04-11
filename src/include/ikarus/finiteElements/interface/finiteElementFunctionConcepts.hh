@@ -8,8 +8,6 @@
 #include <optional>
 
 #include <ikarus/finiteElements/feRequirements.hh>
-#include <ikarus/variables/interfaceVariable.hh>
-#include <ikarus/variables/parameterFactory.hh>
 #ifdef __clang__
 #  pragma clang diagnostic push
 #  pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-argumentgits"

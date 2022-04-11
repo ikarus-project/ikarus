@@ -32,34 +32,34 @@
 #include <ikarus/utils/observer/genericControlObserver.hh>
 #include <ikarus/utils/utils/algorithms.hh>
 
-constexpr int magnetizationOrder    = 1;
-constexpr int vectorPotOrder        = 1;
-constexpr int gridDim               = 3;
-constexpr int directorDim           = 3;
-constexpr int vectorPotDim          = gridDim == 2 ? 1 : 3;
+constexpr int magnetizationOrder = 1;
+constexpr int vectorPotOrder = 1;
+constexpr int gridDim = 3;
+constexpr int directorDim = 3;
+constexpr int vectorPotDim = gridDim==2 ? 1 : 3;
 constexpr int directorCorrectionDim = directorDim - 1;
 
-using DirectorVector  = Dune::BlockVector<Ikarus::UnitVector<double, directorDim>>;
+using DirectorVector = Dune::BlockVector<Ikarus::UnitVector<double, directorDim>>;
 using VectorPotVector = Dune::BlockVector<Ikarus::RealTuple<double, vectorPotDim>>;
 using MultiTypeVector = Dune::MultiTypeBlockVector<DirectorVector, VectorPotVector>;
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   Dune::MPIHelper::instance(argc, argv);
   Dune::ParameterTree parameterSet;
   Dune::ParameterTreeParser::readINITree(argv[1], parameterSet);
 
-  const Dune::ParameterTree& gridParameters     = parameterSet.sub("GridParameters");
-  const Dune::ParameterTree& controlParameters  = parameterSet.sub("ControlParameters");
-  const Dune::ParameterTree& materialParameters = parameterSet.sub("MaterialParameters");
+  const Dune::ParameterTree &gridParameters = parameterSet.sub("GridParameters");
+  const Dune::ParameterTree &controlParameters = parameterSet.sub("ControlParameters");
+  const Dune::ParameterTree &materialParameters = parameterSet.sub("MaterialParameters");
 
-  const auto refinement      = gridParameters.get<int>("refinement");
-  const auto innerRadius     = gridParameters.get<double>("innerRadius");
-  const auto mshfilepath     = gridParameters.get<std::string>("mshfilepath");
-  const auto loadSteps       = controlParameters.get<int>("loadSteps");
+  const auto refinement = gridParameters.get<int>("refinement");
+  const auto innerRadius = gridParameters.get<double>("innerRadius");
+  const auto mshfilepath = gridParameters.get<std::string>("mshfilepath");
+  const auto loadSteps = controlParameters.get<int>("loadSteps");
   const auto loadFactorRange = controlParameters.get<std::array<double, 2>>("loadFactorRange");
 
-  const auto A  = materialParameters.get<double>("A");
-  const auto K  = materialParameters.get<double>("K");
+  const auto A = materialParameters.get<double>("A");
+  const auto K = materialParameters.get<double>("K");
   const auto ms = materialParameters.get<double>("ms");
 
   Python::start();
@@ -73,9 +73,9 @@ int main(int argc, char** argv) {
   auto isInsidePredicate = Python::make_function<bool>(Python::evaluate(dirichletVerticesPredicateText));
 
   using namespace Ikarus;
-  Ikarus::FiniteElements::MagneticMaterial mat({.A = A, .K = K, .ms = ms});
+  Ikarus::MagneticMaterial mat({.A = A, .K = K, .ms = ms});
   //  Ikarus::FiniteElements::MagneticMaterial mat({.A = 2.0e-11, .K = 1e-3, .ms = 8e2});
-  const double lx = sqrt(2 * mat.A / (mat.mu0 * mat.ms * mat.ms));
+  const double lx = sqrt(2*mat.A/(mat.mu0*mat.ms*mat.ms));
   //  const double lengthUnit      = 1e-9;
   //  const double sizedom1InMeter = 30 * lengthUnit;
   //  const double sizedom1        = sizedom1InMeter / lx;
@@ -132,7 +132,7 @@ int main(int argc, char** argv) {
   //  auto grid = std::make_shared<Grid>(bbox, eles);
 
   using Grid = Dune::ALUGrid<gridDim, gridDim, Dune::simplex, Dune::conforming>;
-  auto grid  = Dune::GmshReader<Grid>::read(mshfilepath, false, false);
+  auto grid = Dune::GmshReader<Grid>::read(mshfilepath, false, false);
 
   grid->globalRefine(refinement);
   auto gridView = grid->leafGridView();
@@ -162,9 +162,9 @@ int main(int argc, char** argv) {
 
   //  draw(gridView);
 
-  std::vector<Ikarus::FiniteElements::MicroMagneticsWithVectorPotential<decltype(basisEmbeddedC), decltype(basisRieC)>>
+  std::vector<Ikarus::MicroMagneticsWithVectorPotential<decltype(basisEmbeddedC), decltype(basisRieC)>>
       fes;
-  auto volumeLoad = [](auto& globalCoord, auto& lamb) {
+  auto volumeLoad = [](auto &globalCoord, auto &lamb) {
     Eigen::Vector<double, directorDim> fext;
     fext.setZero();
     fext[0] = 0;
@@ -173,8 +173,8 @@ int main(int argc, char** argv) {
   };
 
   int insideCounter = 0;
-  for (auto& element : elements(gridView)) {
-    auto geoCoord       = element.geometry().center();
+  for (auto &element: elements(gridView)) {
+    auto geoCoord = element.geometry().center();
     const bool isInside = isInsidePredicate(geoCoord);
     fes.emplace_back(basisEmbeddedC, basisRieC, element, mat, volumeLoad, isInside);
     if (isInside) ++insideCounter;
@@ -183,17 +183,17 @@ int main(int argc, char** argv) {
   std::cout << "There are " << insideCounter << " Elements inside" << std::endl;
 
   DirectorVector mBlocked(basisEmbeddedC.size({Dune::Indices::_0}));
-  for (auto& msingle : mBlocked) {
-    if constexpr (directorDim == 3)
-      msingle.setValue(0.1 * Eigen::Vector<double, directorDim>::Random()
-                       + Eigen::Vector<double, directorDim>::UnitZ());
+  for (auto &msingle: mBlocked) {
+    if constexpr (directorDim==3)
+      msingle.setValue(0.1*Eigen::Vector<double, directorDim>::Random()
+                           + Eigen::Vector<double, directorDim>::UnitZ());
     else
-      msingle.setValue(0.1 * Eigen::Vector<double, directorDim>::Random()
-                       + Eigen::Vector<double, directorDim>::UnitX());
+      msingle.setValue(0.1*Eigen::Vector<double, directorDim>::Random()
+                           + Eigen::Vector<double, directorDim>::UnitX());
   }
 
   VectorPotVector aBlocked(basisEmbeddedC.size({Dune::Indices::_1}));
-  for (auto& asingle : aBlocked) {
+  for (auto &asingle: aBlocked) {
     asingle.setValue(Eigen::Vector<double, vectorPotDim>::Zero());
   }
 
@@ -203,15 +203,15 @@ int main(int argc, char** argv) {
   std::cout << "dirichletFlags.size()" << dirichletFlags.size() << std::endl;
   // Fix vector potential on the whole boundary
   Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basisRieC, Dune::Indices::_1),
-                                      [&](auto&& globalIndex) { dirichletFlags[globalIndex[0]] = true; });
+                                      [&](auto &&globalIndex) { dirichletFlags[globalIndex[0]] = true; });
 
-  auto magnetBasis         = Dune::Functions::subspaceBasis(basisRieC, Dune::Indices::_0);
-  auto localView           = magnetBasis.localView();
-  auto seDOFs              = subEntityDOFs(magnetBasis);
-  const auto& gridViewMagn = magnetBasis.gridView();
-  for (auto&& element : elements(gridViewMagn)) {
+  auto magnetBasis = Dune::Functions::subspaceBasis(basisRieC, Dune::Indices::_0);
+  auto localView = magnetBasis.localView();
+  auto seDOFs = subEntityDOFs(magnetBasis);
+  const auto &gridViewMagn = magnetBasis.gridView();
+  for (auto &&element: elements(gridViewMagn)) {
     localView.bind(element);
-    for (const auto& intersection : intersections(gridViewMagn, element)) {
+    for (const auto &intersection: intersections(gridViewMagn, element)) {
       bool isIntersectionInside = false;
 
       for (int i = 0; i < intersection.geometry().corners(); ++i) {
@@ -223,20 +223,20 @@ int main(int argc, char** argv) {
       }
 
       if (!isIntersectionInside) {
-        for (auto localIndex : seDOFs.bind(localView, intersection))
+        for (auto localIndex: seDOFs.bind(localView, intersection))
           dirichletFlags[localView.index(localIndex)[0]] = true;
       }
     }
   }
 
-  auto magnetBasisBlocked   = Dune::Functions::subspaceBasis(basisEmbeddedC, Dune::Indices::_0);
-  auto localView2           = magnetBasisBlocked.localView();
-  auto seDOFs2              = subEntityDOFs(magnetBasisBlocked);
-  const auto& gridViewMagn2 = magnetBasisBlocked.gridView();
-  for (auto&& element : elements(gridViewMagn2)) {
+  auto magnetBasisBlocked = Dune::Functions::subspaceBasis(basisEmbeddedC, Dune::Indices::_0);
+  auto localView2 = magnetBasisBlocked.localView();
+  auto seDOFs2 = subEntityDOFs(magnetBasisBlocked);
+  const auto &gridViewMagn2 = magnetBasisBlocked.gridView();
+  for (auto &&element: elements(gridViewMagn2)) {
     localView2.bind(element);
-    for (const auto& intersection : intersections(gridViewMagn2, element))
-      for (auto localIndex : seDOFs2.bind(localView2, intersection)) {
+    for (const auto &intersection: intersections(gridViewMagn2, element))
+      for (auto localIndex: seDOFs2.bind(localView2, intersection)) {
         bool isIntersectionInside = false;
 
         for (int i = 0; i < intersection.geometry().corners(); ++i) {
@@ -255,29 +255,38 @@ int main(int argc, char** argv) {
       }
   }
 
-  auto denseAssembler  = DenseFlatAssembler(basisRieC, fes, dirichletFlags);
+  auto denseAssembler = DenseFlatAssembler(basisRieC, fes, dirichletFlags);
   auto sparseAssembler = SparseFlatAssembler(basisRieC, fes, dirichletFlags);
-  double lambda        = 0.0;
+  double lambda = 0.0;
 
-  auto residualFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
-    Ikarus::FErequirements req = FErequirementsBuilder<MultiTypeVector>().setSolution(Ikarus::FESolutions::displacement,disp).setParameter(Ikarus::FEParameter::loadfactor, lambdaLocal).setAffordance(Ikarus::VectorAffordances::microMagneticForces).build();
+  auto residualFunction = [&](auto &&disp, auto &&lambdaLocal) -> auto & {
+    Ikarus::FErequirements req =
+        FErequirementsBuilder<MultiTypeVector>().setSolution(Ikarus::FESolutions::magnetizationAndVectorPotential,
+                                                             disp).setParameter(Ikarus::FEParameter::loadfactor,
+                                                                                lambdaLocal).setAffordance(Ikarus::VectorAffordances::microMagneticForces).build();
     return denseAssembler.getReducedVector(req);
   };
 
-  auto hessianFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
-    Ikarus::FErequirements req = FErequirementsBuilder<MultiTypeVector>().setSolution(Ikarus::FESolutions::displacement,disp).setParameter(Ikarus::FEParameter::loadfactor, lambdaLocal).setAffordance(Ikarus::MatrixAffordances::microMagneticHessian).build();
+  auto hessianFunction = [&](auto &&disp, auto &&lambdaLocal) -> auto & {
+    Ikarus::FErequirements req =
+        FErequirementsBuilder<MultiTypeVector>().setSolution(Ikarus::FESolutions::magnetizationAndVectorPotential,
+                                                             disp).setParameter(Ikarus::FEParameter::loadfactor,
+                                                                                lambdaLocal).setAffordance(Ikarus::MatrixAffordances::microMagneticHessian).build();
     return sparseAssembler.getReducedMatrix(req);
   };
 
-  auto energyFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto {
-    Ikarus::FErequirements req = FErequirementsBuilder<MultiTypeVector>().setSolution(Ikarus::FESolutions::displacement,disp).setParameter(Ikarus::FEParameter::loadfactor, lambdaLocal).setAffordance(Ikarus::ScalarAffordances::microMagneticPotentialEnergy).build();
+  auto energyFunction = [&](auto &&disp, auto &&lambdaLocal) -> auto {
+    Ikarus::FErequirements req =
+        FErequirementsBuilder<MultiTypeVector>().setSolution(Ikarus::FESolutions::magnetizationAndVectorPotential,
+                                                             disp).setParameter(Ikarus::FEParameter::loadfactor,
+                                                                                lambdaLocal).setAffordance(Ikarus::ScalarAffordances::microMagneticPotentialEnergy).build();
 
     return denseAssembler.getScalar(req);
   };
 
   auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, residualFunction, hessianFunction),
                                             parameter(mAndABlocked, lambda));
-  auto updateFunction = std::function([&](MultiTypeVector& multiTypeVector, const Eigen::VectorXd& d) {
+  auto updateFunction = std::function([&](MultiTypeVector &multiTypeVector, const Eigen::VectorXd &d) {
     auto dFull = denseAssembler.createFullVector(d);
     multiTypeVector += dFull;
   });
@@ -289,16 +298,16 @@ int main(int argc, char** argv) {
   //  auto nr = Ikarus::makeTrustRegion< decltype(nonLinOp),PreConditioner::DiagonalPreconditioner>(nonLinOp,
   //  updateFunction);
   nr->setup({.verbosity = 1,
-             .maxiter   = 100000,
-             .grad_tol  = 1e-8,
-             .corr_tol  = 1e-16,
-             .useRand   = false,
-             .rho_reg   = 1e6,
-             .Delta0    = 1000});
+                .maxiter   = 100000,
+                .grad_tol  = 1e-8,
+                .corr_tol  = 1e-16,
+                .useRand   = false,
+                .rho_reg   = 1e6,
+                .Delta0    = 1000});
 
   auto lc = Ikarus::LoadControl(nr, loadSteps, loadFactorRange);
 
-  auto scalarMagnBasis          = makeBasis(gridView, lagrangeDG<magnetizationOrder>());
+  auto scalarMagnBasis = makeBasis(gridView, lagrangeDG<magnetizationOrder>());
   auto localViewScalarMagnBasis = scalarMagnBasis.localView();
 
   std::vector<double> gradMNodalRes(scalarMagnBasis.size());
@@ -316,59 +325,38 @@ int main(int argc, char** argv) {
     vtkWriter.addVertexData(AGlobalFunc, Dune::VTK::FieldInfo("A", Dune::VTK::FieldInfo::Type::vector, vectorPotDim));
 
     auto resultRequirements = Ikarus::ResultRequirementsBuilder<MultiTypeVector>()
-        .setSolution(Ikarus::FESolutions::magnetizationAndVectorPotential,mAndABlocked)
+        .setSolution(Ikarus::FESolutions::magnetizationAndVectorPotential, mAndABlocked)
         .setParameter(Ikarus::FEParameter::loadfactor, lambda)
-        .setResult(ResultType::gradientNormOfMagnetization);
-    auto localmFunction        = localFunction(mGlobalFunc);
+        .setResultRequest({ResultType::gradientNormOfMagnetization,ResultType::BField,ResultType::HField}).build();
+    auto localmFunction = localFunction(mGlobalFunc);
 
     auto ele = elements(gridView).begin();
-    Eigen::VectorXd result;
-    for (auto& fe : fes) {
+    ResultTypeMap<double> result;
+    for (auto &fe: fes) {
       localViewScalarMagnBasis.bind(*ele);
-      const auto& fe2              = localViewScalarMagnBasis.tree().finiteElement();
-      const auto& referenceElement = Dune::ReferenceElements<double, gridDim>::general(ele->type());
+      const auto &fe2 = localViewScalarMagnBasis.tree().finiteElement();
+      const auto &referenceElement = Dune::ReferenceElements<double, gridDim>::general(ele->type());
       for (auto c = 0UL; c < fe2.size(); ++c) {
-        const auto fineKey                        = fe2.localCoefficients().localKey(c);
+        const auto fineKey = fe2.localCoefficients().localKey(c);
         const auto nodalPositionInChildCoordinate = referenceElement.position(fineKey.subEntity(), fineKey.codim());
 
         auto coord = toEigenVector(nodalPositionInChildCoordinate);
-
         fe.calculateAt(resultRequirements, coord, result);
-        gradMNodalRes[localViewScalarMagnBasis.index(localViewScalarMagnBasis.tree().localIndex(c))] = result[0];
+        gradMNodalRes[localViewScalarMagnBasis.index(localViewScalarMagnBasis.tree().localIndex(c))[0]] =
+            result.getResult(ResultType::gradientNormOfMagnetization)(0, 0);
+        BfieldNodalRes[localViewScalarMagnBasis.index(localViewScalarMagnBasis.tree().localIndex(c))[0]]
+            = toFieldVector(result.getResult(ResultType::BField));
+        HfieldNodalRes[localViewScalarMagnBasis.index(localViewScalarMagnBasis.tree().localIndex(c))[0]]
+            = toFieldVector(result.getResult(ResultType::HField));
       }
       ++ele;
     }
 
-    auto scalarMagnBasis2          = makeBasis(gridView, power<3>(lagrangeDG<vectorPotOrder>(), BlockedInterleaved{}));
-    auto localViewScalarMagnBasis2 = scalarMagnBasis2.localView();
-    auto ele2                      = elements(gridView).begin();
-    for (auto& fe : fes) {
-      localViewScalarMagnBasis2.bind(*ele2);
-      const auto& fe2              = localViewScalarMagnBasis2.tree().child(0).finiteElement();
-      const auto& referenceElement = Dune::ReferenceElements<double, gridDim>::general(ele2->type());
-      for (auto c = 0UL; c < fe2.size(); ++c) {
-        const auto fineKey                        = fe2.localCoefficients().localKey(c);
-        const auto nodalPositionInChildCoordinate = referenceElement.position(fineKey.subEntity(), fineKey.codim());
-
-        auto coord = toEigenVector(nodalPositionInChildCoordinate);
-
-        resultRequirements.resType = ResultType::BField;
-        fe.calculateAt(resultRequirements, coord, result);
-        BfieldNodalRes[localViewScalarMagnBasis2.index(localViewScalarMagnBasis2.tree().child(0).localIndex(c))[0]]
-            = Dune::FieldVector<double, 3>({result[0], result[1], result[2]});
-        resultRequirements.resType = ResultType::HField;
-        fe.calculateAt(resultRequirements, coord, result);
-        HfieldNodalRes[localViewScalarMagnBasis2.index(localViewScalarMagnBasis2.tree().child(0).localIndex(c))[0]]
-            = Dune::FieldVector<double, 3>({result[0], result[1], result[2]});
-      }
-      ++ele2;
-    }
-
-    auto gradmGlobalFunc  = Dune::Functions::makeDiscreteGlobalBasisFunction<double>(scalarMagnBasis, gradMNodalRes);
+    auto gradmGlobalFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<double>(scalarMagnBasis, gradMNodalRes);
     auto bFieldGlobalFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(
-        scalarMagnBasis2, BfieldNodalRes);
+        scalarMagnBasis, BfieldNodalRes);
     auto hFieldGlobalFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(
-        scalarMagnBasis2, HfieldNodalRes);
+        scalarMagnBasis, HfieldNodalRes);
 
     vtkWriter.addVertexData(gradmGlobalFunc, Dune::VTK::FieldInfo("gradMNorm", Dune::VTK::FieldInfo::Type::scalar, 1));
     vtkWriter.addVertexData(bFieldGlobalFunc, Dune::VTK::FieldInfo("B", Dune::VTK::FieldInfo::Type::vector, 3));
@@ -383,7 +371,7 @@ int main(int argc, char** argv) {
   lc.subscribeAll(writerObserver);
   lc.run();
   nonLinOp.update<0>();
-  const double volume = std::numbers::pi * Dune::power(innerRadius, 2);
+  const double volume = std::numbers::pi*Dune::power(innerRadius, 2);
   spdlog::info("Energy: {}, Volume: {}, Energy/(0.5*V): {}", nonLinOp.value(), volume,
-               nonLinOp.value() / (0.5 * volume));
+               nonLinOp.value()/(0.5*volume));
 }

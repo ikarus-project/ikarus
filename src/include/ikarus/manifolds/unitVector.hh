@@ -7,7 +7,7 @@
 
 #include <ikarus/utils/linearAlgebraTypedefs.hh>
 
-namespace Ikarus::Manifold {
+namespace Ikarus {
   /**
    * \brief FunctionReturnType of unit vectors \f$\mathcal{S}^{d-1}\f$ embedded into space \f$\mathbb{R}^d\f$
    *

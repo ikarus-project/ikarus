@@ -20,12 +20,12 @@
 #include <Eigen/Core>
 
 #include <ikarus/assembler/simpleAssemblers.hh>
-#include <ikarus/finiteElements/autodiffFE.hh>
+#include <ikarus/finiteElements/feBases/autodiffFE.hh>
 #include <ikarus/localBasis/localBasis.hh>
 #include <ikarus/localFunctions/standardLocalFunction.hh>
 #include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/utils/utils/algorithms.hh>
-#include <ikarus/variables/parameterFactory.hh>
+#include <ikarus/utils/linearAlgebraTypedefs.hh>
 
 using namespace Ikarus;
 using namespace Dune::Indices;

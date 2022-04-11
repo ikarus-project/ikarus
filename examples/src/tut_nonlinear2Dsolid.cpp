@@ -27,6 +27,7 @@
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 #include <ikarus/utils/observer/nonLinearSolverLogger.hh>
 #include <ikarus/utils/utils/algorithms.hh>
+#include <ikarus/manifolds/realTuple.hh>
 
 int main(int argc, char** argv) {
   Dune::MPIHelper::instance(argc, argv);
@@ -85,7 +86,7 @@ int main(int argc, char** argv) {
 
   draw(gridView);
   auto localView = basis.localView();
-  std::vector<Ikarus::FiniteElements::NonLinearElasticityFEWithLocalBasis<decltype(basis)>> fes;
+  std::vector<Ikarus::NonLinearElasticityFE<decltype(basis)>> fes;
   auto volumeLoad = [](auto& globalCoord, auto& lamb) {
     Eigen::Vector2d fext;
     fext.setZero();

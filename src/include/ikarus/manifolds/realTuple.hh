@@ -7,7 +7,7 @@
 
 #include <Eigen/Core>
 
-namespace Ikarus::Manifold {
+namespace Ikarus {
   /**
    * \brief FunctionReturnType of Euklidean space \f$\mathbb{R}^d\f$
    *

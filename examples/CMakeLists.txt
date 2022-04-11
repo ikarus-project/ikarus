@@ -11,7 +11,7 @@ foreach(programSourceFile ${programSourceFiles})
   add_dune_pythonlibs_flags(${programName})
   target_compile_options(
     ${programName} PUBLIC -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable
-                          -Wno-deprecated-copy
+                          -Wno-deprecated-copy -ftemplate-backtrace-limit=0
   )
 
   target_link_libraries(${programName} PUBLIC Ikarus::Ikarus)
