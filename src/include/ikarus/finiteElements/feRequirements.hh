@@ -11,6 +11,13 @@
 
 namespace Ikarus {
 
+// clang-format off
+  enum class ScalarAffordances {
+    noAffordance,
+    mechanicalPotentialEnergy,
+    microMagneticPotentialEnergy
+  };
+
   enum class VectorAffordances {
     noAffordance,
     forces,
@@ -27,23 +34,38 @@ namespace Ikarus {
     mass
   };
 
-  enum class ScalarAffordances { noAffordance, mechanicalPotentialEnergy, microMagneticPotentialEnergy };
+  enum class FEParameter {
+    noParameter,
+    loadfactor,
+    time
+  };
+
+  enum class FESolutions {
+    noSolution,
+    displacement,
+    velocity,
+    director,
+    magnetizationAndVectorPotential
+  };
 
 
+  enum class ResultType {
+    noType,
+    magnetization,
+    gradientNormOfMagnetization,
+    vectorPotential,
+    BField,
+    HField,
+    cauchyStress,
+    director
+  };
+// clang-format on
 
   struct AffordanceCollection {
     ScalarAffordances scalarAffordances{ScalarAffordances::noAffordance};
     VectorAffordances vectorAffordances{VectorAffordances::noAffordance};
     MatrixAffordances matrixAffordances{MatrixAffordances::noAffordance};
   };
-
-
-enum class FEParameter { noParameter, loadfactor, time };
-
-enum class FESolutions { noSol, displacement, velocity, director, magnetizationAndVectorPotential };
-
-
-enum class ResultType { noType, magnetization, gradientNormOfMagnetization, vectorPotential, BField, HField };
 
   template <typename Type>
   concept FEAffordance
@@ -76,6 +98,7 @@ enum class ResultType { noType, magnetization, gradientNormOfMagnetization, vect
       }
       catch ( std::out_of_range& oor ) {
         std::cerr << "Out of Range error: " << oor.what() << " in getSolution"<<std::endl;
+        abort();
       }
      }
 
@@ -103,7 +126,7 @@ enum class ResultType { noType, magnetization, gradientNormOfMagnetization, vect
   class FErequirementsBuilder {
   public:
     template <FEAffordance Affordance>
-    FErequirementsBuilder &setAffordance(Affordance &&affordance) {
+    FErequirementsBuilder &addAffordance(Affordance &&affordance) {
       if constexpr (std::is_same_v<Affordance, ScalarAffordances>)
         affordances.scalarAffordances = affordance;
       else if constexpr (std::is_same_v<Affordance, VectorAffordances>)
@@ -115,12 +138,12 @@ enum class ResultType { noType, magnetization, gradientNormOfMagnetization, vect
       return *this;
     }
 
-    FErequirementsBuilder &setParameter(FEParameter &&key, const ParameterType &val) {
+    FErequirementsBuilder &insertParameter(FEParameter &&key, const ParameterType &val) {
       parameter.insert({key, val});
       return *this;
     }
 
-    FErequirementsBuilder &setSolution(FESolutions &&key, const SolutionVectorType &sol) {
+    FErequirementsBuilder &insertGlobalSolution(FESolutions &&key, const SolutionVectorType &sol) {
       sols.insert({key, sol});
       return *this;
     }
@@ -172,35 +195,35 @@ template <typename SolutionVectorType = Eigen::VectorXd, typename ParameterType_
     std::set<ResultType> resType;
   };
 
+
+template<typename Type>
+ concept ResultTypeConcept = std::is_same_v<Type,ResultType>;
+
 template <typename SolutionVectorType = Eigen::VectorXd, typename ParameterType = double>
   class ResultRequirementsBuilder
   {
   public:
 
     template <FEAffordance Affordance>
-    ResultRequirementsBuilder &setAffordance(Affordance &&affordance) {
-      reqB.setAffordance(std::forward<Affordance>(affordance));
+    ResultRequirementsBuilder &addAffordance(Affordance &&affordance) {
+      reqB.addAffordance(std::forward<Affordance>(affordance));
       return *this;
     }
 
-    ResultRequirementsBuilder &setParameter(FEParameter &&key, const ParameterType &val) {
-      reqB.setParameter(std::forward<FEParameter>(key),val);
+    ResultRequirementsBuilder &insertParameter(FEParameter &&key, const ParameterType &val) {
+      reqB.insertParameter(std::forward<FEParameter>(key), val);
       return *this;
     }
 
-    ResultRequirementsBuilder &setSolution(FESolutions &&key, const SolutionVectorType &sol) {
-      reqB.setSolution(std::forward<FESolutions>(key),sol);
+    ResultRequirementsBuilder &insertGlobalSolution(FESolutions &&key, const SolutionVectorType &sol) {
+      reqB.insertGlobalSolution(std::forward<FESolutions>(key), sol);
       return *this;
     }
 
 
-    ResultRequirementsBuilder & setResultRequest(ResultType &&key) {
-      resType.insert(key);
-      return *this;
-    }
-
-    ResultRequirementsBuilder & setResultRequest(std::initializer_list< ResultType>&& keys) {
-      resType.insert(std::move(keys));
+    template<ResultTypeConcept... ResultTypes>
+    ResultRequirementsBuilder & addResultRequest(ResultTypes&&... keys) {
+      resType.insert({std::move(keys)...});
       return *this;
     }
 

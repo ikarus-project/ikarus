@@ -49,9 +49,10 @@ If your are interested the following task are vacant.
 * Every public member function or free function needs a brief description `/* */`
 * We also use a `clang-format` file which needs to be executed in each file before a PR can be merged
 * For comments in the code we follow:
-    !!! note "Quote of Robert Martin in [VideoLink](https://www.youtube.com/watch?v=2a_ytyt9sf8&list=PLmmYSbUCWJ4x1GO839azG_BBw8rkh-zOj)"
-        The proper use of comments is: 
-        To compensate for our failure to express ourselves in code
+!!! cite "Quote of Robert Martin in [VideoLink](https://www.youtube.com/watch?v=2a_ytyt9sf8&list=PLmmYSbUCWJ4x1GO839azG_BBw8rkh-zOj)"
+          "The proper use of comments is: 
+          To compensate for our failure to express ourselves in code."
+       Thus lots of comments should not be interpreted as good programming style but they should be sign as a failure to express ourselves.
 
 
 \bibliography 

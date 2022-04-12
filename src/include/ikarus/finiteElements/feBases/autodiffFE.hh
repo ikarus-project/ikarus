@@ -13,7 +13,7 @@ namespace Ikarus {
   ////This element can not be used on its own but it should be inherited from
   //// The class constructor can only be called from the templated class.
   template <typename RealElement, typename Basis, typename FERequirementTypeImpl = FErequirements<Eigen::VectorXd>>
-  class AutoDiffFEClean {
+  class AutoDiffFE {
   public:
     using LocalView = typename Basis::LocalView;
     using Traits    = TraitsFromLocalView<LocalView>;
@@ -54,7 +54,7 @@ namespace Ikarus {
     size_t size() const { return localdofSize; }
 
   protected:
-    explicit AutoDiffFEClean(const Basis& basis, const typename LocalView::Element& element) {
+    explicit AutoDiffFE(const Basis& basis, const typename LocalView::Element& element) {
       auto localView = basis.localView();
       localView.bind(element);
       localdofSize = localView.size();
