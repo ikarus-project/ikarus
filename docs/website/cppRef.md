@@ -22,11 +22,19 @@ Scott Meyers recommends the following algorithm: [Link](http://cpptips.com/nmemf
 2. [Godblot](https://godbolt.org/) Online compiler with assembler output. Nice to test fast if something would be fast or slow. 
 Also Eigen can be added. Also any other header found on the internet can be include with the link.
 
+## Videos
+Here we collect usefull videos on coding or coding c++
+- [Clean Code - Uncle Bob / Lesson 1](https://www.youtube.com/watch?v=7EmboKQH8lM) How to write code cleanly, see also [@martinclean]
+- [CppCon 2014: Herb Sutter "Back to the Basics! Essentials of Modern C++ Style"](https://youtu.be/xnqTKD8uD64)
+- [CppCon 2018: Jonathan Boccara “105 STL Algorithms in Less Than an Hour”](https://www.youtube.com/watch?v=2olsGf6JIkU) "Almost" all algorithms in the STL
+- [Back to Basics: Object-Oriented Programming - Jon Kalb - CppCon 2019](https://www.youtube.com/watch?v=32tDTD9UJCE&list=PLHTh1InhhwT4CTnVjJqnAKeMfGzOWjsRa) How to do modern "Object-Oriented Programming" (If you really have to)
+- [CppCon 2021 - Back To Basics] (https://www.youtube.com/watch?v=Bt3zcJZIalk&list=PLHTh1InhhwT4TJaHBVWzvBOYhp27UO7mI)
+- [CppCon 2019 Back to Basics](https://www.youtube.com/watch?v=32tDTD9UJCE&list=PLHTh1InhhwT4CTnVjJqnAKeMfGzOWjsRa)
+
 ## Books
 [@gamma1995design]
 [@reddy2011api]
 [@meyers2005effective]
 [@meyers1995more]
-[@martinclean]
 
 \bibliography 

@@ -9,7 +9,6 @@
 #include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observerMessages.hh>
-#include <ikarus/variables/parameterFactory.hh>
 
 namespace Ikarus {
 

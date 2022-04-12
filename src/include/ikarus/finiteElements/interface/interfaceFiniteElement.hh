@@ -25,7 +25,6 @@ namespace Ikarus::FiniteElements {
   template <typename LocalView, typename SolutionVectorType>
   class IFiniteElement {
   public:
-    using DofPairVectorType = std::vector<VariableIndicesPair>;
     using FERequirementType = FErequirements<SolutionVectorType>;
     using GlobalIndex       = typename LocalView::MultiIndex;
     //    using DataVectorType     = typename std::optional<std::reference_wrapper<VariableVectorType>>;

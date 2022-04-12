@@ -48,6 +48,10 @@ If your are interested the following task are vacant.
 * The source files have a `cpp` extension and the header files `hh`.
 * Every public member function or free function needs a brief description `/* */`
 * We also use a `clang-format` file which needs to be executed in each file before a PR can be merged
+* For comments in the code we follow:
+    !!! note "Quote of Robert Martin in [VideoLink](https://www.youtube.com/watch?v=2a_ytyt9sf8&list=PLmmYSbUCWJ4x1GO839azG_BBw8rkh-zOj)"
+        The proper use of comments is: 
+        To compensate for our failure to express ourselves in code
 
 
 \bibliography 

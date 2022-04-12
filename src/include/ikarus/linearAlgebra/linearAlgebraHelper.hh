@@ -10,7 +10,6 @@
 #include <Eigen/Core>
 
 #include <ikarus/utils/concepts.hh>
-#include <ikarus/variables/interfaceVariable.hh>
 
 namespace Ikarus {
 

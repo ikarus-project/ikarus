@@ -21,6 +21,17 @@ namespace Ikarus {
     return fieldvec;
   }
 
+    /** \brief Creates a Dune::FieldVector from a given Eigen::Matrix. The matrix has fixed dynamic size The matrix needs to have a single column. */
+  template <typename ScalarType, int maxRows, int maxCols>
+  Dune::FieldVector<ScalarType, maxRows> toFieldVector(const Eigen::Matrix<ScalarType, Eigen::Dynamic,Eigen::Dynamic,0,maxRows,maxCols>& vec) {
+    assert(vec.cols()==1 && "The passed matrix needs to have a single column.");
+    Dune::FieldVector<ScalarType, maxRows> fieldvec{0.0};
+
+    for (int i = 0; i < vec.rows() ; ++i)
+      fieldvec[i] = vec(i,0);
+    return fieldvec;
+  }
+
   /** \brief Views a dune fieldvector as an Eigen::Vector as Map, no copies take place! */
   template <typename ScalarType, int size>
   Eigen::Map<const Eigen::Vector<ScalarType, size>> toEigenVectorMap(const Dune::FieldVector<ScalarType, size>& vec) {

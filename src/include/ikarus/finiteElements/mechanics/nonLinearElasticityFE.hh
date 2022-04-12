@@ -31,8 +31,9 @@
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/geometry/type.hh>
 
-#include <ikarus/finiteElements/autodiffFE.hh>
-#include <ikarus/finiteElements/interface/fEPolicies.hh>
+#include <ikarus/finiteElements/feBases/autodiffFE.hh>
+#include <ikarus/finiteElements/mechanics/displacementFE.hh>
+#include <ikarus/finiteElements/interface/feTraits.hh>
 #include <ikarus/finiteElements/interface/finiteElementFunctionConcepts.hh>
 #include <ikarus/finiteElements/interface/interfaceFiniteElement.hh>
 #include <ikarus/finiteElements/physicsHelper.hh>
@@ -40,26 +41,26 @@
 #include <ikarus/localFunctions/standardLocalFunction.hh>
 #include <ikarus/utils/linearAlgebraHelper.hh>
 #include <ikarus/utils/linearAlgebraTypedefs.hh>
-#include <ikarus/variables/variableDefinitions.hh>
+#include <ikarus/manifolds/realTuple.hh>
 
-namespace Ikarus::FiniteElements {
+namespace Ikarus {
 
   template <typename Basis>
-  class NonLinearElasticityFEWithLocalBasis
-      : public FEDisplacement<Basis>,
-        public Ikarus::AutoDiffFEClean<NonLinearElasticityFEWithLocalBasis<Basis>, Basis> {
+  class NonLinearElasticityFE
+      : public DisplacementFE<Basis>,
+        public Ikarus::AutoDiffFEClean<NonLinearElasticityFE<Basis>, Basis> {
   public:
-    using BaseDisp = Ikarus::FiniteElements::FEDisplacement<Basis>;  // Handles globalIndices function
-    using BaseAD   = Ikarus::AutoDiffFEClean<NonLinearElasticityFEWithLocalBasis<Basis>, Basis>;
+    using BaseDisp = DisplacementFE<Basis>;  // Handles globalIndices function
+    using BaseAD   = AutoDiffFEClean<NonLinearElasticityFE<Basis>, Basis>;
     using BaseAD::size;
-    using GlobalIndex = typename FEDisplacement<Basis>::GlobalIndex;
+    using GlobalIndex = typename DisplacementFE<Basis>::GlobalIndex;
     friend BaseAD;
     using FERequirementType = FErequirements<Eigen::VectorXd>;
     using LocalView         = typename Basis::LocalView;
 
     template <typename VolumeLoad>
-    NonLinearElasticityFEWithLocalBasis(Basis& globalBasis, const typename LocalView::Element& element, double emod,
-                                        double nu, const VolumeLoad& p_volumeLoad)
+    NonLinearElasticityFE(Basis& globalBasis, const typename LocalView::Element& element, double emod,
+                          double nu, const VolumeLoad& p_volumeLoad)
         : BaseDisp(globalBasis, element),
           BaseAD(globalBasis, element),
           localView_{globalBasis.localView()},
@@ -77,9 +78,9 @@ namespace Ikarus::FiniteElements {
 
   private:
     template <class ScalarType>
-    ScalarType calculateScalarImpl(const FERequirementType& par, Eigen::VectorX<ScalarType>& dx) const {
-      const auto& d      = par.sols[0].get();
-      const auto& lambda = par.parameter.at(FEParameter::loadfactor);
+    ScalarType calculateScalarImpl(const FERequirementType& req, Eigen::VectorX<ScalarType>& dx) const {
+      const auto& d      = req.getSolution(Ikarus::FESolutions::displacement);
+      const auto& lambda = req.getParameter(Ikarus::FEParameter::loadfactor);
 
       auto& first_child = localView_.tree().child(0);
       const auto& fe    = first_child.finiteElement();

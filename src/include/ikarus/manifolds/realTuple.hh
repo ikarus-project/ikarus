@@ -7,14 +7,13 @@
 
 #include <Eigen/Core>
 
-namespace Ikarus::Manifold {
+namespace Ikarus {
   /**
    * \brief FunctionReturnType of Euklidean space \f$\mathbb{R}^d\f$
    *
    * \tparam ct The type used for the scalar coordinate values, e.g. double, float
    * \tparam d Dimension of the embedding space of the manifold
    */
-
   template <typename ct, int d>
   class RealTuple {
   public:
