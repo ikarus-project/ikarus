@@ -32,7 +32,7 @@
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/geometry/type.hh>
 
-#include <ikarus/finiteElements/interface/fEPolicies.hh>
+#include <ikarus/finiteElements/interface/feTraits.hh>
 #include <ikarus/finiteElements/interface/finiteElementFunctionConcepts.hh>
 #include <ikarus/finiteElements/interface/interfaceFiniteElement.hh>
 #include <ikarus/finiteElements/physicsHelper.hh>
@@ -41,9 +41,10 @@
 #include <ikarus/localFunctions/standardLocalFunction.hh>
 #include <ikarus/utils/linearAlgebraHelper.hh>
 #include <ikarus/utils/linearAlgebraTypedefs.hh>
-#include <ikarus/variables/variableDefinitions.hh>
+#include <ikarus/manifolds/realTuple.hh>
+#include <ikarus/manifolds/unitVector.hh>
 
-namespace Ikarus::FiniteElements {
+namespace Ikarus {
 
   namespace Impl {
     template <typename Derived>
@@ -102,7 +103,7 @@ namespace Ikarus::FiniteElements {
     using MultiTypeVector                      = Dune::MultiTypeBlockVector<DirectorVector, VectorPotVector>;
 
     using FERequirementType      = FErequirements<MultiTypeVector>;
-    using ResultRequirementsType = ResultRequirements<FERequirementType>;
+    using ResultRequirementsType = ResultRequirements<MultiTypeVector>;
     using LocalViewEmbedded      = typename BasisEmbedded::LocalView;
     using LocalViewReduced       = typename BasisReduced::LocalView;
 
@@ -149,9 +150,9 @@ namespace Ikarus::FiniteElements {
       using namespace Dune::Indices;
       hred.setZero();
 
-      const auto& mNodal = par.sols[0].get()[_0];
-      const auto& ANodal = par.sols[0].get()[_1];
-      const auto& lambda = par.parameter.at(FEParameter::loadfactor);
+      const auto& mNodal = par.getSolution(Ikarus::FESolutions::magnetizationAndVectorPotential)[_0];
+      const auto& ANodal = par.getSolution(Ikarus::FESolutions::magnetizationAndVectorPotential)[_1];
+      const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
 
       const auto& child0 = localView_.tree().child(_0, 0);
       const auto& fe0    = child0.finiteElement();
@@ -255,9 +256,9 @@ namespace Ikarus::FiniteElements {
     void calculateVector(const FERequirementType& par, typename Traits::VectorType& rieGrad) const {
       rieGrad.setZero();
       using namespace Dune::Indices;
-      const auto& mNodal = par.sols[0].get()[_0];
-      const auto& ANodal = par.sols[0].get()[_1];
-      const auto& lambda = par.parameter.at(FEParameter::loadfactor);
+      const auto& mNodal = par.getSolution(Ikarus::FESolutions::magnetizationAndVectorPotential)[_0];
+      const auto& ANodal = par.getSolution(Ikarus::FESolutions::magnetizationAndVectorPotential)[_1];
+      const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
 
       auto& child0    = localView_.tree().child(_0, 0);
       const auto& fe0 = child0.finiteElement();
@@ -332,13 +333,12 @@ namespace Ikarus::FiniteElements {
       return this->calculateScalarImpl(par, dx);
     }
 
-    void calculateAt(const ResultRequirementsType& res, const Eigen::Vector<double, Traits::mydim>& local,
-                     Eigen::VectorXd& result) const {
+    void calculateAt(const ResultRequirementsType& req, const Eigen::Vector<double, Traits::mydim>& local,
+                     ResultTypeMap<double>& result) const {
       using namespace Dune::Indices;
-      const auto& mNodal = res.req.sols[0].get()[_0];
-      const auto& ANodal = res.req.sols[0].get()[_1];
-      const auto& lambda = res.req.parameter.at(FEParameter::loadfactor);
-
+      const auto& mNodal = req.getSolution(Ikarus::FESolutions::magnetizationAndVectorPotential)[_0];
+      const auto& ANodal = req.getSolution(Ikarus::FESolutions::magnetizationAndVectorPotential)[_1];
+      const auto& lambda = req.getParameter(Ikarus::FEParameter::loadfactor);
       auto& child0    = localView_.tree().child(_0, 0);
       const auto& fe0 = child0.finiteElement();
       auto& child1    = localView_.tree().child(_1, 0);
@@ -380,37 +380,38 @@ namespace Ikarus::FiniteElements {
 
       const Eigen::Vector<double, 3> curlA          = Impl::jacobianToCurl(gradA);
       const Eigen::Vector<double, directorDim> Hbar = volumeLoad(toEigenVector(gp), lambda);
-      switch (res.resType) {
-        case ResultType::gradientNormOfMagnetization:
-          result.resize(1);
-          result[0] = isInside ? gradm.norm() : 0.0;
-          return;
-        case ResultType::BField:
-          result.setZero(3);
-          result = curlA / (material.mu0 * material.ms) * std::sqrt(2.0);
-          return;
-        case ResultType::HField:
-          result.setZero(3);
-          result[0] = curlA[0] / (Dune::power(material.mu0, 2) * material.ms) * std::sqrt(2.0)
-                      - normalizedMag[0] * material.ms * static_cast<double>(isInside);
-          result[1] = curlA[1] / (Dune::power(material.mu0, 2) * material.ms) * std::sqrt(2.0)
-                      - normalizedMag[1] * material.ms * static_cast<double>(isInside);
-          if constexpr (directorDim == 3)
-            result[2] = curlA[2] / (Dune::power(material.mu0, 2) * material.ms) * std::sqrt(2.0)
-                        - normalizedMag[2] * material.ms * static_cast<double>(isInside);
-          return;
-        default:
-          DUNE_THROW(Dune::NotImplemented, "This result type is not implemented by this element");
+
+      typename ResultTypeMap<double>::ResultArray resv;
+      if( req.isResultRequested( ResultType::gradientNormOfMagnetization)) {
+        resv.resize(1,1);
+        resv(0,0)=isInside ? gradm.norm() : 0.0;
+        result.insertOrAssignResult(ResultType::gradientNormOfMagnetization,resv);
       }
+      if( req.isResultRequested( ResultType::BField)) {
+        resv = curlA/(material.mu0*material.ms)*std::sqrt(2.0);
+        result.insertOrAssignResult(ResultType::BField,resv);
+      }
+      if( req.isResultRequested( ResultType::HField)) {
+        resv.setZero(3,1);
+        resv(0,0) = curlA[0]/(Dune::power(material.mu0, 2)*material.ms)*std::sqrt(2.0)
+            - normalizedMag[0]*material.ms*static_cast<double>(isInside);
+        resv(1,0) = curlA[1]/(Dune::power(material.mu0, 2)*material.ms)*std::sqrt(2.0)
+            - normalizedMag[1]*material.ms*static_cast<double>(isInside);
+        if constexpr (directorDim==3)
+          resv(2,0) = curlA[2]/(Dune::power(material.mu0, 2)*material.ms)*std::sqrt(2.0)
+              - normalizedMag[2]*material.ms*static_cast<double>(isInside);
+        result.insertOrAssignResult(ResultType::HField,resv);
+      }
+
     }
 
   private:
     template <class ScalarType>
     ScalarType calculateScalarImpl(const FERequirementType& par, Eigen::VectorX<ScalarType>& dx_) const {
       using namespace Dune::Indices;
-      const auto& mNodal = par.sols[0].get()[_0];
-      const auto& ANodal = par.sols[0].get()[_1];
-      const auto& lambda = par.parameter.at(FEParameter::loadfactor);
+      const auto& mNodal = par.getSolution(Ikarus::FESolutions::magnetizationAndVectorPotential)[_0];
+      const auto& ANodal = par.getSolution(Ikarus::FESolutions::magnetizationAndVectorPotential)[_1];
+      const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
 
       auto& child0    = localView_.tree().child(_0, 0);
       const auto& fe0 = child0.finiteElement();

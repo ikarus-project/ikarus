@@ -20,12 +20,12 @@
 #include <Eigen/Core>
 
 #include <ikarus/assembler/simpleAssemblers.hh>
-#include <ikarus/finiteElements/autodiffFE.hh>
+#include <ikarus/finiteElements/feBases/autodiffFE.hh>
 #include <ikarus/localBasis/localBasis.hh>
 #include <ikarus/localFunctions/standardLocalFunction.hh>
+#include <ikarus/utils/algorithms.hh>
 #include <ikarus/utils/drawing/griddrawer.hh>
-#include <ikarus/utils/utils/algorithms.hh>
-#include <ikarus/variables/parameterFactory.hh>
+#include <ikarus/utils/linearAlgebraTypedefs.hh>
 
 using namespace Ikarus;
 using namespace Dune::Indices;
@@ -36,7 +36,7 @@ struct Solid : Ikarus::AutoDiffFEClean<Solid<Basis>, Basis> {
   using LocalView         = typename Basis::LocalView;
   using FERequirementType = typename BaseAD::FERequirementType;
   using Traits            = TraitsFromLocalView<LocalView>;
-  Solid(const Basis& basis, const typename LocalView::Element& element, double emod, double nu)
+  Solid(const Basis &basis, const typename LocalView::Element &element, double emod, double nu)
       : BaseAD(basis, element), localView_{basis.localView()}, emod_{emod}, nu_{nu} {
     localView_.bind(element);
 
@@ -45,14 +45,14 @@ struct Solid : Ikarus::AutoDiffFEClean<Solid<Basis>, Basis> {
   }
 
   using GlobalIndex = typename LocalView::MultiIndex;
-  void globalIndices(std::vector<GlobalIndex>& globalIndices) const {
-    const auto& feDisp = localView_.tree().child(_0, 0).finiteElement();
+  void globalIndices(std::vector<GlobalIndex> &globalIndices) const {
+    const auto &feDisp = localView_.tree().child(_0, 0).finiteElement();
     for (size_t i = 0; i < feDisp.size(); ++i) {
       for (int j = 0; j < Traits::worlddim; ++j) {
         globalIndices.push_back(localView_.index((localView_.tree().child(_0, j).localIndex(i))));
       }
     }
-    const auto& fePressure = localView_.tree().child(_1).finiteElement();
+    const auto &fePressure = localView_.tree().child(_1).finiteElement();
     for (size_t i = 0; i < fePressure.size(); ++i) {
       globalIndices.push_back(localView_.index((localView_.tree().child(_1).localIndex(i))));
     }
@@ -60,16 +60,16 @@ struct Solid : Ikarus::AutoDiffFEClean<Solid<Basis>, Basis> {
 
 private:
   template <class ScalarType>
-  [[nodiscard]] ScalarType calculateScalarImpl(const FERequirementType& par,
-                                               const Eigen::VectorX<ScalarType>& dx) const {
-    const auto& d      = par.sols[0].get();
-    const auto& lambda = par.parameter.at(FEParameter::loadfactor);
+  [[nodiscard]] ScalarType calculateScalarImpl(const FERequirementType &par,
+                                               const Eigen::VectorX<ScalarType> &dx) const {
+    const auto &d      = par.getSolution(Ikarus::FESolutions::displacement);
+    const auto &lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
     Eigen::VectorX<ScalarType> localDisp(localView_.size());
     localDisp.setZero();
-    auto& displacementNode = localView_.tree().child(_0, 0);
-    auto& pressureNode     = localView_.tree().child(_1);
-    const auto& feDisp     = displacementNode.finiteElement();
-    const auto& fePressure = pressureNode.finiteElement();
+    auto &displacementNode = localView_.tree().child(_0, 0);
+    auto &pressureNode     = localView_.tree().child(_1);
+    const auto &feDisp     = displacementNode.finiteElement();
+    const auto &fePressure = pressureNode.finiteElement();
     Eigen::Matrix<ScalarType, Traits::dimension, Eigen::Dynamic> disp;
     disp.setZero(Eigen::NoChange, feDisp.size());
     for (auto i = 0U; i < feDisp.size(); ++i)
@@ -84,14 +84,14 @@ private:
     ScalarType energy = 0.0;
 
     const int order  = 2 * (feDisp.localBasis().order());
-    const auto& rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
+    const auto &rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
     const auto geo   = localView_.element().geometry();
     Ikarus::LocalBasis localBasisDisp(feDisp.localBasis());
     Ikarus::LocalBasis localBasisPressure(fePressure.localBasis());
     Eigen::Matrix<double, Eigen::Dynamic, Traits::mydim> dNdisp;
     Eigen::VectorXd Ndisp;
     Eigen::VectorXd Npressure;
-    for (auto&& gp : rule) {
+    for (auto &&gp : rule) {
       const auto J = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
       localBasisDisp.evaluateFunctionAndJacobian(gp.position(), Ndisp, dNdisp);
       localBasisPressure.evaluateFunction(gp.position(), Npressure);
@@ -126,7 +126,7 @@ private:
   double lambdaMat;
 };
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   using namespace Dune::Functions;
   /// Construct grid
   Dune::MPIHelper::instance(argc, argv);
@@ -158,12 +158,12 @@ int main(int argc, char** argv) {
   const double Emod = 2.1e1;
   const double nu   = 0.5;
   std::vector<Solid<decltype(basis)>> fes;
-  for (auto& ele : elements(gridView))
+  for (auto &ele : elements(gridView))
     fes.emplace_back(basis, ele, Emod, nu);
 
   /// Collect dirichlet nodes
   std::vector<bool> dirichletFlags(basis.size(), false);
-  forEachBoundaryDOF(subspaceBasis(basis, _0), [&](auto&& localIndex, auto&& localView, auto&& intersection) {
+  forEachBoundaryDOF(subspaceBasis(basis, _0), [&](auto &&localIndex, auto &&localView, auto &&intersection) {
     if (std::abs(intersection.geometry().center()[1]) < 1e-8) dirichletFlags[localView.index(localIndex)[0]] = true;
   });
 
@@ -176,23 +176,25 @@ int main(int argc, char** argv) {
   Eigen::VectorXd d;
   d.setZero(basis.size());
 
-  auto fintFunction = [&](auto&& lambdalocal, auto&& dLocal) -> auto& {
-    Ikarus::FErequirements req;
-    req.sols.emplace_back(dLocal);
-    req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdalocal});
-    req.vectorAffordances = Ikarus::VectorAffordances::forces;
+  auto fintFunction = [&](auto &&lambdaLocal, auto &&dLocal) -> auto & {
+    Ikarus::FErequirements req = FErequirementsBuilder()
+                                     .setSolution(Ikarus::FESolutions::displacement, dLocal)
+                                     .setParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+                                     .setAffordance(Ikarus::VectorAffordances::forces)
+                                     .build();
     return denseFlatAssembler.getReducedVector(req);
   };
-  auto KFunction = [&](auto&& lambdalocal, auto&& dLocal) -> auto& {
-    Ikarus::FErequirements req;
-    req.sols.emplace_back(dLocal);
-    req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdalocal});
-    req.vectorAffordances = Ikarus::VectorAffordances::forces;
+  auto KFunction = [&](auto &&lambdaLocal, auto &&dLocal) -> auto & {
+    Ikarus::FErequirements req = FErequirementsBuilder()
+                                     .setSolution(Ikarus::FESolutions::displacement, dLocal)
+                                     .setParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+                                     .setAffordance(Ikarus::MatrixAffordances::stiffness)
+                                     .build();
     return sparseFlatAssembler.getReducedMatrix(req);
   };
 
-  auto K = KFunction(1, d);
-  auto R = fintFunction(1, d);
+  auto K = KFunction(1.0, d);
+  auto R = fintFunction(1.0, d);
   Eigen::SparseLU<decltype(K)> ld;
   ld.compute(K);
   if (ld.info() != Eigen::Success) assert(false && "Failed Compute");

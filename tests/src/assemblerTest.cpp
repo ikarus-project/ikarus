@@ -37,7 +37,7 @@ TEST(Assembler, SimpleAssemblersTest) {
 
     const auto& indexSet = gridView.indexSet();
 
-    std::vector<Ikarus::FiniteElements::NonLinearElasticityFEWithLocalBasis<decltype(basis)>> fes;
+    std::vector<Ikarus::NonLinearElasticityFE<decltype(basis)>> fes;
     const double Emodul = 1000;
     auto volumeLoad     = [](const auto& globalCoord, const auto& lamb) {  // FIXME makeAnalytic globa function
       Eigen::Vector2d fext;

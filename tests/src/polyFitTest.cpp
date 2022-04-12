@@ -10,7 +10,7 @@
 
 #include <Eigen/Core>
 
-#include <ikarus/utils/utils/polyfit.hh>
+#include <ikarus/utils/polyfit.hh>
 
 TEST(PolyFitTest, PolyFitTest1) {
   Eigen::VectorXd x = Eigen::VectorXd::LinSpaced(10, 0, 10);

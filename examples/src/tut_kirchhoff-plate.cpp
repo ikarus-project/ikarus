@@ -19,22 +19,22 @@
 
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/controlRoutines/loadControl.hh>
-#include <ikarus/finiteElements/autodiffFE.hh>
-#include <ikarus/finiteElements/interface/fEPolicies.hh>
+#include <ikarus/finiteElements/feBases/autodiffFE.hh>
+#include <ikarus/finiteElements/feBases/scalarFE.hh>
+#include <ikarus/finiteElements/interface/feTraits.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/localBasis/localBasis.hh>
 #include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
+#include <ikarus/utils/algorithms.hh>
 #include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 #include <ikarus/utils/observer/loadControlObserver.hh>
 #include <ikarus/utils/observer/nonLinearSolverLogger.hh>
-#include <ikarus/utils/utils/algorithms.hh>
 
 template <typename Basis>
-struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<Basis>,
-                        Ikarus::AutoDiffFEClean<KirchhoffPlate<Basis>, Basis> {
-  using BaseDisp = Ikarus::FiniteElements::ScalarFieldFE<Basis>;
+struct KirchhoffPlate : Ikarus::ScalarFieldFE<Basis>, Ikarus::AutoDiffFEClean<KirchhoffPlate<Basis>, Basis> {
+  using BaseDisp = Ikarus::ScalarFieldFE<Basis>;
   using BaseAD   = Ikarus::AutoDiffFEClean<KirchhoffPlate<Basis>, Basis>;
   using BaseAD::size;
   using LocalView         = typename Basis::LocalView;
@@ -66,8 +66,8 @@ struct KirchhoffPlate : Ikarus::FiniteElements::ScalarFieldFE<Basis>,
 
   template <class Scalar>
   [[nodiscard]] Scalar calculateScalarImpl(const FERequirementType& par, const Eigen::VectorX<Scalar>& dx) const {
-    const auto& wGlobal = par.sols[0].get();
-    const auto& lambda  = par.parameter.at(Ikarus::FEParameter::loadfactor);
+    const auto& wGlobal = par.getSolution(Ikarus::FESolutions::displacement);
+    const auto& lambda  = par.getParameter(Ikarus::FEParameter::loadfactor);
     const auto D        = constitutiveMatrix(Emodul, nu, thickness);
     Scalar energy       = 0.0;
     auto& ele           = localView_.element();
@@ -208,19 +208,21 @@ int main() {
 
     const double totalLoad = 2000;
 
-    auto kFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
-      Ikarus::FErequirements req;
-      req.sols.emplace_back(disp);
-      req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
-      req.matrixAffordances = Ikarus::MatrixAffordances::stiffness;
+    auto kFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
+      Ikarus::FErequirements req = FErequirementsBuilder()
+                                       .setSolution(Ikarus::FESolutions::displacement, disp_)
+                                       .setParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+                                       .setAffordance(Ikarus::MatrixAffordances::stiffness)
+                                       .build();
       return denseAssembler.getMatrix(req);
     };
 
-    auto rFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
-      Ikarus::FErequirements req;
-      req.sols.emplace_back(disp);
-      req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
-      req.vectorAffordances = Ikarus::VectorAffordances::forces;
+    auto rFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
+      Ikarus::FErequirements req = FErequirementsBuilder()
+                                       .setSolution(Ikarus::FESolutions::displacement, disp_)
+                                       .setParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+                                       .setAffordance(Ikarus::VectorAffordances::forces)
+                                       .build();
       return denseAssembler.getVector(req);
     };
 
