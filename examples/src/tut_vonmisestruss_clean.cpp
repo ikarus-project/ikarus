@@ -32,9 +32,9 @@
 
 using namespace Ikarus;
 template <typename Basis>
-struct Truss : Ikarus::DisplacementFE<Basis>, Ikarus::AutoDiffFEClean<Truss<Basis>, Basis> {
+struct Truss : Ikarus::DisplacementFE<Basis>, Ikarus::AutoDiffFE<Truss<Basis>, Basis> {
   using BaseDisp = Ikarus::DisplacementFE<Basis>;
-  using BaseAD   = Ikarus::AutoDiffFEClean<Truss<Basis>, Basis>;
+  using BaseAD   = Ikarus::AutoDiffFE<Truss<Basis>, Basis>;
   using BaseAD::size;
   friend BaseAD;
   using LocalView         = typename Basis::LocalView;
@@ -116,9 +116,9 @@ int main() {
 
   auto RFunction = [&](auto&& u, auto&& lambdaLocal) -> auto& {
     Ikarus::FErequirements req = FErequirementsBuilder()
-                                     .setSolution(Ikarus::FESolutions::displacement, u)
-                                     .setParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
-                                     .setAffordance(Ikarus::VectorAffordances::forces)
+        .insertGlobalSolution(Ikarus::FESolutions::displacement, u)
+        .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+        .addAffordance(Ikarus::VectorAffordances::forces)
                                      .build();
     auto& R = denseFlatAssembler.getVector(req);
     R[3] -= -lambdaLocal;
@@ -126,9 +126,9 @@ int main() {
   };
   auto KFunction = [&](auto&& u, auto&& lambdaLocal) -> auto& {
     Ikarus::FErequirements req = FErequirementsBuilder()
-                                     .setSolution(Ikarus::FESolutions::displacement, u)
-                                     .setParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
-                                     .setAffordance(Ikarus::MatrixAffordances::stiffness)
+        .insertGlobalSolution(Ikarus::FESolutions::displacement, u)
+        .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+        .addAffordance(Ikarus::MatrixAffordances::stiffness)
                                      .build();
     return denseFlatAssembler.getMatrix(req);
   };

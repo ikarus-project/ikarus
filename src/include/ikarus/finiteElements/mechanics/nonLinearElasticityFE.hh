@@ -48,10 +48,10 @@ namespace Ikarus {
   template <typename Basis>
   class NonLinearElasticityFE
       : public DisplacementFE<Basis>,
-        public Ikarus::AutoDiffFEClean<NonLinearElasticityFE<Basis>, Basis> {
+        public Ikarus::AutoDiffFE<NonLinearElasticityFE<Basis>, Basis> {
   public:
     using BaseDisp = DisplacementFE<Basis>;  // Handles globalIndices function
-    using BaseAD   = AutoDiffFEClean<NonLinearElasticityFE<Basis>, Basis>;
+    using BaseAD   = AutoDiffFE<NonLinearElasticityFE<Basis>, Basis>;
     using BaseAD::size;
     using GlobalIndex = typename DisplacementFE<Basis>::GlobalIndex;
     friend BaseAD;
@@ -81,6 +81,8 @@ namespace Ikarus {
     ScalarType calculateScalarImpl(const FERequirementType& req, Eigen::VectorX<ScalarType>& dx) const {
       const auto& d      = req.getSolution(Ikarus::FESolutions::displacement);
       const auto& lambda = req.getParameter(Ikarus::FEParameter::loadfactor);
+      if(req.hasAffordance(stiffness))
+        ...
 
       auto& first_child = localView_.tree().child(0);
       const auto& fe    = first_child.finiteElement();

@@ -12,19 +12,18 @@ In the code, there is not one single class which performs all these tasks. Diffe
 different classes, which are described in the following. Especially, the description of the geometry is
 decoupled from the task to provide physical meaning. The following content is only about the 
 **description of the element geometry**. Details on 
-[the implementation of physical quantities can be found here](FiniteElements.md).
+[the implementation of physical quantities can be found here](finiteElements.md).
 
 On this page, we will go through it using the following example:
 ![umlDiagram](diagrams/UMLGrid.drawio)
-
 ## Grid
 The grid is a collection of grid entities. In the example above, the grid consists of three surfaces, 
 ten edges and eight vertices, i.e. it consists of 21 grid entities. Since it is some work to construct all
-these quantities and their relations, there is the [grid factory](theoryGrid.md#grid-factory) 
+these quantities and their relations, there is the [grid factory](grid.md#grid-factory) 
 which does this job.
 
 ### Interface of the grid
-- `leafGridView()`: returns a [grid view](theoryGrid.md#grid-view), 
+- `leafGridView()`: returns a [grid view](grid.md#grid-view), 
 i.e. an object which can iterate over the grid. 
 
 ### Available grid implementations

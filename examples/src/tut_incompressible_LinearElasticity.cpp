@@ -30,8 +30,8 @@
 using namespace Ikarus;
 using namespace Dune::Indices;
 template <typename Basis>
-struct Solid : Ikarus::AutoDiffFEClean<Solid<Basis>, Basis> {
-  using BaseAD = Ikarus::AutoDiffFEClean<Solid<Basis>, Basis>;
+struct Solid : Ikarus::AutoDiffFE<Solid<Basis>, Basis> {
+  using BaseAD = Ikarus::AutoDiffFE<Solid<Basis>, Basis>;
   friend BaseAD;
   using LocalView         = typename Basis::LocalView;
   using FERequirementType = typename BaseAD::FERequirementType;
@@ -178,17 +178,17 @@ int main(int argc, char **argv) {
 
   auto fintFunction = [&](auto &&lambdaLocal, auto &&dLocal) -> auto & {
     Ikarus::FErequirements req = FErequirementsBuilder()
-                                     .setSolution(Ikarus::FESolutions::displacement, dLocal)
-                                     .setParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
-                                     .setAffordance(Ikarus::VectorAffordances::forces)
+        .insertGlobalSolution(Ikarus::FESolutions::displacement, dLocal)
+        .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+        .addAffordance(Ikarus::VectorAffordances::forces)
                                      .build();
     return denseFlatAssembler.getReducedVector(req);
   };
   auto KFunction = [&](auto &&lambdaLocal, auto &&dLocal) -> auto & {
     Ikarus::FErequirements req = FErequirementsBuilder()
-                                     .setSolution(Ikarus::FESolutions::displacement, dLocal)
-                                     .setParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
-                                     .setAffordance(Ikarus::MatrixAffordances::stiffness)
+        .insertGlobalSolution(Ikarus::FESolutions::displacement, dLocal)
+        .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+        .addAffordance(Ikarus::MatrixAffordances::stiffness)
                                      .build();
     return sparseFlatAssembler.getReducedMatrix(req);
   };

@@ -42,13 +42,13 @@ void factorize(const MatrixType& A); // (2)
 ILinearSolver& compute(const MatrixType& A); // (3)
 void solve(Eigen::VectorX<ScalarType>&x, const Eigen::VectorX<ScalarType>& b); // (4)
 ```
+
 1. If the matrix is sparse Eigen can collect information on the sparsity pattern of the matrix for faster a faster `solve` step. This pattrern does not change if you change the values of the non-zero entries.
 2. This method applies some decomposition for direct solvers e.g. LU decomposition. For iterative solvers the method is a noOp.
 3. Compute simply calls 'analyzePattern' and 'factorize'.
 4. Solves the problem and stores the result in `x`.
 
-!!! note 
-
+!!! tip
     If your algorithm in mind does rely on special features of some linear solver then you have to directly use this solver.
     E.g. if you need the `.determinant()` method of `Eigen::SimplicialLDLT` you need to directly use it since `ILinearSolver`does not support this method.
 
@@ -71,12 +71,12 @@ auto& nonLinearOperator(); // (3)
 1. With this function several properties of the nonlinear solver can be set. E.g. residual tolerance or maximum number of iterations.
 2. Solves the non-linear problem. One can pass an initial guess to the function. Otherwise the zero vector is assumed. 
    It returns`SolverInformation` which contains information on the sucess of the solution step and other information as the needed iterations. 
-3. Simply returns the underlying 
+3. Simply returns the underlying `nonLinearOperator`, see [Link](nonlinearOperator.md)
 
 !!! note
-    To easy the construction process the Nonlinear solver can provide a method `make[...]` which allows shorter syntax.
+    To easy the construction process the Nonlinear solver can provide a method `make[...]` which allows shorter syntax,
     since no `std::shared_ptr` has to be constructed and specifying all template arguments. 
-    The construction of the nonlinear solvers can be very differnt therefore we do not impose and interface for the constructors.
+    The construction of the nonlinear solvers can be very different. Therefore we do not impose an interface for the constructors.
 ### Implementations
 | Name                      | Purpose         | Constraints on nonlinear operator                       | Header |Properties |
 |:--------------------------|:----------------|:----------------|--|--|

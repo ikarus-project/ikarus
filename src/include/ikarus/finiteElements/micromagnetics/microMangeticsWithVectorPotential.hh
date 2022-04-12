@@ -402,7 +402,6 @@ namespace Ikarus {
               - normalizedMag[2]*material.ms*static_cast<double>(isInside);
         result.insertOrAssignResult(ResultType::HField,resv);
       }
-
     }
 
   private:
