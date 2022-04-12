@@ -11,7 +11,7 @@
 
 #include <spdlog/spdlog.h>
 
-#include <ikarus/utils/utils/findLineSegment.hh>
+#include "findLineSegment.hh"
 
 /*
  * The checkgradient function is inspired by http://sma.epfl.ch/~nboumal/book/  Chapter 4.8 and

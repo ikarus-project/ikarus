@@ -22,7 +22,7 @@
 #include <ikarus/utils/linearAlgebraHelper.hh>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observerMessages.hh>
-#include <ikarus/utils/utils/traits.hh>
+#include <ikarus/utils/traits.hh>
 
 namespace Ikarus {
 
@@ -120,9 +120,10 @@ namespace Ikarus {
 
     struct NoPredictor {};
     template <typename SolutionType = NoPredictor>
-    requires std::is_same_v<SolutionType, NoPredictor> || std::is_convertible_v<
-        SolutionType, std::remove_cvref_t<typename NonLinearOperatorImpl::ValueType>>
-        TRSolverInformation solve(const SolutionType& dx_predictor = NoPredictor{}) {
+      requires std::is_same_v<
+                   SolutionType,
+                   NoPredictor> || std::is_convertible_v<SolutionType, std::remove_cvref_t<typename NonLinearOperatorImpl::ValueType>>
+    TRSolverInformation solve(const SolutionType& dx_predictor = NoPredictor{}) {
       this->notify(NonLinearSolverMessages::INIT);
       stats = Stats{};
       info  = AlgoInfo{};

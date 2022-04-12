@@ -14,7 +14,7 @@
 #include <Eigen/Core>
 
 #include <ikarus/manifolds/realTuple.hh>
-#include <ikarus/utils/utils/algorithms.hh>
+#include <ikarus/utils/algorithms.hh>
 #include <ikarus/variables/interfaceVariable.hh>
 #include <ikarus/variables/variableDefinitions.hh>
 
@@ -22,7 +22,7 @@ static constexpr double tol = 1e-15;
 
 TEST(DefaultVariableTest, UnitVectorDirector) {
   using namespace Ikarus;
-  UnitVector<double,3> a{UnitVector<double,3>::CoordinateType::UnitZ()};
+  UnitVector<double, 3> a{UnitVector<double, 3>::CoordinateType::UnitZ()};
   a.update(Eigen::Vector<double, 2>::UnitX());
   const auto aExpected = Eigen::Vector<double, 3>(1.0 / sqrt(2), 0.0, 1.0 / sqrt(2));
   EXPECT_THAT(a.getValue(), EigenApproxEqual(aExpected, tol));
@@ -36,7 +36,7 @@ TEST(DefaultVariableTest, UnitVectorDirector) {
                                                                       -0.14644660940672621363),
                                              tol));
 
-  UnitVector<double,3> b{a};
+  UnitVector<double, 3> b{a};
 
   EXPECT_THAT(b.getValue(), EigenApproxEqual(Eigen::Vector<double, 3>(0.5, 1.0 / sqrt(2), 0.5), tol));
 

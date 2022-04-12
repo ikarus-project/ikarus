@@ -30,7 +30,7 @@
 #include <ikarus/utils/functionSanityChecks.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 #include <ikarus/utils/observer/genericControlObserver.hh>
-#include <ikarus/utils/utils/algorithms.hh>
+#include "src/include/ikarus/utils/algorithms.hh"
 
 constexpr int magnetizationOrder = 1;
 constexpr int vectorPotOrder = 1;

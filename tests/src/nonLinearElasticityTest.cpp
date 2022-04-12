@@ -23,9 +23,9 @@
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
 #include <ikarus/solver/nonLinearSolver/trustRegion.hh>
+#include <ikarus/utils/algorithms.hh>
 #include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
-#include <ikarus/utils/utils/algorithms.hh>
 
 template <typename T>
 class NonLinearElasticityLoadControlNRandTR : public testing::Test {
