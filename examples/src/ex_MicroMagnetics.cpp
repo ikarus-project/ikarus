@@ -261,25 +261,28 @@ int main(int argc, char **argv) {
 
   auto residualFunction = [&](auto &&disp, auto &&lambdaLocal) -> auto & {
     Ikarus::FErequirements req =
-        FErequirementsBuilder<MultiTypeVector>().setSolution(Ikarus::FESolutions::magnetizationAndVectorPotential,
-                                                             disp).setParameter(Ikarus::FEParameter::loadfactor,
-                                                                                lambdaLocal).setAffordance(Ikarus::VectorAffordances::microMagneticForces).build();
+        FErequirementsBuilder<MultiTypeVector>().insertGlobalSolution(Ikarus::FESolutions::magnetizationAndVectorPotential,
+                                                                      disp).insertParameter(Ikarus::FEParameter::loadfactor,
+                                                                                            lambdaLocal).addAffordance(
+            Ikarus::VectorAffordances::microMagneticForces).build();
     return denseAssembler.getReducedVector(req);
   };
 
   auto hessianFunction = [&](auto &&disp, auto &&lambdaLocal) -> auto & {
     Ikarus::FErequirements req =
-        FErequirementsBuilder<MultiTypeVector>().setSolution(Ikarus::FESolutions::magnetizationAndVectorPotential,
-                                                             disp).setParameter(Ikarus::FEParameter::loadfactor,
-                                                                                lambdaLocal).setAffordance(Ikarus::MatrixAffordances::microMagneticHessian).build();
+        FErequirementsBuilder<MultiTypeVector>().insertGlobalSolution(Ikarus::FESolutions::magnetizationAndVectorPotential,
+                                                                      disp).insertParameter(Ikarus::FEParameter::loadfactor,
+                                                                                            lambdaLocal).addAffordance(
+            Ikarus::MatrixAffordances::microMagneticHessian).build();
     return sparseAssembler.getReducedMatrix(req);
   };
 
   auto energyFunction = [&](auto &&disp, auto &&lambdaLocal) -> auto {
     Ikarus::FErequirements req =
-        FErequirementsBuilder<MultiTypeVector>().setSolution(Ikarus::FESolutions::magnetizationAndVectorPotential,
-                                                             disp).setParameter(Ikarus::FEParameter::loadfactor,
-                                                                                lambdaLocal).setAffordance(Ikarus::ScalarAffordances::microMagneticPotentialEnergy).build();
+        FErequirementsBuilder<MultiTypeVector>().insertGlobalSolution(Ikarus::FESolutions::magnetizationAndVectorPotential,
+                                                                      disp).insertParameter(Ikarus::FEParameter::loadfactor,
+                                                                                            lambdaLocal).addAffordance(
+            Ikarus::ScalarAffordances::microMagneticPotentialEnergy).build();
 
     return denseAssembler.getScalar(req);
   };
@@ -325,9 +328,9 @@ int main(int argc, char **argv) {
     vtkWriter.addVertexData(AGlobalFunc, Dune::VTK::FieldInfo("A", Dune::VTK::FieldInfo::Type::vector, vectorPotDim));
 
     auto resultRequirements = Ikarus::ResultRequirementsBuilder<MultiTypeVector>()
-        .setSolution(Ikarus::FESolutions::magnetizationAndVectorPotential, mAndABlocked)
-        .setParameter(Ikarus::FEParameter::loadfactor, lambda)
-        .setResultRequest({ResultType::gradientNormOfMagnetization,ResultType::BField,ResultType::HField}).build();
+        .insertGlobalSolution(Ikarus::FESolutions::magnetizationAndVectorPotential, mAndABlocked)
+              .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
+        .addResultRequest(ResultType::gradientNormOfMagnetization,ResultType::BField,ResultType::HField).build();
     auto localmFunction = localFunction(mGlobalFunc);
 
     auto ele = elements(gridView).begin();

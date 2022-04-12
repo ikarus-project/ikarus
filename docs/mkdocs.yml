@@ -51,11 +51,12 @@ nav:
   - Theory and Class Reference:
     - Overview: 01_theory/overview.md
     - Interface vs. Implementation: 01_theory/interfaceVSimplementation.md
-    - Geometry: 01_theory/theoryGeometry.md
-    - Grid: 01_theory/theoryGrid.md
-    - Finite Elements: 01_theory/FiniteElements.md
+    - Geometry: 01_theory/geometry.md
+    - Grid: 01_theory/grid.md
+    - FE requirements: 01_theory/feRequirements.md
+    - Finite Elements: 01_theory/finiteElements.md
     - Assembler: 01_theory/Assembler.md
-    - NonlinearOperator: 01_theory/NonlinearOperator.md
+    - NonlinearOperator: 01_theory/nonlinearOperator.md
     - Control routines: 01_theory/ControlRoutines.md
     - Local basis: 01_theory/LocalBasis.md
     - Local functions: 01_theory/LocalFunctions.md

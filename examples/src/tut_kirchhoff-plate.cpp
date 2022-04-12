@@ -33,9 +33,9 @@
 #include <ikarus/utils/observer/nonLinearSolverLogger.hh>
 
 template <typename Basis>
-struct KirchhoffPlate : Ikarus::ScalarFieldFE<Basis>, Ikarus::AutoDiffFEClean<KirchhoffPlate<Basis>, Basis> {
+struct KirchhoffPlate : Ikarus::ScalarFieldFE<Basis>, Ikarus::AutoDiffFE<KirchhoffPlate<Basis>, Basis> {
   using BaseDisp = Ikarus::ScalarFieldFE<Basis>;
-  using BaseAD   = Ikarus::AutoDiffFEClean<KirchhoffPlate<Basis>, Basis>;
+  using BaseAD   = Ikarus::AutoDiffFE<KirchhoffPlate<Basis>, Basis>;
   using BaseAD::size;
   using LocalView         = typename Basis::LocalView;
   using FERequirementType = typename BaseAD::FERequirementType;
@@ -210,18 +210,18 @@ int main() {
 
     auto kFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
       Ikarus::FErequirements req = FErequirementsBuilder()
-                                       .setSolution(Ikarus::FESolutions::displacement, disp_)
-                                       .setParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
-                                       .setAffordance(Ikarus::MatrixAffordances::stiffness)
+          .insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
+          .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+          .addAffordance(Ikarus::MatrixAffordances::stiffness)
                                        .build();
       return denseAssembler.getMatrix(req);
     };
 
     auto rFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
       Ikarus::FErequirements req = FErequirementsBuilder()
-                                       .setSolution(Ikarus::FESolutions::displacement, disp_)
-                                       .setParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
-                                       .setAffordance(Ikarus::VectorAffordances::forces)
+          .insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
+          .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+          .addAffordance(Ikarus::VectorAffordances::forces)
                                        .build();
       return denseAssembler.getVector(req);
     };
