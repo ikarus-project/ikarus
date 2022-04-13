@@ -42,7 +42,9 @@ docs_dir: 'website'
 nav:
   - Home: index.md
   - Download: download.md
-  - How to contribute: howtocontribute.md
+  - How to contribute:
+    - Open Tasks: openTask.md
+    - Code style: codeStyle.md
   - Documentation:
     - How to edit the documentation: documentation/howToEdit.md
     - Build the documentation locally: documentation/BuildTheDocumentationLocally.md

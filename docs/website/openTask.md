@@ -1,4 +1,4 @@
-# How to contribute
+# Open tasks
 Thanks for your interest in contributing to this code base.
 If your are interested the following task are vacant.
 
@@ -34,8 +34,6 @@ If your are interested the following task are vacant.
 ### Local Basis 
 * Support second derivatives
 
-
-
 ### Addons
 * Add Python binding [pybind11](https://github.com/pybind/pybind11)
 * Add [Muesli](https://materials.imdea.org/muesli/)
@@ -43,16 +41,8 @@ If your are interested the following task are vacant.
 [^KLNote]: This is usually needed for a Kirchhoff-Love shell implementation, see [@kiendlKLshell].
 
 
-### Code style
-* The directories and filenames use `camelCase`
-* The source files have a `cpp` extension and the header files `hh`.
-* Every public member function or free function needs a brief description `/* */`
-* We also use a `clang-format` file which needs to be executed in each file before a PR can be merged
-* For comments in the code we follow:
-!!! cite "Quote of Robert Martin in [VideoLink](https://www.youtube.com/watch?v=2a_ytyt9sf8&list=PLmmYSbUCWJ4x1GO839azG_BBw8rkh-zOj)"
-          "The proper use of comments is: 
-          To compensate for our failure to express ourselves in code."
-       Thus lots of comments should not be interpreted as good programming style but they should be sign as a failure to express ourselves.
+!!! note  "Code style"
+For details on our code style we refer to [Link](codeStyle.md).
 
 
 \bibliography 
