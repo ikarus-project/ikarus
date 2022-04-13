@@ -7,7 +7,7 @@ Scott Meyers recommends the following algorithm: [Link](http://cpptips.com/nmemf
 ### When to use const?
 1. [Arthur O'Dwyer blog](https://quuxplusone.github.io/blog/2022/01/23/dont-const-all-the-things/)
 
-### How should i pass my parameters to a function?
+### How should i pass my parameters to a function and return from a function?
 1. [Herb Sutter Cppcon Talk 2014](https://youtu.be/xnqTKD8uD64?t=3318)
 
 ## Best practices
@@ -23,7 +23,8 @@ Scott Meyers recommends the following algorithm: [Link](http://cpptips.com/nmemf
 Also Eigen can be added. Also any other header found on the internet can be include with the link.
 
 ## Videos
-Here we collect usefull videos on coding or coding c++
+Here we collect usefull videos on coding or coding c++:
+
 - [Clean Code - Uncle Bob / Lesson 1](https://www.youtube.com/watch?v=7EmboKQH8lM) How to write code cleanly, see also [@martinclean]
 - [CppCon 2014: Herb Sutter "Back to the Basics! Essentials of Modern C++ Style"](https://youtu.be/xnqTKD8uD64)
 - [CppCon 2018: Jonathan Boccara “105 STL Algorithms in Less Than an Hour”](https://www.youtube.com/watch?v=2olsGf6JIkU) "Almost" all algorithms in the STL
