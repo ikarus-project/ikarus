@@ -44,7 +44,7 @@ double& getScalar(const RequirementType& fErequirements)
 ```
 This assembler can be used when you are only interested in a scalar quantity
 and assembling of matrices or vectors is not relevant for you.
-The available requirements are explained in [the available requirements section](#available-requirements) below.
+The available requirements are explained on the [FE requirements page](feRequirements.md).
 `dirichletFlags` is not used in this assembler.
 
 It assembles the reqested scalar quantity. A call to this function could look as follows:
@@ -55,7 +55,7 @@ const auto& K = myAssembler.getScalar(energy) // (2)
 ```
 
 1. This line represents the construction of the SparseFlatAssembler as explained above.
-2. To learn what alternatives for `energy` are available and how this works, read [the available requirements section](#available-requirements) below.
+2. To learn what alternatives for `energy` are available and how this works, read the [FE requirements page](feRequirements.md).
 
 
 ## VectorFlatAssembler
@@ -66,7 +66,7 @@ Eigen::VectorXd& getReducedVector(const RequirementType& fErequirements)
 ```
 As the name suggests, you can either get the full vector or the reduced vector where boundary conditions are considered.
 They work the same way as the scalar assembling functions of [ScalarAssembler](#scalarassembler).
-The available requirements are explained in [the available requirements section](#available-requirements) below.
+The available requirements are explained on the [FE requirements page](feRequirements.md).
 
 
 ## SparseFlatAssembler
@@ -77,7 +77,7 @@ Eigen::SparseMatrix<double> &getReducedMatrix(const RequirementType &fErequireme
 ```
 A sparse matrix is returned.
 They work the same way as the vector assembling functions of [VectorFlatAssembler](#vectorflatassembler).
-The available requirements are explained in [the available requirements section](#available-requirements) below.
+The available requirements are explained on the [FE requirements page](feRequirements.md).
 
 
 
@@ -88,7 +88,3 @@ DenseFlatAssembler returns a dense matrix.
 Eigen::MatrixXd &getMatrix(const RequirementType &fErequirements)
 Eigen::MatrixXd &getReducedMatrix(const RequirementType &fErequirements)
 ```
-
-
-## Available requirements
-ToDo own page
