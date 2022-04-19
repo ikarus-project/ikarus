@@ -28,9 +28,35 @@
 #include <ikarus/localFunctions/projectionBasedLocalFunction.hh>
 #include <ikarus/localFunctions/standardLocalFunction.hh>
 #include <ikarus/utils/functionSanityChecks.hh>
-#include <ikarus/variables/variableDefinitions.hh>
+#include <ikarus/manifolds/unitVector.hh>
+#include <ikarus/manifolds/realTuple.hh>
+#include <dune/common/classname.hh>
 
-const double tol = 1e-15;
+
+
+TEST(LocalFunctionTests,TestInterface)
+{
+  using namespace Ikarus::DerivativeDirections;
+  auto wrt1 = Ikarus::wrt(spatial(0),coeff(7)) ;
+
+  auto counter = countDerivativesType<decltype(wrt1),1>();
+
+  EXPECT_EQ(counter.singleCoeffDerivs,1);
+  EXPECT_EQ(counter.twoCoeffDerivs,0);
+  EXPECT_EQ(counter.spatialDerivs,1);
+  EXPECT_EQ(counter.spatialAll,0);
+
+  auto wrt2 = Ikarus::wrt(spatialall,coeff(7,1)) ;
+
+  counter = countDerivativesType<decltype(wrt2),1>();
+
+  EXPECT_EQ(counter.singleCoeffDerivs,0);
+  EXPECT_EQ(counter.twoCoeffDerivs,1);
+  EXPECT_EQ(counter.spatialDerivs,0);
+  EXPECT_EQ(counter.spatialAll,1);
+}
+
+
 using namespace Dune::Functions::BasisFactory;
 
 template <typename T>
@@ -123,49 +149,48 @@ TYPED_TEST(LocalFunctionProjectionBasedUnitVector, ProjectionBasedUnitVector) {
 
       const Eigen::Vector<double, size> testVec = Eigen::Vector<double, size>::UnitX();
       for (size_t i = 0; i < fe.size(); ++i) {
-        const auto jacobianWRTCoeffs = localF.evaluateDerivative(gpIndex, wrt(coeffs), coeffIndices(i));
+        const auto jacobianWRTCoeffs = localF.evaluateDerivative(gpIndex, wrt(coeff(i)));
         EXPECT_THAT(jacobianWRTCoeffs, EigenApproxEqual((vBlockedLocal[i].orthonormalFrame()).transpose()
                                                             * Jdual.block<size, size>(0, i * size),
                                                         1e-15));
 
         const auto Warray
-            = localF.evaluateDerivative(gpIndex, wrt(coeffs, spatialall), transformWith(Jinv), coeffIndices(i));
+            = localF.evaluateDerivative(gpIndex, wrt(coeff(i), spatialall), transformWith(Jinv));
         const auto Warray2
-            = localF.evaluateDerivative(gpIndex, wrt(spatialall, coeffs), transformWith(Jinv), coeffIndices(i));
+            = localF.evaluateDerivative(gpIndex, wrt(spatialall, coeff(i)), transformWith(Jinv));
         for (int j = 0; j < 2; ++j)
           EXPECT_THAT(Warray[j], EigenApproxEqual(Warray2[j], 1e-15));
 
         const auto W0
-            = localF.evaluateDerivative(gpIndex, wrt(coeffs, spatial(0)), transformWith(Jinv), coeffIndices(i));
+            = localF.evaluateDerivative(gpIndex, wrt(coeff(i), spatial(0)), transformWith(Jinv));
         const auto W1
-            = localF.evaluateDerivative(gpIndex, wrt(coeffs, spatial(1)), transformWith(Jinv), coeffIndices(i));
+            = localF.evaluateDerivative(gpIndex, wrt(coeff(i), spatial(1)), transformWith(Jinv));
 
         EXPECT_THAT(Warray[0], EigenApproxEqual(W0, 1e-15));
         EXPECT_THAT(Warray[1], EigenApproxEqual(W1, 1e-15));
 
-        const auto Warrayun  = localF.evaluateDerivative(gpIndex, wrt(coeffs, spatialall), coeffIndices(i));
-        const auto Warray2un = localF.evaluateDerivative(gpIndex, wrt(spatialall, coeffs), coeffIndices(i));
+        const auto Warrayun  = localF.evaluateDerivative(gpIndex, wrt(coeff(i), spatialall));
+        const auto Warray2un = localF.evaluateDerivative(gpIndex, wrt(spatialall, coeff(i)));
         for (int j = 0; j < 2; ++j)
           EXPECT_THAT(Warrayun[j], EigenApproxEqual(Warray2un[j], 1e-15));
 
-        const auto W0un = localF.evaluateDerivative(gpIndex, wrt(coeffs, spatial(0)), coeffIndices(i));
-        const auto W1un = localF.evaluateDerivative(gpIndex, wrt(coeffs, spatial(1)), coeffIndices(i));
+        const auto W0un = localF.evaluateDerivative(gpIndex, wrt(coeff(i), spatial(0)));
+        const auto W1un = localF.evaluateDerivative(gpIndex, wrt(coeff(i), spatial(1)));
 
         EXPECT_THAT(Warrayun[0], EigenApproxEqual(W0un, 1e-15));
         EXPECT_THAT(Warrayun[1], EigenApproxEqual(W1un, 1e-15));
-        const auto Sun = localF.evaluateDerivative(gpIndex, wrt(coeffs, coeffs), along(testVec), coeffIndices(i, i));
+        const auto Sun = localF.evaluateDerivative(gpIndex, wrt(coeff(i,i)), along(testVec));
 
-        const auto S = localF.evaluateDerivative(gpIndex, wrt(coeffs, coeffs), along(testVec), transformWith(Jinv),
-                                                 coeffIndices(i, i));
+        const auto S = localF.evaluateDerivative(gpIndex, wrt(coeff(i,i)), along(testVec), transformWith(Jinv));
 
-        const auto chi = localF.evaluateDerivative(gpIndex, wrt(spatialall, coeffs, coeffs), along(testVec),
-                                                   transformWith(Jinv), coeffIndices(i, i));
+        const auto chi = localF.evaluateDerivative(gpIndex, wrt(spatialall, coeff(i,i)), along(testVec),
+                                                   transformWith(Jinv));
 
-        const auto chi0 = localF.evaluateDerivative(gpIndex, wrt(spatial(0), coeffs, coeffs), along(testVec),
-                                                    transformWith(Jinv), coeffIndices(i, i));
+        const auto chi0 = localF.evaluateDerivative(gpIndex, wrt(spatial(0), coeff(i,i)), along(testVec),
+                                                    transformWith(Jinv));
 
-        const auto chi1 = localF.evaluateDerivative(gpIndex, wrt(spatial(1), coeffs, coeffs), along(testVec),
-                                                    transformWith(Jinv), coeffIndices(i, i));
+        const auto chi1 = localF.evaluateDerivative(gpIndex, wrt(spatial(1), coeff(i,i)), along(testVec),
+                                                    transformWith(Jinv));
 
         EXPECT_THAT(chi[0], EigenApproxEqual(chi0, 1e-15));
         EXPECT_THAT(chi[1], EigenApproxEqual(chi1, 1e-15));
@@ -276,31 +301,31 @@ TYPED_TEST(LocalFunctionVector, Test1) {
 
       const Eigen::Vector<double, size> testVec = Eigen::Vector<double, size>::UnitX();
       for (size_t i = 0; i < fe.size(); ++i) {
-        const auto jacobianWRTCoeffs = localF.evaluateDerivative(gpIndex, wrt(coeffs), coeffIndices(i));
+        const auto jacobianWRTCoeffs = localF.evaluateDerivative(gpIndex, wrt(coeff(i)));
         EXPECT_THAT(jacobianWRTCoeffs, EigenApproxEqual(Jdual.block<size, size>(0, i * size), 1e-15));
 
         const auto Warray
-            = localF.evaluateDerivative(gpIndex, wrt(coeffs, spatialall), transformWith(Jinv), coeffIndices(i));
+            = localF.evaluateDerivative(gpIndex, wrt(coeff(i), spatialall), transformWith(Jinv));
         const auto Warray2
-            = localF.evaluateDerivative(gpIndex, wrt(spatialall, coeffs), transformWith(Jinv), coeffIndices(i));
+            = localF.evaluateDerivative(gpIndex, wrt(spatialall, coeff(i)), transformWith(Jinv));
         for (int j = 0; j < 2; ++j)
           EXPECT_THAT(Warray[j], EigenApproxEqual(Warray2[j], 1e-15));
 
         const auto W0
-            = localF.evaluateDerivative(gpIndex, wrt(coeffs, spatial(0)), transformWith(Jinv), coeffIndices(i));
+            = localF.evaluateDerivative(gpIndex, wrt(coeff(i), spatial(0)), transformWith(Jinv));
         const auto W1
-            = localF.evaluateDerivative(gpIndex, wrt(coeffs, spatial(1)), transformWith(Jinv), coeffIndices(i));
+            = localF.evaluateDerivative(gpIndex, wrt(coeff(i), spatial(1)), transformWith(Jinv));
 
         EXPECT_THAT(Warray[0], EigenApproxEqual(W0, 1e-15));
         EXPECT_THAT(Warray[1], EigenApproxEqual(W1, 1e-15));
 
-        const auto Warrayun  = localF.evaluateDerivative(gpIndex, wrt(coeffs, spatialall), coeffIndices(i));
-        const auto Warray2un = localF.evaluateDerivative(gpIndex, wrt(spatialall, coeffs), coeffIndices(i));
+        const auto Warrayun  = localF.evaluateDerivative(gpIndex, wrt(coeff(i), spatialall));
+        const auto Warray2un = localF.evaluateDerivative(gpIndex, wrt(spatialall, coeff(i)));
         for (int j = 0; j < 2; ++j)
           EXPECT_THAT(Warrayun[j], EigenApproxEqual(Warray2un[j], 1e-15));
 
-        const auto W0un = localF.evaluateDerivative(gpIndex, wrt(coeffs, spatial(0)), coeffIndices(i));
-        const auto W1un = localF.evaluateDerivative(gpIndex, wrt(coeffs, spatial(1)), coeffIndices(i));
+        const auto W0un = localF.evaluateDerivative(gpIndex, wrt(coeff(i), spatial(0)));
+        const auto W1un = localF.evaluateDerivative(gpIndex, wrt(coeff(i), spatial(1)));
 
         EXPECT_THAT(Warrayun[0], EigenApproxEqual(W0un, 1e-15));
         EXPECT_THAT(Warrayun[1], EigenApproxEqual(W1un, 1e-15));
