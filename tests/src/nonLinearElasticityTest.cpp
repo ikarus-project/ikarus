@@ -49,7 +49,7 @@ TYPED_TEST(NonLinearElasticityLoadControlNRandTR, ComputeMaxDisp) {
   auto basis = makeBasis(gridView, power<2>(lagrange<1>(), FlatInterleaved()));
 
   auto localView = basis.localView();
-  std::vector<Ikarus::FiniteElements::NonLinearElasticityFEWithLocalBasis<decltype(basis)>> fes;
+  std::vector<Ikarus::NonLinearElasticityFE<decltype(basis)>> fes;
   auto volumeLoad = [](auto& globalCoord, auto& lamb) {
     Eigen::Vector2d fext;
     fext.setZero();
@@ -75,26 +75,29 @@ TYPED_TEST(NonLinearElasticityLoadControlNRandTR, ComputeMaxDisp) {
   double lambda = 0.0;
 
   auto residualFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
-    Ikarus::FErequirements<Eigen::VectorXd> req;
-    req.sols.emplace_back(disp_);
-    req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
-    req.vectorAffordances = Ikarus::VectorAffordances::forces;
+    Ikarus::FErequirements req = FErequirementsBuilder()
+        .insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
+        .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+        .addAffordance(Ikarus::VectorAffordances::forces)
+        .build();
     return sparseAssembler.getVector(req);
   };
 
   auto KFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
-    Ikarus::FErequirements<Eigen::VectorXd> req;
-    req.sols.emplace_back(disp_);
-    req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
-    req.matrixAffordances = Ikarus::MatrixAffordances::stiffness;
+    Ikarus::FErequirements req = FErequirementsBuilder()
+        .insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
+        .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+        .addAffordance(Ikarus::MatrixAffordances::stiffness)
+        .build();
     return sparseAssembler.getMatrix(req);
   };
 
   auto energyFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
-    Ikarus::FErequirements<Eigen::VectorXd> req;
-    req.sols.emplace_back(disp_);
-    req.parameter.insert({Ikarus::FEParameter::loadfactor, lambdaLocal});
-    req.scalarAffordances = Ikarus::ScalarAffordances::potentialEnergy;
+    Ikarus::FErequirements req = FErequirementsBuilder()
+        .insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
+        .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+        .addAffordance(Ikarus::ScalarAffordances::mechanicalPotentialEnergy)
+        .build();
     return sparseAssembler.getScalar(req);
   };
 

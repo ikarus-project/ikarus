@@ -194,7 +194,7 @@ int main(int argc, char **argv) {
 
   VectorPotVector aBlocked(basisEmbeddedC.size({Dune::Indices::_1}));
   for (auto &asingle: aBlocked) {
-    asingle.setValue(Eigen::Vector<double, vectorPotDim>::Zero());
+    asingle.setValue(Eigen::Vector<double, vectorPotDim>::Random());
   }
 
   MultiTypeVector mAndABlocked(mBlocked, aBlocked);
@@ -204,6 +204,10 @@ int main(int argc, char **argv) {
   // Fix vector potential on the whole boundary
   Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basisRieC, Dune::Indices::_1),
                                       [&](auto &&globalIndex) { dirichletFlags[globalIndex[0]] = true; });
+
+  // Set vector potential on the whole boundary to zero
+  Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basisEmbeddedC, Dune::Indices::_1),
+                                      [&](auto &&globalIndex) { mAndABlocked[Dune::Indices::_1][globalIndex[1]].setValue(Eigen::Vector<double, vectorPotDim>::Zero()); });
 
   auto magnetBasis = Dune::Functions::subspaceBasis(basisRieC, Dune::Indices::_0);
   auto localView = magnetBasis.localView();
@@ -314,6 +318,7 @@ int main(int argc, char **argv) {
   auto localViewScalarMagnBasis = scalarMagnBasis.localView();
 
   std::vector<double> gradMNodalRes(scalarMagnBasis.size());
+  std::vector<double> divAfieldNodalRes(scalarMagnBasis.size());
   std::vector<Dune::FieldVector<double, 3>> BfieldNodalRes(scalarMagnBasis.size());
   std::vector<Dune::FieldVector<double, 3>> HfieldNodalRes(scalarMagnBasis.size());
 
@@ -330,7 +335,7 @@ int main(int argc, char **argv) {
     auto resultRequirements = Ikarus::ResultRequirementsBuilder<MultiTypeVector>()
         .insertGlobalSolution(Ikarus::FESolutions::magnetizationAndVectorPotential, mAndABlocked)
               .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
-        .addResultRequest(ResultType::gradientNormOfMagnetization,ResultType::BField,ResultType::HField).build();
+        .addResultRequest(ResultType::gradientNormOfMagnetization,ResultType::BField,ResultType::HField,ResultType::divergenceOfVectorPotential).build();
     auto localmFunction = localFunction(mGlobalFunc);
 
     auto ele = elements(gridView).begin();
@@ -351,11 +356,14 @@ int main(int argc, char **argv) {
             = toFieldVector(result.getResult(ResultType::BField));
         HfieldNodalRes[localViewScalarMagnBasis.index(localViewScalarMagnBasis.tree().localIndex(c))[0]]
             = toFieldVector(result.getResult(ResultType::HField));
+        divAfieldNodalRes[localViewScalarMagnBasis.index(localViewScalarMagnBasis.tree().localIndex(c))[0]]
+            = result.getResult(ResultType::divergenceOfVectorPotential)(0, 0);
       }
       ++ele;
     }
 
     auto gradmGlobalFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<double>(scalarMagnBasis, gradMNodalRes);
+    auto divAGlobalFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<double>(scalarMagnBasis, divAfieldNodalRes);
     auto bFieldGlobalFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(
         scalarMagnBasis, BfieldNodalRes);
     auto hFieldGlobalFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(
@@ -364,6 +372,7 @@ int main(int argc, char **argv) {
     vtkWriter.addVertexData(gradmGlobalFunc, Dune::VTK::FieldInfo("gradMNorm", Dune::VTK::FieldInfo::Type::scalar, 1));
     vtkWriter.addVertexData(bFieldGlobalFunc, Dune::VTK::FieldInfo("B", Dune::VTK::FieldInfo::Type::vector, 3));
     vtkWriter.addVertexData(hFieldGlobalFunc, Dune::VTK::FieldInfo("H", Dune::VTK::FieldInfo::Type::vector, 3));
+    vtkWriter.addVertexData(divAGlobalFunc, Dune::VTK::FieldInfo("divA", Dune::VTK::FieldInfo::Type::scalar, 1));
     auto isInsideFunc = Dune::Functions::makeAnalyticGridViewFunction(isInsidePredicate, gridView);
     vtkWriter.addCellData(isInsideFunc, Dune::VTK::FieldInfo("isInside", Dune::VTK::FieldInfo::Type::scalar, 1));
     vtkWriter.write(std::string("Magnet") + std::to_string(i));

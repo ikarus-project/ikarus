@@ -81,8 +81,6 @@ namespace Ikarus {
     ScalarType calculateScalarImpl(const FERequirementType& req, Eigen::VectorX<ScalarType>& dx) const {
       const auto& d      = req.getSolution(Ikarus::FESolutions::displacement);
       const auto& lambda = req.getParameter(Ikarus::FEParameter::loadfactor);
-      if(req.hasAffordance(stiffness))
-        ...
 
       auto& first_child = localView_.tree().child(0);
       const auto& fe    = first_child.finiteElement();
