@@ -4,5 +4,7 @@
 
 #include "localFunctionInterface.hh"
 namespace Ikarus::DerivativeDirections {
-  spatialPartial spatial(int i) { return {i}; }
+  SpatialPartial spatial(size_t i) { return {i}; }
+SingleCoeff coeff(size_t i) { return {i}; }
+TwoCoeff coeff(size_t i, size_t j) { return {i,j}; }
 }  // namespace Ikarus::DerivativeDirections

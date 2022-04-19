@@ -6,51 +6,35 @@
 #include <concepts>
 #include <tuple>
 #include <type_traits>
-namespace Ikarus::utils {
+namespace Ikarus::Std {
 
-  //  template <typename T>
-  //  struct is_std_array : std::false_type {};
-  //
-  //  template <typename T, std::size_t N>
-  //  struct is_std_array<std::array<T, N>> : std::true_type {};
-  //
-  //  template <typename T>
-  //  struct function_traits;
-  //
-  //  template <typename R, typename... A>
-  //  struct function_traits<R (*)(A...)> {
-  //    using return_type           = R;
-  //    using class_type            = void;
-  //    using args_type             = std::tuple<A...>;
-  //    static constexpr auto arity = sizeof...(A);
-  //  };
-  //
-  //  template <typename R, typename... A>
-  //  struct function_traits<R (*&)(A...)> {
-  //    using return_type           = R;
-  //    using class_type            = void;
-  //    using args_type             = std::tuple<A...>;
-  //    static constexpr auto arity = sizeof...(A);
-  //  };
-  //
-  //  template <typename R, typename... A>
-  //  struct function_traits<R(A...)> {
-  //    using return_type           = R;
-  //    using class_type            = void;
-  //    using args_type             = std::tuple<A...>;
-  //    static constexpr auto arity = sizeof...(A);
-  //  };
-  //
-  //  template <class F, std::size_t... Is, class T>
-  //  std::function<typename T::result_type(std::tuple_element_t<Is, typename T::arg_tuple>...)> lambda_to_func_impl(
-  //      F&& f, std::index_sequence<Is...>, T) {
-  //    return std::function<typename T::result_type(std::tuple_element_t<Is, typename T::arg_tuple>...)>(
-  //        std::forward<F>(f));
-  //  }
-  //  //
-  //  template <class F>
-  //  auto lambda_to_func(F&& f) {
-  //    using traits = function_traits<F>;
-  //    return lambda_to_func_impl(std::forward<F>(f), std::make_index_sequence<traits::arity>{}, traits{});
-  //  }
+template <typename> struct is_tuple: std::false_type {};
+
+template <typename ...T> struct is_tuple<std::tuple<T...>>: std::true_type {};
+
+
+template <class Tuple,class Type> requires is_tuple<Tuple>::value
+consteval int countType() {
+  int count = 0;
+  Dune::Hybrid::forEach(
+      Dune::Hybrid::integralRange(Dune::index_constant<std::tuple_size_v<Tuple>>()), [&](auto i) {
+        using currentType = std::remove_cvref_t<std::tuple_element_t<i, Tuple>>;
+        if constexpr (std::is_same_v<currentType, Type>) ++count;
+      });
+  return count;
+}
+
+
+template <typename T, typename Tuple>
+struct hasType;
+
+template <typename T>
+struct hasType<T, std::tuple<>> : std::false_type {};
+
+template <typename T, typename U, typename... Ts>
+struct hasType<T, std::tuple<U, Ts...>> : hasType<T, std::tuple<Ts...>> {};
+
+template <typename T, typename... Ts>
+struct hasType<T, std::tuple<T, Ts...>> : std::true_type {};
+
 }  // namespace Ikarus::utils
