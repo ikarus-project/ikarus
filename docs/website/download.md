@@ -51,8 +51,8 @@ You should now be able to change the docker settings according to the picture ab
 ```sh
 docker pull rath3t/ikarus-debian-bookworm:latest
 ```
-6. Download and install [CLion EAP Version](https://www.jetbrains.com/clion/nextversion/).
-7. In CLion EAP Version, go to **File** and **Settings** and apply the following settings for the toolchain:
+6. Download and install [CLion](https://www.jetbrains.com/clion). You need a version >=2022.1.
+7. In CLion, go to **File** and **Settings** and apply the following settings for the toolchain:
     ![img.png](images/Installation/CLionToolchainSettings.png)
     Edit the Container settings and paste the following command into `Run options`:
 ```
