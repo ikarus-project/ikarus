@@ -16,7 +16,7 @@ lc.run();
 
 ## Obtaining infos from control routines
 The load control is an observable object, i.e. you can subscribe to the messages of the load control.
-[Read this page to learn more about the implementation of observer pattern in Ikarus.](../Observer.md)
+[Read this page to learn more about the implementation of observer pattern in Ikarus.](Observer.md)
 The following messages are available:
 ```cpp
 enum class ControlMessages { 
