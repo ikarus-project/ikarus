@@ -88,8 +88,12 @@ namespace Ikarus {
   }
 
   template <typename ctype2, int d2, typename CorrectionType>
-  [[nodiscard]] RealTuple<ctype2, d2> update(const RealTuple<ctype2, d2> &rt, const CorrectionType &correction) {
+  [[nodiscard]] RealTuple<ctype2, d2> operator+(const RealTuple<ctype2, d2> &rt, const CorrectionType &correction) {
+    if constexpr(std::is_same_v<RealTuple<ctype2, d2>,CorrectionType>)
+    return RealTuple<ctype2, d2>(rt.getValue() + correction.getValue());
+    else
     return RealTuple<ctype2, d2>(rt.getValue() + correction);
   }
+
 
 }  // namespace Ikarus::Manifold

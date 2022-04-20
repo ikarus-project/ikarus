@@ -5,6 +5,7 @@
 #pragma once
 
 #include "localFunctionInterface.hh"
+#include "localFunctionHelper.hh"
 
 #include <concepts>
 #include <iostream>
@@ -243,8 +244,9 @@ namespace Ikarus {
           .eval();
     }
 
-    FunctionReturnType evaluateFunctionImpl(const AnsatzFunctionType& N) const {
-      return FunctionReturnType(evaluateEmbeddingFunctionImpl(N));
+    template<typename DomainTypeOrIntegrationPointIndex>
+    FunctionReturnType evaluateFunctionImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition) const {
+      return FunctionReturnType(evaluateEmbeddingFunctionImpl(ipIndexOrPosition));
     }
 
     JacobianColType evaluateEmbeddingJacobianColImpl(const AnsatzFunctionJacobian& dN, int spaceIndex) const {
@@ -257,7 +259,10 @@ namespace Ikarus {
       return J;
     }
 
-    GlobalE evaluateEmbeddingFunctionImpl(const Eigen::VectorXd& N) const { return coeffsAsMat * N; }
+    template<typename DomainTypeOrIntegrationPointIndex>
+    GlobalE evaluateEmbeddingFunctionImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition) const {
+      const auto& N = evaluateFunctionWithIPorCoord(ipIndexOrPosition,basis_);
+      return coeffsAsMat * N; }
 
     const Ikarus::LocalBasis<DuneBasis>& basis_;
     CoeffContainer coeffs;

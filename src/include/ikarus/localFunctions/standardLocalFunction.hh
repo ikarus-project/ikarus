@@ -5,7 +5,8 @@
 #pragma once
 
 #include "localFunctionInterface.hh"
-#include "localFunctionExpression.h"
+#include "localFunctionExpression.hh"
+#include "localFunctionHelper.hh"
 
 #include <concepts>
 #include <iostream>
@@ -26,6 +27,8 @@ namespace Ikarus {
     friend Base;
     StandardLocalFunction(const Ikarus::LocalBasis<DuneBasis>& p_basis, const CoeffContainer& coeffs_)
         : basis_{p_basis}, coeffs{coeffs_}, coeffsAsMat{Ikarus::LinearAlgebra::viewAsEigenMatrixFixedDyn(coeffs)} {}
+
+    static constexpr bool isLeaf = true;
 
     using Traits = LocalFunctionTraits<StandardLocalFunction>;
     /** \brief Type used for coordinates */
@@ -58,21 +61,37 @@ namespace Ikarus {
       return basis_;
     }
 
-  private:
-    Jacobian evaluateDerivativeWRTSpaceAllImpl(const AnsatzFunctionType& N, const AnsatzFunctionJacobian& dN) const {
+   private:
+    template<typename DomainTypeOrIntegrationPointIndex,typename... TransformArgs>
+    FunctionReturnType evaluateFunctionImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, [[maybe_unused]] const TransformWith<TransformArgs...>& ) const {
+      const auto& N = evaluateFunctionWithIPorCoord(ipIndexOrPosition,basis_);
+
+      return FunctionReturnType(coeffsAsMat * N);
+    }
+
+    template<typename DomainTypeOrIntegrationPointIndex,typename... TransformArgs>
+    Jacobian evaluateDerivativeWRTSpaceAllImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
+                                               const TransformWith<TransformArgs...>& transArgs) const {
+      const auto& dNraw = evaluateDerivativeWithIPorCoord(ipIndexOrPosition,basis_);
+      maytransformDerivatives(dNraw,dNTransformed, transArgs);
       return coeffsAsMat
-             * dN.template cast<ctype>();  // The cast here is only necessary since the autodiff types are not working
+             * dNTransformed.template cast<ctype>();  // The cast here is only necessary since the autodiff types are not working
                                            // otherwise, see Issue https://github.com/autodiff/autodiff/issues/73
     }
 
-    JacobianColType evaluateDerivativeWRTSpaceSingleImpl(const AnsatzFunctionType&, const AnsatzFunctionJacobian& dN,
-                                                         int spaceIndex) const {
-      return coeffsAsMat * dN.col(spaceIndex);
+    template<typename DomainTypeOrIntegrationPointIndex,typename... TransformArgs>
+    JacobianColType evaluateDerivativeWRTSpaceSingleImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
+                                                         int spaceIndex, const TransformWith<TransformArgs...>& transArgs) const {
+        const auto& dNraw = evaluateDerivativeWithIPorCoord(ipIndexOrPosition,basis_);
+        maytransformDerivatives(dNraw,dNTransformed,transArgs);
+
+      return coeffsAsMat * dNTransformed.col(spaceIndex);
     }
 
-    CoeffDerivMatrix evaluateDerivativeWRTCoeffsImpl(const AnsatzFunctionType& N,
-                                                     [[maybe_unused]] const AnsatzFunctionJacobian&,
-                                                     int coeffsIndex) const {
+    template<typename DomainTypeOrIntegrationPointIndex,typename... TransformArgs>
+    CoeffDerivMatrix evaluateDerivativeWRTCoeffsImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
+                                                     int coeffsIndex, const TransformWith<TransformArgs...>& transArgs) const {
+      const auto& N = evaluateFunctionWithIPorCoord(ipIndexOrPosition,basis_);
       CoeffDerivMatrix mat;
       mat.setIdentity(valueSize);
       mat.diagonal() *= N[coeffsIndex];
@@ -100,11 +119,9 @@ namespace Ikarus {
       return W;
     }
 
-    FunctionReturnType evaluateFunctionImpl(const AnsatzFunctionType& N) const {
-      return FunctionReturnType(coeffsAsMat * N);
-    }
 
 
+    mutable AnsatzFunctionJacobian dNTransformed;
     const Ikarus::LocalBasis<DuneBasis>& basis_;
     CoeffContainer coeffs;
     const decltype(Ikarus::LinearAlgebra::viewAsEigenMatrixFixedDyn(coeffs)) coeffsAsMat;

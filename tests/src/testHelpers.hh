@@ -5,7 +5,7 @@
 #pragma once
 
 MATCHER_P2(EigenApproxEqual, expect, prec,
-           std::string(negation ? "isn't" : "is") + " approx equal to" + ::testing::PrintToString(expect)
+           std::string(negation ? "isn't" : "is") + " approx equal to\n" + ::testing::PrintToString(expect)
                + "\nwith precision " + ::testing::PrintToString(prec)) {
   if constexpr (requires { arg.isApprox(expect, prec); })
     return arg.isApprox(expect, prec);

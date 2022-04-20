@@ -10,11 +10,13 @@ namespace Ikarus {
 
 template <typename Expr>
 class LocalFunctionExpression : public LocalFunctionInterface<LocalFunctionExpression<Expr>> {
-  using Base = LocalFunctionInterface<LocalFunctionExpression<Expr>>;
+
 
  public:
+  using Base = LocalFunctionInterface<LocalFunctionExpression<Expr>>;
   friend Base;
   friend Expr;
+  template<typename> friend class LocalFunctionInterface;
 
   using Traits = LocalFunctionTraits<LocalFunctionExpression>;
 
@@ -45,16 +47,23 @@ class LocalFunctionExpression : public LocalFunctionInterface<LocalFunctionExpre
   const Expr& underlying() const {return static_cast<Expr const&>(*this);}
 
 
-  FunctionReturnType evaluateFunctionImpl(const Eigen::VectorXd& N) const { return underlying().evaluateFunctionImpl(N); }
+  template<typename DomainTypeOrIntegrationPointIndex,typename... TransformArgs>
+  FunctionReturnType evaluateFunctionExpr(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, const TransformWith<TransformArgs...>& transArgs)  const
+  { return underlying().evaluateFunctionImpl(ipIndexOrPosition,transArgs); }
 
-  Jacobian evaluateDerivativeWRTSpaceAllImpl(const AnsatzFunctionType& N, const AnsatzFunctionJacobian& dN) const { return underlying().evaluateDerivativeWRTSpaceAllImpl(N,dN); }
+  template<typename DomainTypeOrIntegrationPointIndex,typename... TransformArgs>
+  Jacobian evaluateDerivativeWRTSpaceAllExpr(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
+                                             const TransformWith<TransformArgs...>& transArgs)  const { return underlying().evaluateDerivativeWRTSpaceAllImpl(ipIndexOrPosition,transArgs); }
 
-  JacobianColType evaluateDerivativeWRTSpaceSingleImpl(const AnsatzFunctionType& N, const AnsatzFunctionJacobian& dN,
-                                                       int spaceIndex) const { return underlying().evaluateDerivativeWRTSpaceSingleImpl(N,dN,spaceIndex); }
+  template<typename DomainTypeOrIntegrationPointIndex,typename... TransformArgs>
+  JacobianColType evaluateDerivativeWRTSpaceSingleExpr(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
+                                                       int spaceIndex, const TransformWith<TransformArgs...>& transArgs) const {
+    return underlying().evaluateDerivativeWRTSpaceSingleImpl(ipIndexOrPosition,spaceIndex,transArgs); }
 
-  CoeffDerivMatrix evaluateDerivativeWRTCoeffsImpl(const AnsatzFunctionType& N,
-                                                   const AnsatzFunctionJacobian& dN,
-                                                   int coeffsIndex) const { return underlying().evaluateDerivativeWRTCoeffsImpl(N,dN,coeffsIndex); }
+  template<typename DomainTypeOrIntegrationPointIndex,typename... TransformArgs>
+  CoeffDerivMatrix evaluateDerivativeWRTCoeffsExpr(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
+                                                   int coeffsIndex, const TransformWith<TransformArgs...>& transArgs) const {
+    return underlying().evaluateDerivativeWRTCoeffsImpl(ipIndexOrPosition,coeffsIndex,transArgs); }
 
   CoeffDerivMatrix evaluateSecondDerivativeWRTCoeffs(const AnsatzFunctionType& N,
                                                      const AnsatzFunctionJacobian& dN,
