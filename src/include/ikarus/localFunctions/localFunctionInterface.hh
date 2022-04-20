@@ -236,14 +236,14 @@ namespace Ikarus {
 
     /** \brief Return the function value at the i-th bound integration point*/
     FunctionReturnType evaluateFunction(long unsigned i) {
-      const auto& N = impl().basis.evaluateFunction(i);
+      const auto& N = impl().basis().evaluateFunction(i);
       return impl().evaluateFunctionImpl(N);
     }
 
     /** \brief Return the function value at the coordinates local */
     FunctionReturnType evaluateFunction(const DomainType& local) {
       AnsatzFunctionType N;
-      impl().basis.evaluateFunction(local, N);
+      impl().basis().evaluateFunction(local, N);
       return impl().evaluateFunctionImpl(N);
     }
 
@@ -345,13 +345,13 @@ namespace Ikarus {
     auto evaluateFunctionAndDerivativeWithIPorCoord(const DomainTypeOrIntegrationPointIndex& localOrIpId) const {
       if constexpr (std::is_same_v<DomainTypeOrIntegrationPointIndex, DomainType>) {
         AnsatzFunctionJacobian dN;
-        impl().basis.evaluateJacobian(localOrIpId, dN);
+        impl().basis().evaluateJacobian(localOrIpId, dN);
         AnsatzFunctionType N;
-        impl().basis.evaluateFunction(localOrIpId, N);
+        impl().basis().evaluateFunction(localOrIpId, N);
         return std::make_tuple(N, dN);
       } else if constexpr (std::numeric_limits<DomainTypeOrIntegrationPointIndex>::is_integer) {
-        const AnsatzFunctionJacobian& dN = impl().basis.evaluateJacobian(localOrIpId);
-        const AnsatzFunctionType& N      = impl().basis.evaluateFunction(localOrIpId);
+        const AnsatzFunctionJacobian& dN = impl().basis().evaluateJacobian(localOrIpId);
+        const AnsatzFunctionType& N      = impl().basis().evaluateFunction(localOrIpId);
         return std::make_tuple(std::ref(N), std::ref(dN));
       } else
         static_assert(std::is_same_v<DomainTypeOrIntegrationPointIndex,
@@ -460,7 +460,7 @@ namespace Ikarus {
       return evaluateDerivative(localOrIpId, std::forward<Wrt<Args...>>(args), transformWith());
     }
 
-    auto viewOverIntegrationPoints() { return impl().basis.viewOverIntegrationPoints(); }
+    auto viewOverIntegrationPoints() { return impl().basis().viewOverIntegrationPoints(); }
 
   private:
     auto tryCallSecondDerivativeWRTCoeffs(const auto& N, const auto& dN, const auto& along, const auto& coeffs) const {

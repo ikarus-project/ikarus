@@ -5,6 +5,7 @@
 #pragma once
 
 #include "localFunctionInterface.hh"
+#include "localFunctionExpression.h"
 
 #include <concepts>
 #include <iostream>
@@ -18,13 +19,13 @@
 namespace Ikarus {
 
   template <typename DuneBasis, typename CoeffContainer>
-  class StandardLocalFunction : public LocalFunctionInterface<StandardLocalFunction<DuneBasis, CoeffContainer>> {
-    using Base = LocalFunctionInterface<StandardLocalFunction<DuneBasis, CoeffContainer>>;
+  class StandardLocalFunction : public LocalFunctionExpression<StandardLocalFunction<DuneBasis, CoeffContainer>> {
+    using Base = LocalFunctionExpression<StandardLocalFunction<DuneBasis, CoeffContainer>>;
 
   public:
     friend Base;
-    StandardLocalFunction(const Ikarus::LocalBasis<DuneBasis>& basis_, const CoeffContainer& coeffs_)
-        : basis{basis_}, coeffs{coeffs_}, coeffsAsMat{Ikarus::LinearAlgebra::viewAsEigenMatrixFixedDyn(coeffs)} {}
+    StandardLocalFunction(const Ikarus::LocalBasis<DuneBasis>& p_basis, const CoeffContainer& coeffs_)
+        : basis_{p_basis}, coeffs{coeffs_}, coeffsAsMat{Ikarus::LinearAlgebra::viewAsEigenMatrixFixedDyn(coeffs)} {}
 
     using Traits = LocalFunctionTraits<StandardLocalFunction>;
     /** \brief Type used for coordinates */
@@ -51,6 +52,11 @@ namespace Ikarus {
     using AnsatzFunctionJacobian = typename Traits::AnsatzFunctionJacobian;
 
     auto& coefficientsRef() { return coeffs; }
+
+    const Ikarus::LocalBasis<DuneBasis>& basis() const
+    {
+      return basis_;
+    }
 
   private:
     Jacobian evaluateDerivativeWRTSpaceAllImpl(const AnsatzFunctionType& N, const AnsatzFunctionJacobian& dN) const {
@@ -98,7 +104,8 @@ namespace Ikarus {
       return FunctionReturnType(coeffsAsMat * N);
     }
 
-    const Ikarus::LocalBasis<DuneBasis>& basis;
+
+    const Ikarus::LocalBasis<DuneBasis>& basis_;
     CoeffContainer coeffs;
     const decltype(Ikarus::LinearAlgebra::viewAsEigenMatrixFixedDyn(coeffs)) coeffsAsMat;
   };

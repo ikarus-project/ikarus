@@ -24,8 +24,8 @@ namespace Ikarus {
 
   public:
     friend Base;
-    ProjectionBasedLocalFunction(const Ikarus::LocalBasis<DuneBasis>& basis_, const CoeffContainer& coeffs_)
-        : basis{basis_}, coeffs{coeffs_}, coeffsAsMat{Ikarus::LinearAlgebra::viewAsEigenMatrixFixedDyn(coeffs)} {}
+    ProjectionBasedLocalFunction(const Ikarus::LocalBasis<DuneBasis>& p_basis, const CoeffContainer& coeffs_)
+        : basis_{p_basis}, coeffs{coeffs_}, coeffsAsMat{Ikarus::LinearAlgebra::viewAsEigenMatrixFixedDyn(coeffs)} {}
 
     using Traits = LocalFunctionTraits<ProjectionBasedLocalFunction>;
 
@@ -60,6 +60,11 @@ namespace Ikarus {
     using AnsatzFunctionJacobian = typename Traits::AnsatzFunctionJacobian;
 
     auto& coefficientsRef() { return coeffs; }
+
+    const Ikarus::LocalBasis<DuneBasis>& basis() const
+    {
+      return basis_;
+    }
 
   private:
     static auto tryToCallDerivativeOfProjectionWRTposition(const GlobalE& valE) {
@@ -254,7 +259,7 @@ namespace Ikarus {
 
     GlobalE evaluateEmbeddingFunctionImpl(const Eigen::VectorXd& N) const { return coeffsAsMat * N; }
 
-    const Ikarus::LocalBasis<DuneBasis>& basis;
+    const Ikarus::LocalBasis<DuneBasis>& basis_;
     CoeffContainer coeffs;
     const decltype(Ikarus::LinearAlgebra::viewAsEigenMatrixFixedDyn(coeffs)) coeffsAsMat;
   };

@@ -57,7 +57,7 @@ namespace Ikarus {
     auto& coefficientsRef() { return coeffs; }
 
   private:
-    FunctionReturnType evaluateEmbeddingFunctionImpl(const Eigen::VectorXd& N) const { return FunctionReturnType{}; }
+    FunctionReturnType evaluateFunctionImpl(const Eigen::VectorXd& N) const { return FunctionReturnType{}; }
 
     Jacobian evaluateDerivativeWRTSpaceAllImpl(const AnsatzFunctionType& N, const AnsatzFunctionJacobian& dN) const {
       return Jacobian{};
