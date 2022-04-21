@@ -100,7 +100,7 @@ auto transformWith(Args&&... args) {
         int spatialDerivs{};
         int spatialAll{};
 
-        consteval int orderOfDerivative()
+        consteval int orderOfDerivative() const
         {
           return singleCoeffDerivs+2*twoCoeffDerivs+spatialDerivs+spatialAll;
         }
@@ -227,7 +227,7 @@ template <typename... WrtArgs, typename... TransformArgs, typename... AlongArgs,
       }
 
       static constexpr DerivativeDirections::ConstExprCounter derivativeCounter = DerivativeDirections::countDerivativesType<Wrt<WrtArgs...>>();
-      static constexpr bool  derivativeOrder = derivativeCounter.orderOfDerivative();
+      static constexpr int   derivativeOrder = DerivativeDirections::countDerivativesType<Wrt<WrtArgs...>>().orderOfDerivative();
 
       static constexpr bool hasTwoCoeff = DerivativeDirections::HasTwoCoeff<Wrt<WrtArgs...>>;
       static constexpr bool hasSingleCoeff = DerivativeDirections::HasSingleCoeff<Wrt<WrtArgs...>>;
@@ -261,8 +261,6 @@ template <typename LocalFunctionImpl>
     using CoeffDerivMatrix       = typename Traits::CoeffDerivMatrix;
 
 
-//    template<typename Op,typename E1,typename E2>
-//    friend class BinaryLocalFunctionExpression;
 
     // Check the capabilities of derived implementation
     static constexpr bool hasSecondDerivativeWRTCoeffs = HasevaluateSecondDerivativeWRTCoeffs<LocalFunctionImpl>;
@@ -322,38 +320,38 @@ template <typename LocalFunctionImpl>
     /** \brief Function to forward the call of no spatial derivative and two derivative wrt. coefficients.
      * You have to pass a along argument which specifies the direction wher this derivative is applied
      */
-    template <typename... WrtArgs, typename... TransformArgs, typename... AlongArgs,
-              typename DomainTypeOrIntegrationPointIndex>
-    requires(
-        hasTwoCoeff<Wrt<WrtArgs...>> and DerivativeDirections::HasNoSpatial<Wrt<WrtArgs...>>and
-            hasSecondDerivativeWRTCoeffs) auto evaluateDerivative(const DomainTypeOrIntegrationPointIndex& localOrIpId,
-                                                                  Wrt<WrtArgs...>&& args, Along<AlongArgs...>&& along,
-                                                                  TransformWith<TransformArgs...>&& transArgs) const {
-      const auto& [N, dNraw] = evaluateFunctionAndDerivativeWithIPorCoord(localOrIpId);
-
-      const LocalFunctionEvaluationArgs evalArgs(localOrIpId,std::forward<Wrt<WrtArgs...>>(args),std::forward<Along<AlongArgs...>>(along),std::forward<TransformWith<TransformArgs...>>(transArgs));
-
-      // Check if a matrix is given to transform derivatives. Otherwise we do nothing
-      if constexpr (sizeof...(TransformArgs) > 0) {
-        AnsatzFunctionJacobian dN = (dNraw * std::get<0>(transArgs.args)).eval();
-        return impl().evaluateSecondDerivativeWRTCoeffs(N, dN, std::get<0>(along.args), evalArgs.coeffsIndices);
-      } else
-        return impl().evaluateSecondDerivativeWRTCoeffs(N, dNraw, std::get<0>(along.args), evalArgs.coeffsIndices);
-    }
-
-    /** \brief Function to forward the call of no spatial derivative and two derivative wrt. coefficients.
-     * You have to pass a along argument which specifies the direction where this derivative is applied
-     * Specialization when no transformWith is passed
-     */
-    template <typename... WrtArgs, typename... AlongArgs, typename DomainTypeOrIntegrationPointIndex>
-    requires(hasTwoCoeff<Wrt<WrtArgs...>> and DerivativeDirections::HasNoSpatial<Wrt<WrtArgs...>>and
-                 HasevaluateSecondDerivativeWRTCoeffs<
-                     LocalFunctionImpl>) auto evaluateDerivative(const DomainTypeOrIntegrationPointIndex& localOrIpId,
-                                                                 Wrt<WrtArgs...>&& args, Along<AlongArgs...>&& along) const {
-
-      return evaluateDerivative(localOrIpId, std::forward<Wrt<WrtArgs...>>(args), std::forward<Along<AlongArgs...>>(along),
-                                transformWith());
-    }
+//    template <typename... WrtArgs, typename... TransformArgs, typename... AlongArgs,
+//              typename DomainTypeOrIntegrationPointIndex>
+//    requires(
+//        hasTwoCoeff<Wrt<WrtArgs...>> and DerivativeDirections::HasNoSpatial<Wrt<WrtArgs...>>and
+//            hasSecondDerivativeWRTCoeffs) auto evaluateDerivative(const DomainTypeOrIntegrationPointIndex& localOrIpId,
+//                                                                  Wrt<WrtArgs...>&& args, Along<AlongArgs...>&& along,
+//                                                                  TransformWith<TransformArgs...>&& transArgs) const {
+//      const auto& [N, dNraw] = evaluateFunctionAndDerivativeWithIPorCoord(localOrIpId);
+//
+//      const LocalFunctionEvaluationArgs evalArgs(localOrIpId,std::forward<Wrt<WrtArgs...>>(args),std::forward<Along<AlongArgs...>>(along),std::forward<TransformWith<TransformArgs...>>(transArgs));
+//
+//      // Check if a matrix is given to transform derivatives. Otherwise we do nothing
+//      if constexpr (sizeof...(TransformArgs) > 0) {
+//        AnsatzFunctionJacobian dN = (dNraw * std::get<0>(transArgs.args)).eval();
+//        return impl().evaluateSecondDerivativeWRTCoeffs(N, dN, std::get<0>(along.args), evalArgs.coeffsIndices);
+//      } else
+//        return impl().evaluateSecondDerivativeWRTCoeffs(N, dNraw, std::get<0>(along.args), evalArgs.coeffsIndices);
+//    }
+//
+//    /** \brief Function to forward the call of no spatial derivative and two derivative wrt. coefficients.
+//     * You have to pass a along argument which specifies the direction where this derivative is applied
+//     * Specialization when no transformWith is passed
+//     */
+//    template <typename... WrtArgs, typename... AlongArgs, typename DomainTypeOrIntegrationPointIndex>
+//    requires(hasTwoCoeff<Wrt<WrtArgs...>> and DerivativeDirections::HasNoSpatial<Wrt<WrtArgs...>>and
+//                 HasevaluateSecondDerivativeWRTCoeffs<
+//                     LocalFunctionImpl>) auto evaluateDerivative(const DomainTypeOrIntegrationPointIndex& localOrIpId,
+//                                                                 Wrt<WrtArgs...>&& args, Along<AlongArgs...>&& along) const {
+//
+//      return evaluateDerivative(localOrIpId, std::forward<Wrt<WrtArgs...>>(args), std::forward<Along<AlongArgs...>>(along),
+//                                transformWith());
+//    }
 
     /** \brief Function to forward the call of one spatial derivative in all directions and two derivative wrt.
      * coefficients. You have to pass a along argument which specifies the direction where this derivative is applied */
@@ -493,10 +491,16 @@ auto evaluateDerivativeImpl(const LocalFunctionInterface<LocalFunctionImpl>& f, 
       return f.impl().evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(localFunctionArgs.integrationPointOrIndex,localFunctionArgs.coeffsIndices,localFunctionArgs.spatialPartialIndices,localFunctionArgs.transformWithArgs);
       }
     }
+    else if constexpr(localFunctionArgs.hasTwoCoeff)
+    {
+       if constexpr(localFunctionArgs.hasNoSpatial)
+      {
+        return f.impl().evaluateSecondDerivativeWRTCoeffsImpl(localFunctionArgs.integrationPointOrIndex, localFunctionArgs.coeffsIndices,localFunctionArgs.alongArgs,localFunctionArgs.transformWithArgs);
+      }
+    }
   }
   else {
-    if constexpr (localFunctionArgs.derivativeOrder==1)
-    return f.impl().evaluateDerivativeOfExpression(localFunctionArgs);
+    return f.impl().template evaluateDerivativeOfExpression<localFunctionArgs.derivativeOrder>(localFunctionArgs);
 
   }
 
