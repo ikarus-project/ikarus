@@ -37,4 +37,11 @@ struct hasType<T, std::tuple<U, Ts...>> : hasType<T, std::tuple<Ts...>> {};
 template <typename T, typename... Ts>
 struct hasType<T, std::tuple<T, Ts...>> : std::true_type {};
 
+
+template<template<typename...> class, typename...>
+struct isInstantiation : public std::false_type {};
+
+template<template<typename...> class U, typename... T>
+struct isInstantiation<U, U<T...>> : public std::true_type {};
+
 }  // namespace Ikarus::utils

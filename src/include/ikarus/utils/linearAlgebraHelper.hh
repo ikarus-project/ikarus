@@ -4,6 +4,8 @@
 #include <dune/istl/bvector.hh>
 
 #include <Eigen/Dense>
+#include <ikarus/manifolds/manifoldInterface.hh>
+
 
 namespace Ikarus::LinearAlgebra {
 
@@ -101,3 +103,25 @@ template <typename Derived>
 Derived skew(const Eigen::MatrixBase<Derived>& A) {
   return 0.5 * (A - A.transpose());
 }
+
+/** \brief Evaluates Eigen expressions */
+template <typename Derived>
+auto eval(const Eigen::EigenBase<Derived>& A) {
+
+  if constexpr(static_cast<bool>(Eigen::internal::is_diagonal<Derived>::ret)) //workaround needed since Eigen::DiagonalWrapper does not has a eval function
+  {
+    using Scalar = typename Derived::Scalar;
+    using namespace Eigen;
+    constexpr int diag_size = EIGEN_SIZE_MIN_PREFER_DYNAMIC(Derived::RowsAtCompileTime, Derived::ColsAtCompileTime);
+    constexpr int max_diag_size = EIGEN_SIZE_MIN_PREFER_FIXED(Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime);
+
+    return Eigen::DiagonalMatrix<Scalar,diag_size,max_diag_size>(A.derived().diagonal());}
+  else
+    return A.derived().eval();
+}
+
+/** \brief Does nothing if type is not an Eigen type but our manifolds type instead*/
+auto eval(const Ikarus::Concepts::Manifold auto& A) {
+    return A;
+}
+

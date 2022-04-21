@@ -16,9 +16,13 @@ class LocalFunctionExpression : public LocalFunctionInterface<LocalFunctionExpre
   using Base = LocalFunctionInterface<LocalFunctionExpression<Expr>>;
   friend Base;
   friend Expr;
+  template<typename LocalFunctionEvaluationArgs_,typename LocalFunctionImpl_>
+  friend auto evaluateDerivativeImpl(const LocalFunctionInterface<LocalFunctionImpl_>& f, const LocalFunctionEvaluationArgs_& localFunctionArgs);
   template<typename> friend class LocalFunctionInterface;
 
   using Traits = LocalFunctionTraits<LocalFunctionExpression>;
+  using Expression = Expr;
+
 
   /** \brief Type used for coordinates */
   using ctype = typename Traits::ctype;
@@ -47,23 +51,36 @@ class LocalFunctionExpression : public LocalFunctionInterface<LocalFunctionExpre
   const Expr& underlying() const {return static_cast<Expr const&>(*this);}
 
 
-  template<typename DomainTypeOrIntegrationPointIndex,typename... TransformArgs>
-  FunctionReturnType evaluateFunctionExpr(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, const TransformWith<TransformArgs...>& transArgs)  const
-  { return underlying().evaluateFunctionImpl(ipIndexOrPosition,transArgs); }
+  template<typename LocalFunctionEvaluationArgs_>
+  FunctionReturnType evaluateFunctionExpr(const LocalFunctionEvaluationArgs_& localFunctionArgs)  const
+  { return underlying().evaluateFunctionImpl(localFunctionArgs.integrationPointOrIndex,localFunctionArgs.transformWithArgs); }
 
-  template<typename DomainTypeOrIntegrationPointIndex,typename... TransformArgs>
-  Jacobian evaluateDerivativeWRTSpaceAllExpr(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
-                                             const TransformWith<TransformArgs...>& transArgs)  const { return underlying().evaluateDerivativeWRTSpaceAllImpl(ipIndexOrPosition,transArgs); }
+  template<typename LocalFunctionEvaluationArgs_>
+  Jacobian evaluateDerivativeWRTSpaceAllExpr(const LocalFunctionEvaluationArgs_& localFunctionArgs)  const {
+        if constexpr (Expr::isLeaf)
+      return underlying().evaluateDerivativeWRTSpaceAllImpl(localFunctionArgs.integrationPointOrIndex,localFunctionArgs.transformWithArgs);
+    else
+      return underlying().evaluateDerivativeOfExpression(localFunctionArgs);
+  }
 
-  template<typename DomainTypeOrIntegrationPointIndex,typename... TransformArgs>
-  JacobianColType evaluateDerivativeWRTSpaceSingleExpr(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
-                                                       int spaceIndex, const TransformWith<TransformArgs...>& transArgs) const {
-    return underlying().evaluateDerivativeWRTSpaceSingleImpl(ipIndexOrPosition,spaceIndex,transArgs); }
+  template<typename LocalFunctionEvaluationArgs_>
+  JacobianColType evaluateDerivativeWRTSpaceSingleExpr(const LocalFunctionEvaluationArgs_& localFunctionArgs) const {
+    if constexpr (Expr::isLeaf)
+      return underlying().evaluateDerivativeWRTSpaceSingleImpl(localFunctionArgs.integrationPointOrIndex,localFunctionArgs.spatialPartialIndices,localFunctionArgs.transformWithArgs);
+    else
+      return underlying().evaluateDerivativeOfExpression(localFunctionArgs);
 
-  template<typename DomainTypeOrIntegrationPointIndex,typename... TransformArgs>
-  CoeffDerivMatrix evaluateDerivativeWRTCoeffsExpr(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
-                                                   int coeffsIndex, const TransformWith<TransformArgs...>& transArgs) const {
-    return underlying().evaluateDerivativeWRTCoeffsImpl(ipIndexOrPosition,coeffsIndex,transArgs); }
+  }
+
+  template<typename LocalFunctionEvaluationArgs_>
+  CoeffDerivMatrix evaluateDerivativeWRTCoeffsExpr(const LocalFunctionEvaluationArgs_& localFunctionArgs) const {
+
+    if constexpr (Expr::isLeaf)
+      return underlying().evaluateDerivativeWRTCoeffsImpl(localFunctionArgs.integrationPointOrIndex,localFunctionArgs.coeffsIndices,localFunctionArgs.transformWithArgs);
+    else
+      return underlying().evaluateDerivativeOfExpression(localFunctionArgs);
+
+ }
 
   CoeffDerivMatrix evaluateSecondDerivativeWRTCoeffs(const AnsatzFunctionType& N,
                                                      const AnsatzFunctionJacobian& dN,
@@ -96,5 +113,12 @@ struct LocalFunctionTraits<LocalFunctionExpression<Expr>> : public LocalFunction
   using Base =  LocalFunctionTraits<Expr>;
 
 };
+
+
+
+
+
+
+
 
 }  // namespace Ikarus

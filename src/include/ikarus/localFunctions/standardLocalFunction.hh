@@ -20,8 +20,8 @@
 namespace Ikarus {
 
   template <typename DuneBasis, typename CoeffContainer>
-  class StandardLocalFunction : public LocalFunctionExpression<StandardLocalFunction<DuneBasis, CoeffContainer>> {
-    using Base = LocalFunctionExpression<StandardLocalFunction<DuneBasis, CoeffContainer>>;
+  class StandardLocalFunction : public LocalFunctionInterface<StandardLocalFunction<DuneBasis, CoeffContainer>> {
+    using Base = LocalFunctionInterface<StandardLocalFunction<DuneBasis, CoeffContainer>>;
 
   public:
     friend Base;
@@ -29,6 +29,9 @@ namespace Ikarus {
         : basis_{p_basis}, coeffs{coeffs_}, coeffsAsMat{Ikarus::LinearAlgebra::viewAsEigenMatrixFixedDyn(coeffs)} {}
 
     static constexpr bool isLeaf = true;
+
+    template<typename LocalFunctionEvaluationArgs_,typename LocalFunctionImpl_>
+    friend auto evaluateDerivativeImpl(const LocalFunctionInterface<LocalFunctionImpl_>& f, const LocalFunctionEvaluationArgs_& localFunctionArgs);
 
     using Traits = LocalFunctionTraits<StandardLocalFunction>;
     /** \brief Type used for coordinates */
@@ -109,12 +112,13 @@ namespace Ikarus {
       return Warray;
     }
 
-    CoeffDerivMatrix evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(const AnsatzFunctionType& N,
-                                                                     [[maybe_unused]] const AnsatzFunctionJacobian& dN,
-                                                                     int coeffsIndex, const int spatialIndex) const {
+    template<typename DomainTypeOrIntegrationPointIndex,typename... TransformArgs>
+    CoeffDerivMatrix evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, int coeffsIndex,int spatialIndex, const TransformWith<TransformArgs...>& transArgs) const {
+      const auto& dNraw = evaluateDerivativeWithIPorCoord(ipIndexOrPosition,basis_);
+      maytransformDerivatives(dNraw,dNTransformed,transArgs);
       CoeffDerivMatrix W;
       W.setIdentity(valueSize);
-      W.diagonal() *= dN(coeffsIndex, spatialIndex);
+      W.diagonal() *= dNTransformed(coeffsIndex, spatialIndex);
 
       return W;
     }

@@ -347,39 +347,16 @@ TEST(LocalFunctionTests,TestInterface)
 
 
 
-#include <ikarus/localFunctions/localFunctionExpression.hh>
+#include <ikarus/localFunctions/expressions/binaryExpr.hh>
 
 
 
-template <typename Op, typename E1,typename E2>
- class BinaryLocalFunctionExpression : public Ikarus::LocalFunctionExpression<Op> {
-
-   template<typename> friend class LocalFunctionInterface;
-   template<typename> friend class LocalFunctionExpression;
- protected:
-  E1 const& _u;
-  E2 const& _v;
- public:
-  BinaryLocalFunctionExpression(Ikarus::LocalFunctionExpression<E1> const& u, Ikarus::LocalFunctionExpression<E2> const& v) : _u(static_cast<E1 const&>(u)), _v(static_cast<E2 const&>(v)) {  }
-
-  static constexpr bool isLeaf = false;
-  template<int i = 0>
-  const auto& basis()const
-  {
-    if constexpr(i==0)
-      return _u.basis();
-    else
-      return _v.basis();
-  }
-
-
-};
 
 template <typename E1, typename E2>
-class LocalFunctionSum : public BinaryLocalFunctionExpression<LocalFunctionSum<E1,E2>,E1,E2> {
+ class LocalFunctionSum : public Ikarus::BinaryLocalFunctionExpression<LocalFunctionSum<E1,E2>,E1,E2> {
 
  public:
-  using  Base= BinaryLocalFunctionExpression<LocalFunctionSum<E1,E2>,E1,E2>;
+  using  Base= Ikarus::BinaryLocalFunctionExpression<LocalFunctionSum<E1,E2>,E1,E2>;
   using  Base::BinaryLocalFunctionExpression;
   using Traits = Ikarus::LocalFunctionTraits<LocalFunctionSum>;
 
@@ -409,30 +386,14 @@ class LocalFunctionSum : public BinaryLocalFunctionExpression<LocalFunctionSum<E
   using AnsatzFunctionJacobian = typename Traits::AnsatzFunctionJacobian;
 
   template<typename DomainTypeOrIntegrationPointIndex,typename... TransformArgs>
-  FunctionReturnType evaluateFunctionImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, const Ikarus::TransformWith<TransformArgs...>& transArgs) const {
-    return this->_u.evaluateFunction(ipIndexOrPosition,transArgs)+this->_v.evaluateFunction(ipIndexOrPosition,transArgs);
+  auto evaluateFunctionImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, const Ikarus::TransformWith<TransformArgs...>& transArgs) const {
+    return eval(this->_u.evaluateFunction(ipIndexOrPosition,transArgs)+this->_v.evaluateFunction(ipIndexOrPosition,transArgs));
   }
 
-  template<typename DomainTypeOrIntegrationPointIndex,typename... TransformArgs>
-  JacobianColType evaluateDerivativeWRTSpaceSingleImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,int spaceIndex, const Ikarus::TransformWith<TransformArgs...>& transArgs) const {
-    return this->_u.evaluateDerivative(ipIndexOrPosition,Ikarus::wrt(Ikarus::DerivativeDirections::spatial(spaceIndex)),transArgs)+this->_v.evaluateDerivative(ipIndexOrPosition,Ikarus::wrt(Ikarus::DerivativeDirections::spatial(spaceIndex)),transArgs);
-  }
 
-    template<typename DomainTypeOrIntegrationPointIndex,typename... TransformArgs>
-  Jacobian evaluateDerivativeWRTSpaceAllImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, const Ikarus::TransformWith<TransformArgs...>& transArgs) const {
-    return this->_u.evaluateDerivative(ipIndexOrPosition,Ikarus::wrt(Ikarus::DerivativeDirections::spatialall),transArgs)+this->_v.evaluateDerivative(ipIndexOrPosition,Ikarus::wrt(Ikarus::DerivativeDirections::spatialall),transArgs);
-  }
-
-  template<typename DomainTypeOrIntegrationPointIndex,typename... TransformArgs>
-  CoeffDerivMatrix evaluateDerivativeWRTCoeffsImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
-                                                   int coeffsIndex, const Ikarus::TransformWith<TransformArgs...>& transArgs) const {
-    return this->_u.evaluateDerivative(ipIndexOrPosition,Ikarus::wrt(Ikarus::DerivativeDirections::coeff(coeffsIndex)),transArgs)+this->_v.evaluateDerivative(ipIndexOrPosition,Ikarus::wrt(Ikarus::DerivativeDirections::coeff(coeffsIndex)),transArgs);
-  }
-
-//  template<typename LocalFunctionEvaluationArgs>
-//  auto evaluateDerivativeImpl(const LocalFunctionEvaluationArgs& localFunctionEvaluationArgs) const {
-//    return this->_u.evaluateDerivative(ipIndexOrPosition,Ikarus::wrt(Ikarus::DerivativeDirections::coeff(coeffsIndex)),std::forward<Ikarus::TransformWith<TransformArgs...>>(transArgs))+this->_v.evaluateDerivative(ipIndexOrPosition,Ikarus::wrt(Ikarus::DerivativeDirections::coeff(coeffsIndex)),std::forward<Ikarus::TransformWith<TransformArgs...>>(transArgs));
-//  }
+   template<typename LocalFunctionEvaluationArgs_>
+   auto evaluateDerivativeOfExpression(const LocalFunctionEvaluationArgs_& localFunctionArgs) const {
+     return eval(evaluateDerivativeImpl(this->_u,localFunctionArgs) + evaluateDerivativeImpl(this->_v,localFunctionArgs));  }
 
 };
 
@@ -446,17 +407,9 @@ using Base =  Ikarus::LocalFunctionTraits<E1>;
 
 
 
-#define DEFINEBINARYEXPRESSION(Name,functionName) \
- template <typename E1, typename E2> \
-Name<E1, E2> \
-functionName(Ikarus::LocalFunctionExpression<E1> const& u, Ikarus::LocalFunctionExpression<E2> const& v) { \
-   return Name<E1,E2>(u,v); \
-}
-
-
 template <typename E1, typename E2>
 LocalFunctionSum<E1, E2>
-operator+(Ikarus::LocalFunctionExpression<E1> const& u, Ikarus::LocalFunctionExpression<E2> const& v) {
+operator+(Ikarus::LocalFunctionInterface<E1> const& u, Ikarus::LocalFunctionInterface<E2> const& v) {
   static_assert(Ikarus::Concepts::AddAble<typename E1::FunctionReturnType,typename E2::FunctionReturnType>, "The function values of your local functions are not addable!");
 
    return LocalFunctionSum<E1,E2>(u,v);
@@ -507,11 +460,20 @@ TEST(LocalFunctionTests,TestExpressions) {
       for (size_t i = 0; i < fe.size(); ++i) {
         const Eigen::Matrix2d dfgdi= f.evaluateDerivative(gpIndex, wrt(coeff(i)))+g.evaluateDerivative(gpIndex, wrt(coeff(i)));
         const Eigen::Matrix2d dhdi= h.evaluateDerivative(gpIndex, wrt(coeff(i)));
+        const Eigen::Matrix2d dhdSdi= h.evaluateDerivative(gpIndex, wrt(spatial(1),coeff(i)));
+        const Eigen::Matrix2d dfgdSdi= f.evaluateDerivative(gpIndex, wrt(spatial(1),coeff(i)))+g.evaluateDerivative(gpIndex, wrt(spatial(1),coeff(i)));
         EXPECT_THAT(dfgdi, EigenApproxEqual(dhdi, 1e-14));
+        EXPECT_THAT(dhdSdi, EigenApproxEqual(dfgdSdi, 1e-14));
         for (size_t j = 0; j < fe.size(); ++j) {
           const Eigen::Matrix2d dfgdj= f.evaluateDerivative(gpIndex, wrt(coeff(j)))+g.evaluateDerivative(gpIndex, wrt(coeff(j)));
           const Eigen::Matrix2d dhdj= h.evaluateDerivative(gpIndex, wrt(coeff(j)));
-          if (i==j) { EXPECT_THAT(dfgdj, EigenApproxEqual(dhdj, 1e-14)); }
+          const Eigen::Matrix2d dhdSdj= h.evaluateDerivative(gpIndex, wrt(spatial(1),coeff(j)));
+          const Eigen::Matrix2d dfgdSdj= f.evaluateDerivative(gpIndex, wrt(spatial(1),coeff(j)))+g.evaluateDerivative(gpIndex, wrt(spatial(1),coeff(j)));
+          if (i==j) {
+            EXPECT_THAT(dfgdj, EigenApproxEqual(dhdj, 1e-14));
+            EXPECT_THAT(dfgdSdj, EigenApproxEqual(dhdSdj, 1e-14));
+
+          }
         }
       }
     }
