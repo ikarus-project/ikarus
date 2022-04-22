@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "localFunctionInterface.hh"
 namespace Ikarus
 {
 template <typename DomainTypeOrIntegrationPointIndex, typename Basis>
@@ -59,9 +60,9 @@ auto evaluateFunctionWithIPorCoord(const DomainTypeOrIntegrationPointIndex& loca
 template <typename... TransformArgs>
 void maytransformDerivatives(const auto& dNraw, auto& dNTransformed,
                              const TransformWith<TransformArgs...>& transArgs)  {
-  if constexpr (sizeof...(TransformArgs) > 0)
+  if constexpr (sizeof...(TransformArgs) > 0) {
     dNTransformed = dNraw * std::get<0>(transArgs.args);
-  else
+  } else
     dNTransformed = dNraw;
 }
 

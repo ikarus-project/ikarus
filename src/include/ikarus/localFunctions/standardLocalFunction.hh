@@ -101,12 +101,16 @@ namespace Ikarus {
       return mat;
     }
 
+    template<typename DomainTypeOrIntegrationPointIndex,typename... TransformArgs>
     std::array<CoeffDerivMatrix, gridDim> evaluateDerivativeWRTCoeffsANDSpatialImpl(
-        const AnsatzFunctionType& N, [[maybe_unused]] const AnsatzFunctionJacobian& dN, int coeffsIndex) const {
+        const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
+        int coeffsIndex, const TransformWith<TransformArgs...>& transArgs) const {
+      const auto& dNraw = evaluateDerivativeWithIPorCoord(ipIndexOrPosition,basis_);
+      maytransformDerivatives(dNraw,dNTransformed,transArgs);
       std::array<CoeffDerivMatrix, gridDim> Warray;
       for (int dir = 0; dir < gridDim; ++dir) {
         Warray[dir].setIdentity(valueSize);
-        Warray[dir].diagonal() *= dN(coeffsIndex, dir);
+        Warray[dir].diagonal() *= dNTransformed(coeffsIndex, dir);
       }
 
       return Warray;
