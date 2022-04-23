@@ -430,17 +430,17 @@ class LocalFunctionDot : public Ikarus::BinaryLocalFunctionExpression<LocalFunct
   /** \brief Type for the directional derivatives */
   using AlongType = typename Traits::AlongType;
   /** \brief Type for the coordinates to store the return value */
-  using GlobalE = typename FunctionReturnType::CoordinateType;
+//  using GlobalE = typename FunctionReturnType::CoordinateType;
   /** \brief Type for the Jacobian matrix */
-  using Jacobian = typename Traits::Jacobian;
+//  using Jacobian = typename Traits::Jacobian;
   /** \brief Type for a column of the Jacobian matrix */
-  using JacobianColType = typename Traits::JacobianColType;
+//  using JacobianColType = typename Traits::JacobianColType;
   /** \brief Type for the derivatives wrT the coeffiecients */
-  using CoeffDerivMatrix = typename Traits::CoeffDerivMatrix;
+//  using CoeffDerivMatrix = typename Traits::CoeffDerivMatrix;
   /** \brief Type for ansatz function values */
-  using AnsatzFunctionType = typename Traits::AnsatzFunctionType;
+//  using AnsatzFunctionType = typename Traits::AnsatzFunctionType;
   /** \brief Type for the Jacobian of the ansatz function values */
-  using AnsatzFunctionJacobian = typename Traits::AnsatzFunctionJacobian;
+//  using AnsatzFunctionJacobian = typename Traits::AnsatzFunctionJacobian;
 
   template<typename DomainTypeOrIntegrationPointIndex,typename... TransformArgs>
   auto evaluateFunctionImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, const Ikarus::TransformWith<TransformArgs...>& transArgs) const {
