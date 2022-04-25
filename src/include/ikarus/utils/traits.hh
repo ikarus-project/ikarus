@@ -44,4 +44,9 @@ struct isInstantiation : public std::false_type {};
 template<template<typename...> class U, typename... T>
 struct isInstantiation<U, U<T...>> : public std::true_type {};
 
+template<template<typename,auto...> class Type, typename >
+struct IsInstantiationTypeAndNonTypes : std::false_type {};
+
+template<template<typename,auto...> class Type,typename T, auto... N>
+struct IsInstantiationTypeAndNonTypes<Type,Type<T, N...>> : std::true_type {};
 }  // namespace Ikarus::utils

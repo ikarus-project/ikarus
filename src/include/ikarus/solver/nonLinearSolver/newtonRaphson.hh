@@ -5,7 +5,7 @@
 #pragma once
 #include <iostream>
 
-#include <ikarus/linearAlgebra/linearAlgebraHelper.hh>
+#include <ikarus/utils/linearAlgebraHelper.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/linearSolver/linearSolver.hh>
 #include <ikarus/utils/linearAlgebraHelper.hh>

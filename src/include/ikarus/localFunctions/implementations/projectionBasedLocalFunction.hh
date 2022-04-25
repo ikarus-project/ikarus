@@ -4,17 +4,16 @@
 
 #pragma once
 
-#include "localFunctionHelper.hh"
-#include "localFunctionInterface.hh"
+#include "src/include/ikarus/localBasis/localBasis.hh"
+#include "src/include/ikarus/localFunctions/localFunctionHelper.hh"
+#include "src/include/ikarus/localFunctions/localFunctionInterface.hh"
+#include "src/include/ikarus/utils/linearAlgebraHelper.hh"
 
 #include <concepts>
 #include <iostream>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
-
-#include <ikarus/localBasis/localBasis.hh>
-#include <ikarus/utils/linearAlgebraHelper.hh>
 
 namespace Ikarus {
 
@@ -26,7 +25,7 @@ namespace Ikarus {
   public:
     friend Base;
     ProjectionBasedLocalFunction(const Ikarus::LocalBasis<DuneBasis>& p_basis, const CoeffContainer& coeffs_)
-        : basis_{p_basis}, coeffs{coeffs_}, coeffsAsMat{Ikarus::LinearAlgebra::viewAsEigenMatrixFixedDyn(coeffs)} {}
+        : basis_{p_basis}, coeffs{coeffs_}, coeffsAsMat{Ikarus::viewAsEigenMatrixFixedDyn(coeffs)} {}
 
     using Traits = LocalFunctionTraits<ProjectionBasedLocalFunction>;
 
@@ -35,6 +34,10 @@ namespace Ikarus {
     template <typename LocalFunctionEvaluationArgs_, typename LocalFunctionImpl_>
     friend auto evaluateDerivativeImpl(const LocalFunctionInterface<LocalFunctionImpl_>& f,
                                        const LocalFunctionEvaluationArgs_& localFunctionArgs);
+
+    template <typename LocalFunctionEvaluationArgs_, typename LocalFunctionImpl_>
+    friend auto evaluateFunctionImpl(const LocalFunctionInterface<LocalFunctionImpl_>& f,
+                                     const LocalFunctionEvaluationArgs_& localFunctionArgs) ;
 
     /** \brief Type used for coordinates */
     using ctype = typename Traits::ctype;
@@ -161,15 +164,15 @@ namespace Ikarus {
       std::array<CoeffDerivEukMatrix, gridDim> WarrayEuk
           = evaluateDerivativeWRTCoeffsANDSpatialEukImpl(ipIndexOrPosition, coeffsIndex, transArgs);
       std::array<CoeffDerivRieEukMatrix, gridDim> WarrayRie;
-      const auto BLAT = coeffs[coeffsIndex].orthonormalFrame().transpose();
-      for (int dir = 0; dir < gridDim; ++dir) {
+      const auto BLAT = coeffs[coeffsIndex].orthonormalFrame().transpose().eval();
+      for (int dir = 0; dir < gridDim; ++dir)
         WarrayRie[dir] = BLAT * WarrayEuk[dir];
-      }
+
       return WarrayRie;
     }
 
     template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
-    auto evaluateDerivativeWRTCoeffsANDSpatialEukImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
+    std::array<CoeffDerivEukMatrix, gridDim> evaluateDerivativeWRTCoeffsANDSpatialEukImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
                                                       int coeffsIndex,
                                                       const TransformWith<TransformArgs...>& transArgs) const {
       const auto& [N, dNraw] = evaluateFunctionAndDerivativeWithIPorCoord(ipIndexOrPosition, basis_);
@@ -192,7 +195,6 @@ namespace Ikarus {
         const TransformWith<TransformArgs...>& transArgs) const {
       const CoeffDerivEukMatrix WEuk
           = evaluateDerivativeWRTCoeffsANDSpatialSingleEukImpl(ipIndexOrPosition, coeffsIndex, spatialIndex, transArgs);
-
       return coeffs[coeffsIndex].orthonormalFrame().transpose() * WEuk;
     }
 
@@ -208,7 +210,6 @@ namespace Ikarus {
       CoeffDerivEukMatrix W;
       const auto Qi = tryToCallSecondDerivativeOfProjectionWRTposition(valE, Jcol);
       W             = Qi * N[coeffsIndex] + Pm * dNTransformed(coeffsIndex, spatialIndex);
-
       return W;
     }
 
@@ -296,7 +297,7 @@ namespace Ikarus {
     mutable AnsatzFunctionJacobian dNTransformed;
     const Ikarus::LocalBasis<DuneBasis>& basis_;
     CoeffContainer coeffs;
-    const decltype(Ikarus::LinearAlgebra::viewAsEigenMatrixFixedDyn(coeffs)) coeffsAsMat;
+    const decltype(Ikarus::viewAsEigenMatrixFixedDyn(coeffs)) coeffsAsMat;
   };
 
   template <typename DuneBasis, typename CoeffContainer>

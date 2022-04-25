@@ -4,18 +4,16 @@
 
 #pragma once
 
-#include "localFunctionInterface.hh"
-#include "localFunctionExpression.hh"
-#include "localFunctionHelper.hh"
+#include "src/include/ikarus/localBasis/localBasis.hh"
+#include "src/include/ikarus/localFunctions/localFunctionHelper.hh"
+#include "src/include/ikarus/localFunctions/localFunctionInterface.hh"
+#include "src/include/ikarus/utils/linearAlgebraHelper.hh"
 
 #include <concepts>
 #include <iostream>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
-
-#include <ikarus/localBasis/localBasis.hh>
-#include <ikarus/utils/linearAlgebraHelper.hh>
 
 namespace Ikarus {
 
@@ -26,12 +24,16 @@ namespace Ikarus {
   public:
     friend Base;
     StandardLocalFunction(const Ikarus::LocalBasis<DuneBasis>& p_basis, const CoeffContainer& coeffs_)
-        : basis_{p_basis}, coeffs{coeffs_}, coeffsAsMat{Ikarus::LinearAlgebra::viewAsEigenMatrixFixedDyn(coeffs)} {}
+        : basis_{p_basis}, coeffs{coeffs_}, coeffsAsMat{Ikarus::viewAsEigenMatrixFixedDyn(coeffs)} {}
 
     static constexpr bool isLeaf = true;
 
     template<typename LocalFunctionEvaluationArgs_,typename LocalFunctionImpl_>
     friend auto evaluateDerivativeImpl(const LocalFunctionInterface<LocalFunctionImpl_>& f, const LocalFunctionEvaluationArgs_& localFunctionArgs);
+
+    template <typename LocalFunctionEvaluationArgs_, typename LocalFunctionImpl_>
+    friend auto evaluateFunctionImpl(const LocalFunctionInterface<LocalFunctionImpl_>& f,
+                              const LocalFunctionEvaluationArgs_& localFunctionArgs) ;
 
     using Traits = LocalFunctionTraits<StandardLocalFunction>;
     /** \brief Type used for coordinates */
@@ -132,7 +134,7 @@ namespace Ikarus {
     mutable AnsatzFunctionJacobian dNTransformed;
     const Ikarus::LocalBasis<DuneBasis>& basis_;
     CoeffContainer coeffs;
-    const decltype(Ikarus::LinearAlgebra::viewAsEigenMatrixFixedDyn(coeffs)) coeffsAsMat;
+    const decltype(Ikarus::viewAsEigenMatrixFixedDyn(coeffs)) coeffsAsMat;
   };
 
   template <typename DuneBasis, typename CoeffContainer>

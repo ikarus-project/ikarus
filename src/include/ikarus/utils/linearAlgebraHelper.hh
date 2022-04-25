@@ -2,12 +2,14 @@
 
 #pragma once
 #include <dune/istl/bvector.hh>
+#include <dune/istl/multitypeblockvector.hh>
 
-#include <Eigen/Dense>
+#include <Eigen/Core>
+
 #include <ikarus/manifolds/manifoldInterface.hh>
+#include <ikarus/utils/concepts.hh>
 
-
-namespace Ikarus::LinearAlgebra {
+namespace Ikarus {
 
   /** \brief Orthonormalizes all Matrix columns */
   template <typename Derived>
@@ -83,45 +85,95 @@ namespace Ikarus::LinearAlgebra {
 
     return vec;
   }
-}  // namespace Ikarus::LinearAlgebra
 
-/** \brief Adding free norm function to Eigen types */
-template <typename Derived>
-requires(!std::floating_point<Derived>) auto norm(const Eigen::MatrixBase<Derived>& v) { return v.norm(); }
-
-/** \brief Helper Free Function to have the same interface as for Eigen Vector Types */
-auto norm(const std::floating_point auto& v) { return std::abs(v); }
-
-/** \brief Returns the symmetric part of a matrix*/
-template <typename Derived>
-Derived sym(const Eigen::MatrixBase<Derived>& A) {
-  return 0.5 * (A + A.transpose());
-}
-
-/** \brief Returns the skew part of a matrix*/
-template <typename Derived>
-Derived skew(const Eigen::MatrixBase<Derived>& A) {
-  return 0.5 * (A - A.transpose());
-}
-
-/** \brief Evaluates Eigen expressions */
-template <typename Derived>
-auto eval(const Eigen::EigenBase<Derived>& A) {
-
-  if constexpr(static_cast<bool>(Eigen::internal::is_diagonal<Derived>::ret)) //workaround needed since Eigen::DiagonalWrapper does not has a eval function
+  /* Returns the total correction size of a block vector with a Manifold as type */
+  template <typename Type>
+  size_t correctionSize(const Dune::BlockVector<Type>& a)
+    requires requires { Type::correctionSize; }
   {
-    using Scalar = typename Derived::Scalar;
-    using namespace Eigen;
-    constexpr int diag_size = EIGEN_SIZE_MIN_PREFER_DYNAMIC(Derived::RowsAtCompileTime, Derived::ColsAtCompileTime);
-    constexpr int max_diag_size = EIGEN_SIZE_MIN_PREFER_FIXED(Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime);
+    return a.size() * Type::correctionSize;
+  }
 
-    return Eigen::DiagonalMatrix<Scalar,diag_size,max_diag_size>(A.derived().diagonal());}
-  else
-    return A.derived().eval();
-}
+  /* Enables the += operator for Dune::BlockVector += Eigen::Vector */
+  template <typename Type, typename Derived>
+  Dune::BlockVector<Type>& operator+=(Dune::BlockVector<Type>& a, const Eigen::MatrixBase<Derived>& b)
+    requires(Ikarus::Concepts::AddAssignAble<
+                 Type, decltype(b.template segment<Type::correctionSize>(0))> and requires() { Type::correctionSize; })
+  {
+    for (auto i = 0U; i < a.size(); ++i)
+      a[i] += b.template segment<Type::correctionSize>(i * Type::correctionSize);
+    return a;
+  }
 
-/** \brief Does nothing if type is not an Eigen type but our manifolds type instead*/
-auto eval(const Ikarus::Concepts::Manifold auto& A) {
-    return A;
-}
+  /* Enables the += operator for Dune::MultiTypeBlockVector += Eigen::Vector */
+  template <typename... Types, typename Derived>
+  Dune::MultiTypeBlockVector<Types...>& operator+=(Dune::MultiTypeBlockVector<Types...>& a,
+                                                   const Eigen::MatrixBase<Derived>& b) {
+    using namespace Dune::Indices;
+    size_t posStart = 0;
+    Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<a.size()>()), [&](const auto i) {
+      const size_t size = correctionSize(a[i]);
+      a[i] += b(Eigen::seqN(posStart, size));
+      posStart += size;
+    });
 
+    return a;
+  }
+
+  /** \brief Adding free norm function to Eigen types */
+  template <typename Derived>
+    requires(!std::floating_point<Derived>)
+  auto norm(const Eigen::MatrixBase<Derived>& v) {
+    return v.norm();
+  }
+
+  /** \brief Helper Free Function to have the same interface as for Eigen Vector Types */
+  auto norm(const std::floating_point auto& v) { return std::abs(v); }
+
+  /** \brief Returns the symmetric part of a matrix*/
+  template <typename Derived>
+  Derived sym(const Eigen::MatrixBase<Derived>& A) {
+    return 0.5 * (A + A.transpose());
+  }
+
+  /** \brief Returns the skew part of a matrix*/
+  template <typename Derived>
+  Derived skew(const Eigen::MatrixBase<Derived>& A) {
+    return 0.5 * (A - A.transpose());
+  }
+
+  /** \brief Evaluates Eigen expressions */
+  template <typename Derived>
+  auto eval(const Eigen::EigenBase<Derived>& A) {
+    if constexpr (static_cast<bool>(
+                      Eigen::internal::is_diagonal<Derived>::ret))  // workaround needed since Eigen::DiagonalWrapper
+                                                                    // does not has a eval function
+    {
+      using Scalar = typename Derived::Scalar;
+      using namespace Eigen;
+      constexpr int diag_size = EIGEN_SIZE_MIN_PREFER_DYNAMIC(Derived::RowsAtCompileTime, Derived::ColsAtCompileTime);
+      constexpr int max_diag_size
+          = EIGEN_SIZE_MIN_PREFER_FIXED(Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime);
+
+      return Eigen::DiagonalMatrix<Scalar, diag_size, max_diag_size>(A.derived().diagonal());
+    } else
+      return A.derived().eval();
+  }
+
+  /** \brief Does nothing if type is not an Eigen type but our manifolds type instead*/
+  auto eval(const Ikarus::Concepts::Manifold auto& A) { return A; }
+
+  template <typename Derived>
+  auto transpose(const Eigen::EigenBase<Derived>& A) {
+    if constexpr (requires {
+                    A.derived().transpose();
+                  })  // workaround needed since Eigen::Diagonalmatrix has no transpose function
+      return A.derived().transpose();
+    else if constexpr (Ikarus::Std::IsInstantiationTypeAndNonTypes<Eigen::DiagonalMatrix, Derived>::value)
+      return A.derived();
+    else
+      static_assert((requires { A.derived().transpose(); })
+                    or Ikarus::Std::IsInstantiationTypeAndNonTypes<Eigen::DiagonalMatrix, Derived>::value);
+  }
+
+}  // namespace Ikarus

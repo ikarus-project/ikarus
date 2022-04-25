@@ -4,6 +4,8 @@
 
 #include <config.h>
 
+#include "src/include/ikarus/localFunctions/implementations/standardLocalFunction.hh"
+
 #include <autodiff/forward/dual/dual.hpp>
 #include <matplot/matplot.h>
 
@@ -22,7 +24,6 @@
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/finiteElements/feBases/autodiffFE.hh>
 #include <ikarus/localBasis/localBasis.hh>
-#include <ikarus/localFunctions/standardLocalFunction.hh>
 #include <ikarus/utils/algorithms.hh>
 #include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/utils/linearAlgebraTypedefs.hh>

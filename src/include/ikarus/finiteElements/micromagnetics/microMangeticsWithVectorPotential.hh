@@ -22,6 +22,9 @@
 // *
 
 #pragma once
+#include "src/include/ikarus/localFunctions/implementations/projectionBasedLocalFunction.hh"
+#include "src/include/ikarus/localFunctions/implementations/standardLocalFunction.hh"
+
 #include <autodiff/forward/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
 #include <concepts>
@@ -37,12 +40,10 @@
 #include <ikarus/finiteElements/interface/interfaceFiniteElement.hh>
 #include <ikarus/finiteElements/physicsHelper.hh>
 #include <ikarus/localBasis/localBasis.hh>
-#include <ikarus/localFunctions/projectionBasedLocalFunction.hh>
-#include <ikarus/localFunctions/standardLocalFunction.hh>
-#include <ikarus/utils/linearAlgebraHelper.hh>
-#include <ikarus/utils/linearAlgebraTypedefs.hh>
 #include <ikarus/manifolds/realTuple.hh>
 #include <ikarus/manifolds/unitVector.hh>
+#include <ikarus/utils/linearAlgebraHelper.hh>
+#include <ikarus/utils/linearAlgebraTypedefs.hh>
 
 namespace Ikarus {
 

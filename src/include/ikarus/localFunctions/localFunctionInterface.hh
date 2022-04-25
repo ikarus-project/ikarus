@@ -219,6 +219,18 @@ namespace Ikarus {
       spatialPartialIndices = Ikarus::DerivativeDirections::extractSpatialPartialIndices(args);
     }
 
+    LocalFunctionEvaluationArgs(const LocalFunctionEvaluationArgs& args, const Along<AlongArgs...>& alongArgs)
+        : integrationPointOrIndex{args.integrationPointOrIndex}, wrtArgs{args.wrtArgs}, alongArgs{alongArgs}, transformWithArgs{args.transformWithArgs} {
+      coeffsIndices         = args.coeffsIndices;
+      spatialPartialIndices = args.spatialPartialIndices;
+    }
+
+    template<int N>
+    auto extractArgsWrtFirstN()
+    {
+      return LocalFunctionEvaluationArgs(integrationPointOrIndex,wrt(std::get<N>(wrtArgs.args))
+    }
+
     static constexpr DerivativeDirections::ConstExprCounter derivativeCounter
         = DerivativeDirections::countDerivativesType<Wrt<WrtArgs...>>();
     static constexpr int derivativeOrder
@@ -230,7 +242,6 @@ namespace Ikarus {
     static constexpr bool hasNoSpatial        = DerivativeDirections::HasNoSpatial<Wrt<WrtArgs...>>;
     static constexpr bool hasOneSpatialAll    = DerivativeDirections::HasOneSpatialAll<Wrt<WrtArgs...>>;
     static constexpr bool hasOneSpatialSingle = DerivativeDirections::HasOneSpatialSingle<Wrt<WrtArgs...>>;
-    static constexpr bool hasOneSpatial       = hasOneSpatialAll or hasOneSpatialSingle;
 
     DomainTypeOrIntegrationPointIndex integrationPointOrIndex{};
 
@@ -258,7 +269,6 @@ namespace Ikarus {
         = HasevaluateDerivativeWRTSpaceAllImpl<LocalFunctionImpl>;
 
     static constexpr int gridDim = Traits::gridDim;
-    using TransformMatrix        = Eigen::Matrix<double, gridDim, gridDim>;
 
     template <typename WrtType>
     static constexpr bool hasTwoCoeff = DerivativeDirections::HasTwoCoeff<WrtType>;
@@ -281,7 +291,7 @@ namespace Ikarus {
     auto evaluateFunction(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
                           const TransformWith<TransformArgs...>& transArgs = transformWith()) const {
       const LocalFunctionEvaluationArgs evalArgs(ipIndexOrPosition, wrt(), along(), transArgs);
-      return impl().evaluateFunctionImpl(evalArgs.integrationPointOrIndex, evalArgs.transformWithArgs);
+      return evaluateFunctionImpl(*this,evalArgs);
     }
 
     template <typename... WrtArgs, typename... TransformArgs, typename... AlongArgs,
@@ -318,11 +328,25 @@ namespace Ikarus {
     friend auto evaluateDerivativeImpl(const LocalFunctionInterface<LocalFunctionImpl_>& f,
                                        const LocalFunctionEvaluationArgs_& localFunctionArgs);
 
-    LocalFunctionImpl const& impl() const  // CRTP
+    template <typename LocalFunctionEvaluationArgs_, typename LocalFunctionImpl_>
+    friend auto evaluateFunctionImpl(const LocalFunctionInterface<LocalFunctionImpl_>& f,
+                              const LocalFunctionEvaluationArgs_& localFunctionArgs) ;
+
+        LocalFunctionImpl const& impl() const  // CRTP
     {
       return static_cast<LocalFunctionImpl const&>(*this);
     }
   };
+
+  template <typename LocalFunctionEvaluationArgs_, typename LocalFunctionImpl>
+  auto evaluateFunctionImpl(const LocalFunctionInterface<LocalFunctionImpl>& f,
+                              const LocalFunctionEvaluationArgs_& localFunctionArgs) {
+    if constexpr (LocalFunctionImpl::isLeaf)
+      return f.impl().evaluateFunctionImpl(localFunctionArgs.integrationPointOrIndex, localFunctionArgs.transformWithArgs);
+    else {
+      return f.impl().evaluateValueOfExpression(localFunctionArgs);
+      }
+  }
 
   template <typename LocalFunctionEvaluationArgs_, typename LocalFunctionImpl>
   auto evaluateDerivativeImpl(const LocalFunctionInterface<LocalFunctionImpl>& f,

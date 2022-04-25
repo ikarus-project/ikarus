@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <ikarus/localFunctions/localFunctionExpression.hh>
+#include <ikarus/localFunctions/localFunctionInterface.hh>
 namespace Ikarus
 {
 
