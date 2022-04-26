@@ -206,8 +206,9 @@ std::ostream& operator<<(std::ostream& os,  const Eigen::DiagonalMatrix<Scalar,s
       return A.derived().eval();
   }
 
-  /** \brief Does nothing if type is not an Eigen type but our manifolds type instead*/
-  auto eval(const Ikarus::Concepts::Manifold auto& A) { return A; }
+  /** \brief Does nothing if type is not an Eigen type but our manifolds type or floatingin point instead*/
+  template<typename Type> requires Ikarus::Concepts::Manifold<Type>  or std::floating_point<Type>
+  auto eval(const  Type& A) { return A; }
 
   template <typename Derived>
   auto transpose(const Eigen::EigenBase<Derived>& A) {
@@ -215,11 +216,11 @@ std::ostream& operator<<(std::ostream& os,  const Eigen::DiagonalMatrix<Scalar,s
                     A.derived().transpose();
                   })  // workaround needed since Eigen::Diagonalmatrix has no transpose function
       return A.derived().transpose();
-    else if constexpr (Ikarus::Std::IsInstantiationTypeAndNonTypes<Eigen::DiagonalMatrix, Derived>::value)
+    else if constexpr (Ikarus::Std::IsInstantiationTypeAndNonTypes<Eigen::DiagonalMatrix, Derived>::value or Std::isInstantiation<Eigen::DiagonalWrapper,Derived>::value)
       return A.derived();
     else
       static_assert((requires { A.derived().transpose(); })
-                    or Ikarus::Std::IsInstantiationTypeAndNonTypes<Eigen::DiagonalMatrix, Derived>::value);
+                    or Ikarus::Std::IsInstantiationTypeAndNonTypes<Eigen::DiagonalMatrix, Derived>::value or Std::isInstantiation<Eigen::DiagonalWrapper,Derived>::value);
   }
 
 }  // namespace Ikarus

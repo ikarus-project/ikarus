@@ -6,3 +6,5 @@
 
 #include "sumExpr.hh"
 #include "dotProductExpr.hh"
+#include "negateExpr.hh"
+#include "scaleExpr.hh"

@@ -95,5 +95,14 @@ namespace Ikarus {
     return RealTuple<ctype2, d2>(rt.getValue() + correction);
   }
 
+  template <typename ctype2, int d2, typename Scalar> requires std::is_arithmetic_v<Scalar>
+  [[nodiscard]] RealTuple<ctype2, d2> operator*(const RealTuple<ctype2, d2> &rt, const Scalar &factor) {
+      return RealTuple<ctype2, d2>(rt.getValue() *factor);
+  }
+
+  template <typename ctype2, int d2, typename Scalar> requires std::is_arithmetic_v<Scalar>
+      [[nodiscard]] RealTuple<ctype2, d2> operator*(const Scalar &factor,const RealTuple<ctype2, d2> &rt) {
+    return rt*factor;
+  }
 
 }  // namespace Ikarus::Manifold

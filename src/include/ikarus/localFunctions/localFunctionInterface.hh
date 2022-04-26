@@ -157,8 +157,6 @@ namespace Ikarus {
     using Traits     = LocalFunctionTraits<LocalFunctionImpl>;
     using DomainType = typename Traits::DomainType;
 
-    static constexpr int gridDim = Traits::gridDim;
-
     template <typename WrtType>
     static constexpr bool hasTwoCoeff = DerivativeDirections::HasTwoCoeff<WrtType>;
     template <typename WrtType>

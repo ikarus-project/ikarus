@@ -408,45 +408,46 @@ TEST(LocalFunctionTests, TestExpressions) {
 
     auto gP = Ikarus::ProjectionBasedLocalFunction(localBasis, vBlockedLocal3);
 
-    auto k = dot(f, g);
+    auto k = -dot(f+f, 3*g*1);
 
+    const double tol = 1e-14;
     for (int gpIndex = 0; auto& gp : rule) {
       const auto& N = localBasis.evaluateFunction(gpIndex);
-      EXPECT_DOUBLE_EQ(f.evaluateFunction(gpIndex).getValue().dot(g.evaluateFunction(gpIndex).getValue()),
+      EXPECT_DOUBLE_EQ((-2*3)*f.evaluateFunction(gpIndex).getValue().dot(g.evaluateFunction(gpIndex).getValue()),
                        k.evaluateFunction(gpIndex));
-      auto resSingleSpatial = (f.evaluateDerivative(gpIndex, wrt(spatial(0))).transpose() * g.evaluateFunction(gpIndex).getValue()
-                  + f.evaluateFunction(gpIndex).getValue().transpose() * g.evaluateDerivative(gpIndex, wrt(spatial(0))))
+      auto resSingleSpatial = ((-2*3)*f.evaluateDerivative(gpIndex, wrt(spatial(0))).transpose() * g.evaluateFunction(gpIndex).getValue()
+                  + (-2*3)*f.evaluateFunction(gpIndex).getValue().transpose() * g.evaluateDerivative(gpIndex, wrt(spatial(0))))
                      .eval();
-            EXPECT_THAT(resSingleSpatial, EigenApproxEqual(k.evaluateDerivative(gpIndex, wrt(spatial(0))), 1e-15));
-            auto resSpatialAll = ((f.evaluateDerivative(gpIndex, wrt(spatialall)).transpose() * g.evaluateFunction(gpIndex).getValue()).transpose()
-                         + f.evaluateFunction(gpIndex).getValue().transpose() * g.evaluateDerivative(gpIndex, wrt(spatialall)))
+            EXPECT_THAT(resSingleSpatial, EigenApproxEqual(k.evaluateDerivative(gpIndex, wrt(spatial(0))), tol));
+            auto resSpatialAll = (((-2*3)*f.evaluateDerivative(gpIndex, wrt(spatialall)).transpose() * g.evaluateFunction(gpIndex).getValue()).transpose()
+                         + (-2*3)*f.evaluateFunction(gpIndex).getValue().transpose() * g.evaluateDerivative(gpIndex, wrt(spatialall)))
                             .eval();
             static_assert(resSpatialAll.cols()==2);
             static_assert(resSpatialAll.rows()==1);
 
-            EXPECT_THAT(resSpatialAll, EigenApproxEqual(k.evaluateDerivative(gpIndex, wrt(spatialall)), 1e-15));
+            EXPECT_THAT(resSpatialAll, EigenApproxEqual(k.evaluateDerivative(gpIndex, wrt(spatialall)), tol));
                               for (size_t i = 0; i <            fe.size(); ++i) {
                                 const Eigen::Vector2d dfgdi
-                                    = ((transpose(f.evaluateDerivative(gpIndex, wrt(coeff(i)))) * g.evaluateFunction(gpIndex).getValue()).transpose()
-                                       + f.evaluateFunction(gpIndex).getValue().transpose() * g.evaluateDerivative(gpIndex, wrt(coeff(i))))
+                                    = ((transpose((-2*3)*f.evaluateDerivative(gpIndex, wrt(coeff(i)))) * g.evaluateFunction(gpIndex).getValue()).transpose()
+                                       + (-2*3)*f.evaluateFunction(gpIndex).getValue().transpose() * g.evaluateDerivative(gpIndex, wrt(coeff(i))))
                                           .eval();
                                 const Eigen::Vector2d dkdi = k.evaluateDerivative(gpIndex, wrt(coeff(i)));
-                                EXPECT_THAT(dfgdi, EigenApproxEqual(dkdi, 1e-14));
+                                EXPECT_THAT(dfgdi, EigenApproxEqual(dkdi, tol));
 
               const       Eigen::Vector2d dkdSdi= k.evaluateDerivative(gpIndex, wrt(spatial(1),coeff(i)));
               const       Eigen::Vector2d dkdSdi2= k.evaluateDerivative(gpIndex, wrt(coeff(i),spatial(1)));
 
-              EXPECT_THAT(dkdSdi, EigenApproxEqual(dkdSdi2, 1e-14));
+              EXPECT_THAT(dkdSdi, EigenApproxEqual(dkdSdi2, tol));
 //              const Eigen::Vector2d  dfgdSdi= f.evaluateDerivative(gpIndex, wrt(spatial(1),coeff(i)))+g.evaluateDerivative(gpIndex,        wrt(spatial(1),coeff(i)));
 //              EXPECT_THAT(dhdSdi,
 //              EigenApproxEqual(dfgdSdi, 1e-14));
               for (size_t j = 0; j < fe.size(); ++j) {
-                const       Eigen::Matrix2d dkdSdi2= k.evaluateDerivative(gpIndex, wrt(coeff(i,j)));
+                const       Eigen::Matrix2d dkdSdi3= k.evaluateDerivative(gpIndex, wrt(coeff(i,j)));
 
-                EXPECT_DOUBLE_EQ(dkdSdi2(0,0),2*N[i]*N[j]);
-                EXPECT_DOUBLE_EQ(dkdSdi2(1,1),2*N[i]*N[j]);
-                EXPECT_DOUBLE_EQ(dkdSdi2(0,1),0);
-                EXPECT_DOUBLE_EQ(dkdSdi2(1,0),0);
+                EXPECT_DOUBLE_EQ(dkdSdi3(0,0),-12*N[i]*N[j]);
+                EXPECT_DOUBLE_EQ(dkdSdi3(1,1),-12*N[i]*N[j]);
+                EXPECT_DOUBLE_EQ(dkdSdi3(0,1),0);
+                EXPECT_DOUBLE_EQ(dkdSdi3(1,0),0);
       //          const Eigen::Matrix2d dfgdj= f.evaluateDerivative(gpIndex,
       //          wrt(coeff(j)))+g.evaluateDerivative(gpIndex, wrt(coeff(j))); const Eigen::Matrix2d dhdj=
       //          h.evaluateDerivative(gpIndex, wrt(coeff(j))); const Eigen::Matrix2d dhdSdj=
