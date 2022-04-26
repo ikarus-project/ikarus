@@ -26,8 +26,8 @@
 #include <Eigen/Core>
 
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
-#include <ikarus/localFunctions/implementations/projectionBasedLocalFunction.hh>
-#include <ikarus/localFunctions/implementations/standardLocalFunction.hh>
+#include <ikarus/localFunctions/impl/projectionBasedLocalFunction.hh>
+#include <ikarus/localFunctions/impl/standardLocalFunction.hh>
 #include <ikarus/manifolds/realTuple.hh>
 #include <ikarus/manifolds/unitVector.hh>
 #include <ikarus/utils/functionSanityChecks.hh>
@@ -411,6 +411,7 @@ TEST(LocalFunctionTests, TestExpressions) {
     auto k = dot(f, g);
 
     for (int gpIndex = 0; auto& gp : rule) {
+      const auto& N = localBasis.evaluateFunction(gpIndex);
       EXPECT_DOUBLE_EQ(f.evaluateFunction(gpIndex).getValue().dot(g.evaluateFunction(gpIndex).getValue()),
                        k.evaluateFunction(gpIndex));
       auto resSingleSpatial = (f.evaluateDerivative(gpIndex, wrt(spatial(0))).transpose() * g.evaluateFunction(gpIndex).getValue()
@@ -420,6 +421,9 @@ TEST(LocalFunctionTests, TestExpressions) {
             auto resSpatialAll = ((f.evaluateDerivative(gpIndex, wrt(spatialall)).transpose() * g.evaluateFunction(gpIndex).getValue()).transpose()
                          + f.evaluateFunction(gpIndex).getValue().transpose() * g.evaluateDerivative(gpIndex, wrt(spatialall)))
                             .eval();
+            static_assert(resSpatialAll.cols()==2);
+            static_assert(resSpatialAll.rows()==1);
+
             EXPECT_THAT(resSpatialAll, EigenApproxEqual(k.evaluateDerivative(gpIndex, wrt(spatialall)), 1e-15));
                               for (size_t i = 0; i <            fe.size(); ++i) {
                                 const Eigen::Vector2d dfgdi
@@ -428,11 +432,21 @@ TEST(LocalFunctionTests, TestExpressions) {
                                           .eval();
                                 const Eigen::Vector2d dkdi = k.evaluateDerivative(gpIndex, wrt(coeff(i)));
                                 EXPECT_THAT(dfgdi, EigenApproxEqual(dkdi, 1e-14));
-                              }
-              //const       Eigen::Matrix2d dhdSdi= h.evaluateDerivative(gpIndex, wrt(spatial(1),coeff(i))); const Eigen::Matrix2d
-      //        dfgdSdi= f.evaluateDerivative(gpIndex, wrt(spatial(1),coeff(i)))+g.evaluateDerivative(gpIndex,
-      //        wrt(spatial(1),coeff(i))); EXPECT_THAT(dfgdi, EigenApproxEqual(dhdi, 1e-14)); EXPECT_THAT(dhdSdi,
-      //        EigenApproxEqual(dfgdSdi, 1e-14)); for (size_t j = 0; j < fe.size(); ++j) {
+
+              const       Eigen::Vector2d dkdSdi= k.evaluateDerivative(gpIndex, wrt(spatial(1),coeff(i)));
+              const       Eigen::Vector2d dkdSdi2= k.evaluateDerivative(gpIndex, wrt(coeff(i),spatial(1)));
+
+              EXPECT_THAT(dkdSdi, EigenApproxEqual(dkdSdi2, 1e-14));
+//              const Eigen::Vector2d  dfgdSdi= f.evaluateDerivative(gpIndex, wrt(spatial(1),coeff(i)))+g.evaluateDerivative(gpIndex,        wrt(spatial(1),coeff(i)));
+//              EXPECT_THAT(dhdSdi,
+//              EigenApproxEqual(dfgdSdi, 1e-14));
+              for (size_t j = 0; j < fe.size(); ++j) {
+                const       Eigen::Matrix2d dkdSdi2= k.evaluateDerivative(gpIndex, wrt(coeff(i,j)));
+
+                EXPECT_DOUBLE_EQ(dkdSdi2(0,0),2*N[i]*N[j]);
+                EXPECT_DOUBLE_EQ(dkdSdi2(1,1),2*N[i]*N[j]);
+                EXPECT_DOUBLE_EQ(dkdSdi2(0,1),0);
+                EXPECT_DOUBLE_EQ(dkdSdi2(1,0),0);
       //          const Eigen::Matrix2d dfgdj= f.evaluateDerivative(gpIndex,
       //          wrt(coeff(j)))+g.evaluateDerivative(gpIndex, wrt(coeff(j))); const Eigen::Matrix2d dhdj=
       //          h.evaluateDerivative(gpIndex, wrt(coeff(j))); const Eigen::Matrix2d dhdSdj=
@@ -442,8 +456,8 @@ TEST(LocalFunctionTests, TestExpressions) {
       //            EXPECT_THAT(dfgdj, EigenApproxEqual(dhdj, 1e-14));
       //            EXPECT_THAT(dfgdSdj, EigenApproxEqual(dhdSdj, 1e-14));
       //
-      //          }
-      //        }
+                }
+              }
       //      }
     }
   }

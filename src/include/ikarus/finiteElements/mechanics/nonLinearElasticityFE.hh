@@ -22,7 +22,7 @@
 // *
 
 #pragma once
-#include "src/include/ikarus/localFunctions/implementations/standardLocalFunction.hh"
+#include <ikarus/localFunctions/impl/standardLocalFunction.hh>
 
 #include <autodiff/forward/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>

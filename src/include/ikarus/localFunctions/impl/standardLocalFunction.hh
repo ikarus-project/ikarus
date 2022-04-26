@@ -52,7 +52,7 @@ namespace Ikarus {
     using Jacobian = typename Traits::Jacobian;
     /** \brief Type for a column of the Jacobian matrix */
     using JacobianColType = typename Traits::JacobianColType;
-    /** \brief Type for the derivatives wrT the coeffiecients */
+    /** \brief Type for the derivatives wrT the coefficients */
     using CoeffDerivMatrix = typename Traits::CoeffDerivMatrix;
     /** \brief Type for ansatz function values */
     using AnsatzFunctionType = typename Traits::AnsatzFunctionType;
@@ -127,6 +127,15 @@ namespace Ikarus {
       W.diagonal() *= dNTransformed(coeffsIndex, spatialIndex);
 
       return W;
+    }
+
+
+    template <typename DomainTypeOrIntegrationPointIndex, typename... AlongArgs, typename... TransformArgs>
+    auto evaluateSecondDerivativeWRTCoeffsImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
+                                                           const std::array<size_t, 2>& coeffsIndex,
+                                                           const Along<AlongArgs...>& alongArgs,
+                                                           const TransformWith<TransformArgs...>& transArgs) const {
+      return Eigen::Matrix<ctype, valueSize,valueSize>::Zero();
     }
 
 

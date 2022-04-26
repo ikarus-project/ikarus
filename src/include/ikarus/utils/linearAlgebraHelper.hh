@@ -1,6 +1,7 @@
 
 
 #pragma once
+#include <iostream>
 #include <dune/istl/bvector.hh>
 #include <dune/istl/multitypeblockvector.hh>
 
@@ -129,6 +130,51 @@ namespace Ikarus {
 
   /** \brief Helper Free Function to have the same interface as for Eigen Vector Types */
   auto norm(const std::floating_point auto& v) { return std::abs(v); }
+
+/** \brief Eigen::DiagonalMatrix Product Missing in Eigen*/
+template<typename Scalar, int size>
+ auto operator *(const Eigen::DiagonalMatrix<Scalar,size>& a,const Eigen::DiagonalMatrix<Scalar,size>& b)
+{
+  return (a.diagonal().cwiseProduct(b.diagonal())).asDiagonal();
+}
+
+/** \brief Eigen::Matrix + Eigen::DiagonalMatrix addition missing in Eigen*/
+template<typename Derived,typename Scalar, int size>
+auto operator +(const Eigen::MatrixBase<Derived>& a,const Eigen::DiagonalMatrix<Scalar,size>& b)
+{
+  Derived c(a.derived());
+  c.diagonal() += b.diagonal();
+  return c;
+}
+
+/** \brief Eigen::DiagonalMatrix + Eigen::Matrix addition missing in Eigen*/
+template<typename Derived,typename Scalar, int size>
+auto operator +(const Eigen::DiagonalMatrix<Scalar,size>& a,const Eigen::MatrixBase<Derived>& b)
+{
+  return b+a;
+}
+
+template<typename Derived,typename Derived2>
+auto operator +(const Eigen::MatrixBase<Derived>& a,const Eigen::DiagonalWrapper<Derived2>& b)
+{
+  auto c= a.derived().eval();
+  c.diagonal() += b.diagonal();
+  return c;
+}
+
+template<typename Derived,typename Derived2>
+auto operator +(const Eigen::DiagonalWrapper<Derived>& a,const Eigen::MatrixBase<Derived2>& b)
+{
+  return b+a;
+}
+
+template<typename Scalar, int size>
+std::ostream& operator<<(std::ostream& os,  const Eigen::DiagonalMatrix<Scalar,size>& a) {
+
+  os<<Eigen::Matrix<Scalar,size,size>(a);
+  return os;
+}
+
 
   /** \brief Returns the symmetric part of a matrix*/
   template <typename Derived>
