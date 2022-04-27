@@ -142,7 +142,7 @@ template<typename Scalar, int size>
 template<typename Derived,typename Scalar, int size>
 auto operator +(const Eigen::MatrixBase<Derived>& a,const Eigen::DiagonalMatrix<Scalar,size>& b)
 {
-  Derived c(a.derived());
+  auto c= a.derived().eval();
   c.diagonal() += b.diagonal();
   return c;
 }

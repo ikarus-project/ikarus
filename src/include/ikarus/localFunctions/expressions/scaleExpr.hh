@@ -15,12 +15,12 @@ namespace Ikarus {
 
     template <typename LocalFunctionEvaluationArgs_>
     auto evaluateValueOfExpression(const LocalFunctionEvaluationArgs_& localFunctionArgs) const {
-      return eval(this->_u*evaluateFunctionImpl(this->_v, localFunctionArgs));
+      return eval(this->l*evaluateFunctionImpl(this->r, localFunctionArgs));
     }
 
     template <int DerivativeOrder, typename LocalFunctionEvaluationArgs_>
     auto evaluateDerivativeOfExpression(const LocalFunctionEvaluationArgs_& localFunctionArgs) const {
-      return eval(this->_u*evaluateDerivativeImpl(this->_v, localFunctionArgs));
+      return eval(this->l*evaluateDerivativeImpl(this->r, localFunctionArgs));
     }
   };
 

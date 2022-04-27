@@ -4,6 +4,7 @@
 
 #pragma once
 #include <ikarus/localFunctions/expressions/binaryExpr.hh>
+#include <ikarus/utils/linearAlgebraHelper.hh>
 
 namespace Ikarus {
 
@@ -25,14 +26,14 @@ namespace Ikarus {
 
     template <typename LocalFunctionEvaluationArgs_>
     auto evaluateValueOfExpression(const LocalFunctionEvaluationArgs_& localFunctionArgs) const {
-      return eval(evaluateFunctionImpl(this->_u, localFunctionArgs)
-                  + evaluateFunctionImpl(this->_v,localFunctionArgs));
+      return eval(evaluateFunctionImpl(this->l, localFunctionArgs)
+                  + evaluateFunctionImpl(this->r, localFunctionArgs));
     }
 
     template <int DerivativeOrder, typename LocalFunctionEvaluationArgs_>
     auto evaluateDerivativeOfExpression(const LocalFunctionEvaluationArgs_& localFunctionArgs) const {
-      return eval(evaluateDerivativeImpl(this->_u, localFunctionArgs)
-                  + evaluateDerivativeImpl(this->_v, localFunctionArgs));
+      return eval(evaluateDerivativeImpl(this->l, localFunctionArgs)
+                  + evaluateDerivativeImpl(this->r, localFunctionArgs));
     }
   };
 

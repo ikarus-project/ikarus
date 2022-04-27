@@ -40,6 +40,8 @@ namespace Ikarus {
     using ctype = typename Traits::ctype;
     //    /** \brief Dimension of the coeffs */
     static constexpr int valueSize = Traits::valueSize;
+    /** \brief Dimension of the correction size of coeffs */
+    static constexpr int correctionSize = Traits::correctionSize;
     /** \brief Dimension of the grid */
     static constexpr int gridDim = Traits::gridDim;
     /** \brief Type for coordinate vector in world space */
@@ -130,13 +132,7 @@ namespace Ikarus {
     }
 
 
-    template <typename DomainTypeOrIntegrationPointIndex, typename... AlongArgs, typename... TransformArgs>
-    auto evaluateSecondDerivativeWRTCoeffsImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
-                                                           const std::array<size_t, 2>& coeffsIndex,
-                                                           const Along<AlongArgs...>& alongArgs,
-                                                           const TransformWith<TransformArgs...>& transArgs) const {
-      return Eigen::Matrix<ctype, valueSize,valueSize>::Zero();
-    }
+
 
 
 
@@ -152,6 +148,8 @@ namespace Ikarus {
     using ctype = typename CoeffContainer::value_type::ctype;
     /** \brief Dimension of the coeffs */
     static constexpr int valueSize = CoeffContainer::value_type::valueSize;
+    /** \brief Dimension of the correction size of coeffs */
+    static constexpr int correctionSize = CoeffContainer::value_type::correctionSize;
     /** \brief Dimension of the grid */
     static constexpr int gridDim = Ikarus::LocalBasis<DuneBasis>::gridDim;
     /** \brief Type for the return value */

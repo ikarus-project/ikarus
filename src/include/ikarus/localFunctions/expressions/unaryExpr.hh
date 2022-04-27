@@ -12,9 +12,9 @@ template <typename Op, typename E1>
 class UnaryLocalFunctionExpression : public Ikarus::LocalFunctionInterface<Op> {
 
  protected:
-  E1 const& _u;
+  E1 const& m;
  public:
-   UnaryLocalFunctionExpression(Ikarus::LocalFunctionInterface<E1> const& u) : _u(static_cast<E1 const&>(u)) {  }
+   UnaryLocalFunctionExpression(Ikarus::LocalFunctionInterface<E1> const& u) : m(static_cast<E1 const&>(u)) {  }
 
   static constexpr bool isLeaf = false;
 

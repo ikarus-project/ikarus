@@ -26,6 +26,7 @@
 #include <Eigen/Core>
 
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
+#include <ikarus/localFunctions/expressions.hh>
 #include <ikarus/localFunctions/impl/projectionBasedLocalFunction.hh>
 #include <ikarus/localFunctions/impl/standardLocalFunction.hh>
 #include <ikarus/manifolds/realTuple.hh>
@@ -55,9 +56,158 @@ TEST(LocalFunctionTests, TestInterface) {
   EXPECT_EQ(counter.spatialAll, 1);
 }
 
-//
-//
-//
+TEST(LocalFunctionTests, TestExpressions) {
+  constexpr int sizeD = 2;
+  using Manifold      = Ikarus::RealTuple<double, sizeD>;
+  using Manifold2     = Ikarus::UnitVector<double, sizeD>;
+  constexpr int size  = Manifold::valueSize;
+  using namespace Ikarus;
+  auto grid = createGrid<Grids::Yasp>();
+
+  auto gridView = grid->leafGridView();
+  auto basis    = makeBasis(gridView, power<3>(lagrange<2>(), BlockedInterleaved()));
+  Dune::BlockVector<Manifold> vBlocked(basis.size());
+  Dune::BlockVector<Manifold> vBlocked2(basis.size());
+  Dune::BlockVector<Manifold2> vBlocked3(basis.size());
+  for (auto& vsingle : vBlocked)
+    vsingle.setValue(0.1 * Eigen::Vector<double, size>::Random() + Eigen::Vector<double, size>::UnitX());
+
+  for (auto& vsingle : vBlocked2)
+    vsingle.setValue(0.5 * Eigen::Vector<double, size>::Random() + 7 * Eigen::Vector<double, size>::UnitX());
+
+  for (auto& vsingle : vBlocked3)
+    vsingle.setValue(0.25 * Eigen::Vector<double, size>::Random() + 37 * Eigen::Vector<double, size>::UnitX());
+
+  auto localView = basis.localView();
+  for (auto& ele : elements(gridView)) {
+    localView.bind(ele);
+    const auto& fe   = localView.tree().child(0).finiteElement();
+    auto localBasis  = Ikarus::LocalBasis(localView.tree().child(0).finiteElement().localBasis());
+    const auto& rule = Dune::QuadratureRules<double, 2>::rule(localView.element().type(), 3);
+    localBasis.bind(rule, bindDerivatives(0, 1));
+    Dune::BlockVector<Manifold> vBlockedLocal(fe.size());
+    Dune::BlockVector<Manifold> vBlockedLocal2(fe.size());
+    Dune::BlockVector<Manifold2> vBlockedLocal3(fe.size());
+
+    for (size_t i = 0; i < fe.size(); ++i) {
+      auto globalIndex  = localView.index(localView.tree().child(0).localIndex(i));
+      vBlockedLocal[i]  = vBlocked[globalIndex[0]];
+      vBlockedLocal2[i] = vBlocked2[globalIndex[0]];
+      vBlockedLocal3[i] = vBlocked3[globalIndex[0]];
+    }
+    auto f = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal);
+    auto g = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal2);
+    using namespace Ikarus::DerivativeDirections;
+    auto h = f + g;
+
+    for (int gpIndex = 0; auto& gp : rule) {
+      EXPECT_THAT(f.evaluateFunction(gpIndex).getValue() + g.evaluateFunction(gpIndex).getValue(),
+                  EigenApproxEqual(h.evaluateFunction(gpIndex).getValue(), 1e-15));
+      EXPECT_THAT(f.evaluateDerivative(gpIndex, wrt(spatial(0))) + g.evaluateDerivative(gpIndex, wrt(spatial(0))),
+                  EigenApproxEqual(h.evaluateDerivative(gpIndex, wrt(spatial(0))), 1e-15));
+      EXPECT_THAT(f.evaluateDerivative(gpIndex, wrt(spatialall)) + g.evaluateDerivative(gpIndex, wrt(spatialall)),
+                  EigenApproxEqual(h.evaluateDerivative(gpIndex, wrt(spatialall)), 1e-15));
+      for (size_t i = 0; i < fe.size(); ++i) {
+        const Eigen::Matrix2d dfgdi
+            = f.evaluateDerivative(gpIndex, wrt(coeff(i))) + g.evaluateDerivative(gpIndex, wrt(coeff(i)));
+        const Eigen::Matrix2d dhdi    = h.evaluateDerivative(gpIndex, wrt(coeff(i)));
+        const Eigen::Matrix2d dhdSdi  = h.evaluateDerivative(gpIndex, wrt(spatial(1), coeff(i)));
+        const Eigen::Matrix2d dfgdSdi = f.evaluateDerivative(gpIndex, wrt(spatial(1), coeff(i)))
+                                        + g.evaluateDerivative(gpIndex, wrt(spatial(1), coeff(i)));
+        EXPECT_THAT(dfgdi, EigenApproxEqual(dhdi, 1e-14));
+        EXPECT_THAT(dhdSdi, EigenApproxEqual(dfgdSdi, 1e-14));
+        for (size_t j = 0; j < fe.size(); ++j) {
+          const Eigen::Matrix2d dfgdj
+              = f.evaluateDerivative(gpIndex, wrt(coeff(j))) + g.evaluateDerivative(gpIndex, wrt(coeff(j)));
+          const Eigen::Matrix2d dhdj    = h.evaluateDerivative(gpIndex, wrt(coeff(j)));
+          const Eigen::Matrix2d dhdSdj  = h.evaluateDerivative(gpIndex, wrt(spatial(1), coeff(j)));
+          const Eigen::Matrix2d dfgdSdj = f.evaluateDerivative(gpIndex, wrt(spatial(1), coeff(j)))
+                                          + g.evaluateDerivative(gpIndex, wrt(spatial(1), coeff(j)));
+          if (i == j) {
+            EXPECT_THAT(dfgdj, EigenApproxEqual(dhdj, 1e-14));
+            EXPECT_THAT(dfgdSdj, EigenApproxEqual(dhdSdj, 1e-14));
+          }
+        }
+      }
+    }
+
+    auto gP = Ikarus::ProjectionBasedLocalFunction(localBasis, vBlockedLocal3);
+
+    auto k = -dot(f + f, 3.0 * g * 1.0);
+
+    const double tol = 1e-14;
+    for (int gpIndex = 0; auto& gp : rule) {
+      const auto& N  = localBasis.evaluateFunction(gpIndex);
+      const auto& dN = localBasis.evaluateJacobian(gpIndex);
+      EXPECT_DOUBLE_EQ((-2 * 3) * f.evaluateFunction(gpIndex).getValue().dot(g.evaluateFunction(gpIndex).getValue()),
+                       k.evaluateFunction(gpIndex));
+      auto resSingleSpatial = ((-2 * 3) * f.evaluateDerivative(gpIndex, wrt(spatial(0))).transpose()
+                                   * g.evaluateFunction(gpIndex).getValue()
+                               + (-2 * 3) * f.evaluateFunction(gpIndex).getValue().transpose()
+                                     * g.evaluateDerivative(gpIndex, wrt(spatial(0))))
+                                  .eval();
+      EXPECT_THAT(resSingleSpatial, EigenApproxEqual(k.evaluateDerivative(gpIndex, wrt(spatial(0))), tol));
+      auto resSpatialAll = (((-2 * 3) * f.evaluateDerivative(gpIndex, wrt(spatialall)).transpose()
+                             * g.evaluateFunction(gpIndex).getValue())
+                                .transpose()
+                            + (-2 * 3) * f.evaluateFunction(gpIndex).getValue().transpose()
+                                  * g.evaluateDerivative(gpIndex, wrt(spatialall)))
+                               .eval();
+      static_assert(resSpatialAll.cols() == 2);
+      static_assert(resSpatialAll.rows() == 1);
+
+      EXPECT_THAT(resSpatialAll, EigenApproxEqual(k.evaluateDerivative(gpIndex, wrt(spatialall)), tol));
+      for (size_t i = 0; i < fe.size(); ++i) {
+        const Eigen::Vector2d dfgdi = ((transpose((-2 * 3) * f.evaluateDerivative(gpIndex, wrt(coeff(i))))
+                                        * g.evaluateFunction(gpIndex).getValue())
+                                           .transpose()
+                                       + (-2 * 3) * f.evaluateFunction(gpIndex).getValue().transpose()
+                                             * g.evaluateDerivative(gpIndex, wrt(coeff(i))))
+                                          .eval();
+        const Eigen::Vector2d dkdi = k.evaluateDerivative(gpIndex, wrt(coeff(i)));
+        EXPECT_THAT(dfgdi, EigenApproxEqual(dkdi, tol));
+
+        const Eigen::Vector2d dkdSdi  = k.evaluateDerivative(gpIndex, wrt(spatial(1), coeff(i)));
+        const Eigen::Vector2d dkdSdi2 = k.evaluateDerivative(gpIndex, wrt(coeff(i), spatial(1)));
+
+        EXPECT_THAT(dkdSdi, EigenApproxEqual(dkdSdi2, tol));
+        //              const Eigen::Vector2d  dfgdSdi= f.evaluateDerivative(gpIndex,
+        //              wrt(spatial(1),coeff(i)))+g.evaluateDerivative(gpIndex,        wrt(spatial(1),coeff(i)));
+        //              EXPECT_THAT(dhdSdi,
+        //              EigenApproxEqual(dfgdSdi, 1e-14));
+        for (size_t j = 0; j < fe.size(); ++j) {
+          const Eigen::Matrix2d dkdSdi3 = k.evaluateDerivative(gpIndex, wrt(coeff(i, j)));
+
+          EXPECT_DOUBLE_EQ(dkdSdi3(0, 0), -12 * N[i] * N[j]);
+          EXPECT_DOUBLE_EQ(dkdSdi3(1, 1), -12 * N[i] * N[j]);
+          EXPECT_DOUBLE_EQ(dkdSdi3(0, 1), 0);
+          EXPECT_DOUBLE_EQ(dkdSdi3(1, 0), 0);
+
+          const Eigen::Matrix2d dkdSdi4 = k.evaluateDerivative(gpIndex, wrt(spatial(1), coeff(i, j)));
+          const Eigen::Matrix2d dkdSdi5 = k.evaluateDerivative(gpIndex, wrt(coeff(i, j), spatial(1)));
+          const Eigen::Matrix2d dkdSdi6 = k.evaluateDerivative(gpIndex, wrt(coeff(j, i), spatial(1)));
+          EXPECT_THAT(dkdSdi4, EigenApproxEqual(dkdSdi5, tol));
+          EXPECT_THAT(dkdSdi5, EigenApproxEqual(dkdSdi6, tol));
+          EXPECT_NEAR(dkdSdi4(0, 0), -12 * (dN(i, 1) * N[j]+dN(j, 1) * N[i]),tol);
+          EXPECT_NEAR(dkdSdi4(1, 1), -12 * (dN(i, 1) * N[j]+dN(j, 1) * N[i]),tol);
+          EXPECT_DOUBLE_EQ(dkdSdi4(0, 1), 0);
+          EXPECT_DOUBLE_EQ(dkdSdi4(1, 0), 0);
+          //          const Eigen::Matrix2d dfgdj= f.evaluateDerivative(gpIndex,
+          //          wrt(coeff(j)))+g.evaluateDerivative(gpIndex, wrt(coeff(j))); const Eigen::Matrix2d dhdj=
+          //          h.evaluateDerivative(gpIndex, wrt(coeff(j))); const Eigen::Matrix2d dhdSdj=
+          //          h.evaluateDerivative(gpIndex, wrt(spatial(1),coeff(j))); const Eigen::Matrix2d dfgdSdj=
+          //          f.evaluateDerivative(gpIndex, wrt(spatial(1),coeff(j)))+g.evaluateDerivative(gpIndex,
+          //          wrt(spatial(1),coeff(j))); if (i==j) {
+          //            EXPECT_THAT(dfgdj, EigenApproxEqual(dhdj, 1e-14));
+          //            EXPECT_THAT(dfgdSdj, EigenApproxEqual(dhdSdj, 1e-14));
+          //
+        }
+      }
+      //      }
+    }
+  }
+}
+
 template <typename T>
 class LocalFunctionProjectionBasedUnitVector : public testing::Test {
 public:
@@ -107,9 +257,9 @@ TYPED_TEST(LocalFunctionProjectionBasedUnitVector, ProjectionBasedUnitVector) {
     const auto vasMat = Ikarus::viewAsEigenMatrixFixedDyn(vBlockedLocal);
     using namespace Ikarus::DerivativeDirections;
     for (int gpIndex = 0; auto& gp : rule) {
-      const auto directorCached                         = localF.evaluateFunction(gpIndex).getValue();
+      const auto directorCached                          = localF.evaluateFunction(gpIndex).getValue();
       const Eigen::Vector<double, size> directorEmbedded = vasMat * localBasis.evaluateFunction(gpIndex);
-      const auto directoreval                           = localF.evaluateFunction(gp.position());
+      const auto directoreval                            = localF.evaluateFunction(gp.position());
 
       const auto J     = toEigenMatrix(ele.geometry().jacobianTransposed(gp.position())).transpose().eval();
       const auto Jinv  = J.inverse().eval();
@@ -325,141 +475,6 @@ TYPED_TEST(LocalFunctionVector, Test1) {
       EXPECT_THAT(directorCached, EigenApproxEqual(directoreval.getValue(), 1e-15));
 
       ++gpIndex;
-    }
-  }
-}
-
-#include <ikarus/localFunctions/expressions/expressions.hh>
-
-TEST(LocalFunctionTests, TestExpressions) {
-  constexpr int sizeD = 2;
-  using Manifold      = Ikarus::RealTuple<double, sizeD>;
-  using Manifold2     = Ikarus::UnitVector<double, sizeD>;
-  constexpr int size  = Manifold::valueSize;
-  using namespace Ikarus;
-  auto grid = createGrid<Grids::Yasp>();
-
-  auto gridView = grid->leafGridView();
-  auto basis    = makeBasis(gridView, power<3>(lagrange<2>(), BlockedInterleaved()));
-  Dune::BlockVector<Manifold> vBlocked(basis.size());
-  Dune::BlockVector<Manifold> vBlocked2(basis.size());
-  Dune::BlockVector<Manifold2> vBlocked3(basis.size());
-  for (auto& vsingle : vBlocked)
-    vsingle.setValue(0.1 * Eigen::Vector<double, size>::Random() + Eigen::Vector<double, size>::UnitX());
-
-  for (auto& vsingle : vBlocked2)
-    vsingle.setValue(0.5 * Eigen::Vector<double, size>::Random() + 7 * Eigen::Vector<double, size>::UnitX());
-
-  for (auto& vsingle : vBlocked3)
-    vsingle.setValue(0.25 * Eigen::Vector<double, size>::Random() + 37 * Eigen::Vector<double, size>::UnitX());
-
-  auto localView = basis.localView();
-  for (auto& ele : elements(gridView)) {
-    localView.bind(ele);
-    const auto& fe   = localView.tree().child(0).finiteElement();
-    auto localBasis  = Ikarus::LocalBasis(localView.tree().child(0).finiteElement().localBasis());
-    const auto& rule = Dune::QuadratureRules<double, 2>::rule(localView.element().type(), 3);
-    localBasis.bind(rule, bindDerivatives(0, 1));
-    Dune::BlockVector<Manifold> vBlockedLocal(fe.size());
-    Dune::BlockVector<Manifold> vBlockedLocal2(fe.size());
-    Dune::BlockVector<Manifold2> vBlockedLocal3(fe.size());
-
-    for (size_t i = 0; i < fe.size(); ++i) {
-      auto globalIndex  = localView.index(localView.tree().child(0).localIndex(i));
-      vBlockedLocal[i]  = vBlocked[globalIndex[0]];
-      vBlockedLocal2[i] = vBlocked2[globalIndex[0]];
-      vBlockedLocal3[i] = vBlocked3[globalIndex[0]];
-    }
-    auto f = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal);
-    auto g = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal2);
-    using namespace Ikarus::DerivativeDirections;
-    auto h = f + g;
-
-    for (int gpIndex = 0; auto& gp : rule) {
-      EXPECT_THAT(f.evaluateFunction(gpIndex).getValue() + g.evaluateFunction(gpIndex).getValue(),
-                  EigenApproxEqual(h.evaluateFunction(gpIndex).getValue(), 1e-15));
-      EXPECT_THAT(f.evaluateDerivative(gpIndex, wrt(spatial(0))) + g.evaluateDerivative(gpIndex, wrt(spatial(0))),
-                  EigenApproxEqual(h.evaluateDerivative(gpIndex, wrt(spatial(0))), 1e-15));
-      EXPECT_THAT(f.evaluateDerivative(gpIndex, wrt(spatialall)) + g.evaluateDerivative(gpIndex, wrt(spatialall)),
-                  EigenApproxEqual(h.evaluateDerivative(gpIndex, wrt(spatialall)), 1e-15));
-      for (size_t i = 0; i < fe.size(); ++i) {
-        const Eigen::Matrix2d dfgdi
-            = f.evaluateDerivative(gpIndex, wrt(coeff(i))) + g.evaluateDerivative(gpIndex, wrt(coeff(i)));
-        const Eigen::Matrix2d dhdi    = h.evaluateDerivative(gpIndex, wrt(coeff(i)));
-        const Eigen::Matrix2d dhdSdi  = h.evaluateDerivative(gpIndex, wrt(spatial(1), coeff(i)));
-        const Eigen::Matrix2d dfgdSdi = f.evaluateDerivative(gpIndex, wrt(spatial(1), coeff(i)))
-                                        + g.evaluateDerivative(gpIndex, wrt(spatial(1), coeff(i)));
-        EXPECT_THAT(dfgdi, EigenApproxEqual(dhdi, 1e-14));
-        EXPECT_THAT(dhdSdi, EigenApproxEqual(dfgdSdi, 1e-14));
-        for (size_t j = 0; j < fe.size(); ++j) {
-          const Eigen::Matrix2d dfgdj
-              = f.evaluateDerivative(gpIndex, wrt(coeff(j))) + g.evaluateDerivative(gpIndex, wrt(coeff(j)));
-          const Eigen::Matrix2d dhdj    = h.evaluateDerivative(gpIndex, wrt(coeff(j)));
-          const Eigen::Matrix2d dhdSdj  = h.evaluateDerivative(gpIndex, wrt(spatial(1), coeff(j)));
-          const Eigen::Matrix2d dfgdSdj = f.evaluateDerivative(gpIndex, wrt(spatial(1), coeff(j)))
-                                          + g.evaluateDerivative(gpIndex, wrt(spatial(1), coeff(j)));
-          if (i == j) {
-            EXPECT_THAT(dfgdj, EigenApproxEqual(dhdj, 1e-14));
-            EXPECT_THAT(dfgdSdj, EigenApproxEqual(dhdSdj, 1e-14));
-          }
-        }
-      }
-    }
-
-    auto gP = Ikarus::ProjectionBasedLocalFunction(localBasis, vBlockedLocal3);
-
-    auto k = -dot(f+f, 3*g*1);
-
-    const double tol = 1e-14;
-    for (int gpIndex = 0; auto& gp : rule) {
-      const auto& N = localBasis.evaluateFunction(gpIndex);
-      EXPECT_DOUBLE_EQ((-2*3)*f.evaluateFunction(gpIndex).getValue().dot(g.evaluateFunction(gpIndex).getValue()),
-                       k.evaluateFunction(gpIndex));
-      auto resSingleSpatial = ((-2*3)*f.evaluateDerivative(gpIndex, wrt(spatial(0))).transpose() * g.evaluateFunction(gpIndex).getValue()
-                  + (-2*3)*f.evaluateFunction(gpIndex).getValue().transpose() * g.evaluateDerivative(gpIndex, wrt(spatial(0))))
-                     .eval();
-            EXPECT_THAT(resSingleSpatial, EigenApproxEqual(k.evaluateDerivative(gpIndex, wrt(spatial(0))), tol));
-            auto resSpatialAll = (((-2*3)*f.evaluateDerivative(gpIndex, wrt(spatialall)).transpose() * g.evaluateFunction(gpIndex).getValue()).transpose()
-                         + (-2*3)*f.evaluateFunction(gpIndex).getValue().transpose() * g.evaluateDerivative(gpIndex, wrt(spatialall)))
-                            .eval();
-            static_assert(resSpatialAll.cols()==2);
-            static_assert(resSpatialAll.rows()==1);
-
-            EXPECT_THAT(resSpatialAll, EigenApproxEqual(k.evaluateDerivative(gpIndex, wrt(spatialall)), tol));
-                              for (size_t i = 0; i <            fe.size(); ++i) {
-                                const Eigen::Vector2d dfgdi
-                                    = ((transpose((-2*3)*f.evaluateDerivative(gpIndex, wrt(coeff(i)))) * g.evaluateFunction(gpIndex).getValue()).transpose()
-                                       + (-2*3)*f.evaluateFunction(gpIndex).getValue().transpose() * g.evaluateDerivative(gpIndex, wrt(coeff(i))))
-                                          .eval();
-                                const Eigen::Vector2d dkdi = k.evaluateDerivative(gpIndex, wrt(coeff(i)));
-                                EXPECT_THAT(dfgdi, EigenApproxEqual(dkdi, tol));
-
-              const       Eigen::Vector2d dkdSdi= k.evaluateDerivative(gpIndex, wrt(spatial(1),coeff(i)));
-              const       Eigen::Vector2d dkdSdi2= k.evaluateDerivative(gpIndex, wrt(coeff(i),spatial(1)));
-
-              EXPECT_THAT(dkdSdi, EigenApproxEqual(dkdSdi2, tol));
-//              const Eigen::Vector2d  dfgdSdi= f.evaluateDerivative(gpIndex, wrt(spatial(1),coeff(i)))+g.evaluateDerivative(gpIndex,        wrt(spatial(1),coeff(i)));
-//              EXPECT_THAT(dhdSdi,
-//              EigenApproxEqual(dfgdSdi, 1e-14));
-              for (size_t j = 0; j < fe.size(); ++j) {
-                const       Eigen::Matrix2d dkdSdi3= k.evaluateDerivative(gpIndex, wrt(coeff(i,j)));
-
-                EXPECT_DOUBLE_EQ(dkdSdi3(0,0),-12*N[i]*N[j]);
-                EXPECT_DOUBLE_EQ(dkdSdi3(1,1),-12*N[i]*N[j]);
-                EXPECT_DOUBLE_EQ(dkdSdi3(0,1),0);
-                EXPECT_DOUBLE_EQ(dkdSdi3(1,0),0);
-      //          const Eigen::Matrix2d dfgdj= f.evaluateDerivative(gpIndex,
-      //          wrt(coeff(j)))+g.evaluateDerivative(gpIndex, wrt(coeff(j))); const Eigen::Matrix2d dhdj=
-      //          h.evaluateDerivative(gpIndex, wrt(coeff(j))); const Eigen::Matrix2d dhdSdj=
-      //          h.evaluateDerivative(gpIndex, wrt(spatial(1),coeff(j))); const Eigen::Matrix2d dfgdSdj=
-      //          f.evaluateDerivative(gpIndex, wrt(spatial(1),coeff(j)))+g.evaluateDerivative(gpIndex,
-      //          wrt(spatial(1),coeff(j))); if (i==j) {
-      //            EXPECT_THAT(dfgdj, EigenApproxEqual(dhdj, 1e-14));
-      //            EXPECT_THAT(dfgdSdj, EigenApproxEqual(dhdSdj, 1e-14));
-      //
-                }
-              }
-      //      }
     }
   }
 }
