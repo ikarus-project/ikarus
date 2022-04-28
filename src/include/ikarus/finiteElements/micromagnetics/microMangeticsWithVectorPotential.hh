@@ -43,7 +43,7 @@
 #include <ikarus/manifolds/realTuple.hh>
 #include <ikarus/manifolds/unitVector.hh>
 #include <ikarus/utils/linearAlgebraHelper.hh>
-#include <ikarus/utils/linearAlgebraTypedefs.hh>
+#include <ikarus/utils/eigenDuneTransformations.hh>
 
 namespace Ikarus {
 
@@ -186,12 +186,12 @@ namespace Ikarus {
         const auto J             = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
         const auto Jinv          = J.inverse().eval();
         const auto normalizedMag = mLocalF.evaluateFunction(gpIndex).getValue();
-        const auto gradm         = mLocalF.evaluateDerivative(gpIndex, wrt(spatialall), transformWith(Jinv));
+        const auto gradm         = mLocalF.evaluateDerivative(gpIndex, wrt(spatialAll), transformWith(Jinv));
         const auto vectorPot     = vectorPotLocalFunction.evaluateFunction(gpIndex).getValue();
 
         const auto dNAdx = (dNA * J.inverse()).eval();
         Eigen::Matrix<double, vectorPotDim, Traits::mydim> gradA
-            = vectorPotLocalFunction.evaluateDerivative(gpIndex, wrt(spatialall), transformWith(Jinv));
+            = vectorPotLocalFunction.evaluateDerivative(gpIndex, wrt(spatialAll), transformWith(Jinv));
 
         const Eigen::Vector<double, directorDim> curlA = Impl::jacobianToCurl(gradA).template segment<directorDim>(0);
 
@@ -200,11 +200,11 @@ namespace Ikarus {
           for (size_t i = 0; i < fe0.size(); ++i) {
             const int indexI = i * directorCorrectionDim;
             const auto WI
-                = mLocalF.evaluateDerivative(gpIndex, wrt(spatialall, coeff(i)), transformWith(Jinv));
+                = mLocalF.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i)), transformWith(Jinv));
             for (size_t j = 0; j < fe0.size(); ++j) {
               const int indexJ = j * directorCorrectionDim;
               const auto WJ
-                  = mLocalF.evaluateDerivative(gpIndex, wrt(spatialall, coeff(j)), transformWith(Jinv));
+                  = mLocalF.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(j)), transformWith(Jinv));
 
               const auto mddHbar = mLocalF.evaluateDerivative(
                   gpIndex, wrt(coeff(i,j)), along(2 * Hbar / material.ms + curlA));
@@ -295,9 +295,9 @@ namespace Ikarus {
 
         const auto dNAdx = (dNA * Jinv).eval();
         const Eigen::Matrix<double, directorDim, Traits::mydim> gradm
-            = magnetLocalFunction.evaluateDerivative(gpIndex, wrt(spatialall), transformWith(Jinv));
+            = magnetLocalFunction.evaluateDerivative(gpIndex, wrt(spatialAll), transformWith(Jinv));
         const Eigen::Matrix<double, vectorPotDim, Traits::mydim> gradA
-            = vectorPotLocalFunction.evaluateDerivative(gpIndex, wrt(spatialall), transformWith(Jinv));
+            = vectorPotLocalFunction.evaluateDerivative(gpIndex, wrt(spatialAll), transformWith(Jinv));
 
         const Eigen::Vector<double, directorDim> curlA = Impl::jacobianToCurl(gradA).template segment<directorDim>(0);
         const double divA = gradA.diagonal().template segment<vectorPotDim>(0).sum();
@@ -307,7 +307,7 @@ namespace Ikarus {
         if (isInside) {
           for (size_t i = 0; i < fe0.size(); ++i) {
             const int index = i * directorCorrectionDim;
-            const auto WI   = magnetLocalFunction.evaluateDerivative(gpIndex, wrt(spatialall, coeff(i)),
+            const auto WI   = magnetLocalFunction.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i)),
                                                                    transformWith(Jinv));
             const auto PmI  = magnetLocalFunction.evaluateDerivative(gpIndex, wrt(coeff(i)));
             Eigen::Vector<double, directorCorrectionDim> tmp;
@@ -379,9 +379,9 @@ namespace Ikarus {
       const auto vectorPot     = vectorPotLocalFunction.evaluateFunction(gp).getValue();
 
       const Eigen::Matrix<double, directorDim, Traits::mydim> gradm
-          = magnetLocalFunction.evaluateDerivative(gp, wrt(spatialall), transformWith(Jinv));
+          = magnetLocalFunction.evaluateDerivative(gp, wrt(spatialAll), transformWith(Jinv));
       const Eigen::Matrix<double, vectorPotDim, Traits::mydim> gradA
-          = vectorPotLocalFunction.evaluateDerivative(gp, wrt(spatialall), transformWith(Jinv));
+          = vectorPotLocalFunction.evaluateDerivative(gp, wrt(spatialAll), transformWith(Jinv));
 
       const Eigen::Vector<double, 3> curlA          = Impl::jacobianToCurl(gradA);
       const Eigen::Vector<double, directorDim> Hbar = volumeLoad(toEigenVector(gp), lambda);
@@ -457,9 +457,9 @@ namespace Ikarus {
         const auto vectorPot     = vectorPotLocalFunction.evaluateFunction(gp.position()).getValue();
 
         const Eigen::Matrix<double, directorDim, Traits::mydim> gradm
-            = magnetLocalFunction.evaluateDerivative(gp.position(), wrt(spatialall), transformWith(Jinv));
+            = magnetLocalFunction.evaluateDerivative(gp.position(), wrt(spatialAll), transformWith(Jinv));
         const Eigen::Matrix<double, vectorPotDim, Traits::mydim> gradA
-            = vectorPotLocalFunction.evaluateDerivative(gp.position(), wrt(spatialall), transformWith(Jinv));
+            = vectorPotLocalFunction.evaluateDerivative(gp.position(), wrt(spatialAll), transformWith(Jinv));
 
         const Eigen::Vector<ScalarType, directorDim> curlA
             = Impl::jacobianToCurl(gradA).template segment<directorDim>(0);

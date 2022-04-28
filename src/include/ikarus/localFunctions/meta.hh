@@ -6,7 +6,12 @@
 #include <cstddef>
 
 #include <ikarus/utils/traits.hh>
+#include <dune/typetree/typetree.hh>
+#include <dune/istl/multitypeblockvector.hh>
 namespace Ikarus {
+
+
+
   template <typename... Args_>
   struct Wrt {
     using Args = std::tuple<std::remove_cvref_t<Args_>...>;
@@ -41,26 +46,51 @@ namespace Ikarus {
   }
 
   namespace DerivativeDirections {
-    static struct Spatialall { using value = std::integral_constant<int, -2>; } spatialall;
+
+  struct DerivativeNoOp{};
+
+    [[maybe_unused]] static struct SpatialAll { } spatialAll;
 
     struct SpatialPartial {
-      using value = std::integral_constant<int, -3>;
       size_t index{};
     };
 
-    struct SingleCoeff {
-      using value = std::integral_constant<int, -4>;
-      size_t index{};
-    };
 
-    struct TwoCoeff {
-      using value = std::integral_constant<int, -5>;
-      std::array<size_t, 2> index{};
-    };
+  template<std::size_t I>
+  struct SingleCoeff {
+    Dune::MultiTypeBlockVector<decltype(Dune::TypeTree::treePath(std::declval<Dune::index_constant<I>>(),std::declval<size_t>()))> index{};
+  };
+
+
+
+  template<std::size_t I,std::size_t J>
+  struct TwoCoeff {
+    Dune::MultiTypeBlockVector<decltype(Dune::TypeTree::treePath(std::declval<Dune::index_constant<I>>(),std::declval<size_t>())),
+               decltype(Dune::TypeTree::treePath(std::declval<Dune::index_constant<J>>(),std::declval<size_t>()))> index{};
+  };
 
     SpatialPartial spatial(size_t i);
-    SingleCoeff coeff(size_t i);
-    TwoCoeff coeff(size_t i, size_t j);
+
+  template<std::size_t I>
+  SingleCoeff<I> coeff(Dune::index_constant<I> iObj, size_t i)
+  {
+    using namespace Dune::Indices;
+    SingleCoeff<I> coeffs;
+    std::get<1>(coeffs.index[_0]._data) = i;
+    return coeffs;
+  }
+  template<std::size_t I,std::size_t J>
+  TwoCoeff<I,J> coeff(Dune::index_constant<I> iObj, size_t i,Dune::index_constant<J> jObj, size_t j)
+  {
+    using namespace Dune::Indices;
+    TwoCoeff<I,J> coeffs;
+    std::get<1>(coeffs.index[_0]._data) = i;
+    std::get<1>(coeffs.index[_1]._data) = j;
+    return coeffs;
+  }
+
+  SingleCoeff<0> coeff( size_t i);
+  TwoCoeff<0,0> coeff( size_t i, size_t j);
 
     template <int Dim>
     struct Counter {
@@ -83,14 +113,24 @@ namespace Ikarus {
         return std::array<int, 0>();  // signals no SpatialPartial derivative found
     }
 
+    template<typename Type>
+    concept isSpatial =
+       std::is_same_v<Type,DerivativeDirections::SpatialPartial> or
+          std::is_same_v<Type,DerivativeDirections::SpatialAll>;
+
+  template<typename Type>
+  concept isCoeff = Std::IsSpecializationNonTypes<SingleCoeff, Type>::value or
+      Std::IsSpecializationNonTypes<TwoCoeff, Type>::value;
+
+
     struct ConstExprCounter {
       int singleCoeffDerivs{};
       int twoCoeffDerivs{};
       int spatialDerivs{};
-      int spatialAll{};
+      int spatialAllCounter{};
 
       consteval int orderOfDerivative() const {
-        return singleCoeffDerivs + 2 * twoCoeffDerivs + spatialDerivs + spatialAll;
+        return singleCoeffDerivs + 2 * twoCoeffDerivs + spatialDerivs + spatialAllCounter;
       }
     };
 
@@ -98,19 +138,19 @@ namespace Ikarus {
     consteval ConstExprCounter countDerivativesType() {
       ConstExprCounter counter{};
       using Tuple               = typename WrtType::Args;
-      counter.singleCoeffDerivs = Ikarus::Std::countType<Tuple, SingleCoeff>();
-      counter.twoCoeffDerivs    = Ikarus::Std::countType<Tuple, TwoCoeff>();
+      counter.singleCoeffDerivs = Ikarus::Std::countTypeSpecialization<SingleCoeff,Tuple>();
+      counter.twoCoeffDerivs    = Ikarus::Std::countTypeSpecialization<TwoCoeff,Tuple>();
       counter.spatialDerivs     = Ikarus::Std::countType<Tuple, SpatialPartial>();
-      counter.spatialAll        = Ikarus::Std::countType<Tuple, Spatialall>();
+      counter.spatialAllCounter        = Ikarus::Std::countType<Tuple, SpatialAll>();
       return counter;
     }
 
     template <typename WrtType>
     auto extractCoeffIndices(WrtType&& wrt) {
-      if constexpr (Std::hasType<SingleCoeff, typename std::remove_reference_t<WrtType>::Args>::value)
-        return std::get<SingleCoeff>(wrt.args).index;  // returns single int
-      else if constexpr (Std::hasType<TwoCoeff, typename std::remove_reference_t<WrtType>::Args>::value)
-        return std::get<TwoCoeff>(wrt.args).index;  // return std::array<size_t,2>
+      if constexpr (Std::hasTypeSpecialization<SingleCoeff, typename std::remove_reference_t<WrtType>::Args>())
+        return Std::getSpecialization<SingleCoeff>(wrt.args).index;  // returns single int
+      else if constexpr (Std::hasTypeSpecialization<TwoCoeff, typename std::remove_reference_t<WrtType>::Args>())
+        return Std::getSpecialization<TwoCoeff>(wrt.args).index;  // return std::array<size_t,2>
       else
         return std::array<int, 0>();  // signals no coeff derivative found
     }
@@ -127,11 +167,11 @@ namespace Ikarus {
 
     template <typename WrtType>
     concept HasNoSpatial
-        = (countDerivativesType<WrtType>().spatialDerivs == 0 and countDerivativesType<WrtType>().spatialAll == 0);
+        = (countDerivativesType<WrtType>().spatialDerivs == 0 and countDerivativesType<WrtType>().spatialAllCounter == 0);
 
     template <typename WrtType>
     concept HasOneSpatialAll = countDerivativesType<WrtType>()
-    .spatialAll == 1;
+    .spatialAllCounter == 1;
 
     template <typename WrtType>
     concept HasOneSpatialSingle = countDerivativesType<WrtType>()
@@ -141,4 +181,10 @@ namespace Ikarus {
     concept HasOneSpatial = HasOneSpatialSingle<WrtType> or HasOneSpatialAll<WrtType>;
 
   }  // namespace DerivativeDirections
+
+    template <typename LF>
+  concept IsUnaryExpr = LF::children==1;
+
+  template <typename LF>
+  concept IsBinaryExpr = LF::children==2;
 }  // namespace Ikarus

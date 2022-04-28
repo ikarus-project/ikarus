@@ -11,22 +11,25 @@
 
 #include <concepts>
 #include <iostream>
+#include <dune/common/indices.hh>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
 namespace Ikarus {
 
-  template <typename DuneBasis, typename CoeffContainer>
-  class StandardLocalFunction : public LocalFunctionInterface<StandardLocalFunction<DuneBasis, CoeffContainer>> {
-    using Base = LocalFunctionInterface<StandardLocalFunction<DuneBasis, CoeffContainer>>;
+  template <typename DuneBasis, typename CoeffContainer,std::size_t ID=0>
+  class StandardLocalFunction : public LocalFunctionInterface<StandardLocalFunction<DuneBasis, CoeffContainer,ID>> {
+    using Base = LocalFunctionInterface<StandardLocalFunction<DuneBasis, CoeffContainer,ID>>;
 
   public:
     friend Base;
-    StandardLocalFunction(const Ikarus::LocalBasis<DuneBasis>& p_basis, const CoeffContainer& coeffs_)
+    constexpr StandardLocalFunction(const Ikarus::LocalBasis<DuneBasis>& p_basis, const CoeffContainer& coeffs_, Dune::template index_constant<ID> = Dune::template index_constant<std::size_t(0)>{})
         : basis_{p_basis}, coeffs{coeffs_}, coeffsAsMat{Ikarus::viewAsEigenMatrixFixedDyn(coeffs)} {}
 
+
     static constexpr bool isLeaf = true;
+    static constexpr int id = ID;
 
     template<typename LocalFunctionEvaluationArgs_,typename LocalFunctionImpl_>
     friend auto evaluateDerivativeImpl(const LocalFunctionInterface<LocalFunctionImpl_>& f, const LocalFunctionEvaluationArgs_& localFunctionArgs);
@@ -35,7 +38,7 @@ namespace Ikarus {
     friend auto evaluateFunctionImpl(const LocalFunctionInterface<LocalFunctionImpl_>& f,
                               const LocalFunctionEvaluationArgs_& localFunctionArgs) ;
 
-    using Traits = LocalFunctionTraits<StandardLocalFunction>;
+    using Traits = LocalFunctionTraits<StandardLocalFunction<DuneBasis, CoeffContainer,ID>>;
     /** \brief Type used for coordinates */
     using ctype = typename Traits::ctype;
     //    /** \brief Dimension of the coeffs */
@@ -142,8 +145,8 @@ namespace Ikarus {
     const decltype(Ikarus::viewAsEigenMatrixFixedDyn(coeffs)) coeffsAsMat;
   };
 
-  template <typename DuneBasis, typename CoeffContainer>
-  struct LocalFunctionTraits<StandardLocalFunction<DuneBasis, CoeffContainer>> {
+  template <typename DuneBasis, typename CoeffContainer,std::size_t ID>
+  struct LocalFunctionTraits<StandardLocalFunction<DuneBasis, CoeffContainer,ID>> {
     /** \brief Type used for coordinates */
     using ctype = typename CoeffContainer::value_type::ctype;
     /** \brief Dimension of the coeffs */

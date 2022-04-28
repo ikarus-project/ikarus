@@ -9,8 +9,11 @@
 
 #include <ikarus/manifolds/manifoldInterface.hh>
 #include <ikarus/utils/concepts.hh>
+#include <ikarus/localFunctions/meta.hh>
+
 
 namespace Ikarus {
+
 
   /** \brief Orthonormalizes all Matrix columns */
   template <typename Derived>
@@ -154,12 +157,84 @@ auto operator +(const Eigen::DiagonalMatrix<Scalar,size>& a,const Eigen::MatrixB
   return b+a;
 }
 
+template<typename Scalar, int size>
+auto operator +(const Eigen::DiagonalMatrix<Scalar,size>& a,Ikarus::DerivativeDirections::DerivativeNoOp)
+{
+  return a.derived();
+}
+
+template<typename Scalar, int size>
+auto operator +(Ikarus::DerivativeDirections::DerivativeNoOp,const Eigen::DiagonalMatrix<Scalar,size>& a)
+{
+  return a.derived();
+}
+
+template<typename Scalar, int size>
+auto operator *(const Eigen::DiagonalMatrix<Scalar,size>& a,Ikarus::DerivativeDirections::DerivativeNoOp)
+{
+  return Ikarus::DerivativeDirections::DerivativeNoOp();
+}
+
+template<typename Scalar, int size>
+auto operator *(Ikarus::DerivativeDirections::DerivativeNoOp,const Eigen::DiagonalMatrix<Scalar,size>& a)
+{
+  return Ikarus::DerivativeDirections::DerivativeNoOp();
+}
+
+template<typename Scalar, int size>
+auto operator -(const Eigen::DiagonalMatrix<Scalar,size>& a,Ikarus::DerivativeDirections::DerivativeNoOp)
+{
+  return a.derived();
+}
+
+template<typename Scalar, int size>
+auto operator -(Ikarus::DerivativeDirections::DerivativeNoOp,const Eigen::DiagonalMatrix<Scalar,size>& a)
+{
+  return a.derived();
+}
+
 template<typename Derived,typename Derived2>
 auto operator +(const Eigen::MatrixBase<Derived>& a,const Eigen::DiagonalWrapper<Derived2>& b)
 {
   auto c= a.derived().eval();
   c.diagonal() += b.diagonal();
   return c;
+}
+
+template<typename Derived>
+auto operator +(const Eigen::MatrixBase<Derived>& a,Ikarus::DerivativeDirections::DerivativeNoOp)
+{
+  return a.derived();
+}
+
+template<typename Derived>
+auto operator +(Ikarus::DerivativeDirections::DerivativeNoOp,const Eigen::MatrixBase<Derived>& a)
+{
+  return a.derived();
+}
+
+template<typename Derived>
+auto operator *(const Eigen::MatrixBase<Derived>& a,Ikarus::DerivativeDirections::DerivativeNoOp)
+{
+  return Ikarus::DerivativeDirections::DerivativeNoOp();
+}
+
+template<typename Derived>
+auto operator *(Ikarus::DerivativeDirections::DerivativeNoOp,const Eigen::MatrixBase<Derived>& a)
+{
+  return Ikarus::DerivativeDirections::DerivativeNoOp();
+}
+
+template<typename Derived>
+auto operator -(const Eigen::MatrixBase<Derived>& a,Ikarus::DerivativeDirections::DerivativeNoOp)
+{
+  return a.derived();
+}
+
+template<typename Derived>
+auto operator -(Ikarus::DerivativeDirections::DerivativeNoOp,const Eigen::MatrixBase<Derived>& a)
+{
+  return a.derived();
 }
 
 template<typename Derived,typename Derived2>
@@ -210,17 +285,20 @@ std::ostream& operator<<(std::ostream& os,  const Eigen::DiagonalMatrix<Scalar,s
   template<typename Type> requires Ikarus::Concepts::Manifold<Type>  or std::floating_point<Type>
   auto eval(const  Type& A) { return A; }
 
+
+Ikarus::DerivativeDirections::DerivativeNoOp transpose(const Ikarus::DerivativeDirections::DerivativeNoOp&);
+
   template <typename Derived>
   auto transpose(const Eigen::EigenBase<Derived>& A) {
     if constexpr (requires {
                     A.derived().transpose();
                   })  // workaround needed since Eigen::Diagonalmatrix has no transpose function
       return A.derived().transpose();
-    else if constexpr (Ikarus::Std::IsInstantiationTypeAndNonTypes<Eigen::DiagonalMatrix, Derived>::value or Std::isInstantiation<Eigen::DiagonalWrapper,Derived>::value)
+    else if constexpr (Ikarus::Std::IsSpecializationTypeAndNonTypes<Eigen::DiagonalMatrix, Derived>::value or Std::isSpecialization<Eigen::DiagonalWrapper, Derived>::value)
       return A.derived();
     else
       static_assert((requires { A.derived().transpose(); })
-                    or Ikarus::Std::IsInstantiationTypeAndNonTypes<Eigen::DiagonalMatrix, Derived>::value or Std::isInstantiation<Eigen::DiagonalWrapper,Derived>::value);
+                    or Ikarus::Std::IsSpecializationTypeAndNonTypes<Eigen::DiagonalMatrix, Derived>::value or Std::isSpecialization<Eigen::DiagonalWrapper, Derived>::value);
   }
 
 }  // namespace Ikarus

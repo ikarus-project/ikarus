@@ -17,6 +17,15 @@ namespace Ikarus {
       case ResultType::gradientNormOfMagnetization:
         return "gradientNormOfMagnetization";
         break;
+      case ResultType::divergenceOfVectorPotential:
+        return "divergenceOfVectorPotential";
+        break;
+      case ResultType::cauchyStress:
+        return "cauchyStress";
+        break;
+      case ResultType::director:
+        return "director";
+        break;
       case ResultType::BField:
         return "BField";
         break;

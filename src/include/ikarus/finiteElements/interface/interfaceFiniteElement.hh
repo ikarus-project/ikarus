@@ -9,7 +9,7 @@
 #include <memory>
 #include <optional>
 
-#include <ikarus/utils/linearAlgebraTypedefs.hh>
+#include <ikarus/utils/eigenDuneTransformations.hh>
 
 namespace Ikarus::Variable {
   class IVariable;

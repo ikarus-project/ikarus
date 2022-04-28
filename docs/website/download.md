@@ -56,7 +56,7 @@ docker pull rath3t/ikarus-debian-bookworm:latest
     ![img.png](images/Installation/CLionToolchainSettings.png)
     Edit the Container settings and paste the following command into `Run options`:
 ```
--e DISPLAY=:0 -v \\wsl$\debian\mnt\wslg\.X11-unix:/tmp/.X11-unix -v \\wsl$\debian\mnt\wslg:/mnt/wslg -p 8000:8000
+-e DISPLAY=:0 -v \\wsl$\debian\mnt\wslg\.X11-unix:/tmp/.X11-unix -v \\wsl$\debian\mnt\wslg:/mnt/wslg -p 8000:8000 --cap-add=SYS_PTRACE
 ```
 8. [Clone Ikarus](#clone-ikarus)
 

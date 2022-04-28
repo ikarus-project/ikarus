@@ -26,6 +26,9 @@ consteval int countType() {
 }
 
 
+
+
+
 template <typename T, typename Tuple>
 struct hasType;
 
@@ -40,16 +43,22 @@ struct hasType<T, std::tuple<T, Ts...>> : std::true_type {};
 
 
 template<template<typename...> class, typename...>
-struct isInstantiation : public std::false_type {};
+struct isSpecialization : public std::false_type {};
 
 template<template<typename...> class U, typename... T>
-struct isInstantiation<U, U<T...>> : public std::true_type {};
+struct isSpecialization<U, U<T...>> : public std::true_type {};
 
 template<template<typename,auto...> class Type, typename >
-struct IsInstantiationTypeAndNonTypes : std::false_type {};
+struct IsSpecializationTypeAndNonTypes : std::false_type {};
 
 template<template<typename,auto...> class Type,typename T, auto... N>
-struct IsInstantiationTypeAndNonTypes<Type,Type<T, N...>> : std::true_type {};
+struct IsSpecializationTypeAndNonTypes<Type, Type<T, N...>> : std::true_type {};
+
+template<template<auto...> class Type, typename >
+struct IsSpecializationNonTypes : std::false_type {};
+
+template<template<auto...> class Type, auto... N>
+struct IsSpecializationNonTypes<Type, Type<N...>> : std::true_type {};
 
 
 namespace Impl{
@@ -64,6 +73,82 @@ constexpr auto makeTupleFromTupleIndicesImpl(Tuple&& t, std::index_sequence<I...
 {
   return std::make_tuple(std::get<I>(std::forward<Tuple>(t))...);
 }
+
+
+}
+
+
+
+
+template<typename Tuple, typename Predicate>
+constexpr size_t find_if(Tuple&& tuple, Predicate pred)
+{
+  size_t index = std::tuple_size<std::remove_reference_t<Tuple>>::value;
+  size_t currentIndex = 0;
+  bool found = false;
+
+  Dune::Hybrid::forEach(tuple, [&](auto&& value)
+  {
+    if (!found && pred(value))
+    {
+      index = currentIndex;
+      found = true;
+    }
+    ++currentIndex;
+  });
+  return index;
+}
+
+template<typename Tuple, typename Predicate>
+bool none_of(Tuple&& tuple, Predicate pred)
+{
+  return find_if(tuple, pred) == std::tuple_size<std::decay_t<Tuple>>::value;
+}
+
+template<typename Tuple, typename Predicate>
+bool any_of(Tuple&& tuple, Predicate pred)
+{
+  return !none_of(tuple, pred);
+}
+
+template<typename Tuple, typename Predicate>
+constexpr size_t count_if(Tuple&& tuple, Predicate pred)
+{
+  size_t counter = 0;
+  size_t currentIndex = 0;
+  bool found = false;
+  Dune::Hybrid::forEach(tuple, [&](auto&& value)
+  {
+    if (pred(value))
+      ++counter;
+  });
+  return counter;
+}
+
+
+template<template<auto...> class Type,typename Tuple>
+constexpr int findTypeSpecialization()
+{
+  return find_if(std::remove_cvref_t<Tuple>(), []<typename T> (T&& value){return IsSpecializationNonTypes<Type,std::remove_cvref_t<T>>::value;});
+}
+template<template<auto...> class Type,typename Tuple>
+ auto getSpecialization(Tuple&& tuple)
+{
+  constexpr int index = findTypeSpecialization<Type,Tuple>();
+  return std::get<index>(tuple);
+}
+
+
+template<template<auto...> class Type,typename Tuple>
+constexpr bool hasTypeSpecialization()
+{
+  return (find_if(std::remove_cvref_t<Tuple>(), []<typename T> (T&& value){return IsSpecializationNonTypes<Type,std::remove_cvref_t<T>>::value;}) < std::tuple_size_v<std::remove_cvref_t<Tuple>>);
+}
+
+template<template<auto...> class Type,typename Tuple>
+constexpr bool countTypeSpecialization()
+{
+  return count_if(Tuple(), []<typename T> (T&& value){return IsSpecializationNonTypes<Type,std::remove_cvref_t<T>>::value;});
 }
 
 template<int N,class Tuple>
@@ -81,6 +166,17 @@ constexpr auto makeTupleFromTupleIndices(Tuple&& t)
 {
   return Impl::makeTupleFromTupleIndicesImpl(std::forward<Tuple>(t), std::index_sequence<I...>{});
 }
+
+
+
+template <template <auto...> typename, template <auto...> typename>
+struct isTemplateSame : std::false_type {};
+
+template <template <auto...> typename TT>
+struct isTemplateSame<TT, TT> : std::true_type {};
+
+template <template <auto...> typename TT, template <auto...> typename UU>
+inline constexpr bool isTemplateSame_v = isTemplateSame<TT, UU>::value;
 
 
 // Type your code here, or load an example.

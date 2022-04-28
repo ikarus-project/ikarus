@@ -17,19 +17,20 @@
 
 namespace Ikarus {
 
-  template <typename DuneBasis, typename CoeffContainer>
+  template <typename DuneBasis, typename CoeffContainer,std::size_t ID=0>
   class ProjectionBasedLocalFunction
-      : public LocalFunctionInterface<ProjectionBasedLocalFunction<DuneBasis, CoeffContainer>> {
-    using Base = LocalFunctionInterface<ProjectionBasedLocalFunction<DuneBasis, CoeffContainer>>;
+      : public LocalFunctionInterface<ProjectionBasedLocalFunction<DuneBasis, CoeffContainer,ID>> {
+    using Base = LocalFunctionInterface<ProjectionBasedLocalFunction<DuneBasis, CoeffContainer,ID>>;
 
   public:
     friend Base;
-    ProjectionBasedLocalFunction(const Ikarus::LocalBasis<DuneBasis>& p_basis, const CoeffContainer& coeffs_)
+    constexpr ProjectionBasedLocalFunction(const Ikarus::LocalBasis<DuneBasis>& p_basis, const CoeffContainer& coeffs_,Dune::template index_constant<ID> = Dune::template index_constant<std::size_t(0)>{})
         : basis_{p_basis}, coeffs{coeffs_}, coeffsAsMat{Ikarus::viewAsEigenMatrixFixedDyn(coeffs)} {}
 
     using Traits = LocalFunctionTraits<ProjectionBasedLocalFunction>;
 
     static constexpr bool isLeaf = true;
+    static constexpr int id = ID;
 
     template <typename LocalFunctionEvaluationArgs_, typename LocalFunctionImpl_>
     friend auto evaluateDerivativeImpl(const LocalFunctionInterface<LocalFunctionImpl_>& f,
@@ -63,7 +64,7 @@ namespace Ikarus {
     using CoeffDerivEukMatrix = typename Traits::CoeffDerivEukMatrix;
     /** \brief Type for the derivatives wrT the coefficients in the embedding space on the left and in the tangent space
      * basis on the right*/
-    using CoeffDerivRieEukMatrix = Eigen::Matrix<ctype, correctionSize, valueSize>;
+    using CoeffDerivEukRieMatrix = Eigen::Matrix<ctype, valueSize, correctionSize>;
     /** \brief Type for ansatz function values */
     using AnsatzFunctionType = typename Traits::AnsatzFunctionType;
     /** \brief Type for the Jacobian of the ansatz function values */
@@ -124,11 +125,11 @@ namespace Ikarus {
     }
 
     template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
-    CoeffDerivRieEukMatrix evaluateDerivativeWRTCoeffsImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
+    CoeffDerivEukRieMatrix evaluateDerivativeWRTCoeffsImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
                                                            int coeffsIndex,
                                                            const TransformWith<TransformArgs...>& transArgs) const {
       const auto& N = evaluateFunctionWithIPorCoord(ipIndexOrPosition, basis_);
-      return (coeffs[coeffsIndex].orthonormalFrame().transpose() * evaluateDerivativeWRTCoeffsEukImpl(N, coeffsIndex))
+      return ( evaluateDerivativeWRTCoeffsEukImpl(N, coeffsIndex)*coeffs[coeffsIndex].orthonormalFrame())
           .eval();
     }
 
@@ -158,15 +159,15 @@ namespace Ikarus {
     }
 
     template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
-    std::array<CoeffDerivRieEukMatrix, gridDim> evaluateDerivativeWRTCoeffsANDSpatialImpl(
+    std::array<CoeffDerivEukRieMatrix, gridDim> evaluateDerivativeWRTCoeffsANDSpatialImpl(
         const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, int coeffsIndex,
         const TransformWith<TransformArgs...>& transArgs) const {
       std::array<CoeffDerivEukMatrix, gridDim> WarrayEuk
           = evaluateDerivativeWRTCoeffsANDSpatialEukImpl(ipIndexOrPosition, coeffsIndex, transArgs);
-      std::array<CoeffDerivRieEukMatrix, gridDim> WarrayRie;
-      const auto BLAT = coeffs[coeffsIndex].orthonormalFrame().transpose().eval();
+      std::array<CoeffDerivEukRieMatrix, gridDim> WarrayRie;
+      const auto BLA = coeffs[coeffsIndex].orthonormalFrame().eval();
       for (int dir = 0; dir < gridDim; ++dir)
-        WarrayRie[dir] = BLAT * WarrayEuk[dir];
+        WarrayRie[dir] =  WarrayEuk[dir]* BLA;
 
       return WarrayRie;
     }
@@ -190,12 +191,12 @@ namespace Ikarus {
     }
 
     template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
-    CoeffDerivRieEukMatrix evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(
+    CoeffDerivEukRieMatrix evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(
         const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, int coeffsIndex, int spatialIndex,
         const TransformWith<TransformArgs...>& transArgs) const {
       const CoeffDerivEukMatrix WEuk
           = evaluateDerivativeWRTCoeffsANDSpatialSingleEukImpl(ipIndexOrPosition, coeffsIndex, spatialIndex, transArgs);
-      return coeffs[coeffsIndex].orthonormalFrame().transpose() * WEuk;
+      return  WEuk*coeffs[coeffsIndex].orthonormalFrame();
     }
 
     template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
@@ -300,8 +301,8 @@ namespace Ikarus {
     const decltype(Ikarus::viewAsEigenMatrixFixedDyn(coeffs)) coeffsAsMat;
   };
 
-  template <typename DuneBasis, typename CoeffContainer>
-  struct LocalFunctionTraits<ProjectionBasedLocalFunction<DuneBasis, CoeffContainer>> {
+template <typename DuneBasis, typename CoeffContainer,std::size_t ID>
+  struct LocalFunctionTraits<ProjectionBasedLocalFunction<DuneBasis, CoeffContainer,ID>> {
     /** \brief Type used for coordinates */
     using ctype = typename CoeffContainer::value_type::ctype;
     /** \brief Dimension of the coeffs */

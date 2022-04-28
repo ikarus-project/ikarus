@@ -43,7 +43,7 @@ namespace Ikarus {
   };
 
   template <typename E1, typename E2>
-  LocalFunctionSum<E1, E2> operator+(LocalFunctionInterface<E1> const& u, LocalFunctionInterface<E2> const& v) {
+  constexpr LocalFunctionSum<E1, E2> operator+(LocalFunctionInterface<E1> const& u, LocalFunctionInterface<E2> const& v) {
     static_assert(Concepts::AddAble<typename E1::FunctionReturnType, typename E2::FunctionReturnType>,
                   "The function values of your local functions are not addable!");
 

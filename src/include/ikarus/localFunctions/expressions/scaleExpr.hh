@@ -31,12 +31,12 @@ namespace Ikarus {
   };
 
   template <typename E1,typename E2> requires std::is_arithmetic_v<E1>
-  LocalFunctionScale<E1,E2> operator*(const E1& factor, LocalFunctionInterface<E2> const& u) {
+  constexpr LocalFunctionScale<E1,E2> operator*(const E1& factor, LocalFunctionInterface<E2> const& u) {
     return LocalFunctionScale<E1,E2>(factor,u);
   }
 
   template <typename E1,typename E2> requires std::is_arithmetic_v<E1>
-  LocalFunctionScale<E1,E2> operator*(LocalFunctionInterface<E2> const& u,const E1& factor) {
+  constexpr LocalFunctionScale<E1,E2> operator*(LocalFunctionInterface<E2> const& u,const E1& factor) {
     return factor*u;
   }
 

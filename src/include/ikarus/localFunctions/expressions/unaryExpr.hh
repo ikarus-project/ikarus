@@ -9,14 +9,14 @@ namespace Ikarus
 {
 
 template <typename Op, typename E1>
-class UnaryLocalFunctionExpression : public Ikarus::LocalFunctionInterface<Op> {
+struct UnaryLocalFunctionExpression : public Ikarus::LocalFunctionInterface<Op> {
 
- protected:
   E1 const& m;
- public:
-   UnaryLocalFunctionExpression(Ikarus::LocalFunctionInterface<E1> const& u) : m(static_cast<E1 const&>(u)) {  }
+
+  constexpr UnaryLocalFunctionExpression(Ikarus::LocalFunctionInterface<E1> const& u) : m(static_cast<E1 const&>(u)) {  }
 
   static constexpr bool isLeaf = false;
+  static constexpr int children = 1;
 
 };
 

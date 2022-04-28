@@ -42,7 +42,7 @@
 #include <ikarus/localBasis/localBasis.hh>
 #include <ikarus/manifolds/realTuple.hh>
 #include <ikarus/utils/linearAlgebraHelper.hh>
-#include <ikarus/utils/linearAlgebraTypedefs.hh>
+#include <ikarus/utils/eigenDuneTransformations.hh>
 
 namespace Ikarus {
 
@@ -105,7 +105,7 @@ namespace Ikarus {
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
         const auto Jinv      = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
         const auto u      = uFunction.evaluateFunction(gpIndex).getValue();
-        const auto H      = uFunction.evaluateDerivative(gpIndex, wrt(DerivativeDirections::spatialall),
+        const auto H      = uFunction.evaluateDerivative(gpIndex, wrt(DerivativeDirections::spatialAll),
                                                     transformWith(Jinv));
         const auto E      = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
         const auto EVoigt = toVoigt(E);

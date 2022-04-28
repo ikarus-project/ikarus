@@ -31,7 +31,7 @@ namespace Ikarus {
   };
 
   template <typename E1>
-  LocalFunctionNegate<E1> operator-(LocalFunctionInterface<E1> const& u) {
+  constexpr LocalFunctionNegate<E1> operator-(LocalFunctionInterface<E1> const& u) {
     return LocalFunctionNegate<E1>(u);
   }
 

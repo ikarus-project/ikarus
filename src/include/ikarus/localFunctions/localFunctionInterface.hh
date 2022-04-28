@@ -15,6 +15,10 @@ namespace Ikarus {
   template <typename Derived>
   struct LocalFunctionTraits;
 
+
+template <typename LocalFunctionImpl>
+class LocalFunctionInterface;
+
   template <typename DomainTypeOrIntegrationPointIndex, typename DomainType>
   concept IsIntegrationPointIndexOrIntegrationPointPosition
       = std::is_same_v<DomainTypeOrIntegrationPointIndex,
@@ -41,7 +45,9 @@ namespace Ikarus {
     LocalFunctionEvaluationArgs(const DomainTypeOrIntegrationPointIndex& localOrIpId, const Wrt<WrtArgs...>& args,
                                 const Along<AlongArgs...>& along, const TransformWith<TransformArgs...>& transArgs)
         : integrationPointOrIndex{localOrIpId}, wrtArgs{args}, alongArgs{along}, transformWithArgs{transArgs} {
-      coeffsIndices         = Ikarus::DerivativeDirections::extractCoeffIndices(args);
+      const auto coeffIndicesOfArgs = Ikarus::DerivativeDirections::extractCoeffIndices(args);
+      Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<coeffIndicesOfArgs.size()>{}),[&](auto&& i) { coeffsIndices[i]._data = coeffIndicesOfArgs[i]._data; });
+
       spatialPartialIndices = Ikarus::DerivativeDirections::extractSpatialPartialIndices(args);
     }
 
@@ -58,10 +64,12 @@ namespace Ikarus {
         if constexpr (hasOneSpatialSingle)
           return extractWrtArgsWithGivenType<DerivativeDirections::SpatialPartial>();
          else if constexpr (hasOneSpatialAll)
-          return extractWrtArgsWithGivenType<DerivativeDirections::Spatialall>();
+          return extractWrtArgsWithGivenType<DerivativeDirections::SpatialAll>();
       } else
         return extractWrtArgs<0>();
     }
+
+
 
     auto extractSecondWrtArgOrFirstNonSpatial()const {
       if constexpr (!hasOneSpatial)
@@ -87,44 +95,40 @@ namespace Ikarus {
                                                                             transformWithArgs);
     }
 
-    auto extractWrtArgsTwoCoeffsToSingleCoeff() const
-    {
 
-      const auto coeffArg = std::get<DerivativeDirections::TwoCoeff>(wrtArgs.args);
-      auto wrtArg0            = wrt(DerivativeDirections::coeff(coeffsIndices[0]));
-      auto wrtArg1            = wrt(DerivativeDirections::coeff(coeffsIndices[1]));
-      using ReturnedArgs = LocalFunctionEvaluationArgs<decltype(wrtArg0), Along<AlongArgs...>, TransformWith<TransformArgs...>,
-                                                       DomainTypeOrIntegrationPointIndex>;
-
-      return std::make_pair(ReturnedArgs(integrationPointOrIndex, wrtArg0,   alongArgs, transformWithArgs),ReturnedArgs(integrationPointOrIndex, wrtArg1,    alongArgs, transformWithArgs));
-    }
 
     template<typename DerivativeDirection>
     auto extractWrtArgsWithGivenType()const
     {
-      if constexpr(std::is_same_v<DerivativeDirection,DerivativeDirections::TwoCoeff>) {
-        auto wrtArg = wrt(DerivativeDirections::coeff(coeffsIndices[0], coeffsIndices[1]));
-        return LocalFunctionEvaluationArgs<decltype(wrtArg), Along<AlongArgs...>, TransformWith<TransformArgs...>,
-                                           DomainTypeOrIntegrationPointIndex>(integrationPointOrIndex, wrtArg,
-                                                                              alongArgs, transformWithArgs);
-      }else if constexpr(std::is_same_v<DerivativeDirection,DerivativeDirections::SingleCoeff>) {
-        auto wrtArg = wrt(DerivativeDirections::coeff(coeffsIndices));
-        return LocalFunctionEvaluationArgs<decltype(wrtArg), Along<AlongArgs...>, TransformWith<TransformArgs...>,
-                                           DomainTypeOrIntegrationPointIndex>(integrationPointOrIndex, wrtArg,
-                                                                              alongArgs, transformWithArgs);
-      }else if constexpr(std::is_same_v<DerivativeDirection,DerivativeDirections::SpatialPartial>) {
+      if constexpr(std::is_same_v<DerivativeDirection,DerivativeDirections::SpatialPartial>) {
         auto wrtArg = wrt(DerivativeDirections::spatial(spatialPartialIndices));
         return LocalFunctionEvaluationArgs<decltype(wrtArg), Along<AlongArgs...>, TransformWith<TransformArgs...>,
                                            DomainTypeOrIntegrationPointIndex>(integrationPointOrIndex, wrtArg,
                                                                               alongArgs, transformWithArgs);
-      }else if constexpr(std::is_same_v<DerivativeDirection,DerivativeDirections::Spatialall>) {
-        auto wrtArg = wrt(DerivativeDirections::spatialall);
+      }else if constexpr(std::is_same_v<DerivativeDirection,DerivativeDirections::SpatialAll>) {
+        auto wrtArg = wrt(DerivativeDirections::spatialAll);
         return LocalFunctionEvaluationArgs<decltype(wrtArg), Along<AlongArgs...>, TransformWith<TransformArgs...>,
                                            DomainTypeOrIntegrationPointIndex>(integrationPointOrIndex, wrtArg,
                                                                               alongArgs, transformWithArgs);
       }
     }
 
+    template<template<auto...> class  DerivativeDirection>
+    auto extractWrtArgsWithGivenType()const
+    {
+      using namespace Dune::Indices;
+      if constexpr(Std::isTemplateSame_v<DerivativeDirections::TwoCoeff,DerivativeDirection>) {
+        auto wrtArg =  wrt(DerivativeDirections::coeff(coeffsIndices[_0][_0],coeffsIndices[_0][1],coeffsIndices[_1][_0],coeffsIndices[_1][1]));
+        return LocalFunctionEvaluationArgs<decltype(wrtArg), Along<AlongArgs...>, TransformWith<TransformArgs...>,
+                                           DomainTypeOrIntegrationPointIndex>(integrationPointOrIndex, wrtArg,
+                                                                              alongArgs, transformWithArgs);
+      }else if constexpr(Std::isTemplateSame_v<DerivativeDirections::SingleCoeff,DerivativeDirection>) {
+        auto wrtArg = wrt(DerivativeDirections::coeff(coeffsIndices[_0][_0],coeffsIndices[_0][1]));
+        return LocalFunctionEvaluationArgs<decltype(wrtArg), Along<AlongArgs...>, TransformWith<TransformArgs...>,
+                                           DomainTypeOrIntegrationPointIndex>(integrationPointOrIndex, wrtArg,
+                                                                              alongArgs, transformWithArgs);
+      }
+    }
 
 
     static constexpr DerivativeDirections::ConstExprCounter derivativeCounter
@@ -165,26 +169,103 @@ template <typename... WrtArgs,typename... OtherWrtArgs, typename... TransformArg
                                                                         a.transformWithArgs);
 }
 
+template <typename... WrtArgs,typename... OtherWrtArgs, typename... TransformArgs, typename... AlongArgs,
+    typename DomainTypeOrIntegrationPointIndex>
+    auto extractWrtArgsTwoCoeffsToSingleCoeff(const LocalFunctionEvaluationArgs<Wrt<WrtArgs...>, Along<AlongArgs...>, TransformWith<TransformArgs...>,
+                                                                                DomainTypeOrIntegrationPointIndex>& a)
+    {
+      using namespace Dune::Indices;
+      const auto coeffArg = Std::getSpecialization<DerivativeDirections::TwoCoeff>(a.wrtArgs.args);
+      auto wrtArg0            = wrt(DerivativeDirections::coeff(a.coeffsIndices[_0][_0],a.coeffsIndices[_0][1]));
+      auto wrtArg1            = wrt(DerivativeDirections::coeff(a.coeffsIndices[_1][_0],a.coeffsIndices[_1][1]));
+
+      return std::make_pair(LocalFunctionEvaluationArgs(a.integrationPointOrIndex, wrtArg0,   a.alongArgs, a.transformWithArgs),LocalFunctionEvaluationArgs(a.integrationPointOrIndex, wrtArg1,    a.alongArgs, a.transformWithArgs));
+    }
+
+
+//This function returns the first two args and returns the spatial derivative argument always as first
+template <typename... WrtArgs,typename... OtherWrtArgs, typename... TransformArgs, typename... AlongArgs,
+    typename DomainTypeOrIntegrationPointIndex>
+auto extractFirstTwoArgs(const LocalFunctionEvaluationArgs<Wrt<WrtArgs...>, Along<AlongArgs...>, TransformWith<TransformArgs...>,
+                                                           DomainTypeOrIntegrationPointIndex>& a) {
+  if constexpr(std::tuple_size_v<decltype(a.wrtArgs.args)> ==2) {
+    if constexpr (DerivativeDirections::isSpatial<std::tuple_element_t<0, decltype(a.wrtArgs.args)>>)
+      return std::make_pair(a.template extractWrtArgs<0>(), a.template extractWrtArgs<1>());
+    else if constexpr (DerivativeDirections::isSpatial<std::tuple_element_t<1, decltype(a.wrtArgs.args)>>)
+      return std::make_pair(a.template extractWrtArgs<1>(), a.template extractWrtArgs<0>());
+  }
+  else
+    return extractWrtArgsTwoCoeffsToSingleCoeff(a);
+}
+
 
 template <typename... WrtArgs, typename... TransformArgs, typename... AlongArgs,typename... AlongArgsOther,
     typename DomainTypeOrIntegrationPointIndex>
- auto createWithAlong(const LocalFunctionEvaluationArgs<Wrt<WrtArgs...>, Along<AlongArgs...>, TransformWith<TransformArgs...>,
-                                                              DomainTypeOrIntegrationPointIndex>& args, const Along<AlongArgsOther...>& alongArgs) {
+ auto addAlong(const LocalFunctionEvaluationArgs<Wrt<WrtArgs...>, Along<AlongArgs...>, TransformWith<TransformArgs...>,
+                                                 DomainTypeOrIntegrationPointIndex>& args, const Along<AlongArgsOther...>& alongArgs) {
   auto newArgs = LocalFunctionEvaluationArgs<Wrt<WrtArgs...>, Along<AlongArgsOther...>,
                                              TransformWith<TransformArgs...>, DomainTypeOrIntegrationPointIndex>(
       args.integrationPointOrIndex, args.wrtArgs, alongArgs, args.transformWithArgs, false);
 
-  newArgs.coeffsIndices         = args.coeffsIndices;
+  using namespace Dune::Indices;
+  std::get<1>(newArgs.coeffsIndices[_0]._data) = std::get<1>(args.coeffsIndices[_0]._data);
+  std::get<1>(newArgs.coeffsIndices[_1]._data) = std::get<1>(args.coeffsIndices[_1]._data);
   newArgs.spatialPartialIndices = args.spatialPartialIndices;
 
   return newArgs;
 }
+
+namespace Impl{
+template <typename LocalFunctionImpl_,typename ... I > requires std::is_arithmetic_v<LocalFunctionImpl_>
+consteval int countUniqueLeafNodesImpl() {return 0;}
+
+template <typename LocalFunctionImpl_,typename... I> requires (!std::is_arithmetic_v<LocalFunctionImpl_>)
+consteval int countUniqueLeafNodesImpl() {
+  int counter = 0;
+
+  std::vector<int> a;
+  if constexpr( LocalFunctionImpl_::isLeaf)
+  {
+    const int iD = LocalFunctionImpl_::id;
+    auto
+    if(any_of(std::forward_as_tuple(I...),[&]<typename T>(T&& ){return T::value==iD})) {
+      ++counter;
+    }
+
+    return counter;
+  }
+  else {
+    if constexpr(IsUnaryExpr<LocalFunctionImpl_>) {
+      using ExprType = std::remove_cvref_t<decltype(std::declval<LocalFunctionImpl_>().impl().m)>;
+      return countUniqueLeafNodesImpl<ExprType,I...>();
+    } else if constexpr(IsBinaryExpr<LocalFunctionImpl_>) {
+      using ExprType0 = std::remove_cvref_t<decltype(std::declval<LocalFunctionImpl_>().impl().l)>;
+      using ExprType1 = std::remove_cvref_t<decltype(std::declval<LocalFunctionImpl_>().impl().r)>;
+      return countUniqueLeafNodesImpl<ExprType0,I...>() + countUniqueLeafNodesImpl<ExprType1,I...>();
+    } else
+      static_assert(IsUnaryExpr<LocalFunctionImpl_> and IsBinaryExpr<LocalFunctionImpl_>, "Not supported expression");
+  }
+}
+  }
+
+
+template <typename LocalFunctionImpl_>
+consteval int countUniqueLeafNodes(const LocalFunctionInterface<LocalFunctionImpl_>& a)
+{
+  return Impl::countUniqueLeafNodesImpl<LocalFunctionImpl_>();
+  }
+
+
+
 
   template <typename LocalFunctionImpl>
   class LocalFunctionInterface {
   public:
     using Traits     = LocalFunctionTraits<LocalFunctionImpl>;
     using DomainType = typename Traits::DomainType;
+
+    template <typename LocalFunctionImpl_> requires (!std::is_arithmetic_v<LocalFunctionImpl_>)
+    friend consteval int Impl::countUniqueLeafNodesImpl();
 
     template <typename WrtType>
     static constexpr bool hasTwoCoeff = DerivativeDirections::HasTwoCoeff<WrtType>;
@@ -229,6 +310,8 @@ template <typename... WrtArgs, typename... TransformArgs, typename... AlongArgs,
 
     auto viewOverIntegrationPoints() { return impl().basis().viewOverIntegrationPoints(); }
 
+//    template<std::size_t I>
+//    auto getCoeffs()
   private:
     template <typename LocalFunctionEvaluationArgs_, typename LocalFunctionImpl_>
     friend auto evaluateDerivativeImpl(const LocalFunctionInterface<LocalFunctionImpl_>& f,
@@ -238,7 +321,7 @@ template <typename... WrtArgs, typename... TransformArgs, typename... AlongArgs,
     friend auto evaluateFunctionImpl(const LocalFunctionInterface<LocalFunctionImpl_>& f,
                                      const LocalFunctionEvaluationArgs_& localFunctionArgs);
 
-    LocalFunctionImpl const& impl() const  // CRTP
+    constexpr LocalFunctionImpl const& impl() const  // CRTP
     {
       return static_cast<LocalFunctionImpl const&>(*this);
     }
@@ -282,6 +365,7 @@ template <typename... WrtArgs, typename... TransformArgs, typename... AlongArgs,
   template <typename LocalFunctionEvaluationArgs_, typename LocalFunctionImpl>
   auto evaluateDerivativeImpl(const LocalFunctionInterface<LocalFunctionImpl>& f,
                               const LocalFunctionEvaluationArgs_& localFunctionArgs) {
+    using namespace Dune::Indices;
     if constexpr (LocalFunctionImpl::isLeaf) {
       if constexpr (localFunctionArgs.hasNoCoeff) {
         if constexpr (localFunctionArgs.hasOneSpatialSingle) {
@@ -293,32 +377,34 @@ template <typename... WrtArgs, typename... TransformArgs, typename... AlongArgs,
                                                             localFunctionArgs.transformWithArgs);
         }
       } else if constexpr (localFunctionArgs.hasSingleCoeff) {
-        if constexpr (localFunctionArgs.hasNoSpatial) {
+        if constexpr(decltype(localFunctionArgs.coeffsIndices[_0][_0])::value != LocalFunctionImpl::id)
+        return DerivativeDirections::DerivativeNoOp();
+        else if constexpr (localFunctionArgs.hasNoSpatial) {
           return f.impl().evaluateDerivativeWRTCoeffsImpl(localFunctionArgs.integrationPointOrIndex,
-                                                          localFunctionArgs.coeffsIndices,
+                                                          localFunctionArgs.coeffsIndices[_0][1],
                                                           localFunctionArgs.transformWithArgs);
         } else if constexpr (localFunctionArgs.hasOneSpatialSingle) {
           return f.impl().evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(
-              localFunctionArgs.integrationPointOrIndex, localFunctionArgs.coeffsIndices,
+              localFunctionArgs.integrationPointOrIndex, localFunctionArgs.coeffsIndices[_0][1],
               localFunctionArgs.spatialPartialIndices, localFunctionArgs.transformWithArgs);
         } else if constexpr (localFunctionArgs.hasOneSpatialAll) {
           return f.impl().evaluateDerivativeWRTCoeffsANDSpatialImpl(localFunctionArgs.integrationPointOrIndex,
-                                                                    localFunctionArgs.coeffsIndices,
+                                                                    localFunctionArgs.coeffsIndices[_0][1],
                                                                     localFunctionArgs.transformWithArgs);
         }
       } else if constexpr (localFunctionArgs.hasTwoCoeff) {
         if constexpr (localFunctionArgs.hasNoSpatial) {
           return f.impl().evaluateSecondDerivativeWRTCoeffsImpl(
-              localFunctionArgs.integrationPointOrIndex, localFunctionArgs.coeffsIndices, localFunctionArgs.alongArgs,
+              localFunctionArgs.integrationPointOrIndex, {localFunctionArgs.coeffsIndices[_0][1],localFunctionArgs.coeffsIndices[_1][1]}, localFunctionArgs.alongArgs,
               localFunctionArgs.transformWithArgs);
         } else if constexpr (localFunctionArgs.hasOneSpatialSingle) {
             return f.impl().evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialSingleImpl(
-                localFunctionArgs.integrationPointOrIndex, localFunctionArgs.coeffsIndices,
+                localFunctionArgs.integrationPointOrIndex, {localFunctionArgs.coeffsIndices[_0][1],localFunctionArgs.coeffsIndices[_1][1]},
                 localFunctionArgs.spatialPartialIndices, localFunctionArgs.alongArgs,
                 localFunctionArgs.transformWithArgs);
         } else if constexpr (localFunctionArgs.hasOneSpatialAll) {
           return f.impl().evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialImpl(
-              localFunctionArgs.integrationPointOrIndex, localFunctionArgs.coeffsIndices, localFunctionArgs.alongArgs,
+              localFunctionArgs.integrationPointOrIndex, {localFunctionArgs.coeffsIndices[_0][1],localFunctionArgs.coeffsIndices[_1][1]}, localFunctionArgs.alongArgs,
               localFunctionArgs.transformWithArgs);
         }
       }
@@ -330,8 +416,35 @@ template <typename... WrtArgs, typename... TransformArgs, typename... AlongArgs,
 template <typename LocalFunctionEvaluationArgs_, typename LocalFunctionImpl>
 auto evaluateFirstOrderDerivativesImpl(const LocalFunctionInterface<LocalFunctionImpl>& f,
                             const LocalFunctionEvaluationArgs_& localFunctionArgs) {
+  if constexpr (localFunctionArgs.derivativeOrder == 3) {
+    const auto argsForDx = localFunctionArgs.extractSpatialOrFirstWrtArg();
+    const auto [argsForDy, argsForDz] = extractWrtArgsTwoCoeffsToSingleCoeff(localFunctionArgs);
+    auto dfdx = evaluateDerivativeImpl(f, argsForDx);
+    auto dfdy = evaluateDerivativeImpl(f, argsForDy);
+    auto dfdz = evaluateDerivativeImpl(f, argsForDz);
+    return std::make_tuple(dfdx,dfdy,dfdz);
+  }else if constexpr (localFunctionArgs.derivativeOrder == 2) {
+    const auto [argsForDx, argsForDy] = extractFirstTwoArgs(localFunctionArgs);
+    auto dfdx = evaluateDerivativeImpl(f, argsForDx);
+    auto dfdy = evaluateDerivativeImpl(f, argsForDy);
+    return std::make_tuple(dfdx,dfdy);
+  }
+}
 
-  return std::make_tuple()
+template <typename LocalFunctionEvaluationArgs_, typename LocalFunctionImpl>
+auto evaluateSecondOrderDerivativesImpl(const LocalFunctionInterface<LocalFunctionImpl>& f,
+                                       const LocalFunctionEvaluationArgs_& localFunctionArgs) {
+  if constexpr (localFunctionArgs.derivativeOrder == 3) {
+    const auto argsForDx = localFunctionArgs.extractSpatialOrFirstWrtArg();
+    const auto [argsForDy, argsForDz] = extractWrtArgsTwoCoeffsToSingleCoeff(localFunctionArgs);
+    const auto argsForDxy = joinWRTArgs(argsForDx,argsForDy);
+    const auto argsForDxz = joinWRTArgs(argsForDx,argsForDz);
+    const auto df_dxy = evaluateDerivativeImpl(f, argsForDxy);
+    const auto df_dxz = evaluateDerivativeImpl(f, argsForDxz);
+    return std::make_tuple(df_dxy,df_dxz);
+  }
+  else
+    static_assert(localFunctionArgs.derivativeOrder == 3);
 }
 
 }  // namespace Ikarus

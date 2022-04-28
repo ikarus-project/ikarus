@@ -26,7 +26,7 @@
 #include <ikarus/localBasis/localBasis.hh>
 #include <ikarus/utils/algorithms.hh>
 #include <ikarus/utils/drawing/griddrawer.hh>
-#include <ikarus/utils/linearAlgebraTypedefs.hh>
+#include <ikarus/utils/eigenDuneTransformations.hh>
 
 using namespace Ikarus;
 using namespace Dune::Indices;
