@@ -13,6 +13,8 @@ struct UnaryLocalFunctionExpression : public Ikarus::LocalFunctionInterface<Op> 
 
   E1 const& m;
 
+  decltype(m.ids) ids;
+
   constexpr UnaryLocalFunctionExpression(Ikarus::LocalFunctionInterface<E1> const& u) : m(static_cast<E1 const&>(u)) {  }
 
   static constexpr bool isLeaf = false;

@@ -14,6 +14,8 @@ namespace Ikarus {
     E1 const& l; //std::conditional_t<std::is_arithmetic_v<E1>,E1,E1 const&>
     E2 const& r;
 
+    decltype(std::tuple_cat(l.ids,r.ids)) ids;
+
     constexpr BinaryLocalFunctionExpression(Ikarus::LocalFunctionInterface<E1> const& u,
                                   Ikarus::LocalFunctionInterface<E2> const& v)
       requires(!std::is_arithmetic_v<E1>)
