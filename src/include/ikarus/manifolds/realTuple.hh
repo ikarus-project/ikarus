@@ -110,4 +110,10 @@ template <typename ctype2, int d2>
     return rt*factor;
   }
 
+template <typename ctype2, int d2>
+bool operator==(const RealTuple<ctype2, d2> &v1,const RealTuple<ctype2, d2> &v2)
+{
+  return  v1.getValue()==v2.getValue();
+}
+
 }  // namespace Ikarus::Manifold

@@ -93,12 +93,18 @@ TEST(LocalFunctionTests, TestExpressions) {
     auto h = f + g;
 
     auto a = collectNonArithmeticLeafNodes(h);
+    auto hLeaf = collectLeafNodeLocalFunctions(h);
     static_assert(std::tuple_size_v<decltype(a) > ==2);
 
     std::cout<<Dune::className(a)<<std::endl;
 
     static_assert(countUniqueNonArithmeticLeafNodes(h)==1);
     static_assert(std::is_same_v<decltype(h)::Ids,std::tuple<Dune::index_constant<0>,Dune::index_constant<0>>>);
+
+    for (size_t i = 0; i < fe.size(); ++i) {
+      EXPECT_TRUE(collectLeafNodeLocalFunctions(h).getCoeffs(_0)[i]==vBlockedLocal[i]);
+      EXPECT_TRUE(collectLeafNodeLocalFunctions(h).getCoeffs(_1)[i]==vBlockedLocal2[i]);
+    }
 
     for (int gpIndex = 0; auto& gp : rule) {
       EXPECT_THAT(f.evaluateFunction(gpIndex).getValue() + g.evaluateFunction(gpIndex).getValue(),

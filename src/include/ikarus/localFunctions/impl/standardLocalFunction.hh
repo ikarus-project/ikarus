@@ -64,7 +64,8 @@ namespace Ikarus {
     /** \brief Type for the Jacobian of the ansatz function values */
     using AnsatzFunctionJacobian = typename Traits::AnsatzFunctionJacobian;
 
-    auto& coefficientsRef() { return coeffs; }
+    const auto& coefficientsRef() const { return coeffs; }
+     auto& coefficientsRef()  { return coeffs; }
 
     const Ikarus::LocalBasis<DuneBasis>& basis() const
     {

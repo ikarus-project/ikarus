@@ -18,6 +18,9 @@ namespace Ikarus {
 
     std::tuple<E1StorageType,E2StorageType> expr;
 
+    using L = E1;
+    using R = E2;
+
     const auto& l()const{
       return std::get<0>(expr);
     }

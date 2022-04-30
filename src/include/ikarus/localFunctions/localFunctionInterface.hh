@@ -224,9 +224,10 @@ namespace Ikarus {
     }
 
 
-  template <typename LF> requires IsLocalFunction<LF>
+  template <typename LF> requires LocalFunction<LF>
    auto collectNonArithmeticLeafNodesImpl(const LF& a) {
 
+//    static_assert(LocalFunction<LF>,"Only passing LocalFunctions allowed");
     if constexpr(IsBinaryExpr<LF>)
     return std::tuple_cat(collectNonArithmeticLeafNodesImpl(a.l()),collectNonArithmeticLeafNodesImpl(a.r()));
     else if constexpr(IsUnaryExpr<LF>)
@@ -235,6 +236,8 @@ namespace Ikarus {
     return std::make_tuple();
     else  if constexpr( IsNonArithmeticLeafNode<LF>)
       return std::make_tuple(std::cref(a));
+    else
+      static_assert("There are currently no other expressions. Thus you should not end up here.");
 
 
   }
@@ -247,12 +250,33 @@ namespace Ikarus {
   }
 
 
-template <typename LF>
+template <typename LF> requires LocalFunction<LF>
 auto collectNonArithmeticLeafNodes(const LocalFunctionInterface<LF>& a) {
 
   return Std::makeNestedTupleFlatAndStoreReferences(Impl::collectNonArithmeticLeafNodesImpl(a.impl()));
 
 }
+
+template <typename LF> requires LocalFunction<LF>
+ struct LocalFunctionLeafNodeCollection
+ {
+
+
+   LocalFunctionLeafNodeCollection(const LF& lf): leafNodes{collectNonArithmeticLeafNodes(lf)} {}
+
+   template<std::size_t I>
+   auto getCoeffs(Dune::index_constant<I>) { return std::get<I>(leafNodes).coefficientsRef(); }
+
+
+   decltype(collectNonArithmeticLeafNodes(std::declval<const LF&>())) leafNodes;
+ };
+
+template <typename LF> requires LocalFunction<LF>
+    auto collectLeafNodeLocalFunctions(const LF& lf)
+{
+      return LocalFunctionLeafNodeCollection(lf);
+}
+
 
   template <typename LocalFunctionImpl>
   class LocalFunctionInterface {
@@ -260,8 +284,6 @@ auto collectNonArithmeticLeafNodes(const LocalFunctionInterface<LF>& a) {
     using Traits     = LocalFunctionTraits<LocalFunctionImpl>;
     using DomainType = typename Traits::DomainType;
     static constexpr int gridDim =  Traits::gridDim;
-
-
 
     template <typename WrtType>
     static constexpr bool hasTwoCoeff = DerivativeDirections::HasTwoCoeff<WrtType>;
@@ -305,23 +327,6 @@ auto collectNonArithmeticLeafNodes(const LocalFunctionInterface<LF>& a) {
     }
 
     auto viewOverIntegrationPoints() { return impl().basis().viewOverIntegrationPoints(); }
-
-  private:
-    template <typename LocalFunctionEvaluationArgs_, typename LocalFunctionImpl_>
-    friend auto evaluateDerivativeImpl(const LocalFunctionInterface<LocalFunctionImpl_>& f,
-                                       const LocalFunctionEvaluationArgs_& localFunctionArgs);
-
-    template <typename LocalFunctionEvaluationArgs_, typename LocalFunctionImpl_>
-    friend auto evaluateFunctionImpl(const LocalFunctionInterface<LocalFunctionImpl_>& f,
-                                     const LocalFunctionEvaluationArgs_& localFunctionArgs);
-
-    template <typename LF>
-    friend auto collectNonArithmeticLeafNodes(const LocalFunctionInterface<LF>& a); //FIXME make private class function
-
-    constexpr LocalFunctionImpl const& impl() const  // CRTP
-    {
-      return static_cast<LocalFunctionImpl const&>(*this);
-    }
 
   protected:
     /* Default implementation returns Zero expression if they are not overloaded */
@@ -391,6 +396,30 @@ auto evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(
                                                          const TransformWith<TransformArgs...>& transArgs) const {
       return typename Eigen::internal::plain_col_type<typename LocalFunctionImpl::Jacobian>::type::Zero();
     }
+
+
+
+   private:
+    template <typename LocalFunctionEvaluationArgs_, typename LocalFunctionImpl_>
+    friend auto evaluateDerivativeImpl(const LocalFunctionInterface<LocalFunctionImpl_>& f,
+                                       const LocalFunctionEvaluationArgs_& localFunctionArgs);
+
+    template <typename LocalFunctionEvaluationArgs_, typename LocalFunctionImpl_>
+    friend auto evaluateFunctionImpl(const LocalFunctionInterface<LocalFunctionImpl_>& f,
+                                     const LocalFunctionEvaluationArgs_& localFunctionArgs);
+
+    template <typename LF> requires LocalFunction<LF>
+    friend auto collectNonArithmeticLeafNodes(const LocalFunctionInterface<LF>& a);
+
+    constexpr LocalFunctionImpl const& impl() const  // CRTP
+    {
+      return static_cast<LocalFunctionImpl const&>(*this);
+    }
+
+
+
+
+
 
   };
 

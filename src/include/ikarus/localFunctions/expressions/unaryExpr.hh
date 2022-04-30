@@ -14,6 +14,8 @@ struct UnaryLocalFunctionExpression : public Ikarus::LocalFunctionInterface<Op> 
   using E1StorageType = std::conditional_t<IsNonArithmeticLeafNode<E1>, const E1 & ,E1>;
   std::tuple<E1StorageType> expr;
 
+  using M = E1;
+
   const auto& m()const{
     return std::get<0>(expr);
   }
