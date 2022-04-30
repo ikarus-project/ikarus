@@ -38,8 +38,8 @@ In action this looks like
     using namespace Ikarus::DerivativeDirections;
     localFunction.bind(rule, bindDerivatives(0,1));    
     for(auto& [gpIndex, gp] : localFunction.viewOverIntegrationPoints()){
-      localFunction.evaluateDerivative(gpIndex, wrt(spatialall)); // (1)
-      localFunction.evaluateDerivative(gpIndex, wrt(spatialall), transformWith(Jinv)); // (2)
+      localFunction.evaluateDerivative(gpIndex, wrt(spatialAll)); // (1)
+      localFunction.evaluateDerivative(gpIndex, wrt(spatialAll), transformWith(Jinv)); // (2)
     }
     ```
 
@@ -51,8 +51,8 @@ In action this looks like
     ``` c++
     using namespace Ikarus::DerivativeDirections;
     for(auto& gp : rule){
-      localFunction.evaluateDerivative(gp.position(), wrt(spatialall)); // (1)
-      localFunction.evaluateDerivative(gp.position(), wrt(spatialall), transformWith(Jinv)); // (2)
+      localFunction.evaluateDerivative(gp.position(), wrt(spatialAll)); // (1)
+      localFunction.evaluateDerivative(gp.position(), wrt(spatialAll), transformWith(Jinv)); // (2)
     }
     ```
 
@@ -75,7 +75,7 @@ $$
 where $J$ is the Jacobian of the mapping from the reference element $T_{\text{ref}}$ to the element living in physical space $T$.
 For details see [@sander2020dune] page 22.
 
-Instead of passing `spatialall` to `wrt(..)`, there are other helper such as
+Instead of passing `spatialAll` to `wrt(..)`, there are other helper such as
 
 ```cpp
 localFunction.evaluateDerivative(gpIndex, wrt(spatial(0))); // (1) 
@@ -113,7 +113,7 @@ Therefore the simply return a matrix. This helps for readablilty and for speed. 
 Spatial derivatives and derivatives w.r.t. the coefficients can be combined. Therefore, it is legal to call
 
 ```cpp
-auto B = localFunction.evaluateDerivative(gpIndex, wrt(coeffs,coeffs,spatialall), along(q), coeffIndices(j,k));
+auto B = localFunction.evaluateDerivative(gpIndex, wrt(coeffs,coeffs,spatialAll), along(q), coeffIndices(j,k));
 auto B0 = localFunction.evaluateDerivative(gpIndex, wrt(coeffs,coeffs,spatial(0)), along(q), coeffIndices(j,k));
 auto B1 = localFunction.evaluateDerivative(gpIndex, wrt(coeffs,coeffs,spatial(1)), along(q), coeffIndices(j,k));
 ```
@@ -137,7 +137,7 @@ These objects are also returned when the second and third line above are used.
 Again all of these function calls can be combined with `transformWith()` as
 
 ```cpp
-localFunction.evaluateDerivative(gpIndex, wrt(coeffs,coeffs,spatialall), along(q),transformWith(Jinv), coeffIndices(j,k));
+localFunction.evaluateDerivative(gpIndex, wrt(coeffs,coeffs,spatialAll), along(q),transformWith(Jinv), coeffIndices(j,k));
 ```
 
 which computes
@@ -167,7 +167,7 @@ auto dirichletEnergy() {
   Ikarus::StandardLocalFunction uFunction(localBasis, uNodalCoeffs);
   for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
     //.. calculate the inverse Jacobian of the geometry
-    const auto gradu = uFunction.evaluateDerivative(gpIndex, wrt(spatialall), transformWith(Jinv));
+    const auto gradu = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll), transformWith(Jinv));
     energy+= 0.5*(gradu.transpose()*gradu).trace()* ("weight from integration point and geo.integrationElement");
   }
 }
@@ -181,10 +181,10 @@ auto gradientDirichletEnergy(Eigen::VectorXd& g) {
       Ikarus::StandardLocalFunction uFunction(localBasis, uNodalCoeffs);
   for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
     //.. calculate the inverse Jacobian of the geometry
-    const auto gradu = uFunction.evaluateDerivative(gpIndex, wrt(spatialall), transformWith(Jinv));
+    const auto gradu = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll), transformWith(Jinv));
     for (auto i : fe.size()) { //loop over coeffs, i.e.nodes of the finite element
       const auto graduDCoeffs
-          = uFunction.evaluateDerivative(gpIndex, wrt(spatialall, coeffs), transformWith(Jinv), coeffIndices(i));
+          = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll, coeffs), transformWith(Jinv), coeffIndices(i));
       Eigen::Vector<double, size> tmp;
       tmp.setZero();
       for (int k = 0; k < gridDimension; ++k)
@@ -207,10 +207,10 @@ auto hessianDirichletEnergy(Matrix& h) {
     //.. calculate the inverse Jacobian of the geometry
     for (auto i : loop over coeffs, i.e.nodes of the finite element) {
       const auto graduDCoeffsI
-          = uFunction.evaluateDerivative(gpIndex, wrt(spatialall, coeffs), transformWith(Jinv), coeffIndices(i));
+          = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll, coeffs), transformWith(Jinv), coeffIndices(i));
       for (auto j : fe.size()) { //loop over coeffs, i.e.nodes of the finite element
         const auto graduDCoeffsJ
-          = uFunction.evaluateDerivative(gpIndex, wrt(spatialall, coeffs), transformWith(Jinv), coeffIndices(j));
+          = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll, coeffs), transformWith(Jinv), coeffIndices(j));
         Eigen::Matrix<double, size, size> tmp;
         tmp.setZero();
         for (int k = 0; k < gridDimension; ++k)
@@ -286,13 +286,13 @@ CoeffDerivMatrix
 ```
 
 0. This is called by `localFunction.evaluateFunction(...)`.
-1. This is called by `localFunction.evaluateDerivative(..., wrt(spatialall))`.
+1. This is called by `localFunction.evaluateDerivative(..., wrt(spatialAll))`.
 2. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i)))`.
 3. This is called by `localFunction.evaluateDerivative(..., wrt(coeff))`.
 4. This is called by `localFunction.evaluateDerivative(..., wrt(coeff,coeff))`.
-5. This is called by `localFunction.evaluateDerivative(..., wrt(spatialall,coeff))`.
+5. This is called by `localFunction.evaluateDerivative(..., wrt(spatialAll,coeff))`.
 6. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i),coeff))`.
-7. This is called by `localFunction.evaluateDerivative(..., wrt(spatialall,coeff,coeff))`.
+7. This is called by `localFunction.evaluateDerivative(..., wrt(spatialAll,coeff,coeff))`.
 8. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i),coeff,coeff))`.
 
 

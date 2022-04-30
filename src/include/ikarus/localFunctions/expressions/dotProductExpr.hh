@@ -15,38 +15,37 @@ namespace Ikarus {
 
     template <typename LocalFunctionEvaluationArgs_>
     auto evaluateValueOfExpression(const LocalFunctionEvaluationArgs_& localFunctionArgs) const {
-      const auto u = evaluateFunctionImpl(this->l, localFunctionArgs).getValue();
-      const auto v = evaluateFunctionImpl(this->r, localFunctionArgs).getValue();
+      const auto u = evaluateFunctionImpl(this->l(), localFunctionArgs).getValue();
+      const auto v = evaluateFunctionImpl(this->r(), localFunctionArgs).getValue();
       return u.dot(v);
     }
 
     template <int DerivativeOrder, typename LocalFunctionEvaluationArgs_>
     auto evaluateDerivativeOfExpression(const LocalFunctionEvaluationArgs_& localFunctionArgs) const {
-
-      const auto u = evaluateFunctionImpl(this->l, localFunctionArgs).getValue();
-      const auto v = evaluateFunctionImpl(this->r, localFunctionArgs).getValue();
+      const auto u = evaluateFunctionImpl(this->l(), localFunctionArgs).getValue();
+      const auto v = evaluateFunctionImpl(this->r(), localFunctionArgs).getValue();
       if constexpr (DerivativeOrder == 1)  // d(dot(u,v))/dx =  u_x * v+ u*v_x
       {
-        const auto u_x = evaluateDerivativeImpl(this->l, localFunctionArgs);
-        const auto v_x = evaluateDerivativeImpl(this->r, localFunctionArgs);
+        const auto u_x = evaluateDerivativeImpl(this->l(), localFunctionArgs);
+        const auto v_x = evaluateDerivativeImpl(this->r(), localFunctionArgs);
         return eval(v.transpose()*u_x + u.transpose()*v_x);
       }
       else if constexpr (DerivativeOrder == 2 ) {  // dd(dot(u,v))/(dxdy) =  u_{x,y} * v + u_x*v_y + u_y* v_x + u * v_{x,y}
-        const auto& [u_x,u_y] = evaluateFirstOrderDerivativesImpl(this->l, localFunctionArgs);
-        const auto& [v_x,v_y] = evaluateFirstOrderDerivativesImpl(this->r, localFunctionArgs);
+        const auto& [u_x,u_y] = evaluateFirstOrderDerivativesImpl(this->l(), localFunctionArgs);
+        const auto& [v_x,v_y] = evaluateFirstOrderDerivativesImpl(this->r(), localFunctionArgs);
         if constexpr (LocalFunctionEvaluationArgs_::hasOneSpatialSingle
                       and LocalFunctionEvaluationArgs_::hasSingleCoeff) {
 
-          const auto u_xy = evaluateDerivativeImpl(this->l, localFunctionArgs);
-          const auto v_xy = evaluateDerivativeImpl(this->r, localFunctionArgs);
+          const auto u_xy = evaluateDerivativeImpl(this->l(), localFunctionArgs);
+          const auto v_xy = evaluateDerivativeImpl(this->r(), localFunctionArgs);
 
           return eval(transpose(v) * u_xy + transpose(u_x) * v_y + transpose(v_x) * u_y + transpose(u) * v_xy);
         } else if constexpr (LocalFunctionEvaluationArgs_::hasNoSpatial and LocalFunctionEvaluationArgs_::hasTwoCoeff) {
           const auto alonguArgs = addAlong(localFunctionArgs, along(v));
           const auto alongvArgs = addAlong(localFunctionArgs, along(u));
 
-          const auto u_xyAlongv = evaluateDerivativeImpl(this->l, alongvArgs);
-          const auto v_xyAlongu = evaluateDerivativeImpl(this->r, alonguArgs);
+          const auto u_xyAlongv = evaluateDerivativeImpl(this->l(), alongvArgs);
+          const auto v_xyAlongu = evaluateDerivativeImpl(this->r(), alonguArgs);
 
           return eval(u_xyAlongv + transpose(u_x) * v_y + transpose(v_x) * u_y + v_xyAlongu);
         }
@@ -57,20 +56,20 @@ namespace Ikarus {
 
         const auto argsForDyz = localFunctionArgs.extractSecondWrtArgOrFirstNonSpatial();
 
-        const auto& [u_x,u_y,u_z] = evaluateFirstOrderDerivativesImpl(this->l, localFunctionArgs);
-        const auto& [v_x,v_y,v_z] = evaluateFirstOrderDerivativesImpl(this->r, localFunctionArgs);
-        const auto& [u_xy,u_xz] = evaluateSecondOrderDerivativesImpl(this->l, localFunctionArgs);
-        const auto& [v_xy,v_xz] = evaluateSecondOrderDerivativesImpl(this->r, localFunctionArgs);
+        const auto& [u_x,u_y,u_z] = evaluateFirstOrderDerivativesImpl(this->l(), localFunctionArgs);
+        const auto& [v_x,v_y,v_z] = evaluateFirstOrderDerivativesImpl(this->r(), localFunctionArgs);
+        const auto& [u_xy,u_xz] = evaluateSecondOrderDerivativesImpl(this->l(), localFunctionArgs);
+        const auto& [v_xy,v_xz] = evaluateSecondOrderDerivativesImpl(this->r(), localFunctionArgs);
 
         const auto alonguArgs = addAlong(localFunctionArgs, along(v));
         const auto alongvArgs = addAlong(localFunctionArgs, along(u));
         const auto argsForDyzalongv_xArgs = addAlong(argsForDyz, along(v_x));
         const auto argsForDyzalongu_xArgs = addAlong(argsForDyz, along(u_x));
 
-        const auto u_xyzAlongv = evaluateDerivativeImpl(this->l, alongvArgs);
-        const auto v_xyzAlongu = evaluateDerivativeImpl(this->r, alonguArgs);
-        const auto u_yzAlongvx = evaluateDerivativeImpl(this->l, argsForDyzalongv_xArgs);
-        const auto v_yzAlongux = evaluateDerivativeImpl(this->r, argsForDyzalongu_xArgs);
+        const auto u_xyzAlongv = evaluateDerivativeImpl(this->l(), alongvArgs);
+        const auto v_xyzAlongu = evaluateDerivativeImpl(this->r(), alonguArgs);
+        const auto u_yzAlongvx = evaluateDerivativeImpl(this->l(), argsForDyzalongv_xArgs);
+        const auto v_yzAlongux = evaluateDerivativeImpl(this->r(), argsForDyzalongu_xArgs);
 
         return eval(u_xyzAlongv + transpose(u_xy)*v_z + transpose(u_xz)*v_y + v_yzAlongux + u_yzAlongvx + transpose(v_xz)*u_y  + transpose(v_xy)*u_z  + v_xyzAlongu);
       }else
@@ -87,8 +86,8 @@ namespace Ikarus {
     using DomainType = typename E1::DomainType;
   };
 
-  template <typename E1, typename E2>
-  constexpr LocalFunctionDot<E1, E2> dot(LocalFunctionInterface<E1> const& u, LocalFunctionInterface<E2> const& v) {
+  template <typename E1, typename E2> requires IsLocalFunction<E1,E2>
+  constexpr LocalFunctionDot<E1, E2> dot(E1 const& u, E2 const& v) {
     return LocalFunctionDot<E1, E2>(u, v);
   }
 

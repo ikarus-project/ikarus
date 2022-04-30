@@ -5,25 +5,34 @@
 #pragma once
 
 #include <ikarus/localFunctions/localFunctionInterface.hh>
+#include <ikarus/localFunctions/expressions/unaryExpr.hh>
+
 namespace Ikarus {
 
   template <typename Op, typename E1, typename E2>
   struct BinaryLocalFunctionExpression : public Ikarus::LocalFunctionInterface<Op> {
 
-    //if the E1 expression is an arithmetic type (int or double) then we store the value otherwise we store a const reference
-    E1 const& l; //std::conditional_t<std::is_arithmetic_v<E1>,E1,E1 const&>
-    E2 const& r;
+    // if the E1 expression is an arithmetic type (int or double) then we store the value otherwise we store a const reference
+    using E1StorageType = std::conditional_t<IsNonArithmeticLeafNode<E1>,const E1&,E1>;
+    using E2StorageType = std::conditional_t<IsNonArithmeticLeafNode<E2>, const E2&,E2>;
 
-    decltype(std::tuple_cat(l.ids,r.ids)) ids;
+    std::tuple<E1StorageType,E2StorageType> expr;
 
-    constexpr BinaryLocalFunctionExpression(Ikarus::LocalFunctionInterface<E1> const& u,
-                                  Ikarus::LocalFunctionInterface<E2> const& v)
-      requires(!std::is_arithmetic_v<E1>)
-    : l(static_cast<E1 const&>(u)), r(static_cast<E2 const&>(v)) {}
+    const auto& l()const{
+      return std::get<0>(expr);
+    }
+    const auto& r()const{
+      return std::get<1>(expr);
+    }
 
-    constexpr BinaryLocalFunctionExpression(E1 const& u, Ikarus::LocalFunctionInterface<E2> const& v)
-      requires std::is_arithmetic_v<E1>
-    : l(u), r(static_cast<E2 const&>(v)) {}
+    /* Creates a tuple of all subtype ids, size l or r is not a tuple, tuple_cat may not work.
+     * Thus we artifically wrap them inside a tuple  */
+    using Ids =decltype(Std::makeNestedTupleFlat(std::make_tuple(std::declval<typename E1::Ids>(),std::declval<typename E2::Ids>() )));
+
+    constexpr BinaryLocalFunctionExpression(E1 const& u,E2 const& v)
+      requires  IsLocalFunction<E1,E2>
+    : expr(u,v) {}
+
 
     static constexpr bool isLeaf = false;
     static constexpr int children = 2;

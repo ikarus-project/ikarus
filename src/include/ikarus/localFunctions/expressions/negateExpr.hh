@@ -15,23 +15,23 @@ namespace Ikarus {
 
     template <typename LocalFunctionEvaluationArgs_>
     auto evaluateValueOfExpression(const LocalFunctionEvaluationArgs_& localFunctionArgs) const {
-      return eval(-evaluateFunctionImpl(this->m, localFunctionArgs));
+      return eval(-evaluateFunctionImpl(this->m(), localFunctionArgs));
     }
 
     template <int DerivativeOrder, typename LocalFunctionEvaluationArgs_>
     auto evaluateDerivativeOfExpression(const LocalFunctionEvaluationArgs_& localFunctionArgs) const {
-      return eval(- evaluateDerivativeImpl(this->m, localFunctionArgs) );
+      return eval(- evaluateDerivativeImpl(this->m(), localFunctionArgs) );
     }
   };
 
   template <typename E1>
   struct LocalFunctionTraits<LocalFunctionNegate<E1>> {
-    static constexpr int valueSize = E1::valueSize;
-    using DomainType = typename E1::DomainType;
+    static constexpr int valueSize = E1::Traits::valueSize;
+    using DomainType = typename E1::Traits::DomainType;
   };
 
-  template <typename E1>
-  constexpr LocalFunctionNegate<E1> operator-(LocalFunctionInterface<E1> const& u) {
+  template <typename E1> requires IsLocalFunction<E1>
+  constexpr LocalFunctionNegate<E1> operator-(E1 const& u) {
     return LocalFunctionNegate<E1>(u);
   }
 

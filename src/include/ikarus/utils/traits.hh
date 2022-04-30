@@ -9,6 +9,13 @@
 #include <dune/common/hybridutilities.hh>
 namespace Ikarus::Std {
 
+// Forward delare functions
+template<typename... Types>
+auto makeNestedTupleFlat(std::tuple<Types...> tup);
+
+template<typename... Types>
+auto makeNestedTupleFlatAndStoreReferences(const std::tuple<Types...>& tup);
+
 template <typename> struct is_tuple: std::false_type {};
 
 template <typename ...T> struct is_tuple<std::tuple<T...>>: std::true_type {};
@@ -74,6 +81,66 @@ constexpr auto makeTupleFromTupleIndicesImpl(Tuple&& t, std::index_sequence<I...
   return std::make_tuple(std::get<I>(std::forward<Tuple>(t))...);
 }
 
+template <typename T, typename... Ts>
+struct uniqueImpl : std::type_identity<T> {};
+
+template <typename... Ts, typename U, typename... Us>
+struct uniqueImpl<std::tuple<Ts...>, U, Us...>
+    : std::conditional_t<(std::is_same_v<U, Ts> || ...)
+        , uniqueImpl<std::tuple<Ts...>, Us...>
+        , uniqueImpl<std::tuple<Ts..., U>, Us...>> {};
+
+template <typename... Ts>
+using unique_tupleImpl = typename uniqueImpl<std::tuple<>, Ts...>::type;
+
+
+
+
+template<typename T,typename... Types >
+auto makeNestedTupleFlatImpl()
+{
+  constexpr bool isTuple = isSpecialization<std::tuple,T>::value;
+  if constexpr (sizeof...(Types)>0)
+  { if  constexpr (isTuple)
+      return std::tuple_cat(makeNestedTupleFlat(T()),makeNestedTupleFlatImpl<Types...>());
+    else
+      return std::tuple_cat(std::make_tuple(T()),makeNestedTupleFlatImpl<Types...>());
+  }
+  else
+  {
+    if  constexpr (isTuple)
+      return makeNestedTupleFlat(T());
+    else
+      return std::make_tuple(T());
+  }
+}
+
+template<typename T,typename... Types >
+auto makeNestedTupleFlatAndStoreReferencesImpl(const std::tuple<T,Types...>& tup)
+{
+  constexpr bool isTuple = isSpecialization<std::tuple,std::remove_cvref_t<T>>::value;
+  if constexpr (sizeof...(Types)>0)
+  { if  constexpr (isTuple) {
+      return std::tuple_cat(makeNestedTupleFlatAndStoreReferencesImpl(std::get<0>(tup)), std::apply(
+          [](const T &, const Types &... args) {
+            return makeNestedTupleFlatAndStoreReferencesImpl(std::make_tuple(std::cref(args)...));
+          }, tup));
+    }
+    else {
+      return std::tuple_cat(std::make_tuple(std::cref(std::get<0>(tup))), std::apply(
+          [](const T &, const Types &... args) {
+            return makeNestedTupleFlatAndStoreReferencesImpl(std::make_tuple(std::cref(args)...));
+          }, tup));
+    }
+  }
+  else
+  {
+    if  constexpr (isTuple)
+      return makeNestedTupleFlatAndStoreReferencesImpl(std::get<0>(tup));
+    else
+      return std::make_tuple(std::cref(std::get<0>(tup)));
+  }
+}
 
 }
 
@@ -110,6 +177,25 @@ bool any_of(Tuple&& tuple, Predicate pred)
 {
   return !none_of(tuple, pred);
 }
+
+template<typename Tuple, typename Predicate>
+auto filter(Tuple&& tuple, Predicate pred)
+{
+  return std::apply([&pred](auto...ts) {
+    return std::tuple_cat(std::conditional_t<pred(ts),
+                                             std::tuple<decltype(ts)>,
+                                             std::tuple<>>{}...);
+  }, tuple);
+}
+
+
+
+template<typename... Types>
+constexpr auto unique(std::tuple<Types...>&& tuple)
+{
+  return Impl::unique_tupleImpl<Types...>();
+}
+
 
 template<typename Tuple, typename Predicate>
 constexpr size_t count_if(Tuple&& tuple, Predicate pred)
@@ -179,7 +265,24 @@ template <template <auto...> typename TT, template <auto...> typename UU>
 inline constexpr bool isTemplateSame_v = isTemplateSame<TT, UU>::value;
 
 
-// Type your code here, or load an example.
+
+
+
+template<typename... Types>
+auto makeNestedTupleFlat(std::tuple<Types...> tup)
+{
+
+  return decltype(Impl::makeNestedTupleFlatImpl<Types...>())();
+}
+
+
+template<typename... Types>
+auto makeNestedTupleFlatAndStoreReferences(const std::tuple<Types...>& tup)
+{
+
+  return Impl::makeNestedTupleFlatAndStoreReferencesImpl(tup);
+}
+
 /*
  * Get index of type in tuple
  * Usage:
@@ -216,4 +319,4 @@ struct Index<T, std::tuple<U, Types...>> {
 
 
 
-}  // namespace Ikarus::utils
+}  // namespace Ikarus::Std

@@ -30,7 +30,7 @@ namespace Ikarus {
     LocalFunctionEvaluationArgs(const DomainTypeOrIntegrationPointIndex&, [[maybe_unused]] const TypeListOne& l1,
                                 [[maybe_unused]] const TypeListTwo& l2, [[maybe_unused]] const TypeListThree& l3) {
       static_assert(!sizeof(TypeListOne),
-                    "This type should not be instantiated. check that your arguments satisfies the template below");
+                    "This type should not be instantiated. Check that your arguments satisfies the template below");
     }
   };
 
@@ -209,60 +209,59 @@ namespace Ikarus {
   }
 
   namespace Impl {
-    template <typename LocalFunctionImpl_, typename... I>
-      requires std::is_arithmetic_v<LocalFunctionImpl_>
-    consteval int countUniqueLeafNodesImpl() {
-      return 0;
-    }
-
-    template <typename LocalFunctionImpl_, typename... I>
-      requires(!std::is_arithmetic_v<LocalFunctionImpl_>)
-    consteval int countUniqueLeafNodesImpl() {
-      int counter = 0;
-
-      if constexpr (LocalFunctionImpl_::isLeaf) {
-        const int iD = LocalFunctionImpl_::id;
-
-        if (any_of(std::forward_as_tuple(I()...), [&]<typename T>(T&&) { return T::value == iD; })) {
-          ++counter;
-        }
-
-        return counter;
-      } else {
-        if constexpr (IsUnaryExpr<LocalFunctionImpl_>) {
-          using ExprType = std::remove_cvref_t<decltype(std::declval<LocalFunctionImpl_>().impl().m)>;
-          return countUniqueLeafNodesImpl<ExprType, I...>();
-        } else if constexpr (IsBinaryExpr<LocalFunctionImpl_>) {
-          using ExprType0 = std::remove_cvref_t<decltype(std::declval<LocalFunctionImpl_>().impl().l)>;
-          using ExprType1 = std::remove_cvref_t<decltype(std::declval<LocalFunctionImpl_>().impl().r)>;
-          return countUniqueLeafNodesImpl<ExprType0, I...>() + countUniqueLeafNodesImpl<ExprType1, I...>();
-        } else
-          static_assert(IsUnaryExpr<LocalFunctionImpl_> and IsBinaryExpr<LocalFunctionImpl_>,
-                        "Not supported expression");
-      }
-    }
 
     template <typename LocalFunctionImpl_>
-    auto collectLeafNodeIdenfiers(const LocalFunctionInterface<LocalFunctionImpl_>& a)
-    {
+      requires(!std::is_arithmetic_v<LocalFunctionImpl_>)
+    consteval int countUniqueNonArithmeticLeafNodesImpl() {
 
+
+      if constexpr(Std::isSpecialization<std::tuple,typename LocalFunctionImpl_::Ids>::value) {
+        constexpr auto predicate = []<typename Type>(Type ){return Type::value!=Ikarus::arithmetic;};
+        return std::tuple_size_v<decltype(Std::unique(Std::filter(typename LocalFunctionImpl_::Ids(), predicate)))>;
+      }
+      else
+        return 1;
     }
+
+
+  template <typename LF> requires IsLocalFunction<LF>
+   auto collectNonArithmeticLeafNodesImpl(const LF& a) {
+
+    if constexpr(IsBinaryExpr<LF>)
+    return std::tuple_cat(collectNonArithmeticLeafNodesImpl(a.l()),collectNonArithmeticLeafNodesImpl(a.r()));
+    else if constexpr(IsUnaryExpr<LF>)
+      return std::make_tuple(collectNonArithmeticLeafNodesImpl(a.m()));
+    else  if constexpr(IsArithmeticExpr<LF>)
+    return std::make_tuple();
+    else  if constexpr( IsNonArithmeticLeafNode<LF>)
+      return std::make_tuple(std::cref(a));
+
+
+  }
+
   }  // namespace Impl
 
   template <typename LocalFunctionImpl_>
-  consteval int countUniqueLeafNodes(const LocalFunctionInterface<LocalFunctionImpl_>& a) {
-    return Impl::countUniqueLeafNodesImpl<LocalFunctionImpl_>();
+  consteval int countUniqueNonArithmeticLeafNodes(const LocalFunctionInterface<LocalFunctionImpl_>& a) {
+    return Impl::countUniqueNonArithmeticLeafNodesImpl<LocalFunctionImpl_>();
   }
+
+
+template <typename LF>
+auto collectNonArithmeticLeafNodes(const LocalFunctionInterface<LF>& a) {
+
+  return Std::makeNestedTupleFlatAndStoreReferences(Impl::collectNonArithmeticLeafNodesImpl(a.impl()));
+
+}
 
   template <typename LocalFunctionImpl>
   class LocalFunctionInterface {
   public:
     using Traits     = LocalFunctionTraits<LocalFunctionImpl>;
     using DomainType = typename Traits::DomainType;
+    static constexpr int gridDim =  Traits::gridDim;
 
-    template <typename LocalFunctionImpl_>
-      requires(!std::is_arithmetic_v<LocalFunctionImpl_>)
-    friend consteval int Impl::countUniqueLeafNodesImpl();
+
 
     template <typename WrtType>
     static constexpr bool hasTwoCoeff = DerivativeDirections::HasTwoCoeff<WrtType>;
@@ -307,8 +306,6 @@ namespace Ikarus {
 
     auto viewOverIntegrationPoints() { return impl().basis().viewOverIntegrationPoints(); }
 
-    //    template<std::size_t I>
-    //    auto getCoeffs()
   private:
     template <typename LocalFunctionEvaluationArgs_, typename LocalFunctionImpl_>
     friend auto evaluateDerivativeImpl(const LocalFunctionInterface<LocalFunctionImpl_>& f,
@@ -318,15 +315,16 @@ namespace Ikarus {
     friend auto evaluateFunctionImpl(const LocalFunctionInterface<LocalFunctionImpl_>& f,
                                      const LocalFunctionEvaluationArgs_& localFunctionArgs);
 
+    template <typename LF>
+    friend auto collectNonArithmeticLeafNodes(const LocalFunctionInterface<LF>& a); //FIXME make private class function
+
     constexpr LocalFunctionImpl const& impl() const  // CRTP
     {
       return static_cast<LocalFunctionImpl const&>(*this);
     }
 
   protected:
-    /*
-     * Default implementation returns Zero expression if they are not overloaded
-     */
+    /* Default implementation returns Zero expression if they are not overloaded */
     template <typename DomainTypeOrIntegrationPointIndex, typename... AlongArgs, typename... TransformArgs>
     auto evaluateSecondDerivativeWRTCoeffsImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
                                                const std::array<size_t, 2>& coeffsIndex,
@@ -336,9 +334,7 @@ namespace Ikarus {
                            LocalFunctionImpl::correctionSize>::Zero();
     }
 
-    /*
-     * Default implementation returns Zero expression if they are not overloaded
-     */
+    /* Default implementation returns Zero expression if they are not overloaded */
     template <typename DomainTypeOrIntegrationPointIndex, typename... AlongArgs, typename... TransformArgs>
     auto evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialSingleImpl(
         const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, const std::array<size_t, 2>& coeffsIndex,
@@ -347,6 +343,55 @@ namespace Ikarus {
       return Eigen::Matrix<typename LocalFunctionImpl::ctype, LocalFunctionImpl::correctionSize,
                            LocalFunctionImpl::correctionSize>::Zero();
     }
+
+    /* Default implementation returns Zero expression if they are not overloaded */
+    template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
+    auto evaluateDerivativeWRTSpaceAllImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
+                                               const TransformWith<TransformArgs...>& transArgs) const {
+      return typename LocalFunctionImpl::Jacobian::Zero();
+    }
+
+    /* Default implementation returns Zero expression if they are not overloaded */
+    template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
+    auto evaluateDerivativeWRTCoeffsImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
+                                                           int coeffsIndex,
+                                                           const TransformWith<TransformArgs...>& transArgs) const {
+      return Eigen::Matrix<typename LocalFunctionImpl::ctype, LocalFunctionImpl::valueSize,
+                           LocalFunctionImpl::correctionSize>::Zero();
+    }
+
+    /* Default implementation returns Zero expression if they are not overloaded  */
+    template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
+    auto evaluateDerivativeWRTCoeffsANDSpatialImpl(
+        const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, int coeffsIndex,
+        const TransformWith<TransformArgs...>& transArgs) const {
+      return std::array<Ikarus::DerivativeDirections::DerivativeNoOp, gridDim>();
+    }
+
+    /* Default implementation returns Zero expression if they are not overloaded  */
+template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
+auto evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(
+    const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, int coeffsIndex, int spatialIndex,
+    const TransformWith<TransformArgs...>& transArgs) const {
+  return Eigen::Matrix<typename LocalFunctionImpl::ctype, LocalFunctionImpl::valueSize,
+                       LocalFunctionImpl::correctionSize>::Zero();
+}
+    /* Default implementation returns Zero expression if they are not overloaded  */
+    template <typename DomainTypeOrIntegrationPointIndex, typename... AlongArgs, typename... TransformArgs>
+    auto evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialImpl(
+        const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, const std::array<size_t, 2>& coeffsIndex,
+        const Along<AlongArgs...>& alongArgs, const TransformWith<TransformArgs...>& transArgs) const {
+      return std::array<Ikarus::DerivativeDirections::DerivativeNoOp, gridDim>();
+    }
+
+    /* Default implementation returns Zero expression if they are not overloaded  */
+    template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
+    auto evaluateDerivativeWRTSpaceSingleImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
+                                                         int spaceIndex,
+                                                         const TransformWith<TransformArgs...>& transArgs) const {
+      return typename Eigen::internal::plain_col_type<typename LocalFunctionImpl::Jacobian>::type::Zero();
+    }
+
   };
 
   template <typename LocalFunctionEvaluationArgs_, typename LocalFunctionImpl>
@@ -375,7 +420,7 @@ namespace Ikarus {
                                                             localFunctionArgs.transformWithArgs);
         }
       } else if constexpr (localFunctionArgs.hasSingleCoeff) {
-        if constexpr (decltype(localFunctionArgs.coeffsIndices[_0][_0])::value != LocalFunctionImpl::id)
+        if constexpr (decltype(localFunctionArgs.coeffsIndices[_0][_0])::value != LocalFunctionImpl::Ids::value)
           return DerivativeDirections::DerivativeNoOp();
         else if constexpr (localFunctionArgs.hasNoSpatial) {
           return f.impl().evaluateDerivativeWRTCoeffsImpl(localFunctionArgs.integrationPointOrIndex,

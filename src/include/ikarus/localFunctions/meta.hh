@@ -11,7 +11,6 @@
 namespace Ikarus {
 
 
-
   template <typename... Args_>
   struct Wrt {
     using Args = std::tuple<std::remove_cvref_t<Args_>...>;
@@ -187,4 +186,36 @@ namespace Ikarus {
 
   template <typename LF>
   concept IsBinaryExpr = LF::children==2;
+
+  using Arithmetic = Dune::index_constant<100>;
+  static constexpr auto arithmetic = Arithmetic{};
+
+template <typename LF>
+concept IsArithmeticExpr = LF::Ids::value==arithmetic;
+
+template <typename E1,typename E2>
+class LocalFunctionScale;
+
+template <typename LocalFunctionImpl>
+class LocalFunctionInterface;
+
+template <typename LocalFunctionImpl>
+concept LocalFunction = requires
+{
+  typename LocalFunctionImpl::Traits;
+  LocalFunctionImpl::Traits::valueSize;
+  typename LocalFunctionImpl::Traits::DomainType;
+  typename LocalFunctionImpl::Ids;
+};
+
+template <typename LF>
+concept IsScaleExpr = Std::isSpecialization<LocalFunctionScale,LF>::value;
+
+template <typename LF>
+concept IsNonArithmeticLeafNode = LF::isLeaf==true and !IsArithmeticExpr<LF>;
+
+template <typename... LF>
+concept IsLocalFunction = (LocalFunction<LF> and ...);
+
+
 }  // namespace Ikarus

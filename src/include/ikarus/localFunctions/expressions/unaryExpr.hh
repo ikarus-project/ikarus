@@ -11,11 +11,18 @@ namespace Ikarus
 template <typename Op, typename E1>
 struct UnaryLocalFunctionExpression : public Ikarus::LocalFunctionInterface<Op> {
 
-  E1 const& m;
+  using E1StorageType = std::conditional_t<IsNonArithmeticLeafNode<E1>, const E1 & ,E1>;
+  std::tuple<E1StorageType> expr;
 
-  decltype(m.ids) ids;
+  const auto& m()const{
+    return std::get<0>(expr);
+  }
 
-  constexpr UnaryLocalFunctionExpression(Ikarus::LocalFunctionInterface<E1> const& u) : m(static_cast<E1 const&>(u)) {  }
+  using Ids =decltype(Std::makeNestedTupleFlat(std::make_tuple(std::declval<typename E1::Ids>() )));
+
+  constexpr UnaryLocalFunctionExpression(E1 const& u)
+  requires IsLocalFunction<E1>
+  : expr(u) {  }
 
   static constexpr bool isLeaf = false;
   static constexpr int children = 1;

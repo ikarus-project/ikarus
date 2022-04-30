@@ -45,3 +45,37 @@ TEST(TraitsTest, TreePathCoeffs) {
   EXPECT_EQ(coeffSingle.index[_0][1],1);
 
 }
+
+
+
+TEST(TraitsTest, testTupleFilter) {
+  using namespace Ikarus::DerivativeDirections;
+  using namespace Dune::Indices;
+  auto tup = std::make_tuple(_0,_1,_3,Ikarus::arithmetic);
+  auto filteredTupExpected = std::make_tuple(_0,_1,_3);
+  constexpr auto predicate = []<typename Type>(Type ){return Type::value!=Ikarus::arithmetic;};
+  auto filteredTup = Ikarus::Std::filter(tup,predicate);
+
+  static_assert(std::is_same_v<decltype(filteredTup),decltype(filteredTupExpected)>);
+
+  auto tup2 = std::make_tuple(Ikarus::arithmetic,_0,Ikarus::arithmetic,_1,_3,Ikarus::arithmetic);
+  auto filteredTup2 = Ikarus::Std::filter(tup2,predicate);
+  static_assert(std::is_same_v<decltype(filteredTup2),decltype(filteredTupExpected)>);
+
+}
+
+
+TEST(TraitsTest, makeNestedTupleFlat) {
+  std::vector<int> expectedValues({0,1,1,2,3,1,2,9});
+  std::tuple<std::tuple<int,std::tuple<std::tuple<int,std::tuple<double,float>>,float>>,std::tuple<int,std::tuple<double,float>>> a({0,{{1,{1.0,2.0}},3.0}},{1,{2.0,9.0}});
+  std::tuple<int, int, double, float, float, int, double, float> aFlat;
+
+  static_assert(std::is_same_v<decltype(aFlat),decltype(Ikarus::Std::makeNestedTupleFlat(a))>);
+  static_assert(std::is_same_v<std::tuple<const int&, const int&, const double&, const float&, const float&, const int&, const double&, const float&>,decltype(Ikarus::Std::makeNestedTupleFlatAndStoreReferences(a))>);
+
+  auto reducedTuple = Ikarus::Std::makeNestedTupleFlatAndStoreReferences(a);
+
+  Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<std::tuple_size_v<decltype(a)>>()), [&](const auto i) {
+    EXPECT_EQ(std::get<i>(reducedTuple),expectedValues[i]);
+  });
+}

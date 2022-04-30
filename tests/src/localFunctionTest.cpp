@@ -87,11 +87,18 @@ TEST(LocalFunctionTests, TestExpressions) {
     }
     auto f = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal);
     auto g = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal2);
-    static_assert(countUniqueLeafNodes(f)==1);
-    static_assert(countUniqueLeafNodes(g)==1);
+    static_assert(countUniqueNonArithmeticLeafNodes(f)==1);
+    static_assert(countUniqueNonArithmeticLeafNodes(g)==1);
     using namespace Ikarus::DerivativeDirections;
     auto h = f + g;
-    static_assert(countUniqueLeafNodes(h)==2);
+
+    auto a = collectNonArithmeticLeafNodes(h);
+    static_assert(std::tuple_size_v<decltype(a) > ==2);
+
+    std::cout<<Dune::className(a)<<std::endl;
+
+    static_assert(countUniqueNonArithmeticLeafNodes(h)==1);
+    static_assert(std::is_same_v<decltype(h)::Ids,std::tuple<Dune::index_constant<0>,Dune::index_constant<0>>>);
 
     for (int gpIndex = 0; auto& gp : rule) {
       EXPECT_THAT(f.evaluateFunction(gpIndex).getValue() + g.evaluateFunction(gpIndex).getValue(),
@@ -122,15 +129,19 @@ TEST(LocalFunctionTests, TestExpressions) {
           }
         }
       }
+      ++gpIndex;
     }
 
+    auto k = -dot(f+f, 3.0 * (g/5.0) * 5.0);
+    auto b = collectNonArithmeticLeafNodes(k);
+    static_assert(std::tuple_size_v<decltype(b) > ==3);
 
+//    std::cout<<Dune::className(a)<<std::endl;
+    std::cout<<Dune::className(b)<<std::endl;
+    static_assert(countUniqueNonArithmeticLeafNodes(k)==1);
+    static_assert(std::is_same_v<decltype(k)::Ids,std::tuple<Dune::index_constant<0>,Dune::index_constant<0>,Ikarus::Arithmetic,Dune::index_constant<0>>>);
 
-    auto k = -dot(f + f, 3.0 * g * 1.0);
-    static_assert(countUniqueLeafNodes(k)==2);
-
-
-    const double tol = 1e-14;
+    const double tol = 1e-13;
     for (int gpIndex = 0; auto& gp : rule) {
       const auto& N  = localBasis.evaluateFunction(gpIndex);
       const auto& dN = localBasis.evaluateJacobian(gpIndex);
@@ -148,6 +159,7 @@ TEST(LocalFunctionTests, TestExpressions) {
                             + (-2 * 3) * f.evaluateFunction(gpIndex).getValue().transpose()
                                   * g.evaluateDerivative(gpIndex, wrt(spatialAll)))
                                .eval();
+
       static_assert(resSpatialAll.cols() == 2);
       static_assert(resSpatialAll.rows() == 1);
 
@@ -159,10 +171,13 @@ TEST(LocalFunctionTests, TestExpressions) {
                                        + (-2 * 3) * f.evaluateFunction(gpIndex).getValue().transpose()
                                              * g.evaluateDerivative(gpIndex, wrt(coeff(i))))
                                           .eval();
+
         const VectorType dkdi = k.evaluateDerivative(gpIndex, wrt(coeff(i)));
+
         EXPECT_THAT(dfgdi, EigenApproxEqual(dkdi, tol));
 
         const VectorType dkdSdi  = k.evaluateDerivative(gpIndex, wrt(spatial(1), coeff(i)));
+
         const VectorType dkdSdi2 = k.evaluateDerivative(gpIndex, wrt(coeff(i), spatial(1)));
 
         EXPECT_THAT(dkdSdi, EigenApproxEqual(dkdSdi2, tol));
@@ -181,15 +196,20 @@ TEST(LocalFunctionTests, TestExpressions) {
           EXPECT_THAT(dkdSdi4, EigenApproxEqual(dkdSdi4Expected, tol));
         }
       }
+      ++gpIndex;
     }
 
     auto f2 = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal,_0);
     auto g2 = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal2,_1);
-    static_assert(countUniqueLeafNodes(f2)==1);
-    static_assert(countUniqueLeafNodes(g2)==1);
+    static_assert(countUniqueNonArithmeticLeafNodes(f2)==1);
+    static_assert(countUniqueNonArithmeticLeafNodes(g2)==1);
 
     auto k2 = dot(f2+g2, g2 );
-    static_assert(countUniqueLeafNodes(k2)==2);
+    static_assert(countUniqueNonArithmeticLeafNodes(k2)==2);
+    static_assert(std::is_same_v<decltype(k2)::Ids,std::tuple<Dune::index_constant<0>,Dune::index_constant<1>,Dune::index_constant<1>>>);
+
+    auto b2 = collectNonArithmeticLeafNodes(k2);
+    static_assert(std::tuple_size_v<decltype(b2) > ==3);
 
     for (int gpIndex = 0; auto& gp : rule) {
       const auto& N  = localBasis.evaluateFunction(gpIndex);
@@ -260,6 +280,7 @@ TEST(LocalFunctionTests, TestExpressions) {
 //          EXPECT_DOUBLE_EQ(dkdSdi4(1, 0), 0);
         }
       }
+      ++gpIndex;
     }
 
 

@@ -29,7 +29,7 @@ namespace Ikarus {
 
 
     static constexpr bool isLeaf = true;
-    static constexpr int id = ID;
+    using Ids =  Dune::index_constant<ID>;
 
     template<typename LocalFunctionEvaluationArgs_,typename LocalFunctionImpl_>
     friend auto evaluateDerivativeImpl(const LocalFunctionInterface<LocalFunctionImpl_>& f, const LocalFunctionEvaluationArgs_& localFunctionArgs);

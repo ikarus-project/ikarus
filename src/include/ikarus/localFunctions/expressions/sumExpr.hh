@@ -26,14 +26,14 @@ namespace Ikarus {
 
     template <typename LocalFunctionEvaluationArgs_>
     auto evaluateValueOfExpression(const LocalFunctionEvaluationArgs_& localFunctionArgs) const {
-      return eval(evaluateFunctionImpl(this->l, localFunctionArgs)
-                  + evaluateFunctionImpl(this->r, localFunctionArgs));
+      return eval(evaluateFunctionImpl(this->l(), localFunctionArgs)
+                  + evaluateFunctionImpl(this->r(), localFunctionArgs));
     }
 
     template <int DerivativeOrder, typename LocalFunctionEvaluationArgs_>
     auto evaluateDerivativeOfExpression(const LocalFunctionEvaluationArgs_& localFunctionArgs) const {
-      return eval(evaluateDerivativeImpl(this->l, localFunctionArgs)
-                  + evaluateDerivativeImpl(this->r, localFunctionArgs));
+      return eval(evaluateDerivativeImpl(this->l(), localFunctionArgs)
+                  + evaluateDerivativeImpl(this->r(), localFunctionArgs));
     }
   };
 
@@ -42,8 +42,8 @@ namespace Ikarus {
     using Base = LocalFunctionTraits<E1>;
   };
 
-  template <typename E1, typename E2>
-  constexpr LocalFunctionSum<E1, E2> operator+(LocalFunctionInterface<E1> const& u, LocalFunctionInterface<E2> const& v) {
+  template <typename E1, typename E2> requires IsLocalFunction<E1,E2>
+  constexpr LocalFunctionSum<E1, E2> operator+(E1 const& u, E2 const& v) {
     static_assert(Concepts::AddAble<typename E1::FunctionReturnType, typename E2::FunctionReturnType>,
                   "The function values of your local functions are not addable!");
 

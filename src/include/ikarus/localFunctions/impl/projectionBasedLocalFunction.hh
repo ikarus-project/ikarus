@@ -22,6 +22,7 @@ namespace Ikarus {
       : public LocalFunctionInterface<ProjectionBasedLocalFunction<DuneBasis, CoeffContainer,ID>> {
     using Base = LocalFunctionInterface<ProjectionBasedLocalFunction<DuneBasis, CoeffContainer,ID>>;
 
+
   public:
     friend Base;
     constexpr ProjectionBasedLocalFunction(const Ikarus::LocalBasis<DuneBasis>& p_basis, const CoeffContainer& coeffs_,Dune::template index_constant<ID> = Dune::template index_constant<std::size_t(0)>{})
@@ -30,7 +31,9 @@ namespace Ikarus {
     using Traits = LocalFunctionTraits<ProjectionBasedLocalFunction>;
 
     static constexpr bool isLeaf = true;
-    static constexpr int id = ID;
+    using Ids =  Dune::index_constant<ID>;
+
+
 
     template <typename LocalFunctionEvaluationArgs_, typename LocalFunctionImpl_>
     friend auto evaluateDerivativeImpl(const LocalFunctionInterface<LocalFunctionImpl_>& f,
