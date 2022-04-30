@@ -86,7 +86,7 @@ TEST(LocalFunctionTests, TestExpressions) {
       vBlockedLocal3[i] = vBlocked3[globalIndex[0]];
     }
     auto f = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal);
-    auto g = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal2);
+    auto g = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal);
     static_assert(countUniqueNonArithmeticLeafNodes(f)==1);
     static_assert(countUniqueNonArithmeticLeafNodes(g)==1);
     using namespace Ikarus::DerivativeDirections;
@@ -103,7 +103,7 @@ TEST(LocalFunctionTests, TestExpressions) {
 
     for (size_t i = 0; i < fe.size(); ++i) {
       EXPECT_TRUE(collectLeafNodeLocalFunctions(h).getCoeffs(_0)[i]==vBlockedLocal[i]);
-      EXPECT_TRUE(collectLeafNodeLocalFunctions(h).getCoeffs(_1)[i]==vBlockedLocal2[i]);
+      EXPECT_TRUE(collectLeafNodeLocalFunctions(h).getCoeffs(_1)[i]==vBlockedLocal[i]);
     }
 
     for (int gpIndex = 0; auto& gp : rule) {
@@ -204,6 +204,7 @@ TEST(LocalFunctionTests, TestExpressions) {
       }
       ++gpIndex;
     }
+
 
     auto f2 = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal,_0);
     auto g2 = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal2,_1);
