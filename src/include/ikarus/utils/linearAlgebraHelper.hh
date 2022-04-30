@@ -109,6 +109,15 @@ namespace Ikarus {
     return a;
   }
 
+  /* Enables the -= operator for Dune::BlockVector += Eigen::Vector */
+  template <typename Type, typename Derived>
+  Dune::BlockVector<Type>& operator-=(Dune::BlockVector<Type>& a, const Eigen::MatrixBase<Derived>& b)
+    requires(Ikarus::Concepts::AddAssignAble<
+                 Type, decltype(b.template segment<Type::correctionSize>(0))> and requires() { Type::correctionSize; })
+  {
+    return a+=(-b);
+  }
+
   /* Enables the += operator for Dune::MultiTypeBlockVector += Eigen::Vector */
   template <typename... Types, typename Derived>
   Dune::MultiTypeBlockVector<Types...>& operator+=(Dune::MultiTypeBlockVector<Types...>& a,
@@ -337,6 +346,17 @@ Ikarus::DerivativeDirections::DerivativeNoOp eval(const Ikarus::DerivativeDirect
     else
       static_assert((requires { A.derived().transpose(); })
                     or Ikarus::Std::IsSpecializationTypeAndNonTypes<Eigen::DiagonalMatrix, Derived>::value or Std::isSpecialization<Eigen::DiagonalWrapper, Derived>::value);
+  }
+
+  template<typename To,typename From> requires std::convertible_to<typename From::ctype,To>
+  auto convertUnderlying(const Dune::BlockVector<From>& from)
+  {
+    Dune::BlockVector<typename From::template Rebind<To>::other> to;
+    to.resize(from.size());
+    for (std::size_t i = 0; i < to.size(); ++i)
+      to[i] = from[i];
+
+    return to;
   }
 
 }  // namespace Ikarus

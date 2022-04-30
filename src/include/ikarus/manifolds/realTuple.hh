@@ -21,6 +21,7 @@ namespace Ikarus {
     using ctype      = ct;
     using field_type = ct;
 
+
     /** \brief Size of how much values are needed to store the manifold */
     static constexpr int valueSize = d;
 
@@ -35,10 +36,27 @@ namespace Ikarus {
 
     RealTuple() = default;
 
+    template <typename ctOther,int dOther> requires std::convertible_to<ctOther,ctype>
+    friend class RealTuple;
+
+    /** \brief Copy assignement if the other type has different underlying type*/
+    template<typename ctype_> requires std::convertible_to<ctype_,ctype>
+    RealTuple<ctype,d>& operator=(const RealTuple<ctype_,d>& other)
+    {
+      var = other.var;
+    return *this;
+    }
+
     template <typename OtherType>
     struct Rebind {
-      using type = RealTuple<OtherType, valueSize>;
+      using other = RealTuple<OtherType, valueSize>;
     };
+
+    /** \brief Compute an orthonormal basis of the tangent space of R^n.
+     * This is simply the identity matrix  */
+    Eigen::Matrix<ctype, valueSize, correctionSize> orthonormalFrame() const {
+      return Eigen::Matrix<ctype, valueSize, correctionSize>::Identity();
+    }
 
     /** \brief Copy-Constructor from the values in terms of coordinateType */
     explicit RealTuple(const CoordinateType &vec) noexcept : var{vec} {}
@@ -70,7 +88,7 @@ namespace Ikarus {
     }
 
     /** \brief size */
-    [[nodiscard]] size_t size() const { return var.size(); }
+    [[nodiscard]] constexpr size_t size() const { return valueSize; }
     auto begin() { return var.begin(); }
     auto end() { return var.end(); }
 

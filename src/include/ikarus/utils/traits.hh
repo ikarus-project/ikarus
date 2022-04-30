@@ -315,8 +315,33 @@ struct Index<T, std::tuple<U, Types...>> {
 };
 
 
+/*
+ * Rebind the underlying type of containers
+ */
+template <class Container, class NewType>
+struct Rebind;
+
+/*
+ * Specialization for types like std::vector<...> and nested std::vector<std::vector>
+ */
+template <class OldType, class... Args, template <class...> class Container, class NewType>
+struct Rebind<Container<OldType, Args...>, NewType>
+{
+  using other = Container<NewType, typename Rebind<Args, NewType>::other...>;
+};
+
+/*
+ * Specialization for types like std::array<...,N>
+ */
+template <class OldType, std::size_t N, template <class, std::size_t> class Container, class NewType>
+struct Rebind<Container<OldType, N>, NewType>
+{
+  using other = Container<NewType, N>;
+};
 
 
 
+template <class T1,class T2> consteval bool areTypesEqual(T1&&, T2&&) { return std::is_same_v<T1, T2>; }
+template <class T1,class T2> consteval bool areTypesEqual() { return std::is_same_v<T1, T2>; }
 
 }  // namespace Ikarus::Std

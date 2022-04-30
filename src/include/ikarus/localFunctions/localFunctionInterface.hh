@@ -260,14 +260,14 @@ auto collectNonArithmeticLeafNodes(const LocalFunctionInterface<LF>& a) {
 template <typename LF> requires LocalFunction<LF>
  struct LocalFunctionLeafNodeCollection
  {
-
-
    LocalFunctionLeafNodeCollection(const LF& lf): leafNodes{collectNonArithmeticLeafNodes(lf)} {}
 
    template<std::size_t I>
-   auto getCoeffs(Dune::index_constant<I>) { return std::get<I>(leafNodes).coefficientsRef(); }
+   auto& coefficientsRef(Dune::index_constant<I> =Dune::index_constant<0UL>()) { return std::get<I>(leafNodes).coefficientsRef(); }
+   template<std::size_t I>
+   auto& basis(Dune::index_constant<I> =Dune::index_constant<0UL>()) { return std::get<I>(leafNodes).basis(); }
 
-
+ private:
    decltype(collectNonArithmeticLeafNodes(std::declval<const LF&>())) leafNodes;
  };
 

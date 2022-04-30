@@ -7,6 +7,7 @@
 #include "testHelpers.hh"
 
 #include <ikarus/localFunctions/meta.hh>
+#include <ikarus/utils/traits.hh>
 TEST(TraitsTest, LocalFunctionTest) {
   using namespace Ikarus::DerivativeDirections;
   auto wrt1 = Ikarus::wrt(spatial(0), coeff(7));
@@ -78,4 +79,24 @@ TEST(TraitsTest, makeNestedTupleFlat) {
   Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<std::tuple_size_v<decltype(a)>>()), [&](const auto i) {
     EXPECT_EQ(std::get<i>(reducedTuple),expectedValues[i]);
   });
+}
+
+
+TEST(TraitsTest, testRebind) {
+  std::vector<int> a;
+  using namespace Ikarus::Std;
+  using reboundVector = Rebind<std::vector<int>,double>::other ;
+  reboundVector b;
+  std::vector<double> c;
+  static_assert(!areTypesEqual(a,b));
+  static_assert(areTypesEqual(b,c));
+
+  std::array<int,4> aA;
+
+  using reboundArray = Rebind<std::array<int,4>,double>::other ;
+  reboundArray bA;
+  std::array<double,4> cA;
+
+  static_assert(!areTypesEqual(aA,bA));
+  static_assert(areTypesEqual(bA,cA));
 }

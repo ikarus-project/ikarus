@@ -27,7 +27,6 @@ namespace Ikarus {
     constexpr StandardLocalFunction(const Ikarus::LocalBasis<DuneBasis>& p_basis, const CoeffContainer& coeffs_, Dune::template index_constant<ID> = Dune::template index_constant<std::size_t(0)>{})
         : basis_{p_basis}, coeffs{coeffs_}, coeffsAsMat{Ikarus::viewAsEigenMatrixFixedDyn(coeffs)} {}
 
-
     static constexpr bool isLeaf = true;
     using Ids =  Dune::index_constant<ID>;
 
@@ -64,8 +63,17 @@ namespace Ikarus {
     /** \brief Type for the Jacobian of the ansatz function values */
     using AnsatzFunctionJacobian = typename Traits::AnsatzFunctionJacobian;
 
+
+
+
+
     const auto& coefficientsRef() const { return coeffs; }
      auto& coefficientsRef()  { return coeffs; }
+
+     template <typename OtherType>
+     struct Rebind {
+       using other = StandardLocalFunction<DuneBasis, typename Std::Rebind<CoeffContainer,typename FunctionReturnType::template Rebind<OtherType>::other>::other, ID>;
+     };
 
     const Ikarus::LocalBasis<DuneBasis>& basis() const
     {
@@ -141,7 +149,7 @@ namespace Ikarus {
 
 
     mutable AnsatzFunctionJacobian dNTransformed;
-    const Ikarus::LocalBasis<DuneBasis>& basis_;
+    Ikarus::LocalBasis<DuneBasis> basis_;
     CoeffContainer coeffs;
     const decltype(Ikarus::viewAsEigenMatrixFixedDyn(coeffs)) coeffsAsMat;
   };

@@ -4,6 +4,7 @@
 
 #pragma once
 #include <ikarus/localFunctions/expressions/binaryExpr.hh>
+#include "rebind.hh"
 namespace Ikarus {
 
   template <typename E1, typename E2>
@@ -12,6 +13,9 @@ namespace Ikarus {
     using Base = BinaryLocalFunctionExpression<LocalFunctionDot<E1, E2>, E1, E2>;
     using Base::BinaryLocalFunctionExpression;
     using Traits = LocalFunctionTraits<LocalFunctionDot>;
+
+    template<typename OtherType,typename IDTuple>
+    using Rebind = Rebind<LocalFunctionDot,E1,E2,OtherType,IDTuple>;
 
     template <typename LocalFunctionEvaluationArgs_>
     auto evaluateValueOfExpression(const LocalFunctionEvaluationArgs_& localFunctionArgs) const {

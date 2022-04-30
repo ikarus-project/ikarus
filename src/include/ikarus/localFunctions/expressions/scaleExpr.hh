@@ -14,6 +14,9 @@ namespace Ikarus {
     using Base::BinaryLocalFunctionExpression;
     using Traits = LocalFunctionTraits<LocalFunctionScale>;
 
+    template<typename OtherType,typename IDTuple>
+    using Rebind = Rebind<LocalFunctionScale,E1,E2,OtherType,IDTuple>;
+
     template <typename LocalFunctionEvaluationArgs_>
     auto evaluateValueOfExpression(const LocalFunctionEvaluationArgs_& localFunctionArgs) const {
       return eval(this->l().value()*evaluateFunctionImpl(this->r(), localFunctionArgs));

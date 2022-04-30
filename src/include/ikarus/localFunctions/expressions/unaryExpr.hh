@@ -22,7 +22,9 @@ struct UnaryLocalFunctionExpression : public Ikarus::LocalFunctionInterface<Op> 
 
   using Ids =decltype(Std::makeNestedTupleFlat(std::make_tuple(std::declval<typename E1::Ids>() )));
 
-  constexpr UnaryLocalFunctionExpression(E1 const& u)
+
+
+  constexpr explicit UnaryLocalFunctionExpression(E1 const& u)
   requires IsLocalFunction<E1>
   : expr(u) {  }
 
