@@ -20,6 +20,15 @@ class ArithmeticExpr: public LocalFunctionInterface<ArithmeticExpr<Type>> {
     return ArithmeticExpr(val);
   }
 
+  template <typename OtherType,size_t ID=0>
+  auto rebindClone(OtherType&& t,Dune::index_constant<ID> && id = Dune::index_constant<0>() ) const
+  {
+    if constexpr (Arithmetic::value == ID)
+      return ArithmeticExpr(static_cast<OtherType>(val));
+    else
+      return clone();
+  }
+
   static constexpr bool isLeaf = true;
   using Ids =  Arithmetic;
 

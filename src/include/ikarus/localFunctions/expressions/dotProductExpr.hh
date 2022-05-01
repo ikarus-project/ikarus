@@ -89,6 +89,8 @@ namespace Ikarus {
     static constexpr int valueSize = 1;
     /** \brief Type for the points for evaluation, usually the integration points */
     using DomainType = typename E1::DomainType;
+    /** \brief Dimension of the grid */
+    static constexpr int gridDim = E1::gridDim;
   };
 
   template <typename E1, typename E2> requires IsLocalFunction<E1,E2>
