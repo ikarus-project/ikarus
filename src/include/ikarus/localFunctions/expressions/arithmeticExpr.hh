@@ -15,8 +15,15 @@ class ArithmeticExpr: public LocalFunctionInterface<ArithmeticExpr<Type>> {
 
   Type value()const{    return val;}
 
+  auto clone()const
+  {
+    return ArithmeticExpr(val);
+  }
+
   static constexpr bool isLeaf = true;
   using Ids =  Arithmetic;
+
+//  auto clone() const { return ArithmeticExpr(val);}
 
  private:
   Type val;

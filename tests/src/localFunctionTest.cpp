@@ -36,49 +36,58 @@
 using namespace Dune::Functions::BasisFactory;
 
 template <typename LF,std::size_t... I>
-auto getCoeffRefHelper(const LF& lf)
+auto& getCoeffRefHelper(LF& lf)
 {
   if constexpr(LF::isLeaf)
-    return lf.coefficientsRef()
+    return lf.coefficientsRef();
   else
     return collectLeafNodeLocalFunctions(lf).coefficientsRef();
 }
 
-template <typename LF>
+template <typename LF,bool isCopy=false>
 void testLocalFunction(const LF& lf, int ipIndex) {
+  const double tol = 1e-13;
   using namespace Ikarus::DerivativeDirections;
   using namespace autodiff;
   using namespace Ikarus;
-
   const auto& coeffs  = getCoeffRefHelper(lf);
-  const auto& basis  = getBasisHelper(lf);
   const size_t coeffSize = coeffs.size();
+
+  const auto lfCopy = lf.clone();
+  const auto& coeffCopy = getCoeffRefHelper(lfCopy);
+  for (size_t i = 0; i < coeffSize; ++i)
+    EXPECT_EQ(coeffs[i],coeffCopy[i]); //since the coeffs are copied the values should be the same
+
+  EXPECT_NE(&coeffs,&coeffCopy); //since the coeffs are copied the adresses should differ
+
+  if constexpr(not isCopy)
+    testLocalFunction<std::remove_cvref_t<decltype(lfCopy)>,true>(lfCopy,ipIndex); //also test the cloned local function
+
   const int gridDim = LF::gridDim;
   using Manifold = typename std::remove_cvref_t<decltype(coeffs)>::value_type;
   constexpr int coeffValueSize = Manifold::valueSize;
   constexpr int coeffCorrectionSize = Manifold::correctionSize;
 
-  typename LF::template Rebind<dual>::other lfDual(basis(), convertUnderlying<dual>(coeffs));
+  auto lfDual = lf.rebindClone(dual());
+  auto lfDualLeafNodeCollection = collectLeafNodeLocalFunctions(lfDual);
 
-  auto localFdual = [&](auto& x) {
-    lfDual.coefficientsRef() += x;
+  auto localFdual = [&]  (auto& x)  {
+    lfDualLeafNodeCollection.addToCoeffs(x);
     auto value =  lfDual.evaluateFunction(ipIndex).getValue();
-    lfDual.coefficientsRef() -= x;
+    lfDualLeafNodeCollection.addToCoeffs(-x);
     return value;
   };
 
   auto localFdualSpatialSingle = [&](auto& x,int i) {
-    lfDual.coefficientsRef() += x;
+    lfDualLeafNodeCollection.addToCoeffs(x);
     auto value =  lfDual.evaluateDerivative(ipIndex,Ikarus::wrt(spatial(i)));
-    lfDual.coefficientsRef() -= x;
+    lfDualLeafNodeCollection.addToCoeffs(-x);
     return value;
   };
 
-  Eigen::VectorXdual xv(correctionSize(lfDual.coefficientsRef()));
+  Eigen::VectorXdual xv(correctionSize(coeffs));
   xv.setZero();
   const Eigen::MatrixXd Jcoeff = jacobian(localFdual, autodiff::wrt(xv), at(xv));
-  const Eigen::MatrixXd JspatialSingleCoeff = jacobian(localFdual, autodiff::wrt(xv), at(xv));
-
   std::array<Eigen::MatrixXd,gridDim> JdualSpatialWRTCoeffs;
   for (int d = 0; d < gridDim; ++d)
    JdualSpatialWRTCoeffs[d] = jacobian(localFdualSpatialSingle, autodiff::wrt(xv), at(xv,d));
@@ -88,15 +97,17 @@ void testLocalFunction(const LF& lf, int ipIndex) {
     const auto jacobianWRTCoeffs = lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i)));
     EXPECT_THAT(
         jacobianWRTCoeffs,
-        EigenApproxEqual(Jcoeff.block<coeffValueSize, coeffCorrectionSize>(0, i * coeffValueSize), 1e-15));
+        EigenApproxEqual(Jcoeff.template block<coeffValueSize, coeffCorrectionSize>(0, i * coeffValueSize), tol));
+
+    EXPECT_THAT((Jcoeff.template block<coeffValueSize, coeffCorrectionSize>(0, i * coeffValueSize)), EigenApproxEqual(jacobianWRTCoeffs, tol));
 
     for (int d = 0; d < gridDim; ++d) {
       const auto jacoWrtCoeffAndSpatial = lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i),spatial(d)));
       const auto jacoWrtSpatialAndCoeff = lf.evaluateDerivative(ipIndex, Ikarus::wrt(spatial(d),coeff(i)));
-      EXPECT_THAT(  jacoWrtCoeffAndSpatial,  EigenApproxEqual(jacoWrtSpatialAndCoeff, 1e-15));
+      EXPECT_THAT(  jacoWrtCoeffAndSpatial,  EigenApproxEqual(jacoWrtSpatialAndCoeff, tol));
 
       EXPECT_THAT(jacoWrtCoeffAndSpatial,
-          EigenApproxEqual(JdualSpatialWRTCoeffs[d].template block<coeffValueSize, coeffCorrectionSize>(0, i * coeffValueSize), 1e-15));
+          EigenApproxEqual(JdualSpatialWRTCoeffs[d].template block<coeffValueSize, coeffCorrectionSize>(0, i * coeffValueSize), tol));
     }
     }
 }
@@ -160,13 +171,15 @@ TEST(LocalFunctionTests, TestExpressions) {
     static_assert(std::is_same_v<decltype(h)::Ids, std::tuple<Dune::index_constant<0>, Dune::index_constant<0>>>);
 
     for (size_t i = 0; i < fe.size(); ++i) {
-      EXPECT_TRUE(collectLeafNodeLocalFunctions(h).getCoeffs(_0)[i] == vBlockedLocal[i]);
-      EXPECT_TRUE(collectLeafNodeLocalFunctions(h).getCoeffs(_1)[i] == vBlockedLocal[i]);
+      EXPECT_TRUE(collectLeafNodeLocalFunctions(h).coefficientsRef(_0)[i] == vBlockedLocal[i]);
+      EXPECT_TRUE(collectLeafNodeLocalFunctions(h).coefficientsRef(_1)[i] == vBlockedLocal[i]);
     }
 
     for (int gpIndex = 0; auto& gp : rule) {
       testLocalFunction(f,gpIndex);
+      testLocalFunction(-f,gpIndex);
       testLocalFunction(h,gpIndex);
+//      testLocalFunction(h,gpIndex);
 
       EXPECT_THAT(f.evaluateFunction(gpIndex).getValue() + g.evaluateFunction(gpIndex).getValue(),
                   EigenApproxEqual(h.evaluateFunction(gpIndex).getValue(), 1e-15));
@@ -200,6 +213,7 @@ TEST(LocalFunctionTests, TestExpressions) {
     }
 
     auto k = -dot(f + f, 3.0 * (g / 5.0) * 5.0);
+
     auto b = collectNonArithmeticLeafNodes(k);
     static_assert(std::tuple_size_v<decltype(b)> == 3);
 
@@ -211,6 +225,8 @@ TEST(LocalFunctionTests, TestExpressions) {
 
     const double tol = 1e-13;
     for (int gpIndex = 0; auto& gp : rule) {
+      testLocalFunction(k,gpIndex);
+
       const auto& N  = localBasis.evaluateFunction(gpIndex);
       const auto& dN = localBasis.evaluateJacobian(gpIndex);
       EXPECT_DOUBLE_EQ((-2 * 3) * f.evaluateFunction(gpIndex).getValue().dot(g.evaluateFunction(gpIndex).getValue()),

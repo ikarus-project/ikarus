@@ -4,11 +4,11 @@
 
 #pragma once
 
-#include "src/include/ikarus/localBasis/localBasis.hh"
-#include "src/include/ikarus/localFunctions/localFunctionHelper.hh"
-#include "src/include/ikarus/localFunctions/localFunctionInterface.hh"
-#include "src/include/ikarus/utils/linearAlgebraHelper.hh"
-
+#include <ikarus/localBasis/localBasis.hh>
+#include <ikarus/localFunctions/localFunctionHelper.hh>
+#include <ikarus/localFunctions/localFunctionInterface.hh>
+#include <ikarus/utils/linearAlgebraHelper.hh>
+#include "clonableLocalFunction.hh"
 #include <concepts>
 #include <iostream>
 
@@ -19,12 +19,15 @@ namespace Ikarus {
 
   template <typename DuneBasis, typename CoeffContainer,std::size_t ID=0>
   class ProjectionBasedLocalFunction
-      : public LocalFunctionInterface<ProjectionBasedLocalFunction<DuneBasis, CoeffContainer,ID>> {
+      : public LocalFunctionInterface<ProjectionBasedLocalFunction<DuneBasis, CoeffContainer,ID>>
+      , public ClonableLocalFunction<ProjectionBasedLocalFunction<DuneBasis, CoeffContainer,ID>>
+   {
     using Base = LocalFunctionInterface<ProjectionBasedLocalFunction<DuneBasis, CoeffContainer,ID>>;
 
 
   public:
     friend Base;
+    friend ClonableLocalFunction<ProjectionBasedLocalFunction>;
     constexpr ProjectionBasedLocalFunction(const Ikarus::LocalBasis<DuneBasis>& p_basis, const CoeffContainer& coeffs_,Dune::template index_constant<ID> = Dune::template index_constant<std::size_t(0)>{})
         : basis_{p_basis}, coeffs{coeffs_}, coeffsAsMat{Ikarus::viewAsEigenMatrixFixedDyn(coeffs)} {}
 
@@ -299,7 +302,7 @@ namespace Ikarus {
     GlobalE evaluateEmbeddingFunctionImpl(const AnsatzFunctionType& N) const { return coeffsAsMat * N; }
 
     mutable AnsatzFunctionJacobian dNTransformed;
-    const Ikarus::LocalBasis<DuneBasis>& basis_;
+    Ikarus::LocalBasis<DuneBasis> basis_;
     CoeffContainer coeffs;
     const decltype(Ikarus::viewAsEigenMatrixFixedDyn(coeffs)) coeffsAsMat;
   };

@@ -69,15 +69,22 @@ TEST(TraitsTest, testTupleFilter) {
 TEST(TraitsTest, makeNestedTupleFlat) {
   std::vector<int> expectedValues({0,1,1,2,3,1,2,9});
   std::tuple<std::tuple<int,std::tuple<std::tuple<int,std::tuple<double,float>>,float>>,std::tuple<int,std::tuple<double,float>>> a({0,{{1,{1.0,2.0}},3.0}},{1,{2.0,9.0}});
+  const std::tuple<std::tuple<int,std::tuple<std::tuple<int,std::tuple<double,float>>,float>>,std::tuple<int,std::tuple<double,float>>> y({0,{{1,{1.0,2.0}},3.0}},{1,{2.0,9.0}});
   std::tuple<int, int, double, float, float, int, double, float> aFlat;
 
   static_assert(std::is_same_v<decltype(aFlat),decltype(Ikarus::Std::makeNestedTupleFlat(a))>);
-  static_assert(std::is_same_v<std::tuple<const int&, const int&, const double&, const float&, const float&, const int&, const double&, const float&>,decltype(Ikarus::Std::makeNestedTupleFlatAndStoreReferences(a))>);
+  static_assert(std::is_same_v<std::tuple<const int&, const int&, const double&, const float&, const float&, const int&, const double&, const float&>,decltype(Ikarus::Std::makeNestedTupleFlatAndStoreReferences(y))>);
+  static_assert(std::is_same_v<std::tuple< int&,  int&,  double&,  float&,  float&,  int&,  double&,  float&>,decltype(Ikarus::Std::makeNestedTupleFlatAndStoreReferences(a))>);
 
   auto reducedTuple = Ikarus::Std::makeNestedTupleFlatAndStoreReferences(a);
+  const auto reducedTupleConst = Ikarus::Std::makeNestedTupleFlatAndStoreReferences(y);
 
   Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<std::tuple_size_v<decltype(a)>>()), [&](const auto i) {
     EXPECT_EQ(std::get<i>(reducedTuple),expectedValues[i]);
+  });
+
+  Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<std::tuple_size_v<decltype(a)>>()), [&](const auto i) {
+    EXPECT_EQ(std::get<i>(reducedTupleConst),expectedValues[i]);
   });
 }
 

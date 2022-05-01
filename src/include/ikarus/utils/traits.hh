@@ -13,9 +13,6 @@ namespace Ikarus::Std {
 template<typename... Types>
 auto makeNestedTupleFlat(std::tuple<Types...> tup);
 
-template<typename... Types>
-auto makeNestedTupleFlatAndStoreReferences(const std::tuple<Types...>& tup);
-
 template <typename> struct is_tuple: std::false_type {};
 
 template <typename ...T> struct is_tuple<std::tuple<T...>>: std::true_type {};
@@ -41,6 +38,9 @@ struct hasType;
 
 template <typename T>
 struct hasType<T, std::tuple<>> : std::false_type {};
+
+template <typename T>
+struct hasType<T, T> : std::true_type {};
 
 template <typename T, typename U, typename... Ts>
 struct hasType<T, std::tuple<U, Ts...>> : hasType<T, std::tuple<Ts...>> {};
@@ -120,18 +120,18 @@ auto makeNestedTupleFlatAndStoreReferencesImpl(const std::tuple<T,Types...>& tup
 {
   constexpr bool isTuple = isSpecialization<std::tuple,std::remove_cvref_t<T>>::value;
   if constexpr (sizeof...(Types)>0)
-  { if  constexpr (isTuple) {
-      return std::tuple_cat(makeNestedTupleFlatAndStoreReferencesImpl(std::get<0>(tup)), std::apply(
-          [](const T &, const Types &... args) {
-            return makeNestedTupleFlatAndStoreReferencesImpl(std::make_tuple(std::cref(args)...));
-          }, tup));
-    }
-    else {
-      return std::tuple_cat(std::make_tuple(std::cref(std::get<0>(tup))), std::apply(
-          [](const T &, const Types &... args) {
-            return makeNestedTupleFlatAndStoreReferencesImpl(std::make_tuple(std::cref(args)...));
-          }, tup));
-    }
+  { if  constexpr (isTuple)
+      return std::tuple_cat(makeNestedTupleFlatAndStoreReferencesImpl(std::get<0>(tup)),std::apply(
+                                                                                             [](const T&, const Types&... args)
+                                                                                             {
+                                                                                               return makeNestedTupleFlatAndStoreReferencesImpl(std::make_tuple(std::cref(args)...));
+                                                                                             }, tup));
+    else
+      return std::tuple_cat(std::make_tuple(std::cref(std::get<0>(tup))),std::apply(
+                                                                              [](const T&, const Types&... args)
+                                                                              {
+                                                                                return makeNestedTupleFlatAndStoreReferencesImpl(std::make_tuple(std::cref(args)...));
+                                                                              }, tup));
   }
   else
   {
@@ -139,6 +139,35 @@ auto makeNestedTupleFlatAndStoreReferencesImpl(const std::tuple<T,Types...>& tup
       return makeNestedTupleFlatAndStoreReferencesImpl(std::get<0>(tup));
     else
       return std::make_tuple(std::cref(std::get<0>(tup)));
+  }
+}
+
+
+template<typename T,typename... Types >
+auto makeNestedTupleFlatAndStoreReferencesNonConstImpl(const std::tuple<T,Types...>& tupconst)
+{
+  auto& tup = const_cast<std::tuple<T,Types...>&>(tupconst);
+  constexpr bool isTuple = isSpecialization<std::tuple,std::remove_cvref_t<T>>::value;
+  if constexpr (sizeof...(Types)>0)
+  { if  constexpr (isTuple)
+      return std::tuple_cat(makeNestedTupleFlatAndStoreReferencesNonConstImpl(std::get<0>(tup)),std::apply(
+                                                                                                     []( T&,  Types&... args)
+                                                                                                     {
+                                                                                                       return makeNestedTupleFlatAndStoreReferencesNonConstImpl(std::make_tuple(std::ref(args)...));
+                                                                                                     }, tup));
+    else
+      return std::tuple_cat(std::make_tuple(std::ref(std::get<0>(tup))),std::apply(
+                                                                             []( T&,  Types&... args)
+                                                                             {
+                                                                               return makeNestedTupleFlatAndStoreReferencesNonConstImpl(std::make_tuple(std::ref(args)...));
+                                                                             }, tup));
+  }
+  else
+  {
+    if  constexpr (isTuple)
+      return makeNestedTupleFlatAndStoreReferencesNonConstImpl(std::get<0>(tup));
+    else
+      return std::make_tuple(std::ref(std::get<0>(tup)));
   }
 }
 
@@ -276,11 +305,13 @@ auto makeNestedTupleFlat(std::tuple<Types...> tup)
 }
 
 
-template<typename... Types>
-auto makeNestedTupleFlatAndStoreReferences(const std::tuple<Types...>& tup)
+template<typename Tuple>
+auto makeNestedTupleFlatAndStoreReferences(Tuple&& tup)
 {
-
-  return Impl::makeNestedTupleFlatAndStoreReferencesImpl(tup);
+  if constexpr(!std::is_const_v<std::remove_reference_t<Tuple>>)
+    return Impl::makeNestedTupleFlatAndStoreReferencesNonConstImpl(std::forward<Tuple>(tup));
+  else
+    return Impl::makeNestedTupleFlatAndStoreReferencesImpl(std::forward<Tuple>(tup));
 }
 
 /*

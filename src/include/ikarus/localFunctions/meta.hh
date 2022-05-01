@@ -191,7 +191,7 @@ namespace Ikarus {
   static constexpr auto arithmetic = Arithmetic{};
 
 template <typename LF>
-concept IsArithmeticExpr = LF::Ids::value==arithmetic;
+concept IsArithmeticExpr = std::remove_cvref_t<LF>::Ids::value==arithmetic;
 
 template <typename E1,typename E2>
 class LocalFunctionScale;
@@ -202,20 +202,21 @@ class LocalFunctionInterface;
 template <typename LocalFunctionImpl>
 concept LocalFunction = requires
 {
-  typename LocalFunctionImpl::Traits;
-  LocalFunctionImpl::Traits::valueSize;
-  typename LocalFunctionImpl::Traits::DomainType;
-  typename LocalFunctionImpl::Ids;
+  typename std::remove_cvref_t<LocalFunctionImpl>::Traits;
+  std::remove_cvref_t<LocalFunctionImpl>::Traits::valueSize;
+  typename std::remove_cvref_t<LocalFunctionImpl>::Traits::DomainType;
+  typename std::remove_cvref_t<LocalFunctionImpl>::Ids;
 };
 
 template <typename LF>
-concept IsScaleExpr = Std::isSpecialization<LocalFunctionScale,LF>::value;
+concept IsScaleExpr = Std::isSpecialization<LocalFunctionScale,std::remove_cvref_t<LF>>::value;
 
 template <typename LF>
-concept IsNonArithmeticLeafNode = LF::isLeaf==true and !IsArithmeticExpr<LF>;
+concept IsNonArithmeticLeafNode = std::remove_cvref_t<LF>::isLeaf==true and !IsArithmeticExpr<std::remove_cvref_t<LF>>;
 
 template <typename... LF>
 concept IsLocalFunction = (LocalFunction<LF> and ...);
 
+struct NoRebind { };
 
 }  // namespace Ikarus
