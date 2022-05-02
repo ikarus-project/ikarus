@@ -206,15 +206,13 @@ namespace Ikarus {
               const auto WJ
                   = mLocalF.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(j)), transformWith(Jinv));
               const auto alongVector = (2 * Hbar / material.ms + curlA).eval();
-              const auto mddHbar = mLocalF.evaluateDerivative(
-                  gpIndex, wrt(coeff(i,j)), along(alongVector));
+              const auto mddHbar = mLocalF.evaluateDerivative(gpIndex, wrt(coeff(i,j)), along(alongVector));
 
               Eigen::Matrix<double, directorCorrectionDim, directorCorrectionDim> tmp;
               tmp.setZero();
               for (int k = 0; k < Traits::mydim; ++k)
-                tmp += WI[k].transpose() * WJ[k]
-                       + mLocalF.evaluateDerivative(gpIndex, wrt(spatial(k), coeff(i,j)), along(gradm.col(k)),
-                                                    transformWith(Jinv));
+                tmp += WI[k].transpose() * WJ[k];
+              tmp += mLocalF.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i,j)), along(gradm), transformWith(Jinv));
 
               hred.template block<directorCorrectionDim, directorCorrectionDim>(indexI, indexJ) += tmp * weight;
               hred.template block<directorCorrectionDim, directorCorrectionDim>(indexI, indexJ) -= mddHbar * weight;

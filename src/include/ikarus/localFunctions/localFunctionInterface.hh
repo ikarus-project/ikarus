@@ -410,7 +410,8 @@ auto evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(
     auto evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialImpl(
         const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, const std::array<size_t, 2>& coeffsIndex,
         const Along<AlongArgs...>& alongArgs, const TransformWith<TransformArgs...>& transArgs) const {
-      return std::array<Ikarus::DerivativeDirections::DerivativeNoOp, gridDim>();
+      return Eigen::Matrix<typename LocalFunctionImpl::ctype, LocalFunctionImpl::correctionSize,
+                           LocalFunctionImpl::correctionSize>::Zero();
     }
 
     /* Default implementation returns Zero expression if they are not overloaded  */

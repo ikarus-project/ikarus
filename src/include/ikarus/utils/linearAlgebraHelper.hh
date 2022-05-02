@@ -151,6 +151,13 @@ template<typename Scalar, int size>
   return (a.diagonal().cwiseProduct(b.diagonal())).asDiagonal();
 }
 
+template<typename Scalar, int size>
+auto operator +=( Eigen::DiagonalMatrix<Scalar,size>& a,const Eigen::DiagonalMatrix<Scalar,size>& b)
+{
+  a.diagonal()+=b.diagonal();
+  return a;
+}
+
 /** \brief Eigen::Matrix + Eigen::DiagonalMatrix addition missing in Eigen*/
 template<typename Derived,typename Scalar, int size>
 auto operator +(const Eigen::MatrixBase<Derived>& a,const Eigen::DiagonalMatrix<Scalar,size>& b)
@@ -284,6 +291,9 @@ auto operator +(const Eigen::DiagonalWrapper<Derived>& a,Ikarus::DerivativeDirec
   return a;
 }
 
+
+Ikarus::DerivativeDirections::DerivativeNoOp operator-(Ikarus::DerivativeDirections::DerivativeNoOp);
+
 template<typename Derived>
 auto operator +(Ikarus::DerivativeDirections::DerivativeNoOp, const Eigen::DiagonalWrapper<Derived>& a)
 {
@@ -336,6 +346,9 @@ std::ostream& operator<<(std::ostream& os,  const Eigen::DiagonalMatrix<Scalar,s
 template<typename T> requires autodiff::detail::isDual<T> || autodiff::detail::isExpr<T> || autodiff::detail::isArithmetic<T>
 auto eval( T&& t) { return autodiff::detail::eval(t); }
 
+/** \brief  eval overload for std::array  */
+template <typename Type, std::size_t d>
+auto eval(  std::array<Type,d>&& t) { return t; }
 
 
 Ikarus::DerivativeDirections::DerivativeNoOp transpose(const Ikarus::DerivativeDirections::DerivativeNoOp&);
@@ -365,6 +378,49 @@ Ikarus::DerivativeDirections::DerivativeNoOp eval(const Ikarus::DerivativeDirect
     return to;
   }
 
+
+/* Enables the += operator for std::array if the underlying objects are addable  */
+template <typename Type,typename Type2, std::size_t d>
+std::array<Type,d> operator+(const std::array<Type,d>& a,  const std::array<Type2,d>& b)
+requires Concepts::AddAble<Type, Type2>
+{
+  std::array<Type,d> res;
+  for (size_t i = 0U; i < d; ++i)
+    res[i] = a[i] + b[i];
+  return res;
+}
+
+
+/* Enables the - operator for std::array if the underlying objects are negate able  */
+template < std::size_t d, typename Type>
+std::array<Type,d> operator-(const std::array<Type,d>& a)requires Concepts::NegateAble<Type>
+{
+  std::array<Type,d> res;
+  for (size_t i = 0U; i < d; ++i)
+    res[i] = -a[i];
+  return res;
+}
+
+/* Enables the transposition for std::array if the underlying objects are transposable able  */
+template < std::size_t d, typename Type>
+auto transpose(const std::array<Type,d>& a)requires Concepts::TransposeAble<Type>
+{
+  std::array<decltype(transpose(a[0])),d> res;
+  for (size_t i = 0U; i < d; ++i)
+    res[i] = transpose(a[i]);
+  return res;
+}
+
+
+template < std::size_t d, typename Type,typename Derived>
+auto operator*(const std::array<Type,d>& a, const Eigen::EigenBase<Derived>& b) //FIXME change to a function with a name
+{
+  decltype(eval(a[0]*b.derived())) res;
+  res.setZero();
+  for (size_t i = 0U; i < d; ++i)
+    res += eval(a[i]*b.derived());
+  return res;
+}
 
 
 

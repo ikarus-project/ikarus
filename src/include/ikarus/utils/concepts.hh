@@ -5,7 +5,13 @@
 #pragma once
 #include <dune/functions/functionspacebases/basistags.hh>
 
-namespace Ikarus::Concepts {
+namespace Ikarus {
+
+ template <typename Derived>
+  auto transpose(const Eigen::EigenBase<Derived>& A) ;
+namespace Concepts{
+
+
 
   template <typename Basis>
   concept FlatInterLeavedBasis = requires {
@@ -94,4 +100,15 @@ namespace Ikarus::Concepts {
     x / y;
   };
 
+template <typename L>
+concept NegateAble = requires(L x) {
+  -x;
+};
+
+
+template <typename L>
+concept TransposeAble = requires(L x) {
+  transpose(x);
+};
+}
 }  // namespace Ikarus::Concepts

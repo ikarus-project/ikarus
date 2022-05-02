@@ -23,4 +23,9 @@ Ikarus::DerivativeDirections::DerivativeNoOp eval(const Ikarus::DerivativeDirect
 {
   return Ikarus::DerivativeDirections::DerivativeNoOp();
 }
+
+Ikarus::DerivativeDirections::DerivativeNoOp operator-(Ikarus::DerivativeDirections::DerivativeNoOp)
+{
+  return Ikarus::DerivativeDirections::DerivativeNoOp();
+}
 }

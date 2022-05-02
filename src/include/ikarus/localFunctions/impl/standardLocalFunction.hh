@@ -130,6 +130,8 @@ namespace Ikarus {
       for (int dir = 0; dir < gridDim; ++dir) {
         Warray[dir].setIdentity(valueSize);
         Warray[dir].diagonal() *= dNTransformed(coeffsIndex, dir);
+        std::cout<<"Warray[dir]"<<std::endl;
+        std::cout<<Warray[dir]<<std::endl;
       }
 
       return Warray;

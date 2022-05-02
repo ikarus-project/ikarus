@@ -12,6 +12,7 @@
 #include <array>
 #include <autodiff/forward/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
+
 #include <complex>
 #include <vector>
 
@@ -69,46 +70,133 @@ void testLocalFunction(const LF& lf, int ipIndex) {
   constexpr int coeffValueSize = LF::valueSize;
   constexpr int coeffCorrectionSize = Manifold::correctionSize;
 
-  auto lfDual = lf.rebindClone(dual());
-  auto lfDualLeafNodeCollection = collectLeafNodeLocalFunctions(lfDual);
-
-  auto localFdual = [&]  (const auto& x)  {
-    lfDualLeafNodeCollection.addToCoeffs(x);
-    auto value =  lfDual.evaluateFunction(ipIndex).getValue();
-    lfDualLeafNodeCollection.addToCoeffs(-x);
-    return value;
-  };
-
-  auto localFdualSpatialSingle = [&](const auto& x,int i) {
-    lfDualLeafNodeCollection.addToCoeffs(x);
-    auto value =  lfDual.evaluateDerivative(ipIndex,Ikarus::wrt(spatial(i)));
-    lfDualLeafNodeCollection.addToCoeffs(-x);
-    return value;
-  };
-
   Eigen::VectorXdual xv(correctionSize(coeffs));
   xv.setZero();
-  const Eigen::MatrixXd Jcoeff = jacobian(localFdual, autodiff::wrt(xv), at(xv));
-  std::array<Eigen::MatrixXd,gridDim> JdualSpatialWRTCoeffs;
-  for (int d = 0; d < gridDim; ++d)
-   JdualSpatialWRTCoeffs[d] = jacobian(localFdualSpatialSingle, autodiff::wrt(xv), at(xv,d));
 
-  //  const Eigen::Vector<double, size> testVec = Eigen::Vector<double, size>::UnitX();
+//FIXME this should be also working for matrices. Thus the values should be earlier definied
+  const Eigen::Vector<double,coeffValueSize> alongVec = coeffValueSize==1 ? Eigen::Vector<double,coeffValueSize>::Ones().eval() :Eigen::Vector<double,coeffValueSize>::Random().eval();
+  const Eigen::Matrix<double,coeffValueSize,coeffValueSize> alongMat = coeffValueSize==1 ? Eigen::Matrix<double,coeffValueSize,coeffValueSize>::Ones().eval() :Eigen::Matrix<double,coeffValueSize,coeffValueSize>::Random().eval();
+  /// Second order derivatives
+  auto lfDual2nd = lf.rebindClone(dual2nd ());
+  auto lfDual2ndLeafNodeCollection = collectLeafNodeLocalFunctions(lfDual2nd);
+
+  //FIXME check spatial derivatives
+  auto localFdual2nd = [&]  (const auto& x)  {
+    lfDual2ndLeafNodeCollection.addToCoeffs(x);
+    auto value =  (lfDual2nd.evaluateFunction(ipIndex).getValue().transpose()*alongVec).trace();
+    lfDual2ndLeafNodeCollection.addToCoeffs(-x);
+    return value;
+  };
+
+  auto localFdual2ndSpatialSingle = [&](const auto& x,int i) {
+    lfDual2ndLeafNodeCollection.addToCoeffs(x);
+    auto value =  (lfDual2nd.evaluateDerivative(ipIndex,Ikarus::wrt(spatial(i))).transpose()*alongVec).trace();
+    lfDual2ndLeafNodeCollection.addToCoeffs(-x);
+    return value;
+  };
+
+  auto localFdual2ndSpatialAll = [&](const auto& x) {
+    lfDual2ndLeafNodeCollection.addToCoeffs(x);
+    auto value =  (lfDual2nd.evaluateDerivative(ipIndex,Ikarus::wrt(spatialAll)).transpose()*alongMat).trace();
+    lfDual2ndLeafNodeCollection.addToCoeffs(-x);
+    return value;
+  };
+
+  Eigen::VectorXdual2nd  xvr(correctionSize(coeffs));
+  xvr.setZero();
+
+  dual2nd u;
+  Eigen::VectorXd gradienWRTCoeffs;
+  Eigen::MatrixXd hessianWRTCoeffs;
+  autodiff::hessian(localFdual2nd, autodiff::wrt(xvr), autodiff::at(xvr), u, gradienWRTCoeffs, hessianWRTCoeffs);
+
+  Eigen::VectorXd gradienWRTCoeffsSpatialAll;
+  Eigen::MatrixXd hessianWRTCoeffsSpatialAll;
+  autodiff::hessian(localFdual2ndSpatialAll, autodiff::wrt(xvr), autodiff::at(xvr), u, gradienWRTCoeffsSpatialAll, hessianWRTCoeffsSpatialAll);
+
+  std::array<Eigen::MatrixXd,gridDim>  hessianWRTCoeffsTwoTimesSingleSpatial;
+  std::array<Eigen::VectorXd,gridDim> gradientWRTCoeffsTwoTimesSingleSpatial;
+  for (int d = 0; d < gridDim; ++d) {
+    autodiff::hessian(localFdual2ndSpatialSingle,
+                      autodiff::wrt(xvr),
+                      autodiff::at(xvr,d),
+                      u,
+                      gradientWRTCoeffsTwoTimesSingleSpatial[d],
+                      hessianWRTCoeffsTwoTimesSingleSpatial[d]);
+  }
+
+
   for (size_t i = 0; i < coeffSize; ++i) {
-    const auto jacobianWRTCoeffs = lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i)));
+    const auto jacobianWRTCoeffs = ((alongVec.transpose()*lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i)))).transpose()).eval();
     EXPECT_THAT(
         jacobianWRTCoeffs,
-        EigenApproxEqual(Jcoeff.template block<coeffValueSize, coeffCorrectionSize>(0, i * coeffCorrectionSize), tol));
+        EigenApproxEqual(gradienWRTCoeffs.template segment<coeffCorrectionSize>(i*coeffCorrectionSize), tol));
 
     for (int d = 0; d < gridDim; ++d) {
-      const auto jacoWrtCoeffAndSpatial = lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i),spatial(d)));
-      const auto jacoWrtSpatialAndCoeff = lf.evaluateDerivative(ipIndex, Ikarus::wrt(spatial(d),coeff(i)));
-      EXPECT_THAT(  jacoWrtCoeffAndSpatial,  EigenApproxEqual(jacoWrtSpatialAndCoeff, tol));
+      const auto jacoWrtCoeffAndSpatial = ((alongVec.transpose()*lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i), spatial(d)))).transpose()).eval();
+      const auto jacoWrtSpatialAndCoeff = ((alongVec.transpose()*lf.evaluateDerivative(ipIndex, Ikarus::wrt( spatial(d),coeff(i)))).transpose()).eval();
+
+      EXPECT_THAT(jacoWrtCoeffAndSpatial, EigenApproxEqual(jacoWrtSpatialAndCoeff, tol));
 
       EXPECT_THAT(jacoWrtCoeffAndSpatial,
-          EigenApproxEqual(JdualSpatialWRTCoeffs[d].template block<coeffValueSize, coeffCorrectionSize>(0, i * coeffCorrectionSize), tol));
+                  EigenApproxEqual(gradientWRTCoeffsTwoTimesSingleSpatial[d].template segment<coeffCorrectionSize>(i
+                                                                                              *coeffCorrectionSize
+                                                                                                                ),
+                                   tol));
     }
+    std::cout<<Dune::className(lf)<<std::endl;
+    const auto jacoWrtSpatialAllAndCoeff = lf.evaluateDerivative(ipIndex, Ikarus::wrt( spatialAll,coeff(i)));
+    Eigen::Matrix<double,1,coeffCorrectionSize> jacoWrtSpatialAllAndCoeffProd;
+    jacoWrtSpatialAllAndCoeffProd.setZero();
+    std::cout<<"alongMat"<<std::endl;
+    std::cout<<alongMat<<std::endl;
+
+    for (int d = 0; d < gridDim; ++d) {
+       jacoWrtSpatialAllAndCoeffProd+= (jacoWrtSpatialAllAndCoeff[d]*alongMat.col(d)).transpose().eval();
+      std::cout<<"jacoWrtSpatialAllAndCoeff[d]"<<std::endl;
+      std::cout<<jacoWrtSpatialAllAndCoeff[d]<<std::endl;
     }
+    std::cout<<"jacoWrtSpatialAllAndCoeffProd"<<std::endl;
+    std::cout<<jacoWrtSpatialAllAndCoeffProd<<std::endl;
+    std::cout<<"gradienWRTCoeffsSpatialAll"<<std::endl;
+    std::cout<<gradienWRTCoeffsSpatialAll<<std::endl;
+    EXPECT_THAT(jacoWrtSpatialAllAndCoeffProd,
+                EigenApproxEqual(gradienWRTCoeffsSpatialAll.template segment<coeffCorrectionSize>(
+                                     i*coeffCorrectionSize
+                                 ).transpose(),
+                                 tol));
+
+    for (size_t j = 0; j < coeffSize; ++j) {
+      const auto
+          jacobianWRTCoeffsTwoTimes = lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i, j)), Ikarus::along(alongVec));
+      const auto jacobianWRTCoeffsTwoTimesExpected =
+          hessianWRTCoeffs.template block<coeffCorrectionSize, coeffCorrectionSize>(i*coeffCorrectionSize,
+                                                                                    j*coeffCorrectionSize);
+      EXPECT_THAT(
+          jacobianWRTCoeffsTwoTimes,
+          EigenApproxEqual(jacobianWRTCoeffsTwoTimesExpected, tol));
+
+      const auto
+          jacobianWRTCoeffsTwoTimesSpatialAll = lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i, j),spatialAll), Ikarus::along(alongMat));
+      const auto jacobianWRTCoeffsTwoTimesSpatialAllExpected =
+          hessianWRTCoeffsSpatialAll.template block<coeffCorrectionSize, coeffCorrectionSize>(i*coeffCorrectionSize,
+                                                                                    j*coeffCorrectionSize);
+      EXPECT_THAT(
+          jacobianWRTCoeffsTwoTimesSpatialAll,
+          EigenApproxEqual(jacobianWRTCoeffsTwoTimesSpatialAllExpected, tol));
+
+      for (int d = 0; d < gridDim; ++d) {
+        const auto jacobianWRTCoeffsTwoTimesSingleSpatial =
+            lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i, j), spatial(d)), Ikarus::along(alongVec));
+        const auto jacobianWRTCoeffsTwoTimesSingleSpatialExpected =
+            hessianWRTCoeffsTwoTimesSingleSpatial[d].template block<coeffCorrectionSize, coeffCorrectionSize>(
+                i*coeffCorrectionSize, j*coeffCorrectionSize);
+        EXPECT_THAT(
+            jacobianWRTCoeffsTwoTimesSingleSpatial,
+            EigenApproxEqual(jacobianWRTCoeffsTwoTimesSingleSpatialExpected, tol));
+      }
+    }
+  }
 }
 
 TEST(LocalFunctionTests, TestExpressions) {
@@ -121,6 +209,7 @@ TEST(LocalFunctionTests, TestExpressions) {
   using namespace Ikarus;
   using namespace Dune::Indices;
   auto grid = createGrid<Grids::Yasp>();
+  constexpr int gridDim =std::remove_reference_t<decltype(*grid)>::dimension;
 
   auto gridView = grid->leafGridView();
   auto basis    = makeBasis(gridView, lagrange<2>());
@@ -187,14 +276,12 @@ TEST(LocalFunctionTests, TestExpressions) {
       EXPECT_THAT(f.evaluateDerivative(gpIndex, wrt(spatialAll)) + g.evaluateDerivative(gpIndex, wrt(spatialAll)),
                   EigenApproxEqual(h.evaluateDerivative(gpIndex, wrt(spatialAll)), 1e-15));
       for (size_t i = 0; i < fe.size(); ++i) {
-        const MatrixType dfgdi
-            = f.evaluateDerivative(gpIndex, wrt(coeff(i))) + g.evaluateDerivative(gpIndex, wrt(coeff(i)));
-        const MatrixType dhdi    = h.evaluateDerivative(gpIndex, wrt(coeff(i)));
-        const MatrixType dhdSdi  = h.evaluateDerivative(gpIndex, wrt(spatial(1), coeff(i)));
-        const MatrixType dfgdSdi = f.evaluateDerivative(gpIndex, wrt(spatial(1), coeff(i)))
-                                   + g.evaluateDerivative(gpIndex, wrt(spatial(1), coeff(i)));
-//        EXPECT_THAT(dfgdi, EigenApproxEqual(dhdi, 1e-14));
-        EXPECT_THAT(dhdSdi, EigenApproxEqual(dfgdSdi, 1e-14));
+        const auto dhdSAdi  = h.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i)));
+        const auto dfgdSAdi = (f.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i)))
+            + g.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i))));
+        for (int d = 0; d < gridDim; ++d)
+          EXPECT_THAT(dfgdSAdi[d], EigenApproxEqual(dhdSAdi[d], 1e-14));
+
         for (size_t j = 0; j < fe.size(); ++j) {
           const MatrixType dfgdj
               = f.evaluateDerivative(gpIndex, wrt(coeff(j))) + g.evaluateDerivative(gpIndex, wrt(coeff(j)));
@@ -263,11 +350,6 @@ TEST(LocalFunctionTests, TestExpressions) {
 
         EXPECT_THAT(dfgdi, EigenApproxEqual(dkdi, tol));
 
-        const VectorType dkdSdi = k.evaluateDerivative(gpIndex, wrt(spatial(1), coeff(i)));
-
-        const VectorType dkdSdi2 = k.evaluateDerivative(gpIndex, wrt(coeff(i), spatial(1)));
-
-        EXPECT_THAT(dkdSdi, EigenApproxEqual(dkdSdi2, tol));
 
         for (size_t j = 0; j < fe.size(); ++j) {
           const MatrixType dkdSdi3         = k.evaluateDerivative(gpIndex, wrt(coeff(i, j)));
@@ -301,6 +383,7 @@ TEST(LocalFunctionTests, TestExpressions) {
     static_assert(std::tuple_size_v<decltype(b2)> == 3);
 
     for (int gpIndex = 0; auto& gp : rule) {
+//      testLocalFunction(k2,gpIndex);
       const auto& N  = localBasis.evaluateFunction(gpIndex);
       const auto& dN = localBasis.evaluateJacobian(gpIndex);
       EXPECT_DOUBLE_EQ((f2.evaluateFunction(gpIndex).getValue() + g2.evaluateFunction(gpIndex).getValue())
@@ -469,6 +552,7 @@ TYPED_TEST(LocalFunctionProjectionBasedUnitVector, ProjectionBasedUnitVector) {
       const Eigen::MatrixXd Jdual = jacobian(localFdual_, autodiff::wrt(xv), at(xv));
 
       const Eigen::Vector<double, size> testVec = Eigen::Vector<double, size>::UnitX();
+      const Eigen::Matrix<double, size, size> testMat= Eigen::Matrix<double, size, size>::Random();
       for (size_t i = 0; i < fe.size(); ++i) {
         const auto jacobianWRTCoeffs = localF.evaluateDerivative(gpIndex, wrt(coeff(i)));
         EXPECT_THAT(
@@ -501,16 +585,16 @@ TYPED_TEST(LocalFunctionProjectionBasedUnitVector, ProjectionBasedUnitVector) {
         const auto S = localF.evaluateDerivative(gpIndex, wrt(coeff(i, i)), along(testVec), transformWith(Jinv));
 
         const auto chi
-            = localF.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i, i)), along(testVec), transformWith(Jinv));
+            = localF.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i, i)), along(testMat), transformWith(Jinv));
 
         const auto chi0
-            = localF.evaluateDerivative(gpIndex, wrt(spatial(0), coeff(i, i)), along(testVec), transformWith(Jinv));
+            = localF.evaluateDerivative(gpIndex, wrt(spatial(0), coeff(i, i)), along(testMat.col(0)), transformWith(Jinv));
 
         const auto chi1
-            = localF.evaluateDerivative(gpIndex, wrt(spatial(1), coeff(i, i)), along(testVec), transformWith(Jinv));
+            = localF.evaluateDerivative(gpIndex, wrt(spatial(1), coeff(i, i)), along(testMat.col(1)), transformWith(Jinv));
 
-        EXPECT_THAT(chi[0], EigenApproxEqual(chi0, 1e-15));
-        EXPECT_THAT(chi[1], EigenApproxEqual(chi1, 1e-15));
+        EXPECT_THAT(chi, EigenApproxEqual(chi0+chi1, 1e-15));
+
       }
 
       EXPECT_DOUBLE_EQ(directorCached.norm(), 1.0);

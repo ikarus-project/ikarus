@@ -229,29 +229,30 @@ namespace Ikarus {
       const GlobalE valE          = evaluateEmbeddingFunctionImpl(N);
       const Jacobian J            = evaluateEmbeddingJacobianImpl(dNTransformed);
       const auto& along           = std::get<0>(alongArgs.args);
-      const CoeffDerivEukMatrix S = tryToCallSecondDerivativeOfProjectionWRTposition(valE, along);
-      std::array<CoeffDerivEukMatrix, gridDim> ChiArrayEuk;
+      CoeffDerivEukMatrix ChiArrayEuk;
+      ChiArrayEuk.setZero();
       for (int i = 0; i < gridDim; ++i) {
-        const auto chi    = tryToCallThirdDerivativeOfProjectionWRTposition(valE, along, J.col(i));
+        const auto chi    = tryToCallThirdDerivativeOfProjectionWRTposition(valE, along.col(i), J.col(i));
+        const CoeffDerivEukMatrix S = tryToCallSecondDerivativeOfProjectionWRTposition(valE, along.col(i));
         const auto& NI    = N[coeffsIndex[0]];
         const auto& NJ    = N[coeffsIndex[1]];
         const auto& dNIdi = dNTransformed(coeffsIndex[0], i);
         const auto& dNJdi = dNTransformed(coeffsIndex[1], i);
-        ChiArrayEuk[i]    = chi * NI * NJ + S * (dNIdi * NJ + dNJdi * NI);
+        ChiArrayEuk += chi * NI * NJ + S * (dNIdi * NJ + dNJdi * NI);
       }
       if (coeffsIndex[0] == coeffsIndex[1]) {  // Riemannian Hessian Weingarten map correction
         const std::array<CoeffDerivEukMatrix, gridDim> Warray
             = evaluateDerivativeWRTCoeffsANDSpatialEukImpl(ipIndexOrPosition, coeffsIndex[0], transArgs);
         for (int i = 0; i < gridDim; ++i) {
-          ChiArrayEuk[i] -= coeffs[coeffsIndex[0]].getValue().dot(Warray[i] * along) * CoeffDerivEukMatrix::Identity();
+          ChiArrayEuk -= coeffs[coeffsIndex[0]].getValue().dot(Warray[i] * along.col(i)) * CoeffDerivEukMatrix::Identity();
         }
       }
 
-      std::array<CoeffDerivMatrix, gridDim> ChiArrayRie;
+      CoeffDerivMatrix ChiArrayRie;
       const auto BLA0T = coeffs[coeffsIndex[0]].orthonormalFrame().transpose().eval();
       const auto BLA1  = coeffs[coeffsIndex[1]].orthonormalFrame();
-      for (int i = 0; i < gridDim; ++i)
-        ChiArrayRie[i] = BLA0T * ChiArrayEuk[i] * BLA1;
+//      for (int i = 0; i < gridDim; ++i)
+        ChiArrayRie = BLA0T * ChiArrayEuk * BLA1;
       return ChiArrayRie;
     }
 
