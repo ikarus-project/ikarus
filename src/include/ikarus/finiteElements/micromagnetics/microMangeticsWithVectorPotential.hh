@@ -22,8 +22,8 @@
 // *
 
 #pragma once
-#include "src/include/ikarus/localFunctions/implementations/projectionBasedLocalFunction.hh"
-#include "src/include/ikarus/localFunctions/implementations/standardLocalFunction.hh"
+#include <ikarus/localFunctions/impl/projectionBasedLocalFunction.hh>
+#include <ikarus/localFunctions/impl/standardLocalFunction.hh>
 
 #include <autodiff/forward/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
@@ -205,14 +205,14 @@ namespace Ikarus {
               const int indexJ = j * directorCorrectionDim;
               const auto WJ
                   = mLocalF.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(j)), transformWith(Jinv));
-
+              const auto alongVector = (2 * Hbar / material.ms + curlA).eval();
               const auto mddHbar = mLocalF.evaluateDerivative(
-                  gpIndex, wrt(coeff(i,j)), along(2 * Hbar / material.ms + curlA));
+                  gpIndex, wrt(coeff(i,j)), along(alongVector));
 
               Eigen::Matrix<double, directorCorrectionDim, directorCorrectionDim> tmp;
               tmp.setZero();
               for (int k = 0; k < Traits::mydim; ++k)
-                tmp += WI[k] * WJ[k].transpose()
+                tmp += WI[k].transpose() * WJ[k]
                        + mLocalF.evaluateDerivative(gpIndex, wrt(spatial(k), coeff(i,j)), along(gradm.col(k)),
                                                     transformWith(Jinv));
 
@@ -244,7 +244,7 @@ namespace Ikarus {
             const Eigen::Matrix<double, directorDim, vectorPotDim> gradCurlA_dJ = Impl::vecToSkewMatrix(dNAdx.row(j));
             if (isInside)
               hred.template block<directorCorrectionDim, vectorPotDim>(indexI, indexJ)
-                  -= (PmI * gradCurlA_dJ) * geo.integrationElement(gp.position()) * gp.weight();
+                  -= (PmI.transpose() * gradCurlA_dJ) * geo.integrationElement(gp.position()) * gp.weight();
 
             hred.template block<vectorPotDim, directorCorrectionDim>(indexJ, indexI)
                 = hred.template block<directorCorrectionDim, vectorPotDim>(indexI, indexJ).transpose();
@@ -313,10 +313,10 @@ namespace Ikarus {
             Eigen::Vector<double, directorCorrectionDim> tmp;
             tmp.setZero();
             for (int j = 0; j < Traits ::mydim; ++j)
-              tmp += WI[j] * gradm.col(j);
+              tmp += WI[j].transpose() * gradm.col(j);
 
-            rieGrad.template segment<directorCorrectionDim>(index) += (tmp - PmI * curlA) * weight;
-            rieGrad.template segment<directorCorrectionDim>(index) -= (2 * PmI * Hbar / material.ms) * weight;
+            rieGrad.template segment<directorCorrectionDim>(index) += (tmp - PmI.transpose() * curlA) * weight;
+            rieGrad.template segment<directorCorrectionDim>(index) -= (2 * PmI.transpose() * Hbar / material.ms) * weight;
           }
         }
         const int magEukSize = fe0.size() * directorCorrectionDim;
@@ -427,9 +427,9 @@ namespace Ikarus {
       auto& child1    = localView_.tree().child(_1, 0);
 
       const auto& fe1 = child1.finiteElement();
-      Dune::BlockVector<typename std::remove_cvref_t<decltype(mNodal[0])>::template Rebind<ScalarType>::type> mN(
+      Dune::BlockVector<typename std::remove_cvref_t<decltype(mNodal[0])>::template Rebind<ScalarType>::other> mN(
           fe0.size());
-      Dune::BlockVector<typename std::remove_cvref_t<decltype(ANodal[0])>::template Rebind<ScalarType>::type> AN(
+      Dune::BlockVector<typename std::remove_cvref_t<decltype(ANodal[0])>::template Rebind<ScalarType>::other> AN(
           fe1.size());
 
       for (auto i = 0U; i < fe0.size(); ++i) {

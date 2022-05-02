@@ -4,6 +4,7 @@
 
 #pragma once
 #include <ikarus/localFunctions/expressions/binaryExpr.hh>
+#include <ikarus/manifolds/realTuple.hh>
 #include "rebind.hh"
 namespace Ikarus {
 
@@ -13,12 +14,15 @@ namespace Ikarus {
     using Base = BinaryLocalFunctionExpression<LocalFunctionDot, E1, E2>;
     using Base::BinaryLocalFunctionExpression;
     using Traits = LocalFunctionTraits<LocalFunctionDot>;
+    /** \brief Type used for coordinates */
+    using ctype = typename Traits::ctype;
+    static constexpr int valueSize =  Traits::valueSize;
 
     template <typename LocalFunctionEvaluationArgs_>
     auto evaluateValueOfExpression(const LocalFunctionEvaluationArgs_& localFunctionArgs) const {
       const auto u = evaluateFunctionImpl(this->l(), localFunctionArgs).getValue();
       const auto v = evaluateFunctionImpl(this->r(), localFunctionArgs).getValue();
-      return u.dot(v);
+      return Ikarus::RealTuple<ctype,1>( Eigen::Matrix<ctype,1,1>(u.dot(v)));
     }
 
     template <int DerivativeOrder, typename LocalFunctionEvaluationArgs_>
@@ -85,12 +89,15 @@ namespace Ikarus {
 
   template <typename E1, typename E2>
   struct LocalFunctionTraits<LocalFunctionDot<E1, E2>> {
+    using E1Raw = std::remove_cvref_t<E1>;
     /** \brief Size of the function value */
     static constexpr int valueSize = 1;
     /** \brief Type for the points for evaluation, usually the integration points */
-    using DomainType = typename E1::DomainType;
+    using DomainType = typename E1Raw::DomainType;
+    /** \brief Type used for coordinates */
+    using ctype = typename E1Raw::ctype;
     /** \brief Dimension of the grid */
-    static constexpr int gridDim = E1::gridDim;
+    static constexpr int gridDim = E1Raw::gridDim;
   };
 
   template <typename E1, typename E2> requires IsLocalFunction<E1,E2>

@@ -12,6 +12,7 @@ namespace Ikarus {
     using Base = UnaryLocalFunctionExpression<LocalFunctionNegate, E1>;
     using Base::UnaryLocalFunctionExpression;
     using Traits = LocalFunctionTraits<LocalFunctionNegate>;
+    static constexpr int valueSize =  Traits::valueSize;
 
     template <typename LocalFunctionEvaluationArgs_>
     auto evaluateValueOfExpression(const LocalFunctionEvaluationArgs_& localFunctionArgs) const {

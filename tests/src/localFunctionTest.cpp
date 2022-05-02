@@ -44,6 +44,7 @@ auto& getCoeffRefHelper(LF& lf)
     return collectLeafNodeLocalFunctions(lf).coefficientsRef();
 }
 
+
 template <typename LF,bool isCopy=false>
 void testLocalFunction(const LF& lf, int ipIndex) {
   const double tol = 1e-13;
@@ -65,20 +66,20 @@ void testLocalFunction(const LF& lf, int ipIndex) {
 
   const int gridDim = LF::gridDim;
   using Manifold = typename std::remove_cvref_t<decltype(coeffs)>::value_type;
-  constexpr int coeffValueSize = Manifold::valueSize;
+  constexpr int coeffValueSize = LF::valueSize;
   constexpr int coeffCorrectionSize = Manifold::correctionSize;
 
   auto lfDual = lf.rebindClone(dual());
   auto lfDualLeafNodeCollection = collectLeafNodeLocalFunctions(lfDual);
 
-  auto localFdual = [&]  (auto& x)  {
+  auto localFdual = [&]  (const auto& x)  {
     lfDualLeafNodeCollection.addToCoeffs(x);
     auto value =  lfDual.evaluateFunction(ipIndex).getValue();
     lfDualLeafNodeCollection.addToCoeffs(-x);
     return value;
   };
 
-  auto localFdualSpatialSingle = [&](auto& x,int i) {
+  auto localFdualSpatialSingle = [&](const auto& x,int i) {
     lfDualLeafNodeCollection.addToCoeffs(x);
     auto value =  lfDual.evaluateDerivative(ipIndex,Ikarus::wrt(spatial(i)));
     lfDualLeafNodeCollection.addToCoeffs(-x);
@@ -97,9 +98,7 @@ void testLocalFunction(const LF& lf, int ipIndex) {
     const auto jacobianWRTCoeffs = lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i)));
     EXPECT_THAT(
         jacobianWRTCoeffs,
-        EigenApproxEqual(Jcoeff.template block<coeffValueSize, coeffCorrectionSize>(0, i * coeffValueSize), tol));
-
-    EXPECT_THAT((Jcoeff.template block<coeffValueSize, coeffCorrectionSize>(0, i * coeffValueSize)), EigenApproxEqual(jacobianWRTCoeffs, tol));
+        EigenApproxEqual(Jcoeff.template block<coeffValueSize, coeffCorrectionSize>(0, i * coeffCorrectionSize), tol));
 
     for (int d = 0; d < gridDim; ++d) {
       const auto jacoWrtCoeffAndSpatial = lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i),spatial(d)));
@@ -107,7 +106,7 @@ void testLocalFunction(const LF& lf, int ipIndex) {
       EXPECT_THAT(  jacoWrtCoeffAndSpatial,  EigenApproxEqual(jacoWrtSpatialAndCoeff, tol));
 
       EXPECT_THAT(jacoWrtCoeffAndSpatial,
-          EigenApproxEqual(JdualSpatialWRTCoeffs[d].template block<coeffValueSize, coeffCorrectionSize>(0, i * coeffValueSize), tol));
+          EigenApproxEqual(JdualSpatialWRTCoeffs[d].template block<coeffValueSize, coeffCorrectionSize>(0, i * coeffCorrectionSize), tol));
     }
     }
 }
@@ -158,8 +157,8 @@ TEST(LocalFunctionTests, TestExpressions) {
     auto g = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal);
 
 
-    static_assert(countUniqueNonArithmeticLeafNodes(f) == 1);
-    static_assert(countUniqueNonArithmeticLeafNodes(g) == 1);
+    static_assert(countNonArithmeticLeafNodes(f) == 1);
+    static_assert(countNonArithmeticLeafNodes(g) == 1);
     using namespace Ikarus::DerivativeDirections;
     auto h = f + g;
 
@@ -167,7 +166,7 @@ TEST(LocalFunctionTests, TestExpressions) {
     auto hLeaf = collectLeafNodeLocalFunctions(h);
     static_assert(std::tuple_size_v<decltype(a)> == 2);
 
-    static_assert(countUniqueNonArithmeticLeafNodes(h) == 1);
+    static_assert(countNonArithmeticLeafNodes(h) == 2);
     static_assert(std::is_same_v<decltype(h)::Ids, std::tuple<Dune::index_constant<0>, Dune::index_constant<0>>>);
 
     for (size_t i = 0; i < fe.size(); ++i) {
@@ -219,18 +218,22 @@ TEST(LocalFunctionTests, TestExpressions) {
 
     //    std::cout<<Dune::className(a)<<std::endl;
 //    std::cout << Dune::className(b) << std::endl;
-    static_assert(countUniqueNonArithmeticLeafNodes(k) == 1);
+    static_assert(countNonArithmeticLeafNodes(k) == 3);
     static_assert(std::is_same_v<decltype(k)::Ids, std::tuple<Dune::index_constant<0>, Dune::index_constant<0>,
                                                               Ikarus::Arithmetic, Dune::index_constant<0>>>);
 
     const double tol = 1e-13;
+
+    auto dotff = dot(f,g);
+    static_assert(countNonArithmeticLeafNodes(dotff) == 2);
+    static_assert(std::is_same_v<decltype(dotff)::Ids, std::tuple<Dune::index_constant<0>, Dune::index_constant<0>     >>);
     for (int gpIndex = 0; auto& gp : rule) {
-      testLocalFunction(k,gpIndex);
+      testLocalFunction(dotff,gpIndex);
 
       const auto& N  = localBasis.evaluateFunction(gpIndex);
       const auto& dN = localBasis.evaluateJacobian(gpIndex);
       EXPECT_DOUBLE_EQ((-2 * 3) * f.evaluateFunction(gpIndex).getValue().dot(g.evaluateFunction(gpIndex).getValue()),
-                       k.evaluateFunction(gpIndex));
+                       k.evaluateFunction(gpIndex).getValue()[0]);
       auto resSingleSpatial = ((-2 * 3) * f.evaluateDerivative(gpIndex, wrt(spatial(0))).transpose()
                                    * g.evaluateFunction(gpIndex).getValue()
                                + (-2 * 3) * f.evaluateFunction(gpIndex).getValue().transpose()
@@ -285,11 +288,11 @@ TEST(LocalFunctionTests, TestExpressions) {
 
     auto f2 = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal, _0);
     auto g2 = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal2, _1);
-    static_assert(countUniqueNonArithmeticLeafNodes(f2) == 1);
-    static_assert(countUniqueNonArithmeticLeafNodes(g2) == 1);
+    static_assert(countNonArithmeticLeafNodes(f2) == 1);
+    static_assert(countNonArithmeticLeafNodes(g2) == 1);
 
     auto k2 = dot(f2 + g2, g2);
-    static_assert(countUniqueNonArithmeticLeafNodes(k2) == 2);
+    static_assert(countNonArithmeticLeafNodes(k2) == 3);
     static_assert(
         std::is_same_v<decltype(k2)::Ids,
                        std::tuple<Dune::index_constant<0>, Dune::index_constant<1>, Dune::index_constant<1>>>);
@@ -302,7 +305,7 @@ TEST(LocalFunctionTests, TestExpressions) {
       const auto& dN = localBasis.evaluateJacobian(gpIndex);
       EXPECT_DOUBLE_EQ((f2.evaluateFunction(gpIndex).getValue() + g2.evaluateFunction(gpIndex).getValue())
                            .dot(g2.evaluateFunction(gpIndex).getValue()),
-                       k2.evaluateFunction(gpIndex));
+                       k2.evaluateFunction(gpIndex).getValue()[0]);
       auto resSingleSpatial
           = ((f2.evaluateDerivative(gpIndex, wrt(spatial(0))) + g2.evaluateDerivative(gpIndex, wrt(spatial(0))))
                      .transpose()

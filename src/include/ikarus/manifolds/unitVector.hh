@@ -65,7 +65,7 @@ namespace Ikarus {
 
     template <typename OtherType>
     struct Rebind {
-      using type = UnitVector<OtherType, valueSize>;
+      using other = UnitVector<OtherType, valueSize>;
     };
 
     /** \brief Update the manifold by an correction vector of size correctionSize

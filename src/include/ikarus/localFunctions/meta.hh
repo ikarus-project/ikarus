@@ -30,7 +30,7 @@ namespace Ikarus {
 
   template <typename... Args>
   auto along(Args&&... args) {
-    return Along<Args&&...>{std::forward_as_tuple(std::forward<Args>(args)...)};
+    return Along<Args&...>{std::forward_as_tuple(std::forward<Args>(args)...)};
   }
 
   template <typename... Args_>

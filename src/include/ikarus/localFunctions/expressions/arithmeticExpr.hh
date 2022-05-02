@@ -29,6 +29,11 @@ class ArithmeticExpr: public LocalFunctionInterface<ArithmeticExpr<Type>> {
       return clone();
   }
 
+  template <typename OtherType>
+  struct Rebind {
+    using other = ArithmeticExpr<OtherType>;
+  };
+
   static constexpr bool isLeaf = true;
   using Ids =  Arithmetic;
 

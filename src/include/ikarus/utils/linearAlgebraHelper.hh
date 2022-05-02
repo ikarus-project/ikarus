@@ -10,6 +10,7 @@
 #include <ikarus/manifolds/manifoldInterface.hh>
 #include <ikarus/utils/concepts.hh>
 #include <ikarus/localFunctions/meta.hh>
+#include <autodiff/forward/dual/dual.hpp>
 
 
 namespace Ikarus {
@@ -331,6 +332,11 @@ std::ostream& operator<<(std::ostream& os,  const Eigen::DiagonalMatrix<Scalar,s
   template<typename Type> requires Ikarus::Concepts::Manifold<Type>  or std::floating_point<Type>
   auto eval(const  Type& A) { return A; }
 
+/** \brief  eval overload for autodiff scalars */
+template<typename T> requires autodiff::detail::isDual<T> || autodiff::detail::isExpr<T> || autodiff::detail::isArithmetic<T>
+auto eval( T&& t) { return autodiff::detail::eval(t); }
+
+
 
 Ikarus::DerivativeDirections::DerivativeNoOp transpose(const Ikarus::DerivativeDirections::DerivativeNoOp&);
 Ikarus::DerivativeDirections::DerivativeNoOp eval(const Ikarus::DerivativeDirections::DerivativeNoOp&);
@@ -358,5 +364,8 @@ Ikarus::DerivativeDirections::DerivativeNoOp eval(const Ikarus::DerivativeDirect
 
     return to;
   }
+
+
+
 
 }  // namespace Ikarus

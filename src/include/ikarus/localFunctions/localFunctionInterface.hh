@@ -212,12 +212,12 @@ namespace Ikarus {
 
     template <typename LocalFunctionImpl_>
       requires(!std::is_arithmetic_v<LocalFunctionImpl_>)
-    consteval int countUniqueNonArithmeticLeafNodesImpl() {
+    consteval int countNonArithmeticLeafNodesImpl() {
 
 
       if constexpr(Std::isSpecialization<std::tuple,typename LocalFunctionImpl_::Ids>::value) {
         constexpr auto predicate = []<typename Type>(Type ){return Type::value!=Ikarus::arithmetic;};
-        return std::tuple_size_v<decltype(Std::unique(Std::filter(typename LocalFunctionImpl_::Ids(), predicate)))>;
+        return std::tuple_size_v<decltype(Std::filter(typename LocalFunctionImpl_::Ids(), predicate))>;
       }
       else
         return 1;
@@ -245,8 +245,8 @@ namespace Ikarus {
   }  // namespace Impl
 
   template <typename LocalFunctionImpl_>
-  consteval int countUniqueNonArithmeticLeafNodes(const LocalFunctionInterface<LocalFunctionImpl_>& a) {
-    return Impl::countUniqueNonArithmeticLeafNodesImpl<LocalFunctionImpl_>();
+  consteval int countNonArithmeticLeafNodes(const LocalFunctionInterface<LocalFunctionImpl_>& a) {
+    return Impl::countNonArithmeticLeafNodesImpl<LocalFunctionImpl_>();
   }
 
 

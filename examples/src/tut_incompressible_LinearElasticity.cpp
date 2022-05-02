@@ -4,7 +4,7 @@
 
 #include <config.h>
 
-#include "src/include/ikarus/localFunctions/implementations/standardLocalFunction.hh"
+#include <ikarus/localFunctions/impl/standardLocalFunction.hh>
 
 #include <autodiff/forward/dual/dual.hpp>
 #include <matplot/matplot.h>

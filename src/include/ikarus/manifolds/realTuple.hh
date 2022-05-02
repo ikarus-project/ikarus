@@ -54,7 +54,7 @@ namespace Ikarus {
 
     /** \brief Compute an orthonormal basis of the tangent space of R^n.
      * This is simply the identity matrix  */
-    Eigen::Matrix<ctype, valueSize, correctionSize> orthonormalFrame() const {
+    auto orthonormalFrame() const {
       return Eigen::Matrix<ctype, valueSize, correctionSize>::Identity();
     }
 
