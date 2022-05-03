@@ -16,6 +16,9 @@ namespace Ikarus {
     using Base::BinaryLocalFunctionExpression;
     using Traits = LocalFunctionTraits<LocalFunctionSum>;
 
+    template<size_t ID_=0>
+    static constexpr int order = std::max(std::remove_cvref_t<E1>::template order<ID_>,std::remove_cvref_t<E2>::template order<ID_>)  ;
+
     /** \brief Type used for coordinates */
     using ctype = typename Traits::ctype;
     //    /** \brief Dimension of the coeffs */

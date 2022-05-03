@@ -35,7 +35,8 @@ namespace Ikarus {
 
     static constexpr bool isLeaf = true;
     using Ids =  Dune::index_constant<ID>;
-
+    template<size_t ID_=0>
+    static constexpr int order = ID_==ID ? nonLinear : 0;
 
 
     template <typename LocalFunctionEvaluationArgs_, typename LocalFunctionImpl_>

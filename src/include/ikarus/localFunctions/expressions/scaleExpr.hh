@@ -4,7 +4,7 @@
 
 #pragma once
 #include <ikarus/localFunctions/expressions/binaryExpr.hh>
-#include <ikarus/localFunctions/expressions/arithmeticExpr.hh>
+#include <ikarus/localFunctions/expressions/constant.hh>
 namespace Ikarus {
 
   template <typename E1,typename E2>
@@ -13,6 +13,10 @@ namespace Ikarus {
     using Base = BinaryLocalFunctionExpression<LocalFunctionScale, E1,E2>;
     using Base::BinaryLocalFunctionExpression;
     using Traits = LocalFunctionTraits<LocalFunctionScale>;
+    static constexpr int valueSize =  Traits::valueSize;
+
+    template<size_t ID_=0>
+    static constexpr int order = std::remove_cvref_t<E1>::template order<ID_> + std::remove_cvref_t<E2>::template order<ID_>  ;
 
     template <typename LocalFunctionEvaluationArgs_>
     auto evaluateValueOfExpression(const LocalFunctionEvaluationArgs_& localFunctionArgs) const {
@@ -30,19 +34,19 @@ namespace Ikarus {
   };
 
   template <typename E1,typename E2> requires (std::is_arithmetic_v<std::remove_cvref_t<E1>> and IsLocalFunction<E2>and ! IsScaleExpr<E2>)
-  constexpr LocalFunctionScale<ArithmeticExpr<E1>,E2> operator*( E1&& factor, E2 && u) {
-    return LocalFunctionScale<ArithmeticExpr<E1>,E2>(ArithmeticExpr(factor),std::forward<E2>(u));
+  constexpr LocalFunctionScale<ConstantExpr<E1>, E2> operator*(E1&& factor, E2 && u) {
+    return LocalFunctionScale<ConstantExpr<E1>, E2>(ConstantExpr(factor), std::forward<E2>(u));
   }
 
   template <typename E1,typename E2> requires (std::is_arithmetic_v<std::remove_cvref_t<E1>> and IsLocalFunction<E2> and ! IsScaleExpr<E2>)
-  constexpr LocalFunctionScale<ArithmeticExpr<E1>,E2> operator*(E2 && u, E1&& factor) {
+  constexpr LocalFunctionScale<ConstantExpr<E1>, E2> operator*(E2 && u, E1&& factor) {
     return factor*u;
   }
 
 // Simplification if nested scale expression occur
 template <typename E1,typename E2> requires (std::is_arithmetic_v<std::remove_cvref_t<E1>> and IsScaleExpr<E2>)
 constexpr auto operator*( E1&& factor,  E2&& u) {
-  return LocalFunctionScale<ArithmeticExpr<E1>,std::remove_cvref_t<decltype(u.r())>>(ArithmeticExpr(factor*u.l().value()),u.r().clone());
+  return LocalFunctionScale<ConstantExpr<E1>, std::remove_cvref_t<decltype(u.r())>>(ConstantExpr(factor*u.l().value()), u.r().clone());
 }
 
 template <typename E1,typename E2> requires (std::is_arithmetic_v<std::remove_cvref_t<E1>> and IsScaleExpr<E2> and IsLocalFunction<E2>)

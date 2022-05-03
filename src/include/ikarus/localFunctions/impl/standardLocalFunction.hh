@@ -33,6 +33,9 @@ namespace Ikarus {
     static constexpr bool isLeaf = true;
     using Ids =  Dune::index_constant<ID>;
 
+    template<size_t ID_=0>
+    static constexpr int order = ID_==ID ? linear : constant;
+
     template<typename LocalFunctionEvaluationArgs_,typename LocalFunctionImpl_>
     friend auto evaluateDerivativeImpl(const LocalFunctionInterface<LocalFunctionImpl_>& f, const LocalFunctionEvaluationArgs_& localFunctionArgs);
 
@@ -130,8 +133,6 @@ namespace Ikarus {
       for (int dir = 0; dir < gridDim; ++dir) {
         Warray[dir].setIdentity(valueSize);
         Warray[dir].diagonal() *= dNTransformed(coeffsIndex, dir);
-        std::cout<<"Warray[dir]"<<std::endl;
-        std::cout<<Warray[dir]<<std::endl;
       }
 
       return Warray;

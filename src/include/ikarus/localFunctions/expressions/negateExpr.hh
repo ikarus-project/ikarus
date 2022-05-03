@@ -14,6 +14,9 @@ namespace Ikarus {
     using Traits = LocalFunctionTraits<LocalFunctionNegate>;
     static constexpr int valueSize =  Traits::valueSize;
 
+    template<size_t ID_=0>
+    static constexpr int order = std::remove_cvref_t<E1>::template order<ID_>;
+
     template <typename LocalFunctionEvaluationArgs_>
     auto evaluateValueOfExpression(const LocalFunctionEvaluationArgs_& localFunctionArgs) const {
       return Ikarus::eval(-evaluateFunctionImpl(this->m(), localFunctionArgs));

@@ -14,7 +14,10 @@ struct UnaryLocalFunctionExpression : public Ikarus::LocalFunctionInterface<Op<E
 
   std::tuple<E1> expr;
 
-  using M = E1;
+  using M = std::remove_cvref_t<E1>;
+
+  template<size_t ID_=0>
+  static constexpr int order = Op<E1>::template order<ID_>;
 
   const E1& m() const{
     return std::get<0>(expr);
@@ -24,7 +27,7 @@ struct UnaryLocalFunctionExpression : public Ikarus::LocalFunctionInterface<Op<E
     return std::get<0>(expr);
   }
 
-  using Ids =decltype(Std::makeNestedTupleFlat(std::make_tuple(std::declval<typename std::remove_cvref_t<E1>::Ids>() )));
+  using Ids =decltype(Std::makeNestedTupleFlat(std::make_tuple(std::declval<typename M::Ids>() )));
 
   auto clone ()const{
     return Op<decltype(m().clone())>(m().clone());

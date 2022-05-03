@@ -218,5 +218,10 @@ template <typename... LF>
 concept IsLocalFunction = (LocalFunction<LF> and ...);
 
 struct NoRebind { };
+static constexpr int nonLinear = 1000;
+static constexpr int constant = 0;
+static constexpr int linear = 1;
+static constexpr int quadratic = 2;
+static constexpr int cubic = 3;
 
 }  // namespace Ikarus

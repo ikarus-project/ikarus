@@ -30,9 +30,12 @@
 #include <ikarus/localFunctions/expressions.hh>
 #include <ikarus/localFunctions/impl/projectionBasedLocalFunction.hh>
 #include <ikarus/localFunctions/impl/standardLocalFunction.hh>
+#include <ikarus/localFunctions/localFunctionName.hh>
 #include <ikarus/manifolds/realTuple.hh>
 #include <ikarus/manifolds/unitVector.hh>
 #include <ikarus/utils/functionSanityChecks.hh>
+
+
 
 using namespace Dune::Functions::BasisFactory;
 
@@ -46,8 +49,11 @@ auto& getCoeffRefHelper(LF& lf)
 }
 
 
+
+
 template <typename LF,bool isCopy=false>
 void testLocalFunction(const LF& lf, int ipIndex) {
+  spdlog::info("Testing: " + std::string(isCopy==true? "Copy ": "") + Ikarus::localFunctionName(lf));
   const double tol = 1e-13;
   using namespace Ikarus::DerivativeDirections;
   using namespace autodiff;
@@ -62,25 +68,69 @@ void testLocalFunction(const LF& lf, int ipIndex) {
 
   EXPECT_NE(&coeffs,&coeffCopy); //since the coeffs are copied the adresses should differ
 
-  if constexpr(not isCopy)
-    testLocalFunction<std::remove_cvref_t<decltype(lfCopy)>,true>(lfCopy,ipIndex); //also test the cloned local function
-
-  const int gridDim = LF::gridDim;
+  constexpr int gridDim = LF::gridDim;
   using Manifold = typename std::remove_cvref_t<decltype(coeffs)>::value_type;
-  constexpr int coeffValueSize = LF::valueSize;
+  constexpr int localFunctionValueSize = LF::valueSize;
+  constexpr int coeffValueSize = Manifold::valueSize;
   constexpr int coeffCorrectionSize = Manifold::correctionSize;
 
+  /// Check spatial derivatives
+  /// Check spatial derivatives return sizes
+  {
+    const auto spatialAllDerivative = lf.evaluateDerivative(ipIndex, Ikarus::wrt(spatialAll));
+    static_assert(spatialAllDerivative.cols()==gridDim);
+    static_assert(spatialAllDerivative.rows()==localFunctionValueSize);
+    const auto spatialSingleDerivative = lf.evaluateDerivative(ipIndex, Ikarus::wrt(spatial(0)));
+    static_assert(spatialSingleDerivative.cols()==1);
+    static_assert(spatialSingleDerivative.rows()==localFunctionValueSize);
+
+    /// Check if spatial derivatives are really derivatives
+    /// Perturb in a random direction in the elements parameter space and check spatial derivative
+    auto func = [&](auto &gpOffset_) { return lf.evaluateFunction(toFieldVector(gpOffset_)).getValue(); };
+    auto spatialDerivAll =
+        [&](auto &gpOffset_) { return lf.evaluateDerivative(toFieldVector(gpOffset_), Ikarus::wrt(spatialAll)); };
+    auto derivDerivSingle = [&](auto gpOffset_, int spatialIndex) {
+      return lf.evaluateDerivative(toFieldVector(gpOffset_),
+                                   Ikarus::wrt(spatial(spatialIndex)));
+    };
+    Eigen::Vector<double, gridDim> ipOffset = (Eigen::Vector<double, gridDim>::Random()).normalized();
+    auto nonLinOpSpatialAll =
+        Ikarus::NonLinearOperator(linearAlgebraFunctions(func, spatialDerivAll), parameter(ipOffset));
+    EXPECT_TRUE((checkJacobian<decltype(nonLinOpSpatialAll), Eigen::Vector<double, gridDim>>(nonLinOpSpatialAll,
+                                                                                             false)));
+
+    /// Perturb each spatial direction and check with derivative value
+    for (int i = 0; i < gridDim; ++i) {
+      Eigen::Vector<double, 1> ipOffsetSingle ( ipOffset[i]);
+      auto derivDerivSingleI = [&](auto gpOffset_) {
+        auto offSetSingle = ipOffset;
+        offSetSingle[i]+=gpOffset_[0];
+        return lf.evaluateDerivative(toFieldVector(offSetSingle),
+                                     Ikarus::wrt(spatial(i)));
+      };
+
+      auto funcSingle = [&](auto &gpOffset_) {
+        auto offSetSingle = ipOffset;
+        offSetSingle[i]+=gpOffset_[0];
+        return lf.evaluateFunction(toFieldVector(offSetSingle)).getValue(); };
+
+      auto nonLinOpSpatialSingle =
+          Ikarus::NonLinearOperator(linearAlgebraFunctions(funcSingle, derivDerivSingleI), parameter(ipOffsetSingle));
+      EXPECT_TRUE((checkJacobian<decltype(nonLinOpSpatialSingle), Eigen::Vector<double, 1>>(nonLinOpSpatialSingle,
+                                                                                            false)));
+    }
+  }
+
+  /// Check coeff and spatial derivatives
   Eigen::VectorXdual xv(correctionSize(coeffs));
   xv.setZero();
 
-//FIXME this should be also working for matrices. Thus the values should be earlier definied
-  const Eigen::Vector<double,coeffValueSize> alongVec = coeffValueSize==1 ? Eigen::Vector<double,coeffValueSize>::Ones().eval() :Eigen::Vector<double,coeffValueSize>::Random().eval();
-  const Eigen::Matrix<double,coeffValueSize,coeffValueSize> alongMat = coeffValueSize==1 ? Eigen::Matrix<double,coeffValueSize,coeffValueSize>::Ones().eval() :Eigen::Matrix<double,coeffValueSize,coeffValueSize>::Random().eval();
-  /// Second order derivatives
+  const Eigen::Vector<double, localFunctionValueSize> alongVec = localFunctionValueSize==1 ? Eigen::Vector<double, localFunctionValueSize>::Ones().eval() : Eigen::Vector<double, localFunctionValueSize>::Random().eval();
+  const Eigen::Matrix<double, localFunctionValueSize, gridDim> alongMat = localFunctionValueSize==1 ? Eigen::Matrix<double, localFunctionValueSize, gridDim>::Ones().eval() : Eigen::Matrix<double, localFunctionValueSize, gridDim>::Random().eval();
+  /// Rebind local function to second order dual number
   auto lfDual2nd = lf.rebindClone(dual2nd ());
   auto lfDual2ndLeafNodeCollection = collectLeafNodeLocalFunctions(lfDual2nd);
 
-  //FIXME check spatial derivatives
   auto localFdual2nd = [&]  (const auto& x)  {
     lfDual2ndLeafNodeCollection.addToCoeffs(x);
     auto value =  (lfDual2nd.evaluateFunction(ipIndex).getValue().transpose()*alongVec).trace();
@@ -125,16 +175,27 @@ void testLocalFunction(const LF& lf, int ipIndex) {
                       hessianWRTCoeffsTwoTimesSingleSpatial[d]);
   }
 
-
   for (size_t i = 0; i < coeffSize; ++i) {
-    const auto jacobianWRTCoeffs = ((alongVec.transpose()*lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i)))).transpose()).eval();
+    const auto jacobianWRTCoeffslf= lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i)));
+    static_assert(jacobianWRTCoeffslf.ColsAtCompileTime == coeffCorrectionSize );
+    static_assert(jacobianWRTCoeffslf.RowsAtCompileTime == localFunctionValueSize);
+    const auto jacobianWRTCoeffs = ((alongVec.transpose()*jacobianWRTCoeffslf).transpose()).eval();
+    static_assert(jacobianWRTCoeffs.cols() == 1);
+    static_assert(jacobianWRTCoeffs.rows() == coeffCorrectionSize);
     EXPECT_THAT(
         jacobianWRTCoeffs,
         EigenApproxEqual(gradienWRTCoeffs.template segment<coeffCorrectionSize>(i*coeffCorrectionSize), tol));
 
     for (int d = 0; d < gridDim; ++d) {
-      const auto jacoWrtCoeffAndSpatial = ((alongVec.transpose()*lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i), spatial(d)))).transpose()).eval();
+      const auto jacoWrtCoeffAndSpatiallf= lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i), spatial(d)));
+      static_assert(jacoWrtCoeffAndSpatiallf.ColsAtCompileTime == coeffCorrectionSize);
+      static_assert(jacoWrtCoeffAndSpatiallf.RowsAtCompileTime == localFunctionValueSize );
+      const auto jacoWrtCoeffAndSpatial = ((alongVec.transpose()*jacoWrtCoeffAndSpatiallf).transpose()).eval();
       const auto jacoWrtSpatialAndCoeff = ((alongVec.transpose()*lf.evaluateDerivative(ipIndex, Ikarus::wrt( spatial(d),coeff(i)))).transpose()).eval();
+
+      static_assert(jacoWrtSpatialAndCoeff.cols() == 1);
+      static_assert(jacoWrtSpatialAndCoeff.rows() == coeffCorrectionSize);
+      static_assert(jacoWrtCoeffAndSpatial.rows() == jacoWrtCoeffAndSpatial.rows()  and jacoWrtCoeffAndSpatial.cols() == jacoWrtCoeffAndSpatial.cols());
 
       EXPECT_THAT(jacoWrtCoeffAndSpatial, EigenApproxEqual(jacoWrtSpatialAndCoeff, tol));
 
@@ -144,22 +205,20 @@ void testLocalFunction(const LF& lf, int ipIndex) {
                                                                                                                 ),
                                    tol));
     }
-    std::cout<<Dune::className(lf)<<std::endl;
+
     const auto jacoWrtSpatialAllAndCoeff = lf.evaluateDerivative(ipIndex, Ikarus::wrt( spatialAll,coeff(i)));
+
+    static_assert(jacoWrtSpatialAllAndCoeff[0].ColsAtCompileTime  == coeffCorrectionSize);
+    static_assert(jacoWrtSpatialAllAndCoeff[0].RowsAtCompileTime  == localFunctionValueSize );
+
     Eigen::Matrix<double,1,coeffCorrectionSize> jacoWrtSpatialAllAndCoeffProd;
     jacoWrtSpatialAllAndCoeffProd.setZero();
-    std::cout<<"alongMat"<<std::endl;
-    std::cout<<alongMat<<std::endl;
+//    std::cout<<"alongMat"<<std::endl;
+//    std::cout<<alongMat<<std::endl;
 
-    for (int d = 0; d < gridDim; ++d) {
-       jacoWrtSpatialAllAndCoeffProd+= (jacoWrtSpatialAllAndCoeff[d]*alongMat.col(d)).transpose().eval();
-      std::cout<<"jacoWrtSpatialAllAndCoeff[d]"<<std::endl;
-      std::cout<<jacoWrtSpatialAllAndCoeff[d]<<std::endl;
-    }
-    std::cout<<"jacoWrtSpatialAllAndCoeffProd"<<std::endl;
-    std::cout<<jacoWrtSpatialAllAndCoeffProd<<std::endl;
-    std::cout<<"gradienWRTCoeffsSpatialAll"<<std::endl;
-    std::cout<<gradienWRTCoeffsSpatialAll<<std::endl;
+    for (int d = 0; d < gridDim; ++d)
+        jacoWrtSpatialAllAndCoeffProd+= (alongMat.col(d).transpose()*jacoWrtSpatialAllAndCoeff[d]).eval();
+
     EXPECT_THAT(jacoWrtSpatialAllAndCoeffProd,
                 EigenApproxEqual(gradienWRTCoeffsSpatialAll.template segment<coeffCorrectionSize>(
                                      i*coeffCorrectionSize
@@ -169,6 +228,8 @@ void testLocalFunction(const LF& lf, int ipIndex) {
     for (size_t j = 0; j < coeffSize; ++j) {
       const auto
           jacobianWRTCoeffsTwoTimes = lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i, j)), Ikarus::along(alongVec));
+      static_assert(jacobianWRTCoeffsTwoTimes.cols() == coeffCorrectionSize );
+      static_assert(jacobianWRTCoeffsTwoTimes.rows() == coeffCorrectionSize);
       const auto jacobianWRTCoeffsTwoTimesExpected =
           hessianWRTCoeffs.template block<coeffCorrectionSize, coeffCorrectionSize>(i*coeffCorrectionSize,
                                                                                     j*coeffCorrectionSize);
@@ -178,16 +239,29 @@ void testLocalFunction(const LF& lf, int ipIndex) {
 
       const auto
           jacobianWRTCoeffsTwoTimesSpatialAll = lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i, j),spatialAll), Ikarus::along(alongMat));
+      static_assert(jacobianWRTCoeffsTwoTimesSpatialAll.cols() == coeffCorrectionSize );
+      static_assert(jacobianWRTCoeffsTwoTimesSpatialAll.rows() == coeffCorrectionSize);
       const auto jacobianWRTCoeffsTwoTimesSpatialAllExpected =
           hessianWRTCoeffsSpatialAll.template block<coeffCorrectionSize, coeffCorrectionSize>(i*coeffCorrectionSize,
                                                                                     j*coeffCorrectionSize);
-      EXPECT_THAT(
-          jacobianWRTCoeffsTwoTimesSpatialAll,
-          EigenApproxEqual(jacobianWRTCoeffsTwoTimesSpatialAllExpected, tol));
+
+      /// if the order of the function value is less then quadratic then this should yield a vanishing derivative
+      if constexpr(lf.template order<> <quadratic) {
+        EXPECT_TRUE(jacobianWRTCoeffsTwoTimesSpatialAll.norm()<tol);
+        EXPECT_TRUE(jacobianWRTCoeffsTwoTimesSpatialAllExpected.norm()<tol);
+      } else
+      {
+//        std::cout<<Dune::className(lf)<<std::endl;
+        EXPECT_THAT(
+            jacobianWRTCoeffsTwoTimesSpatialAll,
+            EigenApproxEqual(jacobianWRTCoeffsTwoTimesSpatialAllExpected, tol));
+      }
 
       for (int d = 0; d < gridDim; ++d) {
         const auto jacobianWRTCoeffsTwoTimesSingleSpatial =
             lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i, j), spatial(d)), Ikarus::along(alongVec));
+        static_assert(jacobianWRTCoeffsTwoTimesSingleSpatial.cols() == coeffCorrectionSize );
+        static_assert(jacobianWRTCoeffsTwoTimesSingleSpatial.rows() == coeffCorrectionSize);
         const auto jacobianWRTCoeffsTwoTimesSingleSpatialExpected =
             hessianWRTCoeffsTwoTimesSingleSpatial[d].template block<coeffCorrectionSize, coeffCorrectionSize>(
                 i*coeffCorrectionSize, j*coeffCorrectionSize);
@@ -197,6 +271,9 @@ void testLocalFunction(const LF& lf, int ipIndex) {
       }
     }
   }
+  spdlog::info("done. ");
+  if constexpr(not isCopy)
+    testLocalFunction<std::remove_cvref_t<decltype(lfCopy)>,true>(lfCopy,ipIndex); //also test the cloned local function
 }
 
 TEST(LocalFunctionTests, TestExpressions) {
@@ -243,13 +320,15 @@ TEST(LocalFunctionTests, TestExpressions) {
       vBlockedLocal3[i] = vBlocked3[globalIndex[0]];
     }
     auto f = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal);
+    static_assert(f.template order<> == linear);
     auto g = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal);
-
+    static_assert(g.template order<> == linear);
 
     static_assert(countNonArithmeticLeafNodes(f) == 1);
     static_assert(countNonArithmeticLeafNodes(g) == 1);
     using namespace Ikarus::DerivativeDirections;
     auto h = f + g;
+    static_assert(h.template order<> == linear);
 
     auto a     = collectNonArithmeticLeafNodes(h);
     auto hLeaf = collectLeafNodeLocalFunctions(h);
@@ -258,6 +337,9 @@ TEST(LocalFunctionTests, TestExpressions) {
     static_assert(countNonArithmeticLeafNodes(h) == 2);
     static_assert(std::is_same_v<decltype(h)::Ids, std::tuple<Dune::index_constant<0>, Dune::index_constant<0>>>);
 
+    auto mf = -f;
+    static_assert(f.template order<> == mf.template order<>);
+
     for (size_t i = 0; i < fe.size(); ++i) {
       EXPECT_TRUE(collectLeafNodeLocalFunctions(h).coefficientsRef(_0)[i] == vBlockedLocal[i]);
       EXPECT_TRUE(collectLeafNodeLocalFunctions(h).coefficientsRef(_1)[i] == vBlockedLocal[i]);
@@ -265,16 +347,15 @@ TEST(LocalFunctionTests, TestExpressions) {
 
     for (int gpIndex = 0; auto& gp : rule) {
       testLocalFunction(f,gpIndex);
-      testLocalFunction(-f,gpIndex);
+      testLocalFunction(2*f,gpIndex);
+      testLocalFunction(2*f*3,gpIndex);
+      testLocalFunction(mf,gpIndex);
       testLocalFunction(h,gpIndex);
 //      testLocalFunction(h,gpIndex);
 
       EXPECT_THAT(f.evaluateFunction(gpIndex).getValue() + g.evaluateFunction(gpIndex).getValue(),
                   EigenApproxEqual(h.evaluateFunction(gpIndex).getValue(), 1e-15));
-      EXPECT_THAT(f.evaluateDerivative(gpIndex, wrt(spatial(0))) + g.evaluateDerivative(gpIndex, wrt(spatial(0))),
-                  EigenApproxEqual(h.evaluateDerivative(gpIndex, wrt(spatial(0))), 1e-15));
-      EXPECT_THAT(f.evaluateDerivative(gpIndex, wrt(spatialAll)) + g.evaluateDerivative(gpIndex, wrt(spatialAll)),
-                  EigenApproxEqual(h.evaluateDerivative(gpIndex, wrt(spatialAll)), 1e-15));
+
       for (size_t i = 0; i < fe.size(); ++i) {
         const auto dhdSAdi  = h.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i)));
         const auto dfgdSAdi = (f.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i)))
@@ -299,7 +380,7 @@ TEST(LocalFunctionTests, TestExpressions) {
     }
 
     auto k = -dot(f + f, 3.0 * (g / 5.0) * 5.0);
-
+    static_assert(k.template order<> == quadratic);
     auto b = collectNonArithmeticLeafNodes(k);
     static_assert(std::tuple_size_v<decltype(b)> == 3);
 
@@ -312,10 +393,14 @@ TEST(LocalFunctionTests, TestExpressions) {
     const double tol = 1e-13;
 
     auto dotff = dot(f,g);
+
     static_assert(countNonArithmeticLeafNodes(dotff) == 2);
+    static_assert(dotff.template order<> == quadratic);
     static_assert(std::is_same_v<decltype(dotff)::Ids, std::tuple<Dune::index_constant<0>, Dune::index_constant<0>     >>);
     for (int gpIndex = 0; auto& gp : rule) {
       testLocalFunction(dotff,gpIndex);
+      testLocalFunction(k,gpIndex);
+
 
       const auto& N  = localBasis.evaluateFunction(gpIndex);
       const auto& dN = localBasis.evaluateJacobian(gpIndex);

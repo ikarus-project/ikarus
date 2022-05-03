@@ -34,8 +34,8 @@ void checkNewtonRhapson(NewtonRhapson& nr, SolutionType& x, double tolerance, in
   EXPECT_EQ(solverInfo.iterations, iterExpected);
 }
 
-auto f(double& x) { return 0.5 * x * x + x - 2; }
-auto df(double& x) { return x + 1; }
+auto f(double x) { return 0.5 * x * x + x - 2; }
+auto df(double x) { return x + 1; }
 
 TEST(NonLinearOperator, SimpleOperatorNewtonRhapsonTest) {
   double x = 13;
@@ -58,6 +58,30 @@ Eigen::Vector3d fv(Eigen::Vector3d& x, Eigen::Matrix3d& A, Eigen::Vector3d& b) {
 Eigen::Matrix3d dfv([[maybe_unused]] Eigen::Vector3d& x, Eigen::Matrix3d& A, [[maybe_unused]] Eigen::Vector3d& b) {
   return A;
 }
+
+auto fp(double x,int i) { return 0.5 * x * x + x*i - 2; }
+auto dfp(double x,int i) { return x + i; }
+
+TEST(NonLinearOperator, SimpleOperatorNewtonRhapsonTestWithParamter) {
+  double x = 13;
+
+  for (int i = 0; i < 3; ++i) {
+
+  auto fvLambda  = [&](auto&& x, int& i) { return fp(x,i); };
+  auto dfvLambda = [&](auto&& x, int& i) { return dfp(x,i); };
+  Ikarus::NonLinearOperator nonLinOp(linearAlgebraFunctions(fvLambda, dfvLambda), parameter(x,i));
+
+  // Newton method test
+  const double eps       = 1e-14;
+  const int maxIter      = 20;
+  const double xExpected = std::sqrt(4+i*i) - i;
+
+  Ikarus::NewtonRaphson nr(nonLinOp);
+  const int iterExpected = i==0 ? 7 : i==1 ? 5 : 4;
+  checkNewtonRhapson(nr, x, eps, maxIter, iterExpected, xExpected, 0.0);
+  }
+}
+
 
 TEST(NonLinearOperator, VectorValuedOperatorNewtonMethod) {
   Eigen::Vector3d x;

@@ -193,9 +193,9 @@ namespace Ikarus {
 
   template <typename... WrtArgs, typename... TransformArgs, typename... AlongArgs, typename... AlongArgsOther,
             typename DomainTypeOrIntegrationPointIndex>
-  auto addAlong(const LocalFunctionEvaluationArgs<Wrt<WrtArgs...>, Along<AlongArgs...>, TransformWith<TransformArgs...>,
-                                                  DomainTypeOrIntegrationPointIndex>& args,
-                const Along<AlongArgsOther...>& alongArgs) {
+  auto replaceAlong(const LocalFunctionEvaluationArgs<Wrt<WrtArgs...>, Along<AlongArgs...>, TransformWith<TransformArgs...>,
+                                                      DomainTypeOrIntegrationPointIndex>& args,
+                    const Along<AlongArgsOther...>& alongArgs) {
     auto newArgs = LocalFunctionEvaluationArgs<Wrt<WrtArgs...>, Along<AlongArgsOther...>,
                                                TransformWith<TransformArgs...>, DomainTypeOrIntegrationPointIndex>(
         args.integrationPointOrIndex, args.wrtArgs, alongArgs, args.transformWithArgs, false);

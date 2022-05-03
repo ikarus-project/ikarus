@@ -19,8 +19,8 @@ namespace Ikarus {
 
     std::tuple<E1,E2> expr;
 
-    using L = E1;
-    using R = E2;
+    using L = std::remove_cvref_t<E1>;
+    using R = std::remove_cvref_t<E2>;
 
 
     const E1& l()const{
@@ -49,7 +49,10 @@ namespace Ikarus {
 
     /* Creates a tuple of all subtype ids, size l or r is not a tuple, tuple_cat may not work.
      * Thus we artifically wrap them inside a tuple  */
-    using Ids =decltype(Std::makeNestedTupleFlat(std::make_tuple(std::declval<typename std::remove_cvref_t<E1>::Ids>(),std::declval<typename std::remove_cvref_t<E2>::Ids>() )));
+    using Ids =decltype(Std::makeNestedTupleFlat(std::make_tuple(std::declval<typename L::Ids>(),std::declval<typename R::Ids>() )));
+
+    template<size_t ID_=0>
+    static constexpr int order = Op<E1,E2>::template order<ID_>  ;
 
     constexpr BinaryLocalFunctionExpression(E1 && u,E2 && v)
       requires  IsLocalFunction<E1,E2>

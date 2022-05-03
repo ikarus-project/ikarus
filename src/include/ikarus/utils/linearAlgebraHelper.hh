@@ -412,16 +412,33 @@ auto transpose(const std::array<Type,d>& a)requires Concepts::TransposeAble<Type
 }
 
 
-template < std::size_t d, typename Type,typename Derived>
-auto operator*(const std::array<Type,d>& a, const Eigen::EigenBase<Derived>& b) //FIXME change to a function with a name
+//template < std::size_t d, typename Type,typename Derived>
+//auto operator*(const std::array<Type,d>& a, const Eigen::EigenBase<Derived>& b) //FIXME change to a function with a name
+//{
+//  decltype(eval(a[0]*b.derived())) res;
+//  res.setZero();
+//  for (size_t i = 0U; i < d; ++i)
+//    res += eval(a[i]*b.derived());
+//  return res;
+//}
+//
+//template < std::size_t d, typename Type,typename Derived>
+//auto operator*(const Eigen::EigenBase<Derived>& b,const std::array<Type,d>& a) //FIXME change to a function with a name
+//{
+//  std::array<decltype(eval(b.derived()*a[0])),d> res;
+//  for (size_t i = 0U; i < d; ++i)
+//    res[i] = b.derived()*a[i];
+//  return res;
+//}
+
+
+template <std::size_t d, typename Scalar, typename Type> requires Concepts::MultiplyAble<Scalar,Type>
+auto operator*(Scalar b,const std::array<Type,d>& a)
 {
-  decltype(eval(a[0]*b.derived())) res;
-  res.setZero();
+  std::array<decltype(eval(b*a[0])),d> res;
   for (size_t i = 0U; i < d; ++i)
-    res += eval(a[i]*b.derived());
+    res[i] = b*a[i];
   return res;
 }
-
-
 
 }  // namespace Ikarus

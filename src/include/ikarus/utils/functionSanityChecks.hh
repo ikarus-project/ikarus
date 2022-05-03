@@ -142,7 +142,7 @@ bool checkJacobian(
   const int rangeSize                = 10;
   const auto [poly, range]           = Ikarus::findLineSegment(tE.array().log10(), yE.array().log10(), rangeSize);
 
-  const bool checkPassed = Dune::FloatCmp::le(2.0, poly.coefficients()[1], 1e-4);
+  const bool checkPassed = Dune::FloatCmp::le(2.0, poly.coefficients()[1], 1e-3);
 
   if (draw) {
     spdlog::info("Gradient check:");
@@ -178,7 +178,7 @@ bool checkJacobian(
     xlabel("h");
     ylabel("Approximation error ");
     title("Gradient check");
-    f->show();
+    f->draw();
   }
   nonLinOp.template updateAll();
   return checkPassed;
