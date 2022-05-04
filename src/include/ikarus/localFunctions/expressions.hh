@@ -8,3 +8,4 @@
 #include "expressions/dotProductExpr.hh"
 #include "expressions/negateExpr.hh"
 #include "expressions/scaleExpr.hh"
+#include "expressions/sqrtExpr.hh"

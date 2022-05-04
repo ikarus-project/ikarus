@@ -74,7 +74,7 @@ void testLocalFunction(const LF& lf) {
 
       /// Check if spatial derivatives are really derivatives
       /// Perturb in a random direction in the elements parameter space and check spatial derivative
-      auto func = [&](auto& gpOffset_) { return lf.evaluateFunction(toFieldVector(gpOffset_)).getValue(); };
+      auto func = [&](auto& gpOffset_) { return lf.evaluateFunction(toFieldVector(gpOffset_)); };
       auto spatialDerivAll
           = [&](auto& gpOffset_) { return lf.evaluateDerivative(toFieldVector(gpOffset_), Ikarus::wrt(spatialAll)); };
       auto derivDerivSingle = [&](auto gpOffset_, int spatialIndex) {
@@ -385,7 +385,7 @@ TEST(LocalFunctionTests, TestExpressions) {
     testLocalFunction(k);
     for (int gpIndex = 0; auto& gp : rule) {
       EXPECT_DOUBLE_EQ((-2 * 3) * f.evaluateFunction(gpIndex).getValue().dot(g.evaluateFunction(gpIndex).getValue()),
-                       k.evaluateFunction(gpIndex).getValue()[0]);
+                       k.evaluateFunction(gpIndex)[0]);
 
       ++gpIndex;
     }
@@ -410,7 +410,7 @@ TEST(LocalFunctionTests, TestExpressions) {
       const auto& dN = localBasis.evaluateJacobian(gpIndex);
       EXPECT_DOUBLE_EQ((f2.evaluateFunction(gpIndex).getValue() + g2.evaluateFunction(gpIndex).getValue())
                            .dot(g2.evaluateFunction(gpIndex).getValue()),
-                       k2.evaluateFunction(gpIndex).getValue()[0]);
+                       k2.evaluateFunction(gpIndex)[0]);
       auto resSingleSpatial
           = ((f2.evaluateDerivative(gpIndex, wrt(spatial(0))) + g2.evaluateDerivative(gpIndex, wrt(spatial(0))))
                      .transpose()

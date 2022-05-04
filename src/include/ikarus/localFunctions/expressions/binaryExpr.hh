@@ -5,7 +5,7 @@
 #pragma once
 
 #include <ikarus/localFunctions/localFunctionInterface.hh>
-#include <ikarus/localFunctions/expressions/unaryExpr.hh>
+//#include <ikarus/localFunctions/expressions/unaryExpr.hh>
 #include "rebind.hh"
 #include "exprChecks.hh"
 
@@ -54,12 +54,8 @@ namespace Ikarus {
     constexpr BinaryLocalFunctionExpression(E1 && u,E2 && v)
       requires  IsLocalFunction<E1,E2>
     : expr(std::forward<E1>(u),std::forward<E2>(v)) {
-
         // Sanity Checks
-        std::cout<<"checkIfAllLeafNodeHaveTheSameBasisState"<<std::endl;
         assert(checkIfAllLeafNodeHaveTheSameBasisState(*this) && "The basis of the leaf nodes are not in the same state.");
-        std::cout<<"checkIfAllLeafNodeHaveTheSameBasisStateEnd"<<std::endl;
-
     }
 
 

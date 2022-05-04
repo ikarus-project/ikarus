@@ -6,6 +6,8 @@
 
 #include <ikarus/localFunctions/localFunctionInterface.hh>
 #include "rebind.hh"
+#include "exprChecks.hh"
+
 namespace Ikarus
 {
 
@@ -41,7 +43,10 @@ struct UnaryLocalFunctionExpression : public Ikarus::LocalFunctionInterface<Op<E
 
   constexpr explicit UnaryLocalFunctionExpression(E1 && u)
   requires IsLocalFunction<E1>
-  : expr(std::forward<E1>(u)) {  }
+  : expr(std::forward<E1>(u)) {
+    // Sanity Checks
+    assert(checkIfAllLeafNodeHaveTheSameBasisState(*this) && "The basis of the leaf nodes are not in the same state.");
+  }
 
   static constexpr bool isLeaf = false;
   static constexpr int children = 1;

@@ -59,7 +59,7 @@ namespace Ikarus {
 
   template <typename E1> requires IsLocalFunction<E1>
   constexpr auto sqrt(E1 && u) {
-    static_assert(E1::valueSize==1,"Sqrt expression only defined for scalar valued local functions.")
+    static_assert(std::remove_cvref_t<E1>::valueSize==1,"Sqrt expression only defined for scalar valued local functions.");
     return LocalFunctionSqrt<E1>(std::forward<E1>(u));
   }
 

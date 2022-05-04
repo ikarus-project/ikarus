@@ -29,7 +29,7 @@ namespace Ikarus {
     auto evaluateValueOfExpression(const LFArgs& lfArgs) const {
       const auto u = evaluateFunctionImpl(this->l(), lfArgs).getValue();
       const auto v = evaluateFunctionImpl(this->r(), lfArgs).getValue();
-      return Ikarus::RealTuple<ctype,1>( Eigen::Matrix<ctype,1,1>(u.dot(v)));
+      return (u.transpose()*v).trace();
     }
 
     template <int DerivativeOrder, typename LFArgs>
