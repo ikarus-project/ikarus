@@ -116,7 +116,6 @@ namespace Ikarus {
           static_assert(uTimesA.ColsAtCompileTime ==gridDim);
           static_assert(vTimesA.ColsAtCompileTime ==gridDim);
 
-          const auto argsForDyz = lfArgs.extractSecondWrtArgOrFirstNonSpatial();
 
           const auto &[gradu, u_c0, u_c1] = evaluateFirstOrderDerivativesImpl(this->l(), lfArgs);
           const auto &[gradv, v_c0, v_c1] = evaluateFirstOrderDerivativesImpl(this->r(), lfArgs);
@@ -130,10 +129,12 @@ namespace Ikarus {
           static_assert(gradvTimesA.RowsAtCompileTime == E2Raw::valueSize);
           static_assert(gradvTimesA.ColsAtCompileTime ==1);
 
+          const auto argsForDyz = lfArgs.extractSecondWrtArgOrFirstNonSpatial(); //FIXME check if this is still needed arg for coeffcoeffderivative
+
           const auto alonguAArgs = replaceAlong(lfArgs, along(uTimesA));
           const auto alongvAArgs = replaceAlong(lfArgs, along(vTimesA));
-          const auto alonggraduTimesAArgs = replaceAlong(lfArgs, along(graduTimesA));
-          const auto alonggradvTimesAArgs = replaceAlong(lfArgs, along(gradvTimesA));
+          const auto alonggraduTimesAArgs = replaceAlong(argsForDyz, along(graduTimesA));
+          const auto alonggradvTimesAArgs = replaceAlong(argsForDyz, along(gradvTimesA));
 //          const auto argsForDyzalongv_xArgs = replaceAlong(argsForDyz, along(v_x));
 //          const auto argsForDyzalongu_xArgs = replaceAlong(argsForDyz, along(u_x));
 

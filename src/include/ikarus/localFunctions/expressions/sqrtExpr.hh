@@ -4,6 +4,7 @@
 
 #pragma once
 #include <ikarus/localFunctions/expressions/unaryExpr.hh>
+#include <ikarus/utils/linearAlgebraHelper.hh>
 namespace Ikarus {
 
   template <typename E1>
@@ -27,11 +28,26 @@ namespace Ikarus {
       const auto u = evaluateFunctionImpl(this->m(), lfArgs).getValue();
       if constexpr (DerivativeOrder == 1)  // d(sqrt(u(x)))/(dxdy) =  u_x /(2*sqrt(u(x))
       {
-        const auto u_x = evaluateDerivativeImpl(this->l(), lfArgs);
+        const auto u_x = evaluateDerivativeImpl(this->m(), lfArgs);
         return Ikarus::eval(u_x/(2*sqrt(u)));
       }else if constexpr (DerivativeOrder == 2)
       {
-        const auto& [u_x,u_y] = evaluateFirstOrderDerivativesImpl(this->l(), lfArgs);
+        const auto& [u_x,u_y] = evaluateFirstOrderDerivativesImpl(this->m(), lfArgs);
+        const auto u_xy = evaluateDerivativeImpl(this->m(), lfArgs);
+
+        return Ikarus::eval(-u_x*u_y/(4*std::pow(u,3/2)) + u_xy/(2*sqrt(u)));
+      }else if constexpr (DerivativeOrder == 3)
+      {
+        const auto& [u_x,u_y,u_z] = evaluateFirstOrderDerivativesImpl(this->m(), lfArgs);
+        const auto &[u_xy, u_xz] = evaluateSecondOrderDerivativesImpl(this->l(), lfArgs);
+
+        const auto u_xyz = evaluateDerivativeImpl(this->m(), lfArgs);
+
+        const auto uppow32 = std::pow(u,3.0/2.0);
+        const auto argsForDyz = lfArgs.extractSecondWrtArgOrFirstNonSpatial();
+        const auto u_yz = evaluateDerivativeImpl(this->m(), argsForDyz);
+
+        return Ikarus::eval((3*u_x*u_y*u_z)/(8*std::pow(u,5.0/2.0)) - u_xz*u_y/(4*uppow32) - u_x*u_yz/(4*uppow32) - u_xy*u_z/(4*uppow32) + u_xyz/(2*sqrt(u)));
       }
 
     }
