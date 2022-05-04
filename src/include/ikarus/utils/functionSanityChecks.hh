@@ -108,7 +108,7 @@ bool checkGradient(
  */
 template <typename NonlinearOperator, typename UpdateType = typename NonlinearOperator::template ParameterValue<0>>
 bool checkJacobian(
-    NonlinearOperator& nonLinOp, bool draw = true,
+    NonlinearOperator& nonLinOp, bool draw = true, double tolerance=1e-3,
     std::function<void(typename NonlinearOperator::template ParameterValue<0>&, const UpdateType&)> p_updateFunction
     = [](typename NonlinearOperator::template ParameterValue<0>& a, const UpdateType& b) { a += b; }) {
   auto& x         = nonLinOp.firstParameter();
@@ -142,10 +142,14 @@ bool checkJacobian(
   const int rangeSize                = 10;
   const auto [poly, range]           = Ikarus::findLineSegment(tE.array().log10(), yE.array().log10(), rangeSize);
 
-  const bool checkPassed = Dune::FloatCmp::le(2.0, poly.coefficients()[1], 1e-3);
-
+  const bool checkPassed = Dune::FloatCmp::le(2.0, poly.coefficients()[1], tolerance);
+  if(not checkPassed)
+  {
+    spdlog::info("Jacobian check:");
+    spdlog::info("The slope should be 2. It seems to be {}.", poly.coefficients()[1]);
+  }
   if (draw) {
-    spdlog::info("Gradient check:");
+    spdlog::info("Jacobian check:");
     spdlog::info("The slope should be 2. It seems to be {}.", poly.coefficients()[1]);
     if (checkPassed)
       spdlog::info("We consider this as sufficient.");

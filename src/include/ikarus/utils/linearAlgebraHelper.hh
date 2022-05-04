@@ -412,26 +412,6 @@ auto transpose(const std::array<Type,d>& a)requires Concepts::TransposeAble<Type
 }
 
 
-//template < std::size_t d, typename Type,typename Derived>
-//auto operator*(const std::array<Type,d>& a, const Eigen::EigenBase<Derived>& b) //FIXME change to a function with a name
-//{
-//  decltype(eval(a[0]*b.derived())) res;
-//  res.setZero();
-//  for (size_t i = 0U; i < d; ++i)
-//    res += eval(a[i]*b.derived());
-//  return res;
-//}
-//
-//template < std::size_t d, typename Type,typename Derived>
-//auto operator*(const Eigen::EigenBase<Derived>& b,const std::array<Type,d>& a) //FIXME change to a function with a name
-//{
-//  std::array<decltype(eval(b.derived()*a[0])),d> res;
-//  for (size_t i = 0U; i < d; ++i)
-//    res[i] = b.derived()*a[i];
-//  return res;
-//}
-
-
 template <std::size_t d, typename Scalar, typename Type> requires Concepts::MultiplyAble<Scalar,Type>
 auto operator*(Scalar b,const std::array<Type,d>& a)
 {
@@ -440,5 +420,23 @@ auto operator*(Scalar b,const std::array<Type,d>& a)
     res[i] = b*a[i];
   return res;
 }
+
+/* Method to print to cout the matrix in a format that can directly be copied to maple*/
+template <typename Derived>
+void printForMaple(const Eigen::EigenBase<Derived>& A)
+{
+  Eigen::IOFormat mapleFmt(Eigen::FullPrecision, 0, ", ", "|\n", "<", ">", "<", ">");
+  if constexpr(std::convertible_to<Derived,const Eigen::MatrixBase<Derived>&>) {
+
+    std::cout << "\n" << A.derived().format(mapleFmt) << std::endl;
+  }else
+  { // branch for Eigen::DiagonalMatrix
+    using Scalar = typename Derived::Scalar;
+    using namespace Eigen;
+    constexpr int diag_size = EIGEN_SIZE_MIN_PREFER_DYNAMIC(Derived::RowsAtCompileTime, Derived::ColsAtCompileTime);
+    std::cout << "\n" << Eigen::Matrix<Scalar,diag_size,diag_size>(A.derived().diagonal().asDiagonal()).format(mapleFmt) << std::endl;
+  }
+}
+
 
 }  // namespace Ikarus

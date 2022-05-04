@@ -13,7 +13,8 @@ class ConstantExpr: public LocalFunctionInterface<ConstantExpr<Type>> {
 
   ConstantExpr(Type val_) : val{val_} {}
 
-  Type value()const{    return val;}
+  const Type& value()const{    return val;}
+   Type& value(){    return val;}
 
   auto clone()const
   {

@@ -17,14 +17,14 @@ namespace Ikarus {
     template<size_t ID_=0>
     static constexpr int order = std::remove_cvref_t<E1>::template order<ID_>;
 
-    template <typename LocalFunctionEvaluationArgs_>
-    auto evaluateValueOfExpression(const LocalFunctionEvaluationArgs_& localFunctionArgs) const {
-      return Ikarus::eval(-evaluateFunctionImpl(this->m(), localFunctionArgs));
+    template <typename LFArgs>
+    auto evaluateValueOfExpression(const LFArgs& lfArgs) const {
+      return Ikarus::eval(-evaluateFunctionImpl(this->m(), lfArgs));
     }
 
-    template <int DerivativeOrder, typename LocalFunctionEvaluationArgs_>
-    auto evaluateDerivativeOfExpression(const LocalFunctionEvaluationArgs_& localFunctionArgs) const {
-      return Ikarus::eval(- evaluateDerivativeImpl(this->m(), localFunctionArgs) );
+    template <int DerivativeOrder, typename LFArgs>
+    auto evaluateDerivativeOfExpression(const LFArgs& lfArgs) const {
+      return Ikarus::eval(- evaluateDerivativeImpl(this->m(), lfArgs));
     }
   };
 

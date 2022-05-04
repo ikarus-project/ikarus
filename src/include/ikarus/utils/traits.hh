@@ -310,7 +310,9 @@ auto makeNestedTupleFlat(std::tuple<Types...> tup)
 template<typename Tuple>
 auto makeNestedTupleFlatAndStoreReferences(Tuple&& tup)
 {
-  if constexpr(!std::is_const_v<std::remove_reference_t<Tuple>>)
+  if constexpr (std::tuple_size_v<std::remove_cvref_t<Tuple>> == 0)
+    return tup;
+  else if constexpr(!std::is_const_v<std::remove_reference_t<Tuple>>)
     return Impl::makeNestedTupleFlatAndStoreReferencesNonConstImpl(std::forward<Tuple>(tup));
   else
     return Impl::makeNestedTupleFlatAndStoreReferencesImpl(std::forward<Tuple>(tup));

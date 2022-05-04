@@ -16,7 +16,7 @@ namespace Ikarus {
     static constexpr int valueSize =  Traits::valueSize;
 
     template<size_t ID_=0>
-    static constexpr int order = std::remove_cvref_t<E1>::template order<ID_> + std::remove_cvref_t<E2>::template order<ID_>  ;
+    static constexpr int order = std::min(std::remove_cvref_t<E1>::template order<ID_> + std::remove_cvref_t<E2>::template order<ID_>,nonLinear)  ;
 
     template <typename LocalFunctionEvaluationArgs_>
     auto evaluateValueOfExpression(const LocalFunctionEvaluationArgs_& localFunctionArgs) const {
@@ -46,7 +46,8 @@ namespace Ikarus {
 // Simplification if nested scale expression occur
 template <typename E1,typename E2> requires (std::is_arithmetic_v<std::remove_cvref_t<E1>> and IsScaleExpr<E2>)
 constexpr auto operator*( E1&& factor,  E2&& u) {
-  return LocalFunctionScale<ConstantExpr<E1>, std::remove_cvref_t<decltype(u.r())>>(ConstantExpr(factor*u.l().value()), u.r().clone());
+  u.l().value()*=factor;
+  return u;
 }
 
 template <typename E1,typename E2> requires (std::is_arithmetic_v<std::remove_cvref_t<E1>> and IsScaleExpr<E2> and IsLocalFunction<E2>)

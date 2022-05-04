@@ -7,15 +7,12 @@
 #include <ikarus/localFunctions/localFunctionInterface.hh>
 #include <ikarus/localFunctions/expressions/unaryExpr.hh>
 #include "rebind.hh"
+#include "exprChecks.hh"
 
 namespace Ikarus {
 
   template <template<typename,typename> class Op, typename E1, typename E2>
   struct BinaryLocalFunctionExpression : public Ikarus::LocalFunctionInterface<Op<E1,E2>> {
-
-    // if the E1 expression is an arithmetic type (int or double) then we store the value otherwise we store a const reference
-//    using E1StorageType = std::conditional_t<IsNonArithmeticLeafNode<E1>,const E1&,E1>;
-//    using E2StorageType = std::conditional_t<IsNonArithmeticLeafNode<E2>, const E2&,E2>;
 
     std::tuple<E1,E2> expr;
 
@@ -56,7 +53,14 @@ namespace Ikarus {
 
     constexpr BinaryLocalFunctionExpression(E1 && u,E2 && v)
       requires  IsLocalFunction<E1,E2>
-    : expr(std::forward<E1>(u),std::forward<E2>(v)) {}
+    : expr(std::forward<E1>(u),std::forward<E2>(v)) {
+
+        // Sanity Checks
+        std::cout<<"checkIfAllLeafNodeHaveTheSameBasisState"<<std::endl;
+        assert(checkIfAllLeafNodeHaveTheSameBasisState(*this) && "The basis of the leaf nodes are not in the same state.");
+        std::cout<<"checkIfAllLeafNodeHaveTheSameBasisStateEnd"<<std::endl;
+
+    }
 
 
     static constexpr bool isLeaf = false;
