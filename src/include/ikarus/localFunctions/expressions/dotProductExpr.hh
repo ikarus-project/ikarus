@@ -27,15 +27,15 @@ namespace Ikarus {
 
     template <typename LFArgs>
     auto evaluateValueOfExpression(const LFArgs& lfArgs) const {
-      const auto u = evaluateFunctionImpl(this->l(), lfArgs).getValue();
-      const auto v = evaluateFunctionImpl(this->r(), lfArgs).getValue();
-      return (u.transpose()*v).trace();
+      const auto u = evaluateFunctionImpl(this->l(), lfArgs);
+      const auto v = evaluateFunctionImpl(this->r(), lfArgs);
+      return Eigen::Vector<ctype ,1>((u.transpose()*v).trace());
     }
 
     template <int DerivativeOrder, typename LFArgs>
     auto evaluateDerivativeOfExpression(const LFArgs& lfArgs) const {
-      const auto u = evaluateFunctionImpl(this->l(), lfArgs).getValue();
-      const auto v = evaluateFunctionImpl(this->r(), lfArgs).getValue();
+      const auto u = evaluateFunctionImpl(this->l(), lfArgs);
+      const auto v = evaluateFunctionImpl(this->r(), lfArgs);
       if constexpr (DerivativeOrder == 1)  // d(dot(u,v))/dx =  u_x * v+ u*v_x
       {
         const auto u_x = evaluateDerivativeImpl(this->l(), lfArgs);

@@ -54,10 +54,10 @@ namespace Ikarus {
     static constexpr int gridDim = Traits::gridDim;
     /** \brief Type for coordinate vector in world space */
     using FunctionReturnType = typename Traits::FunctionReturnType;
+    /** \brief The manifold where the function values lives in */
+    using Manifold = typename Traits::Manifold;
     /** \brief Type for the directional derivatives */
     using AlongType = typename Traits::AlongType;
-    /** \brief Type for the coordinates to store the return value */
-    using GlobalE = typename FunctionReturnType::CoordinateType;
     /** \brief Type for the Jacobian matrix */
     using Jacobian = typename Traits::Jacobian;
     /** \brief Type for a column of the Jacobian matrix */
@@ -69,16 +69,12 @@ namespace Ikarus {
     /** \brief Type for the Jacobian of the ansatz function values */
     using AnsatzFunctionJacobian = typename Traits::AnsatzFunctionJacobian;
 
-
-
-
-
     const auto& coefficientsRef() const { return coeffs; }
      auto& coefficientsRef()  { return coeffs; }
 
      template <typename OtherType>
      struct Rebind {
-       using other = StandardLocalFunction<DuneBasis, typename Std::Rebind<CoeffContainer,typename FunctionReturnType::template Rebind<OtherType>::other>::other, ID>;
+       using other = StandardLocalFunction<DuneBasis, typename Std::Rebind<CoeffContainer,typename Manifold::template Rebind<OtherType>::other>::other, ID>;
      };
 
     const Ikarus::LocalBasis<DuneBasis>& basis() const
@@ -155,7 +151,7 @@ namespace Ikarus {
 
 
     mutable AnsatzFunctionJacobian dNTransformed;
-    Ikarus::LocalBasis<DuneBasis> basis_;
+    const Ikarus::LocalBasis<DuneBasis>& basis_;
     CoeffContainer coeffs;
     const decltype(Ikarus::viewAsEigenMatrixFixedDyn(coeffs)) coeffsAsMat;
   };
@@ -170,8 +166,10 @@ namespace Ikarus {
     static constexpr int correctionSize = CoeffContainer::value_type::correctionSize;
     /** \brief Dimension of the grid */
     static constexpr int gridDim = Ikarus::LocalBasis<DuneBasis>::gridDim;
+    /** \brief The manifold where the function values lives in */
+    using Manifold = typename CoeffContainer::value_type;
     /** \brief Type for the return value */
-    using FunctionReturnType = typename CoeffContainer::value_type;
+    using FunctionReturnType = typename Manifold::CoordinateType;
     /** \brief Type for the Jacobian matrix */
     using Jacobian = Eigen::Matrix<ctype, valueSize, gridDim>;
     /** \brief Type for the derivatives wrt. the coeffiecients */

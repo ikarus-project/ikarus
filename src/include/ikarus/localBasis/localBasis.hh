@@ -114,22 +114,26 @@ namespace Ikarus {
 
     /* Returns a view over the integration point index and the point itself */
     auto viewOverIntegrationPoints() const {  // FIXME dont construct this on the fly
+      std::puts("Test");
       assert(Nbound && "You have to bind the basis first");
       assert(Nbound.value().size() == dNbound.value().size()
              && "Number of intergrationpoint evaluations does not match.");
-      if (Nbound and dNbound)
-        return std::views::iota(0UL, Nbound.value().size())
-               | std::views::transform([&](auto&& i_) { return IntegrationPointsAndIndex(i_, rule.value()[i_]); });
-      else {
+      if (Nbound and dNbound) {
+        auto res = std::views::iota(0UL, Nbound.value().size())
+                   | std::views::transform([&](auto&& i_) { return IntegrationPointsAndIndex(i_, rule.value()[i_]); });
+        std::puts("TestAfter");
+        return res;
+      } else {
         assert(false && "You need to call bind first");
         __builtin_unreachable();
       }
+
     }
 
   private:
     mutable std::vector<JacobianDuneType> dNdune{};
     mutable std::vector<RangeDuneType> Ndune{};
-    DuneLocalBasis const* duneLocalBasis; //FIXME take copy ob basis
+    DuneLocalBasis const* duneLocalBasis; //FIXME pass shared_ptr around
     std::optional<std::set<int>> boundDerivatives;
     std::optional<std::vector<Eigen::VectorX<RangeFieldType>>> Nbound{};
     std::optional<std::vector<Eigen::Matrix<RangeFieldType, Eigen::Dynamic, gridDim>>> dNbound{};

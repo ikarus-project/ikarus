@@ -14,18 +14,22 @@ namespace Ikarus {
     using Base::UnaryLocalFunctionExpression;
     using Traits = LocalFunctionTraits<LocalFunctionSqrt>;
     static constexpr int valueSize =  1;
+    static constexpr int gridDim =  Traits::gridDim;
+    using ctype = typename Traits::ctype;
+
+
 
     template<size_t ID_=0>
     static constexpr int order = nonLinear;
 
     template <typename LFArgs>
     auto evaluateValueOfExpression(const LFArgs& lfArgs) const {
-      return Ikarus::eval(sqrt(evaluateFunctionImpl(this->m(), lfArgs).getValue()));
+      return Ikarus::eval(sqrt(evaluateFunctionImpl(this->m(), lfArgs)));
     }
 
     template <int DerivativeOrder, typename LFArgs>
     auto evaluateDerivativeOfExpression(const LFArgs& lfArgs) const {
-      const auto u = evaluateFunctionImpl(this->m(), lfArgs).getValue();
+      const auto u = evaluateFunctionImpl(this->m(), lfArgs);
       if constexpr (DerivativeOrder == 1)  // d(sqrt(u(x)))/(dxdy) =  u_x /(2*sqrt(u(x))
       {
         const auto u_x = evaluateDerivativeImpl(this->m(), lfArgs);
@@ -34,8 +38,17 @@ namespace Ikarus {
       {
         const auto& [u_x,u_y] = evaluateFirstOrderDerivativesImpl(this->m(), lfArgs);
         const auto u_xy = evaluateDerivativeImpl(this->m(), lfArgs);
-
-        return Ikarus::eval(-u_x*u_y/(4*std::pow(u,3/2)) + u_xy/(2*sqrt(u)));
+        if constexpr (LFArgs::hasOneSpatialAll and LFArgs::hasSingleCoeff) {
+          std::array<std::remove_cvref_t<decltype( Ikarus::eval(
+                         u_x.col(0) * u_y))>, gridDim> res;
+          const auto u_yTimesfactor = Ikarus::eval(u_y / (4 * std::pow(u, 3.0 / 2.0)));
+          const ctype sqrtu_Timesfactor = 1.0/ (2 * sqrt(u));
+          for (int i = 0; i < gridDim; ++i)
+              res[i] = Ikarus::eval(Ikarus::eval(-u_x.col(i) * u_yTimesfactor + u_xy[i] *sqrtu_Timesfactor));
+          return res ;
+        }
+        else
+          return Ikarus::eval(-u_x * transpose(u_y) / (4 * std::pow(u, 3.0 / 2.0)) + u_xy / (2 * sqrt(u)));
       }else if constexpr (DerivativeOrder == 3)
       {
         const auto& [u_x,u_y,u_z] = evaluateFirstOrderDerivativesImpl(this->m(), lfArgs);

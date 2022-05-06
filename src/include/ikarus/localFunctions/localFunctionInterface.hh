@@ -61,10 +61,8 @@ namespace Ikarus {
 
     template <std::size_t I = 0>
     auto viewOverIntegrationPoints(Dune::index_constant<I> = Dune::index_constant<0UL>()) const {
-      std::cout<<"viewOverIntegrationPoints"<<std::endl;
       auto leafNodeCollection = collectLeafNodeLocalFunctions(impl());
       auto node               = leafNodeCollection.node(Dune::index_constant<I>());
-      std::cout<<"end"<<"isBound: "<<node.basis().isBound()<<std::endl;
       return node.basis().viewOverIntegrationPoints();
     }
 

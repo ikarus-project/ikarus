@@ -104,7 +104,7 @@ namespace Ikarus {
       Ikarus::StandardLocalFunction uFunction(localBasis, disp);
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
         const auto Jinv      = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
-        const auto u      = uFunction.evaluateFunction(gpIndex).getValue();
+        const auto u      = uFunction.evaluateFunction(gpIndex);
         const auto H      = uFunction.evaluateDerivative(gpIndex, wrt(DerivativeDirections::spatialAll),
                                                     transformWith(Jinv));
         const auto E      = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();

@@ -81,13 +81,13 @@ TYPED_TEST(LocalFunctionProjectionBasedUnitVector, ProjectionBasedUnitVector) {
 
       Ikarus::viewAsFlatEigenVector(v) += x;
       auto localF_ = Ikarus::ProjectionBasedLocalFunction(localBasis, v);
-      return localF_.evaluateFunction(gpI).getValue();
+      return localF_.evaluateFunction(gpI);
     };
 
     const auto vasMat = Ikarus::viewAsEigenMatrixFixedDyn(vBlockedLocal);
     using namespace Ikarus::DerivativeDirections;
     for (int gpIndex = 0; auto& gp : rule) {
-      const auto directorCached                          = localF.evaluateFunction(gpIndex).getValue();
+      const auto directorCached                          = localF.evaluateFunction(gpIndex);
       const Eigen::Vector<double, size> directorEmbedded = vasMat * localBasis.evaluateFunction(gpIndex);
       const auto directoreval                            = localF.evaluateFunction(gp.position());
 
@@ -113,7 +113,7 @@ TYPED_TEST(LocalFunctionProjectionBasedUnitVector, ProjectionBasedUnitVector) {
       EXPECT_THAT(jaco2un.col(0), EigenApproxEqual(jaco2col0un, 1e-15));
       EXPECT_THAT(jaco2un.col(1), EigenApproxEqual(jaco2col1un, 1e-15));
 
-      auto func = [&](auto& gpOffset_) { return localF.evaluateFunction(toFieldVector(gpOffset_)).getValue(); };
+      auto func = [&](auto& gpOffset_) { return localF.evaluateFunction(toFieldVector(gpOffset_)); };
       auto deriv
           = [&](auto& gpOffset_) { return localF.evaluateDerivative(toFieldVector(gpOffset_), wrt(spatialAll)); };
       Eigen::Vector<double, 2> gpOffset = toEigenVector(gp.position());
@@ -172,11 +172,11 @@ TYPED_TEST(LocalFunctionProjectionBasedUnitVector, ProjectionBasedUnitVector) {
       }
 
       EXPECT_DOUBLE_EQ(directorCached.norm(), 1.0);
-      EXPECT_DOUBLE_EQ(directoreval.getValue().norm(), 1.0);
-      EXPECT_THAT(directorCached, EigenApproxEqual(directoreval.getValue(), 1e-15));
-      EXPECT_NEAR((directoreval.getValue().transpose() * jaco2).norm(), 0.0, 1e-15);
-      EXPECT_NEAR((Ikarus::UnitVector<double, size>::derivativeOfProjectionWRTposition(directoreval.getValue())
-                   * directoreval.getValue())
+      EXPECT_DOUBLE_EQ(directoreval.norm(), 1.0);
+      EXPECT_THAT(directorCached, EigenApproxEqual(directoreval, 1e-15));
+      EXPECT_NEAR((directoreval.transpose() * jaco2).norm(), 0.0, 1e-15);
+      EXPECT_NEAR((Ikarus::UnitVector<double, size>::derivativeOfProjectionWRTposition(directoreval)
+                   * directoreval)
                       .norm(),
                   0.0, 1e-15);
 
@@ -229,13 +229,13 @@ TYPED_TEST(LocalFunctionVector, Test1) {
 
       Ikarus::viewAsFlatEigenVector(v) += x;
       auto localF_ = Ikarus::StandardLocalFunction(localBasis, v);
-      return localF_.evaluateFunction(gpI).getValue();
+      return localF_.evaluateFunction(gpI);
     };
 
     const auto vasMat = Ikarus::viewAsEigenMatrixFixedDyn(vBlockedLocal);
     using namespace Ikarus::DerivativeDirections;
     for (int gpIndex = 0; auto& gp : rule) {
-      const auto& directorCached                         = localF.evaluateFunction(gpIndex).getValue();
+      const auto& directorCached                         = localF.evaluateFunction(gpIndex);
       const Eigen::Vector<double, size> directorEmbedded = vasMat * localBasis.evaluateFunction(gpIndex);
       const auto& directoreval                           = localF.evaluateFunction(gp.position());
 
@@ -261,7 +261,7 @@ TYPED_TEST(LocalFunctionVector, Test1) {
       EXPECT_THAT(jaco2un.col(0), EigenApproxEqual(jaco2col0un, 1e-15));
       EXPECT_THAT(jaco2un.col(1), EigenApproxEqual(jaco2col1un, 1e-15));
 
-      auto func = [&](auto& gpOffset_) { return localF.evaluateFunction(toFieldVector(gpOffset_)).getValue(); };
+      auto func = [&](auto& gpOffset_) { return localF.evaluateFunction(toFieldVector(gpOffset_)); };
       auto deriv
           = [&](auto& gpOffset_) { return localF.evaluateDerivative(toFieldVector(gpOffset_), wrt(spatialAll)); };
       Eigen::Vector<double, 2> gpOffset = toEigenVector(gp.position());
@@ -302,7 +302,7 @@ TYPED_TEST(LocalFunctionVector, Test1) {
         EXPECT_THAT(Warrayun[1], EigenApproxEqual(W1un, 1e-15));
       }
 
-      EXPECT_THAT(directorCached, EigenApproxEqual(directoreval.getValue(), 1e-15));
+      EXPECT_THAT(directorCached, EigenApproxEqual(directoreval, 1e-15));
 
       ++gpIndex;
     }

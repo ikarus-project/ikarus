@@ -55,7 +55,9 @@ namespace Ikarus {
       requires  IsLocalFunction<E1,E2>
     : expr(std::forward<E1>(u),std::forward<E2>(v)) {
         // Sanity Checks
+        std::puts("checkIfAllLeafNodeHaveTheSameBasisState");
         assert(checkIfAllLeafNodeHaveTheSameBasisState(*this) && "The basis of the leaf nodes are not in the same state.");
+        std::puts("checkIfAllLeafNodeHaveTheSameBasisStateAfter");
     }
 
 

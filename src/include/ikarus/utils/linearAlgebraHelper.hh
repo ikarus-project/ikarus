@@ -346,6 +346,10 @@ std::ostream& operator<<(std::ostream& os,  const Eigen::DiagonalMatrix<Scalar,s
 template<typename T> requires autodiff::detail::isDual<T> || autodiff::detail::isExpr<T> || autodiff::detail::isArithmetic<T>
 auto eval( T&& t) { return autodiff::detail::eval(t); }
 
+/** \brief  Transpose for scalars and autodiff types */
+template<typename T> requires autodiff::detail::isDual<T> || autodiff::detail::isExpr<T> || autodiff::detail::isArithmetic<T>
+auto transpose( T&& t) { return t; }
+
 /** \brief  eval overload for std::array  */
 template <typename Type, std::size_t d>
 auto eval(  std::array<Type,d>&& t) { return t; }
