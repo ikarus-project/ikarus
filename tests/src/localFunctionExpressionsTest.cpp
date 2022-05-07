@@ -375,14 +375,14 @@ TEST(LocalFunctionTests, TestExpressions) {
     const double tol = 1e-13;
 
     auto dotff = dot(f, g);
-//    auto sqrtdotff = sqrt(dotff);
+    auto sqrtdotff = sqrt(dotff);
 
     static_assert(countNonArithmeticLeafNodes(dotff) == 2);
     static_assert(dotff.order<> == quadratic);
     static_assert(std::is_same_v<decltype(dotff)::Ids, std::tuple<Dune::index_constant<0>, Dune::index_constant<0>>>);
 
     testLocalFunction(dotff);
-//    testLocalFunction(sqrtdotff);
+    testLocalFunction(sqrtdotff);
     testLocalFunction(k);
     for (int gpIndex = 0; auto& gp : rule) {
       EXPECT_DOUBLE_EQ((-2 * 3) * f.evaluateFunction(gpIndex).dot(g.evaluateFunction(gpIndex)),
