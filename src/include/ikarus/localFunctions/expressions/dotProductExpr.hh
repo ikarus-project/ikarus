@@ -135,50 +135,20 @@ namespace Ikarus {
           const auto alongvAArgs = replaceAlong(lfArgs, along(vTimesA));
           const auto alonggraduTimesAArgs = replaceAlong(argsForDyz, along(graduTimesA));
           const auto alonggradvTimesAArgs = replaceAlong(argsForDyz, along(gradvTimesA));
-//          const auto argsForDyzalongv_xArgs = replaceAlong(argsForDyz, along(v_x));
-//          const auto argsForDyzalongu_xArgs = replaceAlong(argsForDyz, along(u_x));
 
           const auto u_xyzAlongv = evaluateDerivativeImpl(this->l(), alongvAArgs);
           const auto v_xyzAlongu = evaluateDerivativeImpl(this->r(), alonguAArgs);
           const auto v_c0c1AlongGraduTimesA = evaluateDerivativeImpl(this->r(), alonggraduTimesAArgs);
           const auto u_c0c1AlongGradvTimesA = evaluateDerivativeImpl(this->l(), alonggradvTimesAArgs);
-
-//          std::cout<<"alongMatrix"<<std::endl;
-//          printForMaple(alongMatrix);
-//          std::cout<<"u_xyzAlongv"<<std::endl;
-//          printForMaple(u_xyzAlongv);
-//          std::cout<<"v_xyzAlongu"<<std::endl;
-//          printForMaple(v_xyzAlongu);
-//          std::cout<<"v_c0c1AlongGraduTimesA"<<std::endl;
-//          printForMaple(v_c0c1AlongGraduTimesA);
-//          std::cout<<"u_c0c1AlongGradvTimesA"<<std::endl;
-//          printForMaple(u_c0c1AlongGradvTimesA);
-//          std::cout<<"transpose(u_c1)"<<std::endl;
-//          printForMaple(transpose(u_c1));
-//          std::cout<<"transpose(v_c1)"<<std::endl;
-//          printForMaple(transpose(v_c1));
-//          std::cout<<"transpose(v_c0)"<<std::endl;
-//          printForMaple(transpose(v_c0));
-//          std::cout<<"transpose(u_c0)"<<std::endl;
-//          printForMaple(transpose(u_c0));
           decltype(eval(u_xyzAlongv)) res;
-//          std::cout<<Dune::className(res)<<std::endl;
+
           res= u_xyzAlongv+v_xyzAlongu+v_c0c1AlongGraduTimesA+u_c0c1AlongGradvTimesA;
           for (int i = 0; i < gridDim; ++i) {
-//            std::cout<<"gradv_c0[i]"<<std::endl;
-//            printForMaple(gradv_c0[i]);
-//            std::cout<<"gradu_c0[i]"<<std::endl;
-//            printForMaple(gradu_c0[i]);
-//            std::cout<<"gradv_c1[i]"<<std::endl;
-//            printForMaple(gradv_c1[i]);
-//            std::cout<<"gradu_c1[i]"<<std::endl;
-//            printForMaple(gradu_c1[i]);
 
             res += (transpose(u_c1)*gradv_c0[i]+transpose(v_c1)*gradu_c0[i])*alongMatrix(0,i)
                 +  (transpose(v_c0)*gradu_c1[i]+transpose(u_c0)*gradv_c1[i])*alongMatrix(0,i);
           }
-//          std::cout<<"res"<<std::endl;
-//          printForMaple(res);
+
           return res;
 
         }

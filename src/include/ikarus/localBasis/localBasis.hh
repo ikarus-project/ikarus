@@ -114,14 +114,12 @@ namespace Ikarus {
 
     /* Returns a view over the integration point index and the point itself */
     auto viewOverIntegrationPoints() const {  // FIXME dont construct this on the fly
-      std::puts("Test");
       assert(Nbound && "You have to bind the basis first");
       assert(Nbound.value().size() == dNbound.value().size()
              && "Number of intergrationpoint evaluations does not match.");
       if (Nbound and dNbound) {
         auto res = std::views::iota(0UL, Nbound.value().size())
                    | std::views::transform([&](auto&& i_) { return IntegrationPointsAndIndex(i_, rule.value()[i_]); });
-        std::puts("TestAfter");
         return res;
       } else {
         assert(false && "You need to call bind first");
