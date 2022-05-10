@@ -127,7 +127,7 @@ namespace Ikarus {
       int spatialDerivs{};
       int spatialAllCounter{};
 
-      consteval int orderOfDerivative() const {
+      [[nodiscard]] consteval int orderOfDerivative() const {
         return singleCoeffDerivs + 2 * twoCoeffDerivs + spatialDerivs + spatialAllCounter;
       }
     };
@@ -216,7 +216,6 @@ namespace Ikarus {
   template <typename... LF>
   concept IsLocalFunction = (LocalFunction<LF> and ...);
 
-  struct NoRebind {};
   static constexpr int nonLinear = 1000;
   static constexpr int constant  = 0;
   static constexpr int linear    = 1;

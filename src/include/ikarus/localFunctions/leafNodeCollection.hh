@@ -53,6 +53,7 @@ namespace Ikarus {
     return Std::makeNestedTupleFlatAndStoreReferences(Impl::collectNonArithmeticLeafNodesImpl(a.impl()));
   }
 
+  /** This class contains the collection of leaf nodes of a local function expression */
   template <typename LF>
   requires LocalFunction<LF>
   struct LocalFunctionLeafNodeCollection {

@@ -367,6 +367,7 @@ TEST(LocalFunctionTests, TestExpressions) {
     const double tol = 1e-13;
 
     auto dotff     = dot(f, g);
+    f.
     auto sqrtdotff = sqrt(dotff);
 
     static_assert(countNonArithmeticLeafNodes(dotff) == 2);

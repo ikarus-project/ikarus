@@ -92,10 +92,10 @@ namespace Ikarus {
       return CoeffDerivMatrix{};
     }
 
-    std::array<CoeffDerivMatrix, gridDim> evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialImpl(
+    CoeffDerivMatrix evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialImpl(
         const AnsatzFunctionType& N, [[maybe_unused]] const AnsatzFunctionJacobian& dN, const AlongType& along,
         const std::array<size_t, 2>& coeffsIndex) const {
-      return std::array<CoeffDerivMatrix, gridDim>{};
+      return CoeffDerivMatrix{};
     }
 
     CoeffDerivMatrix evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialSingleImpl(

@@ -6,6 +6,8 @@
 
 #include "localFunctionInterface.hh"
 namespace Ikarus {
+
+  /** Helper to evaluate the local basis ansatz function and gradient with an integration point index or coordinate vector*/
   template <typename DomainTypeOrIntegrationPointIndex, typename Basis>
   auto evaluateFunctionAndDerivativeWithIPorCoord(const DomainTypeOrIntegrationPointIndex& localOrIpId,
                                                   const Basis& basis) {
@@ -27,6 +29,7 @@ namespace Ikarus {
           "derivative should be evaluated");
   }
 
+  /** Helper to evaluate the local basis ansatz function gradient with an integration point index or coordinate vector*/
   template <typename DomainTypeOrIntegrationPointIndex, typename Basis>
   auto evaluateDerivativeWithIPorCoord(const DomainTypeOrIntegrationPointIndex& localOrIpId, const Basis& basis) {
     if constexpr (std::is_same_v<DomainTypeOrIntegrationPointIndex, typename Basis::DomainType>) {
@@ -44,6 +47,7 @@ namespace Ikarus {
           "derivative should be evaluated");
   }
 
+  /** Helper to evaluate the local basis ansatz function with an integration point index or coordinate vector*/
   template <typename DomainTypeOrIntegrationPointIndex, typename Basis>
   auto evaluateFunctionWithIPorCoord(const DomainTypeOrIntegrationPointIndex& localOrIpId, const Basis& basis) {
     if constexpr (std::is_same_v<DomainTypeOrIntegrationPointIndex, typename Basis::DomainType>) {
@@ -60,6 +64,7 @@ namespace Ikarus {
           "derivative should be evaluated");
   }
 
+  /** Helper to transform the derivatives if the transform arg is non-empty*/
   template <typename... TransformArgs>
   void maytransformDerivatives(const auto& dNraw, auto& dNTransformed,
                                const TransformWith<TransformArgs...>& transArgs) {

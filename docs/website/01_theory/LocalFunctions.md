@@ -20,19 +20,28 @@ FunctionReturnType evaluateFunction(const unsigned int& integrationPointIndex);
 auto evaluateDerivative(const DomainType& local,...);
 auto evaluateDerivative(const unsigned int& integrationPointIndex,...);
 auto viewOverIntegrationPoints(); // (1)
-template<std::size_t ID>
-constexpr int order(Dune::index_constant<ID> );
-template<std::size_t ID>
-auto basis(Dune::index_constant<ID> );
-
-
+template<std::size_t ID=0>
+constexpr int order(Dune::index_constant<ID> ); // (2)
+template<std::size_t ID=0>
+auto basis(Dune::index_constant<ID> ); // (3)
+template<std::size_t ID=0>
+auto coefficientsRef(Dune::index_constant<ID>); // (4)
 
 template <typename IntegrationRule, typename... Ints>
-void bind(IntegrationRule&& p_rule, Derivatives<Ints...>&& ints); // (2)
+void bind(IntegrationRule&& p_rule, Derivatives<Ints...>&& ints); // (5)
+
+auto clone (); // (6)
+template<typename ScalarType, std::size_t ID=0>
+auto rebindClone (ScalarType, Dune::index_constant<ID>); // (7)
 ```
 
 1. This returns a vector of structs of the integration point and its index. Therefore the syntax is usually `#!cpp for (const auto& [gpIndex, gp] : localFunction.viewOverIntegrationPoints()) {...}`
-2. This function is passed through to the given `localBasis`. See [Link](LocalBasis.md)
+2. Return the order of the local function wrt. the coefficients. An id tag can be passed which returns the order wrt a tagged function. For details see [Tagging leaf local functions](#tagging-leaf-local-functions).
+3. Return the basis of the local function. An id tag can be passed which returns the basis of a specific tagged function. For details see [Tagging leaf local functions](#tagging-leaf-local-functions).
+4. Returns a reference to the coefficient of the underlying leaf local finite elements. An id tag can be passed which returns the basis of a specific tagged function. It can return const and non-const reference. The non-const version is deactivated, if there are more than one leaf node with the passed id tag.  For details see [Tagging leaf local functions](#tagging-leaf-local-functions).
+5. This function is passed through to the given `localBasis`. See [Link](LocalBasis.md)
+6. Clones the local function and stores a copy of all leave nodes.
+7. Clones the local function and rebinds the scalar type of the coefficients with id tag ID. This becomes hand, if you want to replace doubles with an autodiff type.
 
 The "..." in the `evaluateDerivative` function call are several variadic templates.
 In action this looks like
@@ -241,10 +250,10 @@ In the follwing table $N^i(\boldsymbol{\xi})$ are the ansatz functions.
 
 ## How to implement your own local functions
 If you are interested in implementing your own local function we have prepared the file
-[`ikarus/LocalFunctions/LocalFunctionTemplate.h`](https://github.com/IkarusRepo/Ikarus/src/include/ikarus/LocalFunctions/LocalFunctionTemplate.h).
+[`ikarus/localFunctions/impl/localFunctionTemplate.hh`](https://github.com/IkarusRepo/Ikarus/src/include/ikarus/localFunctions/impl/localFunctionTemplate.hh).
 
 You can copy the file rename the class to your preferred name and then implement the following functions. If you don't need a function you need to delete the corresponding function.
-Then if someone calls the corresponding derivative the call fails at compile time.
+Then if someone calls the corresponding derivative returns a zero matrix.
 
 ```cpp
 FunctionReturnType evaluateEmbeddingFunctionImpl(const Eigen::VectorXd& N) const { return FunctionReturnType{}; } // (0)
@@ -278,7 +287,7 @@ CoeffDerivMatrix evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(const AnsatzFun
                                                                  const int spatialIndex) const {...} // (6)
 
 
-std::array<CoeffDerivMatrix, gridDim> 
+CoeffDerivMatrix 
         evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialImpl(const AnsatzFunctionType& N, 
                                                                const AnsatzFunctionJacobian& dN, 
                                                                const AlongType& along,
@@ -300,8 +309,8 @@ CoeffDerivMatrix
 4. This is called by `localFunction.evaluateDerivative(..., wrt(coeff(j,k)))`.
 5. This is called by `localFunction.evaluateDerivative(..., wrt(spatialAll,coeff(j)))`.
 6. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i),coeff(j)))`.
-7. This is called by `localFunction.evaluateDerivative(..., wrt(spatialAll,coeff(j,k)))`.
-8. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i),coeff(j,k)))`.
+7. This is called by `localFunction.evaluateDerivative(..., wrt(spatialAll,coeff(j,k)), along(A))`.
+8. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i),coeff(j,k)), along(v))`.
 
 ## Expressions
 We use expression templates[^et] to combine existing local functions to obtain new nested ones.
@@ -420,4 +429,9 @@ auto hessianDirichletEnergy(Matrix& h) {
 
 1. This Block structure is not necessary. In this example all types (MatrixBlock00,MatrixBlock01,MatrixBlock10,MatrixBlock11) are considered as `#!cpp Eigen::MatrixXd`.
 
+
+## Writing your own expression
+You can also write your own expressions. For this you can look into existing expressions. Especially the sqrt expression and the dot expression are the most general unary and binary expression
+
+If your expression is working you should add it to `ikarus/localfunctions/expressions.hh`
 \bibliography

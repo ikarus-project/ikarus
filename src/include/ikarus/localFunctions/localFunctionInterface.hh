@@ -60,13 +60,15 @@ namespace Ikarus {
                                 std::forward<TransformWith<TransformArgs...>>(transArgs));
     }
 
+    /** Return the view of the integration points of the bound Basis with id I */
     template <std::size_t I = 0>
-    auto viewOverIntegrationPoints(Dune::index_constant<I> = Dune::index_constant<0UL>()) const {
+    auto viewOverIntegrationPoints(Dune::index_constant<I> = Dune::index_constant<I>()) const {
       auto leafNodeCollection = collectLeafNodeLocalFunctions(impl());
       auto node               = leafNodeCollection.node(Dune::index_constant<I>());
       return node.basis().viewOverIntegrationPoints();
     }
 
+    /** Return the a non const reference of the coefficients if the leaf node with id tag I is unique. Otherwise this function is deactivated */
     template <std::size_t I = 0>
     requires(Std::countType<typename LocalFunctionImpl::Ids, Dune::index_constant<I>>()
              == 1) auto& coefficientsRef(Dune::index_constant<I> = Dune::index_constant<I>()) {
@@ -74,6 +76,7 @@ namespace Ikarus {
       return collectLeafNodeLocalFunctions(impl()).coefficientsRef(Dune::index_constant<I>());
     }
 
+    /** Return the a non const reference of the coefficients of the leaf node with id tag I. */
     template <std::size_t I = 0>
      const auto& coefficientsRef(Dune::index_constant<I> = Dune::index_constant<I>()) const {
       return collectLeafNodeLocalFunctions(impl()).coefficientsRef(Dune::index_constant<I>());

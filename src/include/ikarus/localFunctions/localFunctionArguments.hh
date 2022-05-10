@@ -34,6 +34,7 @@ namespace Ikarus {
     }
   };
 
+  /** This class contains all the arguments a local function evaluation consumes */
   template <typename... WrtArgs, typename... TransformArgs, typename... AlongArgs,
             typename DomainTypeOrIntegrationPointIndex>
   struct LocalFunctionEvaluationArgs<Wrt<WrtArgs...>, Along<AlongArgs...>, TransformWith<TransformArgs...>,
