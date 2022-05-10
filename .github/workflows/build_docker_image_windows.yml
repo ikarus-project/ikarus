@@ -3,13 +3,13 @@ name: Build Docker Images
 on:
   push:
     branches:
-      - 'master'
+      - 'main'
     paths:
       - 'scripts/ci_docker/windows/DockerFile'
       - '.github/workflows/build_docker_image_windows.yml'
   pull_request:
     branches:
-      - 'master'
+      - 'main'
     paths:
       - 'scripts/ci_docker/windows/DockerFile'
       - '.github/workflows/build_docker_image_windows.yml'
