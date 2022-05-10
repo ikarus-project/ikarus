@@ -3,11 +3,11 @@
 ////
 //
 #pragma once
-#include <autodiff/forward/dual/dual.hpp>
-#include <autodiff/forward/dual/eigen.hpp>
-
 #include "../interface/finiteElementFunctionConcepts.hh"
 #include "../physicsHelper.hh"
+
+#include <autodiff/forward/dual/dual.hpp>
+#include <autodiff/forward/dual/eigen.hpp>
 
 namespace Ikarus {
   ////This element can not be used on its own but it should be inherited from

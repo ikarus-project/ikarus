@@ -61,9 +61,10 @@ namespace Ikarus {
     unsigned int size() { return duneLocalBasis->size(); }
 
     /* Returns the number of integration points if the basis is bound */
-    unsigned int integrationPointSize()const {
+    unsigned int integrationPointSize() const {
       if (not Nbound) throw std::logic_error("You have to bind the basis first");
-      return Nbound.value().size(); }
+      return Nbound.value().size();
+    }
 
     /* Binds this basis to a given integration rule */
     template <typename IntegrationRule, typename... Ints>
@@ -125,13 +126,12 @@ namespace Ikarus {
         assert(false && "You need to call bind first");
         __builtin_unreachable();
       }
-
     }
 
   private:
     mutable std::vector<JacobianDuneType> dNdune{};
     mutable std::vector<RangeDuneType> Ndune{};
-    DuneLocalBasis const* duneLocalBasis; //FIXME pass shared_ptr around
+    DuneLocalBasis const* duneLocalBasis;  // FIXME pass shared_ptr around
     std::optional<std::set<int>> boundDerivatives;
     std::optional<std::vector<Eigen::VectorX<RangeFieldType>>> Nbound{};
     std::optional<std::vector<Eigen::Matrix<RangeFieldType, Eigen::Dynamic, gridDim>>> dNbound{};

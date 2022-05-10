@@ -4,8 +4,6 @@
 
 #include <config.h>
 
-#include <ikarus/localFunctions/impl/standardLocalFunction.hh>
-
 #include <autodiff/forward/dual/dual.hpp>
 #include <matplot/matplot.h>
 
@@ -24,6 +22,7 @@
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/finiteElements/feBases/autodiffFE.hh>
 #include <ikarus/localBasis/localBasis.hh>
+#include <ikarus/localFunctions/impl/standardLocalFunction.hh>
 #include <ikarus/utils/algorithms.hh>
 #include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/utils/eigenDuneTransformations.hh>
@@ -179,17 +178,17 @@ int main(int argc, char **argv) {
 
   auto fintFunction = [&](auto &&lambdaLocal, auto &&dLocal) -> auto & {
     Ikarus::FErequirements req = FErequirementsBuilder()
-        .insertGlobalSolution(Ikarus::FESolutions::displacement, dLocal)
-        .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
-        .addAffordance(Ikarus::VectorAffordances::forces)
+                                     .insertGlobalSolution(Ikarus::FESolutions::displacement, dLocal)
+                                     .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+                                     .addAffordance(Ikarus::VectorAffordances::forces)
                                      .build();
     return denseFlatAssembler.getReducedVector(req);
   };
   auto KFunction = [&](auto &&lambdaLocal, auto &&dLocal) -> auto & {
     Ikarus::FErequirements req = FErequirementsBuilder()
-        .insertGlobalSolution(Ikarus::FESolutions::displacement, dLocal)
-        .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
-        .addAffordance(Ikarus::MatrixAffordances::stiffness)
+                                     .insertGlobalSolution(Ikarus::FESolutions::displacement, dLocal)
+                                     .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+                                     .addAffordance(Ikarus::MatrixAffordances::stiffness)
                                      .build();
     return sparseFlatAssembler.getReducedMatrix(req);
   };

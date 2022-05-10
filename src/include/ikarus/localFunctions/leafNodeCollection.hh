@@ -3,9 +3,11 @@
 //
 
 #pragma once
-#include <ikarus/utils/traits.hh>
-#include <dune/common/indices.hh>
 #include "meta.hh"
+
+#include <dune/common/indices.hh>
+
+#include <ikarus/utils/traits.hh>
 namespace Ikarus {
   namespace Impl {
 
@@ -13,8 +15,7 @@ namespace Ikarus {
     class LocalFunctionInterface;
 
     template <typename LF>
-      requires(!std::is_arithmetic_v<LF>)
-    consteval int countNonArithmeticLeafNodesImpl() {
+    requires(!std::is_arithmetic_v<LF>) consteval int countNonArithmeticLeafNodesImpl() {
       if constexpr (Std::isSpecialization<std::tuple, typename LF::Ids>::value) {
         constexpr auto predicate = []<typename Type>(Type) { return Type::value != Ikarus::arithmetic; };
         return std::tuple_size_v<decltype(Std::filter(typename LF::Ids(), predicate))>;
@@ -23,7 +24,7 @@ namespace Ikarus {
     }
 
     template <typename LF>
-      requires LocalFunction<LF>
+    requires LocalFunction<LF>
     auto collectNonArithmeticLeafNodesImpl(LF&& a) {
       using LFRaw = std::remove_cvref_t<LF>;
       //    static_assert(LocalFunction<LF>,"Only passing LocalFunctions allowed");
@@ -47,13 +48,13 @@ namespace Ikarus {
   }
 
   template <typename LF>
-    requires LocalFunction<LF>
+  requires LocalFunction<LF>
   auto collectNonArithmeticLeafNodes(LF&& a) {
     return Std::makeNestedTupleFlatAndStoreReferences(Impl::collectNonArithmeticLeafNodesImpl(a.impl()));
   }
 
   template <typename LF>
-    requires LocalFunction<LF>
+  requires LocalFunction<LF>
   struct LocalFunctionLeafNodeCollection {
     using LFRaw = std::remove_cvref_t<LF>;
     /* Since we need to enable perfect forwaring we have to implement this universal constructor. We also constrain it
@@ -62,12 +63,12 @@ namespace Ikarus {
      * https://eel.is/c++draft/temp.deduct.call#3
      * */
     template <typename LF_>
-      requires LocalFunction<LF_>
-    LocalFunctionLeafNodeCollection(LF_&& lf) : leafNodes{collectNonArithmeticLeafNodes(std::forward<LF_>(lf))} {}
+    requires LocalFunction<LF_> LocalFunctionLeafNodeCollection(LF_&& lf)
+        : leafNodes{collectNonArithmeticLeafNodes(std::forward<LF_>(lf))} {}
 
     template <std::size_t I = 0>
-      requires(Std::countType<typename LFRaw::Ids, Dune::index_constant<I>>() == 1)
-    auto& coefficientsRef(Dune::index_constant<I> = Dune::index_constant<0UL>()) {
+    requires(Std::countType<typename LFRaw::Ids, Dune::index_constant<I>>()
+             == 1) auto& coefficientsRef(Dune::index_constant<I> = Dune::index_constant<I>()) {
       static_assert(
           Std::countType<typename LFRaw::Ids, Dune::index_constant<I>>() == 1,
           "Non-const coefficientsRef() can only be called, if there is only one node with the given leaf node ID.");
@@ -75,7 +76,7 @@ namespace Ikarus {
     }
 
     template <std::size_t I = 0>
-    const auto& coefficientsRef(Dune::index_constant<I> = Dune::index_constant<0UL>()) {
+    const auto& coefficientsRef(Dune::index_constant<I> = Dune::index_constant<0UL>()) const {
       return std::get<I>(leafNodes).coefficientsRef();
     }
 
@@ -96,19 +97,15 @@ namespace Ikarus {
       return std::get<I>(leafNodes);
     }
 
-    constexpr auto size() {
-      return Dune::index_constant<std::tuple_size_v<LeafNodeTuple>>();
-    }
-
+    constexpr auto size() { return Dune::index_constant<std::tuple_size_v<LeafNodeTuple>>(); }
 
     using LeafNodeTuple = decltype(collectNonArithmeticLeafNodes(std::declval<LF&&>()));
-    private:
+
+  private:
     LeafNodeTuple leafNodes;
   };
 
   template <typename LF>
-    requires LocalFunction<LF>
-  auto collectLeafNodeLocalFunctions(LF&& lf) {
-    return LocalFunctionLeafNodeCollection<LF>(std::forward<LF>(lf));
-  }
+  requires LocalFunction<LF>
+  auto collectLeafNodeLocalFunctions(LF&& lf) { return LocalFunctionLeafNodeCollection<LF>(std::forward<LF>(lf)); }
 }  // namespace Ikarus

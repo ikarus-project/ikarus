@@ -21,7 +21,6 @@ namespace Ikarus {
     using ctype      = ct;
     using field_type = ct;
 
-
     /** \brief Size of how much values are needed to store the manifold */
     static constexpr int valueSize = d;
 
@@ -36,15 +35,16 @@ namespace Ikarus {
 
     RealTuple() = default;
 
-    template <typename ctOther,int dOther> requires std::convertible_to<ctOther,ctype>
+    template <typename ctOther, int dOther>
+    requires std::convertible_to<ctOther, ctype>
     friend class RealTuple;
 
     /** \brief Copy assignement if the other type has different underlying type*/
-    template<typename ctype_> requires std::convertible_to<ctype_,ctype>
-    RealTuple<ctype,d>& operator=(const RealTuple<ctype_,d>& other)
-    {
+    template <typename ctype_>
+    requires std::convertible_to<ctype_, ctype> RealTuple<ctype, d>
+    &operator=(const RealTuple<ctype_, d> &other) {
       var = other.var;
-    return *this;
+      return *this;
     }
 
     template <typename OtherType>
@@ -54,9 +54,7 @@ namespace Ikarus {
 
     /** \brief Compute an orthonormal basis of the tangent space of R^n.
      * This is simply the identity matrix  */
-    auto orthonormalFrame() const {
-      return Eigen::Matrix<ctype, valueSize, correctionSize>::Identity();
-    }
+    auto orthonormalFrame() const { return Eigen::Matrix<ctype, valueSize, correctionSize>::Identity(); }
 
     /** \brief Copy-Constructor from the values in terms of coordinateType */
     explicit RealTuple(const CoordinateType &vec) noexcept : var{vec} {}
@@ -107,31 +105,32 @@ namespace Ikarus {
 
   template <typename ctype2, int d2, typename CorrectionType>
   [[nodiscard]] RealTuple<ctype2, d2> operator+(const RealTuple<ctype2, d2> &rt, const CorrectionType &correction) {
-    if constexpr(std::is_same_v<RealTuple<ctype2, d2>,CorrectionType>)
-    return RealTuple<ctype2, d2>(rt.getValue() + correction.getValue());
+    if constexpr (std::is_same_v<RealTuple<ctype2, d2>, CorrectionType>)
+      return RealTuple<ctype2, d2>(rt.getValue() + correction.getValue());
     else
-    return RealTuple<ctype2, d2>(rt.getValue() + correction);
+      return RealTuple<ctype2, d2>(rt.getValue() + correction);
   }
 
-template <typename ctype2, int d2>
-[[nodiscard]] RealTuple<ctype2, d2> operator-(const RealTuple<ctype2, d2> &rt) {
+  template <typename ctype2, int d2>
+  [[nodiscard]] RealTuple<ctype2, d2> operator-(const RealTuple<ctype2, d2> &rt) {
     return RealTuple<ctype2, d2>(-rt.getValue());
-}
+  }
 
-  template <typename ctype2, int d2, typename Scalar> requires std::is_arithmetic_v<Scalar>
+  template <typename ctype2, int d2, typename Scalar>
+  requires std::is_arithmetic_v<Scalar>
   [[nodiscard]] RealTuple<ctype2, d2> operator*(const RealTuple<ctype2, d2> &rt, const Scalar &factor) {
-      return RealTuple<ctype2, d2>(rt.getValue() *factor);
+    return RealTuple<ctype2, d2>(rt.getValue() * factor);
   }
 
-  template <typename ctype2, int d2, typename Scalar> requires std::is_arithmetic_v<Scalar>
-      [[nodiscard]] RealTuple<ctype2, d2> operator*(const Scalar &factor,const RealTuple<ctype2, d2> &rt) {
-    return rt*factor;
+  template <typename ctype2, int d2, typename Scalar>
+  requires std::is_arithmetic_v<Scalar>
+  [[nodiscard]] RealTuple<ctype2, d2> operator*(const Scalar &factor, const RealTuple<ctype2, d2> &rt) {
+    return rt * factor;
   }
 
-template <typename ctype2, int d2>
-bool operator==(const RealTuple<ctype2, d2> &v1,const RealTuple<ctype2, d2> &v2)
-{
-  return  v1.getValue()==v2.getValue();
-}
+  template <typename ctype2, int d2>
+  bool operator==(const RealTuple<ctype2, d2> &v1, const RealTuple<ctype2, d2> &v2) {
+    return v1.getValue() == v2.getValue();
+  }
 
-}  // namespace Ikarus::Manifold
+}  // namespace Ikarus

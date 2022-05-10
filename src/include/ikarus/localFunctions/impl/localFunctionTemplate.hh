@@ -24,7 +24,7 @@ namespace Ikarus {
   public:
     friend Base;
     LocalFunctionTemplate(const Ikarus::LocalBasis<DuneBasis>& basis_, const CoeffContainer& coeffs_)
-        : basis{basis_}, coeffs{coeffs_}, coeffsAsMat{Ikarus::::viewAsEigenMatrixFixedDyn(coeffs)} {}
+        : basis{basis_}, coeffs{coeffs_}, coeffsAsMat{Ikarus:: ::viewAsEigenMatrixFixedDyn(coeffs)} {}
 
     using Traits = LocalFunctionTraits<LocalFunctionTemplate>;
 
@@ -106,7 +106,7 @@ namespace Ikarus {
 
     const Ikarus::LocalBasis<DuneBasis>& basis;
     CoeffContainer coeffs;
-    const decltype(Ikarus::::viewAsEigenMatrixFixedDyn(coeffs)) coeffsAsMat;
+    const decltype(Ikarus:: ::viewAsEigenMatrixFixedDyn(coeffs)) coeffsAsMat;
   };
 
   template <typename DuneBasis, typename CoeffContainer>

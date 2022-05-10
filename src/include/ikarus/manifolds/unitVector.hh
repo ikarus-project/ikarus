@@ -41,7 +41,7 @@ namespace Ikarus {
     /** \brief Move-Constructor from the values in terms of coordinateType */
     explicit UnitVector(CoordinateType &&vec) noexcept : var{vec.normalized()} {}
 
-    const CoordinateType& getValue() const { return var; }
+    const CoordinateType &getValue() const { return var; }
 
     void setValue(const CoordinateType &vec) { var = vec.normalized(); }
 
@@ -179,11 +179,10 @@ namespace Ikarus {
     CoordinateType var{CoordinateType::UnitX()};
   };
 
-template <typename ctype2, int d2>
-  bool operator==(const UnitVector<ctype2, d2> &v1,const UnitVector<ctype2, d2> &v2)
-{
-    return  v1.getValue()==v2.getValue();
-}
+  template <typename ctype2, int d2>
+  bool operator==(const UnitVector<ctype2, d2> &v1, const UnitVector<ctype2, d2> &v2) {
+    return v1.getValue() == v2.getValue();
+  }
 
   template <typename ctype2, int d2>
   std::ostream &operator<<(std::ostream &s, const UnitVector<ctype2, d2> &var2) {
@@ -203,17 +202,19 @@ template <typename ctype2, int d2>
     return UnitVector<ctype2, d2>(rt.getValue() + rt.orthonormalFrame() * correction);
   }
 
-template <typename ctype2, int d2>
-class RealTuple;
+  template <typename ctype2, int d2>
+  class RealTuple;
 
-template <typename ctype2, int d2, typename Scalar> requires std::is_arithmetic_v<Scalar>
-[[nodiscard]] RealTuple<ctype2, d2> operator*(const UnitVector<ctype2, d2> &rt, const Scalar &factor) {
-  return RealTuple<ctype2, d2>(rt.getValue() *factor);
-}
+  template <typename ctype2, int d2, typename Scalar>
+  requires std::is_arithmetic_v<Scalar>
+  [[nodiscard]] RealTuple<ctype2, d2> operator*(const UnitVector<ctype2, d2> &rt, const Scalar &factor) {
+    return RealTuple<ctype2, d2>(rt.getValue() * factor);
+  }
 
-template <typename ctype2, int d2, typename Scalar> requires std::is_arithmetic_v<Scalar>
-[[nodiscard]] RealTuple<ctype2, d2> operator*(const Scalar &factor,const UnitVector<ctype2, d2> &rt) {
-  return rt*factor;
-}
+  template <typename ctype2, int d2, typename Scalar>
+  requires std::is_arithmetic_v<Scalar>
+  [[nodiscard]] RealTuple<ctype2, d2> operator*(const Scalar &factor, const UnitVector<ctype2, d2> &rt) {
+    return rt * factor;
+  }
 
-}  // namespace Ikarus::Manifold
+}  // namespace Ikarus

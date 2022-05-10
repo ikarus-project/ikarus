@@ -59,13 +59,13 @@ TEST(Assembler, SimpleAssemblersTest) {
     Eigen::VectorXd d(basis.size());
     d.setRandom();
     Ikarus::FErequirements req = Ikarus::FErequirementsBuilder()
-        .insertGlobalSolution(Ikarus::FESolutions::displacement, d)
-        .insertParameter(Ikarus::FEParameter::loadfactor, 0)
-        .addAffordance(Ikarus::MatrixAffordances::stiffness)
-        .build();
+                                     .insertGlobalSolution(Ikarus::FESolutions::displacement, d)
+                                     .insertParameter(Ikarus::FEParameter::loadfactor, 0)
+                                     .addAffordance(Ikarus::MatrixAffordances::stiffness)
+                                     .build();
 
-    auto& Kdense          = denseFlatAssembler.getMatrix(req);
-    auto& K               = sparseFlatAssembler.getMatrix(req);
+    auto& Kdense = denseFlatAssembler.getMatrix(req);
+    auto& K      = sparseFlatAssembler.getMatrix(req);
 
     const auto fixedDofs = std::ranges::count(dirichFlags, true);
     EXPECT_THAT(K, EigenApproxEqual(Kdense, 1e-15));

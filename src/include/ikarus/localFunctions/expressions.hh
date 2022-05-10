@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "expressions/sumExpr.hh"
 #include "expressions/dotProductExpr.hh"
 #include "expressions/negateExpr.hh"
 #include "expressions/scaleExpr.hh"
 #include "expressions/sqrtExpr.hh"
+#include "expressions/sumExpr.hh"

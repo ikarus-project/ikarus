@@ -191,13 +191,13 @@ namespace Ikarus {
       return extractWrtArgsTwoCoeffsToSingleCoeff(a);
   }
 
-
   /* This fnctions takes localfunction arguments and replaces the "along" argument with the given one */
   template <typename... WrtArgs, typename... TransformArgs, typename... AlongArgs, typename... AlongArgsOther,
             typename DomainTypeOrIntegrationPointIndex>
-  auto replaceAlong(const LocalFunctionEvaluationArgs<Wrt<WrtArgs...>, Along<AlongArgs...>, TransformWith<TransformArgs...>,
-                                                      DomainTypeOrIntegrationPointIndex>& args,
-                    const Along<AlongArgsOther...>& alongArgs) {
+  auto replaceAlong(
+      const LocalFunctionEvaluationArgs<Wrt<WrtArgs...>, Along<AlongArgs...>, TransformWith<TransformArgs...>,
+                                        DomainTypeOrIntegrationPointIndex>& args,
+      const Along<AlongArgsOther...>& alongArgs) {
     auto newArgs = LocalFunctionEvaluationArgs<Wrt<WrtArgs...>, Along<AlongArgsOther...>,
                                                TransformWith<TransformArgs...>, DomainTypeOrIntegrationPointIndex>(
         args.integrationPointOrIndex, args.wrtArgs, alongArgs, args.transformWithArgs, false);
@@ -209,7 +209,5 @@ namespace Ikarus {
 
     return newArgs;
   }
-
-
 
 }  // namespace Ikarus

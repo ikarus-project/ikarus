@@ -4,14 +4,15 @@
 
 #pragma once
 
-#include <vector>
-#include <set>
 #include <iostream>
+#include <set>
+#include <vector>
+
 #include <Eigen/Core>
 
 namespace Ikarus {
 
-// clang-format off
+  // clang-format off
   enum class ScalarAffordances {
     noAffordance,
     mechanicalPotentialEnergy,
@@ -60,7 +61,7 @@ namespace Ikarus {
     cauchyStress,
     director
   };
-// clang-format on
+  // clang-format on
 
   struct AffordanceCollection {
     ScalarAffordances scalarAffordances{ScalarAffordances::noAffordance};
@@ -70,9 +71,8 @@ namespace Ikarus {
 
   template <typename Type>
   concept FEAffordance
-      = std::is_same_v<
-            Type,
-            ScalarAffordances> or std::is_same_v<Type, VectorAffordances> or std::is_same_v<Type, MatrixAffordances> or std::is_same_v<AffordanceCollection, MatrixAffordances>;
+      = std::is_same_v<Type, ScalarAffordances> or std::is_same_v<Type, VectorAffordances> or std::is_same_v<
+          Type, MatrixAffordances> or std::is_same_v<AffordanceCollection, MatrixAffordances>;
 
   inline constexpr VectorAffordances forces = VectorAffordances::forces;
 
@@ -95,13 +95,12 @@ namespace Ikarus {
   public:
     const SolutionVectorType &getSolution(FESolutions &&key) const {
       try {
-        return   sols.at(key).get();
-      }
-      catch ( std::out_of_range& oor ) {
-        std::cerr << "Out of Range error: " << oor.what() << " in getSolution"<<std::endl;
+        return sols.at(key).get();
+      } catch (std::out_of_range &oor) {
+        std::cerr << "Out of Range error: " << oor.what() << " in getSolution" << std::endl;
         abort();
       }
-     }
+    }
 
     const ParameterType &getParameter(FEParameter &&key) const { return parameter.at(key).get(); }
 
@@ -163,48 +162,39 @@ namespace Ikarus {
     AffordanceCollection affordances;
   };
 
-  template<typename ParameterType = double>
-  class ResultTypeMap
-  {
-   public:
-    using ResultArray = Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,0,3,3>;
-    void insertOrAssignResult(ResultType&& resultType, const ResultArray& resultArray )
-    {
-      results.insert_or_assign(resultType,resultArray);
+  template <typename ParameterType = double>
+  class ResultTypeMap {
+  public:
+    using ResultArray = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, 0, 3, 3>;
+    void insertOrAssignResult(ResultType &&resultType, const ResultArray &resultArray) {
+      results.insert_or_assign(resultType, resultArray);
     }
 
-    ResultArray& getResult(ResultType&& resultType)
-    {
-      return results.at(resultType);
-    }
+    ResultArray &getResult(ResultType &&resultType) { return results.at(resultType); }
 
-   private:
-    std::map<ResultType,ResultArray> results;
+  private:
+    std::map<ResultType, ResultArray> results;
   };
 
-
-template <typename SolutionVectorType = Eigen::VectorXd, typename ParameterType_ = double>
-  class ResultRequirements : public FErequirements<SolutionVectorType,ParameterType_> {
-   public:
+  template <typename SolutionVectorType = Eigen::VectorXd, typename ParameterType_ = double>
+  class ResultRequirements : public FErequirements<SolutionVectorType, ParameterType_> {
+  public:
     using ParameterType = ParameterType_;
 
-    ResultRequirements(FErequirements<SolutionVectorType,ParameterType>&& req, std::set<ResultType>&& p_resType):
-        FErequirements<SolutionVectorType,ParameterType>(std::move(req)), resType(std::move(p_resType)){}
+    ResultRequirements(FErequirements<SolutionVectorType, ParameterType> &&req, std::set<ResultType> &&p_resType)
+        : FErequirements<SolutionVectorType, ParameterType>(std::move(req)), resType(std::move(p_resType)) {}
     bool isResultRequested(ResultType &&key) const { return resType.contains(key); }
 
-   private:
+  private:
     std::set<ResultType> resType;
   };
 
+  template <typename Type>
+  concept ResultTypeConcept = std::is_same_v<Type, ResultType>;
 
-template<typename Type>
- concept ResultTypeConcept = std::is_same_v<Type,ResultType>;
-
-template <typename SolutionVectorType = Eigen::VectorXd, typename ParameterType = double>
-  class ResultRequirementsBuilder
-  {
+  template <typename SolutionVectorType = Eigen::VectorXd, typename ParameterType = double>
+  class ResultRequirementsBuilder {
   public:
-
     template <FEAffordance Affordance>
     ResultRequirementsBuilder &addAffordance(Affordance &&affordance) {
       reqB.addAffordance(std::forward<Affordance>(affordance));
@@ -221,21 +211,20 @@ template <typename SolutionVectorType = Eigen::VectorXd, typename ParameterType 
       return *this;
     }
 
-
-    template<ResultTypeConcept... ResultTypes>
-    ResultRequirementsBuilder & addResultRequest(ResultTypes&&... keys) {
+    template <ResultTypeConcept... ResultTypes>
+    ResultRequirementsBuilder &addResultRequest(ResultTypes &&...keys) {
       resType.insert({std::move(keys)...});
       return *this;
     }
 
-    ResultRequirements<SolutionVectorType,ParameterType> build() {
-      ResultRequirements<SolutionVectorType,ParameterType> resReq(reqB.build(),std::move(resType));
+    ResultRequirements<SolutionVectorType, ParameterType> build() {
+      ResultRequirements<SolutionVectorType, ParameterType> resReq(reqB.build(), std::move(resType));
       return resReq;
     }
 
   private:
     std::set<ResultType> resType;
-    FErequirementsBuilder<SolutionVectorType,ParameterType> reqB;
+    FErequirementsBuilder<SolutionVectorType, ParameterType> reqB;
   };
 
 }  // namespace Ikarus

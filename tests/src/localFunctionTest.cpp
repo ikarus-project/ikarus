@@ -36,8 +36,6 @@
 
 using namespace Dune::Functions::BasisFactory;
 
-
-
 template <typename T>
 class LocalFunctionProjectionBasedUnitVector : public testing::Test {
 public:
@@ -175,10 +173,9 @@ TYPED_TEST(LocalFunctionProjectionBasedUnitVector, ProjectionBasedUnitVector) {
       EXPECT_DOUBLE_EQ(directoreval.norm(), 1.0);
       EXPECT_THAT(directorCached, EigenApproxEqual(directoreval, 1e-15));
       EXPECT_NEAR((directoreval.transpose() * jaco2).norm(), 0.0, 1e-15);
-      EXPECT_NEAR((Ikarus::UnitVector<double, size>::derivativeOfProjectionWRTposition(directoreval)
-                   * directoreval)
-                      .norm(),
-                  0.0, 1e-15);
+      EXPECT_NEAR(
+          (Ikarus::UnitVector<double, size>::derivativeOfProjectionWRTposition(directoreval) * directoreval).norm(),
+          0.0, 1e-15);
 
       ++gpIndex;
     }

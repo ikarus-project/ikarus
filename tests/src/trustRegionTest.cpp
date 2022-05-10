@@ -7,9 +7,9 @@
 #include "testHelpers.hh"
 
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
-#include <ikarus/solver/nonLinearSolver/trustRegion.hh>
-#include <ikarus/manifolds/unitVector.hh>
 #include <ikarus/manifolds/realTuple.hh>
+#include <ikarus/manifolds/unitVector.hh>
+#include <ikarus/solver/nonLinearSolver/trustRegion.hh>
 
 auto f(const Eigen::Vector<double, 1>& x) { return 0.5 * x[0] * x[0]; }
 auto df(const Eigen::Vector<double, 1>& x) {

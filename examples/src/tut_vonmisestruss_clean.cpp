@@ -20,8 +20,8 @@
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/controlRoutines/loadControl.hh>
 #include <ikarus/finiteElements/feBases/autodiffFE.hh>
-#include <ikarus/finiteElements/mechanics/displacementFE.hh>
 #include <ikarus/finiteElements/interface/feTraits.hh>
+#include <ikarus/finiteElements/mechanics/displacementFE.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/linearSolver/linearSolver.hh>
 #include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
@@ -116,9 +116,9 @@ int main() {
 
   auto RFunction = [&](auto&& u, auto&& lambdaLocal) -> auto& {
     Ikarus::FErequirements req = FErequirementsBuilder()
-        .insertGlobalSolution(Ikarus::FESolutions::displacement, u)
-        .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
-        .addAffordance(Ikarus::VectorAffordances::forces)
+                                     .insertGlobalSolution(Ikarus::FESolutions::displacement, u)
+                                     .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+                                     .addAffordance(Ikarus::VectorAffordances::forces)
                                      .build();
     auto& R = denseFlatAssembler.getVector(req);
     R[3] -= -lambdaLocal;
@@ -126,9 +126,9 @@ int main() {
   };
   auto KFunction = [&](auto&& u, auto&& lambdaLocal) -> auto& {
     Ikarus::FErequirements req = FErequirementsBuilder()
-        .insertGlobalSolution(Ikarus::FESolutions::displacement, u)
-        .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
-        .addAffordance(Ikarus::MatrixAffordances::stiffness)
+                                     .insertGlobalSolution(Ikarus::FESolutions::displacement, u)
+                                     .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+                                     .addAffordance(Ikarus::MatrixAffordances::stiffness)
                                      .build();
     return denseFlatAssembler.getMatrix(req);
   };

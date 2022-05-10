@@ -32,7 +32,7 @@ void draw(const GridView& gridView) {
       l->marker_size(10);
       l->marker_face_color("red");
     }
-  } else if constexpr (GridView::dimensionworld == 2) { //FIXME reduce code duplciation
+  } else if constexpr (GridView::dimensionworld == 2) {  // FIXME reduce code duplciation
     for (auto&& edge : edges(gridView)) {
       std::array<double, 2> xEdge{}, yEdge{};
       for (int i = 0; i < 2; ++i) {

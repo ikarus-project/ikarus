@@ -22,8 +22,6 @@
 // *
 
 #pragma once
-#include <ikarus/localFunctions/impl/standardLocalFunction.hh>
-
 #include <autodiff/forward/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
 #include <concepts>
@@ -40,16 +38,16 @@
 #include <ikarus/finiteElements/mechanics/displacementFE.hh>
 #include <ikarus/finiteElements/physicsHelper.hh>
 #include <ikarus/localBasis/localBasis.hh>
+#include <ikarus/localFunctions/impl/standardLocalFunction.hh>
 #include <ikarus/manifolds/realTuple.hh>
-#include <ikarus/utils/linearAlgebraHelper.hh>
 #include <ikarus/utils/eigenDuneTransformations.hh>
+#include <ikarus/utils/linearAlgebraHelper.hh>
 
 namespace Ikarus {
 
   template <typename Basis>
-  class NonLinearElasticityFE
-      : public DisplacementFE<Basis>,
-        public Ikarus::AutoDiffFE<NonLinearElasticityFE<Basis>, Basis> {
+  class NonLinearElasticityFE : public DisplacementFE<Basis>,
+                                public Ikarus::AutoDiffFE<NonLinearElasticityFE<Basis>, Basis> {
   public:
     using BaseDisp = DisplacementFE<Basis>;  // Handles globalIndices function
     using BaseAD   = AutoDiffFE<NonLinearElasticityFE<Basis>, Basis>;
@@ -60,8 +58,8 @@ namespace Ikarus {
     using LocalView         = typename Basis::LocalView;
 
     template <typename VolumeLoad>
-    NonLinearElasticityFE(Basis& globalBasis, const typename LocalView::Element& element, double emod,
-                          double nu, const VolumeLoad& p_volumeLoad)
+    NonLinearElasticityFE(Basis& globalBasis, const typename LocalView::Element& element, double emod, double nu,
+                          const VolumeLoad& p_volumeLoad)
         : BaseDisp(globalBasis, element),
           BaseAD(globalBasis, element),
           localView_{globalBasis.localView()},
@@ -103,10 +101,10 @@ namespace Ikarus {
       const auto geo = localView_.element().geometry();
       Ikarus::StandardLocalFunction uFunction(localBasis, disp);
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
-        const auto Jinv      = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
-        const auto u      = uFunction.evaluateFunction(gpIndex);
-        const auto H      = uFunction.evaluateDerivative(gpIndex, wrt(DerivativeDirections::spatialAll),
-                                                    transformWith(Jinv));
+        const auto Jinv = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
+        const auto u    = uFunction.evaluateFunction(gpIndex);
+        const auto H
+            = uFunction.evaluateDerivative(gpIndex, wrt(DerivativeDirections::spatialAll), transformWith(Jinv));
         const auto E      = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
         const auto EVoigt = toVoigt(E);
 
@@ -127,4 +125,4 @@ namespace Ikarus {
     double nu_;
   };
 
-}  // namespace Ikarus::FiniteElements
+}  // namespace Ikarus

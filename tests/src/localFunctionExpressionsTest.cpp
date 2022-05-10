@@ -36,14 +36,6 @@
 
 using namespace Dune::Functions::BasisFactory;
 
-template <typename LF, std::size_t... I>
-auto& getCoeffRefHelper(LF& lf) {
-  if constexpr (LF::isLeaf)
-    return lf.coefficientsRef();
-  else
-    return collectLeafNodeLocalFunctions(lf).coefficientsRef();
-}
-
 template <typename LF, bool isCopy = false>
 void testLocalFunction(const LF& lf) {
   spdlog::info("Testing: " + std::string(isCopy ? "Copy " : "") + Ikarus::localFunctionName(lf));
@@ -52,14 +44,14 @@ void testLocalFunction(const LF& lf) {
   using namespace Ikarus::DerivativeDirections;
   using namespace autodiff;
   using namespace Ikarus;
-  const auto& coeffs     = getCoeffRefHelper(lf);
+  const auto& coeffs     = lf.coefficientsRef();
   const size_t coeffSize = coeffs.size();
 
   constexpr int gridDim                = LF::gridDim;
   using Manifold                       = typename std::remove_cvref_t<decltype(coeffs)>::value_type;
   constexpr int localFunctionValueSize = LF::valueSize;
   constexpr int coeffValueSize         = Manifold::valueSize;
-  using ctype                  = typename Manifold::ctype;
+  using ctype                          = typename Manifold::ctype;
   constexpr int coeffCorrectionSize    = Manifold::correctionSize;
 
   for (const auto& [ipIndex, ip] : lf.viewOverIntegrationPoints()) {
@@ -84,8 +76,8 @@ void testLocalFunction(const LF& lf) {
       Eigen::Vector<double, gridDim> ipOffset = (Eigen::Vector<double, gridDim>::Random()).normalized();
       auto nonLinOpSpatialAll
           = Ikarus::NonLinearOperator(linearAlgebraFunctions(func, spatialDerivAll), parameter(ipOffset));
-      EXPECT_TRUE(
-          (checkJacobian<decltype(nonLinOpSpatialAll), Eigen::Vector<double, gridDim>>(nonLinOpSpatialAll, false,1e-2)));
+      EXPECT_TRUE((checkJacobian<decltype(nonLinOpSpatialAll), Eigen::Vector<double, gridDim>>(nonLinOpSpatialAll,
+                                                                                               false, 1e-2)));
 
       /// Perturb each spatial direction and check with derivative value
       for (int i = 0; i < gridDim; ++i) {
@@ -99,7 +91,7 @@ void testLocalFunction(const LF& lf) {
         auto funcSingle = [&](const auto& gpOffset_) {
           auto offSetSingle = ipOffset;
           offSetSingle[i] += gpOffset_[0];
-          return Eigen::Vector<ctype,localFunctionValueSize>(lf.evaluateFunction(toFieldVector(offSetSingle)));
+          return Eigen::Vector<ctype, localFunctionValueSize>(lf.evaluateFunction(toFieldVector(offSetSingle)));
         };
 
         auto nonLinOpSpatialSingle = Ikarus::NonLinearOperator(linearAlgebraFunctions(funcSingle, derivDerivSingleI),
@@ -235,7 +227,7 @@ void testLocalFunction(const LF& lf) {
                 i * coeffCorrectionSize, j * coeffCorrectionSize);
 
         /// if the order of the function value is less then quadratic then this should yield a vanishing derivative
-        if constexpr (lf.template order<> < quadratic) {
+        if constexpr (lf.order() < quadratic) {
           EXPECT_TRUE(jacobianWRTCoeffsTwoTimesSpatialAll.norm() < tol);
           EXPECT_TRUE(jacobianWRTCoeffsTwoTimesSpatialAllExpected.norm() < tol);
         } else {
@@ -260,7 +252,7 @@ void testLocalFunction(const LF& lf) {
   spdlog::info("done. ");
   if constexpr (not isCopy) {  //  test the cloned local function
     const auto lfCopy     = lf.clone();
-    const auto& coeffCopy = getCoeffRefHelper(lfCopy);
+    const auto& coeffCopy = lfCopy.coefficientsRef();
     for (size_t i = 0; i < coeffSize; ++i)
       EXPECT_EQ(coeffs[i], coeffCopy[i]);  // since the coeffs are copied the values should be the same
 
@@ -274,7 +266,7 @@ TEST(LocalFunctionTests, TestExpressions) {
   constexpr int sizeD = 3;
   using Manifold      = Ikarus::RealTuple<double, sizeD>;
   using Manifold2     = Ikarus::UnitVector<double, sizeD>;
-  using VectorType    =  Eigen::Vector<double, sizeD>;
+  using VectorType    = Eigen::Vector<double, sizeD>;
   using MatrixType    = Eigen::Matrix<double, sizeD, sizeD>;
   constexpr int size  = Manifold::valueSize;
   using namespace Ikarus;
@@ -282,9 +274,9 @@ TEST(LocalFunctionTests, TestExpressions) {
   auto grid             = createGrid<Grids::Yasp>(5, 5);
   constexpr int gridDim = std::remove_reference_t<decltype(*grid)>::dimension;
 
-  auto gridView = grid->leafGridView();
+  auto gridView        = grid->leafGridView();
   const auto& indexSet = gridView.indexSet();
-  auto basis    = makeBasis(gridView, lagrange<2>());
+  auto basis           = makeBasis(gridView, lagrange<2>());
   Dune::BlockVector<Manifold> vBlocked(basis.size());
   Dune::BlockVector<Manifold> vBlocked2(basis.size());
   Dune::BlockVector<Manifold2> vBlocked3(basis.size());
@@ -299,8 +291,8 @@ TEST(LocalFunctionTests, TestExpressions) {
 
   auto localView = basis.localView();
   for (auto& ele : elements(gridView)) {
-    std::cout<<"Test on Element: "<<indexSet.index(ele)<<std::endl;
-    std::cout<<"=============================="<<std::endl;
+    std::cout << "Test on Element: " << indexSet.index(ele) << std::endl;
+    std::cout << "==============================" << std::endl;
     localView.bind(ele);
     const auto& fe   = localView.tree().finiteElement();
     auto localBasis  = Ikarus::LocalBasis(localView.tree().finiteElement().localBasis());
@@ -317,23 +309,23 @@ TEST(LocalFunctionTests, TestExpressions) {
       vBlockedLocal3[i] = vBlocked3[globalIndex[0]];
     }
     auto f = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal);
-    static_assert(f.template order<> == linear);
+    static_assert(f.order() == linear);
     auto g = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal);
-    static_assert(g.template order<> == linear);
+    static_assert(g.order() == linear);
     auto gP = Ikarus::ProjectionBasedLocalFunction(localBasis, vBlockedLocal3);
-    static_assert(gP.template order<> == nonLinear);
-
-    static_assert(countNonArithmeticLeafNodes(f) == 1);
+    static_assert(gP.order() == nonLinear);
+//    f.
+        static_assert(countNonArithmeticLeafNodes(f) == 1);
     static_assert(countNonArithmeticLeafNodes(g) == 1);
     using namespace Ikarus::DerivativeDirections;
     auto h   = f + g;
     auto ft2 = 2 * f;
     auto f23 = 2 * f * 3;
     auto mf  = -f;
-    static_assert(h.template order<> == linear);
-    static_assert(ft2.template order<> == linear);
-    static_assert(f23.template order<> == linear);
-    static_assert(f.template order<> == mf.template order<>);
+    static_assert(h.order() == linear);
+    static_assert(ft2.order() == linear);
+    static_assert(f23.order() == linear);
+    static_assert(f.order() == mf.order());
 
     auto a     = collectNonArithmeticLeafNodes(h);
     auto hLeaf = collectLeafNodeLocalFunctions(h);
@@ -343,8 +335,8 @@ TEST(LocalFunctionTests, TestExpressions) {
     static_assert(std::is_same_v<decltype(h)::Ids, std::tuple<Dune::index_constant<0>, Dune::index_constant<0>>>);
 
     for (size_t i = 0; i < fe.size(); ++i) {
-      EXPECT_TRUE(collectLeafNodeLocalFunctions(h).coefficientsRef(_0)[i] == vBlockedLocal[i]);
-      EXPECT_TRUE(collectLeafNodeLocalFunctions(h).coefficientsRef(_1)[i] == vBlockedLocal[i]);
+      EXPECT_TRUE(h.coefficientsRef(_0)[i] == vBlockedLocal[i]);
+      EXPECT_TRUE(h.coefficientsRef(_1)[i] == vBlockedLocal[i]);
     }
     testLocalFunction(f);
     testLocalFunction(ft2);
@@ -362,7 +354,7 @@ TEST(LocalFunctionTests, TestExpressions) {
 
     auto k = -dot(f + f, 3.0 * (g / 5.0) * 5.0);
     //    auto k = -dot(f + f, g);
-    static_assert(k.template order<> == quadratic);
+    static_assert(k.order() == quadratic);
     auto b = collectNonArithmeticLeafNodes(k);
     static_assert(std::tuple_size_v<decltype(b)> == 3);
 
@@ -374,11 +366,11 @@ TEST(LocalFunctionTests, TestExpressions) {
 
     const double tol = 1e-13;
 
-    auto dotff = dot(f, g);
+    auto dotff     = dot(f, g);
     auto sqrtdotff = sqrt(dotff);
 
     static_assert(countNonArithmeticLeafNodes(dotff) == 2);
-    static_assert(dotff.order<> == quadratic);
+    static_assert(dotff.order() == quadratic);
     static_assert(std::is_same_v<decltype(dotff)::Ids, std::tuple<Dune::index_constant<0>, Dune::index_constant<0>>>);
 
     testLocalFunction(dotff);
@@ -409,8 +401,7 @@ TEST(LocalFunctionTests, TestExpressions) {
       //      testLocalFunction(k2,gpIndex);
       const auto& N  = localBasis.evaluateFunction(gpIndex);
       const auto& dN = localBasis.evaluateJacobian(gpIndex);
-      EXPECT_DOUBLE_EQ((f2.evaluateFunction(gpIndex) + g2.evaluateFunction(gpIndex))
-                           .dot(g2.evaluateFunction(gpIndex)),
+      EXPECT_DOUBLE_EQ((f2.evaluateFunction(gpIndex) + g2.evaluateFunction(gpIndex)).dot(g2.evaluateFunction(gpIndex)),
                        k2.evaluateFunction(gpIndex)[0]);
       auto resSingleSpatial
           = ((f2.evaluateDerivative(gpIndex, wrt(spatial(0))) + g2.evaluateDerivative(gpIndex, wrt(spatial(0))))
@@ -483,5 +474,3 @@ TEST(LocalFunctionTests, TestExpressions) {
     }
   }
 }
-
-

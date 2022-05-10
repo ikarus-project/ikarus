@@ -13,8 +13,6 @@
 
 namespace Ikarus {
 
-
-
   template <typename LocalFunctionImpl>
   class LocalFunctionInterface {
   public:
@@ -29,11 +27,14 @@ namespace Ikarus {
     template <typename WrtType>
     static constexpr bool hasNoCoeff = DerivativeDirections::HasNoCoeff<WrtType>;
 
-
+    template <std::size_t ID_ = 0>
+    static constexpr auto order(Dune::index_constant<ID_> = Dune::index_constant<ID_>()) {
+      return LocalFunctionImpl::template orderID<ID_>;
+    }
 
     /** \brief Return the function value*/
     template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
-      requires IsIntegrationPointIndexOrIntegrationPointPosition<DomainTypeOrIntegrationPointIndex, DomainType>
+    requires IsIntegrationPointIndexOrIntegrationPointPosition<DomainTypeOrIntegrationPointIndex, DomainType>
     auto evaluateFunction(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
                           const TransformWith<TransformArgs...>& transArgs = transformWith()) const {
       const LocalFunctionEvaluationArgs evalArgs(ipIndexOrPosition, wrt(), along(), transArgs);
@@ -66,11 +67,22 @@ namespace Ikarus {
       return node.basis().viewOverIntegrationPoints();
     }
 
+    template <std::size_t I = 0>
+    requires(Std::countType<typename LocalFunctionImpl::Ids, Dune::index_constant<I>>()
+             == 1) auto& coefficientsRef(Dune::index_constant<I> = Dune::index_constant<I>()) {
+      auto leafNodeCollection = collectLeafNodeLocalFunctions(impl());
+      return collectLeafNodeLocalFunctions(impl()).coefficientsRef(Dune::index_constant<I>());
+    }
+
+    template <std::size_t I = 0>
+     const auto& coefficientsRef(Dune::index_constant<I> = Dune::index_constant<I>()) const {
+      return collectLeafNodeLocalFunctions(impl()).coefficientsRef(Dune::index_constant<I>());
+    }
+
     /** \brief Forward the binding to the local basis */
     template <typename IntegrationRule, typename... Ints>
-      requires std::conjunction_v<std::is_convertible<int, Ints>
-                                  ...> void
-      bind(IntegrationRule&& p_rule, Impl::Derivatives<Ints...>&& ints) {
+    requires std::conjunction_v<std::is_convertible<int, Ints>...>
+    void bind(IntegrationRule&& p_rule, Impl::Derivatives<Ints...>&& ints) {
       impl().basis.bind(std::forward<IntegrationRule>(p_rule), std::forward<Impl::Derivatives<Ints...>>(ints));
     }
 
@@ -152,7 +164,7 @@ namespace Ikarus {
                                      const LocalFunctionEvaluationArgs_& localFunctionArgs);
 
     template <typename LF>
-      requires LocalFunction<LF>
+    requires LocalFunction<LF>
     friend auto collectNonArithmeticLeafNodes(LF&& a);
 
     constexpr LocalFunctionImpl const& impl() const  // CRTP

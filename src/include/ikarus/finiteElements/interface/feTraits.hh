@@ -8,7 +8,7 @@
 
 #include <ikarus/utils/concepts.hh>
 
-namespace Ikarus{
+namespace Ikarus {
 
   template <typename GridElementEntityType>
   struct FETraits {
@@ -40,7 +40,4 @@ namespace Ikarus{
     using MatrixType = Eigen::MatrixXd;
   };
 
-
-
-
-}  // namespace Ikarus::FiniteElements
+}  // namespace Ikarus

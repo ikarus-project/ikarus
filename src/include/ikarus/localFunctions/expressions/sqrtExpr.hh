@@ -20,7 +20,7 @@ namespace Ikarus {
     using E1Raw = std::remove_cvref_t<E1>;
 
     template <size_t ID_ = 0>
-    static constexpr int order = nonLinear;
+    static constexpr int orderID = nonLinear;
 
     template <typename LFArgs>
     auto evaluateValueOfExpression(const LFArgs& lfArgs) const {
@@ -36,9 +36,9 @@ namespace Ikarus {
         return Ikarus::eval(u_x / (2 * sqrt(u)));
       } else if constexpr (DerivativeOrder == 2) {  // d^3(qrt(u(x,y)))/(dxdy) = - u_x*u_y/(4*u^(3/2)) +
                                                     // u_xy/(2*sqrt(u))
-        const auto& [u_x, u_y] = evaluateFirstOrderDerivativesImpl(this->m(), lfArgs);
-        const auto u_xy        = evaluateDerivativeImpl(this->m(), lfArgs);
-          const auto u_yTimesfactor     = Ikarus::eval(u_y / (4 * std::pow(u, 3.0 / 2.0)));
+        const auto& [u_x, u_y]    = evaluateFirstOrderDerivativesImpl(this->m(), lfArgs);
+        const auto u_xy           = evaluateDerivativeImpl(this->m(), lfArgs);
+        const auto u_yTimesfactor = Ikarus::eval(u_y / (4 * std::pow(u, 3.0 / 2.0)));
         if constexpr (LFArgs::hasOneSpatialAll and LFArgs::hasSingleCoeff) {
           std::array<std::remove_cvref_t<decltype(Ikarus::eval(u_x.col(0) * u_y))>, gridDim> res;
           for (int i = 0; i < gridDim; ++i)
@@ -62,18 +62,10 @@ namespace Ikarus {
         if constexpr (LFArgs::hasOneSpatialSingle) {
           static_assert(decltype(u_x)::ColsAtCompileTime == 1);
           static_assert(decltype(u_x)::RowsAtCompileTime == 1);
-//          const auto test = eval((transpose(u_xz  ) * u_y + u_x[0] * transpose(u_yz) + transpose(u_z) * u_xy));
-//          std::cout<<"(test1-transpose(test1)).norm(): "<<(test-transpose(test)).norm()<<std::endl;
-//          const auto test2 = eval((transpose(u_y   ) * u_xz + u_x[0] * transpose(u_yz) + transpose(u_z) * u_xy));
-//          std::cout<<"(test2-transpose(test2)).norm(): "<<(test2-transpose(test2)).norm()<<std::endl;
-//          const auto test3 = eval((transpose(u_xz  ) * u_y + u_x[0] * transpose(u_yz) + transpose(u_xy ) * u_z));
-//          std::cout<<"(test3-transpose(test3)).norm(): "<<(test3-transpose(test3)).norm()<<std::endl;
-//          const auto test4 = eval((transpose(u_y   ) * u_xz + u_x[0] * transpose(u_yz) + transpose(u_xy ) * u_z));
-//          std::cout<<"(test4-transpose(test4)).norm(): "<<(test4-transpose(test4)).norm()<<std::endl;
-//          const auto test5 = eval((transpose(u_xz  ) * u_y + u_x[0] * u_yz + transpose(u_z) * u_xy));
-//          std::cout<<"(test5-transpose(test5)).norm(): "<<(test5-transpose(test5)).norm()<<std::endl;
+
           return eval(u_xyz / (2.0 * sqrt(u)) + (3.0 * u_x[0] * transpose(u_y) * u_z) / (8.0 * pow(u, 5.0 / 2.0))
-                      - ((transpose(u_y   ) * u_xz + u_x[0] * transpose(u_yz) + transpose(u_xy ) * u_z)) * udiv4timesppow32);
+                      - ((transpose(u_y) * u_xz + u_x[0] * transpose(u_yz) + transpose(u_xy) * u_z))
+                            * udiv4timesppow32);
         } else if constexpr (LFArgs::hasOneSpatialAll) {
           const auto& alongMatrix = std::get<0>(lfArgs.alongArgs.args);
           std::remove_cvref_t<decltype(Ikarus::eval(transpose(u_y) * u_z))> res;
@@ -82,7 +74,8 @@ namespace Ikarus {
           for (int i = 0; i < gridDim; ++i)
             res += alongMatrix(0, i)
                    * (3 * u_x[i] * transpose(u_y) * u_z / (8 * pow(u, 5.0 / 2.0))
-                      - (transpose(u_y  ) * u_xz[i] + u_x[i] * transpose(u_yz) + transpose(u_xy[i] ) * u_z) * udiv4timesppow32);
+                      - (transpose(u_y) * u_xz[i] + u_x[i] * transpose(u_yz) + transpose(u_xy[i]) * u_z)
+                            * udiv4timesppow32);
           return res;
         }
       }

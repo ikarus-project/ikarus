@@ -5,11 +5,11 @@
 #pragma once
 #include <cstddef>
 
-#include <ikarus/utils/traits.hh>
-#include <dune/typetree/typetree.hh>
 #include <dune/istl/multitypeblockvector.hh>
-namespace Ikarus {
+#include <dune/typetree/typetree.hh>
 
+#include <ikarus/utils/traits.hh>
+namespace Ikarus {
 
   template <typename... Args_>
   struct Wrt {
@@ -46,50 +46,50 @@ namespace Ikarus {
 
   namespace DerivativeDirections {
 
-  struct DerivativeNoOp{};
+    struct DerivativeNoOp {};
 
-    [[maybe_unused]] static struct SpatialAll { } spatialAll;
+    [[maybe_unused]] static struct SpatialAll {
+    } spatialAll;
 
     struct SpatialPartial {
       size_t index{};
     };
 
+    template <std::size_t I>
+    struct SingleCoeff {
+      Dune::MultiTypeBlockVector<decltype(Dune::TypeTree::treePath(std::declval<Dune::index_constant<I>>(),
+                                                                   std::declval<size_t>()))>
+          index{};
+    };
 
-  template<std::size_t I>
-  struct SingleCoeff {
-    Dune::MultiTypeBlockVector<decltype(Dune::TypeTree::treePath(std::declval<Dune::index_constant<I>>(),std::declval<size_t>()))> index{};
-  };
-
-
-
-  template<std::size_t I,std::size_t J>
-  struct TwoCoeff {
-    Dune::MultiTypeBlockVector<decltype(Dune::TypeTree::treePath(std::declval<Dune::index_constant<I>>(),std::declval<size_t>())),
-               decltype(Dune::TypeTree::treePath(std::declval<Dune::index_constant<J>>(),std::declval<size_t>()))> index{};
-  };
+    template <std::size_t I, std::size_t J>
+    struct TwoCoeff {
+      Dune::MultiTypeBlockVector<
+          decltype(Dune::TypeTree::treePath(std::declval<Dune::index_constant<I>>(), std::declval<size_t>())),
+          decltype(Dune::TypeTree::treePath(std::declval<Dune::index_constant<J>>(), std::declval<size_t>()))>
+          index{};
+    };
 
     SpatialPartial spatial(size_t i);
 
-  template<std::size_t I>
-  SingleCoeff<I> coeff(Dune::index_constant<I> iObj, size_t i)
-  {
-    using namespace Dune::Indices;
-    SingleCoeff<I> coeffs;
-    std::get<1>(coeffs.index[_0]._data) = i;
-    return coeffs;
-  }
-  template<std::size_t I,std::size_t J>
-  TwoCoeff<I,J> coeff(Dune::index_constant<I> iObj, size_t i,Dune::index_constant<J> jObj, size_t j)
-  {
-    using namespace Dune::Indices;
-    TwoCoeff<I,J> coeffs;
-    std::get<1>(coeffs.index[_0]._data) = i;
-    std::get<1>(coeffs.index[_1]._data) = j;
-    return coeffs;
-  }
+    template <std::size_t I>
+    SingleCoeff<I> coeff(Dune::index_constant<I> iObj, size_t i) {
+      using namespace Dune::Indices;
+      SingleCoeff<I> coeffs;
+      std::get<1>(coeffs.index[_0]._data) = i;
+      return coeffs;
+    }
+    template <std::size_t I, std::size_t J>
+    TwoCoeff<I, J> coeff(Dune::index_constant<I> iObj, size_t i, Dune::index_constant<J> jObj, size_t j) {
+      using namespace Dune::Indices;
+      TwoCoeff<I, J> coeffs;
+      std::get<1>(coeffs.index[_0]._data) = i;
+      std::get<1>(coeffs.index[_1]._data) = j;
+      return coeffs;
+    }
 
-  SingleCoeff<0> coeff( size_t i);
-  TwoCoeff<0,0> coeff( size_t i, size_t j);
+    SingleCoeff<0> coeff(size_t i);
+    TwoCoeff<0, 0> coeff(size_t i, size_t j);
 
     template <int Dim>
     struct Counter {
@@ -112,15 +112,14 @@ namespace Ikarus {
         return std::array<int, 0>();  // signals no SpatialPartial derivative found
     }
 
-    template<typename Type>
-    concept isSpatial =
-       std::is_same_v<Type,DerivativeDirections::SpatialPartial> or
-          std::is_same_v<Type,DerivativeDirections::SpatialAll>;
+    template <typename Type>
+    concept isSpatial = std::is_same_v<Type, DerivativeDirections::SpatialPartial> or std::is_same_v<
+        Type, DerivativeDirections::SpatialAll>;
 
-  template<typename Type>
-  concept isCoeff = Std::IsSpecializationNonTypes<SingleCoeff, Type>::value or
-      Std::IsSpecializationNonTypes<TwoCoeff, Type>::value;
-
+    template <typename Type>
+    concept isCoeff
+        = Std::IsSpecializationNonTypes<SingleCoeff, Type>::value or Std::IsSpecializationNonTypes<TwoCoeff,
+                                                                                                   Type>::value;
 
     struct ConstExprCounter {
       int singleCoeffDerivs{};
@@ -137,10 +136,10 @@ namespace Ikarus {
     consteval ConstExprCounter countDerivativesType() {
       ConstExprCounter counter{};
       using Tuple               = typename WrtType::Args;
-      counter.singleCoeffDerivs = Ikarus::Std::countTypeSpecialization<SingleCoeff,Tuple>();
-      counter.twoCoeffDerivs    = Ikarus::Std::countTypeSpecialization<TwoCoeff,Tuple>();
+      counter.singleCoeffDerivs = Ikarus::Std::countTypeSpecialization<SingleCoeff, Tuple>();
+      counter.twoCoeffDerivs    = Ikarus::Std::countTypeSpecialization<TwoCoeff, Tuple>();
       counter.spatialDerivs     = Ikarus::Std::countType<Tuple, SpatialPartial>();
-      counter.spatialAllCounter        = Ikarus::Std::countType<Tuple, SpatialAll>();
+      counter.spatialAllCounter = Ikarus::Std::countType<Tuple, SpatialAll>();
       return counter;
     }
 
@@ -165,8 +164,8 @@ namespace Ikarus {
                           and countDerivativesType<WrtType>().twoCoeffDerivs == 0);
 
     template <typename WrtType>
-    concept HasNoSpatial
-        = (countDerivativesType<WrtType>().spatialDerivs == 0 and countDerivativesType<WrtType>().spatialAllCounter == 0);
+    concept HasNoSpatial = (countDerivativesType<WrtType>().spatialDerivs == 0
+                            and countDerivativesType<WrtType>().spatialAllCounter == 0);
 
     template <typename WrtType>
     concept HasOneSpatialAll = countDerivativesType<WrtType>()
@@ -181,47 +180,47 @@ namespace Ikarus {
 
   }  // namespace DerivativeDirections
 
-    template <typename LF>
-  concept IsUnaryExpr = LF::children==1;
+  template <typename LF>
+  concept IsUnaryExpr = LF::children == 1;
 
   template <typename LF>
-  concept IsBinaryExpr = LF::children==2;
+  concept IsBinaryExpr = LF::children == 2;
 
-  using Arithmetic = Dune::index_constant<100>;
+  using Arithmetic                 = Dune::index_constant<100>;
   static constexpr auto arithmetic = Arithmetic{};
 
-template <typename LF>
-concept IsArithmeticExpr = std::remove_cvref_t<LF>::Ids::value==arithmetic;
+  template <typename LF>
+  concept IsArithmeticExpr = std::remove_cvref_t<LF>::Ids::value == arithmetic;
 
-template <typename E1,typename E2>
-class LocalFunctionScale;
+  template <typename E1, typename E2>
+  class LocalFunctionScale;
 
-template <typename LocalFunctionImpl>
-class LocalFunctionInterface;
+  template <typename LocalFunctionImpl>
+  class LocalFunctionInterface;
 
-template <typename LocalFunctionImpl>
-concept LocalFunction = requires
-{
-  typename std::remove_cvref_t<LocalFunctionImpl>::Traits;
-  std::remove_cvref_t<LocalFunctionImpl>::Traits::valueSize;
-  typename std::remove_cvref_t<LocalFunctionImpl>::Traits::DomainType;
-  typename std::remove_cvref_t<LocalFunctionImpl>::Ids;
-};
+  template <typename LocalFunctionImpl>
+  concept LocalFunction = requires {
+    typename std::remove_cvref_t<LocalFunctionImpl>::Traits;
+    std::remove_cvref_t<LocalFunctionImpl>::Traits::valueSize;
+    typename std::remove_cvref_t<LocalFunctionImpl>::Traits::DomainType;
+    typename std::remove_cvref_t<LocalFunctionImpl>::Ids;
+  };
 
-template <typename LF>
-concept IsScaleExpr = Std::isSpecialization<LocalFunctionScale,std::remove_cvref_t<LF>>::value;
+  template <typename LF>
+  concept IsScaleExpr = Std::isSpecialization<LocalFunctionScale, std::remove_cvref_t<LF>>::value;
 
-template <typename LF>
-concept IsNonArithmeticLeafNode = std::remove_cvref_t<LF>::isLeaf==true and !IsArithmeticExpr<std::remove_cvref_t<LF>>;
+  template <typename LF>
+  concept IsNonArithmeticLeafNode
+      = std::remove_cvref_t<LF>::isLeaf == true and !IsArithmeticExpr<std::remove_cvref_t<LF>>;
 
-template <typename... LF>
-concept IsLocalFunction = (LocalFunction<LF> and ...);
+  template <typename... LF>
+  concept IsLocalFunction = (LocalFunction<LF> and ...);
 
-struct NoRebind { };
-static constexpr int nonLinear = 1000;
-static constexpr int constant = 0;
-static constexpr int linear = 1;
-static constexpr int quadratic = 2;
-static constexpr int cubic = 3;
+  struct NoRebind {};
+  static constexpr int nonLinear = 1000;
+  static constexpr int constant  = 0;
+  static constexpr int linear    = 1;
+  static constexpr int quadratic = 2;
+  static constexpr int cubic     = 3;
 
 }  // namespace Ikarus

@@ -210,18 +210,18 @@ int main() {
 
     auto kFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
       Ikarus::FErequirements req = FErequirementsBuilder()
-          .insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
-          .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
-          .addAffordance(Ikarus::MatrixAffordances::stiffness)
+                                       .insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
+                                       .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+                                       .addAffordance(Ikarus::MatrixAffordances::stiffness)
                                        .build();
       return denseAssembler.getMatrix(req);
     };
 
     auto rFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
       Ikarus::FErequirements req = FErequirementsBuilder()
-          .insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
-          .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
-          .addAffordance(Ikarus::VectorAffordances::forces)
+                                       .insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
+                                       .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+                                       .addAffordance(Ikarus::VectorAffordances::forces)
                                        .build();
       return denseAssembler.getVector(req);
     };

@@ -4,46 +4,51 @@
 
 #pragma once
 
-#include <ikarus/localBasis/localBasis.hh>
-#include <ikarus/localFunctions/localFunctionHelper.hh>
-#include <ikarus/localFunctions/localFunctionInterface.hh>
-#include <ikarus/utils/linearAlgebraHelper.hh>
 #include "clonableLocalFunction.hh"
 
 #include <concepts>
 #include <iostream>
+
 #include <dune/common/indices.hh>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
+#include <ikarus/localBasis/localBasis.hh>
+#include <ikarus/localFunctions/localFunctionHelper.hh>
+#include <ikarus/localFunctions/localFunctionInterface.hh>
+#include <ikarus/utils/linearAlgebraHelper.hh>
+
 namespace Ikarus {
 
-  template <typename DuneBasis, typename CoeffContainer,std::size_t ID=0>
-  class StandardLocalFunction : public LocalFunctionInterface<StandardLocalFunction<DuneBasis, CoeffContainer,ID>> , public ClonableLocalFunction<StandardLocalFunction<DuneBasis, CoeffContainer,ID>>{
-    using Base = LocalFunctionInterface<StandardLocalFunction<DuneBasis, CoeffContainer,ID>>;
+  template <typename DuneBasis, typename CoeffContainer, std::size_t ID = 0>
+  class StandardLocalFunction : public LocalFunctionInterface<StandardLocalFunction<DuneBasis, CoeffContainer, ID>>,
+                                public ClonableLocalFunction<StandardLocalFunction<DuneBasis, CoeffContainer, ID>> {
+    using Interface = LocalFunctionInterface<StandardLocalFunction<DuneBasis, CoeffContainer, ID>>;
 
   public:
-    friend Base;
+    friend Interface;
     friend ClonableLocalFunction<StandardLocalFunction>;
 
-    constexpr StandardLocalFunction(const Ikarus::LocalBasis<DuneBasis>& p_basis, const CoeffContainer& coeffs_, Dune::template index_constant<ID> = Dune::template index_constant<std::size_t(0)>{})
+    constexpr StandardLocalFunction(const Ikarus::LocalBasis<DuneBasis>& p_basis, const CoeffContainer& coeffs_,
+                                    Dune::template index_constant<ID> = Dune::template index_constant<std::size_t(0)>{})
         : basis_{p_basis}, coeffs{coeffs_}, coeffsAsMat{Ikarus::viewAsEigenMatrixFixedDyn(coeffs)} {}
 
     static constexpr bool isLeaf = true;
-    using Ids =  Dune::index_constant<ID>;
+    using Ids                    = Dune::index_constant<ID>;
 
-    template<size_t ID_=0>
-    static constexpr int order = ID_==ID ? linear : constant;
+    template <size_t ID_ = 0>
+    static constexpr int orderID = ID_ == ID ? linear : constant;
 
-    template<typename LocalFunctionEvaluationArgs_,typename LocalFunctionImpl_>
-    friend auto evaluateDerivativeImpl(const LocalFunctionInterface<LocalFunctionImpl_>& f, const LocalFunctionEvaluationArgs_& localFunctionArgs);
+    template <typename LocalFunctionEvaluationArgs_, typename LocalFunctionImpl_>
+    friend auto evaluateDerivativeImpl(const LocalFunctionInterface<LocalFunctionImpl_>& f,
+                                       const LocalFunctionEvaluationArgs_& localFunctionArgs);
 
     template <typename LocalFunctionEvaluationArgs_, typename LocalFunctionImpl_>
     friend auto evaluateFunctionImpl(const LocalFunctionInterface<LocalFunctionImpl_>& f,
-                              const LocalFunctionEvaluationArgs_& localFunctionArgs) ;
+                                     const LocalFunctionEvaluationArgs_& localFunctionArgs);
 
-    using Traits = LocalFunctionTraits<StandardLocalFunction<DuneBasis, CoeffContainer,ID>>;
+    using Traits = LocalFunctionTraits<StandardLocalFunction<DuneBasis, CoeffContainer, ID>>;
     /** \brief Type used for coordinates */
     using ctype = typename Traits::ctype;
     //    /** \brief Dimension of the coeffs */
@@ -70,61 +75,64 @@ namespace Ikarus {
     using AnsatzFunctionJacobian = typename Traits::AnsatzFunctionJacobian;
 
     const auto& coefficientsRef() const { return coeffs; }
-     auto& coefficientsRef()  { return coeffs; }
+    auto& coefficientsRef() { return coeffs; }
 
-     template <typename OtherType>
-     struct Rebind {
-       using other = StandardLocalFunction<DuneBasis, typename Std::Rebind<CoeffContainer,typename Manifold::template Rebind<OtherType>::other>::other, ID>;
-     };
+    template <typename OtherType>
+    struct Rebind {
+      using other = StandardLocalFunction<
+          DuneBasis, typename Std::Rebind<CoeffContainer, typename Manifold::template Rebind<OtherType>::other>::other,
+          ID>;
+    };
 
-    const Ikarus::LocalBasis<DuneBasis>& basis() const
-    {
-      return basis_;
-    }
+    const Ikarus::LocalBasis<DuneBasis>& basis() const { return basis_; }
 
-   private:
-    template<typename DomainTypeOrIntegrationPointIndex,typename... TransformArgs>
-    FunctionReturnType evaluateFunctionImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, [[maybe_unused]] const TransformWith<TransformArgs...>& ) const {
-      const auto& N = evaluateFunctionWithIPorCoord(ipIndexOrPosition,basis_);
+  private:
+    template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
+    FunctionReturnType evaluateFunctionImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
+                                            [[maybe_unused]] const TransformWith<TransformArgs...>&) const {
+      const auto& N = evaluateFunctionWithIPorCoord(ipIndexOrPosition, basis_);
 
       return FunctionReturnType(coeffsAsMat * N);
     }
 
-    template<typename DomainTypeOrIntegrationPointIndex,typename... TransformArgs>
+    template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
     Jacobian evaluateDerivativeWRTSpaceAllImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
                                                const TransformWith<TransformArgs...>& transArgs) const {
-      const auto& dNraw = evaluateDerivativeWithIPorCoord(ipIndexOrPosition,basis_);
-      maytransformDerivatives(dNraw,dNTransformed, transArgs);
+      const auto& dNraw = evaluateDerivativeWithIPorCoord(ipIndexOrPosition, basis_);
+      maytransformDerivatives(dNraw, dNTransformed, transArgs);
       return coeffsAsMat
-             * dNTransformed.template cast<ctype>();  // The cast here is only necessary since the autodiff types are not working
-                                           // otherwise, see Issue https://github.com/autodiff/autodiff/issues/73
+             * dNTransformed
+                   .template cast<ctype>();  // The cast here is only necessary since the autodiff types are not working
+                                             // otherwise, see Issue https://github.com/autodiff/autodiff/issues/73
     }
 
-    template<typename DomainTypeOrIntegrationPointIndex,typename... TransformArgs>
+    template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
     JacobianColType evaluateDerivativeWRTSpaceSingleImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
-                                                         int spaceIndex, const TransformWith<TransformArgs...>& transArgs) const {
-        const auto& dNraw = evaluateDerivativeWithIPorCoord(ipIndexOrPosition,basis_);
-        maytransformDerivatives(dNraw,dNTransformed,transArgs);
+                                                         int spaceIndex,
+                                                         const TransformWith<TransformArgs...>& transArgs) const {
+      const auto& dNraw = evaluateDerivativeWithIPorCoord(ipIndexOrPosition, basis_);
+      maytransformDerivatives(dNraw, dNTransformed, transArgs);
 
       return coeffsAsMat * dNTransformed.col(spaceIndex);
     }
 
-    template<typename DomainTypeOrIntegrationPointIndex,typename... TransformArgs>
+    template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
     CoeffDerivMatrix evaluateDerivativeWRTCoeffsImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
-                                                     int coeffsIndex, const TransformWith<TransformArgs...>& transArgs) const {
-      const auto& N = evaluateFunctionWithIPorCoord(ipIndexOrPosition,basis_);
+                                                     int coeffsIndex,
+                                                     const TransformWith<TransformArgs...>& transArgs) const {
+      const auto& N = evaluateFunctionWithIPorCoord(ipIndexOrPosition, basis_);
       CoeffDerivMatrix mat;
       mat.setIdentity(valueSize);
       mat.diagonal() *= N[coeffsIndex];
       return mat;
     }
 
-    template<typename DomainTypeOrIntegrationPointIndex,typename... TransformArgs>
+    template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
     std::array<CoeffDerivMatrix, gridDim> evaluateDerivativeWRTCoeffsANDSpatialImpl(
-        const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
-        int coeffsIndex, const TransformWith<TransformArgs...>& transArgs) const {
-      const auto& dNraw = evaluateDerivativeWithIPorCoord(ipIndexOrPosition,basis_);
-      maytransformDerivatives(dNraw,dNTransformed,transArgs);
+        const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, int coeffsIndex,
+        const TransformWith<TransformArgs...>& transArgs) const {
+      const auto& dNraw = evaluateDerivativeWithIPorCoord(ipIndexOrPosition, basis_);
+      maytransformDerivatives(dNraw, dNTransformed, transArgs);
       std::array<CoeffDerivMatrix, gridDim> Warray;
       for (int dir = 0; dir < gridDim; ++dir) {
         Warray[dir].setIdentity(valueSize);
@@ -134,10 +142,12 @@ namespace Ikarus {
       return Warray;
     }
 
-    template<typename DomainTypeOrIntegrationPointIndex,typename... TransformArgs>
-    CoeffDerivMatrix evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, int coeffsIndex,int spatialIndex, const TransformWith<TransformArgs...>& transArgs) const {
-      const auto& dNraw = evaluateDerivativeWithIPorCoord(ipIndexOrPosition,basis_);
-      maytransformDerivatives(dNraw,dNTransformed,transArgs);
+    template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
+    CoeffDerivMatrix evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(
+        const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, int coeffsIndex, int spatialIndex,
+        const TransformWith<TransformArgs...>& transArgs) const {
+      const auto& dNraw = evaluateDerivativeWithIPorCoord(ipIndexOrPosition, basis_);
+      maytransformDerivatives(dNraw, dNTransformed, transArgs);
       CoeffDerivMatrix W;
       W.setIdentity(valueSize);
       W.diagonal() *= dNTransformed(coeffsIndex, spatialIndex);
@@ -145,19 +155,14 @@ namespace Ikarus {
       return W;
     }
 
-
-
-
-
-
     mutable AnsatzFunctionJacobian dNTransformed;
     const Ikarus::LocalBasis<DuneBasis>& basis_;
     CoeffContainer coeffs;
     const decltype(Ikarus::viewAsEigenMatrixFixedDyn(coeffs)) coeffsAsMat;
   };
 
-  template <typename DuneBasis, typename CoeffContainer,std::size_t ID>
-  struct LocalFunctionTraits<StandardLocalFunction<DuneBasis, CoeffContainer,ID>> {
+  template <typename DuneBasis, typename CoeffContainer, std::size_t ID>
+  struct LocalFunctionTraits<StandardLocalFunction<DuneBasis, CoeffContainer, ID>> {
     /** \brief Type used for coordinates */
     using ctype = typename CoeffContainer::value_type::ctype;
     /** \brief Dimension of the coeffs */
