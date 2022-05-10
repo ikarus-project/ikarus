@@ -314,8 +314,7 @@ TEST(LocalFunctionTests, TestExpressions) {
     static_assert(g.order() == linear);
     auto gP = Ikarus::ProjectionBasedLocalFunction(localBasis, vBlockedLocal3);
     static_assert(gP.order() == nonLinear);
-//    f.
-        static_assert(countNonArithmeticLeafNodes(f) == 1);
+    static_assert(countNonArithmeticLeafNodes(f) == 1);
     static_assert(countNonArithmeticLeafNodes(g) == 1);
     using namespace Ikarus::DerivativeDirections;
     auto h   = f + g;
@@ -367,7 +366,6 @@ TEST(LocalFunctionTests, TestExpressions) {
     const double tol = 1e-13;
 
     auto dotff     = dot(f, g);
-    f.
     auto sqrtdotff = sqrt(dotff);
 
     static_assert(countNonArithmeticLeafNodes(dotff) == 2);
