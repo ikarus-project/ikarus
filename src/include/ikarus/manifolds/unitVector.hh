@@ -130,42 +130,30 @@ namespace Ikarus {
     }
 
     /** \brief Compute an orthonormal basis of the tangent space of S^n.
-     * Taken from Oliver Sander dune-gfe */
+     * Taken from Oliver Sander's dune-gfe */
     Eigen::Matrix<ctype, valueSize, correctionSize> orthonormalFrame() const {
-      Eigen::Matrix<ctype, valueSize, correctionSize> result;
+        using ResultType = Eigen::Matrix<ctype, valueSize, correctionSize>;
+        ResultType result;
 
       // Coordinates of the stereographic projection
       Eigen::Matrix<ctype, correctionSize, 1> X;
 
-      if (var[valueSize - 1] <= 0) {
+      if (var[correctionSize] <= 0)
         // Stereographic projection from the north pole onto R^{N-1}
-        for (size_t i = 0; i < valueSize - 1; i++)
-          X[i] = var[i] / (1 - var[valueSize - 1]);
-
-      } else {
+        X = var.template head<correctionSize>()/ (1 - var[correctionSize]);
+      else
         // Stereographic projection from the south pole onto R^{N-1}
-        for (size_t i = 0; i < valueSize - 1; i++)
-          X[i] = var[i] / (1 + var[valueSize - 1]);
-      }
+        X = var.template head<correctionSize>()/ (1 + var[correctionSize]);
 
-      ctype RSquared = X.squaredNorm();
-
-      for (size_t i = 0; i < valueSize - 1; i++)
-        for (size_t j = 0; j < valueSize - 1; j++)
-          // Note: the matrix is the transpose of the one in the paper
-          result(j, i) = 2 * (i == j) * (1 + RSquared) - 4 * X[i] * X[j];
-
-      for (size_t j = 0; j < valueSize - 1; j++)
-        result(valueSize - 1, j) = 4 * X[j];
+      result.template topLeftCorner<correctionSize,correctionSize>() = (2* (1 + X.squaredNorm()))* Eigen::Matrix<ctype, correctionSize, correctionSize>::Identity() - 4* X*X.transpose();
+      result.template bottomLeftCorner<1,correctionSize>() = 4 * X.transpose();
 
       // Upper hemisphere: adapt formulas so it is the stereographic projection from the south pole
-      if (var[valueSize - 1] > 0)
-        for (size_t j = 0; j < valueSize - 1; j++)
-          result(valueSize - 1, j) *= -1;
+      if (var[correctionSize] > 0)
+          result.template bottomLeftCorner<1,correctionSize>() *= -1;
 
-      // normalize the rows to make the orthogonal basis orthonormal
-      for (size_t i = 0; i < valueSize - 1; i++)
-        result.col(i).normalize();
+      // normalize the cols to make the orthogonal basis orthonormal
+      result.colwise().normalize();
 
       return result;
     }
