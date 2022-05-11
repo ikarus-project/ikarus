@@ -10,6 +10,8 @@
 
 #include <ikarus/localBasis/localBasis.hh>
 #include <ikarus/utils/traits.hh>
+#include <ikarus/localFunctions/expressions/exprChecks.hh>
+
 
 namespace Ikarus {
 
@@ -63,6 +65,8 @@ namespace Ikarus {
     /** Return the view of the integration points of the bound Basis with id I */
     template <std::size_t I = 0>
     auto viewOverIntegrationPoints(Dune::index_constant<I> = Dune::index_constant<I>()) const {
+        assert(checkIfAllLeafNodeHaveTheSameBasisState(impl())
+               && "The basis of the leaf nodes are not in the same state.");
       auto leafNodeCollection = collectLeafNodeLocalFunctions(impl());
       auto node               = leafNodeCollection.node(Dune::index_constant<I>());
       return node.basis().viewOverIntegrationPoints();

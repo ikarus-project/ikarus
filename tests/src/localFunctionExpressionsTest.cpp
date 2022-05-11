@@ -308,7 +308,21 @@ TEST(LocalFunctionTests, TestExpressions) {
       vBlockedLocal2[i] = vBlocked2[globalIndex[0]];
       vBlockedLocal3[i] = vBlocked3[globalIndex[0]];
     }
+
     auto f = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal);
+    {
+      auto localBasisNotBound = Ikarus::LocalBasis(localView.tree().finiteElement().localBasis());
+      auto fNotBound          = Ikarus::StandardLocalFunction(localBasisNotBound, vBlockedLocal);
+      auto h                  = f + fNotBound;
+      EXPECT_DEBUG_DEATH(h.viewOverIntegrationPoints(), "The basis of the leaf nodes are not in the same state.");
+
+      const auto& ruleHigher = Dune::QuadratureRules<double, 2>::rule(localView.element().type(), 7);
+      auto localBasisBoundButToDifferentRule = Ikarus::LocalBasis(localView.tree().finiteElement().localBasis());
+      localBasisBoundButToDifferentRule.bind(ruleHigher, bindDerivatives(0, 1));
+      auto fBoundButHigher          = Ikarus::StandardLocalFunction(localBasisBoundButToDifferentRule, vBlockedLocal);
+      auto h2                  = f + fBoundButHigher;
+      EXPECT_DEBUG_DEATH(h.viewOverIntegrationPoints(), "The basis of the leaf nodes are not in the same state.");
+    }
     static_assert(f.order() == linear);
     auto g = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal);
     static_assert(g.order() == linear);
