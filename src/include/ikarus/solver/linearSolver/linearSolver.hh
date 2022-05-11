@@ -102,15 +102,12 @@ namespace Ikarus {
         case SolverTypeTag::d_LLT:
           solverimpl = std::make_unique<SolverImpl<LLT<DenseMatrixType>>>();
           break;
-          //        case SolverTypeTag::BDCSVD:
-          //          solverimpl = std::make_unique<SolverImpl<BDCSVD<DenseMatrixType>>>();
-          //          break;
-          //        case SolverTypeTag::JacobiSVD:
-          //          solverimpl = std::make_unique<SolverImpl<JacobiSVD<DenseMatrixType>>>();
-          break;
         case SolverTypeTag::d_LDLT:
           solverimpl = std::make_unique<SolverImpl<LDLT<DenseMatrixType>>>();
           break;
+        default:
+            DUNE_THROW(Dune::NotImplemented,"Your requested solver does not work with this interface class");
+
       }
     }
 
@@ -127,7 +124,6 @@ namespace Ikarus {
   private:
     struct SolverBase {
       virtual ~SolverBase() = default;
-      //    [[nodiscard]] virtual std::unique_ptr<SolverBase> clone() const                                  = 0;
       virtual void analyzePattern(const DenseMatrixType&) const {};
       virtual void analyzePattern(const SparseMatrixType&)                                       = 0;
       virtual void factorize(const DenseMatrixType&)                                             = 0;
@@ -154,7 +150,6 @@ namespace Ikarus {
           solver.compute(A);
       }
       void compute(const SparseMatrixType& A) {
-        //        std::cout << "solver.computeSparse(A)" << std::endl;
         if constexpr (std::is_base_of_v<Eigen::SparseSolverBase<Solver>, Solver>)
           solver.compute(A);
         else
@@ -181,23 +176,18 @@ namespace Ikarus {
     template <typename MatrixType>
     requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
     inline ILinearSolver& compute(const MatrixType& A) {
-      //            std::cout << "compute(A)" << std::endl;
-      //            std::cout <<"r,c: "<< A.rows()<<" "<<A.cols() << std::endl;
-      //            std::cout << A << std::endl;
       solverimpl->compute(A);
       return *this;
     }
     template <typename MatrixType>
     requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
     inline void analyzePattern(const MatrixType& A) {
-      //      std::cout << "analyzePattern(A)" << std::endl;
       solverimpl->analyzePattern(A);
     }
 
     template <typename MatrixType>
     requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
     inline void factorize(const MatrixType& A) {
-      //      std::cout << "factorize(A)" << std::endl;
       solverimpl->factorize(A);
     }
 

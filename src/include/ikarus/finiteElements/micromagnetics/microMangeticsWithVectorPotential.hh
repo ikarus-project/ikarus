@@ -32,9 +32,8 @@
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/geometry/type.hh>
 
-#include <ikarus/finiteElements/interface/feTraits.hh>
-#include <ikarus/finiteElements/interface/finiteElementFunctionConcepts.hh>
-#include <ikarus/finiteElements/interface/interfaceFiniteElement.hh>
+#include "src/include/ikarus/finiteElements/feTraits.hh"
+#include <ikarus/finiteElements/feRequirements.hh>
 #include <ikarus/finiteElements/physicsHelper.hh>
 #include <ikarus/localBasis/localBasis.hh>
 #include <ikarus/localFunctions/impl/projectionBasedLocalFunction.hh>
@@ -365,8 +364,6 @@ namespace Ikarus {
       const auto geo = localView_.element().geometry();
 
       auto gp = toFieldVector(local);
-      //      localBasisMag.template evaluateFunctionAndJacobian(gp, Nm, dNm);
-      //      localBasisVecPot.template evaluateFunctionAndJacobian(gp, NA, dNA);
 
       using namespace Ikarus::DerivativeDirections;
       Ikarus::ProjectionBasedLocalFunction magnetLocalFunction(localBasisMag, mN);

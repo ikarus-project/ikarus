@@ -11,7 +11,6 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
-#include <ikarus/finiteElements/interface/finiteElementFunctionConcepts.hh>
 #include <ikarus/utils/concepts.hh>
 
 namespace Ikarus {

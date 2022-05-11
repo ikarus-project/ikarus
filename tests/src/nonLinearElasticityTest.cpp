@@ -35,7 +35,6 @@ public:
   decltype(createGrid<T>()) value_;
 };
 using GridTypes = ::testing::Types<Grids::Yasp, Grids::Alu, Grids::Iga>;
-// using GridTypes = ::testing::Types<Grids::Yasp>;
 
 TYPED_TEST_SUITE(NonLinearElasticityLoadControlNRandTR, GridTypes);
 
@@ -45,7 +44,6 @@ TYPED_TEST(NonLinearElasticityLoadControlNRandTR, ComputeMaxDisp) {
   using namespace Ikarus;
 
   using namespace Dune::Functions::BasisFactory;
-  //  auto basis = makeBasis(gridView, power<gridDim>(gridView.getPreBasis(), FlatInterleaved()));
   auto basis = makeBasis(gridView, power<2>(lagrange<1>(), FlatInterleaved()));
 
   auto localView = basis.localView();

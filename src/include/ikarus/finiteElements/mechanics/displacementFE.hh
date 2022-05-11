@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <ikarus/finiteElements/interface/feTraits.hh>
+#include "src/include/ikarus/finiteElements/feTraits.hh"
 namespace Ikarus {
   template <typename Basis>
   class DisplacementFE {

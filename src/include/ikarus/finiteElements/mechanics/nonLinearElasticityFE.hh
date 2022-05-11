@@ -32,9 +32,8 @@
 #include <dune/geometry/type.hh>
 
 #include <ikarus/finiteElements/feBases/autodiffFE.hh>
-#include <ikarus/finiteElements/interface/feTraits.hh>
-#include <ikarus/finiteElements/interface/finiteElementFunctionConcepts.hh>
-#include <ikarus/finiteElements/interface/interfaceFiniteElement.hh>
+#include "src/include/ikarus/finiteElements/feTraits.hh"
+#include <ikarus/finiteElements/feRequirements.hh>
 #include <ikarus/finiteElements/mechanics/displacementFE.hh>
 #include <ikarus/finiteElements/physicsHelper.hh>
 #include <ikarus/localBasis/localBasis.hh>

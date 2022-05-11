@@ -4,9 +4,7 @@
 
 #pragma once
 
-#include "interfaceFiniteElement.hh"
-
-#include <ikarus/utils/concepts.hh>
+#include "src/include/ikarus/utils/concepts.hh"
 
 namespace Ikarus {
 

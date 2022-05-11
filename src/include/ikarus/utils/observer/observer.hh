@@ -72,9 +72,7 @@ public:
   void notify(MessageType message, Eigen::VectorX<ScalarType> val);
 
 private:
-  //  virtual subscribeImpl(MessageType message, std::shared_ptr<IObserver<MessageType>> observer);
-  //  void unSubscribeImpl(MessageType message, std::shared_ptr<IObserver<MessageType>> observer);
-  //  void notifyImpl(MessageType message);
+
   using ObserverVector = std::vector<std::shared_ptr<IObserver<MessageType>>>;
   using ObserverMap    = std::map<MessageType, ObserverVector>;
   ObserverMap observers_;

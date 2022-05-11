@@ -20,7 +20,7 @@
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/controlRoutines/loadControl.hh>
 #include <ikarus/finiteElements/feBases/autodiffFE.hh>
-#include <ikarus/finiteElements/interface/feTraits.hh>
+#include "src/include/ikarus/finiteElements/feTraits.hh"
 #include <ikarus/finiteElements/mechanics/displacementFE.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/linearSolver/linearSolver.hh>

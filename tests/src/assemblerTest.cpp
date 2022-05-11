@@ -19,7 +19,6 @@
 #include <Eigen/Core>
 
 #include <ikarus/assembler/simpleAssemblers.hh>
-#include <ikarus/finiteElements/interface/finiteElementFunctionConcepts.hh>
 #include <ikarus/finiteElements/mechanics/nonLinearElasticityFE.hh>
 
 TEST(Assembler, SimpleAssemblersTest) {
