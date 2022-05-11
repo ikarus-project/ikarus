@@ -3,7 +3,7 @@
 //
 
 #pragma once
-#include <iostream>
+#include <iosfwd>
 
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/linearSolver/linearSolver.hh>

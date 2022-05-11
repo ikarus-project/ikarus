@@ -5,7 +5,7 @@
 #pragma once
 
 // This file contains stl-like algorithms
-#include <iostream>
+#include <iosfwd>
 #include <ranges>
 namespace Ikarus::utils {
   void makeUniqueAndSort(std::ranges::random_access_range auto& varVec) {

@@ -7,7 +7,6 @@
 #include "localFunctionInterface.h"
 
 #include <concepts>
-#include <iostream>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>

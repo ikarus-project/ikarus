@@ -27,7 +27,7 @@
 #include <autodiff/forward/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
 #include <concepts>
-#include <iostream>
+#include <iosfwd>
 #include <numbers>
 
 #include <dune/common/classname.hh>

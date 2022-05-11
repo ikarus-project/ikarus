@@ -7,7 +7,6 @@
 #include "clonableLocalFunction.hh"
 
 #include <concepts>
-#include <iostream>
 
 #include <dune/common/indices.hh>
 

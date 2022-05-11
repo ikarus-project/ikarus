@@ -8,7 +8,7 @@
  */
 
 #pragma once
-#include <iostream>
+#include <iosfwd>
 
 #include <dune/common/float_cmp.hh>
 

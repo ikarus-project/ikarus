@@ -7,7 +7,6 @@
 #include "clonableLocalFunction.hh"
 
 #include <concepts>
-#include <iostream>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -41,11 +40,6 @@ namespace Ikarus {
     static constexpr bool isLeaf = true;
     using Ids                    = Dune::index_constant<ID>;
 
-    //    template<size_t ID_=0>
-    //    constexpr auto order(Dune::index_constant<ID_> = Dune::index_constant<0>()) const
-    //    {
-    //      return orderID<ID_>;
-    //    }
 
     template <typename LocalFunctionEvaluationArgs_, typename LocalFunctionImpl_>
     friend auto evaluateDerivativeImpl(const LocalFunctionInterface<LocalFunctionImpl_>& f,

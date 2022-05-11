@@ -2,7 +2,7 @@
 
 #pragma once
 #include <autodiff/forward/dual/dual.hpp>
-#include <iostream>
+#include <iosfwd>
 
 #include <dune/istl/bvector.hh>
 #include <dune/istl/multitypeblockvector.hh>

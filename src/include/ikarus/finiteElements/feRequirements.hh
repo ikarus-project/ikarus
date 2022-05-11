@@ -4,12 +4,13 @@
 
 #pragma once
 
-#include <iostream>
+#include <iosfwd>
 #include <map>
 #include <set>
 #include <vector>
 
 #include <Eigen/Core>
+#include <dune/common/exceptions.hh>
 
 namespace Ikarus {
 
@@ -99,7 +100,7 @@ namespace Ikarus {
       try {
         return sols.at(key).get();
       } catch (std::out_of_range &oor) {
-        std::cerr << "Out of Range error: " << oor.what() << " in getSolution" << std::endl;
+        DUNE_THROW(Dune::RangeError,std::string("Out of Range error: ") + std::string(oor.what()) + " in getSolution" );
         abort();
       }
     }
