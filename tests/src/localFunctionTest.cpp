@@ -47,8 +47,8 @@ using test_types = ::testing::Types<std::integral_constant<std::size_t, 2>, std:
 TYPED_TEST_SUITE(LocalFunctionProjectionBasedUnitVector, test_types);
 
 TYPED_TEST(LocalFunctionProjectionBasedUnitVector, ProjectionBasedUnitVector) {
-  constexpr int size = TypeParam::value;
-  constexpr double  tol = 1e-14;
+  constexpr int size   = TypeParam::value;
+  constexpr double tol = 1e-14;
   using namespace Ikarus;
   auto grid = createGrid<Grids::Alu>();
 
@@ -129,9 +129,8 @@ TYPED_TEST(LocalFunctionProjectionBasedUnitVector, ProjectionBasedUnitVector) {
       const Eigen::Matrix<double, size, size> testMat = Eigen::Matrix<double, size, size>::Random();
       for (size_t i = 0; i < fe.size(); ++i) {
         const auto jacobianWRTCoeffs = localF.evaluateDerivative(gpIndex, wrt(coeff(i)));
-        EXPECT_THAT(
-            jacobianWRTCoeffs,
-            EigenApproxEqual(Jdual.block<size, size>(0, i * size) * vBlockedLocal[i].orthonormalFrame(), tol));
+        EXPECT_THAT(jacobianWRTCoeffs,
+                    EigenApproxEqual(Jdual.block<size, size>(0, i * size) * vBlockedLocal[i].orthonormalFrame(), tol));
 
         const auto Warray  = localF.evaluateDerivative(gpIndex, wrt(coeff(i), spatialAll), transformWith(Jinv));
         const auto Warray2 = localF.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i)), transformWith(Jinv));

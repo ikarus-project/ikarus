@@ -22,6 +22,8 @@
 // *
 
 #pragma once
+#include "src/include/ikarus/finiteElements/feTraits.hh"
+
 #include <autodiff/forward/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
 #include <concepts>
@@ -32,7 +34,6 @@
 #include <dune/geometry/type.hh>
 
 #include <ikarus/finiteElements/feBases/autodiffFE.hh>
-#include "src/include/ikarus/finiteElements/feTraits.hh"
 #include <ikarus/finiteElements/feRequirements.hh>
 #include <ikarus/finiteElements/mechanics/displacementFE.hh>
 #include <ikarus/finiteElements/physicsHelper.hh>

@@ -72,7 +72,6 @@ public:
   void notify(MessageType message, Eigen::VectorX<ScalarType> val);
 
 private:
-
   using ObserverVector = std::vector<std::shared_ptr<IObserver<MessageType>>>;
   using ObserverMap    = std::map<MessageType, ObserverVector>;
   ObserverMap observers_;

@@ -132,25 +132,26 @@ namespace Ikarus {
     /** \brief Compute an orthonormal basis of the tangent space of S^n.
      * Taken from Oliver Sander's dune-gfe */
     Eigen::Matrix<ctype, valueSize, correctionSize> orthonormalFrame() const {
-        using ResultType = Eigen::Matrix<ctype, valueSize, correctionSize>;
-        ResultType result;
+      using ResultType = Eigen::Matrix<ctype, valueSize, correctionSize>;
+      ResultType result;
 
       // Coordinates of the stereographic projection
       Eigen::Matrix<ctype, correctionSize, 1> X;
 
       if (var[correctionSize] <= 0)
         // Stereographic projection from the north pole onto R^{N-1}
-        X = var.template head<correctionSize>()/ (1 - var[correctionSize]);
+        X = var.template head<correctionSize>() / (1 - var[correctionSize]);
       else
         // Stereographic projection from the south pole onto R^{N-1}
-        X = var.template head<correctionSize>()/ (1 + var[correctionSize]);
+        X = var.template head<correctionSize>() / (1 + var[correctionSize]);
 
-      result.template topLeftCorner<correctionSize,correctionSize>() = (2* (1 + X.squaredNorm()))* Eigen::Matrix<ctype, correctionSize, correctionSize>::Identity() - 4* X*X.transpose();
-      result.template bottomLeftCorner<1,correctionSize>() = 4 * X.transpose();
+      result.template topLeftCorner<correctionSize, correctionSize>()
+          = (2 * (1 + X.squaredNorm())) * Eigen::Matrix<ctype, correctionSize, correctionSize>::Identity()
+            - 4 * X * X.transpose();
+      result.template bottomLeftCorner<1, correctionSize>() = 4 * X.transpose();
 
       // Upper hemisphere: adapt formulas so it is the stereographic projection from the south pole
-      if (var[correctionSize] > 0)
-          result.template bottomLeftCorner<1,correctionSize>() *= -1;
+      if (var[correctionSize] > 0) result.template bottomLeftCorner<1, correctionSize>() *= -1;
 
       // normalize the cols to make the orthogonal basis orthonormal
       result.colwise().normalize();

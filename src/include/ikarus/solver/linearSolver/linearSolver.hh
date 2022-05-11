@@ -106,8 +106,7 @@ namespace Ikarus {
           solverimpl = std::make_unique<SolverImpl<LDLT<DenseMatrixType>>>();
           break;
         default:
-            DUNE_THROW(Dune::NotImplemented,"Your requested solver does not work with this interface class");
-
+          DUNE_THROW(Dune::NotImplemented, "Your requested solver does not work with this interface class");
       }
     }
 
@@ -181,15 +180,11 @@ namespace Ikarus {
     }
     template <typename MatrixType>
     requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
-    inline void analyzePattern(const MatrixType& A) {
-      solverimpl->analyzePattern(A);
-    }
+    inline void analyzePattern(const MatrixType& A) { solverimpl->analyzePattern(A); }
 
     template <typename MatrixType>
     requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
-    inline void factorize(const MatrixType& A) {
-      solverimpl->factorize(A);
-    }
+    inline void factorize(const MatrixType& A) { solverimpl->factorize(A); }
 
     void solve(Eigen::VectorX<ScalarType>& x, const Eigen::VectorX<ScalarType>& b) { solverimpl->solve(x, b); }
   };

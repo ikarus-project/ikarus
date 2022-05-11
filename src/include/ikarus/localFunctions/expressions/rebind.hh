@@ -15,7 +15,6 @@ namespace Ikarus {
   template <template <typename, typename> class Op, typename E1, typename E2, typename OtherType, size_t ID>
   auto rebind(const std::remove_cvref_t<E1>& u, const std::remove_cvref_t<E2>& v,
               Dune::index_constant<ID>&& id = Dune::index_constant<0>()) {
-
     return Op<decltype(u.rebindClone(OtherType(), std::forward<Dune::index_constant<ID>>(id))),
               decltype(v.rebindClone(OtherType(), std::forward<Dune::index_constant<ID>>(id)))>(
         u.rebindClone(OtherType(), std::forward<Dune::index_constant<ID>>(id)),

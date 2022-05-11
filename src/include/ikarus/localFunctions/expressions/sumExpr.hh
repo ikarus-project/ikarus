@@ -19,10 +19,9 @@ namespace Ikarus {
     template <size_t ID_ = 0>
     static constexpr int orderID = std::max(Base::E1Raw::template order<ID_>(), Base::E1Raw::template order<ID_>());
 
-    using ctype = typename Traits::ctype;
+    using ctype                    = typename Traits::ctype;
     static constexpr int valueSize = Traits::valueSize;
-    static constexpr int gridDim = Traits::gridDim;
-
+    static constexpr int gridDim   = Traits::gridDim;
 
     template <typename LocalFunctionEvaluationArgs_>
     auto evaluateValueOfExpression(const LocalFunctionEvaluationArgs_& localFunctionArgs) const {

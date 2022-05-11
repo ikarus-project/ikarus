@@ -5,9 +5,9 @@
 #pragma once
 
 #include <iostream>
+#include <map>
 #include <set>
 #include <vector>
-#include <map>
 
 #include <Eigen/Core>
 
@@ -63,9 +63,9 @@ namespace Ikarus {
     director
   };
   // clang-format on
-  std::string getResultType(const ResultType& res);
+  std::string getResultType(const ResultType &res);
 
-    struct AffordanceCollection {
+  struct AffordanceCollection {
     ScalarAffordances scalarAffordances{ScalarAffordances::noAffordance};
     VectorAffordances vectorAffordances{VectorAffordances::noAffordance};
     MatrixAffordances matrixAffordances{MatrixAffordances::noAffordance};

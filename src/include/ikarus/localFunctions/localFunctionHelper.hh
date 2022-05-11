@@ -7,7 +7,8 @@
 #include "localFunctionInterface.hh"
 namespace Ikarus {
 
-  /** Helper to evaluate the local basis ansatz function and gradient with an integration point index or coordinate vector*/
+  /** Helper to evaluate the local basis ansatz function and gradient with an integration point index or coordinate
+   * vector*/
   template <typename DomainTypeOrIntegrationPointIndex, typename Basis>
   auto evaluateFunctionAndDerivativeWithIPorCoord(const DomainTypeOrIntegrationPointIndex& localOrIpId,
                                                   const Basis& basis) {

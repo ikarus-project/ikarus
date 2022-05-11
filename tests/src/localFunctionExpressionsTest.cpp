@@ -271,7 +271,7 @@ TEST(LocalFunctionTests, TestExpressions) {
   constexpr int size  = Manifold::valueSize;
   using namespace Ikarus;
   using namespace Dune::Indices;
-  auto grid             = createGrid<Grids::Yasp>(5, 5);
+  auto grid             = createGrid<Grids::Yasp>(2, 1);
   constexpr int gridDim = std::remove_reference_t<decltype(*grid)>::dimension;
 
   auto gridView        = grid->leafGridView();
@@ -316,11 +316,11 @@ TEST(LocalFunctionTests, TestExpressions) {
       auto h                  = f + fNotBound;
       EXPECT_DEBUG_DEATH(h.viewOverIntegrationPoints(), "The basis of the leaf nodes are not in the same state.");
 
-      const auto& ruleHigher = Dune::QuadratureRules<double, 2>::rule(localView.element().type(), 7);
+      const auto& ruleHigher                 = Dune::QuadratureRules<double, 2>::rule(localView.element().type(), 7);
       auto localBasisBoundButToDifferentRule = Ikarus::LocalBasis(localView.tree().finiteElement().localBasis());
       localBasisBoundButToDifferentRule.bind(ruleHigher, bindDerivatives(0, 1));
-      auto fBoundButHigher          = Ikarus::StandardLocalFunction(localBasisBoundButToDifferentRule, vBlockedLocal);
-      auto h2                  = f + fBoundButHigher;
+      auto fBoundButHigher = Ikarus::StandardLocalFunction(localBasisBoundButToDifferentRule, vBlockedLocal);
+      auto h2              = f + fBoundButHigher;
       EXPECT_DEBUG_DEATH(h.viewOverIntegrationPoints(), "The basis of the leaf nodes are not in the same state.");
     }
     static_assert(f.order() == linear);

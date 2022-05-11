@@ -33,8 +33,7 @@ namespace Ikarus {
       return rebind<Op, E1, OtherType>(m(), Dune::index_constant<ID>());
     }
 
-    constexpr explicit UnaryLocalFunctionExpression(E1&& u) requires IsLocalFunction<E1> : expr(std::forward<E1>(u)) {
-    }
+    constexpr explicit UnaryLocalFunctionExpression(E1&& u) requires IsLocalFunction<E1> : expr(std::forward<E1>(u)) {}
 
     static constexpr bool isLeaf  = false;
     static constexpr int children = 1;

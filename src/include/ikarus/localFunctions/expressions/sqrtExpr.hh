@@ -86,7 +86,7 @@ namespace Ikarus {
   struct LocalFunctionTraits<SqrtExpr<E1>> : public LocalFunctionTraits<std::remove_cvref_t<E1>> {};
 
   template <typename E1>
-    requires IsLocalFunction<E1>
+  requires IsLocalFunction<E1>
   constexpr auto sqrt(E1&& u) {
     static_assert(std::remove_cvref_t<E1>::valueSize == 1,
                   "Sqrt expression only defined for scalar valued local functions.");

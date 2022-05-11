@@ -12,7 +12,7 @@ namespace Ikarus {
     auto leafNodeCollection = collectLeafNodeLocalFunctions(lf);
     bool isValid            = true;
     if constexpr (leafNodeCollection.size() > 0) {
-      const bool isBound = leafNodeCollection.node(_0).basis().isBound();
+      const bool isBound               = leafNodeCollection.node(_0).basis().isBound();
       unsigned int integrationRuleSize = isBound ? leafNodeCollection.node(_0).basis().integrationPointSize() : 0;
       Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<leafNodeCollection.size()>{}),
                             [&]<typename I>(I&& i) {

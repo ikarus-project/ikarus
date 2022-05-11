@@ -9,9 +9,8 @@
 #include <concepts>
 
 #include <ikarus/localBasis/localBasis.hh>
-#include <ikarus/utils/traits.hh>
 #include <ikarus/localFunctions/expressions/exprChecks.hh>
-
+#include <ikarus/utils/traits.hh>
 
 namespace Ikarus {
 
@@ -65,14 +64,15 @@ namespace Ikarus {
     /** Return the view of the integration points of the bound Basis with id I */
     template <std::size_t I = 0>
     auto viewOverIntegrationPoints(Dune::index_constant<I> = Dune::index_constant<I>()) const {
-        assert(checkIfAllLeafNodeHaveTheSameBasisState(impl())
-               && "The basis of the leaf nodes are not in the same state.");
+      assert(checkIfAllLeafNodeHaveTheSameBasisState(impl())
+             && "The basis of the leaf nodes are not in the same state.");
       auto leafNodeCollection = collectLeafNodeLocalFunctions(impl());
       auto node               = leafNodeCollection.node(Dune::index_constant<I>());
       return node.basis().viewOverIntegrationPoints();
     }
 
-    /** Return the a non const reference of the coefficients if the leaf node with id tag I is unique. Otherwise this function is deactivated */
+    /** Return the a non const reference of the coefficients if the leaf node with id tag I is unique. Otherwise this
+     * function is deactivated */
     template <std::size_t I = 0>
     requires(Std::countType<typename LocalFunctionImpl::Ids, Dune::index_constant<I>>()
              == 1) auto& coefficientsRef(Dune::index_constant<I> = Dune::index_constant<I>()) {
@@ -82,7 +82,7 @@ namespace Ikarus {
 
     /** Return the a non const reference of the coefficients of the leaf node with id tag I. */
     template <std::size_t I = 0>
-     const auto& coefficientsRef(Dune::index_constant<I> = Dune::index_constant<I>()) const {
+    const auto& coefficientsRef(Dune::index_constant<I> = Dune::index_constant<I>()) const {
       return collectLeafNodeLocalFunctions(impl()).coefficientsRef(Dune::index_constant<I>());
     }
 

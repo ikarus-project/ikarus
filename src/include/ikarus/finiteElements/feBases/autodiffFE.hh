@@ -7,6 +7,7 @@
 
 #include <autodiff/forward/dual/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
+
 #include <ikarus/finiteElements/feRequirements.hh>
 
 namespace Ikarus {

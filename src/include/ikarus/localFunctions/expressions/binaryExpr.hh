@@ -4,8 +4,9 @@
 
 #pragma once
 
-#include <ikarus/localFunctions/localFunctionInterface.hh>
 #include "rebind.hh"
+
+#include <ikarus/localFunctions/localFunctionInterface.hh>
 
 namespace Ikarus {
 
@@ -39,7 +40,7 @@ namespace Ikarus {
     static constexpr int orderID = Op<E1, E2>::template orderID<ID_>;
 
     constexpr BinaryLocalFunctionExpression(E1&& u, E2&& v) requires IsLocalFunction<E1, E2>
-        : expr(std::forward<E1>(u), std::forward<E2>(v)) {    }
+        : expr(std::forward<E1>(u), std::forward<E2>(v)) {}
 
     static constexpr bool isLeaf  = false;
     static constexpr int children = 2;
