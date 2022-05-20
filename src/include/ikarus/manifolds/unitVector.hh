@@ -41,10 +41,8 @@ namespace Ikarus {
     /** \brief Move-Constructor from the values in terms of coordinateType */
     explicit UnitVector(CoordinateType &&vec) noexcept : var{vec.normalized()} {}
 
-    /** \brief Get the coordinates of the manifold by value */
-    CoordinateType getValue() const { return var; }
+    const CoordinateType& getValue() const { return var; }
 
-    /** \brief Set the coordinates of the manifold by const reference */
     void setValue(const CoordinateType &vec) { var = vec.normalized(); }
 
     /** \brief Set the coordinates of the manifold by r_value reference */
@@ -180,6 +178,12 @@ namespace Ikarus {
   private:
     CoordinateType var{CoordinateType::UnitX()};
   };
+
+template <typename ctype2, int d2>
+  bool operator==(const UnitVector<ctype2, d2> &v1,const UnitVector<ctype2, d2> &v2)
+{
+    return  v1.getValue()==v2.getValue();
+}
 
   template <typename ctype2, int d2>
   std::ostream &operator<<(std::ostream &s, const UnitVector<ctype2, d2> &var2) {
