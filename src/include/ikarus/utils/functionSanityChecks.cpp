@@ -6,16 +6,12 @@
 
 #include "findLineSegment.hh"
 
-#include <functional>
 #include <matplot/matplot.h>
 #include <matplot/util/colors.h>
 
-#include <dune/common/float_cmp.hh>
-
-#include <spdlog/spdlog.h>
 
 namespace Ikarus {
-  double drawResultAndReturnSlope(const std::string& functionName, const std::function<double(double)>& ftfunc,
+  double drawResultAndReturnSlope(std::string&& functionName, const std::function<double(double)>& ftfunc,
                                   bool draw) {
     using namespace matplot;
     std::vector<double> t = logspace(-8, 0, 100);
