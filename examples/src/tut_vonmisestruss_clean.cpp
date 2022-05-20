@@ -30,6 +30,7 @@
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 #include <ikarus/utils/observer/genericControlObserver.hh>
 #include <ikarus/utils/observer/nonLinearSolverLogger.hh>
+#include <ikarus/utils/eigenDuneTransformations.hh>
 
 using namespace Ikarus;
 template <typename Basis>
