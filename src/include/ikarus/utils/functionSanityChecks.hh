@@ -60,7 +60,7 @@ bool checkGradient(
   const int rangeSize                = 10;
   const auto [poly, range]           = Ikarus::findLineSegment(tE.array().log10(), yE.array().log10(), rangeSize);
 
-  const bool checkPassed = Dune::FloatCmp::eq(2.0, poly.coefficients()[1], 1e-4);
+  const bool checkPassed = Dune::FloatCmp::le(2.0, poly.coefficients()[1], 1e-4);
 
   if (draw) {
     spdlog::info("Gradient check:");
@@ -142,7 +142,7 @@ bool checkJacobian(
   const int rangeSize                = 10;
   const auto [poly, range]           = Ikarus::findLineSegment(tE.array().log10(), yE.array().log10(), rangeSize);
 
-  const bool checkPassed = Dune::FloatCmp::eq(2.0, poly.coefficients()[1], 1e-4);
+  const bool checkPassed = Dune::FloatCmp::le(2.0, poly.coefficients()[1], 1e-4);
 
   if (draw) {
     spdlog::info("Gradient check:");
@@ -233,7 +233,7 @@ bool checkHessian(
   const int rangeSize                = 10;
   const auto [poly, range]           = Ikarus::findLineSegment(tE.array().log10(), yE.array().log10(), rangeSize);
 
-  const bool checkPassed = Dune::FloatCmp::eq(3.0, poly.coefficients()[1], 1e-2);
+  const bool checkPassed = Dune::FloatCmp::le(3.0, poly.coefficients()[1], 1e-2);
 
   if (draw) {
     spdlog::info("Hessian check:");

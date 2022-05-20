@@ -15,8 +15,8 @@
 
 #include <ikarus/manifolds/realTuple.hh>
 #include <ikarus/utils/algorithms.hh>
-#include <ikarus/variables/interfaceVariable.hh>
-#include <ikarus/variables/variableDefinitions.hh>
+#include <ikarus/manifolds/unitVector.hh>
+#include <ikarus/manifolds/realTuple.hh>
 
 static constexpr double tol = 1e-15;
 
@@ -40,7 +40,7 @@ TEST(DefaultVariableTest, UnitVectorDirector) {
 
   EXPECT_THAT(b.getValue(), EigenApproxEqual(Eigen::Vector<double, 3>(0.5, 1.0 / sqrt(2), 0.5), tol));
 
-  DIRECTOR3D c{DIRECTOR3D{Eigen::Vector<double, 3>::UnitZ() * 2.0}};  // move constructor test
+  UnitVector<double, 3> c{UnitVector<double, 3>{Eigen::Vector<double, 3>::UnitZ() * 2.0}};  // move constructor test
   EXPECT_THAT(c.getValue(), EigenApproxEqual(Eigen::Vector<double, 3>(0.0, 0.0, 1.0), tol));
 
   c.setValue(Eigen::Vector<double, 3>(13.0, -5.0, 1.0));

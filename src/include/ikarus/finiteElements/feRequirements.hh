@@ -54,6 +54,7 @@ namespace Ikarus {
     magnetization,
     gradientNormOfMagnetization,
     vectorPotential,
+    divergenceOfVectorPotential,
     BField,
     HField,
     cauchyStress,

@@ -28,7 +28,9 @@
 #include <ikarus/localFunctions/projectionBasedLocalFunction.hh>
 #include <ikarus/localFunctions/standardLocalFunction.hh>
 #include <ikarus/utils/functionSanityChecks.hh>
-#include <ikarus/variables/variableDefinitions.hh>
+#include <ikarus/manifolds/unitVector.hh>
+#include <ikarus/manifolds/realTuple.hh>
+
 
 const double tol = 1e-15;
 using namespace Dune::Functions::BasisFactory;
