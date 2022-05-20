@@ -122,7 +122,7 @@ TEST(NonLinearOperator, SecondOrderVectorValuedOperator) {
   auto ddfvLambda = [&](auto&& xL) { return ddf2v(xL, A, b); };
   auto nonLinOp   = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
 
-  EXPECT_TRUE(checkGradient(nonLinOp, {.draw=false,.writeSlopeStatement=false}));
+  EXPECT_TRUE(checkGradient(nonLinOp, {.draw = false, .writeSlopeStatement = false}));
 
   auto subOperator = nonLinOp.subOperator<1, 2>();
   // Newton method test find root of first derivative
@@ -176,8 +176,8 @@ TEST(NonLinearOperator, SecondOrderVectorValuedOperatorNonlinearAutodiff) {
 
   auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
 
-  EXPECT_TRUE(checkGradient(nonLinOp, {.draw=false,.writeSlopeStatement=false}));
-  EXPECT_TRUE(checkHessian(nonLinOp, {.draw=false,.writeSlopeStatement=false}));
+  EXPECT_TRUE(checkGradient(nonLinOp, {.draw = false, .writeSlopeStatement = false}));
+  EXPECT_TRUE(checkHessian(nonLinOp, {.draw = false, .writeSlopeStatement = false}));
 
   auto subOperator = nonLinOp.subOperator<1, 2>();
 

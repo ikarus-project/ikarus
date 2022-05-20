@@ -9,8 +9,9 @@
 #include <set>
 #include <vector>
 
-#include <Eigen/Core>
 #include <dune/common/exceptions.hh>
+
+#include <Eigen/Core>
 
 namespace Ikarus {
 
@@ -100,7 +101,7 @@ namespace Ikarus {
       try {
         return sols.at(key).get();
       } catch (std::out_of_range &oor) {
-        DUNE_THROW(Dune::RangeError,std::string("Out of Range error: ") + std::string(oor.what()) + " in getSolution" );
+        DUNE_THROW(Dune::RangeError, std::string("Out of Range error: ") + std::string(oor.what()) + " in getSolution");
         abort();
       }
     }

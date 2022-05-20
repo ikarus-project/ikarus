@@ -118,7 +118,8 @@ TYPED_TEST(LocalFunctionProjectionBasedUnitVector, ProjectionBasedUnitVector) {
       Eigen::Vector<double, 2> gpOffset = toEigenVector(gp.position());
       auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(func, deriv), parameter(gpOffset));
 
-      EXPECT_TRUE((checkJacobian<decltype(nonLinOp), Eigen::Vector<double, 2>>(nonLinOp, {.draw=false,.writeSlopeStatement=false})));
+      EXPECT_TRUE((checkJacobian<decltype(nonLinOp), Eigen::Vector<double, 2>>(
+          nonLinOp, {.draw = false, .writeSlopeStatement = false})));
 
       auto localFdual_ = [&](auto& x) { return localFdual(x, gpIndex); };
       Eigen::VectorXdual xv(vasMat.cols() * vasMat.rows());
@@ -264,7 +265,8 @@ TYPED_TEST(LocalFunctionVector, Test1) {
       Eigen::Vector<double, 2> gpOffset = toEigenVector(gp.position());
       auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(func, deriv), parameter(gpOffset));
 
-      EXPECT_TRUE((checkJacobian<decltype(nonLinOp), Eigen::Vector<double, 2>>(nonLinOp, {.draw=false,.writeSlopeStatement=false})));
+      EXPECT_TRUE((checkJacobian<decltype(nonLinOp), Eigen::Vector<double, 2>>(
+          nonLinOp, {.draw = false, .writeSlopeStatement = false})));
 
       auto localFdual_ = [&](auto& x) { return localFdual(x, gpIndex); };
       Eigen::VectorXdual xv(vasMat.cols() * vasMat.rows());

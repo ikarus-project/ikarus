@@ -2,6 +2,7 @@
 // Created by alex on 3/8/22.
 //
 
+#include "functionSanityChecks.hh"
 
 #include "findLineSegment.hh"
 
@@ -12,7 +13,6 @@
 #include <dune/common/float_cmp.hh>
 
 #include <spdlog/spdlog.h>
-#include "functionSanityChecks.hh"
 
 namespace Ikarus {
   double drawResultAndReturnSlope(const std::string& functionName, const std::function<double(double)>& ftfunc,

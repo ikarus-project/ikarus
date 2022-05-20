@@ -76,9 +76,8 @@ void testLocalFunction(const LF& lf) {
       Eigen::Vector<double, gridDim> ipOffset = (Eigen::Vector<double, gridDim>::Random()).normalized();
       auto nonLinOpSpatialAll
           = Ikarus::NonLinearOperator(linearAlgebraFunctions(func, spatialDerivAll), parameter(ipOffset));
-      EXPECT_TRUE((checkJacobian<decltype(nonLinOpSpatialAll), Eigen::Vector<double, gridDim>>(nonLinOpSpatialAll,
-                                                                                               {.draw=false,.writeSlopeStatement=false,.tolerance=1e-2}
- )));
+      EXPECT_TRUE((checkJacobian<decltype(nonLinOpSpatialAll), Eigen::Vector<double, gridDim>>(
+          nonLinOpSpatialAll, {.draw = false, .writeSlopeStatement = false, .tolerance = 1e-2})));
 
       /// Perturb each spatial direction and check with derivative value
       for (int i = 0; i < gridDim; ++i) {
@@ -97,8 +96,8 @@ void testLocalFunction(const LF& lf) {
 
         auto nonLinOpSpatialSingle = Ikarus::NonLinearOperator(linearAlgebraFunctions(funcSingle, derivDerivSingleI),
                                                                parameter(ipOffsetSingle));
-        EXPECT_TRUE((checkJacobian<decltype(nonLinOpSpatialSingle), Eigen::Vector<double, 1>>(nonLinOpSpatialSingle,
-                                                                                              {.draw=false,.writeSlopeStatement=false,.tolerance=1e-2})));
+        EXPECT_TRUE((checkJacobian<decltype(nonLinOpSpatialSingle), Eigen::Vector<double, 1>>(
+            nonLinOpSpatialSingle, {.draw = false, .writeSlopeStatement = false, .tolerance = 1e-2})));
       }
     }
 

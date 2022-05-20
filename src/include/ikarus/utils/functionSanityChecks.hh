@@ -13,14 +13,13 @@
 
 #include <spdlog/spdlog.h>
 
+double drawResultAndReturnSlope(const std::string& functionName, const std::function<double(double)>& ftfunc,
+                                bool draw);
 
-double drawResultAndReturnSlope(const std::string& functionName, const std::function<double(double)>& ftfunc, bool draw);
-
-struct CheckFlags
-{
-  bool draw = true;
-  bool writeSlopeStatement=true;
-  double tolerance = 1e-2;
+struct CheckFlags {
+  bool draw                = true;
+  bool writeSlopeStatement = true;
+  double tolerance         = 1e-2;
 };
 
 /*
@@ -59,11 +58,11 @@ bool checkGradient(
     return value;
   };
 
-  const double slope = drawResultAndReturnSlope("Gradient",ftfunc,checkFlags.draw);
+  const double slope = drawResultAndReturnSlope("Gradient", ftfunc, checkFlags.draw);
 
   const bool checkPassed = Dune::FloatCmp::le(2.0, slope, checkFlags.tolerance);
 
-  if(checkFlags.writeSlopeStatement) {
+  if (checkFlags.writeSlopeStatement) {
     spdlog::info("Gradient check:");
     spdlog::info("The slope should be 2. It seems to be {}.", slope);
     if (checkPassed)
@@ -105,18 +104,17 @@ bool checkJacobian(
     return value;
   };
 
-  const double slope = drawResultAndReturnSlope("Jacobian",ftfunc,checkFlags.draw);
+  const double slope = drawResultAndReturnSlope("Jacobian", ftfunc, checkFlags.draw);
 
   const bool checkPassed = Dune::FloatCmp::le(2.0, slope, checkFlags.tolerance);
 
-  if(checkFlags.writeSlopeStatement) {
+  if (checkFlags.writeSlopeStatement) {
     spdlog::info("Jacobian check:");
     spdlog::info("The slope should be 2. It seems to be {}.", slope);
     if (checkPassed)
       spdlog::info("We consider this as sufficient.");
     else
       spdlog::info("The Jacobian seems wrong.");
-
   }
   nonLinOp.template updateAll();
   return checkPassed;
@@ -161,18 +159,17 @@ bool checkHessian(
     return value;
   };
 
-  const double slope = drawResultAndReturnSlope("Hessian",ftfunc,checkFlags.draw);
+  const double slope = drawResultAndReturnSlope("Hessian", ftfunc, checkFlags.draw);
 
   const bool checkPassed = Dune::FloatCmp::le(3.0, slope, checkFlags.tolerance);
 
   if (checkFlags.draw) {
     spdlog::info("Hessian check:");
-    spdlog::info("The slope should be 3. It seems to be {}.",slope);
+    spdlog::info("The slope should be 3. It seems to be {}.", slope);
     if (checkPassed)
       spdlog::info("We consider this as sufficient.");
     else
       spdlog::info("The Hessian seems wrong.");
-
   }
   nonLinOp.template updateAll();
   return checkPassed;
