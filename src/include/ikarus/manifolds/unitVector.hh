@@ -168,6 +168,12 @@ namespace Ikarus {
     CoordinateType var{CoordinateType::UnitX()};
   };
 
+template <typename ctype2, int d2>
+  bool operator==(const UnitVector<ctype2, d2> &v1,const UnitVector<ctype2, d2> &v2)
+{
+    return  v1.getValue()==v2.getValue();
+}
+
   template <typename ctype2, int d2>
   bool operator==(const UnitVector<ctype2, d2> &v1, const UnitVector<ctype2, d2> &v2) {
     return v1.getValue() == v2.getValue();
