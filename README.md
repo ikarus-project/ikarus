@@ -5,7 +5,7 @@
 [![Sanitizers](https://github.com/IkarusRepo/Ikarus/actions/workflows/sanitizers.yml/badge.svg)](https://github.com/IkarusRepo/Ikarus/actions/workflows/sanitizers.yml)
 [![CodeStyle](https://github.com/IkarusRepo/Ikarus/actions/workflows/style.yml/badge.svg)](https://github.com/IkarusRepo/Ikarus/actions/workflows/style.yml)
 [![Docs](https://github.com/IkarusRepo/Ikarus/actions/workflows/ghpages.yml/badge.svg)](https://github.com/IkarusRepo/Ikarus/actions/workflows/ghpages.yml)
-[![CodeFactor](https://www.codefactor.io/repository/github/ikarusrepo/ikarus/badge/main)](https://www.codefactor.io/repository/github/ikarusrepo/ikarus/overview/main)(https://www.codefactor.io/repository/github/ikarusrepo/ikarus/overview/master)
+[![CodeFactor](https://www.codefactor.io/repository/github/ikarusrepo/ikarus/badge/main)](https://www.codefactor.io/repository/github/ikarusrepo/ikarus/overview/main)
 [![BCH compliance](https://bettercodehub.com/edge/badge/IkarusRepo/Ikarus?branch=master)](https://bettercodehub.com/)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/5c588e67d1e541fc9be3c7377297aa8a)](https://www.codacy.com/gh/IkarusRepo/Ikarus/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=IkarusRepo/Ikarus&amp;utm_campaign=Badge_Grade)
 
