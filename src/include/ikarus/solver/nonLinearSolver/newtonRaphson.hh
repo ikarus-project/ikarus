@@ -3,9 +3,8 @@
 //
 
 #pragma once
-#include <iostream>
+#include <iosfwd>
 
-#include <ikarus/linearAlgebra/linearAlgebraHelper.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/linearSolver/linearSolver.hh>
 #include <ikarus/utils/linearAlgebraHelper.hh>
@@ -29,7 +28,7 @@ namespace Ikarus {
   concept LinearSolverC = requires(LinearSolver& linearSolver, MatrixType& Ax, VectorType& vec) {
     linearSolver.analyzePattern(Ax);
     linearSolver.factorize(Ax);
-    linearSolver.solve(vec,vec);
+    linearSolver.solve(vec, vec);
   };
 
   template <typename NonLinearOperatorImpl,
@@ -90,7 +89,7 @@ namespace Ikarus {
         this->notify(NonLinearSolverMessages::ITERATION_STARTED);
         if constexpr (isLinearSolver) {
           linearSolver.factorize(Ax);
-          linearSolver.solve(corr,-rx);
+          linearSolver.solve(corr, -rx);
           dNorm = corr.norm();
           updateFunction(x, corr);
         } else {

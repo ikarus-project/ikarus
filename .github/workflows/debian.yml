@@ -55,4 +55,4 @@ jobs:
           cmake --build . --parallel 9 --target IkarusTests
       - name: Tests
         working-directory: ./repo/cmake-build-${{ matrix.config.config }}
-        run: ctest --output-on-failure --parallel 2 -C ${{ matrix.config.config }}
+        run: ctest --output-on-failure --parallel 9 -C ${{ matrix.config.config }}

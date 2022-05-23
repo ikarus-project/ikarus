@@ -14,79 +14,77 @@ AssemblerName(const Basis& basis, const FEContainer& fes, const std::vector<bool
 - `dirichFlags` is of type `#!cpp std::vector<bool>`. `#!cpp dirichFlags[i] = true` means that degree of freedom i is fixed. 
     The corresponding row / column / entry will be eliminated when you ask for reduced matrix / vector. 
 
-## SparseFlatAssembler
-The SparseFlatAssembler has to public member functions:
+## FlatAssemblerBase
+The FlatAssemblerBase is the basis for all assemblers currently available. All other Assemblers inherit from this assembler, 
+i.e. they have the functions listed below as well:
 ```cpp
-Eigen::SparseMatrix<double>& getMatrix(const RequirementType& fErequirements)
-```
-It assembles the reqested matrix and returns a sparse matrix. A call to this function could look as follows:
-```cpp
-SparseFlatAssembler myAssembler(...) // (1)
-// other code
-const auto& K = myAssembler.getMatrix(stiffness) // (2)
-```
-
-1. This line represents the construction of the SparseFlatAssembler as explained above.
-2. To learn what alternatives for `stiffness` are available and how this works, read [the available requirements section](#available-requirements) below.
-
-```cpp
-Eigen::SparseMatrix<double>& getReducedMatrix(const RequirementType& fErequirements)
-```
-returns the reduced matrix, i.e. the rows and columns which are flagged with `1` in `dirichFlags` are eliminated. 
-
-## VectorFlatAssembler
-It offers the functions
-```cpp
-Eigen::VectorXd& getVector(const RequirementType& fErequirements)
-Eigen::VectorXd& getReducedVector(const RequirementType& fErequirements)
+size_t size() // (1)
+size_t reducedSize() // (2)
+auto &finiteElements() const // (3)
+Eigen::VectorXd createFullVector(const Eigen::VectorXd &reducedVector) // (4)
+size_t constraintsBelow(size_t i) // (5)
+bool isConstrained(size_t i) // (6)
+size_t estimateOfConnectivity() // (7)
 ```
 
-They work the same way as the matrix assembling functions of [SparseFlatAssembler](#sparseflatassembler).
-The available requirements are explained in [the available requirements section](#available-requirements) below.
+1. Returns the number of degress of freedom.
+2. Returns the number of degrees of freeedom, which are not constrained by a dirichlet boundary condition.
+3. Returns a reference to the finite element container that you gave to the assembler when constructing it.
+4. Gets a reduced vector and returns a full vector. Entries corresponding to fixed dofs are set to 0. Values of the other entries are
+    obtained from the reduced vector.
+5. Tells you how many of the degrees of freedom {0,1,...i-1} are fixed.
+6. Tells you if degree of freedom i is fixed
+7. Returns 8x the number of grid elements, which is an estimate for the connectivity. It can be used to allocate vectors.
+
 
 ## ScalarAssembler
-It offers only one function
+It has the capabilities of [FlatAssemblerBase](#flatassemblerbase) plus one additional function:
 ```cpp
 double& getScalar(const RequirementType& fErequirements)
 ```
-This assembler can be used when you are only interested in a scalar quantity 
+This assembler can be used when you are only interested in a scalar quantity
 and assembling of matrices or vectors is not relevant for you.
-The available requirements are explained in [the available requirements section](#available-requirements) below.
+The available requirements are explained on the [FE requirements page](feRequirements.md).
 `dirichletFlags` is not used in this assembler.
 
-## DenseFlatSimpleAssembler
-It offers the functions
+It assembles the reqested scalar quantity. A call to this function could look as follows:
 ```cpp
-Eigen::MatrixXd& getMatrix(const Ikarus::MatrixAffordances& p_matrixAffordances,
-                               const Eigen::VectorXd& displacement, const double& lambda) 
-Eigen::VectorXd& getVector(const Ikarus::VectorAffordances& p_vectorAffordances,
-                               const Eigen::VectorXd& displacement, const double& lambda)
-double getScalar(const Ikarus::ScalarAffordances& p_scalarAffordances, const Eigen::VectorXd& displacement,
-                     const double& lambda)
+ScalarAssembler myAssembler(...) // (1)
+// other code
+const auto& K = myAssembler.getScalar(energy) // (2)
 ```
-This assembler should be used when your assembling process requires displacement, e.g. if you are using nonlinear load control.
-The result are dense matrices.
-`p_matrixAffordances` describes what matrix you want to assemble, see [the available requirements section](#available-requirements).
-`displacement` is the global displacement vector of the state that you want to assemble
-`lambda` is the load factor you want to use
+
+1. This line represents the construction of the SparseFlatAssembler as explained above.
+2. To learn what alternatives for `energy` are available and how this works, read the [FE requirements page](feRequirements.md).
+
+
+## VectorFlatAssembler
+It offers the functions of [ScalarAssembler](#scalarassembler) plus additionally
+```cpp
+Eigen::VectorXd& getVector(const RequirementType& fErequirements)
+Eigen::VectorXd& getReducedVector(const RequirementType& fErequirements)
+```
+As the name suggests, you can either get the full vector or the reduced vector where boundary conditions are considered.
+They work the same way as the scalar assembling functions of [ScalarAssembler](#scalarassembler).
+The available requirements are explained on the [FE requirements page](feRequirements.md).
+
+
+## SparseFlatAssembler
+It offers the functions of [VectorFlatAssembler](#vectorflatassembler) plus additionally
+```cpp
+Eigen::SparseMatrix<double> &getMatrix(const RequirementType &fErequirements)
+Eigen::SparseMatrix<double> &getReducedMatrix(const RequirementType &fErequirements)
+```
+A sparse matrix is returned.
+They work the same way as the vector assembling functions of [VectorFlatAssembler](#vectorflatassembler).
+The available requirements are explained on the [FE requirements page](feRequirements.md).
+
 
 
 ## DenseFlatAssembler
-It offers the functions
+The only difference between the [SparseFlatAssembler](#sparseflatassembler) and the DenseFlatAssembler is that the
+DenseFlatAssembler returns a dense matrix.
 ```cpp
-Eigen::MatrixXd& getMatrix(const RequirementType& fErequirements)
-Eigen::MatrixXd& getReducedMatrix(const RequirementType& fErequirements)
-
-Eigen::VectorXd& getVector(const RequirementType& fErequirements)
-Eigen::VectorXd& getReducedVector(const RequirementType& fErequirements)
-
-double getScalar(const RequirementType& fErequirements)
-
-auto createFullVector(const Eigen::VectorXd& reducedVector)
+Eigen::MatrixXd &getMatrix(const RequirementType &fErequirements)
+Eigen::MatrixXd &getReducedMatrix(const RequirementType &fErequirements)
 ```
-One function is only available in this assembler and was therefore not yet discussed: `createFullVector`.
-You can used it to expand a vector of reduced size (e.g from solving the linear system) to a vector of full size 
-where entries corresponding to the fixed degrees of freedom are set to zero. 
-
-
-## Available requirements

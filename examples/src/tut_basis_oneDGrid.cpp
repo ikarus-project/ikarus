@@ -77,7 +77,7 @@ void exampleTrussElement() {
   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
   linSolver.factorize(K_GlobRed);
   Eigen::VectorXd D_GlobRed;
-  linSolver.solve(D_GlobRed,F_ExtGlobRed);
+  linSolver.solve(D_GlobRed, F_ExtGlobRed);
 
   std::cout << "Displacement: " << D_GlobRed(Eigen::last) << "\n";
 }
@@ -279,7 +279,7 @@ void exampleTimoshenkoBeam(const int polynomialOrderW, const int polynomialOrder
   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
   linSolver.factorize(K_Glob);
   Eigen::VectorXd D_Glob;
-  linSolver.solve(D_Glob,F_ExtGlob);
+  linSolver.solve(D_Glob, F_ExtGlob);
   // analytical solution
   // std::cout << "Bernoulli solution for displacement at L: " << F * L * L * L / (3.0 * EI) << "\n";
 

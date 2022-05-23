@@ -22,27 +22,27 @@
 // *
 
 #pragma once
+#include "src/include/ikarus/finiteElements/feTraits.hh"
+
 #include <autodiff/forward/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
 #include <concepts>
-#include <iostream>
+#include <iosfwd>
 #include <numbers>
 
 #include <dune/common/classname.hh>
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/geometry/type.hh>
 
-#include <ikarus/finiteElements/interface/feTraits.hh>
-#include <ikarus/finiteElements/interface/finiteElementFunctionConcepts.hh>
-#include <ikarus/finiteElements/interface/interfaceFiniteElement.hh>
+#include <ikarus/finiteElements/feRequirements.hh>
 #include <ikarus/finiteElements/physicsHelper.hh>
 #include <ikarus/localBasis/localBasis.hh>
-#include <ikarus/localFunctions/projectionBasedLocalFunction.hh>
-#include <ikarus/localFunctions/standardLocalFunction.hh>
-#include <ikarus/utils/linearAlgebraHelper.hh>
-#include <ikarus/utils/linearAlgebraTypedefs.hh>
+#include <ikarus/localFunctions/impl/projectionBasedLocalFunction.hh>
+#include <ikarus/localFunctions/impl/standardLocalFunction.hh>
 #include <ikarus/manifolds/realTuple.hh>
 #include <ikarus/manifolds/unitVector.hh>
+#include <ikarus/utils/eigenDuneTransformations.hh>
+#include <ikarus/utils/linearAlgebraHelper.hh>
 
 namespace Ikarus {
 
@@ -185,12 +185,12 @@ namespace Ikarus {
         const auto J             = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
         const auto Jinv          = J.inverse().eval();
         const auto normalizedMag = mLocalF.evaluateFunction(gpIndex).getValue();
-        const auto gradm         = mLocalF.evaluateDerivative(gpIndex, wrt(spatialall), transformWith(Jinv));
+        const auto gradm         = mLocalF.evaluateDerivative(gpIndex, wrt(spatialAll), transformWith(Jinv));
         const auto vectorPot     = vectorPotLocalFunction.evaluateFunction(gpIndex).getValue();
 
         const auto dNAdx = (dNA * J.inverse()).eval();
         Eigen::Matrix<double, vectorPotDim, Traits::mydim> gradA
-            = vectorPotLocalFunction.evaluateDerivative(gpIndex, wrt(spatialall), transformWith(Jinv));
+            = vectorPotLocalFunction.evaluateDerivative(gpIndex, wrt(spatialAll), transformWith(Jinv));
 
         const Eigen::Vector<double, directorDim> curlA = Impl::jacobianToCurl(gradA).template segment<directorDim>(0);
 
@@ -198,22 +198,19 @@ namespace Ikarus {
         if (isInside) {
           for (size_t i = 0; i < fe0.size(); ++i) {
             const int indexI = i * directorCorrectionDim;
-            const auto WI
-                = mLocalF.evaluateDerivative(gpIndex, wrt(spatialall, coeff(i)), transformWith(Jinv));
+            const auto WI    = mLocalF.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i)), transformWith(Jinv));
             for (size_t j = 0; j < fe0.size(); ++j) {
               const int indexJ = j * directorCorrectionDim;
-              const auto WJ
-                  = mLocalF.evaluateDerivative(gpIndex, wrt(spatialall, coeff(j)), transformWith(Jinv));
-
-              const auto mddHbar = mLocalF.evaluateDerivative(
-                  gpIndex, wrt(coeff(i,j)), along(2 * Hbar / material.ms + curlA));
+              const auto WJ    = mLocalF.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(j)), transformWith(Jinv));
+              const auto alongVector = (2 * Hbar / material.ms + curlA).eval();
+              const auto mddHbar     = mLocalF.evaluateDerivative(gpIndex, wrt(coeff(i, j)), along(alongVector));
 
               Eigen::Matrix<double, directorCorrectionDim, directorCorrectionDim> tmp;
               tmp.setZero();
               for (int k = 0; k < Traits::mydim; ++k)
-                tmp += WI[k] * WJ[k].transpose()
-                       + mLocalF.evaluateDerivative(gpIndex, wrt(spatial(k), coeff(i,j)), along(gradm.col(k)),
-                                                    transformWith(Jinv));
+                tmp += WI[k].transpose() * WJ[k];
+              tmp += mLocalF.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i, j)), along(gradm),
+                                                transformWith(Jinv));
 
               hred.template block<directorCorrectionDim, directorCorrectionDim>(indexI, indexJ) += tmp * weight;
               hred.template block<directorCorrectionDim, directorCorrectionDim>(indexI, indexJ) -= mddHbar * weight;
@@ -224,14 +221,15 @@ namespace Ikarus {
         for (size_t i = 0; i < fe1.size(); ++i) {
           const int indexI                                                    = magEukSize + i * vectorPotDim;
           const Eigen::Matrix<double, directorDim, vectorPotDim> gradCurlA_dI = Impl::vecToSkewMatrix(dNAdx.row(i));
-          const auto&  graddivlA_dI= dNAdx.row(i);
+          const auto& graddivlA_dI                                            = dNAdx.row(i);
 
           for (size_t j = 0; j < fe1.size(); ++j) {
             const int indexJ                                                    = magEukSize + j * vectorPotDim;
             const Eigen::Matrix<double, directorDim, vectorPotDim> gradCurlA_dJ = Impl::vecToSkewMatrix(dNAdx.row(j));
-            const auto&  graddivlA_dJ= dNAdx.row(j);
+            const auto& graddivlA_dJ                                            = dNAdx.row(j);
             hred.template block<vectorPotDim, vectorPotDim>(indexI, indexJ)
-                += (gradCurlA_dI.transpose() * gradCurlA_dJ+graddivlA_dI.transpose() * graddivlA_dJ) * geo.integrationElement(gp.position()) * gp.weight();
+                += (gradCurlA_dI.transpose() * gradCurlA_dJ + graddivlA_dI.transpose() * graddivlA_dJ)
+                   * geo.integrationElement(gp.position()) * gp.weight();
           }
         }
 
@@ -243,7 +241,7 @@ namespace Ikarus {
             const Eigen::Matrix<double, directorDim, vectorPotDim> gradCurlA_dJ = Impl::vecToSkewMatrix(dNAdx.row(j));
             if (isInside)
               hred.template block<directorCorrectionDim, vectorPotDim>(indexI, indexJ)
-                  -= (PmI * gradCurlA_dJ) * geo.integrationElement(gp.position()) * gp.weight();
+                  -= (PmI.transpose() * gradCurlA_dJ) * geo.integrationElement(gp.position()) * gp.weight();
 
             hred.template block<vectorPotDim, directorCorrectionDim>(indexJ, indexI)
                 = hred.template block<directorCorrectionDim, vectorPotDim>(indexI, indexJ).transpose();
@@ -294,38 +292,41 @@ namespace Ikarus {
 
         const auto dNAdx = (dNA * Jinv).eval();
         const Eigen::Matrix<double, directorDim, Traits::mydim> gradm
-            = magnetLocalFunction.evaluateDerivative(gpIndex, wrt(spatialall), transformWith(Jinv));
+            = magnetLocalFunction.evaluateDerivative(gpIndex, wrt(spatialAll), transformWith(Jinv));
         const Eigen::Matrix<double, vectorPotDim, Traits::mydim> gradA
-            = vectorPotLocalFunction.evaluateDerivative(gpIndex, wrt(spatialall), transformWith(Jinv));
+            = vectorPotLocalFunction.evaluateDerivative(gpIndex, wrt(spatialAll), transformWith(Jinv));
 
         const Eigen::Vector<double, directorDim> curlA = Impl::jacobianToCurl(gradA).template segment<directorDim>(0);
-        const double divA = gradA.diagonal().template segment<vectorPotDim>(0).sum();
+        const double divA                              = gradA.diagonal().template segment<vectorPotDim>(0).sum();
 
         const Eigen::Vector<double, directorDim> Hbar = volumeLoad(toEigenVector(gp.position()), lambda);
 
         if (isInside) {
           for (size_t i = 0; i < fe0.size(); ++i) {
             const int index = i * directorCorrectionDim;
-            const auto WI   = magnetLocalFunction.evaluateDerivative(gpIndex, wrt(spatialall, coeff(i)),
-                                                                   transformWith(Jinv));
-            const auto PmI  = magnetLocalFunction.evaluateDerivative(gpIndex, wrt(coeff(i)));
+            const auto WI
+                = magnetLocalFunction.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i)), transformWith(Jinv));
+            const auto PmI = magnetLocalFunction.evaluateDerivative(gpIndex, wrt(coeff(i)));
             Eigen::Vector<double, directorCorrectionDim> tmp;
             tmp.setZero();
             for (int j = 0; j < Traits ::mydim; ++j)
-              tmp += WI[j] * gradm.col(j);
+              tmp += WI[j].transpose() * gradm.col(j);
 
-            rieGrad.template segment<directorCorrectionDim>(index) += (tmp - PmI * curlA) * weight;
-            rieGrad.template segment<directorCorrectionDim>(index) -= (2 * PmI * Hbar / material.ms) * weight;
+            rieGrad.template segment<directorCorrectionDim>(index) += (tmp - PmI.transpose() * curlA) * weight;
+            rieGrad.template segment<directorCorrectionDim>(index)
+                -= (2 * PmI.transpose() * Hbar / material.ms) * weight;
           }
         }
         const int magEukSize = fe0.size() * directorCorrectionDim;
         for (size_t i = 0; i < fe1.size(); ++i) {
           const int index                                                     = magEukSize + i * vectorPotDim;
           const Eigen::Matrix<double, directorDim, vectorPotDim> gradCurlA_dI = Impl::vecToSkewMatrix(dNAdx.row(i));
-          const auto&  graddivlA_dI= dNAdx.row(i);
+          const auto& graddivlA_dI                                            = dNAdx.row(i);
 
           rieGrad.template segment<vectorPotDim>(index)
-              += (-gradCurlA_dI.transpose() * (normalizedMag * isInside) + gradCurlA_dI.transpose() * curlA+ graddivlA_dI.transpose()*divA) * weight;
+              += (-gradCurlA_dI.transpose() * (normalizedMag * isInside) + gradCurlA_dI.transpose() * curlA
+                  + graddivlA_dI.transpose() * divA)
+                 * weight;
         }
       }
     }
@@ -343,9 +344,9 @@ namespace Ikarus {
       const auto& mNodal = req.getSolution(Ikarus::FESolutions::magnetizationAndVectorPotential)[_0];
       const auto& ANodal = req.getSolution(Ikarus::FESolutions::magnetizationAndVectorPotential)[_1];
       const auto& lambda = req.getParameter(Ikarus::FEParameter::loadfactor);
-      auto& child0    = localView_.tree().child(_0, 0);
-      const auto& fe0 = child0.finiteElement();
-      auto& child1    = localView_.tree().child(_1, 0);
+      auto& child0       = localView_.tree().child(_0, 0);
+      const auto& fe0    = child0.finiteElement();
+      auto& child1       = localView_.tree().child(_1, 0);
 
       const auto& fe1 = child1.finiteElement();
       Dune::BlockVector<std::remove_cvref_t<decltype(mNodal[0])>> mN(fe0.size());
@@ -364,8 +365,6 @@ namespace Ikarus {
       const auto geo = localView_.element().geometry();
 
       auto gp = toFieldVector(local);
-      //      localBasisMag.template evaluateFunctionAndJacobian(gp, Nm, dNm);
-      //      localBasisVecPot.template evaluateFunctionAndJacobian(gp, NA, dNA);
 
       using namespace Ikarus::DerivativeDirections;
       Ikarus::ProjectionBasedLocalFunction magnetLocalFunction(localBasisMag, mN);
@@ -378,38 +377,38 @@ namespace Ikarus {
       const auto vectorPot     = vectorPotLocalFunction.evaluateFunction(gp).getValue();
 
       const Eigen::Matrix<double, directorDim, Traits::mydim> gradm
-          = magnetLocalFunction.evaluateDerivative(gp, wrt(spatialall), transformWith(Jinv));
+          = magnetLocalFunction.evaluateDerivative(gp, wrt(spatialAll), transformWith(Jinv));
       const Eigen::Matrix<double, vectorPotDim, Traits::mydim> gradA
-          = vectorPotLocalFunction.evaluateDerivative(gp, wrt(spatialall), transformWith(Jinv));
+          = vectorPotLocalFunction.evaluateDerivative(gp, wrt(spatialAll), transformWith(Jinv));
 
       const Eigen::Vector<double, 3> curlA          = Impl::jacobianToCurl(gradA);
       const Eigen::Vector<double, directorDim> Hbar = volumeLoad(toEigenVector(gp), lambda);
 
       typename ResultTypeMap<double>::ResultArray resv;
-      if( req.isResultRequested( ResultType::gradientNormOfMagnetization)) {
-        resv.resize(1,1);
-        resv(0,0)=isInside ? gradm.norm() : 0.0;
-        result.insertOrAssignResult(ResultType::gradientNormOfMagnetization,resv);
+      if (req.isResultRequested(ResultType::gradientNormOfMagnetization)) {
+        resv.resize(1, 1);
+        resv(0, 0) = isInside ? gradm.norm() : 0.0;
+        result.insertOrAssignResult(ResultType::gradientNormOfMagnetization, resv);
       }
-      if( req.isResultRequested( ResultType::BField)) {
-        resv = curlA/(material.mu0*material.ms)*std::sqrt(2.0);
-        result.insertOrAssignResult(ResultType::BField,resv);
+      if (req.isResultRequested(ResultType::BField)) {
+        resv = curlA / (material.mu0 * material.ms) * std::sqrt(2.0);
+        result.insertOrAssignResult(ResultType::BField, resv);
       }
-      if( req.isResultRequested( ResultType::HField)) {
-        resv.setZero(3,1);
-        resv(0,0) = curlA[0]/(Dune::power(material.mu0, 2)*material.ms)*std::sqrt(2.0)
-            - normalizedMag[0]*material.ms*static_cast<double>(isInside);
-        resv(1,0) = curlA[1]/(Dune::power(material.mu0, 2)*material.ms)*std::sqrt(2.0)
-            - normalizedMag[1]*material.ms*static_cast<double>(isInside);
-        if constexpr (directorDim==3)
-          resv(2,0) = curlA[2]/(Dune::power(material.mu0, 2)*material.ms)*std::sqrt(2.0)
-              - normalizedMag[2]*material.ms*static_cast<double>(isInside);
-        result.insertOrAssignResult(ResultType::HField,resv);
+      if (req.isResultRequested(ResultType::HField)) {
+        resv.setZero(3, 1);
+        resv(0, 0) = curlA[0] / (Dune::power(material.mu0, 2) * material.ms) * std::sqrt(2.0)
+                     - normalizedMag[0] * material.ms * static_cast<double>(isInside);
+        resv(1, 0) = curlA[1] / (Dune::power(material.mu0, 2) * material.ms) * std::sqrt(2.0)
+                     - normalizedMag[1] * material.ms * static_cast<double>(isInside);
+        if constexpr (directorDim == 3)
+          resv(2, 0) = curlA[2] / (Dune::power(material.mu0, 2) * material.ms) * std::sqrt(2.0)
+                       - normalizedMag[2] * material.ms * static_cast<double>(isInside);
+        result.insertOrAssignResult(ResultType::HField, resv);
       }
-      if( req.isResultRequested( ResultType::divergenceOfVectorPotential)) {
-        resv.setZero(1,1);
-        resv(0,0) = gradA.diagonal().template segment<vectorPotDim>(0).sum();
-    result.insertOrAssignResult(ResultType::divergenceOfVectorPotential,resv);
+      if (req.isResultRequested(ResultType::divergenceOfVectorPotential)) {
+        resv.setZero(1, 1);
+        resv(0, 0) = gradA.diagonal().template segment<vectorPotDim>(0).sum();
+        result.insertOrAssignResult(ResultType::divergenceOfVectorPotential, resv);
       }
     }
 
@@ -426,9 +425,9 @@ namespace Ikarus {
       auto& child1    = localView_.tree().child(_1, 0);
 
       const auto& fe1 = child1.finiteElement();
-      Dune::BlockVector<typename std::remove_cvref_t<decltype(mNodal[0])>::template Rebind<ScalarType>::type> mN(
+      Dune::BlockVector<typename std::remove_cvref_t<decltype(mNodal[0])>::template Rebind<ScalarType>::other> mN(
           fe0.size());
-      Dune::BlockVector<typename std::remove_cvref_t<decltype(ANodal[0])>::template Rebind<ScalarType>::type> AN(
+      Dune::BlockVector<typename std::remove_cvref_t<decltype(ANodal[0])>::template Rebind<ScalarType>::other> AN(
           fe1.size());
 
       for (auto i = 0U; i < fe0.size(); ++i) {
@@ -456,9 +455,9 @@ namespace Ikarus {
         const auto vectorPot     = vectorPotLocalFunction.evaluateFunction(gp.position()).getValue();
 
         const Eigen::Matrix<double, directorDim, Traits::mydim> gradm
-            = magnetLocalFunction.evaluateDerivative(gp.position(), wrt(spatialall), transformWith(Jinv));
+            = magnetLocalFunction.evaluateDerivative(gp.position(), wrt(spatialAll), transformWith(Jinv));
         const Eigen::Matrix<double, vectorPotDim, Traits::mydim> gradA
-            = vectorPotLocalFunction.evaluateDerivative(gp.position(), wrt(spatialall), transformWith(Jinv));
+            = vectorPotLocalFunction.evaluateDerivative(gp.position(), wrt(spatialAll), transformWith(Jinv));
 
         const Eigen::Vector<ScalarType, directorDim> curlA
             = Impl::jacobianToCurl(gradA).template segment<directorDim>(0);
@@ -470,7 +469,7 @@ namespace Ikarus {
           energy += (0.5 * (gradm.transpose() * gradm).trace() - 2 * normalizedMag.dot(Hbar) / material.ms + 0.5 * 1)
                     * geo.integrationElement(gp.position()) * gp.weight();  // exchange and zeeman energy
 
-        energy += (0.5 * curlA.squaredNorm() + 0.5*divA*divA - isInside * normalizedMag.dot(curlA))
+        energy += (0.5 * curlA.squaredNorm() + 0.5 * divA * divA - isInside * normalizedMag.dot(curlA))
                   * geo.integrationElement(gp.position()) * gp.weight();  // demag energy
       }
       return energy;
@@ -493,4 +492,4 @@ namespace Ikarus {
     bool isInside{};
   };
 
-}  // namespace Ikarus::FiniteElements
+}  // namespace Ikarus

@@ -3,6 +3,8 @@
 //
 #include <config.h>
 
+#include "src/include/ikarus/finiteElements/feTraits.hh"
+
 #include <matplot/matplot.h>
 #include <numbers>
 
@@ -21,13 +23,13 @@
 #include <ikarus/controlRoutines/loadControl.hh>
 #include <ikarus/finiteElements/feBases/autodiffFE.hh>
 #include <ikarus/finiteElements/feBases/scalarFE.hh>
-#include <ikarus/finiteElements/interface/feTraits.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/localBasis/localBasis.hh>
 #include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
 #include <ikarus/utils/algorithms.hh>
 #include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/drawing/griddrawer.hh>
+#include <ikarus/utils/eigenDuneTransformations.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 #include <ikarus/utils/observer/loadControlObserver.hh>
 #include <ikarus/utils/observer/nonLinearSolverLogger.hh>
@@ -210,18 +212,18 @@ int main() {
 
     auto kFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
       Ikarus::FErequirements req = FErequirementsBuilder()
-          .insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
-          .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
-          .addAffordance(Ikarus::MatrixAffordances::stiffness)
+                                       .insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
+                                       .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+                                       .addAffordance(Ikarus::MatrixAffordances::stiffness)
                                        .build();
       return denseAssembler.getMatrix(req);
     };
 
     auto rFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
       Ikarus::FErequirements req = FErequirementsBuilder()
-          .insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
-          .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
-          .addAffordance(Ikarus::VectorAffordances::forces)
+                                       .insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
+                                       .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+                                       .addAffordance(Ikarus::VectorAffordances::forces)
                                        .build();
       return denseAssembler.getVector(req);
     };

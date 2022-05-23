@@ -7,9 +7,9 @@
 #include "testHelpers.hh"
 
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
-#include <ikarus/solver/nonLinearSolver/trustRegion.hh>
-#include <ikarus/manifolds/unitVector.hh>
 #include <ikarus/manifolds/realTuple.hh>
+#include <ikarus/manifolds/unitVector.hh>
+#include <ikarus/solver/nonLinearSolver/trustRegion.hh>
 
 auto f(const Eigen::Vector<double, 1>& x) { return 0.5 * x[0] * x[0]; }
 auto df(const Eigen::Vector<double, 1>& x) {
@@ -245,8 +245,8 @@ ScalarType f3RBlocked(const MultiTypeVector& mT, const Eigen::VectorX<ScalarType
   using namespace Dune::Indices;
   auto& disp                          = mT[_0];
   auto& dir                           = mT[_1];
-  Eigen::VectorX<ScalarType> dualDisp = Ikarus::LinearAlgebra::viewAsFlatEigenVector(disp);
-  Eigen::VectorX<ScalarType> dualDir  = Ikarus::LinearAlgebra::viewAsFlatEigenVector(dir);
+  Eigen::VectorX<ScalarType> dualDisp = Ikarus::viewAsFlatEigenVector(disp);
+  Eigen::VectorX<ScalarType> dualDir  = Ikarus::viewAsFlatEigenVector(dir);
   dualDisp += dx.segment(0, dualDisp.size());
   dualDir += dx(Eigen::seq(dualDisp.size(), Eigen::last));
   ScalarType energy = 0;
@@ -260,8 +260,8 @@ Eigen::VectorXd df3RBlocked(const MultiTypeVector& mT) {
   using namespace Dune::Indices;
   auto& disp = mT[_0];
   auto& dir  = mT[_1];
-  auto dispE = Ikarus::LinearAlgebra::viewAsFlatEigenVector(disp);
-  auto dirE  = Ikarus::LinearAlgebra::viewAsFlatEigenVector(dir);
+  auto dispE = Ikarus::viewAsFlatEigenVector(disp);
+  auto dirE  = Ikarus::viewAsFlatEigenVector(dir);
 
   Eigen::VectorX<autodiff::dual> xR = Eigen::VectorXd::Zero(dispE.size() + dirE.size());
   auto dfvLambda                    = [&](auto&& xRL) { return f3RBlocked<autodiff::dual>(mT, xRL); };
@@ -285,8 +285,8 @@ auto ddf3RBlocked(const MultiTypeVector& mT) {
   using namespace Dune::Indices;
   auto& disp = mT[_0];
   auto& dir  = mT[_1];
-  auto dispE = Ikarus::LinearAlgebra::viewAsFlatEigenVector(disp);
-  auto dirE  = Ikarus::LinearAlgebra::viewAsFlatEigenVector(dir);
+  auto dispE = Ikarus::viewAsFlatEigenVector(disp);
+  auto dirE  = Ikarus::viewAsFlatEigenVector(dir);
 
   Eigen::VectorX<autodiff::dual2nd> xR = Eigen::VectorXd::Zero(dispE.size() + dirE.size());
   auto dfvLambda                       = [&](auto&& xRL) { return f3RBlocked<autodiff::dual2nd>(mT, xRL); };
@@ -370,8 +370,8 @@ TEST(TrustRegion, TrustRegionRiemanianUnitSphereAndDispBlocked) {
   directors[0].setValue(Eigen::Vector3d::UnitY() + Eigen::Vector3d::Ones());
   directors[1].setValue(Eigen::Vector3d::UnitZ() + Eigen::Vector3d::Ones());
 
-  auto dispEigen     = Ikarus::LinearAlgebra::viewAsFlatEigenVector(disp);
-  auto directorEigen = Ikarus::LinearAlgebra::viewAsFlatEigenVector(disp);
+  auto dispEigen     = Ikarus::viewAsFlatEigenVector(disp);
+  auto directorEigen = Ikarus::viewAsFlatEigenVector(disp);
 
   Eigen::VectorXd zeroVec;
   zeroVec.setZero(dispEigen.size() + directorEigen.size());
