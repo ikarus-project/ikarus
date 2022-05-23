@@ -42,7 +42,9 @@ docs_dir: 'website'
 nav:
   - Home: index.md
   - Download: download.md
-  - How to contribute: howtocontribute.md
+  - How to contribute:
+    - Open Tasks: openTask.md
+    - Code style: codeStyle.md
   - Documentation:
     - How to edit the documentation: documentation/howToEdit.md
     - Build the documentation locally: documentation/BuildTheDocumentationLocally.md
@@ -50,7 +52,6 @@ nav:
     - Overview: tutorials/tutorialsOverview.md
   - Theory and Class Reference:
     - Overview: 01_theory/overview.md
-    - Interface vs. Implementation: 01_theory/interfaceVSimplementation.md
     - Geometry: 01_theory/geometry.md
     - Grid: 01_theory/grid.md
     - FE requirements: 01_theory/feRequirements.md
@@ -62,6 +63,7 @@ nav:
     - Local functions: 01_theory/LocalFunctions.md
     - Manifolds: 01_theory/Manifolds.md
     - Solvers: 01_theory/Solvers.md
+    - Observer and Observables: 01_theory/Observer.md
   - Examples:
       - Integrate pi: examples/integrate_pi.md
   - Literature: 99_Literature/99_Literature.md

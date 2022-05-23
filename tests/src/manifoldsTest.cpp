@@ -14,9 +14,8 @@
 #include <Eigen/Core>
 
 #include <ikarus/manifolds/realTuple.hh>
-#include <ikarus/utils/algorithms.hh>
 #include <ikarus/manifolds/unitVector.hh>
-#include <ikarus/manifolds/realTuple.hh>
+#include <ikarus/utils/algorithms.hh>
 
 static constexpr double tol = 1e-15;
 

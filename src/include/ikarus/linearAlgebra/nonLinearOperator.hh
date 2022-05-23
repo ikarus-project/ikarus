@@ -41,12 +41,12 @@ namespace Impl {
 
   template <typename... Args>
   struct LinearAlgebraFunctions {
-    std::tuple<std::reference_wrapper<std::remove_cvref_t<Args>>...> args;
+    std::tuple<std::reference_wrapper<std::remove_reference_t<Args>>...> args;
   };
 
   template <typename... Args>
   struct Parameter {
-    std::tuple<std::reference_wrapper<std::remove_cvref_t<Args>>...> args;
+    std::tuple<std::reference_wrapper<std::remove_reference_t<Args>>...> args;
   };
 
 }  // namespace Impl

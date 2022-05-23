@@ -32,7 +32,7 @@ namespace Ikarus {
     using JacobianDuneType = typename DuneLocalBasis::Traits::JacobianType;
 
   public:
-    explicit LocalBasis(const DuneLocalBasis& p_basis) : duneLocalBasis{&p_basis} {}
+    constexpr explicit LocalBasis(const DuneLocalBasis& p_basis) : duneLocalBasis{&p_basis} {}
     LocalBasis() = default;
 
     static constexpr int gridDim = DuneLocalBasis::Traits::dimDomain;
@@ -59,6 +59,12 @@ namespace Ikarus {
 
     /* Returns the number of ansatz functions */
     unsigned int size() { return duneLocalBasis->size(); }
+
+    /* Returns the number of integration points if the basis is bound */
+    unsigned int integrationPointSize() const {
+      if (not Nbound) throw std::logic_error("You have to bind the basis first");
+      return Nbound.value().size();
+    }
 
     /* Binds this basis to a given integration rule */
     template <typename IntegrationRule, typename... Ints>
@@ -109,12 +115,14 @@ namespace Ikarus {
 
     /* Returns a view over the integration point index and the point itself */
     auto viewOverIntegrationPoints() const {  // FIXME dont construct this on the fly
+      assert(Nbound && "You have to bind the basis first");
       assert(Nbound.value().size() == dNbound.value().size()
              && "Number of intergrationpoint evaluations does not match.");
-      if (Nbound and dNbound)
-        return std::views::iota(0UL, Nbound.value().size())
-               | std::views::transform([&](auto&& i_) { return IntegrationPointsAndIndex(i_, rule.value()[i_]); });
-      else {
+      if (Nbound and dNbound) {
+        auto res = std::views::iota(0UL, Nbound.value().size())
+                   | std::views::transform([&](auto&& i_) { return IntegrationPointsAndIndex(i_, rule.value()[i_]); });
+        return res;
+      } else {
         assert(false && "You need to call bind first");
         __builtin_unreachable();
       }
@@ -123,7 +131,7 @@ namespace Ikarus {
   private:
     mutable std::vector<JacobianDuneType> dNdune{};
     mutable std::vector<RangeDuneType> Ndune{};
-    DuneLocalBasis const* duneLocalBasis;
+    DuneLocalBasis const* duneLocalBasis;  // FIXME pass shared_ptr around
     std::optional<std::set<int>> boundDerivatives;
     std::optional<std::vector<Eigen::VectorX<RangeFieldType>>> Nbound{};
     std::optional<std::vector<Eigen::Matrix<RangeFieldType, Eigen::Dynamic, gridDim>>> dNbound{};

@@ -42,7 +42,7 @@ namespace Ikarus {
   enum class MatrixTypeTag { Dense, Sparse };
 
   /** \brief A type-erased solver templated with the scalar type of the linear system */
-  template <typename ScalarType = double >
+  template <typename ScalarType = double>
   class ILinearSolver {
   public:
     using SparseMatrixType = Eigen::SparseMatrix<ScalarType>;
@@ -102,15 +102,11 @@ namespace Ikarus {
         case SolverTypeTag::d_LLT:
           solverimpl = std::make_unique<SolverImpl<LLT<DenseMatrixType>>>();
           break;
-          //        case SolverTypeTag::BDCSVD:
-          //          solverimpl = std::make_unique<SolverImpl<BDCSVD<DenseMatrixType>>>();
-          //          break;
-          //        case SolverTypeTag::JacobiSVD:
-          //          solverimpl = std::make_unique<SolverImpl<JacobiSVD<DenseMatrixType>>>();
-          break;
         case SolverTypeTag::d_LDLT:
           solverimpl = std::make_unique<SolverImpl<LDLT<DenseMatrixType>>>();
           break;
+        default:
+          DUNE_THROW(Dune::NotImplemented, "Your requested solver does not work with this interface class");
       }
     }
 
@@ -127,26 +123,23 @@ namespace Ikarus {
   private:
     struct SolverBase {
       virtual ~SolverBase() = default;
-      //    [[nodiscard]] virtual std::unique_ptr<SolverBase> clone() const                                  = 0;
       virtual void analyzePattern(const DenseMatrixType&) const {};
-      virtual void analyzePattern(const SparseMatrixType&)                              = 0;
-      virtual void factorize(const DenseMatrixType&)                                    = 0;
-      virtual void factorize(const SparseMatrixType&)                                   = 0;
-      virtual void compute(const SparseMatrixType&)                                     = 0;
-      virtual void compute(const DenseMatrixType&)                                      = 0;
-      virtual void solve(Eigen::VectorX<ScalarType>&x, const Eigen::VectorX<ScalarType>&) const = 0;
+      virtual void analyzePattern(const SparseMatrixType&)                                       = 0;
+      virtual void factorize(const DenseMatrixType&)                                             = 0;
+      virtual void factorize(const SparseMatrixType&)                                            = 0;
+      virtual void compute(const SparseMatrixType&)                                              = 0;
+      virtual void compute(const DenseMatrixType&)                                               = 0;
+      virtual void solve(Eigen::VectorX<ScalarType>& x, const Eigen::VectorX<ScalarType>&) const = 0;
     };
 
     template <typename Solver>
     struct SolverImpl : public SolverBase {
-
       void analyzePattern(const SparseMatrixType& A) override {
         if constexpr (requires(Solver sol) { sol.analyzePattern(A); }) solver.analyzePattern(A);
       }
 
       void factorize(const SparseMatrixType& A) override {
-        if constexpr (requires(Solver sol) { sol.factorize(A); })
-          solver.factorize(A);
+        if constexpr (requires(Solver sol) { sol.factorize(A); }) solver.factorize(A);
       }
 
       // Dense Solvers do not have a factorize method therefore
@@ -156,7 +149,6 @@ namespace Ikarus {
           solver.compute(A);
       }
       void compute(const SparseMatrixType& A) {
-        //        std::cout << "solver.computeSparse(A)" << std::endl;
         if constexpr (std::is_base_of_v<Eigen::SparseSolverBase<Solver>, Solver>)
           solver.compute(A);
         else
@@ -170,7 +162,7 @@ namespace Ikarus {
           throw std::logic_error("This solver does not support solving with dense matrices.");
       }
 
-      void solve(Eigen::VectorX<ScalarType>&x, const Eigen::VectorX<ScalarType>& b) const override {
+      void solve(Eigen::VectorX<ScalarType>& x, const Eigen::VectorX<ScalarType>& b) const override {
         x = solver.solve(b);
       }
 
@@ -183,29 +175,18 @@ namespace Ikarus {
     template <typename MatrixType>
     requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
     inline ILinearSolver& compute(const MatrixType& A) {
-      //            std::cout << "compute(A)" << std::endl;
-      //            std::cout <<"r,c: "<< A.rows()<<" "<<A.cols() << std::endl;
-      //            std::cout << A << std::endl;
       solverimpl->compute(A);
       return *this;
     }
     template <typename MatrixType>
     requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
-    inline void analyzePattern(const MatrixType& A) {
-      //      std::cout << "analyzePattern(A)" << std::endl;
-      solverimpl->analyzePattern(A);
-    }
+    inline void analyzePattern(const MatrixType& A) { solverimpl->analyzePattern(A); }
 
     template <typename MatrixType>
     requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
-    inline void factorize(const MatrixType& A) {
-      //      std::cout << "factorize(A)" << std::endl;
-      solverimpl->factorize(A);
-    }
+    inline void factorize(const MatrixType& A) { solverimpl->factorize(A); }
 
-    void solve(Eigen::VectorX<ScalarType>&x, const Eigen::VectorX<ScalarType>& b) {
-      solverimpl->solve(x,b);
-    }
+    void solve(Eigen::VectorX<ScalarType>& x, const Eigen::VectorX<ScalarType>& b) { solverimpl->solve(x, b); }
   };
 
 }  // namespace Ikarus

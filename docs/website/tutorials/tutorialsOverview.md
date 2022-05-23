@@ -10,8 +10,7 @@ or modifiy the implemented functionality or who want to learn more about
 the impl thoughts and theoretical aspects.
 
 If you are rather interested in the theoretical background 
-and implementation details, visit the
-[theory section](../01_theory/interfaceVSimplementation.md).
+and implementation details, visit the theory and class reference section.
 
 ## Topics
 

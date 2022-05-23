@@ -11,7 +11,6 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
-#include <ikarus/finiteElements/interface/finiteElementFunctionConcepts.hh>
 #include <ikarus/utils/concepts.hh>
 
 namespace Ikarus {
@@ -54,9 +53,9 @@ namespace Ikarus {
     /**  Returns the boolean if a given degree of freedom is fixed */
     bool isConstrained(size_t i) const { return dirichletFlags->at(i); }
 
-    /**  Coarse estimate of node cnnectivit, i.e. this relates the bandwith of an sparse matrix.
-     * This estimate is désigned that it overestimates the real connectivity since it should
-     * only be used fore allocating vectors */
+    /**  Coarse estimate of node connectivity, i.e. this relates the bandwidth of an sparse matrix.
+     * This estimate is designed that it overestimates the real connectivity since it should
+     * only be used for allocating vectors */
     size_t estimateOfConnectivity() const { return basis_->gridView().size(GridView::dimension) * 8; }
 
   private:

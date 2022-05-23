@@ -5,93 +5,109 @@
 #pragma once
 #include <dune/functions/functionspacebases/basistags.hh>
 
-namespace Ikarus::Concepts {
+#include <Eigen/Core>
+namespace Ikarus {
 
-  template <typename Basis>
-  concept FlatInterLeavedBasis = requires {
-    std::is_same_v<typename Basis::PreBasis::IndexMergingStrategy, Dune::Functions::BasisFactory::FlatInterleaved>;
-  };
+  template <typename Derived>
+  auto transpose(const Eigen::EigenBase<Derived>& A);
+  namespace Concepts {
 
-  template <typename Basis>
-  concept FlatLexicographicBasis = requires {
-    std::is_same_v<typename Basis::PreBasis::IndexMergingStrategy, Dune::Functions::BasisFactory::FlatLexicographic>;
-  };
+    template <typename Basis>
+    concept FlatInterLeavedBasis = requires {
+      std::is_same_v<typename Basis::PreBasis::IndexMergingStrategy, Dune::Functions::BasisFactory::FlatInterleaved>;
+    };
 
-  template <typename Basis>
-  concept FlatIndexBasis = FlatLexicographicBasis<Basis> or FlatInterLeavedBasis<Basis>;
+    template <typename Basis>
+    concept FlatLexicographicBasis = requires {
+      std::is_same_v<typename Basis::PreBasis::IndexMergingStrategy, Dune::Functions::BasisFactory::FlatLexicographic>;
+    };
 
-  template <typename Basis>
-  concept BlockedInterLeavedBasis = requires {
-    std::is_same_v<typename Basis::PreBasis::IndexMergingStrategy, Dune::Functions::BasisFactory::BlockedInterleaved>;
-  };
+    template <typename Basis>
+    concept FlatIndexBasis = FlatLexicographicBasis<Basis> or FlatInterLeavedBasis<Basis>;
 
-  template <typename Basis>
-  concept BlockedLexicographicBasis = requires {
-    std::is_same_v<typename Basis::PreBasis::IndexMergingStrategy, Dune::Functions::BasisFactory::BlockedLexicographic>;
-  };
+    template <typename Basis>
+    concept BlockedInterLeavedBasis = requires {
+      std::is_same_v<typename Basis::PreBasis::IndexMergingStrategy, Dune::Functions::BasisFactory::BlockedInterleaved>;
+    };
 
-  template <typename DuneLocalBasisImpl>
-  concept DuneLocalBasis = requires(DuneLocalBasisImpl& duneLocalBasis) {
-    typename DuneLocalBasisImpl::Traits::RangeType;
-    typename DuneLocalBasisImpl::Traits::JacobianType;
-    DuneLocalBasisImpl::Traits::dimDomain;
-    typename DuneLocalBasisImpl::Traits::DomainType;
+    template <typename Basis>
+    concept BlockedLexicographicBasis = requires {
+      std::is_same_v<typename Basis::PreBasis::IndexMergingStrategy,
+                     Dune::Functions::BasisFactory::BlockedLexicographic>;
+    };
 
-    typename DuneLocalBasisImpl::Traits::DomainFieldType;
-    typename DuneLocalBasisImpl::Traits::RangeFieldType;
+    template <typename DuneLocalBasisImpl>
+    concept DuneLocalBasis = requires(DuneLocalBasisImpl& duneLocalBasis) {
+      typename DuneLocalBasisImpl::Traits::RangeType;
+      typename DuneLocalBasisImpl::Traits::JacobianType;
+      DuneLocalBasisImpl::Traits::dimDomain;
+      typename DuneLocalBasisImpl::Traits::DomainType;
 
-    duneLocalBasis.evaluateFunction(std::declval<typename DuneLocalBasisImpl::Traits::DomainType>(),
-                                    std::declval<std::vector<typename DuneLocalBasisImpl::Traits::RangeType>&>());
-    duneLocalBasis.evaluateJacobian(std::declval<typename DuneLocalBasisImpl::Traits::DomainType>(),
-                                    std::declval<std::vector<typename DuneLocalBasisImpl::Traits::JacobianType>&>());
-  };
+      typename DuneLocalBasisImpl::Traits::DomainFieldType;
+      typename DuneLocalBasisImpl::Traits::RangeFieldType;
 
-  template <typename Basis>
-  concept BlockedIndexBasis = BlockedLexicographicBasis<Basis> or BlockedInterLeavedBasis<Basis>;
+      duneLocalBasis.evaluateFunction(std::declval<typename DuneLocalBasisImpl::Traits::DomainType>(),
+                                      std::declval<std::vector<typename DuneLocalBasisImpl::Traits::RangeType>&>());
+      duneLocalBasis.evaluateJacobian(std::declval<typename DuneLocalBasisImpl::Traits::DomainType>(),
+                                      std::declval<std::vector<typename DuneLocalBasisImpl::Traits::JacobianType>&>());
+    };
 
-  template <typename Basis>
-  concept PowerBasis = requires {
-    Basis::PreBasis::Node::isPower == true;
-  };
+    template <typename Basis>
+    concept BlockedIndexBasis = BlockedLexicographicBasis<Basis> or BlockedInterLeavedBasis<Basis>;
 
-  template <typename L, typename R>
-  concept MultiplyAble = requires(L x, R y) {
-    x* y;
-  };
+    template <typename Basis>
+    concept PowerBasis = requires {
+      Basis::PreBasis::Node::isPower == true;
+    };
 
-  template <typename L, typename R>
-  concept AddAble = requires(L x, R y) {
-    x + y;
-  };
+    template <typename L, typename R>
+    concept MultiplyAble = requires(L x, R y) {
+      x* y;
+    };
 
-  template <typename L, typename R>
-  concept SubstractAble = requires(L x, R y) {
-    x - y;
-  };
+    template <typename L, typename R>
+    concept AddAble = requires(L x, R y) {
+      x + y;
+    };
 
-  template <typename L, typename R>
-  concept MultiplyAssignAble = requires(L x, R y) {
-    x *= y;
-  };
+    template <typename L, typename R>
+    concept SubstractAble = requires(L x, R y) {
+      x - y;
+    };
 
-  template <typename L, typename R>
-  concept DivideAssignAble = requires(L x, R y) {
-    x /= y;
-  };
+    template <typename L, typename R>
+    concept MultiplyAssignAble = requires(L x, R y) {
+      x *= y;
+    };
 
-  template <typename L, typename R>
-  concept AddAssignAble = requires(L x, R y) {
-    x += y;
-  };
+    template <typename L, typename R>
+    concept DivideAssignAble = requires(L x, R y) {
+      x /= y;
+    };
 
-  template <typename L, typename R>
-  concept SubstractAssignAble = requires(L x, R y) {
-    x -= y;
-  };
+    template <typename L, typename R>
+    concept AddAssignAble = requires(L x, R y) {
+      x += y;
+    };
 
-  template <typename L, typename R>
-  concept DivideAble = requires(L x, R y) {
-    x / y;
-  };
+    template <typename L, typename R>
+    concept SubstractAssignAble = requires(L x, R y) {
+      x -= y;
+    };
 
-}  // namespace Ikarus::Concepts
+    template <typename L, typename R>
+    concept DivideAble = requires(L x, R y) {
+      x / y;
+    };
+
+    template <typename L>
+    concept NegateAble = requires(L x) {
+      -x;
+    };
+
+    template <typename L>
+    concept TransposeAble = requires(L x) {
+      transpose(x);
+    };
+  }  // namespace Concepts
+}  // namespace Ikarus

@@ -31,7 +31,7 @@ jobs:
       - name: Tests
         working-directory: ./cmake-build-debug
         run: |
-          ctest --output-on-failure --parallel 4 -C Debug
+          ctest --output-on-failure --parallel 9 -C Debug
           cd ..
           gcov -abcfu $(find ./cmake-build-debug/tests/CMakeFiles/IkarusTests.dir/src -type f -name "*.gcno" | sed  's/gcno//g')
           ls

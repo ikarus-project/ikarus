@@ -22,10 +22,10 @@
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/finiteElements/feBases/autodiffFE.hh>
 #include <ikarus/localBasis/localBasis.hh>
-#include <ikarus/localFunctions/standardLocalFunction.hh>
+#include <ikarus/localFunctions/impl/standardLocalFunction.hh>
 #include <ikarus/utils/algorithms.hh>
 #include <ikarus/utils/drawing/griddrawer.hh>
-#include <ikarus/utils/linearAlgebraTypedefs.hh>
+#include <ikarus/utils/eigenDuneTransformations.hh>
 
 using namespace Ikarus;
 using namespace Dune::Indices;
@@ -178,17 +178,17 @@ int main(int argc, char **argv) {
 
   auto fintFunction = [&](auto &&lambdaLocal, auto &&dLocal) -> auto & {
     Ikarus::FErequirements req = FErequirementsBuilder()
-        .insertGlobalSolution(Ikarus::FESolutions::displacement, dLocal)
-        .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
-        .addAffordance(Ikarus::VectorAffordances::forces)
+                                     .insertGlobalSolution(Ikarus::FESolutions::displacement, dLocal)
+                                     .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+                                     .addAffordance(Ikarus::VectorAffordances::forces)
                                      .build();
     return denseFlatAssembler.getReducedVector(req);
   };
   auto KFunction = [&](auto &&lambdaLocal, auto &&dLocal) -> auto & {
     Ikarus::FErequirements req = FErequirementsBuilder()
-        .insertGlobalSolution(Ikarus::FESolutions::displacement, dLocal)
-        .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
-        .addAffordance(Ikarus::MatrixAffordances::stiffness)
+                                     .insertGlobalSolution(Ikarus::FESolutions::displacement, dLocal)
+                                     .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+                                     .addAffordance(Ikarus::MatrixAffordances::stiffness)
                                      .build();
     return sparseFlatAssembler.getReducedMatrix(req);
   };
