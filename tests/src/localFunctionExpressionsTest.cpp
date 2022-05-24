@@ -381,6 +381,8 @@ TEST(LocalFunctionTests, TestExpressions) {
 
     auto dotff     = dot(f, g);
     auto sqrtdotff = sqrt(dotff);
+    auto normSq = normSquared(f);
+    static_assert(normSq.order() == quadratic);
 
     static_assert(countNonArithmeticLeafNodes(dotff) == 2);
     static_assert(dotff.order() == quadratic);
@@ -389,6 +391,7 @@ TEST(LocalFunctionTests, TestExpressions) {
     testLocalFunction(dotff);
     testLocalFunction(sqrtdotff);
     testLocalFunction(k);
+    testLocalFunction(normSq);
     for (int gpIndex = 0; auto& gp : rule) {
       EXPECT_DOUBLE_EQ((-2 * 3) * f.evaluateFunction(gpIndex).dot(g.evaluateFunction(gpIndex)),
                        k.evaluateFunction(gpIndex)[0]);
