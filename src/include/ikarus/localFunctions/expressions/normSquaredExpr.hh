@@ -102,7 +102,6 @@ namespace Ikarus {
 
           res *= 2;
           return res;
-
         } else
           static_assert(
               LFArgs::hasOneSpatialSingle or LFArgs::hasOneSpatialAll,
