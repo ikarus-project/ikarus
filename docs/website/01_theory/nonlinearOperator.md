@@ -1,4 +1,4 @@
-# Non-linear operator
+# Nonlinear operator
 
 The class ``NonLinearOperator`` provides a collection of a function and its derivatives, including the dependence 
 on parameters. 

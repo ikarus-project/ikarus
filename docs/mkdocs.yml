@@ -56,14 +56,15 @@ nav:
     - Grid: 01_theory/grid.md
     - FE requirements: 01_theory/feRequirements.md
     - Finite Elements: 01_theory/finiteElements.md
-    - Assembler: 01_theory/Assembler.md
+    - Assembler: 01_theory/assembler.md
     - NonlinearOperator: 01_theory/nonlinearOperator.md
-    - Control routines: 01_theory/ControlRoutines.md
-    - Local basis: 01_theory/LocalBasis.md
-    - Local functions: 01_theory/LocalFunctions.md
-    - Manifolds: 01_theory/Manifolds.md
-    - Solvers: 01_theory/Solvers.md
-    - Observer and Observables: 01_theory/Observer.md
+    - Control routines: 01_theory/controlRoutines.md
+    - Local basis: 01_theory/localBasis.md
+    - Local functions: 01_theory/localFunctions.md
+    - Manifolds: 01_theory/manifolds.md
+    - Solvers: 01_theory/solvers.md
+    - Observer and observables: 01_theory/observer.md
+    - Global basis: 01_theory/globalBasis.md
   - Examples:
       - Integrate pi: examples/integrate_pi.md
   - Literature: 99_Literature/99_Literature.md
@@ -109,7 +110,7 @@ markdown_extensions:
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
-          class: mermaid-experimental
+          class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
