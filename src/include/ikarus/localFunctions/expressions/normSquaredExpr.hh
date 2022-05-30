@@ -22,8 +22,7 @@ namespace Ikarus {
     static constexpr int gridDim   = Traits::gridDim;
 
     template <size_t ID_ = 0>
-    static constexpr int orderID
-        = std::min(2 * Base::E1Raw::template order<ID_>(), nonLinear);
+    static constexpr int orderID = std::min(2 * Base::E1Raw::template order<ID_>(), nonLinear);
 
     template <typename LFArgs>
     auto evaluateValueOfExpression(const LFArgs &lfArgs) const {
@@ -34,34 +33,30 @@ namespace Ikarus {
     template <int DerivativeOrder, typename LFArgs>
     auto evaluateDerivativeOfExpression(const LFArgs &lfArgs) const {
       const auto u = evaluateFunctionImpl(this->m(), lfArgs);
-      if constexpr (DerivativeOrder == 1)  // d(dot(u,v))/dx = 2 * u_x * u
+      if constexpr (DerivativeOrder == 1)  // d(squaredNorm(u))/dx = 2 * u_x * u
       {
         const auto u_x = evaluateDerivativeImpl(this->m(), lfArgs);
-        return Ikarus::eval(2*u.transpose() * u_x);
-      } else if constexpr (DerivativeOrder
-                           == 2) {  // dd(dot(u,v))/(dxdy) =  2 *u_{x,y} * u + 2*u_x*u_y
+        return Ikarus::eval(2 * u.transpose() * u_x);
+      } else if constexpr (DerivativeOrder == 2) {  // dd(squaredNorm(u))/(dxdy) =  2 *u_{x,y} * u + 2*u_x*u_y
         const auto &[u_x, u_y] = evaluateFirstOrderDerivativesImpl(this->m(), lfArgs);
         if constexpr (LFArgs::hasNoSpatial and LFArgs::hasTwoCoeff) {
           const auto alonguArgs = replaceAlong(lfArgs, along(u));
           const auto u_xyAlongu = evaluateDerivativeImpl(this->m(), alonguArgs);
 
-          // ToDo: kann hier aus irgendeinem Grund den zweiten Term nicht mit 2 multiplizieren
-          return Ikarus::eval(2 * u_xyAlongu + transpose(u_x) * u_y + transpose(u_x) * u_y);
+          return Ikarus::eval(2 * (u_xyAlongu + transpose(u_x) * u_y));
         } else if constexpr (LFArgs::hasOneSpatial and LFArgs::hasSingleCoeff) {
           const auto u_xy = evaluateDerivativeImpl(this->m(), lfArgs);
           if constexpr (LFArgs::hasOneSpatialSingle and LFArgs::hasSingleCoeff) {
-            return Ikarus::eval(2 * transpose(u) * u_xy + 2 * transpose(u_x) * u_y);
+            return Ikarus::eval(2 * (transpose(u) * u_xy + transpose(u_x) * u_y));
           } else if constexpr (LFArgs::hasOneSpatialAll and LFArgs::hasSingleCoeff) {
             std::array<std::remove_cvref_t<decltype(Ikarus::eval(transpose(u) * u_xy[0]))>, gridDim> res;
             for (int i = 0; i < gridDim; ++i)
-              res[i] = Ikarus::eval(transpose(u) * u_xy[i] + transpose(u_x.col(i)) * u_y + transpose(u_x.col(i)) * u_y
-                                    + transpose(u) * u_xy[i]);
+              res[i] = 2 * (transpose(u) * u_xy[i] + transpose(u_x.col(i)) * u_y);
             return res;
           }
         }
-      } else if constexpr (DerivativeOrder
-                           == 3) {  // dd(dot(u,v))/(dxdydz) =  u_{x,y,z} * v + u_{x,y} * v_z + u_{x,z}*v_y +
-                                    // u_x*v_{y,z} + u_{y,z}* v_x + u_y* v_{x,z} + u_z * v_{x,y} + u * v_{x,y,z}
+      } else if constexpr (DerivativeOrder == 3) {  // dd(squaredNorm(u))/(dxdydz) = 2*( u_{x,y,z} * v + u_{x,y} * v_z +
+                                                    // u_{x,z}*v_y + u_x*v_{y,z})
         if constexpr (LFArgs::hasOneSpatialSingle) {
           const auto argsForDyz = lfArgs.extractSecondWrtArgOrFirstNonSpatial();
 
@@ -74,8 +69,7 @@ namespace Ikarus {
           const auto u_xyzAlongu = evaluateDerivativeImpl(this->m(), alonguArgs);
           const auto u_yzAlongux = evaluateDerivativeImpl(this->m(), argsForDyzalongu_xArgs);
 
-          return Ikarus::eval(u_xyzAlongu + transpose(u_xy) * u_z + transpose(u_xz) * u_y + u_yzAlongux + u_yzAlongux
-                              + transpose(u_xz) * u_y + transpose(u_xy) * u_z + u_xyzAlongu);
+          return Ikarus::eval(2 * (u_xyzAlongu + transpose(u_xy) * u_z + transpose(u_xz) * u_y + u_yzAlongux));
         } else if constexpr (LFArgs::hasOneSpatialAll) {
           // check that the along argument has the correct size
           const auto &alongMatrix = std::get<0>(lfArgs.alongArgs.args);
@@ -102,12 +96,11 @@ namespace Ikarus {
           const auto u_c0c1AlongGraduTimesA = evaluateDerivativeImpl(this->m(), alonggraduTimesAArgs);
           decltype(eval(u_xyzAlongu)) res;
 
-          res = 2 * u_xyzAlongu + 2 * u_c0c1AlongGraduTimesA;
+          res = u_xyzAlongu + u_c0c1AlongGraduTimesA;
           for (int i = 0; i < gridDim; ++i)
-            res += (transpose(u_c1) * gradu_c0[i] + transpose(u_c1) * gradu_c0[i] + transpose(u_c0) * gradu_c1[i]
-                    + transpose(u_c0) * gradu_c1[i])
-                   * alongMatrix(0, i);
+            res += (transpose(u_c1) * gradu_c0[i] + transpose(u_c0) * gradu_c1[i]) * alongMatrix(0, i);
 
+          res *= 2;
           return res;
 
         } else
@@ -119,7 +112,6 @@ namespace Ikarus {
                       "Only first, second and third order derivatives are supported.");
     }
   };
-
 
   template <typename E1>
   struct LocalFunctionTraits<NormSquaredExpr<E1>> {
@@ -135,7 +127,9 @@ namespace Ikarus {
   };
 
   template <typename E1>
-  requires IsLocalFunction<E1>
-  constexpr auto normSquared(E1 &&u) { return NormSquaredExpr<E1>(std::forward<E1>(u)); }
+    requires IsLocalFunction<E1>
+  constexpr auto normSquared(E1 &&u) {
+    return NormSquaredExpr<E1>(std::forward<E1>(u));
+  }
 
 }  // namespace Ikarus
