@@ -507,49 +507,47 @@ template <int DerivativeOrder, typename LFArgs>
         } else if constexpr (LFArgs::hasOneSpatial and LFArgs::hasSingleCoeff) { // (9)
           const auto u_xy = evaluateDerivativeImpl(this->l(), lfArgs); // (10)
           const auto v_xy = evaluateDerivativeImpl(this->r(), lfArgs);
-          if constexpr (LFArgs::hasOneSpatialSingle and LFArgs::hasSingleCoeff) {
+          if constexpr (LFArgs::hasOneSpatialSingle and LFArgs::hasSingleCoeff) { // (11)
             return Ikarus::eval(transpose(v) * u_xy + transpose(u_x) * v_y + transpose(v_x) * u_y
                                 + transpose(u) * v_xy);
-          } else if constexpr (LFArgs::hasOneSpatialAll and LFArgs::hasSingleCoeff) {
-            std::array<std::remove_cvref_t<decltype(Ikarus::eval(transpose(v) * u_xy[0]))>, gridDim> res;
+          } else if constexpr (LFArgs::hasOneSpatialAll and LFArgs::hasSingleCoeff) { // (12)
+            std::array<std::remove_cvref_t<decltype(Ikarus::eval(transpose(v) * u_xy[0]))>, gridDim> res; // (13)
             for (int i = 0; i < gridDim; ++i)
               res[i] = Ikarus::eval(transpose(v) * u_xy[i] + transpose(u_x.col(i)) * v_y + transpose(v_x.col(i)) * u_y
                                     + transpose(u) * v_xy[i]);
             return res;
           }
         }
-      } else if constexpr (DerivativeOrder
-                           == 3) {  // dd(dot(u,v))/(dxdydz) =  u_{x,y,z} * v + u_{x,y} * v_z + u_{x,z}*v_y +
-                                    // u_x*v_{y,z} + u_{y,z}* v_x + u_y* v_{x,z} + u_z * v_{x,y} + u * v_{x,y,z}
-        if constexpr (LFArgs::hasOneSpatialSingle) {
-          const auto argsForDyz = lfArgs.extractSecondWrtArgOrFirstNonSpatial();
+      } else if constexpr (DerivativeOrder == 3) { // (14)                                     
+        if constexpr (LFArgs::hasOneSpatialSingle) {  // (15)
+          const auto argsForDyz = lfArgs.extractSecondWrtArgOrFirstNonSpatial(); // (16)
 
-          const auto &[u_x, u_y, u_z] = evaluateFirstOrderDerivativesImpl(this->l(), lfArgs);
+          const auto &[u_x, u_y, u_z] = evaluateFirstOrderDerivativesImpl(this->l(), lfArgs); // (17)
           const auto &[v_x, v_y, v_z] = evaluateFirstOrderDerivativesImpl(this->r(), lfArgs);
-          const auto &[u_xy, u_xz]    = evaluateSecondOrderDerivativesImpl(this->l(), lfArgs);
+          const auto &[u_xy, u_xz]    = evaluateSecondOrderDerivativesImpl(this->l(), lfArgs); // (18)
           const auto &[v_xy, v_xz]    = evaluateSecondOrderDerivativesImpl(this->r(), lfArgs);
 
           const auto alonguArgs             = replaceAlong(lfArgs, along(u));
           const auto alongvArgs             = replaceAlong(lfArgs, along(v));
-          const auto argsForDyzalongv_xArgs = replaceAlong(argsForDyz, along(v_x));
+          const auto argsForDyzalongv_xArgs = replaceAlong(argsForDyz, along(v_x)); // (19)
           const auto argsForDyzalongu_xArgs = replaceAlong(argsForDyz, along(u_x));
 
-          const auto u_xyzAlongv = evaluateDerivativeImpl(this->l(), alongvArgs);
+          const auto u_xyzAlongv = evaluateDerivativeImpl(this->l(), alongvArgs); // (20)
           const auto v_xyzAlongu = evaluateDerivativeImpl(this->r(), alonguArgs);
-          const auto u_yzAlongvx = evaluateDerivativeImpl(this->l(), argsForDyzalongv_xArgs);
+          const auto u_yzAlongvx = evaluateDerivativeImpl(this->l(), argsForDyzalongv_xArgs); // (21)
           const auto v_yzAlongux = evaluateDerivativeImpl(this->r(), argsForDyzalongu_xArgs);
 
           return Ikarus::eval(u_xyzAlongv + transpose(u_xy) * v_z + transpose(u_xz) * v_y + v_yzAlongux + u_yzAlongvx
                               + transpose(v_xz) * u_y + transpose(v_xy) * u_z + v_xyzAlongu);
-        } else if constexpr (LFArgs::hasOneSpatialAll) {
-          const auto &alongMatrix = std::get<0>(lfArgs.alongArgs.args);
+        } else if constexpr (LFArgs::hasOneSpatialAll) { // (22)
+          const auto &alongMatrix = std::get<0>(lfArgs.alongArgs.args); // (23)
 
           const auto uTimesA = eval(u * alongMatrix);
           const auto vTimesA = eval(v * alongMatrix);
 
-          const auto &[gradu, u_c0, u_c1]  = evaluateFirstOrderDerivativesImpl(this->l(), lfArgs);
+          const auto &[gradu, u_c0, u_c1]  = evaluateFirstOrderDerivativesImpl(this->l(), lfArgs); // (24)
           const auto &[gradv, v_c0, v_c1]  = evaluateFirstOrderDerivativesImpl(this->r(), lfArgs);
-          const auto &[gradu_c0, gradu_c1] = evaluateSecondOrderDerivativesImpl(this->l(), lfArgs);
+          const auto &[gradu_c0, gradu_c1] = evaluateSecondOrderDerivativesImpl(this->l(), lfArgs); // (25)
           const auto &[gradv_c0, gradv_c1] = evaluateSecondOrderDerivativesImpl(this->r(), lfArgs);
 
           const auto graduTimesA = (gradu * alongMatrix.transpose()).eval();
@@ -595,18 +593,18 @@ template <int DerivativeOrder, typename LFArgs>
    \end{flalign*}
    The first one would be returned if the caller uses 
    ```cpp
-       localFunction.evaluateDerivative(gpIndex, wrt(spatialAll,coeff(i)));
+       u.evaluateDerivative(gpIndex, wrt(spatialAll,coeff(i)));
    ```
-   and the second using
+   and the second one
    ```cpp
-       localFunction.evaluateDerivative(gpIndex, wrt(spatial(0),coeff(i)));
+       u.evaluateDerivative(gpIndex, wrt(spatial(0),coeff(i)));
    ```
    and the third without any spatial derivative using
    ```cpp
-       localFunction.evaluateDerivative(gpIndex, wrt(coeff(i,j)));
+       u.evaluateDerivative(gpIndex, wrt(coeff(i,j)));
    ```
    Therefore, this function seperates the two wrt. arguments and returns the corresponding first order derivatives.
-6. Compile time branch for the case where no spatial derivatives are requested bot only wrt. coefficients.
+6. Compile time branch for the case where no spatial derivatives are requested bot only wrt. coefficients is needed.
 7. Creates a new argument variable where the along argument is replaced by `v`.
 8. This function evaluates the derivatives of `l` wrt to both passed wrt arguments. Furthmore, it takes the give along argument since otherwise the returned object would be a 3 dimensional array.
    If we consider the left function as $\boldsymbol{u}(\boldsymbol{\xi},\boldsymbol{u}_I)$  and $\boldsymbol{v}$ of the same size as $\boldsymbol{u}$ this calls returns
@@ -615,18 +613,90 @@ template <int DerivativeOrder, typename LFArgs>
    \end{flalign*}
    This is the same if the user calls
    ```cpp
-       localFunction.evaluateDerivative(gpIndex, wrt(coeff(i,j)),along(v));
+       u.evaluateDerivative(gpIndex, wrt(coeff(i,j)),along(v));
    ```
-9. Compile time branch for the case where one spatial derivatives and one derivative wrt. coefficients.
+9. Compile time branch for the case where one spatial derivatives and one derivative wrt. coefficients is needed.
 10. This function evaluates the derivatives of `l` wrt to both passed wrt arguments.
     If we consider the left function as $\boldsymbol{u}(\boldsymbol{\xi},\boldsymbol{u}_I)$  this calls returns
     \begin{flalign*}
-    \verb+u_xy+ &= \frac{\partial^2 \boldsymbol{u} }{\partial\boldsymbol{\xi}\partial\boldsymbol{u}_I} \quad \text{or} \quad \verb+u_xy+ = \frac{\partial^2 \boldsymbol{u} }{\partial\xi_0\partial\boldsymbol{u}_I} v_i
+    \verb+u_xy+ &= \frac{\partial^2 \boldsymbol{u} }{\partial\boldsymbol{\xi}\partial\boldsymbol{u}_I} \quad \text{or} \quad \verb+u_xy+ = \frac{\partial^2 \boldsymbol{u} }{\partial\xi_0\partial\boldsymbol{u}_I}
     \end{flalign*}
     The first one would be returned if the caller uses
    ```cpp
-       localFunction.evaluateDerivative(gpIndex, wrt(spatialAll,coeff(i,j)));
+       u.evaluateDerivative(gpIndex, wrt(spatialAll,coeff(i)));
    ```
+   and the second one
+   ```cpp
+   u.evaluateDerivative(gpIndex, wrt(spatial(0),coeff(i)));
+   ```
+   In the first case the result is stored in an array. Thus in the first index the derivative wrt. to the first spatial coordinate is stored.
+   Therefore we would have in the code
+   ```cpp
+   spatialAllCoeffDeriv = u.evaluateDerivative(gpIndex, wrt(spatialAll,coeff(i)));
+   spatialAllCoeffDeriv[0] // derivative as in u.evaluateDerivative(gpIndex, wrt(spatial(0),coeff(i)));
+   spatialAllCoeffDeriv[1] // derivative as in u.evaluateDerivative(gpIndex, wrt(spatial(1),coeff(i)));
+   ```
+11. Compile time branch for the case where one single spatial derivatives and one derivative wrt. coefficients is needed.
+12. Compile time branch for the case where all spatial derivatives and one derivative wrt. coefficients is needed.
+13. The return type here is an array of single spatial derivatives and each derived wrt. the coefficient. Thus the type inside the array must be deduced here.
+14. Compile time branch for third order derivatives 
+15. Compile time branch for single spatial derivatives
+16. To obtain derivatives wrt to the second and third wrt argument we extract here the arguments. E.g. if we have the following request
+   ```cpp
+    u.evaluateDerivative(gpIndex, wrt(spatialAll,coeff(i,j)),along(matrix));
+   ```
+   this call would extract the arguments as
+   ```cpp
+    newArgs =  "wrt(coeff(i,j)),along(matrix))" //THIS IS NO VALID SYNTAX
+   ``` 
+   This can be used then as    
+   ```cpp
+   u.evaluateDerivative(gpIndex, newArgs);
+   ```
+17. As in the second order derivative case the returns all three first order derivatives. If we would have
+    ```cpp
+    u.evaluateDerivative(gpIndex, wrt(spatialAll,coeff(i,j)),along(matrix));
+    ```
+    The returned values would be
+    \begin{flalign*}
+    \verb+u_x+ &= \frac{\partial \boldsymbol{u} }{\partial\boldsymbol{\xi}} \\\\
+    \verb+u_y+ &= \frac{\partial \boldsymbol{u} }{\partial\boldsymbol{u}_I} \\\\
+    \verb+u_z+ &= \frac{\partial \boldsymbol{u} }{\partial\boldsymbol{u}_J} 
+    \end{flalign*}
+18. This returns the derivatives wrt to the given spatial direction and wrt to the first and second coefficient.  If we would have
+    ```cpp
+    u.evaluateDerivative(gpIndex, wrt(spatialAll,coeff(i,j)),along(matrix));
+    ```
+    The returned values would be
+    \begin{flalign*}
+    \verb+u_xy+ &= \frac{\partial^2 \boldsymbol{u} }{\partial\boldsymbol{\xi}\partial\boldsymbol{u}_I} \\\\
+    \verb+u_xz+ &= \frac{\partial^2 \boldsymbol{u} }{\partial\boldsymbol{\xi}\partial\boldsymbol{u}_J} \\\\
+    \end{flalign*}
+19. Creates a new argument variable where the along argument is replaced by `v_x`.
+20. This return as the call would be
+    ```cpp
+    u.evaluateDerivative(gpIndex, wrt(spatial(0),coeff(i,j),along(v));
+    ```
+    In mathematical notation this returns
+    \begin{flalign*}
+       \verb+u_xyzAlongv  + &= \frac{\partial^3 u_i }{\partial \xi_0\partial\boldsymbol{u}_I\partial\boldsymbol{u}_J} v_i
+       \end{flalign*}
+22. This return as the call would be
+    ```cpp
+    v_x = v.evaluateDerivative(gpIndex, wrt(spatial(0));
+    u_yzAlongvx = u.evaluateDerivative(gpIndex, wrt(coeff(i,j),along(v_x));
+    ```
+    In mathematical notation this returns
+    \begin{flalign*}
+    \verb+u_yzAlongvx+ &= \frac{\partial^2 u_i }{\partial\boldsymbol{u}_I\partial\boldsymbol{u}_J} \left[\frac{\partial \boldsymbol{v}}{\xi_0}\right]_i
+    \end{flalign*}
+23. Compile time branch for all spatial derivatives
+24. Obtain the along argument give by the caller as in
+    ```cpp
+    u.evaluateDerivative(gpIndex, wrt(spatialAll,coeff(i,j),along(matrix));
+    ```
+25. As above in the single spatial case
+26. As above in the single spatial case
 
 If your expression is working you should add it to `ikarus/localfunctions/expressions.hh`
 \bibliography
