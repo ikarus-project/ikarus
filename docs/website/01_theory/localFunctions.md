@@ -334,7 +334,7 @@ auto k = f+g;
 k.evaluateDerivative(ipIndex, wrt(coeff(i), spatial(d))); 
 ``` 
 
-Currently, we support binary and unary expressions. The following expression are defined:
+Currently, we support binary and unary expressions. The following expressions are defined:
 
 | Name       | Mathematical formula                                | Code                        | Note                                                                               |  
 |:-----------|:----------------------------------------------------|:----------------------------|:-----------------------------------------------------------------------------------| 
