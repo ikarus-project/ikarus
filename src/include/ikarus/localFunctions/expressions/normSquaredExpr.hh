@@ -127,9 +127,7 @@ namespace Ikarus {
   };
 
   template <typename E1>
-    requires IsLocalFunction<E1>
-  constexpr auto normSquared(E1 &&u) {
-    return NormSquaredExpr<E1>(std::forward<E1>(u));
-  }
+  requires IsLocalFunction<E1>
+  constexpr auto normSquared(E1 &&u) { return NormSquaredExpr<E1>(std::forward<E1>(u)); }
 
 }  // namespace Ikarus

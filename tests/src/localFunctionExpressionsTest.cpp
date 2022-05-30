@@ -381,7 +381,7 @@ TEST(LocalFunctionTests, TestExpressions) {
 
     auto dotff     = dot(f, g);
     auto sqrtdotff = sqrt(dotff);
-    auto normSq = normSquared(f);
+    auto normSq    = normSquared(f);
     static_assert(normSq.order() == quadratic);
 
     static_assert(countNonArithmeticLeafNodes(dotff) == 2);
