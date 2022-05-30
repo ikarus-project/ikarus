@@ -189,8 +189,8 @@ classDiagram
   }
 
 click NonlinearOperator href "../nonlinearOperator/" 
-click LinearSolver href "../solvers/" 
-click NonlinearSolver href "../solvers/" 
+click LinearSolver href "../solvers/#linear-solver" 
+click NonlinearSolver href "../solvers/#non-linear-solver" 
 click FiniteElement href "../finiteElements/" 
 click GridView href "../grid/" 
 click Grid href "../grid/" 
@@ -201,11 +201,12 @@ click Manifold href "../manifolds/"
 click Localbasis href "../localBasis/" 
 click FERequirements href "../feRequirements/" 
 click FErequirementsBuilder href "../feRequirements/" 
-click ResultRequirements href "../feRequirements/" 
-click ResultRequirementsBuilder href "../feRequirements/" 
+click ResultRequirements href "../feRequirements/#fe-result-requirements" 
+click ResultRequirementsBuilder href "../feRequirements/#fe-result-requirements" 
 click Affordances href "../feRequirements/" 
 click ResultType href "../feRequirements/" 
-click IObservable href "../observer/" 
+click IObservable href "../observer/#iobservable" 
+click Observer href "../observer/#iobserver" 
 click GlobalBasis href "../globalBasis/" 
 
 ```

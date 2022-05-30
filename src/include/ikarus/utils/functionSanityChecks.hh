@@ -5,7 +5,6 @@
 #pragma once
 #include "findLineSegment.hh"
 
-
 #include <dune/common/float_cmp.hh>
 
 #include <spdlog/spdlog.h>

@@ -45,6 +45,9 @@ namespace Ikarus {
     std::regex regexp9("SqrtExpr");
     name = regex_replace(name, regexp9, "Sqrt");
 
+    std::regex regexp10("NormSquaredExpr");
+    name = regex_replace(name, regexp10, "NormSquared");
+
     return name;
   }
 }  // namespace Ikarus
