@@ -53,7 +53,7 @@ void solve(Eigen::VectorX<ScalarType>&x, const Eigen::VectorX<ScalarType>& b); /
     E.g. if you need the `.determinant()` method of `Eigen::SimplicialLDLT` you need to directly use it since `ILinearSolver`does not support this method.
 
 
-## Non-Linear solver
+## Nonlinear solver
 
 Non-linear solvers are usually used to solve some optimization problem, e.g. root-finding or minimization problems
 \begin{align}
