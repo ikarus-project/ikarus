@@ -39,7 +39,7 @@ auto rebindClone (ScalarType, Dune::index_constant<ID>); // (7)
 2. Return the order of the local function wrt. the coefficients. An id tag can be passed which returns the order wrt a tagged function. For details see [Tagging leaf local functions](#tagging-leaf-local-functions).
 3. Return the basis of the local function. An id tag can be passed which returns the basis of a specific tagged function. For details see [Tagging leaf local functions](#tagging-leaf-local-functions).
 4. Returns a reference to the coefficient of the underlying leaf local finite elements. An id tag can be passed which returns the basis of a specific tagged function. It can return const and non-const reference. The non-const version is deactivated, if there are more than one leaf node with the passed id tag.  For details see [Tagging leaf local functions](#tagging-leaf-local-functions).
-5. This function is passed through to the given `localBasis`. See [Link](LocalBasis.md)
+5. This function is passed through to the given `localBasis`. See [Link](localBasis.md)
 6. Clones the local function and stores a copy of all leave nodes.
 7. Clones the local function and rebinds the scalar type of the coefficients with id tag ID. This becomes hand, if you want to replace doubles with an autodiff type.
 

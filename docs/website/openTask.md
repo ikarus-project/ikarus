@@ -10,7 +10,7 @@ If your are interested the following task are vacant.
     \boldsymbol{n} = \frac{\boldsymbol{a}_1 \times \boldsymbol{a}_2}{||\boldsymbol{a}_1 \times \boldsymbol{a}_2||}, \quad \text{with } \boldsymbol{a}_{\alpha} = \sum_{i=1}^n N^i_{,\alpha}(\boldsymbol{\xi}) \boldsymbol{x}_i
     \] 
 
-    To implement these see [link](01_theory/LocalFunctions.md#how-to-implement-your-own-local-functions).
+    To implement these see [link](01_theory/localFunctions.md#how-to-implement-your-own-local-functions).
 
 * Support second derivatives
 * Add \( \operatorname{div} \) and \( \operatorname{curl} \) wrapper
@@ -21,6 +21,7 @@ If your are interested the following task are vacant.
 
 ### Controlroutines addons
 * Extended systems
+* Inhomogeneous dirichlet boundary conditions wrapper class
 
 ### Finite element helper
 * Implement default implemented mass matrix
@@ -33,6 +34,7 @@ If your are interested the following task are vacant.
 
 ### Local Basis 
 * Support second derivatives
+
 
 ### Addons
 * Add Python binding [pybind11](https://github.com/pybind/pybind11)
