@@ -315,6 +315,7 @@ CoeffDerivMatrix
 ## Expressions
 We use expression templates[^et] to combine existing local functions to obtain new nested ones.
 [^et]:  [Expression templates](https://de.wikipedia.org/wiki/Expression_Templates) are usually used in linear algebra libraries, e.g. [Eigen](https://eigen.tuxfamily.org) or [Blaze](https://bitbucket.org/blaze-lib/blaze/src/master/).
+The syntax is similar to the one provided by [UML](https://fenics.readthedocs.io/projects/ufl/en/latest/manual/form_language.html) but only acts on local functions.
 
 For example consider the following code
 ```cpp 
