@@ -335,13 +335,14 @@ k.evaluateDerivative(ipIndex, wrt(coeff(i), spatial(d)));
 
 Currently, we support binary and unary expressions. The following expression are defined:
 
-| Name       | Mathematical formula                                | Code                        | Note                                                              | 
-|:-----------|:----------------------------------------------------|:----------------------------|:------------------------------------------------------------------|
-| Sum        | $$ \boldsymbol{f} + \boldsymbol{g}  $$              | `#!cpp f+g`                 | $\boldsymbol{f}$  and  $\boldsymbol{g}$ need to be the same size. |
-| DotProduct | $$ \boldsymbol{f} \cdot \boldsymbol{g} = f_i g_i $$ | `#!cpp dot(f,g)`            |  $\boldsymbol{f}$  and  $\boldsymbol{g}$ need to be the same size.                                                                 |
-| Negate     | $$ -\boldsymbol{f}  $$                              | `#!cpp -f`                  |                                                                   |
-| sqrt       | $$ \sqrt{f}  $$                                     | `#!cpp sqrt(f)`             | The function $f$ needs a scalar return type.                      |
-| Scale      | $$  a f , \quad a \in  \mathbf{R}$$                 | `#!cpp a*f` and `#!cpp f/a` | `#!cpp a` has to satisfy `#!cpp std::is_arithmetic<..>`           |
+| Name       | Mathematical formula                                | Code                        | Note                                                                               | 
+|:-----------|:----------------------------------------------------|:----------------------------|:-----------------------------------------------------------------------------------|
+| Sum        | $$ \boldsymbol{f} + \boldsymbol{g}  $$              | `#!cpp f+g`                 | $\boldsymbol{f}$  and  $\boldsymbol{g}$ need to be the same size.                  |
+| DotProduct | $$ \boldsymbol{f} \cdot \boldsymbol{g} = f_i g_i $$ | `#!cpp dot(f,g)`            | $\boldsymbol{f}$  and  $\boldsymbol{g}$ need to be the same size.                  |
+| normSquared           | $$ \boldsymbol{f} \cdot \boldsymbol{f} = f_i f_i $$ | `#!cpp normSquared(f)`            |                   |
+| Negate     | $$ -\boldsymbol{f}  $$                              | `#!cpp -f`                  |                                                                                    |
+| sqrt       | $$ \sqrt{f}  $$                                     | `#!cpp sqrt(f)`             | The function $f$ needs a scalar return type.                                       |
+| Scale      | $$  a f , \quad a \in  \mathbf{R}$$                 | `#!cpp a*f` and `#!cpp f/a` | `#!cpp a` has to satisfy `#!cpp std::is_arithmetic<..>`                            |
 
 These expressions can be nested. Thus, it is valid to write something like
 ```cpp
@@ -431,7 +432,201 @@ auto hessianDirichletEnergy(Matrix& h) {
 
 
 ## Writing your own expression
-You can also write your own expressions. For this you can look into existing expressions. Especially the sqrt expression and the dot expression are the most general unary and binary expression
+You can also write your own expressions. For this you can look into existing expressions. Especially the sqrt expression and the normSquared expression are the most general unary and binary expression
+
+# Implementing the return value
+If you want to implement your onw expression you first have to implement the return value.
+This is done using the function 
+```cpp
+template <typename LFArgs>
+auto evaluateValueOfExpression(const LFArgs &lfArgs) const;
+```
+!!! warning
+    The interface dictates that the return value needs to be an Eigen type. Thus, even if you want to return a scalar `#!cpp double` you have to wrap it in `#!cpp Eigen::Vector<double, 1>`
+
+Additionally you also have to implement the derivative evaluation. This is done by implementing 
+```cpp
+template <int DerivativeOrder, typename LFArgs>
+auto evaluateDerivativeOfExpression(const LFArgs &lfArgs) const;
+```
+
+# Evaluate underlying functions
+Expression always act on already given expression therefore, to return the correct quantity for your expression you have to evaluate the underlying quantities.
+If you have a unary function you have access to expression using  `#!cpp this->m()` for binary expressions this is `#!cpp this->l()` and `#!cpp this->r()`.
+
+To evaluate these functions you can use the following syntax.
+
+```cpp
+const auto mEvaluated = evaluateFunctionImpl(this->m(), lfArgs); // (1)
+```
+
+1. The syntax is the same for binary expression, e.g. 
+   ```cpp
+   const auto lEvaluated = evaluateFunctionImpl(this->l(), lfArgs);
+   const auto rEvaluated = evaluateFunctionImpl(this->r(), lfArgs);
+   ```
+   
+The expression fulfill the syntax of a local function thus also derivative can be evaluated.
+
+In the function `evaluateDerivativeOfExpression` the derivative order that the user wants is encoded in the template argument `DerivativeOrder`.
+Additionally, the derivative types can also accessed using the booleans
+
+```cpp
+    static constexpr bool hasTwoCoeff;
+    static constexpr bool hasSingleCoeff;
+    static constexpr bool hasNoCoeff;
+    static constexpr bool hasNoSpatial;
+    static constexpr bool hasOneSpatialAll;
+    static constexpr bool hasOneSpatialSingle;
+    static constexpr bool hasOneSpatial;
+```
+
+Using the dotproduct as binary example expression we have
+
+```cpp
+template <int DerivativeOrder, typename LFArgs>
+    auto evaluateDerivativeOfExpression(const LFArgs &lfArgs) const {
+      const auto u = evaluateFunctionImpl(this->l(), lfArgs);
+      const auto v = evaluateFunctionImpl(this->r(), lfArgs);
+      if constexpr (DerivativeOrder == 1)  // (1)
+      {
+        const auto u_x = evaluateDerivativeImpl(this->l(), lfArgs); // (2)
+        const auto v_x = evaluateDerivativeImpl(this->r(), lfArgs);
+        return Ikarus::eval(v.transpose() * u_x + u.transpose() * v_x); // (3)
+      } else if constexpr (DerivativeOrder == 2) {   // (4)
+        const auto &[u_x, u_y] = evaluateFirstOrderDerivativesImpl(this->l(), lfArgs); // (5)
+        const auto &[v_x, v_y] = evaluateFirstOrderDerivativesImpl(this->r(), lfArgs);
+        if constexpr (LFArgs::hasNoSpatial and LFArgs::hasTwoCoeff) { // (6)
+          const auto alonguArgs = replaceAlong(lfArgs, along(v)); // (7)
+          const auto alongvArgs = replaceAlong(lfArgs, along(u)); 
+
+          const auto u_xyAlongv = evaluateDerivativeImpl(this->l(), alongvArgs); // (8)
+          const auto v_xyAlongu = evaluateDerivativeImpl(this->r(), alonguArgs);
+
+          return Ikarus::eval(u_xyAlongv + transpose(u_x) * v_y + transpose(v_x) * u_y + v_xyAlongu);
+        } else if constexpr (LFArgs::hasOneSpatial and LFArgs::hasSingleCoeff) { // (9)
+          const auto u_xy = evaluateDerivativeImpl(this->l(), lfArgs); // (10)
+          const auto v_xy = evaluateDerivativeImpl(this->r(), lfArgs);
+          if constexpr (LFArgs::hasOneSpatialSingle and LFArgs::hasSingleCoeff) {
+            return Ikarus::eval(transpose(v) * u_xy + transpose(u_x) * v_y + transpose(v_x) * u_y
+                                + transpose(u) * v_xy);
+          } else if constexpr (LFArgs::hasOneSpatialAll and LFArgs::hasSingleCoeff) {
+            std::array<std::remove_cvref_t<decltype(Ikarus::eval(transpose(v) * u_xy[0]))>, gridDim> res;
+            for (int i = 0; i < gridDim; ++i)
+              res[i] = Ikarus::eval(transpose(v) * u_xy[i] + transpose(u_x.col(i)) * v_y + transpose(v_x.col(i)) * u_y
+                                    + transpose(u) * v_xy[i]);
+            return res;
+          }
+        }
+      } else if constexpr (DerivativeOrder
+                           == 3) {  // dd(dot(u,v))/(dxdydz) =  u_{x,y,z} * v + u_{x,y} * v_z + u_{x,z}*v_y +
+                                    // u_x*v_{y,z} + u_{y,z}* v_x + u_y* v_{x,z} + u_z * v_{x,y} + u * v_{x,y,z}
+        if constexpr (LFArgs::hasOneSpatialSingle) {
+          const auto argsForDyz = lfArgs.extractSecondWrtArgOrFirstNonSpatial();
+
+          const auto &[u_x, u_y, u_z] = evaluateFirstOrderDerivativesImpl(this->l(), lfArgs);
+          const auto &[v_x, v_y, v_z] = evaluateFirstOrderDerivativesImpl(this->r(), lfArgs);
+          const auto &[u_xy, u_xz]    = evaluateSecondOrderDerivativesImpl(this->l(), lfArgs);
+          const auto &[v_xy, v_xz]    = evaluateSecondOrderDerivativesImpl(this->r(), lfArgs);
+
+          const auto alonguArgs             = replaceAlong(lfArgs, along(u));
+          const auto alongvArgs             = replaceAlong(lfArgs, along(v));
+          const auto argsForDyzalongv_xArgs = replaceAlong(argsForDyz, along(v_x));
+          const auto argsForDyzalongu_xArgs = replaceAlong(argsForDyz, along(u_x));
+
+          const auto u_xyzAlongv = evaluateDerivativeImpl(this->l(), alongvArgs);
+          const auto v_xyzAlongu = evaluateDerivativeImpl(this->r(), alonguArgs);
+          const auto u_yzAlongvx = evaluateDerivativeImpl(this->l(), argsForDyzalongv_xArgs);
+          const auto v_yzAlongux = evaluateDerivativeImpl(this->r(), argsForDyzalongu_xArgs);
+
+          return Ikarus::eval(u_xyzAlongv + transpose(u_xy) * v_z + transpose(u_xz) * v_y + v_yzAlongux + u_yzAlongvx
+                              + transpose(v_xz) * u_y + transpose(v_xy) * u_z + v_xyzAlongu);
+        } else if constexpr (LFArgs::hasOneSpatialAll) {
+          const auto &alongMatrix = std::get<0>(lfArgs.alongArgs.args);
+
+          const auto uTimesA = eval(u * alongMatrix);
+          const auto vTimesA = eval(v * alongMatrix);
+
+          const auto &[gradu, u_c0, u_c1]  = evaluateFirstOrderDerivativesImpl(this->l(), lfArgs);
+          const auto &[gradv, v_c0, v_c1]  = evaluateFirstOrderDerivativesImpl(this->r(), lfArgs);
+          const auto &[gradu_c0, gradu_c1] = evaluateSecondOrderDerivativesImpl(this->l(), lfArgs);
+          const auto &[gradv_c0, gradv_c1] = evaluateSecondOrderDerivativesImpl(this->r(), lfArgs);
+
+          const auto graduTimesA = (gradu * alongMatrix.transpose()).eval();
+          const auto gradvTimesA = (gradv * alongMatrix.transpose()).eval();
+
+          const auto argsForDyz = lfArgs.extractSecondWrtArgOrFirstNonSpatial();
+
+          const auto alonguAArgs          = replaceAlong(lfArgs, along(uTimesA));
+          const auto alongvAArgs          = replaceAlong(lfArgs, along(vTimesA));
+          const auto alonggraduTimesAArgs = replaceAlong(argsForDyz, along(graduTimesA));
+          const auto alonggradvTimesAArgs = replaceAlong(argsForDyz, along(gradvTimesA));
+
+          const auto u_xyzAlongv            = evaluateDerivativeImpl(this->l(), alongvAArgs);
+          const auto v_xyzAlongu            = evaluateDerivativeImpl(this->r(), alonguAArgs);
+          const auto v_c0c1AlongGraduTimesA = evaluateDerivativeImpl(this->r(), alonggraduTimesAArgs);
+          const auto u_c0c1AlongGradvTimesA = evaluateDerivativeImpl(this->l(), alonggradvTimesAArgs);
+          decltype(eval(u_xyzAlongv)) res;
+
+          res = u_xyzAlongv + v_xyzAlongu + v_c0c1AlongGraduTimesA + u_c0c1AlongGradvTimesA;
+          for (int i = 0; i < gridDim; ++i)
+            res += (transpose(u_c1) * gradv_c0[i] + transpose(v_c1) * gradu_c0[i] + transpose(v_c0) * gradu_c1[i]
+                    + transpose(u_c0) * gradv_c1[i])
+                   * alongMatrix(0, i);
+
+          return res;
+
+        }
+      } 
+    }
+```
+
+1. Compile time branch for first order derivatives
+2. Evaluates the derivative of the `this->l()` wrt. the only derivative inside the localfunction arguments `lfArgs`.
+3. Evaluates the return value and derivatives and function values are combined as dictated by the product rule.
+4. Compile time branch for second order derivatives
+5. Since we are in the second order derivatives branch, there are 4 case for the evaluation of function. 
+   The function value, the function derivative wrt. to the first argument or the second and the function's derivatives wrt. to both arguments.
+   Here, the function `evaluateFirstOrderDerivativesImpl` returns the derivatives wrt. to the first argument and the second.
+   If we consider the left function as $\boldsymbol{u}(\boldsymbol{\xi},\boldsymbol{u}_I)$ this calls returns
+   \begin{flalign*} 
+   \verb+u_x+ &= \frac{\partial\boldsymbol{u}}{\partial\boldsymbol{\xi}} \quad \text{or} \quad \verb+u_x+ = \frac{\partial\boldsymbol{u}}{\partial\xi_0} \quad \text{or} \quad \verb+u_x+ = \frac{\partial\boldsymbol{u}}{\partial\boldsymbol{u}_I}\\\\
+   \verb+u_y+ &= \frac{\partial\boldsymbol{u}}{\partial\boldsymbol{u}_J}
+   \end{flalign*}
+   The first one would be returned if the caller uses 
+   ```cpp
+       localFunction.evaluateDerivative(gpIndex, wrt(spatialAll,coeff(i)));
+   ```
+   and the second using
+   ```cpp
+       localFunction.evaluateDerivative(gpIndex, wrt(spatial(0),coeff(i)));
+   ```
+   and the third without any spatial derivative using
+   ```cpp
+       localFunction.evaluateDerivative(gpIndex, wrt(coeff(i,j)));
+   ```
+   Therefore, this function seperates the two wrt. arguments and returns the corresponding first order derivatives.
+6. Compile time branch for the case where no spatial derivatives are requested bot only wrt. coefficients.
+7. Creates a new argument variable where the along argument is replaced by `v`.
+8. This function evaluates the derivatives of `l` wrt to both passed wrt arguments. Furthmore, it takes the give along argument since otherwise the returned object would be a 3 dimensional array.
+   If we consider the left function as $\boldsymbol{u}(\boldsymbol{\xi},\boldsymbol{u}_I)$  and $\boldsymbol{v}$ of the same size as $\boldsymbol{u}$ this calls returns
+   \begin{flalign*}
+   \verb+u_xyAlongv + &= \frac{\partial^2 u_i }{\partial\boldsymbol{u}_I\partial\boldsymbol{u}_J} v_i
+   \end{flalign*}
+   This is the same if the user calls
+   ```cpp
+       localFunction.evaluateDerivative(gpIndex, wrt(coeff(i,j)),along(v));
+   ```
+9. Compile time branch for the case where one spatial derivatives and one derivative wrt. coefficients.
+10. This function evaluates the derivatives of `l` wrt to both passed wrt arguments.
+    If we consider the left function as $\boldsymbol{u}(\boldsymbol{\xi},\boldsymbol{u}_I)$  this calls returns
+    \begin{flalign*}
+    \verb+u_xy+ &= \frac{\partial^2 \boldsymbol{u} }{\partial\boldsymbol{\xi}\partial\boldsymbol{u}_I} \quad \text{or} \quad \verb+u_xy+ = \frac{\partial^2 \boldsymbol{u} }{\partial\xi_0\partial\boldsymbol{u}_I} v_i
+    \end{flalign*}
+    The first one would be returned if the caller uses
+   ```cpp
+       localFunction.evaluateDerivative(gpIndex, wrt(spatialAll,coeff(i,j)));
+   ```
 
 If your expression is working you should add it to `ikarus/localfunctions/expressions.hh`
 \bibliography
