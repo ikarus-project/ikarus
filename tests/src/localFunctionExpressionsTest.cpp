@@ -490,3 +490,5 @@ TEST(LocalFunctionTests, TestExpressions) {
     }
   }
 }
+
+using namespace Dune::Functions::BasisFactory;
