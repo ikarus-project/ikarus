@@ -9,10 +9,8 @@
 #include <matplot/matplot.h>
 #include <matplot/util/colors.h>
 
-
 namespace Ikarus {
-  double drawResultAndReturnSlope(std::string&& functionName, const std::function<double(double)>& ftfunc,
-                                  bool draw) {
+  double drawResultAndReturnSlope(std::string&& functionName, const std::function<double(double)>& ftfunc, bool draw) {
     using namespace matplot;
     std::vector<double> t = logspace(-8, 0, 100);
     Eigen::Map<Eigen::VectorXd> tE(t.data(), t.size());

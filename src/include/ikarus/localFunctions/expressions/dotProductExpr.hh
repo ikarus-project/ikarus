@@ -135,7 +135,6 @@ namespace Ikarus {
                    * alongMatrix(0, i);
 
           return res;
-
         } else
           static_assert(
               LFArgs::hasOneSpatialSingle or LFArgs::hasOneSpatialAll,
