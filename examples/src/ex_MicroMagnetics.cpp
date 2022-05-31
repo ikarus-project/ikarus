@@ -25,7 +25,7 @@
 
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/controlRoutines/loadControl.hh>
-#include <ikarus/finiteElements/micromagnetics/microMangeticsWithVectorPotential.hh>
+#include <ikarus/finiteElements/micromagnetics/microMagneticsWithVectorPotential.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/nonLinearSolver/trustRegion.hh>
 #include <ikarus/utils/drawing/griddrawer.hh>
