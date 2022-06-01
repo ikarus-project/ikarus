@@ -10,3 +10,4 @@
 #include "expressions/scaleExpr.hh"
 #include "expressions/sqrtExpr.hh"
 #include "expressions/sumExpr.hh"
+#include "expressions/logExpr.hh"
