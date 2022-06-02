@@ -33,10 +33,10 @@ void draw(const GridView& gridView) {
       l->marker_face_color("red");
     }
   } else if constexpr (GridView::dimensionworld == 2) {  // FIXME reduce code duplciation
-    for (auto&& edge : edges(gridView)) {
-      std::array<double, 2> xEdge{}, yEdge{};
-      for (int i = 0; i < 2; ++i) {
-        auto vertCoords = edge.geometry().corner(i);
+    for (auto&& ele : elements(gridView)) {
+      std::vector<double> xEdge( ele.geometry().corners()), yEdge( ele.geometry().corners());
+      for (int i = 0; i < ele.geometry().corners(); ++i) {
+        auto vertCoords = ele.geometry().corner(i);
         xEdge[i]        = vertCoords[0];
         yEdge[i]        = vertCoords[1];
       }
