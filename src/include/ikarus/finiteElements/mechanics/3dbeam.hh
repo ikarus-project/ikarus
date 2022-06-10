@@ -375,10 +375,10 @@ namespace Ikarus {
       using namespace Ikarus::DerivativeDirections;
       ScalarType energy = 0.0;
       for (const auto& gp : rule) {
-        const auto a1            = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
-        const auto Jinv          = a1.norm();
-        const auto r             = centerLineF.evaluateFunction(gp.position());
-        const auto rGrad             = centerLineF.evaluateDerivative(gp.position(),wrt(spatialAll), transformWith(Jinv));
+        const auto A1            = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
+        const auto Jinv          = 1/A1.norm();
+        const auto r             = (centerLineF.evaluateFunction(gp.position())+toEigenVector(geo.global(gp.position()))).eval();
+        const auto rGrad             = (A1+centerLineF.evaluateDerivative(gp.position(),wrt(spatialAll)))*Jinv;
         const auto q             = quatF.evaluateFunction(gp.position());
         const auto qE = Eigen::Quaternion<ScalarType>(q);
         const auto qGrad             = quatF.evaluateDerivative(gp.position(),wrt(spatialAll), transformWith(Jinv));
@@ -388,15 +388,16 @@ namespace Ikarus {
          RPrime << D[0]*qGrad, D[2]*qGrad, D[2]*qGrad;
 
          const auto R = qE.toRotationMatrix().eval();
+         const auto R0 = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitZ(),A1);
          const auto kappa = (RPrime*R).eval();
          const Eigen::Vector<ScalarType,3> kappaV({kappa(2,1),kappa(0,2),kappa(1,0)});
-         const auto eps = (R*rGrad-Eigen::Vector<double,3>::UnitZ()).eval();
+         const auto eps = ((R*R0.template cast<ScalarType>()).transpose()*rGrad-Eigen::Vector<double,3>::UnitZ()).eval();
           const double G = Ikarus::convertLameConstants({.emodul=material.E,.nu=material.nu}).toShearModulus();
           const Eigen::Vector3d dM({material.E*material.I1,material.E*material.I2,material.J});
           const Eigen::Vector3d cM({G*material.A,G*material.A,material.E*material.A});
 
 
-        energy += (0.5 * (eps.dot(cM.asDiagonal()*eps)+ kappaV.dot(dM.asDiagonal()*kappaV)))
+        energy += (0.5 * (eps.dot(cM.asDiagonal()*eps)+ kappaV.dot(dM.asDiagonal()*kappaV))-r.dot(volumeLoad(gp.position(),lambda)))
                   * geo.integrationElement(gp.position()) * gp.weight();  // demag energy
       }
       return energy;
@@ -412,7 +413,7 @@ namespace Ikarus {
     Ikarus::LocalBasis<std::remove_cvref_t<
         decltype(std::declval<LocalViewEmbedded>().tree().child(Dune::Indices::_1, 0).finiteElement().localBasis())>>
         localBasisQuaternions;
-    std::function<Eigen::Vector<double, centerLineDim>(const Eigen::Vector<double, Traits::mydim>&, const double&)>
+    std::function<Eigen::Vector<double, centerLineDim>(const Dune::FieldVector<double, Traits::mydim>&, const double&)>
         volumeLoad;
     BeamMaterial material;
     unsigned int order{};

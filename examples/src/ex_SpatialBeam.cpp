@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
 //  Python::run("import math");
 
   using namespace Ikarus;
-  Ikarus::BeamMaterial mat({.E = 1e8, .nu = 0.5, .A = 1, .I1 = 1, .I2 = 1, .J = 2});
+  Ikarus::BeamMaterial mat({.E = 1e3, .nu = 0.3, .A = 1, .I1 = 1, .I2 = 1, .J = 2});
 
 
   //  auto isInsidePredicate = [&](auto&& coord) {
@@ -105,7 +105,7 @@ int main(int argc, char **argv) {
   gridFactory.insertVertex({L,0,0});
   gridFactory.insertElement(Dune::GeometryTypes::line, {0, 1});
   auto grid     = gridFactory.createGrid();
-  grid->globalRefine(3);
+  grid->globalRefine(5);
 
 //  grid->globalRefine(refinement);
   auto gridView = grid->leafGridView();
@@ -139,7 +139,7 @@ int main(int argc, char **argv) {
     fext.setZero();
     fext[0] = 0;
     fext[1] = 0;
-    fext[2] = -lamb;
+    fext[2] = -lamb*1e-4;
     return fext;
   };
 
@@ -342,9 +342,9 @@ int main(int argc, char **argv) {
 //    vtkWriter.addVertexData(divAGlobalFunc, Dune::VTK::FieldInfo("divA", Dune::VTK::FieldInfo::Type::scalar, 1));
 //    auto isInsideFunc = Dune::Functions::makeAnalyticGridViewFunction(isInsidePredicate, gridView);
 //    vtkWriter.addCellData(isInsideFunc, Dune::VTK::FieldInfo("isInside", Dune::VTK::FieldInfo::Type::scalar, 1));
-    vtkWriter.write(std::string("Magnet") + std::to_string(i));
+    vtkWriter.write(std::string("Beam") + std::to_string(i));
 
-    std::cout << "Writing " << std::string("Magnet") + std::to_string(i) << " to file. The load factor is " << lambda
+    std::cout << "Writing " << std::string("Beam") + std::to_string(i) << " to file. The load factor is " << lambda
               << std::endl;
   });
   lc.subscribeAll(writerObserver);
