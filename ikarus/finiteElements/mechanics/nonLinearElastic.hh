@@ -23,6 +23,8 @@
 #include <ikarus/utils/eigenDuneTransformations.hh>
 #include <ikarus/utils/linearAlgebraHelper.hh>
 
+/** \brief Get the requested column of Eigen::Matrix */
+
 namespace Ikarus {
 
   template <typename Basis_, typename Material_, typename FERequirements_ = FErequirements<>, bool useEigenRef = false>

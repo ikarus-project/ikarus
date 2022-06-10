@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <dune/localfefunctions/derivativetransformators.hh>
 #include <dune/localfefunctions/meta.hh>
 
 #include <ikarus/finiteElements/feRequirements.hh>

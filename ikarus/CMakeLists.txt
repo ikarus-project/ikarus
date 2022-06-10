@@ -9,7 +9,7 @@ file(
   CONFIGURE_DEPENDS *.cpp
 )
 
-dune_add_library(${PROJECT_NAME} ${sources})
+dune_add_library(${PROJECT_NAME} ${sources} EXPORT_NAME Ikarus)
 target_link_libraries(${PROJECT_NAME} PUBLIC ${DUNE_LIBS})
 target_link_dune_default_libraries(${PROJECT_NAME})
 

@@ -46,8 +46,8 @@ namespace Ikarus {
         Dune::FieldVector<ctype, griddim> val(0.0);
 
         fes_->at(0).calculateAt(resultRequirements_, val, resultTypeMap);
-        if (resultRequirements_.getRequestedResult() != resultTypeMap.getSingleResult().first)
-          DUNE_THROW(Dune::InvalidStateException, "The return result should be the requested one");
+//        if (resultRequirements_.getRequestedResult() != resultTypeMap.getSingleResult().first)
+//          DUNE_THROW(Dune::InvalidStateException, "The return result should be the requested one");
 
         auto sigma = resultTypeMap.getSingleResult().second;
 

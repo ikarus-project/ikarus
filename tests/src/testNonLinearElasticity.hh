@@ -162,7 +162,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
                                                                   << maxDisp;
   }
 
-  Dune::VtkWriter<GridView> vtkWriter2(gridView);
+  Dune::Vtk::VtkWriter<GridView> vtkWriter2(gridView);
   auto resReq = Ikarus::ResultRequirements()
                     .insertGlobalSolution(Ikarus::FESolutions::displacement, d)
                     .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
