@@ -125,7 +125,7 @@ int main(int argc, char **argv) {
   //  FlatInterleaved()));
   auto basisRieC = makeBasis(
       gridView, composite(power<worldDim>(lagrange<centerLineOrder>(), FlatInterleaved()),
-                          power<quaternionDim>(lagrange<quaternionOrder>(), FlatInterleaved()), FlatLexicographic{}));
+                          power<quaternionCorrectionDim>(lagrange<quaternionOrder>(), FlatInterleaved()), FlatLexicographic{}));
   std::cout << "This gridview contains: " << std::endl;
   std::cout << gridView.size(1) << " edges" << std::endl;
   std::cout << gridView.size(0) << " vertices" << std::endl;
