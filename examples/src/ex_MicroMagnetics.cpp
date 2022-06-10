@@ -38,11 +38,11 @@ constexpr int vectorPotOrder        = 1;
 constexpr int gridDim               = 3;
 constexpr int directorDim           = 3;
 constexpr int vectorPotDim          = gridDim == 2 ? 1 : 3;
-constexpr int directorCorrectionDim = directorDim - 1;
+constexpr int quaternionCorrectionDim = directorDim - 1;
 
-using DirectorVector  = Dune::BlockVector<Ikarus::UnitVector<double, directorDim>>;
-using VectorPotVector = Dune::BlockVector<Ikarus::RealTuple<double, vectorPotDim>>;
-using MultiTypeVector = Dune::MultiTypeBlockVector<DirectorVector, VectorPotVector>;
+using UnitQuaternionVector      = Dune::BlockVector<Ikarus::UnitVector<double, directorDim>>;
+using CenterLinePositionsVector = Dune::BlockVector<Ikarus::RealTuple<double, vectorPotDim>>;
+using MultiTypeVector = Dune::MultiTypeBlockVector<UnitQuaternionVector, CenterLinePositionsVector>;
 
 int main(int argc, char **argv) {
   Dune::MPIHelper::instance(argc, argv);
@@ -150,10 +150,10 @@ int main(int argc, char **argv) {
                                       power<vectorPotDim>(lagrange<vectorPotOrder>(), BlockedInterleaved()),
                                       BlockedLexicographic{}));
 
-  //  auto basisRie = makeBasis(gridView, power<directorCorrectionDim>(lagrange<magnetizationOrder>(),
+  //  auto basisRie = makeBasis(gridView, power<quaternionCorrectionDim>(lagrange<magnetizationOrder>(),
   //  FlatInterleaved()));
   auto basisRieC = makeBasis(
-      gridView, composite(power<directorCorrectionDim>(lagrange<magnetizationOrder>(), FlatInterleaved()),
+      gridView, composite(power<quaternionCorrectionDim>(lagrange<magnetizationOrder>(), FlatInterleaved()),
                           power<vectorPotDim>(lagrange<vectorPotOrder>(), FlatInterleaved()), FlatLexicographic{}));
   std::cout << "This gridview contains: " << std::endl;
   std::cout << gridView.size(2) << " vertices" << std::endl;
@@ -163,7 +163,7 @@ int main(int argc, char **argv) {
 
   //  draw(gridView);
 
-  std::vector<Ikarus::MicroMagneticsWithVectorPotential<decltype(basisEmbeddedC), decltype(basisRieC)>> fes;
+  std::vector<Ikarus::SimoReissnerBeam<decltype(basisEmbeddedC), decltype(basisRieC)>> fes;
   auto volumeLoad = [](auto &globalCoord, auto &lamb) {
     Eigen::Vector<double, directorDim> fext;
     fext.setZero();
@@ -182,7 +182,7 @@ int main(int argc, char **argv) {
 
   std::cout << "There are " << insideCounter << " Elements inside" << std::endl;
 
-  DirectorVector mBlocked(basisEmbeddedC.size({Dune::Indices::_0}));
+  UnitQuaternionVector mBlocked(basisEmbeddedC.size({Dune::Indices::_0}));
   for (auto &msingle : mBlocked) {
     if constexpr (directorDim == 3)
       msingle.setValue(0.1 * Eigen::Vector<double, directorDim>::Random()
@@ -192,7 +192,7 @@ int main(int argc, char **argv) {
                        + Eigen::Vector<double, directorDim>::UnitX());
   }
 
-  VectorPotVector aBlocked(basisEmbeddedC.size({Dune::Indices::_1}));
+  CenterLinePositionsVector aBlocked(basisEmbeddedC.size({Dune::Indices::_1}));
   for (auto &asingle : aBlocked) {
     asingle.setValue(Eigen::Vector<double, vectorPotDim>::Random());
   }

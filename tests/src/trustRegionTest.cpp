@@ -236,9 +236,9 @@ TEST(TrustRegion, TrustRegionRiemanianUnitSphere) {
 
 #include <dune/istl/bvector.hh>
 #include <dune/istl/multitypeblockvector.hh>
-using DirectorVector     = Dune::BlockVector<Ikarus::UnitVector<double, 3>>;
+using UnitQuaternionVector = Dune::BlockVector<Ikarus::UnitVector<double, 3>>;
 using DisplacementVector = Dune::BlockVector<Ikarus::RealTuple<double, 3>>;
-using MultiTypeVector    = Dune::MultiTypeBlockVector<DisplacementVector, DirectorVector>;
+using MultiTypeVector    = Dune::MultiTypeBlockVector<DisplacementVector, UnitQuaternionVector>;
 
 template <typename ScalarType = double>
 ScalarType f3RBlocked(const MultiTypeVector& mT, const Eigen::VectorX<ScalarType>& dx) {
@@ -365,7 +365,7 @@ TEST(TrustRegion, TrustRegionRiemanianUnitSphereAndDispBlocked) {
   disp[0].setValue(Eigen::Vector3d::UnitY());
   disp[1].setValue(Eigen::Vector3d::UnitZ());
 
-  DirectorVector directors;
+  UnitQuaternionVector directors;
   directors.resize(2);
   directors[0].setValue(Eigen::Vector3d::UnitY() + Eigen::Vector3d::Ones());
   directors[1].setValue(Eigen::Vector3d::UnitZ() + Eigen::Vector3d::Ones());
