@@ -377,23 +377,29 @@ namespace Ikarus {
       for (const auto& gp : rule) {
         const auto A1            = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
         const auto Jinv          = 1/A1.norm();
-        const auto r             = (centerLineF.evaluateFunction(gp.position())+toEigenVector(geo.global(gp.position()))).eval();
-        const auto rGrad             = (A1+centerLineF.evaluateDerivative(gp.position(),wrt(spatialAll)))*Jinv;
+        const auto r             = (centerLineF.evaluateFunction(gp.position())).eval();
+        const auto rGrad             = ((A1+centerLineF.evaluateDerivative(gp.position(),wrt(spatialAll)))*Jinv).eval();
         const auto q             = quatF.evaluateFunction(gp.position());
         const auto qE = Eigen::Quaternion<ScalarType>(q);
         const auto qGrad             = quatF.evaluateDerivative(gp.position(),wrt(spatialAll), transformWith(Jinv));
 
         const auto D = rotationMatrixColumnDerivatives(q);
          Eigen::Matrix<ScalarType,3,3> RPrime;
-         RPrime << D[0]*qGrad, D[2]*qGrad, D[2]*qGrad;
+         RPrime << D[0]*qGrad, D[1]*qGrad, D[2]*qGrad;
 
-         const auto R = qE.toRotationMatrix().eval();
-         const auto R0 = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitZ(),A1);
-         const auto kappa = (RPrime*R).eval();
-         const Eigen::Vector<ScalarType,3> kappaV({kappa(2,1),kappa(0,2),kappa(1,0)});
-         const auto eps = ((R*R0.template cast<ScalarType>()).transpose()*rGrad-Eigen::Vector<double,3>::UnitZ()).eval();
+         const auto R = qE.toRotationMatrix();
+//         std::cout<<"R: "<<R<<std::endl;
+         const auto R0 = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitZ(),A1).toRotationMatrix();
+         const Eigen::Vector3i indices(1,2,0);
+         const auto Perm = Eigen::PermutationMatrix<3>(indices);
+         const auto Rreal = (R*Perm).eval();
+//         std::cout<<"Rreal: "<<Rreal<<std::endl;
+          auto RPrime2 = (RPrime*Perm).eval();
+//         const auto kappa = (RPrime.transpose()*Rreal).eval();
+         const Eigen::Vector<ScalarType,3> kappaV({RPrime2.col(1).dot(Rreal.col(2)),RPrime2.col(2).dot(Rreal.col(0)),RPrime2.col(0).dot(Rreal.col(1))});
+         const auto eps = (Rreal.transpose()*rGrad-Eigen::Vector<double,3>::UnitZ()).eval();
           const double G = Ikarus::convertLameConstants({.emodul=material.E,.nu=material.nu}).toShearModulus();
-          const Eigen::Vector3d dM({material.E*material.I1,material.E*material.I2,material.J});
+          const Eigen::Vector3d dM({material.E*material.I1,material.E*material.I2,G*material.J});
           const Eigen::Vector3d cM({G*material.A,G*material.A,material.E*material.A});
 
 

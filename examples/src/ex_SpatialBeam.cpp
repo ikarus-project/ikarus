@@ -57,9 +57,10 @@ int main(int argc, char **argv) {
 //  const auto innerRadius     = gridParameters.get<double>("innerRadius");
 //  const auto mshfilepath     = gridParameters.get<std::string>("mshfilepath");
 //  const auto loadSteps       = controlParameters.get<int>("loadSteps");
-  const auto loadSteps       = 20;
+  const auto loadSteps       = 1;
+  const double distrutedLoad       = 1e-4;
 //  const auto loadFactorRange = controlParameters.get<std::array<double, 2>>("loadFactorRange");
-  const auto loadFactorRange = std::array<double, 2>({0,20});
+  const auto loadFactorRange = std::array<double, 2>({0,1});
 //
 //  const auto A  = materialParameters.get<double>("A");
 //  const auto K  = materialParameters.get<double>("K");
@@ -70,7 +71,8 @@ int main(int argc, char **argv) {
 //  Python::run("import math");
 
   using namespace Ikarus;
-  Ikarus::BeamMaterial mat({.E = 1e3, .nu = 0.3, .A = 1, .I1 = 1, .I2 = 1, .J = 2});
+  Ikarus::BeamMaterial mat({.E = 1e3, .nu = 0.0, .A = 1, .I1 = 1e-4, .I2 = 1e-4, .J = 2e-4});
+
 
 
   //  auto isInsidePredicate = [&](auto&& coord) {
@@ -105,7 +107,9 @@ int main(int argc, char **argv) {
   gridFactory.insertVertex({L,0,0});
   gridFactory.insertElement(Dune::GeometryTypes::line, {0, 1});
   auto grid     = gridFactory.createGrid();
-  grid->globalRefine(5);
+  grid->globalRefine(10);
+
+  spdlog::info("Max Disp Bernoulli beam: {}", distrutedLoad*L*L*L*L/(76.8*mat.E*mat.I1));
 
 //  grid->globalRefine(refinement);
   auto gridView = grid->leafGridView();
@@ -134,12 +138,12 @@ int main(int argc, char **argv) {
   //  draw(gridView);
 
   std::vector<Ikarus::SimoReissnerBeam<decltype(basisEmbeddedC), decltype(basisRieC)>> fes;
-  auto volumeLoad = [](auto &globalCoord, auto &lamb) {
+  auto volumeLoad = [=distrutedLoad](auto &globalCoord, auto &lamb) {
     Eigen::Vector<double, worldDim> fext;
     fext.setZero();
     fext[0] = 0;
     fext[1] = 0;
-    fext[2] = -lamb*1e-4;
+    fext[2] = -lamb*distrutedLoad;
     return fext;
   };
 
@@ -156,7 +160,7 @@ int main(int argc, char **argv) {
 
   UnitQuaternionVector quatsBlocked(basisEmbeddedC.size({Dune::Indices::_1}));
   for (auto &msingle : quatsBlocked) {
-      msingle.setValue(Eigen::Vector<double, quaternionDim>::UnitX());
+      msingle.setValue(Eigen::Vector<double, quaternionDim>::UnitW());
   }
 
   MultiTypeVector mAndABlocked( centerLineBlocked,quatsBlocked);
@@ -173,55 +177,6 @@ int main(int argc, char **argv) {
         mAndABlocked[Dune::Indices::_0][globalIndex[1]].setValue(Eigen::Vector<double, worldDim>::Zero());
       });
 
-//  auto magnetBasis         = Dune::Functions::subspaceBasis(basisRieC, Dune::Indices::_0);
-//  auto localView           = magnetBasis.localView();
-//  auto seDOFs              = subEntityDOFs(magnetBasis);
-//  const auto &gridViewMagn = magnetBasis.gridView();
-//  for (auto &&element : elements(gridViewMagn)) {
-//    localView.bind(element);
-//    for (const auto &intersection : intersections(gridViewMagn, element)) {
-//      bool isIntersectionInside = false;
-//
-//      for (int i = 0; i < intersection.geometry().corners(); ++i) {
-//        if (isInsidePredicate(intersection.geometry().corner(i))) {
-//          isIntersectionInside = true;
-//          break;
-//        } else
-//          isIntersectionInside = false;
-//      }
-//
-//      if (!isIntersectionInside) {
-//        for (auto localIndex : seDOFs.bind(localView, intersection))
-//          dirichletFlags[localView.index(localIndex)[0]] = true;
-//      }
-//    }
-//  }
-
-//  auto magnetBasisBlocked   = Dune::Functions::subspaceBasis(basisEmbeddedC, Dune::Indices::_0);
-//  auto localView2           = magnetBasisBlocked.localView();
-//  auto seDOFs2              = subEntityDOFs(magnetBasisBlocked);
-//  const auto &gridViewMagn2 = magnetBasisBlocked.gridView();
-//  for (auto &&element : elements(gridViewMagn2)) {
-//    localView2.bind(element);
-//    for (const auto &intersection : intersections(gridViewMagn2, element))
-//      for (auto localIndex : seDOFs2.bind(localView2, intersection)) {
-//        bool isIntersectionInside = false;
-//
-//        for (int i = 0; i < intersection.geometry().corners(); ++i) {
-//          if (isInsidePredicate(intersection.geometry().corner(i))) {
-//            isIntersectionInside = true;
-//            break;
-//          } else
-//            isIntersectionInside = false;
-//        }
-//
-//        if (!isIntersectionInside) {
-//          auto b = mAndABlocked[Dune::Indices::_0][localView2.index(localIndex)[1]].begin();
-//          auto e = mAndABlocked[Dune::Indices::_0][localView2.index(localIndex)[1]].end();
-//          std::fill(b, e, 0.0);
-//        }
-//      }
-//  }
 
   auto denseAssembler  = DenseFlatAssembler(basisRieC, fes, dirichletFlags);
   auto sparseAssembler = SparseFlatAssembler(basisRieC, fes, dirichletFlags);
@@ -262,8 +217,8 @@ int main(int argc, char **argv) {
     multiTypeVector += dFull;
   });
 
-  checkGradient(nonLinOp, {.draw = true, .writeSlopeStatement = true}, updateFunction);
-  checkHessian(nonLinOp, {.draw = true, .writeSlopeStatement = true}, updateFunction);
+  checkGradient(nonLinOp, {.draw = false, .writeSlopeStatement = true}, updateFunction);
+  checkHessian(nonLinOp, {.draw = false, .writeSlopeStatement = true}, updateFunction);
 
   auto nr = Ikarus::makeTrustRegion(nonLinOp, updateFunction);
   //  auto nr = Ikarus::makeTrustRegion< decltype(nonLinOp),PreConditioner::DiagonalPreconditioner>(nonLinOp,
@@ -351,4 +306,5 @@ int main(int argc, char **argv) {
   lc.run();
   nonLinOp.update<0>();
   spdlog::info("Energy: {}", nonLinOp.value());
+  spdlog::info("MaxDisplacement: {}", std::ranges::max(nonLinOp.firstParameter()[Dune::Indices::_0],[](auto& e1,auto& e2) {return std::abs(e1[2])<std::abs(e2[2]);})[2]);
 }
