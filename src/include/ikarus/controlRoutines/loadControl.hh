@@ -53,7 +53,8 @@ namespace Ikarus {
         this->notify(ControlMessages::STEP_STARTED);
         loadParameter += stepSize_;
         solverInfo = nonLinearSolver->solve();
-        if (not solverInfo.sucess) return info;
+        if (not solverInfo.sucess) {  this->notify(ControlMessages::STEP_ENDED);
+            return info; }
         this->notify(ControlMessages::SOLUTION_CHANGED);
         this->notify(ControlMessages::STEP_ENDED);
       }

@@ -74,28 +74,8 @@ namespace Ikarus {
     double J{0.0};
   };
 
-  template<typename ScalarType>
-  auto rotationMatrixColumnDerivatives(const Eigen::Vector<ScalarType,4>& q)
-  {
-    std::array<Eigen::Matrix<ScalarType,3,4> ,3> D;
 
-    D[0] << q[0], -q[1], - q[2], q[3],
-            q[1],  q[0],   q[3], q[2],
-            q[2], -q[3],   q[0], - q[1];
-    D[0]*=2.0;
 
-    D[1] << q[1], q[0], - q[3], -q[2],
-        -q[0],  q[1],   -q[2], q[3],
-        q[3], q[2],   q[1], q[0];
-    D[1]*=2.0;
-
-    D[2] << q[2], q[3],  q[0], q[1],
-        -q[3],  q[2],   q[1], -q[0],
-        -q[0], -q[1],   q[2], q[3];
-    D[2]*=2.0;
-
-    return D;
-  }
 
   template <typename BasisEmbedded, typename BasisReduced>
   class SimoReissnerBeam {
@@ -123,7 +103,7 @@ namespace Ikarus {
     {
       localView_.bind(element);
       localViewReduced.bind(element);
-      order         = 2 * localView_.tree().child(Dune::Indices::_0, 0).finiteElement().localBasis().order();
+      order         = 4 * localView_.tree().child(Dune::Indices::_0, 0).finiteElement().localBasis().order();
       localBasisCenterLine
           = Ikarus::LocalBasis(localView_.tree().child(Dune::Indices::_0, 0).finiteElement().localBasis());
       localBasisCenterLine.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order),
@@ -159,6 +139,8 @@ namespace Ikarus {
       using namespace Dune::Indices;
       hEuk.resize(localView_.size(), localView_.size());
       eukGrad.resize(localView_.size());
+        eukGrad.setZero();
+        hEuk.setZero();
       Eigen::VectorXdual2nd dx2nd;
       dx2nd.resize(localView_.size());
       dx2nd.setZero();
@@ -223,6 +205,8 @@ namespace Ikarus {
       }
 
       hred.topLeftCorner(dispHessianSize,dispHessianSize) = hEuk.topLeftCorner(dispHessianSize,dispHessianSize);
+//        std::cout<<"hred:"<<hred<<std::endl;
+//        std::cout<<"hEuk:"<<hEuk<<std::endl;
     }
 
     [[nodiscard]] int size() const { return localViewReduced.size(); }
@@ -233,7 +217,8 @@ namespace Ikarus {
       dx1st.resize(localView_.size());
       dx1st.setZero();
       auto f = [&](auto& x) { return this->calculateScalarImpl(par, x); };
-
+        eukGrad.resize(localView_.size());
+        eukGrad.setZero();
       autodiff::dual e;
       autodiff::gradient(f, autodiff::wrt(dx1st), at(dx1st), e, eukGrad);
       const auto& quaternions     = par.getSolution(Ikarus::FESolutions::displacementAndQuaternions)[_1];
@@ -243,9 +228,8 @@ namespace Ikarus {
       const auto& feQuat = second_child.finiteElement();
 
       const int dispElementEntries    = feDisp.size() * centerLineDim;
-      const int magElementEntries    = feQuat.size() * quaternionDim;
-      const int magRedElementEntries = feQuat.size() * quaternionCorrectionDim;
-      rieGrad.segment(0,dispElementEntries) = eukGrad.segment(0,dispElementEntries) ;
+
+      rieGrad.head(dispElementEntries) = eukGrad.head(dispElementEntries) ;
       for (auto i = 0U; i < feQuat.size(); ++i) {
         auto globalIndex = localView_.index(localView_.tree().child(_1, 0).localIndex(i));
         size_t indexRed  = dispElementEntries+ i * quaternionCorrectionDim;
@@ -253,6 +237,8 @@ namespace Ikarus {
         rieGrad.template segment<quaternionCorrectionDim>(indexRed)
             = quaternions[globalIndex[1]].orthonormalFrame().transpose() * eukGrad.template segment<quaternionDim>(index);
       }
+//      std::cout<<"rieGrad:"<<rieGrad<<std::endl;
+//      std::cout<<"eukGrad:"<<eukGrad<<std::endl;
     }
 
     [[nodiscard]] typename Traits::ScalarType calculateScalar(const FERequirementType& par) const {
@@ -369,42 +355,42 @@ namespace Ikarus {
 
       const auto geo = localView_.element().geometry();
 
-      const auto& rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
+//      const auto& rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
       Ikarus::StandardLocalFunction centerLineF(localBasisCenterLine, dispEleNodal);
       Ikarus::ProjectionBasedLocalFunction quatF(localBasisQuaternions, quatEleNodal);
       using namespace Ikarus::DerivativeDirections;
       ScalarType energy = 0.0;
-      for (const auto& gp : rule) {
-        const auto A1            = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
-        const auto Jinv          = 1/A1.norm();
-        const auto r             = (centerLineF.evaluateFunction(gp.position())).eval();
-        const auto rGrad             = ((A1+centerLineF.evaluateDerivative(gp.position(),wrt(spatialAll)))*Jinv).eval();
-        const auto q             = quatF.evaluateFunction(gp.position());
-        const auto qE = Eigen::Quaternion<ScalarType>(q);
-        const auto qGrad             = quatF.evaluateDerivative(gp.position(),wrt(spatialAll), transformWith(Jinv));
+      for (const auto& [gpIndex, gp] : centerLineF.viewOverIntegrationPoints()) {
+        const Eigen::Vector3d A1            = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
+        const double Jinv          = 1.0/A1.norm();
+        const auto r             = (centerLineF.evaluateFunction(gpIndex)).eval();
+        const auto rGrad         = ((A1+centerLineF.evaluateDerivative(gpIndex,wrt(spatialAll)))*Jinv).eval();
+        const auto q             = quatF.evaluateFunction(gpIndex);
+//        const auto qE = Eigen::Quaternion<ScalarType>(q);
+        const auto qGrad             = quatF.evaluateDerivative(gpIndex,wrt(spatialAll), transformWith(Jinv));
 
         const auto D = rotationMatrixColumnDerivatives(q);
          Eigen::Matrix<ScalarType,3,3> RPrime;
-         RPrime << D[0]*qGrad, D[1]*qGrad, D[2]*qGrad;
+         RPrime.col(0)= D[0]*qGrad;
+         RPrime.col(1)= D[1]*qGrad;
+         RPrime.col(2)= D[2]*qGrad;
 
-         const auto R = qE.toRotationMatrix();
+//        if(Dune::FloatCmp::ne(q.norm(), ScalarType(1.0)))
+//            std::cout<<std::setprecision(20)<<"q.norm() "<<q.norm()<<std::endl;
+//         , D[1]*qGrad, D[2]*qGrad;
+
+         const auto R = toRotationMatrix(q);
+         const Eigen::Matrix<ScalarType,3,3> kappa = RPrime.transpose()*   R;
+         const Eigen::Vector<ScalarType,3> kappaV({kappa(1,2),kappa(2,0),kappa(0,1)});
 //         std::cout<<"R: "<<R<<std::endl;
-         const auto R0 = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitZ(),A1).toRotationMatrix();
-         const Eigen::Vector3i indices(1,2,0);
-         const auto Perm = Eigen::PermutationMatrix<3>(indices);
-         const auto Rreal = (R*Perm).eval();
-//         std::cout<<"Rreal: "<<Rreal<<std::endl;
-          auto RPrime2 = (RPrime*Perm).eval();
-//         const auto kappa = (RPrime.transpose()*Rreal).eval();
-         const Eigen::Vector<ScalarType,3> kappaV({RPrime2.col(1).dot(Rreal.col(2)),RPrime2.col(2).dot(Rreal.col(0)),RPrime2.col(0).dot(Rreal.col(1))});
-         const auto eps = (Rreal.transpose()*rGrad-Eigen::Vector<double,3>::UnitZ()).eval();
+//         std::cout<<"RPrimeTR: "<<RPrime.transpose()*R<<std::endl;
+         const auto eps = (R.transpose()*rGrad-Eigen::Vector<double,3>::UnitX()).eval();
           const double G = Ikarus::convertLameConstants({.emodul=material.E,.nu=material.nu}).toShearModulus();
-          const Eigen::Vector3d dM({material.E*material.I1,material.E*material.I2,G*material.J});
-          const Eigen::Vector3d cM({G*material.A,G*material.A,material.E*material.A});
-
-
-        energy += (0.5 * (eps.dot(cM.asDiagonal()*eps)+ kappaV.dot(dM.asDiagonal()*kappaV))-r.dot(volumeLoad(gp.position(),lambda)))
-                  * geo.integrationElement(gp.position()) * gp.weight();  // demag energy
+          const Eigen::DiagonalMatrix<double,3> dM({G*material.J,material.E*material.I1,material.E*material.I2});
+          const Eigen::DiagonalMatrix<double,3> cM({material.E*material.A,G*material.A,G*material.A});
+            const auto Fext = volumeLoad(gp.position(),lambda);
+        energy += (0.5 * (eps.dot(cM*eps)+ kappaV.dot(dM*kappaV))-r.dot(Fext))
+                  * geo.integrationElement(gp.position()) * gp.weight();
       }
       return energy;
     }

@@ -32,6 +32,8 @@
 #include <ikarus/utils/functionSanityChecks.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 #include <ikarus/utils/observer/genericControlObserver.hh>
+#include <ikarus/utils/observer/nonLinearSolverLogger.hh>
+#include <ikarus/utils/algorithms.hh>
 
 constexpr int centerLineOrder    = 1;
 constexpr int quaternionOrder        = 1;
@@ -58,7 +60,7 @@ int main(int argc, char **argv) {
 //  const auto mshfilepath     = gridParameters.get<std::string>("mshfilepath");
 //  const auto loadSteps       = controlParameters.get<int>("loadSteps");
   const auto loadSteps       = 1;
-  const double distrutedLoad       = 1e-4;
+  const double distrutedLoad       = 10;
 //  const auto loadFactorRange = controlParameters.get<std::array<double, 2>>("loadFactorRange");
   const auto loadFactorRange = std::array<double, 2>({0,1});
 //
@@ -71,45 +73,17 @@ int main(int argc, char **argv) {
 //  Python::run("import math");
 
   using namespace Ikarus;
-  Ikarus::BeamMaterial mat({.E = 1e3, .nu = 0.0, .A = 1, .I1 = 1e-4, .I2 = 1e-4, .J = 2e-4});
-
-
-
-  //  auto isInsidePredicate = [&](auto&& coord) {
-  //    if (Dune::power(coord[0], 2) + Dune::power(coord[1], 2) - 1e-4 > Dune::power(innerRadius, 2))
-  //      return false;
-  //    else
-  //      return true;
-  //  };
-
-  //  using Grid        = Dune::YaspGrid<gridDim>;
-  //  const size_t elex = 60;
-  //  const size_t eley = elex / 2;
-  //  const size_t elez = 1;
-  //  const double Lx   = freeSpaceX;
-  //  const double Ly   = freeSpaceY;
-  //  const double Lz   = freeSpaceY;
-  //
-  //  Dune::FieldVector<double, gridDim> bbox;
-  //  std::array<int, gridDim> eles{};
-  //  if constexpr (gridDim == 2) {
-  //    bbox = {Lx, Ly};
-  //    eles = {elex, eley};
-  //  } else if constexpr (gridDim == 3) {
-  //  }
-  //
-  //  auto grid = std::make_shared<Grid>(bbox, eles);
+  Ikarus::BeamMaterial mat({.E = 2.1e8, .nu = 0.0, .A = 0.01, .I1 = 8.333333333*1e-6, .I2 =  8.333333333*1e-6, .J =  16.66666666666*1e-6});
 
   Dune::GridFactory<Dune::FoamGrid<1, 3, double>> gridFactory;
-  const double h = 1.0;
   const double L = 12.0;
   gridFactory.insertVertex({0, 0,0});
   gridFactory.insertVertex({L,0,0});
   gridFactory.insertElement(Dune::GeometryTypes::line, {0, 1});
   auto grid     = gridFactory.createGrid();
-  grid->globalRefine(10);
+  grid->globalRefine(3);
 
-  spdlog::info("Max Disp Bernoulli beam: {}", distrutedLoad*L*L*L*L/(76.8*mat.E*mat.I1));
+
 
 //  grid->globalRefine(refinement);
   auto gridView = grid->leafGridView();
@@ -131,14 +105,14 @@ int main(int argc, char **argv) {
       gridView, composite(power<worldDim>(lagrange<centerLineOrder>(), FlatInterleaved()),
                           power<quaternionCorrectionDim>(lagrange<quaternionOrder>(), FlatInterleaved()), FlatLexicographic{}));
   std::cout << "This gridview contains: " << std::endl;
-  std::cout << gridView.size(1) << " edges" << std::endl;
-  std::cout << gridView.size(0) << " vertices" << std::endl;
+  std::cout << gridView.size(1) << " vertices " << std::endl;
+  std::cout << gridView.size(0) << " edges" << std::endl;
   std::cout << basisRieC.size() << " Dofs" << std::endl;
 
   //  draw(gridView);
 
   std::vector<Ikarus::SimoReissnerBeam<decltype(basisEmbeddedC), decltype(basisRieC)>> fes;
-  auto volumeLoad = [=distrutedLoad](auto &globalCoord, auto &lamb) {
+  auto volumeLoad = [distrutedLoad](auto &globalCoord, auto &lamb) {
     Eigen::Vector<double, worldDim> fext;
     fext.setZero();
     fext[0] = 0;
@@ -150,6 +124,7 @@ int main(int argc, char **argv) {
   int insideCounter = 0;
   for (auto &element : elements(gridView)) {
     auto geoCoord       = element.geometry().center();
+//    std::cout<<geoCoord<<std::endl;
     fes.emplace_back(basisEmbeddedC, basisRieC, element, mat, volumeLoad);
   }
 
@@ -160,7 +135,11 @@ int main(int argc, char **argv) {
 
   UnitQuaternionVector quatsBlocked(basisEmbeddedC.size({Dune::Indices::_1}));
   for (auto &msingle : quatsBlocked) {
-      msingle.setValue(Eigen::Vector<double, quaternionDim>::UnitW());
+      Eigen::Vector<double, quaternionDim> q;
+      q.setZero();
+      q.w()=1;
+      q.normalize();
+      msingle.setValue(q);
   }
 
   MultiTypeVector mAndABlocked( centerLineBlocked,quatsBlocked);
@@ -171,13 +150,21 @@ int main(int argc, char **argv) {
   Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basisRieC, Dune::Indices::_0),
                                       [&](auto &&globalIndex) { dirichletFlags[globalIndex[0]] = true; });
 
+    Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basisRieC, Dune::Indices::_1,1),
+                                        [&](auto &&globalIndex) { dirichletFlags[globalIndex[0]] = true; });
+   //partly cmaplíng does not work and full clamp also does not work
+    Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basisRieC, Dune::Indices::_1,0),
+                                        [&](auto &&globalIndex) { dirichletFlags[globalIndex[0]] = true; });
+
   // Fix displacement on the whole boundary to zero
   Dune::Functions::forEachBoundaryDOF(
       Dune::Functions::subspaceBasis(basisEmbeddedC, Dune::Indices::_0), [&](auto &&globalIndex) {
         mAndABlocked[Dune::Indices::_0][globalIndex[1]].setValue(Eigen::Vector<double, worldDim>::Zero());
       });
 
+    const auto fixedDofs = std::ranges::count(dirichletFlags, true);
 
+    std::cout << fixedDofs << " FixedDofs" << std::endl;
   auto denseAssembler  = DenseFlatAssembler(basisRieC, fes, dirichletFlags);
   auto sparseAssembler = SparseFlatAssembler(basisRieC, fes, dirichletFlags);
   double lambda        = 0.0;
@@ -188,6 +175,8 @@ int main(int argc, char **argv) {
                                      .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
                                      .addAffordance(Ikarus::VectorAffordances::forces)
                                      .build();
+//      std::cout<<"denseAssembler.getReducedVector(req)"<<std::endl;
+//      std::cout<<denseAssembler.getReducedVector(req)<<std::endl;
     return denseAssembler.getReducedVector(req);
   };
 
@@ -197,6 +186,8 @@ int main(int argc, char **argv) {
                                      .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
                                      .addAffordance(Ikarus::MatrixAffordances::stiffness)
                                      .build();
+//    std::cout<<"sparseAssembler.getReducedMatrix(req)"<<std::endl;
+//    std::cout<<sparseAssembler.getReducedMatrix(req)<<std::endl;
     return sparseAssembler.getReducedMatrix(req);
   };
 
@@ -220,16 +211,22 @@ int main(int argc, char **argv) {
   checkGradient(nonLinOp, {.draw = false, .writeSlopeStatement = true}, updateFunction);
   checkHessian(nonLinOp, {.draw = false, .writeSlopeStatement = true}, updateFunction);
 
-  auto nr = Ikarus::makeTrustRegion(nonLinOp, updateFunction);
-  //  auto nr = Ikarus::makeTrustRegion< decltype(nonLinOp),PreConditioner::DiagonalPreconditioner>(nonLinOp,
-  //  updateFunction);
-  nr->setup({.verbosity = 1,
-             .maxiter   = 100000,
-             .grad_tol  = 1e-8,
-             .corr_tol  = 1e-16,
-             .useRand   = false,
-             .rho_reg   = 1e6,
-             .Delta0    = 1000});
+//  auto nr = Ikarus::makeTrustRegion(nonLinOp, updateFunction);
+    auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_UmfPackLU);
+
+    auto nr = Ikarus::makeNewtonRaphson(nonLinOp.subOperator<1, 2>(), std::move(linSolver),updateFunction);
+
+    auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
+    nr->subscribeAll(nonLinearSolverObserver);
+//    auto nr = Ikarus::makeTrustRegion< decltype(nonLinOp),PreConditioner::DiagonalPreconditioner>(nonLinOp,
+//    updateFunction);
+//  nr->setup({.verbosity = 1,
+//             .maxiter   = 300,
+//             .grad_tol  = 1e-7,
+//             .corr_tol  = 1e-16,
+//             .useRand   = false,
+//             .rho_reg   = 1e3,
+//             .Delta0    = 1000});
 
   auto lc = Ikarus::LoadControl(nr, loadSteps, loadFactorRange);
 
@@ -247,7 +244,7 @@ int main(int argc, char **argv) {
     auto quatFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, quaternionDim>>(
         Dune::Functions::subspaceBasis(basisEmbeddedC, Dune::Indices::_1), mAndABlocked);
 
-    Dune::VTKWriter vtkWriter(gridView, Dune::VTK::nonconforming);
+    Dune::VTKWriter vtkWriter(gridView, Dune::VTK::conforming);
     vtkWriter.addVertexData(disp, Dune::VTK::FieldInfo("m", Dune::VTK::FieldInfo::Type::vector, worldDim));
 //    vtkWriter.addVertexData(quatFunc, Dune::VTK::FieldInfo("A", Dune::VTK::FieldInfo::Type::vector, vectorPotDim));
 
@@ -307,4 +304,8 @@ int main(int argc, char **argv) {
   nonLinOp.update<0>();
   spdlog::info("Energy: {}", nonLinOp.value());
   spdlog::info("MaxDisplacement: {}", std::ranges::max(nonLinOp.firstParameter()[Dune::Indices::_0],[](auto& e1,auto& e2) {return std::abs(e1[2])<std::abs(e2[2]);})[2]);
+    std::cout<<mAndABlocked<<std::endl;
+    checkGradient(nonLinOp, {.draw = false, .writeSlopeStatement = true}, updateFunction);
+    checkHessian(nonLinOp, {.draw = false, .writeSlopeStatement = true}, updateFunction);
+    spdlog::info("Max Disp Bernoulli beam: {}", 5.0/384.0*distrutedLoad*L*L*L*L/(mat.E*mat.I1));
 }

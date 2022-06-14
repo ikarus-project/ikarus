@@ -399,7 +399,12 @@ namespace Ikarus {
     Eigen::IOFormat mapleFmt(Eigen::FullPrecision, 0, ", ", "|\n", "<", ">", "<", ">");
     if constexpr (std::convertible_to<Derived, const Eigen::MatrixBase<Derived>&>) {
       std::cout << "\n" << A.derived().format(mapleFmt) << std::endl;
-    } else {  // branch for Eigen::DiagonalMatrix
+    }else if  ( std::convertible_to<Derived, const Eigen::SparseMatrixBase<Derived>&>)
+      {
+        Eigen::MatrixXd Adense(A.derived());
+          std::cout << "\n" << Adense.format(mapleFmt) << std::endl;
+      }
+    else {  // branch for Eigen::DiagonalMatrix
       using Scalar = typename Derived::Scalar;
       using namespace Eigen;
       constexpr int diag_size = EIGEN_SIZE_MIN_PREFER_DYNAMIC(Derived::RowsAtCompileTime, Derived::ColsAtCompileTime);
@@ -408,5 +413,37 @@ namespace Ikarus {
                 << std::endl;
     }
   }
+
+    template<typename ScalarType>
+    auto toRotationMatrix(const Eigen::Vector<ScalarType,4>& q)
+    {
+        Eigen::Matrix<ScalarType,3,3> R;
+        R<<q[0]*q[0]-q[1]*q[1]-q[2]*q[2]+q[3]*q[3], 2*(q[0]*q[1] - q[2]*q[3]),           2*(q[0]*q[2] + q[1]*q[3]),
+                2*(q[0]*q[1] + q[2]*q[3]),          -q[0]*q[0]+q[1]*q[1]-q[2]*q[2]+q[3]*q[3], 2*(-q[0]*q[3] + q[1]*q[2]),
+                2*(q[0]*q[2] - q[1]*q[3]), 2*(q[0]*q[3] + q[1]*q[2]) , -q[0]*q[0]-q[1]*q[1]+q[2]*q[2]+q[3]*q[3];
+        return R;
+    }
+    template<typename ScalarType>
+    auto rotationMatrixColumnDerivatives(const Eigen::Vector<ScalarType,4>& q)
+    {
+        std::array<Eigen::Matrix<ScalarType,3,4> ,3> D;
+
+        D[0] << q[0], -q[1], - q[2], q[3],
+                q[1],  q[0],   q[3], q[2],
+                q[2], -q[3],   q[0], - q[1];
+        D[0]*=2.0;
+
+        D[1] << q[1], q[0], - q[3], -q[2],
+                -q[0],  q[1],   -q[2], q[3],
+                q[3], q[2],   q[1], q[0];
+        D[1]*=2.0;
+
+        D[2] << q[2], q[3],  q[0], q[1],
+                -q[3],  q[2],   q[1], -q[0],
+                -q[0], -q[1],   q[2], q[3];
+        D[2]*=2.0;
+
+        return D;
+    }
 
 }  // namespace Ikarus

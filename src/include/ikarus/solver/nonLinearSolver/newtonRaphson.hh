@@ -14,7 +14,7 @@
 namespace Ikarus {
 
   struct NewtonRaphsonSettings {
-    double tol{1e-8};
+    double tol{1e-7};
     int maxIter{20};
   };
 
@@ -89,7 +89,11 @@ namespace Ikarus {
         this->notify(NonLinearSolverMessages::ITERATION_STARTED);
         if constexpr (isLinearSolver) {
           linearSolver.factorize(Ax);
+//          std::cout<<"Ax: "<<Ax<<std::endl;
+//          std::cout<<"rx: "<<rx<<std::endl;
+//          Ikarus::printForMaple(Ax);
           linearSolver.solve(corr, -rx);
+//            std::cout<<"corr: "<<corr<<std::endl;
           dNorm = corr.norm();
           updateFunction(x, corr);
         } else {
