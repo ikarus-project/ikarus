@@ -19,6 +19,7 @@ namespace Ikarus {
   public:
     /** \brief Type used for coordinates */
     using ctype      = ct;
+    using Scalar      = ct;
     using field_type = ct;
 
     /** \brief Size of how much values are needed to store the manifold */
@@ -83,6 +84,10 @@ namespace Ikarus {
     auto &operator+=(const CorrectionType &correction) {
       this->update(correction);
       return *this;
+    }
+
+    void addInEmbedding(const CoordinateType &correction) {
+      var+=correction;
     }
 
     /** \brief size */

@@ -81,11 +81,12 @@ namespace Ikarus {
       return std::get<I>(leafNodes).coefficientsRef();
     }
 
+    // This function updates the embedding values of the underlying coefficients
     template <typename Derived, std::size_t I = 0>
     void addToCoeffs(const Eigen::MatrixBase<Derived>& correction,
                      Dune::index_constant<I> = Dune::index_constant<0UL>()) {
       Dune::Hybrid::forEach(leafNodes, [&]<typename LFI>(LFI& lfi) {
-        if constexpr (LFI::Ids::value == I) lfi.coefficientsRef() += correction;
+        if constexpr (LFI::Ids::value == I) addInEmbedding(lfi.coefficientsRef(),correction);
       });
     }
     template <std::size_t I = 0>

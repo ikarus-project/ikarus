@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
   gridFactory.insertVertex({L,0,0});
   gridFactory.insertElement(Dune::GeometryTypes::line, {0, 1});
   auto grid     = gridFactory.createGrid();
-  grid->globalRefine(3);
+  grid->globalRefine(1);
 
 
 

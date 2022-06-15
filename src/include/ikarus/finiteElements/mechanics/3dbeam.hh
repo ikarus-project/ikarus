@@ -38,6 +38,7 @@
 #include <ikarus/finiteElements/physicsHelper.hh>
 #include <ikarus/localBasis/localBasis.hh>
 #include <ikarus/localFunctions/impl/projectionBasedLocalFunction.hh>
+#include <ikarus/localFunctions/impl/geodesicLocalFunction.hh>
 #include <ikarus/localFunctions/impl/standardLocalFunction.hh>
 #include <ikarus/manifolds/realTuple.hh>
 #include <ikarus/manifolds/unitVector.hh>
@@ -357,7 +358,8 @@ namespace Ikarus {
 
 //      const auto& rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
       Ikarus::StandardLocalFunction centerLineF(localBasisCenterLine, dispEleNodal);
-      Ikarus::ProjectionBasedLocalFunction quatF(localBasisQuaternions, quatEleNodal);
+//      Ikarus::ProjectionBasedLocalFunction quatF(localBasisQuaternions, quatEleNodal);
+      Ikarus::GeodesicLocalFunction quatF(localBasisQuaternions, quatEleNodal);
       using namespace Ikarus::DerivativeDirections;
       ScalarType energy = 0.0;
       for (const auto& [gpIndex, gp] : centerLineF.viewOverIntegrationPoints()) {

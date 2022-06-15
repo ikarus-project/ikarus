@@ -8,6 +8,78 @@
 #include <ikarus/utils/eigenDuneTransformations.hh>
 
 namespace Ikarus {
+
+  template<typename Scalar>
+  Scalar arcCosSquared(const Scalar& x) {
+    using std::acos;
+    const Scalar eps = 1e-2;
+    if (x > 1-eps) {  // acos is not differentiable, use the series expansion instead,
+      // we need here lots of terms to be sure that the numerical derivatives are also within maschine precission
+      return 11665028.0/4729725.0
+             -141088.0/45045.0*x
+             +   413.0/429.0*x*x
+             -  5344.0/12285.0*Dune::power(x,3)
+             +    245.0/1287.0*Dune::power(x,4)
+             -  1632.0/25025.0*Dune::power(x,5)
+             +     56.0/3861.0*Dune::power(x,6)
+             -    32.0/21021.0*Dune::power(x,7);
+    } else {
+      return Dune::power(acos(x),2);
+    }
+  }
+
+  template<typename Scalar>
+  Scalar derivativeOfArcCosSquared(const Scalar& x) {
+    using std::acos;
+    using std::sqrt;
+    const Scalar eps = 1e-2;
+    if (x > 1-eps) {  // regular expression is unstable, use the series expansion instead
+      // we need here lots of terms to be sure that the numerical derivatives are also within maschine precission
+      //return -2 + 2*(x-1)/3 - 4/15*(x-1)*(x-1);
+      return -47104.0/15015.0
+             +12614.0/6435.0*x
+             -63488.0/45045.0*x*x
+             + 1204.0/1287.0*Dune::power(x,3)
+             - 2048.0/4095.0*Dune::power(x,4)
+             +   112.0/585.0*Dune::power(x,5)
+             -2048.0/45045.0*Dune::power(x,6)
+             +   32.0/6435.0*Dune::power(x,7);
+
+    } else if (x < -1+eps) {  // The function is not differentiable
+      DUNE_THROW(Dune::Exception, "arccos^2 is not differentiable at x==-1!"<< x);
+    } else
+      return -2*acos(x) / sqrt(1-x*x);
+  }
+
+
+  /** \brief Compute the second derivative of arccos^2 without getting unstable for x close to 1 */
+  template<typename Scalar>
+   Scalar secondDerivativeOfArcCosSquared(const Scalar& x) {
+    using std::acos;
+    using std::pow;
+    const Scalar eps = 1e-2;
+    if (x > 1-eps) {  // regular expression is unstable, use the series expansion instead
+      // we need here lots of terms to be sure that the numerical derivatives are also within maschine precission
+      //return 2.0/3 - 8*(x-1)/15;
+      return 1350030.0/676039.0+5632.0/2028117.0*Dune::power(x,10)
+             -1039056896.0/334639305.0*x
+             +150876.0/39767.0*x*x
+             -445186048.0/111546435.0*Dune::power(x,3)
+             +       343728.0/96577.0*Dune::power(x,4)
+             -  57769984.0/22309287.0*Dune::power(x,5)
+             +      710688.0/482885.0*Dune::power(x,6)
+             -  41615360.0/66927861.0*Dune::power(x,7)
+             +     616704.0/3380195.0*Dune::power(x,8)
+             -     245760.0/7436429.0*Dune::power(x,9);
+    } else if (x < -1+eps) {  // The function is not differentiable
+      DUNE_THROW(Dune::Exception, "arccos^2 is not differentiable at x==-1!");
+    } else
+      return 2/(1-x*x) - 2*x*acos(x) / pow(1-x*x,1.5);
+  }
+
+
+
+
   /**
    * \brief FunctionReturnType of unit vectors \f$\mathcal{S}^{d-1}\f$ embedded into space \f$\mathbb{R}^d\f$
    *
@@ -19,6 +91,7 @@ namespace Ikarus {
   public:
     /** \brief Type used for coordinates */
     using ctype      = ct;
+    using Scalar      = ct;
     using field_type = ct;
 
     /** \brief Size of how much values are needed to store the manifold */
@@ -48,6 +121,42 @@ namespace Ikarus {
     /** \brief Set the coordinates of the manifold by r_value reference */
     void setValue(CoordinateType &&vec) { var = std::move(vec.normalized()); }
 
+    /** \brief Distance between two elments */
+    template<typename Scalar>
+     auto squaredDistance(const UnitVector<Scalar,d> &other) const {
+      const auto dotprod = var.dot(other.var);
+      using std::min;
+      dotprod = min(dotprod,1.0);
+  if(acos(dotprod)> std::numbers::pi/2)
+    std::cout<<"LARGE angle detected: "<<acos(dotprod)<<std::endl;
+       return arcCosSquared(dotprod);
+     }
+
+   private:
+     template<typename Scalar>
+     CoordinateType euclideanDerivativeOfDistanceSquaredWRTSecondArgument( const UnitVector<Scalar,d> & other) const {
+       const auto dotprod = var.dot(other.var);
+
+       return var*derivativeOfArcCosSquared(dotprod);
+     }
+   public:
+
+    template<typename Scalar>
+    CorrectionType derivativeOfDistanceSquaredWRTSecondArgument( const UnitVector<Scalar,d> & other) const {
+      return other.orthonormalFrame().transpose()*euclideanDerivativeOfDistanceSquaredWRTSecondArgument(other);
+    }
+
+     template<typename Scalar>
+     Eigen::Matrix<Scalar,d-1,d-1> secondDerivativeOfDistanceSquaredWRTSecondArgument( const UnitVector<Scalar,d> & other) const {
+
+       const auto dotprod = var.dot(other.var);
+       const auto BLA = other.orthonormalFrame();
+       const auto gradEuk = euclideanDerivativeOfDistanceSquaredWRTSecondArgument(other);
+       return (BLA.transpose()*secondDerivativeOfArcCosSquared(dotprod)*var*var.transpose()*BLA-other.getValue().dot(gradEuk)*Eigen::Matrix<double,correctionSize,correctionSize>::Identity()).eval();
+     }
+
+
+
     /** \brief Access to data by const reference */
     const ctype &operator[](int i) const { return var[i]; }
 
@@ -63,10 +172,30 @@ namespace Ikarus {
     auto begin() const { return var.begin(); }
     auto end() const { return var.end(); }
 
+    template <typename ctOther, int dOther>
+    requires std::convertible_to<ctOther, ctype>
+    friend class UnitVector;
+
+    /** \brief Copy assignement if the other type has different underlying type*/
+    template <typename ctype_>
+    requires std::convertible_to<ctype_, ctype>
+    UnitVector<ctype, d>
+    &operator=(const UnitVector<ctype_, d> &other) {
+      var = other.var;
+      return *this;
+    }
+
     template <typename OtherType>
     struct Rebind {
       using other = UnitVector<OtherType, valueSize>;
     };
+
+    CoordinateType projectOntoTangentSpace(const CoordinateType& vec)
+    {
+      return derivativeOfProjectionWRTposition(var)*vec;
+    }
+
+
 
     /** \brief Update the manifold by an correction vector of size correctionSize
      * For the unit vector in R^3 the correction are of size 2
@@ -76,6 +205,10 @@ namespace Ikarus {
     void update(const CorrectionType &correction) {
       var += orthonormalFrame() * correction;
       var.normalize();  // projection-based retraction
+    }
+
+    void addInEmbedding(const CoordinateType &correction) {
+      var+=correction;
     }
 
     static Eigen::Matrix<ctype, valueSize, valueSize> derivativeOfProjectionWRTposition(

@@ -27,6 +27,7 @@
 
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/localFunctions/expressions.hh>
+#include <ikarus/localFunctions/impl/geodesicLocalFunction.hh>
 #include <ikarus/localFunctions/impl/projectionBasedLocalFunction.hh>
 #include <ikarus/localFunctions/impl/standardLocalFunction.hh>
 #include <ikarus/localFunctions/localFunctionName.hh>
@@ -136,7 +137,7 @@ void testLocalFunction(const LF& lf) {
       return value;
     };
 
-    Eigen::VectorXdual2nd xvr(correctionSize(coeffs));
+    Eigen::VectorXdual2nd xvr(valueSize(coeffs));
     xvr.setZero();
 
     dual2nd u;
@@ -163,9 +164,10 @@ void testLocalFunction(const LF& lf) {
       const auto jacobianWRTCoeffs = ((alongVec.transpose() * jacobianWRTCoeffslf).transpose()).eval();
       static_assert(jacobianWRTCoeffs.cols() == 1);
       static_assert(jacobianWRTCoeffs.rows() == coeffCorrectionSize);
+      const auto BLAi = coeffs[i].orthonormalFrame();
       EXPECT_THAT(
           jacobianWRTCoeffs,
-          EigenApproxEqual(gradienWRTCoeffs.template segment<coeffCorrectionSize>(i * coeffCorrectionSize), tol));
+          EigenApproxEqual(BLAi.transpose()*gradienWRTCoeffs.template segment<coeffValueSize>(i * coeffValueSize), tol));
 
       for (int d = 0; d < gridDim; ++d) {
         const auto jacoWrtCoeffAndSpatiallf = lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i), spatial(d)));
@@ -184,8 +186,8 @@ void testLocalFunction(const LF& lf) {
         EXPECT_THAT(jacoWrtCoeffAndSpatial, EigenApproxEqual(jacoWrtSpatialAndCoeff, tol));
 
         EXPECT_THAT(jacoWrtCoeffAndSpatial,
-                    EigenApproxEqual(gradientWRTCoeffsTwoTimesSingleSpatial[d].template segment<coeffCorrectionSize>(
-                                         i * coeffCorrectionSize),
+                    EigenApproxEqual(BLAi.transpose()*gradientWRTCoeffsTwoTimesSingleSpatial[d].template segment<coeffValueSize>(
+                                         i * coeffValueSize),
                                      tol));
       }
 
@@ -196,8 +198,6 @@ void testLocalFunction(const LF& lf) {
 
       Eigen::Matrix<double, 1, coeffCorrectionSize> jacoWrtSpatialAllAndCoeffProd;
       jacoWrtSpatialAllAndCoeffProd.setZero();
-      //    std::cout<<"alongMat"<<std::endl;
-      //    std::cout<<alongMat<<std::endl;
 
       for (int d = 0; d < gridDim; ++d)
         jacoWrtSpatialAllAndCoeffProd += (alongMat.col(d).transpose() * jacoWrtSpatialAllAndCoeff[d]).eval();
@@ -205,7 +205,7 @@ void testLocalFunction(const LF& lf) {
       EXPECT_THAT(
           jacoWrtSpatialAllAndCoeffProd,
           EigenApproxEqual(
-              gradienWRTCoeffsSpatialAll.template segment<coeffCorrectionSize>(i * coeffCorrectionSize).transpose(),
+          (BLAi.transpose()*gradienWRTCoeffsSpatialAll.template segment<coeffValueSize>(i * coeffValueSize)).transpose(),
               tol));
 
       for (size_t j = 0; j < coeffSize; ++j) {
@@ -213,18 +213,21 @@ void testLocalFunction(const LF& lf) {
             = lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i, j)), Ikarus::along(alongVec));
         static_assert(jacobianWRTCoeffsTwoTimes.cols() == coeffCorrectionSize);
         static_assert(jacobianWRTCoeffsTwoTimes.rows() == coeffCorrectionSize);
+
+        const auto BLAj = coeffs[j].orthonormalFrame();
         const auto jacobianWRTCoeffsTwoTimesExpected
-            = hessianWRTCoeffs.template block<coeffCorrectionSize, coeffCorrectionSize>(i * coeffCorrectionSize,
-                                                                                        j * coeffCorrectionSize);
+            = (BLAi.transpose()*hessianWRTCoeffs.template block<coeffValueSize, coeffValueSize>(i * coeffValueSize,
+                                                                                        j * coeffValueSize)*BLAj).eval();
         EXPECT_THAT(jacobianWRTCoeffsTwoTimes, EigenApproxEqual(jacobianWRTCoeffsTwoTimesExpected, tol));
 
         const auto jacobianWRTCoeffsTwoTimesSpatialAll
             = lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i, j), spatialAll), Ikarus::along(alongMat));
         static_assert(jacobianWRTCoeffsTwoTimesSpatialAll.cols() == coeffCorrectionSize);
         static_assert(jacobianWRTCoeffsTwoTimesSpatialAll.rows() == coeffCorrectionSize);
+
         const auto jacobianWRTCoeffsTwoTimesSpatialAllExpected
-            = hessianWRTCoeffsSpatialAll.template block<coeffCorrectionSize, coeffCorrectionSize>(
-                i * coeffCorrectionSize, j * coeffCorrectionSize);
+            = (BLAi.transpose()*hessianWRTCoeffsSpatialAll.template block<coeffValueSize, coeffValueSize>(
+                i * coeffValueSize, j * coeffValueSize)*BLAj).eval();
 
         /// if the order of the function value is less then quadratic then this should yield a vanishing derivative
         if constexpr (lf.order() < quadratic) {
@@ -241,8 +244,8 @@ void testLocalFunction(const LF& lf) {
           static_assert(jacobianWRTCoeffsTwoTimesSingleSpatial.cols() == coeffCorrectionSize);
           static_assert(jacobianWRTCoeffsTwoTimesSingleSpatial.rows() == coeffCorrectionSize);
           const auto jacobianWRTCoeffsTwoTimesSingleSpatialExpected
-              = hessianWRTCoeffsTwoTimesSingleSpatial[d].template block<coeffCorrectionSize, coeffCorrectionSize>(
-                  i * coeffCorrectionSize, j * coeffCorrectionSize);
+              = (BLAi.transpose()*hessianWRTCoeffsTwoTimesSingleSpatial[d].template block<coeffValueSize, coeffValueSize>(
+                  i * coeffValueSize, j * coeffValueSize)*BLAj).eval();
           EXPECT_THAT(jacobianWRTCoeffsTwoTimesSingleSpatial,
                       EigenApproxEqual(jacobianWRTCoeffsTwoTimesSingleSpatialExpected, tol));
         }
@@ -327,7 +330,9 @@ TEST(LocalFunctionTests, TestExpressions) {
     auto g = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal);
     static_assert(g.order() == linear);
     auto gP = Ikarus::ProjectionBasedLocalFunction(localBasis, vBlockedLocal3);
+    auto gG = Ikarus::GeodesicLocalFunction(localBasis, vBlockedLocal3);
     static_assert(gP.order() == nonLinear);
+    static_assert(gG.order() == nonLinear);
     static_assert(countNonArithmeticLeafNodes(f) == 1);
     static_assert(countNonArithmeticLeafNodes(g) == 1);
     using namespace Ikarus::DerivativeDirections;
@@ -356,6 +361,8 @@ TEST(LocalFunctionTests, TestExpressions) {
     testLocalFunction(f23);
     testLocalFunction(mf);
     testLocalFunction(h);
+    testLocalFunction(gP);
+    testLocalFunction(gG);
     for (int gpIndex = 0; auto& gp : rule) {
       //      testLocalFunction(gP, gpIndex);
 
