@@ -24,9 +24,9 @@ namespace Ikarus {
   /*  Rebinds the underlying local function coeff coordinate type to a new type, if the ids have a match
    * For unaryExpr
    * */
-  template <template <typename> class Op, typename E1, typename OtherType, size_t ID>
+  template <template <typename, typename...> class Op, typename E1, typename OtherType, size_t ID, typename... Args>
   auto rebind(const std::remove_cvref_t<E1>& u, Dune::index_constant<ID>&& id = Dune::index_constant<0>()) {
-    return Op<decltype(u.rebindClone(OtherType(), std::forward<Dune::index_constant<ID>>(id)))>(
+    return Op<decltype(u.rebindClone(OtherType(), std::forward<Dune::index_constant<ID>>(id))), Args...>(
         u.rebindClone(OtherType(), std::forward<Dune::index_constant<ID>>(id)));
   }
 
