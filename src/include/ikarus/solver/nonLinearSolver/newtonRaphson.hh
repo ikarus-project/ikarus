@@ -31,12 +31,30 @@ namespace Ikarus {
     linearSolver.solve(vec, vec);
   };
 
+  namespace Impl
+  {
+
+  template<typename Type> requires requires{typename Type::Scalar;}
+  Type::Scalar UpdateTypeHelper()
+  {
+    return typename Type::Scalar{};
+  };
+
+  template<typename Type> requires  (!requires {typename Type::Scalar;})
+  Type UpdateTypeHelper()
+  {
+    return Type{};
+  };
+  }
+
   template <typename NonLinearOperatorImpl,
             typename LinearSolver = std::function<typename NonLinearOperatorImpl::ValueType(
                 const typename NonLinearOperatorImpl::ValueType&, const typename NonLinearOperatorImpl::ValueType&)>,
             typename UpdateType
             = std::conditional_t<std::is_floating_point_v<typename NonLinearOperatorImpl::template ParameterValue<0>>,
-                                 typename NonLinearOperatorImpl::template ParameterValue<0>, Eigen::VectorXd>>
+                                 typename NonLinearOperatorImpl::template ParameterValue<0>,
+                                                    Eigen::VectorX<decltype(Impl::UpdateTypeHelper<typename NonLinearOperatorImpl::template ParameterValue<0>>())>>>
+
   class NewtonRaphson : public IObservable<NonLinearSolverMessages> {
   public:
     using LinearSolverScalarFunctionType = std::function<typename NonLinearOperatorImpl::ValueType(
@@ -101,17 +119,24 @@ namespace Ikarus {
           dNorm = norm(corr);
           updateFunction(x, corr);
         }
-        this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, dNorm);
+        this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, static_cast<double>(dNorm));
         this->notify(NonLinearSolverMessages::SOLUTION_CHANGED);
         nonLinearOperator().updateAll();
         rNorm = norm(rx);
-        this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, rNorm);
+        this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, static_cast<double>(rNorm));
         this->notify(NonLinearSolverMessages::ITERATION_ENDED);
         ++iter;
       }
-      solverInformation.iterations   = iter;
-      solverInformation.residualnorm = rNorm;
-      this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, iter, rNorm, settings.tol);
+      if(rNorm > settings.tol) {
+        solverInformation.sucess = false;
+      }
+      else {
+        solverInformation.iterations = iter;
+        solverInformation.residualnorm = static_cast<double>(rNorm);
+        this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, iter, solverInformation.residualnorm, settings.tol);
+      }
+//      std::cout << "rNorm" << std::endl;
+//      std::cout << rNorm << std::endl;
       return solverInformation;
     }
 
