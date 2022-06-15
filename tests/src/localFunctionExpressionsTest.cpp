@@ -382,6 +382,8 @@ TEST(LocalFunctionTests, TestExpressions) {
     auto dotff     = dot(f, g);
     auto sqrtdotff = sqrt(dotff);
     auto normSq    = normSquared(f);
+    auto logg      = log(dotff);
+    auto powf      = pow<3>(dotff);
     static_assert(normSq.order() == quadratic);
 
     static_assert(countNonArithmeticLeafNodes(dotff) == 2);
@@ -392,6 +394,8 @@ TEST(LocalFunctionTests, TestExpressions) {
     testLocalFunction(sqrtdotff);
     testLocalFunction(k);
     testLocalFunction(normSq);
+    testLocalFunction(logg);
+    testLocalFunction(powf);
     for (int gpIndex = 0; auto& gp : rule) {
       EXPECT_DOUBLE_EQ((-2 * 3) * f.evaluateFunction(gpIndex).dot(g.evaluateFunction(gpIndex)),
                        k.evaluateFunction(gpIndex)[0]);
@@ -447,11 +451,6 @@ TEST(LocalFunctionTests, TestExpressions) {
 
         EXPECT_THAT(dfdi, EigenApproxEqual(dkdi, tol));
 
-        //        const VectorType dkdSdi  = k.evaluateDerivative(gpIndex, wrt(spatial(1), coeff(i)));
-        //        const VectorType dkdSdi2 = k.evaluateDerivative(gpIndex, wrt(coeff(i), spatial(1)));
-        //
-        //        EXPECT_THAT(dkdSdi, EigenApproxEqual(dkdSdi2, tol));
-        //
         for (size_t j = 0; j < fe.size(); ++j) {
           const MatrixType dkdij         = k2.evaluateDerivative(gpIndex, wrt(coeff(_0, i, _1, j)));
           const MatrixType dkdijExpected = N[j] * N[i] * MatrixType::Identity();
@@ -463,27 +462,12 @@ TEST(LocalFunctionTests, TestExpressions) {
           const MatrixType dkdij3         = k2.evaluateDerivative(gpIndex, wrt(coeff(_1, i, _1, j)));
           const MatrixType dkdijExpected3 = 2 * N[i] * N[j] * MatrixType::Identity();
           EXPECT_THAT(dkdijExpected3, EigenApproxEqual(dkdij3, tol));
-          //          const MatrixType dkdSdi3 = k.evaluateDerivative(gpIndex, wrt(coeff(i, j)));
-          //
-          //          EXPECT_DOUBLE_EQ(dkdSdi3(0, 0), -12 * N[i] * N[j]);
-          //          EXPECT_DOUBLE_EQ(dkdSdi3(1, 1), -12 * N[i] * N[j]);
-          //          EXPECT_DOUBLE_EQ(dkdSdi3(0, 1), 0);
-          //          EXPECT_DOUBLE_EQ(dkdSdi3(1, 0), 0);
 
           const MatrixType dkdSij         = k2.evaluateDerivative(gpIndex, wrt(spatial(0), coeff(_0, i, _1, j)));
           const MatrixType dkdSijR        = k2.evaluateDerivative(gpIndex, wrt(coeff(_0, i, _1, j), spatial(0)));
           const MatrixType dkdSijExpected = (dN(j, 0) * N[i] + N[j] * dN(i, 0)) * MatrixType::Identity();
           EXPECT_THAT(dkdSijR, EigenApproxEqual(dkdSij, tol));
           EXPECT_THAT(dkdSijExpected, EigenApproxEqual(dkdSij, tol));
-          //          const MatrixType dkdSdi4 = k.evaluateDerivative(gpIndex, wrt(spatial(1), coeff(i, j)));
-          //          const MatrixType dkdSdi5 = k.evaluateDerivative(gpIndex, wrt(coeff(i, j), spatial(1)));
-          //          const MatrixType dkdSdi6 = k.evaluateDerivative(gpIndex, wrt(coeff(j, i), spatial(1)));
-          //          EXPECT_THAT(dkdSdi4, EigenApproxEqual(dkdSdi5, tol));
-          //          EXPECT_THAT(dkdSdi5, EigenApproxEqual(dkdSdi6, tol));
-          //          EXPECT_NEAR(dkdSdi4(0, 0), -12 * (dN(i, 1) * N[j]+dN(j, 1) * N[i]),tol);
-          //          EXPECT_NEAR(dkdSdi4(1, 1), -12 * (dN(i, 1) * N[j]+dN(j, 1) * N[i]),tol);
-          //          EXPECT_DOUBLE_EQ(dkdSdi4(0, 1), 0);
-          //          EXPECT_DOUBLE_EQ(dkdSdi4(1, 0), 0);
         }
       }
       ++gpIndex;
