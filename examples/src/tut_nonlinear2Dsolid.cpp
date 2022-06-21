@@ -28,6 +28,10 @@
 #include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 #include <ikarus/utils/observer/nonLinearSolverLogger.hh>
+#include <dune/fufem/functiontools/boundarydofs.hh>
+#include <dune/fufem/boundarypatch.hh>
+#include <dune/fufem/dunepython.hh>
+
 
 int main(int argc, char** argv) {
   Dune::MPIHelper::instance(argc, argv);
@@ -62,6 +66,8 @@ int main(int argc, char** argv) {
   auto grid               = std::make_shared<Grid>(patchData);
   grid->globalRefine(1);
 
+
+
   /// YaspGrid Example
   //      using Grid        = Dune::YaspGrid<gridDim>;
   //      const double L    = 1;
@@ -74,6 +80,19 @@ int main(int argc, char** argv) {
   //      auto grid                         = std::make_shared<Grid>(bbox, eles);
 
   auto gridView = grid->leafGridView();
+
+  std::vector<bool> neumannVertices(gridView.size(2), false);
+
+  std::string lambda = std::string("lambda x: (") + parameterSet.get<std::string>("neumannVerticesPredicate", "0") + std::string(")");
+  auto pythonNeumannVertices = Python::make_function<bool>(Python::evaluate(lambda));
+
+  for (auto &&vertex: vertices(gridView))
+  {
+    bool isNeumann = pythonNeumannVertices(vertex.geometry().corner(0));
+    neumannVertices[indexSet.index(vertex)] = isNeumann;
+  }
+
+  BoundaryPatch<decltype(gridView)> neumannBoundary(gridView, neumannVertices);
 
   using namespace Dune::Functions::BasisFactory;
   auto basis = makeBasis(gridView, power<gridDim>(gridView.getPreBasis(), FlatInterleaved()));
@@ -94,8 +113,16 @@ int main(int argc, char** argv) {
     fext[0] = lamb;
     return fext;
   };
+
+  auto neumannBoundaryLoad = [](auto& globalCoord, auto& lamb) {
+    Eigen::Vector2d fext;
+    fext.setZero();
+    fext[1] = 0;
+    fext[0] = lamb;
+    return fext;
+  };
   for (auto& element : elements(gridView))
-    fes.emplace_back(basis, element, 1000, 0.3, volumeLoad);
+    fes.emplace_back(basis, element, 1000, 0.3, &neumannBoundary,neumannBoundaryLoad, volumeLoad);
 
   std::vector<bool> dirichletFlags(basis.size(), false);
 
