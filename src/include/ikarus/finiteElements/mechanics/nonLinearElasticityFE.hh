@@ -63,10 +63,10 @@ namespace Ikarus {
                           const VolumeLoad& p_volumeLoad)
         : BaseDisp(globalBasis, element),
           BaseAD(globalBasis, element),
-          neumannBoundary_{neumannBoundary},
-          neumannBoundaryLoad_{neumannBoundaryLoad},
           localView_{globalBasis.localView()},
           volumeLoad(p_volumeLoad),
+          neumannBoundaryLoad_{neumannBoundaryLoad},
+          neumannBoundary_{neumannBoundary},
           emod_{emod},
           nu_{nu} {
       localView_.bind(element);
@@ -136,7 +136,7 @@ namespace Ikarus {
           const auto u    = uFunction.evaluateFunction(quadPos);
 
           // Value of the Neumann data at the current position
-          auto neumannValue = neumannBoundaryLoad(intersection.geometry().global(curQuad.position()));
+          auto neumannValue = neumannBoundaryLoad_(toEigenVector(intersection.geometry().global(curQuad.position())),lambda);
 
           energy -= neumannValue.dot(u) * curQuad.weight() * integrationElement;
         }
