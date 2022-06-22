@@ -63,8 +63,6 @@ namespace Ikarus {
                           const VolumeLoad& p_volumeLoad)
         : BaseDisp(globalBasis, element),
           BaseAD(globalBasis, element),
-          neumannBoundary_{neumannBoundary},
-          neumannBoundaryLoad_{neumannBoundaryLoad},
           localView_{globalBasis.localView()},
           volumeLoad(p_volumeLoad),
           neumannBoundaryLoad_{neumannBoundaryLoad},
