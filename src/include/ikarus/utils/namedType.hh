@@ -1,6 +1,4 @@
-//
-// Created by lex on 15/03/2022.
-//
+
 
 #pragma once
 #include <memory>
