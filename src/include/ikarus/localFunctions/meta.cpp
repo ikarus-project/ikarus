@@ -17,8 +17,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-
-
 #include "meta.hh"
 namespace Ikarus::DerivativeDirections {
   SpatialPartial spatial(size_t i) { return {i}; }

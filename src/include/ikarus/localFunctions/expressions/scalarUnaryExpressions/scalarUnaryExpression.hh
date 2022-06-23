@@ -17,8 +17,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-
-
 #pragma once
 #include <ikarus/localFunctions/expressions/unaryExpr.hh>
 #include <ikarus/utils/linearAlgebraHelper.hh>
