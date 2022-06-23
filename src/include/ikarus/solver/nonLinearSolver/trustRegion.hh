@@ -17,8 +17,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-
-
 /*
  * This code is heavily inspired by the trust-region implementation of
  * https://github.com/NicolasBoumal/manopt/blob/master/manopt/solvers/trustregions/trustregions.m
