@@ -69,12 +69,16 @@ void testLocalFunction(const LF& lf) {
     /// Check spatial derivatives
     /// Check spatial derivatives return sizes
     {
-      const auto spatialAllDerivative = lf.evaluateDerivative(ipIndex, Ikarus::wrt(spatialAll));
-      static_assert(spatialAllDerivative.cols() == gridDim);
-      static_assert(spatialAllDerivative.rows() == localFunctionValueSize);
-      const auto spatialSingleDerivative = lf.evaluateDerivative(ipIndex, Ikarus::wrt(spatial(0)));
-      static_assert(spatialSingleDerivative.cols() == 1);
-      static_assert(spatialSingleDerivative.rows() == localFunctionValueSize);
+      if constexpr (requires {lf.evaluateDerivative(ipIndex, Ikarus::wrt(spatialAll));}) {
+        const auto spatialAllDerivative = lf.evaluateDerivative(ipIndex, Ikarus::wrt(spatialAll));
+        static_assert(spatialAllDerivative.cols() == gridDim);
+        static_assert(spatialAllDerivative.rows() == localFunctionValueSize);
+      }
+      if constexpr(requires { lf.evaluateDerivative(ipIndex, Ikarus::wrt(spatial(0)));}) {
+        const auto spatialSingleDerivative = lf.evaluateDerivative(ipIndex, Ikarus::wrt(spatial(0)));
+        static_assert(spatialSingleDerivative.cols() == 1);
+        static_assert(spatialSingleDerivative.rows() == localFunctionValueSize);
+      }
 
       /// Check if spatial derivatives are really derivatives
       /// Perturb in a random direction in the elements parameter space and check spatial derivative
