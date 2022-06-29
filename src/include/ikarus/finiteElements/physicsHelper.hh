@@ -37,6 +37,17 @@ namespace Ikarus {
     return EVoigt;
   }
 
+  auto planeStressLinearElasticMaterialTangent(double E, double nu)
+  {
+    Eigen::Matrix3d C;
+    C.setZero();
+    C(0, 0) = C(1, 1) = 1;
+    C(0, 1) = C(1, 0) = nu;
+    C(2, 2)  = (1 - nu) / 2;
+    C *= E / (1 - nu * nu);
+    return C;
+  }
+
   template <typename LocalView>
   struct TraitsFromLocalView {
     using GridEntity = typename LocalView::Element;
