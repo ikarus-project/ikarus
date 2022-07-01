@@ -21,7 +21,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v2
@@ -35,7 +35,7 @@ jobs:
          path: 'repo'
       - name: Install format dependencies
         run: |
-          sudo cp /usr/bin/clang-format-12 /usr/bin/clang-format
+          sudo cp /usr/bin/clang-format-13 /usr/bin/clang-format
           pip install cmake_format==0.6.13 pyyaml
 
       - name: configure
