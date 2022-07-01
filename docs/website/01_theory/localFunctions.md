@@ -39,7 +39,7 @@ auto rebindClone (ScalarType, Dune::index_constant<ID>); // (7)
 2. Return the order of the local function wrt. the coefficients. An id tag can be passed which returns the order wrt a tagged function. For details see [Tagging leaf local functions](#tagging-leaf-local-functions).
 3. Return the basis of the local function. An id tag can be passed which returns the basis of a specific tagged function. For details see [Tagging leaf local functions](#tagging-leaf-local-functions).
 4. Returns a reference to the coefficient of the underlying leaf local finite elements. An id tag can be passed which returns the basis of a specific tagged function. It can return const and non-const reference. The non-const version is deactivated, if there are more than one leaf node with the passed id tag.  For details see [Tagging leaf local functions](#tagging-leaf-local-functions).
-5. This function is passed through to the given `localBasis`. See [Link](LocalBasis.md)
+5. This function is passed through to the given `localBasis`. See [Link](localBasis.md)
 6. Clones the local function and stores a copy of all leave nodes.
 7. Clones the local function and rebinds the scalar type of the coefficients with id tag ID. This becomes hand, if you want to replace doubles with an autodiff type.
 
@@ -201,7 +201,7 @@ auto gradientDirichletEnergy(Eigen::VectorXd& g) {
     const auto gradu = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll), transformWith(Jinv)); 
     for (auto i : fe.size()) { //loop over coeffs, i.e.nodes of the finite element 
       const auto graduDCoeffs 
-          = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll, coeffs), transformWith(Jinv), coeffIndices(i)); 
+          = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i)), transformWith(Jinv)); 
       Eigen::Vector<double, size> tmp; 
       tmp.setZero(); 
       for (int k = 0; k < gridDimension; ++k) 
@@ -224,7 +224,7 @@ auto hessianDirichletEnergy(Matrix& h) {
     //.. calculate the inverse Jacobian of the geometry 
     for (auto i : loop over coeffs, i.e.nodes of the finite element) { 
       const auto graduDCoeffsI 
-          = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll, coeffs), transformWith(Jinv), coeffIndices(i)); 
+          = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i)), transformWith(Jinv)); 
       for (auto j : fe.size()) { //loop over coeffs, i.e.nodes of the finite element 
         const auto graduDCoeffsJ 
           = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll, coeffs), transformWith(Jinv), coeffIndices(j)); 
@@ -336,14 +336,16 @@ k.evaluateDerivative(ipIndex, wrt(coeff(i), spatial(d)));
 
 Currently, we support binary and unary expressions. The following expressions are defined:
 
-| Name       | Mathematical formula                                | Code                        | Note                                                                               |  
-|:-----------|:----------------------------------------------------|:----------------------------|:-----------------------------------------------------------------------------------| 
-| Sum        | $$ \boldsymbol{f} + \boldsymbol{g}  $$              | `#!cpp f+g`                 | $\boldsymbol{f}$  and  $\boldsymbol{g}$ need to be the same size.                  | 
-| DotProduct | $$ \boldsymbol{f} \cdot \boldsymbol{g} = f_i g_i $$ | `#!cpp dot(f,g)`            | $\boldsymbol{f}$  and  $\boldsymbol{g}$ need to be the same size.                  | 
-| normSquared           | $$ \boldsymbol{f} \cdot \boldsymbol{f} = f_i f_i $$ | `#!cpp normSquared(f)`            |                   | 
-| Negate     | $$ -\boldsymbol{f}  $$                              | `#!cpp -f`                  |                                                                                    | 
-| sqrt       | $$ \sqrt{f}  $$                                     | `#!cpp sqrt(f)`             | The function $f$ needs a scalar return type.                                       | 
-| Scale      | $$  a f , \quad a \in  \mathbf{R}$$                 | `#!cpp a*f` and `#!cpp f/a` | `#!cpp a` has to satisfy `#!cpp std::is_arithmetic<..>`                            | 
+| Name        | Mathematical formula                                | Code                        | Note                                                                                  |  
+|:------------|:----------------------------------------------------|:----------------------------|:--------------------------------------------------------------------------------------| 
+| Sum         | $$ \boldsymbol{f} + \boldsymbol{g}  $$              | `#!cpp f+g`                 | $\boldsymbol{f}$  and  $\boldsymbol{g}$ need to be the same size.                     | 
+| DotProduct  | $$ \boldsymbol{f} \cdot \boldsymbol{g} = f_i g_i $$ | `#!cpp dot(f,g)`            | $\boldsymbol{f}$  and  $\boldsymbol{g}$ need to be the same size.                     | 
+| normSquared | $$ \boldsymbol{f} \cdot \boldsymbol{f} = f_i f_i $$ | `#!cpp normSquared(f)`      |                                                                                       | 
+| Negate      | $$ -\boldsymbol{f}  $$                              | `#!cpp -f`                  |                                                                                       | 
+| sqrt        | $$ \sqrt{f}  $$                                     | `#!cpp sqrt(f)`             | The function $f$ needs a scalar return type.                                          | 
+| log         | $$ \log{f}  $$                                      | `#!log log(f)`              | The function $f$ needs a scalar return type. Log is the natural logarithm.            | 
+| pow         | $$ f^n  $$                                          | `#!cpp pow<n>(f)`           | The function $f$ needs a scalar return type. $n$ is an integer given at compile time. | 
+| Scale       | $$  a f , \quad a \in  \mathbf{R}$$                 | `#!cpp a*f` and `#!cpp f/a` | `#!cpp a` has to satisfy `#!cpp std::is_arithmetic<..>`                               | 
 
 These expressions can be nested. Thus, it is valid to write something like
 ```cpp 
@@ -363,7 +365,7 @@ constexpr bool children; // (2)
 2. Returns the number of childs 2 for binary expressions and 1 for unary expressions.
 
 !!! note
-To use these expression you can simply include the header by `#!cpp #include <ikarus/localFunctions/expressions.hh>`.
+    To use these expression you can simply include the header by `#!cpp #include <ikarus/localFunctions/expressions.hh>`.
 
 # Tagging leaf local functions
 In the context of mixed finite elements. There are usually several local functions that contribute to the energy. These steems from different local basis.
