@@ -1,6 +1,4 @@
-//
-// Created by Alex on 21.07.2021.
-//
+
 #include <config.h>
 
 #include <gmock/gmock.h>
