@@ -34,7 +34,7 @@ void draw(const GridView& gridView) {
   constexpr int edgeCodim = GridView::dimension - 1;
   for (auto&& element : elements(gridView)) {
     std::array<std::array<double, 2>, GridView::dimensionworld> edgeCoords{};
-    for (int edgeIndex = 0; edgeIndex < element.subEntities(edgeCodim); ++edgeIndex) {
+    for (size_t edgeIndex = 0; edgeIndex < element.subEntities(edgeCodim); ++edgeIndex) {
       auto edge = element.template subEntity<edgeCodim>(edgeIndex);
       for (int i = 0; i < 2; ++i) {
         const auto vertCoords = edge.geometry().corner(i);
