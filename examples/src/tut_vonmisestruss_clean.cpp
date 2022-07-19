@@ -49,8 +49,8 @@
 
 using namespace Ikarus;
 template <typename Basis>
-struct Truss : Ikarus::powerBasisFE<Basis>, Ikarus::AutoDiffFE<Truss<Basis>, Basis> {
-  using BaseDisp = Ikarus::powerBasisFE<Basis>;
+struct Truss : Ikarus::PowerBasisFE<Basis>, Ikarus::AutoDiffFE<Truss<Basis>, Basis> {
+  using BaseDisp = Ikarus::PowerBasisFE<Basis>;
   using BaseAD   = Ikarus::AutoDiffFE<Truss<Basis>, Basis>;
   using BaseAD::size;
   friend BaseAD;
