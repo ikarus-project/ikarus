@@ -19,6 +19,7 @@
  */
 
 #pragma once
+#include "src/include/ikarus/finiteElements/feBases/powerBasisFE.hh"
 #include "src/include/ikarus/finiteElements/feTraits.hh"
 
 #include <autodiff/forward/dual.hpp>
@@ -32,7 +33,6 @@
 
 #include <ikarus/finiteElements/feBases/autodiffFE.hh>
 #include <ikarus/finiteElements/feRequirements.hh>
-#include <ikarus/finiteElements/mechanics/displacementFE.hh>
 #include <ikarus/finiteElements/physicsHelper.hh>
 #include <ikarus/localBasis/localBasis.hh>
 #include <ikarus/localFunctions/impl/standardLocalFunction.hh>
@@ -43,13 +43,13 @@
 namespace Ikarus {
 
   template <typename Basis>
-  class NonLinearElasticityFE : public DisplacementFE<Basis>,
+  class NonLinearElasticityFE : public PowerBasisFE<Basis>,
                                 public Ikarus::AutoDiffFE<NonLinearElasticityFE<Basis>, Basis> {
   public:
-    using BaseDisp = DisplacementFE<Basis>;  // Handles globalIndices function
+    using BaseDisp = PowerBasisFE<Basis>;  // Handles globalIndices function
     using BaseAD   = AutoDiffFE<NonLinearElasticityFE<Basis>, Basis>;
     using BaseAD::size;
-    using GlobalIndex = typename DisplacementFE<Basis>::GlobalIndex;
+    using GlobalIndex = typename PowerBasisFE<Basis>::GlobalIndex;
     friend BaseAD;
     using FERequirementType = FErequirements<Eigen::VectorXd>;
     using LocalView         = typename Basis::LocalView;

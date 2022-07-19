@@ -19,6 +19,7 @@
 
 #include <config.h>
 
+#include "src/include/ikarus/finiteElements/feBases/powerBasisFE.hh"
 #include "src/include/ikarus/finiteElements/feTraits.hh"
 
 #include <autodiff/forward/dual/dual.hpp>
@@ -37,7 +38,6 @@
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/controlRoutines/loadControl.hh>
 #include <ikarus/finiteElements/feBases/autodiffFE.hh>
-#include <ikarus/finiteElements/mechanics/displacementFE.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/linearSolver/linearSolver.hh>
 #include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
@@ -49,8 +49,8 @@
 
 using namespace Ikarus;
 template <typename Basis>
-struct Truss : Ikarus::DisplacementFE<Basis>, Ikarus::AutoDiffFE<Truss<Basis>, Basis> {
-  using BaseDisp = Ikarus::DisplacementFE<Basis>;
+struct Truss : Ikarus::PowerBasisFE<Basis>, Ikarus::AutoDiffFE<Truss<Basis>, Basis> {
+  using BaseDisp = Ikarus::PowerBasisFE<Basis>;
   using BaseAD   = Ikarus::AutoDiffFE<Truss<Basis>, Basis>;
   using BaseAD::size;
   friend BaseAD;
