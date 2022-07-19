@@ -22,6 +22,12 @@
 #include "src/include/ikarus/finiteElements/feTraits.hh"
 
 namespace Ikarus {
+
+  /**
+   * scalarFE.hh includes a class which takes in a scalar basis and arranges
+   * the indices one after the other
+   * Single-DOF elements can be inherited from this class which uses a scalar basis
+   */
   template <typename Basis>
   class ScalarFieldFE {
   public:
