@@ -43,13 +43,13 @@
 namespace Ikarus {
 
   template <typename Basis>
-  class NonLinearElasticityFE : public powerBasisFE<Basis>,
+  class NonLinearElasticityFE : public PowerBasisFE<Basis>,
                                 public Ikarus::AutoDiffFE<NonLinearElasticityFE<Basis>, Basis> {
   public:
-    using BaseDisp = powerBasisFE<Basis>;  // Handles globalIndices function
+    using BaseDisp = PowerBasisFE<Basis>;  // Handles globalIndices function
     using BaseAD   = AutoDiffFE<NonLinearElasticityFE<Basis>, Basis>;
     using BaseAD::size;
-    using GlobalIndex = typename powerBasisFE<Basis>::GlobalIndex;
+    using GlobalIndex = typename PowerBasisFE<Basis>::GlobalIndex;
     friend BaseAD;
     using FERequirementType = FErequirements<Eigen::VectorXd>;
     using LocalView         = typename Basis::LocalView;
