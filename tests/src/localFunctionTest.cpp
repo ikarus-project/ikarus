@@ -31,8 +31,46 @@
 #include <ikarus/manifolds/realTuple.hh>
 #include <ikarus/manifolds/unitVector.hh>
 #include <ikarus/utils/functionSanityChecks.hh>
+#include <dune/localfunctions/lagrange/pqkfactory.hh>
 
+#include "valueFactory.hh"
+#include <ikarus/utils/multiIndex.hh>
 using namespace Dune::Functions::BasisFactory;
+
+TEST(valueFactoryTest,valueFactoryTest2)
+{
+  //Input
+  constexpr int domainDim = 1;
+  using Manifold = Ikarus::RealTuple<double,2>;
+  Dune::GeometryType geometryType= Dune::GeometryTypes::line ;
+
+  Dune::BlockVector<Manifold> testNodalPoints;
+  const size_t nNodes = Dune::ReferenceElements<double,domainDim>::general(geometryType).size(domainDim);
+  Ikarus::ValueFactory<Manifold>::construct(testNodalPoints);
+
+  using FECache=   Dune::PQkLocalFiniteElementCache<double,double,domainDim,1>;
+  FECache feCache;
+
+  const size_t nTestPoints = testNodalPoints.size();
+
+  Ikarus::MultiIndex index(nNodes, nTestPoints);
+
+  Dune::BlockVector<Manifold> coeffs(nNodes);
+  for (size_t i=0; i<index.cycles(); i++, ++index) {
+
+    for (size_t j=0; j<nNodes; j++)
+      coeffs[j] = testNodalPoints[index[j]];
+
+    auto localBasis  = Ikarus::LocalBasis(feCache.get(geometryType).localBasis());
+    auto localF = Ikarus::ProjectionBasedLocalFunction(localBasis, coeffs);
+
+
+//    testLocalF...
+    ++index;
+  }
+}
+
+
 
 template <typename T>
 class LocalFunctionProjectionBasedUnitVector : public testing::Test {
