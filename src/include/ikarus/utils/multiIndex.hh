@@ -48,7 +48,7 @@ namespace Ikarus {
     /** \brief Compute how many times you can call operator++ before getting to (0,...,0) again */
     size_t cycles() const {
       size_t result = 1;
-      for (size_t i=0; i<this->size(); i++)
+      for (size_t i=0; i<this->size(); ++i)
         result *= rangeOfEachComponent_;
       return result;
     }

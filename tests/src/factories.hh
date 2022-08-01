@@ -13,9 +13,9 @@ namespace Ikarus {
     using TargetSpace = Manifold;
 
   public:
-    static void construct(Dune::BlockVector<TargetSpace >& values) {
-      const int  testPointsSize=10;
-      std::ranges::generate_n(values.begin(),testPointsSize,[](){return TargetSpace(TargetSpace::CoordinateType::Random() );});
+    static void construct(Dune::BlockVector<TargetSpace >& values, const int testPointsSize=10) {
+      values.resize(testPointsSize);
+      std::ranges::generate(values,[](){return TargetSpace(TargetSpace::CoordinateType::Random() );});
     }
   };
 }  // namespace Ikarus

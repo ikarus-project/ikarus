@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "common.hh"
+#include "factories.hh"
 #include "testHelpers.hh"
 
 #include <array>
@@ -31,6 +32,7 @@
 #include <ikarus/manifolds/realTuple.hh>
 #include <ikarus/manifolds/unitVector.hh>
 #include <ikarus/utils/functionSanityChecks.hh>
+#include <ikarus/utils/multiIndex.hh>
 
 using namespace Dune::Functions::BasisFactory;
 
@@ -38,7 +40,7 @@ template <typename LF, bool isCopy = false>
 void testLocalFunction(const LF& lf) {
   spdlog::info("Testing: " + std::string(isCopy ? "Copy " : "") + Ikarus::localFunctionName(lf));
 
-  const double tol = 1e-13;
+  const double tol = 1e-12;
   using namespace Ikarus::DerivativeDirections;
   using namespace autodiff;
   using namespace Ikarus;
@@ -68,14 +70,15 @@ void testLocalFunction(const LF& lf) {
       auto func = [&](auto& gpOffset_) { return lf.evaluateFunction(toFieldVector(gpOffset_)); };
       auto spatialDerivAll
           = [&](auto& gpOffset_) { return lf.evaluateDerivative(toFieldVector(gpOffset_), Ikarus::wrt(spatialAll)); };
+
       auto derivDerivSingle = [&](auto gpOffset_, int spatialIndex) {
         return lf.evaluateDerivative(toFieldVector(gpOffset_), Ikarus::wrt(spatial(spatialIndex)));
       };
-      Eigen::Vector<double, gridDim> ipOffset = (Eigen::Vector<double, gridDim>::Random()).normalized();
+      Eigen::Vector<double, gridDim> ipOffset = (Eigen::Vector<double, gridDim>::Random()).normalized() / 2;
       auto nonLinOpSpatialAll
           = Ikarus::NonLinearOperator(linearAlgebraFunctions(func, spatialDerivAll), parameter(ipOffset));
       EXPECT_TRUE((checkJacobian<decltype(nonLinOpSpatialAll), Eigen::Vector<double, gridDim>>(
-          nonLinOpSpatialAll, {.draw = false, .writeSlopeStatement = false, .tolerance = 1e-2})));
+          nonLinOpSpatialAll, {.draw = false, .writeSlopeStatement = true, .tolerance = 1e-2})));
 
       /// Perturb each spatial direction and check with derivative value
       for (int i = 0; i < gridDim; ++i) {
@@ -95,7 +98,7 @@ void testLocalFunction(const LF& lf) {
         auto nonLinOpSpatialSingle = Ikarus::NonLinearOperator(linearAlgebraFunctions(funcSingle, derivDerivSingleI),
                                                                parameter(ipOffsetSingle));
         EXPECT_TRUE((checkJacobian<decltype(nonLinOpSpatialSingle), Eigen::Vector<double, 1>>(
-            nonLinOpSpatialSingle, {.draw = false, .writeSlopeStatement = false, .tolerance = 1e-2})));
+            nonLinOpSpatialSingle, {.draw = false, .writeSlopeStatement = true, .tolerance = 1e-2})));
       }
     }
 
@@ -194,8 +197,6 @@ void testLocalFunction(const LF& lf) {
 
       Eigen::Matrix<double, 1, coeffCorrectionSize> jacoWrtSpatialAllAndCoeffProd;
       jacoWrtSpatialAllAndCoeffProd.setZero();
-      //    std::cout<<"alongMat"<<std::endl;
-      //    std::cout<<alongMat<<std::endl;
 
       for (int d = 0; d < gridDim; ++d)
         jacoWrtSpatialAllAndCoeffProd += (alongMat.col(d).transpose() * jacoWrtSpatialAllAndCoeff[d]).eval();
@@ -260,62 +261,71 @@ void testLocalFunction(const LF& lf) {
   }
 }
 
-TEST(LocalFunctionTests, TestExpressions) {
-  constexpr int sizeD = 3;
-  using Manifold      = Ikarus::RealTuple<double, sizeD>;
-  using Manifold2     = Ikarus::UnitVector<double, sizeD>;
-  using VectorType    = Eigen::Vector<double, sizeD>;
-  using MatrixType    = Eigen::Matrix<double, sizeD, sizeD>;
-  constexpr int size  = Manifold::valueSize;
+template <int domainDim, int worldDim, int order>
+void testLFPreProcess(const Dune::GeometryType& geometryType,size_t nNodalTestPointsI = 6) {
   using namespace Ikarus;
   using namespace Dune::Indices;
-  auto grid             = createGrid<Grids::Yasp>(2, 1);
-  constexpr int gridDim = std::remove_reference_t<decltype(*grid)>::dimension;
+  using Manifold     = Ikarus::RealTuple<double, worldDim>;
+  using Manifold2    = Ikarus::UnitVector<double, worldDim>;
+  using VectorType   = Eigen::Vector<double, worldDim>;
+  using MatrixType   = Eigen::Matrix<double, worldDim, worldDim>;
+  constexpr int size = Manifold::valueSize;
+  Dune::BlockVector<Manifold> testNodalPoints;
+  using FECache = Dune::PQkLocalFiniteElementCache<double, double, domainDim, order>;
+  FECache feCache;
+  const auto& fe      = feCache.get(geometryType);
+  auto localBasis     = Ikarus::LocalBasis(fe.localBasis());
+  const size_t nNodes = fe.size();
+  Dune::BlockVector<Manifold> testNodalPoints1;
+  const int nNodalTestPoints = std::max(nNodalTestPointsI,nNodes);
+  Ikarus::ValueFactory<Manifold>::construct(testNodalPoints1, nNodalTestPoints);
 
-  auto gridView        = grid->leafGridView();
-  const auto& indexSet = gridView.indexSet();
-  auto basis           = makeBasis(gridView, lagrange<2>());
-  Dune::BlockVector<Manifold> vBlocked(basis.size());
-  Dune::BlockVector<Manifold> vBlocked2(basis.size());
-  Dune::BlockVector<Manifold2> vBlocked3(basis.size());
-  for (auto& vsingle : vBlocked)
-    vsingle.setValue(0.1 * Eigen::Vector<double, size>::Random() + Eigen::Vector<double, size>::UnitX());
+  Dune::BlockVector<Manifold2> testNodalPoints2;
+  Ikarus::ValueFactory<Manifold2>::construct(testNodalPoints2, nNodalTestPoints);
 
-  for (auto& vsingle : vBlocked2)
-    vsingle.setValue(0.5 * Eigen::Vector<double, size>::Random() + 7 * Eigen::Vector<double, size>::UnitX());
+  Ikarus::MultiIndex multIndex(nNodes, nNodalTestPoints);
+  Dune::BlockVector<Manifold> vBlockedLocal(nNodes);
+  Dune::BlockVector<Manifold> vBlockedLocal2(nNodes);
+  Dune::BlockVector<Manifold2> vBlockedLocal3(nNodes);
 
-  for (auto& vsingle : vBlocked3)
-    vsingle.setValue(0.25 * Eigen::Vector<double, size>::Random() + 37 * Eigen::Vector<double, size>::UnitX());
+  const auto& rule = Dune::QuadratureRules<double, domainDim>::rule(fe.type(), 3);
+  localBasis.bind(rule, bindDerivatives(0, 1));
 
-  auto localView = basis.localView();
-  for (auto& ele : elements(gridView)) {
-    std::cout << "Test on Element: " << indexSet.index(ele) << std::endl;
-    std::cout << "==============================" << std::endl;
-    localView.bind(ele);
-    const auto& fe   = localView.tree().finiteElement();
-    auto localBasis  = Ikarus::LocalBasis(localView.tree().finiteElement().localBasis());
-    const auto& rule = Dune::QuadratureRules<double, 2>::rule(localView.element().type(), 3);
-    localBasis.bind(rule, bindDerivatives(0, 1));
-    Dune::BlockVector<Manifold> vBlockedLocal(fe.size());
-    Dune::BlockVector<Manifold> vBlockedLocal2(fe.size());
-    Dune::BlockVector<Manifold2> vBlockedLocal3(fe.size());
-
-    for (size_t i = 0; i < fe.size(); ++i) {
-      auto globalIndex  = localView.index(localView.tree().localIndex(i));
-      vBlockedLocal[i]  = vBlocked[globalIndex[0]];
-      vBlockedLocal2[i] = vBlocked2[globalIndex[0]];
-      vBlockedLocal3[i] = vBlocked3[globalIndex[0]];
+  for (size_t i = 0; i < multIndex.cycles(); ++i, ++multIndex) {
+    auto sortedMultiIndex = multIndex;
+    std::ranges::sort(sortedMultiIndex);
+    if (std::ranges::adjacent_find(sortedMultiIndex)
+        != sortedMultiIndex.end())  // skip multiIndices with duplicates. Since otherwise duplicate points are
+                                    // interpolated the jacobian is ill-defined
+      continue;
+    std::cout << "Test on NodalSet: " << std::endl;
+    for (size_t j = 0; j < multIndex.size(); ++j) {
+      std::cout << multIndex[j] << " ";
     }
+
+    for (size_t j = 0; j < fe.size(); ++j) {
+      vBlockedLocal[j]  = testNodalPoints1[multIndex[j]];
+      vBlockedLocal2[j] = testNodalPoints1[multIndex[j]];
+      vBlockedLocal3[j] = testNodalPoints2[multIndex[j]];
+    }
+
+    std::cout << std::endl;
+    std::cout << "==============================" << std::endl;
+    std::cout << vBlockedLocal << std::endl;
+    std::cout << vBlockedLocal2 << std::endl;
+    std::cout << vBlockedLocal3 << std::endl;
+    std::cout << testNodalPoints1 << std::endl;
+    std::cout << testNodalPoints2 << std::endl;
 
     auto f = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal);
     {
-      auto localBasisNotBound = Ikarus::LocalBasis(localView.tree().finiteElement().localBasis());
+      auto localBasisNotBound = Ikarus::LocalBasis(fe.localBasis());
       auto fNotBound          = Ikarus::StandardLocalFunction(localBasisNotBound, vBlockedLocal);
       auto h                  = f + fNotBound;
       EXPECT_DEBUG_DEATH(h.viewOverIntegrationPoints(), "The basis of the leaf nodes are not in the same state.");
 
-      const auto& ruleHigher                 = Dune::QuadratureRules<double, 2>::rule(localView.element().type(), 7);
-      auto localBasisBoundButToDifferentRule = Ikarus::LocalBasis(localView.tree().finiteElement().localBasis());
+      const auto& ruleHigher                 = Dune::QuadratureRules<double, domainDim>::rule(fe.type(), 7);
+      auto localBasisBoundButToDifferentRule = Ikarus::LocalBasis(fe.localBasis());
       localBasisBoundButToDifferentRule.bind(ruleHigher, bindDerivatives(0, 1));
       auto fBoundButHigher = Ikarus::StandardLocalFunction(localBasisBoundButToDifferentRule, vBlockedLocal);
       auto h2              = f + fBoundButHigher;
@@ -343,25 +353,18 @@ TEST(LocalFunctionTests, TestExpressions) {
     static_assert(std::tuple_size_v<decltype(a)> == 2);
 
     static_assert(countNonArithmeticLeafNodes(h) == 2);
-    static_assert(std::is_same_v<decltype(h)::Ids, std::tuple<Dune::index_constant<0>, Dune::index_constant<0>>>);
+    static_assert(
+        std::is_same_v<typename decltype(h)::Ids, std::tuple<Dune::index_constant<0>, Dune::index_constant<0>>>);
 
-    for (size_t i = 0; i < fe.size(); ++i) {
-      EXPECT_TRUE(h.coefficientsRef(_0)[i] == vBlockedLocal[i]);
-      EXPECT_TRUE(h.coefficientsRef(_1)[i] == vBlockedLocal[i]);
+    for (size_t k = 0; k < fe.size(); ++k) {
+      EXPECT_TRUE(h.coefficientsRef(_0)[k] == vBlockedLocal[k]);
+      EXPECT_TRUE(h.coefficientsRef(_1)[k] == vBlockedLocal[k]);
     }
     testLocalFunction(f);
     testLocalFunction(ft2);
     testLocalFunction(f23);
     testLocalFunction(mf);
     testLocalFunction(h);
-    for (int gpIndex = 0; auto& gp : rule) {
-      //      testLocalFunction(gP, gpIndex);
-
-      EXPECT_THAT(f.evaluateFunction(gpIndex) + g.evaluateFunction(gpIndex),
-                  EigenApproxEqual(h.evaluateFunction(gpIndex), 1e-15));
-
-      ++gpIndex;
-    }
 
     auto k = -dot(f + f, 3.0 * (g / 5.0) * 5.0);
     //    auto k = -dot(f + f, g);
@@ -369,11 +372,7 @@ TEST(LocalFunctionTests, TestExpressions) {
     auto b = collectNonArithmeticLeafNodes(k);
     static_assert(std::tuple_size_v<decltype(b)> == 3);
 
-    //    std::cout<<Dune::className(a)<<std::endl;
-    //    std::cout << Dune::className(b) << std::endl;
     static_assert(countNonArithmeticLeafNodes(k) == 3);
-    //    static_assert(std::is_same_v<decltype(k)::Ids, std::tuple<Dune::index_constant<0>, Dune::index_constant<0>,
-    //                                                              Ikarus::Arithmetic, Dune::index_constant<0>>>);
 
     const double tol = 1e-13;
 
@@ -386,7 +385,8 @@ TEST(LocalFunctionTests, TestExpressions) {
 
     static_assert(countNonArithmeticLeafNodes(dotff) == 2);
     static_assert(dotff.order() == quadratic);
-    static_assert(std::is_same_v<decltype(dotff)::Ids, std::tuple<Dune::index_constant<0>, Dune::index_constant<0>>>);
+    static_assert(
+        std::is_same_v<typename decltype(dotff)::Ids, std::tuple<Dune::index_constant<0>, Dune::index_constant<0>>>);
 
     testLocalFunction(dotff);
     testLocalFunction(sqrtdotff);
@@ -394,12 +394,6 @@ TEST(LocalFunctionTests, TestExpressions) {
     testLocalFunction(normSq);
     testLocalFunction(logg);
     testLocalFunction(powf);
-    for (int gpIndex = 0; auto& gp : rule) {
-      EXPECT_DOUBLE_EQ((-2 * 3) * f.evaluateFunction(gpIndex).dot(g.evaluateFunction(gpIndex)),
-                       k.evaluateFunction(gpIndex)[0]);
-
-      ++gpIndex;
-    }
 
     auto f2 = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal, _0);
     auto g2 = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal2, _1);
@@ -409,7 +403,7 @@ TEST(LocalFunctionTests, TestExpressions) {
     auto k2 = dot(f2 + g2, g2);
     static_assert(countNonArithmeticLeafNodes(k2) == 3);
     static_assert(
-        std::is_same_v<decltype(k2)::Ids,
+        std::is_same_v<typename decltype(k2)::Ids,
                        std::tuple<Dune::index_constant<0>, Dune::index_constant<1>, Dune::index_constant<1>>>);
 
     auto b2 = collectNonArithmeticLeafNodes(k2);
@@ -437,33 +431,33 @@ TEST(LocalFunctionTests, TestExpressions) {
              + (f2.evaluateFunction(gpIndex) + g2.evaluateFunction(gpIndex)).transpose()
                    * g2.evaluateDerivative(gpIndex, wrt(spatialAll)))
                 .eval();
-      static_assert(resSpatialAll.cols() == 2);
+      static_assert(resSpatialAll.cols() == domainDim);
       static_assert(resSpatialAll.rows() == 1);
 
       EXPECT_THAT(resSpatialAll, EigenApproxEqual(k2.evaluateDerivative(gpIndex, wrt(spatialAll)), tol));
 
-      for (size_t i = 0; i < fe.size(); ++i) {
-        const VectorType dfdi = g2.evaluateFunction(gpIndex) * N[i];
+      for (size_t iC = 0; iC < fe.size(); ++iC) {
+        const VectorType dfdi = g2.evaluateFunction(gpIndex) * N[iC];
 
-        const VectorType dkdi = k2.evaluateDerivative(gpIndex, wrt(coeff(_0, i)));
+        const VectorType dkdi = k2.evaluateDerivative(gpIndex, wrt(coeff(_0, iC)));
 
         EXPECT_THAT(dfdi, EigenApproxEqual(dkdi, tol));
 
-        for (size_t j = 0; j < fe.size(); ++j) {
-          const MatrixType dkdij         = k2.evaluateDerivative(gpIndex, wrt(coeff(_0, i, _1, j)));
-          const MatrixType dkdijExpected = N[j] * N[i] * MatrixType::Identity();
+        for (size_t jC = 0; jC < fe.size(); ++jC) {
+          const MatrixType dkdij         = k2.evaluateDerivative(gpIndex, wrt(coeff(_0, iC, _1, jC)));
+          const MatrixType dkdijExpected = N[jC] * N[iC] * MatrixType::Identity();
           EXPECT_THAT(dkdijExpected, EigenApproxEqual(dkdij, tol));
 
-          const MatrixType dkdij2         = k2.evaluateDerivative(gpIndex, wrt(coeff(_0, i, _0, j)));
+          const MatrixType dkdij2         = k2.evaluateDerivative(gpIndex, wrt(coeff(_0, iC, _0, jC)));
           const MatrixType dkdijExpected2 = MatrixType::Zero();
           EXPECT_THAT(dkdijExpected2, EigenApproxEqual(dkdij2, tol));
-          const MatrixType dkdij3         = k2.evaluateDerivative(gpIndex, wrt(coeff(_1, i, _1, j)));
-          const MatrixType dkdijExpected3 = 2 * N[i] * N[j] * MatrixType::Identity();
+          const MatrixType dkdij3         = k2.evaluateDerivative(gpIndex, wrt(coeff(_1, iC, _1, jC)));
+          const MatrixType dkdijExpected3 = 2 * N[iC] * N[jC] * MatrixType::Identity();
           EXPECT_THAT(dkdijExpected3, EigenApproxEqual(dkdij3, tol));
 
-          const MatrixType dkdSij         = k2.evaluateDerivative(gpIndex, wrt(spatial(0), coeff(_0, i, _1, j)));
-          const MatrixType dkdSijR        = k2.evaluateDerivative(gpIndex, wrt(coeff(_0, i, _1, j), spatial(0)));
-          const MatrixType dkdSijExpected = (dN(j, 0) * N[i] + N[j] * dN(i, 0)) * MatrixType::Identity();
+          const MatrixType dkdSij         = k2.evaluateDerivative(gpIndex, wrt(spatial(0), coeff(_0, iC, _1, jC)));
+          const MatrixType dkdSijR        = k2.evaluateDerivative(gpIndex, wrt(coeff(_0, iC, _1, jC), spatial(0)));
+          const MatrixType dkdSijExpected = (dN(jC, 0) * N[iC] + N[jC] * dN(iC, 0)) * MatrixType::Identity();
           EXPECT_THAT(dkdSijR, EigenApproxEqual(dkdSij, tol));
           EXPECT_THAT(dkdSijExpected, EigenApproxEqual(dkdSij, tol));
         }
@@ -473,4 +467,38 @@ TEST(LocalFunctionTests, TestExpressions) {
   }
 }
 
-using namespace Dune::Functions::BasisFactory;
+TEST(LocalFunctionTests, TestExpressions) {
+  testLFPreProcess<1, 1, 1>(Dune::GeometryTypes::line);  // line with linear ansatz functions and 1d lf
+  testLFPreProcess<1, 2, 1>(Dune::GeometryTypes::line);  // line with linear ansatz functions and 2d lf
+  testLFPreProcess<1, 3, 1>(Dune::GeometryTypes::line);  // line with linear ansatz functions and 3d lf
+  testLFPreProcess<1, 1, 2>(Dune::GeometryTypes::line);  // line with quadratic ansatz functions and 1d lf
+  testLFPreProcess<1, 2, 2>(Dune::GeometryTypes::line);  // line with quadratic ansatz functions and 2d lf
+  testLFPreProcess<1, 3, 2>(Dune::GeometryTypes::line);  // line with quadratic ansatz functions and 3d lf
+
+  testLFPreProcess<2, 1, 1>(Dune::GeometryTypes::triangle);  // triangle with linear ansatz functions and 1d lf
+  testLFPreProcess<2, 2, 1>(Dune::GeometryTypes::triangle);  // triangle with linear ansatz functions and 2d lf
+  testLFPreProcess<2, 3, 1>(Dune::GeometryTypes::triangle);  // triangle with linear ansatz functions and 3d lf
+  testLFPreProcess<2, 1, 2>(Dune::GeometryTypes::triangle);  // triangle with quadratic ansatz functions and 1d lf
+  testLFPreProcess<2, 2, 2>(Dune::GeometryTypes::triangle);  // triangle with quadratic ansatz functions and 2d lf
+  testLFPreProcess<2, 3, 2>(Dune::GeometryTypes::triangle);  // triangle with quadratic ansatz functions and 3d lf
+
+  testLFPreProcess<2, 1, 1>(
+      Dune::GeometryTypes::quadrilateral);  // quadrilateral with linear ansatz functions and 1d lf
+  testLFPreProcess<2, 2, 1>(
+      Dune::GeometryTypes::quadrilateral);  // quadrilateral with linear ansatz functions and 2d lf
+  testLFPreProcess<2, 3, 1>(
+      Dune::GeometryTypes::quadrilateral);  // quadrilateral with linear ansatz functions and 3d lf
+  testLFPreProcess<2, 1, 2>(
+      Dune::GeometryTypes::quadrilateral);  // quadrilateral with quadratic ansatz functions and 1d lf
+  testLFPreProcess<2, 2, 2>(
+      Dune::GeometryTypes::quadrilateral);  // quadrilateral with quadratic ansatz functions and 2d lf
+  testLFPreProcess<2, 3, 2>(
+      Dune::GeometryTypes::quadrilateral);  // quadrilateral with quadratic ansatz functions and 3d lf
+
+  testLFPreProcess<3, 1, 1>(Dune::GeometryTypes::hexahedron);  // hexahedron with linear ansatz functions and 1d lf
+  testLFPreProcess<3, 2, 1>(Dune::GeometryTypes::hexahedron);  // hexahedron with linear ansatz functions and 2d lf
+  testLFPreProcess<3, 3, 1>(Dune::GeometryTypes::hexahedron);  // hexahedron with linear ansatz functions and 3d lf
+  testLFPreProcess<3, 1, 2>(Dune::GeometryTypes::hexahedron);  // hexahedron with quadratic ansatz functions and 1d lf
+  testLFPreProcess<3, 2, 2>(Dune::GeometryTypes::hexahedron);  // hexahedron with quadratic ansatz functions and 2d lf
+  testLFPreProcess<3, 3, 2>(Dune::GeometryTypes::hexahedron);  // hexahedron with quadratic ansatz functions and 3d lf
+}
