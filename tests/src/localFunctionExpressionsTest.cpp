@@ -78,7 +78,7 @@ void testLocalFunction(const LF& lf) {
       auto nonLinOpSpatialAll
           = Ikarus::NonLinearOperator(linearAlgebraFunctions(func, spatialDerivAll), parameter(ipOffset));
       EXPECT_TRUE((checkJacobian<decltype(nonLinOpSpatialAll), Eigen::Vector<double, gridDim>>(
-          nonLinOpSpatialAll, {.draw = false, .writeSlopeStatement = true, .tolerance = 1e-2})));
+          nonLinOpSpatialAll, {.draw = false, .writeSlopeStatement = false, .tolerance = 1e-2})));
 
       /// Perturb each spatial direction and check with derivative value
       for (int i = 0; i < gridDim; ++i) {
@@ -98,7 +98,7 @@ void testLocalFunction(const LF& lf) {
         auto nonLinOpSpatialSingle = Ikarus::NonLinearOperator(linearAlgebraFunctions(funcSingle, derivDerivSingleI),
                                                                parameter(ipOffsetSingle));
         EXPECT_TRUE((checkJacobian<decltype(nonLinOpSpatialSingle), Eigen::Vector<double, 1>>(
-            nonLinOpSpatialSingle, {.draw = false, .writeSlopeStatement = true, .tolerance = 1e-2})));
+            nonLinOpSpatialSingle, {.draw = false, .writeSlopeStatement = false, .tolerance = 1e-2})));
       }
     }
 
@@ -298,24 +298,12 @@ void localFunctionTestConstructor(const Dune::GeometryType& geometryType, size_t
         != sortedMultiIndex.end())  // skip multiIndices with duplicates. Since otherwise duplicate points are
                                     // interpolated the jacobian is ill-defined
       continue;
-    std::cout << "Test on NodalSet: " << std::endl;
-    for (size_t j = 0; j < multIndex.size(); ++j) {
-      std::cout << multIndex[j] << " ";
-    }
 
     for (size_t j = 0; j < fe.size(); ++j) {
       vBlockedLocal[j]  = testNodalPoints1[multIndex[j]];
       vBlockedLocal2[j] = testNodalPoints1[multIndex[j]];
       vBlockedLocal3[j] = testNodalPoints2[multIndex[j]];
     }
-
-    std::cout << std::endl;
-    std::cout << "==============================" << std::endl;
-    std::cout << vBlockedLocal << std::endl;
-    std::cout << vBlockedLocal2 << std::endl;
-    std::cout << vBlockedLocal3 << std::endl;
-    std::cout << testNodalPoints1 << std::endl;
-    std::cout << testNodalPoints2 << std::endl;
 
     auto f = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal);
     {
