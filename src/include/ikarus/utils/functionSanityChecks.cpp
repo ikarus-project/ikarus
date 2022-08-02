@@ -65,9 +65,10 @@ namespace Ikarus {
       title(functionName + "check");
       f->show();
     }
-    std::cout<<"yE.norm(): "<<yE.norm()<<std::endl;
-    if (yE.lpNorm<Eigen::Infinity>() <1e-10)
-      return std::numeric_limits<double>::infinity(); //If the error is zero everywhere the function is linear for this case we return infinity
+    std::cout << "yE.norm(): " << yE.norm() << std::endl;
+    if (yE.lpNorm<Eigen::Infinity>() < 1e-10)
+      return std::numeric_limits<double>::infinity();  // If the error is zero everywhere the function is linear for
+                                                       // this case we return infinity
     return poly.coefficients()[1];
   }
 

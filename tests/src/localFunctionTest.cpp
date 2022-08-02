@@ -36,17 +36,16 @@
 #include <ikarus/utils/multiIndex.hh>
 using namespace Dune::Functions::BasisFactory;
 
-TEST(valueFactoryTest,valueFactoryTest2)
-{
-  //Input
-  constexpr int domainDim = 1;
-  using Manifold = Ikarus::RealTuple<double,2>;
-  Dune::GeometryType geometryType= Dune::GeometryTypes::line ;
+TEST(valueFactoryTest, valueFactoryTest2) {
+  // Input
+  constexpr int domainDim         = 1;
+  using Manifold                  = Ikarus::RealTuple<double, 2>;
+  Dune::GeometryType geometryType = Dune::GeometryTypes::line;
 
   Dune::BlockVector<Manifold> testNodalPoints;
-  using FECache=   Dune::PQkLocalFiniteElementCache<double,double,domainDim,1>;
+  using FECache = Dune::PQkLocalFiniteElementCache<double, double, domainDim, 1>;
   FECache feCache;
-  auto localBasis  = Ikarus::LocalBasis(feCache.get(geometryType).localBasis());
+  auto localBasis     = Ikarus::LocalBasis(feCache.get(geometryType).localBasis());
   const size_t nNodes = localBasis.size();
 
   Ikarus::ValueFactory<Manifold>::construct(testNodalPoints);
@@ -54,19 +53,15 @@ TEST(valueFactoryTest,valueFactoryTest2)
 
   Ikarus::MultiIndex index(nNodes, nTestPoints);
   Dune::BlockVector<Manifold> coeffs(nNodes);
-  for (size_t i=0; i<index.cycles(); i++, ++index) {
-    for (size_t j=0; j<nNodes; j++)
+  for (size_t i = 0; i < index.cycles(); i++, ++index) {
+    for (size_t j = 0; j < nNodes; j++)
       coeffs[j] = testNodalPoints[index[j]];
-
 
     auto localF = Ikarus::ProjectionBasedLocalFunction(localBasis, coeffs);
 
-
-//    testLocalF...
+    //    testLocalF...
   }
 }
-
-
 
 template <typename T>
 class LocalFunctionProjectionBasedUnitVector : public testing::Test {

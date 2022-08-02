@@ -8,14 +8,13 @@
 
 namespace Ikarus {
   template <typename Manifold>
-  class ValueFactory
-  {
+  class ValueFactory {
     using TargetSpace = Manifold;
 
   public:
-    static void construct(Dune::BlockVector<TargetSpace >& values, const int testPointsSize=10) {
+    static void construct(Dune::BlockVector<TargetSpace>& values, const int testPointsSize = 10) {
       values.resize(testPointsSize);
-      std::ranges::generate(values,[](){return TargetSpace(TargetSpace::CoordinateType::Random() );});
+      std::ranges::generate(values, []() { return TargetSpace(TargetSpace::CoordinateType::Random()); });
     }
   };
 }  // namespace Ikarus
