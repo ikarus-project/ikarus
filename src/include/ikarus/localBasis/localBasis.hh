@@ -55,6 +55,7 @@ namespace Ikarus {
     LocalBasis() = default;
 
     static constexpr int gridDim = DuneLocalBasis::Traits::dimDomain;
+    static_assert(gridDim<=3, "This local Basis only works for grids with dimensions<=3");
     using DomainType             = typename DuneLocalBasis::Traits::DomainType;
 
     using DomainFieldType = typename DuneLocalBasis::Traits::DomainFieldType;
@@ -71,13 +72,20 @@ namespace Ikarus {
     template <typename Derived>
     void evaluateJacobian(const DomainType& local, Eigen::PlainObjectBase<Derived>& dN) const;
 
+    /* Evaluates the ansatz functions second derivatives into the given Eigen Matrix ddN */
+    template <typename Derived>
+    void evaluateSecondDerivatives(const DomainType& local, Eigen::PlainObjectBase<Derived>& ddN) const;
+
     /* Evaluates the ansatz functions and derivatives into the given Eigen Vector/Matrix N,dN */
     template <typename Derived1, typename Derived2>
     void evaluateFunctionAndJacobian(const DomainType& local, Eigen::PlainObjectBase<Derived1>& N,
                                      Eigen::PlainObjectBase<Derived2>& dN) const;
 
     /* Returns the number of ansatz functions */
-    unsigned int size() { return duneLocalBasis->size(); }
+    unsigned int size() const  { return duneLocalBasis->size(); }
+
+    /* Returns the polynomial order  */
+    unsigned int order() const { return duneLocalBasis->order(); }
 
     /* Returns the number of integration points if the basis is bound */
     unsigned int integrationPointSize() const {
@@ -86,12 +94,15 @@ namespace Ikarus {
     }
 
     /* Binds this basis to a given integration rule */
-    template <typename IntegrationRule, typename... Ints>
+    template < typename... Ints>
     requires std::conjunction_v<std::is_convertible<int, Ints>...>
-    void bind(IntegrationRule&& p_rule, Impl::Derivatives<Ints...>&& ints);
+    void bind(const Dune::QuadratureRule<DomainFieldType, gridDim>& p_rule, Impl::Derivatives<Ints...>&& ints);
 
-    /* Returns a reference to the ansatz functions evaluated at the given integration point index */
-    const auto& evaluateFunction(long unsigned ipIndex) const {
+    /* Returns a reference to the ansatz functions evaluated at the given integration point index
+     * The requires statement is needed to circumvent implicit conversion from FieldVector<double,1>
+     * */
+    template<typename IndexType> requires std::same_as<IndexType,long unsigned> or std::same_as<IndexType,int>
+    const auto& evaluateFunction(IndexType ipIndex) const {
       if (not Nbound) throw std::logic_error("You have to bind the basis first");
       return Nbound.value()[ipIndex];
     }
@@ -100,6 +111,12 @@ namespace Ikarus {
     const auto& evaluateJacobian(long unsigned i) const {
       if (not dNbound) throw std::logic_error("You have to bind the basis first");
       return dNbound.value()[i];
+    }
+
+    template <typename Derived>
+    void evaluateSecondDerivatives(long unsigned i) const {
+      if (not ddNbound) throw std::logic_error("You have to bind the basis first");
+      return ddNbound.value()[i];
     }
 
     /* Returns true if the local basis is currently bound to an integration rule */
@@ -149,11 +166,13 @@ namespace Ikarus {
 
   private:
     mutable std::vector<JacobianDuneType> dNdune{};
+    mutable std::vector<RangeDuneType> ddNdune{};
     mutable std::vector<RangeDuneType> Ndune{};
     DuneLocalBasis const* duneLocalBasis;  // FIXME pass shared_ptr around
     std::optional<std::set<int>> boundDerivatives;
     std::optional<std::vector<Eigen::VectorX<RangeFieldType>>> Nbound{};
     std::optional<std::vector<Eigen::Matrix<RangeFieldType, Eigen::Dynamic, gridDim>>> dNbound{};
+    std::optional<std::vector<Eigen::Matrix<RangeFieldType, Eigen::Dynamic, gridDim*(gridDim+1)/2>>> ddNbound{};
     std::optional<Dune::QuadratureRule<DomainFieldType, gridDim>> rule;
   };
 
