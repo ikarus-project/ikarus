@@ -469,36 +469,36 @@ void testLFPreProcess(const Dune::GeometryType& geometryType,size_t nNodalTestPo
 
 TEST(LocalFunctionTests, TestExpressions) {
   testLFPreProcess<1, 1, 1>(Dune::GeometryTypes::line);  // line with linear ansatz functions and 1d lf
-  testLFPreProcess<1, 2, 1>(Dune::GeometryTypes::line);  // line with linear ansatz functions and 2d lf
+//  testLFPreProcess<1, 2, 1>(Dune::GeometryTypes::line);  // line with linear ansatz functions and 2d lf
   testLFPreProcess<1, 3, 1>(Dune::GeometryTypes::line);  // line with linear ansatz functions and 3d lf
   testLFPreProcess<1, 1, 2>(Dune::GeometryTypes::line);  // line with quadratic ansatz functions and 1d lf
-  testLFPreProcess<1, 2, 2>(Dune::GeometryTypes::line);  // line with quadratic ansatz functions and 2d lf
+//  testLFPreProcess<1, 2, 2>(Dune::GeometryTypes::line);  // line with quadratic ansatz functions and 2d lf
   testLFPreProcess<1, 3, 2>(Dune::GeometryTypes::line);  // line with quadratic ansatz functions and 3d lf
 
   testLFPreProcess<2, 1, 1>(Dune::GeometryTypes::triangle);  // triangle with linear ansatz functions and 1d lf
-  testLFPreProcess<2, 2, 1>(Dune::GeometryTypes::triangle);  // triangle with linear ansatz functions and 2d lf
+//  testLFPreProcess<2, 2, 1>(Dune::GeometryTypes::triangle);  // triangle with linear ansatz functions and 2d lf
   testLFPreProcess<2, 3, 1>(Dune::GeometryTypes::triangle);  // triangle with linear ansatz functions and 3d lf
   testLFPreProcess<2, 1, 2>(Dune::GeometryTypes::triangle);  // triangle with quadratic ansatz functions and 1d lf
-  testLFPreProcess<2, 2, 2>(Dune::GeometryTypes::triangle);  // triangle with quadratic ansatz functions and 2d lf
+//  testLFPreProcess<2, 2, 2>(Dune::GeometryTypes::triangle);  // triangle with quadratic ansatz functions and 2d lf
   testLFPreProcess<2, 3, 2>(Dune::GeometryTypes::triangle);  // triangle with quadratic ansatz functions and 3d lf
 
   testLFPreProcess<2, 1, 1>(
       Dune::GeometryTypes::quadrilateral);  // quadrilateral with linear ansatz functions and 1d lf
-  testLFPreProcess<2, 2, 1>(
-      Dune::GeometryTypes::quadrilateral);  // quadrilateral with linear ansatz functions and 2d lf
+//  testLFPreProcess<2, 2, 1>(
+//      Dune::GeometryTypes::quadrilateral);  // quadrilateral with linear ansatz functions and 2d lf
   testLFPreProcess<2, 3, 1>(
       Dune::GeometryTypes::quadrilateral);  // quadrilateral with linear ansatz functions and 3d lf
   testLFPreProcess<2, 1, 2>(
       Dune::GeometryTypes::quadrilateral);  // quadrilateral with quadratic ansatz functions and 1d lf
-  testLFPreProcess<2, 2, 2>(
-      Dune::GeometryTypes::quadrilateral);  // quadrilateral with quadratic ansatz functions and 2d lf
+//  testLFPreProcess<2, 2, 2>(
+//      Dune::GeometryTypes::quadrilateral);  // quadrilateral with quadratic ansatz functions and 2d lf
   testLFPreProcess<2, 3, 2>(
       Dune::GeometryTypes::quadrilateral);  // quadrilateral with quadratic ansatz functions and 3d lf
 
   testLFPreProcess<3, 1, 1>(Dune::GeometryTypes::hexahedron);  // hexahedron with linear ansatz functions and 1d lf
-  testLFPreProcess<3, 2, 1>(Dune::GeometryTypes::hexahedron);  // hexahedron with linear ansatz functions and 2d lf
+//  testLFPreProcess<3, 2, 1>(Dune::GeometryTypes::hexahedron);  // hexahedron with linear ansatz functions and 2d lf
   testLFPreProcess<3, 3, 1>(Dune::GeometryTypes::hexahedron);  // hexahedron with linear ansatz functions and 3d lf
   testLFPreProcess<3, 1, 2>(Dune::GeometryTypes::hexahedron);  // hexahedron with quadratic ansatz functions and 1d lf
-  testLFPreProcess<3, 2, 2>(Dune::GeometryTypes::hexahedron);  // hexahedron with quadratic ansatz functions and 2d lf
+//  testLFPreProcess<3, 2, 2>(Dune::GeometryTypes::hexahedron);  // hexahedron with quadratic ansatz functions and 2d lf
   testLFPreProcess<3, 3, 2>(Dune::GeometryTypes::hexahedron);  // hexahedron with quadratic ansatz functions and 3d lf
 }
