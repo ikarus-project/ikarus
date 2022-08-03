@@ -36,13 +36,13 @@
 
 using namespace Dune::Functions::BasisFactory;
 
-template <typename LF, bool isCopy = false>
-void testLocalBasis(const LF& localBasis, const Dune::GeometryType& type) {
+template <typename LB, bool isCopy = false>
+void testLocalBasis(const LB& localBasis, const Dune::GeometryType& type) {
   const double tol = 1e-12;
   using namespace autodiff;
   using namespace Ikarus;
 
-  constexpr int gridDim = LF::gridDim;
+  constexpr int gridDim = LB::gridDim;
   const auto& rule = Dune::QuadratureRules<double, gridDim>::rule(type, 3);
 
   for (const auto& gp : rule) {
@@ -72,44 +72,12 @@ void testLocalBasis(const LF& localBasis, const Dune::GeometryType& type) {
           nonLinOpSpatialAll, {.draw = false, .writeSlopeStatement = true, .tolerance = 1e-2})));
       if constexpr (gridDim>1) {
         std::cout<<"Test Second Derivatives"<<std::endl;
-        for (int i = 0; i < gridDim; ++i) {
-          auto jacobianLambda1D = [&](auto& gpOffset_) {
-            Eigen::Matrix<double, Eigen::Dynamic, gridDim> dN;
-            Dune::FieldVector<double, gridDim> gpOffset2D;
-            std::ranges::fill(gpOffset2D, 0);
-            gpOffset2D[i] = gpOffset_[0];
-            localBasis.evaluateJacobian(gp.position() + gpOffset2D, dN);
-            return dN.col(i).eval();
-          };
-          constexpr int secondDerivatives = gridDim*(gridDim+1)/2;
-          auto hessianLambda = [&](auto& gpOffset_) {
-            Eigen::Matrix<double, Eigen::Dynamic, secondDerivatives> ddN;
-            Dune::FieldVector<double, gridDim> gpOffset2D;
-            std::ranges::fill(gpOffset2D, 0);
-            gpOffset2D[i] = gpOffset_[0];
-            localBasis.evaluateSecondDerivatives(gp.position() + gpOffset2D, ddN);
-            return ddN.col(i).eval();
-          };
 
-          Eigen::Vector<double, 1> ipOffset1D = (Eigen::Vector<double, 1>::Random()).normalized() / 8;
-
-          auto nonLinOpHg = Ikarus::NonLinearOperator(linearAlgebraFunctions(jacobianLambda1D, hessianLambda),
-                                                      parameter(ipOffset1D));
-
-          EXPECT_TRUE((checkJacobian<decltype(nonLinOpHg), Eigen::Vector<double, 1>>(
-              nonLinOpHg, {.draw = false, .writeSlopeStatement = true, .tolerance = 1e-2})));
-        }
-
-        std::cout<<"Test Second Mixed Derivatives"<<std::endl;
-
-        Ikarus::VoigtIteratorContainer<gridDim> iterC;
+        constexpr auto iterC = voigtNotationContainer<gridDim>;
         auto iter= iterC.begin();
-        iter+=gridDim;
-        for (int i = 0; i < gridDim*(gridDim-1)/2; ++i) {
-          int firstDirection = (*iter)[0];
-          int secondDirection = (*iter)[1];
+        for (int i = 0; const auto [firstDirection,secondDirection] : voigtNotationContainer<gridDim>) {
           std::cout<<"Test Mixed Directions: "<<firstDirection<<" "<<secondDirection<<std::endl;
-          auto jacobianLambda1D = [&](auto& gpOffset_) {
+          auto jacobianLambda1D = [&](const auto& gpOffset_) {
             Eigen::Matrix<double, Eigen::Dynamic, gridDim> dN;
             Dune::FieldVector<double, gridDim> gpOffset2D;
             std::ranges::fill(gpOffset2D, 0);
@@ -118,23 +86,23 @@ void testLocalBasis(const LF& localBasis, const Dune::GeometryType& type) {
             return dN.col(secondDirection).eval();
           };
           constexpr int secondDerivatives = gridDim*(gridDim+1)/2;
-          auto hessianLambda = [&](auto& gpOffset_) {
+          auto hessianLambda = [&](const auto& gpOffset_) {
             Eigen::Matrix<double, Eigen::Dynamic, secondDerivatives> ddN;
             Dune::FieldVector<double, gridDim> gpOffset2D;
             std::ranges::fill(gpOffset2D, 0);
             gpOffset2D[firstDirection] = gpOffset_[0];
             localBasis.evaluateSecondDerivatives(gp.position() + gpOffset2D, ddN);
-            return ddN.col(i+gridDim).eval();
+            return ddN.col(i).eval();
           };
 
-          Eigen::Vector<double, 1> ipOffset1D = (Eigen::Vector<double, 1>::Random()).normalized() / 8;
+          Eigen::Vector<double, 1> ipOffset1D(1);
 
           auto nonLinOpHg = Ikarus::NonLinearOperator(linearAlgebraFunctions(jacobianLambda1D, hessianLambda),
                                                       parameter(ipOffset1D));
 
           EXPECT_TRUE((checkJacobian<decltype(nonLinOpHg), Eigen::Vector<double, 1>>(
-              nonLinOpHg, {.draw = false, .writeSlopeStatement = true, .tolerance = 1e-2})));
-          ++iter;
+              nonLinOpHg, {.draw = false, .writeSlopeStatement = false, .tolerance = 1e-2})));
+          ++i;
         }
       }
     }
@@ -163,11 +131,11 @@ TEST(LocalBasisTests, TestLocalBasis) {
   localBasisTestConstructor<1, 1>(line);
   std::cout<<"Test line with quadratic ansatz functions"<<std::endl;
   localBasisTestConstructor<1, 2>(line);
-  std::cout<<"Test quadrilateral with linear ansatz functions"<<std::endl;
+  std::cout<<"Test triangle with linear ansatz functions"<<std::endl;
   localBasisTestConstructor<2, 1>(triangle);
   std::cout<<"Test triangle with quadratic ansatz functions"<<std::endl;
   localBasisTestConstructor<2, 2>(triangle);
-  std::cout<<"Test triangle with linear ansatz functions"<<std::endl;
+  std::cout<<"Test quadrilateral with linear ansatz functions"<<std::endl;
   localBasisTestConstructor<2, 1>(quadrilateral);
   std::cout<<"Test quadrilateral with quadratic ansatz functions"<<std::endl;
   localBasisTestConstructor<2, 2>(quadrilateral);

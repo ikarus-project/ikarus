@@ -54,19 +54,20 @@ namespace Ikarus {
     std::array<unsigned int, gridDim> order;
     std::ranges::fill(order, 0);
     ddN.setZero(dNdune.size(), Eigen::NoChange);
+
     for (int i = 0; i < gridDim; ++i) { //Diagonal terms
       order[i] = 2;
       duneLocalBasis->partial(order,local, ddNdune);
       for (size_t j = 0; j < ddNdune.size(); ++j)
         ddN(j,i)=ddNdune[j][0];
 
-
       order[i] = 0;
     }
 
     std::ranges::fill(order, 1);
     for (int i = 0; i < gridDim*(gridDim-1)/2; ++i) { //off-diagonal terms
-      order[i] = 0;
+      if constexpr (gridDim>2)
+        order[i] = 0;
       duneLocalBasis->partial(order,local, ddNdune);
       for (size_t j = 0; j < ddNdune.size(); ++j)
         ddN(j,i+gridDim)=ddNdune[j][0];
