@@ -40,7 +40,7 @@ template <typename LF, bool isCopy = false>
 void testLocalFunction(const LF& lf) {
   spdlog::info("Testing: " + std::string(isCopy ? "Copy " : "") + Ikarus::localFunctionName(lf));
 
-  const double tol = 1e-12;
+  const double tol = 1e-10;
   using namespace Ikarus::DerivativeDirections;
   using namespace autodiff;
   using namespace Ikarus;
@@ -454,19 +454,20 @@ void localFunctionTestConstructor(const Dune::GeometryType& geometryType, size_t
     }
   }
 }
-
-TEST(LocalFunctionTests, TestExpressions) {
-  using namespace Dune::GeometryTypes;
-  std::cout<<"line with linear ansatz functions and 1d local function"<<std::endl;
+using namespace Dune::GeometryTypes;
+TEST(LocalFunctionTests, TestExpressionsOnLine) {
+  std::cout << "line with linear ansatz functions and 1d local function" << std::endl;
   localFunctionTestConstructor<1, 1, 1>(line);
   //  localFunctionTestConstructor<1, 2, 1>(line);  // line with linear ansatz functions and 2d lf
-  std::cout<<"line with linear ansatz functions and 3d local function"<<std::endl;
+  std::cout << "line with linear ansatz functions and 3d local function" << std::endl;
   localFunctionTestConstructor<1, 3, 1>(line);
-  std::cout<<"line with quadratic ansatz functions and 1d local function"<<std::endl;
+  std::cout << "line with quadratic ansatz functions and 1d local function" << std::endl;
   localFunctionTestConstructor<1, 1, 2>(line);
   //  localFunctionTestConstructor<1, 2, 2>(line);  // line with quadratic ansatz functions and 2d lf
-  std::cout<<"line with quadratic ansatz functions and 3d local function"<<std::endl;
+  std::cout << "line with quadratic ansatz functions and 3d local function" << std::endl;
   localFunctionTestConstructor<1, 3, 2>(line);
+}
+  TEST(LocalFunctionTests, TestExpressionsOnTriangle) {
   std::cout<<"triangle with linear ansatz functions and 1d local function"<<std::endl;
   localFunctionTestConstructor<2, 1, 1>(triangle);
   //  localFunctionTestConstructor<2, 2, 1>(triangle);  // triangle with linear ansatz functions and 2d lf
@@ -477,7 +478,8 @@ TEST(LocalFunctionTests, TestExpressions) {
   //  localFunctionTestConstructor<2, 2, 2>(triangle);  // triangle with quadratic ansatz functions and 2d lf
   std::cout<<"triangle with quadratic ansatz functions and 3d local function"<<std::endl;
   localFunctionTestConstructor<2, 3, 2>(triangle);
-
+}
+TEST(LocalFunctionTests, TestExpressionsOnQuadrilateral) {
   std::cout<<"quadrilateral with linear ansatz functions and 1d local function"<<std::endl;
   localFunctionTestConstructor<2, 1, 1>(quadrilateral);
   //  localFunctionTestConstructor<2, 2, 1>( quadrilateral);  // quadrilateral with linear ansatz functions and 2d lf
@@ -489,6 +491,8 @@ TEST(LocalFunctionTests, TestExpressions) {
   std::cout<<"quadrilateral with quadratic ansatz functions and 3d local function"<<std::endl;
   localFunctionTestConstructor<2, 3, 2>(quadrilateral);
 
+}
+TEST(LocalFunctionTests, TestExpressionsOnHexahedron) {
   std::cout<<"hexahedron with linear ansatz functions and 1d local function"<<std::endl;
   localFunctionTestConstructor<3, 1, 1>(hexahedron);  // hexahedron with linear ansatz functions and 1d lf
   //  localFunctionTestConstructor<3, 2, 1>(hexahedron);  // hexahedron with linear ansatz functions and 2d lf
