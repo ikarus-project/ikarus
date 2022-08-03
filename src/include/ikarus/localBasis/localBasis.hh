@@ -55,8 +55,8 @@ namespace Ikarus {
     LocalBasis() = default;
 
     static constexpr int gridDim = DuneLocalBasis::Traits::dimDomain;
-    static_assert(gridDim<=3, "This local Basis only works for grids with dimensions<=3");
-    using DomainType             = typename DuneLocalBasis::Traits::DomainType;
+    static_assert(gridDim <= 3, "This local Basis only works for grids with dimensions<=3");
+    using DomainType = typename DuneLocalBasis::Traits::DomainType;
 
     using DomainFieldType = typename DuneLocalBasis::Traits::DomainFieldType;
     using RangeFieldType  = typename DuneLocalBasis::Traits::RangeFieldType;
@@ -82,7 +82,7 @@ namespace Ikarus {
                                      Eigen::PlainObjectBase<Derived2>& dN) const;
 
     /* Returns the number of ansatz functions */
-    unsigned int size() const  { return duneLocalBasis->size(); }
+    unsigned int size() const { return duneLocalBasis->size(); }
 
     /* Returns the polynomial order  */
     unsigned int order() const { return duneLocalBasis->order(); }
@@ -94,14 +94,15 @@ namespace Ikarus {
     }
 
     /* Binds this basis to a given integration rule */
-    template < typename... Ints>
+    template <typename... Ints>
     requires std::conjunction_v<std::is_convertible<int, Ints>...>
     void bind(const Dune::QuadratureRule<DomainFieldType, gridDim>& p_rule, Impl::Derivatives<Ints...>&& ints);
 
     /* Returns a reference to the ansatz functions evaluated at the given integration point index
      * The requires statement is needed to circumvent implicit conversion from FieldVector<double,1>
      * */
-    template<typename IndexType> requires std::same_as<IndexType,long unsigned> or std::same_as<IndexType,int>
+    template <typename IndexType>
+    requires std::same_as<IndexType, long unsigned> or std::same_as<IndexType, int>
     const auto& evaluateFunction(IndexType ipIndex) const {
       if (not Nbound) throw std::logic_error("You have to bind the basis first");
       return Nbound.value()[ipIndex];
@@ -172,7 +173,7 @@ namespace Ikarus {
     std::optional<std::set<int>> boundDerivatives;
     std::optional<std::vector<Eigen::VectorX<RangeFieldType>>> Nbound{};
     std::optional<std::vector<Eigen::Matrix<RangeFieldType, Eigen::Dynamic, gridDim>>> dNbound{};
-    std::optional<std::vector<Eigen::Matrix<RangeFieldType, Eigen::Dynamic, gridDim*(gridDim+1)/2>>> ddNbound{};
+    std::optional<std::vector<Eigen::Matrix<RangeFieldType, Eigen::Dynamic, gridDim*(gridDim + 1) / 2>>> ddNbound{};
     std::optional<Dune::QuadratureRule<DomainFieldType, gridDim>> rule;
   };
 

@@ -43,40 +43,38 @@ void testLocalBasis(const LB& localBasis, const Dune::GeometryType& type) {
   using namespace Ikarus;
 
   constexpr int gridDim = LB::gridDim;
-  const auto& rule = Dune::QuadratureRules<double, gridDim>::rule(type, 3);
+  const auto& rule      = Dune::QuadratureRules<double, gridDim>::rule(type, 3);
 
   for (const auto& gp : rule) {
     /// Check spatial derivatives
     {
       /// Check if spatial derivatives are really derivatives
       /// Perturb in a random direction in the elements parameter space and check spatial derivative
-      auto func           = [&](auto& gpOffset_) {
+      auto func = [&](auto& gpOffset_) {
         Eigen::VectorXd N;
-        localBasis.evaluateFunction(gp.position()+toFieldVector(gpOffset_),N);
+        localBasis.evaluateFunction(gp.position() + toFieldVector(gpOffset_), N);
 
         return N;
       };
       auto jacobianLambda = [&](auto& gpOffset_) {
-        Eigen::Matrix<double,Eigen::Dynamic,gridDim> dN;
-        localBasis.evaluateJacobian(gp.position()+toFieldVector(gpOffset_),dN);
+        Eigen::Matrix<double, Eigen::Dynamic, gridDim> dN;
+        localBasis.evaluateJacobian(gp.position() + toFieldVector(gpOffset_), dN);
         return dN.eval();
       };
-
-
 
       Eigen::Vector<double, gridDim> ipOffset = (Eigen::Vector<double, gridDim>::Random()).normalized() / 8;
 
       auto nonLinOpSpatialAll
           = Ikarus::NonLinearOperator(linearAlgebraFunctions(func, jacobianLambda), parameter(ipOffset));
       EXPECT_TRUE((checkJacobian<decltype(nonLinOpSpatialAll), Eigen::Vector<double, gridDim>>(
-          nonLinOpSpatialAll, {.draw = false, .writeSlopeStatement = true, .tolerance = 1e-2})));
-      if constexpr (gridDim>1) {
-        std::cout<<"Test Second Derivatives"<<std::endl;
+          nonLinOpSpatialAll, {.draw = false, .writeSlopeStatementIfFailed = true, .tolerance = 1e-2})));
+      if constexpr (gridDim > 1) {
+        std::cout << "Test Second Derivatives" << std::endl;
 
         constexpr auto iterC = voigtNotationContainer<gridDim>;
-        auto iter= iterC.begin();
-        for (int i = 0; const auto [firstDirection,secondDirection] : voigtNotationContainer<gridDim>) {
-          std::cout<<"Test Mixed Directions: "<<firstDirection<<" "<<secondDirection<<std::endl;
+        auto iter            = iterC.begin();
+        for (int i = 0; const auto [firstDirection, secondDirection] : voigtNotationContainer<gridDim>) {
+          std::cout << "Test Mixed Directions: " << firstDirection << " " << secondDirection << std::endl;
           auto jacobianLambda1D = [&](const auto& gpOffset_) {
             Eigen::Matrix<double, Eigen::Dynamic, gridDim> dN;
             Dune::FieldVector<double, gridDim> gpOffset2D;
@@ -85,8 +83,8 @@ void testLocalBasis(const LB& localBasis, const Dune::GeometryType& type) {
             localBasis.evaluateJacobian(gp.position() + gpOffset2D, dN);
             return dN.col(secondDirection).eval();
           };
-          constexpr int secondDerivatives = gridDim*(gridDim+1)/2;
-          auto hessianLambda = [&](const auto& gpOffset_) {
+          constexpr int secondDerivatives = gridDim * (gridDim + 1) / 2;
+          auto hessianLambda              = [&](const auto& gpOffset_) {
             Eigen::Matrix<double, Eigen::Dynamic, secondDerivatives> ddN;
             Dune::FieldVector<double, gridDim> gpOffset2D;
             std::ranges::fill(gpOffset2D, 0);
@@ -101,12 +99,11 @@ void testLocalBasis(const LB& localBasis, const Dune::GeometryType& type) {
                                                       parameter(ipOffset1D));
 
           EXPECT_TRUE((checkJacobian<decltype(nonLinOpHg), Eigen::Vector<double, 1>>(
-              nonLinOpHg, {.draw = false, .writeSlopeStatement = false, .tolerance = 1e-2})));
+              nonLinOpHg, {.draw = false, .writeSlopeStatementIfFailed = true, .tolerance = 1e-2})));
           ++i;
         }
       }
     }
-
   }
 }
 
@@ -117,30 +114,29 @@ void localBasisTestConstructor(const Dune::GeometryType& geometryType, size_t nN
 
   using FECache = Dune::PQkLocalFiniteElementCache<double, double, domainDim, order>;
   FECache feCache;
-  const auto& fe      = feCache.get(geometryType);
-  auto localBasis     = Ikarus::LocalBasis(fe.localBasis());
+  const auto& fe  = feCache.get(geometryType);
+  auto localBasis = Ikarus::LocalBasis(fe.localBasis());
 
   const auto& rule = Dune::QuadratureRules<double, domainDim>::rule(fe.type(), 3);
-  testLocalBasis(localBasis,geometryType);
-
+  testLocalBasis(localBasis, geometryType);
 }
 
 TEST(LocalBasisTests, TestLocalBasis) {
   using namespace Dune::GeometryTypes;
-  std::cout<<"Test line with linear ansatz functions"<<std::endl;
+  std::cout << "Test line with linear ansatz functions" << std::endl;
   localBasisTestConstructor<1, 1>(line);
-  std::cout<<"Test line with quadratic ansatz functions"<<std::endl;
+  std::cout << "Test line with quadratic ansatz functions" << std::endl;
   localBasisTestConstructor<1, 2>(line);
-  std::cout<<"Test triangle with linear ansatz functions"<<std::endl;
+  std::cout << "Test triangle with linear ansatz functions" << std::endl;
   localBasisTestConstructor<2, 1>(triangle);
-  std::cout<<"Test triangle with quadratic ansatz functions"<<std::endl;
+  std::cout << "Test triangle with quadratic ansatz functions" << std::endl;
   localBasisTestConstructor<2, 2>(triangle);
-  std::cout<<"Test quadrilateral with linear ansatz functions"<<std::endl;
+  std::cout << "Test quadrilateral with linear ansatz functions" << std::endl;
   localBasisTestConstructor<2, 1>(quadrilateral);
-  std::cout<<"Test quadrilateral with quadratic ansatz functions"<<std::endl;
+  std::cout << "Test quadrilateral with quadratic ansatz functions" << std::endl;
   localBasisTestConstructor<2, 2>(quadrilateral);
-  std::cout<<"Test hexahedron with linear ansatz functions"<<std::endl;
+  std::cout << "Test hexahedron with linear ansatz functions" << std::endl;
   localBasisTestConstructor<3, 1>(hexahedron);
-  std::cout<<"Test hexahedron with quadratic ansatz functions"<<std::endl;
+  std::cout << "Test hexahedron with quadratic ansatz functions" << std::endl;
   localBasisTestConstructor<3, 2>(hexahedron);
 }

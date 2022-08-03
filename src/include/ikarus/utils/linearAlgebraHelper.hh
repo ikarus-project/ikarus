@@ -448,23 +448,19 @@ namespace Ikarus {
     }
   }
 
-
-
-  namespace Impl
-  {
-    constexpr std::tuple<
-        std::array<std::array<int,2>,1>,
-        std::array<std::array<int,2>,3>,
-        std::array<std::array<int,2>,6>> voigtIndices = {{{{0, 0}}}, {{{0, 0}, {1, 1}, {0, 1}}}, {{{0, 0}, {1, 1}, {2, 2}, {1, 2}, {0, 2}, {0, 1}}}};
+  namespace Impl {
+    constexpr std::tuple<std::array<std::array<int, 2>, 1>, std::array<std::array<int, 2>, 3>,
+                         std::array<std::array<int, 2>, 6>>
+        voigtIndices = {{{{0, 0}}}, {{{0, 0}, {1, 1}, {0, 1}}}, {{{0, 0}, {1, 1}, {2, 2}, {1, 2}, {0, 2}, {0, 1}}}};
   }
 
-/*
-* This class returns the indices, if you go through a symmetric matrix with index (Voigt) notation
-* 1D: 0,0
-* 2D: 0,0 1,1 0,1
-* 3D: 0,0 1,1 2,2 1,2 0,2 0,1
-*/
-  template<int dim>
-  constexpr auto voigtNotationContainer = std::get<dim-1>(Impl::voigtIndices);
+  /*
+   * This class returns the indices, if you go through a symmetric matrix with index (Voigt) notation
+   * 1D: 0,0
+   * 2D: 0,0 1,1 0,1
+   * 3D: 0,0 1,1 2,2 1,2 0,2 0,1
+   */
+  template <int dim>
+  constexpr auto voigtNotationContainer = std::get<dim - 1>(Impl::voigtIndices);
 
 }  // namespace Ikarus
