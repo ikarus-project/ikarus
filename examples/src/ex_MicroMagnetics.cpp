@@ -19,7 +19,6 @@
 
 #include <config.h>
 
-#include "src/include/ikarus/utils/algorithms.hh"
 
 #include <dune/alugrid/grid.hh>
 #include <dune/common/parametertreeparser.hh>

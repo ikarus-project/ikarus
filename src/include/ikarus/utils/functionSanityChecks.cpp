@@ -63,10 +63,10 @@ namespace Ikarus {
       xlabel("h");
       ylabel("Approximation error ");
       title(functionName + "check");
-      f->show();
+      f->draw();
     }
-
-    if (yE.lpNorm<Eigen::Infinity>() < 1e-10)
+    std::cout<<yE(range).lpNorm<Eigen::Infinity>()<<std::endl;
+    if (yE(range).lpNorm<Eigen::Infinity>() < 1e-10)
       return std::numeric_limits<double>::infinity();  // If the error is zero everywhere the function is linear for
                                                        // this case we return infinity
     return poly.coefficients()[1];

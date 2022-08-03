@@ -74,10 +74,10 @@ void testLocalFunction(const LF& lf) {
       auto derivDerivSingle = [&](auto gpOffset_, int spatialIndex) {
         return lf.evaluateDerivative(toFieldVector(gpOffset_), Ikarus::wrt(spatial(spatialIndex)));
       };
-      Eigen::Vector<double, gridDim> ipOffset = (Eigen::Vector<double, gridDim>::Random()).normalized() / 2;
+      Eigen::Vector<double, gridDim> ipOffset = (Eigen::Vector<double, gridDim>::Random()).normalized() / 8;
       auto nonLinOpSpatialAll
           = Ikarus::NonLinearOperator(linearAlgebraFunctions(func, spatialDerivAll), parameter(ipOffset));
-      EXPECT_TRUE((checkJacobian<decltype(nonLinOpSpatialAll), Eigen::Vector<double, gridDim>>(
+      ASSERT_TRUE((checkJacobian<decltype(nonLinOpSpatialAll), Eigen::Vector<double, gridDim>>(
           nonLinOpSpatialAll, {.draw = false, .writeSlopeStatement = false, .tolerance = 1e-2})));
 
       /// Perturb each spatial direction and check with derivative value
@@ -97,7 +97,7 @@ void testLocalFunction(const LF& lf) {
 
         auto nonLinOpSpatialSingle = Ikarus::NonLinearOperator(linearAlgebraFunctions(funcSingle, derivDerivSingleI),
                                                                parameter(ipOffsetSingle));
-        EXPECT_TRUE((checkJacobian<decltype(nonLinOpSpatialSingle), Eigen::Vector<double, 1>>(
+        ASSERT_TRUE((checkJacobian<decltype(nonLinOpSpatialSingle), Eigen::Vector<double, 1>>(
             nonLinOpSpatialSingle, {.draw = false, .writeSlopeStatement = false, .tolerance = 1e-2})));
       }
     }
@@ -262,7 +262,7 @@ void testLocalFunction(const LF& lf) {
 }
 
 template <int domainDim, int worldDim, int order>
-void localFunctionTestConstructor(const Dune::GeometryType& geometryType, size_t nNodalTestPointsI = 6) {
+void localFunctionTestConstructor(const Dune::GeometryType& geometryType, size_t nNodalTestPointsI = 1) {
   using namespace Ikarus;
   using namespace Dune::Indices;
   using Manifold     = Ikarus::RealTuple<double, worldDim>;
@@ -457,31 +457,46 @@ void localFunctionTestConstructor(const Dune::GeometryType& geometryType, size_t
 
 TEST(LocalFunctionTests, TestExpressions) {
   using namespace Dune::GeometryTypes;
-  localFunctionTestConstructor<1, 1, 1>(line);  // line with linear ansatz functions and 1d lf
+  std::cout<<"line with linear ansatz functions and 1d local function"<<std::endl;
+  localFunctionTestConstructor<1, 1, 1>(line);
   //  localFunctionTestConstructor<1, 2, 1>(line);  // line with linear ansatz functions and 2d lf
-  localFunctionTestConstructor<1, 3, 1>(line);  // line with linear ansatz functions and 3d lf
-  localFunctionTestConstructor<1, 1, 2>(line);  // line with quadratic ansatz functions and 1d lf
+  std::cout<<"line with linear ansatz functions and 3d local function"<<std::endl;
+  localFunctionTestConstructor<1, 3, 1>(line);
+  std::cout<<"line with quadratic ansatz functions and 1d local function"<<std::endl;
+  localFunctionTestConstructor<1, 1, 2>(line);
   //  localFunctionTestConstructor<1, 2, 2>(line);  // line with quadratic ansatz functions and 2d lf
-  localFunctionTestConstructor<1, 3, 2>(line);  // line with quadratic ansatz functions and 3d lf
-
-  localFunctionTestConstructor<2, 1, 1>(triangle);  // triangle with linear ansatz functions and 1d lf
+  std::cout<<"line with quadratic ansatz functions and 3d local function"<<std::endl;
+  localFunctionTestConstructor<1, 3, 2>(line);
+  std::cout<<"triangle with linear ansatz functions and 1d local function"<<std::endl;
+  localFunctionTestConstructor<2, 1, 1>(triangle);
   //  localFunctionTestConstructor<2, 2, 1>(triangle);  // triangle with linear ansatz functions and 2d lf
-  localFunctionTestConstructor<2, 3, 1>(triangle);  // triangle with linear ansatz functions and 3d lf
-  localFunctionTestConstructor<2, 1, 2>(triangle);  // triangle with quadratic ansatz functions and 1d lf
+  std::cout<<"triangle with linear ansatz functions and 3d local function"<<std::endl;
+  localFunctionTestConstructor<2, 3, 1>(triangle);
+  std::cout<<"triangle with quadratic ansatz functions and 1d local function"<<std::endl;
+  localFunctionTestConstructor<2, 1, 2>(triangle);
   //  localFunctionTestConstructor<2, 2, 2>(triangle);  // triangle with quadratic ansatz functions and 2d lf
-  localFunctionTestConstructor<2, 3, 2>(triangle);  // triangle with quadratic ansatz functions and 3d lf
+  std::cout<<"triangle with quadratic ansatz functions and 3d local function"<<std::endl;
+  localFunctionTestConstructor<2, 3, 2>(triangle);
 
-  localFunctionTestConstructor<2, 1, 1>(quadrilateral);  // quadrilateral with linear ansatz functions and 1d lf
+  std::cout<<"quadrilateral with linear ansatz functions and 1d local function"<<std::endl;
+  localFunctionTestConstructor<2, 1, 1>(quadrilateral);
   //  localFunctionTestConstructor<2, 2, 1>( quadrilateral);  // quadrilateral with linear ansatz functions and 2d lf
-  localFunctionTestConstructor<2, 3, 1>(quadrilateral);  // quadrilateral with linear ansatz functions and 3d lf
-  localFunctionTestConstructor<2, 1, 2>(quadrilateral);  // quadrilateral with quadratic ansatz functions and 1d lf
+  std::cout<<"quadrilateral with linear ansatz functions and 3d local function"<<std::endl;
+  localFunctionTestConstructor<2, 3, 1>(quadrilateral);
+  std::cout<<"quadrilateral with quadratic ansatz functions and 1d local function"<<std::endl;
+  localFunctionTestConstructor<2, 1, 2>(quadrilateral);
   //  localFunctionTestConstructor<2, 2, 2>(quadrilateral);  // quadrilateral with quadratic ansatz functions and 2d lf
-  localFunctionTestConstructor<2, 3, 2>(quadrilateral);  // quadrilateral with quadratic ansatz functions and 3d lf
+  std::cout<<"quadrilateral with quadratic ansatz functions and 3d local function"<<std::endl;
+  localFunctionTestConstructor<2, 3, 2>(quadrilateral);
 
+  std::cout<<"hexahedron with linear ansatz functions and 1d local function"<<std::endl;
   localFunctionTestConstructor<3, 1, 1>(hexahedron);  // hexahedron with linear ansatz functions and 1d lf
   //  localFunctionTestConstructor<3, 2, 1>(hexahedron);  // hexahedron with linear ansatz functions and 2d lf
-  localFunctionTestConstructor<3, 3, 1>(hexahedron);  // hexahedron with linear ansatz functions and 3d lf
-  localFunctionTestConstructor<3, 1, 2>(hexahedron);  // hexahedron with quadratic ansatz functions and 1d lf
+  std::cout<<"hexahedron with linear ansatz functions and 3d local function"<<std::endl;
+  localFunctionTestConstructor<3, 3, 1>(hexahedron);
+  std::cout<<"hexahedron with quadratic ansatz functions and 1d local function"<<std::endl;
+  localFunctionTestConstructor<3, 1, 2>(hexahedron);
   //  localFunctionTestConstructor<3, 2, 2>(hexahedron);  // hexahedron with quadratic ansatz functions and 2d lf
+  std::cout<<"hexahedron with quadratic ansatz functions and 3d local function"<<std::endl;
   localFunctionTestConstructor<3, 3, 2>(hexahedron);  // hexahedron with quadratic ansatz functions and 3d lf
 }
