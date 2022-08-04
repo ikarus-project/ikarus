@@ -28,7 +28,7 @@ namespace Ikarus {
 
   struct CheckFlags {
     bool draw                = true;
-    bool writeSlopeStatement = true;
+    bool writeSlopeStatementIfFailed = true;
     double tolerance         = 1e-2;
   };
 
@@ -72,7 +72,7 @@ namespace Ikarus {
 
     const bool checkPassed = Dune::FloatCmp::le(2.0, slope, checkFlags.tolerance);
 
-    if (checkFlags.writeSlopeStatement) {
+    if (checkFlags.writeSlopeStatementIfFailed and not checkPassed) {
       spdlog::info("Gradient check:");
       spdlog::info("The slope should be 2. It seems to be {}.", slope);
       if (checkPassed)
@@ -118,7 +118,7 @@ namespace Ikarus {
 
     const bool checkPassed = Dune::FloatCmp::le(2.0, slope, checkFlags.tolerance);
 
-    if (checkFlags.writeSlopeStatement) {
+    if (checkFlags.writeSlopeStatementIfFailed and not checkPassed) {
       spdlog::info("Jacobian check:");
       spdlog::info("The slope should be 2. It seems to be {}.", slope);
       if (checkPassed)
@@ -173,7 +173,7 @@ namespace Ikarus {
 
     const bool checkPassed = Dune::FloatCmp::le(3.0, slope, checkFlags.tolerance);
 
-    if (checkFlags.draw) {
+    if (checkFlags.writeSlopeStatementIfFailed and not checkPassed) {
       spdlog::info("Hessian check:");
       spdlog::info("The slope should be 3. It seems to be {}.", slope);
       if (checkPassed)

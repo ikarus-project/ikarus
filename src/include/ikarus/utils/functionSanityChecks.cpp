@@ -27,7 +27,7 @@
 namespace Ikarus {
   double drawResultAndReturnSlope(std::string&& functionName, const std::function<double(double)>& ftfunc, bool draw) {
     using namespace matplot;
-    std::vector<double> t = logspace(-8, 0, 100);
+    std::vector<double> t = logspace(-8, -2, 100);
     Eigen::Map<Eigen::VectorXd> tE(t.data(), t.size());
     std::vector<double> ftevaluated = transform(t, ftfunc);
     Eigen::Map<Eigen::VectorXd> yE(ftevaluated.data(), ftevaluated.size());
@@ -65,7 +65,7 @@ namespace Ikarus {
       title(functionName + "check");
       f->show();
     }
-    if (yE(range).lpNorm<Eigen::Infinity>() < 1e-10)
+    if (yE(range).lpNorm<Eigen::Infinity>() < 1e-10  )
       return std::numeric_limits<double>::infinity();  // If the error is zero everywhere the function is linear for
                                                        // this case we return infinity
     return poly.coefficients()[1];

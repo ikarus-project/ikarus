@@ -314,8 +314,8 @@ int main(int argc, char **argv) {
     multiTypeVector += dFull;
   });
 
-  checkGradient(nonLinOp, {.draw = true, .writeSlopeStatement = true}, updateFunction);
-  checkHessian(nonLinOp, {.draw = true, .writeSlopeStatement = true}, updateFunction);
+  checkGradient(nonLinOp, {.draw = true, .writeSlopeStatementIfFailed = true}, updateFunction);
+  checkHessian(nonLinOp, {.draw = true, .writeSlopeStatementIfFailed = true}, updateFunction);
 
   auto nr = Ikarus::makeTrustRegion(nonLinOp, updateFunction);
   //  auto nr = Ikarus::makeTrustRegion< decltype(nonLinOp),PreConditioner::DiagonalPreconditioner>(nonLinOp,

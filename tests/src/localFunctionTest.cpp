@@ -36,32 +36,6 @@
 #include <ikarus/utils/multiIndex.hh>
 using namespace Dune::Functions::BasisFactory;
 
-TEST(valueFactoryTest, valueFactoryTest2) {
-  // Input
-  constexpr int domainDim         = 1;
-  using Manifold                  = Ikarus::RealTuple<double, 2>;
-  Dune::GeometryType geometryType = Dune::GeometryTypes::line;
-
-  Dune::BlockVector<Manifold> testNodalPoints;
-  using FECache = Dune::PQkLocalFiniteElementCache<double, double, domainDim, 1>;
-  FECache feCache;
-  auto localBasis     = Ikarus::LocalBasis(feCache.get(geometryType).localBasis());
-  const size_t nNodes = localBasis.size();
-
-  Ikarus::ValueFactory<Manifold>::construct(testNodalPoints);
-  const size_t nTestPoints = testNodalPoints.size();
-
-  Ikarus::MultiIndex index(nNodes, nTestPoints);
-  Dune::BlockVector<Manifold> coeffs(nNodes);
-  for (size_t i = 0; i < index.cycles(); i++, ++index) {
-    for (size_t j = 0; j < nNodes; j++)
-      coeffs[j] = testNodalPoints[index[j]];
-
-    auto localF = Ikarus::ProjectionBasedLocalFunction(localBasis, coeffs);
-
-    //    testLocalF...
-  }
-}
 
 template <typename T>
 class LocalFunctionProjectionBasedUnitVector : public testing::Test {
@@ -146,7 +120,7 @@ TYPED_TEST(LocalFunctionProjectionBasedUnitVector, ProjectionBasedUnitVector) {
       auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(func, deriv), parameter(gpOffset));
 
       EXPECT_TRUE((checkJacobian<decltype(nonLinOp), Eigen::Vector<double, 2>>(
-          nonLinOp, {.draw = false, .writeSlopeStatement = false})));
+          nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = false})));
 
       auto localFdual_ = [&](auto& x) { return localFdual(x, gpIndex); };
       Eigen::VectorXdual xv(vasMat.cols() * vasMat.rows());
@@ -293,7 +267,7 @@ TYPED_TEST(LocalFunctionVector, Test1) {
       auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(func, deriv), parameter(gpOffset));
 
       EXPECT_TRUE((checkJacobian<decltype(nonLinOp), Eigen::Vector<double, 2>>(
-          nonLinOp, {.draw = false, .writeSlopeStatement = false})));
+          nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = false})));
 
       auto localFdual_ = [&](auto& x) { return localFdual(x, gpIndex); };
       Eigen::VectorXdual xv(vasMat.cols() * vasMat.rows());

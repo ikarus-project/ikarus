@@ -23,6 +23,7 @@
 #include <dune/common/indices.hh>
 
 #include <ikarus/utils/traits.hh>
+#include <ikarus/utils/linearAlgebraHelper.hh>
 namespace Ikarus {
   namespace Impl {
 
@@ -103,6 +104,16 @@ namespace Ikarus {
         if constexpr (LFI::Ids::value == I) lfi.coefficientsRef() += correction;
       });
     }
+
+    // This function updates the embedding values of the underlying coefficients
+    template <typename Derived, std::size_t I = 0>
+    void addToCoeffsInEmbedding(const Eigen::MatrixBase<Derived>& correction,
+                     Dune::index_constant<I> = Dune::index_constant<0UL>()) {
+      Dune::Hybrid::forEach(leafNodes, [&]<typename LFI>(LFI& lfi) {
+        if constexpr (LFI::Ids::value == I) addInEmbedding(lfi.coefficientsRef(),correction);
+      });
+    }
+
     template <std::size_t I = 0>
     auto& basis(Dune::index_constant<I> = Dune::index_constant<0UL>()) {
       return std::get<I>(leafNodes).basis();
