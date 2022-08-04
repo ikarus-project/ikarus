@@ -51,6 +51,7 @@ namespace Ikarus {
   template <typename... Args_>
   struct TransformWith {
     using Args = std::tuple<Args_...>;
+    static constexpr bool isEmpty = sizeof...(Args_) == 0? true: false;
     Args args;
   };
 
