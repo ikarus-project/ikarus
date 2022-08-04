@@ -428,4 +428,35 @@ namespace Ikarus {
     }
   }
 
+
+  template <typename Derived>
+  auto toSkewMatrix(const Eigen::MatrixBase<Derived>& vec) {
+    constexpr int FieldSize = Derived::ColsAtCompileTime;
+    Eigen::Matrix<typename Derived::Scalar, FieldSize, FieldSize> skew;
+    static_assert(FieldSize != 3,"No support for vectors with size not equal to 3.");
+      skew << 0, -vec(2),  vec(1),
+         vec(2),       0, -vec(0),
+        -vec(1),  vec(0),       0;
+    return skew;
+  }
+
+  /**
+ * Code partly from \Eigen\src\Geometry\OrthoMethods.h
+ *
+ * This function
+*
+* \author Alex Müller
+* \version 09.05.2020
+   */
+  template<typename Derived, typename OtherDerived>
+  typename Eigen::MatrixBase<OtherDerived>::PlainObject cross(const Eigen::MatrixBase<Derived>& v,const Eigen::MatrixBase<OtherDerived>& other)
+  {
+    static_assert(typename Derived::PlainObject::ColumnSize == 1);
+    static_assert(typename Derived::PlainObject::RowSize == 3);
+    static_assert(typename OtherDerived::PlainObject::RowSize == 3);
+    Eigen::Ref<const typename Derived::PlainObject> lhs(v.derived());
+    Eigen::Ref<const typename OtherDerived::PlainObject> rhs(other.derived());
+    return  -rhs.template block<3,Dynamic>(0,0,3,other.cols()).colwise().cross(lhs.template block<3,1>(0,0));
+  }
+
 }  // namespace Ikarus
