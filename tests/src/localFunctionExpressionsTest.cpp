@@ -341,87 +341,88 @@ void localFunctionTestConstructor(const Dune::GeometryType& geometryType, size_t
   }
 
   auto f = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal);
-  {
-    auto localBasisNotBound = Ikarus::LocalBasis(fe.localBasis());
-    auto fNotBound          = Ikarus::StandardLocalFunction(localBasisNotBound, vBlockedLocal);
-    auto h                  = f + fNotBound;
-    EXPECT_DEBUG_DEATH(h.viewOverIntegrationPoints(), "The basis of the leaf nodes are not in the same state.");
-
-    const auto& ruleHigher                 = Dune::QuadratureRules<double, domainDim>::rule(fe.type(), 7);
-    auto localBasisBoundButToDifferentRule = Ikarus::LocalBasis(fe.localBasis());
-    localBasisBoundButToDifferentRule.bind(ruleHigher, bindDerivatives(0, 1));
-    auto fBoundButHigher = Ikarus::StandardLocalFunction(localBasisBoundButToDifferentRule, vBlockedLocal);
-    auto h2              = f + fBoundButHigher;
-    EXPECT_DEBUG_DEATH(h.viewOverIntegrationPoints(), "The basis of the leaf nodes are not in the same state.");
-  }
+  testLocalFunction(f);
   static_assert(f.order() == linear);
+  static_assert(countNonArithmeticLeafNodes(f) == 1);
+
   auto g = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal);
+  static_assert(countNonArithmeticLeafNodes(g) == 1);
   static_assert(g.order() == linear);
 
-  static_assert(countNonArithmeticLeafNodes(f) == 1);
-  static_assert(countNonArithmeticLeafNodes(g) == 1);
-  using namespace Ikarus::DerivativeDirections;
-  auto h   = f + g;
-  auto ft2 = 2 * f;
-  auto f23 = 2 * f * 3;
-  auto mf  = -f;
+  auto h = f + g;
+  testLocalFunction(h);
   static_assert(h.order() == linear);
-  static_assert(ft2.order() == linear);
-  static_assert(f23.order() == linear);
-  static_assert(f.order() == mf.order());
-
-  auto a     = collectNonArithmeticLeafNodes(h);
-  auto hLeaf = collectLeafNodeLocalFunctions(h);
-  static_assert(std::tuple_size_v<decltype(a)> == 2);
-
-  static_assert(countNonArithmeticLeafNodes(h) == 2);
-  static_assert(
-      std::is_same_v<typename decltype(h)::Ids, std::tuple<Dune::index_constant<0>, Dune::index_constant<0>>>);
-
   for (size_t k = 0; k < fe.size(); ++k) {
     EXPECT_TRUE(h.coefficientsRef(_0)[k] == vBlockedLocal[k]);
     EXPECT_TRUE(h.coefficientsRef(_1)[k] == vBlockedLocal[k]);
   }
-  testLocalFunction(f);
+  static_assert(std::tuple_size_v<decltype(collectNonArithmeticLeafNodes(h))> == 2);
+  static_assert(countNonArithmeticLeafNodes(h) == 2);
+  static_assert(
+      std::is_same_v<typename decltype(h)::Ids, std::tuple<Dune::index_constant<0>, Dune::index_constant<0>>>);
+
+  auto ft2 = 2 * f;
+  testLocalFunction(ft2);
+  static_assert(ft2.order() == linear);
+
+  auto f23 = 2 * f * 3;
+  testLocalFunction(f23);
+  static_assert(f23.order() == linear);
+
+  auto mf = -f;
+  testLocalFunction(mf);
+  static_assert(f.order() == mf.order());
+
+  auto k = -dot(f + f, 3.0 * (g / 5.0) * 5.0);
+  testLocalFunction(k);
+  static_assert(k.order() == quadratic);
+  static_assert(std::tuple_size_v<decltype(collectNonArithmeticLeafNodes(k))> == 3);
+  static_assert(countNonArithmeticLeafNodes(k) == 3);
+
+  auto dotff = dot(f, g);
+  testLocalFunction(dotff);
+  static_assert(countNonArithmeticLeafNodes(dotff) == 2);
+  static_assert(dotff.order() == quadratic);
+  static_assert(
+      std::is_same_v<typename decltype(dotff)::Ids, std::tuple<Dune::index_constant<0>, Dune::index_constant<0>>>);
+
+  auto sqrtdotff = sqrt(dotff);
+  testLocalFunction(sqrtdotff);
+
+  auto normSq = normSquared(f);
+  testLocalFunction(normSq);
+  static_assert(normSq.order() == quadratic);
+
+  auto logg = log(dotff);
+  testLocalFunction(logg);
+
+  auto powf = pow<3>(dotff);
+  testLocalFunction(powf);
+
   if constexpr (size > 1)  // Projection-Based only makes since in 2d+
   {
     auto gP = Ikarus::ProjectionBasedLocalFunction(localBasis, vBlockedLocal3);
     static_assert(gP.order() == nonLinear);
     testLocalFunction(gP);
   }
-  testLocalFunction(ft2);
-  testLocalFunction(f23);
-  testLocalFunction(mf);
-  testLocalFunction(h);
 
-  auto k = -dot(f + f, 3.0 * (g / 5.0) * 5.0);
-  //    auto k = -dot(f + f, g);
-  static_assert(k.order() == quadratic);
-  auto b = collectNonArithmeticLeafNodes(k);
-  static_assert(std::tuple_size_v<decltype(b)> == 3);
+  {
+    auto localBasisNotBound = Ikarus::LocalBasis(fe.localBasis());
+    auto fNotBound          = Ikarus::StandardLocalFunction(localBasisNotBound, vBlockedLocal);
+    auto h1                 = f + fNotBound;
+    EXPECT_DEBUG_DEATH(h1.viewOverIntegrationPoints(), "The basis of the leaf nodes are not in the same state.");
 
-  static_assert(countNonArithmeticLeafNodes(k) == 3);
+    const auto& ruleHigher                 = Dune::QuadratureRules<double, domainDim>::rule(fe.type(), 7);
+    auto localBasisBoundButToDifferentRule = Ikarus::LocalBasis(fe.localBasis());
+    localBasisBoundButToDifferentRule.bind(ruleHigher, bindDerivatives(0, 1));
+    auto fBoundButHigher = Ikarus::StandardLocalFunction(localBasisBoundButToDifferentRule, vBlockedLocal);
+    auto h2              = f + fBoundButHigher;
+    EXPECT_DEBUG_DEATH(h2.viewOverIntegrationPoints(), "The basis of the leaf nodes are not in the same state.");
+  }
+
+  using namespace Ikarus::DerivativeDirections;
 
   const double tol = 1e-13;
-
-  auto dotff     = dot(f, g);
-  auto sqrtdotff = sqrt(dotff);
-  auto normSq    = normSquared(f);
-  auto logg      = log(dotff);
-  auto powf      = pow<3>(dotff);
-  static_assert(normSq.order() == quadratic);
-
-  static_assert(countNonArithmeticLeafNodes(dotff) == 2);
-  static_assert(dotff.order() == quadratic);
-  static_assert(
-      std::is_same_v<typename decltype(dotff)::Ids, std::tuple<Dune::index_constant<0>, Dune::index_constant<0>>>);
-
-  testLocalFunction(dotff);
-  testLocalFunction(sqrtdotff);
-  testLocalFunction(k);
-  testLocalFunction(normSq);
-  testLocalFunction(logg);
-  testLocalFunction(powf);
 
   auto f2 = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal, _0);
   auto g2 = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal2, _1);
@@ -437,7 +438,6 @@ void localFunctionTestConstructor(const Dune::GeometryType& geometryType, size_t
   static_assert(std::tuple_size_v<decltype(b2)> == 3);
 
   for (int gpIndex = 0; auto& gp : rule) {
-    //      testLocalFunction(k2,gpIndex);
     const auto& N  = localBasis.evaluateFunction(gpIndex);
     const auto& dN = localBasis.evaluateJacobian(gpIndex);
     EXPECT_DOUBLE_EQ((f2.evaluateFunction(gpIndex) + g2.evaluateFunction(gpIndex)).dot(g2.evaluateFunction(gpIndex)),
@@ -495,51 +495,51 @@ void localFunctionTestConstructor(const Dune::GeometryType& geometryType, size_t
 }
 using namespace Dune::GeometryTypes;
 TEST(LocalFunctionTests, TestExpressionsOnLine) {
-  std::cout << "line with linear ansatz functions and 1d local function" << std::endl;
-  localFunctionTestConstructor<1, 1, 1>(line);
+  //  std::cout << "line with linear ansatz functions and 1d local function" << std::endl;
+  //  localFunctionTestConstructor<1, 1, 1>(line);
   //  localFunctionTestConstructor<1, 2, 1>(line);  // line with linear ansatz functions and 2d lf
-  std::cout << "line with linear ansatz functions and 3d local function" << std::endl;
-  localFunctionTestConstructor<1, 3, 1>(line);
-  std::cout << "line with quadratic ansatz functions and 1d local function" << std::endl;
-  localFunctionTestConstructor<1, 1, 2>(line);
+  //  std::cout << "line with linear ansatz functions and 3d local function" << std::endl;
+  //  localFunctionTestConstructor<1, 3, 1>(line);
+  //  std::cout << "line with quadratic ansatz functions and 1d local function" << std::endl;
+  //  localFunctionTestConstructor<1, 1, 2>(line);
   //  localFunctionTestConstructor<1, 2, 2>(line);  // line with quadratic ansatz functions and 2d lf
   std::cout << "line with quadratic ansatz functions and 3d local function" << std::endl;
   localFunctionTestConstructor<1, 3, 2>(line);
 }
 
 TEST(LocalFunctionTests, TestExpressionsOnTriangle) {
-  std::cout << "triangle with linear ansatz functions and 1d local function" << std::endl;
-  localFunctionTestConstructor<2, 1, 1>(triangle);
+  //  std::cout << "triangle with linear ansatz functions and 1d local function" << std::endl;
+  //  localFunctionTestConstructor<2, 1, 1>(triangle);
   //  localFunctionTestConstructor<2, 2, 1>(triangle);  // triangle with linear ansatz functions and 2d lf
-  std::cout << "triangle with linear ansatz functions and 3d local function" << std::endl;
-  localFunctionTestConstructor<2, 3, 1>(triangle);
-  std::cout << "triangle with quadratic ansatz functions and 1d local function" << std::endl;
-  localFunctionTestConstructor<2, 1, 2>(triangle);
+  //  std::cout << "triangle with linear ansatz functions and 3d local function" << std::endl;
+  //  localFunctionTestConstructor<2, 3, 1>(triangle);
+  //  std::cout << "triangle with quadratic ansatz functions and 1d local function" << std::endl;
+  //  localFunctionTestConstructor<2, 1, 2>(triangle);
   //  localFunctionTestConstructor<2, 2, 2>(triangle);  // triangle with quadratic ansatz functions and 2d lf
   std::cout << "triangle with quadratic ansatz functions and 3d local function" << std::endl;
   localFunctionTestConstructor<2, 3, 2>(triangle);
 }
 
 TEST(LocalFunctionTests, TestExpressionsOnQuadrilateral) {
-  std::cout << "quadrilateral with linear ansatz functions and 1d local function" << std::endl;
-  localFunctionTestConstructor<2, 1, 1>(quadrilateral);
+  //  std::cout << "quadrilateral with linear ansatz functions and 1d local function" << std::endl;
+  //  localFunctionTestConstructor<2, 1, 1>(quadrilateral);
   //  localFunctionTestConstructor<2, 2, 1>( quadrilateral);  // quadrilateral with linear ansatz functions and 2d lf
-  std::cout << "quadrilateral with linear ansatz functions and 3d local function" << std::endl;
-  localFunctionTestConstructor<2, 3, 1>(quadrilateral);
-  std::cout << "quadrilateral with quadratic ansatz functions and 1d local function" << std::endl;
-  localFunctionTestConstructor<2, 1, 2>(quadrilateral);
+  //  std::cout << "quadrilateral with linear ansatz functions and 3d local function" << std::endl;
+  //  localFunctionTestConstructor<2, 3, 1>(quadrilateral);
+  //  std::cout << "quadrilateral with quadratic ansatz functions and 1d local function" << std::endl;
+  //  localFunctionTestConstructor<2, 1, 2>(quadrilateral);
   //  localFunctionTestConstructor<2, 2, 2>(quadrilateral);  // quadrilateral with quadratic ansatz functions and 2d lf
   std::cout << "quadrilateral with quadratic ansatz functions and 3d local function" << std::endl;
   localFunctionTestConstructor<2, 3, 2>(quadrilateral);
 }
 TEST(LocalFunctionTests, TestExpressionsOnHexahedron) {
-  std::cout << "hexahedron with linear ansatz functions and 1d local function" << std::endl;
-  localFunctionTestConstructor<3, 1, 1>(hexahedron);  // hexahedron with linear ansatz functions and 1d lf
+  //  std::cout << "hexahedron with linear ansatz functions and 1d local function" << std::endl;
+  //  localFunctionTestConstructor<3, 1, 1>(hexahedron);  // hexahedron with linear ansatz functions and 1d lf
   //  localFunctionTestConstructor<3, 2, 1>(hexahedron);  // hexahedron with linear ansatz functions and 2d lf
-  std::cout << "hexahedron with linear ansatz functions and 3d local function" << std::endl;
-  localFunctionTestConstructor<3, 3, 1>(hexahedron);
-  std::cout << "hexahedron with quadratic ansatz functions and 1d local function" << std::endl;
-  localFunctionTestConstructor<3, 1, 2>(hexahedron);
+  //  std::cout << "hexahedron with linear ansatz functions and 3d local function" << std::endl;
+  //  localFunctionTestConstructor<3, 3, 1>(hexahedron);
+  //  std::cout << "hexahedron with quadratic ansatz functions and 1d local function" << std::endl;
+  //  localFunctionTestConstructor<3, 1, 2>(hexahedron);
   //  localFunctionTestConstructor<3, 2, 2>(hexahedron);  // hexahedron with quadratic ansatz functions and 2d lf
   std::cout << "hexahedron with quadratic ansatz functions and 3d local function" << std::endl;
   localFunctionTestConstructor<3, 3, 2>(hexahedron);  // hexahedron with quadratic ansatz functions and 3d lf
