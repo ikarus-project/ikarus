@@ -100,19 +100,15 @@ namespace Ikarus {
       return *this;
     }
 
-    Eigen::Matrix<ctype, valueSize, valueSize> weingartenMapEmbedded(
-        const CoordinateType &p) const{
+    Eigen::Matrix<ctype, valueSize, valueSize> weingartenMapEmbedded(const CoordinateType &p) const {
       return Eigen::Matrix<ctype, valueSize, valueSize>::Zero();
     }
 
-    Eigen::Matrix<ctype, correctionSize, correctionSize> weingartenMap(
-        const CoordinateType &p) const{
+    Eigen::Matrix<ctype, correctionSize, correctionSize> weingartenMap(const CoordinateType &p) const {
       return Eigen::Matrix<ctype, correctionSize, correctionSize>::Zero();
     }
 
-    void addInEmbedding(const CoordinateType &correction) {
-      var+=correction;
-    }
+    void addInEmbedding(const CoordinateType &correction) { var += correction; }
 
     /** \brief size */
     [[nodiscard]] constexpr size_t size() const { return valueSize; }
@@ -157,9 +153,7 @@ namespace Ikarus {
     return rt * factor;
   }
 
-
-
-template <typename ctype2, int d2>
+  template <typename ctype2, int d2>
   bool operator==(const RealTuple<ctype2, d2> &v1, const RealTuple<ctype2, d2> &v2) {
     return v1.getValue() == v2.getValue();
   }

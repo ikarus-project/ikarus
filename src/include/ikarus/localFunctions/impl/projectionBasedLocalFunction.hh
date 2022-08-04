@@ -321,7 +321,9 @@ namespace Ikarus {
     }
 
     Jacobian evaluateEmbeddingJacobianImpl(const AnsatzFunctionJacobian& dN) const {
-      Jacobian J = coeffsAsMat * dN.template cast<ctype>();// The cast here is only necessary since the autodiff types are not working
+      Jacobian J
+          = coeffsAsMat
+            * dN.template cast<ctype>();  // The cast here is only necessary since the autodiff types are not working
       // otherwise, see Issue https://github.com/autodiff/autodiff/issues/73
       return J;
     }

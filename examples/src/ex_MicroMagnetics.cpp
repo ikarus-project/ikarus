@@ -19,7 +19,6 @@
 
 #include <config.h>
 
-
 #include <dune/alugrid/grid.hh>
 #include <dune/common/parametertreeparser.hh>
 #include <dune/fufem/dunepython.hh>

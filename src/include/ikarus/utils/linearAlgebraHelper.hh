@@ -116,21 +116,21 @@ namespace Ikarus {
   }
   { return a.size() * Type::correctionSize; }
 
-/* Returns the total value size of a block vector with a Manifold as type */
-template <typename Type>
-size_t valueSize(const Dune::BlockVector<Type>& a) requires requires {
-  Type::valueSize;
-}
-{ return a.size() * Type::valueSize; }
+  /* Returns the total value size of a block vector with a Manifold as type */
+  template <typename Type>
+  size_t valueSize(const Dune::BlockVector<Type>& a) requires requires {
+    Type::valueSize;
+  }
+  { return a.size() * Type::valueSize; }
 
-/* Enables the += operator for Dune::BlockVector += Eigen::Vector */
+  /* Enables the += operator for Dune::BlockVector += Eigen::Vector */
   template <typename Type, typename Derived>
   Dune::BlockVector<Type>& operator+=(Dune::BlockVector<Type>& a, const Eigen::MatrixBase<Derived>& b) requires(
       Ikarus::Concepts::AddAssignAble<Type, decltype(b.template segment<Type::correctionSize>(0))>and requires() {
         Type::correctionSize;
       }) {
-  assert(correctionSize(a)==static_cast<size_t>(b.size()) && " The passed vector has wrong size");
-  for (auto i = 0U; i < a.size(); ++i)
+    assert(correctionSize(a) == static_cast<size_t>(b.size()) && " The passed vector has wrong size");
+    for (auto i = 0U; i < a.size(); ++i)
       a[i] += b.template segment<Type::correctionSize>(i * Type::correctionSize);
     return a;
   }
@@ -159,19 +159,19 @@ size_t valueSize(const Dune::BlockVector<Type>& a) requires requires {
     return a;
   }
 
-/* Enables the += operator for Dune::BlockVector += Eigen::Vector */
-template <typename Type, typename Derived>
-Dune::BlockVector<Type>& addInEmbedding(Dune::BlockVector<Type>& a, const Eigen::MatrixBase<Derived>& b) requires(
-    Ikarus::Concepts::AddAssignAble<Type, decltype(b.template segment<Type::valueSize>(0))>and requires() {
-      Type::valueSize;
-    }) {
-  assert(valueSize(a)==static_cast<size_t>(b.size()) && " The passed vector has wrong size");
-  for (auto i = 0U; i < a.size(); ++i)
-    a[i] .addInEmbedding (b.template segment<Type::valueSize>(i * Type::valueSize));
-  return a;
-}
+  /* Enables the += operator for Dune::BlockVector += Eigen::Vector */
+  template <typename Type, typename Derived>
+  Dune::BlockVector<Type>& addInEmbedding(Dune::BlockVector<Type>& a, const Eigen::MatrixBase<Derived>& b) requires(
+      Ikarus::Concepts::AddAssignAble<Type, decltype(b.template segment<Type::valueSize>(0))>and requires() {
+        Type::valueSize;
+      }) {
+    assert(valueSize(a) == static_cast<size_t>(b.size()) && " The passed vector has wrong size");
+    for (auto i = 0U; i < a.size(); ++i)
+      a[i].addInEmbedding(b.template segment<Type::valueSize>(i * Type::valueSize));
+    return a;
+  }
 
-/** \brief Adding free norm function to Eigen types */
+  /** \brief Adding free norm function to Eigen types */
   template <typename Derived>
   requires(!std::floating_point<Derived>) auto norm(const Eigen::MatrixBase<Derived>& v) { return v.norm(); }
 

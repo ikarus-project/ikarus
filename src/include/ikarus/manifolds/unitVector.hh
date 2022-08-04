@@ -29,7 +29,7 @@ namespace Ikarus {
    * \tparam ct The type used for the scalar coordinate values, e.g. double,float
    * \tparam d Dimension of the embedding space of the manifold
    */
-  template <typename ct, int d> //requires (d>1)
+  template <typename ct, int d>  // requires (d>1)
   class UnitVector {
   public:
     /** \brief Type used for coordinates */
@@ -104,16 +104,12 @@ namespace Ikarus {
       return result;
     }
 
-     Eigen::Matrix<ctype, valueSize, valueSize> weingartenMapEmbedded(
-        const CoordinateType &p) const  {
-
-      return -var.dot(p)*Eigen::Matrix<ctype, valueSize, valueSize>::Identity();
+    Eigen::Matrix<ctype, valueSize, valueSize> weingartenMapEmbedded(const CoordinateType &p) const {
+      return -var.dot(p) * Eigen::Matrix<ctype, valueSize, valueSize>::Identity();
     }
 
-    Eigen::Matrix<ctype, correctionSize, correctionSize> weingartenMap(
-        const CoordinateType &p) const{
-
-      return -var.dot(p)*Eigen::Matrix<ctype, correctionSize, correctionSize>::Identity();
+    Eigen::Matrix<ctype, correctionSize, correctionSize> weingartenMap(const CoordinateType &p) const {
+      return -var.dot(p) * Eigen::Matrix<ctype, correctionSize, correctionSize>::Identity();
     }
 
     template <typename Derived>
@@ -192,8 +188,7 @@ namespace Ikarus {
 
     /** \brief Copy assignement if the other type has different underlying type*/
     template <typename ctype_>
-    requires std::convertible_to<ctype_, ctype>
-    UnitVector<ctype, d>
+    requires std::convertible_to<ctype_, ctype> UnitVector<ctype, d>
     &operator=(const UnitVector<ctype_, d> &other) {
       var = other.var;
       return *this;
@@ -204,12 +199,9 @@ namespace Ikarus {
       return *this;
     }
 
-    void addInEmbedding(const CoordinateType &correction) {
-      var+=correction;
-    }
+    void addInEmbedding(const CoordinateType &correction) { var += correction; }
 
-
-   private:
+  private:
     CoordinateType var{CoordinateType::UnitX()};
   };
 

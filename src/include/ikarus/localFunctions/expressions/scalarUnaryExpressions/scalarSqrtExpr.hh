@@ -37,13 +37,13 @@ namespace Ikarus {
     template <typename ScalarType>
     static auto secondDerivative(const ScalarType& v) {
       using std::pow;
-      return ScalarType(-0.25) /  pow(v, 1.5);
+      return ScalarType(-0.25) / pow(v, 1.5);
     }
 
     template <typename ScalarType>
     static auto thirdDerivative(const ScalarType& v) {
       using std::pow;
-      return ScalarType(0.375) /  pow(v, 2.5);
+      return ScalarType(0.375) / pow(v, 2.5);
     }
   };
   template <typename E1>

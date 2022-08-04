@@ -27,9 +27,9 @@ namespace Ikarus {
   double drawResultAndReturnSlope(std::string&& functionName, const std::function<double(double)>& ftfunc, bool draw);
 
   struct CheckFlags {
-    bool draw                = true;
+    bool draw                        = true;
     bool writeSlopeStatementIfFailed = true;
-    double tolerance         = 1e-2;
+    double tolerance                 = 1e-2;
   };
 
   /*

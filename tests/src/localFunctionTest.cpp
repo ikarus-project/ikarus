@@ -36,7 +36,6 @@
 #include <ikarus/utils/multiIndex.hh>
 using namespace Dune::Functions::BasisFactory;
 
-
 template <typename T>
 class LocalFunctionProjectionBasedUnitVector : public testing::Test {
 public:
