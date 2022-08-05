@@ -494,8 +494,8 @@ void localFunctionTestConstructor(const Dune::GeometryType& geometryType, size_t
   //  }
 }
 
-//Most of the following tests are commented out due to very long compile times and long runtimes in debug mode we hope
-// to still capture most of the issues
+// Most of the following tests are commented out due to very long compile times and long runtimes in debug mode we hope
+//  to still capture most of the issues
 using namespace Dune::GeometryTypes;
 TEST(LocalFunctionTests, TestExpressionsOnLine) {
   //  std::cout << "line with linear ansatz functions and 1d local function" << std::endl;
@@ -536,14 +536,14 @@ TEST(LocalFunctionTests, TestExpressionsOnQuadrilateral) {
   localFunctionTestConstructor<2, 3, 2>(quadrilateral);
 }
 TEST(LocalFunctionTests, TestExpressionsOnHexahedron) {
-    std::cout << "hexahedron with linear ansatz functions and 1d local function" << std::endl;
-    localFunctionTestConstructor<3, 1, 1>(hexahedron);  // hexahedron with linear ansatz functions and 1d lf
+  std::cout << "hexahedron with linear ansatz functions and 1d local function" << std::endl;
+  localFunctionTestConstructor<3, 1, 1>(hexahedron);  // hexahedron with linear ansatz functions and 1d lf
   //  localFunctionTestConstructor<3, 2, 1>(hexahedron);  // hexahedron with linear ansatz functions and 2d lf
   //  std::cout << "hexahedron with linear ansatz functions and 3d local function" << std::endl;
   //  localFunctionTestConstructor<3, 3, 1>(hexahedron);
   //  std::cout << "hexahedron with quadratic ansatz functions and 1d local function" << std::endl;
   //  localFunctionTestConstructor<3, 1, 2>(hexahedron);
   //  localFunctionTestConstructor<3, 2, 2>(hexahedron);  // hexahedron with quadratic ansatz functions and 2d lf
-//  std::cout << "hexahedron with quadratic ansatz functions and 3d local function" << std::endl;
-//  localFunctionTestConstructor<3, 3, 2>(hexahedron);  // hexahedron with quadratic ansatz functions and 3d lf
+  //  std::cout << "hexahedron with quadratic ansatz functions and 3d local function" << std::endl;
+  //  localFunctionTestConstructor<3, 3, 2>(hexahedron);  // hexahedron with quadratic ansatz functions and 3d lf
 }
