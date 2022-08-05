@@ -100,6 +100,16 @@ namespace Ikarus {
       return *this;
     }
 
+    Eigen::Matrix<ctype, valueSize, valueSize> weingartenMapEmbedded(const CoordinateType &p) const {
+      return Eigen::Matrix<ctype, valueSize, valueSize>::Zero();
+    }
+
+    Eigen::Matrix<ctype, correctionSize, correctionSize> weingartenMap(const CoordinateType &p) const {
+      return Eigen::Matrix<ctype, correctionSize, correctionSize>::Zero();
+    }
+
+    void addInEmbedding(const CoordinateType &correction) { var += correction; }
+
     /** \brief size */
     [[nodiscard]] constexpr size_t size() const { return valueSize; }
     auto begin() { return var.begin(); }

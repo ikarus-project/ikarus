@@ -31,19 +31,19 @@ namespace Ikarus {
 
     template <typename ScalarType>
     static auto derivative(const ScalarType& v) {
-      return ScalarType(1.0) / (ScalarType(2.0) * sqrt(v));
+      return ScalarType(0.5) / sqrt(v);
     }
 
     template <typename ScalarType>
     static auto secondDerivative(const ScalarType& v) {
       using std::pow;
-      return ScalarType(-1.0) / (ScalarType(4.0) * pow(v, 3.0 / 2.0));
+      return ScalarType(-0.25) / pow(v, 1.5);
     }
 
     template <typename ScalarType>
     static auto thirdDerivative(const ScalarType& v) {
       using std::pow;
-      return ScalarType(3.0) / (ScalarType(8.0) * pow(v, 5.0 / 2.0));
+      return ScalarType(0.375) / pow(v, 2.5);
     }
   };
   template <typename E1>
