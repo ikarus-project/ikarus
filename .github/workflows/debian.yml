@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: rath3t/ci-debian-bookworm
+      options: --memory-swap="10g" --memory="10g" --cpus="2"
     strategy:
       fail-fast: false
       matrix:
