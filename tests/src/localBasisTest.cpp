@@ -37,7 +37,7 @@
 using namespace Dune::Functions::BasisFactory;
 
 template <typename LB, bool isCopy = false>
-void testLocalBasis(const LB& localBasis, const Dune::GeometryType& type) {
+void testLocalBasis(LB& localBasis, const Dune::GeometryType& type) {
   const double tol = 1e-12;
   using namespace autodiff;
   using namespace Ikarus;
@@ -105,6 +105,17 @@ void testLocalBasis(const LB& localBasis, const Dune::GeometryType& type) {
       }
     }
   }
+  // Unbound basis checks
+  EXPECT_FALSE(localBasis.isBound());
+  EXPECT_DEBUG_DEATH(localBasis.viewOverIntegrationPoints(), "You have to bind the basis first");
+  EXPECT_THROW(localBasis.evaluateFunction(0), std::logic_error);
+  EXPECT_THROW(localBasis.evaluateJacobian(0), std::logic_error);
+  if constexpr (gridDim > 1) {
+    EXPECT_THROW(localBasis.evaluateSecondDerivatives(0), std::logic_error);
+    localBasis.bind(rule, bindDerivatives(0, 1, 2));
+  } else
+    localBasis.bind(rule, bindDerivatives(0, 1));
+  EXPECT_TRUE(localBasis.isBound());
 }
 
 template <int domainDim, int order>
@@ -117,7 +128,6 @@ void localBasisTestConstructor(const Dune::GeometryType& geometryType, size_t nN
   const auto& fe  = feCache.get(geometryType);
   auto localBasis = Ikarus::LocalBasis(fe.localBasis());
 
-  const auto& rule = Dune::QuadratureRules<double, domainDim>::rule(fe.type(), 3);
   testLocalBasis(localBasis, geometryType);
 }
 

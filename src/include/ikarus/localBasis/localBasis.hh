@@ -114,8 +114,8 @@ namespace Ikarus {
       return dNbound.value()[i];
     }
 
-    template <typename Derived>
-    void evaluateSecondDerivatives(long unsigned i) const {
+    /* Returns a reference to the ansatz functions second derivatives evaluated at the given integration point index */
+    const auto& evaluateSecondDerivatives(long unsigned i) const {
       if (not ddNbound) throw std::logic_error("You have to bind the basis first");
       return ddNbound.value()[i];
     }
