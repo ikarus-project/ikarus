@@ -1,25 +1,25 @@
-name: Sanitizers
-on:
-  push:
-    paths-ignore:
-      - 'docs/**'
-      - '.github/workflows/ghpages.yml'
-jobs:
-  Ubuntu-Sanitizers:
-    runs-on: ubuntu-latest
-    container:
-      image: rath3t/ci-debian-bookworm
-    steps:
-      - uses: actions/checkout@v2
-        with:
-         path: 'repo'
-      - name: Build
-        working-directory: ./repo
-        run: |
-          mkdir cmake-build-debug
-          cd cmake-build-debug
-          cmake ../  -DUSE_STATIC_ANALYZER="cppcheck" -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc-12 -DCMAKE_CXX_COMPILER=g++-12 -DUSE_SANITIZER="Address;Memory;MemoryWithOrigins;Thread;Leak;'Address;Undefined'"
-          cmake --build . --parallel 9 --target IkarusTests
-      - name: Tests
-        working-directory: ./repo/cmake-build-debug
-        run: ctest --output-on-failure --parallel 4 -C Debug
+#name: Sanitizers
+#on:
+#  push:
+#    paths-ignore:
+#      - 'docs/**'
+#      - '.github/workflows/ghpages.yml'
+#jobs:
+#  Ubuntu-Sanitizers:
+#    runs-on: ubuntu-latest
+#    container:
+#      image: rath3t/ci-debian-bookworm
+#    steps:
+#      - uses: actions/checkout@v2
+#        with:
+#         path: 'repo'
+#      - name: Build
+#        working-directory: ./repo
+#        run: |
+#          mkdir cmake-build-debug
+#          cd cmake-build-debug
+#          cmake ../  -DUSE_STATIC_ANALYZER="cppcheck" -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc-12 -DCMAKE_CXX_COMPILER=g++-12 -DUSE_SANITIZER="Address;Memory;MemoryWithOrigins;Thread;Leak;'Address;Undefined'"
+#          cmake --build . --parallel 9 --target IkarusTests
+#      - name: Tests
+#        working-directory: ./repo/cmake-build-debug
+#        run: ctest --output-on-failure --parallel 4 -C Debug
