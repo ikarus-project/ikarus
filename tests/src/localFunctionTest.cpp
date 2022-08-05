@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "common.hh"
+#include "factories.hh"
 #include "testHelpers.hh"
 
 #include <array>
@@ -20,6 +21,7 @@
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/grid/yaspgrid.hh>
+#include <dune/localfunctions/lagrange/pqkfactory.hh>
 
 #include <Eigen/Core>
 
@@ -31,7 +33,7 @@
 #include <ikarus/manifolds/realTuple.hh>
 #include <ikarus/manifolds/unitVector.hh>
 #include <ikarus/utils/functionSanityChecks.hh>
-
+#include <ikarus/utils/multiIndex.hh>
 using namespace Dune::Functions::BasisFactory;
 
 template <typename T>
@@ -117,7 +119,7 @@ TYPED_TEST(LocalFunctionProjectionBasedUnitVector, ProjectionBasedUnitVector) {
       auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(func, deriv), parameter(gpOffset));
 
       EXPECT_TRUE((checkJacobian<decltype(nonLinOp), Eigen::Vector<double, 2>>(
-          nonLinOp, {.draw = false, .writeSlopeStatement = false})));
+          nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = false})));
 
       auto localFdual_ = [&](auto& x) { return localFdual(x, gpIndex); };
       Eigen::VectorXdual xv(vasMat.cols() * vasMat.rows());
@@ -264,7 +266,7 @@ TYPED_TEST(LocalFunctionVector, Test1) {
       auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(func, deriv), parameter(gpOffset));
 
       EXPECT_TRUE((checkJacobian<decltype(nonLinOp), Eigen::Vector<double, 2>>(
-          nonLinOp, {.draw = false, .writeSlopeStatement = false})));
+          nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = false})));
 
       auto localFdual_ = [&](auto& x) { return localFdual(x, gpIndex); };
       Eigen::VectorXdual xv(vasMat.cols() * vasMat.rows());

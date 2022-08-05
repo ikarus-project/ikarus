@@ -19,8 +19,6 @@
 
 #include <config.h>
 
-#include "src/include/ikarus/utils/algorithms.hh"
-
 #include <dune/alugrid/grid.hh>
 #include <dune/common/parametertreeparser.hh>
 #include <dune/fufem/dunepython.hh>
@@ -315,8 +313,8 @@ int main(int argc, char **argv) {
     multiTypeVector += dFull;
   });
 
-  checkGradient(nonLinOp, {.draw = true, .writeSlopeStatement = true}, updateFunction);
-  checkHessian(nonLinOp, {.draw = true, .writeSlopeStatement = true}, updateFunction);
+  checkGradient(nonLinOp, {.draw = true, .writeSlopeStatementIfFailed = true}, updateFunction);
+  checkHessian(nonLinOp, {.draw = true, .writeSlopeStatementIfFailed = true}, updateFunction);
 
   auto nr = Ikarus::makeTrustRegion(nonLinOp, updateFunction);
   //  auto nr = Ikarus::makeTrustRegion< decltype(nonLinOp),PreConditioner::DiagonalPreconditioner>(nonLinOp,

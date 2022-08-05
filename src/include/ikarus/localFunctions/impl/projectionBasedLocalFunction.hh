@@ -93,6 +93,7 @@ namespace Ikarus {
     /** \brief Type for the Jacobian of the ansatz function values */
     using AnsatzFunctionJacobian = typename Traits::AnsatzFunctionJacobian;
 
+    const auto& coefficientsRef() const { return coeffs; }
     auto& coefficientsRef() { return coeffs; }
 
     const Ikarus::LocalBasis<DuneBasis>& basis() const { return basis_; }
@@ -320,7 +321,10 @@ namespace Ikarus {
     }
 
     Jacobian evaluateEmbeddingJacobianImpl(const AnsatzFunctionJacobian& dN) const {
-      Jacobian J = coeffsAsMat * dN;
+      Jacobian J
+          = coeffsAsMat
+            * dN.template cast<ctype>();  // The cast here is only necessary since the autodiff types are not working
+      // otherwise, see Issue https://github.com/autodiff/autodiff/issues/73
       return J;
     }
 
