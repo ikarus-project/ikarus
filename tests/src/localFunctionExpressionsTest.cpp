@@ -40,7 +40,7 @@ template <typename LF, bool isCopy = false>
 void testLocalFunction(const LF& lf) {
   spdlog::info("Testing: " + std::string(isCopy ? "Copy " : "") + Ikarus::localFunctionName(lf));
 
-  const double tol = 1e-10;
+  const double tol = 1e-12;
   using namespace Ikarus::DerivativeDirections;
   using namespace autodiff;
   using namespace Ikarus;
@@ -289,7 +289,7 @@ void testLocalFunction(const LF& lf) {
     for (size_t i = 0; i < coeffSize; ++i)
       EXPECT_EQ(coeffs[i], coeffCopy[i]);  // since the coeffs are copied the values should be the same
 
-    EXPECT_NE(&coeffs, &coeffCopy);  // since the coeffs are copied the adresses should differ
+    EXPECT_NE(&coeffs, &coeffCopy);  // since the coeffs are copied the addresses should differ
 
     testLocalFunction<std::remove_cvref_t<decltype(lfCopy)>, true>(lfCopy);
   }
@@ -379,27 +379,27 @@ void localFunctionTestConstructor(const Dune::GeometryType& geometryType, size_t
   static_assert(std::tuple_size_v<decltype(collectNonArithmeticLeafNodes(k))> == 3);
   static_assert(countNonArithmeticLeafNodes(k) == 3);
 
-  auto dotff = dot(f, g);
-  testLocalFunction(dotff);
-  static_assert(countNonArithmeticLeafNodes(dotff) == 2);
-  static_assert(dotff.order() == quadratic);
+  auto dotfg = dot(f, g);
+  testLocalFunction(dotfg);
+  static_assert(countNonArithmeticLeafNodes(dotfg) == 2);
+  static_assert(dotfg.order() == quadratic);
   static_assert(
-      std::is_same_v<typename decltype(dotff)::Ids, std::tuple<Dune::index_constant<0>, Dune::index_constant<0>>>);
-
-  auto sqrtdotff = sqrt(dotff);
-  testLocalFunction(sqrtdotff);
+      std::is_same_v<typename decltype(dotfg)::Ids, std::tuple<Dune::index_constant<0>, Dune::index_constant<0>>>);
 
   auto normSq = normSquared(f);
   testLocalFunction(normSq);
   static_assert(normSq.order() == quadratic);
 
-  auto logg = log(dotff);
+  auto logg = log(dotfg);
   testLocalFunction(logg);
 
-  auto powf = pow<3>(dotff);
+  auto powf = pow<3>(dotfg);
   testLocalFunction(powf);
 
-  if constexpr (size > 1)  // Projection-Based only makes since in 2d+
+  auto powfgsqrtdotfg = sqrt(powf);
+  testLocalFunction(powfgsqrtdotfg);
+
+  if constexpr (size > 1)  // Projection-Based only makes sense in 2d+
   {
     auto gP = Ikarus::ProjectionBasedLocalFunction(localBasis, vBlockedLocal3);
     static_assert(gP.order() == nonLinear);
@@ -493,6 +493,9 @@ void localFunctionTestConstructor(const Dune::GeometryType& geometryType, size_t
   }
   //  }
 }
+
+//Most of the following tests are commented out due to very long compile times and long runtimes in debug mode we hope
+// to still capture most of the issues
 using namespace Dune::GeometryTypes;
 TEST(LocalFunctionTests, TestExpressionsOnLine) {
   //  std::cout << "line with linear ansatz functions and 1d local function" << std::endl;
@@ -533,14 +536,14 @@ TEST(LocalFunctionTests, TestExpressionsOnQuadrilateral) {
   localFunctionTestConstructor<2, 3, 2>(quadrilateral);
 }
 TEST(LocalFunctionTests, TestExpressionsOnHexahedron) {
-  //  std::cout << "hexahedron with linear ansatz functions and 1d local function" << std::endl;
-  //  localFunctionTestConstructor<3, 1, 1>(hexahedron);  // hexahedron with linear ansatz functions and 1d lf
+    std::cout << "hexahedron with linear ansatz functions and 1d local function" << std::endl;
+    localFunctionTestConstructor<3, 1, 1>(hexahedron);  // hexahedron with linear ansatz functions and 1d lf
   //  localFunctionTestConstructor<3, 2, 1>(hexahedron);  // hexahedron with linear ansatz functions and 2d lf
   //  std::cout << "hexahedron with linear ansatz functions and 3d local function" << std::endl;
   //  localFunctionTestConstructor<3, 3, 1>(hexahedron);
   //  std::cout << "hexahedron with quadratic ansatz functions and 1d local function" << std::endl;
   //  localFunctionTestConstructor<3, 1, 2>(hexahedron);
   //  localFunctionTestConstructor<3, 2, 2>(hexahedron);  // hexahedron with quadratic ansatz functions and 2d lf
-  std::cout << "hexahedron with quadratic ansatz functions and 3d local function" << std::endl;
-  localFunctionTestConstructor<3, 3, 2>(hexahedron);  // hexahedron with quadratic ansatz functions and 3d lf
+//  std::cout << "hexahedron with quadratic ansatz functions and 3d local function" << std::endl;
+//  localFunctionTestConstructor<3, 3, 2>(hexahedron);  // hexahedron with quadratic ansatz functions and 3d lf
 }
