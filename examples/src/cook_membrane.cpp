@@ -29,13 +29,13 @@ using namespace Ikarus;
 using namespace Dune::Indices;
 
 template <typename Basis>
-class Q1LinearElasticAD : public DisplacementFE<Basis>,
+class Q1LinearElasticAD : public PowerBasisFE<Basis>,
                           public Ikarus::AutoDiffFE<Q1LinearElasticAD<Basis>, Basis> {
 public:
-  using BaseDisp = DisplacementFE<Basis>;  // Handles globalIndices function
+  using BaseDisp = PowerBasisFE<Basis>;  // Handles globalIndices function
   using BaseAD   = AutoDiffFE<Q1LinearElasticAD<Basis>, Basis>;
   using BaseAD::size;
-  using GlobalIndex = typename DisplacementFE<Basis>::GlobalIndex;
+  using GlobalIndex = typename PowerBasisFE<Basis>::GlobalIndex;
   friend BaseAD;
   using FERequirementType = FErequirements<Eigen::VectorXd>;
   using LocalView         = typename Basis::LocalView;
