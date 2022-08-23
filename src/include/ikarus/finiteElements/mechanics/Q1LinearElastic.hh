@@ -79,8 +79,6 @@ namespace Ikarus {
     using Traits = TraitsFromLocalView<LocalView>;
 
   public:
-
-    void setEASmethod();
     double calculateScalar(const FERequirementType& par)const {
       const auto& d      = par.getSolution(Ikarus::FESolutions::displacement);
       const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
@@ -159,7 +157,6 @@ namespace Ikarus {
       Eigen::Matrix3<double> C = planeStressLinearElasticMaterialTangent(emod_,nu_);
       const auto geo = localView_.element().geometry();
       Ikarus::StandardLocalFunction uFunction(localBasis, disp);
-//      auto  linearStrainF = linearStrains(uFunction);
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
         const auto Jinv = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
         const double intElement = geo.integrationElement(gp.position()) * gp.weight();
@@ -181,7 +178,6 @@ namespace Ikarus {
           }
         }
       }
-//      transformStiffness(h,linearStrainF)
     }
 
     void calculateVector(const FERequirementType& par, typename Traits::VectorType& g) const {

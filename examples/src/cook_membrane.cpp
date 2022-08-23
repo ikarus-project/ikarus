@@ -234,15 +234,7 @@ Eigen::MatrixXd Q1E4Stiffness(auto localView, const Eigen::Matrix3d& C) {
 //
 //  Eigen::EigenSolver<Eigen::MatrixXd> eskeas(K - (L.transpose() * D.inverse() * L));
 //  std::cout << "The eigenvalues of Keas are:" << std::endl << eskeas.eigenvalues() << std::endl;
-  const auto Dinv = D.inverse();
-  for (int i = 0; i < 4; ++i) {
-    const auto& Li = L.block<4,2>(0,i*2);
-    for (int j = 0; j < 4; ++j) {
-      const auto& Lj = L.block<4,2>(0,j*2);
-      K.block<2,2>(i*2,j*2)-= Li.transpose()*Dinv*Lj;
-    }
-  }
-  return  K;
+  return K - (L.transpose() * D.inverse() * L);
 }
 
 
@@ -318,9 +310,6 @@ int main(int argc, char **argv) {
   BoundaryPatch<decltype(gridView)> neumannBoundary(gridView, neumannVertices);
 
   for (auto& element : elements(gridView)) {
-    auto localView = basis.localView();
-    localView.bind(element);
-    Q1E4Stiffness(localView,planeStressLinearElasticMaterialTangent(E,nu));
     fesAD.emplace_back(basis, element, E, nu, &neumannBoundary, neumannBoundaryLoad, volumeLoad);
     fes.emplace_back(basis, element, E, nu, &neumannBoundary, neumannBoundaryLoad, volumeLoad);
   }
