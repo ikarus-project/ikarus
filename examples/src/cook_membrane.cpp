@@ -234,6 +234,7 @@ Eigen::MatrixXd Q1E4Stiffness(auto localView, const Eigen::Matrix3d& C) {
 //
 //  Eigen::EigenSolver<Eigen::MatrixXd> eskeas(K - (L.transpose() * D.inverse() * L));
 //  std::cout << "The eigenvalues of Keas are:" << std::endl << eskeas.eigenvalues() << std::endl;
+//  return K - (L.transpose() * D.inverse() * L);
   const auto Dinv = D.inverse();
   for (int i = 0; i < 4; ++i) {
     const auto& Li = L.block<4,2>(0,i*2);
