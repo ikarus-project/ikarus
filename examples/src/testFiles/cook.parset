@@ -1,0 +1,10 @@
+[GridParameters]
+refinement = 2
+
+[ControlParameters]
+
+[MaterialParameters]
+E      = 1.0
+nu        = 0.3333333333333
+
+[]

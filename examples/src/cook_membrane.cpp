@@ -5,6 +5,7 @@
 
 #include <vector>
 
+#include <dune/common/parametertreeparser.hh>
 #include <dune/fufem/boundarypatch.hh>
 #include <dune/fufem/dunepython.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
@@ -140,8 +141,6 @@ private:
   double nu_;
 };
 
-
-
 Eigen::MatrixXd Q1E4Stiffness(auto localView, const Eigen::Matrix3d& C) {
 
   using namespace Dune::Indices;
@@ -246,24 +245,30 @@ Eigen::MatrixXd Q1E4Stiffness(auto localView, const Eigen::Matrix3d& C) {
   return  K;
 }
 
-
 int main(int argc, char **argv) {
   Dune::MPIHelper::instance(argc, argv);
   constexpr int gridDim = 2;
-  const double E  = 1.0;
-  const double nu = 1.0/3.0;
-
   double lambdaLoad = 1;
+
+  /// read in parameters
+  Dune::ParameterTree parameterSet;
+  Dune::ParameterTreeParser::readINITree(argv[1], parameterSet);
+
+  const Dune::ParameterTree& gridParameters     = parameterSet.sub("GridParameters");
+  const Dune::ParameterTree& controlParameters  = parameterSet.sub("ControlParameters");
+  const Dune::ParameterTree& materialParameters = parameterSet.sub("MaterialParameters");
+
+  const double E          = materialParameters.get<double>("E");
+  const double nu            = materialParameters.get<double>("nu");
+  const int refinement_level = gridParameters.get<int>("refinement");
 
   using Grid = Dune::UGGrid<gridDim>;
   auto grid  = Dune::GmshReader<Grid>::read("../../tests/src/testFiles/cook.msh", false);
-  grid->globalRefine(2);
+  grid->globalRefine(refinement_level);
   auto gridView = grid->leafGridView();
 
   using namespace Dune::Functions::BasisFactory;
   auto basis = makeBasis(gridView, power<gridDim>(lagrange<1>(), FlatInterleaved()));
-
-  // FlatInterleaved() -> <ux1,ux2,ux3,ux4,uy1,uy2,uy3,uy4>
 
   std::cout << "This gridview contains: " << std::endl;
   std::cout << gridView.size(2) << " vertices" << std::endl;
@@ -273,14 +278,16 @@ int main(int argc, char **argv) {
 
   draw(gridView);
 
-  // clamp left-hand side
+  /// clamp left-hand side
   std::vector<bool> dirichletFlags(basis.size(),false);
   forEachBoundaryDOF(basis, [&](auto &&localIndex, auto &&localView, auto &&intersection) {
     if (std::abs(intersection.geometry().center()[0]) < 1e-8) dirichletFlags[localView.index(localIndex)[0]] = true;
   });
 
-  std::vector<Q1LinearElasticAD<decltype(basis)>> fesAD;
+  std::vector<Q1LinearElasticAD<decltype(basis)>> fesAD; //from Automatic differentiation
   std::vector<Ikarus::Q1LinearElastic<decltype(basis)>> fes;
+
+  /// function for volume load- here: returns zero
   auto volumeLoad = [](auto& globalCoord, auto& lamb) {
     Eigen::Vector2d fext;
     fext.setZero();
@@ -289,12 +296,14 @@ int main(int argc, char **argv) {
     return fext;
   };
 
+  /// neumann boundary load in vertical direction
   auto neumannBoundaryLoad = [&](auto& globalCoord, auto& lamb) {
     Eigen::Vector2d F  = Eigen::Vector2d::Zero();
     F[1] = lamb/16.0;
     return F;
   };
 
+  /// Python function which could be used to obtain the vertices at the right edge
   std::string lambdaNeumannVertices = std::string("lambda x: ( x[0]>47.9999 )");
   Python::start();
   Python::Reference main = Python::import("__main__");
@@ -307,6 +316,7 @@ int main(int argc, char **argv) {
 
   const auto& indexSet = gridView.indexSet();
 
+  /// Flagging the vertices on which neumann load is applied as true
   Dune::BitSetVector<1> neumannVertices(gridView.size(2), false);
   auto pythonNeumannVertices = Python::make_function<bool>(Python::evaluate(lambdaNeumannVertices));
 
@@ -320,8 +330,8 @@ int main(int argc, char **argv) {
 
   for (auto& element : elements(gridView)) {
     auto localView = basis.localView();
-    localView.bind(element);
-    Q1E4Stiffness(localView,planeStressLinearElasticMaterialTangent(E,nu));
+//    localView.bind(element);
+//    Q1E4Stiffness(localView,planeStressLinearElasticMaterialTangent(E,nu));
     fesAD.emplace_back(basis, element, E, nu, &neumannBoundary, neumannBoundaryLoad, volumeLoad);
     fes.emplace_back(basis, element, E, nu, &neumannBoundary, neumannBoundaryLoad, volumeLoad);
   }

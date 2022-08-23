@@ -50,10 +50,7 @@ namespace Ikarus {
   class Q1LinearElastic : public PowerBasisFE<Basis>{
   public:
     using BaseDisp = PowerBasisFE<Basis>;  // Handles globalIndices function
-//    using BaseAD   = AutoDiffFE<Q1LinearElastic<Basis>, Basis>;
-//    using BaseAD::size;
     using GlobalIndex = typename PowerBasisFE<Basis>::GlobalIndex;
-//    friend BaseAD;
     using FERequirementType = FErequirements<Eigen::VectorXd>;
     using LocalView         = typename Basis::LocalView;
     using GridView         = typename Basis::GridView;
