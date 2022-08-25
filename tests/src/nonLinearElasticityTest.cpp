@@ -1,7 +1,9 @@
 
 #include <config.h>
 
-#include <catch2/catch_all.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_all.hpp>
+#include <catch2/catch_template_test_macros.hpp>
 
 #include "common.hh"
 #include "testHelpers.hh"
@@ -24,17 +26,6 @@
 #include <ikarus/utils/algorithms.hh>
 #include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
-
-// template <typename T>
-// class NonLinearElasticityLoadControlNRandTR : public testing::Test {
-// public:
-//   using GridId = T;
-//   NonLinearElasticityLoadControlNRandTR() : value_{createGrid<T>()} {}
-//   decltype(createGrid<T>()) value_;
-// };
-// using GridTypes = ::testing::Types<Grids::Yasp, Grids::Alu, Grids::Iga>;
-//
-// TYPED_TEST_SUITE(NonLinearElasticityLoadControlNRandTR, GridTypes);
 
 TEMPLATE_TEST_CASE("NonLinearElasticityLoadControlNRandTR: ComputeMaxDisp", "[nonLinearElasticityTest.cpp]",
                    Grids::Yasp, Grids::Alu, Grids::Iga) {

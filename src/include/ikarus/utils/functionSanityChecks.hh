@@ -81,7 +81,7 @@ namespace Ikarus {
         spdlog::info("The gradient seems wrong.");
     }
 
-    nonLinOp.template updateAll();
+    nonLinOp.updateAll();
     return checkPassed;
   }
 
@@ -149,7 +149,7 @@ namespace Ikarus {
     } else
       b = 1;
 
-    nonLinOp.template updateAll();
+    nonLinOp.updateAll();
     const auto e = nonLinOp.value();
 
     double gradfv, vhessv;
@@ -181,7 +181,7 @@ namespace Ikarus {
       else
         spdlog::info("The Hessian seems wrong.");
     }
-    nonLinOp.template updateAll();
+    nonLinOp.updateAll();
     return checkPassed;
   }
 }  // namespace Ikarus
