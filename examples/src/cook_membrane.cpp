@@ -19,8 +19,9 @@
 #include <Eigen/Eigenvalues>
 
 #include <ikarus/assembler/simpleAssemblers.hh>
+#include <ikarus/finiteElements/mechanics/linearElastic.hh>
+#include <ikarus/finiteElements/mechanics/enhancedAssumedStrains.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
-#include <ikarus/finiteElements/mechanics/Q1LinearElastic.hh>
 #include <ikarus/localBasis/localBasis.hh>
 #include <ikarus/solver/linearSolver/linearSolver.hh>
 #include <ikarus/utils/drawing/griddrawer.hh>
@@ -285,7 +286,8 @@ int main(int argc, char **argv) {
   });
 
   std::vector<Q1LinearElasticAD<decltype(basis)>> fesAD; //from Automatic differentiation
-  std::vector<Ikarus::Q1LinearElastic<decltype(basis)>> fes;
+//  std::vector<Ikarus::LinearElastic<decltype(basis)>> fes;
+  std::vector<Ikarus::EnhancedAssumedStrains<Ikarus::LinearElastic<decltype(basis)>>> fes;
 
   /// function for volume load- here: returns zero
   auto volumeLoad = [](auto& globalCoord, auto& lamb) {
