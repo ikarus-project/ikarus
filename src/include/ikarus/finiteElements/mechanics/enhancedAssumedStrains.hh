@@ -25,6 +25,8 @@
 
 #include <ikarus/utils/eigenDuneTransformations.hh>
 #include <ikarus/localFunctions/meta.hh>
+#include <concepts>
+
 
 namespace Ikarus{
 
@@ -70,14 +72,14 @@ namespace Ikarus{
     static constexpr int strainSize = 3;
     static constexpr int enhancedStrainSize = 4;
 
-    EASE4(const Geometry& geometry)
+    EASQ1E4(const Geometry& geometry)
     : geometry{geometry},
           T0InverseTransformed{calcTransformationMatrix2D(geometry)}
     {}
 
-    auto calcM(const Dune::FieldVector<double,2>& quadPos)
+    template<typename Derived> requires std::convertible_to<Derived,const Eigen::MatrixBase<Derived>&>
+    void calcM(const Dune::FieldVector<double,2>& quadPos,Derived& M) const
     {
-      Eigen::Matrix<double,strainSize,Eigen::Dynamic,0,strainSize,maxEASParameter2d> M;
       M.setZero(strainSize,enhancedStrainSize);
       const double xi = quadPos[0];
       const double eta = quadPos[1];
@@ -100,17 +102,16 @@ namespace Ikarus{
     static constexpr int strainSize = 3;
     static constexpr int enhancedStrainSize = 5;
 
-    EASE5(const Geometry& geometry)
+    EASQ1E5(const Geometry& geometry)
         : geometry{geometry}
           ,T0InverseTransformed{calcTransformationMatrix2D(geometry)}
     {}
 
-    auto calcM(const Dune::FieldVector<double,2>& quadPos)
+    template<typename Derived> requires std::convertible_to<Derived,const Eigen::MatrixBase<Derived>&>
+    void calcM(const Dune::FieldVector<double,2>& quadPos,Derived& M) const
     {
-      Eigen::Matrix<double,strainSize,Eigen::Dynamic,0,strainSize,maxEASParameter2d> M;
-      M.setZero();
-      const double xi = quadPos[0];
-      const double eta = quadPos[1];
+      M.setZero(strainSize,enhancedStrainSize);
+      const double xi = quadPos[0], eta = quadPos[1];
       M(0,0) = xi-0.5;
       M(1,1) = eta-0.5;
       M(2,2) = xi-0.5;
@@ -124,8 +125,10 @@ namespace Ikarus{
     Eigen::Matrix3d T0InverseTransformed;
   };
 
-  using EAS2dVariant = std::variant<EASQ1E4,EASQ1E5>;
-  using EAS3dVariant = std::variant<EASH1E9,EASH1E21>;
+  template<typename Geometry>
+  using EAS2dVariant = std::variant<EASQ1E4<Geometry>,EASQ1E5<Geometry>>;
+//  template<typename Geometry>
+//  using EAS3dVariant = std::variant<EASH1E9<Geometry>,EASH1E21<Geometry>>;
 
 
   template<typename DisplacementBasedElement>
@@ -175,16 +178,15 @@ class EnhancedAssumedStrains : public DisplacementBasedElement {
       auto C = DisplacementBasedElement::getMaterialTangentFunction(par);
       auto& localView = DisplacementBasedElement::getLocalView();
       auto geo = localView.element().geometry();
-      auto easFunction = EASE4(geo);
       auto& first_child = localView.tree().child(0);
       const auto& fe    = first_child.finiteElement();
       assert(((fe.size()== 4 and Traits::mydim==2) or (fe.size()== 8 and Traits::mydim==3)) && "EAS only supported for Q1 or H1 elements");
-      Eigen::Matrix<double,enhancedStrainSize,Eigen::Dynamic> L;
+
       Eigen::Matrix<double,enhancedStrainSize,enhancedStrainSize> D;
       L.setZero(Eigen::NoChange,localView.size());
       D.setZero();
       for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
-        const auto M = easFunction.calcM(gp.position());
+        std::visit([&](auto const& easfunc){ easfunc.calcM(gp.position(),M); }, easVariant);
         const auto Jinv = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
         const auto Ceval = C(gpIndex);
         const double detJ = geo.integrationElement(gp.position());
@@ -205,15 +207,17 @@ void setEASType(EASType otherEASType)
     {
   easType =otherEASType;
   if(otherEASType==EASType::none)
-    return ;
+    return;
   else if(otherEASType==EASType::Q1E4)
-  easVariant= EASE4(localView.element().geometry())     auto geo = localView.element().geometry();
-  auto easFunction = EASE4(geo);
+  easVariant= EASQ1E4(DisplacementBasedElement::getLocalView().element().geometry()) ;
+
 }
 
 private:
 //  DisplacementBasedElement displacementBasedElement;
-  std::conditional_t<Traits::mydim==2 ,EAS2dVariant,EAS3dVariant > easVariant;
+  std::conditional_t<Traits::mydim==2 ,EAS2dVariant<typename LocalView::Element::Geometry>,double > easVariant;
+  mutable Eigen::Matrix<double,enhancedStrainSize,Eigen::Dynamic> L;
+  mutable Eigen::Matrix<double,strainSize,Eigen::Dynamic,0,strainSize,Ikarus::maxEASParameter2d> M;
   EASType easType{EASType::none};
 };
 
