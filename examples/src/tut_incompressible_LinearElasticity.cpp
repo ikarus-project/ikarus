@@ -19,7 +19,6 @@
 
 #include <config.h>
 
-#include <autodiff/forward/dual/dual.hpp>
 #include <matplot/matplot.h>
 
 #include <dune/alugrid/grid.hh>
@@ -33,6 +32,8 @@
 #include <dune/grid/io/file/vtk/vtkwriter.hh>
 
 #include <Eigen/Core>
+
+#include <autodiff/forward/dual/dual.hpp>
 
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/finiteElements/feBases/autodiffFE.hh>

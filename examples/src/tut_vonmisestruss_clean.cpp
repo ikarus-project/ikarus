@@ -22,7 +22,6 @@
 #include "src/include/ikarus/finiteElements/feBases/powerBasisFE.hh"
 #include "src/include/ikarus/finiteElements/feTraits.hh"
 
-#include <autodiff/forward/dual/dual.hpp>
 #include <matplot/matplot.h>
 
 #include <dune/foamgrid/foamgrid.hh>
@@ -34,6 +33,8 @@
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
+
+#include <autodiff/forward/dual/dual.hpp>
 
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/controlRoutines/loadControl.hh>

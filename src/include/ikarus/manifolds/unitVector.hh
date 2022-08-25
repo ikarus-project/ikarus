@@ -183,7 +183,6 @@ namespace Ikarus {
     }
 
     template <typename ctOther, int dOther>
-    requires std::convertible_to<ctOther, ctype>
     friend class UnitVector;
 
     /** \brief Copy assignement if the other type has different underlying type*/

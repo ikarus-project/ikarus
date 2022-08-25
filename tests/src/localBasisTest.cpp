@@ -1,16 +1,13 @@
 
 #include <config.h>
 
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
+#include <catch2/catch_test_macros.hpp>
 
 #include "common.hh"
 #include "factories.hh"
 #include "testHelpers.hh"
 
 #include <array>
-#include <autodiff/forward/dual.hpp>
-#include <autodiff/forward/dual/eigen.hpp>
 #include <complex>
 #include <vector>
 
@@ -23,6 +20,9 @@
 #include <dune/grid/yaspgrid.hh>
 
 #include <Eigen/Core>
+
+#include <autodiff/forward/dual.hpp>
+#include <autodiff/forward/dual/eigen.hpp>
 
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/localFunctions/expressions.hh>
@@ -66,7 +66,7 @@ void testLocalBasis(LB& localBasis, const Dune::GeometryType& type) {
 
       auto nonLinOpSpatialAll
           = Ikarus::NonLinearOperator(linearAlgebraFunctions(func, jacobianLambda), parameter(ipOffset));
-      EXPECT_TRUE((checkJacobian<decltype(nonLinOpSpatialAll), Eigen::Vector<double, gridDim>>(
+      CHECK((checkJacobian<decltype(nonLinOpSpatialAll), Eigen::Vector<double, gridDim>>(
           nonLinOpSpatialAll, {.draw = false, .writeSlopeStatementIfFailed = true, .tolerance = 1e-2})));
       if constexpr (gridDim > 1) {
         std::cout << "Test Second Derivatives" << std::endl;
@@ -98,7 +98,7 @@ void testLocalBasis(LB& localBasis, const Dune::GeometryType& type) {
           auto nonLinOpHg = Ikarus::NonLinearOperator(linearAlgebraFunctions(jacobianLambda1D, hessianLambda),
                                                       parameter(ipOffset1D));
 
-          EXPECT_TRUE((checkJacobian<decltype(nonLinOpHg), Eigen::Vector<double, 1>>(
+          CHECK((checkJacobian<decltype(nonLinOpHg), Eigen::Vector<double, 1>>(
               nonLinOpHg, {.draw = false, .writeSlopeStatementIfFailed = true, .tolerance = 1e-2})));
           ++i;
         }
@@ -106,16 +106,15 @@ void testLocalBasis(LB& localBasis, const Dune::GeometryType& type) {
     }
   }
   // Unbound basis checks
-  EXPECT_FALSE(localBasis.isBound());
-  EXPECT_DEBUG_DEATH(localBasis.viewOverIntegrationPoints(), "You have to bind the basis first");
-  EXPECT_THROW(localBasis.evaluateFunction(0), std::logic_error);
-  EXPECT_THROW(localBasis.evaluateJacobian(0), std::logic_error);
+  CHECK(!localBasis.isBound());
+  CHECK_THROWS_AS(localBasis.evaluateFunction(0), std::logic_error);
+  CHECK_THROWS_AS(localBasis.evaluateJacobian(0), std::logic_error);
   if constexpr (gridDim > 1) {
-    EXPECT_THROW(localBasis.evaluateSecondDerivatives(0), std::logic_error);
+    CHECK_THROWS_AS(localBasis.evaluateSecondDerivatives(0), std::logic_error);
     localBasis.bind(rule, bindDerivatives(0, 1, 2));
   } else
     localBasis.bind(rule, bindDerivatives(0, 1));
-  EXPECT_TRUE(localBasis.isBound());
+  CHECK(localBasis.isBound());
 }
 
 template <int domainDim, int order>
@@ -131,7 +130,7 @@ void localBasisTestConstructor(const Dune::GeometryType& geometryType, size_t nN
   testLocalBasis(localBasis, geometryType);
 }
 
-TEST(LocalBasisTests, TestLocalBasis) {
+TEST_CASE("LocalBasisTests: TestLocalBasis", "[localBasisTest.cpp]") {
   using namespace Dune::GeometryTypes;
   std::cout << "Test line with linear ansatz functions" << std::endl;
   localBasisTestConstructor<1, 1>(line);
