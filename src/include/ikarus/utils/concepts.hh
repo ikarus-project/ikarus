@@ -117,7 +117,7 @@ namespace Ikarus {
 
     template <typename L>
     concept NegateAble = requires(L x) {
-     -x;
+      -x;
     };
 
     template <typename L>

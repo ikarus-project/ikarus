@@ -1,6 +1,7 @@
 
 
 #include <catch2/catch_test_macros.hpp>
+
 #include "testHelpers.hh"
 
 #include <ikarus/utils/autodiffHelper.hh>
@@ -26,7 +27,7 @@ TEST_CASE("AutoDiffHelper: hessianN", "[testAutodiffHelper.cpp]") {
     hExpected.setZero();
     gExpected[i]    = sin(xd[i]) + cos(xd[i]) * xd[i];
     hExpected(i, i) = 2 * +cos(xd[i]) - xd[i] * sin(xd[i]);
-    CHECK_THAT (g[i], EigenApproxEqual(gExpected, 1e-14));
-    CHECK_THAT (h[i], EigenApproxEqual(hExpected, 1e-14));
+    CHECK_THAT(g[i], EigenApproxEqual(gExpected, 1e-14));
+    CHECK_THAT(h[i], EigenApproxEqual(hExpected, 1e-14));
   }
 }

@@ -23,8 +23,8 @@
 
 #include <autodiff/forward/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
+
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
-#include <ikarus/utils/linearAlgebraHelper.hh>
 #include <ikarus/localFunctions/expressions.hh>
 #include <ikarus/localFunctions/impl/projectionBasedLocalFunction.hh>
 #include <ikarus/localFunctions/impl/standardLocalFunction.hh>
@@ -32,7 +32,7 @@
 #include <ikarus/manifolds/realTuple.hh>
 #include <ikarus/manifolds/unitVector.hh>
 #include <ikarus/utils/functionSanityChecks.hh>
-
+#include <ikarus/utils/linearAlgebraHelper.hh>
 #include <ikarus/utils/multiIndex.hh>
 
 using namespace Dune::Functions::BasisFactory;

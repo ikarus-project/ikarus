@@ -1,9 +1,10 @@
 
 #include <config.h>
+
 #include <catch2/catch_all.hpp>
 
-#include "testHelpers.hh"
 #include "common.hh"
+#include "testHelpers.hh"
 
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
@@ -24,19 +25,20 @@
 #include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 
-//template <typename T>
-//class NonLinearElasticityLoadControlNRandTR : public testing::Test {
-//public:
-//  using GridId = T;
-//  NonLinearElasticityLoadControlNRandTR() : value_{createGrid<T>()} {}
-//  decltype(createGrid<T>()) value_;
-//};
-//using GridTypes = ::testing::Types<Grids::Yasp, Grids::Alu, Grids::Iga>;
+// template <typename T>
+// class NonLinearElasticityLoadControlNRandTR : public testing::Test {
+// public:
+//   using GridId = T;
+//   NonLinearElasticityLoadControlNRandTR() : value_{createGrid<T>()} {}
+//   decltype(createGrid<T>()) value_;
+// };
+// using GridTypes = ::testing::Types<Grids::Yasp, Grids::Alu, Grids::Iga>;
 //
-//TYPED_TEST_SUITE(NonLinearElasticityLoadControlNRandTR, GridTypes);
+// TYPED_TEST_SUITE(NonLinearElasticityLoadControlNRandTR, GridTypes);
 
-TEMPLATE_TEST_CASE("NonLinearElasticityLoadControlNRandTR: ComputeMaxDisp", "[nonLinearElasticityTest.cpp]",Grids::Yasp, Grids::Alu, Grids::Iga) {
-  auto grid = createGrid<TestType>();
+TEMPLATE_TEST_CASE("NonLinearElasticityLoadControlNRandTR: ComputeMaxDisp", "[nonLinearElasticityTest.cpp]",
+                   Grids::Yasp, Grids::Alu, Grids::Iga) {
+  auto grid     = createGrid<TestType>();
   auto gridView = grid->leafGridView();
 
   using namespace Ikarus;
@@ -119,14 +121,22 @@ TEMPLATE_TEST_CASE("NonLinearElasticityLoadControlNRandTR: ComputeMaxDisp", "[no
   lc.subscribeAll(vtkWriter);
   const auto controlInfo = lc.run();
   nonLinOp.template update<0>();
-  const auto maxDisp = std::ranges::max(d);
-  const double energyExpected =  (std::is_same_v<TestType, Grids::Yasp>) ? -1.4809559783564966e+03 : ((std::is_same_v<TestType, Grids::Alu>)  ? -1.4842107484533601e+03 :  /* std::is_same_v<TestType, Grids::Iga> */  -8.1142552237939071e+02);
-  const double maxDispExpected =  (std::is_same_v<TestType, Grids::Yasp>) ? 0.786567027108460048 : ((std::is_same_v<TestType, Grids::Alu>)  ? 0.78426066482258983 :  /* std::is_same_v<TestType, Grids::Iga> */  0.615624125459537153);
+  const auto maxDisp           = std::ranges::max(d);
+  const double energyExpected  = (std::is_same_v<TestType, Grids::Yasp>)
+                                     ? -1.4809559783564966e+03
+                                     : ((std::is_same_v<TestType, Grids::Alu>)
+                                            ? -1.4842107484533601e+03
+                                            : /* std::is_same_v<TestType, Grids::Iga> */ -8.1142552237939071e+02);
+  const double maxDispExpected = (std::is_same_v<TestType, Grids::Yasp>)
+                                     ? 0.786567027108460048
+                                     : ((std::is_same_v<TestType, Grids::Alu>)
+                                            ? 0.78426066482258983
+                                            : /* std::is_same_v<TestType, Grids::Iga> */ 0.615624125459537153);
 
-  CHECK (energyExpected == Catch::Approx (nonLinOp.value()));
-  CHECK (maxDispExpected == Catch::Approx (maxDisp));
+  CHECK(energyExpected == Catch::Approx(nonLinOp.value()));
+  CHECK(maxDispExpected == Catch::Approx(maxDisp));
 
   nonLinOp.template update<1>();
-  CHECK (controlInfo.sucess);
-  CHECK (gradTol >= nonLinOp.derivative().norm());
+  CHECK(controlInfo.sucess);
+  CHECK(gradTol >= nonLinOp.derivative().norm());
 }

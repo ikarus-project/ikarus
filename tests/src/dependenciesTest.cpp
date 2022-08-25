@@ -2,17 +2,18 @@
 
 //#include <gtest/gtest.h>
 
+#include <catch2/catch_test_macros.hpp>
+
 #include <fstream>
 #include <vector>
 
 #include "spdlog/fmt/ostr.h"
-#include <spdlog/fmt/ranges.h>
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/spdlog.h"
+#include <spdlog/fmt/ranges.h>
 
 #include <Eigen/Core>
-#include <catch2/catch_test_macros.hpp>
 void foo() {
   spdlog::info("Does this appear in the correct logger?");
   spdlog::debug("This is a debug statement");
@@ -62,7 +63,7 @@ TEST_CASE("Dependencies: spdlog", "[1]") {
 [info] Does this appear in the correct logger?
 [info] [1, 2, 3]
 )xxx";
-  CHECK (file == expectedOutput);
+  CHECK(file == expectedOutput);
 }
 
 #include <dune/common/parametertree.hh>
@@ -107,11 +108,11 @@ nu = 0.3
   const auto Emod      = materialParameters.get<double>("Emod");
   const auto nu        = materialParameters.get<double>("nu");
 
-  CHECK (1e-12 == tolerance);
-  CHECK (2.7191e+4 == mu);
-  CHECK (4.4364e+4 == lambda);
-  CHECK (0.6 == thickness);
-  CHECK (0.3 == nu);
-  CHECK (1000 == Emod);
-  CHECK ("Gauss" == integrationType);
+  CHECK(1e-12 == tolerance);
+  CHECK(2.7191e+4 == mu);
+  CHECK(4.4364e+4 == lambda);
+  CHECK(0.6 == thickness);
+  CHECK(0.3 == nu);
+  CHECK(1000 == Emod);
+  CHECK("Gauss" == integrationType);
 }

@@ -7,6 +7,6 @@
 
 int main(int argc, char **argv) {
   Dune::MPIHelper::instance(argc, argv);
-  int result = Catch::Session().run( argc, argv );
+  int result = Catch::Session().run(argc, argv);
   return result;
 }

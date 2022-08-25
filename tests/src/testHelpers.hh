@@ -18,21 +18,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-
-
 #pragma once
 
-#include <Eigen/Core>
 #include <catch2/matchers/catch_matchers_templated.hpp>
 
-template<typename Derived>
+#include <Eigen/Core>
+
+template <typename Derived>
 struct EigenApproxEqual : Catch::Matchers::MatcherGenericBase {
+  EigenApproxEqual(Eigen::EigenBase<Derived> const& vMB, double prec) : v{vMB.derived()}, prec{prec} {}
 
-  EigenApproxEqual(Eigen::EigenBase<Derived> const& vMB, double prec):
-                                           v{ vMB.derived() }, prec{prec}
-  {}
-
-  template<typename OtherDerived>
+  template <typename OtherDerived>
   bool match(Eigen::EigenBase<OtherDerived> const& otherMB) const {
     const OtherDerived& other = otherMB.derived();
     if constexpr (requires {
@@ -59,21 +55,20 @@ struct EigenApproxEqual : Catch::Matchers::MatcherGenericBase {
     }
     return "Equals: " + stringstream.str();
   }
+
 private:
   Derived const& v;
   double prec;
 };
 
-
-
-//MATCHER_P2(EigenApproxEqual, expect, prec,
-//          std::string(negation ? "isn't" : "is") + " approx equal to\n" + ::testing::PrintToString(expect)
-//              + "\nwith precision " + ::testing::PrintToString(prec)) {
+// MATCHER_P2(EigenApproxEqual, expect, prec,
+//           std::string(negation ? "isn't" : "is") + " approx equal to\n" + ::testing::PrintToString(expect)
+//               + "\nwith precision " + ::testing::PrintToString(prec)) {
 //
-//}
+// }
 //
-//MATCHER_P(EigenExactEqual, expect,
-//         std::string(negation ? "isn't" : "is") + " equal to" + ::testing::PrintToString(expect)) {
-// return ((arg == expect) == true).all();
-//}
+// MATCHER_P(EigenExactEqual, expect,
+//          std::string(negation ? "isn't" : "is") + " equal to" + ::testing::PrintToString(expect)) {
+//  return ((arg == expect) == true).all();
+// }
 //

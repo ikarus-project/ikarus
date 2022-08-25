@@ -1,6 +1,7 @@
 
 
 #include <catch2/catch_test_macros.hpp>
+
 #include "testHelpers.hh"
 
 #include <ikarus/localFunctions/meta.hh>
@@ -11,19 +12,19 @@ TEST_CASE("TraitsTest: LocalFunctionTest", "[traitsTest.cpp]") {
 
   auto counter = countDerivativesType<decltype(wrt1)>();
 
-  CHECK (1 == counter.singleCoeffDerivs);
-  CHECK (0 == counter.twoCoeffDerivs);
-  CHECK (1 == counter.spatialDerivs);
-  CHECK (0 == counter.spatialAllCounter);
+  CHECK(1 == counter.singleCoeffDerivs);
+  CHECK(0 == counter.twoCoeffDerivs);
+  CHECK(1 == counter.spatialDerivs);
+  CHECK(0 == counter.spatialAllCounter);
 
   auto wrt2 = Ikarus::wrt(spatialAll, coeff(7, 1));
 
   counter = countDerivativesType<decltype(wrt2)>();
 
-  CHECK (0 == counter.singleCoeffDerivs);
-  CHECK (1 == counter.twoCoeffDerivs);
-  CHECK (0 == counter.spatialDerivs);
-  CHECK (1 == counter.spatialAllCounter);
+  CHECK(0 == counter.singleCoeffDerivs);
+  CHECK(1 == counter.twoCoeffDerivs);
+  CHECK(0 == counter.spatialDerivs);
+  CHECK(1 == counter.spatialAllCounter);
 }
 
 TEST_CASE("TraitsTest: TreePathCoeffs", "[traitsTest.cpp]") {
@@ -31,15 +32,15 @@ TEST_CASE("TraitsTest: TreePathCoeffs", "[traitsTest.cpp]") {
   using namespace Dune::Indices;
   auto coeffTwo = coeff(_0, 7, _1, 9);
 
-  CHECK (0 == coeffTwo.index[_0][0]);
-  CHECK (7 == coeffTwo.index[_0][1]);
-  CHECK (1 == coeffTwo.index[_1][0]);
-  CHECK (9 == coeffTwo.index[_1][1]);
+  CHECK(0 == coeffTwo.index[_0][0]);
+  CHECK(7 == coeffTwo.index[_0][1]);
+  CHECK(1 == coeffTwo.index[_1][0]);
+  CHECK(9 == coeffTwo.index[_1][1]);
 
   auto coeffSingle = coeff(_4, 1);
 
-  CHECK (4 == coeffSingle.index[_0][0]);
-  CHECK (1 == coeffSingle.index[_0][1]);
+  CHECK(4 == coeffSingle.index[_0][0]);
+  CHECK(1 == coeffSingle.index[_0][1]);
 }
 
 TEST_CASE("TraitsTest: testTupleFilter", "[traitsTest.cpp]") {
@@ -78,14 +79,10 @@ TEST_CASE("TraitsTest: makeNestedTupleFlat", "[traitsTest.cpp]") {
   const auto reducedTupleConst = Ikarus::Std::makeNestedTupleFlatAndStoreReferences(y);
 
   Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<std::tuple_size_v<decltype(a)>>()),
-                        [&](const auto i) {
-                          CHECK (expectedValues[i] == std::get<i>(reducedTuple));
-                        });
+                        [&](const auto i) { CHECK(expectedValues[i] == std::get<i>(reducedTuple)); });
 
   Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<std::tuple_size_v<decltype(a)>>()),
-                        [&](const auto i) {
-                          CHECK (expectedValues[i] == std::get<i>(reducedTupleConst));
-                        });
+                        [&](const auto i) { CHECK(expectedValues[i] == std::get<i>(reducedTupleConst)); });
 }
 
 TEST_CASE("TraitsTest: testRebind", "[traitsTest.cpp]") {

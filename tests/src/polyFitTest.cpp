@@ -1,5 +1,6 @@
 
 #include <catch2/catch_all.hpp>
+
 #include "testHelpers.hh"
 
 #include <matplot/matplot.h>
@@ -14,9 +15,9 @@ TEST_CASE("PolyFitTest: PolyFitTest1", "[polyFitTest.cpp]") {
   Eigen::VectorXd y = Eigen::VectorXd::LinSpaced(10, 2, 20);
 
   auto [poly, normE] = Ikarus::polyfit(x, y, 1);
-  CHECK (2.0 == Catch::Approx (poly.coefficients()[0]));
-  CHECK (1.8 == Catch::Approx (poly.coefficients()[1]));
-  CHECK (1e-14 > normE);
+  CHECK(2.0 == Catch::Approx(poly.coefficients()[0]));
+  CHECK(1.8 == Catch::Approx(poly.coefficients()[1]));
+  CHECK(1e-14 > normE);
 }
 
 TEST_CASE("PolyFitTest: PolyFitTest2", "[polyFitTest.cpp]") {
@@ -29,8 +30,8 @@ TEST_CASE("PolyFitTest: PolyFitTest2", "[polyFitTest.cpp]") {
 
   auto [poly, normE] = Ikarus::polyfit(x, y, 2);
 
-  CHECK (-0.0038062785674569739 == Catch::Approx (poly.coefficients()[0]));
-  CHECK (-0.58760441700969401 == Catch::Approx (poly.coefficients()[1]));
-  CHECK (7.6138682871655829 == Catch::Approx (poly.coefficients()[2]));
-  CHECK (0.0082367593944499204 == Catch::Approx (normE));
+  CHECK(-0.0038062785674569739 == Catch::Approx(poly.coefficients()[0]));
+  CHECK(-0.58760441700969401 == Catch::Approx(poly.coefficients()[1]));
+  CHECK(7.6138682871655829 == Catch::Approx(poly.coefficients()[2]));
+  CHECK(0.0082367593944499204 == Catch::Approx(normE));
 }

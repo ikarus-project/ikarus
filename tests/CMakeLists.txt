@@ -17,10 +17,6 @@ include_directories(../libAddons/eigen/eigenAddons)
 
 file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 
-#find_package(GTest CONFIG REQUIRED)
-
-Include(FetchContent)
-
 find_package(Catch2 3 REQUIRED)
 
 add_executable(IkarusTests ${sources})
@@ -28,7 +24,7 @@ add_executable(IkarusTests ${sources})
 target_link_libraries(
   IkarusTests
   PRIVATE Catch2::Catch2
-  PUBLIC Ikarus::Ikarus
+  PRIVATE Ikarus::Ikarus
 )
 set_target_properties(IkarusTests PROPERTIES CXX_STANDARD 20)
 

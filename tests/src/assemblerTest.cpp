@@ -3,6 +3,7 @@
 #include <config.h>
 
 #include <catch2/catch_all.hpp>
+
 #include "testHelpers.hh"
 
 #include <vector>
@@ -64,18 +65,18 @@ TEST_CASE("Assembler: SimpleAssemblersTest", "[assemblerTest.cpp]") {
     auto& K      = sparseFlatAssembler.getMatrix(req);
 
     const auto fixedDofs = std::ranges::count(dirichFlags, true);
-    CHECK_THAT (K, EigenApproxEqual(Kdense, 1e-15));
-    CHECK (K.rows()== 2 * gridView.size(2));
-    CHECK (K.cols()== 2 * gridView.size(2));
+    CHECK_THAT(K, EigenApproxEqual(Kdense, 1e-15));
+    CHECK(K.rows() == 2 * gridView.size(2));
+    CHECK(K.cols() == 2 * gridView.size(2));
     const int boundaryNodes = (eles[0] * Dune::power(2, i) + 1) * 2 + (eles[1] * Dune::power(2, i) + 1) * 2 - 4;
-    CHECK (2 * boundaryNodes == fixedDofs);
+    CHECK(2 * boundaryNodes == fixedDofs);
 
     auto& KdenseRed = denseFlatAssembler.getReducedMatrix(req);
     auto& KRed      = sparseFlatAssembler.getReducedMatrix(req);
 
-    CHECK_THAT (KRed, EigenApproxEqual(KdenseRed, 1e-15));
-    CHECK (KRed.rows()== 2 * gridView.size(2) - fixedDofs);
-    CHECK (KRed.cols()== 2 * gridView.size(2) - fixedDofs);
+    CHECK_THAT(KRed, EigenApproxEqual(KdenseRed, 1e-15));
+    CHECK(KRed.rows() == 2 * gridView.size(2) - fixedDofs);
+    CHECK(KRed.cols() == 2 * gridView.size(2) - fixedDofs);
 
     grid->globalRefine(1);
   }

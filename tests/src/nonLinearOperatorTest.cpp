@@ -1,7 +1,8 @@
 
 #include <config.h>
 
-#include <catch2/catch_all.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_all.hpp>
 
 #include "testHelpers.hh"
 
@@ -22,13 +23,13 @@ void checkNewtonRhapson(NewtonRhapson& nr, SolutionType& x, double tolerance, in
   const auto solverInfo = nr.solve(x_Predictor);
 
   if constexpr (std::is_same_v<SolutionType, double>)
-    CHECK (xExpected == Catch::Approx (x));
+    CHECK(xExpected == Catch::Approx(x));
   else
-    CHECK_THAT (x, EigenApproxEqual(xExpected, 1e-15));
+    CHECK_THAT(x, EigenApproxEqual(xExpected, 1e-15));
 
-  CHECK (true == solverInfo.sucess);
-  CHECK (tolerance >= solverInfo.residualnorm);
-  CHECK (iterExpected == solverInfo.iterations);
+  CHECK(true == solverInfo.sucess);
+  CHECK(tolerance >= solverInfo.residualnorm);
+  CHECK(iterExpected == solverInfo.iterations);
 }
 
 auto f(double x) { return 0.5 * x * x + x - 2; }
@@ -119,7 +120,7 @@ TEST_CASE("NonLinearOperator: SecondOrderVectorValuedOperator", "[nonLinearOpera
   auto ddfvLambda = [&](auto&& xL) { return ddf2v(xL, A, b); };
   auto nonLinOp   = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
 
-  CHECK (checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = false}));
+  CHECK(checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = false}));
 
   auto subOperator = nonLinOp.subOperator<1, 2>();
   // Newton method test find root of first derivative
@@ -128,11 +129,11 @@ TEST_CASE("NonLinearOperator: SecondOrderVectorValuedOperator", "[nonLinearOpera
   Ikarus::NewtonRaphson nr(subOperator, Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT));
   checkNewtonRhapson(nr, x, eps, maxIter, 1, (-0.5 * A.ldlt().solve(b)).eval(), Eigen::VectorXd::Zero(3).eval());
   nonLinOp.update<0>();
-  CHECK (-2.6538461538461533 == Catch::Approx (nonLinOp.value()));
+  CHECK(-2.6538461538461533 == Catch::Approx(nonLinOp.value()));
   x << 1, 2, 3;  // Restart and check with predictor
   checkNewtonRhapson(nr, x, eps, maxIter, 2, (-0.5 * A.ldlt().solve(b)).eval(), x);
   nonLinOp.update<0>();
-  CHECK (-2.6538461538461533 == Catch::Approx (nonLinOp.value()));
+  CHECK(-2.6538461538461533 == Catch::Approx(nonLinOp.value()));
 }
 
 #include <autodiff/forward/dual.hpp>
@@ -173,8 +174,8 @@ TEST_CASE("NonLinearOperator: SecondOrderVectorValuedOperatorNonlinearAutodiff",
 
   auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
 
-  CHECK (checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = false}));
-  CHECK (checkHessian(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = false}));
+  CHECK(checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = false}));
+  CHECK(checkHessian(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = false}));
 
   auto subOperator = nonLinOp.subOperator<1, 2>();
 
@@ -190,5 +191,5 @@ TEST_CASE("NonLinearOperator: SecondOrderVectorValuedOperatorNonlinearAutodiff",
   checkNewtonRhapson(nr, x, eps, maxIter, 5, xSol, Eigen::VectorXd::Zero(3).eval());
 
   nonLinOp.update<0>();
-  CHECK (-1.1750584073929625716 == Catch::Approx (nonLinOp.value()));
+  CHECK(-1.1750584073929625716 == Catch::Approx(nonLinOp.value()));
 }

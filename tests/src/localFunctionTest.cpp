@@ -3,14 +3,11 @@
 
 #include <catch2/catch_all.hpp>
 
-
 #include "common.hh"
 #include "factories.hh"
 #include "testHelpers.hh"
 
 #include <array>
-#include <autodiff/forward/dual.hpp>
-#include <autodiff/forward/dual/eigen.hpp>
 #include <complex>
 #include <vector>
 
@@ -25,6 +22,9 @@
 
 #include <Eigen/Core>
 
+#include <autodiff/forward/dual.hpp>
+#include <autodiff/forward/dual/eigen.hpp>
+
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/localFunctions/expressions.hh>
 #include <ikarus/localFunctions/impl/projectionBasedLocalFunction.hh>
@@ -36,10 +36,8 @@
 #include <ikarus/utils/multiIndex.hh>
 using namespace Dune::Functions::BasisFactory;
 
-using test_types = std::tuple<std::integral_constant<std::size_t, 2>, std::integral_constant<std::size_t, 3>,
-                                    std::integral_constant<std::size_t, 4>, std::integral_constant<std::size_t, 5>>;
-
-TEMPLATE_TEST_CASE_SIG("LocalFunctionProjectionBasedUnitVector: ProjectionBasedUnitVector", "[localFunctionTest.cpp]",((int V),V), (1), (2), (3)) {
+TEMPLATE_TEST_CASE_SIG("LocalFunctionProjectionBasedUnitVector: ProjectionBasedUnitVector", "[localFunctionTest.cpp]",
+                       ((int V), V), (2), (3), (4), (5)) {
   constexpr int size   = V;
   constexpr double tol = 1e-14;
   using namespace Ikarus;
@@ -92,18 +90,18 @@ TEMPLATE_TEST_CASE_SIG("LocalFunctionProjectionBasedUnitVector: ProjectionBasedU
       const auto jaco2col0e = localF.evaluateDerivative(gp.position(), wrt(spatial(0)), transformWith(Jinv));
       const auto jaco2col1  = localF.evaluateDerivative(gpIndex, wrt(spatial(1)), transformWith(Jinv));
       const auto jaco2col1e = localF.evaluateDerivative(gp.position(), wrt(spatial(1)), transformWith(Jinv));
-      CHECK_THAT (jaco2.col(0), EigenApproxEqual(jaco2col0, tol));
-      CHECK_THAT (jaco2.col(1), EigenApproxEqual(jaco2col1, tol));
-      CHECK_THAT (jaco2, EigenApproxEqual(jaco2e, tol));
-      CHECK_THAT (jaco2col0, EigenApproxEqual(jaco2col0e, tol));
-      CHECK_THAT (jaco2col1, EigenApproxEqual(jaco2col1e, tol));
+      CHECK_THAT(jaco2.col(0), EigenApproxEqual(jaco2col0, tol));
+      CHECK_THAT(jaco2.col(1), EigenApproxEqual(jaco2col1, tol));
+      CHECK_THAT(jaco2, EigenApproxEqual(jaco2e, tol));
+      CHECK_THAT(jaco2col0, EigenApproxEqual(jaco2col0e, tol));
+      CHECK_THAT(jaco2col1, EigenApproxEqual(jaco2col1e, tol));
 
       // Check untransformed derivatives
       const auto jaco2un     = localF.evaluateDerivative(gpIndex, wrt(spatialAll));
       const auto jaco2col0un = localF.evaluateDerivative(gpIndex, wrt(spatial(0)));
       const auto jaco2col1un = localF.evaluateDerivative(gpIndex, wrt(spatial(1)));
-      CHECK_THAT (jaco2un.col(0), EigenApproxEqual(jaco2col0un, tol));
-      CHECK_THAT (jaco2un.col(1), EigenApproxEqual(jaco2col1un, tol));
+      CHECK_THAT(jaco2un.col(0), EigenApproxEqual(jaco2col0un, tol));
+      CHECK_THAT(jaco2un.col(1), EigenApproxEqual(jaco2col1un, tol));
 
       auto func = [&](auto& gpOffset_) { return localF.evaluateFunction(toFieldVector(gpOffset_)); };
       auto deriv
@@ -124,29 +122,29 @@ TEMPLATE_TEST_CASE_SIG("LocalFunctionProjectionBasedUnitVector: ProjectionBasedU
       for (size_t i = 0; i < fe.size(); ++i) {
         const auto jacobianWRTCoeffs = localF.evaluateDerivative(gpIndex, wrt(coeff(i)));
         CHECK_THAT(jacobianWRTCoeffs,
-                    EigenApproxEqual(Jdual.block<size, size>(0, i * size) * vBlockedLocal[i].orthonormalFrame(), tol));
+                   EigenApproxEqual(Jdual.block<size, size>(0, i * size) * vBlockedLocal[i].orthonormalFrame(), tol));
 
         const auto Warray  = localF.evaluateDerivative(gpIndex, wrt(coeff(i), spatialAll), transformWith(Jinv));
         const auto Warray2 = localF.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i)), transformWith(Jinv));
         for (int j = 0; j < 2; ++j)
-          CHECK_THAT (Warray[j], EigenApproxEqual(Warray2[j], tol));
+          CHECK_THAT(Warray[j], EigenApproxEqual(Warray2[j], tol));
 
         const auto W0 = localF.evaluateDerivative(gpIndex, wrt(coeff(i), spatial(0)), transformWith(Jinv));
         const auto W1 = localF.evaluateDerivative(gpIndex, wrt(coeff(i), spatial(1)), transformWith(Jinv));
 
-        CHECK_THAT (Warray[0], EigenApproxEqual(W0, tol));
-        CHECK_THAT (Warray[1], EigenApproxEqual(W1, tol));
+        CHECK_THAT(Warray[0], EigenApproxEqual(W0, tol));
+        CHECK_THAT(Warray[1], EigenApproxEqual(W1, tol));
 
         const auto Warrayun  = localF.evaluateDerivative(gpIndex, wrt(coeff(i), spatialAll));
         const auto Warray2un = localF.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i)));
         for (int j = 0; j < 2; ++j)
-          CHECK_THAT (Warrayun[j], EigenApproxEqual(Warray2un[j], tol));
+          CHECK_THAT(Warrayun[j], EigenApproxEqual(Warray2un[j], tol));
 
         const auto W0un = localF.evaluateDerivative(gpIndex, wrt(coeff(i), spatial(0)));
         const auto W1un = localF.evaluateDerivative(gpIndex, wrt(coeff(i), spatial(1)));
 
-        CHECK_THAT (Warrayun[0], EigenApproxEqual(W0un, tol));
-        CHECK_THAT (Warrayun[1], EigenApproxEqual(W1un, tol));
+        CHECK_THAT(Warrayun[0], EigenApproxEqual(W0un, tol));
+        CHECK_THAT(Warrayun[1], EigenApproxEqual(W1un, tol));
         const auto Sun = localF.evaluateDerivative(gpIndex, wrt(coeff(i, i)), along(testVec));
 
         const auto S = localF.evaluateDerivative(gpIndex, wrt(coeff(i, i)), along(testVec), transformWith(Jinv));
@@ -160,32 +158,26 @@ TEMPLATE_TEST_CASE_SIG("LocalFunctionProjectionBasedUnitVector: ProjectionBasedU
         const auto chi1 = localF.evaluateDerivative(gpIndex, wrt(spatial(1), coeff(i, i)), along(testMat.col(1)),
                                                     transformWith(Jinv));
 
-        CHECK_THAT (chi, EigenApproxEqual(chi0 + chi1, tol));
+        CHECK_THAT(chi, EigenApproxEqual(chi0 + chi1, tol));
       }
 
-      CHECK (1.0 == Catch::Approx (directorCached.norm()));
-      CHECK (1.0 == Catch::Approx (directoreval.norm()));
-      CHECK_THAT (directorCached, EigenApproxEqual(directoreval, tol));
-      CHECK (0.0 == Catch::Approx ((directoreval.transpose() * jaco2).norm()));
-      CHECK(0.0 == (Ikarus::UnitVector<double, size>::derivativeOfProjectionWRTposition(directoreval) * directoreval).norm());
+      CHECK(1.0 == Catch::Approx(directorCached.norm()).margin(tol));
+      CHECK(1.0 == Catch::Approx(directoreval.norm()).margin(tol));
+      CHECK_THAT(directorCached, EigenApproxEqual(directoreval, tol));
+      CHECK(0.0 == Catch::Approx((directoreval.transpose() * jaco2).norm()).margin(tol));
+      CHECK(0.0
+            == Catch::Approx(
+                   (Ikarus::UnitVector<double, size>::derivativeOfProjectionWRTposition(directoreval) * directoreval)
+                       .norm())
+                   .margin(tol));
 
       ++gpIndex;
     }
   }
 }
 
-//template <typename T>
-//class LocalFunctionVector : public testing::Test {
-//public:
-//  using Manifold = T;
-//};
-//using test_types_1
-//    = ::testing::Types<Ikarus::RealTuple<double, 1>, Ikarus::RealTuple<double, 2>, Ikarus::RealTuple<double, 3>>;
-//
-//TYPED_TEST_SUITE(LocalFunctionVector, test_types_1);
-
-TEMPLATE_TEST_CASE_SIG("LocalFunctionVector: Test1", "[localFunctionTest.cpp]",((int V),V), (1), (2), (3)) {
-  using Manifold     = Ikarus::RealTuple<double,V>;
+TEMPLATE_TEST_CASE_SIG("LocalFunctionVector: Test1", "[localFunctionTest.cpp]", ((int V), V), (1), (2), (3)) {
+  using Manifold     = Ikarus::RealTuple<double, V>;
   constexpr int size = Manifold::valueSize;
   using namespace Ikarus;
   auto grid = createGrid<Grids::Yasp>();
@@ -237,18 +229,18 @@ TEMPLATE_TEST_CASE_SIG("LocalFunctionVector: Test1", "[localFunctionTest.cpp]",(
       const auto jaco2col0e = localF.evaluateDerivative(gp.position(), wrt(spatial(0)), transformWith(Jinv));
       const auto jaco2col1  = localF.evaluateDerivative(gpIndex, wrt(spatial(1)), transformWith(Jinv));
       const auto jaco2col1e = localF.evaluateDerivative(gp.position(), wrt(spatial(1)), transformWith(Jinv));
-      CHECK_THAT (jaco2.col(0), EigenApproxEqual(jaco2col0, 1e-15));
-      CHECK_THAT (jaco2.col(1), EigenApproxEqual(jaco2col1, 1e-15));
-      CHECK_THAT (jaco2, EigenApproxEqual(jaco2e, 1e-15));
-      CHECK_THAT (jaco2col0, EigenApproxEqual(jaco2col0e, 1e-15));
-      CHECK_THAT (jaco2col1, EigenApproxEqual(jaco2col1e, 1e-15));
+      CHECK_THAT(jaco2.col(0), EigenApproxEqual(jaco2col0, 1e-15));
+      CHECK_THAT(jaco2.col(1), EigenApproxEqual(jaco2col1, 1e-15));
+      CHECK_THAT(jaco2, EigenApproxEqual(jaco2e, 1e-15));
+      CHECK_THAT(jaco2col0, EigenApproxEqual(jaco2col0e, 1e-15));
+      CHECK_THAT(jaco2col1, EigenApproxEqual(jaco2col1e, 1e-15));
 
       // Check untransformed derivatives
       const auto jaco2un     = localF.evaluateDerivative(gpIndex, wrt(spatialAll));
       const auto jaco2col0un = localF.evaluateDerivative(gpIndex, wrt(spatial(0)));
       const auto jaco2col1un = localF.evaluateDerivative(gpIndex, wrt(spatial(1)));
-      CHECK_THAT (jaco2un.col(0), EigenApproxEqual(jaco2col0un, 1e-15));
-      CHECK_THAT (jaco2un.col(1), EigenApproxEqual(jaco2col1un, 1e-15));
+      CHECK_THAT(jaco2un.col(0), EigenApproxEqual(jaco2col0un, 1e-15));
+      CHECK_THAT(jaco2un.col(1), EigenApproxEqual(jaco2col1un, 1e-15));
 
       auto func = [&](auto& gpOffset_) { return localF.evaluateFunction(toFieldVector(gpOffset_)); };
       auto deriv
@@ -267,32 +259,32 @@ TEMPLATE_TEST_CASE_SIG("LocalFunctionVector: Test1", "[localFunctionTest.cpp]",(
       const Eigen::Vector<double, size> testVec = Eigen::Vector<double, size>::UnitX();
       for (size_t i = 0; i < fe.size(); ++i) {
         const auto jacobianWRTCoeffs = localF.evaluateDerivative(gpIndex, wrt(coeff(i)));
-        CHECK_THAT (jacobianWRTCoeffs, EigenApproxEqual(Jdual.block<size, size>(0, i * size), 1e-15));
+        CHECK_THAT(jacobianWRTCoeffs, EigenApproxEqual(Jdual.block<size, size>(0, i * size), 1e-15));
 
         const auto Warray  = localF.evaluateDerivative(gpIndex, wrt(coeff(i), spatialAll), transformWith(Jinv));
         const auto Warray2 = localF.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i)), transformWith(Jinv));
         for (int j = 0; j < 2; ++j)
-          CHECK_THAT (Warray[j], EigenApproxEqual(Warray2[j], 1e-15));
+          CHECK_THAT(Warray[j], EigenApproxEqual(Warray2[j], 1e-15));
 
         const auto W0 = localF.evaluateDerivative(gpIndex, wrt(coeff(i), spatial(0)), transformWith(Jinv));
         const auto W1 = localF.evaluateDerivative(gpIndex, wrt(coeff(i), spatial(1)), transformWith(Jinv));
 
-        CHECK_THAT (Warray[0], EigenApproxEqual(W0, 1e-15));
-        CHECK_THAT (Warray[1], EigenApproxEqual(W1, 1e-15));
+        CHECK_THAT(Warray[0], EigenApproxEqual(W0, 1e-15));
+        CHECK_THAT(Warray[1], EigenApproxEqual(W1, 1e-15));
 
         const auto Warrayun  = localF.evaluateDerivative(gpIndex, wrt(coeff(i), spatialAll));
         const auto Warray2un = localF.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i)));
         for (int j = 0; j < 2; ++j)
-          CHECK_THAT (Warrayun[j], EigenApproxEqual(Warray2un[j], 1e-15));
+          CHECK_THAT(Warrayun[j], EigenApproxEqual(Warray2un[j], 1e-15));
 
         const auto W0un = localF.evaluateDerivative(gpIndex, wrt(coeff(i), spatial(0)));
         const auto W1un = localF.evaluateDerivative(gpIndex, wrt(coeff(i), spatial(1)));
 
-        CHECK_THAT (Warrayun[0], EigenApproxEqual(W0un, 1e-15));
-        CHECK_THAT (Warrayun[1], EigenApproxEqual(W1un, 1e-15));
+        CHECK_THAT(Warrayun[0], EigenApproxEqual(W0un, 1e-15));
+        CHECK_THAT(Warrayun[1], EigenApproxEqual(W1un, 1e-15));
       }
 
-      CHECK_THAT (directorCached, EigenApproxEqual(directoreval, 1e-15));
+      CHECK_THAT(directorCached, EigenApproxEqual(directoreval, 1e-15));
 
       ++gpIndex;
     }
