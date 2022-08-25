@@ -39,7 +39,7 @@ target_compile_options(
          -Wno-deprecated-copy
          -ftemplate-backtrace-limit=0
 )
-#target_compile_options(IkarusTests PUBLIC -fconcepts-diagnostics-depth=5)
+# target_compile_options(IkarusTests PUBLIC -fconcepts-diagnostics-depth=5)
 
 if(MINGW)
   target_compile_options(IkarusTests PUBLIC -Wa,-mbig-obj -ftrack-macro-expansion=0)
