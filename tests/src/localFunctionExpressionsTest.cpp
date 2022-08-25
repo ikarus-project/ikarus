@@ -25,6 +25,7 @@
 #include <Eigen/Core>
 
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
+#include <ikarus/utils/linearAlgebraHelper.hh>
 #include <ikarus/localFunctions/expressions.hh>
 #include <ikarus/localFunctions/impl/projectionBasedLocalFunction.hh>
 #include <ikarus/localFunctions/impl/standardLocalFunction.hh>
