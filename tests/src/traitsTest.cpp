@@ -1,49 +1,49 @@
 
 
-#include <gmock/gmock.h>
+#include <catch2/catch_test_macros.hpp>
 
 #include "testHelpers.hh"
 
 #include <ikarus/localFunctions/meta.hh>
 #include <ikarus/utils/traits.hh>
-TEST(TraitsTest, LocalFunctionTest) {
+TEST_CASE("TraitsTest: LocalFunctionTest", "[traitsTest.cpp]") {
   using namespace Ikarus::DerivativeDirections;
   auto wrt1 = Ikarus::wrt(spatial(0), coeff(7));
 
   auto counter = countDerivativesType<decltype(wrt1)>();
 
-  EXPECT_EQ(counter.singleCoeffDerivs, 1);
-  EXPECT_EQ(counter.twoCoeffDerivs, 0);
-  EXPECT_EQ(counter.spatialDerivs, 1);
-  EXPECT_EQ(counter.spatialAllCounter, 0);
+  CHECK(1 == counter.singleCoeffDerivs);
+  CHECK(0 == counter.twoCoeffDerivs);
+  CHECK(1 == counter.spatialDerivs);
+  CHECK(0 == counter.spatialAllCounter);
 
   auto wrt2 = Ikarus::wrt(spatialAll, coeff(7, 1));
 
   counter = countDerivativesType<decltype(wrt2)>();
 
-  EXPECT_EQ(counter.singleCoeffDerivs, 0);
-  EXPECT_EQ(counter.twoCoeffDerivs, 1);
-  EXPECT_EQ(counter.spatialDerivs, 0);
-  EXPECT_EQ(counter.spatialAllCounter, 1);
+  CHECK(0 == counter.singleCoeffDerivs);
+  CHECK(1 == counter.twoCoeffDerivs);
+  CHECK(0 == counter.spatialDerivs);
+  CHECK(1 == counter.spatialAllCounter);
 }
 
-TEST(TraitsTest, TreePathCoeffs) {
+TEST_CASE("TraitsTest: TreePathCoeffs", "[traitsTest.cpp]") {
   using namespace Ikarus::DerivativeDirections;
   using namespace Dune::Indices;
   auto coeffTwo = coeff(_0, 7, _1, 9);
 
-  EXPECT_EQ(coeffTwo.index[_0][0], 0);
-  EXPECT_EQ(coeffTwo.index[_0][1], 7);
-  EXPECT_EQ(coeffTwo.index[_1][0], 1);
-  EXPECT_EQ(coeffTwo.index[_1][1], 9);
+  CHECK(0 == coeffTwo.index[_0][0]);
+  CHECK(7 == coeffTwo.index[_0][1]);
+  CHECK(1 == coeffTwo.index[_1][0]);
+  CHECK(9 == coeffTwo.index[_1][1]);
 
   auto coeffSingle = coeff(_4, 1);
 
-  EXPECT_EQ(coeffSingle.index[_0][0], 4);
-  EXPECT_EQ(coeffSingle.index[_0][1], 1);
+  CHECK(4 == coeffSingle.index[_0][0]);
+  CHECK(1 == coeffSingle.index[_0][1]);
 }
 
-TEST(TraitsTest, testTupleFilter) {
+TEST_CASE("TraitsTest: testTupleFilter", "[traitsTest.cpp]") {
   using namespace Ikarus::DerivativeDirections;
   using namespace Dune::Indices;
   auto tup                 = std::make_tuple(_0, _1, _3, Ikarus::arithmetic);
@@ -58,7 +58,7 @@ TEST(TraitsTest, testTupleFilter) {
   static_assert(std::is_same_v<decltype(filteredTup2), decltype(filteredTupExpected)>);
 }
 
-TEST(TraitsTest, makeNestedTupleFlat) {
+TEST_CASE("TraitsTest: makeNestedTupleFlat", "[traitsTest.cpp]") {
   std::vector<int> expectedValues({0, 1, 1, 2, 3, 1, 2, 9});
   std::tuple<std::tuple<int, std::tuple<std::tuple<int, std::tuple<double, float>>, float>>,
              std::tuple<int, std::tuple<double, float>>>
@@ -79,13 +79,13 @@ TEST(TraitsTest, makeNestedTupleFlat) {
   const auto reducedTupleConst = Ikarus::Std::makeNestedTupleFlatAndStoreReferences(y);
 
   Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<std::tuple_size_v<decltype(a)>>()),
-                        [&](const auto i) { EXPECT_EQ(std::get<i>(reducedTuple), expectedValues[i]); });
+                        [&](const auto i) { CHECK(expectedValues[i] == std::get<i>(reducedTuple)); });
 
   Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<std::tuple_size_v<decltype(a)>>()),
-                        [&](const auto i) { EXPECT_EQ(std::get<i>(reducedTupleConst), expectedValues[i]); });
+                        [&](const auto i) { CHECK(expectedValues[i] == std::get<i>(reducedTupleConst)); });
 }
 
-TEST(TraitsTest, testRebind) {
+TEST_CASE("TraitsTest: testRebind", "[traitsTest.cpp]") {
   std::vector<int> a;
   using namespace Ikarus::Std;
   using reboundVector = Rebind<std::vector<int>, double>::other;

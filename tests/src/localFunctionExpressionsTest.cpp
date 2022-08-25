@@ -1,16 +1,14 @@
 
 #include <config.h>
 
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_all.hpp>
 
 #include "common.hh"
 #include "factories.hh"
 #include "testHelpers.hh"
 
 #include <array>
-#include <autodiff/forward/dual.hpp>
-#include <autodiff/forward/dual/eigen.hpp>
 #include <complex>
 #include <vector>
 
@@ -24,8 +22,10 @@
 
 #include <Eigen/Core>
 
+#include <autodiff/forward/dual.hpp>
+#include <autodiff/forward/dual/eigen.hpp>
+
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
-#include <ikarus/utils/linearAlgebraHelper.hh>
 #include <ikarus/localFunctions/expressions.hh>
 #include <ikarus/localFunctions/impl/projectionBasedLocalFunction.hh>
 #include <ikarus/localFunctions/impl/standardLocalFunction.hh>
@@ -33,6 +33,7 @@
 #include <ikarus/manifolds/realTuple.hh>
 #include <ikarus/manifolds/unitVector.hh>
 #include <ikarus/utils/functionSanityChecks.hh>
+#include <ikarus/utils/linearAlgebraHelper.hh>
 #include <ikarus/utils/multiIndex.hh>
 
 using namespace Dune::Functions::BasisFactory;
@@ -87,7 +88,7 @@ void testLocalFunction(const LF& lf) {
       Eigen::Vector<double, gridDim> ipOffset = (Eigen::Vector<double, gridDim>::Random()).normalized() / 16;
       auto nonLinOpSpatialAll
           = Ikarus::NonLinearOperator(linearAlgebraFunctions(func, spatialDerivAll), parameter(ipOffset));
-      ASSERT_TRUE((checkJacobian<decltype(nonLinOpSpatialAll), Eigen::Vector<double, gridDim>>(
+      REQUIRE((checkJacobian<decltype(nonLinOpSpatialAll), Eigen::Vector<double, gridDim>>(
           nonLinOpSpatialAll, {.draw = false, .writeSlopeStatementIfFailed = true, .tolerance = 1e-2})));
 
       /// Perturb each spatial direction and check with derivative value
@@ -107,7 +108,7 @@ void testLocalFunction(const LF& lf) {
 
         auto nonLinOpSpatialSingle = Ikarus::NonLinearOperator(linearAlgebraFunctions(funcSingle, derivDerivSingleI),
                                                                parameter(ipOffsetSingle));
-        ASSERT_TRUE((checkJacobian<decltype(nonLinOpSpatialSingle), Eigen::Vector<double, 1>>(
+        REQUIRE((checkJacobian<decltype(nonLinOpSpatialSingle), Eigen::Vector<double, 1>>(
             nonLinOpSpatialSingle, {.draw = false, .writeSlopeStatementIfFailed = true, .tolerance = 1e-2})));
       }
     }
@@ -167,9 +168,9 @@ void testLocalFunction(const LF& lf) {
       const auto jacobianWRTCoeffs = ((alongVec.transpose() * jacobianWRTCoeffslf).transpose()).eval();
       static_assert(jacobianWRTCoeffs.cols() == 1);
       static_assert(jacobianWRTCoeffs.rows() == coeffCorrectionSize);
-      EXPECT_THAT(jacobianWRTCoeffs,
-                  EigenApproxEqual(
-                      BLAi.transpose() * gradienWRTCoeffs.template segment<coeffValueSize>(i * coeffValueSize), tol));
+      CHECK_THAT(jacobianWRTCoeffs,
+                 EigenApproxEqual(
+                     BLAi.transpose() * gradienWRTCoeffs.template segment<coeffValueSize>(i * coeffValueSize), tol));
 
       for (int d = 0; d < gridDim; ++d) {
         const auto jacoWrtCoeffAndSpatiallf = lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i), spatial(d)));
@@ -185,13 +186,13 @@ void testLocalFunction(const LF& lf) {
         static_assert(jacoWrtCoeffAndSpatial.rows() == jacoWrtCoeffAndSpatial.rows()
                       and jacoWrtCoeffAndSpatial.cols() == jacoWrtCoeffAndSpatial.cols());
 
-        EXPECT_THAT(jacoWrtCoeffAndSpatial, EigenApproxEqual(jacoWrtSpatialAndCoeff, tol));
+        CHECK_THAT(jacoWrtCoeffAndSpatial, EigenApproxEqual(jacoWrtSpatialAndCoeff, tol));
 
-        EXPECT_THAT(jacoWrtCoeffAndSpatial,
-                    EigenApproxEqual(BLAi.transpose()
-                                         * gradientWRTCoeffsTwoTimesSingleSpatial[d].template segment<coeffValueSize>(
-                                             i * coeffValueSize),
-                                     tol));
+        CHECK_THAT(jacoWrtCoeffAndSpatial,
+                   EigenApproxEqual(BLAi.transpose()
+                                        * gradientWRTCoeffsTwoTimesSingleSpatial[d].template segment<coeffValueSize>(
+                                            i * coeffValueSize),
+                                    tol));
       }
 
       const auto jacoWrtSpatialAllAndCoeff = lf.evaluateDerivative(ipIndex, Ikarus::wrt(spatialAll, coeff(i)));
@@ -205,23 +206,23 @@ void testLocalFunction(const LF& lf) {
       for (int d = 0; d < gridDim; ++d)
         jacoWrtSpatialAllAndCoeffProd += (alongMat.col(d).transpose() * jacoWrtSpatialAllAndCoeff[d]).eval();
 
-      EXPECT_THAT(jacoWrtSpatialAllAndCoeffProd,
-                  EigenApproxEqual((BLAi.transpose()
-                                    * gradienWRTCoeffsSpatialAll.template segment<coeffValueSize>(i * coeffValueSize))
-                                       .transpose(),
-                                   tol));
+      CHECK_THAT(jacoWrtSpatialAllAndCoeffProd,
+                 EigenApproxEqual((BLAi.transpose()
+                                   * gradienWRTCoeffsSpatialAll.template segment<coeffValueSize>(i * coeffValueSize))
+                                      .transpose(),
+                                  tol));
 
       // Check if spatialAll returns the same as the single spatial derivatives
       const auto Warray  = lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i), spatialAll));
       const auto Warray2 = lf.evaluateDerivative(ipIndex, Ikarus::wrt(spatialAll, coeff(i)));
       for (int j = 0; j < gridDim; ++j)
-        EXPECT_THAT(Warray[j], EigenApproxEqual(Warray2[j], tol));
+        CHECK_THAT(Warray[j], EigenApproxEqual(Warray2[j], tol));
       std::array<std::remove_cvref_t<decltype(Warray[0])>, gridDim> WarraySingle;
       for (int s = 0; s < gridDim; ++s)
         WarraySingle[s] = lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i), spatial(s)));
 
       for (int j = 0; j < gridDim; ++j)
-        EXPECT_THAT(Warray[j], EigenApproxEqual(WarraySingle[j], tol));
+        CHECK_THAT(Warray[j], EigenApproxEqual(WarraySingle[j], tol));
 
       for (size_t j = 0; j < coeffSize; ++j) {
         const auto BLAj = coeffs[j].orthonormalFrame();
@@ -237,7 +238,7 @@ void testLocalFunction(const LF& lf) {
                + (i == j)
                      * coeffs[j].weingartenMap(gradienWRTCoeffs.template segment<coeffValueSize>(i * coeffValueSize)))
                   .eval();
-        EXPECT_THAT(jacobianWRTCoeffsTwoTimes, EigenApproxEqual(jacobianWRTCoeffsTwoTimesExpected, tol));
+        CHECK_THAT(jacobianWRTCoeffsTwoTimes, EigenApproxEqual(jacobianWRTCoeffsTwoTimesExpected, tol));
 
         const auto jacobianWRTCoeffsTwoTimesSpatialAll
             = lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i, j), spatialAll), Ikarus::along(alongMat));
@@ -255,11 +256,11 @@ void testLocalFunction(const LF& lf) {
 
         /// if the order of the function value is less then quadratic then this should yield a vanishing derivative
         if constexpr (lf.order() < quadratic) {
-          EXPECT_TRUE(jacobianWRTCoeffsTwoTimesSpatialAll.norm() < tol);
-          EXPECT_TRUE(jacobianWRTCoeffsTwoTimesSpatialAllExpected.norm() < tol);
+          CHECK(jacobianWRTCoeffsTwoTimesSpatialAll.norm() < tol);
+          CHECK(jacobianWRTCoeffsTwoTimesSpatialAllExpected.norm() < tol);
         } else {
-          EXPECT_THAT(jacobianWRTCoeffsTwoTimesSpatialAll,
-                      EigenApproxEqual(jacobianWRTCoeffsTwoTimesSpatialAllExpected, tol));
+          CHECK_THAT(jacobianWRTCoeffsTwoTimesSpatialAll,
+                     EigenApproxEqual(jacobianWRTCoeffsTwoTimesSpatialAllExpected, tol));
         }
 
         for (int d = 0; d < gridDim; ++d) {
@@ -277,8 +278,8 @@ void testLocalFunction(const LF& lf) {
                            gradientWRTCoeffsTwoTimesSingleSpatial[d].template segment<coeffValueSize>(
                                i * coeffValueSize)))
                     .eval();
-          EXPECT_THAT(jacobianWRTCoeffsTwoTimesSingleSpatial,
-                      EigenApproxEqual(jacobianWRTCoeffsTwoTimesSingleSpatialExpected, tol));
+          CHECK_THAT(jacobianWRTCoeffsTwoTimesSingleSpatial,
+                     EigenApproxEqual(jacobianWRTCoeffsTwoTimesSingleSpatialExpected, tol));
         }
       }
     }
@@ -288,9 +289,9 @@ void testLocalFunction(const LF& lf) {
     const auto lfCopy     = lf.clone();
     const auto& coeffCopy = lfCopy.coefficientsRef();
     for (size_t i = 0; i < coeffSize; ++i)
-      EXPECT_EQ(coeffs[i], coeffCopy[i]);  // since the coeffs are copied the values should be the same
+      CHECK(coeffCopy[i] == coeffs[i]);
 
-    EXPECT_NE(&coeffs, &coeffCopy);  // since the coeffs are copied the addresses should differ
+    CHECK(&coeffCopy != &coeffs);
 
     testLocalFunction<std::remove_cvref_t<decltype(lfCopy)>, true>(lfCopy);
   }
@@ -354,8 +355,8 @@ void localFunctionTestConstructor(const Dune::GeometryType& geometryType, size_t
   testLocalFunction(h);
   static_assert(h.order() == linear);
   for (size_t k = 0; k < fe.size(); ++k) {
-    EXPECT_TRUE(h.coefficientsRef(_0)[k] == vBlockedLocal[k]);
-    EXPECT_TRUE(h.coefficientsRef(_1)[k] == vBlockedLocal[k]);
+    CHECK(h.coefficientsRef(_0)[k] == vBlockedLocal[k]);
+    CHECK(h.coefficientsRef(_1)[k] == vBlockedLocal[k]);
   }
   static_assert(std::tuple_size_v<decltype(collectNonArithmeticLeafNodes(h))> == 2);
   static_assert(countNonArithmeticLeafNodes(h) == 2);
@@ -411,14 +412,14 @@ void localFunctionTestConstructor(const Dune::GeometryType& geometryType, size_t
     auto localBasisNotBound = Ikarus::LocalBasis(fe.localBasis());
     auto fNotBound          = Ikarus::StandardLocalFunction(localBasisNotBound, vBlockedLocal);
     auto h1                 = f + fNotBound;
-    EXPECT_DEBUG_DEATH(h1.viewOverIntegrationPoints(), "The basis of the leaf nodes are not in the same state.");
+    //    (h1.viewOverIntegrationPoints(), "The basis of the leaf nodes are not in the same state.");
 
     const auto& ruleHigher                 = Dune::QuadratureRules<double, domainDim>::rule(fe.type(), 7);
     auto localBasisBoundButToDifferentRule = Ikarus::LocalBasis(fe.localBasis());
     localBasisBoundButToDifferentRule.bind(ruleHigher, bindDerivatives(0, 1));
     auto fBoundButHigher = Ikarus::StandardLocalFunction(localBasisBoundButToDifferentRule, vBlockedLocal);
     auto h2              = f + fBoundButHigher;
-    EXPECT_DEBUG_DEATH(h2.viewOverIntegrationPoints(), "The basis of the leaf nodes are not in the same state.");
+    //    (h2.viewOverIntegrationPoints(), "The basis of the leaf nodes are not in the same state.");
   }
 
   using namespace Ikarus::DerivativeDirections;
@@ -441,8 +442,8 @@ void localFunctionTestConstructor(const Dune::GeometryType& geometryType, size_t
   for (int gpIndex = 0; auto& gp : rule) {
     const auto& N  = localBasis.evaluateFunction(gpIndex);
     const auto& dN = localBasis.evaluateJacobian(gpIndex);
-    EXPECT_DOUBLE_EQ((f2.evaluateFunction(gpIndex) + g2.evaluateFunction(gpIndex)).dot(g2.evaluateFunction(gpIndex)),
-                     k2.evaluateFunction(gpIndex)[0]);
+    CHECK((f2.evaluateFunction(gpIndex) + g2.evaluateFunction(gpIndex)).dot(g2.evaluateFunction(gpIndex))
+          == Catch::Approx(k2.evaluateFunction(gpIndex)[0]));
     auto resSingleSpatial
         = ((f2.evaluateDerivative(gpIndex, wrt(spatial(0))) + g2.evaluateDerivative(gpIndex, wrt(spatial(0))))
                    .transpose()
@@ -450,7 +451,7 @@ void localFunctionTestConstructor(const Dune::GeometryType& geometryType, size_t
            + (f2.evaluateFunction(gpIndex) + g2.evaluateFunction(gpIndex)).transpose()
                  * g2.evaluateDerivative(gpIndex, wrt(spatial(0))))
               .eval();
-    EXPECT_THAT(resSingleSpatial, EigenApproxEqual(k2.evaluateDerivative(gpIndex, wrt(spatial(0))), tol));
+    CHECK_THAT(resSingleSpatial, EigenApproxEqual(k2.evaluateDerivative(gpIndex, wrt(spatial(0))), tol));
     auto resSpatialAll
         = (((f2.evaluateDerivative(gpIndex, wrt(spatialAll)) + g2.evaluateDerivative(gpIndex, wrt(spatialAll)))
                 .transpose()
@@ -462,32 +463,32 @@ void localFunctionTestConstructor(const Dune::GeometryType& geometryType, size_t
     static_assert(resSpatialAll.cols() == domainDim);
     static_assert(resSpatialAll.rows() == 1);
 
-    EXPECT_THAT(resSpatialAll, EigenApproxEqual(k2.evaluateDerivative(gpIndex, wrt(spatialAll)), tol));
+    CHECK_THAT(resSpatialAll, EigenApproxEqual(k2.evaluateDerivative(gpIndex, wrt(spatialAll)), tol));
 
     for (size_t iC = 0; iC < fe.size(); ++iC) {
       const VectorType dfdi = g2.evaluateFunction(gpIndex) * N[iC];
 
       const VectorType dkdi = k2.evaluateDerivative(gpIndex, wrt(coeff(_0, iC)));
 
-      EXPECT_THAT(dfdi, EigenApproxEqual(dkdi, tol));
+      CHECK_THAT(dfdi, EigenApproxEqual(dkdi, tol));
 
       for (size_t jC = 0; jC < fe.size(); ++jC) {
         const MatrixType dkdij         = k2.evaluateDerivative(gpIndex, wrt(coeff(_0, iC, _1, jC)));
         const MatrixType dkdijExpected = N[jC] * N[iC] * MatrixType::Identity();
-        EXPECT_THAT(dkdijExpected, EigenApproxEqual(dkdij, tol));
+        CHECK_THAT(dkdijExpected, EigenApproxEqual(dkdij, tol));
 
         const MatrixType dkdij2         = k2.evaluateDerivative(gpIndex, wrt(coeff(_0, iC, _0, jC)));
         const MatrixType dkdijExpected2 = MatrixType::Zero();
-        EXPECT_THAT(dkdijExpected2, EigenApproxEqual(dkdij2, tol));
+        CHECK_THAT(dkdijExpected2, EigenApproxEqual(dkdij2, tol));
         const MatrixType dkdij3         = k2.evaluateDerivative(gpIndex, wrt(coeff(_1, iC, _1, jC)));
         const MatrixType dkdijExpected3 = 2 * N[iC] * N[jC] * MatrixType::Identity();
-        EXPECT_THAT(dkdijExpected3, EigenApproxEqual(dkdij3, tol));
+        CHECK_THAT(dkdijExpected3, EigenApproxEqual(dkdij3, tol));
 
         const MatrixType dkdSij         = k2.evaluateDerivative(gpIndex, wrt(spatial(0), coeff(_0, iC, _1, jC)));
         const MatrixType dkdSijR        = k2.evaluateDerivative(gpIndex, wrt(coeff(_0, iC, _1, jC), spatial(0)));
         const MatrixType dkdSijExpected = (dN(jC, 0) * N[iC] + N[jC] * dN(iC, 0)) * MatrixType::Identity();
-        EXPECT_THAT(dkdSijR, EigenApproxEqual(dkdSij, tol));
-        EXPECT_THAT(dkdSijExpected, EigenApproxEqual(dkdSij, tol));
+        CHECK_THAT(dkdSijR, EigenApproxEqual(dkdSij, tol));
+        CHECK_THAT(dkdSijExpected, EigenApproxEqual(dkdSij, tol));
       }
     }
     ++gpIndex;
@@ -498,7 +499,7 @@ void localFunctionTestConstructor(const Dune::GeometryType& geometryType, size_t
 // Most of the following tests are commented out due to very long compile times and long runtimes in debug mode we hope
 //  to still capture most of the issues
 using namespace Dune::GeometryTypes;
-TEST(LocalFunctionTests, TestExpressionsOnLine) {
+TEST_CASE("LocalFunctionTests: TestExpressionsOnLine", "[trustRegionTest.cpp]") {
   //  std::cout << "line with linear ansatz functions and 1d local function" << std::endl;
   //  localFunctionTestConstructor<1, 1, 1>(line);
   //  localFunctionTestConstructor<1, 2, 1>(line);  // line with linear ansatz functions and 2d lf
@@ -511,7 +512,7 @@ TEST(LocalFunctionTests, TestExpressionsOnLine) {
   localFunctionTestConstructor<1, 3, 2>(line);
 }
 
-TEST(LocalFunctionTests, TestExpressionsOnTriangle) {
+TEST_CASE("LocalFunctionTests: TestExpressionsOnTriangle", "[trustRegionTest.cpp]") {
   //  std::cout << "triangle with linear ansatz functions and 1d local function" << std::endl;
   //  localFunctionTestConstructor<2, 1, 1>(triangle);
   //  localFunctionTestConstructor<2, 2, 1>(triangle);  // triangle with linear ansatz functions and 2d lf
@@ -524,7 +525,7 @@ TEST(LocalFunctionTests, TestExpressionsOnTriangle) {
   localFunctionTestConstructor<2, 3, 2>(triangle);
 }
 
-TEST(LocalFunctionTests, TestExpressionsOnQuadrilateral) {
+TEST_CASE("LocalFunctionTests: TestExpressionsOnQuadrilateral", "[trustRegionTest.cpp]") {
   //  std::cout << "quadrilateral with linear ansatz functions and 1d local function" << std::endl;
   //  localFunctionTestConstructor<2, 1, 1>(quadrilateral);
   //  localFunctionTestConstructor<2, 2, 1>( quadrilateral);  // quadrilateral with linear ansatz functions and 2d lf
@@ -536,7 +537,7 @@ TEST(LocalFunctionTests, TestExpressionsOnQuadrilateral) {
   std::cout << "quadrilateral with quadratic ansatz functions and 3d local function" << std::endl;
   localFunctionTestConstructor<2, 3, 2>(quadrilateral);
 }
-TEST(LocalFunctionTests, TestExpressionsOnHexahedron) {
+TEST_CASE("LocalFunctionTests: TestExpressionsOnHexahedron", "[trustRegionTest.cpp]") {
   std::cout << "hexahedron with linear ansatz functions and 1d local function" << std::endl;
   localFunctionTestConstructor<3, 1, 1>(hexahedron);  // hexahedron with linear ansatz functions and 1d lf
   //  localFunctionTestConstructor<3, 2, 1>(hexahedron);  // hexahedron with linear ansatz functions and 2d lf

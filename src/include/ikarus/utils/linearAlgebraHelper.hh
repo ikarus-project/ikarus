@@ -20,13 +20,14 @@
  */
 
 #pragma once
-#include <autodiff/forward/dual/dual.hpp>
 #include <iosfwd>
 
 #include <dune/istl/bvector.hh>
 #include <dune/istl/multitypeblockvector.hh>
 
 #include <Eigen/Core>
+
+#include <autodiff/forward/dual/dual.hpp>
 
 #include <ikarus/localFunctions/meta.hh>
 #include <ikarus/manifolds/manifoldInterface.hh>
@@ -407,8 +408,8 @@ namespace Ikarus {
 
   /* Enables the - operator for std::array if the underlying objects are negate able  */
   template <std::size_t d, typename Type>
-  std::array<Type, d> operator-(const std::array<Type, d>& a) //requires Concepts::NegateAble<Type>
-      {
+  std::array<Type, d> operator-(const std::array<Type, d>& a)  // requires Concepts::NegateAble<Type>
+  {
     std::array<Type, d> res;
     for (size_t i = 0U; i < d; ++i)
       res[i] = -a[i];

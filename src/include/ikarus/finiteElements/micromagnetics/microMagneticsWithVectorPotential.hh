@@ -21,8 +21,6 @@
 #pragma once
 #include "src/include/ikarus/finiteElements/feTraits.hh"
 
-#include <autodiff/forward/dual.hpp>
-#include <autodiff/forward/dual/eigen.hpp>
 #include <concepts>
 #include <iosfwd>
 #include <numbers>
@@ -30,6 +28,9 @@
 #include <dune/common/classname.hh>
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/geometry/type.hh>
+
+#include <autodiff/forward/dual.hpp>
+#include <autodiff/forward/dual/eigen.hpp>
 
 #include <ikarus/finiteElements/feRequirements.hh>
 #include <ikarus/finiteElements/physicsHelper.hh>

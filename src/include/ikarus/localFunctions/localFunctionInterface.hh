@@ -91,7 +91,6 @@ namespace Ikarus {
     template <std::size_t I = 0>
     requires(Std::countType<typename LocalFunctionImpl::Ids, Dune::index_constant<I>>()
              == 1) auto& coefficientsRef(Dune::index_constant<I> = Dune::index_constant<I>()) {
-      auto leafNodeCollection = collectLeafNodeLocalFunctions(impl());
       return collectLeafNodeLocalFunctions(impl()).coefficientsRef(Dune::index_constant<I>());
     }
 
