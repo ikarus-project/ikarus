@@ -20,6 +20,7 @@
 #pragma once
 
 #include "expressions/dotProductExpr.hh"
+#include "expressions/linearStrainsExpr.hh"
 #include "expressions/negateExpr.hh"
 #include "expressions/normSquaredExpr.hh"
 #include "expressions/scalarUnaryExpressions/scalarLogExpr.hh"

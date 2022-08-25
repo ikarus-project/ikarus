@@ -63,6 +63,9 @@ namespace Ikarus {
     std::regex regexp10("NormSquaredExpr");
     name = regex_replace(name, regexp10, "NormSquared");
 
+    std::regex regexp11("LinearStrainsExpr");
+    name = regex_replace(name, regexp11, "LinearStrains");
+
     return name;
   }
 }  // namespace Ikarus
