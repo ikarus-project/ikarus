@@ -1,6 +1,7 @@
 
 
-#include <gmock/gmock.h>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_all.hpp>
 
 #include "testHelpers.hh"
 
@@ -25,7 +26,7 @@ auto ddf(const Eigen::Vector<double, 1>& x) {
   return A;
 }
 
-TEST(TrustRegion, TrustRegion1) {
+TEST_CASE("TrustRegion: TrustRegion1", "[trustRegionTest.cpp]") {
   Eigen::Vector<double, 1> x;
   x << 2;
 
@@ -42,9 +43,9 @@ TEST(TrustRegion, TrustRegion1) {
   tr->setup({.verbosity = 1, .Delta0 = 1});
   const auto solverInfo = tr->solve();
 
-  EXPECT_EQ(solverInfo.sucess, true);
+  CHECK (true == solverInfo.sucess);
 
-  EXPECT_THAT(x, EigenApproxEqual(xExpected, 1e-15));
+  CHECK_THAT (x, EigenApproxEqual(xExpected, 1e-15));
 }
 
 static constexpr double a_      = 1.0;
@@ -73,7 +74,7 @@ auto rosenbrockddx(const Eigen::Vector2d& x) {
   return A;
 }
 
-TEST(TrustRegion, TrustRegion2) {
+TEST_CASE("TrustRegion: TrustRegion2", "[trustRegionTest.cpp]") {
   Eigen::Vector2d x;
   x << 2, 3;
 
@@ -90,12 +91,12 @@ TEST(TrustRegion, TrustRegion2) {
   tr.setup({.verbosity = 1, .maxiter = maxIter_, .grad_tol = eps, .Delta0 = 1});
   const auto solverInfo = tr.solve();
 
-  EXPECT_EQ(solverInfo.sucess, true);
-  EXPECT_EQ(solverInfo.iterations, 25);
-  EXPECT_LT(solverInfo.gradienNorm, eps);
-  EXPECT_THAT(x, EigenApproxEqual(xExpected, eps));
+  CHECK (true == solverInfo.sucess);
+  CHECK (25 == solverInfo.iterations);
+  CHECK (eps > solverInfo.gradienNorm);
+  CHECK_THAT (x, EigenApproxEqual(xExpected, eps));
   nonLinOp.update<0>();
-  EXPECT_DOUBLE_EQ(nonLinOp.value(), offset_);
+  CHECK (offset_ == Catch::Approx (nonLinOp.value()));
 }
 
 #include <autodiff/forward/dual.hpp>
@@ -119,7 +120,7 @@ auto ddf3(Eigen::Vector2<autodiff::dual2nd>& x) {
   return A;
 }
 
-TEST(TrustRegion, TrustRegion3) {
+TEST_CASE("TrustRegion: TrustRegion3", "[trustRegionTest.cpp]") {
   Eigen::Vector2d x(2);
   x << 0.7, -3.3;
 
@@ -141,34 +142,34 @@ TEST(TrustRegion, TrustRegion3) {
   Ikarus::TrustRegion tr(nonLinOp);
   tr.setup({.verbosity = 1, .maxiter = maxIter_, .grad_tol = eps, .corr_tol = eps, .Delta0 = 1});
   const auto solverInfo = tr.solve();
-  EXPECT_EQ(solverInfo.sucess, true);
-  EXPECT_EQ(solverInfo.iterations, 11);
-  EXPECT_LT(solverInfo.gradienNorm, eps);
-  EXPECT_THAT(x, EigenApproxEqual(xExpected, eps));
+  CHECK (true == solverInfo.sucess);
+  CHECK (11 == solverInfo.iterations);
+  CHECK (eps > solverInfo.gradienNorm);
+  CHECK_THAT (x, EigenApproxEqual(xExpected, eps));
   nonLinOp.update<0>();
-  EXPECT_DOUBLE_EQ(nonLinOp.value(), -31.180733385187978);
+  CHECK (-31.180733385187978 == Catch::Approx (nonLinOp.value()));
 
   x << 0.7, -3.3;
   Ikarus::TrustRegion<decltype(nonLinOp), Ikarus::PreConditioner::IdentityPreconditioner> tr2(nonLinOp);
   tr2.setup({.verbosity = 1, .maxiter = maxIter_, .grad_tol = eps, .corr_tol = eps, .Delta0 = 1});
   const auto solverInfo2 = tr2.solve();
-  EXPECT_EQ(solverInfo2.sucess, true);
-  EXPECT_EQ(solverInfo2.iterations, 11);
-  EXPECT_LT(solverInfo2.gradienNorm, eps);
-  EXPECT_THAT(x, EigenApproxEqual(xExpected, eps));
+  CHECK (true == solverInfo2.sucess);
+  CHECK (11 == solverInfo2.iterations);
+  CHECK (eps > solverInfo2.gradienNorm);
+  CHECK_THAT (x, EigenApproxEqual(xExpected, eps));
   nonLinOp.update<0>();
-  EXPECT_DOUBLE_EQ(nonLinOp.value(), -31.180733385187978);
+  CHECK (-31.180733385187978 == Catch::Approx (nonLinOp.value()));
 
   x << 0.7, -3.3;
   Ikarus::TrustRegion<decltype(nonLinOp), Ikarus::PreConditioner::DiagonalPreconditioner> tr3(nonLinOp);
   tr3.setup({.verbosity = 1, .maxiter = maxIter_, .grad_tol = eps, .corr_tol = eps, .Delta0 = 1});
   const auto solverInfo3 = tr3.solve();
-  EXPECT_EQ(solverInfo3.sucess, true);
-  EXPECT_EQ(solverInfo3.iterations, 8);
-  EXPECT_LT(solverInfo3.gradienNorm, eps);
-  EXPECT_THAT(x, EigenApproxEqual(xExpected, eps));
+  CHECK (true == solverInfo3.sucess);
+  CHECK (8 == solverInfo3.iterations);
+  CHECK (eps > solverInfo3.gradienNorm);
+  CHECK_THAT (x, EigenApproxEqual(xExpected, eps));
   nonLinOp.update<0>();
-  EXPECT_DOUBLE_EQ(nonLinOp.value(), -31.180733385187978);
+  CHECK (-31.180733385187978 == Catch::Approx (nonLinOp.value()));
 }
 
 template <typename ScalarType = double>
@@ -204,7 +205,7 @@ auto ddf3R(const Ikarus::UnitVector<double, 2>& x) {
   return A;
 }
 
-TEST(TrustRegion, TrustRegionRiemanianUnitSphere) {
+TEST_CASE("TrustRegion: TrustRegionRiemanianUnitSphere", "[trustRegionTest.cpp]") {
   auto d = Ikarus::UnitVector<double, 2>();
   d.update(Eigen::Vector<double, 1>::Ones());
   auto fvLambda = [](auto&& xL) { return f3R(xL); };
@@ -213,10 +214,10 @@ TEST(TrustRegion, TrustRegionRiemanianUnitSphere) {
   auto ddfvLambda = [](auto&& xL) { return ddf3R(xL); };
 
   Ikarus::NonLinearOperator nonLinOp(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(d));
-  EXPECT_DOUBLE_EQ(fvLambda(d), nonLinOp.value());
+  CHECK (nonLinOp.value() == Catch::Approx (fvLambda(d)));
 
-  EXPECT_THAT(dfvLambda(d), EigenApproxEqual(nonLinOp.derivative(), 1e-15));
-  EXPECT_THAT(ddfvLambda(d), EigenApproxEqual(nonLinOp.secondDerivative(), 1e-15));
+  CHECK_THAT (dfvLambda(d), EigenApproxEqual(nonLinOp.derivative(), 1e-15));
+  CHECK_THAT (ddfvLambda(d), EigenApproxEqual(nonLinOp.secondDerivative(), 1e-15));
 
   Ikarus::TrustRegion tr3(nonLinOp,
                           std::function([](Ikarus::UnitVector<double, 2>& x,
@@ -224,12 +225,12 @@ TEST(TrustRegion, TrustRegionRiemanianUnitSphere) {
   constexpr double tol = 1e-12;
   tr3.setup({.verbosity = 1, .maxiter = 1000, .grad_tol = tol, .corr_tol = tol, .Delta0 = 0.1});
   const auto solverInfo3 = tr3.solve();
-  EXPECT_EQ(solverInfo3.sucess, true);
-  EXPECT_EQ(solverInfo3.iterations, 6);
-  EXPECT_LT(solverInfo3.gradienNorm, tol);
+  CHECK (true == solverInfo3.sucess);
+  CHECK (6 == solverInfo3.iterations);
+  CHECK (tol > solverInfo3.gradienNorm);
   nonLinOp.update<0>();
-  EXPECT_LE(nonLinOp.value(), 1e-17);
-  EXPECT_THAT(nonLinOp.firstParameter().getValue(), EigenApproxEqual(Eigen::Vector2d::UnitY(), 1e-15));
+  CHECK (1e-17 >= nonLinOp.value());
+  CHECK_THAT (nonLinOp.firstParameter().getValue(), EigenApproxEqual(Eigen::Vector2d::UnitY(), 1e-15));
 }
 
 #include <dune/istl/bvector.hh>
@@ -355,7 +356,7 @@ auto ddf3RBlocked(const MultiTypeVector& mT) {
   return A;
 }
 
-TEST(TrustRegion, TrustRegionRiemanianUnitSphereAndDispBlocked) {
+TEST_CASE("TrustRegion: TrustRegionRiemanianUnitSphereAndDispBlocked", "[trustRegionTest.cpp]") {
   using namespace Dune::Indices;
   using namespace Ikarus;
   DisplacementVector disp;
@@ -380,31 +381,30 @@ TEST(TrustRegion, TrustRegionRiemanianUnitSphereAndDispBlocked) {
   auto dfvLambda = [&](auto&& xL) { return df3RBlocked(xL); };
 
   auto gred = dfvLambda(mT);
-  EXPECT_EQ(gred.size(), 10);
+  CHECK (10 == gred.size());
   auto ddfvLambda = [](auto&& xL) { return ddf3RBlocked(xL); };
   auto h          = ddfvLambda(mT);
-  EXPECT_EQ(h.rows(), 10);
-  EXPECT_EQ(h.cols(), 10);
+  CHECK (10 == h.rows());
+  CHECK (10 == h.cols());
 
   Ikarus::NonLinearOperator nonLinOp(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(mT));
-  EXPECT_DOUBLE_EQ(fvLambda(mT), nonLinOp.value());
-  //
-  EXPECT_THAT(dfvLambda(mT), EigenApproxEqual(nonLinOp.derivative(), 1e-15));
-  EXPECT_THAT(ddfvLambda(mT), EigenApproxEqual(nonLinOp.secondDerivative(), 1e-15));
-  //
-  //
+  CHECK (nonLinOp.value() == Catch::Approx (fvLambda(mT)));
+
+  CHECK_THAT (dfvLambda(mT), EigenApproxEqual(nonLinOp.derivative(), 1e-15));
+  CHECK_THAT (ddfvLambda(mT), EigenApproxEqual(nonLinOp.secondDerivative(), 1e-15));
+
   Ikarus::TrustRegion tr3(nonLinOp);
   constexpr double tol = 1e-12;
   tr3.setup({.verbosity = 1, .maxiter = 1000, .grad_tol = tol, .corr_tol = tol, .Delta0 = 0.1});
   const auto solverInfo3 = tr3.solve();
-  EXPECT_EQ(solverInfo3.sucess, true);
-  EXPECT_EQ(solverInfo3.iterations, 9);
-  EXPECT_LT(solverInfo3.gradienNorm, tol);
+  CHECK (true == solverInfo3.sucess);
+  CHECK (9 == solverInfo3.iterations);
+  CHECK (tol > solverInfo3.gradienNorm);
   nonLinOp.update<0>();
-  EXPECT_DOUBLE_EQ(nonLinOp.value(), -0.5);
+  CHECK (-0.5 == Catch::Approx (nonLinOp.value()));
 
   for (auto& director : mT[_1])
-    EXPECT_THAT(director.getValue(), EigenApproxEqual(Eigen::Vector3d::UnitZ(), 1e-15));
+    CHECK_THAT (director.getValue(), EigenApproxEqual(Eigen::Vector3d::UnitZ(), 1e-15));
   for (auto& displacement : mT[_0])
-    EXPECT_THAT(displacement.getValue(), EigenApproxEqual(-0.5 * Eigen::Vector3d::UnitZ(), 1e-14));
+    CHECK_THAT (displacement.getValue(), EigenApproxEqual(-0.5 * Eigen::Vector3d::UnitZ(), 1e-14));
 }

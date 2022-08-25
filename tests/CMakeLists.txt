@@ -21,19 +21,13 @@ file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 
 Include(FetchContent)
 
-FetchContent_Declare(
-        Catch2
-        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-        GIT_TAG        v3.0.0-preview3
-)
-
-FetchContent_MakeAvailable(Catch2)
+find_package(Catch2 3 REQUIRED)
 
 add_executable(IkarusTests ${sources})
 
 target_link_libraries(
   IkarusTests
-  PRIVATE Catch2::Catch2WithMain
+  PRIVATE Catch2::Catch2
   PUBLIC Ikarus::Ikarus
 )
 set_target_properties(IkarusTests PROPERTIES CXX_STANDARD 20)
