@@ -28,7 +28,7 @@ jobs:
           mkdir cmake-build-debug
           cd cmake-build-debug
           cmake ../  -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc-11 -DCMAKE_CXX_COMPILER=g++-11 -DENABLE_TEST_COVERAGE=1
-          cmake --build . --parallel 9 --target IkarusTests
+          cmake --build . --parallel 2 --target IkarusTests
 
       - name: Tests
         working-directory: ./cmake-build-debug
