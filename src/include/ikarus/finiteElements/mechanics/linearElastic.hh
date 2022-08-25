@@ -40,6 +40,7 @@
 #include <ikarus/finiteElements/physicsHelper.hh>
 #include <ikarus/localBasis/localBasis.hh>
 #include <ikarus/localFunctions/impl/standardLocalFunction.hh>
+#include <ikarus/localFunctions/expressions/linearStrainsExpr.hh>
 #include <ikarus/manifolds/realTuple.hh>
 #include <ikarus/utils/eigenDuneTransformations.hh>
 #include <ikarus/utils/linearAlgebraHelper.hh>
@@ -97,24 +98,11 @@ namespace Ikarus {
       Eigen::Matrix3<double> C = planeStressLinearElasticMaterialTangent(emod_,nu_);
       Ikarus::StandardLocalFunction uFunction(localBasis, disp);
 
-      return linearStrain(uFunction.clone());
+      return linearStrains(uFunction.clone());
     }
 
      auto getMaterialTangentFunction(const FERequirementType& par)const
     {
-      const auto& d      = par.getSolution(Ikarus::FESolutions::displacement);
-
-      auto& first_child = localView_.tree().child(0);
-      const auto& fe    = first_child.finiteElement();
-      Dune::BlockVector<Ikarus::RealTuple<double, Traits::dimension>> disp(fe.size());
-
-      for (auto i = 0U; i < fe.size(); ++i)
-        for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
-          disp[i][k2] = d[localView_.index(localView_.tree().child(k2).localIndex(i))[0]];
-
-      Eigen::Matrix3<double> C = planeStressLinearElasticMaterialTangent(emod_,nu_);
-      Ikarus::StandardLocalFunction uFunction(localBasis, disp);
-
       return [&](auto gp){return planeStressLinearElasticMaterialTangent(emod_,nu_);};
     }
 
