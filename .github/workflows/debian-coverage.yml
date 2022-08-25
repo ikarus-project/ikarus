@@ -11,7 +11,7 @@ jobs:
   GCC-Debug-CodeCov:
     runs-on: ubuntu-latest
     container:
-      image: rath3t/ci-debian-bookworm
+      image: rath3t/ikarus-debian-bookworm:latest
       options: --memory-swap="20g" --memory="20g" --cpus="2"
 
     steps:
