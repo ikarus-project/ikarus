@@ -288,8 +288,8 @@ namespace Ikarus {
   }
 
   template <typename Derived>
-  auto operator-(Ikarus::DerivativeDirections::DerivativeNoOp, const Eigen::MatrixBase<Derived>& a) {
-    return a.derived();
+  Derived operator-(Ikarus::DerivativeDirections::DerivativeNoOp, const Eigen::MatrixBase<Derived>& a) {
+    return -a.derived();
   }
 
   template <typename Derived, typename Derived2>
@@ -407,7 +407,8 @@ namespace Ikarus {
 
   /* Enables the - operator for std::array if the underlying objects are negate able  */
   template <std::size_t d, typename Type>
-  std::array<Type, d> operator-(const std::array<Type, d>& a) requires Concepts::NegateAble<Type> {
+  std::array<Type, d> operator-(const std::array<Type, d>& a) //requires Concepts::NegateAble<Type>
+      {
     std::array<Type, d> res;
     for (size_t i = 0U; i < d; ++i)
       res[i] = -a[i];

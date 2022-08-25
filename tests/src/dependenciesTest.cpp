@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "spdlog/fmt/ostr.h"
+#include <spdlog/fmt/ranges.h>
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/spdlog.h"
@@ -59,7 +60,7 @@ TEST(Dependencies, spdlog) {
 [info]                  right aligned
 [debug] This message should be displayed..
 [info] Does this appear in the correct logger?
-[info] 1 2 3
+[info] [1, 2, 3]
 )xxx";
   EXPECT_EQ(expectedOutput, file);
 }
