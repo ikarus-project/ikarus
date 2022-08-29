@@ -64,20 +64,22 @@ namespace Ikarus{
     return T0.inverse() * detJ0;
   }
 
+
   template<typename Geometry>
   struct EASQ1E4
   {
     static constexpr int strainSize = 3;
     static constexpr int enhancedStrainSize = 4;
 
-    EASE4(const Geometry& geometry)
-    : geometry{geometry},
+    EASQ1E4() = default;
+    EASQ1E4(const Geometry& geometry)
+    : geometry{std::make_unique<Geometry>(geometry)},
           T0InverseTransformed{calcTransformationMatrix2D(geometry)}
     {}
 
-    auto calcM(const Dune::FieldVector<double,2>& quadPos)
+    auto calcM(const Dune::FieldVector<double,2>& quadPos) const
     {
-      Eigen::Matrix<double,strainSize,Eigen::Dynamic,0,strainSize,maxEASParameter2d> M;
+      Eigen::Matrix<double,strainSize,enhancedStrainSize> M;
       M.setZero(strainSize,enhancedStrainSize);
       const double xi = quadPos[0];
       const double eta = quadPos[1];
@@ -85,12 +87,12 @@ namespace Ikarus{
       M(1,1) = eta-0.5;
       M(2,2) = xi-0.5;
       M(2,3) = eta-0.5;
-      const double detJ = geometry.integrationElement(quadPos);
+      const double detJ = geometry->integrationElement(quadPos);
       M = T0InverseTransformed/detJ * M ;
       return M;
     }
 
-    const Geometry& geometry;
+     std::unique_ptr<Geometry> geometry;
     Eigen::Matrix3d T0InverseTransformed;
   };
 
@@ -100,14 +102,15 @@ namespace Ikarus{
     static constexpr int strainSize = 3;
     static constexpr int enhancedStrainSize = 5;
 
-    EASE5(const Geometry& geometry)
-        : geometry{geometry}
+    EASQ1E5() = default;
+    EASQ1E5(const Geometry& geometry)
+        : geometry{std::make_unique<Geometry>(geometry)}
           ,T0InverseTransformed{calcTransformationMatrix2D(geometry)}
     {}
 
-    auto calcM(const Dune::FieldVector<double,2>& quadPos)
+    auto calcM(const Dune::FieldVector<double,2>& quadPos) const
     {
-      Eigen::Matrix<double,strainSize,Eigen::Dynamic,0,strainSize,maxEASParameter2d> M;
+      Eigen::Matrix<double,strainSize,enhancedStrainSize> M;
       M.setZero();
       const double xi = quadPos[0];
       const double eta = quadPos[1];
@@ -116,16 +119,18 @@ namespace Ikarus{
       M(2,2) = xi-0.5;
       M(2,3) = eta-0.5;
       M(2,4) = (xi-0.5)*(eta-0.5);
-      M = T0InverseTransformed  * M ;
+      const double detJ = geometry->integrationElement(quadPos);
+      M = T0InverseTransformed/detJ * M ;
       return M;
     }
 
-    const Geometry& geometry;
+    std::unique_ptr<Geometry> geometry;
     Eigen::Matrix3d T0InverseTransformed;
   };
 
-  using EAS2dVariant = std::variant<EASQ1E4,EASQ1E5>;
-  using EAS3dVariant = std::variant<EASH1E9,EASH1E21>;
+  template<typename Geometry>
+  using EAS2dVariant = std::variant<EASQ1E4<Geometry>,EASQ1E5<Geometry>>;
+//  using EAS3dVariant = std::variant<EASH1E9,EASH1E21>;
 
 
   template<typename DisplacementBasedElement>
@@ -135,7 +140,7 @@ class EnhancedAssumedStrains : public DisplacementBasedElement {
 
 
     static constexpr int strainSize = 3;
-    static constexpr int enhancedStrainSize = 4;
+
     using FERequirementType = FErequirements<Eigen::VectorXd>;
     using LocalView         = typename DisplacementBasedElement::LocalView;
     using GridView         = typename DisplacementBasedElement::GridView;
@@ -159,8 +164,6 @@ class EnhancedAssumedStrains : public DisplacementBasedElement {
 
     void calculateVector(const FERequirementType& par, typename Traits::VectorType& g) const {
       DisplacementBasedElement::calculateVector(par,g);
-//      DUNE_THROW(Dune::NotImplemented, "EAS element do not support any vector calculations. Since it is only used for linear elasticity right now. Later the internal forces need to be calculated here");
-
 }
 
     void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& h) const {
@@ -168,23 +171,21 @@ class EnhancedAssumedStrains : public DisplacementBasedElement {
       DisplacementBasedElement::calculateMatrix(par,h); // fill h with displacement-based stiffnesses
       //is assumed to be assembled block-wise on element level. This means the displacements x,y,z of node I are grouped together
 
-      if(easType==EASType::none)
+      if(onlyDisplacementBase)
         return ;
 
       auto strainFunction = DisplacementBasedElement::getStrainFunction(par);
       auto C = DisplacementBasedElement::getMaterialTangentFunction(par);
       auto& localView = DisplacementBasedElement::getLocalView();
       auto geo = localView.element().geometry();
-      auto easFunction = EASE4(geo);
+
       auto& first_child = localView.tree().child(0);
       const auto& fe    = first_child.finiteElement();
       assert(((fe.size()== 4 and Traits::mydim==2) or (fe.size()== 8 and Traits::mydim==3)) && "EAS only supported for Q1 or H1 elements");
-      Eigen::Matrix<double,enhancedStrainSize,Eigen::Dynamic> L;
-      Eigen::Matrix<double,enhancedStrainSize,enhancedStrainSize> D;
-      L.setZero(Eigen::NoChange,localView.size());
+      L.setZero(enhancedStrainSize,localView.size());
       D.setZero();
       for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
-        const auto M = easFunction.calcM(gp.position());
+        std::visit([&](const auto& easfunction){ M = easfunction.calcM(gp.position()); },easVariant);
         const auto Jinv = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
         const auto Ceval = C(gpIndex);
         const double detJ = geo.integrationElement(gp.position());
@@ -194,27 +195,43 @@ class EnhancedAssumedStrains : public DisplacementBasedElement {
         const size_t I    = Traits::worlddim * i;
         const auto Bi = strainFunction.evaluateDerivative(gpIndex,wrt( coeff(i) ), transformWith(Jinv));
 
-        L.block<enhancedStrainSize,Traits::worlddim>(0,I) += M.transpose() * Ceval * Bi * detJ * gp.weight();
+        L.block(0,I,enhancedStrainSize,Traits::worlddim) += M.transpose() * Ceval * Bi * detJ * gp.weight();
 
         }
       }
       h-= L.transpose()*D.inverse()*L; //exploit symmetry
     }
 
-void setEASType(EASType otherEASType)
+void setEASType(int numberOfEASParameters)
     {
-  easType =otherEASType;
-  if(otherEASType==EASType::none)
-    return ;
-  else if(otherEASType==EASType::Q1E4)
-  easVariant= EASE4(localView.element().geometry())     auto geo = localView.element().geometry();
-  auto easFunction = EASE4(geo);
+  enhancedStrainSize=numberOfEASParameters;
+  D.setZero(enhancedStrainSize,enhancedStrainSize);
+
+  switch (numberOfEASParameters) {
+    case 0:
+      onlyDisplacementBase=true;
+      break;
+    case 4:
+      easVariant= EASQ1E4(DisplacementBasedElement::getLocalView().element().geometry());
+      break;
+    case 5:
+      easVariant= EASQ1E5(DisplacementBasedElement::getLocalView().element().geometry());
+      break;
+    default:
+      DUNE_THROW(Dune::NotImplemented,"The given EAS parameters are not available.");
+      break;
+  }
+
+
 }
 
 private:
-//  DisplacementBasedElement displacementBasedElement;
-  std::conditional_t<Traits::mydim==2 ,EAS2dVariant,EAS3dVariant > easVariant;
-  EASType easType{EASType::none};
+  EAS2dVariant<typename LocalView::Element::Geometry> easVariant;
+  mutable Eigen::Matrix<double,strainSize,Eigen::Dynamic> M;
+  mutable Eigen::MatrixXd D;
+  mutable Eigen::MatrixXd L;
+  int enhancedStrainSize;
+  bool onlyDisplacementBase{false};
 };
 
 

@@ -258,9 +258,11 @@ int main(int argc, char **argv) {
   const Dune::ParameterTree& gridParameters     = parameterSet.sub("GridParameters");
   const Dune::ParameterTree& controlParameters  = parameterSet.sub("ControlParameters");
   const Dune::ParameterTree& materialParameters = parameterSet.sub("MaterialParameters");
+  const Dune::ParameterTree& elementParameters = parameterSet.sub("ElementParameters");
 
   const double E          = materialParameters.get<double>("E");
   const double nu            = materialParameters.get<double>("nu");
+  const auto numberOfEASParameters            = elementParameters.get<int>("numberOfEASParameters");
   const int refinement_level = gridParameters.get<int>("refinement");
 
   using Grid = Dune::UGGrid<gridDim>;
@@ -336,7 +338,7 @@ int main(int argc, char **argv) {
 //    Q1E4Stiffness(localView,planeStressLinearElasticMaterialTangent(E,nu));
     fesAD.emplace_back(basis, element, E, nu, &neumannBoundary, neumannBoundaryLoad, volumeLoad);
     fes.emplace_back(basis, element, E, nu, &neumannBoundary, neumannBoundaryLoad, volumeLoad);
-    fes.back().setEASType(EASType::Q1E4);
+    fes.back().setEASType(numberOfEASParameters);
   }
 
   auto sparseAssembler = SparseFlatAssembler(basis, fes, dirichletFlags);
