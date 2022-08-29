@@ -19,7 +19,7 @@
 
 #include <Eigen/Core>
 
-#include "ikarus/solver/linearSolver/geometricMultigrid/geometricMultiGridSolver.hh"
+#include <ikarus/solver/linearSolver/geometricMultigrid/geometricMultiGridSolver.hh>
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/controlRoutines/loadControl.hh>
 #include <ikarus/finiteElements/feRequirements.hh>
@@ -63,26 +63,23 @@ int main(int argc, char** argv) {
     grid->globalRefine(2);
     auto leafGridView = grid->leafGridView();
 
-    draw(leafGridView);
-    draw(grid->levelGridView(1));
-    draw(grid->levelGridView(0));
+//    draw(leafGridView);
+//    draw(grid->levelGridView(1));
+//    draw(grid->levelGridView(0));
 
 //
   using namespace Dune::Functions::BasisFactory;
 
     auto preBasisFactory = power<gridDim>(lagrange<1>(), FlatInterleaved());
 
-    Ikarus::GridTransfer transfer(grid);
 
-    transfer.createOperators(preBasisFactory);
 
     auto coarseBasis = makeBasis(grid->levelGridView(0),preBasisFactory);
-    auto fineBasis = makeBasis(grid->levelGridView(1),preBasisFactory);
+    auto fineBasis = makeBasis(grid->leafGridView(),preBasisFactory);
 
       double lambdaLoad = 1;
 
         std::vector<Ikarus::NonLinearElasticityFE<decltype(coarseBasis)>> feVectorCoarse;
-        std::vector<Ikarus::NonLinearElasticityFE<decltype(coarseBasis)>> feVectorFine;
         std::function<Eigen::Vector<double, 2>(const Eigen::Vector<double, 2>&,
                                                               const double&)> volumeLoad_ =[](auto& globalCoord, auto& lamb) {
           Eigen::Vector2d fext;
