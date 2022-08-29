@@ -36,9 +36,9 @@ namespace Ikarus {
       errors(i)          = error;
       lines.push_back(poly);
     }
-    auto minEle = std::ranges::min_element(errors.begin(), errors.end());
-    auto index  = std::distance(errors.begin(), minEle);
-    auto range  = Eigen::seq(index, index + segmentSize);
+    std::forward_iterator auto minEle = std::ranges::min_element(errors.begin(), errors.end());
+    auto index                        = std::distance(errors.begin(), minEle);
+    auto range                        = Eigen::seq(index, index + segmentSize);
     return std::make_tuple(lines[index], range);
   }
 }  // namespace Ikarus

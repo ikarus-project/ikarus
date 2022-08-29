@@ -9,7 +9,8 @@ jobs:
     name: ${{ matrix.config.name }}
     runs-on: ubuntu-latest
     container:
-      image: rath3t/ci-debian-bookworm
+      image: rath3t/ikarus-debian-bookworm:latest
+      options: --memory-swap="20g" --memory="20g" --cpus="2"
     strategy:
       fail-fast: false
       matrix:
@@ -52,7 +53,7 @@ jobs:
           mkdir cmake-build-${{ matrix.config.config }}
           cd cmake-build-${{ matrix.config.config }}
           cmake ../  -DCMAKE_BUILD_TYPE=${{ matrix.config.config }} -G "Unix Makefiles" -DCMAKE_C_COMPILER=${{ matrix.config.compilerC }} -DCMAKE_CXX_COMPILER=${{ matrix.config.compilerCxx }} -DCMAKE_CXX_FLAGS="-Wall -Wpedantic -Wextra -Werror ${{ matrix.config.lib }}"
-          cmake --build . --parallel 9 --target IkarusTests
+          cmake --build . --parallel 2 --target IkarusTests
       - name: Tests
         working-directory: ./repo/cmake-build-${{ matrix.config.config }}
-        run: ctest --output-on-failure --parallel 9 -C ${{ matrix.config.config }}
+        run: ctest --output-on-failure --parallel 2 -C ${{ matrix.config.config }}

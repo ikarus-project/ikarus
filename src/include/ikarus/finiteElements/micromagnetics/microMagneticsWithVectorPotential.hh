@@ -21,8 +21,6 @@
 #pragma once
 #include "src/include/ikarus/finiteElements/feTraits.hh"
 
-#include <autodiff/forward/dual.hpp>
-#include <autodiff/forward/dual/eigen.hpp>
 #include <concepts>
 #include <iosfwd>
 #include <numbers>
@@ -30,6 +28,9 @@
 #include <dune/common/classname.hh>
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/geometry/type.hh>
+
+#include <autodiff/forward/dual.hpp>
+#include <autodiff/forward/dual/eigen.hpp>
 
 #include <ikarus/finiteElements/feRequirements.hh>
 #include <ikarus/finiteElements/physicsHelper.hh>
@@ -181,9 +182,9 @@ namespace Ikarus {
 
         const auto J             = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
         const auto Jinv          = J.inverse().eval();
-        const auto normalizedMag = mLocalF.evaluateFunction(gpIndex).getValue();
+        const auto normalizedMag = mLocalF.evaluateFunction(gpIndex);
         const auto gradm         = mLocalF.evaluateDerivative(gpIndex, wrt(spatialAll), transformWith(Jinv));
-        const auto vectorPot     = vectorPotLocalFunction.evaluateFunction(gpIndex).getValue();
+        const auto vectorPot     = vectorPotLocalFunction.evaluateFunction(gpIndex);
 
         const auto dNAdx = (dNA * J.inverse()).eval();
         Eigen::Matrix<double, vectorPotDim, Traits::mydim> gradA
@@ -284,8 +285,8 @@ namespace Ikarus {
         localBasisVecPot.evaluateJacobian(gp.position(), dNA);
         const auto J             = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
         const auto Jinv          = J.inverse().eval();
-        const auto normalizedMag = magnetLocalFunction.evaluateFunction(gpIndex).getValue();
-        const auto vectorPot     = vectorPotLocalFunction.evaluateFunction(gpIndex).getValue();
+        const auto normalizedMag = magnetLocalFunction.evaluateFunction(gpIndex);
+        const auto vectorPot     = vectorPotLocalFunction.evaluateFunction(gpIndex);
 
         const auto dNAdx = (dNA * Jinv).eval();
         const Eigen::Matrix<double, directorDim, Traits::mydim> gradm
@@ -370,8 +371,8 @@ namespace Ikarus {
       const auto Jinv = J.inverse().eval();
       Ikarus::StandardLocalFunction vectorPotLocalFunction(localBasisVecPot, AN);
 
-      const auto normalizedMag = magnetLocalFunction.evaluateFunction(gp).getValue();
-      const auto vectorPot     = vectorPotLocalFunction.evaluateFunction(gp).getValue();
+      const auto normalizedMag = magnetLocalFunction.evaluateFunction(gp);
+      const auto vectorPot     = vectorPotLocalFunction.evaluateFunction(gp);
 
       const Eigen::Matrix<double, directorDim, Traits::mydim> gradm
           = magnetLocalFunction.evaluateDerivative(gp, wrt(spatialAll), transformWith(Jinv));
@@ -448,8 +449,8 @@ namespace Ikarus {
       for (const auto& gp : rule) {
         const auto J             = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().eval();
         const auto Jinv          = J.inverse().eval();
-        const auto normalizedMag = magnetLocalFunction.evaluateFunction(gp.position()).getValue();
-        const auto vectorPot     = vectorPotLocalFunction.evaluateFunction(gp.position()).getValue();
+        const auto normalizedMag = magnetLocalFunction.evaluateFunction(gp.position());
+        const auto vectorPot     = vectorPotLocalFunction.evaluateFunction(gp.position());
 
         const Eigen::Matrix<double, directorDim, Traits::mydim> gradm
             = magnetLocalFunction.evaluateDerivative(gp.position(), wrt(spatialAll), transformWith(Jinv));

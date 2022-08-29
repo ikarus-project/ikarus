@@ -22,8 +22,6 @@
 #include "src/include/ikarus/finiteElements/feBases/powerBasisFE.hh"
 #include "src/include/ikarus/finiteElements/feTraits.hh"
 
-#include <autodiff/forward/dual.hpp>
-#include <autodiff/forward/dual/eigen.hpp>
 #include <concepts>
 #include <iosfwd>
 
@@ -31,6 +29,9 @@
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/geometry/type.hh>
 #include <dune/fufem/boundarypatch.hh>
+
+#include <autodiff/forward/dual.hpp>
+#include <autodiff/forward/dual/eigen.hpp>
 
 #include <ikarus/finiteElements/feBases/autodiffFE.hh>
 #include <ikarus/finiteElements/feRequirements.hh>

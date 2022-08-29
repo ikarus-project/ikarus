@@ -19,6 +19,7 @@
 
 #pragma once
 #include <ikarus/localFunctions/expressions/unaryExpr.hh>
+#include <ikarus/utils/linearAlgebraHelper.hh>
 namespace Ikarus {
 
   template <typename E1>

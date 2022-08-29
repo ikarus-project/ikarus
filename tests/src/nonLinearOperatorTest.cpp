@@ -1,8 +1,8 @@
 
 #include <config.h>
 
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_all.hpp>
 
 #include "testHelpers.hh"
 
@@ -23,19 +23,19 @@ void checkNewtonRhapson(NewtonRhapson& nr, SolutionType& x, double tolerance, in
   const auto solverInfo = nr.solve(x_Predictor);
 
   if constexpr (std::is_same_v<SolutionType, double>)
-    EXPECT_DOUBLE_EQ(x, xExpected);
+    CHECK(xExpected == Catch::Approx(x));
   else
-    EXPECT_THAT(x, EigenApproxEqual(xExpected, 1e-15));
+    CHECK_THAT(x, EigenApproxEqual(xExpected, 1e-15));
 
-  EXPECT_EQ(solverInfo.sucess, true);
-  EXPECT_LE(solverInfo.residualnorm, tolerance);
-  EXPECT_EQ(solverInfo.iterations, iterExpected);
+  CHECK(true == solverInfo.sucess);
+  CHECK(tolerance >= solverInfo.residualnorm);
+  CHECK(iterExpected == solverInfo.iterations);
 }
 
 auto f(double x) { return 0.5 * x * x + x - 2; }
 auto df(double x) { return x + 1; }
 
-TEST(NonLinearOperator, SimpleOperatorNewtonRhapsonTest) {
+TEST_CASE("NonLinearOperator: SimpleOperatorNewtonRhapsonTest", "[nonLinearOperatorTest.cpp]") {
   double x = 13;
 
   auto fvLambda  = [&](auto&& x) { return f(x); };
@@ -60,7 +60,7 @@ Eigen::Matrix3d dfv([[maybe_unused]] Eigen::Vector3d& x, Eigen::Matrix3d& A, [[m
 auto fp(double x, int i) { return 0.5 * x * x + x * i - 2; }
 auto dfp(double x, int i) { return x + i; }
 
-TEST(NonLinearOperator, SimpleOperatorNewtonRhapsonTestWithParamter) {
+TEST_CASE("NonLinearOperator: SimpleOperatorNewtonRhapsonTestWithParamter", "[nonLinearOperatorTest.cpp]") {
   double x = 13;
 
   for (int i = 0; i < 3; ++i) {
@@ -79,7 +79,7 @@ TEST(NonLinearOperator, SimpleOperatorNewtonRhapsonTestWithParamter) {
   }
 }
 
-TEST(NonLinearOperator, VectorValuedOperatorNewtonMethod) {
+TEST_CASE("NonLinearOperator: VectorValuedOperatorNewtonMethod", "[nonLinearOperatorTest.cpp]") {
   Eigen::Vector3d x;
   x << 1, 2, 3;
   Eigen::Vector3d b;
@@ -106,7 +106,7 @@ Eigen::MatrixXd ddf2v([[maybe_unused]] Eigen::VectorXd& x, Eigen::MatrixXd& A, [
   return 2 * A;
 }
 
-TEST(NonLinearOperator, SecondOrderVectorValuedOperator) {
+TEST_CASE("NonLinearOperator: SecondOrderVectorValuedOperator", "[nonLinearOperatorTest.cpp]") {
   Eigen::VectorXd x(3);
 
   x << 1, 2, 3;
@@ -120,7 +120,7 @@ TEST(NonLinearOperator, SecondOrderVectorValuedOperator) {
   auto ddfvLambda = [&](auto&& xL) { return ddf2v(xL, A, b); };
   auto nonLinOp   = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
 
-  EXPECT_TRUE(checkGradient(nonLinOp, {.draw = false, .writeSlopeStatement = false}));
+  CHECK(checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = false}));
 
   auto subOperator = nonLinOp.subOperator<1, 2>();
   // Newton method test find root of first derivative
@@ -129,11 +129,11 @@ TEST(NonLinearOperator, SecondOrderVectorValuedOperator) {
   Ikarus::NewtonRaphson nr(subOperator, Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT));
   checkNewtonRhapson(nr, x, eps, maxIter, 1, (-0.5 * A.ldlt().solve(b)).eval(), Eigen::VectorXd::Zero(3).eval());
   nonLinOp.update<0>();
-  EXPECT_DOUBLE_EQ(nonLinOp.value(), -2.6538461538461533);
+  CHECK(-2.6538461538461533 == Catch::Approx(nonLinOp.value()));
   x << 1, 2, 3;  // Restart and check with predictor
   checkNewtonRhapson(nr, x, eps, maxIter, 2, (-0.5 * A.ldlt().solve(b)).eval(), x);
   nonLinOp.update<0>();
-  EXPECT_DOUBLE_EQ(nonLinOp.value(), -2.6538461538461533);
+  CHECK(-2.6538461538461533 == Catch::Approx(nonLinOp.value()));
 }
 
 #include <autodiff/forward/dual.hpp>
@@ -153,7 +153,7 @@ Eigen::MatrixXd ddf2vNL(Eigen::VectorX<autodiff::dual2nd>& x, Eigen::MatrixXd& A
   return autodiff::hessian(f2vNL<autodiff::dual2nd>, wrt(x), at(x, A, b));
 }
 
-TEST(NonLinearOperator, SecondOrderVectorValuedOperatorNonlinearAutodiff) {
+TEST_CASE("NonLinearOperator: SecondOrderVectorValuedOperatorNonlinearAutodiff", "[nonLinearOperatorTest.cpp]") {
   Eigen::VectorXd x(3);
 
   x << 1, 2, 3;
@@ -174,8 +174,8 @@ TEST(NonLinearOperator, SecondOrderVectorValuedOperatorNonlinearAutodiff) {
 
   auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
 
-  EXPECT_TRUE(checkGradient(nonLinOp, {.draw = false, .writeSlopeStatement = false}));
-  EXPECT_TRUE(checkHessian(nonLinOp, {.draw = false, .writeSlopeStatement = false}));
+  CHECK(checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = false}));
+  CHECK(checkHessian(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = false}));
 
   auto subOperator = nonLinOp.subOperator<1, 2>();
 
@@ -191,5 +191,5 @@ TEST(NonLinearOperator, SecondOrderVectorValuedOperatorNonlinearAutodiff) {
   checkNewtonRhapson(nr, x, eps, maxIter, 5, xSol, Eigen::VectorXd::Zero(3).eval());
 
   nonLinOp.update<0>();
-  EXPECT_DOUBLE_EQ(nonLinOp.value(), -1.1750584073929625716);
+  CHECK(-1.1750584073929625716 == Catch::Approx(nonLinOp.value()));
 }

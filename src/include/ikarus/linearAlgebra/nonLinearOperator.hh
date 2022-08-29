@@ -18,13 +18,15 @@
  */
 
 #pragma once
+#include <functional>
+
 #include <dune/common/hybridutilities.hh>
 
 #include <ikarus/utils/traits.hh>
-
 template <typename Fun, typename... Args>
 using ReturnType = std::invoke_result_t<Fun, Args...>;
 
+namespace Ikarus {
 namespace Impl {
   template <class F, class Tuple, std::size_t... I>
   constexpr decltype(auto) applyAndRemoveRefererenceWrapper(F&& f, Tuple&& t, std::index_sequence<I...>) {
@@ -76,7 +78,7 @@ auto linearAlgebraFunctions(Args&&... args) {
   return Impl::LinearAlgebraFunctions<Args&&...>{std::forward_as_tuple(std::forward<Args>(args)...)};
 }
 
-namespace Ikarus {
+
 
   template <typename... DerivativeArgs, typename... ParameterArgs>
   auto initResults(const Impl::LinearAlgebraFunctions<DerivativeArgs...>& derivativesFunctions,

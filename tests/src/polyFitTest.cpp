@@ -1,6 +1,6 @@
 
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_all.hpp>
 
 #include "testHelpers.hh"
 
@@ -9,18 +9,19 @@
 #include <Eigen/Core>
 
 #include <ikarus/utils/polyfit.hh>
+using namespace Catch;
 
-TEST(PolyFitTest, PolyFitTest1) {
+TEST_CASE("PolyFitTest: PolyFitTest1", "[polyFitTest.cpp]") {
   Eigen::VectorXd x = Eigen::VectorXd::LinSpaced(10, 0, 10);
   Eigen::VectorXd y = Eigen::VectorXd::LinSpaced(10, 2, 20);
 
   auto [poly, normE] = Ikarus::polyfit(x, y, 1);
-  EXPECT_DOUBLE_EQ(poly.coefficients()[0], 2.0);
-  EXPECT_DOUBLE_EQ(poly.coefficients()[1], 1.8);
-  EXPECT_LT(normE, 1e-14);
+  CHECK(2.0 == Catch::Approx(poly.coefficients()[0]));
+  CHECK(1.8 == Catch::Approx(poly.coefficients()[1]));
+  CHECK(1e-14 > normE);
 }
 
-TEST(PolyFitTest, PolyFitTest2) {
+TEST_CASE("PolyFitTest: PolyFitTest2", "[polyFitTest.cpp]") {
   const double factor = 7.6;
   Eigen::VectorXd x   = Eigen::VectorXd::LinSpaced(10, 0, 10);
   Eigen::VectorXd y   = 7 * x.array().cwiseProduct(x.array()).matrix();
@@ -30,8 +31,8 @@ TEST(PolyFitTest, PolyFitTest2) {
 
   auto [poly, normE] = Ikarus::polyfit(x, y, 2);
 
-  EXPECT_DOUBLE_EQ(poly.coefficients()[0], -0.0038062785674569739);
-  EXPECT_DOUBLE_EQ(poly.coefficients()[1], -0.58760441700969401);
-  EXPECT_DOUBLE_EQ(poly.coefficients()[2], 7.6138682871655829);
-  EXPECT_DOUBLE_EQ(normE, 0.0082367593944499204);
+  CHECK(-0.0038062785674569739 == Catch::Approx(poly.coefficients()[0]));
+  CHECK(-0.58760441700969401 == Catch::Approx(poly.coefficients()[1]));
+  CHECK(7.6138682871655829 == Catch::Approx(poly.coefficients()[2]));
+  CHECK(0.0082367593944499204 == Catch::Approx(normE));
 }

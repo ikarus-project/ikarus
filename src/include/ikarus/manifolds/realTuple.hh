@@ -49,6 +49,7 @@ namespace Ikarus {
     using CorrectionType = Eigen::Matrix<ctype, correctionSize, 1>;
 
     RealTuple() = default;
+    //    RealTuple() = default;
 
     template <typename ctOther, int dOther>
     requires std::convertible_to<ctOther, ctype>
@@ -99,6 +100,16 @@ namespace Ikarus {
       this->update(correction);
       return *this;
     }
+
+    Eigen::Matrix<ctype, valueSize, valueSize> weingartenMapEmbedded(const CoordinateType &p) const {
+      return Eigen::Matrix<ctype, valueSize, valueSize>::Zero();
+    }
+
+    Eigen::Matrix<ctype, correctionSize, correctionSize> weingartenMap(const CoordinateType &p) const {
+      return Eigen::Matrix<ctype, correctionSize, correctionSize>::Zero();
+    }
+
+    void addInEmbedding(const CoordinateType &correction) { var += correction; }
 
     /** \brief size */
     [[nodiscard]] constexpr size_t size() const { return valueSize; }

@@ -20,7 +20,7 @@
     - Regex: 'config.h'
       Priority: -1
       SortPriority: -1
-    - Regex: '^(<|")(gmock|gtest)/'
+    - Regex: '^(<|")catch2/'
       Priority: 0
       SortPriority: 0
     - Regex: '^(<|")dune/'
@@ -35,6 +35,9 @@
     - Regex: '^(<|")ikarus/'
       Priority: 10
       SortPriority: 10
+    - Regex: '^(<|")autodiff/'
+      Priority: 6
+      SortPriority: 6
     - Regex:           '<([A-Za-z0-9.\/-_])+>'
       Priority:        2
       SortPriority: 2

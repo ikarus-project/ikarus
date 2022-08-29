@@ -11,7 +11,9 @@ jobs:
   GCC-Debug-CodeCov:
     runs-on: ubuntu-latest
     container:
-      image: rath3t/ci-debian-bookworm
+      image: rath3t/ikarus-debian-bookworm:latest
+      options: --memory-swap="20g" --memory="20g" --cpus="2"
+
     steps:
       - uses: actions/checkout@v2
       - name: test vars
@@ -26,12 +28,12 @@ jobs:
           mkdir cmake-build-debug
           cd cmake-build-debug
           cmake ../  -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc-11 -DCMAKE_CXX_COMPILER=g++-11 -DENABLE_TEST_COVERAGE=1
-          cmake --build . --parallel 9 --target IkarusTests
+          cmake --build . --parallel 2 --target IkarusTests
 
       - name: Tests
         working-directory: ./cmake-build-debug
         run: |
-          ctest --output-on-failure --parallel 9 -C Debug
+          ctest --output-on-failure --parallel 2 -C Debug
           cd ..
           gcov -abcfu $(find ./cmake-build-debug/tests/CMakeFiles/IkarusTests.dir/src -type f -name "*.gcno" | sed  's/gcno//g')
           ls

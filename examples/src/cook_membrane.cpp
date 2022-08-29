@@ -19,8 +19,9 @@
 #include <Eigen/Eigenvalues>
 
 #include <ikarus/assembler/simpleAssemblers.hh>
+#include <ikarus/finiteElements/mechanics/linearElastic.hh>
+#include <ikarus/finiteElements/mechanics/enhancedAssumedStrains.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
-#include <ikarus/finiteElements/mechanics/Q1LinearElastic.hh>
 #include <ikarus/localBasis/localBasis.hh>
 #include <ikarus/solver/linearSolver/linearSolver.hh>
 #include <ikarus/utils/drawing/griddrawer.hh>
@@ -276,7 +277,7 @@ int main(int argc, char **argv) {
   std::cout << gridView.size(0) << " elements" << std::endl;
   std::cout << basis.size() << " Dofs" << std::endl;
 
-  draw(gridView);
+//  draw(gridView);
 
   /// clamp left-hand side
   std::vector<bool> dirichletFlags(basis.size(),false);
@@ -285,7 +286,8 @@ int main(int argc, char **argv) {
   });
 
   std::vector<Q1LinearElasticAD<decltype(basis)>> fesAD; //from Automatic differentiation
-  std::vector<Ikarus::Q1LinearElastic<decltype(basis)>> fes;
+//  std::vector<Ikarus::LinearElastic<decltype(basis)>> fes;
+  std::vector<Ikarus::EnhancedAssumedStrains<Ikarus::LinearElastic<decltype(basis)>>> fes;
 
   /// function for volume load- here: returns zero
   auto volumeLoad = [](auto& globalCoord, auto& lamb) {
@@ -334,6 +336,7 @@ int main(int argc, char **argv) {
 //    Q1E4Stiffness(localView,planeStressLinearElasticMaterialTangent(E,nu));
     fesAD.emplace_back(basis, element, E, nu, &neumannBoundary, neumannBoundaryLoad, volumeLoad);
     fes.emplace_back(basis, element, E, nu, &neumannBoundary, neumannBoundaryLoad, volumeLoad);
+    fes.back().setEASType(EASType::Q1E4);
   }
 
   auto sparseAssembler = SparseFlatAssembler(basis, fes, dirichletFlags);
@@ -396,23 +399,23 @@ int main(int argc, char **argv) {
     std::cout<<"Coinciding stiffness :)"<<std::endl;
 
 
-  auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, residualFunction, KFunction),
+  auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(residualFunction, KFunction),
                                                      parameter(D_Glob, lambdaLoad));
 
 
-  const auto K = nonLinOp.secondDerivative();
-  const auto Fext = -nonLinOp.derivative();
+  const auto& K = nonLinOp.derivative();
+  const auto Fext = nonLinOp.value();
 
 //  // solve the linear system
   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_SimplicialLDLT);
   linSolver.compute(K);
 
-  linSolver.solve(D_Glob, Fext);
+  linSolver.solve(D_Glob, -Fext);
 
-  const auto deformedEnergy = nonLinOp.value();
+//  const auto deformedEnergy = nonLinOp.value();
 
-  nonLinOp.update<0>();
-  std::cout << "Energy after: " << nonLinOp.value() << std::endl;
+//  nonLinOp.update<0>();
+//  std::cout << "Energy after: " << D_Glob << std::endl;
 
   // Postprocess
   auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis, D_Glob);

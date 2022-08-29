@@ -27,9 +27,9 @@ namespace Ikarus {
   double drawResultAndReturnSlope(std::string&& functionName, const std::function<double(double)>& ftfunc, bool draw);
 
   struct CheckFlags {
-    bool draw                = true;
-    bool writeSlopeStatement = true;
-    double tolerance         = 1e-2;
+    bool draw                        = true;
+    bool writeSlopeStatementIfFailed = true;
+    double tolerance                 = 1e-2;
   };
 
   /*
@@ -72,7 +72,7 @@ namespace Ikarus {
 
     const bool checkPassed = Dune::FloatCmp::le(2.0, slope, checkFlags.tolerance);
 
-    if (checkFlags.writeSlopeStatement) {
+    if (checkFlags.writeSlopeStatementIfFailed and not checkPassed) {
       spdlog::info("Gradient check:");
       spdlog::info("The slope should be 2. It seems to be {}.", slope);
       if (checkPassed)
@@ -81,7 +81,7 @@ namespace Ikarus {
         spdlog::info("The gradient seems wrong.");
     }
 
-    nonLinOp.template updateAll();
+    nonLinOp.updateAll();
     return checkPassed;
   }
 
@@ -118,7 +118,7 @@ namespace Ikarus {
 
     const bool checkPassed = Dune::FloatCmp::le(2.0, slope, checkFlags.tolerance);
 
-    if (checkFlags.writeSlopeStatement) {
+    if (checkFlags.writeSlopeStatementIfFailed and not checkPassed) {
       spdlog::info("Jacobian check:");
       spdlog::info("The slope should be 2. It seems to be {}.", slope);
       if (checkPassed)
@@ -149,7 +149,7 @@ namespace Ikarus {
     } else
       b = 1;
 
-    nonLinOp.template updateAll();
+    nonLinOp.updateAll();
     const auto e = nonLinOp.value();
 
     double gradfv, vhessv;
@@ -173,7 +173,7 @@ namespace Ikarus {
 
     const bool checkPassed = Dune::FloatCmp::le(3.0, slope, checkFlags.tolerance);
 
-    if (checkFlags.draw) {
+    if (checkFlags.writeSlopeStatementIfFailed and not checkPassed) {
       spdlog::info("Hessian check:");
       spdlog::info("The slope should be 3. It seems to be {}.", slope);
       if (checkPassed)
@@ -181,7 +181,7 @@ namespace Ikarus {
       else
         spdlog::info("The Hessian seems wrong.");
     }
-    nonLinOp.template updateAll();
+    nonLinOp.updateAll();
     return checkPassed;
   }
 }  // namespace Ikarus

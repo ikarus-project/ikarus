@@ -20,13 +20,14 @@
  */
 
 #pragma once
-#include <autodiff/forward/dual/dual.hpp>
 #include <iosfwd>
 
 #include <dune/istl/bvector.hh>
 #include <dune/istl/multitypeblockvector.hh>
 
 #include <Eigen/Core>
+
+#include <autodiff/forward/dual/dual.hpp>
 
 #include <ikarus/localFunctions/meta.hh>
 #include <ikarus/manifolds/manifoldInterface.hh>
@@ -116,12 +117,20 @@ namespace Ikarus {
   }
   { return a.size() * Type::correctionSize; }
 
+  /* Returns the total value size of a block vector with a Manifold as type */
+  template <typename Type>
+  size_t valueSize(const Dune::BlockVector<Type>& a) requires requires {
+    Type::valueSize;
+  }
+  { return a.size() * Type::valueSize; }
+
   /* Enables the += operator for Dune::BlockVector += Eigen::Vector */
   template <typename Type, typename Derived>
   Dune::BlockVector<Type>& operator+=(Dune::BlockVector<Type>& a, const Eigen::MatrixBase<Derived>& b) requires(
       Ikarus::Concepts::AddAssignAble<Type, decltype(b.template segment<Type::correctionSize>(0))>and requires() {
         Type::correctionSize;
       }) {
+    assert(correctionSize(a) == static_cast<size_t>(b.size()) && " The passed vector has wrong size");
     for (auto i = 0U; i < a.size(); ++i)
       a[i] += b.template segment<Type::correctionSize>(i * Type::correctionSize);
     return a;
@@ -148,6 +157,18 @@ namespace Ikarus {
       posStart += size;
     });
 
+    return a;
+  }
+
+  /* Enables the += operator for Dune::BlockVector += Eigen::Vector */
+  template <typename Type, typename Derived>
+  Dune::BlockVector<Type>& addInEmbedding(Dune::BlockVector<Type>& a, const Eigen::MatrixBase<Derived>& b) requires(
+      Ikarus::Concepts::AddAssignAble<Type, decltype(b.template segment<Type::valueSize>(0))>and requires() {
+        Type::valueSize;
+      }) {
+    assert(valueSize(a) == static_cast<size_t>(b.size()) && " The passed vector has wrong size");
+    for (auto i = 0U; i < a.size(); ++i)
+      a[i].addInEmbedding(b.template segment<Type::valueSize>(i * Type::valueSize));
     return a;
   }
 
@@ -268,8 +289,8 @@ namespace Ikarus {
   }
 
   template <typename Derived>
-  auto operator-(Ikarus::DerivativeDirections::DerivativeNoOp, const Eigen::MatrixBase<Derived>& a) {
-    return a.derived();
+  Derived operator-(Ikarus::DerivativeDirections::DerivativeNoOp, const Eigen::MatrixBase<Derived>& a) {
+    return -a.derived();
   }
 
   template <typename Derived, typename Derived2>
@@ -387,7 +408,8 @@ namespace Ikarus {
 
   /* Enables the - operator for std::array if the underlying objects are negate able  */
   template <std::size_t d, typename Type>
-  std::array<Type, d> operator-(const std::array<Type, d>& a) requires Concepts::NegateAble<Type> {
+  std::array<Type, d> operator-(const std::array<Type, d>& a)  // requires Concepts::NegateAble<Type>
+  {
     std::array<Type, d> res;
     for (size_t i = 0U; i < d; ++i)
       res[i] = -a[i];
@@ -427,5 +449,20 @@ namespace Ikarus {
                 << std::endl;
     }
   }
+
+  namespace Impl {
+    constexpr std::tuple<std::array<std::array<int, 2>, 1>, std::array<std::array<int, 2>, 3>,
+                         std::array<std::array<int, 2>, 6>>
+        voigtIndices = {{{{0, 0}}}, {{{0, 0}, {1, 1}, {0, 1}}}, {{{0, 0}, {1, 1}, {2, 2}, {1, 2}, {0, 2}, {0, 1}}}};
+  }
+
+  /*
+   * This class returns the indices, if you go through a symmetric matrix with index (Voigt) notation
+   * 1D: 0,0
+   * 2D: 0,0 1,1 0,1
+   * 3D: 0,0 1,1 2,2 1,2 0,2 0,1
+   */
+  template <int dim>
+  constexpr auto voigtNotationContainer = std::get<dim - 1>(Impl::voigtIndices);
 
 }  // namespace Ikarus
