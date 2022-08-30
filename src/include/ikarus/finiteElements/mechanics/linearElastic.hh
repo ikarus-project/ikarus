@@ -75,7 +75,6 @@ namespace Ikarus {
     }
 
     using Traits = TraitsFromLocalView<LocalView>;
-
   public:
 
     const auto& getLocalView()const
@@ -95,7 +94,11 @@ namespace Ikarus {
         for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
           disp[i][k2] = d[localView_.index(localView_.tree().child(k2).localIndex(i))[0]];
 
-      Eigen::Matrix3<double> C = planeStressLinearElasticMaterialTangent(emod_,nu_);
+      Eigen::MatrixXd C;
+      if (Traits::mydim==2)
+          C = planeStressLinearElasticMaterialTangent(emod_,nu_);
+      if (Traits::mydim==3)
+          C = LinearElasticMaterialTangent3D(emod_,nu_);
       Ikarus::StandardLocalFunction uFunction(localBasis, disp);
 
       return linearStrains(uFunction.clone());
@@ -103,7 +106,7 @@ namespace Ikarus {
 
      auto getMaterialTangentFunction(const FERequirementType& par)const
     {
-      return [&](auto gp){return planeStressLinearElasticMaterialTangent(emod_,nu_);};
+        return [&](auto gp){return planeStressLinearElasticMaterialTangent(emod_,nu_);};
     }
 
 
@@ -122,7 +125,11 @@ namespace Ikarus {
       double energy = 0.0;
       const int order   = 2 * (fe.localBasis().order());
       const auto& rule  = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
-      Eigen::Matrix3<double> C = planeStressLinearElasticMaterialTangent(emod_,nu_);
+      Eigen::MatrixXd C;
+      if (Traits::mydim==2)
+        C = planeStressLinearElasticMaterialTangent(emod_,nu_);
+      if (Traits::mydim==3)
+        C = LinearElasticMaterialTangent3D(emod_,nu_);
       const auto geo = localView_.element().geometry();
       Ikarus::StandardLocalFunction uFunction(localBasis, disp);
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
@@ -182,12 +189,22 @@ namespace Ikarus {
 
       const int order   = 2 * (fe.localBasis().order());
       const auto& rule  = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
-      Eigen::Matrix3<double> C = planeStressLinearElasticMaterialTangent(emod_,nu_);
+      Eigen::MatrixXd C;
+      int epsilonSize;
+      if (Traits::mydim==2) {
+          C = planeStressLinearElasticMaterialTangent(emod_, nu_);
+          epsilonSize = 3;
+      }
+      if (Traits::mydim==3) {
+          C = LinearElasticMaterialTangent3D(emod_, nu_);
+          epsilonSize = 6;
+      }
       const auto geo = localView_.element().geometry();
       Ikarus::StandardLocalFunction uFunction(localBasis, disp);
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
         const auto Jinv = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
         const double intElement = geo.integrationElement(gp.position()) * gp.weight();
+        if (Traits::mydim==2){
         for (size_t i = 0; i < fe.size(); ++i) {
           const auto dHdCi
               = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll,coeff(i)), transformWith(Jinv));
@@ -196,15 +213,41 @@ namespace Ikarus {
           bopI.row(1)<< 0,dHdCi[1].diagonal()(1);
           bopI.row(2)<< dHdCi[1].diagonal()(0),dHdCi[0].diagonal()(1);
           for (size_t j = 0; j < fe.size(); ++j) {
-            const auto dHdCj
-                = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll,coeff(j)), transformWith(Jinv));
-            Eigen::Matrix<double,3,2> bopJ;
-            bopJ.row(0)<< dHdCj[0].diagonal()(0),0;
-            bopJ.row(1)<< 0,dHdCj[1].diagonal()(1);
-            bopJ.row(2)<< dHdCj[1].diagonal()(0),dHdCj[0].diagonal()(1);
-            h.template block<2, 2>(i*Traits::mydim,j*Traits::mydim)+= bopI.transpose()*C*bopJ*intElement;
+              const auto dHdCj
+                      = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(j)), transformWith(Jinv));
+              Eigen::Matrix<double, 3, 2> bopJ;
+              bopJ.row(0) << dHdCj[0].diagonal()(0), 0;
+              bopJ.row(1) << 0, dHdCj[1].diagonal()(1);
+              bopJ.row(2) << dHdCj[1].diagonal()(0), dHdCj[0].diagonal()(1);
+              h.template block<2, 2>(i * Traits::mydim, j * Traits::mydim) += bopI.transpose() * C * bopJ * intElement;
+            }
           }
         }
+          if (Traits::mydim==3){
+              for (size_t i = 0; i < fe.size(); ++i) {
+                  const auto dHdCi
+                          = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll,coeff(i)), transformWith(Jinv));
+                  Eigen::Matrix<double,6,3> bopI;
+                  bopI.row(0)<< dHdCi[0].diagonal()(0),0,0;
+                  bopI.row(1)<< 0,dHdCi[1].diagonal()(1),0;
+                  bopI.row(2)<< 0,0,dHdCi[2].diagonal()(2);
+                  bopI.row(3)<< dHdCi[1].diagonal()(0),dHdCi[0].diagonal()(1),0;
+                  bopI.row(4)<< dHdCi[2].diagonal()(0),0,dHdCi[0].diagonal()(2);
+                  bopI.row(5)<< 0,dHdCi[2].diagonal()(1),dHdCi[1].diagonal()(2);
+                  for (size_t j = 0; j < fe.size(); ++j) {
+                      const auto dHdCj
+                              = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(j)), transformWith(Jinv));
+                      Eigen::Matrix<double, 6, 3> bopJ;
+                      bopJ.row(0)<< dHdCj[0].diagonal()(0),0,0;
+                      bopJ.row(1)<< 0,dHdCj[1].diagonal()(1),0;
+                      bopJ.row(2)<< 0,0,dHdCj[2].diagonal()(2);
+                      bopJ.row(3)<< dHdCj[1].diagonal()(0),dHdCj[0].diagonal()(1),0;
+                      bopJ.row(4)<< dHdCj[2].diagonal()(0),0,dHdCj[0].diagonal()(2);
+                      bopJ.row(5)<< 0,dHdCj[2].diagonal()(1),dHdCj[1].diagonal()(2);
+                      h.template block<3, 3>(i * Traits::mydim, j * Traits::mydim) += bopI.transpose() * C * bopJ * intElement;
+                  }
+              }
+          }
       }
     }
 
@@ -223,7 +266,6 @@ namespace Ikarus {
 
       const int order   = 2 * (fe.localBasis().order());
       const auto& rule  = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
-      Eigen::Matrix3<double> C = planeStressLinearElasticMaterialTangent(emod_,nu_);
       const auto geo = localView_.element().geometry();
       Ikarus::StandardLocalFunction uFunction(localBasis, disp);
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
@@ -233,7 +275,6 @@ namespace Ikarus {
         for (size_t i = 0; i < fe.size(); ++i) {
 //          const auto gradUdCi =uFunction.evaluateDerivative(gpIndex, wrt(spatialAll,coeff(i)), transformWith(Jinv));
           const auto udCi =uFunction.evaluateDerivative(gpIndex, wrt(coeff(i)));
-
           g.template segment<Traits::mydim>(Traits::mydim*i) -= udCi*fext* geo.integrationElement(gp.position()) * gp.weight();
         }
       }
@@ -268,9 +309,6 @@ namespace Ikarus {
         }
       }
     }
-
-
-
 
 
     LocalView localView_;

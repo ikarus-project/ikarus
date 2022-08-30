@@ -50,6 +50,17 @@ namespace Ikarus {
     return C;
   }
 
+  auto LinearElasticMaterialTangent3D(double E, double nu)
+  {
+    Eigen::Matrix<double,6,6> C;
+    C.setZero();
+    C(0, 0) = C(1, 1) = C(2,2) = 1 - nu;
+    C(0, 1) = C(1, 0) = C(2,0) = C(0,2) = C(1,2) = C(2,1) = nu;
+    C(3, 3) = C(4, 4) = C(5, 5) = (1 - 2*nu) / 2;
+    C *= E / ((1 + nu)*(1 - 2*nu));
+    return C;
+  }
+
   template <typename LocalView>
   struct TraitsFromLocalView {
     using GridEntity = typename LocalView::Element;

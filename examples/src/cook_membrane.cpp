@@ -141,93 +141,93 @@ private:
   double emod_;
   double nu_;
 };
-
-Eigen::MatrixXd Q1E4Stiffness(auto localView, const Eigen::Matrix3d& C) {
-
-  using namespace Dune::Indices;
-  constexpr int gridDim   = 2;
-  auto element            = localView.element();
-  auto geometry           = element.geometry();
-  Eigen::MatrixXd K       = Eigen::MatrixXd::Zero(localView.size(), localView.size());
-  Eigen::MatrixXd L       = Eigen::MatrixXd::Zero(4, localView.size());
-  Eigen::MatrixXd D       = Eigen::MatrixXd::Zero(4, 4);
-
-  const auto& localFiniteElement = localView.tree().child(_0).finiteElement();
-  // Define the integration rule
-  int order = 2;
-  const auto& quadRule
-      = Dune::QuadratureRules<double, gridDim>::rule(element.type(), order, Dune::QuadratureType::GaussLegendre);
-
-  for (const auto& quadPoint : quadRule)
-  {
-    const auto quadPos = quadPoint.position();
-    const auto jacobianinvT = geometry.jacobianInverseTransposed(quadPos); //J^{-1}.Transpose() in Dune = J^{-1}
-    const auto detJ = geometry.integrationElement(quadPos); //determinant(J)
-
-    Dune::FieldVector<double,2> quadPos0;
-    quadPos0[0] = 0.5; // Center of the Element in Domain [0,1]
-    quadPos0[1] = 0.5; // Center of the Element in Domain [0,1]
-
-    const auto jacobianinvT0 = geometry.jacobianInverseTransposed(quadPos0); //J^{-1}.Transpose() in Dune = J^{-1}
-    const auto detJ0 = geometry.integrationElement(quadPos0); //determinant(J)
-
-    Eigen::MatrixXd jaco_it = Eigen::MatrixXd::Zero(2,2);
-    for (size_t i=0;i<2;i++)
-      for (size_t j=0;j<2;j++)
-        jaco_it(i,j)=jacobianinvT0[i][j];
-
-    auto jaco = (jaco_it).inverse();
-    auto J11 = jaco(0,0);
-    auto J12 = jaco(0,1);
-    auto J21 = jaco(1,0);
-    auto J22 = jaco(1,1);
-
-    Eigen::Matrix3d T0;
-    T0 << J11*J11 , J12*J12 , J11*J12 ,
-          J21*J21 , J22*J22 , J21*J22 ,
-      2.0*J11*J21 , 2.0*J12*J22 , J21*J12 + J11*J22;
-    auto T0_inv = T0.inverse() * (detJ0/detJ);
-
-    std::vector<Dune::FieldMatrix<double,1,gridDim>> referenceGradients;
-    localFiniteElement.localBasis().evaluateJacobian(quadPos,referenceGradients);
-    std::vector<Dune::FieldVector<double,gridDim>> gradients(referenceGradients.size());
-
-    for (size_t i=0; i<gradients.size(); i++)
-      jacobianinvT.mv(referenceGradients[i][0],gradients[i]);
-
-    // setup B-operator
-    Eigen::MatrixXd B = Eigen::MatrixXd::Zero(3, localView.size());
-    Eigen::MatrixXd M = Eigen::MatrixXd::Zero(3, 4);
-    Eigen::VectorXd dNdx = Eigen::VectorXd::Zero(4);
-    Eigen::VectorXd dNdy = Eigen::VectorXd::Zero(4);
-    for(size_t i=0;i<4;i++)
-    {
-      dNdx[i] = gradients[i][0];
-      dNdy[i] = gradients[i][1];
-    }
-
-    for(size_t i=0;i<4;i++)
-    {
-      B(0,i) = dNdx[i];
-      B(2,i) = dNdy[i];
-
-      B(1,i+4) = dNdy[i];
-      B(2,i+4) = dNdx[i];
-    }
-
-    // -(1/2) is added in the M-Matrix in order to fulfill the Orthogonality condition for Q1E4 element in domain [0,1]
-    M(0,0) = quadPos[0]-0.5;
-    M(1,1) = quadPos[1]-0.5;
-    M(2,2) = quadPos[0]-0.5;
-    M(2,3) = quadPos[1]-0.5;
-
-    M = T0_inv * M ;
-
-    // integration of stiffness matrix
-    K += B.transpose() * C * B * detJ * quadPoint.weight();
-    L += M.transpose() * C * B * detJ * quadPoint.weight();
-    D += M.transpose() * C * M * detJ * quadPoint.weight();
-  }
+//
+//Eigen::MatrixXd Q1E4Stiffness(auto localView, const Eigen::Matrix3d& C) {
+//
+//  using namespace Dune::Indices;
+//  constexpr int gridDim   = 2;
+//  auto element            = localView.element();
+//  auto geometry           = element.geometry();
+//  Eigen::MatrixXd K       = Eigen::MatrixXd::Zero(localView.size(), localView.size());
+//  Eigen::MatrixXd L       = Eigen::MatrixXd::Zero(4, localView.size());
+//  Eigen::MatrixXd D       = Eigen::MatrixXd::Zero(4, 4);
+//
+//  const auto& localFiniteElement = localView.tree().child(_0).finiteElement();
+//  // Define the integration rule
+//  int order = 2;
+//  const auto& quadRule
+//      = Dune::QuadratureRules<double, gridDim>::rule(element.type(), order, Dune::QuadratureType::GaussLegendre);
+//
+//  for (const auto& quadPoint : quadRule)
+//  {
+//    const auto quadPos = quadPoint.position();
+//    const auto jacobianinvT = geometry.jacobianInverseTransposed(quadPos); //J^{-1}.Transpose() in Dune = J^{-1}
+//    const auto detJ = geometry.integrationElement(quadPos); //determinant(J)
+//
+//    Dune::FieldVector<double,2> quadPos0;
+//    quadPos0[0] = 0.5; // Center of the Element in Domain [0,1]
+//    quadPos0[1] = 0.5; // Center of the Element in Domain [0,1]
+//
+//    const auto jacobianinvT0 = geometry.jacobianInverseTransposed(quadPos0); //J^{-1}.Transpose() in Dune = J^{-1}
+//    const auto detJ0 = geometry.integrationElement(quadPos0); //determinant(J)
+//
+//    Eigen::MatrixXd jaco_it = Eigen::MatrixXd::Zero(2,2);
+//    for (size_t i=0;i<2;i++)
+//      for (size_t j=0;j<2;j++)
+//        jaco_it(i,j)=jacobianinvT0[i][j];
+//
+//    auto jaco = (jaco_it).inverse();
+//    auto J11 = jaco(0,0);
+//    auto J12 = jaco(0,1);
+//    auto J21 = jaco(1,0);
+//    auto J22 = jaco(1,1);
+//
+//    Eigen::Matrix3d T0;
+//    T0 << J11*J11 , J12*J12 , J11*J12 ,
+//          J21*J21 , J22*J22 , J21*J22 ,
+//      2.0*J11*J21 , 2.0*J12*J22 , J21*J12 + J11*J22;
+//    auto T0_inv = T0.inverse() * (detJ0/detJ);
+//
+//    std::vector<Dune::FieldMatrix<double,1,gridDim>> referenceGradients;
+//    localFiniteElement.localBasis().evaluateJacobian(quadPos,referenceGradients);
+//    std::vector<Dune::FieldVector<double,gridDim>> gradients(referenceGradients.size());
+//
+//    for (size_t i=0; i<gradients.size(); i++)
+//      jacobianinvT.mv(referenceGradients[i][0],gradients[i]);
+//
+//    // setup B-operator
+//    Eigen::MatrixXd B = Eigen::MatrixXd::Zero(3, localView.size());
+//    Eigen::MatrixXd M = Eigen::MatrixXd::Zero(3, 4);
+//    Eigen::VectorXd dNdx = Eigen::VectorXd::Zero(4);
+//    Eigen::VectorXd dNdy = Eigen::VectorXd::Zero(4);
+//    for(size_t i=0;i<4;i++)
+//    {
+//      dNdx[i] = gradients[i][0];
+//      dNdy[i] = gradients[i][1];
+//    }
+//
+//    for(size_t i=0;i<4;i++)
+//    {
+//      B(0,i) = dNdx[i];
+//      B(2,i) = dNdy[i];
+//
+//      B(1,i+4) = dNdy[i];
+//      B(2,i+4) = dNdx[i];
+//    }
+//
+//    // -(1/2) is added in the M-Matrix in order to fulfill the Orthogonality condition for Q1E4 element in domain [0,1]
+//    M(0,0) = quadPos[0]-0.5;
+//    M(1,1) = quadPos[1]-0.5;
+//    M(2,2) = quadPos[0]-0.5;
+//    M(2,3) = quadPos[1]-0.5;
+//
+//    M = T0_inv * M ;
+//
+//    // integration of stiffness matrix
+//    K += B.transpose() * C * B * detJ * quadPoint.weight();
+//    L += M.transpose() * C * B * detJ * quadPoint.weight();
+//    D += M.transpose() * C * M * detJ * quadPoint.weight();
+//  }
 
 //  Eigen::EigenSolver<Eigen::MatrixXd> esk(K);
 //  std::cout << "The eigenvalues of K are:" << std::endl << esk.eigenvalues() << std::endl;
@@ -235,21 +235,22 @@ Eigen::MatrixXd Q1E4Stiffness(auto localView, const Eigen::Matrix3d& C) {
 //  Eigen::EigenSolver<Eigen::MatrixXd> eskeas(K - (L.transpose() * D.inverse() * L));
 //  std::cout << "The eigenvalues of Keas are:" << std::endl << eskeas.eigenvalues() << std::endl;
 //  return K - (L.transpose() * D.inverse() * L);
-  const auto Dinv = D.inverse();
-  for (int i = 0; i < 4; ++i) {
-    const auto& Li = L.block<4,2>(0,i*2);
-    for (int j = 0; j < 4; ++j) {
-      const auto& Lj = L.block<4,2>(0,j*2);
-      K.block<2,2>(i*2,j*2)-= Li.transpose()*Dinv*Lj;
-    }
-  }
-  return  K;
-}
+//  const auto Dinv = D.inverse();
+//  for (int i = 0; i < 4; ++i) {
+//    const auto& Li = L.block<4,2>(0,i*2);
+//    for (int j = 0; j < 4; ++j) {
+//      const auto& Lj = L.block<4,2>(0,j*2);
+//      K.block<2,2>(i*2,j*2)-= Li.transpose()*Dinv*Lj;
+//    }
+//  }
+//  return  K;
+//}
 
 int main(int argc, char **argv) {
   Dune::MPIHelper::instance(argc, argv);
   constexpr int gridDim = 2;
   double lambdaLoad = 1;
+  constexpr int basis_order = 1;
 
   /// read in parameters
   Dune::ParameterTree parameterSet;
@@ -271,7 +272,7 @@ int main(int argc, char **argv) {
   auto gridView = grid->leafGridView();
 
   using namespace Dune::Functions::BasisFactory;
-  auto basis = makeBasis(gridView, power<gridDim>(lagrange<1>(), FlatInterleaved()));
+  auto basis = makeBasis(gridView, power<gridDim>(lagrange<basis_order>(), FlatInterleaved()));
 
   std::cout << "This gridview contains: " << std::endl;
   std::cout << gridView.size(2) << " vertices" << std::endl;
@@ -334,8 +335,6 @@ int main(int argc, char **argv) {
 
   for (auto& element : elements(gridView)) {
     auto localView = basis.localView();
-//    localView.bind(element);
-//    Q1E4Stiffness(localView,planeStressLinearElasticMaterialTangent(E,nu));
     fesAD.emplace_back(basis, element, E, nu, &neumannBoundary, neumannBoundaryLoad, volumeLoad);
     fes.emplace_back(basis, element, E, nu, &neumannBoundary, neumannBoundaryLoad, volumeLoad);
     fes.back().setEASType(numberOfEASParameters);
@@ -394,6 +393,7 @@ int main(int argc, char **argv) {
   Eigen::VectorXd D_Glob = Eigen::VectorXd::Zero(basis.size());
 
 
+  /// Checking the external force vector and stiffness matrix from Automatic Differentiation and B^TCB
   if(residualFunctionAD(D_Glob,lambdaLoad).isApprox(residualFunction(D_Glob,lambdaLoad)))
     std::cout<<"Coinciding external forces :)"<<std::endl;
 
@@ -408,18 +408,12 @@ int main(int argc, char **argv) {
   const auto& K = nonLinOp.derivative();
   const auto Fext = nonLinOp.value();
 
-//  // solve the linear system
+  /// solve the linear system
   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_SimplicialLDLT);
   linSolver.compute(K);
-
   linSolver.solve(D_Glob, -Fext);
 
-//  const auto deformedEnergy = nonLinOp.value();
-
-//  nonLinOp.update<0>();
-//  std::cout << "Energy after: " << D_Glob << std::endl;
-
-  // Postprocess
+  /// Postprocess
   auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis, D_Glob);
   Dune::VTKWriter vtkWriter(gridView, Dune::VTK::conforming);
   vtkWriter.addVertexData(disp, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));

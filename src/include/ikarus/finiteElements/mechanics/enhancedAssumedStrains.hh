@@ -128,16 +128,47 @@ namespace Ikarus{
     Eigen::Matrix3d T0InverseTransformed;
   };
 
-  template<typename Geometry>
-  using EAS2dVariant = std::variant<EASQ1E4<Geometry>,EASQ1E5<Geometry>>;
-//  using EAS3dVariant = std::variant<EASH1E9,EASH1E21>;
+    template<typename Geometry>
+    struct EASQ1E7
+    {
+        static constexpr int strainSize = 3;
+        static constexpr int enhancedStrainSize = 7;
 
+        EASQ1E7() = default;
+        EASQ1E7(const Geometry& geometry)
+                : geometry{std::make_unique<Geometry>(geometry)}
+                ,T0InverseTransformed{calcTransformationMatrix2D(geometry)}
+        {}
+
+        auto calcM(const Dune::FieldVector<double,2>& quadPos) const
+        {
+            Eigen::Matrix<double,strainSize,enhancedStrainSize> M;
+            M.setZero();
+            const double xi = quadPos[0];
+            const double eta = quadPos[1];
+            M(0,0) = xi-0.5;
+            M(1,1) = eta-0.5;
+            M(2,2) = xi-0.5;
+            M(2,3) = eta-0.5;
+            M(0,4) = (xi-0.5)*(eta-0.5);
+            M(1,5) = (xi-0.5)*(eta-0.5);
+            M(2,6) = (xi-0.5)*(eta-0.5);
+            const double detJ = geometry->integrationElement(quadPos);
+            M = T0InverseTransformed/detJ * M ;
+            return M;
+        }
+
+        std::unique_ptr<Geometry> geometry;
+        Eigen::Matrix3d T0InverseTransformed;
+    };
+
+  template<typename Geometry>
+  using EAS2dVariant = std::variant<EASQ1E4<Geometry>,EASQ1E5<Geometry>,EASQ1E7<Geometry>>;
+//  using EAS3dVariant = std::variant<EASH1E9,EASH1E21>;
 
   template<typename DisplacementBasedElement>
 class EnhancedAssumedStrains : public DisplacementBasedElement {
   public:
-
-
 
     static constexpr int strainSize = 3;
 
@@ -168,7 +199,7 @@ class EnhancedAssumedStrains : public DisplacementBasedElement {
 
     void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& h) const {
       using namespace DerivativeDirections;
-      DisplacementBasedElement::calculateMatrix(par,h); // fill h with displacement-based stiffnesses
+      DisplacementBasedElement::calculateMatrix(par,h); // fill h with displacement-based stiffness
       //is assumed to be assembled block-wise on element level. This means the displacements x,y,z of node I are grouped together
 
       if(onlyDisplacementBase)
@@ -217,12 +248,13 @@ void setEASType(int numberOfEASParameters)
     case 5:
       easVariant= EASQ1E5(DisplacementBasedElement::getLocalView().element().geometry());
       break;
+    case 7:
+      easVariant= EASQ1E7(DisplacementBasedElement::getLocalView().element().geometry());
+      break;
     default:
       DUNE_THROW(Dune::NotImplemented,"The given EAS parameters are not available.");
       break;
   }
-
-
 }
 
 private:
@@ -233,8 +265,4 @@ private:
   int enhancedStrainSize;
   bool onlyDisplacementBase{false};
 };
-
-
-
-
 }
