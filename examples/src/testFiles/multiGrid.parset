@@ -1,0 +1,10 @@
+
+[GridParameters]
+refinement = 4
+meshType = 1
+
+[BasisParameters]
+basisOrder= 3
+
+
+[]

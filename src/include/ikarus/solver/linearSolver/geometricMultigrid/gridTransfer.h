@@ -49,7 +49,7 @@ public:
       auto coarseLocalView = coarseBasis.localView();
       auto fineLocalView = fineBasis.localView();
 
-      transferMatrices[level].setZero(numDofPerNode * grid->size(level+1, gridDim), numDofPerNode * grid->size(level, gridDim));
+      transferMatrices[level].setZero(fineBasis.size(), coarseBasis.size());
 
       std::vector<Dune::FieldVector<double, 1>> NcoarseEvaluated;
 

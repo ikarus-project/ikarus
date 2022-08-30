@@ -27,7 +27,7 @@ namespace Ikarus {
     GeometricMultiGridSolver(const Grid* grid, const PreBasisFactory& preBasisFactory,
                              const FEContainer& feVectorCoarse)
         : transfer{grid}, directSolver{SolverTypeTag::sd_SimplicialLDLT} {
-      fes.resize(grid->maxLevel());
+      fes.resize(grid->maxLevel()+1);
       finestLevel = grid->maxLevel();
       fes[0] = feVectorCoarse;
       for (int level = 1; level < grid->maxLevel()+1; ++level) {
@@ -38,7 +38,8 @@ namespace Ikarus {
         auto fineBasis   = makeBasis(fineGridView, preBasisFactory);
 
         auto coarseElement = elements(coarseGridView).begin();
-        for (auto& coarseFe : fes[0]) {
+        fes[level].reserve(fineGridView.size(0));
+        for (auto& coarseFe : fes[level-1]) {
           {
             for (auto& childsElement : descendantElements(*coarseElement, coarseElement->level()+1)) {
               fes[level].emplace_back(fineBasis, childsElement, coarseFe.settings());
@@ -99,7 +100,7 @@ namespace Ikarus {
       Eigen::VectorXd dFineFull;
       dFineFull.setZero(assemblers[finestLevel].size());
 
-      double lambdaLoad = 1;
+      double lambdaLoad = -1;
 
       requirementType = Ikarus::FErequirementsBuilder()
                             .insertGlobalSolution(Ikarus::FESolutions::displacement, dFineFull)

@@ -34,10 +34,21 @@
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 #include <ikarus/utils/observer/nonLinearSolverLogger.hh>
 #include <dune/grid/io/file/vtk/vtkwriter.hh>
-
+#include <dune/common/parametertreeparser.hh>
 
 int main(int argc, char** argv) {
   Dune::MPIHelper::instance(argc, argv);
+
+  Dune::ParameterTree parameterSet;
+  Dune::ParameterTreeParser::readINITree(argv[1], parameterSet);
+
+  const Dune::ParameterTree &gridParameters     = parameterSet.sub("GridParameters");
+  const Dune::ParameterTree &basisParameters     = parameterSet.sub("BasisParameters");
+  const auto refinement      = gridParameters.get<int>("refinement");
+  const auto meshType      = gridParameters.get<int>("meshType");
+  const auto basisOrder      = basisParameters.get<int>("basisOrder");
+
+
   using namespace Ikarus;
   constexpr int gridDim = 2;
   //  //  /// ALUGrid Example
@@ -55,12 +66,18 @@ int main(int argc, char** argv) {
     gridFactory.insertVertex({L, L});
     gridFactory.insertVertex({L, L/2});
 
+
     gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {0, 1, 2, 3});
     gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {2, 3,4,5});
+    if(meshType == 0)
     gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {3,7,5,6});
-
+    else if(meshType == 1)
+    {
+      gridFactory.insertElement(Dune::GeometryTypes::triangle, {3,7,6});
+      gridFactory.insertElement(Dune::GeometryTypes::triangle, {3,6,5});
+    }
     auto grid     = gridFactory.createGrid();
-    grid->globalRefine(2);
+    grid->globalRefine(refinement);
     auto leafGridView = grid->leafGridView();
 
 //    draw(leafGridView);
@@ -70,7 +87,7 @@ int main(int argc, char** argv) {
 //
   using namespace Dune::Functions::BasisFactory;
 
-    auto preBasisFactory = power<gridDim>(lagrange<1>(), FlatInterleaved());
+    auto preBasisFactory = power<gridDim>(lagrange(basisOrder), FlatInterleaved());
 
 
 
@@ -101,6 +118,9 @@ int main(int argc, char** argv) {
       solver.solve(d,(-FextFine).eval());
       Eigen::VectorXd dFull;
       solver.transformToFineFull(d,dFull);
+
+      if (dFull.size()!= fineBasis.size())
+        std::cout<<"DimensionError"<<std::endl;
 
       /// Postprocess
       auto disp
