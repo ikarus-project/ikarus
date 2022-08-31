@@ -42,11 +42,8 @@ namespace Ikarus{
 
   template<typename Geometry>
   Eigen::Matrix3d calcTransformationMatrix2D(const Geometry& geometry){
-//    Dune::FieldVector<double,2> quadPos0;
-//    quadPos0[0] = 0.5; // Center of the Element in Domain [0,1]
-//    quadPos0[1] = 0.5; // Center of the Element in Domain [0,1]
 
-    const auto quadPos0 = geometry.local(geometry.center());
+    const auto quadPos0 = geometry.type().template geometry<0>(0).center();
 
     const auto jacobianinvT0 = toEigenMatrix(geometry.jacobianInverseTransposed(quadPos0)); //J^{-1}.Transpose() in Dune = J^{-1}
     const auto detJ0 = geometry.integrationElement(quadPos0); //determinant(J)
@@ -67,12 +64,8 @@ namespace Ikarus{
 
     template<typename Geometry>
     Eigen::Matrix3d calcTransformationMatrix3D(const Geometry& geometry){
-//        Dune::FieldVector<double,3> quadPos0;
-//        quadPos0[0] = 0.5; // Center of the Element in Domain [0,1]
-//        quadPos0[1] = 0.5; // Center of the Element in Domain [0,1]
-//        quadPos0[2] = 0.5; // Center of the Element in Domain [0,1]
 
-        const auto quadPos0 = geometry.local(geometry.center());
+        const auto quadPos0 = geometry.type().template geometry<0>(0).center();
 
         const auto jacobianinvT0 = toEigenMatrix(geometry.jacobianInverseTransposed(quadPos0)); //J^{-1}.Transpose() in Dune = J^{-1}
         const auto detJ0 = geometry.integrationElement(quadPos0); //determinant(J)
@@ -343,10 +336,7 @@ class EnhancedAssumedStrains : public DisplacementBasedElement {
       L.setZero(enhancedStrainSize,localView.size());
       D.setZero();
       for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
-          if (Traits::mydim == 2)
-            std::visit([&](const auto& easfunction){ M = easfunction.calcM(gp.position()); },easVariant);
-//          if (Traits::mydim == 3)
-//              std::visit([&](const auto& easfunction){ M = easfunction.calcM(gp.position()); },eas3DVariant);
+        std::visit([&](const auto& easfunction){ M = easfunction.calcM(gp.position()); },easVariant);
         const auto Jinv = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
         const auto Ceval = C(gpIndex);
         const double detJ = geo.integrationElement(gp.position());
@@ -368,45 +358,47 @@ void setEASType(int numberOfEASParameters)
   enhancedStrainSize=numberOfEASParameters;
   D.setZero(enhancedStrainSize,enhancedStrainSize);
 
-   switch (numberOfEASParameters) {
-      case 0:
-          onlyDisplacementBase = true;
-          break;
-      case 4:
-          easVariant = EASQ1E4(DisplacementBasedElement::getLocalView().element().geometry());
-          break;
-      case 5:
-          easVariant = EASQ1E5(DisplacementBasedElement::getLocalView().element().geometry());
-          break;
-      case 7:
-          easVariant = EASQ1E7(DisplacementBasedElement::getLocalView().element().geometry());
-          break;
-      default:
-          DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available.");
-          break;
+  if constexpr (Traits::mydim == 2) {
+      switch (numberOfEASParameters) {
+          case 0:
+              onlyDisplacementBase = true;
+              break;
+          case 4:
+              easVariant = EASQ1E4(DisplacementBasedElement::getLocalView().element().geometry());
+              break;
+          case 5:
+              easVariant = EASQ1E5(DisplacementBasedElement::getLocalView().element().geometry());
+              break;
+          case 7:
+              easVariant = EASQ1E7(DisplacementBasedElement::getLocalView().element().geometry());
+              break;
+          default:
+              DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available.");
+              break;
+      }
   }
-
-//    if (Traits::mydim == 3) {
-//        switch (numberOfEASParameters) {
-//            case 0:
-//                onlyDisplacementBase = true;
-//                break;
-//            case 9:
-//                eas3DVariant = EASH1E9(DisplacementBasedElement::getLocalView().element().geometry());
-//                break;
-//            case 21:
-//                eas3DVariant = EASH1E21(DisplacementBasedElement::getLocalView().element().geometry());
-//                break;
-//            default:
-//                DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available.");
-//                break;
-//        }
-//    }
+    else if constexpr (Traits::mydim == 3) {
+        switch (numberOfEASParameters) {
+            case 0:
+                onlyDisplacementBase = true;
+                break;
+            case 9:
+                easVariant = EASH1E9(DisplacementBasedElement::getLocalView().element().geometry());
+                break;
+            case 21:
+                easVariant = EASH1E21(DisplacementBasedElement::getLocalView().element().geometry());
+                break;
+            default:
+                DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available.");
+                break;
+        }
+    }
 }
 
 private:
-  EAS2DVariant<typename LocalView::Element::Geometry> easVariant;
-  EAS3DVariant<typename LocalView::Element::Geometry> eas3DVariant;
+  using EAS2DVariantImpl = EAS2DVariant<typename LocalView::Element::Geometry>;
+  using EAS3DVariantImpl = EAS3DVariant<typename LocalView::Element::Geometry>;
+  std::conditional_t<Traits::mydim == 2,EAS2DVariantImpl,EAS3DVariantImpl> easVariant;
   mutable Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> M;
   mutable Eigen::MatrixXd D;
   mutable Eigen::MatrixXd L;
@@ -414,3 +406,6 @@ private:
   bool onlyDisplacementBase{false};
 };
 }
+
+
+
