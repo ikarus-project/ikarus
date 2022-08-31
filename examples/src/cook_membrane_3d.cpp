@@ -53,7 +53,6 @@ int main(int argc, char **argv) {
   using Grid = Dune::UGGrid<gridDim>;
   auto grid  = Dune::GmshReader<Grid>::read("../../tests/src/testFiles/cook_3d.msh", false);
   grid->globalRefine(refinement_level);
-  grid->globalRefineinDire
   auto gridView = grid->leafGridView();
 
   using namespace Dune::Functions::BasisFactory;

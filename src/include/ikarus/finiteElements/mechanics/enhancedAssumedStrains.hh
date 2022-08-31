@@ -41,11 +41,12 @@ namespace Ikarus{
   };
 
   template<typename Geometry>
-  Eigen::Matrix3d calcTransformationMatrix2D(const Geometry& geometry)
-  {
-    Dune::FieldVector<double,2> quadPos0;
-    quadPos0[0] = 0.5; // Center of the Element in Domain [0,1]
-    quadPos0[1] = 0.5; // Center of the Element in Domain [0,1]
+  Eigen::Matrix3d calcTransformationMatrix2D(const Geometry& geometry){
+//    Dune::FieldVector<double,2> quadPos0;
+//    quadPos0[0] = 0.5; // Center of the Element in Domain [0,1]
+//    quadPos0[1] = 0.5; // Center of the Element in Domain [0,1]
+
+    const auto quadPos0 = geometry.local(geometry.center());
 
     const auto jacobianinvT0 = toEigenMatrix(geometry.jacobianInverseTransposed(quadPos0)); //J^{-1}.Transpose() in Dune = J^{-1}
     const auto detJ0 = geometry.integrationElement(quadPos0); //determinant(J)
@@ -63,6 +64,40 @@ namespace Ikarus{
 
     return T0.inverse() * detJ0;
   }
+
+    template<typename Geometry>
+    Eigen::Matrix3d calcTransformationMatrix3D(const Geometry& geometry){
+//        Dune::FieldVector<double,3> quadPos0;
+//        quadPos0[0] = 0.5; // Center of the Element in Domain [0,1]
+//        quadPos0[1] = 0.5; // Center of the Element in Domain [0,1]
+//        quadPos0[2] = 0.5; // Center of the Element in Domain [0,1]
+
+        const auto quadPos0 = geometry.local(geometry.center());
+
+        const auto jacobianinvT0 = toEigenMatrix(geometry.jacobianInverseTransposed(quadPos0)); //J^{-1}.Transpose() in Dune = J^{-1}
+        const auto detJ0 = geometry.integrationElement(quadPos0); //determinant(J)
+
+        auto jaco = (jacobianinvT0).inverse().eval();
+        auto J11 = jaco(0,0);
+        auto J12 = jaco(0,1);
+        auto J13 = jaco(0,2);
+        auto J21 = jaco(1,0);
+        auto J22 = jaco(1,1);
+        auto J23 = jaco(1,2);
+        auto J31 = jaco(2,0);
+        auto J32 = jaco(2,1);
+        auto J33 = jaco(2,2);
+
+        Eigen::Matrix<double,6,6> T0;
+        T0 << J11*J11 , J12*J12 , J13*J13 , J11*J12 , J11*J13 , J12*J13 ,
+                J21*J21 , J22*J22 , J23*J23 , J21*J22 , J21*J23 , J22*J23 ,
+                J31*J31 , J32*J32 , J33*J33 , J31*J32 , J31*J33 , J32*J33 ,
+                2.0*J11*J21 , 2.0*J12*J22 , 2.0*J13*J23 , J11*J22 + J21*J12 , J11*J23 + J21*J13 , J12*J23 + J22*J13 ,
+                2.0*J11*J31 , 2.0*J12*J32 , 2.0*J13*J33 , J11*J32 + J31*J12 , J11*J33 + J31*J13 , J12*J33 + J32*J13 ,
+                2.0*J31*J21 , 2.0*J32*J22 , 2.0*J33*J23 , J31*J22 + J21*J32 , J31*J23 + J21*J33 , J32*J23 + J22*J33 ;
+
+        return T0.inverse() * detJ0;
+    }
 
 
   template<typename Geometry>
@@ -162,15 +197,103 @@ namespace Ikarus{
         Eigen::Matrix3d T0InverseTransformed;
     };
 
+    template<typename Geometry>
+    struct EASH1E9
+    {
+        static constexpr int strainSize = 6;
+        static constexpr int enhancedStrainSize = 9;
+
+        EASH1E9() = default;
+        EASH1E9(const Geometry& geometry)
+                : geometry{std::make_unique<Geometry>(geometry)}
+                ,T0InverseTransformed{calcTransformationMatrix3D(geometry)}
+        {}
+
+        auto calcM(const Dune::FieldVector<double,3>& quadPos) const
+        {
+            Eigen::Matrix<double,strainSize,enhancedStrainSize> M;
+            M.setZero();
+            const double xi = quadPos[0];
+            const double eta = quadPos[1];
+            const double zeta = quadPos[2];
+            M(0,0) = xi-0.5;
+            M(1,1) = eta-0.5;
+            M(2,2) = zeta-0.5;
+            M(3,3) = xi-0.5;
+            M(3,4) = eta-0.5;
+            M(4,5) = xi-0.5;
+            M(4,6) = zeta-0.5;
+            M(5,7) = eta-0.5;
+            M(5,8) = zeta-0.5;
+            const double detJ = geometry->integrationElement(quadPos);
+            M = T0InverseTransformed/detJ * M ;
+            return M;
+        }
+        std::unique_ptr<Geometry> geometry;
+        Eigen::Matrix<double,6,6> T0InverseTransformed;
+    };
+
+    template<typename Geometry>
+    struct EASH1E21
+    {
+        static constexpr int strainSize = 6;
+        static constexpr int enhancedStrainSize = 21;
+
+        EASH1E21() = default;
+        EASH1E21(const Geometry& geometry)
+                : geometry{std::make_unique<Geometry>(geometry)}
+                ,T0InverseTransformed{calcTransformationMatrix3D(geometry)}
+        {}
+
+        auto calcM(const Dune::FieldVector<double,3>& quadPos) const
+        {
+            Eigen::Matrix<double,strainSize,enhancedStrainSize> M;
+            M.setZero();
+            const double xi = quadPos[0];
+            const double eta = quadPos[1];
+            const double zeta = quadPos[2];
+            M(0,0) = xi-0.5;
+            M(1,1) = eta-0.5;
+            M(2,2) = zeta-0.5;
+            M(3,3) = xi-0.5;
+            M(3,4) = eta-0.5;
+            M(4,5) = xi-0.5;
+            M(4,6) = zeta-0.5;
+            M(5,7) = eta-0.5;
+            M(5,8) = zeta-0.5;
+
+            M(3,9) = (xi-0.5)*(zeta-0.5);
+            M(3,10) = (eta-0.5)*(zeta-0.5);
+            M(4,11) = (xi-0.5)*(eta-0.5);
+            M(4,12) = (eta-0.5)*(zeta-0.5);
+            M(5,13) = (xi-0.5)*(eta-0.5);
+            M(5,14) = (xi-0.5)*(zeta-0.5);
+
+            M(0,15) = (xi-0.5)*(eta-0.5);
+            M(0,16) = (xi-0.5)*(zeta-0.5);
+            M(1,17) = (xi-0.5)*(eta-0.5);
+            M(1,18) = (eta-0.5)*(zeta-0.5);
+            M(2,19) = (xi-0.5)*(zeta-0.5);
+            M(2,20) = (eta-0.5)*(zeta-0.5);
+
+            const double detJ = geometry->integrationElement(quadPos);
+            M = T0InverseTransformed/detJ * M ;
+            return M;
+        }
+
+        std::unique_ptr<Geometry> geometry;
+        Eigen::Matrix<double,6,6> T0InverseTransformed;
+    };
+
+  /// 2D - Q1 (4-node) , 3D - H1 (8-node) variants
   template<typename Geometry>
-  using EAS2dVariant = std::variant<EASQ1E4<Geometry>,EASQ1E5<Geometry>,EASQ1E7<Geometry>>;
-//  using EAS3dVariant = std::variant<EASH1E9,EASH1E21>;
+  using EAS2DVariant = std::variant<EASQ1E4<Geometry>,EASQ1E5<Geometry>,EASQ1E7<Geometry>>;
+  template<typename Geometry>
+  using EAS3DVariant = std::variant<EASH1E9<Geometry>,EASH1E21<Geometry>>;
 
   template<typename DisplacementBasedElement>
 class EnhancedAssumedStrains : public DisplacementBasedElement {
   public:
-
-    static constexpr int strainSize = 3;
 
     using FERequirementType = FErequirements<Eigen::VectorXd>;
     using LocalView         = typename DisplacementBasedElement::LocalView;
@@ -199,8 +322,12 @@ class EnhancedAssumedStrains : public DisplacementBasedElement {
 
     void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& h) const {
       using namespace DerivativeDirections;
-      DisplacementBasedElement::calculateMatrix(par,h); // fill h with displacement-based stiffness
-      //is assumed to be assembled block-wise on element level. This means the displacements x,y,z of node I are grouped together
+
+        /// fill h with displacement-based stiffness.
+        /// It is assumed to be assembled block-wise on element level.
+        /// This means the displacements x,y,z of node I are grouped together.
+
+      DisplacementBasedElement::calculateMatrix(par,h);
 
       if(onlyDisplacementBase)
         return ;
@@ -216,7 +343,10 @@ class EnhancedAssumedStrains : public DisplacementBasedElement {
       L.setZero(enhancedStrainSize,localView.size());
       D.setZero();
       for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
-        std::visit([&](const auto& easfunction){ M = easfunction.calcM(gp.position()); },easVariant);
+          if (Traits::mydim == 2)
+            std::visit([&](const auto& easfunction){ M = easfunction.calcM(gp.position()); },easVariant);
+//          if (Traits::mydim == 3)
+//              std::visit([&](const auto& easfunction){ M = easfunction.calcM(gp.position()); },eas3DVariant);
         const auto Jinv = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
         const auto Ceval = C(gpIndex);
         const double detJ = geo.integrationElement(gp.position());
@@ -238,28 +368,46 @@ void setEASType(int numberOfEASParameters)
   enhancedStrainSize=numberOfEASParameters;
   D.setZero(enhancedStrainSize,enhancedStrainSize);
 
-  switch (numberOfEASParameters) {
-    case 0:
-      onlyDisplacementBase=true;
-      break;
-    case 4:
-      easVariant= EASQ1E4(DisplacementBasedElement::getLocalView().element().geometry());
-      break;
-    case 5:
-      easVariant= EASQ1E5(DisplacementBasedElement::getLocalView().element().geometry());
-      break;
-    case 7:
-      easVariant= EASQ1E7(DisplacementBasedElement::getLocalView().element().geometry());
-      break;
-    default:
-      DUNE_THROW(Dune::NotImplemented,"The given EAS parameters are not available.");
-      break;
+   switch (numberOfEASParameters) {
+      case 0:
+          onlyDisplacementBase = true;
+          break;
+      case 4:
+          easVariant = EASQ1E4(DisplacementBasedElement::getLocalView().element().geometry());
+          break;
+      case 5:
+          easVariant = EASQ1E5(DisplacementBasedElement::getLocalView().element().geometry());
+          break;
+      case 7:
+          easVariant = EASQ1E7(DisplacementBasedElement::getLocalView().element().geometry());
+          break;
+      default:
+          DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available.");
+          break;
   }
+
+//    if (Traits::mydim == 3) {
+//        switch (numberOfEASParameters) {
+//            case 0:
+//                onlyDisplacementBase = true;
+//                break;
+//            case 9:
+//                eas3DVariant = EASH1E9(DisplacementBasedElement::getLocalView().element().geometry());
+//                break;
+//            case 21:
+//                eas3DVariant = EASH1E21(DisplacementBasedElement::getLocalView().element().geometry());
+//                break;
+//            default:
+//                DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available.");
+//                break;
+//        }
+//    }
 }
 
 private:
-  EAS2dVariant<typename LocalView::Element::Geometry> easVariant;
-  mutable Eigen::Matrix<double,strainSize,Eigen::Dynamic> M;
+  EAS2DVariant<typename LocalView::Element::Geometry> easVariant;
+  EAS3DVariant<typename LocalView::Element::Geometry> eas3DVariant;
+  mutable Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> M;
   mutable Eigen::MatrixXd D;
   mutable Eigen::MatrixXd L;
   int enhancedStrainSize;

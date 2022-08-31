@@ -106,7 +106,14 @@ namespace Ikarus {
 
      auto getMaterialTangentFunction(const FERequirementType& par)const
     {
-        return [&](auto gp){return planeStressLinearElasticMaterialTangent(emod_,nu_);};
+        return [&](auto gp) {
+            Eigen::MatrixXd C;
+            if (Traits::mydim == 2)
+                C = planeStressLinearElasticMaterialTangent(emod_, nu_);
+            if (Traits::mydim == 3)
+                C = LinearElasticMaterialTangent3D(emod_, nu_);
+            return C;
+        };
     }
 
 
