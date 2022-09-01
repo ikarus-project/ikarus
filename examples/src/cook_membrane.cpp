@@ -19,8 +19,8 @@
 #include <Eigen/Eigenvalues>
 
 #include <ikarus/assembler/simpleAssemblers.hh>
-#include <ikarus/finiteElements/mechanics/linearElastic.hh>
 #include <ikarus/finiteElements/mechanics/enhancedAssumedStrains.hh>
+#include <ikarus/finiteElements/mechanics/linearElastic.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/localBasis/localBasis.hh>
 #include <ikarus/solver/linearSolver/linearSolver.hh>
@@ -31,8 +31,7 @@ using namespace Ikarus;
 using namespace Dune::Indices;
 
 template <typename Basis>
-class Q1LinearElasticAD : public PowerBasisFE<Basis>,
-                          public Ikarus::AutoDiffFE<Q1LinearElasticAD<Basis>, Basis> {
+class Q1LinearElasticAD : public PowerBasisFE<Basis>, public Ikarus::AutoDiffFE<Q1LinearElasticAD<Basis>, Basis> {
 public:
   using BaseDisp = PowerBasisFE<Basis>;  // Handles globalIndices function
   using BaseAD   = AutoDiffFE<Q1LinearElasticAD<Basis>, Basis>;
@@ -41,11 +40,11 @@ public:
   friend BaseAD;
   using FERequirementType = FErequirements<Eigen::VectorXd>;
   using LocalView         = typename Basis::LocalView;
-  using GridView         = typename Basis::GridView;
+  using GridView          = typename Basis::GridView;
 
   template <typename VolumeLoad, typename NeumannBoundaryLoad>
-  Q1LinearElasticAD(Basis& globalBasis, const typename LocalView::Element& element, double emod, double nu, const BoundaryPatch<GridView> * neumannBoundary,
-                    const NeumannBoundaryLoad& neumannBoundaryLoad,
+  Q1LinearElasticAD(Basis& globalBasis, const typename LocalView::Element& element, double emod, double nu,
+                    const BoundaryPatch<GridView>* neumannBoundary, const NeumannBoundaryLoad& neumannBoundaryLoad,
                     const VolumeLoad& p_volumeLoad)
       : BaseDisp(globalBasis, element),
         BaseAD(globalBasis, element),
@@ -81,43 +80,42 @@ private:
     ScalarType energy = 0.0;
     const int order   = 2 * (fe.localBasis().order());
     const auto& rule  = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
-    Eigen::Matrix3<ScalarType> C = planeStressLinearElasticMaterialTangent(emod_,nu_);
-    const auto geo = localView_.element().geometry();
+    Eigen::Matrix3<ScalarType> C = planeStressLinearElasticMaterialTangent(emod_, nu_);
+    const auto geo               = localView_.element().geometry();
     Ikarus::StandardLocalFunction uFunction(localBasis, disp);
     for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
       const auto Jinv = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
       const auto u    = uFunction.evaluateFunction(gpIndex);
-      const auto H
-          = uFunction.evaluateDerivative(gpIndex, wrt(DerivativeDirections::spatialAll), transformWith(Jinv));
-      const auto E      = (0.5 * (H.transpose() + H)).eval();
+      const auto H = uFunction.evaluateDerivative(gpIndex, wrt(DerivativeDirections::spatialAll), transformWith(Jinv));
+      const auto E = (0.5 * (H.transpose() + H)).eval();
       const auto EVoigt = toVoigt(E);
 
       Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(toEigenVector(gp.position()), lambda);
       energy += (0.5 * EVoigt.dot(C * EVoigt) - u.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
     }
 
-    //line or surface loads, i.e. neumann boundary
+    // line or surface loads, i.e. neumann boundary
     if (not neumannBoundary_) return energy;
 
     auto element = localView_.element();
-    for (auto &&intersection : intersections(neumannBoundary_->gridView(), element))
-    {
+    for (auto&& intersection : intersections(neumannBoundary_->gridView(), element)) {
       if (not neumannBoundary_ or not neumannBoundary_->contains(intersection)) continue;
 
-      const auto &quadLine = Dune::QuadratureRules<double, Traits::mydim-1>::rule(intersection.type(), order);
+      const auto& quadLine = Dune::QuadratureRules<double, Traits::mydim - 1>::rule(intersection.type(), order);
 
-      for (const auto &curQuad : quadLine)
-      {
+      for (const auto& curQuad : quadLine) {
         // Local position of the quadrature point
-        const Dune::FieldVector<double, Traits::mydim> &quadPos = intersection.geometryInInside().global(curQuad.position());
+        const Dune::FieldVector<double, Traits::mydim>& quadPos
+            = intersection.geometryInInside().global(curQuad.position());
 
         const double integrationElement = intersection.geometry().integrationElement(curQuad.position());
 
         // The value of the local function
-        const auto u    = uFunction.evaluateFunction(quadPos);
+        const auto u = uFunction.evaluateFunction(quadPos);
 
         // Value of the Neumann data at the current position
-        auto neumannValue = neumannBoundaryLoad_(toEigenVector(intersection.geometry().global(curQuad.position())),lambda);
+        auto neumannValue
+            = neumannBoundaryLoad_(toEigenVector(intersection.geometry().global(curQuad.position())), lambda);
 
         energy -= neumannValue.dot(u) * curQuad.weight() * integrationElement;
       }
@@ -130,104 +128,99 @@ private:
   Ikarus::LocalBasis<
       std::remove_cvref_t<decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis())>>
       localBasis;
-  //TODO: write as optional
-  std::function<Eigen::Vector<double, Traits::worlddim>(const Eigen::Vector<double, Traits::worlddim>&,
-                                                        const double&)>
+  // TODO: write as optional
+  std::function<Eigen::Vector<double, Traits::worlddim>(const Eigen::Vector<double, Traits::worlddim>&, const double&)>
       volumeLoad;
-  std::function<Eigen::Vector<double, Traits::worlddim>(const Eigen::Vector<double, Traits::worlddim>&,
-                                                        const double&)>
+  std::function<Eigen::Vector<double, Traits::worlddim>(const Eigen::Vector<double, Traits::worlddim>&, const double&)>
       neumannBoundaryLoad_;
-  const BoundaryPatch<GridView> *neumannBoundary_;
+  const BoundaryPatch<GridView>* neumannBoundary_;
   double emod_;
   double nu_;
 };
-
-Eigen::MatrixXd Q1E4Stiffness(auto localView, const Eigen::Matrix3d& C) {
-
-  using namespace Dune::Indices;
-  constexpr int gridDim   = 2;
-  auto element            = localView.element();
-  auto geometry           = element.geometry();
-  Eigen::MatrixXd K       = Eigen::MatrixXd::Zero(localView.size(), localView.size());
-  Eigen::MatrixXd L       = Eigen::MatrixXd::Zero(4, localView.size());
-  Eigen::MatrixXd D       = Eigen::MatrixXd::Zero(4, 4);
-
-  const auto& localFiniteElement = localView.tree().child(_0).finiteElement();
-  // Define the integration rule
-  int order = 2;
-  const auto& quadRule
-      = Dune::QuadratureRules<double, gridDim>::rule(element.type(), order, Dune::QuadratureType::GaussLegendre);
-
-  for (const auto& quadPoint : quadRule)
-  {
-    const auto quadPos = quadPoint.position();
-    const auto jacobianinvT = geometry.jacobianInverseTransposed(quadPos); //J^{-1}.Transpose() in Dune = J^{-1}
-    const auto detJ = geometry.integrationElement(quadPos); //determinant(J)
-
-    Dune::FieldVector<double,2> quadPos0;
-    quadPos0[0] = 0.5; // Center of the Element in Domain [0,1]
-    quadPos0[1] = 0.5; // Center of the Element in Domain [0,1]
-
-    const auto jacobianinvT0 = geometry.jacobianInverseTransposed(quadPos0); //J^{-1}.Transpose() in Dune = J^{-1}
-    const auto detJ0 = geometry.integrationElement(quadPos0); //determinant(J)
-
-    Eigen::MatrixXd jaco_it = Eigen::MatrixXd::Zero(2,2);
-    for (size_t i=0;i<2;i++)
-      for (size_t j=0;j<2;j++)
-        jaco_it(i,j)=jacobianinvT0[i][j];
-
-    auto jaco = (jaco_it).inverse();
-    auto J11 = jaco(0,0);
-    auto J12 = jaco(0,1);
-    auto J21 = jaco(1,0);
-    auto J22 = jaco(1,1);
-
-    Eigen::Matrix3d T0;
-    T0 << J11*J11 , J12*J12 , J11*J12 ,
-          J21*J21 , J22*J22 , J21*J22 ,
-      2.0*J11*J21 , 2.0*J12*J22 , J21*J12 + J11*J22;
-    auto T0_inv = T0.inverse() * (detJ0/detJ);
-
-    std::vector<Dune::FieldMatrix<double,1,gridDim>> referenceGradients;
-    localFiniteElement.localBasis().evaluateJacobian(quadPos,referenceGradients);
-    std::vector<Dune::FieldVector<double,gridDim>> gradients(referenceGradients.size());
-
-    for (size_t i=0; i<gradients.size(); i++)
-      jacobianinvT.mv(referenceGradients[i][0],gradients[i]);
-
-    // setup B-operator
-    Eigen::MatrixXd B = Eigen::MatrixXd::Zero(3, localView.size());
-    Eigen::MatrixXd M = Eigen::MatrixXd::Zero(3, 4);
-    Eigen::VectorXd dNdx = Eigen::VectorXd::Zero(4);
-    Eigen::VectorXd dNdy = Eigen::VectorXd::Zero(4);
-    for(size_t i=0;i<4;i++)
-    {
-      dNdx[i] = gradients[i][0];
-      dNdy[i] = gradients[i][1];
-    }
-
-    for(size_t i=0;i<4;i++)
-    {
-      B(0,i) = dNdx[i];
-      B(2,i) = dNdy[i];
-
-      B(1,i+4) = dNdy[i];
-      B(2,i+4) = dNdx[i];
-    }
-
-    // -(1/2) is added in the M-Matrix in order to fulfill the Orthogonality condition for Q1E4 element in domain [0,1]
-    M(0,0) = quadPos[0]-0.5;
-    M(1,1) = quadPos[1]-0.5;
-    M(2,2) = quadPos[0]-0.5;
-    M(2,3) = quadPos[1]-0.5;
-
-    M = T0_inv * M ;
-
-    // integration of stiffness matrix
-    K += B.transpose() * C * B * detJ * quadPoint.weight();
-    L += M.transpose() * C * B * detJ * quadPoint.weight();
-    D += M.transpose() * C * M * detJ * quadPoint.weight();
-  }
+//
+// Eigen::MatrixXd Q1E4Stiffness(auto localView, const Eigen::Matrix3d& C) {
+//
+//  using namespace Dune::Indices;
+//  constexpr int gridDim   = 2;
+//  auto element            = localView.element();
+//  auto geometry           = element.geometry();
+//  Eigen::MatrixXd K       = Eigen::MatrixXd::Zero(localView.size(), localView.size());
+//  Eigen::MatrixXd L       = Eigen::MatrixXd::Zero(4, localView.size());
+//  Eigen::MatrixXd D       = Eigen::MatrixXd::Zero(4, 4);
+//
+//  const auto& localFiniteElement = localView.tree().child(_0).finiteElement();
+//  // Define the integration rule
+//  int order = 2;
+//  const auto& quadRule
+//      = Dune::QuadratureRules<double, gridDim>::rule(element.type(), order, Dune::QuadratureType::GaussLegendre);
+//
+//  for (const auto& quadPoint : quadRule)
+//  {
+//    const auto quadPos = quadPoint.position();
+//    const auto jacobianinvT = geometry.jacobianInverseTransposed(quadPos); //J^{-1}.Transpose() in Dune = J^{-1}
+//    const auto detJ = geometry.integrationElement(quadPos); //determinant(J)
+//
+//    Dune::FieldVector<double,2> quadPos0;
+//    quadPos0[0] = 0.5; // Center of the Element in Domain [0,1]
+//    quadPos0[1] = 0.5; // Center of the Element in Domain [0,1]
+//
+//    const auto jacobianinvT0 = geometry.jacobianInverseTransposed(quadPos0); //J^{-1}.Transpose() in Dune = J^{-1}
+//    const auto detJ0 = geometry.integrationElement(quadPos0); //determinant(J)
+//
+//    Eigen::MatrixXd jaco_it = Eigen::MatrixXd::Zero(2,2);
+//    for (size_t i=0;i<2;i++)
+//      for (size_t j=0;j<2;j++)
+//        jaco_it(i,j)=jacobianinvT0[i][j];
+//
+//    auto jaco = (jaco_it).inverse();
+//    auto J11 = jaco(0,0);
+//    auto J12 = jaco(0,1);
+//    auto J21 = jaco(1,0);
+//    auto J22 = jaco(1,1);
+//
+//    Eigen::Matrix3d T0;
+//    T0 << J11*J11 , J12*J12 , J11*J12 ,
+//          J21*J21 , J22*J22 , J21*J22 ,
+//      2.0*J11*J21 , 2.0*J12*J22 , J21*J12 + J11*J22;
+//    auto T0_inv = T0.inverse() * (detJ0/detJ);
+//
+//    std::vector<Dune::FieldMatrix<double,1,gridDim>> referenceGradients;
+//    localFiniteElement.localBasis().evaluateJacobian(quadPos,referenceGradients);
+//    std::vector<Dune::FieldVector<double,gridDim>> gradients(referenceGradients.size());
+//
+//    for (size_t i=0; i<gradients.size(); i++)
+//      jacobianinvT.mv(referenceGradients[i][0],gradients[i]);
+//
+//    // setup B-operator
+//    Eigen::MatrixXd B = Eigen::MatrixXd::Zero(3, localView.size());
+//    Eigen::MatrixXd M = Eigen::MatrixXd::Zero(3, 4);
+//    Eigen::VectorXd dNdx = Eigen::VectorXd::Zero(4);
+//    Eigen::VectorXd dNdy = Eigen::VectorXd::Zero(4);
+//    for(size_t i=0;i<4;i++)
+//    {
+//      dNdx[i] = gradients[i][0];
+//      dNdy[i] = gradients[i][1];
+//    }
+//
+//    for(size_t i=0;i<4;i++)
+//    {
+//      B(0,i) = dNdx[i];
+//      B(2,i) = dNdy[i];
+//
+//      B(1,i+4) = dNdy[i];
+//      B(2,i+4) = dNdx[i];
+//    }
+//
+//    // -(1/2) is added in the M-Matrix in order to fulfill the Orthogonality condition for Q1E4 element in domain
+//    [0,1] M(0,0) = quadPos[0]-0.5; M(1,1) = quadPos[1]-0.5; M(2,2) = quadPos[0]-0.5; M(2,3) = quadPos[1]-0.5;
+//
+//    M = T0_inv * M ;
+//
+//    // integration of stiffness matrix
+//    K += B.transpose() * C * B * detJ * quadPoint.weight();
+//    L += M.transpose() * C * B * detJ * quadPoint.weight();
+//    D += M.transpose() * C * M * detJ * quadPoint.weight();
+//  }
 
 //  Eigen::EigenSolver<Eigen::MatrixXd> esk(K);
 //  std::cout << "The eigenvalues of K are:" << std::endl << esk.eigenvalues() << std::endl;
@@ -235,21 +228,22 @@ Eigen::MatrixXd Q1E4Stiffness(auto localView, const Eigen::Matrix3d& C) {
 //  Eigen::EigenSolver<Eigen::MatrixXd> eskeas(K - (L.transpose() * D.inverse() * L));
 //  std::cout << "The eigenvalues of Keas are:" << std::endl << eskeas.eigenvalues() << std::endl;
 //  return K - (L.transpose() * D.inverse() * L);
-  const auto Dinv = D.inverse();
-  for (int i = 0; i < 4; ++i) {
-    const auto& Li = L.block<4,2>(0,i*2);
-    for (int j = 0; j < 4; ++j) {
-      const auto& Lj = L.block<4,2>(0,j*2);
-      K.block<2,2>(i*2,j*2)-= Li.transpose()*Dinv*Lj;
-    }
-  }
-  return  K;
-}
+//  const auto Dinv = D.inverse();
+//  for (int i = 0; i < 4; ++i) {
+//    const auto& Li = L.block<4,2>(0,i*2);
+//    for (int j = 0; j < 4; ++j) {
+//      const auto& Lj = L.block<4,2>(0,j*2);
+//      K.block<2,2>(i*2,j*2)-= Li.transpose()*Dinv*Lj;
+//    }
+//  }
+//  return  K;
+//}
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   Dune::MPIHelper::instance(argc, argv);
-  constexpr int gridDim = 2;
-  double lambdaLoad = 1;
+  constexpr int gridDim     = 2;
+  double lambdaLoad         = 1;
+  constexpr int basis_order = 1;
 
   /// read in parameters
   Dune::ParameterTree parameterSet;
@@ -258,10 +252,12 @@ int main(int argc, char **argv) {
   const Dune::ParameterTree& gridParameters     = parameterSet.sub("GridParameters");
   const Dune::ParameterTree& controlParameters  = parameterSet.sub("ControlParameters");
   const Dune::ParameterTree& materialParameters = parameterSet.sub("MaterialParameters");
+  const Dune::ParameterTree& elementParameters  = parameterSet.sub("ElementParameters");
 
-  const double E          = materialParameters.get<double>("E");
-  const double nu            = materialParameters.get<double>("nu");
-  const int refinement_level = gridParameters.get<int>("refinement");
+  const double E                   = materialParameters.get<double>("E");
+  const double nu                  = materialParameters.get<double>("nu");
+  const auto numberOfEASParameters = elementParameters.get<int>("numberOfEASParameters");
+  const int refinement_level       = gridParameters.get<int>("refinement");
 
   using Grid = Dune::UGGrid<gridDim>;
   auto grid  = Dune::GmshReader<Grid>::read("../../tests/src/testFiles/cook.msh", false);
@@ -269,7 +265,7 @@ int main(int argc, char **argv) {
   auto gridView = grid->leafGridView();
 
   using namespace Dune::Functions::BasisFactory;
-  auto basis = makeBasis(gridView, power<gridDim>(lagrange<1>(), FlatInterleaved()));
+  auto basis = makeBasis(gridView, power<gridDim>(lagrange<basis_order>(), FlatInterleaved()));
 
   std::cout << "This gridview contains: " << std::endl;
   std::cout << gridView.size(2) << " vertices" << std::endl;
@@ -277,31 +273,31 @@ int main(int argc, char **argv) {
   std::cout << gridView.size(0) << " elements" << std::endl;
   std::cout << basis.size() << " Dofs" << std::endl;
 
-//  draw(gridView);
+  //  draw(gridView);
 
   /// clamp left-hand side
-  std::vector<bool> dirichletFlags(basis.size(),false);
-  forEachBoundaryDOF(basis, [&](auto &&localIndex, auto &&localView, auto &&intersection) {
+  std::vector<bool> dirichletFlags(basis.size(), false);
+  forEachBoundaryDOF(basis, [&](auto&& localIndex, auto&& localView, auto&& intersection) {
     if (std::abs(intersection.geometry().center()[0]) < 1e-8) dirichletFlags[localView.index(localIndex)[0]] = true;
   });
 
-  std::vector<Q1LinearElasticAD<decltype(basis)>> fesAD; //from Automatic differentiation
-//  std::vector<Ikarus::LinearElastic<decltype(basis)>> fes;
+  std::vector<Q1LinearElasticAD<decltype(basis)>> fesAD;  // from Automatic differentiation
+  //  std::vector<Ikarus::LinearElastic<decltype(basis)>> fes;
   std::vector<Ikarus::EnhancedAssumedStrains<Ikarus::LinearElastic<decltype(basis)>>> fes;
 
   /// function for volume load- here: returns zero
   auto volumeLoad = [](auto& globalCoord, auto& lamb) {
     Eigen::Vector2d fext;
     fext.setZero();
-    fext[1] = 2 * lamb*0;
-    fext[0] = lamb*0;
+    fext[1] = 2 * lamb * 0;
+    fext[0] = lamb * 0;
     return fext;
   };
 
   /// neumann boundary load in vertical direction
   auto neumannBoundaryLoad = [&](auto& globalCoord, auto& lamb) {
-    Eigen::Vector2d F  = Eigen::Vector2d::Zero();
-    F[1] = lamb/16.0;
+    Eigen::Vector2d F = Eigen::Vector2d::Zero();
+    F[1]              = lamb / 16.0;
     return F;
   };
 
@@ -311,10 +307,7 @@ int main(int argc, char **argv) {
   Python::Reference main = Python::import("__main__");
   Python::run("import math");
 
-  Python::runStream()
-      << std::endl << "import sys"
-      << std::endl << "import os"
-      << std::endl;
+  Python::runStream() << std::endl << "import sys" << std::endl << "import os" << std::endl;
 
   const auto& indexSet = gridView.indexSet();
 
@@ -322,9 +315,8 @@ int main(int argc, char **argv) {
   Dune::BitSetVector<1> neumannVertices(gridView.size(2), false);
   auto pythonNeumannVertices = Python::make_function<bool>(Python::evaluate(lambdaNeumannVertices));
 
-  for (auto &&vertex: vertices(gridView))
-  {
-    bool isNeumann = pythonNeumannVertices(vertex.geometry().corner(0));
+  for (auto&& vertex : vertices(gridView)) {
+    bool isNeumann                          = pythonNeumannVertices(vertex.geometry().corner(0));
     neumannVertices[indexSet.index(vertex)] = isNeumann;
   }
 
@@ -332,14 +324,12 @@ int main(int argc, char **argv) {
 
   for (auto& element : elements(gridView)) {
     auto localView = basis.localView();
-//    localView.bind(element);
-//    Q1E4Stiffness(localView,planeStressLinearElasticMaterialTangent(E,nu));
     fesAD.emplace_back(basis, element, E, nu, &neumannBoundary, neumannBoundaryLoad, volumeLoad);
     fes.emplace_back(basis, element, E, nu, &neumannBoundary, neumannBoundaryLoad, volumeLoad);
-    fes.back().setEASType(EASType::Q1E4);
+    fes.back().setEASType(numberOfEASParameters);
   }
 
-  auto sparseAssembler = SparseFlatAssembler(basis, fes, dirichletFlags);
+  auto sparseAssembler   = SparseFlatAssembler(basis, fes, dirichletFlags);
   auto sparseAssemblerAD = SparseFlatAssembler(basis, fesAD, dirichletFlags);
 
   auto KFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
@@ -360,7 +350,6 @@ int main(int argc, char **argv) {
     return sparseAssemblerAD.getMatrix(req);
   };
 
-
   auto residualFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
     Ikarus::FErequirements req = FErequirementsBuilder()
                                      .insertGlobalSolution(Ikarus::FESolutions::displacement, disp)
@@ -379,7 +368,6 @@ int main(int argc, char **argv) {
     return sparseAssemblerAD.getVector(req);
   };
 
-
   auto energyFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
     Ikarus::FErequirements req = FErequirementsBuilder()
                                      .insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
@@ -391,33 +379,25 @@ int main(int argc, char **argv) {
 
   Eigen::VectorXd D_Glob = Eigen::VectorXd::Zero(basis.size());
 
+  /// Checking the external force vector and stiffness matrix from Automatic Differentiation and B^TCB
+  if (residualFunctionAD(D_Glob, lambdaLoad).isApprox(residualFunction(D_Glob, lambdaLoad)))
+    std::cout << "Coinciding external forces :)" << std::endl;
 
-  if(residualFunctionAD(D_Glob,lambdaLoad).isApprox(residualFunction(D_Glob,lambdaLoad)))
-    std::cout<<"Coinciding external forces :)"<<std::endl;
+  if (KFunctionAD(D_Glob, lambdaLoad).isApprox(KFunction(D_Glob, lambdaLoad)))
+    std::cout << "Coinciding stiffness :)" << std::endl;
 
-  if(KFunctionAD(D_Glob,lambdaLoad).isApprox(KFunction(D_Glob,lambdaLoad)))
-    std::cout<<"Coinciding stiffness :)"<<std::endl;
+  auto nonLinOp
+      = Ikarus::NonLinearOperator(linearAlgebraFunctions(residualFunction, KFunction), parameter(D_Glob, lambdaLoad));
 
-
-  auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(residualFunction, KFunction),
-                                                     parameter(D_Glob, lambdaLoad));
-
-
-  const auto& K = nonLinOp.derivative();
+  const auto& K   = nonLinOp.derivative();
   const auto Fext = nonLinOp.value();
 
-//  // solve the linear system
+  /// solve the linear system
   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_SimplicialLDLT);
   linSolver.compute(K);
-
   linSolver.solve(D_Glob, -Fext);
 
-//  const auto deformedEnergy = nonLinOp.value();
-
-//  nonLinOp.update<0>();
-//  std::cout << "Energy after: " << D_Glob << std::endl;
-
-  // Postprocess
+  /// Postprocess
   auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis, D_Glob);
   Dune::VTKWriter vtkWriter(gridView, Dune::VTK::conforming);
   vtkWriter.addVertexData(disp, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));

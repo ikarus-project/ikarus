@@ -1,5 +1,5 @@
 [GridParameters]
-refinement = 5
+refinement = 2
 
 [ControlParameters]
 
@@ -10,6 +10,6 @@ nu        = 0.3333333333333
 
 [ElementParameters]
 
-eas = "E4"
+numberOfEASParameters = 5
 
 []
