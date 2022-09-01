@@ -19,8 +19,8 @@
 #include <Eigen/Eigenvalues>
 
 #include <ikarus/assembler/simpleAssemblers.hh>
-#include <ikarus/finiteElements/mechanics/linearElastic.hh>
 #include <ikarus/finiteElements/mechanics/enhancedAssumedStrains.hh>
+#include <ikarus/finiteElements/mechanics/linearElastic.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/localBasis/localBasis.hh>
 #include <ikarus/solver/linearSolver/linearSolver.hh>
@@ -30,10 +30,10 @@
 using namespace Ikarus;
 using namespace Dune::Indices;
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   Dune::MPIHelper::instance(argc, argv);
-  constexpr int gridDim = 3;
-  double lambdaLoad = 1;
+  constexpr int gridDim     = 3;
+  double lambdaLoad         = 1;
   constexpr int basis_order = 1;
 
   /// read in parameters
@@ -43,12 +43,12 @@ int main(int argc, char **argv) {
   const Dune::ParameterTree& gridParameters     = parameterSet.sub("GridParameters");
   const Dune::ParameterTree& controlParameters  = parameterSet.sub("ControlParameters");
   const Dune::ParameterTree& materialParameters = parameterSet.sub("MaterialParameters");
-  const Dune::ParameterTree& elementParameters = parameterSet.sub("ElementParameters");
+  const Dune::ParameterTree& elementParameters  = parameterSet.sub("ElementParameters");
 
-  const double E          = materialParameters.get<double>("E");
-  const double nu            = materialParameters.get<double>("nu");
-  const auto numberOfEASParameters            = elementParameters.get<int>("numberOfEASParameters");
-  const int refinement_level = gridParameters.get<int>("refinement");
+  const double E                   = materialParameters.get<double>("E");
+  const double nu                  = materialParameters.get<double>("nu");
+  const auto numberOfEASParameters = elementParameters.get<int>("numberOfEASParameters");
+  const int refinement_level       = gridParameters.get<int>("refinement");
 
   using Grid = Dune::UGGrid<gridDim>;
   auto grid  = Dune::GmshReader<Grid>::read("../../tests/src/testFiles/cook_3d.msh", false);
@@ -64,29 +64,28 @@ int main(int argc, char **argv) {
   std::cout << gridView.size(0) << " elements" << std::endl;
   std::cout << basis.size() << " Dofs" << std::endl;
 
-//  draw(gridView);
+  //  draw(gridView);
 
   /// clamp left-hand side
-  std::vector<bool> dirichletFlags(basis.size(),false);
-  forEachBoundaryDOF(basis, [&](auto &&localIndex, auto &&localView, auto &&intersection) {
+  std::vector<bool> dirichletFlags(basis.size(), false);
+  forEachBoundaryDOF(basis, [&](auto&& localIndex, auto&& localView, auto&& intersection) {
     if (std::abs(intersection.geometry().center()[0]) < 1e-8) dirichletFlags[localView.index(localIndex)[0]] = true;
   });
 
-
-//  std::vector<Ikarus::LinearElastic<decltype(basis)>> fes;
+  //  std::vector<Ikarus::LinearElastic<decltype(basis)>> fes;
   std::vector<Ikarus::EnhancedAssumedStrains<Ikarus::LinearElastic<decltype(basis)>>> fes;
-//
+  //
   /// function for volume load- here: returns zero
   auto volumeLoad = [](auto& globalCoord, auto& lamb) {
     Eigen::Vector3d fext;
     fext.setZero();
     return fext;
   };
-//
+  //
   /// neumann boundary load in vertical direction
   auto neumannBoundaryLoad = [&](auto& globalCoord, auto& lamb) {
-    Eigen::Vector3d F  = Eigen::Vector3d::Zero();
-    F[1] = lamb/16.0;
+    Eigen::Vector3d F = Eigen::Vector3d::Zero();
+    F[1]              = lamb / 16.0;
     return F;
   };
 
@@ -96,10 +95,7 @@ int main(int argc, char **argv) {
   Python::Reference main = Python::import("__main__");
   Python::run("import math");
 
-  Python::runStream()
-      << std::endl << "import sys"
-      << std::endl << "import os"
-      << std::endl;
+  Python::runStream() << std::endl << "import sys" << std::endl << "import os" << std::endl;
 
   const auto& indexSet = gridView.indexSet();
 
@@ -107,9 +103,8 @@ int main(int argc, char **argv) {
   Dune::BitSetVector<1> neumannVertices(gridView.size(2), false);
   auto pythonNeumannVertices = Python::make_function<bool>(Python::evaluate(lambdaNeumannVertices));
 
-  for (auto &&vertex: vertices(gridView))
-  {
-    bool isNeumann = pythonNeumannVertices(vertex.geometry().corner(0));
+  for (auto&& vertex : vertices(gridView)) {
+    bool isNeumann                          = pythonNeumannVertices(vertex.geometry().corner(0));
     neumannVertices[indexSet.index(vertex)] = isNeumann;
   }
   BoundaryPatch<decltype(gridView)> neumannBoundary(gridView, neumannVertices);
@@ -142,9 +137,9 @@ int main(int argc, char **argv) {
 
   Eigen::VectorXd D_Glob = Eigen::VectorXd::Zero(basis.size());
 
-  auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(residualFunction, KFunction),
-                                                     parameter(D_Glob, lambdaLoad));
-  const auto& K = nonLinOp.derivative();
+  auto nonLinOp
+      = Ikarus::NonLinearOperator(linearAlgebraFunctions(residualFunction, KFunction), parameter(D_Glob, lambdaLoad));
+  const auto& K   = nonLinOp.derivative();
   const auto Fext = nonLinOp.value();
 
   /// solve the linear system

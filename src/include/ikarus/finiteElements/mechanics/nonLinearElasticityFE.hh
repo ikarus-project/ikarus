@@ -26,9 +26,9 @@
 #include <iosfwd>
 
 #include <dune/common/classname.hh>
+#include <dune/fufem/boundarypatch.hh>
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/geometry/type.hh>
-#include <dune/fufem/boundarypatch.hh>
 
 #include <autodiff/forward/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
@@ -55,12 +55,12 @@ namespace Ikarus {
     friend BaseAD;
     using FERequirementType = FErequirements<Eigen::VectorXd>;
     using LocalView         = typename Basis::LocalView;
-    using GridView         = typename Basis::GridView;
+    using GridView          = typename Basis::GridView;
 
     template <typename VolumeLoad, typename NeumannBoundaryLoad>
-    NonLinearElasticityFE(Basis& globalBasis, const typename LocalView::Element& element, double emod, double nu, const BoundaryPatch<GridView> * neumannBoundary,
-                          const NeumannBoundaryLoad&neumannBoundaryLoad,
-                          const VolumeLoad& p_volumeLoad)
+    NonLinearElasticityFE(Basis& globalBasis, const typename LocalView::Element& element, double emod, double nu,
+                          const BoundaryPatch<GridView>* neumannBoundary,
+                          const NeumannBoundaryLoad& neumannBoundaryLoad, const VolumeLoad& p_volumeLoad)
         : BaseDisp(globalBasis, element),
           BaseAD(globalBasis, element),
           localView_{globalBasis.localView()},
@@ -115,28 +115,28 @@ namespace Ikarus {
         energy += (0.5 * EVoigt.dot(C * EVoigt) - u.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
       }
 
-      //line or surface loads, i.e. neumann boundary
+      // line or surface loads, i.e. neumann boundary
       if (not neumannBoundary_) return energy;
 
       auto element = localView_.element();
-      for (auto &&intersection : intersections(neumannBoundary_->gridView(), element))
-      {
+      for (auto&& intersection : intersections(neumannBoundary_->gridView(), element)) {
         if (not neumannBoundary_ or not neumannBoundary_->contains(intersection)) continue;
 
-        const auto &quadLine = Dune::QuadratureRules<double, Traits::mydim-1>::rule(intersection.type(), order);
+        const auto& quadLine = Dune::QuadratureRules<double, Traits::mydim - 1>::rule(intersection.type(), order);
 
-        for (const auto &curQuad : quadLine)
-        {
+        for (const auto& curQuad : quadLine) {
           // Local position of the quadrature point
-          const Dune::FieldVector<double, Traits::mydim> &quadPos = intersection.geometryInInside().global(curQuad.position());
+          const Dune::FieldVector<double, Traits::mydim>& quadPos
+              = intersection.geometryInInside().global(curQuad.position());
 
           const double integrationElement = intersection.geometry().integrationElement(curQuad.position());
 
           // The value of the local function
-          const auto u    = uFunction.evaluateFunction(quadPos);
+          const auto u = uFunction.evaluateFunction(quadPos);
 
           // Value of the Neumann data at the current position
-          auto neumannValue = neumannBoundaryLoad_(toEigenVector(intersection.geometry().global(curQuad.position())),lambda);
+          auto neumannValue
+              = neumannBoundaryLoad_(toEigenVector(intersection.geometry().global(curQuad.position())), lambda);
 
           energy -= neumannValue.dot(u) * curQuad.weight() * integrationElement;
         }
@@ -155,7 +155,7 @@ namespace Ikarus {
     std::function<Eigen::Vector<double, Traits::worlddim>(const Eigen::Vector<double, Traits::worlddim>&,
                                                           const double&)>
         neumannBoundaryLoad_;
-    const BoundaryPatch<GridView> *neumannBoundary_;
+    const BoundaryPatch<GridView>* neumannBoundary_;
     double emod_;
     double nu_;
   };

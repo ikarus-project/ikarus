@@ -57,7 +57,6 @@ void draw(const GridView& gridView) {
     }
   }
 
-
   f->show();
   f.reset();
 }
