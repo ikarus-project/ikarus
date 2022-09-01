@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include <ikarus/finiteElements/feRequirements.hh>
 #include <ikarus/localFunctions/meta.hh>
 #include <ikarus/utils/eigenDuneTransformations.hh>
 
