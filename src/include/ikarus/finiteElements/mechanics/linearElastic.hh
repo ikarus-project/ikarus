@@ -195,46 +195,17 @@ namespace Ikarus {
       }
       const auto geo = localView_.element().geometry();
       Ikarus::StandardLocalFunction uFunction(localBasis, disp);
+      auto eps = linearStrains(uFunction);
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
         const auto Jinv         = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
         const double intElement = geo.integrationElement(gp.position()) * gp.weight();
-        if constexpr (Traits::mydim == 2) {
-          for (size_t i = 0; i < fe.size(); ++i) {
-            const auto dHdCi = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i)), transformWith(Jinv));
-            Eigen::Matrix<double, 3, 2> bopI;
-            bopI.row(0) << dHdCi[0].diagonal()(0), 0;
-            bopI.row(1) << 0, dHdCi[1].diagonal()(1);
-            bopI.row(2) << dHdCi[1].diagonal()(0), dHdCi[0].diagonal()(1);
-            for (size_t j = 0; j < fe.size(); ++j) {
-              const auto dHdCj = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(j)), transformWith(Jinv));
-              Eigen::Matrix<double, 3, 2> bopJ;
-              bopJ.row(0) << dHdCj[0].diagonal()(0), 0;
-              bopJ.row(1) << 0, dHdCj[1].diagonal()(1);
-              bopJ.row(2) << dHdCj[1].diagonal()(0), dHdCj[0].diagonal()(1);
-              h.template block<2, 2>(i * Traits::mydim, j * Traits::mydim) += bopI.transpose() * C * bopJ * intElement;
-            }
-          }
-        } else if constexpr (Traits::mydim == 3) {
-          for (size_t i = 0; i < fe.size(); ++i) {
-            const auto dHdCi = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i)), transformWith(Jinv));
-            Eigen::Matrix<double, 6, 3> bopI;
-            bopI.row(0) << dHdCi[0].diagonal()(0), 0, 0;
-            bopI.row(1) << 0, dHdCi[1].diagonal()(1), 0;
-            bopI.row(2) << 0, 0, dHdCi[2].diagonal()(2);
-            bopI.row(3) << dHdCi[1].diagonal()(0), dHdCi[0].diagonal()(1), 0;
-            bopI.row(4) << dHdCi[2].diagonal()(0), 0, dHdCi[0].diagonal()(2);
-            bopI.row(5) << 0, dHdCi[2].diagonal()(1), dHdCi[1].diagonal()(2);
-            for (size_t j = 0; j < fe.size(); ++j) {
-              const auto dHdCj = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(j)), transformWith(Jinv));
-              Eigen::Matrix<double, 6, 3> bopJ;
-              bopJ.row(0) << dHdCj[0].diagonal()(0), 0, 0;
-              bopJ.row(1) << 0, dHdCj[1].diagonal()(1), 0;
-              bopJ.row(2) << 0, 0, dHdCj[2].diagonal()(2);
-              bopJ.row(3) << dHdCj[1].diagonal()(0), dHdCj[0].diagonal()(1), 0;
-              bopJ.row(4) << dHdCj[2].diagonal()(0), 0, dHdCj[0].diagonal()(2);
-              bopJ.row(5) << 0, dHdCj[2].diagonal()(1), dHdCj[1].diagonal()(2);
-              h.template block<3, 3>(i * Traits::mydim, j * Traits::mydim) += bopI.transpose() * C * bopJ * intElement;
-            }
+        for (size_t i = 0; i < fe.size(); ++i) {
+          const auto bopI = eps.evaluateDerivative(gpIndex, wrt(coeff(i)), transformWith(Jinv));
+
+          for (size_t j = 0; j < fe.size(); ++j) {
+            const auto bopJ = uFunction.evaluateDerivative(gpIndex, wrt(coeff(j)), transformWith(Jinv));
+            h.template block<Traits::mydim, Traits::mydim>(i * Traits::mydim, j * Traits::mydim)
+                += bopI.transpose() * C * bopJ * intElement;
           }
         }
       }
