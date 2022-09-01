@@ -73,8 +73,8 @@ int main(int argc, char **argv) {
   });
 
 
-  std::vector<Ikarus::LinearElastic<decltype(basis)>> fes;
-//  std::vector<Ikarus::EnhancedAssumedStrains<Ikarus::LinearElastic<decltype(basis)>>> fes;
+//  std::vector<Ikarus::LinearElastic<decltype(basis)>> fes;
+  std::vector<Ikarus::EnhancedAssumedStrains<Ikarus::LinearElastic<decltype(basis)>>> fes;
 //
   /// function for volume load- here: returns zero
   auto volumeLoad = [](auto& globalCoord, auto& lamb) {
@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
   for (auto& element : elements(gridView)) {
     auto localView = basis.localView();
     fes.emplace_back(basis, element, E, nu, &neumannBoundary, neumannBoundaryLoad, volumeLoad);
-//    fes.back().setEASType(numberOfEASParameters);
+    fes.back().setEASType(numberOfEASParameters);
   }
 
   auto sparseAssembler = SparseFlatAssembler(basis, fes, dirichletFlags);

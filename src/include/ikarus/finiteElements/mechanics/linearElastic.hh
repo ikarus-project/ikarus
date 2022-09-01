@@ -108,9 +108,9 @@ namespace Ikarus {
     {
         return [&](auto gp) {
             Eigen::MatrixXd C;
-            if (Traits::mydim == 2)
+            if constexpr (Traits::mydim == 2)
                 C = planeStressLinearElasticMaterialTangent(emod_, nu_);
-            if (Traits::mydim == 3)
+            else if constexpr (Traits::mydim == 3)
                 C = LinearElasticMaterialTangent3D(emod_, nu_);
             return C;
         };
@@ -197,21 +197,18 @@ namespace Ikarus {
       const int order   = 2 * (fe.localBasis().order());
       const auto& rule  = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
       Eigen::MatrixXd C;
-      int epsilonSize;
-      if (Traits::mydim==2) {
+      if constexpr (Traits::mydim==2) {
           C = planeStressLinearElasticMaterialTangent(emod_, nu_);
-          epsilonSize = 3;
       }
-      if (Traits::mydim==3) {
+      else if constexpr (Traits::mydim==3) {
           C = LinearElasticMaterialTangent3D(emod_, nu_);
-          epsilonSize = 6;
       }
       const auto geo = localView_.element().geometry();
       Ikarus::StandardLocalFunction uFunction(localBasis, disp);
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
         const auto Jinv = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
         const double intElement = geo.integrationElement(gp.position()) * gp.weight();
-        if (Traits::mydim==2){
+        if constexpr (Traits::mydim==2){
         for (size_t i = 0; i < fe.size(); ++i) {
           const auto dHdCi
               = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll,coeff(i)), transformWith(Jinv));
@@ -230,7 +227,7 @@ namespace Ikarus {
             }
           }
         }
-          if (Traits::mydim==3){
+          else if constexpr (Traits::mydim==3){
               for (size_t i = 0; i < fe.size(); ++i) {
                   const auto dHdCi
                           = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll,coeff(i)), transformWith(Jinv));

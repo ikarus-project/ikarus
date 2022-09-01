@@ -26,6 +26,8 @@
 #include <ikarus/utils/eigenDuneTransformations.hh>
 #include <ikarus/localFunctions/meta.hh>
 
+/// Search for "*****" to identify locations to add a new EAS formulation
+
 namespace Ikarus{
 
   static constexpr int maxEASParameter3d = 21;
@@ -43,7 +45,7 @@ namespace Ikarus{
   template<typename Geometry>
   Eigen::Matrix3d calcTransformationMatrix2D(const Geometry& geometry){
 
-    const auto quadPos0 = geometry.type().template geometry<0>(0).center();
+    const auto quadPos0 = geometry.local(geometry.center());
 
     const auto jacobianinvT0 = toEigenMatrix(geometry.jacobianInverseTransposed(quadPos0)); //J^{-1}.Transpose() in Dune = J^{-1}
     const auto detJ0 = geometry.integrationElement(quadPos0); //determinant(J)
@@ -63,9 +65,9 @@ namespace Ikarus{
   }
 
     template<typename Geometry>
-    Eigen::Matrix3d calcTransformationMatrix3D(const Geometry& geometry){
+    Eigen::Matrix<double,6,6> calcTransformationMatrix3D(const Geometry& geometry){
 
-        const auto quadPos0 = geometry.type().template geometry<0>(0).center();
+        const auto quadPos0 = geometry.local(geometry.center());
 
         const auto jacobianinvT0 = toEigenMatrix(geometry.jacobianInverseTransposed(quadPos0)); //J^{-1}.Transpose() in Dune = J^{-1}
         const auto detJ0 = geometry.integrationElement(quadPos0); //determinant(J)
@@ -278,6 +280,35 @@ namespace Ikarus{
         Eigen::Matrix<double,6,6> T0InverseTransformed;
     };
 
+    /// ***** For a new EAS formulation, add a struct here *****
+/*    template<typename Geometry>
+    struct EASXnEn
+    {
+        static constexpr int strainSize = n;
+        static constexpr int enhancedStrainSize = n;
+
+        EASHnEn() = default;
+        EASHnEn(const Geometry& geometry)
+                : geometry{std::make_unique<Geometry>(geometry)}
+                ,T0InverseTransformed{calcTransformationMatrixnD(geometry)}
+        {}
+
+        auto calcM(const Dune::FieldVector<double,n>& quadPos) const
+        {
+            Eigen::Matrix<double,strainSize,enhancedStrainSize> M;
+            M.setZero();
+
+            // fill M
+
+            const double detJ = geometry->integrationElement(quadPos);
+            M = T0InverseTransformed/detJ * M ;
+            return M;
+        }
+        std::unique_ptr<Geometry> geometry;
+        Eigen::Matrix<double,n,n> T0InverseTransformed;
+    };*/
+
+  /// ***** For a new EAS formulation, add the new struct here to the corresponding EASnDVariant *****
   /// 2D - Q1 (4-node) , 3D - H1 (8-node) variants
   template<typename Geometry>
   using EAS2DVariant = std::variant<EASQ1E4<Geometry>,EASQ1E5<Geometry>,EASQ1E7<Geometry>>;
@@ -353,47 +384,48 @@ class EnhancedAssumedStrains : public DisplacementBasedElement {
       h-= L.transpose()*D.inverse()*L; //exploit symmetry
     }
 
-void setEASType(int numberOfEASParameters)
-    {
-  enhancedStrainSize=numberOfEASParameters;
-  D.setZero(enhancedStrainSize,enhancedStrainSize);
+    /// ***** For a new EAS formulation, add a new switch case here *****
 
-  if constexpr (Traits::mydim == 2) {
-      switch (numberOfEASParameters) {
-          case 0:
-              onlyDisplacementBase = true;
-              break;
-          case 4:
-              easVariant = EASQ1E4(DisplacementBasedElement::getLocalView().element().geometry());
-              break;
-          case 5:
-              easVariant = EASQ1E5(DisplacementBasedElement::getLocalView().element().geometry());
-              break;
-          case 7:
-              easVariant = EASQ1E7(DisplacementBasedElement::getLocalView().element().geometry());
-              break;
-          default:
-              DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available.");
-              break;
+    void setEASType(int numberOfEASParameters){
+      enhancedStrainSize=numberOfEASParameters;
+      D.setZero(enhancedStrainSize,enhancedStrainSize);
+
+      if constexpr (Traits::mydim == 2) {
+          switch (numberOfEASParameters) {
+              case 0:
+                  onlyDisplacementBase = true;
+                  break;
+              case 4:
+                  easVariant = EASQ1E4(DisplacementBasedElement::getLocalView().element().geometry());
+                  break;
+              case 5:
+                  easVariant = EASQ1E5(DisplacementBasedElement::getLocalView().element().geometry());
+                  break;
+              case 7:
+                  easVariant = EASQ1E7(DisplacementBasedElement::getLocalView().element().geometry());
+                  break;
+              default:
+                  DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available for the 2D case.");
+                  break;
+          }
       }
-  }
-    else if constexpr (Traits::mydim == 3) {
-        switch (numberOfEASParameters) {
-            case 0:
-                onlyDisplacementBase = true;
-                break;
-            case 9:
-                easVariant = EASH1E9(DisplacementBasedElement::getLocalView().element().geometry());
-                break;
-            case 21:
-                easVariant = EASH1E21(DisplacementBasedElement::getLocalView().element().geometry());
-                break;
-            default:
-                DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available.");
-                break;
+        else if constexpr (Traits::mydim == 3) {
+            switch (numberOfEASParameters) {
+                case 0:
+                    onlyDisplacementBase = true;
+                    break;
+                case 9:
+                    easVariant = EASH1E9(DisplacementBasedElement::getLocalView().element().geometry());
+                    break;
+                case 21:
+                    easVariant = EASH1E21(DisplacementBasedElement::getLocalView().element().geometry());
+                    break;
+                default:
+                    DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available for the 3D case.");
+                    break;
+            }
         }
     }
-}
 
 private:
   using EAS2DVariantImpl = EAS2DVariant<typename LocalView::Element::Geometry>;
