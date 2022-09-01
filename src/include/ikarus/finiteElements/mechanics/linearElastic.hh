@@ -173,20 +173,13 @@ namespace Ikarus {
     }
 
     void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& h) const {
-      const auto& d      = par.getSolution(Ikarus::FESolutions::displacement);
+      const auto eps = getStrainFunction(par);
       const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
       using namespace DerivativeDirections;
 
       auto& first_child = localView_.tree().child(0);
       const auto& fe    = first_child.finiteElement();
-      Dune::BlockVector<Ikarus::RealTuple<double, Traits::dimension>> disp(fe.size());
 
-      for (auto i = 0U; i < fe.size(); ++i)
-        for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
-          disp[i][k2] = d[localView_.index(localView_.tree().child(k2).localIndex(i))[0]];
-
-      const int order  = 2 * (fe.localBasis().order());
-      const auto& rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
       Eigen::MatrixXd C;
       if constexpr (Traits::mydim == 2) {
         C = planeStressLinearElasticMaterialTangent(emod_, nu_);
@@ -194,16 +187,15 @@ namespace Ikarus {
         C = LinearElasticMaterialTangent3D(emod_, nu_);
       }
       const auto geo = localView_.element().geometry();
-      Ikarus::StandardLocalFunction uFunction(localBasis, disp);
-      auto eps = linearStrains(uFunction);
-      for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
+
+      for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
         const auto Jinv         = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
         const double intElement = geo.integrationElement(gp.position()) * gp.weight();
         for (size_t i = 0; i < fe.size(); ++i) {
           const auto bopI = eps.evaluateDerivative(gpIndex, wrt(coeff(i)), transformWith(Jinv));
 
           for (size_t j = 0; j < fe.size(); ++j) {
-            const auto bopJ = uFunction.evaluateDerivative(gpIndex, wrt(coeff(j)), transformWith(Jinv));
+            const auto bopJ = eps.evaluateDerivative(gpIndex, wrt(coeff(j)), transformWith(Jinv));
             h.template block<Traits::mydim, Traits::mydim>(i * Traits::mydim, j * Traits::mydim)
                 += bopI.transpose() * C * bopJ * intElement;
           }
