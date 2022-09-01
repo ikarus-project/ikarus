@@ -4,6 +4,7 @@
 #include <config.h>
 
 #include <vector>
+#include <chrono>
 
 #include <dune/common/parametertreeparser.hh>
 #include <dune/fufem/boundarypatch.hh>
@@ -240,6 +241,7 @@ private:
 //}
 
 int main(int argc, char** argv) {
+  auto start = std::chrono::high_resolution_clock::now();
   Dune::MPIHelper::instance(argc, argv);
   constexpr int gridDim     = 2;
   double lambdaLoad         = 1;
@@ -281,8 +283,8 @@ int main(int argc, char** argv) {
     if (std::abs(intersection.geometry().center()[0]) < 1e-8) dirichletFlags[localView.index(localIndex)[0]] = true;
   });
 
-  std::vector<Q1LinearElasticAD<decltype(basis)>> fesAD;  // from Automatic differentiation
-  //  std::vector<Ikarus::LinearElastic<decltype(basis)>> fes;
+//  std::vector<Q1LinearElasticAD<decltype(basis)>> fesAD;  // from Automatic differentiation
+//    std::vector<Ikarus::LinearElastic<decltype(basis)>> fes;
   std::vector<Ikarus::EnhancedAssumedStrains<Ikarus::LinearElastic<decltype(basis)>>> fes;
 
   /// function for volume load- here: returns zero
@@ -324,13 +326,13 @@ int main(int argc, char** argv) {
 
   for (auto& element : elements(gridView)) {
     auto localView = basis.localView();
-    fesAD.emplace_back(basis, element, E, nu, &neumannBoundary, neumannBoundaryLoad, volumeLoad);
+//    fesAD.emplace_back(basis, element, E, nu, &neumannBoundary, neumannBoundaryLoad, volumeLoad);
     fes.emplace_back(basis, element, E, nu, &neumannBoundary, neumannBoundaryLoad, volumeLoad);
     fes.back().setEASType(numberOfEASParameters);
   }
 
   auto sparseAssembler   = SparseFlatAssembler(basis, fes, dirichletFlags);
-  auto sparseAssemblerAD = SparseFlatAssembler(basis, fesAD, dirichletFlags);
+//  auto sparseAssemblerAD = SparseFlatAssembler(basis, fesAD, dirichletFlags);
 
   auto KFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
     Ikarus::FErequirements req = FErequirementsBuilder()
@@ -341,14 +343,14 @@ int main(int argc, char** argv) {
     return sparseAssembler.getMatrix(req);
   };
 
-  auto KFunctionAD = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
-    Ikarus::FErequirements req = FErequirementsBuilder()
-                                     .insertGlobalSolution(Ikarus::FESolutions::displacement, disp)
-                                     .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
-                                     .addAffordance(Ikarus::MatrixAffordances::stiffness)
-                                     .build();
-    return sparseAssemblerAD.getMatrix(req);
-  };
+//  auto KFunctionAD = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
+//    Ikarus::FErequirements req = FErequirementsBuilder()
+//                                     .insertGlobalSolution(Ikarus::FESolutions::displacement, disp)
+//                                     .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+//                                     .addAffordance(Ikarus::MatrixAffordances::stiffness)
+//                                     .build();
+//    return sparseAssemblerAD.getMatrix(req);
+//  };
 
   auto residualFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
     Ikarus::FErequirements req = FErequirementsBuilder()
@@ -359,14 +361,14 @@ int main(int argc, char** argv) {
     return sparseAssembler.getVector(req);
   };
 
-  auto residualFunctionAD = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
-    Ikarus::FErequirements req = FErequirementsBuilder()
-                                     .insertGlobalSolution(Ikarus::FESolutions::displacement, disp)
-                                     .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
-                                     .addAffordance(Ikarus::VectorAffordances::forces)
-                                     .build();
-    return sparseAssemblerAD.getVector(req);
-  };
+//  auto residualFunctionAD = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
+//    Ikarus::FErequirements req = FErequirementsBuilder()
+//                                     .insertGlobalSolution(Ikarus::FESolutions::displacement, disp)
+//                                     .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
+//                                     .addAffordance(Ikarus::VectorAffordances::forces)
+//                                     .build();
+//    return sparseAssemblerAD.getVector(req);
+//  };
 
   auto energyFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
     Ikarus::FErequirements req = FErequirementsBuilder()
@@ -380,11 +382,11 @@ int main(int argc, char** argv) {
   Eigen::VectorXd D_Glob = Eigen::VectorXd::Zero(basis.size());
 
   /// Checking the external force vector and stiffness matrix from Automatic Differentiation and B^TCB
-  if (residualFunctionAD(D_Glob, lambdaLoad).isApprox(residualFunction(D_Glob, lambdaLoad)))
-    std::cout << "Coinciding external forces :)" << std::endl;
-
-  if (KFunctionAD(D_Glob, lambdaLoad).isApprox(KFunction(D_Glob, lambdaLoad)))
-    std::cout << "Coinciding stiffness :)" << std::endl;
+//  if (residualFunctionAD(D_Glob, lambdaLoad).isApprox(residualFunction(D_Glob, lambdaLoad)))
+//    std::cout << "Coinciding external forces :)" << std::endl;
+//
+//  if (KFunctionAD(D_Glob, lambdaLoad).isApprox(KFunction(D_Glob, lambdaLoad)))
+//    std::cout << "Coinciding stiffness :)" << std::endl;
 
   auto nonLinOp
       = Ikarus::NonLinearOperator(linearAlgebraFunctions(residualFunction, KFunction), parameter(D_Glob, lambdaLoad));
@@ -393,13 +395,18 @@ int main(int argc, char** argv) {
   const auto Fext = nonLinOp.value();
 
   /// solve the linear system
-  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_SimplicialLDLT);
+  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_CholmodSupernodalLLT);
   linSolver.compute(K);
   linSolver.solve(D_Glob, -Fext);
+
+//  std::cout<<"Energy: "<<energyFunction(D_Glob, lambdaLoad)<<std::endl;
 
   /// Postprocess
   auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis, D_Glob);
   Dune::VTKWriter vtkWriter(gridView, Dune::VTK::conforming);
   vtkWriter.addVertexData(disp, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
   vtkWriter.write("Cook_Membrane");
+  auto stop = std::chrono::high_resolution_clock::now();
+  auto duration = duration_cast<std::chrono::milliseconds>(stop - start);
+  spdlog::info("The total execution took {} milliseconds",duration.count());
 }

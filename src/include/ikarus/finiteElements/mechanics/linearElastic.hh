@@ -1,25 +1,21 @@
-
-// /*
-//  *  This file is part of the Ikarus distribution (https://github.com/rath3t/Ikarus).
-//  *  Copyright (c) 2021 Alexander Müller.
-//  *  Institut fuer Baustatik und Baudynamik
-//  *  Universität Stuttgart
-//  *
-//  *  This library is free software; you can redistribute it and/or
-//  *   modify it under the terms of the GNU Lesser General Public
-//  *   License as published by the Free Software Foundation; either
-//  *   version 2.1 of the License, or (at your option) any later version.
-//
-// *   This library is distributed in the hope that it will be useful,
-// *   but WITHOUT ANY WARRANTY; without even the implied warranty of
-// *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// *   Lesser General Public License for more details.
-//
-// *   You should have received a copy of the GNU Lesser General Public
-// *   License along with this library; if not, write to the Free Software
-// *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
-// *  USA
-// *
+/*
+* This file is part of the Ikarus distribution (https://github.com/IkarusRepo/Ikarus).
+* Copyright (c) 2022. The Ikarus developers.
+*
+* This library is free software; you can redistribute it and/or
+*  modify it under the terms of the GNU Lesser General Public
+*  License as published by the Free Software Foundation; either
+*  version 2.1 of the License, or (at your option) any later version.
+*
+* This library is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+* Lesser General Public License for more details.
+*
+* You should have received a copy of the GNU Lesser General Public
+* License along with this library; if not, write to the Free Software
+* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
+*/
 
 #pragma once
 #include "src/include/ikarus/finiteElements/feTraits.hh"
@@ -69,6 +65,9 @@ namespace Ikarus {
           emod_{emod},
           nu_{nu} {
       localView_.bind(element);
+      auto& first_child = localView_.tree().child(0);
+      const auto& fe    = first_child.finiteElement();
+      numberOfNodes=fe.size();
       const int order = 2 * (localView_.tree().child(0).finiteElement().localBasis().order());
       localBasis      = Ikarus::LocalBasis(localView_.tree().child(0).finiteElement().localBasis());
       localBasis.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order),
@@ -77,69 +76,69 @@ namespace Ikarus {
 
     using Traits = TraitsFromLocalView<LocalView>;
 
+    static constexpr int mydim = Traits::mydim;
+    static constexpr int strainSize = mydim == 1 ? 1 : (mydim == 2 ? 3 : 6);
+
   public:
     const auto& getLocalView() const { return localView_; }
+
+    auto getDisplacementFunction(const FERequirementType& par) const {
+      const auto& d = par.getSolution(Ikarus::FESolutions::displacement);
+
+      Dune::BlockVector<Ikarus::RealTuple<double, Traits::dimension>> disp(numberOfNodes);
+
+      for (auto i = 0U; i < numberOfNodes; ++i)
+        for (auto k2 = 0U; k2 < mydim; ++k2)
+          disp[i][k2] = d[localView_.index(localView_.tree().child(k2).localIndex(i))[0]];
+
+      Ikarus::StandardLocalFunction uFunction(localBasis, disp);
+
+      return uFunction.clone();
+    }
 
     auto getStrainFunction(const FERequirementType& par) const {
       const auto& d = par.getSolution(Ikarus::FESolutions::displacement);
 
-      auto& first_child = localView_.tree().child(0);
-      const auto& fe    = first_child.finiteElement();
-      Dune::BlockVector<Ikarus::RealTuple<double, Traits::dimension>> disp(fe.size());
+      Dune::BlockVector<Ikarus::RealTuple<double, Traits::dimension>> disp(numberOfNodes);
 
-      for (auto i = 0U; i < fe.size(); ++i)
-        for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
+      for (auto i = 0U; i < numberOfNodes; ++i)
+        for (auto k2 = 0U; k2 < mydim; ++k2)
           disp[i][k2] = d[localView_.index(localView_.tree().child(k2).localIndex(i))[0]];
 
-      Eigen::MatrixXd C;
-      if (Traits::mydim == 2) C = planeStressLinearElasticMaterialTangent(emod_, nu_);
-      if (Traits::mydim == 3) C = LinearElasticMaterialTangent3D(emod_, nu_);
       Ikarus::StandardLocalFunction uFunction(localBasis, disp);
 
       return linearStrains(uFunction.clone());
     }
 
+    auto getMaterialTangent() const {
+        if constexpr (mydim == 2)
+          return planeStressLinearElasticMaterialTangent(emod_, nu_);
+        else if constexpr (mydim == 3)
+          return LinearElasticMaterialTangent3D(emod_, nu_);
+    }
+
     auto getMaterialTangentFunction(const FERequirementType& par) const {
       return [&](auto gp) {
-        Eigen::MatrixXd C;
-        if constexpr (Traits::mydim == 2)
-          C = planeStressLinearElasticMaterialTangent(emod_, nu_);
-        else if constexpr (Traits::mydim == 3)
-          C = LinearElasticMaterialTangent3D(emod_, nu_);
-        return C;
+        return getMaterialTangent();
       };
     }
 
     double calculateScalar(const FERequirementType& par) const {
-      const auto& d      = par.getSolution(Ikarus::FESolutions::displacement);
+      const auto u = getDisplacementFunction(par);
+      const auto eps = getStrainFunction(par);
       const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
 
-      auto& first_child = localView_.tree().child(0);
-      const auto& fe    = first_child.finiteElement();
-      Dune::BlockVector<Ikarus::RealTuple<double, Traits::dimension>> disp(fe.size());
+      const auto C = getMaterialTangent();
 
-      for (auto i = 0U; i < fe.size(); ++i)
-        for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
-          disp[i][k2] = d[localView_.index(localView_.tree().child(k2).localIndex(i))[0]];
-
-      double energy    = 0.0;
-      const int order  = 2 * (fe.localBasis().order());
-      const auto& rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
-      Eigen::MatrixXd C;
-      if (Traits::mydim == 2) C = planeStressLinearElasticMaterialTangent(emod_, nu_);
-      if (Traits::mydim == 3) C = LinearElasticMaterialTangent3D(emod_, nu_);
       const auto geo = localView_.element().geometry();
-      Ikarus::StandardLocalFunction uFunction(localBasis, disp);
-      for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
+      double energy    = 0.0;
+      for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
         const auto Jinv = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
-        const auto u    = uFunction.evaluateFunction(gpIndex);
-        const auto H
-            = uFunction.evaluateDerivative(gpIndex, wrt(DerivativeDirections::spatialAll), transformWith(Jinv));
-        const auto E      = (0.5 * (H.transpose() + H)).eval();
-        const auto EVoigt = toVoigt(E);
+        const auto EVoigt = eps.evaluateFunction(gpIndex, transformWith(Jinv));
 
+        const auto uVal = u.evaluateFunction(gpIndex);
         Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(toEigenVector(gp.position()), lambda);
-        energy += (0.5 * EVoigt.dot(C * EVoigt) - u.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
+        energy += (0.5 * EVoigt.dot(C * EVoigt) - uVal.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
       }
 
       // line or surface loads, i.e. neumann boundary
@@ -149,23 +148,23 @@ namespace Ikarus {
       for (auto&& intersection : intersections(neumannBoundary_->gridView(), element)) {
         if (not neumannBoundary_ or not neumannBoundary_->contains(intersection)) continue;
 
-        const auto& quadLine = Dune::QuadratureRules<double, Traits::mydim - 1>::rule(intersection.type(), order);
+        const auto& quadLine = Dune::QuadratureRules<double, mydim - 1>::rule(intersection.type(), u.order());
 
         for (const auto& curQuad : quadLine) {
           // Local position of the quadrature point
-          const Dune::FieldVector<double, Traits::mydim>& quadPos
+          const Dune::FieldVector<double, mydim>& quadPos
               = intersection.geometryInInside().global(curQuad.position());
 
           const double integrationElement = intersection.geometry().integrationElement(curQuad.position());
 
           // The value of the local function
-          const auto u = uFunction.evaluateFunction(quadPos);
+          const auto uVal = u.evaluateFunction(quadPos);
 
           // Value of the Neumann data at the current position
           auto neumannValue
               = neumannBoundaryLoad_(toEigenVector(intersection.geometry().global(curQuad.position())), lambda);
 
-          energy -= neumannValue.dot(u) * curQuad.weight() * integrationElement;
+          energy -= neumannValue.dot(uVal) * curQuad.weight() * integrationElement;
         }
       }
 
@@ -177,26 +176,17 @@ namespace Ikarus {
       const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
       using namespace DerivativeDirections;
 
-      auto& first_child = localView_.tree().child(0);
-      const auto& fe    = first_child.finiteElement();
-
-      Eigen::MatrixXd C;
-      if constexpr (Traits::mydim == 2) {
-        C = planeStressLinearElasticMaterialTangent(emod_, nu_);
-      } else if constexpr (Traits::mydim == 3) {
-        C = LinearElasticMaterialTangent3D(emod_, nu_);
-      }
+      const auto C = getMaterialTangent();
       const auto geo = localView_.element().geometry();
 
       for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
         const auto Jinv         = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
         const double intElement = geo.integrationElement(gp.position()) * gp.weight();
-        for (size_t i = 0; i < fe.size(); ++i) {
+        for (size_t i = 0; i < numberOfNodes; ++i) {
           const auto bopI = eps.evaluateDerivative(gpIndex, wrt(coeff(i)), transformWith(Jinv));
-
-          for (size_t j = 0; j < fe.size(); ++j) {
+          for (size_t j = 0; j < numberOfNodes; ++j) {
             const auto bopJ = eps.evaluateDerivative(gpIndex, wrt(coeff(j)), transformWith(Jinv));
-            h.template block<Traits::mydim, Traits::mydim>(i * Traits::mydim, j * Traits::mydim)
+            h.template block<mydim, mydim>(i * mydim, j * mydim)
                 += bopI.transpose() * C * bopJ * intElement;
           }
         }
@@ -204,31 +194,16 @@ namespace Ikarus {
     }
 
     void calculateVector(const FERequirementType& par, typename Traits::VectorType& g) const {
-      const auto& d      = par.getSolution(Ikarus::FESolutions::displacement);
       const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
       using namespace DerivativeDirections;
 
-      auto& first_child = localView_.tree().child(0);
-      const auto& fe    = first_child.finiteElement();
-      Dune::BlockVector<Ikarus::RealTuple<double, Traits::dimension>> disp(fe.size());
-
-      for (auto i = 0U; i < fe.size(); ++i)
-        for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
-          disp[i][k2] = d[localView_.index(localView_.tree().child(k2).localIndex(i))[0]];
-
-      const int order  = 2 * (fe.localBasis().order());
-      const auto& rule = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
       const auto geo   = localView_.element().geometry();
-      Ikarus::StandardLocalFunction uFunction(localBasis, disp);
-      for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
-        const auto Jinv = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
-        const auto u    = uFunction.evaluateFunction(gpIndex);
+       const auto u = getDisplacementFunction(par);
+      for (const auto& [gpIndex, gp] : u.viewOverIntegrationPoints()) {
         Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(toEigenVector(gp.position()), lambda);
-        for (size_t i = 0; i < fe.size(); ++i) {
-          //          const auto gradUdCi =uFunction.evaluateDerivative(gpIndex, wrt(spatialAll,coeff(i)),
-          //          transformWith(Jinv));
-          const auto udCi = uFunction.evaluateDerivative(gpIndex, wrt(coeff(i)));
-          g.template segment<Traits::mydim>(Traits::mydim * i)
+        for (size_t i = 0; i < numberOfNodes; ++i) {
+          const auto udCi = u.evaluateDerivative(gpIndex, wrt(coeff(i)));
+          g.template segment<mydim>(mydim * i)
               -= udCi * fext * geo.integrationElement(gp.position()) * gp.weight();
         }
       }
@@ -240,23 +215,23 @@ namespace Ikarus {
       for (auto&& intersection : intersections(neumannBoundary_->gridView(), element)) {
         if (not neumannBoundary_ or not neumannBoundary_->contains(intersection)) continue;
 
-        const auto& quadLine = Dune::QuadratureRules<double, Traits::mydim - 1>::rule(intersection.type(), order);
+        const auto& quadLine = Dune::QuadratureRules<double, mydim - 1>::rule(intersection.type(), u.order());
 
         for (const auto& curQuad : quadLine) {
           // Local position of the quadrature point
-          const Dune::FieldVector<double, Traits::mydim>& quadPos
+          const Dune::FieldVector<double, mydim>& quadPos
               = intersection.geometryInInside().global(curQuad.position());
 
           const double integrationElement = intersection.geometry().integrationElement(curQuad.position());
 
           // The value of the local function wrt the i-th coef
-          for (size_t i = 0; i < fe.size(); ++i) {
-            const auto udCi = uFunction.evaluateDerivative(quadPos, wrt(coeff(i)));
+          for (size_t i = 0; i < numberOfNodes; ++i) {
+            const auto udCi = u.evaluateDerivative(quadPos, wrt(coeff(i)));
 
             // Value of the Neumann data at the current position
             auto neumannValue
                 = neumannBoundaryLoad_(toEigenVector(intersection.geometry().global(curQuad.position())), lambda);
-            g.template segment<Traits::mydim>(Traits::mydim * i)
+            g.template segment<mydim>(mydim * i)
                 -= udCi * neumannValue * curQuad.weight() * integrationElement;
           }
         }
@@ -277,6 +252,7 @@ namespace Ikarus {
     const BoundaryPatch<GridView>* neumannBoundary_;
     double emod_;
     double nu_;
+    size_t numberOfNodes{0};
   };
 
 }  // namespace Ikarus
