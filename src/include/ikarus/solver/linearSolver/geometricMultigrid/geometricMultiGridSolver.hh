@@ -9,6 +9,7 @@
 #include "src/include/ikarus/solver/linearSolver/linearSolver.hh"
 
 #include <utility>
+#include <iostream>
 
 #include <dune/functions/functionspacebases/boundarydofs.hh>
 
@@ -64,7 +65,7 @@ namespace Ikarus {
       }
 
       transfer.createOperators(preBasisFactory);
-      iterativeSolver.setMaxIterations(10000);
+      iterativeSolver.setMaxIterations(5);
     }
 
     mutable Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower | Eigen::Upper> iterativeSolver;
@@ -133,28 +134,39 @@ namespace Ikarus {
       auto& KfineRed = assemblers[finestLevel].getReducedMatrix(requirementType);
       iterativeSolver.compute(KfineRed);
       assemblers[finestLevel].createReducedVector(dFineFull, dFineRed);
-      // Pre-Smoothing
-      smoothing(dFineFull, RfineRed, dFineRed);
 
-      Eigen::VectorXd residualMGFineRed = RfineRed - KfineRed * dFineRed;
-      Eigen::VectorXd residualMGFineFull;
-      assemblers[finestLevel].createFullVector(residualMGFineRed, residualMGFineFull);
-      Eigen::VectorXd residualMGCoarseFull;
-      transfer.restrictTo(finestLevel-1, residualMGFineFull, residualMGCoarseFull);
-      Eigen::VectorXd residualMGCoarseRed;
-      assemblers[finestLevel-1].createReducedVector(residualMGCoarseFull, residualMGCoarseRed);
+      Eigen::VectorXd eFineFull,residualMGFineRed,residualMGFineFull,residualMGCoarseFull,eCoarseRed,residualMGCoarseRed,eCoarseFull;
+      eFineFull.resizeLike(dFineFull);
+      eFineFull.setZero();
+      eFineFull[0]=1;
+      int iter = 0;
+      int maxIterations = 1000;
+      std::cout<<eFineFull.norm()<<std::endl;
+      while (eFineFull.norm()>1e-12) {
+        smoothing(dFineFull, RfineRed, dFineRed);// Pre-Smoothing
 
-      Eigen::VectorXd eCoarseRed;
-      directSolver.solve(eCoarseRed, residualMGCoarseRed);
-      Eigen::VectorXd eCoarseFull;
-      assemblers[finestLevel-1].createFullVector(eCoarseRed, eCoarseFull);
-      Eigen::VectorXd eFineFull;
-      transfer.prolongateFrom(finestLevel-1, eCoarseFull, eFineFull);
+        residualMGFineRed = RfineRed - KfineRed * dFineRed;
 
-      dFineFull += eFineFull;
-      assemblers[finestLevel].createReducedVector(dFineFull, dFineRed);
-      // Post smoothing
-      smoothing(dFineFull, RfineRed, dFineRed);
+        assemblers[finestLevel].createFullVector(residualMGFineRed, residualMGFineFull);
+
+        transfer.restrictTo(finestLevel - 1, residualMGFineFull, residualMGCoarseFull);
+        assemblers[finestLevel - 1].createReducedVector(residualMGCoarseFull, residualMGCoarseRed);
+
+        directSolver.solve(eCoarseRed, residualMGCoarseRed);
+        assemblers[finestLevel - 1].createFullVector(eCoarseRed, eCoarseFull);
+
+        transfer.prolongateFrom(finestLevel - 1, eCoarseFull, eFineFull);
+
+        std::cout<<"Residual Fine Red: {}"<<residualMGFineRed.norm()<<std::endl;
+        std::cout<<"Coarse Error: {}"<<eCoarseFull.norm()<<std::endl;
+        std::cout<<"Fine Error: {}"<<eFineFull.norm()<<std::endl;
+        dFineFull += eFineFull;
+        assemblers[finestLevel].createReducedVector(dFineFull, dFineRed);
+
+        smoothing(dFineFull, RfineRed, dFineRed);     // Post smoothing
+
+        ++iter;
+      }
     }
   };
 }  // namespace Ikarus
