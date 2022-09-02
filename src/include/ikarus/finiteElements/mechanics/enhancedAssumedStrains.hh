@@ -38,7 +38,8 @@ namespace Ikarus {
 
   template <typename Geometry>
   Eigen::Matrix3d calcTransformationMatrix2D(const Geometry& geometry) {
-    const auto quadPos0 = geometry.local(geometry.center());
+    const auto& referenceElement = Dune::ReferenceElements<double,2>::general(geometry.type());
+    const auto quadPos0 = referenceElement.position(0,0);
 
     const auto jacobianinvT0
         = toEigenMatrix(geometry.jacobianInverseTransposed(quadPos0));  // J^{-1}.Transpose() in Dune = J^{-1}
@@ -59,7 +60,8 @@ namespace Ikarus {
 
   template <typename Geometry>
   Eigen::Matrix<double, 6, 6> calcTransformationMatrix3D(const Geometry& geometry) {
-    const auto quadPos0 = geometry.local(geometry.center());
+    const auto& referenceElement = Dune::ReferenceElements<double,3>::general(geometry.type());
+    const auto quadPos0 = referenceElement.position(0,0);
 
     const auto jacobianinvT0
         = toEigenMatrix(geometry.jacobianInverseTransposed(quadPos0));  // J^{-1}.Transpose() in Dune = J^{-1}
@@ -93,7 +95,7 @@ namespace Ikarus {
     static constexpr int enhancedStrainSize = 4;
 
     EASQ1E4() = default;
-    EASQ1E4(const Geometry& geometry)
+    explicit EASQ1E4(const Geometry& geometry)
         : geometry{std::make_unique<Geometry>(geometry)}, T0InverseTransformed{calcTransformationMatrix2D(geometry)} {}
 
     auto calcM(const Dune::FieldVector<double, 2>& quadPos) const {
@@ -120,7 +122,7 @@ namespace Ikarus {
     static constexpr int enhancedStrainSize = 5;
 
     EASQ1E5() = default;
-    EASQ1E5(const Geometry& geometry)
+    explicit EASQ1E5(const Geometry& geometry)
         : geometry{std::make_unique<Geometry>(geometry)}, T0InverseTransformed{calcTransformationMatrix2D(geometry)} {}
 
     auto calcM(const Dune::FieldVector<double, 2>& quadPos) const {
@@ -148,7 +150,7 @@ namespace Ikarus {
     static constexpr int enhancedStrainSize = 7;
 
     EASQ1E7() = default;
-    EASQ1E7(const Geometry& geometry)
+    explicit EASQ1E7(const Geometry& geometry)
         : geometry{std::make_unique<Geometry>(geometry)}, T0InverseTransformed{calcTransformationMatrix2D(geometry)} {}
 
     auto calcM(const Dune::FieldVector<double, 2>& quadPos) const {
@@ -178,7 +180,7 @@ namespace Ikarus {
     static constexpr int enhancedStrainSize = 9;
 
     EASH1E9() = default;
-    EASH1E9(const Geometry& geometry)
+    explicit EASH1E9(const Geometry& geometry)
         : geometry{std::make_unique<Geometry>(geometry)}, T0InverseTransformed{calcTransformationMatrix3D(geometry)} {}
 
     auto calcM(const Dune::FieldVector<double, 3>& quadPos) const {
@@ -210,7 +212,7 @@ namespace Ikarus {
     static constexpr int enhancedStrainSize = 21;
 
     EASH1E21() = default;
-    EASH1E21(const Geometry& geometry)
+    explicit EASH1E21(const Geometry& geometry)
         : geometry{std::make_unique<Geometry>(geometry)}, T0InverseTransformed{calcTransformationMatrix3D(geometry)} {}
 
     auto calcM(const Dune::FieldVector<double, 3>& quadPos) const {
@@ -257,7 +259,7 @@ namespace Ikarus {
       struct EASXnEn
       {
           static constexpr int strainSize = n;
-          static constexpr int enhancedStrainSize = n;
+          static constexpr int enhancedStrainSize = m;
 
           EASHnEn() = default;
           EASHnEn(const Geometry& geometry)
@@ -294,14 +296,12 @@ namespace Ikarus {
     using LocalView         = typename DisplacementBasedElement::LocalView;
     using GridView          = typename DisplacementBasedElement::GridView;
     using Traits            = typename DisplacementBasedElement::Traits;
-    using GlobalIndex       = typename DisplacementBasedElement::GlobalIndex;
 
     template <typename Basis, typename VolumeLoad, typename NeumannBoundaryLoad>
     EnhancedAssumedStrains(Basis& globalBasis, const typename LocalView::Element& element, double emod, double nu,
                            const BoundaryPatch<GridView>* neumannBoundary,
                            const NeumannBoundaryLoad& neumannBoundaryLoad, const VolumeLoad& p_volumeLoad)
         : DisplacementBasedElement(globalBasis, element, emod, nu, neumannBoundary, neumannBoundaryLoad, p_volumeLoad) {
-
     }
 
     double calculateScalar(const FERequirementType& par) const {
@@ -319,7 +319,6 @@ namespace Ikarus {
       /// fill h with displacement-based stiffness.
       /// It is assumed to be assembled block-wise on element level.
       /// This means the displacements x,y,z of node I are grouped together.
-
       DisplacementBasedElement::calculateMatrix(par, h);
 
       if (onlyDisplacementBase) return;
