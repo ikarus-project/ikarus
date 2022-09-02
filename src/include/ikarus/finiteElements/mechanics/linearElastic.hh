@@ -68,6 +68,7 @@ namespace Ikarus {
       auto& first_child = localView_.tree().child(0);
       const auto& fe    = first_child.finiteElement();
       numberOfNodes=fe.size();
+      dispAtNodes.resize(fe.size());
       const int order = 2 * (localView_.tree().child(0).finiteElement().localBasis().order());
       localBasis      = Ikarus::LocalBasis(localView_.tree().child(0).finiteElement().localBasis());
       localBasis.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order),
@@ -85,29 +86,17 @@ namespace Ikarus {
     auto getDisplacementFunction(const FERequirementType& par) const {
       const auto& d = par.getSolution(Ikarus::FESolutions::displacement);
 
-      Dune::BlockVector<Ikarus::RealTuple<double, Traits::dimension>> disp(numberOfNodes);
-
-      for (auto i = 0U; i < numberOfNodes; ++i)
+      for (auto i = 0U; i < dispAtNodes.size(); ++i)
         for (auto k2 = 0U; k2 < mydim; ++k2)
-          disp[i][k2] = d[localView_.index(localView_.tree().child(k2).localIndex(i))[0]];
+          dispAtNodes[i][k2] = d[localView_.index(localView_.tree().child(k2).localIndex(i))[0]];
 
-      Ikarus::StandardLocalFunction uFunction(localBasis, disp);
+      Ikarus::StandardLocalFunction uFunction(localBasis, dispAtNodes);
 
-      return uFunction.clone();
+      return uFunction;
     }
 
     auto getStrainFunction(const FERequirementType& par) const {
-      const auto& d = par.getSolution(Ikarus::FESolutions::displacement);
-
-      Dune::BlockVector<Ikarus::RealTuple<double, Traits::dimension>> disp(numberOfNodes);
-
-      for (auto i = 0U; i < numberOfNodes; ++i)
-        for (auto k2 = 0U; k2 < mydim; ++k2)
-          disp[i][k2] = d[localView_.index(localView_.tree().child(k2).localIndex(i))[0]];
-
-      Ikarus::StandardLocalFunction uFunction(localBasis, disp);
-
-      return linearStrains(uFunction.clone());
+      return linearStrains(getDisplacementFunction(par));
     }
 
     auto getMaterialTangent() const {
@@ -250,6 +239,7 @@ namespace Ikarus {
                                                           const double&)>
         neumannBoundaryLoad_;
     const BoundaryPatch<GridView>* neumannBoundary_;
+    mutable Dune::BlockVector<Ikarus::RealTuple<double, Traits::dimension>> dispAtNodes;
     double emod_;
     double nu_;
     size_t numberOfNodes{0};

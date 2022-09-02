@@ -388,17 +388,24 @@ int main(int argc, char** argv) {
 //  if (KFunctionAD(D_Glob, lambdaLoad).isApprox(KFunction(D_Glob, lambdaLoad)))
 //    std::cout << "Coinciding stiffness :)" << std::endl;
 
+  auto startAssembly = std::chrono::high_resolution_clock::now();
   auto nonLinOp
       = Ikarus::NonLinearOperator(linearAlgebraFunctions(residualFunction, KFunction), parameter(D_Glob, lambdaLoad));
-
+  auto stopAssembly = std::chrono::high_resolution_clock::now();
+  auto durationAssembly = duration_cast<std::chrono::milliseconds>(stopAssembly - startAssembly);
+  spdlog::info("The assembly took {} milliseconds",durationAssembly.count());
   const auto& K   = nonLinOp.derivative();
   const auto Fext = nonLinOp.value();
 
   /// solve the linear system
   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_CholmodSupernodalLLT);
+  auto startSolver = std::chrono::high_resolution_clock::now();
+
   linSolver.compute(K);
   linSolver.solve(D_Glob, -Fext);
-
+  auto stopSolver = std::chrono::high_resolution_clock::now();
+  auto durationSolver = duration_cast<std::chrono::milliseconds>(stopSolver - startSolver);
+  spdlog::info("The solver took {} milliseconds",durationSolver.count());
 //  std::cout<<"Energy: "<<energyFunction(D_Glob, lambdaLoad)<<std::endl;
 
   /// Postprocess
