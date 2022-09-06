@@ -119,8 +119,7 @@ int main(int argc, char** argv) {
       Eigen::VectorXd dFull;
       solver.transformToFineFull(d,dFull);
 
-      if (dFull.size()!= fineBasis.size())
-        std::cout<<"DimensionError"<<std::endl;
+
 
       /// Postprocess
       auto disp
