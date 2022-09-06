@@ -66,10 +66,22 @@ int main(int argc, char** argv) {
 
   //  draw(gridView);
 
-  /// clamp left-hand side
+  /// fix left-hand side x-dir
   std::vector<bool> dirichletFlags(basis.size(), false);
-  forEachBoundaryDOF(basis, [&](auto&& localIndex, auto&& localView, auto&& intersection) {
+  forEachBoundaryDOF(subspaceBasis(basis,0), [&](auto&& localIndex, auto&& localView, auto&& intersection) {
     if (std::abs(intersection.geometry().center()[0]) < 1e-8) dirichletFlags[localView.index(localIndex)[0]] = true;
+  });
+
+  /// fix left-hand side y-dir
+  forEachBoundaryDOF(subspaceBasis(basis,1), [&](auto&& localIndex, auto&& localView, auto&& intersection) {
+    if (std::abs(intersection.geometry().center()[0]) < 1e-8) dirichletFlags[localView.index(localIndex)[0]] = true;
+  });
+
+  /// fix left-hand side z-dir line at back z=0
+  forEachBoundaryDOF(subspaceBasis(basis,2), [&](auto&& localIndex, auto&& localView, auto&& intersection) {
+    const auto intersectionCenter = intersection.geometry().center();
+    if (std::abs(intersectionCenter[0]) < 1e-8 and std::abs(intersectionCenter[2]) < 1e-8)
+      dirichletFlags[localView.index(localIndex)[0]] = true;
   });
 
   //  std::vector<Ikarus::LinearElastic<decltype(basis)>> fes;
