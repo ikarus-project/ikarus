@@ -4,6 +4,7 @@
 #include <config.h>
 
 #include <vector>
+#include <chrono>
 
 #include <dune/common/parametertreeparser.hh>
 #include <dune/fufem/boundarypatch.hh>
@@ -31,6 +32,8 @@ using namespace Ikarus;
 using namespace Dune::Indices;
 
 int main(int argc, char** argv) {
+  auto start = std::chrono::high_resolution_clock::now();
+
   Dune::MPIHelper::instance(argc, argv);
   constexpr int gridDim     = 3;
   double lambdaLoad         = 1;
@@ -77,10 +80,10 @@ int main(int argc, char** argv) {
     if (std::abs(intersection.geometry().center()[0]) < 1e-8) dirichletFlags[localView.index(localIndex)[0]] = true;
   });
 
-  /// fix left-hand side z-dir line at back z=0
+  /// fix z-dir line at back z=0
   forEachBoundaryDOF(subspaceBasis(basis,2), [&](auto&& localIndex, auto&& localView, auto&& intersection) {
     const auto intersectionCenter = intersection.geometry().center();
-    if (std::abs(intersectionCenter[0]) < 1e-8 and std::abs(intersectionCenter[2]) < 1e-8)
+    if ( std::abs(intersectionCenter[2]) < 1e-8)
       dirichletFlags[localView.index(localIndex)[0]] = true;
   });
 
@@ -149,19 +152,30 @@ int main(int argc, char** argv) {
 
   Eigen::VectorXd D_Glob = Eigen::VectorXd::Zero(basis.size());
 
+  auto startAssembly = std::chrono::high_resolution_clock::now();
   auto nonLinOp
       = Ikarus::NonLinearOperator(linearAlgebraFunctions(residualFunction, KFunction), parameter(D_Glob, lambdaLoad));
+  auto stopAssembly = std::chrono::high_resolution_clock::now();
+  auto durationAssembly = duration_cast<std::chrono::milliseconds>(stopAssembly - startAssembly);
+  spdlog::info("The assembly took {} milliseconds",durationAssembly.count());
   const auto& K   = nonLinOp.derivative();
-  const auto Fext = nonLinOp.value();
+  const auto& Fext = nonLinOp.value();
 
+  auto startSolver = std::chrono::high_resolution_clock::now();
   /// solve the linear system
-  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_SimplicialLDLT);
+  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_CholmodSupernodalLLT);
   linSolver.compute(K);
   linSolver.solve(D_Glob, -Fext);
+  auto stopSolver = std::chrono::high_resolution_clock::now();
+  auto durationSolver = duration_cast<std::chrono::milliseconds>(stopSolver - startSolver);
+  spdlog::info("The solver took {} milliseconds",durationSolver.count());
 
   /// Postprocess
   auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(basis, D_Glob);
   Dune::VTKWriter vtkWriter(gridView, Dune::VTK::conforming);
   vtkWriter.addVertexData(disp, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 3));
   vtkWriter.write("Cook_Membrane_3D");
+  auto stop = std::chrono::high_resolution_clock::now();
+  auto duration = duration_cast<std::chrono::milliseconds>(stop - start);
+  spdlog::info("The total execution took {} milliseconds",duration.count());
 }

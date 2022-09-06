@@ -395,7 +395,7 @@ int main(int argc, char** argv) {
   auto durationAssembly = duration_cast<std::chrono::milliseconds>(stopAssembly - startAssembly);
   spdlog::info("The assembly took {} milliseconds",durationAssembly.count());
   const auto& K   = nonLinOp.derivative();
-  const auto Fext = nonLinOp.value();
+  const auto& Fext = nonLinOp.value();
 
   /// solve the linear system
   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_CholmodSupernodalLLT);
