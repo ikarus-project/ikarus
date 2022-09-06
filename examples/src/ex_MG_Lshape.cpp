@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
 
     auto coarseBasis = makeBasis(grid->levelGridView(0),preBasisFactory);
     auto fineBasis = makeBasis(grid->leafGridView(),preBasisFactory);
-
+    spdlog::info("Dofs on finest level: {}",fineBasis.size());
       double lambdaLoad = 1;
 
         std::vector<Ikarus::NonLinearElasticityFE<decltype(coarseBasis)>> feVectorCoarse;
@@ -112,9 +112,8 @@ int main(int argc, char** argv) {
       Ikarus::GeometricMultiGridSolver solver(grid.get(),preBasisFactory,feVectorCoarse);
 
 
+
       Eigen::VectorXd d,FextFine;
-
-
       solver.solve(d,(-FextFine).eval());
       Eigen::VectorXd dFull;
       solver.transformToFineFull(d,dFull);
@@ -218,4 +217,5 @@ int main(int argc, char** argv) {
 //  lc.run();
 //  nonLinOp.update<0>();
 //  std::cout << "Energy after: " << nonLinOp.value() << std::endl;
+      spdlog::info("End");
 }

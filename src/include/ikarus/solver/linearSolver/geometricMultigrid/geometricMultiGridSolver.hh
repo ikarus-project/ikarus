@@ -65,10 +65,10 @@ namespace Ikarus {
       }
 
       transfer.createOperators(preBasisFactory);
-      iterativeSolver.setMaxIterations(5);
+      iterativeSolver.setMaxIterations(1);
     }
 
-    mutable Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower | Eigen::Upper> iterativeSolver;
+    mutable Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower | Eigen::Upper,Eigen::IdentityPreconditioner> iterativeSolver;
     Ikarus::GridTransfer<Grid> transfer;
     mutable ILinearSolver<double> directSolver;
     mutable RequirementType requirementType;
@@ -85,7 +85,7 @@ namespace Ikarus {
     void smoothing(const Eigen::VectorX<ScalarType>& dFineFull, const Eigen::VectorX<ScalarType>& RfineRed,
                    Eigen::VectorX<ScalarType>& dFineRed) const {
       assemblers[finestLevel].createReducedVector(dFineFull, dFineRed);
-      dFineRed = iterativeSolver.solve(RfineRed);
+      dFineRed = iterativeSolver.solveWithGuess(RfineRed,dFineRed);
     }
 
     void transformToFineFull(const Eigen::VectorX<double>& dFineRed,Eigen::VectorX<double>& dFineFull)
@@ -137,36 +137,49 @@ namespace Ikarus {
 
       Eigen::VectorXd eFineFull,residualMGFineRed,residualMGFineFull,residualMGCoarseFull,eCoarseRed,residualMGCoarseRed,eCoarseFull;
       eFineFull.resizeLike(dFineFull);
+      residualMGFineRed.resizeLike(dFineRed);
       eFineFull.setZero();
+      residualMGFineRed.setZero();
       eFineFull[0]=1;
+      residualMGFineRed[0]=1;
       int iter = 0;
       int maxIterations = 1000;
-      std::cout<<eFineFull.norm()<<std::endl;
-      while (eFineFull.norm()>1e-12) {
+      spdlog::info("iter ResidualNorm: CorrectionNorm");
+      while (residualMGFineRed.norm()>1e-12) {
         smoothing(dFineFull, RfineRed, dFineRed);// Pre-Smoothing
+//        std::cout<<"dFineRed: "<<dFineRed.transpose()<<std::endl;
 
         residualMGFineRed = RfineRed - KfineRed * dFineRed;
-
+//        std::cout<<"residualMGFineRed: "<<residualMGFineRed.transpose()<<std::endl;
         assemblers[finestLevel].createFullVector(residualMGFineRed, residualMGFineFull);
 
         transfer.restrictTo(finestLevel - 1, residualMGFineFull, residualMGCoarseFull);
+//        std::cout<<"residualMGFineFull: "<<residualMGFineFull.transpose()<<std::endl;
+//        std::cout<<"residualMGCoarseFull: "<<residualMGCoarseFull.transpose()<<std::endl;
         assemblers[finestLevel - 1].createReducedVector(residualMGCoarseFull, residualMGCoarseRed);
-
+//        std::cout<<"residualMGCoarseRed: "<<residualMGCoarseRed.transpose()<<std::endl;
         directSolver.solve(eCoarseRed, residualMGCoarseRed);
+//        std::cout<<"eCoarseRed: "<<eCoarseRed.transpose()<<std::endl;
         assemblers[finestLevel - 1].createFullVector(eCoarseRed, eCoarseFull);
 
         transfer.prolongateFrom(finestLevel - 1, eCoarseFull, eFineFull);
 
-        std::cout<<"Residual Fine Red: {}"<<residualMGFineRed.norm()<<std::endl;
-        std::cout<<"Coarse Error: {}"<<eCoarseFull.norm()<<std::endl;
-        std::cout<<"Fine Error: {}"<<eFineFull.norm()<<std::endl;
+        assemblers[finestLevel].createFullVector(dFineRed, dFineFull);
         dFineFull += eFineFull;
-        assemblers[finestLevel].createReducedVector(dFineFull, dFineRed);
+
+//        assemblers[finestLevel].createReducedVector(dFineFull, dFineRed);
 
         smoothing(dFineFull, RfineRed, dFineRed);     // Post smoothing
+        assemblers[finestLevel].createFullVector(dFineRed, dFineFull);
+        spdlog::info("{:>6d} {:>9.2e} {:>9.2e}",iter,residualMGFineRed.norm(),eFineFull.norm());
 
         ++iter;
       }
+
+//      Eigen::CholmodSimplicialLDLT<std::remove_cvref_t<decltype(KfineRed)>, Eigen::Lower | Eigen::Upper> solver;
+//      solver.compute(KfineRed);
+//      dFineRed = -solver.solve(RfineRed);
+//      assemblers[finestLevel].createFullVector(dFineRed, dFineFull);
     }
   };
 }  // namespace Ikarus

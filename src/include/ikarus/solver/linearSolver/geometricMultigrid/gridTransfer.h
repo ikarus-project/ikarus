@@ -30,6 +30,8 @@ public:
     coarse = transferMatrices[coarseID].transpose() * fine;
   }
 
+
+
   template<typename PreBasisFactory>
   void createOperators(const PreBasisFactory& preBasisFactory)
   {
@@ -57,10 +59,10 @@ public:
 
         coarseLocalView.bind(coarseElement);
         const auto& coarseFE = coarseLocalView.tree().child(0).finiteElement();
-        const int numNCoarse   = coarseFE.localBasis().size();  // Chapter 8
+        const int numNCoarse   = coarseFE.localBasis().size();  // Chapter 8<
         NcoarseEvaluated.resize(numNCoarse);
 
-        for (auto& childsElement : descendantElements(coarseElement, 1)) {
+        for (auto& childsElement : descendantElements(coarseElement, coarseElement.level()+1)) {
           fineLocalView.bind(childsElement);
           const auto& fineFE = fineLocalView.tree().child(0).finiteElement();
           const int numNFine   = fineFE.localBasis().size();
@@ -89,6 +91,9 @@ public:
   }
 
 private:
+
+//  Dune::FieldVector<double,gridDim> obtain
+
 
 
   std::vector<Eigen::MatrixXd> transferMatrices;
