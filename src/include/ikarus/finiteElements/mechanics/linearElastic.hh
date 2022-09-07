@@ -78,7 +78,6 @@ namespace Ikarus {
     using Traits = TraitsFromLocalView<LocalView>;
 
     static constexpr int mydim = Traits::mydim;
-    static constexpr int strainSize = mydim == 1 ? 1 : (mydim == 2 ? 3 : 6);
 
   public:
     const auto& getLocalView() const { return localView_; }
