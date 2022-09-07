@@ -3,7 +3,7 @@ refinement = 5
 meshType = 0
 
 [BasisParameters]
-basisOrder= 1
+basisOrder= 2
 
 
 []

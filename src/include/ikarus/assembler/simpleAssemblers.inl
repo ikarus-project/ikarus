@@ -127,7 +127,7 @@ namespace Ikarus {
   }
 
   template <typename Basis, typename FEContainer>
-  Eigen::SparseMatrix<double> &SparseFlatAssembler<Basis, FEContainer>::getReducedMatrixImpl(
+  Eigen::SparseMatrix<double> & SparseFlatAssembler<Basis, FEContainer>::getReducedMatrixImpl(
       const RequirementType &fErequirements) {
     if (!isReducedOccupationPatternCreated) createReducedOccupationPattern();
     if (!arelinearReducedDofsPerElementCreated) createlinearDofsPerElementReduced();
@@ -180,7 +180,6 @@ namespace Ikarus {
   void SparseFlatAssembler<Basis, FEContainer>::createReducedOccupationPattern() {
     spMatReduced.resize(this->reducedSize(), this->reducedSize());
     std::vector<Eigen::Triplet<double>> vectorOfTriples;
-    const int estimateOfConnectivity = 8;
     using std::size;
 
     vectorOfTriples.reserve(this->estimateOfConnectivity());

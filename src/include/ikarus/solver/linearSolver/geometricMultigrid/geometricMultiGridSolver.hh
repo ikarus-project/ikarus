@@ -146,7 +146,7 @@ namespace Ikarus {
       int iter = 0;
       int maxIterations = 1000;
       spdlog::info("iter ResidualNorm: CorrectionNorm");
-      while (residualMGFineRed.norm()>1e-12) {
+      while (residualMGFineRed.norm()>1e-11) {
         smoothing(dFineFull, RfineRed, dFineRed);// Pre-Smoothing
 
         residualMGFineRed = RfineRed - KfineRed * dFineRed;

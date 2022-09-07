@@ -37,8 +37,12 @@ public:
   {
     transferMatrices.resize(grid->maxLevel());
 
-    for (int level = 0; level < grid->maxLevel(); ++level) {
+    std::vector<Eigen::Triplet<double>> vectorOfTriples;
+//    vectorOfTriples. //Number of Vertices times 8 as estimate
+//    vectorOfTriples.reserve(grid->leafGridView().size(gridDim) * 8); //Number of Vertices times 8 as estimate
 
+    for (int level = 0; level < grid->maxLevel(); ++level) {
+      vectorOfTriples.clear();
       auto coarseGridView = grid->levelGridView(level);
       auto fineGridView   = grid->levelGridView(level+1);
 
@@ -50,8 +54,6 @@ public:
       auto fineBasis = makeBasis(fineGridView,preBasisFactory);
       auto coarseLocalView = coarseBasis.localView();
       auto fineLocalView = fineBasis.localView();
-
-      transferMatrices[level].setZero(fineBasis.size(), coarseBasis.size());
 
       std::vector<Dune::FieldVector<double, 1>> NcoarseEvaluated;
       std::vector<Dune::FieldVector<double, gridDim> > lagrangeNodeCoords;
@@ -68,11 +70,9 @@ public:
           const auto& fineFE = fineLocalView.tree().child(0).finiteElement();
           const int numNFine   = fineFE.localBasis().size();
 
-          obtainLagrangeNodePositions(fineFE,lagrangeNodeCoords);
-          // CoarseIndex Set Chapter 5.6
+          obtainLagrangeNodePositions(fineFE,lagrangeNodeCoords); // CoarseIndex Set Chapter 5.6
+
           const auto geoInFather = childsElement.geometryInFather();
-          const auto& fineReferenceElement
-              = Dune::ReferenceElements<double, gridDim>::general(childsElement.type());  // Chapter 5.5
           for (int i = 0; i < numNFine; ++i) {
             const auto localInFather                  = geoInFather.global(lagrangeNodeCoords[i]);
             coarseFE.localBasis().evaluateFunction(localInFather, NcoarseEvaluated);
@@ -81,12 +81,15 @@ public:
               for (int k = 0; k < numDofPerNode; ++k) {
                 const size_t globalFine = fineLocalView.index((fineLocalView.tree().child(k).localIndex(i)));
                 const size_t globalCoarse = coarseLocalView.index((coarseLocalView.tree().child(k).localIndex(j)));
-                transferMatrices[level](globalFine, globalCoarse) = NcoarseEvaluated[j] ;
+                vectorOfTriples.emplace_back(globalFine, globalCoarse, NcoarseEvaluated[j]) ;
               }
             }
           }
         }
       }
+      transferMatrices[level].resize(fineBasis.size(), coarseBasis.size());
+      //create sparse matrix and ignore duplicates
+      transferMatrices[level].setFromTriplets(vectorOfTriples.begin(), vectorOfTriples.end(),[] (const double &,const double &b) { return b; });
     }
   }
 
@@ -113,7 +116,7 @@ private:
 
 
 
-  std::vector<Eigen::MatrixXd> transferMatrices;
+  std::vector<Eigen::SparseMatrix<double>> transferMatrices;
   const Grid* grid;
 
 
