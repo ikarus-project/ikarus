@@ -43,13 +43,9 @@
 
 namespace Ikarus {
 
-
-
-
   template <typename Basis>
   class NonLinearElasticityFE : public PowerBasisFE<Basis>,
                                 public Ikarus::AutoDiffFE<NonLinearElasticityFE<Basis>, Basis> {
-
   public:
     using BaseDisp = PowerBasisFE<Basis>;  // Handles globalIndices function
     using BaseAD   = AutoDiffFE<NonLinearElasticityFE<Basis>, Basis>;
@@ -60,19 +56,18 @@ namespace Ikarus {
     using LocalView         = typename Basis::LocalView;
 
     using Traits = TraitsFromLocalView<LocalView>;
-    struct Settings{
+    struct Settings {
       double emod_;
       double nu_;
       std::function<Eigen::Vector<double, Traits::worlddim>(const Eigen::Vector<double, Traits::worlddim>&,
                                                             const double&)>
           volumeLoad;
     };
-    NonLinearElasticityFE(Basis& globalBasis, const typename LocalView::Element& element,                const Settings& settings)
+    NonLinearElasticityFE(Basis& globalBasis, const typename LocalView::Element& element, const Settings& settings)
         : BaseDisp(globalBasis, element),
           BaseAD(globalBasis, element),
           localView_{globalBasis.localView()},
-          settings_(settings)
-    {
+          settings_(settings) {
       localView_.bind(element);
       const int order = 2 * (localView_.tree().child(0).finiteElement().localBasis().order());
       localBasis      = Ikarus::LocalBasis(localView_.tree().child(0).finiteElement().localBasis());
@@ -80,9 +75,7 @@ namespace Ikarus {
                       bindDerivatives(0, 1));
     }
 
-
-
-    const auto& settings() const {return settings_;}
+    const auto& settings() const { return settings_; }
 
   private:
     template <class ScalarType>

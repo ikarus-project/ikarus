@@ -8,8 +8,8 @@
 #include "src/include/ikarus/finiteElements/feRequirements.hh"
 #include "src/include/ikarus/solver/linearSolver/linearSolver.hh"
 
-#include <utility>
 #include <iostream>
+#include <utility>
 
 #include <dune/functions/functionspacebases/boundarydofs.hh>
 
@@ -24,15 +24,16 @@ namespace Ikarus {
 
     using BasisType
         = decltype(makeBasis(std::declval<typename Grid::LevelGridView>(), std::declval<PreBasisFactory>()));
+
   public:
     GeometricMultiGridSolver(const Grid* grid, const PreBasisFactory& preBasisFactory,
                              const FEContainer& feVectorCoarse)
         : transfer{grid}, directSolver{SolverTypeTag::sd_SimplicialLDLT} {
-      fes.resize(grid->maxLevel()+1);
+      fes.resize(grid->maxLevel() + 1);
       finestLevel = grid->maxLevel();
-      fes[0] = feVectorCoarse;
-      for (int level = 1; level < grid->maxLevel()+1; ++level) {
-        auto coarseGridView = grid->levelGridView(level-1);
+      fes[0]      = feVectorCoarse;
+      for (int level = 1; level < grid->maxLevel() + 1; ++level) {
+        auto coarseGridView = grid->levelGridView(level - 1);
         auto fineGridView   = grid->levelGridView(level);
 
         auto coarseBasis = makeBasis(coarseGridView, preBasisFactory);
@@ -40,9 +41,9 @@ namespace Ikarus {
 
         auto coarseElement = elements(coarseGridView).begin();
         fes[level].reserve(fineGridView.size(0));
-        for (auto& coarseFe : fes[level-1]) {
+        for (auto& coarseFe : fes[level - 1]) {
           {
-            for (auto& childsElement : descendantElements(*coarseElement, coarseElement->level()+1)) {
+            for (auto& childsElement : descendantElements(*coarseElement, coarseElement->level() + 1)) {
               fes[level].emplace_back(fineBasis, childsElement, coarseFe.settings());
             }
             ++coarseElement;
@@ -50,7 +51,7 @@ namespace Ikarus {
         }
       }
 
-      for (int level = 0; level < grid->maxLevel()+1; ++level) {
+      for (int level = 0; level < grid->maxLevel() + 1; ++level) {
         auto gridView = grid->levelGridView(level);
 
         auto basis          = std::make_shared<BasisType>(makeBasis(gridView, preBasisFactory));
@@ -68,11 +69,12 @@ namespace Ikarus {
       iterativeSolver.setMaxIterations(1);
     }
 
-    mutable Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower | Eigen::Upper,Eigen::IncompleteCholesky<double>> iterativeSolver;
+    mutable Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower | Eigen::Upper,
+                                     Eigen::IncompleteCholesky<double>>
+        iterativeSolver;
     Ikarus::GridTransfer<Grid> transfer;
     mutable ILinearSolver<double> directSolver;
     mutable RequirementType requirementType;
-
 
     mutable std::vector<Ikarus::SparseFlatAssembler<BasisType, FEContainer>> assemblers;
     std::vector<FEContainer> fes;
@@ -84,22 +86,19 @@ namespace Ikarus {
     void smoothing(const Eigen::VectorX<ScalarType>& dFineFull, const Eigen::VectorX<ScalarType>& RfineRed,
                    Eigen::VectorX<ScalarType>& dFineRed) const {
       assemblers[finestLevel].createReducedVector(dFineFull, dFineRed);
-      dFineRed = iterativeSolver.solveWithGuess(RfineRed,dFineRed);
+      dFineRed = iterativeSolver.solveWithGuess(RfineRed, dFineRed);
     }
 
   public:
-
-
-    void transformToFineFull(const Eigen::VectorX<double>& dFineRed,Eigen::VectorX<double>& dFineFull)
-    {
+    void transformToFineFull(const Eigen::VectorX<double>& dFineRed, Eigen::VectorX<double>& dFineFull) {
       assemblers[finestLevel].createFullVector(dFineRed, dFineFull);
     }
 
     template <typename ScalarType>
     void solve(Eigen::VectorX<ScalarType>& dFineRed, const Eigen::VectorX<ScalarType>& RfineRed_) const {
       //    Eigen::MatrixXd KcoarseRed,KfineRed;
-      Eigen::VectorXd RcoarseRed, dCoarseRed, dCoarseFull,RfineFull,RcoarseFull;
-      dCoarseFull.setZero(assemblers[finestLevel-1].size());
+      Eigen::VectorXd RcoarseRed, dCoarseRed, dCoarseFull, RfineFull, RcoarseFull;
+      dCoarseFull.setZero(assemblers[finestLevel - 1].size());
       Eigen::VectorXd dFineFull;
       dFineFull.setZero(assemblers[finestLevel].size());
 
@@ -111,23 +110,23 @@ namespace Ikarus {
                             .addAffordance(Ikarus::VectorAffordances::forces)
                             .build();
       Eigen::VectorXd RfineRed = -assemblers[finestLevel].getReducedVector(requirementType);
-      requirementType   = Ikarus::FErequirementsBuilder()
+      requirementType          = Ikarus::FErequirementsBuilder()
                             .insertGlobalSolution(Ikarus::FESolutions::displacement, dCoarseFull)
                             .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLoad)
                             .addAffordance(Ikarus::VectorAffordances::forces)
                             .build();
-      auto& KcoarseRed         = assemblers[finestLevel-1].getReducedMatrix(requirementType);
+      auto& KcoarseRed = assemblers[finestLevel - 1].getReducedMatrix(requirementType);
 
       directSolver.compute(KcoarseRed);
       assemblers[finestLevel].createFullVector(RfineRed, RfineFull);
-      transfer.restrictTo(finestLevel-1, RfineFull, RcoarseFull);
-      assemblers[finestLevel-1].createReducedVector(RcoarseFull, RcoarseRed);
+      transfer.restrictTo(finestLevel - 1, RfineFull, RcoarseFull);
+      assemblers[finestLevel - 1].createReducedVector(RcoarseFull, RcoarseRed);
 
       directSolver.solve(dCoarseRed, RcoarseRed);
 
-      assemblers[finestLevel-1].createFullVector(dCoarseRed, dCoarseFull);
+      assemblers[finestLevel - 1].createFullVector(dCoarseRed, dCoarseFull);
 
-      transfer.prolongateFrom(finestLevel-1, dCoarseFull, dFineFull);
+      transfer.prolongateFrom(finestLevel - 1, dCoarseFull, dFineFull);
       requirementType = Ikarus::FErequirementsBuilder()
                             .insertGlobalSolution(Ikarus::FESolutions::displacement, dFineFull)
                             .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLoad)
@@ -137,17 +136,18 @@ namespace Ikarus {
       iterativeSolver.compute(KfineRed);
       assemblers[finestLevel].createReducedVector(dFineFull, dFineRed);
 
-      Eigen::VectorXd eFineFull,residualMGFineRed,residualMGFineFull,residualMGCoarseFull,eCoarseRed,residualMGCoarseRed,eCoarseFull;
+      Eigen::VectorXd eFineFull, residualMGFineRed, residualMGFineFull, residualMGCoarseFull, eCoarseRed,
+          residualMGCoarseRed, eCoarseFull;
       eFineFull.resizeLike(dFineFull);
       residualMGFineRed.resizeLike(dFineRed);
       eFineFull.setOnes();
       residualMGFineRed.setOnes();
 
-      int iter = 0;
+      int iter          = 0;
       int maxIterations = 1000;
       spdlog::info("iter ResidualNorm: CorrectionNorm");
-      while (residualMGFineRed.norm()>1e-11) {
-        smoothing(dFineFull, RfineRed, dFineRed);// Pre-Smoothing
+      while (residualMGFineRed.norm() > 1e-11) {
+        smoothing(dFineFull, RfineRed, dFineRed);  // Pre-Smoothing
 
         residualMGFineRed = RfineRed - KfineRed * dFineRed;
         assemblers[finestLevel].createFullVector(residualMGFineRed, residualMGFineFull);
@@ -163,19 +163,17 @@ namespace Ikarus {
         assemblers[finestLevel].createFullVector(dFineRed, dFineFull);
         dFineFull += eFineFull;
 
-        smoothing(dFineFull, RfineRed, dFineRed);     // Post smoothing
+        smoothing(dFineFull, RfineRed, dFineRed);  // Post smoothing
         assemblers[finestLevel].createFullVector(dFineRed, dFineFull);
-        spdlog::info("{:>6d} {:>9.2e} {:>9.2e}",iter,residualMGFineRed.norm(),eFineFull.norm());
+        spdlog::info("{:>6d} {:>9.2e} {:>9.2e}", iter, residualMGFineRed.norm(), eFineFull.norm());
 
         ++iter;
       }
 
-//      Eigen::CholmodSimplicialLDLT<std::remove_cvref_t<decltype(KfineRed)>, Eigen::Lower | Eigen::Upper> solver;
-//      solver.compute(KfineRed);
-//      dFineRed = -solver.solve(RfineRed);
-//      assemblers[finestLevel].createFullVector(dFineRed, dFineFull);
+      //      Eigen::CholmodSimplicialLDLT<std::remove_cvref_t<decltype(KfineRed)>, Eigen::Lower | Eigen::Upper> solver;
+      //      solver.compute(KfineRed);
+      //      dFineRed = -solver.solve(RfineRed);
+      //      assemblers[finestLevel].createFullVector(dFineRed, dFineFull);
     }
-
-
   };
 }  // namespace Ikarus

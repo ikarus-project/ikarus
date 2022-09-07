@@ -108,19 +108,20 @@ int main(int argc, char** argv) {
   auto startSolverConstruction = std::chrono::high_resolution_clock::now();
 
   Ikarus::GeometricMultiGridSolver solver(grid.get(), preBasisFactory, feVectorCoarse);
-  auto stopSolverConstruction     = std::chrono::high_resolution_clock::now();
-  auto durationSolverConstruction = duration_cast<std::chrono::milliseconds>(stopSolverConstruction - startSolverConstruction);
+  auto stopSolverConstruction = std::chrono::high_resolution_clock::now();
+  auto durationSolverConstruction
+      = duration_cast<std::chrono::milliseconds>(stopSolverConstruction - startSolverConstruction);
   spdlog::info("The solver construction took {} milliseconds", durationSolverConstruction.count());
 
   Eigen::VectorXd d, FextFine;
   auto startSolverSolve = std::chrono::high_resolution_clock::now();
   solver.solve(d, (-FextFine).eval());
-  auto stopSolverSolve     = std::chrono::high_resolution_clock::now();
+  auto stopSolverSolve = std::chrono::high_resolution_clock::now();
 
   auto durationSolverSolve = duration_cast<std::chrono::milliseconds>(stopSolverSolve - startSolverSolve);
 
   spdlog::info("The solution step alone took {} milliseconds", durationSolverSolve.count());
-  spdlog::info("The total solve step took {} milliseconds", (durationSolverSolve+durationSolverConstruction).count());
+  spdlog::info("The total solve step took {} milliseconds", (durationSolverSolve + durationSolverConstruction).count());
   Eigen::VectorXd dFull;
   solver.transformToFineFull(d, dFull);
 
