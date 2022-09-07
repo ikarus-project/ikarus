@@ -12,6 +12,8 @@
 //#include <dune/grid/yaspgrid.hh>
 //#include <dune/iga/nurbsgrid.hh>
 #include <functional>
+#include <algorithm>
+#include <chrono>
 
 #include <dune/grid/uggrid.hh>
 
@@ -108,13 +110,16 @@ int main(int argc, char** argv) {
         typename Ikarus::NonLinearElasticityFE<decltype(coarseBasis)>::Settings settings({.emod_=1000, .nu_=0.3, .volumeLoad=volumeLoad_});
         for (auto& element : elements(coarseBasis.gridView()))
           feVectorCoarse.emplace_back(coarseBasis, element, settings);
-
+        auto startSolver = std::chrono::high_resolution_clock::now();
       Ikarus::GeometricMultiGridSolver solver(grid.get(),preBasisFactory,feVectorCoarse);
 
 
 
       Eigen::VectorXd d,FextFine;
       solver.solve(d,(-FextFine).eval());
+      auto stopSolver = std::chrono::high_resolution_clock::now();
+      auto durationSolver = duration_cast<std::chrono::milliseconds>(stopSolver - startSolver);
+      spdlog::info("The solver took {} milliseconds",durationSolver.count());
       Eigen::VectorXd dFull;
       solver.transformToFineFull(d,dFull);
 
@@ -128,94 +133,6 @@ int main(int argc, char** argv) {
 
       vtkWriter.write("LShapeMultigrid");
 
-//  std::cout << "This gridview contains: " << std::endl;
-//  std::cout << gridView.size(2) << " vertices" << std::endl;
-//  std::cout << gridView.size(1) << " edges" << std::endl;
-//  std::cout << gridView.size(0) << " elements" << std::endl;
-//  std::cout << basis.size() << " Dofs" << std::endl;
-//
-//  draw(gridView);
-//  auto localView = basis.localView();
-//  std::vector<Ikarus::NonLinearElasticityFE<decltype(basis)>> fes;
-//  auto volumeLoad = [](auto& globalCoord, auto& lamb) {
-//    Eigen::Vector2d fext;
-//    fext.setZero();
-//    fext[1] = 2 * lamb;
-//    fext[0] = lamb;
-//    return fext;
-//  };
-//  for (auto& element : elements(gridView))
-//    fes.emplace_back(basis, element, 1000, 0.3, volumeLoad);
-//
-//  std::vector<bool> dirichletFlags(basis.size(), false);
-//
-//  Dune::Functions::forEachBoundaryDOF(basis, [&](auto&& localIndex, auto&& localView, auto&& intersection) {
-//    if (std::abs(intersection.geometry().center()[1]) < 1e-8) {
-//      dirichletFlags[localView.index(localIndex)[0]] = true;
-//    }
-//  });
-//
-//  auto sparseAssembler = SparseFlatAssembler(basis, fes, dirichletFlags);
-//
-//  Eigen::VectorXd d;
-//  d.setZero(basis.size());
-//  double lambda = 0.0;
-//
-//  auto residualFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
-//    Ikarus::FErequirements req = FErequirementsBuilder()
-//                                     .insertGlobalSolution(Ikarus::FESolutions::displacement, disp)
-//                                     .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
-//                                     .addAffordance(Ikarus::VectorAffordances::forces)
-//                                     .build();
-//    return sparseAssembler.getVector(req);
-//  };
-//
-//  auto KFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
-//    Ikarus::FErequirements req = FErequirementsBuilder()
-//                                     .insertGlobalSolution(Ikarus::FESolutions::displacement, disp)
-//                                     .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
-//                                     .addAffordance(Ikarus::MatrixAffordances::stiffness)
-//                                     .build();
-//    return sparseAssembler.getMatrix(req);
-//  };
-//
-//  auto energyFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
-//    Ikarus::FErequirements req = FErequirementsBuilder()
-//                                     .insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
-//                                     .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
-//                                     .addAffordance(Ikarus::ScalarAffordances::mechanicalPotentialEnergy)
-//                                     .build();
-//    return sparseAssembler.getScalar(req);
-//  };
-//
-//  auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, residualFunction, KFunction),
-//                                            parameter(d, lambda));
-//
-//  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_UmfPackLU);
-//
-//  auto nr = Ikarus::makeNewtonRaphson(nonLinOp.subOperator<1, 2>(), std::move(linSolver));
-//  //  auto nr = Ikarus::makeTrustRegion(nonLinOp);
-//  //  nr->setup({.verbosity = 1,
-//  //             .maxiter   = 30,
-//  //             .grad_tol  = 1e-8,
-//  //             .corr_tol  = 1e-8,
-//  //             .useRand   = false,
-//  //             .rho_reg   = 1e6,
-//  //             .Delta0    = 1});
-//
-//  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
-//
-//  auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<decltype(basis)>>(basis, d, 2);
-//  vtkWriter->setFileNamePrefix("Test2Dsolid");
-//  vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 2);
-//  nr->subscribeAll(nonLinearSolverObserver);
-//
-//  auto lc = Ikarus::LoadControl(nr, 20, {0, 2000});
-//
-//  lc.subscribeAll(vtkWriter);
-//  std::cout << "Energy before: " << nonLinOp.value() << std::endl;
-//  lc.run();
-//  nonLinOp.update<0>();
-//  std::cout << "Energy after: " << nonLinOp.value() << std::endl;
-      spdlog::info("End");
+      spdlog::info( "dofs: {}, maximum displacement: {}",fineBasis.size(),std::ranges::max(dFull));
+
 }

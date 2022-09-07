@@ -68,7 +68,7 @@ namespace Ikarus {
       iterativeSolver.setMaxIterations(1);
     }
 
-    mutable Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower | Eigen::Upper,Eigen::IdentityPreconditioner> iterativeSolver;
+    mutable Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower | Eigen::Upper,Eigen::IncompleteCholesky<double>> iterativeSolver;
     Ikarus::GridTransfer<Grid> transfer;
     mutable ILinearSolver<double> directSolver;
     mutable RequirementType requirementType;
