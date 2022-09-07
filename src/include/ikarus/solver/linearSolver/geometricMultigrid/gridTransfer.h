@@ -54,6 +54,7 @@ public:
       transferMatrices[level].setZero(fineBasis.size(), coarseBasis.size());
 
       std::vector<Dune::FieldVector<double, 1>> NcoarseEvaluated;
+      std::vector<Dune::FieldVector<double, gridDim> > lagrangeNodeCoords;
 
       for (auto& coarseElement : elements(coarseGridView)) {
 
@@ -67,22 +68,21 @@ public:
           const auto& fineFE = fineLocalView.tree().child(0).finiteElement();
           const int numNFine   = fineFE.localBasis().size();
 
+          obtainLagrangeNodePositions(fineFE,lagrangeNodeCoords);
           // CoarseIndex Set Chapter 5.6
           const auto geoInFather = childsElement.geometryInFather();
           const auto& fineReferenceElement
               = Dune::ReferenceElements<double, gridDim>::general(childsElement.type());  // Chapter 5.5
           for (int i = 0; i < numNFine; ++i) {
-            const auto fineKey                        = fineFE.localCoefficients().localKey(i);
-            const auto nodalPositionInChildCoordinate = fineReferenceElement.position(fineKey.subEntity(), fineKey.codim());
-            const auto localInFather                  = geoInFather.global(nodalPositionInChildCoordinate);
+            const auto localInFather                  = geoInFather.global(lagrangeNodeCoords[i]);
             coarseFE.localBasis().evaluateFunction(localInFather, NcoarseEvaluated);
-            const size_t globalFine = fineIndexSet.subIndex(childsElement, fineKey.subEntity(), fineKey.codim());
 
             for (int j = 0; j < numNCoarse; ++j) {
-              const auto coarseKey      = coarseFE.localCoefficients().localKey(j);
-              const size_t globalCoarse = coarseIndexSet.subIndex(coarseElement, coarseKey.subEntity(), coarseKey.codim());
-              transferMatrices[level].block(globalFine * numDofPerNode, globalCoarse * numDofPerNode,numDofPerNode, numDofPerNode)
-                  = NcoarseEvaluated[j] * Eigen::MatrixXd::Identity(numDofPerNode,numDofPerNode);
+              for (int k = 0; k < numDofPerNode; ++k) {
+                const size_t globalFine = fineLocalView.index((fineLocalView.tree().child(k).localIndex(i)));
+                const size_t globalCoarse = coarseLocalView.index((coarseLocalView.tree().child(k).localIndex(j)));
+                transferMatrices[level](globalFine, globalCoarse) = NcoarseEvaluated[j] ;
+              }
             }
           }
         }
@@ -92,7 +92,24 @@ public:
 
 private:
 
-//  Dune::FieldVector<double,gridDim> obtain
+  template<typename LocalFE> // Dune Book Page 314
+  void obtainLagrangeNodePositions(const LocalFE& localFE, std::vector<Dune::FieldVector<double, gridDim> >& lagrangeNodeCoords)
+  {
+    lagrangeNodeCoords.resize(localFE.size());
+     std::vector<double> out;
+    for (int i = 0; i < gridDim; i++)
+    {
+      auto ithCoord = [&i](const Dune::FieldVector<double, gridDim>& x)
+      {
+        return x[i];
+      };
+
+      localFE.localInterpolation().interpolate(ithCoord, out);
+
+      for (std::size_t j = 0; j < out.size(); j++)
+        lagrangeNodeCoords[j][i] = out[j];
+    }
+  }
 
 
 

@@ -37,6 +37,12 @@
 #include <ikarus/utils/observer/nonLinearSolverLogger.hh>
 #include <dune/grid/io/file/vtk/vtkwriter.hh>
 #include <dune/common/parametertreeparser.hh>
+#include <dune/vtk/utility/filesystem.hh>
+#include <dune/vtk/vtkwriter.hh>
+#include <dune/vtk/datacollectors/lagrangedatacollector.hh>
+#include <dune/vtk/datacollectors/quadraticdatacollector.hh>
+
+
 
 int main(int argc, char** argv) {
   Dune::MPIHelper::instance(argc, argv);
@@ -128,8 +134,13 @@ int main(int argc, char** argv) {
       /// Postprocess
       auto disp
           = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(fineBasis, dFull);
-      Dune::VTKWriter vtkWriter(fineBasis.gridView(), Dune::VTK::conforming);
-      vtkWriter.addVertexData(disp, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
+//      using GridView = decltype(fineBasis.gridView());
+//      using DataCollector = Dune::Vtk::LagrangeDataCollector<GridView>;
+      Dune::Vtk::QuadraticDataCollector dataCollector(fineBasis.gridView());
+      Dune::VtkUnstructuredGridWriter vtkWriter(dataCollector, Dune::Vtk::FormatTypes::ASCII);
+
+//      Dune::SubsamplingVTKWriter vtkWriter(fineBasis.gridView(), Dune::RefinementIntervals(meshType+1));
+      vtkWriter.addPointData(disp, "displacement", 2);
 
       vtkWriter.write("LShapeMultigrid");
 
