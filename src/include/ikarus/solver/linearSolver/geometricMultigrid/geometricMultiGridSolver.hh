@@ -55,7 +55,7 @@ namespace Ikarus {
         auto gridView = grid->levelGridView(level);
 
         auto basis          = std::make_shared<BasisType>(makeBasis(gridView, preBasisFactory));
-        auto dirichletFlags = std::make_shared<std::vector<bool>>((*basis).size(), false);
+        auto dirichletFlags = std::make_shared<std::vector<bool>>(basis->size(), false);
 
         Dune::Functions::forEachBoundaryDOF(*basis, [&](auto&& localIndex, auto&& localView, auto&& intersection) {
           if (std::abs(intersection.geometry().center()[1]) < 1e-8) {

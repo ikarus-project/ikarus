@@ -1,6 +1,6 @@
 [GridParameters]
-refinement = 5
-meshType = 0
+refinement = 4
+meshType = 2
 
 [BasisParameters]
 basisOrder= 2

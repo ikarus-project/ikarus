@@ -19,6 +19,7 @@
 
 #pragma once
 #include <ranges>
+#include <memory>
 #include <utility>
 
 #include <dune/common/power.hh>

@@ -59,27 +59,47 @@ int main(int argc, char** argv) {
   //  //  /// ALUGrid Example
   using Grid = Dune::UGGrid<gridDim>;
   Dune::GridFactory<Grid> gridFactory;
-
+  std::shared_ptr<Grid> grid;
   const double L = 1.0;
 
-  gridFactory.insertVertex({0, 0});
-  gridFactory.insertVertex({L / 2, 0});
-  gridFactory.insertVertex({0, L / 2});
-  gridFactory.insertVertex({L / 2, L / 2});
-  gridFactory.insertVertex({0, L});
-  gridFactory.insertVertex({L / 2, L});
-  gridFactory.insertVertex({L, L});
-  gridFactory.insertVertex({L, L / 2});
+  if (meshType == 0) {
+    gridFactory.insertVertex({0, 0});
+    gridFactory.insertVertex({L/2, 0});
+    gridFactory.insertVertex({0, L/2});
+    gridFactory.insertVertex({L/2, L/2});
+    gridFactory.insertVertex({0, L});
+    gridFactory.insertVertex({L/2, L});
+    gridFactory.insertVertex({L, L});
+    gridFactory.insertVertex({L, L/2});
 
-  gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {0, 1, 2, 3});
-  gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {2, 3, 4, 5});
-  if (meshType == 0)
+    gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {0, 1, 2, 3});
+    gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {2, 3, 4, 5});
+
     gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {3, 7, 5, 6});
+    grid = gridFactory.createGrid();
+  }
   else if (meshType == 1) {
+    gridFactory.insertVertex({0, 0});
+    gridFactory.insertVertex({L/2, 0});
+    gridFactory.insertVertex({0, L/2});
+    gridFactory.insertVertex({L/2, L/2});
+    gridFactory.insertVertex({0, L});
+    gridFactory.insertVertex({L/2, L});
+    gridFactory.insertVertex({L, L});
+    gridFactory.insertVertex({L, L/2});
+
+    gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {0, 1, 2, 3});
+    gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {2, 3, 4, 5});
+
     gridFactory.insertElement(Dune::GeometryTypes::triangle, {3, 7, 6});
     gridFactory.insertElement(Dune::GeometryTypes::triangle, {3, 6, 5});
+    grid = gridFactory.createGrid();
   }
-  auto grid = gridFactory.createGrid();
+  else if (meshType==2)
+  {
+    grid = Dune::GmshReader<Grid>::read("../../examples/src/testFiles/L-shape_unstructured.msh", false);
+  }
+
   grid->globalRefine(refinement);
   auto leafGridView = grid->leafGridView();
 

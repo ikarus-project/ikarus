@@ -9,6 +9,7 @@
 #include <dune/localfunctions/lagrange/pqkfactory.hh>
 
 #include <Eigen/Core>
+#include <Eigen/SparseCore>
 
 namespace Ikarus {
   template <typename Grid>

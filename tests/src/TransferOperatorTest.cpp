@@ -88,47 +88,12 @@ TEST_CASE("MultiGrid: TransferOperatorUGGridLshape", "[TransferOperatorTest.cpp]
 
   Ikarus::GridTransfer transfer(grid);
 
-  //  draw(leafGridView);
-  //  draw(grid->levelGridView(0));
-
   transfer.createOperators(preBasisFactory);
 
   auto coarseBasis = makeBasis(grid->levelGridView(0), preBasisFactory);
-  auto fineBasis   = makeBasis(grid->levelGridView(1), preBasisFactory);
-
   Eigen::VectorXd dCoarse(coarseBasis.size());
   for (int i = 0; i < dCoarse.size(); ++i) {
     dCoarse[i] = i;
-  }
-
-  auto& coarseIndexSet = coarseBasis.gridView().indexSet();
-  auto& fineIndexSet   = fineBasis.gridView().indexSet();
-  auto coarseLocalView = coarseBasis.localView();
-  auto fineLocalView   = fineBasis.localView();
-  for (auto& coarseElement : elements(coarseBasis.gridView())) {
-    std::cout << "Element: " << coarseIndexSet.index(coarseElement) << std::endl;
-    coarseLocalView.bind(coarseElement);
-    const auto& coarseFE = coarseLocalView.tree().child(0).finiteElement();
-    const int numNCoarse = coarseFE.localBasis().size();  // Chapter 8
-    for (int j = 0; j < numNCoarse; ++j) {
-      const auto coarseKey      = coarseFE.localCoefficients().localKey(j);
-      const size_t globalCoarse = coarseIndexSet.subIndex(coarseElement, coarseKey.subEntity(), coarseKey.codim());
-      std::cout << "IndicesCoarse: " << globalCoarse << std::endl;
-    }
-
-    for (auto& childsElement : descendantElements(coarseElement, 1)) {
-      fineLocalView.bind(childsElement);
-      const auto& fineFE = fineLocalView.tree().child(0).finiteElement();
-      const int numNFine = fineFE.localBasis().size();
-
-      // CoarseIndex Set Chapter 5.6
-
-      for (int i = 0; i < numNFine; ++i) {
-        const auto fineKey      = fineFE.localCoefficients().localKey(i);
-        const size_t globalFine = fineIndexSet.subIndex(childsElement, fineKey.subEntity(), fineKey.codim());
-        std::cout << "IndicesFine: " << globalFine << std::endl;
-      }
-    }
   }
 
   Eigen::VectorXd dFine, dFineExpected(16);
@@ -137,8 +102,8 @@ TEST_CASE("MultiGrid: TransferOperatorUGGridLshape", "[TransferOperatorTest.cpp]
 
   CHECK_THAT(dFine, EigenApproxEqual(dFineExpected, 1e-15));
 
-  //  Eigen::VectorXd dCoarse2;
-  //  transfer.restrictTo(0,dFine,dCoarse2);
-  //
-  //  EXPECT_THAT(dCoarse, EigenApproxEqual(dCoarse2, 1e-15));
+    Eigen::VectorXd dCoarse2;
+    transfer.restrictTo(0,dFine,dCoarse2);
+
+    CHECK_THAT(dCoarse, EigenApproxEqual(dCoarse2, 1e-15));
 }
