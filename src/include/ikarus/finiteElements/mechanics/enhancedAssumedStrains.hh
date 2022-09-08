@@ -31,9 +31,6 @@
 
 namespace Ikarus {
 
-  static constexpr int maxEASParameter3d = 21;
-  static constexpr int maxEASParameter2d = 8;
-
   enum class EASType { none, Q1E4, Q1E5, Q1E7, H1E9, H1E21 };
 
   template <typename Geometry>
