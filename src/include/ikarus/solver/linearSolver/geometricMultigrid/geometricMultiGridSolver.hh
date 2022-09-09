@@ -102,18 +102,18 @@ namespace Ikarus {
       Eigen::VectorXd dFineFull;
       dFineFull.setZero(assemblers[finestLevel].size());
 
-      double lambdaLoad = -1;
+      const double lambdaLoad = -1;
 
       requirementType = Ikarus::FErequirementsBuilder()
                             .insertGlobalSolution(Ikarus::FESolutions::displacement, dFineFull)
                             .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLoad)
                             .addAffordance(Ikarus::VectorAffordances::forces)
                             .build();
-      Eigen::VectorXd RfineRed = -assemblers[finestLevel].getReducedVector(requirementType);
+      const Eigen::VectorXd& RfineRed = -assemblers[finestLevel].getReducedVector(requirementType);
       requirementType          = Ikarus::FErequirementsBuilder()
                             .insertGlobalSolution(Ikarus::FESolutions::displacement, dCoarseFull)
                             .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLoad)
-                            .addAffordance(Ikarus::VectorAffordances::forces)
+                            .addAffordance(Ikarus::MatrixAffordances::stiffness)
                             .build();
       auto& KcoarseRed = assemblers[finestLevel - 1].getReducedMatrix(requirementType);
 
@@ -126,13 +126,17 @@ namespace Ikarus {
 
       assemblers[finestLevel - 1].createFullVector(dCoarseRed, dCoarseFull);
 
-      transfer.prolongateFrom(finestLevel - 1, dCoarseFull, dFineFull);
       requirementType = Ikarus::FErequirementsBuilder()
                             .insertGlobalSolution(Ikarus::FESolutions::displacement, dFineFull)
                             .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLoad)
-                            .addAffordance(Ikarus::VectorAffordances::forces)
+                            .addAffordance(Ikarus::MatrixAffordances::stiffness)
                             .build();
-      auto& KfineRed = assemblers[finestLevel].getReducedMatrix(requirementType);
+      const auto KfineRed = assemblers[finestLevel].getReducedMatrix(requirementType);
+      std::cout<<"BeginKfineRed.template block(2,2,0,0).eval()"<<std::endl;
+      std::cout<<KfineRed. block(0,0,2,2)<<std::endl;
+      transfer.prolongateFrom(finestLevel - 1, dCoarseFull, dFineFull);
+//      std::cout<<KfineRed<<std::endl;
+//      std::cout<<"RfineRed.transpose()"<<RfineRed.transpose()<<std::endl;
       iterativeSolver.compute(KfineRed);
       assemblers[finestLevel].createReducedVector(dFineFull, dFineRed);
 
@@ -142,7 +146,7 @@ namespace Ikarus {
       residualMGFineRed.resizeLike(dFineRed);
       eFineFull.setOnes();
       residualMGFineRed.setOnes();
-
+//
       int iter          = 0;
       int maxIterations = 1000;
       spdlog::info("iter ResidualNorm: CorrectionNorm");
@@ -169,11 +173,31 @@ namespace Ikarus {
 
         ++iter;
       }
-
-      //      Eigen::CholmodSimplicialLDLT<std::remove_cvref_t<decltype(KfineRed)>, Eigen::Lower | Eigen::Upper> solver;
-      //      solver.compute(KfineRed);
-      //      dFineRed = -solver.solve(RfineRed);
-      //      assemblers[finestLevel].createFullVector(dFineRed, dFineFull);
+      dFineFull.setZero();
+////
+//      requirementType = Ikarus::FErequirementsBuilder()
+//          .insertGlobalSolution(Ikarus::FESolutions::displacement, dFineFull)
+//          .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLoad)
+//          .addAffordance(Ikarus::MatrixAffordances::stiffness)
+//          .build();
+//      std::cout<<"BAKfineRed.template block(2,2,0,0).eval()"<<std::endl;
+//      std::cout<<KfineRed. block(0,0,2,2)<<std::endl;
+      const auto& KfineRed2 = assemblers[finestLevel].getReducedMatrix(requirementType);
+//
+      std::cout<<"KfineRed.template block(2,2,0,0).eval()"<<std::endl;
+      std::cout<<KfineRed. block(0,0,2,2)<<std::endl;
+      std::cout<<"KfineRed2.template block(2,2,0,0).eval()"<<std::endl;
+      std::cout<<KfineRed2. block(0,0,2,2)<<std::endl;
+      requirementType = Ikarus::FErequirementsBuilder()
+          .insertGlobalSolution(Ikarus::FESolutions::displacement, dFineFull)
+          .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLoad)
+          .addAffordance(Ikarus::VectorAffordances::forces)
+          .build();
+      const Eigen::VectorXd& RfineRed2 = -assemblers[finestLevel].getReducedVector(requirementType);
+            Eigen::SimplicialLDLT<std::remove_cvref_t<decltype(KfineRed2)>, Eigen::Lower | Eigen::Upper> solver;
+            solver.compute(KfineRed);
+            dFineRed = solver.solve(RfineRed);
+            assemblers[finestLevel].createFullVector(dFineRed, dFineFull);
     }
   };
 }  // namespace Ikarus
