@@ -44,7 +44,7 @@ namespace Ikarus {
         for (auto& coarseFe : fes[level - 1]) {
           {
             for (auto& childsElement : descendantElements(*coarseElement, coarseElement->level() + 1)) {
-              fes[level].emplace_back(fineBasis, childsElement, coarseFe.settings());
+              fes[level].emplace_back(fineBasis, childsElement,nullptr, coarseFe.settings());
             }
             ++coarseElement;
           }
@@ -110,6 +110,7 @@ namespace Ikarus {
                             .addAffordance(Ikarus::VectorAffordances::forces)
                             .build();
       const Eigen::VectorXd& RfineRed = -assemblers[finestLevel].getReducedVector(requirementType);
+
       requirementType          = Ikarus::FErequirementsBuilder()
                             .insertGlobalSolution(Ikarus::FESolutions::displacement, dCoarseFull)
                             .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLoad)
@@ -131,9 +132,8 @@ namespace Ikarus {
                             .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLoad)
                             .addAffordance(Ikarus::MatrixAffordances::stiffness)
                             .build();
-      const auto KfineRed = assemblers[finestLevel].getReducedMatrix(requirementType);
-      std::cout<<"BeginKfineRed.template block(2,2,0,0).eval()"<<std::endl;
-      std::cout<<KfineRed. block(0,0,2,2)<<std::endl;
+      const Eigen::SparseMatrix<double>& KfineRed = assemblers[finestLevel].getReducedMatrix(requirementType);
+
       transfer.prolongateFrom(finestLevel - 1, dCoarseFull, dFineFull);
 //      std::cout<<KfineRed<<std::endl;
 //      std::cout<<"RfineRed.transpose()"<<RfineRed.transpose()<<std::endl;
@@ -174,29 +174,19 @@ namespace Ikarus {
         ++iter;
       }
       dFineFull.setZero();
-////
-//      requirementType = Ikarus::FErequirementsBuilder()
-//          .insertGlobalSolution(Ikarus::FESolutions::displacement, dFineFull)
-//          .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLoad)
-//          .addAffordance(Ikarus::MatrixAffordances::stiffness)
-//          .build();
-//      std::cout<<"BAKfineRed.template block(2,2,0,0).eval()"<<std::endl;
-//      std::cout<<KfineRed. block(0,0,2,2)<<std::endl;
-      const auto& KfineRed2 = assemblers[finestLevel].getReducedMatrix(requirementType);
-//
-      std::cout<<"KfineRed.template block(2,2,0,0).eval()"<<std::endl;
-      std::cout<<KfineRed. block(0,0,2,2)<<std::endl;
-      std::cout<<"KfineRed2.template block(2,2,0,0).eval()"<<std::endl;
-      std::cout<<KfineRed2. block(0,0,2,2)<<std::endl;
+
+      const Eigen::SparseMatrix<double>& KfineRed2 = assemblers[finestLevel].getReducedMatrix(requirementType);
+
       requirementType = Ikarus::FErequirementsBuilder()
           .insertGlobalSolution(Ikarus::FESolutions::displacement, dFineFull)
           .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLoad)
           .addAffordance(Ikarus::VectorAffordances::forces)
           .build();
       const Eigen::VectorXd& RfineRed2 = -assemblers[finestLevel].getReducedVector(requirementType);
-            Eigen::SimplicialLDLT<std::remove_cvref_t<decltype(KfineRed2)>, Eigen::Lower | Eigen::Upper> solver;
-            solver.compute(KfineRed);
-            dFineRed = solver.solve(RfineRed);
+
+            Eigen::SimplicialLDLT<std::remove_cvref_t<decltype(KfineRed2)>> solver;
+            solver.compute(KfineRed2);
+            dFineRed = solver.solve(RfineRed2);
             assemblers[finestLevel].createFullVector(dFineRed, dFineFull);
     }
   };

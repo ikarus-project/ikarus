@@ -53,17 +53,25 @@ namespace Ikarus {
     using LocalView         = typename Basis::LocalView;
     using GridView          = typename Basis::GridView;
 
-    template <typename VolumeLoad, typename NeumannBoundaryLoad>
-    LinearElastic(Basis& globalBasis, const typename LocalView::Element& element, double emod, double nu,
-                  const BoundaryPatch<GridView>* neumannBoundary, const NeumannBoundaryLoad& neumannBoundaryLoad,
-                  const VolumeLoad& p_volumeLoad)
+        using Traits = TraitsFromLocalView<LocalView>;
+
+    struct Settings {
+      double emod;
+      double nu;
+      std::function<Eigen::Vector<double, Traits::worlddim>(const Eigen::Vector<double, Traits::worlddim>&,
+                                                            const double&)>
+          volumeLoad;
+
+      std::function<Eigen::Vector<double, Traits::worlddim>(const Eigen::Vector<double, Traits::worlddim>&,
+                                                            const double&)>
+          neumannBoundaryLoad;
+    };
+
+    LinearElastic(Basis& globalBasis, const typename LocalView::Element& element,
+                  const BoundaryPatch<GridView>* neumannBoundary,           const Settings& settings)
         : BaseDisp(globalBasis, element),
           localView_{globalBasis.localView()},
-          volumeLoad(p_volumeLoad),
-          neumannBoundaryLoad_{neumannBoundaryLoad},
-          neumannBoundary_{neumannBoundary},
-          emod_{emod},
-          nu_{nu} {
+          settings_(settings) {
       localView_.bind(element);
       auto& first_child = localView_.tree().child(0);
       const auto& fe    = first_child.finiteElement();
@@ -75,12 +83,13 @@ namespace Ikarus {
                       bindDerivatives(0, 1));
     }
 
-    using Traits = TraitsFromLocalView<LocalView>;
+
 
     static constexpr int mydim = Traits::mydim;
 
   public:
     const auto& getLocalView() const { return localView_; }
+    const auto& settings() const { return settings_; }
 
     auto getDisplacementFunction(const FERequirementType& par) const {
       const auto& d = par.getSolution(Ikarus::FESolutions::displacement);
@@ -100,9 +109,9 @@ namespace Ikarus {
 
     auto getMaterialTangent() const {
         if constexpr (mydim == 2)
-          return planeStressLinearElasticMaterialTangent(emod_, nu_);
+          return planeStressLinearElasticMaterialTangent(settings().emod, settings().nu);
         else if constexpr (mydim == 3)
-          return LinearElasticMaterialTangent3D(emod_, nu_);
+          return LinearElasticMaterialTangent3D(settings().emod, settings().nu);
     }
 
     auto getMaterialTangentFunction(const FERequirementType& par) const {
@@ -188,7 +197,7 @@ namespace Ikarus {
       const auto geo   = localView_.element().geometry();
        const auto u = getDisplacementFunction(par);
       for (const auto& [gpIndex, gp] : u.viewOverIntegrationPoints()) {
-        Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(toEigenVector(gp.position()), lambda);
+        Eigen::Vector<double, Traits::worlddim> fext = settings().volumeLoad(toEigenVector(gp.position()), lambda);
         for (size_t i = 0; i < numberOfNodes; ++i) {
           const auto udCi = u.evaluateDerivative(gpIndex, wrt(coeff(i)));
           g.template segment<mydim>(mydim * i)
@@ -218,7 +227,7 @@ namespace Ikarus {
 
             // Value of the Neumann data at the current position
             auto neumannValue
-                = neumannBoundaryLoad_(toEigenVector(intersection.geometry().global(curQuad.position())), lambda);
+                = settings().neumannBoundaryLoad(toEigenVector(intersection.geometry().global(curQuad.position())), lambda);
             g.template segment<mydim>(mydim * i)
                 -= udCi * neumannValue * curQuad.weight() * integrationElement;
           }
@@ -230,17 +239,11 @@ namespace Ikarus {
     Ikarus::LocalBasis<
         std::remove_cvref_t<decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis())>>
         localBasis;
-    // TODO: write as optional
-    std::function<Eigen::Vector<double, Traits::worlddim>(const Eigen::Vector<double, Traits::worlddim>&,
-                                                          const double&)>
-        volumeLoad;
-    std::function<Eigen::Vector<double, Traits::worlddim>(const Eigen::Vector<double, Traits::worlddim>&,
-                                                          const double&)>
-        neumannBoundaryLoad_;
+
+
     const BoundaryPatch<GridView>* neumannBoundary_;
     mutable Dune::BlockVector<Ikarus::RealTuple<double, Traits::dimension>> dispAtNodes;
-    double emod_;
-    double nu_;
+    Settings settings_;
     size_t numberOfNodes{0};
   };
 

@@ -30,7 +30,7 @@
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/controlRoutines/loadControl.hh>
 #include <ikarus/finiteElements/feRequirements.hh>
-#include <ikarus/finiteElements/mechanics/nonLinearElasticityFE.hh>
+#include <ikarus/finiteElements/mechanics/linearElastic.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/manifolds/realTuple.hh>
 #include <ikarus/solver/linearSolver/geometricMultigrid/geometricMultiGridSolver.hh>
@@ -112,7 +112,7 @@ int main(int argc, char** argv) {
   spdlog::info("Dofs on finest level: {}", fineBasis.size());
   double lambdaLoad = 1;
 
-  std::vector<Ikarus::NonLinearElasticityFE<decltype(coarseBasis)>> feVectorCoarse;
+  std::vector<Ikarus::LinearElastic<decltype(coarseBasis)>> feVectorCoarse;
   std::function<Eigen::Vector<double, 2>(const Eigen::Vector<double, 2>&, const double&)> volumeLoad_
       = [](auto& globalCoord, auto& lamb) {
           Eigen::Vector2d fext;
@@ -121,10 +121,28 @@ int main(int argc, char** argv) {
           fext[0] = 0;
           return fext;
         };
-  typename Ikarus::NonLinearElasticityFE<decltype(coarseBasis)>::Settings settings(
-      {.emod_ = 1000, .nu_ = 0.3, .volumeLoad = volumeLoad_});
-  for (auto& element : elements(coarseBasis.gridView()))
-    feVectorCoarse.emplace_back(coarseBasis, element, settings);
+
+  /// neumann boundary load in vertical direction
+  auto neumannBoundaryLoad = [&](auto& globalCoord, auto& lamb) {
+    Eigen::Vector2d F = Eigen::Vector2d::Zero();
+    return F;
+  };
+
+  auto coarseGridView = coarseBasis.gridView();
+  Dune::BitSetVector<1> neumannVertices(coarseGridView.size(2), false);
+//  auto pythonNeumannVertices = Python::make_function<bool>(Python::evaluate(lambdaNeumannVertices));
+//
+//  for (auto&& vertex : vertices(gridView)) {
+//    bool isNeumann                          = pythonNeumannVertices(vertex.geometry().corner(0));
+//    neumannVertices[indexSet.index(vertex)] = isNeumann;
+//  }
+
+  BoundaryPatch<decltype(coarseGridView)> neumannBoundary(coarseGridView, neumannVertices);
+
+  typename Ikarus::LinearElastic<decltype(coarseBasis)>::Settings settings(
+      {.emod = 1000, .nu = 0.3, .volumeLoad = volumeLoad_,.neumannBoundaryLoad=neumannBoundaryLoad});
+  for (auto& element : elements(coarseGridView))
+    feVectorCoarse.emplace_back(coarseBasis, element, &neumannBoundary, settings);
   auto startSolverConstruction = std::chrono::high_resolution_clock::now();
 
   Ikarus::GeometricMultiGridSolver solver(grid.get(), preBasisFactory, feVectorCoarse);

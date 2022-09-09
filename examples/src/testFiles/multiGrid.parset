@@ -1,5 +1,5 @@
 [GridParameters]
-refinement = 6
+refinement = 5
 meshType = 0
 
 [BasisParameters]
