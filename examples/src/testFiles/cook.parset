@@ -1,0 +1,15 @@
+[GridParameters]
+refinement = 3
+
+[ControlParameters]
+
+[MaterialParameters]
+E      = 1.0
+nu        = 0.3333333333333
+
+
+[ElementParameters]
+
+numberOfEASParameters = 0
+
+[]
