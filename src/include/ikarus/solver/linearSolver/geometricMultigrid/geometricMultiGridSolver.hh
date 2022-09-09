@@ -135,8 +135,7 @@ namespace Ikarus {
       const Eigen::SparseMatrix<double>& KfineRed = assemblers[finestLevel].getReducedMatrix(requirementType);
 
       transfer.prolongateFrom(finestLevel - 1, dCoarseFull, dFineFull);
-//      std::cout<<KfineRed<<std::endl;
-//      std::cout<<"RfineRed.transpose()"<<RfineRed.transpose()<<std::endl;
+
       iterativeSolver.compute(KfineRed);
       assemblers[finestLevel].createReducedVector(dFineFull, dFineRed);
 
