@@ -32,7 +32,7 @@ using namespace Ikarus;
 using namespace Dune::Indices;
 
 int main(int argc, char** argv) {
-  auto start = std::chrono::high_resolution_clock::now();
+//  auto start = std::chrono::high_resolution_clock::now();
   Dune::MPIHelper::instance(argc, argv);
   constexpr int gridDim     = 2;
   double lambdaLoad         = 1;
@@ -47,6 +47,7 @@ int main(int argc, char** argv) {
   easSet << 0,4,5,7;
 
   std::vector<double> dofsVec;
+  std::vector<int> timeVec;
   std::vector<double> dispVec;
   std::vector<std::string> legends;
   /// Draw convergence plots
@@ -56,11 +57,20 @@ int main(int argc, char** argv) {
   ax->y_axis().label("Displacement at top-right tip");
   ax->x_axis().label("Dofs");
 
+  auto f2  = figure(true);
+  auto axesSecondPlot = gca();
+  axesSecondPlot->y_axis().label("Displacement at top-right tip");
+  axesSecondPlot->x_axis().label("time in ms");
+
+
   for(size_t nep=0; nep < easSet.size(); ++nep) {
+
       dofsVec.clear();
       dispVec.clear();
+      timeVec.clear();
       auto grid  = Dune::GmshReader<Grid>::read("../../tests/src/testFiles/cook.msh", false);
-      for (size_t ref = 0; ref < 9; ++ref) {
+      for (size_t ref = 0; ref < 10; ++ref) {
+        auto start = std::chrono::high_resolution_clock::now();
           auto gridView = grid->leafGridView();
           auto numberOfEASParameters = easSet(nep);
 
@@ -147,7 +157,8 @@ int main(int argc, char** argv) {
                                               parameter(D_Glob, lambdaLoad));
           auto stopAssembly = std::chrono::high_resolution_clock::now();
           auto durationAssembly = duration_cast<std::chrono::milliseconds>(stopAssembly - startAssembly);
-//          spdlog::info("The assembly took {} milliseconds with {} EAS parameters and {} refinement level", durationAssembly.count(),numberOfEASParameters,ref);
+          spdlog::info("The assembly took {} milliseconds with {} EAS parameters and {} dofs", durationAssembly.count(),numberOfEASParameters,basis.size());;
+        timeVec.push_back(durationAssembly.count());
           const auto &K = nonLinOp.derivative();
           const auto &Fext = nonLinOp.value();
 
@@ -163,6 +174,9 @@ int main(int argc, char** argv) {
 
           /// Postprocess
           auto dispGlobalFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis, D_Glob);
+        Dune::VTKWriter vtkWriter(gridView, Dune::VTK::conforming);
+        vtkWriter.addVertexData(dispGlobalFunc, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
+        vtkWriter.write("Cook_MembraneConvergence");
           auto localView    = basis.localView();
           auto localw       = localFunction(dispGlobalFunc);
           double uy_fe       = 0.0;
@@ -191,11 +205,22 @@ int main(int argc, char** argv) {
 
       legends.push_back("Q1E"+std::to_string(easSet[nep]));
       auto p = ax->semilogx(dofsVec, dispVec);
+
       p->line_width(2);
       p->marker(line_spec::marker_style::asterisk);
       ax->hold(true);
+
+    auto p2 = axesSecondPlot->semilogx(timeVec, dispVec);
+    p2->line_width(2);
+    p2->marker(line_spec::marker_style::asterisk);
+    axesSecondPlot->hold(true);
   }
   ax->legend(legends);
-//  ax->legend(legend::general_alignment::bottomright);
-  show();
+  axesSecondPlot->legend(legends);
+  auto legend =ax->legend();
+  auto legend2 =axesSecondPlot->legend();
+  legend->location(legend::general_alignment::bottomright);
+  legend2->location(legend::general_alignment::bottomright);
+  f->show();
+  f2->show();
 }
