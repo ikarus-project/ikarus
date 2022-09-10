@@ -173,21 +173,21 @@ namespace Ikarus {
 
         ++iter;
       }
-      dFineFull.setZero();
-
-      const Eigen::SparseMatrix<double>& KfineRed2 = assemblers[finestLevel].getReducedMatrix(requirementType);
-
-      requirementType = Ikarus::FErequirementsBuilder()
-          .insertGlobalSolution(Ikarus::FESolutions::displacement, dFineFull)
-          .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLoad)
-          .addAffordance(Ikarus::VectorAffordances::forces)
-          .build();
-      const Eigen::VectorXd& RfineRed2 = -assemblers[finestLevel].getReducedVector(requirementType);
-
-            Eigen::SimplicialLDLT<std::remove_cvref_t<decltype(KfineRed2)>> solver;
-            solver.compute(KfineRed2);
-            dFineRed = solver.solve(RfineRed2);
-            assemblers[finestLevel].createFullVector(dFineRed, dFineFull);
+//      dFineFull.setZero();
+//
+//      const Eigen::SparseMatrix<double>& KfineRed2 = assemblers[finestLevel].getReducedMatrix(requirementType);
+//
+//      requirementType = Ikarus::FErequirementsBuilder()
+//          .insertGlobalSolution(Ikarus::FESolutions::displacement, dFineFull)
+//          .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLoad)
+//          .addAffordance(Ikarus::VectorAffordances::forces)
+//          .build();
+//      const Eigen::VectorXd& RfineRed2 = -assemblers[finestLevel].getReducedVector(requirementType);
+//
+//            Eigen::CholmodSimplicialLDLT<std::remove_cvref_t<decltype(KfineRed2)>> solver;
+//            solver.compute(KfineRed2);
+//            dFineRed = solver.solve(RfineRed2);
+//            assemblers[finestLevel].createFullVector(dFineRed, dFineFull);
     }
   };
 }  // namespace Ikarus
