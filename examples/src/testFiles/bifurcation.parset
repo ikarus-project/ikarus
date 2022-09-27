@@ -1,11 +1,10 @@
 [GridParameters]
 refinement = 0
-L1 = 1
-L2 = 10
+r = 10
 
 [MaterialParameters]
 E      = 1.0
-nu        = 0.3333333333333
+nu     = 0.3333333333333
 
 [ElementParameters]
 ele_x = 10
