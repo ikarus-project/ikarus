@@ -6,6 +6,8 @@ file(
   CONFIGURE_DEPENDS include/ikarus/*.cpp
 )
 
+
+
 project(
   Ikarus
   VERSION 0.1
@@ -22,4 +24,5 @@ target_include_directories(
                          $<INSTALL_INTERFACE:include>
 )
 
+add_subdirectory(include)
 add_library(Ikarus::Ikarus ALIAS Ikarus)

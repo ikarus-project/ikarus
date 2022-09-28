@@ -17,8 +17,9 @@ include_directories(../libAddons/eigen/eigenAddons)
 
 file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 
-find_package(Catch2 3 REQUIRED)
+find_package(Catch2 3)
 
+if(Catch2_FOUND)
 add_executable(IkarusTests ${sources})
 
 target_link_libraries(
@@ -58,3 +59,5 @@ if(ENABLE_TEST_COVERAGE)
 
   target_link_options(IkarusTests PUBLIC -fprofile-arcs -ftest-coverage)
 endif()
+
+  endif(Catch2_FOUND)
