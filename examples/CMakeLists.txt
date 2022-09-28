@@ -14,6 +14,6 @@ foreach(programSourceFile ${programSourceFiles})
                           -Wno-deprecated-copy -ftemplate-backtrace-limit=0
   )
 
-  target_link_libraries(${programName} PUBLIC Ikarus::Ikarus)
+  target_link_libraries(${programName} PUBLIC Ikarus::ikarus)
   add_dependencies(AllExamples ${programName})
 endforeach()

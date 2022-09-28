@@ -25,7 +25,7 @@ add_executable(IkarusTests ${sources})
 target_link_libraries(
   IkarusTests
   PRIVATE Catch2::Catch2
-  PRIVATE Ikarus::Ikarus
+  PRIVATE Ikarus::inkarus
 )
 set_target_properties(IkarusTests PROPERTIES CXX_STANDARD 20)
 

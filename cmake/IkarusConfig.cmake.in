@@ -1,0 +1,14 @@
+get_filename_component(IKARUS_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+include(CMakeFindDependencyMacro)
+
+list(APPEND CMAKE_MODULE_PATH ${IKARUS_CMAKE_DIR})
+# NOTE: to find FindRapidJSON.cmake
+find_dependency(spdlog)
+find_dependency(Matplot++)
+list(REMOVE_AT CMAKE_MODULE_PATH -1)
+
+if(NOT TARGET Ikarus::Ikarus)
+    include("${IKARUS_CMAKE_DIR}/IkarusTargets.cmake")
+endif()
+
+set(IKARUS_lIBRARIES Ikarus::Ikarus)
