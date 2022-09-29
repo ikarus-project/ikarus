@@ -1,7 +1,8 @@
 //
 #include <config.h>
-#include <dune/common/test/testsuite.hh>
+
 #include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/test/testsuite.hh>
 using Dune::TestSuite;
 //#include "testHelpers.hh"
 //
@@ -10,9 +11,9 @@ using Dune::TestSuite;
 //#include <Eigen/Core>
 //
 //#include <ikarus/utils/polyfit.hh>
-//using namespace Catch;
+// using namespace Catch;
 //
-//TEST_CASE("PolyFitTest: PolyFitTest1", "[polyFitTest.cpp]") {
+// TEST_CASE("PolyFitTest: PolyFitTest1", "[polyFitTest.cpp]") {
 //  Eigen::VectorXd x = Eigen::VectorXd::LinSpaced(10, 0, 10);
 //  Eigen::VectorXd y = Eigen::VectorXd::LinSpaced(10, 2, 20);
 //
@@ -22,7 +23,7 @@ using Dune::TestSuite;
 //  CHECK(1e-14 > normE);
 //}
 //
-//TEST_CASE("PolyFitTest: PolyFitTest2", "[polyFitTest.cpp]") {
+// TEST_CASE("PolyFitTest: PolyFitTest2", "[polyFitTest.cpp]") {
 //  const double factor = 7.6;
 //  Eigen::VectorXd x   = Eigen::VectorXd::LinSpaced(10, 0, 10);
 //  Eigen::VectorXd y   = 7 * x.array().cwiseProduct(x.array()).matrix();
@@ -38,12 +39,11 @@ using Dune::TestSuite;
 //  CHECK(0.0082367593944499204 == Catch::Approx(normE));
 //}
 
-int main(int argc, char** argv)
-{
-    Dune::MPIHelper::instance(argc, argv);
-    TestSuite t;
+int main(int argc, char** argv) {
+  Dune::MPIHelper::instance(argc, argv);
+  TestSuite t;
 
-    //t.subTest(SimpleAssemblersTest());
+  // t.subTest(SimpleAssemblersTest());
 
-    return t.exit();
+  return t.exit();
 }

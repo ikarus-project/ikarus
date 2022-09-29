@@ -1,7 +1,8 @@
 //
 #include <config.h>
-#include <dune/common/test/testsuite.hh>
+
 #include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/test/testsuite.hh>
 using Dune::TestSuite;
 //
 //#include <catch2/catch_test_macros.hpp>
@@ -19,8 +20,8 @@ using Dune::TestSuite;
 //#include <ikarus/utils/functionSanityChecks.hh>
 //#include <ikarus/utils/observer/nonLinearSolverLogger.hh>
 //
-//template <typename SolutionType, typename SolutionTypeExpected, typename NewtonRhapson>
-//void checkNewtonRhapson(NewtonRhapson& nr, SolutionType& x, double tolerance, int maxIter, int iterExpected,
+// template <typename SolutionType, typename SolutionTypeExpected, typename NewtonRhapson>
+// void checkNewtonRhapson(NewtonRhapson& nr, SolutionType& x, double tolerance, int maxIter, int iterExpected,
 //                        const SolutionTypeExpected& xExpected, const auto& x_Predictor) {
 //  nr.setup({tolerance, maxIter});
 //  const auto solverInfo = nr.solve(x_Predictor);
@@ -35,10 +36,10 @@ using Dune::TestSuite;
 //  CHECK(iterExpected == solverInfo.iterations);
 //}
 //
-//auto f(double x) { return 0.5 * x * x + x - 2; }
-//auto df(double x) { return x + 1; }
+// auto f(double x) { return 0.5 * x * x + x - 2; }
+// auto df(double x) { return x + 1; }
 //
-//TEST_CASE("NonLinearOperator: SimpleOperatorNewtonRhapsonTest", "[nonLinearOperatorTest.cpp]") {
+// TEST_CASE("NonLinearOperator: SimpleOperatorNewtonRhapsonTest", "[nonLinearOperatorTest.cpp]") {
 //  double x = 13;
 //
 //  auto fvLambda  = [&](auto&& x) { return f(x); };
@@ -55,15 +56,15 @@ using Dune::TestSuite;
 //  checkNewtonRhapson(nr, x, eps, maxIter, 7, xExpected, 0.0);
 //}
 //
-//Eigen::Vector3d fv(Eigen::Vector3d& x, Eigen::Matrix3d& A, Eigen::Vector3d& b) { return b + A * x; }
-//Eigen::Matrix3d dfv([[maybe_unused]] Eigen::Vector3d& x, Eigen::Matrix3d& A, [[maybe_unused]] Eigen::Vector3d& b) {
+// Eigen::Vector3d fv(Eigen::Vector3d& x, Eigen::Matrix3d& A, Eigen::Vector3d& b) { return b + A * x; }
+// Eigen::Matrix3d dfv([[maybe_unused]] Eigen::Vector3d& x, Eigen::Matrix3d& A, [[maybe_unused]] Eigen::Vector3d& b) {
 //  return A;
 //}
 //
-//auto fp(double x, int i) { return 0.5 * x * x + x * i - 2; }
-//auto dfp(double x, int i) { return x + i; }
+// auto fp(double x, int i) { return 0.5 * x * x + x * i - 2; }
+// auto dfp(double x, int i) { return x + i; }
 //
-//TEST_CASE("NonLinearOperator: SimpleOperatorNewtonRhapsonTestWithParamter", "[nonLinearOperatorTest.cpp]") {
+// TEST_CASE("NonLinearOperator: SimpleOperatorNewtonRhapsonTestWithParamter", "[nonLinearOperatorTest.cpp]") {
 //  double x = 13;
 //
 //  for (int i = 0; i < 3; ++i) {
@@ -82,7 +83,7 @@ using Dune::TestSuite;
 //  }
 //}
 //
-//TEST_CASE("NonLinearOperator: VectorValuedOperatorNewtonMethod", "[nonLinearOperatorTest.cpp]") {
+// TEST_CASE("NonLinearOperator: VectorValuedOperatorNewtonMethod", "[nonLinearOperatorTest.cpp]") {
 //  Eigen::Vector3d x;
 //  x << 1, 2, 3;
 //  Eigen::Vector3d b;
@@ -101,15 +102,15 @@ using Dune::TestSuite;
 //  checkNewtonRhapson(nr, x, eps, maxIter, 1, (-A.ldlt().solve(b)).eval(), Eigen::Vector3d::Zero().eval());
 //}
 //
-//double f2v(Eigen::VectorXd& x, Eigen::MatrixXd& A, Eigen::VectorXd& b) { return x.dot(b + A * x); }
-//Eigen::VectorXd df2v([[maybe_unused]] Eigen::VectorXd& x, Eigen::MatrixXd& A, [[maybe_unused]] Eigen::VectorXd& b) {
+// double f2v(Eigen::VectorXd& x, Eigen::MatrixXd& A, Eigen::VectorXd& b) { return x.dot(b + A * x); }
+// Eigen::VectorXd df2v([[maybe_unused]] Eigen::VectorXd& x, Eigen::MatrixXd& A, [[maybe_unused]] Eigen::VectorXd& b) {
 //  return 2 * A * x + b;
 //}
-//Eigen::MatrixXd ddf2v([[maybe_unused]] Eigen::VectorXd& x, Eigen::MatrixXd& A, [[maybe_unused]] Eigen::VectorXd& b) {
+// Eigen::MatrixXd ddf2v([[maybe_unused]] Eigen::VectorXd& x, Eigen::MatrixXd& A, [[maybe_unused]] Eigen::VectorXd& b) {
 //  return 2 * A;
 //}
 //
-//TEST_CASE("NonLinearOperator: SecondOrderVectorValuedOperator", "[nonLinearOperatorTest.cpp]") {
+// TEST_CASE("NonLinearOperator: SecondOrderVectorValuedOperator", "[nonLinearOperatorTest.cpp]") {
 //  Eigen::VectorXd x(3);
 //
 //  x << 1, 2, 3;
@@ -142,21 +143,22 @@ using Dune::TestSuite;
 //#include <autodiff/forward/dual.hpp>
 //#include <autodiff/forward/dual/eigen.hpp>
 //
-//using namespace autodiff;
-//template <typename ScalarType>
-//ScalarType f2vNL(const Eigen::VectorX<ScalarType>& x, Eigen::MatrixXd&, Eigen::VectorXd&) {
+// using namespace autodiff;
+// template <typename ScalarType>
+// ScalarType f2vNL(const Eigen::VectorX<ScalarType>& x, Eigen::MatrixXd&, Eigen::VectorXd&) {
 //  return x.array().sin().matrix().dot(x);
 //}
 //
-//Eigen::VectorXd df2vNL(Eigen::VectorX<autodiff::dual>& x, Eigen::MatrixXd& A, [[maybe_unused]] Eigen::VectorXd& b) {
+// Eigen::VectorXd df2vNL(Eigen::VectorX<autodiff::dual>& x, Eigen::MatrixXd& A, [[maybe_unused]] Eigen::VectorXd& b) {
 //  return autodiff::gradient(f2vNL<autodiff::dual>, wrt(x), at(x, A, b));
 //}
 //
-//Eigen::MatrixXd ddf2vNL(Eigen::VectorX<autodiff::dual2nd>& x, Eigen::MatrixXd& A, [[maybe_unused]] Eigen::VectorXd& b) {
+// Eigen::MatrixXd ddf2vNL(Eigen::VectorX<autodiff::dual2nd>& x, Eigen::MatrixXd& A, [[maybe_unused]] Eigen::VectorXd&
+// b) {
 //  return autodiff::hessian(f2vNL<autodiff::dual2nd>, wrt(x), at(x, A, b));
 //}
 //
-//TEST_CASE("NonLinearOperator: SecondOrderVectorValuedOperatorNonlinearAutodiff", "[nonLinearOperatorTest.cpp]") {
+// TEST_CASE("NonLinearOperator: SecondOrderVectorValuedOperatorNonlinearAutodiff", "[nonLinearOperatorTest.cpp]") {
 //  Eigen::VectorXd x(3);
 //
 //  x << 1, 2, 3;
@@ -197,13 +199,11 @@ using Dune::TestSuite;
 //  CHECK(-1.1750584073929625716 == Catch::Approx(nonLinOp.value()));
 //}
 
+int main(int argc, char** argv) {
+  Dune::MPIHelper::instance(argc, argv);
+  TestSuite t;
 
-int main(int argc, char** argv)
-{
-    Dune::MPIHelper::instance(argc, argv);
-    TestSuite t;
+  // t.subTest(SimpleAssemblersTest());
 
-    //t.subTest(SimpleAssemblersTest());
-
-    return t.exit();
+  return t.exit();
 }

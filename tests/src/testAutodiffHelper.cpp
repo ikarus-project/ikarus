@@ -1,20 +1,21 @@
 //
 //
 #include <config.h>
-#include <dune/common/test/testsuite.hh>
+
 #include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/test/testsuite.hh>
 using Dune::TestSuite;
 //
 //#include "testHelpers.hh"
 //
 //#include <ikarus/utils/autodiffHelper.hh>
 //
-//template <typename Scalar>
-//Eigen::Vector<Scalar, 2> f(const Eigen::Vector<Scalar, 3>& x) {
+// template <typename Scalar>
+// Eigen::Vector<Scalar, 2> f(const Eigen::Vector<Scalar, 3>& x) {
 //  return (x.array() * (x.array().sin())).template segment<2>(0);
 //}
 //
-//TEST_CASE("AutoDiffHelper: hessianN", "[testAutodiffHelper.cpp]") {
+// TEST_CASE("AutoDiffHelper: hessianN", "[testAutodiffHelper.cpp]") {
 //  Eigen::Vector3d xd;
 //  xd << 1.0, 2.0, 3.0;
 //  Eigen::Vector3dual2nd x = xd;
@@ -35,12 +36,11 @@ using Dune::TestSuite;
 //  }
 //}
 
-int main(int argc, char** argv)
-{
-    Dune::MPIHelper::instance(argc, argv);
-    TestSuite t;
+int main(int argc, char** argv) {
+  Dune::MPIHelper::instance(argc, argv);
+  TestSuite t;
 
-    //t.subTest(SimpleAssemblersTest());
+  // t.subTest(SimpleAssemblersTest());
 
-    return t.exit();
+  return t.exit();
 }

@@ -1,7 +1,8 @@
 //
 #include <config.h>
-#include <dune/common/test/testsuite.hh>
+
 #include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/test/testsuite.hh>
 using Dune::TestSuite;
 //
 //#include "testHelpers.hh"
@@ -17,9 +18,9 @@ using Dune::TestSuite;
 //#include <ikarus/manifolds/unitVector.hh>
 //#include <ikarus/utils/algorithms.hh>
 //
-//static constexpr double tol = 1e-15;
+// static constexpr double tol = 1e-15;
 //
-//TEST_CASE("DefaultVariableTest: UnitVectorDirector", "[manifoldsTest.cpp]") {
+// TEST_CASE("DefaultVariableTest: UnitVectorDirector", "[manifoldsTest.cpp]") {
 //  using namespace Ikarus;
 //  UnitVector<double, 3> a{UnitVector<double, 3>::CoordinateType::UnitZ()};
 //  a.update(Eigen::Vector<double, 2>::UnitX());
@@ -62,13 +63,11 @@ using Dune::TestSuite;
 //  CHECK_THAT(e.getValue(), EigenApproxEqual(eExpected, tol));
 //}
 
+int main(int argc, char** argv) {
+  Dune::MPIHelper::instance(argc, argv);
+  TestSuite t;
 
-int main(int argc, char** argv)
-{
-    Dune::MPIHelper::instance(argc, argv);
-    TestSuite t;
+  // t.subTest(SimpleAssemblersTest());
 
-    //t.subTest(SimpleAssemblersTest());
-
-    return t.exit();
+  return t.exit();
 }

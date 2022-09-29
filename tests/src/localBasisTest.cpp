@@ -1,10 +1,12 @@
 //
 #include <config.h>
-#include <dune/common/test/testsuite.hh>
+
 #include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/test/testsuite.hh>
 using Dune::TestSuite;
 
 #include "common.hh"
+
 #include <complex>
 
 #include <dune/common/classname.hh>
@@ -14,7 +16,6 @@ using Dune::TestSuite;
 #include <dune/grid/yaspgrid.hh>
 
 #include <Eigen/Core>
-
 
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/localFunctions/expressions.hh>
@@ -84,7 +85,7 @@ auto testLocalBasis(LB& localBasis, const Dune::GeometryType& type) {
           auto nonLinOpHg = Ikarus::NonLinearOperator(linearAlgebraFunctions(jacobianLambda1D, hessianLambda),
                                                       parameter(ipOffset1D));
 
-            t.check((checkJacobian<decltype(nonLinOpHg), Eigen::Vector<double, 1>>(
+          t.check((checkJacobian<decltype(nonLinOpHg), Eigen::Vector<double, 1>>(
               nonLinOpHg, {.draw = false, .writeSlopeStatementIfFailed = true, .tolerance = 1e-2})));
           ++i;
         }
@@ -93,31 +94,32 @@ auto testLocalBasis(LB& localBasis, const Dune::GeometryType& type) {
   }
   // Unbound basis checks
   t.check(not localBasis.isBound());
-    try {
-        localBasis.evaluateFunction(0);
-        t.check(false,"The prior function call should have thrown! You should not end up here.");
-    }catch(const std::logic_error& )
-    { }
-    try {
-        localBasis.evaluateJacobian(0);
-        t.check(false,"The prior function call should have thrown! You should not end up here.");
-    }catch(const std::logic_error& )
-    { }
+  try {
+    localBasis.evaluateFunction(0);
+    t.check(false, "The prior function call should have thrown! You should not end up here.");
+  } catch (const std::logic_error&) {
+  }
+  try {
+    localBasis.evaluateJacobian(0);
+    t.check(false, "The prior function call should have thrown! You should not end up here.");
+  } catch (const std::logic_error&) {
+  }
   if constexpr (gridDim > 1) {
-      try {
-          localBasis.evaluateSecondDerivatives(0);
-          t.check(false,"The prior function call should have thrown! You should not end up here.");
-      }catch(const std::logic_error& )
-      { }
+    try {
+      localBasis.evaluateSecondDerivatives(0);
+      t.check(false, "The prior function call should have thrown! You should not end up here.");
+    } catch (const std::logic_error&) {
+    }
     localBasis.bind(rule, bindDerivatives(0, 1, 2));
   } else {
-      localBasis.bind(rule, bindDerivatives(0, 1)); }
-    t.check(localBasis.isBound());
-    return t;
+    localBasis.bind(rule, bindDerivatives(0, 1));
+  }
+  t.check(localBasis.isBound());
+  return t;
 }
 
 template <int domainDim, int order>
-auto localBasisTestConstructor(const Dune::GeometryType& geometryType,[[maybe_unused]] size_t nNodalTestPointsI = 6) {
+auto localBasisTestConstructor(const Dune::GeometryType& geometryType, [[maybe_unused]] size_t nNodalTestPointsI = 6) {
   using namespace Ikarus;
   using namespace Dune::Indices;
 
@@ -129,27 +131,26 @@ auto localBasisTestConstructor(const Dune::GeometryType& geometryType,[[maybe_un
   return testLocalBasis(localBasis, geometryType);
 }
 
-int main(int argc, char** argv)
-{
-    Dune::MPIHelper::instance(argc, argv);
-    TestSuite t;
-    using namespace Dune::GeometryTypes;
-    std::cout << "Test line with linear ansatz functions" << std::endl;
-    t.subTest(localBasisTestConstructor<1, 1>(line));
-    std::cout << "Test line with quadratic ansatz functions" << std::endl;
-    t.subTest(localBasisTestConstructor<1, 2>(line));
-    std::cout << "Test triangle with linear ansatz functions" << std::endl;
-    t.subTest(localBasisTestConstructor<2, 1>(triangle));
-    std::cout << "Test triangle with quadratic ansatz functions" << std::endl;
-    t.subTest(localBasisTestConstructor<2, 2>(triangle));
-    std::cout << "Test quadrilateral with linear ansatz functions" << std::endl;
-    t.subTest(localBasisTestConstructor<2, 1>(quadrilateral));
-    std::cout << "Test quadrilateral with quadratic ansatz functions" << std::endl;
-    t.subTest(localBasisTestConstructor<2, 2>(quadrilateral));
-    std::cout << "Test hexahedron with linear ansatz functions" << std::endl;
-    t.subTest(localBasisTestConstructor<3, 1>(hexahedron));
-    std::cout << "Test hexahedron with quadratic ansatz functions" << std::endl;
-    t.subTest(localBasisTestConstructor<3, 2>(hexahedron));
+int main(int argc, char** argv) {
+  Dune::MPIHelper::instance(argc, argv);
+  TestSuite t;
+  using namespace Dune::GeometryTypes;
+  std::cout << "Test line with linear ansatz functions" << std::endl;
+  t.subTest(localBasisTestConstructor<1, 1>(line));
+  std::cout << "Test line with quadratic ansatz functions" << std::endl;
+  t.subTest(localBasisTestConstructor<1, 2>(line));
+  std::cout << "Test triangle with linear ansatz functions" << std::endl;
+  t.subTest(localBasisTestConstructor<2, 1>(triangle));
+  std::cout << "Test triangle with quadratic ansatz functions" << std::endl;
+  t.subTest(localBasisTestConstructor<2, 2>(triangle));
+  std::cout << "Test quadrilateral with linear ansatz functions" << std::endl;
+  t.subTest(localBasisTestConstructor<2, 1>(quadrilateral));
+  std::cout << "Test quadrilateral with quadratic ansatz functions" << std::endl;
+  t.subTest(localBasisTestConstructor<2, 2>(quadrilateral));
+  std::cout << "Test hexahedron with linear ansatz functions" << std::endl;
+  t.subTest(localBasisTestConstructor<3, 1>(hexahedron));
+  std::cout << "Test hexahedron with quadratic ansatz functions" << std::endl;
+  t.subTest(localBasisTestConstructor<3, 2>(hexahedron));
 
-    return t.exit();
+  return t.exit();
 }

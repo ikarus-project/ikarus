@@ -183,7 +183,6 @@ namespace Ikarus {
       const LocalFunctionEvaluationArgs<Wrt<WrtArgs...>, Along<AlongArgs...>, TransformWith<TransformArgs...>,
                                         DomainTypeOrIntegrationPointIndex>& a) {
     using namespace Dune::Indices;
-    const auto coeffArg = Std::getSpecialization<DerivativeDirections::TwoCoeff>(a.wrtArgs.args);
     auto wrtArg0        = wrt(DerivativeDirections::coeff(a.coeffsIndices[_0][_0], a.coeffsIndices[_0][1]));
     auto wrtArg1        = wrt(DerivativeDirections::coeff(a.coeffsIndices[_1][_0], a.coeffsIndices[_1][1]));
 

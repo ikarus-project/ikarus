@@ -1,6 +1,6 @@
-#install headers
-install(FILES
-        algorithms.hh
+# install headers
+install(
+  FILES algorithms.hh
         autodiffHelper.hh
         concepts.hh
         eigenDuneTransformations.hh
@@ -11,7 +11,8 @@ install(FILES
         namedType.hh
         polyfit.hh
         traits.hh
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/utils)
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/utils
+)
 
 add_subdirectory(drawing)
 add_subdirectory(observer)

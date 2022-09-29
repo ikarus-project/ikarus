@@ -1,8 +1,9 @@
 //
 //
 #include <config.h>
-#include <dune/common/test/testsuite.hh>
+
 #include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/test/testsuite.hh>
 using Dune::TestSuite;
 //
 //#include "testHelpers.hh"
@@ -12,14 +13,14 @@ using Dune::TestSuite;
 //#include <ikarus/manifolds/unitVector.hh>
 //#include <ikarus/solver/nonLinearSolver/trustRegion.hh>
 //
-//auto f(const Eigen::Vector<double, 1>& x) { return 0.5 * x[0] * x[0]; }
-//auto df(const Eigen::Vector<double, 1>& x) {
+// auto f(const Eigen::Vector<double, 1>& x) { return 0.5 * x[0] * x[0]; }
+// auto df(const Eigen::Vector<double, 1>& x) {
 //  Eigen::Vector<double, 1> r;
 //  r[0] = x[0];
 //  return r;
 //}
 //
-//auto ddf(const Eigen::Vector<double, 1>& x) {
+// auto ddf(const Eigen::Vector<double, 1>& x) {
 //  Eigen::SparseMatrix<double> A(1, 1);
 //  A.insert(0, 0);
 //
@@ -28,7 +29,7 @@ using Dune::TestSuite;
 //  return A;
 //}
 //
-//TEST_CASE("TrustRegion: TrustRegion1", "[trustRegionTest.cpp]") {
+// TEST_CASE("TrustRegion: TrustRegion1", "[trustRegionTest.cpp]") {
 //  Eigen::Vector<double, 1> x;
 //  x << 2;
 //
@@ -50,20 +51,20 @@ using Dune::TestSuite;
 //  CHECK_THAT(x, EigenApproxEqual(xExpected, 1e-15));
 //}
 //
-//static constexpr double a_      = 1.0;
-//static constexpr double b_      = 100.0;
-//static constexpr double offset_ = -1;
-//auto rosenbrock(const Eigen::Vector2d& x) {
+// static constexpr double a_      = 1.0;
+// static constexpr double b_      = 100.0;
+// static constexpr double offset_ = -1;
+// auto rosenbrock(const Eigen::Vector2d& x) {
 //  return Dune::power(a_ - x[0], 2) + b_ * Dune::power(x[1] - x[0] * x[0], 2) + offset_;
 //}
-//auto rosenbrockdx(const Eigen::Vector2d& x) {
+// auto rosenbrockdx(const Eigen::Vector2d& x) {
 //  Eigen::Vector2d r;
 //  r[0] = -2 * a_ + 2 * x[0] - 4 * b_ * (-x[0] * x[0] + x[1]) * x[0];
 //  r[1] = 2 * b_ * (-x[0] * x[0] + x[1]);
 //  return r;
 //}
 //
-//auto rosenbrockddx(const Eigen::Vector2d& x) {
+// auto rosenbrockddx(const Eigen::Vector2d& x) {
 //  Eigen::SparseMatrix<double> A(2, 2);
 //  A.insert(0, 0);
 //  A.insert(0, 1);
@@ -76,7 +77,7 @@ using Dune::TestSuite;
 //  return A;
 //}
 //
-//TEST_CASE("TrustRegion: TrustRegion2", "[trustRegionTest.cpp]") {
+// TEST_CASE("TrustRegion: TrustRegion2", "[trustRegionTest.cpp]") {
 //  Eigen::Vector2d x;
 //  x << 2, 3;
 //
@@ -103,15 +104,16 @@ using Dune::TestSuite;
 //
 //#include <autodiff/forward/dual.hpp>
 //#include <autodiff/forward/dual/eigen.hpp>
-//using namespace autodiff;
+// using namespace autodiff;
 //
-//template <typename ScalarType>
-//ScalarType f3(const Eigen::Vector2<ScalarType>& x) {
+// template <typename ScalarType>
+// ScalarType f3(const Eigen::Vector2<ScalarType>& x) {
 //  return -10 * x[0] * x[0] + 10 * x[1] * x[1] + 4 * sin(x[0] * x[1]) - 2 * x[0] + Dune::power(x[0], 4);
 //}
-//Eigen::Vector2d df3(Eigen::Vector2<autodiff::dual>& x) { return autodiff::gradient(f3<autodiff::dual>, wrt(x), at(x)); }
+// Eigen::Vector2d df3(Eigen::Vector2<autodiff::dual>& x) { return autodiff::gradient(f3<autodiff::dual>, wrt(x),
+// at(x)); }
 //
-//auto ddf3(Eigen::Vector2<autodiff::dual2nd>& x) {
+// auto ddf3(Eigen::Vector2<autodiff::dual2nd>& x) {
 //  Eigen::SparseMatrix<double> A(2, 2);
 //  Eigen::Matrix2d h = autodiff::hessian(f3<autodiff::dual2nd>, wrt(x), at(x));
 //  A.insert(0, 0)    = h(0, 0);
@@ -122,7 +124,7 @@ using Dune::TestSuite;
 //  return A;
 //}
 //
-//TEST_CASE("TrustRegion: TrustRegion3", "[trustRegionTest.cpp]") {
+// TEST_CASE("TrustRegion: TrustRegion3", "[trustRegionTest.cpp]") {
 //  Eigen::Vector2d x(2);
 //  x << 0.7, -3.3;
 //
@@ -174,14 +176,14 @@ using Dune::TestSuite;
 //  CHECK(-31.180733385187978 == Catch::Approx(nonLinOp.value()));
 //}
 //
-//template <typename ScalarType = double>
-//ScalarType f3R(const Ikarus::UnitVector<double, 2>& x,
+// template <typename ScalarType = double>
+// ScalarType f3R(const Ikarus::UnitVector<double, 2>& x,
 //               const Eigen::Vector<ScalarType, 2>& dx = Eigen::Vector<ScalarType, 2>::Zero()) {
 //  Eigen::Vector<ScalarType, 2> y = x.getValue();
 //  y += dx;
 //  return y[0] * y[0];
 //}
-//Eigen::Vector<double, 1> df3R(const Ikarus::UnitVector<double, 2>& x) {
+// Eigen::Vector<double, 1> df3R(const Ikarus::UnitVector<double, 2>& x) {
 //  const auto y                        = x.getValue();
 //  Eigen::Vector<autodiff::dual, 2> xR = Eigen::Vector<autodiff::dual, 2>::Zero();
 //  auto dfvLambda                      = [&](auto&& xRL) { return f3R<autodiff::dual>(x, xRL); };
@@ -192,7 +194,7 @@ using Dune::TestSuite;
 //  return g.transpose() * BLA;
 //}
 //
-//auto ddf3R(const Ikarus::UnitVector<double, 2>& x) {
+// auto ddf3R(const Ikarus::UnitVector<double, 2>& x) {
 //  Eigen::SparseMatrix<double> A(1, 1);
 //  Eigen::Vector<autodiff::dual2nd, 2> xR = Eigen::Vector<autodiff::dual2nd, 2>::Zero();
 //  auto dfvLambda                         = [&](auto&& xRL) { return f3R<autodiff::dual2nd>(x, xRL); };
@@ -207,7 +209,7 @@ using Dune::TestSuite;
 //  return A;
 //}
 //
-//TEST_CASE("TrustRegion: TrustRegionRiemanianUnitSphere", "[trustRegionTest.cpp]") {
+// TEST_CASE("TrustRegion: TrustRegionRiemanianUnitSphere", "[trustRegionTest.cpp]") {
 //  auto d = Ikarus::UnitVector<double, 2>();
 //  d.update(Eigen::Vector<double, 1>::Ones());
 //  auto fvLambda = [](auto&& xL) { return f3R(xL); };
@@ -237,12 +239,12 @@ using Dune::TestSuite;
 //
 //#include <dune/istl/bvector.hh>
 //#include <dune/istl/multitypeblockvector.hh>
-//using DirectorVector     = Dune::BlockVector<Ikarus::UnitVector<double, 3>>;
-//using DisplacementVector = Dune::BlockVector<Ikarus::RealTuple<double, 3>>;
-//using MultiTypeVector    = Dune::MultiTypeBlockVector<DisplacementVector, DirectorVector>;
+// using DirectorVector     = Dune::BlockVector<Ikarus::UnitVector<double, 3>>;
+// using DisplacementVector = Dune::BlockVector<Ikarus::RealTuple<double, 3>>;
+// using MultiTypeVector    = Dune::MultiTypeBlockVector<DisplacementVector, DirectorVector>;
 //
-//template <typename ScalarType = double>
-//ScalarType f3RBlocked(const MultiTypeVector& mT, const Eigen::VectorX<ScalarType>& dx) {
+// template <typename ScalarType = double>
+// ScalarType f3RBlocked(const MultiTypeVector& mT, const Eigen::VectorX<ScalarType>& dx) {
 //  using namespace Dune::Indices;
 //  auto& disp                          = mT[_0];
 //  auto& dir                           = mT[_1];
@@ -257,7 +259,7 @@ using Dune::TestSuite;
 //  }
 //  return energy + dualDisp.squaredNorm() + dualDisp.dot(dualDir);
 //}
-//Eigen::VectorXd df3RBlocked(const MultiTypeVector& mT) {
+// Eigen::VectorXd df3RBlocked(const MultiTypeVector& mT) {
 //  using namespace Dune::Indices;
 //  auto& disp = mT[_0];
 //  auto& dir  = mT[_1];
@@ -281,7 +283,7 @@ using Dune::TestSuite;
 //  return gRed;
 //}
 //
-//auto ddf3RBlocked(const MultiTypeVector& mT) {
+// auto ddf3RBlocked(const MultiTypeVector& mT) {
 //  Eigen::SparseMatrix<double> A;
 //  using namespace Dune::Indices;
 //  auto& disp = mT[_0];
@@ -358,7 +360,7 @@ using Dune::TestSuite;
 //  return A;
 //}
 //
-//TEST_CASE("TrustRegion: TrustRegionRiemanianUnitSphereAndDispBlocked", "[trustRegionTest.cpp]") {
+// TEST_CASE("TrustRegion: TrustRegionRiemanianUnitSphereAndDispBlocked", "[trustRegionTest.cpp]") {
 //  using namespace Dune::Indices;
 //  using namespace Ikarus;
 //  DisplacementVector disp;
@@ -411,12 +413,11 @@ using Dune::TestSuite;
 //    CHECK_THAT(displacement.getValue(), EigenApproxEqual(-0.5 * Eigen::Vector3d::UnitZ(), 1e-14));
 //}
 
-int main(int argc, char** argv)
-{
-    Dune::MPIHelper::instance(argc, argv);
-    TestSuite t;
+int main(int argc, char** argv) {
+  Dune::MPIHelper::instance(argc, argv);
+  TestSuite t;
 
-    //t.subTest(SimpleAssemblersTest());
+  // t.subTest(SimpleAssemblersTest());
 
-    return t.exit();
+  return t.exit();
 }

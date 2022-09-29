@@ -1,6 +1,7 @@
 #include <config.h>
-#include <dune/common/test/testsuite.hh>
+
 #include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/test/testsuite.hh>
 using Dune::TestSuite;
 
 #include <fstream>
@@ -19,9 +20,9 @@ void foo() {
 }
 
 auto spdlogTest() {
-    TestSuite t("spdlogTest");
+  TestSuite t("spdlogTest");
 
-    auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+  auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
   console_sink->set_level(spdlog::level::trace);
   console_sink->set_pattern("[%^%l%$] %v");
 
@@ -65,15 +66,14 @@ auto spdlogTest() {
 [info] [1, 2, 3]
 )xxx";
   t.check(file == expectedOutput);
-    return t;
+  return t;
 }
 
-int main(int argc, char** argv)
-{
-    Dune::MPIHelper::instance(argc, argv);
-    TestSuite t;
+int main(int argc, char** argv) {
+  Dune::MPIHelper::instance(argc, argv);
+  TestSuite t;
 
-    t.subTest(spdlogTest());
+  t.subTest(spdlogTest());
 
-    return t.exit();
+  return t.exit();
 }

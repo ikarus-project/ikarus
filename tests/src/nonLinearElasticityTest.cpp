@@ -1,7 +1,8 @@
 //
 #include <config.h>
-#include <dune/common/test/testsuite.hh>
+
 #include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/test/testsuite.hh>
 using Dune::TestSuite;
 //
 //#include <catch2/catch_template_test_macros.hpp>
@@ -30,7 +31,7 @@ using Dune::TestSuite;
 //#include <ikarus/utils/drawing/griddrawer.hh>
 //#include <ikarus/utils/observer/controlVTKWriter.hh>
 //
-//TEMPLATE_TEST_CASE("NonLinearElasticityLoadControlNRandTR: ComputeMaxDisp", "[nonLinearElasticityTest.cpp]",
+// TEMPLATE_TEST_CASE("NonLinearElasticityLoadControlNRandTR: ComputeMaxDisp", "[nonLinearElasticityTest.cpp]",
 //                   Grids::Yasp, Grids::Alu, Grids::Iga) {
 //  auto grid     = createGrid<TestType>();
 //  auto gridView = grid->leafGridView();
@@ -135,12 +136,11 @@ using Dune::TestSuite;
 //  CHECK(gradTol >= nonLinOp.derivative().norm());
 //}
 
-int main(int argc, char** argv)
-{
-    Dune::MPIHelper::instance(argc, argv);
-    TestSuite t;
+int main(int argc, char** argv) {
+  Dune::MPIHelper::instance(argc, argv);
+  TestSuite t;
 
-//    //t.subTest(SimpleAssemblersTest());
+  //    //t.subTest(SimpleAssemblersTest());
 
-    return t.exit();
+  return t.exit();
 }

@@ -1,6 +1,6 @@
-#install headers
-install(FILES
-        constant.hh
+# install headers
+install(
+  FILES constant.hh
         binaryExpr.hh
         dotProductExpr.hh
         exprChecks.hh
@@ -11,6 +11,7 @@ install(FILES
         scaleExpr.hh
         sumExpr.hh
         unaryExpr.hh
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/localFunctions/expressions)
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/localFunctions/expressions
+)
 
 add_subdirectory(scalarUnaryExpressions)

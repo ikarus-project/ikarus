@@ -1,15 +1,16 @@
 //
 //
 #include <config.h>
-#include <dune/common/test/testsuite.hh>
+
 #include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/test/testsuite.hh>
 using Dune::TestSuite;
 //
 //#include "testHelpers.hh"
 //
 //#include <ikarus/localFunctions/meta.hh>
 //#include <ikarus/utils/traits.hh>
-//TEST_CASE("TraitsTest: LocalFunctionTest", "[traitsTest.cpp]") {
+// TEST_CASE("TraitsTest: LocalFunctionTest", "[traitsTest.cpp]") {
 //  using namespace Ikarus::DerivativeDirections;
 //  auto wrt1 = Ikarus::wrt(spatial(0), coeff(7));
 //
@@ -30,7 +31,7 @@ using Dune::TestSuite;
 //  CHECK(1 == counter.spatialAllCounter);
 //}
 //
-//TEST_CASE("TraitsTest: TreePathCoeffs", "[traitsTest.cpp]") {
+// TEST_CASE("TraitsTest: TreePathCoeffs", "[traitsTest.cpp]") {
 //  using namespace Ikarus::DerivativeDirections;
 //  using namespace Dune::Indices;
 //  auto coeffTwo = coeff(_0, 7, _1, 9);
@@ -46,7 +47,7 @@ using Dune::TestSuite;
 //  CHECK(1 == coeffSingle.index[_0][1]);
 //}
 //
-//TEST_CASE("TraitsTest: testTupleFilter", "[traitsTest.cpp]") {
+// TEST_CASE("TraitsTest: testTupleFilter", "[traitsTest.cpp]") {
 //  using namespace Ikarus::DerivativeDirections;
 //  using namespace Dune::Indices;
 //  auto tup                 = std::make_tuple(_0, _1, _3, Ikarus::arithmetic);
@@ -61,7 +62,7 @@ using Dune::TestSuite;
 //  static_assert(std::is_same_v<decltype(filteredTup2), decltype(filteredTupExpected)>);
 //}
 //
-//TEST_CASE("TraitsTest: makeNestedTupleFlat", "[traitsTest.cpp]") {
+// TEST_CASE("TraitsTest: makeNestedTupleFlat", "[traitsTest.cpp]") {
 //  std::vector<int> expectedValues({0, 1, 1, 2, 3, 1, 2, 9});
 //  std::tuple<std::tuple<int, std::tuple<std::tuple<int, std::tuple<double, float>>, float>>,
 //             std::tuple<int, std::tuple<double, float>>>
@@ -72,7 +73,8 @@ using Dune::TestSuite;
 //  std::tuple<int, int, double, float, float, int, double, float> aFlat;
 //
 //  static_assert(std::is_same_v<decltype(aFlat), decltype(Ikarus::Std::makeNestedTupleFlat(a))>);
-//  static_assert(std::is_same_v<std::tuple<const int&, const int&, const double&, const float&, const float&, const int&,
+//  static_assert(std::is_same_v<std::tuple<const int&, const int&, const double&, const float&, const float&, const
+//  int&,
 //                                          const double&, const float&>,
 //                               decltype(Ikarus::Std::makeNestedTupleFlatAndStoreReferences(y))>);
 //  static_assert(std::is_same_v<std::tuple<int&, int&, double&, float&, float&, int&, double&, float&>,
@@ -88,7 +90,7 @@ using Dune::TestSuite;
 //                        [&](const auto i) { CHECK(expectedValues[i] == std::get<i>(reducedTupleConst)); });
 //}
 //
-//TEST_CASE("TraitsTest: testRebind", "[traitsTest.cpp]") {
+// TEST_CASE("TraitsTest: testRebind", "[traitsTest.cpp]") {
 //  std::vector<int> a;
 //  using namespace Ikarus::Std;
 //  using reboundVector = Rebind<std::vector<int>, double>::other;
@@ -107,12 +109,11 @@ using Dune::TestSuite;
 //  static_assert(areTypesEqual(bA, cA));
 //}
 
-int main(int argc, char** argv)
-{
-    Dune::MPIHelper::instance(argc, argv);
-    TestSuite t;
+int main(int argc, char** argv) {
+  Dune::MPIHelper::instance(argc, argv);
+  TestSuite t;
 
-    //t.subTest(SimpleAssemblersTest());
+  // t.subTest(SimpleAssemblersTest());
 
-    return t.exit();
+  return t.exit();
 }

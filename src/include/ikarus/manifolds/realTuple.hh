@@ -101,11 +101,11 @@ namespace Ikarus {
       return *this;
     }
 
-    Eigen::Matrix<ctype, valueSize, valueSize> weingartenMapEmbedded(const CoordinateType &p) const {
+    Eigen::Matrix<ctype, valueSize, valueSize> weingartenMapEmbedded(const CoordinateType &) const {
       return Eigen::Matrix<ctype, valueSize, valueSize>::Zero();
     }
 
-    Eigen::Matrix<ctype, correctionSize, correctionSize> weingartenMap(const CoordinateType &p) const {
+    Eigen::Matrix<ctype, correctionSize, correctionSize> weingartenMap(const CoordinateType &) const {
       return Eigen::Matrix<ctype, correctionSize, correctionSize>::Zero();
     }
 
