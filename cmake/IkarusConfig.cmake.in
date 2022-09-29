@@ -6,6 +6,7 @@ list(APPEND CMAKE_MODULE_PATH ${IKARUS_CMAKE_DIR})
 find_dependency(spdlog)
 find_dependency(Matplot++)
 find_dependency(Eigen3)
+find_package(QuadMath)
 list(REMOVE_AT CMAKE_MODULE_PATH -1)
 
 if(NOT TARGET Ikarus::Ikarus)

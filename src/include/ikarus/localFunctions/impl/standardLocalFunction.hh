@@ -133,7 +133,7 @@ namespace Ikarus {
     template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
     CoeffDerivMatrix evaluateDerivativeWRTCoeffsImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
                                                      int coeffsIndex,
-                                                     const TransformWith<TransformArgs...>& transArgs) const {
+                                                     const TransformWith<TransformArgs...>&) const {
       const auto& N = evaluateFunctionWithIPorCoord(ipIndexOrPosition, basis_);
       CoeffDerivMatrix mat;
       mat.setIdentity(valueSize);

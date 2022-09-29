@@ -18,3 +18,4 @@ foreach(programSourceFile ${programSourceFiles})
       endif()
 endforeach()
 
+file(COPY testFiles/unstructuredTrianglesfine.msh DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/testFiles)

@@ -87,9 +87,6 @@ auto testLocalFunction(const LF &lf) {
       auto spatialDerivAll
           = [&](auto &gpOffset_) { return lf.evaluateDerivative(toFieldVector(gpOffset_), Ikarus::wrt(spatialAll)); };
 
-      auto derivDerivSingle = [&](auto gpOffset_, int spatialIndex) {
-        return lf.evaluateDerivative(toFieldVector(gpOffset_), Ikarus::wrt(spatial(spatialIndex)));
-      };
       Eigen::Vector<double, gridDim> ipOffset = (Eigen::Vector<double, gridDim>::Random()).normalized() / 16;
       try {
         auto nonLinOpSpatialAll
