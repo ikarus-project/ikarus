@@ -32,15 +32,15 @@ jobs:
           - {
             name: "GCC-Debug",
             config: Debug,
-            compilerC: cc,
-            compilerCxx: c++,
+            compilerC: gcc-12,
+            compilerCxx: g++-12,
             lib: ""
           }
           - {
             name: "GCC-Release",
             config: Release,
-            compilerC: cc,
-            compilerCxx: c++,
+            compilerC: gcc-12,
+            compilerCxx: g++-12,
             lib: ""
           }
     steps:
