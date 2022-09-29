@@ -32,15 +32,15 @@ jobs:
           - {
             name: "GCC-Debug",
             config: Debug,
-            compilerC: gcc-11,
-            compilerCxx: g++-11,
+            compilerC: gcc-12,
+            compilerCxx: g++-12,
             lib: ""
           }
           - {
             name: "GCC-Release",
             config: Release,
-            compilerC: gcc-11,
-            compilerCxx: g++-11,
+            compilerC: gcc-12,
+            compilerCxx: g++-12,
             lib: ""
           }
     steps:
@@ -52,7 +52,7 @@ jobs:
         run: |
           mkdir cmake-build-${{ matrix.config.config }}
           cd cmake-build-${{ matrix.config.config }}
-          cmake ../  -DCMAKE_BUILD_TYPE=${{ matrix.config.config }} -G "Unix Makefiles" -DCMAKE_C_COMPILER=${{ matrix.config.compilerC }} -DCMAKE_CXX_COMPILER=${{ matrix.config.compilerCxx }} -DCMAKE_CXX_FLAGS="-Wall -Wpedantic -Wextra -Werror ${{ matrix.config.lib }}"
+          cmake ../  -DCMAKE_BUILD_TYPE=${{ matrix.config.config }} -G "Unix Makefiles" -DCMAKE_C_COMPILER=${{ matrix.config.compilerC }} -DCMAKE_CXX_COMPILER=${{ matrix.config.compilerCxx }}
           cmake --build . --parallel 2 --target IkarusTests
       - name: Tests
         working-directory: ./repo/cmake-build-${{ matrix.config.config }}
