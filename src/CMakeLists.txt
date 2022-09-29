@@ -19,10 +19,10 @@ target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
 include(../cmake/AddDependencies.cmake)
 
-#target_include_directories(
-#  ${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-#                         $<INSTALL_INTERFACE:include>
-#)
+target_include_directories(
+  ${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                         $<INSTALL_INTERFACE:include>
+)
 
 add_subdirectory(include)
 add_library(Ikarus::ikarus ALIAS ikarus)

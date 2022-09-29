@@ -1,4 +1,3 @@
-
 /*
  * This file is part of the Ikarus distribution (https://github.com/IkarusRepo/Ikarus).
  * Copyright (c) 2022. The Ikarus developers.
@@ -20,55 +19,20 @@
 
 #pragma once
 
-#include <catch2/matchers/catch_matchers_templated.hpp>
-
 #include <Eigen/Core>
 
-template <typename Derived>
-struct EigenApproxEqual : Catch::Matchers::MatcherGenericBase {
-  EigenApproxEqual(Eigen::EigenBase<Derived> const& vMB, double prec) : v{vMB.derived()}, prec{prec} {}
-
-  template <typename OtherDerived>
-  bool match(Eigen::EigenBase<OtherDerived> const& otherMB) const {
-    const OtherDerived& other = otherMB.derived();
+template <typename Derived, typename OtherDerived>
+requires(std::convertible_to<Derived, Eigen::EigenBase<Derived> const&>
+and std::convertible_to<OtherDerived, Eigen::EigenBase<OtherDerived> const&>)
+bool
+isApproxSame(Derived const& val, OtherDerived const& other, double prec) {
     if constexpr (requires {
-                    v.isApprox(other, prec);
-                    (v - other).isMuchSmallerThan(1, prec);
-                  })
-      return v.isApprox(other, prec) or (v - other).isZero(prec);
-    else if constexpr (requires { v.isApprox(other, prec); })
-      return v.isApprox(other, prec);
+            val.isApprox(other, prec);
+            (val - other).isMuchSmallerThan(1, prec);
+    })
+        return val.isApprox(other, prec) or (val - other).isZero(prec);
+    else if constexpr (requires { val.isApprox(other, prec); })
+        return val.isApprox(other, prec);
     else  // Eigen::DiagonalMatrix branch
-      return v.diagonal().isApprox(other.diagonal(), prec) or (v.diagonal() - other.diagonal()).isZero(prec);
-  }
-
-  std::string describe() const override {
-    std::stringstream stringstream;
-
-    if constexpr (std::convertible_to<Derived, const Eigen::MatrixBase<Derived>&>) {
-      stringstream << v;
-    } else {  // branch for Eigen::DiagonalMatrix
-      using Scalar = typename Derived::Scalar;
-      using namespace Eigen;
-      constexpr int diag_size = EIGEN_SIZE_MIN_PREFER_DYNAMIC(Derived::RowsAtCompileTime, Derived::ColsAtCompileTime);
-      stringstream << Eigen::Matrix<Scalar, diag_size, diag_size>(v.derived().diagonal().asDiagonal());
-    }
-    return "Equals: " + stringstream.str();
-  }
-
-private:
-  Derived const& v;
-  double prec;
-};
-
-// MATCHER_P2(EigenApproxEqual, expect, prec,
-//           std::string(negation ? "isn't" : "is") + " approx equal to\n" + ::testing::PrintToString(expect)
-//               + "\nwith precision " + ::testing::PrintToString(prec)) {
-//
-// }
-//
-// MATCHER_P(EigenExactEqual, expect,
-//          std::string(negation ? "isn't" : "is") + " equal to" + ::testing::PrintToString(expect)) {
-//  return ((arg == expect) == true).all();
-// }
-//
+        return val.diagonal().isApprox(other.diagonal(), prec) or (val.diagonal() - other.diagonal()).isZero(prec);
+}

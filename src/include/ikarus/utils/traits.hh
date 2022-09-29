@@ -218,8 +218,6 @@ namespace Ikarus::Std {
   template <typename Tuple, typename Predicate>
   constexpr size_t count_if(Tuple&& tuple, Predicate pred) {
     size_t counter      = 0;
-    size_t currentIndex = 0;
-    bool found          = false;
     Dune::Hybrid::forEach(tuple, [&](auto&& value) {
       if (pred(value)) ++counter;
     });
@@ -229,7 +227,7 @@ namespace Ikarus::Std {
   template <template <auto...> class Type, typename Tuple>
   constexpr int findTypeSpecialization() {
     return find_if(std::remove_cvref_t<Tuple>(),
-                   []<typename T>(T&& value) { return IsSpecializationNonTypes<Type, std::remove_cvref_t<T>>::value; });
+                   []<typename T>(T&& ) { return IsSpecializationNonTypes<Type, std::remove_cvref_t<T>>::value; });
   }
   template <template <auto...> class Type, typename Tuple>
   auto getSpecialization(Tuple&& tuple) {
@@ -240,14 +238,14 @@ namespace Ikarus::Std {
   template <template <auto...> class Type, typename Tuple>
   constexpr bool hasTypeSpecialization() {
     return (find_if(std::remove_cvref_t<Tuple>(),
-                    []<typename T>(T&& value) { return IsSpecializationNonTypes<Type, std::remove_cvref_t<T>>::value; })
+                    []<typename T>(T&& ) { return IsSpecializationNonTypes<Type, std::remove_cvref_t<T>>::value; })
             < std::tuple_size_v<std::remove_cvref_t<Tuple>>);
   }
 
   template <template <auto...> class Type, typename Tuple>
   constexpr bool countTypeSpecialization() {
     return count_if(
-        Tuple(), []<typename T>(T&& value) { return IsSpecializationNonTypes<Type, std::remove_cvref_t<T>>::value; });
+        Tuple(), []<typename T>(T&& ) { return IsSpecializationNonTypes<Type, std::remove_cvref_t<T>>::value; });
   }
   template <template <auto...> class Type, typename Tuple>
   static constexpr bool countTypeSpecialization_v = countTypeSpecialization<Type, Tuple>();

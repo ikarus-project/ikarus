@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 file(GLOB programSourceFiles CONFIGURE_DEPENDS src/*.cpp)
 include_directories(../libAddons/eigen/eigenAddons)
 add_custom_target(AllExamples) # Create target that includes all examples
-include(DuneMacros)
 foreach(programSourceFile ${programSourceFiles})
   get_filename_component(programName ${programSourceFile} NAME_WLE)
   add_executable(${programName} ${programSourceFile})

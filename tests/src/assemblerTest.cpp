@@ -1,9 +1,4 @@
-
-
 #include <config.h>
-
-#include <catch2/catch_test_macros.hpp>
-#include <catch2/matchers/catch_matchers_all.hpp>
 
 #include "testHelpers.hh"
 
@@ -14,13 +9,17 @@
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/grid/yaspgrid.hh>
-
+#include <dune/common/test/testsuite.hh>
+#include <dune/common/parallel/mpihelper.hh>
+using Dune::TestSuite;
 #include <Eigen/Core>
 
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/finiteElements/mechanics/nonLinearElasticityFE.hh>
 
-TEST_CASE("Assembler: SimpleAssemblersTest", "[assemblerTest.cpp]") {
+
+auto SimpleAssemblersTest() {
+  TestSuite t("SimpleAssemblersTest");
   using Grid = Dune::YaspGrid<2>;
 
   Dune::FieldVector<double, 2> bbox = {4, 2};
@@ -33,11 +32,9 @@ TEST_CASE("Assembler: SimpleAssemblersTest", "[assemblerTest.cpp]") {
     using namespace Dune::Functions::BasisFactory;
     auto basis = makeBasis(gridView, power<2>(lagrange<1>(), FlatInterleaved()));
 
-    const auto& indexSet = gridView.indexSet();
-
     std::vector<Ikarus::NonLinearElasticityFE<decltype(basis)>> fes;
     const double Emodul = 1000;
-    auto volumeLoad     = [](const auto& globalCoord, const auto& lamb) {  // FIXME makeAnalytic globa function
+    auto volumeLoad     = []([[maybe_unused]] const auto& globalCoord, const auto& lamb) {  // FIXME makeAnalytic globa function
       Eigen::Vector2d fext;
       fext.setZero();
       fext[1] = 2 * lamb;
@@ -66,19 +63,29 @@ TEST_CASE("Assembler: SimpleAssemblersTest", "[assemblerTest.cpp]") {
     auto& K      = sparseFlatAssembler.getMatrix(req);
 
     const auto fixedDofs = std::ranges::count(dirichFlags, true);
-    CHECK_THAT(K, EigenApproxEqual(Kdense, 1e-15));
-    CHECK(K.rows() == 2 * gridView.size(2));
-    CHECK(K.cols() == 2 * gridView.size(2));
+      t.check(isApproxSame(K, Kdense, 1e-15),"Dense==Sparse");
+      t.check(K.rows() == 2 * gridView.size(2),"DofsCheck");
+      t.check(K.cols() == 2 * gridView.size(2),"DofsCheck");
     const int boundaryNodes = (eles[0] * Dune::power(2, i) + 1) * 2 + (eles[1] * Dune::power(2, i) + 1) * 2 - 4;
-    CHECK(2 * boundaryNodes == fixedDofs);
+      t.check(2 * boundaryNodes == fixedDofs);
 
     auto& KdenseRed = denseFlatAssembler.getReducedMatrix(req);
     auto& KRed      = sparseFlatAssembler.getReducedMatrix(req);
 
-    CHECK_THAT(KRed, EigenApproxEqual(KdenseRed, 1e-15));
-    CHECK(KRed.rows() == 2 * gridView.size(2) - fixedDofs);
-    CHECK(KRed.cols() == 2 * gridView.size(2) - fixedDofs);
+    t.check(isApproxSame(KRed, KdenseRed, 1e-15),"DenseRed==SparseRed");
+    t.check(KRed.rows() == 2 * gridView.size(2) - fixedDofs,"DofsCheckRed");
+    t.check(KRed.cols() == 2 * gridView.size(2) - fixedDofs,"DofsCheckRed");
 
     grid->globalRefine(1);
   }
+  return t;
+}
+
+int main(int argc, char** argv)
+{
+    Dune::MPIHelper::instance(argc, argv);
+    TestSuite t;
+
+    t.subTest(SimpleAssemblersTest());
+    return t.exit();
 }

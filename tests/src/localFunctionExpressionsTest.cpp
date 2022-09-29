@@ -1,8 +1,8 @@
 
 #include <config.h>
-
-#include <catch2/catch_test_macros.hpp>
-#include <catch2/matchers/catch_matchers_all.hpp>
+#include <dune/common/test/testsuite.hh>
+#include <dune/common/parallel/mpihelper.hh>
+using Dune::TestSuite;
 
 #include "common.hh"
 #include "factories.hh"
@@ -39,7 +39,8 @@
 using namespace Dune::Functions::BasisFactory;
 
 template <typename LF, bool isCopy = false>
-void testLocalFunction(const LF &lf) {
+auto testLocalFunction(const LF &lf) {
+    TestSuite t(Ikarus::localFunctionName(lf));
   spdlog::info("Testing: " + std::string(isCopy ? "Copy " : "") + Ikarus::localFunctionName(lf));
 
   const double tol = 1e-12;
@@ -94,7 +95,7 @@ void testLocalFunction(const LF &lf) {
         auto nonLinOpSpatialAll
             = Ikarus::NonLinearOperator(linearAlgebraFunctions(func, spatialDerivAll), parameter(ipOffset));
 
-        REQUIRE((checkJacobian<decltype(nonLinOpSpatialAll), Eigen::Vector<double, gridDim>>(
+        t.check((checkJacobian<decltype(nonLinOpSpatialAll), Eigen::Vector<double, gridDim>>(
             nonLinOpSpatialAll, {.draw = false, .writeSlopeStatementIfFailed = true, .tolerance = 1e-2})));
       } catch (const Dune::NotImplemented &exception) {
         spdlog::info(
@@ -120,7 +121,7 @@ void testLocalFunction(const LF &lf) {
         try {
           auto nonLinOpSpatialSingle = Ikarus::NonLinearOperator(linearAlgebraFunctions(funcSingle, derivDerivSingleI),
                                                                  parameter(ipOffsetSingle));
-          REQUIRE((checkJacobian<decltype(nonLinOpSpatialSingle), Eigen::Vector<double, 1>>(
+            t.check((checkJacobian<decltype(nonLinOpSpatialSingle), Eigen::Vector<double, 1>>(
               nonLinOpSpatialSingle, {.draw = false, .writeSlopeStatementIfFailed = true, .tolerance = 1e-2})));
         } catch (const Dune::NotImplemented &exception) {
           spdlog::info(
@@ -194,9 +195,8 @@ void testLocalFunction(const LF &lf) {
       const auto jacobianWRTCoeffs = ((alongVec.transpose() * jacobianWRTCoeffslf).transpose()).eval();
       static_assert(jacobianWRTCoeffs.cols() == 1);
       static_assert(jacobianWRTCoeffs.rows() == coeffCorrectionSize);
-      CHECK_THAT(jacobianWRTCoeffs,
-                 EigenApproxEqual(
-                     BLAi.transpose() * gradienWRTCoeffs.template segment<coeffValueSize>(i * coeffValueSize), tol));
+        t.check(isApproxSame(jacobianWRTCoeffs,
+                                      BLAi.transpose() * gradienWRTCoeffs.template segment<coeffValueSize>(i * coeffValueSize), tol));
 
       if (spatialSingleImplemented)
         for (int d = 0; d < gridDim; ++d) {
@@ -213,10 +213,10 @@ void testLocalFunction(const LF &lf) {
           static_assert(jacoWrtCoeffAndSpatial.rows() == jacoWrtCoeffAndSpatial.rows()
                         and jacoWrtCoeffAndSpatial.cols() == jacoWrtCoeffAndSpatial.cols());
 
-          CHECK_THAT(jacoWrtCoeffAndSpatial, EigenApproxEqual(jacoWrtSpatialAndCoeff, tol));
+            t.check(isApproxSame(jacoWrtCoeffAndSpatial, jacoWrtSpatialAndCoeff, tol));
 
-          CHECK_THAT(jacoWrtCoeffAndSpatial,
-                     EigenApproxEqual(BLAi.transpose()
+            t.check(isApproxSame(jacoWrtCoeffAndSpatial,
+                     BLAi.transpose()
                                           * gradientWRTCoeffsTwoTimesSingleSpatial[d].template segment<coeffValueSize>(
                                               i * coeffValueSize),
                                       tol));
@@ -234,8 +234,8 @@ void testLocalFunction(const LF &lf) {
         for (int d = 0; d < gridDim; ++d)
           jacoWrtSpatialAllAndCoeffProd += (alongMat.col(d).transpose() * jacoWrtSpatialAllAndCoeff[d]).eval();
 
-        CHECK_THAT(jacoWrtSpatialAllAndCoeffProd,
-                   EigenApproxEqual((BLAi.transpose()
+        t.check(isApproxSame(jacoWrtSpatialAllAndCoeffProd,
+                   (BLAi.transpose()
                                      * gradienWRTCoeffsSpatialAll.template segment<coeffValueSize>(i * coeffValueSize))
                                         .transpose(),
                                     tol));
@@ -244,14 +244,14 @@ void testLocalFunction(const LF &lf) {
         const auto Warray  = lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i), spatialAll));
         const auto Warray2 = lf.evaluateDerivative(ipIndex, Ikarus::wrt(spatialAll, coeff(i)));
         for (int j = 0; j < gridDim; ++j)
-          CHECK_THAT(Warray[j], EigenApproxEqual(Warray2[j], tol));
+            t.check(isApproxSame(Warray[j], Warray2[j], tol));
 
         std::array<std::remove_cvref_t<decltype(Warray[0])>, gridDim> WarraySingle;
         for (int s = 0; s < gridDim; ++s)
           WarraySingle[s] = lf.evaluateDerivative(ipIndex, Ikarus::wrt(coeff(i), spatial(s)));
 
         for (int j = 0; j < gridDim; ++j)
-          CHECK_THAT(Warray[j], EigenApproxEqual(WarraySingle[j], tol));
+            t.check(isApproxSame(Warray[j], WarraySingle[j], tol));
       }
       for (size_t j = 0; j < coeffSize; ++j) {
         const auto BLAj = coeffs[j].orthonormalFrame();
@@ -267,7 +267,7 @@ void testLocalFunction(const LF &lf) {
                + (i == j)
                      * coeffs[j].weingartenMap(gradienWRTCoeffs.template segment<coeffValueSize>(i * coeffValueSize)))
                   .eval();
-        CHECK_THAT(jacobianWRTCoeffsTwoTimes, EigenApproxEqual(jacobianWRTCoeffsTwoTimesExpected, tol));
+          t.check(isApproxSame(jacobianWRTCoeffsTwoTimes, jacobianWRTCoeffsTwoTimesExpected, tol));
 
         if (spatialAllImplemented) {
           const auto jacobianWRTCoeffsTwoTimesSpatialAll
@@ -286,11 +286,11 @@ void testLocalFunction(const LF &lf) {
 
           /// if the order of the function value is less then quadratic then this should yield a vanishing derivative
           if constexpr (lf.order() < quadratic) {
-            REQUIRE(jacobianWRTCoeffsTwoTimesSpatialAll.norm() < tol);
-            REQUIRE(jacobianWRTCoeffsTwoTimesSpatialAllExpected.norm() < tol);
+            t.check(jacobianWRTCoeffsTwoTimesSpatialAll.norm() < tol);
+              t.check(jacobianWRTCoeffsTwoTimesSpatialAllExpected.norm() < tol);
           } else {
-            CHECK_THAT(jacobianWRTCoeffsTwoTimesSpatialAll,
-                       EigenApproxEqual(jacobianWRTCoeffsTwoTimesSpatialAllExpected, tol));
+              t.check(isApproxSame(jacobianWRTCoeffsTwoTimesSpatialAll,
+                       jacobianWRTCoeffsTwoTimesSpatialAllExpected, tol));
           }
         }
         if (spatialSingleImplemented)
@@ -309,8 +309,8 @@ void testLocalFunction(const LF &lf) {
                              gradientWRTCoeffsTwoTimesSingleSpatial[d].template segment<coeffValueSize>(
                                  i * coeffValueSize)))
                       .eval();
-            CHECK_THAT(jacobianWRTCoeffsTwoTimesSingleSpatial,
-                       EigenApproxEqual(jacobianWRTCoeffsTwoTimesSingleSpatialExpected, tol));
+              t.check(isApproxSame(jacobianWRTCoeffsTwoTimesSingleSpatial,
+                       jacobianWRTCoeffsTwoTimesSingleSpatialExpected, tol));
           }
       }
     }
@@ -320,16 +320,18 @@ void testLocalFunction(const LF &lf) {
     const auto lfCopy     = lf.clone();
     const auto &coeffCopy = lfCopy.coefficientsRef();
     for (size_t i = 0; i < coeffSize; ++i)
-      CHECK(coeffCopy[i] == coeffs[i]);
+        t.check(coeffCopy[i] == coeffs[i]);
 
-    CHECK(&coeffCopy != &coeffs);
+    t.check(&coeffCopy != &coeffs);
 
-    testLocalFunction<std::remove_cvref_t<decltype(lfCopy)>, true>(lfCopy);
+    t.subTest( testLocalFunction<std::remove_cvref_t<decltype(lfCopy)>, true>(lfCopy));
   }
+    return t;
 }
 
 template <int domainDim, int worldDim, int order>
-void localFunctionTestConstructor(const Dune::GeometryType &geometryType, size_t nNodalTestPointsI = 1) {
+auto localFunctionTestConstructor(const Dune::GeometryType &geometryType, size_t nNodalTestPointsI = 1) {
+    TestSuite t;
   using namespace Ikarus;
   using namespace Dune::Indices;
   using Manifold     = Ikarus::RealTuple<double, worldDim>;
@@ -374,7 +376,7 @@ void localFunctionTestConstructor(const Dune::GeometryType &geometryType, size_t
   }
 
   auto f = Ikarus::StandardLocalFunction(localBasis, vBlockedLocal);
-  testLocalFunction(f);
+  t.subTest(testLocalFunction(f));
   static_assert(f.order() == linear);
   static_assert(countNonArithmeticLeafNodes(f) == 1);
 
@@ -383,11 +385,11 @@ void localFunctionTestConstructor(const Dune::GeometryType &geometryType, size_t
   static_assert(g.order() == linear);
 
   auto h = f + g;
-  testLocalFunction(h);
+  t.subTest(testLocalFunction(h));
   static_assert(h.order() == linear);
   for (size_t k = 0; k < fe.size(); ++k) {
-    CHECK(h.coefficientsRef(_0)[k] == vBlockedLocal[k]);
-    CHECK(h.coefficientsRef(_1)[k] == vBlockedLocal[k]);
+    t.check(h.coefficientsRef(_0)[k] == vBlockedLocal[k]);
+      t.check(h.coefficientsRef(_1)[k] == vBlockedLocal[k]);
   }
   static_assert(std::tuple_size_v<decltype(collectNonArithmeticLeafNodes(h))> == 2);
   static_assert(countNonArithmeticLeafNodes(h) == 2);
@@ -395,54 +397,54 @@ void localFunctionTestConstructor(const Dune::GeometryType &geometryType, size_t
       std::is_same_v<typename decltype(h)::Ids, std::tuple<Dune::index_constant<0>, Dune::index_constant<0>>>);
 
   auto ft2 = 2 * f;
-  testLocalFunction(ft2);
+    t.subTest(testLocalFunction(ft2));
   static_assert(ft2.order() == linear);
 
   auto f23 = 2 * f * 3;
-  testLocalFunction(f23);
+    t.subTest(testLocalFunction(f23));
   static_assert(f23.order() == linear);
 
   auto mf = -f;
-  testLocalFunction(mf);
+    t.subTest(testLocalFunction(mf));
   static_assert(f.order() == mf.order());
 
   if constexpr (domainDim == worldDim) {
     auto eps = linearStrains(f);
-    testLocalFunction(eps);
+      t.subTest(testLocalFunction(eps));
     static_assert(eps.order() == linear);
   }
 
   auto k = -dot(f + f, 3.0 * (g / 5.0) * 5.0);
-  testLocalFunction(k);
+    t.subTest(testLocalFunction(k));
   static_assert(k.order() == quadratic);
   static_assert(std::tuple_size_v<decltype(collectNonArithmeticLeafNodes(k))> == 3);
   static_assert(countNonArithmeticLeafNodes(k) == 3);
 
   auto dotfg = dot(f, g);
-  testLocalFunction(dotfg);
+    t.subTest(testLocalFunction(dotfg));
   static_assert(countNonArithmeticLeafNodes(dotfg) == 2);
   static_assert(dotfg.order() == quadratic);
   static_assert(
       std::is_same_v<typename decltype(dotfg)::Ids, std::tuple<Dune::index_constant<0>, Dune::index_constant<0>>>);
 
   auto normSq = normSquared(f);
-  testLocalFunction(normSq);
+    t.subTest(testLocalFunction(normSq));
   static_assert(normSq.order() == quadratic);
 
   auto logg = log(dotfg);
-  testLocalFunction(logg);
+    t.subTest(testLocalFunction(logg));
 
   auto powf = pow<3>(dotfg);
-  testLocalFunction(powf);
+    t.subTest(testLocalFunction(powf));
 
   auto powfgsqrtdotfg = sqrt(powf);
-  testLocalFunction(powfgsqrtdotfg);
+    t.subTest(testLocalFunction(powfgsqrtdotfg));
 
   if constexpr (size > 1)  // Projection-Based only makes sense in 2d+
   {
     auto gP = Ikarus::ProjectionBasedLocalFunction(localBasis, vBlockedLocal3);
     static_assert(gP.order() == nonLinear);
-    testLocalFunction(gP);
+      t.subTest(testLocalFunction(gP));
   }
 
   {
@@ -479,8 +481,8 @@ void localFunctionTestConstructor(const Dune::GeometryType &geometryType, size_t
   for (int gpIndex = 0; auto &gp : rule) {
     const auto &N  = localBasis.evaluateFunction(gpIndex);
     const auto &dN = localBasis.evaluateJacobian(gpIndex);
-    CHECK((f2.evaluateFunction(gpIndex) + g2.evaluateFunction(gpIndex)).dot(g2.evaluateFunction(gpIndex))
-          == Catch::Approx(k2.evaluateFunction(gpIndex)[0]));
+      t.check(Dune::FloatCmp::eq((f2.evaluateFunction(gpIndex) + g2.evaluateFunction(gpIndex)).dot(g2.evaluateFunction(gpIndex))
+          , k2.evaluateFunction(gpIndex)[0]));
     auto resSingleSpatial
         = ((f2.evaluateDerivative(gpIndex, wrt(spatial(0))) + g2.evaluateDerivative(gpIndex, wrt(spatial(0))))
                    .transpose()
@@ -488,7 +490,7 @@ void localFunctionTestConstructor(const Dune::GeometryType &geometryType, size_t
            + (f2.evaluateFunction(gpIndex) + g2.evaluateFunction(gpIndex)).transpose()
                  * g2.evaluateDerivative(gpIndex, wrt(spatial(0))))
               .eval();
-    CHECK_THAT(resSingleSpatial, EigenApproxEqual(k2.evaluateDerivative(gpIndex, wrt(spatial(0))), tol));
+      t.check(isApproxSame(resSingleSpatial, k2.evaluateDerivative(gpIndex, wrt(spatial(0))), tol));
     auto resSpatialAll
         = (((f2.evaluateDerivative(gpIndex, wrt(spatialAll)) + g2.evaluateDerivative(gpIndex, wrt(spatialAll)))
                 .transpose()
@@ -500,43 +502,45 @@ void localFunctionTestConstructor(const Dune::GeometryType &geometryType, size_t
     static_assert(resSpatialAll.cols() == domainDim);
     static_assert(resSpatialAll.rows() == 1);
 
-    CHECK_THAT(resSpatialAll, EigenApproxEqual(k2.evaluateDerivative(gpIndex, wrt(spatialAll)), tol));
+      t.check(isApproxSame(resSpatialAll, k2.evaluateDerivative(gpIndex, wrt(spatialAll)), tol));
 
     for (size_t iC = 0; iC < fe.size(); ++iC) {
       const VectorType dfdi = g2.evaluateFunction(gpIndex) * N[iC];
 
       const VectorType dkdi = k2.evaluateDerivative(gpIndex, wrt(coeff(_0, iC)));
 
-      CHECK_THAT(dfdi, EigenApproxEqual(dkdi, tol));
+        t.check(isApproxSame(dfdi, dkdi, tol));
 
       for (size_t jC = 0; jC < fe.size(); ++jC) {
         const MatrixType dkdij         = k2.evaluateDerivative(gpIndex, wrt(coeff(_0, iC, _1, jC)));
         const MatrixType dkdijExpected = N[jC] * N[iC] * MatrixType::Identity();
-        CHECK_THAT(dkdijExpected, EigenApproxEqual(dkdij, tol));
+          t.check(isApproxSame(dkdijExpected, dkdij, tol));
 
         const MatrixType dkdij2         = k2.evaluateDerivative(gpIndex, wrt(coeff(_0, iC, _0, jC)));
         const MatrixType dkdijExpected2 = MatrixType::Zero();
-        CHECK_THAT(dkdijExpected2, EigenApproxEqual(dkdij2, tol));
+          t.check(isApproxSame(dkdijExpected2, dkdij2, tol));
         const MatrixType dkdij3         = k2.evaluateDerivative(gpIndex, wrt(coeff(_1, iC, _1, jC)));
         const MatrixType dkdijExpected3 = 2 * N[iC] * N[jC] * MatrixType::Identity();
-        CHECK_THAT(dkdijExpected3, EigenApproxEqual(dkdij3, tol));
+          t.check(isApproxSame(dkdijExpected3, dkdij3, tol));
 
         const MatrixType dkdSij         = k2.evaluateDerivative(gpIndex, wrt(spatial(0), coeff(_0, iC, _1, jC)));
         const MatrixType dkdSijR        = k2.evaluateDerivative(gpIndex, wrt(coeff(_0, iC, _1, jC), spatial(0)));
         const MatrixType dkdSijExpected = (dN(jC, 0) * N[iC] + N[jC] * dN(iC, 0)) * MatrixType::Identity();
-        CHECK_THAT(dkdSijR, EigenApproxEqual(dkdSij, tol));
-        CHECK_THAT(dkdSijExpected, EigenApproxEqual(dkdSij, tol));
+          t.check(isApproxSame(dkdSijR, dkdSij, tol));
+          t.check(isApproxSame(dkdSijExpected, dkdSij, tol));
       }
     }
     ++gpIndex;
   }
   //  }
+    return t;
 }
 
 // Most of the following tests are commented out due to very long compile times and long runtimes in debug mode we hope
 //  to still capture most the bugs
 using namespace Dune::GeometryTypes;
-TEST_CASE("LocalFunctionTests: TestExpressionsOnLine", "[trustRegionTest.cpp]") {
+auto testExpressionsOnLine() {
+    TestSuite t("testExpressionsOnLine");
   //    std::cout << "line with linear ansatz functions and 1d local function" << std::endl;
   //    localFunctionTestConstructor<1, 1, 1>(line);
   //  localFunctionTestConstructor<1, 2, 1>(line);  // line with linear ansatz functions and 2d lf
@@ -546,45 +550,68 @@ TEST_CASE("LocalFunctionTests: TestExpressionsOnLine", "[trustRegionTest.cpp]") 
   //  localFunctionTestConstructor<1, 1, 2>(line);
   //  localFunctionTestConstructor<1, 2, 2>(line);  // line with quadratic ansatz functions and 2d lf
   std::cout << "line with quadratic ansatz functions and 3d local function" << std::endl;
-  localFunctionTestConstructor<1, 3, 2>(line);
+  t.subTest(localFunctionTestConstructor<1, 3, 2>(line));
+  return t;
 }
 
-TEST_CASE("LocalFunctionTests: TestExpressionsOnTriangle", "[trustRegionTest.cpp]") {
-  //  std::cout << "triangle with linear ansatz functions and 1d local function" << std::endl;
+auto testExpressionsOnTriangle() {
+    TestSuite t("testExpressionsOnTriangle");
+
+    //  std::cout << "triangle with linear ansatz functions and 1d local function" << std::endl;
   //  localFunctionTestConstructor<2, 1, 1>(triangle);
   std::cout << "triangle with linear ansatz functions and 2d local function" << std::endl;
-  localFunctionTestConstructor<2, 2, 1>(triangle);
+  t.subTest(localFunctionTestConstructor<2, 2, 1>(triangle));
   //  std::cout << "triangle with linear ansatz functions and 3d local function" << std::endl;
   //  localFunctionTestConstructor<2, 3, 1>(triangle);
   //  std::cout << "triangle with quadratic ansatz functions and 1d local function" << std::endl;
   //  localFunctionTestConstructor<2, 1, 2>(triangle);
   //  localFunctionTestConstructor<2, 2, 2>(triangle);  // triangle with quadratic ansatz functions and 2d lf
   std::cout << "triangle with quadratic ansatz functions and 3d local function" << std::endl;
-  localFunctionTestConstructor<2, 3, 2>(triangle);
+    t.subTest(localFunctionTestConstructor<2, 3, 2>(triangle));
+    return t;
 }
 
-TEST_CASE("LocalFunctionTests: TestExpressionsOnQuadrilateral", "[trustRegionTest.cpp]") {
+auto testExpressionsOnQuadrilateral() {
+    TestSuite t("testExpressionsOnQuadrilateral");
   //  std::cout << "quadrilateral with linear ansatz functions and 1d local function" << std::endl;
   //  localFunctionTestConstructor<2, 1, 1>(quadrilateral);
   std::cout << "quadrilateral with linear ansatz functions and 2d local function" << std::endl;
-  localFunctionTestConstructor<2, 2, 1>(quadrilateral);
+    t.subTest(localFunctionTestConstructor<2, 2, 1>(quadrilateral));
   //  std::cout << "quadrilateral with linear ansatz functions and 3d local function" << std::endl;
   //  localFunctionTestConstructor<2, 3, 1>(quadrilateral);
   //  std::cout << "quadrilateral with quadratic ansatz functions and 1d local function" << std::endl;
   //  localFunctionTestConstructor<2, 1, 2>(quadrilateral);
   //  localFunctionTestConstructor<2, 2, 2>(quadrilateral);  // quadrilateral with quadratic ansatz functions and 2d lf
   std::cout << "quadrilateral with quadratic ansatz functions and 3d local function" << std::endl;
-  localFunctionTestConstructor<2, 3, 2>(quadrilateral);
+    t.subTest(localFunctionTestConstructor<2, 3, 2>(quadrilateral));
+    return t;
 }
-TEST_CASE("LocalFunctionTests: TestExpressionsOnHexahedron", "[trustRegionTest.cpp]") {
+
+auto testExpressionsOnHexahedron() {
+    TestSuite t("testExpressionsOnHexahedron");
   //  std::cout << "hexahedron with linear ansatz functions and 1d local function" << std::endl;
   //  localFunctionTestConstructor<3, 1, 1>(hexahedron);  // hexahedron with linear ansatz functions and 1d lf
   //  localFunctionTestConstructor<3, 2, 1>(hexahedron);  // hexahedron with linear ansatz functions and 2d lf
   std::cout << "hexahedron with linear ansatz functions and 3d local function" << std::endl;
-  localFunctionTestConstructor<3, 3, 1>(hexahedron);
+  t.subTest(localFunctionTestConstructor<3, 3, 1>(hexahedron));
   //  std::cout << "hexahedron with quadratic ansatz functions and 1d local function" << std::endl;
   //  localFunctionTestConstructor<3, 1, 2>(hexahedron);
   //  localFunctionTestConstructor<3, 2, 2>(hexahedron);  // hexahedron with quadratic ansatz functions and 2d lf
   //  std::cout << "hexahedron with quadratic ansatz functions and 3d local function" << std::endl;
   //  localFunctionTestConstructor<3, 3, 2>(hexahedron);  // hexahedron with quadratic ansatz functions and 3d lf
+    return t;
+}
+
+
+int main(int argc, char** argv)
+{
+    Dune::MPIHelper::instance(argc, argv);
+    TestSuite t;
+
+    t.subTest(testExpressionsOnLine());
+    t.subTest(testExpressionsOnTriangle());
+    t.subTest(testExpressionsOnQuadrilateral());
+    t.subTest(testExpressionsOnHexahedron());
+
+    return t.exit();
 }

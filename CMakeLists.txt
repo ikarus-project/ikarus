@@ -22,7 +22,6 @@ add_subdirectory(benchmarks)
 add_subdirectory(tests)
 add_subdirectory(cmake/FormatTarget)
 
-enable_testing()
 if(BUILD_DOCS)
   message("Build docs locally target ENABLED")
   add_subdirectory(docs/BuildLocally)
