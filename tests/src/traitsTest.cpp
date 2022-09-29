@@ -6,10 +6,10 @@
 #include <dune/common/test/testsuite.hh>
 using Dune::TestSuite;
 //
-//#include "testHelpers.hh"
+// #include "testHelpers.hh"
 //
-//#include <ikarus/localFunctions/meta.hh>
-//#include <ikarus/utils/traits.hh>
+// #include <ikarus/localFunctions/meta.hh>
+// #include <ikarus/utils/traits.hh>
 // TEST_CASE("TraitsTest: LocalFunctionTest", "[traitsTest.cpp]") {
 //  using namespace Ikarus::DerivativeDirections;
 //  auto wrt1 = Ikarus::wrt(spatial(0), coeff(7));

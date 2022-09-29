@@ -5,20 +5,20 @@
 #include <dune/common/test/testsuite.hh>
 using Dune::TestSuite;
 //
-//#include <catch2/catch_test_macros.hpp>
-//#include <catch2/matchers/catch_matchers_all.hpp>
+// #include <catch2/catch_test_macros.hpp>
+// #include <catch2/matchers/catch_matchers_all.hpp>
 //
-//#include "testHelpers.hh"
+// #include "testHelpers.hh"
 //
-//#include <Eigen/Core>
-//#include <Eigen/Dense>
+// #include <Eigen/Core>
+// #include <Eigen/Dense>
 //
-//#include <ikarus/assembler/simpleAssemblers.hh>
-//#include <ikarus/linearAlgebra/nonLinearOperator.hh>
-//#include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
-//#include <ikarus/utils/drawing/griddrawer.hh>
-//#include <ikarus/utils/functionSanityChecks.hh>
-//#include <ikarus/utils/observer/nonLinearSolverLogger.hh>
+// #include <ikarus/assembler/simpleAssemblers.hh>
+// #include <ikarus/linearAlgebra/nonLinearOperator.hh>
+// #include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
+// #include <ikarus/utils/drawing/griddrawer.hh>
+// #include <ikarus/utils/functionSanityChecks.hh>
+// #include <ikarus/utils/observer/nonLinearSolverLogger.hh>
 //
 // template <typename SolutionType, typename SolutionTypeExpected, typename NewtonRhapson>
 // void checkNewtonRhapson(NewtonRhapson& nr, SolutionType& x, double tolerance, int maxIter, int iterExpected,
@@ -140,8 +140,8 @@ using Dune::TestSuite;
 //  CHECK(-2.6538461538461533 == Catch::Approx(nonLinOp.value()));
 //}
 //
-//#include <autodiff/forward/dual.hpp>
-//#include <autodiff/forward/dual/eigen.hpp>
+// #include <autodiff/forward/dual.hpp>
+// #include <autodiff/forward/dual/eigen.hpp>
 //
 // using namespace autodiff;
 // template <typename ScalarType>

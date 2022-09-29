@@ -146,9 +146,10 @@ auto projectionBasedLocalFunctionTest() {
 
         t.check(isApproxSame(Warrayun[0], W0un, tol));
         t.check(isApproxSame(Warrayun[1], W1un, tol));
-//        const auto Sun = localF.evaluateDerivative(gpIndex, wrt(coeff(i, i)), along(testVec));
+        //        const auto Sun = localF.evaluateDerivative(gpIndex, wrt(coeff(i, i)), along(testVec));
 
-//        const auto S = localF.evaluateDerivative(gpIndex, wrt(coeff(i, i)), along(testVec), transformWith(Jinv));
+        //        const auto S = localF.evaluateDerivative(gpIndex, wrt(coeff(i, i)), along(testVec),
+        //        transformWith(Jinv));
 
         const auto chi
             = localF.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i, i)), along(testMat), transformWith(Jinv));
@@ -221,8 +222,8 @@ auto standardLocalFunctionTest() {
     const auto vasMat = Ikarus::viewAsEigenMatrixFixedDyn(vBlockedLocal);
     using namespace Ikarus::DerivativeDirections;
     for (int gpIndex = 0; auto& gp : rule) {
-      const auto& directorCached                         = localF.evaluateFunction(gpIndex);
-      const auto& directoreval                           = localF.evaluateFunction(gp.position());
+      const auto& directorCached = localF.evaluateFunction(gpIndex);
+      const auto& directoreval   = localF.evaluateFunction(gp.position());
 
       const auto J     = toEigenMatrix(ele.geometry().jacobianTransposed(gp.position())).transpose().eval();
       const auto Jinv  = J.inverse().eval();

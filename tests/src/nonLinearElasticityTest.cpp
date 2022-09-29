@@ -5,31 +5,31 @@
 #include <dune/common/test/testsuite.hh>
 using Dune::TestSuite;
 //
-//#include <catch2/catch_template_test_macros.hpp>
-//#include <catch2/catch_test_macros.hpp>
-//#include <catch2/matchers/catch_matchers_all.hpp>
+// #include <catch2/catch_template_test_macros.hpp>
+// #include <catch2/catch_test_macros.hpp>
+// #include <catch2/matchers/catch_matchers_all.hpp>
 //
-//#include "common.hh"
-//#include "testHelpers.hh"
+// #include "common.hh"
+// #include "testHelpers.hh"
 //
-//#include <dune/functions/functionspacebases/basistags.hh>
-//#include <dune/functions/functionspacebases/boundarydofs.hh>
-//#include <dune/functions/functionspacebases/lagrangebasis.hh>
-//#include <dune/functions/functionspacebases/powerbasis.hh>
+// #include <dune/functions/functionspacebases/basistags.hh>
+// #include <dune/functions/functionspacebases/boundarydofs.hh>
+// #include <dune/functions/functionspacebases/lagrangebasis.hh>
+// #include <dune/functions/functionspacebases/powerbasis.hh>
 //
-//#include "spdlog/spdlog.h"
+// #include "spdlog/spdlog.h"
 //
-//#include <Eigen/Core>
+// #include <Eigen/Core>
 //
-//#include <ikarus/assembler/simpleAssemblers.hh>
-//#include <ikarus/controlRoutines/loadControl.hh>
-//#include <ikarus/finiteElements/mechanics/nonLinearElasticityFE.hh>
-//#include <ikarus/linearAlgebra/nonLinearOperator.hh>
-//#include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
-//#include <ikarus/solver/nonLinearSolver/trustRegion.hh>
-//#include <ikarus/utils/algorithms.hh>
-//#include <ikarus/utils/drawing/griddrawer.hh>
-//#include <ikarus/utils/observer/controlVTKWriter.hh>
+// #include <ikarus/assembler/simpleAssemblers.hh>
+// #include <ikarus/controlRoutines/loadControl.hh>
+// #include <ikarus/finiteElements/mechanics/nonLinearElasticityFE.hh>
+// #include <ikarus/linearAlgebra/nonLinearOperator.hh>
+// #include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
+// #include <ikarus/solver/nonLinearSolver/trustRegion.hh>
+// #include <ikarus/utils/algorithms.hh>
+// #include <ikarus/utils/drawing/griddrawer.hh>
+// #include <ikarus/utils/observer/controlVTKWriter.hh>
 //
 // TEMPLATE_TEST_CASE("NonLinearElasticityLoadControlNRandTR: ComputeMaxDisp", "[nonLinearElasticityTest.cpp]",
 //                   Grids::Yasp, Grids::Alu, Grids::Iga) {

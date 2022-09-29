@@ -6,9 +6,9 @@
 #include <dune/common/test/testsuite.hh>
 using Dune::TestSuite;
 //
-//#include "testHelpers.hh"
+// #include "testHelpers.hh"
 //
-//#include <ikarus/utils/autodiffHelper.hh>
+// #include <ikarus/utils/autodiffHelper.hh>
 //
 // template <typename Scalar>
 // Eigen::Vector<Scalar, 2> f(const Eigen::Vector<Scalar, 3>& x) {

@@ -446,19 +446,19 @@ auto localFunctionTestConstructor(const Dune::GeometryType &geometryType, size_t
     t.subTest(testLocalFunction(gP));
   }
 
-//  {
-//    auto localBasisNotBound = Ikarus::LocalBasis(fe.localBasis());
-//    auto fNotBound          = Ikarus::StandardLocalFunction(localBasisNotBound, vBlockedLocal);
-//    auto h1                 = f + fNotBound;
-//    //    (h1.viewOverIntegrationPoints(), "The basis of the leaf nodes are not in the same state.");
-//
-//    const auto &ruleHigher                 = Dune::QuadratureRules<double, domainDim>::rule(fe.type(), 7);
-//    auto localBasisBoundButToDifferentRule = Ikarus::LocalBasis(fe.localBasis());
-//    localBasisBoundButToDifferentRule.bind(ruleHigher, bindDerivatives(0, 1));
-//    auto fBoundButHigher = Ikarus::StandardLocalFunction(localBasisBoundButToDifferentRule, vBlockedLocal);
-////    auto h2              = f + fBoundButHigher;
-//    //    (h2.viewOverIntegrationPoints(), "The basis of the leaf nodes are not in the same state.");
-//  }
+  //  {
+  //    auto localBasisNotBound = Ikarus::LocalBasis(fe.localBasis());
+  //    auto fNotBound          = Ikarus::StandardLocalFunction(localBasisNotBound, vBlockedLocal);
+  //    auto h1                 = f + fNotBound;
+  //    //    (h1.viewOverIntegrationPoints(), "The basis of the leaf nodes are not in the same state.");
+  //
+  //    const auto &ruleHigher                 = Dune::QuadratureRules<double, domainDim>::rule(fe.type(), 7);
+  //    auto localBasisBoundButToDifferentRule = Ikarus::LocalBasis(fe.localBasis());
+  //    localBasisBoundButToDifferentRule.bind(ruleHigher, bindDerivatives(0, 1));
+  //    auto fBoundButHigher = Ikarus::StandardLocalFunction(localBasisBoundButToDifferentRule, vBlockedLocal);
+  ////    auto h2              = f + fBoundButHigher;
+  //    //    (h2.viewOverIntegrationPoints(), "The basis of the leaf nodes are not in the same state.");
+  //  }
 
   using namespace Ikarus::DerivativeDirections;
 

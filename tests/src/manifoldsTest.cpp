@@ -5,18 +5,18 @@
 #include <dune/common/test/testsuite.hh>
 using Dune::TestSuite;
 //
-//#include "testHelpers.hh"
+// #include "testHelpers.hh"
 //
-//#include <array>
-//#include <fstream>
-//#include <unordered_set>
-//#include <vector>
+// #include <array>
+// #include <fstream>
+// #include <unordered_set>
+// #include <vector>
 //
-//#include <Eigen/Core>
+// #include <Eigen/Core>
 //
-//#include <ikarus/manifolds/realTuple.hh>
-//#include <ikarus/manifolds/unitVector.hh>
-//#include <ikarus/utils/algorithms.hh>
+// #include <ikarus/manifolds/realTuple.hh>
+// #include <ikarus/manifolds/unitVector.hh>
+// #include <ikarus/utils/algorithms.hh>
 //
 // static constexpr double tol = 1e-15;
 //

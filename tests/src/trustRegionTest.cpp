@@ -6,12 +6,12 @@
 #include <dune/common/test/testsuite.hh>
 using Dune::TestSuite;
 //
-//#include "testHelpers.hh"
+// #include "testHelpers.hh"
 //
-//#include <ikarus/linearAlgebra/nonLinearOperator.hh>
-//#include <ikarus/manifolds/realTuple.hh>
-//#include <ikarus/manifolds/unitVector.hh>
-//#include <ikarus/solver/nonLinearSolver/trustRegion.hh>
+// #include <ikarus/linearAlgebra/nonLinearOperator.hh>
+// #include <ikarus/manifolds/realTuple.hh>
+// #include <ikarus/manifolds/unitVector.hh>
+// #include <ikarus/solver/nonLinearSolver/trustRegion.hh>
 //
 // auto f(const Eigen::Vector<double, 1>& x) { return 0.5 * x[0] * x[0]; }
 // auto df(const Eigen::Vector<double, 1>& x) {
@@ -102,8 +102,8 @@ using Dune::TestSuite;
 //  CHECK(offset_ == Catch::Approx(nonLinOp.value()));
 //}
 //
-//#include <autodiff/forward/dual.hpp>
-//#include <autodiff/forward/dual/eigen.hpp>
+// #include <autodiff/forward/dual.hpp>
+// #include <autodiff/forward/dual/eigen.hpp>
 // using namespace autodiff;
 //
 // template <typename ScalarType>
@@ -237,8 +237,8 @@ using Dune::TestSuite;
 //  CHECK_THAT(nonLinOp.firstParameter().getValue(), EigenApproxEqual(Eigen::Vector2d::UnitY(), 1e-15));
 //}
 //
-//#include <dune/istl/bvector.hh>
-//#include <dune/istl/multitypeblockvector.hh>
+// #include <dune/istl/bvector.hh>
+// #include <dune/istl/multitypeblockvector.hh>
 // using DirectorVector     = Dune::BlockVector<Ikarus::UnitVector<double, 3>>;
 // using DisplacementVector = Dune::BlockVector<Ikarus::RealTuple<double, 3>>;
 // using MultiTypeVector    = Dune::MultiTypeBlockVector<DisplacementVector, DirectorVector>;
