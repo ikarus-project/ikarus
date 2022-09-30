@@ -1,7 +1,8 @@
-
 #include <config.h>
 
-#include <catch2/catch_test_macros.hpp>
+#include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/test/testsuite.hh>
+using Dune::TestSuite;
 
 #include <fstream>
 #include <vector>
@@ -18,7 +19,9 @@ void foo() {
   spdlog::debug("This is a debug statement");
 }
 
-TEST_CASE("Dependencies: spdlog", "[1]") {
+auto spdlogTest() {
+  TestSuite t("spdlogTest");
+
   auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
   console_sink->set_level(spdlog::level::trace);
   console_sink->set_pattern("[%^%l%$] %v");
@@ -48,8 +51,8 @@ TEST_CASE("Dependencies: spdlog", "[1]") {
   Eigen::Vector3d a({1.0, 2.0, 3.0});
   logger.info("{}", a.transpose());
   logger.flush();
-  std::ifstream t(file_sink->filename());
-  std::string file((std::istreambuf_iterator<char>(t)), (std::istreambuf_iterator<char>()));
+  std::ifstream ts(file_sink->filename());
+  std::string file((std::istreambuf_iterator<char>(ts)), (std::istreambuf_iterator<char>()));
   std::string expectedOutput = R"xxx([info] Welcome to spdlog!
 [error] Some error message with arg: 1
 [warning] Easy padding in numbers like 00000012
@@ -62,56 +65,15 @@ TEST_CASE("Dependencies: spdlog", "[1]") {
 [info] Does this appear in the correct logger?
 [info] [1, 2, 3]
 )xxx";
-  CHECK(file == expectedOutput);
+  t.check(file == expectedOutput);
+  return t;
 }
 
-#include <dune/common/parametertree.hh>
-#include <dune/common/parametertreeparser.hh>
+int main(int argc, char** argv) {
+  Dune::MPIHelper::instance(argc, argv);
+  TestSuite t;
 
-TEST_CASE("Dependencies: dunecommonInputParser", "[1]") {
-  Dune::ParameterTree parameterSet;
+  t.subTest(spdlogTest());
 
-  std::string testInPutFile = R"xxx(tolerance = 1e-12
-
-integrationType = Gauss
-
-[elementParameters]
-thickness = 0.6
-
-[materialParameters]
-mu = 2.7191e+4
-lambda = 4.4364e+4
-
-Emod = 1000
-nu = 0.3
-
-[]
-)xxx";
-
-  std::string testInputFileName = "TestInputFile.parset";
-  std::ofstream out(testInputFileName);
-  out << testInPutFile;
-  out.close();
-
-  Dune::ParameterTreeParser::readINITree(testInputFileName, parameterSet);
-
-  const auto tolerance       = parameterSet.get<double>("tolerance");
-  const auto integrationType = parameterSet.get<std::string>("integrationType");
-
-  const Dune::ParameterTree &materialParameters = parameterSet.sub("materialParameters");
-  const Dune::ParameterTree &elementParameters  = parameterSet.sub("elementParameters");
-
-  const auto thickness = elementParameters.get<double>("thickness");
-  const auto mu        = materialParameters.get<double>("mu");
-  const auto lambda    = materialParameters.get<double>("lambda");
-  const auto Emod      = materialParameters.get<double>("Emod");
-  const auto nu        = materialParameters.get<double>("nu");
-
-  CHECK(1e-12 == tolerance);
-  CHECK(2.7191e+4 == mu);
-  CHECK(4.4364e+4 == lambda);
-  CHECK(0.6 == thickness);
-  CHECK(0.3 == nu);
-  CHECK(1000 == Emod);
-  CHECK("Gauss" == integrationType);
+  return t.exit();
 }

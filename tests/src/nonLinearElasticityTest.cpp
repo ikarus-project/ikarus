@@ -1,9 +1,9 @@
-
+//
 #include <config.h>
 
-#include <catch2/catch_template_test_macros.hpp>
-#include <catch2/catch_test_macros.hpp>
-#include <catch2/matchers/catch_matchers_all.hpp>
+#include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/test/testsuite.hh>
+using Dune::TestSuite;
 
 #include "common.hh"
 #include "testHelpers.hh"
@@ -27,9 +27,10 @@
 #include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 
-TEMPLATE_TEST_CASE("NonLinearElasticityLoadControlNRandTR: ComputeMaxDisp", "[nonLinearElasticityTest.cpp]",
-                   Grids::Yasp, Grids::Alu, Grids::Iga) {
-  auto grid     = createGrid<TestType>();
+template <typename Grid>
+auto NonLinearElasticityLoadControlNRandTR() {
+  TestSuite t("NonLinearElasticityLoadControlNRandTR" + Dune::className(Grid{}));
+  auto grid     = createGrid<Grid>();
   auto gridView = grid->leafGridView();
 
   using namespace Ikarus;
@@ -39,7 +40,7 @@ TEMPLATE_TEST_CASE("NonLinearElasticityLoadControlNRandTR: ComputeMaxDisp", "[no
 
   auto localView = basis.localView();
   std::vector<Ikarus::NonLinearElasticityFE<decltype(basis)>> fes;
-  auto volumeLoad = [](auto& globalCoord, auto& lamb) {
+  auto volumeLoad = []([[maybe_unused]] auto& globalCoord, auto& lamb) {
     Eigen::Vector2d fext;
     fext.setZero();
     fext[1] = 2 * lamb;
@@ -112,22 +113,36 @@ TEMPLATE_TEST_CASE("NonLinearElasticityLoadControlNRandTR: ComputeMaxDisp", "[no
   lc.subscribeAll(vtkWriter);
   const auto controlInfo = lc.run();
   nonLinOp.template update<0>();
-  const auto maxDisp           = std::ranges::max(d);
-  const double energyExpected  = (std::is_same_v<TestType, Grids::Yasp>)
-                                     ? -1.4809559783564966e+03
-                                     : ((std::is_same_v<TestType, Grids::Alu>)
-                                            ? -1.4842107484533601e+03
-                                            : /* std::is_same_v<TestType, Grids::Iga> */ -8.1142552237939071e+02);
-  const double maxDispExpected = (std::is_same_v<TestType, Grids::Yasp>)
-                                     ? 0.786567027108460048
-                                     : ((std::is_same_v<TestType, Grids::Alu>)
-                                            ? 0.78426066482258983
-                                            : /* std::is_same_v<TestType, Grids::Iga> */ 0.615624125459537153);
+  const auto maxDisp = std::ranges::max(d);
+  const double energyExpected
+      = (std::is_same_v<Grid, Grids::Yasp>)
+            ? -1.4809559783564966e+03
+            : ((std::is_same_v<Grid, Grids::Alu>) ? -1.4842107484533601e+03
+                                                  : /* std::is_same_v<Grid, Grids::Iga> */ -8.1142552237939071e+02);
+  const double maxDispExpected
+      = (std::is_same_v<Grid, Grids::Yasp>)
+            ? 0.786567027108437
+            : ((std::is_same_v<Grid, Grids::Alu>) ? 0.78426066482258983
+                                                  : /* std::is_same_v<Grid, Grids::Iga> */ 0.615624125459537153);
 
-  CHECK(energyExpected == Catch::Approx(nonLinOp.value()));
-  CHECK(maxDispExpected == Catch::Approx(maxDisp));
+  t.check(Dune::FloatCmp::eq(energyExpected, nonLinOp.value()), "energyExpected == nonLinOp.value()");
+  std::stringstream str;
+
+  t.check(std::abs(maxDispExpected - maxDisp) < 1e-12, "maxDispExpected-maxDisp");
 
   nonLinOp.template update<1>();
-  CHECK(controlInfo.sucess);
-  CHECK(gradTol >= nonLinOp.derivative().norm());
+  t.check(controlInfo.sucess, "Sucessfull result");
+  t.check(gradTol >= nonLinOp.derivative().norm(), "Gradient Tolerance should be larger than actual tolerance");
+  return t;
+}
+
+int main(int argc, char** argv) {
+  Dune::MPIHelper::instance(argc, argv);
+  TestSuite t;
+
+  t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Alu>());
+  t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Yasp>());
+  t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Iga>());
+
+  return t.exit();
 }

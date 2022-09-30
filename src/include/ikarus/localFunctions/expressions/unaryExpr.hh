@@ -44,7 +44,7 @@ namespace Ikarus {
 
     /** Rebind the value type of the underlying local function with the id ID */
     template <typename OtherType, size_t ID = 0>
-    auto rebindClone(OtherType&&, Dune::index_constant<ID>&& id = Dune::index_constant<0>()) const {
+    auto rebindClone(OtherType&&, [[maybe_unused]] Dune::index_constant<ID>&& id = Dune::index_constant<0>()) const {
       return rebind<Op, E1, OtherType, ID, Args...>(m(), Dune::index_constant<ID>());
     }
 

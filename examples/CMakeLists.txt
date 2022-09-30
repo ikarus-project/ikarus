@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 file(GLOB programSourceFiles CONFIGURE_DEPENDS src/*.cpp)
 include_directories(../libAddons/eigen/eigenAddons)
 add_custom_target(AllExamples) # Create target that includes all examples
-include(DuneMacros)
 foreach(programSourceFile ${programSourceFiles})
   get_filename_component(programName ${programSourceFile} NAME_WLE)
   add_executable(${programName} ${programSourceFile})
@@ -14,6 +13,6 @@ foreach(programSourceFile ${programSourceFiles})
                           -Wno-deprecated-copy -ftemplate-backtrace-limit=0
   )
 
-  target_link_libraries(${programName} PUBLIC Ikarus::Ikarus)
+  target_link_libraries(${programName} PUBLIC Ikarus::ikarus)
   add_dependencies(AllExamples ${programName})
 endforeach()

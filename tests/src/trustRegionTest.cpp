@@ -1,7 +1,10 @@
+//
+//
+#include <config.h>
 
-
-#include <catch2/catch_test_macros.hpp>
-#include <catch2/matchers/catch_matchers_all.hpp>
+#include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/test/testsuite.hh>
+using Dune::TestSuite;
 
 #include "testHelpers.hh"
 
@@ -17,7 +20,7 @@ auto df(const Eigen::Vector<double, 1>& x) {
   return r;
 }
 
-auto ddf(const Eigen::Vector<double, 1>& x) {
+auto ddf(const Eigen::Vector<double, 1>&) {
   Eigen::SparseMatrix<double> A(1, 1);
   A.insert(0, 0);
 
@@ -26,7 +29,8 @@ auto ddf(const Eigen::Vector<double, 1>& x) {
   return A;
 }
 
-TEST_CASE("TrustRegion: TrustRegion1", "[trustRegionTest.cpp]") {
+auto trustRegion1() {
+  TestSuite t("trustRegion1");
   Eigen::Vector<double, 1> x;
   x << 2;
 
@@ -34,8 +38,7 @@ TEST_CASE("TrustRegion: TrustRegion1", "[trustRegionTest.cpp]") {
   auto dfvLambda  = [](auto&& xL) { return df(xL); };
   auto ddfvLambda = [](auto&& xL) { return ddf(xL); };
   Ikarus::NonLinearOperator nonLinOp(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
-  const double eps  = 1e-10;
-  const int maxIter = 20;
+
   Eigen::Vector<double, 1> xExpected;
   xExpected << 0;
 
@@ -43,9 +46,10 @@ TEST_CASE("TrustRegion: TrustRegion1", "[trustRegionTest.cpp]") {
   tr->setup({.verbosity = 1, .Delta0 = 1});
   const auto solverInfo = tr->solve();
 
-  CHECK(true == solverInfo.sucess);
+  t.check(true == solverInfo.sucess);
 
-  CHECK_THAT(x, EigenApproxEqual(xExpected, 1e-15));
+  t.check(isApproxSame(x, xExpected, 1e-15));
+  return t;
 }
 
 static constexpr double a_      = 1.0;
@@ -74,7 +78,8 @@ auto rosenbrockddx(const Eigen::Vector2d& x) {
   return A;
 }
 
-TEST_CASE("TrustRegion: TrustRegion2", "[trustRegionTest.cpp]") {
+auto trustRegion2() {
+  TestSuite t("trustRegion2");
   Eigen::Vector2d x;
   x << 2, 3;
 
@@ -91,12 +96,13 @@ TEST_CASE("TrustRegion: TrustRegion2", "[trustRegionTest.cpp]") {
   tr.setup({.verbosity = 1, .maxiter = maxIter_, .grad_tol = eps, .Delta0 = 1});
   const auto solverInfo = tr.solve();
 
-  CHECK(true == solverInfo.sucess);
-  CHECK(25 == solverInfo.iterations);
-  CHECK(eps > solverInfo.gradienNorm);
-  CHECK_THAT(x, EigenApproxEqual(xExpected, eps));
+  t.check(true == solverInfo.sucess);
+  t.check(25 == solverInfo.iterations);
+  t.check(eps > solverInfo.gradienNorm);
+  t.check(isApproxSame(x, xExpected, eps));
   nonLinOp.update<0>();
-  CHECK(offset_ == Catch::Approx(nonLinOp.value()));
+  t.check(Dune::FloatCmp::eq(offset_, nonLinOp.value()));
+  return t;
 }
 
 #include <autodiff/forward/dual.hpp>
@@ -120,7 +126,8 @@ auto ddf3(Eigen::Vector2<autodiff::dual2nd>& x) {
   return A;
 }
 
-TEST_CASE("TrustRegion: TrustRegion3", "[trustRegionTest.cpp]") {
+auto trustRegion3() {
+  TestSuite t("trustRegion3");
   Eigen::Vector2d x(2);
   x << 0.7, -3.3;
 
@@ -142,34 +149,35 @@ TEST_CASE("TrustRegion: TrustRegion3", "[trustRegionTest.cpp]") {
   Ikarus::TrustRegion tr(nonLinOp);
   tr.setup({.verbosity = 1, .maxiter = maxIter_, .grad_tol = eps, .corr_tol = eps, .Delta0 = 1});
   const auto solverInfo = tr.solve();
-  CHECK(true == solverInfo.sucess);
-  CHECK(11 == solverInfo.iterations);
-  CHECK(eps > solverInfo.gradienNorm);
-  CHECK_THAT(x, EigenApproxEqual(xExpected, eps));
+  t.check(true == solverInfo.sucess);
+  t.check(11 == solverInfo.iterations);
+  t.check(eps > solverInfo.gradienNorm);
+  t.check(isApproxSame(x, xExpected, eps));
   nonLinOp.update<0>();
-  CHECK(-31.180733385187978 == Catch::Approx(nonLinOp.value()));
+  t.check(Dune::FloatCmp::eq(-31.180733385187978, nonLinOp.value()));
 
   x << 0.7, -3.3;
   Ikarus::TrustRegion<decltype(nonLinOp), Ikarus::PreConditioner::IdentityPreconditioner> tr2(nonLinOp);
   tr2.setup({.verbosity = 1, .maxiter = maxIter_, .grad_tol = eps, .corr_tol = eps, .Delta0 = 1});
   const auto solverInfo2 = tr2.solve();
-  CHECK(true == solverInfo2.sucess);
-  CHECK(11 == solverInfo2.iterations);
-  CHECK(eps > solverInfo2.gradienNorm);
-  CHECK_THAT(x, EigenApproxEqual(xExpected, eps));
+  t.check(true == solverInfo2.sucess);
+  t.check(11 == solverInfo2.iterations);
+  t.check(eps > solverInfo2.gradienNorm);
+  t.check(isApproxSame(x, xExpected, eps));
   nonLinOp.update<0>();
-  CHECK(-31.180733385187978 == Catch::Approx(nonLinOp.value()));
+  t.check(Dune::FloatCmp::eq(-31.180733385187978, nonLinOp.value()));
 
   x << 0.7, -3.3;
   Ikarus::TrustRegion<decltype(nonLinOp), Ikarus::PreConditioner::DiagonalPreconditioner> tr3(nonLinOp);
   tr3.setup({.verbosity = 1, .maxiter = maxIter_, .grad_tol = eps, .corr_tol = eps, .Delta0 = 1});
   const auto solverInfo3 = tr3.solve();
-  CHECK(true == solverInfo3.sucess);
-  CHECK(8 == solverInfo3.iterations);
-  CHECK(eps > solverInfo3.gradienNorm);
-  CHECK_THAT(x, EigenApproxEqual(xExpected, eps));
+  t.check(true == solverInfo3.sucess);
+  t.check(8 == solverInfo3.iterations);
+  t.check(eps > solverInfo3.gradienNorm);
+  t.check(isApproxSame(x, xExpected, eps));
   nonLinOp.update<0>();
-  CHECK(-31.180733385187978 == Catch::Approx(nonLinOp.value()));
+  t.check(Dune::FloatCmp::eq(-31.180733385187978, nonLinOp.value()));
+  return t;
 }
 
 template <typename ScalarType = double>
@@ -180,7 +188,6 @@ ScalarType f3R(const Ikarus::UnitVector<double, 2>& x,
   return y[0] * y[0];
 }
 Eigen::Vector<double, 1> df3R(const Ikarus::UnitVector<double, 2>& x) {
-  const auto y                        = x.getValue();
   Eigen::Vector<autodiff::dual, 2> xR = Eigen::Vector<autodiff::dual, 2>::Zero();
   auto dfvLambda                      = [&](auto&& xRL) { return f3R<autodiff::dual>(x, xRL); };
   autodiff::dual energy;
@@ -205,7 +212,9 @@ auto ddf3R(const Ikarus::UnitVector<double, 2>& x) {
   return A;
 }
 
-TEST_CASE("TrustRegion: TrustRegionRiemanianUnitSphere", "[trustRegionTest.cpp]") {
+auto trustRegion4_RiemanianUnitSphere() {
+  TestSuite t("trustRegion4_RiemanianUnitSphere");
+
   auto d = Ikarus::UnitVector<double, 2>();
   d.update(Eigen::Vector<double, 1>::Ones());
   auto fvLambda = [](auto&& xL) { return f3R(xL); };
@@ -214,10 +223,10 @@ TEST_CASE("TrustRegion: TrustRegionRiemanianUnitSphere", "[trustRegionTest.cpp]"
   auto ddfvLambda = [](auto&& xL) { return ddf3R(xL); };
 
   Ikarus::NonLinearOperator nonLinOp(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(d));
-  CHECK(nonLinOp.value() == Catch::Approx(fvLambda(d)));
+  t.check(Dune::FloatCmp::eq(nonLinOp.value(), fvLambda(d)));
 
-  CHECK_THAT(dfvLambda(d), EigenApproxEqual(nonLinOp.derivative(), 1e-15));
-  CHECK_THAT(ddfvLambda(d), EigenApproxEqual(nonLinOp.secondDerivative(), 1e-15));
+  t.check(isApproxSame(dfvLambda(d), nonLinOp.derivative(), 1e-15));
+  t.check(isApproxSame(ddfvLambda(d), nonLinOp.secondDerivative(), 1e-15));
 
   Ikarus::TrustRegion tr3(nonLinOp,
                           std::function([](Ikarus::UnitVector<double, 2>& x,
@@ -225,12 +234,13 @@ TEST_CASE("TrustRegion: TrustRegionRiemanianUnitSphere", "[trustRegionTest.cpp]"
   constexpr double tol = 1e-12;
   tr3.setup({.verbosity = 1, .maxiter = 1000, .grad_tol = tol, .corr_tol = tol, .Delta0 = 0.1});
   const auto solverInfo3 = tr3.solve();
-  CHECK(true == solverInfo3.sucess);
-  CHECK(6 == solverInfo3.iterations);
-  CHECK(tol > solverInfo3.gradienNorm);
+  t.check(true == solverInfo3.sucess);
+  t.check(6 == solverInfo3.iterations);
+  t.check(tol > solverInfo3.gradienNorm);
   nonLinOp.update<0>();
-  CHECK(1e-17 >= nonLinOp.value());
-  CHECK_THAT(nonLinOp.firstParameter().getValue(), EigenApproxEqual(Eigen::Vector2d::UnitY(), 1e-15));
+  t.check(1e-17 >= nonLinOp.value());
+  t.check(isApproxSame(nonLinOp.firstParameter().getValue(), Eigen::Vector2d::UnitY(), 1e-15));
+  return t;
 }
 
 #include <dune/istl/bvector.hh>
@@ -356,7 +366,8 @@ auto ddf3RBlocked(const MultiTypeVector& mT) {
   return A;
 }
 
-TEST_CASE("TrustRegion: TrustRegionRiemanianUnitSphereAndDispBlocked", "[trustRegionTest.cpp]") {
+auto trustRegion5_RiemanianUnitSphereAndDispBlocked() {
+  TestSuite t("trustRegion5_RiemanianUnitSphereAndDispBlocked");
   using namespace Dune::Indices;
   using namespace Ikarus;
   DisplacementVector disp;
@@ -381,30 +392,44 @@ TEST_CASE("TrustRegion: TrustRegionRiemanianUnitSphereAndDispBlocked", "[trustRe
   auto dfvLambda = [&](auto&& xL) { return df3RBlocked(xL); };
 
   auto gred = dfvLambda(mT);
-  CHECK(10 == gred.size());
+  t.check(10 == gred.size());
   auto ddfvLambda = [](auto&& xL) { return ddf3RBlocked(xL); };
   auto h          = ddfvLambda(mT);
-  CHECK(10 == h.rows());
-  CHECK(10 == h.cols());
+  t.check(10 == h.rows());
+  t.check(10 == h.cols());
 
   Ikarus::NonLinearOperator nonLinOp(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(mT));
-  CHECK(nonLinOp.value() == Catch::Approx(fvLambda(mT)));
+  t.check(Dune::FloatCmp::eq(nonLinOp.value(), fvLambda(mT)));
 
-  CHECK_THAT(dfvLambda(mT), EigenApproxEqual(nonLinOp.derivative(), 1e-15));
-  CHECK_THAT(ddfvLambda(mT), EigenApproxEqual(nonLinOp.secondDerivative(), 1e-15));
+  t.check(isApproxSame(dfvLambda(mT), nonLinOp.derivative(), 1e-15));
+  t.check(isApproxSame(ddfvLambda(mT), nonLinOp.secondDerivative(), 1e-15));
 
   Ikarus::TrustRegion tr3(nonLinOp);
   constexpr double tol = 1e-12;
   tr3.setup({.verbosity = 1, .maxiter = 1000, .grad_tol = tol, .corr_tol = tol, .Delta0 = 0.1});
   const auto solverInfo3 = tr3.solve();
-  CHECK(true == solverInfo3.sucess);
-  CHECK(9 == solverInfo3.iterations);
-  CHECK(tol > solverInfo3.gradienNorm);
+  t.check(true == solverInfo3.sucess);
+  t.check(9 == solverInfo3.iterations);
+  t.check(tol > solverInfo3.gradienNorm);
   nonLinOp.update<0>();
-  CHECK(-0.5 == Catch::Approx(nonLinOp.value()));
+  t.check(Dune::FloatCmp::eq(-0.5, nonLinOp.value()));
 
   for (auto& director : mT[_1])
-    CHECK_THAT(director.getValue(), EigenApproxEqual(Eigen::Vector3d::UnitZ(), 1e-15));
+    t.check(isApproxSame(director.getValue(), Eigen::Vector3d::UnitZ(), 1e-15));
   for (auto& displacement : mT[_0])
-    CHECK_THAT(displacement.getValue(), EigenApproxEqual(-0.5 * Eigen::Vector3d::UnitZ(), 1e-14));
+    t.check(isApproxSame(displacement.getValue(), -0.5 * Eigen::Vector3d::UnitZ(), 1e-14));
+  return t;
+}
+
+int main(int argc, char** argv) {
+  Dune::MPIHelper::instance(argc, argv);
+  TestSuite t;
+
+  t.subTest(trustRegion1());
+  t.subTest(trustRegion2());
+  t.subTest(trustRegion3());
+  t.subTest(trustRegion4_RiemanianUnitSphere());
+  t.subTest(trustRegion5_RiemanianUnitSphereAndDispBlocked());
+
+  return t.exit();
 }

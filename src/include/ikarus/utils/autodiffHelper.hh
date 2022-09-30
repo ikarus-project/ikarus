@@ -29,7 +29,7 @@ namespace Ikarus {
     static_assert(sizeof...(Vars) >= 1);
     static_assert(sizeof...(Args) >= 1);
 
-    auto fEntry = [&](auto &I) { return [&](const auto &x) { return std::apply(f, at.args)[I]; }; };
+    auto fEntry = [&](auto &I) { return [&](const auto &) { return std::apply(f, at.args)[I]; }; };
     for (int i = 0; i < U::RowsAtCompileTime; ++i)
       hessian(fEntry(i), wrt, at, u[i], g[i], h[i]);
   }

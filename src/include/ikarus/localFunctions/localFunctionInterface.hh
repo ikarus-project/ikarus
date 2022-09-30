@@ -110,68 +110,66 @@ namespace Ikarus {
   protected:
     /* Default implementation returns Zero expression if they are not overloaded */
     template <typename DomainTypeOrIntegrationPointIndex, typename... AlongArgs, typename... TransformArgs>
-    auto evaluateSecondDerivativeWRTCoeffsImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
-                                               const std::array<size_t, 2>& coeffsIndex,
-                                               const Along<AlongArgs...>& alongArgs,
-                                               const TransformWith<TransformArgs...>& transArgs) const {
+    auto evaluateSecondDerivativeWRTCoeffsImpl(const DomainTypeOrIntegrationPointIndex&, const std::array<size_t, 2>&,
+                                               const Along<AlongArgs...>&,
+                                               const TransformWith<TransformArgs...>&) const {
       return Eigen::Matrix<typename LocalFunctionImpl::ctype, LocalFunctionImpl::correctionSize,
                            LocalFunctionImpl::correctionSize>::Zero();
     }
 
     /* Default implementation returns Zero expression if they are not overloaded */
     template <typename DomainTypeOrIntegrationPointIndex, typename... AlongArgs, typename... TransformArgs>
-    auto evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialSingleImpl(
-        const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, const std::array<size_t, 2>& coeffsIndex,
-        const int spatialIndex, const Along<AlongArgs...>& alongArgs,
-        const TransformWith<TransformArgs...>& transArgs) const {
+    auto evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialSingleImpl(const DomainTypeOrIntegrationPointIndex&,
+                                                                      const std::array<size_t, 2>&, const int,
+                                                                      const Along<AlongArgs...>&,
+                                                                      const TransformWith<TransformArgs...>&) const {
       return Eigen::Matrix<typename LocalFunctionImpl::ctype, LocalFunctionImpl::correctionSize,
                            LocalFunctionImpl::correctionSize>::Zero();
     }
 
     /* Default implementation returns Zero expression if they are not overloaded */
     template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
-    auto evaluateDerivativeWRTSpaceAllImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
-                                           const TransformWith<TransformArgs...>& transArgs) const {
+    auto evaluateDerivativeWRTSpaceAllImpl(const DomainTypeOrIntegrationPointIndex&,
+                                           const TransformWith<TransformArgs...>&) const {
       return typename LocalFunctionImpl::Jacobian::Zero();
     }
 
     /* Default implementation returns Zero expression if they are not overloaded */
     template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
-    auto evaluateDerivativeWRTCoeffsImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, int coeffsIndex,
-                                         const TransformWith<TransformArgs...>& transArgs) const {
+    auto evaluateDerivativeWRTCoeffsImpl(const DomainTypeOrIntegrationPointIndex&, int,
+                                         const TransformWith<TransformArgs...>&) const {
       return Eigen::Matrix<typename LocalFunctionImpl::ctype, LocalFunctionImpl::valueSize,
                            LocalFunctionImpl::correctionSize>::Zero();
     }
 
     /* Default implementation returns Zero expression if they are not overloaded  */
     template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
-    auto evaluateDerivativeWRTCoeffsANDSpatialImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
-                                                   int coeffsIndex,
-                                                   const TransformWith<TransformArgs...>& transArgs) const {
+    auto evaluateDerivativeWRTCoeffsANDSpatialImpl(const DomainTypeOrIntegrationPointIndex&, int,
+                                                   const TransformWith<TransformArgs...>&) const {
       return std::array<Ikarus::DerivativeDirections::DerivativeNoOp, gridDim>();
     }
 
     /* Default implementation returns Zero expression if they are not overloaded  */
     template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
-    auto evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
-                                                         int coeffsIndex, int spatialIndex,
-                                                         const TransformWith<TransformArgs...>& transArgs) const {
+    auto evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(const DomainTypeOrIntegrationPointIndex&, int, int,
+                                                         const TransformWith<TransformArgs...>&) const {
       return Eigen::Matrix<typename LocalFunctionImpl::ctype, LocalFunctionImpl::valueSize,
                            LocalFunctionImpl::correctionSize>::Zero();
     }
     /* Default implementation returns Zero expression if they are not overloaded  */
     template <typename DomainTypeOrIntegrationPointIndex, typename... AlongArgs, typename... TransformArgs>
-    auto evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialImpl(
-        const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, const std::array<size_t, 2>& coeffsIndex,
-        const Along<AlongArgs...>& alongArgs, const TransformWith<TransformArgs...>& transArgs) const {
+    auto evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialImpl(const DomainTypeOrIntegrationPointIndex&,
+                                                                const std::array<size_t, 2>&,
+                                                                const Along<AlongArgs...>&,
+                                                                const TransformWith<TransformArgs...>&) const {
       return Eigen::Matrix<typename LocalFunctionImpl::ctype, LocalFunctionImpl::correctionSize,
                            LocalFunctionImpl::correctionSize>::Zero();
     }
 
     /* Default implementation returns Zero expression if they are not overloaded  */
     template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
-    auto evaluateDerivativeWRTSpaceSingleImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
-                                              int spaceIndex, const TransformWith<TransformArgs...>& transArgs) const {
+    auto evaluateDerivativeWRTSpaceSingleImpl(const DomainTypeOrIntegrationPointIndex&, int,
+                                              const TransformWith<TransformArgs...>&) const {
       return typename Eigen::internal::plain_col_type<typename LocalFunctionImpl::Jacobian>::type::Zero();
     }
 
