@@ -28,7 +28,7 @@
 namespace Ikarus {
 
   struct LoadControlInformation {
-    bool sucess{false};
+    bool success{false};
   };
 
   /**  The loadControl control routine simply increases the last parameter of a nonlinear operator and then calls
@@ -60,7 +60,7 @@ namespace Ikarus {
       loadParameter = 0.0;
       this->notify(ControlMessages::STEP_STARTED);
       auto solverInfo = nonLinearSolver->solve();
-      if (not solverInfo.sucess) return info;
+      if (not solverInfo.success) return info;
       this->notify(ControlMessages::SOLUTION_CHANGED);
       this->notify(ControlMessages::STEP_ENDED);
 
@@ -68,12 +68,12 @@ namespace Ikarus {
         this->notify(ControlMessages::STEP_STARTED);
         loadParameter += stepSize_;
         solverInfo = nonLinearSolver->solve();
-        if (not solverInfo.sucess) return info;
+        if (not solverInfo.success) return info;
         this->notify(ControlMessages::SOLUTION_CHANGED);
         this->notify(ControlMessages::STEP_ENDED);
       }
       this->notify(ControlMessages::CONTROL_ENDED);
-      info.sucess = true;
+      info.success = true;
       return info;
     }
 

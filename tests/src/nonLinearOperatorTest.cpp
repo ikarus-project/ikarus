@@ -29,7 +29,7 @@ auto checkNewtonRhapson(NewtonRhapson& nr, SolutionType& x, double tolerance, in
   else
     t.check(isApproxSame(x, xExpected, 1e-15));
 
-  t.check(true == solverInfo.sucess);
+  t.check(true == solverInfo.success);
   t.check(tolerance >= solverInfo.residualnorm);
   t.check(iterExpected == solverInfo.iterations);
   return t;

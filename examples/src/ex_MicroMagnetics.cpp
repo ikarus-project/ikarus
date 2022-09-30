@@ -136,14 +136,14 @@ int main(int argc, char **argv) {
   //  const double Lz   = freeSpaceY;
   //
   //  Dune::FieldVector<double, gridDim> bbox;
-  //  std::array<int, gridDim> eles{};
+  //  std::array<int, gridDim> elementsPerDirection{};
   //  if constexpr (gridDim == 2) {
   //    bbox = {Lx, Ly};
-  //    eles = {elex, eley};
+  //    elementsPerDirection = {elex, eley};
   //  } else if constexpr (gridDim == 3) {
   //  }
   //
-  //  auto grid = std::make_shared<Grid>(bbox, eles);
+  //  auto grid = std::make_shared<Grid>(bbox, elementsPerDirection);
 
   using Grid = Dune::ALUGrid<gridDim, gridDim, Dune::simplex, Dune::conforming>;
   auto grid  = Dune::GmshReader<Grid>::read(mshfilepath, false, false);

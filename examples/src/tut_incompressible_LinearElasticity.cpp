@@ -159,10 +159,10 @@ int main(int argc, char **argv) {
   const size_t elex = 20;
   const size_t eley = 20;
 
-  Dune::FieldVector<double, 2> bbox = {L, h};
-  std::array<int, 2> eles           = {elex, eley};
-  auto grid                         = std::make_shared<Grid>(bbox, eles);
-  auto gridView                     = grid->leafGridView();
+  Dune::FieldVector<double, 2> bbox       = {L, h};
+  std::array<int, 2> elementsPerDirection = {elex, eley};
+  auto grid                               = std::make_shared<Grid>(bbox, elementsPerDirection);
+  auto gridView                           = grid->leafGridView();
   //  draw(gridView);
 
   using namespace Dune::Functions::BasisFactory;

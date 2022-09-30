@@ -25,7 +25,7 @@
 #include <dune/common/hybridutilities.hh>
 namespace Ikarus::Std {
 
-  // Forward delare functions
+  // Forward declare functions
   template <typename... Types>
   auto makeNestedTupleFlat(std::tuple<Types...> tup);
 
@@ -297,7 +297,7 @@ namespace Ikarus::Std {
    * static_assert(Index<float,foo_t>::value==2);
    * static_assert(Index<long double,foo_t>::value==3);
    *
-   * >If the type is not found the returned indenx is the size of the tuple
+   * >If the type is not found the returned index is the size of the tuple
 
    */
   template <class T, class Tuple>

@@ -42,7 +42,7 @@ namespace Ikarus {
     using Jacobian = typename Traits::Jacobian;
     /** \brief Type for a column of the Jacobian matrix */
     using JacobianColType = typename Traits::JacobianColType;
-    /** \brief Type for the derivatives wrt. the coeffiecients */
+    /** \brief Type for the derivatives wrt. the coefficients */
     using CoeffDerivMatrix = typename Traits::CoeffDerivMatrix;
     /** \brief Type for ansatz function values */
     using AnsatzFunctionType = typename Traits::AnsatzFunctionType;
@@ -118,7 +118,7 @@ namespace Ikarus {
     using FunctionReturnType = typename CoeffContainer::value_type;
     /** \brief Type for the Jacobian matrix */
     using Jacobian = Eigen::Matrix<ctype, valueSize, gridDim>;
-    /** \brief Type for the derivatives wrt. the coeffiecients */
+    /** \brief Type for the derivatives wrt. the coefficients */
     using CoeffDerivMatrix = Eigen::Matrix<ctype, valueSize, valueSize>;
     /** \brief Type for the Jacobian of the ansatz function values */
     using AnsatzFunctionJacobian = typename Ikarus::LocalBasis<DuneBasis>::JacobianType;

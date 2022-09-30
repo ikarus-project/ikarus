@@ -46,7 +46,7 @@ auto trustRegion1() {
   tr->setup({.verbosity = 1, .Delta0 = 1});
   const auto solverInfo = tr->solve();
 
-  t.check(true == solverInfo.sucess);
+  t.check(true == solverInfo.success);
 
   t.check(isApproxSame(x, xExpected, 1e-15));
   return t;
@@ -96,7 +96,7 @@ auto trustRegion2() {
   tr.setup({.verbosity = 1, .maxiter = maxIter_, .grad_tol = eps, .Delta0 = 1});
   const auto solverInfo = tr.solve();
 
-  t.check(true == solverInfo.sucess);
+  t.check(true == solverInfo.success);
   t.check(25 == solverInfo.iterations);
   t.check(eps > solverInfo.gradienNorm);
   t.check(isApproxSame(x, xExpected, eps));
@@ -149,7 +149,7 @@ auto trustRegion3() {
   Ikarus::TrustRegion tr(nonLinOp);
   tr.setup({.verbosity = 1, .maxiter = maxIter_, .grad_tol = eps, .corr_tol = eps, .Delta0 = 1});
   const auto solverInfo = tr.solve();
-  t.check(true == solverInfo.sucess);
+  t.check(true == solverInfo.success);
   t.check(11 == solverInfo.iterations);
   t.check(eps > solverInfo.gradienNorm);
   t.check(isApproxSame(x, xExpected, eps));
@@ -160,7 +160,7 @@ auto trustRegion3() {
   Ikarus::TrustRegion<decltype(nonLinOp), Ikarus::PreConditioner::IdentityPreconditioner> tr2(nonLinOp);
   tr2.setup({.verbosity = 1, .maxiter = maxIter_, .grad_tol = eps, .corr_tol = eps, .Delta0 = 1});
   const auto solverInfo2 = tr2.solve();
-  t.check(true == solverInfo2.sucess);
+  t.check(true == solverInfo2.success);
   t.check(11 == solverInfo2.iterations);
   t.check(eps > solverInfo2.gradienNorm);
   t.check(isApproxSame(x, xExpected, eps));
@@ -171,7 +171,7 @@ auto trustRegion3() {
   Ikarus::TrustRegion<decltype(nonLinOp), Ikarus::PreConditioner::DiagonalPreconditioner> tr3(nonLinOp);
   tr3.setup({.verbosity = 1, .maxiter = maxIter_, .grad_tol = eps, .corr_tol = eps, .Delta0 = 1});
   const auto solverInfo3 = tr3.solve();
-  t.check(true == solverInfo3.sucess);
+  t.check(true == solverInfo3.success);
   t.check(8 == solverInfo3.iterations);
   t.check(eps > solverInfo3.gradienNorm);
   t.check(isApproxSame(x, xExpected, eps));
@@ -234,7 +234,7 @@ auto trustRegion4_RiemanianUnitSphere() {
   constexpr double tol = 1e-12;
   tr3.setup({.verbosity = 1, .maxiter = 1000, .grad_tol = tol, .corr_tol = tol, .Delta0 = 0.1});
   const auto solverInfo3 = tr3.solve();
-  t.check(true == solverInfo3.sucess);
+  t.check(true == solverInfo3.success);
   t.check(6 == solverInfo3.iterations);
   t.check(tol > solverInfo3.gradienNorm);
   nonLinOp.update<0>();
@@ -408,7 +408,7 @@ auto trustRegion5_RiemanianUnitSphereAndDispBlocked() {
   constexpr double tol = 1e-12;
   tr3.setup({.verbosity = 1, .maxiter = 1000, .grad_tol = tol, .corr_tol = tol, .Delta0 = 0.1});
   const auto solverInfo3 = tr3.solve();
-  t.check(true == solverInfo3.sucess);
+  t.check(true == solverInfo3.success);
   t.check(9 == solverInfo3.iterations);
   t.check(tol > solverInfo3.gradienNorm);
   nonLinOp.update<0>();
