@@ -1,6 +1,10 @@
+//
+//
+#include <config.h>
 
-
-#include <catch2/catch_test_macros.hpp>
+#include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/test/testsuite.hh>
+using Dune::TestSuite;
 
 #include "testHelpers.hh"
 
@@ -11,7 +15,8 @@ Eigen::Vector<Scalar, 2> f(const Eigen::Vector<Scalar, 3>& x) {
   return (x.array() * (x.array().sin())).template segment<2>(0);
 }
 
-TEST_CASE("AutoDiffHelper: hessianN", "[testAutodiffHelper.cpp]") {
+auto hessianN() {
+  TestSuite t("hessianN");
   Eigen::Vector3d xd;
   xd << 1.0, 2.0, 3.0;
   Eigen::Vector3dual2nd x = xd;
@@ -27,7 +32,17 @@ TEST_CASE("AutoDiffHelper: hessianN", "[testAutodiffHelper.cpp]") {
     hExpected.setZero();
     gExpected[i]    = sin(xd[i]) + cos(xd[i]) * xd[i];
     hExpected(i, i) = 2 * +cos(xd[i]) - xd[i] * sin(xd[i]);
-    CHECK_THAT(g[i], EigenApproxEqual(gExpected, 1e-14));
-    CHECK_THAT(h[i], EigenApproxEqual(hExpected, 1e-14));
+    t.check(isApproxSame(g[i], gExpected, 1e-14));
+    t.check(isApproxSame(h[i], hExpected, 1e-14));
   }
+  return t;
+}
+
+int main(int argc, char** argv) {
+  Dune::MPIHelper::instance(argc, argv);
+  TestSuite t;
+
+  t.subTest(hessianN());
+
+  return t.exit();
 }

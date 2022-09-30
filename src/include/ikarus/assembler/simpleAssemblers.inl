@@ -166,7 +166,6 @@ namespace Ikarus {
   void SparseFlatAssembler<Basis, FEContainer>::createReducedOccupationPattern() {
     spMatReduced.resize(this->reducedSize(), this->reducedSize());
     std::vector<Eigen::Triplet<double>> vectorOfTriples;
-    const int estimateOfConnectivity = 8;
     using std::size;
 
     vectorOfTriples.reserve(this->estimateOfConnectivity());

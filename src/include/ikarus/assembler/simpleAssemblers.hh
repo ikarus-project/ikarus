@@ -23,6 +23,7 @@
 
 #include <dune/common/power.hh>
 
+#include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 

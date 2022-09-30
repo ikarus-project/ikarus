@@ -159,7 +159,7 @@ namespace Ikarus {
     template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
     CoeffDerivEukRieMatrix evaluateDerivativeWRTCoeffsImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
                                                            int coeffsIndex,
-                                                           const TransformWith<TransformArgs...>& transArgs) const {
+                                                           const TransformWith<TransformArgs...>&) const {
       const auto& N = evaluateFunctionWithIPorCoord(ipIndexOrPosition, basis_);
       return (evaluateDerivativeWRTCoeffsEukImpl(N, coeffsIndex) * coeffs[coeffsIndex].orthonormalFrame()).eval();
     }
@@ -173,7 +173,7 @@ namespace Ikarus {
     CoeffDerivMatrix evaluateSecondDerivativeWRTCoeffsImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
                                                            const std::array<size_t, 2>& coeffsIndex,
                                                            const Along<AlongArgs...>& alongArgs,
-                                                           const TransformWith<TransformArgs...>& transArgs) const {
+                                                           const TransformWith<TransformArgs...>&) const {
       const auto& N                 = evaluateFunctionWithIPorCoord(ipIndexOrPosition, basis_);
       const FunctionReturnType valE = evaluateEmbeddingFunctionImpl(N);
 

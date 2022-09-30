@@ -1,4 +1,4 @@
-/* begin Ikarus
+/* begin ikarus
 put the definitions for config.h specific to
 your project here. Everything above will be
 overwritten
@@ -28,7 +28,7 @@ overwritten
 
 /* end private */
 
-/* Define to the version of Ikarus */
+/* Define to the version of ikarus */
 #define IKARUS_VERSION "@IKARUS_VERSION@"
 
 /* Define the sparse matrix addon for eigen */
@@ -37,15 +37,15 @@ overwritten
 /* Init eigen matrices with nan */
 #define EIGEN_INITIALIZE_MATRICES_BY_NAN
 
-/* Define to the major version of Ikarus */
+/* Define to the major version of ikarus */
 #define IKARUS_VERSION_MAJOR @IKARUS_VERSION_MAJOR@
 
-/* Define to the minor version of Ikarus */
+/* Define to the minor version of ikarus */
 #define IKARUS_VERSION_MINOR @IKARUS_VERSION_MINOR@
 
-/* Define to the revision of Ikarus */
+/* Define to the revision of ikarus */
 #define IKARUS_VERSION_REVISION @IKARUS_VERSION_REVISION@
 
-/* end Ikarus
+/* end ikarus
 Everything below here will be overwritten
 */
