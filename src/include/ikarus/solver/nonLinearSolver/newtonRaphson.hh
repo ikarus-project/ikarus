@@ -34,7 +34,7 @@ namespace Ikarus {
   };
 
   struct SolverInformation {
-    bool sucess{false};
+    bool success{false};
     double residualnorm{0.0};
     int iterations{0};
   };
@@ -90,7 +90,7 @@ namespace Ikarus {
         SolverInformation solve(const SolutionType& dx_predictor = NoPredictor{}) {
       this->notify(NonLinearSolverMessages::INIT);
       SolverInformation solverInformation;
-      solverInformation.sucess = true;
+      solverInformation.success = true;
       nonLinearOperator().updateAll();
       const auto& rx = nonLinearOperator().value();
       const auto& Ax = nonLinearOperator().derivative();

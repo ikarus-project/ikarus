@@ -54,7 +54,7 @@ Look at the markdown file of this page to see how a table can be inserted.
 | Grid Entity Interface        ||
 | :------------ | :-----------: |
 | `#!cpp GridViewType leafGridView()`     |
-| `#!cpp GridViewType levelGridView(int levl)`     |
+| `#!cpp GridViewType levelGridView(int level)`     |
 
 
 !!! warning "Insert a warning"

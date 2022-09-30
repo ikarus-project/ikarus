@@ -18,7 +18,7 @@ if(ADD_CODESPELLTARGET)
     message("Adding codespell targets")
     message("${CMAKE_SOURCE_DIR}")
     message(${CMAKE_SOURCE_DIR})
-    set (CODESPELLCOMAND codespell -c -s -I codespellignore -S literature.bib --count ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/tests ${CMAKE_SOURCE_DIR}/examples ${CMAKE_SOURCE_DIR}/docs)
+    set (CODESPELLCOMAND codespell -c -s -I codespellignore -S literature.bib --count ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/tests ${CMAKE_SOURCE_DIR}/examples ${CMAKE_SOURCE_DIR}/docs README.md)
     add_custom_target(
             codespell
             COMMAND ${CODESPELLCOMAND}

@@ -131,7 +131,7 @@ auto NonLinearElasticityLoadControlNRandTR() {
   t.check(std::abs(maxDispExpected - maxDisp) < 1e-12, "maxDispExpected-maxDisp");
 
   nonLinOp.template update<1>();
-  t.check(controlInfo.sucess, "Sucessfull result");
+  t.check(controlInfo.success, "Successful result");
   t.check(gradTol >= nonLinOp.derivative().norm(), "Gradient Tolerance should be larger than actual tolerance");
   return t;
 }

@@ -41,7 +41,7 @@
 namespace Ikarus {
 
   struct TRSolverInformation {
-    bool sucess{false};
+    bool success{false};
     double gradienNorm{0.0};
     int iterations{0};
   };
@@ -310,7 +310,7 @@ namespace Ikarus {
       spdlog::info("{}", info.reasonString);
       spdlog::info("Total iterations: {} Total CG Iterations: {}", stats.outerIter, stats.innerIterSum);
 
-      solverInformation.sucess
+      solverInformation.success
           = (info.stop == StopReason::correctionNormTolReached) or (info.stop == StopReason::gradientNormTolReached);
 
       solverInformation.iterations  = stats.outerIter;
@@ -391,7 +391,7 @@ namespace Ikarus {
       int attempts = 0;
       truncatedConjugateGradient.factorize(hessian());
       // If the preconditioner is IncompleteCholesky the factorization may fail if we have negative diagonal entries and
-      // the initial shift is too small. Therefore, if the factorization fails we increase the intial shift by a factor
+      // the initial shift is too small. Therefore, if the factorization fails we increase the initial shift by a factor
       // of 5.
       if constexpr (preConditioner == PreConditioner::IncompleteCholesky) {
         while (truncatedConjugateGradient.info() != Eigen::Success) {

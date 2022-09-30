@@ -72,7 +72,7 @@ USER ContainerUser
 
 COPY --from=installer-env ["\\PowerShell\\", "$ProgramFiles\\PowerShell"]
 
-# intialize powershell module cache
+# initialize powershell module cache
 RUN pwsh `
         -NoLogo `
         -NoProfile `

@@ -1,5 +1,5 @@
 name: codespell
-on: [push, pull_request]
+on: [push]
 jobs:
   codespell:
     name: Check for spelling errors
@@ -9,5 +9,5 @@ jobs:
       - uses: codespell-project/actions-codespell@master
         with:
           check_filenames: true
-          skip: docs/literature.bib
+          skip: ./docs/literature.bib,./codespellignore
           ignore_words_file: codespellignore

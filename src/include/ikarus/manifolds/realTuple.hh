@@ -55,7 +55,7 @@ namespace Ikarus {
     requires std::convertible_to<ctOther, ctype>
     friend class RealTuple;
 
-    /** \brief Copy assignement if the other type has different underlying type*/
+    /** \brief Copy assignment if the other type has different underlying type*/
     template <typename ctype_>
     requires std::convertible_to<ctype_, ctype> RealTuple<ctype, d>
     &operator=(const RealTuple<ctype_, d> &other) {

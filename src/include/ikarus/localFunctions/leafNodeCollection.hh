@@ -74,7 +74,7 @@ namespace Ikarus {
   requires LocalFunction<LF>
   struct LocalFunctionLeafNodeCollection {
     using LFRaw = std::remove_cvref_t<LF>;
-    /* Since we need to enable perfect forwaring we have to implement this universal constructor. We also constrain it
+    /* Since we need to enable perfect forwarding we have to implement this universal constructor. We also constrain it
      * with requires LocalFunction<LF_> to only allow it for local function types. Without this template and a signature
      * as LocalFunctionLeafNodeCollection( LF&& lf): ... perfect forwarding is not working for constructors. See
      * https://eel.is/c++draft/temp.deduct.call#3

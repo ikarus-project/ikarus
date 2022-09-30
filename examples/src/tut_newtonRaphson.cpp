@@ -56,7 +56,7 @@ void newtonRaphsonVeryBasicExample() {
   nr.setup({eps, maxIter});
   const auto solverInfo = nr.solve(x);
 
-  std::cout << "success: " << solverInfo.sucess << "\n";
+  std::cout << "success: " << solverInfo.success << "\n";
   std::cout << "iterations: " << solverInfo.iterations << "\n";
   std::cout << "residuum: " << solverInfo.residualnorm << "\n";
   std::cout << "solution: " << x << "\n";

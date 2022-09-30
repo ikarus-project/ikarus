@@ -22,8 +22,8 @@ auto SimpleAssemblersTest() {
   using Grid = Dune::YaspGrid<2>;
 
   Dune::FieldVector<double, 2> bbox = {4, 2};
-  std::array<int, 2> eles           = {2, 1};
-  auto grid                         = std::make_shared<Grid>(bbox, eles);
+  std::array<int, 2> elementsPerDirection           = {2, 1};
+  auto grid                         = std::make_shared<Grid>(bbox, elementsPerDirection);
 
   for (int i = 0; i < 4; ++i) {
     auto gridView = grid->leafGridView();
@@ -66,7 +66,7 @@ auto SimpleAssemblersTest() {
     t.check(isApproxSame(K, Kdense, 1e-15), "Dense==Sparse");
     t.check(K.rows() == 2 * gridView.size(2), "DofsCheck");
     t.check(K.cols() == 2 * gridView.size(2), "DofsCheck");
-    const int boundaryNodes = (eles[0] * Dune::power(2, i) + 1) * 2 + (eles[1] * Dune::power(2, i) + 1) * 2 - 4;
+    const int boundaryNodes = (elementsPerDirection[0] * Dune::power(2, i) + 1) * 2 + (elementsPerDirection[1] * Dune::power(2, i) + 1) * 2 - 4;
     t.check(2 * boundaryNodes == fixedDofs);
 
     auto& KdenseRed = denseFlatAssembler.getReducedMatrix(req);

@@ -27,7 +27,7 @@ bool isConstrained(size_t i) // (6)
 size_t estimateOfConnectivity() // (7)
 ```
 
-1. Returns the number of degress of freedom.
+1. Returns the number of degrees of freedom.
 2. Returns the number of degrees of freeedom, which are not constrained by a dirichlet boundary condition.
 3. Returns a reference to the finite element container that you gave to the assembler when constructing it.
 4. Gets a reduced vector and returns a full vector. Entries corresponding to fixed dofs are set to 0. Values of the other entries are
@@ -47,7 +47,7 @@ and assembling of matrices or vectors is not relevant for you.
 The available requirements are explained on the [FE requirements page](feRequirements.md).
 `dirichletFlags` is not used in this assembler.
 
-It assembles the reqested scalar quantity. A call to this function could look as follows:
+It assembles the requested scalar quantity. A call to this function could look as follows:
 ```cpp
 ScalarAssembler myAssembler(...) // (1)
 // other code
