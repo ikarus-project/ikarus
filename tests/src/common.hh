@@ -3,12 +3,14 @@
 #pragma once
 
 #include <dune/alugrid/grid.hh>
+#include <dune/grid/uggrid.hh>
 #include <dune/grid/yaspgrid.hh>
 #include <dune/iga/nurbsgrid.hh>
 namespace Grids {
   struct Yasp {};
   struct Alu {};
   struct Iga {};
+  struct UG {};
 }  // namespace Grids
 
 template <typename GridType>
@@ -53,5 +55,18 @@ auto createGrid([[maybe_unused]] int elex = 10, [[maybe_unused]] int eley = 10) 
     auto grid               = std::make_shared<Grid>(patchData);
     grid->globalRefine(1);
     return grid;
+  } else if constexpr (std::is_same_v<GridType, Grids::UG>) {
+    using GridFactory = Dune::GridFactory<Dune::UGGrid<2>>;
+    GridFactory gridFactory;
+
+    gridFactory.insertVertex({0, 0});
+    gridFactory.insertVertex({1.3, 0});
+    gridFactory.insertVertex({0.1, 0.7});
+    gridFactory.insertVertex({1.5, 1});
+    gridFactory.insertVertex({2, 1.1});
+
+    gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {0, 1, 2, 3});
+    gridFactory.insertElement(Dune::GeometryTypes::triangle, {1, 3, 4});
+    return gridFactory.createGrid();
   }
 }
