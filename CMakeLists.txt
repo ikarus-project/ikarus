@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 
 project(
-  Ikarus
+  ikarus
   VERSION 0.1
   LANGUAGES C CXX
 )
@@ -22,7 +22,6 @@ add_subdirectory(benchmarks)
 add_subdirectory(tests)
 add_subdirectory(cmake/FormatTarget)
 
-enable_testing()
 if(BUILD_DOCS)
   message("Build docs locally target ENABLED")
   add_subdirectory(docs/BuildLocally)

@@ -1,7 +1,9 @@
+#include <config.h>
 
-#include <catch2/catch_test_macros.hpp>
-#include <catch2/matchers/catch_matchers_all.hpp>
-
+#include <dune/common/float_cmp.hh>
+#include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/test/testsuite.hh>
+using Dune::TestSuite;
 #include "testHelpers.hh"
 
 #include <matplot/matplot.h>
@@ -9,19 +11,21 @@
 #include <Eigen/Core>
 
 #include <ikarus/utils/polyfit.hh>
-using namespace Catch;
 
-TEST_CASE("PolyFitTest: PolyFitTest1", "[polyFitTest.cpp]") {
+auto polyFitTest1() {
+  TestSuite t("polyFitTest1");
   Eigen::VectorXd x = Eigen::VectorXd::LinSpaced(10, 0, 10);
   Eigen::VectorXd y = Eigen::VectorXd::LinSpaced(10, 2, 20);
 
   auto [poly, normE] = Ikarus::polyfit(x, y, 1);
-  CHECK(2.0 == Catch::Approx(poly.coefficients()[0]));
-  CHECK(1.8 == Catch::Approx(poly.coefficients()[1]));
-  CHECK(1e-14 > normE);
+  t.check(Dune::FloatCmp::eq(2.0, poly.coefficients()[0]));
+  t.check(Dune::FloatCmp::eq(1.8, poly.coefficients()[1]));
+  t.check(1e-14 > normE);
+  return t;
 }
 
-TEST_CASE("PolyFitTest: PolyFitTest2", "[polyFitTest.cpp]") {
+auto polyFitTest2() {
+  TestSuite t("polyFitTest2");
   const double factor = 7.6;
   Eigen::VectorXd x   = Eigen::VectorXd::LinSpaced(10, 0, 10);
   Eigen::VectorXd y   = 7 * x.array().cwiseProduct(x.array()).matrix();
@@ -31,8 +35,19 @@ TEST_CASE("PolyFitTest: PolyFitTest2", "[polyFitTest.cpp]") {
 
   auto [poly, normE] = Ikarus::polyfit(x, y, 2);
 
-  CHECK(-0.0038062785674569739 == Catch::Approx(poly.coefficients()[0]));
-  CHECK(-0.58760441700969401 == Catch::Approx(poly.coefficients()[1]));
-  CHECK(7.6138682871655829 == Catch::Approx(poly.coefficients()[2]));
-  CHECK(0.0082367593944499204 == Catch::Approx(normE));
+  t.check(Dune::FloatCmp::eq(-0.0038062785674569739, poly.coefficients()[0]));
+  t.check(Dune::FloatCmp::eq(-0.58760441700969401, poly.coefficients()[1]));
+  t.check(Dune::FloatCmp::eq(7.6138682871655829, poly.coefficients()[2]));
+  t.check(Dune::FloatCmp::eq(0.0082367593944499204, normE));
+  return t;
+}
+
+int main(int argc, char** argv) {
+  Dune::MPIHelper::instance(argc, argv);
+  TestSuite t;
+
+  t.subTest(polyFitTest1());
+  t.subTest(polyFitTest2());
+
+  return t.exit();
 }

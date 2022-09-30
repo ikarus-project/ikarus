@@ -59,7 +59,7 @@ namespace Ikarus {
   }  // namespace Impl
 
   template <typename LF>
-  consteval int countNonArithmeticLeafNodes(const LocalFunctionInterface<LF>& a) {
+  consteval int countNonArithmeticLeafNodes(const LocalFunctionInterface<LF>&) {
     return Impl::countNonArithmeticLeafNodesImpl<LF>();
   }
 

@@ -221,12 +221,12 @@ namespace Ikarus {
   }
 
   template <typename Scalar, int size>
-  auto operator*(const Eigen::DiagonalMatrix<Scalar, size>& a, Ikarus::DerivativeDirections::DerivativeNoOp) {
+  auto operator*(const Eigen::DiagonalMatrix<Scalar, size>&, Ikarus::DerivativeDirections::DerivativeNoOp) {
     return Ikarus::DerivativeDirections::DerivativeNoOp();
   }
 
   template <typename Scalar, int size>
-  auto operator*(Ikarus::DerivativeDirections::DerivativeNoOp, const Eigen::DiagonalMatrix<Scalar, size>& a) {
+  auto operator*(Ikarus::DerivativeDirections::DerivativeNoOp, const Eigen::DiagonalMatrix<Scalar, size>&) {
     return Ikarus::DerivativeDirections::DerivativeNoOp();
   }
 
@@ -264,7 +264,7 @@ namespace Ikarus {
                                                          Ikarus::DerivativeDirections::DerivativeNoOp);
 
   template <typename Derived>
-  auto operator*(const Eigen::MatrixBase<Derived>& a, Ikarus::DerivativeDirections::DerivativeNoOp) {
+  auto operator*(const Eigen::MatrixBase<Derived>&, Ikarus::DerivativeDirections::DerivativeNoOp) {
     return Ikarus::DerivativeDirections::DerivativeNoOp();
   }
 

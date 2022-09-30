@@ -16,7 +16,7 @@ auto createGrid([[maybe_unused]] int elex = 10, [[maybe_unused]] int eley = 10) 
   //  //  /// ALUGrid Example
   if constexpr (std::is_same_v<GridType, Grids::Alu>) {
     using Grid = Dune::ALUGrid<2, 2, Dune::simplex, Dune::conforming>;
-    auto grid  = Dune::GmshReader<Grid>::read("../../tests/src/testFiles/unstructuredTrianglesfine.msh", false);
+    auto grid  = Dune::GmshReader<Grid>::read("testFiles/unstructuredTrianglesfine.msh", false);
     grid->globalRefine(0);
     return grid;
   } else if constexpr (std::is_same_v<GridType, Grids::Yasp>) {

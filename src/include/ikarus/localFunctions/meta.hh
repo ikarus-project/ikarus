@@ -88,14 +88,14 @@ namespace Ikarus {
     SpatialPartial spatial(size_t i);
 
     template <std::size_t I>
-    SingleCoeff<I> coeff(Dune::index_constant<I> iObj, size_t i) {
+    SingleCoeff<I> coeff(Dune::index_constant<I>, size_t i) {
       using namespace Dune::Indices;
       SingleCoeff<I> coeffs;
       std::get<1>(coeffs.index[_0]._data) = i;
       return coeffs;
     }
     template <std::size_t I, std::size_t J>
-    TwoCoeff<I, J> coeff(Dune::index_constant<I> iObj, size_t i, Dune::index_constant<J> jObj, size_t j) {
+    TwoCoeff<I, J> coeff(Dune::index_constant<I>, size_t i, Dune::index_constant<J>, size_t j) {
       using namespace Dune::Indices;
       TwoCoeff<I, J> coeffs;
       std::get<1>(coeffs.index[_0]._data) = i;

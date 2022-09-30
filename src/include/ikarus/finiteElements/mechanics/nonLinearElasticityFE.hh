@@ -88,8 +88,6 @@ namespace Ikarus {
           disp[i][k2] = dx[i * 2 + k2] + d[localView_.index(localView_.tree().child(k2).localIndex(i))[0]];
 
       ScalarType energy = 0.0;
-      const int order   = 2 * (fe.localBasis().order());
-      const auto& rule  = Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order);
       Eigen::Matrix3<ScalarType> C;
       C.setZero();  // plane stress
       C(0, 0) = C(1, 1) = 1;

@@ -13,7 +13,7 @@ find_package(benchmark REQUIRED)
 
 target_link_libraries(
   IkarusBenchmarks
-  PRIVATE Ikarus::Ikarus
+  PRIVATE Ikarus::ikarus
   PRIVATE benchmark::benchmark_main
 )
 target_compile_features(IkarusBenchmarks PRIVATE cxx_std_20)

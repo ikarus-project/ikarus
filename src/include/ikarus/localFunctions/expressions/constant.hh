@@ -34,7 +34,7 @@ namespace Ikarus {
     auto clone() const { return ConstantExpr(val); }
 
     template <typename OtherType, size_t ID = 0>
-    auto rebindClone(OtherType&& t, Dune::index_constant<ID>&& id = Dune::index_constant<0>()) const {
+    auto rebindClone(OtherType&&, [[maybe_unused]] Dune::index_constant<ID>&& id = Dune::index_constant<0>()) const {
       if constexpr (Arithmetic::value == ID)
         return ConstantExpr(static_cast<OtherType>(val));
       else

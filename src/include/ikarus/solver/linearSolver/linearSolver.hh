@@ -29,7 +29,7 @@
 #include <Eigen/SparseLU>
 #include <Eigen/SparseQR>
 #include <Eigen/UmfPackSupport>
-//#include <Eigen/SuperLUSupport>
+// #include <Eigen/SuperLUSupport>
 
 namespace Ikarus {
 
