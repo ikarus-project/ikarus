@@ -140,13 +140,6 @@ int main(int argc, char** argv) {
     return fext;
   };
 
-  auto neumannBoundaryLoad = [](auto& globalCoord, auto& lamb) {
-    Eigen::Vector2d fext;
-    fext.setZero();
-    fext[1] = lamb/40;
-    fext[0] = 0;
-    return fext;
-  };
   for (auto& element : elements(gridView))
     fes.emplace_back(basis, element, 1000, 0.3, &neumannBoundary, neumannBoundaryLoad, volumeLoad);
 

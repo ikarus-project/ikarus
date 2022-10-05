@@ -112,7 +112,7 @@ namespace Ikarus {
         Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(toEigenVector(gp.position()), lambda);
         energy += (0.5 * EVoigt.dot(C * EVoigt) - u.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
       }
-
+      const int order = 2 * (localView_.tree().child(0).finiteElement().localBasis().order());
       // line or surface loads, i.e. neumann boundary
       if (not neumannBoundary_) return energy;
 
