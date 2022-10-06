@@ -37,8 +37,8 @@ namespace Ikarus {
     const auto quadPos0          = referenceElement.position(0, 0);
 
     const auto jacobianinvT0
-        = toEigenMatrix(geometry.jacobianInverseTransposed(quadPos0));  // J^{-1}.Transpose() in Dune = J^{-1}
-    const auto detJ0 = geometry.integrationElement(quadPos0);           // determinant(J)
+        = toEigenMatrix(geometry.jacobianInverseTransposed(quadPos0));
+    const auto detJ0 = geometry.integrationElement(quadPos0);
 
     auto jaco = (jacobianinvT0).inverse().eval();
     auto J11  = jaco(0, 0);
@@ -59,8 +59,8 @@ namespace Ikarus {
     const auto quadPos0          = referenceElement.position(0, 0);
 
     const auto jacobianinvT0
-        = toEigenMatrix(geometry.jacobianInverseTransposed(quadPos0));  // J^{-1}.Transpose() in Dune = J^{-1}
-    const auto detJ0 = geometry.integrationElement(quadPos0);           // determinant(J)
+        = toEigenMatrix(geometry.jacobianInverseTransposed(quadPos0));
+    const auto detJ0 = geometry.integrationElement(quadPos0);
 
     auto jaco = (jacobianinvT0).inverse().eval();
     auto J11  = jaco(0, 0);
