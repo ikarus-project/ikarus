@@ -27,17 +27,14 @@
 #include <ikarus/localFunctions/meta.hh>
 #include <ikarus/utils/eigenDuneTransformations.hh>
 
-
-/// Search for "*****" to identify locations to add a new EAS formulation
-
 namespace Ikarus {
 
   enum class EASType { none, Q1E4, Q1E5, Q1E7, H1E9, H1E21 };
 
   template <typename Geometry>
   Eigen::Matrix3d calcTransformationMatrix2D(const Geometry& geometry) {
-    const auto& referenceElement = Dune::ReferenceElements<double,2>::general(geometry.type());
-    const auto quadPos0 = referenceElement.position(0,0);
+    const auto& referenceElement = Dune::ReferenceElements<double, 2>::general(geometry.type());
+    const auto quadPos0          = referenceElement.position(0, 0);
 
     const auto jacobianinvT0
         = toEigenMatrix(geometry.jacobianInverseTransposed(quadPos0));  // J^{-1}.Transpose() in Dune = J^{-1}
@@ -58,8 +55,8 @@ namespace Ikarus {
 
   template <typename Geometry>
   Eigen::Matrix<double, 6, 6> calcTransformationMatrix3D(const Geometry& geometry) {
-    const auto& referenceElement = Dune::ReferenceElements<double,3>::general(geometry.type());
-    const auto quadPos0 = referenceElement.position(0,0);
+    const auto& referenceElement = Dune::ReferenceElements<double, 3>::general(geometry.type());
+    const auto quadPos0          = referenceElement.position(0, 0);
 
     const auto jacobianinvT0
         = toEigenMatrix(geometry.jacobianInverseTransposed(quadPos0));  // J^{-1}.Transpose() in Dune = J^{-1}
@@ -101,10 +98,10 @@ namespace Ikarus {
       M.setZero(strainSize, enhancedStrainSize);
       const double xi   = quadPos[0];
       const double eta  = quadPos[1];
-      M(0, 0)           = xi - 0.5;
-      M(1, 1)           = eta - 0.5;
-      M(2, 2)           = xi - 0.5;
-      M(2, 3)           = eta - 0.5;
+      M(0, 0)           = 2 * xi - 1.0;
+      M(1, 1)           = 2 * eta - 1.0;
+      M(2, 2)           = 2 * xi - 1.0;
+      M(2, 3)           = 2 * eta - 1.0;
       const double detJ = geometry->integrationElement(quadPos);
       M                 = T0InverseTransformed / detJ * M;
       return M;
@@ -128,11 +125,11 @@ namespace Ikarus {
       M.setZero();
       const double xi   = quadPos[0];
       const double eta  = quadPos[1];
-      M(0, 0)           = xi - 0.5;
-      M(1, 1)           = eta - 0.5;
-      M(2, 2)           = xi - 0.5;
-      M(2, 3)           = eta - 0.5;
-      M(2, 4)           = xi * eta - 0.25;
+      M(0, 0)           = 2 * xi - 1.0;
+      M(1, 1)           = 2 * eta - 1.0;
+      M(2, 2)           = 2 * xi - 1.0;
+      M(2, 3)           = 2 * eta - 1.0;
+      M(2, 4)           = (2 * xi - 1.0) * (2 * eta - 1.0);
       const double detJ = geometry->integrationElement(quadPos);
       M                 = T0InverseTransformed / detJ * M;
       return M;
@@ -156,13 +153,13 @@ namespace Ikarus {
       M.setZero();
       const double xi   = quadPos[0];
       const double eta  = quadPos[1];
-      M(0, 0)           = xi - 0.5;
-      M(1, 1)           = eta - 0.5;
-      M(2, 2)           = xi - 0.5;
-      M(2, 3)           = eta - 0.5;
-      M(0, 4)           = xi* eta - 0.25;
-      M(1, 5)           = xi* eta - 0.25;
-      M(2, 6)           = xi* eta - 0.25;
+      M(0, 0)           = 2 * xi - 1.0;
+      M(1, 1)           = 2 * eta - 1.0;
+      M(2, 2)           = 2 * xi - 1.0;
+      M(2, 3)           = 2 * eta - 1.0;
+      M(0, 4)           = (2 * xi - 1.0) * (2 * eta - 1.0);
+      M(1, 5)           = (2 * xi - 1.0) * (2 * eta - 1.0);
+      M(2, 6)           = (2 * xi - 1.0) * (2 * eta - 1.0);
       const double detJ = geometry->integrationElement(quadPos);
       M                 = T0InverseTransformed / detJ * M;
       return M;
@@ -187,15 +184,15 @@ namespace Ikarus {
       const double xi   = quadPos[0];
       const double eta  = quadPos[1];
       const double zeta = quadPos[2];
-      M(0, 0)           = xi - 0.5;
-      M(1, 1)           = eta - 0.5;
-      M(2, 2)           = zeta - 0.5;
-      M(3, 3)           = xi - 0.5;
-      M(3, 4)           = eta - 0.5;
-      M(4, 5)           = xi - 0.5;
-      M(4, 6)           = zeta - 0.5;
-      M(5, 7)           = eta - 0.5;
-      M(5, 8)           = zeta - 0.5;
+      M(0, 0)           = 2 * xi - 1.0;
+      M(1, 1)           = 2 * eta - 1.0;
+      M(2, 2)           = 2 * zeta - 1.0;
+      M(3, 3)           = 2 * xi - 1.0;
+      M(3, 4)           = 2 * eta - 1.0;
+      M(4, 5)           = 2 * xi - 1.0;
+      M(4, 6)           = 2 * zeta - 1.0;
+      M(5, 7)           = 2 * eta - 1.0;
+      M(5, 8)           = 2 * zeta - 1.0;
       const double detJ = geometry->integrationElement(quadPos);
       M                 = T0InverseTransformed / detJ * M;
       return M;
@@ -219,29 +216,29 @@ namespace Ikarus {
       const double xi   = quadPos[0];
       const double eta  = quadPos[1];
       const double zeta = quadPos[2];
-      M(0, 0)           = xi - 0.5;
-      M(1, 1)           = eta - 0.5;
-      M(2, 2)           = zeta - 0.5;
-      M(3, 3)           = xi - 0.5;
-      M(3, 4)           = eta - 0.5;
-      M(4, 5)           = xi - 0.5;
-      M(4, 6)           = zeta - 0.5;
-      M(5, 7)           = eta - 0.5;
-      M(5, 8)           = zeta - 0.5;
+      M(0, 0)           = 2 * xi - 1.0;
+      M(1, 1)           = 2 * eta - 1.0;
+      M(2, 2)           = 2 * zeta - 1.0;
+      M(3, 3)           = 2 * xi - 1.0;
+      M(3, 4)           = 2 * eta - 1.0;
+      M(4, 5)           = 2 * xi - 1.0;
+      M(4, 6)           = 2 * zeta - 1.0;
+      M(5, 7)           = 2 * eta - 1.0;
+      M(5, 8)           = 2 * zeta - 1.0;
 
-      M(3, 9)  = xi* zeta - 0.25;
-      M(3, 10) = eta* zeta - 0.25;
-      M(4, 11) = xi* eta - 0.25;
-      M(4, 12) = eta* zeta - 0.25;
-      M(5, 13) = xi* eta - 0.25;
-      M(5, 14) = xi* zeta - 0.25;
+      M(3, 9)  = (2 * xi - 1.0) * (2 * zeta - 1.0);
+      M(3, 10) = (2 * eta - 1.0) * (2 * zeta - 1.0);
+      M(4, 11) = (2 * xi - 1.0) * (2 * eta - 1.0);
+      M(4, 12) = (2 * eta - 1.0) * (2 * zeta - 1.0);
+      M(5, 13) = (2 * xi - 1.0) * (2 * eta - 1.0);
+      M(5, 14) = (2 * xi - 1.0) * (2 * zeta - 1.0);
 
-      M(0, 15) = xi* eta - 0.25;
-      M(0, 16) = xi* zeta - 0.25;
-      M(1, 17) = xi* eta - 0.25;
-      M(1, 18) = eta* zeta - 0.25;
-      M(2, 19) = xi* zeta - 0.25;
-      M(2, 20) = eta* zeta - 0.25;
+      M(0, 15) = (2 * xi - 1.0) * (2 * eta - 1.0);
+      M(0, 16) = (2 * xi - 1.0) * (2 * zeta - 1.0);
+      M(1, 17) = (2 * xi - 1.0) * (2 * eta - 1.0);
+      M(1, 18) = (2 * eta - 1.0) * (2 * zeta - 1.0);
+      M(2, 19) = (2 * xi - 1.0) * (2 * zeta - 1.0);
+      M(2, 20) = (2 * eta - 1.0) * (2 * zeta - 1.0);
 
       const double detJ = geometry->integrationElement(quadPos);
       M                 = T0InverseTransformed / detJ * M;
@@ -252,36 +249,6 @@ namespace Ikarus {
     Eigen::Matrix<double, 6, 6> T0InverseTransformed;
   };
 
-  /// ***** For a new EAS formulation, add a struct here *****
-  /*    template<typename Geometry>
-      struct EASXnEn
-      {
-          static constexpr int strainSize = n;
-          static constexpr int enhancedStrainSize = m;
-
-          EASHnEn() = default;
-          EASHnEn(const Geometry& geometry)
-                  : geometry{std::make_unique<Geometry>(geometry)}
-                  ,T0InverseTransformed{calcTransformationMatrixnD(geometry)}
-          {}
-
-          auto calcM(const Dune::FieldVector<double,n>& quadPos) const
-          {
-              Eigen::Matrix<double,strainSize,enhancedStrainSize> M;
-              M.setZero();
-
-              // fill M
-
-              const double detJ = geometry->integrationElement(quadPos);
-              M = T0InverseTransformed/detJ * M ;
-              return M;
-          }
-          std::unique_ptr<Geometry> geometry;
-          Eigen::Matrix<double,n,n> T0InverseTransformed;
-      };*/
-
-  /// ***** For a new EAS formulation, add the new struct here to the corresponding EASnDVariant *****
-  /// 2D - Q1 (4-node) , 3D - H1 (8-node) variants
   template <typename Geometry>
   using EAS2DVariant = std::variant<EASQ1E4<Geometry>, EASQ1E5<Geometry>, EASQ1E7<Geometry>>;
   template <typename Geometry>
@@ -331,33 +298,34 @@ namespace Ikarus {
       assert(((fe.size() == 4 and Traits::mydim == 2) or (fe.size() == 8 and Traits::mydim == 3))
              && "EAS only supported for Q1 or H1 elements");
 
-      std::visit([&]<typename EAST>(const EAST& easfunction) {
-      constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
-      Eigen::Matrix<double,enhancedStrainSize,enhancedStrainSize> D;
+      std::visit(
+          [&]<typename EAST>(const EAST& easfunction) {
+            constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
+            Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
 
-      D.setZero();
-      L.setZero(enhancedStrainSize, localView.size());
-      for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
-        const auto M = easfunction.calcM(gp.position());
-        const auto Jinv   = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
-        const auto Ceval  = C(gpIndex);
-        const double detJ = geo.integrationElement(gp.position());
-        D += M.transpose() * Ceval * M * detJ * gp.weight();
+            D.setZero();
+            L.setZero(enhancedStrainSize, localView.size());
+            for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
+              const auto M      = easfunction.calcM(gp.position());
+              const auto Jinv   = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
+              const auto Ceval  = C(gpIndex);
+              const double detJ = geo.integrationElement(gp.position());
+              D += M.transpose() * Ceval * M * detJ * gp.weight();
 
-        for (size_t i = 0; i < fe.size(); ++i) {
-          const size_t I = Traits::worlddim * i;
-          const auto Bi  = strainFunction.evaluateDerivative(gpIndex, wrt(coeff(i)), transformWith(Jinv));
+              for (size_t i = 0; i < fe.size(); ++i) {
+                const size_t I = Traits::worlddim * i;
+                const auto Bi  = strainFunction.evaluateDerivative(gpIndex, wrt(coeff(i)), transformWith(Jinv));
 
-          L.template block<enhancedStrainSize,Traits::worlddim>(0, I) += M.transpose() * Ceval * Bi * detJ * gp.weight();
-        }
-      }
+                L.template block<enhancedStrainSize, Traits::worlddim>(0, I)
+                    += M.transpose() * Ceval * Bi * detJ * gp.weight();
+              }
+            }
 
-      K.template triangularView<Eigen::Upper>() -= L.transpose() * D.inverse() * L;
-      K.template triangularView<Eigen::StrictlyLower>() = K.transpose();
-      }, easVariant);
+            K.template triangularView<Eigen::Upper>() -= L.transpose() * D.inverse() * L;
+            K.template triangularView<Eigen::StrictlyLower>() = K.transpose();
+          },
+          easVariant);
     }
-
-    /// ***** For a new EAS formulation, add a new switch case here *****
 
     void setEASType(int numberOfEASParameters) {
       if constexpr (Traits::mydim == 2) {

@@ -1,21 +1,21 @@
 /*
-* This file is part of the Ikarus distribution (https://github.com/IkarusRepo/Ikarus).
-* Copyright (c) 2022. The Ikarus developers.
-*
-* This library is free software; you can redistribute it and/or
-*  modify it under the terms of the GNU Lesser General Public
-*  License as published by the Free Software Foundation; either
-*  version 2.1 of the License, or (at your option) any later version.
-*
-* This library is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-* Lesser General Public License for more details.
-*
-* You should have received a copy of the GNU Lesser General Public
-* License along with this library; if not, write to the Free Software
-* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
-*/
+ * This file is part of the Ikarus distribution (https://github.com/IkarusRepo/Ikarus).
+ * Copyright (c) 2022. The Ikarus developers.
+ *
+ * This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
+ */
 
 #pragma once
 #include "src/include/ikarus/finiteElements/feTraits.hh"
@@ -67,7 +67,7 @@ namespace Ikarus {
       localView_.bind(element);
       auto& first_child = localView_.tree().child(0);
       const auto& fe    = first_child.finiteElement();
-      numberOfNodes=fe.size();
+      numberOfNodes     = fe.size();
       dispAtNodes.resize(fe.size());
       const int order = 2 * (localView_.tree().child(0).finiteElement().localBasis().order());
       localBasis      = Ikarus::LocalBasis(localView_.tree().child(0).finiteElement().localBasis());
@@ -94,37 +94,33 @@ namespace Ikarus {
       return uFunction;
     }
 
-    auto getStrainFunction(const FERequirementType& par) const {
-      return linearStrains(getDisplacementFunction(par));
-    }
+    auto getStrainFunction(const FERequirementType& par) const { return linearStrains(getDisplacementFunction(par)); }
 
     auto getMaterialTangent() const {
-        if constexpr (mydim == 2)
-          return planeStressLinearElasticMaterialTangent(emod_, nu_);
-        else if constexpr (mydim == 3)
-          return LinearElasticMaterialTangent3D(emod_, nu_);
+      if constexpr (mydim == 2)
+        return planeStressLinearElasticMaterialTangent(emod_, nu_);
+      else if constexpr (mydim == 3)
+        return LinearElasticMaterialTangent3D(emod_, nu_);
     }
 
     auto getMaterialTangentFunction(const FERequirementType& par) const {
-      return [&](auto gp) {
-        return getMaterialTangent();
-      };
+      return [&](auto gp) { return getMaterialTangent(); };
     }
 
     double calculateScalar(const FERequirementType& par) const {
-      const auto u = getDisplacementFunction(par);
-      const auto eps = getStrainFunction(par);
+      const auto u       = getDisplacementFunction(par);
+      const auto eps     = getStrainFunction(par);
       const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
 
       const auto C = getMaterialTangent();
 
       const auto geo = localView_.element().geometry();
-      double energy    = 0.0;
+      double energy  = 0.0;
       for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
-        const auto Jinv = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
+        const auto Jinv   = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
         const auto EVoigt = eps.evaluateFunction(gpIndex, transformWith(Jinv));
 
-        const auto uVal = u.evaluateFunction(gpIndex);
+        const auto uVal                              = u.evaluateFunction(gpIndex);
         Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(toEigenVector(gp.position()), lambda);
         energy += (0.5 * EVoigt.dot(C * EVoigt) - uVal.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
       }
@@ -140,8 +136,7 @@ namespace Ikarus {
 
         for (const auto& curQuad : quadLine) {
           // Local position of the quadrature point
-          const Dune::FieldVector<double, mydim>& quadPos
-              = intersection.geometryInInside().global(curQuad.position());
+          const Dune::FieldVector<double, mydim>& quadPos = intersection.geometryInInside().global(curQuad.position());
 
           const double integrationElement = intersection.geometry().integrationElement(curQuad.position());
 
@@ -160,11 +155,11 @@ namespace Ikarus {
     }
 
     void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& h) const {
-      const auto eps = getStrainFunction(par);
+      const auto eps     = getStrainFunction(par);
       const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
       using namespace DerivativeDirections;
 
-      const auto C = getMaterialTangent();
+      const auto C   = getMaterialTangent();
       const auto geo = localView_.element().geometry();
 
       for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
@@ -174,8 +169,7 @@ namespace Ikarus {
           const auto bopI = eps.evaluateDerivative(gpIndex, wrt(coeff(i)), transformWith(Jinv));
           for (size_t j = 0; j < numberOfNodes; ++j) {
             const auto bopJ = eps.evaluateDerivative(gpIndex, wrt(coeff(j)), transformWith(Jinv));
-            h.template block<mydim, mydim>(i * mydim, j * mydim)
-                += bopI.transpose() * C * bopJ * intElement;
+            h.template block<mydim, mydim>(i * mydim, j * mydim) += bopI.transpose() * C * bopJ * intElement;
           }
         }
       }
@@ -185,14 +179,13 @@ namespace Ikarus {
       const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
       using namespace DerivativeDirections;
 
-      const auto geo   = localView_.element().geometry();
-       const auto u = getDisplacementFunction(par);
+      const auto geo = localView_.element().geometry();
+      const auto u   = getDisplacementFunction(par);
       for (const auto& [gpIndex, gp] : u.viewOverIntegrationPoints()) {
         Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(toEigenVector(gp.position()), lambda);
         for (size_t i = 0; i < numberOfNodes; ++i) {
           const auto udCi = u.evaluateDerivative(gpIndex, wrt(coeff(i)));
-          g.template segment<mydim>(mydim * i)
-              -= udCi * fext * geo.integrationElement(gp.position()) * gp.weight();
+          g.template segment<mydim>(mydim * i) -= udCi * fext * geo.integrationElement(gp.position()) * gp.weight();
         }
       }
 
@@ -207,8 +200,7 @@ namespace Ikarus {
 
         for (const auto& curQuad : quadLine) {
           // Local position of the quadrature point
-          const Dune::FieldVector<double, mydim>& quadPos
-              = intersection.geometryInInside().global(curQuad.position());
+          const Dune::FieldVector<double, mydim>& quadPos = intersection.geometryInInside().global(curQuad.position());
 
           const double integrationElement = intersection.geometry().integrationElement(curQuad.position());
 
@@ -219,8 +211,7 @@ namespace Ikarus {
             // Value of the Neumann data at the current position
             auto neumannValue
                 = neumannBoundaryLoad_(toEigenVector(intersection.geometry().global(curQuad.position())), lambda);
-            g.template segment<mydim>(mydim * i)
-                -= udCi * neumannValue * curQuad.weight() * integrationElement;
+            g.template segment<mydim>(mydim * i) -= udCi * neumannValue * curQuad.weight() * integrationElement;
           }
         }
       }

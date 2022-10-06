@@ -28,56 +28,56 @@ using ReturnType = std::invoke_result_t<Fun, Args...>;
 
 namespace Ikarus {
 
-namespace Impl {
-  template <class F, class Tuple, std::size_t... I>
-  constexpr decltype(auto) applyAndRemoveRefererenceWrapper(F&& f, Tuple&& t, std::index_sequence<I...>) {
-    return std::invoke(
-        std::forward<F>(f),
-        std::get<I>(std::forward<Tuple>(t)).get()...);  //.get gets the impl type of std::referenceWrapper
-  }
+  namespace Impl {
+    template <class F, class Tuple, std::size_t... I>
+    constexpr decltype(auto) applyAndRemoveRefererenceWrapper(F&& f, Tuple&& t, std::index_sequence<I...>) {
+      return std::invoke(
+          std::forward<F>(f),
+          std::get<I>(std::forward<Tuple>(t)).get()...);  //.get gets the impl type of std::referenceWrapper
+    }
 
-  template <class F, class Tuple>
-  constexpr decltype(auto) applyAndRemoveReferenceWrapper(F&& f, Tuple&& t) {
-    return applyAndRemoveRefererenceWrapper(
-        std::forward<F>(f), std::forward<Tuple>(t),
-        std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<Tuple>>>{});
-  }
+    template <class F, class Tuple>
+    constexpr decltype(auto) applyAndRemoveReferenceWrapper(F&& f, Tuple&& t) {
+      return applyAndRemoveRefererenceWrapper(
+          std::forward<F>(f), std::forward<Tuple>(t),
+          std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<Tuple>>>{});
+    }
 
-  template <typename T>
-  auto forwardasReferenceWrapperIfIsReference(T&& t) {
-    if constexpr (std::is_lvalue_reference_v<decltype(t)>)
-      return std::ref(t);
-    else
-      return t;
-  }
+    template <typename T>
+    auto forwardasReferenceWrapperIfIsReference(T&& t) {
+      if constexpr (std::is_lvalue_reference_v<decltype(t)>)
+        return std::ref(t);
+      else
+        return t;
+    }
 
-  template <class Pars, class Tuple, std::size_t... I>
-  constexpr decltype(auto) makeTupleOfValuesAndReferences(Tuple&& t, Pars&& p, std::index_sequence<I...>) {
-    return std::make_tuple(
-        forwardasReferenceWrapperIfIsReference(applyAndRemoveReferenceWrapper(std::get<I>(t), p.args))...);
+    template <class Pars, class Tuple, std::size_t... I>
+    constexpr decltype(auto) makeTupleOfValuesAndReferences(Tuple&& t, Pars&& p, std::index_sequence<I...>) {
+      return std::make_tuple(
+          forwardasReferenceWrapperIfIsReference(applyAndRemoveReferenceWrapper(std::get<I>(t), p.args))...);
+    }
+
+    template <typename... Args>
+    struct LinearAlgebraFunctions {
+      std::tuple<std::reference_wrapper<std::remove_reference_t<Args>>...> args;
+    };
+
+    template <typename... Args>
+    struct Parameter {
+      std::tuple<std::reference_wrapper<std::remove_reference_t<Args>>...> args;
+    };
+
+  }  // namespace Impl
+
+  template <typename... Args>
+  auto parameter(Args&&... args) {
+    return Impl::Parameter<Args&&...>{std::forward_as_tuple(std::forward<Args>(args)...)};
   }
 
   template <typename... Args>
-  struct LinearAlgebraFunctions {
-    std::tuple<std::reference_wrapper<std::remove_reference_t<Args>>...> args;
-  };
-
-  template <typename... Args>
-  struct Parameter {
-    std::tuple<std::reference_wrapper<std::remove_reference_t<Args>>...> args;
-  };
-
-}  // namespace Impl
-
-template <typename... Args>
-auto parameter(Args&&... args) {
-  return Impl::Parameter<Args&&...>{std::forward_as_tuple(std::forward<Args>(args)...)};
-}
-
-template <typename... Args>
-auto linearAlgebraFunctions(Args&&... args) {
-  return Impl::LinearAlgebraFunctions<Args&&...>{std::forward_as_tuple(std::forward<Args>(args)...)};
-}
+  auto linearAlgebraFunctions(Args&&... args) {
+    return Impl::LinearAlgebraFunctions<Args&&...>{std::forward_as_tuple(std::forward<Args>(args)...)};
+  }
 
   template <typename... DerivativeArgs, typename... ParameterArgs>
   auto initResults(const Impl::LinearAlgebraFunctions<DerivativeArgs...>& derivativesFunctions,
