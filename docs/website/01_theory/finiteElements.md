@@ -60,4 +60,61 @@ if(req.isResultRequested( ResultType::cauchyStress)) {
 The last method is `globalIndices`. It is used to message the global indices of this finite element steming in the output parameter `globalIndices`.
 This information should stem from a basis object. See existing implementations for details.
 
+## Linear elasticity
+* To be added
+
+## Enhanced Assumed Strain Elements
+The Enhanced Assumed Strain (EAS) elements are a class of finite elements which helps to avoid the locking phenomena.
+They are obtained by re-parametrizing the Hu-Washizu principle and enforcing an orthogonality condition. 
+This results in an extension of the standard pure displacement formulation with an enhanced strain field ($\tilde\epsilon$) 
+as an additional independent variable. With an appropriate choice of ansatz space for $\tilde\epsilon$, the locking 
+characteristics of the pure displacement formulations can be eliminated. For further theoretical aspects, the readers are referred to [@simo_class_1990] 
+and [@andelfinger_eas-elements_1993]. The EAS formulation is currently implemented for the linear elastic case, but 
+it could be extended to the non-linear regime. The currently implemented EAS elements are the following:
+
+* Q1E4
+* Q1E5
+* Q1E7
+* H1E9
+* H1E21
+
+The notation used here is described as follows. The first alphabet stands for a Quadrilateral (Q) or a Hexahedral (H) element.
+The second index denotes the order of the element. E stands for the EAS element and the number following that denotes the 
+number of EAS parameters used to enhance the strain field. The only difference amongst various EAS formulations arises 
+from the matrix $\mathbf{M}$ which is used to approximate the enhanced strain field. An example for the calculation of the 
+matrix $\mathbf{M}$ for a Q1E4 element is shown below:
+```cpp
+template <typename Geometry>
+struct EASQ1E4 {
+  static constexpr int strainSize         = 3;
+  static constexpr int enhancedStrainSize = 4;
+
+  EASQ1E4() = default;
+  explicit EASQ1E4(const Geometry& geometry)
+      : geometry{std::make_unique<Geometry>(geometry)}, T0InverseTransformed{calcTransformationMatrix2D(geometry)} {}
+
+  auto calcM(const Dune::FieldVector<double, 2>& quadPos) const {
+    Eigen::Matrix<double, strainSize, enhancedStrainSize> M;
+    M.setZero(strainSize, enhancedStrainSize);
+    const double xi   = quadPos[0];
+    const double eta  = quadPos[1];
+    M(0, 0)           = 2 * xi - 1.0;
+    M(1, 1)           = 2 * eta - 1.0;
+    M(2, 2)           = 2 * xi - 1.0;
+    M(2, 3)           = 2 * eta - 1.0;
+    const double detJ = geometry->integrationElement(quadPos);
+    M                 = T0InverseTransformed / detJ * M;
+    return M;
+  }
+
+  std::unique_ptr<Geometry> geometry;
+  Eigen::Matrix3d T0InverseTransformed;
+};
+```
+It is to note that the ansatz spaces for the matrix $\mathbf{M}$ are to be modified such that it fulfills the orthogonality 
+condition in the $\left[0,1\right]$ element domain used in DUNE, in contrast to the $\left[-1,1\right]$ usually found in 
+literature.
+
+In order to add a new EAS element, 
+
 \bibliography
