@@ -60,7 +60,7 @@ if(req.isResultRequested( ResultType::cauchyStress)) {
 The last method is `globalIndices`. It is used to message the global indices of this finite element steming in the output parameter `globalIndices`.
 This information should stem from a basis object. See existing implementations for details.
 
-## Linear elasticity
+## Linear and Non-linear Elasticity
 * To be added
 
 ## Enhanced Assumed Strain Elements
@@ -115,6 +115,57 @@ It is to note that the ansatz spaces for the matrix $\mathbf{M}$ are to be modif
 condition in the $\left[0,1\right]$ element domain used in DUNE, in contrast to the $\left[-1,1\right]$ usually found in 
 literature.
 
-In order to add a new EAS element, 
+In order to add a new EAS element, the following additions are to be done: 
+
+1. Create a `#!cpp struct` to calculate the matrix $\mathbf{M}$ as shown above exemplarily for the Q1E4 element.
+2. Add the new variant in the corresponding list of 2D and 3D variants as shown below:
+```cpp
+template <typename Geometry>
+using EAS2DVariant = std::variant<EASQ1E4<Geometry>, EASQ1E5<Geometry>, EASQ1E7<Geometry>>;
+template <typename Geometry>
+using EAS3DVariant = std::variant<EASH1E9<Geometry>, EASH1E21<Geometry>>;
+```
+3. Finally, add the new EAS variant with an appropriate switch statement (as shown below) to automatically call the 
+desired functions
+```cpp
+void setEASType(int numberOfEASParameters) {
+    if constexpr (Traits::mydim == 2) {
+      switch (numberOfEASParameters) {
+        case 0:
+          onlyDisplacementBase = true;
+          break;
+        case 4:
+          easVariant = EASQ1E4(DisplacementBasedElement::getLocalView().element().geometry());
+          break;
+        case 5:
+          easVariant = EASQ1E5(DisplacementBasedElement::getLocalView().element().geometry());
+          break;
+        case 7:
+          easVariant = EASQ1E7(DisplacementBasedElement::getLocalView().element().geometry());
+          break;
+        default:
+          DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available for the 2D case.");
+          break;
+      }
+    } else if constexpr (Traits::mydim == 3) {
+      switch (numberOfEASParameters) {
+        case 0:
+          onlyDisplacementBase = true;
+          break;
+        case 9:
+          easVariant = EASH1E9(DisplacementBasedElement::getLocalView().element().geometry());
+          break;
+        case 21:
+          easVariant = EASH1E21(DisplacementBasedElement::getLocalView().element().geometry());
+          break;
+        default:
+          DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available for the 3D case.");
+          break;
+      }
+    }
+  }
+```
+
+If the number of EAS parameters is set to zero, the pure displacement formulation is then utilised for analysis.
 
 \bibliography
