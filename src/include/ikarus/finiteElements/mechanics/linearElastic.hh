@@ -22,6 +22,7 @@
 
 #include <concepts>
 #include <iosfwd>
+#include <optional>
 
 #include <dune/common/classname.hh>
 #include <dune/fufem/boundarypatch.hh>
@@ -53,10 +54,16 @@ namespace Ikarus {
     using LocalView         = typename Basis::LocalView;
     using GridView          = typename Basis::GridView;
 
-    template <typename VolumeLoad, typename NeumannBoundaryLoad>
+    using Traits = TraitsFromLocalView<LocalView>;
+
+    static constexpr int mydim = Traits::mydim;
+
+    template <typename VolumeLoad=std::function<Eigen::Vector<double, Traits::worlddim>(const Eigen::Vector<double, Traits::worlddim>&,
+                                                                                          const double&)>, typename NeumannBoundaryLoad=std::function<Eigen::Vector<double, Traits::worlddim>(const Eigen::Vector<double, Traits::worlddim>&,
+                                                                                                                        const double&)>>
     LinearElastic(Basis& globalBasis, const typename LocalView::Element& element, double emod, double nu,
-                  const BoundaryPatch<GridView>* neumannBoundary, const NeumannBoundaryLoad& neumannBoundaryLoad,
-                  const VolumeLoad& p_volumeLoad)
+                  std::optional<std::reference_wrapper<const BoundaryPatch<GridView>>> neumannBoundary= std::nullopt,  std::optional<std::reference_wrapper<const NeumannBoundaryLoad>> neumannBoundaryLoad = std::nullopt,
+                  std::optional<std::reference_wrapper<const VolumeLoad>> p_volumeLoad= std::nullopt)
         : BaseDisp(globalBasis, element),
           localView_{globalBasis.localView()},
           volumeLoad(p_volumeLoad),
@@ -75,9 +82,7 @@ namespace Ikarus {
                       bindDerivatives(0, 1));
     }
 
-    using Traits = TraitsFromLocalView<LocalView>;
 
-    static constexpr int mydim = Traits::mydim;
 
   public:
     const auto& getLocalView() const { return localView_; }
@@ -129,8 +134,8 @@ namespace Ikarus {
       if (not neumannBoundary_) return energy;
 
       auto element = localView_.element();
-      for (auto&& intersection : intersections(neumannBoundary_->gridView(), element)) {
-        if (not neumannBoundary_ or not neumannBoundary_->contains(intersection)) continue;
+      for (auto&& intersection : intersections(neumannBoundary_.gridView(), element)) {
+        if (not neumannBoundary_ or not neumannBoundary_.contains(intersection)) continue;
 
         const auto& quadLine = Dune::QuadratureRules<double, mydim - 1>::rule(intersection.type(), u.order());
 
@@ -193,8 +198,8 @@ namespace Ikarus {
       if (not neumannBoundary_) return;
 
       auto element = localView_.element();
-      for (auto&& intersection : intersections(neumannBoundary_->gridView(), element)) {
-        if (not neumannBoundary_ or not neumannBoundary_->contains(intersection)) continue;
+      for (auto&& intersection : intersections(neumannBoundary_.gridView(), element)) {
+        if (not neumannBoundary_ or not neumannBoundary_.contains(intersection)) continue;
 
         const auto& quadLine = Dune::QuadratureRules<double, mydim - 1>::rule(intersection.type(), u.order());
 
@@ -221,14 +226,13 @@ namespace Ikarus {
     Ikarus::LocalBasis<
         std::remove_cvref_t<decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis())>>
         localBasis;
-    // TODO: write as optional
-    std::function<Eigen::Vector<double, Traits::worlddim>(const Eigen::Vector<double, Traits::worlddim>&,
-                                                          const double&)>
+    std::optional<std::function<Eigen::Vector<double, Traits::worlddim>(const Eigen::Vector<double, Traits::worlddim>&,
+                                                          const double&)>>
         volumeLoad;
-    std::function<Eigen::Vector<double, Traits::worlddim>(const Eigen::Vector<double, Traits::worlddim>&,
-                                                          const double&)>
+    std::optional<std::function<Eigen::Vector<double, Traits::worlddim>(const Eigen::Vector<double, Traits::worlddim>&,
+                                                          const double&)>>
         neumannBoundaryLoad_;
-    const BoundaryPatch<GridView>* neumannBoundary_;
+    std::optional<std::reference_wrapper<const BoundaryPatch<GridView>>> neumannBoundary_;
     mutable Dune::BlockVector<Ikarus::RealTuple<double, Traits::dimension>> dispAtNodes;
     double emod_;
     double nu_;

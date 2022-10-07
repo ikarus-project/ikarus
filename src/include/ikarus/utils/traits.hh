@@ -25,6 +25,10 @@
 #include <dune/common/hybridutilities.hh>
 namespace Ikarus::Std {
 
+  template<typename T>
+  concept is_pointer = std::is_pointer_v<T> || std::is_same_v<T, std::nullptr_t>;
+
+
   // Forward declare functions
   template <typename... Types>
   auto makeNestedTupleFlat(std::tuple<Types...> tup);

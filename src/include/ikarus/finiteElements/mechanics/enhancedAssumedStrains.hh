@@ -26,6 +26,8 @@
 #include <ikarus/finiteElements/feRequirements.hh>
 #include <ikarus/localFunctions/meta.hh>
 #include <ikarus/utils/eigenDuneTransformations.hh>
+#include <optional>
+#include <functional>
 
 namespace Ikarus {
 
@@ -262,10 +264,13 @@ namespace Ikarus {
     using GridView          = typename DisplacementBasedElement::GridView;
     using Traits            = typename DisplacementBasedElement::Traits;
 
-    template <typename Basis, typename VolumeLoad, typename NeumannBoundaryLoad>
+    template <typename VolumeLoad=std::function<Eigen::Vector<double, Traits::worlddim>(const Eigen::Vector<double, Traits::worlddim>&,
+                                                                                          const double&)>, typename NeumannBoundaryLoad=std::function<Eigen::Vector<double, Traits::worlddim>(const Eigen::Vector<double, Traits::worlddim>&,
+                                                                                                   const double&)>>
     EnhancedAssumedStrains(Basis& globalBasis, const typename LocalView::Element& element, double emod, double nu,
-                           const BoundaryPatch<GridView>* neumannBoundary,
-                           const NeumannBoundaryLoad& neumannBoundaryLoad, const VolumeLoad& p_volumeLoad)
+                           std::optional<std::reference_wrapper<const BoundaryPatch<GridView>>> neumannBoundary= std::nullopt,
+                           std::optional<std::reference_wrapper<const NeumannBoundaryLoad>> neumannBoundaryLoad = std::nullopt,
+                           std::optional<std::reference_wrapper<const VolumeLoad>> p_volumeLoad= std::nullopt)
         : DisplacementBasedElement(globalBasis, element, emod, nu, neumannBoundary, neumannBoundaryLoad, p_volumeLoad) {
     }
 

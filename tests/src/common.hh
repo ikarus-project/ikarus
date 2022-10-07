@@ -5,6 +5,8 @@
 #include <dune/alugrid/grid.hh>
 #include <dune/grid/yaspgrid.hh>
 #include <dune/iga/nurbsgrid.hh>
+#include <ikarus/utils/linearAlgebraHelper.hh>
+#include <vector>
 namespace Grids {
   struct Yasp {};
   struct Alu {};
@@ -55,3 +57,13 @@ auto createGrid([[maybe_unused]] int elex = 10, [[maybe_unused]] int eley = 10) 
     return grid;
   }
 }
+
+
+template <int size>
+class CornerFactory {
+public:
+  static void construct(std::vector<Dune::FieldVector<double,size>>& values, const int corners = 10) {
+    values.resize(corners);
+    std::generate(values.begin(),values.end(), []() { return Ikarus::createRandomVector<Dune::FieldVector<double,size>>(); });
+  }
+};
