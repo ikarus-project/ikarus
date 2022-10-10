@@ -145,6 +145,7 @@ namespace Ikarus {
       virtual void compute(const SparseMatrixType&)                                              = 0;
       virtual void compute(const DenseMatrixType&)                                               = 0;
       virtual void solve(Eigen::VectorX<ScalarType>& x, const Eigen::VectorX<ScalarType>&) const = 0;
+      virtual void solve(Eigen::MatrixX<ScalarType>& x, const Eigen::MatrixX<ScalarType>&) const = 0;
     };
 
     template <typename Solver>
@@ -181,6 +182,10 @@ namespace Ikarus {
         x = solver.solve(b);
       }
 
+      void solve(Eigen::MatrixX<ScalarType>& x, const Eigen::MatrixX<ScalarType>& b) const override {
+        x = solver.solve(b);
+      }
+
       Solver solver;
     };
 
@@ -202,6 +207,7 @@ namespace Ikarus {
     inline void factorize(const MatrixType& A) { solverimpl->factorize(A); }
 
     void solve(Eigen::VectorX<ScalarType>& x, const Eigen::VectorX<ScalarType>& b) { solverimpl->solve(x, b); }
+    void solve(Eigen::MatrixX<ScalarType>& x, const Eigen::MatrixX<ScalarType>& b) { solverimpl->solve(x, b); }
   };
 
 }  // namespace Ikarus
