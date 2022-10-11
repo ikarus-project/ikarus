@@ -186,6 +186,10 @@ namespace Ikarus {
         x = solver.solve(b);
       }
 
+      void solve(Eigen::MatrixX<ScalarType>& x, const Eigen::MatrixX<ScalarType>& b) const override {
+        x = solver.solve(b);
+      }
+
       Solver solver;
     };
 
