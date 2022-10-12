@@ -124,7 +124,7 @@ int main(int argc, char** argv) {
 
           for (auto &element: elements(gridView)) {
               auto localView = basis.localView();
-              fes.emplace_back(basis, element, E, nu, &neumannBoundary, neumannBoundaryLoad, volumeLoad);
+              fes.emplace_back(basis, element, E, nu, &volumeLoad,&neumannBoundary, &neumannBoundaryLoad );
               fes.back().setEASType(numberOfEASParameters);
           }
 
