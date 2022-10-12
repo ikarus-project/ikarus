@@ -29,9 +29,12 @@ auto checkNewtonRhapson(NewtonRhapson& nr, SolutionType& x, double tolerance, in
   else
     t.check(isApproxSame(x, xExpected, 1e-15));
 
-  t.check(true == solverInfo.success);
-  t.check(tolerance >= solverInfo.residualnorm);
-  t.check(iterExpected == solverInfo.iterations);
+  t.check(true == solverInfo.success) << "NewtonRhapson wasn't successful.";
+  t.check(tolerance >= solverInfo.residualnorm)
+      << "Residual norm is not below tolerance " << tolerance << " Actual: " << solverInfo.residualnorm;
+  t.check(iterExpected == solverInfo.iterations)
+      << "The iteration count does not match the expected number. Expected: " << iterExpected
+      << " Actual: " << solverInfo.iterations;
   return t;
 }
 
@@ -39,6 +42,8 @@ auto f(double x) { return 0.5 * x * x + x - 2; }
 auto df(double x) { return x + 1; }
 
 auto simple1DOperatorNewtonRhapsonTest() {
+  TestSuite t("simple1DOperatorNewtonRhapsonTest");
+
   double x = 13;
 
   auto fvLambda  = [&](auto&& x) { return f(x); };
@@ -51,8 +56,50 @@ auto simple1DOperatorNewtonRhapsonTest() {
   const double xExpected = std::sqrt(5.0) - 1.0;
 
   Ikarus::NewtonRaphson nr(nonLinOp);
+  t.subTest(checkNewtonRhapson(nr, x, eps, maxIter, 7, xExpected, 0.0));
+  return t;
+}
 
-  return checkNewtonRhapson(nr, x, eps, maxIter, 7, xExpected, 0.0);
+auto simple1DOperatorNewtonRhapsonCheckThatThePerfectPredictorWorksTest() {
+  TestSuite t("simple1DOperatorNewtonRhapsonCheckThatThePerfectPredictorWorksTest");
+  double x = 0;
+
+  auto fvLambda  = [&](auto&& x) { return f(x); };
+  auto dfvLambda = [&](auto&& x) { return df(x); };
+  Ikarus::NonLinearOperator nonLinOp(linearAlgebraFunctions(fvLambda, dfvLambda), parameter(x));
+
+  const double eps       = 1e-14;
+  const int maxIter      = 20;
+  const double xExpected = std::sqrt(5.0) - 1.0;
+
+  Ikarus::NewtonRaphson nr(nonLinOp);
+
+  t.subTest(checkNewtonRhapson(nr, x, eps, maxIter, 0, xExpected, xExpected));
+  return t;
+}
+
+auto dfFail(double x) { return x + 1000000; }
+
+auto simple1DOperatorNewtonRhapsonWithWrongDerivativeTest() {
+  double x = 13;
+
+  auto fvLambda  = [&](auto&& x) { return f(x); };
+  auto dfvLambda = [&](auto&& x) { return dfFail(x); };
+  Ikarus::NonLinearOperator nonLinOp(linearAlgebraFunctions(fvLambda, dfvLambda), parameter(x));
+
+  // Newton method test
+  const double eps  = 1e-14;
+  const int maxIter = 20;
+
+  TestSuite t("checkNewtonRhapsonFailing");
+  Ikarus::NewtonRaphson nr(nonLinOp);
+  nr.setup({eps, maxIter});
+  const auto solverInfo = nr.solve(1000.0);
+
+  t.check(false == solverInfo.success);
+  t.check(maxIter == solverInfo.iterations);
+
+  return t;
 }
 
 Eigen::Vector3d fv(Eigen::Vector3d& x, Eigen::Matrix3d& A, Eigen::Vector3d& b) { return b + A * x; }
@@ -136,7 +183,7 @@ auto secondOrderVectorValuedOperatorTest() {
   nonLinOp.update<0>();
   t.check(Dune::FloatCmp::eq(-2.6538461538461533, nonLinOp.value()));
   x << 1, 2, 3;  // Restart and check with predictor
-  t.subTest(checkNewtonRhapson(nr, x, eps, maxIter, 2, (-0.5 * A.ldlt().solve(b)).eval(), x));
+  t.subTest(checkNewtonRhapson(nr, x, eps, maxIter, 1, (-0.5 * A.ldlt().solve(b)).eval(), x));
   nonLinOp.update<0>();
   t.check(Dune::FloatCmp::eq(-2.6538461538461533, nonLinOp.value()));
   return t;
@@ -207,6 +254,8 @@ int main(int argc, char** argv) {
   TestSuite t;
 
   t.subTest(simple1DOperatorNewtonRhapsonTest());
+  t.subTest(simple1DOperatorNewtonRhapsonCheckThatThePerfectPredictorWorksTest());
+  t.subTest(simple1DOperatorNewtonRhapsonWithWrongDerivativeTest());
   t.subTest(simple1DOperatorNewtonRhapsonTestWithParamter());
   t.subTest(vectorValuedOperatorNewtonRhapsonTest());
   t.subTest(secondOrderVectorValuedOperatorTest());
