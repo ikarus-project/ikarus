@@ -1,7 +1,6 @@
 # Ikarus
-[![Ubuntu](https://github.com/IkarusRepo/Ikarus/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/IkarusRepo/Ikarus/actions/workflows/ubuntu.yml)
+[![Debian](https://github.com/IkarusRepo/Ikarus/actions/workflows/debian.yml/badge.svg)](https://github.com/IkarusRepo/Ikarus/actions/workflows/debian.yml)
 [![codecov](https://codecov.io/gh/IkarusRepo/Ikarus/branch/main/graph/badge.svg?token=zJgggitPMc)](https://codecov.io/gh/IkarusRepo/Ikarus)
-[![Sanitizers](https://github.com/IkarusRepo/Ikarus/actions/workflows/sanitizers.yml/badge.svg)](https://github.com/IkarusRepo/Ikarus/actions/workflows/sanitizers.yml)
 [![CodeStyle](https://github.com/IkarusRepo/Ikarus/actions/workflows/style.yml/badge.svg)](https://github.com/IkarusRepo/Ikarus/actions/workflows/style.yml)
 [![Docs](https://github.com/IkarusRepo/Ikarus/actions/workflows/ghpages.yml/badge.svg)](https://github.com/IkarusRepo/Ikarus/actions/workflows/ghpages.yml)
 [![CodeFactor](https://www.codefactor.io/repository/github/ikarusrepo/ikarus/badge/main)](https://www.codefactor.io/repository/github/ikarusrepo/ikarus/overview/main)
