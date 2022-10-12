@@ -76,7 +76,7 @@ namespace Ikarus {
           linearSolver{std::move(p_linearSolver)},
           updateFunction{p_updateFunction} {
       if constexpr (std::is_same_v<typename NonLinearOperatorImpl::ValueType, Eigen::VectorXd>)
-        corr.setZero(nonLinearOperator().value().size());
+        correction.setZero(nonLinearOperator().value().size());
     }
 
     using NonLinearOperator = NonLinearOperatorImpl;
@@ -91,26 +91,26 @@ namespace Ikarus {
       this->notify(NonLinearSolverMessages::INIT);
       SolverInformation solverInformation;
       solverInformation.success = true;
+      auto& x                   = nonLinearOperator().firstParameter();
+      if constexpr (not std::is_same_v<SolutionType, NoPredictor>) updateFunction(x, dx_predictor);
       nonLinearOperator().updateAll();
       const auto& rx = nonLinearOperator().value();
       const auto& Ax = nonLinearOperator().derivative();
-      auto& x        = nonLinearOperator().firstParameter();
       auto rNorm     = norm(rx);
       decltype(rNorm) dNorm;
       int iter{0};
-      if constexpr (not std::is_same_v<SolutionType, NoPredictor>) updateFunction(x, dx_predictor);
       if constexpr (isLinearSolver) linearSolver.analyzePattern(Ax);
-      while (rNorm > settings.tol && iter <= settings.maxIter) {
+      while (rNorm > settings.tol && iter < settings.maxIter) {
         this->notify(NonLinearSolverMessages::ITERATION_STARTED);
         if constexpr (isLinearSolver) {
           linearSolver.factorize(Ax);
-          linearSolver.solve(corr, -rx);
-          dNorm = corr.norm();
-          updateFunction(x, corr);
+          linearSolver.solve(correction, -rx);
+          dNorm = correction.norm();
+          updateFunction(x, correction);
         } else {
-          corr  = -linearSolver(rx, Ax);
-          dNorm = norm(corr);
-          updateFunction(x, corr);
+          correction = -linearSolver(rx, Ax);
+          dNorm      = norm(correction);
+          updateFunction(x, correction);
         }
         this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, dNorm);
         this->notify(NonLinearSolverMessages::SOLUTION_CHANGED);
@@ -120,6 +120,7 @@ namespace Ikarus {
         this->notify(NonLinearSolverMessages::ITERATION_ENDED);
         ++iter;
       }
+      if (iter == settings.maxIter) solverInformation.success = false;
       solverInformation.iterations   = iter;
       solverInformation.residualnorm = rNorm;
       this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, iter, rNorm, settings.tol);
@@ -130,7 +131,7 @@ namespace Ikarus {
 
   private:
     NonLinearOperatorImpl nonLinearOperator_;
-    typename NonLinearOperatorImpl::ValueType corr;
+    typename NonLinearOperatorImpl::ValueType correction;
     LinearSolver linearSolver;
     UpdateFunctionType updateFunction;
     NewtonRaphsonSettings settings;
