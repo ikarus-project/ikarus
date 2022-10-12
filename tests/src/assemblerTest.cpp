@@ -42,7 +42,7 @@ auto SimpleAssemblersTest() {
             return fext;
           };
     for (auto&& ge : elements(gridView))
-      fes.emplace_back(basis, ge, Emodul, 0.3, volumeLoad);
+      fes.emplace_back(basis, ge, Emodul, 0.3, nullptr, nullptr, volumeLoad);
 
     std::vector<bool> dirichFlags(basis.size(), false);
 

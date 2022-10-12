@@ -20,11 +20,14 @@
 #pragma once
 #include "findLineSegment.hh"
 
+#include <iostream>
+
 #include <dune/common/float_cmp.hh>
 
 #include <spdlog/spdlog.h>
 namespace Ikarus {
-  double drawResultAndReturnSlope(std::string&& functionName, const std::function<double(double)>& ftfunc, bool draw);
+  double drawResultAndReturnSlope(std::string&& functionName, const std::function<double(double)>& ftfunc, bool draw,
+                                  int slopeOfReference);
 
   struct CheckFlags {
     bool draw                        = true;
@@ -68,7 +71,7 @@ namespace Ikarus {
       return value;
     };
 
-    const double slope = drawResultAndReturnSlope("Gradient", ftfunc, checkFlags.draw);
+    const double slope = drawResultAndReturnSlope("Gradient", ftfunc, checkFlags.draw, 2);
 
     const bool checkPassed = Dune::FloatCmp::le(2.0, slope, checkFlags.tolerance);
 
@@ -86,7 +89,7 @@ namespace Ikarus {
   }
 
   /*
-   * The checkgradient function is inspired by http://sma.epfl.ch/~nboumal/book/  Chapter 4.8 and
+   * The checkjacobian function is inspired by http://sma.epfl.ch/~nboumal/book/  Chapter 4.8 and
    * https://github.com/NicolasBoumal/manopt/blob/master/manopt/tools/checkdiff.m
    */
   template <typename NonlinearOperator, typename UpdateType = typename NonlinearOperator::template ParameterValue<0>>
@@ -101,10 +104,10 @@ namespace Ikarus {
     b.setRandom();
     b /= b.norm();
 
-    nonLinOp.template updateAll();
+    nonLinOp.updateAll();
     const auto e = nonLinOp.value();
 
-    const auto jacofv = nonLinOp.derivative() * b;
+    const auto jacofv = (nonLinOp.derivative() * b).eval();
 
     auto ftfunc = [&](auto t) {
       p_updateFunction(x, t * b);
@@ -114,7 +117,7 @@ namespace Ikarus {
       return value;
     };
 
-    const double slope = drawResultAndReturnSlope("Jacobian", ftfunc, checkFlags.draw);
+    const double slope = drawResultAndReturnSlope("Jacobian", ftfunc, checkFlags.draw, 2);
 
     const bool checkPassed = Dune::FloatCmp::le(2.0, slope, checkFlags.tolerance);
 
@@ -169,7 +172,7 @@ namespace Ikarus {
       return value;
     };
 
-    const double slope = drawResultAndReturnSlope("Hessian", ftfunc, checkFlags.draw);
+    const double slope = drawResultAndReturnSlope("Hessian", ftfunc, checkFlags.draw, 3);
 
     const bool checkPassed = Dune::FloatCmp::le(3.0, slope, checkFlags.tolerance);
 

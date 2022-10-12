@@ -48,7 +48,7 @@ auto NonLinearElasticityLoadControlNRandTR() {
     return fext;
   };
   for (auto& element : elements(gridView))
-    fes.emplace_back(basis, element, 1000, 0.3, volumeLoad);
+    fes.emplace_back(basis, element, 1000, 0.3, nullptr, nullptr, volumeLoad);
 
   std::vector<bool> dirichletFlags(basis.size(), false);
 

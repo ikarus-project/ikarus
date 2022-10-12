@@ -8,18 +8,22 @@
 #  Ubuntu-Sanitizers:
 #    runs-on: ubuntu-latest
 #    container:
-#      image: rath3t/ci-debian-bookworm
+#      image: rath3t/ikarus-debian-bookworm:latest
+#      options: --memory-swap="20g" --memory="20g" --cpus="2"
 #    steps:
 #      - uses: actions/checkout@v2
 #        with:
 #         path: 'repo'
+#      - name: Set compiler flags
+#        run: |
+#          update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 110 --slave /usr/bin/g++ g++ /usr/bin/g++-12 --slave /usr/bin/gcov gcov /usr/bin/gcov-12 --slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-12 --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-12
 #      - name: Build
 #        working-directory: ./repo
 #        run: |
 #          mkdir cmake-build-debug
 #          cd cmake-build-debug
 #          cmake ../  -DUSE_STATIC_ANALYZER="cppcheck" -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc-12 -DCMAKE_CXX_COMPILER=g++-12 -DUSE_SANITIZER="Address;Memory;MemoryWithOrigins;Thread;Leak;'Address;Undefined'"
-#          cmake --build . --parallel 9 --target IkarusTests
+#          cmake --build . --parallel 2 --target build_tests
 #      - name: Tests
 #        working-directory: ./repo/cmake-build-debug
 #        run: ctest --output-on-failure --parallel 4 -C Debug

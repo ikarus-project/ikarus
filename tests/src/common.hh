@@ -2,9 +2,16 @@
 
 #pragma once
 
+#include <vector>
+
 #include <dune/alugrid/grid.hh>
+#include <dune/common/test/testsuite.hh>
 #include <dune/grid/yaspgrid.hh>
 #include <dune/iga/nurbsgrid.hh>
+
+#include <ikarus/utils/functionSanityChecks.hh>
+#include <ikarus/utils/linearAlgebraHelper.hh>
+
 namespace Grids {
   struct Yasp {};
   struct Alu {};
@@ -54,4 +61,62 @@ auto createGrid([[maybe_unused]] int elex = 10, [[maybe_unused]] int eley = 10) 
     grid->globalRefine(1);
     return grid;
   }
+}
+
+template <int size>
+struct CornerFactory {
+  static void construct(std::vector<Dune::FieldVector<double, size>>& values, const int corners = 10) {
+    values.resize(corners);
+    std::generate(values.begin(), values.end(),
+                  []() { return Ikarus::createRandomVector<Dune::FieldVector<double, size>>(); });
+  }
+};
+
+// Corner factory for element with codim==0, e.g. no surfaces in 3D
+template <int gridDim>
+struct ValidCornerFactory {
+  static void construct(std::vector<Dune::FieldVector<double, gridDim>>& values, const Dune::GeometryType& type) {
+    const auto& refElement = Dune::ReferenceElements<double, gridDim>::general(type);
+
+    const auto numberOfVertices = refElement.size(gridDim);
+
+    values.resize(numberOfVertices);
+    for (int i = 0; i < numberOfVertices; ++i)
+      values[i] = refElement.position(i, gridDim);
+
+    // perturb corner values slightly
+    std::transform(values.begin(), values.end(), values.begin(), [](const auto& vec) {
+      return vec + Ikarus::createRandomVector<Dune::FieldVector<double, gridDim>>(-0.2, 0.2);
+    });
+  }
+};
+
+template <typename Ele>
+struct ElementTest {};
+
+template <typename NonLinearOperator>
+[[nodiscard]] auto checkGradientOfElement(NonLinearOperator& nonLinearOperator,
+                                          const std::string& messageIfFailed = "") {
+  TestSuite t("Check gradient");
+  t.check(checkGradient(nonLinearOperator, {.draw = false, .writeSlopeStatementIfFailed = true}))
+      << "The gradient of calculateVector is not the gradient of calculateScalar." << messageIfFailed;
+  return t;
+}
+
+template <typename NonLinearOperator>
+[[nodiscard]] auto checkHessianOfElement(NonLinearOperator& nonLinearOperator,
+                                         const std::string& messageIfFailed = "") {
+  TestSuite t("Check Hessian");
+  t.check(checkHessian(nonLinearOperator, {.draw = false, .writeSlopeStatementIfFailed = true}))
+      << "The Hessian of calculateMatrix is not the Hessian of calculateScalar. " << messageIfFailed;
+  return t;
+}
+
+template <typename NonLinearOperator>
+[[nodiscard]] auto checkJacobianOfElement(NonLinearOperator& nonLinearOperator,
+                                          const std::string& messageIfFailed = "") {
+  TestSuite t("Check Jacobian");
+  t.check(checkJacobian(nonLinearOperator, {.draw = false, .writeSlopeStatementIfFailed = true}))
+      << "The Jacobian of calculateMatrix is not the Jacobian of calculateVector." << messageIfFailed;
+  return t;
 }
