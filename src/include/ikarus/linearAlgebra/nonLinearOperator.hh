@@ -118,9 +118,7 @@ namespace Ikarus {
                                const Impl::Parameter<ParameterArgs...>& parameterI)
         : derivatives_{derivativesFunctions.args},
           args_{parameterI.args},
-          derivativesEvaluated_(initResults(derivativesFunctions, parameterI)) {
-      updateAll();
-    }
+          derivativesEvaluated_(initResults(derivativesFunctions, parameterI)) {}
 
     /* Evaluates all functions. Usually called if the parameters changes */
     void updateAll() {

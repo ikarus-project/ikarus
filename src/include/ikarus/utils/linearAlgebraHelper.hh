@@ -451,15 +451,12 @@ namespace Ikarus {
     }
   }
 
-  template<typename FieldVectorT>
-  auto createRandomVector(typename FieldVectorT::value_type lower= -1, typename FieldVectorT::value_type upper= 1)
-  {
+  template <typename FieldVectorT>
+  auto createRandomVector(typename FieldVectorT::value_type lower = -1, typename FieldVectorT::value_type upper = 1) {
     std::random_device rd;
     std::mt19937 mt(rd());
     std::uniform_real_distribution<typename FieldVectorT::value_type> dist(lower, upper);
-    auto rand = [&dist,&mt](){
-      return dist(mt);
-    };
+    auto rand = [&dist, &mt]() { return dist(mt); };
     FieldVectorT vec;
     std::generate(vec.begin(), vec.end(), rand);
     return vec;

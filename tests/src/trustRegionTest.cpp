@@ -12,6 +12,7 @@ using Dune::TestSuite;
 #include <ikarus/manifolds/realTuple.hh>
 #include <ikarus/manifolds/unitVector.hh>
 #include <ikarus/solver/nonLinearSolver/trustRegion.hh>
+using namespace Ikarus;
 
 auto f(const Eigen::Vector<double, 1>& x) { return 0.5 * x[0] * x[0]; }
 auto df(const Eigen::Vector<double, 1>& x) {
@@ -113,11 +114,13 @@ template <typename ScalarType>
 ScalarType f3(const Eigen::Vector2<ScalarType>& x) {
   return -10 * x[0] * x[0] + 10 * x[1] * x[1] + 4 * sin(x[0] * x[1]) - 2 * x[0] + Dune::power(x[0], 4);
 }
-Eigen::Vector2d df3(Eigen::Vector2<autodiff::dual>& x) { return autodiff::gradient(f3<autodiff::dual>, wrt(x), at(x)); }
+Eigen::Vector2d df3(Eigen::Vector2<autodiff::dual>& x) {
+  return autodiff::gradient(f3<autodiff::dual>, autodiff::wrt(x), autodiff::at(x));
+}
 
 auto ddf3(Eigen::Vector2<autodiff::dual2nd>& x) {
   Eigen::SparseMatrix<double> A(2, 2);
-  Eigen::Matrix2d h = autodiff::hessian(f3<autodiff::dual2nd>, wrt(x), at(x));
+  Eigen::Matrix2d h = autodiff::hessian(f3<autodiff::dual2nd>, autodiff::wrt(x), autodiff::at(x));
   A.insert(0, 0)    = h(0, 0);
   A.insert(0, 1)    = h(0, 1);
   A.insert(1, 0)    = h(1, 0);
@@ -192,7 +195,7 @@ Eigen::Vector<double, 1> df3R(const Ikarus::UnitVector<double, 2>& x) {
   auto dfvLambda                      = [&](auto&& xRL) { return f3R<autodiff::dual>(x, xRL); };
   autodiff::dual energy;
   Eigen::Vector<double, 2> g;
-  autodiff::gradient(dfvLambda, wrt(xR), at(xR), energy, g);
+  autodiff::gradient(dfvLambda, autodiff::wrt(xR), autodiff::at(xR), energy, g);
   auto BLA = x.orthonormalFrame();
   return g.transpose() * BLA;
 }
@@ -205,7 +208,7 @@ auto ddf3R(const Ikarus::UnitVector<double, 2>& x) {
   Eigen::Vector2d g;
   Eigen::Matrix2d h;
   const auto y = x.getValue();
-  autodiff::hessian(dfvLambda, wrt(xR), at(xR), energy, g, h);
+  autodiff::hessian(dfvLambda, autodiff::wrt(xR), autodiff::at(xR), energy, g, h);
   auto BLA       = x.orthonormalFrame();
   A.insert(0, 0) = BLA.transpose() * h * BLA - y.dot(g);
 
@@ -277,7 +280,7 @@ Eigen::VectorXd df3RBlocked(const MultiTypeVector& mT) {
   autodiff::dual energy;
   Eigen::VectorXd g;
   Eigen::VectorXd gRed(dispE.size() + dir.size() * dir[0].correctionSize);
-  autodiff::gradient(dfvLambda, wrt(xR), at(xR), energy, g);
+  autodiff::gradient(dfvLambda, autodiff::wrt(xR), autodiff::at(xR), energy, g);
 
   gRed.segment(0, dispE.size()) = g.segment(0, dispE.size());
   for (auto i = 0U; i < dir.size(); ++i) {
@@ -303,7 +306,7 @@ auto ddf3RBlocked(const MultiTypeVector& mT) {
   Eigen::VectorXd g;
   Eigen::MatrixXd h;
   A.resize(dispE.size() + dir.size() * dir[0].correctionSize, dispE.size() + dir.size() * dir[0].correctionSize);
-  autodiff::hessian(dfvLambda, wrt(xR), at(xR), energy, g, h);
+  autodiff::hessian(dfvLambda, autodiff::wrt(xR), autodiff::at(xR), energy, g, h);
 
   for (int i = 0; i < dispE.size(); ++i) {
     for (int j = 0; j < dispE.size(); ++j) {

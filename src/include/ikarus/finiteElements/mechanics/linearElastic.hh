@@ -58,16 +58,15 @@ namespace Ikarus {
 
     static constexpr int mydim = Traits::mydim;
 
-    template <typename VolumeLoad=std::function<Eigen::Vector<double, Traits::worlddim>(const Eigen::Vector<double, Traits::worlddim>&,
-                                                                                          const double&)>, typename NeumannBoundaryLoad=std::function<Eigen::Vector<double, Traits::worlddim>(const Eigen::Vector<double, Traits::worlddim>&,
-                                                                                                                        const double&)>>
-    LinearElastic(Basis& globalBasis, const typename LocalView::Element& element, double emod, double nu,
-                  std::optional<std::reference_wrapper<const BoundaryPatch<GridView>>> neumannBoundary= std::nullopt,  std::optional<std::reference_wrapper<const NeumannBoundaryLoad>> neumannBoundaryLoad = std::nullopt,
-                  std::optional<std::reference_wrapper<const VolumeLoad>> p_volumeLoad= std::nullopt)
+    template <typename VolumeLoad = std::nullptr_t, typename NeumannBoundaryLoad = std::nullptr_t>
+    requires(Std::is_pointer<VolumeLoad>and Std::is_pointer<NeumannBoundaryLoad>)
+        LinearElastic(Basis& globalBasis, const typename LocalView::Element& element, double emod, double nu,
+                      VolumeLoad p_volumeLoad = nullptr, const BoundaryPatch<GridView>* neumannBoundary = nullptr,
+                      NeumannBoundaryLoad p_neumannBoundaryLoad = nullptr)
         : BaseDisp(globalBasis, element),
           localView_{globalBasis.localView()},
-          volumeLoad(p_volumeLoad),
-          neumannBoundaryLoad_{neumannBoundaryLoad},
+          volumeLoad{Std::returnReferenceOrNulloptIfObjectIsNullPtr(p_volumeLoad)},
+          neumannBoundaryLoad{Std::returnReferenceOrNulloptIfObjectIsNullPtr(p_neumannBoundaryLoad)},
           neumannBoundary_{neumannBoundary},
           emod_{emod},
           nu_{nu} {
@@ -80,12 +79,13 @@ namespace Ikarus {
       localBasis      = Ikarus::LocalBasis(localView_.tree().child(0).finiteElement().localBasis());
       localBasis.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order),
                       bindDerivatives(0, 1));
+
+      assert(((not neumannBoundary_ and not neumannBoundaryLoad) or (neumannBoundary_ and neumannBoundaryLoad))
+             && "If you pass a Neumann boundary you should also pass the function for the Neumann load!");
     }
 
-
-
   public:
-    const auto& getLocalView() const { return localView_; }
+    const auto& localView() const { return localView_; }
 
     auto getDisplacementFunction(const FERequirementType& par) const {
       const auto& d = par.getSolution(Ikarus::FESolutions::displacement);
@@ -105,11 +105,11 @@ namespace Ikarus {
       if constexpr (mydim == 2)
         return planeStressLinearElasticMaterialTangent(emod_, nu_);
       else if constexpr (mydim == 3)
-        return LinearElasticMaterialTangent3D(emod_, nu_);
+        return linearElasticMaterialTangent3D(emod_, nu_);
     }
 
-    auto getMaterialTangentFunction(const FERequirementType& par) const {
-      return [&](auto gp) { return getMaterialTangent(); };
+    auto getMaterialTangentFunction([[maybe_unused]] const FERequirementType& par) const {
+      return [&]([[maybe_unused]] auto gp) { return getMaterialTangent(); };
     }
 
     double calculateScalar(const FERequirementType& par) const {
@@ -125,17 +125,24 @@ namespace Ikarus {
         const auto Jinv   = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
         const auto EVoigt = eps.evaluateFunction(gpIndex, transformWith(Jinv));
 
-        const auto uVal                              = u.evaluateFunction(gpIndex);
-        Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(toEigenVector(gp.position()), lambda);
-        energy += (0.5 * EVoigt.dot(C * EVoigt) - uVal.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
+        energy += (0.5 * EVoigt.dot(C * EVoigt)) * geo.integrationElement(gp.position()) * gp.weight();
+      }
+
+      // External forces volume forces over the domain
+      if (volumeLoad) {
+        for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
+          const auto uVal                              = u.evaluateFunction(gpIndex);
+          Eigen::Vector<double, Traits::worlddim> fext = (*volumeLoad)(toEigenVector(gp.position()), lambda);
+          energy -= uVal.dot(fext) * geo.integrationElement(gp.position()) * gp.weight();
+        }
       }
 
       // line or surface loads, i.e. neumann boundary
-      if (not neumannBoundary_) return energy;
+      if (not neumannBoundary_ and not neumannBoundaryLoad) return energy;
 
       auto element = localView_.element();
-      for (auto&& intersection : intersections(neumannBoundary_.gridView(), element)) {
-        if (not neumannBoundary_ or not neumannBoundary_.contains(intersection)) continue;
+      for (auto&& intersection : intersections(neumannBoundary_->gridView(), element)) {
+        if (not neumannBoundary_->contains(intersection)) continue;
 
         const auto& quadLine = Dune::QuadratureRules<double, mydim - 1>::rule(intersection.type(), u.order());
 
@@ -150,18 +157,16 @@ namespace Ikarus {
 
           // Value of the Neumann data at the current position
           auto neumannValue
-              = neumannBoundaryLoad_(toEigenVector(intersection.geometry().global(curQuad.position())), lambda);
+              = (*neumannBoundaryLoad)(toEigenVector(intersection.geometry().global(curQuad.position())), lambda);
 
           energy -= neumannValue.dot(uVal) * curQuad.weight() * integrationElement;
         }
       }
-
       return energy;
     }
 
-    void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& h) const {
-      const auto eps     = getStrainFunction(par);
-      const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
+    void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& K) const {
+      const auto eps = getStrainFunction(par);
       using namespace DerivativeDirections;
 
       const auto C   = getMaterialTangent();
@@ -174,37 +179,56 @@ namespace Ikarus {
           const auto bopI = eps.evaluateDerivative(gpIndex, wrt(coeff(i)), transformWith(Jinv));
           for (size_t j = 0; j < numberOfNodes; ++j) {
             const auto bopJ = eps.evaluateDerivative(gpIndex, wrt(coeff(j)), transformWith(Jinv));
-            h.template block<mydim, mydim>(i * mydim, j * mydim) += bopI.transpose() * C * bopJ * intElement;
+            K.template block<mydim, mydim>(i * mydim, j * mydim) += bopI.transpose() * C * bopJ * intElement;
           }
         }
       }
     }
 
-    void calculateVector(const FERequirementType& par, typename Traits::VectorType& g) const {
+    void calculateVector(const FERequirementType& par, typename Traits::VectorType& forces) const {
       const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
+      const auto eps     = getStrainFunction(par);
       using namespace DerivativeDirections;
 
+      const auto C   = getMaterialTangent();
       const auto geo = localView_.element().geometry();
-      const auto u   = getDisplacementFunction(par);
-      for (const auto& [gpIndex, gp] : u.viewOverIntegrationPoints()) {
-        Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(toEigenVector(gp.position()), lambda);
+
+      // Internal forces
+      for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
+        const auto Jinv         = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
+        const double intElement = geo.integrationElement(gp.position()) * gp.weight();
+        auto stresses           = (C * eps.evaluateFunction(gpIndex, transformWith(Jinv))).eval();
         for (size_t i = 0; i < numberOfNodes; ++i) {
-          const auto udCi = u.evaluateDerivative(gpIndex, wrt(coeff(i)));
-          g.template segment<mydim>(mydim * i) -= udCi * fext * geo.integrationElement(gp.position()) * gp.weight();
+          const auto bopI = eps.evaluateDerivative(gpIndex, wrt(coeff(i)), transformWith(Jinv));
+          forces.template segment<mydim>(mydim * i) += bopI.transpose() * stresses * intElement;
         }
       }
 
-      // line or surface loads, i.e. neumann boundary
-      if (not neumannBoundary_) return;
+      // External forces volume forces over the domain
+      if (volumeLoad) {
+        const auto u = getDisplacementFunction(par);
+        for (const auto& [gpIndex, gp] : u.viewOverIntegrationPoints()) {
+          Eigen::Vector<double, Traits::worlddim> fext = (*volumeLoad)(toEigenVector(gp.position()), lambda);
+          for (size_t i = 0; i < numberOfNodes; ++i) {
+            const auto udCi = u.evaluateDerivative(gpIndex, wrt(coeff(i)));
+            forces.template segment<mydim>(mydim * i)
+                -= udCi * fext * geo.integrationElement(gp.position()) * gp.weight();
+          }
+        }
+      }
 
+      // External forces, boundary forces, i.e. at the Neumann boundary
+      if (not neumannBoundary_ and not neumannBoundaryLoad) return;
+
+      const auto u = getDisplacementFunction(par);
       auto element = localView_.element();
-      for (auto&& intersection : intersections(neumannBoundary_.gridView(), element)) {
-        if (not neumannBoundary_ or not neumannBoundary_.contains(intersection)) continue;
+      for (auto&& intersection : intersections(neumannBoundary_->gridView(), element)) {
+        if (not neumannBoundary_->contains(intersection)) continue;
 
+        // Integration rule along the boundary
         const auto& quadLine = Dune::QuadratureRules<double, mydim - 1>::rule(intersection.type(), u.order());
 
         for (const auto& curQuad : quadLine) {
-          // Local position of the quadrature point
           const Dune::FieldVector<double, mydim>& quadPos = intersection.geometryInInside().global(curQuad.position());
 
           const double integrationElement = intersection.geometry().integrationElement(curQuad.position());
@@ -215,8 +239,8 @@ namespace Ikarus {
 
             // Value of the Neumann data at the current position
             auto neumannValue
-                = neumannBoundaryLoad_(toEigenVector(intersection.geometry().global(curQuad.position())), lambda);
-            g.template segment<mydim>(mydim * i) -= udCi * neumannValue * curQuad.weight() * integrationElement;
+                = (*neumannBoundaryLoad)(toEigenVector(intersection.geometry().global(curQuad.position())), lambda);
+            forces.template segment<mydim>(mydim * i) -= udCi * neumannValue * curQuad.weight() * integrationElement;
           }
         }
       }
@@ -227,12 +251,12 @@ namespace Ikarus {
         std::remove_cvref_t<decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis())>>
         localBasis;
     std::optional<std::function<Eigen::Vector<double, Traits::worlddim>(const Eigen::Vector<double, Traits::worlddim>&,
-                                                          const double&)>>
+                                                                        const double&)>>
         volumeLoad;
     std::optional<std::function<Eigen::Vector<double, Traits::worlddim>(const Eigen::Vector<double, Traits::worlddim>&,
-                                                          const double&)>>
-        neumannBoundaryLoad_;
-    std::optional<std::reference_wrapper<const BoundaryPatch<GridView>>> neumannBoundary_;
+                                                                        const double&)>>
+        neumannBoundaryLoad;
+    const BoundaryPatch<GridView>* neumannBoundary_;
     mutable Dune::BlockVector<Ikarus::RealTuple<double, Traits::dimension>> dispAtNodes;
     double emod_;
     double nu_;
