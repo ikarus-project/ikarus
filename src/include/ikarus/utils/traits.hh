@@ -19,11 +19,25 @@
 
 #pragma once
 #include <concepts>
+#include <functional>
+#include <optional>
 #include <tuple>
 #include <type_traits>
 
 #include <dune/common/hybridutilities.hh>
 namespace Ikarus::Std {
+
+  template <typename T>
+  concept is_pointer = std::is_pointer_v<T> || std::is_same_v<T, std::nullptr_t>;
+
+  template <typename T>
+  requires is_pointer<T>
+  auto& returnReferenceOrNulloptIfObjectIsNullPtr(T v) {
+    if constexpr (!std::is_same_v<T, std::nullptr_t>)
+      return *v;
+    else
+      return std::nullopt;
+  }
 
   // Forward declare functions
   template <typename... Types>

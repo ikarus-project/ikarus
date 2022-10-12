@@ -15,4 +15,7 @@ foreach(programSourceFile ${programSourceFiles})
 
   target_link_libraries(${programName} PUBLIC Ikarus::ikarus)
   add_dependencies(AllExamples ${programName})
+  find_package(PythonLibs REQUIRED)
+  include_directories(${PYTHON_INCLUDE_DIRS})
+  target_link_libraries(${programName} PUBLIC ${PYTHON_LIBRARIES})
 endforeach()

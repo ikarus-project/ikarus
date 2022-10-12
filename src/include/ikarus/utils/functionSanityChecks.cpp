@@ -25,16 +25,18 @@
 #include <matplot/util/colors.h>
 
 namespace Ikarus {
-  double drawResultAndReturnSlope(std::string&& functionName, const std::function<double(double)>& ftfunc, bool draw) {
+  double drawResultAndReturnSlope(std::string&& functionName, const std::function<double(double)>& ftfunc, bool draw,
+                                  int slopeOfReference) {
     using namespace matplot;
     std::vector<double> t = logspace(-8, -2, 100);
     Eigen::Map<Eigen::VectorXd> data(t.data(), t.size());
     std::vector<double> ftevaluated = transform(t, ftfunc);
     Eigen::Map<Eigen::VectorXd> yE(ftevaluated.data(), ftevaluated.size());
 
-    std::vector<double> fexpectedSlope = transform(t, [](auto t) { return t * t; });
-    const int rangeSize                = 10;
-    const auto [poly, range]           = Ikarus::findLineSegment(data.array().log10(), yE.array().log10(), rangeSize);
+    std::vector<double> fexpectedSlope
+        = transform(t, [slopeOfReference](auto t) { return Dune::power(t, slopeOfReference); });
+    const int rangeSize      = 10;
+    const auto [poly, range] = Ikarus::findLineSegment(data.array().log10(), yE.array().log10(), rangeSize);
 
     if (draw) {
       auto f   = figure(true);

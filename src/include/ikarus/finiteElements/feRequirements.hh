@@ -90,8 +90,10 @@ namespace Ikarus {
 
   template <typename Type>
   concept FEAffordance
-      = std::is_same_v<Type, ScalarAffordances> or std::is_same_v<Type, VectorAffordances> or std::is_same_v<
-          Type, MatrixAffordances> or std::is_same_v<AffordanceCollection, MatrixAffordances>;
+      = std::is_same_v<std::remove_cvref_t<Type>, ScalarAffordances> or std::is_same_v<std::remove_cvref_t<Type>,
+                                                                                       VectorAffordances> or std::
+          is_same_v<std::remove_cvref_t<Type>, MatrixAffordances> or std::is_same_v<std::remove_cvref_t<Type>,
+                                                                                    AffordanceCollection>;
 
   inline constexpr VectorAffordances forces = VectorAffordances::forces;
 
@@ -107,11 +109,11 @@ namespace Ikarus {
   template <typename SolutionVectorType = Eigen::VectorXd, typename ParameterType = double>
   class FErequirementsBuilder;
 
-  template <typename SolutionVectorType = Eigen::VectorXd, typename ParameterType = double>
+  template <typename SolutionVectorType_ = Eigen::VectorXd, typename ParameterType = double>
   struct FErequirements {
+    using SolutionVectorType = SolutionVectorType_;
     friend FErequirementsBuilder<SolutionVectorType, ParameterType>;
 
-  public:
     const SolutionVectorType &getSolution(FESolutions &&key) const {
       try {
         return sols.at(key).get();
@@ -120,6 +122,8 @@ namespace Ikarus {
         abort();
       }
     }
+
+    void setSolution(FESolutions &&key, const SolutionVectorType &val) { sols.insert_or_assign(key, val); }
 
     const ParameterType &getParameter(FEParameter &&key) const { return parameter.at(key).get(); }
 
