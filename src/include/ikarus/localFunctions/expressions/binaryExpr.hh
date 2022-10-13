@@ -46,7 +46,7 @@ namespace Ikarus {
     }
 
     /* Creates a tuple of all subtype ids, size l or r is not a tuple, tuple_cat may not work.
-     * Thus we artifically wrap them inside a tuple  */
+     * Thus we artificially wrap them inside a tuple  */
     using Ids = decltype(Std::makeNestedTupleFlat(
         std::make_tuple(std::declval<typename E1Raw::Ids>(), std::declval<typename E2Raw::Ids>())));
 

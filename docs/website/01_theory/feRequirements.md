@@ -36,7 +36,7 @@ Currently, the following feSolutions, fe Parameter and affordances are defined:
 
 ## Usage
 
-Inside the finite element the information can than be convieniently extracted:
+Inside the finite element the information can than be conveniently extracted:
 ```cpp linenums="1"
 const auto& d      = req.getSolution(FESolutions::displacement);
 const auto& lambda = req.getParameter(FEParameter::loadfactor);
@@ -71,7 +71,7 @@ The current supported results are
 
 ## Usage
 To extract the needed information result requirements have the same interface as finite element requirements.
-But they allow to query information whic hresults should be calculated.
+But they allow to query information which hresults should be calculated.
 
 ```cpp
 if( req.isResultRequested( ResultType::cauchyStress)) {

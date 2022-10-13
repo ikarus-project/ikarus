@@ -21,8 +21,8 @@
 namespace Ikarus {
 
   /*
-   * This function returns the polynom fitted onto the data pased in in the least square sense.
-   * It also return the least square error.
+   * This function returns the polynom fitted onto the data passed in the least square sense.
+   * It also returns the least square error.
    */
   std::tuple<Dune::Functions::Polynomial<double>, double> polyfit(const Eigen::Ref<const Eigen::VectorXd>& x,
                                                                   const Eigen::Ref<const Eigen::VectorXd>& y,

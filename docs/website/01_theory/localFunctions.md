@@ -173,7 +173,7 @@ $$
 E(\boldsymbol{u}) = \frac{1}{2} \int_\Omega ||\operatorname{grad}_\boldsymbol{x} \boldsymbol{u}(\boldsymbol{x})|| ^2 \textrm{d} \boldsymbol{x}
 $$
 
-If we want to mimize this energy w.r.t. the coefficients of the nodes, we need to calculate the energy, gradient and the Hessia w.r.t. the coefficents.  
+If we want to mimize this energy w.r.t. the coefficients of the nodes, we need to calculate the energy, gradient and the Hessia w.r.t. the coefficients.  
 Of course this depends on the optimization algorithms, but for now lets keep it simple.
 
 ```cpp 
@@ -212,7 +212,7 @@ auto gradientDirichletEnergy(Eigen::VectorXd& g) {
 } 
 ``` 
 
-1. `graduDCoeffs` contains in `graduDCoeffs[0]` the derivatives w.r.t.the coefficient of the first column and at `[1]` w.r.t.the second colum of `gradu`
+1. `graduDCoeffs` contains in `graduDCoeffs[0]` the derivatives w.r.t.the coefficient of the first column and at `[1]` w.r.t.the second column of `gradu`
 
 ```cpp 
 auto hessianDirichletEnergy(Matrix& h) { 
@@ -241,7 +241,7 @@ auto hessianDirichletEnergy(Matrix& h) {
 
 ## Implementations
 In the following we summarize the local functions that are currently available.
-In the follwing table $N^i(\boldsymbol{\xi})$ are the ansatz functions.
+In the following table $N^i(\boldsymbol{\xi})$ are the ansatz functions.
 
 | Name                      | Interpolation formula                                         | Note                                                                                                                                                                                                                                                      | Header |
 |:--------------------------|:--------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--|
@@ -362,14 +362,14 @@ constexpr bool children; // (2)
 ``` 
 
 1. This is true if the underlying expression is one of the above Local functions that really contain the coefficients, see [Implementations](#implementations).
-2. Returns the number of childs 2 for binary expressions and 1 for unary expressions.
+2. Returns the number of children. 2 for binary expressions and 1 for unary expressions.
 
 !!! note
     To use these expression you can simply include the header by `#!cpp #include <ikarus/localFunctions/expressions.hh>`.
 
 # Tagging leaf local functions
 In the context of mixed finite elements. There are usually several local functions that contribute to the energy. These steems from different local basis.
-For example consider the Q1P0 element where displacments are interpolated by using the four bilinear ansatz function and the the element-wise constant pressure field.
+For example consider the Q1P0 element where displacements are interpolated by using the four bilinear ansatz function and the the element-wise constant pressure field.
 
 Thus we need to differentiate wrt. different coefficients. This can be done by tagging the local function by construction.
 ```cpp 
@@ -438,7 +438,7 @@ auto hessianDirichletEnergy(Matrix& h) {
 You can also write your own expressions. For this you can look into existing expressions. Especially the sqrt expression and the normSquared expression are the most general unary and binary expression
 
 # Implementing the return value
-If you want to implement your onw expression you first have to implement the return value.
+If you want to implement your own expression you first have to implement the return value.
 This is done using the function
 ```cpp 
 template <typename LFArgs> 
@@ -465,8 +465,8 @@ const auto mEvaluated = evaluateFunctionImpl(this->m(), lfArgs); // (1)
 
 1. The syntax is the same for binary expression, e.g.
    ```cpp 
-   const auto lEvaluated = evaluateFunctionImpl(this->l(), lfArgs); 
-   const auto rEvaluated = evaluateFunctionImpl(this->r(), lfArgs); 
+   const auto l_Evaluated = evaluateFunctionImpl(this->l(), lfArgs); 
+   const auto r_Evaluated = evaluateFunctionImpl(this->r(), lfArgs); 
    ``` 
 
 The expression fulfill the syntax of a local function thus also derivative can be evaluated.
@@ -606,7 +606,7 @@ template <int DerivativeOrder, typename LFArgs>
    ```cpp 
        u.evaluateDerivative(gpIndex, wrt(coeff(i,j))); 
    ``` 
-   Therefore, this function seperates the two wrt. arguments and returns the corresponding first order derivatives.
+   Therefore, this function separates the two wrt. arguments and returns the corresponding first order derivatives.
 6. Compile time branch for the case where no spatial derivatives are requested bot only wrt. coefficients is needed.
 7. Creates a new argument variable where the along argument is replaced by `v`.
 8. This function evaluates the derivatives of `l` wrt to both passed wrt arguments. Furthmore, it takes the give along argument since otherwise the returned object would be a 3 dimensional array.
