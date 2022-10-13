@@ -22,12 +22,12 @@ void globalIndices(std::vector<GlobalIndex>& globalIndices);
 ```
 
 To discuss these methods first finite element requirements and result requirements should be learned, see [fe requirements](feRequirements.md).
-The first four methods receive an object of type `FErequirements`. This object is responsable for passing different inforamtion needed for the local evaluation of the local linear algebra objects.
+The first four methods receive an object of type `FErequirements`. This object is responsible for passing different information needed for the local evaluation of the local linear algebra objects.
 The first method `evaluateScalar` simply returns by values since usually this is cheap to return a `double`.
 The other methods `evaluateVector`, `evaluateMatrix` and `calculateLocalSystem` receive one or two  output argument where the result should be written.
 This interface is needed to circumvent the dynamic memory allocation, if these methods would return by value.
 
-The method `calculateAt` is responable to evaluate several results and it receives a `ResultRequirements` ojbect which contains information which results should be evaluated.
+The method `calculateAt` is responable to evaluate several results and it receives a `ResultRequirements` object which contains information which results should be evaluated.
 These results are stored inside the output argument `result` which is of type `ResultTypeMap`.
 Additionally there is the argument 'local' which stores the coordinates where inside the element coordinates the result should be evaluated.
 

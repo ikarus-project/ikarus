@@ -24,9 +24,9 @@ auto createGrid([[maybe_unused]] int elex = 10, [[maybe_unused]] int eley = 10) 
     const double L = 1;
     const double h = 1;
 
-    Dune::FieldVector<double, 2> bbox = {L, h};
-    std::array<int, 2> eles           = {elex, eley};
-    auto grid                         = std::make_shared<Grid>(bbox, eles);
+    Dune::FieldVector<double, 2> bbox       = {L, h};
+    std::array<int, 2> elementsPerDirection = {elex, eley};
+    auto grid                               = std::make_shared<Grid>(bbox, elementsPerDirection);
     return grid;
   } else if constexpr (std::is_same_v<GridType, Grids::Iga>) {
     constexpr auto dimworld        = 2;

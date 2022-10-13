@@ -24,7 +24,7 @@ There exits an enum type `SolverTypeTag` with the following values
 
 {{ inputcpp('src/include/ikarus/solver/linearSolver/linearSolver.hh',0,20,40) }}
 
-The prefixes `s_` and  `d_` indicate wether the linear solver can be used for dense or sparse matrices.
+The prefixes `s_` and  `d_` indicate whether the linear solver can be used for dense or sparse matrices.
 Furthermore, there is a second prefix for sparse solvers[^1] `d` and `i` for direct solvers and for iterative solvers.
 Thus, using `si_ConjugateGradient` means that this solver is for sparse matrices and is an iterative solver.
 
@@ -70,7 +70,7 @@ auto& nonLinearOperator(); // (3)
 
 1. With this function several properties of the nonlinear solver can be set. E.g. residual tolerance or maximum number of iterations.
 2. Solves the non-linear problem. One can pass an initial guess to the function. Otherwise the zero vector is assumed. 
-   It returns`SolverInformation` which contains information on the sucess of the solution step and other information as the needed iterations. 
+   It returns`SolverInformation` which contains information on the success of the solution step and other information as the needed iterations. 
 3. Simply returns the underlying `nonLinearOperator`, see [Link](nonlinearOperator.md)
 
 !!! note

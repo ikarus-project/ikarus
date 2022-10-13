@@ -82,7 +82,7 @@ namespace Ikarus {
 
   /** \brief Creates a Eigen::Matrix from a given Dune::DiagonalMatrix. This should return Eigen::DiagonalMatrix but
    * Eigen::DiagonalMatrix does not contain e.g. a transpose method. And therefore we would need to specialize user
-   * code. Maybe someone whats to do a PR at Eigen? */
+   * code. Maybe someone wants to do a PR at Eigen? */
   template <typename ScalarType, int size1>
   Eigen::Matrix<ScalarType, size1, size1> toEigenMatrix(const Dune::DiagonalMatrix<ScalarType, size1>& mat) {
     Eigen::Matrix<ScalarType, size1, size1> eigenmatrix;

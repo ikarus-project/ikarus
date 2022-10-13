@@ -14,7 +14,7 @@ wsl --install
 wsl --set-default-version 2 #(Is not needed for Windows 11)
 ```
 2. [Download and install Docker for Windows](https://docs.docker.com/desktop/windows/install/).
-  During the installation, select the option "Install requred Windows components for WSL 2"
+  During the installation, select the option "Install required Windows components for WSL 2"
 3. Install debian from [WindowsAppStore](https://www.microsoft.com/en-us/p/debian/9msvkqc78pk6#activetab=pivot:overviewtab)
     1. Open the debian app
     2. Give yourself a username and password
@@ -31,8 +31,8 @@ wsl --setdefault Debian
 6. Try to start Docker. If it works, continue with the next step. If a message occurs that you are not allowed to use docker because
     you are not in the docker user group, follow [these instructions](https://icij.gitbook.io/datashare/faq-errors/you-are-not-allowed-to-use-docker-you-must-be-in-the-docker-users-group-.-what-should-i-do).
     In short:
-    1. Open **Computerverwaltung** as admin
-    2. Go to **Lokale Benutzer und Gruppen** and find **docker-users**
+    1. Open **computer management** as admin
+    2. Go to **Local users and groups** and find **docker-users**
     3. Add your Account (or a group of which you are a member) to the group.
     4. Restart your computer
 7. In Docker, go to Settings --> General and select autostart for docker

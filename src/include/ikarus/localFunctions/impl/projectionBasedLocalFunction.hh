@@ -352,9 +352,9 @@ namespace Ikarus {
     using FunctionReturnType = typename Manifold::CoordinateType;
     /** \brief Type for the Jacobian matrix */
     using Jacobian = Eigen::Matrix<ctype, valueSize, gridDim>;
-    /** \brief Type for the derivatives wrt. the coeffiecients */
+    /** \brief Type for the derivatives wrt. the coefficients */
     using CoeffDerivMatrix = Eigen::Matrix<ctype, correctionSize, correctionSize>;
-    /** \brief Type for the derivatives wrt. the coeffiecients */
+    /** \brief Type for the derivatives wrt. the coefficients */
     using CoeffDerivEukMatrix = Eigen::Matrix<ctype, valueSize, valueSize>;
     /** \brief Type for the Jacobian of the ansatz function values */
     using AnsatzFunctionJacobian = typename Ikarus::LocalBasis<DuneBasis>::JacobianType;

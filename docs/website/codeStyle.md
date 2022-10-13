@@ -17,7 +17,7 @@ the implementation thoughts and theoretical aspects.
 ### Programming style
 
 
-## Seperation of interface and implementation
+## Separation of interface and implementation
 On many of the theory pages you will find a description of an interface and
 a discussion of the implementation. What interface and implementation means is
 explained here with the example of a car.

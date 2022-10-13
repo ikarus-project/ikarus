@@ -23,7 +23,7 @@ Scott Meyers recommends the following algorithm: [Link](http://cpptips.com/nmemf
 Also Eigen can be added. Also any other header found on the internet can be include with the link.
 
 ## Videos
-Here we collect usefull videos on coding or coding c++:
+Here we collect useful videos on coding or coding c++:
 
 - [Clean Code - Uncle Bob / Lesson 1](https://www.youtube.com/watch?v=7EmboKQH8lM) How to write code cleanly, see also [@martinclean]
 - [CppCon 2014: Herb Sutter "Back to the Basics! Essentials of Modern C++ Style"](https://youtu.be/xnqTKD8uD64)

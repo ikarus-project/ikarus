@@ -1,5 +1,5 @@
 Module: ikarus
-Version: 0.1
+Version: 0.2
 Maintainer: mueller@ibb.uni-stuttgart.de
 #depending on
 Depends: dune-typetree dune-geometry dune-iga dune-functions dune-grid dune-fufem dune-alugrid dune-foamgrid dune-uggrid dune-vtk
