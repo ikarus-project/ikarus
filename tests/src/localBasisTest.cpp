@@ -21,7 +21,6 @@ using Dune::TestSuite;
 #include <ikarus/localFunctions/expressions.hh>
 #include <ikarus/manifolds/unitVector.hh>
 #include <ikarus/utils/functionSanityChecks.hh>
-#include <ikarus/utils/multiIndex.hh>
 
 using namespace Dune::Functions::BasisFactory;
 

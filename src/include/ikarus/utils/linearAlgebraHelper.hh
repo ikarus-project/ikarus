@@ -31,7 +31,6 @@
 #include <autodiff/forward/dual/dual.hpp>
 
 #include <ikarus/localFunctions/meta.hh>
-#include <ikarus/manifolds/manifoldInterface.hh>
 #include <ikarus/utils/concepts.hh>
 
 namespace Ikarus {
@@ -346,11 +345,6 @@ namespace Ikarus {
     } else
       return A.derived().eval();
   }
-
-  /** \brief Does nothing if type is not an Eigen type but our manifolds type or floatingin point instead*/
-  template <typename Type>
-  requires Ikarus::Concepts::Manifold<Type> or std::floating_point<Type>
-  auto eval(const Type& A) { return A; }
 
   /** \brief  eval overload for autodiff scalars */
   template <typename T>
