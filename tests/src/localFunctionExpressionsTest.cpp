@@ -35,7 +35,6 @@ using Dune::TestSuite;
 #include <ikarus/manifolds/unitVector.hh>
 #include <ikarus/utils/functionSanityChecks.hh>
 #include <ikarus/utils/linearAlgebraHelper.hh>
-#include <ikarus/utils/multiIndex.hh>
 
 using namespace Dune::Functions::BasisFactory;
 
@@ -351,22 +350,12 @@ auto localFunctionTestConstructor(const Dune::GeometryType &geometryType, size_t
   Dune::BlockVector<Manifold2> testNodalPoints2;
   Ikarus::ValueFactory<Manifold2>::construct(testNodalPoints2, nNodalTestPoints);
 
-  Ikarus::MultiIndex multIndex(nNodes, nNodalTestPoints);
   Dune::BlockVector<Manifold> vBlockedLocal(nNodes);
   Dune::BlockVector<Manifold> vBlockedLocal2(nNodes);
   Dune::BlockVector<Manifold2> vBlockedLocal3(nNodes);
 
   const auto &rule = Dune::QuadratureRules<double, domainDim>::rule(fe.type(), 2);
   localBasis.bind(rule, bindDerivatives(0, 1));
-
-  // More thorough testing by swapping indices and testing again
-  //  for (size_t i = 0; i < multIndex.cycles(); ++i, ++multIndex) {
-  //    auto sortedMultiIndex = multIndex;
-  //    std::ranges::sort(sortedMultiIndex);
-  //    if (std::ranges::adjacent_find(sortedMultiIndex)
-  //        != sortedMultiIndex.end())  // skip multiIndices with duplicates. Since otherwise duplicate points are
-  //                                    // interpolated the jacobian is ill-defined
-  //      continue;
 
   for (size_t j = 0; j < fe.size(); ++j) {
     vBlockedLocal[j]  = testNodalPoints1[j];
