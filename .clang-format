@@ -20,9 +20,6 @@
     - Regex: 'config.h'
       Priority: -1
       SortPriority: -1
-    - Regex: '^(<|")catch2/'
-      Priority: 0
-      SortPriority: 0
     - Regex: '^(<|")dune/'
       Priority: 3
       SortPriority: 3

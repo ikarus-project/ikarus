@@ -1,4 +1,3 @@
 [
-{ include: ["@<gtest/.*>", "public", "<gtest/gtest.h>", "public"] },
 { include: ["@<Eigen/src/Core/.*>", "public", "<Eigen/Core>", "public"] }
 ]
