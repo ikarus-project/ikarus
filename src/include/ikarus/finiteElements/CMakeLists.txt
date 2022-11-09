@@ -5,4 +5,3 @@ install(FILES feRequirements.hh feTraits.hh fEparameter.hh physicsHelper.hh
 
 add_subdirectory(feBases)
 add_subdirectory(mechanics)
-add_subdirectory(micromagnetics)
