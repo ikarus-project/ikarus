@@ -134,7 +134,7 @@ namespace Ikarus {
       std::get<n>(derivativesEvaluated_) = Impl::applyAndRemoveReferenceWrapper(std::get<n>(derivatives_), args_);
     }
 
-    /* Returns the value of the zeros function, e.g. the energy value */
+    /* Returns the value of the zeros function, e.g. the energy value as reference */
     auto& value() requires(sizeof...(DerivativeArgs) > 0) { return nthDerivative<0>(); }
 
     /* Returns the derivative value, e.g. the gradient of an energy */

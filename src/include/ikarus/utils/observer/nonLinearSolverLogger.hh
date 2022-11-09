@@ -35,11 +35,12 @@ public:
         iters = 0;
         dNorm = 0.0;
         rNorm = 0.0;
+        sNorm = 0.0;
         spdlog::info("Non-linear solver started:");
-        spdlog::info("  i ResidualNorm CorrectionNorm");
+        spdlog::info("  i ResidualNorm CorrectionNorm ScalarSubsidiaryNorm");
         break;
       case NonLinearSolverMessages::ITERATION_ENDED:
-        spdlog::info("{:>3d} {:>12.2e} {:14.2e}", iters, rNorm, dNorm);
+        spdlog::info("{:>3d} {:>12.2e} {:14.2e} {:20.2e}", iters, rNorm, dNorm, sNorm);
         ++iters;
         break;
       default:
@@ -54,6 +55,9 @@ public:
         break;
       case NonLinearSolverMessages::CORRECTIONNORM_UPDATED:
         dNorm = val;
+        break;
+      case NonLinearSolverMessages::SCALARSUBSIDIARY_UPDATED:
+        sNorm = val;
         break;
       default:
         break;
@@ -79,4 +83,5 @@ private:
   int iters{0};
   double dNorm{0};
   double rNorm{0};
+  double sNorm{0};
 };

@@ -16,7 +16,6 @@ If your are interested the following task are vacant.
 * Add \( \operatorname{div} \) and \( \operatorname{curl} \) wrapper
 
 ### Controlroutines
-* Arclength method 
 * Dynamics (Explicit/ implicit time stepping)
 
 ### Controlroutines addons
