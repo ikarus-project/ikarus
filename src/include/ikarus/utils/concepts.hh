@@ -21,6 +21,8 @@
 #include <dune/functions/functionspacebases/basistags.hh>
 
 #include <Eigen/Core>
+
+#include <ikarus/utils/pathFollowingFunctions.hh>
 namespace Ikarus {
 
   template <typename Derived>
@@ -73,6 +75,14 @@ namespace Ikarus {
     template <typename Basis>
     concept PowerBasis = requires {
       Basis::PreBasis::Node::isPower == true;
+    };
+
+    template <typename PathFollowingImpl, typename NonLinearOperator>
+    concept PathFollowingStrategy
+        = requires(PathFollowingImpl pft, NonLinearOperator nop, Ikarus::SubsidiaryArgs args) {
+      { pft.evaluateSubsidiaryFunction(args) } -> std::same_as<void>;
+      { pft.initialPrediction(nop, args) } -> std::same_as<void>;
+      { pft.intermediatePrediction(nop, args) } -> std::same_as<void>;
     };
 
     template <typename L, typename R>
