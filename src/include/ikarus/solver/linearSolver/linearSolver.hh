@@ -150,39 +150,39 @@ namespace Ikarus {
 
     template <typename Solver>
     struct SolverImpl : public SolverBase {
-      void analyzePattern(const SparseMatrixType& A) override {
+      void analyzePattern(const SparseMatrixType& A) final {
         if constexpr (requires(Solver sol) { sol.analyzePattern(A); }) solver.analyzePattern(A);
       }
 
-      void factorize(const SparseMatrixType& A) override {
+      void factorize(const SparseMatrixType& A) final {
         if constexpr (requires(Solver sol) { sol.factorize(A); }) solver.factorize(A);
       }
 
       // Dense Solvers do not have a factorize method therefore
       // our interface we just call compute for dense matrices
-      void factorize(const DenseMatrixType& A) override {
+      void factorize(const DenseMatrixType& A) final {
         if constexpr (requires(Solver sol) { sol.compute(A); } && std::is_base_of_v<Eigen::SolverBase<Solver>, Solver>)
           solver.compute(A);
       }
-      void compute(const SparseMatrixType& A) {
+      void compute(const SparseMatrixType& A) final {
         if constexpr (std::is_base_of_v<Eigen::SparseSolverBase<Solver>, Solver>)
           solver.compute(A);
         else
           throw std::logic_error("This solver does not support solving with sparse matrices.");
       }
 
-      void compute(const DenseMatrixType& A) {
+      void compute(const DenseMatrixType& A) final {
         if constexpr (std::is_base_of_v<Eigen::SolverBase<Solver>, Solver>)
           solver.compute(A);
         else
           throw std::logic_error("This solver does not support solving with dense matrices.");
       }
 
-      void solve(Eigen::VectorX<ScalarType>& x, const Eigen::VectorX<ScalarType>& b) const override {
+      void solve(Eigen::VectorX<ScalarType>& x, const Eigen::VectorX<ScalarType>& b) const final {
         x = solver.solve(b);
       }
 
-      void solve(Eigen::MatrixX<ScalarType>& x, const Eigen::MatrixX<ScalarType>& b) const override {
+      void solve(Eigen::MatrixX<ScalarType>& x, const Eigen::MatrixX<ScalarType>& b) const final {
         x = solver.solve(b);
       }
 

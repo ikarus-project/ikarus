@@ -18,7 +18,10 @@
  */
 
 #pragma once
+#include "src/include/ikarus/utils/pathFollowingFunctions.hh"
+
 #include <iosfwd>
+#include <utility>
 
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/linearSolver/linearSolver.hh>
@@ -28,19 +31,19 @@
 
 namespace Ikarus {
 
-  struct NewtonRaphsonSettings {
+  struct NewtonRaphsonWithSubsidiaryFunctionSettings {
     double tol{1e-8};
-    int maxIter{20};
+    int maxIter{30};
   };
 
-  struct SolverInformation {
+  struct SolverInfos {
     bool success{false};
     double residualnorm{0.0};
     int iterations{0};
   };
 
   template <typename LinearSolver, typename MatrixType, typename VectorType>
-  concept LinearSolverC = requires(LinearSolver& linearSolver, MatrixType& Ax, VectorType& vec) {
+  concept LinearSolverCheck = requires(LinearSolver& linearSolver, MatrixType& Ax, VectorType& vec) {
     linearSolver.analyzePattern(Ax);
     linearSolver.factorize(Ax);
     linearSolver.solve(vec, vec);
@@ -52,18 +55,19 @@ namespace Ikarus {
             typename UpdateType
             = std::conditional_t<std::is_floating_point_v<typename NonLinearOperatorImpl::template ParameterValue<0>>,
                                  typename NonLinearOperatorImpl::template ParameterValue<0>, Eigen::VectorXd>>
-  class NewtonRaphson : public IObservable<NonLinearSolverMessages> {
+  class NewtonRaphsonWithSubsidiaryFunction : public IObservable<NonLinearSolverMessages> {
   public:
     using LinearSolverScalarFunctionType = std::function<typename NonLinearOperatorImpl::ValueType(
         const typename NonLinearOperatorImpl::ValueType&, const typename NonLinearOperatorImpl::ValueType&)>;
 
-    static constexpr bool isLinearSolver = LinearSolverC<LinearSolver, typename NonLinearOperatorImpl::DerivativeType,
-                                                         typename NonLinearOperatorImpl::ValueType>;
+    static constexpr bool isLinearSolver
+        = LinearSolverCheck<LinearSolver, typename NonLinearOperatorImpl::DerivativeType,
+                            typename NonLinearOperatorImpl::ValueType>;
 
     using ResultType         = typename NonLinearOperatorImpl::template ParameterValue<0>;
     using UpdateFunctionType = std::function<void(ResultType&, const UpdateType&)>;
 
-    explicit NewtonRaphson(
+    explicit NewtonRaphsonWithSubsidiaryFunction(
         const NonLinearOperatorImpl& p_nonLinearOperator,
         LinearSolver&& p_linearSolver = [](const typename NonLinearOperatorImpl::ValueType& a,
                                            const typename NonLinearOperatorImpl::ValueType& b) { return a / b; },
@@ -74,57 +78,102 @@ namespace Ikarus {
             })
         : nonLinearOperator_{p_nonLinearOperator},
           linearSolver{std::move(p_linearSolver)},
-          updateFunction{p_updateFunction} {
-      if constexpr (std::is_same_v<typename NonLinearOperatorImpl::ValueType, Eigen::VectorXd>)
-        correction.setZero(nonLinearOperator().value().size());
-    }
+          updateFunction{p_updateFunction} {}
 
     using NonLinearOperator = NonLinearOperatorImpl;
 
-    void setup(const NewtonRaphsonSettings& p_settings) { settings = p_settings; }
+    void setup(const NewtonRaphsonWithSubsidiaryFunctionSettings& p_settings) { settings = p_settings; }
 
     struct NoPredictor {};
-    template <typename SolutionType = NoPredictor>
+    template <typename SolutionType = NoPredictor, typename SubsidiaryType>
     requires std::is_same_v<SolutionType, NoPredictor> || std::is_convertible_v<
         SolutionType, std::remove_cvref_t<typename NonLinearOperatorImpl::ValueType>>
-        SolverInformation solve(const SolutionType& dx_predictor = NoPredictor{}) {
+        SolverInfos solve(SubsidiaryType& subsidiaryFunction, SubsidiaryArgs& subsidiaryArgs) {
       this->notify(NonLinearSolverMessages::INIT);
-      SolverInformation solverInformation;
+
+      /// Initializations
+      SolverInfos solverInformation;
       solverInformation.success = true;
-      auto& x                   = nonLinearOperator().firstParameter();
-      if constexpr (not std::is_same_v<SolutionType, NoPredictor>) updateFunction(x, dx_predictor);
+      auto& x                   = nonLinearOperator().firstParameter();  // x = D (Displacements)
+      auto& lambda              = nonLinearOperator().lastParameter();
+
+      /// Determine Fext0
+      /// It is assumed that Fext = Fext0 * lambda such that dRdlambda = Fext0
+      /// Generalization for Fext0 = Fext0(lambda) is not implemented
+
+      auto lambdaDummy = lambda;
+      auto DDummy      = x;
+      x.setZero();
+      lambda = 1.0;
+      nonLinearOperator().template update<0>();
+      const auto Fext0 = (-nonLinearOperator().value()).eval();  // dRdlambda(lambda)
+      lambda           = lambdaDummy;
+      x                = DDummy;
+
+      Eigen::MatrixX<double> residual2d, sol2d;
       nonLinearOperator().updateAll();
       const auto& rx = nonLinearOperator().value();
       const auto& Ax = nonLinearOperator().derivative();
-      auto rNorm     = norm(rx);
+
+      Eigen::VectorXd deltaD;
+      deltaD.resizeLike(rx);
+      deltaD.setZero();
+      double deltalambda = 0.0;
+
+      subsidiaryArgs.dfdDD.resizeLike(Fext0);
+
+      subsidiaryFunction(subsidiaryArgs);
+      auto rNorm = sqrt(rx.dot(rx));
       decltype(rNorm) dNorm;
       int iter{0};
       if constexpr (isLinearSolver) linearSolver.analyzePattern(Ax);
+
+      /// Iterative solving scheme
       while (rNorm > settings.tol && iter < settings.maxIter) {
         this->notify(NonLinearSolverMessages::ITERATION_STARTED);
+
+        /// Two-step solving procedure
+        residual2d.resize(rx.rows(), 2);
+        residual2d << -rx, Fext0;
+        sol2d.resize(rx.rows(), 2);
+
         if constexpr (isLinearSolver) {
           linearSolver.factorize(Ax);
-          linearSolver.solve(correction, -rx);
-          dNorm = correction.norm();
-          updateFunction(x, correction);
+          linearSolver.solve(sol2d, residual2d);
         } else {
-          correction = -linearSolver(rx, Ax);
-          dNorm      = norm(correction);
-          updateFunction(x, correction);
+          sol2d = linearSolver(residual2d, Ax);
         }
-        this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, dNorm);
-        this->notify(NonLinearSolverMessages::SOLUTION_CHANGED);
+
+        subsidiaryFunction(subsidiaryArgs);
+        this->notify(NonLinearSolverMessages::SCALARSUBSIDIARY_UPDATED, subsidiaryArgs.f);
+
+        deltalambda = (-subsidiaryArgs.f - subsidiaryArgs.dfdDD.dot(sol2d.col(0)))
+                      / (subsidiaryArgs.dfdDD.dot(sol2d.col(1)) + subsidiaryArgs.dfdDlambda);
+        deltaD = sol2d.col(0) + deltalambda * sol2d.col(1);
+
+        updateFunction(x, deltaD);
+        updateFunction(subsidiaryArgs.DD, deltaD);
+
+        lambda += deltalambda;
+        subsidiaryArgs.Dlambda += deltalambda;
+
+        dNorm = sqrt(deltaD.dot(deltaD) + deltalambda * deltalambda);
         nonLinearOperator().updateAll();
-        rNorm = norm(rx);
+        rNorm = sqrt(rx.dot(rx) + subsidiaryArgs.f * subsidiaryArgs.f);
+
+        this->notify(NonLinearSolverMessages::SOLUTION_CHANGED);
+        this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, dNorm);
         this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, rNorm);
         this->notify(NonLinearSolverMessages::ITERATION_ENDED);
         ++iter;
       }
+
       if (iter == settings.maxIter) solverInformation.success = false;
       solverInformation.iterations   = iter;
       solverInformation.residualnorm = rNorm;
       if (solverInformation.success)
         this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, iter, rNorm, settings.tol);
+
       return solverInformation;
     }
 
@@ -132,10 +181,9 @@ namespace Ikarus {
 
   private:
     NonLinearOperatorImpl nonLinearOperator_;
-    typename NonLinearOperatorImpl::ValueType correction;
     LinearSolver linearSolver;
     UpdateFunctionType updateFunction;
-    NewtonRaphsonSettings settings;
+    NewtonRaphsonWithSubsidiaryFunctionSettings settings;
   };
 
   template <typename NonLinearOperatorImpl,
@@ -144,7 +192,7 @@ namespace Ikarus {
             typename UpdateType
             = std::conditional_t<std::is_floating_point_v<typename NonLinearOperatorImpl::template ParameterValue<0>>,
                                  typename NonLinearOperatorImpl::template ParameterValue<0>, Eigen::VectorXd>>
-  auto makeNewtonRaphson(
+  auto makeNewtonRaphsonWithSubsidiaryFunction(
       const NonLinearOperatorImpl& p_nonLinearOperator,
       LinearSolver&& p_linearSolver = [](const typename NonLinearOperatorImpl::ValueType& a,
                                          const typename NonLinearOperatorImpl::ValueType& b) { return a / b; },
@@ -155,8 +203,7 @@ namespace Ikarus {
             using Ikarus::operator+=;
             a += b;
           }) {
-    return std::make_shared<NewtonRaphson<NonLinearOperatorImpl, LinearSolver, UpdateType>>(
+    return std::make_shared<NewtonRaphsonWithSubsidiaryFunction<NonLinearOperatorImpl, LinearSolver, UpdateType>>(
         p_nonLinearOperator, std::forward<LinearSolver>(p_linearSolver), std::move(p_updateFunction));
   }
-
 }  // namespace Ikarus
