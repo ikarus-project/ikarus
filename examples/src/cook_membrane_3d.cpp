@@ -3,8 +3,8 @@
 //
 #include <config.h>
 
-#include <vector>
 #include <chrono>
+#include <vector>
 
 #include <dune/common/parametertreeparser.hh>
 #include <dune/fufem/boundarypatch.hh>
@@ -71,20 +71,19 @@ int main(int argc, char** argv) {
 
   /// fix left-hand side x-dir
   std::vector<bool> dirichletFlags(basis.size(), false);
-  forEachBoundaryDOF(subspaceBasis(basis,0), [&](auto&& localIndex, auto&& localView, auto&& intersection) {
+  forEachBoundaryDOF(subspaceBasis(basis, 0), [&](auto&& localIndex, auto&& localView, auto&& intersection) {
     if (std::abs(intersection.geometry().center()[0]) < 1e-8) dirichletFlags[localView.index(localIndex)[0]] = true;
   });
 
   /// fix left-hand side y-dir
-  forEachBoundaryDOF(subspaceBasis(basis,1), [&](auto&& localIndex, auto&& localView, auto&& intersection) {
+  forEachBoundaryDOF(subspaceBasis(basis, 1), [&](auto&& localIndex, auto&& localView, auto&& intersection) {
     if (std::abs(intersection.geometry().center()[0]) < 1e-8) dirichletFlags[localView.index(localIndex)[0]] = true;
   });
 
   /// fix z-dir line at back z=0
-  forEachBoundaryDOF(subspaceBasis(basis,2), [&](auto&& localIndex, auto&& localView, auto&& intersection) {
+  forEachBoundaryDOF(subspaceBasis(basis, 2), [&](auto&& localIndex, auto&& localView, auto&& intersection) {
     const auto intersectionCenter = intersection.geometry().center();
-    if ( std::abs(intersectionCenter[2]) < 1e-8)
-      dirichletFlags[localView.index(localIndex)[0]] = true;
+    if (std::abs(intersectionCenter[2]) < 1e-8) dirichletFlags[localView.index(localIndex)[0]] = true;
   });
 
   //  std::vector<Ikarus::LinearElastic<decltype(basis)>> fes;
@@ -126,7 +125,7 @@ int main(int argc, char** argv) {
 
   for (auto& element : elements(gridView)) {
     auto localView = basis.localView();
-    fes.emplace_back(basis, element, E, nu, &volumeLoad,&neumannBoundary, &neumannBoundaryLoad );
+    fes.emplace_back(basis, element, E, nu, &volumeLoad, &neumannBoundary, &neumannBoundaryLoad);
     fes.back().setEASType(numberOfEASParameters);
   }
 
@@ -155,10 +154,10 @@ int main(int argc, char** argv) {
   auto startAssembly = std::chrono::high_resolution_clock::now();
   auto nonLinOp
       = Ikarus::NonLinearOperator(linearAlgebraFunctions(residualFunction, KFunction), parameter(D_Glob, lambdaLoad));
-  auto stopAssembly = std::chrono::high_resolution_clock::now();
+  auto stopAssembly     = std::chrono::high_resolution_clock::now();
   auto durationAssembly = duration_cast<std::chrono::milliseconds>(stopAssembly - startAssembly);
-  spdlog::info("The assembly took {} milliseconds",durationAssembly.count());
-  const auto& K   = nonLinOp.derivative();
+  spdlog::info("The assembly took {} milliseconds", durationAssembly.count());
+  const auto& K    = nonLinOp.derivative();
   const auto& Fext = nonLinOp.value();
 
   auto startSolver = std::chrono::high_resolution_clock::now();
@@ -166,16 +165,16 @@ int main(int argc, char** argv) {
   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_CholmodSupernodalLLT);
   linSolver.compute(K);
   linSolver.solve(D_Glob, -Fext);
-  auto stopSolver = std::chrono::high_resolution_clock::now();
+  auto stopSolver     = std::chrono::high_resolution_clock::now();
   auto durationSolver = duration_cast<std::chrono::milliseconds>(stopSolver - startSolver);
-  spdlog::info("The solver took {} milliseconds",durationSolver.count());
+  spdlog::info("The solver took {} milliseconds", durationSolver.count());
 
   /// Postprocess
   auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(basis, D_Glob);
   Dune::VTKWriter vtkWriter(gridView, Dune::VTK::conforming);
   vtkWriter.addVertexData(disp, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 3));
   vtkWriter.write("Cook_Membrane_3D");
-  auto stop = std::chrono::high_resolution_clock::now();
+  auto stop     = std::chrono::high_resolution_clock::now();
   auto duration = duration_cast<std::chrono::milliseconds>(stop - start);
-  spdlog::info("The total execution took {} milliseconds",duration.count());
+  spdlog::info("The total execution took {} milliseconds", duration.count());
 }
