@@ -18,8 +18,6 @@
  */
 
 #pragma once
-#include "src/include/ikarus/utils/pathFollowingFunctions.hh"
-
 #include <iosfwd>
 #include <utility>
 
@@ -28,6 +26,7 @@
 #include <ikarus/utils/linearAlgebraHelper.hh>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observerMessages.hh>
+#include <ikarus/utils/pathFollowingFunctions.hh>
 
 namespace Ikarus {
 

@@ -9,7 +9,7 @@ jobs:
     name: ${{ matrix.config.name }}
     runs-on: ubuntu-latest
     container:
-      image: rath3t/ikarus-debian-bookworm:latest
+      image: rath3t/ikarus-dev:latest
       options: --memory-swap="20g" --memory="20g" --cpus="2"
     strategy:
       fail-fast: false

@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "src/include/ikarus/finiteElements/feTraits.hh"
+#include <ikarus/finiteElements/feTraits.hh>
 
 namespace Ikarus {
 

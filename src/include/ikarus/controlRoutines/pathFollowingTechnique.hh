@@ -18,8 +18,6 @@
  */
 
 #pragma once
-#include "src/include/ikarus/utils/pathFollowingFunctions.hh"
-
 #include <memory>
 
 #include <spdlog/spdlog.h>
@@ -30,6 +28,7 @@
 #include <ikarus/solver/nonLinearSolver/newtonRaphsonWithScalarSubsidiaryFunction.hh>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observerMessages.hh>
+#include <ikarus/utils/pathFollowingFunctions.hh>
 
 namespace Ikarus {
 

@@ -19,9 +19,6 @@
  */
 
 #pragma once
-#include "src/include/ikarus/finiteElements/feBases/powerBasisFE.hh"
-#include "src/include/ikarus/finiteElements/feTraits.hh"
-
 #include <concepts>
 #include <iosfwd>
 
@@ -34,7 +31,9 @@
 #include <autodiff/forward/dual/eigen.hpp>
 
 #include <ikarus/finiteElements/feBases/autodiffFE.hh>
+#include <ikarus/finiteElements/feBases/powerBasisFE.hh>
 #include <ikarus/finiteElements/feRequirements.hh>
+#include <ikarus/finiteElements/feTraits.hh>
 #include <ikarus/finiteElements/physicsHelper.hh>
 #include <ikarus/localBasis/localBasis.hh>
 #include <ikarus/localFunctions/impl/standardLocalFunction.hh>

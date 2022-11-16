@@ -19,10 +19,11 @@
 
 #pragma once
 #include <memory>
+#include <optional>
 
 #include <dune/common/float_cmp.hh>
 
-#include "ikarus/solver/linearSolver/linearSolver.hh"
+#include <ikarus/solver/linearSolver/linearSolver.hh>
 
 namespace Ikarus {
 
