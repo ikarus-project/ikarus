@@ -9,7 +9,7 @@ DEPENDENCIES=@REQUIRES@
 Name: @PACKAGE_NAME@
 Version: @VERSION@
 Description: Dune ikarus module
-URL:
+URL: https://ikarusrepo.github.io/
 Requires: dune-typetree dune-geometry dune-iga dune-functions dune-grid dune-fufem dune-alugrid dune-foamgrid
 Libs: -L${libdir}
 Cflags: -I${includedir}

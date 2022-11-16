@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "src/include/ikarus/utils/concepts.hh"
+#include <ikarus/utils/concepts.hh>
 
 namespace Ikarus {
 

@@ -17,7 +17,7 @@ dune_project()
 dune_enable_all_packages()
 
 add_subdirectory(src)
-add_subdirectory(examples)
+add_subdirectory(sandbox)
 add_subdirectory(benchmarks)
 add_subdirectory(tests)
 add_subdirectory(cmake/FormatTarget)

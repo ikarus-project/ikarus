@@ -18,8 +18,6 @@
  */
 
 #pragma once
-#include "src/include/ikarus/finiteElements/feTraits.hh"
-
 #include <concepts>
 #include <iosfwd>
 #include <optional>
@@ -35,6 +33,7 @@
 #include <ikarus/finiteElements/feBases/autodiffFE.hh>
 #include <ikarus/finiteElements/feBases/powerBasisFE.hh>
 #include <ikarus/finiteElements/feRequirements.hh>
+#include <ikarus/finiteElements/feTraits.hh>
 #include <ikarus/finiteElements/physicsHelper.hh>
 #include <ikarus/localBasis/localBasis.hh>
 #include <ikarus/localFunctions/expressions/linearStrainsExpr.hh>

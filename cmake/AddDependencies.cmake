@@ -27,6 +27,7 @@ dune_register_package_flags(
   LIBRARIES
   Eigen3::Eigen
   PUBLIC
+  Eigen3::Eigen
   spdlog::spdlog
   Matplot++::matplot
   autodiff::autodiff

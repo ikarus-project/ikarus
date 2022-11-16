@@ -8,12 +8,12 @@ add_executable(IkarusBenchmarks ${benchSourceFiles})
 list(APPEND CMAKE_PREFIX_PATH
      ${CMAKE_CURRENT_SOURCE_DIR}/../../Ikarus_Dependencies/Dependencies_release/
 )
-include_directories(../libAddons/eigen/eigenAddons)
+
 find_package(benchmark REQUIRED)
 
 target_link_libraries(
   IkarusBenchmarks
-  PRIVATE Ikarus::ikarus
+  PRIVATE ikarus
   PRIVATE benchmark::benchmark_main
 )
 target_compile_features(IkarusBenchmarks PRIVATE cxx_std_20)
