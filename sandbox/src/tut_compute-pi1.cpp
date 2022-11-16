@@ -48,8 +48,7 @@ int main(int argc, char** argv) {
   using namespace Dune;
   constexpr int gridDim = 2;
   Dune::GridFactory<Dune::ALUGrid<gridDim, 2, Dune::simplex, Dune::conforming>> gridFactory;
-  //  std::array<FieldVector<double, 2>, 4> corners0 = {{{-sqrt(2) / 2, -sqrt(2) / 2}, {sqrt(2) / 2, -sqrt(2) / 2},
-  //  {sqrt(2) / 2, sqrt(2) / 2}, {-sqrt(2) / 2, sqrt(2) / 2}}};
+
   Eigen::Vector2d v(1, 0);
   std::array<FieldVector<double, 2>, 6> corners0;
   Eigen::Rotation2D<double> R;
