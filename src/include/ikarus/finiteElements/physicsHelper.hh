@@ -39,8 +39,8 @@ namespace Ikarus {
     return EVoigt;
   }
 
-  auto planeStressLinearElasticMaterialTangent(double E, double nu);
-  auto linearElasticMaterialTangent3D(double E, double nu);
+  Eigen::Matrix3d planeStressLinearElasticMaterialTangent(double E, double nu);
+  Eigen::Matrix<double, 6, 6> linearElasticMaterialTangent3D(double E, double nu);
 
   template <typename LocalView>
   struct TraitsFromLocalView {

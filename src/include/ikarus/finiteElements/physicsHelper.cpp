@@ -35,7 +35,7 @@ namespace Ikarus {
     return {p_vp};
   }
 
-  auto planeStressLinearElasticMaterialTangent(double E, double nu) {
+  Eigen::Matrix3d planeStressLinearElasticMaterialTangent(double E, double nu) {
     Eigen::Matrix3d C;
     C.setZero();
     C(0, 0) = C(1, 1) = 1;
@@ -45,7 +45,7 @@ namespace Ikarus {
     return C;
   }
 
-  auto linearElasticMaterialTangent3D(double E, double nu) {
+  Eigen::Matrix<double, 6, 6> linearElasticMaterialTangent3D(double E, double nu) {
     Eigen::Matrix<double, 6, 6> C;
     C.setZero();
     C(0, 0) = C(1, 1) = C(2, 2) = 1 - nu;
