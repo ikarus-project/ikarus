@@ -19,9 +19,6 @@
 
 #include <config.h>
 
-#include "src/include/ikarus/finiteElements/feBases/powerBasisFE.hh"
-#include "src/include/ikarus/finiteElements/feTraits.hh"
-
 #include <matplot/matplot.h>
 
 #include <dune/foamgrid/foamgrid.hh>
@@ -39,6 +36,8 @@
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/controlRoutines/loadControl.hh>
 #include <ikarus/finiteElements/feBases/autodiffFE.hh>
+#include <ikarus/finiteElements/feBases/powerBasisFE.hh>
+#include <ikarus/finiteElements/feTraits.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/linearSolver/linearSolver.hh>
 #include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>

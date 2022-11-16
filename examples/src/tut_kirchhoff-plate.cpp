@@ -19,8 +19,6 @@
 
 #include <config.h>
 
-#include "src/include/ikarus/finiteElements/feTraits.hh"
-
 #include <matplot/matplot.h>
 #include <numbers>
 
@@ -39,6 +37,7 @@
 #include <ikarus/controlRoutines/loadControl.hh>
 #include <ikarus/finiteElements/feBases/autodiffFE.hh>
 #include <ikarus/finiteElements/feBases/scalarFE.hh>
+#include <ikarus/finiteElements/feTraits.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/localBasis/localBasis.hh>
 #include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
