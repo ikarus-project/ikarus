@@ -4,6 +4,7 @@ install(
         autodiffHelper.hh
         concepts.hh
         eigenDuneTransformations.hh
+        eigenSparseAddon.hh
         findLineSegment.hh
         functionSanityChecks.hh
         linearAlgebraHelper.hh

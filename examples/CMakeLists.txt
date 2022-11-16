@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 
 file(GLOB programSourceFiles CONFIGURE_DEPENDS src/*.cpp)
-include_directories(../libAddons/eigen/eigenAddons)
 add_custom_target(AllExamples) # Create target that includes all examples
 foreach(programSourceFile ${programSourceFiles})
   get_filename_component(programName ${programSourceFile} NAME_WLE)
@@ -13,7 +12,7 @@ foreach(programSourceFile ${programSourceFiles})
                           -Wno-deprecated-copy -ftemplate-backtrace-limit=0
   )
 
-  target_link_libraries(${programName} PUBLIC Ikarus::ikarus)
+  target_link_libraries(${programName} PUBLIC ikarus)
   add_dependencies(AllExamples ${programName})
   find_package(PythonLibs REQUIRED)
   include_directories(${PYTHON_INCLUDE_DIRS})
