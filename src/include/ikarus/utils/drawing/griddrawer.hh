@@ -22,11 +22,12 @@
 #include <matplot/matplot.h>
 #include <ranges>
 #include <set>
+#include <thread>
 
 #include <dune/geometry/dimension.hh>
 
 template <typename GridView>
-void draw(const GridView& gridView) {
+void draw(const GridView& gridView, bool forever=false) {
   using namespace matplot;
   auto f  = figure(true);
   auto ax = gca();
@@ -57,6 +58,13 @@ void draw(const GridView& gridView) {
     }
   }
 
-  f->show();
+  if(forever)
+    f->show();
+  else {
+    f->draw();
+    using namespace std::chrono_literals;
+    std::this_thread::sleep_for(5s);
+
+  }
   f.reset();
 }
