@@ -65,8 +65,7 @@ nav:
     - Solvers: 01_theory/solvers.md
     - Observer and observables: 01_theory/observer.md
     - Global basis: 01_theory/globalBasis.md
-  - Examples:
-      - Integrate pi: examples/integrate_pi.md
+  - Examples: examples.md
   - Literature: 99_Literature/99_Literature.md
   - C++ recommendations: cppRef.md
   - Advanced Topics: AdvancedTopics.md
