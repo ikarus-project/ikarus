@@ -15,27 +15,6 @@ jobs:
       fail-fast: false
       matrix:
         config:
-#          - {
-#            name: "Clang-Debug",
-#            config: Debug,
-#            compilerC: clang-12,
-#            compilerCxx: clang++-12,
-#            lib: "-stdlib=libc++",
-#           }
-#          - {
-#            name: "Clang-Release",
-#            config: Release,
-#            compilerC: clang-12,
-#            compilerCxx: clang++-12,
-#            lib: "-stdlib=libc++",
-#           }
-#          - {
-#            name: "GCC-Debug",
-#            config: Debug,
-#            compilerC: gcc-12,
-#            compilerCxx: g++-12,
-#            lib: ""
-#          }
           - {
             name: "GCC-Release",
             config: Release,
@@ -58,24 +37,22 @@ jobs:
           cd ../.. 
           rm -rf Ikarus
 
-      - run: echo ${{ github.ref_name }}
       - name: Clone examples
-        working-directory: ./repo
         run: |
           git clone https://github.com/IkarusRepo/IkarusExamples.git
       - name: Checkout branch if it exists
+        working-directory: ./IkarusExamples
         continue-on-error: true
         run: git checkout ${{ github.ref_name }}
       - name: Compile all examples
-        working-directory: ./repo
+        working-directory: ./IkarusExamples
         run: |
-          cd IkarusExamples
           mkdir cmake-build-${{ matrix.config.config }}
           cd cmake-build-${{ matrix.config.config }}
           cmake ../  -DCMAKE_BUILD_TYPE=${{ matrix.config.config }} -G "Unix Makefiles" -DCMAKE_C_COMPILER=${{ matrix.config.compilerC }} -DCMAKE_CXX_COMPILER=${{ matrix.config.compilerCxx }}
           for i in $( find ../src -maxdepth 1 -name 'iks*'| sed -e 's/\(.cpp\)*$//g' | sed "s|../src/||" ); do cmake --build . --parallel 2 --target "$i"; done;
       - name: Run all examples
-        working-directory: ./repo/IkarusExamples/cmake-build-${{ matrix.config.config }}/src
+        working-directory: ./IkarusExamples/cmake-build-${{ matrix.config.config }}/src
         run: |
           echo "Testing example: iks001" && ./iks001_cantileverBeam_oneDGrid;
           echo "Testing example: iks002" && ./iks002_compute_pi;
