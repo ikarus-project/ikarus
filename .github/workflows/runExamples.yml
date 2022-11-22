@@ -1,0 +1,90 @@
+name: Run examples
+on:
+  push:
+    paths-ignore:
+      - 'docs/**'
+      - '.github/workflows/ghpages.yml'
+jobs:
+  Build:
+    name: ${{ matrix.config.name }}
+    runs-on: ubuntu-latest
+    container:
+      image: rath3t/ikarus-dev:latest
+      options: --memory-swap="20g" --memory="20g" --cpus="2"
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+#          - {
+#            name: "Clang-Debug",
+#            config: Debug,
+#            compilerC: clang-12,
+#            compilerCxx: clang++-12,
+#            lib: "-stdlib=libc++",
+#           }
+#          - {
+#            name: "Clang-Release",
+#            config: Release,
+#            compilerC: clang-12,
+#            compilerCxx: clang++-12,
+#            lib: "-stdlib=libc++",
+#           }
+#          - {
+#            name: "GCC-Debug",
+#            config: Debug,
+#            compilerC: gcc-12,
+#            compilerCxx: g++-12,
+#            lib: ""
+#          }
+          - {
+            name: "GCC-Release",
+            config: Release,
+            compilerC: gcc-12,
+            compilerCxx: g++-12,
+            lib: ""
+          }
+    steps:
+      - uses: actions/checkout@v2
+        with:
+         path: 'repo'
+      - name: Install Ikarus
+        working-directory: ./repo
+        run: |
+          mkdir build 
+          cd build 
+          cmake .. 
+          cmake --build . --target ikarus 
+          cmake --install . 
+          cd ../.. 
+          rm -rf Ikarus
+
+      - run: echo ${{ github.ref_name }}
+      - name: Clone examples
+        working-directory: ./repo
+        run: |
+          git clone https://github.com/IkarusRepo/IkarusExamples.git
+      - name: Checkout branch if it exists
+        continue-on-error: true
+        run: git checkout ${{ github.ref_name }}
+      - name: Compile all examples
+        working-directory: ./repo
+        run: |
+          cd IkarusExamples
+          mkdir cmake-build-${{ matrix.config.config }}
+          cd cmake-build-${{ matrix.config.config }}
+          cmake ../  -DCMAKE_BUILD_TYPE=${{ matrix.config.config }} -G "Unix Makefiles" -DCMAKE_C_COMPILER=${{ matrix.config.compilerC }} -DCMAKE_CXX_COMPILER=${{ matrix.config.compilerCxx }}
+          for i in $( find ../src -maxdepth 1 -name 'iks*'| sed -e 's/\(.cpp\)*$//g' | sed "s|../src/||" ); do cmake --build . --parallel 2 --target "$i"; done;
+      - name: Run all examples
+        working-directory: ./repo/IkarusExamples/cmake-build-${{ matrix.config.config }}/src
+        run: |
+          echo "Testing example: iks001" && ./iks001_cantileverBeam_oneDGrid;
+          echo "Testing example: iks002" && ./iks002_compute_pi;
+          echo "Testing example: iks003" && ./iks003_compute_pi;
+          echo "Testing example: iks004" && ./iks004_incompressible_LinearElasticity;
+          echo "Testing example: iks005" && ./iks005_kirchhoff_plate;
+          echo "Testing example: iks006" && ./iks006_newtonRaphson;
+          echo "Testing example: iks007" && ./iks007_nonlinear2Dsolid;
+          echo "Testing example: iks008" && ./iks008_vonmises_truss;
+          echo "Testing example: iks009" && ./iks009_cook_membrane auxiliaryFiles/iks009_cook_membrane.parset;
+          echo "Testing example: iks0010" && ./iks010_cook_membrane_convergence;
+#          for i in $( find . -maxdepth 1 -name 'iks*'| sed -e 's/\(.cpp\)*$//g' | sed "s|./||" ); while [! -f auxiliaryFiles/"$i".parset] do echo "Test example: "$i"" &&./"$i"; done;
