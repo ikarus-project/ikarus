@@ -39,7 +39,7 @@ namespace Ikarus {
     const auto& referenceElement = Dune::ReferenceElements<double, 2>::general(geometry.type());
     const auto quadPos0          = referenceElement.position(0, 0);
 
-    const auto jacobianinvT0 = toEigenMatrix(geometry.jacobianInverseTransposed(quadPos0));
+    const auto jacobianinvT0 = toEigen(geometry.jacobianInverseTransposed(quadPos0));
     const auto detJ0         = geometry.integrationElement(quadPos0);
 
     auto jaco = (jacobianinvT0).inverse().eval();
@@ -60,7 +60,7 @@ namespace Ikarus {
     const auto& referenceElement = Dune::ReferenceElements<double, 3>::general(geometry.type());
     const auto quadPos0          = referenceElement.position(0, 0);
 
-    const auto jacobianinvT0 = toEigenMatrix(geometry.jacobianInverseTransposed(quadPos0));
+    const auto jacobianinvT0 = toEigen(geometry.jacobianInverseTransposed(quadPos0));
     const auto detJ0         = geometry.integrationElement(quadPos0);
 
     auto jaco = (jacobianinvT0).inverse().eval();
@@ -321,7 +321,7 @@ namespace Ikarus {
             L.setZero(enhancedStrainSize, localView.size());
             for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
               const auto M      = easfunction.calcM(gp.position());
-              const auto Jinv   = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
+              const auto Jinv   = toEigen(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
               const auto Ceval  = C(gpIndex);
               const double detJ = geo.integrationElement(gp.position());
               D += M.transpose() * Ceval * M * detJ * gp.weight();
@@ -338,8 +338,8 @@ namespace Ikarus {
             const auto alpha = (-D.inverse() * L * disp).eval();
 
             for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
-              const auto M    = easfunction.calcM(gp.position());
-              const auto Jinv = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
+              const auto M            = easfunction.calcM(gp.position());
+              const auto Jinv         = toEigen(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
               const double intElement = geo.integrationElement(gp.position()) * gp.weight();
               const auto Ceval        = C(gpIndex);
               auto stresses           = (Ceval * M * alpha).eval();
@@ -383,7 +383,7 @@ namespace Ikarus {
             L.setZero(enhancedStrainSize, localView.size());
             for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
               const auto M      = easfunction.calcM(gp.position());
-              const auto Jinv   = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
+              const auto Jinv   = toEigen(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
               const auto Ceval  = C(gpIndex);
               const double detJ = geo.integrationElement(gp.position());
               D += M.transpose() * Ceval * M * detJ * gp.weight();

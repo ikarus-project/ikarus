@@ -121,7 +121,7 @@ namespace Ikarus {
       const auto geo = localView_.element().geometry();
       double energy  = 0.0;
       for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
-        const auto Jinv   = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
+        const auto Jinv   = toEigen(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
         const auto EVoigt = eps.evaluateFunction(gpIndex, transformWith(Jinv));
 
         energy += (0.5 * EVoigt.dot(C * EVoigt)) * geo.integrationElement(gp.position()) * gp.weight();
@@ -131,7 +131,7 @@ namespace Ikarus {
       if (volumeLoad) {
         for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
           const auto uVal                              = u.evaluateFunction(gpIndex);
-          Eigen::Vector<double, Traits::worlddim> fext = (*volumeLoad)(toEigenVector(gp.position()), lambda);
+          Eigen::Vector<double, Traits::worlddim> fext = (*volumeLoad)(toEigen(gp.position()), lambda);
           energy -= uVal.dot(fext) * geo.integrationElement(gp.position()) * gp.weight();
         }
       }
@@ -156,7 +156,7 @@ namespace Ikarus {
 
           // Value of the Neumann data at the current position
           auto neumannValue
-              = (*neumannBoundaryLoad)(toEigenVector(intersection.geometry().global(curQuad.position())), lambda);
+              = (*neumannBoundaryLoad)(toEigen(intersection.geometry().global(curQuad.position())), lambda);
 
           energy -= neumannValue.dot(uVal) * curQuad.weight() * integrationElement;
         }
@@ -172,7 +172,7 @@ namespace Ikarus {
       const auto geo = localView_.element().geometry();
 
       for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
-        const auto Jinv         = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
+        const auto Jinv         = toEigen(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
         const double intElement = geo.integrationElement(gp.position()) * gp.weight();
         for (size_t i = 0; i < numberOfNodes; ++i) {
           const auto bopI = eps.evaluateDerivative(gpIndex, wrt(coeff(i)), transformWith(Jinv));
@@ -194,7 +194,7 @@ namespace Ikarus {
 
       // Internal forces
       for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
-        const auto Jinv         = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
+        const auto Jinv         = toEigen(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
         const double intElement = geo.integrationElement(gp.position()) * gp.weight();
         auto stresses           = (C * eps.evaluateFunction(gpIndex, transformWith(Jinv))).eval();
         for (size_t i = 0; i < numberOfNodes; ++i) {
@@ -207,7 +207,7 @@ namespace Ikarus {
       if (volumeLoad) {
         const auto u = getDisplacementFunction(par);
         for (const auto& [gpIndex, gp] : u.viewOverIntegrationPoints()) {
-          Eigen::Vector<double, Traits::worlddim> fext = (*volumeLoad)(toEigenVector(gp.position()), lambda);
+          Eigen::Vector<double, Traits::worlddim> fext = (*volumeLoad)(toEigen(gp.position()), lambda);
           for (size_t i = 0; i < numberOfNodes; ++i) {
             const auto udCi = u.evaluateDerivative(gpIndex, wrt(coeff(i)));
             forces.template segment<mydim>(mydim * i)
@@ -238,7 +238,7 @@ namespace Ikarus {
 
             // Value of the Neumann data at the current position
             auto neumannValue
-                = (*neumannBoundaryLoad)(toEigenVector(intersection.geometry().global(curQuad.position())), lambda);
+                = (*neumannBoundaryLoad)(toEigen(intersection.geometry().global(curQuad.position())), lambda);
             forces.template segment<mydim>(mydim * i) -= udCi * neumannValue * curQuad.weight() * integrationElement;
           }
         }
