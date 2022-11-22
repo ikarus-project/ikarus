@@ -29,12 +29,12 @@ jobs:
       - name: Install Ikarus
         working-directory: ./repo
         run: |
-          mkdir build 
-          cd build 
-          cmake .. 
-          cmake --build . --target ikarus 
-          cmake --install . 
-          cd ../.. 
+          mkdir build
+          cd build
+          cmake ..
+          cmake --build . --target ikarus
+          cmake --install .
+          cd ../..
           rm -rf Ikarus
 
       - name: Clone examples
