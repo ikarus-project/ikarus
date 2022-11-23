@@ -83,9 +83,9 @@ auto testLocalFunction(const LF &lf) {
 
       /// Check if spatial derivatives are really derivatives
       /// Perturb in a random direction in the elements parameter space and check spatial derivative
-      auto func = [&](auto &gpOffset_) { return lf.evaluateFunction(toFieldVector(gpOffset_)); };
+      auto func = [&](auto &gpOffset_) { return lf.evaluateFunction(toDune(gpOffset_)); };
       auto spatialDerivAll
-          = [&](auto &gpOffset_) { return lf.evaluateDerivative(toFieldVector(gpOffset_), Ikarus::wrt(spatialAll)); };
+          = [&](auto &gpOffset_) { return lf.evaluateDerivative(toDune(gpOffset_), Ikarus::wrt(spatialAll)); };
 
       Eigen::Vector<double, gridDim> ipOffset = (Eigen::Vector<double, gridDim>::Random()).normalized() / 16;
       try {
@@ -106,13 +106,13 @@ auto testLocalFunction(const LF &lf) {
         auto derivDerivSingleI = [&](auto gpOffset_) {
           auto offSetSingle = ipOffset;
           offSetSingle[i] += gpOffset_[0];
-          return lf.evaluateDerivative(toFieldVector(offSetSingle), Ikarus::wrt(spatial(i)));
+          return lf.evaluateDerivative(toDune(offSetSingle), Ikarus::wrt(spatial(i)));
         };
 
         auto funcSingle = [&](const auto &gpOffset_) {
           auto offSetSingle = ipOffset;
           offSetSingle[i] += gpOffset_[0];
-          return Eigen::Vector<ctype, localFunctionValueSize>(lf.evaluateFunction(toFieldVector(offSetSingle)));
+          return Eigen::Vector<ctype, localFunctionValueSize>(lf.evaluateFunction(toDune(offSetSingle)));
         };
 
         try {

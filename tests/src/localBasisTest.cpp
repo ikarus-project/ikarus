@@ -40,13 +40,13 @@ auto testLocalBasis(LB& localBasis, const Dune::GeometryType& type) {
       /// Perturb in a random direction in the elements parameter space and check spatial derivative
       auto func = [&](auto& gpOffset_) {
         Eigen::VectorXd N;
-        localBasis.evaluateFunction(gp.position() + toFieldVector(gpOffset_), N);
+        localBasis.evaluateFunction(gp.position() + toDune(gpOffset_), N);
 
         return N;
       };
       auto jacobianLambda = [&](auto& gpOffset_) {
         Eigen::Matrix<double, Eigen::Dynamic, gridDim> dN;
-        localBasis.evaluateJacobian(gp.position() + toFieldVector(gpOffset_), dN);
+        localBasis.evaluateJacobian(gp.position() + toDune(gpOffset_), dN);
         return dN.eval();
       };
 

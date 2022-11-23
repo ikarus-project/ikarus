@@ -82,7 +82,7 @@ auto projectionBasedLocalFunctionTest() {
       const auto directorCached = localF.evaluateFunction(gpIndex);
       const auto directoreval   = localF.evaluateFunction(gp.position());
 
-      const auto J     = toEigenMatrix(ele.geometry().jacobianTransposed(gp.position())).transpose().eval();
+      const auto J     = toEigen(ele.geometry().jacobianTransposed(gp.position())).transpose().eval();
       const auto Jinv  = J.inverse().eval();
       const auto jaco2 = localF.evaluateDerivative(gpIndex, wrt(spatialAll), transformWith(Jinv));
 
@@ -104,10 +104,9 @@ auto projectionBasedLocalFunctionTest() {
       t.check(isApproxSame(jaco2un.col(0), jaco2col0un, tol), "spatialAll[0] == spatial(0)");
       t.check(isApproxSame(jaco2un.col(1), jaco2col1un, tol), "spatialAll[1] == spatial(1)");
 
-      auto func = [&](auto& gpOffset_) { return localF.evaluateFunction(toFieldVector(gpOffset_)); };
-      auto deriv
-          = [&](auto& gpOffset_) { return localF.evaluateDerivative(toFieldVector(gpOffset_), wrt(spatialAll)); };
-      Eigen::Vector<double, 2> gpOffset = toEigenVector(gp.position());
+      auto func  = [&](auto& gpOffset_) { return localF.evaluateFunction(toDune(gpOffset_)); };
+      auto deriv = [&](auto& gpOffset_) { return localF.evaluateDerivative(toDune(gpOffset_), wrt(spatialAll)); };
+      Eigen::Vector<double, 2> gpOffset = toEigen(gp.position());
       auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(func, deriv), parameter(gpOffset));
 
       t.check((checkJacobian<decltype(nonLinOp), Eigen::Vector<double, 2>>(
@@ -224,7 +223,7 @@ auto standardLocalFunctionTest() {
       const auto& directorCached = localF.evaluateFunction(gpIndex);
       const auto& directoreval   = localF.evaluateFunction(gp.position());
 
-      const auto J     = toEigenMatrix(ele.geometry().jacobianTransposed(gp.position())).transpose().eval();
+      const auto J     = toEigen(ele.geometry().jacobianTransposed(gp.position())).transpose().eval();
       const auto Jinv  = J.inverse().eval();
       const auto jaco2 = localF.evaluateDerivative(gpIndex, wrt(spatialAll), transformWith(Jinv));
 
@@ -246,10 +245,9 @@ auto standardLocalFunctionTest() {
       t.check(isApproxSame(jaco2un.col(0), jaco2col0un, 1e-15));
       t.check(isApproxSame(jaco2un.col(1), jaco2col1un, 1e-15));
 
-      auto func = [&](auto& gpOffset_) { return localF.evaluateFunction(toFieldVector(gpOffset_)); };
-      auto deriv
-          = [&](auto& gpOffset_) { return localF.evaluateDerivative(toFieldVector(gpOffset_), wrt(spatialAll)); };
-      Eigen::Vector<double, 2> gpOffset = toEigenVector(gp.position());
+      auto func  = [&](auto& gpOffset_) { return localF.evaluateFunction(toDune(gpOffset_)); };
+      auto deriv = [&](auto& gpOffset_) { return localF.evaluateDerivative(toDune(gpOffset_), wrt(spatialAll)); };
+      Eigen::Vector<double, 2> gpOffset = toEigen(gp.position());
       auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(func, deriv), parameter(gpOffset));
 
       t.check((checkJacobian<decltype(nonLinOp), Eigen::Vector<double, 2>>(

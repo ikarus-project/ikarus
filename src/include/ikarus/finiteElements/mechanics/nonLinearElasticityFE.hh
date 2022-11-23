@@ -101,14 +101,14 @@ namespace Ikarus {
       const auto geo = localView_.element().geometry();
       Ikarus::StandardLocalFunction uFunction(localBasis, disp);
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
-        const auto Jinv = toEigenMatrix(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
+        const auto Jinv = toEigen(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
         const auto u    = uFunction.evaluateFunction(gpIndex);
         const auto H
             = uFunction.evaluateDerivative(gpIndex, wrt(DerivativeDirections::spatialAll), transformWith(Jinv));
         const auto E      = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
         const auto EVoigt = toVoigt(E);
 
-        Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(toEigenVector(gp.position()), lambda);
+        Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(toEigen(gp.position()), lambda);
         energy += (0.5 * EVoigt.dot(C * EVoigt) - u.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
       }
       const int order = 2 * (localView_.tree().child(0).finiteElement().localBasis().order());
@@ -132,8 +132,7 @@ namespace Ikarus {
           const auto u = uFunction.evaluateFunction(quadPos);
 
           // Value of the Neumann data at the current position
-          auto neumannValue
-              = neumannBoundaryLoad_(toEigenVector(intersection.geometry().global(curQuad.position())), lambda);
+          auto neumannValue = neumannBoundaryLoad_(toEigen(intersection.geometry().global(curQuad.position())), lambda);
 
           energy -= neumannValue.dot(u) * curQuad.weight() * integrationElement;
         }
