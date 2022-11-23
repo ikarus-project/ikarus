@@ -1,0 +1,30 @@
+ name: Build WSL Docker Images
+
+ on:
+   workflow_run:
+     workflows: ["Debian"]
+     branches: [main]
+     types:
+       - completed
+
+ jobs:
+   build-docker-debian:
+     if: ${{ github.event.workflow_run.conclusion == 'success' }}
+     runs-on: ubuntu-latest
+
+     steps:
+       - uses: actions/checkout@v2
+         with:
+           repository: 'IkarusRepo/DockerContainer'
+           path: 'repo'
+       - name: Build the Docker image
+         working-directory: ./repo/InstalledContainer
+         run: docker build . --file Dockerfile --tag rath3t/ikarus:latest
+       - name: Docker Login
+         uses: azure/docker-login@v1
+         with:
+           username: ${{ secrets.DOCKER_USERNAME }}
+           password: ${{ secrets.DOCKER_PASSWORD }}
+       - name: Publish the Docker image
+         working-directory: ./repo/InstalledContainer
+         run: docker push rath3t/ikarus:latest

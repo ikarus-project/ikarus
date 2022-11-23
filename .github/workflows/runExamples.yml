@@ -4,6 +4,7 @@ on:
     paths-ignore:
       - 'docs/**'
       - '.github/workflows/ghpages.yml'
+      - '.github/workflows/createDockerContainer.yml'
 jobs:
   Build:
     name: ${{ matrix.config.name }}
