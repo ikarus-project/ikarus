@@ -1,0 +1,15 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: Ikarus
+Upstream-Contact: The Ikarus Developers <mueller@ibb.uni-stuttgart.de>
+Source: https://github.com/IkarusRepo/Ikarus
+
+# Sample paragraph, commented out:
+#
+# Files: src/*
+# Copyright: $YEAR $NAME <$CONTACT>
+# License: ...
+
+Files: tests/src/testFiles/*
+Copyright: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+License: CC0-1.0
+

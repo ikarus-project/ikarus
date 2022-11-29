@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+
+SPDX-License-Identifier: CC-BY-SA-4.0
+-->
+
 # Assembler
 
 The purpose of an assembler is to assemble global quantities (global stiffness matrix, global force vector, global energy, ...) 

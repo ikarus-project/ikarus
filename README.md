@@ -1,4 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+SPDX-License-Identifier: LGPL-2.1-or-later
+-->
 # Ikarus
+
 [![Debian](https://github.com/IkarusRepo/Ikarus/actions/workflows/debian.yml/badge.svg)](https://github.com/IkarusRepo/Ikarus/actions/workflows/debian.yml)
 [![codecov](https://codecov.io/gh/IkarusRepo/Ikarus/branch/main/graph/badge.svg?token=zJgggitPMc)](https://codecov.io/gh/IkarusRepo/Ikarus)
 [![CodeStyle](https://github.com/IkarusRepo/Ikarus/actions/workflows/style.yml/badge.svg)](https://github.com/IkarusRepo/Ikarus/actions/workflows/style.yml)

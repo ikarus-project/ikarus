@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+SPDX-License-Identifier: LGPL-2.1-or-later
+-->
+
 # Master (becomes Release v0.3)
 - Added linear solver capability to accept matrix-valued rhs #76
 - Added `EnhancedAssumedStrains` that can be used to decorated a linear elasticity element with several EAS method #74

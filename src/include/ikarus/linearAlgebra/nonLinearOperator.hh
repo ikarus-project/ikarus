@@ -1,21 +1,5 @@
-/*
- * This file is part of the Ikarus distribution (https://github.com/IkarusRepo/Ikarus).
- * Copyright (c) 2022. The Ikarus developers.
- *
- * This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
- */
+// SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-2.1-or-later
 
 #pragma once
 #include <functional>
@@ -138,7 +122,7 @@ namespace Ikarus {
     auto& value() requires(sizeof...(DerivativeArgs) > 0) { return nthDerivative<0>(); }
 
     /* Returns the derivative value, e.g. the gradient of an energy */
-    auto& derivative() & requires(sizeof...(DerivativeArgs) > 1) { return nthDerivative<1>(); }
+    auto& derivative() requires(sizeof...(DerivativeArgs) > 1) { return nthDerivative<1>(); }
 
     /* Returns the second derivative value, e.g. the Hessian of an energy */
     auto& secondDerivative() requires(sizeof...(DerivativeArgs) > 2) { return nthDerivative<2>(); }

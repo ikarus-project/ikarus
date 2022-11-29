@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+
+SPDX-License-Identifier: CC-BY-SA-4.0
+-->
+
 # C++ recommendations
 As you may know by now Ikarus is written in C++. On this page we summerize recommendation to dig deeper into C++ coding.
 

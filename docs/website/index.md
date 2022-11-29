@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+
+SPDX-License-Identifier: CC-BY-SA-4.0
+-->
+
 # Welcome to the documentation of Ikarus
 Ikarus is a finite element software originated at the [Institute for Structural Mechanics](https://www.ibb.uni-stuttgart.de/en/) at the university of Stuttgart.
 

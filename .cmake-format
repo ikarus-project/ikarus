@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-License-Identifier: CC0-1.0
+
 format:
   tab_size: 2
   line_width: 100
