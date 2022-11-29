@@ -103,7 +103,7 @@ auto dirichletBCTest() {
   double lambda             = 7.5;
   auto resVal               = Ikarus::toEigen(pythonFuncdouble(Dune::FieldVector<double, 2>({1.0, 2.0}), lambda));
   autodiff::real lambdadual = lambda;
-  lambdadual[1] = 1;
+  lambdadual[1]             = 1;
 
   auto res                      = pythonFuncdual(Dune::FieldVector<double, 2>({1.0, 2.0}), lambdadual);
   auto valueResult              = grad<0>(Ikarus::toEigen(res));
