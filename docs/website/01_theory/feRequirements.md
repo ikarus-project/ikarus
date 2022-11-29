@@ -6,7 +6,7 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 
 # FE requirements
 
-Finite element requirements are a simply way to communicate your needs and expectations from a finite element.
+Finite element requirements are a simple way to communicate your needs and expectations from a finite element.
 
 FE requirements are used to pass information from assemblers to finite elements. 
 ## Construction
@@ -38,7 +38,7 @@ The method `build()` constructs at the end the concrete object.
 
 Currently, the following feSolutions, fe Parameter and affordances are defined:
 
-{{ inputcpp('src/include/ikarus/finiteElements/feRequirements.hh',False,14,50) }}
+{{ inputcpp('src/include/ikarus/finiteElements/feRequirements.hh',False,30,70) }}
 
 ## Usage
 
@@ -52,7 +52,7 @@ if(req.hasAffordance(stiffness))
  and with this you can develop your local finite element.
 
 !!! hint "Affordance"
-        It is good style to indicate that you can not fulfill an affordance by throwing an appropriate exception!
+        It is good style to indicate that you cannot fulfill an affordance by throwing an appropriate exception!
 
 
 # FE result requirements
@@ -62,7 +62,7 @@ They are used for the `calculateAt` method of [finite elements](finiteElements.m
 They are a way to communicate the requested results to the finite elements.
 
 ## Construction
-Similar to above the construction is as follow:
+Similar to above the construction is as follows:
 ```cpp linenums="1"
 ResultRequirements resultRequirements = Ikarus::ResultRequirementsBuilder()
         .insertGlobalSolution(FESolutions::displacement, d)
