@@ -8,7 +8,7 @@ SPDX-License-Identifier: LGPL-2.1-or-later
 - Added linear solver capability to accept matrix-valued rhs #76
 - Added `EnhancedAssumedStrains` that can be used to decorate a linear elasticity element with several EAS methods #74
 - Added codespell workflow #70 (CI checks now for grammar and typos in comments and variable names)
-- Added Path following technique to using, e.g. `Arc length method` the scalar subsidiary equation can be implemented independently #80
+- Added Path following technique such that a scalar subsidiary equation, for example for `Arc length method`,  can be implemented independently #80
 - Separated examples from Ikarus repository, now the examples folder is a sandbox to simple compile some user code  #99 +
 - Refactored dune <--> Eigen transformations, now having a FieldVector or EigenVector/Matrix, the transformations should feel smoother #111
 - Docker container for main are automatically generated to test the examples, #52c4d859e721479a218575b53a7a599df762fdc0
