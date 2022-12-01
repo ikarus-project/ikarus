@@ -51,21 +51,21 @@ auto dirichletBCTest() {
   auto inhomogeneousDisplacement = []<typename T>(const auto& globalCoord, const T& lambda) {
     Eigen::Vector<T, 2> localInhomogeneous;
     if (globalCoord[0] > 4 - 1e-8) {
-      localInhomogeniuous[0] = 4 * lambda;
-      localInhomogeniuous[1] = 4 * lambda;
+      localInhomogeneous[0] = 4 * lambda;
+      localInhomogeneous[1] = 4 * lambda;
     } else
-      localInhomogeniuous.setZero();
-    return localInhomogeniuous;
+      localInhomogeneous.setZero();
+    return localInhomogeneous;
   };
 
   auto inhomogeneousDisplacement2 = []<typename T>(const auto& globalCoord, const T& lambda) {
     Eigen::Vector<T, 2> localInhomogeneous;
     if (globalCoord[0] < 1e-8) {
-      localInhomogeniuous[0] = 7 * lambda;
-      localInhomogeniuous[1] = 7 * lambda;
+      localInhomogeneous[0] = 7 * lambda;
+      localInhomogeneous[1] = 7 * lambda;
     } else
-      localInhomogeniuous.setZero();
-    return localInhomogeniuous;
+      localInhomogeneous.setZero();
+    return localInhomogeneous;
   };
 
   dirichletValues1.storeInhomogeneousBoundaryCondition(inhomogeneousDisplacement);
