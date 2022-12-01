@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+SPDX-License-Identifier: CC-BY-SA-4.0
+-->
+
 # Dirichlet values
 ##  Introduction
 In finite element problems it is essential to incorporate Dirichlet boundary condition, i.e. fixing part of the solution to some precribed value.
