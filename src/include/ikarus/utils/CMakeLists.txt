@@ -6,6 +6,7 @@ install(
   FILES algorithms.hh
         autodiffHelper.hh
         concepts.hh
+        duneUtilities.hh
         eigenDuneTransformations.hh
         eigenSparseAddon.hh
         findLineSegment.hh
