@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+
+SPDX-License-Identifier: CC-BY-SA-4.0
+-->
+
 # Local Basis
 
 Each finite element does have some kind of local basis in terms of ansatz functions.

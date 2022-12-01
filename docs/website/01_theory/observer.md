@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+
+SPDX-License-Identifier: CC-BY-SA-4.0
+-->
+
 # Oberserver and Observable
 
 To solve situations like "I want to write an output when the loadstep is completed", the observer pattern is implemented in Ikarus.

@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+
+SPDX-License-Identifier: CC-BY-SA-4.0
+-->
+
 # Manifold elements
 ##  Introduction
 Usually optimization problems are defined in terms of some cost

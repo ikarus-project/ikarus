@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+
+SPDX-License-Identifier: CC-BY-SA-4.0
+-->
+
 # Open tasks
 Thanks for your interest in contributing to this code base.
 If your are interested the following task are vacant.

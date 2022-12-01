@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+
+SPDX-License-Identifier: CC-BY-SA-4.0
+-->
+
 # Installation of Ikarus
 
 !!! warning "Change links on this website when final accounts for repository and docker container are fixed and remove this warning."

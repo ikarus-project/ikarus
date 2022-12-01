@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+
+SPDX-License-Identifier: CC-BY-SA-4.0
+-->
+
 ### Code style
 This section explains the theoretical background and implementation details
 of various parts of the code. It is dedicated to users who want to extend

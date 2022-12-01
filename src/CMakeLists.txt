@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
 cmake_minimum_required(VERSION 3.18)
 
 file(
