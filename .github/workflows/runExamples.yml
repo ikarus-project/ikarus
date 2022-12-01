@@ -8,7 +8,7 @@ on:
       - 'docs/**'
       - '.github/workflows/ghpages.yml'
       - '.github/workflows/createDockerContainer.yml'
-      - 'CHANGELOG.md'
+      - '**.md'
 jobs:
   Build:
     name: ${{ matrix.config.name }}
