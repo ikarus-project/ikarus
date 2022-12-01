@@ -10,7 +10,7 @@ namespace Ikarus {
     Eigen::Index reducedCounter = 0;
     Eigen::VectorXd fullVec(this->size());
     for (Eigen::Index i = 0; i < fullVec.size(); ++i) {
-      if (dirichletFlags->at(i)) {
+      if (dirichletValues->isConstrained(i)) {
         ++reducedCounter;
         fullVec[i] = 0.0;
         continue;

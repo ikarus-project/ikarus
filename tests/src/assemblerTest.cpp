@@ -14,6 +14,8 @@
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/grid/yaspgrid.hh>
+
+#include "ikarus/linearAlgebra/dirichletValues.hh"
 using Dune::TestSuite;
 #include <Eigen/Core>
 
@@ -47,12 +49,14 @@ auto SimpleAssemblersTest() {
     for (auto&& ge : elements(gridView))
       fes.emplace_back(basis, ge, Emodul, 0.3, nullptr, nullptr, volumeLoad);
 
-    std::vector<bool> dirichFlags(basis.size(), false);
+    auto basisP = std::make_shared<const decltype(basis)>(basis);
+    Ikarus::DirichletValues dirichletValues(basisP);
+    dirichletValues.fixDOFs([](auto& basis_, auto& dirichletFlags) {
+      Dune::Functions::forEachBoundaryDOF(basis_, [&](auto&& indexGlobal) { dirichletFlags[indexGlobal] = true; });
+    });
 
-    Dune::Functions::forEachBoundaryDOF(basis, [&](auto&& indexGlobal) { dirichFlags[indexGlobal] = true; });
-
-    Ikarus::SparseFlatAssembler sparseFlatAssembler(basis, fes, dirichFlags);
-    Ikarus::DenseFlatAssembler denseFlatAssembler(basis, fes, dirichFlags);
+    Ikarus::SparseFlatAssembler sparseFlatAssembler(fes, dirichletValues);
+    Ikarus::DenseFlatAssembler denseFlatAssembler(fes, dirichletValues);
 
     Eigen::VectorXd d(basis.size());
     d.setRandom();
@@ -65,7 +69,7 @@ auto SimpleAssemblersTest() {
     auto& Kdense = denseFlatAssembler.getMatrix(req);
     auto& K      = sparseFlatAssembler.getMatrix(req);
 
-    const auto fixedDofs = std::ranges::count(dirichFlags, true);
+    const auto fixedDofs = dirichletValues.fixedDOFsize();
     t.check(isApproxSame(K, Kdense, 1e-15), "Dense==Sparse");
     t.check(K.rows() == 2 * gridView.size(2), "DofsCheck");
     t.check(K.cols() == 2 * gridView.size(2), "DofsCheck");

@@ -23,6 +23,7 @@ using Dune::TestSuite;
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/controlRoutines/loadControl.hh>
 #include <ikarus/finiteElements/mechanics/nonLinearElasticityFE.hh>
+#include <ikarus/linearAlgebra/dirichletValues.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
 #include <ikarus/solver/nonLinearSolver/trustRegion.hh>
@@ -52,16 +53,13 @@ auto NonLinearElasticityLoadControlNRandTR() {
   };
   for (auto& element : elements(gridView))
     fes.emplace_back(basis, element, 1000, 0.3, nullptr, nullptr, volumeLoad);
-
-  std::vector<bool> dirichletFlags(basis.size(), false);
-
-  Dune::Functions::forEachBoundaryDOF(basis, [&](auto&& localIndex, auto&& localView, auto&& intersection) {
-    if (std::abs(intersection.geometry().center()[1]) < 1e-8) {
-      dirichletFlags[localView.index(localIndex)[0]] = true;
-    }
+  auto basisP = std::make_shared<const decltype(basis)>(basis);
+  Ikarus::DirichletValues dirichletValues(basisP);
+  dirichletValues.fixBoundaryDOFs([&](auto& dirichletFlags, auto&& localIndex, auto&& localView, auto&& intersection) {
+    if (std::abs(intersection.geometry().center()[1]) < 1e-8) dirichletFlags[localView.index(localIndex)] = true;
   });
 
-  auto sparseAssembler = SparseFlatAssembler(basis, fes, dirichletFlags);
+  auto sparseAssembler = SparseFlatAssembler(fes, dirichletValues);
 
   Eigen::VectorXd d;
   d.setZero(basis.size());

@@ -11,12 +11,9 @@ using Dune::TestSuite;
 #include "testHelpers.hh"
 
 #include <Eigen/Core>
-#include <Eigen/Dense>
 
-#include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
-#include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/utils/functionSanityChecks.hh>
 #include <ikarus/utils/observer/nonLinearSolverLogger.hh>
 using namespace Ikarus;

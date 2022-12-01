@@ -11,6 +11,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
+#include <ikarus/linearAlgebra/dirichletValues.hh>
 #include <ikarus/utils/concepts.hh>
 
 namespace Ikarus {
@@ -22,22 +23,22 @@ namespace Ikarus {
   class FlatAssemblerBase {
   public:
     using GridView = typename Basis::GridView;
-    FlatAssemblerBase(const Basis &basis, const FEContainer &fes, const std::vector<bool> &dirichFlags)
-        : basis_{&basis}, feContainer{fes}, dirichletFlags{&dirichFlags} {
-      constraintsBelow_.reserve(basis_->size());
+    FlatAssemblerBase(const FEContainer &fes, const DirichletValues<Basis> &p_dirichletValues)
+        : feContainer{fes}, dirichletValues{&p_dirichletValues} {
+      constraintsBelow_.reserve(dirichletValues->size());
       size_t counter = 0;
-      for (auto iv : std::ranges::iota_view{size_t(0), basis_->size()}) {
+      for (auto iv : std::ranges::iota_view{size_t(0), dirichletValues->size()}) {
         constraintsBelow_.emplace_back(counter);
-        if (dirichFlags[iv]) ++counter;
+        if (dirichletValues->isConstrained(iv)) ++counter;
       }
-      fixedDofs = std::ranges::count(dirichFlags, true);
+      fixedDofs = dirichletValues->fixedDOFsize();
     }
 
     /**  Returns the size of the free degrees of freeedom, which are not fixed by a dirichlet boundary condition */
-    size_t reducedSize() { return basis_->size() - fixedDofs; }
+    size_t reducedSize() { return dirichletValues->size() - fixedDofs; }
 
     /**  Returns the size of nodes, i.e. the number of degrees of freedom */
-    size_t size() { return basis_->size(); }
+    size_t size() { return dirichletValues->size(); }
 
     /**  Creates a the fullsized vector of size #Dof and inserts the values of reduced Vector at the "free" degrees
      * of freedom and
@@ -51,17 +52,16 @@ namespace Ikarus {
     size_t constraintsBelow(size_t i) const { return constraintsBelow_[i]; }
 
     /**  Returns the boolean if a given degree of freedom is fixed */
-    bool isConstrained(size_t i) const { return dirichletFlags->at(i); }
+    bool isConstrained(size_t i) const { return dirichletValues->isConstrained(i); }
 
     /**  Coarse estimate of node connectivity, i.e. this relates the bandwidth of an sparse matrix.
      * This estimate is designed that it overestimates the real connectivity since it should
      * only be used for allocating vectors */
-    size_t estimateOfConnectivity() const { return basis_->gridView().size(GridView::dimension) * 8; }
+    size_t estimateOfConnectivity() const { return dirichletValues->basis().gridView().size(GridView::dimension) * 8; }
 
   private:
-    Basis const *basis_;
     FEContainer const &feContainer;
-    std::vector<bool> const *dirichletFlags;
+    DirichletValues<Basis> const *dirichletValues;
     std::vector<size_t> constraintsBelow_{};
     size_t fixedDofs{};
   };
@@ -72,8 +72,8 @@ namespace Ikarus {
     using RequirementType = typename FEContainer::value_type::FERequirementType;
 
   public:
-    ScalarAssembler(const Basis &basis, const FEContainer &fes, const std::vector<bool> &dirichFlags)
-        : FlatAssemblerBase<Basis, FEContainer>(basis, fes, dirichFlags) {}
+    ScalarAssembler(const FEContainer &fes, const DirichletValues<Basis> &dirichletValues)
+        : FlatAssemblerBase<Basis, FEContainer>(fes, dirichletValues) {}
 
     /** Calculates the scalar quantity which is requested by fErequirements and returns a reference */
     double &getScalar(const RequirementType &fErequirements) { return getScalarImpl(fErequirements); }
@@ -96,8 +96,8 @@ namespace Ikarus {
     using GlobalIndex     = typename FEContainer::value_type::GlobalIndex;
 
   public:
-    VectorFlatAssembler(const Basis &basis, const FEContainer &fes, const std::vector<bool> &dirichFlags)
-        : ScalarAssembler<Basis, FEContainer>(basis, fes, dirichFlags) {}
+    VectorFlatAssembler(const FEContainer &fes, const DirichletValues<Basis> &dirichletValues)
+        : ScalarAssembler<Basis, FEContainer>(fes, dirichletValues) {}
 
     /** Calculates the vectorial quantity which is requested by fErequirements and returns a reference
      * A zero is written on fixed dofs */
@@ -126,8 +126,8 @@ namespace Ikarus {
     using GlobalIndex     = typename FEContainer::value_type::GlobalIndex;
 
   public:
-    SparseFlatAssembler(const Basis &basis, const FEContainer &fes, const std::vector<bool> &dirichFlags)
-        : VectorFlatAssembler<Basis, FEContainer>(basis, fes, dirichFlags) {}
+    SparseFlatAssembler(const FEContainer &fes, const DirichletValues<Basis> &dirichletValues)
+        : VectorFlatAssembler<Basis, FEContainer>(fes, dirichletValues) {}
 
     using GridView = typename Basis::GridView;
 
@@ -182,8 +182,8 @@ namespace Ikarus {
   public:
     using RequirementType = typename FEContainer::value_type::FERequirementType;
     using GlobalIndex     = typename FEContainer::value_type::GlobalIndex;
-    explicit DenseFlatAssembler(const Basis &basis, const FEContainer &fes, const std::vector<bool> &dirichFlags)
-        : VectorFlatAssembler<Basis, FEContainer>(basis, fes, dirichFlags) {}
+    explicit DenseFlatAssembler(const FEContainer &fes, const DirichletValues<Basis> &dirichletValues)
+        : VectorFlatAssembler<Basis, FEContainer>(fes, dirichletValues) {}
 
     /** Calculates the matrix quantity which is requested by fErequirements and returns a reference
      * A zero is written on fixed dofs rows and columns and a one is written on the diagonal */

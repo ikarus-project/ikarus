@@ -24,19 +24,20 @@ using Dune::TestSuite;
 
 #include <Eigen/Core>
 
-#include "ikarus/utils/drawing/griddrawer.hh"
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/finiteElements/mechanics/enhancedAssumedStrains.hh>
 #include <ikarus/finiteElements/mechanics/linearElastic.hh>
+#include <ikarus/linearAlgebra/dirichletValues.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/utils/algorithms.hh>
+#include <ikarus/utils/drawing/griddrawer.hh>
 
-/** This tests tests your element on some gridElement with some basis
+/** These tests test your element on some gridElement with some basis
  *
  * @tparam FEElementTemplate The element as template template parameter. The template needs to be the globalBasis
  * @tparam gridDim The dimension of the grid element the finite element should be tested
  * @tparam PreBasis The preBasis you want to test the element with
- * @tparam F A variadic number of the test functor you want to be checked, the need to accept a nonlinearoperator and
+ * @tparam F A variadic number of the test functor you want to be checked, they need to accept a non-linear operator and
  * the finite element
  */
 template <template <typename> typename FEElementTemplate, int gridDim, typename PreBasis, typename... F>
@@ -101,9 +102,11 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, F&&
   using FEElementType = FEElementTemplate<decltype(basis)>;
   std::vector<FEElementType> fes;
   fes.emplace_back(basis, *element, youngsModulus, poissonsRatio, &volumeLoad, &neumannBoundary, &neumannBoundaryLoad);
-  std::vector<bool> dirichletFlags(basis.size(), false);
+  auto basisP = std::make_shared<const decltype(basis)>(basis);
+
+  Ikarus::DirichletValues dirichletValues(basisP);
   auto& fe             = fes[0];
-  auto sparseAssembler = SparseFlatAssembler(basis, fes, dirichletFlags);
+  auto sparseAssembler = SparseFlatAssembler(fes, dirichletValues);
 
   typename FEElementType::FERequirementType::SolutionVectorType d;
   d.setRandom(basis.size());

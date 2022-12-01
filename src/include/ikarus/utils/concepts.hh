@@ -118,5 +118,10 @@ namespace Ikarus {
     concept TransposeAble = requires(L x) {
       transpose(x);
     };
+
+    template <typename Op, typename... Args>
+    concept IsFunctorWithArgs = requires(Op op, Args... args) {
+      op(args...);
+    };
   }  // namespace Concepts
 }  // namespace Ikarus

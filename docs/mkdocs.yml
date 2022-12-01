@@ -57,6 +57,7 @@ nav:
   - Theory and Class Reference:
     - Overview: 01_theory/overview.md
     - Geometry: 01_theory/geometry.md
+    - Dirichlet values: 01_theory/dirichletValues.md
     - Grid: 01_theory/grid.md
     - FE requirements: 01_theory/feRequirements.md
     - Finite Elements: 01_theory/finiteElements.md
