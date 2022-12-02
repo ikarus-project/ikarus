@@ -14,35 +14,33 @@ namespace Ikarus {
   /** \brief Creates a Dune::FieldVector from a given Eigen::Vector */
   template <typename ScalarType, int size>
   Dune::FieldVector<ScalarType, size> toDune(const Eigen::Vector<ScalarType, size>& vec) {
-    Dune::FieldVector<ScalarType, size> fieldvec;
+    Dune::FieldVector<ScalarType, size> fieldVector;
     for (int i = 0; i < size; ++i)
-      fieldvec[i] = vec[i];
-    return fieldvec;
+      fieldVector[i] = vec[i];
+    return fieldVector;
   }
 
   /** \brief Creates a Dune::FieldVector from a given Eigen::Matrix. The matrix has fixed dynamic size. The matrix needs
    * to have a single column. */
-  template <typename ScalarType, int maxRows, int maxCols>
-  Dune::FieldVector<ScalarType, maxRows> toDune(
-      const Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic, 0, maxRows, maxCols>& vec) {
+  template <typename ScalarType, int rows>
+  Dune::FieldVector<ScalarType, rows> toDune(const Eigen::Matrix<ScalarType, rows, 0>& vec) {
     assert(vec.cols() == 1 && "The passed matrix needs to have a single column.");
-    Dune::FieldVector<ScalarType, maxRows> fieldvec{0.0};
+    Dune::FieldVector<ScalarType, rows> fieldVector{0.0};
 
     for (int i = 0; i < vec.rows(); ++i)
-      fieldvec[i] = vec(i, 0);
-    return fieldvec;
+      fieldVector[i] = vec(i, 0);
+    return fieldVector;
   }
 
   /** \brief Creates a Dune::FieldMatrix from a given Eigen::Matrix. The matrix has fixed dynamic size  **/
-  template <typename ScalarType, int maxRows, int maxCols>
-  Dune::FieldMatrix<ScalarType, maxRows, maxCols> toDune(
-      const Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic, 0, maxRows, maxCols>& mat) {
-    Dune::FieldMatrix<ScalarType, maxRows, maxCols> fieldmat{0.0};
+  template <typename ScalarType, int rows, int cols>
+  Dune::FieldMatrix<ScalarType, rows, cols> toDune(const Eigen::Matrix<ScalarType, rows, cols>& mat) {
+    Dune::FieldMatrix<ScalarType, rows, cols> fieldMatrix{0.0};
 
     for (int i = 0; i < mat.rows(); ++i)
       for (int j = 0; j < mat.cols(); ++j)
-        fieldmat[i][j] = mat(i, j);
-    return fieldmat;
+        fieldMatrix[i][j] = mat(i, j);
+    return fieldMatrix;
   }
 
   /** \brief Views a dune fieldvector as an Eigen::Vector as Map, no copies take place! */
