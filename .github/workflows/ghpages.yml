@@ -16,7 +16,7 @@ jobs:
       - name: Setup Mkdocs
         run: |
           pip install mkdocs
-          pip install mkdocs-material
+          pip install git+https://${MKDOCS_TOKEN}@github.com/squidfunk/mkdocs-material-insiders.git
           pip install mkdocs-macros-plugin
           pip install mkdocs-drawio-exporter
           pip install mkdocs-bibtex
