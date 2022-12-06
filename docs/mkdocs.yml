@@ -6,11 +6,11 @@
 site_name: Ikarus
 site_description: Ikarus documentation.
 site_author: The Ikarus Developers
-site_url: https://IkarusRepo.github.io
+site_url: https://https://ikarus-project.github.io/
 
 # Repository
-repo_name: IkarusRepo/Ikarus
-repo_url: https://github.com/IkarusRepo/Ikarus
+repo_name: ikarus-project/ikarus
+repo_url: https://github.com/ikarus-project/ikarus
 
 # Copyright
 copyright: 'Copyright &copy; 2021 The Ikarus Developers'

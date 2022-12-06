@@ -18,7 +18,7 @@
      steps:
        - uses: actions/checkout@v2
          with:
-           repository: 'IkarusRepo/DockerContainer'
+           repository: 'ikarus-project/ikarus-docker-container'
            path: 'repo'
        - name: Build the Docker image
          working-directory: ./repo/InstalledContainer

@@ -4,12 +4,12 @@ SPDX-License-Identifier: LGPL-2.1-or-later
 -->
 # Ikarus
 
-[![Debian](https://github.com/IkarusRepo/Ikarus/actions/workflows/debian.yml/badge.svg)](https://github.com/IkarusRepo/Ikarus/actions/workflows/debian.yml)
-[![codecov](https://codecov.io/gh/IkarusRepo/Ikarus/branch/main/graph/badge.svg?token=zJgggitPMc)](https://codecov.io/gh/IkarusRepo/Ikarus)
-[![CodeStyle](https://github.com/IkarusRepo/Ikarus/actions/workflows/style.yml/badge.svg)](https://github.com/IkarusRepo/Ikarus/actions/workflows/style.yml)
-[![Docs](https://github.com/IkarusRepo/Ikarus/actions/workflows/ghpages.yml/badge.svg)](https://github.com/IkarusRepo/Ikarus/actions/workflows/ghpages.yml)
-[![CodeFactor](https://www.codefactor.io/repository/github/ikarusrepo/ikarus/badge/main)](https://www.codefactor.io/repository/github/ikarusrepo/ikarus/overview/main)
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/5c588e67d1e541fc9be3c7377297aa8a)](https://www.codacy.com/gh/IkarusRepo/Ikarus/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=IkarusRepo/Ikarus&amp;utm_campaign=Badge_Grade)
+[![Debian](https://github.com/ikarus-project/ikarus/actions/workflows/debian.yml/badge.svg)](https://github.com/ikarus-project/ikarus/actions/workflows/debian.yml)
+[![codecov](https://codecov.io/gh/ikarus-project/ikarus/branch/main/graph/badge.svg?token=zJgggitPMc)](https://codecov.io/gh/ikarus-project/ikarus)
+[![CodeStyle](https://github.com/ikarus-project/ikarus/actions/workflows/style.yml/badge.svg)](https://github.com/ikarus-project/ikarus/actions/workflows/style.yml)
+[![Docs](https://github.com/ikarus-project/ikarus/actions/workflows/ghpages.yml/badge.svg)](https://github.com/ikarus-project/ikarus/actions/workflows/ghpages.yml)
+[![CodeFactor](https://www.codefactor.io/repository/github/ikarus-project/ikarus/badge/main)](https://www.codefactor.io/repository/github/ikarus-project/ikarus/overview/main)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/5c588e67d1e541fc9be3c7377297aa8a)](https://www.codacy.com/gh/ikarus-project/ikarus/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ikarus-project/ikarus&amp;utm_campaign=Badge_Grade)
 
 This project tries to provide an easy to read and an easy to use finite element framework.
 It is heavily inspired by the finite element software [DUNE](https://dune-project.org/), the book [DUNE — The Distributed and Unified Numerics Environment](https://www.springer.com/gp/book/9783030597016),
@@ -19,4 +19,10 @@ We favor value semantics and readability.
 
 Concerning the design of CI and the documentation we were inspired by [Autodiff](https://autodiff.github.io/)  and [Kratos](https://github.com/KratosMultiphysics/Kratos).
 
-The documentation resides at https://ikarusrepo.github.io/.
+The documentation resides at https://ikarus-project.github.io/.
+
+
+## Contributors
+
+<img align="left" src="https://user-images.githubusercontent.com/10537464/205657284-f6ace981-42a8-49f1-9c66-4c464f15ce4a.png" width="128">
+<p></br></br><a href="https://www.ibb.uni-stuttgart.de/">Institute for Structural Mechanics</a></p>

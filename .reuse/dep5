@@ -1,7 +1,7 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: Ikarus
 Upstream-Contact: The Ikarus Developers <mueller@ibb.uni-stuttgart.de>
-Source: https://github.com/IkarusRepo/Ikarus
+Source: https://github.com/ikarus-project/ikarus
 
 # Sample paragraph, commented out:
 #

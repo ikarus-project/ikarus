@@ -55,7 +55,7 @@ You should now be able to change the docker settings according to the picture ab
 9. Open the PowerShell and execute:
 ```sh
 docker pull rath3t/ikarus-dev:latest #if you want to develop in Ikarus
-docker pull rath3t/ikarus:latest #if you want to use Ikarus to run your own main file as in https://github.com/IkarusRepo/Ikarus-Examples
+docker pull rath3t/ikarus:latest #if you want to use Ikarus to run your own main file as in https://github.com/ikarus-project/ikarus-examples
 ```
 6. Download and install [CLion](https://www.jetbrains.com/clion). You need a version >=2022.1.
 7. In CLion, go to **File** and **Settings** and apply the following settings for the toolchain:

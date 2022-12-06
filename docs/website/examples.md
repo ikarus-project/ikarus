@@ -6,14 +6,14 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 # Examples
 
 In order to understand several features of Ikarus, a set of examples are provided within the finite element framework.
-These can be found in [IkarusExamples](https://github.com/IkarusRepo/IkarusExamples). The installation and execution 
-methodologies are briefly commented in the [README](https://github.com/IkarusRepo/IkarusExamples/blob/main/README.md) file 
+These can be found in [IkarusExamples](https://github.com/ikarus-project/ikarus-examples). The installation and execution 
+methodologies are briefly commented in the [README](https://github.com/ikarus-project/ikarus-examples/blob/main/README.md) file 
 of the repository. Each example is given a unique identification in the beginning of the file name of the form `iksXXX`.
 This unique identification is also used in the following instead of the complete `*.cpp` file name. The auxiliary files 
 to the examples like `*.msh`, `*.geo` or `*.parset` are available in `../../src/testFiles/`. 
 In order to add a new example, create a pull request with your executable file in the repository IkarusExamples and in 
-parallel update the documentation here, see [How to contribute](https://ikarusrepo.github.io/codeStyle/) and 
-[How to edit](https://ikarusrepo.github.io/documentation/howToEdit/) for more information.  
+parallel update the documentation here, see [How to contribute](https://ikarus-project.github.io/codeStyle/) and 
+[How to edit](https://ikarus-project.github.io/documentation/howToEdit/) for more information.  
 The available examples are described in the following.
 
 ## Cantilever beam with point load
@@ -47,7 +47,7 @@ simply supported and clamped boundaries.
 `iks006_newtonRaphson.cpp` shows a basic example of the Newton-Raphson method to solve a non-linear set of equations. 
 A function which shows the algorithm explicitly is provided and another function which is implemented in Ikarus is 
 demonstrated. The function which depicts the Ikarus implementation uses a 
-[non-linear operator](https://ikarusrepo.github.io/01_theory/nonlinearOperator/) to 
+[non-linear operator](https://ikarus-project.github.io/01_theory/nonlinearOperator/) to 
 perform the Newton-Raphson iterations. A logger can also be subscribed to in order to observe the residual norms, 
 for instance.
 
@@ -68,6 +68,6 @@ The Cook's membrane problem adapted from the paper[@cook_improved_1974] is imple
 structured meshes provided, but also with unstructured and triangular meshes. The input parameters like material and grid 
 parameters are read from the file `cook.parset`. The problem can be solved also with the standard planar solid element, 
 or with enhanced assumed strain elements. For more details on the element technologies, refer the 
-[documentation](https://ikarusrepo.github.io/01_theory/finiteElements/). `iks009` solves the problem for a chosen 
+[documentation](https://ikarus-project.github.io/01_theory/finiteElements/). `iks009` solves the problem for a chosen 
 finite element type whereas `iks010` solves the problem with a set of existing finite elements and compares the 
 convergence rates. 

@@ -21,7 +21,7 @@ jobs:
           pip install mkdocs-drawio-exporter
           pip install mkdocs-bibtex
           wget https://github.com/jgraph/drawio-desktop/releases/download/v16.5.1/drawio-amd64-16.5.1.deb
-          sudo apt-get install libayatana-appindicator3-1
+          sudo apt-get install libayatana-appindicator3-1 libnotify4
           sudo dpkg -i drawio-amd64-16.5.1.deb
           sudo apt-get -y -f install
           sudo apt install libasound2 xvfb
@@ -34,7 +34,7 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           personal_token: ${{ secrets.ORGANIZATION_TOKEN }}
-          external_repository: IkarusRepo/IkarusRepo.github.io
+          external_repository: ikarus-project/ikarus-project.github.io
           publish_dir: ./docs/site
           publish_branch: master
           commit_message: ${{ github.event.head_commit.message }}

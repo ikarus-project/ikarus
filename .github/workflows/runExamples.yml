@@ -44,7 +44,7 @@ jobs:
 
       - name: Clone examples
         run: |
-          git clone https://github.com/IkarusRepo/IkarusExamples.git
+          git clone https://github.com/ikarus-project/ikarus-examples.git
       - name: Checkout branch if it exists
         working-directory: ./IkarusExamples
         continue-on-error: true
