@@ -13,3 +13,7 @@ Files: tests/src/testFiles/*
 Copyright: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 License: CC0-1.0
 
+Files: docs/.meta.yml
+Copyright: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+License: CC0-1.0
+
