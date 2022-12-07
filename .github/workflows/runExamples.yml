@@ -46,18 +46,18 @@ jobs:
         run: |
           git clone https://github.com/ikarus-project/ikarus-examples.git
       - name: Checkout branch if it exists
-        working-directory: ./IkarusExamples
+        working-directory: ./ikarus-examples
         continue-on-error: true
         run: git checkout ${{ github.ref_name }}
       - name: Compile all examples
-        working-directory: ./IkarusExamples
+        working-directory: ./ikarus-examples
         run: |
           mkdir cmake-build-${{ matrix.config.config }}
           cd cmake-build-${{ matrix.config.config }}
           cmake ../  -DCMAKE_BUILD_TYPE=${{ matrix.config.config }} -G "Unix Makefiles" -DCMAKE_C_COMPILER=${{ matrix.config.compilerC }} -DCMAKE_CXX_COMPILER=${{ matrix.config.compilerCxx }}
           for i in $( find ../src -maxdepth 1 -name 'iks*'| sed -e 's/\(.cpp\)*$//g' | sed "s|../src/||" ); do cmake --build . --parallel 2 --target "$i"; done;
       - name: Run all examples
-        working-directory: ./IkarusExamples/cmake-build-${{ matrix.config.config }}/src
+        working-directory: ./ikarus-examples/cmake-build-${{ matrix.config.config }}/src
         run: |
           echo "Testing example: iks001" && ./iks001_cantileverBeam_oneDGrid;
           echo "Testing example: iks002" && ./iks002_compute_pi;
