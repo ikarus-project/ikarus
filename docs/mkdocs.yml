@@ -44,6 +44,8 @@ docs_dir: 'website'
 # Navigation
 nav:
   - Home: index.md
+  - Blog:
+    - blog/index.md
   - Download: download.md
   - How to contribute:
     - Open Tasks: openTask.md
