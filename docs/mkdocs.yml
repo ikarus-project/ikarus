@@ -1,5 +1,4 @@
 # SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
-#
 # SPDX-License-Identifier: CC-BY-SA-4.0
 
 # Project information
@@ -130,14 +129,20 @@ extra_javascript:
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
 
 plugins:
-  - meta
-  - search
-  - drawio-exporter:
-      drawio_args:
-        - --no-sandbox
-  - macros:
-      module_name: mkdocs-macros
-  - bibtex:
-      bib_file: "literature.bib"
+  macros: {module_name: mkdocs-macros}
+  bibtex: {bib_file: "literature.bib"}
+  search: {}
+  social: {}
+
+extra:
+  social:
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/Uni_Stgt_IBB
+    - icon: fontawesome/brands/linkedin
+      link: https://www.linkedin.com/company/uni-stuttgart-ibb
+    - icon: fontawesome/brands/docker
+      link: https://hub.docker.com/repository/docker/rath3t/ikarus
+    - icon: fontawesome/brands/gitter
+      link: https://gitter.im/ikarus-project/community
 
 dev_addr: '0.0.0.0:8000'

@@ -20,11 +20,17 @@ jobs:
           pip install mkdocs-macros-plugin
           pip install mkdocs-drawio-exporter
           pip install mkdocs-bibtex
+          pip install pillow cairosvg
+          sudo apt-get install libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev
           wget https://github.com/jgraph/drawio-desktop/releases/download/v16.5.1/drawio-amd64-16.5.1.deb
           sudo apt-get install libayatana-appindicator3-1 libnotify4
           sudo dpkg -i drawio-amd64-16.5.1.deb
           sudo apt-get -y -f install
           sudo apt install libasound2 xvfb
+      - uses: actions/cache@v2
+        with:
+          key: ${{ github.ref }}
+          path: .cache
       - name: Build Website
         run: |
           cd docs
@@ -36,5 +42,5 @@ jobs:
           personal_token: ${{ secrets.ORGANIZATION_TOKEN }}
           external_repository: ikarus-project/ikarus-project.github.io
           publish_dir: ./docs/site
-          publish_branch: master
+          publish_branch: main
           commit_message: ${{ github.event.head_commit.message }}
