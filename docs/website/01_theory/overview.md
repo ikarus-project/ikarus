@@ -13,8 +13,6 @@ classDiagram
   NonlinearOperator <-- Assembler
   Assembler <-- FiniteElement
   FiniteElement <-- FERequirements
-  FERequirements <-- FErequirementsBuilder
-  ResultRequirements <-- ResultRequirementsBuilder
   FERequirements <|-- ResultRequirements
   FiniteElement <-- ResultRequirements
   FiniteElement <-- Local function
@@ -94,7 +92,7 @@ classDiagram
   
   class FERequirements{
     +hasAffordance()
-    +getSolution()
+    +getGlobalSolution()
     +getParameter()
   } 
   
@@ -102,21 +100,7 @@ classDiagram
     +isResultRequested()
     +getParameter()
   }
-  
-  class ResultRequirementsBuilder{
-    +addAffordance()
-    +insertParameter()
-    +insertGlobalSolution()
-    +addResultRequest()
-  }
-  
-  class FErequirementsBuilder{
-    +addAffordance()
-    +insertParameter()
-    +insertGlobalSolution()
-    +build()
-  }
-  
+    
   class Assembler{
     +getScalar()
     +getVector()

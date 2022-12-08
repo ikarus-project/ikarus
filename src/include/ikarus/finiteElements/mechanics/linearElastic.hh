@@ -71,7 +71,7 @@ namespace Ikarus {
     const auto& localView() const { return localView_; }
 
     auto getDisplacementFunction(const FERequirementType& par) const {
-      const auto& d = par.getSolution(Ikarus::FESolutions::displacement);
+      const auto& d = par.getGlobalSolution(Ikarus::FESolutions::displacement);
 
       for (auto i = 0U; i < dispAtNodes.size(); ++i)
         for (auto k2 = 0U; k2 < mydim; ++k2)

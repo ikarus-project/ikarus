@@ -274,7 +274,7 @@ namespace Ikarus {
 
       if (onlyDisplacementBase) return;
 
-      const auto& d       = par.getSolution(Ikarus::FESolutions::displacement);
+      const auto& d       = par.getGlobalSolution(Ikarus::FESolutions::displacement);
       auto strainFunction = DisplacementBasedElement::getStrainFunction(par);
       auto& localView     = DisplacementBasedElement::localView();
       Eigen::VectorXd disp(localView.size());

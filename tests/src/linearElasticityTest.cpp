@@ -113,26 +113,25 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, F&&
 
   double lambda = 7.3;
 
-  Ikarus::FErequirements requirements = FErequirementsBuilder()
-                                            .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
-                                            .addAffordance(Ikarus::elastoStatics)
-                                            .build();
+  auto requirements = FErequirements()
+                          .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
+                          .addAffordance(Ikarus::AffordanceCollections::elastoStatics);
   Eigen::VectorXd forces;
   Eigen::MatrixXd stiffnessmatrix;
 
   auto fvLambda = [&](auto&& d_) -> auto {
     forces.setZero(basis.localView().maxSize());
-    requirements.setSolution(Ikarus::FESolutions::displacement, d_);
+    requirements.insertGlobalSolution(Ikarus::FESolutions::displacement, d_);
     return sparseAssembler.getScalar(requirements);
   };
 
   auto dfvLambda = [&](auto&& d_) -> auto& {
     forces.setZero(basis.localView().maxSize());
-    requirements.setSolution(Ikarus::FESolutions::displacement, d_);
+    requirements.insertGlobalSolution(Ikarus::FESolutions::displacement, d_);
     return sparseAssembler.getVector(requirements);
   };
   auto ddfvLambda = [&](auto&& d_) -> auto& {
-    requirements.setSolution(Ikarus::FESolutions::displacement, d_);
+    requirements.insertGlobalSolution(Ikarus::FESolutions::displacement, d_);
     return sparseAssembler.getMatrix(requirements);
   };
   auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(d));
