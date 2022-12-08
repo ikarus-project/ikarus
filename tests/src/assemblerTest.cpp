@@ -60,11 +60,10 @@ auto SimpleAssemblersTest() {
 
     Eigen::VectorXd d(basis.size());
     d.setRandom();
-    Ikarus::FErequirements req = Ikarus::FErequirementsBuilder()
+    Ikarus::FErequirements req = Ikarus::FErequirements()
                                      .insertGlobalSolution(Ikarus::FESolutions::displacement, d)
                                      .insertParameter(Ikarus::FEParameter::loadfactor, 0)
-                                     .addAffordance(Ikarus::MatrixAffordances::stiffness)
-                                     .build();
+                                     .addAffordance(Ikarus::MatrixAffordances::stiffness);
 
     auto& Kdense = denseFlatAssembler.getMatrix(req);
     auto& K      = sparseFlatAssembler.getMatrix(req);

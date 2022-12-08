@@ -94,7 +94,7 @@ classDiagram
   
   class FERequirements{
     +hasAffordance()
-    +getSolution()
+    +getGlobalSolution()
     +getParameter()
   } 
   

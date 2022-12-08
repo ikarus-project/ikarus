@@ -66,7 +66,7 @@ namespace Ikarus {
   // clang-format on
   std::string getResultType(const ResultType &res);
 
-  struct AffordanceCollection {
+  struct AffordanceCollectionImpl {
     ScalarAffordances scalarAffordances{ScalarAffordances::noAffordance};
     VectorAffordances vectorAffordances{VectorAffordances::noAffordance};
     MatrixAffordances matrixAffordances{MatrixAffordances::noAffordance};
@@ -77,7 +77,7 @@ namespace Ikarus {
       = std::is_same_v<std::remove_cvref_t<Type>, ScalarAffordances> or std::is_same_v<std::remove_cvref_t<Type>,
                                                                                        VectorAffordances> or std::
           is_same_v<std::remove_cvref_t<Type>, MatrixAffordances> or std::is_same_v<std::remove_cvref_t<Type>,
-                                                                                    AffordanceCollection>;
+                                                                                    AffordanceCollectionImpl>;
 
   inline constexpr VectorAffordances forces = VectorAffordances::forces;
 
@@ -87,27 +87,47 @@ namespace Ikarus {
 
   inline constexpr ScalarAffordances potentialEnergy = ScalarAffordances::mechanicalPotentialEnergy;
 
-  inline constexpr AffordanceCollection elastoStatics
-      = {ScalarAffordances::mechanicalPotentialEnergy, VectorAffordances::forces, MatrixAffordances::stiffness};
-
-  template <typename SolutionVectorType = Eigen::VectorXd, typename ParameterType = double>
-  class FErequirementsBuilder;
+  namespace AffordanceCollections {
+    inline constexpr AffordanceCollectionImpl elastoStatics
+        = {ScalarAffordances::mechanicalPotentialEnergy, VectorAffordances::forces, MatrixAffordances::stiffness};
+  }
 
   template <typename SolutionVectorType_ = Eigen::VectorXd, typename ParameterType = double>
-  struct FErequirements {
+  class FErequirements {
+  public:
     using SolutionVectorType = SolutionVectorType_;
-    friend FErequirementsBuilder<SolutionVectorType, ParameterType>;
+    template <FEAffordance Affordance>
+    FErequirements &addAffordance(Affordance &&affordance) {
+      if constexpr (std::is_same_v<Affordance, ScalarAffordances>)
+        affordances.scalarAffordances = affordance;
+      else if constexpr (std::is_same_v<Affordance, VectorAffordances>)
+        affordances.vectorAffordances = affordance;
+      else if constexpr (std::is_same_v<Affordance, MatrixAffordances>)
+        affordances.matrixAffordances = affordance;
+      else if constexpr (std::is_same_v<Affordance, AffordanceCollectionImpl>)
+        affordances = affordance;
+      return *this;
+    }
 
-    const SolutionVectorType &getSolution(FESolutions &&key) const {
+    FErequirements &insertParameter(FEParameter &&key, const ParameterType &val) {
+      parameter.insert_or_assign(key, val);
+      return *this;
+    }
+
+    FErequirements &insertGlobalSolution(FESolutions &&key, const SolutionVectorType &sol) {
+      sols.insert_or_assign(key, sol);
+      return *this;
+    }
+
+    const SolutionVectorType &getGlobalSolution(FESolutions &&key) const {
       try {
         return sols.at(key).get();
       } catch (std::out_of_range &oor) {
-        DUNE_THROW(Dune::RangeError, std::string("Out of Range error: ") + std::string(oor.what()) + " in getSolution");
+        DUNE_THROW(Dune::RangeError,
+                   std::string("Out of Range error: ") + std::string(oor.what()) + " in getGlobalSolution");
         abort();
       }
     }
-
-    void setSolution(FESolutions &&key, const SolutionVectorType &val) { sols.insert_or_assign(key, val); }
 
     const ParameterType &getParameter(FEParameter &&key) const { return parameter.at(key).get(); }
 
@@ -119,54 +139,14 @@ namespace Ikarus {
         return affordances.vectorAffordances == affordance;
       else if constexpr (std::is_same_v<Affordance, MatrixAffordances>)
         return affordances.matrixAffordances == affordance;
-      else if constexpr (std::is_same_v<AffordanceCollection, MatrixAffordances>)
+      else if constexpr (std::is_same_v<AffordanceCollectionImpl, MatrixAffordances>)
         return affordances == affordance;
     }
 
   private:
     std::map<FESolutions, std::reference_wrapper<const SolutionVectorType>> sols;
     std::map<FEParameter, std::reference_wrapper<const ParameterType>> parameter;
-    AffordanceCollection affordances;
-  };
-
-  template <typename SolutionVectorType, typename ParameterType>
-  class FErequirementsBuilder {
-  public:
-    template <FEAffordance Affordance>
-    FErequirementsBuilder &addAffordance(Affordance &&affordance) {
-      if constexpr (std::is_same_v<Affordance, ScalarAffordances>)
-        affordances.scalarAffordances = affordance;
-      else if constexpr (std::is_same_v<Affordance, VectorAffordances>)
-        affordances.vectorAffordances = affordance;
-      else if constexpr (std::is_same_v<Affordance, MatrixAffordances>)
-        affordances.matrixAffordances = affordance;
-      else if constexpr (std::is_same_v<AffordanceCollection, MatrixAffordances>)
-        affordances = affordance;
-      return *this;
-    }
-
-    FErequirementsBuilder &insertParameter(FEParameter &&key, const ParameterType &val) {
-      parameter.insert({key, val});
-      return *this;
-    }
-
-    FErequirementsBuilder &insertGlobalSolution(FESolutions &&key, const SolutionVectorType &sol) {
-      sols.insert({key, sol});
-      return *this;
-    }
-
-    FErequirements<SolutionVectorType, ParameterType> build() {
-      FErequirements<SolutionVectorType, ParameterType> req;
-      req.sols        = sols;
-      req.parameter   = parameter;
-      req.affordances = affordances;
-      return req;
-    }
-
-  private:
-    std::map<FESolutions, std::reference_wrapper<const SolutionVectorType>> sols;
-    std::map<FEParameter, std::reference_wrapper<const ParameterType>> parameter;
-    AffordanceCollection affordances;
+    AffordanceCollectionImpl affordances;
   };
 
   template <typename ParameterType = double>
@@ -183,6 +163,9 @@ namespace Ikarus {
     std::map<ResultType, ResultArray> results;
   };
 
+  template <typename Type>
+  concept ResultTypeConcept = std::is_same_v<Type, ResultType>;
+
   template <typename SolutionVectorType = Eigen::VectorXd, typename ParameterType_ = double>
   class ResultRequirements : public FErequirements<SolutionVectorType, ParameterType_> {
   public:
@@ -192,46 +175,31 @@ namespace Ikarus {
         : FErequirements<SolutionVectorType, ParameterType>(std::move(req)), resType(std::move(p_resType)) {}
     bool isResultRequested(ResultType &&key) const { return resType.contains(key); }
 
-  private:
-    std::set<ResultType> resType;
-  };
-
-  template <typename Type>
-  concept ResultTypeConcept = std::is_same_v<Type, ResultType>;
-
-  template <typename SolutionVectorType = Eigen::VectorXd, typename ParameterType = double>
-  class ResultRequirementsBuilder {
-  public:
     template <FEAffordance Affordance>
-    ResultRequirementsBuilder &addAffordance(Affordance &&affordance) {
+    ResultRequirements &addAffordance(Affordance &&affordance) {
       reqB.addAffordance(std::forward<Affordance>(affordance));
       return *this;
     }
 
-    ResultRequirementsBuilder &insertParameter(FEParameter &&key, const ParameterType &val) {
+    ResultRequirements &insertParameter(FEParameter &&key, const ParameterType &val) {
       reqB.insertParameter(std::forward<FEParameter>(key), val);
       return *this;
     }
 
-    ResultRequirementsBuilder &insertGlobalSolution(FESolutions &&key, const SolutionVectorType &sol) {
+    ResultRequirements &insertGlobalSolution(FESolutions &&key, const SolutionVectorType &sol) {
       reqB.insertGlobalSolution(std::forward<FESolutions>(key), sol);
       return *this;
     }
 
     template <ResultTypeConcept... ResultTypes>
-    ResultRequirementsBuilder &addResultRequest(ResultTypes &&...keys) {
+    ResultRequirements &addResultRequest(ResultTypes &&...keys) {
       resType.insert({std::move(keys)...});
       return *this;
     }
 
-    ResultRequirements<SolutionVectorType, ParameterType> build() {
-      ResultRequirements<SolutionVectorType, ParameterType> resReq(reqB.build(), std::move(resType));
-      return resReq;
-    }
-
   private:
     std::set<ResultType> resType;
-    FErequirementsBuilder<SolutionVectorType, ParameterType> reqB;
+    FErequirements<SolutionVectorType, ParameterType> reqB;
   };
 
 }  // namespace Ikarus

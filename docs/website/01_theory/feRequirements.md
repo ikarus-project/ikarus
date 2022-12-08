@@ -43,7 +43,7 @@ Currently, the following feSolutions, fe Parameter and affordances are defined:
 
 Inside the finite element the information can than be conveniently extracted:
 ```cpp linenums="1"
-const auto& d      = req.getSolution(FESolutions::displacement);
+const auto& d      = req.getGlobalSolution(FESolutions::displacement);
 const auto& lambda = req.getParameter(FEParameter::loadfactor);
 if(req.hasAffordance(stiffness))
   ...
