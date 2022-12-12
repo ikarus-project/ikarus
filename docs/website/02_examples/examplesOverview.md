@@ -17,13 +17,13 @@ parallel, update the documentation here. See [How to Contribute](../03_contribut
 
 The available examples are :
 
- | Identification    | Name of the example                                                           |
-|:------------------|:------------------------------------------------------------------------------|
-| iks001            | [Cantilever beam with point load](cantileverBeam.md)                          |
-| iks002 and iks003 | [Compute the value of $\pi$](computePi.md)                                    |
-| iks004            | [Compression of an incompressible rubber block](incompressibleRubberBlock.md) |
-| iks005            | [Plate subjected to a surface load](kirchhoffPlate.md)                        |
-| iks006            | [Newton-Raphson method](newtonRaphsonMethod.md)                               |
-| iks007            | [Non-linear Elasticity for 2D solids](nonLinearElasticity.md)                 |
-| iks008            | [Von-Mises stress calculation for truss systems](vonMisesTruss.md)      |
-| iks009 and iks010 | [Cook's membrane](cooksMembrane.md)                                           |
+ | Identification | Name of the example                                                           |
+|:---------------|:------------------------------------------------------------------------------|
+| iks001         | [Compute the value of $\pi$](computePi.md)                                    |
+ | iks002         | [Cantilever beam with point load](cantileverBeam.md)                          |
+| iks003         | [Compression of an incompressible rubber block](incompressibleRubberBlock.md) |
+| iks004         | [Plate subjected to a surface load](kirchhoffPlate.md)                        |
+| iks005         | [Newton-Raphson method](newtonRaphsonMethod.md)                               |
+| iks006         | [Non-linear Elasticity for 2D solids](nonLinearElasticity.md)                 |
+| iks007         | [Von-Mises truss](vonMisesTruss.md)                                           |
+| iks008         | [Cook's membrane](cooksMembrane.md)                                           |
