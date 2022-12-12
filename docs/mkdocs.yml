@@ -68,7 +68,7 @@ nav:
     - Plate subjected to a surface load: 02_examples/kirchhoffPlate.md
     - Newton-Raphson method: 02_examples/newtonRaphsonMethod.md
     - Non-linear Elasticity for 2D solids: 02_examples/nonLinearElasticity.md
-    - Von-Mises stress calculation for truss systems: 02_examples/vonMisesStressTruss.md
+    - Von Mises truss: 02_examples/vonMisesTruss.md
     - Cook's membrane: 02_examples/cooksMembrane.md
   - How to contribute:
     - Open Tasks: 03_contribution/openTask.md

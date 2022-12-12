@@ -25,5 +25,5 @@ The available examples are :
 | iks005            | [Plate subjected to a surface load](kirchhoffPlate.md)                        |
 | iks006            | [Newton-Raphson method](newtonRaphsonMethod.md)                               |
 | iks007            | [Non-linear Elasticity for 2D solids](nonLinearElasticity.md)                 |
-| iks008            | [Von-Mises stress calculation for truss systems](vonMisesStressTruss.md)      |
+| iks008            | [Von-Mises stress calculation for truss systems](vonMisesTruss.md)      |
 | iks009 and iks010 | [Cook's membrane](cooksMembrane.md)                                           |
