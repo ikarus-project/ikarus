@@ -11,39 +11,35 @@ SPDX-License-Identifier: CC-BY-SA-4.0
   see [the download page](../../download).
 
 ## Edit a page
-- Open Ikarus in Clion
-- go the folder `docs\website`
-- find the markdown file which corresponds to the page you want to edit
-- Apply your changes (can be done directly in CLion or in external tools e.g. Sublime Text)
+- Open Ikarus
+- Go to the folder `docs\website`
+- Go to the Markdown file that corresponds to the page to be edited
+- Apply your changes using any desired tool
 - Create a pull request
 - Once the pull request is accepted, the website is automatically updated
 
 ## Add a new page
-- Open Ikarus in Clion
-- go the folder `docs\website` and create a new markdown-File, 
-  e.g. `MyAdditionalPage.md`
+- Open Ikarus
+- Go to the folder `docs\website` and create a new Markdown file, 
+  e.g. `MyAdditionalPage.md`. The new Markdown file could be added in any relevant existing folder or added to a new folder starting with a consecutive folder number, e.g., `XX_myFolder` 
 - Open the file `docs\mkdocs.yml`
 - Find the navigation section which starts with `# Navigation`
 - The navigation section describes the navigation on the left side of the
-website. Add `MyAdditionalPage.md` where you want it to appear
+website. Add `XX_myFolder/MyAdditionalPage.md` where you want it to appear
 - Create a pull request
 - Once the pull request is accepted, the website is automatically updated
 
-## Insert a latex formula
+## Insert a LaTeX formula
+The Markdown format:
+
 `$$ \mathbf{X} \left( \xi,\eta \right) = \begin{bmatrix} \xi^2 \\ 5\xi\eta \end{bmatrix} $$` 
-is compiled to
+
+The compiled output:
 
 $$ \mathbf{X} \left( \xi,\eta \right) = \begin{bmatrix} \xi^2 \\ 5\xi\eta \end{bmatrix} $$
 
-## Insert C++ code
-The C++ code:
-```cpp
-double complicatedCalculation(double number, double anotherNumber) 
-{
-  return number*anotherNumber;
-};
-```
-How it needs to be written in markdown:
+## Insert a C++ code
+The Markdown format:
 ```
     ```cpp
     double complicatedCalculation(double number, double anotherNumber) 
@@ -53,8 +49,18 @@ How it needs to be written in markdown:
     ```
 ```
 
-## Insert a table
-Look at the markdown file of this page to see how a table can be inserted.
+The compiled output:
+
+```cpp
+double complicatedCalculation(double number, double anotherNumber) 
+{
+  return number*anotherNumber;
+};
+```
+
+
+## Insert tables, warnings and notes
+Look at the Markdown file (`03_contribution/howToEdit.md`) to see how tables, warnings and notes can be inserted.
 
 | Grid Entity Interface        ||
 | :------------ | :-----------: |

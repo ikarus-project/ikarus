@@ -43,7 +43,7 @@ wsl --setdefault Debian
 7. In Docker, go to Settings --> General and select autostart for docker
     (otherwise you have to start it manually each time you want to work with Ikarus).
 8. In the Docker settings, select that Docker uses your WSL2 distribution Debian as shown in the picture.
-    ![DockerWslSettings.png](images/Installation/DockerWslSettings.png)
+    ![DockerWslSettings.png](auxiliaryImages/Installation/DockerWslSettings.png)
 
     In cases docker says that you don't have a WSL 2 distribution, go to the PowerShell and execute
 ```sh
@@ -59,7 +59,7 @@ docker pull rath3t/ikarus:latest #if you want to use Ikarus to run your own main
 ```
 6. Download and install [CLion](https://www.jetbrains.com/clion). You need a version >=2022.1.
 7. In CLion, go to **File** and **Settings** and apply the following settings for the toolchain:
-    ![img.png](images/Installation/CLionToolchainSettings.png)
+    ![img.png](auxiliaryImages/Installation/CLionToolchainSettings.png)
     Edit the Container settings and paste the following command into `Run options`:
 ```
 -e DISPLAY=:0 -v \\wsl$\debian\mnt\wslg\.X11-unix:/tmp/.X11-unix -v \\wsl$\debian\mnt\wslg:/mnt/wslg --cap-add=SYS_PTRACE
@@ -71,12 +71,12 @@ docker pull rath3t/ikarus:latest #if you want to use Ikarus to run your own main
 - Clone the Ikarus repository as you do it with any other repository (e.g. using GitKraken)
 - ToDo: Describe here how to access it from Github.com
 - Open the CMake tab `CMake` in the CLion footer:
-  ![ClionFooter.png](images/Installation/ClionFooter.png)
+  ![ClionFooter.png](auxiliaryImages/Installation/ClionFooter.png)
 - Click on `Reload CMake project` (refresh symbol)  
-  ![ReloadCmakeProject.png](images/Installation/ReloadCmakeProject.png)
+  ![ReloadCmakeProject.png](auxiliaryImages/Installation/ReloadCmakeProject.png)
 - CMake now detects all required sources automatically. The output should look similar to
   the screenshot below
-  ![CMakeOutput.png](images/Installation/CMakeOutput.png)
+  ![CMakeOutput.png](auxiliaryImages/Installation/CMakeOutput.png)
 
 ## Installation on Windows using WSL
 !!! warning "This installation procedure is not recommended"

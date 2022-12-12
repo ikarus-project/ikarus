@@ -17,8 +17,8 @@ copyright: 'Copyright &copy; 2021 The Ikarus Developers'
 # Configuration
 theme:
   name: material
-  logo: images/logo_white.svg
-  favicon: images/logo_dummy.svg
+  logo: auxiliaryImages/logo_white.svg
+  favicon: auxiliaryImages/logo_dummy.svg
   features:
     - navigation.instant
     - content.code.annotate
@@ -44,38 +44,33 @@ docs_dir: 'website'
 # Navigation
 nav:
   - Home: index.md
-  - Blog:
-    - blog/index.md
   - Download: download.md
+  - Framework:
+    - Overview: 01_framework/overview.md
+    - Grids: 01_framework/grids.md
+    - Local basis: 01_framework/localBasis.md
+    - Local functions: 01_framework/localFunctions.md
+    - Global basis: 01_framework/globalBasis.md
+    - FE requirements: 01_framework/feRequirements.md
+    - Finite Elements: 01_framework/finiteElements.md
+    - Assembler: 01_framework/assembler.md
+    - Dirichlet boundary conditions: 01_framework/dirichletBCs.md
+    - Solvers: 01_framework/solvers.md
+    - NonlinearOperator: 01_framework/nonlinearOperator.md
+    - Control routines: 01_framework/controlRoutines.md
+    - Manifolds: 01_framework/manifolds.md
+    - Observer and observables: 01_framework/observer.md
+  - Examples: 02_examples/examples.md
   - How to contribute:
-    - Open Tasks: openTask.md
-    - Code style: codeStyle.md
-  - Documentation:
-    - How to edit the documentation: documentation/howToEdit.md
-    - Build the documentation locally: documentation/BuildTheDocumentationLocally.md
-  - Tutorials:
-    - Overview: tutorials/tutorialsOverview.md
-  - Theory and Class Reference:
-    - Overview: 01_theory/overview.md
-    - Geometry: 01_theory/geometry.md
-    - Dirichlet values: 01_theory/dirichletValues.md
-    - Grid: 01_theory/grid.md
-    - FE requirements: 01_theory/feRequirements.md
-    - Finite Elements: 01_theory/finiteElements.md
-    - Assembler: 01_theory/assembler.md
-    - NonlinearOperator: 01_theory/nonlinearOperator.md
-    - Control routines: 01_theory/controlRoutines.md
-    - Local basis: 01_theory/localBasis.md
-    - Local functions: 01_theory/localFunctions.md
-    - Manifolds: 01_theory/manifolds.md
-    - Solvers: 01_theory/solvers.md
-    - Observer and observables: 01_theory/observer.md
-    - Global basis: 01_theory/globalBasis.md
-  - Examples: examples.md
+    - Open Tasks: 03_contribution/openTask.md
+    - Code style: 03_contribution/codeStyle.md
+    - Edit the documentation: 03_contribution/howToEdit.md
+    - Build the documentation locally: 03_contribution/BuildTheDocumentationLocally.md
+  - C++ recommendations: 05_cppReferences/cppRef.md
   - Literature: 99_Literature/99_Literature.md
-  - C++ recommendations: cppRef.md
-  - Advanced Topics: AdvancedTopics.md
-  - Gallery: 02_gallery/gallery.md
+  - Gallery: gallery.md
+  - Blog:
+    - 04_blog/index.md
 
 
 # Customization
