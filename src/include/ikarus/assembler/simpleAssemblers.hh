@@ -72,8 +72,8 @@ namespace Ikarus {
     using RequirementType = typename FEContainer::value_type::FERequirementType;
 
   public:
-    ScalarAssembler(const FEContainer &fes, const DirichletValues<Basis> &dirichletValues)
-        : FlatAssemblerBase<Basis, FEContainer>(fes, dirichletValues) {}
+    ScalarAssembler(const FEContainer &fes, const DirichletValues<Basis> &dirichletValues_)
+        : FlatAssemblerBase<Basis, FEContainer>(fes, dirichletValues_) {}
 
     /** Calculates the scalar quantity which is requested by fErequirements and returns a reference */
     double &getScalar(const RequirementType &fErequirements) { return getScalarImpl(fErequirements); }
@@ -96,8 +96,8 @@ namespace Ikarus {
     using GlobalIndex     = typename FEContainer::value_type::GlobalIndex;
 
   public:
-    VectorFlatAssembler(const FEContainer &fes, const DirichletValues<Basis> &dirichletValues)
-        : ScalarAssembler<Basis, FEContainer>(fes, dirichletValues) {}
+    VectorFlatAssembler(const FEContainer &fes, const DirichletValues<Basis> &dirichletValues_)
+        : ScalarAssembler<Basis, FEContainer>(fes, dirichletValues_) {}
 
     /** Calculates the vectorial quantity which is requested by fErequirements and returns a reference
      * A zero is written on fixed dofs */
@@ -126,8 +126,8 @@ namespace Ikarus {
     using GlobalIndex     = typename FEContainer::value_type::GlobalIndex;
 
   public:
-    SparseFlatAssembler(const FEContainer &fes, const DirichletValues<Basis> &dirichletValues)
-        : VectorFlatAssembler<Basis, FEContainer>(fes, dirichletValues) {}
+    SparseFlatAssembler(const FEContainer &fes, const DirichletValues<Basis> &dirichletValues_)
+        : VectorFlatAssembler<Basis, FEContainer>(fes, dirichletValues_) {}
 
     using GridView = typename Basis::GridView;
 
@@ -182,8 +182,8 @@ namespace Ikarus {
   public:
     using RequirementType = typename FEContainer::value_type::FERequirementType;
     using GlobalIndex     = typename FEContainer::value_type::GlobalIndex;
-    explicit DenseFlatAssembler(const FEContainer &fes, const DirichletValues<Basis> &dirichletValues)
-        : VectorFlatAssembler<Basis, FEContainer>(fes, dirichletValues) {}
+    explicit DenseFlatAssembler(const FEContainer &fes, const DirichletValues<Basis> &dirichletValues_)
+        : VectorFlatAssembler<Basis, FEContainer>(fes, dirichletValues_) {}
 
     /** Calculates the matrix quantity which is requested by fErequirements and returns a reference
      * A zero is written on fixed dofs rows and columns and a one is written on the diagonal */

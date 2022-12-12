@@ -12,8 +12,8 @@
 
 #include <autodiff/forward/dual/dual.hpp>
 
-#include <ikarus/localFunctions/meta.hh>
 #include <ikarus/utils/concepts.hh>
+#include <ikarus/utils/traits.hh>
 
 namespace Ikarus {
 
@@ -192,36 +192,6 @@ namespace Ikarus {
     return (-a.diagonal()).asDiagonal();
   }
 
-  template <typename Scalar, int size>
-  auto operator+(const Eigen::DiagonalMatrix<Scalar, size>& a, Ikarus::DerivativeDirections::DerivativeNoOp) {
-    return a.derived();
-  }
-
-  template <typename Scalar, int size>
-  auto operator+(Ikarus::DerivativeDirections::DerivativeNoOp, const Eigen::DiagonalMatrix<Scalar, size>& a) {
-    return a.derived();
-  }
-
-  template <typename Scalar, int size>
-  auto operator*(const Eigen::DiagonalMatrix<Scalar, size>&, Ikarus::DerivativeDirections::DerivativeNoOp) {
-    return Ikarus::DerivativeDirections::DerivativeNoOp();
-  }
-
-  template <typename Scalar, int size>
-  auto operator*(Ikarus::DerivativeDirections::DerivativeNoOp, const Eigen::DiagonalMatrix<Scalar, size>&) {
-    return Ikarus::DerivativeDirections::DerivativeNoOp();
-  }
-
-  template <typename Scalar, int size>
-  auto operator-(const Eigen::DiagonalMatrix<Scalar, size>& a, Ikarus::DerivativeDirections::DerivativeNoOp) {
-    return a.derived();
-  }
-
-  template <typename Scalar, int size>
-  auto operator-(Ikarus::DerivativeDirections::DerivativeNoOp, const Eigen::DiagonalMatrix<Scalar, size>& a) {
-    return a.derived();
-  }
-
   template <typename Derived, typename Derived2>
   auto operator+(const Eigen::MatrixBase<Derived>& a, const Eigen::DiagonalWrapper<Derived2>& b) {
     auto c = a.derived().eval();
@@ -229,67 +199,9 @@ namespace Ikarus {
     return c;
   }
 
-  template <typename Derived>
-  auto operator+(const Eigen::MatrixBase<Derived>& a, Ikarus::DerivativeDirections::DerivativeNoOp) {
-    return a.derived();
-  }
-
-  template <typename Derived>
-  auto operator+(Ikarus::DerivativeDirections::DerivativeNoOp, const Eigen::MatrixBase<Derived>& a) {
-    return a.derived();
-  }
-
-  Ikarus::DerivativeDirections::DerivativeNoOp operator+(Ikarus::DerivativeDirections::DerivativeNoOp,
-                                                         Ikarus::DerivativeDirections::DerivativeNoOp);
-
-  Ikarus::DerivativeDirections::DerivativeNoOp operator-(Ikarus::DerivativeDirections::DerivativeNoOp,
-                                                         Ikarus::DerivativeDirections::DerivativeNoOp);
-
-  template <typename Derived>
-  auto operator*(const Eigen::MatrixBase<Derived>&, Ikarus::DerivativeDirections::DerivativeNoOp) {
-    return Ikarus::DerivativeDirections::DerivativeNoOp();
-  }
-
-  template <std::floating_point T>
-  auto operator*(const T&, Ikarus::DerivativeDirections::DerivativeNoOp) {
-    return Ikarus::DerivativeDirections::DerivativeNoOp();
-  }
-
-  template <std::floating_point T>
-  auto operator*(Ikarus::DerivativeDirections::DerivativeNoOp b, const T& a) {
-    return a * b;
-  }
-
-  template <typename Derived>
-  auto operator*(Ikarus::DerivativeDirections::DerivativeNoOp, const Eigen::MatrixBase<Derived>& a) {
-    return Ikarus::DerivativeDirections::DerivativeNoOp();
-  }
-
-  template <typename Derived>
-  auto operator-(const Eigen::MatrixBase<Derived>& a, Ikarus::DerivativeDirections::DerivativeNoOp) {
-    return a.derived();
-  }
-
-  template <typename Derived>
-  Derived operator-(Ikarus::DerivativeDirections::DerivativeNoOp, const Eigen::MatrixBase<Derived>& a) {
-    return -a.derived();
-  }
-
   template <typename Derived, typename Derived2>
   auto operator+(const Eigen::DiagonalWrapper<Derived>& a, const Eigen::MatrixBase<Derived2>& b) {
     return b + a;
-  }
-
-  template <typename Derived>
-  auto operator+(const Eigen::DiagonalWrapper<Derived>& a, Ikarus::DerivativeDirections::DerivativeNoOp) {
-    return a;
-  }
-
-  Ikarus::DerivativeDirections::DerivativeNoOp operator-(Ikarus::DerivativeDirections::DerivativeNoOp);
-
-  template <typename Derived>
-  auto operator+(Ikarus::DerivativeDirections::DerivativeNoOp, const Eigen::DiagonalWrapper<Derived>& a) {
-    return a;
   }
 
   template <typename Scalar, int size>
@@ -343,9 +255,6 @@ namespace Ikarus {
   auto eval(std::array<Type, d>&& t) {
     return t;
   }
-
-  Ikarus::DerivativeDirections::DerivativeNoOp transpose(const Ikarus::DerivativeDirections::DerivativeNoOp&);
-  Ikarus::DerivativeDirections::DerivativeNoOp eval(const Ikarus::DerivativeDirections::DerivativeNoOp&);
 
   template <typename Derived>
   auto transpose(const Eigen::EigenBase<Derived>& A) {

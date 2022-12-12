@@ -9,6 +9,9 @@
 #include <dune/fufem/boundarypatch.hh>
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/geometry/type.hh>
+#include <dune/localfefunctions/cachedlocalBasis/cachedlocalBasis.hh>
+#include <dune/localfefunctions/impl/standardLocalFunction.hh>
+#include <dune/localfefunctions/manifolds/realTuple.hh>
 
 #include <autodiff/forward/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
@@ -18,9 +21,6 @@
 #include <ikarus/finiteElements/feRequirements.hh>
 #include <ikarus/finiteElements/feTraits.hh>
 #include <ikarus/finiteElements/physicsHelper.hh>
-#include <ikarus/localBasis/localBasis.hh>
-#include <ikarus/localFunctions/impl/standardLocalFunction.hh>
-#include <ikarus/manifolds/realTuple.hh>
 #include <ikarus/utils/eigenDuneTransformations.hh>
 #include <ikarus/utils/linearAlgebraHelper.hh>
 
@@ -37,6 +37,7 @@ namespace Ikarus {
     friend BaseAD;
     using FERequirementType = FErequirements<Eigen::VectorXd>;
     using LocalView         = typename Basis::LocalView;
+    using Geometry          = typename LocalView::Element::Geometry;
     using GridView          = typename Basis::GridView;
 
     template <typename VolumeLoad, typename NeumannBoundaryLoad>
@@ -53,9 +54,9 @@ namespace Ikarus {
           nu_{nu} {
       localView_.bind(element);
       const int order = 2 * (localView_.tree().child(0).finiteElement().localBasis().order());
-      localBasis      = Ikarus::LocalBasis(localView_.tree().child(0).finiteElement().localBasis());
+      localBasis      = Dune::CachedLocalBasis(localView_.tree().child(0).finiteElement().localBasis());
       localBasis.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order),
-                      bindDerivatives(0, 1));
+                      Dune::bindDerivatives(0, 1));
     }
 
     using Traits = TraitsFromLocalView<LocalView>;
@@ -65,10 +66,11 @@ namespace Ikarus {
     ScalarType calculateScalarImpl(const FERequirementType& req, Eigen::VectorX<ScalarType>& dx) const {
       const auto& d      = req.getGlobalSolution(Ikarus::FESolutions::displacement);
       const auto& lambda = req.getParameter(Ikarus::FEParameter::loadfactor);
-
+      using namespace Dune::DerivativeDirections;
+      using namespace Dune;
       auto& first_child = localView_.tree().child(0);
       const auto& fe    = first_child.finiteElement();
-      Dune::BlockVector<Ikarus::RealTuple<ScalarType, Traits::dimension>> disp(fe.size());
+      Dune::BlockVector<RealTuple<ScalarType, Traits::dimension>> disp(fe.size());
 
       for (auto i = 0U; i < fe.size(); ++i)
         for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
@@ -82,12 +84,10 @@ namespace Ikarus {
       C(2, 2)           = (1 - nu_) / 2;
       C *= emod_ / (1 - nu_ * nu_);
       const auto geo = localView_.element().geometry();
-      Ikarus::StandardLocalFunction uFunction(localBasis, disp);
+      Dune::StandardLocalFunction uFunction(localBasis, disp, std::make_shared<const Geometry>(geo));
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
-        const auto Jinv = toEigen(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
-        const auto u    = uFunction.evaluateFunction(gpIndex);
-        const auto H
-            = uFunction.evaluateDerivative(gpIndex, wrt(DerivativeDirections::spatialAll), transformWith(Jinv));
+        const auto u      = uFunction.evaluate(gpIndex);
+        const auto H      = uFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll), Dune::on(gridElement));
         const auto E      = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
         const auto EVoigt = toVoigt(E);
 
@@ -112,7 +112,7 @@ namespace Ikarus {
           const double integrationElement = intersection.geometry().integrationElement(curQuad.position());
 
           // The value of the local function
-          const auto u = uFunction.evaluateFunction(quadPos);
+          const auto u = uFunction.evaluate(quadPos);
 
           // Value of the Neumann data at the current position
           auto neumannValue = neumannBoundaryLoad_(toEigen(intersection.geometry().global(curQuad.position())), lambda);
@@ -125,7 +125,7 @@ namespace Ikarus {
     }
 
     LocalView localView_;
-    Ikarus::LocalBasis<
+    Dune::CachedLocalBasis<
         std::remove_cvref_t<decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis())>>
         localBasis;
     std::function<Eigen::Vector<double, Traits::worlddim>(const Eigen::Vector<double, Traits::worlddim>&,

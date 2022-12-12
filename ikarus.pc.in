@@ -13,6 +13,6 @@ Name: @PACKAGE_NAME@
 Version: @VERSION@
 Description: Dune ikarus module
 URL: https://ikarus-project.github.io/
-Requires: dune-typetree dune-geometry dune-iga dune-functions dune-grid dune-fufem dune-alugrid dune-foamgrid
+Requires: dune-typetree dune-geometry dune-iga dune-localfefunctions dune-functions dune-grid dune-fufem dune-alugrid dune-foamgrid dune-uggrid dune-vtk
 Libs: -L${libdir}
 Cflags: -I${includedir}

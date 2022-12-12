@@ -15,17 +15,18 @@ using Dune::TestSuite;
 #include <unordered_set>
 #include <vector>
 
+#include <dune/localfefunctions/manifolds/realTuple.hh>
+#include <dune/localfefunctions/manifolds/unitVector.hh>
+
 #include <Eigen/Core>
 
-#include <ikarus/manifolds/realTuple.hh>
-#include <ikarus/manifolds/unitVector.hh>
 #include <ikarus/utils/algorithms.hh>
 
 static constexpr double tol = 1e-15;
 
 auto testUnitVector() {
   TestSuite t("testUnitVector");
-  using namespace Ikarus;
+  using namespace Dune;
   UnitVector<double, 3> a{UnitVector<double, 3>::CoordinateType::UnitZ()};
   a.update(Eigen::Vector<double, 2>::UnitX());
   const auto aExpected = Eigen::Vector<double, 3>(1.0 / sqrt(2), 0.0, 1.0 / sqrt(2));

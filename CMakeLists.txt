@@ -9,7 +9,24 @@ project(
   LANGUAGES C CXX
 )
 
-add_definitions(-Wall -Wpedantic -Wextra -m64)
+add_definitions(
+  -Wall
+  -Wextra
+  -Wshadow
+  -Wnon-virtual-dtor
+  -pedantic
+  -Wpedantic
+  -Wimplicit-fallthrough
+  -Wnull-dereference
+  -Wcast-align
+  -Wunused
+  -Woverloaded-virtual
+  -Wmisleading-indentation
+  -Wduplicated-cond
+  -Wduplicated-branches
+  -m64
+)
+add_definitions(-DDUNE_LOCALFEFUNCTIONS_USE_EIGEN=1)
 
 # find dune packages to make cmake modules available
 find_package(dune-common REQUIRED EXCLUDE_FROM_ALL)

@@ -17,6 +17,7 @@ project(
 
 dune_add_library(${PROJECT_NAME} ${sources})
 target_link_libraries(${PROJECT_NAME} PUBLIC ${DUNE_LIBS})
+target_link_dune_default_libraries(${PROJECT_NAME})
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
