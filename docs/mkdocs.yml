@@ -60,12 +60,21 @@ nav:
     - Control routines: 01_framework/controlRoutines.md
     - Manifolds: 01_framework/manifolds.md
     - Observer and observables: 01_framework/observer.md
-  - Examples: 02_examples/examples.md
+  - Examples:
+    - Overview: 02_examples/examplesOverview.md
+    - Cantilever beam with point load: 02_examples/cantileverBeam.md
+    - Compute the value of pi: 02_examples/computePi.md
+    - Compression of an incompressible rubber block: 02_examples/incompressibleRubberBlock.md
+    - Plate subjected to a surface load: 02_examples/kirchhoffPlate.md
+    - Newton-Raphson method: 02_examples/newtonRaphsonMethod.md
+    - Non-linear Elasticity for 2D solids: 02_examples/nonLinearElasticity.md
+    - Von-Mises stress calculation for truss systems: 02_examples/vonMisesStressTruss.md
+    - Cook's membrane: 02_examples/cooksMembrane.md
   - How to contribute:
     - Open Tasks: 03_contribution/openTask.md
     - Code style: 03_contribution/codeStyle.md
     - Edit the documentation: 03_contribution/howToEdit.md
-    - Build the documentation locally: 03_contribution/BuildTheDocumentationLocally.md
+    - Build the documentation locally: 03_contribution/buildDocumentationLocally.md
   - C++ recommendations: 05_cppReferences/cppRef.md
   - Literature: 99_Literature/99_Literature.md
   - Gallery: gallery.md
