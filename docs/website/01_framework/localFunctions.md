@@ -8,7 +8,7 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 This section explains the concept of local functions.
 
 Local functions are functions which are bound to single grid elements.
-Therefore they are constructed from some local basis and a coefficient vector.
+Therefore they are constructed from some local basis, a coefficient vector and the geometry of the grid element.
 
 Usually local functions need to be evaluated in the local coordinate system \( \mathbb{\xi} \in T_{\text{ref}} \subset\mathbb{R}^n \) :
 
@@ -20,64 +20,75 @@ where $T_{\text{ref}}$ is the reference element, e.g. for a cube $T_{\text{ref}}
 ## Interface
 Local functions provide the following interface
 ```cpp 
-FunctionReturnType evaluateFunction(const DomainType& local); 
-FunctionReturnType evaluateFunction(const unsigned int& integrationPointIndex); 
+LocalFunction(const Dune::CachedLocalBasis<DuneBasis>& p_basis, const CoeffContainer& coeffs_,
+              const std::shared_ptr<const Geometry>& geo,
+              Dune::template index_constant<ID> = Dune::template index_constant<std::size_t(0)>{}); // (1)
+              
+FunctionReturnType evaluate(const DomainType& local); 
+FunctionReturnType evaluate(const unsigned int& integrationPointIndex); 
+
 auto evaluateDerivative(const DomainType& local,...); 
 auto evaluateDerivative(const unsigned int& integrationPointIndex,...); 
-auto viewOverIntegrationPoints(); // (1) 
+auto viewOverIntegrationPoints(); // (2) 
+
 template<std::size_t ID=0> 
-constexpr int order(Dune::index_constant<ID> ); // (2) 
+constexpr int order(Dune::index_constant<ID> ); // (3) 
+
 template<std::size_t ID=0> 
-auto basis(Dune::index_constant<ID> ); // (3) 
+auto basis(Dune::index_constant<ID> ); // (4) 
+
 template<std::size_t ID=0> 
-auto coefficientsRef(Dune::index_constant<ID>); // (4) 
+auto coefficientsRef(Dune::index_constant<ID>); // (5) 
  
 template <typename IntegrationRule, typename... Ints> 
-void bind(IntegrationRule&& p_rule, Derivatives<Ints...>&& ints); // (5) 
+void bind(IntegrationRule&& p_rule, Derivatives<Ints...>&& ints); // (6) 
  
-auto clone (); // (6) 
+auto clone (); // (7) 
+
 template<typename ScalarType, std::size_t ID=0> 
-auto rebindClone (ScalarType, Dune::index_constant<ID>); // (7) 
+auto rebindClone (ScalarType, Dune::index_constant<ID>); // (8) 
 ``` 
 
-1. This returns a vector of structs of the integration point and its index. Therefore the syntax is usually `#!cpp for (const auto& [gpIndex, gp] : localFunction.viewOverIntegrationPoints()) {...}`
-2. Return the order of the local function wrt. the coefficients. An id tag can be passed which returns the order wrt a tagged function. For details see [Tagging leaf local functions](#tagging-leaf-local-functions).
-3. Return the basis of the local function. An id tag can be passed which returns the basis of a specific tagged function. For details see [Tagging leaf local functions](#tagging-leaf-local-functions).
-4. Returns a reference to the coefficient of the underlying leaf local finite elements. An id tag can be passed which returns the basis of a specific tagged function. It can return const and non-const reference. The non-const version is deactivated, if there are more than one leaf node with the passed id tag.  For details see [Tagging leaf local functions](#tagging-leaf-local-functions).
-5. This function is passed through to the given `localBasis`. See [Link](localBasis.md)
-6. Clones the local function and stores a copy of all leave nodes.
-7. Clones the local function and rebinds the scalar type of the coefficients with id tag ID. This becomes hand, if you want to replace doubles with an autodiff type.
+1. The constructor takes a `Dune::CachedLocalBasis` and a vector of coefficients and a shared pointer to the grid elements geometry, 
+   additionally the Local function can be tagged with a compile time constant, e.g. `Dune::template index_constant<0>` aka `Dune::Indices::_0`.
+2. This returns a vector of structs of the integration point and its index. Therefore the syntax is usually `#!cpp for (const auto& [gpIndex, gp] : localFunction.viewOverIntegrationPoints()) {...}`
+3. Return the order of the local function wrt. the coefficients. An id tag can be passed which returns the order wrt a tagged function. For details see [Tagging leaf local functions](#tagging-leaf-local-functions).
+4. Return the basis of the local function. An id tag can be passed which returns the basis of a specific tagged function. For details see [Tagging leaf local functions](#tagging-leaf-local-functions).
+5. Returns a reference to the coefficient of the underlying leaf local finite elements. An id tag can be passed which returns the basis of a specific tagged function. It can return const and non-const reference. The non-const version is deactivated, if there are more than one leaf node with the passed id tag.  For details see [Tagging leaf local functions](#tagging-leaf-local-functions).
+6. This function is passed through to the given `localBasis`. See [Link](localBasis.md)
+7. Clones the local function and stores a copy of all leave nodes.
+8. Clones the local function and rebinds the scalar type of the coefficients with id tag ID. This becomes hand, if you want to replace doubles with an autodiff type.
 
-The "..." in the `evaluateDerivative` function call are several variadic templates.
+The "..." in the `evaluateDerivative` function call refers to several possible variadic templates.
 In action this looks like
 
 
 === "Usage with integration point index"
 
     ``` c++ 
-    using namespace Ikarus::DerivativeDirections; 
+    using namespace Dune::DerivativeDirections; 
     localFunction.bind(rule, bindDerivatives(0,1));     
     for(auto& [gpIndex, gp] : localFunction.viewOverIntegrationPoints()){ 
       localFunction.evaluateDerivative(gpIndex, wrt(spatialAll)); // (1) 
-      localFunction.evaluateDerivative(gpIndex, wrt(spatialAll), transformWith(Jinv)); // (2) 
+      localFunction.evaluateDerivative(gpIndex, wrt(spatialAll), on(gridElement)); // (2) 
     } 
     ``` 
  
     1. Compute the spatial Jacobian of localFunction 
-    2. Compute the spatial Jacobian of localFunction and transform it to physical coordinates 
+    2. Compute the spatial Jacobian of localFunction and transform it to the grid element
 
 === "using integration point coordinates"
 
     ``` c++ 
-    using namespace Ikarus::DerivativeDirections; 
+    using namespace Dune::DerivativeDirections; 
     for(auto& gp : rule){ 
       localFunction.evaluateDerivative(gp.position(), wrt(spatialAll)); // (1) 
-      localFunction.evaluateDerivative(gp.position(), wrt(spatialAll), transformWith(Jinv)); // (2) 
+      localFunction.evaluateDerivative(gp.position(), wrt(spatialAll), on(gridElement)); // (2) 
     } 
     ``` 
  
     1. Compute the spatial Jacobian of localFunction 
-    2. Compute the spatial Jacobian of localFunction and transform it to physical coordinates 
+    2. Compute the spatial Jacobian of localFunction and transform it to the grid element
 
 where the first call implements
 
@@ -86,7 +97,10 @@ $$
 $$
 
 The second one respect the fact that the local function in reality is defined in some physical space $X$ with the coordinate $\boldsymbol{x}$.
-Therefore, it transforms the Jacobian from the reference element $\operatorname{grad}_{\boldsymbol{\xi}}$ to the Jacobian in physical space $\operatorname{grad}_\boldsymbol{x}$ . E.g. it usually implements
+Therefore, it transforms the Jacobian from the reference element $\operatorname{grad}_{\boldsymbol{\xi}}$ to the Jacobian on the grid element $\operatorname{grad}_\boldsymbol{x}$.
+This behavior is activatived if you pass `on(gridElement)` otherwise, if you want the derivatives on the reference element you can pass `on(referenceElement)`. Here, `gridElement` and `referenceElement` are global constants in the namespace `Dune::DerivativeDirections`.
+
+Thus, if `on(gridElement)` is passed the local function usually implements
 
 $$
 \operatorname{grad}_\boldsymbol{x} = \operatorname{grad}_{\boldsymbol{\xi}} \boldsymbol{J}^{-1}  
@@ -105,7 +119,7 @@ localFunction.evaluateDerivative(gpIndex, wrt(spatial(1))); // (2)
 1. Compute the first column of the spatial Jacobian of localFunction
 2. Compute the second column of the spatial Jacobian of localFunction
 
-which can also be combined with `transformWith(Jinv)`.
+which can also be combined with `on(...)`.
 
 ## Derivatives w.r.t. coefficients
 ```cpp 
@@ -127,8 +141,11 @@ $$
 [\boldsymbol{B}]_{jk} =  B_{jk} = q_i A_{ijk} =  \frac{\partial^2 (q_i  f_i(\boldsymbol{\xi}))}{\partial \boldsymbol{x}_j\partial \boldsymbol{x}_k}
 $$
 
-where $\boldsymbol{q}$ is an arbitrary vector of the same size as $f$, i.e. it is the direction of the derivative in this case. $ \boldsymbol{A} $ and $ \boldsymbol{B} $ is simply the returned matrix and they do not have a special meaning. If we would not pass the vector the result would be a third order tensor for a vector valued function $f$.
-Therefore the simply return a matrix. This helps for readablilty and for speed. See the [example](#example-dirichlet-energy) for details.
+where $\boldsymbol{q}$ is an arbitrary vector of the same size as $f$, i.e. it is the direction of the derivative in this case. 
+$\boldsymbol{A}$ and $\boldsymbol{B}$ is simply the returned matrix and they do not have a special meaning. 
+If we would not pass the vector, the result would be a third order tensor for a vector valued function $f$.
+Therefore, in this case, we only do a direction derivative in the direction given by `along(q)` and then simply return a matrix. 
+This helps for readablilty and for speed. See the [example](#example-dirichlet-energy) for details.
 ## Derivatives w.r.t. coefficients and spatial derivatives
 Spatial derivatives and derivatives w.r.t. the coefficients can be combined. Therefore, it is legal to call
 
@@ -139,7 +156,8 @@ auto b2 = localFunction.evaluateDerivative(gpIndex, wrt(coeff(j,k),spatial(1)), 
 ``` 
 
 !!! warning  
-The order of spatial and coeff derivatives does not matter. The returned value is always re-arranged that the first derivative is the spatial one.
+
+    The order of spatial and coeff derivatives does not matter. The returned value is always re-arranged that the first derivative is the spatial one.
 
 The first line is then equivalent to
 
@@ -156,10 +174,10 @@ For the second and third line we have
 
 These objects are also returned when the second and third line above are used.
 
-Again all of these function calls can be combined with `transformWith()` as
+Again all of these function calls can be combined with `on(gridElement)` as
 
 ```cpp 
-localFunction.evaluateDerivative(gpIndex, wrt(coeff(j,k),spatialAll), along(Q),transformWith(Jinv)); 
+localFunction.evaluateDerivative(gpIndex, wrt(coeff(j,k),spatialAll), along(Q), on(gridElement)); 
 ``` 
 
 which computes
@@ -168,9 +186,9 @@ $$
 \frac{\partial^2 ([\operatorname{grad}_\boldsymbol{x} f(\boldsymbol{\xi})]_{il} Q_{il} )}{\partial \boldsymbol{x}_j\partial \boldsymbol{x}_k}.
 $$
 
-
 !!! warning "Warning"
-Currently only first order spatial derivatives and second order derivatives w.r.t. the coefficients are supported.
+
+    Currently only first order spatial derivatives and second order derivatives w.r.t. the coefficients are supported.
 
 ## Example Dirichlet energy
 This examples shows how the energy, gradient and Hessian of a [dirichlet energy](https://en.wikipedia.org/wiki/Dirichlet_energy) can be calculated.
@@ -178,18 +196,18 @@ $$
 E(\boldsymbol{u}) = \frac{1}{2} \int_\Omega ||\operatorname{grad}_\boldsymbol{x} \boldsymbol{u}(\boldsymbol{x})|| ^2 \textrm{d} \boldsymbol{x}
 $$
 
-If we want to mimize this energy w.r.t. the coefficients of the nodes, we need to calculate the energy, gradient and the Hessia w.r.t. the coefficients.  
-Of course this depends on the optimization algorithms, but for now lets keep it simple.
+If we want to mimize this energy w.r.t. the coefficients of the nodes, we need to calculate the energy, gradient and the Hessian w.r.t. the coefficients.  
+Of course, this depends on the optimization algorithms, but for now we consider the general case where all three are needed.
 
 ```cpp 
 auto dirichletEnergy() { 
   double energy = 0; 
-  //... bind localBasis to some integration rule 
-  // and create uNodalCoeffs 
-  Ikarus::StandardLocalFunction uFunction(localBasis, uNodalCoeffs); 
+  // bind localBasis to some integration rule 
+  // create uNodalCoeffs 
+  Ikarus::StandardLocalFunction uFunction(localBasis, uNodalCoeffs, sharedGeometry); 
   for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) { 
     //.. calculate the inverse Jacobian of the geometry 
-    const auto gradu = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll), transformWith(Jinv)); 
+    const auto gradu = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll), on(gridElement)); 
     energy+= 0.5*(gradu.transpose()*gradu).trace()* ("weight from integration point and geo.integrationElement"); 
   } 
 } 
@@ -197,16 +215,16 @@ auto dirichletEnergy() {
 
 ```cpp 
 auto gradientDirichletEnergy(Eigen::VectorXd& g) { 
-  //... bind localBasis to some integration rule 
-  // and create uNodalCoeffs 
+  //.bind localBasis to some integration rule 
+  // create uNodalCoeffs 
   constexpr int size =  // spatial size of u 
-      Ikarus::StandardLocalFunction uFunction(localBasis, uNodalCoeffs); 
+      Ikarus::StandardLocalFunction uFunction(localBasis, uNodalCoeffs, sharedGeometry); 
   for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) { 
     //.. calculate the inverse Jacobian of the geometry 
-    const auto gradu = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll), transformWith(Jinv)); 
+    const auto gradu = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll), on(gridElement)); 
     for (auto i : fe.size()) { //loop over coeffs, i.e.nodes of the finite element 
       const auto graduDCoeffs 
-          = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i)), transformWith(Jinv)); 
+          = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i)), on(gridElement)); 
       Eigen::Vector<double, size> tmp; 
       tmp.setZero(); 
       for (int k = 0; k < gridDimension; ++k) 
@@ -224,15 +242,15 @@ auto hessianDirichletEnergy(Matrix& h) {
   //... bind localBasis to some integration rule 
   // and create uNodalCoeffs 
   constexpr int size =  // spatial size of u 
-      Ikarus::StandardLocalFunction uFunction(localBasis, uNodalCoeffs); 
+      Ikarus::StandardLocalFunction uFunction(localBasis, uNodalCoeffs, sharedGeometry); 
   for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) { 
     //.. calculate the inverse Jacobian of the geometry 
     for (auto i : loop over coeffs, i.e.nodes of the finite element) { 
       const auto graduDCoeffsI 
-          = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i)), transformWith(Jinv)); 
+          = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll, coeff(i)), on(gridElement)); 
       for (auto j : fe.size()) { //loop over coeffs, i.e.nodes of the finite element 
         const auto graduDCoeffsJ 
-          = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll, coeffs), transformWith(Jinv), coeffIndices(j)); 
+          = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll, coeffs), on(gridElement), coeffIndices(j)); 
         Eigen::Matrix<double, size, size> tmp; 
         tmp.setZero(); 
         for (int k = 0; k < gridDimension; ++k) 
@@ -258,64 +276,57 @@ If you are interested in implementing your own local function we have prepared t
 [`ikarus/localFunctions/impl/localFunctionTemplate.hh`](https://github.com/IkarusRepo/Ikarus/src/include/ikarus/localFunctions/impl/localFunctionTemplate.hh).
 
 You can copy the file rename the class to your preferred name and then implement the following functions. If you don't need a function you need to delete the corresponding function.
-Then if someone calls the corresponding derivative returns a zero matrix.
+Then, if someone calls the corresponding derivative it returns a zero matrix/vector of appropriate size.
 
+These function are all templated with `DomainTypeOrIntegrationPointIndex` which is a integration point index or position.
+Additionally, `On<TransformArgs>` contains the information, the function should be evaluated on the reference element or grid element, seee above.
 ```cpp 
-FunctionReturnType evaluateEmbeddingFunctionImpl(const Eigen::VectorXd& N) const { return FunctionReturnType{}; } // (0) 
+FunctionReturnType evaluateFunctionImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
+                                        const On<TransformArgs>&) const; // (1) 
  
-Jacobian evaluateDerivativeWRTSpaceAllImpl(const AnsatzFunctionType& N,  
-                                           const AnsatzFunctionJacobian& dN) const {...} // (1) 
- 
-JacobianColType evaluateDerivativeWRTSpaceSingleImpl(const AnsatzFunctionType& N,  
-                                                     const AnsatzFunctionJacobian& dN, 
-                                                     int spaceIndex) const {...} // (2) 
- 
- 
-CoeffDerivMatrix evaluateDerivativeWRTCoeffsImpl(const AnsatzFunctionType& N, 
-                                                 const AnsatzFunctionJacobian& dN, 
-                                                 int coeffsIndex) const {...} // (3) 
- 
-CoeffDerivMatrix evaluateSecondDerivativeWRTCoeffs(const AnsatzFunctionType& N, 
-                                                   const AnsatzFunctionJacobian&, 
-                                                   const AlongType& along, 
-                                                   const std::array<size_t, gridDim>& coeffsIndex) const {...} // (4) 
- 
-std::array<CoeffDerivMatrix, gridDim>  
-        evaluateDerivativeWRTCoeffsANDSpatialImpl(const AnsatzFunctionType& N,  
-                                                  const AnsatzFunctionJacobian& dN,  
-                                                  int coeffsIndex) const {...} // (5) 
+Jacobian evaluateDerivativeWRTSpaceAllImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
+                                           const On<TransformArgs>& transArgs) const; // (2) 
+                                               
+JacobianColType evaluateDerivativeWRTSpaceSingleImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
+                                                     int spaceIndex, const On<TransformArgs>& transArgs) const; // (3) 
  
  
-CoeffDerivMatrix evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(const AnsatzFunctionType& N, 
-                                                                 const AnsatzFunctionJacobian& dN, 
-                                                                 const int coeffsIndex,  
-                                                                 const int spatialIndex) const {...} // (6) 
+CoeffDerivMatrix evaluateDerivativeWRTCoeffsImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
+                                                 int coeffsIndex, const On<TransformArgs>& transArgs) const; // (4) 
+ 
+CoeffDerivMatrix evaluateSecondDerivativeWRTCoeffsImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
+                                                       const std::array<size_t, 2>& coeffsIndex,
+                                                       const Along<AlongArgs...>& alongArgs,
+                                                       const On<TransformArgs>& transArgs) const; // (5) 
+ 
+std::array<CoeffDerivEukRieMatrix, gridDim> evaluateDerivativeWRTCoeffsANDSpatialImpl(
+    const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, int coeffsIndex,
+    const On<TransformArgs>& transArgs) const; // (6) 
  
  
-CoeffDerivMatrix  
-        evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialImpl(const AnsatzFunctionType& N,  
-                                                               const AnsatzFunctionJacobian& dN,  
-                                                               const AlongType& along, 
-                                                               const std::array<size_t, gridDim>& coeffsIndex 
-                                                               ) const {...} // (7) 
+CoeffDerivEukRieMatrix evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(
+    const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, int coeffsIndex, int spatialIndex,
+    const On<TransformArgs>& transArgs) const;  // (7) 
+ 
+ 
+auto evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialImpl(
+    const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, const std::array<size_t, 2>& coeffsIndex,
+    const Along<AlongArgs...>& alongArgs, const On<TransformArgs>& transArgs) const; // (8) 
                                                                                               
-CoeffDerivMatrix  
-        evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialSingleImpl(const AnsatzFunctionType& N,  
-                                                                     const AnsatzFunctionJacobian& dN,  
-                                                                     const AlongType& along, 
-                                                                     const std::array<size_t, gridDim>& coeffsIndex, c 
-                                                                     const int spatialIndex) const {...} // (8) 
+CoeffDerivMatrix evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialSingleImpl(
+    const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, const std::array<size_t, 2>& coeffsIndex,
+    const int spatialIndex, const Along<AlongArgs...>& alongArgs, const On<TransformArgs>& transArgs) const; // (9) 
 ``` 
 
-0. This is called by `localFunction.evaluateFunction(...)`.
-1. This is called by `localFunction.evaluateDerivative(..., wrt(spatialAll))`.
-2. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i)))`.
-3. This is called by `localFunction.evaluateDerivative(..., wrt(coeff(j)))`.
-4. This is called by `localFunction.evaluateDerivative(..., wrt(coeff(j,k)))`.
-5. This is called by `localFunction.evaluateDerivative(..., wrt(spatialAll,coeff(j)))`.
-6. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i),coeff(j)))`.
-7. This is called by `localFunction.evaluateDerivative(..., wrt(spatialAll,coeff(j,k)), along(A))`.
-8. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i),coeff(j,k)), along(v))`.
+1. This is called by `localFunction.evaluate(...)`.
+2. This is called by `localFunction.evaluateDerivative(..., wrt(spatialAll))`.
+3. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i)))`.
+4. This is called by `localFunction.evaluateDerivative(..., wrt(coeff(j)))`.
+5. This is called by `localFunction.evaluateDerivative(..., wrt(coeff(j,k)))`.
+6. This is called by `localFunction.evaluateDerivative(..., wrt(spatialAll,coeff(j)))`.
+7. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i),coeff(j)))`.
+8. This is called by `localFunction.evaluateDerivative(..., wrt(spatialAll,coeff(j,k)), along(A))`.
+9. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i),coeff(j,k)), along(v))`.
 
 ## Expressions
 We use expression templates[^et] to combine existing local functions to obtain new nested ones.
@@ -325,32 +336,33 @@ The syntax is similar to the one provided by [UML](https://fenics.readthedocs.io
 For example consider the following code
 ```cpp 
 ... 
-auto f = Ikarus::StandardLocalFunction(localBasis, coeffVectors0); 
-auto g = Ikarus::StandardLocalFunction(localBasis, coeffVectors1); 
+auto f = Ikarus::StandardLocalFunction(localBasis, coeffVectors0, sharedGeometry); 
+auto g = Ikarus::StandardLocalFunction(localBasis, coeffVectors1, sharedGeometry); 
 ``` 
 we create here two local functions that satisfy the interface described above.  
 Now it is possible to combine these functions and get an object that also satisfies the concept above.
 Thus the following is possible:
 ```cpp 
 ... 
-auto f = Ikarus::StandardLocalFunction(localBasis, coeffVectors0); 
-auto g = Ikarus::StandardLocalFunction(localBasis, coeffVectors1); 
-auto k = f+g; 
+auto f = Ikarus::StandardLocalFunction(localBasis, coeffVectors0, sharedGeometry); 
+auto g = Ikarus::StandardLocalFunction(localBasis, coeffVectors1, sharedGeometry); 
+auto k = f + g; 
 k.evaluateDerivative(ipIndex, wrt(coeff(i), spatial(d))); 
 ``` 
 
 Currently, we support binary and unary expressions. The following expressions are defined:
 
-| Name        | Mathematical formula                                | Code                        | Note                                                                                  |  
-|:------------|:----------------------------------------------------|:----------------------------|:--------------------------------------------------------------------------------------| 
-| Sum         | $$ \boldsymbol{f} + \boldsymbol{g}  $$              | `#!cpp f+g`                 | $\boldsymbol{f}$  and  $\boldsymbol{g}$ need to be the same size.                     | 
-| DotProduct  | $$ \boldsymbol{f} \cdot \boldsymbol{g} = f_i g_i $$ | `#!cpp dot(f,g)`            | $\boldsymbol{f}$  and  $\boldsymbol{g}$ need to be the same size.                     | 
-| normSquared | $$ \boldsymbol{f} \cdot \boldsymbol{f} = f_i f_i $$ | `#!cpp normSquared(f)`      |                                                                                       | 
-| Negate      | $$ -\boldsymbol{f}  $$                              | `#!cpp -f`                  |                                                                                       | 
-| sqrt        | $$ \sqrt{f}  $$                                     | `#!cpp sqrt(f)`             | The function $f$ needs a scalar return type.                                          | 
-| log         | $$ \log{f}  $$                                      | `#!log log(f)`              | The function $f$ needs a scalar return type. Log is the natural logarithm.            | 
-| pow         | $$ f^n  $$                                          | `#!cpp pow<n>(f)`           | The function $f$ needs a scalar return type. $n$ is an integer given at compile time. | 
-| Scale       | $$  a f , \quad a \in  \mathbf{R}$$                 | `#!cpp a*f` and `#!cpp f/a` | `#!cpp a` has to satisfy `#!cpp std::is_arithmetic<..>`                               | 
+| Name          | Mathematical formula                                                                        | Code                        | Note                                                                                  |  
+|:--------------|:--------------------------------------------------------------------------------------------|:----------------------------|:--------------------------------------------------------------------------------------| 
+| Sum           | $$ \boldsymbol{f} + \boldsymbol{g}  $$                                                      | `#!cpp f+g`                 | $\boldsymbol{f}$  and  $\boldsymbol{g}$ need to be the same size.                     | 
+| DotProduct    | $$ \boldsymbol{f} \cdot \boldsymbol{g} = f_i g_i $$                                         | `#!cpp dot(f,g)`            | $\boldsymbol{f}$  and  $\boldsymbol{g}$ need to be the same size.                     | 
+| normSquared   | $$ \boldsymbol{f} \cdot \boldsymbol{f} = f_i f_i $$                                         | `#!cpp normSquared(f)`      |                                                                                       | 
+| Negate        | $$ -\boldsymbol{f}  $$                                                                      | `#!cpp -f`                  |                                                                                       | 
+| sqrt          | $$ \sqrt{f}  $$                                                                             | `#!cpp sqrt(f)`             | The function $f$ needs a scalar return type.                                          | 
+| log           | $$ \log{f}  $$                                                                              | `#!log log(f)`              | The function $f$ needs a scalar return type. Log is the natural logarithm.            | 
+| pow           | $$ f^n  $$                                                                                  | `#!cpp pow<n>(f)`           | The function $f$ needs a scalar return type. $n$ is an integer given at compile time. | 
+| Scale         | $$  a f , \quad a \in  \mathbf{R}$$                                                         | `#!cpp a*f` and `#!cpp f/a` | `#!cpp a` has to satisfy `#!cpp std::is_arithmetic<..>`                               | 
+| LinearStrains | $$ \frac{1}{2}\left(\mathrm{grad}(\boldsymbol{f})+\mathrm{grad}(\boldsymbol{f})^T\right) $$ | `#!cpp linearStrains(f)`    |                                                                             | 
 
 These expressions can be nested. Thus, it is valid to write something like
 ```cpp 
