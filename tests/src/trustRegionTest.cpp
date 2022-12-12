@@ -11,9 +11,10 @@ using Dune::TestSuite;
 
 #include "testHelpers.hh"
 
+#include <dune/localfefunctions/manifolds/realTuple.hh>
+#include <dune/localfefunctions/manifolds/unitVector.hh>
+
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
-#include <ikarus/manifolds/realTuple.hh>
-#include <ikarus/manifolds/unitVector.hh>
 #include <ikarus/solver/nonLinearSolver/trustRegion.hh>
 using namespace Ikarus;
 
@@ -187,13 +188,13 @@ auto trustRegion3() {
 }
 
 template <typename ScalarType = double>
-ScalarType f3R(const Ikarus::UnitVector<double, 2>& x,
+ScalarType f3R(const Dune::UnitVector<double, 2>& x,
                const Eigen::Vector<ScalarType, 2>& dx = Eigen::Vector<ScalarType, 2>::Zero()) {
   Eigen::Vector<ScalarType, 2> y = x.getValue();
   y += dx;
   return y[0] * y[0];
 }
-Eigen::Vector<double, 1> df3R(const Ikarus::UnitVector<double, 2>& x) {
+Eigen::Vector<double, 1> df3R(const Dune::UnitVector<double, 2>& x) {
   Eigen::Vector<autodiff::dual, 2> xR = Eigen::Vector<autodiff::dual, 2>::Zero();
   auto dfvLambda                      = [&](auto&& xRL) { return f3R<autodiff::dual>(x, xRL); };
   autodiff::dual energy;
@@ -203,7 +204,7 @@ Eigen::Vector<double, 1> df3R(const Ikarus::UnitVector<double, 2>& x) {
   return g.transpose() * BLA;
 }
 
-auto ddf3R(const Ikarus::UnitVector<double, 2>& x) {
+auto ddf3R(const Dune::UnitVector<double, 2>& x) {
   Eigen::SparseMatrix<double> A(1, 1);
   Eigen::Vector<autodiff::dual2nd, 2> xR = Eigen::Vector<autodiff::dual2nd, 2>::Zero();
   auto dfvLambda                         = [&](auto&& xRL) { return f3R<autodiff::dual2nd>(x, xRL); };
@@ -221,7 +222,7 @@ auto ddf3R(const Ikarus::UnitVector<double, 2>& x) {
 auto trustRegion4_RiemanianUnitSphere() {
   TestSuite t("trustRegion4_RiemanianUnitSphere");
 
-  auto d = Ikarus::UnitVector<double, 2>();
+  auto d = Dune::UnitVector<double, 2>(Eigen::Vector2d::UnitX());
   d.update(Eigen::Vector<double, 1>::Ones());
   auto fvLambda = [](auto&& xL) { return f3R(xL); };
 
@@ -229,30 +230,33 @@ auto trustRegion4_RiemanianUnitSphere() {
   auto ddfvLambda = [](auto&& xL) { return ddf3R(xL); };
 
   Ikarus::NonLinearOperator nonLinOp(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(d));
-  t.check(Dune::FloatCmp::eq(nonLinOp.value(), fvLambda(d)));
+  t.check(Dune::FloatCmp::eq(nonLinOp.value(), fvLambda(d))) << "Nonlinear operator and lambda have different value";
 
-  t.check(isApproxSame(dfvLambda(d), nonLinOp.derivative(), 1e-15));
-  t.check(isApproxSame(ddfvLambda(d), nonLinOp.secondDerivative(), 1e-15));
+  t.check(isApproxSame(dfvLambda(d), nonLinOp.derivative(), 1e-15))
+      << "Nonlinear operator derivative and lambda have different value";
+  t.check(isApproxSame(ddfvLambda(d), nonLinOp.secondDerivative(), 1e-15))
+      << "Nonlinear operator second derivative and lambda have different value";
 
   Ikarus::TrustRegion tr3(nonLinOp,
-                          std::function([](Ikarus::UnitVector<double, 2>& x,
-                                           const Ikarus::UnitVector<double, 2>::CorrectionType& d) { x += d; }));
+                          std::function([](Dune::UnitVector<double, 2>& x,
+                                           const Dune::UnitVector<double, 2>::CorrectionType& d_) { x += d_; }));
   constexpr double tol = 1e-12;
   tr3.setup({.verbosity = 1, .maxiter = 1000, .grad_tol = tol, .corr_tol = tol, .Delta0 = 0.1});
   const auto solverInfo3 = tr3.solve();
-  t.check(true == solverInfo3.success);
-  t.check(6 == solverInfo3.iterations);
-  t.check(tol > solverInfo3.gradienNorm);
+  t.check(true == solverInfo3.success) << "Trust region was unsuccessful.";
+  t.check(6 == solverInfo3.iterations) << "Trust region has not the expected numbers of iterations.";
+  t.check(tol > solverInfo3.gradienNorm) << "Trust region didn't reach the correct norm";
   nonLinOp.update<0>();
-  t.check(1e-17 >= nonLinOp.value());
-  t.check(isApproxSame(nonLinOp.firstParameter().getValue(), Eigen::Vector2d::UnitY(), 1e-15));
+  t.check(1e-17 >= nonLinOp.value()) << "Trust region energy is not zero";
+  t.check(isApproxSame(nonLinOp.firstParameter().getValue(), Eigen::Vector2d::UnitY(), 1e-15))
+      << "Trust region solution is wrong";
   return t;
 }
 
 #include <dune/istl/bvector.hh>
 #include <dune/istl/multitypeblockvector.hh>
-using DirectorVector     = Dune::BlockVector<Ikarus::UnitVector<double, 3>>;
-using DisplacementVector = Dune::BlockVector<Ikarus::RealTuple<double, 3>>;
+using DirectorVector     = Dune::BlockVector<Dune::UnitVector<double, 3>>;
+using DisplacementVector = Dune::BlockVector<Dune::RealTuple<double, 3>>;
 using MultiTypeVector    = Dune::MultiTypeBlockVector<DisplacementVector, DirectorVector>;
 
 template <typename ScalarType = double>

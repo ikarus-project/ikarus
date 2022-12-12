@@ -14,6 +14,7 @@
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/grid/yaspgrid.hh>
+#include <dune/localfefunctions/eigenDuneTransformations.hh>
 
 #include <ikarus/linearAlgebra/dirichletValues.hh>
 #include <ikarus/utils/eigenDuneTransformations.hh>
@@ -103,24 +104,24 @@ auto dirichletBCTest() {
   auto pythonFuncdual = Python::make_function<Dune::FieldVector<autodiff::real, 2>>(
       Python::evaluate(inhomogeneousDisplacementFunction));
   double lambda             = 7.5;
-  auto resVal               = Ikarus::toEigen(pythonFuncdouble(Dune::FieldVector<double, 2>({1.0, 2.0}), lambda));
+  auto resVal               = Dune::toEigen(pythonFuncdouble(Dune::FieldVector<double, 2>({1.0, 2.0}), lambda));
   autodiff::real lambdadual = lambda;
   lambdadual[1]             = 1;
 
-  auto res                      = pythonFuncdual(Dune::FieldVector<double, 2>({1.0, 2.0}), lambdadual);
-  auto valueResult              = grad<0>(Ikarus::toEigen(res));
-  auto derivativeResult         = grad(Ikarus::toEigen(res));
+  auto res                      = Dune::toEigen(pythonFuncdual(Dune::FieldVector<double, 2>({1.0, 2.0}), lambdadual));
+  auto valueResult              = grad<0>(res);
+  auto derivativeResult         = grad(res);
   auto derivativeResultExpected = Eigen::Vector<double, 2>({1.0, 4.0});
   t.check(valueResult.isApprox(resVal)) << "valueResult's value is not " << derivativeResultExpected << " but "
                                         << derivativeResult;
   t.check(derivativeResult.isApprox(derivativeResultExpected))
       << "derivativeResult's value is not " << derivativeResultExpected << " but " << derivativeResult;
 
-  auto inhomogeneousDisplacementFromPython = [&]<typename T>(const auto& globalCoord, const T& lambda) {
+  auto inhomogeneousDisplacementFromPython = [&]<typename T>(const auto& globalCoord, const T& lambda_) {
     auto pythonFunc
         = Python::make_function<Dune::FieldVector<T, 2>>(Python::evaluate(inhomogeneousDisplacementFunction));
 
-    return Ikarus::toEigen(pythonFunc(globalCoord, lambda));
+    return Dune::toEigen(pythonFunc(globalCoord, lambda_));
   };
   //
   Ikarus::DirichletValues dirichletValues3(basis);

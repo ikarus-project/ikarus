@@ -11,7 +11,7 @@ namespace Ikarus::plot {
   template <typename FunctionType>
   void drawFunction(FunctionType&& f, std::pair<double, double>&& xRange, int eValuationPoints = 100) {
     std::vector<double> x = matplot::linspace(xRange.first, xRange.second, eValuationPoints);
-    std::vector<double> y = matplot::transform(x, [&f](auto x) { return f(x); });
+    std::vector<double> y = matplot::transform(x, [&f](auto x_) { return f(x_); });
     matplot::plot(x, y, "-o");
     matplot::hold(matplot::on);
   }

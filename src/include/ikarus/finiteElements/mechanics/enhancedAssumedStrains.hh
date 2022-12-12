@@ -7,9 +7,9 @@
 #include <optional>
 
 #include <dune/fufem/boundarypatch.hh>
+#include <dune/localfefunctions/meta.hh>
 
 #include <ikarus/finiteElements/feRequirements.hh>
-#include <ikarus/localFunctions/meta.hh>
 #include <ikarus/utils/eigenDuneTransformations.hh>
 
 namespace Ikarus {
@@ -72,8 +72,9 @@ namespace Ikarus {
     using MType                             = Eigen::Matrix<double, strainSize, enhancedStrainSize>;
 
     EASQ1E4() = default;
-    explicit EASQ1E4(const Geometry& geometry)
-        : geometry{std::make_shared<Geometry>(geometry)}, T0InverseTransformed{calcTransformationMatrix2D(geometry)} {}
+    explicit EASQ1E4(const Geometry& geometry_)
+        : geometry{std::make_shared<Geometry>(geometry_)},
+          T0InverseTransformed{calcTransformationMatrix2D(geometry_)} {}
 
     auto calcM(const Dune::FieldVector<double, 2>& quadPos) const {
       MType M;
@@ -100,8 +101,9 @@ namespace Ikarus {
     using MType                             = Eigen::Matrix<double, strainSize, enhancedStrainSize>;
 
     EASQ1E5() = default;
-    explicit EASQ1E5(const Geometry& geometry)
-        : geometry{std::make_shared<Geometry>(geometry)}, T0InverseTransformed{calcTransformationMatrix2D(geometry)} {}
+    explicit EASQ1E5(const Geometry& geometry_)
+        : geometry{std::make_shared<Geometry>(geometry_)},
+          T0InverseTransformed{calcTransformationMatrix2D(geometry_)} {}
 
     auto calcM(const Dune::FieldVector<double, 2>& quadPos) const {
       MType M;
@@ -129,8 +131,9 @@ namespace Ikarus {
     using MType                             = Eigen::Matrix<double, strainSize, enhancedStrainSize>;
 
     EASQ1E7() = default;
-    explicit EASQ1E7(const Geometry& geometry)
-        : geometry{std::make_shared<Geometry>(geometry)}, T0InverseTransformed{calcTransformationMatrix2D(geometry)} {}
+    explicit EASQ1E7(const Geometry& geometry_)
+        : geometry{std::make_shared<Geometry>(geometry_)},
+          T0InverseTransformed{calcTransformationMatrix2D(geometry_)} {}
 
     auto calcM(const Dune::FieldVector<double, 2>& quadPos) const {
       MType M;
@@ -160,8 +163,9 @@ namespace Ikarus {
     using MType                             = Eigen::Matrix<double, strainSize, enhancedStrainSize>;
 
     EASH1E9() = default;
-    explicit EASH1E9(const Geometry& geometry)
-        : geometry{std::make_shared<Geometry>(geometry)}, T0InverseTransformed{calcTransformationMatrix3D(geometry)} {}
+    explicit EASH1E9(const Geometry& geometry_)
+        : geometry{std::make_shared<Geometry>(geometry_)},
+          T0InverseTransformed{calcTransformationMatrix3D(geometry_)} {}
 
     auto calcM(const Dune::FieldVector<double, 3>& quadPos) const {
       MType M;
@@ -193,8 +197,9 @@ namespace Ikarus {
     using MType                             = Eigen::Matrix<double, strainSize, enhancedStrainSize>;
 
     EASH1E21() = default;
-    explicit EASH1E21(const Geometry& geometry)
-        : geometry{std::make_shared<Geometry>(geometry)}, T0InverseTransformed{calcTransformationMatrix3D(geometry)} {}
+    explicit EASH1E21(const Geometry& geometry_)
+        : geometry{std::make_shared<Geometry>(geometry_)},
+          T0InverseTransformed{calcTransformationMatrix3D(geometry_)} {}
 
     auto calcM(const Dune::FieldVector<double, 3>& quadPos) const {
       MType M;
@@ -252,10 +257,11 @@ namespace Ikarus {
     template <typename Basis, typename VolumeLoad = std::nullptr_t, typename NeumannBoundaryLoad = std::nullptr_t>
     requires(Std::is_pointer<VolumeLoad>and Std::is_pointer<NeumannBoundaryLoad>)
         EnhancedAssumedStrains(Basis& globalBasis, const typename LocalView::Element& element, double emod, double nu,
-                               VolumeLoad p_volumeLoad                        = nullptr,
-                               const BoundaryPatch<GridView>* neumannBoundary = nullptr,
-                               NeumannBoundaryLoad neumannBoundaryLoad        = nullptr)
-        : DisplacementBasedElement(globalBasis, element, emod, nu, p_volumeLoad, neumannBoundary, neumannBoundaryLoad) {
+                               VolumeLoad p_volumeLoad                          = nullptr,
+                               const BoundaryPatch<GridView>* p_neumannBoundary = nullptr,
+                               NeumannBoundaryLoad p_neumannBoundaryLoad        = nullptr)
+        : DisplacementBasedElement(globalBasis, element, emod, nu, p_volumeLoad, p_neumannBoundary,
+                                   p_neumannBoundaryLoad) {
       if (Traits::mydim == 2)
         setEASType(0);
       else if (Traits::mydim == 3)
@@ -271,25 +277,23 @@ namespace Ikarus {
 
     void calculateVector(const FERequirementType& par, typename Traits::VectorType& g) const {
       DisplacementBasedElement::calculateVector(par, g);
+      using namespace Dune;
 
       if (onlyDisplacementBase) return;
 
       const auto& d       = par.getGlobalSolution(Ikarus::FESolutions::displacement);
       auto strainFunction = DisplacementBasedElement::getStrainFunction(par);
-      auto& localView     = DisplacementBasedElement::localView();
-      Eigen::VectorXd disp(localView.size());
-      auto& first_child          = localView.tree().child(0);
-      const auto& fe             = first_child.finiteElement();
-      const size_t numberOfNodes = fe.size();
+      Eigen::VectorXd disp(localView().size());
+      const auto& numNodes = DisplacementBasedElement::numberOfNodes;
 
-      for (auto i = 0U; i < numberOfNodes; ++i)
+      for (auto i = 0U; i < numNodes; ++i)
         for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
-          disp[i * Traits::mydim + k2] = d[localView.index(localView.tree().child(k2).localIndex(i))[0]];
+          disp[i * Traits::mydim + k2] = d[localView().index(localView().tree().child(k2).localIndex(i))[0]];
 
-      using namespace DerivativeDirections;
+      using namespace Dune::DerivativeDirections;
 
       auto C         = DisplacementBasedElement::getMaterialTangentFunction(par);
-      const auto geo = localView.element().geometry();
+      const auto geo = localView().element().geometry();
 
       // Internal forces from enhanced strains
       std::visit(
@@ -298,17 +302,16 @@ namespace Ikarus {
             Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
 
             D.setZero();
-            L.setZero(enhancedStrainSize, localView.size());
+            L.setZero(enhancedStrainSize, localView().size());
             for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
               const auto M      = easfunction.calcM(gp.position());
-              const auto Jinv   = toEigen(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
               const auto Ceval  = C(gpIndex);
               const double detJ = geo.integrationElement(gp.position());
               D += M.transpose() * Ceval * M * detJ * gp.weight();
 
-              for (size_t i = 0; i < fe.size(); ++i) {
+              for (size_t i = 0; i < numNodes; ++i) {
                 const size_t I = Traits::worlddim * i;
-                const auto Bi  = strainFunction.evaluateDerivative(gpIndex, wrt(coeff(i)), transformWith(Jinv));
+                const auto Bi  = strainFunction.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
 
                 L.template block<enhancedStrainSize, Traits::worlddim>(0, I)
                     += M.transpose() * Ceval * Bi * detJ * gp.weight();
@@ -319,12 +322,11 @@ namespace Ikarus {
 
             for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
               const auto M            = easfunction.calcM(gp.position());
-              const auto Jinv         = toEigen(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
               const double intElement = geo.integrationElement(gp.position()) * gp.weight();
               const auto Ceval        = C(gpIndex);
               auto stresses           = (Ceval * M * alpha).eval();
-              for (size_t i = 0; i < numberOfNodes; ++i) {
-                const auto bopI = strainFunction.evaluateDerivative(gpIndex, wrt(coeff(i)), transformWith(Jinv));
+              for (size_t i = 0; i < numNodes; ++i) {
+                const auto bopI = strainFunction.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
                 g.template segment<Traits::mydim>(Traits::mydim * i) += bopI.transpose() * stresses * intElement;
               }
             }
@@ -335,7 +337,8 @@ namespace Ikarus {
     auto& easVariant() { return easVariant_; }
 
     void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& K) const {
-      using namespace DerivativeDirections;
+      using namespace Dune::DerivativeDirections;
+      using namespace Dune;
 
       /// fill h with displacement-based stiffness.
       /// It is assumed to be assembled block-wise on element level.
@@ -344,14 +347,12 @@ namespace Ikarus {
 
       if (onlyDisplacementBase) return;
 
-      auto strainFunction = DisplacementBasedElement::getStrainFunction(par);
-      auto C              = DisplacementBasedElement::getMaterialTangentFunction(par);
-      auto& localView     = DisplacementBasedElement::localView();
-      auto geo            = localView.element().geometry();
+      auto strainFunction  = DisplacementBasedElement::getStrainFunction(par);
+      auto C               = DisplacementBasedElement::getMaterialTangentFunction(par);
+      auto geo             = localView().element().geometry();
+      const auto& numNodes = DisplacementBasedElement::numberOfNodes;
 
-      auto& first_child = localView.tree().child(0);
-      const auto& fe    = first_child.finiteElement();
-      assert(((fe.size() == 4 and Traits::mydim == 2) or (fe.size() == 8 and Traits::mydim == 3))
+      assert(((numNodes == 4 and Traits::mydim == 2) or (numNodes == 8 and Traits::mydim == 3))
              && "EAS only supported for Q1 or H1 elements");
 
       std::visit(
@@ -360,17 +361,16 @@ namespace Ikarus {
             Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
 
             D.setZero();
-            L.setZero(enhancedStrainSize, localView.size());
+            L.setZero(enhancedStrainSize, localView().size());
             for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
               const auto M      = easfunction.calcM(gp.position());
-              const auto Jinv   = toEigen(geo.jacobianTransposed(gp.position())).transpose().inverse().eval();
               const auto Ceval  = C(gpIndex);
               const double detJ = geo.integrationElement(gp.position());
               D += M.transpose() * Ceval * M * detJ * gp.weight();
 
-              for (size_t i = 0; i < fe.size(); ++i) {
+              for (size_t i = 0; i < numNodes; ++i) {
                 const size_t I = Traits::worlddim * i;
-                const auto Bi  = strainFunction.evaluateDerivative(gpIndex, wrt(coeff(i)), transformWith(Jinv));
+                const auto Bi  = strainFunction.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
 
                 L.template block<enhancedStrainSize, Traits::worlddim>(0, I)
                     += M.transpose() * Ceval * Bi * detJ * gp.weight();

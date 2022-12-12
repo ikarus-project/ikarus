@@ -118,11 +118,13 @@ auto NonLinearElasticityLoadControlNRandTR() {
             ? 0.786567027108437
             : ((std::is_same_v<Grid, Grids::Alu>) ? 0.78426066482258983
                                                   : /* std::is_same_v<Grid, Grids::Iga> */ 0.615624125459537153);
+  std::cout << std::setprecision(20) << nonLinOp.value() << std::endl;
+  t.check(Dune::FloatCmp::eq(energyExpected, nonLinOp.value()), "energyExpected == nonLinOp.value()")
+      << "energyExpected: " << energyExpected << "\nnonLinOp.value(): " << nonLinOp.value();
 
-  t.check(Dune::FloatCmp::eq(energyExpected, nonLinOp.value()), "energyExpected == nonLinOp.value()");
-  std::stringstream str;
-
-  t.check(std::abs(maxDispExpected - maxDisp) < 1e-12, "maxDispExpected-maxDisp");
+  t.check(std::abs(maxDispExpected - maxDisp) < 1e-12, "maxDispExpected-maxDisp") << "maxDispExpected: \n"
+                                                                                  << maxDispExpected << "\nmaxDisp: \n"
+                                                                                  << maxDisp;
 
   nonLinOp.template update<1>();
   t.check(controlInfo.success, "Successful result");
