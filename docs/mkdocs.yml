@@ -22,6 +22,13 @@ theme:
   features:
     - navigation.instant
     - content.code.annotate
+    - navigation.tabs
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - navigation.indexes
+    - toc.follow
+    - navigation.top
   palette:
     - scheme: default
       primary: light blue
@@ -46,7 +53,7 @@ nav:
   - Home: index.md
   - Download: download.md
   - Framework:
-    - Overview: 01_framework/overview.md
+    - 01_framework/index.md
     - Grids: 01_framework/grids.md
     - Local basis: 01_framework/localBasis.md
     - Local functions: 01_framework/localFunctions.md
@@ -60,7 +67,7 @@ nav:
     - Manifolds: 01_framework/manifolds.md
     - Observer and observables: 01_framework/observer.md
   - Examples:
-    - Overview: 02_examples/examplesOverview.md
+    - 02_examples/index.md
     - Compute the value of pi: 02_examples/computePi.md
     - Cantilever beam with point load: 02_examples/cantileverBeam.md
     - Compression of an incompressible rubber block: 02_examples/incompressibleRubberBlock.md
