@@ -5,19 +5,20 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 
 # Local functions
 
-Local functions are functions which are bound to single grid elements.
-Therefore, they are constructed from some local basis, a coefficient vector and the geometry of the grid element.
-Since, the implementation is quite involved localfefunctions do not reside at Ikarus but in the separate dune module [dune-localfefunctions](https://github.com/ikarus-project/dune-localfefunctions).
+Local functions are functions that are bound to single grid elements.
+Therefore, they are constructed from some local basis, a coefficient vector, and the geometry of the grid element.
+Since the implementation is quite involved, `localfefunctions` do not reside at Ikarus but in the separate 
+module [dune-localfefunctions](https://github.com/ikarus-project/dune-localfefunctions).
 
-Usually local functions need to be evaluated in the local coordinate system \( \mathbb{\xi} \in T_{\text{ref}} \subset\mathbb{R}^n \) :
+Usually, local functions are need to be evaluated in the local coordinate system \( \mathbb{\xi} \in T_{\text{ref}} \subset\mathbb{R}^n \) :
 
 $$
 f: \boldsymbol{\xi}^n \rightarrow \mathbb{R}^m
 $$
 
-where $T_{\text{ref}}$ is the reference element, e.g. for a cube $T_{\text{ref}}= [0,1]^d$.
+where $T_{\text{ref}}$ is the reference element, e.g., for a hypercube, $T_{\text{ref}}= [0,1]^d$.
 ## Interface
-Local functions provide the following interface
+Local functions provide the following interface:
 ```cpp 
 LocalFunction(const Dune::CachedLocalBasis<DuneBasis>& p_basis, const CoeffContainer& coeffs_,
               const std::shared_ptr<const Geometry>& geo,
@@ -48,19 +49,18 @@ template<typename ScalarType, std::size_t ID=0>
 auto rebindClone (ScalarType, Dune::index_constant<ID>); // (8) 
 ``` 
 
-1. The constructor takes a `Dune::CachedLocalBasis` and a vector of coefficients and a shared pointer to the grid elements geometry, 
-   additionally the Local function can be tagged with a compile time constant, e.g. `Dune::template index_constant<0>` aka `Dune::Indices::_0`.
-2. This returns a vector of structs of the integration point and its index. Therefore the syntax is usually `#!cpp for (const auto& [gpIndex, gp] : localFunction.viewOverIntegrationPoints()) {...}`
-3. Return the order of the local function wrt. the coefficients. An id tag can be passed which returns the order wrt a tagged function. For details see [Tagging leaf local functions](#tagging-leaf-local-functions).
-4. Return the basis of the local function. An id tag can be passed which returns the basis of a specific tagged function. For details see [Tagging leaf local functions](#tagging-leaf-local-functions).
-5. Returns a reference to the coefficient of the underlying leaf local finite elements. An id tag can be passed which returns the basis of a specific tagged function. It can return const and non-const reference. The non-const version is deactivated, if there are more than one leaf node with the passed id tag.  For details see [Tagging leaf local functions](#tagging-leaf-local-functions).
-6. This function is passed through to the given `localBasis`. See [Link](localBasis.md)
+1. The constructor takes a `Dune::CachedLocalBasis`, a vector of coefficients and a shared pointer to the geometry of the grid elements. 
+   Additionally, the local function can be tagged with a compile-time constant, e.g., `Dune::template index_constant<0>` or `Dune::Indices::_0`.
+2. This returns a vector of structs representing the integration point and its index. Therefore, the syntax is `#!cpp for (const auto& [gpIndex, gp] : localFunction.viewOverIntegrationPoints()) {...}`
+3. Returns the order of the local function with respect to the coefficients. An id tag can be passed, which returns the order with respect to a tagged function. For details, see [Tagging leaf local functions](#tagging-leaf-local-functions).
+4. Returns the basis of the local function. An id tag can be passed, which returns the basis of a specific tagged function. For details see [Tagging leaf local functions](#tagging-leaf-local-functions).
+5. Returns a reference to the coefficient of the underlying leaf local finite elements. An id tag can be passed, which returns the basis of a specific tagged function. It can return a const or non-const reference. The non-const version is deactivated, if there is more than one leaf node with the passed id tag.  For details, see [Tagging leaf local functions](#tagging-leaf-local-functions).
+6. This function is passed to the given `localBasis`. See [link](localBasis.md)
 7. Clones the local function and stores a copy of all leave nodes.
-8. Clones the local function and rebinds the scalar type of the coefficients with id tag ID. This becomes hand, if you want to replace doubles with an autodiff type.
+8. Clones the local function and rebinds the scalar type of the coefficients with id tag `ID`. This comes in handy if, for example, one wants to replace doubles with an autodiff type.
 
 The "..." in the `evaluateDerivative` function call refers to several possible variadic templates.
-In action this looks like
-
+The implementation looks like the following:
 
 === "Usage with integration point index"
 
@@ -95,18 +95,19 @@ $$
 \operatorname{grad}_\boldsymbol{\xi} f : \boldsymbol{\xi} \rightarrow \mathbb{R}^{m \times d}.
 $$
 
-The second one respect the fact that the local function in reality is defined in some physical space $X$ with the coordinate $\boldsymbol{x}$.
+The second one takes into account the fact that the local function is defined in some physical space $\boldsymbol{X}$ with the coordinate $\boldsymbol{x}$.
 Therefore, it transforms the Jacobian from the reference element $\operatorname{grad}_{\boldsymbol{\xi}}$ to the Jacobian on the grid element $\operatorname{grad}_\boldsymbol{x}$.
-This behavior is activatived if you pass `on(gridElement)` otherwise, if you want the derivatives on the reference element you can pass `on(referenceElement)`. Here, `gridElement` and `referenceElement` are global constants in the namespace `Dune::DerivativeDirections`.
+This behavior is activated, if `on(gridElement)` is passed; otherwise, if the derivatives on the reference element is needed, pass `on(referenceElement)`. 
+Here, `gridElement` and `referenceElement` are global constants in the namespace `Dune::DerivativeDirections`.
 
-Thus, if `on(gridElement)` is passed the local function usually implements
+Thus, if `on(gridElement)` is passed, the local function usually implements
 
 $$
 \operatorname{grad}_\boldsymbol{x} = \operatorname{grad}_{\boldsymbol{\xi}} \boldsymbol{J}^{-1}  
 $$
 
 where $J$ is the Jacobian of the mapping from the reference element $T_{\text{ref}}$ to the element living in physical space $T$.
-For details see [@sander2020dune] page 22.
+For details, see page 22 of the Dune book[@sander2020dune].
 
 Instead of passing `spatialAll` to `wrt(..)`, there are other helper such as
 

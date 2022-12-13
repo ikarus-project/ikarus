@@ -155,4 +155,3 @@ struct StandardArcLength {
     std::optional<double> psi;
   };
 ```
-
