@@ -19,8 +19,8 @@ two-dimensional displacement for each node. As a result, if there are \(n \) nod
 
 The nodal degrees of freedom should be wrapped in `#!cpp Ikarus::RealTuple<double,2>` in this case.
 
-Another case of optimization is on non-linear manifolds. These arise typically for Cosserat materials \( \mathcal{S}\mathcal{O}(3) \), 
-Reissner-Mindlin shells, and micro-magnetics \( \mathcal{S}^{2} \) or incompressible materials. TODO: ADD REFERENCES: 
+Another case of optimization is on non-linear manifolds. These arise typically for Cosserat materials \( \mathcal{S}\mathcal{O}(3) \)[@sanderBeam], 
+Reissner-Mindlin shells \( \mathcal{S}^2 \)[@muller2022consistent] and micro-magnetics \( \mathcal{S}^{2} \) or incompressible materials.
 
 ##  Interface
 The general interface of the manifold elements is represented by the following concept.
@@ -37,7 +37,7 @@ namespace Ikarus::Concepts {
     { var.getValue() } -> std::convertible_to<typename ManifoldType::CoordinateType>; // (6)
     { var.setValue(value) } -> std::same_as<void>; // (7)
     { var+=correction };  // (8)
-    { s << var } -> std::same_as<std::ostream&>;
+    //...
   };
 }  
 ```
