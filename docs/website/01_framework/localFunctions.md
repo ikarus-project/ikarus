@@ -191,14 +191,14 @@ $$
 
     Currently, only first-order spatial derivatives and second-order derivatives w.r.t. the coefficients are supported.
 
-## Example Dirichlet energy
-This examples shows how the energy, gradient and Hessian of a [dirichlet energy](https://en.wikipedia.org/wiki/Dirichlet_energy) can be calculated.
+## Example: Dirichlet energy
+This example shows how the energy, gradient, and Hessian of a [dirichlet energy](https://en.wikipedia.org/wiki/Dirichlet_energy) can be calculated.
 $$
 E(\boldsymbol{u}) = \frac{1}{2} \int_\Omega ||\operatorname{grad}_\boldsymbol{x} \boldsymbol{u}(\boldsymbol{x})|| ^2 \textrm{d} \boldsymbol{x}
 $$
 
-If we want to mimize this energy w.r.t. the coefficients of the nodes, we need to calculate the energy, gradient and the Hessian w.r.t. the coefficients.  
-Of course, this depends on the optimization algorithms, but for now we consider the general case where all three are needed.
+If the energy is to be minimized w.r.t. the coefficients of the nodes, the energy, gradient, and Hessian w.r.t. the coefficients are to be calculated.
+Of course, this depends on the optimization algorithms, but for now, the general case where all three are needed is considered.
 
 ```cpp 
 auto dirichletEnergy() { 
@@ -236,7 +236,7 @@ auto gradientDirichletEnergy(Eigen::VectorXd& g) {
 } 
 ``` 
 
-1. `graduDCoeffs` contains in `graduDCoeffs[0]` the derivatives w.r.t.the coefficient of the first column and at `[1]` w.r.t.the second column of `gradu`
+1. `graduDCoeffs` contains in `graduDCoeffs[0]` the derivatives w.r.t. the coefficient of the first column, and at `graduDCoeffs[1]` the derivatives w.r.t. the second column of `gradu`.
 
 ```cpp 
 auto hessianDirichletEnergy(Matrix& h) { 
@@ -264,23 +264,24 @@ auto hessianDirichletEnergy(Matrix& h) {
 ``` 
 
 ## Implementations
-In the following we summarize the local functions that are currently available.
-In the following table $N^i(\boldsymbol{\xi})$ are the ansatz functions.
+In the following, the local functions that are currently available are summarized.
+The ansatz functions are denoted as $N^i(\boldsymbol{\xi})$ in the table below.
 
 | Name                      | Interpolation formula                                         | Note                                                                                                                                                                                                                                                      | Header |
 |:--------------------------|:--------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--|
-| Standard                    | $$ \boldsymbol{x} = \sum_{i=1}^n N^i(\boldsymbol{\xi}) \boldsymbol{x}_i  $$     |                                                                                                                                                                                                                                                           | `standardLocalFunction.hh`|
-| Projection-Based[@grohs_ProjectionBasedFinite2019] | $$ \boldsymbol{x} = P\left(\sum_{i=1}^n N^i(\boldsymbol{\xi}) \boldsymbol{x}_i \right) $$ | This is one version of geometric finite elements. These are finite elements suited for interpolation on manifolds. Here $P: \mathbb{R}^m \rightarrow \mathcal{M}$ is an operator that projects <br /> the usual linear interpolation onto some manifold | `projectionBasedLocalFunction.hh`|
+| Standard                    | $$ \boldsymbol{x} = \sum_{i=1}^n N^i(\boldsymbol{\xi}) \boldsymbol{x}_i  $$     |     -                                                                                                                                                                                                                                                      | `standardLocalFunction.hh`|
+| Projection-Based[@grohs_ProjectionBasedFinite2019] | $$ \boldsymbol{x} = P\left(\sum_{i=1}^n N^i(\boldsymbol{\xi}) \boldsymbol{x}_i \right) $$ | This is one version of geometric finite elements. These are finite elements suited <br /> for interpolation on manifolds. Here $P: \mathbb{R}^m \rightarrow \mathcal{M}$ is an operator that projects <br /> the usual linear interpolation onto a manifold. | `projectionBasedLocalFunction.hh`|
 
 ## How to implement your own local functions
-If you are interested in implementing your own local function we have prepared the file
-[`ikarus/localFunctions/impl/localFunctionTemplate.hh`](https://github.com/IkarusRepo/Ikarus/src/include/ikarus/localFunctions/impl/localFunctionTemplate.hh).
+To implement your own local function, the file
+[`ikarus/localFunctions/impl/localFunctionTemplate.hh`](https://github.com/IkarusRepo/Ikarus/src/include/ikarus/localFunctions/impl/localFunctionTemplate.hh) is made available.
 
-You can copy the file rename the class to your preferred name and then implement the following functions. If you don't need a function you need to delete the corresponding function.
-Then, if someone calls the corresponding derivative it returns a zero matrix/vector of appropriate size.
+The file can be copied, and then you can rename the class to your preferred name and implement the functions mentioned below. 
+If a particular function is not required, it has to be deleted explicitly.
+Then, if someone calls that function, it returns a zero matrix or vector of appropriate size.
 
-These function are all templated with `DomainTypeOrIntegrationPointIndex` which is a integration point index or position.
-Additionally, `On<TransformArgs>` contains the information, the function should be evaluated on the reference element or grid element, seee above.
+These functions are all templated with `DomainTypeOrIntegrationPointIndex`, which is an integration point index or position.
+Additionally, `On<TransformArgs>` specifies whether the function should be evaluated on the reference element or the grid element (see above).
 ```cpp 
 FunctionReturnType evaluateFunctionImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
                                         const On<TransformArgs>&) const; // (1) 
@@ -330,19 +331,19 @@ CoeffDerivMatrix evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialSingleImpl(
 9. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i),coeff(j,k)), along(v))`. `v` can be accessed via `std::get<0>(alongArgs.args)`.
 
 ## Expressions
-We use expression templates[^et] to combine existing local functions to obtain new nested ones.
-[^et]:  [Expression templates](https://de.wikipedia.org/wiki/Expression_Templates) are usually used in linear algebra libraries, e.g. [Eigen](https://eigen.tuxfamily.org) or [Blaze](https://bitbucket.org/blaze-lib/blaze/src/master/).
+[Expression templates](https://de.wikipedia.org/wiki/Expression_Templates) are usually used in linear algebra libraries, e.g., [Eigen](https://eigen.tuxfamily.org) or [Blaze](https://bitbucket.org/blaze-lib/blaze/src/master/).
 The syntax is similar to the one provided by [UML](https://fenics.readthedocs.io/projects/ufl/en/latest/manual/form_language.html) but only acts on local functions.
+Expression templates are used here to combine existing local functions in order to obtain new nested ones.
 
-For example consider the following code
+For example, consider the following code:
 ```cpp 
 ... 
 auto f = Ikarus::StandardLocalFunction(localBasis, coeffVectors0, sharedGeometry); 
 auto g = Ikarus::StandardLocalFunction(localBasis, coeffVectors1, sharedGeometry); 
 ``` 
-we create here two local functions that satisfy the interface described above.  
+Two local functions that satisfy the interface described above are created.
 Now it is possible to combine these functions and get an object that also satisfies the concept above.
-Thus the following is possible:
+Thus, the following is possible:
 ```cpp 
 ... 
 auto f = Ikarus::StandardLocalFunction(localBasis, coeffVectors0, sharedGeometry); 
@@ -351,22 +352,22 @@ auto k = f + g;
 k.evaluateDerivative(ipIndex, wrt(coeff(i), spatial(d))); 
 ``` 
 
-Currently, we support binary and unary expressions. The following expressions are defined:
+Currently, binary and unary expressions are supported. The following expressions are defined:
 
-| Name                   | Mathematical formula                                                                                                                                 | Code                              | Note                                                                                               |  
-|:-----------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------|:----------------------------------|:---------------------------------------------------------------------------------------------------| 
-| Sum                    | $$ \boldsymbol{f} + \boldsymbol{g}  $$                                                                                                               | `#!cpp f+g`                       | $\boldsymbol{f}$  and  $\boldsymbol{g}$ need to be the same size.                                  | 
-| DotProduct             | $$ \boldsymbol{f} \cdot \boldsymbol{g} = f_i g_i $$                                                                                                  | `#!cpp dot(f,g)`                  | $\boldsymbol{f}$  and  $\boldsymbol{g}$ need to be the same size.                                  | 
-| normSquared            | $$ \boldsymbol{f} \cdot \boldsymbol{f} = f_i f_i $$                                                                                                  | `#!cpp normSquared(f)`            |                                                                                                    | 
-| Negate                 | $$ -\boldsymbol{f}  $$                                                                                                                               | `#!cpp -f`                        |                                                                                                    | 
-| sqrt                   | $$ \sqrt{f}  $$                                                                                                                                      | `#!cpp sqrt(f)`                   | The function $f$ needs a scalar return type.                                                       | 
-| log                    | $$ \log{f}  $$                                                                                                                                       | `#!log log(f)`                    | The function $f$ needs a scalar return type. Log is the natural logarithm.                         | 
-| pow                    | $$ f^n  $$                                                                                                                                           | `#!cpp pow<n>(f)`                 | The function $f$ needs a scalar return type. $n$ is an integer given at compile time.              | 
-| Scale                  | $$  a f , \quad a \in  \mathbf{R}$$                                                                                                                  | `#!cpp a*f` and `#!cpp f/a`       | `#!cpp a` has to satisfy `#!cpp std::is_arithmetic<..>`                                            | 
-| LinearStrains          | $$ \frac{1}{2}\left(\boldsymbol{H}+\boldsymbol{H}^T \right),\quad \boldsymbol{H} = \mathrm{grad}(\boldsymbol{f})  $$                                 | `#!cpp linearStrains(f)`          | The formula on the left assumes the transformed derivatives, if you call it with `on(gridElement)` | 
-| GreenLagrangianStrains | $$ \frac{1}{2}\left(\boldsymbol{H}+\boldsymbol{H}^T +\boldsymbol{H}^T \boldsymbol{H}\right),\quad \boldsymbol{H} = \mathrm{grad}(\boldsymbol{f})  $$ | `#!cpp greenLagrangianStrains(f)` | The formula on the left assumes the transformed derivatives, if you call it with `on(gridElement)` | 
+| Name                   | Mathematical formula                                                                                                                                 | Code                              | Note                                                                                                    |  
+|:-----------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------|:----------------------------------|:--------------------------------------------------------------------------------------------------------| 
+| Sum                    | $$ \boldsymbol{f} + \boldsymbol{g}  $$                                                                                                               | `#!cpp f+g`                       | $\boldsymbol{f}$  and  $\boldsymbol{g}$ needs to be of the same size.                                   | 
+| DotProduct             | $$ \boldsymbol{f} \cdot \boldsymbol{g} = f_i g_i $$                                                                                                  | `#!cpp dot(f,g)`                  | $\boldsymbol{f}$  and  $\boldsymbol{g}$ needs to be of the same size.                                   | 
+| normSquared            | $$ \boldsymbol{f} \cdot \boldsymbol{f} = f_i f_i $$                                                                                                  | `#!cpp normSquared(f)`            |                                                                                                         | 
+| Negate                 | $$ -\boldsymbol{f}  $$                                                                                                                               | `#!cpp -f`                        |                                                                                                         | 
+| sqrt                   | $$ \sqrt{f}  $$                                                                                                                                      | `#!cpp sqrt(f)`                   | The function $f$ needs a scalar return type.                                                            | 
+| log                    | $$ \log{f}  $$                                                                                                                                       | `#!log log(f)`                    | The function $f$ needs a scalar return type. Here, log is the natural logarithm.                        | 
+| pow                    | $$ f^n  $$                                                                                                                                           | `#!cpp pow<n>(f)`                 | The function $f$ needs a scalar return type. $n$ is an integer given during compile-time.               | 
+| Scale                  | $$  a f , \quad a \in  \mathbf{R}$$                                                                                                                  | `#!cpp a*f` and `#!cpp f/a`       | `#!cpp a` has to satisfy `#!cpp std::is_arithmetic<..>`                                                 | 
+| LinearStrains          | $$ \frac{1}{2}\left(\boldsymbol{H}+\boldsymbol{H}^T \right),\quad \boldsymbol{H} = \mathrm{grad}(\boldsymbol{f})  $$                                 | `#!cpp linearStrains(f)`          | If you call the formula on the left with `on(gridElement)`, it will assume the transformed derivatives. | 
+| GreenLagrangianStrains | $$ \frac{1}{2}\left(\boldsymbol{H}+\boldsymbol{H}^T +\boldsymbol{H}^T \boldsymbol{H}\right),\quad \boldsymbol{H} = \mathrm{grad}(\boldsymbol{f})  $$ | `#!cpp greenLagrangianStrains(f)` | If you call the formula on the left with `on(gridElement)`, it will assume the transformed derivatives. | 
 
-These expressions can be nested. Thus, it is valid to write something like
+These expressions can also be nested. As a result, it is valid to write
 ```cpp 
 auto f = Ikarus::StandardLocalFunction(localBasis, coeffVectors0); 
 auto g = Ikarus::StandardLocalFunction(localBasis, coeffVectors1); 
@@ -374,23 +375,24 @@ auto k = -sqrt(dot(2*f+f,5*g));
 k.evaluateDerivative(ipIndex, wrt(coeff(i), spatial(d))); 
 ``` 
 
-To use these expression there are addition exported static types for all expressions
+To use these expressions, there are additional exported static types for all expressions.
 ```cpp 
 constexpr bool isLeaf; // (1) 
 constexpr bool children; // (2) 
 ``` 
 
-1. This is true if the underlying expression is one of the above Local functions that really contain the coefficients, see [Implementations](#implementations).
-2. Returns the number of children. 2 for binary expressions and 1 for unary expressions.
+1. This is true if the underlying expression is one of the above local functions that really contain the coefficients; see [Implementations](#implementations).
+2. Returns the number of children (2 for binary expressions and 1 for unary expressions).
 
 !!! note
-    To use these expression you can simply include the header `#!cpp #include <dune/localfefunctions/expressions.hh>`.
+    To use these expression, simply include the header `#!cpp #include <dune/localfefunctions/expressions.hh>`.
 
-# Tagging leaf local functions
-In the context of mixed finite elements, there are usually several local functions that contribute to the energy. These stems from different local bases.
-For example consider the Q1P0 element where displacements are interpolated by using the four bilinear ansatz function and the element-wise constant pressure field.
+## Tagging leaf local functions
+In the context of mixed finite elements, there are usually several local functions that contribute to the energy. These stem from different local bases.
+For example, consider the Q1P0 element, where displacements are interpolated by using the four bilinear ansatz functions and the element-wise constant pressure field.
 
-Then, to obtain gradients and Hessians, we need to differentiate wrt. different coefficients. This can be done by tagging the local function at construction.
+Then, to obtain gradients and Hessians, we need to differentiate w.r.t. different coefficients. 
+This can be done by tagging the local function during construction.
 ```cpp 
 using namespace Dune::Indices; 
 auto f = Ikarus::StandardLocalFunction(localBasis0, coeffVectors0, sharedGeometry, _0); 
@@ -398,8 +400,8 @@ auto g = Ikarus::StandardLocalFunction(localBasis1, coeffVectors1, sharedGeometr
 auto k = dot(f,g); 
 k.evaluateDerivative(ipIndex, wrt(coeff(_0,i,_1,j))); // Second derivative w.r.t. the nodal coefficients
 ``` 
-To explain the last line above lets consider that the function f is constructed as $f= \sum_{I=0}^n N^L f_L$ and similar  
-$g= \sum_{I=0}^m M^K g_K$, where $N$ and $M$ are some ansatz functions and $f_L$ and $g_K$ are nodal coefficients.
+To explain the last line above, let us consider that the function f is constructed as $f= \sum_{I=0}^n N^L f_L$ and similarly 
+$g= \sum_{I=0}^m M^K g_K$, where $N$ and $M$ are ansatz functions and $f_L$ and $g_K$ are nodal coefficients.
 
 Thus, the above call translates to
 
@@ -407,9 +409,8 @@ Thus, the above call translates to
 \frac{\partial^2 (\boldsymbol{f} \cdot \boldsymbol{g} )}{\partial \boldsymbol{f}_i\partial \boldsymbol{g}_j},
 \end{align}
 
-where the correct sizes of the result are derived at compile time.
-If we calculate the complete hessian of $\boldsymbol{f} \cdot \boldsymbol{g}$, we can do this by
-
+where the correct sizes of the result are derived at compile-time.
+The complete Hessian of $\boldsymbol{f} \cdot \boldsymbol{g}$ can be calculated by the following:
 ```cpp 
 using namespace Dune::Indices; 
 auto hessianDirichletEnergy(Matrix& h) { 
@@ -451,50 +452,47 @@ auto hessianDirichletEnergy(Matrix& h) {
 } 
 ``` 
 
-1. This Block structure is not necessary. Additionally, in this example all types (MatrixBlock00,MatrixBlock01,MatrixBlock10,MatrixBlock11) are considered as `#!cpp Eigen::MatrixXd`.
+1. This block structure is not necessary. Additionally, in this example, all types (MatrixBlock00, MatrixBlock01, MatrixBlock10, MatrixBlock11) are considered as `#!cpp Eigen::MatrixXd`.
 
 
-## Writing your own expression
-You can also write your own expressions. For this you can look into existing expressions. Especially the sqrt expression and the normSquared expression are the most general unary and binary expression
+## Writing your own expressions
+It is also possible to write your own expressions. To do so, please take a look at the existing expressions. 
+The `sqrt` and `normSquared` expressions are the most general unary and binary expressions implemented.
 
 ### Implementing the return value
-If you want to implement your own expression you first have to implement the return value.
-This is done using the function
+Implementing a return value is the first step in implementing an expression. 
+This is done by using the following function:
 ```cpp 
 template <typename LFArgs> 
 auto evaluateValueOfExpression(const LFArgs &lfArgs) const; 
 ``` 
 !!! warning
+    The interface dictates that the return value needs to be an `Eigen` type. Thus, even if a scalar double is to be returned, it is to be wrapped in `#!cpp Eigen::Vector<double, 1>`
 
-    The interface dictates that the return value needs to be an Eigen type. Thus, even if you want to return a scalar `#!cpp double` you have to wrap it in `#!cpp Eigen::Vector<double, 1>`
-
-Additionally you also have to implement the derivative evaluation. This is done by implementing
+Additionally, the evaluation of the derivative is to be implemented as shown below:
 ```cpp 
 template <int DerivativeOrder, typename LFArgs> 
 auto evaluateDerivativeOfExpression(const LFArgs &lfArgs) const; 
 ``` 
 
-### Evaluate underlying functions
-Expression always act on already given expressions. Therefore, to return the correct quantity for your expression you have to evaluate the underlying quantities.
-If you have a unary function you have access to the expression using  `#!cpp this->m()` and for binary expressions this is `#!cpp this->l()` and `#!cpp this->r()`.
+### Evaluate the underlying functions
+Expressions always act on existing expressions. Therefore, to have the correct return value for the expression, the underlying quantities are to be evaluated.
+`#!cpp this->m()` is used to access unary functions, and `#!cpp this->l()` and `#!cpp this->r()` are used to access binary expressions.
 
-To evaluate these functions you can use the following syntax.
+To evaluate unary functions, the following syntax is used:
 
 ```cpp 
-const auto mEvaluated = evaluateFunctionImpl(this->m(), lfArgs); // (1) 
-``` 
+const auto mEvaluated = evaluateFunctionImpl(this->m(), lfArgs); 
+```
+and for binary functions,
+```cpp 
+const auto l_Evaluated = evaluateFunctionImpl(this->l(), lfArgs); 
+const auto r_Evaluated = evaluateFunctionImpl(this->r(), lfArgs); 
+```
+Because the expression conforms to the syntax of a local function, its derivative can also be evaluated.
 
-1. The syntax is the same for binary expression, e.g.
-   ```cpp 
-   const auto l_Evaluated = evaluateFunctionImpl(this->l(), lfArgs); 
-   const auto r_Evaluated = evaluateFunctionImpl(this->r(), lfArgs); 
-   ``` 
-
-The expression fulfill the syntax of a local function thus also derivative can be evaluated.
-
-In the function `evaluateDerivativeOfExpression` the derivative order, that the user wants is encoded in the template argument `DerivativeOrder`.
-Additionally, the derivative types can also be accessed using the static booleans
-
+In the function `evaluateDerivativeOfExpression`, the template argument `DerivativeOrder` contains the derivative order.
+Additionally, the derivative types can also be accessed using the static booleans, as shown below:
 ```cpp 
     static constexpr bool hasTwoCoeff; 
     static constexpr bool hasSingleCoeff; 
@@ -505,8 +503,7 @@ Additionally, the derivative types can also be accessed using the static boolean
     static constexpr bool hasOneSpatial; 
 ``` 
 
-Using the dotproduct as binary example expression we have
-
+Using the *dot-product* as a binary expression example, we have
 ```cpp 
 template <int DerivativeOrder, typename LFArgs> 
     auto evaluateDerivativeOfExpression(const LFArgs &lfArgs) const { 
@@ -603,124 +600,125 @@ template <int DerivativeOrder, typename LFArgs>
     } 
 ``` 
 
-1. Compile time branch for first order derivatives
-2. Evaluates the derivative of the `this->l()` wrt. the only derivative inside the localfunction arguments `lfArgs`.
-3. Evaluates the return value and derivatives and function values are combined as dictated by the product rule.
-4. Compile time branch for second order derivatives
-5. Since we are in the second order derivatives branch, there are 4 case for the evaluation of function.  
-   The function value, the function derivative wrt. to the first argument or the second and the function's derivatives wrt. to both arguments.
-   Here, the function `evaluateFirstOrderDerivativesImpl` returns the derivatives wrt. to the first argument and the second.
-   If we consider the left function as $\boldsymbol{u}(\boldsymbol{\xi},\boldsymbol{u}_I)$ this calls returns
+1. Compile-time branch for first-order derivatives
+2. Evaluates the derivative of `this->l()` in relation to the only derivative contained within the local function arguments `lfArgs`.
+3. Evaluates the return value; derivatives and function values are combined as dictated by the product rule.
+4. Compile-time branch for second-order derivatives
+5. We have four cases for evaluating functions because we are in the second-order derivatives branch: the function value, the function derivative w.r.t. the first argument or the second argument, and the function's derivative w.r.t. both arguments.
+   Here, the function `evaluateFirstOrderDerivativesImpl` returns the derivatives w.r.t. the first argument and the second argument.
+   If we consider the left function as $\boldsymbol{u}(\boldsymbol{\xi},\boldsymbol{u}_I)$, this calls returns
    \begin{flalign*}  
    \verb+u_x+ &= \frac{\partial\boldsymbol{u}}{\partial\boldsymbol{\xi}} \quad \text{or} \quad \verb+u_x+ = \frac{\partial\boldsymbol{u}}{\partial\xi_0} \quad \text{or} \quad \verb+u_x+ = \frac{\partial\boldsymbol{u}}{\partial\boldsymbol{u}_I}\\\\
    \verb+u_y+ &= \frac{\partial\boldsymbol{u}}{\partial\boldsymbol{u}_J}
    \end{flalign*}
-   The first one would be returned if the caller uses
+   The first one would be returned if it is called as
    ```cpp 
        u.evaluateDerivative(gpIndex, wrt(spatialAll,coeff(i))); 
    ``` 
-   and the second one
+   and the second one if it is called as
    ```cpp 
        u.evaluateDerivative(gpIndex, wrt(spatial(0),coeff(i))); 
    ``` 
-   and the third without any spatial derivative using
+   and the third without any spatial derivative is returned using
    ```cpp 
        u.evaluateDerivative(gpIndex, wrt(coeff(i,j))); 
    ``` 
-   Therefore, this function separates the two wrt. arguments and returns the corresponding first order derivatives.
-6. Compile time branch for the case where no spatial derivatives are requested bot only wrt. coefficients is needed.
-7. Creates a new argument variable where the along argument is replaced by `v`.
-8. This function evaluates the derivatives of `l` wrt to both passed wrt arguments. Furthmore, it takes the give along argument since otherwise the returned object would be a 3 dimensional array.
+   Therefore, this function separates the two `wrt` arguments and returns the corresponding first order derivatives.
+6. Compile-time branch for the case where no spatial derivatives are requested but only the derivatives w.r.t. coefficients are needed.
+7. Creates a new argument variable where the `along` argument is replaced by `v`.
+8. This function evaluates the derivatives of `l` w.r.t. to both `wrt` arguments. Furthermore, it takes the `along` argument since otherwise the returned object would be a 3-dimensional array.
    If we consider the left function as $\boldsymbol{u}(\boldsymbol{\xi},\boldsymbol{u}_I)$  and $\boldsymbol{v}$ of the same size as $\boldsymbol{u}$ this calls returns
    \begin{flalign*}
    \verb+u_xyAlongv + &= \frac{\partial^2 u_i }{\partial\boldsymbol{u}_I\partial\boldsymbol{u}_J} v_i
    \end{flalign*}
-   This is the same if the user calls
+   This is the same if the following is called:
    ```cpp 
        u.evaluateDerivative(gpIndex, wrt(coeff(i,j)),along(v)); 
    ``` 
-9. Compile time branch for the case where one spatial derivatives and one derivative wrt. coefficients is needed.
-10. This function evaluates the derivatives of `l` wrt to both passed wrt arguments.
+9. Compile-time branch for the case where one spatial derivative and one derivative w.r.t. the coefficients is needed.
+10. This function evaluates the derivatives of `l` w.r.t. to both `wrt` arguments.
     If we consider the left function as $\boldsymbol{u}(\boldsymbol{\xi},\boldsymbol{u}_I)$  this calls returns
     \begin{flalign*}
     \verb+u_xy+ &= \frac{\partial^2 \boldsymbol{u} }{\partial\boldsymbol{\xi}\partial\boldsymbol{u}_I} \quad \text{or} \quad \verb+u_xy+ = \frac{\partial^2 \boldsymbol{u} }{\partial\xi_0\partial\boldsymbol{u}_I}
     \end{flalign*}
-    The first one would be returned if the caller uses
+    The first one would be returned if it is called as
    ```cpp 
        u.evaluateDerivative(gpIndex, wrt(spatialAll,coeff(i))); 
    ``` 
-and the second one
+and the second one if it is called as
    ```cpp 
    u.evaluateDerivative(gpIndex, wrt(spatial(0),coeff(i))); 
    ``` 
-In the first case the result is stored in an array. Thus in the first index the derivative wrt. to the first spatial coordinate is stored.
-Therefore we would have in the code
+In the first case the result is stored in an array. Thus, in the first index, the derivative w.r.t. to the first spatial coordinate is stored.
+Therefore, we have
    ```cpp 
    spatialAllCoeffDeriv = u.evaluateDerivative(gpIndex, wrt(spatialAll,coeff(i))); 
    spatialAllCoeffDeriv[0] // derivative as in u.evaluateDerivative(gpIndex, wrt(spatial(0),coeff(i))); 
    spatialAllCoeffDeriv[1] // derivative as in u.evaluateDerivative(gpIndex, wrt(spatial(1),coeff(i))); 
    ``` 
-11. Compile time branch for the case where one single spatial derivatives and one derivative wrt. coefficients is needed.
-12. Compile time branch for the case where all spatial derivatives and one derivative wrt. coefficients is needed.
-13. The return type here is an array of single spatial derivatives and each derived wrt. the coefficient. Thus the type inside the array must be deduced here.
-14. Compile time branch for third order derivatives
-15. Compile time branch for single spatial derivatives
-16. To obtain derivatives wrt to the second and third wrt argument we extract here the arguments. E.g. if we have the following request
+11. Compile-time branch for the case where one single spatial derivatives and one derivative w.r.t. coefficients is needed.
+12. Compile-time branch for the case where all spatial derivatives and one derivative w.r.t. coefficients is needed.
+13. The return type here is an array of single spatial derivatives and each derived w.r.t. the coefficient. Thus the type inside the array must be deduced here.
+14. Compile-time branch for third order derivatives
+15. Compile-time branch for single spatial derivatives
+16. To obtain derivatives w.r.t. to the second and third `wrt` argument, we extract the arguments here. E.g., for the following request:
    ```cpp 
     u.evaluateDerivative(gpIndex, wrt(spatialAll,coeff(i,j)),along(matrix)); 
    ``` 
-this call would extract the arguments as
+This call would extract the arguments as
    ```cpp 
     newArgs =  "wrt(coeff(i,j)),along(matrix))" //THIS IS NO VALID SYNTAX 
    ```  
-This can be used then as
+This can then be used as
    ```cpp 
    u.evaluateDerivative(gpIndex, newArgs); 
    ``` 
-17. As in the second order derivative case the returns all three first order derivatives. If we would have
+17. As in the second order derivative case, it returns all the three first order derivatives. E.g., for the case,
     ```cpp 
     u.evaluateDerivative(gpIndex, wrt(spatialAll,coeff(i,j)),along(matrix)); 
     ``` 
-    The returned values would be
+    the returned values would be
     \begin{flalign*}
     \verb+u_x+ &= \frac{\partial \boldsymbol{u} }{\partial\boldsymbol{\xi}} \\\\
     \verb+u_y+ &= \frac{\partial \boldsymbol{u} }{\partial\boldsymbol{u}_I} \\\\
     \verb+u_z+ &= \frac{\partial \boldsymbol{u} }{\partial\boldsymbol{u}_J}  
     \end{flalign*}
-18. This returns the derivatives wrt to the given spatial direction and wrt to the first and second coefficient.  If we would have
+18. This returns the derivatives w.r.t. the given spatial direction and w.r.t. the first and second coefficient.  E.g., for the case,
     ```cpp 
     u.evaluateDerivative(gpIndex, wrt(spatialAll,coeff(i,j)),along(matrix)); 
     ``` 
-    The returned values would be
+    the returned values would be
     \begin{flalign*}
     \verb+u_xy+ &= \frac{\partial^2 \boldsymbol{u} }{\partial\boldsymbol{\xi}\partial\boldsymbol{u}_I} \\\\
     \verb+u_xz+ &= \frac{\partial^2 \boldsymbol{u} }{\partial\boldsymbol{\xi}\partial\boldsymbol{u}_J} \\\\
     \end{flalign*}
-19. Creates a new argument variable where the along argument is replaced by `v_x`.
-20. This return as the call would be
+19. Creates a new argument variable where the `along` argument is replaced by `v_x`.
+20. This return call would be
     ```cpp 
     u.evaluateDerivative(gpIndex, wrt(spatial(0),coeff(i,j),along(v)); 
     ``` 
-    In mathematical notation this returns
+    In mathematical notation, it returns
     \begin{flalign*}
     \verb+u_xyzAlongv  + &= \frac{\partial^3 u_i }{\partial \xi_0\partial\boldsymbol{u}_I\partial\boldsymbol{u}_J} v_i
     \end{flalign*}
-22. This return as the call would be
+22. This return would be
     ```cpp 
     v_x = v.evaluateDerivative(gpIndex, wrt(spatial(0)); 
     u_yzAlongvx = u.evaluateDerivative(gpIndex, wrt(coeff(i,j),along(v_x)); 
     ``` 
-    In mathematical notation this returns
+    In mathematical notation, it returns
     \begin{flalign*}
     \verb+u_yzAlongvx+ &= \frac{\partial^2 u_i }{\partial\boldsymbol{u}_I\partial\boldsymbol{u}_J} \left[\frac{\partial \boldsymbol{v}}{\xi_0}\right]_i
     \end{flalign*}
-23. Compile time branch for all spatial derivatives
-24. Obtain the along argument give by the caller as in
+23. Compile-time branch for all spatial derivatives
+24. Obtain the `along` argument defined, for example, in
     ```cpp 
     u.evaluateDerivative(gpIndex, wrt(spatialAll,coeff(i,j),along(matrix)); 
     ``` 
-25. As above in the single spatial case
-26. As above in the single spatial case
+25. Similar to the single spatial case
+26. Similar to the single spatial case
 
-If your expression is working you should add it to `dune/localfefunctions/expressions.hh`, by a PR at [dune-localfefunctions](https://github.com/ikarus-project/dune-localfefunctions).
+If your expression is working, it can be added to `dune/localfefunctions/expressions.hh` by submitting a PR 
+to [dune-localfefunctions](https://github.com/ikarus-project/dune-localfefunctions).
+
 \bibliography
