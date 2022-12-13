@@ -30,7 +30,7 @@ auto fixedDOFsize() const; // (6)
 auto size() const ; // (7) 
 ```
 
-1. Create class by inserting a [global basis](globalBasis.md)
+1. Create class by inserting a global basis, [@sander2020dune] Chapter 10.
 2. Accepts a functor to fix boundary degrees of freedom. `f` is  a functor that will be called with the boolean vector of fixed boundary.
  degrees of freedom and the usual arguments of `Dune::Functions::forEachBoundaryDOF`,  as defined on page 388 of the Dune[@sander2020dune] book.
 3. A more general version of `fixBoundaryDOFs`. Here, a functor is to be provided that accepts a basis and the corresponding boolean vector considering the Dirichlet degrees of freedom.
