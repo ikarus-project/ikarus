@@ -11,18 +11,14 @@ FE requirements are used to pass information from [assemblers](assembler.md) to 
 ## Construction and usage
 Usually the construction is as follows:
 ```cpp linenums="1"
-FErequirements req = FErequirementsBuilder()
+FErequirements req = FErequirements()
                            .insertGlobalSolution(FESolutions::displacement, d)
                            .insertParameter(FEParameter::loadfactor, lambda)
-                           .addAffordance(MatrixAffordances::stiffness)
-                           .build();
+                           .addAffordance(MatrixAffordances::stiffness);
 MatrixType A = sparseFlatAssembler.getReducedMatrix(req);
 ```
 
-Requirements are constructed using the builder pattern[@gamma1995design].
-
-Thus, to construct `FErequirements`, the `FErequirementsBuilder` is to be created.
-The requirements can then be chained together.
+All these methods return a reference to `FErequirements` thus, they can chained together.
 
 As in line 2, the finite element solution can also be inserted. The solution is passed with the `enum` type 
 `FESolutions::displacement` vector `d`. This stores a reference to the vector.
@@ -32,9 +28,7 @@ global solutions, an `enum` type of `FEParameter::loadfactor` is passed to indic
 followed by its value.
 
 Finally, the method `addAffordance` is used to indicate the request required from the finite element.
-Thus, there exists scalar, vector, and matrix affordances.
-
-The method `build()` constructs the concrete object at the end.
+Thus, there exists scalar, vector, matrix affordances and general affordance collections.
 
 Currently, the following are defined:
 
@@ -54,16 +48,16 @@ Thus, the local finite element can be developed.
 
 ### FE result requirements
 In addition to the above-mentioned finite element requirements, there are also result requirements. 
-They accept the same parameter types as the `FErequirementsBuilder` and add one more, the `ResultType`.
+They accept the same parameter types as the `FErequirements` and add one more, the `ResultType`.
 These are used in the `calculateAt` method of [finite elements](finiteElements.md).
 They are used to communicate the results required from the finite elements.
 
 Its construction is shown below:
 ```cpp linenums="1"
-ResultRequirements resultRequirements = Ikarus::ResultRequirementsBuilder()
+ResultRequirements resultRequirements = Ikarus::ResultRequirements()
         .insertGlobalSolution(FESolutions::displacement, d)
         .insertParameter(FEParameter::loadfactor, lambda)
-        .addResultRequest(ResultType::cauchyStress,,ResultType::director).build();
+        .addResultRequest(ResultType::cauchyStress,,ResultType::director);
 ```
 
 The current supported results are:
