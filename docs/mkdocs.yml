@@ -50,7 +50,6 @@ nav:
     - Grids: 01_framework/grids.md
     - Local basis: 01_framework/localBasis.md
     - Local functions: 01_framework/localFunctions.md
-    - Global basis: 01_framework/globalBasis.md
     - FE requirements: 01_framework/feRequirements.md
     - Finite Elements: 01_framework/finiteElements.md
     - Assembler: 01_framework/assembler.md
