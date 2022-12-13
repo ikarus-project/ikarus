@@ -5,10 +5,9 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 
 # Local functions
 
-This section explains the concept of local functions.
-
 Local functions are functions which are bound to single grid elements.
-Therefore they are constructed from some local basis, a coefficient vector and the geometry of the grid element.
+Therefore, they are constructed from some local basis, a coefficient vector and the geometry of the grid element.
+Since, the implementation is quite involved localfefunctions do not reside at Ikarus but in the seperate dune module [dune-localfefunctions](https://github.com/ikarus-project/dune-localfefunctions).
 
 Usually local functions need to be evaluated in the local coordinate system \( \mathbb{\xi} \in T_{\text{ref}} \subset\mathbb{R}^n \) :
 
@@ -208,7 +207,7 @@ auto dirichletEnergy() {
   for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) { 
     //.. calculate the inverse Jacobian of the geometry 
     const auto gradu = uFunction.evaluateDerivative(gpIndex, wrt(spatialAll), on(gridElement)); 
-    energy+= 0.5*(gradu.transpose()*gradu).trace()* ("weight from integration point and geo.integrationElement"); 
+    energy+= 0.5 * (gradu.transpose() * gradu).trace() * gp.weight() * sharedGeometry->integrationElement(gp.position());
   } 
 } 
 ``` 
@@ -229,7 +228,7 @@ auto gradientDirichletEnergy(Eigen::VectorXd& g) {
       tmp.setZero(); 
       for (int k = 0; k < gridDimension; ++k) 
         tmp += graduDCoeffs[k] * gradu.col(k);  // (1) 
-      g.segment<size>(i * size) += tmp * ("weight from integration point and geo.integrationElement"); 
+      g.segment<size>(i * size) += tmp * gp.weight() * sharedGeometry->integrationElement(gp.position());
     } 
   } 
 } 
@@ -255,7 +254,7 @@ auto hessianDirichletEnergy(Matrix& h) {
         tmp.setZero(); 
         for (int k = 0; k < gridDimension; ++k) 
           tmp += graduDCoeffsI[k] * graduDCoeffsJ[k]; 
-        h.block<size, size>(i * size, j * size) += tmp * ("weight from integration point and geo.integrationElement"); 
+        h.block<size, size>(i * size, j * size) += tmp * gp.weight() * sharedGeometry->integrationElement(gp.position()); 
       } 
     } 
   } 
@@ -325,8 +324,8 @@ CoeffDerivMatrix evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialSingleImpl(
 5. This is called by `localFunction.evaluateDerivative(..., wrt(coeff(j,k)))`.
 6. This is called by `localFunction.evaluateDerivative(..., wrt(spatialAll,coeff(j)))`.
 7. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i),coeff(j)))`.
-8. This is called by `localFunction.evaluateDerivative(..., wrt(spatialAll,coeff(j,k)), along(A))`.
-9. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i),coeff(j,k)), along(v))`.
+8. This is called by `localFunction.evaluateDerivative(..., wrt(spatialAll,coeff(j,k)), along(A))`. `A` can be accessed via `std::get<0>(alongArgs.args)`.
+9. This is called by `localFunction.evaluateDerivative(..., wrt(spatial(i),coeff(j,k)), along(v))`. `v` can be accessed via `std::get<0>(alongArgs.args)`.
 
 ## Expressions
 We use expression templates[^et] to combine existing local functions to obtain new nested ones.
@@ -352,17 +351,18 @@ k.evaluateDerivative(ipIndex, wrt(coeff(i), spatial(d)));
 
 Currently, we support binary and unary expressions. The following expressions are defined:
 
-| Name          | Mathematical formula                                                                        | Code                        | Note                                                                                  |  
-|:--------------|:--------------------------------------------------------------------------------------------|:----------------------------|:--------------------------------------------------------------------------------------| 
-| Sum           | $$ \boldsymbol{f} + \boldsymbol{g}  $$                                                      | `#!cpp f+g`                 | $\boldsymbol{f}$  and  $\boldsymbol{g}$ need to be the same size.                     | 
-| DotProduct    | $$ \boldsymbol{f} \cdot \boldsymbol{g} = f_i g_i $$                                         | `#!cpp dot(f,g)`            | $\boldsymbol{f}$  and  $\boldsymbol{g}$ need to be the same size.                     | 
-| normSquared   | $$ \boldsymbol{f} \cdot \boldsymbol{f} = f_i f_i $$                                         | `#!cpp normSquared(f)`      |                                                                                       | 
-| Negate        | $$ -\boldsymbol{f}  $$                                                                      | `#!cpp -f`                  |                                                                                       | 
-| sqrt          | $$ \sqrt{f}  $$                                                                             | `#!cpp sqrt(f)`             | The function $f$ needs a scalar return type.                                          | 
-| log           | $$ \log{f}  $$                                                                              | `#!log log(f)`              | The function $f$ needs a scalar return type. Log is the natural logarithm.            | 
-| pow           | $$ f^n  $$                                                                                  | `#!cpp pow<n>(f)`           | The function $f$ needs a scalar return type. $n$ is an integer given at compile time. | 
-| Scale         | $$  a f , \quad a \in  \mathbf{R}$$                                                         | `#!cpp a*f` and `#!cpp f/a` | `#!cpp a` has to satisfy `#!cpp std::is_arithmetic<..>`                               | 
-| LinearStrains | $$ \frac{1}{2}\left(\mathrm{grad}(\boldsymbol{f})+\mathrm{grad}(\boldsymbol{f})^T\right) $$ | `#!cpp linearStrains(f)`    |                                                                             | 
+| Name                   | Mathematical formula                                                                                                                                 | Code                              | Note                                                                                               |  
+|:-----------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------|:----------------------------------|:---------------------------------------------------------------------------------------------------| 
+| Sum                    | $$ \boldsymbol{f} + \boldsymbol{g}  $$                                                                                                               | `#!cpp f+g`                       | $\boldsymbol{f}$  and  $\boldsymbol{g}$ need to be the same size.                                  | 
+| DotProduct             | $$ \boldsymbol{f} \cdot \boldsymbol{g} = f_i g_i $$                                                                                                  | `#!cpp dot(f,g)`                  | $\boldsymbol{f}$  and  $\boldsymbol{g}$ need to be the same size.                                  | 
+| normSquared            | $$ \boldsymbol{f} \cdot \boldsymbol{f} = f_i f_i $$                                                                                                  | `#!cpp normSquared(f)`            |                                                                                                    | 
+| Negate                 | $$ -\boldsymbol{f}  $$                                                                                                                               | `#!cpp -f`                        |                                                                                                    | 
+| sqrt                   | $$ \sqrt{f}  $$                                                                                                                                      | `#!cpp sqrt(f)`                   | The function $f$ needs a scalar return type.                                                       | 
+| log                    | $$ \log{f}  $$                                                                                                                                       | `#!log log(f)`                    | The function $f$ needs a scalar return type. Log is the natural logarithm.                         | 
+| pow                    | $$ f^n  $$                                                                                                                                           | `#!cpp pow<n>(f)`                 | The function $f$ needs a scalar return type. $n$ is an integer given at compile time.              | 
+| Scale                  | $$  a f , \quad a \in  \mathbf{R}$$                                                                                                                  | `#!cpp a*f` and `#!cpp f/a`       | `#!cpp a` has to satisfy `#!cpp std::is_arithmetic<..>`                                            | 
+| LinearStrains          | $$ \frac{1}{2}\left(\boldsymbol{H}+\boldsymbol{H}^T \right),\quad \boldsymbol{H} = \mathrm{grad}(\boldsymbol{f})  $$                                 | `#!cpp linearStrains(f)`          | The formula on the left assumes the transformed derivatives, if you call it with `on(gridElement)` | 
+| GreenLagrangianStrains | $$ \frac{1}{2}\left(\boldsymbol{H}+\boldsymbol{H}^T +\boldsymbol{H}^T \boldsymbol{H}\right),\quad \boldsymbol{H} = \mathrm{grad}(\boldsymbol{f})  $$ | `#!cpp greenLagrangianStrains(f)` | The formula on the left assumes the transformed derivatives, if you call it with `on(gridElement)` | 
 
 These expressions can be nested. Thus, it is valid to write something like
 ```cpp 
@@ -382,38 +382,39 @@ constexpr bool children; // (2)
 2. Returns the number of children. 2 for binary expressions and 1 for unary expressions.
 
 !!! note
-    To use these expression you can simply include the header by `#!cpp #include <ikarus/localFunctions/expressions.hh>`.
+    To use these expression you can simply include the header `#!cpp #include <dune/localfefunctions/expressions.hh>`.
 
 # Tagging leaf local functions
-In the context of mixed finite elements. There are usually several local functions that contribute to the energy. These steems from different local basis.
-For example consider the Q1P0 element where displacements are interpolated by using the four bilinear ansatz function and the the element-wise constant pressure field.
+In the context of mixed finite elements, there are usually several local functions that contribute to the energy. These stems from different local bases.
+For example consider the Q1P0 element where displacements are interpolated by using the four bilinear ansatz function and the element-wise constant pressure field.
 
-Thus we need to differentiate wrt. different coefficients. This can be done by tagging the local function by construction.
+Then, to obtain gradients and Hessians, we need to differentiate wrt. different coefficients. This can be done by tagging the local function at construction.
 ```cpp 
 using namespace Dune::Indices; 
-auto f = Ikarus::StandardLocalFunction(localBasis0, coeffVectors0,0_); 
-auto g = Ikarus::StandardLocalFunction(localBasis1, coeffVectors1,1_); 
+auto f = Ikarus::StandardLocalFunction(localBasis0, coeffVectors0, sharedGeometry, _0); 
+auto g = Ikarus::StandardLocalFunction(localBasis1, coeffVectors1, sharedGeometry, _1); 
 auto k = dot(f,g); 
-k.evaluateDerivative(ipIndex, wrt(coeff(0_,i,1_,j))); 
+k.evaluateDerivative(ipIndex, wrt(coeff(_0,i,_1,j))); // Second derivative w.r.t. the nodal coefficients
 ``` 
-To explain the last line above lets consider that the function f is constructed as $f= \sum_{I=0}^n N^I f_i$ and similar  
-$g= \sum_{I=0}^m M^I g_i$, where $N$ and $M$ are some ansatz functions and $f_I$ and $g_I$ are nodal coefficients.
+To explain the last line above lets consider that the function f is constructed as $f= \sum_{I=0}^n N^L f_L$ and similar  
+$g= \sum_{I=0}^m M^K g_K$, where $N$ and $M$ are some ansatz functions and $f_L$ and $g_K$ are nodal coefficients.
 
-Thus the above call translates to
+Thus, the above call translates to
 
 \begin{align}
-\boldsymbol{M}_{0,1}[J,K] = \frac{\partial^2 (f_{i} g_i )}{\partial \boldsymbol{f}_J\partial \boldsymbol{g}_K}.
+\frac{\partial^2 (\boldsymbol{f} \cdot \boldsymbol{g} )}{\partial \boldsymbol{f}_i\partial \boldsymbol{g}_j},
 \end{align}
 
-If we would calculate the complete hessian of $dot(f,g)$ we can do this by
+where the correct sizes of the result are derived at compile time.
+If we calculate the complete hessian of $\boldsymbol{f} \cdot \boldsymbol{g}$, we can do this by
 
 ```cpp 
 using namespace Dune::Indices; 
 auto hessianDirichletEnergy(Matrix& h) { 
   //... bind localBasis to some integration rule 
   using namespace Dune::Indices; 
-  auto f = Ikarus::StandardLocalFunction(localBasis0, coeffVectors0,0_); 
-  auto g = Ikarus::StandardLocalFunction(localBasis1, coeffVectors1,1_); 
+  auto f = Ikarus::StandardLocalFunction(localBasis0, coeffVectors0, sharedGeometry, _0); 
+  auto g = Ikarus::StandardLocalFunction(localBasis1, coeffVectors1, sharedGeometry, _1); 
   auto k = dot(f,g); 
   constexpr int sizef = f.correctionSize; // spatial size of the correction of the coefficients of f 
   constexpr int sizeg = g.correctionSize; // spatial size of the correction of the coefficients of g 
@@ -424,37 +425,37 @@ auto hessianDirichletEnergy(Matrix& h) {
                                        Dune::MultiTypeBlockVector<MatrixBlock10,MatrixBlock11> > KBlocked; // (1) 
  
    
-  for (const auto& [ipIndex, gp] : k.viewOverIntegrationPoints()) { 
+  for (const auto& [gpIndex, gp] : k.viewOverIntegrationPoints()) { 
     for (size_t I = 0; I < coeffSizef; ++I) 
       for (size_t J = 0; J < coeffSizef; ++J)  
-        KBlocked[0_,0_].block<sizef, sizef>(I * sizef, J * sizef)  
-          += k.evaluateDerivative(ipIndex, wrt(coeff(0_,I,0_,J)))* ("weight from integration point and geo.integrationElement"); 
+        KBlocked[_0,_0].block<sizef, sizef>(I * sizef, J * sizef)  
+          += k.evaluateDerivative(gpIndex, wrt(coeff(_0,I,_0,J))) * gp.weight() * sharedGeometry->integrationElement(gp.position()); 
      
     for (size_t I = 0; I < coeffSizef; ++I) 
       for (size_t J = 0; J < coeffSizeg; ++J) 
-        KBlocked[0_,1_].block<sizef, sizeg>(I * sizef, J * sizeg)  
-          += k.evaluateDerivative(ipIndex, wrt(coeff(0_,I,1_,J)))* ("weight from integration point and geo.integrationElement"); 
+        KBlocked[_0,_1].block<sizef, sizeg>(I * sizef, J * sizeg)  
+          += k.evaluateDerivative(gpIndex, wrt(coeff(_0,I,_1,J))) * gp.weight() * sharedGeometry->integrationElement(gp.position()); 
      
     for (size_t I = 0; I < coeffSizeg; ++I) 
       for (size_t J = 0; J < coeffSizeg; ++J) 
-        KBlocked[1_,1_].block<sizeg, sizeg>(I * sizeg, J * sizeg)  
-          += k.evaluateDerivative(ipIndex, wrt(coeff(1_,I,1_,J)))* ("weight from integration point and geo.integrationElement"); 
+        KBlocked[_1,_1].block<sizeg, sizeg>(I * sizeg, J * sizeg)  
+          += k.evaluateDerivative(gpIndex, wrt(coeff(_1,I,_1,J))) * gp.weight() * sharedGeometry->integrationElement(gp.position()); 
        
     for (size_t I = 0; I < coeffSizeg; ++I) 
       for (size_t J = 0; J < coeffSizef; ++J) 
-        KBlocked[1_,0_].block<sizef, sizeg>(I * sizeg, J * sizef)  
-          += k.evaluateDerivative(ipIndex, wrt(coeff(1_,I,0_,J)))* ("weight from integration point and geo.integrationElement"); 
+        KBlocked[_1,_0].block<sizef, sizeg>(I * sizeg, J * sizef)  
+          += k.evaluateDerivative(gpIndex, wrt(coeff(_1,I,_0,J))) * gp.weight() * sharedGeometry->integrationElement(gp.position()); 
     } 
 } 
 ``` 
 
-1. This Block structure is not necessary. In this example all types (MatrixBlock00,MatrixBlock01,MatrixBlock10,MatrixBlock11) are considered as `#!cpp Eigen::MatrixXd`.
+1. This Block structure is not necessary. Additionally, in this example all types (MatrixBlock00,MatrixBlock01,MatrixBlock10,MatrixBlock11) are considered as `#!cpp Eigen::MatrixXd`.
 
 
 ## Writing your own expression
 You can also write your own expressions. For this you can look into existing expressions. Especially the sqrt expression and the normSquared expression are the most general unary and binary expression
 
-# Implementing the return value
+### Implementing the return value
 If you want to implement your own expression you first have to implement the return value.
 This is done using the function
 ```cpp 
@@ -462,7 +463,8 @@ template <typename LFArgs>
 auto evaluateValueOfExpression(const LFArgs &lfArgs) const; 
 ``` 
 !!! warning
-The interface dictates that the return value needs to be an Eigen type. Thus, even if you want to return a scalar `#!cpp double` you have to wrap it in `#!cpp Eigen::Vector<double, 1>`
+
+    The interface dictates that the return value needs to be an Eigen type. Thus, even if you want to return a scalar `#!cpp double` you have to wrap it in `#!cpp Eigen::Vector<double, 1>`
 
 Additionally you also have to implement the derivative evaluation. This is done by implementing
 ```cpp 
@@ -470,9 +472,9 @@ template <int DerivativeOrder, typename LFArgs>
 auto evaluateDerivativeOfExpression(const LFArgs &lfArgs) const; 
 ``` 
 
-# Evaluate underlying functions
-Expression always act on already given expression. Therefore, to return the correct quantity for your expression you have to evaluate the underlying quantities.
-If you have a unary function you have access to expression using  `#!cpp this->m()` and for binary expressions this is `#!cpp this->l()` and `#!cpp this->r()`.
+### Evaluate underlying functions
+Expression always act on already given expressions. Therefore, to return the correct quantity for your expression you have to evaluate the underlying quantities.
+If you have a unary function you have access to the expression using  `#!cpp this->m()` and for binary expressions this is `#!cpp this->l()` and `#!cpp this->r()`.
 
 To evaluate these functions you can use the following syntax.
 
@@ -488,8 +490,8 @@ const auto mEvaluated = evaluateFunctionImpl(this->m(), lfArgs); // (1)
 
 The expression fulfill the syntax of a local function thus also derivative can be evaluated.
 
-In the function `evaluateDerivativeOfExpression` the derivative order that the user wants is encoded in the template argument `DerivativeOrder`.
-Additionally, the derivative types can also accessed using the booleans
+In the function `evaluateDerivativeOfExpression` the derivative order, that the user wants is encoded in the template argument `DerivativeOrder`.
+Additionally, the derivative types can also be accessed using the static booleans
 
 ```cpp 
     static constexpr bool hasTwoCoeff; 
@@ -718,5 +720,5 @@ This can be used then as
 25. As above in the single spatial case
 26. As above in the single spatial case
 
-If your expression is working you should add it to `ikarus/localfunctions/expressions.hh`
+If your expression is working you should add it to `dune/localfefunctions/expressions.hh`, by a PR at [dune-localfefunctions](https://github.com/ikarus-project/dune-localfefunctions).
 \bibliography
