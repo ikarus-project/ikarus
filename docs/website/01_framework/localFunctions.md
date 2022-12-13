@@ -7,7 +7,7 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 
 Local functions are functions which are bound to single grid elements.
 Therefore, they are constructed from some local basis, a coefficient vector and the geometry of the grid element.
-Since, the implementation is quite involved localfefunctions do not reside at Ikarus but in the seperate dune module [dune-localfefunctions](https://github.com/ikarus-project/dune-localfefunctions).
+Since, the implementation is quite involved localfefunctions do not reside at Ikarus but in the separate dune module [dune-localfefunctions](https://github.com/ikarus-project/dune-localfefunctions).
 
 Usually local functions need to be evaluated in the local coordinate system \( \mathbb{\xi} \in T_{\text{ref}} \subset\mathbb{R}^n \) :
 
