@@ -63,23 +63,23 @@ auto pft = Ikarus::StandardArcLength{};
 auto pft = Ikarus::LoadControlWithSubsidiaryFunction{};
 auto pft = Ikarus::DisplacementControl{controlledIndices};
 ```
-The default path-following type is the `#!cpp Ikarus::StandardArcLength{}`.
-
-It is to note that in the current implementation, it is assumed that the external forces are given by 
-$F_{ext} = F_{ext}^0\lambda$ such that 
-$$
--\frac{\partial \mathbf{R}}{\partial \lambda} = F_{ext}^0
-$$
-An implementation for a general non-linear $F_{ext} = F_{ext}^0\left(\mathbf{D},\lambda\right)$ is an [open task](../03_contribution/openTask.md#control-routines---addons).
+!!! note
+    The default path-following type is the `#!cpp Ikarus::StandardArcLength{}`.
+    In the current implementation, it is assumed that the external forces are given by 
+    $F_{ext} = F_{ext}^0\lambda$ such that 
+    $$
+    -\frac{\partial \mathbf{R}}{\partial \lambda} = F_{ext}^0
+    $$
+    An implementation for a general non-linear $F_{ext} = F_{ext}^0\left(\mathbf{D},\lambda\right)$ is an [open task](../03_contribution/openTask.md#control-routines---addons).
 
 In order to create an own implementation for the scalar subsidiary function, the user has to create a `#!cpp struct` 
 with the following three member functions:  
 ```cpp
-void evaluateSubsidiaryFunction(SubsidiaryArgs& args);
+void evaluateSubsidiaryFunction(SubsidiaryArgs& args) const;
 void initialPrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args);
 void intermediatePrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args);
 ```
-For each Newton-Raphson iteration, The function `#!cpp evaluateSubsidiaryFunction(SubsidiaryArgs& args)` is used to evaluate the subsidiary function and 
+For each Newton-Raphson iteration, the function `#!cpp evaluateSubsidiaryFunction(SubsidiaryArgs& args)` is used to evaluate the subsidiary function and 
 its derivatives with respect to the displacement $\mathbf{D}$ and the load factor $\lambda$. The other two functions 
 are used to specify a prediction for $\mathbf{D}$ and $\lambda$ for the initial step and for 
 all the other intermediate subsequent `#!cpp load_steps`, respectively.   

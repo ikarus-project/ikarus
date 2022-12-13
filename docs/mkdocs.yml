@@ -51,11 +51,11 @@ nav:
     - Local basis: 01_framework/localBasis.md
     - Local functions: 01_framework/localFunctions.md
     - FE requirements: 01_framework/feRequirements.md
-    - Finite Elements: 01_framework/finiteElements.md
+    - Finite elements: 01_framework/finiteElements.md
     - Assembler: 01_framework/assembler.md
     - Dirichlet boundary conditions: 01_framework/dirichletBCs.md
     - Solvers: 01_framework/solvers.md
-    - NonlinearOperator: 01_framework/nonlinearOperator.md
+    - Nonlinear operator: 01_framework/nonlinearOperator.md
     - Control routines: 01_framework/controlRoutines.md
     - Manifolds: 01_framework/manifolds.md
     - Observer and observables: 01_framework/observer.md

@@ -31,9 +31,10 @@ This [link](https://www.dune-project.org/doc/grids/) provides an overview of the
 There also exists an IGA-based grid called [dune-iga](https://github.com/rath3t/dune-iga) to perform
 isogeometric analysis (refer [@cottrellIsogeometricAnalysisIntegration2009d]).
 
-Note that, grid only provide geometric information and their relation to their neighbors.
-Even if the geometry is usually constructed by some ansatz functions, grids do not provide this information to the user, since ansatz functions for soultion fields are provided by some global bases.
-Thus, the user can choose, if the problem should be formulated using the iso-parametric concept, i.e. same ansatz functions for geometry and solution fields, or if the ansatz functions for the solution should be independent.
-We are relying on here one the basis defined by dune. Thus, they use the same interface.
-For details see[@sander2020dune] Chapter 10.
+It is important to note that the grid only provides geometric information and their relationship to their neighbors. 
+Even though geometry is typically constructed by some ansatz functions, grids do not provide this information to the 
+user because some global bases provide ansatz functions for the soultion fields. Thus, the user can choose if the 
+problem should be formulated using the iso-parametric concept, i.e., the same ansatz functions for geometry and 
+solution fields, or if the ansatz functions for the solution should be independent. The basis defined by Dune is directly 
+used here. Thus, they use the same interface. For details, see[@sander2020dune] Chapter 10.
 \bibliography
