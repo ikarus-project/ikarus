@@ -5,7 +5,7 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 
 # Oberserver and Observable
 
-To write output messages when a load step is completed, the observer pattern is implemented in Ikarus.
+To write output messages when desired by the user, the observer pattern is implemented in Ikarus.
 Four things are necessary to understand the implementation of observer patterns: `Messages`, `IObservable`, 
 `IObserver` and `Subscriptions`.
 

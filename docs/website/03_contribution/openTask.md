@@ -7,7 +7,6 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 Thank you for your interest in contributing to this code base.
 The following task are open for your contributions.
 
-
 ### Local functions
 * Implementing a unit normal field function[^KLNote] and its derivatives w.r.t. its coefficients \( \boldsymbol{x}_i \)
 
@@ -25,7 +24,6 @@ The following task are open for your contributions.
 
 ### Control routines - addons
 * Extended systems
-* Inhomogeneous dirichlet boundary conditions wrapper class
 * Nonlinear dependence of $F_{ext}$ on $\mathbf{D}$ and $\lambda$ for path-following techniques, see [control routines](../01_framework/controlRoutines.md#path-following-techniques).
 
 ### Finite element helper
@@ -38,18 +36,13 @@ The following task are open for your contributions.
 * Implement forces and stiffness matrix of `NonLinearElasticityFE`
 * Standard beam and plate formulations
 
-### Local Basis 
-* Support second derivatives
-
-
 ### Further addons
 * Python binding ([pybind11](https://github.com/pybind/pybind11))
 * [Muesli](https://materials.imdea.org/muesli/)
 
 [^KLNote]: This is usually needed for a Kirchhoff-Love shell implementation, see [@kiendlKLshell].
 
-
 !!! note  "Code style"
-For details on our code style we refer to [link](codeStyle.md).
+    For details on the code style, refer [link](codeStyle.md).
 
 \bibliography 

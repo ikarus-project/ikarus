@@ -3,11 +3,11 @@ SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 SPDX-License-Identifier: CC-BY-SA-4.0
 -->
 
-# Compression of an incompressible rubber block
+# Deformation of an incompressible rubber block
 
 ## Description
-`iks004_incompressible_LinearElasticity.cpp` uses a finite element technology with displacement and pressure as
-independent degrees of freedom to simulate the compression of an incompressible rubber block. The potential energy 
+`iks003_incompressible_LinearElasticity.cpp` uses a finite element technology with displacement and pressure as
+independent degrees of freedom to simulate the deformation of an incompressible rubber block. The potential energy 
 for such a system is defined in the `Solid struct` by the function
 `calculateScalarImpl(const FERequirementType &par, const Eigen::VectorX<ScalarType> &dx)`. 
 This function uses the principles of automatic differentiation to provide the stiffness matrix and

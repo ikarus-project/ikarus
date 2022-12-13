@@ -17,7 +17,7 @@ Here \(  \boldsymbol{u} \) is the solution field with a prescribed value \(\bold
 For the discrete algebraic problem, this translates to fixing the values of \(u_i\) to \(g_i\) in the approximation \(  \boldsymbol{u}^h = \sum_i N^i u_i \), where
 \(  N^i \) is the $i$-th ansatz function.
 
-The implementation of several functions for $\boldsymbol{g}$ is done in the class `#!cpp Ikarus::DirichletValues`.
+The handling of such a function $\boldsymbol{g}$ is done by the class `#!cpp Ikarus::DirichletValues`.
 ##  Interface
 The interface of `#!cpp Ikarus::DirichletValues` is represented by the following code snippet:
 ```cpp

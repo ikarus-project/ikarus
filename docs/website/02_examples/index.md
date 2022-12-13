@@ -21,7 +21,7 @@ The available examples are :
 |:---------------|:------------------------------------------------------------------------------|
 | iks001         | [Compute the value of $\pi$](computePi.md)                                    |
  | iks002         | [Cantilever beam with point load](cantileverBeam.md)                          |
-| iks003         | [Compression of an incompressible rubber block](incompressibleRubberBlock.md) |
+| iks003         | [Deformation of an incompressible rubber block](incompressibleRubberBlock.md) |
 | iks004         | [Plate subjected to a surface load](kirchhoffPlate.md)                        |
 | iks005         | [Newton-Raphson method](newtonRaphsonMethod.md)                               |
 | iks006         | [Non-linear Elasticity for 2D solids](nonLinearElasticity.md)                 |
