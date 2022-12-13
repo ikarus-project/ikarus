@@ -18,7 +18,8 @@ auto dfvLambda = [&](auto&& x) { return df(x); };
 
 auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda, dfvLambda), parameter(x));
 ```
-!!! note "It is assumed that the second function is the derivative of the first function, the third function is the derivative of the second function (2nd derivative of the first function), and so on."
+!!! note 
+    It is assumed that the second function is the derivative of the first function, the third function is the derivative of the second function (2nd derivative of the first function), and so on.
 
 ``linearAlgebraFunctions(...)`` and ``parameter(...)`` are helper functions. They are necessary to distinguish which argument is a function and which argument is a parameter.
 
