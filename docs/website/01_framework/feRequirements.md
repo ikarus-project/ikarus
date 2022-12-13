@@ -18,7 +18,7 @@ FErequirements req = FErequirements()
 MatrixType A = sparseFlatAssembler.getReducedMatrix(req);
 ```
 
-All these methods return a reference to `FErequirements` thus, they can chained together.
+All the methods return a reference to `FErequirements`, so they can be chained together.
 
 As in line 2, the finite element solution can also be inserted. The solution is passed with the `enum` type 
 `FESolutions::displacement` vector `d`. This stores a reference to the vector.
@@ -28,7 +28,7 @@ global solutions, an `enum` type of `FEParameter::loadfactor` is passed to indic
 followed by its value.
 
 Finally, the method `addAffordance` is used to indicate the request required from the finite element.
-Thus, there exists scalar, vector, matrix affordances and general affordance collections.
+Thus, there exist scalar, vector, matrix and general affordance collections.
 
 Currently, the following are defined:
 

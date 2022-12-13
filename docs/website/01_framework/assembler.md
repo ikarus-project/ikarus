@@ -54,7 +54,7 @@ The available requirements are explained on the [FE requirements page](feRequire
 It assembles the requested scalar quantity. A call to this function could look like this:
 ```cpp
 ScalarAssembler myAssembler(...) // (1)
-const auto& K = myAssembler.getScalar(energy) // (2)
+const auto& K = myAssembler.getScalar(FErequirements) // (2)
 ```
 
 1. Represents the construction of the desired assembler.

@@ -68,22 +68,22 @@ docker pull rath3t/ikarus:latest #if you want to use Ikarus to run your own main
 
 ## Clone Ikarus
 
-- Clone the Ikarus repository as you do it with any other repository
-- Open the CMake tab `CMake` in the CLion footer:
+- Clone the Ikarus repository.
+- Open the `CMake` tab in the CLion footer:
   ![ClionFooter.png](auxiliaryImages/Installation/ClionFooter.png)
-- Click on `Reload CMake project` (refresh symbol)  
+- Click on `Reload CMake project` (refresh symbol):
   ![ReloadCmakeProject.png](auxiliaryImages/Installation/ReloadCmakeProject.png)
 - CMake now detects all required sources automatically. The output should look similar to
-  the screenshot below
+  the screenshot below:
   ![CMakeOutput.png](auxiliaryImages/Installation/CMakeOutput.png)
 
 ## Installation on Linux
-1. If you have docker available you can simply pull the container with Ikarsu installed to start developing
+1. If you have docker available, simply pull the container with Ikarus installed to start developing.
 ```sh
 docker pull rath3t/ikarus:latest
 ```
-2. Login into the container via
+2. Log in to the container via
 ```sh
 docker container run -it --entrypoint /bin/bash  rath3t/ikarus:latest
 ```
-3. Instead of point 2, you can now also follow the documentation above, if you want to use Clion on Linux, e.g. how to use Clion with a Docker container.
+3. Instead of point 2, one can now also follow the documentation above if Clion on Linux is preferred.

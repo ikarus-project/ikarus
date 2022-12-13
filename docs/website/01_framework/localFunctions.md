@@ -109,15 +109,15 @@ $$
 where $J$ is the Jacobian of the mapping from the reference element $T_{\text{ref}}$ to the element living in physical space $T$.
 For details, see page 22 of the Dune book[@sander2020dune].
 
-Instead of passing `spatialAll` to `wrt(..)`, there are other helper such as
+Instead of passing `spatialAll` to `wrt(..)`, there are other helper functions such as:
 
 ```cpp 
 localFunction.evaluateDerivative(gpIndex, wrt(spatial(0))); // (1)  
 localFunction.evaluateDerivative(gpIndex, wrt(spatial(1))); // (2) 
 ``` 
 
-1. Compute the first column of the spatial Jacobian of localFunction
-2. Compute the second column of the spatial Jacobian of localFunction
+1. Compute the first column of the spatial Jacobian of `localFunction`
+2. Compute the second column of the spatial Jacobian of `localFunction`
 
 which can also be combined with `on(...)`.
 
@@ -125,7 +125,8 @@ which can also be combined with `on(...)`.
 ```cpp 
 localFunction.evaluateDerivative(gpIndex, wrt(coeff(j))); 
 ``` 
-which implements for a in vector space valued function (steeming from interpolation),e.g. $f(\boldsymbol{\xi}) = \sum_{I=1}^n N^I(\boldsymbol{\xi}) \boldsymbol{x}_I$ the following
+which evaluates the first derivative for a vector space valued function,e.g., for $f(\boldsymbol{\xi}) = \sum_{I=1}^n N^I(\boldsymbol{\xi}) \boldsymbol{x}_I$, 
+we arrive at a matrix $\boldsymbol{A}$ such that
 
 $$
 [\boldsymbol{A}]_{ij}  = A_{ij} =  \frac{\partial f_i(\boldsymbol{\xi})}{\partial \boldsymbol{x}_j}
@@ -141,11 +142,11 @@ $$
 [\boldsymbol{B}]_{jk} =  B_{jk} = q_i A_{ijk} =  \frac{\partial^2 (q_i  f_i(\boldsymbol{\xi}))}{\partial \boldsymbol{x}_j\partial \boldsymbol{x}_k}
 $$
 
-where $\boldsymbol{q}$ is an arbitrary vector of the same size as $f$, i.e. it is the direction of the derivative in this case. 
-$\boldsymbol{A}$ and $\boldsymbol{B}$ is simply the returned matrix and they do not have a special meaning. 
-If we would not pass the vector, the result would be a third order tensor for a vector valued function $f$.
-Therefore, in this case, we only do a direction derivative in the direction given by `along(q)` and then simply return a matrix. 
-This helps for readablilty and for speed. See the [example](#example-dirichlet-energy) for details.
+where $\boldsymbol{q}$ is an arbitrary vector of the same size as $f$, i.e., it is the direction of the derivative in this case. 
+$\boldsymbol{A}$ and $\boldsymbol{B}$ are simply then the returned matrices and do not have any special meaning. 
+If a vector is not passed while evaluating the second derivative, the result would be a third-order tensor for a vector-valued function $f$.
+As a result, a direction derivative in the direction given by `along(q)` is computed to return a matrix $\boldsymbol{B}$ in this case. 
+This helps for both readability and performance. See the [example](#example-dirichlet-energy) later for more details.
 ## Derivatives w.r.t. coefficients and spatial derivatives
 Spatial derivatives and derivatives w.r.t. the coefficients can be combined. Therefore, it is legal to call
 
@@ -157,7 +158,7 @@ auto b2 = localFunction.evaluateDerivative(gpIndex, wrt(coeff(j,k),spatial(1)), 
 
 !!! warning  
 
-    The order of spatial and coeff derivatives does not matter. The returned value is always re-arranged that the first derivative is the spatial one.
+    The order of spatial and coefficient derivatives does not matter. The returned value is always rearranged so that the first derivative is the spatial one.
 
 The first line is then equivalent to
 
@@ -165,16 +166,16 @@ $$
 [\boldsymbol{B}]_{jk} =  B_{jk} = Q_{il} A_{iljk} =  \frac{\partial^2 ([\operatorname{grad}_\boldsymbol{\xi} f(\boldsymbol{\xi})]_{il} Q_{il} )}{\partial \boldsymbol{x}_j\partial \boldsymbol{x}_k}.
 $$
 
-For the second and third line we have
+For the second and third line, we have
 
 \begin{align}
 \boldsymbol{b}_{0,jk} = \frac{\partial^2 ([\operatorname{grad}_{\xi^0} f(\xi)]_{i} q_i )}{\partial \boldsymbol{x}_j\partial \boldsymbol{x}_k}, \\
 \boldsymbol{b}_{1,jk} = \frac{\partial^2 ([\operatorname{grad}_{\xi^1} f(\xi)]_{i} q_i )}{\partial \boldsymbol{x}_j\partial \boldsymbol{x}_k}.
 \end{align}
 
-These objects are also returned when the second and third line above are used.
+These objects are also returned when the second and third lines above are used.
 
-Again all of these function calls can be combined with `on(gridElement)` as
+All of these function calls, once again, can be combined with `on(gridElement)` as shown below:
 
 ```cpp 
 localFunction.evaluateDerivative(gpIndex, wrt(coeff(j,k),spatialAll), along(Q), on(gridElement)); 
@@ -188,7 +189,7 @@ $$
 
 !!! warning "Warning"
 
-    Currently only first order spatial derivatives and second order derivatives w.r.t. the coefficients are supported.
+    Currently, only first-order spatial derivatives and second-order derivatives w.r.t. the coefficients are supported.
 
 ## Example Dirichlet energy
 This examples shows how the energy, gradient and Hessian of a [dirichlet energy](https://en.wikipedia.org/wiki/Dirichlet_energy) can be calculated.
