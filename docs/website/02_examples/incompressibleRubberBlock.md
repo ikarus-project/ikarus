@@ -4,8 +4,117 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 -->
 
 # Compression of an incompressible rubber block
+
+## Description
 `iks004_incompressible_LinearElasticity.cpp` uses a finite element technology with displacement and pressure as
-independent degrees of freedom to simulate the compression of an incompressible rubber block. The potential energy for such a system is defined in the
-`calculateScalarImpl(const FERequirementType &par, const Eigen::VectorX<ScalarType> &dx)` function in `struct`
-named `Solid`. This function uses the principles of automatic differentiation to provide the stiffness matrices and
-other necessary quantities to provide a static structural analysis.
+independent degrees of freedom to simulate the compression of an incompressible rubber block. The potential energy 
+for such a system is defined in the `Solid struct` by the function
+`calculateScalarImpl(const FERequirementType &par, const Eigen::VectorX<ScalarType> &dx)`. 
+This function uses the principles of automatic differentiation to provide the stiffness matrix and
+other necessary quantities to perform a static structural analysis.
+
+## Code highlights
+The `struct` named `Solid` is created as an object of `AutoDiffFE`. It is constructed as shown below:
+```cpp
+Solid(const Basis &basis, const typename LocalView::Element &element, double emod, double nu)
+    : BaseAD(basis, element), localView_{basis.localView()}, emod_{emod}, nu_{nu} {
+  localView_.bind(element);
+  mu_       = emod_ / (2 * (1 + nu_));
+  lambdaMat = convertLameConstants({.emodul = emod_, .nu = nu_}).toLamesFirstParameter();
+}
+```
+It takes a reference to the basis function (`&basis`), the element (`&element`), and the material parameters, namely Young's modulus 
+(`emod`) and Poisson's ratio (`nu`), as arguments during construction. The function `convertLameConstants()` is a helper function
+to switch between the Lame parameters.
+
+`ScalarType calculateScalarImpl(const FERequirementType &par, const Eigen::VectorX<ScalarType> &dx)` is 
+then defined, returning a scalar value, in this case the energy.
+The energy is then calculated as follows:
+```cpp
+energy += (0.5 * (2 * mu_ * symgradu.squaredNorm() - 1 / lambdaMat * Dune::power(pressure, 2)) + pressure * divU
+           - x.dot(fext))
+          * geo.integrationElement(gp.position()) * gp.weight();  // plane strain for 2D
+```
+Here: 
+- `symgradu` is the symmetric part of the gradient of displacements 
+- `lambdaMat` is the first Lame parameter
+- `pressure` and `x` are the nodal pressure and displacements, respectively
+- `divU` is the divergence of the displacement vector
+- `fext` is the external force vector
+- `gp.position()` and `gp.weight()` are the positions and weights from the quadrature rule
+- `geo.integrationElement()` returns the determinant of Jacobian required from the iso-parametric concept
+
+A Yasp 2D grid[@sander2020dune] is created of the size $L$ x $h$ with 20 elements in both directions as shown below: 
+```cpp
+using Grid        = Dune::YaspGrid<gridDim>;
+const double L    = 1;
+const double h    = 1;
+const size_t elex = 20;
+const size_t eley = 20;
+
+Dune::FieldVector<double, 2> bbox       = {L, h};
+std::array<int, 2> elementsPerDirection = {elex, eley};
+auto grid                               = std::make_shared<Grid>(bbox, elementsPerDirection);
+auto gridView                           = grid->leafGridView();
+```
+A linear Lagrangian basis is opted for the displacements and a constant basis for the pressure degrees of freedom using the
+`composite` basis feature from Dune as shown below:
+```cpp
+auto basis = Ikarus::makeConstSharedBasis(
+gridView, composite(power<2>(lagrange<1>(), FlatInterleaved()), lagrange<0>(), FlatLexicographic()));
+```
+The displacement degrees of freedom at position $y=0$ are fixed using the following snippet:
+```cpp
+Ikarus::DirichletValues dirichletValues(basis);
+dirichletValues.fixDOFs([](auto &basis_, auto &dirichletFlags) {
+  Dune::Functions::forEachBoundaryDOF(subspaceBasis(basis_, _0),
+                   [&](auto &&localIndex, auto &&localView, auto &&intersection) {
+                       if (std::abs(intersection.geometry().center()[1]) < 1e-8)
+                         dirichletFlags[localView.index(localIndex)] = true;
+  });
+}); 
+```
+Here, all the element edges lying on the boundary of the physical domain are looped over and checked to see if the first index 
+of the center of the edge (`intersection.geometry().center()[1]`) is closer to zero. If this is the case, the corresponding displacement 
+degrees of freedom (obtained via `subspaceBasis(basis_, _0)`) are set to `true` and used by the assembler later.
+
+A `sparse` and a `dense` assembler are used to arrive at the stiffness matrix and the external load vector using the 
+finite element requirements as described [here](../01_framework/feRequirements.md#fe-requirements).  
+```cpp
+auto sparseFlatAssembler = SparseFlatAssembler(fes, dirichletValues);
+auto denseFlatAssembler  = DenseFlatAssembler(fes, dirichletValues);
+  auto req = FErequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
+
+auto fextFunction = [&](auto &&lambdaLocal, auto &&dLocal) -> auto & {
+  req.insertGlobalSolution(Ikarus::FESolutions::displacement, dLocal)
+      .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal);
+  return denseFlatAssembler.getReducedVector(req);
+};
+auto KFunction = [&](auto &&lambdaLocal, auto &&dLocal) -> auto & {
+  req.insertGlobalSolution(Ikarus::FESolutions::displacement, dLocal)
+      .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal);
+  return sparseFlatAssembler.getReducedMatrix(req);
+};
+```
+The `SparseLU` package from the Eigen library is used to solve the linear system of equations. 
+
+For post-processing, the function `Dune::Functions::makeDiscreteGlobalBasisFunction()` is used to create a function for 
+the displacements and pressure using the basis functions and the nodal values. `Dune::VTKWriter` is used to write 
+the `*.vtu` files. The results can then be plotted, for example, using [Paraview](https://www.paraview.org/).
+```cpp
+auto disp
+    = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(subspaceBasis(*basis, _0), d);
+auto pressure = Dune::Functions::makeDiscreteGlobalBasisFunction<double>(subspaceBasis(*basis, _1), d);
+Dune::VTKWriter vtkWriter(gridView, Dune::VTK::nonconforming);
+vtkWriter.addVertexData(disp, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
+vtkWriter.addVertexData(pressure, Dune::VTK::FieldInfo("pressure", Dune::VTK::FieldInfo::Type::scalar, 1));
+vtkWriter.write("iks003_incompressibleLinearElasticity");
+```
+
+## Takeaways
+- `Ikarus::AutoDiffFE` can be used to arrive at the stiffness matrix and external load vector from the energy function.
+- Helper functions are included to switch between the Lame parameters.
+- Grids from Dune can be directly incorporated within the Ikarus framework.
+- Sparse and dense assemblers can be used to construct the global stiffness matrices and load vectors.
+- Solvers from the Eigen library can be used to solve the linear system of equations.
+- Post-processing can be done via Paraview after writing the `*.vtu` files using `Dune::VTKWriter`.
