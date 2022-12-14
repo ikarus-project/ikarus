@@ -51,7 +51,6 @@ namespace Ikarus {
     magnetizationAndVectorPotential
   };
 
-
   enum class ResultType {
     noType,
     magnetization,

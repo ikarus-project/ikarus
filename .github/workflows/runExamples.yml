@@ -59,14 +59,12 @@ jobs:
       - name: Run all examples
         working-directory: ./ikarus-examples/cmake-build-${{ matrix.config.config }}/src
         run: |
-          echo "Testing example: iks001" && ./iks001_cantileverBeamOneDGrid;
-          echo "Testing example: iks002" && ./iks002_computePi;
-          echo "Testing example: iks003" && ./iks003_computePi;
-          echo "Testing example: iks004" && ./iks004_incompressibleLinearElasticity;
-          echo "Testing example: iks005" && ./iks005_kirchhoffPlate;
-          echo "Testing example: iks006" && ./iks006_newtonRaphson;
-          echo "Testing example: iks007" && ./iks007_nonlinear2DSolid;
-          echo "Testing example: iks008" && ./iks008_vonMisesTruss;
-          echo "Testing example: iks009" && ./iks009_cooksMembrane auxiliaryFiles/iks009_cook_membrane.parset;
-          echo "Testing example: iks010" && ./iks010_cooksMembraneConvergenceStudy;
+          echo "Testing example: iks001" && ./iks001_computePi;
+          echo "Testing example: iks002" && ./iks002_cantileverBeamOneDGrid;
+          echo "Testing example: iks003" && ./iks003_incompressibleLinearElasticity;
+          echo "Testing example: iks004" && ./iks004_kirchhoffPlate;
+          echo "Testing example: iks005" && ./iks005_newtonRaphson;
+          echo "Testing example: iks006" && ./iks006_nonlinear2DSolid;
+          echo "Testing example: iks007" && ./iks007_vonMisesTruss;
+          echo "Testing example: iks008" && ./iks008_cooksMembrane auxiliaryFiles/iks008_cooksMembrane.parset;
 #          for i in $( find . -maxdepth 1 -name 'iks*'| sed -e 's/\(.cpp\)*$//g' | sed "s|./||" ); while [! -f auxiliaryFiles/"$i".parset] do echo "Test example: "$i"" &&./"$i"; done;

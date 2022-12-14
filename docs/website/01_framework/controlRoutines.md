@@ -10,18 +10,21 @@ A load control object is constructed as follows:
 ```cpp
 auto lc = Ikarus::LoadControl(nonlinearSolver, numLoadSteps, {loadFactorStartValue, loadFactorEndValue});
 ```
-``nonlinearSolver`` is a nonlinear Solver, e.g. Newton-Raphson. ``numLoadSteps`` is the number of load steps, 
-``loadFactorStartValue`` is the value of the load factor at the beginning of the simulation (usually 0) and 
-``loadFactorEndValue`` is the load factor at the end of the simulation.
 
-The load control is started with the ``run()`` method, i.e. in the example above:
+- `nonlinearSolver` is a nonlinear solver, e.g., Newton-Raphson method, trust-region method, etc.
+- `numLoadSteps` is the number of load steps.
+- `loadFactorStartValue` is the value of the load factor at the beginning of the simulation.
+- `loadFactorEndValue` is the value of the load factor at the end of the simulation.
+
+The load control is started with the ``run()`` method, i.e., for the above-mentioned example:
 ```cpp
 lc.run();
 ```
 
-## Obtaining infos from control routines
-The load control is an observable object, i.e. you can subscribe to the messages of the load control.
-[Read this page to learn more about the implementation of observer pattern in Ikarus.](observer.md)
+## Obtaining information from control routines
+The load control is an observable object, i.e. one can subscribe to the messages of the load control method.
+To read further on the implementation of observer patterns in Ikarus, see [here](observer.md).
+
 The following messages are available:
 ```cpp
 enum class ControlMessages { 
@@ -31,15 +34,16 @@ enum class ControlMessages {
   STEP_STARTED,
   STEP_ENDED,
   SOLUTION_CHANGED,
-  END };
+  END 
+};
 ```
 
-## Path following techniques
-A general routine based on the standard Arc-length method is included which uses a scalar subsidiary function to impose 
+## Path-following techniques
+A general routine based on the standard arc-length method is included, which uses a scalar subsidiary function to impose 
 a constraint on the non-linear system of equations. The previously mentioned LoadControl method can also be recreated 
-using this technique. For more details on the standard arc-length method, refer the works 
+using this technique. For more details on the standard arc-length method, see, among others, the works 
 of Wempner[@WEMPNER19711581], Crisfield[@CRISFIELD198155], Ramm[@wunderlich_strategies_1981] and 
-Riks[@riks_application_1972] among others. A path following object is constructed as follows:  
+Riks[@riks_application_1972] among others. A path-following object is constructed as follows:  
 ```cpp
 auto alc = Ikarus::PathFollowing(nr, load_steps, stepSize, pft);
 ```
@@ -47,7 +51,7 @@ where `#!cpp nr` is a Newton-Raphson solver which considers a scalar subsidiary 
 ```cpp
 auto nr = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
 ```
-and `#!cpp pft` is the desired path following technique. Three different path following techniques are included, namely
+and `#!cpp pft` is the desired path-following technique. Three different path-following techniques are included, namely
 
 * Standard arc-length method
 * Load control method (as a subsidiary function under this generalized implementation)
@@ -59,26 +63,26 @@ auto pft = Ikarus::StandardArcLength{};
 auto pft = Ikarus::LoadControlWithSubsidiaryFunction{};
 auto pft = Ikarus::DisplacementControl{controlledIndices};
 ```
-The default path following type is the `#!cpp Ikarus::StandardArcLength{}`.
-
-It is to note that in the current implementation, it is assumed that the external forces are given by 
-$F_{ext} = F_{ext}^0\lambda$ such that 
-$$
--\frac{\partial \mathbf{R}}{\partial \lambda} = F_{ext}^0
-$$
-An implementation for a general non-linear $F_{ext} = F_{ext}^0\left(\mathbf{D},\lambda\right)$ is an open task.
+!!! note
+    The default path-following type is the `#!cpp Ikarus::StandardArcLength{}`.
+    In the current implementation, it is assumed that the external forces are given by 
+    $F_{ext} = F_{ext}^0\lambda$ such that 
+    $$
+    -\frac{\partial \mathbf{R}}{\partial \lambda} = F_{ext}^0
+    $$
+    An implementation for a general non-linear $F_{ext} = F_{ext}^0\left(\mathbf{D},\lambda\right)$ is an [open task](../03_contribution/openTask.md#control-routines---addons).
 
 In order to create an own implementation for the scalar subsidiary function, the user has to create a `#!cpp struct` 
 with the following three member functions:  
 ```cpp
-void evaluateSubsidiaryFunction(SubsidiaryArgs& args);
+void evaluateSubsidiaryFunction(SubsidiaryArgs& args) const;
 void initialPrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args);
 void intermediatePrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args);
 ```
-The function `#!cpp evaluateSubsidiaryFunction(SubsidiaryArgs& args)` is used to evaluate the subsidiary function and 
-its derivatives with respect to the displacement $\mathbf{D}$ and the load factor $\lambda$ for every Newton-Raphson iteration. The other two functions 
-are used to specify a prediction for $\mathbf{D}$ and $\lambda$ initially for the very first step and for 
-all the other intermediate subsequent `#!cpp load_steps`.   
+For each Newton-Raphson iteration, the function `#!cpp evaluateSubsidiaryFunction(SubsidiaryArgs& args)` is used to evaluate the subsidiary function and 
+its derivatives with respect to the displacement $\mathbf{D}$ and the load factor $\lambda$. The other two functions 
+are used to specify a prediction for $\mathbf{D}$ and $\lambda$ for the initial step and for 
+all the other intermediate subsequent `#!cpp load_steps`, respectively.   
 
 `#!cpp SubsidiaryArgs` is a `#!cpp struct` which is defined as
 ```cpp
@@ -151,4 +155,3 @@ struct StandardArcLength {
     std::optional<double> psi;
   };
 ```
-

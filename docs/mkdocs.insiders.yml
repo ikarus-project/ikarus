@@ -4,4 +4,4 @@
 INHERIT: mkdocs.yml
 plugins:
   meta: {}
-  blog: {draft: true, blog_dir: blog}
+  blog: {draft: true, blog_dir: 04_blog}
