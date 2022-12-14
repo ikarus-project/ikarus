@@ -22,6 +22,7 @@ jobs:
           pip install git+https://${{ secrets.MKDOCS_TOKEN }}@github.com/squidfunk/mkdocs-material-insiders.git
           pip install mkdocs-macros-plugin
           pip install mkdocs-drawio-exporter
+          pip install mkdocs-glightbox
           pip install mkdocs-bibtex
           pip install pillow cairosvg
           sudo apt-get install libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev

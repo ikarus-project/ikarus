@@ -145,6 +145,7 @@ plugins:
   bibtex: {bib_file: "literature.bib"}
   search: {}
   social: {}
+  glightbox: {}
 
 extra:
   social:
