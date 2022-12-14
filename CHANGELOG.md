@@ -13,9 +13,9 @@ SPDX-License-Identifier: LGPL-2.1-or-later
 - Added class `DirichletValues` to handle homogeneous and inhomogeneous dirichlet Values [#104](https://github.com/ikarus-project/ikarus/pull/104)
 - Added documentation for ikarus-examples [#106](https://github.com/ikarus-project/ikarus/pull/106)
 - Refactored dune <--> Eigen transformations, thereby having smoother transformations between FieldVector and EigenVector/Matrix [#111](https://github.com/ikarus-project/ikarus/pull/111)
-- To test the examples, docker images from `main` are automatically generated, see [ikarus-docker-container ](https://github.com/ikarus-project/ikarus-docker-container)
+- To test the examples, docker images from `main` are automatically generated, see [ikarus-docker-container](https://github.com/ikarus-project/ikarus-docker-container)
 - Added license statement to each file [#114](https://github.com/ikarus-project/ikarus/pull/114)
-- Moved `localfefunctions` to a separate Dune module [#117](https://github.com/ikarus-project/ikarus/pull/117) 
+- Moved `localfefunctions` to a separate Dune module [#117](https://github.com/ikarus-project/ikarus/pull/117)
 - Refactored the documentation and added installation instructions [#125](https://github.com/ikarus-project/ikarus/pull/125)
 
 ## Release v0.2 (Apollodorus)
