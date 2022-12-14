@@ -16,5 +16,4 @@ The design of CI and the documentation were inspired by [Autodiff](https://autod
 The documentation is built using [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/).
 
 Ikarus provides the tools to create one's own examples and rapidly prototype finite element solution algorithms. 
-This is done by using template metaprogramming in C++ to write generic code, which is compiled for the example. 
-In addition, this is more efficient, as it provides a "one size fits all" executable.
+This is done by using template metaprogramming in C++ to write generic code, which is compiled for the example.

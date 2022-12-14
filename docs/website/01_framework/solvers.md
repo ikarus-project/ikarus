@@ -87,7 +87,7 @@ auto& nonLinearOperator(); // (3)
 | Name                      | Purpose         | Constraints on nonlinear operator                       | Header |Properties |
 |:--------------------------|:----------------|:----------------|--|--|
 | Newton-Raphson            | Root finding    | Value and gradient          | `newtonRaphson.hh`| Locally quadratic convergence |
-| Newton-Raphson with scalar subsidiary function            | Root finding with a scalar function as additional constraint    | Gradient and a scalar function          | `newtonRaphsonWithScalarSubsidiaryFunction.hh`| Locally quadratic convergence |
+| Newton-Raphson with scalar subsidiary function            | Root finding with a scalar function as additional constraint    | Value, gradient and a scalar function          | `newtonRaphsonWithScalarSubsidiaryFunction.hh`| Locally quadratic convergence |
 | Trust-Region              | Minimization    | Value, gradient and Hessian    | `trustRegion.hh`| Globally convergent and locally quadratic convergence |
 
 To see the Newton-Raphson implementation, we refer to the tests inside `nonLinearOperatorTest.cpp`, and for the 

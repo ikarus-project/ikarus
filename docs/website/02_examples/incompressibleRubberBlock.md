@@ -38,7 +38,7 @@ energy += (0.5 * (2 * mu_ * symgradu.squaredNorm() - 1 / lambdaMat * Dune::power
 Here: 
 - `symgradu` is the symmetric part of the gradient of displacements 
 - `lambdaMat` is the first Lame parameter
-- `pressure` and `x` are the nodal pressure and displacements, respectively
+- `pressure` and `x` is the nodal pressure and current position, respectively
 - `divU` is the divergence of the displacement vector
 - `fext` is the external force vector
 - `gp.position()` and `gp.weight()` are the positions and weights from the quadrature rule

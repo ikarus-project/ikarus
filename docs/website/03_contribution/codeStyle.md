@@ -58,19 +58,4 @@ Thus, the following definitions are summarized:
 - Interface: Defines a set of requirements
 - Implementation: A specific class which fulfills the interface
 
-## Member functions and free functions
-Following that, a comment on "free" functions is made for completeness and to emphasize the difference 
-with a member function. Free functions are indicated by the arguments of the functions listed in the 
-interface. For example, if there is a function named:
-
-- `brand(car)`
-
-listed in the interface, this would imply that the function would get an object, which is a car, as an argument and 
-return the name of the brand. An implementation of this function then takes the form:
-```cpp
-std::string brand(MyCar carObject) {return "MyBrand";}
-```
-This function is called a free function because it need not be a part of the class `MyCar`, but it is free and could be 
-defined in another file than the class `MyCar`.
-
 \bibliography 
