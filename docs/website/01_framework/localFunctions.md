@@ -22,31 +22,31 @@ Local functions provide the following interface:
 ```cpp 
 LocalFunction(const Dune::CachedLocalBasis<DuneBasis>& p_basis, const CoeffContainer& coeffs_,
               const std::shared_ptr<const Geometry>& geo,
-              Dune::template index_constant<ID> = Dune::template index_constant<std::size_t(0)>{}); // (1)
+              Dune::template index_constant<ID> = Dune::template index_constant<std::size_t(0)>{}); // (1)!
               
 FunctionReturnType evaluate(const DomainType& local); 
 FunctionReturnType evaluate(const unsigned int& integrationPointIndex); 
 
 auto evaluateDerivative(const DomainType& local,...); 
 auto evaluateDerivative(const unsigned int& integrationPointIndex,...); 
-auto viewOverIntegrationPoints(); // (2) 
+auto viewOverIntegrationPoints(); // (2)!
 
 template<std::size_t ID=0> 
-constexpr int order(Dune::index_constant<ID> ); // (3) 
+constexpr int order(Dune::index_constant<ID> ); // (3)! 
 
 template<std::size_t ID=0> 
-auto basis(Dune::index_constant<ID> ); // (4) 
+auto basis(Dune::index_constant<ID> ); // (4)! 
 
 template<std::size_t ID=0> 
-auto coefficientsRef(Dune::index_constant<ID>); // (5) 
+auto coefficientsRef(Dune::index_constant<ID>); // (5)! 
  
 template <typename IntegrationRule, typename... Ints> 
-void bind(IntegrationRule&& p_rule, Derivatives<Ints...>&& ints); // (6) 
+void bind(IntegrationRule&& p_rule, Derivatives<Ints...>&& ints); // (6)!
  
-auto clone (); // (7) 
+auto clone (); // (7)! 
 
 template<typename ScalarType, std::size_t ID=0> 
-auto rebindClone (ScalarType, Dune::index_constant<ID>); // (8) 
+auto rebindClone (ScalarType, Dune::index_constant<ID>); // (8)! 
 ``` 
 
 1. The constructor takes a `Dune::CachedLocalBasis`, a vector of coefficients and a shared pointer to the geometry of the grid elements. 
@@ -68,8 +68,8 @@ The implementation looks like the following:
     using namespace Dune::DerivativeDirections; 
     localFunction.bind(rule, bindDerivatives(0,1));     
     for(auto& [gpIndex, gp] : localFunction.viewOverIntegrationPoints()){ 
-      localFunction.evaluateDerivative(gpIndex, wrt(spatialAll)); // (1) 
-      localFunction.evaluateDerivative(gpIndex, wrt(spatialAll), on(gridElement)); // (2) 
+      localFunction.evaluateDerivative(gpIndex, wrt(spatialAll)); // (1)! 
+      localFunction.evaluateDerivative(gpIndex, wrt(spatialAll), on(gridElement)); // (2)! 
     } 
     ``` 
  
@@ -81,8 +81,8 @@ The implementation looks like the following:
     ``` c++ 
     using namespace Dune::DerivativeDirections; 
     for(auto& gp : rule){ 
-      localFunction.evaluateDerivative(gp.position(), wrt(spatialAll)); // (1) 
-      localFunction.evaluateDerivative(gp.position(), wrt(spatialAll), on(gridElement)); // (2) 
+      localFunction.evaluateDerivative(gp.position(), wrt(spatialAll)); // (1)! 
+      localFunction.evaluateDerivative(gp.position(), wrt(spatialAll), on(gridElement)); // (2)! 
     } 
     ``` 
  
@@ -112,8 +112,8 @@ For details, see page 22 of the Dune book[@sander2020dune].
 Instead of passing `spatialAll` to `wrt(..)`, there are other helper functions such as:
 
 ```cpp 
-localFunction.evaluateDerivative(gpIndex, wrt(spatial(0))); // (1)  
-localFunction.evaluateDerivative(gpIndex, wrt(spatial(1))); // (2) 
+localFunction.evaluateDerivative(gpIndex, wrt(spatial(0))); // (1)!  
+localFunction.evaluateDerivative(gpIndex, wrt(spatial(1))); // (2)! 
 ``` 
 
 1. Compute the first column of the spatial Jacobian of `localFunction`
@@ -229,7 +229,7 @@ auto gradientDirichletEnergy(Eigen::VectorXd& g) {
       Eigen::Vector<double, size> tmp; 
       tmp.setZero(); 
       for (int k = 0; k < gridDimension; ++k) 
-        tmp += graduDCoeffs[k] * gradu.col(k);  // (1) 
+        tmp += graduDCoeffs[k] * gradu.col(k);  // (1)! 
       g.segment<size>(i * size) += tmp * gp.weight() * sharedGeometry->integrationElement(gp.position());
     } 
   } 
@@ -284,40 +284,40 @@ These functions are all templated with `DomainTypeOrIntegrationPointIndex`, whic
 Additionally, `On<TransformArgs>` specifies whether the function should be evaluated on the reference element or the grid element (see above).
 ```cpp 
 FunctionReturnType evaluateFunctionImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
-                                        const On<TransformArgs>&) const; // (1) 
+                                        const On<TransformArgs>&) const; // (1)! 
  
 Jacobian evaluateDerivativeWRTSpaceAllImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
-                                           const On<TransformArgs>& transArgs) const; // (2) 
+                                           const On<TransformArgs>& transArgs) const; // (2)! 
                                                
 JacobianColType evaluateDerivativeWRTSpaceSingleImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
-                                                     int spaceIndex, const On<TransformArgs>& transArgs) const; // (3) 
+                                                     int spaceIndex, const On<TransformArgs>& transArgs) const; // (3)! 
  
  
 CoeffDerivMatrix evaluateDerivativeWRTCoeffsImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
-                                                 int coeffsIndex, const On<TransformArgs>& transArgs) const; // (4) 
+                                                 int coeffsIndex, const On<TransformArgs>& transArgs) const; // (4)! 
  
 CoeffDerivMatrix evaluateSecondDerivativeWRTCoeffsImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
                                                        const std::array<size_t, 2>& coeffsIndex,
                                                        const Along<AlongArgs...>& alongArgs,
-                                                       const On<TransformArgs>& transArgs) const; // (5) 
+                                                       const On<TransformArgs>& transArgs) const; // (5)! 
  
 std::array<CoeffDerivEukRieMatrix, gridDim> evaluateDerivativeWRTCoeffsANDSpatialImpl(
     const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, int coeffsIndex,
-    const On<TransformArgs>& transArgs) const; // (6) 
+    const On<TransformArgs>& transArgs) const; // (6)! 
  
  
 CoeffDerivEukRieMatrix evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(
     const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, int coeffsIndex, int spatialIndex,
-    const On<TransformArgs>& transArgs) const;  // (7) 
+    const On<TransformArgs>& transArgs) const;  // (7)! 
  
  
 auto evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialImpl(
     const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, const std::array<size_t, 2>& coeffsIndex,
-    const Along<AlongArgs...>& alongArgs, const On<TransformArgs>& transArgs) const; // (8) 
+    const Along<AlongArgs...>& alongArgs, const On<TransformArgs>& transArgs) const; // (8)! 
                                                                                               
 CoeffDerivMatrix evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialSingleImpl(
     const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, const std::array<size_t, 2>& coeffsIndex,
-    const int spatialIndex, const Along<AlongArgs...>& alongArgs, const On<TransformArgs>& transArgs) const; // (9) 
+    const int spatialIndex, const Along<AlongArgs...>& alongArgs, const On<TransformArgs>& transArgs) const; // (9)! 
 ``` 
 
 1. This is called by `localFunction.evaluate(...)`.
@@ -377,8 +377,8 @@ k.evaluateDerivative(ipIndex, wrt(coeff(i), spatial(d)));
 
 To use these expressions, there are additional exported static types for all expressions.
 ```cpp 
-constexpr bool isLeaf; // (1) 
-constexpr bool children; // (2) 
+constexpr bool isLeaf; // (1)! 
+constexpr bool children; // (2)! 
 ``` 
 
 1. This is true if the underlying expression is one of the above local functions that really contain the coefficients; see [Implementations](#implementations).
@@ -425,7 +425,7 @@ auto hessianDirichletEnergy(Matrix& h) {
   constexpr int coeffSizeg = coeffVectors1.size(); 
    
   Dune::MultiTypeBlockMatrix<Dune::MultiTypeBlockVector<MatrixBlock00,MatrixBlock01>, 
-                                       Dune::MultiTypeBlockVector<MatrixBlock10,MatrixBlock11> > KBlocked; // (1) 
+                                       Dune::MultiTypeBlockVector<MatrixBlock10,MatrixBlock11> > KBlocked; // (1)! 
  
    
   for (const auto& [gpIndex, gp] : k.viewOverIntegrationPoints()) { 
@@ -509,66 +509,66 @@ template <int DerivativeOrder, typename LFArgs>
     auto evaluateDerivativeOfExpression(const LFArgs &lfArgs) const { 
       const auto u = evaluateFunctionImpl(this->l(), lfArgs); 
       const auto v = evaluateFunctionImpl(this->r(), lfArgs); 
-      if constexpr (DerivativeOrder == 1)  // (1) 
+      if constexpr (DerivativeOrder == 1)  // (1)! 
       { 
-        const auto u_x = evaluateDerivativeImpl(this->l(), lfArgs); // (2) 
+        const auto u_x = evaluateDerivativeImpl(this->l(), lfArgs); // (2)! 
         const auto v_x = evaluateDerivativeImpl(this->r(), lfArgs); 
-        return Ikarus::eval(v.transpose() * u_x + u.transpose() * v_x); // (3) 
-      } else if constexpr (DerivativeOrder == 2) {   // (4) 
-        const auto &[u_x, u_y] = evaluateFirstOrderDerivativesImpl(this->l(), lfArgs); // (5) 
+        return Ikarus::eval(v.transpose() * u_x + u.transpose() * v_x); // (3)!
+      } else if constexpr (DerivativeOrder == 2) {   // (4)! 
+        const auto &[u_x, u_y] = evaluateFirstOrderDerivativesImpl(this->l(), lfArgs); // (5)! 
         const auto &[v_x, v_y] = evaluateFirstOrderDerivativesImpl(this->r(), lfArgs); 
-        if constexpr (LFArgs::hasNoSpatial and LFArgs::hasTwoCoeff) { // (6) 
-          const auto alonguArgs = replaceAlong(lfArgs, along(v)); // (7) 
+        if constexpr (LFArgs::hasNoSpatial and LFArgs::hasTwoCoeff) { // (6)! 
+          const auto alonguArgs = replaceAlong(lfArgs, along(v)); // (7)! 
           const auto alongvArgs = replaceAlong(lfArgs, along(u));  
  
-          const auto u_xyAlongv = evaluateDerivativeImpl(this->l(), alongvArgs); // (8) 
+          const auto u_xyAlongv = evaluateDerivativeImpl(this->l(), alongvArgs); // (8)! 
           const auto v_xyAlongu = evaluateDerivativeImpl(this->r(), alonguArgs); 
  
           return Ikarus::eval(u_xyAlongv + transpose(u_x) * v_y + transpose(v_x) * u_y + v_xyAlongu); 
-        } else if constexpr (LFArgs::hasOneSpatial and LFArgs::hasSingleCoeff) { // (9) 
-          const auto u_xy = evaluateDerivativeImpl(this->l(), lfArgs); // (10) 
+        } else if constexpr (LFArgs::hasOneSpatial and LFArgs::hasSingleCoeff) { // (9)! 
+          const auto u_xy = evaluateDerivativeImpl(this->l(), lfArgs); // (10)! 
           const auto v_xy = evaluateDerivativeImpl(this->r(), lfArgs); 
-          if constexpr (LFArgs::hasOneSpatialSingle and LFArgs::hasSingleCoeff) { // (11) 
+          if constexpr (LFArgs::hasOneSpatialSingle and LFArgs::hasSingleCoeff) { // (11)! 
             return Ikarus::eval(transpose(v) * u_xy + transpose(u_x) * v_y + transpose(v_x) * u_y 
                                 + transpose(u) * v_xy); 
-          } else if constexpr (LFArgs::hasOneSpatialAll and LFArgs::hasSingleCoeff) { // (12) 
-            std::array<std::remove_cvref_t<decltype(Ikarus::eval(transpose(v) * u_xy[0]))>, gridDim> res; // (13) 
+          } else if constexpr (LFArgs::hasOneSpatialAll and LFArgs::hasSingleCoeff) { // (12)! 
+            std::array<std::remove_cvref_t<decltype(Ikarus::eval(transpose(v) * u_xy[0]))>, gridDim> res; // (13)! 
             for (int i = 0; i < gridDim; ++i) 
               res[i] = Ikarus::eval(transpose(v) * u_xy[i] + transpose(u_x.col(i)) * v_y + transpose(v_x.col(i)) * u_y 
                                     + transpose(u) * v_xy[i]); 
             return res; 
           } 
         } 
-      } else if constexpr (DerivativeOrder == 3) { // (14)                                      
-        if constexpr (LFArgs::hasOneSpatialSingle) {  // (15) 
-          const auto argsForDyz = lfArgs.extractSecondWrtArgOrFirstNonSpatial(); // (16) 
+      } else if constexpr (DerivativeOrder == 3) { // (14)!                                      
+        if constexpr (LFArgs::hasOneSpatialSingle) {  // (15)! 
+          const auto argsForDyz = lfArgs.extractSecondWrtArgOrFirstNonSpatial(); // (16)! 
  
-          const auto &[u_x, u_y, u_z] = evaluateFirstOrderDerivativesImpl(this->l(), lfArgs); // (17) 
+          const auto &[u_x, u_y, u_z] = evaluateFirstOrderDerivativesImpl(this->l(), lfArgs); // (17)! 
           const auto &[v_x, v_y, v_z] = evaluateFirstOrderDerivativesImpl(this->r(), lfArgs); 
-          const auto &[u_xy, u_xz]    = evaluateSecondOrderDerivativesImpl(this->l(), lfArgs); // (18) 
+          const auto &[u_xy, u_xz]    = evaluateSecondOrderDerivativesImpl(this->l(), lfArgs); // (18)! 
           const auto &[v_xy, v_xz]    = evaluateSecondOrderDerivativesImpl(this->r(), lfArgs); 
  
           const auto alonguArgs             = replaceAlong(lfArgs, along(u)); 
           const auto alongvArgs             = replaceAlong(lfArgs, along(v)); 
-          const auto argsForDyzalongv_xArgs = replaceAlong(argsForDyz, along(v_x)); // (19) 
+          const auto argsForDyzalongv_xArgs = replaceAlong(argsForDyz, along(v_x)); // (19)! 
           const auto argsForDyzalongu_xArgs = replaceAlong(argsForDyz, along(u_x)); 
  
-          const auto u_xyzAlongv = evaluateDerivativeImpl(this->l(), alongvArgs); // (20) 
+          const auto u_xyzAlongv = evaluateDerivativeImpl(this->l(), alongvArgs); // (20)! 
           const auto v_xyzAlongu = evaluateDerivativeImpl(this->r(), alonguArgs); 
-          const auto u_yzAlongvx = evaluateDerivativeImpl(this->l(), argsForDyzalongv_xArgs); // (21) 
+          const auto u_yzAlongvx = evaluateDerivativeImpl(this->l(), argsForDyzalongv_xArgs); // (21)! 
           const auto v_yzAlongux = evaluateDerivativeImpl(this->r(), argsForDyzalongu_xArgs); 
  
           return Ikarus::eval(u_xyzAlongv + transpose(u_xy) * v_z + transpose(u_xz) * v_y + v_yzAlongux + u_yzAlongvx 
                               + transpose(v_xz) * u_y + transpose(v_xy) * u_z + v_xyzAlongu); 
-        } else if constexpr (LFArgs::hasOneSpatialAll) { // (22) 
-          const auto &alongMatrix = std::get<0>(lfArgs.alongArgs.args); // (23) 
+        } else if constexpr (LFArgs::hasOneSpatialAll) { // (22)! 
+          const auto &alongMatrix = std::get<0>(lfArgs.alongArgs.args); // (23)! 
  
           const auto uTimesA = eval(u * alongMatrix); 
           const auto vTimesA = eval(v * alongMatrix); 
  
-          const auto &[gradu, u_c0, u_c1]  = evaluateFirstOrderDerivativesImpl(this->l(), lfArgs); // (24) 
+          const auto &[gradu, u_c0, u_c1]  = evaluateFirstOrderDerivativesImpl(this->l(), lfArgs); // (24)! 
           const auto &[gradv, v_c0, v_c1]  = evaluateFirstOrderDerivativesImpl(this->r(), lfArgs); 
-          const auto &[gradu_c0, gradu_c1] = evaluateSecondOrderDerivativesImpl(this->l(), lfArgs); // (25) 
+          const auto &[gradu_c0, gradu_c1] = evaluateSecondOrderDerivativesImpl(this->l(), lfArgs); // (25)! 
           const auto &[gradv_c0, gradv_c1] = evaluateSecondOrderDerivativesImpl(this->r(), lfArgs); 
  
           const auto graduTimesA = (gradu * alongMatrix.transpose()).eval(); 
@@ -701,7 +701,7 @@ This can then be used as
     \begin{flalign*}
     \verb+u_xyzAlongv  + &= \frac{\partial^3 u_i }{\partial \xi_0\partial\boldsymbol{u}_I\partial\boldsymbol{u}_J} v_i
     \end{flalign*}
-22. This return would be
+21. This return would be
     ```cpp 
     v_x = v.evaluateDerivative(gpIndex, wrt(spatial(0)); 
     u_yzAlongvx = u.evaluateDerivative(gpIndex, wrt(coeff(i,j),along(v_x)); 
@@ -710,13 +710,13 @@ This can then be used as
     \begin{flalign*}
     \verb+u_yzAlongvx+ &= \frac{\partial^2 u_i }{\partial\boldsymbol{u}_I\partial\boldsymbol{u}_J} \left[\frac{\partial \boldsymbol{v}}{\xi_0}\right]_i
     \end{flalign*}
-23. Compile-time branch for all spatial derivatives
-24. Obtain the `along` argument defined, for example, in
+22. Compile-time branch for all spatial derivatives
+23. Obtain the `along` argument defined, for example, in
     ```cpp 
     u.evaluateDerivative(gpIndex, wrt(spatialAll,coeff(i,j),along(matrix)); 
     ``` 
+24. Similar to the single spatial case
 25. Similar to the single spatial case
-26. Similar to the single spatial case
 
 If your expression is working, it can be added to `dune/localfefunctions/expressions.hh` by submitting a PR 
 to [dune-localfefunctions](https://github.com/ikarus-project/dune-localfefunctions).

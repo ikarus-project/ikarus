@@ -64,10 +64,10 @@ nr.subscribe(NonLinearSolverMessages::ITERATION_STARTED, ourSimpleObserver);
 ## Subscriptions
 There are a couple of options for the subscription:
 ```cpp
-subscribe(MessageType::Message,observer) // (1)
-subscribeAll(observer) // (2)
-subscribeAll({observer1,observer2}) // (3)
-unSubscribe(...) // (4)
+subscribe(MessageType::Message,observer) // (1)!
+subscribeAll(observer) // (2)!
+subscribeAll({observer1,observer2}) // (3)!
+unSubscribe(...) // (4)!
 ```
 
 1. Subscribes to one specific message.

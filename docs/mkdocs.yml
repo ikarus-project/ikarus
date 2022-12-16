@@ -47,46 +47,46 @@ theme:
 
 # Path where the markdown files are
 docs_dir: 'website'
-
+edit_uri: ""
 # Navigation
 nav:
   - Home: index.md
   - Download: download.md
   - Framework:
-    - 01_framework/index.md
-    - Grids: 01_framework/grids.md
-    - Local basis: 01_framework/localBasis.md
-    - Local functions: 01_framework/localFunctions.md
-    - FE requirements: 01_framework/feRequirements.md
-    - Finite elements: 01_framework/finiteElements.md
-    - Assembler: 01_framework/assembler.md
-    - Dirichlet boundary conditions: 01_framework/dirichletBCs.md
-    - Solvers: 01_framework/solvers.md
-    - Nonlinear operator: 01_framework/nonlinearOperator.md
-    - Control routines: 01_framework/controlRoutines.md
-    - Manifolds: 01_framework/manifolds.md
-    - Observer and observables: 01_framework/observer.md
+      - 01_framework/index.md
+      - Grids: 01_framework/grids.md
+      - Local basis: 01_framework/localBasis.md
+      - Local functions: 01_framework/localFunctions.md
+      - FE requirements: 01_framework/feRequirements.md
+      - Finite elements: 01_framework/finiteElements.md
+      - Assembler: 01_framework/assembler.md
+      - Dirichlet boundary conditions: 01_framework/dirichletBCs.md
+      - Solvers: 01_framework/solvers.md
+      - Nonlinear operator: 01_framework/nonlinearOperator.md
+      - Control routines: 01_framework/controlRoutines.md
+      - Manifolds: 01_framework/manifolds.md
+      - Observer and observables: 01_framework/observer.md
   - Examples:
-    - 02_examples/index.md
-    - Compute the value of pi: 02_examples/computePi.md
-    - Cantilever beam with point load: 02_examples/cantileverBeam.md
-    - Compression of an incompressible rubber block: 02_examples/incompressibleRubberBlock.md
-    - Plate subjected to a surface load: 02_examples/kirchhoffPlate.md
-    - Newton-Raphson method: 02_examples/newtonRaphsonMethod.md
-    - Non-linear elasticity for 2D solids: 02_examples/nonLinearElasticity.md
-    - Von Mises truss: 02_examples/vonMisesTruss.md
-    - Cook's membrane: 02_examples/cooksMembrane.md
+      - 02_examples/index.md
+      - Compute the value of pi: 02_examples/computePi.md
+      - Cantilever beam with point load: 02_examples/cantileverBeam.md
+      - Compression of an incompressible rubber block: 02_examples/incompressibleRubberBlock.md
+      - Plate subjected to a surface load: 02_examples/kirchhoffPlate.md
+      - Newton-Raphson method: 02_examples/newtonRaphsonMethod.md
+      - Non-linear elasticity for 2D solids: 02_examples/nonLinearElasticity.md
+      - Von Mises truss: 02_examples/vonMisesTruss.md
+      - Cook's membrane: 02_examples/cooksMembrane.md
   - How to contribute:
-    - Open Tasks: 03_contribution/openTask.md
-    - Code style: 03_contribution/codeStyle.md
-    - Edit the documentation: 03_contribution/howToEdit.md
-    - Build the documentation locally: 03_contribution/buildDocumentationLocally.md
+      - Open Tasks: 03_contribution/openTask.md
+      - Code style: 03_contribution/codeStyle.md
+      - Edit the documentation: 03_contribution/howToEdit.md
+      - Build the documentation locally: 03_contribution/buildDocumentationLocally.md
   - C++ recommendations: 05_cppReferences/cppRef.md
   - Literature: 99_Literature/99_Literature.md
   - Gallery: gallery.md
   - Blog:
-    - 04_blog/index.md
-
+      - 04_blog/index.md
+#      - 04_blog/posts/v0.3.md #remove comments here for local draft
 
 # Customization
 extra_css:
@@ -143,6 +143,7 @@ extra_javascript:
 plugins:
   macros: {module_name: mkdocs-macros}
   bibtex: {bib_file: "literature.bib"}
+#  glightbox: {}
   search: {}
   social: {}
   glightbox: {}
@@ -157,5 +158,7 @@ extra:
       link: https://hub.docker.com/repository/docker/rath3t/ikarus
     - icon: fontawesome/brands/gitter
       link: https://gitter.im/ikarus-project/community
+  version:
+    provider: mike
 
 dev_addr: '0.0.0.0:8000'

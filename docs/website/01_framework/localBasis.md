@@ -13,7 +13,7 @@ In the exported module ```dune-localfefunctions```, we provide  a thin wrapper w
 For the definitions of bases, refer Chapter 8.2.1 of the Dune book[@sander2020dune].
 Thus ```Dune::CachedLocalBasis``` (`#include <dune/cachedlocalBasis/cachedlocalBasis.hh>`) provides the following interface:
 ```cpp
-Dune::LocalBasis(const DuneLocalBasis& p_basis)  // Constructor (1)
+Dune::LocalBasis(const DuneLocalBasis& p_basis);// (1)!
 void evaluateFunction(const DomainType& local, Eigen::VectorX<RangeFieldType>& N);
 void evaluateJacobian(const DomainType& local,Eigen::Matrix<RangeFieldType, Eigen::Dynamic, gridDim>& dN);
 void evaluateFunctionAndJacobian(const DomainType& local,Eigen::VectorX<RangeFieldType>& N,
@@ -24,14 +24,14 @@ void evaluateSecondDerivatives(const DomainType& local, Eigen::Matrix<RangeField
 const Eigen::VectorX<RangeFieldType>& evaluateFunction(const unsigned int& integrationPointIndex);
 const Eigen::Matrix<RangeFieldType, Eigen::Dynamic, gridDim>& evaluateJacobian(const unsigned int& integrationPointIndex);
 const Eigen::Matrix<RangeFieldType, Eigen::Dynamic, gridDim*(gridDim + 1) / 2>& evaluateSecondDerivatives(const unsigned int& integrationPointIndex);
-auto viewOverIntegrationPoints(); // (2)
-auto viewOverFunctionAndJacobian(); // (3)
+auto viewOverIntegrationPoints();// (2)!
+auto viewOverFunctionAndJacobian();// (3)!
 
 template <typename IntegrationRule, typename... Ints>
 void bind(IntegrationRule&& p_rule, Derivatives<Ints...>&& ints);
 
-bool isBound(int i) const; // (4)
-const Dune::QuadraturePoint<DomainFieldType, gridDim>& indexToIntegrationPoint(int i) const; // (5)
+bool isBound(int i) const;// (4)!
+const Dune::QuadraturePoint<DomainFieldType, gridDim>& indexToIntegrationPoint(int i) const;// (5)!
 ```
 
 1. The constructor only accepts a local basis that satisfies the concept `Concepts::DuneLocalBasis`. In keeping with the spirit of duck-typing, this also allows for the use of a local basis from the Dune module.
@@ -81,7 +81,7 @@ Finally, to bind to an integration rule and cache the value and ansatz function 
     for(auto& gp : rule){
       localFunction.evaluateFunction(gp.position(), N); 
       localFunction.evaluateJacobian(gp.position(), dN);
-      localFunction.evaluateFunctionAndJacobian(gp.position(), N, dN); // (1) 
+      localFunction.evaluateFunctionAndJacobian(gp.position(), N, dN);// (1)! 
     }
     ```
 

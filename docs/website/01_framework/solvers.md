@@ -44,10 +44,10 @@ and to [Eigen's documentation for sparse decompositions](https://eigen.tuxfamily
 ### Interface 
 Similar to Eigen's interface, the following functions are provided:
 ```cpp
-void analyzePattern(const MatrixType& A);  // (1)
-void factorize(const MatrixType& A); // (2)
-ILinearSolver& compute(const MatrixType& A); // (3)
-void solve(Eigen::VectorX<ScalarType>&x, const Eigen::VectorX<ScalarType>& b); // (4)
+void analyzePattern(const MatrixType& A);  // (1)!
+void factorize(const MatrixType& A); // (2)!
+ILinearSolver& compute(const MatrixType& A); // (3)!
+void solve(Eigen::VectorX<ScalarType>&x, const Eigen::VectorX<ScalarType>& b); // (4)!
 ```
 
 1. If the matrix is sparse, Eigen can collect information on the sparsity pattern of the matrix for a faster `solve` step. This pattern does not change if the non-zero entries are modified.
@@ -69,9 +69,9 @@ Non-linear solvers are usually used to solve a kind of optimization problem, e.g
 
 It has the following interface:
 ```cpp
-void setup(const NewtonRaphsonSettings& p_settings); // (1)
-SolverInformation solve(const SolutionType& dx_predictor = NoPredictor{}); // (2)
-auto& nonLinearOperator(); // (3)
+void setup(const NewtonRaphsonSettings& p_settings); // (1)!
+SolverInformation solve(const SolutionType& dx_predictor = NoPredictor{}); // (2)!
+auto& nonLinearOperator(); // (3)!
 ```
 
 1. With this function, several properties of the nonlinear solver can be set. E.g., residual tolerance or maximum number of iterations

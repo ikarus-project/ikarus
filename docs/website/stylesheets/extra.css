@@ -10,3 +10,7 @@
 :root {
     --md-tooltip-width: 800px;
 }
+
+p {
+    text-align: justify;
+}
