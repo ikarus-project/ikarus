@@ -41,14 +41,16 @@ jobs:
           cd docs
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          mike deploy dev  --config-file mkdocs.insiders.yml --branch main
-          mike set-default dev --config-file mkdocs.insiders.yml --branch main
+          mike deploy dev  --config-file mkdocs.insiders.yml --branch main --prefix=docs/site/build     
+          mike set-default dev --config-file mkdocs.insiders.yml --branch main --prefix=docs/site/build
+          git reset HEAD
+          git checkout .
 
       - name: Deploy Website
         uses: peaceiris/actions-gh-pages@v3
         with:
           personal_token: ${{ secrets.ORGANIZATION_TOKEN }}
           external_repository: ikarus-project/ikarus-project.github.io
-          publish_dir: ./docs/site
+          publish_dir: ./docs/site/build
           publish_branch: main
           commit_message: ${{ github.event.head_commit.message }}

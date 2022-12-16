@@ -24,6 +24,51 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
+      - name: Setup Mkdocs
+        run: |
+          pip install mkdocs
+          pip install git+https://${{ secrets.MKDOCS_TOKEN }}@github.com/squidfunk/mkdocs-material-insiders.git
+          pip install mkdocs-macros-plugin
+          pip install mkdocs-drawio-exporter
+          pip install mkdocs-bibtex
+          pip install mike
+          pip install mkdocs-glightbox
+          pip install pillow cairosvg
+          sudo apt-get install libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev  
+
+      - name: Update documentation online
+        run: |
+          cd ./repo/docs
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          mike deploy  --update-aliases ${{ github.ref_name }} dev --config-file mkdocs.insiders.yml --branch main  --prefix=docs/site/      
+
+      - name: Deploy Website
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          personal_token: ${{ secrets.ORGANIZATION_TOKEN }}
+          external_repository: ikarus-project/ikarus-project.github.io
+          publish_dir: ./repo/docs/site
+          publish_branch: main
+          commit_message: ${{ github.event.head_commit.message }}
+
+      - uses: actions/cache@v2
+        with:
+          key: ${{ github.ref }}
+          path: .cache
+      - name: Build Website for offline use
+        run: |
+          cd ./repo/docs
+          cmake -B .build
+          cmake --build .build --target site
+          tar -czf docs-${{ github.ref_name }}.tar.gz ./site
+          zip -9r  docs-${{ github.ref_name }}.zip    ./site
+          curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@docs-${{ github.ref_name }}.tar.gz -F 'jsonData={"description":"Ikarus examples","categories":["Documentation"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
+          curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@docs-${{ github.ref_name }}.zip    -F 'jsonData={"description":"Ikarus examples","categories":["Documentation"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"          
+
       - name: Download, tag, push and save docker images for new release
         run: |
           docker pull rath3t/ikarus-dev:latest
@@ -59,36 +104,6 @@ jobs:
           zip -9r  ikarus-examples-${{ github.ref_name }}.zip    ./ikarus-examples
           curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@ikarus-examples-${{ github.ref_name }}.tar.gz -F 'jsonData={"description":"Ikarus examples","categories":["Code"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
           curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@ikarus-examples-${{ github.ref_name }}.zip -F 'jsonData={"description":"Ikarus examples","categories":["Code"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version: 3.x
-      - name: Setup Mkdocs
-        run: |
-          pip install mkdocs
-          pip install git+https://${{ secrets.MKDOCS_TOKEN }}@github.com/squidfunk/mkdocs-material-insiders.git
-          pip install mkdocs-macros-plugin
-          pip install mkdocs-drawio-exporter
-          pip install mkdocs-bibtex
-          pip install mike
-          pip install mkdocs-glightbox
-          pip install pillow cairosvg
-          sudo apt-get install libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev
-
-      - uses: actions/cache@v2
-        with:
-          key: ${{ github.ref }}
-          path: .cache
-      - name: Build Website for offline use
-        run: |
-          cd ./repo/docs
-          cmake -B .build
-          cmake --build .build --target site
-          tar -czf docs-${{ github.ref_name }}.tar.gz ./site
-          zip -9r  docs-${{ github.ref_name }}.zip    ./site
-          curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@docs-${{ github.ref_name }}.tar.gz -F 'jsonData={"description":"Ikarus examples","categories":["Documentation"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
-          curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@docs-${{ github.ref_name }}.zip    -F 'jsonData={"description":"Ikarus examples","categories":["Documentation"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
-
 
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
