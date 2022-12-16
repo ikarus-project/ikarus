@@ -91,10 +91,10 @@ jobs:
       - name: Zip and upload current Ikarus to DARUS
         run: |
           mv repo ikarus-${{ github.ref_name }}
-          tar -czf ikarus-sources-${{ github.ref_name }}.tar.gz ./ikarus-${{ github.ref_name }}
-          zip -9r  ikarus-sources-${{ github.ref_name }}.zip    ./ikarus-${{ github.ref_name }}
-          curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@ikarus-sources-${{ github.ref_name }}.tar.gz -F 'jsonData={"description":"Ikarus sources","categories":["Code"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
-          curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@ikarus-sources-${{ github.ref_name }}.zip -F 'jsonData={"description":"Ikarus sources","categories":["Code"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
+          tar -czf ikarus-${{ github.ref_name }}.tar.gz ./ikarus-${{ github.ref_name }}
+          zip -9r  ikarus-${{ github.ref_name }}.zip    ./ikarus-${{ github.ref_name }}
+          curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@ikarus-${{ github.ref_name }}.tar.gz -F 'jsonData={"description":"Ikarus sources","categories":["Code"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
+          curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@ikarus-${{ github.ref_name }}.zip -F 'jsonData={"description":"Ikarus sources","categories":["Code"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
 
       - name: Checkout ikarus-examples and create tag, push it, zip it and add it to DARUS
         run: |
