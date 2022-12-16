@@ -39,23 +39,22 @@ jobs:
           pip install pillow cairosvg
           sudo apt-get install libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev  
 
-      - name: Update documentation online
+      - name: Build Website
         run: |
-          cd ./repo/docs
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          mike deploy ${{ github.ref_name }}  --config-file mkdocs.insiders.yml --branch main --prefix=docs/site/build     
-          git reset HEAD
-          git checkout .
-
-      - name: Deploy Website
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          personal_token: ${{ secrets.ORGANIZATION_TOKEN }}
-          external_repository: ikarus-project/ikarus-project.github.io
-          publish_dir: ./repo/docs/site/build
-          publish_branch: main
-          commit_message: ${{ github.event.head_commit.message }}
+          git clone https://github.com/ikarus-project/ikarus-project.github.io.git
+          cd ikarus-project.github.io
+          git fetch origin gh-pages --depth=1
+          cp -R ../repo/docs/ .
+          cp -R ../repo/src/ .
+          git config --local user.email "${{ github.event.head_commit.author.email }}"
+          git config --local user.name "${{ github.event.head_commit.author.name }}"
+          cd docs
+          export MKDOCSOFFLINE=false
+          mike deploy ${{ github.ref_name }}  --config-file mkdocs.insiders.yml
+          git remote set-url origin https://${{ secrets.ORGANIZATION_TOKEN }}@github.com/ikarus-project/ikarus-project.github.io.git
+          git commit --amend -m "Deploy ${{ github.ref_name }} at ${{ github.event.head_commit.message }} ikarus-project/ikarus@${{ github.event.head_commit.id }}" --allow-empty
+          git push origin gh-pages 
+          export MKDOCSOFFLINE=true
 
       - uses: actions/cache@v2
         with:
@@ -66,8 +65,9 @@ jobs:
           cd ./repo/docs
           cmake -B .build
           cmake --build .build --target site
-          tar -czf docs-${{ github.ref_name }}.tar.gz ./site
-          zip -9r  docs-${{ github.ref_name }}.zip    ./site
+          mv site documentation-${{ github.ref_name }}
+          tar -czf docs-${{ github.ref_name }}.tar.gz ./documentation-${{ github.ref_name }}
+          zip -9r  docs-${{ github.ref_name }}.zip    ./documentation-${{ github.ref_name }}
           curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@docs-${{ github.ref_name }}.tar.gz -F 'jsonData={"description":"Ikarus examples","categories":["Documentation"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
           curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@docs-${{ github.ref_name }}.zip    -F 'jsonData={"description":"Ikarus examples","categories":["Documentation"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"          
 
@@ -90,8 +90,9 @@ jobs:
 
       - name: Zip and upload current Ikarus to DARUS
         run: |
-          tar -czf ikarus-sources-${{ github.ref_name }}.tar.gz ./repo
-          zip -9r  ikarus-sources-${{ github.ref_name }}.zip    ./repo
+          mv repo ikarus-${{ github.ref_name }}
+          tar -czf ikarus-sources-${{ github.ref_name }}.tar.gz ./ikarus-${{ github.ref_name }}
+          zip -9r  ikarus-sources-${{ github.ref_name }}.zip    ./ikarus-${{ github.ref_name }}
           curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@ikarus-sources-${{ github.ref_name }}.tar.gz -F 'jsonData={"description":"Ikarus sources","categories":["Code"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
           curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@ikarus-sources-${{ github.ref_name }}.zip -F 'jsonData={"description":"Ikarus sources","categories":["Code"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
 
@@ -102,8 +103,9 @@ jobs:
           git tag ${{ github.ref_name }}
           git push https://${{ secrets.ORGANIZATION_TOKEN }}@github.com/ikarus-project/ikarus-examples.git ${{ github.ref_name }}
           cd ..
-          tar -czf ikarus-examples-${{ github.ref_name }}.tar.gz ./ikarus-examples
-          zip -9r  ikarus-examples-${{ github.ref_name }}.zip    ./ikarus-examples
+          mv ikarus-examples ikarus-examples-${{ github.ref_name }}
+          tar -czf ikarus-examples-${{ github.ref_name }}.tar.gz ./ikarus-examples-${{ github.ref_name }}
+          zip -9r  ikarus-examples-${{ github.ref_name }}.zip    ./ikarus-examples-${{ github.ref_name }}
           curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@ikarus-examples-${{ github.ref_name }}.tar.gz -F 'jsonData={"description":"Ikarus examples","categories":["Code"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
           curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@ikarus-examples-${{ github.ref_name }}.zip -F 'jsonData={"description":"Ikarus examples","categories":["Code"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
 
@@ -115,8 +117,8 @@ jobs:
           prerelease: true
           title: ${{ github.ref_name }}
           files: |
-            ./repo/docs/docs-${{ github.ref_name }}.tar.gz
-            ./repo/docs/docs-${{ github.ref_name }}.zip
+            ./ikarus-${{ github.ref_name }}/docs/docs-${{ github.ref_name }}.tar.gz
+            ./ikarus-${{ github.ref_name }}/docs/docs-${{ github.ref_name }}.zip
             ikarus-dev-docker-${{ github.ref_name }}.tar.gz
             ikarus-docker-${{ github.ref_name }}.tar.gz
             ikarus-examples-${{ github.ref_name }}.tar.gz
