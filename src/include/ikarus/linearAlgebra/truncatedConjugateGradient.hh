@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Modifications:
 // SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 // this file is modified from the default conjugate gradient method of eigen
 #pragma once
