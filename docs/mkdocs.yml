@@ -158,5 +158,7 @@ extra:
       link: https://hub.docker.com/repository/docker/rath3t/ikarus
     - icon: fontawesome/brands/gitter
       link: https://gitter.im/ikarus-project/community
+  version:
+    provider: mike
 
 dev_addr: '0.0.0.0:8000'
