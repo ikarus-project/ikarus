@@ -12,6 +12,10 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/5c588e67d1e541fc9be3c7377297aa8a)](https://www.codacy.com/gh/ikarus-project/ikarus/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ikarus-project/ikarus&amp;utm_campaign=Badge_Grade)
 [![Gitter](https://badges.gitter.im/ikarus-project/community.svg)](https://gitter.im/ikarus-project/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
+
+[![Release](https://badgen.net/badge/Release/0.2/purple?icon=github)](https://github.com/ikarus-project/ikarus/releases)
+
+
 This project tries to provide an easy to read and an easy to use finite element framework.
 It is heavily inspired by the finite element software [DUNE](https://dune-project.org/), the book [DUNE — The Distributed and Unified Numerics Environment](https://www.springer.com/gp/book/9783030597016),
 [deal.II](https://www.dealii.org/) and [Kratos](https://github.com/KratosMultiphysics/Kratos).
