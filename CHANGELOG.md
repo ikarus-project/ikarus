@@ -3,7 +3,10 @@ SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 SPDX-License-Identifier: LGPL-3.0-or-later
 -->
 
-# Master (becomes Release v0.3)
+# Master (becomes Release v0.4)
+
+
+## Release v0.3 (Prometheus)
 
 - Added codespell workflow (CI checks now for grammar and typos in comments and variable names) [#70](https://github.com/ikarus-project/ikarus/pull/70)
 - Added `EnhancedAssumedStrains` to decorate a linear-elastic element with various EAS methods [#74](https://github.com/ikarus-project/ikarus/pull/74)
@@ -17,6 +20,8 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 - Added license statement to each file [#114](https://github.com/ikarus-project/ikarus/pull/114)
 - Moved `localfefunctions` to a separate Dune module [#117](https://github.com/ikarus-project/ikarus/pull/117)
 - Refactored the documentation and added installation instructions [#125](https://github.com/ikarus-project/ikarus/pull/125)
+- Added a workflow to create a release on [GitHub](https://github.com/ikarus-project/ikarus/releases) and push it to [DaRUS](https://darus.uni-stuttgart.de/dataset.xhtml?persistentId=doi%3A10.18419%2Fdarus-3303&version=DRAFT)
+- Added the first blog post of Ikarus [#128](https://github.com/ikarus-project/ikarus/pull/128)
 
 ## Release v0.2 (Apollodorus)
 
