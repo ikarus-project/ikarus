@@ -13,7 +13,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 [![Gitter](https://badges.gitter.im/ikarus-project/community.svg)](https://gitter.im/ikarus-project/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 
-[![Release](https://badgen.net/badge/Release/0.2/purple?icon=github)](https://github.com/ikarus-project/ikarus/releases)
+[![Release](https://badgen.net/badge/Release/0.3/purple?icon=github)](https://github.com/ikarus-project/ikarus/releases)
 [![Doi](https://img.shields.io/badge/DOI-10.18419%2Fdarus--3303-orange)](https://doi.org/10.18419/darus-3303)
 
 This project tries to provide an easy to read and an easy to use finite element framework.
