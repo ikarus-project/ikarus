@@ -11,3 +11,5 @@ plugins:
 extra:
   status:
     new: Recently added or big refactoring
+  version:
+    provider: mike

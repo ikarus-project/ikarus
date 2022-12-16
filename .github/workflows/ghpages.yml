@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          path: 'repo'
       - uses: actions/setup-python@v4
         with:
           python-version: 3.x
@@ -38,19 +40,16 @@ jobs:
           path: .cache
       - name: Build Website
         run: |
-          cd docs
+          git clone https://github.com/ikarus-project/ikarus-project.github.io.git
+          cd ikarus-project.github.io
+          git fetch origin gh-pages --depth=1
+          cp -R ../repo/docs/ .
+          cp -R ../repo/src/ .
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          mike deploy dev  --config-file mkdocs.insiders.yml --branch main --prefix=docs/site/build     
-          mike set-default dev --config-file mkdocs.insiders.yml --branch main --prefix=docs/site/build
-          git reset HEAD
-          git checkout .
+          cd docs
+          mike deploy dev --config-file mkdocs.insiders.yml
+          mike set-default dev --config-file mkdocs.insiders.yml
+          git remote set-url origin https://${{ secrets.ORGANIZATION_TOKEN }}@github.com/ikarus-project/ikarus-project.github.io.git
+          git push origin gh-pages 
 
-      - name: Deploy Website
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          personal_token: ${{ secrets.ORGANIZATION_TOKEN }}
-          external_repository: ikarus-project/ikarus-project.github.io
-          publish_dir: ./docs/site/build
-          publish_branch: main
-          commit_message: ${{ github.event.head_commit.message }}
