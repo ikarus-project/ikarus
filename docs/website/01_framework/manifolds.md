@@ -29,14 +29,14 @@ namespace Ikarus::Concepts {
   template <typename ManifoldType>
   concept Manifold = requires(ManifoldType var, typename ManifoldType::CorrectionType correction, std::ostream& s,
                               typename ManifoldType::CoordinateType value) {
-    typename ManifoldType::ctype; // (1)
-    ManifoldType::valueSize; // (2)
-    ManifoldType::correctionSize; // (3)
-    typename ManifoldType::CoordinateType; // (4)
-    typename ManifoldType::CorrectionType; // (5)
-    { var.getValue() } -> std::convertible_to<typename ManifoldType::CoordinateType>; // (6)
-    { var.setValue(value) } -> std::same_as<void>; // (7)
-    { var+=correction };  // (8)
+    typename ManifoldType::ctype; // (1)!
+    ManifoldType::valueSize; // (2)!
+    ManifoldType::correctionSize; // (3)!
+    typename ManifoldType::CoordinateType; // (4)!
+    typename ManifoldType::CorrectionType; // (5)!
+    { var.getValue() } -> std::convertible_to<typename ManifoldType::CoordinateType>; // (6)!
+    { var.setValue(value) } -> std::same_as<void>; // (7)!
+    { var+=correction };  // (8)!
     //...
   };
 }  

@@ -21,13 +21,13 @@ The handling of such a function $\boldsymbol{g}$ is done by the class `#!cpp Ika
 ##  Interface
 The interface of `#!cpp Ikarus::DirichletValues` is represented by the following code snippet:
 ```cpp
-Ikarus::DirichletValues dirichletValues2(basis); // (1)
-void fixBoundaryDOFs(f); // (2)
-void fixDOFs(f); // (3)
-const auto& basis() const; // (4)
-bool isConstrained(std::size_t i) const; // (5)
-auto fixedDOFsize() const; // (6)
-auto size() const ; // (7) 
+Ikarus::DirichletValues dirichletValues2(basis); // (1)!
+void fixBoundaryDOFs(f); // (2)!
+void fixDOFs(f); // (3)!
+const auto& basis() const; // (4)!
+bool isConstrained(std::size_t i) const; // (5)!
+auto fixedDOFsize() const; // (6)!
+auto size() const ; // (7)! 
 ```
 
 1. Create class by inserting a global basis, [@sander2020dune] Chapter 10.

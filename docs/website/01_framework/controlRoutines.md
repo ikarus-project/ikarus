@@ -87,12 +87,12 @@ all the other intermediate subsequent `#!cpp load_steps`, respectively.
 `#!cpp SubsidiaryArgs` is a `#!cpp struct` which is defined as
 ```cpp
 struct SubsidiaryArgs {
-  double stepSize; // (1)
-  Eigen::VectorX<double> DD; // (2)
-  double Dlambda{}; // (3)
-  double f{}; // (4)
-  Eigen::VectorX<double> dfdDD; // (5)
-  double dfdDlambda{}; // (6)
+  double stepSize; // (1)!
+  Eigen::VectorX<double> DD; // (2)!
+  double Dlambda{}; // (3)!
+  double f{}; // (4)!
+  Eigen::VectorX<double> dfdDD; // (5)!
+  double dfdDlambda{}; // (6)!
 };
 ```
 

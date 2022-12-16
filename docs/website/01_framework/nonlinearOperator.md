@@ -25,17 +25,17 @@ auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda, dfvLa
 
 ``nonLinOp`` provides the following features:
 ```cpp
-void updateAll() // (1)
-void update<n>() // (2)
-auto& value() // (3)
-auto& derivative() // (4)
-auto& secondDerivative() // (5)
-auto& nthDerivative<n>() // (6)
-auto& firstParameter() // (7)
-auto& secondParameter() // (8)
-auto& nthParameter<n>() // (9)
-auto& lastParameter() // (10)
-auto subOperator<n,m,...>() // (11)
+void updateAll() // (1)!
+void update<n>() // (2)!
+auto& value() // (3)!
+auto& derivative() // (4)!
+auto& secondDerivative() // (5)!
+auto& nthDerivative<n>() // (6)!
+auto& firstParameter() // (7)!
+auto& secondParameter() // (8)!
+auto& nthParameter<n>() // (9)!
+auto& lastParameter() // (10)!
+auto subOperator<n,m,...>() // (11)!
 ```
 
 1. Evaluates all functions.
