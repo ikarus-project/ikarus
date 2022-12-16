@@ -24,6 +24,7 @@ jobs:
           pip install mkdocs-drawio-exporter
           pip install mkdocs-glightbox
           pip install mkdocs-bibtex
+          pip install mike
           pip install pillow cairosvg
           sudo apt-get install libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev
           #wget https://github.com/jgraph/drawio-desktop/releases/download/v16.5.1/drawio-amd64-16.5.1.deb
@@ -38,8 +39,11 @@ jobs:
       - name: Build Website
         run: |
           cd docs
-          cmake -B .build
-          cmake --build .build --target site
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          mike deploy dev  --config-file mkdocs.insiders.yml --branch main
+          mike set-default dev --config-file mkdocs.insiders.yml --branch main
+
       - name: Deploy Website
         uses: peaceiris/actions-gh-pages@v3
         with:

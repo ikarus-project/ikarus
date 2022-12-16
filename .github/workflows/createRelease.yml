@@ -70,6 +70,7 @@ jobs:
           pip install mkdocs-macros-plugin
           pip install mkdocs-drawio-exporter
           pip install mkdocs-bibtex
+          pip install mike
           pip install mkdocs-glightbox
           pip install pillow cairosvg
           sudo apt-get install libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev
