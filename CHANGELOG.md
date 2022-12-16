@@ -5,7 +5,6 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 
 # Master (becomes Release v0.4)
 
-
 ## Release v0.3 (Prometheus)
 
 - Added codespell workflow (CI checks now for grammar and typos in comments and variable names) [#70](https://github.com/ikarus-project/ikarus/pull/70)
