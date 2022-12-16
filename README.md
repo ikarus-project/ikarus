@@ -14,7 +14,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 
 
 [![Release](https://badgen.net/badge/Release/0.2/purple?icon=github)](https://github.com/ikarus-project/ikarus/releases)
-
+[![Doi](https://img.shields.io/badge/DOI-10.18419%2Fdarus--3303-orange)](https://doi.org/10.18419/darus-3303)
 
 This project tries to provide an easy to read and an easy to use finite element framework.
 It is heavily inspired by the finite element software [DUNE](https://dune-project.org/), the book [DUNE — The Distributed and Unified Numerics Environment](https://www.springer.com/gp/book/9783030597016),
