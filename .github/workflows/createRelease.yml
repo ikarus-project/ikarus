@@ -107,36 +107,6 @@ jobs:
           curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@ikarus-examples-${{ github.ref_name }}.tar.gz -F 'jsonData={"description":"Ikarus examples","categories":["Code"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
           curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@ikarus-examples-${{ github.ref_name }}.zip -F 'jsonData={"description":"Ikarus examples","categories":["Code"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
 
-      - uses: actions/setup-python@v4
-        with:
-          python-version: 3.x
-      - name: Setup Mkdocs
-        run: |
-          pip install mkdocs
-          pip install git+https://${{ secrets.MKDOCS_TOKEN }}@github.com/squidfunk/mkdocs-material-insiders.git
-          pip install mkdocs-macros-plugin
-          pip install mkdocs-drawio-exporter
-          pip install mkdocs-bibtex
-          pip install mkdocs-glightbox
-          pip install mike
-          pip install pillow cairosvg
-          sudo apt-get install libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev
-
-      - uses: actions/cache@v2
-        with:
-          key: ${{ github.ref }}
-          path: .cache
-      - name: Build Website for offline use
-        run: |
-          cd ./repo/docs
-          cmake -B .build
-          cmake --build .build --target site
-          tar -czf docs-${{ github.ref_name }}.tar.gz ./site
-          zip -9r  docs-${{ github.ref_name }}.zip    ./site
-          curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@docs-${{ github.ref_name }}.tar.gz -F 'jsonData={"description":"Ikarus examples","categories":["Documentation"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
-          curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@docs-${{ github.ref_name }}.zip    -F 'jsonData={"description":"Ikarus examples","categories":["Documentation"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
-
-
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.ORGANIZATION_TOKEN }}"

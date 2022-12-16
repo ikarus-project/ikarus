@@ -86,7 +86,7 @@ nav:
   - Gallery: gallery.md
   - Blog:
       - 04_blog/index.md
-      - 04_blog/posts/v0.3.md #remove comments here for local draft
+#      - 04_blog/posts/v0.3.md #remove comments here for local draft
 
 # Customization
 extra_css:
