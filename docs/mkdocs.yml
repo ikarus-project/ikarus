@@ -44,8 +44,6 @@ theme:
         icon: material/toggle-switch
         name: Switch to light mode
 
-
-
 # Path where the markdown files are
 docs_dir: 'website'
 edit_uri: ""
@@ -144,10 +142,9 @@ extra_javascript:
 plugins:
   macros: {module_name: mkdocs-macros}
   bibtex: {bib_file: "literature.bib"}
-#  glightbox: {}
   search: {}
   social: {}
-  glightbox: {}
+  glightbox: { auto_caption: true }
 
 extra:
   social:
