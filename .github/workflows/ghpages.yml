@@ -27,7 +27,6 @@ jobs:
           pip install mkdocs-glightbox
           pip install mike
           pip install mkdocs-bibtex
-          pip install mike
           pip install pillow cairosvg
           sudo apt-get install libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev
           #wget https://github.com/jgraph/drawio-desktop/releases/download/v16.5.1/drawio-amd64-16.5.1.deb
@@ -47,7 +46,6 @@ jobs:
           git config --local user.name "${{ github.event.head_commit.author.name }}"
           cd docs
           mike deploy dev --config-file mkdocs.insiders.yml
-          mike set-default dev --config-file mkdocs.insiders.yml
           git remote set-url origin https://${{ secrets.ORGANIZATION_TOKEN }}@github.com/ikarus-project/ikarus-project.github.io.git
           git commit --amend -m "Deploy dev at ${{ github.event.head_commit.message }} ikarus-project/ikarus@${{ github.event.head_commit.id }}" 
           git push origin gh-pages 
