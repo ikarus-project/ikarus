@@ -166,12 +166,14 @@ namespace Ikarus {
   concept ResultTypeConcept = std::is_same_v<Type, ResultType>;
 
   template <typename SolutionVectorType = Eigen::VectorXd, typename ParameterType_ = double>
-  class ResultRequirements : public FErequirements<SolutionVectorType, ParameterType_> {
+  class ResultRequirements {
   public:
     using ParameterType = ParameterType_;
 
     ResultRequirements(FErequirements<SolutionVectorType, ParameterType> &&req, std::set<ResultType> &&p_resType)
-        : FErequirements<SolutionVectorType, ParameterType>(std::move(req)), resType(std::move(p_resType)) {}
+        : reqB{req}, resType(std::move(p_resType)) {}
+
+    ResultRequirements() = default;
     bool isResultRequested(ResultType &&key) const { return resType.contains(key); }
 
     template <FEAffordance Affordance>
@@ -195,6 +197,12 @@ namespace Ikarus {
       resType.insert({std::move(keys)...});
       return *this;
     }
+
+    const SolutionVectorType &getGlobalSolution(FESolutions &&key) const {
+      return reqB.getGlobalSolution(std::move(key));
+    }
+
+    const ParameterType &getParameter(FEParameter &&key) const { return reqB.getParameter(std::move(key)); }
 
   private:
     std::set<ResultType> resType;
