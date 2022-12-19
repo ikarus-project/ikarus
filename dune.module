@@ -5,5 +5,6 @@ Module: ikarus
 Version: 0.2
 Maintainer: mueller@ibb.uni-stuttgart.de
 Depends: dune-typetree dune-geometry dune-iga dune-localfefunctions dune-functions dune-grid dune-fufem dune-alugrid dune-foamgrid dune-uggrid dune-vtk
+Python-Requires: pip>=21.a portalocker numpy wheel setuptools>=41 jinja2
 # Optional build dependencies
 #Suggests:

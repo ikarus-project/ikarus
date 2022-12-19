@@ -2,3 +2,7 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 add_subdirectory(ikarus)
+
+if(DUNE_ENABLE_PYTHONBINDINGS)
+    add_subdirectory(python)
+endif()

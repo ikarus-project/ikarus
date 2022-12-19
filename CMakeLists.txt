@@ -46,5 +46,9 @@ if(BUILD_DOCS)
   add_subdirectory(docs/BuildLocally)
 endif()
 
+if(DUNE_ENABLE_PYTHONBINDINGS)
+  add_subdirectory(python)
+endif()
+
 # finalize the dune project, e.g. generating config.h etc.
 finalize_dune_project(GENERATE_CONFIG_H_CMAKE)
