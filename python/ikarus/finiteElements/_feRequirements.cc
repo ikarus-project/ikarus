@@ -1,10 +1,10 @@
 // -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 // vi: set et ts=4 sw=2 sts=2:
 
-#include <dune/python/geometry/type.hh>
-#include <dune/python/pybind11/pybind11.h>
+#include <ikarus/python/finiteElements/feRequirements.hh>
+#include <pybind11.h>
 
-PYBIND11_MODULE( _geometry, module )
+PYBIND11_MODULE( _ikarus, module )
 {
   Dune::Python::registerGeometryType( module );
 

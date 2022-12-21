@@ -18,6 +18,7 @@ message("Find spdlog: ")
 find_package(spdlog REQUIRED)
 message("Find autodiff: ")
 find_package(autodiff REQUIRED)
+find_package(pybind11 REQUIRED)
 
 message("Find matplotc++: ")
 find_package(Matplot++ REQUIRED)

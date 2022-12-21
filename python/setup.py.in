@@ -1,9 +1,9 @@
 from setuptools import setup, find_packages
 
-pkg = [m for m in "${ProjectPythonRequires}".split(' ') if "dune" not in m]
+pkg = [m for m in "${ProjectPythonRequires}".split(' ') if "ikarus" not in m]
 
 setup(name="${ProjectName}",
-    namespace_packages=['dune'],
+    namespace_packages=['ikarus'],
     description="${ProjectDescription}",
     version="${ProjectVersionString}",
     author="${ProjectAuthor}",
