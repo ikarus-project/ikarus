@@ -5,7 +5,7 @@
 site_name: Ikarus
 site_description: Ikarus documentation.
 site_author: The Ikarus Developers
-site_url: https://https://ikarus-project.github.io/
+site_url: https://ikarus-project.github.io/
 
 # Repository
 repo_name: ikarus-project/ikarus
@@ -19,7 +19,7 @@ theme:
   name: material
   custom_dir: overrides
   logo: auxiliaryImages/logo_white.svg
-  favicon: auxiliaryImages/logo_dummy.svg
+  favicon: auxiliaryImages/logo_blue.svg
   features:
     - navigation.instant
     - content.code.annotate
@@ -156,6 +156,7 @@ extra:
       link: https://hub.docker.com/repository/docker/rath3t/ikarus
     - icon: fontawesome/brands/gitter
       link: https://gitter.im/ikarus-project/community
+
   version:
     provider: mike
 

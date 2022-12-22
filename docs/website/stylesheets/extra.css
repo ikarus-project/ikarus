@@ -9,6 +9,7 @@
 }
 :root {
     --md-tooltip-width: 800px;
+    --md-primary-fg-color:        #00BEFF;
 }
 
 p {
