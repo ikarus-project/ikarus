@@ -178,7 +178,7 @@ namespace Ikarus {
     for (auto &&fe : this->finiteElements()) {
       dofs.resize(0);
       fe.globalIndices(dofs);
-      elementLinearIndices.emplace_back(Dune::Power<2>::eval(dofs.size()));
+      elementLinearIndices.emplace_back(Dune::power(dofs.size(),2));
       for (Eigen::Index linearIndexOfElement = 0; auto &&c : dofs)
         for (auto &&r : dofs)
           elementLinearIndices.back()[linearIndexOfElement++] = spMat.getLinearIndex(r[0], c[0]);

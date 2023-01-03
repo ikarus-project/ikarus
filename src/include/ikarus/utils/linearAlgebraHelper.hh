@@ -5,6 +5,7 @@
 #include <iosfwd>
 #include <random>
 
+#include <dune/common/tuplevector.hh>
 #include <dune/istl/bvector.hh>
 #include <dune/istl/multitypeblockvector.hh>
 
@@ -129,8 +130,7 @@ namespace Ikarus {
 
   /* Enables the += operator for Dune::MultiTypeBlockVector += Eigen::Vector */
   template <typename... Types, typename Derived>
-  Dune::MultiTypeBlockVector<Types...>& operator+=(Dune::MultiTypeBlockVector<Types...>& a,
-                                                   const Eigen::MatrixBase<Derived>& b) {
+  Dune::TupleVector<Types...>& operator+=(Dune::TupleVector<Types...>& a, const Eigen::MatrixBase<Derived>& b) {
     using namespace Dune::Indices;
     size_t posStart = 0;
     Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<a.size()>()), [&](const auto i) {
