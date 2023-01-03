@@ -21,7 +21,7 @@ namespace Ikarus {
         : localView{p_basis.localView()} {
       static_assert(Ikarus::Concepts::PowerBasis<RootBasis>,
                     "You didn't pass a localview of a power basis to this method");
-      static_assert(RootBasis::PreBasis::Node::CHILDREN != 1,
+      static_assert(RootBasis::PreBasis::Node::degree() != 1,
                     "The basis has only one children. Maybe use scalarFE.hh. ");
 
       localView.bind(element);

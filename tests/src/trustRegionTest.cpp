@@ -5,8 +5,11 @@
 //
 #include <config.h>
 
+#include <experimental/type_traits>
+
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
+#include <dune/common/tuplevector.hh>
 using Dune::TestSuite;
 
 #include "testHelpers.hh"
@@ -254,10 +257,9 @@ auto trustRegion4_RiemanianUnitSphere() {
 }
 
 #include <dune/istl/bvector.hh>
-#include <dune/istl/multitypeblockvector.hh>
 using DirectorVector     = Dune::BlockVector<Dune::UnitVector<double, 3>>;
 using DisplacementVector = Dune::BlockVector<Dune::RealTuple<double, 3>>;
-using MultiTypeVector    = Dune::MultiTypeBlockVector<DisplacementVector, DirectorVector>;
+using MultiTypeVector    = Dune::TupleVector<DisplacementVector, DirectorVector>;
 
 template <typename ScalarType = double>
 ScalarType f3RBlocked(const MultiTypeVector& mT, const Eigen::VectorX<ScalarType>& dx) {

@@ -5,7 +5,7 @@
 #include <ranges>
 #include <utility>
 
-#include <dune/common/power.hh>
+#include <dune/common/math.hh>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
