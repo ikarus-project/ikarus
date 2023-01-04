@@ -14,8 +14,9 @@ foreach(programSourceFile ${programSourceFiles})
     ${programName} PUBLIC -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable
                           -Wno-deprecated-copy -ftemplate-backtrace-limit=0
   )
-
-  target_link_libraries(${programName} PUBLIC ikarus)
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(Clipper2Lib REQUIRED IMPORTED_TARGET Clipper2)
+  target_link_libraries(${programName} PUBLIC ikarus PkgConfig::Clipper2Lib)
   add_dependencies(AllExamples ${programName})
   find_package(PythonLibs REQUIRED)
   include_directories(${PYTHON_INCLUDE_DIRS})
