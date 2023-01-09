@@ -4,6 +4,7 @@
 Module: ikarus
 Version: 0.2
 Maintainer: mueller@ibb.uni-stuttgart.de
-Depends: dune-typetree dune-geometry dune-iga dune-localfefunctions dune-functions dune-grid dune-fufem dune-alugrid dune-foamgrid dune-uggrid dune-vtk
+Depends: dune-typetree dune-geometry dune-iga dune-localfefunctions dune-functions dune-grid dune-fufem dune-alugrid dune-uggrid dune-vtk
+Python-Requires: scipy
 # Optional build dependencies
-#Suggests:
+Suggests:

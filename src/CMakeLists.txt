@@ -9,12 +9,6 @@ file(
   CONFIGURE_DEPENDS include/ikarus/*.cpp
 )
 
-project(
-  ikarus
-  VERSION 0.2
-  LANGUAGES C CXX
-)
-
 dune_add_library(${PROJECT_NAME} ${sources})
 target_link_libraries(${PROJECT_NAME} PUBLIC ${DUNE_LIBS})
 target_link_dune_default_libraries(${PROJECT_NAME})

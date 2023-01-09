@@ -1,0 +1,20 @@
+dune_python_add_test(NAME pyglobalbasis2d
+                     SCRIPT globalbasis2d.py
+                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                     LABELS python)
+dune_python_add_test(NAME pyglobalbasis3d
+                     SCRIPT globalbasis3d.py
+                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                     LABELS python)
+dune_python_add_test(NAME pypoisson
+                     SCRIPT poisson.py
+                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                     LABELS python)
+dune_python_add_test(NAME pyfunction
+                     SCRIPT function.py
+                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                     LABELS python)
+dune_python_add_test(NAME pydiscretefunction
+                     SCRIPT discretefunction.py
+                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                     LABELS python)
