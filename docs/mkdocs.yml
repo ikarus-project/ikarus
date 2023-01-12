@@ -153,7 +153,7 @@ extra:
     - icon: fontawesome/brands/linkedin
       link: https://www.linkedin.com/company/uni-stuttgart-ibb
     - icon: fontawesome/brands/docker
-      link: https://hub.docker.com/repository/docker/rath3t/ikarus
+      link: https://hub.docker.com/repository/docker/ikarusproject/ikarus
     - icon: fontawesome/brands/gitter
       link: https://gitter.im/ikarus-project/community
 

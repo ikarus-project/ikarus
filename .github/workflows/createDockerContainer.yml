@@ -22,7 +22,7 @@
            path: 'repo'
        - name: Build the Docker image
          working-directory: ./repo/InstalledContainer
-         run: docker build . --file Dockerfile --tag rath3t/ikarus:latest
+         run: docker build . --file Dockerfile --tag ikarusproject/ikarus:latest
        - name: Docker Login
          uses: azure/docker-login@v1
          with:
@@ -30,4 +30,4 @@
            password: ${{ secrets.DOCKER_PASSWORD }}
        - name: Publish the Docker image
          working-directory: ./repo/InstalledContainer
-         run: docker push rath3t/ikarus:latest
+         run: docker push ikarusproject/ikarus:latest
