@@ -6,4 +6,4 @@ set(HEADERS
   tree.hh
 )
 
-install(FILES ${HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/python/functions)
+install(FILES ${HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/ikarus)
