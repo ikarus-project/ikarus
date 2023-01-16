@@ -74,8 +74,9 @@ auto checkCauchyStress2D() {
       Eigen::Vector3d computedResult = result.getResult(ResultType::cauchyStress).eval();
       stressVector[localScalarView.index(localScalarView.tree().localIndex(c))[0]] = toDune(computedResult);
       for (auto voigtSize = 0UL; voigtSize < 3; ++voigtSize)
-        if (Dune::FloatCmp::eq(stressVector[localScalarView.index(localScalarView.tree().localIndex(c))[0]][voigtSize],
-                               expectedStress[c][voigtSize]))
+        if (Dune::FloatCmp::eq<double, Dune::FloatCmp::CmpStyle::absolute>(
+                stressVector[localScalarView.index(localScalarView.tree().localIndex(c))[0]][voigtSize],
+                expectedStress[c][voigtSize]))
           checkStressAtNodes = true;
         else {
           checkStressAtNodes = false;
