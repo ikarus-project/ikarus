@@ -30,11 +30,12 @@ namespace Ikarus {
   template <typename Basis>
   class LinearElastic : public PowerBasisFE<Basis> {
   public:
-    using BaseDisp          = PowerBasisFE<Basis>;  // Handles globalIndices function
-    using GlobalIndex       = typename PowerBasisFE<Basis>::GlobalIndex;
-    using FERequirementType = FErequirements<Eigen::VectorXd>;
-    using LocalView         = typename Basis::LocalView;
-    using GridView          = typename Basis::GridView;
+    using BaseDisp               = PowerBasisFE<Basis>;  // Handles globalIndices function
+    using GlobalIndex            = typename PowerBasisFE<Basis>::GlobalIndex;
+    using FERequirementType      = FErequirements<Eigen::VectorXd>;
+    using ResultRequirementsType = ResultRequirements<Eigen::VectorXd>;
+    using LocalView              = typename Basis::LocalView;
+    using GridView               = typename Basis::GridView;
 
     using Traits = TraitsFromLocalView<LocalView>;
 
@@ -167,6 +168,27 @@ namespace Ikarus {
             K.template block<mydim, mydim>(i * mydim, j * mydim) += bopI.transpose() * C * bopJ * intElement;
           }
         }
+      }
+    }
+
+    void calculateAt(const ResultRequirementsType& req, const Eigen::Vector<double, Traits::mydim>& local,
+                     ResultTypeMap<double>& result) const {
+      using namespace Dune::Indices;
+      using namespace Dune::DerivativeDirections;
+      using namespace Dune;
+
+      const auto eps = getStrainFunction(req.getFERequirements());
+      const auto C   = getMaterialTangent();
+      auto gp        = toDune(local);
+      auto epsVoigt  = eps.evaluate(gp, on(gridElement));
+
+      auto cauchyStress = C * (epsVoigt).eval();
+
+      typename ResultTypeMap<double>::ResultArray resultVector;
+      if (req.isResultRequested(ResultType::cauchyStress)) {
+        resultVector.resize(3, 1);
+        resultVector = cauchyStress;
+        result.insertOrAssignResult(ResultType::cauchyStress, resultVector);
       }
     }
 
