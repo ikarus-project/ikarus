@@ -9,6 +9,7 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 # Deformation of an incompressible rubber block
 
 ## Description
+
 `iks003_incompressible_LinearElasticity.cpp` uses a finite element technology with displacement and pressure as
 independent degrees of freedom to simulate the deformation of an incompressible rubber block. The potential energy 
 for such a system is defined in the `Solid struct` by the function
@@ -17,6 +18,7 @@ This function uses the principles of automatic differentiation to provide the st
 other necessary quantities to perform a static structural analysis.
 
 ## Code highlights
+
 The `struct` named `Solid` is created as an object of `AutoDiffFE`. It is constructed as shown below:
 ```cpp
 Solid(const Basis &basis, const typename LocalView::Element &element, double emod, double nu)
@@ -115,6 +117,7 @@ vtkWriter.write("iks003_incompressibleLinearElasticity");
 ```
 
 ## Takeaways
+
 - `Ikarus::AutoDiffFE` can be used to arrive at the stiffness matrix and external load vector from the energy function.
 - Helper functions are included to switch between the Lame parameters.
 - Grids from Dune can be directly incorporated within the Ikarus framework.

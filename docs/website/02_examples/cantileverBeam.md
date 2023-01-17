@@ -6,6 +6,7 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 # Cantilever beam with point load
 
 ## Description
+
 The example `iks002_cantileverBeamOneDGrid.cpp` demonstrates a simple implementation of the standard one dimensional 
 Timoshenko beam element which is clamped on the left 
 hand side. A point load is applied on the right hand side of the beam. It uses `Dune::OneDGrid` to generate the required 
@@ -13,6 +14,7 @@ grid. The implementation shown here assembles the stiffness matrices explicitly.
 implementations of matrix assembly and other features of Ikarus is showcased in the other examples.
 
 ## Code highlights
+
 The `#!cpp main()` function calls the following function to run the example 
 ```cpp
 void exampleTimoshenkoBeam(const int polynomialOrderW, // (1)! 
@@ -136,6 +138,7 @@ void plotDeformedTimoschenkoBeam(auto &gridView, auto &basis, auto &d_glob, doub
 This function uses the plotting features from [Matlab](https://de.mathworks.com/products/matlab.html).
 
 ## Takeaways
+
 - `#!cpp Dune::OneDGrid` can be used to create one-dimensional grids. 
 - Grids and quadrature rules from Dune can be directly incorporated within the Ikarus framework.
 - A composite basis can be used to have different ansatz functions for different degrees of freedom.
