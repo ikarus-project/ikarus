@@ -63,7 +63,7 @@ auto lvkObserver = std::make_shared<Ikarus::GenericControlObserver>(ControlMessa
 });
 ```
 The load control method is used as the path-following strategy, and it is subscribed to both `vtkWriter` and `lvkObserver`.
-The features from `matplot` are then used to plot the load-displacement curve from the matrix `lambdaAndDisp`.
+The features from [Matplot++](https://github.com/alandefreitas/matplotplusplus) are then used to plot the load-displacement curve from the matrix `lambdaAndDisp`.
 
 ## Takeaways
 

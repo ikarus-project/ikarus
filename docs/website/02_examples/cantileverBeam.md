@@ -134,7 +134,8 @@ For post-processing, the deformed configuration of the beam can be plotted using
 ```cpp
 void plotDeformedTimoschenkoBeam(auto &gridView, auto &basis, auto &d_glob, double EI, double GA, double L, double F);
 ```
-This function uses the plotting features of [Matlab](https://de.mathworks.com/products/matlab.html).
+This function uses the plotting features of [Matplot++](https://github.com/alandefreitas/matplotplusplus), 
+which has a similar syntax to [Matplotlib](https://matplotlib.org/).
 
 ## Takeaways
 

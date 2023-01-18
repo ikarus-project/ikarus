@@ -121,6 +121,7 @@ vtkWriter.write("iks003_incompressibleLinearElasticity");
 ## Takeaways
 
 - `Ikarus::AutoDiffFE` can be used to arrive at the stiffness matrix and external load vector from the energy function.
+- Easier implementation of mixed finite elements is possible due to the composite basis feature from Dune.
 - Helper functions are included to switch between the Lame parameters.
 - Grids from Dune can be directly incorporated within the Ikarus framework.
 - Sparse and dense assemblers can be used to construct the global stiffness matrices and load vectors.

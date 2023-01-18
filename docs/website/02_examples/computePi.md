@@ -35,7 +35,7 @@ It is to note that dune-grid only supports Version 2 of the Gmsh format. The `#!
 included within the Ikarus framework to quickly draw grids and verify them for any major errors.
 The function `#!cpp grid->globalRefine(1);` is invoked to refine the grid on a global level. This means that, if we have 
 a single square-shaped 4-node quadrilateral element, the `globalRefine(1)` function will bisect the element once in 
-either direction and thereby result in a grid with 2 elements in either direction. This type of refinement is done in 
+either direction and thereby result in a grid with 2 elements in either direction. This type of refinement is done for triangular elements in 
 the following, and the area of the circle is compared to the value of $\pi$. The area of the circle itself is obtained by 
 summing the volumes (area in 2D terms) of individual elements.
 ```cpp
@@ -66,9 +66,9 @@ for (auto &element : elements(gridView))
     for (auto &intersection : intersections(gridView, element))
       if (intersection.boundary()) circumference += intersection.geometry().volume();
 ```
-It is observed that even though the grid is globally refined in every loop, the computed value of $\pi$ converges to 
-the actual value very slowly. This is due to the fact that even though the grid has many elements with every refinement, 
-it doesn't contain the information about the boundary of the circle to predict an accurate value of $\pi$. In order to refine 
+It is observed that even though the grid is globally refined in every loop, the computed value of $\pi$ never converges. 
+This is due to the fact that the triangular grid doesn't change its area with refinement. Even though the grid has many elements with every refinement, 
+it doesn't contain enough information about the boundary of the circle to predict an accurate value of $\pi$. In order to refine 
 the boundary entities correctly, the `#!cpp boundaryAwareRefinedCircle()` function is formulated and explained next.
 
 In this function, the grid is created explicitly and isn't read from an external `*.msh` file. The corners are 
@@ -123,8 +123,7 @@ grid->adapt();
 grid->postAdapt();
 auto gridViewRefined = grid->leafGridView();
 ```
-Now, the calculation of area and circumference to determine the value of $\pi$ converges efficiently when comparing it 
-with the same number of elements as in the earlier case.
+Now, the calculation of area and circumference to determine the value of $\pi$ converges correctly.
 
 ## Takeaways
 

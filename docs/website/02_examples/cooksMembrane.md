@@ -78,8 +78,8 @@ for (auto &ele : elements(gridView)) {
   }
 }
 ```
-The datasets are then stored and plotted using `matplot`. The deformed configuration is also written using the `Dune::VTKWriter` and can be visualized using Paraview.
-Several log information is also displayed in this example using `spdlog/spdlog.h`.
+The datasets are then stored and plotted using [Matplot++](https://github.com/alandefreitas/matplotplusplus). The deformed configuration is also written using the `Dune::VTKWriter` and can be visualized using Paraview.
+Several log information is also displayed in this example using [spdlog](https://github.com/gabime/spdlog).
 
 ## Takeaways
 
