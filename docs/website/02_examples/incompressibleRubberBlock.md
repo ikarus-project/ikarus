@@ -68,6 +68,7 @@ A linear Lagrangian basis is opted for the displacements and a constant basis fo
 auto basis = Ikarus::makeConstSharedBasis(
 gridView, composite(power<2>(lagrange<1>(), FlatInterleaved()), lagrange<0>(), FlatLexicographic()));
 ```
+Here, `#!cpp power<2>` is used to approximate the displacement field in both $x$ and $y$ directions. 
 The displacement degrees of freedom at position $y=0$ are fixed using the following snippet:
 ```cpp
 Ikarus::DirichletValues dirichletValues(basis);
