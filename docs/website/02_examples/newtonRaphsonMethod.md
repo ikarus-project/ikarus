@@ -15,6 +15,7 @@ perform the Newton-Raphson iterations. A logger can also be subscribed to in ord
 for instance.
 
 ## Code highlights
+
 Here, the `#!cpp main()` function uses two functions namely `#!cpp void newtonRaphsonVeryBasicExample();` and `#!cpp void newtonRaphsonBasicExampleWithLogger();` 
 that demonstrates the implementation of the Newton-Raphson scheme and also show the method to subscribe to loggers for information, respectively. 
 The function, which is solved in this example, and its derivative are mentioned below:
@@ -103,6 +104,7 @@ void newtonRaphsonBasicExampleWithLogger() {
     std::cout << "The Newton-Raphson procedure failed to converge" << std::endl;
 }
 ```
+
 ## Takeaways
 
 - Functors for the function and its derivative can be used to create a simple non-linear operator.
