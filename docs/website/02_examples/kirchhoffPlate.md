@@ -7,14 +7,14 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 
 ## Description
 
-Kirchhoff type plate element is implemented in `iks004_kirchhoffPlate.cpp` using the automatic differentiation
+Kirchhoff-type plate element is implemented in `iks004_kirchhoffPlate.cpp` using the automatic differentiation
 technique as commented before. The basis used for discretization is a NURBS basis from the `dune-iga` module.
-The problem is solved and convergence plots are created by comparing the solutions to the available analytical solutions for the
+The problem is solved, and convergence plots are created by comparing the solutions to the available analytical solutions for the
 simply supported case.
 
 ## Code highlights
 
-Similar to the `struct` named `Solid` in `iks003_incompressible_LinearElasticity.cpp`, here a `struct`named `KirchhoffPlate` is created as an object 
+Similar to the `struct` named `Solid` in `iks003_incompressible_LinearElasticity.cpp`, here a `struct` named `KirchhoffPlate` is created as an object 
 of `AutoDiffFE`. It is constructed as shown below:
 ```cpp
 KirchhoffPlate(const Basis &basis, const typename LocalView::Element &element, double p_Emodul, double p_nu,
@@ -29,12 +29,12 @@ KirchhoffPlate(const Basis &basis, const typename LocalView::Element &element, d
   geometry_.emplace(localView_.element().geometry());
 }
 ```
-It takes in the `p_thickness` parameter additionally to the ones in `Solid`. Here, the energy is then calculated as
+It takes in the `p_thickness` parameter in addition to the ones in `Solid`. Here, the energy is calculated as:
 ```cpp
 energy += (0.5 * kappa.dot(D * kappa) - w * lambda) * geometry_->integrationElement(gp.position()) * gp.weight();
 ```
 with `kappa` being the vector of curvature containing $\kappa_{xx}, \kappa_{yy}$ and $\kappa_{xy}$. If the boundaries 
-are to clamped, penalty method could be used, for example, to fix the derivatives of the displacements. Here however, the example for the simply supported case is discussed further.
+are clamped, the penalty method could be used, for example, to fix the derivatives of the displacements. Here, however, the example for the simply supported case is discussed further.
 
 A two-dimensional NURBS grid is created from the [dune-iga](https://github.com/rath3t/dune-iga) module. 
 
@@ -68,26 +68,26 @@ Grid grid(patchData); // (14)!
 1. The dimension of the grid. Here, two-dimensional.
 2. The dimension of the physical space in which the grid lies (the embedding space of the grid). Here, two-dimensional.
 3. The knot vector for the NURBS grid.
-4. Length of the plate.
-5. Width of the plate.
-6. Control points and the weights for the square plate. The control points are ordered such that all the control points for a particular $x$-position are written first, followed by the subsequent $x$-positions in ascending order.
-7. Number of control points in either directions.
+4. Length of the plate
+5. Width of the plate
+6. Control points and the weights for the square plate (the control points are ordered such that all the control points for a particular $x$-position are listed first, followed by the subsequent $x$-positions in ascending order).
+7. Number of control points in either direction.
 8. Creation of the control net.
 9. Binding the `knotSpans` to a particular NURBS `patchData`.
 10. The polynomial degree for the basis in either directions. It can also be calculated from the `knotSpans`.
 11. Binding the `controlNet` to a particular NURBS `patchData`.
 12. Elevating the polynomial degree for the `patchData` in $x$-direction (`0`) by 1.
 13. Elevating the polynomial degree for the `patchData` in $y$-direction (`1`) by 1.
-14. Creating the grid object from the patch data.
+14. Creating the grid object from the patch data
 
-In order to obtain the convergence plots, the system is solved five times, with every time the refinement level 
-increasing by 1 using the command `#!cpp grid.globalRefine(1);`. The NURBS basis can be obtained directly from the 
-NURBS grid using the `getPreBasis()` function as shown below: 
+In order to obtain the convergence plots, the system is solved five times, with the refinement level 
+increasing by 1 each time using the command `#!cpp grid.globalRefine(1);`. The NURBS basis can be obtained directly from the 
+NURBS grid using the `getPreBasis()` function, as shown below:
 ```cpp
 auto basis = Ikarus::makeConstSharedBasis(gridView, gridView.impl().getPreBasis());
 ```
 This is followed by specifying the Dirichlet boundary conditions, creating the finite elements and the assembler, 
-solving the system of equations and post-processing using Paraview as mentioned in the previous examples.
+solving the system of equations, and post-processing using Paraview as mentioned in the previous examples.
 The analytical solution for the simply supported case is adapted from 
 [Wikipedia](https://en.wikipedia.org/wiki/Bending_of_plates#Simply-supported_plate_with_uniformly-distributed_load) and is also mentioned below: 
 ```cpp
@@ -150,7 +150,7 @@ l2Evcector.push_back(l2_error);
 
 ## Takeaways
 
-- NURBS grid can be created using the `dune-iga` module.
+- NURBS grids can be created using the `dune-iga` module.
 - The basis for the corresponding NURBS grid can be obtained using the `getPreBasis()` function.
 - The Kirchhoff plate element can be easily implemented by evaluating the energy and using automatic differentiation methods.
 - $L^2$-error can be evaluated to perform convergence studies.

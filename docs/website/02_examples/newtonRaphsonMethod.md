@@ -8,22 +8,22 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 ## Description
 
 `iks005_newtonRaphson.cpp` shows a basic example of the [Newton-Raphson method](https://en.wikipedia.org/wiki/Newton's_method) to solve a non-linear set of equations.
-A function which shows the algorithm explicitly is provided and another function which is implemented in Ikarus is
-demonstrated. The function which depicts the Ikarus implementation uses a
+A function that shows the algorithm explicitly is provided, and another function which is implemented in Ikarus is
+demonstrated. The function that depicts the Ikarus implementation uses a
 [non-linear operator](../01_framework/nonlinearOperator.md) to
 perform the Newton-Raphson iterations. A logger can also be subscribed to in order to observe the residual norms,
 for instance.
 
 ## Code highlights
 
-Here, the `#!cpp main()` function uses two functions namely `#!cpp void newtonRaphsonVeryBasicExample();` and `#!cpp void newtonRaphsonBasicExampleWithLogger();` 
-that demonstrates the implementation of the Newton-Raphson scheme and also show the method to subscribe to loggers for information, respectively. 
+Here, the `#!cpp main()` function uses two functions, namely `#!cpp void newtonRaphsonVeryBasicExample();` and `#!cpp void newtonRaphsonBasicExampleWithLogger();` 
+that demonstrate the implementation of the Newton-Raphson scheme and also show the method to subscribe to loggers for information, respectively. 
 The function, which is solved in this example, and its derivative are mentioned below:
 ```cpp
 auto f(double &x) { return 0.5 * x * x + x - 2; }
 auto df(double &x) { return x + 1; }
 ```
-First, the function `#!cpp void newtonRaphsonVeryBasicExample();` is described. 
+First, the `#!cpp void newtonRaphsonVeryBasicExample();` function is described. 
 The settings for the Newton-Raphson method are defined as:
 ```cpp
 double x               = 13; // (1)!
@@ -32,10 +32,10 @@ const int maxIter      = 20; // (3)!
 const double xExpected = std::sqrt(5.0) - 1.0; // (4)!
 ```
 
-1. Starting point for the Newton-Raphson method to find the closest root.
-2. Tolerance level below which the iterations stop.
-3. Maximum number of iterations.
-4. Expected value (analytical solution).
+1. Starting point for the Newton-Raphson method to find the closest root
+2. Tolerance level below which the iterations stop
+3. Maximum number of iterations
+4. Expected value (analytical solution)
 
 Functors are created then to evaluate the function to be solved for and its derivative. These are then passed to the non-linear operator as shown below:
 ```cpp
@@ -43,7 +43,7 @@ auto fvLambda  = [&](auto &&x) { return f(x); };
 auto dfvLambda = [&](auto &&x) { return df(x); };
 Ikarus::NonLinearOperator nonLinOp(Ikarus::linearAlgebraFunctions(fvLambda, dfvLambda), Ikarus::parameter(x));
 ```
-The standard implementation of the Newton-Raphson method is illustrated in this function which uses `nonLinOp` as well.
+The standard implementation of the Newton-Raphson method is illustrated in this function, which also uses `nonLinOp`.
 ```cpp
 int iterCount = 1;
 while (abs(nonLinOp.value()) > eps and iterCount <= maxIter) {
@@ -55,7 +55,7 @@ while (abs(nonLinOp.value()) > eps and iterCount <= maxIter) {
   std::cout << "nonlinearOperator, x: " << nonLinOp.firstParameter() << "\n";
 }
 ```
-One could also use the existing functionality in Ikarus to obtain a similar solution from the Newton-Raphson scheme as depicted below:
+One could also use the existing functionality in Ikarus to obtain a similar solution from the Newton-Raphson scheme, as depicted below:
 ```cpp
 Ikarus::NewtonRaphson nr(nonLinOp);
 nr.setup({eps, maxIter});

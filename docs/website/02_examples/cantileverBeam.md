@@ -7,15 +7,14 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 
 ## Description
 
-The example `iks002_cantileverBeamOneDGrid.cpp` demonstrates a simple implementation of the standard one dimensional 
-Timoshenko beam element which is clamped on the left 
-hand side. A point load is applied on the right hand side of the beam. It uses `Dune::OneDGrid` to generate the required 
+The example `iks002_cantileverBeamOneDGrid.cpp` demonstrates a simple implementation of the standard one-dimensional 
+Timoshenko beam element, which is clamped on the left-hand side. A point load is applied on the right-hand side of the beam. It uses `Dune::OneDGrid` to generate the required 
 grid. The implementation shown here assembles the stiffness matrices explicitly. Advanced 
-implementations of matrix assembly and other features of Ikarus is showcased in the other examples.
+implementations of matrix assembly and other features of Ikarus are showcased in the other examples.
 
 ## Code highlights
 
-The `#!cpp main()` function calls the following function to run the example 
+The `#!cpp main()` function calls the following function to run the example.
 ```cpp
 void exampleTimoshenkoBeam(const int polynomialOrderW, // (1)! 
 const int polynomialOrderPhi, // (2)!
@@ -49,8 +48,8 @@ C << EI, 0, 0, GA;
 ```
 
 The one-dimension grid is created by specifying the starting (`0`) and end (`L`) points of the beam and using `numElements`.
-The grid module `Dune::OneDGrid`[@sander2020dune] is used here. The *composite basis* feature from Dune allows to create 
-different basis for the degrees of freedom `w` and `phi`. Empty dense global and local stiffness matrices are then defined along with 
+The grid module `Dune::OneDGrid`[@sander2020dune] is used here. The *composite basis* feature in Dune allows for 
+different bases for the degrees of freedom `w` and `phi`. Empty dense global and local stiffness matrices are then defined along with 
 a global external load vector. The quadrature rule for integration of the stiffness matrix and the external load vector is set up as shown below:
 ```cpp
 const int maxOrderIntegration = std::max(2 * (polynomialOrderW - 1), 2 * polynomialOrderPhi);
@@ -61,7 +60,7 @@ The local element stiffness matrix is then obtained by the following function:
 ```cpp
 void TimoshenkoBeamStiffness(auto &KLocal, auto &localView, auto &gridElement, auto &quadratureRule, const Eigen::Matrix2d &C);
 ```
-The access to the information corresponding to the two independent degrees of freedom (`w` and `phi`) can be obtained by using the child elements as depicted below:
+Access to the information corresponding to the two independent degrees of freedom (`w` and `phi`) can be obtained by using the child elements as depicted below:
 ```cpp
 auto wFE   = localView.tree().child(_0);
 auto phiFE = localView.tree().child(_1);
@@ -101,7 +100,7 @@ for (auto &gp : quadratureRule) { // (1)!
 6. Filling up the $\mathbf{B}$-operator for the columns corresponding to 'phi'
 7. Integrating to arrive at the local stiffness matrix
 
-Assembly of the local element stiffness matrices is done to obtain the global element stiffness matrix as shown below:  
+Assembly of the local element stiffness matrices is done to obtain the global element stiffness matrix, as shown below:  
 ```cpp
 for (auto i = 0U; i < localView.size(); ++i)
   for (auto j = 0U; j < localView.size(); ++j)
@@ -129,18 +128,18 @@ for (auto dof : fixedDofs) {
   KGlobal(dof, dof) = 1.0;
 }
 ```
-Finally, the system of equations are solved by using the solver type `#!cpp Ikarus::SolverTypeTag::d_LDLT`. For more 
-details on the solver types, refer the [documentation](../01_framework/solvers.md).
-For post-processing, the deformed configuration of the beam can be plotted using the following function shown here in the example:
+Finally, the system of equations is solved by using the solver type `#!cpp Ikarus::SolverTypeTag::d_LDLT`. For more 
+details on the solver types, refer to the [documentation](../01_framework/solvers.md).
+For post-processing, the deformed configuration of the beam can be plotted using the following function, shown here in the example:
 ```cpp
 void plotDeformedTimoschenkoBeam(auto &gridView, auto &basis, auto &d_glob, double EI, double GA, double L, double F);
 ```
-This function uses the plotting features from [Matlab](https://de.mathworks.com/products/matlab.html).
+This function uses the plotting features of [Matlab](https://de.mathworks.com/products/matlab.html).
 
 ## Takeaways
 
 - `#!cpp Dune::OneDGrid` can be used to create one-dimensional grids. 
-- Grids and quadrature rules from Dune can be directly incorporated within the Ikarus framework.
+- Grids and quadrature rules from Dune can be directly incorporated into the Ikarus framework.
 - A composite basis can be used to have different ansatz functions for different degrees of freedom.
 - Solvers from the Eigen library can be used to solve the linear system of equations.
 - `localBasis` functions can be used to evaluate the ansatz functions and its derivatives.
