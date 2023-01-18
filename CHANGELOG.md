@@ -4,7 +4,11 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 -->
 
 # Master (becomes Release v0.4)
-- Add comment section to blog post ( [511d83](https://github.com/ikarus-project/ikarus/commit/511d83f9e7c474c9b320db5bc9367114ebe2825d) )
+
+- Added comment section to blog post ([511d83](https://github.com/ikarus-project/ikarus/commit/511d83f9e7c474c9b320db5bc9367114ebe2825d))
+- Updated license information ([#138](https://github.com/ikarus-project/ikarus/pull/138))
+- Added detailed documentation for ikarus-examples ([#140](https://github.com/ikarus-project/ikarus/pull/140))
+
 ## Release v0.3 (Prometheus)
 
 - Added codespell workflow (CI checks now for grammar and typos in comments and variable names) [#70](https://github.com/ikarus-project/ikarus/pull/70)

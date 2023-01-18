@@ -9,7 +9,8 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 # Deformation of an incompressible rubber block
 
 ## Description
-`iks003_incompressible_LinearElasticity.cpp` uses a finite element technology with displacement and pressure as
+
+`iks003_incompressible_LinearElasticity.cpp` uses finite element technology with displacement and pressure as
 independent degrees of freedom to simulate the deformation of an incompressible rubber block. The potential energy 
 for such a system is defined in the `Solid struct` by the function
 `calculateScalarImpl(const FERequirementType &par, const Eigen::VectorX<ScalarType> &dx)`. 
@@ -17,6 +18,7 @@ This function uses the principles of automatic differentiation to provide the st
 other necessary quantities to perform a static structural analysis.
 
 ## Code highlights
+
 The `struct` named `Solid` is created as an object of `AutoDiffFE`. It is constructed as shown below:
 ```cpp
 Solid(const Basis &basis, const typename LocalView::Element &element, double emod, double nu)
@@ -39,15 +41,16 @@ energy += (0.5 * (2 * mu_ * symgradu.squaredNorm() - 1 / lambdaMat * Dune::power
           * geo.integrationElement(gp.position()) * gp.weight();  // plane strain for 2D
 ```
 Here: 
+
 - `symgradu` is the symmetric part of the gradient of displacements 
 - `lambdaMat` is the first Lame parameter
-- `pressure` and `x` is the nodal pressure and current position, respectively
+- `pressure` and `x` are the nodal pressure and current position, respectively
 - `divU` is the divergence of the displacement vector
 - `fext` is the external force vector
 - `gp.position()` and `gp.weight()` are the positions and weights from the quadrature rule
 - `geo.integrationElement()` returns the determinant of Jacobian required from the iso-parametric concept
 
-A Yasp 2D grid[@sander2020dune] is created of the size $L$ x $h$ with 20 elements in both directions as shown below: 
+A Yasp 2D grid[@sander2020dune] is created of the size $L$ x $h$ with 20 elements in both directions, as shown below: 
 ```cpp
 using Grid        = Dune::YaspGrid<gridDim>;
 const double L    = 1;
@@ -61,11 +64,12 @@ auto grid                               = std::make_shared<Grid>(bbox, elementsP
 auto gridView                           = grid->leafGridView();
 ```
 A linear Lagrangian basis is opted for the displacements and a constant basis for the pressure degrees of freedom using the
-`composite` basis feature from Dune as shown below:
+`composite` basis feature from Dune, as shown below:
 ```cpp
 auto basis = Ikarus::makeConstSharedBasis(
 gridView, composite(power<2>(lagrange<1>(), FlatInterleaved()), lagrange<0>(), FlatLexicographic()));
 ```
+Here, `#!cpp power<2>` is used to approximate the displacement field in both $x$ and $y$ directions. 
 The displacement degrees of freedom at position $y=0$ are fixed using the following snippet:
 ```cpp
 Ikarus::DirichletValues dirichletValues(basis);
@@ -115,7 +119,9 @@ vtkWriter.write("iks003_incompressibleLinearElasticity");
 ```
 
 ## Takeaways
+
 - `Ikarus::AutoDiffFE` can be used to arrive at the stiffness matrix and external load vector from the energy function.
+- Easier implementation of mixed finite elements is possible due to the composite basis feature from Dune.
 - Helper functions are included to switch between the Lame parameters.
 - Grids from Dune can be directly incorporated within the Ikarus framework.
 - Sparse and dense assemblers can be used to construct the global stiffness matrices and load vectors.

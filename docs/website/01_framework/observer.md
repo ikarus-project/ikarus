@@ -3,7 +3,7 @@ SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 SPDX-License-Identifier: CC-BY-SA-4.0
 -->
 
-# Oberserver and Observable
+# Observer and Observable
 
 To write output messages when desired by the user, the observer pattern is implemented in Ikarus.
 Four things are necessary to understand the implementation of observer patterns: `Messages`, `IObservable`, 
