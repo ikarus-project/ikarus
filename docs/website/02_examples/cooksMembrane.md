@@ -40,7 +40,7 @@ The file `cook.msh` contains the Cook's membrane problem with a structured grid,
 contains the same problem with triangular elements and with an unstructured mesh, respectively. The mesh file is read using 
 `Dune::GmshReader` and `Dune::UGGrid` is used to get the `grid` object.
 `easSet` is an `Eigen::Vector` which contains the number of EAS parameters for the four element types. 
-It is to note that if the number of EAS parameteres is set to zero, the standard Q1 formulation is used. 
+It is to note that if the number of EAS parameters is set to zero, the standard Q1 formulation is used. 
 ```cpp
 Eigen::Vector<int, 4> easSet;
 easSet << 0, 4, 5, 7;
