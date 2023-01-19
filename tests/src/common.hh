@@ -7,9 +7,13 @@
 
 #include <dune/alugrid/grid.hh>
 #include <dune/common/test/testsuite.hh>
+#include <dune/functions/functionspacebases/lagrangedgbasis.hh>
 #include <dune/grid/yaspgrid.hh>
 #include <dune/iga/nurbsgrid.hh>
 
+#include <ikarus/finiteElements/feRequirements.hh>
+#include <ikarus/utils/duneUtilities.hh>
+#include <ikarus/utils/eigenDuneTransformations.hh>
 #include <ikarus/utils/functionSanityChecks.hh>
 #include <ikarus/utils/linearAlgebraHelper.hh>
 
@@ -76,7 +80,8 @@ struct CornerFactory {
 // Corner factory for element with codim==0, e.g. no surfaces in 3D
 template <int gridDim>
 struct ValidCornerFactory {
-  static void construct(std::vector<Dune::FieldVector<double, gridDim>>& values, const Dune::GeometryType& type) {
+  static void construct(std::vector<Dune::FieldVector<double, gridDim>>& values, const Dune::GeometryType& type,
+                        const bool& isRandom) {
     const auto& refElement = Dune::ReferenceElements<double, gridDim>::general(type);
 
     const auto numberOfVertices = refElement.size(gridDim);
@@ -85,10 +90,12 @@ struct ValidCornerFactory {
     for (int i = 0; i < numberOfVertices; ++i)
       values[i] = refElement.position(i, gridDim);
 
-    // perturb corner values slightly
-    std::transform(values.begin(), values.end(), values.begin(), [](const auto& vec) {
-      return vec + Ikarus::createRandomVector<Dune::FieldVector<double, gridDim>>(-0.2, 0.2);
-    });
+    /// perturb corner values slightly
+    if (isRandom) {
+      std::transform(values.begin(), values.end(), values.begin(), [](const auto& vec) {
+        return vec + Ikarus::createRandomVector<Dune::FieldVector<double, gridDim>>(-0.2, 0.2);
+      });
+    }
   }
 };
 
@@ -119,5 +126,68 @@ template <typename NonLinearOperator>
   TestSuite t("Check Jacobian");
   t.check(checkJacobian(nonLinearOperator, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << "The Jacobian of calculateMatrix is not the Jacobian of calculateVector." << messageIfFailed;
+  return t;
+}
+
+template <typename NonLinearOperator, typename FiniteElement, typename GridView>
+[[nodiscard]] auto checkCauchyStressOf2DElement(NonLinearOperator& nonLinearOperator, FiniteElement& fe,
+                                                GridView& gridView,
+                                                [[maybe_unused]] const std::string& messageIfFailed = "") {
+  TestSuite t("Cauchy Stress check of 2D solid element (4-node quadrilateral)");
+  using namespace Ikarus;
+  using namespace Dune::Indices;
+  using namespace Dune::Functions::BasisFactory;
+  const int gridDim = 2;
+
+  auto& displacement = nonLinearOperator.firstParameter();
+  displacement << 0, 0, 1, 1, 1, 1, 1, 1;
+  std::vector<Dune::FieldVector<double, 3>> expectedStress = {{1428.5714287000, 1428.5714287000, 769.2307693000},
+                                                              {1098.9010990000, 329.6703297000, 384.6153846500},
+                                                              {329.6703297000, 1098.9010990000, 384.6153846500},
+                                                              {0, 0, 0}};
+
+  /// Modifications for the EAS method
+  if constexpr (requires { fe.setEASType(4); }) {
+    fe.setEASType(4);
+    expectedStress = {{1214.2857143755, 1214.2857143755, 384.6153846800},
+                      {1214.2857144055, 214.2857142945, 384.6153847400},
+                      {214.2857142945, 1214.2857144055, 384.6153845600},
+                      {214.2857143245, 214.2857143245, 384.6153846200}};
+  }
+
+  auto resultRequirements = Ikarus::ResultRequirements<Eigen::VectorXd>()
+                                .insertGlobalSolution(Ikarus::FESolutions::displacement, displacement)
+                                .addResultRequest(ResultType::cauchyStress);
+
+  ResultTypeMap<double> result;
+
+  auto scalarBasis        = makeConstSharedBasis(gridView, lagrangeDG<1>());
+  auto localScalarView    = scalarBasis->localView();
+  bool checkStressAtNodes = false;
+  std::vector<Dune::FieldVector<double, 3>> stressVector(scalarBasis->size());
+  auto ele = elements(gridView).begin();
+
+  localScalarView.bind(*ele);
+  const auto& fe2              = localScalarView.tree().finiteElement();
+  const auto& referenceElement = Dune::ReferenceElements<double, gridDim>::general(ele->type());
+  for (auto c = 0UL; c < fe2.size(); ++c) {
+    const auto fineKey                        = fe2.localCoefficients().localKey(c);
+    const auto nodalPositionInChildCoordinate = referenceElement.position(fineKey.subEntity(), fineKey.codim());
+    auto coord                                = toEigen(nodalPositionInChildCoordinate);
+    fe.calculateAt(resultRequirements, coord, result);
+    Eigen::Vector3d computedResult = result.getResult(ResultType::cauchyStress).eval();
+    stressVector[localScalarView.index(localScalarView.tree().localIndex(c))[0]] = toDune(computedResult);
+    for (auto voigtSize = 0UL; voigtSize < 3; ++voigtSize)
+      if (Dune::FloatCmp::eq<double, Dune::FloatCmp::CmpStyle::absolute>(
+              stressVector[localScalarView.index(localScalarView.tree().localIndex(c))[0]][voigtSize],
+              expectedStress[c][voigtSize]))
+        checkStressAtNodes = true;
+      else {
+        checkStressAtNodes = false;
+        break;
+      }
+    if (not checkStressAtNodes) break;
+  }
+  t.check(checkStressAtNodes, "Stresses at nodes are not correctly computed");
   return t;
 }

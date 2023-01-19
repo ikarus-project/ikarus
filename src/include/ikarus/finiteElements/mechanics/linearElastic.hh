@@ -182,7 +182,7 @@ namespace Ikarus {
       auto gp        = toDune(local);
       auto epsVoigt  = eps.evaluate(gp, on(gridElement));
 
-      auto cauchyStress = C * (epsVoigt).eval();
+      auto cauchyStress = C * epsVoigt;
 
       typename ResultTypeMap<double>::ResultArray resultVector;
       if (req.isResultRequested(ResultType::cauchyStress)) {

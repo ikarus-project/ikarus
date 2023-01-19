@@ -23,7 +23,7 @@
  * the finite element
  */
 template <template <typename> typename FEElementTemplate, int gridDim, typename PreBasis, typename... F>
-auto testFEElement(const PreBasis& preBasis, const std::string& elementName, F&&... f) {
+auto testFEElement(const PreBasis& preBasis, const std::string& elementName, const bool& isRandomGrid, F&&... f) {
   TestSuite t(std::string("testFEElement ") + elementName + " on grid element with dimension" + std::to_string(gridDim)
               + ".");
 
@@ -34,7 +34,7 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, F&&
   std::vector<Dune::FieldVector<double, gridDim>> corners;
 
   const int numberOfVertices = Dune::power(2, gridDim);
-  ValidCornerFactory<gridDim>::construct(corners, Dune::GeometryTypes::cube(gridDim));
+  ValidCornerFactory<gridDim>::construct(corners, Dune::GeometryTypes::cube(gridDim), isRandomGrid);
 
   std::vector<unsigned int> vertexArrangment;
   vertexArrangment.resize(numberOfVertices);
@@ -121,20 +121,26 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, F&&
   // execute all passed functions
   nonLinOp.updateAll();
   Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<sizeof...(F)>()),
-                        [&](auto i) { t.subTest(std::get<i.value>(fTuple)(nonLinOp, fe)); });
+                        [&](auto i) { t.subTest(std::get<i.value>(fTuple)(nonLinOp, fe, gridView)); });
 
   // check if element has a test functor, if yes we execute it
   if constexpr (requires { ElementTest<FEElementType>::test(); }) {
     auto testFunctor = ElementTest<FEElementType>::test();
-    t.subTest(testFunctor(nonLinOp, fe));
+    t.subTest(testFunctor(nonLinOp, fe, gridView));
   }
 
   return t;
 }
 
-auto checkGradientFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe) { return checkGradientOfElement(nonLinOp); };
-auto checkHessianFunctor  = [](auto& nonLinOp, [[maybe_unused]] auto& fe) { return checkHessianOfElement(nonLinOp); };
-auto checkJacobianFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe) {
+auto checkGradientFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe, [[maybe_unused]] auto& gridView) {
+  return checkGradientOfElement(nonLinOp);
+};
+auto checkHessianFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe, [[maybe_unused]] auto& gridView) {
+  return checkHessianOfElement(nonLinOp);
+};
+auto checkJacobianFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe, [[maybe_unused]] auto& gridView) {
   auto subOperator = nonLinOp.template subOperator<1, 2>();
   return checkJacobianOfElement(subOperator);
 };
+auto checkCauchyStressFunctor
+    = [](auto& nonLinOp, auto& fe, auto& gridView) { return checkCauchyStressOf2DElement(nonLinOp, fe, gridView); };
