@@ -269,31 +269,6 @@ namespace Ikarus {
         setEASType(0);
     }
 
-    void calculateDAndLMatrix(const auto& easFunction, const auto& par, Eigen::MatrixXd& DMat,
-                              Eigen::MatrixXd& LMat) const {
-      using namespace Dune;
-      using namespace Dune::DerivativeDirections;
-      auto strainFunction           = DisplacementBasedElement::getStrainFunction(par);
-      const auto C                  = DisplacementBasedElement::getMaterialTangentFunction(par);
-      const auto geo                = localView().element().geometry();
-      const auto numNodes           = DisplacementBasedElement::numberOfNodes;
-      const auto enhancedStrainSize = easFunction.enhancedStrainSize;
-      DMat.setZero(enhancedStrainSize, enhancedStrainSize);
-      LMat.setZero(enhancedStrainSize, localView().size());
-      for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
-        const auto M      = easFunction.calcM(gp.position());
-        const auto CEval  = C(gpIndex);
-        const double detJ = geo.integrationElement(gp.position());
-        DMat += M.transpose() * CEval * M * detJ * gp.weight();
-        for (size_t i = 0U; i < numNodes; ++i) {
-          const size_t I = Traits::worlddim * i;
-          const auto Bi  = strainFunction.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
-          LMat.template block<enhancedStrainSize, Traits::worlddim>(0, I)
-              += M.transpose() * CEval * Bi * detJ * gp.weight();
-        }
-      }
-    }
-
     double calculateScalar(const FERequirementType& par) const {
       if (onlyDisplacementBase) return DisplacementBasedElement::calculateScalar(par);
       DUNE_THROW(Dune::NotImplemented,
@@ -324,7 +299,9 @@ namespace Ikarus {
       // Internal forces from enhanced strains
       std::visit(
           [&]<typename EAST>(const EAST& easFunction) {
-            Eigen::MatrixXd D;
+            constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
+            Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
+            D.setZero();
             calculateDAndLMatrix(easFunction, par, D, L);
 
             const auto alpha = (-D.inverse() * L * disp).eval();
@@ -332,8 +309,8 @@ namespace Ikarus {
             for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
               const auto M            = easFunction.calcM(gp.position());
               const double intElement = geo.integrationElement(gp.position()) * gp.weight();
-              const auto Ceval        = C(gpIndex);
-              auto stresses           = (Ceval * M * alpha).eval();
+              const auto CEval        = C(gpIndex);
+              auto stresses           = (CEval * M * alpha).eval();
               for (size_t i = 0; i < numNodes; ++i) {
                 const auto bopI = strainFunction.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
                 g.template segment<Traits::mydim>(Traits::mydim * i) += bopI.transpose() * stresses * intElement;
@@ -363,7 +340,9 @@ namespace Ikarus {
 
       std::visit(
           [&]<typename EAST>(const EAST& easFunction) {
-            Eigen::MatrixXd D;
+            constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
+            Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
+            D.setZero();
             calculateDAndLMatrix(easFunction, par, D, L);
 
             K.template triangularView<Eigen::Upper>() -= L.transpose() * D.inverse() * L;
@@ -384,9 +363,8 @@ namespace Ikarus {
 
       const auto& d             = req.getGlobalSolution(Ikarus::FESolutions::displacement);
       const auto strainFunction = DisplacementBasedElement::getStrainFunction(req.getFERequirements());
-      const auto C              = DisplacementBasedElement::getMaterialTangent();
+      const auto C              = DisplacementBasedElement::getMaterialTangentFunction(req.getFERequirements());
       auto gpLocal              = toDune(local);
-      auto geo                  = localView().element().geometry();
       const auto& numNodes      = DisplacementBasedElement::numberOfNodes;
 
       Eigen::VectorXd disp(localView().size());
@@ -399,11 +377,14 @@ namespace Ikarus {
 
       std::visit(
           [&]<typename EAST>(const EAST& easFunction) {
-            Eigen::MatrixXd D;
+            constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
+            Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
+            D.setZero();
             calculateDAndLMatrix(easFunction, req.getFERequirements(), D, L);
             const auto alpha = (-D.inverse() * L * disp).eval();
             const auto M     = easFunction.calcM(gpLocal);
-            auto easStress   = C * M * alpha;
+            const auto CEval = C(gpLocal);
+            auto easStress   = (CEval * M * alpha).eval();
             typename ResultTypeMap<double>::ResultArray resultVector;
             if (req.isResultRequested(ResultType::cauchyStress)) {
               resultVector.resize(3, 1);
@@ -462,5 +443,29 @@ namespace Ikarus {
     std::conditional_t<Traits::mydim == 2, EAS2DVariantImpl, EAS3DVariantImpl> easVariant_;
     mutable Eigen::MatrixXd L;
     bool onlyDisplacementBase{false};
+    template <int enhancedStrainSize>
+    void calculateDAndLMatrix(const auto& easFunction, const auto& par,
+                              Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>& DMat,
+                              Eigen::MatrixXd& LMat) const {
+      using namespace Dune;
+      using namespace Dune::DerivativeDirections;
+      auto strainFunction = DisplacementBasedElement::getStrainFunction(par);
+      const auto C        = DisplacementBasedElement::getMaterialTangentFunction(par);
+      const auto geo      = localView().element().geometry();
+      const auto numNodes = DisplacementBasedElement::numberOfNodes;
+      LMat.setZero(enhancedStrainSize, localView().size());
+      for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
+        const auto M      = easFunction.calcM(gp.position());
+        const auto CEval  = C(gpIndex);
+        const double detJ = geo.integrationElement(gp.position());
+        DMat += M.transpose() * CEval * M * detJ * gp.weight();
+        for (size_t i = 0U; i < numNodes; ++i) {
+          const size_t I = Traits::worlddim * i;
+          const auto Bi  = strainFunction.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
+          LMat.template block<enhancedStrainSize, Traits::worlddim>(0, I)
+              += M.transpose() * CEval * Bi * detJ * gp.weight();
+        }
+      }
+    }
   };
 }  // namespace Ikarus

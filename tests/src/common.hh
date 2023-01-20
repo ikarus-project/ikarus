@@ -131,7 +131,18 @@ template <typename NonLinearOperator>
 
 template <typename NonLinearOperator, typename FiniteElement>
 [[nodiscard]] auto checkCauchyStressOf2DElement(NonLinearOperator& nonLinearOperator, FiniteElement& fe,
-                                                [[maybe_unused]] const std::string& messageIfFailed = "") {
+                                                const std::string& messageIfFailed = "") {
+  static_assert(FiniteElement::Traits::mydim == 2,
+                "The test to check Cauchy stress is only supported for the two-dimensional case");
+  assert(fe.localView().element().type() == Dune::GeometryTypes::quadrilateral
+         && "The test to check Cauchy stress is only supported for quadrilaterals");
+  static_assert(std::remove_cvref_t<decltype(fe.localView().tree())>::degree() == 2,
+                "The test to check Cauchy stress is only supported with the powerBasis being two-dimensional");
+  static_assert(std::is_same_v<typename std::remove_cvref_t<decltype(fe.localView().tree().child(0))>,
+                               Dune::Functions::LagrangeNode<
+                                   std::remove_cvref_t<decltype(fe.localView().globalBasis().gridView())>, 1, double>>,
+                "The test to check Cauchy stress is only supported for a linear Lagrange basis");
+
   TestSuite t("Cauchy Stress check of 2D solid element (4-node quadrilateral)");
   using namespace Ikarus;
   using namespace Dune::Indices;
