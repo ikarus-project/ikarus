@@ -301,7 +301,6 @@ namespace Ikarus {
           [&]<typename EAST>(const EAST& easFunction) {
             constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
             Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
-            D.setZero();
             calculateDAndLMatrix(easFunction, par, D, L);
 
             const auto alpha = (-D.inverse() * L * disp).eval();
@@ -342,7 +341,6 @@ namespace Ikarus {
           [&]<typename EAST>(const EAST& easFunction) {
             constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
             Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
-            D.setZero();
             calculateDAndLMatrix(easFunction, par, D, L);
 
             K.template triangularView<Eigen::Upper>() -= L.transpose() * D.inverse() * L;
@@ -379,7 +377,6 @@ namespace Ikarus {
           [&]<typename EAST>(const EAST& easFunction) {
             constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
             Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
-            D.setZero();
             calculateDAndLMatrix(easFunction, req.getFERequirements(), D, L);
             const auto alpha = (-D.inverse() * L * disp).eval();
             const auto M     = easFunction.calcM(gpLocal);
@@ -453,6 +450,7 @@ namespace Ikarus {
       const auto C        = DisplacementBasedElement::getMaterialTangentFunction(par);
       const auto geo      = localView().element().geometry();
       const auto numNodes = DisplacementBasedElement::numberOfNodes;
+      DMat.setZero();
       LMat.setZero(enhancedStrainSize, localView().size());
       for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
         const auto M      = easFunction.calcM(gp.position());
