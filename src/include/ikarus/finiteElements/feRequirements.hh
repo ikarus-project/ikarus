@@ -204,6 +204,8 @@ namespace Ikarus {
 
     const ParameterType &getParameter(FEParameter &&key) const { return reqB.getParameter(std::move(key)); }
 
+    const FErequirements<SolutionVectorType, ParameterType> &getFERequirements() const { return reqB; }
+
   private:
     std::set<ResultType> resType;
     FErequirements<SolutionVectorType, ParameterType> reqB;

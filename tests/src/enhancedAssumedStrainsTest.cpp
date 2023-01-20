@@ -14,8 +14,8 @@ using Dune::TestSuite;
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 
-#include "ikarus/finiteElements/mechanics/enhancedAssumedStrains.hh"
-#include "ikarus/finiteElements/mechanics/linearElastic.hh"
+#include <ikarus/finiteElements/mechanics/enhancedAssumedStrains.hh>
+#include <ikarus/finiteElements/mechanics/linearElastic.hh>
 
 template <typename Basis>
 using EASElement = Ikarus::EnhancedAssumedStrains<Ikarus::LinearElastic<Basis>>;
@@ -31,8 +31,9 @@ int main(int argc, char** argv) {
   auto firstOrderLagrangePrePower2Basis = power<2>(lagrange<1>(), FlatInterleaved());
   auto firstOrderLagrangePrePower3Basis = power<3>(lagrange<1>(), FlatInterleaved());
 
-  t.subTest(testFEElement<EASElement, 2>(firstOrderLagrangePrePower2Basis, "EAS", checkJacobianFunctor));
-  t.subTest(testFEElement<EASElement, 3>(firstOrderLagrangePrePower3Basis, "EAS", checkJacobianFunctor));
+  t.subTest(testFEElement<EASElement, 2>(firstOrderLagrangePrePower2Basis, "EAS", true, checkJacobianFunctor));
+  t.subTest(testFEElement<EASElement, 3>(firstOrderLagrangePrePower3Basis, "EAS", true, checkJacobianFunctor));
+  t.subTest(testFEElement<EASElement, 2>(firstOrderLagrangePrePower2Basis, "EAS", false, checkCauchyStressFunctor));
 
   return t.exit();
 }

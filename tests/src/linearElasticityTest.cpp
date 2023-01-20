@@ -5,6 +5,7 @@
 
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
+
 using Dune::TestSuite;
 
 #include "testFEElement.hh"
@@ -13,7 +14,7 @@ using Dune::TestSuite;
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 
-#include "ikarus/finiteElements/mechanics/linearElastic.hh"
+#include <ikarus/finiteElements/mechanics/linearElastic.hh>
 
 template <typename Basis>
 using LinearElasticElement = Ikarus::LinearElastic<Basis>;
@@ -28,14 +29,15 @@ int main(int argc, char** argv) {
   auto firstOrderLagrangePrePower3Basis  = power<3>(lagrange<1>(), FlatInterleaved());
   auto secondOrderLagrangePrePower3Basis = power<3>(lagrange<2>(), FlatInterleaved());
 
-  t.subTest(testFEElement<LinearElasticElement, 2>(firstOrderLagrangePrePower2Basis, "LinearElastic",
+  t.subTest(testFEElement<LinearElasticElement, 2>(firstOrderLagrangePrePower2Basis, "LinearElastic", true,
                                                    checkGradientFunctor, checkHessianFunctor, checkJacobianFunctor));
-  t.subTest(testFEElement<LinearElasticElement, 2>(secondOrderLagrangePrePower2Basis, "LinearElastic",
+  t.subTest(testFEElement<LinearElasticElement, 2>(secondOrderLagrangePrePower2Basis, "LinearElastic", true,
                                                    checkGradientFunctor, checkHessianFunctor, checkJacobianFunctor));
-  t.subTest(testFEElement<LinearElasticElement, 3>(firstOrderLagrangePrePower3Basis, "LinearElastic",
+  t.subTest(testFEElement<LinearElasticElement, 3>(firstOrderLagrangePrePower3Basis, "LinearElastic", true,
                                                    checkGradientFunctor, checkHessianFunctor, checkJacobianFunctor));
-  t.subTest(testFEElement<LinearElasticElement, 3>(secondOrderLagrangePrePower3Basis, "LinearElastic",
+  t.subTest(testFEElement<LinearElasticElement, 3>(secondOrderLagrangePrePower3Basis, "LinearElastic", true,
                                                    checkGradientFunctor, checkHessianFunctor, checkJacobianFunctor));
-
+  t.subTest(testFEElement<LinearElasticElement, 2>(firstOrderLagrangePrePower2Basis, "LinearElastic", false,
+                                                   checkCauchyStressFunctor));
   return t.exit();
 }

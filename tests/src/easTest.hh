@@ -38,17 +38,18 @@ struct ElementTest<Ikarus::EnhancedAssumedStrains<DisplacementBasedElement>> {
         }
         t.subTest(checkJacobianOfElement(subOp, messageIfFailed));
 
-        auto stiffnessmatrix = subOp.derivative();
+        auto stiffnessMatrix = subOp.derivative();
 
-        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(stiffnessmatrix);
+        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(stiffnessMatrix);
         newEigenValues = es.eigenvalues();
 
         t.check((newEigenValues.array() < 1e-5 * newEigenValues.norm()).count() == 3 * gridDim - 3)
             << "We always should have 3 or 6 zero eigenvalues, for 3 or 6 rigid body motions"
                "\nEigenValues: \n"
             << newEigenValues.transpose() << std::endl;
-        if (numberOfEASParameter > 0 and numberOfEASParameter != 5)  // Q1E4 and Q1E5 are the same
-          t.check((newEigenValues.array() < oldEigenValues.array()).sum())
+        if (numberOfEASParameter > 0 and numberOfEASParameter != 5)          // Q1E4 and Q1E5 are the same
+          t.check((newEigenValues.array() <= oldEigenValues.array()).sum())  // Q1E4 and Q1E7 are the same in the case
+                                                                             // of undistorted element
               << "More EAS parameter mean that the stiffness gets reduced. EAS parameter: " << numberOfEASParameter
               << "\noldEigenValues: \n"
               << oldEigenValues.transpose() << "\nnewEigenValues: \n"
@@ -62,16 +63,16 @@ struct ElementTest<Ikarus::EnhancedAssumedStrains<DisplacementBasedElement>> {
           auto easVariantCopy    = fe.easVariant();  // This only test if the variant has a copy assignment operator
           const auto& easVariant = fe.easVariant();
           std::visit(
-              [&]<typename EAS>(const EAS& easfunction) {
-                typename EAS::MType Mintegrated;
-                Mintegrated.setZero();
+              [&]<typename EAS>(const EAS& easFunction) {
+                typename EAS::MType MIntegrated;
+                MIntegrated.setZero();
                 for (const auto& gp : rule) {
-                  const auto M = easfunction.calcM(gp.position());
+                  const auto M = easFunction.calcM(gp.position());
 
                   const double detJ = element.geometry().integrationElement(gp.position());
-                  Mintegrated += M * detJ * gp.weight();
+                  MIntegrated += M * detJ * gp.weight();
                 }
-                t.check(Mintegrated.isZero())
+                t.check(MIntegrated.isZero())
                     << "Orthogonality condition check: The M matrix of the EAS method should be "
                        "zero, integrated over the domain.";
               },

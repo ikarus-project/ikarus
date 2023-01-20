@@ -23,7 +23,8 @@
  * the finite element
  */
 template <template <typename> typename FEElementTemplate, int gridDim, typename PreBasis, typename... F>
-auto testFEElement(const PreBasis& preBasis, const std::string& elementName, F&&... f) {
+auto testFEElement(const PreBasis& preBasis, const std::string& elementName, const bool& isRandomlyDistorted,
+                   F&&... f) {
   TestSuite t(std::string("testFEElement ") + elementName + " on grid element with dimension" + std::to_string(gridDim)
               + ".");
 
@@ -34,7 +35,7 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, F&&
   std::vector<Dune::FieldVector<double, gridDim>> corners;
 
   const int numberOfVertices = Dune::power(2, gridDim);
-  ValidCornerFactory<gridDim>::construct(corners, Dune::GeometryTypes::cube(gridDim));
+  ValidCornerFactory<gridDim>::construct(corners, Dune::GeometryTypes::cube(gridDim), isRandomlyDistorted);
 
   std::vector<unsigned int> vertexArrangment;
   vertexArrangment.resize(numberOfVertices);
@@ -138,3 +139,4 @@ auto checkJacobianFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe) {
   auto subOperator = nonLinOp.template subOperator<1, 2>();
   return checkJacobianOfElement(subOperator);
 };
+auto checkCauchyStressFunctor = [](auto& nonLinOp, auto& fe) { return checkCauchyStressOf2DElement(nonLinOp, fe); };
