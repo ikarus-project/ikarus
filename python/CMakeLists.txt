@@ -1,4 +1,4 @@
-add_subdirectory(dune)
+add_subdirectory(ikarus)
 
 dune_python_configure_bindings(
   PATH "."
