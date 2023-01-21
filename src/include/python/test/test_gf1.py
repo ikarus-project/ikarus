@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
 
 import numpy
-from dune.grid import gridFunction, structuredGrid
+import ikarus
 
 fcalls = 0
 gcalls = 0
@@ -54,4 +54,9 @@ def testGF_first(gridView):
     assert gcalls == 1
     lg.unbind()
     lf.unbind()
+
+if __name__ == "__main__":
+    help(ikarus)
+    assert ikarus.add(3,4)==7
+
 

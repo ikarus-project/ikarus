@@ -10,5 +10,5 @@
 # included in the package install from source.
 #
 [build-system]
-requires = ['cmake>=3.13', 'dune-alugrid@git+https://gitlab.dune-project.org/extensions/dune-alugrid.git', 'dune-fufem<=0.2.dev20230109', 'dune-functions<=0.2.dev20230109', 'dune-geometry<=0.2.dev20230109', 'dune-grid@git+https://gitlab.dune-project.org/core/dune-grid.git', 'dune-iga<=0.2.dev20230109', 'dune-localfefunctions<=0.2.dev20230109', 'dune-typetree<=0.2.dev20230109', 'dune-uggrid<=0.2.dev20230109', 'ninja', 'pip', 'requests', 'scikit-build', 'setuptools', 'wheel']
+requires = ['cmake>=3.13', 'dune-alugrid@git+https://gitlab.dune-project.org/extensions/dune-alugrid.git', 'dune-fufem<=0.2.dev20230109', 'dune-functions<=0.2.dev20230109', 'dune-geometry<=0.2.dev20230109', 'dune-grid@git+https://gitlab.dune-project.org/core/dune-grid.git', 'dune-iga<=0.2.dev20230109', 'dune-localfefunctions<=0.2.dev20230109', 'dune-typetree<=0.2.dev20230109', 'dune-uggrid<=0.2.dev20230109', 'ninja', 'pip', 'requests', 'scikit-build','mpi4py', 'setuptools', 'wheel']
 build-backend = 'setuptools.build_meta'

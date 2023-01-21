@@ -35,6 +35,7 @@ dune_register_package_flags(
   Matplot++::matplot
   autodiff::autodiff
 )
+#target_link_libraries(${PROJECT_NAME} PUBLIC Matplot++::matplot)
 
 target_link_dune_default_libraries(${PROJECT_NAME}) # link compiled dune libs
 add_dune_all_flags(${PROJECT_NAME})

@@ -7,6 +7,7 @@ add_python_targets(ikarus
 find_package(autodiff REQUIRED)
 dune_add_pybind11_module(NAME _ikarus)
 set_property(TARGET _ikarus PROPERTY LINK_LIBRARIES dunecommon dunegeometry dunegrid ikarus APPEND)
+target_compile_options(_ikarus PRIVATE -fPIC)
 if(SKBUILD)
   install(TARGETS _ikarus LIBRARY DESTINATION python/ikarus)
 endif()

@@ -14,6 +14,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC ${DUNE_LIBS})
 target_link_dune_default_libraries(${PROJECT_NAME})
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
+#target_compile_options(${PROJECT_NAME} PUBLIC -fPIC)
 
 include(../cmake/AddDependencies.cmake)
 

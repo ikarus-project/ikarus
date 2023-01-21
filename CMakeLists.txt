@@ -25,6 +25,7 @@ add_definitions(
   -Wduplicated-cond
   -Wduplicated-branches
   -m64
+        -fPIC
 )
 add_definitions(-DDUNE_LOCALFEFUNCTIONS_USE_EIGEN=1)
 
