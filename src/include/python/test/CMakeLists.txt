@@ -5,10 +5,10 @@ dune_python_add_test(NAME pytest_gf1
                      SCRIPT test_gf1.py
                      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                      LABELS quick)
-#dune_python_add_test(NAME pytest_gf2
-#                     SCRIPT test_gf2.py
-#                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-#                     LABELS quick)
+dune_python_add_test(NAME pytest_gf2
+                     SCRIPT test_gf2.py
+                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                     LABELS quick)
 #dune_python_add_test(NAME pytest_indexset
 #                     SCRIPT test_indexset.py
 #                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
