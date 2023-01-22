@@ -29,6 +29,12 @@ PYBIND11_MODULE( _ikarus, m )
 
   m.def("to_voigt", &Ikarus::toVoigt<double,2>,pybind11::return_value_policy::reference_internal, "A function that arranges a symmetric matrix to a vector and doubles the off-diagonal entries",
         pybind11::arg("E"));
+  m.def("to_voigt", &Ikarus::toVoigt<double,3>,pybind11::return_value_policy::reference_internal, "A function that arranges a symmetric matrix to a vector and doubles the off-diagonal entries",
+        pybind11::arg("E"));
+
+  m.def("planeStressLinearElasticMaterialTangent",&Ikarus::planeStressLinearElasticMaterialTangent,pybind11::return_value_policy::reference_internal,
+        "A function returning the linear elastic material tangent, incorporating the plane stress assumption",
+        pybind11::arg("E"),pybind11::arg("nu"));
 
 //  pybind11::enum_< Dune::PartitionType > partitionType( module, "PartitionType" );
 //  partitionType.value( "Interior", Dune::InteriorEntity );
