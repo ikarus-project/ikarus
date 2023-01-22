@@ -9,60 +9,13 @@
 #include <vector>
 
 #include <dune/common/exceptions.hh>
+#include "affordances.hh"
 
 #include <Eigen/Core>
 
 namespace Ikarus {
 
-  // clang-format off
-  enum class ScalarAffordances {
-    noAffordance,
-    mechanicalPotentialEnergy,
-    microMagneticPotentialEnergy
-  };
 
-  enum class VectorAffordances {
-    noAffordance,
-    forces,
-    microMagneticForces
-  };
-
-  enum class MatrixAffordances {
-    noAffordance,
-    stiffness,
-    materialstiffness,
-    geometricstiffness,
-    stiffnessdiffBucklingVector,
-    microMagneticHessian,
-    mass
-  };
-
-  enum class FEParameter {
-    noParameter,
-    loadfactor,
-    time
-  };
-
-  enum class FESolutions {
-    noSolution,
-    displacement,
-    velocity,
-    director,
-    magnetizationAndVectorPotential
-  };
-
-  enum class ResultType {
-    noType,
-    magnetization,
-    gradientNormOfMagnetization,
-    vectorPotential,
-    divergenceOfVectorPotential,
-    BField,
-    HField,
-    cauchyStress,
-    director
-  };
-  // clang-format on
   std::string getResultType(const ResultType &res);
 
   struct AffordanceCollectionImpl {
@@ -138,7 +91,7 @@ namespace Ikarus {
         return affordances.vectorAffordances == affordance;
       else if constexpr (std::is_same_v<Affordance, MatrixAffordances>)
         return affordances.matrixAffordances == affordance;
-      else if constexpr (std::is_same_v<AffordanceCollectionImpl, MatrixAffordances>)
+      else if constexpr (std::is_same_v<Affordance,AffordanceCollectionImpl>)
         return affordances == affordance;
     }
 

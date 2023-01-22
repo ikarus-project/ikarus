@@ -8,8 +8,11 @@
 
 
 #include <python/ikarus/enums.hh>
+#include <ikarus/finiteElements/affordances.hh>
+#include <ikarus/finiteElements/physicsHelper.hh>
 
 #include <dune/python/pybind11/pybind11.h>
+#include <dune/python/pybind11/eigen.h>
 int add(int i, int j) {
   return i + j;
 }
@@ -18,7 +21,15 @@ PYBIND11_MODULE( _ikarus, m )
   // enumeration types from dune-grid
   m.def("add", &add, "A function which adds two numbers",
         pybind11::arg("i"), pybind11::arg("j"));
-//
+
+  pybind11::enum_< Ikarus::ScalarAffordances > scalarAffordances( m, "scalarAffordances" );
+  scalarAffordances.value( "noAffordance", Ikarus::ScalarAffordances::noAffordance );
+  scalarAffordances.value( "mechanicalPotentialEnergy", Ikarus::ScalarAffordances::mechanicalPotentialEnergy );
+  scalarAffordances.value( "microMagneticPotentialEnergy", Ikarus::ScalarAffordances::microMagneticPotentialEnergy );
+
+  m.def("to_voigt", &Ikarus::toVoigt<double,2>,pybind11::return_value_policy::reference_internal, "A function that arranges a symmetric matrix to a vector and doubles the off-diagonal entries",
+        pybind11::arg("E"));
+
 //  pybind11::enum_< Dune::PartitionType > partitionType( module, "PartitionType" );
 //  partitionType.value( "Interior", Dune::InteriorEntity );
 //  partitionType.value( "Border", Dune::BorderEntity );

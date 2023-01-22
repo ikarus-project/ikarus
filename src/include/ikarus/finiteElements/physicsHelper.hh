@@ -7,7 +7,7 @@
 #include <Eigen/Core>
 namespace Ikarus {
   template <typename ST, int size>
-  requires(size > 0 and size <= 3) auto toVoigt(const Eigen::Matrix<ST, size, size>& E) {
+  requires(size > 0 and size <= 3) auto toVoigt( Eigen::Ref<const Eigen::Matrix<ST, size, size>> E) {
     Eigen::Vector<ST, (size * (size + 1)) / 2> EVoigt;
     EVoigt.setZero();
     for (int i = 0; i < size; ++i)
