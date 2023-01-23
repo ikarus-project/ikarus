@@ -28,6 +28,7 @@ Concerning the design of CI and the documentation we were inspired by [Autodiff]
 
 The documentation resides at https://ikarus-project.github.io/.
 
+If you use Ikarus, please cite the dataset by clicking on the doi badge above and then selecting "Cite Dataset," where you will find several citing options. 
 
 ## Contributors
 
