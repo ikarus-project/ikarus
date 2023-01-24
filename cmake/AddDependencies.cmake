@@ -14,6 +14,6 @@
 
 
 
-target_link_dune_default_libraries(${PROJECT_NAME}) # link compiled dune libs
-add_dune_all_flags(${PROJECT_NAME})
-add_dune_pythonlibs_flags(${PROJECT_NAME})
+#target_link_dune_default_libraries(${PROJECT_NAME}) # link compiled dune libs
+#add_dune_all_flags(${PROJECT_NAME})
+#add_dune_pythonlibs_flags(${PROJECT_NAME})

@@ -9,7 +9,7 @@
 #include <vector>
 
 #include <dune/common/exceptions.hh>
-#include "affordances.hh"
+#include <ikarus/finiteElements/affordances.hh>
 
 #include <Eigen/Core>
 
