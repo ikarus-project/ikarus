@@ -36,7 +36,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake ..
+          cmake .. -DBUILD_SHARED_LIBS=ON
           cmake --build . --target ikarus
           cmake --install .
           cd ../..
