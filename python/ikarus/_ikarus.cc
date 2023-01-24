@@ -42,7 +42,7 @@ PYBIND11_MODULE( _ikarus, m )
 //  partitionType.value( "Overlap", Dune::OverlapEntity );
 //  partitionType.value( "Front", Dune::FrontEntity );
 //  partitionType.value( "Ghost", Dune::GhostEntity );
-//
+//dunecontrol   --cmake-opts="-DDUNE_LOCALFEFUNCTIONS_USE_EIGEN=1 -DCMAKE_BUILD_TYPE=Release -DDUNE_PYTHON_ALLOW_GET_PIP=1 -DDUNE_PYTHON_VIRTUALENV_SETUP=TRUE -DDUNE_ENABLE_PYTHONBINDINGS=TRUE -DBUILD_SHARED_LIBS=TRUE -DCMAKE_DISABLE_FIND_PACKAGE_Alberta=TRUE" cmake
 //  pybind11::enum_< Dune::InterfaceType > interfaceType( module, "InterfaceType" );
 //  interfaceType.value( "InteriorBorder_InteriorBorder", Dune::InteriorBorder_InteriorBorder_Interface );
 //  interfaceType.value( "InteriorBorder_All", Dune::InteriorBorder_All_Interface );
