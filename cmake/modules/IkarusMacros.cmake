@@ -4,16 +4,16 @@
 get_filename_component(IKARUS_CMAKE_DIR "IkarusMacros.cmake" PATH)
 include(CMakeFindDependencyMacro)
 
-find_package(spdlog)
-include(AddSpdlogFlags)
+#find_package(spdlog)
+#include(AddSpdlogFlags)
 
-find_package(Matplot++)
-include(AddMatplotppFlags)
+#find_package(Matplot++)
+#include(AddMatplotppFlags)
 
-find_package(Eigen3 3.3.9 REQUIRED)
-include(AddEigenFlags)
+#find_package(Eigen3 3.3.9 REQUIRED)
+#include(AddEigenFlags)
 
-find_package(autodiff REQUIRED)
-include(AddAutoDiffFlags)
+#find_package(autodiff REQUIRED)
+#include(AddAutoDiffFlags)
 
 set(IKARUS_lIBRARIES ikarus)

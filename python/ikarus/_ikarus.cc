@@ -12,7 +12,7 @@
 #include <ikarus/finiteElements/physicsHelper.hh>
 
 #include <dune/python/pybind11/pybind11.h>
-#include <dune/python/pybind11/eigen.h>
+//#include <dune/python/pybind11/eigen.h>
 int add(int i, int j) {
   return i + j;
 }
@@ -27,14 +27,14 @@ PYBIND11_MODULE( _ikarus, m )
   scalarAffordances.value( "mechanicalPotentialEnergy", Ikarus::ScalarAffordances::mechanicalPotentialEnergy );
   scalarAffordances.value( "microMagneticPotentialEnergy", Ikarus::ScalarAffordances::microMagneticPotentialEnergy );
 
-  m.def("to_voigt", &Ikarus::toVoigt<double,2>,pybind11::return_value_policy::reference_internal, "A function that arranges a symmetric matrix to a vector and doubles the off-diagonal entries",
-        pybind11::arg("E"));
-  m.def("to_voigt", &Ikarus::toVoigt<double,3>,pybind11::return_value_policy::reference_internal, "A function that arranges a symmetric matrix to a vector and doubles the off-diagonal entries",
-        pybind11::arg("E"));
-
-  m.def("planeStressLinearElasticMaterialTangent",&Ikarus::planeStressLinearElasticMaterialTangent,pybind11::return_value_policy::reference_internal,
-        "A function returning the linear elastic material tangent, incorporating the plane stress assumption",
-        pybind11::arg("E"),pybind11::arg("nu"));
+//  m.def("to_voigt", &Ikarus::toVoigt<double,2>,pybind11::return_value_policy::reference_internal, "A function that arranges a symmetric matrix to a vector and doubles the off-diagonal entries",
+//        pybind11::arg("E"));
+//  m.def("to_voigt", &Ikarus::toVoigt<double,3>,pybind11::return_value_policy::reference_internal, "A function that arranges a symmetric matrix to a vector and doubles the off-diagonal entries",
+//        pybind11::arg("E"));
+//
+//  m.def("planeStressLinearElasticMaterialTangent",&Ikarus::planeStressLinearElasticMaterialTangent,pybind11::return_value_policy::reference_internal,
+//        "A function returning the linear elastic material tangent, incorporating the plane stress assumption",
+//        pybind11::arg("E"),pybind11::arg("nu"));
 
 //  pybind11::enum_< Dune::PartitionType > partitionType( module, "PartitionType" );
 //  partitionType.value( "Interior", Dune::InteriorEntity );

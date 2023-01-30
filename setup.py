@@ -10,4 +10,4 @@ try:
 except ImportError:
     from packagemetadata import metaData
 from skbuild import setup
-setup(**metaData('0.2.dev20230109')[1])
+setup(**metaData('0.3.dev20230130')[1])

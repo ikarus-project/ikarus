@@ -3,9 +3,9 @@
 
 add_python_targets(ikarus
   __init__
-#        toVoigt
+# toVoigt
 )
-find_package(autodiff REQUIRED)
+#find_package(autodiff REQUIRED)
 dune_add_pybind11_module(NAME _ikarus)
 set_property(TARGET _ikarus PROPERTY LINK_LIBRARIES dunecommon dunegeometry dunegrid ikarus APPEND)
 target_compile_options(_ikarus PRIVATE -fPIC)

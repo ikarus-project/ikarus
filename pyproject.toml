@@ -10,5 +10,5 @@
 # included in the package install from source.
 #
 [build-system]
-requires = ['cmake>=3.13', 'dune-alugrid<=0.3.dev20230109', 'dune-fufem<=0.3.dev20230109', 'dune-functions<=0.3.dev20230109', 'dune-geometry<=0.3.dev20230109', 'dune-grid<=0.3.dev20230109', 'dune-iga<=0.3.dev20230109', 'dune-localfefunctions<=0.3.dev20230109', 'dune-typetree<=0.3.dev20230109', 'dune-uggrid<=0.3.dev20230109', 'ninja', 'pip', 'requests', 'scikit-build','mpi4py', 'setuptools', 'wheel']
+requires = ['cmake>=3.13', 'dune-geometry<=0.3.dev20230130', 'dune-grid<=0.3.dev20230130', 'dune-typetree<=0.3.dev20230130', 'mpi4py', 'ninja', 'pip', 'requests', 'scikit-build', 'scipy', 'setuptools', 'wheel']
 build-backend = 'setuptools.build_meta'
