@@ -25,6 +25,7 @@ add_definitions(
   -Wduplicated-cond
   -Wduplicated-branches
   -m64
+  -fPIC
 )
 add_definitions(-DDUNE_LOCALFEFUNCTIONS_USE_EIGEN=1)
 
@@ -44,6 +45,10 @@ add_subdirectory(cmake/FormatTarget)
 if(BUILD_DOCS)
   message("Build docs locally target ENABLED")
   add_subdirectory(docs/BuildLocally)
+endif()
+
+if(DUNE_ENABLE_PYTHONBINDINGS)
+  add_subdirectory(python)
 endif()
 
 # finalize the dune project, e.g. generating config.h etc.

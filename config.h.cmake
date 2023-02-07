@@ -37,9 +37,6 @@ overwritten
 /* Define the sparse matrix addon for eigen */
 #define EIGEN_SPARSEMATRIX_PLUGIN <ikarus/utils/eigenSparseAddon.hh>
 
-/* Init eigen matrices with nan */
-#define EIGEN_INITIALIZE_MATRICES_BY_NAN
-
 /* Define to the major version of ikarus */
 #define IKARUS_VERSION_MAJOR @IKARUS_VERSION_MAJOR@
 

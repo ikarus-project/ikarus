@@ -14,7 +14,7 @@ jobs:
     name: ${{ matrix.config.name }}
     runs-on: ubuntu-latest
     container:
-      image: ikarusproject/ikarus-dev:latest
+      image: rath3t/ikarus-dev:pythonBindings
       options: --memory-swap="20g" --memory="20g" --cpus="2"
     strategy:
       fail-fast: false
@@ -36,7 +36,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake ..
+          cmake .. -DBUILD_SHARED_LIBS=ON
           cmake --build . --target ikarus
           cmake --install .
           cd ../..
