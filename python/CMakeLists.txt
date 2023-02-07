@@ -1,8 +1,7 @@
 add_subdirectory(ikarus)
-
+configure_file(setup.py.in setup.py)
 dune_python_configure_bindings(
   PATH "."
-  PACKAGENAME ikarus
   CMAKE_METADATA_FLAGS DUNE_OPTS_FILE
 )
 if(POLICY CMP0087)
