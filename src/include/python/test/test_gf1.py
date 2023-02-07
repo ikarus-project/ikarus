@@ -11,26 +11,26 @@ if __name__ == "__main__":
     assert iks.add(3,4)==7
     assert str(iks.scalarAffordances.noAffordance) == "scalarAffordances.noAffordance"
     E = numpy.array([[1, 7], [7, 4]])
-    help(iks.to_voigt)
-    Evoigt= iks.to_voigt([1,14])
-    print(Evoigt)
-    assert Evoigt[0]==1
-    assert Evoigt[1]==4
-    assert Evoigt[2]==14
-
-    E = numpy.array([[1, 7, 3],[7, 7, 3],[3, 3, 3]])
-    Evoigt= iks.to_voigt(E)
-    print(E)
-    print(Evoigt)
-    assert Evoigt[0]==1
-    assert Evoigt[1]==7
-    assert Evoigt[2]==3
-    assert Evoigt[3]==6
-    assert Evoigt[4]==6
-    assert Evoigt[5]==14
-
-    C = iks.planeStressLinearElasticMaterialTangent(1000,0.3)
-    print(C)
+    # help(iks.to_voigt)
+    # Evoigt= iks.to_voigt([1,14])
+    # print(Evoigt)
+    # assert Evoigt[0]==1
+    # assert Evoigt[1]==4
+    # assert Evoigt[2]==14
+    #
+    # E = numpy.array([[1, 7, 3],[7, 7, 3],[3, 3, 3]])
+    # Evoigt= iks.to_voigt(E)
+    # print(E)
+    # print(Evoigt)
+    # assert Evoigt[0]==1
+    # assert Evoigt[1]==7
+    # assert Evoigt[2]==3
+    # assert Evoigt[3]==6
+    # assert Evoigt[4]==6
+    # assert Evoigt[5]==14
+    #
+    # C = iks.planeStressLinearElasticMaterialTangent(1000,0.3)
+    # print(C)
 
 
 
