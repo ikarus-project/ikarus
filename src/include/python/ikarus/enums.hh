@@ -5,13 +5,10 @@
 #ifndef DUNE_PYTHON_GRID_ENUMS_HH
 #define DUNE_PYTHON_GRID_ENUMS_HH
 
-namespace Dune::Python
+namespace Ikarus
   {
 
-    enum class Reader { dgf, dgfString, gmsh, structured };
-    enum class VTKDataType { CellData, PointData, CellVector, PointVector };
-    enum class Marker { Coarsen = -1, Keep = 0, Refine = 1 };
-
-  } // namespace Dune
+    enum class Bla { foo, bar};
+  } // namespace Ikarus
 
 #endif // #ifndef DUNE_PYTHON_GRID_ENUMS_HH

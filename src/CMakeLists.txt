@@ -15,8 +15,6 @@ target_link_dune_default_libraries(${PROJECT_NAME})
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
-#include(../cmake/AddDependencies.cmake)
-
 # make header path available
 target_include_directories(
   ${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

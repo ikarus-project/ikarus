@@ -8,11 +8,9 @@
 
 
 #include <python/ikarus/enums.hh>
-#include <ikarus/finiteElements/affordances.hh>
-#include <ikarus/finiteElements/physicsHelper.hh>
+#include <ikarus/affordances.hh>
 
 #include <dune/python/pybind11/pybind11.h>
-//#include <dune/python/pybind11/eigen.h>
 int add(int i, int j) {
   return i + j;
 }
@@ -22,64 +20,7 @@ PYBIND11_MODULE( _ikarus, m )
   m.def("add", &add, "A function which adds two numbers",
         pybind11::arg("i"), pybind11::arg("j"));
 
-  pybind11::enum_< Ikarus::ScalarAffordances > scalarAffordances( m, "scalarAffordances" );
-  scalarAffordances.value( "noAffordance", Ikarus::ScalarAffordances::noAffordance );
-  scalarAffordances.value( "mechanicalPotentialEnergy", Ikarus::ScalarAffordances::mechanicalPotentialEnergy );
-  scalarAffordances.value( "microMagneticPotentialEnergy", Ikarus::ScalarAffordances::microMagneticPotentialEnergy );
-
-//  m.def("to_voigt", &Ikarus::toVoigt<double,2>,pybind11::return_value_policy::reference_internal, "A function that arranges a symmetric matrix to a vector and doubles the off-diagonal entries",
-//        pybind11::arg("E"));
-//  m.def("to_voigt", &Ikarus::toVoigt<double,3>,pybind11::return_value_policy::reference_internal, "A function that arranges a symmetric matrix to a vector and doubles the off-diagonal entries",
-//        pybind11::arg("E"));
-//
-//  m.def("planeStressLinearElasticMaterialTangent",&Ikarus::planeStressLinearElasticMaterialTangent,pybind11::return_value_policy::reference_internal,
-//        "A function returning the linear elastic material tangent, incorporating the plane stress assumption",
-//        pybind11::arg("E"),pybind11::arg("nu"));
-
-//  pybind11::enum_< Dune::PartitionType > partitionType( module, "PartitionType" );
-//  partitionType.value( "Interior", Dune::InteriorEntity );
-//  partitionType.value( "Border", Dune::BorderEntity );
-//  partitionType.value( "Overlap", Dune::OverlapEntity );
-//  partitionType.value( "Front", Dune::FrontEntity );
-//  partitionType.value( "Ghost", Dune::GhostEntity );
-//dunecontrol   --cmake-opts="-DDUNE_LOCALFEFUNCTIONS_USE_EIGEN=1 -DCMAKE_BUILD_TYPE=Release -DDUNE_PYTHON_ALLOW_GET_PIP=1 -DDUNE_PYTHON_VIRTUALENV_SETUP=TRUE -DDUNE_ENABLE_PYTHONBINDINGS=TRUE -DBUILD_SHARED_LIBS=TRUE -DCMAKE_DISABLE_FIND_PACKAGE_Alberta=TRUE" cmake
-//  pybind11::enum_< Dune::InterfaceType > interfaceType( module, "InterfaceType" );
-//  interfaceType.value( "InteriorBorder_InteriorBorder", Dune::InteriorBorder_InteriorBorder_Interface );
-//  interfaceType.value( "InteriorBorder_All", Dune::InteriorBorder_All_Interface );
-//  interfaceType.value( "Overlap_OverlapFront", Dune::Overlap_OverlapFront_Interface );
-//  interfaceType.value( "Overlap_All", Dune::Overlap_All_Interface );
-//  interfaceType.value( "All_All", Dune::All_All_Interface );
-//
-//  pybind11::enum_< Dune::CommunicationDirection > communicationDirection( module, "CommunicationDirection" );
-//  communicationDirection.value( "Forward", Dune::ForwardCommunication );
-//  communicationDirection.value( "Backward", Dune::BackwardCommunication );
-//
-//  pybind11::enum_< Dune::VTK::OutputType > vtkOutputType( module, "OutputType" );
-//  vtkOutputType.value( "ascii", Dune::VTK::OutputType::ascii );
-//  vtkOutputType.value( "base64", Dune::VTK::OutputType::base64 );
-//  vtkOutputType.value( "appendedraw", Dune::VTK::OutputType::appendedraw );
-//  vtkOutputType.value( "appendedbase64", Dune::VTK::OutputType::appendedbase64 );
-//
-//  // enumeration types added by dune-python
-//
-//  pybind11::enum_< Dune::Python::detail::CommOp > commOps( module, "CommOp" );
-//  commOps.value( "set", Dune::Python::detail::CommOp::set );
-//  commOps.value( "add", Dune::Python::detail::CommOp::add );
-//
-//  pybind11::enum_< Dune::Python::Marker > marker( module, "Marker" );
-//  marker.value( "coarsen", Dune::Python::Marker::Coarsen );
-//  marker.value( "keep", Dune::Python::Marker::Keep );
-//  marker.value( "refine", Dune::Python::Marker::Refine );
-//
-//  pybind11::enum_< Dune::Python::VTKDataType > vtkDataType( module, "DataType" );
-//  vtkDataType.value( "CellData", Dune::Python::VTKDataType::CellData );
-//  vtkDataType.value( "PointData", Dune::Python::VTKDataType::PointData );
-//  vtkDataType.value( "CellVector", Dune::Python::VTKDataType::CellVector );
-//  vtkDataType.value( "PointVector", Dune::Python::VTKDataType::PointVector );
-//
-//  pybind11::enum_< Dune::Python::Reader > reader( module, "reader" );
-//  reader.value( "dgf", Dune::Python::Reader::dgf );
-//  reader.value( "dgfString", Dune::Python::Reader::dgfString );
-//  reader.value( "gmsh", Dune::Python::Reader::gmsh );
-//  reader.value( "structured", Dune::Python::Reader::structured );
+  pybind11::enum_< Ikarus::Bla > scalarAffordances( m, "Bla" );
+  scalarAffordances.value( "foo", Ikarus::Bla::foo );
+  scalarAffordances.value( "bar", Ikarus::Bla::bar );
 }
