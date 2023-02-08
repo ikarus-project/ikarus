@@ -7,7 +7,7 @@
 #include <dune/grid/io/file/vtk/vtkwriter.hh>
 
 
-#include <python/ikarus/enums.hh>
+#include <ikarus/python/ikarus/enums.hh>
 #include <ikarus/affordances.hh>
 
 #include <dune/python/pybind11/pybind11.h>

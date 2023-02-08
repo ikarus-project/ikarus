@@ -3,11 +3,13 @@
 
 cmake_minimum_required(VERSION 3.18)
 
-file(
-  GLOB_RECURSE sources
-  RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-  CONFIGURE_DEPENDS include/ikarus/*.cpp
-)
+#file(
+#  GLOB_RECURSE sources
+#  RELATIVE ./
+#  CONFIGURE_DEPENDS *.cpp
+#)
+
+set(sources affordances.cpp)
 
 dune_add_library(${PROJECT_NAME} ${sources})
 target_link_libraries(${PROJECT_NAME} PUBLIC ${DUNE_LIBS})
@@ -20,5 +22,6 @@ target_include_directories(
   ${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                          $<INSTALL_INTERFACE:include>
 )
-
-add_subdirectory(include)
+if( DUNE_ENABLE_PYTHONBINDINGS )
+    add_subdirectory(python)
+endif()

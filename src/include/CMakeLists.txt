@@ -1,8 +1,8 @@
 # SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
-add_subdirectory(ikarus)
+add_subdirectory(../../ikarus)
 
 if( DUNE_ENABLE_PYTHONBINDINGS )
-    add_subdirectory(python)
+    add_subdirectory(../../ikarus/python)
 endif()

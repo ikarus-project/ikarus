@@ -17,7 +17,7 @@ include(DuneMacros)
 dune_project()
 dune_enable_all_packages()
 
-add_subdirectory(src)
+add_subdirectory(ikarus)
 
 if(DUNE_ENABLE_PYTHONBINDINGS)
   add_subdirectory(python)
