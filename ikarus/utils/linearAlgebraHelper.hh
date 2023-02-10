@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
+#include "concepts.hh"
+#include "traits.hh"
+
 #include <iosfwd>
 #include <random>
 
@@ -12,9 +15,6 @@
 #include <Eigen/Core>
 
 #include <autodiff/forward/dual/dual.hpp>
-
-#include <ikarus/utils/concepts.hh>
-#include <ikarus/utils/traits.hh>
 
 namespace Ikarus {
 

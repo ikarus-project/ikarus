@@ -183,7 +183,6 @@ namespace Ikarus {
 
             info.cauchystr = " USED CAUCHY POINT!";
           }
-
         } else
           info.cauchystr = "                  ";
 

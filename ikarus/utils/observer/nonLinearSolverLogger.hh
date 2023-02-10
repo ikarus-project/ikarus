@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
+#include "observer.hh"
+#include "observerMessages.hh"
+
 #include <string>
 
 #include "spdlog/spdlog.h"
-
-#include <ikarus/utils/observer/observer.hh>
-#include <ikarus/utils/observer/observerMessages.hh>
 
 class NonLinearSolverLogger : public IObserver<NonLinearSolverMessages> {
 public:

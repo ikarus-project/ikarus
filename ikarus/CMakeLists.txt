@@ -6,13 +6,7 @@ cmake_minimum_required(VERSION 3.18)
 file(
   GLOB_RECURSE sources
   RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-  CONFIGURE_DEPENDS include/ikarus/*.cpp
-)
-
-project(
-  ikarus
-  VERSION 0.2
-  LANGUAGES C CXX
+  CONFIGURE_DEPENDS ../ikarus/*.cpp
 )
 
 dune_add_library(${PROJECT_NAME} ${sources})
@@ -21,12 +15,9 @@ target_link_dune_default_libraries(${PROJECT_NAME})
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
-include(../cmake/AddDependencies.cmake)
-
-# make header path available
-target_include_directories(
-  ${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                         $<INSTALL_INTERFACE:include>
-)
-
-add_subdirectory(include)
+add_subdirectory(assembler)
+add_subdirectory(controlRoutines)
+add_subdirectory(finiteElements)
+add_subdirectory(linearAlgebra)
+add_subdirectory(solver)
+add_subdirectory(utils)

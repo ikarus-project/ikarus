@@ -27,6 +27,8 @@ add_definitions(
   -m64
 )
 add_definitions(-DDUNE_LOCALFEFUNCTIONS_USE_EIGEN=1)
+add_definitions(-DDCMAKE_DISABLE_FIND_PACKAGE_Vc=1)
+add_definitions(-DCMAKE_DISABLE_FIND_PACKAGE_LATEX=1)
 
 # find dune packages to make cmake modules available
 find_package(dune-common REQUIRED EXCLUDE_FROM_ALL)
@@ -36,9 +38,9 @@ include(DuneMacros)
 dune_project()
 dune_enable_all_packages()
 
-add_subdirectory(src)
 add_subdirectory(sandbox)
 add_subdirectory(tests)
+add_subdirectory(ikarus)
 add_subdirectory(cmake/FormatTarget)
 
 if(BUILD_DOCS)

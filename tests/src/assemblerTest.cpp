@@ -15,7 +15,7 @@
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/grid/yaspgrid.hh>
 
-#include "ikarus/linearAlgebra/dirichletValues.hh"
+#include <ikarus/linearAlgebra/dirichletValues.hh>
 using Dune::TestSuite;
 #include <Eigen/Core>
 

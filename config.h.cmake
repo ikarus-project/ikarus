@@ -34,12 +34,6 @@ overwritten
 /* Define to the version of ikarus */
 #define IKARUS_VERSION "@IKARUS_VERSION@"
 
-/* Define the sparse matrix addon for eigen */
-#define EIGEN_SPARSEMATRIX_PLUGIN <ikarus/utils/eigenSparseAddon.hh>
-
-/* Init eigen matrices with nan */
-#define EIGEN_INITIALIZE_MATRICES_BY_NAN
-
 /* Define to the major version of ikarus */
 #define IKARUS_VERSION_MAJOR @IKARUS_VERSION_MAJOR@
 
@@ -48,6 +42,12 @@ overwritten
 
 /* Define to the revision of ikarus */
 #define IKARUS_VERSION_REVISION @IKARUS_VERSION_REVISION@
+
+/* Define the sparse matrix addon for eigen */
+#define EIGEN_SPARSEMATRIX_PLUGIN <ikarus/utils/eigenSparseAddon.hh>
+
+/* Init eigen matrices with nan */
+#define EIGEN_INITIALIZE_MATRICES_BY_NAN
 
 /* end ikarus
 Everything below here will be overwritten

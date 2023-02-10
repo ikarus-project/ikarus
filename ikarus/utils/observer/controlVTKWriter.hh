@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
+#include "observer.hh"
+#include "observerMessages.hh"
+
 #include <string>
 
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 
 #include <spdlog/spdlog.h>
-
-#include <ikarus/utils/observer/observer.hh>
-#include <ikarus/utils/observer/observerMessages.hh>
 
 template <typename Basis>  // Check basis
 class ControlSubsamplingVertexVTKWriter : public IObserver<ControlMessages> {
