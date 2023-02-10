@@ -1,5 +1,7 @@
 # SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
-# SPDX-License-Identifier: LGPL-3.0-or-later set HAVE_MATPLOTLIB for config.h
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
+#set HAVE_MATPLOTLIB for config.h
 set(HAVE_MATPLOTLIB ${Matplot++_FOUND})
 
 # register all Matplot related flags
