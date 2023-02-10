@@ -17,7 +17,7 @@ function(add_dune_Eigen3_flags _targets)
     foreach(_target ${_targets})
       target_link_libraries(${_target} PUBLIC Eigen3::Eigen)
       target_compile_definitions(
-        ${_target} PUBLIC ENABLE_EIGEN=1 EIGEN_INITIALIZE_MATRICES_BY_NAN=1
+        ${_target} PUBLIC ENABLE_EIGEN=1 EIGEN_INITIALIZE_MATRICES_BY_NAN=1 EIGEN_SPARSEMATRIX_PLUGIN=<ikarus/utils/eigenSparseAddon.hh>
       )
     endforeach(_target)
   endif()
