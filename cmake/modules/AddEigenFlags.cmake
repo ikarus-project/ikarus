@@ -5,7 +5,7 @@ set(HAVE_EIGEN ${Eigen3_FOUND})
 # register all eigen related flags
 if(Eigen3_FOUND)
   dune_register_package_flags(
-    LIBRARIES Eigen3::Eigen COMPILE_DEFINITIONS "ENABLE_EIGEN=1;EIGEN_INITIALIZE_MATRICES_BY_NAN=1"
+    LIBRARIES Eigen3::Eigen COMPILE_DEFINITIONS "ENABLE_EIGEN=1;EIGEN_INITIALIZE_MATRICES_BY_NAN=1;EIGEN_SPARSEMATRIX_PLUGIN=<ikarus/utils/eigenSparseAddon.hh>"
   )
 endif()
 

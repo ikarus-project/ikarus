@@ -38,9 +38,9 @@ include(DuneMacros)
 dune_project()
 dune_enable_all_packages()
 
-add_subdirectory(src)
 add_subdirectory(sandbox)
 add_subdirectory(tests)
+add_subdirectory(ikarus)
 add_subdirectory(cmake/FormatTarget)
 
 if(BUILD_DOCS)
