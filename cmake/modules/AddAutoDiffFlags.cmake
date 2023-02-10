@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
-#set HAVE_AUTODIFF for config.h
+# set HAVE_AUTODIFF for config.h
 set(HAVE_AUTODIFF ${autodiff_FOUND})
 
 # register all eigen related flags
