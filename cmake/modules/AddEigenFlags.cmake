@@ -7,7 +7,7 @@ set(HAVE_EIGEN ${Eigen3_FOUND})
 # register all eigen related flags
 if(Eigen3_FOUND)
   dune_register_package_flags(
-    LIBRARIES Eigen3::Eigen COMPILE_DEFINITIONS "ENABLE_EIGEN=1;EIGEN_INITIALIZE_MATRICES_BY_NAN=1;EIGEN_SPARSEMATRIX_PLUGIN=<ikarus/utils/eigenSparseAddon.hh>"
+    LIBRARIES Eigen3::Eigen COMPILE_DEFINITIONS "ENABLE_EIGEN=1"
   )
 endif()
 
@@ -17,7 +17,7 @@ function(add_dune_Eigen3_flags _targets)
     foreach(_target ${_targets})
       target_link_libraries(${_target} PUBLIC Eigen3::Eigen)
       target_compile_definitions(
-        ${_target} PUBLIC ENABLE_EIGEN=1 EIGEN_INITIALIZE_MATRICES_BY_NAN=1 EIGEN_SPARSEMATRIX_PLUGIN=<ikarus/utils/eigenSparseAddon.hh>
+        ${_target} PUBLIC ENABLE_EIGEN=1
       )
     endforeach(_target)
   endif()
