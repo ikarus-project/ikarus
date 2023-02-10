@@ -15,12 +15,12 @@
 
 #include <Eigen/Sparse>
 
-#include "ikarus/linearAlgebra/nonLinearOperator.hh"
-#include "ikarus/linearAlgebra/truncatedConjugateGradient.hh"
-#include "ikarus/utils/linearAlgebraHelper.hh"
-#include "ikarus/utils/observer/observer.hh"
-#include "ikarus/utils/observer/observerMessages.hh"
-#include "ikarus/utils/traits.hh"
+#include <ikarus/linearAlgebra/nonLinearOperator.hh>
+#include <ikarus/linearAlgebra/truncatedConjugateGradient.hh>
+#include <ikarus/utils/linearAlgebraHelper.hh>
+#include <ikarus/utils/observer/observer.hh>
+#include <ikarus/utils/observer/observerMessages.hh>
+#include <ikarus/utils/traits.hh>
 
 namespace Ikarus {
 

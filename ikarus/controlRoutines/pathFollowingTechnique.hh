@@ -8,11 +8,11 @@
 
 #include <Eigen/Core>
 
-#include "ikarus/linearAlgebra/nonLinearOperator.hh"
-#include "ikarus/solver/nonLinearSolver/newtonRaphsonWithScalarSubsidiaryFunction.hh"
-#include "ikarus/utils/observer/observer.hh"
-#include "ikarus/utils/observer/observerMessages.hh"
-#include "ikarus/utils/pathFollowingFunctions.hh"
+#include <ikarus/linearAlgebra/nonLinearOperator.hh>
+#include <ikarus/solver/nonLinearSolver/newtonRaphsonWithScalarSubsidiaryFunction.hh>
+#include <ikarus/utils/observer/observer.hh>
+#include <ikarus/utils/observer/observerMessages.hh>
+#include <ikarus/utils/pathFollowingFunctions.hh>
 
 namespace Ikarus {
 

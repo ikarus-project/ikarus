@@ -5,12 +5,12 @@
 #include <iosfwd>
 #include <utility>
 
-#include "ikarus/linearAlgebra/nonLinearOperator.hh"
-#include "ikarus/solver/linearSolver/linearSolver.hh"
-#include "ikarus/utils/linearAlgebraHelper.hh"
-#include "ikarus/utils/observer/observer.hh"
-#include "ikarus/utils/observer/observerMessages.hh"
-#include "ikarus/utils/pathFollowingFunctions.hh"
+#include <ikarus/linearAlgebra/nonLinearOperator.hh>
+#include <ikarus/solver/linearSolver/linearSolver.hh>
+#include <ikarus/utils/linearAlgebraHelper.hh>
+#include <ikarus/utils/observer/observer.hh>
+#include <ikarus/utils/observer/observerMessages.hh>
+#include <ikarus/utils/pathFollowingFunctions.hh>
 
 namespace Ikarus {
 

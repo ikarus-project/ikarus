@@ -10,8 +10,8 @@
 #include <autodiff/forward/real.hpp>
 #include <autodiff/forward/real/eigen.hpp>
 
-#include "ikarus/utils/concepts.hh"
-#include "ikarus/utils/traits.hh"
+#include <ikarus/utils/concepts.hh>
+#include <ikarus/utils/traits.hh>
 
 namespace Ikarus {
 

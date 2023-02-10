@@ -16,13 +16,13 @@
 #include <autodiff/forward/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
 
-#include "ikarus/finiteElements/feBases/autodiffFE.hh"
-#include "ikarus/finiteElements/feBases/powerBasisFE.hh"
-#include "ikarus/finiteElements/feRequirements.hh"
-#include "ikarus/finiteElements/feTraits.hh"
-#include "ikarus/finiteElements/physicsHelper.hh"
-#include "ikarus/utils/eigenDuneTransformations.hh"
-#include "ikarus/utils/linearAlgebraHelper.hh"
+#include <ikarus/finiteElements/feBases/autodiffFE.hh>
+#include <ikarus/finiteElements/feBases/powerBasisFE.hh>
+#include <ikarus/finiteElements/feRequirements.hh>
+#include <ikarus/finiteElements/feTraits.hh>
+#include <ikarus/finiteElements/physicsHelper.hh>
+#include <ikarus/utils/eigenDuneTransformations.hh>
+#include <ikarus/utils/linearAlgebraHelper.hh>
 
 namespace Ikarus {
 

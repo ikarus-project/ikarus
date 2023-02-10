@@ -6,7 +6,7 @@
 
 #include <dune/common/hybridutilities.hh>
 
-#include "ikarus/utils/traits.hh"
+#include <ikarus/utils/traits.hh>
 template <typename Fun, typename... Args>
 using ReturnType = std::invoke_result_t<Fun, Args...>;
 
