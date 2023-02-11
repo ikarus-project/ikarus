@@ -15,6 +15,7 @@
 #include <dune/grid/yaspgrid.hh>
 
 #include <ikarus/linearAlgebra/dirichletValues.hh>
+#include <ikarus/utils/init.hh>
 using Dune::TestSuite;
 #include <Eigen/Core>
 
@@ -89,7 +90,6 @@ auto SimpleAssemblersTest() {
 
 int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
-  Ikarus::enableFileLogger();
   TestSuite t;
 
   t.subTest(SimpleAssemblersTest());

@@ -49,8 +49,6 @@ overwritten
 /* Init eigen matrices with nan */
 #define EIGEN_INITIALIZE_MATRICES_BY_NAN
 
-#include <ikarus/utils/init.hh>
-
 /* end ikarus
 Everything below here will be overwritten
 */
