@@ -381,7 +381,7 @@ namespace Ikarus {
           choleskyInitialShift *= 5;
           truncatedConjugateGradient.preconditioner().setInitialShift(choleskyInitialShift);
           truncatedConjugateGradient.factorize(hessian());
-          if (attempts > 5) throw std::logic_error("Factorization of preconditioner failed!");
+          if (attempts > 5) DUNE_THROW(Dune::MathError, "Factorization of preconditioner failed!");
           ++attempts;
         }
         if (truncatedConjugateGradient.info() == Eigen::Success) choleskyInitialShift = 1e-3;

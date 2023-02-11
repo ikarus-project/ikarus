@@ -77,7 +77,7 @@ namespace Ikarus {
           solverimpl = std::make_unique<SolverImpl<UmfPackLU<SparseMatrixType>>>();
           break;
         case SolverTypeTag::sd_SuperLU:
-          throw std::logic_error("Not implemented yet.");
+          DUNE_THROW(Dune::NotImplemented, "Not implemented yet.");
           break;
           // Dense Solver
         case SolverTypeTag::d_PartialPivLU:
@@ -152,14 +152,14 @@ namespace Ikarus {
         if constexpr (std::is_base_of_v<Eigen::SparseSolverBase<Solver>, Solver>)
           solver.compute(A);
         else
-          throw std::logic_error("This solver does not support solving with sparse matrices.");
+          DUNE_THROW(Dune::NotImplemented, "This solver does not support solving with sparse matrices.");
       }
 
       void compute(const DenseMatrixType& A) final {
         if constexpr (std::is_base_of_v<Eigen::SolverBase<Solver>, Solver>)
           solver.compute(A);
         else
-          throw std::logic_error("This solver does not support solving with dense matrices.");
+          DUNE_THROW(Dune::NotImplemented, "This solver does not support solving with dense matrices.");
       }
 
       void solve(Eigen::VectorX<ScalarType>& x, const Eigen::VectorX<ScalarType>& b) const final {
