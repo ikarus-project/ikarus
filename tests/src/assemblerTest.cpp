@@ -7,7 +7,6 @@
 
 #include <vector>
 
-#include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
@@ -89,7 +88,8 @@ auto SimpleAssemblersTest() {
 }
 
 int main(int argc, char** argv) {
-  Dune::MPIHelper::instance(argc, argv);
+  Ikarus::init(argc, argv);
+  Ikarus::enableFileLogger();
   TestSuite t;
 
   t.subTest(SimpleAssemblersTest());
