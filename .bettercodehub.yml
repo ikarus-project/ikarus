@@ -5,8 +5,8 @@ languages:
 - name: cpp
   production:
     include:
-      - /src/include/ikarus/.*\.cpp
-      - /src/include/ikarus/.*\.h
+      - /ikarus/.*\.cpp
+      - /ikarus/.*\.h
     exclude:
       - /tests/.*\.cpp
   test:
