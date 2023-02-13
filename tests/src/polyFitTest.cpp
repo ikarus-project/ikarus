@@ -3,17 +3,19 @@
 
 #include <config.h>
 
-#include <dune/common/float_cmp.hh>
-#include <dune/common/parallel/mpihelper.hh>
-#include <dune/common/test/testsuite.hh>
-using Dune::TestSuite;
 #include "testHelpers.hh"
 
 #include <matplot/matplot.h>
 
+#include <dune/common/float_cmp.hh>
+#include <dune/common/test/testsuite.hh>
+
 #include <Eigen/Core>
 
+#include <ikarus/utils/init.hh>
 #include <ikarus/utils/polyfit.hh>
+
+using Dune::TestSuite;
 
 auto polyFitTest1() {
   TestSuite t("polyFitTest1");
@@ -46,7 +48,7 @@ auto polyFitTest2() {
 }
 
 int main(int argc, char** argv) {
-  Dune::MPIHelper::instance(argc, argv);
+  Ikarus::init(argc, argv);
   TestSuite t;
 
   t.subTest(polyFitTest1());

@@ -1,25 +1,22 @@
 // SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-//
-//
 #include <config.h>
-
-#include <experimental/type_traits>
-
-#include <dune/common/parallel/mpihelper.hh>
-#include <dune/common/test/testsuite.hh>
-#include <dune/common/tuplevector.hh>
-using Dune::TestSuite;
 
 #include "testHelpers.hh"
 
+#include <experimental/type_traits>
+
+#include <dune/common/test/testsuite.hh>
+#include <dune/common/tuplevector.hh>
 #include <dune/localfefunctions/manifolds/realTuple.hh>
 #include <dune/localfefunctions/manifolds/unitVector.hh>
 
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/nonLinearSolver/trustRegion.hh>
+#include <ikarus/utils/init.hh>
 using namespace Ikarus;
+using Dune::TestSuite;
 
 auto f(const Eigen::Vector<double, 1>& x) { return 0.5 * x[0] * x[0]; }
 auto df(const Eigen::Vector<double, 1>& x) {
@@ -434,7 +431,7 @@ auto trustRegion5_RiemanianUnitSphereAndDispBlocked() {
 }
 
 int main(int argc, char** argv) {
-  Dune::MPIHelper::instance(argc, argv);
+  Ikarus::init(argc, argv);
   TestSuite t;
 
   t.subTest(trustRegion1());

@@ -3,19 +3,19 @@
 
 #include <config.h>
 
-#include <dune/common/parallel/mpihelper.hh>
-#include <dune/common/test/testsuite.hh>
-using Dune::TestSuite;
-
 #include "easTest.hh"
 #include "testFEElement.hh"
 
+#include <dune/common/test/testsuite.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 
 #include <ikarus/finiteElements/mechanics/enhancedAssumedStrains.hh>
 #include <ikarus/finiteElements/mechanics/linearElastic.hh>
+#include <ikarus/utils/init.hh>
+
+using Dune::TestSuite;
 
 template <typename Basis>
 using EASElement = Ikarus::EnhancedAssumedStrains<Ikarus::LinearElastic<Basis>>;
@@ -24,7 +24,7 @@ template <typename Basis>
 using LinearElasticElement = Ikarus::LinearElastic<Basis>;
 
 int main(int argc, char** argv) {
-  Dune::MPIHelper::instance(argc, argv);
+  Ikarus::init(argc, argv);
   TestSuite t("EAS");
 
   using namespace Dune::Functions::BasisFactory;

@@ -7,7 +7,6 @@
 
 #include <vector>
 
-#include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
@@ -15,12 +14,13 @@
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/grid/yaspgrid.hh>
 
-#include <ikarus/linearAlgebra/dirichletValues.hh>
 using Dune::TestSuite;
 #include <Eigen/Core>
 
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/finiteElements/mechanics/nonLinearElasticityFE.hh>
+#include <ikarus/linearAlgebra/dirichletValues.hh>
+#include <ikarus/utils/init.hh>
 
 auto SimpleAssemblersTest() {
   TestSuite t("SimpleAssemblersTest");
@@ -89,7 +89,7 @@ auto SimpleAssemblersTest() {
 }
 
 int main(int argc, char** argv) {
-  Dune::MPIHelper::instance(argc, argv);
+  Ikarus::init(argc, argv);
   TestSuite t;
 
   t.subTest(SimpleAssemblersTest());

@@ -4,13 +4,10 @@
 //
 #include <config.h>
 
-#include <dune/common/parallel/mpihelper.hh>
-#include <dune/common/test/testsuite.hh>
-using Dune::TestSuite;
-
 #include "common.hh"
 #include "testHelpers.hh"
 
+#include <dune/common/test/testsuite.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
@@ -29,7 +26,10 @@ using Dune::TestSuite;
 #include <ikarus/solver/nonLinearSolver/trustRegion.hh>
 #include <ikarus/utils/algorithms.hh>
 #include <ikarus/utils/drawing/griddrawer.hh>
+#include <ikarus/utils/init.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
+
+using Dune::TestSuite;
 
 template <typename Grid>
 auto NonLinearElasticityLoadControlNRandTR() {
@@ -133,7 +133,7 @@ auto NonLinearElasticityLoadControlNRandTR() {
 }
 
 int main(int argc, char** argv) {
-  Dune::MPIHelper::instance(argc, argv);
+  Ikarus::init(argc, argv);
   TestSuite t;
 
   t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Alu>());

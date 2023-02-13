@@ -3,25 +3,24 @@
 
 #include <config.h>
 
-#include <dune/common/parallel/mpihelper.hh>
-#include <dune/common/test/testsuite.hh>
-
-using Dune::TestSuite;
-
 #include "testFEElement.hh"
 
+#include <dune/common/test/testsuite.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 
 #include <ikarus/finiteElements/mechanics/linearElastic.hh>
+#include <ikarus/utils/init.hh>
+
+using Dune::TestSuite;
 
 template <typename Basis>
 using LinearElasticElement = Ikarus::LinearElastic<Basis>;
 
 int main(int argc, char** argv) {
-  Dune::MPIHelper::instance(argc, argv);
-  TestSuite t("LinearElasticity");
+  Ikarus::init(argc, argv);
+  Dune::TestSuite t("LinearElasticity");
 
   using namespace Dune::Functions::BasisFactory;
   auto firstOrderLagrangePrePower2Basis  = power<2>(lagrange<1>(), FlatInterleaved());

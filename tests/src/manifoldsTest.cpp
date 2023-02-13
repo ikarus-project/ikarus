@@ -3,11 +3,6 @@
 
 #include <config.h>
 
-#include <dune/common/parallel/mpihelper.hh>
-#include <dune/common/test/testsuite.hh>
-
-using Dune::TestSuite;
-
 #include "testHelpers.hh"
 
 #include <array>
@@ -15,12 +10,16 @@ using Dune::TestSuite;
 #include <unordered_set>
 #include <vector>
 
+#include <dune/common/test/testsuite.hh>
 #include <dune/localfefunctions/manifolds/realTuple.hh>
 #include <dune/localfefunctions/manifolds/unitVector.hh>
 
 #include <Eigen/Core>
 
 #include <ikarus/utils/algorithms.hh>
+#include <ikarus/utils/init.hh>
+
+using Dune::TestSuite;
 
 static constexpr double tol = 1e-15;
 
@@ -70,7 +69,7 @@ auto testUnitVector() {
 }
 
 int main(int argc, char **argv) {
-  Dune::MPIHelper::instance(argc, argv);
+  Ikarus::init(argc, argv);
   TestSuite t;
 
   t.subTest(testUnitVector());

@@ -11,6 +11,7 @@ install(
         eigenSparseAddon.hh
         findLineSegment.hh
         functionSanityChecks.hh
+        init.hh
         linearAlgebraHelper.hh
         pathFollowingFunctions.hh
         polyfit.hh

@@ -25,8 +25,8 @@
 template <template <typename> typename FEElementTemplate, int gridDim, typename PreBasis, typename... F>
 auto testFEElement(const PreBasis& preBasis, const std::string& elementName, const bool& isRandomlyDistorted,
                    F&&... f) {
-  TestSuite t(std::string("testFEElement ") + elementName + " on grid element with dimension" + std::to_string(gridDim)
-              + ".");
+  Dune::TestSuite t(std::string("testFEElement ") + elementName + " on grid element with dimension"
+                    + std::to_string(gridDim) + ".");
 
   auto fTuple = std::forward_as_tuple(f...);
 

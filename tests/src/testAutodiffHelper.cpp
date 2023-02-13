@@ -1,17 +1,16 @@
 // SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-//
-//
 #include <config.h>
-
-#include <dune/common/parallel/mpihelper.hh>
-#include <dune/common/test/testsuite.hh>
-using Dune::TestSuite;
 
 #include "testHelpers.hh"
 
+#include <dune/common/test/testsuite.hh>
+
 #include <ikarus/utils/autodiffHelper.hh>
+#include <ikarus/utils/init.hh>
+
+using Dune::TestSuite;
 
 template <typename Scalar>
 Eigen::Vector<Scalar, 2> f(const Eigen::Vector<Scalar, 3>& x) {
@@ -42,7 +41,7 @@ auto hessianN() {
 }
 
 int main(int argc, char** argv) {
-  Dune::MPIHelper::instance(argc, argv);
+  Ikarus::init(argc, argv);
   TestSuite t;
 
   t.subTest(hessianN());

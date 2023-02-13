@@ -6,25 +6,25 @@
 
 #include <vector>
 
-#include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/float_cmp.hh>
 #include <dune/common/test/testsuite.hh>
 #include <dune/fufem/dunepython.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
+#include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/grid/yaspgrid.hh>
 #include <dune/localfefunctions/eigenDuneTransformations.hh>
 
-#include <ikarus/linearAlgebra/dirichletValues.hh>
-#include <ikarus/utils/eigenDuneTransformations.hh>
-using Dune::TestSuite;
-#include <dune/common/float_cmp.hh>
-#include <dune/functions/functionspacebases/interpolate.hh>
-
 #include <Eigen/Core>
 
+#include <ikarus/linearAlgebra/dirichletValues.hh>
 #include <ikarus/utils/duneUtilities.hh>
+#include <ikarus/utils/eigenDuneTransformations.hh>
+#include <ikarus/utils/init.hh>
+
+using Dune::TestSuite;
 
 auto dirichletBCTest() {
   TestSuite t("SimpleAssemblersTest");
@@ -138,7 +138,7 @@ auto dirichletBCTest() {
 }
 
 int main(int argc, char** argv) {
-  Dune::MPIHelper::instance(argc, argv);
+  Ikarus::init(argc, argv);
   TestSuite t;
 
   t.subTest(dirichletBCTest());

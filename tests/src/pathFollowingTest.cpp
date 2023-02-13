@@ -4,11 +4,9 @@
 //
 #include <config.h>
 
-#include <dune/common/parallel/mpihelper.hh>
-#include <dune/common/test/testsuite.hh>
-using Dune::TestSuite;
-
 #include "testHelpers.hh"
+
+#include <dune/common/test/testsuite.hh>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -18,9 +16,11 @@ using Dune::TestSuite;
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/utils/functionSanityChecks.hh>
+#include <ikarus/utils/init.hh>
 #include <ikarus/utils/observer/nonLinearSolverLogger.hh>
 
 using namespace Ikarus::Concepts;
+using Dune::TestSuite;
 
 auto residual(const Eigen::VectorXd& D, double lambda) {
   Eigen::VectorXd vec;
@@ -163,7 +163,7 @@ auto simple2DOperatorDisplacementControlTest() {
 }
 
 int main(int argc, char** argv) {
-  Dune::MPIHelper::instance(argc, argv);
+  Ikarus::init(argc, argv);
   TestSuite t;
 
   t.subTest(simple2DOperatorArcLengthTest());
