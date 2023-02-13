@@ -5,10 +5,10 @@
 
 #include <iostream>
 
-#include <dune/common/parallel/mpihelper.hh>
+#include <ikarus/utils/init.hh>
 
 int main(int argc, char** argv) {
-  Dune::MPIHelper::instance(argc, argv);
+  Ikarus::init(argc, argv);
 
   std::cout << "Hello from ikarus!" << std::endl;
 }

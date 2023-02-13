@@ -30,7 +30,7 @@ namespace Ikarus {
 
       std::ranges::transform(currentTime, currentTime.begin(), [](char ch) {
         return (ch == ' ' or ch == ':') ? '_' : ch;
-      });  // replace spaces and collon with underscore
+      });  // replace space and colon with underscore
       auto logFilename = (filename.empty() ? executableName : filename) + currentTime + ".log";
       auto file_sink   = std::make_shared<spdlog::sinks::basic_file_sink_mt>(logFilename, true);
       file_sink->set_pattern("%v");
@@ -49,11 +49,6 @@ namespace Ikarus {
     void operator=(IkarusInstance const&) = delete;
   };
 
-  void enableFileLogger(std::string filename = "") {
-    auto& instance = IkarusInstance::getInstance();
-    instance.enableFileLogger(std::move(filename));
-  }
-
   void init(int argc, char** argv, bool enableFileLogger = true) {
     Dune::MPIHelper::instance(argc, argv);
     auto& instance          = IkarusInstance::getInstance();
@@ -65,13 +60,13 @@ namespace Ikarus {
     auto currentTime = std::chrono::system_clock::now();
     std::chrono::year_month_day currentYearMonthDay{floor<std::chrono::days>(currentTime)};
 
-    spdlog::info("Current time: {}", currentTime);
-    spdlog::info(
-        R"xxx( _ _  __ __  ___ _  _   __ )xxx");  // https://patorjk.com/software/taag/#p=testall&f=Univers&t=IKARUS
-                                                  // font: Stforek
-    spdlog::info(R"xxx(| | |/ //  \| _ \ || |/' _/)xxx");
-    spdlog::info(R"xxx(| |   <| /\ | v / \/ |`._`.)xxx");
-    spdlog::info(R"xxx(|_|_|\_\_||_|_|_\\__/ |___/)xxx");
+    spdlog::info("Start of execution: {}", currentTime);
+    /// https://patorjk.com/software/taag/#p=testall&f=Univers&t=IKARUS (font: Lean)
+    spdlog::info(R"xxx(    _/_/_/  _/    _/    _/_/    _/_/_/    _/    _/    _/_/_/)xxx");
+    spdlog::info(R"xxx(     _/    _/  _/    _/    _/  _/    _/  _/    _/  _/       )xxx");
+    spdlog::info(R"xxx(    _/    _/_/      _/_/_/_/  _/_/_/    _/    _/    _/_/    )xxx");
+    spdlog::info(R"xxx(   _/    _/  _/    _/    _/  _/    _/  _/    _/        _/   )xxx");
+    spdlog::info(R"xxx(_/_/_/  _/    _/  _/    _/  _/    _/    _/_/    _/_/_/      )xxx");
 
     spdlog::info("© 2021-{} The Ikarus Developers, see LICENSE.md ", static_cast<int>(currentYearMonthDay.year()));
     spdlog::info("You are using Ikarus v{}. Please don't forget to cite us:", IKARUS_VERSION);
@@ -79,5 +74,4 @@ namespace Ikarus {
         "Müller, A., & Vinod Kumar Mitruka, T. K. M. (2023). Ikarus v0.3 (Version V1). Version V1. "
         "doi:<https://doi.org/10.18419/darus-3303>");
   }
-
 }  // namespace Ikarus

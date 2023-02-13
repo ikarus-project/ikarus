@@ -3,8 +3,9 @@
 
 #include <config.h>
 
-#include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
+
+#include <ikarus/utils/init.hh>
 using Dune::TestSuite;
 
 #include "easTest.hh"
@@ -24,7 +25,7 @@ template <typename Basis>
 using LinearElasticElement = Ikarus::LinearElastic<Basis>;
 
 int main(int argc, char** argv) {
-  Dune::MPIHelper::instance(argc, argv);
+  Ikarus::init(argc, argv);
   TestSuite t("EAS");
 
   using namespace Dune::Functions::BasisFactory;

@@ -3,8 +3,9 @@
 
 #include <config.h>
 
-#include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
+
+#include <ikarus/utils/init.hh>
 
 using Dune::TestSuite;
 
@@ -70,7 +71,7 @@ auto testUnitVector() {
 }
 
 int main(int argc, char **argv) {
-  Dune::MPIHelper::instance(argc, argv);
+  Ikarus::init(argc, argv);
   TestSuite t;
 
   t.subTest(testUnitVector());

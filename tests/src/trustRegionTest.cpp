@@ -7,10 +7,11 @@
 
 #include <experimental/type_traits>
 
-#include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
 #include <dune/common/tuplevector.hh>
+
 using Dune::TestSuite;
+#include <ikarus/utils/init.hh>
 
 #include "testHelpers.hh"
 
@@ -434,7 +435,7 @@ auto trustRegion5_RiemanianUnitSphereAndDispBlocked() {
 }
 
 int main(int argc, char** argv) {
-  Dune::MPIHelper::instance(argc, argv);
+  Ikarus::init(argc, argv);
   TestSuite t;
 
   t.subTest(trustRegion1());

@@ -6,7 +6,6 @@
 
 #include <vector>
 
-#include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
 #include <dune/fufem/dunepython.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
@@ -18,6 +17,7 @@
 
 #include <ikarus/linearAlgebra/dirichletValues.hh>
 #include <ikarus/utils/eigenDuneTransformations.hh>
+#include <ikarus/utils/init.hh>
 using Dune::TestSuite;
 #include <dune/common/float_cmp.hh>
 #include <dune/functions/functionspacebases/interpolate.hh>
@@ -138,7 +138,7 @@ auto dirichletBCTest() {
 }
 
 int main(int argc, char** argv) {
-  Dune::MPIHelper::instance(argc, argv);
+  Ikarus::init(argc, argv);
   TestSuite t;
 
   t.subTest(dirichletBCTest());

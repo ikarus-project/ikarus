@@ -2,14 +2,15 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include <config.h>
 
-#include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
+
+#include <ikarus/utils/init.hh>
 using Dune::TestSuite;
 
 #include <ikarus/utils/duneUtilities.hh>
 
 int main(int argc, char** argv) {
-  Dune::MPIHelper::instance(argc, argv);
+  Ikarus::init(argc, argv);
   TestSuite t;
 
   autodiff::real valDual = 7.0;

@@ -4,8 +4,9 @@
 #include <config.h>
 
 #include <dune/common/float_cmp.hh>
-#include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
+
+#include <ikarus/utils/init.hh>
 using Dune::TestSuite;
 #include "testHelpers.hh"
 
@@ -46,7 +47,7 @@ auto polyFitTest2() {
 }
 
 int main(int argc, char** argv) {
-  Dune::MPIHelper::instance(argc, argv);
+  Ikarus::init(argc, argv);
   TestSuite t;
 
   t.subTest(polyFitTest1());
