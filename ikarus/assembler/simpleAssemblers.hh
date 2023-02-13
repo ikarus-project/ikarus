@@ -6,6 +6,7 @@
 #include <utility>
 
 #include <dune/common/math.hh>
+#include <dune/functions/backends/istlvectorbackend.hh>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -94,6 +95,8 @@ namespace Ikarus {
   class VectorFlatAssembler : public ScalarAssembler<Basis, FEContainer> {
     using RequirementType = typename FEContainer::value_type::FERequirementType;
     using GlobalIndex     = typename FEContainer::value_type::GlobalIndex;
+    using VectorType                     = Eigen::VectorXd;
+    using BackendType                   = decltype(Dune::Functions::istlVectorBackend(std::declval<VectorType&>()));
 
   public:
     VectorFlatAssembler(const FEContainer &fes, const DirichletValues<Basis> &dirichletValues_)
@@ -101,20 +104,22 @@ namespace Ikarus {
 
     /** Calculates the vectorial quantity which is requested by fErequirements and returns a reference
      * A zero is written on fixed dofs */
-    Eigen::VectorXd &getVector(const RequirementType &fErequirements) { return getVectorImpl(fErequirements); }
+    VectorType &getVector(const RequirementType &fErequirements) { return getVectorImpl(fErequirements); }
 
     /** Calculates the vectorial quantity which is requested by fErequirements and returns a reference
      * This vector has a reduced size by the number of fixed degrees of freedom */
-    Eigen::VectorXd &getReducedVector(const RequirementType &fErequirements) {
+    VectorType &getReducedVector(const RequirementType &fErequirements) {
       return getReducedVectorImpl(fErequirements);
     }
 
   private:
-    Eigen::VectorXd &getVectorImpl(const RequirementType &fErequirements);
-    Eigen::VectorXd &getReducedVectorImpl(const RequirementType &fErequirements);
+    VectorType &getVectorImpl(const RequirementType &fErequirements);
+    VectorType &getReducedVectorImpl(const RequirementType &fErequirements);
 
     Eigen::VectorXd vec{};
+    BackendType vecBackend;
     Eigen::VectorXd vecRed{};
+
   };
 
   /** SparseFlatAssembler assembles matrix quantities using a flat basis Indexing strategy

@@ -63,8 +63,12 @@ namespace Ikarus {
       f(*basis_, dirichletFlagsBackend);
     }
 
-    /* \brief Returns the local basis object */
+    /* \brief Returns the global basis object */
     const auto& basis() const { return *basis_; }
+
+    /* \brief Returns a boolean values, if the give multiIndex is constrained */
+    template<typename MultiIndex>
+    [[nodiscard]] bool isConstrained(const MultiIndex& multiIndex) const { return dirichletFlagsBackend[multiIndex]; }
 
     /* \brief Returns a boolean values, if the i-th degree of freedom is constrained */
     [[nodiscard]] bool isConstrained(std::size_t i) const { return dirichletFlags[i]; }

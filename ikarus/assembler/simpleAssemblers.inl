@@ -31,7 +31,7 @@ namespace Ikarus {
       fe.calculateVector(fErequirements, vecLocal);
       fe.globalIndices(dofs);
       for (int i = 0; auto id : dofs) {
-        vec(id[0]) += vecLocal(i);
+        vecBackend(id) += vecLocal(i);
         ++i;
       }
     }
@@ -56,7 +56,7 @@ namespace Ikarus {
       fe.globalIndices(dofs);
       assert(static_cast<long int>(dofs.size()) == vecLocal.size() && "The returned vector has wrong rowSize!");
       for (int i = 0; auto &&dofIndex : dofs) {
-        if (this->isConstrained(dofIndex[0])) {
+        if (this->isConstrained(dofIndex)) {
           ++reducedCounter;
           ++i;
           continue;
