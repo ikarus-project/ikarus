@@ -19,8 +19,8 @@ template <typename Basis>
 using LinearElasticElement = Ikarus::LinearElastic<Basis>;
 
 int main(int argc, char** argv) {
-  toDuneHelper::instance(argc, argv);
-  TestSuite t("LinearElasticity");
+  Ikarus::init(argc, argv);
+  Dune::TestSuite t("LinearElasticity");
 
   using namespace Dune::Functions::BasisFactory;
   auto firstOrderLagrangePrePower2Basis  = power<2>(lagrange<1>(), FlatInterleaved());

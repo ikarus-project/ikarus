@@ -105,7 +105,7 @@ struct ElementTest {};
 template <typename NonLinearOperator>
 [[nodiscard]] auto checkGradientOfElement(NonLinearOperator& nonLinearOperator,
                                           const std::string& messageIfFailed = "") {
-  TestSuite t("Check gradient");
+  Dune::TestSuite t("Check gradient");
   t.check(checkGradient(nonLinearOperator, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << "The gradient of calculateVector is not the gradient of calculateScalar." << messageIfFailed;
   return t;
@@ -114,7 +114,7 @@ template <typename NonLinearOperator>
 template <typename NonLinearOperator>
 [[nodiscard]] auto checkHessianOfElement(NonLinearOperator& nonLinearOperator,
                                          const std::string& messageIfFailed = "") {
-  TestSuite t("Check Hessian");
+  Dune::TestSuite t("Check Hessian");
   t.check(checkHessian(nonLinearOperator, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << "The Hessian of calculateMatrix is not the Hessian of calculateScalar. " << messageIfFailed;
   return t;
@@ -123,7 +123,7 @@ template <typename NonLinearOperator>
 template <typename NonLinearOperator>
 [[nodiscard]] auto checkJacobianOfElement(NonLinearOperator& nonLinearOperator,
                                           const std::string& messageIfFailed = "") {
-  TestSuite t("Check Jacobian");
+  Dune::TestSuite t("Check Jacobian");
   t.check(checkJacobian(nonLinearOperator, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << "The Jacobian of calculateMatrix is not the Jacobian of calculateVector." << messageIfFailed;
   return t;
@@ -143,7 +143,7 @@ template <typename NonLinearOperator, typename FiniteElement>
                                    std::remove_cvref_t<decltype(fe.localView().globalBasis().gridView())>, 1, double>>,
                 "The test to check Cauchy stress is only supported for a linear Lagrange basis");
 
-  TestSuite t("Cauchy Stress check of 2D solid element (4-node quadrilateral)");
+  Dune::TestSuite t("Cauchy Stress check of 2D solid element (4-node quadrilateral)");
   using namespace Ikarus;
   using namespace Dune::Indices;
   using namespace Dune::Functions::BasisFactory;

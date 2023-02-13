@@ -4,6 +4,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 -->
 
 # Master (becomes Release v0.4)
+- Added greeting and init function for reasonable default, e.g. log also to file ([#147](https://github.com/ikarus-project/ikarus/pull/147))
 - Add CODE_OF_CONDUCT.md file
 - Refactored Cmake and directory structure  ([#146](https://github.com/ikarus-project/ikarus/pull/146))
 - Added comment section to blog post ([511d83](https://github.com/ikarus-project/ikarus/commit/511d83f9e7c474c9b320db5bc9367114ebe2825d))
