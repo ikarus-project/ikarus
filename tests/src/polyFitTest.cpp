@@ -3,18 +3,19 @@
 
 #include <config.h>
 
-#include <dune/common/float_cmp.hh>
-#include <dune/common/test/testsuite.hh>
-
-#include <ikarus/utils/init.hh>
-using Dune::TestSuite;
 #include "testHelpers.hh"
 
 #include <matplot/matplot.h>
 
+#include <dune/common/float_cmp.hh>
+#include <dune/common/test/testsuite.hh>
+
 #include <Eigen/Core>
 
+#include <ikarus/utils/init.hh>
 #include <ikarus/utils/polyfit.hh>
+
+using Dune::TestSuite;
 
 auto polyFitTest1() {
   TestSuite t("polyFitTest1");

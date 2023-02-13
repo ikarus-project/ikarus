@@ -1,26 +1,22 @@
 // SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-//
-//
 #include <config.h>
+
+#include "testHelpers.hh"
 
 #include <experimental/type_traits>
 
 #include <dune/common/test/testsuite.hh>
 #include <dune/common/tuplevector.hh>
-
-using Dune::TestSuite;
-#include <ikarus/utils/init.hh>
-
-#include "testHelpers.hh"
-
 #include <dune/localfefunctions/manifolds/realTuple.hh>
 #include <dune/localfefunctions/manifolds/unitVector.hh>
 
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/nonLinearSolver/trustRegion.hh>
+#include <ikarus/utils/init.hh>
 using namespace Ikarus;
+using Dune::TestSuite;
 
 auto f(const Eigen::Vector<double, 1>& x) { return 0.5 * x[0] * x[0]; }
 auto df(const Eigen::Vector<double, 1>& x) {

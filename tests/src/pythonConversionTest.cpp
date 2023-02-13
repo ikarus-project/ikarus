@@ -4,10 +4,10 @@
 
 #include <dune/common/test/testsuite.hh>
 
-#include <ikarus/utils/init.hh>
-using Dune::TestSuite;
-
 #include <ikarus/utils/duneUtilities.hh>
+#include <ikarus/utils/init.hh>
+
+using Dune::TestSuite;
 
 int main(int argc, char** argv) {
   Ikarus::init(argc, argv);

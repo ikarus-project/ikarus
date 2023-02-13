@@ -4,20 +4,19 @@
 //
 #include <config.h>
 
-#include <dune/common/test/testsuite.hh>
-
-#include <ikarus/utils/init.hh>
-using Dune::TestSuite;
-
 #include "testHelpers.hh"
+
+#include <dune/common/test/testsuite.hh>
 
 #include <Eigen/Core>
 
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
 #include <ikarus/utils/functionSanityChecks.hh>
+#include <ikarus/utils/init.hh>
 #include <ikarus/utils/observer/nonLinearSolverLogger.hh>
 using namespace Ikarus;
+using Dune::TestSuite;
 
 template <typename SolutionType, typename SolutionTypeExpected, typename NewtonRhapson>
 auto checkNewtonRhapson(NewtonRhapson& nr, SolutionType& x, double tolerance, int maxIter, int iterExpected,

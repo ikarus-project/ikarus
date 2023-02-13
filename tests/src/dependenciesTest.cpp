@@ -3,21 +3,21 @@
 
 #include <config.h>
 
+#include <fstream>
+
 #include <dune/common/test/testsuite.hh>
 
-#include <ikarus/utils/init.hh>
-using Dune::TestSuite;
-
-#include <fstream>
-#include <vector>
-
-#include "spdlog/fmt/ostr.h"
-#include "spdlog/sinks/basic_file_sink.h"
-#include "spdlog/sinks/stdout_color_sinks.h"
-#include "spdlog/spdlog.h"
-#include <spdlog/fmt/ranges.h>
+#include <spdlog/fmt/ostr.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
 
 #include <Eigen/Core>
+
+#include <ikarus/utils/init.hh>
+
+using Dune::TestSuite;
+
 void foo() {
   spdlog::info("Does this appear in the correct logger?");
   spdlog::debug("This is a debug statement");

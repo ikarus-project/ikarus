@@ -3,12 +3,6 @@
 
 #include <config.h>
 
-#include <dune/common/test/testsuite.hh>
-
-#include <ikarus/utils/init.hh>
-
-using Dune::TestSuite;
-
 #include "testHelpers.hh"
 
 #include <array>
@@ -16,12 +10,16 @@ using Dune::TestSuite;
 #include <unordered_set>
 #include <vector>
 
+#include <dune/common/test/testsuite.hh>
 #include <dune/localfefunctions/manifolds/realTuple.hh>
 #include <dune/localfefunctions/manifolds/unitVector.hh>
 
 #include <Eigen/Core>
 
 #include <ikarus/utils/algorithms.hh>
+#include <ikarus/utils/init.hh>
+
+using Dune::TestSuite;
 
 static constexpr double tol = 1e-15;
 

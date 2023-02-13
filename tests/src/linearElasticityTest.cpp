@@ -3,19 +3,17 @@
 
 #include <config.h>
 
-#include <dune/common/test/testsuite.hh>
-
-#include <ikarus/utils/init.hh>
-
-using Dune::TestSuite;
-
 #include "testFEElement.hh"
 
+#include <dune/common/test/testsuite.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 
 #include <ikarus/finiteElements/mechanics/linearElastic.hh>
+#include <ikarus/utils/init.hh>
+
+using Dune::TestSuite;
 
 template <typename Basis>
 using LinearElasticElement = Ikarus::LinearElastic<Basis>;
