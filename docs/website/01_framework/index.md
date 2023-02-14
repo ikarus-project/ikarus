@@ -28,11 +28,11 @@ classDiagram
   Controlroutine <|-- IObservable
   NonlinearSolver <|-- IObservable
   Observer ..> IObservable
-  FErequirementsBuilder <-- Affordances
+  FERequirements <-- Affordances
   Affordances <-- ScalarAffordances
   Affordances <-- VectorAffordances
   Affordances <-- MatrixAffordances
-  ResultRequirementsBuilder <-- ResultType
+  ResultRequirements <-- ResultType
   
   
   class ScalarAffordances{
@@ -189,9 +189,7 @@ click Localfunction href "../localFunctions/"
 click Manifold href "../manifolds/" 
 click Localbasis href "../localBasis/" 
 click FERequirements href "../feRequirements/" 
-click FErequirementsBuilder href "../feRequirements/" 
 click ResultRequirements href "../feRequirements/#fe-result-requirements" 
-click ResultRequirementsBuilder href "../feRequirements/#fe-result-requirements" 
 click Affordances href "../feRequirements/" 
 click ResultType href "../feRequirements/" 
 click IObservable href "../observer/#iobservable" 
