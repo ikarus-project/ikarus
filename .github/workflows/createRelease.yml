@@ -67,9 +67,7 @@ jobs:
           cmake --build .build --target site
           mv site documentation-${{ github.ref_name }}
           tar -czf docs-${{ github.ref_name }}.tar.gz ./documentation-${{ github.ref_name }}
-          zip -9r  docs-${{ github.ref_name }}.zip    ./documentation-${{ github.ref_name }}
-          curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@docs-${{ github.ref_name }}.tar.gz -F 'jsonData={"description":"Ikarus examples","categories":["Documentation"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
-          curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@docs-${{ github.ref_name }}.zip    -F 'jsonData={"description":"Ikarus examples","categories":["Documentation"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"          
+          zip -9r  docs-${{ github.ref_name }}.zip    ./documentation-${{ github.ref_name }}       
 
       - name: Download, tag, push and save docker images for new release
         run: |
@@ -83,20 +81,8 @@ jobs:
           docker save ikarusproject/ikarus:${{ github.ref_name }}     > ikarus-docker-${{ github.ref_name }}.tar
           gzip -c9 ikarus-dev-docker-${{ github.ref_name }}.tar > ikarus-dev-docker-${{ github.ref_name }}.tar.gz
           gzip -c9 ikarus-docker-${{ github.ref_name }}.tar > ikarus-docker-${{ github.ref_name }}.tar.gz
-          curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@ikarus-dev-docker-${{ github.ref_name }}.tar.gz -F 'jsonData={"description":"The docker container to develop with Ikarus",     "categories":["Docker image"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
-          curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@ikarus-docker-${{ github.ref_name }}.tar.gz     -F 'jsonData={"description":"The docker container to run examples with Ikarus","categories":["Docker image"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
-#          curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@ikarus-dev-docker-${{ github.ref_name }}.zip    -F 'jsonData={"description":"The docker container to develop with Ikarus",     "categories":["Docker image"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
-#          curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@ikarus-docker-${{ github.ref_name }}.zip        -F 'jsonData={"description":"The docker container to run examples with Ikarus","categories":["Docker image"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
 
-      - name: Zip and upload current Ikarus to DARUS
-        run: |
-          mv repo ikarus-${{ github.ref_name }}
-          tar -czf ikarus-${{ github.ref_name }}.tar.gz ./ikarus-${{ github.ref_name }}
-          zip -9r  ikarus-${{ github.ref_name }}.zip    ./ikarus-${{ github.ref_name }}
-          curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@ikarus-${{ github.ref_name }}.tar.gz -F 'jsonData={"description":"Ikarus sources","categories":["Code"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
-          curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@ikarus-${{ github.ref_name }}.zip -F 'jsonData={"description":"Ikarus sources","categories":["Code"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
-
-      - name: Checkout ikarus-examples and create tag, push it, zip it and add it to DARUS
+      - name: Checkout ikarus-examples and create tag, push it, zip it
         run: |
           git clone https://github.com/ikarus-project/ikarus-examples.git
           cd ikarus-examples
@@ -106,8 +92,6 @@ jobs:
           mv ikarus-examples ikarus-examples-${{ github.ref_name }}
           tar -czf ikarus-examples-${{ github.ref_name }}.tar.gz ./ikarus-examples-${{ github.ref_name }}
           zip -9r  ikarus-examples-${{ github.ref_name }}.zip    ./ikarus-examples-${{ github.ref_name }}
-          curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@ikarus-examples-${{ github.ref_name }}.tar.gz -F 'jsonData={"description":"Ikarus examples","categories":["Code"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
-          curl -H X-Dataverse-key:${{ secrets.DARUS_TOKEN }} -X POST -F file=@ikarus-examples-${{ github.ref_name }}.zip -F 'jsonData={"description":"Ikarus examples","categories":["Code"], "restrict":"false", "tabIngest":"false"}' "https://darus.uni-stuttgart.de/api/datasets/:persistentId/add?persistentId=doi:10.18419/darus-3303"
 
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
@@ -123,7 +107,5 @@ jobs:
             ikarus-docker-${{ github.ref_name }}.tar.gz
             ikarus-examples-${{ github.ref_name }}.tar.gz
             ikarus-examples-${{ github.ref_name }}.zip
-#            ikarus-dev-docker-${{ github.ref_name }}.zip
-#            ikarus-docker-${{ github.ref_name }}.zip
 
 
