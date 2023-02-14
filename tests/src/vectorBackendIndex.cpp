@@ -12,10 +12,45 @@
 #include <dune/functions/functionspacebases/boundarydofs.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
+#include <dune/functions/functionspacebases/compositebasis.hh>
 #include <dune/functions/backends/istlvectorbackend.hh>
 #include <dune/grid/yaspgrid.hh>
+#include <dune/typetree/treecontainer.hh>
 
 using Dune::TestSuite;
+
+template<typename Basis, int size>
+size_t calcFlatindex(Basis& basis,Dune::ReservedVector<long unsigned int, size> globalIndex)
+{
+//  using Node = std::remove_cvref_t<decltype(basis.preBasis().subPreBasis())>::Node;
+//  Dune::ReservedVector<size_t,globalIndex.size>
+//  if constexpr  (not Node::isLeaf)
+    auto offset = basis.size({globalIndex})*globalIndex.back();
+    auto res = offset;
+    for (int i = 0; i < globalIndex.back(); ++i) {
+      res
+    }
+    globalIndex.pop_back();
+    if (not globalIndex.empty())
+    return offset+calcFlatindex(basis,globalIndex);
+    else
+     return offset;
+//  auto result = globalIndex[0];
+//  if constexpr (Node::isComposite) {
+//    Dune::Hybrid::forEach(std::make_index_sequence<Node::children>(), [&](auto i) {
+//      result *= calcFlatindex(basis.preBasis().subPreBasis(i)) * globalIndex[i];
+//      });
+//  } else if (Node::isPower) {
+//    for (int i = 0; i < Node::children; ++i) {
+//      result *=  basis.preBasis().subPreBasis(i).dimension * globalIndex[i];
+//    }
+//  }else if (Node::isLeaf)
+//  {
+//    result+=globalIndex[index];
+//  }
+//  return result;
+}
+
 
 auto multiIndexTest() {
   TestSuite t("SimpleAssemblersTest");
@@ -28,24 +63,50 @@ auto multiIndexTest() {
     auto gridView = grid->leafGridView();
 
     using namespace Dune::Functions::BasisFactory;
-    auto basis = makeBasis(gridView, power<2>(lagrange<1>(), BlockedInterleaved()));
+    auto basis = makeBasis(gridView, composite(power<2>(lagrange<1>(), BlockedLexicographic()),lagrange<2>(), BlockedLexicographic()));
 
 
   std::vector<double> values;
   values.resize(basis.dimension());
+  auto& indexSet = gridView.indexSet();
+
+  for (auto& vert : vertices(gridView)) {
+    values[indexSet.index(vert)]= indexSet.index(vert);
+  }
   auto valBackend =Dune::Functions::istlVectorBackend(values);
-  auto localView = basis.localView();
+//  valBackend.resize(basis);
+
+  std::vector<int> vec;
+  auto localView= basis.localView();
+//  auto ele0=elements(gridView).begin();
+//  localView.bind(*ele0);
+  auto vTest =Dune::TypeTree::makeTreeContainer<int>(localView.tree());
+//  Dune::TypeTree::forEachNode()
+
   for (int eleIndex=0; auto& ele :elements(gridView)) {
     localView.bind(ele);
     std::cout<<"Ele: "<<eleIndex<<std::endl;
-    const auto& fe = localView.tree().child(0).finiteElement();
+    using namespace Dune::Indices;
+    const auto& fe = localView.tree().child(_0,0).finiteElement();
     for (size_t i = 0; i < fe.size(); ++i) {
       for (int j = 0; j < 2; ++j) {
-        auto globalIndex=localView.index(localView.tree().child(j).localIndex(i));
-        std::cout<<"i: "<<i<<" j: "<<j<< " gI: "<<globalIndex<<std::endl;
-        auto valIterator = &valBackend[globalIndex];
-        std::cout<<valIterator-values.data()<<std::endl;
+        auto globalIndex=localView.index(localView.tree().child(_0,j).localIndex(i));
+        std::cout<<"i: "<<i<<" j: "<<j<< " gI: "<<globalIndex<<" "<<calcFlatindex(basis,globalIndex)<<std::endl;
+//        int res=0;
+//        static_assert(globalIndex.capacity()==3);
+//        auto vTest =Dune::TypeTree::makeTreeContainer<int>(localView.tree());
+//        auto globalFlatIndex= 0;
       }
+    }
+    const auto& fe2 = localView.tree().child(_1).finiteElement();
+    for (size_t i = 0; i < fe2.size(); ++i) {
+        auto globalIndex=localView.index(localView.tree().child(_1).localIndex(i));
+        std::cout<<"i: "<<i<< " gI: "<<globalIndex<<" "<<calcFlatindex(basis,globalIndex)<<std::endl;
+//        int res=0;
+//        static_assert(globalIndex.capacity()==3);
+//        auto vTest =Dune::TypeTree::makeTreeContainer<int>(localView.tree());
+//        auto globalFlatIndex= 0;
+
     }
 ++eleIndex;
   }
