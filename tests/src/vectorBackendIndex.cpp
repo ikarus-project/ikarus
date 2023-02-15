@@ -27,9 +27,9 @@ size_t calcFlatindex(Basis& basis,Dune::ReservedVector<long unsigned int, size> 
 //  if constexpr  (not Node::isLeaf)
     auto offset = basis.size({globalIndex})*globalIndex.back();
     auto res = offset;
-    for (int i = 0; i < globalIndex.back(); ++i) {
-      res
-    }
+//    for (int i = 0; i < globalIndex.back(); ++i) {
+//      res
+//    }
     globalIndex.pop_back();
     if (not globalIndex.empty())
     return offset+calcFlatindex(basis,globalIndex);
@@ -51,6 +51,19 @@ size_t calcFlatindex(Basis& basis,Dune::ReservedVector<long unsigned int, size> 
 //  return result;
 }
 
+template<typename Basis, int size>
+auto calcFlatindexS(Basis& basis,Dune::ReservedVector<long unsigned int, size> globalIndex)
+{
+    auto globalIndex2 = globalIndex;
+//    globalIndex.pop_back();
+    auto res = 0;
+    for (int i = 0; i < globalIndex2.back(); ++i) {
+     res+=basis.size({globalIndex})*globalIndex.back();
+     globalIndex.pop_back();
+    }
+    globalIndex.back() = res+globalIndex2.back();
+    return globalIndex;
+}
 
 auto multiIndexTest() {
   TestSuite t("SimpleAssemblersTest");
@@ -91,7 +104,7 @@ auto multiIndexTest() {
     for (size_t i = 0; i < fe.size(); ++i) {
       for (int j = 0; j < 2; ++j) {
         auto globalIndex=localView.index(localView.tree().child(_0,j).localIndex(i));
-        std::cout<<"i: "<<i<<" j: "<<j<< " gI: "<<globalIndex<<" "<<calcFlatindex(basis,globalIndex)<<std::endl;
+        std::cout<<"i: "<<i<<" j: "<<j<< " gI: "<<globalIndex<<" "<<calcFlatindexS(basis,globalIndex)<<std::endl;
 //        int res=0;
 //        static_assert(globalIndex.capacity()==3);
 //        auto vTest =Dune::TypeTree::makeTreeContainer<int>(localView.tree());
@@ -101,13 +114,16 @@ auto multiIndexTest() {
     const auto& fe2 = localView.tree().child(_1).finiteElement();
     for (size_t i = 0; i < fe2.size(); ++i) {
         auto globalIndex=localView.index(localView.tree().child(_1).localIndex(i));
-        std::cout<<"i: "<<i<< " gI: "<<globalIndex<<" "<<calcFlatindex(basis,globalIndex)<<std::endl;
+        std::cout<<"i: "<<i<< " gI: "<<globalIndex<<" "<<calcFlatindexS(basis,globalIndex)<<std::endl;
 //        int res=0;
 //        static_assert(globalIndex.capacity()==3);
 //        auto vTest =Dune::TypeTree::makeTreeContainer<int>(localView.tree());
 //        auto globalFlatIndex= 0;
 
     }
+    std::cout<<"Basis: "<<basis.size({0,0,0})<<std::endl;
+    std::cout<<"Basis: "<<basis.size({0,0})<<std::endl;
+    std::cout<<"Basis: "<<basis.size({0})<<std::endl;
 ++eleIndex;
   }
   return t;
