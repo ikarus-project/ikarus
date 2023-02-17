@@ -28,6 +28,7 @@ namespace Ikarus {
       }
     }
 
+    using IObserver::updateImpl;
     void updateImpl(ControlMessages, double) override {}
     void updateImpl(ControlMessages, const Eigen::VectorXd&) override {}
   };

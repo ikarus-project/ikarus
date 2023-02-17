@@ -261,19 +261,19 @@ namespace Eigen {
     /** \internal */
     template <typename Rhs, typename Dest>
     void _solve_vector_with_guess_impl(const Rhs& b, Dest& x) const {
-      typedef typename Base::MatrixWrapper MatrixWrapper;
-      typedef typename Base::ActualMatrixType ActualMatrixType;
+      typedef typename Base::MatrixWrapper MatrixWrapperBase;
+      typedef typename Base::ActualMatrixType ActualMatrixTypeBase;
       enum {
-        TransposeInput = (!MatrixWrapper::MatrixFree) && (UpLo == (Lower | Upper)) && (!MatrixType::IsRowMajor)
+        TransposeInput = (!MatrixWrapperBase::MatrixFree) && (UpLo == (Lower | Upper)) && (!MatrixType::IsRowMajor)
                          && (!NumTraits<Scalar>::IsComplex)
       };
-      typedef typename internal::conditional<TransposeInput, Transpose<const ActualMatrixType>,
-                                             ActualMatrixType const&>::type RowMajorWrapper;
-      EIGEN_STATIC_ASSERT(EIGEN_IMPLIES(MatrixWrapper::MatrixFree, UpLo == (Lower | Upper)),
+      typedef typename internal::conditional<TransposeInput, Transpose<const ActualMatrixTypeBase>,
+                                             ActualMatrixTypeBase const&>::type RowMajorWrapper;
+      EIGEN_STATIC_ASSERT(EIGEN_IMPLIES(MatrixWrapperBase::MatrixFree, UpLo == (Lower | Upper)),
                           MATRIX_FREE_CONJUGATE_GRADIENT_IS_COMPATIBLE_WITH_UPPER_UNION_LOWER_MODE_ONLY);
       typedef typename internal::conditional<
           UpLo == (Lower | Upper), RowMajorWrapper,
-          typename MatrixWrapper::template ConstSelfAdjointViewReturnType<UpLo>::Type>::type SelfAdjointWrapper;
+          typename MatrixWrapperBase::template ConstSelfAdjointViewReturnType<UpLo>::Type>::type SelfAdjointWrapper;
       //      TCGInfo<typename Dest::RealScalar> dummyInfo;
       m_iterations = Base::maxIterations();
       m_error      = Base::m_tolerance;
