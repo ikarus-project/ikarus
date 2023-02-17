@@ -123,17 +123,21 @@ namespace Ikarus {
     struct SolverBase {
       virtual ~SolverBase() = default;
       virtual void analyzePattern(const DenseMatrixType&) const {};
-      virtual void analyzePattern(const SparseMatrixType&)                                       = 0;
-      virtual void factorize(const DenseMatrixType&)                                             = 0;
-      virtual void factorize(const SparseMatrixType&)                                            = 0;
-      virtual void compute(const SparseMatrixType&)                                              = 0;
-      virtual void compute(const DenseMatrixType&)                                               = 0;
-      virtual void solve(Eigen::VectorX<ScalarType>& x, const Eigen::VectorX<ScalarType>&) const = 0;
-      virtual void solve(Eigen::MatrixX<ScalarType>& x, const Eigen::MatrixX<ScalarType>&) const = 0;
+      virtual void analyzePattern(const SparseMatrixType&)                                         = 0;
+      virtual void factorize(const DenseMatrixType&)                                               = 0;
+      virtual void factorize(const SparseMatrixType&)                                              = 0;
+      virtual void compute(const SparseMatrixType&)                                                = 0;
+      virtual void compute(const DenseMatrixType&)                                                 = 0;
+      virtual void solve(Eigen::VectorX<ScalarType>& x, const Eigen::VectorX<ScalarType>&) const   = 0;
+      virtual void solve(Eigen::MatrixX2<ScalarType>& x, const Eigen::MatrixX2<ScalarType>&) const = 0;
+      virtual void solve(Eigen::MatrixX3<ScalarType>& x, const Eigen::MatrixX3<ScalarType>&) const = 0;
+      virtual void solve(Eigen::MatrixX<ScalarType>& x, const Eigen::MatrixX<ScalarType>&) const   = 0;
     };
 
     template <typename Solver>
     struct SolverImpl : public SolverBase {
+      using SolverBase::analyzePattern;  // forward use of analyzePattern(DenseMatrixType)
+
       void analyzePattern(const SparseMatrixType& A) final {
         if constexpr (requires(Solver sol) { sol.analyzePattern(A); }) solver.analyzePattern(A);
       }
@@ -166,6 +170,14 @@ namespace Ikarus {
         x = solver.solve(b);
       }
 
+      void solve(Eigen::MatrixX2<ScalarType>& x, const Eigen::MatrixX2<ScalarType>& b) const final {
+        x = solver.solve(b);
+      }
+
+      void solve(Eigen::MatrixX3<ScalarType>& x, const Eigen::MatrixX3<ScalarType>& b) const final {
+        x = solver.solve(b);
+      }
+
       void solve(Eigen::MatrixX<ScalarType>& x, const Eigen::MatrixX<ScalarType>& b) const final {
         x = solver.solve(b);
       }
@@ -191,6 +203,8 @@ namespace Ikarus {
     inline void factorize(const MatrixType& A) { solverimpl->factorize(A); }
 
     void solve(Eigen::VectorX<ScalarType>& x, const Eigen::VectorX<ScalarType>& b) { solverimpl->solve(x, b); }
+    void solve(Eigen::MatrixX3<ScalarType>& x, const Eigen::MatrixX3<ScalarType>& b) { solverimpl->solve(x, b); }
+    void solve(Eigen::MatrixX2<ScalarType>& x, const Eigen::MatrixX2<ScalarType>& b) { solverimpl->solve(x, b); }
     void solve(Eigen::MatrixX<ScalarType>& x, const Eigen::MatrixX<ScalarType>& b) { solverimpl->solve(x, b); }
   };
 

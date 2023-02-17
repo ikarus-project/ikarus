@@ -93,7 +93,7 @@ namespace Ikarus {
       lambda           = lambdaDummy;
       x                = DDummy;
 
-      Eigen::MatrixX<double> residual2d, sol2d;
+      Eigen::MatrixX2<double> residual2d, sol2d;
       nonLinearOperator().updateAll();
       const auto& rx = nonLinearOperator().value();
       const auto& Ax = nonLinearOperator().derivative();
@@ -101,7 +101,6 @@ namespace Ikarus {
       Eigen::VectorXd deltaD;
       deltaD.resizeLike(rx);
       deltaD.setZero();
-      double deltalambda = 0.0;
 
       subsidiaryArgs.dfdDD.resizeLike(Fext0);
 
@@ -130,8 +129,8 @@ namespace Ikarus {
         subsidiaryFunction(subsidiaryArgs);
         this->notify(NonLinearSolverMessages::SCALARSUBSIDIARY_UPDATED, subsidiaryArgs.f);
 
-        deltalambda = (-subsidiaryArgs.f - subsidiaryArgs.dfdDD.dot(sol2d.col(0)))
-                      / (subsidiaryArgs.dfdDD.dot(sol2d.col(1)) + subsidiaryArgs.dfdDlambda);
+        const double deltalambda = (-subsidiaryArgs.f - subsidiaryArgs.dfdDD.dot(sol2d.col(0)))
+                                   / (subsidiaryArgs.dfdDD.dot(sol2d.col(1)) + subsidiaryArgs.dfdDlambda);
         deltaD = sol2d.col(0) + deltalambda * sol2d.col(1);
 
         updateFunction(x, deltaD);
