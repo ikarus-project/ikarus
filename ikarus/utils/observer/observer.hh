@@ -6,6 +6,8 @@
 
 #include <Eigen/Core>
 
+#include <ikarus/utils/makeEnum.hh>
+
 template <typename MessageType>
 class IObserver {
 public:
@@ -42,19 +44,10 @@ protected:
 };
 
 template <typename MessageType>
-MessageType& increment(MessageType& e) {
-  if (e == MessageType::END) {
-    DUNE_THROW(Dune::RangeError, "for MessageType& operator ++ (MessageType&)");
-  }
-  e = MessageType(static_cast<typename std::underlying_type<MessageType>::type>(e) + 1);
-  return e;
-}
-
-template <typename MessageType>
 class IObservable {
 public:
   IObservable() {
-    for (MessageType msg = MessageType::BEGIN; msg != MessageType::END; increment(msg))
+    for (MessageType msg = MessageType::BEGIN; msg != MessageType::END; Ikarus::increment(msg))
       messages_.push_back(msg);
   }
   virtual ~IObservable() = default;

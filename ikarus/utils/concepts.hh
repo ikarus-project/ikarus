@@ -123,5 +123,71 @@ namespace Ikarus {
     concept IsFunctorWithArgs = requires(Op op, Args... args) {
       op(args...);
     };
+
+    template <typename V>
+    concept EigenVector = static_cast<bool>(V::IsVectorAtCompileTime);
+
+#define MAKE_EIGEN_FIXED_VECTOR_CONCEPT(Size) \
+  template <typename V>                       \
+  concept EigenVector##Size                   \
+      = static_cast<bool>(V::IsVectorAtCompileTime) and static_cast<bool>(V::SizeAtCompileTime == Size);
+
+    MAKE_EIGEN_FIXED_VECTOR_CONCEPT(1);
+    MAKE_EIGEN_FIXED_VECTOR_CONCEPT(2);
+    MAKE_EIGEN_FIXED_VECTOR_CONCEPT(3);
+    MAKE_EIGEN_FIXED_VECTOR_CONCEPT(4);
+    MAKE_EIGEN_FIXED_VECTOR_CONCEPT(5);
+    MAKE_EIGEN_FIXED_VECTOR_CONCEPT(6);
+
+#define MAKE_EIGEN_FIXED_MATRIX_CONCEPT(Size1, Size2)                                                       \
+  template <typename M>                                                                                     \
+  concept EigenMatrix##Size1##Size2 = static_cast<bool>(std::remove_cvref_t<M>::RowsAtCompileTime == Size1) \
+                                      and static_cast<bool>(std::remove_cvref_t<M>::ColsAtCompileTime == Size2);
+
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(1, 1);
+
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(1, 2);
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(2, 2);
+
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(1, 3);
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(2, 3);
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(3, 2);
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(3, 3);
+
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(1, 4);
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(2, 4);
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(3, 4);
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(4, 2);
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(4, 3);
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(4, 4);
+
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(1, 5);
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(2, 5);
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(3, 5);
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(4, 5);
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(5, 2);
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(5, 3);
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(5, 4);
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(5, 5);
+
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(1, 6);
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(2, 6);
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(3, 6);
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(4, 6);
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(5, 6);
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(6, 2);
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(6, 3);
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(6, 4);
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(6, 5);
+    MAKE_EIGEN_FIXED_MATRIX_CONCEPT(6, 6);
+
+#define MAKE_EIGEN_FIXED_MATRIX_OR_VOIGT_CONCEPT(Size1, Size2) \
+  template <typename M>                                        \
+  concept EigenMatrixOrVoigtNotation##Size1 = EigenMatrix##Size1##Size1<M> or EigenVector##Size2<M>;
+
+    MAKE_EIGEN_FIXED_MATRIX_OR_VOIGT_CONCEPT(1, 1);
+    MAKE_EIGEN_FIXED_MATRIX_OR_VOIGT_CONCEPT(2, 3);
+    MAKE_EIGEN_FIXED_MATRIX_OR_VOIGT_CONCEPT(3, 6);
+
   }  // namespace Concepts
 }  // namespace Ikarus

@@ -43,6 +43,9 @@ namespace Ikarus::Std {
     return count;
   }
 
+  template <typename Fun, typename... Args>
+  using ReturnType = std::invoke_result_t<Fun, Args...>;
+
   template <typename T, typename Tuple>
   struct hasType;
 
@@ -69,6 +72,12 @@ namespace Ikarus::Std {
 
   template <template <typename, auto...> class Type, typename T, auto... N>
   struct IsSpecializationTypeAndNonTypes<Type, Type<T, N...>> : std::true_type {};
+
+  template <template <auto, typename...> class Type, typename>
+  struct IsSpecializationNonTypeAndTypes : std::false_type {};
+
+  template <template <auto, typename...> class Type, auto T, typename... N>
+  struct IsSpecializationNonTypeAndTypes<Type, Type<T, N...>> : std::true_type {};
 
   template <template <auto...> class Type, typename>
   struct IsSpecializationNonTypes : std::false_type {};

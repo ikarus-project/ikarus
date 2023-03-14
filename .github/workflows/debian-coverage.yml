@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ikarusproject/ikarus-dev:latest
-      options: --memory-swap="20g" --memory="20g" --cpus="2"
+      options: --memory-swap="20g" --memory="20g" --cpus="2" --user root
 
     steps:
       - uses: actions/checkout@v2
@@ -25,9 +25,6 @@ jobs:
         run: |
           echo $CI
           echo $GITHUB_ACTIONS
-      - name: Create Work Dir
-        run: |
-          update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 110 --slave /usr/bin/g++ g++ /usr/bin/g++-12 --slave /usr/bin/gcov gcov /usr/bin/gcov-12 --slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-12 --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-12
       - name: Build
         run: |
           mkdir cmake-build-debug

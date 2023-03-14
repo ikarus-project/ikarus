@@ -20,18 +20,19 @@
 #include <ikarus/finiteElements/feBases/powerBasisFE.hh>
 #include <ikarus/finiteElements/feRequirements.hh>
 #include <ikarus/finiteElements/feTraits.hh>
+#include <ikarus/finiteElements/mechanics/materials.hh>
 #include <ikarus/finiteElements/physicsHelper.hh>
 #include <ikarus/utils/eigenDuneTransformations.hh>
 #include <ikarus/utils/linearAlgebraHelper.hh>
 
 namespace Ikarus {
 
-  template <typename Basis>
+  template <typename Basis, typename Material>
   class NonLinearElasticityFE : public PowerBasisFE<Basis>,
-                                public Ikarus::AutoDiffFE<NonLinearElasticityFE<Basis>, Basis> {
+                                public Ikarus::AutoDiffFE<NonLinearElasticityFE<Basis, Material>, Basis> {
   public:
     using BaseDisp = PowerBasisFE<Basis>;  // Handles globalIndices function
-    using BaseAD   = AutoDiffFE<NonLinearElasticityFE<Basis>, Basis>;
+    using BaseAD   = AutoDiffFE<NonLinearElasticityFE, Basis>;
     using BaseAD::size;
     using GlobalIndex = typename PowerBasisFE<Basis>::GlobalIndex;
     friend BaseAD;
@@ -41,7 +42,7 @@ namespace Ikarus {
     using GridView          = typename Basis::GridView;
 
     template <typename VolumeLoad, typename NeumannBoundaryLoad>
-    NonLinearElasticityFE(Basis& globalBasis, const typename LocalView::Element& element, double emod, double nu,
+    NonLinearElasticityFE(Basis& globalBasis, const typename LocalView::Element& element, const Material& p_mat,
                           const BoundaryPatch<GridView>* neumannBoundary,
                           const NeumannBoundaryLoad& neumannBoundaryLoad, const VolumeLoad& p_volumeLoad)
         : BaseDisp(globalBasis, element),
@@ -50,8 +51,7 @@ namespace Ikarus {
           volumeLoad(p_volumeLoad),
           neumannBoundaryLoad_{neumannBoundaryLoad},
           neumannBoundary_{neumannBoundary},
-          emod_{emod},
-          nu_{nu} {
+          mat{p_mat} {
       localView_.bind(element);
       const int order = 2 * (localView_.tree().child(0).finiteElement().localBasis().order());
       localBasis      = Dune::CachedLocalBasis(localView_.tree().child(0).finiteElement().localBasis());
@@ -77,22 +77,19 @@ namespace Ikarus {
           disp[i][k2] = dx[i * 2 + k2] + d[localView_.index(localView_.tree().child(k2).localIndex(i))[0]];
 
       ScalarType energy = 0.0;
-      Eigen::Matrix3<ScalarType> C;
-      C.setZero();  // plane stress
-      C(0, 0) = C(1, 1) = 1;
-      C(0, 1) = C(1, 0) = nu_;
-      C(2, 2)           = (1 - nu_) / 2;
-      C *= emod_ / (1 - nu_ * nu_);
+
+      decltype(auto) matAD = mat.template rebind<ScalarType>();
+
       const auto geo = localView_.element().geometry();
       Dune::StandardLocalFunction uFunction(localBasis, disp, std::make_shared<const Geometry>(geo));
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
-        const auto u      = uFunction.evaluate(gpIndex);
-        const auto H      = uFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll), Dune::on(gridElement));
-        const auto E      = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
-        const auto EVoigt = toVoigt(E);
-
+        const auto u        = uFunction.evaluate(gpIndex);
+        const auto H        = uFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll), Dune::on(gridElement));
+        const auto E        = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
+        const auto EVoigt   = toVoigt(E);
+        auto internalEnergy = matAD.template storedEnergy<StrainTags::greenLagrangian>(EVoigt);
         Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(toEigen(gp.position()), lambda);
-        energy += (0.5 * EVoigt.dot(C * EVoigt) - u.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
+        energy += (internalEnergy - u.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
       }
       const int order = 2 * (localView_.tree().child(0).finiteElement().localBasis().order());
       // line or surface loads, i.e. neumann boundary
@@ -135,8 +132,7 @@ namespace Ikarus {
                                                           const double&)>
         neumannBoundaryLoad_;
     const BoundaryPatch<GridView>* neumannBoundary_;
-    double emod_;
-    double nu_;
+    Material mat;
   };
 
 }  // namespace Ikarus

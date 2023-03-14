@@ -9,23 +9,6 @@ project(
   LANGUAGES C CXX
 )
 
-add_definitions(
-  -Wall
-  -Wextra
-  -Wshadow
-  -Wnon-virtual-dtor
-  -pedantic
-  -Wpedantic
-  -Wimplicit-fallthrough
-  -Wnull-dereference
-  -Wcast-align
-  -Wunused
-  -Woverloaded-virtual
-  -Wmisleading-indentation
-  -Wduplicated-cond
-  -Wduplicated-branches
-  -m64
-)
 add_definitions(-DDUNE_LOCALFEFUNCTIONS_USE_EIGEN=1)
 add_definitions(-DDCMAKE_DISABLE_FIND_PACKAGE_Vc=1)
 add_definitions(-DCMAKE_DISABLE_FIND_PACKAGE_LATEX=1)
