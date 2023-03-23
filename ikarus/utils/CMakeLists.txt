@@ -6,6 +6,7 @@ install(
   FILES algorithms.hh
         autodiffHelper.hh
         concepts.hh
+        defaultFunctions.hh
         duneUtilities.hh
         eigenDuneTransformations.hh
         eigenSparseAddon.hh
@@ -13,8 +14,10 @@ install(
         functionSanityChecks.hh
         init.hh
         linearAlgebraHelper.hh
+        makeEnum.hh
         pathFollowingFunctions.hh
         polyfit.hh
+        tensorUtils.hh
         traits.hh
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/utils
 )

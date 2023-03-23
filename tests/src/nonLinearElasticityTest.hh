@@ -31,8 +31,8 @@
 
 using Dune::TestSuite;
 
-template <typename Grid>
-auto NonLinearElasticityLoadControlNRandTR() {
+template <typename Grid, typename Material>
+auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   TestSuite t("NonLinearElasticityLoadControlNRandTR" + Dune::className(Grid{}));
   auto grid     = createGrid<Grid>();
   auto gridView = grid->leafGridView();
@@ -42,8 +42,7 @@ auto NonLinearElasticityLoadControlNRandTR() {
   using namespace Dune::Functions::BasisFactory;
   auto basis = makeBasis(gridView, power<2>(lagrange<1>(), FlatInterleaved()));
 
-  auto g = basis.localView();
-  std::vector<Ikarus::NonLinearElasticityFE<decltype(basis)>> fes;
+  auto g          = basis.localView();
   auto volumeLoad = []([[maybe_unused]] auto& globalCoord, auto& lamb) {
     Eigen::Vector2d fext;
     fext.setZero();
@@ -51,8 +50,13 @@ auto NonLinearElasticityLoadControlNRandTR() {
     fext[0] = lamb;
     return fext;
   };
+
+  auto reducedMat = plainStress(mat, 1e-8);
+
+  std::vector<Ikarus::NonLinearElasticityFE<decltype(basis), decltype(reducedMat)>> fes;
+
   for (auto& element : elements(gridView))
-    fes.emplace_back(basis, element, 1000, 0.3, nullptr, nullptr, volumeLoad);
+    fes.emplace_back(basis, element, reducedMat, nullptr, nullptr, volumeLoad);
   auto basisP = std::make_shared<const decltype(basis)>(basis);
   Ikarus::DirichletValues dirichletValues(basisP);
   dirichletValues.fixBoundaryDOFs([&](auto& dirichletFlags, auto&& localIndex, auto&& localView, auto&& intersection) {
@@ -87,6 +91,8 @@ auto NonLinearElasticityLoadControlNRandTR() {
 
   auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, residualFunction, KFunction),
                                             parameter(d, lambda));
+  //  t.check(checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true})) << "checkGradient Failed";
+  //  t.check(checkHessian(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true})) << "checkHessian Failed";
 
   const double gradTol = 1e-8;
 
@@ -103,42 +109,42 @@ auto NonLinearElasticityLoadControlNRandTR() {
   vtkWriter->setFileNamePrefix("Test2Dsolid");
   vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 2);
 
-  auto lc = Ikarus::LoadControl(tr, 1, {0, 2000});
+  auto lc = Ikarus::LoadControl(tr, 1, {0, 50});
   lc.subscribeAll(vtkWriter);
   const auto controlInfo = lc.run();
   nonLinOp.template update<0>();
   const auto maxDisp = std::ranges::max(d);
   const double energyExpected
       = (std::is_same_v<Grid, Grids::Yasp>)
-            ? -1.4809559783564966e+03
-            : ((std::is_same_v<Grid, Grids::Alu>) ? -1.4842107484533601e+03
-                                                  : /* std::is_same_v<Grid, Grids::Iga> */ -8.1142552237939071e+02);
+            ? -2.9593431593780032962
+            : ((std::is_same_v<Grid, Grids::Alu>) ? -2.9530594665063669702
+                                                  : /* std::is_same_v<Grid, Grids::Iga> */ -1.4533281398929942529);
   const double maxDispExpected
       = (std::is_same_v<Grid, Grids::Yasp>)
-            ? 0.786567027108437
-            : ((std::is_same_v<Grid, Grids::Alu>) ? 0.78426066482258983
-                                                  : /* std::is_same_v<Grid, Grids::Iga> */ 0.615624125459537153);
+            ? 0.11291304159624337977
+            : ((std::is_same_v<Grid, Grids::Alu>) ? 0.1123397197762363714
+                                                  : /* std::is_same_v<Grid, Grids::Iga> */ 0.061647849558021668159);
   std::cout << std::setprecision(20) << nonLinOp.value() << std::endl;
-  t.check(Dune::FloatCmp::eq(energyExpected, nonLinOp.value()), "energyExpected == nonLinOp.value()")
-      << "energyExpected: " << energyExpected << "\nnonLinOp.value(): " << nonLinOp.value();
+  std::cout << "Maxdisp: " << maxDisp << std::endl;
+  if constexpr (std::is_same_v<Material, Ikarus::StVenantKirchhoff<>>) {
+    t.check(Dune::FloatCmp::eq(energyExpected, nonLinOp.value()), "energyExpected == nonLinOp.value()")
+        << "energyExpected: " << energyExpected << "\nnonLinOp.value(): " << nonLinOp.value();
 
-  t.check(std::abs(maxDispExpected - maxDisp) < 1e-12, "maxDispExpected-maxDisp") << "maxDispExpected: \n"
-                                                                                  << maxDispExpected << "\nmaxDisp: \n"
-                                                                                  << maxDisp;
+    t.check(std::abs(maxDispExpected - maxDisp) < 1e-12, "maxDispExpected-maxDisp")
+        << "maxDispExpected: \n"
+        << maxDispExpected << "\nmaxDisp: \n"
+        << maxDisp;
+  } else {  // using a Neohooke material yields a lower energy and larger displacements
+    t.check(Dune::FloatCmp::gt(energyExpected, nonLinOp.value()), "energyExpected > nonLinOp.value()")
+        << "energyExpected: " << energyExpected << "\nnonLinOp.value(): " << nonLinOp.value();
+
+    t.check(maxDispExpected < maxDisp, "maxDispExpected<maxDisp") << "maxDispExpected: \n"
+                                                                  << maxDispExpected << "\nmaxDisp: \n"
+                                                                  << maxDisp;
+  }
 
   nonLinOp.template update<1>();
   t.check(controlInfo.success, "Successful result");
   t.check(gradTol >= nonLinOp.derivative().norm(), "Gradient Tolerance should be larger than actual tolerance");
   return t;
-}
-
-int main(int argc, char** argv) {
-  Ikarus::init(argc, argv);
-  TestSuite t;
-
-  t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Alu>());
-  t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Yasp>());
-  t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Iga>());
-
-  return t.exit();
 }

@@ -6,6 +6,7 @@
 
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/linearSolver/linearSolver.hh>
+#include <ikarus/utils/defaultFunctions.hh>
 #include <ikarus/utils/linearAlgebraHelper.hh>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observerMessages.hh>
@@ -18,6 +19,7 @@ namespace Ikarus {
   };
 
   struct SolverInformation {
+    explicit operator bool() const { return success; }
     bool success{false};
     double residualnorm{0.0};
     int iterations{0};
@@ -30,32 +32,18 @@ namespace Ikarus {
     linearSolver.solve(vec, vec);
   };
 
-  template <typename NonLinearOperatorImpl,
-            typename LinearSolver = std::function<typename NonLinearOperatorImpl::ValueType(
-                const typename NonLinearOperatorImpl::ValueType&, const typename NonLinearOperatorImpl::ValueType&)>,
-            typename UpdateType
-            = std::conditional_t<std::is_floating_point_v<typename NonLinearOperatorImpl::template ParameterValue<0>>,
-                                 typename NonLinearOperatorImpl::template ParameterValue<0>, Eigen::VectorXd>>
+  template <typename NonLinearOperatorImpl, typename LinearSolver = SolverDefault,
+            typename UpdateFunctionType_ = UpdateDefault>
   class NewtonRaphson : public IObservable<NonLinearSolverMessages> {
   public:
-    using LinearSolverScalarFunctionType = std::function<typename NonLinearOperatorImpl::ValueType(
-        const typename NonLinearOperatorImpl::ValueType&, const typename NonLinearOperatorImpl::ValueType&)>;
-
     static constexpr bool isLinearSolver = LinearSolverC<LinearSolver, typename NonLinearOperatorImpl::DerivativeType,
                                                          typename NonLinearOperatorImpl::ValueType>;
 
     using ResultType         = typename NonLinearOperatorImpl::template ParameterValue<0>;
-    using UpdateFunctionType = std::function<void(ResultType&, const UpdateType&)>;
+    using UpdateFunctionType = UpdateFunctionType_;
 
-    explicit NewtonRaphson(
-        const NonLinearOperatorImpl& p_nonLinearOperator,
-        LinearSolver&& p_linearSolver = [](const typename NonLinearOperatorImpl::ValueType& a,
-                                           const typename NonLinearOperatorImpl::ValueType& b) { return a / b; },
-        std::function<void(ResultType&, const UpdateType&)> p_updateFunction =
-            [](ResultType& a, const UpdateType& b) {
-              using Ikarus::operator+=;
-              a += b;
-            })
+    explicit NewtonRaphson(const NonLinearOperatorImpl& p_nonLinearOperator, LinearSolver&& p_linearSolver = {},
+                           UpdateFunctionType_ p_updateFunction = {})
         : nonLinearOperator_{p_nonLinearOperator},
           linearSolver{std::move(p_linearSolver)},
           updateFunction{p_updateFunction} {
@@ -71,7 +59,10 @@ namespace Ikarus {
     template <typename SolutionType = NoPredictor>
     requires std::is_same_v<SolutionType, NoPredictor> || std::is_convertible_v<
         SolutionType, std::remove_cvref_t<typename NonLinearOperatorImpl::ValueType>>
-        SolverInformation solve(const SolutionType& dx_predictor = NoPredictor{}) {
+    [[nodiscard(
+        "The solve method returns information of the solution process. You should store this information and check if "
+        "it was successful")]] SolverInformation
+    solve(const SolutionType& dx_predictor = NoPredictor{}) {
       this->notify(NonLinearSolverMessages::INIT);
       SolverInformation solverInformation;
       solverInformation.success = true;
@@ -96,19 +87,19 @@ namespace Ikarus {
           dNorm      = norm(correction);
           updateFunction(x, correction);
         }
-        this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, dNorm);
+        this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, static_cast<double>(dNorm));
         this->notify(NonLinearSolverMessages::SOLUTION_CHANGED);
         nonLinearOperator().updateAll();
         rNorm = norm(rx);
-        this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, rNorm);
+        this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, static_cast<double>(rNorm));
         this->notify(NonLinearSolverMessages::ITERATION_ENDED);
         ++iter;
       }
       if (iter == settings.maxIter) solverInformation.success = false;
       solverInformation.iterations   = iter;
-      solverInformation.residualnorm = rNorm;
+      solverInformation.residualnorm = static_cast<double>(rNorm);
       if (solverInformation.success)
-        this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, iter, rNorm, settings.tol);
+        this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, iter, static_cast<double>(rNorm), settings.tol);
       return solverInformation;
     }
 
@@ -122,24 +113,10 @@ namespace Ikarus {
     NewtonRaphsonSettings settings;
   };
 
-  template <typename NonLinearOperatorImpl,
-            typename LinearSolver = std::function<typename NonLinearOperatorImpl::ValueType(
-                const typename NonLinearOperatorImpl::ValueType&, const typename NonLinearOperatorImpl::ValueType&)>,
-            typename UpdateType
-            = std::conditional_t<std::is_floating_point_v<typename NonLinearOperatorImpl::template ParameterValue<0>>,
-                                 typename NonLinearOperatorImpl::template ParameterValue<0>, Eigen::VectorXd>>
-  auto makeNewtonRaphson(
-      const NonLinearOperatorImpl& p_nonLinearOperator,
-      LinearSolver&& p_linearSolver = [](const typename NonLinearOperatorImpl::ValueType& a,
-                                         const typename NonLinearOperatorImpl::ValueType& b) { return a / b; },
-      std::function<void(typename NonLinearOperatorImpl::template ParameterValue<0>&, const UpdateType&)>
-          p_updateFunction
-      =
-          [](typename NonLinearOperatorImpl::template ParameterValue<0>& a, const UpdateType& b) {
-            using Ikarus::operator+=;
-            a += b;
-          }) {
-    return std::make_shared<NewtonRaphson<NonLinearOperatorImpl, LinearSolver, UpdateType>>(
+  template <typename NonLinearOperatorImpl, typename LinearSolver = SolverDefault, typename Update = UpdateDefault>
+  auto makeNewtonRaphson(const NonLinearOperatorImpl& p_nonLinearOperator, LinearSolver&& p_linearSolver = {},
+                         Update&& p_updateFunction = {}) {
+    return std::make_shared<NewtonRaphson<NonLinearOperatorImpl, LinearSolver, Update>>(
         p_nonLinearOperator, std::forward<LinearSolver>(p_linearSolver), std::move(p_updateFunction));
   }
 

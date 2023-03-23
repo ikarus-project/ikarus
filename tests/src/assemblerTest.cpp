@@ -34,20 +34,22 @@ auto SimpleAssemblersTest() {
     auto gridView = grid->leafGridView();
 
     using namespace Dune::Functions::BasisFactory;
-    auto basis = makeBasis(gridView, power<2>(lagrange<1>(), FlatInterleaved()));
+    auto basis        = makeBasis(gridView, power<2>(lagrange<1>(), FlatInterleaved()));
+    auto matParameter = Ikarus::toLamesFirstParameterAndShearModulus({.emodul = 1000, .nu = 0.3});
 
-    std::vector<Ikarus::NonLinearElasticityFE<decltype(basis)>> fes;
-    const double Emodul = 1000;
-    auto volumeLoad
-        = []([[maybe_unused]] const auto& globalCoord, const auto& lamb) {  // FIXME makeAnalytic globa function
-            Eigen::Vector2d fext;
-            fext.setZero();
-            fext[1] = 2 * lamb;
-            fext[0] = lamb;
-            return fext;
-          };
+    Ikarus::StVenantKirchhoff matSVK(matParameter);
+    auto reducedMat = plainStress(matSVK, 1e-8);
+    std::vector<Ikarus::NonLinearElasticityFE<decltype(basis), decltype(reducedMat)>> fes;
+
+    auto volumeLoad = []([[maybe_unused]] const auto& globalCoord, const auto& lamb) {
+      Eigen::Vector2d fext;
+      fext.setZero();
+      fext[1] = 2 * lamb;
+      fext[0] = lamb;
+      return fext;
+    };
     for (auto&& ge : elements(gridView))
-      fes.emplace_back(basis, ge, Emodul, 0.3, nullptr, nullptr, volumeLoad);
+      fes.emplace_back(basis, ge, reducedMat, nullptr, nullptr, volumeLoad);
 
     auto basisP = std::make_shared<const decltype(basis)>(basis);
     Ikarus::DirichletValues dirichletValues(basisP);

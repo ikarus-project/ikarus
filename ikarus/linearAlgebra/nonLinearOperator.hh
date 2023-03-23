@@ -7,8 +7,6 @@
 #include <dune/common/hybridutilities.hh>
 
 #include <ikarus/utils/traits.hh>
-template <typename Fun, typename... Args>
-using ReturnType = std::invoke_result_t<Fun, Args...>;
 
 namespace Ikarus {
 
@@ -85,7 +83,7 @@ namespace Ikarus {
    * The fcuntion are assumed to be derivatvies of each other. */
   template <typename... DerivativeArgs, typename... ParameterArgs>
   class NonLinearOperator<Impl::LinearAlgebraFunctions<DerivativeArgs...>, Impl::Parameter<ParameterArgs...>> {
-    using FunctionReturnValues = std::tuple<ReturnType<DerivativeArgs, ParameterArgs&...>...>;
+    using FunctionReturnValues = std::tuple<Ikarus::Std::ReturnType<DerivativeArgs, ParameterArgs&...>...>;
     using ParameterValues      = std::tuple<ParameterArgs...>;
 
   public:
@@ -156,10 +154,10 @@ namespace Ikarus {
     }
 
   private:
-    using FunctionReturnValuesWrapper = std::tuple<
-        std::conditional_t<std::is_reference_v<ReturnType<DerivativeArgs, ParameterArgs&...>>,
-                           std::reference_wrapper<std::remove_cvref_t<ReturnType<DerivativeArgs, ParameterArgs&...>>>,
-                           std::remove_cvref_t<ReturnType<DerivativeArgs, ParameterArgs&...>>>...>;
+    using FunctionReturnValuesWrapper = std::tuple<std::conditional_t<
+        std::is_reference_v<Ikarus::Std::ReturnType<DerivativeArgs, ParameterArgs&...>>,
+        std::reference_wrapper<std::remove_cvref_t<Ikarus::Std::ReturnType<DerivativeArgs, ParameterArgs&...>>>,
+        std::remove_cvref_t<Ikarus::Std::ReturnType<DerivativeArgs, ParameterArgs&...>>>...>;
     std::tuple<std::conditional_t<std::is_reference_v<DerivativeArgs>,
                                   std::reference_wrapper<std::remove_cvref_t<DerivativeArgs>>,
                                   std::remove_cvref_t<DerivativeArgs>>...>

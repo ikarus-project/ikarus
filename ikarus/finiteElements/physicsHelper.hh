@@ -6,25 +6,32 @@
 
 #include <Eigen/Core>
 namespace Ikarus {
-  template <typename ST, int size>
-  requires(size > 0 and size <= 3) auto toVoigt(const Eigen::Matrix<ST, size, size>& E) {
-    Eigen::Vector<ST, (size * (size + 1)) / 2> EVoigt;
-    EVoigt.setZero();
-    for (int i = 0; i < size; ++i)
-      EVoigt(i) = E(i, i);
 
-    if constexpr (size == 2)
-      EVoigt(2) = E(0, 1) * 2;
-    else if constexpr (size == 3) {
-      EVoigt(size)     = E(1, 2) * 2;
-      EVoigt(size + 1) = E(0, 2) * 2;
-      EVoigt(size + 2) = E(0, 1) * 2;
-    }
-    return EVoigt;
+  [[deprecated(
+      "These are hard-coded function you should use the material library Ikarus::LinearElasticity")]] inline Eigen::
+      Matrix3d
+      planeStressLinearElasticMaterialTangent(double E, double nu) {
+    Eigen::Matrix3d C;
+    C.setZero();
+    C(0, 0) = C(1, 1) = 1;
+    C(0, 1) = C(1, 0) = nu;
+    C(2, 2)           = (1 - nu) / 2;
+    C *= E / (1 - nu * nu);
+    return C;
   }
 
-  Eigen::Matrix3d planeStressLinearElasticMaterialTangent(double E, double nu);
-  Eigen::Matrix<double, 6, 6> linearElasticMaterialTangent3D(double E, double nu);
+  [[deprecated(
+      "These are hard-coded function you should use the material library: Ikarus::LinearElasticity")]] inline Eigen::
+      Matrix<double, 6, 6>
+      linearElasticMaterialTangent3D(double E, double nu) {
+    Eigen::Matrix<double, 6, 6> C;
+    C.setZero();
+    C(0, 0) = C(1, 1) = C(2, 2) = 1 - nu;
+    C(0, 1) = C(1, 0) = C(2, 0) = C(0, 2) = C(1, 2) = C(2, 1) = nu;
+    C(3, 3) = C(4, 4) = C(5, 5) = (1 - 2 * nu) / 2;
+    C *= E / ((1 + nu) * (1 - 2 * nu));
+    return C;
+  }
 
   template <typename LocalView>
   struct TraitsFromLocalView {
@@ -74,12 +81,25 @@ namespace Ikarus {
     double lambda;
   };
 
+  struct LamesFirstParameterAndShearModulus {
+    double lambda;
+    double mu;
+  };
+
+  template <typename MaterialParameter>
+  concept MaterialParameterTuple = std::is_same_v<MaterialParameter, YoungsModulusAndPoissonsRatio> or std::is_same_v<
+      MaterialParameter, YoungsModulusAndBulkModulus> or std::is_same_v<MaterialParameter,
+                                                                        YoungsModulusAndLamesFirstParameter> or std::
+      is_same_v<MaterialParameter, BulkModulusAndLamesFirstParameter> or std::is_same_v<
+          MaterialParameter, LamesFirstParameterAndShearModulus> or std::is_same_v<MaterialParameter,
+                                                                                   YoungsModulusAndShearModulus>;
+
   template <typename ValuePair>
   struct ConvertLameConstants {
     constexpr inline double toLamesFirstParameter() requires(
         !std::is_same_v<
             ValuePair,
-            YoungsModulusAndLamesFirstParameter> and !std::is_same_v<ValuePair, BulkModulusAndLamesFirstParameter>) {
+            YoungsModulusAndLamesFirstParameter> and !std::is_same_v<ValuePair, BulkModulusAndLamesFirstParameter> and !std::is_same_v<ValuePair, LamesFirstParameterAndShearModulus>) {
       if constexpr (std::is_same_v<ValuePair, YoungsModulusAndPoissonsRatio>) {
         const auto& E  = vp.emodul;
         const auto& nu = vp.nu;
@@ -112,11 +132,18 @@ namespace Ikarus {
         const auto& E      = vp.emodul;
         const auto& lambda = vp.lambda;
         return (E + 3.0 * lambda + calcR(vp)) / 6.0;
+      } else if constexpr (std::is_same_v<ValuePair, LamesFirstParameterAndShearModulus>) {
+        const auto& lambda = vp.lambda;
+        const auto& mu     = vp.mu;
+        return lambda + 2.0 * mu / 3.0;
       } else
         assert(false && "Your LameParameter request is not implemented");
     }
 
-    constexpr inline double toShearModulus() requires(!std::is_same_v<ValuePair, YoungsModulusAndShearModulus>) {
+    constexpr inline double toShearModulus() requires(
+        !std::is_same_v<
+            ValuePair,
+            YoungsModulusAndShearModulus> and !std::is_same_v<ValuePair, LamesFirstParameterAndShearModulus>) {
       if constexpr (std::is_same_v<ValuePair, YoungsModulusAndPoissonsRatio>) {
         const auto& E  = vp.emodul;
         const auto& nu = vp.nu;
@@ -158,6 +185,10 @@ namespace Ikarus {
         const auto& K      = vp.K;
         const auto& lambda = vp.lambda;
         return 3.0 * K - 2.0 * lambda;
+      } else if constexpr (std::is_same_v<ValuePair, LamesFirstParameterAndShearModulus>) {
+        const auto& lambda = vp.lambda;
+        const auto& mu     = vp.mu;
+        return lambda + 2.0 * mu;
       } else
         assert(false && "Your LameParameter request is not implemented");
     }
@@ -179,6 +210,10 @@ namespace Ikarus {
         const auto& K      = vp.K;
         const auto& lambda = vp.lambda;
         return lambda / (3 * K - lambda);
+      } else if constexpr (std::is_same_v<ValuePair, LamesFirstParameterAndShearModulus>) {
+        const auto& lambda = vp.lambda;
+        const auto& mu     = vp.mu;
+        return lambda / (2.0 * (lambda + mu));
       } else
         assert(false && "Your LameParameter request is not implemented");
     }
@@ -189,6 +224,10 @@ namespace Ikarus {
             YoungsModulusAndPoissonsRatio> and !std::is_same_v<ValuePair, YoungsModulusAndShearModulus> and !std::is_same_v<ValuePair, YoungsModulusAndBulkModulus> and !std::is_same_v<ValuePair, YoungsModulusAndLamesFirstParameter>) {
       if constexpr (std::is_same_v<ValuePair, BulkModulusAndLamesFirstParameter>) {
         return 9.0 * vp.K * (vp.K - vp.lambda) / (3.0 * vp.K - vp.lambda);
+      } else if constexpr (std::is_same_v<ValuePair, LamesFirstParameterAndShearModulus>) {
+        const auto& lambda = vp.lambda;
+        const auto& mu     = vp.mu;
+        return mu * (3.0 * lambda + 2.0 * mu) / (lambda + mu);
       } else
         assert(false && "Your LameParameter request is not implemented");
     }
@@ -200,6 +239,9 @@ namespace Ikarus {
 
     friend ConvertLameConstants<YoungsModulusAndBulkModulus> convertLameConstants(
         const YoungsModulusAndBulkModulus& p_vp);
+
+    friend ConvertLameConstants<LamesFirstParameterAndShearModulus> convertLameConstants(
+        const LamesFirstParameterAndShearModulus& p_vp);
 
     friend ConvertLameConstants<BulkModulusAndLamesFirstParameter> convertLameConstants(
         const BulkModulusAndLamesFirstParameter& p_vp);
@@ -213,10 +255,39 @@ namespace Ikarus {
     }
     ValuePair vp;
   };
-  ConvertLameConstants<YoungsModulusAndPoissonsRatio> convertLameConstants(const YoungsModulusAndPoissonsRatio& p_vp);
-  ConvertLameConstants<YoungsModulusAndShearModulus> convertLameConstants(const YoungsModulusAndShearModulus& p_vp);
-  ConvertLameConstants<YoungsModulusAndBulkModulus> convertLameConstants(const YoungsModulusAndBulkModulus& p_vp);
-  ConvertLameConstants<BulkModulusAndLamesFirstParameter> convertLameConstants(
-      const BulkModulusAndLamesFirstParameter& p_vp);
+  inline ConvertLameConstants<YoungsModulusAndPoissonsRatio> convertLameConstants(
+      const YoungsModulusAndPoissonsRatio& p_vp) {
+    return {p_vp};
+  }
+  inline ConvertLameConstants<YoungsModulusAndShearModulus> convertLameConstants(
+      const YoungsModulusAndShearModulus& p_vp) {
+    return {p_vp};
+  }
+  inline ConvertLameConstants<YoungsModulusAndBulkModulus> convertLameConstants(
+      const YoungsModulusAndBulkModulus& p_vp) {
+    return {p_vp};
+  }
+  inline ConvertLameConstants<LamesFirstParameterAndShearModulus> convertLameConstants(
+      const LamesFirstParameterAndShearModulus& p_vp) {
+    return {p_vp};
+  }
+  inline ConvertLameConstants<BulkModulusAndLamesFirstParameter> convertLameConstants(
+      const BulkModulusAndLamesFirstParameter& p_vp) {
+    return {p_vp};
+  }
+
+  inline auto toLamesFirstParameterAndShearModulus(const YoungsModulusAndPoissonsRatio& matParameter) {
+    auto lambda = convertLameConstants(matParameter).toLamesFirstParameter();
+    auto mu     = convertLameConstants(matParameter).toShearModulus();
+
+    return LamesFirstParameterAndShearModulus{.lambda = lambda, .mu = mu};
+  }
+
+  inline auto toYoungsModulusAndPoissonsRatio(const LamesFirstParameterAndShearModulus& matParameter) {
+    auto emod = convertLameConstants(matParameter).toYoungsModulus();
+    auto nu   = convertLameConstants(matParameter).toPoissonsRatio();
+
+    return YoungsModulusAndPoissonsRatio{.emodul = emod, .nu = nu};
+  }
 
 }  // namespace Ikarus

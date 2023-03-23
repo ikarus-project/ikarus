@@ -103,10 +103,8 @@ auto simple1DOperatorNewtonRhapsonWithWrongDerivativeTest() {
   return t;
 }
 
-Eigen::Vector3d fv(Eigen::Vector3d& x, Eigen::Matrix3d& A, Eigen::Vector3d& b) { return b + A * x; }
-Eigen::Matrix3d dfv([[maybe_unused]] Eigen::Vector3d& x, Eigen::Matrix3d& A, [[maybe_unused]] Eigen::Vector3d& b) {
-  return A;
-}
+Eigen::Vector3d fv(const Eigen::Vector3d& x, const Eigen::Matrix3d& A, const Eigen::Vector3d& b) { return b + A * x; }
+Eigen::Matrix3d dfv(Eigen::Vector3d&, const Eigen::Matrix3d& A, Eigen::Vector3d&) { return A; }
 
 auto fp(double x, int i) { return 0.5 * x * x + x * i - 2; }
 auto dfp(double x, int i) { return x + i; }
@@ -116,8 +114,8 @@ auto simple1DOperatorNewtonRhapsonTestWithParamter() {
   double x = 13;
 
   for (int i = 0; i < 3; ++i) {
-    auto fvLambda  = [](auto&& x_, int& i_) { return fp(x_, i_); };
-    auto dfvLambda = [](auto&& x_, int& i_) { return dfp(x_, i_); };
+    auto fvLambda  = [](auto&& x_, const int& i_) { return fp(x_, i_); };
+    auto dfvLambda = [](auto&& x_, const int& i_) { return dfp(x_, i_); };
     Ikarus::NonLinearOperator nonLinOp(linearAlgebraFunctions(fvLambda, dfvLambda), parameter(x, i));
 
     // Newton method test
