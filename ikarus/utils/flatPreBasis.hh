@@ -1,8 +1,9 @@
-// This file is taken from
-// https://gitlab.mn.tu-dresden.de/amdis/amdis-core/-/blob/master/amdis/functions/FlatPreBasis.hpp
-// their License is MIT License
-//
-// Copyright (c) 2023 AMDiS
+// Original File: https://gitlab.mn.tu-dresden.de/amdis/amdis-core/-/blob/master/amdis/functions/FlatPreBasis.hpp
+// SPDX-FileCopyrightText: 2023 Copyright (c)  AMDiS
+// SPDX-License-Identifier: MIT
+// Modifications:
+// SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 

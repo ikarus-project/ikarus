@@ -54,7 +54,7 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
   using namespace Ikarus;
 
   using namespace Dune::Functions::BasisFactory;
-  auto basis = Ikarus::makeBasis(gridView, preBasis);
+  auto basis     = Ikarus::makeBasis(gridView, preBasis);
   auto flatBasis = basis.flat();
 
   auto localView = flatBasis.localView();

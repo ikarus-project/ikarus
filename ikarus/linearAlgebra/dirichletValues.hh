@@ -22,8 +22,7 @@ namespace Ikarus {
     using FlagsType                     = std::vector<bool>;
     static constexpr int worldDimension = Basis::GridView::dimensionworld;
     using BackendType                   = decltype(Dune::Functions::istlVectorBackend(std::declval<FlagsType&>()));
-    explicit DirichletValues(const Basis& p_basis)
-        : basis_{p_basis}, dirichletFlagsBackend{dirichletFlags} {
+    explicit DirichletValues(const Basis& p_basis) : basis_{p_basis}, dirichletFlagsBackend{dirichletFlags} {
       dirichletFlagsBackend.resize(basis_);
       std::fill(dirichletFlags.begin(), dirichletFlags.end(), false);
       inhomogeneousBoundaryVectorDummy.setZero(basis_.size());
@@ -67,8 +66,10 @@ namespace Ikarus {
     const auto& basis() const { return basis_; }
 
     /* \brief Returns a boolean values, if the give multiIndex is constrained */
-    template<typename MultiIndex>
-    [[nodiscard]] bool isConstrained(const MultiIndex& multiIndex) const { return dirichletFlagsBackend[multiIndex]; }
+    template <typename MultiIndex>
+    [[nodiscard]] bool isConstrained(const MultiIndex& multiIndex) const {
+      return dirichletFlagsBackend[multiIndex];
+    }
 
     /* \brief Returns a boolean values, if the i-th degree of freedom is constrained */
     [[nodiscard]] bool isConstrained(std::size_t i) const { return dirichletFlags[i]; }

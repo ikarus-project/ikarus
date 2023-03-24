@@ -20,9 +20,8 @@ using Dune::TestSuite;
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/finiteElements/mechanics/nonLinearElasticityFE.hh>
 #include <ikarus/linearAlgebra/dirichletValues.hh>
-#include <ikarus/utils/init.hh>
 #include <ikarus/utils/basis.hh>
-
+#include <ikarus/utils/init.hh>
 
 auto SimpleAssemblersTest() {
   TestSuite t("SimpleAssemblersTest");
@@ -36,7 +35,7 @@ auto SimpleAssemblersTest() {
     auto gridView = grid->leafGridView();
 
     using namespace Dune::Functions::BasisFactory;
-    auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<1>()));
+    auto basis        = Ikarus::makeBasis(gridView, power<2>(lagrange<1>()));
     auto matParameter = Ikarus::toLamesFirstParameterAndShearModulus({.emodul = 1000, .nu = 0.3});
 
     Ikarus::StVenantKirchhoff matSVK(matParameter);

@@ -1,9 +1,7 @@
-//
-// Created by lex on 3/23/23.
-//
+// SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
-#ifndef IKARUS_BASIS_HH
-#define IKARUS_BASIS_HH
+#pragma once
 
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 
@@ -43,5 +41,3 @@ namespace Ikarus {
     return Basis(basis, flatBasis);
   }
 }  // namespace Ikarus
-
-#endif  // IKARUS_BASIS_HH

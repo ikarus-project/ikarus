@@ -28,12 +28,13 @@
 namespace Ikarus {
 
   template <typename Basis, typename Material>
-  class NonLinearElasticityFE : public PowerBasisFE<typename Basis::FlatBasis>,
-                                public Ikarus::AutoDiffFE<NonLinearElasticityFE<Basis, Material>, typename Basis::FlatBasis> {
+  class NonLinearElasticityFE
+      : public PowerBasisFE<typename Basis::FlatBasis>,
+        public Ikarus::AutoDiffFE<NonLinearElasticityFE<Basis, Material>, typename Basis::FlatBasis> {
   public:
     using FlatBasis = typename Basis::FlatBasis;
-    using BaseDisp = PowerBasisFE<FlatBasis>;  // Handles globalIndices function
-    using BaseAD   = Ikarus::AutoDiffFE<NonLinearElasticityFE<Basis, Material>, typename Basis::FlatBasis>;
+    using BaseDisp  = PowerBasisFE<FlatBasis>;  // Handles globalIndices function
+    using BaseAD    = Ikarus::AutoDiffFE<NonLinearElasticityFE<Basis, Material>, typename Basis::FlatBasis>;
     using BaseAD::size;
     friend BaseAD;
     using FERequirementType = FErequirements<Eigen::VectorXd>;
@@ -73,7 +74,8 @@ namespace Ikarus {
 
       for (auto i = 0U; i < fe.size(); ++i)
         for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
-          disp[i][k2] = dx[i * 2 + k2] + d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
+          disp[i][k2]
+              = dx[i * 2 + k2] + d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
 
       ScalarType energy = 0.0;
 

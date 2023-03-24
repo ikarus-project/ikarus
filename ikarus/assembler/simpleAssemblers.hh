@@ -95,7 +95,7 @@ namespace Ikarus {
   class VectorFlatAssembler : public ScalarAssembler<Basis, FEContainer> {
     using RequirementType = typename FEContainer::value_type::FERequirementType;
     using GlobalIndex     = typename FEContainer::value_type::GlobalIndex;
-    using VectorType                     = Eigen::VectorXd;
+    using VectorType      = Eigen::VectorXd;
 
   public:
     VectorFlatAssembler(const FEContainer &fes, const DirichletValues<Basis> &dirichletValues_)
@@ -107,9 +107,7 @@ namespace Ikarus {
 
     /** Calculates the vectorial quantity which is requested by fErequirements and returns a reference
      * This vector has a reduced size by the number of fixed degrees of freedom */
-    VectorType &getReducedVector(const RequirementType &fErequirements) {
-      return getReducedVectorImpl(fErequirements);
-    }
+    VectorType &getReducedVector(const RequirementType &fErequirements) { return getReducedVectorImpl(fErequirements); }
 
   private:
     VectorType &getVectorImpl(const RequirementType &fErequirements);
@@ -117,7 +115,6 @@ namespace Ikarus {
 
     Eigen::VectorXd vec{};
     Eigen::VectorXd vecRed{};
-
   };
 
   /** SparseFlatAssembler assembles matrix quantities using a flat basis Indexing strategy

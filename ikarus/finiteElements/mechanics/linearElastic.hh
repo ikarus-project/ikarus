@@ -31,8 +31,8 @@ namespace Ikarus {
   template <typename Basis>
   class LinearElastic : public PowerBasisFE<typename Basis::FlatBasis> {
   public:
-    using FlatBasis = typename Basis::FlatBasis;
-    using BasePowerFE               = PowerBasisFE<FlatBasis>;  // Handles globalIndices function
+    using FlatBasis              = typename Basis::FlatBasis;
+    using BasePowerFE            = PowerBasisFE<FlatBasis>;  // Handles globalIndices function
     using FERequirementType      = FErequirements<Eigen::VectorXd>;
     using ResultRequirementsType = ResultRequirements<Eigen::VectorXd>;
     using LocalView              = typename FlatBasis::LocalView;
@@ -48,7 +48,7 @@ namespace Ikarus {
                       VolumeLoad p_volumeLoad = nullptr, const BoundaryPatch<GridView>* neumannBoundary = nullptr,
                       NeumannBoundaryLoad p_neumannBoundaryLoad = nullptr)
         : BasePowerFE(globalBasis.flat(), element),
-//          BasePowerFE::localView(){globalBasis.flatBasis().localView()},
+          //          BasePowerFE::localView(){globalBasis.flatBasis().localView()},
           volumeLoad{Std::returnReferenceOrNulloptIfObjectIsNullPtr(p_volumeLoad)},
           neumannBoundaryLoad{Std::returnReferenceOrNulloptIfObjectIsNullPtr(p_neumannBoundaryLoad)},
           neumannBoundary_{neumannBoundary},
@@ -69,7 +69,7 @@ namespace Ikarus {
     }
 
   public:
-//    const auto& localView() const { return localView(); }
+    //    const auto& localView() const { return localView(); }
 
     auto getDisplacementFunction(const FERequirementType& par) const {
       const auto& d = par.getGlobalSolution(Ikarus::FESolutions::displacement);
@@ -253,7 +253,6 @@ namespace Ikarus {
         }
       }
     }
-
 
     Dune::CachedLocalBasis<
         std::remove_cvref_t<decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis())>>

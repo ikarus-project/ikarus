@@ -20,11 +20,10 @@
 #include <Eigen/Core>
 
 #include <ikarus/linearAlgebra/dirichletValues.hh>
+#include <ikarus/utils/basis.hh>
 #include <ikarus/utils/duneUtilities.hh>
 #include <ikarus/utils/eigenDuneTransformations.hh>
 #include <ikarus/utils/init.hh>
-#include <ikarus/utils/basis.hh>
-
 
 using Dune::TestSuite;
 

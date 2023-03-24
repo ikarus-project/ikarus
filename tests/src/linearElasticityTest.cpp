@@ -7,12 +7,12 @@
 
 #include <dune/common/test/testsuite.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
+#include <dune/functions/functionspacebases/compositebasis.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
-#include <dune/functions/functionspacebases/compositebasis.hh>
-#include <ikarus/utils/flatPreBasis.hh>
 
 #include <ikarus/finiteElements/mechanics/linearElastic.hh>
+#include <ikarus/utils/flatPreBasis.hh>
 #include <ikarus/utils/init.hh>
 
 using Dune::TestSuite;
@@ -25,10 +25,10 @@ int main(int argc, char** argv) {
   Dune::TestSuite t("LinearElasticity");
 
   using namespace Dune::Functions::BasisFactory;
-  auto firstOrderLagrangePrePower2Basis  = power<2>(lagrange<1>(), FlatInterleaved());
-  auto secondOrderLagrangePrePower2Basis = power<2>(lagrange<2>(), FlatInterleaved());
-  auto firstOrderLagrangePrePower3Basis  = power<3>(lagrange<1>(), FlatInterleaved());
-  auto secondOrderLagrangePrePower3Basis = power<3>(lagrange<2>(), FlatInterleaved());
+  auto firstOrderLagrangePrePower2Basis         = power<2>(lagrange<1>(), FlatInterleaved());
+  auto secondOrderLagrangePrePower2Basis        = power<2>(lagrange<2>(), FlatInterleaved());
+  auto firstOrderLagrangePrePower3Basis         = power<3>(lagrange<1>(), FlatInterleaved());
+  auto secondOrderLagrangePrePower3Basis        = power<3>(lagrange<2>(), FlatInterleaved());
   auto secondOrderLagrangePrePower3BasisBlocked = power<3>(lagrange<2>());
 
   t.subTest(testFEElement<LinearElasticElement, 2>(firstOrderLagrangePrePower2Basis, "LinearElastic", true,
