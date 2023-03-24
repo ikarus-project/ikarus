@@ -29,9 +29,9 @@ namespace Ikarus {
       vecLocal.setZero(fe.size());
       dofs.resize(0);
       fe.calculateVector(fErequirements, vecLocal);
-      fe.globalIndices(dofs);
+      fe.globalFlatIndices(dofs);
       for (int i = 0; auto id : dofs) {
-        vecBackend(id) += vecLocal(i);
+        vec(id[0]) += vecLocal(i);
         ++i;
       }
     }
@@ -53,7 +53,7 @@ namespace Ikarus {
       vecLocal.setZero(fe.size());
       dofs.resize(0);
       fe.calculateVector(fErequirements, vecLocal);
-      fe.globalIndices(dofs);
+      fe.globalFlatIndices(dofs);
       assert(static_cast<long int>(dofs.size()) == vecLocal.size() && "The returned vector has wrong rowSize!");
       for (int i = 0; auto &&dofIndex : dofs) {
         if (this->isConstrained(dofIndex)) {
@@ -106,7 +106,7 @@ namespace Ikarus {
       A.setZero(fe.size(), fe.size());
       dofs.resize(0);
       fe.calculateMatrix(fErequirements, A);
-      fe.globalIndices(dofs);
+      fe.globalFlatIndices(dofs);
       assert(dofs.size() == static_cast<unsigned>(A.rows()) && "The returned matrix has wrong rowSize!");
       assert(dofs.size() == static_cast<unsigned>(A.cols()) && "The returned matrix has wrong colSize!");
       Eigen::Index linearIndex = 0;
@@ -134,7 +134,7 @@ namespace Ikarus {
     std::vector<GlobalIndex> dofs;
     for (auto &&fe : this->finiteElements()) {
       dofs.resize(0);
-      fe.globalIndices(dofs);
+      fe.globalFlatIndices(dofs);
       for (auto idi : dofs)
         for (auto idj : dofs)
           vectorOfTriples.emplace_back(idi[0], idj[0], 0.0);
@@ -154,7 +154,7 @@ namespace Ikarus {
     std::vector<GlobalIndex> dofs;
     for (auto &fe : this->finiteElements()) {
       dofs.resize(0);
-      fe.globalIndices(dofs);
+      fe.globalFlatIndices(dofs);
       for (auto r = 0U; r < dofs.size(); ++r) {
         if (this->isConstrained(dofs[r][0]))
           continue;
@@ -177,7 +177,7 @@ namespace Ikarus {
     std::vector<GlobalIndex> dofs;
     for (auto &&fe : this->finiteElements()) {
       dofs.resize(0);
-      fe.globalIndices(dofs);
+      fe.globalFlatIndices(dofs);
       elementLinearIndices.emplace_back(Dune::power(dofs.size(),2));
       for (Eigen::Index linearIndexOfElement = 0; auto &&c : dofs)
         for (auto &&r : dofs)
@@ -191,7 +191,7 @@ namespace Ikarus {
     std::vector<GlobalIndex> dofs;
     for (auto &&fe : this->finiteElements()) {
       dofs.resize(0);
-      fe.globalIndices(dofs);
+      fe.globalFlatIndices(dofs);
       elementLinearReducedIndices.emplace_back();
       for (auto r = 0U; r < dofs.size(); ++r) {
         if (this->isConstrained(dofs[r][0])) continue;
@@ -214,7 +214,7 @@ namespace Ikarus {
       matLocal.setZero(fe.size(), fe.size());
       dofs.resize(0);
       fe.calculateMatrix(fErequirements, matLocal);
-      fe.globalIndices(dofs);
+      fe.globalFlatIndices(dofs);
       assert(dofs.size() == static_cast<unsigned>(matLocal.rows()) && "The returned matrix has wrong rowSize!");
       assert(dofs.size() == static_cast<unsigned>(matLocal.cols()) && "The returned matrix has wrong colSize!");
       for (auto r = 0U; r < dofs.size(); ++r) {
@@ -243,7 +243,7 @@ namespace Ikarus {
       matLocal.setZero(fe.size(), fe.size());
       dofs.resize(0);
       fe.calculateMatrix(fErequirements, matLocal);
-      fe.globalIndices(dofs);
+      fe.globalFlatIndices(dofs);
       for (auto i = 0; auto idi : dofs) {
         for (auto j = 0; auto idj : dofs) {
           mat(idi[0], idj[0]) += matLocal(i, j);

@@ -9,6 +9,8 @@
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
+#include <dune/functions/functionspacebases/compositebasis.hh>
+#include <ikarus/utils/flatPreBasis.hh>
 
 #include <ikarus/finiteElements/mechanics/linearElastic.hh>
 #include <ikarus/utils/init.hh>
@@ -27,6 +29,7 @@ int main(int argc, char** argv) {
   auto secondOrderLagrangePrePower2Basis = power<2>(lagrange<2>(), FlatInterleaved());
   auto firstOrderLagrangePrePower3Basis  = power<3>(lagrange<1>(), FlatInterleaved());
   auto secondOrderLagrangePrePower3Basis = power<3>(lagrange<2>(), FlatInterleaved());
+  auto secondOrderLagrangePrePower3BasisBlocked = power<3>(lagrange<2>());
 
   t.subTest(testFEElement<LinearElasticElement, 2>(firstOrderLagrangePrePower2Basis, "LinearElastic", true,
                                                    checkGradientFunctor, checkHessianFunctor, checkJacobianFunctor));
@@ -35,6 +38,8 @@ int main(int argc, char** argv) {
   t.subTest(testFEElement<LinearElasticElement, 3>(firstOrderLagrangePrePower3Basis, "LinearElastic", true,
                                                    checkGradientFunctor, checkHessianFunctor, checkJacobianFunctor));
   t.subTest(testFEElement<LinearElasticElement, 3>(secondOrderLagrangePrePower3Basis, "LinearElastic", true,
+                                                   checkGradientFunctor, checkHessianFunctor, checkJacobianFunctor));
+  t.subTest(testFEElement<LinearElasticElement, 3>(secondOrderLagrangePrePower3BasisBlocked, "LinearElastic", true,
                                                    checkGradientFunctor, checkHessianFunctor, checkJacobianFunctor));
   t.subTest(testFEElement<LinearElasticElement, 2>(firstOrderLagrangePrePower2Basis, "LinearElastic", false,
                                                    checkCauchyStressFunctor));

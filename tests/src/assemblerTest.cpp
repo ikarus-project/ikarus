@@ -21,6 +21,8 @@ using Dune::TestSuite;
 #include <ikarus/finiteElements/mechanics/nonLinearElasticityFE.hh>
 #include <ikarus/linearAlgebra/dirichletValues.hh>
 #include <ikarus/utils/init.hh>
+#include <ikarus/utils/basis.hh>
+
 
 auto SimpleAssemblersTest() {
   TestSuite t("SimpleAssemblersTest");
@@ -34,7 +36,7 @@ auto SimpleAssemblersTest() {
     auto gridView = grid->leafGridView();
 
     using namespace Dune::Functions::BasisFactory;
-    auto basis        = makeBasis(gridView, power<2>(lagrange<1>(), FlatInterleaved()));
+    auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<1>()));
     auto matParameter = Ikarus::toLamesFirstParameterAndShearModulus({.emodul = 1000, .nu = 0.3});
 
     Ikarus::StVenantKirchhoff matSVK(matParameter);
@@ -52,7 +54,7 @@ auto SimpleAssemblersTest() {
       fes.emplace_back(basis, ge, reducedMat, nullptr, nullptr, volumeLoad);
 
     auto basisP = std::make_shared<const decltype(basis)>(basis);
-    Ikarus::DirichletValues dirichletValues(basisP);
+    Ikarus::DirichletValues dirichletValues(basisP->flat());
     dirichletValues.fixDOFs([](auto& basis_, auto& dirichletFlags) {
       Dune::Functions::forEachBoundaryDOF(basis_, [&](auto&& indexGlobal) { dirichletFlags[indexGlobal] = true; });
     });
@@ -60,7 +62,7 @@ auto SimpleAssemblersTest() {
     Ikarus::SparseFlatAssembler sparseFlatAssembler(fes, dirichletValues);
     Ikarus::DenseFlatAssembler denseFlatAssembler(fes, dirichletValues);
 
-    Eigen::VectorXd d(basis.size());
+    Eigen::VectorXd d(basis.flat().size());
     d.setRandom();
     Ikarus::FErequirements req = Ikarus::FErequirements()
                                      .insertGlobalSolution(Ikarus::FESolutions::displacement, d)

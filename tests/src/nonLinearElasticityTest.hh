@@ -27,6 +27,7 @@
 #include <ikarus/utils/algorithms.hh>
 #include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/utils/init.hh>
+#include <ikarus/utils/basis.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 
 using Dune::TestSuite;
@@ -40,9 +41,10 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   using namespace Ikarus;
 
   using namespace Dune::Functions::BasisFactory;
-  auto basis = makeBasis(gridView, power<2>(lagrange<1>(), FlatInterleaved()));
+  auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<1>()));
+//  auto flatBasis = basis.flat();
 
-  auto g          = basis.localView();
+//  auto g          = basis.localView();
   auto volumeLoad = []([[maybe_unused]] auto& globalCoord, auto& lamb) {
     Eigen::Vector2d fext;
     fext.setZero();
@@ -58,7 +60,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   for (auto& element : elements(gridView))
     fes.emplace_back(basis, element, reducedMat, nullptr, nullptr, volumeLoad);
   auto basisP = std::make_shared<const decltype(basis)>(basis);
-  Ikarus::DirichletValues dirichletValues(basisP);
+  Ikarus::DirichletValues dirichletValues(basisP->flat());
   dirichletValues.fixBoundaryDOFs([&](auto& dirichletFlags, auto&& localIndex, auto&& localView, auto&& intersection) {
     if (std::abs(intersection.geometry().center()[1]) < 1e-8) dirichletFlags[localView.index(localIndex)] = true;
   });
@@ -66,7 +68,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   auto sparseAssembler = SparseFlatAssembler(fes, dirichletValues);
 
   Eigen::VectorXd d;
-  d.setZero(basis.size());
+  d.setZero(basis.flat().size());
   double lambda = 0.0;
 
   auto req = FErequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
@@ -105,7 +107,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
              .rho_reg   = 1e8,
              .Delta0    = 1});
 
-  auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<decltype(basis)>>(basis, d, 2);
+  auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(basis.flat(), d, 2);
   vtkWriter->setFileNamePrefix("Test2Dsolid");
   vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 2);
 

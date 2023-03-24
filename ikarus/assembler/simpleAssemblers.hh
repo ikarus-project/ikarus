@@ -96,7 +96,6 @@ namespace Ikarus {
     using RequirementType = typename FEContainer::value_type::FERequirementType;
     using GlobalIndex     = typename FEContainer::value_type::GlobalIndex;
     using VectorType                     = Eigen::VectorXd;
-    using BackendType                   = decltype(Dune::Functions::istlVectorBackend(std::declval<VectorType&>()));
 
   public:
     VectorFlatAssembler(const FEContainer &fes, const DirichletValues<Basis> &dirichletValues_)
@@ -117,7 +116,6 @@ namespace Ikarus {
     VectorType &getReducedVectorImpl(const RequirementType &fErequirements);
 
     Eigen::VectorXd vec{};
-    BackendType vecBackend;
     Eigen::VectorXd vecRed{};
 
   };

@@ -23,6 +23,8 @@
 #include <ikarus/utils/duneUtilities.hh>
 #include <ikarus/utils/eigenDuneTransformations.hh>
 #include <ikarus/utils/init.hh>
+#include <ikarus/utils/basis.hh>
+
 
 using Dune::TestSuite;
 
@@ -37,17 +39,19 @@ auto dirichletBCTest() {
   auto gridView = grid->leafGridView();
 
   using namespace Dune::Functions::BasisFactory;
-  auto basis = Ikarus::makeConstSharedBasis(gridView, power<2>(lagrange<1>(), FlatInterleaved()));
+  auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<1>()));
 
-  Ikarus::DirichletValues dirichletValues1(basis);
+  auto basisP = std::make_shared<const decltype(basis)>(basis);
+
+  Ikarus::DirichletValues dirichletValues1(basisP->flat());
   dirichletValues1.fixDOFs([](auto& basis_, auto& dirichFlags) {
     Dune::Functions::forEachBoundaryDOF(basis_, [&](auto&& indexGlobal) { dirichFlags[indexGlobal] = true; });
   });
 
-  Ikarus::DirichletValues dirichletValues2(basis);
+  Ikarus::DirichletValues dirichletValues2(basisP->flat());
   dirichletValues2.fixBoundaryDOFs([](auto& dirichFlags, auto&& indexGlobal) { dirichFlags[indexGlobal] = true; });
 
-  for (std::size_t i = 0; i < basis->size(); ++i)
+  for (std::size_t i = 0; i < basisP->flat().size(); ++i)
     t.check(dirichletValues1.isConstrained(i) == dirichletValues2.isConstrained(i))
         << "Different dirichlet value creations didn't provide the same result. Index: i=" << i;
 
@@ -89,7 +93,7 @@ auto dirichletBCTest() {
           << "Values differ dispDerivs[i]: " << dispDerivs[globalIndex[0]];
     }
   };
-  Dune::Functions::forEachBoundaryDOF(*basis, lambdaCheck);
+  Dune::Functions::forEachBoundaryDOF(basisP->flat(), lambdaCheck);
 
   // Check that we can store lambda from python
   std::string inhomogeneousDisplacementFunction
@@ -124,7 +128,7 @@ auto dirichletBCTest() {
     return Dune::toEigen(pythonFunc(globalCoord, lambda_));
   };
   //
-  Ikarus::DirichletValues dirichletValues3(basis);
+  Ikarus::DirichletValues dirichletValues3(basisP->flat());
   dirichletValues3.fixBoundaryDOFs([](auto& dirichFlags, auto&& indexGlobal) { dirichFlags[indexGlobal] = true; });
 
   Eigen::VectorXd disps2, dispDerivs2;
