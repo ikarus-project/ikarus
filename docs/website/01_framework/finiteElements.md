@@ -23,7 +23,7 @@ void evaluateMatrix(const FErequirements& req, MatrixType& A);
 void calculateLocalSystem(const FErequirements& req, MatrixType& A, VectorType& b);
 void calculateAt(const Resultrequirements& req, const Eigen::Vector<double, Traits::mydim>& local,
                      ResultTypeMap<ScalarType>& result);
-void globalIndices(std::vector<GlobalIndex>& globalFlatIndices);
+void globalFlatIndices(std::vector<GlobalIndex>& indices);
 ```
 
 Please refer to the [FE requirements](feRequirements.md) to learn more about the finite element requirements and result requirements. 
@@ -62,7 +62,7 @@ if(req.isResultRequested( ResultType::cauchyStress)) {
     Thus, the maximum size of `result` is limited to a 3x3 matrix. This is used to circumvent dynamic memory allocations again.
 
 
-The last method is the `globalFlatIndices`. It is used to write a finite element's global indices to the output parameter `globalFlatIndices`.
+The last method is the `globalFlatIndices`. It is used to write a finite element's global indices to the output parameter `indices`.
 This information originates from a `basis` object. See existing implementations for details.
 
 ## Linear and Non-linear Elasticity
