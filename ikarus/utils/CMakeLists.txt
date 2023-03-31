@@ -5,12 +5,14 @@
 install(
   FILES algorithms.hh
         autodiffHelper.hh
+        basis.hh
         concepts.hh
         defaultFunctions.hh
         duneUtilities.hh
         eigenDuneTransformations.hh
         eigenSparseAddon.hh
         findLineSegment.hh
+        flatPreBasis.hh
         functionSanityChecks.hh
         init.hh
         linearAlgebraHelper.hh
