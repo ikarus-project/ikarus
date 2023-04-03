@@ -13,6 +13,7 @@
 #include <ikarus/finiteElements/feRequirements.hh>
 #include <ikarus/linearAlgebra/dirichletValues.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
+#include <ikarus/utils/basis.hh>
 
 /** These tests test your element on some gridElement with some basis
  *
@@ -53,9 +54,10 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
   using namespace Ikarus;
 
   using namespace Dune::Functions::BasisFactory;
-  auto basis = makeBasis(gridView, preBasis);
+  auto basis     = Ikarus::makeBasis(gridView, preBasis);
+  auto flatBasis = basis.flat();
 
-  auto localView = basis.localView();
+  auto localView = flatBasis.localView();
 
   auto volumeLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
     VectorType fext;
@@ -87,12 +89,12 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
   fes.emplace_back(basis, *element, youngsModulus, poissonsRatio, &volumeLoad, &neumannBoundary, &neumannBoundaryLoad);
   auto basisP = std::make_shared<const decltype(basis)>(basis);
 
-  Ikarus::DirichletValues dirichletValues(basisP);
+  Ikarus::DirichletValues dirichletValues(basisP->flat());
   auto& fe             = fes[0];
   auto sparseAssembler = SparseFlatAssembler(fes, dirichletValues);
 
   typename FEElementType::FERequirementType::SolutionVectorType d;
-  d.setRandom(basis.size());
+  d.setRandom(flatBasis.size());
 
   double lambda = 7.3;
 
@@ -103,13 +105,13 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
   Eigen::MatrixXd stiffnessmatrix;
 
   auto fvLambda = [&](auto&& d_) -> auto {
-    forces.setZero(basis.localView().maxSize());
+    forces.setZero(flatBasis.localView().maxSize());
     requirements.insertGlobalSolution(Ikarus::FESolutions::displacement, d_);
     return sparseAssembler.getScalar(requirements);
   };
 
   auto dfvLambda = [&](auto&& d_) -> auto& {
-    forces.setZero(basis.localView().maxSize());
+    forces.setZero(flatBasis.localView().maxSize());
     requirements.insertGlobalSolution(Ikarus::FESolutions::displacement, d_);
     return sparseAssembler.getVector(requirements);
   };

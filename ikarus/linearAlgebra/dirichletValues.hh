@@ -22,11 +22,10 @@ namespace Ikarus {
     using FlagsType                     = std::vector<bool>;
     static constexpr int worldDimension = Basis::GridView::dimensionworld;
     using BackendType                   = decltype(Dune::Functions::istlVectorBackend(std::declval<FlagsType&>()));
-    explicit DirichletValues(std::shared_ptr<const Basis>& p_basis)
-        : basis_{p_basis}, dirichletFlagsBackend{dirichletFlags} {
-      dirichletFlagsBackend.resize(*basis_);
+    explicit DirichletValues(const Basis& p_basis) : basis_{p_basis}, dirichletFlagsBackend{dirichletFlags} {
+      dirichletFlagsBackend.resize(basis_);
       std::fill(dirichletFlags.begin(), dirichletFlags.end(), false);
-      inhomogeneousBoundaryVectorDummy.setZero(basis_->size());
+      inhomogeneousBoundaryVectorDummy.setZero(basis_.size());
     }
 
     /**
@@ -39,16 +38,16 @@ namespace Ikarus {
     void fixBoundaryDOFs(F&& f) {
       if constexpr (Concepts::IsFunctorWithArgs<F, BackendType, typename Basis::MultiIndex>) {
         auto lambda = [&](auto&& indexGlobal) { f(dirichletFlagsBackend, indexGlobal); };
-        Dune::Functions::forEachBoundaryDOF(*basis_, lambda);
+        Dune::Functions::forEachBoundaryDOF(basis_, lambda);
       } else if constexpr (Concepts::IsFunctorWithArgs<F, BackendType, int, typename Basis::LocalView>) {
         auto lambda = [&](auto&& localIndex, auto&& localView) { f(dirichletFlagsBackend, localIndex, localView); };
-        Dune::Functions::forEachBoundaryDOF(*basis_, lambda);
+        Dune::Functions::forEachBoundaryDOF(basis_, lambda);
       } else if constexpr (Concepts::IsFunctorWithArgs<F, BackendType, int, typename Basis::LocalView,
                                                        typename Basis::GridView::Intersection>) {
         auto lambda = [&](auto&& localIndex, auto&& localView, auto&& intersection) {
           f(dirichletFlagsBackend, localIndex, localView, intersection);
         };
-        Dune::Functions::forEachBoundaryDOF(*basis_, lambda);
+        Dune::Functions::forEachBoundaryDOF(basis_, lambda);
       }
     }
 
@@ -60,11 +59,17 @@ namespace Ikarus {
      */
     template <typename F>
     void fixDOFs(F&& f) {
-      f(*basis_, dirichletFlagsBackend);
+      f(basis_, dirichletFlagsBackend);
     }
 
-    /* \brief Returns the local basis object */
-    const auto& basis() const { return *basis_; }
+    /* \brief Returns the global basis object */
+    const auto& basis() const { return basis_; }
+
+    /* \brief Returns a boolean values, if the give multiIndex is constrained */
+    template <typename MultiIndex>
+    requires(not std::integral<MultiIndex>) [[nodiscard]] bool isConstrained(const MultiIndex& multiIndex) const {
+      return dirichletFlagsBackend[multiIndex];
+    }
 
     /* \brief Returns a boolean values, if the i-th degree of freedom is constrained */
     [[nodiscard]] bool isConstrained(std::size_t i) const { return dirichletFlags[i]; }
@@ -76,7 +81,7 @@ namespace Ikarus {
     auto size() const { return dirichletFlags.size(); }
 
     /**
-     * \brief Function to insert a function of inhomogenious dirichlet boundary functions
+     * \brief Function to insert a function of inhomogeneous dirichlet boundary functions
      *
      * \param f A callback that will be called with the current coordinate vector and the scalar load factor
      * It creates internally the first derivative of the passed function and stores them simultaneously
@@ -84,15 +89,15 @@ namespace Ikarus {
     template <typename F>
     void storeInhomogeneousBoundaryCondition(F&& f) {
       auto derivativeLambda = [&](const auto& globalCoord, const double& lambda) {
-        autodiff::real lambdadual = lambda;
-        lambdadual[1]             = 1;  // Setting the derivative in lambda direction to 1
-        return derivative(f(globalCoord, lambdadual));
+        autodiff::real lambdaDual = lambda;
+        lambdaDual[1]             = 1;  // Setting the derivative in lambda direction to 1
+        return derivative(f(globalCoord, lambdaDual));
       };
       dirichletFunctions.push_back({f, derivativeLambda});
     }
 
     /**
-     * \brief Function to evaluate all stored inhomogenious dirichlet boundary functions at all positions where the
+     * \brief Function to evaluate all stored inhomogeneous dirichlet boundary functions at all positions where the
      * corresponding degrees of freedom are true
      *
      * \param xIh The vector where the interpolated result should be stored
@@ -104,14 +109,14 @@ namespace Ikarus {
       xIh.setZero();
       for (auto& f : dirichletFunctions) {
         interpolate(
-            *basis_, inhomogeneousBoundaryVectorDummy,
+            basis_, inhomogeneousBoundaryVectorDummy,
             [&](const auto& globalCoord) { return f.value(globalCoord, lambda); }, dirichletFlagsBackend);
         xIh += inhomogeneousBoundaryVectorDummy;
       }
     }
 
     /**
-     * \brief Function to evaluate all stored inhomogenious dirichlet boundary DERIVATIVE functions at all positions
+     * \brief Function to evaluate all stored inhomogeneous dirichlet boundary DERIVATIVE functions at all positions
      * where the corresponding degrees of freedom are true
      *
      * \param xIh The vector where the interpolated result should be stored
@@ -123,7 +128,7 @@ namespace Ikarus {
       xIh.setZero();
       for (auto& f : dirichletFunctions) {
         interpolate(
-            *basis_, inhomogeneousBoundaryVectorDummy,
+            basis_, inhomogeneousBoundaryVectorDummy,
             [&](const auto& globalCoord) { return f.derivative(globalCoord, lambda); }, dirichletFlagsBackend);
         xIh += inhomogeneousBoundaryVectorDummy;
       }
@@ -131,7 +136,7 @@ namespace Ikarus {
 
   private:
     Eigen::VectorXd inhomogeneousBoundaryVectorDummy;
-    std::shared_ptr<const Basis> basis_;
+    Basis basis_;
     std::vector<bool> dirichletFlags;
     BackendType dirichletFlagsBackend;
     struct DirichletFunctions {

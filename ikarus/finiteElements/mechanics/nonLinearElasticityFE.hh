@@ -28,34 +28,35 @@
 namespace Ikarus {
 
   template <typename Basis, typename Material>
-  class NonLinearElasticityFE : public PowerBasisFE<Basis>,
-                                public Ikarus::AutoDiffFE<NonLinearElasticityFE<Basis, Material>, Basis> {
+  class NonLinearElasticityFE
+      : public PowerBasisFE<typename Basis::FlatBasis>,
+        public Ikarus::AutoDiffFE<NonLinearElasticityFE<Basis, Material>, typename Basis::FlatBasis> {
   public:
-    using BaseDisp = PowerBasisFE<Basis>;  // Handles globalIndices function
-    using BaseAD   = AutoDiffFE<NonLinearElasticityFE, Basis>;
+    using FlatBasis = typename Basis::FlatBasis;
+    using BaseDisp  = PowerBasisFE<FlatBasis>;  // Handles globalIndices function
+    using BaseAD    = Ikarus::AutoDiffFE<NonLinearElasticityFE<Basis, Material>, typename Basis::FlatBasis>;
+    using BaseAD::localView;
     using BaseAD::size;
-    using GlobalIndex = typename PowerBasisFE<Basis>::GlobalIndex;
     friend BaseAD;
     using FERequirementType = FErequirements<Eigen::VectorXd>;
-    using LocalView         = typename Basis::LocalView;
+    using LocalView         = typename FlatBasis::LocalView;
     using Geometry          = typename LocalView::Element::Geometry;
-    using GridView          = typename Basis::GridView;
+    using GridView          = typename FlatBasis::GridView;
 
     template <typename VolumeLoad, typename NeumannBoundaryLoad>
     NonLinearElasticityFE(Basis& globalBasis, const typename LocalView::Element& element, const Material& p_mat,
                           const BoundaryPatch<GridView>* neumannBoundary,
                           const NeumannBoundaryLoad& neumannBoundaryLoad, const VolumeLoad& p_volumeLoad)
-        : BaseDisp(globalBasis, element),
-          BaseAD(globalBasis, element),
-          localView_{globalBasis.localView()},
+        : BaseDisp(globalBasis.flat(), element),
+          BaseAD(globalBasis.flat(), element),
           volumeLoad(p_volumeLoad),
           neumannBoundaryLoad_{neumannBoundaryLoad},
           neumannBoundary_{neumannBoundary},
           mat{p_mat} {
-      localView_.bind(element);
-      const int order = 2 * (localView_.tree().child(0).finiteElement().localBasis().order());
-      localBasis      = Dune::CachedLocalBasis(localView_.tree().child(0).finiteElement().localBasis());
-      localBasis.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order),
+      this->localView().bind(element);
+      const int order = 2 * (this->localView().tree().child(0).finiteElement().localBasis().order());
+      localBasis      = Dune::CachedLocalBasis(this->localView().tree().child(0).finiteElement().localBasis());
+      localBasis.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(this->localView().element().type(), order),
                       Dune::bindDerivatives(0, 1));
     }
 
@@ -68,19 +69,20 @@ namespace Ikarus {
       const auto& lambda = req.getParameter(Ikarus::FEParameter::loadfactor);
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
-      auto& first_child = localView_.tree().child(0);
+      auto& first_child = this->localView().tree().child(0);
       const auto& fe    = first_child.finiteElement();
       Dune::BlockVector<RealTuple<ScalarType, Traits::dimension>> disp(fe.size());
 
       for (auto i = 0U; i < fe.size(); ++i)
         for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
-          disp[i][k2] = dx[i * 2 + k2] + d[localView_.index(localView_.tree().child(k2).localIndex(i))[0]];
+          disp[i][k2]
+              = dx[i * 2 + k2] + d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
 
       ScalarType energy = 0.0;
 
       decltype(auto) matAD = mat.template rebind<ScalarType>();
 
-      const auto geo = localView_.element().geometry();
+      const auto geo = this->localView().element().geometry();
       Dune::StandardLocalFunction uFunction(localBasis, disp, std::make_shared<const Geometry>(geo));
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
         const auto u        = uFunction.evaluate(gpIndex);
@@ -91,11 +93,11 @@ namespace Ikarus {
         Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(toEigen(gp.position()), lambda);
         energy += (internalEnergy - u.dot(fext)) * geo.integrationElement(gp.position()) * gp.weight();
       }
-      const int order = 2 * (localView_.tree().child(0).finiteElement().localBasis().order());
+      const int order = 2 * (this->localView().tree().child(0).finiteElement().localBasis().order());
       // line or surface loads, i.e. neumann boundary
       if (not neumannBoundary_) return energy;
 
-      auto element = localView_.element();
+      auto element = this->localView().element();
       for (auto&& intersection : intersections(neumannBoundary_->gridView(), element)) {
         if (not neumannBoundary_ or not neumannBoundary_->contains(intersection)) continue;
 
@@ -121,7 +123,6 @@ namespace Ikarus {
       return energy;
     }
 
-    LocalView localView_;
     Dune::CachedLocalBasis<
         std::remove_cvref_t<decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis())>>
         localBasis;

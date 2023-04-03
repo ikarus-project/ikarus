@@ -18,13 +18,13 @@ namespace Ikarus {
     using LocalView   = typename Basis::LocalView;
     using GlobalIndex = typename LocalView::MultiIndex;
     explicit PowerBasisFE(const Basis& p_basis, const typename LocalView::Element& element)
-        : localView{p_basis.localView()} {
+        : localView_{p_basis.localView()} {
       static_assert(Ikarus::Concepts::PowerBasis<RootBasis>,
                     "You didn't pass a localview of a power basis to this method");
       static_assert(RootBasis::PreBasis::Node::degree() != 1,
                     "The basis has only one children. Maybe use scalarFE.hh. ");
 
-      localView.bind(element);
+      localView_.bind(element);
     }
 
     /** \brief Type of the Pairs of gridEntities and variable tags */
@@ -34,23 +34,26 @@ namespace Ikarus {
     /** \brief Number of children in the powerBasis */
     static constexpr int num_children = RootBasis::PreBasis::Node::CHILDREN;
 
-    [[nodiscard]] constexpr int size() const { return localView.size(); }
+    [[nodiscard]] constexpr int size() const { return localView_.size(); }
 
-    void globalIndices(std::vector<GlobalIndex>& globalIndices) const {
+    void globalFlatIndices(std::vector<GlobalIndex>& globalIndices) const {
+      globalIndices.clear();
       static_assert(
-          requires { localView.tree().child(0); },
+          requires { localView_.tree().child(0); },
           "Your basis does not provide a child accessor. Maybe use scalarFE.hh.");
-      const auto& fe = localView.tree().child(0).finiteElement();
+      const auto& fe = localView_.tree().child(0).finiteElement();
       for (size_t i = 0; i < fe.size(); ++i) {
         for (int j = 0; j < num_children; ++j) {
-          globalIndices.push_back(localView.index((localView.tree().child(j).localIndex(i))));
+          globalIndices.push_back(localView_.index((localView_.tree().child(j).localIndex(i))));
         }
       }
     }
 
-    const GridElementEntityType& getEntity() { return localView.element(); }
+    const GridElementEntityType& getEntity() { return localView_.element(); }
+    const LocalView& localView() const { return localView_; }
+    LocalView& localView() { return localView_; }
 
   private:
-    LocalView localView;
+    LocalView localView_;
   };
 }  // namespace Ikarus

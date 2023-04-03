@@ -29,14 +29,14 @@
 namespace Ikarus {
 
   template <typename Basis>
-  class LinearElastic : public PowerBasisFE<Basis> {
+  class LinearElastic : public PowerBasisFE<typename Basis::FlatBasis> {
   public:
-    using BaseDisp               = PowerBasisFE<Basis>;  // Handles globalIndices function
-    using GlobalIndex            = typename PowerBasisFE<Basis>::GlobalIndex;
+    using FlatBasis              = typename Basis::FlatBasis;
+    using BasePowerFE            = PowerBasisFE<FlatBasis>;  // Handles globalIndices function
     using FERequirementType      = FErequirements<Eigen::VectorXd>;
     using ResultRequirementsType = ResultRequirements<Eigen::VectorXd>;
-    using LocalView              = typename Basis::LocalView;
-    using GridView               = typename Basis::GridView;
+    using LocalView              = typename FlatBasis::LocalView;
+    using GridView               = typename FlatBasis::GridView;
 
     using Traits = TraitsFromLocalView<LocalView>;
 
@@ -47,21 +47,21 @@ namespace Ikarus {
         LinearElastic(Basis& globalBasis, const typename LocalView::Element& element, double emod, double nu,
                       VolumeLoad p_volumeLoad = nullptr, const BoundaryPatch<GridView>* neumannBoundary = nullptr,
                       NeumannBoundaryLoad p_neumannBoundaryLoad = nullptr)
-        : BaseDisp(globalBasis, element),
-          localView_{globalBasis.localView()},
+        : BasePowerFE(globalBasis.flat(), element),
+          //          BasePowerFE::localView(){globalBasis.flatBasis().localView()},
           volumeLoad{Std::returnReferenceOrNulloptIfObjectIsNullPtr(p_volumeLoad)},
           neumannBoundaryLoad{Std::returnReferenceOrNulloptIfObjectIsNullPtr(p_neumannBoundaryLoad)},
           neumannBoundary_{neumannBoundary},
           emod_{emod},
           nu_{nu} {
-      localView_.bind(element);
-      auto& first_child = localView_.tree().child(0);
+      this->localView().bind(element);
+      auto& first_child = this->localView().tree().child(0);
       const auto& fe    = first_child.finiteElement();
       numberOfNodes     = fe.size();
       dispAtNodes.resize(fe.size());
-      const int order = 2 * (localView_.tree().child(0).finiteElement().localBasis().order());
-      localBasis      = Dune::CachedLocalBasis(localView_.tree().child(0).finiteElement().localBasis());
-      localBasis.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(localView_.element().type(), order),
+      const int order = 2 * (this->localView().tree().child(0).finiteElement().localBasis().order());
+      localBasis      = Dune::CachedLocalBasis(this->localView().tree().child(0).finiteElement().localBasis());
+      localBasis.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(this->localView().element().type(), order),
                       Dune::bindDerivatives(0, 1));
 
       assert(((not neumannBoundary_ and not neumannBoundaryLoad) or (neumannBoundary_ and neumannBoundaryLoad))
@@ -69,17 +69,17 @@ namespace Ikarus {
     }
 
   public:
-    const auto& localView() const { return localView_; }
+    //    const auto& localView() const { return localView(); }
 
     auto getDisplacementFunction(const FERequirementType& par) const {
       const auto& d = par.getGlobalSolution(Ikarus::FESolutions::displacement);
 
       for (auto i = 0U; i < dispAtNodes.size(); ++i)
         for (auto k2 = 0U; k2 < mydim; ++k2)
-          dispAtNodes[i][k2] = d[localView_.index(localView_.tree().child(k2).localIndex(i))[0]];
+          dispAtNodes[i][k2] = d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
 
       auto geo = std::make_shared<const typename GridView::GridView::template Codim<0>::Entity::Geometry>(
-          localView_.element().geometry());
+          this->localView().element().geometry());
       Dune::StandardLocalFunction uFunction(localBasis, dispAtNodes, geo);
 
       return uFunction;
@@ -107,7 +107,7 @@ namespace Ikarus {
 
       const auto C = getMaterialTangent();
 
-      const auto geo = localView_.element().geometry();
+      const auto geo = this->localView().element().geometry();
       double energy  = 0.0;
       for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
         const auto EVoigt = eps.evaluate(gpIndex, on(gridElement));
@@ -127,7 +127,7 @@ namespace Ikarus {
       // line or surface loads, i.e. neumann boundary
       if (not neumannBoundary_ and not neumannBoundaryLoad) return energy;
 
-      auto element = localView_.element();
+      auto element = this->localView().element();
       for (auto&& intersection : intersections(neumannBoundary_->gridView(), element)) {
         if (not neumannBoundary_->contains(intersection)) continue;
 
@@ -158,7 +158,7 @@ namespace Ikarus {
       using namespace Dune;
 
       const auto C   = getMaterialTangent();
-      const auto geo = localView_.element().geometry();
+      const auto geo = this->localView().element().geometry();
 
       for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
         const double intElement = geo.integrationElement(gp.position()) * gp.weight();
@@ -200,7 +200,7 @@ namespace Ikarus {
       using namespace Dune;
 
       const auto C   = getMaterialTangent();
-      const auto geo = localView_.element().geometry();
+      const auto geo = this->localView().element().geometry();
 
       // Internal forces
       for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
@@ -229,7 +229,7 @@ namespace Ikarus {
       if (not neumannBoundary_ and not neumannBoundaryLoad) return;
 
       const auto u = getDisplacementFunction(par);
-      auto element = localView_.element();
+      auto element = this->localView().element();
       for (auto&& intersection : intersections(neumannBoundary_->gridView(), element)) {
         if (not neumannBoundary_->contains(intersection)) continue;
 
@@ -254,7 +254,6 @@ namespace Ikarus {
       }
     }
 
-    LocalView localView_;
     Dune::CachedLocalBasis<
         std::remove_cvref_t<decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis())>>
         localBasis;

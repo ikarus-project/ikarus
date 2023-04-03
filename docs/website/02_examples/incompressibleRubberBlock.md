@@ -1,6 +1,3 @@
----
-status: new
----
 <!--
 SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 SPDX-License-Identifier: CC-BY-SA-4.0
@@ -19,11 +16,11 @@ other necessary quantities to perform a static structural analysis.
 
 ## Code highlights
 
-The `struct` named `Solid` is created as an object of `AutoDiffFE`. It is constructed as shown below:
+The `struct` named `Solid` is created such that it inherits from `AutoDiffFE`. It is constructed as shown below:
 ```cpp
 Solid(const Basis &basis, const typename LocalView::Element &element, double emod, double nu)
-    : BaseAD(basis, element), localView_{basis.localView()}, emod_{emod}, nu_{nu} {
-  localView_.bind(element);
+    : BaseAD(basis.flat(), element), emod_{emod}, nu_{nu} {
+  this->localView().bind(element);
   mu_       = emod_ / (2 * (1 + nu_));
   lambdaMat = convertLameConstants({.emodul = emod_, .nu = nu_}).toLamesFirstParameter();
 }
@@ -66,13 +63,14 @@ auto gridView                           = grid->leafGridView();
 A linear Lagrangian basis is opted for the displacements and a constant basis for the pressure degrees of freedom using the
 `composite` basis feature from Dune, as shown below:
 ```cpp
-auto basis = Ikarus::makeConstSharedBasis(
-gridView, composite(power<2>(lagrange<1>(), FlatInterleaved()), lagrange<0>(), FlatLexicographic()));
+auto basis = Ikarus::makeBasis(
+gridView, composite(power<2>(lagrange<1>()), lagrange<0>()));
 ```
 Here, `#!cpp power<2>` is used to approximate the displacement field in both $x$ and $y$ directions. 
 The displacement degrees of freedom at position $y=0$ are fixed using the following snippet:
 ```cpp
-Ikarus::DirichletValues dirichletValues(basis);
+auto basisP = std::make_shared<const decltype(basis)>(basis);
+Ikarus::DirichletValues dirichletValues(basisP->flat());
 dirichletValues.fixDOFs([](auto &basis_, auto &dirichletFlags) {
   Dune::Functions::forEachBoundaryDOF(subspaceBasis(basis_, _0),
                    [&](auto &&localIndex, auto &&localView, auto &&intersection) {
@@ -90,7 +88,7 @@ finite element requirements as described [here](../01_framework/feRequirements.m
 ```cpp
 auto sparseFlatAssembler = SparseFlatAssembler(fes, dirichletValues);
 auto denseFlatAssembler  = DenseFlatAssembler(fes, dirichletValues);
-  auto req = FErequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
+auto req = FErequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
 
 auto fextFunction = [&](auto &&lambdaLocal, auto &&dLocal) -> auto & {
   req.insertGlobalSolution(Ikarus::FESolutions::displacement, dLocal)
@@ -110,8 +108,8 @@ the displacements and pressure using the basis functions and the nodal values. `
 the `*.vtu` files. The results can then be plotted, for example, using [Paraview](https://www.paraview.org/).
 ```cpp
 auto disp
-    = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(subspaceBasis(*basis, _0), d);
-auto pressure = Dune::Functions::makeDiscreteGlobalBasisFunction<double>(subspaceBasis(*basis, _1), d);
+    = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(subspaceBasis(basis.flat(), _0), d);
+auto pressure = Dune::Functions::makeDiscreteGlobalBasisFunction<double>(subspaceBasis(basis.flat(), _1), d);
 Dune::VTKWriter vtkWriter(gridView, Dune::VTK::nonconforming);
 vtkWriter.addVertexData(disp, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
 vtkWriter.addVertexData(pressure, Dune::VTK::FieldInfo("pressure", Dune::VTK::FieldInfo::Type::scalar, 1));

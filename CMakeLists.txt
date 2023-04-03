@@ -10,7 +10,7 @@ project(
 )
 
 add_definitions(-DDUNE_LOCALFEFUNCTIONS_USE_EIGEN=1)
-add_definitions(-DDCMAKE_DISABLE_FIND_PACKAGE_Vc=1)
+add_definitions(-DCMAKE_DISABLE_FIND_PACKAGE_Vc=1)
 add_definitions(-DCMAKE_DISABLE_FIND_PACKAGE_LATEX=1)
 
 # find dune packages to make cmake modules available

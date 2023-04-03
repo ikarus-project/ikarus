@@ -19,9 +19,9 @@ namespace Ikarus {
     using LocalView   = typename Basis::LocalView;
     using GlobalIndex = typename LocalView::MultiIndex;
     explicit ScalarFieldFE(const Basis& basis, const typename LocalView::Element& element)
-        : localView{basis.localView()} {
+        : localView_{basis.localView()} {
       static_assert(RootBasis::PreBasis::Node::CHILDREN == 0, "This is no scalar basis!");
-      localView.bind(element);
+      localView_.bind(element);
     }
 
     /** \brief Type of the Pairs of gridEntities and variable tags */
@@ -31,17 +31,19 @@ namespace Ikarus {
     /** \brief Dimension of the world space */
     static constexpr int worlddim = Traits::worlddim;
 
-    [[nodiscard]] int size() const { return localView.size(); }
+    [[nodiscard]] int size() const { return localView_.size(); }
 
-    void globalIndices(std::vector<GlobalIndex>& globalIndices) const {
-      const auto& fe = localView.tree().finiteElement();
+    void globalFlatIndices(std::vector<GlobalIndex>& globalIndices) const {
+      const auto& fe = localView_.tree().finiteElement();
       for (size_t i = 0; i < fe.size(); ++i)
-        globalIndices.push_back(localView.index(localView.tree().localIndex(i)));
+        globalIndices.push_back(localView_.index(localView_.tree().localIndex(i)));
     }
 
-    const GridElementEntityType& getEntity() { return localView.element(); }
+    const GridElementEntityType& getEntity() { return localView_.element(); }
+    const LocalView& localView() const { return localView_; }
+    LocalView& localView() { return localView_; }
 
   private:
-    LocalView localView;
+    LocalView localView_;
   };
 }  // namespace Ikarus
