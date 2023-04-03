@@ -66,8 +66,8 @@ namespace Ikarus {
     const auto& basis() const { return basis_; }
 
     /* \brief Returns a boolean values, if the give multiIndex is constrained */
-    template <typename MultiIndex> requires (not std::integral<MultiIndex>)
-    [[nodiscard]] bool isConstrained(const MultiIndex& multiIndex) const {
+    template <typename MultiIndex>
+    requires(not std::integral<MultiIndex>) [[nodiscard]] bool isConstrained(const MultiIndex& multiIndex) const {
       return dirichletFlagsBackend[multiIndex];
     }
 
