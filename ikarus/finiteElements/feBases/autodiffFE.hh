@@ -16,12 +16,12 @@ namespace Ikarus {
   template <typename RealElement, typename Basis, typename FERequirementTypeImpl = FErequirements<Eigen::VectorXd>>
   class AutoDiffFE {
   public:
-    using LocalView = typename Basis::LocalView;
-    using Traits    = TraitsFromLocalView<LocalView>;
-
-    using FERequirementType = FErequirements<Eigen::VectorXd>;
+    using LocalView             = typename Basis::LocalView;
+    using Traits                = TraitsFromLocalView<LocalView>;
+    using GridElementEntityType = typename LocalView::Element;
+    using FERequirementType     = FErequirements<Eigen::VectorXd>;
     void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& h) const {
-      Eigen::VectorXdual2nd dx(localdofSize);
+      Eigen::VectorXdual2nd dx(localDofSize);
       Eigen::VectorXd g;
       autodiff::dual2nd e;
       dx.setZero();
@@ -30,7 +30,7 @@ namespace Ikarus {
     }
 
     void calculateVector(const FERequirementType& par, typename Traits::VectorType& g) const {
-      Eigen::VectorXdual dx(localdofSize);
+      Eigen::VectorXdual dx(localDofSize);
       dx.setZero();
       autodiff::dual e;
       auto f = [&](auto& x) { return this->underlying().calculateScalarImpl(par, x); };
@@ -39,26 +39,29 @@ namespace Ikarus {
 
     void calculateLocalSystem(const FERequirementType& par, typename Traits::MatrixType& h,
                               typename Traits::VectorType& g) const {
-      Eigen::VectorXdual2nd dx(localdofSize);
+      Eigen::VectorXdual2nd dx(localDofSize);
       dx.setZero();
       auto f = [&](auto& x) { return this->underlying().calculateScalarImpl(par, x); };
       hessian(f, autodiff::wrt(dx), at(dx), g, h);
     }
 
     [[nodiscard]] typename Traits::ScalarType calculateScalar(const FERequirementType& par) const {
-      Eigen::VectorXd dx(localdofSize);
+      Eigen::VectorXd dx(localDofSize);
       dx.setZero();
 
       return this->underlying().calculateScalarImpl(par, dx);
     }
 
-    size_t size() const { return localdofSize; }
+    [[nodiscard]] size_t size() const { return localDofSize; }
+    const GridElementEntityType& getEntity() { return localView_.element(); }
+    const LocalView& localView() const { return localView_; }
+    LocalView& localView() { return localView_; }
 
   protected:
-    explicit AutoDiffFE(const Basis& basis, const typename LocalView::Element& element) {
-      auto localView = basis.localView();
-      localView.bind(element);
-      localdofSize = localView.size();
+    explicit AutoDiffFE(const Basis& basis, const typename LocalView::Element& element)
+        : localView_{basis.localView()} {
+      localView_.bind(element);
+      localDofSize = localView_.size();
     }
 
   private:
@@ -66,8 +69,8 @@ namespace Ikarus {
     {
       return static_cast<RealElement const&>(*this);
     }
-
-    int localdofSize{};
+    LocalView localView_;
+    int localDofSize{};
   };
 
 }  // namespace Ikarus

@@ -35,6 +35,7 @@ namespace Ikarus {
     using FlatBasis = typename Basis::FlatBasis;
     using BaseDisp  = PowerBasisFE<FlatBasis>;  // Handles globalIndices function
     using BaseAD    = Ikarus::AutoDiffFE<NonLinearElasticityFE<Basis, Material>, typename Basis::FlatBasis>;
+    using BaseAD::localView;
     using BaseAD::size;
     friend BaseAD;
     using FERequirementType = FErequirements<Eigen::VectorXd>;
