@@ -9,11 +9,11 @@
 #include <dune/fufem/boundarypatch.hh>
 #include <dune/grid/uggrid.hh>
 
-#include "ikarus/utils/basis.hh"
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/finiteElements/feRequirements.hh>
 #include <ikarus/linearAlgebra/dirichletValues.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
+#include <ikarus/utils/basis.hh>
 
 /** These tests test your element on some gridElement with some basis
  *

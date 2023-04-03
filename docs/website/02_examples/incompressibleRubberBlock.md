@@ -16,7 +16,7 @@ other necessary quantities to perform a static structural analysis.
 
 ## Code highlights
 
-The `struct` named `Solid` is created as an object of `AutoDiffFE`. It is constructed as shown below:
+The `struct` named `Solid` is created such that it inherits from `AutoDiffFE`. It is constructed as shown below:
 ```cpp
 Solid(const Basis &basis, const typename LocalView::Element &element, double emod, double nu)
     : BaseAD(basis.flat(), element), emod_{emod}, nu_{nu} {

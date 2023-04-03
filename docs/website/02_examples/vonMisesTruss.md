@@ -13,7 +13,7 @@ standard Von-Mises truss example found in literature (refer to Section 2[@misesT
 
 ## Code highlights
 
-The struct named `Truss` is created as an object in `AutoDiffFE`. It is constructed as shown below:
+The struct named `Truss` is created such that it inherits from `AutoDiffFE`. It is constructed as shown below:
 ```cpp
 Truss(const Basis &basis, const typename LocalView::Element &element, double p_EA)
     : BaseDisp(basis.flat(), element), BaseAD(basis.flat(), element), EA{p_EA} {

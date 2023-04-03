@@ -41,10 +41,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   using namespace Ikarus;
 
   using namespace Dune::Functions::BasisFactory;
-  auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<1>()));
-  //  auto flatBasis = basis.flat();
-
-  //  auto g          = basis.localView();
+  auto basis      = Ikarus::makeBasis(gridView, power<2>(lagrange<1>()));
   auto volumeLoad = []([[maybe_unused]] auto& globalCoord, auto& lamb) {
     Eigen::Vector2d fext;
     fext.setZero();

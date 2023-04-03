@@ -14,8 +14,8 @@ simply supported case.
 
 ## Code highlights
 
-Similar to the `struct` named `Solid` in `iks003_incompressible_LinearElasticity.cpp`, here a `struct` named `KirchhoffPlate` is created as an object 
-of `AutoDiffFE`. It is constructed as shown below:
+Similar to the `struct` named `Solid` in `iks003_incompressible_LinearElasticity.cpp`, here a `struct` named `KirchhoffPlate` 
+is created such that it inherits from `AutoDiffFE`. It is constructed as shown below:
 ```cpp
 KirchhoffPlate(const Basis &basis, const typename LocalView::Element &element, double p_Emodul, double p_nu,
                double p_thickness)
