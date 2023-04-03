@@ -1,6 +1,3 @@
----
-status: new
----
 <!--
 SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 SPDX-License-Identifier: CC-BY-SA-4.0
@@ -51,9 +48,9 @@ easSet << 0, 4, 5, 7;
 The EAS elements are created then, as shown below:
 ```cpp
 auto numberOfEASParameters = easSet(nep); // (1)!
-std::vector<Ikarus::EnhancedAssumedStrains<Ikarus::LinearElastic<typename decltype(basis)::element_type>>> fes;
+std::vector<Ikarus::EnhancedAssumedStrains<Ikarus::LinearElastic<decltype(basis)>>> fes;
 for (auto &element : elements(gridView)) {
-  fes.emplace_back(*basis, element, E, nu, &volumeLoad, &neumannBoundary, &neumannBoundaryLoad);
+  fes.emplace_back(basis, element, E, nu, &volumeLoad, &neumannBoundary, &neumannBoundaryLoad);
   fes.back().setEASType(numberOfEASParameters);
 }
 ```
@@ -64,7 +61,7 @@ The Dirichlet boundary conditions are defined for the left edge, and the Neumann
 A sparse assembler is used, and the linear system of equations is solved. The vertical displacement in the top right corner is computed as shown below and is later stored in a vector: 
 ```cpp
 auto dispGlobalFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(*basis, D_Glob);
-auto localView      = basis->localView();
+auto localView      = basis.flat().localView();
 auto localw         = localFunction(dispGlobalFunc);
 double uy_fe        = 0.0;
 Eigen::Vector2d req_pos;

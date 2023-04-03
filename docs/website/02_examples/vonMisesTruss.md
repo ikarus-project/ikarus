@@ -1,6 +1,3 @@
----
-status: new
----
 <!--
 SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 SPDX-License-Identifier: CC-BY-SA-4.0
@@ -19,8 +16,8 @@ standard Von-Mises truss example found in literature (refer to Section 2[@misesT
 The struct named `Truss` is created as an object in `AutoDiffFE`. It is constructed as shown below:
 ```cpp
 Truss(const Basis &basis, const typename LocalView::Element &element, double p_EA)
-    : BaseDisp(basis, element), BaseAD(basis, element), localView_{basis.localView()}, EA{p_EA} {
-  localView_.bind(element);
+    : BaseDisp(basis.flat(), element), BaseAD(basis.flat(), element), EA{p_EA} {
+  this->localView().bind(element);
 }
 ```
 It takes a reference to the basis function (`&basis`), the element (`&element`), and the axial stiffness of the 

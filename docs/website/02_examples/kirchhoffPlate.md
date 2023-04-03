@@ -1,6 +1,3 @@
----
-status: new
----
 <!--
 SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 SPDX-License-Identifier: CC-BY-SA-4.0
@@ -22,14 +19,13 @@ of `AutoDiffFE`. It is constructed as shown below:
 ```cpp
 KirchhoffPlate(const Basis &basis, const typename LocalView::Element &element, double p_Emodul, double p_nu,
                double p_thickness)
-    : BaseDisp(basis, element),
-      BaseAD(basis, element),
-      localView_{basis.localView()},
+    : BaseDisp(basis.flat(), element),
+      BaseAD(basis.flat(), element),
       Emodul{p_Emodul},
       nu{p_nu},
       thickness{p_thickness} {
-  localView_.bind(element);
-  geometry_.emplace(localView_.element().geometry());
+  this->localView().bind(element);
+  geometry_.emplace(this->localView().element().geometry());
 }
 ```
 It takes in the `p_thickness` parameter in addition to the ones in `Solid`. Here, the energy is calculated as:
@@ -87,7 +83,7 @@ In order to obtain the convergence plots, the system is solved five times, with 
 increasing by 1 each time using the command `#!cpp grid.globalRefine(1);`. The NURBS basis can be obtained directly from the 
 NURBS grid using the `getPreBasis()` function, as shown below:
 ```cpp
-auto basis = Ikarus::makeConstSharedBasis(gridView, gridView.impl().getPreBasis());
+auto basis = Ikarus::makeBasis(gridView, gridView.impl().getPreBasis());
 ```
 This is followed by specifying the Dirichlet boundary conditions, creating the finite elements and the assembler, 
 solving the system of equations, and post-processing using Paraview as mentioned in the previous examples.
@@ -113,7 +109,7 @@ solution of the displacements and the NURBS basis whereas the `#!cpp Dune::Funct
 used to create a function by using the function to evaluate the analytical solutions and the `gridView` to get the position `x`.
 Local functions are then created that are used later to calculate the $L^2$-error.  
 ```cpp
-auto wGlobalFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 1>>(*basis, w);
+auto wGlobalFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 1>>(basis.flat(), w);
 auto wGlobalAnalyticFunction = Dune::Functions::makeAnalyticGridViewFunction(wAna, gridView);
 auto localw                  = localFunction(wGlobalFunction);
 auto localwAna               = localFunction(wGlobalAnalyticFunction);
@@ -147,7 +143,7 @@ can be later used to create plots using the features from Matlab.
 ```cpp
 std::vector<double> dofsVec;
 std::vector<double> l2Evcector;
-dofsVec.push_back(basis->size());
+dofsVec.push_back(basis.flat().size());
 l2Evcector.push_back(l2_error);
 ```
 
