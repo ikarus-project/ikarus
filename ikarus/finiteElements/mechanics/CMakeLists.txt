@@ -3,6 +3,7 @@
 
 add_subdirectory(materials)
 # install headers
-install(FILES nonLinearElasticityFE.hh enhancedAssumedStrains.hh linearElastic.hh materials.hh
+install(FILES nonLinearElasticityFE.hh enhancedAssumedStrains.hh linearElastic.hh kirchhoffPlate.hh
+              ReissnerMindlinPlate.hh materials.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/finiteElements/mechanics
 )

@@ -31,6 +31,9 @@ namespace Ikarus {
       case ResultType::HField:
         return "HField";
         break;
+      case ResultType::stressResultant:
+        return "stressResultant";
+        break;
     }
     __builtin_unreachable();
   }

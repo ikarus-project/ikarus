@@ -34,7 +34,7 @@ namespace Ikarus {
     geometricstiffness,
     stiffnessdiffBucklingVector,
     microMagneticHessian,
-    mass
+    mass,
   };
 
   enum class FEParameter {
@@ -60,7 +60,8 @@ namespace Ikarus {
     BField,
     HField,
     cauchyStress,
-    director
+    director,
+    stressResultant
   };
   // clang-format on
   std::string getResultType(const ResultType &res);
