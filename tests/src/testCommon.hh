@@ -7,10 +7,15 @@
 
 #include <dune/alugrid/grid.hh>
 #include <dune/common/test/testsuite.hh>
+#include <dune/fufem/boundarypatch.hh>
 #include <dune/functions/functionspacebases/lagrangedgbasis.hh>
+#include <dune/grid/uggrid.hh>
 #include <dune/grid/yaspgrid.hh>
 #include <dune/iga/nurbsgrid.hh>
+#include <dune/localfefunctions/cachedlocalBasis/cachedlocalBasis.hh>
 
+#include <ikarus/finiteElements/feBases/autodiffFE.hh>
+#include <ikarus/finiteElements/feBases/powerBasisFE.hh>
 #include <ikarus/finiteElements/feRequirements.hh>
 #include <ikarus/utils/duneUtilities.hh>
 #include <ikarus/utils/eigenDuneTransformations.hh>
@@ -77,11 +82,13 @@ struct CornerFactory {
   }
 };
 
+enum class CornerDistortionFlag { unDistorted, fixedDistorted, randomlyDistorted };
+
 // Corner factory for element with codim==0, e.g. no surfaces in 3D
 template <int gridDim>
 struct ValidCornerFactory {
   static void construct(std::vector<Dune::FieldVector<double, gridDim>>& values, const Dune::GeometryType& type,
-                        const bool& isRandomlyDistorted) {
+                        const CornerDistortionFlag& distortionFlag) {
     const auto& refElement = Dune::ReferenceElements<double, gridDim>::general(type);
 
     const auto numberOfVertices = refElement.size(gridDim);
@@ -90,14 +97,50 @@ struct ValidCornerFactory {
     for (int i = 0; i < numberOfVertices; ++i)
       values[i] = refElement.position(i, gridDim);
 
-    /// perturb corner values slightly
-    if (isRandomlyDistorted) {
+    /// Perturbation of the corner values
+    if (distortionFlag == CornerDistortionFlag::unDistorted)
+      return;
+    else if (distortionFlag == CornerDistortionFlag::fixedDistorted) {
+      if (not((gridDim == 2) and (numberOfVertices == 4)))
+        DUNE_THROW(Dune::NotImplemented, "Fixed distortion is only implemented for a 2D 4-node element (Q1)");
+      std::vector<Dune::FieldVector<double, gridDim>> randomnessOnNodes;
+      randomnessOnNodes.push_back({-0.2, -0.05});
+      randomnessOnNodes.push_back({-0.15, 0.05});
+      randomnessOnNodes.push_back({0.15, 0.15});
+      randomnessOnNodes.push_back({-0.05, -0.1});
+      for (long i = 0; i < 4; ++i)
+        values[i] += randomnessOnNodes[i];
+    } else if (distortionFlag == CornerDistortionFlag::randomlyDistorted) {
       std::transform(values.begin(), values.end(), values.begin(), [](const auto& vec) {
         return vec + Ikarus::createRandomVector<Dune::FieldVector<double, gridDim>>(-0.2, 0.2);
       });
-    }
+    } else
+      DUNE_THROW(Dune::IOError, "Incorrect CornerDistortionFlag entered");
   }
 };
+
+template <int gridDim>
+auto createUGGridFromCorners(const CornerDistortionFlag& distortionFlag) {
+  using Grid = Dune::UGGrid<gridDim>;
+
+  std::vector<Dune::FieldVector<double, gridDim>> corners;
+
+  const int numberOfVertices = Dune::power(2, gridDim);
+  ValidCornerFactory<gridDim>::construct(corners, Dune::GeometryTypes::cube(gridDim), distortionFlag);
+
+  std::vector<unsigned int> vertexArrangment;
+  vertexArrangment.resize(numberOfVertices);
+  std::iota(vertexArrangment.begin(), vertexArrangment.end(), 0);
+
+  Dune::GridFactory<Grid> gridFactory;
+  for (auto& corner : corners) {
+    gridFactory.insertVertex(corner);
+  }
+  gridFactory.insertElement(Dune::GeometryTypes::cube(gridDim), vertexArrangment);
+
+  std::unique_ptr<Grid> grid = gridFactory.createGrid();
+  return grid;
+}
 
 template <typename Ele>
 struct ElementTest {};

@@ -4,9 +4,9 @@
 //
 #include <config.h>
 
-#include "common.hh"
-#include "nonLinearElasticityTest.hh"
+#include "testCommon.hh"
 #include "testHelpers.hh"
+#include "testNonLinearElasticity.hh"
 
 using Dune::TestSuite;
 

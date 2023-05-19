@@ -33,7 +33,6 @@ The following task are open for your contributions.
 * Nonlinear Reissner-Mindlin shell [@muller2022consistent]
 * Kirchhoff-Love shell
 * 3D-Beam
-* Implement forces and stiffness matrix of `NonLinearElastic`
 * Standard beam and plate formulations
 
 ### Further addons

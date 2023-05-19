@@ -50,7 +50,11 @@ auto SimpleAssemblersTest() {
       return fext;
     };
     for (auto&& ge : elements(gridView))
+<<<<<<< main:tests/src/assemblerTest.cpp
       fes.emplace_back(basis, ge, reducedMat, volumeLoad);
+=======
+      fes.emplace_back(basis, ge, reducedMat, nullptr, nullptr, &volumeLoad);
+>>>>>>> modifications in nonLinearFE and tests:tests/src/testAssembler.cpp
 
     auto basisP = std::make_shared<const decltype(basis)>(basis);
     Ikarus::DirichletValues dirichletValues(basisP->flat());

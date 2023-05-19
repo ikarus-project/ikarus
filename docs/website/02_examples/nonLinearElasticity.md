@@ -59,7 +59,7 @@ auto matParameter = Ikarus::toLamesFirstParameterAndShearModulus({.emodul = 1000
 Ikarus::StVenantKirchhoff matSVK(matParameter);
 auto reducedMat = planeStress(matSVK);
 
-std::vector<Ikarus::NonLinearElastic<typename decltype(basis)::element_type, decltype(reducedMat)>>> fes;
+std::vector<Ikarus::NonLinearElastic<decltype(basis), decltype(reducedMat)>>> fes;
 for (auto &element : elements(gridView))
   fes.emplace_back(*basis, element, reducedMat, &neumannBoundary, neumannBoundaryLoad, volumeLoad);
 ```

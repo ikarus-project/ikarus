@@ -3,7 +3,7 @@
 
 #include <config.h>
 
-#include "easTest.hh"
+#include "testEAS.hh"
 #include "testFEElement.hh"
 
 #include <dune/common/test/testsuite.hh>
@@ -30,10 +30,15 @@ int main(int argc, char** argv) {
   using namespace Dune::Functions::BasisFactory;
   auto firstOrderLagrangePrePower2Basis = power<2>(lagrange<1>(), FlatInterleaved());
   auto firstOrderLagrangePrePower3Basis = power<3>(lagrange<1>(), FlatInterleaved());
+  const auto randomlyDistorted          = CornerDistortionFlag::randomlyDistorted;
+  const auto unDistorted                = CornerDistortionFlag::unDistorted;
 
-  t.subTest(testFEElement<EASElement, 2>(firstOrderLagrangePrePower2Basis, "EAS", true, checkJacobianFunctor));
-  t.subTest(testFEElement<EASElement, 3>(firstOrderLagrangePrePower3Basis, "EAS", true, checkJacobianFunctor));
-  t.subTest(testFEElement<EASElement, 2>(firstOrderLagrangePrePower2Basis, "EAS", false, checkCauchyStressFunctor));
+  t.subTest(
+      testFEElement<EASElement, 2>(firstOrderLagrangePrePower2Basis, "EAS", randomlyDistorted, checkJacobianFunctor));
+  t.subTest(
+      testFEElement<EASElement, 3>(firstOrderLagrangePrePower3Basis, "EAS", randomlyDistorted, checkJacobianFunctor));
+  t.subTest(
+      testFEElement<EASElement, 2>(firstOrderLagrangePrePower2Basis, "EAS", unDistorted, checkCauchyStressFunctor));
 
   return t.exit();
 }

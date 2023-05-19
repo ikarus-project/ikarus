@@ -277,8 +277,11 @@ namespace Ikarus {
 
       if (onlyDisplacementBase) return;
 
+      Eigen::VectorXd dx(this->localView().size());
+      dx.setZero();
+
       const auto& d       = par.getGlobalSolution(Ikarus::FESolutions::displacement);
-      auto strainFunction = DisplacementBasedElement::getStrainFunction(par);
+      auto strainFunction = DisplacementBasedElement::getStrainFunction(par, dx);
       Eigen::VectorXd disp(localView().size());
       const auto& numNodes = DisplacementBasedElement::numberOfNodes;
 
@@ -327,11 +330,6 @@ namespace Ikarus {
 
       if (onlyDisplacementBase) return;
 
-      auto strainFunction  = DisplacementBasedElement::getStrainFunction(par);
-      const auto& numNodes = DisplacementBasedElement::numberOfNodes;
-      assert(((numNodes == 4 and Traits::mydim == 2) or (numNodes == 8 and Traits::mydim == 3))
-             && "EAS only supported for Q1 or H1 elements");
-
       std::visit(
           [&]<typename EAST>(const EAST& easFunction) {
             constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
@@ -363,9 +361,6 @@ namespace Ikarus {
         for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
           disp[i * Traits::mydim + k2] = d[localView().index(localView().tree().child(k2).localIndex(i))[0]];
 
-      assert(((numNodes == 4 and Traits::mydim == 2) or (numNodes == 8 and Traits::mydim == 3))
-             && "EAS only supported for Q1 or H1 elements");
-
       std::visit(
           [&]<typename EAST>(const EAST& easFunction) {
             constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
@@ -386,6 +381,10 @@ namespace Ikarus {
     }
 
     void setEASType(int numberOfEASParameters) {
+      const auto& numNodes = DisplacementBasedElement::numberOfNodes;
+      if (not((numNodes == 4 and Traits::mydim == 2) or (numNodes == 8 and Traits::mydim == 3))
+          and (numberOfEASParameters != 0))
+        DUNE_THROW(Dune::NotImplemented, "EAS only supported for Q1 or H1 elements");
       if constexpr (Traits::mydim == 2) {
         switch (numberOfEASParameters) {
           case 0:
@@ -439,7 +438,9 @@ namespace Ikarus {
                               Eigen::MatrixXd& LMat) const {
       using namespace Dune;
       using namespace Dune::DerivativeDirections;
-      auto strainFunction = DisplacementBasedElement::getStrainFunction(par);
+      Eigen::VectorXd dx(this->localView().size());
+      dx.setZero();
+      auto strainFunction = DisplacementBasedElement::getStrainFunction(par, dx);
       const auto C        = DisplacementBasedElement::getMaterialTangentFunction(par);
       const auto geo      = localView().element().geometry();
       const auto numNodes = DisplacementBasedElement::numberOfNodes;

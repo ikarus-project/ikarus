@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "common.hh"
+#include "testCommon.hh"
 
 #include <dune/common/bitsetvector.hh>
 #include <dune/fufem/boundarypatch.hh>
@@ -25,31 +25,14 @@
  * the finite element
  */
 template <template <typename> typename FEElementTemplate, int gridDim, typename PreBasis, typename... F>
-auto testFEElement(const PreBasis& preBasis, const std::string& elementName, const bool& isRandomlyDistorted,
+auto testFEElement(const PreBasis& preBasis, const std::string& elementName, const CornerDistortionFlag& distortionFlag,
                    F&&... f) {
   Dune::TestSuite t(std::string("testFEElement ") + elementName + " on grid element with dimension "
                     + std::to_string(gridDim));
 
   auto fTuple = std::forward_as_tuple(f...);
 
-  using Grid = Dune::UGGrid<gridDim>;
-
-  std::vector<Dune::FieldVector<double, gridDim>> corners;
-
-  const int numberOfVertices = Dune::power(2, gridDim);
-  ValidCornerFactory<gridDim>::construct(corners, Dune::GeometryTypes::cube(gridDim), isRandomlyDistorted);
-
-  std::vector<unsigned int> vertexArrangment;
-  vertexArrangment.resize(numberOfVertices);
-  std::iota(vertexArrangment.begin(), vertexArrangment.end(), 0);
-
-  Dune::GridFactory<Grid> gridFactory;
-  for (auto& corner : corners) {
-    gridFactory.insertVertex(corner);
-  }
-  gridFactory.insertElement(Dune::GeometryTypes::cube(gridDim), vertexArrangment);
-
-  std::unique_ptr<Grid> grid = gridFactory.createGrid();
+  auto grid = createUGGridFromCorners<gridDim>(distortionFlag);
 
   auto gridView = grid->leafGridView();
   using namespace Ikarus;
