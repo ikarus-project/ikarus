@@ -252,25 +252,16 @@ namespace Ikarus {
   template <typename DisplacementBasedElement>
   class EnhancedAssumedStrains : public DisplacementBasedElement {
   public:
-    using FERequirementType      = FErequirements<Eigen::VectorXd>;
-    using ResultRequirementsType = ResultRequirements<Eigen::VectorXd>;
+    using FERequirementType      = typename DisplacementBasedElement::FERequirementType;
+    using ResultRequirementsType = typename DisplacementBasedElement::ResultRequirementsType;
     using LocalView              = typename DisplacementBasedElement::LocalView;
     using GridView               = typename DisplacementBasedElement::GridView;
     using Traits                 = typename DisplacementBasedElement::Traits;
     using DisplacementBasedElement::localView;
 
-    template <typename Basis, typename VolumeLoad = std::nullptr_t, typename NeumannBoundaryLoad = std::nullptr_t>
-    requires(Std::is_pointer<VolumeLoad>and Std::is_pointer<NeumannBoundaryLoad>)
-        EnhancedAssumedStrains(Basis& globalBasis, const typename LocalView::Element& element, double emod, double nu,
-                               VolumeLoad p_volumeLoad                          = nullptr,
-                               const BoundaryPatch<GridView>* p_neumannBoundary = nullptr,
-                               NeumannBoundaryLoad p_neumannBoundaryLoad        = nullptr)
-        : DisplacementBasedElement(globalBasis, element, emod, nu, p_volumeLoad, p_neumannBoundary,
-                                   p_neumannBoundaryLoad) {
-      if (Traits::mydim == 2)
-        setEASType(0);
-      else if (Traits::mydim == 3)
-        setEASType(0);
+    template <typename... Args>
+    explicit EnhancedAssumedStrains(Args&&... args) : DisplacementBasedElement(std::forward<Args>(args)...) {
+      setEASType(0);
     }
 
     double calculateScalar(const FERequirementType& par) const {
@@ -387,10 +378,10 @@ namespace Ikarus {
             const auto CEval = C(gpLocal);
             auto easStress   = (CEval * M * alpha).eval();
             typename ResultTypeMap<double>::ResultArray resultVector;
-            if (req.isResultRequested(ResultType::cauchyStress)) {
+            if (req.isResultRequested(ResultType::linearStress)) {
               resultVector.resize(3, 1);
-              resultVector = result.getResult(ResultType::cauchyStress) + easStress;
-              result.insertOrAssignResult(ResultType::cauchyStress, resultVector);
+              resultVector = result.getResult(ResultType::linearStress) + easStress;
+              result.insertOrAssignResult(ResultType::linearStress, resultVector);
             }
           },
           easVariant_);

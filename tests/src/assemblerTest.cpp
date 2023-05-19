@@ -18,7 +18,7 @@ using Dune::TestSuite;
 #include <Eigen/Core>
 
 #include <ikarus/assembler/simpleAssemblers.hh>
-#include <ikarus/finiteElements/mechanics/nonLinearElasticityFE.hh>
+#include <ikarus/finiteElements/mechanics/nonLinearElastic.hh>
 #include <ikarus/linearAlgebra/dirichletValues.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/init.hh>
@@ -39,8 +39,8 @@ auto SimpleAssemblersTest() {
     auto matParameter = Ikarus::toLamesFirstParameterAndShearModulus({.emodul = 1000, .nu = 0.3});
 
     Ikarus::StVenantKirchhoff matSVK(matParameter);
-    auto reducedMat = plainStress(matSVK, 1e-8);
-    std::vector<Ikarus::NonLinearElasticityFE<decltype(basis), decltype(reducedMat)>> fes;
+    auto reducedMat = planeStress(matSVK, 1e-8);
+    std::vector<Ikarus::NonLinearElastic<decltype(basis), decltype(reducedMat)>> fes;
 
     auto volumeLoad = []([[maybe_unused]] const auto& globalCoord, const auto& lamb) {
       Eigen::Vector2d fext;
@@ -50,7 +50,7 @@ auto SimpleAssemblersTest() {
       return fext;
     };
     for (auto&& ge : elements(gridView))
-      fes.emplace_back(basis, ge, reducedMat, nullptr, nullptr, volumeLoad);
+      fes.emplace_back(basis, ge, reducedMat, volumeLoad);
 
     auto basisP = std::make_shared<const decltype(basis)>(basis);
     Ikarus::DirichletValues dirichletValues(basisP->flat());
@@ -63,9 +63,11 @@ auto SimpleAssemblersTest() {
 
     Eigen::VectorXd d(basis.flat().size());
     d.setRandom();
+    double load = 0.0;
+
     Ikarus::FErequirements req = Ikarus::FErequirements()
                                      .insertGlobalSolution(Ikarus::FESolutions::displacement, d)
-                                     .insertParameter(Ikarus::FEParameter::loadfactor, 0)
+                                     .insertParameter(Ikarus::FEParameter::loadfactor, load)
                                      .addAffordance(Ikarus::MatrixAffordances::stiffness);
 
     auto& Kdense = denseFlatAssembler.getMatrix(req);

@@ -43,10 +43,14 @@ struct ElementTest<Ikarus::EnhancedAssumedStrains<DisplacementBasedElement>> {
         Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(stiffnessMatrix);
         newEigenValues = es.eigenvalues();
 
-        t.check((newEigenValues.array() < 1e-5 * newEigenValues.norm()).count() == 3 * gridDim - 3)
-            << "We always should have 3 or 6 zero eigenvalues, for 3 or 6 rigid body motions"
-               "\nEigenValues: \n"
-            << newEigenValues.transpose() << std::endl;
+        t.check((newEigenValues.array() < 1e-6 * newEigenValues.norm()).count() == 3 * gridDim - 3,
+                "Number of eigenvalues")
+            << "We always should have " << 3 * gridDim - 3 << " zero eigenvalues, for " << 3 * gridDim - 3
+            << " rigid body motions"
+            << " but we counted " << (newEigenValues.array() < 1e-6 * newEigenValues.norm()).count()
+            << "\nEigenValues: \n"
+            << newEigenValues.transpose() << "The tolerance is " << 1e-6 * newEigenValues.norm()
+            << "The number of EAS parameters is" << numberOfEASParameter << std::endl;
         if (numberOfEASParameter > 0 and numberOfEASParameter != 5)          // Q1E4 and Q1E5 are the same
           t.check((newEigenValues.array() <= oldEigenValues.array()).sum())  // Q1E4 and Q1E7 are the same in the case
                                                                              // of undistorted element
@@ -77,6 +81,18 @@ struct ElementTest<Ikarus::EnhancedAssumedStrains<DisplacementBasedElement>> {
                        "zero, integrated over the domain.";
               },
               easVariant);
+          try {
+            auto requirements = Ikarus::FErequirements();
+            fe.calculateScalar(requirements);
+            t.check(false) << "fe.calculateScalar should have failed for numberOfEASParameter > 0";
+          } catch (const Dune::NotImplemented&) {
+          }
+        }
+
+        try {
+          fe.setEASType(100);
+          t.check(false) << "fe.setEASType(100) should have failed";
+        } catch (const Dune::NotImplemented&) {
         }
       };
       return t;

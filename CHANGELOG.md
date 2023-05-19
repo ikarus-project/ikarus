@@ -13,6 +13,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 - Added greeting and init function for reasonable default, e.g. log also to file ([#147](https://github.com/ikarus-project/ikarus/pull/147))
 - Added an interface for the material library ([#154](https://github.com/ikarus-project/ikarus/pull/154))
 - Added a wrapper for flat and blocked basis ([#157](https://github.com/ikarus-project/ikarus/pull/157))
+- Added basic python bindings and infrastructure. Ikarus can now be downloaded via `pip install pyikarus` ([#157](https://github.com/ikarus-project/ikarus/pull/152))
 
 ## Release v0.3 (Prometheus)
 

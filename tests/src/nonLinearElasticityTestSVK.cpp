@@ -7,6 +7,9 @@
 #include "nonLinearElasticityTest.hh"
 #include "testHelpers.hh"
 
+#include <dune/python/pybind11/stl_bind.h>
+
+#include "ikarus/finiteElements/mechanics/linearElastic.hh"
 using Dune::TestSuite;
 
 int main(int argc, char** argv) {
@@ -16,7 +19,6 @@ int main(int argc, char** argv) {
   auto matParameter = Ikarus::toLamesFirstParameterAndShearModulus({.emodul = 1000, .nu = 0.3});
 
   Ikarus::StVenantKirchhoff matSVK(matParameter);
-
   t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Alu>(matSVK));
   t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Yasp>(matSVK));
   t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Iga>(matSVK));

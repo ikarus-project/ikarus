@@ -4,7 +4,7 @@
 namespace Ikarus {
 
   template <typename Basis, typename FEContainer>
-  Eigen::VectorXd FlatAssemblerBase<Basis, FEContainer>::createFullVector(const Eigen::VectorXd &reducedVector) {
+  Eigen::VectorXd FlatAssemblerBase<Basis, FEContainer>::createFullVector(Eigen::Ref<const Eigen::VectorXd> reducedVector) {
     assert(reducedVector.size() == static_cast<Eigen::Index>(this->reducedSize())
            && "The reduced vector you passed has the wrong dimensions.");
     Eigen::Index reducedCounter = 0;
@@ -21,7 +21,7 @@ namespace Ikarus {
   }
 
   template <typename Basis, typename FEContainer>
-  Eigen::VectorXd &VectorFlatAssembler<Basis, FEContainer>::getVectorImpl(const RequirementType &fErequirements) {
+  Eigen::VectorXd &VectorFlatAssembler<Basis, FEContainer>::getVectorImpl(const FERequirementType &fErequirements) {
     vec.setZero(this->size());
     Eigen::VectorXd vecLocal;
     std::vector<GlobalIndex> dofs;
@@ -44,7 +44,7 @@ namespace Ikarus {
 
   template <typename Basis, typename FEContainer>
   Eigen::VectorXd &VectorFlatAssembler<Basis, FEContainer>::getReducedVectorImpl(
-      const RequirementType &fErequirements) {
+      const FERequirementType &fErequirements) {
     vecRed.setZero(this->reducedSize());
     int reducedCounter = 0;
     Eigen::VectorXd vecLocal;
@@ -69,7 +69,7 @@ namespace Ikarus {
 
   template <typename Basis, typename FEContainer>
   Eigen::SparseMatrix<double> &SparseFlatAssembler<Basis, FEContainer>::getMatrixImpl(
-      const RequirementType &fErequirements) {
+      const FERequirementType &fErequirements) {
     if (!isOccupationPatternCreated) createOccupationPattern();
     if (!arelinearDofsPerElementCreated) createlinearDofsPerElement();
     spMat.coeffs().setZero();
@@ -96,7 +96,7 @@ namespace Ikarus {
 
   template <typename Basis, typename FEContainer>
   Eigen::SparseMatrix<double> &SparseFlatAssembler<Basis, FEContainer>::getReducedMatrixImpl(
-      const RequirementType &fErequirements) {
+      const FERequirementType &fErequirements) {
     if (!isReducedOccupationPatternCreated) createReducedOccupationPattern();
     if (!arelinearReducedDofsPerElementCreated) createlinearDofsPerElementReduced();
     spMatReduced.coeffs().setZero();
@@ -206,7 +206,7 @@ namespace Ikarus {
   }
 
   template <typename Basis, typename FEContainer>
-  Eigen::MatrixXd &DenseFlatAssembler<Basis, FEContainer>::getReducedMatrixImpl(const RequirementType &fErequirements) {
+  Eigen::MatrixXd &DenseFlatAssembler<Basis, FEContainer>::getReducedMatrixImpl(const FERequirementType &fErequirements) {
     matRed.setZero(this->reducedSize(), this->reducedSize());
     Eigen::MatrixXd matLocal;
     std::vector<GlobalIndex> dofs;
@@ -235,7 +235,7 @@ namespace Ikarus {
   }
 
   template <typename Basis, typename FEContainer>
-  Eigen::MatrixXd &DenseFlatAssembler<Basis, FEContainer>::getMatrixImpl(const RequirementType &fErequirements) {
+  Eigen::MatrixXd &DenseFlatAssembler<Basis, FEContainer>::getMatrixImpl(const FERequirementType &fErequirements) {
     mat.setZero(this->size(), this->size());
     Eigen::MatrixXd matLocal;
     std::vector<GlobalIndex> dofs;

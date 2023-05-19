@@ -13,7 +13,7 @@ file(GLOB programSourceFiles CONFIGURE_DEPENDS *.cpp)
 
 foreach(programSourceFile ${programSourceFiles})
   get_filename_component(programName ${programSourceFile} NAME_WLE)
-  dune_add_test(SOURCES ${programSourceFile} LINK_LIBRARIES ikarus)
+  dune_add_test(SOURCES ${programSourceFile} LINK_LIBRARIES ikarus LABELS cpp)
   target_compile_features(${programName} PUBLIC cxx_std_20)
   set_tests_properties(${programName} PROPERTIES TIMEOUT 1000)
   add_dune_pythonlibs_flags(${programName})

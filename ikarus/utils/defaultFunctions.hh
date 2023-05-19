@@ -16,4 +16,7 @@ namespace Ikarus {
       a += b;
     }
   };
+
+  struct LoadDefault {};
+
 }  // namespace Ikarus

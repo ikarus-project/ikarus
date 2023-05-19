@@ -168,9 +168,9 @@ template <typename NonLinearOperator, typename FiniteElement>
                        {214.2857143245, 214.2857143245, 384.6153846200}}};
   }
 
-  auto resultRequirements = Ikarus::ResultRequirements<Eigen::VectorXd>()
+  auto resultRequirements = Ikarus::ResultRequirements<>()
                                 .insertGlobalSolution(Ikarus::FESolutions::displacement, displacement)
-                                .addResultRequest(ResultType::cauchyStress);
+                                .addResultRequest(ResultType::linearStress);
 
   ResultTypeMap<double> result;
   auto gridView        = fe.localView().globalBasis().gridView();
@@ -187,7 +187,7 @@ template <typename NonLinearOperator, typename FiniteElement>
     const auto nodalPositionInChildCoordinate = referenceElement.position(fineKey.subEntity(), fineKey.codim());
     auto coord                                = toEigen(nodalPositionInChildCoordinate);
     fe.calculateAt(resultRequirements, coord, result);
-    Eigen::Vector3d computedResult = result.getResult(ResultType::cauchyStress).eval();
+    Eigen::Vector3d computedResult = result.getResult(ResultType::linearStress).eval();
     const auto nodeIndex           = localScalarView.index(localScalarView.tree().localIndex(c))[0];
     stressVector[nodeIndex]        = toDune(computedResult);
     for (auto voigtIndex = 0UL; voigtIndex < 3; ++voigtIndex) {

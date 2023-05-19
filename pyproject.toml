@@ -1,0 +1,5 @@
+# SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-License-Identifier: CC0-1.0
+[build-system]
+requires = ['setuptools',  'matplotlib',  'wheel',    'scikit-build',    'cmake',    'ninja',    'requests', 'dune-common<=2.9.0', 'dune-grid<=2.9.0', 'dune-geometry<=2.9.0', 'dune-localfunctions<=2.9.0', 'dune-functions<=2.9.0', 'dune-istl<=2.9.0']
+build-backend = 'setuptools.build_meta'

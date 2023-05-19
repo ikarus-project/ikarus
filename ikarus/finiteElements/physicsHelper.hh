@@ -33,7 +33,7 @@ namespace Ikarus {
     return C;
   }
 
-  template <typename LocalView>
+  template <typename LocalView, bool useRef = false>
   struct TraitsFromLocalView {
     using GridEntity = typename LocalView::Element;
     /** \brief Dimension of the world space */
@@ -46,10 +46,10 @@ namespace Ikarus {
     static constexpr int dimension = GridEntity::dimension;
 
     /** \brief Type of the internal forces */
-    using VectorType = Eigen::VectorXd;
+    using VectorType = std::conditional_t<useRef, Eigen::Ref<Eigen::VectorXd>, Eigen::VectorXd&>;
 
     /** \brief Type of the stiffness matrix */
-    using MatrixType = Eigen::MatrixXd;
+    using MatrixType = std::conditional_t<useRef, Eigen::Ref<Eigen::MatrixXd>, Eigen::MatrixXd&>;
 
     /** \brief Type of the stiffness matrix */
     using ScalarType = typename GridEntity::Geometry::ctype;

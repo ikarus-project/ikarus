@@ -1,8 +1,8 @@
 # SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
-#
 # SPDX-License-Identifier: CC-BY-SA-4.0
 
 "These macros are taken and modified from https://github.com/autodiff/autodiff"
+
 
 def define_env(env):
     """
@@ -14,8 +14,10 @@ def define_env(env):
 
     @env.macro
     def inputcode(filename, language, linenumbers=False, startline=0, endline=None):
-        filename = '../' + filename  # file path must be given relative to root directory
-        f = open(filename, 'r')
+        filename = (
+            "../" + filename
+        )  # file path must be given relative to root directory
+        f = open(filename, "r")
         if startline != 0 or endline is None:
             lines = f.readlines()
             lines = lines[startline:endline]
@@ -23,11 +25,11 @@ def define_env(env):
         else:
             text = f.read()
         if linenumbers is False:
-            textblock = f'```{{ .{language} .annotate}}\n{text}\n```'
+            textblock = f"```{{ .{language} .annotate}}\n{text}\n```"
         else:
             textblock = f'```{{ .{language} linenums="1" .annotate}} \n{text}\n```'
         return textblock
 
     @env.macro
-    def inputcpp(filename,linenumbers=False, startline=0, endline=None):
-        return inputcode(filename, 'cpp', linenumbers, startline, endline)
+    def inputcpp(filename, linenumbers=False, startline=0, endline=None):
+        return inputcode(filename, "cpp", linenumbers, startline, endline)

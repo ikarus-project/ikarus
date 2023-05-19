@@ -57,11 +57,11 @@ auto neumannBoundaryLoad = [](auto &globalCoord, auto &lamb) {
 auto matParameter = Ikarus::toLamesFirstParameterAndShearModulus({.emodul = 1000, .nu = 0.3});
 
 Ikarus::StVenantKirchhoff matSVK(matParameter);
-auto reducedMat = plainStress(matSVK);
+auto reducedMat = planeStress(matSVK);
 
-std::vector<Ikarus::NonLinearElasticityFE<decltype(basis), decltype(reducedMat)>>> fes;
+std::vector<Ikarus::NonLinearElastic<typename decltype(basis)::element_type, decltype(reducedMat)>>> fes;
 for (auto &element : elements(gridView))
-  fes.emplace_back(basis, element, reducedMat, &neumannBoundary, neumannBoundaryLoad, volumeLoad);
+  fes.emplace_back(*basis, element, reducedMat, &neumannBoundary, neumannBoundaryLoad, volumeLoad);
 ```
 The functors `volumeLoad` and `neumannBoundaryLoad` are used to obtain the external volume and surface loads acting on a particular position.
 We use a Saint Venant–Kirchhoff material model, which we transform to a plane stress material law for our two-dimensional simulation.

@@ -13,23 +13,23 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 ## Preview the documentation locally
 - Change the cmake option, for example, in Clion: Open `File --> Settings --> Build,Execution,Deployment --> Cmake`. 
   Add `-DBUILD_DOCS=TRUE` to your cmake options 
-  ![CmakeOptions.png](../auxiliaryImages/Build%20documentation%20locally/CmakeOptions.png)
+  ![CmakeOptions.png](../auxiliaryImages/builddocumentationlocally/CmakeOptions.png)
 - Choose target `localSite` and build it (for instance, click on the hammer)
   
-  ![localSite.png](../auxiliaryImages/Build%20documentation%20locally/localSite.png)
+  ![localSite.png](../auxiliaryImages/builddocumentationlocally/localSite.png)
   
 - After a couple of seconds, build messages should appear that look similar to the picture below.
-  ![buildMessages.png](../auxiliaryImages/Build%20documentation%20locally/buildMessages.png)
+  ![buildMessages.png](../auxiliaryImages/builddocumentationlocally/buildMessages.png)
 - Click on `Services` in the footer, double-click on `Docker` and unfold `Containers`. There should be 
   one container with a blue box, while the other containers have a blue box with a white square inside
   (see figure below). In this example, the container we are looking for is `elegant_bassi`.
   The name will be different on your computer, but the relevant criterion for finding the container
   is the blue box.
-  ![servicesDocker.png](../auxiliaryImages/Build%20documentation%20locally/servicesDocker.png)
+  ![servicesDocker.png](../auxiliaryImages/builddocumentationlocally/servicesDocker.png)
 - Click on the container with the blue box and navigate to `Port Bindings`.
 - Add a new port by clicking on `+`, activate `Host port` under `Modifiy options` and enter 
   `8000` in both fields (see image below). Confirm with `OK`.
-  ![portBindings.png](../auxiliaryImages/Build%20documentation%20locally/portBindings.png)
+  ![portBindings.png](../auxiliaryImages/builddocumentationlocally/portBindings.png)
 - Click on `Save` in the lower right corner. This will restart the container. Messages will appear 
   saying that the build failed. These messages can be ignored. The build process restarts automatically.
 - After a few seconds, [Click on this link](http://127.0.0.1:8000/).

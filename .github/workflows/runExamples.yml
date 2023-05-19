@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ikarusproject/ikarus-dev:latest
-      options: --memory-swap="20g" --memory="20g" --cpus="2"  --user root
+      options: --memory-swap="20g" --memory="20g" --cpus="2" --user root
     strategy:
       fail-fast: false
       matrix:

@@ -15,3 +15,10 @@ cmake-build-relwithdebinfo/
 docs/website/drawio-exporter
 *.pyc
 .cache/
+
+ikarus/python/test/setpath.py
+python/pyikarus.egg-info/
+dist/
+_skbuild/
+MANIFEST.in
+ikarus/python/test/*.vtu

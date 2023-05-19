@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-License-Identifier: LGPL-3.0-or-later
+from setuptools import setup, find_packages
+REQUIRED_PACKAGES = '${RequiredPythonModules}'.replace(';',' ').split(' ')
+
+setup(
+    name="pyikarus",
+    description="${ProjectDescription}",
+    version="${ProjectVersionString}",
+    author="${ProjectAuthor}",
+    author_email="${ProjectMaintainerEmail}",
+    packages=find_packages(exclude=["docs/*"]),
+    zip_safe=0,
+    package_data={"": ["*.so"], "pyikarus": ["data/*.cmake"]},
+    install_requires=REQUIRED_PACKAGES,
+    include_package_data=True,
+)
