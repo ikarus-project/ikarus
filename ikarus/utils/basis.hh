@@ -8,36 +8,42 @@
 #include <ikarus/utils/flatPreBasis.hh>
 
 namespace Ikarus {
-  template <typename BlockedBasis_, typename FlatBasis_>
+  template <typename PreBasis_>
   class Basis {
   public:
-    using BlockedBasis = std::remove_cvref_t<BlockedBasis_>;
-    using GridView     = typename BlockedBasis::GridView;
-    using FlatBasis    = std::remove_cvref_t<FlatBasis_>;
+    using PreBasis       = PreBasis_;
+    using GridView       = typename PreBasis::GridView;
+    using UntouchedBasis = decltype(Dune::Functions::DefaultGlobalBasis(std::declval<PreBasis>()));
+    using FlatBasis = decltype(Dune::Functions::DefaultGlobalBasis(Ikarus::flatPreBasis(std::declval<PreBasis>())));
 
-    Basis(BlockedBasis_& p_bb, FlatBasis_& p_fb) : bb{p_bb}, fb{p_fb} {}
+    explicit Basis(const PreBasis& pb)
+        : bb{Dune::Functions::DefaultGlobalBasis(pb)},
+          fb{Dune::Functions::DefaultGlobalBasis(Ikarus::flatPreBasis(pb))} {}
 
     auto& flat() { return fb; }
 
-    auto& basis() { return bb; }
+    auto& untouched() { return bb; }
 
     const auto& flat() const { return fb; }
 
-    const auto& basis() const { return bb; }
+    const auto& untouched() const { return bb; }
 
     const auto& gridView() const { return bb.gridView(); }
 
     auto& gridView() { return bb.gridView(); }
 
   private:
-    BlockedBasis bb;
+    UntouchedBasis bb;
     FlatBasis fb;
   };
 
-  template <typename GridView, typename PreBasis>
-  auto makeBasis(GridView& gv, const PreBasis& pb) {
-    auto basis     = Dune::Functions::BasisFactory::makeBasis(gv, pb);
-    auto flatBasis = Dune::Functions::DefaultGlobalBasis(Ikarus::flatPreBasis(pb(gv)));
-    return Basis(basis, flatBasis);
+  template <typename GridView, typename PreBasisFactory>
+  auto makeBasis(const GridView& gv, const PreBasisFactory& pb) {
+    return Basis(pb(gv));
+  }
+
+  template <typename PreBasis>
+  auto makeBasis(const Dune::Functions::DefaultGlobalBasis<PreBasis>& gb) {
+    return Basis(gb.preBasis());
   }
 }  // namespace Ikarus

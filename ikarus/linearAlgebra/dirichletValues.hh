@@ -15,14 +15,14 @@
 
 namespace Ikarus {
 
-  template <typename Basis_>
+  template <typename Basis_, typename FlagsType_ = std::vector<bool>>
   class DirichletValues {
   public:
-    using Basis                         = Basis_;
-    using FlagsType                     = std::vector<bool>;
+    using Basis                         = std::remove_cvref_t<Basis_>;
+    using FlagsType                     = FlagsType_;
     static constexpr int worldDimension = Basis::GridView::dimensionworld;
     using BackendType                   = decltype(Dune::Functions::istlVectorBackend(std::declval<FlagsType&>()));
-    explicit DirichletValues(const Basis& p_basis) : basis_{p_basis}, dirichletFlagsBackend{dirichletFlags} {
+    explicit DirichletValues(const Basis_& p_basis) : basis_{p_basis}, dirichletFlagsBackend{dirichletFlags} {
       dirichletFlagsBackend.resize(basis_);
       std::fill(dirichletFlags.begin(), dirichletFlags.end(), false);
       inhomogeneousBoundaryVectorDummy.setZero(basis_.size());
@@ -62,7 +62,7 @@ namespace Ikarus {
       f(basis_, dirichletFlagsBackend);
     }
 
-    /* \brief Returns the global basis object */
+    /* \brief Returns the local basis object */
     const auto& basis() const { return basis_; }
 
     /* \brief Returns a boolean values, if the give multiIndex is constrained */
@@ -79,6 +79,9 @@ namespace Ikarus {
 
     /* \brief Returns how many degrees of freedom there are */
     auto size() const { return dirichletFlags.size(); }
+
+    /* \brief Returns the underlying dof flag container */
+    auto& container() const { return dirichletFlags; }
 
     /**
      * \brief Function to insert a function of inhomogeneous dirichlet boundary functions
@@ -137,7 +140,7 @@ namespace Ikarus {
   private:
     Eigen::VectorXd inhomogeneousBoundaryVectorDummy;
     Basis basis_;
-    std::vector<bool> dirichletFlags;
+    FlagsType dirichletFlags;
     BackendType dirichletFlagsBackend;
     struct DirichletFunctions {
       using Signature = std::function<Eigen::Vector<double, worldDimension>(

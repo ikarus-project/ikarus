@@ -26,8 +26,8 @@
 template <template <typename> typename FEElementTemplate, int gridDim, typename PreBasis, typename... F>
 auto testFEElement(const PreBasis& preBasis, const std::string& elementName, const bool& isRandomlyDistorted,
                    F&&... f) {
-  Dune::TestSuite t(std::string("testFEElement ") + elementName + " on grid element with dimension"
-                    + std::to_string(gridDim) + ".");
+  Dune::TestSuite t(std::string("testFEElement ") + elementName + " on grid element with dimension "
+                    + std::to_string(gridDim));
 
   auto fTuple = std::forward_as_tuple(f...);
 
@@ -86,32 +86,30 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
 
   using FEElementType = FEElementTemplate<decltype(basis)>;
   std::vector<FEElementType> fes;
-  fes.emplace_back(basis, *element, youngsModulus, poissonsRatio, &volumeLoad, &neumannBoundary, &neumannBoundaryLoad);
+  fes.emplace_back(basis, *element, youngsModulus, poissonsRatio, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
   auto basisP = std::make_shared<const decltype(basis)>(basis);
 
   Ikarus::DirichletValues dirichletValues(basisP->flat());
   auto& fe             = fes[0];
   auto sparseAssembler = SparseFlatAssembler(fes, dirichletValues);
 
-  typename FEElementType::FERequirementType::SolutionVectorType d;
-  d.setRandom(flatBasis.size());
+  static_assert(std::is_reference_v<typename decltype(sparseAssembler)::FEContainerType>);
+
+  typename FEElementType::FERequirementType::SolutionVectorTypeRaw d;
+  d.setRandom(basis.flat().size());
 
   double lambda = 7.3;
 
   auto requirements = FErequirements()
                           .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
                           .addAffordance(Ikarus::AffordanceCollections::elastoStatics);
-  Eigen::VectorXd forces;
-  Eigen::MatrixXd stiffnessmatrix;
 
   auto fvLambda = [&](auto&& d_) -> auto {
-    forces.setZero(flatBasis.localView().maxSize());
     requirements.insertGlobalSolution(Ikarus::FESolutions::displacement, d_);
     return sparseAssembler.getScalar(requirements);
   };
 
   auto dfvLambda = [&](auto&& d_) -> auto& {
-    forces.setZero(flatBasis.localView().maxSize());
     requirements.insertGlobalSolution(Ikarus::FESolutions::displacement, d_);
     return sparseAssembler.getVector(requirements);
   };
@@ -130,7 +128,8 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
   if constexpr (requires { ElementTest<FEElementType>::test(); }) {
     auto testFunctor = ElementTest<FEElementType>::test();
     t.subTest(testFunctor(nonLinOp, fe));
-  }
+  } else
+    spdlog::info("No element test functor found for {}", Dune::className<FEElementType>());
 
   return t;
 }

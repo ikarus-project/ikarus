@@ -7,7 +7,7 @@
 
 namespace Ikarus {
 
-  template <typename GridElementEntityType>
+  template <typename GridElementEntityType, bool useRef = false>
   struct FETraits {
     /** \brief Type used for coordinates */
     using ctype = double;
@@ -28,13 +28,13 @@ namespace Ikarus {
     using ParameterSpaceType = Eigen::Matrix<ctype, mydim, 1>;
 
     /** \brief Type of the internal forces */
-    using VectorType = Eigen::VectorXd;
+    using VectorType = std::conditional_t<useRef, Eigen::Ref<Eigen::VectorXd>, Eigen::VectorXd>;
 
     /** \brief Type of the internal forces */
     using ScalarType = ctype;
 
     /** \brief Type of the stiffness matrix */
-    using MatrixType = Eigen::MatrixXd;
+    using MatrixType = std::conditional_t<useRef, Eigen::Ref<Eigen::MatrixXd>, Eigen::MatrixXd>;
   };
 
 }  // namespace Ikarus

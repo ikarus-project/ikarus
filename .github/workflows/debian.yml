@@ -39,14 +39,24 @@ jobs:
             config: Debug,
             compilerC: gcc-12,
             compilerCxx: g++-12,
-            lib: ""
+            lib: "",
+            testRegex: "cpp"
           }
           - {
             name: "GCC-Release",
             config: Release,
             compilerC: gcc-12,
             compilerCxx: g++-12,
-            lib: ""
+            lib: "",
+            testRegex: "cpp"
+          }
+          - {
+            name: "GCC-Release-Python",
+            config: Release,
+            compilerC: gcc-12,
+            compilerCxx: g++-12,
+            lib: "",
+            testRegex: "python"
           }
     steps:
       - uses: actions/checkout@v2
@@ -58,7 +68,9 @@ jobs:
           mkdir cmake-build-${{ matrix.config.config }}
           cd cmake-build-${{ matrix.config.config }}
           cmake ../  -DCMAKE_BUILD_TYPE=${{ matrix.config.config }} -G "Unix Makefiles" -DCMAKE_C_COMPILER=${{ matrix.config.compilerC }} -DCMAKE_CXX_COMPILER=${{ matrix.config.compilerCxx }}
-          cmake --build . --parallel 2 --target build_tests
+          cmake --build . --parallel 2 --target ikarus
+          cmake --build . --parallel 2 --target _ikarus
+          cmake --build . --parallel 2 --target build_${{ matrix.config.testRegex }}_tests
       - name: Tests
         working-directory: ./repo/cmake-build-${{ matrix.config.config }}
-        run: ctest --output-on-failure --parallel 2 -C ${{ matrix.config.config }}
+        run: ctest --output-on-failure --parallel 2 -L ${{ matrix.config.testRegex }}

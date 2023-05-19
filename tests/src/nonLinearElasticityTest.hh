@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-//
 #include <config.h>
 
 #include "common.hh"
@@ -13,13 +12,13 @@
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 
-#include "spdlog/spdlog.h"
+#include <spdlog/spdlog.h>
 
 #include <Eigen/Core>
 
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/controlRoutines/loadControl.hh>
-#include <ikarus/finiteElements/mechanics/nonLinearElasticityFE.hh>
+#include <ikarus/finiteElements/mechanics/nonLinearElastic.hh>
 #include <ikarus/linearAlgebra/dirichletValues.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
@@ -34,14 +33,15 @@ using Dune::TestSuite;
 
 template <typename Grid, typename Material>
 auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
-  TestSuite t("NonLinearElasticityLoadControlNRandTR" + Dune::className(Grid{}));
+  TestSuite t("NonLinearElasticityLoadControlNRandTR " + Dune::className(Grid{}) + " " + Dune::className(mat));
   auto grid     = createGrid<Grid>();
   auto gridView = grid->leafGridView();
 
   using namespace Ikarus;
 
   using namespace Dune::Functions::BasisFactory;
-  auto basis      = Ikarus::makeBasis(gridView, power<2>(lagrange<1>()));
+  auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<1>(), FlatInterleaved()));
+  //  auto g          = basis.flat().localView();
   auto volumeLoad = []([[maybe_unused]] auto& globalCoord, auto& lamb) {
     Eigen::Vector2d fext;
     fext.setZero();
@@ -50,14 +50,14 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
     return fext;
   };
 
-  auto reducedMat = plainStress(mat, 1e-8);
+  auto reducedMat = planeStress(mat, 1e-8);
 
-  std::vector<Ikarus::NonLinearElasticityFE<decltype(basis), decltype(reducedMat)>> fes;
+  std::vector<Ikarus::NonLinearElastic<decltype(basis), decltype(reducedMat)>> fes;
 
   for (auto& element : elements(gridView))
-    fes.emplace_back(basis, element, reducedMat, nullptr, nullptr, volumeLoad);
-  auto basisP = std::make_shared<const decltype(basis)>(basis);
-  Ikarus::DirichletValues dirichletValues(basisP->flat());
+    fes.emplace_back(basis, element, reducedMat, volumeLoad);
+
+  Ikarus::DirichletValues dirichletValues(basis.flat());
   dirichletValues.fixBoundaryDOFs([&](auto& dirichletFlags, auto&& localIndex, auto&& localView, auto&& intersection) {
     if (std::abs(intersection.geometry().center()[1]) < 1e-8) dirichletFlags[localView.index(localIndex)] = true;
   });
@@ -104,8 +104,8 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
              .rho_reg   = 1e8,
              .Delta0    = 1});
 
-  auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(
-      basis.flat(), d, 2);
+  using FlatBasis = decltype(basis)::FlatBasis;
+  auto vtkWriter  = std::make_shared<ControlSubsamplingVertexVTKWriter<FlatBasis>>(basis.flat(), d, 2);
   vtkWriter->setFileNamePrefix("Test2Dsolid");
   vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 2);
 
@@ -114,16 +114,22 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   const auto controlInfo = lc.run();
   nonLinOp.template update<0>();
   const auto maxDisp = std::ranges::max(d);
-  const double energyExpected
-      = (std::is_same_v<Grid, Grids::Yasp>)
-            ? -2.9593431593780032962
-            : ((std::is_same_v<Grid, Grids::Alu>) ? -2.9530594665063669702
-                                                  : /* std::is_same_v<Grid, Grids::Iga> */ -1.4533281398929942529);
-  const double maxDispExpected
-      = (std::is_same_v<Grid, Grids::Yasp>)
-            ? 0.11291304159624337977
-            : ((std::is_same_v<Grid, Grids::Alu>) ? 0.1123397197762363714
-                                                  : /* std::is_same_v<Grid, Grids::Iga> */ 0.061647849558021668159);
+  double energyExpected;
+  if (std::is_same_v<Grid, Grids::Yasp>)
+    energyExpected = -2.9593431593780032962;
+  else if (std::is_same_v<Grid, Grids::Alu>)
+    energyExpected = -2.9530594665063669702;
+  else /* std::is_same_v<Grid, Grids::Iga> */
+    energyExpected = -1.4533281398929942529;
+
+  double maxDispExpected;
+  if (std::is_same_v<Grid, Grids::Yasp>)
+    maxDispExpected = 0.11291304159624337977;
+  else if (std::is_same_v<Grid, Grids::Alu>)
+    maxDispExpected = 0.1123397197762363714;
+  else /* std::is_same_v<Grid, Grids::Iga> */
+    maxDispExpected = 0.061647849558021668159;
+
   std::cout << std::setprecision(20) << nonLinOp.value() << std::endl;
   std::cout << "Maxdisp: " << maxDisp << std::endl;
   if constexpr (std::is_same_v<Material, Ikarus::StVenantKirchhoff<>>) {
@@ -131,7 +137,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
         << "energyExpected: " << energyExpected << "\nnonLinOp.value(): " << nonLinOp.value();
 
     t.check(std::abs(maxDispExpected - maxDisp) < 1e-12, "maxDispExpected-maxDisp")
-        << "maxDispExpected: \n"
+        << "\nmaxDispExpected: \n"
         << maxDispExpected << "\nmaxDisp: \n"
         << maxDisp;
   } else {  // using a Neohooke material yields a lower energy and larger displacements

@@ -173,7 +173,7 @@ int main(int argc, char** argv) {
   auto nhRed5 = beamMaterial(nh, 1e-12);
   t.subTest(testMaterial(nhRed5));
 
-  auto nhRed6 = plainStress(nh, 1e-12);
+  auto nhRed6 = planeStress(nh, 1e-12);
   t.subTest(testMaterial(nhRed6));
 
   return t.exit();

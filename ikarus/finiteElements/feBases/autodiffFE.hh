@@ -13,14 +13,16 @@
 namespace Ikarus {
   ////This element can not be used on its own but it should be inherited from
   //// The class constructor can only be called from the templated class.
-  template <typename RealElement, typename Basis, typename FERequirementTypeImpl = FErequirements<Eigen::VectorXd>>
+  template <typename RealElement, typename Basis, typename FERequirementType_ = FErequirements<>,
+            bool useEigenRef = false>
   class AutoDiffFE {
   public:
-    using LocalView             = typename Basis::LocalView;
-    using Traits                = TraitsFromLocalView<LocalView>;
-    using GridElementEntityType = typename LocalView::Element;
-    using FERequirementType     = FErequirements<Eigen::VectorXd>;
-    void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& h) const {
+    using LocalView   = typename Basis::LocalView;
+    using Traits      = TraitsFromLocalView<LocalView, useEigenRef>;
+    using GridElement = typename LocalView::Element;
+
+    using FERequirementType = FERequirementType_;
+    void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType h) const {
       Eigen::VectorXdual2nd dx(localDofSize);
       Eigen::VectorXd g;
       autodiff::dual2nd e;
@@ -29,7 +31,7 @@ namespace Ikarus {
       hessian(f, autodiff::wrt(dx), at(dx), e, g, h);
     }
 
-    void calculateVector(const FERequirementType& par, typename Traits::VectorType& g) const {
+    void calculateVector(const FERequirementType& par, typename Traits::VectorType g) const {
       Eigen::VectorXdual dx(localDofSize);
       dx.setZero();
       autodiff::dual e;
@@ -37,8 +39,8 @@ namespace Ikarus {
       gradient(f, autodiff::wrt(dx), at(dx), e, g);
     }
 
-    void calculateLocalSystem(const FERequirementType& par, typename Traits::MatrixType& h,
-                              typename Traits::VectorType& g) const {
+    void calculateLocalSystem(const FERequirementType& par, typename Traits::MatrixType h,
+                              typename Traits::VectorType g) const {
       Eigen::VectorXdual2nd dx(localDofSize);
       dx.setZero();
       auto f = [&](auto& x) { return this->underlying().calculateScalarImpl(par, x); };
@@ -53,7 +55,7 @@ namespace Ikarus {
     }
 
     [[nodiscard]] size_t size() const { return localDofSize; }
-    const GridElementEntityType& getEntity() { return localView_.element(); }
+    const GridElement& getEntity() { return localView_.element(); }
     const LocalView& localView() const { return localView_; }
     LocalView& localView() { return localView_; }
 

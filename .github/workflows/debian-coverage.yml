@@ -29,7 +29,9 @@ jobs:
         run: |
           mkdir cmake-build-debug
           cd cmake-build-debug
-          cmake ../  -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc-12 -DCMAKE_CXX_COMPILER=g++-12 -DENABLE_TEST_COVERAGE=1
+          cmake ../  -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" -DENABLE_TEST_COVERAGE=1
+          cmake --build . --parallel 2 --target ikarus
+          cmake --build . --parallel 2 --target _ikarus
           cmake --build . --parallel 2 --target build_tests
 
       - name: Tests
@@ -37,7 +39,7 @@ jobs:
         run: |
           ctest --output-on-failure --parallel 2 -C Debug
           cd ..
-          gcov -abcfu $(find ./cmake-build-debug -type f -name "*.gcno" | sed  's/gcno//g')
+          gcov -abcfu $(find ./cmake-build-debug -not -path "*dune-env/*" -type f -name "*.gcno" | sed  's/gcno//g')
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2

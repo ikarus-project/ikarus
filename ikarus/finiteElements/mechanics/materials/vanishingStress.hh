@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "ikarus/linearAlgebra/nonLinearOperator.hh"
-#include "ikarus/solver/nonLinearSolver/newtonRaphson.hh"
+#include <ikarus/linearAlgebra/nonLinearOperator.hh>
+#include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
 
 namespace Ikarus {
 

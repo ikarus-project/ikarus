@@ -40,11 +40,13 @@ jobs:
         run: |
           sudo cp /usr/bin/clang-format-13 /usr/bin/clang-format
           pip install cmake_format==0.6.13 pyyaml
+          pip install black==23.3.0
 
       - name: configure
-        run: cmake -S "cmake/FormatTarget" -Bbuild -DADD_FORMATTARGET=TRUE
+        run: cmake -S "cmake/FormatTarget" -Bbuild -DADD_FORMATTARGET=TRUE -DADD_PYTHONFORMATTING=1
 
       - name: check style
         run: |
           cmake --build build --target format
           cmake --build build --target check-format
+          cmake --build build --target check-pythonformat

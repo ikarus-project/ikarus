@@ -52,3 +52,27 @@ if(ADD_CODESPELLTARGET)
   endif()
 
 endif()
+
+if(ADD_PYTHONFORMATTING)
+  find_package(Python)
+  if(Python_FOUND)
+    message("Adding python format command")
+
+    set(PYTHONFORMATTINGCOMAND python -m black .)
+    add_custom_target(
+      fix-pythonformat
+      COMMAND ${PYTHONFORMATTINGCOMAND}
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+
+    set(PYTHONFORMATTINGCOMANDCHECK python -m black . --check)
+    add_custom_target(
+      check-pythonformat
+      COMMAND ${PYTHONFORMATTINGCOMANDCHECK}
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+  else()
+    message(STATUS "python not found, codespell target not available")
+  endif()
+
+endif()
