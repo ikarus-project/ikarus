@@ -56,8 +56,6 @@ if __name__ == "__main__":
     assert len(d2) == len(d)
     assert (d2 == d).all()
     fes = []
-    forces = np.zeros(8)
-    stiffness = np.zeros((8, 8))
 
     def volumeLoad(x, lambdaVal):
         return np.array([lambdaVal * x[0] * 2, 2 * lambdaVal * x[1] * 0])
@@ -89,6 +87,8 @@ if __name__ == "__main__":
             )
         )
 
+    forces = np.zeros(8)
+    stiffness = np.zeros((8, 8))
     fes[0].calculateVector(req, forces)
     fes[0].calculateMatrix(req, stiffness)
     fes[0].localView()

@@ -12,22 +12,24 @@
 
 #include <Eigen/Core>
 
+#include <ikarus/utils/makeEnum.hh>
+
 namespace Ikarus {
 
   // clang-format off
-  enum class ScalarAffordances {
+  MAKE_ENUM(ScalarAffordances,
     noAffordance,
     mechanicalPotentialEnergy,
     microMagneticPotentialEnergy
-  };
+  );
 
-  enum class VectorAffordances {
+  MAKE_ENUM(VectorAffordances,
     noAffordance,
     forces,
     microMagneticForces
-  };
+  );
 
-  enum class MatrixAffordances {
+  MAKE_ENUM(MatrixAffordances,
     noAffordance,
     stiffness,
     materialstiffness,
@@ -35,23 +37,23 @@ namespace Ikarus {
     stiffnessdiffBucklingVector,
     microMagneticHessian,
     mass
-  };
+  );
 
-  enum class FEParameter {
+  MAKE_ENUM(FEParameter,
     noParameter,
     loadfactor,
     time
-  };
+    );
 
-  enum class FESolutions {
+  MAKE_ENUM(FESolutions,
     noSolution,
     displacement,
     velocity,
     director,
     magnetizationAndVectorPotential
-  };
+  );
 
-  enum class ResultType {
+  MAKE_ENUM(ResultType,
     noType,
     magnetization,
     gradientNormOfMagnetization,
@@ -60,11 +62,12 @@ namespace Ikarus {
     BField,
     HField,
     cauchyStress,
+    PK2Stress,
     linearStress,
     director
-  };
+  );
+
   // clang-format on
-  std::string getResultType(const ResultType &res);
 
   struct AffordanceCollectionImpl {
     ScalarAffordances scalarAffordances{ScalarAffordances::noAffordance};
@@ -147,13 +150,21 @@ namespace Ikarus {
         else
           return sols.at(key);
       } catch (std::out_of_range &oor) {
-        DUNE_THROW(Dune::RangeError,
-                   std::string("Out of Range error: ") + std::string(oor.what()) + " in getGlobalSolution");
+        DUNE_THROW(Dune::RangeError, std::string("Out of Range error: ") + std::string(oor.what())
+                                         + " in getGlobalSolution with key" + toString(key));
         abort();
       }
     }
 
-    const ParameterTypeRaw &getParameter(FEParameter &&key) const { return parameter.at(key).get(); }
+    const ParameterTypeRaw &getParameter(FEParameter &&key) const {
+      try {
+        return parameter.at(key).get();
+      } catch (std::out_of_range &oor) {
+        DUNE_THROW(Dune::RangeError, std::string("Out of Range error: ") + std::string(oor.what())
+                                         + " in getParameter with key" + toString(key));
+        abort();
+      }
+    }
 
     template <FEAffordance Affordance>
     bool hasAffordance(Affordance &&affordance) const {
@@ -181,7 +192,14 @@ namespace Ikarus {
       results.insert_or_assign(resultType, resultArray);
     }
 
-    ResultArray &getResult(ResultType &&resultType) { return results.at(resultType); }
+    ResultArray &getResult(const ResultType &resultType) { return results.at(resultType); }
+
+    auto &getSingleResult() {
+      if (results.size() != 1)
+        DUNE_THROW(Dune::RangeError, "getSingleResult can only be called when a single result was inserted");
+      else
+        return *(results.begin());
+    }
 
   private:
     std::map<ResultType, ResultArray> results;
@@ -193,12 +211,14 @@ namespace Ikarus {
   template <typename FErequirements = FErequirements<>>
   class ResultRequirements {
   public:
-    using ParameterType         = typename FErequirements::ParameterType;
+    using ParameterTypeRaw      = typename FErequirements::ParameterTypeRaw;
     using SolutionVectorType    = typename FErequirements::SolutionVectorType;
     using SolutionVectorTypeRaw = typename FErequirements::SolutionVectorTypeRaw;
 
     ResultRequirements(FErequirements &&req, std::set<ResultType> &&p_resType)
         : reqB{req}, resType(std::move(p_resType)) {}
+
+    explicit ResultRequirements(const FErequirements &req) : reqB{req} {}
 
     ResultRequirements() = default;
     bool isResultRequested(ResultType &&key) const { return resType.contains(key); }
@@ -209,7 +229,7 @@ namespace Ikarus {
       return *this;
     }
 
-    ResultRequirements &insertParameter(FEParameter &&key, ParameterType &val) {
+    ResultRequirements &insertParameter(FEParameter &&key, ParameterTypeRaw &val) {
       reqB.insertParameter(std::forward<FEParameter>(key), val);
       return *this;
     }
@@ -229,9 +249,17 @@ namespace Ikarus {
       return reqB.getGlobalSolution(std::move(key));
     }
 
-    const ParameterType &getParameter(FEParameter &&key) const { return reqB.getParameter(std::move(key)); }
+    const ParameterTypeRaw &getParameter(FEParameter &&key) const { return reqB.getParameter(std::move(key)); }
 
     const FErequirements &getFERequirements() const { return reqB; }
+
+    auto getRequestedResult() const {
+      if (resType.size() == 1)
+        return *(resType.begin());
+      else {
+        DUNE_THROW(Dune::InvalidStateException, "This function can only be called when a single result is requested");
+      }
+    }
 
   private:
     std::set<ResultType> resType;

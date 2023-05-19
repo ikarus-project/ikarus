@@ -168,7 +168,7 @@ namespace Ikarus {
       }
     }
 
-    void calculateAt(const ResultRequirementsType& req, const Eigen::Vector<double, Traits::mydim>& local,
+    void calculateAt(const ResultRequirementsType& req, const Dune::FieldVector<double, Traits::mydim>& local,
                      ResultTypeMap<double>& result) const {
       using namespace Dune::Indices;
       using namespace Dune::DerivativeDirections;
@@ -176,8 +176,7 @@ namespace Ikarus {
 
       const auto eps = getStrainFunction(req.getFERequirements());
       const auto C   = getMaterialTangent();
-      auto gp        = toDune(local);
-      auto epsVoigt  = eps.evaluate(gp, on(gridElement));
+      auto epsVoigt  = eps.evaluate(local, on(gridElement));
 
       auto cauchyStress = (C * epsVoigt).eval();
 

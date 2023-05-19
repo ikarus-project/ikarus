@@ -37,6 +37,9 @@ namespace Ikarus {
     using BaseDisp          = PowerBasisFE<FlatBasis>;  // Handles globalIndices function
     using BaseAD            = Ikarus::AutoDiffFE<NonLinearElastic<Basis_, Material_, FErequirements_, useEigenRef>,
                                       typename Basis_::FlatBasis, FErequirements_, useEigenRef>;
+    using LocalView         = typename FlatBasis::LocalView;
+    using Geometry          = typename LocalView::Element::Geometry;
+    using GridView          = typename FlatBasis::GridView;
     using FERequirementType = FErequirements_;
 
     using ResultRequirementsType = ResultRequirements<FERequirementType>;
@@ -44,11 +47,8 @@ namespace Ikarus {
     using BaseAD::localView;
     using BaseAD::size;
     friend BaseAD;
-    using LocalView = typename FlatBasis::LocalView;
-    using Element   = typename LocalView::Element;
-    using Geometry  = typename Element::Geometry;
-    using GridView  = typename FlatBasis::GridView;
-    using Material  = Material_;
+    using Element  = typename LocalView::Element;
+    using Material = Material_;
 
     template <typename VolumeLoad = LoadDefault, typename NeumannBoundaryLoad = LoadDefault>
     NonLinearElastic(const Basis& globalBasis, const typename LocalView::Element& element, const Material& p_mat,
@@ -141,6 +141,37 @@ namespace Ikarus {
       return energy;
     }
 
+  public:
+    void calculateAt(const ResultRequirementsType& req, const Dune::FieldVector<double, Traits::mydim>& local,
+                     ResultTypeMap<double>& result) const {
+      const auto& d      = req.getGlobalSolution(Ikarus::FESolutions::displacement);
+      const auto& lambda = req.getParameter(Ikarus::FEParameter::loadfactor);
+      using namespace Dune::DerivativeDirections;
+      using namespace Dune;
+      auto& first_child = this->localView().tree().child(0);
+      const auto& fe    = first_child.finiteElement();
+      Dune::BlockVector<RealTuple<double, Traits::dimension>> disp(fe.size());
+
+      for (auto i = 0U; i < fe.size(); ++i)
+        for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
+          disp[i][k2] = d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
+      const auto geo = this->localView().element().geometry();
+
+      Dune::StandardLocalFunction uFunction(localBasis, disp, std::make_shared<const Geometry>(geo));
+      const auto H      = uFunction.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
+      const auto E      = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
+      const auto EVoigt = toVoigt(E);
+      auto PK2          = mat.template stresses<StrainTags::greenLagrangian>(EVoigt);
+
+      typename ResultTypeMap<double>::ResultArray resultVector;
+      if (req.isResultRequested(ResultType::PK2Stress)) {
+        resultVector.resizeLike(PK2);
+        resultVector = PK2;
+        result.insertOrAssignResult(ResultType::PK2Stress, resultVector);
+      }
+    }
+
+  private:
     Dune::CachedLocalBasis<
         std::remove_cvref_t<decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis())>>
         localBasis;

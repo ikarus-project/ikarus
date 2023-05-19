@@ -344,7 +344,7 @@ namespace Ikarus {
           easVariant_);
     }
 
-    void calculateAt(const ResultRequirementsType& req, const Eigen::Vector<double, Traits::mydim>& local,
+    void calculateAt(const ResultRequirementsType& req, const Dune::FieldVector<double, Traits::mydim>& local,
                      ResultTypeMap<double>& result) const {
       using namespace Dune::Indices;
       using namespace Dune::DerivativeDirections;
@@ -354,11 +354,9 @@ namespace Ikarus {
 
       if (onlyDisplacementBase) return;
 
-      const auto& d             = req.getGlobalSolution(Ikarus::FESolutions::displacement);
-      const auto strainFunction = DisplacementBasedElement::getStrainFunction(req.getFERequirements());
-      const auto C              = DisplacementBasedElement::getMaterialTangentFunction(req.getFERequirements());
-      auto gpLocal              = toDune(local);
-      const auto& numNodes      = DisplacementBasedElement::numberOfNodes;
+      const auto& d        = req.getGlobalSolution(Ikarus::FESolutions::displacement);
+      const auto C         = DisplacementBasedElement::getMaterialTangentFunction(req.getFERequirements());
+      const auto& numNodes = DisplacementBasedElement::numberOfNodes;
 
       Eigen::VectorXd disp(localView().size());
       for (auto i = 0U; i < numNodes; ++i)
@@ -374,8 +372,8 @@ namespace Ikarus {
             Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
             calculateDAndLMatrix(easFunction, req.getFERequirements(), D, L);
             const auto alpha = (-D.inverse() * L * disp).eval();
-            const auto M     = easFunction.calcM(gpLocal);
-            const auto CEval = C(gpLocal);
+            const auto M     = easFunction.calcM(local);
+            const auto CEval = C(local);
             auto easStress   = (CEval * M * alpha).eval();
             typename ResultTypeMap<double>::ResultArray resultVector;
             if (req.isResultRequested(ResultType::linearStress)) {

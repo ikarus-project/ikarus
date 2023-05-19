@@ -9,6 +9,7 @@
 #include <dune/fufem/boundarypatch.hh>
 #include <dune/grid/uggrid.hh>
 
+#include "ikarus/io/resultFunction.hh"
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/finiteElements/feRequirements.hh>
 #include <ikarus/linearAlgebra/dirichletValues.hh>
@@ -130,6 +131,12 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
     t.subTest(testFunctor(nonLinOp, fe));
   } else
     spdlog::info("No element test functor found for {}", Dune::className<FEElementType>());
+
+  // Trying to instantiate the Result Evaluator
+  if constexpr (gridDim == 2) {
+    auto resReq         = Ikarus::ResultRequirements(requirements).addResultRequest(ResultType::PK2Stress);
+    auto resultFunction = std::make_shared<ResultFunction<FEElementType>>(&fes, resReq);
+  }
 
   return t;
 }

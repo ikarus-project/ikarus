@@ -24,7 +24,7 @@ jobs:
       - name: Create tag and push tag
         run: |
           cd repo
-          python .github/workflows/scripts/release.py
+          python .github/workflows/scripts/release.py $NEWVERSION
           git tag -a v$NEWVERSION
           git push v$NEWVERSION
       - name: Docker Login
