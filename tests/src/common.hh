@@ -185,9 +185,8 @@ template <typename NonLinearOperator, typename FiniteElement>
   for (auto c = 0UL; c < fe2.size(); ++c) {
     const auto fineKey                        = fe2.localCoefficients().localKey(c);
     const auto nodalPositionInChildCoordinate = referenceElement.position(fineKey.subEntity(), fineKey.codim());
-    auto coord                                = toEigen(nodalPositionInChildCoordinate);
-    fe.calculateAt(resultRequirements, coord, result);
-    Eigen::Vector3d computedResult = result.getResult(ResultType::linearStress).eval();
+    fe.calculateAt(resultRequirements, nodalPositionInChildCoordinate, result);
+    Eigen::Vector3d computedResult = result.getResult(ResultType::linearStress);
     const auto nodeIndex           = localScalarView.index(localScalarView.tree().localIndex(c))[0];
     stressVector[nodeIndex]        = toDune(computedResult);
     for (auto voigtIndex = 0UL; voigtIndex < 3; ++voigtIndex) {

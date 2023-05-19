@@ -41,10 +41,13 @@ def inplace_change(filename: str, old_string: str, new_string: str):
         f.write(s)
 
 
-def update_all_versions():
+def update_all_versions(version_override=None):
     """Update all version numbers in local files"""
     old_version_number = read_old_version()
-    new_version_number = bump_patch_number(old_version_number)
+    if version_override is None:
+        new_version_number = bump_patch_number(old_version_number)
+    else:
+        new_version_number = version_override
     print(f"Bump version from {old_version_number} to {new_version_number}")
     inplace_change(
         "../../../dune.module",
@@ -58,10 +61,16 @@ def update_all_versions():
     )
     inplace_change(
         "../../../setup.py",
-        f"ikarusVersion = {old_version_number}",
-        f"ikarusVersion = {new_version_number}",
+        f'ikarusVersion = "{old_version_number}"',
+        f'ikarusVersion = "{new_version_number}"',
     )
 
 
+import sys
+
 if __name__ == "__main__":
-    update_all_versions()
+    try:
+        var = sys.argv[1]
+        update_all_versions(var)
+    except IndexError:
+        update_all_versions()

@@ -49,7 +49,7 @@ namespace Ikarus {
       }
     }
 
-    const GridElementEntityType& getEntity() { return localView_.element(); }
+    const GridElementEntityType& gridElement() { return localView_.element(); }
     const LocalView& localView() const { return localView_; }
     LocalView& localView() { return localView_; }
 
