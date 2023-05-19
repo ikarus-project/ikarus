@@ -15,19 +15,14 @@ namespace Ikarus {
   //// The class constructor can only be called from the templated class.
   template <typename RealElement, typename Basis, typename FERequirementType_ = FErequirements<>,
             bool useEigenRef = false>
-  class AutoDiffFE {
-  template <typename RealElement, typename Basis, typename FERequirementTypeImpl = FErequirements<Eigen::VectorXd>>
   class AutoDiffFE : public RealElement {
   public:
-    using GridElement = typename LocalView::Element;
-
-    using FERequirementType = FERequirementType_;
-    void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType h) const {
-      Eigen::VectorXdual2nd dx(localDofSize);
     using Base              = RealElement;
     using LocalView         = typename Basis::FlatBasis::LocalView;
     using Traits            = TraitsFromLocalView<LocalView>;
-    using FERequirementType = FErequirements<Eigen::VectorXd>;
+    using GridElement       = typename LocalView::Element;
+    using FERequirementType = FERequirementType_;
+
     void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& h) const {
       Eigen::VectorXdual2nd dx(this->localView().size());
       Eigen::VectorXd g;
