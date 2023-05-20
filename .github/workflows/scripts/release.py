@@ -6,7 +6,7 @@ import os
 
 def read_old_version():
     script_dir = os.path.dirname(os.path.realpath("__file__"))
-    rel_path = "../../../dune.module"
+    rel_path = "dune.module"
     abs_file_path = os.path.join(script_dir, rel_path)
     print(abs_file_path)
     with open(abs_file_path) as f:
@@ -50,17 +50,17 @@ def update_all_versions(version_override=None):
         new_version_number = version_override
     print(f"Bump version from {old_version_number} to {new_version_number}")
     inplace_change(
-        "../../../dune.module",
+        "dune.module",
         f"Version: {old_version_number}",
         f"Version: {new_version_number}",
     )
     inplace_change(
-        "../../../CMakeLists.txt",
+        "CMakeLists.txt",
         f"VERSION {old_version_number}",
         f"VERSION {new_version_number}",
     )
     inplace_change(
-        "../../../setup.py",
+        "setup.py",
         f'ikarusVersion = "{old_version_number}"',
         f'ikarusVersion = "{new_version_number}"',
     )

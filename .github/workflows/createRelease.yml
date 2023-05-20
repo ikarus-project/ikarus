@@ -21,12 +21,19 @@ jobs:
       - uses: actions/checkout@v2
         with:
           path: 'repo'
+          token: ${{ secrets.ORGANIZATION_TOKEN }}
       - name: Create tag and push tag
         run: |
           cd repo
           python .github/workflows/scripts/release.py $NEWVERSION
-          git tag -a v$NEWVERSION
-          git push v$NEWVERSION
+          git config --local user.email "mueller@ibb.uni-stuttgart.de"
+          git config --local user.name "AlexanderMueller"
+          git remote set-url origin https://${{ secrets.ORGANIZATION_TOKEN }}@github.com/ikarus-project/ikarus.git
+          git add .
+          git commit -m "Create release v$NEWVERSION"
+          git push origin main
+          git tag -a v$NEWVERSION -m "Create release v$NEWVERSION"
+          git push origin v$NEWVERSION
       - name: Docker Login
         uses: azure/docker-login@v1
         with:
@@ -55,8 +62,9 @@ jobs:
           git fetch origin gh-pages --depth=1
           cp -R ../repo/docs/ .
           cp -R ../repo/src/ .
-          git config --local user.email "${{ github.event.head_commit.author.email }}"
-          git config --local user.name "${{ github.event.head_commit.author.name }}"
+          git config --local user.email "mueller@ibb.uni-stuttgart.de"
+
+          git config --local user.name "rath3t"
           cd docs
           export MKDOCSOFFLINE=false
           mike deploy v$NEWVERSION  --config-file mkdocs.insiders.yml
