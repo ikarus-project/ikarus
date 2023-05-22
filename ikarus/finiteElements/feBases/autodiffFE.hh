@@ -11,16 +11,16 @@
 #include <ikarus/finiteElements/physicsHelper.hh>
 
 namespace Ikarus {
-  ////This element can not be used on its own but it should be inherited from
-  //// The class constructor can only be called from the templated class.
+  /// This element can not be used on its own but it should be inherited from
+  /// The class constructor can only be called from the templated class.
   template <typename RealElement, typename Basis, typename FERequirementType_ = FErequirements<>,
             bool useEigenRef = false>
   class AutoDiffFE : public RealElement {
   public:
     using Base              = RealElement;
     using LocalView         = typename Basis::FlatBasis::LocalView;
-    using Traits            = TraitsFromLocalView<LocalView>;
-    using GridElement       = typename LocalView::Element;
+    using Traits            = TraitsFromLocalView<LocalView, useEigenRef>;
+    using Element       = typename LocalView::Element;
     using FERequirementType = FERequirementType_;
 
     void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& h) const {

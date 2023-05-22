@@ -38,6 +38,7 @@ namespace Ikarus {
     using FERequirementType      = FERequirements_;
     using ResultRequirementsType = ResultRequirements<FERequirementType>;
     using LocalView              = typename FlatBasis::LocalView;
+    using Element                = typename LocalView::Element;
     using GridView               = typename FlatBasis::GridView;
 
     using Traits = TraitsFromLocalView<LocalView, useEigenRef>;

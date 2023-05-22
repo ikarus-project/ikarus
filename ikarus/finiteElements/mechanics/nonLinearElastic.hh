@@ -29,18 +29,20 @@
 
 namespace Ikarus {
 
-  template <typename Basis_, typename Material, typename FERequirements_ = FErequirements<>, bool useEigenRef = false>
+  template <typename Basis_, typename Material_, typename FERequirements_ = FErequirements<>, bool useEigenRef = false>
   class NonLinearElastic : public PowerBasisFE<typename Basis_::FlatBasis> {
   public:
     using Basis                      = Basis_;
+    using Material                   = Material_;
     using FlatBasis                  = typename Basis::FlatBasis;
     using BasePowerFE                = PowerBasisFE<FlatBasis>;  // Handles globalIndices function
     using FERequirementType          = FERequirements_;
     using ResultRequirementsType     = ResultRequirements<FERequirementType>;
     using LocalView                  = typename FlatBasis::LocalView;
-    using Geometry                   = typename LocalView::Element::Geometry;
+    using Element                    = typename LocalView::Element;
+    using Geometry                   = typename Element::Geometry;
     using GridView                   = typename FlatBasis::GridView;
-    using Traits                     = TraitsFromLocalView<LocalView>;
+    using Traits                     = TraitsFromLocalView<LocalView, useEigenRef>;
     static constexpr int myDim       = Traits::mydim;
     static constexpr auto strainType = StrainTags::greenLagrangian;
 
@@ -114,7 +116,7 @@ namespace Ikarus {
       return calculateScalarImpl(par, dx);
     }
 
-    void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& K) const {
+    void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType K) const {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
       Eigen::VectorXd dx(this->localView().size());
@@ -160,7 +162,7 @@ namespace Ikarus {
       }
     }
 
-    void calculateVector(const FERequirementType& par, typename Traits::VectorType& force) const {
+    void calculateVector(const FERequirementType& par, typename Traits::VectorType force) const {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
       const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
