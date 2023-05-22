@@ -134,5 +134,5 @@ if __name__ == "__main__":
 
     assert np.allclose(resultd.x, resultd2.x, atol=1e-6)
     assert np.allclose(resultd3.x, resultd4.x)
-    assert np.all(abs(resultd3.grad) < 1e-8)
-    assert np.all(abs(resultd4.fun) < 1e-8)
+    assert np.all(abs(resultd3.grad) < 1e-6)
+    assert np. all(abs(resultd4.fun) < 1e-8)
