@@ -9,7 +9,7 @@
 #include <dune/fufem/boundarypatch.hh>
 #include <dune/grid/uggrid.hh>
 
-#include "ikarus/io/resultFunction.hh"
+#include <ikarus/io/resultFunction.hh>
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/finiteElements/feRequirements.hh>
 #include <ikarus/linearAlgebra/dirichletValues.hh>

@@ -7,12 +7,10 @@
 
 #include <dune/common/test/testsuite.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
-#include <dune/functions/functionspacebases/compositebasis.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 
 #include <ikarus/finiteElements/mechanics/linearElastic.hh>
-#include <ikarus/utils/flatPreBasis.hh>
 #include <ikarus/utils/init.hh>
 
 using Dune::TestSuite;

@@ -15,6 +15,7 @@
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/nonLinearSolver/trustRegion.hh>
 #include <ikarus/utils/init.hh>
+
 using namespace Ikarus;
 using Dune::TestSuite;
 

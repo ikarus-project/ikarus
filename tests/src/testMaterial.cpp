@@ -14,6 +14,7 @@
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/utils/functionSanityChecks.hh>
 #include <ikarus/utils/init.hh>
+
 using namespace Ikarus;
 using Dune::TestSuite;
 

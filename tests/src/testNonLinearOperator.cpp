@@ -15,6 +15,7 @@
 #include <ikarus/utils/functionSanityChecks.hh>
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/observer/nonLinearSolverLogger.hh>
+
 using namespace Ikarus;
 using Dune::TestSuite;
 
