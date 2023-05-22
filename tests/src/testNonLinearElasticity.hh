@@ -16,9 +16,9 @@
 
 #include <Eigen/Core>
 
-#include <ikarus/finiteElements/mechanics/linearElastic.hh>
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/controlRoutines/loadControl.hh>
+#include <ikarus/finiteElements/mechanics/linearElastic.hh>
 #include <ikarus/finiteElements/mechanics/nonLinearElastic.hh>
 #include <ikarus/io/resultFunction.hh>
 #include <ikarus/linearAlgebra/dirichletValues.hh>
@@ -103,8 +103,6 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
 
   auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, residualFunction, KFunction),
                                             parameter(d, lambda));
-  //  t.check(checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true})) << "checkGradient Failed";
-  //  t.check(checkHessian(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true})) << "checkHessian Failed";
 
   const double gradTol = 1e-8;
 
@@ -119,7 +117,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
 
   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(
       basis.flat(), d, 2);
-  vtkWriter->setFileNamePrefix("Test2Dsolid");
+  vtkWriter->setFileNamePrefix("Test2DSolid");
   vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 2);
 
   auto lc = Ikarus::LoadControl(tr, 1, {0, 50});
@@ -129,7 +127,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   const auto maxDisp = std::ranges::max(d);
   double energyExpected;
   if (std::is_same_v<Grid, Grids::Yasp>)
-    energyExpected = -2.9593431593780032962;
+    energyExpected = -2.9605187645668578078;
   else if (std::is_same_v<Grid, Grids::Alu>)
     energyExpected = -2.9530594665063669702;
   else /* std::is_same_v<Grid, Grids::Iga> */
@@ -137,7 +135,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
 
   double maxDispExpected;
   if (std::is_same_v<Grid, Grids::Yasp>)
-    maxDispExpected = 0.11291304159624337977;
+    maxDispExpected = 0.11293260007792008115;
   else if (std::is_same_v<Grid, Grids::Alu>)
     maxDispExpected = 0.1123397197762363714;
   else /* std::is_same_v<Grid, Grids::Iga> */
@@ -170,7 +168,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   auto resultFunction = std::make_shared<ResultFunction<ElementType>>(&fes, resReq);
 
   t.check(resultFunction->name() == "PK2Stress")
-      << "Test resultname: " << resultFunction->name() << "should be PK2Stress";
+      << "Test resultName: " << resultFunction->name() << "should be PK2Stress";
   t.check(resultFunction->ncomps() == 3) << "Test result comps: " << resultFunction->ncomps() << "should be 3";
 
   vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction));
@@ -179,13 +177,13 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
 
   auto resultFunction2S = std::make_shared<decltype(resultFunction2)>(resultFunction2);
   t.check(resultFunction2S->name() == "PrincipalStress")
-      << "Test resultname: " << resultFunction2S->name() << "should be PrincipalStress";
+      << "Test resultName: " << resultFunction2S->name() << "should be PrincipalStress";
   t.check(resultFunction2S->ncomps() == 2) << "Test result comps: " << resultFunction2S->ncomps() << "should be 2";
   vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction2S));
   auto resultFunction3  = ResultFunction(&fes, resReq, ResultEvaluators::VonMises{});
   auto resultFunction3S = std::make_shared<decltype(resultFunction3)>(resultFunction3);
   t.check(resultFunction3S->name() == "VonMises")
-      << "Test resultname: " << resultFunction2S->name() << "should be VonMises";
+      << "Test resultName: " << resultFunction2S->name() << "should be VonMises";
   t.check(resultFunction3S->ncomps() == 1) << "Test result comps: " << resultFunction2S->ncomps() << "should be 1";
   vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction3S));
 
@@ -225,8 +223,8 @@ auto GreenLagrangeStrainTest(const Material& mat) {
   using NonLinearElasticity = Ikarus::NonLinearElastic<decltype(basis), decltype(mat)>;
   using LinearElasticity    = Ikarus::LinearElastic<decltype(basis)>;
 
-  NonLinearElasticity fe(basis, *element, mat, nullptr, nullptr, nullptr);
-  LinearElasticity feLE(basis, *element, 1000.0, 0.0, nullptr, nullptr, nullptr);
+  NonLinearElasticity fe(basis, *element, mat);
+  LinearElasticity feLE(basis, *element, 1000.0, 0.0);
 
   Eigen::VectorXd d;
   d.setZero(nDOF);
@@ -266,7 +264,7 @@ auto SingleElementTest(const Material& mat) {
   const double tol = 1e-10;
 
   using NonLinearElasticity = Ikarus::NonLinearElastic<decltype(basis), decltype(mat)>;
-  NonLinearElastic fe(basis, *element, mat, nullptr, nullptr, nullptr);
+  NonLinearElastic fe(basis, *element, mat);
 
   Eigen::VectorXd d;
   d.setZero(nDOF);
@@ -334,7 +332,7 @@ auto CheckCalculateScalar(const Material& mat) {
   BoundaryPatch<decltype(gridView)> neumannBoundary(gridView, neumannVertices);
 
   using NonLinearElasticity = Ikarus::NonLinearElastic<decltype(basis), decltype(mat)>;
-  NonLinearElasticity fe(basis, *element, mat, &neumannBoundary, &neumannBoundaryLoad, &volumeLoad);
+  NonLinearElasticity fe(basis, *element, mat, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
   using AutoDiffBasedFE = Ikarus::AutoDiffFE<NonLinearElasticity, decltype(basis)>;
   AutoDiffBasedFE feAutoDiff{fe};
 
