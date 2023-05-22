@@ -246,7 +246,7 @@ template <typename NonLinearOperator, typename FiniteElement>
 
 template <typename NonLinearOperator, typename FiniteElement,
           typename FERequirementType = FiniteElement::FERequirementType>
-[[nodiscard]] auto CheckCalculateScalar(NonLinearOperator&, FiniteElement& fe, FERequirementType req,
+[[nodiscard]] auto checkCalculateScalar(NonLinearOperator&, FiniteElement& fe, FERequirementType req,
                                         const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Check calculateScalar() by Automatic Differentiation");
   auto& basis           = fe.localView().globalBasis();

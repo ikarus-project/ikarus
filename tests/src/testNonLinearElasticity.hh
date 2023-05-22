@@ -300,7 +300,7 @@ auto SingleElementTest(const Material& mat) {
 }
 
 template <int gridDim, typename Material>
-auto CheckCalculateScalar(const Material& mat) {
+auto checkCalculateScalar(const Material& mat) {
   TestSuite t("Check calculateScalar() by Automatic Differentiation with gridDim = " + std::to_string(gridDim));
 
   auto grid     = createUGGridFromCorners<gridDim>(CornerDistortionFlag::randomlyDistorted);

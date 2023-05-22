@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
   t.subTest(GreenLagrangeStrainTest<2>(reducedMat));
   t.subTest(GreenLagrangeStrainTest<3>(matSVK2));
   t.subTest(SingleElementTest(reducedMat));
-  t.subTest(CheckCalculateScalar<2>(reducedMat));
-  t.subTest(CheckCalculateScalar<3>(matSVK1));
+  t.subTest(checkCalculateScalar<2>(reducedMat));
+  t.subTest(checkCalculateScalar<3>(matSVK1));
   return t.exit();
 }
