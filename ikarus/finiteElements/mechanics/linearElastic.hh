@@ -241,8 +241,8 @@ namespace Ikarus {
 
       const auto C = getMaterialTangent();
 
-      const auto geo = this->localView().element().geometry();
-      double energy  = 0.0;
+      const auto geo    = this->localView().element().geometry();
+      ScalarType energy = 0.0;
       for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
         const auto EVoigt = eps.evaluate(gpIndex, on(gridElement));
 

@@ -243,3 +243,46 @@ template <typename NonLinearOperator, typename FiniteElement>
   }
   return t;
 }
+
+template <typename NonLinearOperator, typename FiniteElement,
+          typename FERequirementType = FiniteElement::FERequirementType>
+[[nodiscard]] auto CheckCalculateScalar(NonLinearOperator&, FiniteElement& fe, FERequirementType req,
+                                        const std::string& messageIfFailed = "") {
+  Dune::TestSuite t("Check calculateScalar() by Automatic Differentiation");
+  auto& basis           = fe.localView().globalBasis();
+  auto nDOF             = basis.size();
+  using AutoDiffBasedFE = Ikarus::AutoDiffFE<FiniteElement>;
+  AutoDiffBasedFE feAutoDiff{fe};
+  const double tol = 1e-10;
+
+  Eigen::MatrixXd K, KAutoDiff;
+  K.setZero(nDOF, nDOF);
+  KAutoDiff.setZero(nDOF, nDOF);
+
+  Eigen::VectorXd R, RAutoDiff;
+  R.setZero(nDOF);
+  RAutoDiff.setZero(nDOF);
+
+  fe.calculateMatrix(req, K);
+  feAutoDiff.calculateMatrix(req, KAutoDiff);
+
+  fe.calculateVector(req, R);
+  feAutoDiff.calculateVector(req, RAutoDiff);
+
+  t.check(K.isApprox(KAutoDiff, tol),
+          "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
+          "automatic differentiation")
+      << messageIfFailed;
+
+  t.check(R.isApprox(RAutoDiff, tol),
+          "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
+          "automatic differentiation")
+      << messageIfFailed;
+
+  t.check(Dune::FloatCmp::eq(fe.calculateScalar(req), feAutoDiff.calculateScalar(req), tol),
+          "Mismatch between the energies obtained from explicit implementation and the one based on "
+          "automatic differentiation")
+      << messageIfFailed;
+
+  return t;
+}

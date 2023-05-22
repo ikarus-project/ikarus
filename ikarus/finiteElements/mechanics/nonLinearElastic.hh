@@ -47,7 +47,7 @@ namespace Ikarus {
     static constexpr auto strainType = StrainTags::greenLagrangian;
 
     template <typename VolumeLoad = LoadDefault, typename NeumannBoundaryLoad = LoadDefault>
-    NonLinearElastic(Basis& globalBasis, const typename LocalView::Element& element, const Material& p_mat,
+    NonLinearElastic(const Basis& globalBasis, const typename LocalView::Element& element, const Material& p_mat,
                      VolumeLoad p_volumeLoad = {}, const BoundaryPatch<GridView>* p_neumannBoundary = nullptr,
                      NeumannBoundaryLoad p_neumannBoundaryLoad = {})
         : BasePowerFE(globalBasis.flat(), element), neumannBoundary{p_neumannBoundary}, mat{p_mat} {

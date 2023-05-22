@@ -11,7 +11,7 @@
 template <typename DisplacementBasedElement>
 struct ElementTest<Ikarus::EnhancedAssumedStrains<DisplacementBasedElement>> {
   [[nodiscard]] static auto test() {
-    auto easFunctor = [](auto& nonLinOp, auto& fe) {
+    auto easFunctor = [](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req) {
       const auto& localView = fe.localView();
       const auto& element   = localView.element();
       constexpr int gridDim = std::remove_cvref_t<decltype(element)>::dimension;

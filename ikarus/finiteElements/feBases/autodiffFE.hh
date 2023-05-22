@@ -13,14 +13,14 @@
 namespace Ikarus {
   /// This element can not be used on its own but it should be inherited from
   /// The class constructor can only be called from the templated class.
-  template <typename RealElement, typename Basis, typename FERequirementType_ = FErequirements<>,
-            bool useEigenRef = false>
+  template <typename RealElement, typename FERequirementType_ = FErequirements<>, bool useEigenRef = false>
   class AutoDiffFE : public RealElement {
   public:
     using Base              = RealElement;
+    using Basis             = Base::Basis;
     using LocalView         = typename Basis::FlatBasis::LocalView;
     using Traits            = TraitsFromLocalView<LocalView, useEigenRef>;
-    using Element       = typename LocalView::Element;
+    using Element           = typename LocalView::Element;
     using FERequirementType = FERequirementType_;
 
     void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& h) const {

@@ -39,13 +39,13 @@ namespace Ikarus::Python {
     using LoadFunction = std::function<Eigen::Vector<double, Traits::worlddim>(Eigen::Vector<double, Traits::worlddim>,
                                                                                const double&)>;
 
-    cls.def(pybind11::init([](const GlobalBasis& basis, const Element& element, const Material& mat,
-                              const LoadFunction volumeLoad) { return new NonLinearElastic(basis, element, mat, volumeLoad); }),
+    cls.def(pybind11::init(
+                [](const GlobalBasis& basis, const Element& element, const Material& mat,
+                   const LoadFunction volumeLoad) { return new NonLinearElastic(basis, element, mat, volumeLoad); }),
             pybind11::keep_alive<1, 2>(), pybind11::keep_alive<1, 3>());
 
     cls.def(pybind11::init([](const GlobalBasis& basis, const Element& element, const Material& mat,
-                              const LoadFunction volumeLoad,
-                              const BoundaryPatch<GridView>& bp,
+                              const LoadFunction volumeLoad, const BoundaryPatch<GridView>& bp,
                               const LoadFunction neumannBoundaryLoad) {
               return new NonLinearElastic(basis, element, mat, volumeLoad, &bp, neumannBoundaryLoad);
             }),

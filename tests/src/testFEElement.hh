@@ -106,12 +106,12 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
   // execute all passed functions
   nonLinOp.updateAll();
   Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<sizeof...(F)>()),
-                        [&](auto i) { t.subTest(std::get<i.value>(fTuple)(nonLinOp, fe)); });
+                        [&](auto i) { t.subTest(std::get<i.value>(fTuple)(nonLinOp, fe, requirements)); });
 
   // check if element has a test functor, if yes we execute it
   if constexpr (requires { ElementTest<FEElementType>::test(); }) {
     auto testFunctor = ElementTest<FEElementType>::test();
-    t.subTest(testFunctor(nonLinOp, fe));
+    t.subTest(testFunctor(nonLinOp, fe, requirements));
   } else
     spdlog::info("No element test functor found for {}", Dune::className<FEElementType>());
 
@@ -124,10 +124,17 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
   return t;
 }
 
-auto checkGradientFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe) { return checkGradientOfElement(nonLinOp); };
-auto checkHessianFunctor  = [](auto& nonLinOp, [[maybe_unused]] auto& fe) { return checkHessianOfElement(nonLinOp); };
-auto checkJacobianFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe) {
+auto checkGradientFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe, [[maybe_unused]] auto& req) {
+  return checkGradientOfElement(nonLinOp);
+};
+auto checkHessianFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe, [[maybe_unused]] auto& req) {
+  return checkHessianOfElement(nonLinOp);
+};
+auto checkJacobianFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe, [[maybe_unused]] auto& req) {
   auto subOperator = nonLinOp.template subOperator<1, 2>();
   return checkJacobianOfElement(subOperator);
 };
-auto checkCauchyStressFunctor = [](auto& nonLinOp, auto& fe) { return checkCauchyStressOf2DElement(nonLinOp, fe); };
+auto checkCauchyStressFunctor
+    = [](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req) { return checkCauchyStressOf2DElement(nonLinOp, fe); };
+auto checkCalculateScalarFunctor
+    = [](auto& nonLinOp, auto& fe, auto& req) { return CheckCalculateScalar(nonLinOp, fe, req); };
