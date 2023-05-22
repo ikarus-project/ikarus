@@ -101,7 +101,7 @@ jobs:
       - name: Checkout ikarus-examples and create tag, push it, zip it
         run: |
           git clone https://github.com/ikarus-project/ikarus-examples.git
-          cd ikarus-examples
+          cd ikarus-examples-v$NEWVERSION
           git config --local user.email "mueller@ibb.uni-stuttgart.de"
           git config --local user.name "AlexanderMueller"
           git tag -a v$NEWVERSION -m "Create release v$NEWVERSION"
