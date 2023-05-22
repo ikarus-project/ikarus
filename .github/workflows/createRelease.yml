@@ -67,9 +67,9 @@ jobs:
           cd docs
           export MKDOCSOFFLINE=false
           mike deploy v$NEWVERSION  --config-file mkdocs.insiders.yml
+          mike deploy dev  --config-file mkdocs.insiders.yml
           git remote set-url origin https://${{ secrets.ORGANIZATION_TOKEN }}@github.com/ikarus-project/ikarus-project.github.io.git
-          git commit --amend -m "Deploy v$NEWVERSION at ${{ github.event.head_commit.message }} ikarus-project/ikarus@${{ github.event.head_commit.id }}" --allow-empty
-
+          git push origin gh-pages 
           export MKDOCSOFFLINE=true
 
       - uses: actions/cache@v2
@@ -127,14 +127,14 @@ jobs:
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.ORGANIZATION_TOKEN }}"
-          automatic_release_tag: v$NEWVERSION
+          automatic_release_tag: ${{ github.event.inputs.releaseTag }}
           draft: false
           prerelease: true
-          title: v$NEWVERSION
+          title: ${{ github.event.inputs.releaseTag }}
           files: |
-            ./ikarus-v$NEWVERSION/docs/docs-v$NEWVERSION.tar.gz
-            ./ikarus-v$NEWVERSION/docs/docs-v$NEWVERSION.zip
-            ikarus-dev-docker-v$NEWVERSION.tar.gz
-            ikarus-docker-v$NEWVERSION.tar.gz
-            ikarus-examples-v$NEWVERSION.tar.gz
-            ikarus-examples-v$NEWVERSION.zip
+            ./ikarus-${{ github.event.inputs.releaseTag }}/docs/docs-${{ github.event.inputs.releaseTag }}.tar.gz
+            ./ikarus-${{ github.event.inputs.releaseTag }}/docs/docs-${{ github.event.inputs.releaseTag }}.zip
+            ikarus-dev-docker-${{ github.event.inputs.releaseTag }}.tar.gz
+            ikarus-docker-${{ github.event.inputs.releaseTag }}.tar.gz
+            ikarus-examples-${{ github.event.inputs.releaseTag }}.tar.gz
+            ikarus-examples-${{ github.event.inputs.releaseTag }}.zip
