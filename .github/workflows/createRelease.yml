@@ -132,9 +132,9 @@ jobs:
           prerelease: true
           title: ${{ github.event.inputs.releaseTag }}
           files: |
-            ./ikarus-${{ github.event.inputs.releaseTag }}/docs/docs-${{ github.event.inputs.releaseTag }}.tar.gz
-            ./ikarus-${{ github.event.inputs.releaseTag }}/docs/docs-${{ github.event.inputs.releaseTag }}.zip
-            ikarus-dev-docker-${{ github.event.inputs.releaseTag }}.tar.gz
-            ikarus-docker-${{ github.event.inputs.releaseTag }}.tar.gz
-            ikarus-examples-${{ github.event.inputs.releaseTag }}.tar.gz
-            ikarus-examples-${{ github.event.inputs.releaseTag }}.zip
+            ./ikarus-v${{ github.event.inputs.releaseTag }}/docs/docs-v${{ github.event.inputs.releaseTag }}.tar.gz
+            ./ikarus-v${{ github.event.inputs.releaseTag }}/docs/docs-v${{ github.event.inputs.releaseTag }}.zip
+            ikarus-dev-docker-v${{ github.event.inputs.releaseTag }}.tar.gz
+            ikarus-docker-v${{ github.event.inputs.releaseTag }}.tar.gz
+            ikarus-examples-v${{ github.event.inputs.releaseTag }}.tar.gz
+            ikarus-examples-v${{ github.event.inputs.releaseTag }}.zip
