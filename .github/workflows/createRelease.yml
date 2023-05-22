@@ -31,9 +31,9 @@ jobs:
           git remote set-url origin https://${{ secrets.ORGANIZATION_TOKEN }}@github.com/ikarus-project/ikarus.git
           git add .
           git commit -m "Create release v$NEWVERSION"
-          git push origin main
+         
           git tag -a v$NEWVERSION -m "Create release v$NEWVERSION"
-          git push origin v$NEWVERSION
+
       - name: Docker Login
         uses: azure/docker-login@v1
         with:
@@ -61,16 +61,15 @@ jobs:
           cd ikarus-project.github.io
           git fetch origin gh-pages --depth=1
           cp -R ../repo/docs/ .
-          cp -R ../repo/src/ .
+          cp -R ../repo/ikarus/ .
           git config --local user.email "mueller@ibb.uni-stuttgart.de"
-
-          git config --local user.name "rath3t"
+          git config --local user.name "AlexanderMueller"
           cd docs
           export MKDOCSOFFLINE=false
           mike deploy v$NEWVERSION  --config-file mkdocs.insiders.yml
           git remote set-url origin https://${{ secrets.ORGANIZATION_TOKEN }}@github.com/ikarus-project/ikarus-project.github.io.git
           git commit --amend -m "Deploy v$NEWVERSION at ${{ github.event.head_commit.message }} ikarus-project/ikarus@${{ github.event.head_commit.id }}" --allow-empty
-          git push origin gh-pages 
+
           export MKDOCSOFFLINE=true
 
       - uses: actions/cache@v2
@@ -90,10 +89,10 @@ jobs:
         run: |
           docker pull ikarusproject/ikarus-dev:latest
           docker tag ikarusproject/ikarus-dev:latest ikarusproject/ikarus-dev:v$NEWVERSION
-          docker push ikarusproject/ikarus-dev:v$NEWVERSION
+          
           docker pull ikarusproject/ikarus:latest
           docker tag ikarusproject/ikarus:latest ikarusproject/ikarus:v$NEWVERSION
-          docker push ikarusproject/ikarus:v$NEWVERSION
+        
           docker save ikarusproject/ikarus-dev:v$NEWVERSION > ikarus-dev-docker-v$NEWVERSION.tar
           docker save ikarusproject/ikarus:v$NEWVERSION     > ikarus-docker-v$NEWVERSION.tar
           gzip -c9 ikarus-dev-docker-v$NEWVERSION.tar > ikarus-dev-docker-v$NEWVERSION.tar.gz
@@ -103,12 +102,27 @@ jobs:
         run: |
           git clone https://github.com/ikarus-project/ikarus-examples.git
           cd ikarus-examples
-          git tag -a v$NEWVERSION
-          git push https://${{ secrets.ORGANIZATION_TOKEN }}@github.com/ikarus-project/ikarus-examples.git v$NEWVERSION
+          git config --local user.email "mueller@ibb.uni-stuttgart.de"
+          git config --local user.name "AlexanderMueller"
+          git tag -a v$NEWVERSION -m "Create release v$NEWVERSION"
+         
           cd ..
           mv ikarus-examples ikarus-examples-v$NEWVERSION
           tar -czf ikarus-examples-v$NEWVERSION.tar.gz ./ikarus-examples-v$NEWVERSION
           zip -9r  ikarus-examples-v$NEWVERSION.zip    ./ikarus-examples-v$NEWVERSION
+
+      - name: Push and finalize
+        run: |    
+          cd ikarus-project.github.io 
+          git push origin gh-pages     
+          cd ../ikarus-examples
+          git push https://${{ secrets.ORGANIZATION_TOKEN }}@github.com/ikarus-project/ikarus-examples.git v$NEWVERSION
+          cd .. 
+          docker push ikarusproject/ikarus-dev:v$NEWVERSION  
+          docker push ikarusproject/ikarus:v$NEWVERSION
+          cd repo
+          git push origin v$NEWVERSION
+          git push origin main
 
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:

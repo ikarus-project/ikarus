@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: CC0-1.0
 import os
-
+from datetime import datetime
 
 def read_old_version():
     script_dir = os.path.dirname(os.path.realpath("__file__"))
@@ -25,14 +25,12 @@ def bump_patch_number(version_number: str) -> str:
 
 
 def inplace_change(filename: str, old_string: str, new_string: str):
-    # Safely read the input filename using 'with'
     with open(filename) as f:
         s = f.read()
         if old_string not in s:
             print('"{old_string}" not found in {filename}.'.format(**locals()))
             return
 
-    # Safely write the changed content, if found in the file
     with open(filename, "w") as f:
         print(
             'Changing "{old_string}" to "{new_string}" in {filename}'.format(**locals())
@@ -41,27 +39,49 @@ def inplace_change(filename: str, old_string: str, new_string: str):
         f.write(s)
 
 
+def changeLine(filename: str, old_string: str, new_string: str):
+    with open(filename) as f:
+        s = f.read()
+        for line in s.split("\n"):
+            print(line)
+            if line.startswith(old_string):
+                with open(filename, "w") as fw:
+                    print(
+                        'Changing the line "{line}"\n to "{new_string}" in {filename}'.format(**locals())
+                    )
+                    s = s.replace(line, new_string)
+                    fw.write(s)
+
+
+
+
 def update_all_versions(version_override=None):
     """Update all version numbers in local files"""
     old_version_number = read_old_version()
-    if version_override is None:
+    if version_override is None or version_override== "dev":
         new_version_number = bump_patch_number(old_version_number)
     else:
         new_version_number = version_override
+
+    if version_override== "dev":
+        new_version_number += '.dev' + datetime.now().strftime('%Y%m%d%H%M%S')
+
     print(f"Bump version from {old_version_number} to {new_version_number}")
-    inplace_change(
-        "dune.module",
-        f"Version: {old_version_number}",
-        f"Version: {new_version_number}",
-    )
-    inplace_change(
-        "CMakeLists.txt",
-        f"VERSION {old_version_number}",
-        f"VERSION {new_version_number}",
-    )
-    inplace_change(
+    if version_override!= "dev":
+        inplace_change(
+            "dune.module",
+            f"Version: {old_version_number}",
+            f"Version: {new_version_number}",
+        )
+        inplace_change(
+            "CMakeLists.txt",
+            f"VERSION {old_version_number}",
+            f"VERSION {new_version_number}",
+        )
+
+    changeLine(
         "setup.py",
-        f'ikarusVersion = "{old_version_number}"',
+        f'ikarusVersion =',
         f'ikarusVersion = "{new_version_number}"',
     )
 

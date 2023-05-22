@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: CC0-1.0
 
-name: Publish Python  distributions to TestPyPI
+name: Publish Python  distributions to PyPI
 on:
   push:
     branches:
@@ -11,6 +11,8 @@ on:
       - '.github/workflows/ghpages.yml'
       - '.github/workflows/createDockerContainer.yml'
       - '**.md'
+  release:
+    types: [published]
 
 jobs:
   build-n-publish:
@@ -24,14 +26,24 @@ jobs:
       - name: Install twine and scikit-build
         run: |
           /dune/dune-common/build-cmake/run-in-dune-env pip install twine scikit-build
-      - name: Build a binary wheel and a source tarball
-        run: |
           git config --global --add safe.directory /__w/ikarus/ikarus
-          /dune/dune-common/build-cmake/run-in-dune-env python setup.py sdist
+      - name: Bump dev version
+        if: ${{ github.event_name == 'push' }}
+        run: /dune/dune-common/build-cmake/run-in-dune-env python .github/workflows/scripts/release.py dev
+      - name: Create release version
+        if: ${{ github.event_name == 'release' }}
+        run: /dune/dune-common/build-cmake/run-in-dune-env python .github/workflows/scripts/release.py
 
+      - name: Create tarball
+        run: |
+          /dune/dune-common/build-cmake/run-in-dune-env python setup.py sdist
 
       - name: Publish distribution to Test PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.TESTPYPI_TOKEN }}
           repository-url: https://test.pypi.org/legacy/
+      - name: Publish distribution 📦 to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_TOKEN }}
