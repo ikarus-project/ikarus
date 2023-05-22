@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 Module: ikarus
-Version: 0.3.1
+Version: 0.3.2
 Maintainer: mueller@ibb.uni-stuttgart.de
 Python-Requires: matplotlib scipy numpy dune-common dune-grid dune-geometry  dune-istl dune-functions
 Depends: dune-common dune-grid dune-geometry  dune-istl

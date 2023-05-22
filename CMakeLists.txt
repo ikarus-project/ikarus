@@ -7,7 +7,7 @@ option(DUNE_ENABLE_PYTHONBINDINGS "Enable Python bindings" ON)
 option(DUNE_PYTHON_ALLOW_GET_PIP "Allow dune-common to install pip into venv" ON)
 project(
   ikarus
-  VERSION 0.3.1
+  VERSION 0.3.2
   LANGUAGES C CXX
 )
 
