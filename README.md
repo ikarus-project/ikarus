@@ -11,6 +11,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 [![CodeFactor](https://www.codefactor.io/repository/github/ikarus-project/ikarus/badge/main)](https://www.codefactor.io/repository/github/ikarus-project/ikarus/overview/main)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/5c588e67d1e541fc9be3c7377297aa8a)](https://www.codacy.com/gh/ikarus-project/ikarus/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ikarus-project/ikarus&amp;utm_campaign=Badge_Grade)
 [![Gitter](https://badges.gitter.im/ikarus-project/community.svg)](https://gitter.im/ikarus-project/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+[![PyPI version](https://badge.fury.io/py/pyikarus.svg)](https://badge.fury.io/py/pyikarus)
 
 
 [![Release](https://badgen.net/badge/Release/0.3/purple?icon=github)](https://github.com/ikarus-project/ikarus/releases)
