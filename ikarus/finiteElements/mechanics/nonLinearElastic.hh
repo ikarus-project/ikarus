@@ -184,7 +184,7 @@ namespace Ikarus {
         const auto u = getDisplacementFunction(par, dx);
         for (const auto& [gpIndex, gp] : u.viewOverIntegrationPoints()) {
           const double intElement                            = geo.integrationElement(gp.position()) * gp.weight();
-          const Eigen::Vector<double, Traits::worlddim> fExt = volumeLoad(toEigen(gp.position()), lambda);
+          const Eigen::Vector<double, Traits::worlddim> fExt = volumeLoad(toEigen(geo.global(gp.position())), lambda);
           for (size_t i = 0; i < numberOfNodes; ++i) {
             const auto udCi = u.evaluateDerivative(gpIndex, wrt(coeff(i)));
             force.template segment<myDim>(myDim * i) -= udCi * fExt * intElement;
@@ -255,7 +255,7 @@ namespace Ikarus {
       if (volumeLoad) {
         for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
           const auto u                                       = uFunction.evaluate(gpIndex);
-          const Eigen::Vector<double, Traits::worlddim> fExt = volumeLoad(toEigen(gp.position()), lambda);
+          const Eigen::Vector<double, Traits::worlddim> fExt = volumeLoad(toEigen(geo.global(gp.position())), lambda);
           energy -= u.dot(fExt) * geo.integrationElement(gp.position()) * gp.weight();
         }
       }
