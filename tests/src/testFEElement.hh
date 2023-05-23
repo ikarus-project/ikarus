@@ -118,7 +118,7 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
     requirements.insertGlobalSolution(Ikarus::FESolutions::displacement, d_);
     return sparseAssembler.getMatrix(requirements);
   };
-  auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(d));
+  auto nonLinOp = Ikarus::NonLinearOperator(functions(fvLambda, dfvLambda, ddfvLambda), parameter(d));
 
   // execute all passed functions
   nonLinOp.updateAll();

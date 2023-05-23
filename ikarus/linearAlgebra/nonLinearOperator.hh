@@ -57,7 +57,7 @@ namespace Ikarus {
   }
 
   template <typename... Args>
-  auto linearAlgebraFunctions(Args&&... args) {
+  auto functions(Args&&... args) {
     return Impl::LinearAlgebraFunctions<Args&&...>{std::forward_as_tuple(std::forward<Args>(args)...)};
   }
 
@@ -149,7 +149,7 @@ namespace Ikarus {
     /* Returns a new NonLinearOperator from the given indices */
     template <int... Derivatives>
     auto subOperator() {
-      return Ikarus::NonLinearOperator(linearAlgebraFunctions(std::get<Derivatives>(derivatives_)...),
+      return Ikarus::NonLinearOperator(functions(std::get<Derivatives>(derivatives_)...),
                                        Impl::applyAndRemoveReferenceWrapper(parameter<ParameterArgs...>, args_));
     }
 

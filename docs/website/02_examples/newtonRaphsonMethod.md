@@ -41,7 +41,7 @@ Functors are created then to evaluate the function to be solved for and its deri
 ```cpp
 auto fvLambda  = [&](auto &&x) { return f(x); };
 auto dfvLambda = [&](auto &&x) { return df(x); };
-Ikarus::NonLinearOperator nonLinOp(Ikarus::linearAlgebraFunctions(fvLambda, dfvLambda), Ikarus::parameter(x));
+Ikarus::NonLinearOperator nonLinOp(Ikarus::functions(fvLambda, dfvLambda), Ikarus::parameter(x));
 ```
 The standard implementation of the Newton-Raphson method is illustrated in this function, which also uses `nonLinOp`.
 ```cpp
@@ -89,7 +89,7 @@ void newtonRaphsonBasicExampleWithLogger() {
 
   auto fvLambda  = [&](auto &&x) { return f(x); };
   auto dfvLambda = [&](auto &&x) { return df(x); };
-  Ikarus::NonLinearOperator nonLinOp(Ikarus::linearAlgebraFunctions(fvLambda, dfvLambda), Ikarus::parameter(x));
+  Ikarus::NonLinearOperator nonLinOp(Ikarus::functions(fvLambda, dfvLambda), Ikarus::parameter(x));
 
   Ikarus::NewtonRaphson nr(nonLinOp);
   nr.setup({eps, maxIter});

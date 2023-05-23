@@ -14,6 +14,11 @@
 
 #include <ikarus/utils/makeEnum.hh>
 
+namespace Dune
+{
+template <typename... T>
+struct TupleVector;
+}
 namespace Ikarus {
 
   // clang-format off
@@ -43,14 +48,15 @@ namespace Ikarus {
     noParameter,
     loadfactor,
     time
-    );
+  );
 
   MAKE_ENUM(FESolutions,
     noSolution,
     displacement,
     velocity,
     director,
-    magnetizationAndVectorPotential
+    magnetizationAndVectorPotential,
+    midSurfaceAndDirector
   );
 
   MAKE_ENUM(ResultType,
@@ -110,6 +116,16 @@ namespace Ikarus {
     struct DeduceRawVectorType<Eigen::Ref<T>> {
       using Type = Eigen::Ref<T>;
     };
+
+  template <typename... T>
+  struct DeduceRawVectorType<Dune::MultiTypeBlockVector<T...>> {
+    using Type = Dune::MultiTypeBlockVector<T...>;
+  };
+
+  template <typename... T>
+  struct DeduceRawVectorType<Dune::TupleVector<T...>> {
+    using Type = Dune::TupleVector<T...>;
+  };
   }  // namespace Impl
 
   template <typename SolutionVectorType_ = std::reference_wrapper<Eigen::VectorXd>,

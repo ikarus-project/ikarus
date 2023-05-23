@@ -101,7 +101,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
     return sparseAssembler.getScalar(req);
   };
 
-  auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, residualFunction, KFunction),
+  auto nonLinOp = Ikarus::NonLinearOperator(functions(energyFunction, residualFunction, KFunction),
                                             parameter(d, lambda));
   //  t.check(checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true})) << "checkGradient Failed";
   //  t.check(checkHessian(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true})) << "checkHessian Failed";
