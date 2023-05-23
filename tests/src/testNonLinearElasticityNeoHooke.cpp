@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
   Ikarus::NeoHooke matNH(matParameter);
 
   t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Alu>(matNH));
-  //  t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Yasp>(matNH));
-  //  t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Iga>(matNH));
+  t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Yasp>(matNH));
+  t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Iga>(matNH));
   return t.exit();
 }

@@ -12,7 +12,7 @@
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 
-#include <spdlog/spdlog.h>
+#include "spdlog/spdlog.h"
 
 #include <Eigen/Core>
 
@@ -70,7 +70,9 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   for (auto& element : elements(gridView))
     fes.emplace_back(basis, element, reducedMat, volumeLoad);
 
-  Ikarus::DirichletValues dirichletValues(basis.flat());
+  auto basisP = std::make_shared<const decltype(basis)>(basis);
+  Ikarus::DirichletValues dirichletValues(basisP->flat());
+
   dirichletValues.fixBoundaryDOFs([&](auto& dirichletFlags, auto&& localIndex, auto&& localView, auto&& intersection) {
     if (std::abs(intersection.geometry().center()[1]) < 1e-8) dirichletFlags[localView.index(localIndex)] = true;
   });

@@ -3,10 +3,6 @@
 
 #pragma once
 
-#include <functional>
-#include <optional>
-
-#include <dune/fufem/boundarypatch.hh>
 #include <dune/localfefunctions/meta.hh>
 
 #include <ikarus/finiteElements/feRequirements.hh>

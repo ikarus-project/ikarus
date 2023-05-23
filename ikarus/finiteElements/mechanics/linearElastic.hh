@@ -2,10 +2,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
-#include <concepts>
-#include <iosfwd>
-#include <optional>
-#include <type_traits>
 
 #include <dune/common/classname.hh>
 #include <dune/fufem/boundarypatch.hh>

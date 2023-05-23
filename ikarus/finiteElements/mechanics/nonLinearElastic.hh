@@ -3,10 +3,6 @@
 
 #pragma once
 
-#include <concepts>
-#include <iosfwd>
-#include <optional>
-
 #include <dune/common/classname.hh>
 #include <dune/fufem/boundarypatch.hh>
 #include <dune/geometry/quadraturerules.hh>
