@@ -149,66 +149,9 @@ namespace Ikarus {
     }
 
     void calculateVector(const FERequirementType& par, typename Traits::VectorType force) const {
-      const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
       Eigen::VectorXd dx(this->localView().size());
       dx.setZero();
-      const auto eps = getStrainFunction(par, dx);
-      using namespace Dune::DerivativeDirections;
-      using namespace Dune;
-
-      const auto C   = getMaterialTangent();
-      const auto geo = this->localView().element().geometry();
-
-      // Internal forces
-      for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
-        const double intElement = geo.integrationElement(gp.position()) * gp.weight();
-        auto stresses           = (C * eps.evaluate(gpIndex, on(gridElement))).eval();
-        for (size_t i = 0; i < numberOfNodes; ++i) {
-          const auto bopI = eps.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
-          force.template segment<myDim>(myDim * i) += bopI.transpose() * stresses * intElement;
-        }
-      }
-
-      // External forces volume forces over the domain
-      if (volumeLoad) {
-        const auto u = getDisplacementFunction(par, dx);
-        for (const auto& [gpIndex, gp] : u.viewOverIntegrationPoints()) {
-          Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(toEigen(geo.global(gp.position())), lambda);
-          for (size_t i = 0; i < numberOfNodes; ++i) {
-            const auto udCi = u.evaluateDerivative(gpIndex, wrt(coeff(i)));
-            force.template segment<myDim>(myDim * i)
-                -= udCi * fext * geo.integrationElement(gp.position()) * gp.weight();
-          }
-        }
-      }
-
-      // External forces, boundary forces, i.e. at the Neumann boundary
-      if (not neumannBoundary) return;
-
-      const auto u = getDisplacementFunction(par, dx);
-      auto element = this->localView().element();
-      for (auto&& intersection : intersections(neumannBoundary->gridView(), element)) {
-        if (not neumannBoundary->contains(intersection)) continue;
-
-        // Integration rule along the boundary
-        const auto& quadLine = Dune::QuadratureRules<double, myDim - 1>::rule(intersection.type(), u.order());
-
-        for (const auto& curQuad : quadLine) {
-          const Dune::FieldVector<double, myDim>& quadPos = intersection.geometryInInside().global(curQuad.position());
-
-          const double integrationElement = intersection.geometry().integrationElement(curQuad.position());
-
-          // The value of the local function wrt the i-th coef
-          for (size_t i = 0; i < numberOfNodes; ++i) {
-            const auto udCi = u.evaluateDerivative(quadPos, wrt(coeff(i)));
-
-            // Value of the Neumann data at the current position
-            auto neumannValue
-                = neumannBoundaryLoad(toEigen(intersection.geometry().global(curQuad.position())), lambda);
-            force.template segment<myDim>(myDim * i) -= udCi * neumannValue * curQuad.weight() * integrationElement;
-          }
-        }
-      }
+      calculateVectorImpl(par, force, dx);
     }
 
     Dune::CachedLocalBasis<
@@ -279,6 +222,69 @@ namespace Ikarus {
         }
       }
       return energy;
+    }
+
+    template <class ScalarType = double>
+    void calculateVectorImpl(const FERequirementType& par, typename Traits::VectorType& force,
+                             const Eigen::VectorX<ScalarType>& dx) const {
+      const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
+      const auto eps     = getStrainFunction(par, dx);
+      using namespace Dune::DerivativeDirections;
+      using namespace Dune;
+
+      const auto C   = getMaterialTangent();
+      const auto geo = this->localView().element().geometry();
+
+      // Internal forces
+      for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
+        const double intElement = geo.integrationElement(gp.position()) * gp.weight();
+        auto stresses           = (C * eps.evaluate(gpIndex, on(gridElement))).eval();
+        for (size_t i = 0; i < numberOfNodes; ++i) {
+          const auto bopI = eps.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
+          force.template segment<myDim>(myDim * i) += bopI.transpose() * stresses * intElement;
+        }
+      }
+
+      // External forces volume forces over the domain
+      if (volumeLoad) {
+        const auto u = getDisplacementFunction(par, dx);
+        for (const auto& [gpIndex, gp] : u.viewOverIntegrationPoints()) {
+          Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(toEigen(geo.global(gp.position())), lambda);
+          for (size_t i = 0; i < numberOfNodes; ++i) {
+            const auto udCi = u.evaluateDerivative(gpIndex, wrt(coeff(i)));
+            force.template segment<myDim>(myDim * i)
+                -= udCi * fext * geo.integrationElement(gp.position()) * gp.weight();
+          }
+        }
+      }
+
+      // External forces, boundary forces, i.e. at the Neumann boundary
+      if (not neumannBoundary) return;
+
+      const auto u = getDisplacementFunction(par, dx);
+      auto element = this->localView().element();
+      for (auto&& intersection : intersections(neumannBoundary->gridView(), element)) {
+        if (not neumannBoundary->contains(intersection)) continue;
+
+        // Integration rule along the boundary
+        const auto& quadLine = Dune::QuadratureRules<double, myDim - 1>::rule(intersection.type(), u.order());
+
+        for (const auto& curQuad : quadLine) {
+          const Dune::FieldVector<double, myDim>& quadPos = intersection.geometryInInside().global(curQuad.position());
+
+          const double integrationElement = intersection.geometry().integrationElement(curQuad.position());
+
+          // The value of the local function wrt the i-th coef
+          for (size_t i = 0; i < numberOfNodes; ++i) {
+            const auto udCi = u.evaluateDerivative(quadPos, wrt(coeff(i)));
+
+            // Value of the Neumann data at the current position
+            auto neumannValue
+                = neumannBoundaryLoad(toEigen(intersection.geometry().global(curQuad.position())), lambda);
+            force.template segment<myDim>(myDim * i) -= udCi * neumannValue * curQuad.weight() * integrationElement;
+          }
+        }
+      }
     }
   };
 }  // namespace Ikarus

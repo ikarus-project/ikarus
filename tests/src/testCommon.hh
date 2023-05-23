@@ -266,8 +266,14 @@ template <typename NonLinearOperator, typename FiniteElement,
   fe.calculateMatrix(req, K);
   feAutoDiff.calculateMatrix(req, KAutoDiff);
 
+  std::cout << std::setprecision(10) << "K\n" << K << std::endl;
+  std::cout << std::setprecision(10) << "KAutoDiff\n" << KAutoDiff << std::endl;
+
   fe.calculateVector(req, R);
   feAutoDiff.calculateVector(req, RAutoDiff);
+
+  std::cout << std::setprecision(10) << "R\n" << R << std::endl;
+  std::cout << std::setprecision(10) << "RAutoDiff\n" << RAutoDiff << std::endl;
 
   t.check(K.isApprox(KAutoDiff, tol),
           "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
@@ -279,10 +285,16 @@ template <typename NonLinearOperator, typename FiniteElement,
           "automatic differentiation")
       << messageIfFailed;
 
-  t.check(Dune::FloatCmp::eq(fe.calculateScalar(req), feAutoDiff.calculateScalar(req), tol),
-          "Mismatch between the energies obtained from explicit implementation and the one based on "
-          "automatic differentiation")
-      << messageIfFailed;
+  try {
+    auto energy         = fe.calculateScalar(req);
+    auto energyAutoDiff = feAutoDiff.calculateScalar(req);
+
+    t.check(Dune::FloatCmp::eq(energy, energyAutoDiff, tol),
+            "Mismatch between the energies obtained from explicit implementation and the one based on "
+            "automatic differentiation")
+        << messageIfFailed;
+  } catch (const Dune::NotImplemented&) {
+  }
 
   return t;
 }

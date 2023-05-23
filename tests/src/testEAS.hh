@@ -8,10 +8,11 @@
 #include <variant>
 
 #include <ikarus/finiteElements/mechanics/enhancedAssumedStrains.hh>
+
 template <typename DisplacementBasedElement>
 struct ElementTest<Ikarus::EnhancedAssumedStrains<DisplacementBasedElement>> {
   [[nodiscard]] static auto test() {
-    auto easFunctor = [](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req) {
+    auto easFunctor = [](auto& nonLinOp, auto& fe, auto& req) {
       const auto& localView = fe.localView();
       const auto& element   = localView.element();
       constexpr int gridDim = std::remove_cvref_t<decltype(element)>::dimension;
@@ -37,6 +38,7 @@ struct ElementTest<Ikarus::EnhancedAssumedStrains<DisplacementBasedElement>> {
           t.subTest(checkHessianOfElement(nonLinOp, messageIfFailed));
         }
         t.subTest(checkJacobianOfElement(subOp, messageIfFailed));
+        t.subTest(checkCalculateScalar(nonLinOp, fe, req));
 
         auto stiffnessMatrix = subOp.derivative();
 

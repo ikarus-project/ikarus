@@ -20,9 +20,6 @@ using Dune::TestSuite;
 template <typename Basis>
 using EASElement = Ikarus::EnhancedAssumedStrains<Ikarus::LinearElastic<Basis>>;
 
-template <typename Basis>
-using LinearElasticElement = Ikarus::LinearElastic<Basis>;
-
 int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t("EAS");

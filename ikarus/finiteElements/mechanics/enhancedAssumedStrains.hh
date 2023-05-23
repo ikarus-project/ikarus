@@ -264,53 +264,12 @@ namespace Ikarus {
       if (onlyDisplacementBase) return DisplacementBasedElement::calculateScalar(par);
       DUNE_THROW(Dune::NotImplemented,
                  "EAS element do not support any scalar calculations, i.e. they are not derivable from a potential");
-      return 0.0;
     }
 
-    void calculateVector(const FERequirementType& par, typename Traits::VectorType& g) const {
-      DisplacementBasedElement::calculateVector(par, g);
-      using namespace Dune;
-
-      if (onlyDisplacementBase) return;
-
+    void calculateVector(const FERequirementType& par, typename Traits::VectorType& force) const {
       Eigen::VectorXd dx(this->localView().size());
       dx.setZero();
-
-      const auto& d       = par.getGlobalSolution(Ikarus::FESolutions::displacement);
-      auto strainFunction = DisplacementBasedElement::getStrainFunction(par, dx);
-      Eigen::VectorXd disp(localView().size());
-      const auto& numNodes = DisplacementBasedElement::numberOfNodes;
-
-      for (auto i = 0U; i < numNodes; ++i)
-        for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
-          disp[i * Traits::mydim + k2] = d[localView().index(localView().tree().child(k2).localIndex(i))[0]];
-
-      using namespace Dune::DerivativeDirections;
-
-      auto C         = DisplacementBasedElement::getMaterialTangentFunction(par);
-      const auto geo = localView().element().geometry();
-
-      // Internal forces from enhanced strains
-      std::visit(
-          [&]<typename EAST>(const EAST& easFunction) {
-            constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
-            Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
-            calculateDAndLMatrix(easFunction, par, D, L);
-
-            const auto alpha = (-D.inverse() * L * disp).eval();
-
-            for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
-              const auto M            = easFunction.calcM(gp.position());
-              const double intElement = geo.integrationElement(gp.position()) * gp.weight();
-              const auto CEval        = C(gpIndex);
-              auto stresses           = (CEval * M * alpha).eval();
-              for (size_t i = 0; i < numNodes; ++i) {
-                const auto bopI = strainFunction.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
-                g.template segment<Traits::mydim>(Traits::mydim * i) += bopI.transpose() * stresses * intElement;
-              }
-            }
-          },
-          easVariant_);
+      calculateVectorImpl(par, force, dx);
     }
 
     auto& easVariant() { return easVariant_; }
@@ -420,6 +379,53 @@ namespace Ikarus {
             break;
         }
       }
+    }
+
+  protected:
+    template <class ScalarType = double>
+    void calculateVectorImpl(const FERequirementType& par, typename Traits::VectorType& g,
+                             const Eigen::VectorX<ScalarType>& dx) const {
+      DisplacementBasedElement::calculateVector(par, g);
+      using namespace Dune;
+
+      if (onlyDisplacementBase) return;
+
+      const auto& d       = par.getGlobalSolution(Ikarus::FESolutions::displacement);
+      auto strainFunction = DisplacementBasedElement::getStrainFunction(par, dx);
+      Eigen::VectorXd disp(localView().size());
+      const auto& numNodes = DisplacementBasedElement::numberOfNodes;
+
+      for (auto i = 0U; i < numNodes; ++i)
+        for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
+          disp[i * Traits::mydim + k2]
+              = dx[i * Traits::mydim + k2] + d[localView().index(localView().tree().child(k2).localIndex(i))[0]];
+
+      using namespace Dune::DerivativeDirections;
+
+      auto C         = DisplacementBasedElement::getMaterialTangentFunction(par);
+      const auto geo = localView().element().geometry();
+
+      // Internal forces from enhanced strains
+      std::visit(
+          [&]<typename EAST>(const EAST& easFunction) {
+            constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
+            Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
+            calculateDAndLMatrix(easFunction, par, D, L);
+
+            const auto alpha = (-D.inverse() * L * disp).eval();
+
+            for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
+              const auto M            = easFunction.calcM(gp.position());
+              const double intElement = geo.integrationElement(gp.position()) * gp.weight();
+              const auto CEval        = C(gpIndex);
+              auto stresses           = (CEval * M * alpha).eval();
+              for (size_t i = 0; i < numNodes; ++i) {
+                const auto bopI = strainFunction.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
+                g.template segment<Traits::mydim>(Traits::mydim * i) += bopI.transpose() * stresses * intElement;
+              }
+            }
+          },
+          easVariant_);
     }
 
   private:
