@@ -12,7 +12,7 @@ on:
       - '.github/workflows/createDockerContainer.yml'
       - '**.md'
   release:
-    types: [published]
+    types: [published ]
 
 jobs:
   build-n-publish:
