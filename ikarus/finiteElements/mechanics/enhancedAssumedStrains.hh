@@ -269,7 +269,7 @@ namespace Ikarus {
     void calculateVector(const FERequirementType& par, typename Traits::VectorType& force) const {
       Eigen::VectorXd dx(this->localView().size());
       dx.setZero();
-      calculateVectorImpl(par, force, dx);
+      force = calculateVectorImpl(par, dx);
     }
 
     auto& easVariant() { return easVariant_; }
@@ -383,16 +383,16 @@ namespace Ikarus {
 
   protected:
     template <class ScalarType = double>
-    void calculateVectorImpl(const FERequirementType& par, typename Traits::VectorType& g,
-                             const Eigen::VectorX<ScalarType>& dx) const {
+    auto calculateVectorImpl(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx) const {
+      Eigen::VectorXd g;
+      g.setZero(dx.size());
       DisplacementBasedElement::calculateVector(par, g);
+      if (onlyDisplacementBase) return g;
       using namespace Dune;
-
-      if (onlyDisplacementBase) return;
 
       const auto& d       = par.getGlobalSolution(Ikarus::FESolutions::displacement);
       auto strainFunction = DisplacementBasedElement::getStrainFunction(par, dx);
-      Eigen::VectorXd disp(localView().size());
+      Eigen::VectorX<ScalarType> disp(localView().size());
       const auto& numNodes = DisplacementBasedElement::numberOfNodes;
 
       for (auto i = 0U; i < numNodes; ++i)
@@ -426,6 +426,7 @@ namespace Ikarus {
             }
           },
           easVariant_);
+      return g;
     }
 
   private:

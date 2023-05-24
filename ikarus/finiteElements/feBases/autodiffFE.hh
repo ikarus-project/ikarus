@@ -22,17 +22,14 @@ namespace Ikarus {
     using FERequirementType = FERequirementType_;
 
     void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& h) const {
-      if constexpr (requires {
-                      this->calculateVectorImpl(par, typename Traits::VectorType{}, Eigen::VectorX<double>{});
-                    }) {
+      if constexpr (requires { this->calculateVectorImpl(par, Eigen::VectorX<double>{}); }) {
         /// This is only valid if the external forces are independent of displacements, for e.g., no follower forces are
         /// applied
         std::cout << "Hello calculateMatrix from calculateVectorImpl\n";
         Eigen::VectorXdual dx(this->localView().size());
-        typename Traits::VectorType g(this->localView().size());
         dx.setZero();
         autodiff::dual e;
-        auto f = [&](auto& x) { return this->calculateVectorImpl(par, g, x); };
+        auto f = [&](auto& x) { return this->calculateVectorImpl(par, x); };
         gradient(f, autodiff::wrt(dx), at(dx), e, h);
       } else if constexpr (requires { this->calculateScalarImpl(par, Eigen::VectorX<double>{}); }) {
         std::cout << "Hello calculateMatrix from calculateScalarImpl\n";
