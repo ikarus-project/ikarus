@@ -38,7 +38,8 @@ struct ElementTest<Ikarus::EnhancedAssumedStrains<DisplacementBasedElement>> {
           t.subTest(checkHessianOfElement(nonLinOp, messageIfFailed));
         }
         t.subTest(checkJacobianOfElement(subOp, messageIfFailed));
-        t.subTest(checkCalculateScalar(nonLinOp, fe, req));
+        std::cout << "Number of EAS\t" << numberOfEASParameter << std::endl;
+        t.subTest(checkCalculateScalar(nonLinOp, fe, req, messageIfFailed));
 
         auto stiffnessMatrix = subOp.derivative();
 

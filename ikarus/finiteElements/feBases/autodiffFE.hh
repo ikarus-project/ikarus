@@ -22,15 +22,21 @@ namespace Ikarus {
     using FERequirementType = FERequirementType_;
 
     void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& h) const {
-      if constexpr (requires { this->calculateVectorImpl(par, Eigen::VectorX<double>{}); }) {
+      if constexpr (requires {
+                      this->calculateVectorImpl(par, Eigen::VectorX<double>{}, std::declval<Eigen::VectorX<double>&>());
+                    }) {
         /// This is only valid if the external forces are independent of displacements, for e.g., no follower forces are
         /// applied
         std::cout << "Hello calculateMatrix from calculateVectorImpl\n";
         Eigen::VectorXdual dx(this->localView().size());
+        Eigen::VectorXdual g(this->localView().size());
+        Eigen::VectorXdual g2(this->localView().size());
         dx.setZero();
-        autodiff::dual e;
-        auto f = [&](auto& x) { return this->calculateVectorImpl(par, x); };
-        gradient(f, autodiff::wrt(dx), at(dx), e, h);
+        auto f = [&](auto& x) -> auto& {
+          this->calculateVectorImpl(par, x, g2);
+          return g2;
+        };
+        jacobian(f, autodiff::wrt(dx), at(dx), g, h);
       } else if constexpr (requires { this->calculateScalarImpl(par, Eigen::VectorX<double>{}); }) {
         std::cout << "Hello calculateMatrix from calculateScalarImpl\n";
         Eigen::VectorXdual2nd dx(this->localView().size());
@@ -77,7 +83,17 @@ namespace Ikarus {
                    "chosen element.");
     }
 
+    const RealElement& getFE() const { return *this; }
+
     template <typename... Args>
-    explicit AutoDiffFE(Args&&... args) : RealElement{std::forward<Args>(args)...} {}
+    explicit AutoDiffFE(Args&&... args) : RealElement{std::forward<Args>(args)...} {
+      if constexpr (requires { this->setEASType(int{}); }) {
+        int numberOfEASParameters;
+        std::visit([&]<typename EAST>(const EAST& easFunction) { numberOfEASParameters = EAST::enhancedStrainSize; },
+                   getFE().easVariant());
+        this->setEASType(numberOfEASParameters);
+        std::cout << "setEASType exists !!!!" << numberOfEASParameters << std::endl;
+      }
+    }
   };
 }  // namespace Ikarus

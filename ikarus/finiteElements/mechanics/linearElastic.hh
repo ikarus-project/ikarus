@@ -148,10 +148,10 @@ namespace Ikarus {
       }
     }
 
-    void calculateVector(const FERequirementType& par, typename Traits::VectorType force) const {
+    void calculateVector(const FERequirementType& par, typename Traits::VectorType& force) const {
       Eigen::VectorXd dx(this->localView().size());
       dx.setZero();
-      force = calculateVectorImpl(par, dx);
+      calculateVectorImpl(par, dx, force);
     }
 
     Dune::CachedLocalBasis<
@@ -225,9 +225,8 @@ namespace Ikarus {
     }
 
     template <class ScalarType = double>
-    auto calculateVectorImpl(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx) const {
-      Eigen::VectorXd force;
-      force.setZero(dx.size());
+    void calculateVectorImpl(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx,
+                             Eigen::VectorX<ScalarType>& force) const {
       const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
       const auto eps     = getStrainFunction(par, dx);
       using namespace Dune::DerivativeDirections;
@@ -260,7 +259,7 @@ namespace Ikarus {
       }
 
       // External forces, boundary forces, i.e. at the Neumann boundary
-      if (not neumannBoundary) return force;
+      if (not neumannBoundary) return;
 
       const auto u = getDisplacementFunction(par, dx);
       auto element = this->localView().element();
@@ -286,7 +285,6 @@ namespace Ikarus {
           }
         }
       }
-      return force;
     }
   };
 }  // namespace Ikarus

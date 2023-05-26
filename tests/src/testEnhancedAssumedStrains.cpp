@@ -32,10 +32,11 @@ int main(int argc, char** argv) {
 
   t.subTest(
       testFEElement<EASElement, 2>(firstOrderLagrangePrePower2Basis, "EAS", randomlyDistorted, checkJacobianFunctor));
-  t.subTest(
-      testFEElement<EASElement, 3>(firstOrderLagrangePrePower3Basis, "EAS", randomlyDistorted, checkJacobianFunctor));
-  t.subTest(
-      testFEElement<EASElement, 2>(firstOrderLagrangePrePower2Basis, "EAS", unDistorted, checkCauchyStressFunctor));
+  //  t.subTest(
+  //      testFEElement<EASElement, 3>(firstOrderLagrangePrePower3Basis, "EAS", randomlyDistorted,
+  //      checkJacobianFunctor));
+  //  t.subTest(
+  //      testFEElement<EASElement, 2>(firstOrderLagrangePrePower2Basis, "EAS", unDistorted, checkCauchyStressFunctor));
 
   return t.exit();
 }

@@ -268,11 +268,12 @@ namespace Ikarus {
 
     void calculateVector(const FERequirementType& par, typename Traits::VectorType& force) const {
       Eigen::VectorXd dx(this->localView().size());
+      force.setZero(this->localView().size());
       dx.setZero();
-      force = calculateVectorImpl(par, dx);
+      calculateVectorImpl(par, dx, force);
     }
 
-    auto& easVariant() { return easVariant_; }
+    const auto& easVariant() const { return easVariant_; }
 
     void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& K) const {
       using namespace Dune::DerivativeDirections;
@@ -383,13 +384,11 @@ namespace Ikarus {
 
   protected:
     template <class ScalarType = double>
-    auto calculateVectorImpl(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx) const {
-      Eigen::VectorXd g;
-      g.setZero(dx.size());
-      DisplacementBasedElement::calculateVector(par, g);
-      if (onlyDisplacementBase) return g;
+    void calculateVectorImpl(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx,
+                             Eigen::VectorX<ScalarType>& force) const {
+      DisplacementBasedElement::calculateVectorImpl(par, dx, force);
+      if (onlyDisplacementBase) return;
       using namespace Dune;
-
       const auto& d       = par.getGlobalSolution(Ikarus::FESolutions::displacement);
       auto strainFunction = DisplacementBasedElement::getStrainFunction(par, dx);
       Eigen::VectorX<ScalarType> disp(localView().size());
@@ -421,12 +420,11 @@ namespace Ikarus {
               auto stresses           = (CEval * M * alpha).eval();
               for (size_t i = 0; i < numNodes; ++i) {
                 const auto bopI = strainFunction.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
-                g.template segment<Traits::mydim>(Traits::mydim * i) += bopI.transpose() * stresses * intElement;
+                force.template segment<Traits::mydim>(Traits::mydim * i) += bopI.transpose() * stresses * intElement;
               }
             }
           },
           easVariant_);
-      return g;
     }
 
   private:
