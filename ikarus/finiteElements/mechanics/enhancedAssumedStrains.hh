@@ -257,7 +257,7 @@ namespace Ikarus {
 
     template <typename... Args>
     explicit EnhancedAssumedStrains(Args&&... args) : DisplacementBasedElement(std::forward<Args>(args)...) {
-      setEASType(0);
+      setEASType(numberOfEASParameters);
     }
 
     double calculateScalar(const FERequirementType& par) const {
@@ -273,7 +273,8 @@ namespace Ikarus {
       calculateVectorImpl(par, dx, force);
     }
 
-    const auto& easVariant() const { return easVariant_; }
+    const auto& getEASVariant() const { return easVariant_; }
+    const auto& getNumberOfEASParameters() const { return numberOfEASParameters; }
 
     void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& K) const {
       using namespace Dune::DerivativeDirections;
@@ -336,11 +337,12 @@ namespace Ikarus {
           easVariant_);
     }
 
-    void setEASType(int numberOfEASParameters) {
+    void setEASType(int numberOfEASParameters_) {
       const auto& numNodes = DisplacementBasedElement::numberOfNodes;
       if (not((numNodes == 4 and Traits::mydim == 2) or (numNodes == 8 and Traits::mydim == 3))
           and (numberOfEASParameters != 0))
         DUNE_THROW(Dune::NotImplemented, "EAS only supported for Q1 or H1 elements");
+      numberOfEASParameters = numberOfEASParameters_;
       if constexpr (Traits::mydim == 2) {
         switch (numberOfEASParameters) {
           case 0:
@@ -433,6 +435,7 @@ namespace Ikarus {
     std::conditional_t<Traits::mydim == 2, EAS2DVariantImpl, EAS3DVariantImpl> easVariant_;
     mutable Eigen::MatrixXd L;
     bool onlyDisplacementBase{false};
+    int numberOfEASParameters{0};
     template <int enhancedStrainSize>
     void calculateDAndLMatrix(const auto& easFunction, const auto& par,
                               Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>& DMat,

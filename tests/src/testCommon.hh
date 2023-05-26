@@ -276,19 +276,12 @@ template <typename NonLinearOperator, typename FiniteElement,
   std::cout << std::setprecision(10) << "R\n" << R << std::endl;
   std::cout << std::setprecision(10) << "RAutoDiff\n" << RAutoDiff << std::endl;
 
-  std::visit(
-      [&]<typename EAST>(const EAST& easFunction) {
-        std::visit(
-            [&]<typename EAST2>(const EAST2& easFunction) {
-              std::cout << "Printing FE easType: " << EAST2::enhancedStrainSize
-                        << "  AutoDiffFE easType: " << EAST::enhancedStrainSize << std::endl;
-              t.check(EAST::enhancedStrainSize == EAST2::enhancedStrainSize)
-                  << "\nFe easType: " << EAST2::enhancedStrainSize
-                  << "\nAutodiffFe easType: " << EAST::enhancedStrainSize;
-            },
-            fe.easVariant());
-      },
-      feAutoDiff.getFE().easVariant());
+  if constexpr (requires {feAutoDiff.getFE().getNumberOfEASParameters();}) {
+    t.check(fe.getNumberOfEASParameters() == feAutoDiff.getFE().getNumberOfEASParameters())
+        << "Number of EAS parameters for FE(" << fe.getNumberOfEASParameters()
+        << ") and number of EAS parameters for AutodiffFE(" << feAutoDiff.getFE().getNumberOfEASParameters()
+        << ") are not equal";
+  }
 
   t.check(K.isApprox(KAutoDiff, tol),
           "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "

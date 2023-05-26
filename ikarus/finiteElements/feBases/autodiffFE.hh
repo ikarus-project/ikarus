@@ -88,9 +88,7 @@ namespace Ikarus {
     template <typename... Args>
     explicit AutoDiffFE(Args&&... args) : RealElement{std::forward<Args>(args)...} {
       if constexpr (requires { this->setEASType(int{}); }) {
-        int numberOfEASParameters;
-        std::visit([&]<typename EAST>(const EAST& easFunction) { numberOfEASParameters = EAST::enhancedStrainSize; },
-                   getFE().easVariant());
+        int numberOfEASParameters = this->getNumberOfEASParameters();
         this->setEASType(numberOfEASParameters);
         std::cout << "setEASType exists !!!!" << numberOfEASParameters << std::endl;
       }

@@ -67,8 +67,8 @@ struct ElementTest<Ikarus::EnhancedAssumedStrains<DisplacementBasedElement>> {
         auto rule       = Dune::QuadratureRules<double, gridDim>::rule(localView.element().type(), order);
 
         if (numberOfEASParameter > 0) {
-          auto easVariantCopy    = fe.easVariant();  // This only test if the variant has a copy assignment operator
-          const auto& easVariant = fe.easVariant();
+          auto easVariantCopy    = fe.getEASVariant();  // This only test if the variant has a copy assignment operator
+          const auto& easVariant = fe.getEASVariant();
           std::visit(
               [&]<typename EAS>(const EAS& easFunction) {
                 typename EAS::MType MIntegrated;
