@@ -267,9 +267,6 @@ template <typename NonLinearOperator, typename FiniteElement,
   fe.calculateMatrix(req, K);
   feAutoDiff.calculateMatrix(req, KAutoDiff);
 
-  std::cout << std::setprecision(10) << "K\n" << K << std::endl;
-  std::cout << std::setprecision(10) << "KAutoDiff\n" << KAutoDiff << std::endl;
-
   fe.calculateVector(req, R);
   feAutoDiff.calculateVector(req, RAutoDiff);
 
@@ -293,7 +290,6 @@ template <typename NonLinearOperator, typename FiniteElement,
   try {
     auto energy         = fe.calculateScalar(req);
     auto energyAutoDiff = feAutoDiff.calculateScalar(req);
-
     t.check(Dune::FloatCmp::eq(energy, energyAutoDiff, tol),
             "Mismatch between the energies obtained from explicit implementation and the one based on "
             "automatic differentiation")

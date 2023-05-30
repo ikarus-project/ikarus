@@ -103,6 +103,12 @@ namespace Ikarus {
       return calculateScalarImpl(par, dx);
     }
 
+    void calculateVector(const FERequirementType& par, typename Traits::VectorType force) const {
+      Eigen::VectorXd dx(this->localView().size());
+      dx.setZero();
+      calculateVectorImpl(par, dx, force);
+    }
+
     void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType K) const {
       Eigen::VectorXd dx(this->localView().size());
       dx.setZero();
@@ -146,12 +152,6 @@ namespace Ikarus {
         resultVector = cauchyStress;
         result.insertOrAssignResult(ResultType::linearStress, resultVector);
       }
-    }
-
-    void calculateVector(const FERequirementType& par, typename Traits::VectorType force) const {
-      Eigen::VectorXd dx(this->localView().size());
-      dx.setZero();
-      calculateVectorImpl(par, dx, force);
     }
 
     Dune::CachedLocalBasis<

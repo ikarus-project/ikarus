@@ -27,18 +27,16 @@ namespace Ikarus {
                     }) {
         /// This is only valid if the external forces are independent of displacements, for e.g., no follower forces are
         /// applied
-        std::cout << "Hello calculateMatrix from calculateVectorImpl\n";
         Eigen::VectorXdual dx(this->localView().size());
         Eigen::VectorXdual g(this->localView().size());
-        g.setZero();
         dx.setZero();
         auto f = [&](auto& x) -> auto& {
+          g.setZero();
           this->calculateVectorImpl(par, x, g);
           return g;
         };
         jacobian(f, autodiff::wrt(dx), at(dx), g, h);
       } else if constexpr (requires { this->calculateScalarImpl(par, Eigen::VectorX<double>{}); }) {
-        std::cout << "Hello calculateMatrix from calculateScalarImpl\n";
         Eigen::VectorXdual2nd dx(this->localView().size());
         Eigen::VectorXd g;
         autodiff::dual2nd e;
