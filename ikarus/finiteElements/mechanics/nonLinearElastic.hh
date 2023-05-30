@@ -122,13 +122,13 @@ namespace Ikarus {
       return calculateScalarImpl(par, dx);
     }
 
-    void calculateVector(const FERequirementType& par, typename Traits::VectorType force) const {
+    void calculateVector(const FERequirementType& par, typename Traits::template VectorType<> force) const {
       Eigen::VectorXd dx(this->localView().size());
       dx.setZero();
       calculateVectorImpl(par, dx, force);
     }
 
-    void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType K) const {
+    void calculateMatrix(const FERequirementType& par, typename Traits::template MatrixType<> K) const {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
       Eigen::VectorXd dx(this->localView().size());
@@ -190,7 +190,7 @@ namespace Ikarus {
 
   protected:
     template <typename ScalarType = double>
-    ScalarType calculateScalarImpl(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx) const {
+    ScalarType calculateScalarImpl(const FERequirementType& par, const typename Traits::template VectorType<ScalarType>& dx) const {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
       const auto uFunction = getDisplacementFunction(par, dx);
@@ -243,7 +243,7 @@ namespace Ikarus {
     }
 
     template <class ScalarType = double>
-    void calculateVectorImpl(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx,
+    void calculateVectorImpl(const FERequirementType& par, const typename Traits::template VectorType<ScalarType>& dx,
                              Eigen::VectorX<ScalarType>& force) const {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;

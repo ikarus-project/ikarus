@@ -171,7 +171,7 @@ namespace Ikarus {
 
   protected:
     template <class ScalarType = double>
-    ScalarType calculateScalarImpl(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx) const {
+    ScalarType calculateScalarImpl(const FERequirementType& par, const typename Traits::template VectorType<ScalarType>& dx) const {
       const auto u       = getDisplacementFunction(par, dx);
       const auto eps     = getStrainFunction(par, dx);
       const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
@@ -225,7 +225,7 @@ namespace Ikarus {
     }
 
     template <class ScalarType = double>
-    void calculateVectorImpl(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx,
+    void calculateVectorImpl(const FERequirementType& par, const typename Traits::template VectorType<ScalarType>& dx,
                              Eigen::VectorX<ScalarType>& force) const {
       const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
       const auto eps     = getStrainFunction(par, dx);
