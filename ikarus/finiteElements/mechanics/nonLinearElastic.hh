@@ -85,9 +85,14 @@ namespace Ikarus {
       return greenLagrangeStrains(getDisplacementFunction(par, dx));
     }
 
-    template <bool voigt = true>
-    auto getMaterialTangent(const auto& strain) const {
-      return mat.template tangentModuli<strainType, voigt>(strain);
+    template <typename ScalarType, int strainDim, bool voigt = true>
+    auto getMaterialTangent(const Eigen::Vector<ScalarType, strainDim>& strain) const {
+      if constexpr (std::is_same_v<ScalarType, double>)
+        return mat.template tangentModuli<strainType, voigt>(strain);
+      else {
+        decltype(auto) matAD = mat.template rebind<ScalarType>();
+        return matAD.template tangentModuli<strainType, voigt>(strain);
+      }
     }
 
     template <typename ScalarType, int strainDim>
@@ -100,9 +105,14 @@ namespace Ikarus {
       }
     }
 
-    template <bool voigt = true>
-    auto getStress(const auto& strain) const {
-      return mat.template stresses<strainType, voigt>(strain);
+    template <typename ScalarType, int strainDim, bool voigt = true>
+    auto getStress(const Eigen::Vector<ScalarType, strainDim>& strain) const {
+      if constexpr (std::is_same_v<ScalarType, double>)
+        return mat.template stresses<strainType, voigt>(strain);
+      else {
+        decltype(auto) matAD = mat.template rebind<ScalarType>();
+        return matAD.template stresses<strainType, voigt>(strain);
+      }
     }
 
     template <typename ScalarType = double>

@@ -336,7 +336,7 @@ auto checkCalculateScalar(const Material& mat) {
   using NonLinearElasticity = Ikarus::NonLinearElastic<decltype(basis), decltype(mat)>;
   NonLinearElasticity fe(basis, *element, mat, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
   using AutoDiffBasedFE = Ikarus::AutoDiffFE<NonLinearElasticity>;
-  AutoDiffBasedFE feAutoDiff{fe};
+  AutoDiffBasedFE feAutoDiff(fe);
 
   Eigen::VectorXd d;
   d.setRandom(nDOF);
