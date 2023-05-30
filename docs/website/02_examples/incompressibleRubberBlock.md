@@ -70,7 +70,7 @@ auto basis = Ikarus::makeBasis(
 gridView, composite(power<2>(lagrange<1>()), lagrange<0>()));
 ```
 Here, `#!cpp power<2>` is used to approximate the displacement field in both $x$ and $y$ directions.
-A vector of `Solid` finite elements that are decorated by `AutoDiffFE` are then constructued as shown below:
+A vector of `Solid` finite elements that are decorated by `AutoDiffFE` are then constructed as shown below:
 ```cpp
 std::vector<AutoDiffFE<Solid<decltype(basis)>>> fes;
 for (auto &ele : elements(gridView))
