@@ -1,3 +1,6 @@
+---
+status: new
+---
 <!--
 SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 SPDX-License-Identifier: CC-BY-SA-4.0
@@ -15,12 +18,12 @@ simply supported case.
 ## Code highlights
 
 Similar to the `struct` named `Solid` in `iks003_incompressible_LinearElasticity.cpp`, here a `struct` named `KirchhoffPlate` 
-is created such that it inherits from `AutoDiffFE`. It is constructed as shown below:
+is created. `KirchhoffPlate` inherits from `ScalarFieldFE` and it must be decorated with `AutoDiffFE` as well to compute the stiffness matrix and load vectors. 
+It is constructed as shown below:
 ```cpp
 KirchhoffPlate(const Basis &basis, const typename LocalView::Element &element, double p_Emodul, double p_nu,
                double p_thickness)
     : BaseDisp(basis.flat(), element),
-      BaseAD(basis.flat(), element),
       Emodul{p_Emodul},
       nu{p_nu},
       thickness{p_thickness} {
@@ -120,7 +123,6 @@ L^2\textrm{-error} = \sqrt{\sum_{ele} \int_{\Omega_{ele}} \left( w_{analytical}-
 $$ 
 as shown below: 
 ```cpp
-
 double l2_error = 0.0;
 for (auto &ele : elements(gridView)) {
   localView.bind(ele);

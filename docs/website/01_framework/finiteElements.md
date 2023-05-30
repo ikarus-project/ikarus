@@ -85,7 +85,7 @@ NonLinearElastic(const Basis& globalBasis, const typename LocalView::Element& el
                  VolumeLoad p_volumeLoad = {}, const BoundaryPatch<GridView>* p_neumannBoundary = nullptr,
                  NeumannBoundaryLoad p_neumannBoundaryLoad = {})
 ```
-The first argument defines the basis function used to interpolate the solution field, while the second argument points to the finite element itself.
+The first argument defines the basis function used to interpolate the solution field, while the second argument points to the `gridElement` itself.
 The next set of arguments are related to the material law to be used. For the geometrically linear case, the Young's modulus and the Poisson's ratio are passed, and a `planeStress` material model is assumed.
 For the geometrically non-linear case, the material model is to be passed as an argument, for instance, the St. Venant-Kirchhoff material law or the Neo-Hookean material law. 
 `volumeLoad` and `neumannBoundaryLoad` are optional parameters that could be passed as per the use case. 

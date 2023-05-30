@@ -1,3 +1,6 @@
+---
+status: new
+---
 <!--
 SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 SPDX-License-Identifier: CC-BY-SA-4.0
@@ -16,11 +19,11 @@ other necessary quantities to perform a static structural analysis.
 
 ## Code highlights
 
-The `struct` named `Solid` is created such that it inherits from `AutoDiffFE`. It is constructed as shown below:
+The `struct` named `Solid` is created which is not inherited from any class. It is constructed as shown below:
 ```cpp
 Solid(const Basis &basis, const typename LocalView::Element &element, double emod, double nu)
-    : BaseAD(basis.flat(), element), emod_{emod}, nu_{nu} {
-  this->localView().bind(element);
+    : localView_{basis.flat().localView()}, emod_{emod}, nu_{nu} {
+  localView_.bind(element);
   mu_       = emod_ / (2 * (1 + nu_));
   lambdaMat = convertLameConstants({.emodul = emod_, .nu = nu_}).toLamesFirstParameter();
 }
@@ -66,7 +69,13 @@ A linear Lagrangian basis is opted for the displacements and a constant basis fo
 auto basis = Ikarus::makeBasis(
 gridView, composite(power<2>(lagrange<1>()), lagrange<0>()));
 ```
-Here, `#!cpp power<2>` is used to approximate the displacement field in both $x$ and $y$ directions. 
+Here, `#!cpp power<2>` is used to approximate the displacement field in both $x$ and $y$ directions.
+A vector of `Solid` finite elements that are decorated by `AutoDiffFE` are then constructued as shown below:
+```cpp
+std::vector<AutoDiffFE<Solid<decltype(basis)>>> fes;
+for (auto &ele : elements(gridView))
+  fes.emplace_back(basis, ele, Emod, nu);
+```
 The displacement degrees of freedom at position $y=0$ are fixed using the following snippet:
 ```cpp
 auto basisP = std::make_shared<const decltype(basis)>(basis);
