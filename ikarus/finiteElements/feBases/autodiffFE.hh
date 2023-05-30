@@ -30,11 +30,11 @@ namespace Ikarus {
         std::cout << "Hello calculateMatrix from calculateVectorImpl\n";
         Eigen::VectorXdual dx(this->localView().size());
         Eigen::VectorXdual g(this->localView().size());
-        Eigen::VectorXdual g2(this->localView().size());
+        g.setZero();
         dx.setZero();
         auto f = [&](auto& x) -> auto& {
-          this->calculateVectorImpl(par, x, g2);
-          return g2;
+          this->calculateVectorImpl(par, x, g);
+          return g;
         };
         jacobian(f, autodiff::wrt(dx), at(dx), g, h);
       } else if constexpr (requires { this->calculateScalarImpl(par, Eigen::VectorX<double>{}); }) {
@@ -52,7 +52,13 @@ namespace Ikarus {
     }
 
     void calculateVector(const FERequirementType& par, typename Traits::VectorType& g) const {
-      if constexpr (requires { this->calculateScalarImpl(par, Eigen::VectorX<double>{}); }) {
+      if constexpr (requires {
+                      this->calculateVectorImpl(par, Eigen::VectorX<double>{}, std::declval<Eigen::VectorX<double>&>());
+                    }) {
+        Eigen::VectorXd dx(this->localView().size());
+        dx.setZero();
+        return this->calculateVectorImpl(par, dx, g);
+      } else if constexpr (requires { this->calculateScalarImpl(par, Eigen::VectorX<double>{}); }) {
         Eigen::VectorXdual dx(this->localView().size());
         dx.setZero();
         autodiff::dual e;
@@ -86,11 +92,12 @@ namespace Ikarus {
     const RealElement& getFE() const { return *this; }
 
     template <typename... Args>
-    explicit AutoDiffFE(Args&&... args) : RealElement{std::forward<Args>(args)...} {
+    explicit AutoDiffFE(Args&&... args) : RealElement{std::forward<Args>(args)...} {}
+
+    explicit AutoDiffFE(RealElement& other) : RealElement(other) {
       if constexpr (requires { this->setEASType(int{}); }) {
-        int numberOfEASParameters = this->getNumberOfEASParameters();
+        const auto& numberOfEASParameters = other.getNumberOfEASParameters();
         this->setEASType(numberOfEASParameters);
-        std::cout << "setEASType exists !!!!" << numberOfEASParameters << std::endl;
       }
     }
   };

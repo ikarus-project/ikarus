@@ -273,10 +273,7 @@ template <typename NonLinearOperator, typename FiniteElement,
   fe.calculateVector(req, R);
   feAutoDiff.calculateVector(req, RAutoDiff);
 
-  std::cout << std::setprecision(10) << "R\n" << R << std::endl;
-  std::cout << std::setprecision(10) << "RAutoDiff\n" << RAutoDiff << std::endl;
-
-  if constexpr (requires {feAutoDiff.getFE().getNumberOfEASParameters();}) {
+  if constexpr (requires { feAutoDiff.getFE().getNumberOfEASParameters(); }) {
     t.check(fe.getNumberOfEASParameters() == feAutoDiff.getFE().getNumberOfEASParameters())
         << "Number of EAS parameters for FE(" << fe.getNumberOfEASParameters()
         << ") and number of EAS parameters for AutodiffFE(" << feAutoDiff.getFE().getNumberOfEASParameters()

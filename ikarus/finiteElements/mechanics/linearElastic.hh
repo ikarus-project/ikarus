@@ -148,7 +148,7 @@ namespace Ikarus {
       }
     }
 
-    void calculateVector(const FERequirementType& par, typename Traits::VectorType& force) const {
+    void calculateVector(const FERequirementType& par, typename Traits::VectorType force) const {
       Eigen::VectorXd dx(this->localView().size());
       dx.setZero();
       calculateVectorImpl(par, dx, force);

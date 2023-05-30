@@ -260,15 +260,18 @@ namespace Ikarus {
       setEASType(numberOfEASParameters);
     }
 
+    explicit EnhancedAssumedStrains(DisplacementBasedElement& other) : DisplacementBasedElement(other) {
+      setEASType(numberOfEASParameters);
+    }
+
     double calculateScalar(const FERequirementType& par) const {
       if (onlyDisplacementBase) return DisplacementBasedElement::calculateScalar(par);
       DUNE_THROW(Dune::NotImplemented,
                  "EAS element do not support any scalar calculations, i.e. they are not derivable from a potential");
     }
 
-    void calculateVector(const FERequirementType& par, typename Traits::VectorType& force) const {
+    void calculateVector(const FERequirementType& par, typename Traits::VectorType force) const {
       Eigen::VectorXd dx(this->localView().size());
-      force.setZero(this->localView().size());
       dx.setZero();
       calculateVectorImpl(par, dx, force);
     }
@@ -276,7 +279,7 @@ namespace Ikarus {
     const auto& getEASVariant() const { return easVariant_; }
     const auto& getNumberOfEASParameters() const { return numberOfEASParameters; }
 
-    void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& K) const {
+    void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType K) const {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
 
