@@ -246,9 +246,9 @@ template <typename NonLinearOperator, typename FiniteElement>
 
 template <typename NonLinearOperator, typename FiniteElement,
           typename FERequirementType = FiniteElement::FERequirementType>
-[[nodiscard]] auto checkCalculateScalar(NonLinearOperator&, FiniteElement& fe, FERequirementType req,
+[[nodiscard]] auto checkFEByAutoDiff(NonLinearOperator&, FiniteElement& fe, FERequirementType req,
                                         const std::string& messageIfFailed = "") {
-  Dune::TestSuite t("Check calculateScalar() by Automatic Differentiation");
+  Dune::TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() by Automatic Differentiation");
   auto& basis           = fe.localView().globalBasis();
   auto nDOF             = basis.size();
   using AutoDiffBasedFE = Ikarus::AutoDiffFE<FiniteElement>;

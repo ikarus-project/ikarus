@@ -302,8 +302,8 @@ auto SingleElementTest(const Material& mat) {
 }
 
 template <int gridDim, typename Material>
-auto checkFEWithAutoDiff(const Material& mat) {
-  TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() with Automatic Differentiation for gridDim = "
+auto checkFEByAutoDiff(const Material& mat) {
+  TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() by Automatic Differentiation for gridDim = "
               + std::to_string(gridDim));
 
   auto grid     = createUGGridFromCorners<gridDim>(CornerDistortionFlag::randomlyDistorted);

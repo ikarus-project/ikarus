@@ -136,5 +136,5 @@ auto checkJacobianFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe, [[mayb
 };
 auto checkCauchyStressFunctor
     = [](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req) { return checkCauchyStressOf2DElement(nonLinOp, fe); };
-auto checkCalculateScalarFunctor
-    = [](auto& nonLinOp, auto& fe, auto& req) { return checkCalculateScalar(nonLinOp, fe, req); };
+auto checkFEByAutoDiffFunctor
+    = [](auto& nonLinOp, auto& fe, auto& req) { return checkFEByAutoDiff(nonLinOp, fe, req); };

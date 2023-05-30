@@ -33,19 +33,19 @@ int main(int argc, char** argv) {
 
   t.subTest(testFEElement<LinearElasticElement, 2>(firstOrderLagrangePrePower2Basis, "LinearElastic", randomlyDistorted,
                                                    checkGradientFunctor, checkHessianFunctor, checkJacobianFunctor,
-                                                   checkCalculateScalarFunctor));
+                                                   checkFEByAutoDiffFunctor));
   t.subTest(testFEElement<LinearElasticElement, 2>(secondOrderLagrangePrePower2Basis, "LinearElastic",
                                                    randomlyDistorted, checkGradientFunctor, checkHessianFunctor,
-                                                   checkJacobianFunctor, checkCalculateScalarFunctor));
+                                                   checkJacobianFunctor, checkFEByAutoDiffFunctor));
   t.subTest(testFEElement<LinearElasticElement, 3>(firstOrderLagrangePrePower3Basis, "LinearElastic", randomlyDistorted,
                                                    checkGradientFunctor, checkHessianFunctor, checkJacobianFunctor,
-                                                   checkCalculateScalarFunctor));
+                                                   checkFEByAutoDiffFunctor));
   t.subTest(testFEElement<LinearElasticElement, 3>(secondOrderLagrangePrePower3Basis, "LinearElastic",
                                                    randomlyDistorted, checkGradientFunctor, checkHessianFunctor,
-                                                   checkJacobianFunctor, checkCalculateScalarFunctor));
+                                                   checkJacobianFunctor, checkFEByAutoDiffFunctor));
   t.subTest(testFEElement<LinearElasticElement, 3>(secondOrderLagrangePrePower3BasisBlocked, "LinearElastic",
                                                    randomlyDistorted, checkGradientFunctor, checkHessianFunctor,
-                                                   checkJacobianFunctor, checkCalculateScalarFunctor));
+                                                   checkJacobianFunctor, checkFEByAutoDiffFunctor));
   t.subTest(testFEElement<LinearElasticElement, 2>(firstOrderLagrangePrePower2Basis, "LinearElastic", unDistorted,
                                                    checkCauchyStressFunctor));
   return t.exit();

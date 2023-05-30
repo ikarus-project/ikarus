@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
   t.subTest(GreenLagrangeStrainTest<2>(reducedMat));
   t.subTest(GreenLagrangeStrainTest<3>(matSVK2));
   t.subTest(SingleElementTest(reducedMat));
-  t.subTest(checkFEWithAutoDiff<2>(reducedMat));
-  t.subTest(checkFEWithAutoDiff<3>(matSVK1));
+  t.subTest(checkFEByAutoDiff<2>(reducedMat));
+  t.subTest(checkFEByAutoDiff<3>(matSVK1));
   return t.exit();
 }
