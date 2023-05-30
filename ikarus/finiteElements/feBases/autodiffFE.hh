@@ -21,9 +21,10 @@ namespace Ikarus {
     using Element           = typename LocalView::Element;
     using FERequirementType = FERequirementType_;
 
-    void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& h) const {
+    void calculateMatrix(const FERequirementType& par, typename Traits::template MatrixType<> h) const {
       if constexpr (requires {
-                      this->calculateVectorImpl(par, Eigen::VectorX<double>{}, std::declval<Eigen::VectorX<double>&>());
+                      this->calculateVectorImpl(par, std::declval<const Eigen::VectorXdual&>(),
+                                                std::declval<const typename Traits::template VectorType<autodiff::dual2nd>&>());
                     }) {
         /// This is only valid if the external forces are independent of displacements, for e.g., no follower forces are
         /// applied
@@ -36,12 +37,15 @@ namespace Ikarus {
           return g;
         };
         jacobian(f, autodiff::wrt(dx), at(dx), g, h);
-      } else if constexpr (requires { this->calculateScalarImpl(par, Eigen::VectorX<double>{}); }) {
+      } else if constexpr (requires {
+                             this->calculateScalarImpl(par,
+                                                       std::declval<typename Traits::template VectorType<double>&>());
+                           }) {
         Eigen::VectorXdual2nd dx(this->localView().size());
         Eigen::VectorXd g;
         autodiff::dual2nd e;
         dx.setZero();
-        auto f = [&](auto& x) { return this->calculateScalarImpl(par, x); };
+        auto f = [&](auto& x) { return this->template calculateScalarImpl<autodiff::dual2nd>(par, x); };
         hessian(f, autodiff::wrt(dx), at(dx), e, g, h);
       } else
         DUNE_THROW(Dune::NotImplemented,
@@ -49,18 +53,23 @@ namespace Ikarus {
                    "chosen element.");
     }
 
-    void calculateVector(const FERequirementType& par, typename Traits::VectorType& g) const {
+    void calculateVector(const FERequirementType& par, typename Traits::template VectorType<> g) const {
       if constexpr (requires {
-                      this->calculateVectorImpl(par, Eigen::VectorX<double>{}, std::declval<Eigen::VectorX<double>&>());
+                      this->calculateVectorImpl(par, std::declval<typename Traits::template VectorType<double>&>(),
+                                                std::declval<Eigen::VectorX<double>&>());
                     }) {
         Eigen::VectorXd dx(this->localView().size());
         dx.setZero();
         return this->calculateVectorImpl(par, dx, g);
-      } else if constexpr (requires { this->calculateScalarImpl(par, Eigen::VectorX<double>{}); }) {
+      } else if constexpr (requires {
+                             this->template calculateScalarImpl<autodiff::dual>(par,
+                                                       std::declval<const Eigen::VectorXdual&>()
+                                                       );
+                           }) {
         Eigen::VectorXdual dx(this->localView().size());
         dx.setZero();
         autodiff::dual e;
-        auto f = [&](auto& x) { return this->calculateScalarImpl(par, x); };
+        auto f = [&](auto& x) { return this->template calculateScalarImpl<autodiff::dual>(par, x); };
         gradient(f, autodiff::wrt(dx), at(dx), e, g);
       } else
         DUNE_THROW(Dune::NotImplemented,
@@ -68,22 +77,28 @@ namespace Ikarus {
                    "chosen element.");
     }
 
-    void calculateLocalSystem(const FERequirementType& par, typename Traits::MatrixType& h,
-                              typename Traits::VectorType& g) const {
+    void calculateLocalSystem(const FERequirementType& par, typename Traits::template MatrixType<> h,
+                              typename Traits::template VectorType<> g) const {
       Eigen::VectorXdual2nd dx(this->localView().size());
       dx.setZero();
       auto f = [&](auto& x) { return this->calculateScalarImpl(par, x); };
       hessian(f, autodiff::wrt(dx), at(dx), g, h);
     }
 
-    [[nodiscard]] typename Traits::ScalarType calculateScalar(const FERequirementType& par) const {
-      if constexpr (requires { this->calculateScalarImpl(par, Eigen::VectorX<double>{}); }) {
+    template <typename ScalarType = double>
+    [[nodiscard]] ScalarType calculateScalar(const FERequirementType& par) const {
+      if constexpr (requires { this->calculateScalar(par); }) {
+        return this->calculateScalar(par);
+      } else if constexpr (requires {
+                             this->calculateScalarImpl(par,
+                                                       std::declval<const Eigen::VectorXd&>());
+                           }) {
         Eigen::VectorXd dx(this->localView().size());
         dx.setZero();
         return this->calculateScalarImpl(par, dx);
       } else
         DUNE_THROW(Dune::NotImplemented,
-                   "Appropriate calculateScalarImpl function is not implemented for the "
+                   "Appropriate calculateScalar and calculateScalarImpl functions are not implemented for the "
                    "chosen element.");
     }
 

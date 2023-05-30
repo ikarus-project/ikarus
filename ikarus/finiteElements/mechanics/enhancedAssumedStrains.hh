@@ -270,7 +270,7 @@ namespace Ikarus {
                  "EAS element do not support any scalar calculations, i.e. they are not derivable from a potential");
     }
 
-    void calculateVector(const FERequirementType& par, typename Traits::VectorType force) const {
+    void calculateVector(const FERequirementType& par, typename Traits::template VectorType<> force) const {
       Eigen::VectorXd dx(this->localView().size());
       dx.setZero();
       calculateVectorImpl(par, dx, force);
@@ -279,7 +279,7 @@ namespace Ikarus {
     const auto& getEASVariant() const { return easVariant_; }
     const auto& getNumberOfEASParameters() const { return numberOfEASParameters; }
 
-    void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType K) const {
+    void calculateMatrix(const FERequirementType& par, typename Traits::template MatrixType<> K) const {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
 
@@ -388,9 +388,9 @@ namespace Ikarus {
     }
 
   protected:
-    template <class ScalarType = double>
+    template <typename ScalarType>
     void calculateVectorImpl(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx,
-                             Eigen::VectorX<ScalarType>& force) const {
+                             typename Traits::template VectorType<ScalarType>& force) const {
       DisplacementBasedElement::calculateVectorImpl(par, dx, force);
       if (onlyDisplacementBase) return;
       using namespace Dune;

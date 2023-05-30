@@ -103,13 +103,13 @@ namespace Ikarus {
       return calculateScalarImpl(par, dx);
     }
 
-    void calculateVector(const FERequirementType& par, typename Traits::VectorType force) const {
+    void calculateVector(const FERequirementType& par, typename Traits::template VectorType<> force) const {
       Eigen::VectorXd dx(this->localView().size());
       dx.setZero();
       calculateVectorImpl(par, dx, force);
     }
 
-    void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType K) const {
+    void calculateMatrix(const FERequirementType& par, typename Traits::template MatrixType<> K) const {
       Eigen::VectorXd dx(this->localView().size());
       dx.setZero();
       const auto eps = getStrainFunction(par, dx);
@@ -170,8 +170,9 @@ namespace Ikarus {
     size_t numberOfNodes{0};
 
   protected:
-    template <class ScalarType = double>
-    ScalarType calculateScalarImpl(const FERequirementType& par, const typename Traits::template VectorType<ScalarType>& dx) const {
+    template <typename ScalarType>
+    auto calculateScalarImpl(const FERequirementType& par,
+                             const typename Traits::template VectorType<ScalarType>& dx) const ->ScalarType  {
       const auto u       = getDisplacementFunction(par, dx);
       const auto eps     = getStrainFunction(par, dx);
       const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
@@ -224,9 +225,9 @@ namespace Ikarus {
       return energy;
     }
 
-    template <class ScalarType = double>
-    void calculateVectorImpl(const FERequirementType& par, const typename Traits::template VectorType<ScalarType>& dx,
-                             Eigen::VectorX<ScalarType>& force) const {
+    template <typename ScalarType>
+    void calculateVectorImpl(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx,
+                             typename Traits::template VectorType<ScalarType>& force) const {
       const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
       const auto eps     = getStrainFunction(par, dx);
       using namespace Dune::DerivativeDirections;

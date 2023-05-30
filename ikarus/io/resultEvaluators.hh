@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <dune/common/power.hh>
+#include <dune/common/math.hh>
 
 #include <ikarus/finiteElements/feRequirements.hh>
 
