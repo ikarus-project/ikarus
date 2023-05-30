@@ -1,3 +1,6 @@
+---
+status: new
+---
 <!--
 SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 SPDX-License-Identifier: CC-BY-SA-4.0
@@ -17,9 +20,9 @@ This leads to the following interface for the finite elements:
 ## Interface
 Local functions provide the following interface
 ```cpp
-ScalarType evaluateScalar(const FErequirements& req);
-void evaluateVector(const FErequirements& req, VectorType& b);
-void evaluateMatrix(const FErequirements& req, MatrixType& A);
+ScalarType calculateScalar(const FErequirements& req);
+void calculateVector(const FErequirements& req, VectorType& b);
+void calculateMatrix(const FErequirements& req, MatrixType& A);
 void calculateLocalSystem(const FErequirements& req, MatrixType& A, VectorType& b);
 void calculateAt(const Resultrequirements& req, const Eigen::Vector<double, Traits::mydim>& local,
                      ResultTypeMap<ScalarType>& result);
@@ -66,7 +69,38 @@ The last method is the `globalFlatIndices`. It is used to write a finite element
 This information originates from a `basis` object. See existing implementations for details.
 
 ## Linear and Non-linear Elasticity
-* To be added
+`LinearElastic` and `NonLinearElastic` classes are designed in a generic way such that they could be directly used for 
+any $n$-dimensional finite element in the geometrically linear and non-linear cases.
+They inherit from the class `PowerBasisFE`, which helps to arrange the nodal degrees of freedom in a `FlatInterleaved` format. 
+Refer Dune[@sander2020dune] for more details. The constructor for both classes of elements has the following signature:
+```cpp
+template <typename VolumeLoad = LoadDefault, typename NeumannBoundaryLoad = LoadDefault>
+LinearElastic(const Basis& globalBasis, const typename LocalView::Element& element, double emod, double nu,
+                  VolumeLoad p_volumeLoad = {}, const BoundaryPatch<GridView>* p_neumannBoundary = nullptr,
+                  NeumannBoundaryLoad p_neumannBoundaryLoad = {}) {}
+```
+```cpp
+template <typename VolumeLoad = LoadDefault, typename NeumannBoundaryLoad = LoadDefault>
+NonLinearElastic(const Basis& globalBasis, const typename LocalView::Element& element, const Material& p_mat,
+                 VolumeLoad p_volumeLoad = {}, const BoundaryPatch<GridView>* p_neumannBoundary = nullptr,
+                 NeumannBoundaryLoad p_neumannBoundaryLoad = {})
+```
+The first argument defines the basis function used to interpolate the solution field, while the second argument points to the finite element itself.
+The next set of arguments are related to the material law to be used. For the geometrically linear case, the Young's modulus and the Poisson's ratio are passed, and a `planeStress` material model is assumed.
+For the geometrically non-linear case, the material model is to be passed as an argument, for instance, the St. Venant-Kirchhoff material law or the Neo-Hookean material law. 
+`volumeLoad` and `neumannBoundaryLoad` are optional parameters that could be passed as per the use case. 
+It is necessary to note that a `neumannBoundary` must be defined if a `neumannBoundaryLoad` is to be applied.
+Member functions are defined as per the [interface](finiteElements.md#interface) mentioned above.
+Protected member functions `calculateScalarImpl(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx)` and
+`calculateVectorImpl(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx, Eigen::VectorX<ScalarType>& force)` are 
+written such that the stiffness matrices and load vectors can also be obtained by automatic differentiation.
+The function `getStrainFunction(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx)` uses the correct strain measure to toggle between the geometrically linear and non-linear cases.
+`LinearStrains` are used for the geometrically linear case, while `GreenLagrangianStrains` are used for the non-linear case. 
+These strain measures are defined as expressions in `dune-localfefunctions`. Refer to [Expressions](localFunctions.md#expressions) for more details.
+The strain-displacement operators are obtained by evaluating the derivative of the strain measure with respect to the nodal degrees of freedom, which is then used to evaluate the stiffness matrix.
+For more details on derivatives w.r.t. coefficients, refer [here](localFunctions.md#derivatives-wrt-coefficients).
+Finally, the `calculateAt()` function evaluates the `linearStress` and `PK2Stress` (the second Piola-Kirchhoff stress tensor) as per the `ResultRequirementsType`.
+An implementation for a push forward operation to evaluate the `cauchyStress` is an open task.
 
 ## Enhanced Assumed Strain Elements
 The Enhanced Assumed Strain (EAS) elements are a class of finite elements that helps to avoid the locking phenomenon.
