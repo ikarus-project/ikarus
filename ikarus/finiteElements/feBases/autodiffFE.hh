@@ -21,10 +21,10 @@ namespace Ikarus {
     using Element           = typename LocalView::Element;
     using FERequirementType = FERequirementType_;
 
-    void calculateMatrix(const FERequirementType& par, typename Traits::template MatrixType<> h) const {
+    void calculateMatrix(const FERequirementType& par, typename Traits::template MatrixType<>& h) const {
       if constexpr (requires {
                       this->calculateVectorImpl(par, std::declval<const Eigen::VectorXdual&>(),
-                                                std::declval<const typename Traits::template VectorType<autodiff::dual2nd>&>());
+                                                std::declval<typename Traits::template VectorType<autodiff::dual>>());
                     }) {
         /// This is only valid if the external forces are independent of displacements, for e.g., no follower forces are
         /// applied
@@ -39,7 +39,7 @@ namespace Ikarus {
         jacobian(f, autodiff::wrt(dx), at(dx), g, h);
       } else if constexpr (requires {
                              this->calculateScalarImpl(par,
-                                                       std::declval<typename Traits::template VectorType<double>&>());
+                                                       std::declval<typename Traits::template VectorType<autodiff::dual2nd>>());
                            }) {
         Eigen::VectorXdual2nd dx(this->localView().size());
         Eigen::VectorXd g;
@@ -53,10 +53,10 @@ namespace Ikarus {
                    "chosen element.");
     }
 
-    void calculateVector(const FERequirementType& par, typename Traits::template VectorType<> g) const {
+    void calculateVector(const FERequirementType& par, typename Traits::template VectorType<>& g) const {
       if constexpr (requires {
-                      this->calculateVectorImpl(par, std::declval<typename Traits::template VectorType<double>&>(),
-                                                std::declval<Eigen::VectorX<double>&>());
+                      this->calculateVectorImpl(par, std::declval<const Eigen::VectorXd&>(),
+                                                std::declval<typename Traits::template VectorType<double>>());
                     }) {
         Eigen::VectorXd dx(this->localView().size());
         dx.setZero();
@@ -85,10 +85,9 @@ namespace Ikarus {
       hessian(f, autodiff::wrt(dx), at(dx), g, h);
     }
 
-    template <typename ScalarType = double>
-    [[nodiscard]] ScalarType calculateScalar(const FERequirementType& par) const {
-      if constexpr (requires { this->calculateScalar(par); }) {
-        return this->calculateScalar(par);
+    [[nodiscard]] double calculateScalar(const FERequirementType& par) const {
+      if constexpr (requires { RealElement::calculateScalar(par); }) {
+        return RealElement::calculateScalar(par);
       } else if constexpr (requires {
                              this->calculateScalarImpl(par,
                                                        std::declval<const Eigen::VectorXd&>());
@@ -107,11 +106,11 @@ namespace Ikarus {
     template <typename... Args>
     explicit AutoDiffFE(Args&&... args) : RealElement{std::forward<Args>(args)...} {}
 
-    explicit AutoDiffFE(RealElement& other) : RealElement(other) {
-      if constexpr (requires { this->setEASType(int{}); }) {
-        const auto& numberOfEASParameters = other.getNumberOfEASParameters();
-        this->setEASType(numberOfEASParameters);
-      }
-    }
+//    explicit AutoDiffFE(RealElement& other) : RealElement(other) {
+//      if constexpr (requires { this->setEASType(int{}); }) {
+//        const auto& numberOfEASParameters = other.getNumberOfEASParameters();
+//        this->setEASType(numberOfEASParameters);
+//      }
+//    }
   };
 }  // namespace Ikarus

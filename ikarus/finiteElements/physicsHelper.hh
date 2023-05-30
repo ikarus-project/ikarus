@@ -47,11 +47,11 @@ namespace Ikarus {
 
     /** \brief Type of the internal forces */
     template <typename ScalarType = double>
-    using VectorType = std::conditional_t<useRef, Eigen::Ref<Eigen::VectorX<ScalarType>>, Eigen::VectorX<ScalarType>>;
+    using VectorType = std::conditional_t<useRef, Eigen::Ref<Eigen::VectorX<ScalarType>>, Eigen::VectorX<ScalarType>&>;
 
     /** \brief Type of the stiffness matrix */
     template <typename ScalarType = double>
-    using MatrixType = std::conditional_t<useRef, Eigen::Ref<Eigen::MatrixX<ScalarType>>, Eigen::MatrixX<ScalarType>>;
+    using MatrixType = std::conditional_t<useRef, Eigen::Ref<Eigen::MatrixX<ScalarType>>, Eigen::MatrixX<ScalarType>&>;
   };
 
   /// see https://en.wikipedia.org/wiki/Lam%C3%A9_parameters

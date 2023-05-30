@@ -96,11 +96,11 @@ namespace Ikarus {
       return [&]([[maybe_unused]] auto gp) { return getMaterialTangent(); };
     }
 
-    template <typename ScalarType = double>
-    ScalarType calculateScalar(const FERequirementType& par) const {
+
+    double calculateScalar(const FERequirementType& par) const {
       Eigen::VectorXd dx(this->localView().size());
       dx.setZero();
-      return calculateScalarImpl(par, dx);
+      return calculateScalarImpl<double>(par, dx);
     }
 
     void calculateVector(const FERequirementType& par, typename Traits::template VectorType<> force) const {
@@ -227,7 +227,7 @@ namespace Ikarus {
 
     template <typename ScalarType>
     void calculateVectorImpl(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx,
-                             typename Traits::template VectorType<ScalarType>& force) const {
+                             typename Traits::template VectorType<ScalarType> force) const {
       const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
       const auto eps     = getStrainFunction(par, dx);
       using namespace Dune::DerivativeDirections;

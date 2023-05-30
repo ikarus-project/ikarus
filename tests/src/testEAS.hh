@@ -70,17 +70,20 @@ struct ElementTest<Ikarus::EnhancedAssumedStrains<DisplacementBasedElement>> {
           const auto& easVariant = fe.getEASVariant();
           std::visit(
               [&]<typename EAS>(const EAS& easFunction) {
-                typename EAS::MType MIntegrated;
-                MIntegrated.setZero();
-                for (const auto& gp : rule) {
-                  const auto M = easFunction.calcM(gp.position());
+                if constexpr (not std::is_same_v<std::monostate,EAS>)
+                {
+                  typename EAS::MType MIntegrated;
+                  MIntegrated.setZero();
+                  for (const auto &gp: rule) {
+                    const auto M = easFunction.calcM(gp.position());
 
-                  const double detJ = element.geometry().integrationElement(gp.position());
-                  MIntegrated += M * detJ * gp.weight();
+                    const double detJ = element.geometry().integrationElement(gp.position());
+                    MIntegrated += M*detJ*gp.weight();
+                  }
+                  t.check(MIntegrated.isZero())
+                      << "Orthogonality condition check: The M matrix of the EAS method should be "
+                         "zero, integrated over the domain.";
                 }
-                t.check(MIntegrated.isZero())
-                    << "Orthogonality condition check: The M matrix of the EAS method should be "
-                       "zero, integrated over the domain.";
               },
               easVariant);
           try {

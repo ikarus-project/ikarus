@@ -280,12 +280,12 @@ template <typename NonLinearOperator, typename FiniteElement,
   t.check(K.isApprox(KAutoDiff, tol),
           "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
           "automatic differentiation")
-      << messageIfFailed;
+      << messageIfFailed<<"\nKAutoDiff:\n"<<KAutoDiff<<"\nK:\n"<<K;
 
   t.check(R.isApprox(RAutoDiff, tol),
           "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
           "automatic differentiation")
-      << messageIfFailed;
+      << messageIfFailed<<"\nRAutoDiff:\n"<<RAutoDiff<<"\nR:\n"<<R;
 
   try {
     auto energy         = fe.calculateScalar(req);

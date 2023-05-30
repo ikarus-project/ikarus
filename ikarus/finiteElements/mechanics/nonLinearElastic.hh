@@ -191,7 +191,7 @@ namespace Ikarus {
   protected:
     template <typename ScalarType>
     auto calculateScalarImpl(const FERequirementType& par
-    , const typename Traits::template VectorType<ScalarType>& dx) const ->ScalarType  {
+    , const Eigen:: VectorX<ScalarType>& dx) const ->ScalarType  {
 
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
@@ -246,7 +246,7 @@ namespace Ikarus {
 
     template <typename ScalarType>
     void calculateVectorImpl(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx,
-                             typename Traits::template VectorType<ScalarType>& force) const {
+                             typename Traits::template VectorType<ScalarType> force) const {
 
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
