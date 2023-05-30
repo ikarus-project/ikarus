@@ -3,8 +3,6 @@
 
 #include <config.h>
 
-#include "testCommon.hh"
-#include "testHelpers.hh"
 #include "testNonLinearElasticity.hh"
 
 using Dune::TestSuite;
@@ -26,7 +24,7 @@ int main(int argc, char** argv) {
   t.subTest(GreenLagrangeStrainTest<2>(reducedMat));
   t.subTest(GreenLagrangeStrainTest<3>(matSVK2));
   t.subTest(SingleElementTest(reducedMat));
-  t.subTest(checkCalculateScalar<2>(reducedMat));
-  t.subTest(checkCalculateScalar<3>(matSVK1));
+  t.subTest(checkFEWithAutoDiff<2>(reducedMat));
+  t.subTest(checkFEWithAutoDiff<3>(matSVK1));
   return t.exit();
 }

@@ -265,7 +265,7 @@ auto SingleElementTest(const Material& mat) {
   auto nDOF        = basis.flat().size();
   const double tol = 1e-10;
 
-  using NonLinearElasticity = Ikarus::NonLinearElastic<decltype(basis), decltype(mat)>;
+  using NonLinearElastic = Ikarus::NonLinearElastic<decltype(basis), decltype(mat)>;
   NonLinearElastic fe(basis, *element, mat);
 
   Eigen::VectorXd d;
@@ -302,8 +302,9 @@ auto SingleElementTest(const Material& mat) {
 }
 
 template <int gridDim, typename Material>
-auto checkCalculateScalar(const Material& mat) {
-  TestSuite t("Check calculateScalar() by Automatic Differentiation with gridDim = " + std::to_string(gridDim));
+auto checkFEWithAutoDiff(const Material& mat) {
+  TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() with Automatic Differentiation for gridDim = "
+              + std::to_string(gridDim));
 
   auto grid     = createUGGridFromCorners<gridDim>(CornerDistortionFlag::randomlyDistorted);
   auto gridView = grid->leafGridView();
