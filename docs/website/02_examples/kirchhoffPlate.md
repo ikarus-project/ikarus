@@ -17,8 +17,8 @@ simply supported case.
 
 ## Code highlights
 
-Similar to the `struct` named `Solid` in `iks003_incompressible_LinearElasticity.cpp`, here a `struct` named `KirchhoffPlate` 
-is created. `KirchhoffPlate` inherits from `ScalarFieldFE` and it must be decorated with `AutoDiffFE` as well to compute the stiffness matrix and load vectors. 
+Similar to the `struct` named `Solid` in `iks003_incompressible_LinearElasticity.cpp`, here a `struct` named `KirchhoffPlate` is created.
+It inherits from `ScalarFieldFE` and it must be decorated with `AutoDiffFE` as well to compute the required matrices and vectors.
 It is constructed as shown below:
 
 ```cpp
