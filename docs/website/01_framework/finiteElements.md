@@ -17,7 +17,9 @@ parameters stemming from the underlying physical problem, e.g., load factor, You
 
 The second task of finite elements is to evaluate derived results in the element parameter space, e.g., stresses or geometric quantities.
 This leads to the following interface for the finite elements:
+
 ## Interface
+
 Finite elements should have interface methods, which should be non-template and non-virtual (for the latter, considering 
 the non-virtual interface idiom (NVI)), since these methods are used to assemble quantities. These functions are 
 `calculateScalar`, `calculateVector` and `calculateMatrix`. These are public methods. 
@@ -77,6 +79,7 @@ The last method is the `globalFlatIndices`. It is used to write a finite element
 This information originates from a `basis` object. See existing implementations for details.
 
 ## Linear and Non-linear Elasticity
+
 `LinearElastic` and `NonLinearElastic` classes are designed in a generic way such that they could be directly used for 
 any $n$-dimensional finite element in the geometrically linear and non-linear cases.
 They inherit from the class `PowerBasisFE`, which helps to arrange the nodal degrees of freedom in a `FlatInterleaved` format. 
@@ -93,6 +96,7 @@ NonLinearElastic(const Basis& globalBasis, const typename LocalView::Element& el
                  VolumeLoad p_volumeLoad = {}, const BoundaryPatch<GridView>* p_neumannBoundary = nullptr,
                  NeumannBoundaryLoad p_neumannBoundaryLoad = {})
 ```
+
 The first argument defines the basis function used to interpolate the solution field, while the second argument points to the `gridElement` itself.
 The next set of arguments are related to the material law to be used. For the geometrically linear case, the Young's modulus and the Poisson's ratio are passed, and a `planeStress` material model is assumed.
 For the geometrically non-linear case, the material model is to be passed as an argument, for instance, the St. Venant-Kirchhoff material law or the Neo-Hookean material law. 
@@ -111,6 +115,7 @@ Finally, the `calculateAt()` function evaluates the `linearStress` and `PK2Stres
 An implementation for a push forward operation to evaluate the `cauchyStress` is an open task, see [open tasks](03_contribution/openTask.md##Finite elements)
 
 ## Enhanced Assumed Strain Elements
+
 The Enhanced Assumed Strain (EAS) elements are a class of finite elements that helps to avoid the locking phenomenon.
 They are obtained by re-parametrizing the Hu-Washizu principle and enforcing an orthogonality condition. 
 This results in an extension of the standard pure displacement formulation with an enhanced strain field ($\tilde\epsilon$) 

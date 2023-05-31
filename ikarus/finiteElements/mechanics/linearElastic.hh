@@ -65,20 +65,20 @@ namespace Ikarus {
 
   public:
     template <typename ScalarType>
-    auto getDisplacementFunction(const FERequirementType& par, const std::optional<const Eigen::VectorX<ScalarType>>& dx=std::nullopt) const {
+    auto getDisplacementFunction(const FERequirementType& par,
+                                 const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
       const auto& d = par.getGlobalSolution(Ikarus::FESolutions::displacement);
 
       Dune::BlockVector<Dune::RealTuple<ScalarType, Traits::dimension>> disp(dispAtNodes.size());
-      if(dx) {
+      if (dx) {
         for (auto i = 0U; i < disp.size(); ++i)
           for (auto k2 = 0U; k2 < myDim; ++k2)
-            disp[i][k2]
-                = dx.value()[i*myDim + k2] + d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
-      }else
+            disp[i][k2] = dx.value()[i * myDim + k2]
+                          + d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
+      } else
         for (auto i = 0U; i < disp.size(); ++i)
           for (auto k2 = 0U; k2 < myDim; ++k2)
-            disp[i][k2]
-                = d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
+            disp[i][k2] = d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
 
       auto geo = std::make_shared<const typename GridView::GridView::template Codim<0>::Entity::Geometry>(
           this->localView().element().geometry());
@@ -88,7 +88,8 @@ namespace Ikarus {
     }
 
     template <class ScalarType = double>
-    auto getStrainFunction(const FERequirementType& par, const std::optional<const Eigen::VectorX<ScalarType>>& dx=std::nullopt) const {
+    auto getStrainFunction(const FERequirementType& par,
+                           const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
       return linearStrains(getDisplacementFunction(par, dx));
     }
 
@@ -103,10 +104,7 @@ namespace Ikarus {
       return [&]([[maybe_unused]] auto gp) { return getMaterialTangent(); };
     }
 
-
-    inline double calculateScalar(const FERequirementType& par) const {
-      return calculateScalarImpl<double>(par);
-    }
+    inline double calculateScalar(const FERequirementType& par) const { return calculateScalarImpl<double>(par); }
 
     inline void calculateVector(const FERequirementType& par, typename Traits::template VectorType<> force) const {
       calculateVectorImpl<double>(par, force);
@@ -137,7 +135,6 @@ namespace Ikarus {
       using namespace Dune::Indices;
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
-
 
       const auto eps = getStrainFunction(req.getFERequirements());
       const auto C   = getMaterialTangent();
@@ -170,8 +167,8 @@ namespace Ikarus {
 
   protected:
     template <typename ScalarType>
-    auto calculateScalarImpl(const FERequirementType& par,
-                             const std::optional<const Eigen::VectorX<ScalarType>>& dx=std::nullopt) const ->ScalarType  {
+    auto calculateScalarImpl(const FERequirementType& par, const std::optional<const Eigen::VectorX<ScalarType>>& dx
+                                                           = std::nullopt) const -> ScalarType {
       const auto u       = getDisplacementFunction(par, dx);
       const auto eps     = getStrainFunction(par, dx);
       const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
@@ -225,8 +222,8 @@ namespace Ikarus {
     }
 
     template <typename ScalarType>
-    void calculateVectorImpl(const FERequirementType& par,
-                             typename Traits::template VectorType<ScalarType> force, const std::optional<const Eigen::VectorX<ScalarType>>& dx =std::nullopt ) const {
+    void calculateVectorImpl(const FERequirementType& par, typename Traits::template VectorType<ScalarType> force,
+                             const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
       const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
       const auto eps     = getStrainFunction(par, dx);
       using namespace Dune::DerivativeDirections;

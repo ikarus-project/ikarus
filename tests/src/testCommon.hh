@@ -251,7 +251,7 @@ template <typename NonLinearOperator, typename FiniteElement,
   Dune::TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() by Automatic Differentiation");
   auto& basis           = fe.localView().globalBasis();
   auto nDOF             = basis.size();
-  using AutoDiffBasedFE = Ikarus::AutoDiffFE<FiniteElement,FERequirementType,false,true>;
+  using AutoDiffBasedFE = Ikarus::AutoDiffFE<FiniteElement, FERequirementType, false, true>;
   AutoDiffBasedFE feAutoDiff(fe);
 
   const double tol = 1e-10;
@@ -260,11 +260,8 @@ template <typename NonLinearOperator, typename FiniteElement,
   K.setZero(nDOF, nDOF);
   KAutoDiff.setZero(nDOF, nDOF);
 
-
   fe.calculateMatrix(req, K);
   feAutoDiff.calculateMatrix(req, KAutoDiff);
-
-
 
   if constexpr (requires { feAutoDiff.getFE().getNumberOfEASParameters(); }) {
     t.check(fe.getNumberOfEASParameters() == feAutoDiff.getFE().getNumberOfEASParameters())
@@ -281,23 +278,21 @@ template <typename NonLinearOperator, typename FiniteElement,
       << K;
 
   try {
-  Eigen::VectorXd R, RAutoDiff;
-  R.setZero(nDOF);
-  RAutoDiff.setZero(nDOF);
+    Eigen::VectorXd R, RAutoDiff;
+    R.setZero(nDOF);
+    RAutoDiff.setZero(nDOF);
 
-  fe.calculateVector(req, R);
-  feAutoDiff.calculateVector(req, RAutoDiff);
-  t.check(R.isApprox(RAutoDiff, tol),
-          "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
-          "automatic differentiation")
-      << messageIfFailed << "\nRAutoDiff:\n"
-      << RAutoDiff << "\nR:\n"
-      << R;
-  }catch( const Dune::NotImplemented&)
-  {
-    // calculateVector not checked sicne the element throws a Dune::NotImplemented
+    fe.calculateVector(req, R);
+    feAutoDiff.calculateVector(req, RAutoDiff);
+    t.check(R.isApprox(RAutoDiff, tol),
+            "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
+            "automatic differentiation")
+        << messageIfFailed << "\nRAutoDiff:\n"
+        << RAutoDiff << "\nR:\n"
+        << R;
+  } catch (const Dune::NotImplemented&) {
+    /// calculateVector not checked since the element throws a Dune::NotImplemented
   }
-
 
   try {
     auto energy         = fe.calculateScalar(req);

@@ -20,6 +20,7 @@ simply supported case.
 Similar to the `struct` named `Solid` in `iks003_incompressible_LinearElasticity.cpp`, here a `struct` named `KirchhoffPlate` 
 is created. `KirchhoffPlate` inherits from `ScalarFieldFE` and it must be decorated with `AutoDiffFE` as well to compute the stiffness matrix and load vectors. 
 It is constructed as shown below:
+
 ```cpp
 KirchhoffPlate(const Basis &basis, const typename LocalView::Element &element, double p_Emodul, double p_nu,
                double p_thickness)

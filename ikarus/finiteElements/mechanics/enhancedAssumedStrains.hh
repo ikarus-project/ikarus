@@ -394,19 +394,19 @@ namespace Ikarus {
     }
 
   protected:
-
-    template<typename ScalarType>
-    inline ScalarType calculateScalarImpl(const FERequirementType& par, const std::optional<const Eigen::VectorX<ScalarType>>& dx=std::nullopt) const {
+    template <typename ScalarType>
+    inline ScalarType calculateScalarImpl(const FERequirementType& par,
+                                          const std::optional<const Eigen::VectorX<ScalarType>>& dx
+                                          = std::nullopt) const {
       if (isDisplacementBased()) return DisplacementBasedElement::template calculateScalarImpl<ScalarType>(par, dx);
       DUNE_THROW(Dune::NotImplemented,
                  "EAS element do not support any scalar calculations, i.e. they are not derivable from a potential");
     }
 
-
     template <typename ScalarType>
-    void calculateVectorImpl(const FERequirementType& par,
-                             typename Traits::template VectorType<ScalarType> force, const std::optional<const Eigen::VectorX<ScalarType>>& dx=std::nullopt) const {
-      DisplacementBasedElement::calculateVectorImpl(par,force, dx );
+    void calculateVectorImpl(const FERequirementType& par, typename Traits::template VectorType<ScalarType> force,
+                             const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
+      DisplacementBasedElement::calculateVectorImpl(par, force, dx);
       if (isDisplacementBased()) return;
       using namespace Dune;
       const auto& d       = par.getGlobalSolution(Ikarus::FESolutions::displacement);
@@ -415,22 +415,20 @@ namespace Ikarus {
       const auto& numNodes = DisplacementBasedElement::numberOfNodes;
 
       // FIXME this should not be needed in the future strainFunction should be able to hand out this vector
-      if(dx)
-      for (auto i = 0U; i < numNodes; ++i)
-        for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
-          disp[i * Traits::mydim + k2]
-              = dx.value()[i * Traits::mydim + k2] + d[localView().index(localView().tree().child(k2).localIndex(i))[0]];
+      if (dx)
+        for (auto i = 0U; i < numNodes; ++i)
+          for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
+            disp[i * Traits::mydim + k2] = dx.value()[i * Traits::mydim + k2]
+                                           + d[localView().index(localView().tree().child(k2).localIndex(i))[0]];
       else
         for (auto i = 0U; i < numNodes; ++i)
           for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
-            disp[i * Traits::mydim + k2]
-                = d[localView().index(localView().tree().child(k2).localIndex(i))[0]];
+            disp[i * Traits::mydim + k2] = d[localView().index(localView().tree().child(k2).localIndex(i))[0]];
 
       using namespace Dune::DerivativeDirections;
 
       auto C         = DisplacementBasedElement::getMaterialTangentFunction(par);
       const auto geo = localView().element().geometry();
-
 
       // Internal forces from enhanced strains
       std::visit(
