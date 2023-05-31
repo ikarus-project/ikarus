@@ -9,9 +9,10 @@
 
 #include <ikarus/finiteElements/feRequirements.hh>
 #include <ikarus/finiteElements/physicsHelper.hh>
+#include <ikarus/utils/traits.hh>
 
 namespace Ikarus {
-  template <typename RealElement, typename FERequirementType_ = FErequirements<>, bool useEigenRef = false>
+  template <typename RealElement, typename FERequirementType_ = FErequirements<>, bool useEigenRef = false, bool forceAutoDiff=false>
   class AutoDiffFE : public RealElement {
   public:
     using Base              = RealElement;
@@ -23,8 +24,13 @@ namespace Ikarus {
 
     void calculateMatrix(const FERequirementType& par, typename Traits::template MatrixType<>& h) const {
       if constexpr (requires {
-                      this->calculateVectorImpl(par, std::declval<const Eigen::VectorXdual&>(),
-                                                std::declval<typename Traits::template VectorType<autodiff::dual>>());
+        RealElement::calculateMatrix(par,  h);
+      } and not forceAutoDiff) {
+        RealElement::calculateMatrix(par,h);
+      }
+      else if constexpr (requires {
+                      this->template calculateVectorImpl<autodiff::dual>(par,
+                                                std::declval<typename Traits::template VectorType<autodiff::dual>>(), std::declval<const Eigen::VectorXdual&>());
                     }) {
         /// This is only valid if the external forces are independent of displacements, for e.g., no follower forces are
         /// applied
@@ -33,12 +39,12 @@ namespace Ikarus {
         dx.setZero();
         auto f = [&](auto& x) -> auto& {
           g.setZero();
-          this->calculateVectorImpl(par, x, g);
+          this->template calculateVectorImpl<autodiff::dual>(par,  g,x);
           return g;
         };
         jacobian(f, autodiff::wrt(dx), at(dx), g, h);
       } else if constexpr (requires {
-                             this->calculateScalarImpl(par,
+                             this->template calculateScalarImpl<autodiff::dual2nd>(par,
                                                        std::declval<typename Traits::template VectorType<autodiff::dual2nd>>());
                            }) {
         Eigen::VectorXdual2nd dx(this->localView().size());
@@ -48,19 +54,17 @@ namespace Ikarus {
         auto f = [&](auto& x) { return this->template calculateScalarImpl<autodiff::dual2nd>(par, x); };
         hessian(f, autodiff::wrt(dx), at(dx), e, g, h);
       } else
-        DUNE_THROW(Dune::NotImplemented,
-                   "Appropriate calculateScalarImpl and calculateVectorImpl functions are not implemented for the "
+        static_assert(Ikarus::Std::DummyFalse<AutoDiffFE>::value,"Appropriate calculateScalarImpl or calculateVectorImpl functions are not implemented for the "
                    "chosen element.");
+
     }
 
-    void calculateVector(const FERequirementType& par, typename Traits::template VectorType<>& g) const {
+    inline void calculateVector(const FERequirementType& par, typename Traits::template VectorType<>& g) const {
       if constexpr (requires {
-                      this->calculateVectorImpl(par, std::declval<const Eigen::VectorXd&>(),
-                                                std::declval<typename Traits::template VectorType<double>>());
+                      this->template calculateVectorImpl<double>(par,
+                                                std::declval<typename Traits::template VectorType<double>>(), std::declval<const Eigen::VectorXd&>());
                     }) {
-        Eigen::VectorXd dx(this->localView().size());
-        dx.setZero();
-        return this->calculateVectorImpl(par, dx, g);
+        return this->template calculateVectorImpl<double>(par, g);
       } else if constexpr (requires {
                              this->template calculateScalarImpl<autodiff::dual>(par,
                                                        std::declval<const Eigen::VectorXdual&>()
@@ -72,7 +76,7 @@ namespace Ikarus {
         auto f = [&](auto& x) { return this->template calculateScalarImpl<autodiff::dual>(par, x); };
         gradient(f, autodiff::wrt(dx), at(dx), e, g);
       } else
-        DUNE_THROW(Dune::NotImplemented,
+        static_assert(Ikarus::Std::DummyFalse<AutoDiffFE>::value,
                    "Appropriate calculateScalarImpl function is not implemented for the "
                    "chosen element.");
     }
@@ -96,7 +100,7 @@ namespace Ikarus {
         dx.setZero();
         return this->calculateScalarImpl(par, dx);
       } else
-        DUNE_THROW(Dune::NotImplemented,
+        static_assert(Ikarus::Std::DummyFalse<AutoDiffFE>::value,
                    "Appropriate calculateScalar and calculateScalarImpl functions are not implemented for the "
                    "chosen element.");
     }

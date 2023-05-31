@@ -260,7 +260,7 @@ namespace Ikarus {
     explicit EnhancedAssumedStrains(Args&&... args) : DisplacementBasedElement(std::forward<Args>(args)...) {
     }
 
-    double calculateScalar(const FERequirementType& par) const {
+    inline double calculateScalar(const FERequirementType& par) const {
       if (isDisplacementBased()) return DisplacementBasedElement::calculateScalar(par);
       DUNE_THROW(Dune::NotImplemented,
                  "EAS element do not support any scalar calculations, i.e. they are not derivable from a potential");
@@ -271,10 +271,8 @@ namespace Ikarus {
       return std::holds_alternative<std::monostate>(easVariant_);
     }
 
-    void calculateVector(const FERequirementType& par, typename Traits::template VectorType<> force) const {
-      Eigen::VectorXd dx(this->localView().size());
-      dx.setZero();
-      calculateVectorImpl(par, dx, force);
+    inline void calculateVector(const FERequirementType& par, typename Traits::template VectorType<> force) const {
+      calculateVectorImpl<double>(par, force);
     }
 
     const auto& getEASVariant() const { return easVariant_; }
@@ -399,9 +397,9 @@ namespace Ikarus {
 
   protected:
     template <typename ScalarType>
-    void calculateVectorImpl(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx,
-                             typename Traits::template VectorType<ScalarType>& force) const {
-      DisplacementBasedElement::calculateVectorImpl(par, dx, force);
+    void calculateVectorImpl(const FERequirementType& par,
+                             typename Traits::template VectorType<ScalarType> force, const std::optional<const Eigen::VectorX<ScalarType>>& dx=std::nullopt) const {
+      DisplacementBasedElement::calculateVectorImpl(par,force, dx );
       if (isDisplacementBased()) return;
       using namespace Dune;
       const auto& d       = par.getGlobalSolution(Ikarus::FESolutions::displacement);
@@ -409,15 +407,23 @@ namespace Ikarus {
       Eigen::VectorX<ScalarType> disp(localView().size());
       const auto& numNodes = DisplacementBasedElement::numberOfNodes;
 
+      // FIXME this should not be needed in the future strainFunction should be able to hand out this vector
+      if(dx)
       for (auto i = 0U; i < numNodes; ++i)
         for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
           disp[i * Traits::mydim + k2]
-              = dx[i * Traits::mydim + k2] + d[localView().index(localView().tree().child(k2).localIndex(i))[0]];
+              = dx.value()[i * Traits::mydim + k2] + d[localView().index(localView().tree().child(k2).localIndex(i))[0]];
+      else
+        for (auto i = 0U; i < numNodes; ++i)
+          for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
+            disp[i * Traits::mydim + k2]
+                = d[localView().index(localView().tree().child(k2).localIndex(i))[0]];
 
       using namespace Dune::DerivativeDirections;
 
       auto C         = DisplacementBasedElement::getMaterialTangentFunction(par);
       const auto geo = localView().element().geometry();
+
 
       // Internal forces from enhanced strains
       std::visit(
@@ -456,9 +462,8 @@ namespace Ikarus {
                               Eigen::MatrixXd& LMat) const {
       using namespace Dune;
       using namespace Dune::DerivativeDirections;
-      Eigen::VectorXd dx(this->localView().size());
-      dx.setZero();
-      auto strainFunction = DisplacementBasedElement::getStrainFunction(par, dx);
+
+      auto strainFunction = DisplacementBasedElement::getStrainFunction(par);
       const auto C        = DisplacementBasedElement::getMaterialTangentFunction(par);
       const auto geo      = localView().element().geometry();
       const auto numNodes = DisplacementBasedElement::numberOfNodes;

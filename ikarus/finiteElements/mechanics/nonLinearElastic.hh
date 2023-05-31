@@ -64,15 +64,15 @@ namespace Ikarus {
     }
 
   public:
-    template <typename ScalarType>
-    auto getDisplacementFunction(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx) const {
+    template <typename ScalarType=double>
+    auto getDisplacementFunction(const FERequirementType& par, const std::optional<const Eigen::VectorX<ScalarType>>& dx=std::nullopt) const {
       const auto& d = par.getGlobalSolution(Ikarus::FESolutions::displacement);
 
       Dune::BlockVector<Dune::RealTuple<ScalarType, Traits::dimension>> disp(dispAtNodes.size());
       for (auto i = 0U; i < disp.size(); ++i)
         for (auto k2 = 0U; k2 < myDim; ++k2)
           disp[i][k2]
-              = dx[i * myDim + k2] + d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
+              = dx.value()[i * myDim + k2] + d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
 
       auto geo = std::make_shared<const typename GridView::GridView::template Codim<0>::Entity::Geometry>(
           this->localView().element().geometry());
@@ -81,7 +81,7 @@ namespace Ikarus {
     }
 
     template <typename ScalarType = double>
-    auto getStrainFunction(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx) const {
+    inline auto getStrainFunction(const FERequirementType& par, const std::optional<const Eigen::VectorX<ScalarType>>& dx=std::nullopt) const {
       return greenLagrangeStrains(getDisplacementFunction(par, dx));
     }
 
@@ -115,25 +115,18 @@ namespace Ikarus {
       }
     }
 
-    template <typename ScalarType = double>
-    ScalarType calculateScalar(const FERequirementType& par) const {
-      Eigen::VectorXd dx(this->localView().size());
-      dx.setZero();
-      return calculateScalarImpl<ScalarType>(par, dx);
+    inline double calculateScalar(const FERequirementType& par) const {
+      return calculateScalarImpl<double>(par);
     }
 
-    void calculateVector(const FERequirementType& par, typename Traits::template VectorType<> force) const {
-      Eigen::VectorXd dx(this->localView().size());
-      dx.setZero();
-      calculateVectorImpl(par, dx, force);
+    inline void calculateVector(const FERequirementType& par, typename Traits::template VectorType<> force) const {
+      calculateVectorImpl<double>(par, force);
     }
 
     void calculateMatrix(const FERequirementType& par, typename Traits::template MatrixType<> K) const {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
-      Eigen::VectorXd dx(this->localView().size());
-      dx.setZero();
-      const auto eps = getStrainFunction(par, dx);
+      const auto eps = getStrainFunction(par);
       const auto geo = this->localView().element().geometry();
 
       for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
@@ -157,10 +150,8 @@ namespace Ikarus {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
 
-      Eigen::VectorXd dx(this->localView().size());
-      dx.setZero();
 
-      const auto uFunction = getDisplacementFunction(req.getFERequirements(), dx);
+      const auto uFunction = getDisplacementFunction(req.getFERequirements());
       const auto H         = uFunction.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
       const auto E         = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
       const auto EVoigt    = toVoigt(E);
@@ -191,7 +182,7 @@ namespace Ikarus {
   protected:
     template <typename ScalarType>
     auto calculateScalarImpl(const FERequirementType& par
-    , const Eigen:: VectorX<ScalarType>& dx) const ->ScalarType  {
+    , const std::optional<const Eigen:: VectorX<ScalarType>>& dx=std::nullopt) const ->ScalarType  {
 
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
@@ -245,8 +236,8 @@ namespace Ikarus {
     }
 
     template <typename ScalarType>
-    void calculateVectorImpl(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx,
-                             typename Traits::template VectorType<ScalarType> force) const {
+    void calculateVectorImpl(const FERequirementType& par,
+                             typename Traits::template VectorType<ScalarType> force, const std::optional<const Eigen::VectorX<ScalarType>>& dx=std::nullopt) const {
 
       using namespace Dune::DerivativeDirections;
       using namespace Dune;

@@ -403,4 +403,10 @@ namespace Ikarus::Std {
   template <typename T>
   struct FunctionTraits<T, Dune::void_t<decltype(&T::operator())>> : public FunctionTraits<decltype(&T::operator())> {};
 
+  template <typename T=void>
+  struct DummyFalse
+      {
+        static constexpr bool value=false;
+      };
+
 }  // namespace Ikarus::Std
