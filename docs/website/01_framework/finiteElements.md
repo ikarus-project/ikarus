@@ -18,7 +18,7 @@ parameters stemming from the underlying physical problem, e.g., load factor, You
 The second task of finite elements is to evaluate derived results in the element parameter space, e.g., stresses or geometric quantities.
 This leads to the following interface for the finite elements:
 ## Interface
-Finite elements should have interface methods, which should be no-template and non-virtual (for the latter, considering 
+Finite elements should have interface methods, which should be non-template and non-virtual (for the latter, considering 
 the non-virtual interface idiom (NVI)), since these methods are used to assemble quantities. These functions are 
 `calculateScalar`, `calculateVector` and `calculateMatrix`. These are public methods. 
 Such an interface is provided by the local functions are shown below:
@@ -108,7 +108,7 @@ These strain measures are defined as expressions in `dune-localfefunctions`. Ref
 The strain-displacement operators are obtained by evaluating the derivative of the strain measure with respect to the nodal degrees of freedom, which is then used to evaluate the stiffness matrix.
 For more details on derivatives w.r.t. coefficients, refer [here](localFunctions.md#derivatives-wrt-coefficients).
 Finally, the `calculateAt()` function evaluates the `linearStress` and `PK2Stress` (the second Piola-Kirchhoff stress tensor) as per the `ResultRequirementsType`.
-An implementation for a push forward operation to evaluate the `cauchyStress` is an open task.
+An implementation for a push forward operation to evaluate the `cauchyStress` is an open task, see [open tasks](03_contribution/openTask.md##Finite elements)
 
 ## Enhanced Assumed Strain Elements
 The Enhanced Assumed Strain (EAS) elements are a class of finite elements that helps to avoid the locking phenomenon.

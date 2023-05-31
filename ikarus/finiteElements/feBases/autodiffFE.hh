@@ -63,7 +63,7 @@ namespace Ikarus {
       if constexpr (requires {
                       this->template calculateVectorImpl<double>(par,
                                                 std::declval<typename Traits::template VectorType<double>>(), std::declval<const Eigen::VectorXd&>());
-                    }) {
+                    } and not forceAutoDiff) {
         return this->template calculateVectorImpl<double>(par, g);
       } else if constexpr (requires {
                              this->template calculateScalarImpl<autodiff::dual>(
@@ -91,10 +91,8 @@ namespace Ikarus {
     [[nodiscard]] double calculateScalar(const FERequirementType& par) const {
       if constexpr (requires { RealElement::calculateScalar(par); }) {
         return RealElement::calculateScalar(par);
-      } else if constexpr (requires { this->calculateScalarImpl(par, std::declval<const Eigen::VectorXd&>()); }) {
-        Eigen::VectorXd dx(this->localView().size());
-        dx.setZero();
-        return this->calculateScalarImpl(par, dx);
+      } else if constexpr (requires { this->calculateScalarImpl(par); }) {
+        return this->calculateScalarImpl(par);
       } else
         static_assert(Ikarus::Std::DummyFalse<AutoDiffFE>::value,
                    "Appropriate calculateScalar and calculateScalarImpl functions are not implemented for the "

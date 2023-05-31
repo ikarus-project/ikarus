@@ -34,6 +34,7 @@ The following task are open for your contributions.
 * Kirchhoff-Love shell
 * 3D-Beam
 * Standard beam and plate formulations
+* add calculation of different strain measures (push-forward or pull-back of PK2 stresses or similar)
 
 ### Further addons
 * [Muesli](https://materials.imdea.org/muesli/)

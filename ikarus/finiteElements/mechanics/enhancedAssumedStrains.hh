@@ -394,6 +394,15 @@ namespace Ikarus {
     }
 
   protected:
+
+    template<typename ScalarType>
+    inline ScalarType calculateScalarImpl(const FERequirementType& par, const std::optional<const Eigen::VectorX<ScalarType>>& dx=std::nullopt) const {
+      if (isDisplacementBased()) return DisplacementBasedElement::template calculateScalarImpl<ScalarType>(par, dx);
+      DUNE_THROW(Dune::NotImplemented,
+                 "EAS element do not support any scalar calculations, i.e. they are not derivable from a potential");
+    }
+
+
     template <typename ScalarType>
     void calculateVectorImpl(const FERequirementType& par,
                              typename Traits::template VectorType<ScalarType> force, const std::optional<const Eigen::VectorX<ScalarType>>& dx=std::nullopt) const {
