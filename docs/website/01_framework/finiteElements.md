@@ -18,7 +18,11 @@ parameters stemming from the underlying physical problem, e.g., load factor, You
 The second task of finite elements is to evaluate derived results in the element parameter space, e.g., stresses or geometric quantities.
 This leads to the following interface for the finite elements:
 ## Interface
-Local functions provide the following interface
+Finite elements should have interface methods, which should be no-template and non-virtual (for the latter, considering 
+the non-virtual interface idiom (NVI)), since these methods are used to assemble quantities. These functions are 
+`calculateScalar`, `calculateVector` and `calculateMatrix`. These are public methods. 
+Such an interface is provided by the local functions are shown below:
+
 ```cpp
 ScalarType calculateScalar(const FErequirements& req);
 void calculateVector(const FErequirements& req, VectorType& b);
@@ -28,6 +32,10 @@ void calculateAt(const Resultrequirements& req, const Eigen::Vector<double, Trai
                      ResultTypeMap<ScalarType>& result);
 void globalFlatIndices(std::vector<GlobalIndex>& indices);
 ```
+
+Since we would also like to use `autodiff` for our element, we have their protected implementations. These methods are 
+templates to allow double or `autodiff` scalar types. These methods are `calculateScalarImpl`, `calculateVectorImpl` and 
+`calculateMatrixImpl`. `calculateScalar`, `calculateVector` and `calculateMatrix` simply forward to these implementation functions.
 
 Please refer to the [FE requirements](feRequirements.md) to learn more about the finite element requirements and result requirements. 
 The first four methods receive an object of type `FErequirements`. This object is responsible for passing different types of information needed for the local evaluation of the local linear algebra objects.

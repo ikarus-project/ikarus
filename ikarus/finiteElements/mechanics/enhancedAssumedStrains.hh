@@ -241,9 +241,9 @@ namespace Ikarus {
   };
 
   template <typename Geometry>
-  using EAS2DVariant = std::variant<std::monostate,EASQ1E4<Geometry>, EASQ1E5<Geometry>, EASQ1E7<Geometry>>;
+  using EAS2DVariant = std::variant<std::monostate, EASQ1E4<Geometry>, EASQ1E5<Geometry>, EASQ1E7<Geometry>>;
   template <typename Geometry>
-  using EAS3DVariant = std::variant<std::monostate,EASH1E9<Geometry>, EASH1E21<Geometry>>;
+  using EAS3DVariant = std::variant<std::monostate, EASH1E9<Geometry>, EASH1E21<Geometry>>;
 
   template <typename DisplacementBasedElement>
   class EnhancedAssumedStrains : public DisplacementBasedElement {
@@ -255,10 +255,12 @@ namespace Ikarus {
     using Traits                 = typename DisplacementBasedElement::Traits;
     using DisplacementBasedElement::localView;
 
-    //Disabeling this forwarding cosntructor if the argument provided is EnhancedAssumedStrains itself, to forward the calls to the implicit copy constructor
-    template <typename... Args> requires ( not std::is_same_v<std::remove_cvref_t<std::tuple_element_t<0, std::tuple<Args...>>>,EnhancedAssumedStrains>)
-    explicit EnhancedAssumedStrains(Args&&... args) : DisplacementBasedElement(std::forward<Args>(args)...) {
-    }
+    // Disabling this forwarding constructor if the argument provided is EnhancedAssumedStrains itself, to forward the
+    // calls to the implicit copy constructor
+    template <typename... Args>
+    requires(not std::is_same_v<std::remove_cvref_t<std::tuple_element_t<0, std::tuple<Args...>>>,
+                                EnhancedAssumedStrains>) explicit EnhancedAssumedStrains(Args&&... args)
+        : DisplacementBasedElement(std::forward<Args>(args)...) {}
 
     inline double calculateScalar(const FERequirementType& par) const {
       if (isDisplacementBased()) return DisplacementBasedElement::calculateScalar(par);
@@ -266,26 +268,23 @@ namespace Ikarus {
                  "EAS element do not support any scalar calculations, i.e. they are not derivable from a potential");
     }
 
-
-    bool isDisplacementBased()  const    {
-      return std::holds_alternative<std::monostate>(easVariant_);
-    }
+    bool isDisplacementBased() const { return std::holds_alternative<std::monostate>(easVariant_); }
 
     inline void calculateVector(const FERequirementType& par, typename Traits::template VectorType<> force) const {
       calculateVectorImpl<double>(par, force);
     }
 
     const auto& getEASVariant() const { return easVariant_; }
-     auto getNumberOfEASParameters() const {
-        return std::visit(
-            [&]<typename EAST>(const EAST &easFunction) {
-              if constexpr (std::is_same_v<std::monostate,EAST>)
-                return 0;
-              else
+    auto getNumberOfEASParameters() const {
+      return std::visit(
+          [&]<typename EAST>(const EAST& easFunction) {
+            if constexpr (std::is_same_v<std::monostate, EAST>)
+              return 0;
+            else
               return EAST::enhancedStrainSize;
-            },
-            easVariant_);
-     }
+          },
+          easVariant_);
+    }
 
     void calculateMatrix(const FERequirementType& par, typename Traits::template MatrixType<> K) const {
       using namespace Dune::DerivativeDirections;
@@ -300,12 +299,12 @@ namespace Ikarus {
 
       std::visit(
           [&]<typename EAST>(const EAST& easFunction) {
-            if constexpr (not std::is_same_v<std::monostate,EAST>) {
+            if constexpr (not std::is_same_v<std::monostate, EAST>) {
               constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
               Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
               calculateDAndLMatrix(easFunction, par, D, L);
 
-              K.template triangularView<Eigen::Upper>() -= L.transpose()*D.inverse()*L;
+              K.template triangularView<Eigen::Upper>() -= L.transpose() * D.inverse() * L;
               K.template triangularView<Eigen::StrictlyLower>() = K.transpose();
             }
           },
@@ -333,15 +332,14 @@ namespace Ikarus {
 
       std::visit(
           [&]<typename EAST>(const EAST& easFunction) {
-            if constexpr (not std::is_same_v<std::monostate,EAST>)
-            {
+            if constexpr (not std::is_same_v<std::monostate, EAST>) {
               constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
               Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
               calculateDAndLMatrix(easFunction, req.getFERequirements(), D, L);
-              const auto alpha = (-D.inverse()*L*disp).eval();
-              const auto M = easFunction.calcM(local);
+              const auto alpha = (-D.inverse() * L * disp).eval();
+              const auto M     = easFunction.calcM(local);
               const auto CEval = C(local);
-              auto easStress = (CEval*M*alpha).eval();
+              auto easStress   = (CEval * M * alpha).eval();
               typename ResultTypeMap<double>::ResultArray resultVector;
               if (req.isResultRequested(ResultType::linearStress)) {
                 resultVector.resize(3, 1);
@@ -365,13 +363,13 @@ namespace Ikarus {
             easVariant_ = std::monostate();
             break;
           case 4:
-            easVariant_          = EASQ1E4(localView().element().geometry());
+            easVariant_ = EASQ1E4(localView().element().geometry());
             break;
           case 5:
-            easVariant_          = EASQ1E5(localView().element().geometry());
+            easVariant_ = EASQ1E5(localView().element().geometry());
             break;
           case 7:
-            easVariant_          = EASQ1E7(localView().element().geometry());
+            easVariant_ = EASQ1E7(localView().element().geometry());
             break;
           default:
             DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available for the 2D case.");
@@ -383,10 +381,10 @@ namespace Ikarus {
             easVariant_ = std::monostate();
             break;
           case 9:
-            easVariant_          = EASH1E9(localView().element().geometry());
+            easVariant_ = EASH1E9(localView().element().geometry());
             break;
           case 21:
-            easVariant_          = EASH1E21(localView().element().geometry());
+            easVariant_ = EASH1E21(localView().element().geometry());
             break;
           default:
             DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available for the 3D case.");
@@ -428,22 +426,21 @@ namespace Ikarus {
       // Internal forces from enhanced strains
       std::visit(
           [&]<typename EAST>(const EAST& easFunction) {
-            if constexpr (not std::is_same_v<std::monostate,EAST>)
-            {
+            if constexpr (not std::is_same_v<std::monostate, EAST>) {
               constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
               Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
               calculateDAndLMatrix(easFunction, par, D, L);
 
-              const auto alpha = (-D.inverse()*L*disp).eval();
+              const auto alpha = (-D.inverse() * L * disp).eval();
 
-              for (const auto &[gpIndex, gp]: strainFunction.viewOverIntegrationPoints()) {
-                const auto M = easFunction.calcM(gp.position());
-                const double intElement = geo.integrationElement(gp.position())*gp.weight();
-                const auto CEval = C(gpIndex);
-                auto stresses = (CEval*M*alpha).eval();
+              for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
+                const auto M            = easFunction.calcM(gp.position());
+                const double intElement = geo.integrationElement(gp.position()) * gp.weight();
+                const auto CEval        = C(gpIndex);
+                auto stresses           = (CEval * M * alpha).eval();
                 for (size_t i = 0; i < numNodes; ++i) {
                   const auto bopI = strainFunction.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
-                  force.template segment<Traits::mydim>(Traits::mydim*i) += bopI.transpose()*stresses*intElement;
+                  force.template segment<Traits::mydim>(Traits::mydim * i) += bopI.transpose() * stresses * intElement;
                 }
               }
             }
