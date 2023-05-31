@@ -38,8 +38,8 @@ namespace Ikarus {
         };
         jacobian(f, autodiff::wrt(dx), at(dx), g, h);
       } else if constexpr (requires {
-                             this->calculateScalarImpl(par,
-                                                       std::declval<typename Traits::template VectorType<autodiff::dual2nd>>());
+                             this->calculateScalarImpl(
+                                 par, std::declval<typename Traits::template VectorType<autodiff::dual2nd>>());
                            }) {
         Eigen::VectorXdual2nd dx(this->localView().size());
         Eigen::VectorXd g;
@@ -62,9 +62,8 @@ namespace Ikarus {
         dx.setZero();
         return this->calculateVectorImpl(par, dx, g);
       } else if constexpr (requires {
-                             this->template calculateScalarImpl<autodiff::dual>(par,
-                                                       std::declval<const Eigen::VectorXdual&>()
-                                                       );
+                             this->template calculateScalarImpl<autodiff::dual>(
+                                 par, std::declval<const Eigen::VectorXdual&>());
                            }) {
         Eigen::VectorXdual dx(this->localView().size());
         dx.setZero();
@@ -88,10 +87,7 @@ namespace Ikarus {
     [[nodiscard]] double calculateScalar(const FERequirementType& par) const {
       if constexpr (requires { RealElement::calculateScalar(par); }) {
         return RealElement::calculateScalar(par);
-      } else if constexpr (requires {
-                             this->calculateScalarImpl(par,
-                                                       std::declval<const Eigen::VectorXd&>());
-                           }) {
+      } else if constexpr (requires { this->calculateScalarImpl(par, std::declval<const Eigen::VectorXd&>()); }) {
         Eigen::VectorXd dx(this->localView().size());
         dx.setZero();
         return this->calculateScalarImpl(par, dx);
@@ -106,11 +102,11 @@ namespace Ikarus {
     template <typename... Args>
     explicit AutoDiffFE(Args&&... args) : RealElement{std::forward<Args>(args)...} {}
 
-//    explicit AutoDiffFE(RealElement& other) : RealElement(other) {
-//      if constexpr (requires { this->setEASType(int{}); }) {
-//        const auto& numberOfEASParameters = other.getNumberOfEASParameters();
-//        this->setEASType(numberOfEASParameters);
-//      }
-//    }
+    //    explicit AutoDiffFE(RealElement& other) : RealElement(other) {
+    //      if constexpr (requires { this->setEASType(int{}); }) {
+    //        const auto& numberOfEASParameters = other.getNumberOfEASParameters();
+    //        this->setEASType(numberOfEASParameters);
+    //      }
+    //    }
   };
 }  // namespace Ikarus

@@ -190,9 +190,7 @@ namespace Ikarus {
 
   protected:
     template <typename ScalarType>
-    auto calculateScalarImpl(const FERequirementType& par
-    , const Eigen:: VectorX<ScalarType>& dx) const ->ScalarType  {
-
+    auto calculateScalarImpl(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx) const -> ScalarType {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
       const auto uFunction = getDisplacementFunction(par, dx);
@@ -247,7 +245,6 @@ namespace Ikarus {
     template <typename ScalarType>
     void calculateVectorImpl(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx,
                              typename Traits::template VectorType<ScalarType> force) const {
-
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
       const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);

@@ -96,7 +96,6 @@ namespace Ikarus {
       return [&]([[maybe_unused]] auto gp) { return getMaterialTangent(); };
     }
 
-
     double calculateScalar(const FERequirementType& par) const {
       Eigen::VectorXd dx(this->localView().size());
       dx.setZero();
@@ -172,7 +171,7 @@ namespace Ikarus {
   protected:
     template <typename ScalarType>
     auto calculateScalarImpl(const FERequirementType& par,
-                             const typename Traits::template VectorType<ScalarType>& dx) const ->ScalarType  {
+                             const typename Traits::template VectorType<ScalarType>& dx) const -> ScalarType {
       const auto u       = getDisplacementFunction(par, dx);
       const auto eps     = getStrainFunction(par, dx);
       const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
