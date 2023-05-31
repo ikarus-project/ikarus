@@ -18,8 +18,6 @@ if(ADD_CODESPELLTARGET)
   find_package(Python)
   if(Python_FOUND)
     message("Adding codespell targets")
-    message("${CMAKE_SOURCE_DIR}")
-    message(${CMAKE_SOURCE_DIR})
     set(CODESPELLCOMAND
         codespell
         -c

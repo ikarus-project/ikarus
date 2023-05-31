@@ -69,10 +69,16 @@ namespace Ikarus {
       const auto& d = par.getGlobalSolution(Ikarus::FESolutions::displacement);
 
       Dune::BlockVector<Dune::RealTuple<ScalarType, Traits::dimension>> disp(dispAtNodes.size());
+      if(dx)
       for (auto i = 0U; i < disp.size(); ++i)
         for (auto k2 = 0U; k2 < myDim; ++k2)
           disp[i][k2]
               = dx.value()[i * myDim + k2] + d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
+      else
+              for (auto i = 0U; i < disp.size(); ++i)
+        for (auto k2 = 0U; k2 < myDim; ++k2)
+          disp[i][k2]
+              = d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
 
       auto geo = std::make_shared<const typename GridView::GridView::template Codim<0>::Entity::Geometry>(
           this->localView().element().geometry());

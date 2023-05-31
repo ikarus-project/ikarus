@@ -251,7 +251,7 @@ template <typename NonLinearOperator, typename FiniteElement,
   Dune::TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() by Automatic Differentiation");
   auto& basis           = fe.localView().globalBasis();
   auto nDOF             = basis.size();
-  using AutoDiffBasedFE = Ikarus::AutoDiffFE<FiniteElement>;
+  using AutoDiffBasedFE = Ikarus::AutoDiffFE<FiniteElement,FERequirementType,false,true>;
   AutoDiffBasedFE feAutoDiff(fe);
 
   const double tol = 1e-10;

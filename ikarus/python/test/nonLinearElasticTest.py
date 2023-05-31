@@ -112,8 +112,6 @@ if __name__ == "__main__":
         reqL.insertGlobalSolution(iks.FESolutions.displacement, dBig)
         return assembler.getReducedMatrix(reqL).todense()
 
-    print("energy(dRed):", energy(dRed))
-    print("energyafer")
     resultd = minimize(energy, x0=dRed, options={"disp": True}, tol=1e-14)
     resultd2 = minimize(
         energy, x0=dRed, jac=gradient, options={"disp": True}, tol=1e-14
@@ -126,10 +124,8 @@ if __name__ == "__main__":
         hess=hess,
         options={"disp": True},
     )
-    resultd4 = sp.optimize.root(
-        gradient, jac=hess, x0=dRed, options={"disp": True}, tol=1e-10
-    )
-    # print(assembler.createFullVector(resultd.g))
+    resultd4 = sp.optimize.root(        gradient, jac=hess, x0=dRed, tol=1e-10    )
+
     np.set_printoptions(precision=3)
 
     assert np.allclose(resultd.x, resultd2.x, atol=1e-6)

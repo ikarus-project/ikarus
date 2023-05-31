@@ -106,11 +106,5 @@ namespace Ikarus {
     template <typename... Args>
     explicit AutoDiffFE(Args&&... args) : RealElement{std::forward<Args>(args)...} {}
 
-    //    explicit AutoDiffFE(RealElement& other) : RealElement(other) {
-    //      if constexpr (requires { this->setEASType(int{}); }) {
-    //        const auto& numberOfEASParameters = other.getNumberOfEASParameters();
-    //        this->setEASType(numberOfEASParameters);
-    //      }
-    //    }
   };
 }  // namespace Ikarus
