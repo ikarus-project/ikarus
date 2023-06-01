@@ -50,7 +50,7 @@ auto simple1DOperatorNewtonRhapsonTest() {
 
   auto fvLambda  = [&](auto&& x_) { return f(x_); };
   auto dfvLambda = [&](auto&& x_) { return df(x_); };
-  Ikarus::NonLinearOperator nonLinOp(linearAlgebraFunctions(fvLambda, dfvLambda), parameter(x));
+  Ikarus::NonLinearOperator nonLinOp(functions(fvLambda, dfvLambda), parameter(x));
 
   // Newton method test
   const double eps       = 1e-14;
@@ -68,7 +68,7 @@ auto simple1DOperatorNewtonRhapsonCheckThatThePerfectPredictorWorksTest() {
 
   auto fvLambda  = [](auto&& x_) { return f(x_); };
   auto dfvLambda = [](auto&& x_) { return df(x_); };
-  Ikarus::NonLinearOperator nonLinOp(linearAlgebraFunctions(fvLambda, dfvLambda), parameter(x));
+  Ikarus::NonLinearOperator nonLinOp(functions(fvLambda, dfvLambda), parameter(x));
 
   const double eps       = 1e-14;
   const int maxIter      = 20;
@@ -87,7 +87,7 @@ auto simple1DOperatorNewtonRhapsonWithWrongDerivativeTest() {
 
   auto fvLambda  = [](auto&& x_) { return f(x_); };
   auto dfvLambda = [](auto&& x_) { return dfFail(x_); };
-  Ikarus::NonLinearOperator nonLinOp(linearAlgebraFunctions(fvLambda, dfvLambda), parameter(x));
+  Ikarus::NonLinearOperator nonLinOp(functions(fvLambda, dfvLambda), parameter(x));
 
   // Newton method test
   const double eps  = 1e-14;
@@ -117,7 +117,7 @@ auto simple1DOperatorNewtonRhapsonTestWithParamter() {
   for (int i = 0; i < 3; ++i) {
     auto fvLambda  = [](auto&& x_, const int& i_) { return fp(x_, i_); };
     auto dfvLambda = [](auto&& x_, const int& i_) { return dfp(x_, i_); };
-    Ikarus::NonLinearOperator nonLinOp(linearAlgebraFunctions(fvLambda, dfvLambda), parameter(x, i));
+    Ikarus::NonLinearOperator nonLinOp(functions(fvLambda, dfvLambda), parameter(x, i));
 
     // Newton method test
     const double eps       = 1e-14;
@@ -140,7 +140,7 @@ auto vectorValuedOperatorNewtonRhapsonTest() {
 
   auto fvLambda  = [&](auto&& x_) { return fv(x_, A, b); };
   auto dfvLambda = [&](auto&& x_) { return dfv(x_, A, b); };
-  auto nonLinOp  = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda, dfvLambda), parameter(x));
+  auto nonLinOp  = Ikarus::NonLinearOperator(functions(fvLambda, dfvLambda), parameter(x));
 
   // Newton method test
   const double eps  = 1e-14;
@@ -170,7 +170,7 @@ auto secondOrderVectorValuedOperatorTest() {
   auto fvLambda   = [&](auto&& x_) { return f2v(x_, A, b); };
   auto dfvLambda  = [&](auto&& x_) { return df2v(x_, A, b); };
   auto ddfvLambda = [&](auto&& x_) { return ddf2v(x_, A, b); };
-  auto nonLinOp   = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
+  auto nonLinOp   = Ikarus::NonLinearOperator(functions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
 
   t.check(checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = false}));
 
@@ -226,7 +226,7 @@ auto secondOrderVectorValuedOperatorNonlinearAutodiff() {
     return ddf2vNL(xR, A, b);
   };
 
-  auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
+  auto nonLinOp = Ikarus::NonLinearOperator(functions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
 
   t.check(checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = false}));
   t.check(checkHessian(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = false}));

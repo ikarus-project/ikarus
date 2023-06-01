@@ -40,7 +40,7 @@ namespace Ikarus {
     }
 
     template <typename... Args>
-    struct LinearAlgebraFunctions {
+    struct Functions {
       std::tuple<std::reference_wrapper<std::remove_reference_t<Args>>...> args;
     };
 
@@ -57,12 +57,12 @@ namespace Ikarus {
   }
 
   template <typename... Args>
-  auto linearAlgebraFunctions(Args&&... args) {
-    return Impl::LinearAlgebraFunctions<Args&&...>{std::forward_as_tuple(std::forward<Args>(args)...)};
+  auto functions(Args&&... args) {
+    return Impl::Functions<Args&&...>{std::forward_as_tuple(std::forward<Args>(args)...)};
   }
 
   template <typename... DerivativeArgs, typename... ParameterArgs>
-  auto initResults(const Impl::LinearAlgebraFunctions<DerivativeArgs...>& derivativesFunctions,
+  auto initResults(const Impl::Functions<DerivativeArgs...>& derivativesFunctions,
                    const Impl::Parameter<ParameterArgs...>& parameterI) {
     return Impl::makeTupleOfValuesAndReferences(
         derivativesFunctions.args, parameterI,
@@ -82,7 +82,7 @@ namespace Ikarus {
   /* NonLinearOperator is a class taking linear algebra function and their arguments.
    * The fcuntion are assumed to be derivatvies of each other. */
   template <typename... DerivativeArgs, typename... ParameterArgs>
-  class NonLinearOperator<Impl::LinearAlgebraFunctions<DerivativeArgs...>, Impl::Parameter<ParameterArgs...>> {
+  class NonLinearOperator<Impl::Functions<DerivativeArgs...>, Impl::Parameter<ParameterArgs...>> {
     using FunctionReturnValues = std::tuple<Ikarus::Std::ReturnType<DerivativeArgs, ParameterArgs&...>...>;
     using ParameterValues      = std::tuple<ParameterArgs...>;
 
@@ -96,7 +96,7 @@ namespace Ikarus {
     using ValueType      = std::remove_cvref_t<std::tuple_element_t<0, FunctionReturnValues>>;
     using DerivativeType = std::remove_cvref_t<std::tuple_element_t<1, FunctionReturnValues>>;
 
-    explicit NonLinearOperator(const Impl::LinearAlgebraFunctions<DerivativeArgs...>& derivativesFunctions,
+    explicit NonLinearOperator(const Impl::Functions<DerivativeArgs...>& derivativesFunctions,
                                const Impl::Parameter<ParameterArgs...>& parameterI)
         : derivatives_{derivativesFunctions.args},
           args_{parameterI.args},
@@ -149,7 +149,7 @@ namespace Ikarus {
     /* Returns a new NonLinearOperator from the given indices */
     template <int... Derivatives>
     auto subOperator() {
-      return Ikarus::NonLinearOperator(linearAlgebraFunctions(std::get<Derivatives>(derivatives_)...),
+      return Ikarus::NonLinearOperator(functions(std::get<Derivatives>(derivatives_)...),
                                        Impl::applyAndRemoveReferenceWrapper(parameter<ParameterArgs...>, args_));
     }
 
