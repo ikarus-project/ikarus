@@ -10,6 +10,6 @@ plugins:
 
 extra:
   status:
-    new: Recently added or big refactoring
+    new: Recently added or heavily refactored
   version:
     provider: mike

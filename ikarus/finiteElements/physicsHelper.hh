@@ -46,13 +46,12 @@ namespace Ikarus {
     static constexpr int dimension = GridEntity::dimension;
 
     /** \brief Type of the internal forces */
-    using VectorType = std::conditional_t<useRef, Eigen::Ref<Eigen::VectorXd>, Eigen::VectorXd&>;
+    template <typename ScalarType = double>
+    using VectorType = std::conditional_t<useRef, Eigen::Ref<Eigen::VectorX<ScalarType>>, Eigen::VectorX<ScalarType>&>;
 
     /** \brief Type of the stiffness matrix */
-    using MatrixType = std::conditional_t<useRef, Eigen::Ref<Eigen::MatrixXd>, Eigen::MatrixXd&>;
-
-    /** \brief Type of the stiffness matrix */
-    using ScalarType = typename GridEntity::Geometry::ctype;
+    template <typename ScalarType = double>
+    using MatrixType = std::conditional_t<useRef, Eigen::Ref<Eigen::MatrixX<ScalarType>>, Eigen::MatrixX<ScalarType>&>;
   };
 
   /// see https://en.wikipedia.org/wiki/Lam%C3%A9_parameters

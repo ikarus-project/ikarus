@@ -3,15 +3,15 @@
 
 #pragma once
 
-#include "common.hh"
+#include "testCommon.hh"
 
 #include <dune/common/bitsetvector.hh>
 #include <dune/fufem/boundarypatch.hh>
 #include <dune/grid/uggrid.hh>
 
-#include "ikarus/io/resultFunction.hh"
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/finiteElements/feRequirements.hh>
+#include <ikarus/io/resultFunction.hh>
 #include <ikarus/linearAlgebra/dirichletValues.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/utils/basis.hh>
@@ -25,31 +25,14 @@
  * the finite element
  */
 template <template <typename> typename FEElementTemplate, int gridDim, typename PreBasis, typename... F>
-auto testFEElement(const PreBasis& preBasis, const std::string& elementName, const bool& isRandomlyDistorted,
+auto testFEElement(const PreBasis& preBasis, const std::string& elementName, const CornerDistortionFlag& distortionFlag,
                    F&&... f) {
   Dune::TestSuite t(std::string("testFEElement ") + elementName + " on grid element with dimension "
                     + std::to_string(gridDim));
 
   auto fTuple = std::forward_as_tuple(f...);
 
-  using Grid = Dune::UGGrid<gridDim>;
-
-  std::vector<Dune::FieldVector<double, gridDim>> corners;
-
-  const int numberOfVertices = Dune::power(2, gridDim);
-  ValidCornerFactory<gridDim>::construct(corners, Dune::GeometryTypes::cube(gridDim), isRandomlyDistorted);
-
-  std::vector<unsigned int> vertexArrangment;
-  vertexArrangment.resize(numberOfVertices);
-  std::iota(vertexArrangment.begin(), vertexArrangment.end(), 0);
-
-  Dune::GridFactory<Grid> gridFactory;
-  for (auto& corner : corners) {
-    gridFactory.insertVertex(corner);
-  }
-  gridFactory.insertElement(Dune::GeometryTypes::cube(gridDim), vertexArrangment);
-
-  std::unique_ptr<Grid> grid = gridFactory.createGrid();
+  auto grid = createUGGridFromCorners<gridDim>(distortionFlag);
 
   auto gridView = grid->leafGridView();
   using namespace Ikarus;
@@ -123,12 +106,12 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
   // execute all passed functions
   nonLinOp.updateAll();
   Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<sizeof...(F)>()),
-                        [&](auto i) { t.subTest(std::get<i.value>(fTuple)(nonLinOp, fe)); });
+                        [&](auto i) { t.subTest(std::get<i.value>(fTuple)(nonLinOp, fe, requirements)); });
 
   // check if element has a test functor, if yes we execute it
   if constexpr (requires { ElementTest<FEElementType>::test(); }) {
     auto testFunctor = ElementTest<FEElementType>::test();
-    t.subTest(testFunctor(nonLinOp, fe));
+    t.subTest(testFunctor(nonLinOp, fe, requirements));
   } else
     spdlog::info("No element test functor found for {}", Dune::className<FEElementType>());
 
@@ -141,10 +124,17 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
   return t;
 }
 
-auto checkGradientFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe) { return checkGradientOfElement(nonLinOp); };
-auto checkHessianFunctor  = [](auto& nonLinOp, [[maybe_unused]] auto& fe) { return checkHessianOfElement(nonLinOp); };
-auto checkJacobianFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe) {
+auto checkGradientFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe, [[maybe_unused]] auto& req) {
+  return checkGradientOfElement(nonLinOp);
+};
+auto checkHessianFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe, [[maybe_unused]] auto& req) {
+  return checkHessianOfElement(nonLinOp);
+};
+auto checkJacobianFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe, [[maybe_unused]] auto& req) {
   auto subOperator = nonLinOp.template subOperator<1, 2>();
   return checkJacobianOfElement(subOperator);
 };
-auto checkCauchyStressFunctor = [](auto& nonLinOp, auto& fe) { return checkCauchyStressOf2DElement(nonLinOp, fe); };
+auto checkCauchyStressFunctor
+    = [](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req) { return checkCauchyStressOf2DElement(nonLinOp, fe); };
+auto checkFEByAutoDiffFunctor
+    = [](auto& nonLinOp, auto& fe, auto& req) { return checkFEByAutoDiff(nonLinOp, fe, req); };

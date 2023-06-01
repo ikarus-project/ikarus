@@ -6,9 +6,6 @@
 #include "testHelpers.hh"
 
 #include <array>
-#include <fstream>
-#include <unordered_set>
-#include <vector>
 
 #include <dune/common/test/testsuite.hh>
 #include <dune/localfefunctions/manifolds/realTuple.hh>
@@ -16,7 +13,6 @@
 
 #include <Eigen/Core>
 
-#include <ikarus/utils/algorithms.hh>
 #include <ikarus/utils/init.hh>
 
 using Dune::TestSuite;

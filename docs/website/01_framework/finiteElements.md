@@ -1,3 +1,6 @@
+---
+status: new
+---
 <!--
 SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 SPDX-License-Identifier: CC-BY-SA-4.0
@@ -14,17 +17,28 @@ parameters stemming from the underlying physical problem, e.g., load factor, You
 
 The second task of finite elements is to evaluate derived results in the element parameter space, e.g., stresses or geometric quantities.
 This leads to the following interface for the finite elements:
+
 ## Interface
-Local functions provide the following interface
+
+Finite elements should have non-template and non-virtual (considering non-virtual interface idiom (NVI) for the latter) interface methods.
+This is because these methods are usually used to assemble quantities.
+These functions are `calculateScalar`, `calculateVector` and `calculateMatrix`. These are public methods.
+Such an interface is provided by the local functions are shown below:
+
 ```cpp
-ScalarType evaluateScalar(const FErequirements& req);
-void evaluateVector(const FErequirements& req, VectorType& b);
-void evaluateMatrix(const FErequirements& req, MatrixType& A);
+ScalarType calculateScalar(const FErequirements& req);
+void calculateVector(const FErequirements& req, VectorType& b);
+void calculateMatrix(const FErequirements& req, MatrixType& A);
 void calculateLocalSystem(const FErequirements& req, MatrixType& A, VectorType& b);
 void calculateAt(const Resultrequirements& req, const Eigen::Vector<double, Traits::mydim>& local,
                      ResultTypeMap<ScalarType>& result);
 void globalFlatIndices(std::vector<GlobalIndex>& indices);
 ```
+
+Since we would also like to use `autodiff` for our element, we have their protected implementations.
+These methods are templates to allow double or `autodiff` scalar types.
+These methods are `calculateScalarImpl`, `calculateVectorImpl` and `calculateMatrixImpl`.
+`calculateScalar`, `calculateVector` and `calculateMatrix` simply forward to these implementation functions.
 
 Please refer to the [FE requirements](feRequirements.md) to learn more about the finite element requirements and result requirements. 
 The first four methods receive an object of type `FErequirements`. This object is responsible for passing different types of information needed for the local evaluation of the local linear algebra objects.
@@ -66,15 +80,59 @@ The last method is the `globalFlatIndices`. It is used to write a finite element
 This information originates from a `basis` object. See existing implementations for details.
 
 ## Linear and Non-linear Elasticity
-* To be added
+
+`LinearElastic` and `NonLinearElastic` classes are designed in a generic way.
+This means that they could be directly used for any $n$-dimensional finite element in the geometrically linear and non-linear cases.
+They inherit from the class `PowerBasisFE`, which helps to arrange the nodal degrees of freedom in a `FlatInterleaved` format.
+Refer DUNE[@sander2020dune] for more details. The constructor for both classes of elements has the following signature:
+```cpp
+template <typename VolumeLoad = LoadDefault, typename NeumannBoundaryLoad = LoadDefault>
+LinearElastic(const Basis& globalBasis, const typename LocalView::Element& element, double emod, double nu,
+                  VolumeLoad p_volumeLoad = {}, const BoundaryPatch<GridView>* p_neumannBoundary = nullptr,
+                  NeumannBoundaryLoad p_neumannBoundaryLoad = {}) {}
+```
+```cpp
+template <typename VolumeLoad = LoadDefault, typename NeumannBoundaryLoad = LoadDefault>
+NonLinearElastic(const Basis& globalBasis, const typename LocalView::Element& element, const Material& p_mat,
+                 VolumeLoad p_volumeLoad = {}, const BoundaryPatch<GridView>* p_neumannBoundary = nullptr,
+                 NeumannBoundaryLoad p_neumannBoundaryLoad = {})
+```
+
+The first argument defines the basis function used to interpolate the solution field, while the second argument points to the `gridElement` itself.
+The next set of arguments are related to the material law to be used.
+For the geometrically linear case, the Young's modulus and the Poisson's ratio are passed, and a `planeStress` material model is assumed.
+For the geometrically non-linear case, the material model is to be passed as an argument.
+This could be for instance, the St. Venant-Kirchhoff material law or the Neo-Hookean material law.
+`volumeLoad` and `neumannBoundaryLoad` are optional parameters that could be passed as per the use case.
+It is necessary to note that a `neumannBoundary` must be defined if a `neumannBoundaryLoad` is to be applied.
+Member functions are defined as per the [interface](finiteElements.md#interface) mentioned above.
+Two member functions are written such that the stiffness matrices and load vectors can also be obtained by automatic differentiation.
+These functions are `protected`. They are:
+```cpp
+calculateScalarImpl(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx)
+calculateVectorImpl(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx, Eigen::VectorX<ScalarType>& force)
+```
+`getStrainFunction(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx)` is used to get the desired strain measure.
+It can be used to toggle between the geometrically linear and non-linear cases.
+`LinearStrains` are used for the geometrically linear case, while `GreenLagrangianStrains` are used for the non-linear case.
+These strain measures are defined as expressions in `dune-localfefunctions`. Refer to [Expressions](localFunctions.md#expressions) for more details.
+The strain-displacement operators are obtained by evaluating the derivative of the strain measure with respect to the nodal degrees of freedom.
+This is then used to evaluate the stiffness matrix.
+For more details on derivatives w.r.t. coefficients, refer [here](localFunctions.md#derivatives-wrt-coefficients).
+Finally, the `calculateAt()` function evaluates the `linearStress` and `PK2Stress` (the second Piola-Kirchhoff stress tensor) as per the `ResultRequirementsType`.
+An implementation for a push forward operation to evaluate the `cauchyStress` is an open task.
+Refer to [open tasks](../03_contribution/openTask.md#finite-elements) for more details.
 
 ## Enhanced Assumed Strain Elements
+
 The Enhanced Assumed Strain (EAS) elements are a class of finite elements that helps to avoid the locking phenomenon.
-They are obtained by re-parametrizing the Hu-Washizu principle and enforcing an orthogonality condition. 
-This results in an extension of the standard pure displacement formulation with an enhanced strain field ($\tilde\epsilon$) 
-as an additional independent variable.The locking characteristics of the pure displacement formulations can be eliminated with an appropriate choice of ansatz space for $\tilde\epsilon$. For further theoretical aspects, the readers are referred to [@simo_class_1990] 
-and [@andelfinger_eas-elements_1993]. The EAS formulation is currently implemented for the linear-elastic case, but 
-it could be extended to the non-linear regime. The currently implemented EAS elements are the following:
+They are obtained by re-parametrizing the Hu-Washizu principle and enforcing an orthogonality condition.
+This results in an extension of the standard pure displacement formulation with an enhanced strain field ($\tilde\epsilon$).
+($\tilde\epsilon$) is as an additional independent variable.
+The locking characteristics of the pure displacement formulations can be eliminated with an appropriate choice of ansatz space for $\tilde\epsilon$.
+For further theoretical aspects, the readers are referred to [@simo_class_1990] and [@andelfinger_eas-elements_1993].
+The EAS formulation is currently implemented for the linear-elastic case, but it could be extended to the non-linear regime.
+The currently implemented EAS elements are the following:
 
 * Q1E4
 * Q1E5

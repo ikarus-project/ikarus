@@ -1,3 +1,6 @@
+---
+status: new
+---
 <!--
 SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 SPDX-License-Identifier: CC-BY-SA-4.0
@@ -13,10 +16,12 @@ standard Von-Mises truss example found in literature (refer to Section 2[@misesT
 
 ## Code highlights
 
-The struct named `Truss` is created such that it inherits from `AutoDiffFE`. It is constructed as shown below:
+The struct named `Truss` is created such that it inherits from `PowerBasisFE`.
+It must be decorated with `AutoDiffFE` as well to compute the stiffness matrix and load vectors during construction.
+It is constructed as shown below:
 ```cpp
 Truss(const Basis &basis, const typename LocalView::Element &element, double p_EA)
-    : BaseDisp(basis.flat(), element), BaseAD(basis.flat(), element), EA{p_EA} {
+    : BaseDisp(basis.flat(), element), EA{p_EA} {
   this->localView().bind(element);
 }
 ```

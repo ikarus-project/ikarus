@@ -58,7 +58,13 @@ jobs:
       - name: Checkout branch if it exists
         working-directory: ./ikarus-examples
         continue-on-error: true
+        if: ${{ github.event_name == 'push' }}
         run: git checkout ${{ github.ref_name }}
+      - name: Checkout branch if it exists
+        working-directory: ./ikarus-examples
+        continue-on-error: true
+        if: ${{ github.event_name == 'pull_request' }}
+        run: git checkout ${{ github.event.pull_request.head.ref }}
       - name: Compile all examples
         working-directory: ./ikarus-examples
         run: |

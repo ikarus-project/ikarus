@@ -3,15 +3,16 @@
 
 #pragma once
 
-#include "common.hh"
+#include "testCommon.hh"
 
 #include <variant>
 
 #include <ikarus/finiteElements/mechanics/enhancedAssumedStrains.hh>
+
 template <typename DisplacementBasedElement>
 struct ElementTest<Ikarus::EnhancedAssumedStrains<DisplacementBasedElement>> {
   [[nodiscard]] static auto test() {
-    auto easFunctor = [](auto& nonLinOp, auto& fe) {
+    auto easFunctor = [](auto& nonLinOp, auto& fe, auto& req) {
       const auto& localView = fe.localView();
       const auto& element   = localView.element();
       constexpr int gridDim = std::remove_cvref_t<decltype(element)>::dimension;
@@ -37,6 +38,7 @@ struct ElementTest<Ikarus::EnhancedAssumedStrains<DisplacementBasedElement>> {
           t.subTest(checkHessianOfElement(nonLinOp, messageIfFailed));
         }
         t.subTest(checkJacobianOfElement(subOp, messageIfFailed));
+        t.subTest(checkFEByAutoDiff(nonLinOp, fe, req, messageIfFailed));
 
         auto stiffnessMatrix = subOp.derivative();
 
@@ -68,17 +70,19 @@ struct ElementTest<Ikarus::EnhancedAssumedStrains<DisplacementBasedElement>> {
           const auto& easVariant = fe.easVariant();
           std::visit(
               [&]<typename EAS>(const EAS& easFunction) {
-                typename EAS::MType MIntegrated;
-                MIntegrated.setZero();
-                for (const auto& gp : rule) {
-                  const auto M = easFunction.calcM(gp.position());
+                if constexpr (not std::is_same_v<std::monostate, EAS>) {
+                  typename EAS::MType MIntegrated;
+                  MIntegrated.setZero();
+                  for (const auto& gp : rule) {
+                    const auto M = easFunction.calcM(gp.position());
 
-                  const double detJ = element.geometry().integrationElement(gp.position());
-                  MIntegrated += M * detJ * gp.weight();
+                    const double detJ = element.geometry().integrationElement(gp.position());
+                    MIntegrated += M * detJ * gp.weight();
+                  }
+                  t.check(MIntegrated.isZero())
+                      << "Orthogonality condition check: The M matrix of the EAS method should be "
+                         "zero, integrated over the domain.";
                 }
-                t.check(MIntegrated.isZero())
-                    << "Orthogonality condition check: The M matrix of the EAS method should be "
-                       "zero, integrated over the domain.";
               },
               easVariant);
           try {

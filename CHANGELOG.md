@@ -10,10 +10,12 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 - Updated license information ([#138](https://github.com/ikarus-project/ikarus/pull/138))
 - Added detailed documentation for ikarus-examples ([#140](https://github.com/ikarus-project/ikarus/pull/140))
 - Added computation of Cauchy stress in linear elasticity ([#137](https://github.com/ikarus-project/ikarus/pull/137))
-- Added greeting and init function for reasonable default, e.g. log also to file ([#147](https://github.com/ikarus-project/ikarus/pull/147))
+- Added greeting and init function for a reasonable default, e.g., log also to file ([#147](https://github.com/ikarus-project/ikarus/pull/147))
 - Added an interface for the material library ([#154](https://github.com/ikarus-project/ikarus/pull/154))
 - Added a wrapper for flat and blocked basis ([#157](https://github.com/ikarus-project/ikarus/pull/157))
 - Added basic python bindings and infrastructure. Ikarus can now be downloaded via `pip install pyikarus` ([#157](https://github.com/ikarus-project/ikarus/pull/152))
+- Added result evaluators to post-process desired results ([#165](https://github.com/ikarus-project/ikarus/pull/165))
+- Added explicit calculation of scalars, vectors, and matrices for `NonLinearElastic` ([#160](https://github.com/ikarus-project/ikarus/pull/160))
 
 ## Release v0.3 (Prometheus)
 

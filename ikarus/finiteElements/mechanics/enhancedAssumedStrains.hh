@@ -3,10 +3,6 @@
 
 #pragma once
 
-#include <functional>
-#include <optional>
-
-#include <dune/fufem/boundarypatch.hh>
 #include <dune/localfefunctions/meta.hh>
 
 #include <ikarus/finiteElements/feRequirements.hh>
@@ -245,9 +241,9 @@ namespace Ikarus {
   };
 
   template <typename Geometry>
-  using EAS2DVariant = std::variant<EASQ1E4<Geometry>, EASQ1E5<Geometry>, EASQ1E7<Geometry>>;
+  using EAS2DVariant = std::variant<std::monostate, EASQ1E4<Geometry>, EASQ1E5<Geometry>, EASQ1E7<Geometry>>;
   template <typename Geometry>
-  using EAS3DVariant = std::variant<EASH1E9<Geometry>, EASH1E21<Geometry>>;
+  using EAS3DVariant = std::variant<std::monostate, EASH1E9<Geometry>, EASH1E21<Geometry>>;
 
   template <typename DisplacementBasedElement>
   class EnhancedAssumedStrains : public DisplacementBasedElement {
@@ -259,87 +255,58 @@ namespace Ikarus {
     using Traits                 = typename DisplacementBasedElement::Traits;
     using DisplacementBasedElement::localView;
 
+    // Disabling this forwarding constructor if the argument provided is EnhancedAssumedStrains itself, to forward the
+    // calls to the implicit copy constructor
     template <typename... Args>
-    explicit EnhancedAssumedStrains(Args&&... args) : DisplacementBasedElement(std::forward<Args>(args)...) {
-      setEASType(0);
-    }
+    requires(not std::is_same_v<std::remove_cvref_t<std::tuple_element_t<0, std::tuple<Args...>>>,
+                                EnhancedAssumedStrains>) explicit EnhancedAssumedStrains(Args&&... args)
+        : DisplacementBasedElement(std::forward<Args>(args)...) {}
 
-    double calculateScalar(const FERequirementType& par) const {
-      if (onlyDisplacementBase) return DisplacementBasedElement::calculateScalar(par);
+    inline double calculateScalar(const FERequirementType& par) const {
+      if (isDisplacementBased()) return DisplacementBasedElement::calculateScalar(par);
       DUNE_THROW(Dune::NotImplemented,
                  "EAS element do not support any scalar calculations, i.e. they are not derivable from a potential");
-      return 0.0;
     }
 
-    void calculateVector(const FERequirementType& par, typename Traits::VectorType& g) const {
-      DisplacementBasedElement::calculateVector(par, g);
-      using namespace Dune;
+    bool isDisplacementBased() const { return std::holds_alternative<std::monostate>(easVariant_); }
 
-      if (onlyDisplacementBase) return;
+    inline void calculateVector(const FERequirementType& par, typename Traits::template VectorType<> force) const {
+      calculateVectorImpl<double>(par, force);
+    }
 
-      const auto& d       = par.getGlobalSolution(Ikarus::FESolutions::displacement);
-      auto strainFunction = DisplacementBasedElement::getStrainFunction(par);
-      Eigen::VectorXd disp(localView().size());
-      const auto& numNodes = DisplacementBasedElement::numberOfNodes;
-
-      for (auto i = 0U; i < numNodes; ++i)
-        for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
-          disp[i * Traits::mydim + k2] = d[localView().index(localView().tree().child(k2).localIndex(i))[0]];
-
-      using namespace Dune::DerivativeDirections;
-
-      auto C         = DisplacementBasedElement::getMaterialTangentFunction(par);
-      const auto geo = localView().element().geometry();
-
-      // Internal forces from enhanced strains
-      std::visit(
+    const auto& easVariant() const { return easVariant_; }
+    auto getNumberOfEASParameters() const {
+      return std::visit(
           [&]<typename EAST>(const EAST& easFunction) {
-            constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
-            Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
-            calculateDAndLMatrix(easFunction, par, D, L);
-
-            const auto alpha = (-D.inverse() * L * disp).eval();
-
-            for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
-              const auto M            = easFunction.calcM(gp.position());
-              const double intElement = geo.integrationElement(gp.position()) * gp.weight();
-              const auto CEval        = C(gpIndex);
-              auto stresses           = (CEval * M * alpha).eval();
-              for (size_t i = 0; i < numNodes; ++i) {
-                const auto bopI = strainFunction.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
-                g.template segment<Traits::mydim>(Traits::mydim * i) += bopI.transpose() * stresses * intElement;
-              }
-            }
+            if constexpr (std::is_same_v<std::monostate, EAST>)
+              return 0;
+            else
+              return EAST::enhancedStrainSize;
           },
           easVariant_);
     }
 
-    auto& easVariant() { return easVariant_; }
-
-    void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& K) const {
+    void calculateMatrix(const FERequirementType& par, typename Traits::template MatrixType<> K) const {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
 
-      /// fill h with displacement-based stiffness.
+      /// fill K with displacement-based stiffness.
       /// It is assumed to be assembled block-wise on element level.
       /// This means the displacements x,y,z of node I are grouped together.
       DisplacementBasedElement::calculateMatrix(par, K);
 
-      if (onlyDisplacementBase) return;
-
-      auto strainFunction  = DisplacementBasedElement::getStrainFunction(par);
-      const auto& numNodes = DisplacementBasedElement::numberOfNodes;
-      assert(((numNodes == 4 and Traits::mydim == 2) or (numNodes == 8 and Traits::mydim == 3))
-             && "EAS only supported for Q1 or H1 elements");
+      if (isDisplacementBased()) return;
 
       std::visit(
           [&]<typename EAST>(const EAST& easFunction) {
-            constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
-            Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
-            calculateDAndLMatrix(easFunction, par, D, L);
+            if constexpr (not std::is_same_v<std::monostate, EAST>) {
+              constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
+              Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
+              calculateDAndLMatrix(easFunction, par, D, L);
 
-            K.template triangularView<Eigen::Upper>() -= L.transpose() * D.inverse() * L;
-            K.template triangularView<Eigen::StrictlyLower>() = K.transpose();
+              K.template triangularView<Eigen::Upper>() -= L.transpose() * D.inverse() * L;
+              K.template triangularView<Eigen::StrictlyLower>() = K.transpose();
+            }
           },
           easVariant_);
     }
@@ -352,7 +319,7 @@ namespace Ikarus {
 
       DisplacementBasedElement::calculateAt(req, local, result);
 
-      if (onlyDisplacementBase) return;
+      if (isDisplacementBased()) return;
 
       const auto& d        = req.getGlobalSolution(Ikarus::FESolutions::displacement);
       const auto C         = DisplacementBasedElement::getMaterialTangentFunction(req.getFERequirements());
@@ -363,62 +330,61 @@ namespace Ikarus {
         for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
           disp[i * Traits::mydim + k2] = d[localView().index(localView().tree().child(k2).localIndex(i))[0]];
 
-      assert(((numNodes == 4 and Traits::mydim == 2) or (numNodes == 8 and Traits::mydim == 3))
-             && "EAS only supported for Q1 or H1 elements");
-
       std::visit(
           [&]<typename EAST>(const EAST& easFunction) {
-            constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
-            Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
-            calculateDAndLMatrix(easFunction, req.getFERequirements(), D, L);
-            const auto alpha = (-D.inverse() * L * disp).eval();
-            const auto M     = easFunction.calcM(local);
-            const auto CEval = C(local);
-            auto easStress   = (CEval * M * alpha).eval();
-            typename ResultTypeMap<double>::ResultArray resultVector;
-            if (req.isResultRequested(ResultType::linearStress)) {
-              resultVector.resize(3, 1);
-              resultVector = result.getResult(ResultType::linearStress) + easStress;
-              result.insertOrAssignResult(ResultType::linearStress, resultVector);
+            if constexpr (not std::is_same_v<std::monostate, EAST>) {
+              constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
+              Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
+              calculateDAndLMatrix(easFunction, req.getFERequirements(), D, L);
+              const auto alpha = (-D.inverse() * L * disp).eval();
+              const auto M     = easFunction.calcM(local);
+              const auto CEval = C(local);
+              auto easStress   = (CEval * M * alpha).eval();
+              typename ResultTypeMap<double>::ResultArray resultVector;
+              if (req.isResultRequested(ResultType::linearStress)) {
+                resultVector.resize(3, 1);
+                resultVector = result.getResult(ResultType::linearStress) + easStress;
+                result.insertOrAssignResult(ResultType::linearStress, resultVector);
+              }
             }
           },
           easVariant_);
     }
 
-    void setEASType(int numberOfEASParameters) {
+    void setEASType(int numberOfEASParameters_) {
+      const auto& numNodes = DisplacementBasedElement::numberOfNodes;
+      if (not((numNodes == 4 and Traits::mydim == 2) or (numNodes == 8 and Traits::mydim == 3))
+          and (not isDisplacementBased()))
+        DUNE_THROW(Dune::NotImplemented, "EAS only supported for Q1 or H1 elements");
+
       if constexpr (Traits::mydim == 2) {
-        switch (numberOfEASParameters) {
+        switch (numberOfEASParameters_) {
           case 0:
-            onlyDisplacementBase = true;
+            easVariant_ = std::monostate();
             break;
           case 4:
-            easVariant_          = EASQ1E4(localView().element().geometry());
-            onlyDisplacementBase = false;
+            easVariant_ = EASQ1E4(localView().element().geometry());
             break;
           case 5:
-            easVariant_          = EASQ1E5(localView().element().geometry());
-            onlyDisplacementBase = false;
+            easVariant_ = EASQ1E5(localView().element().geometry());
             break;
           case 7:
-            easVariant_          = EASQ1E7(localView().element().geometry());
-            onlyDisplacementBase = false;
+            easVariant_ = EASQ1E7(localView().element().geometry());
             break;
           default:
             DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available for the 2D case.");
             break;
         }
       } else if constexpr (Traits::mydim == 3) {
-        switch (numberOfEASParameters) {
+        switch (numberOfEASParameters_) {
           case 0:
-            onlyDisplacementBase = true;
+            easVariant_ = std::monostate();
             break;
           case 9:
-            easVariant_          = EASH1E9(localView().element().geometry());
-            onlyDisplacementBase = false;
+            easVariant_ = EASH1E9(localView().element().geometry());
             break;
           case 21:
-            easVariant_          = EASH1E21(localView().element().geometry());
-            onlyDisplacementBase = false;
+            easVariant_ = EASH1E21(localView().element().geometry());
             break;
           default:
             DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available for the 3D case.");
@@ -427,18 +393,80 @@ namespace Ikarus {
       }
     }
 
+  protected:
+    template <typename ScalarType>
+    inline ScalarType calculateScalarImpl(const FERequirementType& par,
+                                          const std::optional<const Eigen::VectorX<ScalarType>>& dx
+                                          = std::nullopt) const {
+      if (isDisplacementBased()) return DisplacementBasedElement::template calculateScalarImpl<ScalarType>(par, dx);
+      DUNE_THROW(Dune::NotImplemented,
+                 "EAS element do not support any scalar calculations, i.e. they are not derivable from a potential");
+    }
+
+    template <typename ScalarType>
+    void calculateVectorImpl(const FERequirementType& par, typename Traits::template VectorType<ScalarType> force,
+                             const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
+      DisplacementBasedElement::calculateVectorImpl(par, force, dx);
+      if (isDisplacementBased()) return;
+      using namespace Dune;
+      const auto& d       = par.getGlobalSolution(Ikarus::FESolutions::displacement);
+      auto strainFunction = DisplacementBasedElement::getStrainFunction(par, dx);
+      Eigen::VectorX<ScalarType> disp(localView().size());
+      const auto& numNodes = DisplacementBasedElement::numberOfNodes;
+
+      // FIXME this should not be needed in the future strainFunction should be able to hand out this vector
+      if (dx)
+        for (auto i = 0U; i < numNodes; ++i)
+          for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
+            disp[i * Traits::mydim + k2] = dx.value()[i * Traits::mydim + k2]
+                                           + d[localView().index(localView().tree().child(k2).localIndex(i))[0]];
+      else
+        for (auto i = 0U; i < numNodes; ++i)
+          for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
+            disp[i * Traits::mydim + k2] = d[localView().index(localView().tree().child(k2).localIndex(i))[0]];
+
+      using namespace Dune::DerivativeDirections;
+
+      auto C         = DisplacementBasedElement::getMaterialTangentFunction(par);
+      const auto geo = localView().element().geometry();
+
+      // Internal forces from enhanced strains
+      std::visit(
+          [&]<typename EAST>(const EAST& easFunction) {
+            if constexpr (not std::is_same_v<std::monostate, EAST>) {
+              constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
+              Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
+              calculateDAndLMatrix(easFunction, par, D, L);
+
+              const auto alpha = (-D.inverse() * L * disp).eval();
+
+              for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
+                const auto M            = easFunction.calcM(gp.position());
+                const double intElement = geo.integrationElement(gp.position()) * gp.weight();
+                const auto CEval        = C(gpIndex);
+                auto stresses           = (CEval * M * alpha).eval();
+                for (size_t i = 0; i < numNodes; ++i) {
+                  const auto bopI = strainFunction.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
+                  force.template segment<Traits::mydim>(Traits::mydim * i) += bopI.transpose() * stresses * intElement;
+                }
+              }
+            }
+          },
+          easVariant_);
+    }
+
   private:
     using EAS2DVariantImpl = EAS2DVariant<typename LocalView::Element::Geometry>;
     using EAS3DVariantImpl = EAS3DVariant<typename LocalView::Element::Geometry>;
     std::conditional_t<Traits::mydim == 2, EAS2DVariantImpl, EAS3DVariantImpl> easVariant_;
     mutable Eigen::MatrixXd L;
-    bool onlyDisplacementBase{false};
     template <int enhancedStrainSize>
     void calculateDAndLMatrix(const auto& easFunction, const auto& par,
                               Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>& DMat,
                               Eigen::MatrixXd& LMat) const {
       using namespace Dune;
       using namespace Dune::DerivativeDirections;
+
       auto strainFunction = DisplacementBasedElement::getStrainFunction(par);
       const auto C        = DisplacementBasedElement::getMaterialTangentFunction(par);
       const auto geo      = localView().element().geometry();

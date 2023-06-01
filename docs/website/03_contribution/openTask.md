@@ -33,8 +33,8 @@ The following task are open for your contributions.
 * Nonlinear Reissner-Mindlin shell [@muller2022consistent]
 * Kirchhoff-Love shell
 * 3D-Beam
-* Implement forces and stiffness matrix of `NonLinearElastic`
 * Standard beam and plate formulations
+* Add calculation of different stress measures (push-forward or pull-back of PK2 stresses or similar)
 
 ### Further addons
 * [Muesli](https://materials.imdea.org/muesli/)
