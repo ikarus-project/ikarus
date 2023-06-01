@@ -78,7 +78,7 @@ The finite element requirements are defined by using the affordance `#!cpp Ikaru
 This is then used to create functors to get the stiffness matrix, residual vector, and energy value using a sparse assembler.
 A non-linear operator and the linear solver used by the `solverType` are defined as:
 ```cpp
-auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, residualFunction, KFunction), parameter(d, lambda));
+auto nonLinOp = Ikarus::NonLinearOperator(functions(energyFunction, residualFunction, KFunction), parameter(d, lambda));
 auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_UmfPackLU);
 ```
 An object for the Newton-Raphson method or the trust region method can then be defined as

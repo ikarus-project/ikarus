@@ -43,7 +43,7 @@ auto trustRegion1() {
   auto fvLambda   = [](auto&& xL) { return f(xL); };
   auto dfvLambda  = [](auto&& xL) { return df(xL); };
   auto ddfvLambda = [](auto&& xL) { return ddf(xL); };
-  Ikarus::NonLinearOperator nonLinOp(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
+  Ikarus::NonLinearOperator nonLinOp(functions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
 
   Eigen::Vector<double, 1> xExpected;
   xExpected << 0;
@@ -92,7 +92,7 @@ auto trustRegion2() {
   auto fvLambda   = [](auto&& xL) { return rosenbrock(xL); };
   auto dfvLambda  = [](auto&& xL) { return rosenbrockdx(xL); };
   auto ddfvLambda = [](auto&& xL) { return rosenbrockddx(xL); };
-  Ikarus::NonLinearOperator nonLinOp(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
+  Ikarus::NonLinearOperator nonLinOp(functions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
   const double eps   = 1e-10;
   const int maxIter_ = 30;
   Eigen::Vector2d xExpected;
@@ -148,7 +148,7 @@ auto trustRegion3() {
     auto xR = xL.template cast<autodiff::dual2nd>().eval();
     return ddf3(xR);
   };
-  Ikarus::NonLinearOperator nonLinOp(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
+  Ikarus::NonLinearOperator nonLinOp(functions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
   const double eps   = 1e-12;
   const int maxIter_ = 30;
   Eigen::Vector2d xExpected;
@@ -230,7 +230,7 @@ auto trustRegion4_RiemanianUnitSphere() {
   auto dfvLambda  = [](auto&& xL) { return df3R(xL); };
   auto ddfvLambda = [](auto&& xL) { return ddf3R(xL); };
 
-  Ikarus::NonLinearOperator nonLinOp(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(d));
+  Ikarus::NonLinearOperator nonLinOp(functions(fvLambda, dfvLambda, ddfvLambda), parameter(d));
   t.check(Dune::FloatCmp::eq(nonLinOp.value(), fvLambda(d))) << "Nonlinear operator and lambda have different value";
 
   t.check(isApproxSame(dfvLambda(d), nonLinOp.derivative(), 1e-15))
@@ -408,7 +408,7 @@ auto trustRegion5_RiemanianUnitSphereAndDispBlocked() {
   t.check(10 == h.rows());
   t.check(10 == h.cols());
 
-  Ikarus::NonLinearOperator nonLinOp(linearAlgebraFunctions(fvLambda, dfvLambda, ddfvLambda), parameter(mT));
+  Ikarus::NonLinearOperator nonLinOp(functions(fvLambda, dfvLambda, ddfvLambda), parameter(mT));
   t.check(Dune::FloatCmp::eq(nonLinOp.value(), fvLambda(mT)));
 
   t.check(isApproxSame(dfvLambda(mT), nonLinOp.derivative(), 1e-15));

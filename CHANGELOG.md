@@ -16,6 +16,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 - Added basic python bindings and infrastructure. Ikarus can now be downloaded via `pip install pyikarus` ([#157](https://github.com/ikarus-project/ikarus/pull/152))
 - Added result evaluators to post-process desired results ([#165](https://github.com/ikarus-project/ikarus/pull/165))
 - Added explicit calculation of scalars, vectors, and matrices for `NonLinearElastic` ([#160](https://github.com/ikarus-project/ikarus/pull/160))
+- Renamed Ikarus::linearAlgebraFunctions to Ikarus::functions ([#171](https://github.com/ikarus-project/ikarus/pull/171))
 
 ## Release v0.3 (Prometheus)
 

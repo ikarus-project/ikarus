@@ -153,7 +153,7 @@ namespace Ikarus {
       };
 
       auto Er    = E(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices).eval().template cast<ScalarType>();
-      auto nonOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(f, df), parameter(Er));
+      auto nonOp = Ikarus::NonLinearOperator(functions(f, df), parameter(Er));
       auto nr    = Ikarus::makeNewtonRaphson(
              nonOp, [](auto &r, auto &A) { return (A.inverse() * r).eval(); },
              [&](auto &Ex33, auto &Ecomps) {

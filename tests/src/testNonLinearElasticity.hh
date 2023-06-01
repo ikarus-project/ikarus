@@ -103,8 +103,8 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
     return sparseAssembler.getScalar(req);
   };
 
-  auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(energyFunction, residualFunction, KFunction),
-                                            parameter(d, lambda));
+  auto nonLinOp
+      = Ikarus::NonLinearOperator(functions(energyFunction, residualFunction, KFunction), parameter(d, lambda));
 
   const double gradTol = 1e-8;
 

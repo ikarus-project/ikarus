@@ -47,8 +47,7 @@ auto simple2DOperatorArcLengthTest() {
   auto fvLambda  = [&](auto&& D_, auto&& lambda_) { return residual(D_, lambda_); };
   auto dfvLambda = [&](auto&& D_, auto&& lambda_) { return stiffnessMatrix(D_, lambda_); };
 
-  auto nonLinOp
-      = Ikarus::NonLinearOperator(Ikarus::linearAlgebraFunctions(fvLambda, dfvLambda), Ikarus::parameter(D, lambda));
+  auto nonLinOp = Ikarus::NonLinearOperator(Ikarus::functions(fvLambda, dfvLambda), Ikarus::parameter(D, lambda));
 
   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
 
@@ -79,8 +78,7 @@ auto simple2DOperatorArcLengthTestAsDefault() {
   auto fvLambda  = [&](auto&& D_, auto&& lambda_) { return residual(D_, lambda_); };
   auto dfvLambda = [&](auto&& D_, auto&& lambda_) { return stiffnessMatrix(D_, lambda_); };
 
-  auto nonLinOp
-      = Ikarus::NonLinearOperator(Ikarus::linearAlgebraFunctions(fvLambda, dfvLambda), Ikarus::parameter(D, lambda));
+  auto nonLinOp = Ikarus::NonLinearOperator(Ikarus::functions(fvLambda, dfvLambda), Ikarus::parameter(D, lambda));
 
   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
 
@@ -106,8 +104,7 @@ auto simple2DOperatorLoadControlTest() {
   auto fvLambda  = [&](auto&& D_, auto&& lambda_) { return residual(D_, lambda_); };
   auto dfvLambda = [&](auto&& D_, auto&& lambda_) { return stiffnessMatrix(D_, lambda_); };
 
-  auto nonLinOp
-      = Ikarus::NonLinearOperator(Ikarus::linearAlgebraFunctions(fvLambda, dfvLambda), Ikarus::parameter(D, lambda));
+  auto nonLinOp = Ikarus::NonLinearOperator(Ikarus::functions(fvLambda, dfvLambda), Ikarus::parameter(D, lambda));
 
   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
 
@@ -137,8 +134,7 @@ auto simple2DOperatorDisplacementControlTest() {
   auto fvLambda  = [&](auto&& D_, auto&& lambda_) { return residual(D_, lambda_); };
   auto dfvLambda = [&](auto&& D_, auto&& lambda_) { return stiffnessMatrix(D_, lambda_); };
 
-  auto nonLinOp
-      = Ikarus::NonLinearOperator(Ikarus::linearAlgebraFunctions(fvLambda, dfvLambda), Ikarus::parameter(D, lambda));
+  auto nonLinOp = Ikarus::NonLinearOperator(Ikarus::functions(fvLambda, dfvLambda), Ikarus::parameter(D, lambda));
 
   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
 

@@ -16,12 +16,12 @@ double x               = 13;
 auto fvLambda  = [&](auto&& x) { return f(x); };
 auto dfvLambda = [&](auto&& x) { return df(x); };
 
-auto nonLinOp = Ikarus::NonLinearOperator(linearAlgebraFunctions(fvLambda, dfvLambda), parameter(x));
+auto nonLinOp = Ikarus::NonLinearOperator(functions(fvLambda, dfvLambda), parameter(x));
 ```
 !!! note 
     It is assumed that the second function is the derivative of the first function, the third function is the derivative of the second function (2nd derivative of the first function), and so on.
 
-``linearAlgebraFunctions(...)`` and ``parameter(...)`` are helper functions. They are necessary to distinguish which argument is a function and which argument is a parameter.
+``functions(...)`` and ``parameter(...)`` are helper functions. They are necessary to distinguish which argument is a function and which argument is a parameter.
 
 ``nonLinOp`` provides the following features:
 ```cpp
@@ -39,7 +39,7 @@ auto subOperator<n,m,...>() // (11)!
 ```
 
 1. Evaluates all functions.
-2. Evaluates the n-th function in ``linearAlgebraFunctions(...)`` . Counting starts from 0, as always in C++.
+2. Evaluates the n-th function in ``functions(...)`` . Counting starts from 0, as always in C++.
 3. Returns the result of the function evaluation.
 4. Returns the result of the evaluation of the first derivative (if the function for the first derivative is passed to the nonlinear operator during construction).
 5. Returns the result of the evaluation of the second derivative (if the function for the second derivative is passed to the nonlinear operator during construction).
