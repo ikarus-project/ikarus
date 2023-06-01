@@ -274,7 +274,7 @@ namespace Ikarus {
       calculateVectorImpl<double>(par, force);
     }
 
-    const auto& getEASVariant() const { return easVariant_; }
+    const auto& easVariant() const { return easVariant_; }
     auto getNumberOfEASParameters() const {
       return std::visit(
           [&]<typename EAST>(const EAST& easFunction) {
