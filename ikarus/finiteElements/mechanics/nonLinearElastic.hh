@@ -22,6 +22,7 @@
 #include <ikarus/finiteElements/physicsHelper.hh>
 #include <ikarus/utils/eigenDuneTransformations.hh>
 #include <ikarus/utils/linearAlgebraHelper.hh>
+#include <ikarus/utils/observer/controlVTKWriter.hh>
 
 namespace Ikarus {
 

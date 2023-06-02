@@ -12,30 +12,24 @@
 
 #include <spdlog/spdlog.h>
 
-template <typename Basis>  // Check basis
+
+template <typename Basis, typename SolutionVectorType>  // Check basis
 class ControlSubsamplingVertexVTKWriter : public IObserver<ControlMessages> {
   static constexpr int components = Basis::LocalView::Tree::CHILDREN == 0 ? 1 : Basis::LocalView::Tree::CHILDREN;
 
 public:
-  ControlSubsamplingVertexVTKWriter(const Basis& p_basis, const Eigen::VectorXd& sol, int refinementLevels = 0)
-      : basis{&p_basis}, vtkWriter(p_basis.gridView(), Dune::refinementLevels(refinementLevels)), solution{&sol} {}
+  template< typename FunctionType>
+  ControlSubsamplingVertexVTKWriter(const Basis& p_basis, const SolutionVectorType& sol,FunctionType&& p_func, int refinementLevels = 0)
+      : basis{&p_basis}, vtkWriter(p_basis.gridView(), Dune::refinementLevels(refinementLevels)), solution{&sol}, func{p_func} {}
 
-  auto setFieldInfo(std::string&& name, Dune::VTK::FieldInfo::Type type, std::size_t size,
-                    Dune::VTK::Precision prec = Dune::VTK::Precision::float32) {
-    fieldInfo      = Dune::VTK::FieldInfo(std::move(name), type, size, prec);
-    isFieldInfoSet = true;
-  }
 
   auto setFileNamePrefix(std::string&& p_name) { prefixString = std::move(p_name); }
 
   void updateImpl(ControlMessages message) override {
-    assert(isFieldInfoSet && "You need to call setFieldInfo first!");
     switch (message) {
       case ControlMessages::SOLUTION_CHANGED: {
-        auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, components>>(*basis,
-                                                                                                            *solution);
-        vtkWriter.addVertexData(disp, fieldInfo);
-        vtkWriter.write(prefixString + std::to_string(step++));
+        func(vtkWriter, *basis, *solution, prefixString,step);
+
       } break;
       default:
         break;  //   default: do nothing when notified
@@ -48,10 +42,10 @@ public:
 
 private:
   Basis const* basis;
-  Dune::SubsamplingVTKWriter<typename Basis::GridView> vtkWriter;
-  Eigen::VectorXd const* solution;
+  using VtkWriter = Dune::SubsamplingVTKWriter<typename Basis::GridView>;
+  VtkWriter vtkWriter;
+  SolutionVectorType const* solution;
   int step{0};
-  Dune::VTK::FieldInfo fieldInfo{"Default", Dune::VTK::FieldInfo::Type::scalar, 1};
+  std::function<void(VtkWriter&,const Basis&, const SolutionVectorType&, std::string&,int)> func;
   std::string prefixString{};
-  bool isFieldInfoSet{false};
 };

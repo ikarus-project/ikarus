@@ -9,6 +9,8 @@ namespace Ikarus {
   struct StVenantKirchhoff : public Material<StVenantKirchhoff<ScalarType_>> {
     std::string nameImpl() const { return "StVenantKirchhoff"; }
 
+    auto getMaterialParameters(){return materialParameter;}
+
     explicit StVenantKirchhoff(const LamesFirstParameterAndShearModulus& mpt) : materialParameter{mpt} {}
     using ScalarType                    = ScalarType_;
     static constexpr int worldDimension = 3;

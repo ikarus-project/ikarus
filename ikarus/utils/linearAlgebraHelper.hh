@@ -128,7 +128,7 @@ namespace Ikarus {
     return a += (-b);
   }
 
-  /* Enables the += operator for Dune::MultiTypeBlockVector += Eigen::Vector */
+  /* Enables the += operator for Dune::TupleVector += Eigen::Vector */
   template <typename... Types, typename Derived>
   Dune::TupleVector<Types...>& operator+=(Dune::TupleVector<Types...>& a, const Eigen::MatrixBase<Derived>& b) {
     using namespace Dune::Indices;
