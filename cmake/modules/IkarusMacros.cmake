@@ -14,3 +14,6 @@ include(AddEigenFlags)
 
 find_package(autodiff REQUIRED)
 include(AddAutoDiffFlags)
+
+find_package(Spectra REQUIRED)
+include(AddSpectraFlags)
