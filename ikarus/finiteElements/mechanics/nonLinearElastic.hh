@@ -52,10 +52,18 @@ namespace Ikarus {
       const auto& fe    = first_child.finiteElement();
       numberOfNodes     = fe.size();
       dispAtNodes.resize(fe.size());
-      const int order = 2 * (this->localView().tree().child(0).finiteElement().localBasis().order());
+      order = 2 * (this->localView().tree().child(0).finiteElement().localBasis().order());
       localBasis      = Dune::CachedLocalBasis(this->localView().tree().child(0).finiteElement().localBasis());
-      localBasis.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(this->localView().element().type(), order),
-                      Dune::bindDerivatives(0, 1));
+      if constexpr (requires { this->localView().element().impl().getQuadratureRule(order); })
+        if (this->localView().element().impl().isTrimmed())
+          localBasis.bind(this->localView().element().impl().getQuadratureRule(order), Dune::bindDerivatives(0, 1));
+        else
+          localBasis.bind(Dune::QuadratureRules<double, myDim>::rule(this->localView().element().type(), order),
+                          Dune::bindDerivatives(0, 1));
+      else
+        localBasis.bind(Dune::QuadratureRules<double, myDim>::rule(this->localView().element().type(), order),
+                        Dune::bindDerivatives(0, 1));
+
       if constexpr (!std::is_same_v<VolumeLoad, LoadDefault>) volumeLoad = p_volumeLoad;
       if constexpr (!std::is_same_v<NeumannBoundaryLoad, LoadDefault>) neumannBoundaryLoad = p_neumannBoundaryLoad;
 
@@ -182,6 +190,7 @@ namespace Ikarus {
     Material mat;
     mutable Dune::BlockVector<Dune::RealTuple<double, Traits::dimension>> dispAtNodes;
     size_t numberOfNodes{0};
+    int order{};
 
   protected:
     template <typename ScalarType>
@@ -209,7 +218,7 @@ namespace Ikarus {
         }
       }
 
-      // line or surface loads, i.e. neumann boundary
+      // line or surface loads, i.e., neumann boundary
       if (not neumannBoundary and not neumannBoundaryLoad) return energy;
 
       const auto& element = this->localView().element();
@@ -217,7 +226,7 @@ namespace Ikarus {
         if (not neumannBoundary or not neumannBoundary->contains(intersection)) continue;
 
         const auto& quadLine
-            = Dune::QuadratureRules<double, Traits::mydim - 1>::rule(intersection.type(), uFunction.order());
+            = Dune::QuadratureRules<double, Traits::mydim - 1>::rule(intersection.type(), order);
 
         for (const auto& curQuad : quadLine) {
           // Local position of the quadrature point
@@ -272,7 +281,7 @@ namespace Ikarus {
         }
       }
 
-      // External forces, boundary forces, i.e. at the Neumann boundary
+      // External forces, boundary forces, i.e., at the Neumann boundary
       if (not neumannBoundary and not neumannBoundaryLoad) return;
 
       const auto u        = getDisplacementFunction(par, dx);
@@ -281,7 +290,7 @@ namespace Ikarus {
         if (not neumannBoundary->contains(intersection)) continue;
 
         // Integration rule along the boundary
-        const auto& quadLine = Dune::QuadratureRules<double, myDim - 1>::rule(intersection.type(), u.order());
+        const auto& quadLine = Dune::QuadratureRules<double, myDim - 1>::rule(intersection.type(), order);
 
         for (const auto& curQuad : quadLine) {
           const Dune::FieldVector<double, myDim>& quadPos = intersection.geometryInInside().global(curQuad.position());
