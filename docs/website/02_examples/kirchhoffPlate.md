@@ -77,17 +77,17 @@ Grid grid(patchData); // (14)!
 7. Number of control points in either direction.
 8. Creation of the control net.
 9. Binding the `knotSpans` to a particular NURBS `patchData`.
-10. The polynomial degree for the basis in either directions. It can also be calculated from the `knotSpans`.
+10. The polynomial degree for the basis in either direction. It can also be calculated from the `knotSpans`.
 11. Binding the `controlNet` to a particular NURBS `patchData`.
 12. Elevating the polynomial degree for the `patchData` in $x$-direction (`0`) by 1.
 13. Elevating the polynomial degree for the `patchData` in $y$-direction (`1`) by 1.
 14. Creating the grid object from the patch data
 
 In order to obtain the convergence plots, the system is solved five times, with the refinement level 
-increasing by 1 each time using the command `#!cpp grid.globalRefine(1);`. The NURBS basis can be obtained directly from the 
-NURBS grid using the `getPreBasis()` function, as shown below:
+increasing by 1 each time using the command `#!cpp grid.globalRefine(1);`.
+The NURBS basis can be obtained from the freestanding functions `nurbs()`, as shown below:
 ```cpp
-auto basis = Ikarus::makeBasis(gridView, gridView.impl().getPreBasis());
+auto basis = Ikarus::makeBasis(gridView, nurbs());
 ```
 This is followed by specifying the Dirichlet boundary conditions, creating the finite elements and the assembler, 
 solving the system of equations, and post-processing using Paraview as mentioned in the previous examples.
@@ -153,6 +153,6 @@ l2Evcector.push_back(l2_error);
 ## Takeaways
 
 - NURBS grids can be created using the `dune-iga` module.
-- The basis for the corresponding NURBS grid can be obtained using the `getPreBasis()` function.
+- The basis for the corresponding NURBS grid can be obtained using the `nurbs()` function.
 - The Kirchhoff plate element can be easily implemented by evaluating the energy and using automatic differentiation methods.
 - $L^2$-error can be evaluated to perform convergence studies.

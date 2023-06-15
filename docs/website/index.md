@@ -4,6 +4,9 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 -->
 
 # Welcome to the documentation of Ikarus
+
+![](auxiliaryImages/BigLogo.png){ align=right width=400 }
+
 Ikarus is a C++-based library built within the finite element architecture. It originated at the [Institute for Structural Mechanics](https://www.ibb.uni-stuttgart.de/en/) at the University of Stuttgart.
 
 This project tries to provide an easy-to-read and an easy-to-use finite element framework.

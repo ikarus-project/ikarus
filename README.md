@@ -4,6 +4,10 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 -->
 # Ikarus
 
+<img align="left" src="docs/website/auxiliaryImages/BigLogo.png" width="800">  
+
+<br/><br/>    
+
 [![Debian](https://github.com/ikarus-project/ikarus/actions/workflows/debian.yml/badge.svg)](https://github.com/ikarus-project/ikarus/actions/workflows/debian.yml)
 [![codecov](https://codecov.io/gh/ikarus-project/ikarus/branch/main/graph/badge.svg?token=zJgggitPMc)](https://codecov.io/gh/ikarus-project/ikarus)
 [![CodeStyle](https://github.com/ikarus-project/ikarus/actions/workflows/style.yml/badge.svg)](https://github.com/ikarus-project/ikarus/actions/workflows/style.yml)

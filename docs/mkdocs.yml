@@ -18,8 +18,8 @@ copyright: 'Copyright &copy; 2021 The Ikarus Developers'
 theme:
   name: material
   custom_dir: overrides
-  logo: auxiliaryImages/logo_white.svg
-  favicon: auxiliaryImages/logo_blue.svg
+  logo: auxiliaryImages/logo_white.png
+  favicon: auxiliaryImages/logo_blue.png
   features:
     - navigation.instant
     - content.code.annotate
