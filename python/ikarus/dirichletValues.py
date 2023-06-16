@@ -11,6 +11,7 @@ def dirichletValues(basis):
     element_type = f"Ikarus::DirichletValues<{basis.cppTypeName},Eigen::VectorX<bool>>"
 
     includes = []
+    includes += basis._includes
     includes += ["ikarus/assembler/simpleAssemblers.hh"]
     includes += ["ikarus/python/dirichletValues/dirichletValues.hh"]
     moduleName = "SparseFlatAssembler_" + hashIt(element_type)
