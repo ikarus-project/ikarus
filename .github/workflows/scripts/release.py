@@ -58,8 +58,10 @@ def changeLine(filename: str, old_string: str, new_string: str):
 def update_all_versions(version_override=None):
     """Update all version numbers in local files"""
     old_version_number = read_old_version()
-    if version_override is None or version_override== "dev":
+    if  version_override== "dev":
         new_version_number = bump_patch_number(old_version_number)
+    elif version_override is None:
+        new_version_number = old_version_number
     else:
         new_version_number = version_override
 
