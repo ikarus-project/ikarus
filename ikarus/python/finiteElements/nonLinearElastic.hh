@@ -16,6 +16,7 @@
 
 #include <ikarus/finiteElements/feRequirements.hh>
 #include <ikarus/utils/basis.hh>
+#include <ikarus/finiteElements/mechanics/nonLinearElastic.hh>
 
 namespace Ikarus::Python {
 

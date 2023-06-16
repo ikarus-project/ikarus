@@ -5,7 +5,7 @@ import setpath
 
 setpath.set_path()
 import ikarus as iks
-import ikarus.finite_elements
+import ikarus.finiteElements
 import ikarus.utils
 import ikarus.assembler
 import ikarus.dirichletValues
@@ -57,7 +57,7 @@ if __name__ == "__main__":
     fes = []
     for e in grid.elements:
         fes.append(
-            iks.finite_elements.nonLinearElasticElement(
+            iks.finiteElements.NonLinearElastic(
                 basisLagrange1, e, psNH, volumeLoad, boundaryPatch, neumannLoad
             )
         )

@@ -5,7 +5,7 @@ import setpath
 
 setpath.set_path()
 import ikarus as iks
-import ikarus.finite_elements
+import ikarus.finiteElements
 import ikarus.utils
 import ikarus.assembler
 import ikarus.dirichletValues
@@ -73,7 +73,7 @@ if __name__ == "__main__":
     # the following should throw
     try:
         for e in grid.elements:
-            iks.finite_elements.linearElasticElement(
+            iks.finiteElements.LinearElastic(
                 basisLagrange1, e, 1000, 0.2, volumeLoad, boundaryPatch
             )
         assert False
@@ -82,7 +82,7 @@ if __name__ == "__main__":
 
     for e in grid.elements:
         fes.append(
-            iks.finite_elements.linearElasticElement(
+            iks.finiteElements.LinearElastic(
                 basisLagrange1, e, 1000, 0.2, volumeLoad, boundaryPatch, neumannLoad
             )
         )

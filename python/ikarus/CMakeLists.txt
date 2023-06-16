@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 add_subdirectory(assembler)
-add_subdirectory(finite_elements)
+add_subdirectory(finiteElements)
 add_subdirectory(utils)
 
 add_python_targets(ikarus __init__ dirichletValues materials basis generator)
