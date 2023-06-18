@@ -17,6 +17,7 @@
 #include <ikarus/finiteElements/feBases/autodiffFE.hh>
 #include <ikarus/finiteElements/feBases/powerBasisFE.hh>
 #include <ikarus/finiteElements/feRequirements.hh>
+#include <ikarus/io/resultFunction.hh>
 #include <ikarus/utils/duneUtilities.hh>
 #include <ikarus/utils/eigenDuneTransformations.hh>
 #include <ikarus/utils/functionSanityChecks.hh>
@@ -215,7 +216,11 @@ template <typename NonLinearOperator, typename FiniteElement>
                                 .insertGlobalSolution(Ikarus::FESolutions::displacement, displacement)
                                 .addResultRequest(ResultType::linearStress);
 
-  ResultTypeMap<double> result;
+  auto resultRequirements2 = Ikarus::ResultRequirements<>()
+                                 .insertGlobalSolution(Ikarus::FESolutions::displacement, displacement)
+                                 .addResultRequest(ResultType::PK2Stress);
+
+  ResultTypeMap<double> result, result2;
   auto gridView        = fe.localView().globalBasis().gridView();
   auto scalarBasis     = makeConstSharedBasis(gridView, lagrangeDG<1>());
   auto localScalarView = scalarBasis->localView();
@@ -229,6 +234,11 @@ template <typename NonLinearOperator, typename FiniteElement>
     const auto fineKey                        = fe2.localCoefficients().localKey(c);
     const auto nodalPositionInChildCoordinate = referenceElement.position(fineKey.subEntity(), fineKey.codim());
     fe.calculateAt(resultRequirements, nodalPositionInChildCoordinate, result);
+    try {
+      fe.calculateAt(resultRequirements2, nodalPositionInChildCoordinate, result2);
+      t.check(false) << "result2 should have failed for requesting PK2Stress here";
+    } catch (const Dune::NotImplemented&) {
+    }
     Eigen::Vector3d computedResult = result.getResult(ResultType::linearStress);
     const auto nodeIndex           = localScalarView.index(localScalarView.tree().localIndex(c))[0];
     stressVector[nodeIndex]        = toDune(computedResult);
