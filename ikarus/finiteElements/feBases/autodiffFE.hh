@@ -23,7 +23,7 @@ namespace Ikarus {
     using Element           = typename LocalView::Element;
     using FERequirementType = FERequirementType_;
 
-    void calculateMatrix(const FERequirementType& par, typename Traits::template MatrixType<>& h) const {
+    void calculateMatrix(const FERequirementType& par, typename Traits::template MatrixType<> h) const {
       if constexpr (requires { RealElement::calculateMatrix(par, h); } and not forceAutoDiff) {
         RealElement::calculateMatrix(par, h);
       } else if constexpr (requires {
@@ -58,7 +58,7 @@ namespace Ikarus {
                       "chosen element.");
     }
 
-    inline void calculateVector(const FERequirementType& par, typename Traits::template VectorType<>& g) const {
+    inline void calculateVector(const FERequirementType& par, typename Traits::template VectorType<> g) const {
       if constexpr (requires {
                       this->template calculateVectorImpl<double>(
                           par, std::declval<typename Traits::template VectorType<double>>(),

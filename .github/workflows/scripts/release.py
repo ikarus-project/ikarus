@@ -4,6 +4,7 @@
 import os
 from datetime import datetime
 
+
 def read_old_version():
     script_dir = os.path.dirname(os.path.realpath("__file__"))
     rel_path = "dune.module"
@@ -47,29 +48,29 @@ def changeLine(filename: str, old_string: str, new_string: str):
             if line.startswith(old_string):
                 with open(filename, "w") as fw:
                     print(
-                        'Changing the line "{line}"\n to "{new_string}" in {filename}'.format(**locals())
+                        'Changing the line "{line}"\n to "{new_string}" in {filename}'.format(
+                            **locals()
+                        )
                     )
                     s = s.replace(line, new_string)
                     fw.write(s)
 
 
-
-
 def update_all_versions(version_override=None):
     """Update all version numbers in local files"""
     old_version_number = read_old_version()
-    if  version_override== "dev":
+    if version_override is None or version_override == "dev":
         new_version_number = bump_patch_number(old_version_number)
     elif version_override is None:
         new_version_number = old_version_number
     else:
         new_version_number = version_override
 
-    if version_override== "dev":
-        new_version_number += '.dev' + datetime.now().strftime('%Y%m%d%H%M%S')
+    if version_override == "dev":
+        new_version_number += ".dev" + datetime.now().strftime("%Y%m%d%H%M%S")
 
     print(f"Bump version from {old_version_number} to {new_version_number}")
-    if version_override!= "dev":
+    if version_override != "dev":
         inplace_change(
             "dune.module",
             f"Version: {old_version_number}",
@@ -83,7 +84,7 @@ def update_all_versions(version_override=None):
 
     changeLine(
         "setup.py",
-        f'ikarusVersion =',
+        f"ikarusVersion =",
         f'ikarusVersion = "{new_version_number}"',
     )
 

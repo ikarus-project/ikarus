@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include <config.h>
 
@@ -12,6 +12,7 @@
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/subspacebasis.hh>
+#include <dune/iga/nurbsbasis.hh>
 
 #include "spdlog/spdlog.h"
 
@@ -30,22 +31,20 @@
 #include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
-#include <dune/iga/nurbsbasis.hh>
 
 using Dune::TestSuite;
 
 auto NonLinearElasticityLoadControlNRandTRforKLShell() {
-  TestSuite t("NonLinearElasticityLoadControlNRandTRforKLShell " );
+  TestSuite t("NonLinearElasticityLoadControlNRandTRforKLShell ");
   constexpr auto dimworld        = 3;
   const std::array<int, 2> order = {1, 1};
 
-  const std::array<std::vector<double>, 2> knotSpans = {{{0, 0, 1, 1}, {0, 0,  1, 1}}};
+  const std::array<std::vector<double>, 2> knotSpans = {{{0, 0, 1, 1}, {0, 0, 1, 1}}};
 
   using ControlPoint = Dune::IGA::NURBSPatchData<2, dimworld>::ControlPointType;
 
   const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {0, 0,0}, .w = 1},  {.p = {10, 0,0}, .w = 1}},
-         {{.p = {0, 2,0}, .w = 1}, {.p = {10, 2,0}, .w = 1}}   };
+      = {{{.p = {0, 0, 0}, .w = 1}, {.p = {10, 0, 0}, .w = 1}}, {{.p = {0, 2, 0}, .w = 1}, {.p = {10, 2, 0}, .w = 1}}};
 
   std::array<int, 2> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
 
@@ -58,21 +57,22 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   patchData.controlPoints = controlNet;
   for (int i = 0; i < 2; ++i)
     patchData = degreeElevate(patchData, i, 1);
-  auto grid               = std::make_shared<Grid>(patchData);
+
+  auto grid = std::make_shared<Grid>(patchData);
   grid->globalRefine(2);
   auto gridView = grid->leafGridView();
 
   using GridView = decltype(gridView);
   using namespace Ikarus;
   using namespace Dune::Functions::BasisFactory;
-  const double E= 1000;
-  const double nu= 0.0;
-  const double thickness= 0.1;
-  auto basis      = Ikarus::makeBasis(gridView, power<3>(nurbs(), FlatInterleaved()));
-  auto volumeLoad = [thickness]([[maybe_unused]] auto& globalCoord, auto& lamb) {
+  const double E         = 1000;
+  const double nu        = 0.0;
+  const double thickness = 0.1;
+  auto basis             = Ikarus::makeBasis(gridView, power<3>(nurbs(), FlatInterleaved()));
+  auto volumeLoad        = [thickness]([[maybe_unused]] auto& globalCoord, auto& lamb) {
     Eigen::Vector3d fext;
     fext.setZero();
-    fext[2] = 2*Dune::power(thickness,3)*lamb;
+    fext[2] = 2 * Dune::power(thickness, 3) * lamb/10;
     return fext;
   };
 
@@ -80,26 +80,29 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   std::vector<ElementType> fes;
 
   for (auto& element : elements(gridView))
-    fes.emplace_back(basis, element, E,nu,thickness, volumeLoad);
+    fes.emplace_back(basis, element, E, nu, thickness, volumeLoad);
 
   auto basisP = std::make_shared<const decltype(basis)>(basis);
   Ikarus::DirichletValues dirichletValues(basisP->flat());
 
   dirichletValues.fixBoundaryDOFs([&](auto& dirichletFlags, auto&& localIndex, auto&& localView, auto&& intersection) {
-    if (std::abs(intersection.geometry().center()[0]) < 1e-8  )
-      dirichletFlags[localView.index(localIndex)] = true;
+    if (std::abs(intersection.geometry().center()[0]) < 1e-8) dirichletFlags[localView.index(localIndex)] = true;
   });
 
   dirichletValues.fixDOFs([&](auto& basis, auto&& dirichletFlags) {
-    Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basis,2),[&]( auto&& localIndex, auto&& localView, auto&& intersection) {
-    if (std::abs(intersection.geometry().center()[0]) > 10- 1e-8 )
-      dirichletFlags[localView.index(localIndex)] = true;});
+    Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basis, 2),
+                                        [&](auto&& localIndex, auto&& localView, auto&& intersection) {
+                                          if (std::abs(intersection.geometry().center()[0]) > 10 - 1e-8)
+                                            dirichletFlags[localView.index(localIndex)] = true;
+                                        });
   });
 
   dirichletValues.fixDOFs([&](auto& basis, auto&& dirichletFlags) {
-    Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basis,1),[&]( auto&& localIndex, auto&& localView, auto&& intersection) {
-      if (std::abs(intersection.geometry().center()[0]) > 10- 1e-8 )
-        dirichletFlags[localView.index(localIndex)] = true;});
+    Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basis, 1),
+                                        [&](auto&& localIndex, auto&& localView, auto&& intersection) {
+                                          if (std::abs(intersection.geometry().center()[0]) > 10 - 1e-8)
+                                            dirichletFlags[localView.index(localIndex)] = true;
+                                        });
   });
 
   auto sparseAssembler = SparseFlatAssembler(fes, dirichletValues);
@@ -147,19 +150,19 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   vtkWriter->setFileNamePrefix("Test2DSolid");
   vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 3);
 
-  auto lc = Ikarus::LoadControl(tr, 10, {0, 1});
+  auto lc = Ikarus::LoadControl(tr, 1, {0, 1});
   lc.subscribeAll(vtkWriter);
   const auto controlInfo = lc.run();
 
-  std::cout<<std::setprecision(16)<< std::ranges::max(d)<<std::endl;
-  t.check(Dune::FloatCmp::eq(2.383202011258829
-                             ,std::ranges::max(d)))<<std::setprecision(16)<<"The maximum displacement is "<<std::ranges::max(d);
+  std::cout << std::setprecision(16) << std::ranges::max(d) << std::endl;
+  t.check(Dune::FloatCmp::eq(0.2957393081676369, std::ranges::max(d)))
+      << std::setprecision(16) << "The maximum displacement is " << std::ranges::max(d);
   return t;
 }
 
-
-int main(int argc, char **argv) { Ikarus::init(argc, argv);
-//  const double E             = materialParameters.get<double>("E");
-//  const double nu            = materialParameters.get<double>("nu");
+int main(int argc, char** argv) {
+  Ikarus::init(argc, argv);
+  //  const double E             = materialParameters.get<double>("E");
+  //  const double nu            = materialParameters.get<double>("nu");
   NonLinearElasticityLoadControlNRandTRforKLShell();
 }

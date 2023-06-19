@@ -124,7 +124,7 @@ if __name__ == "__main__":
         hess=hess,
         options={"disp": True},
     )
-    resultd4 = sp.optimize.root(        gradient, jac=hess, x0=dRed, tol=1e-10    )
+    resultd4 = sp.optimize.root(gradient, jac=hess, x0=dRed, tol=1e-10)
 
     np.set_printoptions(precision=3)
 

@@ -39,7 +39,7 @@ namespace Ikarus {
       for (int j = 0; j < dim; ++j)
         for (int k = 0; k < dim; ++k)
           for (int l = 0; l < dim; ++l)
-            idTensor(i, j, k, l) = 0.5 * (A(i,k) * B(j, l) + A(i,l) * B(j,k));
+            idTensor(i, j, k, l) = 0.5 * (A(i, k) * B(j, l) + A(i, l) * B(j, k));
     return idTensor;
   }
 
