@@ -67,12 +67,12 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   using namespace Dune::Functions::BasisFactory;
   const double E= 1000;
   const double nu= 0.0;
-  const double thickness= 1;
+  const double thickness= 0.1;
   auto basis      = Ikarus::makeBasis(gridView, power<3>(nurbs(), FlatInterleaved()));
   auto volumeLoad = [thickness]([[maybe_unused]] auto& globalCoord, auto& lamb) {
     Eigen::Vector3d fext;
     fext.setZero();
-    fext[2] = 2*thickness*lamb;
+    fext[2] = 2*Dune::power(thickness,3)*lamb;
     return fext;
   };
 
@@ -151,6 +151,9 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   lc.subscribeAll(vtkWriter);
   const auto controlInfo = lc.run();
 
+  std::cout<<std::setprecision(16)<< std::ranges::max(d)<<std::endl;
+  t.check(Dune::FloatCmp::eq(2.383202011258829
+                             ,std::ranges::max(d)))<<std::setprecision(16)<<"The maximum displacement is "<<std::ranges::max(d);
   return t;
 }
 

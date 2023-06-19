@@ -25,6 +25,34 @@
 
 namespace Ikarus {
 
+  template <class ScalarType>
+  ScalarType energyHelper(const Eigen::Vector<ScalarType,3>& epsV,const auto& Aconv,double E, double nu)
+  {
+    const double lambda= E*nu/((1.0+nu)*(1.0-2.0*nu));
+    const double mu =E/(2.0*(1.0+nu));
+    const double lambdbar= 2.0*lambda*mu/(lambda+2.0*mu);
+    Eigen::TensorFixedSize<double, Eigen::Sizes<3, 3, 3, 3>> moduli;
+    const auto AconvT = TensorCast(Aconv, std::array<Eigen::Index, 2>({3, 3}));
+    moduli = lambdbar * dyadic(AconvT,AconvT).eval()+
+             + 2* mu * symmetricFourthOrder<double>(Aconv,Aconv);
+
+    auto C= toVoigt(moduli);
+//    auto C55= staticCondensation(C,std::array<size_t, 1>({2}));
+    auto C33= C({0,1,5},{0,1,5}).eval();
+
+//    std::cout<<"moduli"<<std::endl;
+//    std::cout<<moduli<<std::endl;
+//    std::cout<<"C"<<std::endl;
+//    std::cout<<C<<std::endl;
+//    std::cout<<"C55"<<std::endl;
+//    std::cout<<C55<<std::endl;
+//    std::cout<<"C33"<<std::endl;
+//    std::cout<<C33<<std::endl;
+
+
+    return 0.5*epsV.dot(C33*epsV);
+  }
+
   auto toLocalCartesian(const auto& A,const auto& Jcontravariant,const auto& Jloc)
   {
 
@@ -170,64 +198,37 @@ namespace Ikarus {
         const auto [X,Jd,Hd] = geo.impl().zeroFirstAndSecondDerivativeOfPosition(gp.position());
         const auto J = toEigen(Jd);
         const auto H = toEigen(Hd);
-        const auto A1d1 = H.row(0);
-        const auto A2d2 =  H.row(1);
-        const auto A1d2 = H.row(2);
         const auto A1 = J.row(0);
         const auto A2 = J.row(1);
-        const Eigen::Vector3<double> A3 = (A1.cross(A2)).normalized();
-        const auto B2 = toEigen(geo.impl().secondFundamentalForm(gp.position()));
+//        const Eigen::Vector3<double> A3 =  (J.row(0).cross(J.row(1))).normalized();
         const Eigen::Matrix<double,2,2> A = J*J.transpose();
         const Eigen::Matrix<ScalarType,3,2> gradu = toEigen(uFunction.evaluateDerivative(gpIndex, wrt(spatialAll,Dune::on(DerivativeDirections::referenceElement))));
-        const auto ud1 = gradu.col(0);
-        const auto ud2 = gradu.col(1);
-        const Eigen::Vector3<ScalarType> a1 = A1.transpose()+ud1;
-        const Eigen::Vector3<ScalarType> a2 = A2.transpose()+ud2;
-        const Eigen::Vector3<ScalarType> a3 = (a1.cross(a2)).normalized();
+        const Eigen::Matrix<ScalarType,2,3> j = J + gradu.transpose();
+        const Eigen::Matrix<ScalarType,2,2> a = j*j.transpose();
+
+        const Eigen::Vector3<ScalarType> a3 = (j.row(0).cross(j.row(1))).normalized();
 
         const auto& Ndd= localBasis.evaluateSecondDerivatives(gpIndex);
         const auto cps = geo.impl().controlPoints().directGetAll();
+        const auto uasMatrix = Dune::viewAsEigenMatrixAsDynFixed(uNodes);
 
-//        const h = H +
-        Eigen::Vector3<ScalarType> ad1d1=A1d1;
-        Eigen::Vector3<ScalarType> ad2d2=A2d2;
-        Eigen::Vector3<ScalarType> ad1d2=A1d2;
-        Eigen::Vector3<double> Ad1d1;
-        Eigen::Vector3<double> Ad2d2;
-        Eigen::Vector3<double> Ad1d2;
-        Ad1d1.setZero();
-        Ad2d2.setZero();
-        Ad1d2.setZero();
-        for (int i = 0; i < numberOfNodes; ++i) {
-          ad1d1+=Ndd.col(0)[i]*uNodes[i].getValue();
-          Ad1d1+=Ndd.col(0)[i]*toEigen(cps[i]);
-          ad2d2+=Ndd.col(1)[i]*uNodes[i].getValue();
-          Ad2d2+=Ndd.col(1)[i]*toEigen(cps[i]);
-          ad1d2+=Ndd.col(2)[i]*uNodes[i].getValue();
-          Ad1d2+=Ndd.col(2)[i]*toEigen(cps[i]);
-        }
+        const auto h = H + Ndd.transpose().template cast<ScalarType>()*uasMatrix;
+        Eigen::Vector<ScalarType,3> bV=h*a3;
+        bV(2)*=2;
 
-        Eigen::Matrix<ScalarType,2,2> b;
-        b<< ad1d1.dot(a3),ad1d2.dot(a3),
-            ad1d2.dot(a3),ad2d2.dot(a3);
 
-        Eigen::Matrix<double,2,2> B;
-        B<< Ad1d1.dot(A3),Ad1d2.dot(A3),
-            Ad1d2.dot(A3),Ad2d2.dot(A3);
-        assert(B2.isApprox(B));
-        Eigen::Matrix<ScalarType,2,2> a;
-        a<<a1.squaredNorm(), a1.dot(a2),
-            a2.dot(a1),a2.squaredNorm();
-        const auto JcontraInv= calculateContravariantBaseVectors(J,A3);
-        const Eigen::Matrix<double,2,3> Jloc = Dune::orthonormalizeMatrixColumns(J.transpose()).transpose();
-        const Eigen::Matrix<double,2,2> id =J*JcontraInv.transpose();
-        assert(Dune::FloatCmp::eq(std::abs(id(0,0)),1.0));
-        assert(Dune::FloatCmp::eq(std::abs(id(1,1)),1.0));
-        assert(Dune::FloatCmp::lt(std::abs(id(1,0)),1e-8));
-        const auto epsV= toVoigt((0.5*(toLocalCartesian(a-A,JcontraInv,Jloc))).eval());
-        const auto kappaV= toVoigt(toLocalCartesian(-b +B,JcontraInv,Jloc).eval());
+        Eigen::Matrix<double,3,3> G;
+        G.setZero();
+        G.block<2,2>(0,0)= A;
+        G(2,2)=1;
+        const auto GInv= G.inverse().eval();
 
-        energy += 0.5*(epsV.dot(Cmat*epsV)*thickness_+kappaV.dot(Cmat*kappaV)*Dune::power(thickness_,3)/12.0) * geo.integrationElement(gp.position()) * gp.weight();
+        const auto epsV= toVoigt((0.5*(a-A)).eval()).eval();
+        const auto BV = toVoigt(toEigen(geo.impl().secondFundamentalForm(gp.position())));
+        const auto kappaV= (BV-bV).eval();
+        const ScalarType membraneEnergy = energyHelper(epsV,GInv,emod_,nu_)*thickness_;
+        const ScalarType bendingEnergy = energyHelper(kappaV,GInv,emod_,nu_)*Dune::power(thickness_,3)/12.0;
+        energy += (membraneEnergy+bendingEnergy) * geo.integrationElement(gp.position()) * gp.weight();
       }
 
       if (volumeLoad) {
