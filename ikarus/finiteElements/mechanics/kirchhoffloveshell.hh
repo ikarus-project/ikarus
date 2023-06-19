@@ -33,41 +33,12 @@ namespace Ikarus {
     const double lambdbar= 2.0*lambda*mu/(lambda+2.0*mu);
     Eigen::TensorFixedSize<double, Eigen::Sizes<3, 3, 3, 3>> moduli;
     const auto AconvT = TensorCast(Aconv, std::array<Eigen::Index, 2>({3, 3}));
-    moduli = lambdbar * dyadic(AconvT,AconvT).eval()+
-             + 2* mu * symmetricFourthOrder<double>(Aconv,Aconv);
+    moduli = lambdbar * dyadic(AconvT,AconvT).eval() + 2* mu * symmetricFourthOrder<double>(Aconv,Aconv);
 
     auto C= toVoigt(moduli);
-//    auto C55= staticCondensation(C,std::array<size_t, 1>({2}));
     auto C33= C({0,1,5},{0,1,5}).eval();
 
-//    std::cout<<"moduli"<<std::endl;
-//    std::cout<<moduli<<std::endl;
-//    std::cout<<"C"<<std::endl;
-//    std::cout<<C<<std::endl;
-//    std::cout<<"C55"<<std::endl;
-//    std::cout<<C55<<std::endl;
-//    std::cout<<"C33"<<std::endl;
-//    std::cout<<C33<<std::endl;
-
-
     return 0.5*epsV.dot(C33*epsV);
-  }
-
-  auto toLocalCartesian(const auto& A,const auto& Jcontravariant,const auto& Jloc)
-  {
-
-    auto factor= (Jloc*Jcontravariant.transpose()).eval();
-    auto Aloc=(factor*A*factor.transpose()).eval();
-    return Aloc;
-  }
-
-  auto calculateContravariantBaseVectors(const auto&J,const auto& A3)
-  {
-    const auto det = J.row(0).dot(J.row(1).cross(A3));
-    auto Jcont= J;
-    Jcont.row(0)= J.row(1).cross(A3)/det;
-    Jcont.row(1)= A3.cross(J.row(0))/det;
-    return Jcont;
   }
 
   template <typename Basis_, typename FERequirements_ = FErequirements<>, bool useEigenRef = false>
@@ -113,11 +84,6 @@ namespace Ikarus {
 
       assert(((not p_neumannBoundary and not neumannBoundaryLoad) or (p_neumannBoundary and neumannBoundaryLoad))
              && "If you pass a Neumann boundary you should also pass the function for the Neumann load!");
-
-      Cmat<< 1,nu,0,
-          nu,1,0,
-          0,0,(1-nu)/2.0;
-      Cmat*= emod/(1-nu*nu);
     }
 
   public:
@@ -148,21 +114,7 @@ namespace Ikarus {
 
     void calculateAt(const ResultRequirementsType& req, const Dune::FieldVector<double, Traits::mydim>& local,
                      ResultTypeMap<double>& result) const {
-//      using namespace Dune::DerivativeDirections;
-//      using namespace Dune;
-//
-//      const auto uFunction = getDisplacementFunction(req.getFERequirements());
-//      const auto H         = uFunction.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
-//      const auto E         = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
-//      const auto EVoigt    = toVoigt(E);
-//      auto PK2             = mat.template stresses<StrainTags::greenLagrangian>(EVoigt);
-//
-//      typename ResultTypeMap<double>::ResultArray resultVector;
-//      if (req.isResultRequested(ResultType::PK2Stress)) {
-//        resultVector.resizeLike(PK2);
-//        resultVector = PK2;
-//        result.insertOrAssignResult(ResultType::PK2Stress, resultVector);
-//      }
+         DUNE_THROW(Dune::NotImplemented,"No results are implemented");
     }
 
     Dune::CachedLocalBasis<
@@ -176,7 +128,6 @@ namespace Ikarus {
         neumannBoundaryLoad;
     const BoundaryPatch<GridView>* neumannBoundary;
     mutable Dune::BlockVector<Dune::RealTuple<double, Traits::dimension>> dispAtNodes;
-    Eigen::Matrix<double,3,3> Cmat;
     double emod_;
     double nu_;
     double thickness_;
@@ -193,41 +144,33 @@ namespace Ikarus {
       const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
       const auto geo       = this->localView().element().geometry();
       ScalarType energy    = 0.0;
+      const auto uasMatrix = Dune::viewAsEigenMatrixAsDynFixed(uNodes);
 
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
         const auto [X,Jd,Hd] = geo.impl().zeroFirstAndSecondDerivativeOfPosition(gp.position());
         const auto J = toEigen(Jd);
         const auto H = toEigen(Hd);
-        const auto A1 = J.row(0);
-        const auto A2 = J.row(1);
-//        const Eigen::Vector3<double> A3 =  (J.row(0).cross(J.row(1))).normalized();
         const Eigen::Matrix<double,2,2> A = J*J.transpose();
         const Eigen::Matrix<ScalarType,3,2> gradu = toEigen(uFunction.evaluateDerivative(gpIndex, wrt(spatialAll,Dune::on(DerivativeDirections::referenceElement))));
         const Eigen::Matrix<ScalarType,2,3> j = J + gradu.transpose();
-        const Eigen::Matrix<ScalarType,2,2> a = j*j.transpose();
-
-        const Eigen::Vector3<ScalarType> a3 = (j.row(0).cross(j.row(1))).normalized();
 
         const auto& Ndd= localBasis.evaluateSecondDerivatives(gpIndex);
-        const auto cps = geo.impl().controlPoints().directGetAll();
-        const auto uasMatrix = Dune::viewAsEigenMatrixAsDynFixed(uNodes);
-
         const auto h = H + Ndd.transpose().template cast<ScalarType>()*uasMatrix;
+        const Eigen::Vector3<ScalarType> a3 = (j.row(0).cross(j.row(1))).normalized();
         Eigen::Vector<ScalarType,3> bV=h*a3;
-        bV(2)*=2;
-
+        bV(2)*=2; //Voigt notation requires the two here
 
         Eigen::Matrix<double,3,3> G;
         G.setZero();
         G.block<2,2>(0,0)= A;
         G(2,2)=1;
-        const auto GInv= G.inverse().eval();
+        const Eigen::Matrix<double,3,3> GInv= G.inverse();
 
-        const auto epsV= toVoigt((0.5*(a-A)).eval()).eval();
+        const auto epsV= toVoigt((0.5*(j*j.transpose()-A)).eval()).eval();
         const auto BV = toVoigt(toEigen(geo.impl().secondFundamentalForm(gp.position())));
         const auto kappaV= (BV-bV).eval();
-        const ScalarType membraneEnergy = energyHelper(epsV,GInv,emod_,nu_)*thickness_;
-        const ScalarType bendingEnergy = energyHelper(kappaV,GInv,emod_,nu_)*Dune::power(thickness_,3)/12.0;
+        const ScalarType membraneEnergy = thickness_*energyHelper(epsV,GInv,emod_,nu_);
+        const ScalarType bendingEnergy = Dune::power(thickness_,3)/12.0*energyHelper(kappaV,GInv,emod_,nu_);
         energy += (membraneEnergy+bendingEnergy) * geo.integrationElement(gp.position()) * gp.weight();
       }
 
