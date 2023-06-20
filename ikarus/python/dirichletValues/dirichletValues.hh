@@ -79,6 +79,11 @@ namespace Ikarus::Python {
               };
               self.fixBoundaryDOFs(lambda);
             });
+
+    cls.def("fixDOFs",
+            [](DirichletValues& self, const std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, const Basis&)>& f) {
+              self.fixBoundaryDOFs(f);
+            });
   }
 
 }  // namespace Ikarus::Python

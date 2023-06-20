@@ -33,6 +33,17 @@ namespace Ikarus {
   }
 
   template <typename ScalarType = double, int dim = 3>
+  auto symmetricFourthOrder(const auto& A, const auto& B) {
+    Eigen::TensorFixedSize<double, Eigen::Sizes<dim, dim, dim, dim>> idTensor;
+    for (int i = 0; i < dim; ++i)
+      for (int j = 0; j < dim; ++j)
+        for (int k = 0; k < dim; ++k)
+          for (int l = 0; l < dim; ++l)
+            idTensor(i, j, k, l) = 0.5 * (A(i, k) * B(j, l) + A(i, l) * B(j, k));
+    return idTensor;
+  }
+
+  template <typename ScalarType = double, int dim = 3>
   auto identityFourthOrder() {
     Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<dim, dim, dim, dim>> idTensor;
     for (int i = 0; i < dim; ++i)

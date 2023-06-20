@@ -52,8 +52,8 @@ namespace Ikarus {
       const auto& fe    = first_child.finiteElement();
       numberOfNodes     = fe.size();
       dispAtNodes.resize(fe.size());
-      order = 2 * (this->localView().tree().child(0).finiteElement().localBasis().order());
-      localBasis      = Dune::CachedLocalBasis(this->localView().tree().child(0).finiteElement().localBasis());
+      order      = 2 * (this->localView().tree().child(0).finiteElement().localBasis().order());
+      localBasis = Dune::CachedLocalBasis(this->localView().tree().child(0).finiteElement().localBasis());
       if constexpr (requires { this->localView().element().impl().getQuadratureRule(order); })
         if (this->localView().element().impl().isTrimmed())
           localBasis.bind(this->localView().element().impl().getQuadratureRule(order), Dune::bindDerivatives(0, 1));
@@ -225,8 +225,7 @@ namespace Ikarus {
       for (auto&& intersection : intersections(neumannBoundary->gridView(), element)) {
         if (not neumannBoundary or not neumannBoundary->contains(intersection)) continue;
 
-        const auto& quadLine
-            = Dune::QuadratureRules<double, Traits::mydim - 1>::rule(intersection.type(), order);
+        const auto& quadLine = Dune::QuadratureRules<double, Traits::mydim - 1>::rule(intersection.type(), order);
 
         for (const auto& curQuad : quadLine) {
           // Local position of the quadrature point

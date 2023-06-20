@@ -15,12 +15,14 @@
 #include <dune/python/pybind11/stl.h>
 
 #include <ikarus/finiteElements/feRequirements.hh>
+#include <ikarus/finiteElements/mechanics/kirchhoffloveshell.hh>
+#include <ikarus/finiteElements/mechanics/linearElastic.hh>
 #include <ikarus/utils/basis.hh>
 
 namespace Ikarus::Python {
 
-  template <class LinearElastic, class... options>
-  void registerLinearElastic(pybind11::handle scope, pybind11::class_<LinearElastic, options...> cls) {
+  template <bool defaultInitializers = true, class LinearElastic, class... options>
+  void registerElement(pybind11::handle scope, pybind11::class_<LinearElastic, options...> cls) {
     using pybind11::operator""_a;
 
     using GlobalBasis    = typename LinearElastic::Basis;
@@ -30,24 +32,27 @@ namespace Ikarus::Python {
     using Traits         = typename LinearElastic::Traits;
     using FErequirements = typename LinearElastic::FERequirementType;
 
-    cls.def(pybind11::init([](const GlobalBasis& basis, const Element& element, double emod, double nu) {
-              return new LinearElastic(basis, element, emod, nu);
-            }),
-            pybind11::keep_alive<1, 2>(), pybind11::keep_alive<1, 3>());
+    if constexpr (defaultInitializers)
+      cls.def(pybind11::init([](const GlobalBasis& basis, const Element& element, double emod, double nu) {
+                return new LinearElastic(basis, element, emod, nu);
+              }),
+              pybind11::keep_alive<1, 2>(), pybind11::keep_alive<1, 3>());
 
     using LoadFunction = std::function<Eigen::Vector<double, Traits::worlddim>(Eigen::Vector<double, Traits::worlddim>,
                                                                                const double&)>;
-    cls.def(pybind11::init(
-                [](const GlobalBasis& basis, const Element& element, double emod, double nu,
-                   const LoadFunction volumeLoad) { return new LinearElastic(basis, element, emod, nu, volumeLoad); }),
-            pybind11::keep_alive<1, 2>(), pybind11::keep_alive<1, 3>());
-
-    cls.def(pybind11::init([](const GlobalBasis& basis, const Element& element, double emod, double nu,
-                              const LoadFunction volumeLoad, const BoundaryPatch<GridView>& bp,
-                              const LoadFunction neumannBoundaryLoad) {
-              return new LinearElastic(basis, element, emod, nu, volumeLoad, &bp, neumannBoundaryLoad);
-            }),
-            pybind11::keep_alive<1, 2>(), pybind11::keep_alive<1, 3>(), pybind11::keep_alive<1, 7>());
+    if constexpr (defaultInitializers)
+      cls.def(pybind11::init([](const GlobalBasis& basis, const Element& element, double emod, double nu,
+                                const LoadFunction volumeLoad) {
+                return new LinearElastic(basis, element, emod, nu, volumeLoad);
+              }),
+              pybind11::keep_alive<1, 2>(), pybind11::keep_alive<1, 3>());
+    if constexpr (defaultInitializers)
+      cls.def(pybind11::init([](const GlobalBasis& basis, const Element& element, double emod, double nu,
+                                const LoadFunction volumeLoad, const BoundaryPatch<GridView>& bp,
+                                const LoadFunction neumannBoundaryLoad) {
+                return new LinearElastic(basis, element, emod, nu, volumeLoad, &bp, neumannBoundaryLoad);
+              }),
+              pybind11::keep_alive<1, 2>(), pybind11::keep_alive<1, 3>(), pybind11::keep_alive<1, 7>());
 
     pybind11::module scopedf = pybind11::module::import("dune.functions");
 
@@ -95,7 +100,43 @@ namespace Ikarus::Python {
         },
         pybind11::arg("FErequirements"), pybind11::arg("elementMatrix").noconvert());
 
-    cls.def("getMaterialTangent", [](LinearElastic& self) { return self.getMaterialTangent(); });
+    if constexpr (requires { std::declval<LinearElastic>().getMaterialTangent(); })
+      cls.def("getMaterialTangent", [](LinearElastic& self) { return self.getMaterialTangent(); });
+  }
+
+  template <class LinearElastic, class... options>
+  void registerLinearElastic(pybind11::handle scope, pybind11::class_<LinearElastic, options...> cls) {
+    registerElement(scope, cls);
+  }
+
+  template <class LinearElastic, class... options>
+  void registerKirchhoffLoveShell(pybind11::handle scope, pybind11::class_<LinearElastic, options...> cls) {
+    registerElement<false, LinearElastic, options...>(scope, cls);
+    using GlobalBasis    = typename LinearElastic::Basis;
+    using FlatBasis      = typename LinearElastic::FlatBasis;
+    using GridView       = typename GlobalBasis::GridView;
+    using Element        = typename LinearElastic::Element;
+    using Traits         = typename LinearElastic::Traits;
+    using FErequirements = typename LinearElastic::FERequirementType;
+
+    using LoadFunction = std::function<Eigen::Vector<double, Traits::worlddim>(Eigen::Vector<double, Traits::worlddim>,
+                                                                               const double&)>;
+    cls.def(pybind11::init([](const GlobalBasis& basis, const Element& element, double emod, double nu,
+                              double thickness, const LoadFunction volumeLoad) {
+              return new LinearElastic(basis, element, emod, nu, thickness, volumeLoad);
+            }),
+            pybind11::keep_alive<1, 2>(), pybind11::keep_alive<1, 3>());
+
+    cls.def(pybind11::init([](const GlobalBasis& basis, const Element& element, double emod, double nu,
+                              double thickness) { return new LinearElastic(basis, element, emod, nu, thickness); }),
+            pybind11::keep_alive<1, 2>(), pybind11::keep_alive<1, 3>());
+
+    cls.def(pybind11::init([](const GlobalBasis& basis, const Element& element, double emod, double nu,
+                              double thickness, const LoadFunction volumeLoad, const BoundaryPatch<GridView>& bp,
+                              const LoadFunction neumannBoundaryLoad) {
+              return new LinearElastic(basis, element, emod, nu, thickness, volumeLoad, &bp, neumannBoundaryLoad);
+            }),
+            pybind11::keep_alive<1, 2>(), pybind11::keep_alive<1, 3>(), pybind11::keep_alive<1, 8>());
   }
 
 }  // namespace Ikarus::Python

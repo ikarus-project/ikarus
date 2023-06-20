@@ -15,6 +15,7 @@
 #include <dune/python/pybind11/stl.h>
 
 #include <ikarus/finiteElements/feRequirements.hh>
+#include <ikarus/finiteElements/mechanics/nonLinearElastic.hh>
 #include <ikarus/utils/basis.hh>
 
 namespace Ikarus::Python {
