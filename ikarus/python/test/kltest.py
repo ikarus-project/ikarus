@@ -12,14 +12,12 @@ import ikarus.dirichletValues
 import numpy as np
 import scipy as sp
 
-import dune.grid
-import dune.functions
 from dune.vtk import vtkWriter
 from dune.iga import ControlPoint, ControlPointNet, NurbsPatchData, IGAGrid
-from dune.iga.basis import defaultGlobalBasis, Power, Lagrange, Nurbs
+from dune.iga.basis import defaultGlobalBasis, Power, Nurbs
 
 from dune.common.hashit import hashIt
-from dune.iga.basis import preBasisTypeName, defaultGlobalBasis
+from dune.iga.basis import preBasisTypeName
 from dune.generator.generator import SimpleGenerator
 
 
