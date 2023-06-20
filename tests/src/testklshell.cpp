@@ -72,7 +72,7 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   auto volumeLoad        = [thickness]([[maybe_unused]] auto& globalCoord, auto& lamb) {
     Eigen::Vector3d fext;
     fext.setZero();
-    fext[2] = 2 * Dune::power(thickness, 3) * lamb/10;
+    fext[2] = 2 * Dune::power(thickness, 3) * lamb / 10;
     return fext;
   };
 
