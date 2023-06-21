@@ -150,6 +150,12 @@ namespace Ikarus {
           lagrangePoints[jI][i] = out[jI];
       }
 
+
+//      lagrangePoints[0]= {0,0.5};
+//      lagrangePoints[1]= {0.5,0};
+//      lagrangePoints[2]= {1,0.5};
+//      lagrangePoints[3]= {0.5,1};
+
       std::array<Eigen::Vector<ScalarType,3>,4> membraneStrainsAtVertices;
       for (int i=0;auto& lP :lagrangePoints) {
         const auto J                     = toEigen(geo.jacobianTransposed(lP));
@@ -161,6 +167,24 @@ namespace Ikarus {
         const auto epsV                 = toVoigt((0.5 * (j * j.transpose() - A)).eval()).eval();
         membraneStrainsAtVertices[i++]=epsV;
       }
+
+//      std::array<Dune::FieldVector<double,1>,4> NANS;
+
+//      auto evalMembraneStrains = [&](auto& gppos)
+//      {
+//        std::vector<Dune::FieldVector<double,1>> N;
+//        N.resize(4);
+//        N[0]=0.5*(1-gppos[1]);
+//        N[1]=0.5*(1-gppos[0]);
+//        N[2]=0.5*(1+gppos[1]);
+//        N[3]=0.5*(1+gppos[0]);
+//        Eigen::Vector<ScalarType,3> res;
+//        res.setZero();
+//        for (int i = 0; i < 4; ++i) {
+//          res+=membraneStrainsAtVertices[i]*N[i][0];
+//        }
+//        return res;
+//      };
 
       auto evalMembraneStrains = [&](auto& gppos)
       {
@@ -203,7 +227,7 @@ namespace Ikarus {
         const auto kappaV               = (BV - bV).eval();
         const auto C = materialTangent(GInv);
         const ScalarType membraneEnergy = 0.5* thickness_ * epsV.dot(C*epsV);
-        const ScalarType bendingEnergy  = 0.5* Dune::power(thickness_, 3) / 12.0 * kappaV.dot(C*epsV);
+        const ScalarType bendingEnergy  = 0.5* Dune::power(thickness_, 3) / 12.0 * kappaV.dot(C*kappaV);
         energy += (membraneEnergy + bendingEnergy) * geo.integrationElement(gp.position()) * gp.weight();
       }
 

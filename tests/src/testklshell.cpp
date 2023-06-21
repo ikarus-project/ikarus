@@ -13,6 +13,9 @@
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/subspacebasis.hh>
 #include <dune/iga/nurbsbasis.hh>
+#include <ikarus/controlRoutines/pathFollowingTechnique.hh>
+#include <ikarus/utils/observer/nonLinearSolverLogger.hh>
+
 
 #include "spdlog/spdlog.h"
 
@@ -59,7 +62,7 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
     patchData = degreeElevate(patchData, i, 1);
 
   auto grid = std::make_shared<Grid>(patchData);
-  grid->globalRefine(2);
+  grid->globalRefine(3);
   auto gridView = grid->leafGridView();
 
   using GridView = decltype(gridView);
@@ -72,6 +75,7 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   auto volumeLoad        = [thickness]([[maybe_unused]] auto& globalCoord, auto& lamb) {
     Eigen::Vector3d fext;
     fext.setZero();
+    fext[1]= 2 * Dune::power(thickness, 3) * lamb / 10;
     fext[2] = 2 * Dune::power(thickness, 3) * lamb / 10;
     return fext;
   };
@@ -132,18 +136,22 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   };
 
   auto nonLinOp
-      = Ikarus::NonLinearOperator(functions(energyFunction, residualFunction, KFunction), parameter(d, lambda));
+      = Ikarus::NonLinearOperator(functions( residualFunction, KFunction), parameter(d, lambda));
 
   const double gradTol = 1e-8;
 
-  auto tr = Ikarus::makeTrustRegion(nonLinOp);
-  tr->setup({.verbosity = 1,
-             .maxiter   = 1000,
-             .grad_tol  = gradTol,
-             .corr_tol  = 1e-16,  // everything should converge to the gradient tolerance
-             .useRand   = false,
-             .rho_reg   = 1e8,
-             .Delta0    = 1});
+//  auto tr = Ikarus::makeTrustRegion(nonLinOp);
+//  tr->setup({.verbosity = 1,
+//             .maxiter   = 1000,
+//             .grad_tol  = gradTol,
+//             .corr_tol  = 1e-16,  // everything should converge to the gradient tolerance
+//             .useRand   = false,
+//             .rho_reg   = 1e8,
+//             .Delta0    = 1});
+  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_CholmodSupernodalLLT);
+  auto tr = Ikarus::makeNewtonRaphson(nonLinOp,std::move(linSolver));
+  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
+  tr->subscribeAll(nonLinearSolverObserver);
 
   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(
       basis.flat(), d, 2);
