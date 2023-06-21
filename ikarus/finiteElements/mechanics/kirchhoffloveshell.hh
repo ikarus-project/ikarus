@@ -25,20 +25,7 @@
 
 namespace Ikarus {
 
-  template <class ScalarType>
-  ScalarType energyHelper(const Eigen::Vector<ScalarType, 3>& epsV, const auto& Aconv, double E, double nu) {
-    const double lambda   = E * nu / ((1.0 + nu) * (1.0 - 2.0 * nu));
-    const double mu       = E / (2.0 * (1.0 + nu));
-    const double lambdbar = 2.0 * lambda * mu / (lambda + 2.0 * mu);
-    Eigen::TensorFixedSize<double, Eigen::Sizes<3, 3, 3, 3>> moduli;
-    const auto AconvT = TensorCast(Aconv, std::array<Eigen::Index, 2>({3, 3}));
-    moduli            = lambdbar * dyadic(AconvT, AconvT).eval() + 2 * mu * symmetricFourthOrder<double>(Aconv, Aconv);
 
-    auto C   = toVoigt(moduli);
-    auto C33 = C({0, 1, 5}, {0, 1, 5}).eval();
-
-    return 0.5 * epsV.dot(C33 * epsV);
-  }
 
   template <typename Basis_, typename FERequirements_ = FErequirements<>, bool useEigenRef = false>
   class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis> {
@@ -173,8 +160,9 @@ namespace Ikarus {
         const auto epsV                 = toVoigt((0.5 * (j * j.transpose() - A)).eval()).eval();
         const auto BV                   = toVoigt(toEigen(geo.impl().secondFundamentalForm(gp.position())));
         const auto kappaV               = (BV - bV).eval();
-        const ScalarType membraneEnergy = thickness_ * energyHelper(epsV, GInv, emod_, nu_);
-        const ScalarType bendingEnergy  = Dune::power(thickness_, 3) / 12.0 * energyHelper(kappaV, GInv, emod_, nu_);
+        const auto C = materialTangent(GInv);
+        const ScalarType membraneEnergy = 0.5* thickness_ * epsV.dot(C*epsV);
+        const ScalarType bendingEnergy  = 0.5* Dune::power(thickness_, 3) / 12.0 * kappaV.dot(C*epsV);
         energy += (membraneEnergy + bendingEnergy) * geo.integrationElement(gp.position()) * gp.weight();
       }
 
@@ -214,5 +202,122 @@ namespace Ikarus {
 
       return energy;
     }
+
+    template <typename ScalarType>
+    void calculateVectorImpl(const FERequirementType& par, typename Traits::template VectorType<ScalarType> force,
+                             const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
+      using namespace Dune::DerivativeDirections;
+      using namespace Dune;
+      const auto [uFunction, uNodes] = getDisplacementFunction(par, dx);
+      const auto& lambda             = par.getParameter(Ikarus::FEParameter::loadfactor);
+      const auto geo                 = this->localView().element().geometry();
+      ScalarType energy              = 0.0;
+      const auto uasMatrix           = Dune::viewAsEigenMatrixAsDynFixed(uNodes);
+
+      // Internal forces
+      for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
+        const double intElement = geo.integrationElement(gp.position()) * gp.weight();
+        const auto [X, Jd, Hd]                      = geo.impl().zeroFirstAndSecondDerivativeOfPosition(gp.position());
+        const auto J                                = toEigen(Jd);
+        const auto H                                = toEigen(Hd);
+        const Eigen::Matrix<double, 2, 2> A         = J * J.transpose();
+        const Eigen::Matrix<ScalarType, 3, 2> gradu = toEigen(
+            uFunction.evaluateDerivative(gpIndex, wrt(spatialAll, Dune::on(DerivativeDirections::referenceElement))));
+        const Eigen::Matrix<ScalarType, 2, 3> j = J + gradu.transpose();
+
+        const auto& Ndd                     = localBasis.evaluateSecondDerivatives(gpIndex);
+        const auto& Nd                     = localBasis.evaluateDerivatives(gpIndex);
+        const auto h                        = H + Ndd.transpose().template cast<ScalarType>() * uasMatrix;
+        const Eigen::Vector3<ScalarType> a3 = (j.row(0).cross(j.row(1))).normalized();
+        Eigen::Vector<ScalarType, 3> bV     = h * a3;
+        bV(2) *= 2;  // Voigt notation requires the two here
+
+        Eigen::Matrix<double, 3, 3> G;
+        G.setZero();
+        G.block<2, 2>(0, 0)                    = A;
+        G(2, 2)                                = 1;
+        const Eigen::Matrix<double, 3, 3> GInv = G.inverse();
+        
+        const auto epsV                 = toVoigt((0.5 * (j * j.transpose() - A)).eval()).eval();
+        const auto BV                   = toVoigt(toEigen(geo.impl().secondFundamentalForm(gp.position())));
+        const auto kappaV               = (BV - bV).eval();
+        const auto C = materialTangent(GInv);
+        const Eigen::Vector<ScalarType,3> membrane = thickness_*C*epsV;
+        const Eigen::Vector<ScalarType,3> moments = Dune::power(thickness_, 3) / 12.0*C*kappaV;
+
+        for (size_t i = 0; i < numberOfNodes; ++i) {
+          Eigen::Matrix<double, 3, 3> bopIMembrane = bopMembrane(j,Nd,i);
+          force.template segment<myDim>(myDim * i) += bopIMembrane.transpose() * membrane * intElement;
+        }
+      }
+
+      // External forces volume forces over the domain
+      if (volumeLoad) {
+        const auto u = getDisplacementFunction(par, dx);
+        for (const auto& [gpIndex, gp] : u.viewOverIntegrationPoints()) {
+          Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(toEigen(geo.global(gp.position())), lambda);
+          for (size_t i = 0; i < numberOfNodes; ++i) {
+            const auto udCi = u.evaluateDerivative(gpIndex, wrt(coeff(i)));
+            force.template segment<myDim>(myDim * i)
+                -= udCi * fext * geo.integrationElement(gp.position()) * gp.weight();
+          }
+        }
+      }
+
+      // External forces, boundary forces, i.e. at the Neumann boundary
+      if (not neumannBoundary) return;
+
+      const auto u = getDisplacementFunction(par, dx);
+      auto element = this->localView().element();
+      for (auto&& intersection : intersections(neumannBoundary->gridView(), element)) {
+        if (not neumannBoundary->contains(intersection)) continue;
+
+        // Integration rule along the boundary
+        const auto& quadLine = Dune::QuadratureRules<double, myDim - 1>::rule(intersection.type(), order);
+
+        for (const auto& curQuad : quadLine) {
+          const Dune::FieldVector<double, myDim>& quadPos = intersection.geometryInInside().global(curQuad.position());
+
+          const double integrationElement = intersection.geometry().integrationElement(curQuad.position());
+
+          // The value of the local function wrt the i-th coef
+          for (size_t i = 0; i < numberOfNodes; ++i) {
+            const auto udCi = u.evaluateDerivative(quadPos, wrt(coeff(i)));
+
+            // Value of the Neumann data at the current position
+            auto neumannValue
+                = neumannBoundaryLoad(toEigen(intersection.geometry().global(curQuad.position())), lambda);
+            force.template segment<myDim>(myDim * i) -= udCi * neumannValue * curQuad.weight() * integrationElement;
+          }
+        }
+      }
+    }
+
+  private:
+    template <typename ScalarType>
+    Eigen::Matrix<ScalarType,3,3> bopMembrane(const Eigen::Matrix<ScalarType,2,3>& J,const auto& dN, const int node) {
+        Eigen::Matrix<ScalarType,3,3> bop;
+        bop<< J.row(0)*dN(node,0),
+              J.row(1)*dN(node,1),
+              J.row(0)*dN(node,1)+J.row(1)*dN(node,0);
+
+        return bop;
+    }
+
+
+    Eigen::Matrix<double,3,3> materialTangent(const Eigen::Matrix<double,3,3>& Aconv) {
+        const double lambda   = emod_ * nu_ / ((1.0 + nu_) * (1.0 - 2.0 * nu_));
+        const double mu       = emod_ / (2.0 * (1.0 + nu_));
+        const double lambdbar = 2.0 * lambda * mu / (lambda + 2.0 * mu);
+        Eigen::TensorFixedSize<double, Eigen::Sizes<3, 3, 3, 3>> moduli;
+        const auto AconvT = TensorCast(Aconv, std::array<Eigen::Index, 2>({3, 3}));
+        moduli            = lambdbar * dyadic(AconvT, AconvT).eval() + 2 * mu * symmetricFourthOrder<double>(Aconv, Aconv);
+
+        auto C   = toVoigt(moduli);
+        auto C33 = C({0, 1, 5}, {0, 1, 5}).eval();
+
+        return C33;
+      }
+
   };
 }  // namespace Ikarus
