@@ -151,7 +151,7 @@ namespace Ikarus {
       }
 
       std::array<Eigen::Vector<ScalarType,3>,4> membraneStrainsAtVertices;
-      for (int i=0;auto lP :lagrangePoints) {
+      for (int i=0;auto& lP :lagrangePoints) {
         const auto J                     = toEigen(geo.jacobianTransposed(lP));
         const Eigen::Matrix<double, 2, 2> A         = J * J.transpose();
         const Eigen::Matrix<ScalarType, 3, 2> gradu = toEigen(
@@ -359,7 +359,6 @@ namespace Ikarus {
 
         auto C   = toVoigt(moduli);
         auto C33 = C({0, 1, 5}, {0, 1, 5}).eval();
-
         return C33;
       }
 
