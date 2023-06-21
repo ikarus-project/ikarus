@@ -216,6 +216,16 @@ namespace Ikarus {
     return 0.5 * (A + A.transpose());
   }
 
+  /** \brief Create skew 3x3 matrix from 3d vector*/
+  template <typename ScalarType>
+  Eigen::Matrix<ScalarType,3,3> skew(const Eigen::Vector<ScalarType,3>& a) {
+    Eigen::Matrix<ScalarType,3,3> A;
+    A << 0, -a(2), a(1),
+        a(2), 0, -a(0),
+        -a(1), a(0), 0;
+    return A;
+  }
+
   /** \brief Returns the skew part of a matrix*/
   template <typename Derived>
   Derived skew(const Eigen::MatrixBase<Derived>& A) {
