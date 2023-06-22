@@ -226,6 +226,15 @@ namespace Ikarus {
     return A;
   }
 
+template <typename ScalarType>
+Eigen::Matrix<ScalarType,3,3> skew( ScalarType a) {
+  Eigen::Matrix<ScalarType,3,3> A;
+  A << 0, -a, a,
+      a, 0, -a,
+      -a, a, 0;
+  return A;
+}
+
   /** \brief Returns the skew part of a matrix*/
   template <typename Derived>
   Derived skew(const Eigen::MatrixBase<Derived>& A) {

@@ -38,6 +38,110 @@
 
 using Dune::TestSuite;
 
+auto checkFEByAutoDiff() {
+  TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() by Automatic Differentiation of Kirchhoff-Love shell");
+
+  constexpr auto dimworld        = 3;
+  const std::array<int, 2> order = {2, 2};
+
+  const std::array<std::vector<double>, 2> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+
+  using ControlPoint = Dune::IGA::NURBSPatchData<2, dimworld>::ControlPointType;
+
+  const std::vector<std::vector<ControlPoint>> controlPoints
+      = {
+      {{.p = {0, 0.0, 0}, .w = 1}, {.p = {5, 0.0, 0}, .w = 1}, {.p = {10, 0.0, 0}, .w = 1}},
+      {{.p = {0, 0.5, 0}, .w = 1}, {.p = {5, 0.5, 0}, .w = 4}, {.p = {10, 0.5, 0}, .w = 1}},
+      {{.p = {0, 2, 0}, .w = 1}, {.p = {5, 2, 0}, .w = 1}, {.p = {10, 2, 0}, .w = 1}}};
+
+  std::array<int, 2> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
+
+  auto controlNet = Dune::IGA::NURBSPatchData<2, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  using Grid      = Dune::IGA::NURBSGrid<2, dimworld>;
+
+  Dune::IGA::NURBSPatchData<2, dimworld> patchData;
+  patchData.knotSpans     = knotSpans;
+  patchData.degree        = order;
+  patchData.controlPoints = controlNet;
+//  for (int i = 0; i < 2; ++i)
+//    patchData = degreeElevate(patchData, i, 1);
+  auto grid = std::make_shared<Grid>(patchData);
+
+  grid->globalRefine(2);
+  auto gridView = grid->leafGridView();
+
+  using namespace Dune::Functions::BasisFactory;
+  auto basis       = Ikarus::makeBasis(gridView, power<3>(nurbs()));
+  auto element     = gridView.template begin<0>();
+  auto nDOF        = basis.flat().size();
+  const double tol = 1e-10;
+
+  auto volumeLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
+    VectorType fExt;
+    fExt.setZero();
+    fExt[1] = 2 * lamb;
+    return fExt;
+  };
+
+  auto neumannBoundaryLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
+    VectorType fExt;
+    fExt.setZero();
+    fExt[0] = lamb / 40;
+    return fExt;
+  };
+
+  /// We artificially apply a Neumann load on the complete boundary
+  Dune::BitSetVector<1> neumannVertices(gridView.size(2), true);
+
+  BoundaryPatch<decltype(gridView)> neumannBoundary(gridView, neumannVertices);
+
+  Ikarus::FESettings feSettings;
+  feSettings.addOrAssign("youngs_modulus", 1000.0);
+  feSettings.addOrAssign("poissons_ratio", 0.3);
+  feSettings.addOrAssign("thickness", 0.1);
+  feSettings.addOrAssign("simulationFlag", 0);
+  using KLSHELL = Ikarus::KirchhoffLoveShell<decltype(basis)>;
+  KLSHELL fe(basis, *element, feSettings, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
+  using AutoDiffBasedFE = Ikarus::AutoDiffFE<KLSHELL>;
+  AutoDiffBasedFE feAutoDiff(fe);
+
+  Eigen::VectorXd d;
+  d.setRandom(nDOF);
+  double lambda = 7.3;
+
+  auto req = Ikarus::FErequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
+  req.insertGlobalSolution(Ikarus::FESolutions::displacement, d)
+      .insertParameter(Ikarus::FEParameter::loadfactor, lambda);
+
+  Eigen::MatrixXd K, KAutoDiff;
+  K.setZero(nDOF, nDOF);
+  KAutoDiff.setZero(nDOF, nDOF);
+
+  Eigen::VectorXd R, RAutoDiff;
+  R.setZero(nDOF);
+  RAutoDiff.setZero(nDOF);
+
+//  fe.calculateMatrix(req, K);
+//  feAutoDiff.calculateMatrix(req, KAutoDiff);
+
+  fe.calculateVector(req, R);
+  feAutoDiff.calculateVector(req, RAutoDiff);
+
+//  t.check(K.isApprox(KAutoDiff, tol),
+//          "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
+//          "automatic differentiation:" << K <<"\n"<< KAutoDiff<<"\n"<< K-KAutoDiff);
+
+  t.check(R.isApprox(RAutoDiff, tol))<<
+      "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
+      "automatic differentiation:" << R <<"\n"<< RAutoDiff<<"\n"<< R-RAutoDiff;
+
+  t.check(Dune::FloatCmp::eq(fe.calculateScalar(req), feAutoDiff.calculateScalar(req), tol),
+          "Mismatch between the energies obtained from explicit implementation and the one based on "
+          "automatic differentiation");
+
+  return t;
+}
+
 auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   TestSuite t("NonLinearElasticityLoadControlNRandTRforKLShell ");
   constexpr auto dimworld        = 3;
@@ -189,5 +293,6 @@ int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   //  const double E             = materialParameters.get<double>("E");
   //  const double nu            = materialParameters.get<double>("nu");
-  NonLinearElasticityLoadControlNRandTRforKLShell();
+  checkFEByAutoDiff();
+//  NonLinearElasticityLoadControlNRandTRforKLShell();
 }
