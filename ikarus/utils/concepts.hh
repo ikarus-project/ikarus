@@ -61,6 +61,11 @@ namespace Ikarus {
       Basis::PreBasis::Node::isPower == true;
     };
 
+    template <typename Basis>
+    concept CompositeBasis = requires {
+      Basis::PreBasis::Node::isComposite == true;
+    };
+
     template <typename PathFollowingImpl, typename NonLinearOperator>
     concept PathFollowingStrategy
         = requires(PathFollowingImpl pft, NonLinearOperator nop, Ikarus::SubsidiaryArgs args) {

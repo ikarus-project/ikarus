@@ -3,6 +3,6 @@
 add_subdirectory(materials)
 # install headers
 install(FILES nonLinearElastic.hh enhancedAssumedStrains.hh linearElastic.hh materials.hh
-              kirchhoffloveshell.hh
+        kirchhoffLoveShell.hh timoshenkoBeam.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/finiteElements/mechanics
 )

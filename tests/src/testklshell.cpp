@@ -20,7 +20,7 @@
 
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/controlRoutines/loadControl.hh>
-#include <ikarus/finiteElements/mechanics/kirchhoffloveshell.hh>
+#include <ikarus/finiteElements/mechanics/kirchhoffLoveShell.hh>
 #include <ikarus/io/resultFunction.hh>
 #include <ikarus/linearAlgebra/dirichletValues.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>

@@ -2,6 +2,6 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 # install headers
-install(FILES autodiffFE.hh powerBasisFE.hh scalarFE.hh
+install(FILES autodiffFE.hh powerBasisFE.hh scalarFE.hh compositeBasisFE.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/finiteElements/feBases
 )
