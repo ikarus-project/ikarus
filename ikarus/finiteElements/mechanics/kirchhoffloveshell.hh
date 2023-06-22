@@ -10,10 +10,10 @@
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/geometry/type.hh>
 #include <dune/localfefunctions/cachedlocalBasis/cachedlocalBasis.hh>
-#include <dune/localfefunctions/expressions/greenLagrangeStrains.hh>
 #include <dune/localfefunctions/impl/standardLocalFunction.hh>
 #include <dune/localfefunctions/manifolds/realTuple.hh>
 #include <dune/localfunctions/lagrange/lagrangecube.hh>
+
 
 #include <autodiff/forward/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
@@ -21,10 +21,9 @@
 #include <ikarus/finiteElements/feBases/powerBasisFE.hh>
 #include <ikarus/finiteElements/feRequirements.hh>
 #include <ikarus/finiteElements/feTraits.hh>
-#include <ikarus/finiteElements/mechanics/materials.hh>
-#include <ikarus/finiteElements/physicsHelper.hh>
 #include <ikarus/utils/eigenDuneTransformations.hh>
 #include <ikarus/utils/linearAlgebraHelper.hh>
+#include <ikarus/utils/tensorUtils.hh>
 namespace Ikarus {
 
   template <typename Basis_, typename FERequirements_ = FErequirements<>, bool useEigenRef = false>
@@ -424,7 +423,7 @@ namespace Ikarus {
       const auto AconvT = TensorCast(Aconv, std::array<Eigen::Index, 2>({3, 3}));
       moduli = lambdbar * dyadic(AconvT, AconvT).eval() + 2 * mu * symmetricFourthOrder<double>(Aconv, Aconv);
 
-      auto C   = toVoigt(moduli);
+      auto C   = Ikarus::toVoigt(moduli);
       Eigen::Matrix<double, 3, 3> C33 = C({0, 1, 5}, {0, 1, 5});
       return C33;
     }
