@@ -58,6 +58,8 @@ namespace Ikarus {
       const auto& fe    = first_child.finiteElement();
       numberOfNodes     = fe.size();
       dispAtNodes.resize(fe.size());
+      dispAtNodesDual.resize(fe.size());
+      dispAtNodesDual2nd.resize(fe.size());
       order      = 2 * (fe.localBasis().order());
       localBasis = Dune::CachedLocalBasis(fe.localBasis());
       if constexpr (requires { this->localView().element().impl().getQuadratureRule(order); })
@@ -82,22 +84,53 @@ namespace Ikarus {
     auto getDisplacementFunction(const FERequirementType& par,
                                  const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
       const auto& d = par.getGlobalSolution(Ikarus::FESolutions::displacement);
-
-      Dune::BlockVector<Dune::RealTuple<ScalarType, Traits::worlddim>> disp(dispAtNodes.size());
-      if (dx)
-        for (auto i = 0U; i < disp.size(); ++i)
-          for (auto k2 = 0U; k2 < worlddim; ++k2)
-            disp[i][k2] = dx.value()[i * worlddim + k2]
-                          + d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
-      else
-        for (auto i = 0U; i < disp.size(); ++i)
-          for (auto k2 = 0U; k2 < worlddim; ++k2)
-            disp[i][k2] = d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
-
       auto geo = std::make_shared<const typename GridView::GridView::template Codim<0>::Entity::Geometry>(
           this->localView().element().geometry());
-      Dune::StandardLocalFunction uFunction(localBasis, disp, geo);
-      return std::make_pair(uFunction, disp);
+//      Dune::BlockVector<Dune::RealTuple<ScalarType, Traits::worlddim>> disp(dispAtNodes.size());
+      if constexpr (std::is_same_v<ScalarType,autodiff::dual>) {
+        if (dx)
+          for (auto i = 0U; i < dispAtNodesDual.size(); ++i)
+            for (auto k2 = 0U; k2 < worlddim; ++k2)
+              dispAtNodesDual[i][k2] = dx.value()[i * worlddim + k2]
+                            + d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
+        else
+          for (auto i = 0U; i < dispAtNodesDual.size(); ++i)
+            for (auto k2 = 0U; k2 < worlddim; ++k2)
+              dispAtNodesDual[i][k2] = d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
+      }
+      else if constexpr (std::is_same_v<ScalarType,autodiff::dual2nd>) {
+        if (dx)
+          for (auto i = 0U; i < dispAtNodesDual2nd.size(); ++i)
+            for (auto k2 = 0U; k2 < worlddim; ++k2)
+              dispAtNodesDual2nd[i][k2] = dx.value()[i * worlddim + k2]
+                            + d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
+        else
+          for (auto i = 0U; i < dispAtNodesDual2nd.size(); ++i)
+            for (auto k2 = 0U; k2 < worlddim; ++k2)
+              dispAtNodesDual2nd[i][k2] = d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
+      }
+      else if constexpr (std::is_same_v<ScalarType,double>) {
+        if (dx)
+          for (auto i = 0U; i < dispAtNodes.size(); ++i)
+            for (auto k2 = 0U; k2 < worlddim; ++k2)
+              dispAtNodes[i][k2] = dx.value()[i * worlddim + k2]
+                                          + d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
+        else
+          for (auto i = 0U; i < dispAtNodes.size(); ++i)
+            for (auto k2 = 0U; k2 < worlddim; ++k2)
+              dispAtNodes[i][k2] = d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
+      }
+
+      if constexpr (std::is_same_v<ScalarType,autodiff::dual>) {
+        Dune::StandardLocalFunction uFunction(localBasis, dispAtNodesDual, geo);
+        return std::make_pair(uFunction, std::ref(dispAtNodesDual));
+      } else if constexpr (std::is_same_v<ScalarType,autodiff::dual2nd>) {
+        Dune::StandardLocalFunction uFunction(localBasis, dispAtNodesDual2nd, geo);
+        return std::make_pair(uFunction, std::ref(dispAtNodesDual2nd));
+      } else if constexpr (std::is_same_v<ScalarType,double>) {
+        Dune::StandardLocalFunction uFunction(localBasis, dispAtNodes, geo);
+        return std::make_pair(uFunction, std::ref(dispAtNodes));
+      }
     }
 
     inline double calculateScalar(const FERequirementType& par) const { return calculateScalarImpl<double>(par); }
@@ -117,7 +150,9 @@ namespace Ikarus {
                                                           const double&)>
         neumannBoundaryLoad;
     const BoundaryPatch<GridView>* neumannBoundary;
-    mutable Dune::BlockVector<Dune::RealTuple<double, Traits::dimension>> dispAtNodes;
+    mutable Dune::BlockVector<Dune::RealTuple<double, Traits::worlddim>> dispAtNodes;
+    mutable Dune::BlockVector<Dune::RealTuple<autodiff::dual , Traits::worlddim>> dispAtNodesDual;
+    mutable Dune::BlockVector<Dune::RealTuple<autodiff::dual2nd , Traits::worlddim>> dispAtNodesDual2nd;
     double emod_;
     double nu_;
     double thickness_;
@@ -125,6 +160,8 @@ namespace Ikarus {
     int order{};
 
   protected:
+    mutable std::vector<Dune::FieldVector<double,2> > lagrangePoints;
+    mutable std::vector<double> out;
     template <typename ScalarType>
     auto calculateScalarImpl(const FERequirementType& par, const std::optional<const Eigen::VectorX<ScalarType>>& dx
                                                            = std::nullopt) const -> ScalarType {
@@ -137,24 +174,23 @@ namespace Ikarus {
       const auto uasMatrix           = Dune::viewAsEigenMatrixAsDynFixed(uNodes);
 
       Dune::LagrangeCubeLocalFiniteElement<double,double,2,1> q1lfem2D;
-      std::vector<FieldVector<double,2> > lagrangePoints(q1lfem2D.size());
+      lagrangePoints.resize(q1lfem2D.size());
       for (int i=0; i<2; i++)
       {
         auto ithCoord = [&i](const FieldVector<double,2>& x)
         {
           return x[i];
         };
-        std::vector<double> out;
         q1lfem2D.localInterpolation().interpolate(ithCoord,out);
         for (std::size_t jI=0; jI<out.size(); jI++)
           lagrangePoints[jI][i] = out[jI];
       }
 
 
-//      lagrangePoints[0]= {0,0.5};
-//      lagrangePoints[1]= {0.5,0};
-//      lagrangePoints[2]= {1,0.5};
-//      lagrangePoints[3]= {0.5,1};
+      lagrangePoints[0]= {0,0.5};
+      lagrangePoints[1]= {0.5,0};
+      lagrangePoints[2]= {1,0.5};
+      lagrangePoints[3]= {0.5,1};
 
       std::array<Eigen::Vector<ScalarType,3>,4> membraneStrainsAtVertices;
       for (int i=0;auto& lP :lagrangePoints) {
@@ -168,28 +204,15 @@ namespace Ikarus {
         membraneStrainsAtVertices[i++]=epsV;
       }
 
-//      std::array<Dune::FieldVector<double,1>,4> NANS;
-
-//      auto evalMembraneStrains = [&](auto& gppos)
-//      {
-//        std::vector<Dune::FieldVector<double,1>> N;
-//        N.resize(4);
-//        N[0]=0.5*(1-gppos[1]);
-//        N[1]=0.5*(1-gppos[0]);
-//        N[2]=0.5*(1+gppos[1]);
-//        N[3]=0.5*(1+gppos[0]);
-//        Eigen::Vector<ScalarType,3> res;
-//        res.setZero();
-//        for (int i = 0; i < 4; ++i) {
-//          res+=membraneStrainsAtVertices[i]*N[i][0];
-//        }
-//        return res;
-//      };
+      std::array<Dune::FieldVector<double,1>,4> NANS;
 
       auto evalMembraneStrains = [&](auto& gppos)
       {
-        std::vector<Dune::FieldVector<double,1>> N;
-        q1lfem2D.localBasis().evaluateFunction(gppos,N);
+        std::array<Dune::FieldVector<double,1>,4> N;
+        N[0]=0.5*(1-gppos[1]);
+        N[1]=0.5*(1-gppos[0]);
+        N[2]=0.5*(1+gppos[1]);
+        N[3]=0.5*(1+gppos[0]);
         Eigen::Vector<ScalarType,3> res;
         res.setZero();
         for (int i = 0; i < 4; ++i) {
@@ -197,6 +220,18 @@ namespace Ikarus {
         }
         return res;
       };
+
+//      auto evalMembraneStrains = [&](auto& gppos)
+//      {
+//        std::vector<Dune::FieldVector<double,1>> N;
+//        q1lfem2D.localBasis().evaluateFunction(gppos,N);
+//        Eigen::Vector<ScalarType,3> res;
+//        res.setZero();
+//        for (int i = 0; i < 4; ++i) {
+//          res+=membraneStrainsAtVertices[i]*N[i][0];
+//        }
+//        return res;
+//      };
 
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
         const auto [X, Jd, Hd]                      = geo.impl().zeroFirstAndSecondDerivativeOfPosition(gp.position());
@@ -221,8 +256,8 @@ namespace Ikarus {
 
 
 
-        const auto epsV = evalMembraneStrains(gp.position());
-//        const auto epsV                 = toVoigt((0.5 * (j * j.transpose() - A)).eval()).eval();
+//        const auto epsV = evalMembraneStrains(gp.position());
+        const auto epsV                 = toVoigt((0.5 * (j * j.transpose() - A)).eval()).eval();
         const auto BV                   = toVoigt(toEigen(geo.impl().secondFundamentalForm(gp.position())));
         const auto kappaV               = (BV - bV).eval();
         const auto C = materialTangent(GInv);
