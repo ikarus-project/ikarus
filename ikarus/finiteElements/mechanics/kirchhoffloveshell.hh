@@ -169,7 +169,7 @@ namespace Ikarus {
 
       const auto& simFlag = fESettings.request<int>("simulationFlag");
 
-      Dune::LagrangeCubeLocalFiniteElement<double, double, 2, 1> q1lfem2D;
+      Dune::LagrangeCubeLocalFiniteElement<double, double, 2, 2> q1lfem2D;
 
       if (simFlag == 1) {
         lagrangePoints.resize(q1lfem2D.size());
@@ -187,7 +187,7 @@ namespace Ikarus {
         lagrangePoints[3] = {0.5, 1};
       }
 
-      std::array<Eigen::Vector<ScalarType, 3>, 4> membraneStrainsAtVertices;
+      std::vector<Eigen::Vector<ScalarType, 3>> membraneStrainsAtVertices;
       for (int i = 0; auto& lP : lagrangePoints) {
         const auto J                                = toEigen(geo.jacobianTransposed(lP));
         const Eigen::Matrix<double, 2, 2> A         = J * J.transpose();
@@ -196,7 +196,7 @@ namespace Ikarus {
         // const Eigen::Matrix<ScalarType, 2, 3> j = J + gradu.transpose();
 
         const auto  epsV = toVoigt((0.5 * (gradu.transpose()*J.transpose() + J*gradu +gradu.transpose()*gradu)).eval()).eval();
-        membraneStrainsAtVertices[i++] = epsV;
+        membraneStrainsAtVertices.push_back(epsV);
       }
 
       std::vector<Dune::FieldVector<double, 1>> NANS;
@@ -213,7 +213,7 @@ namespace Ikarus {
         }
         Eigen::Vector<ScalarType, 3> res;
         res.setZero();
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < NANS.size(); ++i) {
           res += membraneStrainsAtVertices[i] * NANS[i][0];
         }
         return res;
@@ -241,7 +241,7 @@ namespace Ikarus {
         const Eigen::Matrix<ScalarType, 2, 3> j = J + gradu.transpose();
 
         const auto& Ndd                     = localBasis.evaluateSecondDerivatives(gpIndex);
-        const auto h                        = H + Ndd.transpose().template cast<ScalarType>() * uasMatrix;
+        const auto h                        = (H + Ndd.transpose().template cast<ScalarType>() * uasMatrix).eval();
         const Eigen::Vector3<ScalarType> a3 = (j.row(0).cross(j.row(1))).normalized();
         Eigen::Vector<ScalarType, 3> bV     = h * a3;
         bV(2) *= 2;  // Voigt notation requires the two here

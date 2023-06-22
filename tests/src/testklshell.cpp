@@ -6,17 +6,14 @@
 #include "testCommon.hh"
 #include "testHelpers.hh"
 
-#include <dune/common/test/testsuite.hh>
 #include <dune/common/parametertreeparser.hh>
+#include <dune/common/test/testsuite.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/subspacebasis.hh>
 #include <dune/iga/nurbsbasis.hh>
-#include <ikarus/controlRoutines/pathFollowingTechnique.hh>
-#include <ikarus/utils/observer/nonLinearSolverLogger.hh>
-
 
 #include "spdlog/spdlog.h"
 
@@ -24,8 +21,9 @@
 
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/controlRoutines/loadControl.hh>
-#include <ikarus/finiteElements/mechanics/kirchhoffloveshell.hh>
+#include <ikarus/controlRoutines/pathFollowingTechnique.hh>
 #include <ikarus/finiteElements/mechanics/fesettings.hh>
+#include <ikarus/finiteElements/mechanics/kirchhoffloveshell.hh>
 #include <ikarus/io/resultFunction.hh>
 #include <ikarus/linearAlgebra/dirichletValues.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
@@ -36,6 +34,7 @@
 #include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
+#include <ikarus/utils/observer/nonLinearSolverLogger.hh>
 
 using Dune::TestSuite;
 
@@ -63,40 +62,38 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   for (int i = 0; i < 2; ++i)
     patchData = degreeElevate(patchData, i, 1);
 
+  Dune::ParameterTree parameterSet;
+  Dune::ParameterTreeParser::readINITree("/workspaces/lex/Dokumente/ikarusVSC/ikarus/tests/src/shell.parset",
+                                         parameterSet);
+
+  const auto E              = parameterSet.get<double>("E");
+  const auto nu             = parameterSet.get<double>("nu");
+  const auto thickness      = parameterSet.get<double>("thickness");
+  const auto loadFactor     = parameterSet.get<double>("loadFactor");
+  const auto simulationFlag = parameterSet.get<int>("simulationFlag");
+  const auto refine         = parameterSet.get<int>("refine");
   auto grid = std::make_shared<Grid>(patchData);
 
-  Dune::ParameterTree parameterSet;
-  Dune::ParameterTreeParser::readINITree("/workspaces/lex/Dokumente/ikarusVSC/ikarus/tests/src/shell.parset", parameterSet);
-
-  const auto E = parameterSet.get<double>("E");
-  const auto nu     = parameterSet.get<double>("nu");
-  const auto thickness     = parameterSet.get<double>("thickness");
-  const auto loadFactor     = parameterSet.get<double>("loadFactor");
-  const auto simulationFlag     = parameterSet.get<int>("simulationFlag");
-  const auto refine     = parameterSet.get<int>("refine");
-
-  grid->globalRefine(refine);
+  grid->globalRefineInDirection(0,refine);
   auto gridView = grid->leafGridView();
 
   using GridView = decltype(gridView);
   using namespace Ikarus;
   using namespace Dune::Functions::BasisFactory;
 
-
-
   // const double E         = 100000;
   // const double nu        = 0.0;
   // const double thickness = 0.001;
-    Ikarus::FESettings feSettings;
-  feSettings.addOrAssign("youngs_modulus",E);
-  feSettings.addOrAssign("poissons_ratio",nu);
-  feSettings.addOrAssign("thickness",thickness);
-  feSettings.addOrAssign("simulationFlag",simulationFlag);
-  auto basis             = Ikarus::makeBasis(gridView, power<3>(nurbs(), FlatInterleaved()));
-  auto volumeLoad        = [thickness,loadFactor]([[maybe_unused]] auto& globalCoord, auto& lamb) {
+  Ikarus::FESettings feSettings;
+  feSettings.addOrAssign("youngs_modulus", E);
+  feSettings.addOrAssign("poissons_ratio", nu);
+  feSettings.addOrAssign("thickness", thickness);
+  feSettings.addOrAssign("simulationFlag", simulationFlag);
+  auto basis      = Ikarus::makeBasis(gridView, power<3>(nurbs(), FlatInterleaved()));
+  auto volumeLoad = [thickness, loadFactor]([[maybe_unused]] auto& globalCoord, auto& lamb) {
     Eigen::Vector3d fext;
     fext.setZero();
-//    fext[1]= 2 * Dune::power(thickness, 3) * lamb / 10;
+    //    fext[1]= 2 * Dune::power(thickness, 3) * lamb / 10;
     fext[2] = 2 * Dune::power(thickness, 3) * lamb * loadFactor;
     return fext;
   };
@@ -156,8 +153,7 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
     return sparseAssembler.getScalar(req);
   };
 
-  auto nonLinOp
-      = Ikarus::NonLinearOperator(functions(residualFunction, KFunction), parameter(d, lambda));
+  auto nonLinOp = Ikarus::NonLinearOperator(functions(residualFunction, KFunction), parameter(d, lambda));
 
   const double gradTol = 1e-16;
 
@@ -169,9 +165,9 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   //            .useRand   = false,
   //            .rho_reg   = 1e8,
   //            .Delta0    = 1});
-  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_UmfPackLU);
- auto tr = Ikarus::makeNewtonRaphson(nonLinOp,std::move(linSolver));
- auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
+  auto linSolver               = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_UmfPackLU);
+  auto tr                      = Ikarus::makeNewtonRaphson(nonLinOp, std::move(linSolver));
+  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
   tr->subscribeAll(nonLinearSolverObserver);
 
   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(
