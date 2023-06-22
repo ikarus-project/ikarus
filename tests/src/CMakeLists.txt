@@ -9,7 +9,7 @@ find_dependency(spdlog REQUIRED)
 find_dependency(autodiff REQUIRED)
 find_dependency(Matplot++ REQUIRED)
 
-file(GLOB programSourceFiles CONFIGURE_DEPENDS *.cpp)
+file(GLOB programSourceFiles *.cpp)
 
 foreach(programSourceFile ${programSourceFiles})
   get_filename_component(programName ${programSourceFile} NAME_WLE)

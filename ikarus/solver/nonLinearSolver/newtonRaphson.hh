@@ -15,7 +15,7 @@ namespace Ikarus {
 
   struct NewtonRaphsonSettings {
     double tol{1e-8};
-    int maxIter{20};
+    int maxIter{50};
   };
 
   struct SolverInformation {

@@ -2,6 +2,6 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 add_subdirectory(materials)
 # install headers
-install(FILES nonLinearElastic.hh enhancedAssumedStrains.hh linearElastic.hh materials.hh kirchhoffloveshell.hh
+install(FILES nonLinearElastic.hh enhancedAssumedStrains.hh linearElastic.hh materials.hh kirchhoffloveshell.hh fesettings.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/finiteElements/mechanics
 )

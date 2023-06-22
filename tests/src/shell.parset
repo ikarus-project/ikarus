@@ -1,0 +1,6 @@
+E = 10000
+nu = 0.0
+thickness = 0.01
+simulationFlag = 0
+refine = 3
+loadFactor=10
