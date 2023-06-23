@@ -31,7 +31,6 @@
 #include <ikarus/solver/nonLinearSolver/trustRegion.hh>
 #include <ikarus/utils/algorithms.hh>
 #include <ikarus/utils/basis.hh>
-#include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 #include <ikarus/utils/observer/nonLinearSolverLogger.hh>
@@ -50,9 +49,15 @@ auto checkFEByAutoDiff() {
 
   const std::vector<std::vector<ControlPoint>> controlPoints
       = {
-      {{.p = {0, 0.0, 0}, .w = 1}, {.p = {5, 0.0, 0}, .w = 1}, {.p = {10, 0.0, 0}, .w = 1}},
-      {{.p = {0, 0.5, 0}, .w = 1}, {.p = {5, 0.5, 0}, .w = 4}, {.p = {10, 0.5, 0}, .w = 1}},
-      {{.p = {0, 2, 0}, .w = 1}, {.p = {5, 2, 0}, .w = 1}, {.p = {10, 2, 0}, .w = 1}}};
+          {{.p = {0, 0.0, 0}, .w = 1}, {.p = {0, 1, 0}, .w = 1}, {.p = {0, 2, 0}, .w = 1}},
+          {{.p = {5, 0.0, 0}, .w = 1}, {.p = {5, 1, 0}, .w = 1}, {.p = {5, 2, 0}, .w = 1}},
+          {{.p = {10, 0.0, 0}, .w = 1}, {.p = {10, 1, 0}, .w = 1}, {.p = {10, 2, 0}, .w = 1}}};
+
+//  const std::vector<std::vector<ControlPoint>> controlPoints
+//      = {
+//      {{.p = {0, 0.0, 0}, .w = 1}, {.p = {5, 0.0, 0}, .w = 1}, {.p = {10, 0.0, 0}, .w = 1}},
+//      {{.p = {0, 0.5, 0}, .w = 1}, {.p = {5, 0.5, 0}, .w = 1}, {.p = {10, 0.5, 0}, .w = 1}},
+//      {{.p = {0, 2, 0}, .w = 1}, {.p = {5, 2, 0}, .w = 1}, {.p = {10, 2, 0}, .w = 1}}};
 
   std::array<int, 2> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
 
@@ -67,13 +72,16 @@ auto checkFEByAutoDiff() {
 //    patchData = degreeElevate(patchData, i, 1);
   auto grid = std::make_shared<Grid>(patchData);
 
-  grid->globalRefine(2);
+//  grid->globalRefine(2);
   auto gridView = grid->leafGridView();
 
   using namespace Dune::Functions::BasisFactory;
   auto basis       = Ikarus::makeBasis(gridView, power<3>(nurbs()));
   auto element     = gridView.template begin<0>();
   auto nDOF        = basis.flat().size();
+  auto localView        = basis.flat().localView();
+  localView.bind(*element);
+  auto nDOFPerEle        = localView.size();
   const double tol = 1e-10;
 
   auto volumeLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
@@ -97,16 +105,42 @@ auto checkFEByAutoDiff() {
 
   Ikarus::FESettings feSettings;
   feSettings.addOrAssign("youngs_modulus", 1000.0);
-  feSettings.addOrAssign("poissons_ratio", 0.3);
+  feSettings.addOrAssign("poissons_ratio", 0.0);
   feSettings.addOrAssign("thickness", 0.1);
   feSettings.addOrAssign("simulationFlag", 0);
   using KLSHELL = Ikarus::KirchhoffLoveShell<decltype(basis)>;
-  KLSHELL fe(basis, *element, feSettings, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
-  using AutoDiffBasedFE = Ikarus::AutoDiffFE<KLSHELL>;
+  KLSHELL fe(basis, *element, feSettings);
+//  KLSHELL fe(basis, *element, feSettings, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
+  using AutoDiffBasedFE = Ikarus::AutoDiffFE<KLSHELL, Ikarus::FErequirements<>, false, true>;
   AutoDiffBasedFE feAutoDiff(fe);
 
   Eigen::VectorXd d;
-  d.setRandom(nDOF);
+//  d.setRandom(nDOF);
+  d.setZero(nDOF);
+//  d[0]=0;
+  d[3]=0.25;
+  d[6]=0.5;
+  d[12]=0.25;
+  d[15]=0.5;
+  d[21]=0.25;
+  d[24]=0.5;
+  auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(basis.flat(),                                  d);
+  Dune::SubsamplingVTKWriter vtkWriter(gridView,Dune::refinementLevels(0));
+
+  vtkWriter.addVertexData(disp, {"displacements", Dune::VTK::FieldInfo::Type::scalar, 3});
+  vtkWriter.write("KLSHELL");
+
+  auto localDisp=localFunction(disp);
+  localDisp.bind(*element);
+  std::cout<<localDisp({0,0})<<std::endl;
+  std::cout<<localDisp({0.5,0})<<std::endl;
+  std::cout<<localDisp({1,0})<<std::endl;
+  std::cout<<localDisp({0,0.5})<<std::endl;
+  std::cout<<localDisp({0.5,0.5})<<std::endl;
+  std::cout<<localDisp({1,0.5})<<std::endl;
+  std::cout<<localDisp({0,1})<<std::endl;
+  std::cout<<localDisp({0.5,1})<<std::endl;
+  std::cout<<localDisp({1,1})<<std::endl;
   double lambda = 7.3;
 
   auto req = Ikarus::FErequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
@@ -114,12 +148,12 @@ auto checkFEByAutoDiff() {
       .insertParameter(Ikarus::FEParameter::loadfactor, lambda);
 
   Eigen::MatrixXd K, KAutoDiff;
-  K.setZero(nDOF, nDOF);
-  KAutoDiff.setZero(nDOF, nDOF);
+  K.setZero(nDOFPerEle, nDOFPerEle);
+  KAutoDiff.setZero(nDOFPerEle, nDOFPerEle);
 
   Eigen::VectorXd R, RAutoDiff;
-  R.setZero(nDOF);
-  RAutoDiff.setZero(nDOF);
+  R.setZero(nDOFPerEle);
+  RAutoDiff.setZero(nDOFPerEle);
 
 //  fe.calculateMatrix(req, K);
 //  feAutoDiff.calculateMatrix(req, KAutoDiff);
@@ -133,7 +167,7 @@ auto checkFEByAutoDiff() {
 
   t.check(R.isApprox(RAutoDiff, tol))<<
       "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
-      "automatic differentiation:" << R <<"\n"<< RAutoDiff<<"\n"<< R-RAutoDiff;
+      "automatic differentiation:\n" << R <<"\n RAutoDiff \n"<< RAutoDiff<<"\n R-RAutoDiff \n"<< R-RAutoDiff;
 
   t.check(Dune::FloatCmp::eq(fe.calculateScalar(req), feAutoDiff.calculateScalar(req), tol),
           "Mismatch between the energies obtained from explicit implementation and the one based on "

@@ -72,6 +72,7 @@ namespace Ikarus {
                            }) {
         Eigen::VectorXdual dx(this->localView().size());
         dx.setZero();
+        g.setZero();
         autodiff::dual e;
         auto f = [&](auto& x) { return this->template calculateScalarImpl<autodiff::dual>(par, x); };
         gradient(f, autodiff::wrt(dx), at(dx), e, g);
