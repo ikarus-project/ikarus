@@ -75,14 +75,14 @@ namespace Ikarus {
     }
 
   public:
-    template <typename ScalarType = double>
+    template <typename ScalarType>
     auto getDisplacementFunction(const FERequirementType& par,
                                  const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
       const auto& d = par.getGlobalSolution(Ikarus::FESolutions::displacement);
       auto geo      = std::make_shared<const typename GridView::GridView::template Codim<0>::Entity::Geometry>(
           this->localView().element().geometry());
             Dune::BlockVector<Dune::RealTuple<ScalarType, Traits::worlddim>> disp(dispAtNodes.size());
-//      if constexpr (std::is_same_v<ScalarType, autodiff::dual>) {
+
         if (dx)
           for (auto i = 0U; i < disp.size(); ++i)
             for (auto k2 = 0U; k2 < worlddim; ++k2)
@@ -93,40 +93,10 @@ namespace Ikarus {
           for (auto i = 0U; i < disp.size(); ++i)
             for (auto k2 = 0U; k2 < worlddim; ++k2)
               disp[i][k2] = d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
-//      } else if constexpr (std::is_same_v<ScalarType, autodiff::dual2nd>) {
-//        if (dx)
-//          for (auto i = 0U; i < dispAtNodesDual2nd.size(); ++i)
-//            for (auto k2 = 0U; k2 < worlddim; ++k2)
-//              dispAtNodesDual2nd[i][k2]
-//                  = dx.value()[i * worlddim + k2]
-//                    + d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
-//        else
-//          for (auto i = 0U; i < dispAtNodesDual2nd.size(); ++i)
-//            for (auto k2 = 0U; k2 < worlddim; ++k2)
-//              dispAtNodesDual2nd[i][k2]
-//                  = d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
-//      } else if constexpr (std::is_same_v<ScalarType, double>) {
-//        if (dx)
-//          for (auto i = 0U; i < dispAtNodes.size(); ++i)
-//            for (auto k2 = 0U; k2 < worlddim; ++k2)
-//              dispAtNodes[i][k2] = dx.value()[i * worlddim + k2]
-//                                   + d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
-//        else
-//          for (auto i = 0U; i < dispAtNodes.size(); ++i)
-//            for (auto k2 = 0U; k2 < worlddim; ++k2)
-//              dispAtNodes[i][k2] = d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
-//      }
 
-//      if constexpr (std::is_same_v<ScalarType, autodiff::dual>) {
         Dune::StandardLocalFunction uFunction(localBasis, disp, geo);
-//        return std::make_pair(uFunction, std::ref(dispAtNodesDual));
-//      } else if constexpr (std::is_same_v<ScalarType, autodiff::dual2nd>) {
-//        Dune::StandardLocalFunction uFunction(localBasis, dispAtNodesDual2nd, geo);
-//        return std::make_pair(uFunction, std::ref(dispAtNodesDual2nd));
-//      } else if constexpr (std::is_same_v<ScalarType, double>) {
-//        Dune::StandardLocalFunction uFunction(localBasis, dispAtNodes, geo);
-        return std::make_pair(uFunction, dispAtNodes);
-//      }
+
+        return uFunction;
     }
 
     inline double calculateScalar(const FERequirementType& par) const { return calculateScalarImpl<double>(par); }
@@ -161,9 +131,14 @@ namespace Ikarus {
     mutable std::vector<Dune::FieldVector<double, 2>> lagrangePoints;
     mutable std::vector<double> out;
 
-    template<typename ScalarType>
-    auto computeMaterialAndStrains(const Eigen::Matrix<double, 2, 3>& J, const Eigen::Matrix<ScalarType, 3, 2>& gradu ) const
+    auto computeMaterialAndStrains(const Dune::FieldVector<double, 2>& gpPos, int gpIndex, const Geometry& geo, const auto& uFunction) const
     {
+      using ScalarType = typename std::remove_cvref_t<decltype(uFunction)>::ctype;
+      using namespace Dune;
+      using namespace Dune::DerivativeDirections;
+      const auto [X, Jd, Hd]                      = geo.impl().zeroFirstAndSecondDerivativeOfPosition(gpPos);
+      const auto J                                = toEigen(Jd);
+      const auto H                                = toEigen(Hd);
       const Eigen::Matrix<double, 2, 2> A         = J * J.transpose();
       Eigen::Matrix<double, 3, 3> G;
       G.setZero();
@@ -171,13 +146,27 @@ namespace Ikarus {
       G(2, 2)                                = 1;
       const Eigen::Matrix<double, 3, 3> GInv = G.inverse();
       const auto C                    = materialTangent(GInv);
-       Eigen::Vector3<ScalarType> epsV; //= toVoigt((0.5 * (gradu.transpose()*J.transpose() + J*gradu +gradu.transpose()*gradu)).eval()).eval();
+
+      const Eigen::Matrix<ScalarType, 3, 2> gradu = toEigen(
+          uFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll), Dune::on(Dune::DerivativeDirections::referenceElement)));
+      Eigen::Vector3<ScalarType> epsV;
       const Eigen::Matrix<ScalarType, 2, 3> j = J + gradu.transpose();
-      std::cout<<"J\n"<<J<<std::endl;
-      std::cout<<"j\n"<<j<<std::endl;
+
       epsV << J.row(0).dot(gradu.col(0)) + 0.5 * gradu.col(0).squaredNorm(),
           J.row(1).dot(gradu.col(1)) + 0.5 * gradu.col(1).squaredNorm(),j.row(0).dot(j.row(1));
-      return std::make_tuple(C,epsV);
+
+      const auto& Ndd                     = localBasis.evaluateSecondDerivatives(gpIndex);
+      const auto uasMatrix           = Dune::viewAsEigenMatrixAsDynFixed(uFunction.coefficientsRef());
+      const auto hessianu               = Ndd.transpose().template cast<ScalarType>() * uasMatrix;
+      const Eigen::Matrix3<ScalarType> h                        = H + hessianu;
+
+      const Eigen::Vector3<ScalarType> a3N = (j.row(0).cross(j.row(1)));
+      const Eigen::Vector3<ScalarType> a3 = a3N.normalized();
+      Eigen::Vector<ScalarType, 3> bV     = h * a3;
+      bV(2) *= 2;  // Voigt notation requires the two here
+      const auto BV                   = toVoigt(toEigen(geo.impl().secondFundamentalForm(gpPos)));
+      const auto kappaV               = (BV - bV).eval();
+      return std::make_tuple(C,epsV,kappaV,j,J,h,a3N,a3);
     }
 
     template <typename ScalarType>
@@ -185,23 +174,20 @@ namespace Ikarus {
                                                            = std::nullopt) const -> ScalarType {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
-      const auto [uFunction, uNodes] = getDisplacementFunction(par, dx);
+      const auto uFunction = getDisplacementFunction(par, dx);
       const auto& lambda             = par.getParameter(Ikarus::FEParameter::loadfactor);
       const auto geo                 = this->localView().element().geometry();
       ScalarType energy              = 0.0;
-//      const auto uasMatrix           = Dune::viewAsEigenMatrixAsDynFixed(uNodes);
+
       const auto& thickness_ = fESettings.request<double>("thickness");
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
-        const auto Jd                     = geo.jacobianTransposed(gp.position());
-//        const auto [X, Jd, Hd]                      = geo.impl().zeroFirstAndSecondDerivativeOfPosition(gp.position());
-        const auto J                                = toEigen(Jd);
-        const Eigen::Matrix<ScalarType, 3, 2> gradu = toEigen(
-            uFunction.evaluateDerivative(gpIndex, wrt(spatialAll), Dune::on(DerivativeDirections::referenceElement)));
-        const auto [ C,epsV]= computeMaterialAndStrains(J,gradu);
+//        const auto& Ndd                     = localBasis.evaluateSecondDerivatives(gpIndex);
+//        const auto hessianu               = Ndd.transpose().template cast<ScalarType>() * uasMatrix;
+        const auto [ C,epsV,kappaV,j,J,h,a3N,a3]= computeMaterialAndStrains(gp.position(), gpIndex,geo,uFunction);
 
         const ScalarType membraneEnergy = 0.5 * thickness_ * epsV.dot(C * epsV);
-//        const ScalarType bendingEnergy  = 0.5 * Dune::power(thickness_, 3) / 12.0 * kappaV.dot(C * kappaV)*0;
-        energy += membraneEnergy  * geo.integrationElement(gp.position()) * gp.weight();
+        const ScalarType bendingEnergy  = 0.5 * Dune::power(thickness_, 3) / 12.0 * kappaV.dot(C * kappaV);
+        energy +=( membraneEnergy+bendingEnergy)  * geo.integrationElement(gp.position()) * gp.weight();
       }
 
 //      if (volumeLoad) {
@@ -247,7 +233,7 @@ namespace Ikarus {
           force.setZero();
           using namespace Dune::DerivativeDirections;
           using namespace Dune;
-          const auto [uFunction, uNodes] = getDisplacementFunction(par, dx);
+          const auto uFunction = getDisplacementFunction(par, dx);
           const auto& lambda             = par.getParameter(Ikarus::FEParameter::loadfactor);
           const auto geo                 = this->localView().element().geometry();
 
@@ -255,22 +241,18 @@ namespace Ikarus {
 
           // Internal forces
           for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
-//            const auto [X, Jd, Hd]  =    geo.impl().zeroFirstAndSecondDerivativeOfPosition(gp.position());
-            const auto Jd                     = geo.jacobianTransposed(gp.position());
-            const auto J = toEigen(Jd);
-            const Eigen::Matrix<double, 2, 2> A         = J * J.transpose();
-            const Eigen::Matrix<ScalarType, 3, 2> gradu = toEigen(
-                uFunction.evaluateDerivative(gpIndex, wrt(spatialAll), Dune::on(DerivativeDirections::referenceElement)));
-            const Eigen::Matrix<ScalarType, 2, 3> j = J + gradu.transpose();
+
+            const auto [ C,epsV,kappaV,j,J,h,a3N,a3]= computeMaterialAndStrains(gp.position(), gpIndex,geo,uFunction);
+            const Eigen::Vector<ScalarType,3> membraneForces = thickness_*C*epsV;
+            const Eigen::Vector<ScalarType,3> moments = Dune::power(thickness_, 3) / 12.0 *C * kappaV;
 
             const auto& Nd                     = localBasis.evaluateJacobian(gpIndex);
-
-            const auto [ C,epsV]= computeMaterialAndStrains(J,gradu);
-            const Eigen::Vector<ScalarType,3> membraneForces = thickness_*C*epsV;
-
+            const auto& Ndd                     = localBasis.evaluateSecondDerivatives(gpIndex);
             for (size_t i = 0; i < numberOfNodes; ++i) {
               Eigen::Matrix<ScalarType, 3, 3> bopIMembrane = bopMembrane(j,Nd,i);
+              Eigen::Matrix<ScalarType, 3, 3> bopIBending = bopBending(j,h,Nd,Ndd,i,a3N,a3);
               force.template segment<3>(3 * i) += bopIMembrane.transpose() * membraneForces * geo.integrationElement(gp.position()) * gp.weight();
+              force.template segment<3>(3 * i) -= bopIBending.transpose() * moments * geo.integrationElement(gp.position()) * gp.weight();
             }
           }
 
@@ -326,6 +308,24 @@ namespace Ikarus {
       bop.row(0)= Jcur.row(0) * dN(node, 0);
       bop.row(1)= Jcur.row(1) * dN(node, 1);
       bop.row(2)= Jcur.row(0) * dN(node, 1) + Jcur.row(1) * dN(node, 0);
+
+      return bop;
+    }
+
+    template <typename ScalarType>
+    Eigen::Matrix<ScalarType, 3, 3> bopBending(const Eigen::Matrix<ScalarType, 2, 3>& jcur,const Eigen::Matrix3<ScalarType>& h, const auto& dN, const auto& ddN,
+                                                const int node, const Eigen::Vector3<ScalarType>& a3N,const Eigen::Vector3<ScalarType>& a3)const  {
+      const Eigen::Matrix<ScalarType,3,3> a1dxI =  Eigen::Matrix<double,3,3>::Identity()*dN(node, 0); // this should be double
+      // but the cross-product below complains otherwise
+      const Eigen::Matrix<ScalarType,3,3> a2dxI =  Eigen::Matrix<double,3,3>::Identity()*dN(node, 1);
+      const auto a1 = jcur.row(0);
+      const auto a2 = jcur.row(1);
+      const Eigen::Matrix<ScalarType,3,3> a3NdI = a1dxI.colwise().cross(a2)-a2dxI.colwise().cross(a1); // minus needed since order has
+      // to be swapped to get column-wise cross product working
+      const Eigen::Matrix<ScalarType,3,3> a3d1 =1.0/a3N.norm()*(Eigen::Matrix<double,3,3>::Identity()-a3*a3.transpose())*a3NdI;
+
+      Eigen::Matrix<ScalarType, 3, 3> bop = h*a3d1+(a3*ddN.row(node)).transpose();
+      bop.row(2)*= 2;
 
       return bop;
     }

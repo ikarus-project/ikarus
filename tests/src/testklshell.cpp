@@ -115,15 +115,15 @@ auto checkFEByAutoDiff() {
   AutoDiffBasedFE feAutoDiff(fe);
 
   Eigen::VectorXd d;
-//  d.setRandom(nDOF);
-  d.setZero(nDOF);
+  d.setRandom(nDOF);
+//  d.setZero(nDOF);
 //  d[0]=0;
-  d[3]=0.25;
-  d[6]=0.5;
-  d[12]=0.25;
-  d[15]=0.5;
-  d[21]=0.25;
-  d[24]=0.5;
+//  d[3]=0.25;
+//  d[6]=0.5;
+//  d[12]=0.25;
+//  d[15]=0.5;
+//  d[21]=0.25;
+//  d[24]=0.5;
   auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(basis.flat(),                                  d);
   Dune::SubsamplingVTKWriter vtkWriter(gridView,Dune::refinementLevels(0));
 
@@ -132,15 +132,15 @@ auto checkFEByAutoDiff() {
 
   auto localDisp=localFunction(disp);
   localDisp.bind(*element);
-  std::cout<<localDisp({0,0})<<std::endl;
-  std::cout<<localDisp({0.5,0})<<std::endl;
-  std::cout<<localDisp({1,0})<<std::endl;
-  std::cout<<localDisp({0,0.5})<<std::endl;
-  std::cout<<localDisp({0.5,0.5})<<std::endl;
-  std::cout<<localDisp({1,0.5})<<std::endl;
-  std::cout<<localDisp({0,1})<<std::endl;
-  std::cout<<localDisp({0.5,1})<<std::endl;
-  std::cout<<localDisp({1,1})<<std::endl;
+//  std::cout<<localDisp({0,0})<<std::endl;
+//  std::cout<<localDisp({0.5,0})<<std::endl;
+//  std::cout<<localDisp({1,0})<<std::endl;
+//  std::cout<<localDisp({0,0.5})<<std::endl;
+//  std::cout<<localDisp({0.5,0.5})<<std::endl;
+//  std::cout<<localDisp({1,0.5})<<std::endl;
+//  std::cout<<localDisp({0,1})<<std::endl;
+//  std::cout<<localDisp({0.5,1})<<std::endl;
+//  std::cout<<localDisp({1,1})<<std::endl;
   double lambda = 7.3;
 
   auto req = Ikarus::FErequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
