@@ -155,15 +155,15 @@ auto checkFEByAutoDiff() {
   R.setZero(nDOFPerEle);
   RAutoDiff.setZero(nDOFPerEle);
 
-//  fe.calculateMatrix(req, K);
-//  feAutoDiff.calculateMatrix(req, KAutoDiff);
+  fe.calculateMatrix(req, K);
+  feAutoDiff.calculateMatrix(req, KAutoDiff);
 
   fe.calculateVector(req, R);
   feAutoDiff.calculateVector(req, RAutoDiff);
 
-//  t.check(K.isApprox(KAutoDiff, tol),
-//          "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
-//          "automatic differentiation:" << K <<"\n"<< KAutoDiff<<"\n"<< K-KAutoDiff);
+  t.check(K.isApprox(KAutoDiff, tol))<<
+      "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
+      "automatic differentiation: \n" << K <<"\n KAutoDiff \n"<< KAutoDiff<<"\n K-KAutoDiff \n"<< K-KAutoDiff;
 
   t.check(R.isApprox(RAutoDiff, tol))<<
       "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
@@ -186,7 +186,7 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   using ControlPoint = Dune::IGA::NURBSPatchData<2, dimworld>::ControlPointType;
 
   const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {0, 0, 0}, .w = 1}, {.p = {10, 0, 0}, .w = 1}}, {{.p = {0, 2, 0}, .w = 1}, {.p = {10, 2, 0}, .w = 1}}};
+      = {{{.p = {0, 0, 0}, .w = 1}, {.p = {0, 2, 0}, .w = 1}}, {{.p = {10, 0, 0}, .w = 1}, {.p = {10, 2, 0}, .w = 1}}};
 
   std::array<int, 2> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
 
@@ -201,7 +201,7 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
     patchData = degreeElevate(patchData, i, 1);
 
   Dune::ParameterTree parameterSet;
-  Dune::ParameterTreeParser::readINITree("/workspaces/lex/Dokumente/ikarusVSC/ikarus/tests/src/shell.parset",
+  Dune::ParameterTreeParser::readINITree("/tmp/Ikarus/tests/src/shell.parset",
                                          parameterSet);
 
   const auto E              = parameterSet.get<double>("E");
@@ -214,6 +214,8 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
 
   grid->globalRefineInDirection(0,refine);
   auto gridView = grid->leafGridView();
+
+
 
   using GridView = decltype(gridView);
   using namespace Ikarus;
@@ -228,6 +230,8 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   feSettings.addOrAssign("thickness", thickness);
   feSettings.addOrAssign("simulationFlag", simulationFlag);
   auto basis      = Ikarus::makeBasis(gridView, power<3>(nurbs(), FlatInterleaved()));
+  std::cout<<"Number of Elements: "<<gridView.size(0)<<std::endl;
+  std::cout<<"Dofs: "<<basis.flat().dimension()<<std::endl;
   auto volumeLoad = [thickness, loadFactor]([[maybe_unused]] auto& globalCoord, auto& lamb) {
     Eigen::Vector3d fext;
     fext.setZero();
@@ -310,7 +314,7 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
 
   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(
       basis.flat(), d, 2);
-  vtkWriter->setFileNamePrefix("Test2DSolid");
+  vtkWriter->setFileNamePrefix("TestKLShell");
   vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 3);
 
   auto lc = Ikarus::LoadControl(tr, 1, {0, 1});
@@ -328,5 +332,5 @@ int main(int argc, char** argv) {
   //  const double E             = materialParameters.get<double>("E");
   //  const double nu            = materialParameters.get<double>("nu");
   checkFEByAutoDiff();
-//  NonLinearElasticityLoadControlNRandTRforKLShell();
+  NonLinearElasticityLoadControlNRandTRforKLShell();
 }
