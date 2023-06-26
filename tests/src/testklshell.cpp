@@ -37,7 +37,8 @@
 
 using Dune::TestSuite;
 
-auto checkFEByAutoDiff() {
+template<template<typename> typename ShellElement>
+auto checkFEByAutoDiff(std::string filename) {
   TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() by Automatic Differentiation of Kirchhoff-Love shell");
 
   constexpr auto dimworld        = 3;
@@ -53,11 +54,7 @@ auto checkFEByAutoDiff() {
           {{.p = {5, 0.0, 0}, .w = 1}, {.p = {5, 1, 0}, .w = 1}, {.p = {5, 2, 0}, .w = 1}},
           {{.p = {10, 0.0, 0}, .w = 1}, {.p = {10, 1, 0}, .w = 1}, {.p = {10, 2, 0}, .w = 1}}};
 
-//  const std::vector<std::vector<ControlPoint>> controlPoints
-//      = {
-//      {{.p = {0, 0.0, 0}, .w = 1}, {.p = {5, 0.0, 0}, .w = 1}, {.p = {10, 0.0, 0}, .w = 1}},
-//      {{.p = {0, 0.5, 0}, .w = 1}, {.p = {5, 0.5, 0}, .w = 1}, {.p = {10, 0.5, 0}, .w = 1}},
-//      {{.p = {0, 2, 0}, .w = 1}, {.p = {5, 2, 0}, .w = 1}, {.p = {10, 2, 0}, .w = 1}}};
+
 
   std::array<int, 2> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
 
@@ -108,39 +105,24 @@ auto checkFEByAutoDiff() {
   feSettings.addOrAssign("poissons_ratio", 0.0);
   feSettings.addOrAssign("thickness", 0.1);
   feSettings.addOrAssign("simulationFlag", 0);
-  using KLSHELL = Ikarus::KirchhoffLoveShell<decltype(basis)>;
-  KLSHELL fe(basis, *element, feSettings);
-//  KLSHELL fe(basis, *element, feSettings, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
-  using AutoDiffBasedFE = Ikarus::AutoDiffFE<KLSHELL, Ikarus::FErequirements<>, false, true>;
+  using Basis = decltype(basis);
+//  KLSHELL fe(basis, *element, feSettings);
+  ShellElement<Basis> fe(basis, *element, feSettings, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
+  using AutoDiffBasedFE = Ikarus::AutoDiffFE<ShellElement<Basis>, Ikarus::FErequirements<>, false, true>;
   AutoDiffBasedFE feAutoDiff(fe);
 
   Eigen::VectorXd d;
   d.setRandom(nDOF);
-//  d.setZero(nDOF);
-//  d[0]=0;
-//  d[3]=0.25;
-//  d[6]=0.5;
-//  d[12]=0.25;
-//  d[15]=0.5;
-//  d[21]=0.25;
-//  d[24]=0.5;
+
   auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(basis.flat(),                                  d);
   Dune::SubsamplingVTKWriter vtkWriter(gridView,Dune::refinementLevels(0));
 
   vtkWriter.addVertexData(disp, {"displacements", Dune::VTK::FieldInfo::Type::scalar, 3});
-  vtkWriter.write("KLSHELL");
+  vtkWriter.write(filename);
 
   auto localDisp=localFunction(disp);
   localDisp.bind(*element);
-//  std::cout<<localDisp({0,0})<<std::endl;
-//  std::cout<<localDisp({0.5,0})<<std::endl;
-//  std::cout<<localDisp({1,0})<<std::endl;
-//  std::cout<<localDisp({0,0.5})<<std::endl;
-//  std::cout<<localDisp({0.5,0.5})<<std::endl;
-//  std::cout<<localDisp({1,0.5})<<std::endl;
-//  std::cout<<localDisp({0,1})<<std::endl;
-//  std::cout<<localDisp({0.5,1})<<std::endl;
-//  std::cout<<localDisp({1,1})<<std::endl;
+
   double lambda = 7.3;
 
   auto req = Ikarus::FErequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
@@ -240,7 +222,10 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
     return fext;
   };
 
-  using ElementType = Ikarus::AutoDiffFE<Ikarus::KirchhoffLoveShell<decltype(basis)>>;
+  using ElementTypePRim = Ikarus::KirchhoffLoveShell<decltype(basis)>;
+  using ElementTypeRaw = Ikarus::StressBasedShell<ElementTypePRim>;
+//  using ElementType = Ikarus::AutoDiffFE<ElementTypeRaw, Ikarus::FErequirements<>, false, true>;
+  using ElementType = ElementTypeRaw;
   std::vector<ElementType> fes;
 
   for (auto& element : elements(gridView))
@@ -309,7 +294,7 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   //            .Delta0    = 1});
   auto linSolver               = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_UmfPackLU);
   auto tr                      = Ikarus::makeNewtonRaphson(nonLinOp, std::move(linSolver));
-  tr.
+
   auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
   tr->subscribeAll(nonLinearSolverObserver);
 
@@ -328,10 +313,18 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   return t;
 }
 
+
+template <typename Basis>
+using KLSHELL = Ikarus::KirchhoffLoveShell<Basis>;
+template <typename Basis>
+using KLSHELLSB = Ikarus::StressBasedShell<Ikarus::KirchhoffLoveShell<Basis>>;
 int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   //  const double E             = materialParameters.get<double>("E");
   //  const double nu            = materialParameters.get<double>("nu");
-  checkFEByAutoDiff();
+
+  checkFEByAutoDiff<KLSHELL>("KLSHELL");
+
+  checkFEByAutoDiff<KLSHELLSB>("KLSHELLSB");
   NonLinearElasticityLoadControlNRandTRforKLShell();
 }

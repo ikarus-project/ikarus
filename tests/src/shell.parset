@@ -1,6 +1,6 @@
 E = 1000
 nu = 0.0
-thickness = 0.01
-simulationFlag = 0
-refine = 10
+thickness = 0.1
+simulationFlag = 1
+refine = 9
 loadFactor=1
