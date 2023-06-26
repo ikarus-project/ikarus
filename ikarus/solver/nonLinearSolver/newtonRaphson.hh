@@ -100,7 +100,7 @@ namespace Ikarus {
       solverInformation.iterations   = iter;
       solverInformation.residualnorm = static_cast<double>(rNorm);
       if (solverInformation.success)
-        this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, iter, static_cast<double>(rNorm), settings.tol);
+        this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, iter, static_cast<double>(rNorm), settings.Rtol);
       return solverInformation;
     }
 
