@@ -33,23 +33,23 @@ struct DefaultMembraneStrain {
         J.row(1).dot(gradu.col(1)) + 0.5*gradu.col(1).squaredNorm(), j.row(0).dot(j.row(1));
     return epsV;
   }
-  template<typename ScalarType>
-  auto derivative(const Eigen::Matrix<ScalarType, 2, 3> &jcur, const auto &dN,
-                  const int node) const{
+  template<typename Geometry,typename ScalarType>
+  auto derivative(const Eigen::Matrix<ScalarType, 2, 3> &jcur, const auto &dNAtGp, const Geometry& geo,const auto& uFunction, const auto& localBasis,
+                  const int node)  const{
     Eigen::Matrix<ScalarType, 3, 3> bop;
-    bop.row(0) = jcur.row(0)*dN(node, 0);
-    bop.row(1) = jcur.row(1)*dN(node, 1);
-    bop.row(2) = jcur.row(0)*dN(node, 1) + jcur.row(1)*dN(node, 0);
+    bop.row(0) = jcur.row(0)*dNAtGp(node, 0);
+    bop.row(1) = jcur.row(1)*dNAtGp(node, 1);
+    bop.row(2) = jcur.row(0)*dNAtGp(node, 1) + jcur.row(1)*dNAtGp(node, 0);
 
     return bop;
   }
-  template<typename ScalarType>
-  auto secondDerivative(const auto &dN,
+  template<typename Geometry,typename ScalarType>
+  auto secondDerivative(const auto &dNAtGp, const Geometry& geo,const auto& uFunction, const auto& localBasis,
                         const Eigen::Vector3<ScalarType> &S, int I, int J)const {
-    const auto &dN1i = dN(I, 0);
-    const auto &dN1j = dN(J, 0);
-    const auto &dN2i = dN(I, 1);
-    const auto &dN2j = dN(J, 1);
+    const auto &dN1i = dNAtGp(I, 0);
+    const auto &dN1j = dNAtGp(J, 0);
+    const auto &dN2i = dNAtGp(I, 1);
+    const auto &dN2j = dNAtGp(J, 1);
     const ScalarType NS = dN1i*dN1j*S[0] + dN2i*dN2j*S[1] + (dN1i*dN2j + dN2i*dN1j)*S[2];
     Eigen::Matrix<ScalarType, 3, 3> kg = Eigen::Matrix<double, 3, 3>::Identity()*NS;
     return kg;
@@ -94,6 +94,7 @@ struct CASMembraneStrain
         uFunction.evaluateDerivative(lP, wrt(spatialAll, Dune::on(DerivativeDirections::referenceElement))));
 
       const auto  epsV = defaultMembraneStrain.value(lP,geo,uFunction);
+      membraneStrainsAtVertices = std::vector<Eigen::Vector<ScalarType, 3>>()
       std::visit([&](auto& vec){ vec.push_back(epsV);},membraneStrainsAtVertices);
     }
 
@@ -109,23 +110,53 @@ struct CASMembraneStrain
     Eigen::Vector<ScalarType, 3> res;
     res.setZero();
     std::visit([&](auto& vec){
-      for (int i = 0; i < NANS.size(); ++i) {
-        res += vec[i] * NANS[i][0];
+      if constexpr (std::is_same_v<typename decltype(vec)::value_type,ScalarType>) {
+        for (int i = 0; i < NANS.size(); ++i) {
+          res += vec[i] * NANS[i][0];
+        }
       }
       ;},membraneStrainsAtVertices);
 
     return res;
   }
 
-  template<typename ScalarType>
-  auto derivative(const Eigen::Matrix<ScalarType, 2, 3> &jcur, const auto &dN,
+  template<typename Geometry,typename ScalarType>
+  auto derivative(const Eigen::Matrix<ScalarType, 2, 3> &jcur, const auto &dNAtGp, const Geometry& geo,const auto& uFunction, const auto& localBasis,
                   const int node) const{
-    Eigen::Matrix<ScalarType, 3, 3> bop;
-    bop.row(0) = jcur.row(0)*dN(node, 0);
-    bop.row(1) = jcur.row(1)*dN(node, 1);
-    bop.row(2) = jcur.row(0)*dN(node, 1) + jcur.row(1)*dN(node, 0);
 
+    Eigen::Matrix<ScalarType, 3, 3> bop;
+    bop.setZero();
+    using namespace Dune::DerivativeDirections;
+    using namespace Dune;
+    Eigen::Matrix<double,Eigen::Dynamic,2> dN;
+    for (int i = 0; auto& lP : lagrangePoints) {
+       localBasis.evaluateJacobian(lP,dN);
+
+      const auto J = toEigen(geo.jacobianTransposed(lP));
+      const Eigen::Matrix<ScalarType, 3, 2> gradu = toEigen(
+        uFunction.evaluateDerivative(lP, wrt(spatialAll, Dune::on(DerivativeDirections::referenceElement))));
+      const Eigen::Matrix<ScalarType, 2, 3> j = J + gradu.transpose();
+      const auto  bopI = defaultMembraneStrain.derivative(jcur,dN,geo,uFunction,localBasis,node);
+      bop+=bopI*NANS[i][0];
+    }
     return bop;
+  }
+
+  template<typename Geometry,typename ScalarType>
+  auto secondDerivative(const auto &dNAtGp, const Geometry& geo,const auto& uFunction, const auto& localBasis,
+                        const Eigen::Vector3<ScalarType> &S, int I, int J)const {
+    Eigen::Matrix<ScalarType, 3, 3> kg;
+    kg.setZero();
+    using namespace Dune::DerivativeDirections;
+    using namespace Dune;
+    Eigen::Matrix<double,Eigen::Dynamic,2> dN;
+    for (int i = 0; auto& lP : lagrangePoints) {
+     localBasis.evaluateJacobian(lP,dN);
+
+      const auto  kgIJ = defaultMembraneStrain.secondDerivative(dN,geo,uFunction,localBasis,S,I,J);
+      kg+=kgIJ*NANS[i][0];
+    }
+    return kg;
   }
 
 };
@@ -167,29 +198,28 @@ class MembraneStrainVariant
   }
   template< typename Geometry>
   auto value(const Dune::FieldVector<double, 2> &gpPos,
-             int gpIndex,
              const Geometry &geo,
              const auto &uFunction) {
 
-    return std::visit([&](const auto& impl) { return impl.value(gpPos,gpIndex,geo,uFunction); }, impl_);
+    return std::visit([&](const auto& impl) { return impl.value(gpPos,geo,uFunction); }, impl_);
   }
-  template<typename ScalarType>
-  auto derivative(const Eigen::Matrix<ScalarType, 2, 3> &jcur, const auto &dN,
+  template<typename Geometry,typename ScalarType>
+  auto derivative(const Eigen::Matrix<ScalarType, 2, 3> &jcur, const auto &dNAtGp, const Geometry& geo,const auto& uFunction, const auto& localBasis,
                   const int node) {
 
-    return std::visit([&](const auto& impl) { return impl.derivative(jcur,dN,node); }, impl_);
+    return std::visit([&](const auto& impl) { return impl.derivative(jcur,dNAtGp,geo,uFunction,localBasis,node); }, impl_);
   }
-  template<typename ScalarType>
-  auto secondDerivative(const auto &dN,
+  template<typename Geometry,typename ScalarType>
+  auto secondDerivative(const auto &dNAtGp, const Geometry& geo,const auto& uFunction, const auto& localBasis,
                         const Eigen::Vector3<ScalarType> &S, int I, int J) {
 
-    return std::visit([&](const auto& impl) { return impl.secondDerivative(dN,S,I,J); }, impl_);
+    return std::visit([&](const auto& impl) { return impl.secondDerivative(dNAtGp,geo,uFunction,localBasis,S,I,J); }, impl_);
   }
 
  private:
   std::variant<Implementations...> impl_;
 };
 
-using MembraneStrain = MembraneStrainVariant<DefaultMembraneStrain>;
+using MembraneStrain = MembraneStrainVariant<DefaultMembraneStrain,CASMembraneStrain>;
 
 }

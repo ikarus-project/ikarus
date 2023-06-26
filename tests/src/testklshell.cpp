@@ -99,12 +99,14 @@ auto checkFEByAutoDiff(std::string filename) {
   Dune::BitSetVector<1> neumannVertices(gridView.size(2), true);
 
   BoundaryPatch<decltype(gridView)> neumannBoundary(gridView, neumannVertices);
+  for (int i = 0; i < 2; ++i) {
+
 
   Ikarus::FESettings feSettings;
   feSettings.addOrAssign("youngs_modulus", 1000.0);
   feSettings.addOrAssign("poissons_ratio", 0.0);
   feSettings.addOrAssign("thickness", 0.1);
-  feSettings.addOrAssign("simulationFlag", 0);
+  feSettings.addOrAssign("simulationFlag", i);
   using Basis = decltype(basis);
 //  KLSHELL fe(basis, *element, feSettings);
   ShellElement<Basis> fe(basis, *element, feSettings, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
@@ -118,7 +120,7 @@ auto checkFEByAutoDiff(std::string filename) {
   Dune::SubsamplingVTKWriter vtkWriter(gridView,Dune::refinementLevels(0));
 
   vtkWriter.addVertexData(disp, {"displacements", Dune::VTK::FieldInfo::Type::scalar, 3});
-  vtkWriter.write(filename);
+  vtkWriter.write(filename+ std::to_string(i));
 
   auto localDisp=localFunction(disp);
   localDisp.bind(*element);
@@ -145,16 +147,16 @@ auto checkFEByAutoDiff(std::string filename) {
 
   t.check(K.isApprox(KAutoDiff, tol))<<
       "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
-      "automatic differentiation: \n" << K <<"\n KAutoDiff \n"<< KAutoDiff<<"\n K-KAutoDiff \n"<< K-KAutoDiff;
+      "automatic differentiation with simulationFlag: "<<i<<"\n" << K <<"\n KAutoDiff \n"<< KAutoDiff<<"\n K-KAutoDiff \n"<< K-KAutoDiff;
 
   t.check(R.isApprox(RAutoDiff, tol))<<
       "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
-      "automatic differentiation:\n" << R <<"\n RAutoDiff \n"<< RAutoDiff<<"\n R-RAutoDiff \n"<< R-RAutoDiff;
+      "automatic differentiation with simulationFlag: "<<i<<"\n" << R <<"\n RAutoDiff \n"<< RAutoDiff<<"\n R-RAutoDiff \n"<< R-RAutoDiff;
 
-  t.check(Dune::FloatCmp::eq(fe.calculateScalar(req), feAutoDiff.calculateScalar(req), tol),
-          "Mismatch between the energies obtained from explicit implementation and the one based on "
-          "automatic differentiation");
-
+  t.check(Dune::FloatCmp::eq(fe.calculateScalar(req), feAutoDiff.calculateScalar(req), tol))<<
+    "Mismatch between the energies obtained from explicit implementation and the one based on "
+    "automatic differentiation"<<"with simulationFlag: "<<i;
+  }
   return t;
 }
 

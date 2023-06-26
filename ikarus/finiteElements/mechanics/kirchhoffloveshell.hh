@@ -92,6 +92,7 @@ namespace Ikarus {
       const auto &lambda = par.getParameter(FEParameter::loadfactor);
       const auto geo = this->localView().element().geometry();
       ScalarType energy = 0.0;
+      this->membraneStrains.pre(geo,uFunction);
 
       const auto &thickness_ = this->fESettings.template request<double>("thickness");
       for (int gpIndex=0; const auto & gp: rule) {
@@ -145,6 +146,7 @@ namespace Ikarus {
       const auto geo = this->localView().element().geometry();
 
       const auto &thickness_ = this->fESettings.template request<double>("thickness");
+      this->membraneStrains.pre(geo,uFunction);
 
       // Internal forces
       for (int gpIndex=0; const auto & gp: rule) {
@@ -164,12 +166,13 @@ namespace Ikarus {
         const auto &Nd = this->localBasis.evaluateJacobian(gpIndex2D);
         const auto &Ndd = this->localBasis.evaluateSecondDerivatives(gpIndex2D);
         for (size_t i = 0; i < this->numberOfNodes; ++i) {
-          Eigen::Matrix<ScalarType, 3, 3> bopIMembrane = this->membraneStrain.derivative(j, Nd, i);
+          Eigen::Matrix<ScalarType, 3, 3> bopIMembrane = this->membraneStrain.derivative(j, Nd,geo,uFunction,this->localBasis, i);
           Eigen::Matrix<ScalarType, 3, 3> bopIBending = this->bopBending(j, h, Nd, Ndd, i, a3N, a3);
           Eigen::Matrix<ScalarType, 3, 3> bopI = bopIMembrane-zeta*bopIBending;
           force.template segment<3>(3*i) +=
               bopI.transpose()*S*geo.integrationElement(gp2DPos)*gp.weight()*2*thickness_/2.0;
-          // the first two fixes the change of the integration mapping from 0..1 to -1..1 and the h/2 factor is the factor for the correct thickness
+          // the first two fixes the change of the integration mapping from 0..1 to -1..1,
+          // and the h/2 factor is the factor for the correct thickness
         }
         ++gpIndex;
       }
@@ -211,6 +214,7 @@ namespace Ikarus {
       const auto uFunction = this->getDisplacementFunction(par, dx);
       const auto &lambda = par.getParameter(FEParameter::loadfactor);
       const auto geo = this->localView().element().geometry();
+      this->membraneStrains.pre(geo,uFunction);
 
       const auto &thickness_ = this->fESettings.template request<double>("thickness");
 
@@ -233,14 +237,14 @@ namespace Ikarus {
         const auto &Nd = this->localBasis.evaluateJacobian(gpIndex2D);
         const auto &Ndd = this->localBasis.evaluateSecondDerivatives(gpIndex2D);
         for (size_t i = 0; i < this->numberOfNodes; ++i) {
-          Eigen::Matrix<ScalarType, 3, 3> bopIMembrane = this->membraneStrain.derivative(jE, Nd, i);
+          Eigen::Matrix<ScalarType, 3, 3> bopIMembrane = this->membraneStrain.derivative(jE, Nd,geo,uFunction,this->localBasis, i);
           Eigen::Matrix<ScalarType, 3, 3> bopIBending = this->bopBending(jE, h, Nd, Ndd, i, a3N, a3);
           Eigen::Matrix<ScalarType, 3, 3> bopI = bopIMembrane - zeta * bopIBending;
           for (size_t j = i; j < this->numberOfNodes; ++j) {
-            Eigen::Matrix<ScalarType, 3, 3> bopJMembrane = this->membraneStrain.derivative(jE, Nd, j);
+            Eigen::Matrix<ScalarType, 3, 3> bopJMembrane = this->membraneStrain.derivative(jE, Nd,geo,uFunction,this->localBasis, j);
             Eigen::Matrix<ScalarType, 3, 3> bopJBending = this->bopBending(jE, h, Nd, Ndd, j, a3N, a3);
             Eigen::Matrix<ScalarType, 3, 3> bopJ = bopJMembrane - zeta * bopJBending;
-            Eigen::Matrix<ScalarType, 3, 3> kgMembraneIJ = this->membraneStrain.secondDerivative(Nd, S, i, j);
+            Eigen::Matrix<ScalarType, 3, 3> kgMembraneIJ = this->membraneStrain.secondDerivative(Nd,geo,uFunction,this->localBasis, S, i, j);
             Eigen::Matrix<ScalarType, 3, 3> kgBendingIJ = this->kgBending(jE, h, Nd, Ndd, a3N, a3, S, i, j);
             K.template block<3, 3>(3*i, 3*j) += (bopI.transpose()*C*bopJ+kgMembraneIJ+zeta*kgBendingIJ)*intElement;
 
@@ -278,6 +282,8 @@ class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis> {
     const auto &simulationFlag = fESettings.request<int>("simulationFlag");
     if (simulationFlag==0)
       membraneStrain = DefaultMembraneStrain();
+    else if (simulationFlag==1)
+      membraneStrain = CASMembraneStrain();
 
     this->localView().bind(element);
     auto &first_child = this->localView().tree().child(0);
@@ -447,6 +453,7 @@ class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis> {
     const auto &lambda = par.getParameter(FEParameter::loadfactor);
     const auto geo = this->localView().element().geometry();
     ScalarType energy = 0.0;
+    this->membraneStrains.pre(geo,uFunction);
 
     const auto &thickness_ = fESettings.request<double>("thickness");
     for (const auto &[gpIndex, gp]: uFunction.viewOverIntegrationPoints()) {
@@ -488,6 +495,7 @@ class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis> {
     const auto uFunction = getDisplacementFunction(par, dx);
     const auto &lambda = par.getParameter(FEParameter::loadfactor);
     const auto geo = this->localView().element().geometry();
+    this->membraneStrains.pre(geo,uFunction);
 
     const auto &thickness_ = fESettings.request<double>("thickness");
 
@@ -495,15 +503,15 @@ class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis> {
     for (const auto &[gpIndex, gp]: uFunction.viewOverIntegrationPoints()) {
 
       const auto
-          [C, epsV, kappaV, j, J, h,H, a3N, a3] = computeMaterialAndStrains(gp.position(), gpIndex, geo, uFunction);
+          [C, epsV, kappaV, jE, J, h,H, a3N, a3] = computeMaterialAndStrains(gp.position(), gpIndex, geo, uFunction);
       const Eigen::Vector<ScalarType, 3> membraneForces = thickness_*C*epsV;
       const Eigen::Vector<ScalarType, 3> moments = Dune::power(thickness_, 3)/12.0*C*kappaV;
 
       const auto &Nd = localBasis.evaluateJacobian(gpIndex);
       const auto &Ndd = localBasis.evaluateSecondDerivatives(gpIndex);
       for (size_t i = 0; i < numberOfNodes; ++i) {
-        Eigen::Matrix<ScalarType, 3, 3> bopIMembrane = membraneStrain.derivative(j, Nd, i);
-        Eigen::Matrix<ScalarType, 3, 3> bopIBending = bopBending(j, h, Nd, Ndd, i, a3N, a3);
+        Eigen::Matrix<ScalarType, 3, 3> bopIMembrane = membraneStrain.derivative(jE, Nd, geo,uFunction,localBasis, i);
+        Eigen::Matrix<ScalarType, 3, 3> bopIBending = bopBending(jE, h, Nd, Ndd, i, a3N, a3);
         force.template segment<3>(3*i) +=
             bopIMembrane.transpose()*membraneForces*geo.integrationElement(gp.position())*gp.weight();
         force.template segment<3>(3*i) -=
@@ -548,6 +556,7 @@ class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis> {
     const auto uFunction = getDisplacementFunction(par, dx);
     const auto &lambda = par.getParameter(FEParameter::loadfactor);
     const auto geo = this->localView().element().geometry();
+    this->membraneStrains.pre(geo,uFunction);
 
     const auto &thickness_ = fESettings.request<double>("thickness");
 
@@ -565,13 +574,13 @@ class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis> {
         Eigen::Matrix<ScalarType, 3, 3> bopIMembrane = bopMembrane(jE, Nd, i);
         Eigen::Matrix<ScalarType, 3, 3> bopIBending = bopBending(jE, h, Nd, Ndd, i, a3N, a3);
         for (size_t j = i; j < numberOfNodes; ++j) {
-          Eigen::Matrix<ScalarType, 3, 3> bopJMembrane = membraneStrain.derivative(jE, Nd, j);
+          Eigen::Matrix<ScalarType, 3, 3> bopJMembrane = membraneStrain.derivative(jE, Nd,geo,uFunction,localBasis, j);
           Eigen::Matrix<ScalarType, 3, 3> bopJBending = bopBending(jE, h, Nd, Ndd, j, a3N, a3);
           K.template block<3, 3>(3*i, 3*j) += thickness_*bopIMembrane.transpose()*C*bopJMembrane*intElement;
           K.template block<3, 3>(3*i, 3*j) +=
               Dune::power(thickness_, 3)/12.0*bopIBending.transpose()*C*bopJBending*intElement;
 
-          Eigen::Matrix<ScalarType, 3, 3> kgMembraneIJ = membraneStrain.secondDerivative(Nd, membraneForces, i, j);
+          Eigen::Matrix<ScalarType, 3, 3> kgMembraneIJ = membraneStrain.secondDerivative(Nd,geo,uFunction,localBasis, membraneForces, i, j);
           Eigen::Matrix<ScalarType, 3, 3> kgBendingIJ = kgBending(jE, h, Nd, Ndd, a3N, a3, moments, i, j);
           K.template block<3, 3>(3*i, 3*j) += kgMembraneIJ*intElement;
           K.template block<3, 3>(3*i, 3*j) += kgBendingIJ*intElement;
