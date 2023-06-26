@@ -14,7 +14,8 @@
 namespace Ikarus {
 
   struct NewtonRaphsonSettings {
-    double tol{1e-8};
+    double Rtol{1e-8};
+    double dtol{1e-8};
     int maxIter{50};
   };
 
@@ -72,10 +73,10 @@ namespace Ikarus {
       const auto& rx = nonLinearOperator().value();
       const auto& Ax = nonLinearOperator().derivative();
       auto rNorm     = norm(rx);
-      decltype(rNorm) dNorm;
+      decltype(rNorm) dNorm=1;
       int iter{0};
       if constexpr (isLinearSolver) linearSolver.analyzePattern(Ax);
-      while (rNorm > settings.tol && iter < settings.maxIter) {
+      while ((rNorm > settings.Rtol or dNorm > settings.dtol) && iter < settings.maxIter) {
         this->notify(NonLinearSolverMessages::ITERATION_STARTED);
         if constexpr (isLinearSolver) {
           linearSolver.factorize(Ax);

@@ -309,6 +309,7 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   //            .Delta0    = 1});
   auto linSolver               = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_UmfPackLU);
   auto tr                      = Ikarus::makeNewtonRaphson(nonLinOp, std::move(linSolver));
+  tr.
   auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
   tr->subscribeAll(nonLinearSolverObserver);
 
