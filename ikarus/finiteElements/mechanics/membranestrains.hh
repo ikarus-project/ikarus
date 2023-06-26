@@ -94,8 +94,11 @@ struct CASMembraneStrain
         uFunction.evaluateDerivative(lP, wrt(spatialAll, Dune::on(DerivativeDirections::referenceElement))));
 
       const auto  epsV = defaultMembraneStrain.value(lP,geo,uFunction);
-      membraneStrainsAtVertices = std::vector<Eigen::Vector<ScalarType, 3>>()
-      std::visit([&](auto& vec){ vec.push_back(epsV);},membraneStrainsAtVertices);
+      membraneStrainsAtVertices = std::vector<Eigen::Vector<ScalarType, 3>>();
+      std::visit([&](auto& vec){
+        if constexpr (std::is_same_v<typename std::remove_cvref_t<decltype(vec)>::value_type,ScalarType>) {
+          vec.push_back(epsV);}
+          },membraneStrainsAtVertices);
     }
 
   }
@@ -110,7 +113,7 @@ struct CASMembraneStrain
     Eigen::Vector<ScalarType, 3> res;
     res.setZero();
     std::visit([&](auto& vec){
-      if constexpr (std::is_same_v<typename decltype(vec)::value_type,ScalarType>) {
+      if constexpr (std::is_same_v<typename std::remove_cvref_t<decltype(vec)>::value_type,ScalarType>) {
         for (int i = 0; i < NANS.size(); ++i) {
           res += vec[i] * NANS[i][0];
         }
@@ -192,9 +195,10 @@ class MembraneStrainVariant
   MembraneStrainVariant& operator=(const MembraneStrainVariant& other) = default;
   MembraneStrainVariant& operator=(MembraneStrainVariant&& other)  noexcept = default;
 
-  template<typename ScalarType>
-  void pre() {
-    std::visit([&](const auto* impl) { impl->pre(); }, impl_);
+  template<typename Geometry>
+  void pre( const Geometry &geo,
+            const auto &uFunction){
+  std::visit([&]( auto& impl) { impl.pre(geo,uFunction); }, impl_);
   }
   template< typename Geometry>
   auto value(const Dune::FieldVector<double, 2> &gpPos,

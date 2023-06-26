@@ -92,7 +92,7 @@ namespace Ikarus {
       const auto &lambda = par.getParameter(FEParameter::loadfactor);
       const auto geo = this->localView().element().geometry();
       ScalarType energy = 0.0;
-      this->membraneStrains.pre(geo,uFunction);
+      this->membraneStrain.pre(geo,uFunction);
 
       const auto &thickness_ = this->fESettings.template request<double>("thickness");
       for (int gpIndex=0; const auto & gp: rule) {
@@ -146,7 +146,7 @@ namespace Ikarus {
       const auto geo = this->localView().element().geometry();
 
       const auto &thickness_ = this->fESettings.template request<double>("thickness");
-      this->membraneStrains.pre(geo,uFunction);
+      this->membraneStrain.pre(geo,uFunction);
 
       // Internal forces
       for (int gpIndex=0; const auto & gp: rule) {
@@ -214,7 +214,7 @@ namespace Ikarus {
       const auto uFunction = this->getDisplacementFunction(par, dx);
       const auto &lambda = par.getParameter(FEParameter::loadfactor);
       const auto geo = this->localView().element().geometry();
-      this->membraneStrains.pre(geo,uFunction);
+      this->membraneStrain.pre(geo,uFunction);
 
       const auto &thickness_ = this->fESettings.template request<double>("thickness");
 
@@ -453,7 +453,7 @@ class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis> {
     const auto &lambda = par.getParameter(FEParameter::loadfactor);
     const auto geo = this->localView().element().geometry();
     ScalarType energy = 0.0;
-    this->membraneStrains.pre(geo,uFunction);
+    this->membraneStrain.pre(geo,uFunction);
 
     const auto &thickness_ = fESettings.request<double>("thickness");
     for (const auto &[gpIndex, gp]: uFunction.viewOverIntegrationPoints()) {
@@ -495,7 +495,7 @@ class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis> {
     const auto uFunction = getDisplacementFunction(par, dx);
     const auto &lambda = par.getParameter(FEParameter::loadfactor);
     const auto geo = this->localView().element().geometry();
-    this->membraneStrains.pre(geo,uFunction);
+    this->membraneStrain.pre(geo,uFunction);
 
     const auto &thickness_ = fESettings.request<double>("thickness");
 
@@ -556,7 +556,7 @@ class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis> {
     const auto uFunction = getDisplacementFunction(par, dx);
     const auto &lambda = par.getParameter(FEParameter::loadfactor);
     const auto geo = this->localView().element().geometry();
-    this->membraneStrains.pre(geo,uFunction);
+    this->membraneStrain.pre(geo,uFunction);
 
     const auto &thickness_ = fESettings.request<double>("thickness");
 
