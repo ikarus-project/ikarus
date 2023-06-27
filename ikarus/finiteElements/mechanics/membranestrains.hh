@@ -11,9 +11,11 @@ namespace Ikarus {
 
 
 struct DefaultMembraneStrain {
+
   template<typename Geometry>
   void pre( const Geometry &geo,
             const auto &uFunction){}
+
   template< typename Geometry>
   auto value(const Dune::FieldVector<double, 2> &gpPos,
              const Geometry &geo,
@@ -34,7 +36,7 @@ struct DefaultMembraneStrain {
     return epsV;
   }
   template<typename Geometry,typename ScalarType>
-  auto derivative(const Eigen::Matrix<ScalarType, 2, 3> &jcur, const auto &dNAtGp, const Geometry& geo,const auto& uFunction, const auto& localBasis,
+  auto derivative(const Dune::FieldVector<double, 2> &gpPos,const Eigen::Matrix<ScalarType, 2, 3> &jcur, const auto &dNAtGp, const Geometry& geo,const auto& uFunction, const auto& localBasis,
                   const int node)  const{
     Eigen::Matrix<ScalarType, 3, 3> bop;
     bop.row(0) = jcur.row(0)*dNAtGp(node, 0);
@@ -44,7 +46,7 @@ struct DefaultMembraneStrain {
     return bop;
   }
   template<typename Geometry,typename ScalarType>
-  auto secondDerivative(const auto &dNAtGp, const Geometry& geo,const auto& uFunction, const auto& localBasis,
+  auto secondDerivative(const Dune::FieldVector<double, 2> &gpPos,const auto &dNAtGp, const Geometry& geo,const auto& uFunction, const auto& localBasis,
                         const Eigen::Vector3<ScalarType> &S, int I, int J)const {
     const auto &dN1i = dNAtGp(I, 0);
     const auto &dN1j = dNAtGp(J, 0);
@@ -82,24 +84,25 @@ struct CASMembraneStrain
   template<typename Geometry>
   void pre( const Geometry &geo,
            const auto &uFunction) {
-    using ScalarType = typename std::remove_cvref_t<decltype(uFunction)>::ctype;
+//    using ScalarType = typename std::remove_cvref_t<decltype(uFunction)>::ctype;
 
-    using namespace Dune::DerivativeDirections;
-    using namespace Dune;
-
-    for (int i = 0; auto& lP : lagrangePoints) {
-      const auto J                                = toEigen(geo.jacobianTransposed(lP));
-      const Eigen::Matrix<double, 2, 2> A         = J * J.transpose();
-      const Eigen::Matrix<ScalarType, 3, 2> gradu = toEigen(
-        uFunction.evaluateDerivative(lP, wrt(spatialAll, Dune::on(DerivativeDirections::referenceElement))));
-
-      const auto  epsV = defaultMembraneStrain.value(lP,geo,uFunction);
-      membraneStrainsAtVertices = std::vector<Eigen::Vector<ScalarType, 3>>();
-      std::visit([&](auto& vec){
-        if constexpr (std::is_same_v<typename std::remove_cvref_t<decltype(vec)>::value_type,ScalarType>) {
-          vec.push_back(epsV);}
-          },membraneStrainsAtVertices);
-    }
+//    using namespace Dune::DerivativeDirections;
+//    using namespace Dune;
+//
+//    membraneStrainsAtVertices = std::vector<Eigen::Vector<ScalarType, 3>>();
+//    for (int i = 0; auto& lP : lagrangePoints) {
+//      const auto J                                = toEigen(geo.jacobianTransposed(lP));
+//      const Eigen::Matrix<double, 2, 2> A         = J * J.transpose();
+//      const Eigen::Matrix<ScalarType, 3, 2> gradu = toEigen(
+//        uFunction.evaluateDerivative(lP, wrt(spatialAll, Dune::on(DerivativeDirections::referenceElement))));
+//
+//      const auto  epsV = defaultMembraneStrain.value(lP,geo,uFunction);
+//
+//      std::visit([&](auto& vec){
+//        if constexpr (std::is_same_v<typename std::remove_cvref_t<decltype(vec)>::value_type,ScalarType>) {
+//          vec.push_back(epsV);}
+//          },membraneStrainsAtVertices);
+//    }
 
   }
   template< typename Geometry>
@@ -112,21 +115,25 @@ struct CASMembraneStrain
 
     Eigen::Vector<ScalarType, 3> res;
     res.setZero();
-    std::visit([&](auto& vec){
-      if constexpr (std::is_same_v<typename std::remove_cvref_t<decltype(vec)>::value_type,ScalarType>) {
-        for (int i = 0; i < NANS.size(); ++i) {
-          res += vec[i] * NANS[i][0];
-        }
-      }
-      ;},membraneStrainsAtVertices);
+    for (int i = 0; auto& lP : lagrangePoints) {
+      const auto  epsV = defaultMembraneStrain.value(lP,geo,uFunction);
+      res += epsV * NANS[i++][0];
+    }
+//    std::visit([&](auto& vec){
+//      if constexpr (std::is_same_v<typename std::remove_cvref_t<decltype(vec)>::value_type,ScalarType>) {
+//        for (int i = 0; i < NANS.size(); ++i) {
+//          res += vec[i] * NANS[i][0];
+//        }
+//      }
+//      ;},membraneStrainsAtVertices);
 
     return res;
   }
 
   template<typename Geometry,typename ScalarType>
-  auto derivative(const Eigen::Matrix<ScalarType, 2, 3> &jcur, const auto &dNAtGp, const Geometry& geo,const auto& uFunction, const auto& localBasis,
+  auto derivative(const Dune::FieldVector<double, 2> &gpPos,const Eigen::Matrix<ScalarType, 2, 3> &, const auto &, const Geometry& geo,const auto& uFunction, const auto& localBasis,
                   const int node) const{
-
+    q1lfem2D.localBasis().evaluateFunction(gpPos, NANS);
     Eigen::Matrix<ScalarType, 3, 3> bop;
     bop.setZero();
     using namespace Dune::DerivativeDirections;
@@ -138,16 +145,17 @@ struct CASMembraneStrain
       const auto J = toEigen(geo.jacobianTransposed(lP));
       const Eigen::Matrix<ScalarType, 3, 2> gradu = toEigen(
         uFunction.evaluateDerivative(lP, wrt(spatialAll, Dune::on(DerivativeDirections::referenceElement))));
-      const Eigen::Matrix<ScalarType, 2, 3> j = J + gradu.transpose();
-      const auto  bopI = defaultMembraneStrain.derivative(jcur,dN,geo,uFunction,localBasis,node);
-      bop+=bopI*NANS[i][0];
+      const Eigen::Matrix<ScalarType, 2, 3> jE = J + gradu.transpose();
+      const auto  bopI = defaultMembraneStrain.derivative(lP,jE,dN,geo,uFunction,localBasis,node);
+      bop+=bopI*NANS[i++][0];
     }
     return bop;
   }
 
   template<typename Geometry,typename ScalarType>
-  auto secondDerivative(const auto &dNAtGp, const Geometry& geo,const auto& uFunction, const auto& localBasis,
+  auto secondDerivative(const Dune::FieldVector<double, 2> &gpPos,const auto &, const Geometry& geo,const auto& uFunction, const auto& localBasis,
                         const Eigen::Vector3<ScalarType> &S, int I, int J)const {
+    q1lfem2D.localBasis().evaluateFunction(gpPos, NANS);
     Eigen::Matrix<ScalarType, 3, 3> kg;
     kg.setZero();
     using namespace Dune::DerivativeDirections;
@@ -156,8 +164,8 @@ struct CASMembraneStrain
     for (int i = 0; auto& lP : lagrangePoints) {
      localBasis.evaluateJacobian(lP,dN);
 
-      const auto  kgIJ = defaultMembraneStrain.secondDerivative(dN,geo,uFunction,localBasis,S,I,J);
-      kg+=kgIJ*NANS[i][0];
+      const auto  kgIJ = defaultMembraneStrain.secondDerivative(lP,dN,geo,uFunction,localBasis,S,I,J);
+      kg+=kgIJ*NANS[i++][0];
     }
     return kg;
   }
@@ -208,16 +216,16 @@ class MembraneStrainVariant
     return std::visit([&](const auto& impl) { return impl.value(gpPos,geo,uFunction); }, impl_);
   }
   template<typename Geometry,typename ScalarType>
-  auto derivative(const Eigen::Matrix<ScalarType, 2, 3> &jcur, const auto &dNAtGp, const Geometry& geo,const auto& uFunction, const auto& localBasis,
+  auto derivative(const Dune::FieldVector<double, 2> &gpPos,const Eigen::Matrix<ScalarType, 2, 3> &jcur, const auto &dNAtGp, const Geometry& geo,const auto& uFunction, const auto& localBasis,
                   const int node) {
 
-    return std::visit([&](const auto& impl) { return impl.derivative(jcur,dNAtGp,geo,uFunction,localBasis,node); }, impl_);
+    return std::visit([&](const auto& impl) { return impl.derivative(gpPos,jcur,dNAtGp,geo,uFunction,localBasis,node); }, impl_);
   }
   template<typename Geometry,typename ScalarType>
-  auto secondDerivative(const auto &dNAtGp, const Geometry& geo,const auto& uFunction, const auto& localBasis,
+  auto secondDerivative(const Dune::FieldVector<double, 2> &gpPos,const auto &dNAtGp, const Geometry& geo,const auto& uFunction, const auto& localBasis,
                         const Eigen::Vector3<ScalarType> &S, int I, int J) {
 
-    return std::visit([&](const auto& impl) { return impl.secondDerivative(dNAtGp,geo,uFunction,localBasis,S,I,J); }, impl_);
+    return std::visit([&](const auto& impl) { return impl.secondDerivative(gpPos,dNAtGp,geo,uFunction,localBasis,S,I,J); }, impl_);
   }
 
  private:
