@@ -39,11 +39,17 @@ using Dune::TestSuite;
 #include <autodiff/forward/dual/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
 
+template<typename CASStrain>
 auto testMembraneStrain(const auto& localView,const auto& d)
 {
   TestSuite t;
   const auto element = localView.element();
    auto geoR = element.geometry();
+
+   const auto cps= geoR.impl().controlPoints().directGetAll();
+  for (auto cp:cps) {
+    std::cout<<cp<<std::endl;
+  }
   auto geo = std::make_shared<const decltype(geoR)>(   element.geometry());
   auto &first_child = localView.tree().child(0);
   const auto &fe = first_child.finiteElement();
@@ -62,7 +68,7 @@ auto testMembraneStrain(const auto& localView,const auto& d)
               = dx[i*3 + k2] + disp[i][k2];
 
     Dune::StandardLocalFunction uFunction(localBasis, dispD, geo);
-    Ikarus::CASMembraneStrain strain;
+    CASStrain strain;
     return strain.value(gpPos,geoR,uFunction);
   };
 
@@ -73,13 +79,15 @@ auto testMembraneStrain(const auto& localView,const auto& d)
   dx.setZero();
   Eigen::MatrixXd h=jacobian(f, autodiff::wrt(dx), at(dx), g);
 
-  Ikarus::CASMembraneStrain strain;
+  CASStrain strain;
   Eigen::MatrixXd hR(3,localView.size());
   for (int i = 0; i < fe.size(); ++i) {
     hR.block<3,3>(0,3*i)=strain.derivative(gpPos,Eigen::Matrix<double, 2, 3>(),double(),geoR,uFunction,localBasis,i);
   }
 
   const double tol = 1e-10;
+  std::cout<<"h\n"<<h<<std::endl;
+  std::cout<<"hR\n"<<hR<<std::endl;
 
   t.check(h.isApprox(hR, tol))<<
                               "Mismatch between the  matrices obtained from explicit implementation and the one based on "
@@ -129,58 +137,62 @@ auto checkFEByAutoDiff(std::string filename) {
   auto element     = gridView.template begin<0>();
   auto nDOF        = basis.flat().size();
   auto localView        = basis.flat().localView();
+
   localView.bind(*element);
   auto nDOFPerEle        = localView.size();
-  const double tol = 1e-10;
+  Eigen::VectorXd dT;
+  dT.setZero(nDOF);
+  t.subTest(testMembraneStrain<Ikarus::CASMembraneStrain<Ikarus::CASAnsatzFunction>>(localView,dT));
+  std::cout<<"========================="<<std::endl;
+  t.subTest(testMembraneStrain<Ikarus::CASMembraneStrain<Ikarus::CASAnsatzFunctionANS>>(localView,dT));
+//  const double tol = 1e-10;
+//
+//  auto volumeLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
+//    VectorType fExt;
+//    fExt.setZero();
+//    fExt[1] = 2 * lamb;
+//    return fExt;
+//  };
+//
+//  auto neumannBoundaryLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
+//    VectorType fExt;
+//    fExt.setZero();
+//    fExt[0] = lamb / 40;
+//    return fExt;
+//  };
+//
+//  /// We artificially apply a Neumann load on the complete boundary
+//  Dune::BitSetVector<1> neumannVertices(gridView.size(2), true);
+//
+//  BoundaryPatch<decltype(gridView)> neumannBoundary(gridView, neumannVertices);
+//  for (int i = 0; i < 2; ++i) {
+//
+//
+//  Ikarus::FESettings feSettings;
+//  feSettings.addOrAssign("youngs_modulus", 1000.0);
+//  feSettings.addOrAssign("poissons_ratio", 0.0);
+//  feSettings.addOrAssign("thickness", 0.1);
+//  feSettings.addOrAssign("simulationFlag", i);
+//  using Basis = decltype(basis);
+////  KLSHELL fe(basis, *element, feSettings);
+//  ShellElement<Basis> fe(basis, *element, feSettings, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
+//  using AutoDiffBasedFE = Ikarus::AutoDiffFE<ShellElement<Basis>, Ikarus::FErequirements<>, false, true>;
+//  AutoDiffBasedFE feAutoDiff(fe);
+//
+//  Eigen::VectorXd d;
+//  d.setRandom(nDOF);
+//  //d.setZero(nDOF);
+//
+//  auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(basis.flat(),                                  d);
+//  Dune::SubsamplingVTKWriter vtkWriter(gridView,Dune::refinementLevels(0));
+//
+//  vtkWriter.addVertexData(disp, {"displacements", Dune::VTK::FieldInfo::Type::scalar, 3});
+//  vtkWriter.write(filename+ std::to_string(i));
+//
+//  auto localDisp=localFunction(disp);
+//  localDisp.bind(*element);
 
-  auto volumeLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
-    VectorType fExt;
-    fExt.setZero();
-    fExt[1] = 2 * lamb;
-    return fExt;
-  };
 
-  auto neumannBoundaryLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
-    VectorType fExt;
-    fExt.setZero();
-    fExt[0] = lamb / 40;
-    return fExt;
-  };
-
-  /// We artificially apply a Neumann load on the complete boundary
-  Dune::BitSetVector<1> neumannVertices(gridView.size(2), true);
-
-  BoundaryPatch<decltype(gridView)> neumannBoundary(gridView, neumannVertices);
-  for (int i = 0; i < 2; ++i) {
-
-
-  Ikarus::FESettings feSettings;
-  feSettings.addOrAssign("youngs_modulus", 1000.0);
-  feSettings.addOrAssign("poissons_ratio", 0.0);
-  feSettings.addOrAssign("thickness", 0.1);
-  feSettings.addOrAssign("simulationFlag", i);
-  using Basis = decltype(basis);
-//  KLSHELL fe(basis, *element, feSettings);
-  ShellElement<Basis> fe(basis, *element, feSettings, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
-  using AutoDiffBasedFE = Ikarus::AutoDiffFE<ShellElement<Basis>, Ikarus::FErequirements<>, false, true>;
-  AutoDiffBasedFE feAutoDiff(fe);
-
-  Eigen::VectorXd d;
-  d.setRandom(nDOF);
-  //d.setZero(nDOF);
-
-  auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(basis.flat(),                                  d);
-  Dune::SubsamplingVTKWriter vtkWriter(gridView,Dune::refinementLevels(0));
-
-  vtkWriter.addVertexData(disp, {"displacements", Dune::VTK::FieldInfo::Type::scalar, 3});
-  vtkWriter.write(filename+ std::to_string(i));
-
-  auto localDisp=localFunction(disp);
-  localDisp.bind(*element);
-
-  auto localView= basis.flat().localView();
-  localView.bind(*element);
-  t.subTest(testMembraneStrain(localView,d));
 
 //  double lambda = 7.3;
 //
@@ -386,5 +398,5 @@ int main(int argc, char** argv) {
   checkFEByAutoDiff<KLSHELL>("KLSHELL");
 
   checkFEByAutoDiff<KLSHELLSB>("KLSHELLSB");
-//  NonLinearElasticityLoadControlNRandTRforKLShell();
+  NonLinearElasticityLoadControlNRandTRforKLShell();
 }

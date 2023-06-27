@@ -60,12 +60,61 @@ struct DefaultMembraneStrain {
 
 };
 
+
+struct CASAnsatzFunction
+{
+  Dune::LagrangeCubeLocalFiniteElement<double, double, 2, 1> q1lfem2D;
+  mutable std::vector<double> out;
+
+  auto positions(std::vector<Dune::FieldVector<double, 2>>& lagrangePoints)
+  {
+    lagrangePoints.resize(q1lfem2D.size());
+    for (int i = 0; i < 2; i++) {
+      auto ithCoord = [&i](const Dune::FieldVector<double, 2>& x) { return x[i]; };
+      q1lfem2D.localInterpolation().interpolate(ithCoord, out);
+      for (std::size_t jI = 0; jI < out.size(); jI++)
+        lagrangePoints[jI][i] = out[jI];
+    }
+  }
+
+  void evaluateFunction(const Dune::FieldVector<double,2>& gpPos,std::vector<Dune::FieldVector<double, 1>>& N) const
+  {
+    q1lfem2D.localBasis().evaluateFunction(gpPos, N);
+  }
+};
+
+struct CASAnsatzFunctionANS
+{
+  Dune::LagrangeCubeLocalFiniteElement<double, double, 2, 1> q1lfem2D;
+  mutable std::vector<double> out;
+
+  auto positions(std::vector<Dune::FieldVector<double, 2>>& lagrangePoints)
+  {
+    lagrangePoints.resize(4);
+    lagrangePoints[0] = {0, 0.5};
+    lagrangePoints[1] = {0.5, 0};
+    lagrangePoints[2] = {1, 0.5};
+    lagrangePoints[3] = {0.5, 1};
+  }
+
+  void evaluateFunction(const Dune::FieldVector<double,2>& gpPos,std::vector<Dune::FieldVector<double, 1>>& NANS) const
+  {
+    NANS.resize(4);
+    NANS[0] =  (1 - gpPos[1]);
+    NANS[1] = (1 - gpPos[0]);
+    NANS[2] = gpPos[1];
+    NANS[3] = gpPos[0];
+  }
+
+};
+
+template<typename Ansatzfunction>
 struct CASMembraneStrain
 {
   DefaultMembraneStrain defaultMembraneStrain;
   mutable std::vector<Dune::FieldVector<double, 2>> lagrangePoints;
-  mutable std::vector<double> out;
-  Dune::LagrangeCubeLocalFiniteElement<double, double, 2, 1> q1lfem2D;
+  Ansatzfunction cASAnsatzFunction;
+
 
   template<typename T>
   using Vec = std::vector<Eigen::Vector<T, 3>>;
@@ -74,13 +123,7 @@ struct CASMembraneStrain
 
   CASMembraneStrain()
   {
-    lagrangePoints.resize(q1lfem2D.size());
-    for (int i = 0; i < 2; i++) {
-      auto ithCoord = [&i](const Dune::FieldVector<double, 2>& x) { return x[i]; };
-      q1lfem2D.localInterpolation().interpolate(ithCoord, out);
-      for (std::size_t jI = 0; jI < out.size(); jI++)
-        lagrangePoints[jI][i] = out[jI];
-  }
+    cASAnsatzFunction.positions(lagrangePoints);
 }
   template<typename Geometry>
   void pre( const Geometry &geo,
@@ -112,7 +155,7 @@ struct CASMembraneStrain
              const auto &uFunction) const -> Eigen::Vector3<typename std::remove_cvref_t<decltype(uFunction)>::ctype> {
     using ScalarType = typename std::remove_cvref_t<decltype(uFunction)>::ctype;
 
-    q1lfem2D.localBasis().evaluateFunction(gpPos, NANS);
+    cASAnsatzFunction.evaluateFunction(gpPos, NANS);
 
     Eigen::Vector<ScalarType, 3> res;
     res.setZero();
@@ -134,7 +177,7 @@ struct CASMembraneStrain
   template<typename Geometry,typename ScalarType>
   auto derivative(const Dune::FieldVector<double, 2> &gpPos,const Eigen::Matrix<ScalarType, 2, 3> &, const auto &, const Geometry& geo,const auto& uFunction, const auto& localBasis,
                   const int node) const{
-    q1lfem2D.localBasis().evaluateFunction(gpPos, NANS);
+    cASAnsatzFunction.evaluateFunction(gpPos, NANS);
     Eigen::Matrix<ScalarType, 3, 3> bop;
     bop.setZero();
     using namespace Dune::DerivativeDirections;
@@ -142,6 +185,9 @@ struct CASMembraneStrain
 
     for (int i = 0; auto& lP : lagrangePoints) {
        localBasis.evaluateJacobian(lP,dN);
+//       std::cout<<"lP: "<<lP<<std::endl;
+//       std::cout<<dN<<std::endl;
+
 
       const auto J = toEigen(geo.jacobianTransposed(lP));
       const Eigen::Matrix<ScalarType, 3, 2> gradu = toEigen(
@@ -156,7 +202,7 @@ struct CASMembraneStrain
   template<typename Geometry,typename ScalarType>
   auto secondDerivative(const Dune::FieldVector<double, 2> &gpPos,const auto &, const Geometry& geo,const auto& uFunction, const auto& localBasis,
                         const Eigen::Vector3<ScalarType> &S, int I, int J)const {
-    q1lfem2D.localBasis().evaluateFunction(gpPos, NANS);
+    cASAnsatzFunction.evaluateFunction(gpPos, NANS);
     Eigen::Matrix<ScalarType, 3, 3> kg;
     kg.setZero();
     using namespace Dune::DerivativeDirections;
@@ -225,6 +271,6 @@ class MembraneStrainVariant
   std::variant<Implementations...> impl_;
 };
 
-using MembraneStrain = MembraneStrainVariant<DefaultMembraneStrain,CASMembraneStrain>;
+using MembraneStrain = MembraneStrainVariant<DefaultMembraneStrain,CASMembraneStrain<CASAnsatzFunction>,CASMembraneStrain<CASAnsatzFunctionANS>>;
 
 }
