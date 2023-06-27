@@ -13,7 +13,7 @@ dune_add_library(${PROJECT_NAME} ${sources})
 target_link_libraries(${PROJECT_NAME} PUBLIC ${DUNE_LIBS})
 target_link_dune_default_libraries(${PROJECT_NAME})
 
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_23)
 
 add_subdirectory(assembler)
 add_subdirectory(controlRoutines)

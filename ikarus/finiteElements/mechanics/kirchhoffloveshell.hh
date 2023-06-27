@@ -168,7 +168,7 @@ namespace Ikarus {
         for (size_t i = 0; i < this->numberOfNodes; ++i) {
           Eigen::Matrix<ScalarType, 3, 3> bopIMembrane = this->membraneStrain.derivative(gp2DPos,j, Nd,geo,uFunction,this->localBasis, i);
           Eigen::Matrix<ScalarType, 3, 3> bopIBending = this->bopBending(j, h, Nd, Ndd, i, a3N, a3);
-          Eigen::Matrix<ScalarType, 3, 3> bopI = bopIMembrane-zeta*bopIBending;
+          Eigen::Matrix<ScalarType, 3, 3> bopI = bopIMembrane+zeta*bopIBending;
           force.template segment<3>(3*i) +=
               bopI.transpose()*S*geo.integrationElement(gp2DPos)*gp.weight()*2*thickness_/2.0;
           // the first two fixes the change of the integration mapping from 0..1 to -1..1,
@@ -239,11 +239,11 @@ namespace Ikarus {
         for (size_t i = 0; i < this->numberOfNodes; ++i) {
           Eigen::Matrix<ScalarType, 3, 3> bopIMembrane = this->membraneStrain.derivative(gp2DPos,jE, Nd,geo,uFunction,this->localBasis, i);
           Eigen::Matrix<ScalarType, 3, 3> bopIBending = this->bopBending(jE, h, Nd, Ndd, i, a3N, a3);
-          Eigen::Matrix<ScalarType, 3, 3> bopI = bopIMembrane - zeta * bopIBending;
+          Eigen::Matrix<ScalarType, 3, 3> bopI = bopIMembrane + zeta * bopIBending;
           for (size_t j = i; j < this->numberOfNodes; ++j) {
             Eigen::Matrix<ScalarType, 3, 3> bopJMembrane = this->membraneStrain.derivative(gp2DPos,jE, Nd,geo,uFunction,this->localBasis, j);
             Eigen::Matrix<ScalarType, 3, 3> bopJBending = this->bopBending(jE, h, Nd, Ndd, j, a3N, a3);
-            Eigen::Matrix<ScalarType, 3, 3> bopJ = bopJMembrane - zeta * bopJBending;
+            Eigen::Matrix<ScalarType, 3, 3> bopJ = bopJMembrane + zeta * bopJBending;
             Eigen::Matrix<ScalarType, 3, 3> kgMembraneIJ = this->membraneStrain.secondDerivative(gp2DPos,Nd,geo,uFunction,this->localBasis, S, i, j);
             Eigen::Matrix<ScalarType, 3, 3> kgBendingIJ = this->kgBending(jE, h, Nd, Ndd, a3N, a3, S, i, j);
             K.template block<3, 3>(3*i, 3*j) += (bopI.transpose()*C*bopJ+kgMembraneIJ+zeta*kgBendingIJ)*intElement;
@@ -514,7 +514,7 @@ class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis> {
         Eigen::Matrix<ScalarType, 3, 3> bopIBending = bopBending(jE, h, Nd, Ndd, i, a3N, a3);
         force.template segment<3>(3*i) +=
             bopIMembrane.transpose()*membraneForces*geo.integrationElement(gp.position())*gp.weight();
-        force.template segment<3>(3*i) -=
+        force.template segment<3>(3*i) +=
             bopIBending.transpose()*moments*geo.integrationElement(gp.position())*gp.weight();
       }
     }
@@ -690,7 +690,7 @@ class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis> {
     const Eigen::Matrix<ScalarType, 3, 3>
         a3d1 = 1.0/a3N.norm()*(Eigen::Matrix<double, 3, 3>::Identity() - a3*a3.transpose())*a3NdI;
 
-    Eigen::Matrix<ScalarType, 3, 3> bop = h*a3d1 + (a3*ddN.row(node)).transpose();
+    Eigen::Matrix<ScalarType, 3, 3> bop = -(h*a3d1 + (a3*ddN.row(node)).transpose());
     bop.row(2) *= 2;
 
     return bop;

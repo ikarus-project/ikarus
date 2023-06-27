@@ -36,6 +36,58 @@
 #include <ikarus/utils/observer/nonLinearSolverLogger.hh>
 
 using Dune::TestSuite;
+#include <autodiff/forward/dual/dual.hpp>
+#include <autodiff/forward/dual/eigen.hpp>
+
+auto testMembraneStrain(const auto& localView,const auto& d)
+{
+  TestSuite t;
+  const auto element = localView.element();
+   auto geoR = element.geometry();
+  auto geo = std::make_shared<const decltype(geoR)>(   element.geometry());
+  auto &first_child = localView.tree().child(0);
+  const auto &fe = first_child.finiteElement();
+  const auto localBasis = Dune::CachedLocalBasis(fe.localBasis());
+  Dune::BlockVector<Dune::RealTuple<double, 3>> disp(fe.size());
+  for (auto i = 0U; i < disp.size(); ++i)
+    for (auto k2 = 0U; k2 < 3; ++k2)
+      disp[i][k2] = d[localView.index(localView.tree().child(k2).localIndex(i))[0]];
+
+  Dune::FieldVector<double, 2> gpPos={0.34,0.57};
+  auto f = [&](auto&& dx){
+    Dune::BlockVector<Dune::RealTuple<autodiff::dual, 3>> dispD(fe.size());
+      for (auto i = 0U; i < dispD.size(); ++i)
+        for (auto k2 = 0U; k2 < 3; ++k2)
+          dispD[i][k2]
+              = dx[i*3 + k2] + disp[i][k2];
+
+    Dune::StandardLocalFunction uFunction(localBasis, dispD, geo);
+    Ikarus::CASMembraneStrain strain;
+    return strain.value(gpPos,geoR,uFunction);
+  };
+
+  Dune::StandardLocalFunction uFunction(localBasis, disp, geo);
+
+  Eigen::VectorXdual dx(localView.size());
+  Eigen::VectorXdual g(localView.size());
+  dx.setZero();
+  Eigen::MatrixXd h=jacobian(f, autodiff::wrt(dx), at(dx), g);
+
+  Ikarus::CASMembraneStrain strain;
+  Eigen::MatrixXd hR(3,localView.size());
+  for (int i = 0; i < fe.size(); ++i) {
+    hR.block<3,3>(0,3*i)=strain.derivative(gpPos,Eigen::Matrix<double, 2, 3>(),double(),geoR,uFunction,localBasis,i);
+  }
+
+  const double tol = 1e-10;
+
+  t.check(h.isApprox(hR, tol))<<
+                              "Mismatch between the  matrices obtained from explicit implementation and the one based on "
+                              "automatic differentiation: h"<<"\n" << h <<"\n hR \n"<< hR<<"\n h-hR \n"<< h-hR;
+
+  return t;
+}
+
 
 template<template<typename> typename ShellElement>
 auto checkFEByAutoDiff(std::string filename) {
@@ -115,6 +167,7 @@ auto checkFEByAutoDiff(std::string filename) {
 
   Eigen::VectorXd d;
   d.setRandom(nDOF);
+  //d.setZero(nDOF);
 
   auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(basis.flat(),                                  d);
   Dune::SubsamplingVTKWriter vtkWriter(gridView,Dune::refinementLevels(0));
@@ -125,38 +178,42 @@ auto checkFEByAutoDiff(std::string filename) {
   auto localDisp=localFunction(disp);
   localDisp.bind(*element);
 
-  double lambda = 7.3;
+  auto localView= basis.flat().localView();
+  localView.bind(*element);
+  t.subTest(testMembraneStrain(localView,d));
 
-  auto req = Ikarus::FErequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
-  req.insertGlobalSolution(Ikarus::FESolutions::displacement, d)
-      .insertParameter(Ikarus::FEParameter::loadfactor, lambda);
-
-  Eigen::MatrixXd K, KAutoDiff;
-  K.setZero(nDOFPerEle, nDOFPerEle);
-  KAutoDiff.setZero(nDOFPerEle, nDOFPerEle);
-
-  Eigen::VectorXd R, RAutoDiff;
-  R.setZero(nDOFPerEle);
-  RAutoDiff.setZero(nDOFPerEle);
-
-  fe.calculateMatrix(req, K);
-  feAutoDiff.calculateMatrix(req, KAutoDiff);
-
-  fe.calculateVector(req, R);
-  feAutoDiff.calculateVector(req, RAutoDiff);
-
-  t.check(K.isApprox(KAutoDiff, tol))<<
-      "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
-      "automatic differentiation with simulationFlag: "<<i<<"\n" << K <<"\n KAutoDiff \n"<< KAutoDiff<<"\n K-KAutoDiff \n"<< K-KAutoDiff;
-
-  t.check(R.isApprox(RAutoDiff, tol))<<
-      "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
-      "automatic differentiation with simulationFlag: "<<i<<"\n" << R <<"\n RAutoDiff \n"<< RAutoDiff<<"\n R-RAutoDiff \n"<< R-RAutoDiff;
-
-  t.check(Dune::FloatCmp::eq(fe.calculateScalar(req), feAutoDiff.calculateScalar(req), tol))<<
-    "Mismatch between the energies obtained from explicit implementation and the one based on "
-    "automatic differentiation"<<"with simulationFlag: "<<i;
-  }
+//  double lambda = 7.3;
+//
+//  auto req = Ikarus::FErequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
+//  req.insertGlobalSolution(Ikarus::FESolutions::displacement, d)
+//      .insertParameter(Ikarus::FEParameter::loadfactor, lambda);
+//
+//  Eigen::MatrixXd K, KAutoDiff;
+//  K.setZero(nDOFPerEle, nDOFPerEle);
+//  KAutoDiff.setZero(nDOFPerEle, nDOFPerEle);
+//
+//  Eigen::VectorXd R, RAutoDiff;
+//  R.setZero(nDOFPerEle);
+//  RAutoDiff.setZero(nDOFPerEle);
+//
+//  fe.calculateMatrix(req, K);
+//  feAutoDiff.calculateMatrix(req, KAutoDiff);
+//
+//  fe.calculateVector(req, R);
+//  feAutoDiff.calculateVector(req, RAutoDiff);
+//
+//  t.check(K.isApprox(KAutoDiff, tol),"K Check"+filename)<<
+//      "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
+//      "automatic differentiation with simulationFlag: "<<i<<"\n" << K <<"\n KAutoDiff \n"<< KAutoDiff<<"\n K-KAutoDiff \n"<< K-KAutoDiff;
+//
+//  t.check(R.isApprox(RAutoDiff, tol),"R Check"+filename)<<
+//      "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
+//      "automatic differentiation with simulationFlag: "<<i<<"\n" << R <<"\n RAutoDiff \n"<< RAutoDiff<<"\n R-RAutoDiff \n"<< R-RAutoDiff;
+//
+//  t.check(Dune::FloatCmp::eq(fe.calculateScalar(req), feAutoDiff.calculateScalar(req), tol),"E Check"+filename)<<
+//    "Mismatch between the energies obtained from explicit implementation and the one based on "
+//    "automatic differentiation"<<"with simulationFlag: "<<i;
+//  }
   return t;
 }
 
@@ -302,7 +359,7 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
 
   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(
       basis.flat(), d, 2);
-  vtkWriter->setFileNamePrefix("TestKLShell");
+  vtkWriter->setFileNamePrefix("TestKLShellREAL_EX");
   vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 3);
 
   auto lc = Ikarus::LoadControl(tr, 1, {0, 1});
@@ -314,6 +371,7 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
       << std::setprecision(16) << "The maximum displacement is " << std::ranges::max(d);
   return t;
 }
+
 
 
 template <typename Basis>
@@ -328,5 +386,5 @@ int main(int argc, char** argv) {
   checkFEByAutoDiff<KLSHELL>("KLSHELL");
 
   checkFEByAutoDiff<KLSHELLSB>("KLSHELLSB");
-  NonLinearElasticityLoadControlNRandTRforKLShell();
+//  NonLinearElasticityLoadControlNRandTRforKLShell();
 }

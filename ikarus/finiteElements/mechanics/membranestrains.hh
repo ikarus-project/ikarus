@@ -6,6 +6,7 @@
 #include <dune/common/fvector.hh>
 #include <dune/localfefunctions/impl/standardLocalFunction.hh>
 #include <dune/common/overloadset.hh>
+#include <ranges>
 namespace Ikarus {
 
 
@@ -22,7 +23,7 @@ struct DefaultMembraneStrain {
              const auto &uFunction) const -> Eigen::Vector3<typename std::remove_cvref_t<decltype(uFunction)>::ctype>{
     using ScalarType = typename std::remove_cvref_t<decltype(uFunction)>::ctype;
     Eigen::Vector3<ScalarType> epsV;
-    const auto J = toEigen(geo.jacobianTransposed(gpPos));
+    const auto J = Dune::toEigen(geo.jacobianTransposed(gpPos));
     using namespace Dune;
     using namespace Dune::DerivativeDirections;
     const Eigen::Matrix<ScalarType, 3, 2> gradu = toEigen(
@@ -129,7 +130,7 @@ struct CASMembraneStrain
 
     return res;
   }
-
+  mutable Eigen::Matrix<double,Eigen::Dynamic,2> dN;
   template<typename Geometry,typename ScalarType>
   auto derivative(const Dune::FieldVector<double, 2> &gpPos,const Eigen::Matrix<ScalarType, 2, 3> &, const auto &, const Geometry& geo,const auto& uFunction, const auto& localBasis,
                   const int node) const{
@@ -138,15 +139,15 @@ struct CASMembraneStrain
     bop.setZero();
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
-    Eigen::Matrix<double,Eigen::Dynamic,2> dN;
+
     for (int i = 0; auto& lP : lagrangePoints) {
        localBasis.evaluateJacobian(lP,dN);
 
       const auto J = toEigen(geo.jacobianTransposed(lP));
       const Eigen::Matrix<ScalarType, 3, 2> gradu = toEigen(
-        uFunction.evaluateDerivative(lP, wrt(spatialAll, Dune::on(DerivativeDirections::referenceElement))));
+        uFunction.evaluateDerivative(lP, wrt(spatialAll), Dune::on(DerivativeDirections::referenceElement)));
       const Eigen::Matrix<ScalarType, 2, 3> jE = J + gradu.transpose();
-      const auto  bopI = defaultMembraneStrain.derivative(lP,jE,dN,geo,uFunction,localBasis,node);
+      const auto  bopI = defaultMembraneStrain.derivative<Geometry,ScalarType>(lP,jE,dN,geo,uFunction,localBasis,node);
       bop+=bopI*NANS[i++][0];
     }
     return bop;
@@ -160,7 +161,6 @@ struct CASMembraneStrain
     kg.setZero();
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
-    Eigen::Matrix<double,Eigen::Dynamic,2> dN;
     for (int i = 0; auto& lP : lagrangePoints) {
      localBasis.evaluateJacobian(lP,dN);
 
@@ -173,18 +173,11 @@ struct CASMembraneStrain
 };
 
 
-template<class Visitor, class Variant>
-auto visitIf(Visitor&& visitor, Variant&& variant)
-{
-  auto visitorWithFallback = Dune::overload([&](std::monostate&) {},  [&](const std::monostate&) {}, visitor);
-  return std::visit(visitorWithFallback, variant);
-}
 template<class... Implementations>
 class MembraneStrainVariant
 {
 
  public:
-
 
   template<class Implementation>
   explicit MembraneStrainVariant(const Implementation& impl) :
