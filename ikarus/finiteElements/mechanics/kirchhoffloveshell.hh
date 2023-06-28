@@ -285,7 +285,7 @@ class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis> {
     else if (simulationFlag==1)
       membraneStrain = CASMembraneStrain<CASAnsatzFunction>();
     else if (simulationFlag==2)
-      membraneStrain = CASMembraneStrain<CASAnsatzFunction>();
+      membraneStrain = CASMembraneStrain<CASAnsatzFunctionANS>();
 
     this->localView().bind(element);
     auto &first_child = this->localView().tree().child(0);

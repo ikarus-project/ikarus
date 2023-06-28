@@ -34,6 +34,7 @@
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 #include <ikarus/utils/observer/nonLinearSolverLogger.hh>
+#include <ikarus/io/shell3DDataCollector.hh>
 
 using Dune::TestSuite;
 #include <autodiff/forward/dual/dual.hpp>
@@ -145,87 +146,87 @@ auto checkFEByAutoDiff(std::string filename) {
   t.subTest(testMembraneStrain<Ikarus::CASMembraneStrain<Ikarus::CASAnsatzFunction>>(localView,dT));
   std::cout<<"========================="<<std::endl;
   t.subTest(testMembraneStrain<Ikarus::CASMembraneStrain<Ikarus::CASAnsatzFunctionANS>>(localView,dT));
-//  const double tol = 1e-10;
-//
-//  auto volumeLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
-//    VectorType fExt;
-//    fExt.setZero();
-//    fExt[1] = 2 * lamb;
-//    return fExt;
-//  };
-//
-//  auto neumannBoundaryLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
-//    VectorType fExt;
-//    fExt.setZero();
-//    fExt[0] = lamb / 40;
-//    return fExt;
-//  };
-//
-//  /// We artificially apply a Neumann load on the complete boundary
-//  Dune::BitSetVector<1> neumannVertices(gridView.size(2), true);
-//
-//  BoundaryPatch<decltype(gridView)> neumannBoundary(gridView, neumannVertices);
-//  for (int i = 0; i < 2; ++i) {
-//
-//
-//  Ikarus::FESettings feSettings;
-//  feSettings.addOrAssign("youngs_modulus", 1000.0);
-//  feSettings.addOrAssign("poissons_ratio", 0.0);
-//  feSettings.addOrAssign("thickness", 0.1);
-//  feSettings.addOrAssign("simulationFlag", i);
-//  using Basis = decltype(basis);
-////  KLSHELL fe(basis, *element, feSettings);
-//  ShellElement<Basis> fe(basis, *element, feSettings, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
-//  using AutoDiffBasedFE = Ikarus::AutoDiffFE<ShellElement<Basis>, Ikarus::FErequirements<>, false, true>;
-//  AutoDiffBasedFE feAutoDiff(fe);
-//
-//  Eigen::VectorXd d;
-//  d.setRandom(nDOF);
-//  //d.setZero(nDOF);
-//
-//  auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(basis.flat(),                                  d);
-//  Dune::SubsamplingVTKWriter vtkWriter(gridView,Dune::refinementLevels(0));
-//
-//  vtkWriter.addVertexData(disp, {"displacements", Dune::VTK::FieldInfo::Type::scalar, 3});
-//  vtkWriter.write(filename+ std::to_string(i));
-//
-//  auto localDisp=localFunction(disp);
-//  localDisp.bind(*element);
+  const double tol = 1e-10;
+
+  auto volumeLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
+    VectorType fExt;
+    fExt.setZero();
+    fExt[1] = 2 * lamb;
+    return fExt;
+  };
+
+  auto neumannBoundaryLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
+    VectorType fExt;
+    fExt.setZero();
+    fExt[0] = lamb / 40;
+    return fExt;
+  };
+
+  /// We artificially apply a Neumann load on the complete boundary
+  Dune::BitSetVector<1> neumannVertices(gridView.size(2), true);
+
+  BoundaryPatch<decltype(gridView)> neumannBoundary(gridView, neumannVertices);
+  for (int i = 0; i < 2; ++i) {
+
+
+  Ikarus::FESettings feSettings;
+  feSettings.addOrAssign("youngs_modulus", 1000.0);
+  feSettings.addOrAssign("poissons_ratio", 0.0);
+  feSettings.addOrAssign("thickness", 0.1);
+  feSettings.addOrAssign("simulationFlag", i);
+  using Basis = decltype(basis);
+//  KLSHELL fe(basis, *element, feSettings);
+  ShellElement<Basis> fe(basis, *element, feSettings, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
+  using AutoDiffBasedFE = Ikarus::AutoDiffFE<ShellElement<Basis>, Ikarus::FErequirements<>, false, true>;
+  AutoDiffBasedFE feAutoDiff(fe);
+
+  Eigen::VectorXd d;
+  d.setRandom(nDOF);
+  //d.setZero(nDOF);
+
+  auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(basis.flat(),                                  d);
+  Dune::SubsamplingVTKWriter vtkWriter(gridView,Dune::refinementLevels(0));
+
+  vtkWriter.addVertexData(disp, {"displacements", Dune::VTK::FieldInfo::Type::scalar, 3});
+  vtkWriter.write(filename+ std::to_string(i));
+
+  auto localDisp=localFunction(disp);
+  localDisp.bind(*element);
 
 
 
-//  double lambda = 7.3;
-//
-//  auto req = Ikarus::FErequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
-//  req.insertGlobalSolution(Ikarus::FESolutions::displacement, d)
-//      .insertParameter(Ikarus::FEParameter::loadfactor, lambda);
-//
-//  Eigen::MatrixXd K, KAutoDiff;
-//  K.setZero(nDOFPerEle, nDOFPerEle);
-//  KAutoDiff.setZero(nDOFPerEle, nDOFPerEle);
-//
-//  Eigen::VectorXd R, RAutoDiff;
-//  R.setZero(nDOFPerEle);
-//  RAutoDiff.setZero(nDOFPerEle);
-//
-//  fe.calculateMatrix(req, K);
-//  feAutoDiff.calculateMatrix(req, KAutoDiff);
-//
-//  fe.calculateVector(req, R);
-//  feAutoDiff.calculateVector(req, RAutoDiff);
-//
-//  t.check(K.isApprox(KAutoDiff, tol),"K Check"+filename)<<
-//      "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
-//      "automatic differentiation with simulationFlag: "<<i<<"\n" << K <<"\n KAutoDiff \n"<< KAutoDiff<<"\n K-KAutoDiff \n"<< K-KAutoDiff;
-//
-//  t.check(R.isApprox(RAutoDiff, tol),"R Check"+filename)<<
-//      "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
-//      "automatic differentiation with simulationFlag: "<<i<<"\n" << R <<"\n RAutoDiff \n"<< RAutoDiff<<"\n R-RAutoDiff \n"<< R-RAutoDiff;
-//
-//  t.check(Dune::FloatCmp::eq(fe.calculateScalar(req), feAutoDiff.calculateScalar(req), tol),"E Check"+filename)<<
-//    "Mismatch between the energies obtained from explicit implementation and the one based on "
-//    "automatic differentiation"<<"with simulationFlag: "<<i;
-//  }
+  double lambda = 7.3;
+
+  auto req = Ikarus::FErequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
+  req.insertGlobalSolution(Ikarus::FESolutions::displacement, d)
+      .insertParameter(Ikarus::FEParameter::loadfactor, lambda);
+
+  Eigen::MatrixXd K, KAutoDiff;
+  K.setZero(nDOFPerEle, nDOFPerEle);
+  KAutoDiff.setZero(nDOFPerEle, nDOFPerEle);
+
+  Eigen::VectorXd R, RAutoDiff;
+  R.setZero(nDOFPerEle);
+  RAutoDiff.setZero(nDOFPerEle);
+
+  fe.calculateMatrix(req, K);
+  feAutoDiff.calculateMatrix(req, KAutoDiff);
+
+  fe.calculateVector(req, R);
+  feAutoDiff.calculateVector(req, RAutoDiff);
+
+  t.check(K.isApprox(KAutoDiff, tol),"K Check"+filename)<<
+      "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
+      "automatic differentiation with simulationFlag: "<<i<<"\n" << K <<"\n KAutoDiff \n"<< KAutoDiff<<"\n K-KAutoDiff \n"<< K-KAutoDiff;
+
+  t.check(R.isApprox(RAutoDiff, tol),"R Check"+filename)<<
+      "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
+      "automatic differentiation with simulationFlag: "<<i<<"\n" << R <<"\n RAutoDiff \n"<< RAutoDiff<<"\n R-RAutoDiff \n"<< R-RAutoDiff;
+
+  t.check(Dune::FloatCmp::eq(fe.calculateScalar(req), feAutoDiff.calculateScalar(req), tol),"E Check"+filename)<<
+    "Mismatch between the energies obtained from explicit implementation and the one based on "
+    "automatic differentiation"<<"with simulationFlag: "<<i;
+  }
   return t;
 }
 
@@ -263,6 +264,7 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   const auto loadFactor     = parameterSet.get<double>("loadFactor");
   const auto simulationFlag = parameterSet.get<int>("simulationFlag");
   const auto refine         = parameterSet.get<int>("refine");
+  const auto plotInPlaneRefine         = parameterSet.get<int>("plotInPlaneRefine");
   auto grid = std::make_shared<Grid>(patchData);
 
   grid->globalRefineInDirection(0,refine);
@@ -377,6 +379,11 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   auto lc = Ikarus::LoadControl(tr, 1, {0, 1});
   lc.subscribeAll(vtkWriter);
   const auto controlInfo = lc.run();
+
+  Dune::Vtk::Shell3DDataCollector dataCollector1(gridView,Dune::RefinementIntervals(plotInPlaneRefine));
+
+  Dune::VtkUnstructuredGridWriter writer2(dataCollector1, Dune::Vtk::FormatTypes::ASCII);
+  writer2.write("KLSHELL3D");
 
   std::cout << std::setprecision(16) << std::ranges::max(d) << std::endl;
   t.check(Dune::FloatCmp::eq(0.2957393081676369, std::ranges::max(d)))

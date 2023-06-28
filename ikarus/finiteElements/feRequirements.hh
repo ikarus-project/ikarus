@@ -64,7 +64,8 @@ namespace Ikarus {
     cauchyStress,
     PK2Stress,
     linearStress,
-    director
+    director,
+    midsurface
   );
 
   // clang-format on
