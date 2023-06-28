@@ -25,7 +25,7 @@ namespace Dune::Vtk {
     typedef typename GridView::Grid::ctype ctype;
   public:
     using Super::dim;
-    typedef VirtualRefinement<dim, ctype> Refinement;
+    typedef VirtualRefinement<3, ctype> Refinement;
     typedef typename Refinement::IndexVector IndexVector;
     typedef typename Refinement::ElementIterator SubElementIterator;
     typedef typename Refinement::VertexIterator SubVertexIterator;
@@ -34,6 +34,7 @@ namespace Dune::Vtk {
 
 
     using Super::partition;
+    double thickness_;
     Dune::RefinementIntervals subSampleInPlane;
     Dune::RefinementIntervals subSampleOutofPlane;
 
@@ -42,7 +43,24 @@ namespace Dune::Vtk {
   public:
     explicit Shell3DDataCollector(GridView const& gridView, double thickness=1, Dune::RefinementIntervals subSampleInPlane_ = RefinementIntervals(0),
                                   Dune::RefinementIntervals subSampleOutofPlane_ = RefinementIntervals(0)) :
-   Super(gridView),subSampleInPlane{subSampleInPlane_},subSampleOutofPlane{subSampleOutofPlane_} {
+   Super(gridView),thickness_{thickness},subSampleInPlane{subSampleInPlane_},subSampleOutofPlane{subSampleOutofPlane_} {
+    }
+
+
+    auto determineRefinementType(const Dune::GeometryType& type) const
+    {
+      if(type==Dune::GeometryTypes::quadrilateral)
+        return Dune::GeometryTypes::hexahedron;
+      else if(type==Dune::GeometryTypes::triangle)
+        return Dune::GeometryTypes::prism;
+      else
+        DUNE_THROW(Dune::NotImplemented,"Shell3DDataCollector works only for element types that are quads or triangles");
+    }
+
+    template <typename VectorType>
+     VectorType cross(const VectorType& a, const VectorType& b)const {
+
+        return {a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]};
     }
 
     /// Construct the point sets
@@ -53,14 +71,15 @@ namespace Dune::Vtk {
       std::int64_t vertex_idx = 0;
       auto const& indexSet    = gridView_.indexSet();
       for (auto const& eit : elements(gridView_)) {
-        Refinement& refinement = buildRefinement<dim, ctype>(eit.type(), eit.type());
+        const auto refElementType= determineRefinementType(eit.type());
+        Refinement& inPlaneRefinement = buildRefinement<3, ctype>(refElementType, refElementType);
 
-        for (SubVertexIterator sit = refinement.vBegin(subSampleInPlane), send = refinement.vEnd(subSampleInPlane);
-             sit != send; ++sit) {
-            vertexIndex_.emplace(std::array<int, 2>({indexSet.index(eit), sit.index()}), vertex_idx++);
+        for (SubVertexIterator inPlaneVertexIt = inPlaneRefinement.vBegin(subSampleInPlane), send = inPlaneRefinement.vEnd(subSampleInPlane);
+             inPlaneVertexIt != send; ++inPlaneVertexIt) {
+            vertexIndex_.emplace(std::array<int, 2>({indexSet.index(eit), inPlaneVertexIt.index()}), vertex_idx++);
             ++numPoints_;
           }
-          numCells_+=refinement.nElements(subSampleInPlane);
+          numCells_+=inPlaneRefinement.nElements(subSampleInPlane);
         }
     }
 
@@ -80,12 +99,15 @@ namespace Dune::Vtk {
         auto geometry          = eit.geometry();
         const int elementId = indexSet.index(eit);
 
-        const auto refinedElementType=eit.type();
-        Refinement& refinement = buildRefinement<dim, ctype>(eit.type(), refinedElementType);
+        const auto refElementType= determineRefinementType(eit.type());
+        Refinement& refinement = buildRefinement<3, ctype>(refElementType, refElementType);
         for (SubVertexIterator sit = refinement.vBegin(subSampleInPlane), send = refinement.vEnd(subSampleInPlane);
              sit != send; ++sit) {
-
-          auto v          = geometry.global(sit.coords());
+          Dune::FieldVector<T,2> coord2D= {sit.coords()[0],sit.coords()[1]};
+          auto midSurface          = geometry.global(coord2D);
+          auto J         = geometry.jacobianTransposed(coord2D);
+          auto n          = cross(J[0],J[1]);
+          auto v = midSurface+(2*sit.coords()[2]-1)*n*thickness_/2.0;
           std::int64_t idx = 3 * vertexIndex_.at({elementId,sit.index()});
 
           for (std::size_t j = 0; j < v.size(); ++j)
@@ -129,11 +151,12 @@ namespace Dune::Vtk {
       std::int64_t old_o = 0;
       for (auto const& eit : elements(gridView_, partition)) {
         const int elementId = indexSet.index(eit);
-        const auto refinedElementType=eit.type();
-        Refinement& refinement = buildRefinement<dim, ctype>(eit.type(), refinedElementType);
+        const auto refElementType= determineRefinementType(eit.type());
+
+        Refinement& refinement = buildRefinement<3, ctype>(refElementType, refElementType);
         for (SubElementIterator eRit = refinement.eBegin(subSampleInPlane), eRend = refinement.eEnd(subSampleInPlane);
              eRit != eRend; ++eRit) {
-          Vtk::CellType cellType(refinedElementType, Vtk::CellType::LINEAR);
+          Vtk::CellType cellType(refElementType, Vtk::CellType::LINEAR);
 
           const size_t numberOfVirtualVerticesInElement = eRit.vertexIndices().size();
             for (auto idxLocal : eRit.vertexIndices()) {
@@ -161,26 +184,24 @@ namespace Dune::Vtk {
     [[nodiscard]] std::vector<T> pointDataImpl(GlobalFunction const& fct) const {
       int nComps = fct.numComponents();
       std::vector<T> data(this->numPoints() * nComps);
+            auto localFct        = localFunction(fct);
+      auto const& indexSet = gridView_.indexSet();
+      for (auto eit : elements(gridView_)) {
+        auto geometry          = eit.geometry();
+        const int elementId = indexSet.index(eit);
 
-//      auto localFct        = localFunction(fct);
-//      auto const& indexSet = gridView_.indexSet();
-//      for (auto element : elements(gridView_, partition)) {
-//        localFct.bind(element);
-//        auto geometry          = element.geometry();
-//        const size_t elementId = indexSet.index(element);
-//
-//        auto elementRepr = element.impl().trimmedElementRepresentation();
-//        auto subGridView = elementRepr->gridView();
-//
-//        const auto& subGridIndexSet = subGridView.indexSet();
-//        for (auto subGridVertex : vertices(subGridView)) {
-//          auto vecInLocal  = subGridVertex.geometry().center();
-//          std::int64_t idx = nComps * vertexIndex_.at({elementId, subGridIndexSet.index(subGridVertex)});
-//
-//          for (std::size_t comp = 0; comp < nComps; ++comp)
-//            data[idx + comp] = T(localFct.evaluate(comp, vecInLocal));
-//        }
-//      }
+        const auto refElementType= determineRefinementType(eit.type());
+        Refinement& refinement = buildRefinement<3, ctype>(refElementType, refElementType);
+        for (SubVertexIterator sit = refinement.vBegin(subSampleInPlane), send = refinement.vEnd(subSampleInPlane);
+             sit != send; ++sit) {
+          Dune::FieldVector<T,2> coord2D= {sit.coords()[0],sit.coords()[1]};
+
+          std::int64_t idx = nComps * vertexIndex_.at({elementId,sit.index()});
+
+          for (std::size_t comp = 0; comp < nComps; ++comp)
+              data[idx + comp] = T(localFct.evaluate(comp, sit.coords()));
+        }
+      }
 
       return data;
     }
@@ -189,27 +210,23 @@ namespace Dune::Vtk {
     [[nodiscard]] std::vector<T> cellDataImpl(VtkFunction const& fct) const {
       int nComps = fct.numComponents();
       std::vector<T> data;
-//      data.reserve(this->numCells_ * nComps);
+      data.reserve(this->numCells_ * nComps);
 //
-//      auto localFct        = localFunction(fct);
-//      auto const& indexSet = gridView_.indexSet();
-//
-//      for (auto element : elements(gridView_, partition)) {
-//        localFct.bind(element);
-//        auto geometry          = element.geometry();
-//        const size_t elementId = indexSet.index(element);
-//
-//        auto elementRepr            = element.impl().trimmedElementRepresentation();
-//        auto subGridView            = elementRepr->gridView();
-//        const auto& trimmedIndexSet = subGridView.indexSet();
-//
-//        for (auto subGridElement : elements(subGridView)) {
-//          auto vecInLocal = subGridElement.geometry().center();
-//
-//          for (std::size_t comp = 0; comp < nComps; ++comp)
-//            data.push_back(localFct.evaluate(comp, vecInLocal));
-//        }
-//      }
+      auto localFct        = localFunction(fct);
+      auto const& indexSet = gridView_.indexSet();
+      for (auto eit : elements(gridView_)) {
+        auto geometry          = eit.geometry();
+        const int elementId = indexSet.index(eit);
+
+        const auto refElementType= determineRefinementType(eit.type());
+        Refinement& refinement = buildRefinement<3, ctype>(refElementType, refElementType);
+        for (SubElementIterator eVit = refinement.eBegin(subSampleInPlane), eend = refinement.eEnd(subSampleInPlane);
+             eVit != eend; ++eVit) {
+
+          for (std::size_t comp = 0; comp < nComps; ++comp)
+              data.push_back() = T(localFct.evaluate(comp, eVit.coords()));
+        }
+      }
       return data;
     }
 

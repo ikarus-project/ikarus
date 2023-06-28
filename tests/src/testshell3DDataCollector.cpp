@@ -84,7 +84,7 @@ auto test3DDataCollector() {
 
   using GridView = decltype(gridView);
 
-  Dune::Vtk::Shell3DDataCollector dataCollector1(gridView,Dune::RefinementIntervals(plotInPlaneRefine));
+  Dune::Vtk::Shell3DDataCollector dataCollector1(gridView,1,Dune::RefinementIntervals(plotInPlaneRefine));
 
   Dune::VtkUnstructuredGridWriter writer2(dataCollector1, Dune::Vtk::FormatTypes::ASCII);
   writer2.write("KLSHELL3DTEST");
