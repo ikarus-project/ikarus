@@ -315,7 +315,7 @@ namespace Ikarus {
                              directorReferenceFunction);
     }
 
-    void calculateMatrix(const FERequirementType &par, typename Traits::MatrixType &hred) const {
+    void calculateMatrix(const FERequirementType &par, typename Traits::MatrixType hred) const {
       using namespace Dune::Indices;
       hred.setZero();
 
@@ -396,7 +396,7 @@ namespace Ikarus {
 
     //    [[nodiscard]] int size() const { return localView.size(); }
 
-    void calculateVector(const FERequirementType &par, typename Traits::VectorType &rieGrad) const {
+    void calculateVector(const FERequirementType &par, typename Traits::VectorType  rieGrad) const {
       using namespace Dune::Indices;
       rieGrad.setZero();
 
