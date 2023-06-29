@@ -40,6 +40,7 @@ using Dune::TestSuite;
 #include <autodiff/forward/dual/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
 #include <dune/geometry/virtualrefinement.hh>
+#include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
 auto test3DDataCollector() {
   TestSuite t("test3DDataCollector ");
   constexpr auto dimworld        = 3;
@@ -80,13 +81,40 @@ auto test3DDataCollector() {
   grid->globalRefineInDirection(0,refine);
   auto gridView = grid->leafGridView();
 
+//  auto g = [](auto x, auto df, auto nDeformedf, auto nReff) {
+//    const FieldVector corrd2D = {[x[0],x[1]};
+//    return df(corrd2D)+ x[2]* (nDeformedf(corrd2D)- nReff(corrd2D));
+//  };
 
 
   using GridView = decltype(gridView);
 
-  Dune::Vtk::Shell3DDataCollector dataCollector1(gridView,1,Dune::RefinementIntervals(plotInPlaneRefine));
+  Dune::Vtk::Shell3DDataCollector dc(gridView,1,Dune::RefinementIntervals(plotInPlaneRefine));
 
-  Dune::VtkUnstructuredGridWriter writer2(dataCollector1, Dune::Vtk::FormatTypes::ASCII);
+  Dune::VtkUnstructuredGridWriter writer2(dc, Dune::Vtk::FormatTypes::ASCII);
+  auto lambdaf = [](Dune::FieldVector<double, 3> x) {
+    return Dune::FieldVector<double, 3>({std::sin(x[0]), std::cos(3 * x[0]) + std::sin(4 * x[1]),std::sin(x[2])});
+  };
+  auto lambaGV = Dune::Functions::makeAnalyticGridViewFunction(lambdaf,gridView);
+  writer2.addPointData(lambaGV, Dune::Vtk::FieldInfo{"x", Dune::Vtk::RangeTypes::VECTOR, 3});
+//
+//  using namespace Dune::Functions::BasisFactory;
+//  auto basis       = Ikarus::makeBasis(gridView, power<3>(nurbs()));
+//  Eigen::VectorXd d;
+//  d.setRandom(basis.flat().size());
+//  auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(basis.flat(), d);
+//
+//  using namespace Dune::Functions::BasisFactory;
+//  auto basis       = Ikarus::makeBasis(gridView, power<3>(nurbs()));
+//  Eigen::VectorXd d;
+//  d.setRandom(basis.flat().size());
+//  auto displacement = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(basis.flat(), d);
+//
+//  Eigen::VectorXd normals;
+//  normals.setRandom(basis.flat().size());
+//  auto deformedNormalFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(basis.flat(), normals);
+
+
   writer2.write("KLSHELL3DTEST");
 
   return t;

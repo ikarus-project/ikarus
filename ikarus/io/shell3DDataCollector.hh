@@ -187,7 +187,6 @@ namespace Dune::Vtk {
             auto localFct        = localFunction(fct);
       auto const& indexSet = gridView_.indexSet();
       for (auto eit : elements(gridView_)) {
-        auto geometry          = eit.geometry();
         const int elementId = indexSet.index(eit);
 
         const auto refElementType= determineRefinementType(eit.type());
