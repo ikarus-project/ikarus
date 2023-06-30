@@ -3,7 +3,7 @@
 
 cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 
-option(DUNE_ENABLE_PYTHONBINDINGS "Enable Python bindings" ON)
+option(DUNE_ENABLE_PYTHONBINDINGS "Enable Python bindings" FALSE)
 option(DUNE_PYTHON_ALLOW_GET_PIP "Allow dune-common to install pip into venv" ON)
 project(
   ikarus

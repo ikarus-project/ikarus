@@ -314,6 +314,13 @@ class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis> {
   }
 
  public:
+
+  int ndofEmbedded()const
+  {
+    using namespace Dune::Indices;
+    return this->localView().size();
+  }
+
   template<typename ScalarType>
   auto getDisplacementFunction(const FERequirementType &par,
                                const std::optional<const Eigen::VectorX<ScalarType>> &dx = std::nullopt) const {

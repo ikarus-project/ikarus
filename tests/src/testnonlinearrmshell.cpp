@@ -91,8 +91,9 @@ auto squareTest() {
     auto deformationPowerBasis = makeBasis(gridView,power<3>(lagrange<displacementOrder>()));
 
     std::vector<Eigen::Vector<double, 3> > v;
-    Functions::interpolate(deformationPowerBasis, v, refCoords);
-    std::copy(v.begin(), v.end(), mBlocked.begin());
+  for (auto &msingle : mBlocked) {
+    msingle.setValue(Eigen::Vector<double, 3>::Zero());
+  }
 
 
     DirectorVector dBlocked(basis.untouched().size({Dune::Indices::_1}));
@@ -156,7 +157,7 @@ auto squareTest() {
     double lambda = 0;
      auto residualFunction = [&](auto &&disp, auto &&lambdaLocal) -> auto & {
       auto req = Ikarus::FErequirements<MultiTypeVector>()
-                                       .insertGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector, disp)
+                                       .insertGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector, x)
                                        .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal)
                                        .addAffordance(Ikarus::AffordanceCollections::elastoStatics);
       return sparseFlatAssembler.getVector(req);

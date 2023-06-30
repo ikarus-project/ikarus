@@ -15,7 +15,6 @@
 
 template <typename Basis, typename SolutionVectorType>  // Check basis
 class ControlSubsamplingVertexVTKWriter : public IObserver<ControlMessages> {
-  static constexpr int components = Basis::LocalView::Tree::CHILDREN == 0 ? 1 : Basis::LocalView::Tree::CHILDREN;
 
 public:
   template< typename FunctionType>
@@ -28,7 +27,7 @@ public:
   void updateImpl(ControlMessages message) override {
     switch (message) {
       case ControlMessages::SOLUTION_CHANGED: {
-        func(vtkWriter, *basis, *solution, prefixString,step);
+        func(vtkWriter, *basis, *solution, prefixString,step++);
 
       } break;
       default:

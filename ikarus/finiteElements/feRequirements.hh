@@ -18,6 +18,8 @@ namespace Dune
 {
 template <typename... T>
 struct TupleVector;
+template <typename... T>
+class MultiTypeBlockVector;
 }
 namespace Ikarus {
 
@@ -117,6 +119,7 @@ namespace Ikarus {
     struct DeduceRawVectorType<Eigen::Ref<T>> {
       using Type = Eigen::Ref<T>;
     };
+
 
   template <typename... T>
   struct DeduceRawVectorType<Dune::MultiTypeBlockVector<T...>> {
