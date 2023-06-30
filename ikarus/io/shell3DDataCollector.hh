@@ -107,6 +107,7 @@ namespace Dune::Vtk {
           auto midSurface          = geometry.global(coord2D);
           auto J         = geometry.jacobianTransposed(coord2D);
           auto n          = cross(J[0],J[1]);
+          n/= n.two_norm();
           auto v = midSurface+(2*sit.coords()[2]-1)*n*thickness_/2.0;
           std::int64_t idx = 3 * vertexIndex_.at({elementId,sit.index()});
 
@@ -184,11 +185,11 @@ namespace Dune::Vtk {
     [[nodiscard]] std::vector<T> pointDataImpl(GlobalFunction const& fct) const {
       int nComps = fct.numComponents();
       std::vector<T> data(this->numPoints() * nComps);
-            auto localFct        = localFunction(fct);
+            auto localFct        = localFunctionMod(fct);
       auto const& indexSet = gridView_.indexSet();
       for (auto eit : elements(gridView_)) {
         const int elementId = indexSet.index(eit);
-
+        localFct.bind(eit);
         const auto refElementType= determineRefinementType(eit.type());
         Refinement& refinement = buildRefinement<3, ctype>(refElementType, refElementType);
         for (SubVertexIterator sit = refinement.vBegin(subSampleInPlane), send = refinement.vEnd(subSampleInPlane);
@@ -211,9 +212,11 @@ namespace Dune::Vtk {
       std::vector<T> data;
       data.reserve(this->numCells_ * nComps);
 //
-      auto localFct        = localFunction(fct);
+      auto localFct        = localFunctionMod(fct);
       auto const& indexSet = gridView_.indexSet();
       for (auto eit : elements(gridView_)) {
+        localFct.bind(eit);
+
         auto geometry          = eit.geometry();
         const int elementId = indexSet.index(eit);
 
@@ -223,7 +226,7 @@ namespace Dune::Vtk {
              eVit != eend; ++eVit) {
 
           for (std::size_t comp = 0; comp < nComps; ++comp)
-              data.push_back() = T(localFct.evaluate(comp, eVit.coords()));
+              data.push_back(T(localFct.evaluate(comp, eVit.coords())));
         }
       }
       return data;

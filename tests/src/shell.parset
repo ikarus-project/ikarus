@@ -2,6 +2,6 @@ E = 1000
 nu = 0.0
 thickness = 0.1
 simulationFlag = 2
-refine = 2
+refine = 5
 loadFactor=1
 plotInPlaneRefine=2
