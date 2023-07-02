@@ -280,12 +280,6 @@ class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis> {
                      NeumannBoundaryLoad p_neumannBoundaryLoad = {})
       : BasePowerFE(globalBasis.flat(), element), neumannBoundary{p_neumannBoundary}, fESettings{std::move(p_feSettings)} {
     const auto &simulationFlag = fESettings.request<int>("simulationFlag");
-    if (simulationFlag==0)
-      membraneStrain = DefaultMembraneStrain();
-    else if (simulationFlag==1)
-      membraneStrain = CASMembraneStrain<CASAnsatzFunction>();
-    else if (simulationFlag==2)
-      membraneStrain = CASMembraneStrain<CASAnsatzFunctionANS>();
 
     this->localView().bind(element);
     auto &first_child = this->localView().tree().child(0);
@@ -294,7 +288,7 @@ class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis> {
     dispAtNodes.resize(fe.size());
     dispAtNodesDual.resize(fe.size());
     dispAtNodesDual2nd.resize(fe.size());
-    order = 2*(fe.localBasis().order());
+    order = 3*(fe.localBasis().order());
     localBasis = Dune::CachedLocalBasis(fe.localBasis());
     if constexpr (requires { this->localView().element().impl().getQuadratureRule(order); })
       if (this->localView().element().impl().isTrimmed())
@@ -311,6 +305,14 @@ class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis> {
 
     assert(((not p_neumannBoundary and not neumannBoundaryLoad) or (p_neumannBoundary and neumannBoundaryLoad))
                && "If you pass a Neumann boundary you should also pass the function for the Neumann load!");
+
+    if (simulationFlag==0)
+      membraneStrain = DefaultMembraneStrain();
+    else if (simulationFlag==1)
+      membraneStrain = CASMembraneStrain<CASAnsatzFunction<FlatBasis>>(this->localView());
+    else if (simulationFlag==2)
+      membraneStrain = CASMembraneStrain<CASAnsatzFunctionANS<FlatBasis>>(this->localView());
+
   }
 
  public:
@@ -369,7 +371,7 @@ class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis> {
   FESettings fESettings;
   size_t numberOfNodes{0};
   int order{};
-  mutable MembraneStrain membraneStrain;
+  mutable MembraneStrain<FlatBasis> membraneStrain;
 
   auto calc3DMetric(const auto& J,const auto& H,double zeta) const
   {

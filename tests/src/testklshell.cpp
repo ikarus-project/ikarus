@@ -14,6 +14,7 @@
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/subspacebasis.hh>
 #include <dune/iga/nurbsbasis.hh>
+#include <Eigen/Eigenvalues>
 
 #include "spdlog/spdlog.h"
 
@@ -69,7 +70,7 @@ auto testMembraneStrain(const auto& localView,const auto& d)
               = dx[i*3 + k2] + disp[i][k2];
 
     Dune::StandardLocalFunction uFunction(localBasis, dispD, geo);
-    CASStrain strain;
+    CASStrain strain(localView);
     return strain.value(gpPos,geoR,uFunction);
   };
 
@@ -80,7 +81,7 @@ auto testMembraneStrain(const auto& localView,const auto& d)
   dx.setZero();
   Eigen::MatrixXd h=jacobian(f, autodiff::wrt(dx), at(dx), g);
 
-  CASStrain strain;
+  CASStrain strain(localView);
   Eigen::MatrixXd hR(3,localView.size());
   for (int i = 0; i < fe.size(); ++i) {
     hR.block<3,3>(0,3*i)=strain.derivative(gpPos,Eigen::Matrix<double, 2, 3>(),double(),geoR,uFunction,localBasis,i);
@@ -143,9 +144,10 @@ auto checkFEByAutoDiff(std::string filename) {
   auto nDOFPerEle        = localView.size();
   Eigen::VectorXd dT;
   dT.setZero(nDOF);
-  t.subTest(testMembraneStrain<Ikarus::CASMembraneStrain<Ikarus::CASAnsatzFunction>>(localView,dT));
+  using Basis = typename  decltype(basis)::FlatBasis;
+  t.subTest(testMembraneStrain<Ikarus::CASMembraneStrain<Ikarus::CASAnsatzFunction<Basis>>>(localView,dT));
   std::cout<<"========================="<<std::endl;
-  t.subTest(testMembraneStrain<Ikarus::CASMembraneStrain<Ikarus::CASAnsatzFunctionANS>>(localView,dT));
+  t.subTest(testMembraneStrain<Ikarus::CASMembraneStrain<Ikarus::CASAnsatzFunctionANS<Basis>>>(localView,dT));
   const double tol = 1e-10;
 
   auto volumeLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
@@ -296,9 +298,9 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   };
 
   using ElementTypePRim = Ikarus::KirchhoffLoveShell<decltype(basis)>;
-  using ElementTypeRaw = Ikarus::StressBasedShell<ElementTypePRim>;
+//  using ElementTypeRaw = Ikarus::StressBasedShell<ElementTypePRim>;
 //  using ElementType = Ikarus::AutoDiffFE<ElementTypeRaw, Ikarus::FErequirements<>, false, true>;
-  using ElementType = ElementTypeRaw;
+  using ElementType = ElementTypePRim;
   std::vector<ElementType> fes;
 
   for (auto& element : elements(gridView))
@@ -308,7 +310,8 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   Ikarus::DirichletValues dirichletValues(basisP->flat());
 
   dirichletValues.fixBoundaryDOFs([&](auto& dirichletFlags, auto&& localIndex, auto&& localView, auto&& intersection) {
-    if (std::abs(intersection.geometry().center()[0]) < 1e-8) dirichletFlags[localView.index(localIndex)] = true;
+    if (std::abs(intersection.geometry().center()[0]) < 1e-8)
+      dirichletFlags[localView.index(localIndex)] = true;
   });
 
   dirichletValues.fixDOFs([&](auto& basis, auto&& dirichletFlags) {
@@ -328,7 +331,8 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   });
 
   auto sparseAssembler = SparseFlatAssembler(fes, dirichletValues);
-
+  std::cout<<"Dofs: "<<basis.flat().size()<<std::endl;
+  std::cout<<"Fixed Dofs: "<<dirichletValues.fixedDOFsize()<<std::endl;
   Eigen::VectorXd d;
   d.setZero(basis.flat().size());
   double lambda = 0.0;
@@ -347,12 +351,32 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
     return sparseAssembler.getMatrix(req);
   };
 
+  auto KFunctionRed = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
+    req.insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
+        .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal);
+    return sparseAssembler.getReducedMatrix(req);
+  };
+
   auto energyFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
     req.insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
         .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal);
     return sparseAssembler.getScalar(req);
   };
 
+  const auto K = Eigen::MatrixXd(KFunctionRed(d,lambda));
+  std::cout<<K<<std::endl;
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es;
+  std::cout<<"Eigevec: "<<std::endl;
+  std::cout<<es.eigenvectors()<<std::endl;
+  es.compute(K);
+  std::cout << "The eigenvalues of A are: " << es.eigenvalues().transpose() << std::endl;
+
+  Dune::SubsamplingVTKWriter<GridView> vtkWriter2(gridView,Dune::RefinementIntervals(10));
+  for (int i = 0; i < es.eigenvalues().size(); ++i) {
+    auto ev= Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double,3>>(basis.flat(),sparseAssembler.createFullVector( es.eigenvectors().col(i)));
+    vtkWriter2.addVertexData(ev, Dune::VTK::FieldInfo(std::to_string(i)+"_"+std::to_string(es.eigenvalues()[i]), Dune::VTK::FieldInfo::Type::vector, 3));
+  }
+  vtkWriter2.write("EigenvaluesKLTest");
   auto nonLinOp = Ikarus::NonLinearOperator(functions(residualFunction, KFunction), parameter(d, lambda));
 
   const double gradTol = 1e-16;
@@ -380,10 +404,10 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   lc.subscribeAll(vtkWriter);
   const auto controlInfo = lc.run();
 
-  Dune::Vtk::Shell3DDataCollector dataCollector1(gridView,Dune::RefinementIntervals(plotInPlaneRefine));
-
-  Dune::VtkUnstructuredGridWriter writer2(dataCollector1, Dune::Vtk::FormatTypes::ASCII);
-  writer2.write("KLSHELL3D");
+//  Dune::Vtk::Shell3DDataCollector dataCollector1(gridView,Dune::RefinementIntervals(plotInPlaneRefine));
+//
+//  Dune::VtkUnstructuredGridWriter writer2(dataCollector1, Dune::Vtk::FormatTypes::ASCII);
+//  writer2.write("KLSHELL3D");
 
   std::cout << std::setprecision(16) << std::ranges::max(d) << std::endl;
   t.check(Dune::FloatCmp::eq(0.2957393081676369, std::ranges::max(d)))

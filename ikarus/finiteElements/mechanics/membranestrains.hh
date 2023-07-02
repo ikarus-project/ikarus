@@ -60,9 +60,11 @@ struct DefaultMembraneStrain {
 
 };
 
-
+template<typename Basis>
 struct CASAnsatzFunction
 {
+  using LocalView = typename Basis::LocalView;
+  CASAnsatzFunction(const LocalView& lb){}
   Dune::LagrangeCubeLocalFiniteElement<double, double, 2, 1> q1lfem2D;
   mutable std::vector<double> out;
 
@@ -83,11 +85,46 @@ struct CASAnsatzFunction
   }
 };
 
+template<typename Basis>
 struct CASAnsatzFunctionANS
 {
+  using LocalView = typename Basis::LocalView;
+  CASAnsatzFunctionANS(const LocalView& lb){}
   Dune::LagrangeCubeLocalFiniteElement<double, double, 2, 1> q1lfem2D;
   mutable std::vector<double> out;
 
+  auto positions(std::vector<Dune::FieldVector<double, 2>>& lagrangePoints)
+  {
+    lagrangePoints.resize(4);
+    lagrangePoints[0] = {0, 0.5};
+    lagrangePoints[1] = {0.5, 0};
+    lagrangePoints[2] = {1, 0.5};
+    lagrangePoints[3] = {0.5, 1};
+  }
+
+  void evaluateFunction(const Dune::FieldVector<double,2>& gpPos,std::vector<Dune::FieldVector<double, 1>>& NANS) const
+  {
+    NANS.resize(4);
+    NANS[0] =  (1 - gpPos[1]);
+    NANS[1] = (1 - gpPos[0]);
+    NANS[2] = gpPos[1];
+    NANS[3] = gpPos[0];
+  }
+
+};
+
+#include<dune/iga/nurbsbasis.hh>
+
+template<typename Basis>
+struct CASAnsatzFunctionANSARB
+{
+  using Grid = Dune::IGA::NURBSGrid<2,3>;
+  using GridView = typename Grid::LeafGridView;
+  using LocalView = typename Basis::LocalView;
+  LocalView localView;
+  mutable std::vector<double> out;
+
+  CASAnsatzFunctionANSARB(const LocalView& lb): localView{lb}{}
   auto positions(std::vector<Dune::FieldVector<double, 2>>& lagrangePoints)
   {
     lagrangePoints.resize(4);
@@ -121,7 +158,8 @@ struct CASMembraneStrain
   std::variant<Vec<double>,Vec<autodiff::dual>,Vec<autodiff::dual2nd>> membraneStrainsAtVertices;
   mutable std::vector<Dune::FieldVector<double, 1>> NANS;
 
-  CASMembraneStrain()
+  template<typename LocalView>
+  CASMembraneStrain(const LocalView& lv): cASAnsatzFunction(lv)
   {
     cASAnsatzFunction.positions(lagrangePoints);
 }
@@ -271,6 +309,7 @@ class MembraneStrainVariant
   std::variant<Implementations...> impl_;
 };
 
-using MembraneStrain = MembraneStrainVariant<DefaultMembraneStrain,CASMembraneStrain<CASAnsatzFunction>,CASMembraneStrain<CASAnsatzFunctionANS>>;
+template<typename Basis>
+using MembraneStrain = MembraneStrainVariant<DefaultMembraneStrain,CASMembraneStrain<CASAnsatzFunction<Basis>>,CASMembraneStrain<CASAnsatzFunctionANS<Basis>>>;
 
 }
