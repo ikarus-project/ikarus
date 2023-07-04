@@ -600,29 +600,29 @@ class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis> {
   }
 
  private:
-  template<typename ScalarType>
-  Eigen::Matrix<ScalarType, 3, 3> bopMembrane(const Eigen::Matrix<ScalarType, 2, 3> &Jcur, const auto &dN,
-                                              const int node) const {
-    Eigen::Matrix<ScalarType, 3, 3> bop;
-    bop.row(0) = Jcur.row(0)*dN(node, 0);
-    bop.row(1) = Jcur.row(1)*dN(node, 1);
-    bop.row(2) = Jcur.row(0)*dN(node, 1) + Jcur.row(1)*dN(node, 0);
+//  template<typename ScalarType>
+//  Eigen::Matrix<ScalarType, 3, 3> bopMembrane(const Eigen::Matrix<ScalarType, 2, 3> &Jcur, const auto &dN,
+//                                              const int node) const {
+//    Eigen::Matrix<ScalarType, 3, 3> bop;
+//    bop.row(0) = Jcur.row(0)*dN(node, 0);
+//    bop.row(1) = Jcur.row(1)*dN(node, 1);
+//    bop.row(2) = Jcur.row(0)*dN(node, 1) + Jcur.row(1)*dN(node, 0);
+//
+//    return bop;
+//  }
 
-    return bop;
-  }
-
-  template<typename ScalarType>
-  Eigen::Matrix<ScalarType, 3, 3> kgMembrane(const auto &dN,
-                                             const Eigen::Vector3<ScalarType> &S, int I, int J) const {
-
-    const auto &dN1i = dN(I, 0);
-    const auto &dN1j = dN(J, 0);
-    const auto &dN2i = dN(I, 1);
-    const auto &dN2j = dN(J, 1);
-    const ScalarType NS = dN1i*dN1j*S[0] + dN2i*dN2j*S[1] + (dN1i*dN2j + dN2i*dN1j)*S[2];
-    Eigen::Matrix<ScalarType, 3, 3> kg = Eigen::Matrix<double, 3, 3>::Identity()*NS;
-    return kg;
-  }
+//  template<typename ScalarType>
+//  Eigen::Matrix<ScalarType, 3, 3> kgMembrane(const auto &dN,
+//                                             const Eigen::Vector3<ScalarType> &S, int I, int J) const {
+//
+//    const auto &dN1i = dN(I, 0);
+//    const auto &dN1j = dN(J, 0);
+//    const auto &dN2i = dN(I, 1);
+//    const auto &dN2j = dN(J, 1);
+//    const ScalarType NS = dN1i*dN1j*S[0] + dN2i*dN2j*S[1] + (dN1i*dN2j + dN2i*dN1j)*S[2];
+//    Eigen::Matrix<ScalarType, 3, 3> kg = Eigen::Matrix<double, 3, 3>::Identity()*NS;
+//    return kg;
+//  }
 
   template<typename ScalarType>
   Eigen::Matrix<ScalarType, 3, 3> kgBending(const Eigen::Matrix<ScalarType, 2, 3> &jcur,

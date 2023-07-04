@@ -181,7 +181,7 @@ auto checkFEByAutoDiff(std::string filename) {
   Dune::BitSetVector<1> neumannVertices(gridView.size(2), true);
 
   BoundaryPatch<decltype(gridView)> neumannBoundary(gridView, neumannVertices);
-  for (int i = 0; i < 1; ++i) {
+  for (int i = 0; i < 3; ++i) {
 
 
   Ikarus::FESettings feSettings;
@@ -205,13 +205,13 @@ auto checkFEByAutoDiff(std::string filename) {
 
 
     for (auto &msingle : mBlocked) {
-      msingle.setValue(Eigen::Vector<double, 3>::Zero());
+      msingle.setValue(Eigen::Vector<double, 3>::Random());
     }
 
 
     DirectorVector dBlocked(basis.untouched().size({Dune::Indices::_1}));
     for (auto &dsingle : dBlocked) {
-      dsingle.setValue(Eigen::Vector<double, 3>::UnitZ());
+      dsingle.setValue(Eigen::Vector<double, 3>::UnitZ()+0.1*Eigen::Vector<double, 3>::Random());
     }
 
     const MultiTypeVector x0(mBlocked, dBlocked);
@@ -233,7 +233,7 @@ auto checkFEByAutoDiff(std::string filename) {
 
     vtkWriter.addVertexData(disp, {"displacements", Dune::VTK::FieldInfo::Type::vector, 3});
     vtkWriter.addVertexData(director, {"director", Dune::VTK::FieldInfo::Type::vector, 3});
-  vtkWriter.write(filename+ std::to_string(0));
+  vtkWriter.write(filename+ std::to_string(i));
 
 //  auto localDisp=localFunction(disp);
 //  localDisp.bind(*element);
