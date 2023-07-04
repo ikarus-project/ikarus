@@ -108,7 +108,7 @@ namespace Ikarus {
                              this->template calculateVectorImpl<autodiff::dual>(
                                  par, std::declval<typename Traits::template VectorType<autodiff::dual>>(),
                                  std::declval<const Eigen::VectorXdual&>());
-                           }) {
+                           }and not forceAutoDiff) {
         /// This is only valid if the external forces are independent of displacements, for e.g., no follower forces are
         /// applied
         Eigen::VectorXdual dx(this->ndofEmbedded());

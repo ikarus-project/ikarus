@@ -205,13 +205,15 @@ auto checkFEByAutoDiff(std::string filename) {
 
 
     for (auto &msingle : mBlocked) {
-      msingle.setValue(Eigen::Vector<double, 3>::Random());
+      msingle.setValue(Eigen::Vector<double, 3>::Zero());
+//      msingle.setValue(Eigen::Vector<double, 3>::Random());
     }
 
 
     DirectorVector dBlocked(basis.untouched().size({Dune::Indices::_1}));
     for (auto &dsingle : dBlocked) {
-      dsingle.setValue(Eigen::Vector<double, 3>::UnitZ()+0.1*Eigen::Vector<double, 3>::Random());
+//      dsingle.setValue(Eigen::Vector<double, 3>::UnitZ()+0.1*Eigen::Vector<double, 3>::Random());
+      dsingle.setValue(Eigen::Vector<double, 3>::UnitZ());
     }
 
     const MultiTypeVector x0(mBlocked, dBlocked);
@@ -253,15 +255,15 @@ auto checkFEByAutoDiff(std::string filename) {
   R.setZero(nDOFPerEle);
   RAutoDiff.setZero(nDOFPerEle);
 
-//  fe.calculateMatrix(req, K);
-//  feAutoDiff.calculateMatrix(req, KAutoDiff);
+  fe.calculateMatrix(req, K);
+  feAutoDiff.calculateMatrix(req, KAutoDiff);
 
   fe.calculateVector(req, R);
   feAutoDiff.calculateVector(req, RAutoDiff);
 
-//  t.check(K.isApprox(KAutoDiff, tol),"K Check"+filename)<<
-//      "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
-//      "automatic differentiation with simulationFlag: "<<i<<"\n" << K <<"\n KAutoDiff \n"<< KAutoDiff<<"\n K-KAutoDiff \n"<< K-KAutoDiff;
+  t.check(K.isApprox(KAutoDiff, tol),"K Check"+filename)<<
+      "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
+      "automatic differentiation with simulationFlag: "<<i<<"\n" << K <<"\n KAutoDiff \n"<< KAutoDiff<<"\n K-KAutoDiff \n"<< K-KAutoDiff;
 
   t.check(R.isApprox(RAutoDiff, tol),"R Check"+filename)<<
       "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
