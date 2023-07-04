@@ -310,7 +310,11 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
   feSettings.addOrAssign("poissons_ratio", nu);
   feSettings.addOrAssign("thickness", thickness);
   feSettings.addOrAssign("simulationFlag", simulationFlag);
-  auto basis       = Ikarus::makeBasis(gridView, composite(power<3>(nurbs()),power<2>(nurbs())));
+
+  auto scalarMidSurfBasis = nurbs();
+  auto scalaarDirectorBasis = nurbs();
+  auto basis       = Ikarus::makeBasis(gridView, composite(power<3>(scalarMidSurfBasis, BlockedInterleaved()),power<2>(scalaarDirectorBasis, BlockedInterleaved()),
+                                                           BlockedLexicographic{}));
 
   std::cout<<"Number of Elements: "<<gridView.size(0)<<std::endl;
   std::cout<<"Dofs: "<<basis.flat().dimension()<<std::endl;
@@ -369,33 +373,33 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
   auto basisP = std::make_shared<const decltype(basis)>(basis);
   Ikarus::DirichletValues dirichletValues(basisP->flat());
 
-//  dirichletValues.fixBoundaryDOFs([&](auto& dirichletFlags, auto&& localIndex, auto&& localView, auto&& intersection) {
-//    if (std::abs(intersection.geometry().center()[0]) < 1e-8) dirichletFlags[localView.index(localIndex)] = true;
+  dirichletValues.fixBoundaryDOFs([&](auto& dirichletFlags, auto&& localIndex, auto&& localView, auto&& intersection) {
+    if (std::abs(intersection.geometry().center()[0]) < 1e-8) dirichletFlags[localView.index(localIndex)] = true;
+  });
+
+//  dirichletValues.fixDOFs([&](auto& basis, auto&& dirichletFlags) {
+//    Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basis,Dune::Indices::_0),
+//                                        [&](auto&& localIndex, auto&& localView, auto&& intersection) {
+//                                          if (std::abs(intersection.geometry().center()[0]) < 1e-8)
+//                                            dirichletFlags[localView.index(localIndex)] = true;
+//                                        });
 //  });
-
-  dirichletValues.fixDOFs([&](auto& basis, auto&& dirichletFlags) {
-    Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basis,Dune::Indices::_0),
-                                        [&](auto&& localIndex, auto&& localView, auto&& intersection) {
-                                          if (std::abs(intersection.geometry().center()[0]) < 1e-8)
-                                            dirichletFlags[localView.index(localIndex)] = true;
-                                        });
-  });
-
-  dirichletValues.fixDOFs([&](auto& basis, auto&& dirichletFlags) {
-    Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basis,Dune::Indices::_0, 2),
-                                        [&](auto&& localIndex, auto&& localView, auto&& intersection) {
-                                          if (std::abs(intersection.geometry().center()[0]) > 10 - 1e-8)
-                                            dirichletFlags[localView.index(localIndex)] = true;
-                                        });
-  });
-
-  dirichletValues.fixDOFs([&](auto& basis, auto&& dirichletFlags) {
-    Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basis,Dune::Indices::_0, 1),
-                                        [&](auto&& localIndex, auto&& localView, auto&& intersection) {
-                                          if (std::abs(intersection.geometry().center()[0]) > 10 - 1e-8)
-                                            dirichletFlags[localView.index(localIndex)] = true;
-                                        });
-  });
+//
+//  dirichletValues.fixDOFs([&](auto& basis, auto&& dirichletFlags) {
+//    Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basis,Dune::Indices::_0, 2),
+//                                        [&](auto&& localIndex, auto&& localView, auto&& intersection) {
+//                                          if (std::abs(intersection.geometry().center()[0]) > 10 - 1e-8)
+//                                            dirichletFlags[localView.index(localIndex)] = true;
+//                                        });
+//  });
+//
+//  dirichletValues.fixDOFs([&](auto& basis, auto&& dirichletFlags) {
+//    Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basis,Dune::Indices::_0, 1),
+//                                        [&](auto&& localIndex, auto&& localView, auto&& intersection) {
+//                                          if (std::abs(intersection.geometry().center()[0]) > 10 - 1e-8)
+//                                            dirichletFlags[localView.index(localIndex)] = true;
+//                                        });
+//  });
 
   auto sparseAssembler = SparseFlatAssembler(fes, dirichletValues);
 
@@ -409,13 +413,13 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
   auto residualFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
     req.insertGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector, disp_)
         .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal);
-    return sparseAssembler.getVector(req);
+    return sparseAssembler.getReducedVector(req);
   };
 
   auto KFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
     req.insertGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector, disp_)
         .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal);
-    return sparseAssembler.getMatrix(req);
+    return sparseAssembler.getReducedMatrix(req);
   };
 
   auto energyFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
@@ -436,14 +440,22 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
   //            .useRand   = false,
   //            .rho_reg   = 1e8,
   //            .Delta0    = 1});
+  auto updateFunction = std::function([&](MultiTypeVector &multiTypeVector, const Eigen::VectorXd &d_) {
+    auto dFull = sparseAssembler.createFullVector(d_);
+//    std::cout<<"dFull"<<std::endl;
+//    std::cout<<dFull<<std::endl;
+    multiTypeVector += dFull;
+  });
   auto linSolver               = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_UmfPackLU);
-  auto tr                      = Ikarus::makeNewtonRaphson(nonLinOp, std::move(linSolver));
+  auto tr                      = Ikarus::makeNewtonRaphson(nonLinOp, std::move(linSolver),std::move(updateFunction));
 
   auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
   tr->subscribeAll(nonLinearSolverObserver);
 
-  auto blockedmidSurfaceBasis2 = Dune::Functions::subspaceBasis(basis.untouched(),Dune::Indices::_0);
-  auto blockeddirectorBasis2 = Dune::Functions::subspaceBasis(basis.untouched(),Dune::Indices::_1);
+  auto basis3D       = Ikarus::makeBasis(gridView, composite(power<3>(scalarMidSurfBasis, BlockedInterleaved()),power<3>(scalaarDirectorBasis, BlockedInterleaved()),
+                                                           BlockedLexicographic{}));
+  auto blockedmidSurfaceBasis2 = Dune::Functions::subspaceBasis(basis3D.untouched(),Dune::Indices::_0);
+  auto blockeddirectorBasis2 = Dune::Functions::subspaceBasis(basis3D.untouched(),Dune::Indices::_1);
   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis)>,MultiTypeVector>>(
       basis, x,[&](auto& writer, auto& basis,auto& xL, auto& prefixString, int step){
 

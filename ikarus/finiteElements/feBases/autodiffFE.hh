@@ -94,7 +94,7 @@ namespace Ikarus {
 
           }
           }
-         hred.block(0,nDofs0,nDofs0,nDofs1)=hred.block(nDofs0,0,nDofs1,nDofs0).transpose();
+//         hred.block(0,nDofs0,nDofs0,nDofs1)=hred.block(nDofs0,0,nDofs1,nDofs0).transpose();
         std::cout<<"hredA\n"<<std::endl;
         std::cout<<hred<<std::endl;
       }else
@@ -171,13 +171,17 @@ namespace Ikarus {
             const auto globalIndex = this->localViewBlocked().index(this->localViewBlocked().tree().child(_1, 0).localIndex(i));
               localDirectorConfiguration[i] = dNodal[globalIndex[1]];
           }
-          const int nDofs0 = this->localViewBlocked().tree().child(_0, 0).finiteElement().size();
+          const int nDofs0 = this->localViewBlocked().tree().child(_0, 0).finiteElement().size()*3;
           gRed.segment(0,nDofs0)= g.segment(0,nDofs0);
           for (int i = 0; i < localDirectorConfiguration.size(); i++) {
              const int index3 = nDofs0+3*i;
              const int index2 = nDofs0+2*i;
              gRed.template segment<2>(index2)= localDirectorConfiguration[i].orthonormalFrame().transpose()*g.template segment<3>(index3);
           }
+          std::cout<<"g"<<std::endl;
+          std::cout<<g<<std::endl;
+          std::cout<<"gRed"<<std::endl;
+          std::cout<<gRed<<std::endl;
         }else
           gRed=g;
       } else

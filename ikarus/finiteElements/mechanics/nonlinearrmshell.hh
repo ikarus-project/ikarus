@@ -217,15 +217,15 @@ namespace Ikarus {
 //      std::vector<Dune::RealTuple<double, 3>> localConfiguration0(nDofs0);
       std::vector<Dune::UnitVector<double, 3>> localConfiguration1(nDofs1);
 
-      for (int i = 0; i < nDofs0 + nDofs1; i++) {
+      for (int i = 0; i < nDofs1; i++) {
         int localIndexI = 0;
-        if (i < nDofs0) {
-          auto &node  = localViewBlocked_.tree().child(_0, 0);
-          localIndexI = node.localIndex(i);
-        } else {
-          auto &node  = localViewBlocked_.tree().child(_1, 0);
-          localIndexI = node.localIndex(i - nDofs0);
-        }
+//        if (i < nDofs0) {
+//          auto &node  = localViewBlocked_.tree().child(_0, 0);
+//          localIndexI = node.localIndex(i);
+//        } else {
+          auto &node  = localViewBlocked_.tree().child(_1);
+          localIndexI = node.localIndex(i );
+//        }
         auto multiIndex = localViewBlocked_.index(localIndexI);
 
         // The CompositeBasis number is contained in multiIndex[0]
@@ -234,7 +234,7 @@ namespace Ikarus {
 //          localConfiguration0[i] = x0[_0][multiIndex[1]];
 //        else
           if (multiIndex[0] == 1)
-          localConfiguration1[i - nDofs0] = x0[_1][multiIndex[1]];
+          localConfiguration1[i] = x0[_1][multiIndex[1]];
       }
       return localConfiguration1;
     }
@@ -306,14 +306,16 @@ namespace Ikarus {
       Dune::BlockVector<typename std::remove_cvref_t<decltype(mNodal[0])>::template rebind<ScalarType>::other>   displacements(fe0.size());
       if (dx) {
         for (auto i = 0U; i < fe0.size(); ++i) {
-          const auto globalIndex = localViewBlocked_.index(localViewBlocked_.tree().child(_0).localIndex(i));
+          const auto globalIndex = localViewBlocked_.index(localViewBlocked_.tree().child(_0, 0).localIndex(i));
           for (auto k2 = 0U; k2 < worlddim; ++k2)
             displacements[i][k2] = mNodal[globalIndex[1]][k2] +dx.value()[i*worlddim + k2];
         }
         const int nDofs0 = this->localViewBlocked().tree().child(_0, 0).finiteElement().size()*3;
 
         for (auto i = 0U; i < fe1.size(); ++i) {
-          const auto globalIndex = localViewBlocked_.index(localViewBlocked_.tree().child(_1).localIndex(i));
+          const int ndofsB = localViewBlocked_.tree().child(_0, 0).finiteElement().size();
+          const int localIndex = localViewBlocked_.tree().child(_1, 0).localIndex(i);
+          const auto globalIndex = localViewBlocked_.index(localIndex);
           for (auto k2 = 0U; k2 < worlddim; ++k2)
             localDirectorConfiguration[i][k2] = dNodal[globalIndex[1]][k2]+dx.value()[nDofs0+i*worlddim + k2];
         }
@@ -324,7 +326,7 @@ namespace Ikarus {
         }
 
         for (auto i = 0U; i < fe1.size(); ++i) {
-          const auto globalIndex = localViewBlocked_.index(localViewBlocked_.tree().child(_1).localIndex(i));
+          const auto globalIndex = localViewBlocked_.index(localViewBlocked_.tree().child(_1, 0).localIndex(this->localViewBlocked().tree().child(_0, 0).finiteElement().size()+i));
           localDirectorConfiguration[i] = dNodal[globalIndex[1]];
         }}
 
@@ -544,13 +546,14 @@ namespace Ikarus {
       for (const auto &[gpIndex, gp] : displacementFunction.viewOverIntegrationPoints()) {
         const auto weight = geo_->integrationElement(gp.position()) * gp.weight();
 
-        kin.t           = directorFunction.evaluate(gpIndex,Dune::on(referenceElement));
-        kin.t0          = directorReferenceFunction.evaluate(gpIndex,Dune::on(referenceElement));
-        kin.ud1andud2   = displacementFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(referenceElement));
+        kin.t           = directorFunction.evaluate(gpIndex,Dune::on(gridElement));
+        kin.t0          = directorReferenceFunction.evaluate(gpIndex,Dune::on(gridElement));
+        kin.ud1andud2   = displacementFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(gridElement));
         kin.A1andA2     = Dune::toEigen(geo_->jacobianTransposed(gp.position())).transpose();
+        kin.A1andA2     = Eigen::Matrix<double,3,2>::Identity();
         kin.a1anda2     = kin.A1andA2+ kin.ud1andud2;
-        kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(referenceElement));
-        kin.td1Andtd2   = directorFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(referenceElement));
+        kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(gridElement));
+        kin.td1Andtd2   = directorFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(gridElement));
 
         auto Egl                = calculateGreenLagrangianStrains(kin);
         const auto StimesWeight = (calculateStressResultants(CMat_, Egl)).eval();
@@ -592,6 +595,8 @@ namespace Ikarus {
       }
       return energy;
     }
+
+
 
     mutable Eigen::Matrix<double, Eigen::Dynamic, Traits::mydim> dNA;
 
