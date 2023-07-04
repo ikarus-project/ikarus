@@ -137,7 +137,9 @@ auto checkFEByAutoDiff(std::string filename) {
   auto gridView = grid->leafGridView();
 
   using namespace Dune::Functions::BasisFactory;
-  auto basis       = Ikarus::makeBasis(gridView, composite(power<3>(nurbs()),power<2>(nurbs())));
+  auto scalarMidSurfBasis = nurbs();
+  auto scalaarDirectorBasis = nurbs();
+  auto basis       = Ikarus::makeBasis(gridView, composite(power<3>(scalarMidSurfBasis),power<2>(scalaarDirectorBasis)));
   auto element     = gridView.template begin<0>();
   auto nDOF        = basis.flat().size();
   auto localView        = basis.flat().localView();
@@ -152,17 +154,27 @@ auto checkFEByAutoDiff(std::string filename) {
   const double tol = 1e-10;
 
   auto volumeLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
-    VectorType fExt;
-    fExt.setZero();
-    fExt[1] = 2 * lamb;
-    return fExt;
+    std::array<Eigen::Vector<double,3>,2> vLoad;
+    auto& fext = vLoad[0];
+    auto& mext = vLoad[1];
+    fext.setZero();
+//    fext[0] = lamb;
+//    fext[1] = 0.01 * lamb;
+    fext[1] = 2*lamb;
+    mext.setZero();
+    return vLoad;
   };
 
   auto neumannBoundaryLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
-    VectorType fExt;
-    fExt.setZero();
-    fExt[0] = lamb / 40;
-    return fExt;
+    std::array<Eigen::Vector<double,3>,2> vLoad;
+    auto& fext = vLoad[0];
+    auto& mext = vLoad[1];
+    fext.setZero();
+//    fext[0] = lamb;
+//    fext[1] = 0.01 * lamb;
+    fext[2] = 4*lamb;
+    mext.setZero();
+    return vLoad;
   };
 
   /// We artificially apply a Neumann load on the complete boundary
@@ -187,13 +199,14 @@ auto checkFEByAutoDiff(std::string filename) {
     auto blockedmidSurfaceBasis = Dune::Functions::subspaceBasis(basis.untouched(),Dune::Indices::_0);
 
     MidSurfaceVector mBlocked(basis.untouched().size({Dune::Indices::_0}));
-    auto refCoords = [](auto v){ return Dune::FieldVector<double,3>();};
+//    auto refCoords = [](auto v){ return Dune::FieldVector<double,3>();};
 //    Functions::interpolate(blockedmidSurfaceBasis, mBlocked, refCoords);
-    auto deformationPowerBasis = makeBasis(gridView,power<3>(nurbs()));
+//    auto deformationPowerBasis = makeBasis(gridView,power<3>(nurbs()));
 
-    std::vector<Eigen::Vector<double, 3> > v;
-    Dune::Functions::interpolate(deformationPowerBasis, v, refCoords);
-    std::copy(v.begin(), v.end(), mBlocked.begin());
+
+    for (auto &msingle : mBlocked) {
+      msingle.setValue(Eigen::Vector<double, 3>::Zero());
+    }
 
 
     DirectorVector dBlocked(basis.untouched().size({Dune::Indices::_1}));
@@ -207,18 +220,23 @@ auto checkFEByAutoDiff(std::string filename) {
   using AutoDiffBasedFE = Ikarus::AutoDiffFE<ShellElement<Basis>, true>;
   AutoDiffBasedFE feAutoDiff(fe);
 
-  Eigen::VectorXd d;
-  d.setRandom(nDOF);
+//  Eigen::VectorXd d;
+//  d.setRandom(nDOF);
   //d.setZero(nDOF);
-
-  auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(basis.flat(),                                  d);
+    auto basis3D       = Ikarus::makeBasis(gridView, composite(power<3>(scalarMidSurfBasis, BlockedInterleaved()),power<3>(scalaarDirectorBasis, BlockedInterleaved()),
+                                                               BlockedLexicographic{}));
+    auto blockedmidSurfaceBasis2 = Dune::Functions::subspaceBasis(basis3D.untouched(),Dune::Indices::_0);
+    auto blockeddirectorBasis2 = Dune::Functions::subspaceBasis(basis3D.untouched(),Dune::Indices::_1);
+    auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockedmidSurfaceBasis2,  x);
+    auto director = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockeddirectorBasis2,  x);
   Dune::SubsamplingVTKWriter vtkWriter(gridView,Dune::refinementLevels(0));
 
-  vtkWriter.addVertexData(disp, {"displacements", Dune::VTK::FieldInfo::Type::scalar, 3});
-  vtkWriter.write(filename+ std::to_string(i));
+    vtkWriter.addVertexData(disp, {"displacements", Dune::VTK::FieldInfo::Type::vector, 3});
+    vtkWriter.addVertexData(director, {"director", Dune::VTK::FieldInfo::Type::vector, 3});
+  vtkWriter.write(filename+ std::to_string(0));
 
-  auto localDisp=localFunction(disp);
-  localDisp.bind(*element);
+//  auto localDisp=localFunction(disp);
+//  localDisp.bind(*element);
 
   double lambda = 7.3;
 
@@ -238,7 +256,7 @@ auto checkFEByAutoDiff(std::string filename) {
 //  fe.calculateMatrix(req, K);
 //  feAutoDiff.calculateMatrix(req, KAutoDiff);
 
-//  fe.calculateVector(req, R);
+  fe.calculateVector(req, R);
   feAutoDiff.calculateVector(req, RAutoDiff);
 
 //  t.check(K.isApprox(KAutoDiff, tol),"K Check"+filename)<<
@@ -501,8 +519,8 @@ int main(int argc, char** argv) {
   //  const double E             = materialParameters.get<double>("E");
   //  const double nu            = materialParameters.get<double>("nu");
 
-//  checkFEByAutoDiff<RMSHELL>("RMSHELL");
+  checkFEByAutoDiff<RMSHELL>("RMSHELL");
 
 //  checkFEByAutoDiff<KLSHELLSB>("KLSHELLSB");
-  NonLinearElasticityLoadControlNRandTRforRMShell();
+//  NonLinearElasticityLoadControlNRandTRforRMShell();
 }

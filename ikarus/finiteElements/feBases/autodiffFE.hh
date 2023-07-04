@@ -79,7 +79,7 @@ namespace Ikarus {
             hred.template block<correctionSize1,correctionSize0>(index2i,index2j) =BLAIT*h.template block<valueSize1,valueSize0>(index3i,index3j);
 
           }
-            hred.template block<correctionSize1,correctionSize1>(index2i,index2i)+=localDirectorConfiguration[i].weingarten(g.template segment<valueSize1>(index3i));
+            hred.template block<correctionSize1,correctionSize1>(index2i,index2i)+=localDirectorConfiguration[i].weingarten(g.template segment<valueSize1>(index3i).template cast<double>());
         }
 //        std::cout<<"hredB\n"<<std::endl;
 //        std::cout<<hred<<std::endl;

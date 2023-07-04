@@ -241,11 +241,11 @@ namespace Ikarus {
 
     template<typename ScalarType>
     Eigen::Matrix<ScalarType, 8, 3> boperatorMidSurface(const KinematicVariables<ScalarType> &kin, int integrationPointIndex,
-                                                        int coeffIndex, const auto &midSurfaceFunction) const {
+                                                        int coeffIndex, const auto &displacementFunction) const {
       using namespace Dune::TypeTree::Indices;
       using namespace Dune::DerivativeDirections;
       const std::array<Eigen::Matrix<ScalarType, 3, 3>, 2> diffa1Anda2
-          = midSurfaceFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(spatialAll, coeff(_0, coeffIndex)));
+          = displacementFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(spatialAll, coeff(_0, coeffIndex)),Dune::on(gridElement));
       const auto &diffa1 = diffa1Anda2[0];
       const auto &diffa2 = diffa1Anda2[1];
       Eigen::Matrix<ScalarType, 8, 3> bop;
@@ -269,9 +269,9 @@ namespace Ikarus {
       using namespace Dune::TypeTree::Indices;
       using namespace Dune::DerivativeDirections;
       const std::array<Eigen::Matrix<ScalarType, 3, 2>, 2> diffdt
-          = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(spatialAll, coeff(_1, coeffIndex)));
+          = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(spatialAll, coeff(_1, coeffIndex)),Dune::on(gridElement));
       const Eigen::Matrix<ScalarType, 3, 2> difft
-          = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(coeff(_1, coeffIndex)));
+          = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(coeff(_1, coeffIndex)),Dune::on(gridElement));
 
       const auto &diffdtd1 = diffdt[0];
       const auto &diffdtd2 = diffdt[1];
@@ -313,7 +313,6 @@ namespace Ikarus {
         const int nDofs0 = this->localViewBlocked().tree().child(_0, 0).finiteElement().size()*3;
 
         for (auto i = 0U; i < fe1.size(); ++i) {
-          const int ndofsB = localViewBlocked_.tree().child(_0, 0).finiteElement().size();
           const int localIndex = localViewBlocked_.tree().child(_1, 0).localIndex(i);
           const auto globalIndex = localViewBlocked_.index(localIndex);
           for (auto k2 = 0U; k2 < worlddim; ++k2)
@@ -324,11 +323,13 @@ namespace Ikarus {
           const auto globalIndex = localViewBlocked_.index(localViewBlocked_.tree().child(_0).localIndex(i));
           displacements[i] = mNodal[globalIndex[1]];
         }
-
+        
         for (auto i = 0U; i < fe1.size(); ++i) {
-          const auto globalIndex = localViewBlocked_.index(localViewBlocked_.tree().child(_1, 0).localIndex(this->localViewBlocked().tree().child(_0, 0).finiteElement().size()+i));
+          const int localIndex = localViewBlocked_.tree().child(_1, 0).localIndex(i);
+          const auto globalIndex = localViewBlocked_.index(localIndex);
           localDirectorConfiguration[i] = dNodal[globalIndex[1]];
-        }}
+        }
+      }
 
       const auto localRefDirectorConfiguration = getReferenceLocalConfigurations();
 
@@ -427,94 +428,98 @@ namespace Ikarus {
 
     //    [[nodiscard]] int size() const { return localView.size(); }
 
-//    template<typename ScalarType>
-//    void calculateVectorImpl(const FERequirementType &par, typename Traits::template VectorType<ScalarType> rieGrad,
-//                             const std::optional<const Eigen::VectorX<ScalarType>> &dx = std::nullopt) const {
-//      using namespace Dune::Indices;
-//      rieGrad.setZero();
-//
-//      const auto &lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
-//
-//      using namespace Dune::DerivativeDirections;
-//      using namespace Dune::Indices;
-//      const auto [midSurfaceFunction, midSurfaceReferenceFunction, displacementFunction, directorFunction,
-//                  directorReferenceFunction]
-//          = createFunctions(par);
-//
-//      KinematicVariables kin{};
-//
-//      Dune::BlockVector<Dune::FieldMatrix<field_type, 8, 3>> bopMidSurface(numNodeMidSurface);
-//      Dune::BlockVector<Dune::FieldMatrix<field_type, 8, 2>> bopDirector(numNodeDirector);
-//      const int midSurfaceDofs = numNodeMidSurface * midSurfaceDim;
-//      for (const auto &[gpIndex, gp] : midSurfaceFunction.viewOverIntegrationPoints()) {
-//        const auto weight = geo_->integrationElement(gp.position()) * gp.weight();
-//
-//        kin.t           = directorFunction.evaluate(gpIndex,Dune::on(referenceElement));
-//        kin.t0          = directorReferenceFunction.evaluate(gpIndex,Dune::on(referenceElement));
-//        kin.a1anda2     = midSurfaceFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(referenceElement));
-//        kin.A1andA2     = midSurfaceReferenceFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(referenceElement));
-//        kin.ud1andud2   = displacementFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(referenceElement));
-//        kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(referenceElement));
-//        kin.td1Andtd2   = directorFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(referenceElement));
-//
-//        auto Egl                = calculateGreenLagrangianStrains(kin);
-//        const auto StimesWeight = (calculateStressResultants(CMat_, Egl) * weight).eval();
-//
-//        for (int i = 0; i < numNodeMidSurface; ++i) {
-//          const auto indexI = midSurfaceDim * i;
-//          const auto bopI   = boperatorMidSurface(kin, gpIndex, i, midSurfaceFunction);
-//          rieGrad.template segment<midSurfaceDim>(indexI) += bopI.transpose() * StimesWeight;
-//        }
-//
-//        for (int i = 0; i < numNodeDirector; ++i) {
-//          const auto indexI = midSurfaceDofs + directorCorrectionDim * i;
-//          const auto bopI   = boperatorDirector(kin, gpIndex, i, directorFunction);
-//
-//          rieGrad.template segment<directorCorrectionDim>(indexI) += bopI.transpose() * StimesWeight;
-//        }
-//      }
-//
-//      // External forces volume forces over the domain
-//      if (volumeLoad) {
-//        for (const auto& [gpIndex, gp] : displacementFunction.viewOverIntegrationPoints()) {
-//          Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(geo_->global(gp.position()), lambda)[0];
-//          for (size_t i = 0; i < numNodeMidSurface; ++i) {
-//            const auto indexI = midSurfaceDim * i;
-//            const auto udCi = displacementFunction.evaluateDerivative(gpIndex, Dune::wrt(coeff(i)));
-//            rieGrad.template segment<midSurfaceDim>(indexI)
-//                -= udCi * fext * geo_->integrationElement(gp.position()) * gp.weight();
-//          }
-//        }
-//      }
-//
-//      // External forces, boundary forces, i.e. at the Neumann boundary
-//      if (not neumannBoundary) return;
-//
-//      auto element = localViewFlat_.element();
-//      for (auto&& intersection : intersections(neumannBoundary->gridView(), element)) {
-//        if (not neumannBoundary->contains(intersection)) continue;
-//
-//        // Integration rule along the boundary
-//        const auto& quadLine = Dune::QuadratureRules<double, 1>::rule(intersection.type(), displacementFunction.order());
-//
-//        for (const auto& curQuad : quadLine) {
-//          const Dune::FieldVector<double, 2>& quadPos = intersection.geometryInInside().global(curQuad.position());
-//
-//          const double integrationElement = intersection.geometry().integrationElement(curQuad.position());
-//
-//          // The value of the local function wrt the i-th coef
-//          for (size_t i = 0; i < numNodeMidSurface; ++i) {
-//            const auto indexI = midSurfaceDim * i;
-//            const auto udCi = displacementFunction.evaluateDerivative(quadPos, Dune::wrt(coeff(i)));
-//
-//            // Value of the Neumann data at the current position
-//            auto neumannValue
-//                = neumannBoundaryLoad(intersection.geometry().global(curQuad.position()), lambda)[0];
-//            rieGrad.template segment<midSurfaceDim>(indexI) -= udCi * neumannValue * curQuad.weight() * integrationElement;
-//          }
-//        }
-//      }
-//    }
+    inline void calculateVector(const FERequirementType &par, typename Traits::template VectorType<> force) const {
+      calculateVectorImpl<double>(par, force);
+    }
+    template<typename ScalarType>
+    void calculateVectorImpl(const FERequirementType &par, typename Traits::template VectorType<ScalarType> rieGrad,
+                             const std::optional<const Eigen::VectorX<ScalarType>> &dx = std::nullopt) const {
+      using namespace Dune::Indices;
+      rieGrad.setZero();
+
+      const auto &lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
+
+      using namespace Dune::DerivativeDirections;
+      using namespace Dune::Indices;
+      const auto [ displacementFunction, directorFunction,
+          directorReferenceFunction]
+          = createFunctions(par,dx);
+
+      KinematicVariables<ScalarType> kin{};
+
+      Dune::BlockVector<Dune::FieldMatrix<ScalarType, 8, 3>> bopMidSurface(numNodeMidSurface);
+      Dune::BlockVector<Dune::FieldMatrix<ScalarType, 8, 2>> bopDirector(numNodeDirector);
+      const int midSurfaceDofs = numNodeMidSurface * midSurfaceDim;
+      for (const auto &[gpIndex, gp] : displacementFunction.viewOverIntegrationPoints()) {
+        const auto weight = geo_->integrationElement(gp.position()) * gp.weight();
+
+        kin.t           = directorFunction.evaluate(gpIndex,Dune::on(gridElement));
+        kin.t0          = directorReferenceFunction.evaluate(gpIndex,Dune::on(gridElement));
+        kin.ud1andud2   = displacementFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(gridElement));
+        kin.A1andA2     = Dune::toEigen(geo_->jacobianTransposed(gp.position())).transpose();
+        kin.A1andA2     = Eigen::Matrix<double,3,2>::Identity();
+        kin.a1anda2     = kin.A1andA2+ kin.ud1andud2;
+        kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(gridElement));
+        kin.td1Andtd2   = directorFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(gridElement));
+
+        auto Egl                = calculateGreenLagrangianStrains(kin);
+        const auto S = (calculateStressResultants(CMat_, Egl)).eval();
+
+        for (int i = 0; i < numNodeMidSurface; ++i) {
+          const auto indexI = midSurfaceDim * i;
+          const auto bopI   = boperatorMidSurface(kin, gpIndex, i, displacementFunction);
+          rieGrad.template segment<midSurfaceDim>(indexI) += bopI.transpose() * S*weight;
+        }
+
+        for (int i = 0; i < numNodeDirector; ++i) {
+          const auto indexI = midSurfaceDofs + directorCorrectionDim * i;
+          const auto bopI   = boperatorDirector(kin, gpIndex, i, directorFunction);
+
+          rieGrad.template segment<directorCorrectionDim>(indexI) += bopI.transpose() * S*weight;
+        }
+      }
+
+      // External forces volume forces over the domain
+      if (volumeLoad) {
+        for (const auto& [gpIndex, gp] : displacementFunction.viewOverIntegrationPoints()) {
+          Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(geo_->global(gp.position()), lambda)[0];
+          for (size_t i = 0; i < numNodeMidSurface; ++i) {
+            const auto indexI = midSurfaceDim * i;
+            const auto udCi = displacementFunction.evaluateDerivative(gpIndex, Dune::wrt(coeff(i)));
+            rieGrad.template segment<midSurfaceDim>(indexI)
+                -= udCi * fext * geo_->integrationElement(gp.position()) * gp.weight();
+          }
+        }
+      }
+
+      // External forces, boundary forces, i.e. at the Neumann boundary
+      if (not neumannBoundary) return;
+
+      auto element = localViewFlat_.element();
+      for (auto&& intersection : intersections(neumannBoundary->gridView(), element)) {
+        if (not neumannBoundary->contains(intersection)) continue;
+
+        // Integration rule along the boundary
+        const auto& quadLine = Dune::QuadratureRules<double, 1>::rule(intersection.type(), displacementFunction.order());
+
+        for (const auto& curQuad : quadLine) {
+          const Dune::FieldVector<double, 2>& quadPos = intersection.geometryInInside().global(curQuad.position());
+
+          const double integrationElement = intersection.geometry().integrationElement(curQuad.position());
+
+          // The value of the local function wrt the i-th coef
+          for (size_t i = 0; i < numNodeMidSurface; ++i) {
+            const auto indexI = midSurfaceDim * i;
+            const auto udCi = displacementFunction.evaluateDerivative(quadPos, Dune::wrt(coeff(i)));
+
+            // Value of the Neumann data at the current position
+            auto neumannValue
+                = neumannBoundaryLoad(intersection.geometry().global(curQuad.position()), lambda)[0];
+            rieGrad.template segment<midSurfaceDim>(indexI) -= udCi * neumannValue * curQuad.weight() * integrationElement;
+          }
+        }
+      }
+    }
 
     inline double calculateScalar(const FERequirementType &par) const { return calculateScalarImpl<double>(par); }
 
@@ -540,8 +545,7 @@ namespace Ikarus {
 
       KinematicVariables<ScalarType> kin{};
 
-      Dune::BlockVector<Dune::FieldMatrix<ScalarType, 8, 3>> bopMidSurface(numNodeMidSurface);
-      Dune::BlockVector<Dune::FieldMatrix<ScalarType, 8, 2>> bopDirector(numNodeDirector);
+
       const int midSurfaceDofs = numNodeMidSurface * midSurfaceDim;
       for (const auto &[gpIndex, gp] : displacementFunction.viewOverIntegrationPoints()) {
         const auto weight = geo_->integrationElement(gp.position()) * gp.weight();
