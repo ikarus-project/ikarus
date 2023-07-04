@@ -318,7 +318,7 @@ namespace Ikarus {
     }
 
     template<typename ScalarType>
-    Eigen::Matrix<ScalarType, 8, 2> boperatorDirector(const KinematicVariables<ScalarType> &kin, int integrationPointIndex,
+    Eigen::Matrix<ScalarType, 3, 2> boperatorDirectorBending(const KinematicVariables<ScalarType> &kin, int integrationPointIndex,
                                                       int coeffIndex, const auto &directorFunction) const {
       using namespace Dune::TypeTree::Indices;
       using namespace Dune::DerivativeDirections;
@@ -330,14 +330,32 @@ namespace Ikarus {
       const auto &diffdtd1 = diffdt[0];
       const auto &diffdtd2 = diffdt[1];
 
-      Eigen::Matrix<ScalarType, 8, 2> bop;
+      Eigen::Matrix<ScalarType, 3, 2> bop;
       bop.setZero();
-      bop.row(3) = kin.a1().transpose() * diffdtd1;  // bending_{,disp}
-      bop.row(4) = kin.a2().transpose() * diffdtd2;
-      bop.row(5) = kin.a2().transpose() * diffdtd1 + kin.a1().transpose() * diffdtd2;
+      bop.row(0) = kin.a1().transpose() * diffdtd1;  // bending_{,disp}
+      bop.row(1) = kin.a2().transpose() * diffdtd2;
+      bop.row(2) = kin.a2().transpose() * diffdtd1 + kin.a1().transpose() * diffdtd2;
 
-      bop.row(6) = kin.a1().transpose() * difft;  // trans_shear_{,disp}
-      bop.row(7) = kin.a2().transpose() * difft;
+      return bop;
+    }
+
+    template<typename ScalarType>
+    Eigen::Matrix<ScalarType, 2, 2> boperatorDirectorShear(const KinematicVariables<ScalarType> &kin, int integrationPointIndex,
+                                                      int coeffIndex, const auto &directorFunction) const {
+      using namespace Dune::TypeTree::Indices;
+      using namespace Dune::DerivativeDirections;
+      const std::array<Eigen::Matrix<ScalarType, 3, 2>, 2> diffdt
+          = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(spatialAll, coeff(_1, coeffIndex)),Dune::on(referenceElement));
+      const Eigen::Matrix<ScalarType, 3, 2> difft
+          = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(coeff(_1, coeffIndex)),Dune::on(referenceElement));
+
+      const auto &diffdtd1 = diffdt[0];
+      const auto &diffdtd2 = diffdt[1];
+
+      Eigen::Matrix<ScalarType, 2, 2> bop;
+
+      bop.row(0) = kin.a1().transpose() * difft;  // trans_shear_{,disp}
+      bop.row(1) = kin.a2().transpose() * difft;
 
       return bop;
     }
@@ -506,6 +524,7 @@ namespace Ikarus {
       KinematicVariables<ScalarType> kin{};
 
       Eigen::Matrix<ScalarType, 8, 3> bopMidSurface;
+      Eigen::Matrix<ScalarType, 8, 2> bopDirector;
 //      Dune::BlockVector<Dune::FieldMatrix<ScalarType, 8, 2>> bopDirector(numNodeDirector);
       const int midSurfaceDofs = numNodeMidSurface * midSurfaceDim;
 
@@ -535,17 +554,17 @@ namespace Ikarus {
           const auto bopIMembrane   = membraneStrain.derivative(gp.position(),jE, Nd, *geo_,displacementFunction,localBasisMidSurface, i);
           const auto bopIBending   = boperatorMidSurfaceBending(kin,gpIndex, i,displacementFunction);
           const auto bopIShear   = boperatorMidSurfaceShear(kin,gpIndex, i,displacementFunction);
-          bopMidSurface. template block<3,3>(0,0) = bopIMembrane;
-          bopMidSurface. template block<3,3>(3,0) = bopIBending;
-          bopMidSurface. template block<2,3>(6,0) = bopIShear;
+          bopMidSurface<< bopIMembrane,bopIBending, bopIShear;
           rieGrad.template segment<midSurfaceDim>(indexI) += bopMidSurface.transpose() * S*weight;
         }
 
         for (int i = 0; i < numNodeDirector; ++i) {
           const auto indexI = midSurfaceDofs + directorCorrectionDim * i;
-          const auto bopI   = boperatorDirector(kin, gpIndex, i, directorFunction);
+          const auto bopIBending   = boperatorDirectorBending(kin, gpIndex, i, directorFunction);
+          const auto bopIShear   = boperatorDirectorShear(kin, gpIndex, i, directorFunction);
 
-          rieGrad.template segment<directorCorrectionDim>(indexI) += bopI.transpose() * S*weight;
+          bopDirector<<Eigen::Matrix<double,3,2>::Zero(),bopIBending,bopIShear;
+          rieGrad.template segment<directorCorrectionDim>(indexI) += bopDirector.transpose() * S*weight;
         }
       }
 
