@@ -35,8 +35,8 @@ namespace Ikarus {
         using namespace Dune::Indices;
         const auto &mNodal = par.getGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector)[_0];
         const auto &dNodal = par.getGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector)[_1];
-        const auto &child0 = this->localViewBlocked_.tree().child(_0, 0);
-        const auto &child1 = this->localViewBlocked_.tree().child(_1, 0);
+        const auto &child0 = this->localViewBlocked().tree().child(_0, 0);
+        const auto &child1 = this->localViewBlocked().tree().child(_1, 0);
         const auto &fe0    = child0.finiteElement();
         const auto &fe1    = child1.finiteElement();
         Dune::BlockVector<std::remove_cvref_t<decltype(mNodal[0])>> localMidSurfaceConfiguration(fe0.size());
@@ -165,7 +165,7 @@ namespace Ikarus {
         {
           using namespace Dune::Indices;
           const auto &dNodal = par.getGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector)[_1];
-          const auto &child1 = this->localViewBlocked_.tree().child(_1, 0);
+          const auto &child1 = this->localViewBlocked().tree().child(_1, 0);
           const auto &fe1    = child1.finiteElement();
           Dune::BlockVector<std::remove_cvref_t<decltype(dNodal[0])>> localDirectorConfiguration(fe1.size());
           for (auto i = 0U; i < fe1.size(); ++i) {

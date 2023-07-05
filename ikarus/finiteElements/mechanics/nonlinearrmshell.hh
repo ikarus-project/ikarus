@@ -176,7 +176,7 @@ struct StressBasedShellRM;
     }
 
     template<typename ScalarType>
-    auto calc3DMetric(const KinematicVariables<ScalarType> &kin, double zeta)
+    auto calc3DMetric(const KinematicVariables<ScalarType> &kin, double zeta) const
     {
       const auto G1 = (kin.A1() + zeta*kin.t0d1()).eval();
       const auto G2 =(kin.A2() + zeta*kin.t0d2()).eval();
@@ -187,6 +187,7 @@ struct StressBasedShellRM;
       J3D.col(2)=G3;
 
       Eigen::Matrix<double,3,3> G= J3D.transpose()*J3D; //here quadratic parts of zeta appear!
+      return G;
     }
 
     using GlobalIndex = typename LocalViewFlat::MultiIndex;
@@ -423,7 +424,7 @@ struct StressBasedShellRM;
     }
 
     template<typename ScalarType>
-    Eigen::Matrix<ScalarType, 3, 2> boperatorDirectorBending(const auto& j, int integrationPointIndex,
+    Eigen::Matrix<ScalarType, 3, 2> boperatorDirectorBending(const Eigen::Matrix<ScalarType, 3, 2>& j, int integrationPointIndex,
                                                       int coeffIndex, const auto &directorFunction) const {
       using namespace Dune::TypeTree::Indices;
       using namespace Dune::DerivativeDirections;

@@ -83,8 +83,8 @@ namespace Ikarus {
     static constexpr int myDim = Traits::mydim;
     static constexpr int worlddim = Traits::worlddim;
     static constexpr bool isEuclidean = ResultantBasedShell::isEuclidean;
-    using ResultantBasedShell::localViewBlocked_ ;
-
+    using ResultantBasedShell::localViewBlocked ;
+   public:
     inline void calculateMatrix(const FERequirementType &par, typename Traits::template MatrixType<> K) const {
       calculateMatrixImpl<double>(par, K);
     }
@@ -202,12 +202,11 @@ namespace Ikarus {
         strains<< strainsV,gammaV;
         const auto S = (C3D*strains).eval();
 
-        const auto &Nd = this->localBasis.evaluateJacobian(gpIndex2D);
-        const auto &Ndd = this->localBasis.evaluateSecondDerivatives(gpIndex2D);
-        for (size_t i = 0; i < this->numberOfNodes; ++i) {
-          const auto bopIMembrane   = this->membraneStrain.derivative(gp.position(),jE, Nd, geo,displacementFunction,this->localBasisMidSurface, i);
-          const auto bopIBending   = boperatorMidSurfaceBending(kin,gpIndex, i,displacementFunction);
-          const auto bopIShear   = boperatorMidSurfaceShear(kin,gpIndex, i,displacementFunction);
+        const auto &Nd = this->localBasisMidSurface.evaluateJacobian(gpIndex2D);
+        for (size_t i = 0; i < this->numNodeMidSurface; ++i) {
+          const auto bopIMembrane   = this->membraneStrain.derivative(gp2DPos,jE, Nd, geo,displacementFunction,this->localBasisMidSurface, i);
+          const auto bopIBending   = this->boperatorMidSurfaceBending(kin,gpIndex, i,displacementFunction);
+          const auto bopIShear   = this->boperatorMidSurfaceShear(kin,gpIndex, i,displacementFunction);
           bopMidSurface<< bopIMembrane+zeta*bopIBending, bopIShear;
           force.template segment<3>(3*i) +=
               bopMidSurface.transpose()*S*geo.integrationElement(gp2DPos)*gp.weight()*2*thickness_/2.0;
@@ -216,8 +215,8 @@ namespace Ikarus {
         }
         for (int i = 0; i < this->numNodeDirector; ++i) {
           const auto indexI = midSurfaceDofs + directorCorrectionDim * i;
-          const auto bopIBending   = boperatorDirectorBending(g1Andg2, gpIndex, i, directorFunction);
-          const auto bopIShear   = boperatorDirectorShear(kin, gpIndex, i, directorFunction);
+          const auto bopIBending   = this->boperatorDirectorBending(g1Andg2, gpIndex, i, directorFunction);
+          const auto bopIShear   = this->boperatorDirectorShear(kin, gpIndex, i, directorFunction);
 
           bopDirector<<zeta*bopIBending,bopIShear;
           force.template segment<directorCorrectionDim>(indexI) += bopDirector.transpose() * S*geo.integrationElement(gp2DPos)*gp.weight()*2*thickness_/2.0;
@@ -229,11 +228,17 @@ namespace Ikarus {
       //External forces volume forces over the domain
       if (this->volumeLoad) {
         for (const auto& [gpIndex, gp] : displacementFunction.viewOverIntegrationPoints()) {
-          Eigen::Vector<double, Traits::worlddim> fext = this->volumeLoad(toEigen(geo.global(gp.position())), lambda);
-          for (size_t i = 0; i < this->numberOfNodes; ++i) {
+          const auto [fext,mext] = volumeLoad(geo_->global(gp.position()), lambda);
+          for (size_t i = 0; i < this->numNodeMidSurface; ++i) {
             const auto udCi = displacementFunction.evaluateDerivative(gpIndex, wrt(coeff(i)));
             force.template segment<worlddim>(worlddim * i)
                 -= udCi * fext * geo.integrationElement(gp.position()) * gp.weight();
+          }
+          for (size_t i = 0; i < this->numNodeDirector; ++i) {
+            const auto indexI = midSurfaceDofs + directorCorrectionDim * i;
+            const auto tdCi = directorFunction.evaluateDerivative(gpIndex, Dune::wrt(coeff(_1,i)));
+            rieGrad.template segment<directorCorrectionDim>(indexI)
+                -= (tdCi.transpose() * mext) * geo_->integrationElement(gp.position()) * gp.weight();
           }
         }
       }
@@ -242,13 +247,21 @@ namespace Ikarus {
       if (not this->neumannBoundary) return;
       forEachInterSectionIntegrationPoint(this->localView().element(),this->neumannBoundary,this->order,
                                           [&](auto& quadPos,auto&& globalPos,auto& intElement){
-                                            for (size_t i = 0; i < this->numberOfNodes; ++i) {
+                                            const auto [fext,mext] = volumeLoad(geo_->global(quadPos), lambda);
+
+                                            for (size_t i = 0; i < this->numNodeMidSurface; ++i) {
                                               const auto udCi = displacementFunction.evaluateDerivative(quadPos, wrt(coeff(i)));
 
                                               // Value of the Neumann data at the current position
                                               auto neumannValue
                                                   = this->neumannBoundaryLoad(globalPos, lambda);
-                                              force.template segment<worlddim>(worlddim * i) -= udCi * neumannValue * intElement;
+                                              force.template segment<worlddim>(worlddim * i) -= udCi * fext * intElement;
+                                            }
+                                            for (size_t i = 0; i < numNodeDirector; ++i) {
+                                              const auto indexI = midSurfaceDofs + directorCorrectionDim * i;
+                                              const auto tdCi = directorFunction.evaluateDerivative(quadPos, Dune::wrt(coeff(_1,i)));
+                                              rieGrad.template segment<directorCorrectionDim>(indexI)
+                                                  -= (tdCi.transpose() * mext) * intElement;
                                             }
                                           });
     }
