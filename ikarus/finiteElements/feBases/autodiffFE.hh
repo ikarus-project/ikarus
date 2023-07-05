@@ -95,8 +95,8 @@ namespace Ikarus {
           }
           }
 //         hred.block(0,nDofs0,nDofs0,nDofs1)=hred.block(nDofs0,0,nDofs1,nDofs0).transpose();
-        std::cout<<"hredA\n"<<std::endl;
-        std::cout<<hred<<std::endl;
+//        std::cout<<"hredA\n"<<std::endl;
+//        std::cout<<hred<<std::endl;
       }else
         hred=h;
     }
@@ -108,7 +108,7 @@ namespace Ikarus {
                              this->template calculateVectorImpl<autodiff::dual>(
                                  par, std::declval<typename Traits::template VectorType<autodiff::dual>>(),
                                  std::declval<const Eigen::VectorXdual&>());
-                           }and not forceAutoDiff) {
+                           }and RealElement::isEuclidean) {
         /// This is only valid if the external forces are independent of displacements, for e.g., no follower forces are
         /// applied
         Eigen::VectorXdual dx(this->ndofEmbedded());
@@ -160,7 +160,7 @@ namespace Ikarus {
         autodiff::dual e;
         auto f = [&](auto& x) { return this->template calculateScalarImpl<autodiff::dual>(par, x); };
         gradient(f, autodiff::wrt(dx), at(dx), e, g);
-        if constexpr (not std::is_same_v<FERequirementType,FErequirements<>>)
+        if constexpr (not RealElement::isEuclidean)
         {
           using namespace Dune::Indices;
           const auto &dNodal = par.getGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector)[_1];
@@ -178,10 +178,6 @@ namespace Ikarus {
              const int index2 = nDofs0+2*i;
              gRed.template segment<2>(index2)= localDirectorConfiguration[i].orthonormalFrame().transpose()*g.template segment<3>(index3);
           }
-          std::cout<<"g"<<std::endl;
-          std::cout<<g<<std::endl;
-          std::cout<<"gRed"<<std::endl;
-          std::cout<<gRed<<std::endl;
         }else
           gRed=g;
       } else

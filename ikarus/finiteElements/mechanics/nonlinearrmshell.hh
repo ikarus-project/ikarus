@@ -36,6 +36,8 @@ namespace Ikarus {
    public:
     using Basis = Basis_;
 
+    static constexpr bool isEuclidean = false;
+
     template<typename ScalarType>
     struct KinematicVariables {
       // current configuration
@@ -142,21 +144,21 @@ namespace Ikarus {
              membraneStrain = CASMembraneStrain<CASAnsatzFunctionANS>();
 
       CMat_.setZero();
-      // membrane
-      const double fac1 = thickness_ * Emodul / (1 - nu * nu);
-      CMat_(0, 0) = CMat_(1, 1) = fac1;
-      CMat_(2, 2)               = fac1 * (1 - nu) * 0.5;
-      CMat_(1, 0) = CMat_(0, 1) = fac1 * nu;
-
-      // bending
-      const double fac2 = thickness_ * thickness_ * thickness_ / 12 * Emodul / (1 - nu * nu);
-      CMat_(3, 3) = CMat_(4, 4) = fac2;
-      CMat_(5, 5)               = fac2 * (1 - nu) * 0.5;
-      CMat_(3, 4) = CMat_(4, 3) = fac2 * nu;
-
-      // transverse shear
-      const double fac3 = kappa_ * thickness_ * Emodul * 0.5 / (1 + nu);
-      CMat_(6, 6) = CMat_(7, 7) = fac3;
+//      // membrane
+//      const double fac1 = thickness_ * Emodul / (1 - nu * nu);
+//      CMat_(0, 0) = CMat_(1, 1) = fac1;
+//      CMat_(2, 2)               = fac1 * (1 - nu) * 0.5;
+//      CMat_(1, 0) = CMat_(0, 1) = fac1 * nu;
+//
+//      // bending
+//      const double fac2 = thickness_ * thickness_ * thickness_ / 12 * Emodul / (1 - nu * nu);
+//      CMat_(3, 3) = CMat_(4, 4) = fac2;
+//      CMat_(5, 5)               = fac2 * (1 - nu) * 0.5;
+//      CMat_(3, 4) = CMat_(4, 3) = fac2 * nu;
+//
+//      // transverse shear
+//      const double fac3 = kappa_ * thickness_ * Emodul * 0.5 / (1 + nu);
+//      CMat_(6, 6) = CMat_(7, 7) = fac3;
 
       if constexpr (!std::is_same_v<VolumeLoad, LoadDefault>) volumeLoad = p_volumeLoad;
       if constexpr (!std::is_same_v<NeumannBoundaryLoad, LoadDefault>) neumannBoundaryLoad = p_neumannBoundaryLoad;
@@ -594,12 +596,19 @@ namespace Ikarus {
       // External forces volume forces over the domain
       if (volumeLoad) {
         for (const auto& [gpIndex, gp] : displacementFunction.viewOverIntegrationPoints()) {
-          Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(geo_->global(gp.position()), lambda)[0];
+          const auto [fext,mext] = volumeLoad(geo_->global(gp.position()), lambda);
           for (size_t i = 0; i < numNodeMidSurface; ++i) {
             const auto indexI = midSurfaceDim * i;
-            const auto udCi = displacementFunction.evaluateDerivative(gpIndex, Dune::wrt(coeff(i)));
+            const auto udCi = displacementFunction.evaluateDerivative(gpIndex, Dune::wrt(coeff(_0,i)));
+
             rieGrad.template segment<midSurfaceDim>(indexI)
-                -= udCi * fext * geo_->integrationElement(gp.position()) * gp.weight();
+                -= (udCi * fext) * geo_->integrationElement(gp.position()) * gp.weight();
+          }
+          for (size_t i = 0; i < numNodeDirector; ++i) {
+            const auto indexI = midSurfaceDofs + directorCorrectionDim * i;
+            const auto tdCi = directorFunction.evaluateDerivative(gpIndex, Dune::wrt(coeff(_1,i)));
+            rieGrad.template segment<directorCorrectionDim>(indexI)
+                -= (tdCi * mext) * geo_->integrationElement(gp.position()) * gp.weight();
           }
         }
       }
