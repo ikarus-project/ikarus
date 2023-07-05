@@ -21,6 +21,8 @@ foreach(programSourceFile ${programSourceFiles})
   include_directories(${PYTHON_INCLUDE_DIRS})
   target_link_libraries(${programName} PUBLIC ${PYTHON_LIBRARIES})
   target_compile_options(${programName} PUBLIC -ftemplate-backtrace-limit=0)
+  target_compile_options(${programName} PUBLIC -ftime-report -Og)
+
   if(ENABLE_TEST_COVERAGE)
     message("Enable Test Coverage")
     target_compile_options(${programName} PUBLIC -O0 -g -fprofile-arcs -ftest-coverage)

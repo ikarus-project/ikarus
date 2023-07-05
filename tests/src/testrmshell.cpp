@@ -103,19 +103,21 @@ auto checkFEByAutoDiff(std::string filename) {
   TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() by Automatic Differentiation of Kirchhoff-Love shell");
 
   constexpr auto dimworld        = 3;
-  const std::array<int, 2> order = {2, 2};
+  const std::array<int, 2> order = {1, 1};
 
-  const std::array<std::vector<double>, 2> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+//  const std::array<std::vector<double>, 2> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+  const std::array<std::vector<double>, 2> knotSpans = {{{0, 0,  1, 1}, {0, 0, 1, 1}}};
 
   using ControlPoint = Dune::IGA::NURBSPatchData<2, dimworld>::ControlPointType;
 
+//  const std::vector<std::vector<ControlPoint>> controlPoints
+//      = {
+//          {{.p = {0, 0.0, 0}, .w = 1}, {.p = {0, 1, 0}, .w = 1}, {.p = {0, 2, 0}, .w = 1}},
+//          {{.p = {5, 0.0, 0}, .w = 1}, {.p = {5, 1, 0}, .w = 1}, {.p = {5, 2, 0}, .w = 1}},
+//          {{.p = {10, 0.0, 0}, .w = 1}, {.p = {10, 1, 0}, .w = 1}, {.p = {10, 2, 0}, .w = 1}}};
+
   const std::vector<std::vector<ControlPoint>> controlPoints
-      = {
-          {{.p = {0, 0.0, 0}, .w = 1}, {.p = {0, 1, 0}, .w = 1}, {.p = {0, 2, 0}, .w = 1}},
-          {{.p = {5, 0.0, 0}, .w = 1}, {.p = {5, 1, 0}, .w = 1}, {.p = {5, 2, 0}, .w = 1}},
-          {{.p = {10, 0.0, 0}, .w = 1}, {.p = {10, 1, 0}, .w = 1}, {.p = {10, 2, 0}, .w = 1}}};
-
-
+      = {{{.p = {0, 0, 0}, .w = 1}, {.p = {0, 1, 0}, .w = 1}}, {{.p = {12, 0, 0}, .w = 1}, {.p = {12, 1, 0}, .w = 1}}};
 
   std::array<int, 2> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
 
@@ -202,15 +204,15 @@ auto checkFEByAutoDiff(std::string filename) {
 
 
     for (auto &msingle : mBlocked) {
-      msingle.setValue(Eigen::Vector<double, 3>::Zero());
-//      msingle.setValue(Eigen::Vector<double, 3>::Random());
+//      msingle.setValue(Eigen::Vector<double, 3>::Zero());
+      msingle.setValue(Eigen::Vector<double, 3>::Random());
     }
 
 
     DirectorVector dBlocked(basis.untouched().size({Dune::Indices::_1}));
     for (auto &dsingle : dBlocked) {
-//      dsingle.setValue(Eigen::Vector<double, 3>::UnitZ()+0.1*Eigen::Vector<double, 3>::Random());
-      dsingle.setValue(Eigen::Vector<double, 3>::UnitZ());
+      dsingle.setValue(Eigen::Vector<double, 3>::UnitZ()+0.1*Eigen::Vector<double, 3>::Random());
+//      dsingle.setValue(Eigen::Vector<double, 3>::UnitZ());
     }
 
     const MultiTypeVector x0(mBlocked, dBlocked);
@@ -547,8 +549,8 @@ int main(int argc, char** argv) {
   //  const double E             = materialParameters.get<double>("E");
   //  const double nu            = materialParameters.get<double>("nu");
 
-//  checkFEByAutoDiff<RMSHELL>("RMSHELL");
+  checkFEByAutoDiff<RMSHELL>("RMSHELL");
 
 //  checkFEByAutoDiff<KLSHELLSB>("KLSHELLSB");
-  NonLinearElasticityLoadControlNRandTRforRMShell();
+//  NonLinearElasticityLoadControlNRandTRforRMShell();
 }

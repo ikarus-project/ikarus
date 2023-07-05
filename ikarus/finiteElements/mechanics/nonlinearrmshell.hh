@@ -303,6 +303,94 @@ namespace Ikarus {
     }
 
     template<typename ScalarType>
+    Eigen::Matrix<ScalarType, 3, 2> kgMidSurfaceDirectorBending(const KinematicVariables<ScalarType> &kin,const auto& N,const auto& dN, int integrationPointIndex,
+                                                               int i,int j, const auto &displacementFunction, const auto &directorFunction,const auto& S) const {
+      using namespace Dune::TypeTree::Indices;
+      using namespace Dune::DerivativeDirections;
+      const double& Ni   = N[i];
+      const double& dN1i = dN(i, 0);
+      const double& dN2i = dN(i, 1);
+      const std::array<Eigen::Matrix<ScalarType, 3, 2>, 2> WJ
+          = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(spatialAll, coeff(_1, j)),Dune::on(referenceElement));
+      Eigen::Matrix<ScalarType, 3, 2> kg = S[3] * dN1i * WJ[0] + S[4] * dN2i * WJ[1] + S[5] * (dN1i * WJ[1] + dN2i * WJ[0]);  // bending_{,dir,disp}*M
+
+      return kg;
+    }
+
+    template<typename ScalarType>
+    Eigen::Matrix<ScalarType, 2, 2> kgDirectorDirectorBending(const KinematicVariables<ScalarType> &kin,const auto& Nd,const auto& dNd, int integrationPointIndex,
+                                                                int i,int j, const auto &displacementFunction, const auto &directorFunction,const auto& S) const {
+      using namespace Dune::TypeTree::Indices;
+      using namespace Dune::DerivativeDirections;
+      const double& Ni   = Nd[i];
+      const double& dN1i = dNd(i, 0);
+      const double& dN2i = dNd(i, 1);
+      const double& Nj = Nd[j];
+      const double& dN1j = dNd(j, 0);
+      const double& dN2j = dNd(j, 1);
+
+      const double NdN1 = dN1j * Ni + Nj * dN1i;
+      const double NdN2 = dN2j * Ni + Nj * dN2i;
+//      const Eigen::Vector<ScalarType,3> SM = S.template segment<3>(3);
+      const auto a1 = kin.a1().eval();
+      const auto a2 = kin.a2().eval();
+      const Eigen::Matrix<ScalarType, 2, 2> fac11
+          = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(spatial(0),coeff(_1, i,_1, j)),Dune::along(a1),Dune::on(referenceElement));
+      const Eigen::Matrix<ScalarType, 2, 2> fac21
+          = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(spatial(1),coeff(_1, i,_1, j)),Dune::along(a1),Dune::on(referenceElement));
+      const Eigen::Matrix<ScalarType, 2, 2> fac12
+          = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(spatial(0),coeff(_1, i,_1, j)),Dune::along(a2),Dune::on(referenceElement));
+      const Eigen::Matrix<ScalarType, 2, 2> fac22
+          = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(spatial(1),coeff(_1, i,_1, j)),Dune::along(a2),Dune::on(referenceElement));
+      Eigen::Matrix<ScalarType, 2, 2> kg = fac11 * S[3] + fac22 * S[4] +(fac12 + fac21) * S[5];  // bending_{,dir,dir}*M
+
+      return kg;
+    }
+
+    template<typename ScalarType>
+    Eigen::Matrix<ScalarType, 2, 2> kgDirectorDirectorShear(const KinematicVariables<ScalarType> &kin,const auto& Nd,const auto& dNd, int integrationPointIndex,
+                                                                 int i,int j, const auto &displacementFunction, const auto &directorFunction,const auto& S) const {
+      using namespace Dune::TypeTree::Indices;
+      using namespace Dune::DerivativeDirections;
+      const double& Ni   = Nd[i];
+      const double& dN1i = dNd(i, 0);
+      const double& dN2i = dNd(i, 1);
+      const double& Nj = Nd[j];
+      const double& dN1j = dNd(j, 0);
+      const double& dN2j = dNd(j, 1);
+
+      const double NdN1 = dN1j * Ni + Nj * dN1i;
+      const double NdN2 = dN2j * Ni + Nj * dN2i;
+//      const Eigen::Vector<ScalarType,3> SM = S.template segment<3>(3);
+      const auto a1 = kin.a1().eval();
+      const auto a2 = kin.a2().eval();
+      const Eigen::Matrix<ScalarType, 2, 2> S1
+          = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(coeff(_1, i,_1, j)),Dune::along(a1),Dune::on(referenceElement));
+
+      const Eigen::Matrix<ScalarType, 2, 2> S2
+          = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(coeff(_1, i,_1, j)),Dune::along(a2),Dune::on(referenceElement));
+      Eigen::Matrix<ScalarType, 2, 2> kg = S1* S[6] + S2 * S[7];
+
+      return kg;
+    }
+
+    template<typename ScalarType>
+    Eigen::Matrix<ScalarType, 3, 2> kgMidSurfaceDirectorShear(const KinematicVariables<ScalarType> &kin,const auto& N,const auto& dN, int integrationPointIndex,
+                                                                int i,int j, const auto &displacementFunction, const auto &directorFunction,const auto& S) const {
+      using namespace Dune::TypeTree::Indices;
+      using namespace Dune::DerivativeDirections;
+      const double& Ni   = N[i];
+      const double& dN1i = dN(i, 0);
+      const double& dN2i = dN(i, 1);
+      const Eigen::Matrix<ScalarType, 3, 2> P
+          = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(coeff(_1, j)),Dune::on(referenceElement));
+      Eigen::Matrix<ScalarType, 3, 2> kg = P * (dN1i * S[6] + dN2i * S[7]); // shear_{,dir,disp}*Q
+      // bending_{,dir,disp}*M
+
+      return kg;
+    }
+
+    template<typename ScalarType>
     Eigen::Matrix<ScalarType, 2, 3> boperatorMidSurfaceShear(const KinematicVariables<ScalarType> &kin, int integrationPointIndex,
                                                         int coeffIndex, const auto &displacementFunction) const {
       using namespace Dune::TypeTree::Indices;
@@ -466,6 +554,9 @@ namespace Ikarus {
         CMat_. template block<3,3>(3,3)=Dune::power(thickness_, 3)/12.0*C3D.template block<3,3>(0,0);
         CMat_. template block<2,2>(6,6)=thickness_*C3D.template block<2,2>(3,3);
         const auto &Nd = localBasisMidSurface.evaluateJacobian(gpIndex);
+        const auto &N = localBasisMidSurface.evaluateFunction(gpIndex);
+        const auto &dNdirector = localBasisDirector.evaluateJacobian(gpIndex);
+        const auto &Ndirector = localBasisDirector.evaluateFunction(gpIndex);
 
         for (int i = 0; i < numNodeMidSurface; ++i) {
           const auto indexI = midSurfaceDim * i;
@@ -473,7 +564,7 @@ namespace Ikarus {
           const auto bopIBendingI   = boperatorMidSurfaceBending(kin,gpIndex, i,displacementFunction);
           const auto bopIShearI   = boperatorMidSurfaceShear(kin,gpIndex, i,displacementFunction);
           bopMidSurfaceI<< bopIMembraneI,bopIBendingI, bopIShearI;
-          for (int j = 0; j < numNodeMidSurface; ++j) {
+          for (int j = i; j < numNodeMidSurface; ++j) {
             const auto indexJ = midSurfaceDim * j;
 
             const auto bopIMembraneJ   = membraneStrain.derivative(gp.position(),jE, Nd, *geo_,displacementFunction,localBasisMidSurface, j);
@@ -483,6 +574,9 @@ namespace Ikarus {
 
             hred.template block<midSurfaceDim, midSurfaceDim>(indexI, indexJ)
                 += bopMidSurfaceI.transpose() * CMat_ * bopMidSurfaceJ * weight;
+
+            Eigen::Matrix<ScalarType, 3, 3> kgMembraneIJ = membraneStrain.secondDerivative(gp.position(),Nd,*geo_,displacementFunction,localBasisMidSurface, S.template segment<3>(0).eval(), i, j);
+            hred.template block<3, 3>(3*i, 3*j) += kgMembraneIJ*weight;
           }
 
           for (int j = 0; j < numNodeDirector; ++j) {
@@ -492,8 +586,14 @@ namespace Ikarus {
 
             bopDirectorJ <<Eigen::Matrix<double,3,2>::Zero(),bopBendingJ,bopShearJ;
 
+            Eigen::Matrix<ScalarType, 3, 2> kg= kgMidSurfaceDirectorBending(kin,N,Nd,gpIndex,i,j,displacementFunction,directorFunction,S);
+            Eigen::Matrix<ScalarType, 3, 2> kg2= kgMidSurfaceDirectorShear(kin,N,Nd,gpIndex,i,j,displacementFunction,directorFunction,S);
+
             hred.template block<midSurfaceDim, directorCorrectionDim>(indexI, indexJ)
                 += bopMidSurfaceI.transpose() * CMat_ * bopDirectorJ * weight;
+
+            hred.template block<midSurfaceDim, directorCorrectionDim>(indexI, indexJ)
+                += (kg+kg2) * weight;
           }
         }
 
@@ -503,30 +603,38 @@ namespace Ikarus {
           const auto bopShearI   = boperatorDirectorShear(kin, gpIndex, i, directorFunction);
 
           bopDirectorI <<Eigen::Matrix<double,3,2>::Zero(),bopBendingI,bopShearI;
-          for (int j = 0; j < numNodeMidSurface; ++j) {
-            const auto indexJ = midSurfaceDim * j;
+//          for (int j = 0; j < numNodeMidSurface; ++j) {
+//            const auto indexJ = midSurfaceDim * j;
+//
+//            const auto bopMembraneJ   = membraneStrain.derivative(gp.position(),jE, Nd, *geo_,displacementFunction,localBasisMidSurface, j);
+//            const auto bopBendingJ   = boperatorMidSurfaceBending(kin,gpIndex, j,displacementFunction);
+//            const auto bopShearJ   = boperatorMidSurfaceShear(kin,gpIndex, j,displacementFunction);
+//            bopMidSurfaceJ<< bopMembraneJ,bopBendingJ, bopShearJ;
+//
+//            hred.template block<directorCorrectionDim, midSurfaceDim>(indexI, indexJ)
+//                += bopDirectorI.transpose() * CMat_ * bopMidSurfaceJ * weight;
+//          }
 
-            const auto bopMembraneJ   = membraneStrain.derivative(gp.position(),jE, Nd, *geo_,displacementFunction,localBasisMidSurface, j);
-            const auto bopBendingJ   = boperatorMidSurfaceBending(kin,gpIndex, j,displacementFunction);
-            const auto bopShearJ   = boperatorMidSurfaceShear(kin,gpIndex, j,displacementFunction);
-            bopMidSurfaceJ<< bopMembraneJ,bopBendingJ, bopShearJ;
-
-            hred.template block<directorCorrectionDim, midSurfaceDim>(indexI, indexJ)
-                += bopDirectorI.transpose() * CMat_ * bopMidSurfaceJ * weight;
-          }
-
-          for (int j = 0; j < numNodeDirector; ++j) {
+          for (int j = i; j < numNodeDirector; ++j) {
             const auto indexJ = midSurfaceDofs + directorCorrectionDim * j;
 
             const auto bopBendingJ   = boperatorDirectorBending(kin, gpIndex, j, directorFunction);
             const auto bopShearJ   = boperatorDirectorShear(kin, gpIndex, j, directorFunction);
             bopDirectorJ <<Eigen::Matrix<double,3,2>::Zero(),bopBendingJ,bopShearJ;
 
+            Eigen::Matrix<ScalarType, 2, 2> kgBending= kgDirectorDirectorBending(kin,Ndirector,dNdirector,gpIndex,i,j,displacementFunction,directorFunction,S);
+            Eigen::Matrix<ScalarType, 2, 2> kgShear= kgDirectorDirectorShear(kin,Ndirector,dNdirector,gpIndex,i,j,displacementFunction,directorFunction,S);
+
+
             hred.template block<directorCorrectionDim, directorCorrectionDim>(indexI, indexJ)
                 += bopDirectorI.transpose() * CMat_ * bopDirectorJ * weight;
+
+            hred.template block<directorCorrectionDim, directorCorrectionDim>(indexI, indexJ)
+                += (kgBending+kgShear)* weight;
           }
         }
       }
+      hred.template triangularView<Eigen::StrictlyLower>() = hred.transpose();
     }
 
     //    [[nodiscard]] int size() const { return localView.size(); }
@@ -639,10 +747,6 @@ namespace Ikarus {
           for (size_t i = 0; i < numNodeDirector; ++i) {
             const auto indexI = midSurfaceDofs + directorCorrectionDim * i;
             const auto tdCi = directorFunction.evaluateDerivative(quadPos, Dune::wrt(coeff(_1,i)));
-            std::cout<<"tdCi"<<std::endl;
-            std::cout<<tdCi<<std::endl;
-            std::cout<<"mext"<<std::endl;
-            std::cout<<mext<<std::endl;
             rieGrad.template segment<directorCorrectionDim>(indexI)
                 -= (tdCi.transpose() * mext) * curQuad.weight() * integrationElement;;
           }
