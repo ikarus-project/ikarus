@@ -29,6 +29,8 @@
 #include <ikarus/utils/tensorUtils.hh>
 
 namespace Ikarus {
+template<typename ResultantBasedShell>
+struct StressBasedShellRM;
 
   template <typename Basis_, bool useEigenRef_ = false>
   class NonLinearRMshell {
@@ -171,6 +173,20 @@ namespace Ikarus {
     {
       using namespace Dune::Indices;
       return localViewFlat_.tree().child(_0, 0).finiteElement().size()*3+ localViewFlat_.tree().child(_1, 0).finiteElement().size()*3;
+    }
+
+    template<typename ScalarType>
+    auto calc3DMetric(const KinematicVariables<ScalarType> &kin, double zeta)
+    {
+      const auto G1 = (kin.A1() + zeta*kin.t0d1()).eval();
+      const auto G2 =(kin.A2() + zeta*kin.t0d2()).eval();
+      const auto G3 = kin.t0;
+      Eigen::Matrix<double,3,3> J3D;
+      J3D.col(0)=G1;
+      J3D.col(1)=G2;
+      J3D.col(2)=G3;
+
+      Eigen::Matrix<double,3,3> G= J3D.transpose()*J3D; //here quadratic parts of zeta appear!
     }
 
     using GlobalIndex = typename LocalViewFlat::MultiIndex;
@@ -407,7 +423,7 @@ namespace Ikarus {
     }
 
     template<typename ScalarType>
-    Eigen::Matrix<ScalarType, 3, 2> boperatorDirectorBending(const KinematicVariables<ScalarType> &kin, int integrationPointIndex,
+    Eigen::Matrix<ScalarType, 3, 2> boperatorDirectorBending(const auto& j, int integrationPointIndex,
                                                       int coeffIndex, const auto &directorFunction) const {
       using namespace Dune::TypeTree::Indices;
       using namespace Dune::DerivativeDirections;
@@ -421,9 +437,9 @@ namespace Ikarus {
 
       Eigen::Matrix<ScalarType, 3, 2> bop;
       bop.setZero();
-      bop.row(0) = kin.a1().transpose() * diffdtd1;  // bending_{,disp}
-      bop.row(1) = kin.a2().transpose() * diffdtd2;
-      bop.row(2) = kin.a2().transpose() * diffdtd1 + kin.a1().transpose() * diffdtd2;
+      bop.row(0) = j.col(0).transpose() * diffdtd1;  // bending_{,disp}
+      bop.row(1) = j.col(1).transpose() * diffdtd2;
+      bop.row(2) = j.col(1).transpose() * diffdtd1 + j.col(0).transpose() * diffdtd2;
 
       return bop;
     }
@@ -581,7 +597,7 @@ namespace Ikarus {
 
           for (int j = 0; j < numNodeDirector; ++j) {
             const auto indexJ = midSurfaceDofs + directorCorrectionDim * j;
-            const auto bopBendingJ   = boperatorDirectorBending(kin, gpIndex, j, directorFunction);
+            const auto bopBendingJ   = boperatorDirectorBending(kin.a1anda2, gpIndex, j, directorFunction);
             const auto bopShearJ   = boperatorDirectorShear(kin, gpIndex, j, directorFunction);
 
             bopDirectorJ <<Eigen::Matrix<double,3,2>::Zero(),bopBendingJ,bopShearJ;
@@ -599,7 +615,7 @@ namespace Ikarus {
 
         for (int i = 0; i < numNodeDirector; ++i) {
           const auto indexI = midSurfaceDofs + directorCorrectionDim * i;
-          const auto bopBendingI   = boperatorDirectorBending(kin, gpIndex, i, directorFunction);
+          const auto bopBendingI   = boperatorDirectorBending(kin.a1anda2, gpIndex, i, directorFunction);
           const auto bopShearI   = boperatorDirectorShear(kin, gpIndex, i, directorFunction);
 
           bopDirectorI <<Eigen::Matrix<double,3,2>::Zero(),bopBendingI,bopShearI;
@@ -618,7 +634,7 @@ namespace Ikarus {
           for (int j = i; j < numNodeDirector; ++j) {
             const auto indexJ = midSurfaceDofs + directorCorrectionDim * j;
 
-            const auto bopBendingJ   = boperatorDirectorBending(kin, gpIndex, j, directorFunction);
+            const auto bopBendingJ   = boperatorDirectorBending(kin.a1anda2, gpIndex, j, directorFunction);
             const auto bopShearJ   = boperatorDirectorShear(kin, gpIndex, j, directorFunction);
             bopDirectorJ <<Eigen::Matrix<double,3,2>::Zero(),bopBendingJ,bopShearJ;
 
@@ -692,7 +708,7 @@ namespace Ikarus {
 
         for (int i = 0; i < numNodeDirector; ++i) {
           const auto indexI = midSurfaceDofs + directorCorrectionDim * i;
-          const auto bopIBending   = boperatorDirectorBending(kin, gpIndex, i, directorFunction);
+          const auto bopIBending   = boperatorDirectorBending(kin.a1anda2, gpIndex, i, directorFunction);
           const auto bopIShear   = boperatorDirectorShear(kin, gpIndex, i, directorFunction);
 
           bopDirector<<Eigen::Matrix<double,3,2>::Zero(),bopIBending,bopIShear;
@@ -877,9 +893,12 @@ namespace Ikarus {
     YoungsModulusAndPoissonsRatio material;
     double thickness_;
     mutable Eigen::Matrix<double, 8, 8> CMat_;
-
+    friend StressBasedShellRM<NonLinearRMshell>;
     size_t numNodeMidSurface{};
     size_t numNodeDirector{};
+
+    const LocalViewFlat& localView() const { return localViewFlat_; }
+    LocalViewFlat& localView() { return localViewFlat_; }
   };
 
 }  // namespace Ikarus
