@@ -3,9 +3,6 @@
 
 #include <config.h>
 
-#include "testCommon.hh"
-#include "testHelpers.hh"
-
 #include <dune/common/parametertreeparser.hh>
 #include <dune/common/test/testsuite.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
@@ -16,6 +13,8 @@
 #include <dune/functions/functionspacebases/compositebasis.hh>
 #include <dune/functions/functionspacebases/subspacebasis.hh>
 #include <dune/iga/nurbsbasis.hh>
+#include <dune/iga/nurbsgrid.hh>
+#include <ikarus/finiteElements/feBases/autodiffFE.hh>
 #include <dune/functions/functionspacebases/interpolate.hh>
 
 #include "spdlog/spdlog.h"
@@ -24,7 +23,6 @@
 
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/controlRoutines/loadControl.hh>
-#include <ikarus/controlRoutines/pathFollowingTechnique.hh>
 #include <ikarus/finiteElements/mechanics/fesettings.hh>
 #include <ikarus/finiteElements/mechanics/nonlinearrmshell.hh>
 #include <ikarus/io/resultFunction.hh>
@@ -32,7 +30,6 @@
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
 #include <ikarus/solver/nonLinearSolver/trustRegion.hh>
-#include <ikarus/utils/algorithms.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
@@ -352,11 +349,40 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
     fext.setZero();
 //    fext[0] = lamb;
 //    fext[1] = 0.01 * lamb;
-    fext[2] = 2 * Dune::power(thickness, 3) * lamb * loadFactor;
+    fext[2] = 2 * Dune::power(thickness, 3) * lamb * loadFactor*0;
     mext.setZero();
+
     return vLoad;
   };
 
+  auto boundaryLoad = [thickness, loadFactor]<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
+    std::array<Eigen::Vector<double,3>,2> vLoad;
+    auto& fext = vLoad[0];
+    auto& mext = vLoad[1];
+    fext.setZero();
+    //    fext[0] = lamb;
+    //    fext[1] = 0.01 * lamb;
+    fext[2] = 2 * Dune::power(thickness, 3) * lamb * loadFactor*0;
+    mext.setZero();
+    mext[0]=lamb*loadFactor;
+//    std::cout<<"vLoad[0]"<<std::endl;
+//    std::cout<<vLoad[0]<<std::endl;
+//    std::cout<<"vLoad[1]"<<std::endl;
+//    std::cout<<vLoad[1]<<std::endl;
+//    std::cout<<"loadFactor"<<std::endl;
+//    std::cout<<loadFactor<<std::endl;
+//    std::cout<<"lamb"<<std::endl;
+//    std::cout<<lamb<<std::endl;
+    return vLoad;
+  };
+
+  Dune::BitSetVector<1> neumannVertices(gridView.size(2), false);
+  const auto& indexSet= gridView.indexSet();
+  for(auto& vertex: vertices(gridView))
+    if(vertex.geometry().center()[0]>12-1e-8)
+      neumannVertices[indexSet.index(vertex)]=true;
+  std::cout<<neumannVertices<<std::endl;
+  BoundaryPatch<decltype(gridView)> neumannBoundary(gridView, neumannVertices);
 
 
   using MidSurfaceVector = Dune::BlockVector<Dune::RealTuple<double, 3>>;
@@ -383,12 +409,12 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
 
   using ElementTypePRim = Ikarus::NonLinearRMshell<decltype(basis)>;
 //  using ElementTypeRaw = Ikarus::StressBasedShell<ElementTypePRim>;
-  using ElementType = Ikarus::AutoDiffFE<ElementTypePRim, true>;
-//  using ElementType = ElementTypePRim;
+//  using ElementType = Ikarus::AutoDiffFE<ElementTypePRim, true>;
+  using ElementType = ElementTypePRim;
   std::vector<ElementType> fes;
 
   for (auto& element : elements(gridView))
-    fes.emplace_back(basis, element, feSettings,x0, volumeLoad);
+    fes.emplace_back(basis, element, feSettings,x0, volumeLoad,&neumannBoundary,boundaryLoad);
 
   auto basisP = std::make_shared<const decltype(basis)>(basis);
   Ikarus::DirichletValues dirichletValues(basisP->flat());
@@ -521,8 +547,8 @@ int main(int argc, char** argv) {
   //  const double E             = materialParameters.get<double>("E");
   //  const double nu            = materialParameters.get<double>("nu");
 
-  checkFEByAutoDiff<RMSHELL>("RMSHELL");
+//  checkFEByAutoDiff<RMSHELL>("RMSHELL");
 
 //  checkFEByAutoDiff<KLSHELLSB>("KLSHELLSB");
-//  NonLinearElasticityLoadControlNRandTRforRMShell();
+  NonLinearElasticityLoadControlNRandTRforRMShell();
 }

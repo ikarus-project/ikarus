@@ -6,7 +6,6 @@
 #include <iosfwd>
 #include <numbers>
 
-#include <dune/common/classname.hh>
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/geometry/type.hh>
 #include <dune/localfefunctions/cachedlocalBasis/cachedlocalBasis.hh>
@@ -608,7 +607,7 @@ namespace Ikarus {
             const auto indexI = midSurfaceDofs + directorCorrectionDim * i;
             const auto tdCi = directorFunction.evaluateDerivative(gpIndex, Dune::wrt(coeff(_1,i)));
             rieGrad.template segment<directorCorrectionDim>(indexI)
-                -= (tdCi * mext) * geo_->integrationElement(gp.position()) * gp.weight();
+                -= (tdCi.transpose() * mext) * geo_->integrationElement(gp.position()) * gp.weight();
           }
         }
       }
@@ -627,16 +626,25 @@ namespace Ikarus {
           const Dune::FieldVector<double, 2>& quadPos = intersection.geometryInInside().global(curQuad.position());
 
           const double integrationElement = intersection.geometry().integrationElement(curQuad.position());
-
+          const auto [fext,mext]
+              = neumannBoundaryLoad(intersection.geometry().global(curQuad.position()), lambda);
           // The value of the local function wrt the i-th coef
           for (size_t i = 0; i < numNodeMidSurface; ++i) {
             const auto indexI = midSurfaceDim * i;
-            const auto udCi = displacementFunction.evaluateDerivative(quadPos, Dune::wrt(coeff(i)));
+            const auto udCi = displacementFunction.evaluateDerivative(quadPos, Dune::wrt(coeff(_0,i)));
 
-            // Value of the Neumann data at the current position
-            auto neumannValue
-                = neumannBoundaryLoad(intersection.geometry().global(curQuad.position()), lambda)[0];
-            rieGrad.template segment<midSurfaceDim>(indexI) -= udCi * neumannValue * curQuad.weight() * integrationElement;
+            rieGrad.template segment<midSurfaceDim>(indexI) -= udCi * fext * curQuad.weight() * integrationElement;
+          }
+
+          for (size_t i = 0; i < numNodeDirector; ++i) {
+            const auto indexI = midSurfaceDofs + directorCorrectionDim * i;
+            const auto tdCi = directorFunction.evaluateDerivative(quadPos, Dune::wrt(coeff(_1,i)));
+            std::cout<<"tdCi"<<std::endl;
+            std::cout<<tdCi<<std::endl;
+            std::cout<<"mext"<<std::endl;
+            std::cout<<mext<<std::endl;
+            rieGrad.template segment<directorCorrectionDim>(indexI)
+                -= (tdCi.transpose() * mext) * curQuad.weight() * integrationElement;;
           }
         }
       }

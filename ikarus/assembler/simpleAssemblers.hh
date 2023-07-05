@@ -6,13 +6,11 @@
 #include <utility>
 
 #include <dune/common/math.hh>
-#include <dune/functions/backends/istlvectorbackend.hh>
-
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
-#include <ikarus/linearAlgebra/dirichletValues.hh>
+//#include <ikarus/linearAlgebra/dirichletValues.hh>
 #include <ikarus/utils/concepts.hh>
 
 namespace Ikarus {

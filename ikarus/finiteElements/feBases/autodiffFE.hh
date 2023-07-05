@@ -9,6 +9,7 @@
 
 #include <ikarus/finiteElements/feRequirements.hh>
 #include <ikarus/finiteElements/physicsHelper.hh>
+#include <dune/istl/bvector.hh>
 #include <ikarus/utils/traits.hh>
 
 namespace Ikarus {

@@ -5,7 +5,7 @@
 #include <memory>
 
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
-#include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
+//#include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observerMessages.hh>
 

@@ -15,7 +15,7 @@
 
 #include <Eigen/Sparse>
 
-#include <ikarus/linearAlgebra/nonLinearOperator.hh>
+//#include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/linearAlgebra/truncatedConjugateGradient.hh>
 #include <ikarus/utils/linearAlgebraHelper.hh>
 #include <ikarus/utils/observer/observer.hh>
