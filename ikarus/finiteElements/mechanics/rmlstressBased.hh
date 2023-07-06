@@ -212,6 +212,7 @@ namespace Ikarus {
         for (int i = 0; i < this->numNodeDirector; ++i) {
           const auto indexI = midSurfaceDofs + directorCorrectionDim * i;
           const auto bopIBending   = this->boperatorDirectorBending(g1Andg2, gpIndex2D, i, directorFunction);
+//          const auto bopIBending   = this->boperatorDirectorBending(g1Andg2, gpIndex2D, i, directorFunction);
           const auto bopIShear   = this->boperatorDirectorShear(kin, gpIndex2D, i, directorFunction);
 
           bopDirector<<zeta*bopIBending,bopIShear;
@@ -266,42 +267,123 @@ namespace Ikarus {
       K.setZero();
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
-      const auto uFunction = this->getDisplacementFunction(par, dx);
+      const auto [ displacementFunction, directorFunction,
+          directorReferenceFunction]
+          = this->createFunctions(par,dx);
       const auto &lambda = par.getParameter(FEParameter::loadfactor);
-      this->membraneStrain.pre(geo,uFunction);
+      this->membraneStrain.pre(geo,displacementFunction);
+      const int midSurfaceDofs = this->numNodeMidSurface * midSurfaceDim;
+      KinematicVariables<ScalarType> kin{};
+
 
       const auto &thickness_ = this->fESettings.template request<double>("thickness");
-
+      Eigen::Matrix<ScalarType, 5, 3> bopMidSurfaceI;
+      Eigen::Matrix<ScalarType, 5, 2> bopDirectorI;
+      Eigen::Matrix<ScalarType, 5, 3> bopMidSurfaceJ;
+      Eigen::Matrix<ScalarType, 5, 2> bopDirectorJ;
       // Internal forces
       for (int gpIndex=0; const auto & gp: rule) {
         const double zeta  = (2*gp.position()[2]-1)*thickness_/2.0;
         const int gpIndex2D= gpIndex/numberOfThicknessIntegrationPoints;
         const Dune::FieldVector<double,2> gp2DPos= {gp.position()[0],gp.position()[1]};
-        const auto
-          [C, epsV, kappaV, jE, J, h,H, a3N, a3] = this->computeMaterialAndStrains(gp2DPos, gpIndex2D, geo, uFunction);
-        const auto G = this->calc3DMetric(J,H,zeta);
+        kin.t           = directorFunction.evaluate(gpIndex2D,Dune::on(Dune::DerivativeDirections::referenceElement));
+        kin.t0          = directorReferenceFunction.evaluate(gpIndex2D,Dune::on(Dune::DerivativeDirections::referenceElement));
+        kin.ud1andud2   = displacementFunction.evaluateDerivative(gpIndex2D, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
+        kin.A1andA2     = Dune::toEigen(geo.jacobianTransposed(gp2DPos)).transpose();
+        kin.a1anda2     = kin.A1andA2+ kin.ud1andud2;
+        kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gpIndex2D, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
+        kin.td1Andtd2   = directorFunction.evaluateDerivative(gpIndex2D, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
+        const Eigen::Matrix<ScalarType,2,3> jE = kin.a1anda2.transpose();
+        auto [_,epsV,kappaV,gammaV]                = this->computeMaterialAndStrains(gp2DPos,gpIndex2D,geo,displacementFunction,kin);
+
+        const auto G = this->calc3DMetric(kin,zeta);
         //        std::cout<<"G: "<<G<<std::endl;
         const auto Ginv = G.inverse().eval();
 
+        const auto g1Andg2 = (kin.a1anda2+ zeta* kin.td1Andtd2).eval();
+
         const auto C3D = this->materialTangent(Ginv);
-        const auto strainsV= (epsV+ zeta*kappaV).eval();
-        const auto S = (C3D*strainsV).eval();
+        Eigen::Vector3<ScalarType> rhoV;
+        rhoV<< 0.5*(kin.td1().squaredNorm()-kin.t0d1().squaredNorm()),0.5*(kin.td2().squaredNorm()-kin.t0d2().squaredNorm()),kin.td1().dot(kin.td2())-kin.t0d1().dot(kin.t0d2());
+        const auto strainsV= (epsV+ zeta*kappaV+0*zeta*zeta*rhoV).eval();
+        Eigen::Vector<ScalarType,5> strains;
+        strains<< strainsV,gammaV;
+        const auto S = (C3D*strains).eval();
+        Eigen::Vector<ScalarType,8> S8;
+        Eigen::Vector<ScalarType,3> SSec;
+        SSec= zeta*zeta*S.template segment<3>(0);
+        S8.template segment<3>(0)<< S.template segment<3>(0);
+        S8.template segment<3>(3)<< zeta*S.template segment<3>(0);
+        S8.template segment<2>(6)<< S.template segment<2>(3);
         const auto intElement =geo.integrationElement(gp2DPos) * gp.weight() * 2 * thickness_ / 2.0;
 
-        const auto &Nd = this->localBasis.evaluateJacobian(gpIndex2D);
-        const auto &Ndd = this->localBasis.evaluateSecondDerivatives(gpIndex2D);
-        for (size_t i = 0; i < this->numberOfNodes; ++i) {
-          Eigen::Matrix<ScalarType, 3, 3> bopIMembrane = this->membraneStrain.derivative(gp2DPos,jE, Nd,geo,uFunction,this->localBasis, i);
-          Eigen::Matrix<ScalarType, 3, 3> bopIBending = this->bopBending(jE, h, Nd, Ndd, i, a3N, a3);
-          Eigen::Matrix<ScalarType, 3, 3> bopI = bopIMembrane + zeta * bopIBending;
-          for (size_t j = i; j < this->numberOfNodes; ++j) {
-            Eigen::Matrix<ScalarType, 3, 3> bopJMembrane = this->membraneStrain.derivative(gp2DPos,jE, Nd,geo,uFunction,this->localBasis, j);
-            Eigen::Matrix<ScalarType, 3, 3> bopJBending = this->bopBending(jE, h, Nd, Ndd, j, a3N, a3);
-            Eigen::Matrix<ScalarType, 3, 3> bopJ = bopJMembrane + zeta * bopJBending;
-            Eigen::Matrix<ScalarType, 3, 3> kgMembraneIJ = this->membraneStrain.secondDerivative(gp2DPos,Nd,geo,uFunction,this->localBasis, S, i, j);
-            Eigen::Matrix<ScalarType, 3, 3> kgBendingIJ = this->kgBending(jE, h, Nd, Ndd, a3N, a3, S, i, j);
-            K.template block<3, 3>(3*i, 3*j) += (bopI.transpose()*C*bopJ+kgMembraneIJ+zeta*kgBendingIJ)*intElement;
+        const auto &Nd = this->localBasisMidSurface.evaluateJacobian(gpIndex2D);
+        const auto &N = this->localBasisMidSurface.evaluateFunction(gpIndex2D);
+        const auto &dNdirector = this->localBasisDirector.evaluateJacobian(gpIndex2D);
+        const auto &Ndirector = this->localBasisDirector.evaluateFunction(gpIndex2D);
+        for (size_t i = 0; i < this->numNodeMidSurface; ++i) {
+          const auto indexI = midSurfaceDim * i;
 
+          const auto bopIMembrane   = this->membraneStrain.derivative(gp2DPos,jE, Nd, geo,displacementFunction,this->localBasisMidSurface, i);
+          const auto bopIBending   = this->boperatorMidSurfaceBending(kin,gpIndex2D, i,displacementFunction);
+          const auto bopIShear   = this->boperatorMidSurfaceShear(kin,gpIndex2D, i,displacementFunction);
+          bopMidSurfaceI<< bopIMembrane+zeta*bopIBending, bopIShear;
+          for (size_t j = i; j < this->numNodeMidSurface; ++j) {
+            const auto indexJ = midSurfaceDim * j;
+
+            const auto bopJMembrane   = this->membraneStrain.derivative(gp2DPos,jE, Nd, geo,displacementFunction,this->localBasisMidSurface,j);
+            const auto bopJBending   = this->boperatorMidSurfaceBending(kin,gpIndex2D, j,displacementFunction);
+            const auto bopJShear   = this->boperatorMidSurfaceShear(kin,gpIndex2D, j,displacementFunction);
+            bopMidSurfaceJ<< bopJMembrane+zeta*bopJBending, bopJShear;
+//            Eigen::Matrix<ScalarType, 3, 3> kgMembraneIJ = this->membraneStrain.secondDerivative(gp2DPos,Nd,geo,uFunction,this->localBasisMidSurface, S, i, j);
+//            Eigen::Matrix<ScalarType, 3, 3> kgBendingIJ = this->kgBending(jE, h, Nd, Ndd, a3N, a3, S, i, j);
+            K.template block<3, 3>(indexI, indexJ) += (bopMidSurfaceI.transpose()*C3D*bopMidSurfaceJ)*intElement;
+
+            Eigen::Matrix<ScalarType, 3, 3> kgMembraneIJ = this->membraneStrain.secondDerivative(gp2DPos,Nd,geo,displacementFunction,this->localBasisMidSurface, S.template segment<3>(0).eval(), i, j);
+            K.template block<3, 3>(indexI, indexJ) += kgMembraneIJ*intElement;
+
+          }
+          for (int j = 0; j < this->numNodeDirector; ++j) {
+            const auto indexJ = midSurfaceDofs + directorCorrectionDim * j;
+            const auto bopBendingJ   = this->boperatorDirectorBending(g1Andg2, gpIndex2D, j, directorFunction);
+            const auto bopShearJ   = this->boperatorDirectorShear(kin, gpIndex2D, j, directorFunction);
+
+            bopDirectorJ<<zeta*bopBendingJ,bopShearJ;
+
+            Eigen::Matrix<ScalarType, 3, 2> kg= this->kgMidSurfaceDirectorBending(kin,N,Nd,gpIndex2D,i,j,displacementFunction,directorFunction,S8);
+            Eigen::Matrix<ScalarType, 3, 2> kg2= this->kgMidSurfaceDirectorShear(kin,N,Nd,gpIndex2D,i,j,displacementFunction,directorFunction,S8);
+
+            K.template block<midSurfaceDim, directorCorrectionDim>(indexI, indexJ)
+                += bopMidSurfaceI.transpose() * C3D * bopDirectorJ * intElement;
+
+            K.template block<midSurfaceDim, directorCorrectionDim>(indexI, indexJ)
+                += (kg+kg2) * intElement;
+          }
+        }
+        for (int i = 0; i < this->numNodeDirector; ++i) {
+          const auto indexI = midSurfaceDofs + directorCorrectionDim * i;
+          const auto bopBendingI   = this->boperatorDirectorBending(g1Andg2, gpIndex2D, i, directorFunction);
+          const auto bopShearI   = this->boperatorDirectorShear(kin, gpIndex2D, i, directorFunction);
+
+          bopDirectorI<<zeta*bopBendingI,bopShearI;
+
+          for (int j = i; j < this->numNodeDirector; ++j) {
+            const auto indexJ = midSurfaceDofs + directorCorrectionDim * j;
+
+            const auto bopBendingJ   = this->boperatorDirectorBending(g1Andg2, gpIndex2D, j, directorFunction);
+            const auto bopShearJ   = this->boperatorDirectorShear(kin, gpIndex2D, j, directorFunction);
+            bopDirectorJ<<zeta*bopBendingJ,bopShearJ;
+
+            Eigen::Matrix<ScalarType, 2, 2> kgBending= this->kgDirectorDirectorBending(kin,Ndirector,dNdirector,gpIndex2D,i,j,displacementFunction,directorFunction,S8);
+//            Eigen::Matrix<ScalarType, 2, 2> kgBending2= this->kgSecondDirectorDirectorBending(kin,Ndirector,dNdirector,gpIndex2D,i,j,displacementFunction,directorFunction,SSec);
+            Eigen::Matrix<ScalarType, 2, 2> kgShear= this->kgDirectorDirectorShear(kin,Ndirector,dNdirector,gpIndex2D,i,j,displacementFunction,directorFunction,S8);
+
+
+            K.template block<directorCorrectionDim, directorCorrectionDim>(indexI, indexJ)
+                += bopDirectorI.transpose() * C3D * bopDirectorJ * intElement;
+
+            K.template block<directorCorrectionDim, directorCorrectionDim>(indexI, indexJ)
+                += (kgBending+kgShear)* intElement;
           }
         }
         ++gpIndex;

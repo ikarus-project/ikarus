@@ -260,11 +260,11 @@ auto checkFEByAutoDiff(std::string filename) {
   fe.calculateVector(req, R);
   feAutoDiff.calculateVector(req, RAutoDiff);
 
-//    fe.calculateMatrix(req, K);
-//    feAutoDiff.calculateMatrix(req, KAutoDiff);
-//  t.check(K.isApprox(KAutoDiff, tol),"K Check"+filename)<<
-//      "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
-//      "automatic differentiation with simulationFlag: "<<i<<"\n" << K <<"\n KAutoDiff \n"<< KAutoDiff<<"\n K-KAutoDiff \n"<< K-KAutoDiff;
+    fe.calculateMatrix(req, K);
+    feAutoDiff.calculateMatrix(req, KAutoDiff);
+  t.check(K.isApprox(KAutoDiff, tol),"K Check"+filename)<<
+      "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
+      "automatic differentiation with simulationFlag: "<<i<<"\n" << K <<"\n KAutoDiff \n"<< KAutoDiff<<"\n K-KAutoDiff \n"<< K-KAutoDiff;
 
   t.check(R.isApprox(RAutoDiff, tol),"R Check"+filename)<<
       "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
