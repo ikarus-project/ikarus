@@ -395,7 +395,7 @@ struct StressBasedShellRM;
       const auto WJ
           = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(spatialAll,coeff(_1, j)),Dune::on(referenceElement));
       Eigen::Matrix<ScalarType, 2, 2> kg;
-      kg  = WI[0].transpose() * WJ[0] * S[0] + WI[1].transpose() * WJ[1] * S[1] + (WI[0] * WJ[1] + WI[1] * WJ[0]) * S[2]; //{/zeta^2* t_{,a}\cdot t_{,a}}_{,dir,dir}
+      kg  = WI[0].transpose() * WJ[0] * S[0] + WI[1].transpose() * WJ[1] * S[1] + (WI[0] .transpose()* WJ[1] + WI[1].transpose() * WJ[0]) * S[2]; //{/zeta^2* t_{,a}\cdot t_{,a}}_{,dir,dir}
       kg += fac11 * S[0] + fac22 * S[1] + (fac21 + fac12) * S[2];
 
       return kg;

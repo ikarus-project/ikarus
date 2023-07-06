@@ -168,8 +168,9 @@ namespace Ikarus {
       this->membraneStrain.pre(geo,displacementFunction);
       KinematicVariables<ScalarType> kin{};
       // Internal forces
-      Eigen::Matrix<ScalarType, 5, 3> bopMidSurface;
-      Eigen::Matrix<ScalarType, 5, 2> bopDirector;
+      Eigen::Matrix<ScalarType, 5, 3> bopMidSurfaceI;
+      Eigen::Matrix<ScalarType, 5, 2> bopDirectorI;
+      std::cout<<"calculateVectorImpl"<<std::endl;
       for (int gpIndex=0; const auto & gp: rule) {
         const double zeta  = (2*gp.position()[2]-1)*thickness_/2.0;
         const int gpIndex2D= gpIndex/numberOfThicknessIntegrationPoints;
@@ -200,23 +201,20 @@ namespace Ikarus {
 
         const auto &Nd = this->localBasisMidSurface.evaluateJacobian(gpIndex2D);
         for (size_t i = 0; i < this->numNodeMidSurface; ++i) {
-          const auto bopIMembrane   = this->membraneStrain.derivative(gp2DPos,jE, Nd, geo,displacementFunction,this->localBasisMidSurface, i);
-          const auto bopIBending   = this->boperatorMidSurfaceBending(kin,gpIndex2D, i,displacementFunction);
-          const auto bopIShear   = this->boperatorMidSurfaceShear(kin,gpIndex2D, i,displacementFunction);
-          bopMidSurface<< bopIMembrane+zeta*bopIBending, bopIShear;
+          std::cout<<"bopMidSurfaceIForces"<<std::endl;
+          bopMidSurfaceI= bopMembrane(kin, gpIndex2D, gp2DPos,jE, Nd, displacementFunction, i, zeta);
+
           force.template segment<3>(3*i) +=
-              bopMidSurface.transpose()*S*geo.integrationElement(gp2DPos)*gp.weight()*2*thickness_/2.0;
+              bopMidSurfaceI.transpose()*S*geo.integrationElement(gp2DPos)*gp.weight()*2*thickness_/2.0;
           // the first two fixes the change of the integration mapping from 0..1 to -1..1,
           // and the h/2 factor is the factor for the correct thickness
         }
         for (int i = 0; i < this->numNodeDirector; ++i) {
           const auto indexI = midSurfaceDofs + directorCorrectionDim * i;
-          const auto bopIBending   = this->boperatorDirectorBending(g1Andg2, gpIndex2D, i, directorFunction);
-//          const auto bopIBending   = this->boperatorDirectorBending(g1Andg2, gpIndex2D, i, directorFunction);
-          const auto bopIShear   = this->boperatorDirectorShear(kin, gpIndex2D, i, directorFunction);
+          std::cout<<"bopDirectorIForces"<<std::endl;
 
-          bopDirector<<zeta*bopIBending,bopIShear;
-          force.template segment<directorCorrectionDim>(indexI) += bopDirector.transpose() * S*geo.integrationElement(gp2DPos)*gp.weight()*2*thickness_/2.0;
+          bopDirectorI =bopDirector(kin, g1Andg2, gpIndex2D, directorFunction, i, zeta);
+          force.template segment<directorCorrectionDim>(indexI) += bopDirectorI.transpose() * S*geo.integrationElement(gp2DPos)*gp.weight()*2*thickness_/2.0;
         }
 
         ++gpIndex;
@@ -260,7 +258,27 @@ namespace Ikarus {
                                             }
                                           });
     }
+    template<typename ScalarType>
+    auto bopMembrane(const KinematicVariables<ScalarType>& kin, const auto& gpIndex2D,const auto& gp2DPos,const auto& jE, const auto& Nd, const auto& displacementFunction,int i,double zeta) const
+    {
+      Eigen::Matrix<ScalarType, 5, 3> bopMidSurfaceI;
+      const auto bopIMembrane   = this->membraneStrain.derivative(gp2DPos,jE, Nd, geo,displacementFunction,this->localBasisMidSurface, i);
+      const auto bopIBending   = this->boperatorMidSurfaceBending(kin,gpIndex2D, i,displacementFunction);
+      const auto bopIShear   = this->boperatorMidSurfaceShear(kin,gpIndex2D, i,displacementFunction);
+      bopMidSurfaceI<< bopIMembrane+zeta*bopIBending, bopIShear;
+      return bopMidSurfaceI;
+    }
+    template<typename ScalarType>
+    auto bopDirector(const KinematicVariables<ScalarType>& kin, const auto& g1Andg2, const auto& gpIndex2D,const auto& directorFunction,int i,double zeta)const
+    {
+      Eigen::Matrix<ScalarType, 5, 2> bopDirectorI;
 
+      const auto bopBendingI   = this->boperatorDirectorBending(g1Andg2, gpIndex2D, i, directorFunction);
+      const auto bopShearI   = this->boperatorDirectorShear(kin, gpIndex2D, i, directorFunction);
+      bopDirectorI<<zeta*bopBendingI,bopShearI;
+      return bopDirectorI;
+
+    }
     template<typename ScalarType>
     void calculateMatrixImpl(const FERequirementType &par, typename Traits::template MatrixType<ScalarType> K,
                              const std::optional<const Eigen::VectorX<ScalarType>> &dx = std::nullopt) const {
@@ -305,7 +323,7 @@ namespace Ikarus {
         const auto C3D = this->materialTangent(Ginv);
         Eigen::Vector3<ScalarType> rhoV;
         rhoV<< 0.5*(kin.td1().squaredNorm()-kin.t0d1().squaredNorm()),0.5*(kin.td2().squaredNorm()-kin.t0d2().squaredNorm()),kin.td1().dot(kin.td2())-kin.t0d1().dot(kin.t0d2());
-        const auto strainsV= (epsV+ zeta*kappaV+0*zeta*zeta*rhoV).eval();
+        const auto strainsV= (epsV+ zeta*kappaV+zeta*zeta*rhoV).eval();
         Eigen::Vector<ScalarType,5> strains;
         strains<< strainsV,gammaV;
         const auto S = (C3D*strains).eval();
@@ -323,20 +341,14 @@ namespace Ikarus {
         const auto &Ndirector = this->localBasisDirector.evaluateFunction(gpIndex2D);
         for (size_t i = 0; i < this->numNodeMidSurface; ++i) {
           const auto indexI = midSurfaceDim * i;
+          bopMidSurfaceI= bopMembrane(kin, gpIndex2D, gp2DPos,jE, Nd, displacementFunction, i, zeta);
 
-          const auto bopIMembrane   = this->membraneStrain.derivative(gp2DPos,jE, Nd, geo,displacementFunction,this->localBasisMidSurface, i);
-          const auto bopIBending   = this->boperatorMidSurfaceBending(kin,gpIndex2D, i,displacementFunction);
-          const auto bopIShear   = this->boperatorMidSurfaceShear(kin,gpIndex2D, i,displacementFunction);
-          bopMidSurfaceI<< bopIMembrane+zeta*bopIBending, bopIShear;
           for (size_t j = i; j < this->numNodeMidSurface; ++j) {
             const auto indexJ = midSurfaceDim * j;
+            std::cout<<"bopMidSurfaceIStiffness"<<std::endl;
 
-            const auto bopJMembrane   = this->membraneStrain.derivative(gp2DPos,jE, Nd, geo,displacementFunction,this->localBasisMidSurface,j);
-            const auto bopJBending   = this->boperatorMidSurfaceBending(kin,gpIndex2D, j,displacementFunction);
-            const auto bopJShear   = this->boperatorMidSurfaceShear(kin,gpIndex2D, j,displacementFunction);
-            bopMidSurfaceJ<< bopJMembrane+zeta*bopJBending, bopJShear;
-//            Eigen::Matrix<ScalarType, 3, 3> kgMembraneIJ = this->membraneStrain.secondDerivative(gp2DPos,Nd,geo,uFunction,this->localBasisMidSurface, S, i, j);
-//            Eigen::Matrix<ScalarType, 3, 3> kgBendingIJ = this->kgBending(jE, h, Nd, Ndd, a3N, a3, S, i, j);
+            bopMidSurfaceI= bopMembrane(kin, gpIndex2D, gp2DPos,jE, Nd, displacementFunction, j, zeta);
+
             K.template block<3, 3>(indexI, indexJ) += (bopMidSurfaceI.transpose()*C3D*bopMidSurfaceJ)*intElement;
 
             Eigen::Matrix<ScalarType, 3, 3> kgMembraneIJ = this->membraneStrain.secondDerivative(gp2DPos,Nd,geo,displacementFunction,this->localBasisMidSurface, S.template segment<3>(0).eval(), i, j);
@@ -347,8 +359,8 @@ namespace Ikarus {
             const auto indexJ = midSurfaceDofs + directorCorrectionDim * j;
             const auto bopBendingJ   = this->boperatorDirectorBending(g1Andg2, gpIndex2D, j, directorFunction);
             const auto bopShearJ   = this->boperatorDirectorShear(kin, gpIndex2D, j, directorFunction);
-
-            bopDirectorJ<<zeta*bopBendingJ,bopShearJ;
+            std::cout<<"bopDirectorIStiffness"<<std::endl;
+            bopDirectorJ =bopDirector(kin, g1Andg2, gpIndex2D, directorFunction, j, zeta);
 
             Eigen::Matrix<ScalarType, 3, 2> kg= this->kgMidSurfaceDirectorBending(kin,N,Nd,gpIndex2D,i,j,displacementFunction,directorFunction,S8);
             Eigen::Matrix<ScalarType, 3, 2> kg2= this->kgMidSurfaceDirectorShear(kin,N,Nd,gpIndex2D,i,j,displacementFunction,directorFunction,S8);
@@ -362,22 +374,24 @@ namespace Ikarus {
         }
         for (int i = 0; i < this->numNodeDirector; ++i) {
           const auto indexI = midSurfaceDofs + directorCorrectionDim * i;
-          const auto bopBendingI   = this->boperatorDirectorBending(g1Andg2, gpIndex2D, i, directorFunction);
-          const auto bopShearI   = this->boperatorDirectorShear(kin, gpIndex2D, i, directorFunction);
-
-          bopDirectorI<<zeta*bopBendingI,bopShearI;
+          bopDirectorI =bopDirector(kin, g1Andg2, gpIndex2D, directorFunction, i, zeta);
 
           for (int j = i; j < this->numNodeDirector; ++j) {
             const auto indexJ = midSurfaceDofs + directorCorrectionDim * j;
 
-            const auto bopBendingJ   = this->boperatorDirectorBending(g1Andg2, gpIndex2D, j, directorFunction);
-            const auto bopShearJ   = this->boperatorDirectorShear(kin, gpIndex2D, j, directorFunction);
-            bopDirectorJ<<zeta*bopBendingJ,bopShearJ;
-
+            bopDirectorJ =bopDirector(kin, g1Andg2, gpIndex2D, directorFunction, j, zeta);
+            std::cout<<"bopDirectorJ"<<std::endl;
+            std::cout<<bopDirectorJ<<std::endl;
             Eigen::Matrix<ScalarType, 2, 2> kgBending= this->kgDirectorDirectorBending(kin,Ndirector,dNdirector,gpIndex2D,i,j,displacementFunction,directorFunction,S8);
+            std::cout<<"Before"<<std::endl;
+            std::cout<<"kgBending"<<std::endl;
+            std::cout<<kgBending<<std::endl;
 //            Eigen::Matrix<ScalarType, 2, 2> kgBending2= this->kgSecondDirectorDirectorBending(kin,Ndirector,dNdirector,gpIndex2D,i,j,displacementFunction,directorFunction,SSec);
+//            std::cout<<"kgBending2"<<std::endl;
+//            std::cout<<kgBending2<<std::endl;
             Eigen::Matrix<ScalarType, 2, 2> kgShear= this->kgDirectorDirectorShear(kin,Ndirector,dNdirector,gpIndex2D,i,j,displacementFunction,directorFunction,S8);
-
+            std::cout<<"kgShear"<<std::endl;
+            std::cout<<kgShear<<std::endl;
 
             K.template block<directorCorrectionDim, directorCorrectionDim>(indexI, indexJ)
                 += bopDirectorI.transpose() * C3D * bopDirectorJ * intElement;
