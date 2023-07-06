@@ -192,7 +192,7 @@ class VTKLocalFunctionModWrapper final
   }
 
  private:
-  std::shared_ptr<VTKFunction<GridView> const> fct_;
+  std::shared_ptr<VTKFunctionMod<GridView> const> fct_;
   Entity const* entity_;
 };
 

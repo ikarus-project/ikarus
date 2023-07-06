@@ -396,14 +396,20 @@ namespace Ikarus {
       K.template triangularView<Eigen::StrictlyLower>() = K.transpose();
           }
 
-    auto calculateStresses(
+    auto calculateStresses(const auto& par,
         const Dune::FieldVector<double,3>& gp
     ) const
     {
       std::array<Eigen::Vector<double,6>,3> stresses; //Cauchy,PK2,PK1
 
        KinematicVariables<double> kin;
-
+      const auto &thickness_ = this->fESettings.template request<double>("thickness");
+      using namespace Dune::DerivativeDirections;
+      using namespace Dune;
+      const auto [ displacementFunction, directorFunction,
+          directorReferenceFunction]
+          = this->createFunctions(par);
+      const auto &lambda = par.getParameter(FEParameter::loadfactor);
       const double zeta  = (2*gp[2]-1)*thickness_/2.0;
       const Dune::FieldVector<double,2> gp2DPos= {gp[0],gp[1]};
       kin.t           = directorFunction.evaluate(gp2DPos,Dune::on(Dune::DerivativeDirections::referenceElement));
@@ -413,7 +419,7 @@ namespace Ikarus {
       kin.a1anda2     = kin.A1andA2+ kin.ud1andud2;
       kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
       kin.td1Andtd2   = directorFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
-      const Eigen::Matrix<ScalarType,2,3> jE = kin.a1anda2.transpose();
+      const Eigen::Matrix<double,2,3> jE = kin.a1anda2.transpose();
       auto [_,epsV,kappaV,gammaV]                = this->computeMaterialAndStrains(gp2DPos,geo,displacementFunction,kin);
 
       const auto G = this->calc3DMetric(kin,zeta);
@@ -424,15 +430,15 @@ namespace Ikarus {
       const auto G1AndG2 = (kin.A1andA2+ zeta* kin.t0d1Andt0d2).eval();
 
       const auto C3D = this->materialTangent(Ginv);
-      Eigen::Vector3<ScalarType> rhoV;
+      Eigen::Vector3<double> rhoV;
       rhoV<< 0.5*(kin.td1().squaredNorm()-kin.t0d1().squaredNorm()),0.5*(kin.td2().squaredNorm()-kin.t0d2().squaredNorm()),kin.td1().dot(kin.td2())-kin.t0d1().dot(kin.t0d2());
       const auto strainsV= (epsV+ zeta*kappaV+zeta*zeta*rhoV).eval();
-      Eigen::Vector<ScalarType,5> strains;
+      Eigen::Vector<double,5> strains;
       strains<< strainsV,gammaV;
       const auto S = (C3D*strains).eval();
 
       //  Array2D<double> EGl2(3,3);
-      Matrix3d PK2 ;
+      Eigen::Matrix3d PK2 ;
       PK2<< S[0], S[2], S[3],
           S[2], S[1], S[4],
           S[3], S[4], 0.0;
@@ -450,13 +456,13 @@ namespace Ikarus {
 
       const double detF = F.determinant();
 
-      Matrix3d cauchy=1.0/detF*F*PK2*F.transpose();
-      Matrix3d PK1=F*PK2;
+      Eigen::Matrix3d cauchy=1.0/detF*F*PK2*F.transpose();
+      Eigen::Matrix3d PK1=F*PK2;
 
       //Transforming all stresses in the local cartesian coordinate system
-      EigenMatrix J;
+      Eigen::Matrix3d J;
       J<<g1Andg2.col(0),g1Andg2.col(1),kin.t;
-     const  Matrix3d Jloc= orthonormalizeMatrixColumns(J);
+     const  Eigen::Matrix3d Jloc= orthonormalizeMatrixColumns(J);
 
       cauchy=Jloc.transpose()*cauchy*Jloc;
       PK1=Jloc.transpose()*PK1*Jloc;
@@ -469,11 +475,12 @@ namespace Ikarus {
       return stresses;
     }
 
-    void calculateAt(const ResultRequirementsType &req, const Dune::FieldVector<double, Traits::mydim> &local,
+    void calculateAt(const ResultRequirementsType &req, const Dune::FieldVector<double, 3> &local,
                      ResultTypeMap<double> &result) const {
       if (req.isResultRequested(ResultType::cauchyStress)) {
+        typename ResultTypeMap<double>::ResultArray resultVector;
         resultVector.resize(6, 1);
-        auto res= calculateStresses(local);
+        auto res= calculateStresses(req.getFERequirements(),local);
         resultVector =res;
         result.insertOrAssignResult(ResultType::cauchyStress, resultVector);
       }else

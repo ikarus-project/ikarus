@@ -19,6 +19,7 @@
 #include <dune/functions/functionspacebases/interpolate.hh>
 
 #include "spdlog/spdlog.h"
+#include "ikarus/io/vtkFunctionExtensions.hh"
 
 #include <Eigen/Core>
 
@@ -36,7 +37,7 @@
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 #include <ikarus/utils/observer/nonLinearSolverLogger.hh>
-//#include <ikarus/io/shell3DDataCollector.hh>
+#include <ikarus/io/shell3DDataCollector.hh>
 
 using Dune::TestSuite;
 #include <autodiff/forward/dual/dual.hpp>
@@ -411,9 +412,9 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
   MultiTypeVector x =x0;
 
   using ElementTypePRim = Ikarus::NonLinearRMshell<decltype(basis)>;
-//  using ElementTypeRaw = Ikarus::StressBasedShell<ElementTypePRim>;
+  using ElementTypeRaw = Ikarus::StressBasedShellRM<ElementTypePRim>;
 //  using ElementType = Ikarus::AutoDiffFE<ElementTypePRim, true>;
-  using ElementType = ElementTypePRim;
+  using ElementType = ElementTypeRaw;
   std::vector<ElementType> fes;
 
   for (auto& element : elements(gridView))
@@ -528,8 +529,18 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
 
   Dune::Vtk::Shell3DDataCollector dataCollector1(gridView,thickness,Dune::RefinementIntervals(plotInPlaneRefine));
 
-  Dune::VtkUnstructuredGridWriter writer2(dataCollector1, Dune::Vtk::FormatTypes::ASCII);
+  Dune::VtkUnstructuredGridWriterMod writer2(dataCollector1, Dune::Vtk::FormatTypes::ASCII);
+  auto resReq = Ikarus::ResultRequirements< Ikarus::FErequirements<MultiTypeVector>>()
+      .insertGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector, x)
+      .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
+      .addResultRequest(ResultType::cauchyStress);
+  auto resultFunction = std::make_shared<ResultFunction3D<ElementType>>(&fes, resReq);
+
+//  writer2.addPointData(Dune::Vtk::FunctionMod<GridView>(resultFunction), Dune::Vtk::FieldInfo{"cauchy", Dune::Vtk::RangeTypes::VECTOR, 6});
+  writer2.addPointData(Dune::Vtk::FunctionMod<GridView>(resultFunction));
   writer2.write("RMSHELL3D");
+
+
 
   std::cout << std::setprecision(16) << std::ranges::max(d) << std::endl;
   t.check(Dune::FloatCmp::eq(0.2957393081676369, std::ranges::max(d)))
