@@ -18,7 +18,7 @@ namespace Ikarus
               = intersection.geometryInInside().global(curQuad.position());
 
           const double intElement = intersection.geometry().integrationElement(curQuad.position())*curQuad.weight();
-          f(quadPos,Dune::toEigen(intersection.geometry().global(curQuad.position())),intElement) ;
+          f(quadPos,intersection.geometry().global(curQuad.position()),intElement) ;
         }
       }
     }

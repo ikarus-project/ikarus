@@ -35,7 +35,7 @@
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 #include <ikarus/utils/observer/nonLinearSolverLogger.hh>
-#include <ikarus/io/shell3DDataCollector.hh>
+//#include <ikarus/io/shell3DDataCollector.hh>
 
 using Dune::TestSuite;
 #include <autodiff/forward/dual/dual.hpp>
@@ -527,10 +527,10 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
 
 
 
-  Dune::Vtk::Shell3DDataCollector dataCollector1(gridView,thickness,Dune::RefinementIntervals(plotInPlaneRefine));
-
-  Dune::VtkUnstructuredGridWriter writer2(dataCollector1, Dune::Vtk::FormatTypes::ASCII);
-  writer2.write("RMSHELL3D");
+//  Dune::Vtk::Shell3DDataCollector dataCollector1(gridView,thickness,Dune::RefinementIntervals(plotInPlaneRefine));
+//
+//  Dune::VtkUnstructuredGridWriter writer2(dataCollector1, Dune::Vtk::FormatTypes::ASCII);
+//  writer2.write("RMSHELL3D");
 
   std::cout << std::setprecision(16) << std::ranges::max(d) << std::endl;
   t.check(Dune::FloatCmp::eq(0.2957393081676369, std::ranges::max(d)))
