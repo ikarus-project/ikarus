@@ -24,7 +24,7 @@
 #include <ikarus/controlRoutines/pathFollowingTechnique.hh>
 #include <ikarus/finiteElements/mechanics/fesettings.hh>
 #include <ikarus/finiteElements/mechanics/kirchhoffloveshell.hh>
-#include <ikarus/io/resultFunction.hh>
+//#include <ikarus/io/resultFunction.hh>
 #include <ikarus/linearAlgebra/dirichletValues.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
@@ -35,11 +35,17 @@
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 #include <ikarus/utils/observer/nonLinearSolverLogger.hh>
 #include <ikarus/io/shell3DDataCollector.hh>
+#include <ikarus/io/vtkFunctionExtensions.hh>
+#include <ikarus/io/analyticGridViewFunctionMod.hh>
+#include <ikarus/io/composedGgridfuncMod.hh>
 
 using Dune::TestSuite;
 #include <autodiff/forward/dual/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
 #include <dune/geometry/virtualrefinement.hh>
+#include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
+#include <dune/vtk/writers/vtkunstructuredgridwriter.hh>
+
 auto test3DDataCollector() {
   TestSuite t("test3DDataCollector ");
   constexpr auto dimworld        = 3;
@@ -80,13 +86,58 @@ auto test3DDataCollector() {
   grid->globalRefineInDirection(0,refine);
   auto gridView = grid->leafGridView();
 
+//  auto g = [](auto x, auto df, auto nDeformedf, auto nReff) {
+//    const FieldVector corrd2D = {[x[0],x[1]};
+//    return df(corrd2D)+ x[2]* (nDeformedf(corrd2D)- nReff(corrd2D));
+//  };
 
+  //d.setZero(nDOF);
+  using namespace Dune::Functions::BasisFactory;
+
+  auto basis       = Ikarus::makeBasis(gridView, power<3>(nurbs()));
+  auto nDOF        = basis.flat().size();
+  Eigen::VectorXd d;
+  d.setRandom(nDOF);
+  auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(basis.flat(), d);
+  Eigen::VectorXd d2;
+  d2.setRandom(nDOF);
+  auto disp2 = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(basis.flat(), d2);
+
+  auto f=[](auto&& f1, auto&& f2, auto&& x)
+  {
+    return f1+x*f2;
+  };
+
+  auto compf = Dune::Functions::ComposedGridFunctionMod(f,disp,disp2);
 
   using GridView = decltype(gridView);
+  Dune::Vtk::Shell3DDataCollector dc(gridView,thickness,Dune::RefinementIntervals(plotInPlaneRefine));
 
-  Dune::Vtk::Shell3DDataCollector dataCollector1(gridView,Dune::RefinementIntervals(plotInPlaneRefine));
+  Dune::VtkUnstructuredGridWriterMod writer2(dc, Dune::Vtk::FormatTypes::ASCII);
+  auto lambdaf = [](Dune::FieldVector<double, 3> x) {
+    return Dune::FieldVector<double, 3>({std::sin(x[0]), std::cos(3 * x[0]) + std::sin(4 * x[1]),std::sin(x[2])});
+  };
+  auto lambaGV = Dune::Functions::makeAnalyticGridViewFunctionMod(lambdaf,gridView,thickness);
+  writer2.addPointData(lambaGV, Dune::Vtk::FieldInfo{"x", Dune::Vtk::RangeTypes::VECTOR, 3});
+  writer2.addPointData(compf, Dune::Vtk::FieldInfo{"displacment", Dune::Vtk::RangeTypes::VECTOR, 3});
+//
+//  using namespace Dune::Functions::BasisFactory;
+//  auto basis       = Ikarus::makeBasis(gridView, power<3>(nurbs()));
+//  Eigen::VectorXd d;
+//  d.setRandom(basis.flat().size());
+//  auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(basis.flat(), d);
+//
+//  using namespace Dune::Functions::BasisFactory;
+//  auto basis       = Ikarus::makeBasis(gridView, power<3>(nurbs()));
+//  Eigen::VectorXd d;
+//  d.setRandom(basis.flat().size());
+//  auto displacement = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(basis.flat(), d);
+//
+//  Eigen::VectorXd normals;
+//  normals.setRandom(basis.flat().size());
+//  auto deformedNormalFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(basis.flat(), normals);
 
-  Dune::VtkUnstructuredGridWriter writer2(dataCollector1, Dune::Vtk::FormatTypes::ASCII);
+
   writer2.write("KLSHELL3DTEST");
 
   return t;
