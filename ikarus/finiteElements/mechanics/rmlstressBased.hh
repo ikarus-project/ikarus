@@ -400,7 +400,7 @@ namespace Ikarus {
         const Dune::FieldVector<double,3>& gp
     ) const
     {
-      std::array<Eigen::Vector<double,6>,3> stresses; //Cauchy,PK2,PK1
+      std::array<Eigen::Matrix<double,3,3>,3> stresses; //Cauchy,PK2,PK1
 
        KinematicVariables<double> kin;
       const auto &thickness_ = this->fESettings.template request<double>("thickness");
@@ -408,7 +408,7 @@ namespace Ikarus {
       using namespace Dune;
       const auto [ displacementFunction, directorFunction,
           directorReferenceFunction]
-          = this->createFunctions(par);
+          = this->template createFunctions<double>(par);
       const auto &lambda = par.getParameter(FEParameter::loadfactor);
       const double zeta  = (2*gp[2]-1)*thickness_/2.0;
       const Dune::FieldVector<double,2> gp2DPos= {gp[0],gp[1]};
@@ -468,9 +468,9 @@ namespace Ikarus {
       PK1=Jloc.transpose()*PK1*Jloc;
       PK2=Jloc.transpose()*PK2*Jloc;
 
-      stresses[0]= Dune::toVoigt(cauchy);
-      stresses[1]= Dune::toVoigt(PK2);
-      stresses[2]= Dune::toVoigt(PK1); //Eigentlich mehr komponenten GID lässt aber nicht mehr rauschreiben
+      stresses[0]= cauchy;
+      stresses[1]= PK2;
+      stresses[2]= PK1;
 
       return stresses;
     }
@@ -479,9 +479,9 @@ namespace Ikarus {
                      ResultTypeMap<double> &result) const {
       if (req.isResultRequested(ResultType::cauchyStress)) {
         typename ResultTypeMap<double>::ResultArray resultVector;
-        resultVector.resize(6, 1);
+        resultVector.resize(3, 3);
         auto res= calculateStresses(req.getFERequirements(),local);
-        resultVector =res;
+        resultVector =res[0];
         result.insertOrAssignResult(ResultType::cauchyStress, resultVector);
       }else
       DUNE_THROW(Dune::NotImplemented, "No results are implemented");

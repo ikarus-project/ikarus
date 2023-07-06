@@ -128,8 +128,7 @@ class ResultFunction3D : public Dune::VTKFunctionMod<typename ElementType::GridV
   ResultFunction3D(std::vector<ElementType>* fes, const ResultRequirements& req, UserFunction userFunction = {})
       : gridView{fes->at(0).localView().globalBasis().gridView()},
         resultRequirements_{req},
-        fes_{fes},
-        userFunction_{userFunction} {
+        fes_{fes} {
     if constexpr (!std::is_same_v<UserFunction, Impl::DefaultUserFunction>) userFunction_ = userFunction;
   }
 
@@ -140,7 +139,7 @@ class ResultFunction3D : public Dune::VTKFunctionMod<typename ElementType::GridV
     else {
       fes_->at(eleID).calculateAt(resultRequirements_, local, resultTypeMap);
       auto result = resultTypeMap.getSingleResult().second;
-      return result(comp);
+      return Ikarus::toVoigt(result,false)(comp);
     }
   }
 

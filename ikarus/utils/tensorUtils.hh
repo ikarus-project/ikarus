@@ -106,7 +106,7 @@ namespace Ikarus {
   }
 
   template <typename ST, int size>
-  requires(size > 0 and size <= 3) auto toVoigt(const Eigen::Matrix<ST, size, size>& E, bool isStrain = true) {
+  requires(size > 0 and size <= 3) auto toVoigt(const Eigen::Matrix<ST, Eigen::Dynamic,Eigen::Dynamic,0,size, size>& E, bool isStrain = true) {
     Eigen::Vector<ST, (size * (size + 1)) / 2> EVoigt;
     EVoigt.template segment<size>(0) = E.diagonal();
 
