@@ -209,7 +209,6 @@ struct StressBasedShellRM;
 
     template<typename ScalarType>
     auto computeMaterialAndStrains(const Dune::FieldVector<double, 2> &gpPos,
-                                                int gpIndex,
                                                 const Geometry &geo,
                                                 const auto &uFunction,const KinematicVariables<ScalarType> &kin) const {
       Eigen::Vector3<ScalarType> epsV=membraneStrain.value(gpPos,geo,uFunction);
@@ -597,7 +596,7 @@ struct StressBasedShellRM;
         kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(referenceElement));
         kin.td1Andtd2   = directorFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(referenceElement));
 
-        auto [C3D,epsV,kappV,gammaV]                = computeMaterialAndStrains(gp.position(),gpIndex,*geo_,displacementFunction,kin);
+        auto [C3D,epsV,kappV,gammaV]                = computeMaterialAndStrains(gp.position(),*geo_,displacementFunction,kin);
         Eigen::Vector<ScalarType,8> Egl,S;
         Egl<<epsV,kappV,gammaV;
         S.template segment<3>(0)= thickness_*C3D.template block<3,3>(0,0)*epsV;
@@ -716,7 +715,7 @@ struct StressBasedShellRM;
         kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(referenceElement));
         kin.td1Andtd2   = directorFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(referenceElement));
 
-        auto [C3D,epsV,kappV,gammaV]                = computeMaterialAndStrains(gp.position(),gpIndex,*geo_,displacementFunction,kin);
+        auto [C3D,epsV,kappV,gammaV]                = computeMaterialAndStrains(gp.position(),*geo_,displacementFunction,kin);
         Eigen::Vector<ScalarType,8> Egl,S;
         Egl<<epsV,kappV,gammaV;
         S.template segment<3>(0)= thickness_*C3D.template block<3,3>(0,0)*epsV;
@@ -834,7 +833,7 @@ struct StressBasedShellRM;
         kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(referenceElement));
         kin.td1Andtd2   = directorFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(referenceElement));
 
-        auto [C3D,epsV,kappV,gammaV]                = computeMaterialAndStrains(gp.position(),gpIndex,*geo_,displacementFunction,kin);
+        auto [C3D,epsV,kappV,gammaV]                = computeMaterialAndStrains(gp.position(),*geo_,displacementFunction,kin);
         Eigen::Vector<ScalarType,8> Egl,S;
         Egl<<epsV,kappV,gammaV;
         S.template segment<3>(0)= thickness_*C3D.template block<3,3>(0,0)*epsV;

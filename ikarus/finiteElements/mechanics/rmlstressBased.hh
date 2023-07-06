@@ -112,10 +112,10 @@ namespace Ikarus {
         kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gpIndex2D, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
         kin.td1Andtd2   = directorFunction.evaluateDerivative(gpIndex2D, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
 
-        auto [_,epsV,kappaV,gammaV]                = this->computeMaterialAndStrains(gp2DPos,gpIndex2D,geo,displacementFunction,kin);
+        auto [_,epsV,kappaV,gammaV]                = this->computeMaterialAndStrains(gp2DPos,geo,displacementFunction,kin);
 
 //        const auto
-//            [C, epsV, kappaV, j, J, h,H, a3N, a3] = this->computeMaterialAndStrains(gp2DPos, gpIndex2D, geo, uFunction);
+//            [C, epsV, kappaV, j, J, h,H, a3N, a3] = this->computeMaterialAndStrains(gp2DPos, geo, uFunction);
 
         const auto G = this->calc3DMetric(kin,zeta);
 //        std::cout<<"G: "<<G<<std::endl;
@@ -183,7 +183,7 @@ namespace Ikarus {
         kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gpIndex2D, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
         kin.td1Andtd2   = directorFunction.evaluateDerivative(gpIndex2D, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
         const Eigen::Matrix<ScalarType,2,3> jE = kin.a1anda2.transpose();
-        auto [_,epsV,kappaV,gammaV]                = this->computeMaterialAndStrains(gp2DPos,gpIndex2D,geo,displacementFunction,kin);
+        auto [_,epsV,kappaV,gammaV]                = this->computeMaterialAndStrains(gp2DPos,geo,displacementFunction,kin);
 
         const auto G = this->calc3DMetric(kin,zeta);
         //        std::cout<<"G: "<<G<<std::endl;
@@ -312,7 +312,7 @@ namespace Ikarus {
         kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gpIndex2D, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
         kin.td1Andtd2   = directorFunction.evaluateDerivative(gpIndex2D, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
         const Eigen::Matrix<ScalarType,2,3> jE = kin.a1anda2.transpose();
-        auto [_,epsV,kappaV,gammaV]                = this->computeMaterialAndStrains(gp2DPos,gpIndex2D,geo,displacementFunction,kin);
+        auto [_,epsV,kappaV,gammaV]                = this->computeMaterialAndStrains(gp2DPos,geo,displacementFunction,kin);
 
         const auto G = this->calc3DMetric(kin,zeta);
         //        std::cout<<"G: "<<G<<std::endl;
@@ -395,6 +395,93 @@ namespace Ikarus {
 
       K.template triangularView<Eigen::StrictlyLower>() = K.transpose();
           }
+
+    auto calculateStresses(
+        const Dune::FieldVector<double,3>& gp
+    ) const
+    {
+      std::array<Eigen::Vector<double,6>,3> stresses; //Cauchy,PK2,PK1
+
+       KinematicVariables<double> kin;
+
+      const double zeta  = (2*gp[2]-1)*thickness_/2.0;
+      const Dune::FieldVector<double,2> gp2DPos= {gp[0],gp[1]};
+      kin.t           = directorFunction.evaluate(gp2DPos,Dune::on(Dune::DerivativeDirections::referenceElement));
+      kin.t0          = directorReferenceFunction.evaluate(gp2DPos,Dune::on(Dune::DerivativeDirections::referenceElement));
+      kin.ud1andud2   = displacementFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
+      kin.A1andA2     = Dune::toEigen(geo.jacobianTransposed(gp2DPos)).transpose();
+      kin.a1anda2     = kin.A1andA2+ kin.ud1andud2;
+      kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
+      kin.td1Andtd2   = directorFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
+      const Eigen::Matrix<ScalarType,2,3> jE = kin.a1anda2.transpose();
+      auto [_,epsV,kappaV,gammaV]                = this->computeMaterialAndStrains(gp2DPos,geo,displacementFunction,kin);
+
+      const auto G = this->calc3DMetric(kin,zeta);
+      //        std::cout<<"G: "<<G<<std::endl;
+      const auto Ginv = G.inverse().eval();
+
+      const auto g1Andg2 = (kin.a1anda2+ zeta* kin.td1Andtd2).eval();
+      const auto G1AndG2 = (kin.A1andA2+ zeta* kin.t0d1Andt0d2).eval();
+
+      const auto C3D = this->materialTangent(Ginv);
+      Eigen::Vector3<ScalarType> rhoV;
+      rhoV<< 0.5*(kin.td1().squaredNorm()-kin.t0d1().squaredNorm()),0.5*(kin.td2().squaredNorm()-kin.t0d2().squaredNorm()),kin.td1().dot(kin.td2())-kin.t0d1().dot(kin.t0d2());
+      const auto strainsV= (epsV+ zeta*kappaV+zeta*zeta*rhoV).eval();
+      Eigen::Vector<ScalarType,5> strains;
+      strains<< strainsV,gammaV;
+      const auto S = (C3D*strains).eval();
+
+      //  Array2D<double> EGl2(3,3);
+      Matrix3d PK2 ;
+      PK2<< S[0], S[2], S[3],
+          S[2], S[1], S[4],
+          S[3], S[4], 0.0;
+
+      Eigen::Matrix3d F,F0;
+      F0.col(0) = G1AndG2.col(0);
+      F0.col(1) = G1AndG2.col(1);
+      F0.col(2) = kin.t0;
+
+      //Local cartesische Ref G1contravariant = E1
+      F.col(0) = g1Andg2.col(0);
+      F.col(1) = g1Andg2.col(1);
+      F.col(2) = kin.t;
+      F = F0.inverse()*F;
+
+      const double detF = F.determinant();
+
+      Matrix3d cauchy=1.0/detF*F*PK2*F.transpose();
+      Matrix3d PK1=F*PK2;
+
+      //Transforming all stresses in the local cartesian coordinate system
+      EigenMatrix J;
+      J<<g1Andg2.col(0),g1Andg2.col(1),kin.t;
+     const  Matrix3d Jloc= orthonormalizeMatrixColumns(J);
+
+      cauchy=Jloc.transpose()*cauchy*Jloc;
+      PK1=Jloc.transpose()*PK1*Jloc;
+      PK2=Jloc.transpose()*PK2*Jloc;
+
+      stresses[0]= Dune::toVoigt(cauchy);
+      stresses[1]= Dune::toVoigt(PK2);
+      stresses[2]= Dune::toVoigt(PK1); //Eigentlich mehr komponenten GID lässt aber nicht mehr rauschreiben
+
+      return stresses;
+    }
+
+    void calculateAt(const ResultRequirementsType &req, const Dune::FieldVector<double, Traits::mydim> &local,
+                     ResultTypeMap<double> &result) const {
+      if (req.isResultRequested(ResultType::cauchyStress)) {
+        resultVector.resize(6, 1);
+        auto res= calculateStresses(local);
+        resultVector =res;
+        result.insertOrAssignResult(ResultType::cauchyStress, resultVector);
+      }else
+      DUNE_THROW(Dune::NotImplemented, "No results are implemented");
+    }
   };
+
+
+
 
 }  // namespace Ikarus
