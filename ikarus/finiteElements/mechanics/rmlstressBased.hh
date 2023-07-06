@@ -28,7 +28,7 @@ namespace Ikarus {
   struct StressBasedShellRM : private ResultantBasedShell
   {
     template <typename ScalarType>
-    using KinematicVariables =typename ResultantBasedShell::KinematicVariables<ScalarType>;
+    using KinematicVariables =typename ResultantBasedShell::template KinematicVariables<ScalarType>;
     Dune::QuadratureRule<double,3> rule;
     static constexpr int midSurfaceDim         = 3;
     static constexpr int directorDim           = 3;
@@ -345,9 +345,8 @@ namespace Ikarus {
 
           for (size_t j = i; j < this->numNodeMidSurface; ++j) {
             const auto indexJ = midSurfaceDim * j;
-            std::cout<<"bopMidSurfaceIStiffness"<<std::endl;
 
-            bopMidSurfaceI= bopMembrane(kin, gpIndex2D, gp2DPos,jE, Nd, displacementFunction, j, zeta);
+            bopMidSurfaceJ= bopMembrane(kin, gpIndex2D, gp2DPos,jE, Nd, displacementFunction, j, zeta);
 
             K.template block<3, 3>(indexI, indexJ) += (bopMidSurfaceI.transpose()*C3D*bopMidSurfaceJ)*intElement;
 
@@ -359,7 +358,6 @@ namespace Ikarus {
             const auto indexJ = midSurfaceDofs + directorCorrectionDim * j;
             const auto bopBendingJ   = this->boperatorDirectorBending(g1Andg2, gpIndex2D, j, directorFunction);
             const auto bopShearJ   = this->boperatorDirectorShear(kin, gpIndex2D, j, directorFunction);
-            std::cout<<"bopDirectorIStiffness"<<std::endl;
             bopDirectorJ =bopDirector(kin, g1Andg2, gpIndex2D, directorFunction, j, zeta);
 
             Eigen::Matrix<ScalarType, 3, 2> kg= this->kgMidSurfaceDirectorBending(kin,N,Nd,gpIndex2D,i,j,displacementFunction,directorFunction,S8);
@@ -380,28 +378,21 @@ namespace Ikarus {
             const auto indexJ = midSurfaceDofs + directorCorrectionDim * j;
 
             bopDirectorJ =bopDirector(kin, g1Andg2, gpIndex2D, directorFunction, j, zeta);
-            std::cout<<"bopDirectorJ"<<std::endl;
-            std::cout<<bopDirectorJ<<std::endl;
+
             Eigen::Matrix<ScalarType, 2, 2> kgBending= this->kgDirectorDirectorBending(kin,Ndirector,dNdirector,gpIndex2D,i,j,displacementFunction,directorFunction,S8);
-            std::cout<<"Before"<<std::endl;
-            std::cout<<"kgBending"<<std::endl;
-            std::cout<<kgBending<<std::endl;
-//            Eigen::Matrix<ScalarType, 2, 2> kgBending2= this->kgSecondDirectorDirectorBending(kin,Ndirector,dNdirector,gpIndex2D,i,j,displacementFunction,directorFunction,SSec);
-//            std::cout<<"kgBending2"<<std::endl;
-//            std::cout<<kgBending2<<std::endl;
+            Eigen::Matrix<ScalarType, 2, 2> kgBending2= this->kgSecondDirectorDirectorBending(kin,Ndirector,dNdirector,gpIndex2D,i,j,displacementFunction,directorFunction,SSec);
             Eigen::Matrix<ScalarType, 2, 2> kgShear= this->kgDirectorDirectorShear(kin,Ndirector,dNdirector,gpIndex2D,i,j,displacementFunction,directorFunction,S8);
-            std::cout<<"kgShear"<<std::endl;
-            std::cout<<kgShear<<std::endl;
 
             K.template block<directorCorrectionDim, directorCorrectionDim>(indexI, indexJ)
                 += bopDirectorI.transpose() * C3D * bopDirectorJ * intElement;
 
             K.template block<directorCorrectionDim, directorCorrectionDim>(indexI, indexJ)
-                += (kgBending+kgShear)* intElement;
+                += (kgBending+kgBending2+kgShear)* intElement;
           }
         }
         ++gpIndex;
       }
+
       K.template triangularView<Eigen::StrictlyLower>() = K.transpose();
           }
   };

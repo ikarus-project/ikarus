@@ -10,7 +10,8 @@ find_dependency(autodiff REQUIRED)
 find_dependency(Matplot++ REQUIRED)
 
 file(GLOB programSourceFiles *.cpp)
-
+#set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+#set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
 foreach(programSourceFile ${programSourceFiles})
   get_filename_component(programName ${programSourceFile} NAME_WLE)
   dune_add_test(SOURCES ${programSourceFile} LINK_LIBRARIES ikarus LABELS cpp)
@@ -20,8 +21,12 @@ foreach(programSourceFile ${programSourceFiles})
   find_package(PythonLibs REQUIRED)
   include_directories(${PYTHON_INCLUDE_DIRS})
   target_link_libraries(${programName} PUBLIC ${PYTHON_LIBRARIES})
-  target_compile_options(${programName} PUBLIC -ftemplate-backtrace-limit=0)
-  target_compile_options(${programName} PUBLIC -ftime-report -Og)
+#  target_compile_options(${programName} PUBLIC -ftemplate-backtrace-limit=0)
+#  target_compile_options(${programName} PUBLIC  -ftime-trace)
+#  target_compile_options(${programName} PUBLIC -ftime-report)
+#  target_compile_options(${programName} PUBLIC -fexperimental-library)
+
+
 
   if(ENABLE_TEST_COVERAGE)
     message("Enable Test Coverage")

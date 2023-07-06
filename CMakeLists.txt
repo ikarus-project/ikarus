@@ -35,7 +35,7 @@ add_definitions(-DCMAKE_CXX_COMPILER_LAUNCHER=ccache)
 #list(APPEND CMAKE_PREFIX_PATH "/dune/dune-vtk/build-cmake")
 #list(APPEND CMAKE_PREFIX_PATH "/dune/dune-localfefunctions/build-cmake")
 #string(REPLACE ":" ";" CMAKE_PREFIX_PATH "$ENV{CMAKE_PREFIX_PATH}")
-
+#-DUSE_STATIC_ANALYZER="iwyu"
 
 find_package(dune-common REQUIRED EXCLUDE_FROM_ALL)
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules" ${dune-common_MODULE_PATH})

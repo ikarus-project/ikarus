@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include <config.h>
-
+#include <ranges>
+#include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/parametertreeparser.hh>
 #include <dune/common/test/testsuite.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
@@ -255,13 +256,11 @@ auto checkFEByAutoDiff(std::string filename) {
   R.setZero(nDOFPerEle);
   RAutoDiff.setZero(nDOFPerEle);
 
-
-
   fe.calculateVector(req, R);
   feAutoDiff.calculateVector(req, RAutoDiff);
-
     fe.calculateMatrix(req, K);
     feAutoDiff.calculateMatrix(req, KAutoDiff);
+
   t.check(K.isApprox(KAutoDiff, tol),"K Check"+filename)<<
       "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
       "automatic differentiation with simulationFlag: "<<i<<"\n" << K <<"\n KAutoDiff \n"<< KAutoDiff<<"\n K-KAutoDiff \n"<< K-KAutoDiff;
