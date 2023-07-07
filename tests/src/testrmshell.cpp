@@ -177,7 +177,7 @@ auto checkFEByAutoDiff(std::string filename) {
 //    fext[1] = 0.01 * lamb;
     fext[2] = 4*lamb;
     mext.setZero();
-    mext[0]=lamb;
+//    mext[0]=lamb;
     return vLoad;
   };
 
@@ -376,7 +376,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
     fext[2] = 2 * Dune::power(thickness, 3) * lamb * loadFactor*0;
     mext.setZero();
     const double pi         = std::numbers::pi;
-    mext[0]=2*pi*E*Dune::power(thickness, 3)/L*(1-thickness*thickness*pi*pi/(L*L))*lamb*loadFactor;
+    mext[1]=2.0*pi*E*Dune::power(thickness, 3)/L/12.0*(1.0-thickness*thickness*pi*pi/(L*L))*lamb*loadFactor;
 //    std::cout<<"vLoad[0]"<<std::endl;
 //    std::cout<<vLoad[0]<<std::endl;
 //    std::cout<<"vLoad[1]"<<std::endl;
@@ -514,6 +514,9 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
                                                            BlockedLexicographic{}));
   auto blockedmidSurfaceBasis2 = Dune::Functions::subspaceBasis(basis3D.untouched(),Dune::Indices::_0);
   auto blockeddirectorBasis2 = Dune::Functions::subspaceBasis(basis3D.untouched(),Dune::Indices::_1);
+  auto t0 = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockeddirectorBasis2, x0);
+
+
   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis)>,MultiTypeVector>>(
       basis, x,[&](auto& writer, auto& basis,auto& xL, auto& prefixString, int step){
 
@@ -524,40 +527,51 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
         writer.addVertexData(director, {"director", Dune::VTK::FieldInfo::Type::vector, 3});
         writer.write(prefixString+ std::to_string(step));
 
+
+//        std::cout<<"T5"<<std::endl;
       },
       2);
-  vtkWriter->setFileNamePrefix("TestRMShellREAL_EX");
+  vtkWriter->setFileNamePrefix("PureBending");
 //  vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 3);
-
+  Dune::Vtk::Shell3DDataCollector dataCollector1(gridView,thickness,Dune::RefinementIntervals(plotInPlaneRefine));
+  Dune::VtkUnstructuredGridWriterMod writer2(dataCollector1, Dune::Vtk::FormatTypes::ASCII);
+  auto f=[thickness](auto&& m, auto&& t,auto&& t0, auto&& x)
+  {
+    //    std::cout<<"m"<<std::endl;
+    //    std::cout<<m<<std::endl;
+    //    std::cout<<"t"<<std::endl;
+    //    std::cout<<t<<std::endl;
+    //    std::cout<<"t0"<<std::endl;
+    //    std::cout<<t0<<std::endl;
+    //    std::cout<<"m+(2*x-1)*(t-t0)* thickness / 2.0"<<std::endl;
+    //    std::cout<<m+(2*x-1)*(t-t0)* thickness / 2.0<<std::endl;
+    return m+(2*x-1)*(t-t0)* thickness / 2.0;
+  };
+  auto resReq = Ikarus::ResultRequirements< Ikarus::FErequirements<MultiTypeVector>>()
+                    .insertGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector, x)
+                    .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
+                    .addResultRequest(ResultType::cauchyStress);
+  auto resultFunction = std::make_shared<ResultFunction3D<ElementType>>(&fes, resReq);
+  auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockedmidSurfaceBasis2,  x);
+  auto director = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockeddirectorBasis2,  x)
+  auto director0 = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockeddirectorBasis2,  x0);
+  //        std::cout<<"T1"<<std::endl;
+  //        writer2.addPointData(Dune::Vtk::FunctionMod<GridView>(resultFunction));
+  //        std::cout<<"T2"<<std::endl;
+  auto compf = Dune::Functions::ComposedGridFunctionMod(f,disp,director,director0);
+  //        std::cout<<"T3"<<std::endl;
+  writer2.addPointData(compf, Dune::Vtk::FieldInfo{"displacements", Dune::Vtk::RangeTypes::VECTOR, 3});
+  //        std::cout<<"T4"<<std::endl;
+  const std::string name3d= "PureBending3D";
+  std::cout<<name3d<<std::endl;
+  writer2.write(name3d);
   auto lc = Ikarus::LoadControl(tr, loadSteps, {0, 1});
   lc.subscribeAll(vtkWriter);
   const auto controlInfo = lc.run();
 
 
 
-  Dune::Vtk::Shell3DDataCollector dataCollector1(gridView,thickness,Dune::RefinementIntervals(plotInPlaneRefine));
 
-  Dune::VtkUnstructuredGridWriterMod writer2(dataCollector1, Dune::Vtk::FormatTypes::ASCII);
-  auto resReq = Ikarus::ResultRequirements< Ikarus::FErequirements<MultiTypeVector>>()
-      .insertGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector, x)
-      .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
-      .addResultRequest(ResultType::cauchyStress);
-  auto resultFunction = std::make_shared<ResultFunction3D<ElementType>>(&fes, resReq);
-
-//  writer2.addPointData(Dune::Vtk::FunctionMod<GridView>(resultFunction), Dune::Vtk::FieldInfo{"cauchy", Dune::Vtk::RangeTypes::VECTOR, 6});
-  writer2.addPointData(Dune::Vtk::FunctionMod<GridView>(resultFunction));
-  auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockedmidSurfaceBasis2, x);
-  auto disp2 = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockeddirectorBasis2, x);
-
-  auto f=[thickness](auto&& f1, auto&& f2, auto&& x)
-  {
-    return f1+(2*x-1)*f2* thickness / 2.0;
-  };
-
-  auto compf = Dune::Functions::ComposedGridFunctionMod(f,disp,disp2);
-  writer2.addPointData(compf, Dune::Vtk::FieldInfo{"displacment", Dune::Vtk::RangeTypes::VECTOR, 3});
-
-  writer2.write("RMSHELL3D");
 
 
 

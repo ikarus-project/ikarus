@@ -51,6 +51,8 @@ namespace Ikarus {
       for (int ls = 0; ls < loadSteps_; ++ls) {
         this->notify(ControlMessages::STEP_STARTED);
         loadParameter += stepSize_;
+        spdlog::info("===============Loadstep {} with load factor {}",ls,loadParameter);
+
         solverInfo = nonLinearSolver->solve();
         if (not solverInfo.success) return info;
         this->notify(ControlMessages::SOLUTION_CHANGED);

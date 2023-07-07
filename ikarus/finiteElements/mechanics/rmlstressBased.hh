@@ -148,9 +148,9 @@ namespace Ikarus {
                                             const auto [fext,mext]
                                                 = this->neumannBoundaryLoad(globalPos, lambda);
                                             const auto u = displacementFunction.evaluate(quadPos);
-                                            const auto t = directorFunction.evaluate(quadPos);
+//                                            const auto t = directorFunction.evaluate(quadPos);
                                             energy -= fext.dot(u) * intElement;
-                                            energy -= mext.dot(t) * intElement;
+//                                            energy -= mext.dot(t) * intElement;
                                           });
       return energy;
     }
@@ -242,6 +242,7 @@ namespace Ikarus {
 
       // External forces, boundary forces, i.e., at the Neumann boundary
       if (not this->neumannBoundary) return;
+
       forEachInterSectionIntegrationPoint(this->localView().element(),this->neumannBoundary,this->order,
                                           [&](auto& quadPos,auto&& globalPos,auto& intElement){
                                             const auto [fext,mext] = this->neumannBoundaryLoad(globalPos, lambda);
@@ -252,11 +253,13 @@ namespace Ikarus {
                                               // Value of the Neumann data at the current position
                                               force.template segment<worlddim>(worlddim * i) -= udCi * fext * intElement;
                                             }
+//                                            const auto &Ndirector = this->localBasisDirector.evaluateFunction(quadPos);
                                             for (size_t i = 0; i < this->numNodeDirector; ++i) {
                                               const auto indexI = midSurfaceDofs + directorCorrectionDim * i;
                                               const auto tdCi = directorFunction.evaluateDerivative(quadPos, Dune::wrt(coeff(_1,i)));
+                                              const auto t=  directorFunction.evaluate(quadPos,Dune::on(Dune::DerivativeDirections::referenceElement));
                                               force.template segment<directorCorrectionDim>(indexI)
-                                                  -= (tdCi.transpose() * mext) * intElement;
+                                                  -= (tdCi.transpose() * mext.cross(t)) * intElement;
                                             }
                                           });
     }
@@ -454,28 +457,36 @@ namespace Ikarus {
       F.col(0) = g1Andg2.col(0);
       F.col(1) = g1Andg2.col(1);
       F.col(2) = kin.t;
-      F = F0.inverse()*F;
+      F = F*F0.inverse();
 
 
       const double detF = F.determinant();
+      std::cout<<"F"<<std::endl;
+      std::cout<<F<<std::endl;
+      std::cout<<"PK2"<<std::endl;
+      std::cout<<PK2<<std::endl;
 
       Eigen::Matrix3d cauchy=1.0/detF*F*PK2*F.transpose();
+      std::cout<<cauchy<<std::endl;
       Eigen::Matrix3d PK1=F*PK2;
 
       //Transforming all stresses in the local cartesian coordinate system
-      Eigen::Matrix3d J,j;
-      J<<G1AndG2.col(0),G1AndG2.col(1),kin.t;
+//      Eigen::Matrix3d J;
+      Eigen::Matrix3d j;
+//      J<<G1AndG2.col(0),G1AndG2.col(1),kin.t0;
       j<<g1Andg2.col(0),g1Andg2.col(1),kin.t;
-     const  Eigen::Matrix3d Jloc= orthonormalizeMatrixColumns(J);
+//     const  Eigen::Matrix3d Jloc= orthonormalizeMatrixColumns(J);
+     const  Eigen::Matrix3d jloc= orthonormalizeMatrixColumns(j);
 
-      F     = Jloc.transpose()*kin.j*(kin.J.inverse())*Jloc;
-      cauchy=Jloc.transpose()*cauchy*Jloc;
-      PK1=Jloc.transpose()*PK1*Jloc;
-      PK2=Jloc.transpose()*PK2*Jloc;
+//      F     = Jloc.transpose()*kin.j*(kin.J.inverse())*Jloc;
+     auto facM=(j*jloc.inverse()).eval();
+      cauchy=facM.transpose()*cauchy*facM;
+//      PK1=Jloc.transpose()*PK1*Jloc;
+//      PK2=Jloc.transpose()*PK2*Jloc;
 
       stresses[0]= cauchy;
-      stresses[1]= PK2;
-      stresses[2]= PK1;
+//      stresses[1]= PK2;
+//      stresses[2]= PK1;
 
       return stresses;
     }
