@@ -20,6 +20,7 @@
 
 #include "spdlog/spdlog.h"
 #include "ikarus/io/vtkFunctionExtensions.hh"
+#include "ikarus/io/composedGgridfuncMod.hh"
 
 #include <Eigen/Core>
 
@@ -106,21 +107,21 @@ auto checkFEByAutoDiff(std::string filename) {
   TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() by Automatic Differentiation of Kirchhoff-Love shell");
 
   constexpr auto dimworld        = 3;
-  const std::array<int, 2> order = {1, 1};
+  const std::array<int, 2> order = {2,2};
 
-//  const std::array<std::vector<double>, 2> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
-  const std::array<std::vector<double>, 2> knotSpans = {{{0, 0,  1, 1}, {0, 0, 1, 1}}};
+  const std::array<std::vector<double>, 2> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+//  const std::array<std::vector<double>, 2> knotSpans = {{{0, 0,  1, 1}, {0, 0, 1, 1}}};
 
   using ControlPoint = Dune::IGA::NURBSPatchData<2, dimworld>::ControlPointType;
 
-//  const std::vector<std::vector<ControlPoint>> controlPoints
-//      = {
-//          {{.p = {0, 0.0, 0}, .w = 1}, {.p = {0, 1, 0}, .w = 1}, {.p = {0, 2, 0}, .w = 1}},
-//          {{.p = {5, 0.0, 0}, .w = 1}, {.p = {5, 1, 0}, .w = 1}, {.p = {5, 2, 0}, .w = 1}},
-//          {{.p = {10, 0.0, 0}, .w = 1}, {.p = {10, 1, 0}, .w = 1}, {.p = {10, 2, 0}, .w = 1}}};
-
   const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {0, 0, 0}, .w = 1}, {.p = {0, 1, 0}, .w = 1}}, {{.p = {12, 0, 0}, .w = 1}, {.p = {12, 1, 0}, .w = 1}}};
+      = {
+          {{.p = {0, 0.0, 0}, .w = 1}, {.p = {0, 1, 0}, .w = 1}, {.p = {0, 2, 0}, .w = 1}},
+          {{.p = {5, 0.0, 0}, .w = 1}, {.p = {5, 1, 0}, .w = 1}, {.p = {5, 2, 0}, .w = 1}},
+          {{.p = {10, 0.0, 0}, .w = 1}, {.p = {10, 1, 0}, .w = 1}, {.p = {10, 2, 0}, .w = 1}}};
+
+//  const std::vector<std::vector<ControlPoint>> controlPoints
+//      = {{{.p = {0, 0, 0}, .w = 1}, {.p = {0, 1, 0}, .w = 1}}, {{.p = {12, 0, 0}, .w = 1}, {.p = {12, 1, 0}, .w = 1}}};
 
   std::array<int, 2> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
 
@@ -285,9 +286,10 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
   const std::array<std::vector<double>, 2> knotSpans = {{{0, 0, 1, 1}, {0, 0, 1, 1}}};
 
   using ControlPoint = Dune::IGA::NURBSPatchData<2, dimworld>::ControlPointType;
-
+  const double b = 1;
+  const double L = 12;
   const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {0, 0, 0}, .w = 1}, {.p = {0, 1, 0}, .w = 1}}, {{.p = {12, 0, 0}, .w = 1}, {.p = {12, 1, 0}, .w = 1}}};
+      = {{{.p = {0, 0, 0}, .w = 1}, {.p = {0, b, 0}, .w = 1}}, {{.p = {L, 0, 0}, .w = 1}, {.p = {L, b, 0}, .w = 1}}};
 
   std::array<int, 2> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
 
@@ -298,8 +300,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
-//  for (int i = 0; i < 2; ++i)
-//    patchData = degreeElevate(patchData, i, 1);
+
 
   Dune::ParameterTree parameterSet;
   Dune::ParameterTreeParser::readINITree("/tmp/Ikarus/tests/src/shell.parset",
@@ -311,10 +312,14 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
   const auto loadFactor     = parameterSet.get<double>("loadFactor");
   const auto simulationFlag = parameterSet.get<int>("simulationFlag");
   const auto refine         = parameterSet.get<int>("refine");
+  const auto orderElevate         = parameterSet.get<std::array<int,2>>("orderElevate");
   const auto plotInPlaneRefine         = parameterSet.get<int>("plotInPlaneRefine");
-  auto grid = std::make_shared<Grid>(patchData);
+  const auto loadSteps         = parameterSet.get<int>("loadSteps");
 
-  grid->globalRefineInDirection(0,refine);
+  auto grid = std::make_shared<Grid>(patchData);
+  for (int i = 0; i < 2; ++i)
+    grid->degreeElevateInDirection(i,orderElevate[i]);
+
   auto gridView = grid->leafGridView();
 
 
@@ -359,7 +364,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
     return vLoad;
   };
 
-  auto boundaryLoad = [thickness, loadFactor]<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
+  auto boundaryLoad = [thickness, loadFactor,E,L]<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
     std::array<Eigen::Vector<double,3>,2> vLoad;
     auto& fext = vLoad[0];
     auto& mext = vLoad[1];
@@ -368,7 +373,8 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
     //    fext[1] = 0.01 * lamb;
     fext[2] = 2 * Dune::power(thickness, 3) * lamb * loadFactor*0;
     mext.setZero();
-    mext[0]=lamb*loadFactor;
+    const double pi         = std::numbers::pi;
+    mext[0]=2*pi*E*Dune::power(thickness, 3)/L*(1-thickness*thickness*pi*pi/(L*L))*lamb*loadFactor;
 //    std::cout<<"vLoad[0]"<<std::endl;
 //    std::cout<<vLoad[0]<<std::endl;
 //    std::cout<<"vLoad[1]"<<std::endl;
@@ -521,7 +527,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
   vtkWriter->setFileNamePrefix("TestRMShellREAL_EX");
 //  vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 3);
 
-  auto lc = Ikarus::LoadControl(tr, 1, {0, 1});
+  auto lc = Ikarus::LoadControl(tr, loadSteps, {0, 1});
   lc.subscribeAll(vtkWriter);
   const auto controlInfo = lc.run();
 
@@ -538,6 +544,17 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
 
 //  writer2.addPointData(Dune::Vtk::FunctionMod<GridView>(resultFunction), Dune::Vtk::FieldInfo{"cauchy", Dune::Vtk::RangeTypes::VECTOR, 6});
   writer2.addPointData(Dune::Vtk::FunctionMod<GridView>(resultFunction));
+  auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockedmidSurfaceBasis2, x);
+  auto disp2 = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockeddirectorBasis2, x);
+
+  auto f=[thickness](auto&& f1, auto&& f2, auto&& x)
+  {
+    return f1+x*f2* thickness / 2.0;
+  };
+
+  auto compf = Dune::Functions::ComposedGridFunctionMod(f,disp,disp2);
+  writer2.addPointData(compf, Dune::Vtk::FieldInfo{"displacment", Dune::Vtk::RangeTypes::VECTOR, 3});
+
   writer2.write("RMSHELL3D");
 
 

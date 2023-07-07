@@ -112,7 +112,7 @@ class ResultFunction3D : public Dune::VTKFunctionMod<typename ElementType::GridV
       if (resultRequirements_.getRequestedResult() != resultTypeMap.getSingleResult().first)
         DUNE_THROW(Dune::InvalidStateException, "The return result should be the requested one");
 
-      auto sigma = resultTypeMap.getSingleResult().second;
+      auto sigma = Ikarus::toVoigt(resultTypeMap.getSingleResult().second,false);
 
       return sigma.rows() * sigma.cols();
     } else

@@ -170,11 +170,13 @@ namespace Ikarus {
       // Internal forces
       Eigen::Matrix<ScalarType, 5, 3> bopMidSurfaceI;
       Eigen::Matrix<ScalarType, 5, 2> bopDirectorI;
-      std::cout<<"calculateVectorImpl"<<std::endl;
+
       for (int gpIndex=0; const auto & gp: rule) {
         const double zeta  = (2*gp.position()[2]-1)*thickness_/2.0;
         const int gpIndex2D= gpIndex/numberOfThicknessIntegrationPoints;
+
         const Dune::FieldVector<double,2> gp2DPos= {gp.position()[0],gp.position()[1]};
+        const auto intElement =geo.integrationElement(gp2DPos) * gp.weight() * 2 * thickness_ / 2.0;
         kin.t           = directorFunction.evaluate(gpIndex2D,Dune::on(Dune::DerivativeDirections::referenceElement));
         kin.t0          = directorReferenceFunction.evaluate(gpIndex2D,Dune::on(Dune::DerivativeDirections::referenceElement));
         kin.ud1andud2   = displacementFunction.evaluateDerivative(gpIndex2D, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
@@ -201,20 +203,18 @@ namespace Ikarus {
 
         const auto &Nd = this->localBasisMidSurface.evaluateJacobian(gpIndex2D);
         for (size_t i = 0; i < this->numNodeMidSurface; ++i) {
-          std::cout<<"bopMidSurfaceIForces"<<std::endl;
           bopMidSurfaceI= bopMembrane(kin, gpIndex2D, gp2DPos,jE, Nd, displacementFunction, i, zeta);
 
           force.template segment<3>(3*i) +=
-              bopMidSurfaceI.transpose()*S*geo.integrationElement(gp2DPos)*gp.weight()*2*thickness_/2.0;
+              bopMidSurfaceI.transpose()*S*intElement;
           // the first two fixes the change of the integration mapping from 0..1 to -1..1,
           // and the h/2 factor is the factor for the correct thickness
         }
         for (int i = 0; i < this->numNodeDirector; ++i) {
           const auto indexI = midSurfaceDofs + directorCorrectionDim * i;
-          std::cout<<"bopDirectorIForces"<<std::endl;
 
           bopDirectorI =bopDirector(kin, g1Andg2, gpIndex2D, directorFunction, i, zeta);
-          force.template segment<directorCorrectionDim>(indexI) += bopDirectorI.transpose() * S*geo.integrationElement(gp2DPos)*gp.weight()*2*thickness_/2.0;
+          force.template segment<directorCorrectionDim>(indexI) += bopDirectorI.transpose() * S*intElement;
         }
 
         ++gpIndex;
