@@ -35,7 +35,7 @@
 using Dune::TestSuite;
 
 auto NonLinearElasticityLoadControlNRandTRforKLShell() {
-  TestSuite t("NonLinearElasticityLoadControlNRandTRforKLShell ");
+  TestSuite t("NonLinearElasticityLoadControlNRandTRforKLShell");
   constexpr auto dimworld        = 3;
   const std::array<int, 2> order = {1, 1};
 
@@ -147,7 +147,7 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
 
   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(
       basis.flat(), d, 2);
-  vtkWriter->setFileNamePrefix("Test2DSolid");
+  vtkWriter->setFileNamePrefix("TestKLShell");
   vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 3);
 
   auto lc = Ikarus::LoadControl(tr, 1, {0, 1});
@@ -162,7 +162,5 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
 
 int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
-  //  const double E             = materialParameters.get<double>("E");
-  //  const double nu            = materialParameters.get<double>("nu");
   NonLinearElasticityLoadControlNRandTRforKLShell();
 }

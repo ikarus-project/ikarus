@@ -194,20 +194,19 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   auto resultFunction4  = ResultFunction(&fes, resReq, OwnResultFunction{});
   auto resultFunction4S = std::make_shared<decltype(resultFunction4)>(resultFunction4);
 
-  //  try {
-  //    auto resReq5 = Ikarus::ResultRequirements()
-  //                       .insertGlobalSolution(Ikarus::FESolutions::displacement, d)
-  //                       .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
-  //                       .addResultRequest(ResultType::linearStress);
-  //    auto resultFunction5 = std::make_shared<ResultFunction<ElementType>>(&fes, resReq5);
-  //    vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction5));
-  //    t.check(false) << "resultFunction5 should have failed for requesting linearStress here";
-  //  } catch (const Dune::NotImplemented&) {
-  //  }
-
   vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction4S));
 
   vtkWriter2.write("EndResult" + Dune::className<Grid>());
+  auto resReq5 = Ikarus::ResultRequirements()
+                     .insertGlobalSolution(Ikarus::FESolutions::displacement, d)
+                     .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
+                     .addResultRequest(ResultType::linearStress);
+  auto resultFunction5 = std::make_shared<ResultFunction<ElementType>>(&fes, resReq5);
+  try {
+    vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction5));
+    t.check(false) << "resultFunction5 should have failed for requesting linearStress here";
+  } catch (const Dune::NotImplemented&) {
+  }
 
   nonLinOp.template update<1>();
   t.check(controlInfo.success, "Successful result");
