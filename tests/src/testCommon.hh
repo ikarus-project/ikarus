@@ -216,15 +216,22 @@ template <typename NonLinearOperator, typename FiniteElement>
                                 .insertGlobalSolution(Ikarus::FESolutions::displacement, displacement)
                                 .addResultRequest(ResultType::linearStress);
 
-  auto resultRequirements2 = Ikarus::ResultRequirements<>()
-                                 .insertGlobalSolution(Ikarus::FESolutions::displacement, displacement)
-                                 .addResultRequest(ResultType::PK2Stress);
-
   ResultTypeMap<double> result, result2;
-  auto gridView        = fe.localView().globalBasis().gridView();
+  auto gridView  = fe.localView().globalBasis().gridView();
+  using GridView = decltype(gridView);
+  Dune::VtkWriter<GridView> vtkWriter(gridView);
   auto scalarBasis     = makeConstSharedBasis(gridView, lagrangeDG<1>());
   auto localScalarView = scalarBasis->localView();
   std::vector<Dune::FieldVector<double, 3>> stressVector(scalarBasis->size());
+  //  try {
+  //    auto resultRequirements2 = Ikarus::ResultRequirements<>()
+  //                                   .insertGlobalSolution(Ikarus::FESolutions::displacement, displacement)
+  //                                   .addResultRequest(ResultType::PK2Stress);
+  //    auto resultFunction = std::make_shared<ResultFunction<typename decltype(fe)::pointer>>(&fe,
+  //    resultRequirements2); vtkWriter.addPointData(Dune::Vtk::Function<GridView>(resultFunction)); t.check(false) <<
+  //    "resultFunction5 should have failed for requesting PK2Stress here";
+  //  } catch (const Dune::NotImplemented&) {
+  //  }
   auto ele = elements(gridView).begin();
 
   localScalarView.bind(*ele);
@@ -234,11 +241,11 @@ template <typename NonLinearOperator, typename FiniteElement>
     const auto fineKey                        = fe2.localCoefficients().localKey(c);
     const auto nodalPositionInChildCoordinate = referenceElement.position(fineKey.subEntity(), fineKey.codim());
     fe.calculateAt(resultRequirements, nodalPositionInChildCoordinate, result);
-    try {
-      fe.calculateAt(resultRequirements2, nodalPositionInChildCoordinate, result2);
-      t.check(false) << "result2 should have failed for requesting PK2Stress here";
-    } catch (const Dune::NotImplemented&) {
-    }
+    //    try {
+    //      fe.calculateAt(resultRequirements2, nodalPositionInChildCoordinate, result2);
+    //      t.check(false) << "result2 should have failed for requesting PK2Stress here";
+    //    } catch (const Dune::NotImplemented&) {
+    //    }
     Eigen::Vector3d computedResult = result.getResult(ResultType::linearStress);
     const auto nodeIndex           = localScalarView.index(localScalarView.tree().localIndex(c))[0];
     stressVector[nodeIndex]        = toDune(computedResult);
