@@ -444,46 +444,53 @@ namespace Ikarus {
 
       //  Array2D<double> EGl2(3,3);
       Eigen::Matrix3d PK2 ;
-      PK2<< S[0], S[2], S[3],
-          S[2], S[1], S[4],
-          S[3], S[4], 0.0;
+//      PK2<< S[0], S[2], S[3],
+//          S[2], S[1], S[4],
+//          S[3], S[4], 0.0;
 
-      Eigen::Matrix3d F,F0;
-      F0.col(0) = G1AndG2.col(0);
-      F0.col(1) = G1AndG2.col(1);
-      F0.col(2) = kin.t0;
-
-      //Local cartesische Ref G1contravariant = E1
-      F.col(0) = g1Andg2.col(0);
-      F.col(1) = g1Andg2.col(1);
-      F.col(2) = kin.t;
-      F = F*F0.inverse();
+      Eigen::Matrix3d J;
+      Eigen::Matrix3d j;
+      J<<G1AndG2.col(0),G1AndG2.col(1),kin.t0;
+      j<<g1Andg2.col(0),g1Andg2.col(1),kin.t;
 
 
-      const double detF = F.determinant();
-      std::cout<<"F"<<std::endl;
-      std::cout<<F<<std::endl;
-      std::cout<<"PK2"<<std::endl;
-      std::cout<<PK2<<std::endl;
 
-      Eigen::Matrix3d cauchy=1.0/detF*F*PK2*F.transpose();
-      std::cout<<cauchy<<std::endl;
-      Eigen::Matrix3d PK1=F*PK2;
+
+//      Eigen::Matrix3d PK1=F*PK2;
 
       //Transforming all stresses in the local cartesian coordinate system
-//      Eigen::Matrix3d J;
-      Eigen::Matrix3d j;
-//      J<<G1AndG2.col(0),G1AndG2.col(1),kin.t0;
-      j<<g1Andg2.col(0),g1Andg2.col(1),kin.t;
-//     const  Eigen::Matrix3d Jloc= orthonormalizeMatrixColumns(J);
-     const  Eigen::Matrix3d jloc= orthonormalizeMatrixColumns(j);
 
+//     const  Eigen::Matrix3d Jloc= orthonormalizeMatrixColumns(J);
+      const  Eigen::Matrix3d Jloc= orthonormalizeMatrixColumns(J);
+      const  Eigen::Matrix3d jloc= orthonormalizeMatrixColumns(j);
+      const  Eigen::Matrix3d F     = Jloc.transpose()*j*(J.inverse())*Jloc;
+      const double detF = F.determinant();
+
+      const auto &emod_ = this->fESettings.template request<double>("youngs_modulus");
+      const auto &nu_ = this->fESettings.template request<double>("poissons_ratio");
+      const double lambdaf = emod_*nu_/((1.0 + nu_)*(1.0 - 2.0*nu_));
+      const double mu = emod_/(2.0*(1.0 + nu_));
+      const double lambdbar = 2.0*lambdaf*mu/(lambdaf + 2.0*mu);
+      const Eigen::Matrix3d E = 0.5*(F.transpose()*F-Eigen::Matrix3d::Identity());
+      PK2= lambdbar* E.trace()*Eigen::Matrix3d::Identity()+2*mu*E;
 //      F     = Jloc.transpose()*kin.j*(kin.J.inverse())*Jloc;
-     auto facM=(j*jloc.inverse()).eval();
-      cauchy=facM.transpose()*cauchy*facM;
+//     auto facM=(j*jloc.inverse()).eval();
+//      cauchy=facM.transpose()*cauchy*facM;
+//      std::cout<<"cauchyT"<<std::endl;
+      Eigen::Matrix3d cauchy=1/detF*F*PK2*F.transpose();
+      const  Eigen::Matrix3d fac= jloc*Jloc.inverse();
+      cauchy=fac.transpose()*cauchy*fac;
+//      std::cout<<cauchy<<std::endl;
 //      PK1=Jloc.transpose()*PK1*Jloc;
 //      PK2=Jloc.transpose()*PK2*Jloc;
-
+//      std::cout<<"F"<<std::endl;
+//      std::cout<<F<<std::endl;
+//      std::cout<<"PK2"<<std::endl;
+//      std::cout<<PK2<<std::endl;
+//
+//
+//      std::cout<<"cauchy"<<std::endl;
+//      std::cout<<cauchy<<std::endl;
       stresses[0]= cauchy;
 //      stresses[1]= PK2;
 //      stresses[2]= PK1;

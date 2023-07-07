@@ -82,7 +82,7 @@ struct StressBasedShellRM;
     using DirectorVector                       = Dune::BlockVector<Dune::UnitVector<double, directorDim>>;
     using MultiTypeVector                      = Dune::TupleVector<MidSufaceVector, DirectorVector>;
 
-    using FERequirementType      = FErequirements<MultiTypeVector>;
+    using FERequirementType      = FErequirements<std::reference_wrapper<MultiTypeVector>>;
     using ResultRequirementsType = ResultRequirements<MultiTypeVector>;
     using LocalViewBlocked       = typename Basis::UntouchedBasis::LocalView;
     using LocalViewFlat          = typename Basis::FlatBasis::LocalView;

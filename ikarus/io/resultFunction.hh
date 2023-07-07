@@ -112,7 +112,8 @@ class ResultFunction3D : public Dune::VTKFunctionMod<typename ElementType::GridV
       if (resultRequirements_.getRequestedResult() != resultTypeMap.getSingleResult().first)
         DUNE_THROW(Dune::InvalidStateException, "The return result should be the requested one");
 
-      auto sigma = Ikarus::toVoigt(resultTypeMap.getSingleResult().second,false);
+//      auto sigma = Ikarus::toVoigt(resultTypeMap.getSingleResult().second,false);
+      auto sigma = resultTypeMap.getSingleResult().second;
 
       return sigma.rows() * sigma.cols();
     } else
@@ -139,7 +140,7 @@ class ResultFunction3D : public Dune::VTKFunctionMod<typename ElementType::GridV
     else {
       fes_->at(eleID).calculateAt(resultRequirements_, local, resultTypeMap);
       auto result = resultTypeMap.getSingleResult().second;
-      return Ikarus::toVoigt(result,false)(comp);
+      return comp<6? result(fromVoigt(comp)[0],fromVoigt(comp)[1]):0.0;
     }
   }
 
