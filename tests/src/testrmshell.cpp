@@ -552,7 +552,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
 //        auto resultFunction2 = std::make_shared<Dune::VTKFunctionMod<GridView>const>(resultFunction);
 
         writer2.addPointData(compf, Dune::Vtk::FieldInfo{"displacements", Dune::Vtk::RangeTypes::VECTOR, 3});
-        writer2.addPointData(resultFunction, Dune::Vtk::FieldInfo{"cauchy", Dune::Vtk::RangeTypes::TENSOR, 6});
+        writer2.addPointData(Dune::Vtk::FunctionMod<GridView>(resultFunction));
         //        std::cout<<"T4"<<std::endl;
         const std::string name3d= "PureBending3D"+std::to_string(step);
         std::cout<<name3d<<std::endl;

@@ -480,7 +480,7 @@ namespace Ikarus {
       Eigen::Matrix3d cauchy=1/detF*F*PK2*F.transpose();
       const  Eigen::Matrix3d fac= jloc*Jloc.inverse();
       cauchy=fac.transpose()*cauchy*fac;
-//      std::cout<<cauchy<<std::endl;
+      std::cout<<cauchy<<std::endl;
 //      PK1=Jloc.transpose()*PK1*Jloc;
 //      PK2=Jloc.transpose()*PK2*Jloc;
 //      std::cout<<"F"<<std::endl;
