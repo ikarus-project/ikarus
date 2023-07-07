@@ -177,6 +177,7 @@ auto checkFEByAutoDiff(std::string filename) {
 //    fext[1] = 0.01 * lamb;
     fext[2] = 4*lamb;
     mext.setZero();
+    mext[0]=lamb;
     return vLoad;
   };
 
@@ -319,6 +320,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
   auto grid = std::make_shared<Grid>(patchData);
   for (int i = 0; i < 2; ++i)
     grid->degreeElevateInDirection(i,orderElevate[i]);
+  grid->globalRefineInDirection(0,refine);
 
   auto gridView = grid->leafGridView();
 
@@ -549,7 +551,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
 
   auto f=[thickness](auto&& f1, auto&& f2, auto&& x)
   {
-    return f1+x*f2* thickness / 2.0;
+    return f1+(2*x-1)*f2* thickness / 2.0;
   };
 
   auto compf = Dune::Functions::ComposedGridFunctionMod(f,disp,disp2);
@@ -578,8 +580,8 @@ int main(int argc, char** argv) {
   //  const double E             = materialParameters.get<double>("E");
   //  const double nu            = materialParameters.get<double>("nu");
 
-//  checkFEByAutoDiff<RMSHELL>("RMSHELL");
-//  checkFEByAutoDiff<RMSHELLSB>("RMSHELLSB");
+  checkFEByAutoDiff<RMSHELL>("RMSHELL");
+  checkFEByAutoDiff<RMSHELLSB>("RMSHELLSB");
 
 //  checkFEByAutoDiff<KLSHELLSB>("KLSHELLSB");
   NonLinearElasticityLoadControlNRandTRforRMShell();

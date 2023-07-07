@@ -145,10 +145,12 @@ namespace Ikarus {
       if (not this->neumannBoundary and not this->neumannBoundaryLoad) return energy;
       forEachInterSectionIntegrationPoint(this->localView().element(),this->neumannBoundary,this->order,
                                           [&](auto& quadPos,auto&& globalPos,auto& intElement){
-                                            const auto neumannValue
-                                                = this->neumannBoundaryLoad(globalPos, lambda)[0];
+                                            const auto [fext,mext]
+                                                = this->neumannBoundaryLoad(globalPos, lambda);
                                             const auto u = displacementFunction.evaluate(quadPos);
-                                            energy -= neumannValue.dot(u) * intElement;
+                                            const auto t = directorFunction.evaluate(quadPos);
+                                            energy -= fext.dot(u) * intElement;
+                                            energy -= mext.dot(t) * intElement;
                                           });
       return energy;
     }
@@ -454,16 +456,19 @@ namespace Ikarus {
       F.col(2) = kin.t;
       F = F0.inverse()*F;
 
+
       const double detF = F.determinant();
 
       Eigen::Matrix3d cauchy=1.0/detF*F*PK2*F.transpose();
       Eigen::Matrix3d PK1=F*PK2;
 
       //Transforming all stresses in the local cartesian coordinate system
-      Eigen::Matrix3d J;
-      J<<g1Andg2.col(0),g1Andg2.col(1),kin.t;
+      Eigen::Matrix3d J,j;
+      J<<G1AndG2.col(0),G1AndG2.col(1),kin.t;
+      j<<g1Andg2.col(0),g1Andg2.col(1),kin.t;
      const  Eigen::Matrix3d Jloc= orthonormalizeMatrixColumns(J);
 
+      F     = Jloc.transpose()*kin.j*(kin.J.inverse())*Jloc;
       cauchy=Jloc.transpose()*cauchy*Jloc;
       PK1=Jloc.transpose()*PK1*Jloc;
       PK2=Jloc.transpose()*PK2*Jloc;
