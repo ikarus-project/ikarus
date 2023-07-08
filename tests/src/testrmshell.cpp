@@ -316,11 +316,17 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
   const auto orderElevate         = parameterSet.get<std::array<int,2>>("orderElevate");
   const auto plotInPlaneRefine         = parameterSet.get<int>("plotInPlaneRefine");
   const auto loadSteps         = parameterSet.get<int>("loadSteps");
+  const auto lowerDirectorOrder         = parameterSet.get<int>("lowerDirectorOrder");
+  const auto globalDegreeElevateBefore         = parameterSet.get<int>("globalDegreeElevateBefore");
+  const auto globalDegreeElevateAfter        = parameterSet.get<int>("globalDegreeElevateAfter");
 
   auto grid = std::make_shared<Grid>(patchData);
   for (int i = 0; i < 2; ++i)
     grid->degreeElevateInDirection(i,orderElevate[i]);
+  grid->globalDegreeElevate(globalDegreeElevateBefore);
   grid->globalRefineInDirection(0,refine);
+  grid->globalDegreeElevate(globalDegreeElevateAfter);
+
 
   auto gridView = grid->leafGridView();
 
@@ -340,7 +346,10 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
   feSettings.addOrAssign("simulationFlag", simulationFlag);
 
   auto scalarMidSurfBasis = nurbs();
-  auto scalaarDirectorBasis = nurbs();
+
+  auto scalaarDirectorBasis = Imp::NurbsPreBasisFactory<2, 3>();
+  if(lowerDirectorOrder>-1)
+    scalaarDirectorBasis= Imp::NurbsPreBasisFactory<2, 3>(gridView.impl().lowerOrderPatchData(lowerDirectorOrder));
   auto basis       = Ikarus::makeBasis(gridView, composite(power<3>(scalarMidSurfBasis, BlockedInterleaved()),power<2>(scalaarDirectorBasis, BlockedInterleaved()),
                                                            BlockedLexicographic{}));
 

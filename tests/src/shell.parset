@@ -1,9 +1,12 @@
 E = 1000
 nu = 0.0
-thickness = 1
+thickness = 1.0
 simulationFlag = 0
-refine = 3
+refine = 1
 loadFactor=1
-orderElevate= 0 0
-plotInPlaneRefine=1
+orderElevate= 0  0
+plotInPlaneRefine=2
 loadSteps=50
+lowerDirectorOrder=0
+globalDegreeElevateBefore=1
+globalDegreeElevateAfter=1
