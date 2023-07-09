@@ -112,7 +112,10 @@ class ResultFunction3D : public Dune::VTKFunctionMod<typename ElementType::GridV
       if (resultRequirements_.getRequestedResult() != resultTypeMap.getSingleResult().first)
         DUNE_THROW(Dune::InvalidStateException, "The return result should be the requested one");
 
-      auto sigma = Ikarus::toVoigt(resultTypeMap.getSingleResult().second,false);
+
+      auto sigma = resultTypeMap.getSingleResult().second;
+      if( resultTypeMap.getSingleResult().first== ResultType::cauchyStress or resultTypeMap.getSingleResult().first== ResultType::PK2Stress)
+        return 6;
 
       return sigma.rows() * sigma.cols();
     } else
@@ -139,7 +142,18 @@ class ResultFunction3D : public Dune::VTKFunctionMod<typename ElementType::GridV
     else {
       fes_->at(eleID).calculateAt(resultRequirements_, local, resultTypeMap);
       auto result = resultTypeMap.getSingleResult().second;
-      return Ikarus::toVoigt(result,false)(comp);
+//      auto sigma = resultTypeMap.getSingleResult().second;
+      if( resultTypeMap.getSingleResult().first== ResultType::cauchyStress or resultTypeMap.getSingleResult().first== ResultType::PK2Stress)
+        return Ikarus::toVoigt(result,false)(comp);
+      else if(result.rows()==1 and result.cols()==1)
+      return result(0,0);
+      else
+      {
+        const int cols =result.cols();
+        const int row_index = comp / cols;
+        const int    col_index = comp % cols;
+        return result(row_index,col_index);
+      }
     }
   }
 

@@ -79,7 +79,12 @@ namespace Ikarus {
     shearForces,
 membraneForcesPK2,
 bendingMomentsPK2,
-shearForcesPK2
+shearForcesPK2,
+detF,
+E11,
+zeta,
+refJacobian,
+curJacobian
   );
 
   // clang-format on

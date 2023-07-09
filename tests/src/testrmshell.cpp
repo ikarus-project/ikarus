@@ -538,12 +538,21 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
     //    std::cout<<m+(2*x-1)*(t-t0)* thickness / 2.0<<std::endl;
     return m+(2*x-1)*(t-t0)* thickness / 2.0;
   };
-  auto resReq = Ikarus::ResultRequirements< Ikarus::FErequirements<std::reference_wrapper<MultiTypeVector>>>()
-      .insertGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector, x)
-      .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
-      .addResultRequest(ResultType::cauchyStress);
-  auto director0 = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockeddirectorBasis2,  x0);
 
+  auto resReqPK2 = Ikarus::ResultRequirements< Ikarus::FErequirements<std::reference_wrapper<MultiTypeVector>>>()
+                    .insertGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector, x)
+                    .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
+                    .addResultRequest(ResultType::PK2Stress);
+  auto director0 = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockeddirectorBasis2,  x0);
+auto add3DResultFunction=[&](auto& writer2, auto&& resultType) {
+
+    auto resReq = Ikarus::ResultRequirements< Ikarus::FErequirements<std::reference_wrapper<MultiTypeVector>>>()
+                      .insertGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector, x)
+                      .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
+                      .addResultRequest(std::move(resultType));
+    auto resultFunction = std::make_shared<ResultFunction3D<ElementType>>(&fes, resReq);
+    writer2.addPointData(Dune::Vtk::FunctionMod<GridView>(resultFunction));
+  };
   auto addResultFunction=[&](auto& writer, auto&& resultType)
   {
     auto resReqN = Ikarus::ResultRequirements< Ikarus::FErequirements<std::reference_wrapper<MultiTypeVector>>>()
@@ -577,11 +586,20 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
 
         auto compf = Dune::Functions::ComposedGridFunctionMod(f,disp,director,director0);
         //        std::cout<<"T3"<<std::endl;
-        auto resultFunction = std::make_shared<ResultFunction3D<ElementType>>(&fes, resReq);
+//        auto resultFunction = std::make_shared<ResultFunction3D<ElementType>>(&fes, resReq);
+//        auto resultFunctionPK2 = std::make_shared<ResultFunction3D<ElementType>>(&fes, resReqPK2);
 //        auto resultFunction2 = std::make_shared<Dune::VTKFunctionMod<GridView>const>(resultFunction);
 
         writer2.addPointData(compf, Dune::Vtk::FieldInfo{"displacements", Dune::Vtk::RangeTypes::VECTOR, 3});
-        writer2.addPointData(Dune::Vtk::FunctionMod<GridView>(resultFunction));
+        add3DResultFunction(writer2,ResultType::cauchyStress);
+        add3DResultFunction(writer2,ResultType::PK2Stress);
+        add3DResultFunction(writer2,ResultType::detF);
+        add3DResultFunction(writer2,ResultType::E11);
+        add3DResultFunction(writer2,ResultType::zeta);
+        add3DResultFunction(writer2,ResultType::refJacobian);
+        add3DResultFunction(writer2,ResultType::curJacobian);
+//        writer2.addPointData(Dune::Vtk::FunctionMod<GridView>(resultFunction));
+//        writer2.addPointData(Dune::Vtk::FunctionMod<GridView>(resultFunctionPK2));
         //        std::cout<<"T4"<<std::endl;
         const std::string name3d= "PureBending3D"+std::to_string(step);
         std::cout<<name3d<<std::endl;

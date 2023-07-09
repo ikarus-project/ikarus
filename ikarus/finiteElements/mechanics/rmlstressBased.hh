@@ -49,6 +49,12 @@ namespace Ikarus {
 
     }
 
+    struct FirstOrderVariationVariables
+    {
+
+    };
+
+
     int numberOfThicknessIntegrationPoints;
 //    FESettings fESettings;
 //    size_t numberOfNodes{0};
@@ -433,7 +439,6 @@ namespace Ikarus {
       auto [_,epsV,kappaV,gammaV]                = this->computeMaterialAndStrains(gp2DPos,geo,displacementFunction,kin);
 
       const auto G = this->calc3DMetric(kin,zeta);
-      //        std::cout<<"G: "<<G<<std::endl;
       const auto Ginv = G.inverse().eval();
 
       const auto g1Andg2 = (kin.a1anda2+ zeta* kin.td1Andtd2).eval();
@@ -445,44 +450,19 @@ namespace Ikarus {
       const auto strainsV= (epsV+ zeta*kappaV+zeta*zeta*rhoV).eval();
       Eigen::Vector<double,5> strains;
       strains<< strainsV,gammaV;
-      const auto S = (C3D*strains).eval();
+//      const auto S = (C3D*strains).eval();
 
-      //  Array2D<double> EGl2(3,3);
       Eigen::Matrix3d PK2 ;
-//      PK2<< S[0], S[2], S[3],
-//          S[2], S[1], S[4],
-//          S[3], S[4], 0.0;
 
       Eigen::Matrix3d J;
       Eigen::Matrix3d j;
       J<<G1AndG2.col(0),G1AndG2.col(1),kin.t0;
       j<<g1Andg2.col(0),g1Andg2.col(1),kin.t;
 
-
-
-
-//      Eigen::Matrix3d PK1=F*PK2;
-
-      //Transforming all stresses in the local cartesian coordinate system
-
-//     std::cout<<J<<std::endl;
-
       const  Eigen::Matrix3d Jloc= orthonormalizeMatrixColumns(J);
-//      std::cout<<Jloc<<std::endl;
       const  Eigen::Matrix3d jloc= orthonormalizeMatrixColumns(j);
       const  Eigen::Matrix3d F     = j*(J.inverse());
 
-//      Eigen::Matrix3d F,F0;
-//      F0.col(0) = kin.G1;
-//      F0.col(1) = kin.G2;
-//      F0.col(2) = kin.t0;
-//
-//      //Local cartesische Ref G1contravariant = E1
-//      kin.F.col(0) = kin.g1;
-//      kin.F.col(1) = kin.g2;
-//      kin.F.col(2) = kin.t;
-
-//      Eigen::Matrix3d F = j*J.inverse();
       const double detF = F.determinant();
 
       const auto &emod_ = this->fESettings.template request<double>("youngs_modulus");
@@ -492,10 +472,7 @@ namespace Ikarus {
       const double lambdbar = 2.0*lambdaf*mu/(lambdaf + 2.0*mu);
       const Eigen::Matrix3d E = 0.5*(F.transpose()*F-Eigen::Matrix3d::Identity());
       PK2= lambdbar* E.trace()*Eigen::Matrix3d::Identity()+2*mu*E;
-//      F     = Jloc.transpose()*kin.j*(kin.J.inverse())*Jloc;
-//     auto facM=(j*jloc.inverse()).eval();
-//      cauchy=facM.transpose()*cauchy*facM;
-//      std::cout<<"cauchyT"<<std::endl;
+
       Eigen::Matrix3d cauchy=1/detF*F*PK2*F.transpose();
 //      const  Eigen::Matrix3d fac= jloc*Jloc.inverse();
       if(toIntegrate)
@@ -506,9 +483,10 @@ namespace Ikarus {
         const  Eigen::Matrix3d jlocC= orthonormalizeMatrixColumns(jC);
         cauchy=jlocC.transpose()*cauchy*jlocC;
 
-      }else
-      cauchy=jloc.transpose()*cauchy*jloc;
-//      std::cout<<cauchy<<std::endl;
+      }else {
+        cauchy = jloc.transpose() * cauchy * jloc;
+      }
+      //      std::cout<<cauchy<<std::endl;
 //      PK1=Jloc.transpose()*PK1*Jloc;
 //      PK2=Jloc.transpose()*PK2*Jloc;
 //      std::cout<<"F"<<std::endl;
@@ -522,19 +500,43 @@ namespace Ikarus {
       stresses[0]= cauchy;
       stresses[1]= PK2;
 //      stresses[2]= PK1;
-
-      return stresses;
+      double E11 = E(0,0);
+      return std::make_tuple(stresses,detF,E11,zeta,j,J);
     }
 
     void calculateAt(const ResultRequirementsType &req, const Dune::FieldVector<double, 3> &local,
                      ResultTypeMap<double> &result) const {
-      if (req.isResultRequested(ResultType::cauchyStress)) {
         typename ResultTypeMap<double>::ResultArray resultVector;
         resultVector.resize(3, 3);
-        auto res= calculateStresses(req.getFERequirements(),local,false);
-        resultVector =res[0];
-        result.insertOrAssignResult(ResultType::cauchyStress, resultVector);
-      }else
+        auto [res,detF,E11,zeta,j,J]= calculateStresses(req.getFERequirements(),local,false);
+        if(req.isResultRequested(ResultType::cauchyStress)) {
+          resultVector = res[0];
+          result.insertOrAssignResult(ResultType::cauchyStress, resultVector);
+        }else if(req.isResultRequested(ResultType::PK2Stress)) {
+          resultVector = res[1];
+          result.insertOrAssignResult(ResultType::PK2Stress, resultVector);
+        }else if(req.isResultRequested(ResultType::detF)) {
+          resultVector.resize(1,1);
+          resultVector(0,0) = detF;
+          result.insertOrAssignResult(ResultType::detF, resultVector);
+        }else if(req.isResultRequested(ResultType::E11)) {
+          resultVector.resize(1,1);
+          resultVector(0,0) = E11;
+          result.insertOrAssignResult(ResultType::E11, resultVector);
+        }else if(req.isResultRequested(ResultType::zeta)) {
+          resultVector.resize(1,1);
+          resultVector(0,0) = zeta;
+          result.insertOrAssignResult(ResultType::zeta, resultVector);
+        }else if(req.isResultRequested(ResultType::refJacobian)) {
+          resultVector.resize(3,3);
+          resultVector = J;
+          result.insertOrAssignResult(ResultType::refJacobian, resultVector);
+        }else if(req.isResultRequested(ResultType::curJacobian)) {
+          resultVector.resize(3,3);
+          resultVector = j;
+          result.insertOrAssignResult(ResultType::curJacobian, resultVector);
+        }
+      else
       DUNE_THROW(Dune::NotImplemented, "No results are implemented");
     }
 
@@ -618,8 +620,10 @@ namespace Ikarus {
         // the first two fixes the change of the integration mapping from 0..1 to -1..1,
         // and the h/2 factor is the factor for the correct thickness
 
-        const auto [ cauchy,PK2,PK1]   = calculateStresses(req.getFERequirements(),gp3DPos,true);
-
+        const auto [res,detF,E11,zetaS,jS,JS]   = calculateStresses(req.getFERequirements(),gp3DPos,true);
+        if(not Dune::FloatCmp::eq(zeta,zetaS))
+          DUNE_THROW(Dune::NotImplemented,"zetas differ!");
+        const auto [ cauchy,PK2,PK1] = res;
         Eigen::Matrix2d PK2_al_be= PK2.template block<2,2>(0,0);
         Eigen::Matrix2d cauchy_al_be= cauchy.template block<2,2>(0,0);
 //        const Matrix2d PK2_al_be                = make2x2Matrix(stresses[1][0],stresses[1][2],stresses[1][2],stresses[1][1]);
