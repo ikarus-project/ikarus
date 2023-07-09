@@ -76,7 +76,10 @@ namespace Ikarus {
     midsurface,
     membraneForces,
     bendingMoments,
-    shearForces
+    shearForces,
+membraneForcesPK2,
+bendingMomentsPK2,
+shearForcesPK2
   );
 
   // clang-format on
