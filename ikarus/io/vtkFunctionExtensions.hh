@@ -421,7 +421,7 @@ class FunctionMod
       : localFct_(std::forward<LF>(localFct))
       , name_(std::move(name))
   {
-    std::cout<<"(1)"<<std::endl;
+
     setComponents(std::move(components));
     setRangeType(getArg<Vtk::RangeTypes>(args..., Vtk::RangeTypes::UNSPECIFIED), components_.size());
     setDataType(getArg<Vtk::DataTypes>(args..., Vtk::DataTypes::FLOAT64));
@@ -444,7 +444,7 @@ class FunctionMod
   FunctionMod (LF&& localFct, std::string name, int ncomps, Args&&... args)
       : FunctionMod(std::forward<LF>(localFct), std::move(name), allComponents(ncomps),
                  std::forward<Args>(args)...)
-  {    std::cout<<"(2)"<<std::endl;}
+  { }
 
   /// (3) Construct from a LocalFunctionMod directly.
   /**
@@ -459,7 +459,7 @@ class FunctionMod
   FunctionMod (LF&& localFct, std::string name, Args&&... args)
       : FunctionMod(std::forward<LF>(localFct), std::move(name), sizeOf<R>(),
                  std::forward<Args>(args)...)
-  {    std::cout<<"(3)"<<std::endl;}
+  { }
 
   /// (4) Construct from a Vtk::FunctionMod
   template <class... Args>
@@ -469,7 +469,7 @@ class FunctionMod
                  getArg<int,unsigned int,long,unsigned long,std::vector<int>>(args..., fct.components_),
                  getArg<Vtk::RangeTypes>(args..., fct.rangeType_),
                  getArg<Vtk::DataTypes>(args..., fct.dataType_))
-  {    std::cout<<"(4)"<<std::endl;}
+  {  }
 
   /// (5) Construct from a GridFunctionMod
   /**
@@ -484,13 +484,13 @@ class FunctionMod
       disableCopyMove<FunctionMod, GF> = 0, IsGridFunctionMod<GF> = true>
   FunctionMod (GF&& fct, std::string name, Args&&... args)
       : FunctionMod(localFunctionMod(std::forward<GF>(fct)), std::move(name), std::forward<Args>(args)...)
-  {    std::cout<<"(5)"<<std::endl;}
+  { }
 
   /// (6) Constructor that forwards the number of components and data type to the other constructor
   template <class F>
   FunctionMod (F&& fct, Vtk::FieldInfo info, ...)
       : FunctionMod(std::forward<F>(fct), info.name(), info.size(), info.rangeType(), info.dataType())
-  {    std::cout<<"(6)"<<std::endl;}
+  { }
 
   /// (7) Automatically extract name and num components from GridFunctionMod if available
   template <class F, class... Args,
@@ -502,7 +502,7 @@ class FunctionMod
   explicit FunctionMod (F&& fct, ...)
       : FunctionMod(localFunctionMod(std::forward<F>(fct)), fct.name(), fct.numComponents(),
                  Vtk::RangeTypes::UNSPECIFIED, fct.dataType())
-  {    std::cout<<"(7)"<<std::endl;}
+  {    }
 
   /// (8) Construct from legacy VTKFunctionMod
   /**
@@ -512,7 +512,6 @@ class FunctionMod
       : localFct_(fct)
       , name_(fct->name())
   {
-    std::cout<<"(8)"<<std::endl;
     setComponents(fct->ncomps());
     setDataType(dataTypeOf(fct->precision()));
     setRangeType(rangeTypeOf(fct->ncomps()));

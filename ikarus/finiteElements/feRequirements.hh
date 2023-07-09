@@ -73,7 +73,10 @@ namespace Ikarus {
     PK2Stress,
     linearStress,
     director,
-    midsurface
+    midsurface,
+    membraneForces,
+    bendingMoments,
+    shearForces
   );
 
   // clang-format on

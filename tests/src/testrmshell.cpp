@@ -374,8 +374,10 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
 
     return vLoad;
   };
-
-  auto boundaryLoad = [thickness, loadFactor,E,L]<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
+  const double pi         = std::numbers::pi;
+  const double MomentLoad         = 2.0*pi*E*Dune::power(thickness, 3)/L/12.0*(1.0-thickness*thickness*pi*pi/(L*L));
+  std::cout<<"MomentLoad: "<<MomentLoad<<std::endl;
+  auto boundaryLoad = [thickness, loadFactor,E,L,MomentLoad]<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
     std::array<Eigen::Vector<double,3>,2> vLoad;
     auto& fext = vLoad[0];
     auto& mext = vLoad[1];
@@ -384,8 +386,8 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
     //    fext[1] = 0.01 * lamb;
     fext[2] = 2 * Dune::power(thickness, 3) * lamb * loadFactor*0;
     mext.setZero();
-    const double pi         = std::numbers::pi;
-    mext[1]=2.0*pi*E*Dune::power(thickness, 3)/L/12.0*(1.0-thickness*thickness*pi*pi/(L*L))*lamb*loadFactor;
+
+    mext[1]=MomentLoad*lamb*loadFactor;
 //    std::cout<<"vLoad[0]"<<std::endl;
 //    std::cout<<vLoad[0]<<std::endl;
 //    std::cout<<"vLoad[1]"<<std::endl;
@@ -549,10 +551,31 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
         auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockedmidSurfaceBasis2,  x);
         auto director = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockeddirectorBasis2,  x);
 
-        writer.addVertexData(disp, {"displacements", Dune::VTK::FieldInfo::Type::vector, 3});
-        writer.addVertexData(director, {"director", Dune::VTK::FieldInfo::Type::vector, 3});
+        writer.addPointData(disp, Dune::Vtk::FieldInfo{"displacements", Dune::VTK::FieldInfo::Type::vector, 3});
+        writer.addPointData(director, Dune::Vtk::FieldInfo{"director", Dune::VTK::FieldInfo::Type::vector, 3});
+        auto resReqN = Ikarus::ResultRequirements< Ikarus::FErequirements<std::reference_wrapper<MultiTypeVector>>>()
+            .insertGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector, x)
+            .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
+            .addResultRequest(ResultType::membraneForces);
+        auto resultFunctionMembrane = std::make_shared<ResultFunction<ElementType>>(&fes, resReqN);
+        writer.addPointData(Dune::Vtk::Function<GridView>(resultFunctionMembrane));
+
+        auto resReqM = Ikarus::ResultRequirements< Ikarus::FErequirements<std::reference_wrapper<MultiTypeVector>>>()
+            .insertGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector, x)
+            .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
+            .addResultRequest(ResultType::bendingMoments);
+        auto resultFunctionMoments = std::make_shared<ResultFunction<ElementType>>(&fes, resReqM);
+        writer.addPointData(Dune::Vtk::Function<GridView>(resultFunctionMoments));
+
+        auto resReqQ = Ikarus::ResultRequirements< Ikarus::FErequirements<std::reference_wrapper<MultiTypeVector>>>()
+            .insertGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector, x)
+            .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
+            .addResultRequest(ResultType::shearForces);
+        auto resultFunctionShear = std::make_shared<ResultFunction<ElementType>>(&fes, resReqQ);
+        writer.addPointData(Dune::Vtk::Function<GridView>(resultFunctionShear));
+
         writer.write(prefixString+ std::to_string(step));
-        Dune::VtkUnstructuredGridWriterMod writer2(dataCollector1, Dune::Vtk::FormatTypes::ASCII);
+        Dune::VtkUnstructuredGridWriterMod writer2(dataCollector1, Dune::Vtk::FormatTypes::ASCII,Dune::Vtk::DataTypes::FLOAT64);
 
 
         auto compf = Dune::Functions::ComposedGridFunctionMod(f,disp,director,director0);
