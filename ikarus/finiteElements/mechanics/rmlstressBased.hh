@@ -407,7 +407,7 @@ namespace Ikarus {
           }
 
     auto calculateStresses(const auto& par,
-        const Dune::FieldVector<double,3>& gp
+        const Dune::FieldVector<double,3>& gp, bool toIntegrate
     ) const
     {
       std::array<Eigen::Matrix<double,3,3>,3> stresses; //Cauchy,PK2,PK1
@@ -498,6 +498,15 @@ namespace Ikarus {
 //      std::cout<<"cauchyT"<<std::endl;
       Eigen::Matrix3d cauchy=1/detF*F*PK2*F.transpose();
 //      const  Eigen::Matrix3d fac= jloc*Jloc.inverse();
+      if(toIntegrate)
+      {
+        Eigen::Matrix3d jC;
+        jC<<      kin.a1anda2.col(0),kin.a1anda2.col(1),kin.t;
+
+        const  Eigen::Matrix3d jlocC= orthonormalizeMatrixColumns(jC);
+        cauchy=jlocC.transpose()*cauchy*jlocC;
+
+      }else
       cauchy=jloc.transpose()*cauchy*jloc;
 //      std::cout<<cauchy<<std::endl;
 //      PK1=Jloc.transpose()*PK1*Jloc;
@@ -522,7 +531,7 @@ namespace Ikarus {
       if (req.isResultRequested(ResultType::cauchyStress)) {
         typename ResultTypeMap<double>::ResultArray resultVector;
         resultVector.resize(3, 3);
-        auto res= calculateStresses(req.getFERequirements(),local);
+        auto res= calculateStresses(req.getFERequirements(),local,false);
         resultVector =res[0];
         result.insertOrAssignResult(ResultType::cauchyStress, resultVector);
       }else
@@ -577,7 +586,7 @@ namespace Ikarus {
 
         const double zeta  = (2*gppos[2]-1)*thickness/2.0;
         const Dune::FieldVector<double,2> gp2DPos= local;
-        const Dune::FieldVector<double,3> gp3DPos= {local[0],local[1],zeta};
+        const Dune::FieldVector<double,3> gp3DPos= {local[0],local[1],gppos[2]};
         kin.t           = directorFunction.evaluate(gp2DPos,Dune::on(Dune::DerivativeDirections::referenceElement));
         kin.t0          = directorReferenceFunction.evaluate(gp2DPos,Dune::on(Dune::DerivativeDirections::referenceElement));
         kin.ud1andud2   = displacementFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
@@ -609,7 +618,7 @@ namespace Ikarus {
         // the first two fixes the change of the integration mapping from 0..1 to -1..1,
         // and the h/2 factor is the factor for the correct thickness
 
-        const auto [ cauchy,PK2,PK1]   = calculateStresses(req.getFERequirements(),gp3DPos);
+        const auto [ cauchy,PK2,PK1]   = calculateStresses(req.getFERequirements(),gp3DPos,true);
 
         Eigen::Matrix2d PK2_al_be= PK2.template block<2,2>(0,0);
         Eigen::Matrix2d cauchy_al_be= cauchy.template block<2,2>(0,0);
