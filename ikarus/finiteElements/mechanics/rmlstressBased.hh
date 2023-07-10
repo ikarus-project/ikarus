@@ -503,7 +503,6 @@ namespace Ikarus {
       Eigen::Vector<double,6> strains6;
       strains<< strainsV,gammaV;
       strains6<<strains,0.0;
-//      const auto S = (C3D*strains).eval();
 
       Eigen::Matrix3d PK2 ;
 
@@ -541,20 +540,9 @@ namespace Ikarus {
       }else {
         cauchy = jloc.transpose() * cauchy * jloc;
       }
-      //      std::cout<<cauchy<<std::endl;
-//      PK1=Jloc.transpose()*PK1*Jloc;
-//      PK2=Jloc.transpose()*PK2*Jloc;
-//      std::cout<<"F"<<std::endl;
-//      std::cout<<F<<std::endl;
-//      std::cout<<"PK2"<<std::endl;
-//      std::cout<<PK2<<std::endl;
-//
-//
-//      std::cout<<"cauchy"<<std::endl;
-//      std::cout<<cauchy<<std::endl;
+
       stresses[0]= cauchy;
       stresses[1]= PK2;
-//      stresses[2]= PK1;
       double E11 = E(0,0);
       return std::make_tuple(stresses,detF,E11,zeta,j,J,gp2DPos);
     }
@@ -626,9 +614,6 @@ namespace Ikarus {
           directorReferenceFunction]
           = this->template createFunctions<double>(req.getFERequirements());
 
-//      Vector4d NPK2    = Vector4d::Zero();
-//      Vector4d MPK2    = Vector4d::Zero();
-//      Vector2d QPK2    = Vector2d::Zero();
       Eigen::Matrix2d NCauchy = Eigen::Matrix2d::Zero();
       Eigen::Matrix2d MCauchy = Eigen::Matrix2d::Zero();
       Eigen::Vector2d QCauchy = Eigen::Vector2d::Zero();
@@ -636,9 +621,7 @@ namespace Ikarus {
       Eigen::Matrix2d NPK2 = Eigen::Matrix2d::Zero();
       Eigen::Matrix2d MPK2 = Eigen::Matrix2d::Zero();
       Eigen::Vector2d QPK2 = Eigen::Vector2d::Zero();
-//      Vector4d NPK1    = Vector4d::Zero();
-//      Vector4d MPK1    = Vector4d::Zero();
-//      Vector2d QPK1    = Vector2d::Zero();
+
       KinematicVariables<double> kin;
       std::cout<<"Num GPs "<<oneDRule.size()<<std::endl;
       for (auto& gP : oneDRule)
@@ -649,32 +632,6 @@ namespace Ikarus {
         const double zeta  = (2*gppos[2]-1)*thickness/2.0;
         const Dune::FieldVector<double,2> gp2DPos= local;
         const Dune::FieldVector<double,3> gp3DPos= {local[0],local[1],gppos[2]};
-//        kin.t           = directorFunction.evaluate(gp2DPos,Dune::on(Dune::DerivativeDirections::referenceElement));
-//        kin.t0          = directorReferenceFunction.evaluate(gp2DPos,Dune::on(Dune::DerivativeDirections::referenceElement));
-//        kin.ud1andud2   = displacementFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
-//        kin.A1andA2     = Dune::toEigen(geo.jacobianTransposed(gp2DPos)).transpose();
-//        kin.a1anda2     = kin.A1andA2+ kin.ud1andud2;
-//        kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
-//        kin.td1Andtd2   = directorFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
-//        const Eigen::Matrix<double,2,3> jE = kin.a1anda2.transpose();
-//
-//
-//         auto g1Andg2 = (kin.a1anda2+ zeta* kin.td1Andtd2).eval();
-//         auto G1AndG2 = (kin.A1andA2+ zeta* kin.t0d1Andt0d2).eval();
-//
-//        const double detz     = ( g1Andg2.col(0).cross(g1Andg2.col(1)).dot(kin.t)) / (kin.a1anda2.col(0).cross(kin.a1anda2.col(1))).norm();
-//        const double detZ     = ( G1AndG2.col(0).cross(G1AndG2.col(1)).dot(kin.t)) / (kin.A1andA2.col(0).cross(kin.A1andA2.col(1))).norm();
-
-
-//        kin.t           = directorFunction.evaluate(gp2DPos,Dune::on(Dune::DerivativeDirections::referenceElement));
-//        kin.t0          = directorReferenceFunction.evaluate(gp2DPos,Dune::on(Dune::DerivativeDirections::referenceElement));
-//        kin.ud1andud2   = displacementFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
-//        kin.A1andA2     = Dune::toEigen(geo.jacobianTransposed(gp2DPos)).transpose();
-//        kin.a1anda2     = kin.A1andA2+ kin.ud1andud2;
-//        kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
-//        kin.td1Andtd2   = directorFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
-//         g1Andg2 = (kin.a1anda2+ zeta* kin.td1Andtd2).eval();
-//         G1AndG2 = (kin.A1andA2+ zeta* kin.t0d1Andt0d2).eval();
 
         const double fac_gp = gpweight * thickness * 0.5*2;
         // the first two fixes the change of the integration mapping from 0..1 to -1..1,
@@ -686,64 +643,9 @@ namespace Ikarus {
         const auto [ cauchy,PK2,PK1] = res;
         Eigen::Matrix2d PK2_al_be= PK2.template block<2,2>(0,0);
         Eigen::Matrix2d cauchy_al_be= cauchy.template block<2,2>(0,0);
-//        const Matrix2d PK2_al_be                = make2x2Matrix(stresses[1][0],stresses[1][2],stresses[1][2],stresses[1][1]);
-//        const Matrix2d PK1_al_be                = make2x2Matrix(stresses[2][0],stresses[2][2],stresses[2][2],stresses[2][1]); //eigentlich unsymmetrisch
 
         const Eigen::Vector2d cauchy_al_3              = cauchy.template block<2,1>(0,2);
         const Eigen::Vector2d PK2_al_3              = PK2.template block<2,1>(0,2);
-//        const Vector2d PK2_al_3                 = stresses[1].segment<2>(3);
-//        const Vector2d PK1_al_3                 = stresses[2].segment<2>(3);
-
-//        Eigen::Vector2d ga_la;
-//        ga_la<< kin.g1.dot(kin.t),kin.g2.dot(kin.t);
-//        ga_la<< kin.a1().dot(kin.t),kin.a2().dot(kin.t);
-
-        ////////////////////////////////
-        //PK2 Resultants
-//        const double detz0    = ( kin.G1.cross(kin.G2).dot(kin.t0)) / (kin.A1.cross(kin.A2)).norm();
-//
-//        const double dVC      = kin.A1.cross(kin.A2).dot(kin.t0);
-//        const Vector3d A1cont = 1 / dVC * kin.A2.cross(kin.t0);
-//        const Vector3d A2cont = 1 / dVC * kin.t0.cross(kin.A1);
-
-        /** Referenz Direktor krümmungen ähnlich zweite Fundamentalfrom */
-//        Matrix2d hat_Be_La;
-//        hat_Be_La <<kin.t0d1.dot(A1cont), kin.t0d1.dot(A2cont),
-//            kin.t0d2.dot(A1cont), kin.t0d2.dot(A2cont);
-//
-//        //PK2-Membrankräfte, Momente, Querkräfte
-//        NPK2 += fac_gp * detz0 * (PK2_al_be - zeta * PK2_al_be * hat_Be_La).reshaped();
-//        MPK2 +=  fac_gp * detz0 * zeta * ( PK2_al_be - zeta * PK2_al_be * hat_Be_La).reshaped();
-//        QPK2 +=  fac_gp * detz0 * (PK2_al_3);
-
-        ////////////////////////////////
-        //Cauchy Resultants
-
-
-//        const double dvC      = kin.a1anda2.col(0).cross(kin.a1anda2.col(1)).dot(kin.t);
-//        const double dVC      = kin.A1andA2.col(0).cross(kin.A1andA2.col(1)).dot(kin.t0);
-//        const Eigen::Vector3d a1cont = 1 / dvC * kin.a1anda2.col(1).cross(kin.t);
-//        const Eigen::Vector3d A1cont = 1 / dVC * kin.A1andA2.col(1).cross(kin.t0);
-//        const Eigen::Vector3d a2cont = 1 / dvC * kin.t.cross(kin.a1anda2.col(0));
-//        const Eigen::Vector3d A2cont = 1 / dVC * kin.t0.cross(kin.A1andA2.col(0));
-//
-//        /** Aktuelle Direktor krümmungen ähnlich zweite Fundamentalfrom */
-//        Eigen::Matrix2d bhat_be_la;
-//        bhat_be_la <<kin.td1Andtd2.col(0).dot(a1cont), kin.td1Andtd2.col(0).dot(a2cont),
-//            kin.td1Andtd2.col(1).dot(a1cont), kin.td1Andtd2.col(1).dot(a2cont);
-//
-//        Eigen::Matrix2d Bhat_be_la;
-//        Bhat_be_la <<kin.t0d1Andt0d2.col(0).dot(A1cont), kin.t0d1Andt0d2.col(0).dot(A2cont),
-//            kin.t0d1Andt0d2.col(1).dot(A1cont), kin.t0d1Andt0d2.col(1).dot(A2cont);
-
-        //Cauchy-Membrankräfte, Momente, Querkräfte
-//        NCauchy +=  fac_gp * detz * (cauchy_al_be - zeta * cauchy_al_be * bhat_be_la);
-//        MCauchy +=  fac_gp * detz * (zeta *cauchy_al_be - zeta * cauchy_al_be * bhat_be_la);
-//        QCauchy +=  fac_gp * detz * (cauchy_al_3 - zeta * cauchy_al_be * bhat_be_la * ga_la);
-//
-//        NPK2 +=  fac_gp * detz * (PK2_al_be - zeta * PK2_al_be * Bhat_be_la);
-//        MPK2 +=  fac_gp * detz * (zeta *PK2_al_be - zeta * PK2_al_be * Bhat_be_la);
-//        QPK2 +=  fac_gp * detz * (PK2_al_3);
 
         NCauchy +=  fac_gp *  cauchy_al_be ;
         MCauchy +=  fac_gp *  zeta *cauchy_al_be ;
@@ -752,12 +654,6 @@ namespace Ikarus {
         NPK2 +=  fac_gp * PK2_al_be ;
         MPK2 +=  fac_gp * zeta *PK2_al_be ;
         QPK2 +=  fac_gp *PK2_al_3;
-
-        ////////////////////////////////
-        //PK1-Membrankräfte, Momente, Querkräfte
-//        NPK1 +=  fac_gp * detz0 * (PK1_al_be- zeta * PK1_al_be * hat_Be_La).reshaped();
-//        MPK1 +=  fac_gp * detz0 * zeta *(PK1_al_be - zeta * PK1_al_be * hat_Be_La).reshaped();
-//        QPK1 +=  fac_gp * detz0 * (PK1_al_3);
       }
       typename ResultTypeMap<double>::ResultArray resultVector;
 
@@ -786,29 +682,7 @@ namespace Ikarus {
         resultVector=QPK2;
         result.insertOrAssignResult(ResultType::shearForcesPK2, resultVector);
       }
-
     }
-
-//    Acurv = t^+ . Acart . t   ->    AcurvVoigt = T.AcartVoigt
-//    auto getMatrixTransformMatrixForVoigtVector(
-//        const Eigen::Matrix3d& t
-//    )const
-//    {
-//      Eigen::Matrix<double,6,6> T;
-//      T<< t(0,0)*t(0,0),   t(1,0)*t(1,0),   t(2,0)*t(2,0),               t(2,0)*t(1,0),               t(2,0)*t(0,0),
-//          t(1,0)*t(0,0),
-//          t(0,1)*t(0,1),   t(1,1)*t(1,1),   t(2,1)*t(2,1),               t(2,1)*t(1,1),               t(2,1)*t(0,1),
-//          t(1,1)*t(0,1),
-//          t(0,2)*t(0,2),   t(1,2)*t(1,2),   t(2,2)*t(2,2),               t(2,2)*t(1,2),               t(2,2)*t(0,2),
-//          t(1,2)*t(0,2),
-//          2*t(0,1)*t(0,2), 2*t(1,1)*t(1,2), 2*t(2,1)*t(2,2), t(1,1)*t(2,2)+t(1,2)*t(2,1), t(0,1)*t(2,2)+t(0,2)*t(2,1), t(0,1)*t(1,2)+t(0,2)*t(1,
-//                                                                                                                                              1),
-//          2*t(0,0)*t(0,2), 2*t(1,0)*t(1,2), 2*t(2,0)*t(2,2), t(1,0)*t(2,2)+t(1,2)*t(2,0), t(0,0)*t(2,2)+t(0,2)*t(2,0), t(0,0)*t(1,2)+t(0,2)*t(1,
-//                                                                                                                                              0),
-//          2*t(0,0)*t(0,1), 2*t(1,0)*t(1,1), 2*t(2,0)*t(2,1), t(1,0)*t(2,1)+t(1,1)*t(2,0), t(0,0)*t(2,1)+t(0,1)*t(2,0), t(0,0)*t(1,1)+t(0,1)*t(1,
-//                                                                                                                                              0);
-//      return T;
-//    }
   };
 
 
