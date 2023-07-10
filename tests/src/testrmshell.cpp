@@ -312,7 +312,8 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
   const auto simulationFlag            = parameterSet.get<int>("simulationFlag");
   const auto refine                    = parameterSet.get<int>("refine");
   const auto orderElevate              = parameterSet.get<std::array<int, 2>>("orderElevate");
-  const auto plotInPlaneRefine         = parameterSet.get<int>("plotInPlaneRefine");
+  const auto plot3drefine         = parameterSet.get<int>("plot3drefine");
+  const auto inPlaneRefine         = parameterSet.get<int>("inPlaneRefine");
   const auto loadSteps                 = parameterSet.get<int>("loadSteps");
   const auto lowerDirectorOrder        = parameterSet.get<int>("lowerDirectorOrder");
   const auto globalDegreeElevateBefore = parameterSet.get<int>("globalDegreeElevateBefore");
@@ -527,7 +528,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
                           power<3>(scalaarDirectorBasis, BlockedInterleaved()), BlockedLexicographic{}));
   auto blockedmidSurfaceBasis2 = Dune::Functions::subspaceBasis(basis3D.untouched(), Dune::Indices::_0);
   auto blockeddirectorBasis2   = Dune::Functions::subspaceBasis(basis3D.untouched(), Dune::Indices::_1);
-  Dune::Vtk::Shell3DDataCollector dataCollector1(gridView, thickness, Dune::RefinementIntervals(plotInPlaneRefine));
+  Dune::Vtk::Shell3DDataCollector dataCollector1(gridView, thickness, Dune::RefinementIntervals(plot3drefine));
   auto f = [thickness](auto&& m, auto&& t, auto&& t0, auto&& x) {
     //    std::cout<<"m"<<std::endl;
     //    std::cout<<m<<std::endl;
@@ -613,13 +614,15 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
             writer2.write(name3d);
             //        std::cout<<"T5"<<std::endl;
           },
-          2);
+          inPlaneRefine);
   vtkWriter->setFileNamePrefix("PureBending");
   //  vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 3);
 
   auto lc = Ikarus::LoadControl(tr, loadSteps, {0, 1});
   lc.subscribeAll(vtkWriter);
   const auto controlInfo = lc.run();
+
+  auto localView= basis.flat().localView();
 
   auto calculateL2Error =
       [&](auto& feFunction, auto& analyticFuntion) {
@@ -632,40 +635,50 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
           localView.bind(ele);
           localw.bind(ele);
           localwAna.bind(ele);
-          const auto geo   = localView.element().geometry();
+          const auto geo   = ele.geometry();
           const auto& rule = Dune::QuadratureRules<double, 2>::rule(
-              ele.type(), 3 * localView.tree().finiteElement().localBasis().order());
+              ele.type(), 3 * localView.tree().child(Dune::Indices::_0,0).finiteElement().localBasis().order());
           for (auto gp : rule) {
             const auto gpGlobalPos = geo.global(gp.position());
 
             const auto w_ex = localwAna(gp.position());
             const auto w_fe = localw(gp.position());
-            if constexpr (std::is_same_v<decltype(w_ex), Dune::FieldVector<double, 3>>)
-              l2_error += (w_ex - w_fe).two_norm() * ele.geometry().integrationElement(gp.position()) * gp.weight();
-            else
-              l2_error += Dune::power(w_ex - w_fe, 2) * ele.geometry().integrationElement(gp.position()) * gp.weight();
+            for (int i = 0; i < w_ex.size(); ++i) {
+              l2_error += Dune::power((w_ex[i] - w_fe[i]),2) * geo.integrationElement(gp.position()) * gp.weight();
+            }
+//            else
+//              l2_error += Dune::power(w_ex - w_fe, 2) * geo.integrationElement(gp.position()) * gp.weight();
           }
         }
         return l2_error;
-      }
+      };
 
   auto n11Ana
-      = Dune::Functions::makeAnalyticGridViewFunction([](auto x) { return 0; }, gridView);
-  auto m11Ana  = Dune::Functions::makeAnalyticGridViewFunction([&](auto x) { return MomentLoad; }, gridView);
-  auto q13Ana  = Dune::Functions::makeAnalyticGridViewFunction([](auto x) { return 0; }, gridView);
+      = Dune::Functions::makeAnalyticGridViewFunction([](auto x) {
+          Dune::FieldVector<double,4> n;
+          n=0;
+          return n; }, gridView);
+  auto m11Ana  = Dune::Functions::makeAnalyticGridViewFunction([&](auto x) { Dune::FieldVector<double,4> n;
+    n=0;
+    n[0]=MomentLoad;
+    return n; }, gridView);
+  auto q13Ana  = Dune::Functions::makeAnalyticGridViewFunction([](auto x) { Dune::FieldVector<double,2> n;
+    n=0;
+    return n;
+  }, gridView);
 
   const double R = sqrt(-pi*pi*thickness*thickness + L*L)/(2.0*pi);
   auto dispAna = Dune::Functions::makeAnalyticGridViewFunction(
       [&](auto x) {
         const double alpha = x[0] / L;
 
-        return Dune::FieldVector({R * sin(alpha) - alpha * L / (2 * pi), 0, R * cos(alpha) - R});
+        return Dune::FieldVector<double,3>({R * sin(alpha) - alpha * L / (2 * pi), 0, R * cos(alpha) - R});
       },
       gridView);
 
-  auto n11 =createResultFunction(ResultType::membraneForces);
-  auto m11 = createResultFunction(ResultType::bendingMoments);
-  auto q13 =createResultFunction(ResultType::shearForces);
+  auto n11 =Dune::Vtk::Function<GridView>(createResultFunction(ResultType::membraneForces));
+  auto m11 = Dune::Vtk::Function<GridView>(createResultFunction(ResultType::bendingMoments));
+  auto q13 =Dune::Vtk::Function<GridView>(createResultFunction(ResultType::shearForces));
 
   std::cout<<std::setprecision(16)<< "Shear Forces error: "<<calculateL2Error(q13,q13Ana)<<std::endl;
   std::cout<<std::setprecision(16)<< "Membrane Forces error: "<<calculateL2Error(n11,n11Ana)<<std::endl;

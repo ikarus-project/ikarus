@@ -12,15 +12,16 @@
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 
 #include <spdlog/spdlog.h>
-#include <dune/vtk/datacollectors/discontinuousdatacollector.hh>
+#include <ikarus/io/shell2DDataCollector.hh>
 
 template <typename Basis, typename SolutionVectorType>  // Check basis
 class ControlSubsamplingVertexVTKWriter : public IObserver<ControlMessages> {
 
+  using DC = Dune::Vtk::Shell2DDataCollector<typename Basis::GridView>;
 public:
   template< typename FunctionType>
   ControlSubsamplingVertexVTKWriter(const Basis& p_basis, const SolutionVectorType& sol,FunctionType&& p_func, int refinementLevels = 0)
-      : basis{&p_basis}, vtkWriter(p_basis.gridView(),Dune::Vtk::FormatTypes::ASCII,Dune::Vtk::DataTypes::FLOAT64), solution{&sol}, func{p_func} {}
+      : basis{&p_basis}, vtkWriter(std::make_shared<DC>(p_basis.gridView(),Dune::refinementLevels(refinementLevels)),Dune::Vtk::FormatTypes::ASCII,Dune::Vtk::DataTypes::FLOAT64), solution{&sol}, func{p_func} {}
 
 
   auto setFileNamePrefix(std::string&& p_name) { prefixString = std::move(p_name); }
@@ -42,7 +43,7 @@ public:
 
 private:
   Basis const* basis;
-  using VtkWriter = Dune::VtkUnstructuredGridWriter<typename Basis::GridView,Dune::Vtk::DiscontinuousDataCollector<typename Basis::GridView>>;
+  using VtkWriter = Dune::VtkUnstructuredGridWriter<typename Basis::GridView,DC>;
   VtkWriter vtkWriter;
   SolutionVectorType const* solution;
   int step{0};

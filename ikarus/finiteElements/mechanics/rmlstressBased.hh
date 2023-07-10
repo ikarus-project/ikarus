@@ -459,32 +459,7 @@ namespace Ikarus {
 
       const auto a1anda2T= (Dune::viewAsEigenMatrixAsDynFixed(displacements).transpose()*Nd).eval();
 
-//      const auto nurbs= this->geo_->impl().nurbs();
-//      const auto localInSpan              = this->geo_->impl().localToSpan(gp2DPos);
-//      const auto basisFunctionDerivatives = nurbs.basisFunctionDerivatives(localInSpan, 1);
-//      const auto& cpNet= geo.impl().controlPoints();
-//      Eigen::Matrix<double,3,2> a1anda2T2;
-////      std::cout<< "this->geo_->scaling_"<<std::endl;
-////      std::cout<< this->geo_->impl().scaling_[0]<<" "<<this->geo_->impl().scaling_[1]<<std::endl;
-////      std::cout<< "this->geo_->offset_"<<std::endl;
-////      std::cout<< this->geo_->impl().offset_[0]<<" "<<this->geo_->impl().offset_[1]<<std::endl;
-//      for (int dir = 0; dir < 2; ++dir) {
-//        std::array<unsigned int, 2> ithVec{};
-//        ithVec[dir] = 1;
-//        a1anda2T2.col(dir)          = toEigen(Dune::IGA::dot(basisFunctionDerivatives.get(ithVec), cpNet));
-//        a1anda2T2.col(dir)   *= this->geo_->impl().scaling_[dir];  // transform back to 0..1 domain
-//      }
       kin.a1anda2   = midSurface.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
-//      if(not a1anda2T.isApprox(kin.a1anda2))
-//        DUNE_THROW(Dune::NotImplemented,"a1anda2 differ!"<<"kin.a1anda2\n"<<kin.a1anda2<<"\n"<<"a1anda2T\n"<<a1anda2T);
-
-//      if(not a1anda2T2.isApprox(kin.a1anda2))
-//        DUNE_THROW(Dune::NotImplemented,"a1anda2 differ!"<<"kin.a1anda2\n"<<kin.a1anda2<<"\n"<<"a1anda2T2\n"<<a1anda2T2);
-//      std::cout<<"kin.a1anda2"<<std::endl;
-//      std::cout<<kin.a1anda2<<std::endl;
-//      std::cout<<"kin.A1andA2"<<std::endl;
-//      std::cout<<kin.A1andA2<<std::endl;
-
 
       const Eigen::Matrix<double,2,3> jE = kin.a1anda2.transpose();
       auto [_,epsV,kappaV,gammaV]                = this->computeMaterialAndStrains(gp2DPos,geo,displacementFunction,kin);
@@ -528,7 +503,6 @@ namespace Ikarus {
       PK2= lambdbar* E.trace()*Eigen::Matrix3d::Identity()+2*mu*E;
 
       Eigen::Matrix3d cauchy=1/detF*F*PK2*F.transpose();
-//      const  Eigen::Matrix3d fac= jloc*Jloc.inverse();
       if(toIntegrate)
       {
         Eigen::Matrix3d jC;
@@ -623,7 +597,6 @@ namespace Ikarus {
       Eigen::Vector2d QPK2 = Eigen::Vector2d::Zero();
 
       KinematicVariables<double> kin;
-      std::cout<<"Num GPs "<<oneDRule.size()<<std::endl;
       for (auto& gP : oneDRule)
       {
         const auto& gppos =gP.position();
@@ -638,8 +611,7 @@ namespace Ikarus {
         // and the h/2 factor is the factor for the correct thickness
 
         const auto [res,detF,E11,zetaS,jS,JS,gp2DPosS]   = calculateStresses(req.getFERequirements(),gp3DPos,true);
-        if(not Dune::FloatCmp::eq(zeta,zetaS))
-          DUNE_THROW(Dune::NotImplemented,"zetas differ!");
+
         const auto [ cauchy,PK2,PK1] = res;
         Eigen::Matrix2d PK2_al_be= PK2.template block<2,2>(0,0);
         Eigen::Matrix2d cauchy_al_be= cauchy.template block<2,2>(0,0);
