@@ -23,7 +23,7 @@
 #include <ikarus/utils/tensorproductquadrule.hh>
 namespace Ikarus {
 
-
+  constexpr bool secondOrderBending = true;
   template<typename ResultantBasedShell>
   struct StressBasedShellRM : private ResultantBasedShell
   {
@@ -38,7 +38,8 @@ namespace Ikarus {
 
       const auto& twoDRule = Dune::QuadratureRules<double,2>::rule(Dune::GeometryTypes::quadrilateral,this->order);
       const auto& oneDRule = Dune::QuadratureRules<double,1>::rule(Dune::GeometryTypes::line,4);
-
+//      std::cout<<"oneDRule size "<<oneDRule.size()<<std::endl;
+//      std::cout<<"oneDRule size "<<Dune::QuadratureRules<double,1>::rule(Dune::GeometryTypes::line,3).size()<<std::endl;
       numberOfThicknessIntegrationPoints = oneDRule.size();
       rule = Ikarus::tensorProductQuadrature(twoDRule,oneDRule);
 //      fESettings = ResultantBasedShell::getfFESettings();
@@ -46,6 +47,7 @@ namespace Ikarus {
 //      numberOfNodes = ResultantBasedShell::getNumberOfNodes();
 //      membraneStrain = ResultantBasedShell::getMembraneStrain();
 //      std::cout<<"Constructor: "<<rule.size()<<std::endl;
+      secondOrderBending = this->fESettings.template request<bool>("secondOrderBending");
 
     }
 
@@ -56,6 +58,7 @@ namespace Ikarus {
 
 
     int numberOfThicknessIntegrationPoints;
+    bool secondOrderBending=true;
 //    FESettings fESettings;
 //    size_t numberOfNodes{0};
 //    int order{};
@@ -134,7 +137,7 @@ namespace Ikarus {
         Eigen::Vector3<ScalarType> rhoV;
 
         rhoV<< 0.5*(kin.td1().squaredNorm()-kin.t0d1().squaredNorm()),0.5*(kin.td2().squaredNorm()-kin.t0d2().squaredNorm()),kin.td1().dot(kin.td2())-kin.t0d1().dot(kin.t0d2());
-        const auto strainsV= (epsV+ zeta*kappaV+0*zeta*zeta*rhoV).eval();
+        const auto strainsV= (epsV+ zeta*kappaV+secondOrderBending*zeta*zeta*rhoV).eval();
         Eigen::Vector<ScalarType,5> strains;
         strains<< strainsV,gammaV;
         const ScalarType energyVal = 0.5*strains.dot(C3D*strains);
@@ -209,7 +212,7 @@ namespace Ikarus {
         const auto C3D = this->materialTangent(Ginv);
         Eigen::Vector3<ScalarType> rhoV;
         rhoV<< 0.5*(kin.td1().squaredNorm()-kin.t0d1().squaredNorm()),0.5*(kin.td2().squaredNorm()-kin.t0d2().squaredNorm()),kin.td1().dot(kin.td2())-kin.t0d1().dot(kin.t0d2());
-        const auto strainsV= (epsV+ zeta*kappaV+0*zeta*zeta*rhoV).eval();
+        const auto strainsV= (epsV+ zeta*kappaV+secondOrderBending*zeta*zeta*rhoV).eval();
         Eigen::Vector<ScalarType,5> strains;
         strains<< strainsV,gammaV;
         const auto S = (C3D*strains).eval();
@@ -226,7 +229,7 @@ namespace Ikarus {
         for (int i = 0; i < this->numNodeDirector; ++i) {
           const auto indexI = midSurfaceDofs + directorCorrectionDim * i;
 
-          bopDirectorI =bopDirector(kin, kin.a1anda2, gpIndex2D, directorFunction, i, zeta);
+          bopDirectorI =secondOrderBending? bopDirector(kin, g1Andg2, gpIndex2D, directorFunction, i, zeta) :bopDirector(kin, kin.a1anda2, gpIndex2D, directorFunction, i, zeta);
           force.template segment<directorCorrectionDim>(indexI) += bopDirectorI.transpose() * S*intElement;
         }
 
@@ -341,7 +344,7 @@ namespace Ikarus {
         const auto C3D = this->materialTangent(Ginv);
         Eigen::Vector3<ScalarType> rhoV;
         rhoV<< 0.5*(kin.td1().squaredNorm()-kin.t0d1().squaredNorm()),0.5*(kin.td2().squaredNorm()-kin.t0d2().squaredNorm()),kin.td1().dot(kin.td2())-kin.t0d1().dot(kin.t0d2());
-        const auto strainsV= (epsV+ zeta*kappaV+0*zeta*zeta*rhoV).eval();
+        const auto strainsV= (epsV+ zeta*kappaV+secondOrderBending*zeta*zeta*rhoV).eval();
         Eigen::Vector<ScalarType,5> strains;
         strains<< strainsV,gammaV;
         const auto S = (C3D*strains).eval();
@@ -374,7 +377,7 @@ namespace Ikarus {
             const auto indexJ = midSurfaceDofs + directorCorrectionDim * j;
             const auto bopBendingJ   = this->boperatorDirectorBending(g1Andg2, gpIndex2D, j, directorFunction);
             const auto bopShearJ   = this->boperatorDirectorShear(kin, gpIndex2D, j, directorFunction);
-            bopDirectorJ =bopDirector(kin, kin.a1anda2, gpIndex2D, directorFunction, j, zeta);
+            bopDirectorJ =secondOrderBending? bopDirector(kin, g1Andg2, gpIndex2D, directorFunction, j, zeta):bopDirector(kin, kin.a1anda2, gpIndex2D, directorFunction, j, zeta);
 
             Eigen::Matrix<ScalarType, 3, 2> kg= this->kgMidSurfaceDirectorBending(kin,N,Nd,gpIndex2D,i,j,displacementFunction,directorFunction,S8);
             Eigen::Matrix<ScalarType, 3, 2> kg2= this->kgMidSurfaceDirectorShear(kin,N,Nd,gpIndex2D,i,j,displacementFunction,directorFunction,S8);
@@ -388,12 +391,12 @@ namespace Ikarus {
         }
         for (int i = 0; i < this->numNodeDirector; ++i) {
           const auto indexI = midSurfaceDofs + directorCorrectionDim * i;
-          bopDirectorI =bopDirector(kin, kin.a1anda2, gpIndex2D, directorFunction, i, zeta);
+          bopDirectorI =secondOrderBending? bopDirector(kin, g1Andg2, gpIndex2D, directorFunction, i, zeta) : bopDirector(kin, kin.a1anda2, gpIndex2D, directorFunction, i, zeta);
 
           for (int j = i; j < this->numNodeDirector; ++j) {
             const auto indexJ = midSurfaceDofs + directorCorrectionDim * j;
 
-            bopDirectorJ =bopDirector(kin, kin.a1anda2, gpIndex2D, directorFunction, j, zeta);
+            bopDirectorJ =secondOrderBending? bopDirector(kin, g1Andg2, gpIndex2D, directorFunction, j, zeta): bopDirector(kin, kin.a1anda2, gpIndex2D, directorFunction, j, zeta);
 
             Eigen::Matrix<ScalarType, 2, 2> kgBending= this->kgDirectorDirectorBending(kin,Ndirector,dNdirector,gpIndex2D,i,j,displacementFunction,directorFunction,S8);
             Eigen::Matrix<ScalarType, 2, 2> kgBending2= this->kgSecondDirectorDirectorBending(kin,Ndirector,dNdirector,gpIndex2D,i,j,displacementFunction,directorFunction,SSec);
@@ -403,7 +406,7 @@ namespace Ikarus {
                 += bopDirectorI.transpose() * C3D * bopDirectorJ * intElement;
 
             K.template block<directorCorrectionDim, directorCorrectionDim>(indexI, indexJ)
-                += (kgBending+0*kgBending2+kgShear)* intElement;
+                += (kgBending+secondOrderBending*kgBending2+kgShear)* intElement;
           }
         }
         ++gpIndex;
@@ -432,9 +435,57 @@ namespace Ikarus {
       kin.t0          = directorReferenceFunction.evaluate(gp2DPos,Dune::on(Dune::DerivativeDirections::referenceElement));
       kin.ud1andud2   = displacementFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
       kin.A1andA2     = Dune::toEigen(geo.jacobianTransposed(gp2DPos)).transpose();
-      kin.a1anda2     = kin.A1andA2+ kin.ud1andud2;
+//      kin.A1andA2     = Eigen::Matrix<double,3,2>::Identity();
+//      kin.a1anda2     = kin.A1andA2+ kin.ud1andud2;
       kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
       kin.td1Andtd2   = directorFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
+      using namespace Dune::Indices;
+      const auto &mNodal = par.getGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector)[_0];
+    //      const auto &lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
+
+      const auto &child0 = this->localViewBlocked_.tree().child(_0, 0);
+      const auto &fe0    = child0.finiteElement();
+
+      Dune::BlockVector<typename std::remove_cvref_t<decltype(mNodal[0])>>  displacements(fe0.size());
+      const auto& cps= geo.impl().controlPoints().directGetAll();
+      for (auto i = 0U; i < fe0.size(); ++i) {
+        const auto globalIndex = this->localViewBlocked_.index(this->localViewBlocked_.tree().child(_0).localIndex(i));
+        displacements[i].setValue(mNodal[globalIndex[1]].getValue() + toEigen(cps[i]));
+      }
+//      std::cout<<displacements<<std::endl;
+      Dune::StandardLocalFunction midSurface(this->localBasisMidSurface, displacements, this->geo_, _0);
+      Eigen::MatrixX2d Nd;
+      this->localBasisMidSurface.evaluateJacobian(gp2DPos,Nd);
+
+      const auto a1anda2T= (Dune::viewAsEigenMatrixAsDynFixed(displacements).transpose()*Nd).eval();
+
+//      const auto nurbs= this->geo_->impl().nurbs();
+//      const auto localInSpan              = this->geo_->impl().localToSpan(gp2DPos);
+//      const auto basisFunctionDerivatives = nurbs.basisFunctionDerivatives(localInSpan, 1);
+//      const auto& cpNet= geo.impl().controlPoints();
+//      Eigen::Matrix<double,3,2> a1anda2T2;
+////      std::cout<< "this->geo_->scaling_"<<std::endl;
+////      std::cout<< this->geo_->impl().scaling_[0]<<" "<<this->geo_->impl().scaling_[1]<<std::endl;
+////      std::cout<< "this->geo_->offset_"<<std::endl;
+////      std::cout<< this->geo_->impl().offset_[0]<<" "<<this->geo_->impl().offset_[1]<<std::endl;
+//      for (int dir = 0; dir < 2; ++dir) {
+//        std::array<unsigned int, 2> ithVec{};
+//        ithVec[dir] = 1;
+//        a1anda2T2.col(dir)          = toEigen(Dune::IGA::dot(basisFunctionDerivatives.get(ithVec), cpNet));
+//        a1anda2T2.col(dir)   *= this->geo_->impl().scaling_[dir];  // transform back to 0..1 domain
+//      }
+      kin.a1anda2   = midSurface.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
+//      if(not a1anda2T.isApprox(kin.a1anda2))
+//        DUNE_THROW(Dune::NotImplemented,"a1anda2 differ!"<<"kin.a1anda2\n"<<kin.a1anda2<<"\n"<<"a1anda2T\n"<<a1anda2T);
+
+//      if(not a1anda2T2.isApprox(kin.a1anda2))
+//        DUNE_THROW(Dune::NotImplemented,"a1anda2 differ!"<<"kin.a1anda2\n"<<kin.a1anda2<<"\n"<<"a1anda2T2\n"<<a1anda2T2);
+//      std::cout<<"kin.a1anda2"<<std::endl;
+//      std::cout<<kin.a1anda2<<std::endl;
+//      std::cout<<"kin.A1andA2"<<std::endl;
+//      std::cout<<kin.A1andA2<<std::endl;
+
+
       const Eigen::Matrix<double,2,3> jE = kin.a1anda2.transpose();
       auto [_,epsV,kappaV,gammaV]                = this->computeMaterialAndStrains(gp2DPos,geo,displacementFunction,kin);
 
@@ -447,9 +498,11 @@ namespace Ikarus {
       const auto C3D = this->materialTangent(Ginv);
       Eigen::Vector3<double> rhoV;
       rhoV<< 0.5*(kin.td1().squaredNorm()-kin.t0d1().squaredNorm()),0.5*(kin.td2().squaredNorm()-kin.t0d2().squaredNorm()),kin.td1().dot(kin.td2())-kin.t0d1().dot(kin.t0d2());
-      const auto strainsV= (epsV+ zeta*kappaV+zeta*zeta*rhoV).eval();
+      const auto strainsV= (epsV+ zeta*kappaV+0*zeta*zeta*rhoV).eval();
       Eigen::Vector<double,5> strains;
+      Eigen::Vector<double,6> strains6;
       strains<< strainsV,gammaV;
+      strains6<<strains,0.0;
 //      const auto S = (C3D*strains).eval();
 
       Eigen::Matrix3d PK2 ;
@@ -470,7 +523,9 @@ namespace Ikarus {
       const double lambdaf = emod_*nu_/((1.0 + nu_)*(1.0 - 2.0*nu_));
       const double mu = emod_/(2.0*(1.0 + nu_));
       const double lambdbar = 2.0*lambdaf*mu/(lambdaf + 2.0*mu);
-      const Eigen::Matrix3d E = 0.5*(F.transpose()*F-Eigen::Matrix3d::Identity());
+       Eigen::Matrix3d E = 0.5*(F.transpose()*F-Eigen::Matrix3d::Identity());
+       if(not secondOrderBending)
+       E=Ikarus::fromVoigt(strains6,true);
       PK2= lambdbar* E.trace()*Eigen::Matrix3d::Identity()+2*mu*E;
 
       Eigen::Matrix3d cauchy=1/detF*F*PK2*F.transpose();
@@ -501,14 +556,14 @@ namespace Ikarus {
       stresses[1]= PK2;
 //      stresses[2]= PK1;
       double E11 = E(0,0);
-      return std::make_tuple(stresses,detF,E11,zeta,j,J);
+      return std::make_tuple(stresses,detF,E11,zeta,j,J,gp2DPos);
     }
 
     void calculateAt(const ResultRequirementsType &req, const Dune::FieldVector<double, 3> &local,
                      ResultTypeMap<double> &result) const {
         typename ResultTypeMap<double>::ResultArray resultVector;
         resultVector.resize(3, 3);
-        auto [res,detF,E11,zeta,j,J]= calculateStresses(req.getFERequirements(),local,false);
+        auto [res,detF,E11,zeta,j,J,gp2DPos]= calculateStresses(req.getFERequirements(),local,false);
         if(req.isResultRequested(ResultType::cauchyStress)) {
           resultVector = res[0];
           result.insertOrAssignResult(ResultType::cauchyStress, resultVector);
@@ -535,6 +590,11 @@ namespace Ikarus {
           resultVector.resize(3,3);
           resultVector = j;
           result.insertOrAssignResult(ResultType::curJacobian, resultVector);
+        }else if(req.isResultRequested(ResultType::gpPosition)) {
+          resultVector.resize(2,1);
+          resultVector(0,0) = gp2DPos[0];
+          resultVector(1,0) = gp2DPos[1];
+          result.insertOrAssignResult(ResultType::gpPosition, resultVector);
         }
       else
       DUNE_THROW(Dune::NotImplemented, "No results are implemented");
@@ -558,7 +618,7 @@ namespace Ikarus {
     auto stressResultants(const ResultRequirementsType &req, const Dune::FieldVector<double, 2> &local,
                           ResultTypeMap<double> &result)const
     {
-      const auto& oneDRule = Dune::QuadratureRules<double,1>::rule(Dune::GeometryTypes::line,3);
+      const auto& oneDRule = Dune::QuadratureRules<double,1>::rule(Dune::GeometryTypes::line,4);
       const auto &thickness = this->fESettings.template request<double>("thickness");
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
@@ -580,7 +640,7 @@ namespace Ikarus {
 //      Vector4d MPK1    = Vector4d::Zero();
 //      Vector2d QPK1    = Vector2d::Zero();
       KinematicVariables<double> kin;
-
+      std::cout<<"Num GPs "<<oneDRule.size()<<std::endl;
       for (auto& gP : oneDRule)
       {
         const auto& gppos =gP.position();
@@ -589,30 +649,30 @@ namespace Ikarus {
         const double zeta  = (2*gppos[2]-1)*thickness/2.0;
         const Dune::FieldVector<double,2> gp2DPos= local;
         const Dune::FieldVector<double,3> gp3DPos= {local[0],local[1],gppos[2]};
-        kin.t           = directorFunction.evaluate(gp2DPos,Dune::on(Dune::DerivativeDirections::referenceElement));
-        kin.t0          = directorReferenceFunction.evaluate(gp2DPos,Dune::on(Dune::DerivativeDirections::referenceElement));
-        kin.ud1andud2   = displacementFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
-        kin.A1andA2     = Dune::toEigen(geo.jacobianTransposed(gp2DPos)).transpose();
-        kin.a1anda2     = kin.A1andA2+ kin.ud1andud2;
-        kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
-        kin.td1Andtd2   = directorFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
-        const Eigen::Matrix<double,2,3> jE = kin.a1anda2.transpose();
-
-
-         auto g1Andg2 = (kin.a1anda2+ zeta* kin.td1Andtd2).eval();
-         auto G1AndG2 = (kin.A1andA2+ zeta* kin.t0d1Andt0d2).eval();
-
-        const double detz     = ( g1Andg2.col(0).cross(g1Andg2.col(1)).dot(kin.t)) / (kin.a1anda2.col(0).cross(kin.a1anda2.col(1))).norm();
-        const double detZ     = ( G1AndG2.col(0).cross(G1AndG2.col(1)).dot(kin.t)) / (kin.A1andA2.col(0).cross(kin.A1andA2.col(1))).norm();
-
-
-//        kin.t           = directorFunction.evaluate(gp2DPos,Dune::on(Dune::DerivativeDirections::gridElement));
-//        kin.t0          = directorReferenceFunction.evaluate(gp2DPos,Dune::on(Dune::DerivativeDirections::gridElement));
-//        kin.ud1andud2   = displacementFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::gridElement));
+//        kin.t           = directorFunction.evaluate(gp2DPos,Dune::on(Dune::DerivativeDirections::referenceElement));
+//        kin.t0          = directorReferenceFunction.evaluate(gp2DPos,Dune::on(Dune::DerivativeDirections::referenceElement));
+//        kin.ud1andud2   = displacementFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
 //        kin.A1andA2     = Dune::toEigen(geo.jacobianTransposed(gp2DPos)).transpose();
 //        kin.a1anda2     = kin.A1andA2+ kin.ud1andud2;
-//        kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::gridElement));
-//        kin.td1Andtd2   = directorFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::gridElement));
+//        kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
+//        kin.td1Andtd2   = directorFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
+//        const Eigen::Matrix<double,2,3> jE = kin.a1anda2.transpose();
+//
+//
+//         auto g1Andg2 = (kin.a1anda2+ zeta* kin.td1Andtd2).eval();
+//         auto G1AndG2 = (kin.A1andA2+ zeta* kin.t0d1Andt0d2).eval();
+//
+//        const double detz     = ( g1Andg2.col(0).cross(g1Andg2.col(1)).dot(kin.t)) / (kin.a1anda2.col(0).cross(kin.a1anda2.col(1))).norm();
+//        const double detZ     = ( G1AndG2.col(0).cross(G1AndG2.col(1)).dot(kin.t)) / (kin.A1andA2.col(0).cross(kin.A1andA2.col(1))).norm();
+
+
+//        kin.t           = directorFunction.evaluate(gp2DPos,Dune::on(Dune::DerivativeDirections::referenceElement));
+//        kin.t0          = directorReferenceFunction.evaluate(gp2DPos,Dune::on(Dune::DerivativeDirections::referenceElement));
+//        kin.ud1andud2   = displacementFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
+//        kin.A1andA2     = Dune::toEigen(geo.jacobianTransposed(gp2DPos)).transpose();
+//        kin.a1anda2     = kin.A1andA2+ kin.ud1andud2;
+//        kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
+//        kin.td1Andtd2   = directorFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
 //         g1Andg2 = (kin.a1anda2+ zeta* kin.td1Andtd2).eval();
 //         G1AndG2 = (kin.A1andA2+ zeta* kin.t0d1Andt0d2).eval();
 
@@ -620,7 +680,7 @@ namespace Ikarus {
         // the first two fixes the change of the integration mapping from 0..1 to -1..1,
         // and the h/2 factor is the factor for the correct thickness
 
-        const auto [res,detF,E11,zetaS,jS,JS]   = calculateStresses(req.getFERequirements(),gp3DPos,true);
+        const auto [res,detF,E11,zetaS,jS,JS,gp2DPosS]   = calculateStresses(req.getFERequirements(),gp3DPos,true);
         if(not Dune::FloatCmp::eq(zeta,zetaS))
           DUNE_THROW(Dune::NotImplemented,"zetas differ!");
         const auto [ cauchy,PK2,PK1] = res;
@@ -634,9 +694,9 @@ namespace Ikarus {
 //        const Vector2d PK2_al_3                 = stresses[1].segment<2>(3);
 //        const Vector2d PK1_al_3                 = stresses[2].segment<2>(3);
 
-        Eigen::Vector2d ga_la;
+//        Eigen::Vector2d ga_la;
 //        ga_la<< kin.g1.dot(kin.t),kin.g2.dot(kin.t);
-        ga_la<< kin.a1().dot(kin.t),kin.a2().dot(kin.t);
+//        ga_la<< kin.a1().dot(kin.t),kin.a2().dot(kin.t);
 
         ////////////////////////////////
         //PK2 Resultants
@@ -660,21 +720,21 @@ namespace Ikarus {
         //Cauchy Resultants
 
 
-        const double dvC      = kin.a1anda2.col(0).cross(kin.a1anda2.col(1)).dot(kin.t);
-        const double dVC      = kin.A1andA2.col(0).cross(kin.A1andA2.col(1)).dot(kin.t0);
-        const Eigen::Vector3d a1cont = 1 / dvC * kin.a1anda2.col(1).cross(kin.t);
-        const Eigen::Vector3d A1cont = 1 / dVC * kin.A1andA2.col(1).cross(kin.t0);
-        const Eigen::Vector3d a2cont = 1 / dvC * kin.t.cross(kin.a1anda2.col(0));
-        const Eigen::Vector3d A2cont = 1 / dVC * kin.t0.cross(kin.A1andA2.col(0));
-
-        /** Aktuelle Direktor krümmungen ähnlich zweite Fundamentalfrom */
-        Eigen::Matrix2d bhat_be_la;
-        bhat_be_la <<kin.td1Andtd2.col(0).dot(a1cont), kin.td1Andtd2.col(0).dot(a2cont),
-            kin.td1Andtd2.col(1).dot(a1cont), kin.td1Andtd2.col(1).dot(a2cont);
-
-        Eigen::Matrix2d Bhat_be_la;
-        Bhat_be_la <<kin.t0d1Andt0d2.col(0).dot(A1cont), kin.t0d1Andt0d2.col(0).dot(A2cont),
-            kin.t0d1Andt0d2.col(1).dot(A1cont), kin.t0d1Andt0d2.col(1).dot(A2cont);
+//        const double dvC      = kin.a1anda2.col(0).cross(kin.a1anda2.col(1)).dot(kin.t);
+//        const double dVC      = kin.A1andA2.col(0).cross(kin.A1andA2.col(1)).dot(kin.t0);
+//        const Eigen::Vector3d a1cont = 1 / dvC * kin.a1anda2.col(1).cross(kin.t);
+//        const Eigen::Vector3d A1cont = 1 / dVC * kin.A1andA2.col(1).cross(kin.t0);
+//        const Eigen::Vector3d a2cont = 1 / dvC * kin.t.cross(kin.a1anda2.col(0));
+//        const Eigen::Vector3d A2cont = 1 / dVC * kin.t0.cross(kin.A1andA2.col(0));
+//
+//        /** Aktuelle Direktor krümmungen ähnlich zweite Fundamentalfrom */
+//        Eigen::Matrix2d bhat_be_la;
+//        bhat_be_la <<kin.td1Andtd2.col(0).dot(a1cont), kin.td1Andtd2.col(0).dot(a2cont),
+//            kin.td1Andtd2.col(1).dot(a1cont), kin.td1Andtd2.col(1).dot(a2cont);
+//
+//        Eigen::Matrix2d Bhat_be_la;
+//        Bhat_be_la <<kin.t0d1Andt0d2.col(0).dot(A1cont), kin.t0d1Andt0d2.col(0).dot(A2cont),
+//            kin.t0d1Andt0d2.col(1).dot(A1cont), kin.t0d1Andt0d2.col(1).dot(A2cont);
 
         //Cauchy-Membrankräfte, Momente, Querkräfte
 //        NCauchy +=  fac_gp * detz * (cauchy_al_be - zeta * cauchy_al_be * bhat_be_la);

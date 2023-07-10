@@ -319,6 +319,8 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
   const auto lowerDirectorOrder         = parameterSet.get<int>("lowerDirectorOrder");
   const auto globalDegreeElevateBefore         = parameterSet.get<int>("globalDegreeElevateBefore");
   const auto globalDegreeElevateAfter        = parameterSet.get<int>("globalDegreeElevateAfter");
+  const auto secondOrderBending        = parameterSet.get<bool>("secondOrderBending");
+  const auto momentloadF        = parameterSet.get<double>("momentloadF");
 
   auto grid = std::make_shared<Grid>(patchData);
   for (int i = 0; i < 2; ++i)
@@ -344,6 +346,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
   feSettings.addOrAssign("poissons_ratio", nu);
   feSettings.addOrAssign("thickness", thickness);
   feSettings.addOrAssign("simulationFlag", simulationFlag);
+  feSettings.addOrAssign("secondOrderBending", secondOrderBending);
 
   auto scalarMidSurfBasis = nurbs();
 
@@ -377,7 +380,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
   const double pi         = std::numbers::pi;
   const double MomentLoad         = 2.0*pi*E*Dune::power(thickness, 3)/L/12.0*(1.0-2.0/3.0*thickness*thickness*pi*pi/(L*L));
   std::cout<<"MomentLoad: "<<MomentLoad<<std::endl;
-  auto boundaryLoad = [thickness, loadFactor,E,L,MomentLoad]<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
+  auto boundaryLoad = [&]<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
     std::array<Eigen::Vector<double,3>,2> vLoad;
     auto& fext = vLoad[0];
     auto& mext = vLoad[1];
@@ -387,7 +390,8 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
     fext[2] = 2 * Dune::power(thickness, 3) * lamb * loadFactor*0;
     mext.setZero();
 
-    mext[1]=MomentLoad*lamb*loadFactor;
+//    mext[1]=MomentLoad*lamb*loadFactor;
+    mext[1]=momentloadF*lamb*loadFactor;
 //    std::cout<<"vLoad[0]"<<std::endl;
 //    std::cout<<vLoad[0]<<std::endl;
 //    std::cout<<"vLoad[1]"<<std::endl;
@@ -536,7 +540,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
     //    std::cout<<t0<<std::endl;
     //    std::cout<<"m+(2*x-1)*(t-t0)* thickness / 2.0"<<std::endl;
     //    std::cout<<m+(2*x-1)*(t-t0)* thickness / 2.0<<std::endl;
-    return m+(2*x-1)*(t-t0)* thickness / 2.0;
+    return m+(2*x-1)*(t/t.two_norm()-t0/t0.two_norm())* thickness / 2.0;
   };
 
   auto resReqPK2 = Ikarus::ResultRequirements< Ikarus::FErequirements<std::reference_wrapper<MultiTypeVector>>>()
@@ -598,6 +602,7 @@ auto add3DResultFunction=[&](auto& writer2, auto&& resultType) {
         add3DResultFunction(writer2,ResultType::zeta);
         add3DResultFunction(writer2,ResultType::refJacobian);
         add3DResultFunction(writer2,ResultType::curJacobian);
+        add3DResultFunction(writer2,ResultType::gpPosition);
 //        writer2.addPointData(Dune::Vtk::FunctionMod<GridView>(resultFunction));
 //        writer2.addPointData(Dune::Vtk::FunctionMod<GridView>(resultFunctionPK2));
         //        std::cout<<"T4"<<std::endl;
