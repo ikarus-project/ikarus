@@ -473,11 +473,16 @@ namespace Ikarus {
       const auto C3D = this->materialTangent(Ginv);
       Eigen::Vector3<double> rhoV;
       rhoV<< 0.5*(kin.td1().squaredNorm()-kin.t0d1().squaredNorm()),0.5*(kin.td2().squaredNorm()-kin.t0d2().squaredNorm()),kin.td1().dot(kin.td2())-kin.t0d1().dot(kin.t0d2());
-      const auto strainsV= (epsV+ zeta*kappaV+0*zeta*zeta*rhoV).eval();
+      const auto strainsV= (epsV+ zeta*kappaV+secondOrderBending*zeta*zeta*rhoV).eval();
       Eigen::Vector<double,5> strains;
       Eigen::Vector<double,6> strains6;
       strains<< strainsV,gammaV;
       strains6<<strains,0.0;
+
+      Eigen::Matrix3d E;
+      E<< strains(0,0),strains(2)/2, strains(3)/2,
+          strains(2)/2, strains(1), strains(4)/2,
+          strains(3)/2,strains(4)/2,0;
 
       Eigen::Matrix3d PK2 ;
 
@@ -497,9 +502,11 @@ namespace Ikarus {
       const double lambdaf = emod_*nu_/((1.0 + nu_)*(1.0 - 2.0*nu_));
       const double mu = emod_/(2.0*(1.0 + nu_));
       const double lambdbar = 2.0*lambdaf*mu/(lambdaf + 2.0*mu);
-       Eigen::Matrix3d E = 0.5*(F.transpose()*F-Eigen::Matrix3d::Identity());
-       if(not secondOrderBending)
-       E=Ikarus::fromVoigt(strains6,true);
+//       Eigen::Matrix3d E = 0.5*(F.transpose()*F-Eigen::Matrix3d::Identity());
+//       if(not secondOrderBending)
+//       E=Ikarus::fromVoigt(strains6,true);
+       const Eigen::Matrix3d T= Jloc*J.inverse();
+       E= T.transpose()*E*T;
       PK2= lambdbar* E.trace()*Eigen::Matrix3d::Identity()+2*mu*E;
 
       Eigen::Matrix3d cauchy=1/detF*F*PK2*F.transpose();
@@ -575,6 +582,12 @@ namespace Ikarus {
          stressResultants(req,local,result);
       }else
         DUNE_THROW(Dune::NotImplemented, "No results are implemented");
+    }
+
+    auto calculateEnergyPart(const ResultRequirementsType &req, const Dune::FieldVector<double, 2> &local,
+                             ResultTypeMap<double> &result)
+    {
+
     }
 
     auto stressResultants(const ResultRequirementsType &req, const Dune::FieldVector<double, 2> &local,

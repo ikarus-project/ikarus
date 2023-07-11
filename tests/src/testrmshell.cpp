@@ -650,7 +650,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
 //              l2_error += Dune::power(w_ex - w_fe, 2) * geo.integrationElement(gp.position()) * gp.weight();
           }
         }
-        return l2_error;
+        return std::sqrt(l2_error);
       };
 
   auto n11Ana
@@ -672,7 +672,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
       [&](auto x) {
         const double alpha = x[0] / L;
 
-        return Dune::FieldVector<double,3>({R * sin(alpha) - alpha * L / (2 * pi), 0, R * cos(alpha) - R});
+        return Dune::FieldVector<double,3>({R * sin(alpha) - alpha * L / (2 * pi), 0, -R * cos(alpha) + R});
       },
       gridView);
 
@@ -683,7 +683,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
   std::cout<<std::setprecision(16)<< "Shear Forces error: "<<calculateL2Error(q13,q13Ana)<<std::endl;
   std::cout<<std::setprecision(16)<< "Membrane Forces error: "<<calculateL2Error(n11,n11Ana)<<std::endl;
   std::cout<<std::setprecision(16)<< "Moments Forces error: "<<calculateL2Error(m11,m11Ana)<<std::endl;
-  std::cout<<std::setprecision(16)<< "Displacements error: "<<calculateL2Error(disp,m11Ana)<<std::endl;
+  std::cout<<std::setprecision(16)<< "Displacements error: "<<calculateL2Error(disp,dispAna)<<std::endl;
 
 
   std::cout << std::setprecision(16) << std::ranges::max(d) << std::endl;
@@ -698,9 +698,9 @@ template <typename Basis>
 using RMSHELL = Ikarus::NonLinearRMshell<Basis>;
 template <typename Basis>
 using RMSHELLSB = Ikarus::StressBasedShellRM<RMSHELL<Basis>>;
-#include <cfenv>
+//#include <cfenv>
 int main(int argc, char** argv) {
-  feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);
+//  feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);
   Ikarus::init(argc, argv);
   //  const double E             = materialParameters.get<double>("E");
   //  const double nu            = materialParameters.get<double>("nu");
