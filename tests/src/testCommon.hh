@@ -17,7 +17,10 @@
 #include <ikarus/finiteElements/feBases/autodiffFE.hh>
 #include <ikarus/finiteElements/feBases/powerBasisFE.hh>
 #include <ikarus/finiteElements/feRequirements.hh>
+#include <ikarus/finiteElements/mechanics/enhancedAssumedStrains.hh>
+#include <ikarus/finiteElements/mechanics/linearElastic.hh>
 #include <ikarus/io/resultFunction.hh>
+#include <ikarus/utils/basis.hh>
 #include <ikarus/utils/duneUtilities.hh>
 #include <ikarus/utils/eigenDuneTransformations.hh>
 #include <ikarus/utils/functionSanityChecks.hh>
@@ -217,23 +220,36 @@ template <typename NonLinearOperator, typename FiniteElement>
                                 .addResultRequest(ResultType::linearStress);
 
   ResultTypeMap<double> result;
-  auto gridView  = fe.localView().globalBasis().gridView();
-  using GridView = decltype(gridView);
-  Dune::VtkWriter<GridView> vtkWriter(gridView);
+  auto gridView        = fe.localView().globalBasis().gridView();
+  using GridView       = decltype(gridView);
   auto scalarBasis     = makeConstSharedBasis(gridView, lagrangeDG<1>());
   auto localScalarView = scalarBasis->localView();
   std::vector<Dune::FieldVector<double, 3>> stressVector(scalarBasis->size());
-  auto resultRequirements2 = Ikarus::ResultRequirements<>()
-                                 .insertGlobalSolution(Ikarus::FESolutions::displacement, displacement)
-                                 .addResultRequest(ResultType::PK2Stress);
-  std::vector<FiniteElement> fes;
-  fes.push_back(fe);
-  auto resultFunction = std::make_shared<ResultFunction<std::remove_cvref_t<FiniteElement>>>(&fes, resultRequirements2);
-  try {
-    vtkWriter.addPointData(Dune::Vtk::Function<GridView>(resultFunction));
-    t.check(false) << "resultFunction5 should have failed for requesting PK2Stress here";
-  } catch (const Dune::NotImplemented&) {
-  }
+
+  using LinearElasticElement
+      = Ikarus::LinearElastic<Ikarus::Basis<std::remove_cvref_t<decltype(fe.localView().globalBasis().preBasis())>>>;
+  using EASElement = Ikarus::EnhancedAssumedStrains<
+      Ikarus::LinearElastic<Ikarus::Basis<std::remove_cvref_t<decltype(fe.localView().globalBasis().preBasis())>>>>;
+
+  if constexpr (std::is_same_v<LinearElasticElement, FiniteElement> or std::is_same_v<EASElement, FiniteElement>) {
+    auto resultRequirements2 = Ikarus::ResultRequirements<>()
+                                   .insertGlobalSolution(Ikarus::FESolutions::displacement, displacement)
+                                   .addResultRequest(ResultType::PK2Stress);
+    Dune::VtkWriter<GridView> vtkWriter(gridView);
+    std::vector<FiniteElement> fes;
+    fes.push_back(fe);
+    auto resultFunction
+        = std::make_shared<ResultFunction<std::remove_cvref_t<FiniteElement>>>(&fes, resultRequirements2);
+    try {
+      vtkWriter.addPointData(Dune::Vtk::Function<GridView>(resultFunction));
+      t.check(false) << "resultFunction5 should have failed for requesting PK2Stress here";
+    } catch (const Dune::NotImplemented&) {
+    }
+  } else
+    std::cout << "Result requirement check is skipped as " << Dune::className<FiniteElement>()
+              << " is not equivalent to " << Dune::className<LinearElasticElement>() << " or "
+              << Dune::className<EASElement>() << std::endl;
+
   auto ele = elements(gridView).begin();
   localScalarView.bind(*ele);
   const auto& fe2              = localScalarView.tree().finiteElement();
