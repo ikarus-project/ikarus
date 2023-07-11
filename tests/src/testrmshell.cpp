@@ -19,6 +19,7 @@
 #include <dune/functions/functionspacebases/interpolate.hh>
 
 #include "spdlog/spdlog.h"
+#include "testCommon.hh"
 #include "ikarus/io/vtkFunctionExtensions.hh"
 #include "ikarus/io/composedGgridfuncMod.hh"
 
@@ -39,10 +40,11 @@
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 #include <ikarus/utils/observer/nonLinearSolverLogger.hh>
 #include <ikarus/io/shell3DDataCollector.hh>
+#include <ikarus/utils/linearAlgebraHelper.hh>
 
 using Dune::TestSuite;
-//#include <autodiff/forward/dual/dual.hpp>
-//#include <autodiff/forward/dual/eigen.hpp>
+#include <autodiff/forward/dual/dual.hpp>
+#include <autodiff/forward/dual/eigen.hpp>
 
 //template<typename CASStrain>
 //auto testMembraneStrain(const auto& localView,const auto& d)
@@ -102,155 +104,200 @@ using Dune::TestSuite;
 //}
 //
 //
-//template<template<typename> typename ShellElement>
-//auto checkFEByAutoDiff(std::string filename) {
-//  TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() by Automatic Differentiation of Kirchhoff-Love shell");
-//
-//  constexpr auto dimworld        = 3;
-//  const std::array<int, 2> order = {2,2};
-//
-//  const std::array<std::vector<double>, 2> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
-////  const std::array<std::vector<double>, 2> knotSpans = {{{0, 0,  1, 1}, {0, 0, 1, 1}}};
-//
-//  using ControlPoint = Dune::IGA::NURBSPatchData<2, dimworld>::ControlPointType;
-//
+template<template<typename> typename ShellElement>
+auto checkFEByAutoDiff(std::string filename) {
+  TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() by Automatic Differentiation of Kirchhoff-Love shell");
+
+  constexpr auto dimworld        = 3;
+  const std::array<int, 2> order = {2,2};
+
+  const std::array<std::vector<double>, 2> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+//  const std::array<std::vector<double>, 2> knotSpans = {{{0, 0,  1, 1}, {0, 0, 1, 1}}};
+
+  using ControlPoint = Dune::IGA::NURBSPatchData<2, dimworld>::ControlPointType;
+
+  const std::vector<std::vector<ControlPoint>> controlPoints
+      = {
+          {{.p = {0, 0.0, 0}, .w = 1}, {.p = {0, 1, 0}, .w = 1}, {.p = {0, 2, 0}, .w = 1}},
+          {{.p = {5, 0.0, 0}, .w = 1}, {.p = {5, 1, 0}, .w = 1}, {.p = {5, 2, 0}, .w = 1}},
+          {{.p = {10, 0.0, 0}, .w = 1}, {.p = {10, 1, 0}, .w = 1}, {.p = {10, 2, 0}, .w = 1}}};
+
 //  const std::vector<std::vector<ControlPoint>> controlPoints
-//      = {
-//          {{.p = {0, 0.0, 0}, .w = 1}, {.p = {0, 1, 0}, .w = 1}, {.p = {0, 2, 0}, .w = 1}},
-//          {{.p = {5, 0.0, 0}, .w = 1}, {.p = {5, 1, 0}, .w = 1}, {.p = {5, 2, 0}, .w = 1}},
-//          {{.p = {10, 0.0, 0}, .w = 1}, {.p = {10, 1, 0}, .w = 1}, {.p = {10, 2, 0}, .w = 1}}};
-//
-////  const std::vector<std::vector<ControlPoint>> controlPoints
-////      = {{{.p = {0, 0, 0}, .w = 1}, {.p = {0, 1, 0}, .w = 1}}, {{.p = {12, 0, 0}, .w = 1}, {.p = {12, 1, 0}, .w = 1}}};
-//
-//  std::array<int, 2> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
-//
-//  auto controlNet = Dune::IGA::NURBSPatchData<2, dimworld>::ControlPointNetType(dimsize, controlPoints);
-//  using Grid      = Dune::IGA::NURBSGrid<2, dimworld>;
-//
-//  Dune::IGA::NURBSPatchData<2, dimworld> patchData;
-//  patchData.knotSpans     = knotSpans;
-//  patchData.degree        = order;
-//  patchData.controlPoints = controlNet;
-////  for (int i = 0; i < 2; ++i)
-////    patchData = degreeElevate(patchData, i, 1);
-//  auto grid = std::make_shared<Grid>(patchData);
-//
-////  grid->globalRefine(2);
-//  auto gridView = grid->leafGridView();
-//
-//  using namespace Dune::Functions::BasisFactory;
-//  auto scalarMidSurfBasis = nurbs();
-//  auto scalaarDirectorBasis = nurbs();
-//  auto basis       = Ikarus::makeBasis(gridView, composite(power<3>(scalarMidSurfBasis),power<2>(scalaarDirectorBasis)));
-//  auto element     = gridView.template begin<0>();
-//  auto nDOF        = basis.flat().size();
-//  auto localView        = basis.flat().localView();
-//
-//  localView.bind(*element);
-//  auto nDOFPerEle        = localView.size();
-////  Eigen::VectorXd dT;
-////  dT.setZero(nDOF);
-////  t.subTest(testMembraneStrain<Ikarus::CASMembraneStrain<Ikarus::CASAnsatzFunction>>(localView,dT));
-////  std::cout<<"========================="<<std::endl;
-////  t.subTest(testMembraneStrain<Ikarus::CASMembraneStrain<Ikarus::CASAnsatzFunctionANS>>(localView,dT));
-//  const double tol = 1e-10;
-//
-//  auto volumeLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
-//    std::array<Eigen::Vector<double,3>,2> vLoad;
-//    auto& fext = vLoad[0];
-//    auto& mext = vLoad[1];
-//    fext.setZero();
-////    fext[0] = lamb;
-////    fext[1] = 0.01 * lamb;
-//    fext[1] = 2*lamb;
-//    mext.setZero();
-//    return vLoad;
-//  };
-//
-//  auto neumannBoundaryLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
-//    std::array<Eigen::Vector<double,3>,2> vLoad;
-//    auto& fext = vLoad[0];
-//    auto& mext = vLoad[1];
-//    fext.setZero();
-////    fext[0] = lamb;
-////    fext[1] = 0.01 * lamb;
-//    fext[2] = 4*lamb;
-//    mext.setZero();
-////    mext[0]=lamb;
-//    return vLoad;
-//  };
-//
-//  /// We artificially apply a Neumann load on the complete boundary
-//  Dune::BitSetVector<1> neumannVertices(gridView.size(2), true);
-//
-//  BoundaryPatch<decltype(gridView)> neumannBoundary(gridView, neumannVertices);
-//  for (int i = 0; i < 3; ++i) {
-//
-//
-//  Ikarus::FESettings feSettings;
-//  feSettings.addOrAssign("youngs_modulus", 1000.0);
-//  feSettings.addOrAssign("poissons_ratio", 0.0);
-//  feSettings.addOrAssign("thickness", 0.1);
-//  feSettings.addOrAssign("simulationFlag", i);
-//  using Basis = decltype(basis);
-////  KLSHELL fe(basis, *element, feSettings);
-//    using MidSurfaceVector = Dune::BlockVector<Dune::RealTuple<double, 3>>;
-//    using DirectorVector  = Dune::BlockVector<Dune::UnitVector<double, 3>>;
-//    using MultiTypeVector = Dune::TupleVector<MidSurfaceVector, DirectorVector>;
-//    using MultiTypeVectorRaw = Dune::TupleVector< Dune::BlockVector<Dune::FieldVector<double, 3>>, Dune::BlockVector<Dune::FieldVector<double, 3>>>;
-//    using namespace Dune::Functions::BasisFactory;
-//    auto blockedmidSurfaceBasis = Dune::Functions::subspaceBasis(basis.untouched(),Dune::Indices::_0);
-//
-//    MidSurfaceVector mBlocked(basis.untouched().size({Dune::Indices::_0}));
-////    auto refCoords = [](auto v){ return Dune::FieldVector<double,3>();};
-////    Functions::interpolate(blockedmidSurfaceBasis, mBlocked, refCoords);
-////    auto deformationPowerBasis = makeBasis(gridView,power<3>(nurbs()));
-//
-//
-//    for (auto &msingle : mBlocked) {
-////      msingle.setValue(Eigen::Vector<double, 3>::Zero());
-//      msingle.setValue(Eigen::Vector<double, 3>::Random());
-//    }
-//
-//
-//    DirectorVector dBlocked(basis.untouched().size({Dune::Indices::_1}));
-//    for (auto &dsingle : dBlocked) {
-//      dsingle.setValue(Eigen::Vector<double, 3>::UnitZ()+0.1*Eigen::Vector<double, 3>::Random());
-////      dsingle.setValue(Eigen::Vector<double, 3>::UnitZ());
-//    }
-//
-//    const MultiTypeVector x0(mBlocked, dBlocked);
-//    MultiTypeVector x =x0;
+//      = {{{.p = {0, 0, 0}, .w = 1}, {.p = {0, 1, 0}, .w = 1}}, {{.p = {12, 0, 0}, .w = 1}, {.p = {12, 1, 0}, .w = 1}}};
+
+  std::array<int, 2> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
+
+  auto controlNet = Dune::IGA::NURBSPatchData<2, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  using Grid      = Dune::IGA::NURBSGrid<2, dimworld>;
+
+  Dune::IGA::NURBSPatchData<2, dimworld> patchData;
+  patchData.knotSpans     = knotSpans;
+  patchData.degree        = order;
+  patchData.controlPoints = controlNet;
+//  for (int i = 0; i < 2; ++i)
+//    patchData = degreeElevate(patchData, i, 1);
+  auto grid = std::make_shared<Grid>(patchData);
+
+//  grid->globalRefine(2);
+  auto gridView = grid->leafGridView();
+
+  using namespace Dune::Functions::BasisFactory;
+  auto scalarMidSurfBasis = nurbs();
+  auto scalaarDirectorBasis = nurbs();
+  auto basis       = Ikarus::makeBasis(gridView, composite(power<3>(scalarMidSurfBasis),power<2>(scalaarDirectorBasis)));
+  auto element     = gridView.template begin<0>();
+  auto nDOF        = basis.flat().size();
+  auto localView        = basis.flat().localView();
+
+  localView.bind(*element);
+  auto nDOFPerEle        = localView.size();
+//  Eigen::VectorXd dT;
+//  dT.setZero(nDOF);
+//  t.subTest(testMembraneStrain<Ikarus::CASMembraneStrain<Ikarus::CASAnsatzFunction>>(localView,dT));
+//  std::cout<<"========================="<<std::endl;
+//  t.subTest(testMembraneStrain<Ikarus::CASMembraneStrain<Ikarus::CASAnsatzFunctionANS>>(localView,dT));
+  const double tol = 1e-10;
+
+  auto volumeLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
+    std::array<Eigen::Vector<double,3>,2> vLoad;
+    auto& fext = vLoad[0];
+    auto& mext = vLoad[1];
+    fext.setZero();
+//    fext[0] = lamb;
+//    fext[1] = 0.01 * lamb;
+    fext[1] = 2*lamb;
+    mext.setZero();
+    return vLoad;
+  };
+
+  auto neumannBoundaryLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
+    std::array<Eigen::Vector<double,3>,2> vLoad;
+    auto& fext = vLoad[0];
+    auto& mext = vLoad[1];
+    fext.setZero();
+//    fext[0] = lamb;
+//    fext[1] = 0.01 * lamb;
+    fext[2] = 4*lamb;
+    mext.setZero();
+//    mext[0]=lamb;
+    return vLoad;
+  };
+
+  /// We artificially apply a Neumann load on the complete boundary
+  Dune::BitSetVector<1> neumannVertices(gridView.size(2), true);
+
+  BoundaryPatch<decltype(gridView)> neumannBoundary(gridView, neumannVertices);
+  std::array<std::string,3> directorFunctions;
+  directorFunctions[0]="NFE";
+  directorFunctions[1]="PBFE";
+  directorFunctions[2]="GFE";
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      
+
+
+    Ikarus::FESettings feSettings;
+  feSettings.addOrAssign("youngs_modulus", 1000.0);
+  feSettings.addOrAssign("poissons_ratio", 0.0);
+  feSettings.addOrAssign("thickness", 0.1);
+  feSettings.addOrAssign("simulationFlag", i);
+  feSettings.addOrAssign("directorFunction", directorFunctions[j]);
+  feSettings.addOrAssign("secondOrderBending", true);
+  using Basis = decltype(basis);
+//  KLSHELL fe(basis, *element, feSettings);
+    using MidSurfaceVector = Dune::BlockVector<Dune::RealTuple<double, 3>>;
+    using DirectorVector  = Dune::BlockVector<Dune::UnitVector<double, 3>>;
+    using MultiTypeVector = Dune::TupleVector<MidSurfaceVector, DirectorVector>;
+    using MultiTypeVectorRaw = Dune::TupleVector< Dune::BlockVector<Dune::FieldVector<double, 3>>, Dune::BlockVector<Dune::FieldVector<double, 3>>>;
+    using namespace Dune::Functions::BasisFactory;
+    auto blockedmidSurfaceBasis = Dune::Functions::subspaceBasis(basis.untouched(),Dune::Indices::_0);
+
+    MidSurfaceVector mBlocked(basis.untouched().size({Dune::Indices::_0}));
+//    auto refCoords = [](auto v){ return Dune::FieldVector<double,3>();};
+//    Functions::interpolate(blockedmidSurfaceBasis, mBlocked, refCoords);
+//    auto deformationPowerBasis = makeBasis(gridView,power<3>(nurbs()));
+
+
+    for (auto &msingle : mBlocked) {
+//      msingle.setValue(Eigen::Vector<double, 3>::Zero());
+      msingle.setValue(Eigen::Vector<double, 3>::Random());
+    }
+
+
+    DirectorVector dBlocked(basis.untouched().size({Dune::Indices::_1}));
+    for (auto &dsingle : dBlocked) {
+      dsingle.setValue(Eigen::Vector<double, 3>::UnitZ()+0.1*Eigen::Vector<double, 3>::Random());
+//      dsingle.setValue(Eigen::Vector<double, 3>::UnitZ());
+    }
+
+    const MultiTypeVector x0(mBlocked, dBlocked);
+    MultiTypeVector x =x0;
 //  ShellElement<Basis> fe(basis, *element, feSettings,x0, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
-//  using AutoDiffBasedFE = Ikarus::AutoDiffFE<ShellElement<Basis>, true>;
+  std::vector<ShellElement<Basis>> fes;
+  fes.emplace_back(basis, *element, feSettings,x0, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
+  using AutoDiffBasedFE = Ikarus::AutoDiffFE<ShellElement<Basis>, true>;
 //  AutoDiffBasedFE feAutoDiff(fe);
-//
-////  Eigen::VectorXd d;
-////  d.setRandom(nDOF);
-//  //d.setZero(nDOF);
-//    auto basis3D       = Ikarus::makeBasis(gridView, composite(power<3>(scalarMidSurfBasis, BlockedInterleaved()),power<3>(scalaarDirectorBasis, BlockedInterleaved()),
-//                                                               BlockedLexicographic{}));
-//    auto blockedmidSurfaceBasis2 = Dune::Functions::subspaceBasis(basis3D.untouched(),Dune::Indices::_0);
-//    auto blockeddirectorBasis2 = Dune::Functions::subspaceBasis(basis3D.untouched(),Dune::Indices::_1);
-//    auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockedmidSurfaceBasis2,  x);
-//    auto director = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockeddirectorBasis2,  x);
-//  Dune::SubsamplingVTKWriter vtkWriter(gridView,Dune::refinementLevels(0));
-//
-//    vtkWriter.addVertexData(disp, {"displacements", Dune::VTK::FieldInfo::Type::vector, 3});
-//    vtkWriter.addVertexData(director, {"director", Dune::VTK::FieldInfo::Type::vector, 3});
-//  vtkWriter.write(filename+ std::to_string(i));
-//
-////  auto localDisp=localFunction(disp);
-////  localDisp.bind(*element);
-//
-//  double lambda = 7.3;
-//
-//    auto req = Ikarus::FErequirements<MultiTypeVector>()
-//        .insertGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector, x)
-//        .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
-//        .addAffordance(Ikarus::AffordanceCollections::elastoStatics);
-//
+
+//  Eigen::VectorXd d;
+//  d.setRandom(nDOF);
+  //d.setZero(nDOF);
+    auto basis3D       = Ikarus::makeBasis(gridView, composite(power<3>(scalarMidSurfBasis, BlockedInterleaved()),power<3>(scalaarDirectorBasis, BlockedInterleaved()),
+                                                               BlockedLexicographic{}));
+    auto blockedmidSurfaceBasis2 = Dune::Functions::subspaceBasis(basis3D.untouched(),Dune::Indices::_0);
+    auto blockeddirectorBasis2 = Dune::Functions::subspaceBasis(basis3D.untouched(),Dune::Indices::_1);
+    auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockedmidSurfaceBasis2,  x);
+    auto director = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockeddirectorBasis2,  x);
+  Dune::SubsamplingVTKWriter vtkWriter(gridView,Dune::refinementLevels(0));
+
+    vtkWriter.addVertexData(disp, {"displacements", Dune::VTK::FieldInfo::Type::vector, 3});
+    vtkWriter.addVertexData(director, {"director", Dune::VTK::FieldInfo::Type::vector, 3});
+  vtkWriter.write(filename+ std::to_string(i));
+
+  Ikarus::DirichletValues dirichletValues( basis.flat());
+  auto& fe             = fes[0];
+  auto sparseAssembler = Ikarus::SparseFlatAssembler(fes, dirichletValues);
+
+//  auto localDisp=localFunction(disp);
+//  localDisp.bind(*element);
+
+  double lambda = 7.3;
+
+    auto req = Ikarus::FErequirements<std::reference_wrapper<MultiTypeVector>>()
+        .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
+        .addAffordance(Ikarus::AffordanceCollections::elastoStatics);
+
+    auto fvLambda = [&](auto&& d_) -> auto {
+      req.        insertGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector, d_);
+      return sparseAssembler.getScalar(req);
+    };
+
+    auto dfvLambda = [&](auto&& d_) -> auto& {
+      req.        insertGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector, d_);
+      return sparseAssembler.getReducedVector(req);
+    };
+    auto ddfvLambda = [&](auto&& d_) -> auto& {
+      req.        insertGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector, d_);
+      return sparseAssembler.getReducedMatrix(req);
+    };
+    auto nonLinOp = Ikarus::NonLinearOperator(Ikarus::functions(fvLambda, dfvLambda, ddfvLambda), Ikarus::parameter(x));
+
+    nonLinOp.updateAll();
+
+    auto uF=std::function([&](MultiTypeVector& multiTypeVector, const Eigen::VectorXd& d_) {
+      auto dFull = sparseAssembler.createFullVector(d_);
+      //    std::cout<<"dFull"<<std::endl;
+      //    std::cout<<dFull<<std::endl;
+      using Ikarus::operator+=;
+      multiTypeVector += dFull;
+    });
+
+    t.check(Ikarus::checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true},uF))<<"Mismatch between the residual vectors obtained from explicit implementation and the one based on "<<
+                                                                                                          "automatic differentiation with simulationFlag: "<<i<<" and director func "<<directorFunctions[j];
+    t.check(Ikarus::checkHessian(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true},uF))<<"Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "<<
+              "automatic differentiation with simulationFlag: "<<i<<" and director func "<<directorFunctions[j];
+    t.check(Ikarus::checkJacobian(nonLinOp. template subOperator<1,2>(), {.draw = false, .writeSlopeStatementIfFailed = true},uF))<<"Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "<<
+        "automatic differentiation of the gradient with simulationFlag: "<<i<<" and director func "<<directorFunctions[j];
+
 //  Eigen::MatrixXd K, KAutoDiff;
 //  K.setZero(nDOFPerEle, nDOFPerEle);
 //  KAutoDiff.setZero(nDOFPerEle, nDOFPerEle);
@@ -266,18 +313,19 @@ using Dune::TestSuite;
 //
 //  t.check(K.isApprox(KAutoDiff, tol),"K Check"+filename)<<
 //      "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
-//      "automatic differentiation with simulationFlag: "<<i<<"\n" << K <<"\n KAutoDiff \n"<< KAutoDiff<<"\n K-KAutoDiff \n"<< K-KAutoDiff;
+//      "automatic differentiation with simulationFlag: "<<i<<" and director func "<<directorFunctions[j]<<"\n" << K <<"\n KAutoDiff \n"<< KAutoDiff<<"\n K-KAutoDiff \n"<< K-KAutoDiff;
 //
 //  t.check(R.isApprox(RAutoDiff, tol),"R Check"+filename)<<
 //      "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
-//      "automatic differentiation with simulationFlag: "<<i<<"\n" << R <<"\n RAutoDiff \n"<< RAutoDiff<<"\n R-RAutoDiff \n"<< R-RAutoDiff;
+//      "automatic differentiation with simulationFlag: "<<i<<" and director func "<<directorFunctions[j]<<"\n" << R <<"\n RAutoDiff \n"<< RAutoDiff<<"\n R-RAutoDiff \n"<< R-RAutoDiff;
 //
 //  t.check(Dune::FloatCmp::eq(fe.calculateScalar(req), feAutoDiff.calculateScalar(req), tol),"E Check"+filename)<<
 //    "Mismatch between the energies obtained from explicit implementation and the one based on "
-//    "automatic differentiation"<<"with simulationFlag: "<<i;
-//  }
-//  return t;
-//}
+//    "automatic differentiation"<<"with simulationFlag: "<<i<<" and director func "<<directorFunctions[j];
+  }
+  }
+  return t;
+}
 
 auto NonLinearElasticityLoadControlNRandTRforRMShell() {
   TestSuite t("NonLinearElasticityLoadControlNRandTRforKLShell ");
@@ -320,6 +368,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
   const auto globalDegreeElevateAfter  = parameterSet.get<int>("globalDegreeElevateAfter");
   const auto secondOrderBending        = parameterSet.get<bool>("secondOrderBending");
   const auto momentloadF               = parameterSet.get<double>("momentloadF");
+  const auto directorFunction               = parameterSet.get<std::string>("directorFunction");
 
   auto grid = std::make_shared<Grid>(patchData);
   for (int i = 0; i < 2; ++i)
@@ -343,6 +392,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
   feSettings.addOrAssign("thickness", thickness);
   feSettings.addOrAssign("simulationFlag", simulationFlag);
   feSettings.addOrAssign("secondOrderBending", secondOrderBending);
+  feSettings.addOrAssign("directorFunction", directorFunction);
 
   auto scalarMidSurfBasis = nurbs();
 
@@ -706,7 +756,7 @@ int main(int argc, char** argv) {
   //  const double nu            = materialParameters.get<double>("nu");
 
 //  checkFEByAutoDiff<RMSHELL>("RMSHELL");
-//  checkFEByAutoDiff<RMSHELLSB>("RMSHELLSB");
+  checkFEByAutoDiff<RMSHELLSB>("RMSHELLSB");
 
 //  checkFEByAutoDiff<KLSHELLSB>("KLSHELLSB");
   NonLinearElasticityLoadControlNRandTRforRMShell();

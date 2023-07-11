@@ -552,26 +552,74 @@ struct StressBasedShellRM;
       using namespace Dune::DerivativeDirections;
 
       Dune::StandardLocalFunction displacementFunction(localBasisMidSurface, displacements, geo_, _0);
-      Dune::ProjectionBasedLocalFunction2 directorFunctionImpl(localBasisDirector, localDirectorConfiguration, geo_, _1);
-      Dune::ProjectionBasedLocalFunction2 directorReferenceFunctionImpl(localBasisDirector, localRefDirectorConfiguration,
-                                                                   geo_, _1);
-      using DirectorCurType= decltype(directorFunctionImpl);
-      using DuneBasis = typename  DirectorCurType::DuneBasis;
-      using CoeffContainer = typename  DirectorCurType::CoeffContainer;
-      using GeometryL = typename  DirectorCurType::Geometry;
-      static constexpr int orderID = DirectorCurType::id[0];
-      using DirVariantCur = DirectorFunctionVar<DuneBasis, CoeffContainer,GeometryL,orderID>;
-      DirVariantCur directorFunction(directorFunctionImpl);
 
-      using DirectorRefType= decltype(directorReferenceFunctionImpl);
-      using DuneBasisRef = typename  DirectorRefType::DuneBasis;
-      using CoeffContainerRef = typename  DirectorRefType::CoeffContainer;
-      using GeometryLRef = typename  DirectorRefType::Geometry;
-      static constexpr int orderIDRef = DirectorRefType::id[0];
-      using DirVariantRef = DirectorFunctionVar<DuneBasisRef, CoeffContainerRef,GeometryLRef,orderIDRef>;
-      DirVariantRef directorReferenceFunction(directorReferenceFunctionImpl);
-      return std::make_tuple( displacementFunction, directorFunction,
-                             directorReferenceFunction);
+      const std::string &directorFunctionType = fESettings.request<std::string>("directorFunction");
+
+      if (directorFunctionType=="NFE") {
+        Dune::EmbeddedLocalFunction directorFunctionImpl(localBasisDirector, localDirectorConfiguration, geo_, _1);
+        Dune::EmbeddedLocalFunction directorReferenceFunctionImpl(localBasisDirector, localRefDirectorConfiguration,
+                                                                          geo_, _1);
+        using DirectorCurType= decltype(directorFunctionImpl);
+        using DuneBasis = typename  DirectorCurType::DuneBasis;
+        using CoeffContainer = typename  DirectorCurType::CoeffContainer;
+        using GeometryL = typename  DirectorCurType::Geometry;
+        static constexpr int orderID = DirectorCurType::id[0];
+        using DirVariantCur = DirectorFunctionVar<DuneBasis, CoeffContainer,GeometryL,orderID>;
+        DirVariantCur directorFunction(directorFunctionImpl);
+
+        using DirectorRefType= decltype(directorReferenceFunctionImpl);
+        using DuneBasisRef = typename  DirectorRefType::DuneBasis;
+        using CoeffContainerRef = typename  DirectorRefType::CoeffContainer;
+        using GeometryLRef = typename  DirectorRefType::Geometry;
+        static constexpr int orderIDRef = DirectorRefType::id[0];
+        using DirVariantRef = DirectorFunctionVar<DuneBasisRef, CoeffContainerRef,GeometryLRef,orderIDRef>;
+        DirVariantRef directorReferenceFunction(directorReferenceFunctionImpl);
+        return std::make_tuple( displacementFunction, directorFunction,
+                               directorReferenceFunction);
+      } else if (directorFunctionType=="PBFE") {
+        Dune::ProjectionBasedLocalFunction2 directorFunctionImpl(localBasisDirector, localDirectorConfiguration, geo_, _1);
+        Dune::ProjectionBasedLocalFunction2 directorReferenceFunctionImpl(localBasisDirector, localRefDirectorConfiguration,
+                                                                          geo_, _1);
+        using DirectorCurType= decltype(directorFunctionImpl);
+        using DuneBasis = typename  DirectorCurType::DuneBasis;
+        using CoeffContainer = typename  DirectorCurType::CoeffContainer;
+        using GeometryL = typename  DirectorCurType::Geometry;
+        static constexpr int orderID = DirectorCurType::id[0];
+        using DirVariantCur = DirectorFunctionVar<DuneBasis, CoeffContainer,GeometryL,orderID>;
+        DirVariantCur directorFunction(directorFunctionImpl);
+
+        using DirectorRefType= decltype(directorReferenceFunctionImpl);
+        using DuneBasisRef = typename  DirectorRefType::DuneBasis;
+        using CoeffContainerRef = typename  DirectorRefType::CoeffContainer;
+        using GeometryLRef = typename  DirectorRefType::Geometry;
+        static constexpr int orderIDRef = DirectorRefType::id[0];
+        using DirVariantRef = DirectorFunctionVar<DuneBasisRef, CoeffContainerRef,GeometryLRef,orderIDRef>;
+        DirVariantRef directorReferenceFunction(directorReferenceFunctionImpl);
+        return std::make_tuple( displacementFunction, directorFunction,
+                               directorReferenceFunction);
+      } else if (directorFunctionType=="GFE") {
+        Dune::GeodesicLocalFunction directorFunctionImpl(localBasisDirector, localDirectorConfiguration, geo_, _1);
+        Dune::GeodesicLocalFunction directorReferenceFunctionImpl(localBasisDirector, localRefDirectorConfiguration,
+                                                                          geo_, _1);
+        using DirectorCurType= decltype(directorFunctionImpl);
+        using DuneBasis = typename  DirectorCurType::DuneBasis;
+        using CoeffContainer = typename  DirectorCurType::CoeffContainer;
+        using GeometryL = typename  DirectorCurType::Geometry;
+        static constexpr int orderID = DirectorCurType::id[0];
+        using DirVariantCur = DirectorFunctionVar<DuneBasis, CoeffContainer,GeometryL,orderID>;
+        DirVariantCur directorFunction(directorFunctionImpl);
+
+        using DirectorRefType= decltype(directorReferenceFunctionImpl);
+        using DuneBasisRef = typename  DirectorRefType::DuneBasis;
+        using CoeffContainerRef = typename  DirectorRefType::CoeffContainer;
+        using GeometryLRef = typename  DirectorRefType::Geometry;
+        static constexpr int orderIDRef = DirectorRefType::id[0];
+        using DirVariantRef = DirectorFunctionVar<DuneBasisRef, CoeffContainerRef,GeometryLRef,orderIDRef>;
+        DirVariantRef directorReferenceFunction(directorReferenceFunctionImpl);
+        return std::make_tuple( displacementFunction, directorFunction,
+                               directorReferenceFunction);
+
+      }
     }
 
     inline void calculateMatrix(const FERequirementType &par, typename Traits::template MatrixType<> K) const {

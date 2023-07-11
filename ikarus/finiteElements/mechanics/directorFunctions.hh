@@ -8,6 +8,7 @@
 //#include <dune/localfefunctions/impl/projectionBasedLocalFunction.hh>
 #include "NFE.hh"
 #include "PBFE.hh"
+#include "GFE.hh"
 #include <dune/common/overloadset.hh>
 #include <ranges>
 #include <dune/localfefunctions/concepts.hh>
@@ -70,7 +71,8 @@ class DirectorFunctionVariant
 
 template <typename DuneBasis, typename CoeffContainer, typename Geometry, std::size_t ID>
 using DirectorFunctionVar = DirectorFunctionVariant< Dune::EmbeddedLocalFunction<DuneBasis,CoeffContainer,Geometry,ID>,
-                                                        Dune::ProjectionBasedLocalFunction2<DuneBasis,CoeffContainer,Geometry,ID>
+                                                        Dune::ProjectionBasedLocalFunction2<DuneBasis,CoeffContainer,Geometry,ID>,
+                                                        Dune::GeodesicLocalFunction<DuneBasis,CoeffContainer,Geometry,ID>
                                                     >;
 
 }

@@ -17,17 +17,20 @@
 
 namespace Dune {
 
-  template <typename DuneBasis, typename CoeffContainer, typename Geometry, std::size_t ID = 0,
+  template <typename DuneBasis_, typename CoeffContainer_, typename Geometry_, std::size_t ID = 0,
             typename LinAlg = Dune::DefaultLinearAlgebra>
   class EmbeddedLocalFunction
-      : public LocalFunctionInterface<EmbeddedLocalFunction<DuneBasis, CoeffContainer, Geometry, ID, LinAlg>>,
-        public ClonableLocalFunction<EmbeddedLocalFunction<DuneBasis, CoeffContainer, Geometry, ID, LinAlg>> {
+      : public LocalFunctionInterface<EmbeddedLocalFunction<DuneBasis_, CoeffContainer_, Geometry_, ID, LinAlg>>,
+        public ClonableLocalFunction<EmbeddedLocalFunction<DuneBasis_, CoeffContainer_, Geometry_, ID, LinAlg>> {
     using Interface = LocalFunctionInterface<EmbeddedLocalFunction>;
 
     template <size_t ID_ = 0>
     static constexpr int orderID = ID_ == ID ? 1 : 0;
 
   public:
+    using DuneBasis =DuneBasis_;
+    using CoeffContainer =CoeffContainer_;
+    using Geometry =Geometry_;
     friend Interface;
     friend ClonableLocalFunction<EmbeddedLocalFunction>;
     constexpr EmbeddedLocalFunction(
@@ -137,8 +140,8 @@ namespace Dune {
       const auto& [N, dNraw] = evaluateFunctionAndDerivativeWithIPorCoord(ipIndexOrPosition, basis_);
       maytransformDerivatives(dNraw, dNTransformed, transArgs, geometry_, ipIndexOrPosition, basis_);
       Jacobian J              = evaluateEmbeddingJacobianImpl(dNTransformed);
-      FunctionReturnType valE = evaluateEmbeddingFunctionImpl(N);
-      return tryToCallDerivativeOfProjectionWRTposition(valE) * J;
+//      FunctionReturnType valE = evaluateEmbeddingFunctionImpl(N);
+      return  J;
     }
 
     template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
@@ -147,21 +150,16 @@ namespace Dune {
       const auto& [N, dNraw] = evaluateFunctionAndDerivativeWithIPorCoord(ipIndexOrPosition, basis_);
       maytransformDerivatives(dNraw, dNTransformed, transArgs, geometry_, ipIndexOrPosition, basis_);
       JacobianColType Jcol    = evaluateEmbeddingJacobianColImpl(dNTransformed, spaceIndex);
-      FunctionReturnType valE = evaluateEmbeddingFunctionImpl(N);
-      return tryToCallDerivativeOfProjectionWRTposition(valE) * Jcol;
+      return  Jcol;
     }
 
     template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
     CoeffDerivEukRieMatrix evaluateDerivativeWRTCoeffsImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
                                                            int coeffsIndex, const On<TransformArgs...>&) const {
       const auto& N = evaluateFunctionWithIPorCoord(ipIndexOrPosition, basis_);
-      return (evaluateDerivativeWRTCoeffsEukImpl(N, coeffsIndex) * coeffs[coeffsIndex].orthonormalFrame());
+      return N[coeffsIndex] * coeffs[coeffsIndex].orthonormalFrame();
     }
 
-    CoeffDerivEukMatrix evaluateDerivativeWRTCoeffsEukImpl(const AnsatzFunctionType& N, int coeffsIndex) const {
-      FunctionReturnType valE = evaluateEmbeddingFunctionImpl(N);
-      return tryToCallDerivativeOfProjectionWRTposition(valE) * N[coeffsIndex];
-    }
 
     template <typename DomainTypeOrIntegrationPointIndex, typename... AlongArgs, typename... TransformArgs>
     CoeffDerivMatrix evaluateSecondDerivativeWRTCoeffsImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
@@ -170,12 +168,11 @@ namespace Dune {
                                                            const On<TransformArgs...>&) const {
       const auto& N                 = evaluateFunctionWithIPorCoord(ipIndexOrPosition, basis_);
       const FunctionReturnType valE = evaluateEmbeddingFunctionImpl(N);
-
-      CoeffDerivEukMatrix ddt = tryToCallSecondDerivativeOfProjectionWRTposition(valE, std::get<0>(alongArgs.args))
-                                * N[coeffsIndex[0]] * N[coeffsIndex[1]];
+      CoeffDerivEukMatrix ddt;
+      ddt.setZero();
 
       if (coeffsIndex[0] == coeffsIndex[1]) {  // Riemannian Hessian Weingarten map correction
-        const CoeffDerivEukMatrix dt = evaluateDerivativeWRTCoeffsEukImpl(N, coeffsIndex[0]);
+        const CoeffDerivEukMatrix dt = N[coeffsIndex[0]]*CoeffDerivEukMatrix::Identity();
         auto& unitVec                = coeffs[coeffsIndex[0]];
         auto& unitVecVal             = unitVec.getValue();
         auto scal                    = inner(unitVecVal, dt * std::get<0>(alongArgs.args));
@@ -191,94 +188,37 @@ namespace Dune {
     std::array<CoeffDerivEukRieMatrix, gridDim> evaluateDerivativeWRTCoeffsANDSpatialImpl(
         const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, int coeffsIndex,
         const On<TransformArgs...>& transArgs) const {
-      std::array<CoeffDerivEukMatrix, gridDim> WarrayEuk
-          = evaluateDerivativeWRTCoeffsANDSpatialEukImpl(ipIndexOrPosition, coeffsIndex, transArgs);
       std::array<CoeffDerivEukRieMatrix, gridDim> WarrayRie;
       const auto BLA = coeffs[coeffsIndex].orthonormalFrame();
       for (int dir = 0; dir < gridDim; ++dir)
-        WarrayRie[dir] = WarrayEuk[dir] * BLA;
+        WarrayRie[dir] = coeff(dNTransformed, coeffsIndex, dir) * BLA;
 
       return WarrayRie;
-    }
-
-    template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
-    std::array<CoeffDerivEukMatrix, gridDim> evaluateDerivativeWRTCoeffsANDSpatialEukImpl(
-        const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, int coeffsIndex,
-        const On<TransformArgs...>& transArgs) const {
-      const auto& [N, dNraw] = evaluateFunctionAndDerivativeWithIPorCoord(ipIndexOrPosition, basis_);
-      maytransformDerivatives(dNraw, dNTransformed, transArgs, geometry_, ipIndexOrPosition, basis_);
-      const FunctionReturnType valE = evaluateEmbeddingFunctionImpl(N);
-      const Jacobian J              = evaluateEmbeddingJacobianImpl(dNTransformed);
-      const CoeffDerivEukMatrix Pm  = tryToCallDerivativeOfProjectionWRTposition(valE);
-      std::array<CoeffDerivEukMatrix, gridDim> Warray;
-      for (int dir = 0; dir < gridDim; ++dir) {
-        const auto Qi = tryToCallSecondDerivativeOfProjectionWRTposition(valE, col(J, dir));
-        Warray[dir]   = Qi * N[coeffsIndex] + Pm * coeff(dNTransformed, coeffsIndex, dir);
-      }
-
-      return Warray;
     }
 
     template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
     CoeffDerivEukRieMatrix evaluateDerivativeWRTCoeffsANDSpatialSingleImpl(
         const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, int coeffsIndex, int spatialIndex,
         const On<TransformArgs...>& transArgs) const {
-      const CoeffDerivEukMatrix WEuk
-          = evaluateDerivativeWRTCoeffsANDSpatialSingleEukImpl(ipIndexOrPosition, coeffsIndex, spatialIndex, transArgs);
-      return WEuk * coeffs[coeffsIndex].orthonormalFrame();
+      return coeff(dNTransformed, coeffsIndex, spatialIndex) * coeffs[coeffsIndex].orthonormalFrame();
     }
 
-    template <typename DomainTypeOrIntegrationPointIndex, typename... TransformArgs>
-    CoeffDerivEukMatrix evaluateDerivativeWRTCoeffsANDSpatialSingleEukImpl(
-        const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, int coeffsIndex, int spatialIndex,
-        const On<TransformArgs...>& transArgs) const {
-      const auto& [N, dNraw] = evaluateFunctionAndDerivativeWithIPorCoord(ipIndexOrPosition, basis_);
-      maytransformDerivatives(dNraw, dNTransformed, transArgs, geometry_, ipIndexOrPosition, basis_);
-      const FunctionReturnType valE = evaluateEmbeddingFunctionImpl(N);
-      const JacobianColType Jcol    = evaluateEmbeddingJacobianColImpl(dNTransformed, spatialIndex);
-      const CoeffDerivEukMatrix Pm  = tryToCallDerivativeOfProjectionWRTposition(valE);
-      CoeffDerivEukMatrix W;
-      const auto Qi = tryToCallSecondDerivativeOfProjectionWRTposition(valE, Jcol);
-      W             = Qi * N[coeffsIndex] + Pm * coeff(dNTransformed, coeffsIndex, spatialIndex);
-      return W;
-    }
 
     template <typename DomainTypeOrIntegrationPointIndex, typename... AlongArgs, typename... TransformArgs>
     auto evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialImpl(
         const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, const std::array<size_t, 2>& coeffsIndex,
         const Along<AlongArgs...>& alongArgs, const On<TransformArgs...>& transArgs) const {
-      const auto& [N, dNraw] = evaluateFunctionAndDerivativeWithIPorCoord(ipIndexOrPosition, basis_);
-
-      maytransformDerivatives(dNraw, dNTransformed, transArgs, geometry_, ipIndexOrPosition, basis_);
-      const FunctionReturnType valE = evaluateEmbeddingFunctionImpl(N);
-      const Jacobian J              = evaluateEmbeddingJacobianImpl(dNTransformed);
-      const auto& along             = std::get<0>(alongArgs.args);
       CoeffDerivEukMatrix ChiArrayEuk;
       setZero(ChiArrayEuk);
-      static_assert(Cols<decltype(along)>::value == gridDim);
-      static_assert(Cols<decltype(J)>::value == gridDim);
-      static_assert(Rows<decltype(along)>::value == valueSize);
-      static_assert(Rows<decltype(J)>::value == valueSize);
-      for (int i = 0; i < gridDim; ++i) {
-        auto colAlong               = col(along, i);
-        const auto chi              = tryToCallThirdDerivativeOfProjectionWRTposition(valE, colAlong, col(J, i));
-        const CoeffDerivEukMatrix S = tryToCallSecondDerivativeOfProjectionWRTposition(valE, colAlong);
-        const auto& NI              = N[coeffsIndex[0]];
-        const auto& NJ              = N[coeffsIndex[1]];
-        const auto& dNIdi           = coeff(dNTransformed, coeffsIndex[0], i);
-        const auto& dNJdi           = coeff(dNTransformed, coeffsIndex[1], i);
-        ChiArrayEuk += chi * NI * NJ;
-        ChiArrayEuk += S * (dNIdi * NJ + dNJdi * NI);
-      }
+
       if (coeffsIndex[0] == coeffsIndex[1]) {  // Riemannian Hessian Weingarten map correction
-        const std::array<CoeffDerivEukMatrix, gridDim> Warray
-            = evaluateDerivativeWRTCoeffsANDSpatialEukImpl(ipIndexOrPosition, coeffsIndex[0], transArgs);
+        const auto& along             = std::get<0>(alongArgs.args);
         for (int i = 0; i < gridDim; ++i) {
+          const CoeffDerivEukMatrix W =coeff(dNTransformed, coeffsIndex[0], i)*CoeffDerivEukMatrix::Identity();
           ChiArrayEuk -= createScaledIdentityMatrix<ctype, valueSize, valueSize>(
-              inner(coeffs[coeffsIndex[0]].getValue(), Warray[i] * col(along, i)));
+              inner(coeffs[coeffsIndex[0]].getValue(), W * col(along, i)));
         }
       }
-
       CoeffDerivMatrix ChiArrayRie;
       const auto BLA0T = eval(transposeEvaluated(coeffs[coeffsIndex[0]].orthonormalFrame()));
       const auto BLA1  = coeffs[coeffsIndex[1]].orthonormalFrame();
@@ -290,23 +230,22 @@ namespace Dune {
     CoeffDerivMatrix evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialSingleImpl(
         const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition, const std::array<size_t, 2>& coeffsIndex,
         const int spatialIndex, const Along<AlongArgs...>& alongArgs, const On<TransformArgs...>& transArgs) const {
-      const auto& [N, dNraw] = evaluateFunctionAndDerivativeWithIPorCoord(ipIndexOrPosition, basis_);
-      maytransformDerivatives(dNraw, dNTransformed, transArgs, geometry_, ipIndexOrPosition, basis_);
-      const FunctionReturnType valE = evaluateEmbeddingFunctionImpl(N);
-      const Jacobian J              = evaluateEmbeddingJacobianImpl(dNTransformed);
+//      const auto& [N, dNraw] = evaluateFunctionAndDerivativeWithIPorCoord(ipIndexOrPosition, basis_);
+//      maytransformDerivatives(dNraw, dNTransformed, transArgs, geometry_, ipIndexOrPosition, basis_);
+//      const FunctionReturnType valE = evaluateEmbeddingFunctionImpl(N);
+//      const Jacobian J              = evaluateEmbeddingJacobianImpl(dNTransformed);
       const auto& along             = std::get<0>(alongArgs.args);
-      const CoeffDerivEukMatrix S   = tryToCallSecondDerivativeOfProjectionWRTposition(valE, along);
-      const auto chi          = tryToCallThirdDerivativeOfProjectionWRTposition(valE, along, col(J, spatialIndex));
-      const auto& NI          = N[coeffsIndex[0]];
-      const auto& NJ          = N[coeffsIndex[1]];
-      const auto& dNIdi       = coeff(dNTransformed, coeffsIndex[0], spatialIndex);
-      const auto& dNJdi       = coeff(dNTransformed, coeffsIndex[1], spatialIndex);
-      CoeffDerivEukMatrix Chi = chi * NI * NJ;
-      Chi += S * (dNIdi * NJ + dNJdi * NI);
+//      const CoeffDerivEukMatrix S   = tryToCallSecondDerivativeOfProjectionWRTposition(valE, along);
+//      const auto chi          = tryToCallThirdDerivativeOfProjectionWRTposition(valE, along, col(J, spatialIndex));
+//      const auto& NI          = N[coeffsIndex[0]];
+//      const auto& NJ          = N[coeffsIndex[1]];
+//      const auto& dNIdi       = coeff(dNTransformed, coeffsIndex[0], spatialIndex);
+//      const auto& dNJdi       = coeff(dNTransformed, coeffsIndex[1], spatialIndex);
+      CoeffDerivEukMatrix Chi;
+      Chi.setZero();
 
       if (coeffsIndex[0] == coeffsIndex[1]) {  // Riemannian Hessian Weingarten map correction
-        const CoeffDerivEukMatrix W = evaluateDerivativeWRTCoeffsANDSpatialSingleEukImpl(
-            ipIndexOrPosition, coeffsIndex[0], spatialIndex, transArgs);
+        const CoeffDerivEukMatrix W = coeff(dNTransformed, coeffsIndex[0], spatialIndex)*CoeffDerivEukMatrix::Identity();
         Chi -= createScaledIdentityMatrix<ctype, valueSize, valueSize>(
             inner(coeffs[coeffsIndex[0]].getValue(), W * along));
       }
@@ -318,7 +257,7 @@ namespace Dune {
     FunctionReturnType evaluateFunctionImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
                                             [[maybe_unused]] const On<TransformArgs...>&) const {
       const auto& N = evaluateFunctionWithIPorCoord(ipIndexOrPosition, basis_);
-      return Manifold(evaluateEmbeddingFunctionImpl(N)).getValue();
+      return evaluateEmbeddingFunctionImpl(N);
     }
 
     JacobianColType evaluateEmbeddingJacobianColImpl(const AnsatzFunctionJacobian& dN, int spaceIndex) const {

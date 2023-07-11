@@ -19,6 +19,8 @@ namespace Ikarus
       doubleMap.insert_or_assign(key,value);
             else  if constexpr (std::is_same_v<T,int>)
       intMap.insert_or_assign(key,value);
+            else  if constexpr (std::is_same_v<T,std::string>)
+      stringMap.insert_or_assign(key,value);
     }
 
     template<typename T>
@@ -30,12 +32,15 @@ namespace Ikarus
       return doubleMap.at(key);
              else  if constexpr (std::is_same_v<T,int>)
       return intMap.at(key);
+             else  if constexpr (std::is_same_v<T,std::string>)
+      return stringMap.at(key);
     }
 
 
     std::map<std::string,bool> boolMap;
     std::map<std::string,double> doubleMap;
     std::map<std::string,int > intMap;
+    std::map<std::string,std::string > stringMap;
 
 
   };
