@@ -174,7 +174,8 @@ namespace Ikarus {
         resultVector.resizeLike(PK2);
         resultVector = PK2;
         result.insertOrAssignResult(ResultType::PK2Stress, resultVector);
-      }
+      } else
+        DUNE_THROW(Dune::NotImplemented, "The requested result type is NOT implemented.");
     }
 
     Dune::CachedLocalBasis<

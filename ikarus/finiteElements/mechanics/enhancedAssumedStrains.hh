@@ -345,7 +345,8 @@ namespace Ikarus {
                 resultVector.resize(3, 1);
                 resultVector = result.getResult(ResultType::linearStress) + easStress;
                 result.insertOrAssignResult(ResultType::linearStress, resultVector);
-              }
+              } else
+                DUNE_THROW(Dune::NotImplemented, "The requested result type is NOT implemented.");
             }
           },
           easVariant_);
