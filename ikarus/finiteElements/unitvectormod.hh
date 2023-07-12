@@ -98,6 +98,15 @@ namespace Dune {
     return (BLA.transpose()*secondDerivativeOfArcCosSquared(dotprod)*l.getValue()*l.getValue().transpose()*BLA-r.getValue().dot(gradEuk)*Eigen::Matrix<double,d-1,d-1>::Identity()).eval();
   }
 
+  template<typename Scalar, int d>
+  Eigen::Matrix<Scalar,d,d> euclideanSecondDerivativeOfDistanceSquaredWRTSecondArgument(const UnitVector<Scalar,d> & l, const UnitVector<Scalar,d> & r)  {
+
+    const auto dotprod = l.getValue().dot(r.getValue());
+    const auto gradEuk = euclideanDerivativeOfDistanceSquaredWRTSecondArgument(l,r);
+    return (secondDerivativeOfArcCosSquared(dotprod)*l.getValue()*l.getValue().transpose()-r.getValue().dot(gradEuk)*Eigen::Matrix<double,d,d>::Identity()).eval();
+  }
+
+
 //
 //  /**
 //   * \brief FunctionReturnType of unit vectors \f$\mathcal{S}^{d-1}\f$ embedded into space \f$\mathbb{R}^d\f$

@@ -103,7 +103,7 @@ namespace Dune::Vtk {
         Refinement& refinement = buildRefinement<3, ctype>(refElementType, refElementType);
         for (SubVertexIterator sit = refinement.vBegin(subSampleInPlane), send = refinement.vEnd(subSampleInPlane);
              sit != send; ++sit) {
-          Dune::FieldVector<T,2> coord2D= {sit.coords()[0],sit.coords()[1]};
+          Dune::FieldVector<T,2> coord2D= {static_cast<T>(sit.coords()[0]),static_cast<T>(sit.coords()[1])};
           auto midSurface          = geometry.global(coord2D);
           auto J         = geometry.jacobianTransposed(coord2D);
           auto n          = cross(J[0],J[1]);
@@ -194,8 +194,6 @@ namespace Dune::Vtk {
         Refinement& refinement = buildRefinement<3, ctype>(refElementType, refElementType);
         for (SubVertexIterator sit = refinement.vBegin(subSampleInPlane), send = refinement.vEnd(subSampleInPlane);
              sit != send; ++sit) {
-          Dune::FieldVector<T,2> coord2D= {sit.coords()[0],sit.coords()[1]};
-
           std::int64_t idx = nComps * vertexIndex_.at({elementId,sit.index()});
 
           for (std::size_t comp = 0; comp < nComps; ++comp)
