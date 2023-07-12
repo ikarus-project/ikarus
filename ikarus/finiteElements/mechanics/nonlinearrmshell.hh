@@ -339,16 +339,7 @@ struct StressBasedShellRM;
                                                                 int i,int j, const auto &displacementFunction, const auto &directorFunction,const auto& S) const {
       using namespace Dune::TypeTree::Indices;
       using namespace Dune::DerivativeDirections;
-      const double& Ni   = Nd[i];
-      const double& dN1i = dNd(i, 0);
-      const double& dN2i = dNd(i, 1);
-      const double& Nj = Nd[j];
-      const double& dN1j = dNd(j, 0);
-      const double& dN2j = dNd(j, 1);
 
-      const double NdN1 = dN1j * Ni + Nj * dN1i;
-      const double NdN2 = dN2j * Ni + Nj * dN2i;
-//      const Eigen::Vector<ScalarType,3> SM = S.template segment<3>(3);
       const auto a1 = kin.a1().eval();
       const auto a2 = kin.a2().eval();
       const Eigen::Matrix<ScalarType, 2, 2> fac11
@@ -369,16 +360,7 @@ struct StressBasedShellRM;
                                                               int i,int j, const auto &displacementFunction, const auto &directorFunction,const auto& S) const {
       using namespace Dune::TypeTree::Indices;
       using namespace Dune::DerivativeDirections;
-      const double& Ni   = Nd[i];
-      const double& dN1i = dNd(i, 0);
-      const double& dN2i = dNd(i, 1);
-      const double& Nj = Nd[j];
-      const double& dN1j = dNd(j, 0);
-      const double& dN2j = dNd(j, 1);
 
-      const double NdN1 = dN1j * Ni + Nj * dN1i;
-      const double NdN2 = dN2j * Ni + Nj * dN2i;
-//      const Eigen::Vector<ScalarType,3> SM = S.template segment<3>(3);
       const auto td1 = kin.td1().eval();
       const auto td2 = kin.td2().eval();
       const Eigen::Matrix<ScalarType, 2, 2> fac11
@@ -406,16 +388,7 @@ struct StressBasedShellRM;
                                                                  int i,int j, const auto &displacementFunction, const auto &directorFunction,const auto& S) const {
       using namespace Dune::TypeTree::Indices;
       using namespace Dune::DerivativeDirections;
-      const double& Ni   = Nd[i];
-      const double& dN1i = dNd(i, 0);
-      const double& dN2i = dNd(i, 1);
-      const double& Nj = Nd[j];
-      const double& dN1j = dNd(j, 0);
-      const double& dN2j = dNd(j, 1);
 
-      const double NdN1 = dN1j * Ni + Nj * dN1i;
-      const double NdN2 = dN2j * Ni + Nj * dN2i;
-//      const Eigen::Vector<ScalarType,3> SM = S.template segment<3>(3);
       const auto a1 = kin.a1().eval();
       const auto a2 = kin.a2().eval();
       const Eigen::Matrix<ScalarType, 2, 2> S1
@@ -467,8 +440,6 @@ struct StressBasedShellRM;
       using namespace Dune::DerivativeDirections;
       const std::array<Eigen::Matrix<ScalarType, 3, 2>, 2> diffdt
           = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(spatialAll, coeff(_1, coeffIndex)),Dune::on(referenceElement));
-      const Eigen::Matrix<ScalarType, 3, 2> difft
-          = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(coeff(_1, coeffIndex)),Dune::on(referenceElement));
 
       const auto &diffdtd1 = diffdt[0];
       const auto &diffdtd2 = diffdt[1];
@@ -487,13 +458,8 @@ struct StressBasedShellRM;
                                                       int coeffIndex, const auto &directorFunction) const {
       using namespace Dune::TypeTree::Indices;
       using namespace Dune::DerivativeDirections;
-      const std::array<Eigen::Matrix<ScalarType, 3, 2>, 2> diffdt
-          = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(spatialAll, coeff(_1, coeffIndex)),Dune::on(referenceElement));
       const Eigen::Matrix<ScalarType, 3, 2> difft
           = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(coeff(_1, coeffIndex)),Dune::on(referenceElement));
-
-      const auto &diffdtd1 = diffdt[0];
-      const auto &diffdtd2 = diffdt[1];
 
       Eigen::Matrix<ScalarType, 2, 2> bop;
 

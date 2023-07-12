@@ -12,18 +12,12 @@
 #include <dune/functions/functionspacebases/subspacebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/compositebasis.hh>
-#include <dune/functions/functionspacebases/subspacebasis.hh>
 #include <dune/iga/nurbsbasis.hh>
 #include <dune/iga/nurbsgrid.hh>
 #include <ikarus/finiteElements/feBases/autodiffFE.hh>
-#include <dune/functions/functionspacebases/interpolate.hh>
 
 #include "spdlog/spdlog.h"
 #include "testCommon.hh"
-#include "ikarus/io/vtkFunctionExtensions.hh"
-#include "ikarus/io/composedGgridfuncMod.hh"
-
-#include <Eigen/Core>
 
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/controlRoutines/loadControl.hh>
@@ -32,19 +26,11 @@
 #include <ikarus/finiteElements/mechanics/rmlstressBased.hh>
 #include <ikarus/io/resultFunction.hh>
 #include <ikarus/linearAlgebra/dirichletValues.hh>
-#include <ikarus/linearAlgebra/nonLinearOperator.hh>
-#include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
-//#include <ikarus/solver/nonLinearSolver/trustRegion.hh>
+
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/init.hh>
-#include <ikarus/utils/observer/controlVTKWriter.hh>
-#include <ikarus/utils/observer/nonLinearSolverLogger.hh>
-#include <ikarus/io/shell3DDataCollector.hh>
-#include <ikarus/utils/linearAlgebraHelper.hh>
 
 using Dune::TestSuite;
-#include <autodiff/forward/dual/dual.hpp>
-#include <autodiff/forward/dual/eigen.hpp>
 
 template<typename CASStrain>
 auto testMembraneStrain(const auto& localView,const auto& d)
@@ -234,6 +220,7 @@ auto checkFEByAutoDiff(std::string filename) {
     MultiTypeVector x =x0;
 //  ShellElement<Basis> fe(basis, *element, feSettings,x0, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
   std::vector<ShellElement<Basis>> fes;
+  for (auto& ele :elements(gridView))
   fes.emplace_back(basis, *element, feSettings,x0, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
   using AutoDiffBasedFE = Ikarus::AutoDiffFE<ShellElement<Basis>, true>;
 //  AutoDiffBasedFE feAutoDiff(fe);
@@ -241,20 +228,19 @@ auto checkFEByAutoDiff(std::string filename) {
 //  Eigen::VectorXd d;
 //  d.setRandom(nDOF);
   //d.setZero(nDOF);
-    auto basis3D       = Ikarus::makeBasis(gridView, composite(power<3>(scalarMidSurfBasis, BlockedInterleaved()),power<3>(scalaarDirectorBasis, BlockedInterleaved()),
-                                                               BlockedLexicographic{}));
-    auto blockedmidSurfaceBasis2 = Dune::Functions::subspaceBasis(basis3D.untouched(),Dune::Indices::_0);
-    auto blockeddirectorBasis2 = Dune::Functions::subspaceBasis(basis3D.untouched(),Dune::Indices::_1);
-    auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockedmidSurfaceBasis2,  x);
-    auto director = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockeddirectorBasis2,  x);
-  Dune::SubsamplingVTKWriter vtkWriter(gridView,Dune::refinementLevels(0));
-
-    vtkWriter.addVertexData(disp, {"displacements", Dune::VTK::FieldInfo::Type::vector, 3});
-    vtkWriter.addVertexData(director, {"director", Dune::VTK::FieldInfo::Type::vector, 3});
-  vtkWriter.write(filename+ std::to_string(i));
+//    auto basis3D       = Ikarus::makeBasis(gridView, composite(power<3>(scalarMidSurfBasis, BlockedInterleaved()),power<3>(scalaarDirectorBasis, BlockedInterleaved()),
+//                                                               BlockedLexicographic{}));
+//    auto blockedmidSurfaceBasis2 = Dune::Functions::subspaceBasis(basis3D.untouched(),Dune::Indices::_0);
+//    auto blockeddirectorBasis2 = Dune::Functions::subspaceBasis(basis3D.untouched(),Dune::Indices::_1);
+//    auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockedmidSurfaceBasis2,  x);
+//    auto director = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockeddirectorBasis2,  x);
+//  Dune::SubsamplingVTKWriter vtkWriter(gridView,Dune::refinementLevels(0));
+//
+//    vtkWriter.addVertexData(disp, {"displacements", Dune::VTK::FieldInfo::Type::vector, 3});
+//    vtkWriter.addVertexData(director, {"director", Dune::VTK::FieldInfo::Type::vector, 3});
+//  vtkWriter.write(filename+ std::to_string(i));
 
   Ikarus::DirichletValues dirichletValues( basis.flat());
-  auto& fe             = fes[0];
   auto sparseAssembler = Ikarus::SparseFlatAssembler(fes, dirichletValues);
 
 //  auto localDisp=localFunction(disp);
@@ -273,22 +259,22 @@ auto checkFEByAutoDiff(std::string filename) {
 
     auto dfvLambda = [&](auto&& d_) -> auto& {
       req.        insertGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector, d_);
-      return sparseAssembler.getReducedVector(req);
+      return sparseAssembler.getVector(req);
     };
     auto ddfvLambda = [&](auto&& d_) -> auto& {
       req.        insertGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector, d_);
-      return sparseAssembler.getReducedMatrix(req);
+      return sparseAssembler.getMatrix(req);
     };
     auto nonLinOp = Ikarus::NonLinearOperator(Ikarus::functions(fvLambda, dfvLambda, ddfvLambda), Ikarus::parameter(x));
 
     nonLinOp.updateAll();
 
     auto uF=std::function([&](MultiTypeVector& multiTypeVector, const Eigen::VectorXd& d_) {
-      auto dFull = sparseAssembler.createFullVector(d_);
+//      auto dFull = sparseAssembler.createFullVector(d_);
       //    std::cout<<"dFull"<<std::endl;
       //    std::cout<<dFull<<std::endl;
       using Ikarus::operator+=;
-      multiTypeVector += dFull;
+      multiTypeVector += d_;
     });
 
     t.check(Ikarus::checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true},uF))<<"Mismatch between the residual vectors obtained from explicit implementation and the one based on "<<

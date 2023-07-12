@@ -55,8 +55,8 @@ namespace Dune {
         coeffsReal[i]=coeffs[i];
         coeffsDual2nd[i]=coeffs[i];
       }
-      std::cout<<"coeffsReal Constructor"<<std::endl;
-      std::cout<<coeffsReal<<std::endl;
+//      std::cout<<"coeffsReal Constructor"<<std::endl;
+//      std::cout<<coeffsReal<<std::endl;
     }
 
     using Traits = LocalFunctionTraits<GeodesicLocalFunction>;
@@ -209,11 +209,11 @@ namespace Dune {
       x.setZero();
       Eigen::Matrix<ctype ,valueSize,valueSize> J;
           jacobian(f, autodiff::wrt(x), autodiff::at(x), F,J);
-          std::cout<<"evaluateDerivativeWRTCoeffsImpl coeffIndex:"<<coeffsIndex<<std::endl;
-          std::cout<<"F"<<std::endl;
-          std::cout<<F<<std::endl;
-          std::cout<<"J"<<std::endl;
-          std::cout<<J<<std::endl;
+//          std::cout<<"evaluateDerivativeWRTCoeffsImpl coeffIndex:"<<coeffsIndex<<std::endl;
+//          std::cout<<"F"<<std::endl;
+//          std::cout<<F<<std::endl;
+//          std::cout<<"J"<<std::endl;
+//          std::cout<<J<<std::endl;
       return J*coeffs[coeffsIndex].orthonormalFrame();
     }
 
@@ -239,11 +239,11 @@ namespace Dune {
         if (coeffsIndex[0] == coeffsIndex[1]) {  // Riemannian Hessian Weingarten map correction
           H -= (coeffs[coeffsIndex[0]].getValue().dot(g)) * CoeffDerivEukMatrix::Identity();
         }
-        std::cout<<"evaluateSecondDerivativeWRTCoeffsImpl coeffIndex:"<<coeffsIndex[0]<<" "<<coeffsIndex[1]<<std::endl;
-        std::cout<<"g"<<std::endl;
-        std::cout<<g<<std::endl;
-        std::cout<<"H"<<std::endl;
-        std::cout<<H<<std::endl;
+//        std::cout<<"evaluateSecondDerivativeWRTCoeffsImpl coeffIndex:"<<coeffsIndex[0]<<" "<<coeffsIndex[1]<<std::endl;
+//        std::cout<<"g"<<std::endl;
+//        std::cout<<g<<std::endl;
+//        std::cout<<"H"<<std::endl;
+//        std::cout<<H<<std::endl;
         return coeffs[coeffsIndex[0]].orthonormalFrame().transpose() * H * coeffs[coeffsIndex[0]].orthonormalFrame();
       }else
 
@@ -263,11 +263,11 @@ namespace Dune {
         x.setZero();
         hessian(f, autodiff::wrt(x), autodiff::at(x), e, g, H);
         CoeffDerivEukMatrix Hr = H.template block<valueSize, valueSize>(0, valueSize);
-        std::cout<<"evaluateSecondDerivativeWRTCoeffsImpl diff coeffIndex:"<<coeffsIndex[0]<<" "<<coeffsIndex[1]<<std::endl;
-        std::cout<<"g"<<std::endl;
-        std::cout<<g<<std::endl;
-        std::cout<<"H"<<std::endl;
-        std::cout<<H<<std::endl;
+//        std::cout<<"evaluateSecondDerivativeWRTCoeffsImpl diff coeffIndex:"<<coeffsIndex[0]<<" "<<coeffsIndex[1]<<std::endl;
+//        std::cout<<"g"<<std::endl;
+//        std::cout<<g<<std::endl;
+//        std::cout<<"H"<<std::endl;
+//        std::cout<<H<<std::endl;
         return coeffs[coeffsIndex[0]].orthonormalFrame().transpose() * Hr * coeffs[coeffsIndex[1]].orthonormalFrame();
       }
     }
@@ -282,19 +282,19 @@ namespace Dune {
       //      const auto BLA = coeffs[coeffsIndex].orthonormalFrame().eval();
       //      for (int dir = 0; dir < gridDim; ++dir)
       //        WarrayRie[dir] = WarrayEuk[dir] * BLA;
-      std::cout<<"coeffsReal Outside"<<std::endl;
-      std::cout<<coeffsReal<<std::endl;
+//      std::cout<<"coeffsReal Outside"<<std::endl;
+//      std::cout<<coeffsReal<<std::endl;
       auto f = [&](auto& x)
       {
-        std::cout<<"coeffsReal Inside Before"<<std::endl;
-        std::cout<<coeffsReal<<std::endl;
-        std::cout<<"x"<<std::endl;
-        std::cout<<x<<std::endl;
+//        std::cout<<"coeffsReal Inside Before"<<std::endl;
+//        std::cout<<coeffsReal<<std::endl;
+//        std::cout<<"x"<<std::endl;
+//        std::cout<<x<<std::endl;
         coeffsReal[coeffsIndex].addInEmbedding(x);
         auto J = evaluateDerivativeWRTSpaceAllImplImpl(ipIndexOrPosition,On<TransformArgs...>(),coeffsReal);
         coeffsReal[coeffsIndex].addInEmbedding(-x);
-        std::cout<<"coeffsReal Inside After"<<std::endl;
-        std::cout<<coeffsReal<<std::endl;
+//        std::cout<<"coeffsReal Inside After"<<std::endl;
+//        std::cout<<coeffsReal<<std::endl;
         auto JV = J.reshaped().eval();
         return JV;
       };
@@ -306,13 +306,13 @@ namespace Dune {
       for (int i = 0; i < gridDim; ++i) {
         WarrayRie[i]=JV.template block<valueSize,valueSize>(valueSize*i,0)*coeffs[coeffsIndex].orthonormalFrame();
       }
-      std::cout<<"evaluateDerivativeWRTCoeffsANDSpatialImpl coeffIndex:"<<coeffsIndex<<std::endl;
-      std::cout<<"JV"<<std::endl;
-      std::cout<<JV<<std::endl;
-      std::cout<<"WarrayRie[0]"<<std::endl;
-      std::cout<<WarrayRie[0]<<std::endl;
-      std::cout<<"WarrayRie[1]"<<std::endl;
-      std::cout<<WarrayRie[1]<<std::endl;
+//      std::cout<<"evaluateDerivativeWRTCoeffsANDSpatialImpl coeffIndex:"<<coeffsIndex<<std::endl;
+//      std::cout<<"JV"<<std::endl;
+//      std::cout<<JV<<std::endl;
+//      std::cout<<"WarrayRie[0]"<<std::endl;
+//      std::cout<<WarrayRie[0]<<std::endl;
+//      std::cout<<"WarrayRie[1]"<<std::endl;
+//      std::cout<<WarrayRie[1]<<std::endl;
       return WarrayRie;
     }
 
@@ -337,11 +337,11 @@ namespace Dune {
         jacobian(f, wrt(x), at(x), F, JV);
           WarrayRie
               = JV* coeffs[coeffsIndex].orthonormalFrame();
-          std::cout<<"evaluateDerivativeWRTCoeffsANDSpatialSingleImpl coeffIndex:"<<coeffsIndex<<"spatialindex"<<spatialIndex<<std::endl;
-          std::cout<<"JV"<<std::endl;
-          std::cout<<JV<<std::endl;
-          std::cout<<"WarrayRi"<<std::endl;
-          std::cout<<WarrayRie<<std::endl;
+//          std::cout<<"evaluateDerivativeWRTCoeffsANDSpatialSingleImpl coeffIndex:"<<coeffsIndex<<"spatialindex"<<spatialIndex<<std::endl;
+//          std::cout<<"JV"<<std::endl;
+//          std::cout<<JV<<std::endl;
+//          std::cout<<"WarrayRi"<<std::endl;
+//          std::cout<<WarrayRie<<std::endl;
         return WarrayRie;
     }
 
@@ -390,11 +390,11 @@ namespace Dune {
 
         // Riemannian Hessian Weingarten map correction
         H      -= coeffs[coeffsIndex[0]].getValue().dot(g) * CoeffDerivEukMatrix::Identity();
-        std::cout<<"evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialGenericImpl coeffIndex:"<<coeffsIndex[0]<<" "<<coeffsIndex[1]<<"spatialindex"<<spaceIndex.value()<<std::endl;
-        std::cout<<"H"<<std::endl;
-        std::cout<<H<<std::endl;
-        std::cout<<"g"<<std::endl;
-        std::cout<<g<<std::endl;
+//        std::cout<<"evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialGenericImpl coeffIndex:"<<coeffsIndex[0]<<" "<<coeffsIndex[1]<<"spatialindex"<<spaceIndex.value()<<std::endl;
+//        std::cout<<"H"<<std::endl;
+//        std::cout<<H<<std::endl;
+//        std::cout<<"g"<<std::endl;
+//        std::cout<<g<<std::endl;
         CoeffDerivMatrix ChiArrayRie;
         const auto BLA0 = coeffs[coeffsIndex[0]].orthonormalFrame();
         ChiArrayRie      = BLA0.transpose() * H * BLA0;
@@ -418,13 +418,13 @@ namespace Dune {
         x.setZero();
         hessian(f, autodiff::wrt(x), autodiff::at(x), e, g, H);
         CoeffDerivEukMatrix Hr = H.template block<valueSize, valueSize>(0, valueSize);
-        std::cout<<"evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialGenericImpl coeffIndex:"<<coeffsIndex[0]<<" "<<coeffsIndex[1]<<std::endl;
-        std::cout<<"H"<<std::endl;
-        std::cout<<H<<std::endl;
-        std::cout<<"Hr"<<std::endl;
-        std::cout<<Hr<<std::endl;
-        std::cout<<"g"<<std::endl;
-        std::cout<<g<<std::endl;
+//        std::cout<<"evaluateThirdDerivativeWRTCoeffsTwoTimesAndSpatialGenericImpl coeffIndex:"<<coeffsIndex[0]<<" "<<coeffsIndex[1]<<std::endl;
+//        std::cout<<"H"<<std::endl;
+//        std::cout<<H<<std::endl;
+//        std::cout<<"Hr"<<std::endl;
+//        std::cout<<Hr<<std::endl;
+//        std::cout<<"g"<<std::endl;
+//        std::cout<<g<<std::endl;
         CoeffDerivMatrix ChiArrayRie;
         const auto BLA0T = coeffs[coeffsIndex[0]].orthonormalFrame().transpose().eval();
         const auto BLA1  = coeffs[coeffsIndex[1]].orthonormalFrame();
