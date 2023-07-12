@@ -494,11 +494,20 @@ namespace Dune {
     auto evaluateFunctionImplImpl(const DomainTypeOrIntegrationPointIndex& ipIndexOrPosition,
                                             [[maybe_unused]] const On<TransformArgs...>&, const auto& localCoeffs) const {
       const auto& N = evaluateFunctionWithIPorCoord(ipIndexOrPosition, basis_);
+      using ManifoldLocal= std::remove_cvref_t<decltype(localCoeffs[0])>;
+      typename ManifoldLocal::CoordinateType tresV;
+      tresV.setZero();
+//      =localCoeffs[0];
 
-      auto tres=localCoeffs[0]; // predictor
+      for (int i = 0; i < localCoeffs.size(); ++i) {
+        tresV+=N[i]*localCoeffs[i].getValue();
+      }
+      auto tres= ManifoldLocal(tresV);
+      // predictor
       auto g = getGradientOfSquaredDistanceImpl(N,localCoeffs);
       auto h = getHessianOfSquaredDistanceImpl(N,localCoeffs);
       int maxiter=20;
+      int miniter=3;
       int i=0;
       typename decltype(tres)::ctype gRNorm;
       for (; i<maxiter; ++i)
@@ -510,7 +519,7 @@ namespace Dune {
         tres.setValue(tres.getValue()+P*d);
 
         gRNorm=(P*gE).norm();
-        if(gRNorm<1e-8)
+        if(gRNorm<1e-8 and i>= miniter)
           break;
       }
 //      auto nonLinOp  = Ikarus::NonLinearOperator( Ikarus::functions(g,h), Ikarus::parameter(tres));
