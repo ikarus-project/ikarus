@@ -173,7 +173,7 @@ auto checkFEByAutoDiff(std::string filename) {
   feSettings.addOrAssign("youngs_modulus", 1000.0);
   feSettings.addOrAssign("poissons_ratio", 0.0);
   feSettings.addOrAssign("thickness", 0.1);
-  feSettings.addOrAssign("simulationFlag", i);
+  feSettings.addOrAssign("membraneStrainFlag", i);
   using Basis = decltype(basis);
 //  KLSHELL fe(basis, *element, feSettings);
   ShellElement<Basis> fe(basis, *element, feSettings, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
@@ -217,15 +217,15 @@ auto checkFEByAutoDiff(std::string filename) {
 
   t.check(K.isApprox(KAutoDiff, tol),"K Check"+filename)<<
       "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
-      "automatic differentiation with simulationFlag: "<<i<<"\n" << K <<"\n KAutoDiff \n"<< KAutoDiff<<"\n K-KAutoDiff \n"<< K-KAutoDiff;
+      "automatic differentiation with membraneStrainFlag: "<<i<<"\n" << K <<"\n KAutoDiff \n"<< KAutoDiff<<"\n K-KAutoDiff \n"<< K-KAutoDiff;
 
   t.check(R.isApprox(RAutoDiff, tol),"R Check"+filename)<<
       "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
-      "automatic differentiation with simulationFlag: "<<i<<"\n" << R <<"\n RAutoDiff \n"<< RAutoDiff<<"\n R-RAutoDiff \n"<< R-RAutoDiff;
+      "automatic differentiation with membraneStrainFlag: "<<i<<"\n" << R <<"\n RAutoDiff \n"<< RAutoDiff<<"\n R-RAutoDiff \n"<< R-RAutoDiff;
 
   t.check(Dune::FloatCmp::eq(fe.calculateScalar(req), feAutoDiff.calculateScalar(req), tol),"E Check"+filename)<<
     "Mismatch between the energies obtained from explicit implementation and the one based on "
-    "automatic differentiation"<<"with simulationFlag: "<<i;
+    "automatic differentiation"<<"with membraneStrainFlag: "<<i;
   }
   return t;
 }
@@ -262,7 +262,7 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   const auto nu             = parameterSet.get<double>("nu");
   const auto thickness      = parameterSet.get<double>("thickness");
   const auto loadFactor     = parameterSet.get<double>("loadFactor");
-  const auto simulationFlag = parameterSet.get<int>("simulationFlag");
+  const auto membraneStrainFlag = parameterSet.get<int>("membraneStrainFlag");
   const auto refine         = parameterSet.get<int>("refine");
   const auto plotInPlaneRefine         = parameterSet.get<int>("plotInPlaneRefine");
   auto grid = std::make_shared<Grid>(patchData);
@@ -283,7 +283,7 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   feSettings.addOrAssign("youngs_modulus", E);
   feSettings.addOrAssign("poissons_ratio", nu);
   feSettings.addOrAssign("thickness", thickness);
-  feSettings.addOrAssign("simulationFlag", simulationFlag);
+  feSettings.addOrAssign("membraneStrainFlag", membraneStrainFlag);
   auto basis      = Ikarus::makeBasis(gridView, power<3>(nurbs(), FlatInterleaved()));
   std::cout<<"Number of Elements: "<<gridView.size(0)<<std::endl;
   std::cout<<"Dofs: "<<basis.flat().dimension()<<std::endl;

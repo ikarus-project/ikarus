@@ -28,6 +28,7 @@
 #include "membranestrains.hh"
 #include <ikarus/utils/tensorUtils.hh>
 #include "directorFunctions.hh"
+#include "transverseShearStrains.hh"
 
 namespace Ikarus {
 template<typename ResultantBasedShell>
@@ -68,6 +69,7 @@ struct StressBasedShellRM;
 
       auto t0d1() const { return t0d1Andt0d2.col(0); }
       auto t0d2() const { return t0d1Andt0d2.col(1); }
+
     };
 
   public:
@@ -95,6 +97,7 @@ struct StressBasedShellRM;
     static constexpr int myDim = Traits::mydim;
     static constexpr int worlddim = Traits::worlddim;
     mutable MembraneStrain membraneStrain;
+    mutable TransverseShearStrain transverseShearStrain;
     template <typename VolumeLoad = LoadDefault, typename NeumannBoundaryLoad = LoadDefault>
     NonLinearRMshell(const Basis &globalBasis, const typename LocalViewBlocked::Element &element,
                      const FESettings &p_feSettings,  const MultiTypeVector &p_x0,
@@ -136,14 +139,22 @@ struct StressBasedShellRM;
       const auto &Emodul = fESettings.request<double>("youngs_modulus");
       const auto &nu = fESettings.request<double>("poissons_ratio");
       thickness_ = fESettings.request<double>("thickness");
-           const auto &simulationFlag = fESettings.request<int>("simulationFlag");
+           const auto &membraneStrainFlag = fESettings.request<int>("membraneStrainFlag");
+           const auto &transverseShearStrainFlag = fESettings.request<int>("transverseShearStrainFlag");
 
-           if (simulationFlag==0)
+           if (membraneStrainFlag==0)
              membraneStrain = DefaultMembraneStrain();
-           else if (simulationFlag==1)
+           else if (membraneStrainFlag==1)
              membraneStrain = CASMembraneStrain<CASAnsatzFunction>();
-           else if (simulationFlag==2)
+           else if (membraneStrainFlag==2)
              membraneStrain = CASMembraneStrain<CASAnsatzFunctionANS>();
+
+           if (transverseShearStrainFlag==0)
+             transverseShearStrain = DefaultTransverseShear();
+           else if(transverseShearStrainFlag==1)
+             transverseShearStrain= CASTransverseStrain();
+           else
+             DUNE_THROW(Dune::Exception,"Others trasnverse shear strain functions not implemented");
 
       CMat_.setZero();
 //      // membrane
@@ -209,9 +220,9 @@ struct StressBasedShellRM;
     }
 
     template<typename ScalarType>
-    auto computeMaterialAndStrains(const Dune::FieldVector<double, 2> &gpPos,
+    auto computeMaterialAndStrains(const Dune::FieldVector<double, 2> &gpPos,int integrationPointIndex,
                                                 const Geometry &geo,
-                                                const auto &uFunction,const KinematicVariables<ScalarType> &kin) const {
+                                                const auto &uFunction,const auto& directorFunction,const auto& directorRefFunction,const KinematicVariables<ScalarType> &kin) const {
       Eigen::Vector3<ScalarType> epsV=membraneStrain.value(gpPos,geo,uFunction);
       const Eigen::Matrix<double, 2, 2> A = kin.A1andA2.transpose()*kin.A1andA2;
       Eigen::Matrix<double, 3, 3> G;
@@ -225,9 +236,9 @@ struct StressBasedShellRM;
 
       kappaV<<  kin.a1().dot(kin.td1()) - kin.A1().dot(kin.t0d1()), kin.a2().dot(kin.td2()) - kin.A2().dot(kin.t0d2()),
           kin.a1().dot(kin.td2()) + kin.a2().dot(kin.td1()) - kin.A1().dot(kin.t0d2()) - kin.A2().dot(kin.t0d1());
-      Eigen::Vector2<ScalarType> gammaV;
+      Eigen::Vector2<ScalarType> gammaV = transverseShearStrain.value(gpPos,integrationPointIndex,geo,kin,uFunction,directorFunction,directorRefFunction);
 
-      gammaV<<kin.a1().dot(kin.t) - kin.A1().dot(kin.t0), kin.a2().dot(kin.t) - kin.A2().dot(kin.t0);
+//      gammaV<<kin.a1().dot(kin.t) - kin.A1().dot(kin.t0), kin.a2().dot(kin.t) - kin.A2().dot(kin.t0);
 
       return std::make_tuple(C,epsV,kappaV,gammaV);
     }
@@ -383,55 +394,54 @@ struct StressBasedShellRM;
       return kg;
     }
 
-    template<typename ScalarType>
-    Eigen::Matrix<ScalarType, 2, 2> kgDirectorDirectorShear(const KinematicVariables<ScalarType> &kin,const auto& Nd,const auto& dNd, int integrationPointIndex,
-                                                                 int i,int j, const auto &displacementFunction, const auto &directorFunction,const auto& S) const {
-      using namespace Dune::TypeTree::Indices;
-      using namespace Dune::DerivativeDirections;
+//    template<typename ScalarType>
+//    Eigen::Matrix<ScalarType, 2, 2> kgDirectorDirectorShear(const KinematicVariables<ScalarType> &kin,const auto& Nd,const auto& dNd, int integrationPointIndex,
+//                                                                 int i,int j, const auto &displacementFunction, const auto &directorFunction,const auto& S) const {
+//      using namespace Dune::TypeTree::Indices;
+//      using namespace Dune::DerivativeDirections;
+//
+//      const auto a1 = kin.a1().eval();
+//      const auto a2 = kin.a2().eval();
+//      const Eigen::Matrix<ScalarType, 2, 2> S1
+//          = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(coeff(_1, i,_1, j)),Dune::along(a1),Dune::on(referenceElement));
+//
+//      const Eigen::Matrix<ScalarType, 2, 2> S2
+//          = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(coeff(_1, i,_1, j)),Dune::along(a2),Dune::on(referenceElement));
+//      Eigen::Matrix<ScalarType, 2, 2> kg = S1* S[6] + S2 * S[7];
+//
+//      return kg;
+//    }
 
-      const auto a1 = kin.a1().eval();
-      const auto a2 = kin.a2().eval();
-      const Eigen::Matrix<ScalarType, 2, 2> S1
-          = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(coeff(_1, i,_1, j)),Dune::along(a1),Dune::on(referenceElement));
+//    template<typename ScalarType>
+//    Eigen::Matrix<ScalarType, 3, 2> kgMidSurfaceDirectorShear(const KinematicVariables<ScalarType> &kin,const auto& N,const auto& dN, int integrationPointIndex,
+//                                                                int i,int j, const auto &displacementFunction, const auto &directorFunction,const auto& S) const {
+//      using namespace Dune::TypeTree::Indices;
+//      using namespace Dune::DerivativeDirections;
+//      const double& dN1i = dN(i, 0);
+//      const double& dN2i = dN(i, 1);
+//      const Eigen::Matrix<ScalarType, 3, 2> P
+//          = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(coeff(_1, j)),Dune::on(referenceElement));
+//      Eigen::Matrix<ScalarType, 3, 2> kg = P * (dN1i * S[6] + dN2i * S[7]); // shear_{,dir,disp}*Q
+//      // bending_{,dir,disp}*M
+//
+//      return kg;
+//    }
 
-      const Eigen::Matrix<ScalarType, 2, 2> S2
-          = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(coeff(_1, i,_1, j)),Dune::along(a2),Dune::on(referenceElement));
-      Eigen::Matrix<ScalarType, 2, 2> kg = S1* S[6] + S2 * S[7];
-
-      return kg;
-    }
-
-    template<typename ScalarType>
-    Eigen::Matrix<ScalarType, 3, 2> kgMidSurfaceDirectorShear(const KinematicVariables<ScalarType> &kin,const auto& N,const auto& dN, int integrationPointIndex,
-                                                                int i,int j, const auto &displacementFunction, const auto &directorFunction,const auto& S) const {
-      using namespace Dune::TypeTree::Indices;
-      using namespace Dune::DerivativeDirections;
-      const double& Ni   = N[i];
-      const double& dN1i = dN(i, 0);
-      const double& dN2i = dN(i, 1);
-      const Eigen::Matrix<ScalarType, 3, 2> P
-          = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(coeff(_1, j)),Dune::on(referenceElement));
-      Eigen::Matrix<ScalarType, 3, 2> kg = P * (dN1i * S[6] + dN2i * S[7]); // shear_{,dir,disp}*Q
-      // bending_{,dir,disp}*M
-
-      return kg;
-    }
-
-    template<typename ScalarType>
-    Eigen::Matrix<ScalarType, 2, 3> boperatorMidSurfaceShear(const KinematicVariables<ScalarType> &kin, int integrationPointIndex,
-                                                        int coeffIndex, const auto &displacementFunction) const {
-      using namespace Dune::TypeTree::Indices;
-      using namespace Dune::DerivativeDirections;
-      const std::array<Eigen::Matrix<ScalarType, 3, 3>, 2> diffa1Anda2
-          = displacementFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(spatialAll, coeff(_0, coeffIndex)),Dune::on(referenceElement));
-      const auto &diffa1 = diffa1Anda2[0];
-      const auto &diffa2 = diffa1Anda2[1];
-      Eigen::Matrix<ScalarType, 2, 3> bop;
-      bop.setZero();
-      bop.row(0) = kin.t.transpose() * diffa1;  // trans_shear_{,disp}
-      bop.row(1) = kin.t.transpose() * diffa2;
-      return bop;
-    }
+//    template<typename ScalarType>
+//    Eigen::Matrix<ScalarType, 2, 3> boperatorMidSurfaceShear(const KinematicVariables<ScalarType> &kin, int integrationPointIndex,
+//                                                        int coeffIndex, const auto &displacementFunction) const {
+//      using namespace Dune::TypeTree::Indices;
+//      using namespace Dune::DerivativeDirections;
+//      const std::array<Eigen::Matrix<ScalarType, 3, 3>, 2> diffa1Anda2
+//          = displacementFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(spatialAll, coeff(_0, coeffIndex)),Dune::on(referenceElement));
+//      const auto &diffa1 = diffa1Anda2[0];
+//      const auto &diffa2 = diffa1Anda2[1];
+//      Eigen::Matrix<ScalarType, 2, 3> bop;
+//      bop.setZero();
+//      bop.row(0) = kin.t.transpose() * diffa1;  // trans_shear_{,disp}
+//      bop.row(1) = kin.t.transpose() * diffa2;
+//      return bop;
+//    }
 
     template<typename ScalarType>
     Eigen::Matrix<ScalarType, 3, 2> boperatorDirectorBending(const Eigen::Matrix<ScalarType, 3, 2>& j, int integrationPointIndex,
@@ -452,22 +462,22 @@ struct StressBasedShellRM;
 
       return bop;
     }
-
-    template<typename ScalarType>
-    Eigen::Matrix<ScalarType, 2, 2> boperatorDirectorShear(const KinematicVariables<ScalarType> &kin, int integrationPointIndex,
-                                                      int coeffIndex, const auto &directorFunction) const {
-      using namespace Dune::TypeTree::Indices;
-      using namespace Dune::DerivativeDirections;
-      const Eigen::Matrix<ScalarType, 3, 2> difft
-          = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(coeff(_1, coeffIndex)),Dune::on(referenceElement));
-
-      Eigen::Matrix<ScalarType, 2, 2> bop;
-
-      bop.row(0) = kin.a1().transpose() * difft;  // trans_shear_{,disp}
-      bop.row(1) = kin.a2().transpose() * difft;
-
-      return bop;
-    }
+//
+//    template<typename ScalarType>
+//    Eigen::Matrix<ScalarType, 2, 2> boperatorDirectorShear(const KinematicVariables<ScalarType> &kin, int integrationPointIndex,
+//                                                      int coeffIndex, const auto &directorFunction) const {
+//      using namespace Dune::TypeTree::Indices;
+//      using namespace Dune::DerivativeDirections;
+//      const Eigen::Matrix<ScalarType, 3, 2> difft
+//          = directorFunction.evaluateDerivative(integrationPointIndex, Dune::wrt(coeff(_1, coeffIndex)),Dune::on(referenceElement));
+//
+//      Eigen::Matrix<ScalarType, 2, 2> bop;
+//
+//      bop.row(0) = kin.a1().transpose() * difft;  // trans_shear_{,disp}
+//      bop.row(1) = kin.a2().transpose() * difft;
+//
+//      return bop;
+//    }
 
     template<typename ScalarType>
     auto createFunctions(const FERequirementType &par,
@@ -625,7 +635,7 @@ struct StressBasedShellRM;
         kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(referenceElement));
         kin.td1Andtd2   = directorFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(referenceElement));
 
-        auto [C3D,epsV,kappV,gammaV]                = computeMaterialAndStrains(gp.position(),*geo_,displacementFunction,kin);
+        auto [C3D,epsV,kappV,gammaV]                = computeMaterialAndStrains(gp.position(),*geo_,displacementFunction,directorFunction,directorReferenceFunction,kin);
         Eigen::Vector<ScalarType,8> Egl,S;
         Egl<<epsV,kappV,gammaV;
         S.template segment<3>(0)= thickness_*C3D.template block<3,3>(0,0)*epsV;
@@ -644,14 +654,14 @@ struct StressBasedShellRM;
           const auto indexI = midSurfaceDim * i;
           const auto bopIMembraneI   = membraneStrain.derivative(gp.position(),jE, Nd, *geo_,displacementFunction,localBasisMidSurface, i);
           const auto bopIBendingI   = boperatorMidSurfaceBending(kin,gpIndex, i,displacementFunction);
-          const auto bopIShearI   = boperatorMidSurfaceShear(kin,gpIndex, i,displacementFunction);
+          const auto bopIShearI   = transverseShearStrain.derivativeWRTMidSurface(kin,gp.position(),gpIndex, Nd,*geo_,displacementFunction,directorFunction,localBasisMidSurface,i);
           bopMidSurfaceI<< bopIMembraneI,bopIBendingI, bopIShearI;
           for (int j = i; j < numNodeMidSurface; ++j) {
             const auto indexJ = midSurfaceDim * j;
 
             const auto bopIMembraneJ   = membraneStrain.derivative(gp.position(),jE, Nd, *geo_,displacementFunction,localBasisMidSurface, j);
             const auto bopIBendingJ   = boperatorMidSurfaceBending(kin,gpIndex, j,displacementFunction);
-            const auto bopIShearJ   = boperatorMidSurfaceShear(kin,gpIndex, j,displacementFunction);
+            const auto bopIShearJ   = transverseShearStrain.derivativeWRTMidSurface(kin,gp.position(),gpIndex, Nd,*geo_,displacementFunction,directorFunction,localBasisMidSurface,j);
             bopMidSurfaceJ<< bopIMembraneJ,bopIBendingJ, bopIShearJ;
 
             hred.template block<midSurfaceDim, midSurfaceDim>(indexI, indexJ)
@@ -664,12 +674,16 @@ struct StressBasedShellRM;
           for (int j = 0; j < numNodeDirector; ++j) {
             const auto indexJ = midSurfaceDofs + directorCorrectionDim * j;
             const auto bopBendingJ   = boperatorDirectorBending(kin.a1anda2, gpIndex, j, directorFunction);
-            const auto bopShearJ   = boperatorDirectorShear(kin, gpIndex, j, directorFunction);
+            const auto bopShearJ   = transverseShearStrain.derivativeWRTDirector(kin,gp.position(),gpIndex, Nd,*geo_,displacementFunction,directorFunction,
+                                                                                   localBasisMidSurface,j);
+//            const auto bopShearJ   = boperatorDirectorShear(kin, gpIndex, j, directorFunction);
 
             bopDirectorJ <<Eigen::Matrix<double,3,2>::Zero(),bopBendingJ,bopShearJ;
 
             Eigen::Matrix<ScalarType, 3, 2> kg= kgMidSurfaceDirectorBending(kin,N,Nd,gpIndex,i,j,displacementFunction,directorFunction,S);
-            Eigen::Matrix<ScalarType, 3, 2> kg2= kgMidSurfaceDirectorShear(kin,N,Nd,gpIndex,i,j,displacementFunction,directorFunction,S);
+//            Eigen::Matrix<ScalarType, 3, 2> kg2= kgMidSurfaceDirectorShear(kin,N,Nd,gpIndex,i,j,displacementFunction,directorFunction,S);
+            Eigen::Matrix<ScalarType, 3, 2> kg2= transverseShearStrain.secondDerivativeWRTSurfaceDirector(gp.position(),gpIndex, Nd,*geo_,displacementFunction,directorFunction, localBasisMidSurface,
+                                                                                                           S,i,j);
 
             hred.template block<midSurfaceDim, directorCorrectionDim>(indexI, indexJ)
                 += bopMidSurfaceI.transpose() * CMat_ * bopDirectorJ * weight;
@@ -682,7 +696,9 @@ struct StressBasedShellRM;
         for (int i = 0; i < numNodeDirector; ++i) {
           const auto indexI = midSurfaceDofs + directorCorrectionDim * i;
           const auto bopBendingI   = boperatorDirectorBending(kin.a1anda2, gpIndex, i, directorFunction);
-          const auto bopShearI   = boperatorDirectorShear(kin, gpIndex, i, directorFunction);
+//          const auto bopShearI   = boperatorDirectorShear(kin, gpIndex, i, directorFunction);
+          const auto bopShearI   = transverseShearStrain.derivativeWRTDirector(kin,gp.position(),gpIndex, Nd,*geo_,displacementFunction,directorFunction,
+                                                                             localBasisMidSurface,i);
 
           bopDirectorI <<Eigen::Matrix<double,3,2>::Zero(),bopBendingI,bopShearI;
 
@@ -690,12 +706,15 @@ struct StressBasedShellRM;
             const auto indexJ = midSurfaceDofs + directorCorrectionDim * j;
 
             const auto bopBendingJ   = boperatorDirectorBending(kin.a1anda2, gpIndex, j, directorFunction);
-            const auto bopShearJ   = boperatorDirectorShear(kin, gpIndex, j, directorFunction);
+//            const auto bopShearJ   = boperatorDirectorShear(kin, gpIndex, j, directorFunction);
+            const auto bopShearJ   = transverseShearStrain.derivativeWRTDirector(kin,gp.position(),gpIndex, Nd,*geo_,displacementFunction,directorFunction,
+                                                                                   localBasisMidSurface,j);
             bopDirectorJ <<Eigen::Matrix<double,3,2>::Zero(),bopBendingJ,bopShearJ;
 
             Eigen::Matrix<ScalarType, 2, 2> kgBending= kgDirectorDirectorBending(kin,Ndirector,dNdirector,gpIndex,i,j,displacementFunction,directorFunction,S);
-            Eigen::Matrix<ScalarType, 2, 2> kgShear= kgDirectorDirectorShear(kin,Ndirector,dNdirector,gpIndex,i,j,displacementFunction,directorFunction,S);
-
+//            Eigen::Matrix<ScalarType, 2, 2> kgShear= kgDirectorDirectorShear(kin,Ndirector,dNdirector,gpIndex,i,j,displacementFunction,directorFunction,S);
+            Eigen::Matrix<ScalarType, 3, 2> kgShear= transverseShearStrain.secondDerivativeWRTDirectorDirector(gp.position(),gpIndex, Nd,*geo_,displacementFunction,directorFunction,
+                                                                                                            localBasisMidSurface,S,kin,i,j);
 
             hred.template block<directorCorrectionDim, directorCorrectionDim>(indexI, indexJ)
                 += bopDirectorI.transpose() * CMat_ * bopDirectorJ * weight;
@@ -744,7 +763,7 @@ struct StressBasedShellRM;
         kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(referenceElement));
         kin.td1Andtd2   = directorFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(referenceElement));
 
-        auto [C3D,epsV,kappV,gammaV]                = computeMaterialAndStrains(gp.position(),*geo_,displacementFunction,kin);
+        auto [C3D,epsV,kappV,gammaV]                = computeMaterialAndStrains(gp.position(),*geo_,displacementFunction,directorFunction,directorReferenceFunction,kin);
         Eigen::Vector<ScalarType,8> Egl,S;
         Egl<<epsV,kappV,gammaV;
         S.template segment<3>(0)= thickness_*C3D.template block<3,3>(0,0)*epsV;
@@ -756,7 +775,9 @@ struct StressBasedShellRM;
           const auto indexI = midSurfaceDim * i;
           const auto bopIMembrane   = membraneStrain.derivative(gp.position(),jE, Nd, *geo_,displacementFunction,localBasisMidSurface, i);
           const auto bopIBending   = boperatorMidSurfaceBending(kin,gpIndex, i,displacementFunction);
-          const auto bopIShear   = boperatorMidSurfaceShear(kin,gpIndex, i,displacementFunction);
+//          const auto bopIShear   = boperatorMidSurfaceShear(kin,gpIndex, i,displacementFunction);
+          const auto bopIShear   = transverseShearStrain.derivativeWRTMidSurface(kin,gp.position(),gpIndex, Nd,*geo_,displacementFunction,directorFunction,localBasisMidSurface,i);
+
           bopMidSurface<< bopIMembrane,bopIBending, bopIShear;
           rieGrad.template segment<midSurfaceDim>(indexI) += bopMidSurface.transpose() * S*weight;
         }
@@ -764,7 +785,9 @@ struct StressBasedShellRM;
         for (int i = 0; i < numNodeDirector; ++i) {
           const auto indexI = midSurfaceDofs + directorCorrectionDim * i;
           const auto bopIBending   = boperatorDirectorBending(kin.a1anda2, gpIndex, i, directorFunction);
-          const auto bopIShear   = boperatorDirectorShear(kin, gpIndex, i, directorFunction);
+//          const auto bopIShear   = boperatorDirectorShear(kin, gpIndex, i, directorFunction);
+          const auto bopIShear   = transverseShearStrain.derivativeWRTDirector(kin,gp.position(),gpIndex, Nd,*geo_,displacementFunction,directorFunction,
+                                                                                 localBasisMidSurface,i);
 
           bopDirector<<Eigen::Matrix<double,3,2>::Zero(),bopIBending,bopIShear;
           rieGrad.template segment<directorCorrectionDim>(indexI) += bopDirector.transpose() * S*weight;
@@ -862,7 +885,7 @@ struct StressBasedShellRM;
         kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(referenceElement));
         kin.td1Andtd2   = directorFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(referenceElement));
 
-        auto [C3D,epsV,kappV,gammaV]                = computeMaterialAndStrains(gp.position(),*geo_,displacementFunction,kin);
+        auto [C3D,epsV,kappV,gammaV]                = computeMaterialAndStrains(gp.position(),*geo_,displacementFunction,directorFunction,kin);
         Eigen::Vector<ScalarType,8> Egl,S;
         Egl<<epsV,kappV,gammaV;
         S.template segment<3>(0)= thickness_*C3D.template block<3,3>(0,0)*epsV;

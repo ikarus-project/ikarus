@@ -1,7 +1,8 @@
 E = 1000
 nu = 0.0
 thickness = 1.0
-simulationFlag = 0
+membraneStrainFlag = 0
+transverseShearStrainFlag=0
 refine = 2
 loadFactor=1
 orderElevate= 1 0

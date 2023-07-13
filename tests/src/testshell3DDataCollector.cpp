@@ -78,7 +78,7 @@ auto test3DDataCollector() {
   const auto nu             = parameterSet.get<double>("nu");
   const auto thickness      = parameterSet.get<double>("thickness");
   const auto loadFactor     = parameterSet.get<double>("loadFactor");
-  const auto simulationFlag = parameterSet.get<int>("simulationFlag");
+  const auto membraneStrainFlag = parameterSet.get<int>("membraneStrainFlag");
   const auto refine         = parameterSet.get<int>("refine");
   const auto plotInPlaneRefine         = parameterSet.get<int>("plotInPlaneRefine");
   auto grid = std::make_shared<Grid>(patchData);

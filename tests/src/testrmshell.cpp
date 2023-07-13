@@ -76,7 +76,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
   const auto nu                        = parameterSet.get<double>("nu");
   const auto thickness                 = parameterSet.get<double>("thickness");
   const auto loadFactor                = parameterSet.get<double>("loadFactor");
-  const auto simulationFlag            = parameterSet.get<int>("simulationFlag");
+  const auto membraneStrainFlag            = parameterSet.get<int>("membraneStrainFlag");
   const auto refine                    = parameterSet.get<int>("refine");
   const auto orderElevate              = parameterSet.get<std::array<int, 2>>("orderElevate");
   const auto plot3drefine         = parameterSet.get<int>("plot3drefine");
@@ -109,7 +109,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
   feSettings.addOrAssign("youngs_modulus", E);
   feSettings.addOrAssign("poissons_ratio", nu);
   feSettings.addOrAssign("thickness", thickness);
-  feSettings.addOrAssign("simulationFlag", simulationFlag);
+  feSettings.addOrAssign("membraneStrainFlag", membraneStrainFlag);
   feSettings.addOrAssign("secondOrderBending", secondOrderBending);
   feSettings.addOrAssign("directorFunction", directorFunction);
 

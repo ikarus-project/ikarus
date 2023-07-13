@@ -186,7 +186,8 @@ auto checkFEByAutoDiff(std::string filename) {
   feSettings.addOrAssign("youngs_modulus", 1000.0);
   feSettings.addOrAssign("poissons_ratio", 0.0);
   feSettings.addOrAssign("thickness", 0.1);
-  feSettings.addOrAssign("simulationFlag", i);
+  feSettings.addOrAssign("membraneStrainFlag", i);
+  feSettings.addOrAssign("transverseShearStrainFlag",0);
   feSettings.addOrAssign("directorFunction", directorFunctions[j]);
   feSettings.addOrAssign("secondOrderBending", true);
   using Basis = decltype(basis);
@@ -221,7 +222,7 @@ auto checkFEByAutoDiff(std::string filename) {
 //  ShellElement<Basis> fe(basis, *element, feSettings,x0, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
   std::vector<ShellElement<Basis>> fes;
   for (auto& ele :elements(gridView))
-  fes.emplace_back(basis, *element, feSettings,x0, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
+  fes.emplace_back(basis,ele, feSettings,x0, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
   using AutoDiffBasedFE = Ikarus::AutoDiffFE<ShellElement<Basis>, true>;
 //  AutoDiffBasedFE feAutoDiff(fe);
 
@@ -278,12 +279,12 @@ auto checkFEByAutoDiff(std::string filename) {
     });
 
     t.check(Ikarus::checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true},uF))<<"Mismatch between the residual vectors obtained from explicit implementation and the one based on "<<
-                                                                                                          "automatic differentiation with simulationFlag: "<<i<<" and director func "<<directorFunctions[j];
+                                                                                                          "automatic differentiation with membraneStrainFlag: "<<i<<" and director func "<<directorFunctions[j];
     t.check(Ikarus::checkHessian(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true},uF))<<"Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "<<
-              "automatic differentiation with simulationFlag: "<<i<<" and director func "<<directorFunctions[j]<<"\n The Hessian is\n"<<ddfvLambda(x);
+              "automatic differentiation with membraneStrainFlag: "<<i<<" and director func "<<directorFunctions[j]<<"\n The Hessian is\n"<<ddfvLambda(x);
 //    auto subOp = nonLinOp.template subOperator<1, 2>();
 //    t.check(Ikarus::checkJacobian(subOp, {.draw = false, .writeSlopeStatementIfFailed = true},uF))<<"Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "<<
-//        "automatic differentiation of the gradient with simulationFlag: "<<i<<" and director func "<<directorFunctions[j];
+//        "automatic differentiation of the gradient with membraneStrainFlag: "<<i<<" and director func "<<directorFunctions[j];
 
 //  Eigen::MatrixXd K, KAutoDiff;
 //  K.setZero(nDOFPerEle, nDOFPerEle);
@@ -300,15 +301,15 @@ auto checkFEByAutoDiff(std::string filename) {
 //
 //  t.check(K.isApprox(KAutoDiff, tol),"K Check"+filename)<<
 //      "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
-//      "automatic differentiation with simulationFlag: "<<i<<" and director func "<<directorFunctions[j]<<"\n" << K <<"\n KAutoDiff \n"<< KAutoDiff<<"\n K-KAutoDiff \n"<< K-KAutoDiff;
+//      "automatic differentiation with membraneStrainFlag: "<<i<<" and director func "<<directorFunctions[j]<<"\n" << K <<"\n KAutoDiff \n"<< KAutoDiff<<"\n K-KAutoDiff \n"<< K-KAutoDiff;
 //
 //  t.check(R.isApprox(RAutoDiff, tol),"R Check"+filename)<<
 //      "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
-//      "automatic differentiation with simulationFlag: "<<i<<" and director func "<<directorFunctions[j]<<"\n" << R <<"\n RAutoDiff \n"<< RAutoDiff<<"\n R-RAutoDiff \n"<< R-RAutoDiff;
+//      "automatic differentiation with membraneStrainFlag: "<<i<<" and director func "<<directorFunctions[j]<<"\n" << R <<"\n RAutoDiff \n"<< RAutoDiff<<"\n R-RAutoDiff \n"<< R-RAutoDiff;
 //
 //  t.check(Dune::FloatCmp::eq(fe.calculateScalar(req), feAutoDiff.calculateScalar(req), tol),"E Check"+filename)<<
 //    "Mismatch between the energies obtained from explicit implementation and the one based on "
-//    "automatic differentiation"<<"with simulationFlag: "<<i<<" and director func "<<directorFunctions[j];
+//    "automatic differentiation"<<"with membraneStrainFlag: "<<i<<" and director func "<<directorFunctions[j];
   }
   }
   return t;
@@ -328,7 +329,7 @@ int main(int argc, char** argv) {
   //  const double E             = materialParameters.get<double>("E");
   //  const double nu            = materialParameters.get<double>("nu");
 
-//  checkFEByAutoDiff<RMSHELL>("RMSHELL");
+  checkFEByAutoDiff<RMSHELL>("RMSHELL");
   checkFEByAutoDiff<RMSHELLSB>("RMSHELLSB");
 
 //  checkFEByAutoDiff<KLSHELLSB>("KLSHELLSB");

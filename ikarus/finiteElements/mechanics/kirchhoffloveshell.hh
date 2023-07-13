@@ -53,12 +53,12 @@ class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis> {
                      const BoundaryPatch<GridView> *p_neumannBoundary = nullptr,
                      NeumannBoundaryLoad p_neumannBoundaryLoad = {})
       : BasePowerFE(globalBasis.flat(), element), neumannBoundary{p_neumannBoundary}, fESettings{std::move(p_feSettings)} {
-    const auto &simulationFlag = fESettings.request<int>("simulationFlag");
-    if (simulationFlag==0)
+    const auto &membraneStrainFlag = fESettings.request<int>("membraneStrainFlag");
+    if (membraneStrainFlag==0)
       membraneStrain = DefaultMembraneStrain();
-    else if (simulationFlag==1)
+    else if (membraneStrainFlag==1)
       membraneStrain = CASMembraneStrain<CASAnsatzFunction>();
-    else if (simulationFlag==2)
+    else if (membraneStrainFlag==2)
       membraneStrain = CASMembraneStrain<CASAnsatzFunctionANS>();
 
     this->localView().bind(element);
