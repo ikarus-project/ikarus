@@ -121,7 +121,7 @@ namespace Ikarus {
         kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gpIndex2D, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
         kin.td1Andtd2   = directorFunction.evaluateDerivative(gpIndex2D, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
 
-        auto [_,epsV,kappaV,gammaV]                = this->computeMaterialAndStrains(gp2DPos,geo,displacementFunction,directorFunction,directorReferenceFunction,kin);
+        auto [_,epsV,kappaV,gammaV]                = this->computeMaterialAndStrains(gp2DPos,gpIndex2D,geo,displacementFunction,directorFunction,directorReferenceFunction,kin);
 
 //        const auto
 //            [C, epsV, kappaV, j, J, h,H, a3N, a3] = this->computeMaterialAndStrains(gp2DPos, geo, uFunction);
@@ -198,7 +198,7 @@ namespace Ikarus {
         kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gpIndex2D, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
         kin.td1Andtd2   = directorFunction.evaluateDerivative(gpIndex2D, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
         const Eigen::Matrix<ScalarType,2,3> jE = kin.a1anda2.transpose();
-        auto [_,epsV,kappaV,gammaV]                = this->computeMaterialAndStrains(gp2DPos,geo,displacementFunction,directorFunction,directorReferenceFunction,kin);
+        auto [_,epsV,kappaV,gammaV]                = this->computeMaterialAndStrains(gp2DPos,gpIndex2D,geo,displacementFunction,directorFunction,directorReferenceFunction,kin);
 
         const auto G = this->calc3DMetric(kin,zeta);
         //        std::cout<<"G: "<<G<<std::endl;
@@ -229,7 +229,8 @@ namespace Ikarus {
         for (int i = 0; i < this->numNodeDirector; ++i) {
           const auto indexI = midSurfaceDofs + directorCorrectionDim * i;
 
-          bopDirectorI =secondOrderBending? bopDirector(kin, g1Andg2, gpIndex2D, displacementFunction, directorFunction, i, zeta) :bopDirector(kin, kin.a1anda2, gpIndex2D,displacementFunction, directorFunction, i, zeta);
+          bopDirectorI =secondOrderBending? bopDirector(kin,Nd, g1Andg2, gpIndex2D, gp2DPos, displacementFunction, directorFunction, i, zeta)
+                                            :bopDirector(kin,Nd, kin.a1anda2, gpIndex2D, gp2DPos,displacementFunction, directorFunction, i, zeta);
           force.template segment<directorCorrectionDim>(indexI) += bopDirectorI.transpose() * S*intElement;
         }
 
@@ -284,17 +285,19 @@ namespace Ikarus {
       const auto bopIMembrane   = this->membraneStrain.derivative(gp2DPos,jE, Nd, geo,displacementFunction,this->localBasisMidSurface, i);
       const auto bopIBending   = this->boperatorMidSurfaceBending(kin,gpIndex2D, i,displacementFunction);
 //      const auto bopIShear   = this->boperatorMidSurfaceShear(kin,gpIndex2D, i,displacementFunction);
-      const auto bopIShear   = this-> transverseShearStrain.derivativeWRTMidSurface(gp2DPos,gpIndex2D, Nd,geo,displacementFunction,directorFunction,this->localBasisMidSurface,i);
+      const auto bopIShear   = this-> transverseShearStrain.derivativeWRTMidSurface(kin,gp2DPos,gpIndex2D, Nd,geo,displacementFunction,directorFunction,this->localBasisMidSurface,i);
       bopMidSurfaceI<< bopIMembrane+zeta*bopIBending, bopIShear;
       return bopMidSurfaceI;
     }
     template<typename ScalarType>
-    auto bopDirector(const KinematicVariables<ScalarType>& kin, const auto& g1Andg2, const auto& gpIndex2D,const auto& gp2DPos,const auto& displacementFunction,const auto& directorFunction,int i,double zeta)const
+    auto bopDirector(const KinematicVariables<ScalarType>& kin,const auto& Nd, const auto& g1Andg2,
+                     const auto& gpIndex2D,const auto& gp2DPos,const auto& displacementFunction,
+                     const auto& directorFunction,int i,double zeta)const
     {
       Eigen::Matrix<ScalarType, 5, 2> bopDirectorI;
 
       const auto bopBendingI   = this->boperatorDirectorBending(g1Andg2, gpIndex2D, i, directorFunction);
-      const auto bopShearI   = this->transverseShearStrain.derivativeWRTDirector(gp2DPos,gpIndex2D, Nd,geo,displacementFunction,directorFunction,
+      const auto bopShearI   = this->transverseShearStrain.derivativeWRTDirector(kin,gp2DPos,gpIndex2D, Nd,geo,displacementFunction,directorFunction,
                                                                                    this->localBasisMidSurface,i);
       bopDirectorI<<zeta*bopBendingI,bopShearI;
       return bopDirectorI;
@@ -333,7 +336,7 @@ namespace Ikarus {
         kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gpIndex2D, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
         kin.td1Andtd2   = directorFunction.evaluateDerivative(gpIndex2D, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
         const Eigen::Matrix<ScalarType,2,3> jE = kin.a1anda2.transpose();
-        auto [_,epsV,kappaV,gammaV]                = this->computeMaterialAndStrains(gp2DPos,geo,displacementFunction,directorFunction,directorReferenceFunction,kin);
+        auto [_,epsV,kappaV,gammaV]                = this->computeMaterialAndStrains(gp2DPos,gpIndex2D,geo,displacementFunction,directorFunction,directorReferenceFunction,kin);
 
         const auto G = this->calc3DMetric(kin,zeta);
         //        std::cout<<"G: "<<G<<std::endl;
@@ -379,12 +382,13 @@ namespace Ikarus {
             const auto indexJ = midSurfaceDofs + directorCorrectionDim * j;
 //            const auto bopBendingJ   = this->boperatorDirectorBending(g1Andg2, gpIndex2D, j, directorFunction);
 //            const auto bopShearJ   = this->boperatorDirectorShear(kin, gpIndex2D, j, directorFunction);
-            bopDirectorJ =secondOrderBending? bopDirector(kin, g1Andg2, gpIndex2D,gp2DPos, displacementFunction, directorFunction, j, zeta):bopDirector(kin, kin.a1anda2, gpIndex2D,gp2DPos, displacementFunction,directorFunction, j, zeta);
+            bopDirectorJ =secondOrderBending? bopDirector(kin,Nd, g1Andg2, gpIndex2D,gp2DPos, displacementFunction, directorFunction, j, zeta):bopDirector(kin,Nd, kin.a1anda2, gpIndex2D,gp2DPos, displacementFunction,directorFunction, j, zeta);
 
             Eigen::Matrix<ScalarType, 3, 2> kg= this->kgMidSurfaceDirectorBending(kin,N,Nd,gpIndex2D,i,j,displacementFunction,directorFunction,S8);
 //            Eigen::Matrix<ScalarType, 3, 2> kg2= this->kgMidSurfaceDirectorShear(kin,N,Nd,gpIndex2D,i,j,displacementFunction,directorFunction,S8);
-            Eigen::Matrix<ScalarType, 3, 2> kg2= this->transverseShearStrain.secondDerivativeWRTSurfaceDirector(gp2DPos,gpIndex, Nd,geo,displacementFunction,directorFunction, this->localBasisMidSurface,
-                                                                                                                 S8,i,j);
+            Eigen::Matrix<ScalarType, 3, 2> kg2= this->transverseShearStrain.secondDerivativeWRTSurfaceDirector(gp2DPos,gpIndex, Nd,geo,displacementFunction,directorFunction,
+                                                                                                                 this->localBasisMidSurface,
+                                                                                                                 S8,kin,i,j);
 
             K.template block<midSurfaceDim, directorCorrectionDim>(indexI, indexJ)
                 += bopMidSurfaceI.transpose() * C3D * bopDirectorJ * intElement;
@@ -395,18 +399,18 @@ namespace Ikarus {
         }
         for (int i = 0; i < this->numNodeDirector; ++i) {
           const auto indexI = midSurfaceDofs + directorCorrectionDim * i;
-          bopDirectorI =secondOrderBending? bopDirector(kin, g1Andg2, gpIndex2D,gp2DPos,displacementFunction, directorFunction, i, zeta) : bopDirector(kin, kin.a1anda2, gpIndex2D,gp2DPos,displacementFunction, directorFunction, i, zeta);
+          bopDirectorI =secondOrderBending? bopDirector(kin,Nd, g1Andg2, gpIndex2D,gp2DPos,displacementFunction, directorFunction, i, zeta) : bopDirector(kin,Nd, kin.a1anda2, gpIndex2D,gp2DPos,displacementFunction, directorFunction, i, zeta);
 
           for (int j = i; j < this->numNodeDirector; ++j) {
             const auto indexJ = midSurfaceDofs + directorCorrectionDim * j;
 
-            bopDirectorJ =secondOrderBending? bopDirector(kin, g1Andg2, gpIndex2D,displacementFunction, directorFunction, j, zeta): bopDirector(kin, kin.a1anda2, gpIndex2D,gp2DPos,displacementFunction, directorFunction, j, zeta);
+            bopDirectorJ =secondOrderBending? bopDirector(kin,Nd, g1Andg2, gpIndex2D,gp2DPos,displacementFunction, directorFunction, j, zeta): bopDirector(kin,Nd, kin.a1anda2, gpIndex2D,gp2DPos,displacementFunction, directorFunction, j, zeta);
 
             Eigen::Matrix<ScalarType, 2, 2> kgBending= this->kgDirectorDirectorBending(kin,Ndirector,dNdirector,gpIndex2D,i,j,displacementFunction,directorFunction,S8);
             Eigen::Matrix<ScalarType, 2, 2> kgBending2= this->kgSecondDirectorDirectorBending(kin,Ndirector,dNdirector,gpIndex2D,i,j,displacementFunction,directorFunction,SSec);
 //            Eigen::Matrix<ScalarType, 2, 2> kgShear= this->kgDirectorDirectorShear(kin,Ndirector,dNdirector,gpIndex2D,i,j,displacementFunction,directorFunction,S8);
             Eigen::Matrix<ScalarType, 2, 2> kgShear= this->transverseShearStrain.secondDerivativeWRTDirectorDirector(gp2DPos,gpIndex, Nd,geo,displacementFunction,directorFunction,
-                                                                                                                        this->localBasisMidSurface,S8,i,j);
+                                                                                                                        this->localBasisMidSurface,S8,kin,i,j);
 
             K.template block<directorCorrectionDim, directorCorrectionDim>(indexI, indexJ)
                 += bopDirectorI.transpose() * C3D * bopDirectorJ * intElement;
@@ -468,7 +472,8 @@ namespace Ikarus {
       kin.a1anda2   = midSurface.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
 
       const Eigen::Matrix<double,2,3> jE = kin.a1anda2.transpose();
-      auto [_,epsV,kappaV,gammaV]                = this->computeMaterialAndStrains(gp2DPos,geo,displacementFunction,directorFunction,directorReferenceFunction,kin);
+      const int dummyIndex=-100;
+      auto [_,epsV,kappaV,gammaV]                = this->computeMaterialAndStrains(gp2DPos,dummyIndex,geo,displacementFunction,directorFunction,directorReferenceFunction,kin);
 
       const auto G = this->calc3DMetric(kin,zeta);
       const auto Ginv = G.inverse().eval();

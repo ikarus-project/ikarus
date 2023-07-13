@@ -31,21 +31,23 @@ struct DefaultTransverseShear {
                                      Dune::on(Dune::DerivativeDirections::referenceElement)));
     const Eigen::Matrix<ScalarType, 2, 3> j = J + gradu.transpose();
     Eigen::Vector2<ScalarType> gammaV;
-    const Eigen::Matrix<ScalarType, 3, 2> t0
-        = directorFunction.evaluate(gpPos,Dune::on(Dune::DerivativeDirections::referenceElement));
-    const Eigen::Matrix<ScalarType, 3, 2> t
+    const Eigen::Vector<ScalarType, 3> t0
         = referenceDirectorFunction.evaluate(gpPos,Dune::on(Dune::DerivativeDirections::referenceElement));
+    const Eigen::Vector<ScalarType, 3> t
+        = directorFunction.evaluate(gpPos,Dune::on(Dune::DerivativeDirections::referenceElement));
     gammaV<<j.row(0).dot(t) - J.row(0).dot(t0),j.row(1).dot(t) - J.row(1).dot(t0);
 
     return gammaV;
   }
-  template<typename Geometry,typename ScalarType>
+  template<typename Geometry>
   auto derivativeWRTMidSurface(const auto& kin,const Dune::FieldVector<double, 2> &gpPos,const int integrationPointIndex,
                                const auto &dNAtGp, const Geometry& geo,const auto& uFunction,const auto& directorFunction,
                                const auto& localBasis,                  const int node)  const{
+    using ScalarType = typename std::remove_cvref_t<decltype(uFunction)>::ctype;
+
     using namespace Dune::TypeTree::Indices;
     using namespace Dune::DerivativeDirections;
-    const Eigen::Matrix<ScalarType, 3, 2> t
+    const Eigen::Vector<ScalarType, 3> t
         = directorFunction.evaluate(gpPos,Dune::on(Dune::DerivativeDirections::referenceElement));
     const std::array<Eigen::Matrix<ScalarType, 3, 3>, 2> diffa1Anda2
         = uFunction.evaluateDerivative(gpPos, Dune::wrt(spatialAll, coeff(_0, node)),Dune::on(Dune::DerivativeDirections::referenceElement));
@@ -53,14 +55,17 @@ struct DefaultTransverseShear {
     const auto &diffa2 = diffa1Anda2[1];
     Eigen::Matrix<ScalarType, 2, 3> bop;
     bop.setZero();
-    bop.row(0) = t.transpose() * diffa1;  // trans_shear_{,disp}
-    bop.row(1) =t.transpose() * diffa2;
+    bop.row(0) = t.transpose() * diffa1(0,0);  // trans_shear_{,disp}
+    bop.row(1) =t.transpose() * diffa2(0,0);
     return bop;
   }
 
-  template<typename Geometry,typename ScalarType>
-  auto derivativeWRTDirector(const auto& kin,const Dune::FieldVector<double, 2> &gpPos,const int integrationPointIndex, const auto &dNAtGp, const Geometry& geo,const auto& uFunction,const auto& directorFunction, const auto& localBasis,
+  template<typename Geometry>
+  auto derivativeWRTDirector(const auto& kin,const Dune::FieldVector<double, 2> &gpPos,const int integrationPointIndex,
+                             const auto &dNAtGp, const Geometry& geo,const auto& uFunction,const auto& directorFunction, const auto& localBasis,
                                const int node)  const{
+    using ScalarType = typename std::remove_cvref_t<decltype(uFunction)>::ctype;
+
     using namespace Dune::TypeTree::Indices;
     using namespace Dune::DerivativeDirections;
     const Eigen::Matrix<ScalarType, 3, 2> difft
@@ -87,7 +92,7 @@ struct DefaultTransverseShear {
   auto secondDerivativeWRTDirectorDirector(const Dune::FieldVector<double, 2> &gpPos,const int integrationPointIndex,
                                            const auto &dNAtGp, const Geometry& geo,const auto& uFunction,
                                            const auto& directorFunction, const auto& localBasis,
-                        const Eigen::Vector3<ScalarType> &S,const auto& kin, int i, int j)const {
+                        const Eigen::Vector<ScalarType,8> &S,const auto& kin, int i, int j)const {
     using namespace Dune::TypeTree::Indices;
 //    using namespace Dune::DerivativeDirections;
 //    const Eigen::Matrix<ScalarType, 3, 2> difft
@@ -119,7 +124,7 @@ struct DefaultTransverseShear {
   auto secondDerivativeWRTSurfaceDirector(const Dune::FieldVector<double, 2> &gpPos,const int integrationPointIndex,
                                           const auto &dNAtGp, const Geometry& geo,const auto& uFunction,
                                           const auto& directorFunction, const auto& localBasis,
-                                           const Eigen::Vector3<ScalarType> &S,const auto& kin, int i, int j)const {
+                                           const Eigen::Vector<ScalarType,8> &S,const auto& kin, int i, int j)const {
     using namespace Dune::TypeTree::Indices;
     using namespace Dune::DerivativeDirections;
     const double& dN1i = dNAtGp(i, 0);
@@ -227,7 +232,7 @@ struct CASTransverseStrain
   template< typename Geometry>
   auto value(const Dune::FieldVector<double, 2> &gpPos,const int integrationPointIndex,
              const Geometry &geo,const auto& kin,
-             const auto &uFunction) const -> Eigen::Vector2<typename std::remove_cvref_t<decltype(uFunction)>::ctype>{
+             const auto &uFunction, const auto& directorFunction, const auto& referenceDirectorFunction) const -> Eigen::Vector2<typename std::remove_cvref_t<decltype(uFunction)>::ctype>{
     using ScalarType = typename std::remove_cvref_t<decltype(uFunction)>::ctype;
 
     cASAnsatzFunction.evaluateFunction(gpPos, NANS);
@@ -236,11 +241,11 @@ struct CASTransverseStrain
     res.setZero();
     if(lagrangePoints.size()!=4)
       DUNE_THROW(Dune::Exception,"Wrong node size");
-   res[0]= NANS[0][0]*defaultTransverseShear.value(lagrangePoints[0],integrationPointIndex,geo,kin,uFunction)+
-    NANS[2][0]*defaultTransverseShear.value(lagrangePoints[2],integrationPointIndex,geo,kin,uFunction);
+   res[0]= NANS[0][0]*defaultTransverseShear.value(lagrangePoints[0],integrationPointIndex,geo,kin,uFunction,directorFunction,referenceDirectorFunction)[0]+
+    NANS[2][0]*defaultTransverseShear.value(lagrangePoints[2],integrationPointIndex,geo,kin,uFunction,directorFunction,referenceDirectorFunction)[0];
 
-   res[1]= NANS[1][0]*defaultTransverseShear.value(lagrangePoints[1],integrationPointIndex,geo,kin,uFunction)+
-            NANS[3][0]*defaultTransverseShear.value(lagrangePoints[3],integrationPointIndex,geo,kin,uFunction);
+   res[1]= NANS[1][0]*defaultTransverseShear.value(lagrangePoints[1],integrationPointIndex,geo,kin,uFunction,directorFunction,referenceDirectorFunction)[1]+
+            NANS[3][0]*defaultTransverseShear.value(lagrangePoints[3],integrationPointIndex,geo,kin,uFunction,directorFunction,referenceDirectorFunction)[1];
 //    std::visit([&](auto& vec){
 //      if constexpr (std::is_same_v<typename std::remove_cvref_t<decltype(vec)>::value_type,ScalarType>) {
 //        for (int i = 0; i < NANS.size(); ++i) {
@@ -252,9 +257,11 @@ struct CASTransverseStrain
     return res;
   }
   mutable Eigen::Matrix<double,Eigen::Dynamic,2> dN;
-  template<typename Geometry,typename ScalarType>
+  template<typename Geometry>
   auto derivativeWRTMidSurface(const auto& kin,const Dune::FieldVector<double, 2> &gpPos,const int integrationPointIndex, const auto &dNAtGp, const Geometry& geo,const auto& uFunction,const auto& directorFunction, const auto& localBasis,
                                const int node)  const{
+    using ScalarType = typename std::remove_cvref_t<decltype(uFunction)>::ctype;
+
     cASAnsatzFunction.evaluateFunction(gpPos, NANS);
     Eigen::Matrix<ScalarType, 2, 3> bop;
     bop.setZero();
@@ -291,11 +298,13 @@ struct CASTransverseStrain
     return bop;
   }
 
-  template<typename Geometry,typename ScalarType>
+  template<typename Geometry>
   auto derivativeWRTDirector(const auto& kin,const Dune::FieldVector<double, 2> &gpPos,const int integrationPointIndex, const auto &dNAtGp, const Geometry& geo,const auto& uFunction,const auto& directorFunction, const auto& localBasis,
                                const int node)  const{
+    using ScalarType = typename std::remove_cvref_t<decltype(uFunction)>::ctype;
+
     cASAnsatzFunction.evaluateFunction(gpPos, NANS);
-    Eigen::Matrix<ScalarType, 2, 3> bop;
+    Eigen::Matrix<ScalarType, 2, 2> bop;
     bop.setZero();
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
@@ -340,12 +349,20 @@ struct CASTransverseStrain
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
 
-    for (int i = 0; auto& lP : lagrangePoints) {
-     localBasis.evaluateJacobian(lP,dN);
+    Eigen::Vector<ScalarType,8> S0;
+    S0<<0,0,0,0,0,0,S[6],0;
+    localBasis.evaluateJacobian(lagrangePoints[0],dN);
+    const auto  kgIJ0 = defaultTransverseShear.secondDerivativeWRTDirectorDirector(lagrangePoints[0],integrationPointIndex,dN,geo,uFunction,directorFunction,localBasis,S0,kin,i,j);
+    localBasis.evaluateJacobian(lagrangePoints[2],dN);
+    const auto  kgIJ2 = defaultTransverseShear.secondDerivativeWRTDirectorDirector(lagrangePoints[2],integrationPointIndex,dN,geo,uFunction,directorFunction,localBasis,S0,kin,i,j);
+    kg=NANS[0][0]*kgIJ0+NANS[2][0]*kgIJ2;
+    S0<<0,0,0,0,0,0,0,S[7];
+    localBasis.evaluateJacobian(lagrangePoints[1],dN);
+    const auto  kgIJ1 = defaultTransverseShear.secondDerivativeWRTDirectorDirector(lagrangePoints[1],integrationPointIndex,dN,geo,uFunction,directorFunction,localBasis,S0,kin,i,j);
+    localBasis.evaluateJacobian(lagrangePoints[3],dN);
+    const auto  kgIJ3 = defaultTransverseShear.secondDerivativeWRTDirectorDirector(lagrangePoints[3],integrationPointIndex,dN,geo,uFunction,directorFunction,localBasis,S0,kin,i,j);
+    kg+=NANS[1][0]*kgIJ1+NANS[3][0]*kgIJ3;
 
-      const auto  kgIJ = defaultTransverseShear.secondDerivativeWRTDirectorDirector(lP,dN,geo,uFunction,localBasis,S,i,j);
-      kg+=kgIJ*NANS[i++][0];
-    }
     return kg;
   }
 
@@ -360,12 +377,19 @@ struct CASTransverseStrain
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
 
-    for (int i = 0; auto& lP : lagrangePoints) {
-      localBasis.evaluateJacobian(lP,dN);
-
-      const auto  kgIJ = defaultTransverseShear.secondDerivativeWRTSurfaceDirector(lP,dN,geo,uFunction,localBasis,S,i,j);
-      kg+=kgIJ*NANS[i++][0];
-    }
+    Eigen::Vector<ScalarType,8> S0;
+    S0<<0,0,0,0,0,0,S[6],0;
+    localBasis.evaluateJacobian(lagrangePoints[0],dN);
+    const auto  kgIJ0 = defaultTransverseShear.secondDerivativeWRTSurfaceDirector(lagrangePoints[0],integrationPointIndex,dN,geo,uFunction,directorFunction,localBasis,S0,kin,i,j);
+    localBasis.evaluateJacobian(lagrangePoints[2],dN);
+    const auto  kgIJ2 = defaultTransverseShear.secondDerivativeWRTSurfaceDirector(lagrangePoints[2],integrationPointIndex,dN,geo,uFunction,directorFunction,localBasis,S0,kin,i,j);
+    kg=NANS[0][0]*kgIJ0+NANS[2][0]*kgIJ2;
+    S0<<0,0,0,0,0,0,0,S[7];
+    localBasis.evaluateJacobian(lagrangePoints[1],dN);
+    const auto  kgIJ1 = defaultTransverseShear.secondDerivativeWRTSurfaceDirector(lagrangePoints[1],integrationPointIndex,dN,geo,uFunction,directorFunction,localBasis,S0,kin,i,j);
+    localBasis.evaluateJacobian(lagrangePoints[3],dN);
+    const auto  kgIJ3 = defaultTransverseShear.secondDerivativeWRTSurfaceDirector(lagrangePoints[3],integrationPointIndex,dN,geo,uFunction,directorFunction,localBasis,S0,kin,i,j);
+    kg+=NANS[1][0]*kgIJ1+NANS[3][0]*kgIJ3;
     return kg;
   }
 

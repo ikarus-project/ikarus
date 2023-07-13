@@ -92,24 +92,24 @@ auto testMembraneStrain(const auto& localView,const auto& d)
 //
 template<template<typename> typename ShellElement>
 auto checkFEByAutoDiff(std::string filename) {
-  TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() by Automatic Differentiation of Kirchhoff-Love shell");
+  TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() by Automatic Differentiation of Kirchhoff-Love shell "+filename);
 
   constexpr auto dimworld        = 3;
-  const std::array<int, 2> order = {2,2};
+  const std::array<int, 2> order = {1,1};
 
-  const std::array<std::vector<double>, 2> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
-//  const std::array<std::vector<double>, 2> knotSpans = {{{0, 0,  1, 1}, {0, 0, 1, 1}}};
+//  const std::array<std::vector<double>, 2> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+  const std::array<std::vector<double>, 2> knotSpans = {{{0, 0,  1, 1}, {0, 0, 1, 1}}};
 
   using ControlPoint = Dune::IGA::NURBSPatchData<2, dimworld>::ControlPointType;
 
-  const std::vector<std::vector<ControlPoint>> controlPoints
-      = {
-          {{.p = {0, 0.0, 0}, .w = 1}, {.p = {0, 1, 0}, .w = 1}, {.p = {0, 2, 0}, .w = 1}},
-          {{.p = {5, 0.0, 0}, .w = 1}, {.p = {5, 1, 0}, .w = 1}, {.p = {5, 2, 0}, .w = 1}},
-          {{.p = {10, 0.0, 0}, .w = 1}, {.p = {10, 1, 0}, .w = 1}, {.p = {10, 2, 0}, .w = 1}}};
-//
 //  const std::vector<std::vector<ControlPoint>> controlPoints
-//      = {{{.p = {0, 0, 0}, .w = 1}, {.p = {0, 1, 0}, .w = 1}}, {{.p = {12, 0, 0}, .w = 1}, {.p = {12, 1, 0}, .w = 1}}};
+//      = {
+//          {{.p = {0, 0.0, 0}, .w = 1}, {.p = {0, 1, 0}, .w = 1}, {.p = {0, 2, 0}, .w = 1}},
+//          {{.p = {5, 0.0, 0}, .w = 1}, {.p = {5, 1, 0}, .w = 1}, {.p = {5, 2, 0}, .w = 1}},
+//          {{.p = {10, 0.0, 0}, .w = 1}, {.p = {10, 1, 0}, .w = 1}, {.p = {10, 2, 0}, .w = 1}}};
+//
+  const std::vector<std::vector<ControlPoint>> controlPoints
+      = {{{.p = {0, 0, 0}, .w = 1}, {.p = {0, 1, 0}, .w = 1}}, {{.p = {12, 0, 0}, .w = 1}, {.p = {12, 1, 0}, .w = 1}}};
 
   std::array<int, 2> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
 
@@ -179,138 +179,141 @@ auto checkFEByAutoDiff(std::string filename) {
   directorFunctions[2]="GFE";
   for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 3; ++j) {
-      
+      for (int k = 0; k < 2; ++k) {
+        Ikarus::FESettings feSettings;
+        feSettings.addOrAssign("youngs_modulus", 1000.0);
+        feSettings.addOrAssign("poissons_ratio", 0.0);
+        feSettings.addOrAssign("thickness", 0.1);
+        feSettings.addOrAssign("membraneStrainFlag", i);
+        feSettings.addOrAssign("transverseShearStrainFlag", k);
+        feSettings.addOrAssign("directorFunction", directorFunctions[j]);
+        feSettings.addOrAssign("secondOrderBending", true);
+        using Basis = decltype(basis);
+        //  KLSHELL fe(basis, *element, feSettings);
+        using MidSurfaceVector   = Dune::BlockVector<Dune::RealTuple<double, 3>>;
+        using DirectorVector     = Dune::BlockVector<Dune::UnitVector<double, 3>>;
+        using MultiTypeVector    = Dune::TupleVector<MidSurfaceVector, DirectorVector>;
+        using MultiTypeVectorRaw = Dune::TupleVector<Dune::BlockVector<Dune::FieldVector<double, 3>>,
+                                                     Dune::BlockVector<Dune::FieldVector<double, 3>>>;
+        using namespace Dune::Functions::BasisFactory;
+        auto blockedmidSurfaceBasis = Dune::Functions::subspaceBasis(basis.untouched(), Dune::Indices::_0);
 
+        MidSurfaceVector mBlocked(basis.untouched().size({Dune::Indices::_0}));
+        //    auto refCoords = [](auto v){ return Dune::FieldVector<double,3>();};
+        //    Functions::interpolate(blockedmidSurfaceBasis, mBlocked, refCoords);
+        //    auto deformationPowerBasis = makeBasis(gridView,power<3>(nurbs()));
 
-    Ikarus::FESettings feSettings;
-  feSettings.addOrAssign("youngs_modulus", 1000.0);
-  feSettings.addOrAssign("poissons_ratio", 0.0);
-  feSettings.addOrAssign("thickness", 0.1);
-  feSettings.addOrAssign("membraneStrainFlag", i);
-  feSettings.addOrAssign("transverseShearStrainFlag",0);
-  feSettings.addOrAssign("directorFunction", directorFunctions[j]);
-  feSettings.addOrAssign("secondOrderBending", true);
-  using Basis = decltype(basis);
-//  KLSHELL fe(basis, *element, feSettings);
-    using MidSurfaceVector = Dune::BlockVector<Dune::RealTuple<double, 3>>;
-    using DirectorVector  = Dune::BlockVector<Dune::UnitVector<double, 3>>;
-    using MultiTypeVector = Dune::TupleVector<MidSurfaceVector, DirectorVector>;
-    using MultiTypeVectorRaw = Dune::TupleVector< Dune::BlockVector<Dune::FieldVector<double, 3>>, Dune::BlockVector<Dune::FieldVector<double, 3>>>;
-    using namespace Dune::Functions::BasisFactory;
-    auto blockedmidSurfaceBasis = Dune::Functions::subspaceBasis(basis.untouched(),Dune::Indices::_0);
+        for (auto& msingle : mBlocked) {
+          //      msingle.setValue(Eigen::Vector<double, 3>::Zero());
+          msingle.setValue(Eigen::Vector<double, 3>::Random());
+        }
 
-    MidSurfaceVector mBlocked(basis.untouched().size({Dune::Indices::_0}));
-//    auto refCoords = [](auto v){ return Dune::FieldVector<double,3>();};
-//    Functions::interpolate(blockedmidSurfaceBasis, mBlocked, refCoords);
-//    auto deformationPowerBasis = makeBasis(gridView,power<3>(nurbs()));
+        DirectorVector dBlocked(basis.untouched().size({Dune::Indices::_1}));
+        for (auto& dsingle : dBlocked) {
+          dsingle.setValue(Eigen::Vector<double, 3>::UnitZ() + 0.1 * Eigen::Vector<double, 3>::Random());
+          //      dsingle.setValue(Eigen::Vector<double, 3>::UnitZ());
+        }
 
+        const MultiTypeVector x0(mBlocked, dBlocked);
+        MultiTypeVector x = x0;
+        //  ShellElement<Basis> fe(basis, *element, feSettings,x0, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
+        std::vector<ShellElement<Basis>> fes;
+        for (auto& ele : elements(gridView))
+          fes.emplace_back(basis, ele, feSettings, x0, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
+        using AutoDiffBasedFE = Ikarus::AutoDiffFE<ShellElement<Basis>, true>;
+        //  AutoDiffBasedFE feAutoDiff(fe);
 
-    for (auto &msingle : mBlocked) {
-//      msingle.setValue(Eigen::Vector<double, 3>::Zero());
-      msingle.setValue(Eigen::Vector<double, 3>::Random());
+        //  Eigen::VectorXd d;
+        //  d.setRandom(nDOF);
+        // d.setZero(nDOF);
+        //    auto basis3D       = Ikarus::makeBasis(gridView, composite(power<3>(scalarMidSurfBasis, BlockedInterleaved()),power<3>(scalaarDirectorBasis, BlockedInterleaved()),
+        //                                                               BlockedLexicographic{}));
+        //    auto blockedmidSurfaceBasis2 = Dune::Functions::subspaceBasis(basis3D.untouched(),Dune::Indices::_0);
+        //    auto blockeddirectorBasis2 = Dune::Functions::subspaceBasis(basis3D.untouched(),Dune::Indices::_1);
+        //    auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockedmidSurfaceBasis2,  x); auto director = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockeddirectorBasis2,  x);
+        //  Dune::SubsamplingVTKWriter vtkWriter(gridView,Dune::refinementLevels(0));
+        //
+        //    vtkWriter.addVertexData(disp, {"displacements", Dune::VTK::FieldInfo::Type::vector, 3});
+        //    vtkWriter.addVertexData(director, {"director", Dune::VTK::FieldInfo::Type::vector, 3});
+        //  vtkWriter.write(filename+ std::to_string(i));
+
+        Ikarus::DirichletValues dirichletValues(basis.flat());
+        auto sparseAssembler = Ikarus::SparseFlatAssembler(fes, dirichletValues);
+
+        //  auto localDisp=localFunction(disp);
+        //  localDisp.bind(*element);
+
+        double lambda = 7.3;
+
+        auto req = Ikarus::FErequirements<std::reference_wrapper<MultiTypeVector>>()
+                       .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
+                       .addAffordance(Ikarus::AffordanceCollections::elastoStatics);
+
+        auto fvLambda = [&](auto&& d_) -> auto {
+          req.insertGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector, d_);
+          return sparseAssembler.getScalar(req);
+        };
+
+        auto dfvLambda = [&](auto&& d_) -> auto& {
+          req.insertGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector, d_);
+          return sparseAssembler.getVector(req);
+        };
+        auto ddfvLambda = [&](auto&& d_) -> auto& {
+          req.insertGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector, d_);
+          return sparseAssembler.getMatrix(req);
+        };
+        auto nonLinOp
+            = Ikarus::NonLinearOperator(Ikarus::functions(fvLambda, dfvLambda, ddfvLambda), Ikarus::parameter(x));
+
+        nonLinOp.updateAll();
+
+        auto uF = std::function([&](MultiTypeVector& multiTypeVector, const Eigen::VectorXd& d_) {
+          //      auto dFull = sparseAssembler.createFullVector(d_);
+          //    std::cout<<"dFull"<<std::endl;
+          //    std::cout<<dFull<<std::endl;
+          using Ikarus::operator+=;
+          multiTypeVector += d_;
+        });
+
+        t.check(Ikarus::checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}, uF))
+            << "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
+            << "automatic differentiation with membraneStrainFlag: " << i << " and director func "
+            << directorFunctions[j] <<" TransversShearStrain: "<<k<< "\n  The residual is \n " << dfvLambda(x);
+        t.check(Ikarus::checkHessian(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}, uF))
+            << "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
+            << "automatic differentiation with membraneStrainFlag: " << i << " and director func "
+            << directorFunctions[j] <<" TransversShearStrain: "<<k<< "\n The Hessian is\n"
+            << ddfvLambda(x);
+        //    auto subOp = nonLinOp.template subOperator<1, 2>();
+        //    t.check(Ikarus::checkJacobian(subOp, {.draw = false, .writeSlopeStatementIfFailed = true},uF))<<"Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "<<
+        //        "automatic differentiation of the gradient with membraneStrainFlag: "<<i<<" and director func "<<directorFunctions[j];
+
+        //  Eigen::MatrixXd K, KAutoDiff;
+        //  K.setZero(nDOFPerEle, nDOFPerEle);
+        //  KAutoDiff.setZero(nDOFPerEle, nDOFPerEle);
+        //
+        //  Eigen::VectorXd R, RAutoDiff;
+        //  R.setZero(nDOFPerEle);
+        //  RAutoDiff.setZero(nDOFPerEle);
+        //
+        //  fe.calculateVector(req, R);
+        //  feAutoDiff.calculateVector(req, RAutoDiff);
+        //    fe.calculateMatrix(req, K);
+        //    feAutoDiff.calculateMatrix(req, KAutoDiff);
+        //
+        //  t.check(K.isApprox(KAutoDiff, tol),"K Check"+filename)<<
+        //      "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
+        //      "automatic differentiation with membraneStrainFlag: "<<i<<" and director func "<<directorFunctions[j]<<"\n" << K <<"\n KAutoDiff \n"<< KAutoDiff<<"\n K-KAutoDiff \n"<< K-KAutoDiff;
+        //
+        //  t.check(R.isApprox(RAutoDiff, tol),"R Check"+filename)<<
+        //      "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
+        //      "automatic differentiation with membraneStrainFlag: "<<i<<" and director func "<<directorFunctions[j]<<"\n" << R <<"\n RAutoDiff \n"<< RAutoDiff<<"\n R-RAutoDiff \n"<< R-RAutoDiff;
+        //
+        //  t.check(Dune::FloatCmp::eq(fe.calculateScalar(req), feAutoDiff.calculateScalar(req), tol),"E Check"+filename)<<
+        //    "Mismatch between the energies obtained from explicit implementation and the one based on "
+        //    "automatic differentiation"<<"with membraneStrainFlag: "<<i<<" and director func "<<directorFunctions[j];
+      }
     }
-
-
-    DirectorVector dBlocked(basis.untouched().size({Dune::Indices::_1}));
-    for (auto &dsingle : dBlocked) {
-      dsingle.setValue(Eigen::Vector<double, 3>::UnitZ()+0.1*Eigen::Vector<double, 3>::Random());
-//      dsingle.setValue(Eigen::Vector<double, 3>::UnitZ());
-    }
-
-    const MultiTypeVector x0(mBlocked, dBlocked);
-    MultiTypeVector x =x0;
-//  ShellElement<Basis> fe(basis, *element, feSettings,x0, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
-  std::vector<ShellElement<Basis>> fes;
-  for (auto& ele :elements(gridView))
-  fes.emplace_back(basis,ele, feSettings,x0, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
-  using AutoDiffBasedFE = Ikarus::AutoDiffFE<ShellElement<Basis>, true>;
-//  AutoDiffBasedFE feAutoDiff(fe);
-
-//  Eigen::VectorXd d;
-//  d.setRandom(nDOF);
-  //d.setZero(nDOF);
-//    auto basis3D       = Ikarus::makeBasis(gridView, composite(power<3>(scalarMidSurfBasis, BlockedInterleaved()),power<3>(scalaarDirectorBasis, BlockedInterleaved()),
-//                                                               BlockedLexicographic{}));
-//    auto blockedmidSurfaceBasis2 = Dune::Functions::subspaceBasis(basis3D.untouched(),Dune::Indices::_0);
-//    auto blockeddirectorBasis2 = Dune::Functions::subspaceBasis(basis3D.untouched(),Dune::Indices::_1);
-//    auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockedmidSurfaceBasis2,  x);
-//    auto director = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockeddirectorBasis2,  x);
-//  Dune::SubsamplingVTKWriter vtkWriter(gridView,Dune::refinementLevels(0));
-//
-//    vtkWriter.addVertexData(disp, {"displacements", Dune::VTK::FieldInfo::Type::vector, 3});
-//    vtkWriter.addVertexData(director, {"director", Dune::VTK::FieldInfo::Type::vector, 3});
-//  vtkWriter.write(filename+ std::to_string(i));
-
-  Ikarus::DirichletValues dirichletValues( basis.flat());
-  auto sparseAssembler = Ikarus::SparseFlatAssembler(fes, dirichletValues);
-
-//  auto localDisp=localFunction(disp);
-//  localDisp.bind(*element);
-
-  double lambda = 7.3;
-
-    auto req = Ikarus::FErequirements<std::reference_wrapper<MultiTypeVector>>()
-        .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
-        .addAffordance(Ikarus::AffordanceCollections::elastoStatics);
-
-    auto fvLambda = [&](auto&& d_) -> auto {
-      req.        insertGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector, d_);
-      return sparseAssembler.getScalar(req);
-    };
-
-    auto dfvLambda = [&](auto&& d_) -> auto& {
-      req.        insertGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector, d_);
-      return sparseAssembler.getVector(req);
-    };
-    auto ddfvLambda = [&](auto&& d_) -> auto& {
-      req.        insertGlobalSolution(Ikarus::FESolutions::midSurfaceAndDirector, d_);
-      return sparseAssembler.getMatrix(req);
-    };
-    auto nonLinOp = Ikarus::NonLinearOperator(Ikarus::functions(fvLambda, dfvLambda, ddfvLambda), Ikarus::parameter(x));
-
-    nonLinOp.updateAll();
-
-    auto uF=std::function([&](MultiTypeVector& multiTypeVector, const Eigen::VectorXd& d_) {
-//      auto dFull = sparseAssembler.createFullVector(d_);
-      //    std::cout<<"dFull"<<std::endl;
-      //    std::cout<<dFull<<std::endl;
-      using Ikarus::operator+=;
-      multiTypeVector += d_;
-    });
-
-    t.check(Ikarus::checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true},uF))<<"Mismatch between the residual vectors obtained from explicit implementation and the one based on "<<
-                                                                                                          "automatic differentiation with membraneStrainFlag: "<<i<<" and director func "<<directorFunctions[j];
-    t.check(Ikarus::checkHessian(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true},uF))<<"Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "<<
-              "automatic differentiation with membraneStrainFlag: "<<i<<" and director func "<<directorFunctions[j]<<"\n The Hessian is\n"<<ddfvLambda(x);
-//    auto subOp = nonLinOp.template subOperator<1, 2>();
-//    t.check(Ikarus::checkJacobian(subOp, {.draw = false, .writeSlopeStatementIfFailed = true},uF))<<"Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "<<
-//        "automatic differentiation of the gradient with membraneStrainFlag: "<<i<<" and director func "<<directorFunctions[j];
-
-//  Eigen::MatrixXd K, KAutoDiff;
-//  K.setZero(nDOFPerEle, nDOFPerEle);
-//  KAutoDiff.setZero(nDOFPerEle, nDOFPerEle);
-//
-//  Eigen::VectorXd R, RAutoDiff;
-//  R.setZero(nDOFPerEle);
-//  RAutoDiff.setZero(nDOFPerEle);
-//
-//  fe.calculateVector(req, R);
-//  feAutoDiff.calculateVector(req, RAutoDiff);
-//    fe.calculateMatrix(req, K);
-//    feAutoDiff.calculateMatrix(req, KAutoDiff);
-//
-//  t.check(K.isApprox(KAutoDiff, tol),"K Check"+filename)<<
-//      "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
-//      "automatic differentiation with membraneStrainFlag: "<<i<<" and director func "<<directorFunctions[j]<<"\n" << K <<"\n KAutoDiff \n"<< KAutoDiff<<"\n K-KAutoDiff \n"<< K-KAutoDiff;
-//
-//  t.check(R.isApprox(RAutoDiff, tol),"R Check"+filename)<<
-//      "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
-//      "automatic differentiation with membraneStrainFlag: "<<i<<" and director func "<<directorFunctions[j]<<"\n" << R <<"\n RAutoDiff \n"<< RAutoDiff<<"\n R-RAutoDiff \n"<< R-RAutoDiff;
-//
-//  t.check(Dune::FloatCmp::eq(fe.calculateScalar(req), feAutoDiff.calculateScalar(req), tol),"E Check"+filename)<<
-//    "Mismatch between the energies obtained from explicit implementation and the one based on "
-//    "automatic differentiation"<<"with membraneStrainFlag: "<<i<<" and director func "<<directorFunctions[j];
-  }
   }
   return t;
 }
@@ -322,14 +325,15 @@ template <typename Basis>
 using RMSHELL = Ikarus::NonLinearRMshell<Basis>;
 template <typename Basis>
 using RMSHELLSB = Ikarus::StressBasedShellRM<RMSHELL<Basis>>;
-//#include <cfenv>
+#include <cfenv>
 int main(int argc, char** argv) {
-//  feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);
+  feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);
   Ikarus::init(argc, argv);
   //  const double E             = materialParameters.get<double>("E");
   //  const double nu            = materialParameters.get<double>("nu");
 
-  checkFEByAutoDiff<RMSHELL>("RMSHELL");
+//  checkFEByAutoDiff<RMSHELL>("RMSHELL");
+  std::cout<<"RMSHELLSB"<<std::endl;
   checkFEByAutoDiff<RMSHELLSB>("RMSHELLSB");
 
 //  checkFEByAutoDiff<KLSHELLSB>("KLSHELLSB");

@@ -635,7 +635,7 @@ struct StressBasedShellRM;
         kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(referenceElement));
         kin.td1Andtd2   = directorFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(referenceElement));
 
-        auto [C3D,epsV,kappV,gammaV]                = computeMaterialAndStrains(gp.position(),*geo_,displacementFunction,directorFunction,directorReferenceFunction,kin);
+        auto [C3D,epsV,kappV,gammaV]                = computeMaterialAndStrains(gp.position(),gpIndex,*geo_,displacementFunction,directorFunction,directorReferenceFunction,kin);
         Eigen::Vector<ScalarType,8> Egl,S;
         Egl<<epsV,kappV,gammaV;
         S.template segment<3>(0)= thickness_*C3D.template block<3,3>(0,0)*epsV;
@@ -682,8 +682,9 @@ struct StressBasedShellRM;
 
             Eigen::Matrix<ScalarType, 3, 2> kg= kgMidSurfaceDirectorBending(kin,N,Nd,gpIndex,i,j,displacementFunction,directorFunction,S);
 //            Eigen::Matrix<ScalarType, 3, 2> kg2= kgMidSurfaceDirectorShear(kin,N,Nd,gpIndex,i,j,displacementFunction,directorFunction,S);
-            Eigen::Matrix<ScalarType, 3, 2> kg2= transverseShearStrain.secondDerivativeWRTSurfaceDirector(gp.position(),gpIndex, Nd,*geo_,displacementFunction,directorFunction, localBasisMidSurface,
-                                                                                                           S,i,j);
+            Eigen::Matrix<ScalarType, 3, 2> kg2= transverseShearStrain.secondDerivativeWRTSurfaceDirector(gp.position(),gpIndex, Nd,*geo_,
+                                                                                                           displacementFunction,directorFunction, localBasisMidSurface,
+                                                                                                           S,kin,i,j);
 
             hred.template block<midSurfaceDim, directorCorrectionDim>(indexI, indexJ)
                 += bopMidSurfaceI.transpose() * CMat_ * bopDirectorJ * weight;
@@ -713,7 +714,7 @@ struct StressBasedShellRM;
 
             Eigen::Matrix<ScalarType, 2, 2> kgBending= kgDirectorDirectorBending(kin,Ndirector,dNdirector,gpIndex,i,j,displacementFunction,directorFunction,S);
 //            Eigen::Matrix<ScalarType, 2, 2> kgShear= kgDirectorDirectorShear(kin,Ndirector,dNdirector,gpIndex,i,j,displacementFunction,directorFunction,S);
-            Eigen::Matrix<ScalarType, 3, 2> kgShear= transverseShearStrain.secondDerivativeWRTDirectorDirector(gp.position(),gpIndex, Nd,*geo_,displacementFunction,directorFunction,
+            Eigen::Matrix<ScalarType, 2, 2> kgShear= transverseShearStrain.secondDerivativeWRTDirectorDirector(gp.position(),gpIndex, Nd,*geo_,displacementFunction,directorFunction,
                                                                                                             localBasisMidSurface,S,kin,i,j);
 
             hred.template block<directorCorrectionDim, directorCorrectionDim>(indexI, indexJ)
@@ -763,7 +764,7 @@ struct StressBasedShellRM;
         kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(referenceElement));
         kin.td1Andtd2   = directorFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(referenceElement));
 
-        auto [C3D,epsV,kappV,gammaV]                = computeMaterialAndStrains(gp.position(),*geo_,displacementFunction,directorFunction,directorReferenceFunction,kin);
+        auto [C3D,epsV,kappV,gammaV]                = computeMaterialAndStrains(gp.position(),gpIndex,*geo_,displacementFunction,directorFunction,directorReferenceFunction,kin);
         Eigen::Vector<ScalarType,8> Egl,S;
         Egl<<epsV,kappV,gammaV;
         S.template segment<3>(0)= thickness_*C3D.template block<3,3>(0,0)*epsV;
@@ -885,7 +886,7 @@ struct StressBasedShellRM;
         kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(referenceElement));
         kin.td1Andtd2   = directorFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll),Dune::on(referenceElement));
 
-        auto [C3D,epsV,kappV,gammaV]                = computeMaterialAndStrains(gp.position(),*geo_,displacementFunction,directorFunction,kin);
+        auto [C3D,epsV,kappV,gammaV]                = computeMaterialAndStrains(gp.position(),gpIndex,*geo_,displacementFunction,directorFunction,directorReferenceFunction,kin);
         Eigen::Vector<ScalarType,8> Egl,S;
         Egl<<epsV,kappV,gammaV;
         S.template segment<3>(0)= thickness_*C3D.template block<3,3>(0,0)*epsV;
