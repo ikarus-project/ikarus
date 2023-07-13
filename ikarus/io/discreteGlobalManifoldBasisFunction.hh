@@ -1,7 +1,6 @@
 // -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 // vi: set et ts=4 sw=2 sts=2:
-#ifndef DUNE_FUNCTIONS_GRIDFUNCTIONS_DISCRETEGLOBALBASISFUNCTIONS_HH
-#define DUNE_FUNCTIONS_GRIDFUNCTIONS_DISCRETEGLOBALBASISFUNCTIONS_HH
+#pragma once
 
 #include <memory>
 #include <optional>
@@ -204,7 +203,7 @@ namespace Dune {
 
         const std::string& directorFunctionName() const
         {
-          return *data_->funcType;
+          return data_->funcType;
         }
 
         //! Return the stored node-to-range map.
@@ -311,22 +310,26 @@ namespace Dune {
 
 
         //! Create a local-function from the associated grid-function
-        LocalFunction(const DiscreteGlobalManifoldBasisFunction& globalFunction)
+        LocalFunction(const DiscreteGlobalManifoldBasisFunction& globalFunction,std::string p_directorFunctionType)
             : LocalBase(globalFunction.data_)
               , evaluationBuffer_(this->localView_.tree())
         {
-          /* Nothing. */
+          directorFunctionType=p_directorFunctionType;
         }
 
+        std::string directorFunctionType;
 
-        auto createFunction(const auto& localBasis)
+
+        auto createFunction(const auto& localBasis)const
         {
-          const auto& directorFunctionType= this->directorFunctionName();
+          using namespace Dune::Indices;
+          using namespace Ikarus;
+          auto ikarusBasis = Dune::CachedLocalBasis(localBasis);
           using LocalBasis = std::remove_cvref_t< decltype(localBasis)>;
           using CoeffContainer = std::remove_cvref_t< decltype(this->localDoFs_)>;
-          auto geo_=std::make_shared<Geometry>(this->localView_.element());
+          auto geo_=std::make_shared<const Geometry>(this->localView_.element());
           if (directorFunctionType=="NFE") {
-            Dune::EmbeddedLocalFunction directorFunctionImpl(localBasisDirector, this->localDoFs_, geo_, _1);
+            Dune::EmbeddedLocalFunction directorFunctionImpl(ikarusBasis, this->localDoFs_, geo_, _1);
             using DirectorCurType= decltype(directorFunctionImpl);
             using DuneBasis = typename  DirectorCurType::DuneBasis;
             using CoeffContainer = typename  DirectorCurType::CoeffContainer;
@@ -337,9 +340,8 @@ namespace Dune {
 
             return directorFunction;
           } else if (directorFunctionType=="PBFE") {
-            Dune::ProjectionBasedLocalFunction2 directorFunctionImpl(localBasisDirector, this->localDoFs_, geo_, _1);
-            Dune::ProjectionBasedLocalFunction2 directorReferenceFunctionImpl(localBasisDirector, localRefDirectorConfiguration,
-                                                                              geo_, _1);
+            Dune::ProjectionBasedLocalFunction2 directorFunctionImpl(ikarusBasis, this->localDoFs_, geo_, _1);
+
             using DirectorCurType= decltype(directorFunctionImpl);
             using DuneBasis = typename  DirectorCurType::DuneBasis;
             using CoeffContainer = typename  DirectorCurType::CoeffContainer;
@@ -350,9 +352,8 @@ namespace Dune {
 
             return directorFunction;
           } else if (directorFunctionType=="GFE") {
-            Dune::GeodesicLocalFunction directorFunctionImpl(localBasisDirector, this->localDoFs_, geo_, _1);
-            Dune::GeodesicLocalFunction directorReferenceFunctionImpl(localBasisDirector, localRefDirectorConfiguration,
-                                                                      geo_, _1);
+            Dune::GeodesicLocalFunction directorFunctionImpl(ikarusBasis, this->localDoFs_, geo_, _1);
+
             using DirectorCurType= decltype(directorFunctionImpl);
             using DuneBasis = typename  DirectorCurType::DuneBasis;
             using CoeffContainer = typename  DirectorCurType::CoeffContainer;
@@ -463,7 +464,7 @@ namespace Dune {
        */
       friend LocalFunction localFunction(const DiscreteGlobalManifoldBasisFunction& t)
       {
-        return LocalFunction(t);
+        return LocalFunction(t,t.directorFunctionName());
       }
     };
 
@@ -705,5 +706,3 @@ namespace Dune {
 
   } // namespace Functions
 } // namespace Dune
-
-#endif // DUNE_FUNCTIONS_GRIDFUNCTIONS_DISCRETEGLOBALBASISFUNCTIONS_HH

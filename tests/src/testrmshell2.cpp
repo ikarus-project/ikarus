@@ -124,7 +124,7 @@ auto checkFEByAutoDiff(std::string filename) {
 //    patchData = degreeElevate(patchData, i, 1);
   auto grid = std::make_shared<Grid>(patchData);
 
-  grid->globalRefine(2);
+  grid->globalRefine(0);
   auto gridView = grid->leafGridView();
 
   using namespace Dune::Functions::BasisFactory;

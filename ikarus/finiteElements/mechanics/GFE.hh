@@ -509,13 +509,16 @@ namespace Dune {
       int maxiter=20;
       int miniter=0;
       int i=0;
+      using ScalarType=typename decltype(tres)::ctype;
       typename decltype(tres)::ctype gRNorm;
       for (; i<maxiter; ++i)
       {
-        auto gE=g(tres);
         auto P = tres.derivativeOfProjectionWRTposition(tres.getValue());
+        auto gE=(P*g(tres)).eval();
         auto hE=(P*h(tres)*P).eval();
-        auto d=(-hE.completeOrthogonalDecomposition().pseudoInverse() * gE).eval();
+//        Eigen::CompleteOrthogonalDecomposition<Eigen::Matrix<ScalarType,valueSize,valueSize>> cod;
+//        cod.compute(hE);
+        auto d=(-(hE.transpose() * hE).ldlt().solve(hE.transpose() * gE)).eval();
         tres.setValue(tres.getValue()+P*d);
 
         gRNorm=(P*gE).norm();

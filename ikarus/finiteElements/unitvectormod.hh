@@ -6,6 +6,7 @@
 #include <concepts>
 
 #include <ikarus/utils/eigenDuneTransformations.hh>
+#include <dune/localfefunctions/manifolds/unitVector.hh>
 
 namespace Dune {
 

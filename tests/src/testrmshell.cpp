@@ -22,6 +22,7 @@
 #include "testCommon.hh"
 #include "ikarus/io/vtkFunctionExtensions.hh"
 #include "ikarus/io/composedGgridfuncMod.hh"
+#include "ikarus/io/discreteGlobalManifoldBasisFunction.hh"
 
 #include <Eigen/Core>
 
@@ -45,6 +46,7 @@
 using Dune::TestSuite;
 #include <autodiff/forward/dual/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
+#include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 
 auto NonLinearElasticityLoadControlNRandTRforRMShell() {
   TestSuite t("NonLinearElasticityLoadControlNRandTRforKLShell ");
@@ -315,7 +317,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
   };
 
   auto director0
-      = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockeddirectorBasis2, x0);
+      = Dune::Functions::makeDiscreteGlobalManifoldBasisFunction<Dune::FieldVector<double, 3>>(blockeddirectorBasis2, x0,directorFunction);
 
   auto add3DResultFunction = [&](auto& writer2, auto&& resultType) {
     auto resReq = Ikarus::ResultRequirements<Ikarus::FErequirements<std::reference_wrapper<MultiTypeVector>>>()
@@ -346,8 +348,8 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
       = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis)>, MultiTypeVector>>(
           basis, x,
           [&](auto& writer, auto& basis, auto& xL, auto& prefixString, int step) {
-            auto director = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(
-                blockeddirectorBasis2, x);
+            auto director = Dune::Functions::makeDiscreteGlobalManifoldBasisFunction<Dune::FieldVector<double, 3>>(
+                blockeddirectorBasis2, x,directorFunction);
 
             writer.addPointData(disp, Dune::Vtk::FieldInfo{"displacements", Dune::VTK::FieldInfo::Type::vector, 3});
             writer.addPointData(director, Dune::Vtk::FieldInfo{"director", Dune::VTK::FieldInfo::Type::vector, 3});
