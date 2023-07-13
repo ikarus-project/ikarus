@@ -31,7 +31,7 @@ namespace Dune {
 
         // In order to make the cache work for proxy-references
         // we have to use AutonomousValue<T> instead of std::decay_t<T>
-        using Coefficient = Dune::AutonomousValue<decltype(std::declval<Vector>()[std::declval<typename Basis::MultiIndex>()])>;
+        using Coefficient = Dune::UnitVector<double,3>;
 
         using GridView = typename Basis::GridView;
         using EntitySet = GridViewEntitySet<GridView, 0>;
@@ -135,7 +135,7 @@ namespace Dune {
               // is not the same as the localIndex within the
               // full local view.
               size_t localIndex = localView_.tree().localIndex(i);
-              localDoFs_[localIndex] = dofs[localView_.index(localIndex)];
+              localDoFs_[localIndex] = dofs[Dune::Indices::_1][localView_.index(localIndex)[1]];
             }
           }
 
@@ -327,7 +327,7 @@ namespace Dune {
           auto ikarusBasis = Dune::CachedLocalBasis(localBasis);
           using LocalBasis = std::remove_cvref_t< decltype(localBasis)>;
           using CoeffContainer = std::remove_cvref_t< decltype(this->localDoFs_)>;
-          auto geo_=std::make_shared<const Geometry>(this->localView_.element());
+          auto geo_=std::make_shared<const Geometry>(this->localView_.element().geometry());
           if (directorFunctionType=="NFE") {
             Dune::EmbeddedLocalFunction directorFunctionImpl(ikarusBasis, this->localDoFs_, geo_, _1);
             using DirectorCurType= decltype(directorFunctionImpl);
@@ -381,26 +381,22 @@ namespace Dune {
           Range y;
           istlVectorBackend(y) = 0;
 
-          TypeTree::forEachLeafNode(this->localView_.tree(), [&](auto&& node, auto&& treePath) {
+//          TypeTree::forEachLeafNode(this->localView_.tree(), [&](auto&& node, auto&& treePath) {
+            const auto& node = this->localView_.tree().child(0);
             const auto& fe = node.finiteElement();
             const auto& localBasis = fe.localBasis();
             auto f = createFunction(localBasis);
 
 
-            auto& shapeFunctionValues = evaluationBuffer_[treePath];
-
-            localBasis.evaluateFunction(x, shapeFunctionValues);
 
             // Compute linear combinations of basis function jacobian.
             // Non-scalar coefficients of dimension coeffDim are handled by
             // processing the coeffDim linear combinations independently
             // and storing them as entries of an array.
             using Value = LocalBasisRange< std::decay_t<decltype(node)> >;
-            static constexpr auto coeffDim = decltype(flatVectorView(this->localDoFs_[node.localIndex(0)]).size())::value;
-            auto fE= f(x);
-            auto values = std::array<Value, coeffDim>{};
-            for (std::size_t j = 0; j < coeffDim; ++j)
-              values[j]= fE[j];
+            auto fE= f.evaluate(x);
+            for (std::size_t j = 0; j < 3; ++j)
+              y[j]= fE[j];
 //            istlVectorBackend(values) = 0;
 //            for (size_type i = 0; i < localBasis.size(); ++i)
 //            {
@@ -411,8 +407,8 @@ namespace Dune {
 
             // Assign computed values to node entry of range.
             // Types are matched using the lexicographic ordering provided by flatVectorView.
-            LocalBase::assignWith(nodeToRangeEntry(node, treePath, y), values);
-          });
+//            LocalBase::assignWith(nodeToRangeEntry(node, treePath, y), values);
+//          });
 
           return y;
         }
@@ -495,22 +491,23 @@ namespace Dune {
     auto makeDiscreteGlobalManifoldBasisFunction(B&& basis, V&& vector, std::string funcType)
     {
       using Basis = std::decay_t<B>;
+      using VT = std::decay_t<V>;
       using NTREM = HierarchicNodeToRangeMap;
 
       // Small helper functions to wrap vectors using istlVectorBackend
       // if they do not already satisfy the VectorBackend interface.
-      auto toConstVectorBackend = [&](auto&& v) -> decltype(auto) {
-        if constexpr (models<Concept::ConstVectorBackend<Basis>, decltype(v)>()) {
-          return std::forward<decltype(v)>(v);
-        } else {
-          return istlVectorBackend(v);
-        }
-      };
+//      auto toConstVectorBackend = [&](auto&& v) -> decltype(auto) {
+//        if constexpr (models<Concept::ConstVectorBackend<Basis>, decltype(v)>()) {
+//          return std::forward<decltype(v)>(v);
+//        } else {
+//          return istlVectorBackend(v);
+//        }
+//      };
 
-      using Vector = std::decay_t<decltype(toConstVectorBackend(std::forward<V>(vector)))>;
-      return DiscreteGlobalManifoldBasisFunction<Basis, Vector, NTREM, R>(
+//      using Vector = std::decay_t<decltype(toConstVectorBackend(std::forward<V>(vector)))>;
+      return DiscreteGlobalManifoldBasisFunction<Basis, VT, NTREM, R>(
           std::forward<B>(basis),
-          toConstVectorBackend(std::forward<V>(vector)),
+          std::forward<V>(vector),
           HierarchicNodeToRangeMap(),funcType);
     }
 
