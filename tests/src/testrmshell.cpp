@@ -355,7 +355,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell(char** argv) {
   };
   auto disp
       = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(blockedmidSurfaceBasis2, x);
-
+  auto localView= basis.flat().localView();
   auto vtkWriter
       = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis)>, MultiTypeVector>>(
           basis, x,
@@ -396,13 +396,13 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell(char** argv) {
             //        writer2.addPointData(Dune::Vtk::FunctionMod<GridView>(resultFunction));
             //        writer2.addPointData(Dune::Vtk::FunctionMod<GridView>(resultFunctionPK2));
             //        std::cout<<"T4"<<std::endl;
-            const std::string name3d = "PureBending3D" + std::to_string(step);
+            const std::string name3d = "PureBending3D"+std::to_string(gridView.size(0))+"_Order_"+std::to_string(localView.tree().child(Dune::Indices::_0,0).finiteElement().localBasis().order())+"_transverseShearStrainFlag_"+std::to_string(transverseShearStrainFlag)+directorFunction + std::to_string(step);
             std::cout << name3d << std::endl;
             writer2.write(name3d);
             //        std::cout<<"T5"<<std::endl;
           },
           inPlaneRefine);
-  auto localView= basis.flat().localView();
+
   if(suffix)
     vtkWriter->setFileNamePrefix("PureBending_Ele"+std::to_string(gridView.size(0))+"_Order_"+std::to_string(localView.tree().child(Dune::Indices::_0,0).finiteElement().localBasis().order())+"_transverseShearStrainFlag_"+std::to_string(transverseShearStrainFlag)+directorFunction);
   else
