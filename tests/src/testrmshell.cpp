@@ -472,7 +472,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell(char** argv) {
   const double R = sqrt(-pi*pi*thickness*thickness + L*L)/(2.0*pi);
   auto dispAna = Dune::Functions::makeAnalyticGridViewFunction(
       [&](auto x) {
-        const double alpha = x[0] / L;
+        const double alpha = 2*pi *x[0] / L;
 
         return Dune::FieldVector<double,3>({R * sin(alpha) - alpha * L / (2 * pi), 0, -R * cos(alpha) + R});
       },
