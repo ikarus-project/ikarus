@@ -433,7 +433,8 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell(char** argv) {
         auto locale    = localFunction(feFunction);
 
         /// Calculate L_2 error for simply supported case
-        double energy = 0.0;
+        Eigen::Vector3d energy;
+        energy.setZero();
         for (auto& ele : elements(gridView)) {
           localView.bind(ele);
           locale.bind(ele);
@@ -445,7 +446,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell(char** argv) {
 
             const auto w_ex = locale(gp.position());
             for (int i = 0; i < w_ex.size(); ++i) {
-              energy += w_ex[i] * geo.integrationElement(gp.position()) * gp.weight();
+              energy[i] += w_ex[i] * geo.integrationElement(gp.position()) * gp.weight();
             }
 //            else
 //              l2_error += Dune::power(w_ex - w_fe, 2) * geo.integrationElement(gp.position()) * gp.weight();

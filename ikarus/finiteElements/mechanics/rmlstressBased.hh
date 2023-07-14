@@ -588,6 +588,7 @@ namespace Ikarus {
     void calculateAt(const ResultRequirementsType &req, const Dune::FieldVector<double, 2> &local,
                      ResultTypeMap<double> &result) const {
       if(req.isResultRequested(ResultType::energyArray)) {
+        typename ResultTypeMap<double>::ResultArray resultVector;
         auto energyVec = calculateInternalEnergy(req.getFERequirements(),local);
         resultVector.resize(3, 1);
         resultVector=energyVec;
