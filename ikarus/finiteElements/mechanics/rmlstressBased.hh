@@ -94,6 +94,10 @@ namespace Ikarus {
       calculateVectorImpl<double>(par, force);
     }
     inline double calculateScalar(const FERequirementType &par) const { return calculateScalarImpl<double>(par); }
+
+
+
+
     template<typename ScalarType>
     auto calculateScalarImpl(const FERequirementType &par, const std::optional<const Eigen::VectorX<ScalarType>> &dx
                                                            = std::nullopt) const -> ScalarType {
@@ -542,6 +546,7 @@ namespace Ikarus {
     void calculateAt(const ResultRequirementsType &req, const Dune::FieldVector<double, 3> &local,
                      ResultTypeMap<double> &result) const {
         typename ResultTypeMap<double>::ResultArray resultVector;
+
         resultVector.resize(3, 3);
         auto [res,detF,E11,zeta,j,J,gp2DPos]= calculateStresses(req.getFERequirements(),local,false);
         if(req.isResultRequested(ResultType::cauchyStress)) {
@@ -582,6 +587,13 @@ namespace Ikarus {
 
     void calculateAt(const ResultRequirementsType &req, const Dune::FieldVector<double, 2> &local,
                      ResultTypeMap<double> &result) const {
+      if(req.isResultRequested(ResultType::energyArray)) {
+        auto energyVec = calculateInternalEnergy(req.getFERequirements(),local);
+        resultVector.resize(3, 1);
+        resultVector=energyVec;
+        result.insertOrAssignResult(ResultType::energyArray, resultVector);
+        return;
+      }
       if (req.isResultRequested(ResultType::cauchyStress))
         DUNE_THROW(Dune::NotImplemented, "No results are implemented");
       else if (req.isResultRequested(ResultType::membraneForces)
@@ -626,9 +638,9 @@ namespace Ikarus {
         const auto& gppos =gP.position();
         const auto& gpweight =gP.weight();
 
-        const double zeta  = (2*gppos[2]-1)*thickness/2.0;
+        const double zeta  = (2*gppos[0]-1)*thickness/2.0;
         const Dune::FieldVector<double,2> gp2DPos= local;
-        const Dune::FieldVector<double,3> gp3DPos= {local[0],local[1],gppos[2]};
+        const Dune::FieldVector<double,3> gp3DPos= {local[0],local[1],gppos[0]};
 
         const double fac_gp = gpweight * thickness * 0.5*2;
         // the first two fixes the change of the integration mapping from 0..1 to -1..1,
@@ -678,6 +690,68 @@ namespace Ikarus {
         resultVector=QPK2;
         result.insertOrAssignResult(ResultType::shearForcesPK2, resultVector);
       }
+    }
+
+    auto calculateInternalEnergy(const FERequirementType &par, const Dune::FieldVector<double, 2> &local) const  {
+      const auto& oneDRule = Dune::QuadratureRules<double,1>::rule(Dune::GeometryTypes::line,4);
+
+      using namespace Dune::DerivativeDirections;
+      using namespace Dune;
+      const auto [ displacementFunction, directorFunction,
+          directorReferenceFunction]
+          = this->template createFunctions<double>(par);
+      const auto &lambda = par.getParameter(FEParameter::loadfactor);
+      Eigen::Vector3d energy;
+      energy.setZero();
+      this->membraneStrain.pre(geo,displacementFunction);
+
+      const auto &thickness_ = this->fESettings.template request<double>("thickness");
+      KinematicVariables<double> kin{};
+      for (auto& gP : oneDRule)
+      {
+        const auto& gppos =gP.position();
+        const auto& gpweight =gP.weight();
+        const double zeta  = (2*gppos[0]-1)*thickness_/2.0;
+        const Dune::FieldVector<double,2> gp2DPos= local;
+        const Dune::FieldVector<double,3> gp3DPos= {local[0],local[1],gppos[0]};
+
+        kin.t           = directorFunction.evaluate(gp2DPos,Dune::on(Dune::DerivativeDirections::referenceElement));
+        kin.t0          = directorReferenceFunction.evaluate(gp2DPos,Dune::on(Dune::DerivativeDirections::referenceElement));
+        kin.ud1andud2   = displacementFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
+        kin.A1andA2     = Dune::toEigen(geo.jacobianTransposed(gp2DPos)).transpose();
+        kin.a1anda2     = kin.A1andA2+ kin.ud1andud2;
+        kin.t0d1Andt0d2 = directorReferenceFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
+        kin.td1Andtd2   = directorFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
+
+        auto [_,epsV,kappaV,gammaV]                = this->computeMaterialAndStrains(gp2DPos,0,geo,displacementFunction,directorFunction,directorReferenceFunction,kin);
+
+//        const auto
+//            [C, epsV, kappaV, j, J, h,H, a3N, a3] = this->computeMaterialAndStrains(gp2DPos, geo, uFunction);
+
+        const auto G = this->calc3DMetric(kin,zeta);
+
+        const double fac_gp = gpweight * thickness_ * 0.5*2;
+
+//        std::cout<<"G: "<<G<<std::endl;
+        const auto Ginv = G.inverse().eval();
+
+        const auto C3D = this->materialTangent(Ginv);
+        Eigen::Vector3<double> rhoV;
+
+        rhoV<< 0.5*(kin.td1().squaredNorm()-kin.t0d1().squaredNorm()),0.5*(kin.td2().squaredNorm()-kin.t0d2().squaredNorm()),kin.td1().dot(kin.td2())-kin.t0d1().dot(kin.t0d2());
+        const auto strainsV= (epsV+ zeta*kappaV+secondOrderBending*zeta*zeta*rhoV).eval();
+        Eigen::Vector<double,5> strains;
+        strains<< strainsV,gammaV;
+        Eigen::Vector3d kappaBig = zeta*kappaV+secondOrderBending*zeta*zeta*rhoV;
+        const double membrane = 0.5*epsV.dot(C3D.template block<3,3>(0,0)*epsV);
+        const double bendingE = 0.5*kappaBig.dot(C3D.template block<3,3>(0,0)*kappaBig);
+        const double shearE = 0.5*gammaV.dot(C3D.template block<2,2>(3,3)*gammaV);
+        Eigen::Vector3d en;
+        en<<membrane,bendingE,shearE;
+        energy += (en)*fac_gp;
+      }
+
+      return energy;
     }
   };
 

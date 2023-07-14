@@ -72,10 +72,10 @@ namespace Ikarus {
       nonLinearOperator().updateAll();
       const auto& rx = nonLinearOperator().value();
       const auto& Ax = nonLinearOperator().derivative();
-      std::cout<<"Ax"<<std::endl;
-      std::cout<<Ax<<std::endl;
-      std::cout<<"Rx"<<std::endl;
-      std::cout<<rx<<std::endl;
+//      std::cout<<"Ax"<<std::endl;
+//      std::cout<<Ax<<std::endl;
+//      std::cout<<"Rx"<<std::endl;
+//      std::cout<<rx<<std::endl;
       auto rNorm     = norm(rx);
       decltype(rNorm) dNorm=1;
       int iter{0};

@@ -127,15 +127,15 @@ namespace Dune {
             // the size of the tree. However, this would require to
             // subtract an offset from localIndex(i) on each cache
             // access in operator().
-            localDoFs_.resize(localView_.size());
+            localDoFs_.resize(localView_.tree().child(0).finiteElement().size());
             const auto& dofs = *data_->coefficients;
-            for (size_type i = 0; i < localView_.tree().size(); ++i)
+            for (size_type i = 0; i < localView_.tree().child(0).finiteElement().size(); ++i)
             {
               // For a subspace basis the index-within-tree i
               // is not the same as the localIndex within the
               // full local view.
               size_t localIndex = localView_.tree().localIndex(i);
-              localDoFs_[localIndex] = dofs[Dune::Indices::_1][localView_.index(localIndex)[1]];
+              localDoFs_[i] = dofs[Dune::Indices::_1][localView_.index(localIndex)[1]];
             }
           }
 

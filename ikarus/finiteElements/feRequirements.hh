@@ -84,7 +84,8 @@ detF,
 E11,
 zeta,
 refJacobian,
-curJacobian,gpPosition
+curJacobian,gpPosition,
+            energyArray
   );
 
   // clang-format on

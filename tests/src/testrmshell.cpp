@@ -48,7 +48,7 @@ using Dune::TestSuite;
 #include <autodiff/forward/dual/eigen.hpp>
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 
-auto NonLinearElasticityLoadControlNRandTRforRMShell() {
+auto NonLinearElasticityLoadControlNRandTRforRMShell(char** argv) {
   TestSuite t("NonLinearElasticityLoadControlNRandTRforKLShell ");
   constexpr auto dimworld        = 3;
   const std::array<int, 2> order = {1, 1};
@@ -72,7 +72,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
   patchData.controlPoints = controlNet;
 
   Dune::ParameterTree parameterSet;
-  Dune::ParameterTreeParser::readINITree("/tmp/Ikarus/tests/src/shell.parset", parameterSet);
+  Dune::ParameterTreeParser::readINITree(argv[1], parameterSet);
 
   const auto E                         = parameterSet.get<double>("E");
   const auto nu                        = parameterSet.get<double>("nu");
@@ -428,6 +428,32 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
         return std::sqrt(l2_error);
       };
 
+  auto integrateScalar =
+      [&](auto& feFunction) {
+        auto locale    = localFunction(feFunction);
+
+        /// Calculate L_2 error for simply supported case
+        double energy = 0.0;
+        for (auto& ele : elements(gridView)) {
+          localView.bind(ele);
+          locale.bind(ele);
+          const auto geo   = ele.geometry();
+          const auto& rule = Dune::QuadratureRules<double, 2>::rule(
+              ele.type(), 3 * localView.tree().child(Dune::Indices::_0,0).finiteElement().localBasis().order());
+          for (auto gp : rule) {
+            const auto gpGlobalPos = geo.global(gp.position());
+
+            const auto w_ex = locale(gp.position());
+            for (int i = 0; i < w_ex.size(); ++i) {
+              energy += w_ex[i] * geo.integrationElement(gp.position()) * gp.weight();
+            }
+//            else
+//              l2_error += Dune::power(w_ex - w_fe, 2) * geo.integrationElement(gp.position()) * gp.weight();
+          }
+        }
+        return energy;
+      };
+
   auto n11Ana
       = Dune::Functions::makeAnalyticGridViewFunction([](auto x) {
           Dune::FieldVector<double,4> n;
@@ -454,12 +480,22 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell() {
   auto n11 =Dune::Vtk::Function<GridView>(createResultFunction(ResultType::membraneForces));
   auto m11 = Dune::Vtk::Function<GridView>(createResultFunction(ResultType::bendingMoments));
   auto q13 =Dune::Vtk::Function<GridView>(createResultFunction(ResultType::shearForces));
+  auto energy =Dune::Vtk::Function<GridView>(createResultFunction(ResultType::energyArray));
+//  auto shearE =Dune::Vtk::Function<GridView>(createResultFunction(ResultType::shearEnergy));
+//  auto bendingE =Dune::Vtk::Function<GridView>(createResultFunction(ResultType::bendingEnergy));
 
-  std::cout<<std::setprecision(16)<< "Shear Forces error: "<<calculateL2Error(q13,q13Ana)<<std::endl;
-  std::cout<<std::setprecision(16)<< "Membrane Forces error: "<<calculateL2Error(n11,n11Ana)<<std::endl;
-  std::cout<<std::setprecision(16)<< "Moments Forces error: "<<calculateL2Error(m11,m11Ana)<<std::endl;
-  std::cout<<std::setprecision(16)<< "Displacements error: "<<calculateL2Error(disp,dispAna)<<std::endl;
+  std::ostringstream stream;
+  parameterSet.report(stream);
+  spdlog::info("Settings:\n {}",stream.str());
 
+
+  spdlog::info("Shear Forces error: {}",calculateL2Error(q13,q13Ana));
+  spdlog::info("Membrane Forces error: {}",calculateL2Error(n11,n11Ana));
+  spdlog::info("Moments Forces error: {}",calculateL2Error(m11,m11Ana));
+  spdlog::info("Displacements error: {}",calculateL2Error(disp,dispAna));
+  spdlog::info("Energy error: {}",integrateScalar(energy));
+  spdlog::info("Number of Elements:{} ",gridView.size(0));
+  spdlog::info("Dofs: {}" ,basis.flat().dimension());
 
   std::cout << std::setprecision(16) << std::ranges::max(d) << std::endl;
   t.check(Dune::FloatCmp::eq(0.2957393081676369, std::ranges::max(d,[](auto a, auto b){ return std::abs(a)<std::abs(b);})))
@@ -480,5 +516,5 @@ int main(int argc, char** argv) {
 
 
 //  checkFEByAutoDiff<KLSHELLSB>("KLSHELLSB");
-  NonLinearElasticityLoadControlNRandTRforRMShell();
+  NonLinearElasticityLoadControlNRandTRforRMShell(argv);
 }
