@@ -1,6 +1,6 @@
 E = 1000
 nu = 0.0
-thickness = 1.0
+thickness = 0.1
 membraneStrainFlag = 0
 transverseShearStrainFlag=0
 refine = 4
@@ -16,3 +16,6 @@ secondOrderBending=1
 momentloadF=40.04454187
 directorFunction=PBFE
 suffix=1
+residualTolerance=1e-8
+displacementTolerance=1e-8
+maximumIterations=100

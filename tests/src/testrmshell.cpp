@@ -3,6 +3,8 @@
 
 #include <config.h>
 #include <ranges>
+#include <filesystem>
+
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/parametertreeparser.hh>
 #include <dune/common/test/testsuite.hh>
@@ -73,6 +75,8 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell(char** argv) {
 
   Dune::ParameterTree parameterSet;
   Dune::ParameterTreeParser::readINITree(argv[1], parameterSet);
+  std::filesystem::path path(argv[1]);
+  std::string relPath= path.relative_path();
 
   const auto E                         = parameterSet.get<double>("E");
   const auto nu                        = parameterSet.get<double>("nu");
@@ -94,6 +98,9 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell(char** argv) {
   const auto momentloadF               = parameterSet.get<double>("momentloadF");
   const auto directorFunction               = parameterSet.get<std::string>("directorFunction");
   const auto suffix               = parameterSet.get<bool>("suffix");
+  const auto residualTolerance               = parameterSet.get<double>("residualTolerance");
+  const auto displacementTolerance               = parameterSet.get<double>("displacementTolerance");
+  const auto maximumIterations               = parameterSet.get<int>("maximumIterations");
 
   auto grid = std::make_shared<Grid>(patchData);
   for (int i = 0; i < 2; ++i)
@@ -295,7 +302,11 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell(char** argv) {
   });
   auto linSolver      = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_UmfPackLU);
   auto tr             = Ikarus::makeNewtonRaphson(nonLinOp, std::move(linSolver), std::move(updateFunction));
-
+  Ikarus::NewtonRaphsonSettings settings;
+  settings.Rtol=residualTolerance;
+  settings.dtol=displacementTolerance;
+  settings.maxIter=maximumIterations;
+  tr->setup(settings);
   auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
   tr->subscribeAll(nonLinearSolverObserver);
 
