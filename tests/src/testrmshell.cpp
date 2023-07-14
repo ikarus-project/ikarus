@@ -495,7 +495,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell(char** argv) {
   spdlog::info("Moments Forces error: {}",calculateL2Error(m11,m11Ana));
   spdlog::info("Displacements error: {}",calculateL2Error(disp,dispAna));
   spdlog::info("Energy error: {}",integrateScalar(energy));
-  spdlog::info("Number of Elements:{} ",gridView.size(0));
+  spdlog::info("Number of Elements: {}",gridView.size(0));
   spdlog::info("Dofs: {}" ,basis.flat().dimension());
 
   std::cout << std::setprecision(16) << std::ranges::max(d) << std::endl;
