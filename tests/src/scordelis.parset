@@ -1,0 +1,17 @@
+E = 4.32e8
+nu = 0.0
+thickness = 0.25
+membraneStrainFlag = 0
+transverseShearStrainFlag=0
+refine = 4
+loadFactor=90
+orderElevate= 2 0
+plot3drefine=4
+inPlaneRefine=3
+loadSteps=5
+lowerDirectorOrder=-1
+globalDegreeElevateBefore=0
+globalDegreeElevateAfter=0
+secondOrderBending=1
+momentloadF=-40.04454187
+directorFunction=PBFE

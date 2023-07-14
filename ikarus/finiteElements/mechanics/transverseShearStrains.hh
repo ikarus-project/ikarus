@@ -172,10 +172,10 @@ struct CASAnsatzFunctionANSTShear
   auto positions(std::vector<Dune::FieldVector<double, 2>>& lagrangePoints)
   {
     lagrangePoints.resize(4);
-    lagrangePoints[0] = {0, 0.5};
-    lagrangePoints[1] = {0.5, 0};
-    lagrangePoints[2] = {1, 0.5};
-    lagrangePoints[3] = {0.5, 1};
+    lagrangePoints[0] = {0.5,0};
+    lagrangePoints[1] = {0,0.5};
+    lagrangePoints[2] = {0.5, 1};
+    lagrangePoints[3] = {1, 0.5};
   }
 
   void evaluateFunction(const Dune::FieldVector<double,2>& gpPos,std::vector<Dune::FieldVector<double, 1>>& NANS) const
