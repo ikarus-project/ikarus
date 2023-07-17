@@ -478,7 +478,8 @@ namespace Ikarus {
       const Eigen::Matrix<double,2,3> jE = kin.a1anda2.transpose();
       const int dummyIndex=-100;
       auto [_,epsV,kappaV,gammaV]                = this->computeMaterialAndStrains(gp2DPos,dummyIndex,geo,displacementFunction,directorFunction,directorReferenceFunction,kin);
-
+//      std::cout<<"gammaVInside"<<std::endl;
+//      std::cout<<gammaV<<std::endl;
       const auto G = this->calc3DMetric(kin,zeta);
       const auto Ginv = G.inverse().eval();
 
@@ -493,6 +494,8 @@ namespace Ikarus {
       Eigen::Vector<double,6> strains6;
       strains<< strainsV,gammaV;
       strains6<<strains,0.0;
+//      std::cout<<"strains6"<<std::endl;
+//      std::cout<<strains6<<std::endl;
 
       Eigen::Matrix3d E;
       E<< strains(0),strains(2)/2, strains(3)/2,
@@ -521,23 +524,31 @@ namespace Ikarus {
 //       if(not secondOrderBending)
 //       E=Ikarus::fromVoigt(strains6,true);
        const Eigen::Matrix3d T= Jloc*J.inverse();
+//       std::cout<<"EB"<<std::endl;
+//       std::cout<<E<<std::endl;
        E= T.transpose()*E*T;
+//       std::cout<<"E"<<std::endl;
+//       std::cout<<E<<std::endl;
       PK2= lambdbar* E.trace()*Eigen::Matrix3d::Identity()+2*mu*E;
-
+//      std::cout<<"PK2"<<std::endl;
+//      std::cout<<PK2<<std::endl;
       Eigen::Matrix3d cauchy=1/detF*F*PK2*F.transpose();
-      if(toIntegrate)
-      {
-        Eigen::Matrix3d jC;
-        jC<<      kin.a1anda2.col(0),kin.a1anda2.col(1),kin.t;
-//        JC<< zujhjhujh    kin.A1andA2.col(0),kin.A1andA2.col(1),kin.t0;
-
-        const  Eigen::Matrix3d jlocC= orthonormalizeMatrixColumns(jC);
-        cauchy=jlocC.transpose()*cauchy*jlocC;
-
-      }else {
+//      std::cout<<"cauchyB"<<std::endl;
+//      std::cout<<cauchy<<std::endl;
+//      if(toIntegrate)
+//      {
+//        Eigen::Matrix3d jC;
+//        jC<<      kin.a1anda2.col(0),kin.a1anda2.col(1),kin.t;
+////        JC<< zujhjhujh    kin.A1andA2.col(0),kin.A1andA2.col(1),kin.t0;
+//
+//        const  Eigen::Matrix3d jlocC= orthonormalizeMatrixColumns(jC);
+//        cauchy=jlocC.transpose()*cauchy*jlocC;
+//
+//      }else {
         cauchy = jloc.transpose() * cauchy * jloc;
-      }
-
+//      }
+//      std::cout<<"cauchyA"<<std::endl;
+//      std::cout<<cauchy<<std::endl;
       stresses[0]= cauchy;
       stresses[1]= PK2;
       double E11 = E(0,0);
@@ -817,9 +828,12 @@ namespace Ikarus {
         GV<< 0,0, gammaV(0)/2,
             0, 0, gammaV(1)/2,
             gammaV(0)/2,gammaV(1)/2,0;
-        GV= T.transpose()*GV*T;
+//        GV= T.transpose()*GV*T;
         Eigen::Vector2d gaV;
-        gaV<<GV(0,2)/2,GV(1,2)/2;
+        gaV<<GV(0,2)*2,GV(1,2)*2;
+        Eigen::Matrix3d QCauchyBig;
+        QCauchyBig.setZero();
+
 //        const auto [res,detF,E11,zetaS,jS,JS,gp2DPosS]   = calculateStresses(par,gp3DPos,true);
 
 
@@ -829,10 +843,17 @@ namespace Ikarus {
 
 
         const auto [NCauchy,MCauchy,MCauchy2,QCauchy] =calcStressResultants(par,local);
-
+        QCauchyBig.template block<2,1>(0,2)=QCauchy;
+        QCauchyBig.template block<1,2>(2,0)=QCauchy;
+//        std::cout<<"QCauchyBig"<<std::endl;
+//        std::cout<<QCauchyBig<<std::endl;
+//        std::cout<<"GV"<<std::endl;
+//        std::cout<<GV<<std::endl;
+//        std::cout<<"gammaV"<<std::endl;
+//        std::cout<<gammaV<<std::endl;
         const double membrane = 0.5*(NCauchy*EV.template block<2,2>(0,0)).trace();
         const double bendingE =0.5*(MCauchy*KV.template block<2,2>(0,0)+MCauchy2*KV2.template block<2,2>(0,0)).trace();
-        const double shearE =0.5*(QCauchy.dot(gaV)/2);
+        const double shearE =0.5*(QCauchyBig*GV).trace();
         Eigen::Vector3d en;
         en<<membrane,bendingE,shearE;
         return en;
