@@ -23,6 +23,7 @@
 #include "ikarus/io/vtkFunctionExtensions.hh"
 #include "ikarus/io/composedGgridfuncMod.hh"
 #include "ikarus/io/discreteGlobalManifoldBasisFunction.hh"
+#include "ikarus/finiteElements/mechanics/initDirectors.hh"
 
 #include <Eigen/Core>
 
@@ -148,7 +149,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell(char** argv) {
           fext.setZero();
           //    fext[0] = lamb;
           //    fext[1] = 0.01 * lamb;
-          fext[2] = loadFactor;
+          fext[2] = loadFactor*lamb;
           mext.setZero();
 
           return vLoad;
@@ -203,9 +204,14 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell(char** argv) {
   }
 
   DirectorVector dBlocked(basis.untouched().size({Dune::Indices::_1}));
-  for (auto& dsingle : dBlocked) {
-  dsingle.setValue(Eigen::Vector<double, 3>::UnitZ());
-  }
+  auto scalaarDirectorBasisV = Ikarus::makeBasis(
+      gridView, scalaarDirectorBasis);
+  getNodalBaseSytemMatrices(scalaarDirectorBasisV,dBlocked);
+//  for (auto& dsingle : dBlocked) {
+//  dsingle.setValue(Eigen::Vector<double, 3>::UnitZ());
+//  }
+
+
 
   const MultiTypeVector x0(mBlocked, dBlocked);
   MultiTypeVector x = x0;
@@ -393,7 +399,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell(char** argv) {
             //        std::cout<<"T5"<<std::endl;
           },
           inPlaneRefine);
-  vtkWriter->setFileNamePrefix("PureBending");
+  vtkWriter->setFileNamePrefix("ScordelisLo");
   //  vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 3);
 
   auto lc = Ikarus::LoadControl(tr, loadSteps, {0, 1});

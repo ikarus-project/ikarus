@@ -495,7 +495,7 @@ namespace Ikarus {
       strains6<<strains,0.0;
 
       Eigen::Matrix3d E;
-      E<< strains(0,0),strains(2)/2, strains(3)/2,
+      E<< strains(0),strains(2)/2, strains(3)/2,
           strains(2)/2, strains(1), strains(4)/2,
           strains(3)/2,strains(4)/2,0;
 
@@ -529,6 +529,7 @@ namespace Ikarus {
       {
         Eigen::Matrix3d jC;
         jC<<      kin.a1anda2.col(0),kin.a1anda2.col(1),kin.t;
+//        JC<< zujhjhujh    kin.A1andA2.col(0),kin.A1andA2.col(1),kin.t0;
 
         const  Eigen::Matrix3d jlocC= orthonormalizeMatrixColumns(jC);
         cauchy=jlocC.transpose()*cauchy*jlocC;
@@ -612,6 +613,64 @@ namespace Ikarus {
                              ResultTypeMap<double> &result)
     {
 
+    }
+
+    auto calcStressResultants(const FERequirementType &par, const Dune::FieldVector<double, 2> &local)const
+    {
+
+      const auto& oneDRule = Dune::QuadratureRules<double,1>::rule(Dune::GeometryTypes::line,4);
+      const auto &thickness = this->fESettings.template request<double>("thickness");
+      using namespace Dune::DerivativeDirections;
+      using namespace Dune;
+      const auto [ displacementFunction, directorFunction,
+          directorReferenceFunction]
+          = this->template createFunctions<double>(par);
+
+      Eigen::Matrix2d NCauchy = Eigen::Matrix2d::Zero();
+      Eigen::Matrix2d MCauchy = Eigen::Matrix2d::Zero();
+      Eigen::Matrix2d MCauchy2 = Eigen::Matrix2d::Zero();
+      Eigen::Vector2d QCauchy = Eigen::Vector2d::Zero();
+
+      Eigen::Matrix2d NPK2 = Eigen::Matrix2d::Zero();
+      Eigen::Matrix2d MPK2 = Eigen::Matrix2d::Zero();
+      Eigen::Matrix2d MPK2_2 = Eigen::Matrix2d::Zero();
+      Eigen::Vector2d QPK2 = Eigen::Vector2d::Zero();
+
+      KinematicVariables<double> kin;
+      for (auto& gP : oneDRule)
+      {
+        const auto& gppos =gP.position();
+        const auto& gpweight =gP.weight();
+
+        const double zeta  = (2*gppos[0]-1)*thickness/2.0;
+        const Dune::FieldVector<double,2> gp2DPos= local;
+        const Dune::FieldVector<double,3> gp3DPos= {local[0],local[1],gppos[0]};
+
+        const double fac_gp = gpweight * thickness * 0.5*2;
+        // the first two fixes the change of the integration mapping from 0..1 to -1..1,
+        // and the h/2 factor is the factor for the correct thickness
+
+        const auto [res,detF,E11,zetaS,jS,JS,gp2DPosS]   = calculateStresses(par,gp3DPos,true);
+
+        const auto [ cauchy,PK2,PK1] = res;
+        Eigen::Matrix2d PK2_al_be= PK2.template block<2,2>(0,0);
+        Eigen::Matrix2d cauchy_al_be= cauchy.template block<2,2>(0,0);
+
+        const Eigen::Vector2d cauchy_al_3              = cauchy.template block<2,1>(0,2);
+        const Eigen::Vector2d PK2_al_3              = PK2.template block<2,1>(0,2);
+
+        NCauchy +=  fac_gp *  cauchy_al_be ;
+        MCauchy +=  fac_gp *  zeta *cauchy_al_be ;
+        MCauchy2 +=  fac_gp *  zeta * zeta *cauchy_al_be ;
+        QCauchy +=  fac_gp * cauchy_al_3 ;
+
+        NPK2 +=  fac_gp * PK2_al_be ;
+        MPK2 +=  fac_gp * zeta *PK2_al_be ;
+        MPK2_2 +=  fac_gp * zeta *PK2_al_be ;
+        QPK2 +=  fac_gp *PK2_al_3;
+      }
+
+      return std::tuple(NCauchy,MCauchy,MCauchy2,QCauchy);
     }
 
     auto stressResultants(const ResultRequirementsType &req, const Dune::FieldVector<double, 2> &local,
@@ -708,13 +767,13 @@ namespace Ikarus {
 
       const auto &thickness_ = this->fESettings.template request<double>("thickness");
       KinematicVariables<double> kin{};
-      for (auto& gP : oneDRule)
-      {
-        const auto& gppos =gP.position();
-        const auto& gpweight =gP.weight();
-        const double zeta  = (2*gppos[0]-1)*thickness_/2.0;
+//      for (auto& gP : oneDRule)
+//      {
+//        const auto& gppos =gP.position();
+//        const auto& gpweight =gP.weight();
+//        const double zeta  = (2*gppos[0]-1)*thickness_/2.0;
         const Dune::FieldVector<double,2> gp2DPos= local;
-        const Dune::FieldVector<double,3> gp3DPos= {local[0],local[1],gppos[0]};
+//        const Dune::FieldVector<double,3> gp3DPos= {local[0],local[1],gppos[0]};
 
         kin.t           = directorFunction.evaluate(gp2DPos,Dune::on(Dune::DerivativeDirections::referenceElement));
         kin.t0          = directorReferenceFunction.evaluate(gp2DPos,Dune::on(Dune::DerivativeDirections::referenceElement));
@@ -725,32 +784,60 @@ namespace Ikarus {
         kin.td1Andtd2   = directorFunction.evaluateDerivative(gp2DPos, Dune::wrt(spatialAll),Dune::on(Dune::DerivativeDirections::referenceElement));
 
         auto [_,epsV,kappaV,gammaV]                = this->computeMaterialAndStrains(gp2DPos,0,geo,displacementFunction,directorFunction,directorReferenceFunction,kin);
-
-//        const auto
-//            [C, epsV, kappaV, j, J, h,H, a3N, a3] = this->computeMaterialAndStrains(gp2DPos, geo, uFunction);
-
-        const auto G = this->calc3DMetric(kin,zeta);
-
-        const double fac_gp = gpweight * thickness_ * 0.5*2;
-
-//        std::cout<<"G: "<<G<<std::endl;
-        const auto Ginv = G.inverse().eval();
-
-        const auto C3D = this->materialTangent(Ginv);
         Eigen::Vector3<double> rhoV;
-
         rhoV<< 0.5*(kin.td1().squaredNorm()-kin.t0d1().squaredNorm()),0.5*(kin.td2().squaredNorm()-kin.t0d2().squaredNorm()),kin.td1().dot(kin.td2())-kin.t0d1().dot(kin.t0d2());
-        const auto strainsV= (epsV+ zeta*kappaV+secondOrderBending*zeta*zeta*rhoV).eval();
-        Eigen::Vector<double,5> strains;
-        strains<< strainsV,gammaV;
-        Eigen::Vector3d kappaBig = zeta*kappaV+secondOrderBending*zeta*zeta*rhoV;
-        const double membrane = 0.5*epsV.dot(C3D.template block<3,3>(0,0)*epsV);
-        const double bendingE = 0.5*kappaBig.dot(C3D.template block<3,3>(0,0)*kappaBig);
-        const double shearE = 0.5*gammaV.dot(C3D.template block<2,2>(3,3)*gammaV);
+//        const auto strainsV= (epsV+ zeta*kappaV+secondOrderBending*zeta*zeta*rhoV).eval();
+
+        Eigen::Matrix3d J;
+//        const auto G1AndG2 = (kin.A1andA2+ zeta* kin.t0d1Andt0d2).eval();
+        J<<kin.A1andA2.col(0),kin.A1andA2.col(1),kin.t0;
+
+        const  Eigen::Matrix3d Jloc= orthonormalizeMatrixColumns(J);
+        const Eigen::Matrix3d T= Jloc*J.inverse();
+
+        Eigen::Matrix3d EV;
+        EV<< epsV(0,0),epsV(2)/2, 0,
+            epsV(2)/2, epsV(1), 0,
+            0,0,0;
+        EV= T.transpose()*EV*T;
+
+        Eigen::Matrix3d KV;
+        KV<< kappaV(0),(kappaV(2))/2, 0,
+            (kappaV(2))/2, kappaV(1), 0,
+            0,0,0;
+        KV= T.transpose()*KV*T;
+
+        Eigen::Matrix3d KV2;
+        KV2<< rhoV(0),(rhoV(2))/2, 0,
+            (rhoV(2))/2, rhoV(1), 0,
+            0,0,0;
+        KV2= T.transpose()*KV2*T;
+
+        Eigen::Matrix3d GV;
+        GV<< 0,0, gammaV(0)/2,
+            0, 0, gammaV(1)/2,
+            gammaV(0)/2,gammaV(1)/2,0;
+        GV= T.transpose()*GV*T;
+        Eigen::Vector2d gaV;
+        gaV<<GV(0,2)/2,GV(1,2)/2;
+//        const auto [res,detF,E11,zetaS,jS,JS,gp2DPosS]   = calculateStresses(par,gp3DPos,true);
+
+
+
+//        const double fac_gp = gpweight * thickness_ * 0.5*2;
+
+
+
+        const auto [NCauchy,MCauchy,MCauchy2,QCauchy] =calcStressResultants(par,local);
+
+        const double membrane = 0.5*(NCauchy*EV.template block<2,2>(0,0)).trace();
+        const double bendingE =0.5*(MCauchy*KV.template block<2,2>(0,0)+MCauchy2*KV2.template block<2,2>(0,0)).trace();
+        const double shearE =0.5*(QCauchy.dot(gaV)/2);
         Eigen::Vector3d en;
         en<<membrane,bendingE,shearE;
-        energy += (en)*fac_gp;
-      }
+        return en;
+//        energy += (en)*fac_gp;
+//      }
 
       return energy;
     }

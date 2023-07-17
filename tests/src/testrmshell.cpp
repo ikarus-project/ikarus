@@ -231,13 +231,12 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell(char** argv) {
     if (std::abs(intersection.geometry().center()[0]) < 1e-8) dirichletFlags[localView.index(localIndex)] = true;
   });
 
-  //  dirichletValues.fixDOFs([&](auto& basis, auto&& dirichletFlags) {
-  //    Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basis,Dune::Indices::_0),
-  //                                        [&](auto&& localIndex, auto&& localView, auto&& intersection) {
-  //                                          if (std::abs(intersection.geometry().center()[0]) < 1e-8)
-  //                                            dirichletFlags[localView.index(localIndex)] = true;
-  //                                        });
-  //  });
+    dirichletValues.fixDOFs([&](auto& basis, auto&& dirichletFlags) {
+      Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basis,Dune::Indices::_0,1),
+                                          [&](auto&& globallIndex) {
+                                              dirichletFlags[globallIndex] = true;
+                                          });
+    });
   //
   //  dirichletValues.fixDOFs([&](auto& basis, auto&& dirichletFlags) {
   //    Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basis,Dune::Indices::_0, 2),
