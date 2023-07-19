@@ -18,12 +18,12 @@ public:
         break;
       case ControlMessages::STEP_STARTED:
         spdlog::info("============================================");
-        spdlog::info("Controlstep has started");
+        spdlog::info("Control step has started");
         spdlog::info("============================================");
         break;
       case ControlMessages::STEP_ENDED:
         spdlog::info("============================================");
-        spdlog::info("Controlstep has ended");
+        spdlog::info("Control step has ended");
         break;
       case ControlMessages::CONTROL_ENDED:
         spdlog::info("Control ended");
@@ -34,14 +34,14 @@ public:
     }
   }
 
-  void updateImpl(ControlMessages, double) override {
-    //    switch (message) {
-    //      case ControlMessages::RESIDUALNORM_UPDATED:
-    //        spdlog::info("Residual norm is {:03.2f}", val);
-    //        break;
-    //      default:
-    //        break;
-    //    }
+  void updateImpl(ControlMessages message, double val) override {
+    switch (message) {
+      case ControlMessages::STEP_ENDED:
+        spdlog::info("Step size is {:04.3e}", val);
+        break;
+      default:
+        break;
+    }
   }
 
   void updateImpl(ControlMessages, const Eigen::VectorXd&) override {}

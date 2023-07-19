@@ -19,6 +19,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 - Renamed Ikarus::linearAlgebraFunctions to Ikarus::functions ([#171](https://github.com/ikarus-project/ikarus/pull/171))
 - Added Kirchhoff-Love Shell based on automatic differentiation ([#177](https://github.com/ikarus-project/ikarus/pull/177))
 - Added getRawMatrix/getRawVector functionality to the assemblers ([#179](https://github.com/ikarus-project/ikarus/pull/179))
+- Added adaptive step sizing possibility in control routines ([#172](https://github.com/ikarus-project/ikarus/pull/172))
 
 ## Release v0.3 (Prometheus)
 

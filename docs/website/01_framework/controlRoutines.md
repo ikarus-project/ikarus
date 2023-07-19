@@ -155,3 +155,14 @@ struct StandardArcLength {
     std::optional<double> psi;
   };
 ```
+
+## Automatic step-sizing for path-following techniques
+Instead of using a constant step size the step size can be automatically adapted during the path-following allowing a more efficient calculation. 
+The automatic step-sizing is implemented according to Ramm[@wunderlich_strategies_1981] .
+In dependence of the desired number of iterations `#!cpp refIte` and the number of iterations used in the previous step `#!cpp actIte` the step size can be scaled:
+```cpp
+        if (ls > 0 && isAdaptiveStep) {
+          double actIte           = solverInfo.iterations;
+          subsidiaryArgs.stepSize = sqrt(refIte / actIte) * subsidiaryArgs.stepSize;
+        }
+```

@@ -18,6 +18,9 @@ namespace Ikarus {
     double f{};
     Eigen::VectorX<double> dfdDD;
     double dfdDlambda{};
+    int actStep;
+    int loadSteps;
+    Eigen::MatrixX<double> eigenValues;
   };
 
   /// Arc Length Control Method

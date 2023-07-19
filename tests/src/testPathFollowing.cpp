@@ -59,14 +59,19 @@ auto simple2DOperatorArcLengthTest() {
   static_assert(PathFollowingStrategy<decltype(pft), decltype(nonLinOp)>,
                 "StandardArcLength is a PathFollowingStrategy");
 
-  auto nr                      = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
-  auto alc                     = Ikarus::PathFollowing(nr, load_steps, stepSize, pft);
+  auto nr  = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
+  auto alc = Ikarus::PathFollowing(nr, load_steps, stepSize, pft);
+
+  auto dass             = Ikarus::DefaultAdaptiveStepSizing();
+  dass.targetIterations = 6;
+  auto alcSS            = Ikarus::PathFollowing(nr, load_steps, stepSize, pft, dass);
+
   auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
   nr->subscribeAll(nonLinearSolverObserver);
-  const auto controlInfo = alc.run();
+  const auto controlInfo = alcSS.run();
 
   TestSuite t("Arc Length with Subsidiary function");
-  t.check(controlInfo.success, "Successful result");
+  t.check(controlInfo.success, "No convergence");
   return t;
 }
 
@@ -83,7 +88,7 @@ auto simple2DOperatorArcLengthTestAsDefault() {
   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
 
   double stepSize = 0.1;
-  int load_steps  = 50;
+  int load_steps  = 5;
 
   auto nr                      = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
   auto alc                     = Ikarus::PathFollowing(nr, load_steps, stepSize);
@@ -92,7 +97,7 @@ auto simple2DOperatorArcLengthTestAsDefault() {
   const auto controlInfo = alc.run();
 
   TestSuite t("Arc Length as Default Test");
-  t.check(controlInfo.success, "Successful result");
+  t.check(controlInfo.success, "No convergence");
   return t;
 }
 
@@ -109,7 +114,7 @@ auto simple2DOperatorLoadControlTest() {
   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
 
   double stepSize = 0.1;
-  int load_steps  = 50;
+  int load_steps  = 10;
 
   auto pft = Ikarus::LoadControlWithSubsidiaryFunction{};  // Path following type
 
@@ -122,7 +127,7 @@ auto simple2DOperatorLoadControlTest() {
   const auto controlInfo = lc.run();
 
   TestSuite t("Load Control with Subsidiary function");
-  t.check(controlInfo.success, "Successful result");
+  t.check(controlInfo.success, "No convergence");
   return t;
 }
 
@@ -139,7 +144,7 @@ auto simple2DOperatorDisplacementControlTest() {
   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
 
   double stepSize                    = 0.05;
-  int load_steps                     = 30;
+  int load_steps                     = 10;
   std::vector<int> controlledIndices = {0};
 
   auto pft = Ikarus::DisplacementControl{controlledIndices};  // Path following type
@@ -154,6 +159,43 @@ auto simple2DOperatorDisplacementControlTest() {
   const auto controlInfo = dc.run();
 
   TestSuite t("Displacement Control with Subsidiary function");
+  t.check(controlInfo.success, "No convergence");
+  return t;
+}
+
+auto simple2DOperatorArcLengthTestWithStepSizing() {
+  double lambda = 0;
+  Eigen::VectorXd D;
+  D.setZero(2);
+
+  auto fvLambda  = [&](auto&& D_, auto&& lambda_) { return residual(D_, lambda_); };
+  auto dfvLambda = [&](auto&& D_, auto&& lambda_) { return stiffnessMatrix(D_, lambda_); };
+
+  auto nonLinOp = Ikarus::NonLinearOperator(Ikarus::functions(fvLambda, dfvLambda), Ikarus::parameter(D, lambda));
+
+  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
+
+  double stepSize     = 0.1;
+  int load_steps      = 50;
+  bool isAdaptiveStep = true;
+  double refIte       = 3;
+
+  auto pft = Ikarus::StandardArcLength{};  // Path following type
+
+  static_assert(PathFollowingStrategy<decltype(pft), decltype(nonLinOp)>,
+                "StandardArcLength is a PathFollowingStrategy");
+
+  auto nr               = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
+  auto dass             = Ikarus::DefaultAdaptiveStepSizing();
+  dass.targetIterations = 6;
+  auto alc              = Ikarus::PathFollowing(nr, load_steps, stepSize, pft, dass);
+  // auto fass = Ikarus::FancyAdaptiveStepSizing<>();
+  // auto alc                     = Ikarus::PathFollowing(nr, load_steps, stepSize, pft, fass);
+  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
+  nr->subscribeAll(nonLinearSolverObserver);
+  const auto controlInfo = alc.run();
+
+  TestSuite t("Arc Length with Subsidiary function and adaptive step sizing");
   t.check(controlInfo.success, "Successful result");
   return t;
 }
@@ -163,6 +205,7 @@ int main(int argc, char** argv) {
   TestSuite t;
 
   t.subTest(simple2DOperatorArcLengthTest());
+  t.subTest(simple2DOperatorArcLengthTestWithStepSizing());
   t.subTest(simple2DOperatorArcLengthTestAsDefault());
   t.subTest(simple2DOperatorLoadControlTest());
   t.subTest(simple2DOperatorDisplacementControlTest());

@@ -16,7 +16,7 @@ namespace Ikarus {
 
   struct NewtonRaphsonWithSubsidiaryFunctionSettings {
     double tol{1e-8};
-    int maxIter{30};
+    int maxIter{20};
   };
 
   struct SolverInfos {
@@ -143,7 +143,7 @@ namespace Ikarus {
         nonLinearOperator().updateAll();
         rNorm = sqrt(rx.dot(rx) + subsidiaryArgs.f * subsidiaryArgs.f);
 
-        this->notify(NonLinearSolverMessages::SOLUTION_CHANGED);
+        this->notify(NonLinearSolverMessages::SOLUTION_CHANGED, lambda);
         this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, dNorm);
         this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, rNorm);
         this->notify(NonLinearSolverMessages::ITERATION_ENDED);
