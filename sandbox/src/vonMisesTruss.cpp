@@ -193,9 +193,9 @@ int main(int argc, char **argv) {
   /// Postprocess
   using namespace matplot;
   Eigen::VectorXd lambdaVec = lambdaAndDisp.row(0);
-  Eigen::VectorXd dVec      = -lambdaAndDisp.row(2); // vertical displacement
+  Eigen::VectorXd dVec      = -lambdaAndDisp.row(2);  // vertical displacement
   auto f                    = figure(true);
-  auto ax = gca();
+  auto ax                   = gca();
   title("Load-Displacement Curve");
   xlabel("y-Displacement");
   ylabel("LoadFactor");
@@ -219,7 +219,7 @@ int main(int argc, char **argv) {
   p[1]->line_width(2);
   p[1]->marker(line_spec::marker_style::asterisk);
   ax->legend(legends);
-  auto legend  = ax->legend();
+  auto legend = ax->legend();
   legend->location(legend::general_alignment::topleft);
   save("vonMisesTruss.svg");
   // f->draw();

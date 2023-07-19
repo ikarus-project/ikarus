@@ -20,3 +20,7 @@ License: CC-BY-SA-4.0
 Files: .github/ISSUE_TEMPLATE/*
 Copyright: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 License: CC-BY-SA-4.0
+
+Files: sandbox/src/auxiliaryFiles/*
+Copyright: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+License: CC0-1.0

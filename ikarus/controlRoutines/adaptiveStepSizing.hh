@@ -15,7 +15,7 @@
 
 namespace Ikarus {
 
-  // TODO move these structs to seperate header
+  // TODO move these structs to separate header
   //  sync solverinformations ,NR,NRwithSubArgs,TrustRegion
   //  improve output
   template <typename ScalarType = double>
