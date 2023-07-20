@@ -3,6 +3,8 @@
 
 #include <config.h>
 
+#include <matplot/matplot.h>
+
 #include <dune/common/parametertreeparser.hh>
 #include <dune/fufem/dunepython.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
@@ -17,17 +19,21 @@
 #include <Eigen/Core>
 
 #include <ikarus/assembler/simpleAssemblers.hh>
+#include <ikarus/controlRoutines/adaptiveStepSizing.hh>
 #include <ikarus/controlRoutines/loadControl.hh>
+#include <ikarus/controlRoutines/pathFollowingTechnique.hh>
 #include <ikarus/finiteElements/feRequirements.hh>
 #include <ikarus/finiteElements/mechanics/nonLinearElastic.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
-#include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
+#include <ikarus/solver/nonLinearSolver/newtonRaphsonWithScalarSubsidiaryFunction.hh>
 #include <ikarus/solver/nonLinearSolver/trustRegion.hh>
 #include <ikarus/utils/algorithms.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/utils/init.hh>
+#include <ikarus/utils/observer/controlLogger.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
+#include <ikarus/utils/observer/genericControlObserver.hh>
 #include <ikarus/utils/observer/nonLinearSolverLogger.hh>
 
 using namespace Ikarus;
@@ -45,6 +51,7 @@ int main(int argc, char** argv) {
   const Dune::ParameterTree& gridParameters     = parameterSet.sub("GridParameters");
   const Dune::ParameterTree& materialParameters = parameterSet.sub("MaterialParameters");
   const Dune::ParameterTree& elementParameters  = parameterSet.sub("ElementParameters");
+  const Dune::ParameterTree& controlParameters  = parameterSet.sub("ControlParameters");
 
   const auto E                     = materialParameters.get<double>("E");
   const auto nu                    = materialParameters.get<double>("nu");
@@ -53,6 +60,10 @@ int main(int argc, char** argv) {
   const auto ele_x                 = elementParameters.get<int>("ele_x");
   const auto ele_y                 = elementParameters.get<int>("ele_y");
   const auto numberOfEASParameters = elementParameters.get<int>("numberOfEASParameters");
+  const auto stepSize              = controlParameters.get<double>("stepSize");
+  const auto tol                   = controlParameters.get<double>("tolerance");
+  const auto loadSteps             = controlParameters.get<int>("loadSteps");
+  const auto maxIter               = controlParameters.get<int>("maxIter");
   const auto L1                    = r * L2;
 
   if ((ele_x <= 0) or (ele_y <= 0)) DUNE_THROW(Dune::MathError, "Number of elements should be greater than zero");
@@ -111,8 +122,8 @@ int main(int argc, char** argv) {
   };
 
   auto matParameter = Ikarus::toLamesFirstParameterAndShearModulus({.emodul = E, .nu = nu});
-  Ikarus::StVenantKirchhoff matSVK(matParameter);
-  auto reducedMat = planeStress(matSVK, 1e-8);
+  Ikarus::NeoHooke matNH(matParameter);
+  auto reducedMat = planeStress(matNH, 1e-8);
 
   std::vector<Ikarus::NonLinearElastic<decltype(basis), decltype(reducedMat)>> fes;
   for (auto& element : elements(gridView))
@@ -128,15 +139,6 @@ int main(int argc, char** argv) {
                                             dirichletFlags[localView.index(localIndex)] = true;
                                         });
   });
-
-  //  dirichletValues.fixDOFs([](auto& basis_, auto& dirichletFlags) {
-  //    Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basis_, _0),
-  //                                        [&](auto&& localIndex, auto&& localView, auto&& intersection) {
-  //                                          if ((std::abs(intersection.geometry().corner(0)[1]) < 1e-8)
-  //                                              and (std::abs(intersection.geometry().corner(0)[0]) < 1e-8))
-  //                                            dirichletFlags[localView.index(localIndex)] = true;
-  //                                        });
-  //  });  // single node fix in x-direction
 
   dirichletValues.fixDOFs([](auto& basis_, auto& dirichletFlags) {
     Dune::Functions::forEachBoundaryDOF(
@@ -182,30 +184,82 @@ int main(int argc, char** argv) {
       = Ikarus::NonLinearOperator(functions(energyFunction, residualFunction, KFunction), parameter(d, lambda));
 
   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_CholmodSupernodalLLT);
-
-  auto nr = Ikarus::makeNewtonRaphson(nonLinOp.subOperator<1, 2>(), std::move(linSolver));
-  //  auto nr = Ikarus::makeTrustRegion(nonLinOp);
-  //  nr->setup({.verbosity = 1,
-  //             .maxiter   = 30,
-  //             .grad_tol  = 1e-9,
-  //             .corr_tol  = 1e-9,
-  //             .useRand   = false,
-  //             .rho_reg   = 1e6,
-  //             .Delta0    = 1});
+  auto nr        = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp.subOperator<1, 2>(), std::move(linSolver));
+  nr->setup({.tol = tol, .maxIter = maxIter});
 
   auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
+  auto controlObserver         = std::make_shared<ControlLogger>();
+
+  //  std::vector<int> controlledIndices;
+  //  Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basis.flat(), _1),
+  //                                      [&](auto&& localIndex, auto&& localView, auto&& intersection) {
+  //                                        if (std::abs(intersection.geometry().center()[1] - L2) < 1e-8)
+  //                                          controlledIndices.push_back(localView.index(localIndex));
+  //                                      });
+  //
+  //  auto pft = Ikarus::DisplacementControl{controlledIndices};
+
+  int topLeftIndex;
+  Dune::Functions::forEachBoundaryDOF(
+      Dune::Functions::subspaceBasis(basis.flat(), _1), [&](auto&& localIndex, auto&& localView, auto&& intersection) {
+        size_t cornerNodes = 0;
+        for (auto i = 0U; i < localView.size() / 2; ++i) {
+          if ((std::abs(localView.element().geometry().corner(cornerNodes)[0]) < 1e-8)
+              and (std::abs(localView.element().geometry().corner(cornerNodes)[1] - L2) < 1e-8)) {
+            topLeftIndex = localView.index(localView.tree().localIndex(i));
+          }
+          cornerNodes = cornerNodes + 1;
+        }
+      });
+
+  Eigen::Matrix2Xd lambdaAndDisp;
+  lambdaAndDisp.setZero(Eigen::NoChange, loadSteps);
+  auto lvkObserver = std::make_shared<Ikarus::GenericControlObserver>(ControlMessages::SOLUTION_CHANGED, [&](int step) {
+    lambdaAndDisp(0, step) = lambda;
+    lambdaAndDisp(1, step) = d[topLeftIndex];
+  });
+
+  auto pft = Ikarus::LoadControlWithSubsidiaryFunction{};
+  auto pf  = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
 
   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(
       basis.flat(), d, 0);
   vtkWriter->setFileNamePrefix("BifurcationRubberBlock");
   vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 2);
+
   nr->subscribeAll(nonLinearSolverObserver);
+  pf.subscribeAll({controlObserver, vtkWriter, lvkObserver});
 
-  auto lc = Ikarus::LoadControl(nr, 100, {0, 10});
-
-  lc.subscribeAll(vtkWriter);
   std::cout << "Energy before: " << nonLinOp.value() << std::endl;
-  lc.run();
+
+  const auto controlInfo = pf.run();
   nonLinOp.update<0>();
+
   std::cout << "Energy after: " << nonLinOp.value() << std::endl;
+  std::cout << "topLeftIndex: " << topLeftIndex << std::endl;
+
+  /// Postprocess
+  using namespace matplot;
+  Eigen::VectorXd lambdaVec = lambdaAndDisp.row(0);
+  Eigen::VectorXd dVec      = -lambdaAndDisp.row(1);  // vertical displacement at topLeftIndex
+
+  std::cout << "lambdaVec:\n " << lambdaVec.transpose() << std::endl;
+  std::cout << "dVec:\n " << dVec.transpose() << std::endl;
+
+  std::cout << "(0)\n";
+  using namespace matplot;
+  auto f  = figure(true);
+  auto ax = gca();
+  title("Load-Displacement Curve");
+  std::cout << "(2)\n";
+  ax->x_axis().label("Displacement");
+  std::cout << "(3)\n";
+  ax->y_axis().label("LoadFactor");
+  std::cout << "(4)\n";
+  auto p = ax->plot(dVec, lambdaVec);
+  std::cout << "(5)\n";
+  f->save("bifurcationOfRubberBlock.png");
+  std::cout << "(6)\n";
+  using namespace std::chrono_literals;
+  std::this_thread::sleep_for(5s);
 }

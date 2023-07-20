@@ -4,11 +4,15 @@ r = 1.0
 
 [MaterialParameters]
 E      = 1000.0
-nu     = 0.3333333333333333
+nu     = 0.45
 
 [ElementParameters]
-ele_x = 10
-ele_y = 10
+ele_x = 8
+ele_y = 8
 numberOfEASParameters = 0
 
-[]
+[ControlParameters]
+stepSize = 0.1
+loadSteps = 10
+tolerance = 1e-8
+maxIter = 20
