@@ -16,10 +16,11 @@ public:
       case NonLinearSolverMessages::ITERATION_STARTED:
         break;
       case NonLinearSolverMessages::INIT:
-        iters = 0;
-        dNorm = 0.0;
-        rNorm = 0.0;
-        sNorm = 0.0;
+        iters  = 0;
+        dNorm  = 0.0;
+        rNorm  = 0.0;
+        sNorm  = 0.0;
+        lambda = 0.0;
         spdlog::info("Non-linear solver started:");
         spdlog::info("  i ResidualNorm CorrectionNorm ScalarSubsidiaryNorm lambda");
         break;

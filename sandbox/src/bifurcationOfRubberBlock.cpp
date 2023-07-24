@@ -181,25 +181,25 @@ int main(int argc, char** argv) {
   };
 
   auto nonLinOp
-      = Ikarus::NonLinearOperator(functions(energyFunction, residualFunction, KFunction), parameter(d, lambda));
+      = Ikarus::NonLinearOperator(Ikarus::functions(residualFunction, KFunction), Ikarus::parameter(d, lambda));
 
-  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_CholmodSupernodalLLT);
-  auto nr        = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp.subOperator<1, 2>(), std::move(linSolver));
+  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_UmfPackLU);
+  auto nr        = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
   nr->setup({.tol = tol, .maxIter = maxIter});
 
   auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
   auto controlObserver         = std::make_shared<ControlLogger>();
 
-  //  std::vector<int> controlledIndices;
-  //  Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basis.flat(), _1),
-  //                                      [&](auto&& localIndex, auto&& localView, auto&& intersection) {
-  //                                        if (std::abs(intersection.geometry().center()[1] - L2) < 1e-8)
-  //                                          controlledIndices.push_back(localView.index(localIndex));
-  //                                      });
+  //    std::vector<int> controlledIndices;
+  //    Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basis.flat(), _1),
+  //                                        [&](auto&& localIndex, auto&& localView, auto&& intersection) {
+  //                                          if (std::abs(intersection.geometry().center()[1] - L2) < 1e-8)
+  //                                            controlledIndices.push_back(localView.index(localIndex));
+  //                                        });
   //
-  //  auto pft = Ikarus::DisplacementControl{controlledIndices};
+  //    auto pft = Ikarus::DisplacementControl{controlledIndices};
 
-  int topLeftIndex;
+  int topLeftIndex = 0;
   Dune::Functions::forEachBoundaryDOF(
       Dune::Functions::subspaceBasis(basis.flat(), _1), [&](auto&& localIndex, auto&& localView, auto&& intersection) {
         size_t cornerNodes = 0;
@@ -213,13 +213,16 @@ int main(int argc, char** argv) {
       });
 
   Eigen::Matrix2Xd lambdaAndDisp;
-  lambdaAndDisp.setZero(Eigen::NoChange, loadSteps);
+  lambdaAndDisp.setZero(Eigen::NoChange, loadSteps + 2);
+  lambdaAndDisp(0, 0) = lambda;
+  lambdaAndDisp(1, 0) = d[topLeftIndex];
+
   auto lvkObserver = std::make_shared<Ikarus::GenericControlObserver>(ControlMessages::SOLUTION_CHANGED, [&](int step) {
-    lambdaAndDisp(0, step) = lambda;
-    lambdaAndDisp(1, step) = d[topLeftIndex];
+    lambdaAndDisp(0, step + 1) = lambda;
+    lambdaAndDisp(1, step + 1) = d[topLeftIndex];
   });
 
-  auto pft = Ikarus::LoadControlWithSubsidiaryFunction{};
+  auto pft = Ikarus::StandardArcLength{};
   auto pf  = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
 
   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(
@@ -230,36 +233,25 @@ int main(int argc, char** argv) {
   nr->subscribeAll(nonLinearSolverObserver);
   pf.subscribeAll({controlObserver, vtkWriter, lvkObserver});
 
-  std::cout << "Energy before: " << nonLinOp.value() << std::endl;
+  //    std::cout << "Energy before: " << nonLinOp.value() << std::endl;
 
   const auto controlInfo = pf.run();
-  nonLinOp.update<0>();
+  //  nonLinOp.update<0>();
 
-  std::cout << "Energy after: " << nonLinOp.value() << std::endl;
-  std::cout << "topLeftIndex: " << topLeftIndex << std::endl;
+  //  std::cout << "Energy after: " << nonLinOp.value() << std::endl;
 
   /// Postprocess
   using namespace matplot;
   Eigen::VectorXd lambdaVec = lambdaAndDisp.row(0);
   Eigen::VectorXd dVec      = -lambdaAndDisp.row(1);  // vertical displacement at topLeftIndex
 
-  std::cout << "lambdaVec:\n " << lambdaVec.transpose() << std::endl;
-  std::cout << "dVec:\n " << dVec.transpose() << std::endl;
-
-  std::cout << "(0)\n";
   using namespace matplot;
   auto f  = figure(true);
   auto ax = gca();
   title("Load-Displacement Curve");
-  std::cout << "(2)\n";
   ax->x_axis().label("Displacement");
-  std::cout << "(3)\n";
   ax->y_axis().label("LoadFactor");
-  std::cout << "(4)\n";
   auto p = ax->plot(dVec, lambdaVec);
-  std::cout << "(5)\n";
+  p->line_width(3);
   f->save("bifurcationOfRubberBlock.png");
-  std::cout << "(6)\n";
-  using namespace std::chrono_literals;
-  std::this_thread::sleep_for(5s);
 }

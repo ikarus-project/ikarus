@@ -20,7 +20,7 @@ namespace Ikarus {
     double dfdDlambda{};
     int actStep;
     int loadSteps;
-    Eigen::MatrixX<double> eigenValues;
+    Eigen::MatrixX<double> eigenValues{};
   };
 
   /// Arc Length Control Method
@@ -38,8 +38,11 @@ namespace Ikarus {
 
     template <typename NonLinearOperator>
     void initialPrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
-      auto linearSolver
-          = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);  // for the linear predictor step
+      auto linearSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_SimplicialLDLT);
+      if constexpr (std::is_same_v<decltype(nonLinearOperator.derivative()), Eigen::MatrixX<double>>)
+        linearSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);  // for the linear predictor step
+      else
+        std::cout << "Sparse linear solver is used in the initial prediction step" << std::endl;
 
       nonLinearOperator.lastParameter() = 1.0;  // lambda =1.0
 
@@ -47,6 +50,7 @@ namespace Ikarus {
       const auto& R = nonLinearOperator.value();
       const auto& K = nonLinearOperator.derivative();
 
+      linearSolver.analyzePattern(K);
       linearSolver.factorize(K);
       linearSolver.solve(args.DD, -R);
 
