@@ -1,6 +1,7 @@
 [GridParameters]
 refinement = 0
-r = 1.0
+r = 0.1
+L2 = 1
 
 [MaterialParameters]
 E      = 1000.0
@@ -12,7 +13,12 @@ ele_y = 8
 numberOfEASParameters = 0
 
 [ControlParameters]
-stepSize = 0.05
-loadSteps = 200
+stepSize = 0.02    # r = 0.1 (with loadSteps = 100, L2 = 1)
+#stepSize = 0.08    # r = 0.5 (with loadSteps = 200, L2 = 1)
+#stepSize  = 0.2     # r = 1.75 (with loadSteps = 2000, L2 = 1)
+#stepSize = 0.02    # r = 0.1 (with loadSteps = 100, L2 = 10)
+#stepSize = 0.8     # r = 0.5 (with loadSteps = 200, L2 = 10)
+#stepSize = 2       # r = 1.75 (with loadSteps = 200, L2 = 10)
+loadSteps = 100
 tolerance = 1e-8
 maxIter = 20

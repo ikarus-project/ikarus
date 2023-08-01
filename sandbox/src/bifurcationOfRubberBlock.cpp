@@ -42,7 +42,6 @@ using namespace Dune::Indices;
 int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   constexpr int gridDim = 2;
-  const double L2       = 10.0;
 
   /// read in parameters
   Dune::ParameterTree parameterSet;
@@ -57,6 +56,7 @@ int main(int argc, char** argv) {
   const auto nu                    = materialParameters.get<double>("nu");
   const auto refinement_level      = gridParameters.get<int>("refinement");
   const auto r                     = gridParameters.get<double>("r");  // aspect ratio of the rubber block
+  const auto L2                    = gridParameters.get<double>("L2");
   const auto ele_x                 = elementParameters.get<int>("ele_x");
   const auto ele_y                 = elementParameters.get<int>("ele_y");
   const auto numberOfEASParameters = elementParameters.get<int>("numberOfEASParameters");
@@ -81,8 +81,9 @@ int main(int argc, char** argv) {
   const auto& indexSet = gridView.indexSet();
 
   Dune::BitSetVector<1> neumannVertices(gridView.size(2), false);
-
-  std::string lambdaNeumannVertices = std::string("lambda x: ( x[1] > 9.9999 )");
+  std::string boundaryEdge = "lambda x: ( x[1] > " + std::to_string(L2 - 1e-4) + ")";
+  std::cout << "boundaryEdge:\t" << boundaryEdge << std::endl;
+  std::string lambdaNeumannVertices = std::string(boundaryEdge);
   Python::start();
   Python::Reference main = Python::import("__main__");
   Python::run("import math");
@@ -125,7 +126,9 @@ int main(int argc, char** argv) {
   Ikarus::NeoHooke matNH(matParameter);
   auto reducedMat = planeStress(matNH, 1e-8);
 
-  std::vector<Ikarus::NonLinearElastic<decltype(basis), decltype(reducedMat)>> fes;
+  using NonLinearElasticElementType = Ikarus::NonLinearElastic<decltype(basis), decltype(reducedMat)>;
+
+  std::vector<NonLinearElasticElementType> fes;
   for (auto& element : elements(gridView))
     fes.emplace_back(basis, element, reducedMat, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
 
@@ -155,7 +158,7 @@ int main(int argc, char** argv) {
         });
   });  // single node fix in x-direction
 
-  auto sparseAssembler = SparseFlatAssembler(fes, dirichletValues);
+  auto denseAssembler = DenseFlatAssembler(fes, dirichletValues);
 
   Eigen::VectorXd d;
   d.setZero(basis.flat().size());
@@ -165,25 +168,25 @@ int main(int argc, char** argv) {
   auto residualFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
     req.insertGlobalSolution(Ikarus::FESolutions::displacement, disp)
         .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal);
-    return sparseAssembler.getVector(req);
+    return denseAssembler.getVector(req);
   };
 
   auto KFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
     req.insertGlobalSolution(Ikarus::FESolutions::displacement, disp)
         .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal);
-    return sparseAssembler.getMatrix(req);
+    return denseAssembler.getMatrix(req);
   };
 
   auto energyFunction = [&](auto&& disp, auto&& lambdaLocal) -> auto& {
     req.insertGlobalSolution(Ikarus::FESolutions::displacement, disp)
         .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal);
-    return sparseAssembler.getScalar(req);
+    return denseAssembler.getScalar(req);
   };
 
   auto nonLinOp
       = Ikarus::NonLinearOperator(Ikarus::functions(residualFunction, KFunction), Ikarus::parameter(d, lambda));
 
-  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_UmfPackLU);
+  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
   auto nr        = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
   nr->setup({.tol = tol, .maxIter = maxIter});
 
@@ -222,8 +225,10 @@ int main(int argc, char** argv) {
     lambdaAndDisp(1, step + 1) = d[topLeftIndex];
   });
 
-  auto pft = Ikarus::StandardArcLength{};
-  auto pf  = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
+  auto pft        = Ikarus::StandardArcLength{};
+  auto adaptiveSS = Ikarus::DefaultAdaptiveStepSizing();
+  auto bisection  = Ikarus::BisectionMethod();
+  auto pf         = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft, adaptiveSS, true, bisection);
 
   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(
       basis.flat(), d, 0);

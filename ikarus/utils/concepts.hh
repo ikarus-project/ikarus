@@ -67,6 +67,8 @@ namespace Ikarus {
       { pft.evaluateSubsidiaryFunction(args) } -> std::same_as<void>;
       { pft.initialPrediction(nop, args) } -> std::same_as<void>;
       { pft.intermediatePrediction(nop, args) } -> std::same_as<void>;
+      { pft.intermediatePredictionBack(nop, args) } -> std::same_as<void>;
+      { pft.intermediatePredictionBisectionForward(nop, args) } -> std::same_as<void>;
     };
 
     template <typename L, typename R>

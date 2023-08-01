@@ -14,7 +14,9 @@ namespace Ikarus {
   struct SubsidiaryArgs {
     double stepSize;
     Eigen::VectorX<double> DD;
+    Eigen::VectorX<double> DDBisection;
     double Dlambda{};
+    double DlambdaBisection{};
     double f{};
     Eigen::VectorX<double> dfdDD;
     double dfdDlambda{};
@@ -62,6 +64,9 @@ namespace Ikarus {
       args.DD      = args.DD * args.stepSize / s;
       args.Dlambda = args.stepSize / s;
 
+      args.DDBisection      = args.DD;
+      args.DlambdaBisection = args.Dlambda;
+
       nonLinearOperator.firstParameter() = args.DD;
       nonLinearOperator.lastParameter()  = args.Dlambda;
     }
@@ -70,6 +75,20 @@ namespace Ikarus {
     void intermediatePrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
       nonLinearOperator.firstParameter() += args.DD;
       nonLinearOperator.lastParameter() += args.Dlambda;
+    }
+
+    template <typename NonLinearOperator>
+    void intermediatePredictionBack(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
+      nonLinearOperator.firstParameter() -= args.DDBisection;
+      nonLinearOperator.lastParameter() -= args.DlambdaBisection;
+    }
+
+    template <typename NonLinearOperator>
+    void intermediatePredictionBisectionForward(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
+      args.DDBisection      = args.DDBisection * 0.5;
+      args.DlambdaBisection = args.DlambdaBisection * 0.5;
+      nonLinearOperator.firstParameter() += args.DDBisection;
+      nonLinearOperator.lastParameter() += args.DlambdaBisection;
     }
 
     std::string name = "Arc length";
@@ -96,6 +115,18 @@ namespace Ikarus {
     void intermediatePrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
       nonLinearOperator.lastParameter() += args.Dlambda;
     }
+
+    template <typename NonLinearOperator>
+    void intermediatePredictionBack(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
+      nonLinearOperator.lastParameter() -= args.DlambdaBisection;
+    }
+
+    template <typename NonLinearOperator>
+    void intermediatePredictionBisectionForward(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
+      args.DlambdaBisection *= 0.5;
+      nonLinearOperator.lastParameter() += args.DlambdaBisection;
+    }
+
     std::string name = "Load control";
   };
 
@@ -121,6 +152,17 @@ namespace Ikarus {
     template <typename NonLinearOperator>
     void intermediatePrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
       nonLinearOperator.firstParameter() += args.DD;
+    }
+
+    template <typename NonLinearOperator>
+    void intermediatePredictionBack(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
+      nonLinearOperator.firstParameter() -= args.DDBisection;
+    }
+
+    template <typename NonLinearOperator>
+    void intermediatePredictionBisectionForward(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
+      args.DDBisection *= 0.5;
+      nonLinearOperator.firstParameter() += args.DDBisection;
     }
 
     std::string name = "Displacement control";
