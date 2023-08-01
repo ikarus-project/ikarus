@@ -13,12 +13,12 @@ ele_y = 8
 numberOfEASParameters = 0
 
 [ControlParameters]
-stepSize = 0.02    # r = 0.1 (with loadSteps = 100, L2 = 1)
+stepSize = 0.01    # r = 0.1 (with loadSteps = 100, L2 = 1)
 #stepSize = 0.08    # r = 0.5 (with loadSteps = 200, L2 = 1)
 #stepSize  = 0.2     # r = 1.75 (with loadSteps = 2000, L2 = 1)
 #stepSize = 0.02    # r = 0.1 (with loadSteps = 100, L2 = 10)
 #stepSize = 0.8     # r = 0.5 (with loadSteps = 200, L2 = 10)
 #stepSize = 2       # r = 1.75 (with loadSteps = 200, L2 = 10)
-loadSteps = 100
+loadSteps = 1200
 tolerance = 1e-8
 maxIter = 20

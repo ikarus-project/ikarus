@@ -23,25 +23,26 @@ namespace Ikarus {
   };
 
   template <typename NonLinearOperator>
-  double getMinEigenValue(NonLinearOperator& nonOp, bool updateDisplacements = false) {
+  double getMinEigenValue(NonLinearOperator& nonOp, const int eigenValueOfInterest, bool updateDisplacements = false) {
     const auto& K = nonOp.derivative();
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es;  // Dense matrices only
     es.compute(K);
     auto eigenValues  = es.eigenvalues();
     auto eigenVectors = es.eigenvectors();
-    if (updateDisplacements) nonOp.firstParameter() = eigenVectors.col(0);
-    return eigenValues.minCoeff();
+    if (updateDisplacements) nonOp.firstParameter() = eigenVectors.col(eigenValueOfInterest);
+    return eigenValues[eigenValueOfInterest];  // only works because eigenValues here is sorted already by Eigen
   }
 
   template <typename ScalarType = double>
   struct BisectionMethod {
-    template <typename NonLinearOperator, typename NonLinearSolver, typename PathFollowingType>
+    template <typename NonLinearOperator, typename NonLinearSolver, typename PathFollowingType, typename PathFollowing>
     void operator()(NonLinearOperator& nonOp, const std::shared_ptr<NonLinearSolver>& nonLinearSolver,
-                    SubsidiaryArgs& subsidiaryArgs, PathFollowingType& pathFollowingType, SolverInfos& solverInfo) {
+                    SubsidiaryArgs& subsidiaryArgs, PathFollowingType& pathFollowingType, SolverInfos& solverInfo,
+                    const int eigenValueOfInterest, PathFollowing& pf) {
       std::cout << "########################################" << std::endl;
       std::cout << "######  BISECTION METHOD BEGINS  #######" << std::endl;
       std::cout << "########################################" << std::endl;
-      auto minEigenValue         = getMinEigenValue(nonOp);
+      auto minEigenValue         = getMinEigenValue(nonOp, eigenValueOfInterest);
       int numberOfBisections     = 100;
       int bisectionCounter       = 0;
       auto subsidiaryFunctionPtr = [&](auto&& args) { return pathFollowingType.evaluateSubsidiaryFunction(args); };
@@ -50,13 +51,14 @@ namespace Ikarus {
       while ((abs(minEigenValue) > 1e-8) and (bisectionCounter < numberOfBisections)) {
         pathFollowingType.intermediatePredictionBisectionForward(nonOp, subsidiaryArgs);
         solverInfo    = nonLinearSolver->solve(subsidiaryFunctionPtr, subsidiaryArgs);
-        minEigenValue = getMinEigenValue(nonOp);
+        minEigenValue = getMinEigenValue(nonOp, eigenValueOfInterest);
         bisectionCounter++;
         if (minEigenValue < 0.0) pathFollowingType.intermediatePredictionBack(nonOp, subsidiaryArgs);
         std::cout << std::setprecision(16) << "minEigenValue:\t" << minEigenValue << "\tbisectionCounter:\t"
                   << bisectionCounter << std::endl;
       }
-      minEigenValue = getMinEigenValue(nonOp, true);
+      pf.notify(ControlMessages::CRITICAL_POINT_CHANGED);
+      minEigenValue = getMinEigenValue(nonOp, eigenValueOfInterest, true);
     }
   };
 
@@ -104,7 +106,9 @@ namespace Ikarus {
       if (not solverInfo.success) return info;
       this->notify(ControlMessages::SOLUTION_CHANGED);
       this->notify(ControlMessages::STEP_ENDED);
-      int bisectionCounter = 0;
+      int bisectionCounter       = 0;
+      int eigenValueOfInterest   = 0;
+      int numberOfCriticalPoints = 4;
 
       /// Calculate predictor for a particular step
       for (int ls = 0; ls < loadSteps_; ++ls) {
@@ -120,16 +124,17 @@ namespace Ikarus {
         auto DDummy2      = DDummy1;
         auto LambdaDummy2 = LambdaDummy1;
 
-        if (determineCriticalPoint and (getMinEigenValue(nonOp) < 0.0)) {
+        if (determineCriticalPoint and (getMinEigenValue(nonOp, eigenValueOfInterest) < 0.0)) {
           pathFollowingType_.intermediatePredictionBack(nonOp, subsidiaryArgs);
-          criticalPointEstimator(nonOp, nonLinearSolver, subsidiaryArgs, pathFollowingType_, solverInfo);
-          this->notify(ControlMessages::SOLUTION_CHANGED);
-          this->notify(ControlMessages::STEP_ENDED, subsidiaryArgs.stepSize);
+          criticalPointEstimator(nonOp, nonLinearSolver, subsidiaryArgs, pathFollowingType_, solverInfo,
+                                 eigenValueOfInterest, *this);
+          this->notify(ControlMessages::CRITICAL_POINT_CHANGED);
           bisectionCounter++;
+          eigenValueOfInterest++;
           std::cout << "########################################" << std::endl;
           std::cout << "######   BISECTION METHOD ENDS   #######" << std::endl;
           std::cout << "########################################" << std::endl;
-          if (bisectionCounter == 1) {
+          if (bisectionCounter == numberOfCriticalPoints) {
             std::cout << "####### bisectionCounter reached the maximum value #######" << std::endl;
             break;
           }

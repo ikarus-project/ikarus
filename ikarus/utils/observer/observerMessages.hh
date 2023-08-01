@@ -3,7 +3,16 @@
 
 #pragma once
 
-enum class ControlMessages { BEGIN, CONTROL_STARTED, CONTROL_ENDED, STEP_STARTED, STEP_ENDED, SOLUTION_CHANGED, END };
+enum class ControlMessages {
+  BEGIN,
+  CONTROL_STARTED,
+  CONTROL_ENDED,
+  CRITICAL_POINT_CHANGED,
+  STEP_STARTED,
+  STEP_ENDED,
+  SOLUTION_CHANGED,
+  END
+};
 
 enum class NonLinearSolverMessages {
   BEGIN,

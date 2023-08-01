@@ -37,6 +37,12 @@ public:
         vtkWriter.addVertexData(disp, fieldInfo);
         vtkWriter.write(prefixString + std::to_string(step++));
       } break;
+      case ControlMessages::CRITICAL_POINT_CHANGED: {
+        auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, components>>(*basis,
+                                                                                                            *solution);
+        vtkWriter.addVertexData(disp, fieldInfo);
+        vtkWriter.write(prefixString + "Critical" + std::to_string(criticalStep++));
+      } break;
       default:
         break;  //   default: do nothing when notified
     }
@@ -51,6 +57,7 @@ private:
   Dune::SubsamplingVTKWriter<typename Basis::GridView> vtkWriter;
   Eigen::VectorXd const* solution;
   int step{0};
+  int criticalStep{0};
   Dune::VTK::FieldInfo fieldInfo{"Default", Dune::VTK::FieldInfo::Type::scalar, 1};
   std::string prefixString{};
   bool isFieldInfoSet{false};
