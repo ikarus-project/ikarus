@@ -124,6 +124,9 @@ namespace Ikarus {
         auto DDummy2      = DDummy1;
         auto LambdaDummy2 = LambdaDummy1;
 
+        subsidiaryArgs.DDBisection      = subsidiaryArgs.DD;
+        subsidiaryArgs.DlambdaBisection = subsidiaryArgs.Dlambda;
+
         if (determineCriticalPoint and (getMinEigenValue(nonOp, eigenValueOfInterest) < 0.0)) {
           pathFollowingType_.intermediatePredictionBack(nonOp, subsidiaryArgs);
           criticalPointEstimator(nonOp, nonLinearSolver, subsidiaryArgs, pathFollowingType_, solverInfo,
