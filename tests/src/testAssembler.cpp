@@ -23,6 +23,14 @@ using Dune::TestSuite;
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/init.hh>
 
+template <typename TestSuiteType, typename SparseType, typename DenseType, typename DOFSize>
+void checkAssembledQuantities(TestSuiteType& t, SparseType& sType, DenseType& dType, DOFSize dofSize) {
+  t.check(isApproxSame(sType, dType, 1e-15), "Dense==Sparse");
+  t.check(sType.rows() == dofSize) << "DOFsCheck via rows: " << sType.rows() << "rows and " << dofSize << " DOFs";
+  if (not(std::is_same_v<SparseType, Eigen::VectorXd>))
+    t.check(sType.cols() == dofSize) << "DOFsCheck via columns: " << sType.cols() << "cols and " << dofSize << " DOFs";
+}
+
 auto SimpleAssemblersTest() {
   TestSuite t("SimpleAssemblersTest");
   using Grid = Dune::YaspGrid<2>;
@@ -70,23 +78,31 @@ auto SimpleAssemblersTest() {
                                      .insertParameter(Ikarus::FEParameter::loadfactor, load)
                                      .addAffordance(Ikarus::MatrixAffordances::stiffness);
 
-    auto& Kdense = denseFlatAssembler.getMatrix(req);
-    auto& K      = sparseFlatAssembler.getMatrix(req);
+    auto& KRawDense = denseFlatAssembler.getRawMatrix(req);
+    auto& KRaw      = sparseFlatAssembler.getRawMatrix(req);
+    auto& RRawDense = denseFlatAssembler.getRawVector(req);
+    auto& RRaw      = sparseFlatAssembler.getRawVector(req);
+    checkAssembledQuantities(t, KRaw, KRawDense, 2 * gridView.size(2));
+    checkAssembledQuantities(t, RRaw, RRawDense, 2 * gridView.size(2));
 
-    const auto fixedDofs = dirichletValues.fixedDOFsize();
-    t.check(isApproxSame(K, Kdense, 1e-15), "Dense==Sparse");
-    t.check(K.rows() == 2 * gridView.size(2), "DofsCheck");
-    t.check(K.cols() == 2 * gridView.size(2), "DofsCheck");
+    auto& KDense = denseFlatAssembler.getMatrix(req);
+    auto& K      = sparseFlatAssembler.getMatrix(req);
+    auto& RDense = denseFlatAssembler.getVector(req);
+    auto& R      = sparseFlatAssembler.getVector(req);
+    checkAssembledQuantities(t, K, KDense, 2 * gridView.size(2));
+    checkAssembledQuantities(t, R, RDense, 2 * gridView.size(2));
+
+    const auto fixedDOFs    = dirichletValues.fixedDOFsize();
     const int boundaryNodes = (elementsPerDirection[0] * Dune::power(2, i) + 1) * 2
                               + (elementsPerDirection[1] * Dune::power(2, i) + 1) * 2 - 4;
-    t.check(2 * boundaryNodes == fixedDofs);
+    t.check(2 * boundaryNodes == fixedDOFs);
 
-    auto& KdenseRed = denseFlatAssembler.getReducedMatrix(req);
+    auto& KRedDense = denseFlatAssembler.getReducedMatrix(req);
     auto& KRed      = sparseFlatAssembler.getReducedMatrix(req);
-
-    t.check(isApproxSame(KRed, KdenseRed, 1e-15), "DenseRed==SparseRed");
-    t.check(KRed.rows() == 2 * gridView.size(2) - fixedDofs, "DofsCheckRed");
-    t.check(KRed.cols() == 2 * gridView.size(2) - fixedDofs, "DofsCheckRed");
+    auto& RRedDense = denseFlatAssembler.getReducedVector(req);
+    auto& RRed      = sparseFlatAssembler.getReducedVector(req);
+    checkAssembledQuantities(t, KRed, KRedDense, 2 * gridView.size(2) - fixedDOFs);
+    checkAssembledQuantities(t, RRed, RRedDense, 2 * gridView.size(2) - fixedDOFs);
 
     grid->globalRefine(1);
   }
