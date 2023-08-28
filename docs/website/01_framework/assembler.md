@@ -63,18 +63,20 @@ const auto& K = myAssembler.getScalar(feRequirements) // (2)!
 ## Flat vector assembler
 It has all the features of [ScalarAssembler](#scalarassembler) plus more, like:
 ```cpp
-Eigen::VectorXd& getVector(const RequirementType& fErequirements)
-Eigen::VectorXd& getReducedVector(const RequirementType& fErequirements)
+Eigen::VectorXd& getRawVector(const FERequirementType &feRequirements)
+Eigen::VectorXd& getVector(const FERequirementType& feRequirements)
+Eigen::VectorXd& getReducedVector(const FERequirementType& feRequirements)
 ```
-As the name suggests, the full vector or a reduced vector considering boundary conditions is returned.
+The first one returns a vector without considering the boundary conditions. The remaining, as the name suggests, returns a full vector or a reduced vector considering boundary conditions.
 They work in the same way as the scalar assembly functions of [ScalarAssembler](#scalarassembler).
 The available FE requirements are explained on the [FE requirements](feRequirements.md) page.
 
 ## Flat sparse assembler
 It offers the functions of [VectorFlatAssembler](#vectorflatassembler) plus more, like:
 ```cpp
-Eigen::SparseMatrix<double> &getMatrix(const RequirementType &fErequirements)
-Eigen::SparseMatrix<double> &getReducedMatrix(const RequirementType &fErequirements)
+Eigen::SparseMatrix<double> &getRawMatrix(const FERequirementType &feRequirements) 
+Eigen::SparseMatrix<double> &getMatrix(const FERequirementType &feRequirements)
+Eigen::SparseMatrix<double> &getReducedMatrix(const FERequirementType &feRequirements)
 ```
 A sparse matrix is returned.
 They work in the same way as the vector assembly functions of [VectorFlatAssembler](#vectorflatassembler).
@@ -84,6 +86,7 @@ The available FE requirements are explained on the [FE requirements](feRequireme
 The only difference between the [SparseFlatAssembler](#sparseflatassembler) and the DenseFlatAssembler is that the
 DenseFlatAssembler returns a dense matrix.
 ```cpp
-Eigen::MatrixXd &getMatrix(const RequirementType &fErequirements)
-Eigen::MatrixXd &getReducedMatrix(const RequirementType &fErequirements)
+Eigen::MatrixXd &getRawMatrix(const FERequirementType &feRequirements)
+Eigen::MatrixXd &getMatrix(const FERequirementType &feRequirements)
+Eigen::MatrixXd &getReducedMatrix(const FERequirementType &feRequirements)
 ```
