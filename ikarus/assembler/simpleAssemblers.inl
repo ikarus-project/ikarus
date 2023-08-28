@@ -76,7 +76,7 @@ namespace Ikarus {
   Eigen::SparseMatrix<double> &SparseFlatAssembler<Basis, FEContainer>::getRawMatrixImpl(
       const FERequirementType &feRequirements) {
     if (!isOccupationPatternCreated) createOccupationPattern();
-    if (!areLinearDofsPerElementCreated) createlinearDofsPerElement();
+    if (!areLinearDofsPerElementCreated) createLinearDOFsPerElement();
     spMatRaw.coeffs().setZero();
     Eigen::MatrixXd A;
     for (size_t elementIndex = 0; const auto &fe : this->finiteElements()) {
@@ -110,7 +110,7 @@ namespace Ikarus {
   Eigen::SparseMatrix<double> &SparseFlatAssembler<Basis, FEContainer>::getReducedMatrixImpl(
       const FERequirementType &feRequirements) {
     if (!isReducedOccupationPatternCreated) createReducedOccupationPattern();
-    if (!areLinearReducedDofsPerElementCreated) createlinearDofsPerElementReduced();
+    if (!areLinearReducedDofsPerElementCreated) createLinearDOFsPerElementReduced();
     spMatReduced.coeffs().setZero();
     Eigen::MatrixXd A;
     std::vector<GlobalIndex> dofs;
@@ -185,7 +185,7 @@ namespace Ikarus {
   }
 
   template <typename Basis, typename FEContainer>
-  void SparseFlatAssembler<Basis, FEContainer>::createlinearDofsPerElement() {
+  void SparseFlatAssembler<Basis, FEContainer>::createLinearDOFsPerElement() {
     std::vector<GlobalIndex> dofs;
     for (auto &&fe : this->finiteElements()) {
       dofs.resize(0);
@@ -199,7 +199,7 @@ namespace Ikarus {
   }
 
   template <typename Basis, typename FEContainer>
-  void SparseFlatAssembler<Basis, FEContainer>::createlinearDofsPerElementReduced() {
+  void SparseFlatAssembler<Basis, FEContainer>::createLinearDOFsPerElementReduced() {
     std::vector<GlobalIndex> dofs;
     for (auto &&fe : this->finiteElements()) {
       dofs.resize(0);

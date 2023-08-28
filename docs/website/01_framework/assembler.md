@@ -67,7 +67,8 @@ Eigen::VectorXd& getRawVector(const FERequirementType &feRequirements)
 Eigen::VectorXd& getVector(const FERequirementType& feRequirements)
 Eigen::VectorXd& getReducedVector(const FERequirementType& feRequirements)
 ```
-The first one returns a vector without considering the boundary conditions. The remaining, as the name suggests, returns a full vector or a reduced vector considering boundary conditions.
+The first one returns a vector without considering the boundary conditions.
+The remaining, as the name suggests, returns a full vector or a reduced vector considering boundary conditions.
 They work in the same way as the scalar assembly functions of [ScalarAssembler](#scalarassembler).
 The available FE requirements are explained on the [FE requirements](feRequirements.md) page.
 

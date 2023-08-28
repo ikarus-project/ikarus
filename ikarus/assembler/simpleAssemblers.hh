@@ -208,10 +208,10 @@ namespace Ikarus {
     void createReducedOccupationPattern();
 
     /** This function save the dof indices of each element in the vector elementLinearIndices */
-    void createlinearDofsPerElement();
+    void createLinearDOFsPerElement();
 
     /** This function save the dof indices of each element in the vector elementLinearIndices but excludes fixed dofs */
-    void createlinearDofsPerElementReduced();
+    void createLinearDOFsPerElementReduced();
 
     Eigen::SparseMatrix<double> spMatRaw;
     Eigen::SparseMatrix<double> spMat;
