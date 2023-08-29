@@ -142,6 +142,7 @@ namespace Ikarus {
     }
 
   private:
+    void assembleRawVectorImpl(const FERequirementType &feRequirements, Eigen::VectorXd &assemblyVec);
     Eigen::VectorXd &getRawVectorImpl(const FERequirementType &feRequirements);
     Eigen::VectorXd &getVectorImpl(const FERequirementType &feRequirements);
     Eigen::VectorXd &getReducedVectorImpl(const FERequirementType &feRequirements);
@@ -192,6 +193,7 @@ namespace Ikarus {
     }
 
   private:
+    void assembleRawMatrixImpl(const FERequirementType &feRequirements, Eigen::SparseMatrix<double> &assemblyMat);
     Eigen::SparseMatrix<double> &getRawMatrixImpl(const FERequirementType &feRequirements);
     Eigen::SparseMatrix<double> &getMatrixImpl(const FERequirementType &feRequirements);
     Eigen::SparseMatrix<double> &getReducedMatrixImpl(const FERequirementType &feRequirements);
@@ -199,7 +201,7 @@ namespace Ikarus {
     /** Calculates the non-zero entries in the full sparse matrix and passed them to the underlying eigen sparse matrix
      * https://stackoverflow.com/questions/59192659/efficiently-use-eigen-for-repeated-sparse-matrix-assembly-in-nonlinear-finite-el
      */
-    void createOccupationPattern();
+    void createOccupationPattern(Eigen::SparseMatrix<double> &assemblyMat);
 
     /** Calculates the non-zero entries in the sparse matrix and passed them to the underlying eigen sparse matrix
      * The size of the matrix has the size of the free degrees of freedom
@@ -208,7 +210,7 @@ namespace Ikarus {
     void createReducedOccupationPattern();
 
     /** This function save the dof indices of each element in the vector elementLinearIndices */
-    void createLinearDOFsPerElement();
+    void createLinearDOFsPerElement(Eigen::SparseMatrix<double> &assemblyMat);
 
     /** This function save the dof indices of each element in the vector elementLinearIndices but excludes fixed dofs */
     void createLinearDOFsPerElementReduced();
@@ -216,10 +218,12 @@ namespace Ikarus {
     Eigen::SparseMatrix<double> spMatRaw;
     Eigen::SparseMatrix<double> spMat;
     Eigen::SparseMatrix<double> spMatReduced;
+    bool isOccupationPatternCreatedRaw{false};
     bool isOccupationPatternCreated{false};
     bool isReducedOccupationPatternCreated{false};
-    bool areLinearDofsPerElementCreated{false};
-    bool areLinearReducedDofsPerElementCreated{false};
+    bool areLinearDOFsPerElementCreatedRaw{false};
+    bool areLinearDOFsPerElementCreated{false};
+    bool areLinearReducedDOFsPerElementCreated{false};
     std::vector<std::vector<Eigen::Index>> elementLinearIndices;
     std::vector<std::vector<Eigen::Index>> elementLinearReducedIndices;
   };
@@ -260,6 +264,7 @@ namespace Ikarus {
     }
 
   private:
+    void assembleRawMatrixImpl(const FERequirementType &feRequirements, Eigen::MatrixXd &assemblyMat);
     Eigen::MatrixXd &getRawMatrixImpl(const FERequirementType &feRequirements);
     Eigen::MatrixXd &getMatrixImpl(const FERequirementType &feRequirements);
     Eigen::MatrixXd &getReducedMatrixImpl(const FERequirementType &feRequirements);

@@ -4,7 +4,8 @@
 namespace Ikarus {
 
   template <typename Basis, typename FEContainer>
-  Eigen::VectorXd FlatAssemblerBase<Basis, FEContainer>::createFullVector(Eigen::Ref<const Eigen::VectorXd> reducedVector) {
+  Eigen::VectorXd FlatAssemblerBase<Basis, FEContainer>::createFullVector(
+      Eigen::Ref<const Eigen::VectorXd> reducedVector) {
     assert(reducedVector.size() == static_cast<Eigen::Index>(this->reducedSize())
            && "The reduced vector you passed has the wrong dimensions.");
     Eigen::Index reducedCounter = 0;
@@ -21,8 +22,9 @@ namespace Ikarus {
   }
 
   template <typename Basis, typename FEContainer>
-  Eigen::VectorXd &VectorFlatAssembler<Basis, FEContainer>::getRawVectorImpl(const FERequirementType &feRequirements) {
-    vecRaw.setZero(this->size());
+  void VectorFlatAssembler<Basis, FEContainer>::assembleRawVectorImpl(const FERequirementType &feRequirements,
+                                                                      Eigen::VectorXd &assemblyVec) {
+    assemblyVec.setZero(this->size());
     Eigen::VectorXd vecLocal;
     std::vector<GlobalIndex> dofs;
     for (auto &fe : this->finiteElements()) {
@@ -31,16 +33,21 @@ namespace Ikarus {
       fe.calculateVector(feRequirements, vecLocal);
       fe.globalFlatIndices(dofs);
       for (int i = 0; auto id : dofs) {
-        vecRaw(id[0]) += vecLocal(i);
+        assemblyVec(id[0]) += vecLocal(i);
         ++i;
       }
     }
+  }
+
+  template <typename Basis, typename FEContainer>
+  Eigen::VectorXd &VectorFlatAssembler<Basis, FEContainer>::getRawVectorImpl(const FERequirementType &feRequirements) {
+    assembleRawVectorImpl(feRequirements, vecRaw);
     return vecRaw;
   }
 
   template <typename Basis, typename FEContainer>
   Eigen::VectorXd &VectorFlatAssembler<Basis, FEContainer>::getVectorImpl(const FERequirementType &feRequirements) {
-    vec = getRawVectorImpl(feRequirements);
+    assembleRawVectorImpl(feRequirements, vec);
     for (auto i = 0U; i < this->size(); ++i) {
       if (this->isConstrained(i)) vec[i] = 0;
     }
@@ -73,11 +80,9 @@ namespace Ikarus {
   }
 
   template <typename Basis, typename FEContainer>
-  Eigen::SparseMatrix<double> &SparseFlatAssembler<Basis, FEContainer>::getRawMatrixImpl(
-      const FERequirementType &feRequirements) {
-    if (!isOccupationPatternCreated) createOccupationPattern();
-    if (!areLinearDofsPerElementCreated) createLinearDOFsPerElement();
-    spMatRaw.coeffs().setZero();
+  void SparseFlatAssembler<Basis, FEContainer>::assembleRawMatrixImpl(const FERequirementType &feRequirements,
+                                                                      Eigen::SparseMatrix<double> &assemblyMat) {
+    assemblyMat.coeffs().setZero();
     Eigen::MatrixXd A;
     for (size_t elementIndex = 0; const auto &fe : this->finiteElements()) {
       A.setZero(fe.size(), fe.size());
@@ -87,16 +92,38 @@ namespace Ikarus {
       assert(std::sqrt(elementLinearIndices[elementIndex].size()) == A.cols()
              && "The returned matrix has wrong colSize!");
       for (Eigen::Index linearIndex = 0; double matrixEntry : A.reshaped())
-        spMatRaw.coeffs()(elementLinearIndices[elementIndex][linearIndex++]) += matrixEntry;
+        assemblyMat.coeffs()(elementLinearIndices[elementIndex][linearIndex++]) += matrixEntry;
       ++elementIndex;
     }
+  }
+
+  template <typename Basis, typename FEContainer>
+  Eigen::SparseMatrix<double> &SparseFlatAssembler<Basis, FEContainer>::getRawMatrixImpl(
+      const FERequirementType &feRequirements) {
+    if (!isOccupationPatternCreatedRaw) {
+      createOccupationPattern(spMatRaw);
+      isOccupationPatternCreatedRaw = true;
+    }
+    if (!areLinearDOFsPerElementCreatedRaw) {
+      createLinearDOFsPerElement(spMatRaw);
+      areLinearDOFsPerElementCreatedRaw = true;
+    }
+    assembleRawMatrixImpl(feRequirements, spMatRaw);
     return spMatRaw;
   }
 
   template <typename Basis, typename FEContainer>
   Eigen::SparseMatrix<double> &SparseFlatAssembler<Basis, FEContainer>::getMatrixImpl(
       const FERequirementType &feRequirements) {
-    spMat = getRawMatrixImpl(feRequirements);
+    if (!isOccupationPatternCreated) {
+      createOccupationPattern(spMat);
+      isOccupationPatternCreated = true;
+    }
+    if (!areLinearDOFsPerElementCreated) {
+      createLinearDOFsPerElement(spMat);
+      areLinearDOFsPerElementCreated = true;
+    }
+    assembleRawMatrixImpl(feRequirements, spMat);
     for (auto i = 0U; i < this->size(); ++i)
       if (this->isConstrained(i)) spMat.col(i) *= 0;
     for (auto i = 0U; i < this->size(); ++i)
@@ -110,7 +137,7 @@ namespace Ikarus {
   Eigen::SparseMatrix<double> &SparseFlatAssembler<Basis, FEContainer>::getReducedMatrixImpl(
       const FERequirementType &feRequirements) {
     if (!isReducedOccupationPatternCreated) createReducedOccupationPattern();
-    if (!areLinearReducedDofsPerElementCreated) createLinearDOFsPerElementReduced();
+    if (!areLinearReducedDOFsPerElementCreated) createLinearDOFsPerElementReduced();
     spMatReduced.coeffs().setZero();
     Eigen::MatrixXd A;
     std::vector<GlobalIndex> dofs;
@@ -138,8 +165,8 @@ namespace Ikarus {
   }
 
   template <typename Basis, typename FEContainer>
-  void SparseFlatAssembler<Basis, FEContainer>::createOccupationPattern() {
-    spMatRaw.resize(this->size(), this->size());
+  void SparseFlatAssembler<Basis, FEContainer>::createOccupationPattern(Eigen::SparseMatrix<double> &assemblyMat) {
+    assemblyMat.resize(this->size(), this->size());
     std::vector<Eigen::Triplet<double>> vectorOfTriples;
 
     vectorOfTriples.reserve(this->estimateOfConnectivity());
@@ -152,8 +179,7 @@ namespace Ikarus {
           vectorOfTriples.emplace_back(idi[0], idj[0], 0.0);
     }
 
-    spMatRaw.setFromTriplets(vectorOfTriples.begin(), vectorOfTriples.end());
-    isOccupationPatternCreated = true;
+    assemblyMat.setFromTriplets(vectorOfTriples.begin(), vectorOfTriples.end());
   }
 
   template <typename Basis, typename FEContainer>
@@ -185,17 +211,16 @@ namespace Ikarus {
   }
 
   template <typename Basis, typename FEContainer>
-  void SparseFlatAssembler<Basis, FEContainer>::createLinearDOFsPerElement() {
+  void SparseFlatAssembler<Basis, FEContainer>::createLinearDOFsPerElement(Eigen::SparseMatrix<double> &assemblyMat) {
     std::vector<GlobalIndex> dofs;
     for (auto &&fe : this->finiteElements()) {
       dofs.resize(0);
       fe.globalFlatIndices(dofs);
-      elementLinearIndices.emplace_back(Dune::power(dofs.size(),2));
+      elementLinearIndices.emplace_back(Dune::power(dofs.size(), 2));
       for (Eigen::Index linearIndexOfElement = 0; auto &&c : dofs)
         for (auto &&r : dofs)
-          elementLinearIndices.back()[linearIndexOfElement++] = spMatRaw.getLinearIndex(r[0], c[0]);
+          elementLinearIndices.back()[linearIndexOfElement++] = assemblyMat.getLinearIndex(r[0], c[0]);
     }
-    areLinearDofsPerElementCreated = true;
   }
 
   template <typename Basis, typename FEContainer>
@@ -214,11 +239,51 @@ namespace Ikarus {
         }
       }
     }
-    areLinearReducedDofsPerElementCreated = true;
+    areLinearReducedDOFsPerElementCreated = true;
   }
 
   template <typename Basis, typename FEContainer>
-  Eigen::MatrixXd &DenseFlatAssembler<Basis, FEContainer>::getReducedMatrixImpl(const FERequirementType &feRequirements) {
+  void DenseFlatAssembler<Basis, FEContainer>::assembleRawMatrixImpl(const FERequirementType &feRequirements,
+                                                                     Eigen::MatrixXd &assemblyMat) {
+    assemblyMat.setZero(this->size(), this->size());
+    Eigen::MatrixXd matLocal;
+    std::vector<GlobalIndex> dofs;
+    for (auto &fe : this->finiteElements()) {
+      matLocal.setZero(fe.size(), fe.size());
+      dofs.resize(0);
+      fe.calculateMatrix(feRequirements, matLocal);
+      fe.globalFlatIndices(dofs);
+      for (auto i = 0; auto idi : dofs) {
+        for (auto j = 0; auto idj : dofs) {
+          assemblyMat(idi[0], idj[0]) += matLocal(i, j);
+          ++j;
+        }
+        ++i;
+      }
+    }
+  }
+
+  template <typename Basis, typename FEContainer>
+  Eigen::MatrixXd &DenseFlatAssembler<Basis, FEContainer>::getRawMatrixImpl(const FERequirementType &feRequirements) {
+    assembleRawMatrixImpl(feRequirements, matRaw);
+    return matRaw;
+  }
+
+  template <typename Basis, typename FEContainer>
+  Eigen::MatrixXd &DenseFlatAssembler<Basis, FEContainer>::getMatrixImpl(const FERequirementType &feRequirements) {
+    assembleRawMatrixImpl(feRequirements, mat);
+    for (auto i = 0U; i < this->size(); ++i)
+      if (this->isConstrained(i)) mat.col(i).setZero();
+    for (auto i = 0U; i < this->size(); ++i)
+      if (this->isConstrained(i)) mat.row(i).setZero();
+    for (auto i = 0U; i < this->size(); ++i)
+      if (this->isConstrained(i)) mat(i, i) = 1;
+    return mat;
+  }
+
+  template <typename Basis, typename FEContainer>
+  Eigen::MatrixXd &DenseFlatAssembler<Basis, FEContainer>::getReducedMatrixImpl(
+      const FERequirementType &feRequirements) {
     matRed.setZero(this->reducedSize(), this->reducedSize());
     Eigen::MatrixXd matLocal;
     std::vector<GlobalIndex> dofs;
@@ -245,38 +310,4 @@ namespace Ikarus {
     }
     return matRed;
   }
-
-  template <typename Basis, typename FEContainer>
-  Eigen::MatrixXd &DenseFlatAssembler<Basis, FEContainer>::getRawMatrixImpl(const FERequirementType &feRequirements) {
-    matRaw.setZero(this->size(), this->size());
-    Eigen::MatrixXd matLocal;
-    std::vector<GlobalIndex> dofs;
-    for (auto &fe : this->finiteElements()) {
-      matLocal.setZero(fe.size(), fe.size());
-      dofs.resize(0);
-      fe.calculateMatrix(feRequirements, matLocal);
-      fe.globalFlatIndices(dofs);
-      for (auto i = 0; auto idi : dofs) {
-        for (auto j = 0; auto idj : dofs) {
-          matRaw(idi[0], idj[0]) += matLocal(i, j);
-          ++j;
-        }
-        ++i;
-      }
-    }
-    return matRaw;
-  }
-
-  template <typename Basis, typename FEContainer>
-  Eigen::MatrixXd &DenseFlatAssembler<Basis, FEContainer>::getMatrixImpl(const FERequirementType &feRequirements) {
-    mat = getRawMatrixImpl(feRequirements);
-    for (auto i = 0U; i < this->size(); ++i)
-      if (this->isConstrained(i)) mat.col(i).setZero();
-    for (auto i = 0U; i < this->size(); ++i)
-      if (this->isConstrained(i)) mat.row(i).setZero();
-    for (auto i = 0U; i < this->size(); ++i)
-      if (this->isConstrained(i)) mat(i, i) = 1;
-    return mat;
-  }
-
 }  // namespace Ikarus
