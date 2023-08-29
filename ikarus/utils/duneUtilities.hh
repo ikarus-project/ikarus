@@ -22,6 +22,22 @@ namespace Ikarus {
     using DuneBasis = decltype(makeBasis(std::forward<Args>(args)...));
     return std::make_shared<const DuneBasis>(makeBasis(std::forward<Args>(args)...));
   }
+
+  ///// Dune Book Page 314 - for 3D (hard-coded)
+  template <typename ElementType, typename LocalFE>
+  void obtainLagrangeNodePositions(const ElementType &ele, const LocalFE &localFE,
+                                   std::vector<Dune::FieldVector<double, 3>> &lagrangeNodeCoords) {
+    lagrangeNodeCoords.resize(localFE.size());
+    std::vector<double> out;
+    for (int i = 0; i < 3; i++) {
+      auto ithCoord = [&i](const Dune::FieldVector<double, 3> &x) { return x[i]; };
+      localFE.localInterpolation().interpolate(ithCoord, out);
+      for (std::size_t j = 0; j < out.size(); j++)
+        lagrangeNodeCoords[j][i] = out[j];
+    }
+    for (auto &nCoord : lagrangeNodeCoords)
+      nCoord = ele.geometry().global(nCoord);
+  }
 }  // namespace Ikarus
 
 namespace Python {
