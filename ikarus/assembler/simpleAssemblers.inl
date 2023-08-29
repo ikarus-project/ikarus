@@ -48,9 +48,8 @@ namespace Ikarus {
   template <typename Basis, typename FEContainer>
   Eigen::VectorXd &VectorFlatAssembler<Basis, FEContainer>::getVectorImpl(const FERequirementType &feRequirements) {
     assembleRawVectorImpl(feRequirements, vec);
-    for (auto i = 0U; i < this->size(); ++i) {
+    for (auto i = 0U; i < this->size(); ++i)
       if (this->isConstrained(i)) vec[i] = 0;
-    }
     return vec;
   }
 
@@ -100,14 +99,10 @@ namespace Ikarus {
   template <typename Basis, typename FEContainer>
   Eigen::SparseMatrix<double> &SparseFlatAssembler<Basis, FEContainer>::getRawMatrixImpl(
       const FERequirementType &feRequirements) {
-    if (!isOccupationPatternCreatedRaw) {
+    std::call_once(sparsePreProcessorRaw, [&](){
       createOccupationPattern(spMatRaw);
-      isOccupationPatternCreatedRaw = true;
-    }
-    if (!areLinearDOFsPerElementCreatedRaw) {
       createLinearDOFsPerElement(spMatRaw);
-      areLinearDOFsPerElementCreatedRaw = true;
-    }
+    });
     assembleRawMatrixImpl(feRequirements, spMatRaw);
     return spMatRaw;
   }
@@ -115,14 +110,10 @@ namespace Ikarus {
   template <typename Basis, typename FEContainer>
   Eigen::SparseMatrix<double> &SparseFlatAssembler<Basis, FEContainer>::getMatrixImpl(
       const FERequirementType &feRequirements) {
-    if (!isOccupationPatternCreated) {
+    std::call_once(sparsePreProcessor, [&](){
       createOccupationPattern(spMat);
-      isOccupationPatternCreated = true;
-    }
-    if (!areLinearDOFsPerElementCreated) {
       createLinearDOFsPerElement(spMat);
-      areLinearDOFsPerElementCreated = true;
-    }
+    });
     assembleRawMatrixImpl(feRequirements, spMat);
     for (auto i = 0U; i < this->size(); ++i)
       if (this->isConstrained(i)) spMat.col(i) *= 0;
@@ -136,8 +127,10 @@ namespace Ikarus {
   template <typename Basis, typename FEContainer>
   Eigen::SparseMatrix<double> &SparseFlatAssembler<Basis, FEContainer>::getReducedMatrixImpl(
       const FERequirementType &feRequirements) {
-    if (!isReducedOccupationPatternCreated) createReducedOccupationPattern();
-    if (!areLinearReducedDOFsPerElementCreated) createLinearDOFsPerElementReduced();
+    std::call_once(sparsePreProcessorReduced, [&](){
+      createReducedOccupationPattern();
+      createLinearDOFsPerElementReduced();
+    });
     spMatReduced.coeffs().setZero();
     Eigen::MatrixXd A;
     std::vector<GlobalIndex> dofs;
@@ -207,7 +200,6 @@ namespace Ikarus {
     }
 
     spMatReduced.setFromTriplets(vectorOfTriples.begin(), vectorOfTriples.end());
-    isReducedOccupationPatternCreated = true;
   }
 
   template <typename Basis, typename FEContainer>
@@ -239,7 +231,6 @@ namespace Ikarus {
         }
       }
     }
-    areLinearReducedDOFsPerElementCreated = true;
   }
 
   template <typename Basis, typename FEContainer>

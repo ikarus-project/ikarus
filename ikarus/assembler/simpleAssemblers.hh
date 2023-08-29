@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
+#include <mutex>
 #include <ranges>
 #include <utility>
 
@@ -218,14 +219,9 @@ namespace Ikarus {
     Eigen::SparseMatrix<double> spMatRaw;
     Eigen::SparseMatrix<double> spMat;
     Eigen::SparseMatrix<double> spMatReduced;
-    bool isOccupationPatternCreatedRaw{false};
-    bool isOccupationPatternCreated{false};
-    bool isReducedOccupationPatternCreated{false};
-    bool areLinearDOFsPerElementCreatedRaw{false};
-    bool areLinearDOFsPerElementCreated{false};
-    bool areLinearReducedDOFsPerElementCreated{false};
     std::vector<std::vector<Eigen::Index>> elementLinearIndices;
     std::vector<std::vector<Eigen::Index>> elementLinearReducedIndices;
+    std::once_flag sparsePreProcessorRaw, sparsePreProcessor, sparsePreProcessorReduced;
   };
 
   template <class T, class DirichletValuesType>
