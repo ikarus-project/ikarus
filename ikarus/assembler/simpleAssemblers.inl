@@ -99,10 +99,7 @@ namespace Ikarus {
   template <typename Basis, typename FEContainer>
   Eigen::SparseMatrix<double> &SparseFlatAssembler<Basis, FEContainer>::getRawMatrixImpl(
       const FERequirementType &feRequirements) {
-    std::call_once(sparsePreProcessorRaw, [&](){
-      createOccupationPattern(spMatRaw);
-      createLinearDOFsPerElement(spMatRaw);
-    });
+    std::call_once(sparsePreProcessorRaw, [&]() { preProcessSparseMatrix(spMatRaw); });
     assembleRawMatrixImpl(feRequirements, spMatRaw);
     return spMatRaw;
   }
@@ -110,10 +107,7 @@ namespace Ikarus {
   template <typename Basis, typename FEContainer>
   Eigen::SparseMatrix<double> &SparseFlatAssembler<Basis, FEContainer>::getMatrixImpl(
       const FERequirementType &feRequirements) {
-    std::call_once(sparsePreProcessor, [&](){
-      createOccupationPattern(spMat);
-      createLinearDOFsPerElement(spMat);
-    });
+    std::call_once(sparsePreProcessor, [&]() { preProcessSparseMatrix(spMat); });
     assembleRawMatrixImpl(feRequirements, spMat);
     for (auto i = 0U; i < this->size(); ++i)
       if (this->isConstrained(i)) spMat.col(i) *= 0;
@@ -127,10 +121,7 @@ namespace Ikarus {
   template <typename Basis, typename FEContainer>
   Eigen::SparseMatrix<double> &SparseFlatAssembler<Basis, FEContainer>::getReducedMatrixImpl(
       const FERequirementType &feRequirements) {
-    std::call_once(sparsePreProcessorReduced, [&](){
-      createReducedOccupationPattern();
-      createLinearDOFsPerElementReduced();
-    });
+    std::call_once(sparsePreProcessorReduced, [&]() { preProcessSparseMatrixReduced(spMatReduced); });
     spMatReduced.coeffs().setZero();
     Eigen::MatrixXd A;
     std::vector<GlobalIndex> dofs;
@@ -171,13 +162,13 @@ namespace Ikarus {
         for (auto idj : dofs)
           vectorOfTriples.emplace_back(idi[0], idj[0], 0.0);
     }
-
     assemblyMat.setFromTriplets(vectorOfTriples.begin(), vectorOfTriples.end());
   }
 
   template <typename Basis, typename FEContainer>
-  void SparseFlatAssembler<Basis, FEContainer>::createReducedOccupationPattern() {
-    spMatReduced.resize(this->reducedSize(), this->reducedSize());
+  void SparseFlatAssembler<Basis, FEContainer>::createReducedOccupationPattern(
+      Eigen::SparseMatrix<double> &assemblyMat) {
+    assemblyMat.resize(this->reducedSize(), this->reducedSize());
     std::vector<Eigen::Triplet<double>> vectorOfTriples;
     using std::size;
 
@@ -198,8 +189,7 @@ namespace Ikarus {
         }
       }
     }
-
-    spMatReduced.setFromTriplets(vectorOfTriples.begin(), vectorOfTriples.end());
+    assemblyMat.setFromTriplets(vectorOfTriples.begin(), vectorOfTriples.end());
   }
 
   template <typename Basis, typename FEContainer>
@@ -216,7 +206,8 @@ namespace Ikarus {
   }
 
   template <typename Basis, typename FEContainer>
-  void SparseFlatAssembler<Basis, FEContainer>::createLinearDOFsPerElementReduced() {
+  void SparseFlatAssembler<Basis, FEContainer>::createLinearDOFsPerElementReduced(
+      Eigen::SparseMatrix<double> &assemblyMat) {
     std::vector<GlobalIndex> dofs;
     for (auto &&fe : this->finiteElements()) {
       dofs.resize(0);
@@ -226,7 +217,7 @@ namespace Ikarus {
         if (this->isConstrained(dofs[r][0])) continue;
         for (auto c = 0U; c < dofs.size(); ++c) {
           if (this->isConstrained(dofs[c][0])) continue;
-          elementLinearReducedIndices.back().push_back(spMatReduced.getLinearIndex(
+          elementLinearReducedIndices.back().push_back(assemblyMat.getLinearIndex(
               dofs[r][0] - this->constraintsBelow(dofs[r][0]), dofs[c][0] - this->constraintsBelow(dofs[c][0])));
         }
       }

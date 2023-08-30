@@ -208,13 +208,22 @@ namespace Ikarus {
      * The size of the matrix has the size of the free degrees of freedom
      * https://stackoverflow.com/questions/59192659/efficiently-use-eigen-for-repeated-sparse-matrix-assembly-in-nonlinear-finite-el
      */
-    void createReducedOccupationPattern();
+    void createReducedOccupationPattern(Eigen::SparseMatrix<double> &assemblyMat);
 
     /** This function save the dof indices of each element in the vector elementLinearIndices */
     void createLinearDOFsPerElement(Eigen::SparseMatrix<double> &assemblyMat);
 
     /** This function save the dof indices of each element in the vector elementLinearIndices but excludes fixed dofs */
-    void createLinearDOFsPerElementReduced();
+    void createLinearDOFsPerElementReduced(Eigen::SparseMatrix<double> &assemblyMat);
+
+    void preProcessSparseMatrix(Eigen::SparseMatrix<double> &assemblyMat) {
+      createOccupationPattern(assemblyMat);
+      createLinearDOFsPerElement(assemblyMat);
+    }
+    void preProcessSparseMatrixReduced(Eigen::SparseMatrix<double> &assemblyMat) {
+      createReducedOccupationPattern(assemblyMat);
+      createLinearDOFsPerElementReduced(assemblyMat);
+    }
 
     Eigen::SparseMatrix<double> spMatRaw;
     Eigen::SparseMatrix<double> spMat;
