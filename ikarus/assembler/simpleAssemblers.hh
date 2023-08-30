@@ -216,14 +216,9 @@ namespace Ikarus {
     /** This function save the dof indices of each element in the vector elementLinearIndices but excludes fixed dofs */
     void createLinearDOFsPerElementReduced(Eigen::SparseMatrix<double> &assemblyMat);
 
-    void preProcessSparseMatrix(Eigen::SparseMatrix<double> &assemblyMat) {
-      createOccupationPattern(assemblyMat);
-      createLinearDOFsPerElement(assemblyMat);
-    }
-    void preProcessSparseMatrixReduced(Eigen::SparseMatrix<double> &assemblyMat) {
-      createReducedOccupationPattern(assemblyMat);
-      createLinearDOFsPerElementReduced(assemblyMat);
-    }
+    void preProcessSparseMatrix(Eigen::SparseMatrix<double> &assemblyMat);
+
+    void preProcessSparseMatrixReduced(Eigen::SparseMatrix<double> &assemblyMat);
 
     Eigen::SparseMatrix<double> spMatRaw;
     Eigen::SparseMatrix<double> spMat;

@@ -225,6 +225,18 @@ namespace Ikarus {
   }
 
   template <typename Basis, typename FEContainer>
+  void SparseFlatAssembler<Basis, FEContainer>::preProcessSparseMatrix(Eigen::SparseMatrix<double> &assemblyMat) {
+    createOccupationPattern(assemblyMat);
+    createLinearDOFsPerElement(assemblyMat);
+  }
+
+  template <typename Basis, typename FEContainer>
+  void SparseFlatAssembler<Basis, FEContainer>::preProcessSparseMatrixReduced(Eigen::SparseMatrix<double> &assemblyMat) {
+    createReducedOccupationPattern(assemblyMat);
+    createLinearDOFsPerElementReduced(assemblyMat);
+  }
+
+  template <typename Basis, typename FEContainer>
   void DenseFlatAssembler<Basis, FEContainer>::assembleRawMatrixImpl(const FERequirementType &feRequirements,
                                                                      Eigen::MatrixXd &assemblyMat) {
     assemblyMat.setZero(this->size(), this->size());
