@@ -31,7 +31,8 @@ void checkAssembledQuantities(TestSuiteType& t, SparseType& sType, DenseType& dT
     t.check(sType.cols() == dofSize) << "DOFsCheck via columns: " << sType.cols() << "cols and " << dofSize << " DOFs";
 }
 
-auto SimpleAssemblersTest() {
+template <typename PreBasis>
+auto SimpleAssemblersTest(const PreBasis& preBasis) {
   TestSuite t("SimpleAssemblersTest");
   using Grid = Dune::YaspGrid<2>;
 
@@ -40,12 +41,11 @@ auto SimpleAssemblersTest() {
   auto grid                               = std::make_shared<Grid>(bbox, elementsPerDirection);
 
   for (int ref = 0; ref < 4; ++ref) {
-    auto gridView  = grid->leafGridView();
-    auto totalDOFs = 2 * gridView.size(2);
+    auto gridView = grid->leafGridView();
 
-    using namespace Dune::Functions::BasisFactory;
-    auto basis        = Ikarus::makeBasis(gridView, power<2>(lagrange<1>()));
+    auto basis        = Ikarus::makeBasis(gridView, preBasis);
     auto matParameter = Ikarus::toLamesFirstParameterAndShearModulus({.emodul = 1000, .nu = 0.3});
+    auto totalDOFs    = basis.flat().size();
 
     Ikarus::StVenantKirchhoff matSVK(matParameter);
     auto reducedMat = planeStress(matSVK, 1e-8);
@@ -77,7 +77,7 @@ auto SimpleAssemblersTest() {
     Ikarus::FErequirements req = Ikarus::FErequirements()
                                      .insertGlobalSolution(Ikarus::FESolutions::displacement, d)
                                      .insertParameter(Ikarus::FEParameter::loadfactor, load)
-                                     .addAffordance(Ikarus::MatrixAffordances::stiffness);
+                                     .addAffordance(Ikarus::AffordanceCollections::elastoStatics);
 
     auto& KRawDense = denseFlatAssembler.getRawMatrix(req);
     auto& KRaw      = sparseFlatAssembler.getRawMatrix(req);
@@ -93,10 +93,15 @@ auto SimpleAssemblersTest() {
     checkAssembledQuantities(t, K, KDense, totalDOFs);
     checkAssembledQuantities(t, R, RDense, totalDOFs);
 
-    const auto fixedDOFs    = dirichletValues.fixedDOFsize();
-    const int boundaryNodes = (elementsPerDirection[0] * Dune::power(2, ref) + 1) * 2
-                              + (elementsPerDirection[1] * Dune::power(2, ref) + 1) * 2 - 4;
-    t.check(2 * boundaryNodes == fixedDOFs);
+    const auto fixedDOFs = dirichletValues.fixedDOFsize();
+    int boundaryNodes    = (elementsPerDirection[0] * Dune::power(2, ref) + 1) * 2
+                        + (elementsPerDirection[1] * Dune::power(2, ref) + 1) * 2 - 4;
+    if (std::is_same_v<typename std::remove_cvref_t<decltype(fes[0].localView().tree().child(0))>,
+                       Dune::Functions::LagrangeNode<
+                           std::remove_cvref_t<decltype(fes[0].localView().globalBasis().gridView())>, 2, double>>)
+      boundaryNodes *= 2;
+    t.check(2 * boundaryNodes == fixedDOFs)
+        << "Boundary DOFs (" << 2 * boundaryNodes << ") is not equal to Fixed DOFs (" << fixedDOFs << ")";
 
     /// check if full matrices and full vectors are correct after applying boundary conditions
     t.check(std::ranges::count(KDense.reshaped(), 1) == fixedDOFs) << "Correct number of ones in matrix";
@@ -154,6 +159,11 @@ int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t;
 
-  t.subTest(SimpleAssemblersTest());
+  using namespace Dune::Functions::BasisFactory;
+  auto firstOrderLagrangePrePower2Basis  = power<2>(lagrange<1>(), FlatInterleaved());
+  auto secondOrderLagrangePrePower2Basis = power<2>(lagrange<2>(), FlatInterleaved());
+
+  t.subTest(SimpleAssemblersTest(firstOrderLagrangePrePower2Basis));
+  t.subTest(SimpleAssemblersTest(secondOrderLagrangePrePower2Basis));
   return t.exit();
 }
