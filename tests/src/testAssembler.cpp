@@ -39,8 +39,9 @@ auto SimpleAssemblersTest() {
   std::array<int, 2> elementsPerDirection = {2, 1};
   auto grid                               = std::make_shared<Grid>(bbox, elementsPerDirection);
 
-  for (int i = 0; i < 4; ++i) {
-    auto gridView = grid->leafGridView();
+  for (int ref = 0; ref < 4; ++ref) {
+    auto gridView  = grid->leafGridView();
+    auto totalDOFs = 2 * gridView.size(2);
 
     using namespace Dune::Functions::BasisFactory;
     auto basis        = Ikarus::makeBasis(gridView, power<2>(lagrange<1>()));
@@ -82,27 +83,67 @@ auto SimpleAssemblersTest() {
     auto& KRaw      = sparseFlatAssembler.getRawMatrix(req);
     auto& RRawDense = denseFlatAssembler.getRawVector(req);
     auto& RRaw      = sparseFlatAssembler.getRawVector(req);
-    checkAssembledQuantities(t, KRaw, KRawDense, 2 * gridView.size(2));
-    checkAssembledQuantities(t, RRaw, RRawDense, 2 * gridView.size(2));
+    checkAssembledQuantities(t, KRaw, KRawDense, totalDOFs);
+    checkAssembledQuantities(t, RRaw, RRawDense, totalDOFs);
 
     auto& KDense = denseFlatAssembler.getMatrix(req);
     auto& K      = sparseFlatAssembler.getMatrix(req);
     auto& RDense = denseFlatAssembler.getVector(req);
     auto& R      = sparseFlatAssembler.getVector(req);
-    checkAssembledQuantities(t, K, KDense, 2 * gridView.size(2));
-    checkAssembledQuantities(t, R, RDense, 2 * gridView.size(2));
+    checkAssembledQuantities(t, K, KDense, totalDOFs);
+    checkAssembledQuantities(t, R, RDense, totalDOFs);
 
     const auto fixedDOFs    = dirichletValues.fixedDOFsize();
-    const int boundaryNodes = (elementsPerDirection[0] * Dune::power(2, i) + 1) * 2
-                              + (elementsPerDirection[1] * Dune::power(2, i) + 1) * 2 - 4;
+    const int boundaryNodes = (elementsPerDirection[0] * Dune::power(2, ref) + 1) * 2
+                              + (elementsPerDirection[1] * Dune::power(2, ref) + 1) * 2 - 4;
     t.check(2 * boundaryNodes == fixedDOFs);
+
+    /// check if full matrices and full vectors are correct after applying boundary conditions
+    t.check(std::ranges::count(KDense.reshaped(), 1) == fixedDOFs) << "Correct number of ones in matrix";
+    t.check(std::ranges::count(RDense, 0) == fixedDOFs) << "Correct number of zeros in vector";
+
+    for (auto i = 0U; i < totalDOFs; ++i) {
+      if (dirichletValues.isConstrained(i)) {
+        for (auto j = 0U; j < totalDOFs; ++j) {
+          t.check(Dune::FloatCmp::eq(KDense(i, j), static_cast<double>(i == j)))
+              << std::string(i == j ? "" : "Off-") + "Diagonal term is " << KDense(i, j) << " at (" << i << "," << j
+              << ")";
+        }
+        t.check(Dune::FloatCmp::eq(RDense(i), 0.0)) << "Vector component is " << RDense(i) << " at " << i;
+      } else {
+        for (auto j = 0U; j < totalDOFs; ++j)
+          if (not(dirichletValues.isConstrained(j)))
+            t.check(Dune::FloatCmp::eq(KDense(i, j), KRawDense(i, j)))
+                << "KDense and KRawDense have the same entries corresponding to unconstrained DOFs";
+        t.check(Dune::FloatCmp::eq(RDense(i), RRawDense(i)))
+            << "RDense and RRawDense have the same entries corresponding to unconstrained DOFs";
+      }
+    }
 
     auto& KRedDense = denseFlatAssembler.getReducedMatrix(req);
     auto& KRed      = sparseFlatAssembler.getReducedMatrix(req);
     auto& RRedDense = denseFlatAssembler.getReducedVector(req);
     auto& RRed      = sparseFlatAssembler.getReducedVector(req);
-    checkAssembledQuantities(t, KRed, KRedDense, 2 * gridView.size(2) - fixedDOFs);
-    checkAssembledQuantities(t, RRed, RRedDense, 2 * gridView.size(2) - fixedDOFs);
+    checkAssembledQuantities(t, KRed, KRedDense, totalDOFs - fixedDOFs);
+    checkAssembledQuantities(t, RRed, RRedDense, totalDOFs - fixedDOFs);
+
+    /// check if reduced matrices and reduced vectors are correct after applying boundary conditions
+    size_t r = 0U;
+    for (auto i = 0U; i < totalDOFs; ++i) {
+      if (not(dirichletValues.isConstrained(i))) {
+        size_t c = 0U;
+        for (auto j = 0U; j < totalDOFs; ++j)
+          if (not(dirichletValues.isConstrained(j))) {
+            t.check(Dune::FloatCmp::eq(KRawDense(i, j), KRedDense(r, c)))
+                << "Matrix components are " << KRawDense(i, j) << " and " << KRedDense(r, c) << " at (" << r << "," << c
+                << ")";
+            c++;
+          }
+        t.check(Dune::FloatCmp::eq(RRawDense(i), RRedDense(r)))
+            << "Vector components are " << RRawDense(i) << " and " << RRedDense(r) << " at " << r;
+        r++;
+      }
+    }
 
     grid->globalRefine(1);
   }
