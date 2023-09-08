@@ -811,18 +811,22 @@ namespace Ikarus {
             epsV(2)/2, epsV(1), 0,
             0,0,0;
         EV= T.transpose()*EV*T;
+        Eigen::Vector3d epsV2;
+      epsV2<< EV(0,0), EV(1,1), 2*EV(0,1);
 
         Eigen::Matrix3d KV;
         KV<< kappaV(0),(kappaV(2))/2, 0,
             (kappaV(2))/2, kappaV(1), 0,
             0,0,0;
         KV= T.transpose()*KV*T;
+      Eigen::Vector3d KV2;
+      KV2<< KV(0,0), KV(1,1), 2*KV(0,1);
 
-        Eigen::Matrix3d KV2;
-        KV2<< rhoV(0),(rhoV(2))/2, 0,
-            (rhoV(2))/2, rhoV(1), 0,
-            0,0,0;
-        KV2= T.transpose()*KV2*T;
+//        Eigen::Matrix3d KV2;
+//        KV2<< rhoV(0),(rhoV(2))/2, 0,
+//            (rhoV(2))/2, rhoV(1), 0,
+//            0,0,0;
+//        KV2= T.transpose()*KV2*T;
 
         Eigen::Matrix3d GV;
         GV<< 0,0, gammaV(0)/2,
@@ -834,6 +838,30 @@ namespace Ikarus {
         Eigen::Matrix3d QCauchyBig;
         QCauchyBig.setZero();
 
+      const auto &emod_ = this->fESettings.template request<double>("youngs_modulus");
+      const auto &nu_ = this->fESettings.template request<double>("poissons_ratio");
+      Eigen::Matrix3d Cm;
+      Cm.setZero();
+      // membrane
+      const double fac1 = thickness_ * Emodul / (1 - nu * nu);
+      Cm(0, 0) = Cm(1, 1) = fac1;
+      Cm(2, 2)               = fac1 * (1 - nu) * 0.5;
+      Cm(1, 0) = Cm(0, 1) = fac1 * nu;
+
+      Eigen::Matrix3d Cb;
+      Cb.setZero();
+      // bending
+      const double fac2 = thickness_ * thickness_ * thickness_ / 12 * Emodul / (1 - nu * nu);
+      Cb(3, 3) = Cb(4, 4) = fac2;
+      Cb(5, 5)               = fac2 * (1 - nu) * 0.5;
+      Cb(3, 4) = Cb(4, 3) = fac2 * nu;
+
+      Eigen::Matrix3d Cs;
+      Cs.setZero();
+      // transverse shear
+      const double fac3 = 1 * thickness_ * Emodul * 0.5 / (1 + nu);
+      Cs(6, 6) = Cs(7, 7) = fac3;
+
 //        const auto [res,detF,E11,zetaS,jS,JS,gp2DPosS]   = calculateStresses(par,gp3DPos,true);
 
 
@@ -842,18 +870,20 @@ namespace Ikarus {
 
 
 
-        const auto [NCauchy,MCauchy,MCauchy2,QCauchy] =calcStressResultants(par,local);
-        QCauchyBig.template block<2,1>(0,2)=QCauchy;
-        QCauchyBig.template block<1,2>(2,0)=QCauchy;
+//        const auto [NCauchy,MCauchy,MCauchy2,QCauchy] =calcStressResultants(par,local);
+//        QCauchyBig.template block<2,1>(0,2)=QCauchy;
+//        QCauchyBig.template block<1,2>(2,0)=QCauchy;
 //        std::cout<<"QCauchyBig"<<std::endl;
 //        std::cout<<QCauchyBig<<std::endl;
 //        std::cout<<"GV"<<std::endl;
 //        std::cout<<GV<<std::endl;
 //        std::cout<<"gammaV"<<std::endl;
 //        std::cout<<gammaV<<std::endl;
-        const double membrane = 0.5*(NCauchy*EV.template block<2,2>(0,0)).trace();
-        const double bendingE =0.5*(MCauchy*KV.template block<2,2>(0,0)+MCauchy2*KV2.template block<2,2>(0,0)).trace();
-        const double shearE =0.5*(QCauchyBig*GV).trace();
+        const double membrane = 0.5*epsV2.dot(Cs*epsV2);
+        const double bendingE = 0.5*KV2.dot(Cb*KV2);
+        const double shearE = 0.5*gaV.dot(Cs*gaV);
+//        const double bendingE =0.5*(MCauchy*KV.template block<2,2>(0,0)+MCauchy2*KV2.template block<2,2>(0,0)).trace();
+//        const double shearE =0.5*(QCauchyBig*GV).trace();
         Eigen::Vector3d en;
         en<<membrane,bendingE,shearE;
         return en;

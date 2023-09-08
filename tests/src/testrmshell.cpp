@@ -101,6 +101,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell(char** argv) {
   const auto residualTolerance               = parameterSet.get<double>("residualTolerance");
   const auto displacementTolerance               = parameterSet.get<double>("displacementTolerance");
   const auto maximumIterations               = parameterSet.get<int>("maximumIterations");
+  const auto globalDegreeElevateAfter2               = parameterSet.get<int>("globalDegreeElevateAfter2");
 
   auto grid = std::make_shared<Grid>(patchData);
   for (int i = 0; i < 2; ++i)
@@ -108,6 +109,7 @@ auto NonLinearElasticityLoadControlNRandTRforRMShell(char** argv) {
   grid->globalDegreeElevate(globalDegreeElevateBefore);
   grid->globalRefineInDirection(0, refine);
   grid->globalDegreeElevate(globalDegreeElevateAfter);
+  grid->globalDegreeElevate(globalDegreeElevateAfter2);
 
   auto gridView = grid->leafGridView();
 

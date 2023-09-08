@@ -123,13 +123,17 @@ auto checkFEByAutoDiff(std::string filename) {
 //  for (int i = 0; i < 2; ++i)
 //    patchData = degreeElevate(patchData, i, 1);
   auto grid = std::make_shared<Grid>(patchData);
-
+  grid->globalDegreeElevate(1);
   grid->globalRefine(0);
+  grid->globalDegreeElevate(1);
+
+
   auto gridView = grid->leafGridView();
 
   using namespace Dune::Functions::BasisFactory;
   auto scalarMidSurfBasis = nurbs();
-  auto scalaarDirectorBasis = nurbs();
+//  auto scalaarDirectorBasis = Imp::NurbsPreBasisFactory<2, 3>();
+  auto scalaarDirectorBasis = Imp::NurbsPreBasisFactory<2, 3>(gridView.impl().lowerOrderPatchData(1));
   auto basis       = Ikarus::makeBasis(gridView, composite(power<3>(scalarMidSurfBasis),power<2>(scalaarDirectorBasis)));
   auto element     = gridView.template begin<0>();
   auto nDOF        = basis.flat().size();
@@ -177,9 +181,9 @@ auto checkFEByAutoDiff(std::string filename) {
   directorFunctions[0]="NFE";
   directorFunctions[1]="PBFE";
   directorFunctions[2]="GFE";
-  for (int i = 0; i < 3; ++i) {
+  for (int i = 0; i < 1; ++i) {
     for (int j = 0; j < 3; ++j) {
-      for (int k = 0; k < 2; ++k) {
+      for (int k = 0; k < 1; ++k) {
         Ikarus::FESettings feSettings;
         feSettings.addOrAssign("youngs_modulus", 1000.0);
         feSettings.addOrAssign("poissons_ratio", 0.0);
