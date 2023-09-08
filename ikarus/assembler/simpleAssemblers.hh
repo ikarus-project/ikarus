@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
+#include <mutex>
 #include <ranges>
 #include <utility>
 
@@ -95,14 +96,14 @@ namespace Ikarus {
     ScalarAssembler(FEContainer &&fes, const DirichletValuesType &dirichletValues_)
         : FlatAssemblerBase<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues_) {}
 
-    /** Calculates the scalar quantity which is requested by fErequirements and returns a reference */
-    double &getScalar(const FERequirementType &fErequirements) { return getScalarImpl(fErequirements); }
+    /** Calculates the scalar quantity which is requested by feRequirements and returns a reference */
+    double &getScalar(const FERequirementType &feRequirements) { return getScalarImpl(feRequirements); }
 
   private:
-    double &getScalarImpl(const FERequirementType &fErequirements) {
+    double &getScalarImpl(const FERequirementType &feRequirements) {
       scal = 0.0;
       for (auto &fe : this->finiteElements()) {
-        scal += fe.calculateScalar(fErequirements);
+        scal += fe.calculateScalar(feRequirements);
       }
       return scal;
     }
@@ -128,20 +129,26 @@ namespace Ikarus {
     VectorFlatAssembler(FEContainer &&fes, const DirichletValuesType &dirichletValues_)
         : ScalarAssembler<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues_) {}
 
-    /** Calculates the vectorial quantity which is requested by fErequirements and returns a reference
-     * A zero is written on fixed dofs */
-    Eigen::VectorXd &getVector(const FERequirementType &fErequirements) { return getVectorImpl(fErequirements); }
+    /// Calculates the vectorial quantity which is requested by feRequirements and returns a reference */
+    Eigen::VectorXd &getRawVector(const FERequirementType &feRequirements) { return getRawVectorImpl(feRequirements); }
 
-    /** Calculates the vectorial quantity which is requested by fErequirements and returns a reference
+    /** Calculates the vectorial quantity which is requested by feRequirements and returns a reference
+     * A zero is written on fixed dofs */
+    Eigen::VectorXd &getVector(const FERequirementType &feRequirements) { return getVectorImpl(feRequirements); }
+
+    /** Calculates the vectorial quantity which is requested by feRequirements and returns a reference
      * This vector has a reduced size by the number of fixed degrees of freedom */
-    Eigen::VectorXd &getReducedVector(const FERequirementType &fErequirements) {
-      return getReducedVectorImpl(fErequirements);
+    Eigen::VectorXd &getReducedVector(const FERequirementType &feRequirements) {
+      return getReducedVectorImpl(feRequirements);
     }
 
   private:
-    Eigen::VectorXd &getVectorImpl(const FERequirementType &fErequirements);
-    Eigen::VectorXd &getReducedVectorImpl(const FERequirementType &fErequirements);
+    void assembleRawVectorImpl(const FERequirementType &feRequirements, Eigen::VectorXd &assemblyVec);
+    Eigen::VectorXd &getRawVectorImpl(const FERequirementType &feRequirements);
+    Eigen::VectorXd &getVectorImpl(const FERequirementType &feRequirements);
+    Eigen::VectorXd &getReducedVectorImpl(const FERequirementType &feRequirements);
 
+    Eigen::VectorXd vecRaw{};
     Eigen::VectorXd vec{};
     Eigen::VectorXd vecRed{};
   };
@@ -169,47 +176,56 @@ namespace Ikarus {
 
     using GridView = typename Basis::GridView;
 
-    /** Calculates the matrix quantity which is requested by fErequirements and returns a reference
-     * A zero is written on fixed dofs rows and columns and a one is written on the diagonal */
-    Eigen::SparseMatrix<double> &getMatrix(const FERequirementType &fErequirements) {
-      return getMatrixImpl(fErequirements);
+    /// Calculates the matrix quantity which is requested by feRequirements and returns a reference
+    Eigen::SparseMatrix<double> &getRawMatrix(const FERequirementType &feRequirements) {
+      return getRawMatrixImpl(feRequirements);
     }
 
-    /** Calculates the matrix quantity which is requested by fErequirements and returns a reference
+    /** Calculates the matrix quantity which is requested by feRequirements and returns a reference
+     * A zero is written on fixed dofs rows and columns and a one is written on the diagonal */
+    Eigen::SparseMatrix<double> &getMatrix(const FERequirementType &feRequirements) {
+      return getMatrixImpl(feRequirements);
+    }
+
+    /** Calculates the matrix quantity which is requested by feRequirements and returns a reference
      * The size of the matrix has the size of the free degrees of freedom */
-    Eigen::SparseMatrix<double> &getReducedMatrix(const FERequirementType &fErequirements) {
-      return getReducedMatrixImpl(fErequirements);
+    Eigen::SparseMatrix<double> &getReducedMatrix(const FERequirementType &feRequirements) {
+      return getReducedMatrixImpl(feRequirements);
     }
 
   private:
-    Eigen::SparseMatrix<double> &getMatrixImpl(const FERequirementType &fErequirements);
-    Eigen::SparseMatrix<double> &getReducedMatrixImpl(const FERequirementType &fErequirements);
+    void assembleRawMatrixImpl(const FERequirementType &feRequirements, Eigen::SparseMatrix<double> &assemblyMat);
+    Eigen::SparseMatrix<double> &getRawMatrixImpl(const FERequirementType &feRequirements);
+    Eigen::SparseMatrix<double> &getMatrixImpl(const FERequirementType &feRequirements);
+    Eigen::SparseMatrix<double> &getReducedMatrixImpl(const FERequirementType &feRequirements);
 
     /** Calculates the non-zero entries in the full sparse matrix and passed them to the underlying eigen sparse matrix
      * https://stackoverflow.com/questions/59192659/efficiently-use-eigen-for-repeated-sparse-matrix-assembly-in-nonlinear-finite-el
      */
-    void createOccupationPattern();
+    void createOccupationPattern(Eigen::SparseMatrix<double> &assemblyMat);
 
     /** Calculates the non-zero entries in the sparse matrix and passed them to the underlying eigen sparse matrix
      * The size of the matrix has the size of the free degrees of freedom
      * https://stackoverflow.com/questions/59192659/efficiently-use-eigen-for-repeated-sparse-matrix-assembly-in-nonlinear-finite-el
      */
-    void createReducedOccupationPattern();
+    void createReducedOccupationPattern(Eigen::SparseMatrix<double> &assemblyMat);
 
     /** This function save the dof indices of each element in the vector elementLinearIndices */
-    void createlinearDofsPerElement();
+    void createLinearDOFsPerElement(Eigen::SparseMatrix<double> &assemblyMat);
 
     /** This function save the dof indices of each element in the vector elementLinearIndices but excludes fixed dofs */
-    void createlinearDofsPerElementReduced();
+    void createLinearDOFsPerElementReduced(Eigen::SparseMatrix<double> &assemblyMat);
 
+    void preProcessSparseMatrix(Eigen::SparseMatrix<double> &assemblyMat);
+
+    void preProcessSparseMatrixReduced(Eigen::SparseMatrix<double> &assemblyMat);
+
+    Eigen::SparseMatrix<double> spMatRaw;
     Eigen::SparseMatrix<double> spMat;
     Eigen::SparseMatrix<double> spMatReduced;
-    bool isOccupationPatternCreated{false};
-    bool isReducedOccupationPatternCreated{false};
-    bool arelinearDofsPerElementCreated{false};
-    bool arelinearReducedDofsPerElementCreated{false};
     std::vector<std::vector<Eigen::Index>> elementLinearIndices;
     std::vector<std::vector<Eigen::Index>> elementLinearReducedIndices;
+    std::once_flag sparsePreProcessorRaw, sparsePreProcessor, sparsePreProcessorReduced;
   };
 
   template <class T, class DirichletValuesType>
@@ -234,20 +250,26 @@ namespace Ikarus {
     explicit DenseFlatAssembler(FEContainer &&fes, const DirichletValuesType &dirichletValues_)
         : VectorFlatAssembler<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues_) {}
 
-    /** Calculates the matrix quantity which is requested by fErequirements and returns a reference
-     * A zero is written on fixed dofs rows and columns and a one is written on the diagonal */
-    Eigen::MatrixXd &getMatrix(const FERequirementType &fErequirements) { return getMatrixImpl(fErequirements); }
+    /// Calculates the matrix quantity which is requested by feRequirements and returns a reference
+    Eigen::MatrixXd &getRawMatrix(const FERequirementType &feRequirements) { return getRawMatrixImpl(feRequirements); }
 
-    /** Calculates the matrix quantity which is requested by fErequirements and returns a reference
+    /** Calculates the matrix quantity which is requested by feRequirements and returns a reference
+     * A zero is written on fixed dofs rows and columns and a one is written on the diagonal */
+    Eigen::MatrixXd &getMatrix(const FERequirementType &feRequirements) { return getMatrixImpl(feRequirements); }
+
+    /** Calculates the matrix quantity which is requested by feRequirements and returns a reference
      * The size of the matrix has the size of the free degrees of freedom */
-    Eigen::MatrixXd &getReducedMatrix(const FERequirementType &fErequirements) {
-      return getReducedMatrixImpl(fErequirements);
+    Eigen::MatrixXd &getReducedMatrix(const FERequirementType &feRequirements) {
+      return getReducedMatrixImpl(feRequirements);
     }
 
   private:
-    Eigen::MatrixXd &getReducedMatrixImpl(const FERequirementType &fErequirements);
-    Eigen::MatrixXd &getMatrixImpl(const FERequirementType &fErequirements);
+    void assembleRawMatrixImpl(const FERequirementType &feRequirements, Eigen::MatrixXd &assemblyMat);
+    Eigen::MatrixXd &getRawMatrixImpl(const FERequirementType &feRequirements);
+    Eigen::MatrixXd &getMatrixImpl(const FERequirementType &feRequirements);
+    Eigen::MatrixXd &getReducedMatrixImpl(const FERequirementType &feRequirements);
 
+    Eigen::MatrixXd matRaw{};
     Eigen::MatrixXd mat{};
     Eigen::MatrixXd matRed{};
   };

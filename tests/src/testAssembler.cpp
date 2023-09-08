@@ -23,7 +23,16 @@ using Dune::TestSuite;
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/init.hh>
 
-auto SimpleAssemblersTest() {
+template <typename TestSuiteType, typename SparseType, typename DenseType, typename DOFSize>
+void checkAssembledQuantities(TestSuiteType& t, SparseType& sType, DenseType& dType, DOFSize dofSize) {
+  t.check(isApproxSame(sType, dType, 1e-15), "Dense==Sparse");
+  t.check(sType.rows() == dofSize) << "DOFsCheck via rows: " << sType.rows() << "rows and " << dofSize << " DOFs";
+  if (not(std::is_same_v<SparseType, Eigen::VectorXd>))
+    t.check(sType.cols() == dofSize) << "DOFsCheck via columns: " << sType.cols() << "cols and " << dofSize << " DOFs";
+}
+
+template <typename PreBasis>
+auto SimpleAssemblersTest(const PreBasis& preBasis) {
   TestSuite t("SimpleAssemblersTest");
   using Grid = Dune::YaspGrid<2>;
 
@@ -31,12 +40,12 @@ auto SimpleAssemblersTest() {
   std::array<int, 2> elementsPerDirection = {2, 1};
   auto grid                               = std::make_shared<Grid>(bbox, elementsPerDirection);
 
-  for (int i = 0; i < 4; ++i) {
+  for (int ref = 0; ref < 4; ++ref) {
     auto gridView = grid->leafGridView();
 
-    using namespace Dune::Functions::BasisFactory;
-    auto basis        = Ikarus::makeBasis(gridView, power<2>(lagrange<1>()));
+    auto basis        = Ikarus::makeBasis(gridView, preBasis);
     auto matParameter = Ikarus::toLamesFirstParameterAndShearModulus({.emodul = 1000, .nu = 0.3});
+    auto totalDOFs    = basis.flat().size();
 
     Ikarus::StVenantKirchhoff matSVK(matParameter);
     auto reducedMat = planeStress(matSVK, 1e-8);
@@ -68,25 +77,78 @@ auto SimpleAssemblersTest() {
     Ikarus::FErequirements req = Ikarus::FErequirements()
                                      .insertGlobalSolution(Ikarus::FESolutions::displacement, d)
                                      .insertParameter(Ikarus::FEParameter::loadfactor, load)
-                                     .addAffordance(Ikarus::MatrixAffordances::stiffness);
+                                     .addAffordance(Ikarus::AffordanceCollections::elastoStatics);
 
-    auto& Kdense = denseFlatAssembler.getMatrix(req);
+    auto& KRawDense = denseFlatAssembler.getRawMatrix(req);
+    auto& KRaw      = sparseFlatAssembler.getRawMatrix(req);
+    auto& RRawDense = denseFlatAssembler.getRawVector(req);
+    auto& RRaw      = sparseFlatAssembler.getRawVector(req);
+    checkAssembledQuantities(t, KRaw, KRawDense, totalDOFs);
+    checkAssembledQuantities(t, RRaw, RRawDense, totalDOFs);
+
+    auto& KDense = denseFlatAssembler.getMatrix(req);
     auto& K      = sparseFlatAssembler.getMatrix(req);
+    auto& RDense = denseFlatAssembler.getVector(req);
+    auto& R      = sparseFlatAssembler.getVector(req);
+    checkAssembledQuantities(t, K, KDense, totalDOFs);
+    checkAssembledQuantities(t, R, RDense, totalDOFs);
 
-    const auto fixedDofs = dirichletValues.fixedDOFsize();
-    t.check(isApproxSame(K, Kdense, 1e-15), "Dense==Sparse");
-    t.check(K.rows() == 2 * gridView.size(2), "DofsCheck");
-    t.check(K.cols() == 2 * gridView.size(2), "DofsCheck");
-    const int boundaryNodes = (elementsPerDirection[0] * Dune::power(2, i) + 1) * 2
-                              + (elementsPerDirection[1] * Dune::power(2, i) + 1) * 2 - 4;
-    t.check(2 * boundaryNodes == fixedDofs);
+    const auto fixedDOFs = dirichletValues.fixedDOFsize();
+    int boundaryNodes    = (elementsPerDirection[0] * Dune::power(2, ref) + 1) * 2
+                        + (elementsPerDirection[1] * Dune::power(2, ref) + 1) * 2 - 4;
+    if (std::is_same_v<typename std::remove_cvref_t<decltype(fes[0].localView().tree().child(0))>,
+                       Dune::Functions::LagrangeNode<
+                           std::remove_cvref_t<decltype(fes[0].localView().globalBasis().gridView())>, 2, double>>)
+      boundaryNodes *= 2;
+    t.check(2 * boundaryNodes == fixedDOFs)
+        << "Boundary DOFs (" << 2 * boundaryNodes << ") is not equal to Fixed DOFs (" << fixedDOFs << ")";
 
-    auto& KdenseRed = denseFlatAssembler.getReducedMatrix(req);
+    /// check if full matrices and full vectors are correct after applying boundary conditions
+    t.check(std::ranges::count(KDense.reshaped(), 1) == fixedDOFs) << "Correct number of ones in matrix";
+    t.check(std::ranges::count(RDense, 0) == fixedDOFs) << "Correct number of zeros in vector";
+
+    for (auto i = 0U; i < totalDOFs; ++i) {
+      if (dirichletValues.isConstrained(i)) {
+        for (auto j = 0U; j < totalDOFs; ++j) {
+          t.check(Dune::FloatCmp::eq(KDense(i, j), static_cast<double>(i == j)))
+              << std::string(i == j ? "" : "Off-") + "Diagonal term is " << KDense(i, j) << " at (" << i << "," << j
+              << ")";
+        }
+        t.check(Dune::FloatCmp::eq(RDense(i), 0.0)) << "Vector component is " << RDense(i) << " at " << i;
+      } else {
+        for (auto j = 0U; j < totalDOFs; ++j)
+          if (not(dirichletValues.isConstrained(j)))
+            t.check(Dune::FloatCmp::eq(KDense(i, j), KRawDense(i, j)))
+                << "KDense and KRawDense have the same entries corresponding to unconstrained DOFs";
+        t.check(Dune::FloatCmp::eq(RDense(i), RRawDense(i)))
+            << "RDense and RRawDense have the same entries corresponding to unconstrained DOFs";
+      }
+    }
+
+    auto& KRedDense = denseFlatAssembler.getReducedMatrix(req);
     auto& KRed      = sparseFlatAssembler.getReducedMatrix(req);
+    auto& RRedDense = denseFlatAssembler.getReducedVector(req);
+    auto& RRed      = sparseFlatAssembler.getReducedVector(req);
+    checkAssembledQuantities(t, KRed, KRedDense, totalDOFs - fixedDOFs);
+    checkAssembledQuantities(t, RRed, RRedDense, totalDOFs - fixedDOFs);
 
-    t.check(isApproxSame(KRed, KdenseRed, 1e-15), "DenseRed==SparseRed");
-    t.check(KRed.rows() == 2 * gridView.size(2) - fixedDofs, "DofsCheckRed");
-    t.check(KRed.cols() == 2 * gridView.size(2) - fixedDofs, "DofsCheckRed");
+    /// check if reduced matrices and reduced vectors are correct after applying boundary conditions
+    size_t r = 0U;
+    for (auto i = 0U; i < totalDOFs; ++i) {
+      if (not(dirichletValues.isConstrained(i))) {
+        size_t c = 0U;
+        for (auto j = 0U; j < totalDOFs; ++j)
+          if (not(dirichletValues.isConstrained(j))) {
+            t.check(Dune::FloatCmp::eq(KRawDense(i, j), KRedDense(r, c)))
+                << "Matrix components are " << KRawDense(i, j) << " and " << KRedDense(r, c) << " at (" << r << "," << c
+                << ")";
+            c++;
+          }
+        t.check(Dune::FloatCmp::eq(RRawDense(i), RRedDense(r)))
+            << "Vector components are " << RRawDense(i) << " and " << RRedDense(r) << " at " << r;
+        r++;
+      }
+    }
 
     grid->globalRefine(1);
   }
@@ -97,6 +159,11 @@ int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t;
 
-  t.subTest(SimpleAssemblersTest());
+  using namespace Dune::Functions::BasisFactory;
+  auto firstOrderLagrangePrePower2Basis  = power<2>(lagrange<1>(), FlatInterleaved());
+  auto secondOrderLagrangePrePower2Basis = power<2>(lagrange<2>(), FlatInterleaved());
+
+  t.subTest(SimpleAssemblersTest(firstOrderLagrangePrePower2Basis));
+  t.subTest(SimpleAssemblersTest(secondOrderLagrangePrePower2Basis));
   return t.exit();
 }
