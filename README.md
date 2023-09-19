@@ -26,6 +26,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 This project tries to provide an easy to read and an easy to use finite element framework.
 It is heavily inspired by the finite element software [DUNE](https://dune-project.org/), the book [DUNE — The Distributed and Unified Numerics Environment](https://www.springer.com/gp/book/9783030597016),
 [deal.II](https://www.dealii.org/) and [Kratos](https://github.com/KratosMultiphysics/Kratos).
+Furthermore, it directly uses several modules from [DUNE](https://dune-project.org/).
 
 We favor value semantics and readability.
 
