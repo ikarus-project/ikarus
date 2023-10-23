@@ -13,6 +13,7 @@
 
 #include <spdlog/spdlog.h>
 #include <ikarus/io/shell2DDataCollector.hh>
+#include <dune/vtk/writers/vtkunstructuredgridwriter.hh>
 
 template <typename Basis, typename SolutionVectorType>  // Check basis
 class ControlSubsamplingVertexVTKWriter : public IObserver<ControlMessages> {

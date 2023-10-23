@@ -58,6 +58,7 @@ namespace Ikarus {
     velocity,
     director,
     magnetizationAndVectorPotential,
+            displacementAndQuaternions,
     midSurfaceAndDirector
   );
 
