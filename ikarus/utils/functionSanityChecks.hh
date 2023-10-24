@@ -38,7 +38,7 @@ namespace Ikarus {
     } else
       b = 1;
 
-    nonLinOp.template updateAll();
+    nonLinOp.updateAll();
     const auto e = nonLinOp.value();
 
     double gradfv;
@@ -113,7 +113,7 @@ namespace Ikarus {
       else
         spdlog::info("The Jacobian seems wrong.");
     }
-    nonLinOp.template updateAll();
+    nonLinOp.updateAll();
     return checkPassed;
   }
 

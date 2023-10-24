@@ -153,19 +153,19 @@ int main(int argc, char** argv) {
   auto le = LinearElasticity(matPar);
   t.subTest(testMaterial(le));
 
-  auto leRed = makeVanishingStress<{2, 2}>(le, 1e-12);
+  auto leRed = makeVanishingStress<Impl::StressIndexPair{2, 2}>(le, 1e-12);
   t.subTest(testMaterial(leRed));
 
-  auto svkRed = makeVanishingStress<{2, 2}>(svk, 1e-12);
+  auto svkRed = makeVanishingStress<Impl::StressIndexPair{2, 2}>(svk, 1e-12);
   t.subTest(testMaterial(svkRed));
 
-  auto nhRed = makeVanishingStress<{2, 2}>(nh, 1e-12);
+  auto nhRed = makeVanishingStress<Impl::StressIndexPair{2, 2}>(nh, 1e-12);
   t.subTest(testMaterial(nhRed));
 
-  auto nhRed2 = makeVanishingStress<{1, 1}, {2, 2}>(nh, 1e-12);
+  auto nhRed2 = makeVanishingStress<Impl::StressIndexPair{1, 1}, Impl::StressIndexPair{2, 2}>(nh, 1e-12);
   t.subTest(testMaterial(nhRed2));
 
-  auto nhRed3 = makeVanishingStress<{2, 1}, {2, 0}, {2, 2}>(nh, 1e-12);
+  auto nhRed3 = makeVanishingStress<Impl::StressIndexPair{2, 1}, Impl::StressIndexPair{2, 0}, Impl::StressIndexPair{2, 2}>(nh, 1e-12);
   t.subTest(testMaterial(nhRed3));
 
   auto nhRed4 = shellMaterial(nh, 1e-12);
