@@ -13,11 +13,13 @@
 #include <Eigen/SparseLU>
 #include <Eigen/SparseQR>
 #include <Eigen/UmfPackSupport>
+#include <dune/common/exceptions.hh>
 // #include <Eigen/SuperLUSupport>
 
 namespace Ikarus {
 
   enum class SolverTypeTag {
+    none,
     si_ConjugateGradient,
     si_LeastSquaresConjugateGradient,
     si_BiCGSTAB,
@@ -42,12 +44,13 @@ namespace Ikarus {
 
   /** \brief A type-erased solver templated with the scalar type of the linear system */
   template <typename ScalarType = double>
-  class ILinearSolver {
+  class ILinearSolverTemplate {
   public:
     using SparseMatrixType = Eigen::SparseMatrix<ScalarType>;
     using DenseMatrixType  = Eigen::MatrixX<ScalarType>;
-    explicit ILinearSolver(const SolverTypeTag& solverTypeTag) {
+    explicit ILinearSolverTemplate(const SolverTypeTag& p_solverTypeTag) : solverTypeTag{p_solverTypeTag} {
       using namespace Eigen;
+
       switch (solverTypeTag) {
         case SolverTypeTag::si_ConjugateGradient:
           solverimpl = std::make_unique<SolverImpl<ConjugateGradient<SparseMatrixType, Lower | Upper>>>();
@@ -104,20 +107,25 @@ namespace Ikarus {
         case SolverTypeTag::d_LDLT:
           solverimpl = std::make_unique<SolverImpl<LDLT<DenseMatrixType>>>();
           break;
+        case SolverTypeTag::none:
+          break;
         default:
           DUNE_THROW(Dune::NotImplemented, "Your requested solver does not work with this interface class");
       }
     }
 
-    ~ILinearSolver()       = default;
-    ILinearSolver& operator=(const ILinearSolver& other) {
-      ILinearSolver tmp(other);
-      std::swap(solverimpl, tmp.solverimpl);
+    ~ILinearSolverTemplate()       = default;
+    ILinearSolverTemplate& operator=(const ILinearSolverTemplate& other) {
+      ILinearSolverTemplate tmp(other);
       return *this;
     }
 
-    ILinearSolver(ILinearSolver&&) noexcept = default;
-    ILinearSolver& operator=(ILinearSolver&&) noexcept = default;
+    ILinearSolverTemplate(const ILinearSolverTemplate& rhs)
+    {
+       *this = ILinearSolverTemplate(rhs.solverTypeTag);
+    }
+    ILinearSolverTemplate(ILinearSolverTemplate&&) noexcept = default;
+    ILinearSolverTemplate& operator=(ILinearSolverTemplate&&) noexcept = default;
 
   private:
     struct SolverBase {
@@ -186,11 +194,12 @@ namespace Ikarus {
     };
 
     std::unique_ptr<SolverBase> solverimpl;
+    SolverTypeTag solverTypeTag{SolverTypeTag::none};
 
   public:
     template <typename MatrixType>
     requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
-    inline ILinearSolver& compute(const MatrixType& A) {
+    inline ILinearSolverTemplate& compute(const MatrixType& A) {
       solverimpl->compute(A);
       return *this;
     }
@@ -208,4 +217,5 @@ namespace Ikarus {
     void solve(Eigen::MatrixX<ScalarType>& x, const Eigen::MatrixX<ScalarType>& b) { solverimpl->solve(x, b); }
   };
 
+  typedef ILinearSolverTemplate<double>    ILinearSolver;
 }  // namespace Ikarus
