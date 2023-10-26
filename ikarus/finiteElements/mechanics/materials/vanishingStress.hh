@@ -81,7 +81,7 @@ namespace Ikarus {
     template <typename Derived>
     ScalarType storedEnergyImpl(const Eigen::MatrixBase<Derived> &E) const {
       const auto [nonOp, Esol] = reduceStress(E);
-      return matImpl.template storedEnergyImpl(Esol);
+      return matImpl.storedEnergyImpl(Esol);
     }
 
     template <bool voigt, typename Derived>

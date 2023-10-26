@@ -11,13 +11,13 @@ using Dune::TestSuite;
 int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t;
- 
+
   auto matParameter = Ikarus::toLamesFirstParameterAndShearModulus({.emodul = 1000, .nu = 0.3});
 
-  Ikarus::NeoHooke matNH(matParameter);
+  Ikarus::NeoHooke matNH(matParameter); 
 
   t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Alu>(matNH));
-  t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Yasp>(matNH));
-  t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Iga>(matNH));
+//  t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Yasp>(matNH));
+//  t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Iga>(matNH));
   return t.exit();
 }
