@@ -120,7 +120,7 @@ struct StandardArcLength {
     template <typename NonLinearOperator>
     void initialPrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
       auto linearSolver
-          = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);  // for the linear predictor step
+          = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);  // for the linear predictor step
 
       nonLinearOperator.lastParameter() = 1.0;  // lambda =1.0
 

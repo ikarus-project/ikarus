@@ -6,18 +6,15 @@
 #include <type_traits>
 #include <variant>
 
-#include <Eigen/CholmodSupport>
-#include <Eigen/Dense>
-#include <Eigen/IterativeLinearSolvers>
-#include <Eigen/Sparse>
-#include <Eigen/SparseLU>
-#include <Eigen/SparseQR>
-#include <Eigen/UmfPackSupport>
-// #include <Eigen/SuperLUSupport>
+#include <dune/common/exceptions.hh>
+
+#include <Eigen/Core>
+#include <Eigen/SparseCore>
 
 namespace Ikarus {
 
   enum class SolverTypeTag {
+    none,
     si_ConjugateGradient,
     si_LeastSquaresConjugateGradient,
     si_BiCGSTAB,
@@ -42,82 +39,21 @@ namespace Ikarus {
 
   /** \brief A type-erased solver templated with the scalar type of the linear system */
   template <typename ScalarType = double>
-  class ILinearSolver {
+  class LinearSolverTemplate {
   public:
     using SparseMatrixType = Eigen::SparseMatrix<ScalarType>;
     using DenseMatrixType  = Eigen::MatrixX<ScalarType>;
-    explicit ILinearSolver(const SolverTypeTag& solverTypeTag) {
-      using namespace Eigen;
-      switch (solverTypeTag) {
-        case SolverTypeTag::si_ConjugateGradient:
-          solverimpl = std::make_unique<SolverImpl<ConjugateGradient<SparseMatrixType, Lower | Upper>>>();
-          break;
-        case SolverTypeTag::si_LeastSquaresConjugateGradient:
-          solverimpl = std::make_unique<SolverImpl<LeastSquaresConjugateGradient<SparseMatrixType>>>();
-          break;
-        case SolverTypeTag::si_BiCGSTAB:
-          solverimpl = std::make_unique<SolverImpl<BiCGSTAB<SparseMatrixType>>>();
-          break;
-        case SolverTypeTag::sd_SimplicialLLT:
-          solverimpl = std::make_unique<SolverImpl<SimplicialLLT<SparseMatrixType>>>();
-          break;
-        case SolverTypeTag::sd_SimplicialLDLT:
-          solverimpl = std::make_unique<SolverImpl<SimplicialLDLT<SparseMatrixType>>>();
-          break;
-        case SolverTypeTag::sd_SparseLU:
-          solverimpl = std::make_unique<SolverImpl<SparseLU<SparseMatrixType>>>();
-          break;
-        case SolverTypeTag::sd_SparseQR:
-          solverimpl = std::make_unique<SolverImpl<SparseQR<SparseMatrixType, COLAMDOrdering<int>>>>();
-          break;
-        case SolverTypeTag::sd_CholmodSupernodalLLT:
-          solverimpl = std::make_unique<SolverImpl<CholmodSupernodalLLT<SparseMatrixType>>>();
-          break;
-        case SolverTypeTag::sd_UmfPackLU:
-          solverimpl = std::make_unique<SolverImpl<UmfPackLU<SparseMatrixType>>>();
-          break;
-        case SolverTypeTag::sd_SuperLU:
-          DUNE_THROW(Dune::NotImplemented, "Not implemented yet.");
-          break;
-          // Dense Solver
-        case SolverTypeTag::d_PartialPivLU:
-          solverimpl = std::make_unique<SolverImpl<PartialPivLU<DenseMatrixType>>>();
-          break;
-        case SolverTypeTag::d_FullPivLU:
-          solverimpl = std::make_unique<SolverImpl<FullPivLU<DenseMatrixType>>>();
-          break;
-        case SolverTypeTag::d_HouseholderQR:
-          solverimpl = std::make_unique<SolverImpl<HouseholderQR<DenseMatrixType>>>();
-          break;
-        case SolverTypeTag::d_ColPivHouseholderQR:
-          solverimpl = std::make_unique<SolverImpl<ColPivHouseholderQR<DenseMatrixType>>>();
-          break;
-        case SolverTypeTag::d_FullPivHouseholderQR:
-          solverimpl = std::make_unique<SolverImpl<FullPivHouseholderQR<DenseMatrixType>>>();
-          break;
-        case SolverTypeTag::d_CompleteOrthogonalDecomposition:
-          solverimpl = std::make_unique<SolverImpl<CompleteOrthogonalDecomposition<DenseMatrixType>>>();
-          break;
-        case SolverTypeTag::d_LLT:
-          solverimpl = std::make_unique<SolverImpl<LLT<DenseMatrixType>>>();
-          break;
-        case SolverTypeTag::d_LDLT:
-          solverimpl = std::make_unique<SolverImpl<LDLT<DenseMatrixType>>>();
-          break;
-        default:
-          DUNE_THROW(Dune::NotImplemented, "Your requested solver does not work with this interface class");
-      }
-    }
+    explicit LinearSolverTemplate(const SolverTypeTag& p_solverTypeTag);
 
-    ~ILinearSolver()       = default;
-    ILinearSolver& operator=(const ILinearSolver& other) {
-      ILinearSolver tmp(other);
-      std::swap(solverimpl, tmp.solverimpl);
+    ~LinearSolverTemplate()       = default;
+    LinearSolverTemplate& operator=(const LinearSolverTemplate& other) {
+      LinearSolverTemplate tmp(other);
       return *this;
     }
 
-    ILinearSolver(ILinearSolver&&) noexcept = default;
-    ILinearSolver& operator=(ILinearSolver&&) noexcept = default;
+    LinearSolverTemplate(const LinearSolverTemplate& rhs) { *this = LinearSolverTemplate(rhs.solverTypeTag); }
+    LinearSolverTemplate(LinearSolverTemplate&&) noexcept = default;
+    LinearSolverTemplate& operator=(LinearSolverTemplate&&) noexcept = default;
 
   private:
     struct SolverBase {
@@ -186,11 +122,12 @@ namespace Ikarus {
     };
 
     std::unique_ptr<SolverBase> solverimpl;
+    SolverTypeTag solverTypeTag{SolverTypeTag::none};
 
   public:
     template <typename MatrixType>
     requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
-    inline ILinearSolver& compute(const MatrixType& A) {
+    inline LinearSolverTemplate& compute(const MatrixType& A) {
       solverimpl->compute(A);
       return *this;
     }
@@ -208,4 +145,5 @@ namespace Ikarus {
     void solve(Eigen::MatrixX<ScalarType>& x, const Eigen::MatrixX<ScalarType>& b) { solverimpl->solve(x, b); }
   };
 
+  typedef LinearSolverTemplate<double> LinearSolver;
 }  // namespace Ikarus
