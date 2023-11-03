@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include <utility>
 #include <type_traits>
+#include <utility>
 
 #include <dune/vtk/vtkwriter.hh>
 
@@ -42,14 +42,13 @@ namespace Ikarus {
       return evaluateStressComponent(index, local, comp);
     }
 
-    [[nodiscard]] constexpr int ncomps() const override {
+    [[nodiscard]] int ncomps() const override {
       if constexpr (std::is_same_v<UserFunction, Impl::DefaultUserFunction>) {
         Dune::FieldVector<ctype, griddim> val(0.0);
 
         fes_->at(0).calculateAt(resultRequirements_, val, resultTypeMap);
-        if (not std::is_constant_evaluated())
-          if (resultRequirements_.getRequestedResult() != resultTypeMap.getSingleResult().first)
-            DUNE_THROW(Dune::InvalidStateException, "The return result should be the requested one");
+        if (resultRequirements_.getRequestedResult() != resultTypeMap.getSingleResult().first)
+          DUNE_THROW(Dune::InvalidStateException, "The return result should be the requested one");
 
         auto sigma = resultTypeMap.getSingleResult().second;
 

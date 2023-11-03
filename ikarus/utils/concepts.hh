@@ -7,7 +7,7 @@
 #include <concepts>
 #include <type_traits>
 #include <utility>
-#include <vector> 
+#include <vector>
 
 #include <dune/functions/functionspacebases/basistags.hh>
 
