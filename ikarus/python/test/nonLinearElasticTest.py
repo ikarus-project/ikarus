@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
     boundaryPatch = iks.utils.boundaryPatch(grid, neumannVertices)
 
-    svk = iks.StVenantKirchhoff(emodul=1000, nu=0.3)
+    svk = iks.materials.StVenantKirchhoff(E=1000, nu=0.3)
 
     psNH = svk.asPlaneStress()
     fes = []

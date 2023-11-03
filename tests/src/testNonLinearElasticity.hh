@@ -145,7 +145,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
 
   std::cout << std::setprecision(20) << nonLinOp.value() << std::endl;
   std::cout << "Maxdisp: " << maxDisp << std::endl;
-  if constexpr (std::is_same_v<Material, Ikarus::StVenantKirchhoff<>>) {
+  if constexpr (std::is_same_v<Material, Ikarus::StVenantKirchhoff>) {
     t.check(Dune::FloatCmp::eq(energyExpected, nonLinOp.value()), "energyExpected == nonLinOp.value()")
         << "energyExpected: " << energyExpected << "\nnonLinOp.value(): " << nonLinOp.value();
 
@@ -162,7 +162,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
                                                                   << maxDisp;
   }
 
-  Dune::VtkWriter<GridView> vtkWriter2(gridView);
+  Dune::Vtk::VtkWriter<GridView> vtkWriter2(gridView);
   auto resReq = Ikarus::ResultRequirements()
                     .insertGlobalSolution(Ikarus::FESolutions::displacement, d)
                     .insertParameter(Ikarus::FEParameter::loadfactor, lambda)

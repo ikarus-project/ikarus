@@ -3,21 +3,15 @@
 
 #pragma once
 
+#include <ikarus/finiteElements/mechanics/materials/interface.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
-
 namespace Ikarus {
 
   namespace Impl {
     struct StressIndexPair {
       size_t row;
       size_t col;
-    };
-
-    template <size_t size>
-    struct StressIndexPairs {
-      std::array<size_t, size> rows;
-      std::array<size_t, size> cols;
     };
 
     template <size_t size>
@@ -54,14 +48,17 @@ namespace Ikarus {
     explicit VanishingStress(MaterialImpl mat, typename MaterialImpl::ScalarType p_tol = 1e-12)
         : matImpl{mat}, tol{p_tol} {}
 
+    using Underlying = MaterialImpl;
+
     static constexpr auto fixedPairs                    = stressIndexPair;
     static constexpr auto freeVoigtIndices              = createfreeVoigtIndices(fixedPairs);
     static constexpr auto fixedVoigtIndices             = createFixedVoigtIndices(fixedPairs);
     static constexpr auto fixedDiagonalVoigtIndicesSize = countDiagonalIndices(fixedPairs);
+    static constexpr auto freeStrains                   = freeVoigtIndices.size();
     using ScalarType                                    = typename MaterialImpl::ScalarType;
     // https://godbolt.org/z/hcs7j5rq7
 
-    [[nodiscard]] std::string nameImpl() const noexcept {
+    [[nodiscard]] constexpr std::string nameImpl() const noexcept {
       auto matName = matImpl.name() + "_Vanishing(";
       for (auto p : fixedPairs)
         matName += "(" + std::to_string(p.row) + std::to_string(p.col) + ")";
@@ -81,7 +78,7 @@ namespace Ikarus {
     template <typename Derived>
     ScalarType storedEnergyImpl(const Eigen::MatrixBase<Derived> &E) const {
       const auto [nonOp, Esol] = reduceStress(E);
-      return matImpl.template storedEnergyImpl(Esol);
+      return matImpl.storedEnergyImpl(Esol);
     }
 
     template <bool voigt, typename Derived>
@@ -155,7 +152,7 @@ namespace Ikarus {
       auto Er    = E(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices).eval().template cast<ScalarType>();
       auto nonOp = Ikarus::NonLinearOperator(functions(f, df), parameter(Er));
       auto nr    = Ikarus::makeNewtonRaphson(
-             nonOp, [](auto &r, auto &A) { return (A.inverse() * r).eval(); },
+             nonOp, [&](auto &r, auto &A) { return (A.inverse() * r).eval(); },
              [&](auto &Ex33, auto &Ecomps) {
             for (int ri = 0; auto i : fixedDiagonalVoigtIndices) {
               auto indexPair = fromVoigt(i);
@@ -180,4 +177,19 @@ namespace Ikarus {
     return VanishingStress<std::to_array({stressIndexPair...}), MaterialImpl>(mat, p_tol);
   }
 
+  template <typename MaterialImpl>
+  auto planeStress(const MaterialImpl &mat, typename MaterialImpl::ScalarType p_tol = 1e-8) {
+    return makeVanishingStress<Impl::StressIndexPair{2, 1}, Impl::StressIndexPair{2, 0}, Impl::StressIndexPair{2, 2}>(
+        mat, p_tol);
+  }
+
+  template <typename MaterialImpl>
+  auto shellMaterial(const MaterialImpl &mat, typename MaterialImpl::ScalarType p_tol = 1e-8) {
+    return makeVanishingStress<Impl::StressIndexPair{2, 2}>(mat, p_tol);
+  }
+
+  template <typename MaterialImpl>
+  auto beamMaterial(const MaterialImpl &mat, typename MaterialImpl::ScalarType p_tol = 1e-8) {
+    return makeVanishingStress<Impl::StressIndexPair{1, 1}, Impl::StressIndexPair{2, 2}>(mat, p_tol);
+  }
 }  // namespace Ikarus

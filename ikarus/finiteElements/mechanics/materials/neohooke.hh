@@ -3,16 +3,18 @@
 
 #pragma once
 
+#include <ikarus/finiteElements/mechanics/materials/interface.hh>
 #include <ikarus/utils/tensorUtils.hh>
+
 namespace Ikarus {
 
   // see Javier Bonet, Richard D. Wood - Nonlinear Continuum Mechanics for Finite Element Analysis, 2nd Edition (2008)
   // Section 6.4.3
   template <typename ScalarType_ = double>
-  struct NeoHooke : public Material<NeoHooke<ScalarType_>> {
-    std::string nameImpl() const noexcept { return "NeoHooke"; }
+  struct NeoHookeT : public Material<NeoHookeT<ScalarType_>> {
+    [[nodiscard]] constexpr std::string nameImpl() const noexcept { return "NeoHooke"; }
 
-    explicit NeoHooke(const LamesFirstParameterAndShearModulus& mpt) : lambdaAndmu{mpt} {}
+    explicit NeoHookeT(const LamesFirstParameterAndShearModulus& mpt) : lambdaAndmu{mpt} {}
     using ScalarType                    = ScalarType_;
     static constexpr int worldDimension = 3;
     using StrainMatrix                  = Eigen::Matrix<ScalarType, worldDimension, worldDimension>;
@@ -81,9 +83,11 @@ namespace Ikarus {
 
     template <typename ScalarTypeOther>
     auto rebind() const {
-      return NeoHooke<ScalarTypeOther>(lambdaAndmu);
+      return NeoHookeT<ScalarTypeOther>(lambdaAndmu);
     }
 
     LamesFirstParameterAndShearModulus lambdaAndmu;
   };
+  typedef NeoHookeT<double> NeoHooke;
+
 }  // namespace Ikarus

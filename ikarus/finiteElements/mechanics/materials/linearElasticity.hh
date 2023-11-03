@@ -5,16 +5,17 @@
 
 #include "svk.hh"
 
+#include <ikarus/finiteElements/mechanics/materials/interface.hh>
 #include <ikarus/utils/tensorUtils.hh>
 namespace Ikarus {
   template <typename ScalarType_ = double>
-  struct LinearElasticity : public Material<LinearElasticity<ScalarType_>> {
-    [[nodiscard]] std::string nameImpl() const noexcept { return "LinearElasticity"; }
+  struct LinearElasticityT : public Material<LinearElasticityT<ScalarType_>> {
+    [[nodiscard]] constexpr std::string nameImpl() const noexcept { return "LinearElasticity"; }
 
     using ScalarType = ScalarType_;
-    using Base       = StVenantKirchhoff<ScalarType>;
+    using Base       = StVenantKirchhoffT<ScalarType>;
 
-    explicit LinearElasticity(const LamesFirstParameterAndShearModulus& mpt) : svk{mpt} {}
+    explicit LinearElasticityT(const LamesFirstParameterAndShearModulus& mpt) : svk{mpt} {}
     using field_type                    = ScalarType;
     static constexpr int worldDimension = 3;
     using StrainMatrix                  = Eigen::Matrix<ScalarType, worldDimension, worldDimension>;
@@ -51,11 +52,13 @@ namespace Ikarus {
 
     template <typename ScalarTypeOther>
     auto rebind() const {
-      LinearElasticity<ScalarTypeOther> leRebound;
+      LinearElasticityT<ScalarTypeOther> leRebound;
       leRebound.svk = svk.template rebind<ScalarTypeOther>();
       return leRebound;
     }
 
-    StVenantKirchhoff<ScalarType> svk;
+    StVenantKirchhoffT<ScalarType> svk;
   };
+
+  typedef LinearElasticityT<double> LinearElasticity;
 }  // namespace Ikarus

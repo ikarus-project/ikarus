@@ -17,4 +17,3 @@ except ImportError:
 from ._ikarus import *
 from .dirichletValues import dirichletValues
 from .basis import basis
-from .materials import *
