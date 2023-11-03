@@ -27,7 +27,7 @@ SPDX-License-Identifier: CC-BY-SA-4.0
   is the blue box.
   ![servicesDocker.png](../auxiliaryImages/builddocumentationlocally/servicesDocker.png)
 - Click on the container with the blue box and navigate to `Port Bindings`.
-- Add a new port by clicking on `+`, activate `Host port` under `Modify options` and enter 
+- Add a new port by clicking on `+`, activate `Host port` under `Modify options` and enter
   `8000` in both fields (see image below). Confirm with `OK`.
   ![portBindings.png](../auxiliaryImages/builddocumentationlocally/portBindings.png)
 - Click on `Save` in the lower right corner. This will restart the container. Messages will appear 
