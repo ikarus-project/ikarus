@@ -25,7 +25,7 @@ jobs:
     name: ${{ matrix.config.name }}
     runs-on: ubuntu-latest
     container:
-      image: ikarusproject/ikarus-dev:latest # this does not work for the python binding tests since the dune base bindings are configured with gcc and here ikarus her executed with clang, we may use ikarus-dev-clang later here
+      image: ikarusproject/ikarus-dev-${{ matrix.config.compiler }}:latest
       options: --memory-swap="20g" --memory="20g" --cpus="2" --user root
     strategy:
       fail-fast: false
@@ -34,6 +34,7 @@ jobs:
           - {
             name: "Clang-Debug",
             config: Debug,
+            compiler: clang,
             compilerC: clang-16,
             compilerCxx: clang++-16,
             lib: "-stdlib=libc++",
@@ -42,6 +43,7 @@ jobs:
           - {
             name: "Clang-Release",
             config: Release,
+            compiler: clang,
             compilerC: clang-16,
             compilerCxx: clang++-16,
             lib: "-stdlib=libc++",
@@ -50,6 +52,7 @@ jobs:
           - {
             name: "GCC-Debug",
             config: Debug,
+            compiler: gcc,
             compilerC: gcc-12,
             compilerCxx: g++-12,
             lib: "",
@@ -58,6 +61,7 @@ jobs:
           - {
             name: "GCC-Release",
             config: Release,
+            compiler: gcc,
             compilerC: gcc-12,
             compilerCxx: g++-12,
             lib: "",
@@ -66,8 +70,18 @@ jobs:
           - {
             name: "GCC-Release-Python",
             config: Release,
+            compiler: gcc,
             compilerC: gcc-12,
             compilerCxx: g++-12,
+            lib: "",
+            testRegex: "python"
+          }
+          - {
+            name: "Clang-Release-Python",
+            config: Release,
+            compiler: clang,
+            compilerC: clang-16,
+            compilerCxx: clang++-16,
             lib: "",
             testRegex: "python"
           }
