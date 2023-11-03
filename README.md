@@ -39,4 +39,4 @@ If you use Ikarus, please cite the dataset by clicking on the doi badge above an
 ## Contributors
 
 <img align="left" src="https://user-images.githubusercontent.com/10537464/205657284-f6ace981-42a8-49f1-9c66-4c464f15ce4a.png" width="128">
-<p></br></br><a href="https://www.ibb.uni-stuttgart.de/">Institute for Structural Mechanics</a></p>
+<p></br></br><a href="https://www.ibb.uni-stuttgart.de/">Institute for Structural Mechanics</a> of the <a href="https://www.uni-stuttgart.de/">University of Stuttgart</a></p>
