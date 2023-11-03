@@ -13,6 +13,14 @@ on:
       - '**.md'
   release:
     types: [published ]
+  workflow_dispatch:
+    inputs:
+      releaseTag:
+        description: 'Release version'
+        required: true
+
+env:
+  NEWVERSION: ${{ github.event.inputs.releaseTag }}
 
 jobs:
   build-n-publish:
@@ -32,7 +40,11 @@ jobs:
         run: /dune/dune-common/build-cmake/run-in-dune-env python .github/workflows/scripts/release.py dev
       - name: Create release version
         if: ${{ github.event_name == 'release' }}
-        run: /dune/dune-common/build-cmake/run-in-dune-env python .github/workflows/scripts/release.py
+        run: /dune/dune-common/build-cmake/run-in-dune-env python .github/workflows/scripts/release.py ${{ github.event.release.tag_name }}
+
+      - name: Create version from workflow dispatch
+        if: ${{ github.event_name == 'release' }}
+        run: /dune/dune-common/build-cmake/run-in-dune-env python .github/workflows/scripts/release.py $NEWVERSION
 
       - name: Create tarball
         run: |

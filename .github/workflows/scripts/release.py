@@ -59,7 +59,7 @@ def changeLine(filename: str, old_string: str, new_string: str):
 def update_all_versions(version_override=None):
     """Update all version numbers in local files"""
     old_version_number = read_old_version()
-    if version_override is None or version_override == "dev":
+    if version_override == "dev":
         new_version_number = bump_patch_number(old_version_number)
     elif version_override is None:
         new_version_number = old_version_number
@@ -94,6 +94,7 @@ import sys
 if __name__ == "__main__":
     try:
         var = sys.argv[1]
+        var = var.removeprefix("v")
         update_all_versions(var)
     except IndexError:
         update_all_versions()
