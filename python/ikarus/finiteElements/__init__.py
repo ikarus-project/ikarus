@@ -52,9 +52,9 @@ def elementConstructorDecoratorFactory(
             includes += basis._includes
             # includes += material._includes
             includes += element._includes
-            moduleName = func.__name__ + "_" + hashIt(element_type)
+            module_name = func.__name__ + "_" + hashIt(element_type)
             module = generator.load(
-                includes=includes, typeName=element_type, moduleName=moduleName
+                includes=includes, typeName=element_type, moduleName=module_name
             )
             # https://pybind11.readthedocs.io/en/stable/advanced/functions.html#allow-prohibiting-none-arguments
             if volumeLoad is None:

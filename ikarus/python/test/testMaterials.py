@@ -61,18 +61,7 @@ def checkMaterial(mat, strain, nonlinear=True, size=6):
         pass
 
 
-def checkPlaneStressReducedFullEquality(material, strainName, strain):
-    strainFull = np.array(
-        [
-            strain[0],
-            strain[1],
-            0 if strainName == "linear" or strainName == "greenLagrangian" else 1,
-            0,
-            0,
-            strain[2],
-        ]
-    )
-
+def compareMaterialFromFullAndReduced(material, strainName, strainFull):
     e1 = material.storedEnergy(strainName, strainFull)
     e2 = material.storedEnergy(strainName, strain)
 
@@ -85,6 +74,21 @@ def checkPlaneStressReducedFullEquality(material, strainName, strain):
     C1 = material.tangentModuli(strainName, strainFull)
     C2 = material.tangentModuli(strainName, strain)
     assert np.allclose(C1, C2)
+
+
+def checkPlaneStressReducedFullEquality(material, strainName, strain):
+    strainFull = np.array(
+        [
+            strain[0],
+            strain[1],
+            0 if strainName == "linear" or strainName == "greenLagrangian" else 1,
+            0,
+            0,
+            strain[2],
+        ]
+    )
+
+    compareMaterialFromFullAndReduced(material, strainName, strainFull)
 
 
 def checkShellStressReducedFullEquality(material, strainName, strain):
@@ -99,18 +103,7 @@ def checkShellStressReducedFullEquality(material, strainName, strain):
         ]
     )
 
-    e1 = material.storedEnergy(strainName, strainFull)
-    e2 = material.storedEnergy(strainName, strain)
-
-    assert math.isclose(e1, e2)
-
-    s1 = material.stresses(strainName, strainFull)
-    s2 = material.stresses(strainName, strain)
-    assert np.allclose(s1, s2)
-
-    C1 = material.tangentModuli(strainName, strainFull)
-    C2 = material.tangentModuli(strainName, strain)
-    assert np.allclose(C1, C2)
+    compareMaterialFromFullAndReduced(material, strainName, strainFull)
 
 
 def checkBeamStressReducedFullEquality(material, strainName, strain):
@@ -125,18 +118,7 @@ def checkBeamStressReducedFullEquality(material, strainName, strain):
         ]
     )
 
-    e1 = material.storedEnergy(strainName, strainFull)
-    e2 = material.storedEnergy(strainName, strain)
-
-    assert math.isclose(e1, e2)
-
-    s1 = material.stresses(strainName, strainFull)
-    s2 = material.stresses(strainName, strain)
-    assert np.allclose(s1, s2)
-
-    C1 = material.tangentModuli(strainName, strainFull)
-    C2 = material.tangentModuli(strainName, strain)
-    assert np.allclose(C1, C2)
+    compareMaterialFromFullAndReduced(material, strainName, strainFull)
 
 
 def checkWithStrain(strain):
