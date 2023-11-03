@@ -2,7 +2,10 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 import setpath
-
+import os
+os.environ["DUNE_CMAKE_FLAGS"]="-DCMAKE_CXX_COMPILER=clang++-16 -DCMAKE_C_COMPILER=clang-16"
+from dune.common import FieldVector
+v= FieldVector((3,12,3))
 setpath.set_path()
 import ikarus as iks
 import numpy as np
