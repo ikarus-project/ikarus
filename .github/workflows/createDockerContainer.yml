@@ -22,7 +22,10 @@
            path: 'repo'
        - name: Build the Docker image
          working-directory: ./repo/InstalledContainer
-         run: docker build . --file Dockerfile --tag ikarusproject/ikarus:latest
+         run: | 
+           docker build . --file Dockerfile --tag ikarusproject/ikarus-gcc:latest --build-arg compiler="gcc" --build-arg ccompiler="gcc-12" --build-arg cppcompiler="g++-12"
+           docker build . --file Dockerfile --tag ikarusproject/ikarus-clang:latest --build-arg compiler="clang" --build-arg ccompiler="clang-16" --build-arg cppcompiler="clang++-16"
+           docker tag ikarusproject/ikarus-gcc:latest ikarusproject/ikarus:latest
        - name: Docker Login
          uses: azure/docker-login@v1
          with:
@@ -30,4 +33,7 @@
            password: ${{ secrets.DOCKER_PASSWORD }}
        - name: Publish the Docker image
          working-directory: ./repo/InstalledContainer
-         run: docker push ikarusproject/ikarus:latest
+         run: |
+           docker push ikarusproject/ikarus-gcc:latest      
+           docker push ikarusproject/ikarus-clang:latest          
+           docker push ikarusproject/ikarus:latest 
