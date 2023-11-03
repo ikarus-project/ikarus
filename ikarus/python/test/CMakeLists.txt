@@ -24,6 +24,18 @@ dune_python_add_test(
   LABELS
   python
 )
+
+dune_python_add_test(
+  NAME
+  pymaterial
+  SCRIPT
+  testMaterials.py
+  WORKING_DIRECTORY
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  LABELS
+  python
+)
+
 if(HAVE_DUNE_IGA)
   dune_python_add_test(
     NAME

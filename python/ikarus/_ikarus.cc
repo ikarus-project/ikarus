@@ -112,5 +112,14 @@ PYBIND11_MODULE(_ikarus, m) {
 
   lv.def("getParameter", [](const FEreq& self, FEParameter parType) { return self.getParameter(std::move(parType)); });
 
-  //  MAKE_MATERIAL_CLASS_IN_MODULE(StVenantKirchhoff,double);
+  auto materials = m.def_submodule("materials", "This is the submodule for materials in Ikarus");
+
+  pybind11::class_<LinearElasticity> linElastic(materials, "LinearElasticity");
+  Ikarus::Python::registerLinearElasticity(materials, linElastic);
+
+  pybind11::class_<StVenantKirchhoff> svk(materials, "StVenantKirchhoff");
+  Ikarus::Python::registerStVenantKirchhoff(materials, svk);
+
+  pybind11::class_<NeoHooke> nh(materials, "NeoHooke");
+  Ikarus::Python::registerNeoHooke(materials, nh);
 }

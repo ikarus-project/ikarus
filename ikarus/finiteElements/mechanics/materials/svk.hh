@@ -3,13 +3,15 @@
 
 #pragma once
 
+#include <ikarus/finiteElements/mechanics/materials/interface.hh>
 #include <ikarus/utils/tensorUtils.hh>
+
 namespace Ikarus {
   template <typename ScalarType_ = double>
-  struct StVenantKirchhoff : public Material<StVenantKirchhoff<ScalarType_>> {
-    std::string nameImpl() const { return "StVenantKirchhoff"; }
+  struct StVenantKirchhoffT : public Material<StVenantKirchhoffT<ScalarType_>> {
+    [[nodiscard]] constexpr std::string nameImpl() const { return "StVenantKirchhoff"; }
 
-    explicit StVenantKirchhoff(const LamesFirstParameterAndShearModulus& mpt) : materialParameter{mpt} {}
+    explicit StVenantKirchhoffT(const LamesFirstParameterAndShearModulus& mpt) : materialParameter{mpt} {}
     using ScalarType                    = ScalarType_;
     static constexpr int worldDimension = 3;
     using StrainMatrix                  = Eigen::Matrix<ScalarType, worldDimension, worldDimension>;
@@ -110,4 +112,7 @@ namespace Ikarus {
 
     LamesFirstParameterAndShearModulus materialParameter;
   };
+
+  typedef StVenantKirchhoffT<double> StVenantKirchhoff;
+
 }  // namespace Ikarus

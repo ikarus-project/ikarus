@@ -5,8 +5,6 @@
 
 #include "testHelpers.hh"
 
-#include <vector>
-
 #include <dune/common/test/testsuite.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
@@ -15,11 +13,11 @@
 #include <dune/grid/yaspgrid.hh>
 
 using Dune::TestSuite;
-#include <Eigen/Core>
 
 #include <ikarus/assembler/simpleAssemblers.hh>
+#include <ikarus/finiteElements/mechanics/materials.hh>
+#include <ikarus/finiteElements/mechanics/materials/svk.hh>
 #include <ikarus/finiteElements/mechanics/nonLinearElastic.hh>
-#include <ikarus/linearAlgebra/dirichletValues.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/init.hh>
 

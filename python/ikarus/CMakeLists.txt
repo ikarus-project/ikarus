@@ -5,7 +5,7 @@ add_subdirectory(assembler)
 add_subdirectory(finiteElements)
 add_subdirectory(utils)
 
-add_python_targets(ikarus __init__ dirichletValues materials basis generator)
+add_python_targets(ikarus __init__ dirichletValues basis generator)
 
 dune_add_pybind11_module(NAME _ikarus)
 set_property(
