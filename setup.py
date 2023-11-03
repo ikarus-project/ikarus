@@ -17,7 +17,7 @@ from skbuild import setup
 # /dune/dune-common/build-cmake/run-in-dune-env python setup.py sdist
 # /dune/dune-common/build-cmake/run-in-dune-env python -m twine upload dist/* --verbose
 
-ikarusVersion = "0.3.2"
+ikarusVersion = "0.3.6"
 duneVersion = "2.9.0"
 
 metadata = metaData(duneVersion)[1]
