@@ -83,8 +83,20 @@ jobs:
           docker pull ikarusproject/ikarus-dev:latest
           docker tag ikarusproject/ikarus-dev:latest ikarusproject/ikarus-dev:v$NEWVERSION
           
+          docker pull ikarusproject/ikarus-dev-gcc:latest
+          docker tag ikarusproject/ikarus-dev-gcc:latest ikarusproject/ikarus-dev-gcc:v$NEWVERSION
+          
+          docker pull ikarusproject/ikarus-dev-clang:latest
+          docker tag ikarusproject/ikarus-dev-clang:latest ikarusproject/ikarus-dev-clang:v$NEWVERSION
+          
           docker pull ikarusproject/ikarus:latest
           docker tag ikarusproject/ikarus:latest ikarusproject/ikarus:v$NEWVERSION
+          
+          docker pull ikarusproject/ikarus-gcc:latest
+          docker tag ikarusproject/ikarus-gcc:latest ikarusproject/ikarus-gcc:v$NEWVERSION
+          
+          docker pull ikarusproject/ikarus-clang:latest
+          docker tag ikarusproject/ikarus-clang:latest ikarusproject/ikarus-clang:v$NEWVERSION
         
           docker save ikarusproject/ikarus-dev:v$NEWVERSION > ikarus-dev-docker-v$NEWVERSION.tar
           docker save ikarusproject/ikarus:v$NEWVERSION     > ikarus-docker-v$NEWVERSION.tar
@@ -112,7 +124,11 @@ jobs:
           git push https://${{ secrets.ORGANIZATION_TOKEN }}@github.com/ikarus-project/ikarus-examples.git v$NEWVERSION
           cd .. 
           docker push ikarusproject/ikarus-dev:v$NEWVERSION  
+          docker push ikarusproject/ikarus-dev-gcc:v$NEWVERSION  
+          docker push ikarusproject/ikarus-dev-clang:v$NEWVERSION  
           docker push ikarusproject/ikarus:v$NEWVERSION
+          docker push ikarusproject/ikarus-gcc:v$NEWVERSION
+          docker push ikarusproject/ikarus-clang:v$NEWVERSION
           cd repo
           git push origin v$NEWVERSION
           git push origin main
