@@ -6,7 +6,10 @@
 #include <ranges>
 #include <unsupported/Eigen/CXX11/Tensor>
 
+#include <dune/common/promotiontraits.hh>
+
 #include <ikarus/utils/concepts.hh>
+#include <ikarus/utils/math.hh>
 namespace Ikarus {
 
   template <typename Derived, typename T, auto rank>
@@ -105,8 +108,9 @@ namespace Ikarus {
     return mat;
   }
 
-  template <typename ST, int size>
-  requires(size > 0 and size <= 3) auto toVoigt(const Eigen::Matrix<ST, size, size>& E, bool isStrain = true) {
+  template <typename ST, int size, int _Options, int _MaxRows>
+  requires(size > 0 and size <= 3) auto toVoigt(const Eigen::Matrix<ST, size, size, _Options, _MaxRows, _MaxRows>& E,
+                                                bool isStrain = true) {
     Eigen::Vector<ST, (size * (size + 1)) / 2> EVoigt;
     EVoigt.template segment<size>(0) = E.diagonal();
 
@@ -139,7 +143,7 @@ namespace Ikarus {
   template <typename ST, int size>
   requires(size == 1 or size == 3 or size == 6) auto fromVoigt(const Eigen::Vector<ST, size>& EVoigt,
                                                                bool isStrain = true) {
-    constexpr int matrixSize = (-1 + sqrt(1 + 8 * size)) / 2;
+    constexpr int matrixSize = (-1 + Ikarus::ct_sqrt(1 + 8 * size)) / 2;
     Eigen::Matrix<ST, matrixSize, matrixSize> E;
     E.diagonal() = EVoigt.template segment<3>(0);
 

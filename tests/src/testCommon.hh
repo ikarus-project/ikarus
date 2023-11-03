@@ -235,7 +235,7 @@ template <typename NonLinearOperator, typename FiniteElement>
     auto resultRequirements2 = Ikarus::ResultRequirements<>()
                                    .insertGlobalSolution(Ikarus::FESolutions::displacement, displacement)
                                    .addResultRequest(ResultType::PK2Stress);
-    Dune::VtkWriter<GridView> vtkWriter(gridView);
+    Dune::Vtk::VtkWriter<GridView> vtkWriter(gridView);
     std::vector<FiniteElement> fes;
     fes.push_back(fe);
     auto resultFunction

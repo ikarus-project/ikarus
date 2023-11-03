@@ -2,10 +2,16 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
-#include <memory>
-#include <optional>
 
-#include <dune/common/float_cmp.hh>
+#include <math.h>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include <dune/common/exceptions.hh>
+
+#include <Eigen/Core>
 
 #include <ikarus/solver/linearSolver/linearSolver.hh>
 

@@ -1,17 +1,27 @@
 // SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
-#include <memory>
+#include <algorithm>
+#include <concepts>
+#include <cstddef>
+#include <functional>
 #include <type_traits>
+#include <utility>
+#include <vector>
 
 #include <dune/functions/backends/istlvectorbackend.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
 
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
+#include <Eigen/Core>
+
+#include <autodiff/forward/real/real.hpp>
 
 #include <ikarus/utils/concepts.hh>
-#include <ikarus/utils/traits.hh>
+
+namespace Dune {
+  template <class K, int N>
+  class FieldVector;
+}
 
 namespace Ikarus {
 

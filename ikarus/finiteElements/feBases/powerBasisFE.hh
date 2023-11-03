@@ -32,7 +32,7 @@ namespace Ikarus {
     using Traits                = FETraits<GridElementEntityType>;
 
     /** \brief Number of children in the powerBasis */
-    static constexpr int num_children = RootBasis::PreBasis::Node::CHILDREN;
+    static constexpr int num_children = RootBasis::PreBasis::Node::degree();
 
     [[nodiscard]] constexpr int size() const { return localView_.size(); }
 

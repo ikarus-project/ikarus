@@ -4,10 +4,23 @@
 #pragma once
 #include "pathFollowingFunctions.hh"
 
+#include <concepts>
+#include <type_traits>
+#include <utility>
+#include <vector> 
+
 #include <dune/functions/functionspacebases/basistags.hh>
 
-#include <Eigen/Core>
+#include <ikarus/utils/traits.hh>
+
+namespace Eigen {
+  template <typename Derived>
+  struct EigenBase;
+}
+
 namespace Ikarus {
+  template <auto stressIndexPair, typename MaterialImpl>
+  struct VanishingStress;
 
   template <typename Derived>
   auto transpose(const Eigen::EigenBase<Derived>& A);
@@ -188,6 +201,25 @@ namespace Ikarus {
     MAKE_EIGEN_FIXED_MATRIX_OR_VOIGT_CONCEPT(1, 1);
     MAKE_EIGEN_FIXED_MATRIX_OR_VOIGT_CONCEPT(2, 3);
     MAKE_EIGEN_FIXED_MATRIX_OR_VOIGT_CONCEPT(3, 6);
+
+    template <template <typename...> class MaterialToCheck, typename Material>
+    consteval bool isMaterial() {
+      if constexpr (Std::isSpecialization<MaterialToCheck, Material>::value) return true;
+
+      if constexpr (Std::IsSpecializationNonTypeAndTypes<VanishingStress, Material>::value) {
+        if constexpr (Std::isSpecialization<MaterialToCheck, typename Material::Underlying>::value) {
+          //          static_assert(Std::isSpecialization<MaterialToCheck, typename Material::Underlying>::value);
+
+          return true;
+        } else {
+          return false;
+        }
+      } else
+        return false;
+    }
+
+    template <template <typename...> class MaterialToCheck, typename Material>
+    concept IsMaterial = isMaterial<MaterialToCheck, Material>();
 
   }  // namespace Concepts
 }  // namespace Ikarus

@@ -17,6 +17,7 @@ install(
         init.hh
         linearAlgebraHelper.hh
         makeEnum.hh
+        math.hh
         pathFollowingFunctions.hh
         polyfit.hh
         tensorUtils.hh

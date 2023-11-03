@@ -3,11 +3,17 @@
 
 #pragma once
 #include <Python.h>
+#include <cstddef>
+#include <memory>
+#include <utility>
 
 #include <dune/fufem/dunepython.hh>
-#include <dune/functions/functionspacebases/defaultglobalbasis.hh>
+#include <dune/functions/functionspacebases/basistags.hh>
 
 #include <autodiff/forward/real/real.hpp>
+
+#include <ikarus/utils/basis.hh>
+
 namespace Ikarus {
   template <typename... Args>
   auto makeSharedBasis(Args&&... args) {

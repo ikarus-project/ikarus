@@ -56,14 +56,33 @@ if(ADD_PYTHONFORMATTING)
   if(Python_FOUND)
     message("Adding python format command")
 
-    set(PYTHONFORMATTINGCOMAND python -m black .)
+    set(PYTHONFORMATTINGCOMAND
+        pip
+        install
+        black
+        &&
+        python
+        -m
+        black
+        .
+    )
     add_custom_target(
       fix-pythonformat
       COMMAND ${PYTHONFORMATTINGCOMAND}
       WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     )
 
-    set(PYTHONFORMATTINGCOMANDCHECK python -m black . --check)
+    set(PYTHONFORMATTINGCOMANDCHECK
+        pip
+        install
+        black
+        &&
+        python
+        -m
+        black
+        .
+        --check
+    )
     add_custom_target(
       check-pythonformat
       COMMAND ${PYTHONFORMATTINGCOMANDCHECK}

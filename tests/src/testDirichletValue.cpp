@@ -17,7 +17,7 @@
 #include <dune/grid/yaspgrid.hh>
 #include <dune/localfefunctions/eigenDuneTransformations.hh>
 
-#include <Eigen/Core>
+#include <autodiff/forward/real/eigen.hpp>
 
 #include <ikarus/linearAlgebra/dirichletValues.hh>
 #include <ikarus/utils/basis.hh>

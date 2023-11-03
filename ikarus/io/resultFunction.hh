@@ -4,6 +4,7 @@
 #pragma once
 
 #include <utility>
+#include <type_traits>
 
 #include <dune/vtk/vtkwriter.hh>
 
@@ -46,8 +47,9 @@ namespace Ikarus {
         Dune::FieldVector<ctype, griddim> val(0.0);
 
         fes_->at(0).calculateAt(resultRequirements_, val, resultTypeMap);
-        if (resultRequirements_.getRequestedResult() != resultTypeMap.getSingleResult().first)
-          DUNE_THROW(Dune::InvalidStateException, "The return result should be the requested one");
+        if (not std::is_constant_evaluated())
+          if (resultRequirements_.getRequestedResult() != resultTypeMap.getSingleResult().first)
+            DUNE_THROW(Dune::InvalidStateException, "The return result should be the requested one");
 
         auto sigma = resultTypeMap.getSingleResult().second;
 

@@ -50,6 +50,7 @@ if __name__ == "__main__":
 
     d2 = req.getGlobalSolution(iks.FESolutions.displacement)
 
+    # check that is really the same data address
     assert ("{}".format(hex(d2.__array_interface__["data"][0]))) == (
         "{}".format(hex(d.__array_interface__["data"][0]))
     )
