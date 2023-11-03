@@ -2,7 +2,11 @@
 # SPDX-License-Identifier: CC0-1.0
 
 name: codespell
-on: [push,pull_request]
+on:
+  push:
+  pull_request:
+    types: [ opened ]
+
 jobs:
   codespell:
     name: Check for spelling errors

@@ -12,6 +12,7 @@ on:
 
 
   pull_request:
+    types: [opened]
     branches:
       - main
     paths-ignore:
@@ -37,6 +38,14 @@ jobs:
             compilerCxx: g++-12,
             lib: ""
           }
+          - {
+            name: "Clang-Release",
+            config: Release,
+            compilerC: clang-16,
+            compilerCxx: clang++-16,
+            lib: "-stdlib=libc++",
+            testRegex: "cpp"
+          }
     steps:
       - uses: actions/checkout@v2
         with:
@@ -46,8 +55,8 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake ..
-          cmake --build . --target ikarus
+          cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.config.config }} -GNinja -DCMAKE_C_COMPILER=${{ matrix.config.compilerC }} -DCMAKE_CXX_COMPILER=${{ matrix.config.compilerCxx }}
+          cmake --build . --parallel 2 --target ikarus
           cmake --install .
           cd ../..
           rm -rf Ikarus
@@ -70,7 +79,7 @@ jobs:
         run: |
           mkdir cmake-build-${{ matrix.config.config }}
           cd cmake-build-${{ matrix.config.config }}
-          cmake ../  -DCMAKE_BUILD_TYPE=${{ matrix.config.config }} -G "Unix Makefiles" -DCMAKE_C_COMPILER=${{ matrix.config.compilerC }} -DCMAKE_CXX_COMPILER=${{ matrix.config.compilerCxx }}
+          cmake ../  -DCMAKE_BUILD_TYPE=${{ matrix.config.config }} -GNinja -DCMAKE_C_COMPILER=${{ matrix.config.compilerC }} -DCMAKE_CXX_COMPILER=${{ matrix.config.compilerCxx }}
           for i in $( find ../src -maxdepth 1 -name 'iks*'| sed -e 's/\(.cpp\)*$//g' | sed "s|../src/||" ); do cmake --build . --parallel 2 --target "$i"; done;
       - name: Run all examples
         working-directory: ./ikarus-examples/cmake-build-${{ matrix.config.config }}/src
