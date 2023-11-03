@@ -12,6 +12,7 @@ on:
       - 'docs/**'
       - '.github/workflows/ghpages.yml'
   pull_request:
+    types: [opened]
     branches:
       - master
       - main

@@ -11,6 +11,7 @@ on:
       - '**.md'
 
   pull_request:
+    types: [opened]
     branches:
       - main
     paths-ignore:
@@ -18,32 +19,34 @@ on:
       - '.github/workflows/ghpages.yml'
       - '.github/workflows/createDockerContainer.yml'
       - '**.md'
-      -
+
 jobs:
   Build:
     name: ${{ matrix.config.name }}
     runs-on: ubuntu-latest
     container:
-      image: ikarusproject/ikarus-dev:latest
+      image: ikarusproject/ikarus-dev:latest # this does not work for the python binding tests since the dune base bindings are configured with gcc and here ikarus her executed with clang, we may use ikarus-dev-clang later here
       options: --memory-swap="20g" --memory="20g" --cpus="2" --user root
     strategy:
       fail-fast: false
       matrix:
         config:
-#          - {
-#            name: "Clang-Debug",
-#            config: Debug,
-#            compilerC: clang-12,
-#            compilerCxx: clang++-12,
-#            lib: "-stdlib=libc++",
-#           }
-#          - {
-#            name: "Clang-Release",
-#            config: Release,
-#            compilerC: clang-12,
-#            compilerCxx: clang++-12,
-#            lib: "-stdlib=libc++",
-#           }
+          - {
+            name: "Clang-Debug",
+            config: Debug,
+            compilerC: clang-16,
+            compilerCxx: clang++-16,
+            lib: "-stdlib=libc++",
+            testRegex: "cpp"
+           }
+          - {
+            name: "Clang-Release",
+            config: Release,
+            compilerC: clang-16,
+            compilerCxx: clang++-16,
+            lib: "-stdlib=libc++",
+            testRegex: "cpp"
+           }
           - {
             name: "GCC-Debug",
             config: Debug,
@@ -77,7 +80,7 @@ jobs:
         run: |
           mkdir cmake-build-${{ matrix.config.config }}
           cd cmake-build-${{ matrix.config.config }}
-          cmake ../  -DCMAKE_BUILD_TYPE=${{ matrix.config.config }} -G "Unix Makefiles" -DCMAKE_C_COMPILER=${{ matrix.config.compilerC }} -DCMAKE_CXX_COMPILER=${{ matrix.config.compilerCxx }}
+          cmake ../  -DCMAKE_BUILD_TYPE=${{ matrix.config.config }} -GNinja -DCMAKE_C_COMPILER=${{ matrix.config.compilerC }} -DCMAKE_CXX_COMPILER=${{ matrix.config.compilerCxx }}
           cmake --build . --parallel 2 --target ikarus
           cmake --build . --parallel 2 --target _ikarus
           cmake --build . --parallel 2 --target build_${{ matrix.config.testRegex }}_tests

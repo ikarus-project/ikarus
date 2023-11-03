@@ -11,6 +11,7 @@ on:
       - '**.md'
 
   pull_request:
+    types: [opened]
     branches:
       - main
     paths-ignore:
@@ -22,7 +23,7 @@ env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
 jobs:
-  GCC-Debug-CodeCov:
+  Clang-Debug-CodeCov:
     runs-on: ubuntu-latest
     container:
       image: ikarusproject/ikarus-dev:latest
@@ -30,28 +31,24 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: test vars
-        run: |
-          echo $CI
-          echo $GITHUB_ACTIONS
       - name: Build
         run: |
-          mkdir cmake-build-debug
-          cd cmake-build-debug
-          cmake ../  -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" -DENABLE_TEST_COVERAGE=1
-          cmake --build . --parallel 2 --target ikarus
-          cmake --build . --parallel 2 --target _ikarus
-          cmake --build . --parallel 2 --target build_tests
+          mkdir $HOME/profiles/
+          mkdir cmake-build-debug-coverage
+          cd cmake-build-debug-coverage
+          cmake ../  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -GNinja -DENABLE_TEST_COVERAGE=1
+          cmake --build . --parallel 2 --target ikarus  
+          cmake --build . --parallel 2 --target build_cpp_tests 
 
       - name: Tests
-        working-directory: ./cmake-build-debug
+        working-directory: ./cmake-build-debug-coverage
         run: |
-          ctest --output-on-failure --parallel 2 -C Debug
+          ctest --output-on-failure --parallel 2 -C Debug -L cpp
           cd ..
-          gcov -abcfu $(find ./cmake-build-debug -not -path "*dune-env/*" -type f -name "*.gcno" | sed  's/gcno//g')
+          llvm-cov-16 gcov $(find ./cmake-build-debug-coverage -not -path "*dune-env/*" -type f -name "*.gcno" | sed  's/gcno//g') 
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: tests
