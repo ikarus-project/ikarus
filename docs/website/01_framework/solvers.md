@@ -57,7 +57,8 @@ void solve(Eigen::VectorX<ScalarType>&x, const Eigen::VectorX<ScalarType>& b); /
 
 !!! tip
     If your algorithm relies on special features or attributes of a linear solver, then the solver is to be directly used.
-    For example, if the `.determinant()` method of `Eigen::SimplicialLDLT` is required, it must be called directly because `LinearSolver`does not support it.
+    For example, if the `.determinant()` method of `Eigen::SimplicialLDLT` is required, it must be called directly because 
+    `LinearSolver`does not support it.
 
 ## Nonlinear solver
 
