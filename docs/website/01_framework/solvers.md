@@ -23,7 +23,7 @@ library are supported.
 Linear solvers can be constructed by calling the constructor:
 
 ```cpp
-ILinearSolver(const SolverTypeTag& solverTypeTag)
+LinearSolver(const SolverTypeTag& solverTypeTag)
 ```
 
 There exists an enum type `SolverTypeTag` with the following values:
@@ -46,7 +46,7 @@ Similar to Eigen's interface, the following functions are provided:
 ```cpp
 void analyzePattern(const MatrixType& A);  // (1)!
 void factorize(const MatrixType& A); // (2)!
-ILinearSolver& compute(const MatrixType& A); // (3)!
+LinearSolver& compute(const MatrixType& A); // (3)!
 void solve(Eigen::VectorX<ScalarType>&x, const Eigen::VectorX<ScalarType>& b); // (4)!
 ```
 
@@ -57,7 +57,7 @@ void solve(Eigen::VectorX<ScalarType>&x, const Eigen::VectorX<ScalarType>& b); /
 
 !!! tip
     If your algorithm relies on special features or attributes of a linear solver, then the solver is to be directly used.
-    For example, if the `.determinant()` method of `Eigen::SimplicialLDLT` is required, it must be called directly because `ILinearSolver`does not support it.
+    For example, if the `.determinant()` method of `Eigen::SimplicialLDLT` is required, it must be called directly because `LinearSolver`does not support it.
 
 ## Nonlinear solver
 

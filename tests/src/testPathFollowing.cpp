@@ -49,7 +49,7 @@ auto simple2DOperatorArcLengthTest() {
 
   auto nonLinOp = Ikarus::NonLinearOperator(Ikarus::functions(fvLambda, dfvLambda), Ikarus::parameter(D, lambda));
 
-  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
+  auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
 
   double stepSize = 0.1;
   int load_steps  = 50;
@@ -80,7 +80,7 @@ auto simple2DOperatorArcLengthTestAsDefault() {
 
   auto nonLinOp = Ikarus::NonLinearOperator(Ikarus::functions(fvLambda, dfvLambda), Ikarus::parameter(D, lambda));
 
-  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
+  auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
 
   double stepSize = 0.1;
   int load_steps  = 50;
@@ -106,7 +106,7 @@ auto simple2DOperatorLoadControlTest() {
 
   auto nonLinOp = Ikarus::NonLinearOperator(Ikarus::functions(fvLambda, dfvLambda), Ikarus::parameter(D, lambda));
 
-  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
+  auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
 
   double stepSize = 0.1;
   int load_steps  = 50;
@@ -136,7 +136,7 @@ auto simple2DOperatorDisplacementControlTest() {
 
   auto nonLinOp = Ikarus::NonLinearOperator(Ikarus::functions(fvLambda, dfvLambda), Ikarus::parameter(D, lambda));
 
-  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT);
+  auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
 
   double stepSize                    = 0.05;
   int load_steps                     = 30;

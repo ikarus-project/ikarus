@@ -178,7 +178,7 @@ auto secondOrderVectorValuedOperatorTest() {
   // Newton method test find root of first derivative
   const double eps  = 1e-14;
   const int maxIter = 20;
-  Ikarus::NewtonRaphson nr(subOperator, Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT));
+  Ikarus::NewtonRaphson nr(subOperator, Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT));
   checkNewtonRhapson(nr, x, eps, maxIter, 1, (-0.5 * A.ldlt().solve(b)).eval(), Eigen::VectorXd::Zero(3).eval());
   nonLinOp.update<0>();
   t.check(Dune::FloatCmp::eq(-2.6538461538461533, nonLinOp.value()));
@@ -236,7 +236,7 @@ auto secondOrderVectorValuedOperatorNonlinearAutodiff() {
   // Newton method test find root of first derivative
   const double eps  = 1e-14;
   const int maxIter = 20;
-  Ikarus::NewtonRaphson nr(subOperator, Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::d_LDLT));
+  Ikarus::NewtonRaphson nr(subOperator, Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT));
 
   const Eigen::Vector3d xSol(-4.9131804394348836888, 2.0287578381104342236, 2.0287578381104342236);
   auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();

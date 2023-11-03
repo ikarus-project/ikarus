@@ -79,7 +79,7 @@ This is then used to create functors to get the stiffness matrix, residual vecto
 A non-linear operator and the linear solver used by the `solverType` are defined as:
 ```cpp
 auto nonLinOp = Ikarus::NonLinearOperator(functions(energyFunction, residualFunction, KFunction), parameter(d, lambda));
-auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_UmfPackLU);
+auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::sd_UmfPackLU);
 ```
 An object for the Newton-Raphson method or the trust region method can then be defined as
 ```cpp
