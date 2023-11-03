@@ -2,5 +2,6 @@
 # SPDX-License-Identifier: CC0-1.0
 
 [
-{ include: ["@<Eigen/src/Core/.*>", "public", "<Eigen/Core>", "public"] }
+{ include: ["@<Eigen/src/Core/.*>", "public", "<Eigen/Core>", "public"] },
+{ include: ["@<Eigen/src/SparseCore/.*>", "public", "<Eigen/Sparse>", "public"] }
 ]

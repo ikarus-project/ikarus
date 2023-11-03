@@ -7,6 +7,10 @@
 
 #pragma once
 
+#include <cstddef>
+#include <utility>
+
+#include <dune/common/indices.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/compositebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>

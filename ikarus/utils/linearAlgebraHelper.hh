@@ -133,7 +133,7 @@ namespace Ikarus {
   Dune::TupleVector<Types...>& operator+=(Dune::TupleVector<Types...>& a, const Eigen::MatrixBase<Derived>& b) {
     using namespace Dune::Indices;
     size_t posStart = 0;
-    Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<a.size()>()), [&](const auto i) {
+    Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<sizeof...(Types)>()), [&](const auto i) {
       const size_t size = correctionSize(a[i]);
       a[i] += b(Eigen::seqN(posStart, size));
       posStart += size;

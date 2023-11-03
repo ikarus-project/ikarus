@@ -14,7 +14,7 @@
 
 template <typename Basis>  // Check basis
 class ControlSubsamplingVertexVTKWriter : public IObserver<ControlMessages> {
-  static constexpr int components = Basis::LocalView::Tree::CHILDREN == 0 ? 1 : Basis::LocalView::Tree::CHILDREN;
+  static constexpr int components = Basis::LocalView::Tree::degree() == 0 ? 1 : Basis::LocalView::Tree::degree();
 
 public:
   ControlSubsamplingVertexVTKWriter(const Basis& p_basis, const Eigen::VectorXd& sol, int refinementLevels = 0)

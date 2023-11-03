@@ -20,11 +20,21 @@ foreach(programSourceFile ${programSourceFiles})
   find_package(PythonLibs REQUIRED)
   include_directories(${PYTHON_INCLUDE_DIRS})
   target_link_libraries(${programName} PUBLIC ${PYTHON_LIBRARIES})
-  target_compile_options(${programName} PUBLIC -ftemplate-backtrace-limit=0)
   if(ENABLE_TEST_COVERAGE)
-    message("Enable Test Coverage")
-    target_compile_options(${programName} PUBLIC -O0 -g -fprofile-arcs -ftest-coverage)
-    target_link_options(${programName} PUBLIC -fprofile-arcs -ftest-coverage)
+    target_compile_options(${programName} PUBLIC -O0 -g --coverage)
+    target_link_options(${programName} PUBLIC --coverage)
+    if(ENABLE_TEST_COVERAGE_SOURCEBASED)
+      if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        target_compile_options(
+          ${programName} PUBLIC -fno-limit-debug-info -fprofile-instr-generate -fcoverage-mapping
+        )
+        target_link_options(
+          ${programName} PUBLIC -fno-limit-debug-info -fprofile-instr-generate -fcoverage-mapping
+        )
+      else()
+        message(FATAL_ERROR "Source-based coverage is only available with clang")
+      endif()
+    endif()
   endif()
 
 endforeach()

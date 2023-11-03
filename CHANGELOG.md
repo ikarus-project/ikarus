@@ -19,6 +19,11 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 - Renamed Ikarus::linearAlgebraFunctions to Ikarus::functions ([#171](https://github.com/ikarus-project/ikarus/pull/171))
 - Added Kirchhoff-Love Shell based on automatic differentiation ([#177](https://github.com/ikarus-project/ikarus/pull/177))
 - Added getRawMatrix/getRawVector functionality to the assemblers ([#179](https://github.com/ikarus-project/ikarus/pull/179))
+- Add Clang 16 support ([#186](https://github.com/ikarus-project/ikarus/pull/176))
+- Improve material library and Python bindings ([#186](https://github.com/ikarus-project/ikarus/pull/176)), default e.g. `StVenantKirchhoff` is not a template anymore
+  use `StVenantKirchhoffT<...>` for scalar-types that are not `double`
+- `Ikarus::ILinearSolver` is no template anymore and renamed and uses double, 
+  use `Ikarus::LinearSolverT<...>` instead ([#186](https://github.com/ikarus-project/ikarus/pull/176)), if you need a fancy scalar type
 
 ## Release v0.3 (Prometheus)
 

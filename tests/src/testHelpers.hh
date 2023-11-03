@@ -2,8 +2,12 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
+#include <concepts>
 
-#include <Eigen/Core>
+namespace Eigen {
+  template <typename Derived>
+  struct EigenBase;
+}
 
 template <typename Derived, typename OtherDerived>
 requires(std::convertible_to<Derived, Eigen::EigenBase<Derived> const&>and std::convertible_to<

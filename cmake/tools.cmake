@@ -60,7 +60,9 @@ if(USE_SANITIZER OR USE_STATIC_ANALYZER)
     clang_tidy(${CLANG_TIDY_ARGS})
     message("${IWYU_ARGS}")
     message("${CMAKE_CURRENT_LIST_DIR}/../iwyu.imp")
-    include_what_you_use(-Xiwyu --mapping_file=${CMAKE_CURRENT_LIST_DIR}/../iwyu.imp)
+    include_what_you_use(
+      -Xiwyu --check_also=*.hh -Xiwyu --mapping_file=${CMAKE_CURRENT_LIST_DIR}/../iwyu.imp
+    )
     cppcheck(${CPPCHECK_ARGS})
   endif()
 endif()

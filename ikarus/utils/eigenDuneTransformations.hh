@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <assert.h>
+
 #include <dune/common/diagonalmatrix.hh>
 #include <dune/common/fmatrix.hh>
 #include <dune/common/fvector.hh>
