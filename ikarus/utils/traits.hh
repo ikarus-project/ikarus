@@ -218,7 +218,7 @@ namespace Ikarus::Std {
   }
 
   template <typename... Types>
-  constexpr auto unique(std::tuple<Types...>&& tuple) {
+  constexpr auto unique(std::tuple<Types...>&&) {
     return Impl::unique_tupleImpl<Types...>();
   }
 

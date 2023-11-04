@@ -52,7 +52,7 @@ namespace Ikarus {
 
         auto sigma = resultTypeMap.getSingleResult().second;
 
-        return sigma.rows() * sigma.cols();
+        return static_cast<int>(sigma.rows() * sigma.cols());
       } else
         return userFunction_.ncomps();
     }

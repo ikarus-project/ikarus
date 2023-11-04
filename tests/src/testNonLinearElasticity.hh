@@ -35,8 +35,8 @@ using Dune::TestSuite;
 
 struct OwnResultFunction {
   template <typename ElementTypeT, typename FERequirements, int size, typename ScalarTypeT>
-  double operator()(const ElementTypeT& fe, const Ikarus::ResultRequirements<FERequirements>& req,
-                    const Dune::FieldVector<ScalarTypeT, size>& pos, [[maybe_unused]] int comp) const {
+  double operator()(const ElementTypeT& /* fe */, const Ikarus::ResultRequirements<FERequirements>& /* req */,
+                    const Dune::FieldVector<ScalarTypeT, size>& /* pos */, [[maybe_unused]] int /* comp */) const {
     return 7;
   }
   static std::string name() { return "Seven"; }
@@ -189,8 +189,6 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   t.check(resultFunction3S->ncomps() == 1) << "Test result comps: " << resultFunction2S->ncomps() << "should be 1";
   vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction3S));
 
-  auto lambdaEvaluator
-      = [](const auto& fe, const auto& req, const auto& pos, [[maybe_unused]] int comp) { return 7.0; };
   auto resultFunction4  = ResultFunction(&fes, resReq, OwnResultFunction{});
   auto resultFunction4S = std::make_shared<decltype(resultFunction4)>(resultFunction4);
 
@@ -301,7 +299,7 @@ auto SingleElementTest(const Material& mat) {
   eigenValuesExpected.setZero(basis.flat().size());
   eigenValuesExpected << 1e-16, 1e-16, 1845.6296388251504753, 14192.4707553121224317, 19964.32719133414782,
       29973.7943273325380486, 46641.183728849332812, 95447.6156712376251918;
-  for (long i = 0; i < basis.flat().size(); ++i) {
+  for (size_t i = 0; i < basis.flat().size(); ++i) {
     if (abs(eigenValuesComputed[i]) > tol) {
       t.check(Dune::FloatCmp::eq(abs(eigenValuesComputed[i]), eigenValuesExpected[i], tol),
               "Mismatch in the " + std::to_string(i + 1)

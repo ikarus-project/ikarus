@@ -75,14 +75,14 @@ namespace Ikarus {
 
   template <typename ScalarType, long int dim>
   auto symTwoSlots(const Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<dim, dim, dim, dim>>& t,
-                   const std::array<int, 2>& slots) {
-    std::array<int, 4> shuffleSlot;
+                   const std::array<size_t, 2>& slots) {
+    std::array<size_t, 4> shuffleSlot;
     std::iota(shuffleSlot.begin(), shuffleSlot.end(), 0);     // create 0,1,2,3 array
     std::swap(shuffleSlot[slots[0]], shuffleSlot[slots[1]]);  // swap  the given slots
     return (0.5 * (t + t.shuffle(shuffleSlot))).eval();
   }
 
-  constexpr size_t toVoigt(size_t i, size_t j) noexcept {
+  constexpr Eigen::Index toVoigt(Eigen::Index i, Eigen::Index j) noexcept {
     if (i == j)  // _00 -> 0, _11 -> 1,  _22 -> 2
       return i;
     else if ((i == 1 and j == 2) or (i == 2 and j == 1))  // _12 and _21 --> 3
@@ -100,16 +100,16 @@ namespace Ikarus {
   template <typename ScalarType = double>
   Eigen::Matrix<ScalarType, 6, 6> toVoigt(const Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<3, 3, 3, 3>>& ft) {
     Eigen::Matrix<ScalarType, 6, 6> mat;
-    for (int i = 0; i < 3; ++i)
-      for (int j = 0; j < 3; ++j)
-        for (int k = 0; k < 3; ++k)
-          for (int l = 0; l < 3; ++l)
+    for (Eigen::Index i = 0; i < 3; ++i)
+      for (Eigen::Index j = 0; j < 3; ++j)
+        for (Eigen::Index k = 0; k < 3; ++k)
+          for (Eigen::Index l = 0; l < 3; ++l)
             mat(toVoigt(i, j), toVoigt(k, l)) = ft(i, j, k, l);  // TODO exploit symmetry
     return mat;
   }
 
-  template <typename ST, int size, int _Options, int _MaxRows>
-  requires(size > 0 and size <= 3) auto toVoigt(const Eigen::Matrix<ST, size, size, _Options, _MaxRows, _MaxRows>& E,
+  template <typename ST, int size, int Options, int MaxRows>
+  requires(size > 0 and size <= 3) auto toVoigt(const Eigen::Matrix<ST, size, size, Options, MaxRows, MaxRows>& E,
                                                 bool isStrain = true) {
     Eigen::Vector<ST, (size * (size + 1)) / 2> EVoigt;
     EVoigt.template segment<size>(0) = E.diagonal();
@@ -162,8 +162,8 @@ namespace Ikarus {
   auto fromVoigt(const Eigen::Matrix<ScalarType, 6, 6>& CVoigt) {
     Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<3, 3, 3, 3>> C;
     //    size_t iR=0,jR=0;
-    for (int i = 0; i < 6; ++i) {
-      for (int j = 0; j < 6; ++j) {
+    for (size_t i = 0; i < 6; ++i) {
+      for (size_t j = 0; j < 6; ++j) {
         auto firstIndices                                                       = fromVoigt(i);
         auto secondIndices                                                      = fromVoigt(j);
         C(firstIndices[0], firstIndices[1], secondIndices[0], secondIndices[1]) = CVoigt(i, j);

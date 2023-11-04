@@ -115,8 +115,9 @@ namespace Ikarus {
 
     inline double calculateScalar(const FERequirementType& par) const { return calculateScalarImpl<double>(par); }
 
-    void calculateAt(const ResultRequirementsType& req, const Dune::FieldVector<double, Traits::mydim>& local,
-                     ResultTypeMap<double>& result) const {
+    void calculateAt([[maybe_unused]] const ResultRequirementsType& req,
+                     [[maybe_unused]] const Dune::FieldVector<double, Traits::mydim>& local,
+                     [[maybe_unused]] ResultTypeMap<double>& result) const {
       DUNE_THROW(Dune::NotImplemented, "No results are implemented");
     }
 

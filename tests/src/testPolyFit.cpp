@@ -17,7 +17,7 @@
 
 using Dune::TestSuite;
 
-auto polyFitTest1() {
+static auto polyFitTest1() {
   TestSuite t("polyFitTest1");
   Eigen::VectorXd x = Eigen::VectorXd::LinSpaced(10, 0, 10);
   Eigen::VectorXd y = Eigen::VectorXd::LinSpaced(10, 2, 20);
@@ -29,7 +29,7 @@ auto polyFitTest1() {
   return t;
 }
 
-auto polyFitTest2() {
+static auto polyFitTest2() {
   TestSuite t("polyFitTest2");
   const double factor = 7.6;
   Eigen::VectorXd x   = Eigen::VectorXd::LinSpaced(10, 0, 10);

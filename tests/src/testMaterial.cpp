@@ -99,10 +99,6 @@ auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-14) {
     return (mat.template tangentModuli<strainTag>(xv) * strainDerivativeFactor * strainDerivativeFactor).eval();
   };
 
-  using ReturnTypeDerivative = Ikarus::Std::ReturnType<decltype(df), decltype(ev)&>;
-
-  using ReturnTypeSecondDerivative = Ikarus::Std::ReturnType<decltype(ddf), decltype(ev)&>;
-
   auto nonLinOp    = Ikarus::NonLinearOperator(functions(f, df, ddf), parameter(ev));
   auto subNonLinOp = nonLinOp.template subOperator<1, 2>();
 
@@ -119,10 +115,10 @@ auto testMaterial(Material mat) {
   if constexpr (
       std::is_same_v<
           Material,
-          LinearElasticity> or std::is_same_v<Material, Ikarus::VanishingStress<std::array<Ikarus::Impl::StressIndexPair, 1>({{2, 2}}), Ikarus::LinearElasticity>>) {
+          LinearElasticity> or std::is_same_v<Material, Ikarus::VanishingStress<std::array<Ikarus::Impl::StressIndexPair, 1>({{{2, 2}}}), Ikarus::LinearElasticity>>) {
     t.subTest(testMaterialWithStrain<StrainTags::linear>(mat));
   } else if constexpr (std::is_same_v<Material,
-                                      Ikarus::VanishingStress<std::array<Ikarus::Impl::StressIndexPair, 1>({{2, 2}}),
+                                      Ikarus::VanishingStress<std::array<Ikarus::Impl::StressIndexPair, 1>({{{2, 2}}}),
                                                               Ikarus::StVenantKirchhoff>>) {
     t.subTest(testMaterialWithStrain<StrainTags::greenLagrangian>(mat));
   } else {

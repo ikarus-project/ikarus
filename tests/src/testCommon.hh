@@ -11,9 +11,12 @@
 #include <dune/functions/functionspacebases/lagrangedgbasis.hh>
 #include <dune/grid/uggrid.hh>
 #include <dune/grid/yaspgrid.hh>
-#include <dune/iga/nurbsgrid.hh>
-#include <dune/localfefunctions/cachedlocalBasis/cachedlocalBasis.hh>
-
+#if HAVE_DUNE_IGA
+#  include <dune/iga/nurbsgrid.hh>
+#endif
+#if HAVE_DUNE_LOCALFEFUNCTIONS
+#  include <dune/localfefunctions/cachedlocalBasis/cachedlocalBasis.hh>
+#endif
 #include <ikarus/finiteElements/feBases/autodiffFE.hh>
 #include <ikarus/finiteElements/feBases/powerBasisFE.hh>
 #include <ikarus/finiteElements/feRequirements.hh>
@@ -50,6 +53,7 @@ auto createGrid([[maybe_unused]] int elex = 10, [[maybe_unused]] int eley = 10) 
     auto grid                               = std::make_shared<Grid>(bbox, elementsPerDirection);
     return grid;
   } else if constexpr (std::is_same_v<GridType, Grids::Iga>) {
+#if HAVE_DUNE_IGA
     constexpr auto dimworld        = 2;
     const std::array<int, 2> order = {2, 2};
 
@@ -62,7 +66,7 @@ auto createGrid([[maybe_unused]] int elex = 10, [[maybe_unused]] int eley = 10) 
            {{.p = {0, 0.5}, .w = 1}, {.p = {0.5, 0.5}, .w = 10}, {.p = {1, 0.5}, .w = 1}},
            {{.p = {0, 1}, .w = 1}, {.p = {0.5, 1}, .w = 1}, {.p = {1, 1}, .w = 1}}};
 
-    std::array<int, 2> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
+    std::array<int, 2> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
 
     auto controlNet = Dune::IGA::NURBSPatchData<2, dimworld>::ControlPointNetType(dimsize, controlPoints);
     using Grid      = Dune::IGA::NURBSGrid<2, dimworld>;
@@ -74,6 +78,7 @@ auto createGrid([[maybe_unused]] int elex = 10, [[maybe_unused]] int eley = 10) 
     auto grid               = std::make_shared<Grid>(patchData);
     grid->globalRefine(1);
     return grid;
+#endif
   }
 }
 

@@ -28,9 +28,10 @@
     using enum type;                           \
     switch (_e) {                              \
       FOR_EACH(ENUM_CASE, __VA_ARGS__)         \
-      default:                                 \
-        return "unknown";                      \
+      ENUM_CASE(BEGIN)                         \
+      ENUM_CASE(END)                           \
     }                                          \
+    __builtin_unreachable();                   \
   }
 
 #include <dune/common/exceptions.hh>

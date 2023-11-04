@@ -16,12 +16,12 @@
 
 using Dune::TestSuite;
 
-void foo() {
+static void foo() {
   spdlog::info("Does this appear in the correct logger?");
   spdlog::debug("This is a debug statement");
 }
 
-auto spdlogTest() {
+static TestSuite spdlogTest() {
   TestSuite t("spdlogTest");
 
   auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();

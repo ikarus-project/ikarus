@@ -9,9 +9,10 @@
 
 #include <dune/common/test/testsuite.hh>
 #include <dune/common/tuplevector.hh>
-#include <dune/localfefunctions/manifolds/realTuple.hh>
-#include <dune/localfefunctions/manifolds/unitVector.hh>
-
+#if HAVE_DUNE_LOCALFEFUNCTIONS
+#  include <dune/localfefunctions/manifolds/realTuple.hh>
+#  include <dune/localfefunctions/manifolds/unitVector.hh>
+#endif
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/nonLinearSolver/trustRegion.hh>
 #include <ikarus/utils/init.hh>
@@ -19,14 +20,14 @@
 using namespace Ikarus;
 using Dune::TestSuite;
 
-auto f(const Eigen::Vector<double, 1>& x) { return 0.5 * x[0] * x[0]; }
-auto df(const Eigen::Vector<double, 1>& x) {
+static auto f(const Eigen::Vector<double, 1>& x) { return 0.5 * x[0] * x[0]; }
+static auto df(const Eigen::Vector<double, 1>& x) {
   Eigen::Vector<double, 1> r;
   r[0] = x[0];
   return r;
 }
 
-auto ddf(const Eigen::Vector<double, 1>&) {
+static auto ddf(const Eigen::Vector<double, 1>&) {
   Eigen::SparseMatrix<double> A(1, 1);
   A.insert(0, 0);
 
@@ -35,7 +36,7 @@ auto ddf(const Eigen::Vector<double, 1>&) {
   return A;
 }
 
-auto trustRegion1() {
+static auto trustRegion1() {
   TestSuite t("trustRegion1");
   Eigen::Vector<double, 1> x;
   x << 2;
@@ -61,17 +62,17 @@ auto trustRegion1() {
 static constexpr double a_      = 1.0;
 static constexpr double b_      = 100.0;
 static constexpr double offset_ = -1;
-auto rosenbrock(const Eigen::Vector2d& x) {
+static auto rosenbrock(const Eigen::Vector2d& x) {
   return Dune::power(a_ - x[0], 2) + b_ * Dune::power(x[1] - x[0] * x[0], 2) + offset_;
 }
-auto rosenbrockdx(const Eigen::Vector2d& x) {
+static auto rosenbrockdx(const Eigen::Vector2d& x) {
   Eigen::Vector2d r;
   r[0] = -2 * a_ + 2 * x[0] - 4 * b_ * (-x[0] * x[0] + x[1]) * x[0];
   r[1] = 2 * b_ * (-x[0] * x[0] + x[1]);
   return r;
 }
 
-auto rosenbrockddx(const Eigen::Vector2d& x) {
+static auto rosenbrockddx(const Eigen::Vector2d& x) {
   Eigen::SparseMatrix<double> A(2, 2);
   A.insert(0, 0);
   A.insert(0, 1);
@@ -84,7 +85,7 @@ auto rosenbrockddx(const Eigen::Vector2d& x) {
   return A;
 }
 
-auto trustRegion2() {
+static auto trustRegion2() {
   TestSuite t("trustRegion2");
   Eigen::Vector2d x;
   x << 2, 3;
@@ -119,11 +120,11 @@ template <typename ScalarType>
 ScalarType f3(const Eigen::Vector2<ScalarType>& x) {
   return -10 * x[0] * x[0] + 10 * x[1] * x[1] + 4 * sin(x[0] * x[1]) - 2 * x[0] + Dune::power(x[0], 4);
 }
-Eigen::Vector2d df3(Eigen::Vector2<autodiff::dual>& x) {
+static Eigen::Vector2d df3(Eigen::Vector2<autodiff::dual>& x) {
   return autodiff::gradient(f3<autodiff::dual>, autodiff::wrt(x), autodiff::at(x));
 }
 
-auto ddf3(Eigen::Vector2<autodiff::dual2nd>& x) {
+static auto ddf3(Eigen::Vector2<autodiff::dual2nd>& x) {
   Eigen::SparseMatrix<double> A(2, 2);
   Eigen::Matrix2d h = autodiff::hessian(f3<autodiff::dual2nd>, autodiff::wrt(x), autodiff::at(x));
   A.insert(0, 0)    = h(0, 0);
@@ -134,7 +135,7 @@ auto ddf3(Eigen::Vector2<autodiff::dual2nd>& x) {
   return A;
 }
 
-auto trustRegion3() {
+static auto trustRegion3() {
   TestSuite t("trustRegion3");
   Eigen::Vector2d x(2);
   x << 0.7, -3.3;
@@ -195,7 +196,7 @@ ScalarType f3R(const Dune::UnitVector<double, 2>& x,
   y += dx;
   return y[0] * y[0];
 }
-Eigen::Vector<double, 1> df3R(const Dune::UnitVector<double, 2>& x) {
+static Eigen::Vector<double, 1> df3R(const Dune::UnitVector<double, 2>& x) {
   Eigen::Vector<autodiff::dual, 2> xR = Eigen::Vector<autodiff::dual, 2>::Zero();
   auto dfvLambda                      = [&](auto&& xRL) { return f3R<autodiff::dual>(x, xRL); };
   autodiff::dual energy;
@@ -205,7 +206,7 @@ Eigen::Vector<double, 1> df3R(const Dune::UnitVector<double, 2>& x) {
   return g.transpose() * BLA;
 }
 
-auto ddf3R(const Dune::UnitVector<double, 2>& x) {
+static auto ddf3R(const Dune::UnitVector<double, 2>& x) {
   Eigen::SparseMatrix<double> A(1, 1);
   Eigen::Vector<autodiff::dual2nd, 2> xR = Eigen::Vector<autodiff::dual2nd, 2>::Zero();
   auto dfvLambda                         = [&](auto&& xRL) { return f3R<autodiff::dual2nd>(x, xRL); };
@@ -220,7 +221,7 @@ auto ddf3R(const Dune::UnitVector<double, 2>& x) {
   return A;
 }
 
-auto trustRegion4_RiemanianUnitSphere() {
+static auto trustRegion4_RiemanianUnitSphere() {
   TestSuite t("trustRegion4_RiemanianUnitSphere");
 
   auto d = Dune::UnitVector<double, 2>(Eigen::Vector2d::UnitX());
@@ -275,7 +276,7 @@ ScalarType f3RBlocked(const MultiTypeVector& mT, const Eigen::VectorX<ScalarType
   }
   return energy + dualDisp.squaredNorm() + dualDisp.dot(dualDir);
 }
-Eigen::VectorXd df3RBlocked(const MultiTypeVector& mT) {
+static Eigen::VectorXd df3RBlocked(const MultiTypeVector& mT) {
   using namespace Dune::Indices;
   auto& disp = mT[_0];
   auto& dir  = mT[_1];
@@ -299,7 +300,7 @@ Eigen::VectorXd df3RBlocked(const MultiTypeVector& mT) {
   return gRed;
 }
 
-auto ddf3RBlocked(const MultiTypeVector& mT) {
+static auto ddf3RBlocked(const MultiTypeVector& mT) {
   Eigen::SparseMatrix<double> A;
   using namespace Dune::Indices;
   auto& disp = mT[_0];
@@ -376,7 +377,7 @@ auto ddf3RBlocked(const MultiTypeVector& mT) {
   return A;
 }
 
-auto trustRegion5_RiemanianUnitSphereAndDispBlocked() {
+static auto trustRegion5_RiemanianUnitSphereAndDispBlocked() {
   TestSuite t("trustRegion5_RiemanianUnitSphereAndDispBlocked");
   using namespace Dune::Indices;
   using namespace Ikarus;

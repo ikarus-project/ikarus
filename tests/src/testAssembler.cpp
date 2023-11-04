@@ -24,9 +24,11 @@ using Dune::TestSuite;
 template <typename TestSuiteType, typename SparseType, typename DenseType, typename DOFSize>
 void checkAssembledQuantities(TestSuiteType& t, SparseType& sType, DenseType& dType, DOFSize dofSize) {
   t.check(isApproxSame(sType, dType, 1e-15), "Dense==Sparse");
-  t.check(sType.rows() == dofSize) << "DOFsCheck via rows: " << sType.rows() << "rows and " << dofSize << " DOFs";
+  t.check(sType.rows() == static_cast<Eigen::Index>(dofSize))
+      << "DOFsCheck via rows: " << sType.rows() << "rows and " << dofSize << " DOFs";
   if (not(std::is_same_v<SparseType, Eigen::VectorXd>))
-    t.check(sType.cols() == dofSize) << "DOFsCheck via columns: " << sType.cols() << "cols and " << dofSize << " DOFs";
+    t.check(sType.cols() == static_cast<Eigen::Index>(dofSize))
+        << "DOFsCheck via columns: " << sType.cols() << "cols and " << dofSize << " DOFs";
 }
 
 template <typename PreBasis>
@@ -91,8 +93,8 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
     checkAssembledQuantities(t, K, KDense, totalDOFs);
     checkAssembledQuantities(t, R, RDense, totalDOFs);
 
-    const auto fixedDOFs = dirichletValues.fixedDOFsize();
-    int boundaryNodes    = (elementsPerDirection[0] * Dune::power(2, ref) + 1) * 2
+    const Eigen::Index fixedDOFs = dirichletValues.fixedDOFsize();
+    int boundaryNodes            = (elementsPerDirection[0] * Dune::power(2, ref) + 1) * 2
                         + (elementsPerDirection[1] * Dune::power(2, ref) + 1) * 2 - 4;
     if (std::is_same_v<typename std::remove_cvref_t<decltype(fes[0].localView().tree().child(0))>,
                        Dune::Functions::LagrangeNode<
@@ -131,10 +133,10 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
     checkAssembledQuantities(t, RRed, RRedDense, totalDOFs - fixedDOFs);
 
     /// check if reduced matrices and reduced vectors are correct after applying boundary conditions
-    size_t r = 0U;
+    Eigen::Index r = 0U;
     for (auto i = 0U; i < totalDOFs; ++i) {
       if (not(dirichletValues.isConstrained(i))) {
-        size_t c = 0U;
+        Eigen::Index c = 0U;
         for (auto j = 0U; j < totalDOFs; ++j)
           if (not(dirichletValues.isConstrained(j))) {
             t.check(Dune::FloatCmp::eq(KRawDense(i, j), KRedDense(r, c)))

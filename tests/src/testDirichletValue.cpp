@@ -27,7 +27,7 @@
 
 using Dune::TestSuite;
 
-auto dirichletBCTest() {
+static auto dirichletBCTest() {
   TestSuite t("SimpleAssemblersTest");
   using Grid = Dune::YaspGrid<2>;
 
@@ -81,15 +81,15 @@ auto dirichletBCTest() {
   dirichletValues1.evaluateInhomogeneousBoundaryConditionDerivative(dispDerivs, 2);
 
   auto lambdaCheck = [&](auto&& localIndex, auto&& localView, auto&& intersection) {
-    auto globalIndex = localView.index(localIndex);
+    auto globalIndex0 = static_cast<Eigen::Index>(localView.index(static_cast<size_t>(localIndex))[0]);
     if (intersection.geometry().center()[0] > 4 - 1e-8) {
-      t.check(Dune::FloatCmp::eq(disps[globalIndex[0]], 8.0)) << "Values differ disps[i]: " << disps[globalIndex[0]];
-      t.check(Dune::FloatCmp::eq(dispDerivs[globalIndex[0]], 4.0))
-          << "Values differ dispDerivs[i]: " << dispDerivs[globalIndex[0]];
+      t.check(Dune::FloatCmp::eq(disps[globalIndex0], 8.0)) << "Values differ disps[i]: " << disps[globalIndex0];
+      t.check(Dune::FloatCmp::eq(dispDerivs[globalIndex0], 4.0))
+          << "Values differ dispDerivs[i]: " << dispDerivs[globalIndex0];
     } else if (intersection.geometry().center()[0] < 1e-8) {
-      t.check(Dune::FloatCmp::eq(disps[globalIndex[0]], 14.0)) << "Values differ disps[i]: " << disps[globalIndex[0]];
-      t.check(Dune::FloatCmp::eq(dispDerivs[globalIndex[0]], 7.0))
-          << "Values differ dispDerivs[i]: " << dispDerivs[globalIndex[0]];
+      t.check(Dune::FloatCmp::eq(disps[globalIndex0], 14.0)) << "Values differ disps[i]: " << disps[globalIndex0];
+      t.check(Dune::FloatCmp::eq(dispDerivs[globalIndex0], 7.0))
+          << "Values differ dispDerivs[i]: " << dispDerivs[globalIndex0];
     }
   };
   Dune::Functions::forEachBoundaryDOF(basisP->flat(), lambdaCheck);
