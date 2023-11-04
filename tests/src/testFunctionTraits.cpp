@@ -7,7 +7,7 @@ struct A {
   double bar(int b, float c);
 };
 
-int freeBar(double, float) { return 0; }
+static int freeBar(double, float) { return 5; }
 
 int main() {
   // Test lambda
@@ -21,6 +21,7 @@ int main() {
   static_assert(TraitsLambda::numberOfArguments == 2);
 
   // Test free function
+  freeBar(2.0, 7);
   using TraitsFree = Ikarus::Std::FunctionTraits<decltype(&freeBar)>;
   static_assert(std::is_same_v<typename TraitsFree::args_type<0>, double>);
   static_assert(std::is_same_v<typename TraitsFree::args_type<1>, float>);

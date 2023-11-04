@@ -22,13 +22,13 @@ namespace Eigen {
   };
   template <typename Scalar>
   struct TCGInfo {
-    TCGStopReason stop_tCG = TCGStopReason::maximumInnerIterations;
-    Scalar Delta           = 100000;
-    Scalar kappa           = 0.1;
-    Scalar theta           = 1.0;
-    int mininner           = 1;
-    int maxinner           = 1000;
-    int numInnerIter       = 0;
+    TCGStopReason stop_tCG    = TCGStopReason::maximumInnerIterations;
+    Scalar Delta              = 100000;
+    Scalar kappa              = 0.1;
+    Scalar theta              = 1.0;
+    Eigen::Index mininner     = 1;
+    Eigen::Index maxinner     = 1000;
+    Eigen::Index numInnerIter = 0;
 
     void initRuntimeOptions(int _num_dof_solve) {
       maxinner = _num_dof_solve * 2;
@@ -64,16 +64,17 @@ namespace Eigen {
 
       VectorType residual = rhs - mat * x;  // initial residual
 
-      RealScalar rhsNorm2 = rhs.norm();
-      if (rhsNorm2 == 0) {
+      RealScalar rhsNorm2             = rhs.norm();
+      const RealScalar considerAsZero = (std::numeric_limits<RealScalar>::min)();
+
+      if (rhsNorm2 <= considerAsZero) {
         x.setZero();
         iters     = 0;
         tol_error = 0;
         return;
       }
-      const RealScalar considerAsZero = (std::numeric_limits<RealScalar>::min)();
-      RealScalar threshold            = numext::maxi(tol * tol * rhsNorm2 * rhsNorm2, considerAsZero);
-      RealScalar residualNorm2        = residual.norm();
+      RealScalar threshold     = numext::maxi(tol * tol * rhsNorm2 * rhsNorm2, considerAsZero);
+      RealScalar residualNorm2 = residual.norm();
       if (residualNorm2 * residualNorm2 < threshold) {
         iters     = 0;
         tol_error = (residualNorm2 / rhsNorm2);
@@ -149,16 +150,16 @@ namespace Eigen {
 
   }  // namespace internal
 
-  template <typename _MatrixType, int _UpLo = Lower,
-            typename _Preconditioner = DiagonalPreconditioner<typename _MatrixType::Scalar> >
+  template <typename MatrixType, int UpLo = Lower,
+            typename Preconditioner = DiagonalPreconditioner<typename MatrixType::Scalar> >
   class TruncatedConjugateGradient;
 
   namespace internal {
 
-    template <typename _MatrixType, int _UpLo, typename _Preconditioner>
-    struct traits<TruncatedConjugateGradient<_MatrixType, _UpLo, _Preconditioner> > {
-      typedef _MatrixType MatrixType;
-      typedef _Preconditioner Preconditioner;
+    template <typename MatrixType_, int UpLo, typename Preconditioner_>
+    struct traits<TruncatedConjugateGradient<MatrixType_, UpLo, Preconditioner_> > {
+      typedef MatrixType_ MatrixType;
+      typedef Preconditioner_ Preconditioner;
     };
 
   }  // namespace internal
@@ -175,7 +176,6 @@ namespace Eigen {
       *               Default is \c Lower, best performance is \c Lower|Upper.
       * \tparam _Preconditioner the type of the preconditioner. Default is DiagonalPreconditioner
       *
-      * \implsparsesolverconcept
       *
       * The maximal number of iterations and tolerance value can be controlled via the setMaxIterations()
       * and setTolerance() methods. The defaults are the size of the problem for the maximal number of iterations
@@ -212,13 +212,13 @@ namespace Eigen {
       * \sa class LeastSquaresConjugateGradient, class SimplicialCholesky, DiagonalPreconditioner,
      IdentityPreconditioner
       */
-  template <typename _MatrixType, int _UpLo, typename _Preconditioner>
+  template <typename MatrixType_, int UpLo_, typename Preconditioner_>
   class TruncatedConjugateGradient
-      : public IterativeSolverBase<TruncatedConjugateGradient<_MatrixType, _UpLo, _Preconditioner> > {
+      : public IterativeSolverBase<TruncatedConjugateGradient<MatrixType_, UpLo_, Preconditioner_> > {
   public:
     typedef IterativeSolverBase<TruncatedConjugateGradient> Base;
     TruncatedConjugateGradient(TruncatedConjugateGradient&& other) noexcept
-        : Base(std::move(other)), algInfo{other.algInfo} {};
+        : Base(std::move(other)), algInfo{other.algInfo} {}
 
   private:
     using Base::m_error;
@@ -226,20 +226,20 @@ namespace Eigen {
     using Base::m_isInitialized;
     using Base::m_iterations;
     using Base::matrix;
-    mutable TCGInfo<typename _MatrixType::RealScalar> algInfo;
+    mutable TCGInfo<typename MatrixType_::RealScalar> algInfo;
 
   public:
-    typedef _MatrixType MatrixType;
+    typedef MatrixType_ MatrixType;
     typedef typename MatrixType::Scalar Scalar;
     typedef typename MatrixType::RealScalar RealScalar;
-    typedef _Preconditioner Preconditioner;
+    typedef Preconditioner_ Preconditioner;
 
-    enum { UpLo = _UpLo };
+    enum { UpLo = UpLo_ };
 
   public:
-    TCGInfo<typename _MatrixType::RealScalar> getInfo() { return algInfo; }
+    TCGInfo<typename MatrixType::RealScalar> getInfo() { return algInfo; }
 
-    void setInfo(TCGInfo<typename _MatrixType::RealScalar> _alginfo) { this->algInfo = _alginfo; }
+    void setInfo(TCGInfo<typename MatrixType::RealScalar> _alginfo) { this->algInfo = _alginfo; }
     /** Default constructor. */
     TruncatedConjugateGradient() : Base() {}
 
@@ -270,7 +270,7 @@ namespace Eigen {
       typedef typename internal::conditional<TransposeInput, Transpose<const ActualMatrixTypeBase>,
                                              ActualMatrixTypeBase const&>::type RowMajorWrapper;
       EIGEN_STATIC_ASSERT(EIGEN_IMPLIES(MatrixWrapperBase::MatrixFree, UpLo == (Lower | Upper)),
-                          MATRIX_FREE_CONJUGATE_GRADIENT_IS_COMPATIBLE_WITH_UPPER_UNION_LOWER_MODE_ONLY);
+                          MATRIX_FREE_CONJUGATE_GRADIENT_IS_COMPATIBLE_WITH_UPPER_UNION_LOWER_MODE_ONLY)
       typedef typename internal::conditional<
           UpLo == (Lower | Upper), RowMajorWrapper,
           typename MatrixWrapperBase::template ConstSelfAdjointViewReturnType<UpLo>::Type>::type SelfAdjointWrapper;

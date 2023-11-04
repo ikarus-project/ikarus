@@ -22,7 +22,7 @@ on:
       - '**.md'
 jobs:
   Build:
-    name: ${{ matrix.config.name }}
+    name: ${{ matrix.config.name }} Examples
     runs-on: ubuntu-latest
     container:
       image: ikarusproject/ikarus-dev:latest

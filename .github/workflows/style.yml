@@ -5,16 +5,12 @@ name: CodeStyle
 
 on:
   push:
-    branches:
-      - master
-      - main
     paths-ignore:
       - 'docs/**'
       - '.github/workflows/ghpages.yml'
   pull_request:
     types: [opened]
     branches:
-      - master
       - main
     paths-ignore:
       - 'docs/**'
@@ -24,7 +20,8 @@ env:
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
 
 jobs:
-  build:
+  format-check:
+    name: Check for formatting errors
     runs-on: ubuntu-22.04
 
     steps:
@@ -51,3 +48,22 @@ jobs:
           cmake --build build --target format
           cmake --build build --target check-format
           cmake --build build --target check-pythonformat
+
+  REUSE:
+    name: REUSE Compliance Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: REUSE Compliance Check
+        uses: fsfe/reuse-action@v1
+
+  codespell:
+    name: Check for spelling errors
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: codespell-project/actions-codespell@master
+        with:
+          check_filenames: true
+          skip: ./docs/literature.bib,./codespellignore
+          ignore_words_file: codespellignore

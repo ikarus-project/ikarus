@@ -3,6 +3,7 @@
 
 #pragma once
 #include <map>
+#include <memory>
 
 #include <Eigen/Core>
 
@@ -16,31 +17,31 @@ public:
     assert(MessageType::END != message && "The END enum type should not be used");
     assert(MessageType::BEGIN != message && "The BEGIN enum type should not be used");
     updateImpl(message);
-  };
+  }
   void update(MessageType message, double val) {
     assert(MessageType::END != message && "The END enum type should not be used");
     assert(MessageType::BEGIN != message && "The BEGIN enum type should not be used");
     updateImpl(message, val);
-  };
+  }
 
   void update(MessageType message, int intVal, double val1, double val2) {
     assert(MessageType::END != message && "The END enum type should not be used");
     assert(MessageType::BEGIN != message && "The BEGIN enum type should not be used");
     updateImpl(message, intVal, val1, val2);
-  };
+  }
 
   void update(MessageType message, const Eigen::VectorXd& vec) {
     assert(MessageType::END != message && "The END enum type should not be used");
     assert(MessageType::BEGIN != message && "The BEGIN enum type should not be used");
     updateImpl(message, vec);
-  };
+  }
 
 protected:
-  virtual void updateImpl([[maybe_unused]] MessageType message){};
-  virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] double val){};
+  virtual void updateImpl([[maybe_unused]] MessageType message) {}
+  virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] double val) {}
   virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] int intVal,
-                          [[maybe_unused]] double val1, [[maybe_unused]] double val2){};
-  virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] const Eigen::VectorXd& vec){};
+                          [[maybe_unused]] double val1, [[maybe_unused]] double val2) {}
+  virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] const Eigen::VectorXd& vec) {}
 };
 
 template <typename MessageType>

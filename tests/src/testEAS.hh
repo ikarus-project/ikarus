@@ -85,20 +85,13 @@ struct ElementTest<Ikarus::EnhancedAssumedStrains<DisplacementBasedElement>> {
                 }
               },
               easVariant);
-          try {
-            auto requirements = Ikarus::FErequirements();
-            fe.calculateScalar(requirements);
-            t.check(false) << "fe.calculateScalar should have failed for numberOfEASParameter > 0";
-          } catch (const Dune::NotImplemented&) {
-          }
+          auto requirements = Ikarus::FErequirements();
+          t.checkThrow([&]() { fe.calculateScalar(requirements); })
+              << "fe.calculateScalar should have failed for numberOfEASParameter > 0";
         }
 
-        try {
-          fe.setEASType(100);
-          t.check(false) << "fe.setEASType(100) should have failed";
-        } catch (const Dune::NotImplemented&) {
-        }
-      };
+        t.checkThrow([&]() { fe.setEASType(100); }) << "fe.setEASType(100) should have failed";
+      }
       return t;
     };
     return easFunctor;

@@ -35,7 +35,7 @@ namespace Ikarus {
     explicit DirichletValues(const Basis_& p_basis) : basis_{p_basis}, dirichletFlagsBackend{dirichletFlags} {
       dirichletFlagsBackend.resize(basis_);
       std::fill(dirichletFlags.begin(), dirichletFlags.end(), false);
-      inhomogeneousBoundaryVectorDummy.setZero(basis_.size());
+      inhomogeneousBoundaryVectorDummy.setZero(static_cast<Eigen::Index>(basis_.size()));
     }
 
     /**

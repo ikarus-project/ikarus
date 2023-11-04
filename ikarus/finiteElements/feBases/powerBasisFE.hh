@@ -34,7 +34,7 @@ namespace Ikarus {
     /** \brief Number of children in the powerBasis */
     static constexpr int num_children = RootBasis::PreBasis::Node::degree();
 
-    [[nodiscard]] constexpr int size() const { return localView_.size(); }
+    [[nodiscard]] constexpr size_t size() const { return localView_.size(); }
 
     void globalFlatIndices(std::vector<GlobalIndex>& globalIndices) const {
       globalIndices.clear();

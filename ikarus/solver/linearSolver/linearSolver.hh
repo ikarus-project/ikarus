@@ -32,7 +32,7 @@ namespace Ikarus {
     d_FullPivHouseholderQR,
     d_CompleteOrthogonalDecomposition,
     d_LLT,
-    d_LDLT,
+    d_LDLT
   };
 
   enum class MatrixTypeTag { Dense, Sparse };
@@ -58,7 +58,7 @@ namespace Ikarus {
   private:
     struct SolverBase {
       virtual ~SolverBase() = default;
-      virtual void analyzePattern(const DenseMatrixType&) const {};
+      virtual void analyzePattern(const DenseMatrixType&) const {}
       virtual void analyzePattern(const SparseMatrixType&)                                         = 0;
       virtual void factorize(const DenseMatrixType&)                                               = 0;
       virtual void factorize(const SparseMatrixType&)                                              = 0;
@@ -146,4 +146,5 @@ namespace Ikarus {
   };
 
   typedef LinearSolverTemplate<double> LinearSolver;
+  extern template class LinearSolverTemplate<double>;
 }  // namespace Ikarus

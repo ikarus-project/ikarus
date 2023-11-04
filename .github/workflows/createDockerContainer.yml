@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: CC0-1.0
 
- name: Build WSL Docker Images
+ name: Build Docker Images
 
  on:
    workflow_run:

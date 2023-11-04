@@ -41,7 +41,8 @@ namespace Ikarus {
 
   template <typename GridView, typename PreBasisFactory>
   auto makeBasis(const GridView& gv, const PreBasisFactory& pb) {
-    return Basis(pb(gv));
+    auto preBasis = pb(gv);
+    return Basis(preBasis);
   }
 
   template <typename PreBasis>

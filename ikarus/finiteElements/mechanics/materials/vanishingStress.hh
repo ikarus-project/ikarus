@@ -10,12 +10,12 @@ namespace Ikarus {
 
   namespace Impl {
     struct StressIndexPair {
-      size_t row;
-      size_t col;
+      Eigen::Index row;
+      Eigen::Index col;
     };
 
     template <size_t size>
-    constexpr auto createfreeVoigtIndices(const std::array<StressIndexPair, size> &fixed) {
+    consteval auto createfreeVoigtIndices(const std::array<StressIndexPair, size> &fixed) {
       std::array<size_t, 6 - size> res{};
       std::array<size_t, size> voigtFixedIndices;
       std::ranges::transform(fixed, voigtFixedIndices.begin(), [](auto pair) { return toVoigt(pair.row, pair.col); });
@@ -26,7 +26,7 @@ namespace Ikarus {
     }
 
     template <size_t size>
-    constexpr auto createFixedVoigtIndices(const std::array<StressIndexPair, size> &fixed) {
+    consteval auto createFixedVoigtIndices(const std::array<StressIndexPair, size> &fixed) {
       std::array<size_t, size> fixedIndices;
       std::ranges::transform(fixed, fixedIndices.begin(), [](auto pair) { return toVoigt(pair.row, pair.col); });
       std::ranges::sort(fixedIndices);
@@ -119,7 +119,7 @@ namespace Ikarus {
 
     template <typename Derived>
     void initUnknownStrains(Eigen::MatrixBase<Derived> &E) const {
-      for (int i = 0; i < fixedPairs.size(); ++i) {
+      for (size_t i = 0; i < fixedPairs.size(); ++i) {
         ScalarType initialVal = E(fixedPairs[i].row, fixedPairs[i].col);
         if constexpr (strainTag == StrainTags::deformationGradient or strainTag == StrainTags::rightCauchyGreenTensor) {
           if (Dune::FloatCmp::eq(initialVal, ScalarType(0.0)) and (fixedPairs[i].row == fixedPairs[i].col))
@@ -136,7 +136,7 @@ namespace Ikarus {
       initUnknownStrains(E);
 
       std::array<size_t, fixedDiagonalVoigtIndicesSize> fixedDiagonalVoigtIndices;
-      for (int ri = 0; auto i : fixedVoigtIndices) {
+      for (size_t ri = 0; auto i : fixedVoigtIndices) {
         auto indexPair = fromVoigt(i);
         if (indexPair[0] == indexPair[1]) fixedDiagonalVoigtIndices[ri++] = i;
       }
@@ -153,7 +153,7 @@ namespace Ikarus {
       auto nonOp = Ikarus::NonLinearOperator(functions(f, df), parameter(Er));
       auto nr    = Ikarus::makeNewtonRaphson(
              nonOp, [&](auto &r, auto &A) { return (A.inverse() * r).eval(); },
-             [&](auto &Ex33, auto &Ecomps) {
+             [&](auto    &/* Ex33 */, auto &Ecomps) {
             for (int ri = 0; auto i : fixedDiagonalVoigtIndices) {
               auto indexPair = fromVoigt(i);
               E(indexPair[0], indexPair[1]) += Ecomps(ri++);

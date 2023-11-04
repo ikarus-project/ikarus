@@ -57,22 +57,20 @@ namespace Ikarus {
   Eigen::VectorXd &VectorFlatAssembler<Basis, FEContainer>::getReducedVectorImpl(
       const FERequirementType &feRequirements) {
     vecRed.setZero(this->reducedSize());
-    int reducedCounter = 0;
     Eigen::VectorXd vecLocal;
     std::vector<GlobalIndex> dofs;
-    for (auto &fe : this->finiteElements()) {
+    for ( auto &fe : this->finiteElements()) {
       vecLocal.setZero(fe.size());
       dofs.resize(0);
       fe.calculateVector(feRequirements, vecLocal);
       fe.globalFlatIndices(dofs);
       assert(static_cast<long int>(dofs.size()) == vecLocal.size() && "The returned vector has wrong rowSize!");
-      for (int i = 0; auto &&dofIndex : dofs) {
+      for (int localConstrainedCounter = 0; auto &&dofIndex : dofs) {
         if (this->isConstrained(dofIndex)) {
-          ++reducedCounter;
-          ++i;
+          ++localConstrainedCounter;
           continue;
         } else
-          vecRed(dofIndex[0] - this->constraintsBelow(dofIndex[0])) += vecLocal[i++];
+          vecRed(dofIndex[0] - this->constraintsBelow(dofIndex[0])) += vecLocal[localConstrainedCounter++];
       }
     }
     return vecRed;
@@ -86,9 +84,9 @@ namespace Ikarus {
     for (size_t elementIndex = 0; const auto &fe : this->finiteElements()) {
       A.setZero(fe.size(), fe.size());
       fe.calculateMatrix(feRequirements, A);
-      assert(std::sqrt(elementLinearIndices[elementIndex].size()) == A.rows()
+      assert(static_cast<Eigen::Index>(std::sqrt(elementLinearIndices[elementIndex].size())) == A.rows()
              && "The returned matrix has wrong rowSize!");
-      assert(std::sqrt(elementLinearIndices[elementIndex].size()) == A.cols()
+      assert(static_cast<Eigen::Index>(std::sqrt(elementLinearIndices[elementIndex].size())) == A.cols()
              && "The returned matrix has wrong colSize!");
       for (Eigen::Index linearIndex = 0; double matrixEntry : A.reshaped())
         assemblyMat.coeffs()(elementLinearIndices[elementIndex][linearIndex++]) += matrixEntry;

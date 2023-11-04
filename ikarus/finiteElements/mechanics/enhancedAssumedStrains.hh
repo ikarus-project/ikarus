@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
+#if HAVE_DUNE_LOCALFEFUNCTIONS
+#  include <dune/localfefunctions/derivativetransformators.hh>
+#  include <dune/localfefunctions/meta.hh>
 
-#include <dune/localfefunctions/derivativetransformators.hh>
-#include <dune/localfefunctions/meta.hh>
-
-#include <ikarus/finiteElements/feRequirements.hh>
-#include <ikarus/utils/eigenDuneTransformations.hh>
+#  include <ikarus/finiteElements/feRequirements.hh>
+#  include <ikarus/utils/eigenDuneTransformations.hh>
 
 namespace Ikarus {
 
@@ -278,7 +278,7 @@ namespace Ikarus {
     const auto& easVariant() const { return easVariant_; }
     auto getNumberOfEASParameters() const {
       return std::visit(
-          [&]<typename EAST>(const EAST& easFunction) {
+          [&]<typename EAST>(const EAST&) {
             if constexpr (std::is_same_v<std::monostate, EAST>)
               return 0;
             else
@@ -490,3 +490,7 @@ namespace Ikarus {
     }
   };
 }  // namespace Ikarus
+
+#else
+#  error EnhancedAssumedStrains depends on dune-localfefunctions, which is not included
+#endif

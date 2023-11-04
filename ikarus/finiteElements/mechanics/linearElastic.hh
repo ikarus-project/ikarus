@@ -2,29 +2,30 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
-#include <iosfwd>
-#include <optional>
-#include <type_traits>
+#if HAVE_DUNE_LOCALFEFUNCTIONS
+#  include <iosfwd>
+#  include <optional>
+#  include <type_traits>
 
-#include <dune/common/classname.hh>
-#include <dune/fufem/boundarypatch.hh>
-#include <dune/geometry/quadraturerules.hh>
-#include <dune/geometry/type.hh>
-#include <dune/localfefunctions/expressions/linearStrainsExpr.hh>
-#include <dune/localfefunctions/impl/standardLocalFunction.hh>
-#include <dune/localfefunctions/manifolds/realTuple.hh>
+#  include <dune/common/classname.hh>
+#  include <dune/fufem/boundarypatch.hh>
+#  include <dune/geometry/quadraturerules.hh>
+#  include <dune/geometry/type.hh>
+#  include <dune/localfefunctions/expressions/linearStrainsExpr.hh>
+#  include <dune/localfefunctions/impl/standardLocalFunction.hh>
+#  include <dune/localfefunctions/manifolds/realTuple.hh>
 
-#include <autodiff/forward/dual.hpp>
-#include <autodiff/forward/dual/eigen.hpp>
+#  include <autodiff/forward/dual.hpp>
+#  include <autodiff/forward/dual/eigen.hpp>
 
-#include <ikarus/finiteElements/feBases/powerBasisFE.hh>
-#include <ikarus/finiteElements/feRequirements.hh>
-#include <ikarus/finiteElements/feTraits.hh>
-#include <ikarus/finiteElements/mechanics/materials.hh>
-#include <ikarus/finiteElements/physicsHelper.hh>
-#include <ikarus/utils/defaultFunctions.hh>
-#include <ikarus/utils/eigenDuneTransformations.hh>
-#include <ikarus/utils/linearAlgebraHelper.hh>
+#  include <ikarus/finiteElements/feBases/powerBasisFE.hh>
+#  include <ikarus/finiteElements/feRequirements.hh>
+#  include <ikarus/finiteElements/feTraits.hh>
+#  include <ikarus/finiteElements/mechanics/materials.hh>
+#  include <ikarus/finiteElements/physicsHelper.hh>
+#  include <ikarus/utils/defaultFunctions.hh>
+#  include <ikarus/utils/eigenDuneTransformations.hh>
+#  include <ikarus/utils/linearAlgebraHelper.hh>
 
 namespace Ikarus {
 
@@ -297,3 +298,7 @@ namespace Ikarus {
     }
   };
 }  // namespace Ikarus
+
+#else
+#  error LinearElastic depends on dune-localfefunctions, which is not included
+#endif

@@ -22,7 +22,7 @@
 using namespace Ikarus::Concepts;
 using Dune::TestSuite;
 
-auto residual(const Eigen::VectorXd& D, double lambda) {
+static auto residual(const Eigen::VectorXd& D, double lambda) {
   Eigen::VectorXd vec;
   vec.resize(2);
   auto& w = D[1];
@@ -30,7 +30,7 @@ auto residual(const Eigen::VectorXd& D, double lambda) {
   vec << 16.0 * u - 3 * w - w * w * w - (2.0 / 3.0) * lambda, -3 * u + 4 * w - 3 * u * w * w - (9.0 / 4.0) * lambda;
   return vec;
 }
-auto stiffnessMatrix(const Eigen::VectorXd& D, [[maybe_unused]] double lambda) {
+static auto stiffnessMatrix(const Eigen::VectorXd& D, [[maybe_unused]] double lambda) {
   Eigen::MatrixXd mat;
   mat.setZero(2, 2);
   auto& w = D[1];
@@ -39,7 +39,7 @@ auto stiffnessMatrix(const Eigen::VectorXd& D, [[maybe_unused]] double lambda) {
   return mat;
 }
 
-auto simple2DOperatorArcLengthTest() {
+static auto simple2DOperatorArcLengthTest() {
   double lambda = 0;
   Eigen::VectorXd D;
   D.setZero(2);
@@ -61,7 +61,7 @@ auto simple2DOperatorArcLengthTest() {
 
   auto nr                      = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
   auto alc                     = Ikarus::PathFollowing(nr, load_steps, stepSize, pft);
-  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
+  auto nonLinearSolverObserver = std::make_shared<Ikarus::NonLinearSolverLogger>();
   nr->subscribeAll(nonLinearSolverObserver);
   const auto controlInfo = alc.run();
 
@@ -70,7 +70,7 @@ auto simple2DOperatorArcLengthTest() {
   return t;
 }
 
-auto simple2DOperatorArcLengthTestAsDefault() {
+static auto simple2DOperatorArcLengthTestAsDefault() {
   double lambda = 0;
   Eigen::VectorXd D;
   D.setZero(2);
@@ -87,7 +87,7 @@ auto simple2DOperatorArcLengthTestAsDefault() {
 
   auto nr                      = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
   auto alc                     = Ikarus::PathFollowing(nr, load_steps, stepSize);
-  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
+  auto nonLinearSolverObserver = std::make_shared<Ikarus::NonLinearSolverLogger>();
   nr->subscribeAll(nonLinearSolverObserver);
   const auto controlInfo = alc.run();
 
@@ -96,7 +96,7 @@ auto simple2DOperatorArcLengthTestAsDefault() {
   return t;
 }
 
-auto simple2DOperatorLoadControlTest() {
+static auto simple2DOperatorLoadControlTest() {
   double lambda = 0;
   Eigen::VectorXd D;
   D.setZero(2);
@@ -117,7 +117,7 @@ auto simple2DOperatorLoadControlTest() {
 
   auto nr                      = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
   auto lc                      = Ikarus::PathFollowing(nr, load_steps, stepSize, pft);
-  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
+  auto nonLinearSolverObserver = std::make_shared<Ikarus::NonLinearSolverLogger>();
   nr->subscribeAll(nonLinearSolverObserver);
   const auto controlInfo = lc.run();
 
@@ -126,7 +126,7 @@ auto simple2DOperatorLoadControlTest() {
   return t;
 }
 
-auto simple2DOperatorDisplacementControlTest() {
+static auto simple2DOperatorDisplacementControlTest() {
   double lambda = 0;
   Eigen::VectorXd D;
   D.setZero(2);
@@ -149,7 +149,7 @@ auto simple2DOperatorDisplacementControlTest() {
 
   auto nr                      = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
   auto dc                      = Ikarus::PathFollowing(nr, load_steps, stepSize, pft);
-  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
+  auto nonLinearSolverObserver = std::make_shared<Ikarus::NonLinearSolverLogger>();
   nr->subscribeAll(nonLinearSolverObserver);
   const auto controlInfo = dc.run();
 

@@ -12,8 +12,9 @@
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/subspacebasis.hh>
-#include <dune/iga/nurbsbasis.hh>
-
+#if HAVE_DUNE_IGA
+#  include <dune/iga/nurbsbasis.hh>
+#endif
 #include "spdlog/spdlog.h"
 
 #include <Eigen/Core>
@@ -34,7 +35,7 @@
 
 using Dune::TestSuite;
 
-auto NonLinearElasticityLoadControlNRandTRforKLShell() {
+static auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   TestSuite t("NonLinearElasticityLoadControlNRandTRforKLShell");
   constexpr auto dimworld        = 3;
   const std::array<int, 2> order = {1, 1};
@@ -46,7 +47,7 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   const std::vector<std::vector<ControlPoint>> controlPoints
       = {{{.p = {0, 0, 0}, .w = 1}, {.p = {10, 0, 0}, .w = 1}}, {{.p = {0, 2, 0}, .w = 1}, {.p = {10, 2, 0}, .w = 1}}};
 
-  std::array<int, 2> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
+  std::array<int, 2> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
 
   auto controlNet = Dune::IGA::NURBSPatchData<2, dimworld>::ControlPointNetType(dimsize, controlPoints);
   using Grid      = Dune::IGA::NURBSGrid<2, dimworld>;
@@ -62,7 +63,6 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   grid->globalRefine(2);
   auto gridView = grid->leafGridView();
 
-  using GridView = decltype(gridView);
   using namespace Ikarus;
   using namespace Dune::Functions::BasisFactory;
   const double E         = 1000;
@@ -89,16 +89,16 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
     if (std::abs(intersection.geometry().center()[0]) < 1e-8) dirichletFlags[localView.index(localIndex)] = true;
   });
 
-  dirichletValues.fixDOFs([&](auto& basis, auto&& dirichletFlags) {
-    Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basis, 2),
+  dirichletValues.fixDOFs([&](auto& basisL, auto&& dirichletFlags) {
+    Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basisL, 2),
                                         [&](auto&& localIndex, auto&& localView, auto&& intersection) {
                                           if (std::abs(intersection.geometry().center()[0]) > 10 - 1e-8)
                                             dirichletFlags[localView.index(localIndex)] = true;
                                         });
   });
 
-  dirichletValues.fixDOFs([&](auto& basis, auto&& dirichletFlags) {
-    Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basis, 1),
+  dirichletValues.fixDOFs([&](auto& basisL, auto&& dirichletFlags) {
+    Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basisL, 1),
                                         [&](auto&& localIndex, auto&& localView, auto&& intersection) {
                                           if (std::abs(intersection.geometry().center()[0]) > 10 - 1e-8)
                                             dirichletFlags[localView.index(localIndex)] = true;
@@ -154,6 +154,7 @@ auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   lc.subscribeAll(vtkWriter);
   const auto controlInfo = lc.run();
 
+  t.check(controlInfo.success);
   std::cout << std::setprecision(16) << std::ranges::max(d) << std::endl;
   t.check(Dune::FloatCmp::eq(0.2957393081676369, std::ranges::max(d)))
       << std::setprecision(16) << "The maximum displacement is " << std::ranges::max(d);

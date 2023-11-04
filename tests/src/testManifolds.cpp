@@ -8,9 +8,10 @@
 #include <array>
 
 #include <dune/common/test/testsuite.hh>
-#include <dune/localfefunctions/manifolds/realTuple.hh>
-#include <dune/localfefunctions/manifolds/unitVector.hh>
-
+#if HAVE_DUNE_LOCALFEFUNCTIONS
+#  include <dune/localfefunctions/manifolds/realTuple.hh>
+#  include <dune/localfefunctions/manifolds/unitVector.hh>
+#endif
 #include <Eigen/Core>
 
 #include <ikarus/utils/init.hh>
@@ -19,7 +20,7 @@ using Dune::TestSuite;
 
 static constexpr double tol = 1e-15;
 
-auto testUnitVector() {
+static auto testUnitVector() {
   TestSuite t("testUnitVector");
   using namespace Dune;
   UnitVector<double, 3> a{UnitVector<double, 3>::CoordinateType::UnitZ()};

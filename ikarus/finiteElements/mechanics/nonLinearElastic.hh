@@ -3,26 +3,27 @@
 
 #pragma once
 
-#include <dune/common/classname.hh>
-#include <dune/fufem/boundarypatch.hh>
-#include <dune/geometry/quadraturerules.hh>
-#include <dune/geometry/type.hh>
-#include <dune/localfefunctions/cachedlocalBasis/cachedlocalBasis.hh>
-#include <dune/localfefunctions/expressions/greenLagrangeStrains.hh>
-#include <dune/localfefunctions/impl/standardLocalFunction.hh>
-#include <dune/localfefunctions/manifolds/realTuple.hh>
+#if HAVE_DUNE_LOCALFEFUNCTIONS
+#  include <dune/common/classname.hh>
+#  include <dune/fufem/boundarypatch.hh>
+#  include <dune/geometry/quadraturerules.hh>
+#  include <dune/geometry/type.hh>
+#  include <dune/localfefunctions/cachedlocalBasis/cachedlocalBasis.hh>
+#  include <dune/localfefunctions/expressions/greenLagrangeStrains.hh>
+#  include <dune/localfefunctions/impl/standardLocalFunction.hh>
+#  include <dune/localfefunctions/manifolds/realTuple.hh>
 
-#include <autodiff/forward/dual.hpp>
-#include <autodiff/forward/dual/eigen.hpp>
+#  include <autodiff/forward/dual.hpp>
+#  include <autodiff/forward/dual/eigen.hpp>
 
-#include <ikarus/finiteElements/feBases/powerBasisFE.hh>
-#include <ikarus/finiteElements/feRequirements.hh>
-#include <ikarus/finiteElements/feTraits.hh>
-#include <ikarus/finiteElements/mechanics/materials/tags.hh>
-#include <ikarus/finiteElements/physicsHelper.hh>
-#include <ikarus/utils/defaultFunctions.hh>
-#include <ikarus/utils/eigenDuneTransformations.hh>
-#include <ikarus/utils/linearAlgebraHelper.hh>
+#  include <ikarus/finiteElements/feBases/powerBasisFE.hh>
+#  include <ikarus/finiteElements/feRequirements.hh>
+#  include <ikarus/finiteElements/feTraits.hh>
+#  include <ikarus/finiteElements/mechanics/materials/tags.hh>
+#  include <ikarus/finiteElements/physicsHelper.hh>
+#  include <ikarus/utils/defaultFunctions.hh>
+#  include <ikarus/utils/eigenDuneTransformations.hh>
+#  include <ikarus/utils/linearAlgebraHelper.hh>
 
 namespace Ikarus {
 
@@ -261,7 +262,6 @@ namespace Ikarus {
       for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
         const double intElement = geo.integrationElement(gp.position()) * gp.weight();
         const auto EVoigt       = (eps.evaluate(gpIndex, on(gridElement))).eval();
-        const auto C            = getMaterialTangent(EVoigt);
         const auto stresses     = getStress(EVoigt);
         for (size_t i = 0; i < numberOfNodes; ++i) {
           const auto bopI = eps.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
@@ -312,3 +312,7 @@ namespace Ikarus {
     }
   };
 }  // namespace Ikarus
+
+#else
+#  error NonLinearElastic depends on dune-localfefunctions, which is not included
+#endif

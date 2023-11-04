@@ -40,10 +40,10 @@ auto checkNewtonRhapson(NewtonRhapson& nr, SolutionType& x, double tolerance, in
   return t;
 }
 
-auto f(double x) { return 0.5 * x * x + x - 2; }
-auto df(double x) { return x + 1; }
+static auto f(double x) { return 0.5 * x * x + x - 2; }
+static auto df(double x) { return x + 1; }
 
-auto simple1DOperatorNewtonRhapsonTest() {
+static auto simple1DOperatorNewtonRhapsonTest() {
   TestSuite t("simple1DOperatorNewtonRhapsonTest");
 
   double x = 13;
@@ -62,7 +62,7 @@ auto simple1DOperatorNewtonRhapsonTest() {
   return t;
 }
 
-auto simple1DOperatorNewtonRhapsonCheckThatThePerfectPredictorWorksTest() {
+static auto simple1DOperatorNewtonRhapsonCheckThatThePerfectPredictorWorksTest() {
   TestSuite t("simple1DOperatorNewtonRhapsonCheckThatThePerfectPredictorWorksTest");
   double x = 0;
 
@@ -80,9 +80,9 @@ auto simple1DOperatorNewtonRhapsonCheckThatThePerfectPredictorWorksTest() {
   return t;
 }
 
-auto dfFail(double x) { return x + 1000000; }
+static auto dfFail(double x) { return x + 1000000; }
 
-auto simple1DOperatorNewtonRhapsonWithWrongDerivativeTest() {
+static auto simple1DOperatorNewtonRhapsonWithWrongDerivativeTest() {
   double x = 13;
 
   auto fvLambda  = [](auto&& x_) { return f(x_); };
@@ -104,13 +104,15 @@ auto simple1DOperatorNewtonRhapsonWithWrongDerivativeTest() {
   return t;
 }
 
-Eigen::Vector3d fv(const Eigen::Vector3d& x, const Eigen::Matrix3d& A, const Eigen::Vector3d& b) { return b + A * x; }
-Eigen::Matrix3d dfv(Eigen::Vector3d&, const Eigen::Matrix3d& A, Eigen::Vector3d&) { return A; }
+static Eigen::Vector3d fv(const Eigen::Vector3d& x, const Eigen::Matrix3d& A, const Eigen::Vector3d& b) {
+  return b + A * x;
+}
+static Eigen::Matrix3d dfv(Eigen::Vector3d&, const Eigen::Matrix3d& A, Eigen::Vector3d&) { return A; }
 
-auto fp(double x, int i) { return 0.5 * x * x + x * i - 2; }
-auto dfp(double x, int i) { return x + i; }
+static auto fp(double x, int i) { return 0.5 * x * x + x * i - 2; }
+static auto dfp(double x, int i) { return x + i; }
 
-auto simple1DOperatorNewtonRhapsonTestWithParamter() {
+static auto simple1DOperatorNewtonRhapsonTestWithParamter() {
   TestSuite t("simple1DOperatorNewtonRhapsonTestWithParamter");
   double x = 13;
 
@@ -130,7 +132,8 @@ auto simple1DOperatorNewtonRhapsonTestWithParamter() {
   }
   return t;
 }
-auto vectorValuedOperatorNewtonRhapsonTest() {
+
+static auto vectorValuedOperatorNewtonRhapsonTest() {
   Eigen::Vector3d x;
   x << 1, 2, 3;
   Eigen::Vector3d b;
@@ -149,15 +152,18 @@ auto vectorValuedOperatorNewtonRhapsonTest() {
   return checkNewtonRhapson(nr, x, eps, maxIter, 1, (-A.ldlt().solve(b)).eval(), Eigen::Vector3d::Zero().eval());
 }
 
-double f2v(Eigen::VectorXd& x, Eigen::MatrixXd& A, Eigen::VectorXd& b) { return x.dot(b + A * x); }
-Eigen::VectorXd df2v([[maybe_unused]] Eigen::VectorXd& x, Eigen::MatrixXd& A, [[maybe_unused]] Eigen::VectorXd& b) {
+static double f2v(Eigen::VectorXd& x, Eigen::MatrixXd& A, Eigen::VectorXd& b) { return x.dot(b + A * x); }
+static Eigen::VectorXd df2v([[maybe_unused]] Eigen::VectorXd& x, Eigen::MatrixXd& A,
+                            [[maybe_unused]] Eigen::VectorXd& b) {
   return 2 * A * x + b;
 }
-Eigen::MatrixXd ddf2v([[maybe_unused]] Eigen::VectorXd& x, Eigen::MatrixXd& A, [[maybe_unused]] Eigen::VectorXd& b) {
+
+static Eigen::MatrixXd ddf2v([[maybe_unused]] Eigen::VectorXd& x, Eigen::MatrixXd& A,
+                             [[maybe_unused]] Eigen::VectorXd& b) {
   return 2 * A;
 }
 
-auto secondOrderVectorValuedOperatorTest() {
+static auto secondOrderVectorValuedOperatorTest() {
   TestSuite t("SecondOrderVectorValuedOperatorTest");
   Eigen::VectorXd x(3);
 
@@ -198,15 +204,17 @@ ScalarType f2vNL(const Eigen::VectorX<ScalarType>& x, Eigen::MatrixXd&, Eigen::V
   return x.array().sin().matrix().dot(x);
 }
 
-Eigen::VectorXd df2vNL(Eigen::VectorX<autodiff::dual>& x, Eigen::MatrixXd& A, [[maybe_unused]] Eigen::VectorXd& b) {
+static Eigen::VectorXd df2vNL(Eigen::VectorX<autodiff::dual>& x, Eigen::MatrixXd& A,
+                              [[maybe_unused]] Eigen::VectorXd& b) {
   return autodiff::gradient(f2vNL<autodiff::dual>, autodiff::wrt(x), autodiff::at(x, A, b));
 }
 
-Eigen::MatrixXd ddf2vNL(Eigen::VectorX<autodiff::dual2nd>& x, Eigen::MatrixXd& A, [[maybe_unused]] Eigen::VectorXd& b) {
+static Eigen::MatrixXd ddf2vNL(Eigen::VectorX<autodiff::dual2nd>& x, Eigen::MatrixXd& A,
+                               [[maybe_unused]] Eigen::VectorXd& b) {
   return autodiff::hessian(f2vNL<autodiff::dual2nd>, autodiff::wrt(x), autodiff::at(x, A, b));
 }
 
-auto secondOrderVectorValuedOperatorNonlinearAutodiff() {
+static auto secondOrderVectorValuedOperatorNonlinearAutodiff() {
   TestSuite t("SecondOrderVectorValuedOperatorNonlinearAutodiff");
   Eigen::VectorXd x(3);
 
