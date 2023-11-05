@@ -8,8 +8,12 @@
 #include <dune/common/test/testsuite.hh>
 
 #include <Eigen/Eigenvalues>
+#include <unsupported/Eigen/MatrixFunctions>
 
-#include <ikarus/finiteElements/mechanics/materials.hh>
+#include <ikarus/finiteElements/mechanics/materials/svk.hh>
+#include <ikarus/finiteElements/mechanics/materials/neohooke.hh>
+#include <ikarus/finiteElements/mechanics/materials/linearElasticity.hh>
+#include <ikarus/finiteElements/mechanics/materials/vanishingStress.hh>
 #include <ikarus/finiteElements/physicsHelper.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/utils/functionSanityChecks.hh>

@@ -18,6 +18,8 @@
 #include "concepts.hh"
 #include "traits.hh"
 
+#include<autodiff/forward/dual/dual.hpp>
+
 namespace Ikarus {
 
   /** \brief Orthonormalizes all Matrix columns */
