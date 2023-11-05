@@ -18,6 +18,7 @@ using Dune::TestSuite;
 #include <ikarus/finiteElements/mechanics/materials/svk.hh>
 #include <ikarus/finiteElements/mechanics/materials/vanishingStress.hh>
 #include <ikarus/finiteElements/mechanics/nonLinearElastic.hh>
+#include <ikarus/linearAlgebra/dirichletValues.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/init.hh>
 

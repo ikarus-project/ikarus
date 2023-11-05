@@ -28,6 +28,7 @@
 #include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
+#include <ikarus/io/resultEvaluators.hh>
 
 using Dune::TestSuite;
 
