@@ -17,6 +17,7 @@
 #include <ikarus/controlRoutines/loadControl.hh>
 #include <ikarus/finiteElements/mechanics/linearElastic.hh>
 #include <ikarus/finiteElements/mechanics/nonLinearElastic.hh>
+#include <ikarus/finiteElements/mechanics/materials/svk.hh>
 #include <ikarus/io/resultFunction.hh>
 #include <ikarus/linearAlgebra/dirichletValues.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>

@@ -7,6 +7,7 @@
 #include <cmath>
 #include <limits>
 #include <type_traits>
+#include <dune/common/float_cmp.hh>
 
 namespace Ikarus {
 

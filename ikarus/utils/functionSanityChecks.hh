@@ -2,13 +2,11 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
-#include "findLineSegment.hh"
-
-#include <iostream>
-
-#include <dune/common/float_cmp.hh>
-
 #include <spdlog/spdlog.h>
+#include <functional>
+#include <string>
+#include <dune/common/float_cmp.hh> // IWYU pragma: keep
+
 namespace Ikarus {
   double drawResultAndReturnSlope(std::string&& functionName, const std::function<double(double)>& ftfunc, bool draw,
                                   int slopeOfReference);

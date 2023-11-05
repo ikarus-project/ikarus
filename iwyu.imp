@@ -4,4 +4,6 @@
 [
 { include: ["@<Eigen/src/Core/.*>", "public", "<Eigen/Core>", "public"] },
 { include: ["@<Eigen/src/SparseCore/.*>", "public", "<Eigen/Sparse>", "public"] }
+{ include: ["@<unsupported/Eigen/CXX11/src/Tensor/.*>", "public", "<unsupported/Eigen/CXX11/Tensor>", "public"] }
+{ include: ["@<dune/fufem/python/.*>", "public", "<dune/fufem/dunepython.hh>", "public"] }
 ]

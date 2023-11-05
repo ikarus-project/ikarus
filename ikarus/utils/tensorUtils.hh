@@ -2,14 +2,21 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
 
-#include <numeric>
-#include <ranges>
+#include <assert.h>
+#include <stddef.h>
 #include <unsupported/Eigen/CXX11/Tensor>
-
+#include <Eigen/Core>
+#include <algorithm>
+#include <array>
 #include <dune/common/promotiontraits.hh>
-
 #include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/math.hh>
+#include <numeric>
+#include <ranges>
+#include <type_traits>
+#include <utility>
+namespace Eigen { template <typename Idx> struct IndexPair; }
+
 namespace Ikarus {
 
   template <typename Derived, typename T, auto rank>

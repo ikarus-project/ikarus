@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
-#include "polyfit.hh"
-
 #include <Eigen/Core>
+#include <dune/functions/analyticfunctions/polynomial.hh>
+#include <tuple>
 
 namespace Ikarus {
   /*

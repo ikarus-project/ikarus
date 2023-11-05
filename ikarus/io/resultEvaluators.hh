@@ -3,15 +3,11 @@
 
 #pragma once
 
+#include <assert.h>
 #include <dune/common/math.hh>
-
 #include <ikarus/finiteElements/feRequirements.hh>
-
-namespace Dune {
-  // Forward declaration
-  template <typename ScalarType, int size>
-  class FieldVector;
-}  // namespace Dune
+#include <string>
+namespace Dune { template <typename ScalarType, int size> class FieldVector; }
 
 namespace Ikarus::ResultEvaluators {
 

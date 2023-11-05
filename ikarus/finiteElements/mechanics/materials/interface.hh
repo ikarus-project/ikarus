@@ -4,10 +4,12 @@
 #pragma once
 
 #include <ikarus/finiteElements/mechanics/materials/strainConversions.hh>
-#include <ikarus/finiteElements/mechanics/materials/tags.hh>
-#include <ikarus/finiteElements/physicsHelper.hh>
 #include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/traits.hh>
+#include <string>
+#include <ikarus/utils/tensorUtils.hh>
+namespace Eigen { template <typename Derived> class MatrixBase; }
+namespace Ikarus { enum class StrainTags; }
 
 namespace Ikarus {
   template <class MaterialImpl>

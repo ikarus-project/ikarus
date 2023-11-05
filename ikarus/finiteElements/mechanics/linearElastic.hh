@@ -21,7 +21,6 @@ template <class GV> class BoundaryPatch;
 #  include <ikarus/finiteElements/feBases/powerBasisFE.hh>
 #  include <ikarus/finiteElements/feRequirements.hh>
 #  include <ikarus/finiteElements/feTraits.hh>
-#  include <ikarus/finiteElements/mechanics/materials.hh>
 #  include <ikarus/finiteElements/physicsHelper.hh>
 #  include <ikarus/utils/defaultFunctions.hh>
 #  include <ikarus/utils/eigenDuneTransformations.hh>

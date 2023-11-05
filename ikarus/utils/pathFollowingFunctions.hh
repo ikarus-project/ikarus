@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <Eigen/src/plugins/IndexedViewMethods.h>
 #include <math.h>
 #include <Eigen/Core>
 #include <dune/common/exceptions.hh>

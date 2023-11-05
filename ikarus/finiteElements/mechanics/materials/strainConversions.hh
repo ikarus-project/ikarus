@@ -3,11 +3,10 @@
 #pragma once
 #include "tags.hh"
 
-#include <unsupported/Eigen/MatrixFunctions>
-
-#include <Eigen/Core>
-
-#include <ikarus/utils/tensorUtils.hh>
+#include <ikarus/utils/tensorUtils.hh>  // for fromVoigt
+#include "ikarus/utils/concepts.hh"     // for EigenMatrix33, EigenVector
+#include "tags.hh"                      // for StrainTags
+namespace Eigen { template <typename Derived> class MatrixBase; }
 
 namespace Ikarus {
   namespace Impl {

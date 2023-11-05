@@ -11,6 +11,7 @@
 #include <dune/functions/functionspacebases/lagrangedgbasis.hh>
 #include <dune/grid/uggrid.hh>
 #include <dune/grid/yaspgrid.hh>
+#include <dune/vtk/vtkwriter.hh>
 #if HAVE_DUNE_IGA
 #  include <dune/iga/nurbsgrid.hh>
 #endif

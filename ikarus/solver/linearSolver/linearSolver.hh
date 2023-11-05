@@ -6,7 +6,6 @@
 #include <Eigen/Sparse>
 #include <dune/common/exceptions.hh>
 #include <memory>
-#include <ikarus/utils/eigenSparseAddon.hh>
 
 namespace Ikarus {
 
