@@ -3,14 +3,13 @@
 
 #pragma once
 
-#include <type_traits>
-#include <utility>
-
-#include <dune/vtk/vtkwriter.hh>
-
+#include <dune/common/exceptions.hh>
+#include <dune/common/fvector.hh>
+#include <dune/grid/io/file/vtk/function.hh>
 #include <ikarus/finiteElements/feRequirements.hh>
-#include <ikarus/io/resultEvaluators.hh>
-#include <ikarus/utils/eigenDuneTransformations.hh>
+#include <string>
+#include <vector>
+
 namespace Ikarus {
 
   namespace Impl {

@@ -4,13 +4,9 @@
 #pragma once
 
 #include <assert.h>
-
-#include <dune/common/diagonalmatrix.hh>
+#include <Eigen/Core>
 #include <dune/common/fmatrix.hh>
 #include <dune/common/fvector.hh>
-#include <dune/istl/scaledidmatrix.hh>
-
-#include <Eigen/Core>
 
 namespace Ikarus {
 

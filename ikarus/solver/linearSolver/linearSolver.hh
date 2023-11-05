@@ -2,14 +2,11 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
-#include <memory>
-#include <type_traits>
-#include <variant>
-
-#include <dune/common/exceptions.hh>
-
 #include <Eigen/Core>
-#include <Eigen/SparseCore>
+#include <Eigen/Sparse>
+#include <dune/common/exceptions.hh>
+#include <memory>
+#include <ikarus/utils/eigenSparseAddon.hh>
 
 namespace Ikarus {
 

@@ -1,15 +1,16 @@
 // SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-////
-//
+
 #pragma once
+#include <Eigen/Core>
 #include <autodiff/forward/dual/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
-
+#include <autodiff/forward/utils/derivative.hpp>
 #include <ikarus/finiteElements/feRequirements.hh>
 #include <ikarus/finiteElements/physicsHelper.hh>
 #include <ikarus/utils/traits.hh>
+#include <utility>
 
 namespace Ikarus {
   template <typename RealElement, typename FERequirementType_ = FErequirements<>, bool useEigenRef = false,

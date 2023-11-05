@@ -8,7 +8,7 @@
 #  include <type_traits>
 
 #  include <dune/common/classname.hh>
-#  include <dune/fufem/boundarypatch.hh>
+template <class GV> class BoundaryPatch;
 #  include <dune/geometry/quadraturerules.hh>
 #  include <dune/geometry/type.hh>
 #  include <dune/localfefunctions/expressions/linearStrainsExpr.hh>

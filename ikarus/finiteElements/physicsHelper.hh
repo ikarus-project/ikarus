@@ -2,9 +2,12 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
-#include <dune/common/float_cmp.hh>
-
+#include <assert.h>
 #include <Eigen/Core>
+#include <cmath>
+#include <limits>
+#include <type_traits>
+
 namespace Ikarus {
 
   [[deprecated(

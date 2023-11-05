@@ -2,16 +2,16 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
-#include "pathFollowingFunctions.hh"
-
 #include <concepts>
+#include <ikarus/utils/traits.hh>
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include "pathFollowingFunctions.hh"
 
-#include <dune/functions/functionspacebases/basistags.hh>
+#include <dune/functions/functionspacebases/basistags.hh> // IWYU pragma: keep
 
-#include <ikarus/utils/traits.hh>
+
 
 namespace Eigen {
   template <typename Derived>

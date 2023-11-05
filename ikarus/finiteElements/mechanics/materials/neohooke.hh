@@ -3,8 +3,17 @@
 
 #pragma once
 
+#include <unsupported/Eigen/CXX11/src/Tensor/TensorDimensions.h>
+#include <unsupported/Eigen/CXX11/src/Tensor/TensorFixedSize.h>
+#include <Eigen/Core>
+#include <array>
+#include <complex>
 #include <ikarus/finiteElements/mechanics/materials/interface.hh>
 #include <ikarus/utils/tensorUtils.hh>
+#include <string>
+#include <ikarus/finiteElements/mechanics/materials/tags.hh>
+#include <ikarus/finiteElements/physicsHelper.hh>
+#include <ikarus/utils/concepts.hh>
 
 namespace Ikarus {
 
@@ -51,6 +60,7 @@ namespace Ikarus {
       static_assert(Concepts::EigenMatrixOrVoigtNotation3<Derived>);
       if constexpr (!voigt) {
         if constexpr (!Concepts::EigenVector<Derived>) {
+          using std::log;
           const auto logdetF = log(sqrt(C.determinant()));
           const auto invC    = C.inverse().eval();
           return (lambdaAndmu.mu * (StrainMatrix::Identity() - invC) + lambdaAndmu.lambda * logdetF * invC).eval();

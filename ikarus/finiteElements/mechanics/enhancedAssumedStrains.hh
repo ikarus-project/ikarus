@@ -2,12 +2,24 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
+#include "config.h"
 #if HAVE_DUNE_LOCALFEFUNCTIONS
-#  include <dune/localfefunctions/derivativetransformators.hh>
-#  include <dune/localfefunctions/meta.hh>
-
-#  include <ikarus/finiteElements/feRequirements.hh>
-#  include <ikarus/utils/eigenDuneTransformations.hh>
+#include <stddef.h>
+#include <Eigen/Dense>
+#include <dune/common/binaryfunctions.hh>
+#include <dune/common/exceptions.hh>
+#include <dune/common/fvector.hh>
+#include <dune/common/indices.hh>
+#include <dune/common/iteratorfacades.hh>
+#include <dune/geometry/referenceelements.hh>
+#include <dune/localfefunctions/derivativetransformators.hh>
+#include <dune/localfefunctions/meta.hh>
+#include <ikarus/finiteElements/feRequirements.hh>
+#include <memory>
+#include <optional>
+#include <type_traits>
+#include <utility>
+#include <variant>
 
 namespace Ikarus {
 
