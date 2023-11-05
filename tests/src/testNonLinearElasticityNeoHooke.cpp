@@ -5,7 +5,7 @@
 #include <config.h>
 
 #include "testNonLinearElasticity.hh"
-
+#include <ikarus/finiteElements/mechanics/materials/neohooke.hh>
 using Dune::TestSuite;
 
 int main(int argc, char** argv) {

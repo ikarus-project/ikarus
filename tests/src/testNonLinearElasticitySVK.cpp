@@ -4,7 +4,8 @@
 #include <config.h>
 
 #include "testNonLinearElasticity.hh"
-
+#include <ikarus/finiteElements/mechanics/materials/svk.hh>
+#include <ikarus/finiteElements/mechanics/materials/vanishingStress.hh>
 using Dune::TestSuite;
 
 int main(int argc, char** argv) {
