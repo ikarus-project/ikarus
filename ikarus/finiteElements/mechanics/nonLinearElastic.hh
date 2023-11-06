@@ -5,7 +5,7 @@
 
 #if HAVE_DUNE_LOCALFEFUNCTIONS
 #  include <dune/common/classname.hh>
-template <class GV> class BoundaryPatch;
+#include <dune/fufem/boundarypatch.hh>
 #  include <dune/geometry/quadraturerules.hh>
 #  include <dune/geometry/type.hh>
 #  include <dune/localfefunctions/cachedlocalBasis/cachedlocalBasis.hh>
@@ -24,6 +24,7 @@ template <class GV> class BoundaryPatch;
 #  include <ikarus/utils/defaultFunctions.hh>
 #  include <ikarus/utils/eigenDuneTransformations.hh>
 #  include <ikarus/utils/linearAlgebraHelper.hh>
+#  include <ikarus/utils/tensorUtils.hh>
 
 namespace Ikarus {
 

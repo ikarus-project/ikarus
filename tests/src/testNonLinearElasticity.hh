@@ -9,7 +9,7 @@
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 
-#include "spdlog/spdlog.h"
+#include <spdlog/spdlog.h>
 
 #include <Eigen/Core>
 
@@ -18,6 +18,7 @@
 #include <ikarus/finiteElements/mechanics/linearElastic.hh>
 #include <ikarus/finiteElements/mechanics/nonLinearElastic.hh>
 #include <ikarus/finiteElements/mechanics/materials/svk.hh>
+#include <ikarus/finiteElements/mechanics/materials/vanishingStress.hh>
 #include <ikarus/io/resultFunction.hh>
 #include <ikarus/linearAlgebra/dirichletValues.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
