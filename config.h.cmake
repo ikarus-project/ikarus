@@ -44,7 +44,7 @@ overwritten
 #define IKARUS_VERSION_REVISION @IKARUS_VERSION_REVISION@
 
 /* Define the sparse matrix addon for eigen */
-#define EIGEN_SPARSEMATRIX_PLUGIN <ikarus/utils/eigenSparseAddon.hh>
+#define EIGEN_SPARSEMATRIX_PLUGIN <ikarus/utils/eigensparseaddon.hh>
 
 /* Init eigen matrices with nan */
 #define EIGEN_INITIALIZE_MATRICES_BY_NAN

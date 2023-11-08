@@ -10,9 +10,9 @@ def sparseFlatAssembler(fes, dirichletValues):
     generator = MySimpleGenerator("SparseFlatAssembler", "Ikarus::Python")
 
     includes = []
-    includes += ["ikarus/assembler/simpleAssemblers.hh"]
+    includes += ["ikarus/assembler/simpleassemblers.hh"]
     includes += fes[0]._includes  # include header of finite element
-    includes += ["ikarus/python/assembler/flatAssembler.hh"]
+    includes += ["ikarus/python/assembler/flatassembler.hh"]
     moduleName = "SparseFlatAssembler_" + hashIt(element_type)
     module = generator.load(
         includes=includes, typeName=element_type, moduleName=moduleName
@@ -25,9 +25,9 @@ def denseFlatAssembler(fes, dirichletValues):
     generator = MySimpleGenerator("DenseFlatAssembler", "Ikarus::Python")
 
     includes = []
-    includes += ["ikarus/assembler/simpleAssemblers.hh"]
-    includes += ["ikarus/finiteElements/mechanics/linearElastic.hh"]
-    includes += ["ikarus/python/assembler/flatAssembler.hh"]
+    includes += ["ikarus/assembler/simpleassemblers.hh"]
+    includes += ["ikarus/finiteelements/mechanics/linearelastic.hh"]
+    includes += ["ikarus/python/assembler/flatassembler.hh"]
     includes += fes[0]._includes  # include header of finite element
     moduleName = "SparseFlatAssembler_" + hashIt(element_type)
     module = generator.load(

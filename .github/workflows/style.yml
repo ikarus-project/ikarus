@@ -67,3 +67,16 @@ jobs:
           check_filenames: true
           skip: ./docs/literature.bib,./codespellignore
           ignore_words_file: codespellignore
+
+  lint-filenames:
+    name: Lint filenames
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Validating lowercase file names
+        uses: scheduleonce/lint-filenames@v2.0.0
+        with:
+          path: '{./ikarus/**,./python/**}'
+          pattern: '^[a-z0-9_\-]+(\.hh|\.cpp|\.inl|\.py|\.py\.in|\.cc|)$|CMakeLists\.txt'
+          # match all lowercase names with extensions .hh/.cpp/.inl/.py/.py.in/.cc and ignore CMakeLists.txt

@@ -7,7 +7,7 @@
 
 #include <Eigen/Core>
 
-#include <ikarus/utils/makeEnum.hh>
+#include <ikarus/utils/makeenum.hh>
 
 template <typename MessageType>
 class IObserver {

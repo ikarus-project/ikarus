@@ -5,10 +5,10 @@ import setpath
 
 setpath.set_path()
 import ikarus as iks
-import ikarus.finiteElements
+import ikarus.finite_elements
 import ikarus.utils
 import ikarus.assembler
-import ikarus.dirichletValues
+import ikarus.dirichlet_values
 import numpy as np
 import scipy as sp
 
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     fes = []
     for e in gridView.elements:
         fes.append(
-            iks.finiteElements.KirchhoffLoveShell(
+            iks.finite_elements.KirchhoffLoveShell(
                 basis, e, 1000, 0.0, thickness, volumeLoad
             )
         )

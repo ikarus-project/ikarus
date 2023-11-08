@@ -7,8 +7,8 @@
 #include <dune/python/pybind11/operators.h>
 #include <dune/python/pybind11/pybind11.h>
 
-#include <ikarus/finiteElements/feRequirements.hh>
-#include <ikarus/python/finiteElements/materials/material.hh>
+#include <ikarus/finiteelements/ferequirements.hh>
+#include <ikarus/python/finiteelements/materials/material.hh>
 
 // since python does not support passing python float by reference to a double&, we have to wrap everything
 // see also https://pybind11.readthedocs.io/en/stable/faq.html#limitations-involving-reference-arguments
@@ -85,7 +85,7 @@ PYBIND11_MODULE(_ikarus, m) {
       .def(py::self * double());
 
   using FEreq   = FErequirements<Ref<VectorXd>>;
-  auto includes = Dune::Python::IncludeFiles{"ikarus/finiteElements/feRequirements.hh"};
+  auto includes = Dune::Python::IncludeFiles{"ikarus/finiteelements/ferequirements.hh"};
   auto lv       = Dune::Python::insertClass<FEreq>(
                 m, "FErequirements", Dune::Python::GenerateTypeName("FErequirements<Eigen::Ref<Eigen::VectorXd>>"),
                 includes)

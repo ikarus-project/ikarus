@@ -10,14 +10,14 @@ include(../../cmake/tools.cmake)
 file(GLOB programSourceFiles CONFIGURE_DEPENDS *.cpp)
 
 set(TEST_DEPENDING_ON_LOCALFEFUNCTIONS
-    testManifolds
-    testDirichletValue
-    testTrustRegion
-    testEnhancedAssumedStrains
-    testAssembler
-    testLinearElasticity
-    testNonLinearElasticityNeoHooke
-    testNonLinearElasticitySVK
+    testmanifolds
+    testdirichletvalue
+    testtrustregion
+    testenhancedassumedstrains
+    testassembler
+    testlinearelasticity
+    testnonlinearelasticityneohooke
+    testnonlinearelasticitysvk
 )
 
 set(TEST_DEPENDING_ON_IGA testklshell)
@@ -82,4 +82,4 @@ foreach(programSourceFile ${programSourceFiles})
 
 endforeach()
 
-file(COPY testFiles/unstructuredTrianglesfine.msh DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/testFiles)
+file(COPY testfiles/unstructuredtrianglesfine.msh DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/testfiles)

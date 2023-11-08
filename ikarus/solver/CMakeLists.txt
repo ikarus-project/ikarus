@@ -2,5 +2,5 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 # install headers
-add_subdirectory(linearSolver)
-add_subdirectory(nonLinearSolver)
+add_subdirectory(linearsolver)
+add_subdirectory(nonlinearsolver)

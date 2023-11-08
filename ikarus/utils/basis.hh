@@ -7,7 +7,7 @@
 
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 
-#include <ikarus/utils/flatPreBasis.hh>
+#include <ikarus/utils/flatprebasis.hh>
 
 namespace Ikarus {
   template <typename PreBasis_>

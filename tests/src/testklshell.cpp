@@ -3,8 +3,8 @@
 
 #include <config.h>
 
-#include "testCommon.hh"
-#include "testHelpers.hh"
+#include "testcommon.hh"
+#include "testhelpers.hh"
 
 #include <dune/common/test/testsuite.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
@@ -19,19 +19,19 @@
 
 #include <Eigen/Core>
 
-#include <ikarus/assembler/simpleAssemblers.hh>
-#include <ikarus/controlRoutines/loadControl.hh>
-#include <ikarus/finiteElements/mechanics/kirchhoffloveshell.hh>
-#include <ikarus/io/resultFunction.hh>
-#include <ikarus/linearAlgebra/dirichletValues.hh>
-#include <ikarus/linearAlgebra/nonLinearOperator.hh>
-#include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
-#include <ikarus/solver/nonLinearSolver/trustRegion.hh>
+#include <ikarus/assembler/simpleassemblers.hh>
+#include <ikarus/controlroutines/loadcontrol.hh>
+#include <ikarus/finiteelements/mechanics/kirchhoffloveshell.hh>
+#include <ikarus/io/resultfunction.hh>
+#include <ikarus/linearalgebra/dirichletvalues.hh>
+#include <ikarus/linearalgebra/nonlinearoperator.hh>
+#include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
+#include <ikarus/solver/nonlinearsolver/trustregion.hh>
 #include <ikarus/utils/algorithms.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/utils/init.hh>
-#include <ikarus/utils/observer/controlVTKWriter.hh>
+#include <ikarus/utils/observer/controlvtkwriter.hh>
 
 using Dune::TestSuite;
 
