@@ -1,18 +1,15 @@
 // SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-#include <config.h>
-
 #include "testCommon.hh"
 #include "testHelpers.hh"
 
 #include <dune/common/test/testsuite.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
-#include <dune/functions/functionspacebases/boundarydofs.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 
-#include "spdlog/spdlog.h"
+#include <spdlog/spdlog.h>
 
 #include <Eigen/Core>
 
@@ -20,6 +17,8 @@
 #include <ikarus/controlRoutines/loadControl.hh>
 #include <ikarus/finiteElements/mechanics/linearElastic.hh>
 #include <ikarus/finiteElements/mechanics/nonLinearElastic.hh>
+#include <ikarus/finiteElements/mechanics/materials/svk.hh>
+#include <ikarus/finiteElements/mechanics/materials/vanishingStress.hh>
 #include <ikarus/io/resultFunction.hh>
 #include <ikarus/linearAlgebra/dirichletValues.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
@@ -30,6 +29,7 @@
 #include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
+#include <ikarus/io/resultEvaluators.hh>
 
 using Dune::TestSuite;
 

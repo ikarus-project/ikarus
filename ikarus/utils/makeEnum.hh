@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: 2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
+#include <string>
+#include <type_traits>
+#include <dune/common/exceptions.hh>
 // https://www.scs.stanford.edu/~dm/blog/va-opt.html
 
 #define PARENS ()
@@ -34,7 +37,7 @@
     __builtin_unreachable();                   \
   }
 
-#include <dune/common/exceptions.hh>
+
 namespace Ikarus {
   template <typename MessageType>
   MessageType& increment(MessageType& e) {

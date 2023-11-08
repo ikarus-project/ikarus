@@ -2,12 +2,15 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
+#include <assert.h>
+#include <Eigen/Core>
+#include <algorithm>
+#include <concepts>
+#include <ikarus/utils/makeEnum.hh>
+#include <initializer_list>
 #include <map>
 #include <memory>
-
-#include <Eigen/Core>
-
-#include <ikarus/utils/makeEnum.hh>
+#include <vector>
 
 template <typename MessageType>
 class IObserver {

@@ -8,7 +8,7 @@
 #  include <type_traits>
 
 #  include <dune/common/classname.hh>
-#  include <dune/fufem/boundarypatch.hh>
+template <class GV> class BoundaryPatch;
 #  include <dune/geometry/quadraturerules.hh>
 #  include <dune/geometry/type.hh>
 #  include <dune/localfefunctions/expressions/linearStrainsExpr.hh>
@@ -21,7 +21,6 @@
 #  include <ikarus/finiteElements/feBases/powerBasisFE.hh>
 #  include <ikarus/finiteElements/feRequirements.hh>
 #  include <ikarus/finiteElements/feTraits.hh>
-#  include <ikarus/finiteElements/mechanics/materials.hh>
 #  include <ikarus/finiteElements/physicsHelper.hh>
 #  include <ikarus/utils/defaultFunctions.hh>
 #  include <ikarus/utils/eigenDuneTransformations.hh>

@@ -2,12 +2,10 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
-#include <memory>
-
-#include <ikarus/linearAlgebra/nonLinearOperator.hh>
-#include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
+#include <array>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observerMessages.hh>
+#include <memory>
 
 namespace Ikarus {
 

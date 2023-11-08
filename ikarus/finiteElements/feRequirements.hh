@@ -3,16 +3,17 @@
 
 #pragma once
 
-#include <iosfwd>
+#include <stdlib.h>
+#include <Eigen/Core>
+#include <dune/common/exceptions.hh>
+#include <functional>
+#include <ikarus/utils/makeEnum.hh>
 #include <map>
 #include <set>
-#include <vector>
-
-#include <dune/common/exceptions.hh>
-
-#include <Eigen/Core>
-
-#include <ikarus/utils/makeEnum.hh>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <utility>
 
 namespace Ikarus {
 

@@ -3,7 +3,11 @@
 
 #pragma once
 
+#include <stddef.h>
 #include <ikarus/finiteElements/feTraits.hh>
+#include <vector>
+#include <ikarus/utils/concepts.hh>
+
 namespace Ikarus {
 
   /**

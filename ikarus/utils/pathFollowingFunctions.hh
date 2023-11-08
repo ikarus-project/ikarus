@@ -4,16 +4,13 @@
 #pragma once
 
 #include <math.h>
+#include <Eigen/Core>
+#include <dune/common/exceptions.hh>
+#include <ikarus/solver/linearSolver/linearSolver.hh>
 #include <optional>
 #include <string>
 #include <utility>
 #include <vector>
-
-#include <dune/common/exceptions.hh>
-
-#include <Eigen/Core>
-
-#include <ikarus/solver/linearSolver/linearSolver.hh>
 
 namespace Ikarus {
 

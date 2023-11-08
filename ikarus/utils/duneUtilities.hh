@@ -8,7 +8,6 @@
 #include <utility>
 
 #include <dune/fufem/dunepython.hh>
-#include <dune/functions/functionspacebases/basistags.hh>
 
 #include <autodiff/forward/real/real.hpp>
 

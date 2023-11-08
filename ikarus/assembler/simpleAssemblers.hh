@@ -2,19 +2,15 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
-#include <mutex>
-#include <ranges>
-#include <utility>
-
-#include <dune/common/math.hh>
-#include <dune/functions/backends/istlvectorbackend.hh>
-
-#include <Eigen/Core>
-#include <Eigen/Dense>
-#include <Eigen/Sparse>
-
-#include <ikarus/linearAlgebra/dirichletValues.hh>
-#include <ikarus/utils/concepts.hh>
+#include <stddef.h>      // for size_t
+#include <Eigen/Core>    // for VectorXd, MatrixXd, Index, Ref
+#include <Eigen/Sparse>  // for SparseMatrix, traits<>::ColsAtCompileTime
+#include <algorithm>     // for max
+#include <mutex>         // for once_flag
+#include <ranges>        // for iota_view
+#include <type_traits>   // for remove_cvref_t, conditional_t
+#include <utility>       // for forward
+#include <vector>        // for vector
 
 namespace Ikarus {
 

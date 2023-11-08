@@ -3,8 +3,14 @@
 
 #pragma once
 
+#include <Eigen/Core>
+#include <unsupported/Eigen/CXX11/Tensor>
 #include <ikarus/finiteElements/mechanics/materials/interface.hh>
 #include <ikarus/utils/tensorUtils.hh>
+#include <string>
+#include "ikarus/finiteElements/mechanics/materials/tags.hh"
+#include "ikarus/finiteElements/physicsHelper.hh"
+#include "ikarus/utils/concepts.hh"
 
 namespace Ikarus {
   template <typename ScalarType_ = double>

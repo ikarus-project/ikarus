@@ -3,9 +3,23 @@
 
 #pragma once
 
+#include <Eigen/Dense>
+#include <stddef.h>
+#include <algorithm>
+#include <array>
+#include <dune/common/exceptions.hh>
 #include <ikarus/finiteElements/mechanics/materials/interface.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>
+#include <ranges>
+#include <string>
+#include <utility>
+#include <ikarus/finiteElements/mechanics/materials/tags.hh>
+#include <ikarus/utils/concepts.hh>
+#include <ikarus/utils/tensorUtils.hh>
+
+namespace Eigen { template <typename Derived> class MatrixBase; }
+
 namespace Ikarus {
 
   namespace Impl {

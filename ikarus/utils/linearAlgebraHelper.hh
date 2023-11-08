@@ -2,19 +2,23 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
+#include <assert.h>
+#include <Eigen/Core>
+#include <array>
+#include <concepts>
+#include <cstddef>
+#include <dune/common/hybridutilities.hh>
+#include <dune/common/indices.hh>
+#include <dune/common/tuplevector.hh>
+#include <dune/istl/bvector.hh>
+#include <iostream>
+#include <memory>
+#include <random>
+#include <tuple>
 #include "concepts.hh"
 #include "traits.hh"
 
-#include <iosfwd>
-#include <random>
-
-#include <dune/common/tuplevector.hh>
-#include <dune/istl/bvector.hh>
-#include <dune/istl/multitypeblockvector.hh>
-
-#include <Eigen/Core>
-
-#include <autodiff/forward/dual/dual.hpp>
+#include<autodiff/forward/dual/dual.hpp>
 
 namespace Ikarus {
 

@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
-#include <iosfwd>
-
-#include <ikarus/linearAlgebra/nonLinearOperator.hh>
-#include <ikarus/solver/linearSolver/linearSolver.hh>
+#include <Eigen/Core>
 #include <ikarus/utils/defaultFunctions.hh>
 #include <ikarus/utils/linearAlgebraHelper.hh>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observerMessages.hh>
+#include <memory>
+#include <type_traits>
+#include <utility>
 
 namespace Ikarus {
 

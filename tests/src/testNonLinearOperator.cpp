@@ -8,7 +8,7 @@
 
 #include <dune/common/test/testsuite.hh>
 
-#include <Eigen/Core>
+#include <Eigen/Dense>
 
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/nonLinearSolver/newtonRaphson.hh>

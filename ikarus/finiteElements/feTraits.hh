@@ -3,7 +3,8 @@
 
 #pragma once
 
-#include <ikarus/utils/concepts.hh>
+#include <Eigen/Core>
+#include <type_traits>
 
 namespace Ikarus {
 
