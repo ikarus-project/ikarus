@@ -268,7 +268,7 @@ ScalarType f3RBlocked(const MultiTypeVector& mT, const Eigen::VectorX<ScalarType
   Eigen::VectorX<ScalarType> dualDisp = Ikarus::viewAsFlatEigenVector(disp);
   Eigen::VectorX<ScalarType> dualDir  = Ikarus::viewAsFlatEigenVector(dir);
   dualDisp += dx.segment(0, dualDisp.size());
-  dualDir += dx(Eigen::seq(dualDisp.size(), Eigen::last));
+  dualDir += dx(Eigen::seq(dualDisp.size(), Eigen::indexing::last));
   ScalarType energy = 0;
   for (auto i = 0U; i < dir.size(); ++i) {
     energy += Dune::power(dualDir(i * 3), 2);

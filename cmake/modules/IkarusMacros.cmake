@@ -9,7 +9,7 @@ include(AddSpdlogFlags)
 find_package(Matplot++)
 include(AddMatplotppFlags)
 
-find_package(Eigen3 3.3.9 REQUIRED)
+find_package(Eigen3 3.4.90 REQUIRED)
 include(AddEigenFlags)
 
 find_package(autodiff REQUIRED)

@@ -164,54 +164,6 @@ namespace Eigen {
 
   }  // namespace internal
 
-  /** \ingroup IterativeLinearSolvers_Module
-      * \brief A conjugate gradient solver for sparse (or dense) self-adjoint problems
-      *
-      * This class allows to solve for A.x = b linear problems using an iterative conjugate gradient algorithm.
-      * The matrix A must be selfadjoint. The matrix A and the vectors x and b can be either dense or sparse.
-      *
-      * \tparam _MatrixType the type of the matrix A, can be a dense or a sparse matrix.
-      * \tparam _UpLo the triangular part that will be used for the computations. It can be Lower,
-      *               \c Upper, or \c Lower|Upper in which the full matrix entries will be considered.
-      *               Default is \c Lower, best performance is \c Lower|Upper.
-      * \tparam _Preconditioner the type of the preconditioner. Default is DiagonalPreconditioner
-      *
-      *
-      * The maximal number of iterations and tolerance value can be controlled via the setMaxIterations()
-      * and setTolerance() methods. The defaults are the size of the problem for the maximal number of iterations
-      * and NumTraits<Scalar>::epsilon() for the tolerance.
-      *
-      * The tolerance corresponds to the relative residual error: |Ax-b|/|b|
-      *
-      * \b Performance: Even though the default value of \c _UpLo is \c Lower, significantly higher performance is
-      * achieved when using a complete matrix and \b Lower|Upper as the \a _UpLo template parameter. Moreover, in this
-      * case multi-threading can be exploited if the user code is compiled with OpenMP enabled.
-      * See \ref TopicMultiThreading for details.
-      *
-      * This class can be used as the direct solver classes. Here is a typical usage example:
-        \code
-        int n = 10000;
-        VectorXd x(n), b(n);
-        SparseMatrix<double> A(n,n);
-        // fill A and b
-        ConjugateGradient<SparseMatrix<double>, Lower|Upper> cg;
-        cg.compute(A);
-        x = cg.solve(b);
-        std::cout << "#iterations:     " << cg.iterations() << std::endl;
-        std::cout << "estimated error: " << cg.error()      << std::endl;
-        // update b, and solve again
-        x = cg.solve(b);
-        \endcode
-      *
-      * By default the iterations start with x=0 as an initial guess of the solution.
-      * One can control the start using the solveWithGuess() method.
-      *
-      * ConjugateGradient can also be used in a matrix-free context, see the following \link MatrixfreeSolverExample
-     example \endlink.
-      *
-      * \sa class LeastSquaresConjugateGradient, class SimplicialCholesky, DiagonalPreconditioner,
-     IdentityPreconditioner
-      */
   template <typename MatrixType_, int UpLo_, typename Preconditioner_>
   class TruncatedConjugateGradient
       : public IterativeSolverBase<TruncatedConjugateGradient<MatrixType_, UpLo_, Preconditioner_> > {
@@ -261,20 +213,20 @@ namespace Eigen {
     /** \internal */
     template <typename Rhs, typename Dest>
     void _solve_vector_with_guess_impl(const Rhs& b, Dest& x) const {
-      typedef typename Base::MatrixWrapper MatrixWrapperBase;
-      typedef typename Base::ActualMatrixType ActualMatrixTypeBase;
+      typedef typename Base::MatrixWrapper MatrixWrapper;
+      typedef typename Base::ActualMatrixType ActualMatrixType;
       enum {
-        TransposeInput = (!MatrixWrapperBase::MatrixFree) && (UpLo == (Lower | Upper)) && (!MatrixType::IsRowMajor)
+        TransposeInput = (!MatrixWrapper::MatrixFree) && (UpLo == (Lower | Upper)) && (!MatrixType::IsRowMajor)
                          && (!NumTraits<Scalar>::IsComplex)
       };
-      typedef typename internal::conditional<TransposeInput, Transpose<const ActualMatrixTypeBase>,
-                                             ActualMatrixTypeBase const&>::type RowMajorWrapper;
-      EIGEN_STATIC_ASSERT(EIGEN_IMPLIES(MatrixWrapperBase::MatrixFree, UpLo == (Lower | Upper)),
-                          MATRIX_FREE_CONJUGATE_GRADIENT_IS_COMPATIBLE_WITH_UPPER_UNION_LOWER_MODE_ONLY)
-      typedef typename internal::conditional<
-          UpLo == (Lower | Upper), RowMajorWrapper,
-          typename MatrixWrapperBase::template ConstSelfAdjointViewReturnType<UpLo>::Type>::type SelfAdjointWrapper;
-      //      TCGInfo<typename Dest::RealScalar> dummyInfo;
+      typedef std::conditional_t<TransposeInput, Transpose<const ActualMatrixType>, ActualMatrixType const&>
+          RowMajorWrapper;
+      EIGEN_STATIC_ASSERT(internal::check_implication(MatrixWrapper::MatrixFree, UpLo == (Lower | Upper)),
+                          MATRIX_FREE_CONJUGATE_GRADIENT_IS_COMPATIBLE_WITH_UPPER_UNION_LOWER_MODE_ONLY);
+      typedef std::conditional_t<UpLo == (Lower | Upper), RowMajorWrapper,
+                                 typename MatrixWrapper::template ConstSelfAdjointViewReturnType<UpLo>::Type>
+          SelfAdjointWrapper;
+
       m_iterations = Base::maxIterations();
       m_error      = Base::m_tolerance;
 
@@ -282,8 +234,6 @@ namespace Eigen {
       internal::truncated_conjugate_gradient(SelfAdjointWrapper(row_mat), b, x, Base::m_preconditioner, m_iterations,
                                              m_error, algInfo);
       m_info = m_error <= Base::m_tolerance ? Success : NoConvergence;
-
-      //      setInfo =dummyInfo;
     }
 
   protected:
