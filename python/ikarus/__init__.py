@@ -15,5 +15,5 @@ except ImportError:
     pass
 
 from ._ikarus import *
-from .dirichletValues import dirichletValues
+from .dirichlet_values import dirichletValues
 from .basis import basis

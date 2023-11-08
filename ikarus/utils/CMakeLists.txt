@@ -4,23 +4,23 @@
 # install headers
 install(
   FILES algorithms.hh
-        autodiffHelper.hh
+        autodiffhelper.hh
         basis.hh
         concepts.hh
-        defaultFunctions.hh
-        duneUtilities.hh
-        eigenDuneTransformations.hh
-        eigenSparseAddon.hh
-        findLineSegment.hh
-        flatPreBasis.hh
-        functionSanityChecks.hh
+        defaultfunctions.hh
+        duneutilities.hh
+        eigendunetransformations.hh
+        eigensparseaddon.hh
+        findlinesegment.hh
+        flatprebasis.hh
+        functionsanitychecks.hh
         init.hh
-        linearAlgebraHelper.hh
-        makeEnum.hh
+        linearalgebrahelper.hh
+        makeenum.hh
         math.hh
-        pathFollowingFunctions.hh
+        pathfollowingfunctions.hh
         polyfit.hh
-        tensorUtils.hh
+        tensorutils.hh
         traits.hh
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/utils
 )

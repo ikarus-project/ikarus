@@ -2,6 +2,6 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 # install headers
-install(FILES griddrawer.hh matplotHelper.hh
+install(FILES griddrawer.hh matplothelper.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/utils/drawing
 )

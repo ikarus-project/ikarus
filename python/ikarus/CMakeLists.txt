@@ -2,10 +2,10 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 add_subdirectory(assembler)
-add_subdirectory(finiteElements)
+add_subdirectory(finite_elements)
 add_subdirectory(utils)
 
-add_python_targets(ikarus __init__ dirichletValues basis generator)
+add_python_targets(ikarus __init__ dirichlet_values basis generator)
 
 dune_add_pybind11_module(NAME _ikarus)
 set_property(

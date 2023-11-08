@@ -32,7 +32,7 @@ Thus, there exist scalar, vector, matrix and general affordance collections.
 
 Currently, the following are defined:
 
-{{ inputcpp('ikarus/finiteElements/feRequirements.hh',False,17,52) }}
+{{ inputcpp('ikarus/finiteelements/feRequirements.hh',False,17,52) }}
 
 Inside the finite element, the information can then be conveniently extracted:
 ```cpp linenums="1"
@@ -62,7 +62,7 @@ ResultRequirements resultRequirements = Ikarus::ResultRequirements()
 
 The current supported results are:
 
-{{ inputcpp('ikarus/finiteElements/feRequirements.hh',False,53,64) }}
+{{ inputcpp('ikarus/finiteelements/feRequirements.hh',False,53,64) }}
 
 The interface for result requirements is similar to the finite element requirements.
 They do, however, support querying specific results to be calculated.

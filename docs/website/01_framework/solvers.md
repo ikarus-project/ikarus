@@ -28,7 +28,7 @@ LinearSolver(const SolverTypeTag& solverTypeTag)
 
 There exists an enum type `SolverTypeTag` with the following values:
 
-{{ inputcpp('ikarus/solver/linearSolver/linearSolver.hh',False,19,39) }}
+{{ inputcpp('ikarus/solver/linearsolver/linearsolver.hh',False,19,39) }}
 
 The prefixes `s_` and  `d_` indicate whether the linear solver can be used for `sparse` or `dense` matrices, respectively.
 Furthermore, there is also a second prefix for sparse solvers: `d` and `i` for direct solvers and for iterative solvers, respectively.

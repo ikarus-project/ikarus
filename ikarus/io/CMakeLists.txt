@@ -2,6 +2,6 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 # install headers
-install(FILES resultFunction.hh resultEvaluators.hh
+install(FILES resultfunction.hh resultevaluators.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/io
 )

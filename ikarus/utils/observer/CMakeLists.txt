@@ -3,13 +3,13 @@
 
 # install headers
 install(
-  FILES controlLogger.hh
-        controlVTKWriter.hh
-        genericControlObserver.hh
-        gridDrawerObserver.hh
-        loadControlObserver.hh
-        nonLinearSolverLogger.hh
+  FILES controllogger.hh
+        controlvtkwriter.hh
+        genericcontrolobserver.hh
+        griddrawerobserver.hh
+        loadcontrolobserver.hh
+        nonlinearsolverlogger.hh
         observer.hh
-        observerMessages.hh
+        observermessages.hh
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/utils/observer
 )

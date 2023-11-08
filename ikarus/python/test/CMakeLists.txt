@@ -7,7 +7,7 @@ dune_python_add_test(
   NAME
   pylinearElasticTest
   SCRIPT
-  linearElasticTest.py
+  linearelastictest.py
   WORKING_DIRECTORY
   ${CMAKE_CURRENT_SOURCE_DIR}
   LABELS
@@ -18,7 +18,7 @@ dune_python_add_test(
   NAME
   pynonLinearElasticTest
   SCRIPT
-  nonLinearElasticTest.py
+  nonlinearelastictest.py
   WORKING_DIRECTORY
   ${CMAKE_CURRENT_SOURCE_DIR}
   LABELS
@@ -29,7 +29,7 @@ dune_python_add_test(
   NAME
   pymaterial
   SCRIPT
-  testMaterials.py
+  testmaterials.py
   WORKING_DIRECTORY
   ${CMAKE_CURRENT_SOURCE_DIR}
   LABELS
