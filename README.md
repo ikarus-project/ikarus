@@ -7,17 +7,16 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 <img align="left" src="docs/website/auxiliaryImages/BigLogo.png" width="800">  
 
 <br/><br/>    
+[![](http://github-actions.40ants.com/ikarus-project/ikarus/matrix.svg?only=Debian.Gcc-12-Debug,Debian.Gcc-12-Release,Debian.Clang-16-Debug,Debian.Clang-16-Release)](https://github.com/ikarus-project/ikarus)
 
-[![Debian](https://github.com/ikarus-project/ikarus/actions/workflows/debian.yml/badge.svg)](https://github.com/ikarus-project/ikarus/actions/workflows/debian.yml)
 [![codecov](https://codecov.io/gh/ikarus-project/ikarus/branch/main/graph/badge.svg?token=zJgggitPMc)](https://codecov.io/gh/ikarus-project/ikarus)
 [![CodeStyle](https://github.com/ikarus-project/ikarus/actions/workflows/style.yml/badge.svg)](https://github.com/ikarus-project/ikarus/actions/workflows/style.yml)
 [![Docs](https://github.com/ikarus-project/ikarus/actions/workflows/ghpages.yml/badge.svg)](https://github.com/ikarus-project/ikarus/actions/workflows/ghpages.yml)
 [![CodeFactor](https://www.codefactor.io/repository/github/ikarus-project/ikarus/badge/main)](https://www.codefactor.io/repository/github/ikarus-project/ikarus/overview/main)
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/5c588e67d1e541fc9be3c7377297aa8a)](https://www.codacy.com/gh/ikarus-project/ikarus/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ikarus-project/ikarus&amp;utm_campaign=Badge_Grade)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/5c588e67d1e541fc9be3c7377297aa8a)](https://app.codacy.com/gh/ikarus-project/ikarus/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+
 [![Gitter](https://badges.gitter.im/ikarus-project/community.svg)](https://gitter.im/ikarus-project/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 [![PyPI version](https://badge.fury.io/py/pyikarus.svg)](https://badge.fury.io/py/pyikarus)
-
-
 [![Release](https://badgen.net/badge/Release/0.3/purple?icon=github)](https://github.com/ikarus-project/ikarus/releases)
 [![Doi](https://img.shields.io/badge/DOI-10.18419%2Fdarus--3303-orange)](https://doi.org/10.18419/darus-3303)
 [![SWH](https://archive.softwareheritage.org/badge/origin/https://github.com/ikarus-project/ikarus/)](https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/ikarus-project/ikarus)

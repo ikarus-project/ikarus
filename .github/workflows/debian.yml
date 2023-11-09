@@ -32,7 +32,7 @@ jobs:
       matrix:
         config:
           - {
-            name: "Clang-Debug",
+            name: "Clang-16-Debug",
             config: Debug,
             compilerC: clang-16,
             compilerCxx: clang++-16,
@@ -40,7 +40,7 @@ jobs:
             testRegex: "cpp"
            }
           - {
-            name: "Clang-Release",
+            name: "Clang-16-Release",
             config: Release,
             compilerC: clang-16,
             compilerCxx: clang++-16,
@@ -48,7 +48,7 @@ jobs:
             testRegex: "cpp"
            }
           - {
-            name: "GCC-Debug",
+            name: "GCC-12-Debug",
             config: Debug,
             compilerC: gcc-12,
             compilerCxx: g++-12,
@@ -56,7 +56,7 @@ jobs:
             testRegex: "cpp"
           }
           - {
-            name: "GCC-Release",
+            name: "Gcc-12-Release",
             config: Release,
             compilerC: gcc-12,
             compilerCxx: g++-12,
@@ -64,7 +64,7 @@ jobs:
             testRegex: "cpp"
           }
           - {
-            name: "GCC-Release-Python",
+            name: "Gcc-12-Python",
             config: Release,
             compilerC: gcc-12,
             compilerCxx: g++-12,
