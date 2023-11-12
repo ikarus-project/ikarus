@@ -1,15 +1,13 @@
-<!--
-SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
-SPDX-License-Identifier: CC-BY-SA-4.0
--->
-
 # FE requirements
 
 Finite element requirements are a simple way to communicate the needs and expectations of a finite element.
 
-FE requirements are used to pass information from [assemblers](assembler.md) to finite elements. 
+FE requirements are used to pass information from [assemblers](assembler.md) to finite elements.
+
 ## Construction and usage
+
 Usually the construction is as follows:
+
 ```cpp linenums="1"
 FErequirements req = FErequirements()
                            .insertGlobalSolution(FESolutions::displacement, d)
@@ -20,11 +18,11 @@ MatrixType A = sparseFlatAssembler.getReducedMatrix(req);
 
 All the methods return a reference to `FErequirements`, so they can be chained together.
 
-As in line 2, the finite element solution can also be inserted. The solution is passed with the `enum` type 
+As in line 2, the finite element solution can also be inserted. The solution is passed with the `enum` type
 `FESolutions::displacement` vector `d`. This stores a reference to the vector.
 
-Additionally, if some parameters are to be passed, use the method `insertParameter` (line 3), where, similar to the 
-global solutions, an `enum` type of `FEParameter::loadfactor` is passed to indicate the meaning of the parameter, 
+Additionally, if some parameters are to be passed, use the method `insertParameter` (line 3), where, similar to the
+global solutions, an `enum` type of `FEParameter::loadfactor` is passed to indicate the meaning of the parameter,
 followed by its value.
 
 Finally, the method `addAffordance` is used to indicate the request required from the finite element.
@@ -32,27 +30,31 @@ Thus, there exist scalar, vector, matrix and general affordance collections.
 
 Currently, the following are defined:
 
-{{ inputcpp('ikarus/finiteelements/feRequirements.hh',False,17,52) }}
+{{ inputcpp('ikarus/finiteelements/ferequirements.hh',False,17,52) }}
 
 Inside the finite element, the information can then be conveniently extracted:
+
 ```cpp linenums="1"
 const auto& d      = req.getGlobalSolution(FESolutions::displacement);
 const auto& lambda = req.getParameter(FEParameter::loadfactor);
 if(req.hasAffordance(stiffness))
   ...
 ```
+
 Thus, the local finite element can be developed.
 
 !!! hint "Affordance"
         It is good style to indicate that you cannot fulfill an affordance by throwing an appropriate exception!
 
 ### FE result requirements
-In addition to the above-mentioned finite element requirements, there are also result requirements. 
+
+In addition to the above-mentioned finite element requirements, there are also result requirements.
 They accept the same parameter types as the `FErequirements` and add one more, the `ResultType`.
 These are used in the `calculateAt` method of [finite elements](finiteElements.md).
 They are used to communicate the results required from the finite elements.
 
 Its construction is shown below:
+
 ```cpp linenums="1"
 ResultRequirements resultRequirements = Ikarus::ResultRequirements()
         .insertGlobalSolution(FESolutions::displacement, d)
@@ -62,7 +64,7 @@ ResultRequirements resultRequirements = Ikarus::ResultRequirements()
 
 The current supported results are:
 
-{{ inputcpp('ikarus/finiteelements/feRequirements.hh',False,53,64) }}
+{{ inputcpp('ikarus/finiteelements/ferequirements.hh',False,53,64) }}
 
 The interface for result requirements is similar to the finite element requirements.
 They do, however, support querying specific results to be calculated.

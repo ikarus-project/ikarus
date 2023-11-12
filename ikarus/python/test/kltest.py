@@ -12,7 +12,6 @@ import ikarus.dirichlet_values
 import numpy as np
 import scipy as sp
 
-from dune.vtk import vtkWriter
 from dune.iga import ControlPoint, ControlPointNet, NurbsPatchData, IGAGrid
 from dune.iga.basis import defaultGlobalBasis, Power, Nurbs
 

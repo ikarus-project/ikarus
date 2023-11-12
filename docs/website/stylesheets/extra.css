@@ -1,12 +1,7 @@
-/*
- * SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
- *
- * SPDX-License-Identifier: CC-BY-SA-4.0
- */
-
 .md-grid {
     max-width: 2000px;
 }
+
 :root {
     --md-tooltip-width: 800px;
     --md-primary-fg-color:        #00BEFF;

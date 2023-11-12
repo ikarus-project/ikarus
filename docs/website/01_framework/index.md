@@ -1,12 +1,7 @@
-<!--
-SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
-SPDX-License-Identifier: CC-BY-SA-4.0
--->
-
 # Framework
 
 ``` mermaid
-classDiagram 
+classDiagram
   GridView <-- Grid
   GlobalBasis <-- GridView
   Assembler <-- GlobalBasis
@@ -33,22 +28,22 @@ classDiagram
   Affordances <-- VectorAffordances
   Affordances <-- MatrixAffordances
   ResultRequirements <-- ResultType
-  
-  
+
+
   class ScalarAffordances{
   <<enumeration>>
       mechanicalPotentialEnergy
       microMagneticPotentialEnergy
       ...
   }
-  
+
   class VectorAffordances{
-        <<enumeration>>    
+        <<enumeration>>
       forces
       microMagneticForces
       ...
   }
-  
+
   class MatrixAffordances{
         <<enumeration>>
       stiffness
@@ -59,7 +54,7 @@ classDiagram
       microMagneticHessian
       ...
   }
-  
+
   class ResultType{
       <<enumeration>>
       noType
@@ -73,15 +68,15 @@ classDiagram
       director
       ...
   }
-  
+
   class Observer{
     +update()
   }
-  
+
   class DirichletConditions{
   TBA
   }
-  
+
   class IObservable{
     +subscribe()
     +subscribeAll()
@@ -89,18 +84,18 @@ classDiagram
     +unSubscribeAll()
     +notify()
   }
-  
+
   class FERequirements{
     +hasAffordance()
     +getGlobalSolution()
     +getParameter()
-  } 
-  
+  }
+
   class ResultRequirements{
     +isResultRequested()
     +getParameter()
   }
-    
+
   class Assembler{
     +getScalar()
     +getVector()
@@ -118,28 +113,28 @@ classDiagram
   class Controlroutine{
     +run()
   }
-  
+
   class NonlinearSolver{
     +setup()
     +solve()
     +nonLinearOperator()
   }
-  
+
   class GlobalBasis{
     +localView()
   }
-  
+
     class Grid{
     +leafGridView()
   }
-  
+
   class FiniteElement{
   +calculateScalar()
   +calculateVector()
   +calculateMatrix()
   +calculateAt()
   }
-  
+
   class LinearSolver{
     +analyzePattern()
     +factorize()
@@ -159,16 +154,16 @@ classDiagram
     +calculateDerivative()
     +bind()
     +viewOverIntegrationPoints()
-  }  
-  
+  }
+
   class Localbasis{
     +calculateFunction()
     +evaluateJacobian()
     +bind()
     +isBound()
     +viewOverIntegrationPoints()
-  }  
-  
+  }
+
   class Manifold{
     +setValue()
     +operator+=()
@@ -177,23 +172,23 @@ classDiagram
     +size()
   }
 
-click NonlinearOperator href "../nonlinearOperator/" 
-click LinearSolver href "../solvers/#linear-solver" 
-click NonlinearSolver href "../solvers/#non-linear-solver" 
-click FiniteElement href "../finiteElements/" 
-click GridView href "../grid/" 
-click Grid href "../grid/" 
-click Controlroutine href "../controlRoutines/" 
-click Assembler href "../assembler/" 
-click Localfunction href "../localFunctions/" 
-click Manifold href "../manifolds/" 
-click Localbasis href "../localBasis/" 
-click FERequirements href "../feRequirements/" 
-click ResultRequirements href "../feRequirements/#fe-result-requirements" 
-click Affordances href "../feRequirements/" 
-click ResultType href "../feRequirements/" 
-click IObservable href "../observer/#iobservable" 
-click Observer href "../observer/#iobserver" 
-click GlobalBasis href "../globalBasis/" 
+click NonlinearOperator href "../nonlinearOperator/"
+click LinearSolver href "../solvers/#linear-solver"
+click NonlinearSolver href "../solvers/#non-linear-solver"
+click FiniteElement href "../finiteElements/"
+click GridView href "../grid/"
+click Grid href "../grid/"
+click Controlroutine href "../controlRoutines/"
+click Assembler href "../assembler/"
+click Localfunction href "../localFunctions/"
+click Manifold href "../manifolds/"
+click Localbasis href "../localBasis/"
+click FERequirements href "../feRequirements/"
+click ResultRequirements href "../feRequirements/#fe-result-requirements"
+click Affordances href "../feRequirements/"
+click ResultType href "../feRequirements/"
+click IObservable href "../observer/#iobservable"
+click Observer href "../observer/#iobserver"
+click GlobalBasis href "../globalBasis/"
 
 ```

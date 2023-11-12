@@ -1,13 +1,14 @@
+# Ikarus
+
 <!--
 SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 SPDX-License-Identifier: LGPL-3.0-or-later
 -->
-# Ikarus
 
-<img align="left" src="docs/website/auxiliaryImages/BigLogo.png" width="800">  
+<img align="left" src="docs/website/auxiliaryImages/BigLogo.png" width="800" alt="Ikarus logo">  
 
-<br/><br/>    
-[![](http://github-actions.40ants.com/ikarus-project/ikarus/matrix.svg?only=Debian.Gcc-12-Debug,Debian.Gcc-12-Release,Debian.Clang-16-Debug,Debian.Clang-16-Release)](https://github.com/ikarus-project/ikarus)
+<br/><br/>
+[![compilerMatrix](http://github-actions.40ants.com/ikarus-project/ikarus/matrix.svg?only=Debian.Gcc-12-Debug,Debian.Gcc-12-Release,Debian.Clang-16-Debug,Debian.Clang-16-Release)](https://github.com/ikarus-project/ikarus)
 
 [![codecov](https://codecov.io/gh/ikarus-project/ikarus/branch/main/graph/badge.svg?token=zJgggitPMc)](https://codecov.io/gh/ikarus-project/ikarus)
 [![CodeStyle](https://github.com/ikarus-project/ikarus/actions/workflows/style.yml/badge.svg)](https://github.com/ikarus-project/ikarus/actions/workflows/style.yml)
@@ -23,7 +24,8 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 [![SWHRelease](https://archive.softwareheritage.org/badge/swh:1:rel:2cbfacc591c5fa48bdc84b375e42d1ab5304425f/)](https://archive.softwareheritage.org/swh:1:rel:2cbfacc591c5fa48bdc84b375e42d1ab5304425f;origin=https://github.com/ikarus-project/ikarus;visit=swh:1:snp:22424908ab42ab0d38be84c34235b8b5ae7af6c4)
 
 This project tries to provide an easy to read and an easy to use finite element framework.
-It is heavily inspired by the finite element software [DUNE](https://dune-project.org/), the book [DUNE — The Distributed and Unified Numerics Environment](https://www.springer.com/gp/book/9783030597016),
+It is heavily inspired by the finite element software [DUNE](https://dune-project.org/), the book
+[DUNE — The Distributed and Unified Numerics Environment](https://www.springer.com/gp/book/9783030597016),
 [deal.II](https://www.dealii.org/) and [Kratos](https://github.com/KratosMultiphysics/Kratos).
 Furthermore, it directly uses several modules from [DUNE](https://dune-project.org/).
 
@@ -31,11 +33,13 @@ We favor value semantics and readability.
 
 Concerning the design of CI and the documentation we were inspired by [Autodiff](https://autodiff.github.io/)  and [Kratos](https://github.com/KratosMultiphysics/Kratos).
 
-The documentation resides at https://ikarus-project.github.io/.
+The documentation resides at [https://ikarus-project.github.io/](https://ikarus-project.github.io/).
 
-If you use Ikarus, please cite the dataset by clicking on the doi badge above and then selecting "Cite Dataset," where you will find several citing options. 
+If you use Ikarus, please cite the dataset by clicking on the doi badge above and then selecting "Cite Dataset," where you will find
+several citing options.
 
 ## Contributors
 
 <img align="left" src="https://user-images.githubusercontent.com/10537464/205657284-f6ace981-42a8-49f1-9c66-4c464f15ce4a.png" width="128">
-<p></br></br><a href="https://www.ibb.uni-stuttgart.de/">Institute for Structural Mechanics</a> of the <a href="https://www.uni-stuttgart.de/">University of Stuttgart</a></p>
+<p></br></br><a href="https://www.ibb.uni-stuttgart.de/">Institute for Structural Mechanics</a> of the
+<a href="https://www.uni-stuttgart.de/">University of Stuttgart</a></p>
