@@ -48,7 +48,7 @@ jobs:
             testRegex: "cpp"
            }
           - {
-            name: "GCC-12-Debug",
+            name: "Gcc-12-Debug",
             config: Debug,
             compilerC: gcc-12,
             compilerCxx: g++-12,

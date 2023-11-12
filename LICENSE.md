@@ -1,4 +1,3 @@
-
 # Copyright holders
 
 - 2021-2023 Alexander Müller
@@ -11,8 +10,8 @@ All licenses reside in the folder `LICENSES`.
 Each source file here has the corresponding header for license information.
 The Ikarus source and header files are released under `LGPL-3.0-or-later`.
 
-Only `ikarus/linearAlgebra/truncatedConjugateGradient.hh` adapted from the 
-[Eigen library](https://eigen.tuxfamily.org/index.php?title=Main_Page) is released under 
+Only `ikarus/linearAlgebra/truncatedConjugateGradient.hh` adapted from the
+[Eigen library](https://eigen.tuxfamily.org/index.php?title=Main_Page) is released under
 `LGPL-3.0-or-later` along with their own license (`MPL-2.0`).
 The documentation files are released under `CC-BY-SA-4.0`.
 Several minor files are released under the public domain `CC0-1.0`.

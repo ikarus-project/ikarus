@@ -1,7 +1,4 @@
-# SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
-# SPDX-License-Identifier: CC-BY-SA-4.0
 
-# Project information
 site_name: Ikarus
 site_description: Ikarus documentation.
 site_author: The Ikarus Developers
@@ -11,8 +8,9 @@ site_url: https://ikarus-project.github.io/
 repo_name: ikarus-project/ikarus
 repo_url: https://github.com/ikarus-project/ikarus
 
-# Copyright
+# REUSE-IgnoreStart
 copyright: 'Copyright &copy; 2021 The Ikarus Developers'
+# REUSE-IgnoreEnd
 
 # Configuration
 theme:
@@ -81,7 +79,7 @@ nav:
       - Edit the documentation: 03_contribution/howToEdit.md
       - Build the documentation locally: 03_contribution/buildDocumentationLocally.md
   - C++ recommendations: 05_cppReferences/cppRef.md
-  - Literature: 99_Literature/99_Literature.md
+  - Literature: 99_Literature/99Literature.md
   - Gallery: gallery.md
   - Blog:
       - 04_blog/index.md

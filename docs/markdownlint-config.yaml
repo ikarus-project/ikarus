@@ -1,0 +1,28 @@
+
+default: true
+#see for rules https://github.com/DavidAnson/markdownlint/blob/main/schema/.markdownlint.yaml
+# MD013/line-length - Line length
+MD013:
+  line_length: 140
+  heading_line_length: 140
+  code_block_line_length: 250
+  code_blocks: true
+  tables: false
+  headings: true
+  headers: true
+  strict: false
+  stern: false
+
+# MD033/no-inline-html - Inline HTML
+MD033:
+  # Allowed elements
+  allowed_elements: [figure,a,br,img,p,figcaption]
+
+# MD051/link-fragments - Link fragments should be valid
+MD051: false
+# MD052/reference-links-images - Reference links and images should use a label that is defined
+MD052: false
+
+# MD046/code-block-style - Code block style
+# Material theme tabbed content feature use indented and simple use fenced; can't support both
+MD046: false

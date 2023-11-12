@@ -68,6 +68,16 @@ jobs:
           skip: ./docs/literature.bib,./codespellignore
           ignore_words_file: codespellignore
 
+  lint-markdown:
+    name: Check for markdown errors
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: articulate/actions-markdownlint@v1
+        with:
+          config: docs/markdownlint-config.yaml
+          files: '**/*.md'
+
   lint-filenames:
     name: Lint filenames
     runs-on: ubuntu-latest
