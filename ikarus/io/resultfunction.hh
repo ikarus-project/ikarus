@@ -11,11 +11,12 @@
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/io/resultevaluators.hh>
 #include <ikarus/utils/eigendunetransformations.hh>
-namespace Ikarus {
 
+namespace Ikarus {
   namespace Impl {
-    struct DefaultUserFunction {};
-  }  // namespace Impl
+    struct DefaultUserFunction {
+    };
+  } // namespace Impl
   /**
    * \brief Wrapper to evaluate results for a vtkwriter.
    * Usage:
@@ -28,12 +29,13 @@ namespace Ikarus {
    * or with Dune vtkWriter.addVertexData(resultFunction);
    */
 
-  template <typename ElementType, typename UserFunction = Impl::DefaultUserFunction>
-  class ResultFunction : public Dune::VTKFunction<typename ElementType::GridView> {
+  template <typename ElementType_, typename UserFunction = Impl::DefaultUserFunction>
+  class ResultFunction : public Dune::VTKFunction<typename ElementType_::GridView> {
   public:
-    using ResultRequirements     = typename ElementType::ResultRequirementsType;
-    using GridView               = typename ElementType::GridView;
-    using ctype                  = typename GridView::ctype;
+    using ElementType = ElementType_;
+    using ResultRequirements = typename ElementType::ResultRequirementsType;
+    using GridView = typename ElementType::GridView;
+    using ctype = typename GridView::ctype;
     constexpr static int griddim = GridView::dimension;
     typedef typename GridView::template Codim<0>::Entity Entity;
 
@@ -56,6 +58,7 @@ namespace Ikarus {
       } else
         return userFunction_.ncomps();
     }
+
     [[nodiscard]] constexpr std::string name() const override {
       if constexpr (std::is_same_v<UserFunction, Impl::DefaultUserFunction>)
         return toString(resultRequirements_.getRequestedResult());
@@ -64,10 +67,10 @@ namespace Ikarus {
     }
 
     ResultFunction(std::vector<ElementType>* fes, const ResultRequirements& req, UserFunction userFunction = {})
-        : gridView{fes->at(0).localView().globalBasis().gridView()},
-          resultRequirements_{req},
-          fes_{fes},
-          userFunction_{userFunction} {
+      : gridView{fes->at(0).localView().globalBasis().gridView()},
+        resultRequirements_{req},
+        fes_{fes},
+        userFunction_{userFunction} {
       if constexpr (!std::is_same_v<UserFunction, Impl::DefaultUserFunction>) userFunction_ = userFunction;
     }
 
@@ -89,4 +92,4 @@ namespace Ikarus {
     [[no_unique_address]] std::string name_{};
     UserFunction userFunction_;
   };
-}  // namespace Ikarus
+} // namespace Ikarus

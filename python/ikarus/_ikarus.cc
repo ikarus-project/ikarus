@@ -10,6 +10,9 @@
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/python/finiteelements/materials/material.hh>
 
+// TEMP
+#include <ikarus/python/io/resultfunction.hh>
+
 // since python does not support passing python float by reference to a double&, we have to wrap everything
 // see also https://pybind11.readthedocs.io/en/stable/faq.html#limitations-involving-reference-arguments
 template <typename T>
