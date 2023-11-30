@@ -121,7 +121,7 @@ if __name__ == "__main__":
     fx = flatBasis.asFunction(x)
     grid.plot()
 
-    # Test resultAt Function (see C++ test)
+    # Test resultAt Function
     resReq = ikarus.ResultRequirements()
     resReq.insertGlobalSolution(iks.FESolutions.displacement, x)
     resReq.insertParameter(iks.FEParameter.loadfactor, lambdaLoad)
@@ -130,16 +130,16 @@ if __name__ == "__main__":
     indexSet = grid.indexSet
 
     stressFuncScalar = grid.function(
-        lambda e, x: fes[indexSet.index(e)].calculateAt(resReq, x)[0, 0]
+        lambda e, x: fes[indexSet.index(e)].resultAt(resReq, x)[0, 0]
     )
     stressFuncVec = grid.function(
-        lambda e, x: fes[indexSet.index(e)].calculateAt(resReq, x)[:, 0]
+        lambda e, x: fes[indexSet.index(e)].resultAt(resReq, x)[:, 0]
     )
 
-    # After adding another resReq the function calculateAt() should fail if this result was never inserted
+    # After adding another resReq the function resultAt() should fail if this result was never inserted
     resReq.addResultRequest(iks.ResultType.cauchyStress)
     try:
-        fes[0].calculateAt(resReq, np.array([0.5, 0.5]), iks.ResultType.cauchyStress)
+        fes[0].resultAt(resReq, np.array([0.5, 0.5]), iks.ResultType.cauchyStress)
     except IndexError:
         assert True
     else:

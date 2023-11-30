@@ -105,7 +105,7 @@ namespace Ikarus::Python {
       cls.def("getMaterialTangent", [](LinearElastic& self) { return self.getMaterialTangent(); });
 
     cls.def(
-        "calculateAt",
+        "resultAt",
         [](LinearElastic& self, const ResultRequirementsType& req,
            const Dune::FieldVector<double, Traits::mydim>& local, ResultType resType = ResultType::noType) {
           ResultTypeMap<double> resultTypeMap;

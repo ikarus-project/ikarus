@@ -132,3 +132,15 @@ if __name__ == "__main__":
     assert np.allclose(resultd3.x, resultd4.x)
     assert np.all(abs(resultd3.grad) < 1e-8)
     assert np.all(abs(resultd4.fun) < 1e-8)
+
+    resReq = ikarus.ResultRequirements()
+    resReq.insertGlobalSolution(
+        iks.FESolutions.displacement, assembler.createFullVector(resultd.x)
+    )
+    resReq.insertParameter(iks.FEParameter.loadfactor, lambdaLoad)
+    resReq.addResultRequest(iks.ResultType.PK2Stress)
+
+    res1 = fes[0].resultAt(resReq, np.array([0.5, 0.5]))
+    res2 = fes[0].resultAt(resReq, np.array([0.5, 0.5]), iks.ResultType.PK2Stress)
+
+    assert np.allclose(res1, res2)
