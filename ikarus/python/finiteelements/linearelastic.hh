@@ -25,12 +25,13 @@ namespace Ikarus::Python {
   void registerElement(pybind11::handle scope, pybind11::class_<LinearElastic, options...> cls) {
     using pybind11::operator""_a;
 
-    using GlobalBasis    = typename LinearElastic::Basis;
-    using FlatBasis      = typename LinearElastic::FlatBasis;
-    using GridView       = typename GlobalBasis::GridView;
-    using Element        = typename LinearElastic::Element;
-    using Traits         = typename LinearElastic::Traits;
-    using FErequirements = typename LinearElastic::FERequirementType;
+    using GlobalBasis            = typename LinearElastic::Basis;
+    using FlatBasis              = typename LinearElastic::FlatBasis;
+    using GridView               = typename GlobalBasis::GridView;
+    using Element                = typename LinearElastic::Element;
+    using Traits                 = typename LinearElastic::Traits;
+    using FErequirements         = typename LinearElastic::FERequirementType;
+    using ResultRequirementsType = typename LinearElastic::ResultRequirementsType;
 
     if constexpr (defaultInitializers)
       cls.def(pybind11::init([](const GlobalBasis& basis, const Element& element, double emod, double nu) {
@@ -102,6 +103,19 @@ namespace Ikarus::Python {
 
     if constexpr (requires { std::declval<LinearElastic>().getMaterialTangent(); })
       cls.def("getMaterialTangent", [](LinearElastic& self) { return self.getMaterialTangent(); });
+
+    cls.def(
+        "calculateAt",
+        [](LinearElastic& self, const ResultRequirementsType& req,
+           const Dune::FieldVector<double, Traits::mydim>& local, ResultType resType = ResultType::noType) {
+          ResultTypeMap<double> resultTypeMap;
+          self.calculateAt(req, local, resultTypeMap);
+          if (resType == ResultType::noType)
+            return resultTypeMap.getSingleResult().second;
+          else
+            return resultTypeMap.getResult(resType);
+        },
+        pybind11::arg("resultRequirements"), pybind11::arg("local"), pybind11::arg("resultType") = ResultType::noType);
   }
 
   template <class LinearElastic, class... options>
