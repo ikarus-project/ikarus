@@ -17,7 +17,6 @@ import dune.functions
 from dune.vtk import vtkWriter, vtkUnstructuredGridWriter
 
 if __name__ == "__main__":
-    print("Hello from the test")
     lowerLeft = []
     upperRight = []
     elements = []
@@ -141,8 +140,8 @@ if __name__ == "__main__":
     resReq.addResultRequest(iks.ResultType.cauchyStress)
     try:
         fes[0].calculateAt(resReq, np.array([0.5, 0.5]), iks.ResultType.cauchyStress)
-    except:
-        pass
+    except IndexError:
+        assert True
     else:
         assert False
 
