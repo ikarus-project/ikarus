@@ -24,13 +24,15 @@ namespace Ikarus::Python {
   void registerNonLinearElastic(pybind11::handle scope, pybind11::class_<NonLinearElastic, options...> cls) {
     using pybind11::operator""_a;
 
-    using GlobalBasis    = typename NonLinearElastic::Basis;
-    using FlatBasis      = typename NonLinearElastic::FlatBasis;
-    using GridView       = typename GlobalBasis::GridView;
-    using Element        = typename NonLinearElastic::Element;
-    using Traits         = typename NonLinearElastic::Traits;
-    using FErequirements = typename NonLinearElastic::FERequirementType;
-    using Material       = typename NonLinearElastic::Material;
+    using GlobalBasis            = typename NonLinearElastic::Basis;
+    using FlatBasis              = typename NonLinearElastic::FlatBasis;
+    using GridView               = typename GlobalBasis::GridView;
+    using Element                = typename NonLinearElastic::Element;
+    using Traits                 = typename NonLinearElastic::Traits;
+    using FErequirements         = typename NonLinearElastic::FERequirementType;
+    using Material               = typename NonLinearElastic::Material;
+    using FErequirements         = typename NonLinearElastic::FERequirementType;
+    using ResultRequirementsType = typename NonLinearElastic::ResultRequirementsType;
 
     cls.def(pybind11::init([](const GlobalBasis& basis, const Element& element, const Material& mat) {
               return new NonLinearElastic(basis, element, mat);
@@ -97,6 +99,19 @@ namespace Ikarus::Python {
           return self.calculateMatrix(req, mat);
         },
         pybind11::arg("FErequirements"), pybind11::arg("elementMatrix").noconvert());
+
+    cls.def(
+        "resultAt",
+        [](NonLinearElastic& self, const ResultRequirementsType& req,
+           const Dune::FieldVector<double, Traits::mydim>& local, ResultType resType = ResultType::noType) {
+          ResultTypeMap<double> resultTypeMap;
+          self.calculateAt(req, local, resultTypeMap);
+          if (resType == ResultType::noType)
+            return resultTypeMap.getSingleResult().second;
+          else
+            return resultTypeMap.getResult(resType);
+        },
+        pybind11::arg("resultRequirements"), pybind11::arg("local"), pybind11::arg("resultType") = ResultType::noType);
   }
 
 }  // namespace Ikarus::Python

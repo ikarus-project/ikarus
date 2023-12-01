@@ -1,12 +1,15 @@
 # SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: CC0-1.0
 
+/.devcontainer
+
 /build*
 /.vscode
 /cpm_modules
 .DS_Store
 .idea/
 cmake-build-debug/
+*cmake-build*
 cmake-build-debug-dockerfull/
 cmake-build-debug-dockerfulldocs/
 cmake-build-release/

@@ -14,7 +14,7 @@ import scipy as sp
 
 import dune.grid
 import dune.functions
-from dune.vtk import vtkWriter
+from dune.vtk import vtkWriter, vtkUnstructuredGridWriter
 
 if __name__ == "__main__":
     lowerLeft = []
@@ -29,7 +29,7 @@ if __name__ == "__main__":
     req.addAffordance(iks.ScalarAffordances.mechanicalPotentialEnergy)
 
     grid = dune.grid.structuredGrid(lowerLeft, upperRight, elements)
-    grid.hierarchicalGrid.globalRefine(6)
+    grid.hierarchicalGrid.globalRefine(4)
     basisLagrange12 = dune.functions.defaultGlobalBasis(
         grid, dune.functions.Power(dune.functions.Lagrange(order=1), 2)
     )
@@ -121,4 +121,38 @@ if __name__ == "__main__":
     fx = flatBasis.asFunction(x)
     grid.plot()
 
-    writer = vtkWriter(grid, "nameTest", pointData={("displacement", (0, 1)): fx})
+    # Test resultAt Function
+    resReq = ikarus.ResultRequirements()
+    resReq.insertGlobalSolution(iks.FESolutions.displacement, x)
+    resReq.insertParameter(iks.FEParameter.loadfactor, lambdaLoad)
+    resReq.addResultRequest(iks.ResultType.linearStress)
+
+    indexSet = grid.indexSet
+
+    stressFuncScalar = grid.function(
+        lambda e, x: fes[indexSet.index(e)].resultAt(resReq, x)[0, 0]
+    )
+    stressFuncVec = grid.function(
+        lambda e, x: fes[indexSet.index(e)].resultAt(resReq, x)[:, 0]
+    )
+
+    # After adding another resReq the function resultAt() should fail if this result was never inserted
+    resReq.addResultRequest(iks.ResultType.cauchyStress)
+    try:
+        fes[0].resultAt(resReq, np.array([0.5, 0.5]), iks.ResultType.cauchyStress)
+    except IndexError:
+        assert True
+    else:
+        assert False
+
+    from utils import output_path
+
+    writer = vtkWriter(
+        grid, output_path() + "result", pointData={("displacement", (0, 1)): fx}
+    )
+
+    writer2 = vtkUnstructuredGridWriter(grid)
+    writer2.addCellData(stressFuncScalar, name="stress")
+    writer2.addCellData(stressFuncVec, name="stress2")
+
+    writer2.write(name=output_path() + "result")

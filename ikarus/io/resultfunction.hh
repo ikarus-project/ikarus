@@ -11,8 +11,8 @@
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/io/resultevaluators.hh>
 #include <ikarus/utils/eigendunetransformations.hh>
-namespace Ikarus {
 
+namespace Ikarus {
   namespace Impl {
     struct DefaultUserFunction {};
   }  // namespace Impl
@@ -28,9 +28,10 @@ namespace Ikarus {
    * or with Dune vtkWriter.addVertexData(resultFunction);
    */
 
-  template <typename ElementType, typename UserFunction = Impl::DefaultUserFunction>
-  class ResultFunction : public Dune::VTKFunction<typename ElementType::GridView> {
+  template <typename ElementType_, typename UserFunction = Impl::DefaultUserFunction>
+  class ResultFunction : public Dune::VTKFunction<typename ElementType_::GridView> {
   public:
+    using ElementType            = ElementType_;
     using ResultRequirements     = typename ElementType::ResultRequirementsType;
     using GridView               = typename ElementType::GridView;
     using ctype                  = typename GridView::ctype;
@@ -56,6 +57,7 @@ namespace Ikarus {
       } else
         return userFunction_.ncomps();
     }
+
     [[nodiscard]] constexpr std::string name() const override {
       if constexpr (std::is_same_v<UserFunction, Impl::DefaultUserFunction>)
         return toString(resultRequirements_.getRequestedResult());
