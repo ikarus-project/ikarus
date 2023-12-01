@@ -112,7 +112,6 @@ namespace Ikarus {
     };
   }  // namespace Impl
 
-  // @todo FErequirements -> FERequirements
   template <typename SolutionVectorType_ = std::reference_wrapper<Eigen::VectorXd>,
             typename ParameterType_      = std::reference_wrapper<double>>
   class FErequirements {

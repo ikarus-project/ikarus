@@ -154,8 +154,6 @@ PYBIND11_MODULE(_ikarus, m) {
 
   resReq.def("addResultRequest", [](ResReq& self, ResultType rType) { self.addResultRequest(std::move(rType)); });
 
-  // @todo do we have to rebuilt the whole interface?
-
   auto materials = m.def_submodule("materials", "This is the submodule for materials in Ikarus");
 
   pybind11::class_<LinearElasticity> linElastic(materials, "LinearElasticity");
