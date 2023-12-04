@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
   t.subTest(testFEElement<EASElement, 3>(firstOrderLagrangePrePower3Basis, "EAS", randomlyDistorted, cubeGeometry,
                                          checkJacobianFunctor));
   t.subTest(testFEElement<EASElement, 2>(firstOrderLagrangePrePower2Basis, "EAS", unDistorted, cubeGeometry,
-                                         checkLinearStressFunctor));
+                                         checkLinearStressFunctor, checkResultFunctionFunctor));
 
   return t.exit();
 }
