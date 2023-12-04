@@ -26,13 +26,13 @@
  */
 template <template <typename> typename FEElementTemplate, int gridDim, typename PreBasis, typename... F>
 auto testFEElement(const PreBasis& preBasis, const std::string& elementName, const CornerDistortionFlag& distortionFlag,
-                   F&&... f) {
+                   const ElementGeometryFlag& geometryFlag, F&&... f) {
   Dune::TestSuite t(std::string("testFEElement ") + elementName + " on grid element with dimension "
                     + std::to_string(gridDim));
 
   auto fTuple = std::forward_as_tuple(f...);
 
-  auto grid = createUGGridFromCorners<gridDim>(distortionFlag);
+  auto grid = createUGGridFromCorners<gridDim>(distortionFlag, geometryFlag);
 
   auto gridView = grid->leafGridView();
   using namespace Ikarus;
@@ -115,7 +115,7 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
   } else
     spdlog::info("No element test functor found for {}", Dune::className<FEElementType>());
 
-  // Trying to instantiate the Result Evaluator
+  // Trying to instantiate the Result Evaluator @todo this should be done differently
   if constexpr (gridDim == 2) {
     auto resReq         = Ikarus::ResultRequirements(requirements).addResultRequest(ResultType::PK2Stress);
     auto resultFunction = std::make_shared<ResultFunction<FEElementType>>(&fes, resReq);
@@ -124,17 +124,20 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
   return t;
 }
 
-auto checkGradientFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe, [[maybe_unused]] auto& req) {
+inline auto checkGradientFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe, [[maybe_unused]] auto& req) {
   return checkGradientOfElement(nonLinOp);
 };
-auto checkHessianFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe, [[maybe_unused]] auto& req) {
+inline auto checkHessianFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe, [[maybe_unused]] auto& req) {
   return checkHessianOfElement(nonLinOp);
 };
-auto checkJacobianFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe, [[maybe_unused]] auto& req) {
+inline auto checkJacobianFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe, [[maybe_unused]] auto& req) {
   auto subOperator = nonLinOp.template subOperator<1, 2>();
   return checkJacobianOfElement(subOperator);
 };
-auto checkCauchyStressFunctor
-    = [](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req) { return checkCauchyStressOf2DElement(nonLinOp, fe); };
-auto checkFEByAutoDiffFunctor
+inline auto checkLinearStressFunctor
+    = [](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req) { return checkLinearStress(nonLinOp, fe); };
+
+inline auto checkResultFunctionFunctor
+    = [](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req) { return checkResultFunction(nonLinOp, fe); };
+inline auto checkFEByAutoDiffFunctor
     = [](auto& nonLinOp, auto& fe, auto& req) { return checkFEByAutoDiff(nonLinOp, fe, req); };

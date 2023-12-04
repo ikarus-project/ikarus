@@ -171,12 +171,9 @@ namespace Ikarus {
       const auto EVoigt    = toVoigt(E);
       auto PK2             = mat.template stresses<StrainTags::greenLagrangian>(EVoigt);
 
-      typename ResultTypeMap<double>::ResultArray resultVector;
-      if (req.isResultRequested(ResultType::PK2Stress)) {
-        resultVector.resizeLike(PK2);
-        resultVector = PK2;
-        result.insertOrAssignResult(ResultType::PK2Stress, resultVector);
-      } else
+      if (req.isResultRequested(ResultType::PK2Stress))
+        result.insertOrAssignResult(ResultType::PK2Stress, PK2);
+      else
         DUNE_THROW(Dune::NotImplemented, "The requested result type is NOT implemented.");
     }
 
