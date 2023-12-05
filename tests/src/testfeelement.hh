@@ -27,9 +27,8 @@
 template <template <typename> typename FEElementTemplate, typename PreBasis, typename ReferenceElement, typename... F>
 auto testFEElement(const PreBasis& preBasis, const std::string& elementName, const CornerDistortionFlag& distortionFlag,
                    const ReferenceElement& refElement, F&&... f) {
-
   constexpr int gridDim = ReferenceElement::dimension;
-  
+
   Dune::TestSuite t(std::string("testFEElement ") + elementName + " on grid element with dimension "
                     + std::to_string(gridDim));
 
