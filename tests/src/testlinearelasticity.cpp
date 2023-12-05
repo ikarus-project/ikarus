@@ -32,46 +32,48 @@ int main(int argc, char** argv) {
   constexpr auto unDistorted                    = CornerDistortionFlag::unDistorted;
 
   // Test cube 2D
-  t.subTest(testFEElement<LinearElasticElement, 2>(
-      firstOrderLagrangePrePower2Basis, "LinearElastic", randomlyDistorted, Dune::GeometryTypes::cube(2),
-      checkGradientFunctor, checkHessianFunctor, checkJacobianFunctor, checkFEByAutoDiffFunctor));
-  t.subTest(testFEElement<LinearElasticElement, 2>(
-      secondOrderLagrangePrePower2Basis, "LinearElastic", randomlyDistorted, Dune::GeometryTypes::cube(2),
-      checkGradientFunctor, checkHessianFunctor, checkJacobianFunctor, checkFEByAutoDiffFunctor));
+  t.subTest(testFEElement<LinearElasticElement>(firstOrderLagrangePrePower2Basis, "LinearElastic", randomlyDistorted,
+                                                Dune::ReferenceElements<double, 2>::cube(), checkGradientFunctor,
+                                                checkHessianFunctor, checkJacobianFunctor, checkFEByAutoDiffFunctor));
+  t.subTest(testFEElement<LinearElasticElement>(secondOrderLagrangePrePower2Basis, "LinearElastic", randomlyDistorted,
+                                                Dune::ReferenceElements<double, 2>::cube(), checkGradientFunctor,
+                                                checkHessianFunctor, checkJacobianFunctor, checkFEByAutoDiffFunctor));
 
-  t.subTest(testFEElement<LinearElasticElement, 2>(firstOrderLagrangePrePower2Basis, "LinearElastic", unDistorted,
-                                                   Dune::GeometryTypes::cube(2), checkLinearStressFunctor,
-                                                   checkResultFunctionFunctor));
+  t.subTest(testFEElement<LinearElasticElement>(firstOrderLagrangePrePower2Basis, "LinearElastic", unDistorted,
+                                                Dune::ReferenceElements<double, 2>::cube(), checkLinearStressFunctor,
+                                                checkResultFunctionFunctor));
 
   // Test simplex 2D
-  t.subTest(testFEElement<LinearElasticElement, 2>(
-      firstOrderLagrangePrePower2Basis, "LinearElastic", randomlyDistorted, Dune::GeometryTypes::simplex(2),
-      checkGradientFunctor, checkHessianFunctor, checkJacobianFunctor, checkFEByAutoDiffFunctor));
-  t.subTest(testFEElement<LinearElasticElement, 2>(
-      secondOrderLagrangePrePower2Basis, "LinearElastic", randomlyDistorted, Dune::GeometryTypes::simplex(2),
-      checkGradientFunctor, checkHessianFunctor, checkJacobianFunctor, checkFEByAutoDiffFunctor));
+  t.subTest(testFEElement<LinearElasticElement>(firstOrderLagrangePrePower2Basis, "LinearElastic", randomlyDistorted,
+                                                Dune::ReferenceElements<double, 2>::simplex(), checkGradientFunctor,
+                                                checkHessianFunctor, checkJacobianFunctor, checkFEByAutoDiffFunctor));
+  t.subTest(testFEElement<LinearElasticElement>(secondOrderLagrangePrePower2Basis, "LinearElastic", randomlyDistorted,
+                                                Dune::ReferenceElements<double, 2>::simplex(), checkGradientFunctor,
+                                                checkHessianFunctor, checkJacobianFunctor, checkFEByAutoDiffFunctor));
 
-  t.subTest(testFEElement<LinearElasticElement, 2>(firstOrderLagrangePrePower2Basis, "LinearElastic", unDistorted,
-                                                   Dune::GeometryTypes::simplex(2), checkLinearStressFunctor));
+  t.subTest(testFEElement<LinearElasticElement>(firstOrderLagrangePrePower2Basis, "LinearElastic", unDistorted,
+                                                Dune::ReferenceElements<double, 2>::simplex(),
+                                                checkLinearStressFunctor));
 
   // Test cube 3D
-  t.subTest(testFEElement<LinearElasticElement, 3>(
-      firstOrderLagrangePrePower3Basis, "LinearElastic", randomlyDistorted, Dune::GeometryTypes::cube(3),
-      checkGradientFunctor, checkHessianFunctor, checkJacobianFunctor, checkFEByAutoDiffFunctor));
-  t.subTest(testFEElement<LinearElasticElement, 3>(
-      secondOrderLagrangePrePower3Basis, "LinearElastic", randomlyDistorted, Dune::GeometryTypes::cube(3),
-      checkGradientFunctor, checkHessianFunctor, checkJacobianFunctor, checkFEByAutoDiffFunctor));
-  t.subTest(testFEElement<LinearElasticElement, 3>(
-      secondOrderLagrangePrePower3BasisBlocked, "LinearElastic", randomlyDistorted, Dune::GeometryTypes::cube(3),
-      checkGradientFunctor, checkHessianFunctor, checkJacobianFunctor, checkFEByAutoDiffFunctor));
+  t.subTest(testFEElement<LinearElasticElement>(firstOrderLagrangePrePower3Basis, "LinearElastic", randomlyDistorted,
+                                                Dune::ReferenceElements<double, 3>::cube(), checkGradientFunctor,
+                                                checkHessianFunctor, checkJacobianFunctor, checkFEByAutoDiffFunctor));
+  t.subTest(testFEElement<LinearElasticElement>(secondOrderLagrangePrePower3Basis, "LinearElastic", randomlyDistorted,
+                                                Dune::ReferenceElements<double, 3>::cube(), checkGradientFunctor,
+                                                checkHessianFunctor, checkJacobianFunctor, checkFEByAutoDiffFunctor));
+  t.subTest(testFEElement<LinearElasticElement>(secondOrderLagrangePrePower3BasisBlocked, "LinearElastic",
+                                                randomlyDistorted, Dune::ReferenceElements<double, 3>::cube(),
+                                                checkGradientFunctor, checkHessianFunctor, checkJacobianFunctor,
+                                                checkFEByAutoDiffFunctor));
 
   // Test simplex 3D
-  t.subTest(testFEElement<LinearElasticElement, 3>(
-      firstOrderLagrangePrePower3Basis, "LinearElastic", randomlyDistorted, Dune::GeometryTypes::simplex(3),
-      checkGradientFunctor, checkHessianFunctor, checkJacobianFunctor, checkFEByAutoDiffFunctor));
+  t.subTest(testFEElement<LinearElasticElement>(firstOrderLagrangePrePower3Basis, "LinearElastic", randomlyDistorted,
+                                                Dune::ReferenceElements<double, 3>::simplex(), checkGradientFunctor,
+                                                checkHessianFunctor, checkJacobianFunctor, checkFEByAutoDiffFunctor));
 
-  t.subTest(testFEElement<LinearElasticElement, 3>(firstOrderLagrangePrePower3Basis, "LinearElastic", unDistorted,
-                                                   Dune::GeometryTypes::simplex(3), checkLinearStressFunctor,
-                                                   checkResultFunctionFunctor));
+  t.subTest(testFEElement<LinearElasticElement>(firstOrderLagrangePrePower3Basis, "LinearElastic", unDistorted,
+                                                Dune::ReferenceElements<double, 3>::simplex(), checkLinearStressFunctor,
+                                                checkResultFunctionFunctor));
   return t.exit();
 }
