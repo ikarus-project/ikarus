@@ -29,14 +29,14 @@ int main(int argc, char** argv) {
   auto firstOrderLagrangePrePower3Basis = power<3>(lagrange<1>(), FlatInterleaved());
   constexpr auto randomlyDistorted      = CornerDistortionFlag::randomlyDistorted;
   constexpr auto unDistorted            = CornerDistortionFlag::unDistorted;
-  constexpr auto cubeGeometry           = ElementGeometryFlag::cube;
 
-  t.subTest(testFEElement<EASElement, 2>(firstOrderLagrangePrePower2Basis, "EAS", randomlyDistorted, cubeGeometry,
-                                         checkJacobianFunctor));
-  t.subTest(testFEElement<EASElement, 3>(firstOrderLagrangePrePower3Basis, "EAS", randomlyDistorted, cubeGeometry,
-                                         checkJacobianFunctor));
-  t.subTest(testFEElement<EASElement, 2>(firstOrderLagrangePrePower2Basis, "EAS", unDistorted, cubeGeometry,
-                                         checkLinearStressFunctor, checkResultFunctionFunctor));
+  t.subTest(testFEElement<EASElement, 2>(firstOrderLagrangePrePower2Basis, "EAS", randomlyDistorted,
+                                         Dune::GeometryTypes::cube(2), checkJacobianFunctor));
+  t.subTest(testFEElement<EASElement, 3>(firstOrderLagrangePrePower3Basis, "EAS", randomlyDistorted,
+                                         Dune::GeometryTypes::cube(3), checkJacobianFunctor));
+  t.subTest(testFEElement<EASElement, 2>(firstOrderLagrangePrePower2Basis, "EAS", unDistorted,
+                                         Dune::GeometryTypes::cube(2), checkLinearStressFunctor,
+                                         checkResultFunctionFunctor));
 
   return t.exit();
 }

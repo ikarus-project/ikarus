@@ -26,13 +26,16 @@
  */
 template <template <typename> typename FEElementTemplate, int gridDim, typename PreBasis, typename... F>
 auto testFEElement(const PreBasis& preBasis, const std::string& elementName, const CornerDistortionFlag& distortionFlag,
-                   const ElementGeometryFlag& geometryFlag, F&&... f) {
+                   const Dune::GeometryType& geometryType, F&&... f) {
+  assert(gridDim == geometryType.dim()
+         && "The dimension of the geometryType should match  the dimension of the given finite element basis");
+
   Dune::TestSuite t(std::string("testFEElement ") + elementName + " on grid element with dimension "
                     + std::to_string(gridDim));
 
   auto fTuple = std::forward_as_tuple(f...);
 
-  auto grid = createUGGridFromCorners<gridDim>(distortionFlag, geometryFlag);
+  auto grid = createUGGridFromCorners<gridDim>(distortionFlag, geometryType);
 
   auto gridView = grid->leafGridView();
   using namespace Ikarus;
