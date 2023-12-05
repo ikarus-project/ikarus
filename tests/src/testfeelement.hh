@@ -19,7 +19,7 @@
 /** These tests test your element on some gridElement with some basis
  *
  * @tparam FEElementTemplate The element as template template parameter. The template needs to be the globalBasis
- * @tparam ReferenceElement The reference element, the grid has to be contructed from
+ * @tparam ReferenceElement The reference element, the grid has to be constructed from
  * @tparam PreBasis The preBasis you want to test the element with
  * @tparam F A variadic number of the test functor you want to be checked, they need to accept a non-linear operator and
  * the finite element
@@ -27,10 +27,9 @@
 template <template <typename> typename FEElementTemplate, typename PreBasis, typename ReferenceElement, typename... F>
 auto testFEElement(const PreBasis& preBasis, const std::string& elementName, const CornerDistortionFlag& distortionFlag,
                    const ReferenceElement& refElement, F&&... f) {
-  constexpr int gridDim = ReferenceElement::dimension;
-  // assert(gridDim == geometryType.dim()
-  //        && "The dimension of the geometryType should match  the dimension of the given finite element basis");
 
+  constexpr int gridDim = ReferenceElement::dimension;
+  
   Dune::TestSuite t(std::string("testFEElement ") + elementName + " on grid element with dimension "
                     + std::to_string(gridDim));
 
