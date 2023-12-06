@@ -27,15 +27,17 @@ int main(int argc, char** argv) {
   using namespace Dune::Functions::BasisFactory;
   auto firstOrderLagrangePrePower2Basis = power<2>(lagrange<1>(), FlatInterleaved());
   auto firstOrderLagrangePrePower3Basis = power<3>(lagrange<1>(), FlatInterleaved());
-  const auto randomlyDistorted          = CornerDistortionFlag::randomlyDistorted;
-  const auto unDistorted                = CornerDistortionFlag::unDistorted;
+  constexpr auto randomlyDistorted      = CornerDistortionFlag::randomlyDistorted;
+  constexpr auto unDistorted            = CornerDistortionFlag::unDistorted;
 
-  t.subTest(
-      testFEElement<EASElement, 2>(firstOrderLagrangePrePower2Basis, "EAS", randomlyDistorted, checkJacobianFunctor));
-  t.subTest(
-      testFEElement<EASElement, 3>(firstOrderLagrangePrePower3Basis, "EAS", randomlyDistorted, checkJacobianFunctor));
-  t.subTest(
-      testFEElement<EASElement, 2>(firstOrderLagrangePrePower2Basis, "EAS", unDistorted, checkCauchyStressFunctor));
+  t.subTest(testFEElement<EASElement>(firstOrderLagrangePrePower2Basis, "EAS", randomlyDistorted,
+                                      Dune::ReferenceElements<double, 2>::cube(), checkJacobianFunctor));
+
+  t.subTest(testFEElement<EASElement>(firstOrderLagrangePrePower3Basis, "EAS", randomlyDistorted,
+                                      Dune::ReferenceElements<double, 3>::cube(), checkJacobianFunctor));
+  t.subTest(testFEElement<EASElement>(firstOrderLagrangePrePower2Basis, "EAS", unDistorted,
+                                      Dune::ReferenceElements<double, 2>::cube(), checkLinearStressFunctor,
+                                      checkResultFunctionFunctor));
 
   return t.exit();
 }

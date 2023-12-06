@@ -151,14 +151,11 @@ namespace Ikarus {
       const auto C   = getMaterialTangent();
       auto epsVoigt  = eps.evaluate(local, on(gridElement));
 
-      auto cauchyStress = (C * epsVoigt).eval();
+      auto linearStress = (C * epsVoigt).eval();
 
-      typename ResultTypeMap<double>::ResultArray resultVector;
-      if (req.isResultRequested(ResultType::linearStress)) {
-        resultVector.resize(3, 1);
-        resultVector = cauchyStress;
-        result.insertOrAssignResult(ResultType::linearStress, resultVector);
-      } else
+      if (req.isResultRequested(ResultType::linearStress))
+        result.insertOrAssignResult(ResultType::linearStress, linearStress);
+      else
         DUNE_THROW(Dune::NotImplemented, "The requested result type is NOT implemented.");
     }
 

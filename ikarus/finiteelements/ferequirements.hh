@@ -187,7 +187,7 @@ namespace Ikarus {
   template <typename ParameterType = double>
   class ResultTypeMap {
   public:
-    using ResultArray = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, 0, 3, 3>;
+    using ResultArray = Eigen::Matrix<ParameterType, Eigen::Dynamic, Eigen::Dynamic, 0, 9, 3>;
     void insertOrAssignResult(ResultType &&resultType, const ResultArray &resultArray) {
       results.insert_or_assign(resultType, resultArray);
     }
