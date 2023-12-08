@@ -28,7 +28,6 @@
 #include <ikarus/io/resultfunction.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/duneutilities.hh>
-#include <ikarus/utils/eigendunetransformations.hh>
 #include <ikarus/utils/functionsanitychecks.hh>
 #include <ikarus/utils/linearalgebrahelper.hh>
 
@@ -187,137 +186,26 @@ template <typename NonLinearOperator>
 }
 
 template <typename NonLinearOperator, typename FiniteElement>
-[[nodiscard]] auto checkLinearStressOf2DElement(NonLinearOperator& nonLinearOperator, FiniteElement& fe,
-                                                const std::string& messageIfFailed = "") {
-  static_assert(FiniteElement::Traits::mydim == 2,
-                "The test to check linear stress is only supported for the two-dimensional case");
-  assert(fe.localView().element().type() == Dune::GeometryTypes::quadrilateral
-         && "The test to check linear stress is only supported for quadrilaterals");
-  static_assert(std::remove_cvref_t<decltype(fe.localView().tree())>::degree() == 2,
-                "The test to check linear stress is only supported with the powerBasis being two-dimensional");
-  static_assert(std::is_same_v<std::remove_cvref_t<decltype(fe.localView().tree().child(0))>,
-                               Dune::Functions::LagrangeNode<
-                                   std::remove_cvref_t<decltype(fe.localView().globalBasis().gridView())>, 1, double>>,
-                "The test to check linear stress is only supported for a linear Lagrange basis");
+[[nodiscard]] auto checkCalculateAt(NonLinearOperator& nonLinearOperator, FiniteElement& fe,
+                                    const Ikarus::ResultRequirements<>& resultRequirements, const auto& expectedResult,
+                                    const auto& evaluationPositions, const std::string& messageIfFailed = "") {
+  Eigen::MatrixXd computedResults(expectedResult.rows(), expectedResult.cols());
+  computedResults.setZero();
 
-  Dune::TestSuite t("Linear Stress check of 2D solid element (4-node quadrilateral)");
-  using namespace Ikarus;
-  using namespace Dune::Indices;
-  using namespace Dune::Functions::BasisFactory;
-  constexpr int gridDim = 2;
-
-  auto& displacement = nonLinearOperator.firstParameter();
-  displacement << 0, 0, 1, 1, 1, 1, 1, 1;
-  std::array<Dune::FieldVector<double, 3>, 4> expectedStress = {{{1428.5714287000, 1428.5714287000, 769.2307693000},
-                                                                 {1098.9010990000, 329.6703297000, 384.6153846500},
-                                                                 {329.6703297000, 1098.9010990000, 384.6153846500},
-                                                                 {0, 0, 0}}};
-
-  /// Modifications for the EAS method
-  /// The test is only to check the computation of Cauchy stress in the linear elastic case. This includes only the
-  /// addition of C*M*alpha to the stress from pure displacement formulation. Hence it is sufficient to test only for
-  /// one of the EAS variant as the other M matrices are already tested.
-  if constexpr (requires { fe.setEASType(4); }) {
-    fe.setEASType(4);
-    expectedStress = {{{1214.2857143755, 1214.2857143755, 384.6153846800},
-                       {1214.2857144055, 214.2857142945, 384.6153847400},
-                       {214.2857142945, 1214.2857144055, 384.6153845600},
-                       {214.2857143245, 214.2857143245, 384.6153846200}}};
+  Ikarus::ResultTypeMap result;
+  for (int i = 0; const auto& pos : evaluationPositions) {
+    fe.calculateAt(resultRequirements, pos, result);
+    computedResults.row(i++) = result.getSingleResult().second.transpose();
   }
 
-  auto resultRequirements = Ikarus::ResultRequirements<>()
-                                .insertGlobalSolution(Ikarus::FESolutions::displacement, displacement)
-                                .addResultRequest(ResultType::linearStress);
-
-  ResultTypeMap result;
-  auto gridView        = fe.localView().globalBasis().gridView();
-  auto scalarBasis     = makeConstSharedBasis(gridView, lagrangeDG<1>());
-  auto localScalarView = scalarBasis->localView();
-  std::vector<Dune::FieldVector<double, 3>> stressVector(scalarBasis->size());
-
-  auto ele = elements(gridView).begin();
-  localScalarView.bind(*ele);
-  const auto& fe2              = localScalarView.tree().finiteElement();
-  const auto& referenceElement = Dune::ReferenceElements<double, gridDim>::general(ele->type());
-  for (const auto c : std::views::iota(0u, fe2.size())) {
-    const auto fineKey                        = fe2.localCoefficients().localKey(c);
-    const auto nodalPositionInChildCoordinate = referenceElement.position(fineKey.subEntity(), fineKey.codim());
-    fe.calculateAt(resultRequirements, nodalPositionInChildCoordinate, result);
-    Eigen::Vector3d computedResult = result.getResult(ResultType::linearStress);
-    const auto nodeIndex           = localScalarView.index(localScalarView.tree().localIndex(c))[0];
-    stressVector[nodeIndex]        = toDune(computedResult);
-    for (const auto voigtIndex : std::views::iota(0u, static_cast<unsigned int>(gridDim * (gridDim + 1) / 2))) {
-      const auto FEStressComponent       = stressVector[nodeIndex][voigtIndex];
-      const auto expectedStressComponent = expectedStress[c][voigtIndex];
-      const bool isStressCorrect
-          = Dune::FloatCmp::eq<double, Dune::FloatCmp::CmpStyle::absolute>(FEStressComponent, expectedStressComponent);
-      t.check(isStressCorrect) << "Stress component " << voigtIndex << " at node " << c << " is not correctly computed"
-                               << messageIfFailed;
-    }
-  }
-  return t;
-}
-
-template <typename NonLinearOperator, typename FiniteElement>
-[[nodiscard]] auto checkLinearStressOfSimplex(NonLinearOperator& nonLinearOperator, FiniteElement& fe,
-                                              const std::string& messageIfFailed = "") {
-  constexpr int dim = FiniteElement::Traits::mydim;
-
-  static_assert(std::remove_cvref_t<decltype(fe.localView().tree())>::degree() == dim,
-                "The test to check linear stress is only supported with the powerBasis being two-dimensional");
-  assert(fe.localView().element().type() == Dune::GeometryTypes::simplex(dim)
-         && "The test to check linear stress is only supported for simplices");
-  static_assert(
-      std::is_same_v<
-          std::remove_cvref_t<decltype(fe.localView().tree().child(0))>,
-          Dune::Functions::LagrangeNode<std::remove_cvref_t<decltype(fe.localView().globalBasis().gridView())>, 1>>,
-      "The test to check linear stress is only supported for a linear Lagrange basis");
-
-  Dune::TestSuite t("Linear Stress check of" + std::to_string(dim) + "D  simplex element");
-
-  Eigen::Vector<double, dim*(dim + 1) / 2> expectedStress;
-  auto& displacement = nonLinearOperator.firstParameter();
-
-  if constexpr (dim == 2) {
-    displacement << 0, 0, 2, 0, 1, 0;
-    expectedStress << 2197.8021978, 659.3406593, 384.61538461;
-  } else {
-    displacement << 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0;
-    expectedStress << 576.923076900000, 1346.15384610000, 576.923076900000, 0, 384.615384600000, 769.230769200000;
-  }
-
-  using namespace Ikarus;
-  auto gridView = fe.localView().globalBasis().gridView();
-  auto element  = elements(gridView).begin();
-
-  auto resultRequirements = ResultRequirements()
-                                .insertGlobalSolution(FESolutions::displacement, displacement)
-                                .addResultRequest(ResultType::linearStress);
-
-  ResultTypeMap result;
-  fe.calculateAt(resultRequirements, Dune::FieldVector<double, dim>(0), result);
-  auto computedResult = result.getResult(ResultType::linearStress);
-
-  const bool isStressCorrect = isApproxSame(computedResult, expectedStress, 1e-8);
-  t.check(isStressCorrect) << "Computed Stress is not the same as expected stress:\n"
-                           << "It is\n:" << computedResult << "\nBut should be:\n"
-                           << expectedStress << "\n"
+  Dune::TestSuite t("Test of the calulateAt function");
+  const bool isStressCorrect = isApproxSame(computedResults, expectedResult, 1e-8);
+  t.check(isStressCorrect) << "Computed Result for " + Dune::className(fe) + " is not the same as expected result:\n"
+                           << "It is:\n"
+                           << computedResults << "\nBut should be:\n"
+                           << expectedResult << "\n"
                            << messageIfFailed;
-
   return t;
-}
-
-template <typename NonLinearOperator, typename FiniteElement>
-[[nodiscard]] auto checkLinearStress(NonLinearOperator& nonLinearOperator, FiniteElement& fe,
-                                     const std::string& messageIfFailed = "") {
-  if (fe.localView().element().type() == Dune::GeometryTypes::simplex(FiniteElement::Traits::mydim))
-    return checkLinearStressOfSimplex(nonLinearOperator, fe, messageIfFailed);
-
-  if constexpr (FiniteElement::Traits::mydim == 2)
-    return checkLinearStressOf2DElement(nonLinearOperator, fe, messageIfFailed);
-
-  std::cout << "There is no stress test yet implemented for the Element " << Dune::className(fe) << std::endl;
-  return Dune::TestSuite();
 }
 
 template <typename NonLinearOperator, typename FiniteElement>
@@ -356,7 +244,7 @@ template <typename NonLinearOperator, typename FiniteElement>
 
     t.checkNoThrow([&]() {
       resultFunctionLS.bind(*element);
-      auto stress = resultFunctionLS(toDune(Eigen::Vector<double, FiniteElement::Traits::mydim>()));
+      auto stress = resultFunctionLS(Dune::FieldVector<double, FiniteElement::Traits::mydim>(0));
     });
     // This throws while instantiating the Dune::VTK::Function because `calculateAt` is called for determining the
     // ncomps
