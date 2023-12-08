@@ -39,7 +39,7 @@ namespace Ikarus {
         globalIndices.push_back(localView_.index(localView_.tree().localIndex(i)));
     }
 
-    const GridElementEntityType& getEntity() { return localView_.element(); }
+    const GridElementEntityType& getEntity() const { return localView_.element(); }
     const LocalView& localView() const { return localView_; }
     LocalView& localView() { return localView_; }
 
