@@ -133,7 +133,7 @@ inline auto checkFEByAutoDiffFunctor
     = [](auto& nonLinOp, auto& fe, auto& req) { return checkFEByAutoDiff(nonLinOp, fe, req); };
 
 auto checkCalculateAtFunctorFactory(const auto resultCollectionFunction) {
-  return [=](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req) {
+  return [&](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req) {
     auto [resultRequirements, expectedStress, positions] = resultCollectionFunction(nonLinOp, fe);
     return checkCalculateAt(nonLinOp, fe, resultRequirements, expectedStress, positions);
   };

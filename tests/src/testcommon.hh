@@ -190,7 +190,6 @@ template <typename NonLinearOperator, typename FiniteElement>
                                     const Ikarus::ResultRequirements<>& resultRequirements, const auto& expectedResult,
                                     const auto& evaluationPositions, const std::string& messageIfFailed = "") {
   Eigen::MatrixXd computedResults(expectedResult.rows(), expectedResult.cols());
-  computedResults.setZero();
 
   Ikarus::ResultTypeMap result;
   for (int i = 0; const auto& pos : evaluationPositions) {
@@ -198,9 +197,10 @@ template <typename NonLinearOperator, typename FiniteElement>
     computedResults.row(i++) = result.getSingleResult().second.transpose();
   }
 
-  Dune::TestSuite t("Test of the calulateAt function");
-  const bool isStressCorrect = isApproxSame(computedResults, expectedResult, 1e-8);
-  t.check(isStressCorrect) << "Computed Result for " + Dune::className(fe) + " is not the same as expected result:\n"
+  Dune::TestSuite t("Test of the calulateAt function for " + Dune::className(fe));
+  const bool isResultCorrect = isApproxSame(computedResults, expectedResult, 1e-8);
+  t.check(isResultCorrect) << "Computed Result for " << toString(resultRequirements.getRequestedResult())
+                           << " is not the same as expected result:\n"
                            << "It is:\n"
                            << computedResults << "\nBut should be:\n"
                            << expectedResult << "\n"
