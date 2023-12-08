@@ -7,11 +7,9 @@
 
 #include <dune/common/bitsetvector.hh>
 #include <dune/fufem/boundarypatch.hh>
-#include <dune/grid/uggrid.hh>
 
 #include <ikarus/assembler/simpleassemblers.hh>
 #include <ikarus/finiteelements/ferequirements.hh>
-#include <ikarus/io/resultfunction.hh>
 #include <ikarus/linearalgebra/dirichletvalues.hh>
 #include <ikarus/linearalgebra/nonlinearoperator.hh>
 #include <ikarus/utils/basis.hh>
@@ -116,12 +114,6 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
   } else
     spdlog::info("No element test functor found for {}", Dune::className<FEElementType>());
 
-  // Trying to instantiate the Result Evaluator @todo this should be done differently
-  if constexpr (gridDim == 2) {
-    auto resReq         = Ikarus::ResultRequirements(requirements).addResultRequest(ResultType::PK2Stress);
-    auto resultFunction = std::make_shared<ResultFunction<FEElementType>>(&fes, resReq);
-  }
-
   return t;
 }
 
@@ -135,10 +127,14 @@ inline auto checkJacobianFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe,
   auto subOperator = nonLinOp.template subOperator<1, 2>();
   return checkJacobianOfElement(subOperator);
 };
-inline auto checkLinearStressFunctor
-    = [](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req) { return checkLinearStress(nonLinOp, fe); };
-
 inline auto checkResultFunctionFunctor
     = [](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req) { return checkResultFunction(nonLinOp, fe); };
 inline auto checkFEByAutoDiffFunctor
     = [](auto& nonLinOp, auto& fe, auto& req) { return checkFEByAutoDiff(nonLinOp, fe, req); };
+
+auto checkCalculateAtFunctorFactory(const auto resultCollectionFunction) {
+  return [&](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req) {
+    auto [resultRequirements, expectedStress, positions] = resultCollectionFunction(nonLinOp, fe);
+    return checkCalculateAt(nonLinOp, fe, resultRequirements, expectedStress, positions);
+  };
+}

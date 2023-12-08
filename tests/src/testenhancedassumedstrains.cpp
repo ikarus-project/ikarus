@@ -3,6 +3,7 @@
 
 #include <config.h>
 
+#include "resultcollection.hh"
 #include "testeas.hh"
 #include "testfeelement.hh"
 
@@ -35,9 +36,9 @@ int main(int argc, char** argv) {
 
   t.subTest(testFEElement<EASElement>(firstOrderLagrangePrePower3Basis, "EAS", randomlyDistorted,
                                       Dune::ReferenceElements<double, 3>::cube(), checkJacobianFunctor));
-  t.subTest(testFEElement<EASElement>(firstOrderLagrangePrePower2Basis, "EAS", unDistorted,
-                                      Dune::ReferenceElements<double, 2>::cube(), checkLinearStressFunctor,
-                                      checkResultFunctionFunctor));
+  t.subTest(testFEElement<EASElement>(
+      firstOrderLagrangePrePower2Basis, "EAS", unDistorted, Dune::ReferenceElements<double, 2>::cube(),
+      checkCalculateAtFunctorFactory(linearStressResultsOfSquare), checkResultFunctionFunctor));
 
   return t.exit();
 }
