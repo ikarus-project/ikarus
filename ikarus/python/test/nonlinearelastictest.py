@@ -143,4 +143,4 @@ if __name__ == "__main__":
     res1 = fes[0].resultAt(resReq, np.array([0.5, 0.5]))
     res2 = fes[0].resultAt(resReq, np.array([0.5, 0.5]), iks.ResultType.PK2Stress)
 
-    assert np.allclose(res1, res2, atol=1e-6)
+    assert np.allclose(res1, res2, atol=1e-6), f" {res1} is not equal to {res2}"
