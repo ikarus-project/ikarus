@@ -4,7 +4,6 @@
 name: License Year Update
 
 on:
-  push:
   schedule:
     - cron:  '0 0 1 1 *'
   workflow_dispatch:
@@ -28,4 +27,4 @@ jobs:
           git remote set-url origin https://${{ secrets.ORGANIZATION_TOKEN_WITH_WORKFLOWS }}@github.com/ikarus-project/ikarus.git
           git add .
           git commit -m "Update license headers"
-          git push origin feature/licenseyear
+          git push origin main
