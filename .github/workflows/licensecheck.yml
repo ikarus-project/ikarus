@@ -1,0 +1,31 @@
+# SPDX-FileCopyrightText: 2021-2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-License-Identifier: CC0-1.0
+
+name: License Year Update
+
+on:
+  push:
+  schedule:
+    - cron:  '0 0 1 1 *'
+  workflow_dispatch:
+
+jobs:
+  Run: 
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: 'repo'
+          token: ${{ secrets.ORGANIZATION_TOKEN_WITH_WORKFLOWS }}
+          
+        
+      - name: Update headers
+        run: |
+          cd repo
+          python .github/workflows/scripts/updatelicense.py
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "GitHub Actions [Bot]"
+          git remote set-url origin https://${{ secrets.ORGANIZATION_TOKEN_WITH_WORKFLOWS }}@github.com/ikarus-project/ikarus.git
+          git add .
+          git commit -m "Update license headers"
+          git push origin feature/licenseyear
