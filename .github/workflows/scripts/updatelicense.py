@@ -8,17 +8,17 @@ import datetime
 
 def update_license_header(file_path):
     try:
-        with open(file_path, "r", newline='') as file:
+        with open(file_path, "r", newline="") as file:
             content = file.read()
-    
+
         # Update the license header using regex
         updated_content, nsubs = re.subn(
-            r"SPDX-FileCopyrightText: (\d{4}) The Ikarus Developers",
-            lambda match: f"SPDX-FileCopyrightText: 2021-{2022} The Ikarus Developers",
+            r"SPDX-FileCopyrightText: (\d{4}-\d{4}) The Ikarus Developers",
+            lambda match: f"SPDX-FileCopyrightText: 2021-{datetime.datetime.now().year} The Ikarus Developers",
             content,
         )
         if nsubs > 0:
-            with open(file_path, "w", newline='') as file:
+            with open(file_path, "w", newline="") as file:
                 file.write(updated_content)
             print(f"Updated license header in: {file_path}")
         else:
