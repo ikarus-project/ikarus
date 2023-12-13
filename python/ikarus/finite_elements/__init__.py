@@ -101,7 +101,7 @@ def KirchhoffLoveShell(
     neumannBoundaryLoad=None,
 ):
     generator = MySimpleGenerator("KirchhoffLoveShell", "Ikarus::Python")
-    includes = ["ikarus/python/finiteelements/linearelastic.hh"]
+    includes = ["ikarus/python/finiteelements/kirchhoffloveshell.hh"]
 
     includes += ["ikarus/finiteelements/febases/autodifffe.hh"]
     autodiffWrapper = "AutoDiffFE"
