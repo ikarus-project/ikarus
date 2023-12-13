@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "linearelastic.hh"
+
 #include <dune/fufem/boundarypatch.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
@@ -18,10 +20,8 @@
 #include <ikarus/finiteelements/mechanics/kirchhoffloveshell.hh>
 #include <ikarus/utils/basis.hh>
 
-#include "linearelastic.hh"
-
 namespace Ikarus::Python {
-  
+
   template <class KirchhoffLoveShell, class... options>
   void registerKirchhoffLoveShell(pybind11::handle scope, pybind11::class_<KirchhoffLoveShell, options...> cls) {
     registerElement<false, KirchhoffLoveShell, options...>(scope, cls);
@@ -40,9 +40,11 @@ namespace Ikarus::Python {
             }),
             pybind11::keep_alive<1, 2>(), pybind11::keep_alive<1, 3>());
 
-    cls.def(pybind11::init([](const GlobalBasis& basis, const Element& element, double emod, double nu,
-                              double thickness) { return new KirchhoffLoveShell(basis, element, emod, nu, thickness); }),
-            pybind11::keep_alive<1, 2>(), pybind11::keep_alive<1, 3>());
+    cls.def(
+        pybind11::init([](const GlobalBasis& basis, const Element& element, double emod, double nu, double thickness) {
+          return new KirchhoffLoveShell(basis, element, emod, nu, thickness);
+        }),
+        pybind11::keep_alive<1, 2>(), pybind11::keep_alive<1, 3>());
 
     cls.def(pybind11::init([](const GlobalBasis& basis, const Element& element, double emod, double nu,
                               double thickness, const LoadFunction volumeLoad, const BoundaryPatch<GridView>& bp,
