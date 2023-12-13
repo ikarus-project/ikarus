@@ -15,7 +15,6 @@
 #include <dune/python/pybind11/stl.h>
 
 #include <ikarus/finiteelements/ferequirements.hh>
-#include <ikarus/finiteelements/mechanics/kirchhoffloveshell.hh>
 #include <ikarus/finiteelements/mechanics/linearelastic.hh>
 #include <ikarus/utils/basis.hh>
 
@@ -121,36 +120,6 @@ namespace Ikarus::Python {
   template <class LinearElastic, class... options>
   void registerLinearElastic(pybind11::handle scope, pybind11::class_<LinearElastic, options...> cls) {
     registerElement(scope, cls);
-  }
-
-  template <class LinearElastic, class... options>
-  void registerKirchhoffLoveShell(pybind11::handle scope, pybind11::class_<LinearElastic, options...> cls) {
-    registerElement<false, LinearElastic, options...>(scope, cls);
-    using GlobalBasis    = typename LinearElastic::Basis;
-    using FlatBasis      = typename LinearElastic::FlatBasis;
-    using GridView       = typename GlobalBasis::GridView;
-    using Element        = typename LinearElastic::Element;
-    using Traits         = typename LinearElastic::Traits;
-    using FErequirements = typename LinearElastic::FERequirementType;
-
-    using LoadFunction = std::function<Eigen::Vector<double, Traits::worlddim>(Eigen::Vector<double, Traits::worlddim>,
-                                                                               const double&)>;
-    cls.def(pybind11::init([](const GlobalBasis& basis, const Element& element, double emod, double nu,
-                              double thickness, const LoadFunction volumeLoad) {
-              return new LinearElastic(basis, element, emod, nu, thickness, volumeLoad);
-            }),
-            pybind11::keep_alive<1, 2>(), pybind11::keep_alive<1, 3>());
-
-    cls.def(pybind11::init([](const GlobalBasis& basis, const Element& element, double emod, double nu,
-                              double thickness) { return new LinearElastic(basis, element, emod, nu, thickness); }),
-            pybind11::keep_alive<1, 2>(), pybind11::keep_alive<1, 3>());
-
-    cls.def(pybind11::init([](const GlobalBasis& basis, const Element& element, double emod, double nu,
-                              double thickness, const LoadFunction volumeLoad, const BoundaryPatch<GridView>& bp,
-                              const LoadFunction neumannBoundaryLoad) {
-              return new LinearElastic(basis, element, emod, nu, thickness, volumeLoad, &bp, neumannBoundaryLoad);
-            }),
-            pybind11::keep_alive<1, 2>(), pybind11::keep_alive<1, 3>(), pybind11::keep_alive<1, 8>());
   }
 
 }  // namespace Ikarus::Python
