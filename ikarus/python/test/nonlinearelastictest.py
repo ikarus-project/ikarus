@@ -126,17 +126,14 @@ if __name__ == "__main__":
     )
     resultd4 = sp.optimize.root(gradient, jac=hess, x0=dRed, tol=1e-10)
 
-    np.set_printoptions(precision=3)
-
     assert np.allclose(resultd.x, resultd2.x, atol=1e-6)
     assert np.allclose(resultd3.x, resultd4.x)
     assert np.all(abs(resultd3.grad) < 1e-8)
     assert np.all(abs(resultd4.fun) < 1e-8)
 
     resReq = ikarus.ResultRequirements()
-    resReq.insertGlobalSolution(
-        iks.FESolutions.displacement, assembler.createFullVector(resultd.x)
-    )
+    fullD = assembler.createFullVector(resultd2.x)
+    resReq.insertGlobalSolution(iks.FESolutions.displacement, fullD)
     resReq.insertParameter(iks.FEParameter.loadfactor, lambdaLoad)
     resReq.addResultRequest(iks.ResultType.PK2Stress)
 
