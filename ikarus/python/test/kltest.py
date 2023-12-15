@@ -119,4 +119,4 @@ if __name__ == "__main__":
     vtkWriter = gridView.trimmedVtkWriter()
     vtkWriter.addPointData(displacementFunc, name="displacement")
     vtkWriter.write("KLshell")
-    assert (0.6719017274300256 - max(d)) < 1e-6
+    assert (0.2087577577980777 - max(d)) < 1e-6, f"The maximum displacement should be 0.2087577577980777 but is {max(d)}"

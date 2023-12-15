@@ -1,3 +1,7 @@
+---
+status: new
+---
+
 # Control routines
 
 ## Load control
@@ -104,6 +108,7 @@ struct SubsidiaryArgs {
   double f{}; // (4)!
   Eigen::VectorX<double> dfdDD; // (5)!
   double dfdDlambda{}; // (6)!
+  int actualStep; // (7)!
 };
 ```
 
@@ -113,6 +118,7 @@ struct SubsidiaryArgs {
 4. Scalar value evaluated from the subsidiary function
 5. Derivative of the subsidiary function with respect to the displacement increment
 6. Derivative of the subsidiary function with respect to the load factor increment
+7. Current load step number
 
 An example for the standard arc-length method is shown below:
 
@@ -167,3 +173,23 @@ struct StandardArcLength {
     std::optional<double> psi;
   };
 ```
+
+## Automatic step-sizing for the path-following techniques
+
+Instead of using a constant step size, the step size can be automatically adapted for efficient computations.
+The automatic step-sizing is implemented according to Ramm[@wunderlich_strategies_1981] .
+The step size can be scaled as shown below:
+
+$$
+\hat{s}_{k+1} = \left(\frac{\hat{i}}{i_k}\right)^{1/2}\hat{s}_k
+$$
+
+Here, $\hat{s}_{k+1}$ and $\hat{s}_{k}$ are the step sizes at $k+1$-th and $k$-th iteration.
+Here, $\hat{i}$ is the desired number of iterations and $i_k$ is the number of iterations used in the previous step.
+
+For implementation details, refer to `ikarus/controlroutines/adaptivestepsizing.hh`.
+
+By default, `AdaptiveStepSizing::NoOp` is used with a path-following technique.
+`AdaptiveStepSizing::NoOp` uses the step size provided by the user and doesn't modify them while using `PathFollowing`.
+`NoOp` here stands for [No Operation](https://en.wikipedia.org/wiki/NOP_(code)).
+The `AdaptiveStepSizing::IterationBased` based on Ramm[@wunderlich_strategies_1981] can be used as a step-sizing method, if required.

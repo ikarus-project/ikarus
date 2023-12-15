@@ -16,7 +16,7 @@ file ([#147](https://github.com/ikarus-project/ikarus/pull/147))
 - Added an interface for the material library ([#154](https://github.com/ikarus-project/ikarus/pull/154))
 - Added a wrapper for flat and blocked basis ([#157](https://github.com/ikarus-project/ikarus/pull/157))
 - Added basic python bindings and infrastructure. Ikarus can now be downloaded
-via `pip install pyikarus` ([#157](https://github.com/ikarus-project/ikarus/pull/152))
+via `pip install pyikarus` ([#152](https://github.com/ikarus-project/ikarus/pull/152))
 - Added result evaluators to post-process desired results ([#165](https://github.com/ikarus-project/ikarus/pull/165))
 - Added explicit calculation of scalars, vectors, and matrices for `NonLinearElastic`
 ([#160](https://github.com/ikarus-project/ikarus/pull/160))
@@ -24,6 +24,7 @@ via `pip install pyikarus` ([#157](https://github.com/ikarus-project/ikarus/pull
 - Added Kirchhoff-Love Shell based on automatic differentiation ([#177](https://github.com/ikarus-project/ikarus/pull/177))
 - Added getRawMatrix/getRawVector functionality to the assemblers ([#179](https://github.com/ikarus-project/ikarus/pull/179))
 - Add Clang 16 support ([#186](https://github.com/ikarus-project/ikarus/pull/176))
+- Added a default adaptive step sizing possibility and refactored loggers ([#193](https://github.com/ikarus-project/ikarus/pull/193))
 
 - Improve material library and Python bindings ([#186](https://github.com/ikarus-project/ikarus/pull/176)), default e.g.
   `StVenantKirchhoff` is

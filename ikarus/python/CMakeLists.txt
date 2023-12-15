@@ -7,4 +7,3 @@ add_subdirectory(dirichletvalues)
 add_subdirectory(test)
 add_subdirectory(basis)
 add_subdirectory(utils)
-

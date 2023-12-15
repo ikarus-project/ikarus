@@ -105,7 +105,7 @@ static auto trustRegion2() {
 
   t.check(true == solverInfo.success);
   t.check(25 == solverInfo.iterations);
-  t.check(eps > solverInfo.gradienNorm);
+  t.check(eps > solverInfo.residualNorm);
   t.check(isApproxSame(x, xExpected, eps));
   nonLinOp.update<0>();
   t.check(Dune::FloatCmp::eq(offset_, nonLinOp.value()));
@@ -160,7 +160,7 @@ static auto trustRegion3() {
   const auto solverInfo = tr.solve();
   t.check(true == solverInfo.success);
   t.check(11 == solverInfo.iterations);
-  t.check(eps > solverInfo.gradienNorm);
+  t.check(eps > solverInfo.residualNorm);
   t.check(isApproxSame(x, xExpected, eps));
   nonLinOp.update<0>();
   t.check(Dune::FloatCmp::eq(-31.180733385187978, nonLinOp.value()));
@@ -171,7 +171,7 @@ static auto trustRegion3() {
   const auto solverInfo2 = tr2.solve();
   t.check(true == solverInfo2.success);
   t.check(11 == solverInfo2.iterations);
-  t.check(eps > solverInfo2.gradienNorm);
+  t.check(eps > solverInfo2.residualNorm);
   t.check(isApproxSame(x, xExpected, eps));
   nonLinOp.update<0>();
   t.check(Dune::FloatCmp::eq(-31.180733385187978, nonLinOp.value()));
@@ -182,7 +182,7 @@ static auto trustRegion3() {
   const auto solverInfo3 = tr3.solve();
   t.check(true == solverInfo3.success);
   t.check(8 == solverInfo3.iterations);
-  t.check(eps > solverInfo3.gradienNorm);
+  t.check(eps > solverInfo3.residualNorm);
   t.check(isApproxSame(x, xExpected, eps));
   nonLinOp.update<0>();
   t.check(Dune::FloatCmp::eq(-31.180733385187978, nonLinOp.value()));
@@ -247,7 +247,7 @@ static auto trustRegion4_RiemanianUnitSphere() {
   const auto solverInfo3 = tr3.solve();
   t.check(true == solverInfo3.success) << "Trust region was unsuccessful.";
   t.check(6 == solverInfo3.iterations) << "Trust region has not the expected numbers of iterations.";
-  t.check(tol > solverInfo3.gradienNorm) << "Trust region didn't reach the correct norm";
+  t.check(tol > solverInfo3.residualNorm) << "Trust region didn't reach the correct norm";
   nonLinOp.update<0>();
   t.check(1e-17 >= nonLinOp.value()) << "Trust region energy is not zero";
   t.check(isApproxSame(nonLinOp.firstParameter().getValue(), Eigen::Vector2d::UnitY(), 1e-15))
@@ -421,7 +421,7 @@ static auto trustRegion5_RiemanianUnitSphereAndDispBlocked() {
   const auto solverInfo3 = tr3.solve();
   t.check(true == solverInfo3.success);
   t.check(9 == solverInfo3.iterations);
-  t.check(tol > solverInfo3.gradienNorm);
+  t.check(tol > solverInfo3.residualNorm);
   nonLinOp.update<0>();
   t.check(Dune::FloatCmp::eq(-0.5, nonLinOp.value()));
 

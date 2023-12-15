@@ -2,39 +2,26 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
-#include <string>
+#include "observer.hh"
+#include "observermessages.hh"
 
-#include <spdlog/spdlog.h>
+#include <chrono>
 
-#include <ikarus/utils/Observer/observer.hh>
-#include <ikarus/utils/Observer/observermessages.hh>
+namespace Ikarus {
+  class ControlLogger : public IObserver<ControlMessages> {
+  public:
+    void updateImpl(Ikarus::ControlMessages message) final;
+    void updateImpl(Ikarus::ControlMessages message, double) final {}
+    void updateImpl(Ikarus::ControlMessages message, int) final {}
+    void updateImpl(Ikarus::ControlMessages message, const std::string& val) final;
+    void updateImpl(Ikarus::ControlMessages message, int val1, const std::string& val2) final;
+    void updateImpl(Ikarus::ControlMessages message, int val1, double val2) final;
+    void updateImpl(Ikarus::ControlMessages, const Eigen::VectorXd&) final {}
 
-class ControlLogger : public IObserver<ControlMessages> {
-public:
-  void updateImpl(ControlMessages message) override {
-    switch (message) {
-      case ControlMessages::CONTROL_STARTED:
-        spdlog::info("Control started");
-        break;
-      case ControlMessages::STEP_STARTED:
-        spdlog::info("============================================");
-        spdlog::info("Controlstep has started");
-        spdlog::info("============================================");
-        break;
-      case ControlMessages::STEP_ENDED:
-        spdlog::info("============================================");
-        spdlog::info("Controlstep has ended");
-        break;
-      case ControlMessages::CONTROL_ENDED:
-        spdlog::info("Control ended");
-        spdlog::info("============================================");
-        break;
-      default:
-        break;  //   default: do nothing when notified
-    }
-  }
-
-  void updateImpl(ControlMessages, double) override {}
-
-  void updateImpl(ControlMessages, const Eigen::VectorXd&) override {}
-};
+  private:
+    using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
+    TimePoint start;
+    TimePoint stop;
+    std::chrono::milliseconds duration;
+  };
+}  // namespace Ikarus

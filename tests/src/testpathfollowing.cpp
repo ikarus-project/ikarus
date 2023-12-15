@@ -1,22 +1,20 @@
 // SPDX-FileCopyrightText: 2021-2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-//
 #include <config.h>
 
+#include "testcommon.hh"
 #include "testhelpers.hh"
 
 #include <dune/common/test/testsuite.hh>
 
 #include <Eigen/Core>
-#include <Eigen/Dense>
 
-#include <ikarus/assembler/simpleassemblers.hh>
 #include <ikarus/controlroutines/pathfollowingtechnique.hh>
 #include <ikarus/linearalgebra/nonlinearoperator.hh>
-#include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/utils/functionsanitychecks.hh>
 #include <ikarus/utils/init.hh>
+#include <ikarus/utils/observer/controllogger.hh>
 #include <ikarus/utils/observer/nonlinearsolverlogger.hh>
 
 using namespace Ikarus::Concepts;
@@ -39,122 +37,112 @@ static auto stiffnessMatrix(const Eigen::VectorXd& D, [[maybe_unused]] double la
   return mat;
 }
 
-static auto simple2DOperatorArcLengthTest() {
-  double lambda = 0;
-  Eigen::VectorXd D;
-  D.setZero(2);
-
-  auto fvLambda  = [&](auto&& D_, auto&& lambda_) { return residual(D_, lambda_); };
-  auto dfvLambda = [&](auto&& D_, auto&& lambda_) { return stiffnessMatrix(D_, lambda_); };
-
-  auto nonLinOp = Ikarus::NonLinearOperator(Ikarus::functions(fvLambda, dfvLambda), Ikarus::parameter(D, lambda));
-
+template <typename NonLinearOperator>
+static auto simple2DOperatorArcLengthTest(NonLinearOperator& nonLinOp, double stepSize, int loadSteps) {
+  resetNonLinearOperatorParametersToZero(nonLinOp);
   auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
+  auto pft       = Ikarus::StandardArcLength{};  // Type of path following technique
 
-  double stepSize = 0.1;
-  int load_steps  = 50;
+  auto nr  = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
+  auto alc = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
 
-  auto pft = Ikarus::StandardArcLength{};  // Path following type
-
-  static_assert(PathFollowingStrategy<decltype(pft), decltype(nonLinOp)>,
-                "StandardArcLength is a PathFollowingStrategy");
-
-  auto nr                      = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
-  auto alc                     = Ikarus::PathFollowing(nr, load_steps, stepSize, pft);
   auto nonLinearSolverObserver = std::make_shared<Ikarus::NonLinearSolverLogger>();
+  auto pathFollowingObserver   = std::make_shared<Ikarus::ControlLogger>();
   nr->subscribeAll(nonLinearSolverObserver);
-  const auto controlInfo = alc.run();
+  alc.subscribeAll(pathFollowingObserver);
+  const auto controlInfo              = alc.run();
+  std::vector<int> expectedIterations = {1, 3, 3, 3, 3};
+  Eigen::Vector2d expectedDisplacement;
+  expectedDisplacement << 0.0883524725970593, 0.3486891582376427;
+  double expectedLambda = 0.4877655288280236;
 
   TestSuite t("Arc Length with Subsidiary function");
-  t.check(controlInfo.success, "Successful result");
+  t.check(controlInfo.success, "No convergence");
+  for (auto i = 0; i < 2; ++i)
+    checkScalars(t, nonLinOp.firstParameter()[i], expectedDisplacement[i], " --> " + pft.name);
+  checkScalars(t, nonLinOp.lastParameter(), expectedLambda, " --> " + pft.name);
+  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
   return t;
 }
 
-static auto simple2DOperatorArcLengthTestAsDefault() {
-  double lambda = 0;
-  Eigen::VectorXd D;
-  D.setZero(2);
-
-  auto fvLambda  = [&](auto&& D_, auto&& lambda_) { return residual(D_, lambda_); };
-  auto dfvLambda = [&](auto&& D_, auto&& lambda_) { return stiffnessMatrix(D_, lambda_); };
-
-  auto nonLinOp = Ikarus::NonLinearOperator(Ikarus::functions(fvLambda, dfvLambda), Ikarus::parameter(D, lambda));
-
-  auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
-
-  double stepSize = 0.1;
-  int load_steps  = 50;
-
+template <typename NonLinearOperator>
+static auto simple2DOperatorArcLengthTestAsDefault(NonLinearOperator& nonLinOp, double stepSize, int loadSteps) {
+  resetNonLinearOperatorParametersToZero(nonLinOp);
+  auto linSolver               = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
   auto nr                      = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
-  auto alc                     = Ikarus::PathFollowing(nr, load_steps, stepSize);
+  auto alc                     = Ikarus::PathFollowing(nr, loadSteps, stepSize);
   auto nonLinearSolverObserver = std::make_shared<Ikarus::NonLinearSolverLogger>();
+  auto pathFollowingObserver   = std::make_shared<Ikarus::ControlLogger>();
   nr->subscribeAll(nonLinearSolverObserver);
-  const auto controlInfo = alc.run();
+  alc.subscribeAll(pathFollowingObserver);
+  const auto controlInfo              = alc.run();
+  std::vector<int> expectedIterations = {1, 3, 3, 3, 3};
+  Eigen::Vector2d expectedDisplacement;
+  expectedDisplacement << 0.0883524725970593, 0.3486891582376427;
+  double expectedLambda = 0.4877655288280236;
 
   TestSuite t("Arc Length as Default Test");
-  t.check(controlInfo.success, "Successful result");
+  t.check(controlInfo.success, "No convergence");
+  for (auto i = 0; i < 2; ++i)
+    checkScalars(t, nonLinOp.firstParameter()[i], expectedDisplacement[i]);
+  checkScalars(t, nonLinOp.lastParameter(), expectedLambda);
+  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
   return t;
 }
 
-static auto simple2DOperatorLoadControlTest() {
-  double lambda = 0;
-  Eigen::VectorXd D;
-  D.setZero(2);
-
-  auto fvLambda  = [&](auto&& D_, auto&& lambda_) { return residual(D_, lambda_); };
-  auto dfvLambda = [&](auto&& D_, auto&& lambda_) { return stiffnessMatrix(D_, lambda_); };
-
-  auto nonLinOp = Ikarus::NonLinearOperator(Ikarus::functions(fvLambda, dfvLambda), Ikarus::parameter(D, lambda));
-
+template <typename NonLinearOperator>
+static auto simple2DOperatorLoadControlTest(NonLinearOperator& nonLinOp, double stepSize, int loadSteps) {
+  resetNonLinearOperatorParametersToZero(nonLinOp);
   auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
-
-  double stepSize = 0.1;
-  int load_steps  = 50;
-
-  auto pft = Ikarus::LoadControlWithSubsidiaryFunction{};  // Path following type
-
-  static_assert(PathFollowingStrategy<decltype(pft), decltype(nonLinOp)>, "LoadControl is a PathFollowingStrategy");
+  auto pft       = Ikarus::LoadControlWithSubsidiaryFunction{};  // Type of path following technique
 
   auto nr                      = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
-  auto lc                      = Ikarus::PathFollowing(nr, load_steps, stepSize, pft);
+  auto lc                      = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
   auto nonLinearSolverObserver = std::make_shared<Ikarus::NonLinearSolverLogger>();
+  auto pathFollowingObserver   = std::make_shared<Ikarus::ControlLogger>();
   nr->subscribeAll(nonLinearSolverObserver);
-  const auto controlInfo = lc.run();
+  lc.subscribeAll(pathFollowingObserver);
+  const auto controlInfo              = lc.run();
+  std::vector<int> expectedIterations = {2, 3, 3, 3, 3};
+  Eigen::Vector2d expectedDisplacement;
+  expectedDisplacement << 0.0908533884835060, 0.3581294588381901;
+  double expectedLambda = 0.5;
 
   TestSuite t("Load Control with Subsidiary function");
-  t.check(controlInfo.success, "Successful result");
+  t.check(controlInfo.success, "No convergence");
+  for (auto i = 0; i < 2; ++i)
+    checkScalars(t, nonLinOp.firstParameter()[i], expectedDisplacement[i], " --> " + pft.name);
+  checkScalars(t, nonLinOp.lastParameter(), expectedLambda, " --> " + pft.name);
+  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
   return t;
 }
 
-static auto simple2DOperatorDisplacementControlTest() {
-  double lambda = 0;
-  Eigen::VectorXd D;
-  D.setZero(2);
-
-  auto fvLambda  = [&](auto&& D_, auto&& lambda_) { return residual(D_, lambda_); };
-  auto dfvLambda = [&](auto&& D_, auto&& lambda_) { return stiffnessMatrix(D_, lambda_); };
-
-  auto nonLinOp = Ikarus::NonLinearOperator(Ikarus::functions(fvLambda, dfvLambda), Ikarus::parameter(D, lambda));
-
-  auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
-
-  double stepSize                    = 0.05;
-  int load_steps                     = 30;
+template <typename NonLinearOperator>
+static auto simple2DOperatorDisplacementControlTest(NonLinearOperator& nonLinOp, double stepSize, int loadSteps) {
+  resetNonLinearOperatorParametersToZero(nonLinOp);
+  auto linSolver                     = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
   std::vector<int> controlledIndices = {0};
 
-  auto pft = Ikarus::DisplacementControl{controlledIndices};  // Path following type
-
-  static_assert(PathFollowingStrategy<decltype(pft), decltype(nonLinOp)>,
-                "DisplacementControl is a PathFollowingStrategy");
+  auto pft = Ikarus::DisplacementControl{controlledIndices};  // Type of path following technique
 
   auto nr                      = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
-  auto dc                      = Ikarus::PathFollowing(nr, load_steps, stepSize, pft);
+  auto dc                      = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
   auto nonLinearSolverObserver = std::make_shared<Ikarus::NonLinearSolverLogger>();
+  auto pathFollowingObserver   = std::make_shared<Ikarus::ControlLogger>();
   nr->subscribeAll(nonLinearSolverObserver);
-  const auto controlInfo = dc.run();
+  dc.subscribeAll(pathFollowingObserver);
+  const auto controlInfo              = dc.run();
+  std::vector<int> expectedIterations = {3, 3, 3, 3, 3};
+  Eigen::Vector2d expectedDisplacement;
+  expectedDisplacement << 0.5, 1.4781013410920430;
+  double expectedLambda = 0.5045466678049050;
 
   TestSuite t("Displacement Control with Subsidiary function");
-  t.check(controlInfo.success, "Successful result");
+  t.check(controlInfo.success, "No convergence");
+  for (auto i = 0; i < 2; ++i)
+    checkScalars(t, nonLinOp.firstParameter()[i], expectedDisplacement[i], " --> " + pft.name);
+  checkScalars(t, nonLinOp.lastParameter(), expectedLambda, " --> " + pft.name);
+  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
   return t;
 }
 
@@ -162,10 +150,22 @@ int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t;
 
-  t.subTest(simple2DOperatorArcLengthTest());
-  t.subTest(simple2DOperatorArcLengthTestAsDefault());
-  t.subTest(simple2DOperatorLoadControlTest());
-  t.subTest(simple2DOperatorDisplacementControlTest());
+  double lambda = 0;
+  Eigen::VectorXd D;
+  D.setZero(2);
+
+  auto fvLambda  = [&](auto&& D_, auto&& lambda_) { return residual(D_, lambda_); };
+  auto dfvLambda = [&](auto&& D_, auto&& lambda_) { return stiffnessMatrix(D_, lambda_); };
+
+  auto nonLinOp = Ikarus::NonLinearOperator(Ikarus::functions(fvLambda, dfvLambda), Ikarus::parameter(D, lambda));
+
+  double stepSize = 0.1;
+  int loadSteps   = 5;
+
+  t.subTest(simple2DOperatorArcLengthTest(nonLinOp, stepSize, loadSteps));
+  t.subTest(simple2DOperatorArcLengthTestAsDefault(nonLinOp, stepSize, loadSteps));
+  t.subTest(simple2DOperatorLoadControlTest(nonLinOp, stepSize, loadSteps));
+  t.subTest(simple2DOperatorDisplacementControlTest(nonLinOp, stepSize, loadSteps));
 
   return t.exit();
 }

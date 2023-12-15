@@ -25,18 +25,16 @@
 #include <ikarus/io/resultfunction.hh>
 #include <ikarus/linearalgebra/dirichletvalues.hh>
 #include <ikarus/linearalgebra/nonlinearoperator.hh>
-#include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/solver/nonlinearsolver/trustregion.hh>
 #include <ikarus/utils/algorithms.hh>
 #include <ikarus/utils/basis.hh>
-#include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/observer/controlvtkwriter.hh>
 
 using Dune::TestSuite;
 
-static auto NonLinearElasticityLoadControlNRandTRforKLShell() {
-  TestSuite t("NonLinearElasticityLoadControlNRandTRforKLShell");
+static auto NonLinearKLShellLoadControlTR() {
+  TestSuite t("NonLinearKLShellLoadControlTR");
   constexpr auto dimworld        = 3;
   const std::array<int, 2> order = {1, 1};
 
@@ -72,7 +70,7 @@ static auto NonLinearElasticityLoadControlNRandTRforKLShell() {
   auto volumeLoad        = [thickness]([[maybe_unused]] auto& globalCoord, auto& lamb) {
     Eigen::Vector3d fext;
     fext.setZero();
-    fext[2] = 2 * Dune::power(thickness, 3) * lamb / 10;
+    fext[2] = 2 * Dune::power(thickness, 3) * lamb;
     return fext;
   };
 
@@ -89,20 +87,8 @@ static auto NonLinearElasticityLoadControlNRandTRforKLShell() {
     if (std::abs(intersection.geometry().center()[0]) < 1e-8) dirichletFlags[localView.index(localIndex)] = true;
   });
 
-  dirichletValues.fixDOFs([&](auto& basisL, auto&& dirichletFlags) {
-    Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basisL, 2),
-                                        [&](auto&& localIndex, auto&& localView, auto&& intersection) {
-                                          if (std::abs(intersection.geometry().center()[0]) > 10 - 1e-8)
-                                            dirichletFlags[localView.index(localIndex)] = true;
-                                        });
-  });
-
-  dirichletValues.fixDOFs([&](auto& basisL, auto&& dirichletFlags) {
-    Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basisL, 1),
-                                        [&](auto&& localIndex, auto&& localView, auto&& intersection) {
-                                          if (std::abs(intersection.geometry().center()[0]) > 10 - 1e-8)
-                                            dirichletFlags[localView.index(localIndex)] = true;
-                                        });
+  dirichletValues.fixBoundaryDOFs([&](auto& dirichletFlags, auto&& localIndex, auto&& localView, auto&& intersection) {
+    if (std::abs(intersection.geometry().center()[0]) > 10.0 - 1e-8) dirichletFlags[localView.index(localIndex)] = true;
   });
 
   auto sparseAssembler = SparseFlatAssembler(fes, dirichletValues);
@@ -156,12 +142,12 @@ static auto NonLinearElasticityLoadControlNRandTRforKLShell() {
 
   t.check(controlInfo.success);
   std::cout << std::setprecision(16) << std::ranges::max(d) << std::endl;
-  t.check(Dune::FloatCmp::eq(0.2957393081676369, std::ranges::max(d)))
+  t.check(Dune::FloatCmp::eq(0.2087577577980777, std::ranges::max(d)))
       << std::setprecision(16) << "The maximum displacement is " << std::ranges::max(d);
   return t;
 }
 
 int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
-  NonLinearElasticityLoadControlNRandTRforKLShell();
+  NonLinearKLShellLoadControlTR();
 }

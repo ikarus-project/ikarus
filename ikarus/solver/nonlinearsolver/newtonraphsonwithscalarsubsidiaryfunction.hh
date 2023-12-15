@@ -2,11 +2,14 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
+
 #include <iosfwd>
 #include <utility>
 
 #include <ikarus/linearalgebra/nonlinearoperator.hh>
 #include <ikarus/solver/linearsolver/linearsolver.hh>
+#include <ikarus/solver/nonlinearsolver/solverinfos.hh>
+#include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/linearalgebrahelper.hh>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observermessages.hh>
@@ -16,20 +19,7 @@ namespace Ikarus {
 
   struct NewtonRaphsonWithSubsidiaryFunctionSettings {
     double tol{1e-8};
-    int maxIter{30};
-  };
-
-  struct SolverInfos {
-    bool success{false};
-    double residualnorm{0.0};
-    int iterations{0};
-  };
-
-  template <typename LinearSolver, typename MatrixType, typename VectorType>
-  concept LinearSolverCheck = requires(LinearSolver& linearSolver, MatrixType& Ax, VectorType& vec) {
-    linearSolver.analyzePattern(Ax);
-    linearSolver.factorize(Ax);
-    linearSolver.solve(vec, vec);
+    int maxIter{20};
   };
 
   template <typename NonLinearOperatorImpl,
@@ -44,8 +34,8 @@ namespace Ikarus {
         const typename NonLinearOperatorImpl::ValueType&, const typename NonLinearOperatorImpl::ValueType&)>;
 
     static constexpr bool isLinearSolver
-        = LinearSolverCheck<LinearSolver, typename NonLinearOperatorImpl::DerivativeType,
-                            typename NonLinearOperatorImpl::ValueType>;
+        = Ikarus::Concepts::LinearSolverCheck<LinearSolver, typename NonLinearOperatorImpl::DerivativeType,
+                                              typename NonLinearOperatorImpl::ValueType>;
 
     using ResultType         = typename NonLinearOperatorImpl::template ParameterValue<0>;
     using UpdateFunctionType = std::function<void(ResultType&, const UpdateType&)>;
@@ -71,11 +61,11 @@ namespace Ikarus {
     template <typename SolutionType = NoPredictor, typename SubsidiaryType>
     requires std::is_same_v<SolutionType, NoPredictor> || std::is_convertible_v<
         SolutionType, std::remove_cvref_t<typename NonLinearOperatorImpl::ValueType>>
-        SolverInfos solve(SubsidiaryType& subsidiaryFunction, SubsidiaryArgs& subsidiaryArgs) {
+        Ikarus::NonLinearSolverInformation solve(SubsidiaryType& subsidiaryFunction, SubsidiaryArgs& subsidiaryArgs) {
       this->notify(NonLinearSolverMessages::INIT);
 
       /// Initializations
-      SolverInfos solverInformation;
+      Ikarus::NonLinearSolverInformation solverInformation;
       solverInformation.success = true;
       auto& x                   = nonLinearOperator().firstParameter();  // x = D (Displacements)
       auto& lambda              = nonLinearOperator().lastParameter();
@@ -127,7 +117,6 @@ namespace Ikarus {
         }
 
         subsidiaryFunction(subsidiaryArgs);
-        this->notify(NonLinearSolverMessages::SCALARSUBSIDIARY_UPDATED, subsidiaryArgs.f);
 
         const double deltalambda = (-subsidiaryArgs.f - subsidiaryArgs.dfdDD.dot(sol2d.col(0)))
                                    / (subsidiaryArgs.dfdDD.dot(sol2d.col(1)) + subsidiaryArgs.dfdDlambda);
@@ -143,18 +132,19 @@ namespace Ikarus {
         nonLinearOperator().updateAll();
         rNorm = sqrt(rx.dot(rx) + subsidiaryArgs.f * subsidiaryArgs.f);
 
-        this->notify(NonLinearSolverMessages::SOLUTION_CHANGED);
-        this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, dNorm);
-        this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, rNorm);
+        this->notify(NonLinearSolverMessages::SOLUTION_CHANGED, static_cast<double>(lambda));
+        this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, static_cast<double>(dNorm));
+        this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, static_cast<double>(rNorm));
         this->notify(NonLinearSolverMessages::ITERATION_ENDED);
+
         ++iter;
       }
 
       if (iter == settings.maxIter) solverInformation.success = false;
-      solverInformation.iterations   = iter;
-      solverInformation.residualnorm = rNorm;
-      if (solverInformation.success)
-        this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, iter, rNorm, settings.tol);
+      solverInformation.iterations     = iter;
+      solverInformation.residualNorm   = rNorm;
+      solverInformation.correctionNorm = dNorm;
+      if (solverInformation.success) this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, iter);
 
       return solverInformation;
     }

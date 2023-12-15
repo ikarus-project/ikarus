@@ -68,22 +68,28 @@ namespace Ikarus::Std {
   struct isSpecialization<U, U<T...>> : public std::true_type {};
 
   template <template <typename, auto...> class Type, typename>
-  struct IsSpecializationTypeAndNonTypes : std::false_type {};
+  struct isSpecializationTypeAndNonTypes : std::false_type {};
 
   template <template <typename, auto...> class Type, typename T, auto... N>
-  struct IsSpecializationTypeAndNonTypes<Type, Type<T, N...>> : std::true_type {};
+  struct isSpecializationTypeAndNonTypes<Type, Type<T, N...>> : std::true_type {};
 
   template <template <auto, typename...> class Type, typename>
-  struct IsSpecializationNonTypeAndTypes : std::false_type {};
+  struct isSpecializationNonTypeAndTypes : std::false_type {};
 
   template <template <auto, typename...> class Type, auto T, typename... N>
-  struct IsSpecializationNonTypeAndTypes<Type, Type<T, N...>> : std::true_type {};
+  struct isSpecializationNonTypeAndTypes<Type, Type<T, N...>> : std::true_type {};
+
+  template <template <typename, auto, typename> class Type, typename>
+  struct isSpecializationTypeNonTypeAndType : std::false_type {};
+
+  template <template <typename, auto, typename> class Type, typename T, auto M, typename N>
+  struct isSpecializationTypeNonTypeAndType<Type, Type<T, M, N>> : std::true_type {};
 
   template <template <auto...> class Type, typename>
-  struct IsSpecializationNonTypes : std::false_type {};
+  struct isSpecializationNonTypes : std::false_type {};
 
   template <template <auto...> class Type, auto... N>
-  struct IsSpecializationNonTypes<Type, Type<N...>> : std::true_type {};
+  struct isSpecializationNonTypes<Type, Type<N...>> : std::true_type {};
 
   namespace Impl {
     template <class Tuple, std::size_t... I>
@@ -234,7 +240,7 @@ namespace Ikarus::Std {
   template <template <auto...> class Type, typename Tuple>
   constexpr int findTypeSpecialization() {
     return find_if(std::remove_cvref_t<Tuple>(),
-                   []<typename T>(T&&) { return IsSpecializationNonTypes<Type, std::remove_cvref_t<T>>::value; });
+                   []<typename T>(T&&) { return isSpecializationNonTypes<Type, std::remove_cvref_t<T>>::value; });
   }
   template <template <auto...> class Type, typename Tuple>
   auto getSpecialization(Tuple&& tuple) {
@@ -245,14 +251,14 @@ namespace Ikarus::Std {
   template <template <auto...> class Type, typename Tuple>
   constexpr bool hasTypeSpecialization() {
     return (find_if(std::remove_cvref_t<Tuple>(),
-                    []<typename T>(T&&) { return IsSpecializationNonTypes<Type, std::remove_cvref_t<T>>::value; })
+                    []<typename T>(T&&) { return isSpecializationNonTypes<Type, std::remove_cvref_t<T>>::value; })
             < std::tuple_size_v<std::remove_cvref_t<Tuple>>);
   }
 
   template <template <auto...> class Type, typename Tuple>
   constexpr bool countTypeSpecialization() {
     return count_if(Tuple(),
-                    []<typename T>(T&&) { return IsSpecializationNonTypes<Type, std::remove_cvref_t<T>>::value; });
+                    []<typename T>(T&&) { return isSpecializationNonTypes<Type, std::remove_cvref_t<T>>::value; });
   }
   template <template <auto...> class Type, typename Tuple>
   static constexpr bool countTypeSpecialization_v = countTypeSpecialization<Type, Tuple>();

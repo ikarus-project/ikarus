@@ -262,12 +262,12 @@ namespace Ikarus {
                     A.derived().transpose();
                   })  // workaround needed since Eigen::Diagonalmatrix has no transpose function
       return A.derived().transpose();
-    else if constexpr (Ikarus::Std::IsSpecializationTypeAndNonTypes<Eigen::DiagonalMatrix, Derived>::value
+    else if constexpr (Ikarus::Std::isSpecializationTypeAndNonTypes<Eigen::DiagonalMatrix, Derived>::value
                        or Std::isSpecialization<Eigen::DiagonalWrapper, Derived>::value)
       return A.derived();
     else
       static_assert((requires { A.derived().transpose(); })
-                    or Ikarus::Std::IsSpecializationTypeAndNonTypes<Eigen::DiagonalMatrix, Derived>::value
+                    or Ikarus::Std::isSpecializationTypeAndNonTypes<Eigen::DiagonalMatrix, Derived>::value
                     or Std::isSpecialization<Eigen::DiagonalWrapper, Derived>::value);
   }
 

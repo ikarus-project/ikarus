@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <math.h>
+#include <cmath>
 #include <optional>
 #include <string>
 #include <utility>
@@ -14,6 +14,9 @@
 #include <Eigen/Core>
 
 #include <ikarus/solver/linearsolver/linearsolver.hh>
+#include <ikarus/utils/concepts.hh>
+#include <ikarus/utils/defaultfunctions.hh>
+#include <ikarus/utils/traits.hh>
 
 namespace Ikarus {
 
@@ -24,6 +27,7 @@ namespace Ikarus {
     double f{};
     Eigen::VectorX<double> dfdDD;
     double dfdDlambda{};
+    int actualStep;
   };
 
   /// Arc Length Control Method
@@ -41,7 +45,16 @@ namespace Ikarus {
 
     template <typename NonLinearOperator>
     void initialPrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
-      auto linearSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);  // for the linear predictor step
+      Ikarus::SolverTypeTag solverTag;
+      using JacobianType = std::remove_cvref_t<typename NonLinearOperator::DerivativeType>;
+      static_assert((Ikarus::Std::isSpecializationTypeAndNonTypes<Eigen::Matrix, JacobianType>::value)
+                        or (Ikarus::Std::isSpecializationTypeNonTypeAndType<Eigen::SparseMatrix, JacobianType>::value),
+                    "Linear solver not implemented for the chosen derivative type of the non-linear operator");
+
+      if constexpr (Ikarus::Std::isSpecializationTypeAndNonTypes<Eigen::Matrix, JacobianType>::value)
+        solverTag = Ikarus::SolverTypeTag::d_LDLT;
+      else
+        solverTag = Ikarus::SolverTypeTag::sd_SimplicialLDLT;
 
       nonLinearOperator.lastParameter() = 1.0;  // lambda =1.0
 
@@ -49,6 +62,15 @@ namespace Ikarus {
       const auto& R = nonLinearOperator.value();
       const auto& K = nonLinearOperator.derivative();
 
+      static constexpr bool isLinearSolver
+          = Ikarus::Concepts::LinearSolverCheck<decltype(Ikarus::LinearSolver(solverTag)),
+                                                typename NonLinearOperator::DerivativeType,
+                                                typename NonLinearOperator::ValueType>;
+      static_assert(isLinearSolver,
+                    "Initial predictor step in the standard arc-length method doesn't have a linear solver");
+
+      auto linearSolver = Ikarus::LinearSolver(solverTag);  // for the linear predictor step
+      linearSolver.analyzePattern(K);
       linearSolver.factorize(K);
       linearSolver.solve(args.DD, -R);
 

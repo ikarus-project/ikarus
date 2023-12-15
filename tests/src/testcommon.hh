@@ -323,3 +323,10 @@ template <typename NonLinearOperator, typename FiniteElement,
 
   return t;
 }
+
+template <typename NonLinearOperator>
+void resetNonLinearOperatorParametersToZero(NonLinearOperator& nonLinOp) {
+  nonLinOp.firstParameter().setZero();
+  nonLinOp.lastParameter() = 0.0;
+  nonLinOp.updateAll();
+}

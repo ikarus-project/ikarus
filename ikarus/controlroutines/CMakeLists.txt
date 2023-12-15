@@ -2,6 +2,6 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 # install headers
-install(FILES loadcontrol.hh pathfollowingtechnique.hh
+install(FILES loadcontrol.hh pathfollowingtechnique.hh adaptivestepsizing.hh controlinfos.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/controlroutines
 )
