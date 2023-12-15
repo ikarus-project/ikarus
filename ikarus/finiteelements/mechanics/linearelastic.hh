@@ -54,7 +54,7 @@ namespace Ikarus {
       auto& first_child = this->localView().tree().child(0);
       const auto& fe    = first_child.finiteElement();
       numberOfNodes     = fe.size();
-      dispAtNodes.resize(fe.size());
+      dispAtNodes.resize(numberOfNodes);
       order      = 2 * (this->localView().tree().child(0).finiteElement().localBasis().order());
       localBasis = Dune::CachedLocalBasis(this->localView().tree().child(0).finiteElement().localBasis());
       if constexpr (requires { this->localView().element().impl().getQuadratureRule(order); })
