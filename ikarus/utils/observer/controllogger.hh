@@ -11,8 +11,8 @@ namespace Ikarus {
   class ControlLogger : public IObserver<ControlMessages> {
   public:
     void updateImpl(Ikarus::ControlMessages message) final;
-    void updateImpl(Ikarus::ControlMessages message, double) final {}
-    void updateImpl(Ikarus::ControlMessages message, int) final {}
+    void updateImpl(Ikarus::ControlMessages, double) final {}
+    void updateImpl(Ikarus::ControlMessages, int) final {}
     void updateImpl(Ikarus::ControlMessages message, const std::string& val) final;
     void updateImpl(Ikarus::ControlMessages message, int val1, const std::string& val2) final;
     void updateImpl(Ikarus::ControlMessages message, int val1, double val2) final;

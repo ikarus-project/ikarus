@@ -7,7 +7,6 @@ install(
         controlvtkwriter.hh
         genericobserver.hh
         griddrawerobserver.hh
-        loadcontrolobserver.hh
         nonlinearsolverlogger.hh
         observer.hh
         observermessages.hh

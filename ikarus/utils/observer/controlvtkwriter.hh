@@ -46,9 +46,12 @@ namespace Ikarus {
       }
     }
 
-    using IObserver::updateImpl;
-    void updateImpl(ControlMessages, double) final {}
-    void updateImpl(ControlMessages, const Eigen::VectorXd&) final {}
+    void updateImpl(Ikarus::ControlMessages, double) final {}
+    void updateImpl(Ikarus::ControlMessages, int) final {}
+    void updateImpl(Ikarus::ControlMessages, const std::string&) final {}
+    void updateImpl(Ikarus::ControlMessages, int, const std::string&) final {}
+    void updateImpl(Ikarus::ControlMessages, int, double) final {}
+    void updateImpl(Ikarus::ControlMessages, const Eigen::VectorXd&) final {}
 
   private:
     Basis const* basis;
