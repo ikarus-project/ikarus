@@ -3,5 +3,6 @@
 
 # install headers
 install(FILES loadcontrol.hh pathfollowingtechnique.hh adaptivestepsizing.hh controlinfos.hh
+              pathfollowingfunctions.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/controlroutines
 )

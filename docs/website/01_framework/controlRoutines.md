@@ -177,7 +177,7 @@ struct StandardArcLength {
 ## Automatic step-sizing for the path-following techniques
 
 Instead of using a constant step size, the step size can be automatically adapted for efficient computations.
-The automatic step-sizing is implemented according to Ramm[@wunderlich_strategies_1981] .
+The automatic step-sizing is implemented according to Ramm[@wunderlich_strategies_1981].
 The step size can be scaled as shown below:
 
 $$

@@ -6,6 +6,7 @@
 #include <iosfwd>
 #include <utility>
 
+#include <ikarus/controlroutines/pathfollowingfunctions.hh>
 #include <ikarus/linearalgebra/nonlinearoperator.hh>
 #include <ikarus/solver/linearsolver/linearsolver.hh>
 #include <ikarus/solver/nonlinearsolver/solverinfos.hh>
@@ -13,7 +14,6 @@
 #include <ikarus/utils/linearalgebrahelper.hh>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observermessages.hh>
-#include <ikarus/utils/pathfollowingfunctions.hh>
 
 namespace Ikarus {
 

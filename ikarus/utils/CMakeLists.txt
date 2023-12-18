@@ -18,7 +18,6 @@ install(
         linearalgebrahelper.hh
         makeenum.hh
         math.hh
-        pathfollowingfunctions.hh
         polyfit.hh
         tensorutils.hh
         traits.hh

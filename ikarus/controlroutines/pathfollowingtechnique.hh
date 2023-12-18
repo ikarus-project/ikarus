@@ -9,11 +9,11 @@
 
 #include <ikarus/controlroutines/adaptivestepsizing.hh>
 #include <ikarus/controlroutines/controlinfos.hh>
+#include <ikarus/controlroutines/pathfollowingfunctions.hh>
 #include <ikarus/linearalgebra/nonlinearoperator.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphsonwithscalarsubsidiaryfunction.hh>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observermessages.hh>
-#include <ikarus/utils/pathfollowingfunctions.hh>
 
 namespace Ikarus {
 

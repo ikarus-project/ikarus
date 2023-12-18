@@ -3,8 +3,8 @@
 
 #pragma once
 
+#include <ikarus/controlroutines/pathfollowingfunctions.hh>
 #include <ikarus/solver/nonlinearsolver/solverinfos.hh>
-#include <ikarus/utils/pathfollowingfunctions.hh>
 
 namespace Ikarus::AdaptiveStepSizing {
   template <typename ScalarType = double>
