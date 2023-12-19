@@ -100,17 +100,17 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   Ikarus::DirichletValues dirichletValues(basisP->flat());
 
   /// fix all DOFs at the left edge (x=-0.5)
-  dirichletValues.fixDOFs([&](auto& basis, auto&& dirichletFlags) {
-    Dune::Functions::forEachBoundaryDOF(basis, [&](auto&& localIndex, auto&& localView, auto&& intersection) {
+  dirichletValues.fixDOFs([&](auto& basis_, auto&& dirichletFlags) {
+    Dune::Functions::forEachBoundaryDOF(basis_, [&](auto&& localIndex, auto&& localView, auto&& intersection) {
       if (std::abs(intersection.geometry().center()[0] + 0.5) < 1e-8)
         dirichletFlags[localView.index(localIndex)] = true;
     });
   });
 
   /// fix y and z DOFs at the right edge (x=0.5)
-  dirichletValues.fixDOFs([&](auto& basis, auto&& dirichletFlags) {
+  dirichletValues.fixDOFs([&](auto& basis_, auto&& dirichletFlags) {
     for (auto fixedDirection = 1; fixedDirection < 3; ++fixedDirection) {
-      Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basis, fixedDirection),
+      Dune::Functions::forEachBoundaryDOF(Dune::Functions::subspaceBasis(basis_, fixedDirection),
                                           [&](auto&& localIndex, auto&& localView, auto&& intersection) {
                                             if (std::abs(intersection.geometry().center()[0] - 0.5) < 1e-8)
                                               dirichletFlags[localView.index(localIndex)] = true;
@@ -169,11 +169,12 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(
       basis.flat(), d, 2);
   vtkWriter->setFieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 3);
-  vtkWriter->setFileNamePrefix("testAdaptiveStepSizing");
+  vtkWriter->setFileNamePrefix("testAdaptiveStepSizing" + pft.name);
 
-  crWSS.subscribeAll({vtkWriter, pathFollowingObserver});
   crWoSS.subscribeAll({vtkWriter, pathFollowingObserver});
   crWoSS.unSubscribeAll(vtkWriter);
+  crWSS.subscribeAll({pathFollowingObserver});
+  crWSS.subscribe(Ikarus::ControlMessages::SOLUTION_CHANGED, vtkWriter);
 
   const std::string& message1 = " --> " + pft.name + " with default adaptive step sizing";
   const std::string& message2 = " --> " + pft.name + " without default adaptive step sizing";
