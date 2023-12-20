@@ -12,7 +12,7 @@ namespace Ikarus::AdaptiveStepSizing {
     template <typename NonLinearOperator>
     void operator()(const NonLinearSolverInformation&, Ikarus::SubsidiaryArgs&, const NonLinearOperator&) {}
     [[nodiscard]] int targetIterations() const { return 0; }
-    void setTargetIterations(int) {}
+    void setTargetIterations(const int) {}
   };
 
   struct IterationBased {
