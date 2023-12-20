@@ -7,7 +7,6 @@
 #include <ikarus/solver/nonlinearsolver/solverinfos.hh>
 
 namespace Ikarus::AdaptiveStepSizing {
-  template <typename ScalarType = double>
   struct NoOp {
   public:
     template <typename NonLinearOperator>
@@ -16,23 +15,23 @@ namespace Ikarus::AdaptiveStepSizing {
     void setTargetIterations(int) {}
   };
 
-  template <typename ScalarType = double>
   struct IterationBased {
   public:
     template <typename NonLinearOperator>
     void operator()(const NonLinearSolverInformation& solverInfo, Ikarus::SubsidiaryArgs& subsidiaryArgs,
                     const NonLinearOperator&) {
-      if (not((subsidiaryArgs.actualStep > 0) and (targetIterations_ != 0)))
+      if (subsidiaryArgs.actualStep == 0) return;
+      if (targetIterations_ == 0)
         DUNE_THROW(Dune::InvalidStateException,
                    "For IterationBased, targetIterations should not be equal to 0 and actualStep should be "
                    "greater than 0. Try calling setTargetIterations(int) first.");
-      ScalarType previousIterations = solverInfo.iterations;
+      const auto previousIterations = solverInfo.iterations;
       if (previousIterations > targetIterations_)
-        subsidiaryArgs.stepSize
-            = sqrt(static_cast<ScalarType>(targetIterations_) / previousIterations) * subsidiaryArgs.stepSize;
+        subsidiaryArgs.stepSize = sqrt(static_cast<double>(targetIterations_) / static_cast<double>(previousIterations))
+                                  * subsidiaryArgs.stepSize;
     }
     [[nodiscard]] int targetIterations() const { return targetIterations_; }
-    void setTargetIterations(int targetIterations) { targetIterations_ = targetIterations; }
+    void setTargetIterations(const int targetIterations) { targetIterations_ = targetIterations; }
 
   private:
     int targetIterations_{0};

@@ -18,7 +18,7 @@
 namespace Ikarus {
 
   template <typename NonLinearSolver, typename PathFollowingType = Ikarus::StandardArcLength,
-            typename AdaptiveStepSizing = Ikarus::AdaptiveStepSizing::NoOp<>>
+            typename AdaptiveStepSizing = Ikarus::AdaptiveStepSizing::NoOp>
   requires((Concepts::PathFollowingStrategy<
                PathFollowingType, typename NonLinearSolver::NonLinearOperator,
                Ikarus::SubsidiaryArgs>)and(Concepts::

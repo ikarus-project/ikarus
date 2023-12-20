@@ -174,10 +174,43 @@ struct StandardArcLength {
   };
 ```
 
-## Automatic step-sizing for the path-following techniques
+## Adaptive step-sizing for the path-following techniques
+
+### Interface
+
+The general interface for adaptive step-sizing is represented by the following concept.
+
+```cpp
+namespace Ikarus::Concepts {
+    template <typename AdaptiveStepSizing, typename NonLinearSolverInformation, typename SubsidiaryArgs,
+              typename NonLinearOperator>
+    concept AdaptiveStepSizingStrategy = requires(AdaptiveStepSizing adaptiveSS, NonLinearSolverInformation info,
+                                                  SubsidiaryArgs args, NonLinearOperator nop) {
+      { adaptiveSS(info, args, nop) } -> std::same_as<void>; // (1)!
+      { adaptiveSS.targetIterations() } -> std::same_as<int>; // (2)!
+      { adaptiveSS.setTargetIterations(std::declval<int>()) } -> std::same_as<void>; // (3)!
+    };
+}
+```
+
+1. `#!cpp operator()` is overloaded such that the step size is modified.
+2. Function that returns `#!cpp targetIterations` to be achieved. See [Iteration-based](#iteration-based), for example.
+3. Function used to set `#!cpp targetIterations`.
+
+For implementation details, refer to `ikarus/controlroutines/adaptivestepsizing.hh`.
+
+### Types of adaptive step-sizing techniques
+
+#### No Operation
+
+By default, `AdaptiveStepSizing::NoOp` is used with a path-following technique.
+`AdaptiveStepSizing::NoOp` uses the step size provided by the user and doesn't modify them while using `PathFollowing`.
+`NoOp` here stands for [No Operation](https://en.wikipedia.org/wiki/NOP_(code)).
+
+#### Iteration-based
 
 Instead of using a constant step size, the step size can be automatically adapted for efficient computations.
-The automatic step-sizing is implemented according to Ramm[@wunderlich_strategies_1981].
+The `AdaptiveStepSizing::IterationBased` is implemented according to Ramm[@wunderlich_strategies_1981].
 The step size can be scaled as shown below:
 
 $$
@@ -186,10 +219,3 @@ $$
 
 Here, $\hat{s}_{k+1}$ and $\hat{s}_{k}$ are the step sizes at $k+1$-th and $k$-th iteration.
 Here, $\hat{i}$ is the desired number of iterations and $i_k$ is the number of iterations used in the previous step.
-
-For implementation details, refer to `ikarus/controlroutines/adaptivestepsizing.hh`.
-
-By default, `AdaptiveStepSizing::NoOp` is used with a path-following technique.
-`AdaptiveStepSizing::NoOp` uses the step size provided by the user and doesn't modify them while using `PathFollowing`.
-`NoOp` here stands for [No Operation](https://en.wikipedia.org/wiki/NOP_(code)).
-The `AdaptiveStepSizing::IterationBased` based on Ramm[@wunderlich_strategies_1981] can be used as a step-sizing method, if required.
