@@ -199,7 +199,7 @@ namespace Ikarus::Concepts {
 
 For implementation details, refer to `ikarus/controlroutines/adaptivestepsizing.hh`.
 
-### Types of adaptive step-sizing techniques
+### Implementations
 
 #### No Operation
 
