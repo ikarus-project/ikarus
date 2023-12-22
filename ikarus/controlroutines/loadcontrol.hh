@@ -17,6 +17,8 @@ namespace Ikarus {
   template <typename NonLinearSolver>
   class LoadControl : public IObservable<ControlMessages> {
   public:
+    static constexpr std::string name_ = "Load Control Method";
+
     LoadControl(const std::shared_ptr<NonLinearSolver>& p_nonLinearSolver, int loadSteps,
                 const std::array<double, 2>& tbeginEnd)
         : nonLinearSolver{p_nonLinearSolver},
@@ -68,6 +70,5 @@ namespace Ikarus {
     double parameterBegin_;
     double parameterEnd_;
     double stepSize_;
-    const std::string name_ = "Load Control Method";
   };
 }  // namespace Ikarus
