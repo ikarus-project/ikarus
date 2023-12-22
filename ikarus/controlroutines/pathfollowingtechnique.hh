@@ -63,11 +63,11 @@ namespace Ikarus {
 
       /// Calculate predictor for a particular step
       for (int ls = 1; ls < loadSteps_; ++ls) {
-        subsidiaryArgs.actualStep = ls;
+        subsidiaryArgs.currentStep = ls;
 
         adaptiveStepSizing(solverInfo, subsidiaryArgs, nonOp);
 
-        this->notify(ControlMessages::STEP_STARTED, subsidiaryArgs.actualStep, subsidiaryArgs.stepSize);
+        this->notify(ControlMessages::STEP_STARTED, subsidiaryArgs.currentStep, subsidiaryArgs.stepSize);
 
         pathFollowingType_.intermediatePrediction(nonOp, subsidiaryArgs);
 

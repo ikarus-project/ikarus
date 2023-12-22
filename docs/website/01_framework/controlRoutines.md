@@ -108,7 +108,7 @@ struct SubsidiaryArgs {
   double f{}; // (4)!
   Eigen::VectorX<double> dfdDD; // (5)!
   double dfdDlambda{}; // (6)!
-  int actualStep; // (7)!
+  int currentStep; // (7)!
 };
 ```
 

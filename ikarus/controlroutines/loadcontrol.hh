@@ -35,7 +35,7 @@ namespace Ikarus {
     ControlInformation run() {
       ControlInformation info({false});
       auto& nonOp = nonLinearSolver->nonLinearOperator();
-      this->notify(ControlMessages::CONTROL_STARTED);
+      this->notify(ControlMessages::CONTROL_STARTED, name_);
       auto& loadParameter = nonOp.lastParameter();
 
       loadParameter = 0.0;
@@ -57,7 +57,7 @@ namespace Ikarus {
         this->notify(ControlMessages::SOLUTION_CHANGED);
         this->notify(ControlMessages::STEP_ENDED);
       }
-      this->notify(ControlMessages::CONTROL_ENDED, info.totalIterations, "Load Control Method");
+      this->notify(ControlMessages::CONTROL_ENDED, info.totalIterations, name_);
       info.success = true;
       return info;
     }
@@ -68,5 +68,6 @@ namespace Ikarus {
     double parameterBegin_;
     double parameterEnd_;
     double stepSize_;
+    const std::string name_ = "Load Control Method";
   };
 }  // namespace Ikarus
