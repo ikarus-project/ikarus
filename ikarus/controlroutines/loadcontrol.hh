@@ -17,7 +17,7 @@ namespace Ikarus {
   template <typename NonLinearSolver>
   class LoadControl : public IObservable<ControlMessages> {
   public:
-    static constexpr std::string name_ = "Load Control Method";
+    static constexpr std::string_view name_ = "Load Control Method";
 
     LoadControl(const std::shared_ptr<NonLinearSolver>& p_nonLinearSolver, int loadSteps,
                 const std::array<double, 2>& tbeginEnd)
@@ -37,7 +37,7 @@ namespace Ikarus {
     ControlInformation run() {
       ControlInformation info({false});
       auto& nonOp = nonLinearSolver->nonLinearOperator();
-      this->notify(ControlMessages::CONTROL_STARTED, name_);
+      this->notify(ControlMessages::CONTROL_STARTED, static_cast<std::string>(name_));
       auto& loadParameter = nonOp.lastParameter();
 
       loadParameter = 0.0;
@@ -59,7 +59,7 @@ namespace Ikarus {
         this->notify(ControlMessages::SOLUTION_CHANGED);
         this->notify(ControlMessages::STEP_ENDED);
       }
-      this->notify(ControlMessages::CONTROL_ENDED, info.totalIterations, name_);
+      this->notify(ControlMessages::CONTROL_ENDED, info.totalIterations, static_cast<std::string>(name_));
       info.success = true;
       return info;
     }
