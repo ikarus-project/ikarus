@@ -83,10 +83,9 @@ namespace Ikarus {
    * The fcuntion are assumed to be derivatvies of each other. */
   template <typename... DerivativeArgs, typename... ParameterArgs>
   class NonLinearOperator<Impl::Functions<DerivativeArgs...>, Impl::Parameter<ParameterArgs...>> {
+  public:
     using FunctionReturnValues = std::tuple<Ikarus::Std::ReturnType<DerivativeArgs, ParameterArgs&...>...>;
     using ParameterValues      = std::tuple<ParameterArgs...>;
-
-  public:
     template <int n>
     using FunctionReturnType = std::tuple_element_t<n, FunctionReturnValues>;
 

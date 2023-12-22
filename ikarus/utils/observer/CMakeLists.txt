@@ -5,9 +5,8 @@
 install(
   FILES controllogger.hh
         controlvtkwriter.hh
-        genericcontrolobserver.hh
+        genericobserver.hh
         griddrawerobserver.hh
-        loadcontrolobserver.hh
         nonlinearsolverlogger.hh
         observer.hh
         observermessages.hh

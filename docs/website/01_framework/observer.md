@@ -77,7 +77,7 @@ subscribeAll({observer1,observer2}) // (3)!
 unSubscribe(...) // (4)!
 ```
 
-1. Subscribes to one specific message.
+1. Subscribe to one specific message.
 2. Subscribes to all the messages in `enum`.
 3. Multiple observers can subscribe at once.
 4. Unsubscribe from specific messages or all messages.
@@ -85,7 +85,7 @@ unSubscribe(...) // (4)!
 To send a message together with data, the sender (observable) calls
 
 ```cpp
-this->notify(MessageType::Message,data);
+this->notify(MessageType::Message, data);
 ```
 
 and the receiver (observer) has to implement

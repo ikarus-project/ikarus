@@ -13,35 +13,57 @@ template <typename MessageType>
 class IObserver {
 public:
   virtual ~IObserver() = default;
+
   void update(MessageType message) {
-    assert(MessageType::END != message && "The END enum type should not be used");
-    assert(MessageType::BEGIN != message && "The BEGIN enum type should not be used");
+    checkMessageType(message);
     updateImpl(message);
   }
+
   void update(MessageType message, double val) {
-    assert(MessageType::END != message && "The END enum type should not be used");
-    assert(MessageType::BEGIN != message && "The BEGIN enum type should not be used");
+    checkMessageType(message);
     updateImpl(message, val);
   }
 
-  void update(MessageType message, int intVal, double val1, double val2) {
-    assert(MessageType::END != message && "The END enum type should not be used");
-    assert(MessageType::BEGIN != message && "The BEGIN enum type should not be used");
-    updateImpl(message, intVal, val1, val2);
-  }
+  void update(MessageType message, int val) {
+    checkMessageType(message);
+    updateImpl(message, val);
+  };
+
+  void update(MessageType message, const std::string& val) {
+    checkMessageType(message);
+    updateImpl(message, val);
+  };
+
+  void update(MessageType message, int val1, double val2) {
+    checkMessageType(message);
+    updateImpl(message, val1, val2);
+  };
+
+  void update(MessageType message, int val1, const std::string& val2) {
+    checkMessageType(message);
+    updateImpl(message, val1, val2);
+  };
 
   void update(MessageType message, const Eigen::VectorXd& vec) {
-    assert(MessageType::END != message && "The END enum type should not be used");
-    assert(MessageType::BEGIN != message && "The BEGIN enum type should not be used");
+    checkMessageType(message);
     updateImpl(message, vec);
   }
 
 protected:
-  virtual void updateImpl([[maybe_unused]] MessageType message) {}
-  virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] double val) {}
-  virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] int intVal,
-                          [[maybe_unused]] double val1, [[maybe_unused]] double val2) {}
+  virtual void updateImpl([[maybe_unused]] MessageType message){};
+  virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] double val){};
+  virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] int val){};
+  virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] const std::string& val){};
+  virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] int val1, const std::string& val2){};
+  virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] int val1, double val2){};
   virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] const Eigen::VectorXd& vec) {}
+
+private:
+  void checkMessageType(MessageType message) {
+    if (MessageType::END == message) DUNE_THROW(Dune::InvalidStateException, "The END enum type should not be used");
+    if (MessageType::BEGIN == message)
+      DUNE_THROW(Dune::InvalidStateException, "The BEGIN enum type should not be used");
+  }
 };
 
 template <typename MessageType>
@@ -60,9 +82,12 @@ public:
   void notify(MessageType message);
   template <std::floating_point ScalarType>
   void notify(MessageType message, ScalarType val);
-  void notify(MessageType message, int intVal, double val1, double val2);
+  void notify(MessageType message, int val);
+  void notify(MessageType message, const std::string& val);
+  void notify(MessageType message, int val1, double val2);
+  void notify(MessageType message, int val1, const std::string& val2);
   template <std::floating_point ScalarType>
-  void notify(MessageType message, Eigen::VectorX<ScalarType> val);
+  void notify(MessageType message, Eigen::VectorX<ScalarType> vec);
 
 private:
   using ObserverVector = std::vector<std::shared_ptr<IObserver<MessageType>>>;
@@ -119,10 +144,31 @@ void IObservable<MessageType>::notify(MessageType message, ScalarType val) {
 }
 
 template <typename MessageType>
-void IObservable<MessageType>::notify(MessageType message, int intVal, double val1, double val2) {
+void IObservable<MessageType>::notify(MessageType message, int val) {
   auto vectorOfObserversOfASpecificMessage = observers_[message];
   for (auto&& obs : vectorOfObserversOfASpecificMessage)
-    obs->update(message, intVal, val1, val2);
+    obs->update(message, val);
+}
+
+template <typename MessageType>
+void IObservable<MessageType>::notify(MessageType message, const std::string& val) {
+  auto vectorOfObserversOfASpecificMessage = observers_[message];
+  for (auto&& obs : vectorOfObserversOfASpecificMessage)
+    obs->update(message, val);
+}
+
+template <typename MessageType>
+void IObservable<MessageType>::notify(MessageType message, int val1, double val2) {
+  auto vectorOfObserversOfASpecificMessage = observers_[message];
+  for (auto&& obs : vectorOfObserversOfASpecificMessage)
+    obs->update(message, val1, val2);
+}
+
+template <typename MessageType>
+void IObservable<MessageType>::notify(MessageType message, int val1, const std::string& val2) {
+  auto vectorOfObserversOfASpecificMessage = observers_[message];
+  for (auto&& obs : vectorOfObserversOfASpecificMessage)
+    obs->update(message, val1, val2);
 }
 
 template <typename MessageType>

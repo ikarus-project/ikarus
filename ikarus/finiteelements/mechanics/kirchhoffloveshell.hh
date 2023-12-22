@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <dune/common/classname.hh>
 #include <dune/fufem/boundarypatch.hh>
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/geometry/type.hh>
@@ -70,7 +69,7 @@ namespace Ikarus {
       auto& first_child = this->localView().tree().child(0);
       const auto& fe    = first_child.finiteElement();
       numberOfNodes     = fe.size();
-      dispAtNodes.resize(numberOfNodes);
+      dispAtNodes.resize(fe.size());
       order      = 2 * (fe.localBasis().order());
       localBasis = Dune::CachedLocalBasis(fe.localBasis());
       if constexpr (requires { this->localView().element().impl().getQuadratureRule(order); })
@@ -156,7 +155,7 @@ namespace Ikarus {
         const auto H                                = toEigen(Hd);
         const Eigen::Matrix<double, 2, 2> A         = J * J.transpose();
         const Eigen::Matrix<ScalarType, 3, 2> gradu = toEigen(
-            uFunction.evaluateDerivative(gpIndex, wrt(spatialAll, Dune::on(DerivativeDirections::referenceElement))));
+            uFunction.evaluateDerivative(gpIndex, wrt(spatialAll), Dune::on(DerivativeDirections::referenceElement)));
         const Eigen::Matrix<ScalarType, 2, 3> j = J + gradu.transpose();
 
         const auto& Ndd                     = localBasis.evaluateSecondDerivatives(gpIndex);

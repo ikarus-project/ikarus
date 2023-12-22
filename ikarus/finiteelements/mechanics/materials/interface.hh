@@ -33,7 +33,7 @@ namespace Ikarus {
     using MaterialImpl = MaterialImpl_;
 
     static constexpr bool isReduced
-        = Std::IsSpecializationNonTypeAndTypes<Ikarus::VanishingStress, MaterialImpl>::value;
+        = Std::isSpecializationNonTypeAndTypes<Ikarus::VanishingStress, MaterialImpl>::value;
 
     /* Const accessor to the underlying material   */
     constexpr MaterialImpl const &impl() const  // CRTP

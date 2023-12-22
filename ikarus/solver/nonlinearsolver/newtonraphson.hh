@@ -2,10 +2,13 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
+
 #include <iosfwd>
 
 #include <ikarus/linearalgebra/nonlinearoperator.hh>
 #include <ikarus/solver/linearsolver/linearsolver.hh>
+#include <ikarus/solver/nonlinearsolver/solverinfos.hh>
+#include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/defaultfunctions.hh>
 #include <ikarus/utils/linearalgebrahelper.hh>
 #include <ikarus/utils/observer/observer.hh>
@@ -18,26 +21,13 @@ namespace Ikarus {
     int maxIter{20};
   };
 
-  struct SolverInformation {
-    explicit operator bool() const { return success; }
-    bool success{false};
-    double residualnorm{0.0};
-    int iterations{0};
-  };
-
-  template <typename LinearSolver, typename MatrixType, typename VectorType>
-  concept LinearSolverC = requires(LinearSolver& linearSolver, MatrixType& Ax, VectorType& vec) {
-    linearSolver.analyzePattern(Ax);
-    linearSolver.factorize(Ax);
-    linearSolver.solve(vec, vec);
-  };
-
   template <typename NonLinearOperatorImpl, typename LinearSolver = SolverDefault,
             typename UpdateFunctionType_ = UpdateDefault>
   class NewtonRaphson : public IObservable<NonLinearSolverMessages> {
   public:
-    static constexpr bool isLinearSolver = LinearSolverC<LinearSolver, typename NonLinearOperatorImpl::DerivativeType,
-                                                         typename NonLinearOperatorImpl::ValueType>;
+    static constexpr bool isLinearSolver
+        = Ikarus::Concepts::LinearSolverCheck<LinearSolver, typename NonLinearOperatorImpl::DerivativeType,
+                                              typename NonLinearOperatorImpl::ValueType>;
 
     using ResultType         = typename NonLinearOperatorImpl::template ParameterValue<0>;
     using UpdateFunctionType = UpdateFunctionType_;
@@ -61,10 +51,10 @@ namespace Ikarus {
         SolutionType, std::remove_cvref_t<typename NonLinearOperatorImpl::ValueType>>
     [[nodiscard(
         "The solve method returns information of the solution process. You should store this information and check if "
-        "it was successful")]] SolverInformation
+        "it was successful")]] Ikarus::NonLinearSolverInformation
     solve(const SolutionType& dx_predictor = NoPredictor{}) {
       this->notify(NonLinearSolverMessages::INIT);
-      SolverInformation solverInformation;
+      Ikarus::NonLinearSolverInformation solverInformation;
       solverInformation.success = true;
       auto& x                   = nonLinearOperator().firstParameter();
       if constexpr (not std::is_same_v<SolutionType, NoPredictor>) updateFunction(x, dx_predictor);
@@ -96,10 +86,10 @@ namespace Ikarus {
         ++iter;
       }
       if (iter == settings.maxIter) solverInformation.success = false;
-      solverInformation.iterations   = iter;
-      solverInformation.residualnorm = static_cast<double>(rNorm);
-      if (solverInformation.success)
-        this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, iter, static_cast<double>(rNorm), settings.tol);
+      solverInformation.iterations     = iter;
+      solverInformation.residualNorm   = static_cast<double>(rNorm);
+      solverInformation.correctionNorm = static_cast<double>(dNorm);
+      if (solverInformation.success) this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, iter);
       return solverInformation;
     }
 

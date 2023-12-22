@@ -32,7 +32,7 @@ namespace Ikarus {
 
     auto setFileNamePrefix(std::string&& p_name) { prefixString = std::move(p_name); }
 
-    void updateImpl(ControlMessages message) override {
+    void updateImpl(ControlMessages message) final {
       assert(isFieldInfoSet && "You need to call setFieldInfo first!");
       switch (message) {
         case ControlMessages::SOLUTION_CHANGED: {
@@ -46,9 +46,12 @@ namespace Ikarus {
       }
     }
 
-    using IObserver::updateImpl;
-    void updateImpl(ControlMessages, double) override {}
-    void updateImpl(ControlMessages, const Eigen::VectorXd&) override {}
+    void updateImpl(Ikarus::ControlMessages, double) final {}
+    void updateImpl(Ikarus::ControlMessages, int) final {}
+    void updateImpl(Ikarus::ControlMessages, const std::string&) final {}
+    void updateImpl(Ikarus::ControlMessages, int, const std::string&) final {}
+    void updateImpl(Ikarus::ControlMessages, int, double) final {}
+    void updateImpl(Ikarus::ControlMessages, const Eigen::VectorXd&) final {}
 
   private:
     Basis const* basis;

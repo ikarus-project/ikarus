@@ -1,3 +1,7 @@
+---
+status: new
+---
+
 # Control routines
 
 ## Load control
@@ -104,6 +108,7 @@ struct SubsidiaryArgs {
   double f{}; // (4)!
   Eigen::VectorX<double> dfdDD; // (5)!
   double dfdDlambda{}; // (6)!
+  int currentStep; // (7)!
 };
 ```
 
@@ -113,6 +118,7 @@ struct SubsidiaryArgs {
 4. Scalar value evaluated from the subsidiary function
 5. Derivative of the subsidiary function with respect to the displacement increment
 6. Derivative of the subsidiary function with respect to the load factor increment
+7. Current load step number
 
 An example for the standard arc-length method is shown below:
 
@@ -167,3 +173,49 @@ struct StandardArcLength {
     std::optional<double> psi;
   };
 ```
+
+## Adaptive step-sizing for the path-following techniques
+
+### Interface
+
+The general interface for adaptive step-sizing is represented by the following concept.
+
+```cpp
+namespace Ikarus::Concepts {
+    template <typename AdaptiveStepSizing, typename NonLinearSolverInformation, typename SubsidiaryArgs,
+              typename NonLinearOperator>
+    concept AdaptiveStepSizingStrategy = requires(AdaptiveStepSizing adaptiveSS, NonLinearSolverInformation info,
+                                                  SubsidiaryArgs args, NonLinearOperator nop) {
+      { adaptiveSS(info, args, nop) } -> std::same_as<void>; // (1)!
+      { adaptiveSS.targetIterations() } -> std::same_as<int>; // (2)!
+      { adaptiveSS.setTargetIterations(std::declval<int>()) } -> std::same_as<void>; // (3)!
+    };
+}
+```
+
+1. `#!cpp operator()` is overloaded such that the step size is modified.
+2. Function that returns `#!cpp targetIterations` to be achieved. See [Iteration-based](#iteration-based), for example.
+3. Function used to set `#!cpp targetIterations`.
+
+For implementation details, refer to `ikarus/controlroutines/adaptivestepsizing.hh`.
+
+### Implementations
+
+#### No Operation
+
+By default, `AdaptiveStepSizing::NoOp` is used with a path-following technique.
+`AdaptiveStepSizing::NoOp` uses the step size provided by the user and doesn't modify them while using `PathFollowing`.
+`NoOp` here stands for [No Operation](https://en.wikipedia.org/wiki/NOP_(code)).
+
+#### Iteration-based
+
+Instead of using a constant step size, the step size can be automatically adapted for efficient computations.
+The `AdaptiveStepSizing::IterationBased` is implemented according to Ramm[@wunderlich_strategies_1981].
+The step size can be scaled as shown below:
+
+$$
+\hat{s}_{k+1} = \left(\frac{\hat{i}}{i_k}\right)^{1/2}\hat{s}_k
+$$
+
+Here, $\hat{s}_{k+1}$ and $\hat{s}_{k}$ are the step sizes at $k+1$-th and $k$-th iteration.
+Here, $\hat{i}$ is the desired number of iterations and $i_k$ is the number of iterations used in the previous step.

@@ -6,6 +6,7 @@
 #include "spdlog/spdlog.h"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wswitch-enum"
+
 namespace Ikarus {
 
   void NonLinearSolverLogger::updateImpl(NonLinearSolverMessages message) {
@@ -13,15 +14,15 @@ namespace Ikarus {
       case NonLinearSolverMessages::ITERATION_STARTED:
         break;
       case NonLinearSolverMessages::INIT:
-        iters = 0;
-        dNorm = 0.0;
+        iters = 1;
         rNorm = 0.0;
-        sNorm = 0.0;
+        dNorm = 0.0;
         spdlog::info("Non-linear solver started:");
-        spdlog::info("  i ResidualNorm CorrectionNorm ScalarSubsidiaryNorm");
+        spdlog::info("{:<11} {:<20} {:<20} {:<20}", "Ite", "normR", "normD", "lambda");
+        spdlog::info("-------------------------------------------------------------------------------");
         break;
       case NonLinearSolverMessages::ITERATION_ENDED:
-        spdlog::info("{:>3d} {:>12.2e} {:14.2e} {:20.2e}", iters, rNorm, dNorm, sNorm);
+        spdlog::info("{} {:<10d} {:<20.2e} {:<20.2e} {:<20.2e}", "", iters, rNorm, dNorm, lambda);
         ++iters;
         break;
       default:
@@ -34,24 +35,21 @@ namespace Ikarus {
       case NonLinearSolverMessages::RESIDUALNORM_UPDATED:
         rNorm = val;
         break;
+      case NonLinearSolverMessages::SOLUTION_CHANGED:
+        lambda = val;
+        break;
       case NonLinearSolverMessages::CORRECTIONNORM_UPDATED:
         dNorm = val;
-        break;
-      case NonLinearSolverMessages::SCALARSUBSIDIARY_UPDATED:
-        sNorm = val;
         break;
       default:
         break;
     }
   }
 
-  void NonLinearSolverLogger::updateImpl(NonLinearSolverMessages message, int intVal, double val1, double val2) {
+  void NonLinearSolverLogger::updateImpl(NonLinearSolverMessages message, int numberOfIterations) {
     switch (message) {
       case NonLinearSolverMessages::FINISHED_SUCESSFULLY:
-        spdlog::info(
-            "Nonlinear solver finished: {} iterations and final residualNorm {:03.2e} < {:01.2e} <-- desired "
-            "tolerance.",
-            intVal, val1, val2);
+        spdlog::info("Number of iterations: {}", numberOfIterations);
         break;
       default:
         break;

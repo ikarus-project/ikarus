@@ -7,6 +7,7 @@
  */
 
 #pragma once
+
 #include <iosfwd>
 
 #include <dune/common/float_cmp.hh>
@@ -17,18 +18,13 @@
 
 #include <ikarus/linearalgebra/nonlinearoperator.hh>
 #include <ikarus/linearalgebra/truncatedconjugategradient.hh>
+#include <ikarus/solver/nonlinearsolver/solverinfos.hh>
 #include <ikarus/utils/linearalgebrahelper.hh>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observermessages.hh>
 #include <ikarus/utils/traits.hh>
 
 namespace Ikarus {
-
-  struct TRSolverInformation {
-    bool success{false};
-    double gradienNorm{0.0};
-    int iterations{0};
-  };
 
   enum class PreConditioner { IncompleteCholesky, IdentityPreconditioner, DiagonalPreconditioner };
 
@@ -120,13 +116,12 @@ namespace Ikarus {
     template <typename SolutionType = NoPredictor>
     requires std::is_same_v<SolutionType, NoPredictor> || std::is_convertible_v<
         SolutionType, std::remove_cvref_t<typename NonLinearOperatorImpl::ValueType>>
-        TRSolverInformation solve(const SolutionType& dx_predictor = NoPredictor{}) {
+        NonLinearSolverInformation solve(const SolutionType& dx_predictor = NoPredictor{}) {
       this->notify(NonLinearSolverMessages::INIT);
       stats = Stats{};
       info  = AlgoInfo{};
 
-      this->notify(NonLinearSolverMessages::INIT);
-      TRSolverInformation solverInformation;
+      NonLinearSolverInformation solverInformation;
       nonLinearOperator().updateAll();
       stats.energy   = energy();
       auto& x        = nonLinearOperator().firstParameter();
@@ -296,10 +291,10 @@ namespace Ikarus {
       solverInformation.success
           = (info.stop == StopReason::correctionNormTolReached) or (info.stop == StopReason::gradientNormTolReached);
 
-      solverInformation.iterations  = stats.outerIter;
-      solverInformation.gradienNorm = stats.gradNorm;
-      this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, solverInformation.iterations,
-                   solverInformation.gradienNorm, options.grad_tol);
+      solverInformation.iterations   = stats.outerIter;
+      solverInformation.residualNorm = stats.gradNorm;
+      if (solverInformation.success)
+        this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, solverInformation.iterations);
       return solverInformation;
     }
 

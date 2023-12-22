@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
-#include "pathfollowingfunctions.hh"
 
 #include <concepts>
 #include <type_traits>
@@ -10,6 +9,8 @@
 #include <vector>
 
 #include <dune/functions/functionspacebases/basistags.hh>
+
+#include <Eigen/Sparse>
 
 #include <ikarus/utils/traits.hh>
 
@@ -74,12 +75,35 @@ namespace Ikarus {
       Basis::PreBasis::Node::isPower == true;
     };
 
-    template <typename PathFollowingImpl, typename NonLinearOperator>
-    concept PathFollowingStrategy
-        = requires(PathFollowingImpl pft, NonLinearOperator nop, Ikarus::SubsidiaryArgs args) {
+    template <typename PathFollowingImpl, typename NonLinearOperator, typename SubsidiaryArgs>
+    concept PathFollowingStrategy = requires(PathFollowingImpl pft, NonLinearOperator nop, SubsidiaryArgs args) {
       { pft.evaluateSubsidiaryFunction(args) } -> std::same_as<void>;
       { pft.initialPrediction(nop, args) } -> std::same_as<void>;
       { pft.intermediatePrediction(nop, args) } -> std::same_as<void>;
+    };
+
+    template <typename AdaptiveStepSizing, typename NonLinearSolverInformation, typename SubsidiaryArgs,
+              typename NonLinearOperator>
+    concept AdaptiveStepSizingStrategy = requires(AdaptiveStepSizing adaptiveSS, NonLinearSolverInformation info,
+                                                  SubsidiaryArgs args, NonLinearOperator nop) {
+      { adaptiveSS(info, args, nop) } -> std::same_as<void>;
+      { adaptiveSS.targetIterations() } -> std::same_as<int>;
+      { adaptiveSS.setTargetIterations(std::declval<int>()) } -> std::same_as<void>;
+    };
+
+    template <typename LinearSolver, typename MatrixType, typename VectorType>
+    concept LinearSolverCheck = requires(LinearSolver& linearSolver, MatrixType& Ax, VectorType& vec) {
+      linearSolver.analyzePattern(Ax);
+      linearSolver.factorize(Ax);
+      linearSolver.solve(vec, vec);
+    };
+
+    template <typename NonLinearSolver>
+    concept NonLinearSolverCheckForPathFollowing = requires {
+      std::tuple_size<typename NonLinearSolver::NonLinearOperator::ParameterValues>::value == 2;
+      not(std::is_same_v<
+              typename NonLinearSolver::NonLinearOperator::ValueType,
+              double> and ((Ikarus::Std::isSpecializationTypeAndNonTypes<Eigen::Matrix, typename NonLinearSolver::NonLinearOperator::DerivativeType>::value) or (Ikarus::Std::isSpecializationTypeNonTypeAndType<Eigen::SparseMatrix, typename NonLinearSolver::NonLinearOperator::DerivativeType>::value)));
     };
 
     template <typename L, typename R>
@@ -206,7 +230,7 @@ namespace Ikarus {
     consteval bool isMaterial() {
       if constexpr (Std::isSpecialization<MaterialToCheck, Material>::value) return true;
 
-      if constexpr (Std::IsSpecializationNonTypeAndTypes<VanishingStress, Material>::value) {
+      if constexpr (Std::isSpecializationNonTypeAndTypes<VanishingStress, Material>::value) {
         if constexpr (Std::isSpecialization<MaterialToCheck, typename Material::Underlying>::value) {
           return true;
         } else {
