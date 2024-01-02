@@ -1,7 +1,6 @@
 INHERIT: mkdocs.yml
 plugins:
   meta: {}
-  blog: {draft: true, blog_dir: 04_blog}
   offline: {enabled: !ENV [MKDOCSOFFLINE, false]}
   privacy: {enabled: !ENV [MKDOCSOFFLINE, false]}
 

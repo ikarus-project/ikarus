@@ -36,7 +36,7 @@ endif()
 
 if(BUILD_DOCS)
   message("Build docs locally target ENABLED")
-  add_subdirectory(docs/BuildLocally)
+  add_subdirectory(docs)
 endif()
 
 if(DUNE_ENABLE_PYTHONBINDINGS)

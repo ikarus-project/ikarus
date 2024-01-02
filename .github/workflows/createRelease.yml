@@ -48,16 +48,28 @@ jobs:
           pip install git+https://${{ secrets.MKDOCS_TOKEN }}@github.com/squidfunk/mkdocs-material-insiders.git
           sudo apt-get install libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev  
 
+      - name: Build Doxygen
+        run: |
+          git clone  https://github.com/jothepro/doxygen-awesome-css.git
+          cd doxygen-awesome-css
+          make install
+          cd ..
+          cd repo
+          mkdir build_docs
+          cd build_docs
+          cmake .. -DBUILD_DOCS=1 -DDUNE_ENABLE_PYTHONBINDINGS=0
+          cmake --build . --target doxygen_ikarus
+
       - name: Build Website
         run: |
           git clone https://github.com/ikarus-project/ikarus-project.github.io.git
           cd ikarus-project.github.io
           git fetch origin gh-pages --depth=1
-          cp -R ../repo/docs/ .
+          cp -R ../repo/build_docs/ .
           cp -R ../repo/ikarus/ .
           git config --local user.email "mueller@ibb.uni-stuttgart.de"
           git config --local user.name "AlexanderMueller"
-          cd docs
+          cd build_docs/docs
           export MKDOCSOFFLINE=false
           mike deploy v$NEWVERSION  --config-file mkdocs.insiders.yml
           mike deploy dev  --config-file mkdocs.insiders.yml

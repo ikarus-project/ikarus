@@ -12,7 +12,7 @@ def define_env(env):
     @env.macro
     def inputcode(filename, language, linenumbers=False, startline=0, endline=None):
         filename = (
-            "../" + filename
+            "../../" + filename
         )  # file path must be given relative to root directory
         f = open(filename, "r")
         if startline != 0 or endline is None:

@@ -1,6 +1,6 @@
 # Welcome to the documentation of Ikarus
 
-![Ikarus logo](auxiliaryImages/BigLogo.png){  }
+![Ikarus logo](auxiliaryImages/BigLogo.png)
 
 This project tries to provide an easy-to-read and an easy-to-use finite element framework.
 It is heavily inspired by the finite element software [DUNE](https://dune-project.org/), the book [DUNE — The Distributed and Unified

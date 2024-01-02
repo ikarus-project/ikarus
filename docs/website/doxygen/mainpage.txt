@@ -1,0 +1,19 @@
+// SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// mueller@ibb.uni-stuttgart.de SPDX-License-Identifier: LGPL-3.0-or-later
+/** \mainpage Ikarus documentation
+
+\section intro Introduction
+ This is the class documentation for the Ikarus module.
+This project tries to provide an easy-to-read and an easy-to-use finite element framework.
+It is heavily inspired by the finite element software DUNE, the book DUNE — The Distributed and Unified Numerics Environment, deal.II and Kratos.
+Furthermore, it directly uses several modules from DUNE.
+
+\section mods Modules
+
+The best way to start is from the page \subpage modules which gives
+you access to the documentation by category.
+
+*/
+
+/** \page modules Modules
+*/

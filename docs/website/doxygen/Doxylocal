@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# mueller@ibb.uni-stuttgart.de SPDX-License-Identifier: LGPL-3.0-or-later
+# This file contains local changes to the doxygen configuration
+# please use '+=' to add files/directories to the lists
+
+# The INPUT tag can be used to specify the files and/or directories that contain
+# documented source files. You may enter file names like "myfile.cpp" or
+# directories like "/usr/src/myproject". Separate the files or directories
+# with spaces.
+
+INPUT                 += @top_srcdir@/ikarus/ \
+                     @top_srcdir@/python/ \
+                    @srcdir@/mainpage.txt \
+                          @srcdir@/modules.txt
+
+FILE_PATTERNS       += *.hh *.dist *.dev *.page *.py
+
+# The EXCLUDE tag can be used to specify files and/or directories that should
+# be excluded from the INPUT source files. This way you can easily exclude a
+# subdirectory from a directory tree whose root is specified with the INPUT tag.
+
+EXCLUDE               += @top_srcdir@/tests \
+                        @top_srcdir@/ikarus/python/test
+
+# The EXAMPLE_PATH tag can be used to specify one or more files or
+# directories that contain example code fragments that are included (see
+# the \include command).
+
+# EXAMPLE_PATH          += @top_srcdir@/src
+
+# The IMAGE_PATH tag can be used to specify one or more files or
+# directories that contain image that are included in the documentation (see
+# the \image command).
+
+# IMAGE_PATH            += @top_srcdir@/ikarus/pics
+CREATE_SUBDIRS = YES
+
+#for https://jothepro.github.io/doxygen-awesome-css/index.html#autotoc_md9
+GENERATE_TREEVIEW      = YES # optional. Also works without treeview
+DISABLE_INDEX = NO
+FULL_SIDEBAR = NO
+HTML_EXTRA_STYLESHEET  = /usr/local/share/doxygen-awesome-css/doxygen-awesome.css @srcdir@/custom.css
+HTML_COLORSTYLE        = LIGHT # required with Doxygen >= 1.9.5
+
+
+EXTRA_PACKAGES         = amsmath amssymb
+
+GENERATE_XML = YES
+GENERATE_LATEX = YES
+USE_MATHJAX =YES
