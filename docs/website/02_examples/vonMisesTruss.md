@@ -23,7 +23,7 @@ truss structure (`p_EA`) as arguments during construction.
 
 `ScalarType calculateScalarImpl(const FERequirementType &par, const Eigen::VectorX<ScalarType> &dx)` is
 then defined, returning a scalar value, in this case the energy.
-The energy is defined as `#!cpp 0.5 * EA / sqrt(LRefsquared) * Egl * Egl` with `Egl` being the Green-Lagrange strain defined as
+The energy is defined as `#!cpp 0.5 * EA * sqrt(LRefsquared) * Egl * Egl` with `Egl` being the Green-Lagrange strain defined as
 
 ```cpp
 const Scalar Egl = 0.5 * (lsquared - LRefsquared) / LRefsquared;
@@ -38,7 +38,7 @@ the addition of the vertices and elements to create a grid as shown below:
 ```cpp
 Dune::GridFactory<Dune::FoamGrid<1, 2, double>> gridFactory;
 const double h = 1.0;
-const double L = 1.0;
+const double L = 2.0;
 gridFactory.insertVertex({0, 0});
 gridFactory.insertVertex({L, h});
 gridFactory.insertVertex({2 * L, 0});

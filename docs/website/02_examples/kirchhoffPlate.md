@@ -42,8 +42,8 @@ constexpr int griddim                                    = 2; // (1)!
 constexpr int dimworld                                   = 2; // (2)!
 const std::array<std::vector<double>, griddim> knotSpans = { { {0, 0, 1, 1}, {0, 0, 1, 1} } }; // (3)!
 using ControlPoint = Dune::IGA::NURBSPatchData<griddim, dimworld>::ControlPointType;
-const double Lx = 1; // (4)!
-const double Ly = 1; // (5)!
+const double Lx = 10; // (4)!
+const double Ly = 10; // (5)!
 
 const std::vector<std::vector<ControlPoint>> controlPoints
     = { { {.p = {0, 0}, .w = 1}, {.p = {0, Ly}, .w = 1} },
@@ -123,34 +123,37 @@ auto localwAna               = localFunction(wGlobalAnalyticFunction);
 
 The $L^2$-error is calculated by using
 $$
-L^2\textrm{-error} = \sqrt{\sum_{ele} \int_{\Omega_{ele}} \left( w_{analytical}-w_{FE} \right)^2}
+L^2\textrm{-error} = \frac{\sqrt{\sum_{ele} \int_{\Omega_{ele}} \left( w_{analytical}-w_{FE} \right)^2}}{L^2\textrm{-exact}}
 $$
+with $L^2\textrm{-exact} = \sqrt{\sum_{ele} \int_{\Omega_{ele}} \left( w_{analytical}\right)^2}$
 as shown below:
 
 ```cpp
 double l2_error = 0.0;
+double l2_normEx = 0.0;
 for (auto &ele : elements(gridView)) {
   localView.bind(ele);
   localw.bind(ele);
   localwAna.bind(ele);
   const auto geo   = localView.element().geometry();
-  const auto &rule = Dune::QuadratureRules<double, 2>::rule(ele.type(), 2 * localView.tree().finiteElement().localBasis().order());
+  const auto &rule = Dune::QuadratureRules<double, 2>::rule(
+      ele.type(), 2U * localView.tree().finiteElement().localBasis().order());
   for (auto gp : rule) {
-    const auto gpGlobalPos = geo.global(gp.position());
-
-    const auto w_ex = localwAna(gp.position());
-    const auto w_fe = localw(gp.position());
-    l2_error += Dune::power(w_ex - w_fe, 2) * ele.geometry().integrationElement(gp.position()) * gp.weight();
+    const auto intElement = ele.geometry().integrationElement(gp.position()) * gp.weight();
+    const auto w_ex       = localwAna(gp.position());
+    const auto w_fe       = localw(gp.position());
+    l2_error += Dune::power(w_ex - w_fe, 2) * intElement;
+    l2_normEx += w_ex * intElement;
   }
 }
-l2_error = std::sqrt(l2_error);
+l2_error = std::sqrt(l2_error) / std::sqrt(l2_normEx);
 ```
 
 The number of degrees of freedom for each refinement level and its corresponding $L^2$-error is pushed to a vector that
 can be later used to create plots using the features from Matlab.
 
 ```cpp
-std::vector<double> dofsVec;
+std::vector<size_t> dofsVec;
 std::vector<double> l2Evcector;
 dofsVec.push_back(basis.flat().size());
 l2Evcector.push_back(l2_error);
