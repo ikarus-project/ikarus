@@ -20,6 +20,7 @@ using Dune::TestSuite;
 #include <ikarus/finiteelements/mechanics/nonlinearelastic.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/init.hh>
+#include <ikarus/utils/linearalgebrahelper.hh>
 
 template <typename TestSuiteType, typename SparseType, typename DenseType, typename DOFSize>
 void checkAssembledQuantities(TestSuiteType& t, SparseType& sType, DenseType& dType, DOFSize dofSize) {
@@ -31,12 +32,14 @@ void checkAssembledQuantities(TestSuiteType& t, SparseType& sType, DenseType& dT
         << "DOFsCheck via columns: " << sType.cols() << "cols and " << dofSize << " DOFs";
 }
 
-template <typename PreBasis>
+template <int order, typename PreBasis>
 auto SimpleAssemblersTest(const PreBasis& preBasis) {
   TestSuite t("SimpleAssemblersTest");
   using Grid = Dune::YaspGrid<2>;
 
-  Dune::FieldVector<double, 2> bbox       = {4, 2};
+  const double Lx                         = 4.0;
+  const double Ly                         = 2.0;
+  Dune::FieldVector<double, 2> bbox       = {Lx, Ly};
   std::array<int, 2> elementsPerDirection = {2, 1};
   auto grid                               = std::make_shared<Grid>(bbox, elementsPerDirection);
 
@@ -63,6 +66,7 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
 
     auto basisP = std::make_shared<const decltype(basis)>(basis);
     Ikarus::DirichletValues dirichletValues(basisP->flat());
+    Ikarus::DirichletValues dirichletValues2(basisP->flat());
     dirichletValues.fixDOFs([](auto& basis_, auto& dirichletFlags) {
       Dune::Functions::forEachBoundaryDOF(basis_, [&](auto&& indexGlobal) { dirichletFlags[indexGlobal] = true; });
     });
@@ -150,6 +154,26 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
       }
     }
 
+    constexpr double tol = 1e-8;
+    auto localView       = basis.flat().localView();
+    for (auto &ele : elements(gridView)) {
+      localView.bind(ele);
+      const auto &fe = localView.tree().child(0).finiteElement();
+      std::vector<Dune::FieldVector<double, 2>> nodalPos;
+      Ikarus::obtainLagrangeNodePositions<order>(localView, nodalPos);
+      for (int i = 0; i < fe.size(); i++)
+        if ((std::abs(nodalPos[i][0]) < tol) or (std::abs(nodalPos[i][0] - Lx) < tol)
+            or (std::abs(nodalPos[i][1]) < tol) or (std::abs(nodalPos[i][1] - Ly) < tol))
+          for (auto fixedDirection = 0; fixedDirection < 2; ++fixedDirection) {
+            auto fixIndex = localView.index(localView.tree().child(fixedDirection).localIndex(i));
+            dirichletValues2.fixIthDOF(fixIndex);
+          }
+    }
+
+    t.check(fixedDOFs == dirichletValues2.fixedDOFsize())
+        << "Fixed DOF size is not the same for dirichletValues (" << fixedDOFs << ") and dirichletValues2 ("
+        << dirichletValues2.fixedDOFsize() << ")";
+
     grid->globalRefine(1);
   }
   return t;
@@ -163,7 +187,7 @@ int main(int argc, char** argv) {
   auto firstOrderLagrangePrePower2Basis  = power<2>(lagrange<1>(), FlatInterleaved());
   auto secondOrderLagrangePrePower2Basis = power<2>(lagrange<2>(), FlatInterleaved());
 
-  t.subTest(SimpleAssemblersTest(firstOrderLagrangePrePower2Basis));
-  t.subTest(SimpleAssemblersTest(secondOrderLagrangePrePower2Basis));
+  t.subTest(SimpleAssemblersTest<1>(firstOrderLagrangePrePower2Basis));
+  t.subTest(SimpleAssemblersTest<2>(secondOrderLagrangePrePower2Basis));
   return t.exit();
 }

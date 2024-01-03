@@ -366,14 +366,15 @@ namespace Ikarus {
   /* A function to obtain the global positions of the nodes of an element with Lagrangian basis
    * (Refer - Dune Book Section 8.3.1, Page 314)
    */
-  template <typename ElementType, typename LocalFE, int size>
-  void obtainLagrangeNodePositions(const ElementType& ele, const LocalFE& localFE,
+  template <int order, int size, typename LocalView>
+  void obtainLagrangeNodePositions(const LocalView& localView,
                                    std::vector<Dune::FieldVector<double, size>>& lagrangeNodeCoords) {
     static_assert(
-        std::is_same_v<std::remove_cvref_t<decltype(localFE.localView().tree().child(0))>,
-                       Dune::Functions::LagrangeNode<
-                           std::remove_cvref_t<decltype(localFE.localView().globalBasis().gridView())>, size, double>>,
+        std::is_same_v<typename std::remove_cvref_t<decltype(localView.tree().child(0))>,
+                       Dune::Functions::LagrangeNode<std::remove_cvref_t<decltype(localView.globalBasis().gridView())>,
+                                                     order, double>>,
         "This function is only supported for Lagrange basis");
+    const auto& localFE = localView.tree().child(0).finiteElement();
     lagrangeNodeCoords.resize(localFE.size());
     std::vector<double> out;
     for (int i = 0; i < size; i++) {
@@ -383,7 +384,7 @@ namespace Ikarus {
         lagrangeNodeCoords[j][i] = out[j];
     }
     for (auto& nCoord : lagrangeNodeCoords)
-      nCoord = ele.geometry().global(nCoord);
+      nCoord = localView.element().geometry().global(nCoord);
   }
 
 }  // namespace Ikarus
