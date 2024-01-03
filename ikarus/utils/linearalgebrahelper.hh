@@ -9,7 +9,7 @@
 #include <random>
 
 #include <dune/common/tuplevector.hh>
-#include <dune/functions/functionspacebases/lagrangedgbasis.hh>
+#include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/istl/bvector.hh>
 #include <dune/istl/multitypeblockvector.hh>
 
