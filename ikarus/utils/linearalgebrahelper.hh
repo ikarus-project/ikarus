@@ -9,6 +9,7 @@
 #include <random>
 
 #include <dune/common/tuplevector.hh>
+#include <dune/functions/functionspacebases/lagrangedgbasis.hh>
 #include <dune/istl/bvector.hh>
 #include <dune/istl/multitypeblockvector.hh>
 
@@ -361,5 +362,28 @@ namespace Ikarus {
    */
   template <int dim>
   constexpr auto voigtNotationContainer = std::get<dim - 1>(Impl::voigtIndices);
+
+  /* A function to obtain the global positions of the nodes of an element with Lagrangian basis
+   * (Refer - Dune Book Section 8.3.1, Page 314)
+   */
+  template <typename ElementType, typename LocalFE, int size>
+  void obtainLagrangeNodePositions(const ElementType& ele, const LocalFE& localFE,
+                                   std::vector<Dune::FieldVector<double, size>>& lagrangeNodeCoords) {
+    static_assert(
+        std::is_same_v<std::remove_cvref_t<decltype(localFE.localView().tree().child(0))>,
+                       Dune::Functions::LagrangeNode<
+                           std::remove_cvref_t<decltype(localFE.localView().globalBasis().gridView())>, size, double>>,
+        "This function is only supported for Lagrange basis");
+    lagrangeNodeCoords.resize(localFE.size());
+    std::vector<double> out;
+    for (int i = 0; i < size; i++) {
+      auto ithCoord = [&i](const Dune::FieldVector<double, size>& x) { return x[i]; };
+      localFE.localInterpolation().interpolate(ithCoord, out);
+      for (std::size_t j = 0; j < out.size(); j++)
+        lagrangeNodeCoords[j][i] = out[j];
+    }
+    for (auto& nCoord : lagrangeNodeCoords)
+      nCoord = ele.geometry().global(nCoord);
+  }
 
 }  // namespace Ikarus
