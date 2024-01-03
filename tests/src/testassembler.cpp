@@ -156,9 +156,9 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
 
     constexpr double tol = 1e-8;
     auto localView       = basis.flat().localView();
-    for (auto &ele : elements(gridView)) {
+    for (auto& ele : elements(gridView)) {
       localView.bind(ele);
-      const auto &fe = localView.tree().child(0).finiteElement();
+      const auto& fe = localView.tree().child(0).finiteElement();
       std::vector<Dune::FieldVector<double, 2>> nodalPos;
       Ikarus::obtainLagrangeNodePositions<order>(localView, nodalPos);
       for (int i = 0; i < fe.size(); i++)
