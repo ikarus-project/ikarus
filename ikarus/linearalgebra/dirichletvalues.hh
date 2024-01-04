@@ -72,6 +72,13 @@ namespace Ikarus {
       f(basis_, dirichletFlagsBackend);
     }
 
+    /**
+     * \brief Function to fix (set boolean values to true or false) of degrees of freedom
+     *
+     * \param i An index indicating the DOF number to be fixed
+     */
+    void fixIthDOF(typename Basis::MultiIndex i) { dirichletFlagsBackend[i] = true; }
+
     /* \brief Returns the local basis object */
     const auto& basis() const { return basis_; }
 

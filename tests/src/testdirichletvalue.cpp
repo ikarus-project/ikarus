@@ -24,6 +24,7 @@
 #include <ikarus/utils/duneutilities.hh>
 #include <ikarus/utils/eigendunetransformations.hh>
 #include <ikarus/utils/init.hh>
+#include <ikarus/utils/linearalgebrahelper.hh>
 
 using Dune::TestSuite;
 
@@ -31,7 +32,9 @@ static auto dirichletBCTest() {
   TestSuite t("SimpleAssemblersTest");
   using Grid = Dune::YaspGrid<2>;
 
-  Dune::FieldVector<double, 2> bbox       = {4, 2};
+  const double Lx                         = 4.0;
+  const double Ly                         = 2.0;
+  Dune::FieldVector<double, 2> bbox       = {Lx, Ly};
   std::array<int, 2> elementsPerDirection = {2, 1};
   auto grid                               = std::make_shared<Grid>(bbox, elementsPerDirection);
 
@@ -136,6 +139,28 @@ static auto dirichletBCTest() {
   dirichletValues3.evaluateInhomogeneousBoundaryCondition(disps2, lambda3);
   dirichletValues3.evaluateInhomogeneousBoundaryConditionDerivative(dispDerivs2, lambda3);
   t.check(disps2.isApprox(dispDerivs2 * lambda3));
+
+  // Check if all boundary DOFs found manually using obtainLagrangeNodePositions is the same as using forEachBoundaryDOF
+  Ikarus::DirichletValues dirichletValues4(basisP->flat());
+  constexpr double tol = 1e-8;
+  auto localView       = basis.flat().localView();
+  for (auto& ele : elements(gridView)) {
+    localView.bind(ele);
+    const auto& fe = localView.tree().child(0).finiteElement();
+    std::vector<Dune::FieldVector<double, 2>> nodalPos;
+    Ikarus::obtainLagrangeNodePositions<1>(localView, nodalPos);
+    for (int i = 0; i < fe.size(); i++)
+      if ((std::abs(nodalPos[i][0]) < tol) or (std::abs(nodalPos[i][0] - Lx) < tol) or (std::abs(nodalPos[i][1]) < tol)
+          or (std::abs(nodalPos[i][1] - Ly) < tol))
+        for (auto fixedDirection = 0; fixedDirection < 2; ++fixedDirection) {
+          auto fixIndex = localView.index(localView.tree().child(fixedDirection).localIndex(i));
+          dirichletValues4.fixIthDOF(fixIndex);
+        }
+  }
+
+  for (std::size_t i = 0; i < basisP->flat().size(); ++i)
+    t.check(dirichletValues1.isConstrained(i) == dirichletValues4.isConstrained(i))
+        << "Different dirichlet value creations didn't provide the same result. Index: i=" << i;
 
   return t;
 }

@@ -25,6 +25,7 @@ via `pip install pyikarus` ([#152](https://github.com/ikarus-project/ikarus/pull
 - Added getRawMatrix/getRawVector functionality to the assemblers ([#179](https://github.com/ikarus-project/ikarus/pull/179))
 - Add Clang 16 support ([#186](https://github.com/ikarus-project/ikarus/pull/176))
 - Added a default adaptive step sizing possibility and refactored loggers ([#193](https://github.com/ikarus-project/ikarus/pull/193))
+- Added a wrapper to fix Dirichlet BCs for Lagrange Nodes ([#222](https://github.com/ikarus-project/ikarus/pull/222))
 
 - Improve material library and Python bindings ([#186](https://github.com/ikarus-project/ikarus/pull/176)), default e.g.
   `StVenantKirchhoff` is
