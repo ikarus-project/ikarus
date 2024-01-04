@@ -17,6 +17,7 @@
 #include <ikarus/finiteelements/febases/powerbasisfe.hh>
 #include <ikarus/finiteelements/fehelper.hh>
 #include <ikarus/finiteelements/ferequirements.hh>
+#include <ikarus/finiteelements/mechanics/loads.hh>
 #include <ikarus/finiteelements/mechanics/materials.hh>
 #include <ikarus/finiteelements/mechanics/membranestrains.hh>
 #include <ikarus/finiteelements/physicshelper.hh>
@@ -315,6 +316,7 @@ namespace Ikarus {
       using namespace Dune;
       const auto uFunction = displacementFunction(par, dx);
       const auto& lambda   = par.getParameter(FEParameter::loadfactor);
+      Loads loads(*this);
 
       // Internal forces
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
@@ -337,41 +339,11 @@ namespace Ikarus {
       }
 
       // External forces volume forces over the domain
-      if (volumeLoad) {
-        const auto u = displacementFunction(par, dx);
-        for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
-          Eigen::Vector<double, worldDim> fext = volumeLoad(geo_->global(gp.position()), lambda);
-          for (size_t i = 0; i < numberOfNodes; ++i) {
-            const auto udCi = uFunction.evaluateDerivative(gpIndex, wrt(coeff(i)));
-            force.template segment<worldDim>(worldDim * i)
-                -= udCi * fext * geo_->integrationElement(gp.position()) * gp.weight();
-          }
-        }
-      }
+      if (volumeLoad) loads.volume(par, force, dx);
 
+      // External forces, boundary forces, i.e., at the Neumann boundary
       if (not neumannBoundary and not neumannBoundaryLoad) return;
-
-      // External forces, boundary forces, i.e. at the Neumann boundary
-      for (auto&& intersection : intersections(neumannBoundary->gridView(), this->localView().element())) {
-        if (not neumannBoundary or not neumannBoundary->contains(intersection)) continue;
-
-        const auto& quadLine = QuadratureRules<double, Element::mydimension - 1>::rule(intersection.type(), order);
-
-        for (const auto& curQuad : quadLine) {
-          // Local position of the quadrature point
-          const FieldVector<double, Element::mydimension>& quadPos
-              = intersection.geometryInInside().global(curQuad.position());
-
-          const double intElement = intersection.geometry().integrationElement(curQuad.position()) * curQuad.weight();
-          for (size_t i = 0; i < numberOfNodes; ++i) {
-            const auto udCi = uFunction.evaluateDerivative(quadPos, wrt(coeff(i)));
-
-            // Value of the Neumann data at the current position
-            auto neumannValue = neumannBoundaryLoad(intersection.geometry().global(curQuad.position()), lambda);
-            force.template segment<worldDim>(worldDim * i) -= udCi * neumannValue * intElement;
-          }
-        }
-      }
+      loads.traction(par, neumannBoundary, force, dx);
     }
 
     template <typename ScalarType>
@@ -382,6 +354,10 @@ namespace Ikarus {
       const auto uFunction = displacementFunction(par, dx);
       const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
       ScalarType energy    = 0.0;
+        const auto disp           = Dune::viewAsFlatEigenVector(uFunction.coefficientsRef());
+        Eigen::VectorX<ScalarType> force;
+        force.setZero(numberOfNodes * worldDim);
+        Loads loads(*this);
 
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
         const auto [C, epsV, kappaV, j, J, h, H, a3N, a3]
@@ -392,38 +368,16 @@ namespace Ikarus {
         energy += (membraneEnergy + bendingEnergy) * geo_->integrationElement(gp.position()) * gp.weight();
       }
 
-      if (volumeLoad) {
-        for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
-          const auto u                               = uFunction.evaluate(gpIndex);
-          const Eigen::Vector<double, worldDim> fExt = volumeLoad(geo_->global(gp.position()), lambda);
-          energy -= u.dot(fExt) * geo_->integrationElement(gp.position()) * gp.weight();
-        }
-      }
+        // External forces volume forces over the domain
+        if (volumeLoad) loads.volume(par, force, dx);
+        energy += static_cast<ScalarType>(force.transpose() * disp);
+        force.setZero();
 
-      if (not neumannBoundary and not neumannBoundaryLoad) return energy;
+        // line or surface loads, i.e., neumann boundary
+        if (not neumannBoundary and not neumannBoundaryLoad) return energy;
+        loads.traction(par, neumannBoundary, force, dx);
 
-      // line or surface loads, i.e., neumann boundary
-      const auto& element = this->localView().element();
-      for (auto&& intersection : intersections(neumannBoundary->gridView(), element)) {
-        if (not neumannBoundary or not neumannBoundary->contains(intersection)) continue;
-
-        const auto& quadLine = QuadratureRules<double, Traits::mydim - 1>::rule(intersection.type(), order);
-
-        for (const auto& curQuad : quadLine) {
-          // Local position of the quadrature point
-          const FieldVector<double, Traits::mydim>& quadPos
-              = intersection.geometryInInside().global(curQuad.position());
-
-          const double intElement = intersection.geometry().integrationElement(curQuad.position());
-
-          // The value of the local function
-          const auto u = uFunction.evaluate(quadPos);
-
-          // Value of the Neumann data at the current position
-          const auto neumannValue = neumannBoundaryLoad(intersection.geometry().global(curQuad.position()), lambda);
-          energy -= neumannValue.dot(u) * curQuad.weight() * intElement;
-        }
-      }
+        energy += static_cast<ScalarType>(force.transpose() * disp);
       return energy;
     }
 
