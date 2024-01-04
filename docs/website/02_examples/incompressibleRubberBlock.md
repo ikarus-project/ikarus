@@ -96,18 +96,17 @@ Here, all the element edges lying on the boundary of the physical domain are loo
 of the center of the edge (`intersection.geometry().center()[1]`) is close to zero. If this is the case, the corresponding $x$-displacement
 degrees of freedom (obtained via `subspaceBasis(basis_, _0)`) are set to `true` and used by the assembler later.
 
-A `sparse` and a `dense` assembler are used to arrive at the stiffness matrix and the external load vector using the
+A `sparse` assembler is used to arrive at the stiffness matrix and the external load vector using the
 finite element requirements as described [here](../01_framework/feRequirements.md#fe-requirements).
 
 ```cpp
 auto sparseFlatAssembler = SparseFlatAssembler(fes, dirichletValues);
-auto denseFlatAssembler  = DenseFlatAssembler(fes, dirichletValues);
 auto req = FErequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
 
 auto fextFunction = [&](auto &&lambdaLocal, auto &&dLocal) -> auto & {
   req.insertGlobalSolution(Ikarus::FESolutions::displacement, dLocal)
       .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal);
-  return denseFlatAssembler.getReducedVector(req);
+  return sparseFlatAssembler.getReducedVector(req);
 };
 auto KFunction = [&](auto &&lambdaLocal, auto &&dLocal) -> auto & {
   req.insertGlobalSolution(Ikarus::FESolutions::displacement, dLocal)
@@ -138,6 +137,6 @@ vtkWriter.write("iks003_incompressibleLinearElasticity");
 - Easier implementation of mixed finite elements is possible due to the composite basis feature from Dune.
 - Helper functions are included to switch between the Lame parameters.
 - Grids from Dune can be directly incorporated within the Ikarus framework.
-- Sparse and dense assemblers can be used to construct the global stiffness matrices and load vectors.
+- Sparse assembler can be used to construct the global stiffness matrices and load vectors.
 - Solvers from the Eigen library can be used to solve the linear system of equations.
 - Post-processing can be done via Paraview after writing the `*.vtu` files using `Dune::VTKWriter`.
