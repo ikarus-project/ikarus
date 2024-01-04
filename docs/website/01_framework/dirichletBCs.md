@@ -38,9 +38,9 @@ auto size() const ; // (8)!
 3. A more general version of `fixBoundaryDOFs`. Here, a functor is to be provided that accepts a basis and the corresponding boolean
 4. A function that helps to fix the $i$-th degree of freedom
    vector considering the Dirichlet degrees of freedom.
-4. Returns the underlying basis.
-5. Indicates whether the degree of freedom `i` is fixed.
-6. Returns the number of fixed degrees of freedom.
-7. Returns the number of all dirichlet degrees of freedom.
+5. Returns the underlying basis.
+6. Indicates whether the degree of freedom `i` is fixed.
+7. Returns the number of fixed degrees of freedom.
+8. Returns the number of all dirichlet degrees of freedom.
 
 \bibliography

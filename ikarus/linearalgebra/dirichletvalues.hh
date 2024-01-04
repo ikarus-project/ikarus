@@ -77,7 +77,7 @@ namespace Ikarus {
      *
      * \param i An index indicating the DOF number to be fixed
      */
-    void fixIthDOF(std::size_t i) { dirichletFlags[i] = true; }
+    void fixIthDOF(typename Basis::MultiIndex i) { dirichletFlagsBackend[i] = true; }
 
     /* \brief Returns the local basis object */
     const auto& basis() const { return basis_; }

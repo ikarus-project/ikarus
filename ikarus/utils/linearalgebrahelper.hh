@@ -363,8 +363,16 @@ namespace Ikarus {
   template <int dim>
   constexpr auto voigtNotationContainer = std::get<dim - 1>(Impl::voigtIndices);
 
-  /* A function to obtain the global positions of the nodes of an element with Lagrangian basis
-   * (Refer - Dune Book Section 8.3.1, Page 314)
+  /**
+   * \brief A function to obtain the global positions of the nodes of an element with Lagrangian basis, see Dune book
+   * page 314
+   *
+   * \tparam order Polynomial order of the Lagrangian basis
+   * \tparam size Size of the nodal coordinate vector
+   * \tparam LocalView Type of the local view
+   *
+   * \param localView Local View bounded to an element
+   * \param lagrangeNodeCoords A vector of nodal coordinates to be updated
    */
   template <int order, int size, typename LocalView>
   void obtainLagrangeNodePositions(const LocalView& localView,
