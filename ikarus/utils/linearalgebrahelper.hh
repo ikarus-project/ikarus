@@ -371,7 +371,7 @@ namespace Ikarus {
    * \tparam size Size of the nodal coordinate vector
    * \tparam LocalView Type of the local view
    *
-   * \param localView Local View bounded to an element
+   * \param localView Local view bounded to an element
    * \param lagrangeNodeCoords A vector of nodal coordinates to be updated
    */
   template <int order, int size, typename LocalView>
