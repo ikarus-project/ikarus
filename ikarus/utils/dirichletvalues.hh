@@ -1,5 +1,12 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
+
+/**
+ * @file dirichletvalues.hh
+ * @brief Definition of DirichletValues class for handling Dirichlet boundary conditions.
+ *
+ */
+
 #pragma once
 #include <algorithm>
 #include <concepts>
@@ -25,6 +32,16 @@ namespace Dune {
 
 namespace Ikarus {
 
+  /**
+   * @brief Class for handling Dirichlet boundary conditions in Ikarus.
+   * \ingroup  utils
+   * \details The DirichletValues class provides functionalities for fixing degrees of freedom and storing inhomogeneous
+   * Dirichlet boundary conditions. It supports fixing degrees of freedom using various callback functions and
+   * stores functions for inhomogeneous Dirichlet boundary conditions.
+   *
+   * @tparam Basis_ Type of the finite element basis
+   * @tparam FlagsType_ Type for storing Dirichlet flags (default is std::vector<bool>)
+   */
   template <typename Basis_, typename FlagsType_ = std::vector<bool>>
   class DirichletValues {
   public:
@@ -39,10 +56,12 @@ namespace Ikarus {
     }
 
     /**
-     * \brief Function to fix (set boolean values to true or false) of degrees of freedom
+     * @brief Function to fix (set boolean values to true or false) degrees of freedom on the boundary.
      *
-     * \param f A callback that will be called with the boolean vector of fixed boundary
-     * degrees of freedom and the usual arguments of `Dune::Functions::forEachBoundaryDOF`, see Dune book page 388
+     * This function takes a callback function, which will be called with the boolean vector of fixed boundary
+     * degrees of freedom and the usual arguments of `Dune::Functions::forEachBoundaryDOF`.
+     *
+     * @param f A callback function
      */
     template <typename F>
     void fixBoundaryDOFs(F&& f) {
@@ -62,10 +81,12 @@ namespace Ikarus {
     }
 
     /**
-     * \brief Function to fix (set boolean values to true or false) of degrees of freedom
+     * @brief Function to fix (set boolean values to true or false) degrees of freedom.
      *
-     * \param f A callback that will be called with the stored function space basis and the boolean vector of fixed
-     * boundary degrees of freedom
+     * This function takes a callback function, which will be called with the stored function space basis and
+     * the boolean vector of fixed boundary degrees of freedom.
+     *
+     * @param f A callback function
      */
     template <typename F>
     void fixDOFs(F&& f) {
@@ -101,10 +122,13 @@ namespace Ikarus {
     auto& container() const { return dirichletFlags; }
 
     /**
-     * \brief Function to insert a function of inhomogeneous dirichlet boundary functions
+     * @brief Function to insert a function for inhomogeneous Dirichlet boundary conditions.
      *
-     * \param f A callback that will be called with the current coordinate vector and the scalar load factor
-     * It creates internally the first derivative of the passed function and stores them simultaneously
+     * \details This function takes a callback function, which will be called with the current coordinate vector
+     * and the scalar load factor. It creates internally the first derivative of the passed function and
+     * stores them simultaneously.
+     *
+     * @param f A callback function
      */
     template <typename F>
     void storeInhomogeneousBoundaryCondition(F&& f) {
@@ -117,11 +141,13 @@ namespace Ikarus {
     }
 
     /**
-     * \brief Function to evaluate all stored inhomogeneous dirichlet boundary functions at all positions where the
-     * corresponding degrees of freedom are true
+     * @brief Function to evaluate all stored inhomogeneous Dirichlet boundary functions.
      *
-     * \param xIh The vector where the interpolated result should be stored
-     * \param lambda the load factor
+     * This function evaluates all stored inhomogeneous Dirichlet boundary functions at all positions where the
+     * corresponding degrees of freedom are true.
+     *
+     * @param xIh The vector where the interpolated result should be stored
+     * @param lambda The load factor
      */
     void evaluateInhomogeneousBoundaryCondition(Eigen::VectorXd& xIh, const double& lambda) {
       inhomogeneousBoundaryVectorDummy.setZero();
@@ -136,11 +162,13 @@ namespace Ikarus {
     }
 
     /**
-     * \brief Function to evaluate all stored inhomogeneous dirichlet boundary DERIVATIVE functions at all positions
-     * where the corresponding degrees of freedom are true
+     * @brief Function to evaluate all stored inhomogeneous Dirichlet boundary derivative functions.
      *
-     * \param xIh The vector where the interpolated result should be stored
-     * \param lambda the load factor
+     * This function evaluates all stored inhomogeneous Dirichlet boundary derivative functions at all positions
+     * where the corresponding degrees of freedom are true.
+     *
+     * @param xIh The vector where the interpolated result should be stored
+     * @param lambda The load factor
      */
     void evaluateInhomogeneousBoundaryConditionDerivative(Eigen::VectorXd& xIh, const double& lambda) {
       inhomogeneousBoundaryVectorDummy.setZero();

@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * \file dirichletvalues.hh
+ * \brief Python bindings for DirichletValues
+ */
+
 #pragma once
 
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
@@ -18,7 +23,28 @@
 // PYBIND11_MAKE_OPAQUE(std::vector<bool>);
 namespace Ikarus::Python {
 
-  // Python wrapper for the FVAssembler C++ class
+  /**
+   * \brief Register Python bindings for a DirichletValues class.
+   *
+   * This function registers Python bindings for a DirichletValues class, allowing it to be used in Python scripts.
+   * The registered class will have an initializer that takes a `Basis` object. It exposes several member functions to
+   * Python:
+   *   - `fixBoundaryDOFs(f)`: Fixes boundary degrees of freedom using a user-defined function `f`.
+   *   - `fixBoundaryDOFsUsingLocalView(f)`: Fixes boundary degrees of freedom using a user-defined function `f` with a
+   * `LocalView` argument.
+   *   - `fixBoundaryDOFsUsingLocalViewAndIntersection(f)`: Fixes boundary degrees of freedom using a user-defined
+   * function `f` with `LocalView` and `Intersection` arguments.
+   *   - `fixDOFs(f)`: Fixes boundary degrees of freedom using a user-defined function `f` with the boolean vector and
+   * the basis as arguments.
+   *
+   * \tparam DirichletValues The DirichletValues class to be registered.
+   * \tparam options Variadic template parameters for additional options when defining the Python class.
+   *
+   * \param scope A Pybind11 handle representing the Python scope where the class should be registered.
+   * \param cls The Pybind11 class template to be used for registering the DirichletValues class.
+   *
+   * \ingroup pythonbindings
+   */
   template <class DirichletValues, class... options>
   void registerDirichletValues(pybind11::handle scope, pybind11::class_<DirichletValues, options...> cls) {
     using pybind11::operator""_a;

@@ -12,10 +12,12 @@
 #if HAVE_DUNE_LOCALFEFUNCTIONS
 #  include <dune/localfefunctions/manifolds/realTuple.hh>
 #  include <dune/localfefunctions/manifolds/unitVector.hh>
+
 #endif
-#include <ikarus/linearalgebra/nonlinearoperator.hh>
 #include <ikarus/solver/nonlinearsolver/trustregion.hh>
 #include <ikarus/utils/init.hh>
+#include <ikarus/utils/linearalgebrahelper.hh>
+#include <ikarus/utils/nonlinearoperator.hh>
 
 using namespace Ikarus;
 using Dune::TestSuite;
@@ -44,12 +46,12 @@ static auto trustRegion1() {
   auto fvLambda   = [](auto&& xL) { return f(xL); };
   auto dfvLambda  = [](auto&& xL) { return df(xL); };
   auto ddfvLambda = [](auto&& xL) { return ddf(xL); };
-  Ikarus::NonLinearOperator nonLinOp(functions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
+  NonLinearOperator nonLinOp(functions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
 
   Eigen::Vector<double, 1> xExpected;
   xExpected << 0;
 
-  auto tr = Ikarus::makeTrustRegion(nonLinOp);
+  auto tr = makeTrustRegion(nonLinOp);
   tr->setup({.verbosity = 1, .Delta0 = 1});
   const auto solverInfo = tr->solve();
 
@@ -415,7 +417,7 @@ static auto trustRegion5_RiemanianUnitSphereAndDispBlocked() {
   t.check(isApproxSame(dfvLambda(mT), nonLinOp.derivative(), 1e-15));
   t.check(isApproxSame(ddfvLambda(mT), nonLinOp.secondDerivative(), 1e-15));
 
-  Ikarus::TrustRegion tr3(nonLinOp);
+  TrustRegion tr3(nonLinOp);
   constexpr double tol = 1e-12;
   tr3.setup({.verbosity = 1, .maxiter = 1000, .grad_tol = tol, .corr_tol = tol, .Delta0 = 0.1});
   const auto solverInfo3 = tr3.solve();

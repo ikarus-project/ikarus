@@ -1,5 +1,11 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
+
+/**
+ * \file init.hh
+ * \brief Implementation of the init function
+ */
+
 #pragma once
 
 #include <chrono>
@@ -17,13 +23,29 @@
 
 namespace Ikarus {
 
+  /**
+   * @brief Singleton class representing an instance of the Ikarus framework.
+   *
+   * This class manages the initialization and configuration of the Ikarus framework.
+   * It provides functionality to enable a file logger and prints a banner and version information on initialization.
+   */
   class IkarusInstance {
   public:
+    /**
+     * @brief Gets the singleton instance of the Ikarus framework.
+     *
+     * @return The singleton instance.
+     */
     static IkarusInstance& getInstance() {
       static IkarusInstance instance;
       return instance;
     }
 
+    /**
+     * @brief Enables a file logger.
+     *
+     * @param filename The name of the log file. If empty, the executable name is used.
+     */
     void enableFileLogger(std::string&& filename = "") {
       using namespace std::chrono;
       std::string currentTime = fmt::format("_{}", std::chrono::system_clock::now());
@@ -49,7 +71,14 @@ namespace Ikarus {
     void operator=(IkarusInstance const&) = delete;
   };
 
-  void init(int argc, char** argv, bool enableFileLogger = true) {
+  /**
+   * @brief Initializes the Ikarus framework.
+   *
+   * @param argc The number of command-line arguments.
+   * @param argv The command-line arguments.
+   * @param enableFileLogger Flag indicating whether to enable the file logger.
+   */
+  void inline init(int argc, char** argv, bool enableFileLogger = true) {
     Dune::MPIHelper::instance(argc, argv);
     auto& instance          = IkarusInstance::getInstance();
     instance.executableName = argv[0];
@@ -58,7 +87,7 @@ namespace Ikarus {
     if (enableFileLogger) instance.enableFileLogger();
 
     auto currentTime = std::chrono::system_clock::now();
-    std::chrono::year_month_day currentYearMonthDay{floor<std::chrono::days>(currentTime)};
+    const std::chrono::year_month_day currentYearMonthDay{floor<std::chrono::days>(currentTime)};
 
     spdlog::info("Start of execution: {}", currentTime);
     /// https://patorjk.com/software/taag/#p=testall&f=Univers&t=IKARUS (font: Lean)

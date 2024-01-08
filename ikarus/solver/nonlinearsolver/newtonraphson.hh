@@ -1,11 +1,13 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * \file newtonraphson.hh
+ * \brief Implementation of the Newton-Raphson method for solving nonlinear equations.
+ */
+
 #pragma once
 
-#include <iosfwd>
-
-#include <ikarus/linearalgebra/nonlinearoperator.hh>
 #include <ikarus/solver/linearsolver/linearsolver.hh>
 #include <ikarus/solver/nonlinearsolver/solverinfos.hh>
 #include <ikarus/utils/concepts.hh>
@@ -16,24 +18,47 @@
 
 namespace Ikarus {
 
+  /**
+   * \struct NewtonRaphsonSettings
+   * \brief Settings for the Newton-Raphson solver.
+   */
   struct NewtonRaphsonSettings {
     double tol{1e-8};
     int maxIter{20};
   };
 
-  template <typename NonLinearOperatorImpl, typename LinearSolver = SolverDefault,
-            typename UpdateFunctionType_ = UpdateDefault>
+  /**
+   * \class NewtonRaphson
+   * \brief Implementation of the Newton-Raphson method for solving nonlinear equations.
+   * \tparam NonLinearOperatorImpl Type of the nonlinear operator to solve.
+   * \tparam LinearSolver Type of the linear solver used internally (default is SolverDefault).
+   * \tparam UpdateFunctionTypeImpl Type of the update function (default is UpdateDefault).
+   * \relates makeNewtonRaphson
+   * \ingroup solvers
+   */
+  template <typename NonLinearOperatorImpl, typename LinearSolver = utils::SolverDefault,
+            typename UpdateFunctionTypeImpl = utils::UpdateDefault>
   class NewtonRaphson : public IObservable<NonLinearSolverMessages> {
   public:
+    ///< Compile-time boolean indicating if the linear solver satisfies the non-linear solver concept
     static constexpr bool isLinearSolver
         = Ikarus::Concepts::LinearSolverCheck<LinearSolver, typename NonLinearOperatorImpl::DerivativeType,
                                               typename NonLinearOperatorImpl::ValueType>;
 
-    using ResultType         = typename NonLinearOperatorImpl::template ParameterValue<0>;
-    using UpdateFunctionType = UpdateFunctionType_;
+    ///< Type representing the parameter vector of the nonlinear operator.
+    using ValueType = typename NonLinearOperatorImpl::template ParameterValue<0>;
 
+    using UpdateFunctionType = UpdateFunctionTypeImpl;  ///< Type representing the update function.
+    using NonLinearOperator  = NonLinearOperatorImpl;   ///< Type of the non-linear operator
+
+    /**
+     * \brief Constructor for NewtonRaphson.
+     * \param p_nonLinearOperator Nonlinear operator to solve.
+     * \param p_linearSolver Linear solver used internally (default is SolverDefault).
+     * \param p_updateFunction Update function (default is UpdateDefault).
+     */
     explicit NewtonRaphson(const NonLinearOperatorImpl& p_nonLinearOperator, LinearSolver&& p_linearSolver = {},
-                           UpdateFunctionType_ p_updateFunction = {})
+                           UpdateFunctionTypeImpl p_updateFunction = {})
         : nonLinearOperator_{p_nonLinearOperator},
           linearSolver{std::move(p_linearSolver)},
           updateFunction{p_updateFunction} {
@@ -41,11 +66,20 @@ namespace Ikarus {
         correction.setZero(nonLinearOperator().value().size());
     }
 
-    using NonLinearOperator = NonLinearOperatorImpl;
-
+    /**
+     * \brief Set up the solver with the given settings.
+     * \param p_settings Newton-Raphson settings.
+     */
     void setup(const NewtonRaphsonSettings& p_settings) { settings = p_settings; }
 
+#ifndef DOXYGEN
     struct NoPredictor {};
+#endif
+    /**
+     * \brief Solve the nonlinear system.
+     * \param dx_predictor Predictor for the solution increment (default is NoPredictor).
+     * \return Information about the solution process.
+     */
     template <typename SolutionType = NoPredictor>
     requires std::is_same_v<SolutionType, NoPredictor> || std::is_convertible_v<
         SolutionType, std::remove_cvref_t<typename NonLinearOperatorImpl::ValueType>>
@@ -93,6 +127,10 @@ namespace Ikarus {
       return solverInformation;
     }
 
+    /**
+     * \brief Access the nonlinear operator.
+     * \return Reference to the nonlinear operator.
+     */
     auto& nonLinearOperator() { return nonLinearOperator_; }
 
   private:
@@ -103,10 +141,21 @@ namespace Ikarus {
     NewtonRaphsonSettings settings;
   };
 
-  template <typename NonLinearOperatorImpl, typename LinearSolver = SolverDefault, typename Update = UpdateDefault>
+  /**
+   * \brief Function to create a NewtonRaphson solver instance.
+   * \tparam NonLinearOperatorImpl Type of the nonlinear operator to solve.
+   * \tparam LinearSolver Type of the linear solver used internally (default is SolverDefault).
+   * \tparam UpdateFunctionType Type of the update function (default is UpdateDefault).
+   * \param p_nonLinearOperator Nonlinear operator to solve.
+   * \param p_linearSolver Linear solver used internally (default is SolverDefault).
+   * \param p_updateFunction Update function (default is UpdateDefault).
+   * \return Shared pointer to the NewtonRaphson solver instance.
+   */
+  template <typename NonLinearOperatorImpl, typename LinearSolver = utils::SolverDefault,
+            typename UpdateFunctionType = utils::UpdateDefault>
   auto makeNewtonRaphson(const NonLinearOperatorImpl& p_nonLinearOperator, LinearSolver&& p_linearSolver = {},
-                         Update&& p_updateFunction = {}) {
-    return std::make_shared<NewtonRaphson<NonLinearOperatorImpl, LinearSolver, Update>>(
+                         UpdateFunctionType&& p_updateFunction = {}) {
+    return std::make_shared<NewtonRaphson<NonLinearOperatorImpl, LinearSolver, UpdateFunctionType>>(
         p_nonLinearOperator, std::forward<LinearSolver>(p_linearSolver), std::move(p_updateFunction));
   }
 

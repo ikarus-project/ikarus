@@ -1,44 +1,65 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file kirchhoffloveshell.hh
+ * @brief Definition of the KirchhoffLoveShell class for Kirchhoff-Love shell elements in Ikarus.
+ */
+
 #pragma once
 
 #include <dune/fufem/boundarypatch.hh>
 #include <dune/geometry/quadraturerules.hh>
-#include <dune/geometry/type.hh>
 #include <dune/localfefunctions/cachedlocalBasis/cachedlocalBasis.hh>
-#include <dune/localfefunctions/expressions/greenLagrangeStrains.hh>
 #include <dune/localfefunctions/impl/standardLocalFunction.hh>
 #include <dune/localfefunctions/manifolds/realTuple.hh>
 
-#include <autodiff/forward/dual.hpp>
-#include <autodiff/forward/dual/eigen.hpp>
-
 #include <ikarus/finiteelements/febases/powerbasisfe.hh>
 #include <ikarus/finiteelements/ferequirements.hh>
-#include <ikarus/finiteelements/fetraits.hh>
 #include <ikarus/finiteelements/mechanics/materials.hh>
 #include <ikarus/finiteelements/physicshelper.hh>
-#include <ikarus/utils/eigendunetransformations.hh>
-#include <ikarus/utils/linearalgebrahelper.hh>
 
 namespace Ikarus {
 
+  /**
+   * @brief Helper function to calculate the energy for Kirchhoff-Love shell elements.
+   *
+   * This function calculates the energy for Kirchhoff-Love shell elements based on given strain and material
+   * properties.
+   *
+   *
+   * @tparam ScalarType The scalar type used for calculations.
+   * @param epsV The Green-Lagrange strains.
+   * @param Aconv Transformation matrix for strains.
+   * @param E Young's modulus.
+   * @param nu Poisson's ratio.
+   * @return The calculated energy.
+   */
   template <class ScalarType>
   ScalarType energyHelper(const Eigen::Vector<ScalarType, 3>& epsV, const auto& Aconv, double E, double nu) {
     const double lambda   = E * nu / ((1.0 + nu) * (1.0 - 2.0 * nu));
     const double mu       = E / (2.0 * (1.0 + nu));
     const double lambdbar = 2.0 * lambda * mu / (lambda + 2.0 * mu);
     Eigen::TensorFixedSize<double, Eigen::Sizes<3, 3, 3, 3>> moduli;
-    const auto AconvT = TensorCast(Aconv, std::array<Eigen::Index, 2>({3, 3}));
+    const auto AconvT = tensorView(Aconv, std::array<Eigen::Index, 2>({3, 3}));
     moduli            = lambdbar * dyadic(AconvT, AconvT).eval() + 2 * mu * symmetricFourthOrder<double>(Aconv, Aconv);
 
     auto C   = toVoigt(moduli);
     auto C33 = C({0, 1, 5}, {0, 1, 5}).eval();
-
     return 0.5 * epsV.dot(C33 * epsV);
   }
 
+  /**
+   * @brief Kirchhoff-Love shell finite element class.
+   *
+   * This class represents Kirchhoff-Love shell finite elements.
+   *
+   * @ingroup mechanics
+   *
+   * @tparam Basis_ The basis type for the finite element.
+   * @tparam FERequirements_ The type representing the requirements for finite element calculations.
+   * @tparam useEigenRef A boolean indicating whether to use Eigen references for efficiency.
+   */
   template <typename Basis_, typename FERequirements_ = FErequirements<>, bool useEigenRef = false>
   class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis> {
   public:
@@ -55,7 +76,23 @@ namespace Ikarus {
     static constexpr int myDim    = Traits::mydim;
     static constexpr int worlddim = Traits::worlddim;
 
-    template <typename VolumeLoad = LoadDefault, typename NeumannBoundaryLoad = LoadDefault>
+    /**
+     * @brief Constructor for the KirchhoffLoveShell class.
+     *
+     * Initializes the KirchhoffLoveShell instance with the given parameters.
+     *
+     * @tparam VolumeLoad The type representing the volume load function.
+     * @tparam NeumannBoundaryLoad The type representing the Neumann boundary load function.
+     * @param globalBasis The global basis for the finite element.
+     * @param element The local element to bind.
+     * @param emod Young's modulus of the material.
+     * @param nu Poisson's ratio of the material.
+     * @param thickness Thickness of the shell.
+     * @param p_volumeLoad The volume load function (optional, default is utils::LoadDefault).
+     * @param p_neumannBoundary The Neumann boundary patch (optional, default is nullptr).
+     * @param p_neumannBoundaryLoad The Neumann boundary load function (optional, default is LoadDefault).
+     */
+    template <typename VolumeLoad = utils::LoadDefault, typename NeumannBoundaryLoad = utils::LoadDefault>
     KirchhoffLoveShell(const Basis& globalBasis, const typename LocalView::Element& element, double emod, double nu,
                        double thickness, VolumeLoad p_volumeLoad = {},
                        const BoundaryPatch<GridView>* p_neumannBoundary = nullptr,
@@ -82,14 +119,25 @@ namespace Ikarus {
         localBasis.bind(Dune::QuadratureRules<double, myDim>::rule(this->localView().element().type(), order),
                         Dune::bindDerivatives(0, 1, 2));
 
-      if constexpr (!std::is_same_v<VolumeLoad, LoadDefault>) volumeLoad = p_volumeLoad;
-      if constexpr (!std::is_same_v<NeumannBoundaryLoad, LoadDefault>) neumannBoundaryLoad = p_neumannBoundaryLoad;
+      if constexpr (!std::is_same_v<VolumeLoad, utils::LoadDefault>) volumeLoad = p_volumeLoad;
+      if constexpr (!std::is_same_v<NeumannBoundaryLoad, utils::LoadDefault>)
+        neumannBoundaryLoad = p_neumannBoundaryLoad;
 
       assert(((not p_neumannBoundary and not neumannBoundaryLoad) or (p_neumannBoundary and neumannBoundaryLoad))
              && "If you pass a Neumann boundary you should also pass the function for the Neumann load!");
     }
 
   public:
+    /**
+     * @brief Get the displacement function and nodal displacements.
+     *
+     * Retrieves the displacement function and nodal displacements based on the given FERequirements.
+     *
+     * @tparam ScalarType The scalar type used for calculations.
+     * @param par The FERequirements.
+     * @param dx Optional additional displacement vector.
+     * @return A pair containing the displacement function and nodal displacements.
+     */
     template <typename ScalarType = double>
     auto getDisplacementFunction(const FERequirementType& par,
                                  const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
@@ -112,8 +160,26 @@ namespace Ikarus {
       return std::make_pair(uFunction, disp);
     }
 
-    inline double calculateScalar(const FERequirementType& par) const { return calculateScalarImpl<double>(par); }
+    /**
+     * @brief Calculate the scalar value.
+     *
+     * Calculates the scalar value based on the given FERequirements.
+     *
+     * @param par The FERequirements.
+     * @return The calculated scalar value.
+     */
+    double calculateScalar(const FERequirementType& par) const { return calculateScalarImpl<double>(par); }
 
+    /**
+     * @brief Calculate results at local coordinates.
+     *
+     * Calculates the results at the specified local coordinates based on the given requirements and stores them in the
+     * result container.
+     *
+     * @param req The result requirements.
+     * @param local The local coordinates at which results are to be calculated.
+     * @param result The result container to store the calculated values.
+     */
     void calculateAt([[maybe_unused]] const ResultRequirementsType& req,
                      [[maybe_unused]] const Dune::FieldVector<double, Traits::mydim>& local,
                      [[maybe_unused]] ResultTypeMap<double>& result) const {
@@ -138,6 +204,17 @@ namespace Ikarus {
     int order{};
 
   protected:
+    /**
+     * @brief Implementation to calculate the scalar value.
+     *
+     * Implementation to calculate the scalar value based on the given FERequirements and optional additional
+     * displacement.
+     *
+     * @tparam ScalarType The scalar type used for calculations.
+     * @param par The FERequirements.
+     * @param dx Optional additional displacement vector.
+     * @return The calculated scalar value.
+     */
     template <typename ScalarType>
     auto calculateScalarImpl(const FERequirementType& par, const std::optional<const Eigen::VectorX<ScalarType>>& dx
                                                            = std::nullopt) const -> ScalarType {

@@ -21,14 +21,14 @@
 #include <ikarus/finiteelements/mechanics/linearelastic.hh>
 #include <ikarus/finiteelements/mechanics/nonlinearelastic.hh>
 #include <ikarus/io/resultfunction.hh>
-#include <ikarus/linearalgebra/dirichletvalues.hh>
-#include <ikarus/linearalgebra/nonlinearoperator.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/solver/nonlinearsolver/trustregion.hh>
 #include <ikarus/utils/algorithms.hh>
 #include <ikarus/utils/basis.hh>
+#include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/drawing/griddrawer.hh>
 #include <ikarus/utils/init.hh>
+#include <ikarus/utils/nonlinearoperator.hh>
 #include <ikarus/utils/observer/controlvtkwriter.hh>
 
 using Dune::TestSuite;

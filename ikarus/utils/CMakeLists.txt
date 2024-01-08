@@ -8,7 +8,7 @@ install(
         basis.hh
         concepts.hh
         defaultfunctions.hh
-        duneutilities.hh
+        dirichletvalues.hh
         eigendunetransformations.hh
         eigensparseaddon.hh
         findlinesegment.hh
@@ -18,7 +18,9 @@ install(
         linearalgebrahelper.hh
         makeenum.hh
         math.hh
+        nonlinearoperator.hh
         polyfit.hh
+        pythonautodiffdefinitions.hh
         tensorutils.hh
         traits.hh
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/utils

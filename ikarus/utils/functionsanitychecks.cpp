@@ -8,7 +8,7 @@
 #include <matplot/matplot.h>
 #include <matplot/util/colors.h>
 
-namespace Ikarus {
+namespace Ikarus::utils::Impl {
   double drawResultAndReturnSlope(std::string&& functionName, const std::function<double(double)>& ftfunc, bool draw,
                                   int slopeOfReference) {
     using namespace matplot;
@@ -20,7 +20,7 @@ namespace Ikarus {
     std::vector<double> fexpectedSlope
         = transform(t, [slopeOfReference](auto t_) { return Dune::power(t_, slopeOfReference); });
     const int rangeSize      = 10;
-    const auto [poly, range] = Ikarus::findLineSegment(data.array().log10(), yE.array().log10(), rangeSize);
+    const auto [poly, range] = Ikarus::utils::findLineSegment(data.array().log10(), yE.array().log10(), rangeSize);
 
     if (draw) {
       auto f   = figure(true);
@@ -57,4 +57,4 @@ namespace Ikarus {
     return poly.coefficients()[1];
   }
 
-}  // namespace Ikarus
+}  // namespace Ikarus::utils::Impl

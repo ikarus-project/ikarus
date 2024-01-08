@@ -1,6 +1,14 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/*!
+ * \file simpleassemblers.inl
+ * \brief Implementation of assembler functions
+* @ingroup  assemblers
+ */
+
+#pragma once
+
 namespace Ikarus {
 
   template <typename Basis, typename FEContainer>

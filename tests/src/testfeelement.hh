@@ -10,9 +10,9 @@
 
 #include <ikarus/assembler/simpleassemblers.hh>
 #include <ikarus/finiteelements/ferequirements.hh>
-#include <ikarus/linearalgebra/dirichletvalues.hh>
-#include <ikarus/linearalgebra/nonlinearoperator.hh>
 #include <ikarus/utils/basis.hh>
+#include <ikarus/utils/dirichletvalues.hh>
+#include <ikarus/utils/nonlinearoperator.hh>
 
 /** These tests test your element on some gridElement with some basis
  *
@@ -132,8 +132,8 @@ inline auto checkResultFunctionFunctor
 inline auto checkFEByAutoDiffFunctor
     = [](auto& nonLinOp, auto& fe, auto& req) { return checkFEByAutoDiff(nonLinOp, fe, req); };
 
-auto checkCalculateAtFunctorFactory(const auto resultCollectionFunction) {
-  return [&](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req) {
+auto checkCalculateAtFunctorFactory(const auto& resultCollectionFunction) {
+  return [=](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req) {
     auto [resultRequirements, expectedStress, positions] = resultCollectionFunction(nonLinOp, fe);
     return checkCalculateAt(nonLinOp, fe, resultRequirements, expectedStress, positions);
   };

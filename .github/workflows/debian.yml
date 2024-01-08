@@ -37,7 +37,7 @@ jobs:
             compilerC: clang-16,
             compilerCxx: clang++-16,
             lib: "-stdlib=libc++",
-            testRegex: "cpp"
+            testRegex: "cpp_quick"
            }
           - {
             name: "Clang-16-Release",
@@ -53,7 +53,7 @@ jobs:
             compilerC: gcc-12,
             compilerCxx: g++-12,
             lib: "",
-            testRegex: "cpp"
+            testRegex: "cpp_quick"
           }
           - {
             name: "Gcc-12-Release",

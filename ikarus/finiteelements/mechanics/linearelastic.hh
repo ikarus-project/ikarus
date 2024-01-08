@@ -1,34 +1,43 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file linearelastic.hh
+ * @brief Definition of the LinearElastic class for finite element mechanics computations.
+ * @ingroup  mechanics
+ */
+
 #pragma once
+
 #if HAVE_DUNE_LOCALFEFUNCTIONS
 #  include <iosfwd>
 #  include <optional>
 #  include <type_traits>
 
-#  include <dune/common/classname.hh>
 #  include <dune/fufem/boundarypatch.hh>
 #  include <dune/geometry/quadraturerules.hh>
-#  include <dune/geometry/type.hh>
 #  include <dune/localfefunctions/expressions/linearStrainsExpr.hh>
 #  include <dune/localfefunctions/impl/standardLocalFunction.hh>
 #  include <dune/localfefunctions/manifolds/realTuple.hh>
 
-#  include <autodiff/forward/dual.hpp>
-#  include <autodiff/forward/dual/eigen.hpp>
-
 #  include <ikarus/finiteelements/febases/powerbasisfe.hh>
 #  include <ikarus/finiteelements/ferequirements.hh>
-#  include <ikarus/finiteelements/fetraits.hh>
 #  include <ikarus/finiteelements/mechanics/materials.hh>
 #  include <ikarus/finiteelements/physicshelper.hh>
 #  include <ikarus/utils/defaultfunctions.hh>
-#  include <ikarus/utils/eigendunetransformations.hh>
 #  include <ikarus/utils/linearalgebrahelper.hh>
 
 namespace Ikarus {
 
+  /**
+   * @brief LinearElastic class represents a linear elastic finite element.
+   *
+   * @ingroup mechanics
+   *
+   * @tparam Basis_ The basis type for the finite element.
+   * @tparam FERequirements_ The requirements for the finite element.
+   * @tparam useEigenRef A boolean flag indicating whether to use Eigen references.
+   */
   template <typename Basis_, typename FERequirements_ = FErequirements<>, bool useEigenRef = false>
   class LinearElastic : public PowerBasisFE<typename Basis_::FlatBasis> {
   public:
@@ -45,7 +54,20 @@ namespace Ikarus {
 
     static constexpr int myDim = Traits::mydim;
 
-    template <typename VolumeLoad = LoadDefault, typename NeumannBoundaryLoad = LoadDefault>
+    /**
+     * @brief Constructor for the LinearElastic class.
+     *
+     * @tparam VolumeLoad The type for the volume load function.
+     * @tparam NeumannBoundaryLoad The type for the Neumann boundary load function.
+     * @param globalBasis The global basis for the finite element.
+     * @param element The element for which the finite element is constructed.
+     * @param emod Young's modulus.
+     * @param nu Poisson's ratio.
+     * @param p_volumeLoad Volume load function (default is LoadDefault).
+     * @param p_neumannBoundary Neumann boundary patch (default is nullptr).
+     * @param p_neumannBoundaryLoad Neumann boundary load function (default is LoadDefault).
+     */
+    template <typename VolumeLoad = utils::LoadDefault, typename NeumannBoundaryLoad = utils::LoadDefault>
     LinearElastic(const Basis& globalBasis, const typename LocalView::Element& element, double emod, double nu,
                   VolumeLoad p_volumeLoad = {}, const BoundaryPatch<GridView>* p_neumannBoundary = nullptr,
                   NeumannBoundaryLoad p_neumannBoundaryLoad = {})
@@ -67,14 +89,21 @@ namespace Ikarus {
         localBasis.bind(Dune::QuadratureRules<double, myDim>::rule(this->localView().element().type(), order),
                         Dune::bindDerivatives(0, 1));
 
-      if constexpr (!std::is_same_v<VolumeLoad, LoadDefault>) volumeLoad = p_volumeLoad;
-      if constexpr (!std::is_same_v<NeumannBoundaryLoad, LoadDefault>) neumannBoundaryLoad = p_neumannBoundaryLoad;
+      if constexpr (!std::is_same_v<VolumeLoad, utils::LoadDefault>) volumeLoad = p_volumeLoad;
+      if constexpr (!std::is_same_v<NeumannBoundaryLoad, utils::LoadDefault>)
+        neumannBoundaryLoad = p_neumannBoundaryLoad;
 
       assert(((not p_neumannBoundary and not neumannBoundaryLoad) or (p_neumannBoundary and neumannBoundaryLoad))
              && "If you pass a Neumann boundary you should also pass the function for the Neumann load!");
     }
-
-  public:
+    /**
+     * @brief Gets the displacement function for the given FERequirementType and optional displacement vector.
+     *
+     * @tparam ScalarType The scalar type for the displacement vector.
+     * @param par The FERequirementType object.
+     * @param dx Optional displacement vector.
+     * @return The displacement function.
+     */
     template <typename ScalarType>
     auto getDisplacementFunction(const FERequirementType& par,
                                  const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
@@ -97,13 +126,25 @@ namespace Ikarus {
 
       return uFunction;
     }
-
+    /**
+     * @brief Gets the strain function for the given FERequirementType and optional displacement vector.
+     *
+     * @tparam ScalarType The scalar type for the strain vector.
+     * @param par The FERequirementType object.
+     * @param dx Optional displacement vector.
+     * @return The strain function.
+     */
     template <class ScalarType = double>
     auto getStrainFunction(const FERequirementType& par,
                            const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
       return linearStrains(getDisplacementFunction(par, dx));
     }
 
+    /**
+     * @brief Gets the material tangent matrix for the linear elastic material.
+     *
+     * @return The material tangent matrix.
+     */
     auto getMaterialTangent() const {
       if constexpr (myDim == 2)
         return planeStressLinearElasticMaterialTangent(emod_, nu_);
@@ -111,16 +152,40 @@ namespace Ikarus {
         return linearElasticMaterialTangent3D(emod_, nu_);
     }
 
+    /**
+     * @brief Gets the material tangent function for the given FERequirementType.
+     *
+     * @param par The FERequirementType object.
+     * @return The material tangent function.
+     */
     auto getMaterialTangentFunction([[maybe_unused]] const FERequirementType& par) const {
       return [&]([[maybe_unused]] auto gp) { return getMaterialTangent(); };
     }
 
+    /**
+     * @brief Calculates the scalar energy for the given FERequirementType.
+     *
+     * @param par The FERequirementType object.
+     * @return The scalar energy.
+     */
     inline double calculateScalar(const FERequirementType& par) const { return calculateScalarImpl<double>(par); }
 
+    /**
+     * @brief Calculates the vector force for the given FERequirementType.
+     *
+     * @param par The FERequirementType object.
+     * @param force Vector to store the calculated force.
+     */
     inline void calculateVector(const FERequirementType& par, typename Traits::template VectorType<> force) const {
       calculateVectorImpl<double>(par, force);
     }
 
+    /**
+     * @brief Calculates the matrix stiffness for the given FERequirementType.
+     *
+     * @param par The FERequirementType object.
+     * @param K Matrix to store the calculated stiffness.
+     */
     void calculateMatrix(const FERequirementType& par, typename Traits::template MatrixType<> K) const {
       const auto eps = getStrainFunction(par);
       using namespace Dune::DerivativeDirections;
@@ -128,7 +193,6 @@ namespace Ikarus {
 
       const auto C   = getMaterialTangent();
       const auto geo = this->localView().element().geometry();
-
       for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
         const double intElement = geo.integrationElement(gp.position()) * gp.weight();
         for (size_t i = 0; i < numberOfNodes; ++i) {
@@ -141,6 +205,13 @@ namespace Ikarus {
       }
     }
 
+    /**
+     * @brief Calculates results at a specific local position.
+     *
+     * @param req The ResultRequirementsType object specifying the requested results.
+     * @param local Local position vector.
+     * @param result Map to store the calculated results.
+     */
     void calculateAt(const ResultRequirementsType& req, const Dune::FieldVector<double, Traits::mydim>& local,
                      ResultTypeMap<double>& result) const {
       using namespace Dune::Indices;

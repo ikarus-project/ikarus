@@ -1,5 +1,16 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
+
+/**
+ * \file
+ * \brief Implementation of strain-related functions.
+ *
+ * This file provides implementation for strain-related functions, including the creation and transformation of
+ * different strain tensors.
+ *
+ * @ingroup  materials
+ */
+
 #pragma once
 #include "tags.hh"
 
@@ -20,6 +31,17 @@ namespace Ikarus {
     }
   }  // namespace Impl
 
+  /**
+   * \brief Create  Green-Lagrangian strain based on the input.
+   *
+   * This function creates Green-Lagrangian strains based on the input strain matrix.
+   * What to do is decided by the provided strain tag
+   * @ingroup  materials
+   * \tparam tag Type of the strain tag.
+   * \tparam Derived Type of the Eigen matrix.
+   * \param eMB Eigen matrix representing the input strain.
+   * \return The Green-Lagrangian strains matrix.
+   */
   template <StrainTags tag, typename Derived>
   auto createGreenLagrangianStrains(const Eigen::MatrixBase<Derived>& eMB) {
     const auto& e = eMB.derived();
@@ -34,6 +56,17 @@ namespace Ikarus {
       return (0.5 * (e - Derived::Identity())).eval();
   }
 
+  /**
+   * \brief Create the deformation gradient based on the input.
+   *
+   * This function creates deformation gradient based on the input strain matrix.
+   * What to do is decided by the provided strain tag
+   * @ingroup  materials
+   * \tparam tag Type of the strain tag.
+   * \tparam Derived Type of the Eigen matrix.
+   * \param eMB Eigen matrix representing the input strain.
+   * \return The deformation gradient matrix.
+   */
   template <StrainTags tag, typename Derived>
   decltype(auto) createDeformationGradient(const Eigen::MatrixBase<Derived>& eMB) {
     const auto& e = eMB.derived();
@@ -54,6 +87,17 @@ namespace Ikarus {
     }
   }
 
+  /**
+   * \brief Create right Cauchy-Green tensor based on the input.
+   *
+   * This function creates Right Cauchy-Green tensor based on the input strain matrix.
+   * What to do is decided by the provided strain tag
+   * @ingroup  materials
+   * \tparam tag Type of the strain tag.
+   * \tparam Derived Type of the Eigen matrix.
+   * \param eMB Eigen matrix representing the input strain.
+   * \return The Right Cauchy-Green tensor matrix.
+   */
   template <StrainTags tag, typename Derived>
   decltype(auto) createRightCauchyGreen(const Eigen::MatrixBase<Derived>& eMB) {
     const auto& e = eMB.derived();
@@ -73,6 +117,17 @@ namespace Ikarus {
     }
   }
 
+  /**
+   * \brief Transform strain from one type to another.
+   *
+   * This function transforms one strain component matrix from one type to another, based on the provided strain tags
+   * @ingroup  materials
+   * \tparam from Type of the source strain tag.
+   * \tparam to Type of the target strain tag.
+   * \tparam Derived Type of the Eigen matrix.
+   * \param eRaw Eigen matrix representing the input strain.
+   * \return The transformed strain matrix.
+   */
   template <StrainTags from, StrainTags to, typename Derived>
   decltype(auto) transformStrain(const Eigen::MatrixBase<Derived>& eRaw) {
     static_assert((from == to) or (from != StrainTags::linear and to != StrainTags::linear),

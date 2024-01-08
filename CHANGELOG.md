@@ -34,6 +34,7 @@ via `pip install pyikarus` ([#152](https://github.com/ikarus-project/ikarus/pull
 - `Ikarus::ILinearSolver` is no template anymore and renamed and uses double, use
 `Ikarus::LinearSolverT<...>` instead ([#186](https://github.com/ikarus-project/ikarus/pull/176)),
   if you need a fancy scalar type
+- Added doxygen class documentation
 
 ## Release v0.3 (Prometheus)
 

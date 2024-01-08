@@ -1,21 +1,39 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file interface.hh
+ * @brief Contains the Material interface class and related template functions for material properties.
+ * @ingroup  materials
+ */
+
 #pragma once
 
 #include <ikarus/finiteelements/mechanics/materials/strainconversions.hh>
 #include <ikarus/finiteelements/mechanics/materials/tags.hh>
 #include <ikarus/finiteelements/physicshelper.hh>
 #include <ikarus/utils/concepts.hh>
+#include <ikarus/utils/linearalgebrahelper.hh>
 #include <ikarus/utils/traits.hh>
 
 namespace Ikarus {
+
+#ifndef DOXYGEN
   template <class MaterialImpl>
   struct Material;
 
   template <auto stressIndexPair, typename MaterialImpl>
   struct VanishingStress;
+#endif
 
+  /**
+   * @brief Template function for checking if the strain size is correct.
+   *
+   * The given strain quantity has to be a Eigen::Vector6 or a Eigen::Matrix3
+   *
+   * @tparam Material Type of the material.
+   * @tparam Strains Type of the strains.
+   */
   template <typename Material, typename Strains>
   consteval bool hasCorrectSize() {
     if constexpr (Concepts::EigenVector6<Strains> or Concepts::EigenMatrix33<Strains>) return true;
@@ -25,37 +43,73 @@ namespace Ikarus {
       return false;
   }
 
+  /**
+   * @brief Template concept for ensuring correct strain size.
+   *
+   * @tparam Material Type of the material.
+   * @tparam Strains Type of the strains.
+   */
   template <typename Material, typename Strains>
   concept CorrectStrainSize = hasCorrectSize<Material, Strains>();
 
-  template <class MaterialImpl_>
+  /**
+   * @brief Interface classf or materials.
+   * @ingroup materials
+   *    \details Consider a hyper elastic material with the free Helmholtz energy
+   *        \f[\psi: \begin{cases}\mathbb{R}^{3\times 3} \rightarrow \mathbb{R} \\ \BC
+   * \mapsto \psi(\BC) \end{cases}.\f]
+   *
+   * Then, the value of this potential energy is return by \link Material< MaterialImpl >::storedEnergy storedEnergy
+   * \endlink and its first derivative (the stresses) by \link Material< MaterialImpl >::stresses stresses \endlink and
+   * the second derivatives (the tangent moduli) by \link Material< MaterialImpl >::tangentModuli tangentModuli
+   * \endlink.
+   *
+   * The passed strains can be in several formats, i.e.,
+   *   \f$\BC\f$ can be the [right Cauchy-Green
+   * tensor](https://en.wikipedia.org/wiki/Finite_strain_theory#Cauchy_strain_tensor_(right_Cauchy%E2%80%93Green_deformation_tensor)),
+   * the [deformation gradient](https://en.wikipedia.org/wiki/Finite_strain_theory#Deformation_gradient_tensor)
+   * \f$\mathbf{F}\f$ or linear strains. The current supported tags are given by Ikarus::StrainTags.
+   * @tparam MaterialImpl Type of the underlying material implementation.
+   */
+  template <class MaterialImpl>
   struct Material {
-    using MaterialImpl = MaterialImpl_;
+    using MaterialImplType = MaterialImpl;  ///< Type of material implementation
 
-    static constexpr bool isReduced
-        = Std::isSpecializationNonTypeAndTypes<Ikarus::VanishingStress, MaterialImpl>::value;
+    /**
+     * @brief Static constant for determining if the material has vanishing stress components (is reduced).
+     */
+    static constexpr bool isReduced = traits::isSpecializationNonTypeAndTypes<VanishingStress, MaterialImpl>::value;
 
-    /* Const accessor to the underlying material   */
-    constexpr MaterialImpl const &impl() const  // CRTP
-    {
-      return static_cast<MaterialImpl const &>(*this);
-    }
+    /**
+     * @brief Const accessor to the underlying material (CRTP).
+     *
+     * @return Const reference to the underlying material.
+     */
+    constexpr const MaterialImpl &impl() const { return static_cast<MaterialImpl const &>(*this); }
 
-    /* Const accessor to the underlying material   */
-    constexpr MaterialImpl &impl()  // CRTP
-    {
-      return static_cast<MaterialImpl &>(*this);
-    }
+    /**
+     * @brief Accessor to the underlying material (CRTP).
+     *
+     * @return Reference to the underlying material.
+     */
+    constexpr MaterialImpl &impl() { return static_cast<MaterialImpl &>(*this); }
 
-    /* Name of the material    */
+    /**
+     * @brief Get the name of the implemented material.
+     *
+     * @return Name of the material.
+     */
     [[nodiscard]] constexpr std::string name() const { return impl().nameImpl(); }
 
     /**
-     * Return the stored potential energy of the material
-     * @tparam The strain tag, which indicates, which strain tensor components are passed
-     * @tparam Derived The underlying Eigen type
-     * @param Eraw The strain tensor components, which can be passed in Voigt notation or matrix notation
-     * @return Scalar return of stored energy
+     * @brief Return the stored potential energy of the material.
+     *
+     *\details This function return the free Helmholtz energy of the material
+     *
+     * @tparam tag Strain tag indicating which strain tensor components are passed.
+     * @tparam Derived The underlying Eigen type.
+     * @param Eraw The strain tensor components passed in Voigt notation or matrix notation.
+     * @return Scalar return of stored energy.
      */
     template <StrainTags tag, typename Derived>
     requires CorrectStrainSize<MaterialImpl, Derived>
@@ -73,11 +127,13 @@ namespace Ikarus {
     }
 
     /**
-     * The stresses of the material
-     * @tparam The strain tag, which indicates, which strain tensor components are passed
-     * @tparam Derived The underlying Eigen type
-     * @param Eraw The strain tensor components, which can be passed in Voigt notation or matrix notation
-     * @return Vectorial or Matrix return of stresses
+     * @brief Get the stresses of the material.
+     *
+     * @tparam tag Strain tag indicating which strain tensor components are passed.
+     * @tparam voigt Boolean indicating whether to return Voigt-shaped result.
+     * @tparam Derived The underlying Eigen type.
+     * @param Eraw The strain tensor components passed in Voigt notation or matrix notation.
+     * @return Vectorial or Matrix return of stresses.
      */
     template <StrainTags tag, bool voigt = true, typename Derived>
     requires CorrectStrainSize<MaterialImpl, Derived>
@@ -85,18 +141,20 @@ namespace Ikarus {
       decltype(auto) Ev = enlargeIfReduced<Material>(Eraw);
       decltype(auto) E  = transformStrain<tag, MaterialImpl::strainTag>(Ev);
       if constexpr (voigt and MaterialImpl::stressToVoigt == false)
-        // user request a Voigt shaped return but material is not able to. Therefore, we transform it here.
+        // user requests a Voigt shaped return but material is not able to. Therefore, we transform it here.
         return toVoigt(stressesMaybeTransformInputToVoigt<false>(E), false);
       else
         return stressesMaybeTransformInputToVoigt<voigt>(E);
     }
 
     /**
-     * The tangentModuli of the material
-     * @tparam The strain tag, which indicates, which strain tensor components are passed
-     * @tparam Derived The underlying Eigen type
-     * @param Eraw The strain tensor components, which can be passed in Voigt notation or matrix notation
-     * @return tangent moduli in voigt notation or as fourth order tensor
+     * @brief Get the tangentModuli of the material.
+     *
+     * @tparam tag Strain tag indicating which strain tensor components are passed.
+     * @tparam voigt Boolean indicating whether to return Voigt-shaped result.
+     * @tparam Derived The underlying Eigen type.
+     * @param Eraw The strain tensor components passed in Voigt notation or matrix notation.
+     * @return Tangent moduli in Voigt notation or as fourth-order tensor.
      */
     template <StrainTags tag, bool voigt = true, typename Derived>
     requires CorrectStrainSize<MaterialImpl, Derived>
@@ -110,7 +168,14 @@ namespace Ikarus {
         return tangentModuliMaybeTransformInputToVoigt<voigt>(E);
     }
 
-    /* Rebind material to different scalar type (Useful for automatic differentiation  */
+    /**
+     * @brief Rebind material to a different scalar type.
+     *
+     * Useful for using automatic differentiation.
+     *
+     * @tparam ScalarTypeOther The scalar type to rebind to.
+     * @return Rebound material.
+     */
     template <typename ScalarTypeOther>
     auto rebind() const {
       return impl().template rebind<ScalarTypeOther>();

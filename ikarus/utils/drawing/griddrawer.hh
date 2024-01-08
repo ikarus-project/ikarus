@@ -1,6 +1,12 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * \file griddrawer.hh
+ * \brief Draw grid view using Matplot library
+ * \ingroup io
+ */
+
 #pragma once
 
 #include <matplot/matplot.h>
@@ -10,6 +16,17 @@
 
 #include <dune/geometry/dimension.hh>
 
+/**
+ * @brief Draw function for visualizing the elements of a DUNE grid view.
+ *
+ * This function uses the Matplot library to visualize the elements of a DUNE grid view. It draws the edges of the
+ * elements in either 2D or 3D space.
+ *
+ * @tparam GridView The type of the DUNE grid view.
+ * @param gridView The DUNE grid view to visualize.
+ * @param forever If true, the plot will be displayed until closed; otherwise, it will be displayed for a short
+ * duration.
+ */
 template <typename GridView>
 void draw(const GridView& gridView, bool forever = false) {
   using namespace matplot;

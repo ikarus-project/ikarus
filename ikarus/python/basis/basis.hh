@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * \file basis.hh
+ * \brief Python bindings for Ikarus basis
+ */
+
 #pragma once
 
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
@@ -17,7 +22,17 @@
 
 namespace Ikarus::Python {
 
-  // Python wrapper for the FVAssembler C++ class
+  /**
+   * \brief Register a Python wrapper for an Ikarus basis class.
+   *
+   * \tparam Basis The Ikarus basis class to be registered.
+   * \tparam options Variadic template parameters for additional options when defining the Python class.
+   *
+   * \param scope A Pybind11 handle representing the Python scope where the class should be registered.
+   * \param cls The Pybind11 class template to be used for registering the Ikarus basis class.
+   *
+   * \ingroup pythonbindings
+   */
   template <class Basis, class... options>
   void registerBasis(pybind11::handle scope, pybind11::class_<Basis, options...> cls) {
     using pybind11::operator""_a;

@@ -19,12 +19,12 @@
 
 #include <autodiff/forward/real/eigen.hpp>
 
-#include <ikarus/linearalgebra/dirichletvalues.hh>
 #include <ikarus/utils/basis.hh>
-#include <ikarus/utils/duneutilities.hh>
+#include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/eigendunetransformations.hh>
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/linearalgebrahelper.hh>
+#include <ikarus/utils/pythonautodiffdefinitions.hh>
 
 using Dune::TestSuite;
 

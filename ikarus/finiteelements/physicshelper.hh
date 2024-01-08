@@ -1,12 +1,26 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * \file physicshelper.hh
+ * \brief Material property functions and conversion utilities.
+ * \details This file contains material property functions and conversion utilities related to linear elasticity.
+ */
+
 #pragma once
 #include <dune/common/float_cmp.hh>
 
 #include <Eigen/Core>
 namespace Ikarus {
 
+  /**
+   * \brief Computes the plane stress linear elastic material tangent matrix.
+   *
+   * \param E Young's modulus.
+   * \param nu Poisson's ratio.
+   * \return 3x3 material tangent matrix.
+   * \deprecated Use the material library Ikarus::LinearElasticity.
+   */
   [[deprecated(
       "These are hard-coded function you should use the material library Ikarus::LinearElasticity")]] inline Eigen::
       Matrix3d
@@ -20,6 +34,14 @@ namespace Ikarus {
     return C;
   }
 
+  /**
+   * \brief Computes the 3D linear elastic material tangent matrix.
+   *
+   * \param E Young's modulus.
+   * \param nu Poisson's ratio.
+   * \return 6x6 material tangent matrix.
+   * \deprecated Use the material library Ikarus::LinearElasticity.
+   */
   [[deprecated(
       "These are hard-coded function you should use the material library: Ikarus::LinearElasticity")]] inline Eigen::
       Matrix<double, 6, 6>
@@ -33,6 +55,12 @@ namespace Ikarus {
     return C;
   }
 
+  /**
+   * \brief Traits for handling local views.
+   *
+   * \tparam LocalView Type of the local view.
+   * \tparam useRef Boolean indicating whether to use Eigen::Ref for VectorType and MatrixType.
+   */
   template <typename LocalView, bool useRef = false>
   struct TraitsFromLocalView {
     using GridEntity = typename LocalView::Element;
@@ -54,37 +82,48 @@ namespace Ikarus {
     using MatrixType = std::conditional_t<useRef, Eigen::Ref<Eigen::MatrixX<ScalarType>>, Eigen::MatrixX<ScalarType>&>;
   };
 
-  /// see https://en.wikipedia.org/wiki/Lam%C3%A9_parameters
+  ///<  Structure representing Young's modulus and Poisson's ratio. \brief see
+  ///<  https://en.wikipedia.org/wiki/Lam%C3%A9_parameters
   struct YoungsModulusAndPoissonsRatio {
     double emodul;
     double nu;
   };
 
+  ///<  Structure representing Young's modulus and shear modulus.
   struct YoungsModulusAndShearModulus {
     double emodul;
     double mu;
   };
 
+  ///< Structure representing Young's modulus and bulk modulus.
   struct YoungsModulusAndBulkModulus {
     double emodul;
     double K;
   };
 
+  ///< Structure representing Young's modulus and Lame's first parameter.
   struct YoungsModulusAndLamesFirstParameter {
     double emodul;
     double lambda;
   };
 
+  ///< Structure representing bulk modulus and Lame's first parameter.
   struct BulkModulusAndLamesFirstParameter {
     double K;
     double lambda;
   };
 
+  ///< Structure representing Lame's first parameter and shear modulus.
   struct LamesFirstParameterAndShearModulus {
     double lambda;
     double mu;
   };
 
+  /**
+   * \brief Concept for checking if a type is a valid material parameter tuple.
+   *
+   * \tparam MaterialParameter Type to check.
+   */
   template <typename MaterialParameter>
   concept MaterialParameterTuple = std::is_same_v<MaterialParameter, YoungsModulusAndPoissonsRatio> or std::is_same_v<
       MaterialParameter, YoungsModulusAndBulkModulus> or std::is_same_v<MaterialParameter,
@@ -93,9 +132,14 @@ namespace Ikarus {
           MaterialParameter, LamesFirstParameterAndShearModulus> or std::is_same_v<MaterialParameter,
                                                                                    YoungsModulusAndShearModulus>;
 
+  /**
+   * \brief Conversion utility for Lame's constants.
+   *
+   * \tparam ValuePair Type of the value pair to convert.
+   */
   template <typename ValuePair>
   struct ConvertLameConstants {
-    constexpr inline double toLamesFirstParameter() requires(
+    constexpr double toLamesFirstParameter() requires(
         !std::is_same_v<
             ValuePair,
             YoungsModulusAndLamesFirstParameter> and !std::is_same_v<ValuePair, BulkModulusAndLamesFirstParameter> and !std::is_same_v<ValuePair, LamesFirstParameterAndShearModulus>) {
@@ -116,7 +160,7 @@ namespace Ikarus {
         assert(false && "Your LameParameter request is not implemented");
     }
 
-    constexpr inline double toBulkModulus() requires(
+    constexpr double toBulkModulus() requires(
         !std::is_same_v<
             ValuePair, YoungsModulusAndBulkModulus> and !std::is_same_v<ValuePair, BulkModulusAndLamesFirstParameter>) {
       if constexpr (std::is_same_v<ValuePair, YoungsModulusAndPoissonsRatio>) {
@@ -139,7 +183,7 @@ namespace Ikarus {
         assert(false && "Your LameParameter request is not implemented");
     }
 
-    constexpr inline double toShearModulus() requires(
+    constexpr double toShearModulus() requires(
         !std::is_same_v<
             ValuePair,
             YoungsModulusAndShearModulus> and !std::is_same_v<ValuePair, LamesFirstParameterAndShearModulus>) {
@@ -163,7 +207,7 @@ namespace Ikarus {
         assert(false && "Your LameParameter request is not implemented");
     }
 
-    constexpr inline double toPWaveModulus() {
+    constexpr double toPWaveModulus() {
       if constexpr (std::is_same_v<ValuePair, YoungsModulusAndPoissonsRatio>) {
         const auto& E  = vp.emodul;
         const auto& nu = vp.nu;
@@ -192,7 +236,7 @@ namespace Ikarus {
         assert(false && "Your LameParameter request is not implemented");
     }
 
-    constexpr inline double toPoissonsRatio() requires(!std::is_same_v<ValuePair, YoungsModulusAndPoissonsRatio>) {
+    constexpr double toPoissonsRatio() requires(!std::is_same_v<ValuePair, YoungsModulusAndPoissonsRatio>) {
       if constexpr (std::is_same_v<ValuePair, YoungsModulusAndShearModulus>) {
         const auto& E  = vp.emodul;
         const auto& mu = vp.mu;
@@ -217,7 +261,7 @@ namespace Ikarus {
         assert(false && "Your LameParameter request is not implemented");
     }
 
-    constexpr inline double toYoungsModulus() requires(
+    constexpr double toYoungsModulus() requires(
         !std::is_same_v<
             ValuePair,
             YoungsModulusAndPoissonsRatio> and !std::is_same_v<ValuePair, YoungsModulusAndShearModulus> and !std::is_same_v<ValuePair, YoungsModulusAndBulkModulus> and !std::is_same_v<ValuePair, YoungsModulusAndLamesFirstParameter>) {
@@ -275,6 +319,12 @@ namespace Ikarus {
     return {p_vp};
   }
 
+  /**
+   * \brief Converts Young's modulus and Poisson's ratio to Lame's first parameter and shear modulus.
+   *
+   * \param matParameter Young's modulus and Poisson's ratio.
+   * \return Lame's first parameter and shear modulus.
+   */
   inline auto toLamesFirstParameterAndShearModulus(const YoungsModulusAndPoissonsRatio& matParameter) {
     auto lambda = convertLameConstants(matParameter).toLamesFirstParameter();
     auto mu     = convertLameConstants(matParameter).toShearModulus();
@@ -282,6 +332,12 @@ namespace Ikarus {
     return LamesFirstParameterAndShearModulus{.lambda = lambda, .mu = mu};
   }
 
+  /**
+   * \brief Converts Lame's first parameter and shear modulus to Young's modulus and Poisson's ratio.
+   *
+   * \param matParameter Lame's first parameter and shear modulus.
+   * \return Young's modulus and Poisson's ratio.
+   */
   inline auto toYoungsModulusAndPoissonsRatio(const LamesFirstParameterAndShearModulus& matParameter) {
     auto emod = convertLameConstants(matParameter).toYoungsModulus();
     auto nu   = convertLameConstants(matParameter).toPoissonsRatio();

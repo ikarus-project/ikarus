@@ -1,9 +1,14 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * \file kirchhoffloveshell.hh
+ * \brief Python bindings for the Kirchhoff-Love shell element
+ */
+
 #pragma once
 
-#include "linearelastic.hh"
+#include "registerelement.hh"
 
 #include <dune/fufem/boundarypatch.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
@@ -22,6 +27,20 @@
 
 namespace Ikarus::Python {
 
+  /**
+   * \brief Register Python bindings for a KirchhoffLoveShell class.
+   *
+   * This function registers Python bindings for a KirchhoffLoveShell class, allowing it to be used in Python scripts.
+   * The registered class will have several initializers with different sets of parameters.
+   *
+   * \tparam KirchhoffLoveShell The KirchhoffLoveShell class to be registered.
+   * \tparam options Variadic template parameters for additional options when defining the Python class.
+   *
+   * \param scope A Pybind11 handle representing the Python scope where the class should be registered.
+   * \param cls The Pybind11 class template to be used for registering the KirchhoffLoveShell class.
+   *
+   * \ingroup pythonbindings
+   */
   template <class KirchhoffLoveShell, class... options>
   void registerKirchhoffLoveShell(pybind11::handle scope, pybind11::class_<KirchhoffLoveShell, options...> cls) {
     registerElement<false, KirchhoffLoveShell, options...>(scope, cls);

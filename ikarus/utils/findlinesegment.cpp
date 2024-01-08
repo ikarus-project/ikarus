@@ -3,7 +3,7 @@
 
 #include "findlinesegment.hh"
 
-namespace Ikarus {
+namespace Ikarus::utils {
   /*
    * This function is inspired from
    * https://github.com/NicolasBoumal/manopt/blob/master/manopt/tools/identify_linear_piece.m
@@ -25,4 +25,4 @@ namespace Ikarus {
     auto range                        = Eigen::seq(index, index + segmentSize);
     return std::make_tuple(lines[index], range);
   }
-}  // namespace Ikarus
+}  // namespace Ikarus::utils

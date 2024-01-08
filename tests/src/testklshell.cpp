@@ -23,12 +23,12 @@
 #include <ikarus/controlroutines/loadcontrol.hh>
 #include <ikarus/finiteelements/mechanics/kirchhoffloveshell.hh>
 #include <ikarus/io/resultfunction.hh>
-#include <ikarus/linearalgebra/dirichletvalues.hh>
-#include <ikarus/linearalgebra/nonlinearoperator.hh>
 #include <ikarus/solver/nonlinearsolver/trustregion.hh>
 #include <ikarus/utils/algorithms.hh>
 #include <ikarus/utils/basis.hh>
+#include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/init.hh>
+#include <ikarus/utils/nonlinearoperator.hh>
 #include <ikarus/utils/observer/controlvtkwriter.hh>
 
 using Dune::TestSuite;
