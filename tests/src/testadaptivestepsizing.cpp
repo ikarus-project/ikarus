@@ -88,14 +88,14 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
     return fext;
   };
 
-  using ElementType = Ikarus::AutoDiffFE<Ikarus::KirchhoffLoveShell<decltype(basis)>>;
+  using ElementType = KirchhoffLoveShell<decltype(basis)>;
   std::vector<ElementType> fes;
 
   for (auto& element : elements(gridView))
     fes.emplace_back(basis, element, E, nu, thickness, utils::LoadDefault(), &neumannBoundary, neumannBoundaryLoad);
 
   auto basisP = std::make_shared<const decltype(basis)>(basis);
-  Ikarus::DirichletValues dirichletValues(basisP->flat());
+  DirichletValues dirichletValues(basisP->flat());
 
   /// fix all DOFs at the left edge (x=-0.5)
   dirichletValues.fixDOFs([&](auto& basis_, auto&& dirichletFlags) {
@@ -137,7 +137,7 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   };
 
   auto nonLinOp  = Ikarus::NonLinearOperator(functions(residualFunction, KFunction), parameter(d, lambda));
-  auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::sd_SimplicialLDLT);
+  auto linSolver = LinearSolver(Ikarus::SolverTypeTag::sd_SimplicialLDLT);
 
   int loadSteps = 6;
 

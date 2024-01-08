@@ -17,6 +17,7 @@
 namespace Ikarus::utils {
   namespace Impl {
     /**
+     *@internal
      * @brief Draws the function and returns the slope for a given function.
      * @param functionName The name of the function.
      * @param ftfunc The function to be evaluated.

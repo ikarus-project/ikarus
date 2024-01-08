@@ -275,10 +275,10 @@ namespace Ikarus {
     Dune::CachedLocalBasis<
         std::remove_cvref_t<decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis())>>
         localBasis;
-    std::function<Eigen::Vector<double, Traits::worlddim>(const Eigen::Vector<double, Traits::worlddim>&,
+    std::function<Eigen::Vector<double, Traits::worlddim>(const Dune::FieldVector<double, Traits::worlddim>&,
                                                           const double&)>
         volumeLoad;
-    std::function<Eigen::Vector<double, Traits::worlddim>(const Eigen::Vector<double, Traits::worlddim>&,
+    std::function<Eigen::Vector<double, Traits::worlddim>(const Dune::FieldVector<double, Traits::worlddim>&,
                                                           const double&)>
         neumannBoundaryLoad;
     const BoundaryPatch<GridView>* neumannBoundary;
@@ -308,7 +308,7 @@ namespace Ikarus {
       if (volumeLoad) {
         for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
           const auto u                                       = uFunction.evaluate(gpIndex);
-          const Eigen::Vector<double, Traits::worlddim> fExt = volumeLoad(toEigen(geo.global(gp.position())), lambda);
+          const Eigen::Vector<double, Traits::worlddim> fExt = volumeLoad(geo.global(gp.position()), lambda);
           energy -= u.dot(fExt) * geo.integrationElement(gp.position()) * gp.weight();
         }
       }
@@ -334,7 +334,7 @@ namespace Ikarus {
 
           // Value of the Neumann data at the current position
           const auto neumannValue
-              = neumannBoundaryLoad(toEigen(intersection.geometry().global(curQuad.position())), lambda);
+              = neumannBoundaryLoad(intersection.geometry().global(curQuad.position()), lambda);
           energy -= neumannValue.dot(u) * curQuad.weight() * intElement;
         }
       }
@@ -366,7 +366,7 @@ namespace Ikarus {
         const auto u = displacementFunction(par, dx);
         for (const auto& [gpIndex, gp] : u.viewOverIntegrationPoints()) {
           const double intElement                            = geo.integrationElement(gp.position()) * gp.weight();
-          const Eigen::Vector<double, Traits::worlddim> fExt = volumeLoad(toEigen(geo.global(gp.position())), lambda);
+          const Eigen::Vector<double, Traits::worlddim> fExt = volumeLoad(geo.global(gp.position()), lambda);
           for (size_t i = 0; i < numberOfNodes; ++i) {
             const auto udCi = u.evaluateDerivative(gpIndex, wrt(coeff(i)));
             force.template segment<myDim>(myDim * i) -= udCi * fExt * intElement;
@@ -396,7 +396,7 @@ namespace Ikarus {
 
             // Value of the Neumann data at the current position
             const auto neumannValue
-                = neumannBoundaryLoad(toEigen(intersection.geometry().global(curQuad.position())), lambda);
+                = neumannBoundaryLoad(intersection.geometry().global(curQuad.position()), lambda);
             force.template segment<myDim>(myDim * i) -= udCi * neumannValue * curQuad.weight() * intElement;
           }
         }

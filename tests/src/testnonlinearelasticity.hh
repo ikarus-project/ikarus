@@ -261,6 +261,8 @@ template <typename Material, int gridDim = 2>
 auto SingleElementTest(const Material& mat) {
   static_assert(gridDim == 2, "Single element test is applicable only for the 2D case");
   TestSuite t("Single element test for non-linear Q1 element");
+  using namespace Ikarus;
+
 
   auto grid     = createUGGridFromCorners<gridDim>(CornerDistortionFlag::fixedDistorted);
   auto gridView = grid->leafGridView();
@@ -273,7 +275,7 @@ auto SingleElementTest(const Material& mat) {
   auto nDOF        = basis.flat().size();
   const double tol = 1e-10;
 
-  using NonLinearElastic = Ikarus::NonLinearElastic<decltype(basis), decltype(mat)>;
+  using NonLinearElastic = NonLinearElastic<decltype(basis), decltype(mat)>;
   NonLinearElastic fe(basis, *element, mat);
 
   Eigen::VectorXd d;
@@ -306,83 +308,5 @@ auto SingleElementTest(const Material& mat) {
                   + "-th eigen value in single element test for four node non-linear 2D element");
     }
   }
-  return t;
-}
-
-template <int gridDim, typename Material>
-auto checkFEByAutoDiff(const Material& mat) {
-  TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() by Automatic Differentiation for gridDim = "
-              + std::to_string(gridDim));
-
-  auto grid     = createUGGridFromCorners<gridDim>(CornerDistortionFlag::randomlyDistorted);
-  auto gridView = grid->leafGridView();
-
-  using namespace Dune::Functions::BasisFactory;
-  auto basis       = Ikarus::makeBasis(gridView, power<gridDim>(lagrange<1>()));
-  auto element     = gridView.template begin<0>();
-  auto nDOF        = basis.flat().size();
-  const double tol = 1e-10;
-
-  auto volumeLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
-    VectorType fExt;
-    fExt.setZero();
-    fExt[1] = 2 * lamb;
-    return fExt;
-  };
-
-  auto neumannBoundaryLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
-    VectorType fExt;
-    fExt.setZero();
-    fExt[0] = lamb / 40;
-    return fExt;
-  };
-
-  /// We artificially apply a Neumann load on the complete boundary
-  Dune::BitSetVector<1> neumannVertices(gridView.size(2), true);
-
-  BoundaryPatch<decltype(gridView)> neumannBoundary(gridView, neumannVertices);
-
-  using NonLinearElasticity = Ikarus::NonLinearElastic<decltype(basis), decltype(mat)>;
-  NonLinearElasticity fe(basis, *element, mat, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
-  using AutoDiffBasedFE = Ikarus::AutoDiffFE<NonLinearElasticity>;
-  AutoDiffBasedFE feAutoDiff(fe);
-
-  Eigen::VectorXd d;
-  d.setRandom(nDOF);
-  double lambda = 7.3;
-
-  auto req = Ikarus::FERequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
-  req.insertGlobalSolution(Ikarus::FESolutions::displacement, d)
-      .insertParameter(Ikarus::FEParameter::loadfactor, lambda);
-
-  Eigen::MatrixXd K, KAutoDiff;
-  K.setZero(nDOF, nDOF);
-  KAutoDiff.setZero(nDOF, nDOF);
-
-  Eigen::VectorXd R, RAutoDiff;
-  R.setZero(nDOF);
-  RAutoDiff.setZero(nDOF);
-
-  fe.calculateMatrix(req, K);
-  feAutoDiff.calculateMatrix(req, KAutoDiff);
-
-  fe.calculateVector(req, R);
-  feAutoDiff.calculateVector(req, RAutoDiff);
-
-  t.check(K.isApprox(KAutoDiff, tol),
-          "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
-          "automatic differentiation with gridDim = "
-              + std::to_string(gridDim));
-
-  t.check(R.isApprox(RAutoDiff, tol),
-          "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
-          "automatic differentiation with gridDim = "
-              + std::to_string(gridDim));
-
-  t.check(Dune::FloatCmp::eq(fe.calculateScalar(req), feAutoDiff.calculateScalar(req), tol),
-          "Mismatch between the energies obtained from explicit implementation and the one based on "
-          "automatic differentiation with gridDim = "
-              + std::to_string(gridDim));
-
   return t;
 }

@@ -5,6 +5,7 @@
 
 #include "testcommon.hh"
 #include "testhelpers.hh"
+#include "checkfebyautodiff.hh"
 
 #include <dune/common/test/testsuite.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
@@ -151,7 +152,40 @@ static auto NonLinearKLShellLoadControlTR() {
   return t;
 }
 
+auto singleElementTest() {
+  TestSuite t("Kirchhoff-Love autodiff");
+  using namespace Dune::Functions::BasisFactory;
+
+  auto volumeLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
+        Eigen::Vector<typename VectorType::field_type,VectorType::dimension> fExt;
+    fExt.setZero();
+    fExt[1] = 2 * lamb;
+    return fExt;
+  };
+
+  auto neumannBoundaryLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
+    Eigen::Vector<typename VectorType::field_type,VectorType::dimension> fExt;
+    fExt.setZero();
+    fExt[0] = lamb / 40;
+    return fExt;
+  };
+  {
+    auto grid     = createGrid<Grids::IgaSurfaceIn3D>();
+    auto gridView = grid->leafGridView();
+    /// We artificially apply a Neumann load on the complete boundary
+    Dune::BitSetVector<1> neumannVertices(gridView.size(2), true);
+    BoundaryPatch neumannBoundary(gridView, neumannVertices);
+      const double E         = 1000;
+  const double nu        = 0.0;
+  const double thickness = 0.1;
+    t.subTest(checkFEByAutoDiff<Ikarus::KirchhoffLoveShell>(gridView,power<3>(nurbs()),E,nu,thickness,volumeLoad,&neumannBoundary,neumannBoundaryLoad));
+  }
+  return t;
+}
+
 int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
-  NonLinearKLShellLoadControlTR();
+  TestSuite t("Kirchhoff-Love");
+  t.subTest(NonLinearKLShellLoadControlTR());
+  t.subTest(singleElementTest());
 }
