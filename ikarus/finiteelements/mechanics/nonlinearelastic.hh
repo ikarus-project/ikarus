@@ -333,8 +333,7 @@ namespace Ikarus {
           const auto u = uFunction.evaluate(quadPos);
 
           // Value of the Neumann data at the current position
-          const auto neumannValue
-              = neumannBoundaryLoad(intersection.geometry().global(curQuad.position()), lambda);
+          const auto neumannValue = neumannBoundaryLoad(intersection.geometry().global(curQuad.position()), lambda);
           energy -= neumannValue.dot(u) * curQuad.weight() * intElement;
         }
       }
@@ -395,8 +394,7 @@ namespace Ikarus {
             const auto udCi = u.evaluateDerivative(quadPos, wrt(coeff(i)));
 
             // Value of the Neumann data at the current position
-            const auto neumannValue
-                = neumannBoundaryLoad(intersection.geometry().global(curQuad.position()), lambda);
+            const auto neumannValue = neumannBoundaryLoad(intersection.geometry().global(curQuad.position()), lambda);
             force.template segment<myDim>(myDim * i) -= udCi * neumannValue * curQuad.weight() * intElement;
           }
         }

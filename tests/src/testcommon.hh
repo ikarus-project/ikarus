@@ -57,8 +57,8 @@ auto createGrid([[maybe_unused]] int elex = 10, [[maybe_unused]] int eley = 10) 
     return grid;
   } else if constexpr (std::is_same_v<GridType, Grids::IgaSurfaceIn2D>) {
 #if HAVE_DUNE_IGA
-    constexpr auto dimworld        = 2;
-    const std::array order = {2, 2};
+    constexpr auto dimworld = 2;
+    const std::array order  = {2, 2};
 
     const std::array<std::vector<double>, 2> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
 
@@ -81,10 +81,9 @@ auto createGrid([[maybe_unused]] int elex = 10, [[maybe_unused]] int eley = 10) 
     auto grid               = std::make_shared<Grid>(patchData);
     grid->globalRefine(1);
     return grid;
-  }
-  else if constexpr (std::is_same_v<GridType, Grids::IgaSurfaceIn3D>) {
-    constexpr auto dimworld        = 3;
-    const std::array order = {2, 2};
+  } else if constexpr (std::is_same_v<GridType, Grids::IgaSurfaceIn3D>) {
+    constexpr auto dimworld = 3;
+    const std::array order  = {2, 2};
 
     const std::array<std::vector<double>, 2> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
 

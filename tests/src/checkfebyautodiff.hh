@@ -1,29 +1,31 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-
 #pragma once
 #include <dune/common/test/testsuite.hh>
+#include <ikarus/utils/basis.hh>
+#include <ikarus/finiteelements/febases/autodifffe.hh>
+#include <Eigen/Core>
 
-template <template<typename ,typename > class FE, typename GridView,typename PreBasis, typename... ElementArgsType>
-auto checkFEByAutoDiff( const GridView& gridView, const PreBasis& pb,const ElementArgsType&... eleArgs) {
-
-  using namespace Dune::Functions::BasisFactory;
+template <template <typename...> class FE, typename GridView, typename PreBasis, typename... ElementArgsType>
+auto checkFEByAutoDiff(const GridView& gridView, const PreBasis& pb, const ElementArgsType&... eleArgs) {
   auto basis       = Ikarus::makeBasis(gridView, pb);
   auto element     = gridView.template begin<0>();
-  auto nDOF        = basis.flat().size();
+  auto localView = basis.flat().localView();
+  localView.bind(*element);
+  auto nDOF        = localView.size();
   const double tol = 1e-10;
 
-  FE fe(basis,*element,eleArgs...);
+  FE fe(basis, *element, eleArgs...);
 
   const std::string feClassName = Dune::className(fe);
   Dune::TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() by Automatic Differentiation for gridDim = "
-            + feClassName);
-  using AutoDiffBasedFE = Ikarus::AutoDiffFE<decltype(fe)>;
+                    + feClassName);
+  using AutoDiffBasedFE = Ikarus::AutoDiffFE<decltype(fe),typename decltype(fe)::FERequirementType,false,true>;
   AutoDiffBasedFE feAutoDiff(fe);
 
   Eigen::VectorXd d;
-  d.setRandom(nDOF);
+  d.setRandom(basis.flat().dimension());
   double lambda = 7.3;
 
   auto req = Ikarus::FErequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
@@ -47,12 +49,12 @@ auto checkFEByAutoDiff( const GridView& gridView, const PreBasis& pb,const Eleme
   t.check(K.isApprox(KAutoDiff, tol),
           "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
           "automatic differentiation for "
-              + feClassName);
+              + feClassName)<<"The difference is "<<(K-KAutoDiff);
 
   t.check(R.isApprox(RAutoDiff, tol),
           "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
           "automatic differentiation for "
-              + feClassName);
+              + feClassName)<<"The difference is "<<(R-RAutoDiff);
 
   t.check(Dune::FloatCmp::eq(fe.calculateScalar(req), feAutoDiff.calculateScalar(req), tol),
           "Mismatch between the energies obtained from explicit implementation and the one based on "

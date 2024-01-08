@@ -92,7 +92,7 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   std::vector<ElementType> fes;
 
   for (auto& element : elements(gridView))
-    fes.emplace_back(basis, element, E, nu, thickness, utils::LoadDefault(), &neumannBoundary, neumannBoundaryLoad);
+    fes.emplace_back(basis, element, E, nu, thickness, {}, &neumannBoundary, neumannBoundaryLoad);
 
   auto basisP = std::make_shared<const decltype(basis)>(basis);
   DirichletValues dirichletValues(basisP->flat());
@@ -137,21 +137,21 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   };
 
   auto nonLinOp  = Ikarus::NonLinearOperator(functions(residualFunction, KFunction), parameter(d, lambda));
-  auto linSolver = LinearSolver(Ikarus::SolverTypeTag::sd_SimplicialLDLT);
+  auto linSolver = LinearSolver(SolverTypeTag::sd_SimplicialLDLT);
 
   int loadSteps = 6;
 
   auto nr   = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
-  auto dass = Ikarus::AdaptiveStepSizing::IterationBased{};
-  auto nass = Ikarus::AdaptiveStepSizing::NoOp{};
+  auto dass = AdaptiveStepSizing::IterationBased{};
+  auto nass = AdaptiveStepSizing::NoOp{};
   dass.setTargetIterations(targetIterations);
 
   /// control routine with and without step sizing
   auto crWSS  = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft, dass);
   auto crWoSS = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft, nass);
 
-  auto nonLinearSolverObserver = std::make_shared<Ikarus::NonLinearSolverLogger>();
-  auto pathFollowingObserver   = std::make_shared<Ikarus::ControlLogger>();
+  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
+  auto pathFollowingObserver   = std::make_shared<ControlLogger>();
   nr->subscribeAll(nonLinearSolverObserver);
 
   t.checkThrow<Dune::InvalidStateException>(

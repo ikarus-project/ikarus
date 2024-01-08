@@ -263,7 +263,6 @@ auto SingleElementTest(const Material& mat) {
   TestSuite t("Single element test for non-linear Q1 element");
   using namespace Ikarus;
 
-
   auto grid     = createUGGridFromCorners<gridDim>(CornerDistortionFlag::fixedDistorted);
   auto gridView = grid->leafGridView();
 

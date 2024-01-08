@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "testcommon.hh"
 #include "checkfebyautodiff.hh"
+#include "testcommon.hh"
 
 #include <variant>
 
@@ -39,7 +39,6 @@ struct ElementTest<Ikarus::EnhancedAssumedStrains<DisplacementBasedElement>> {
           t.subTest(checkHessianOfElement(nonLinOp, messageIfFailed));
         }
         t.subTest(checkJacobianOfElement(subOp, messageIfFailed));
-
 
         t.subTest(checkFEByAutoDiff(nonLinOp, fe, req, messageIfFailed));
 

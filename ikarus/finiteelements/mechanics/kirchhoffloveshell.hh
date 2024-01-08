@@ -36,20 +36,20 @@ namespace Ikarus {
   template <typename Basis_, typename FERequirements_ = FERequirements<>, bool useEigenRef = false>
   class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis> {
   public:
-    using Basis                   = Basis_;
-    using FlatBasis               = typename Basis::FlatBasis;
-    using BasePowerFE             = PowerBasisFE<FlatBasis>;  // Handles globalIndices function
-    using FERequirementType       = FERequirements_;
-    using ResultRequirementsType  = ResultRequirements<FERequirementType>;
-    using LocalView               = typename FlatBasis::LocalView;
-    using Element                 = typename LocalView::Element;
-    using Geometry                = typename Element::Geometry;
-    using GridView                = typename FlatBasis::GridView;
-    using Traits                  = TraitsFromLocalView<LocalView, useEigenRef>;
-    static constexpr int myDim    = Traits::mydim;
-    static constexpr int worlddim = Traits::worlddim;
+    using Basis                             = Basis_;
+    using FlatBasis                         = typename Basis::FlatBasis;
+    using BasePowerFE                       = PowerBasisFE<FlatBasis>;  // Handles globalIndices function
+    using FERequirementType                 = FERequirements_;
+    using ResultRequirementsType            = ResultRequirements<FERequirementType>;
+    using LocalView                         = typename FlatBasis::LocalView;
+    using Element                           = typename LocalView::Element;
+    using Geometry                          = typename Element::Geometry;
+    using GridView                          = typename FlatBasis::GridView;
+    using Traits                            = TraitsFromLocalView<LocalView, useEigenRef>;
+    static constexpr int myDim              = Traits::mydim;
+    static constexpr int worlddim           = Traits::worlddim;
     static constexpr int membraneStrainSize = 3;
-    static constexpr int bendingStrainSize = 3;
+    static constexpr int bendingStrainSize  = 3;
 
     /**
      * @brief Constructor for the KirchhoffLoveShell class.
@@ -203,82 +203,57 @@ namespace Ikarus {
 
   protected:
     /**
- * \brief Compute material properties and strains at a given integration point.
- *
- * \param gpPos The position of the integration point.
- * \param gpIndex The index of the integration point.
- * \param geo The geometry object providing position and derivatives.
- * \param uFunction The function representing the displacement field.
- *
- * \tparam gpPos The type of the integration point position.
- * \tparam gpIndex The type of the integration point index.
- * \tparam geo The type of the geometry object.
- * \tparam uFunction The type of the displacement field function.
- *
- * \return A tuple containing the material tangent, membrane strain, curvature variation,
- *         Jacobian matrix, metric tensor, Hessian matrix, second fundamental form,
- *         normalized normal vector, and normal vector at the given integration point.
- */
-auto computeMaterialAndStrains(const Dune::FieldVector<double, 2> &gpPos, int gpIndex, const Geometry &geo,
-                               const auto &uFunction) const {
-    // Deduce the scalar type of the function
-    using ScalarType = typename std::remove_cvref_t<decltype(uFunction)>::ctype;
+     * \brief Compute material properties and strains at a given integration point.
+     *
+     * \param gpPos The position of the integration point.
+     * \param gpIndex The index of the integration point.
+     * \param geo The geometry object providing position and derivatives.
+     * \param uFunction The function representing the displacement field.
+     *
+     * \tparam gpPos The type of the integration point position.
+     * \tparam gpIndex The type of the integration point index.
+     * \tparam geo The type of the geometry object.
+     * \tparam uFunction The type of the displacement field function.
+     *
+     * \return A tuple containing the material tangent, membrane strain, curvature variation,
+     *         Jacobian matrix, metric tensor, Hessian matrix, second fundamental form,
+     *         normalized normal vector, and normal vector at the given integration point.
+     */
+    auto computeMaterialAndStrains(const Dune::FieldVector<double, 2> &gpPos,
+                                int gpIndex,
+                                const Geometry &geo,
+                                const auto &uFunction) const {
+      using ScalarType = typename std::remove_cvref_t<decltype(uFunction)>::ctype;
+      using namespace Dune;
+      using namespace Dune::DerivativeDirections;
+      const auto [X, Jd, Hd] = geo.impl().zeroFirstAndSecondDerivativeOfPosition(gpPos);
+      const auto J = toEigen(Jd);
+      const auto H = toEigen(Hd);
+      const Eigen::Matrix<double, 2, 2> A = J*J.transpose();
+      Eigen::Matrix<double, 3, 3> G;
+      G.setZero();
+      G.block<2, 2>(0, 0) = A;
+      G(2, 2) = 1;
+      const Eigen::Matrix<double, 3, 3> GInv = G.inverse();
+      const auto C = materialTangent(GInv);
 
-    using namespace Dune;
-    using namespace Dune::DerivativeDirections;
+      Eigen::Vector3<ScalarType> epsV=membraneStrain.value(gpPos,geo,uFunction);
 
-    // Extract position and derivatives from the geometry
-    const auto [X, Jd, Hd] = geo.impl().zeroFirstAndSecondDerivativeOfPosition(gpPos);
-    const auto J           = toEigen(Jd);
-    const auto H           = toEigen(Hd);
-
-    // Compute the metric tensor A
-    const Eigen::Matrix<double, 2, 2> A = J * J.transpose();
-
-    // Build the metric tensor G in 3D
-    Eigen::Matrix<double, worlddim, worlddim> G;
-    G.setZero();
-    G.template block<2, 2>(0, 0) = A;
-    G(2, 2)             = 1;
-
-    const Eigen::Matrix<double, worlddim, worlddim> GInv = G.inverse();
-
-    // Compute the material tangent
-    const auto C = materialTangent(GInv);
-
-    // Compute membrane strain
-    Eigen::Vector3<ScalarType> epsV = membraneStrain.value(gpPos, geo, uFunction);
-
-    const auto &Ndd = localBasis.evaluateSecondDerivatives(gpIndex);
-
-    const auto uasMatrix = Dune::viewAsEigenMatrixAsDynFixed(uFunction.coefficientsRef());
-
-    // Compute the Hessian of the deformed midsurface
-    const auto hessianu = Ndd.transpose().template cast<ScalarType>() * uasMatrix;
-    const Eigen::Matrix3<ScalarType> h = H + hessianu;
-
-    // Compute the gradient and Jacobian matrices
-    const Eigen::Matrix<ScalarType, worlddim, myDim> gradu =
-        toEigen(uFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll), Dune::on(Dune::DerivativeDirections::referenceElement)));
-    const Eigen::Matrix<ScalarType, myDim, worlddim> j = J + gradu.transpose();
-
-    // Compute the normal vector
-    const Eigen::Vector3<ScalarType> a3N = (j.row(0).cross(j.row(1))).normalized();
-
-    // Compute the normalized normal vector a3
-    const Eigen::Vector3<ScalarType> a3 = a3N.normalized();
-
-    // Compute the vector bV
-    Eigen::Vector<ScalarType, worlddim> bV = h * a3;
-    bV(2) *= 2;  // Voigt notation requires the factor of 2 here
-
-    // Compute BV and kappaV
-    const auto BV     = toVoigt(toEigen(geo.impl().secondFundamentalForm(gpPos)));
-    const auto kappaV = (BV - bV).eval();
-
-    return std::make_tuple(C, epsV, kappaV, j, J, h, H, a3N, a3);
-}
-
+      const auto &Ndd = localBasis.evaluateSecondDerivatives(gpIndex);
+      const auto uasMatrix = Dune::viewAsEigenMatrixAsDynFixed(uFunction.coefficientsRef());
+      const auto hessianu = Ndd.transpose().template cast<ScalarType>()*uasMatrix;
+      const Eigen::Matrix3<ScalarType> h = H + hessianu;
+      const Eigen::Matrix<ScalarType, 3, 2> gradu = toEigen(
+          uFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll), Dune::on(Dune::DerivativeDirections::referenceElement)));
+      const Eigen::Matrix<ScalarType, 2, 3> j = J + gradu.transpose();
+      const Eigen::Vector3<ScalarType> a3N = (j.row(0).cross(j.row(1)));
+      const Eigen::Vector3<ScalarType> a3 = a3N.normalized();
+      Eigen::Vector<ScalarType, 3> bV = h*a3;
+      bV(2) *= 2;  // Voigt notation requires the two here
+      const auto BV = toVoigt(toEigen(geo.impl().secondFundamentalForm(gpPos)));
+      const auto kappaV = (BV - bV).eval();
+      return std::make_tuple(C, epsV, kappaV, j, J, h,H, a3N, a3);
+    }
 
     template <typename ScalarType>
     void calculateMatrixImpl(const FERequirementType &par, typename Traits::template MatrixType<ScalarType> K,
@@ -290,13 +265,12 @@ auto computeMaterialAndStrains(const Dune::FieldVector<double, 2> &gpPos, int gp
       const auto &lambda   = par.getParameter(FEParameter::loadfactor);
       const auto geo       = this->localView().element().geometry();
 
-      // Internal forces
       for (const auto &[gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
         const auto intElement = geo.integrationElement(gp.position()) * gp.weight();
         const auto [C, epsV, kappaV, jE, J, h, H, a3N, a3]
             = computeMaterialAndStrains(gp.position(), gpIndex, geo, uFunction);
         const Eigen::Vector<ScalarType, membraneStrainSize> membraneForces = thickness_ * C * epsV;
-        const Eigen::Vector<ScalarType, bendingStrainSize> moments        = Dune::power(thickness_, 3) / 12.0 * C * kappaV;
+        const Eigen::Vector<ScalarType, bendingStrainSize> moments = Dune::power(thickness_, 3) / 12.0 * C * kappaV;
 
         const auto &Nd  = localBasis.evaluateJacobian(gpIndex);
         const auto &Ndd = localBasis.evaluateSecondDerivatives(gpIndex);
@@ -306,18 +280,17 @@ auto computeMaterialAndStrains(const Dune::FieldVector<double, 2> &gpPos, int gp
 
           Eigen::Matrix<ScalarType, bendingStrainSize, worlddim> bopIBending = bopBending(jE, h, Nd, Ndd, i, a3N, a3);
           for (size_t j = i; j < numberOfNodes; ++j) {
-            auto KBlock = K.template block<worlddim,worlddim>(worlddim * i, worlddim * j);
+            auto KBlock = K.template block<worlddim, worlddim>(worlddim * i, worlddim * j);
             Eigen::Matrix<ScalarType, membraneStrainSize, worlddim> bopJMembrane
                 = membraneStrain.derivative(gp.position(), jE, Nd, geo, uFunction, localBasis, j);
             Eigen::Matrix<ScalarType, bendingStrainSize, worlddim> bopJBending = bopBending(jE, h, Nd, Ndd, j, a3N, a3);
-            KBlock
-                += thickness_ * bopIMembrane.transpose() * C * bopJMembrane * intElement;
-            KBlock
-                += Dune::power(thickness_, 3) / 12.0 * bopIBending.transpose() * C * bopJBending * intElement;
+            KBlock += thickness_ * bopIMembrane.transpose() * C * bopJMembrane * intElement;
+            KBlock += Dune::power(thickness_, 3) / 12.0 * bopIBending.transpose() * C * bopJBending * intElement;
 
-            Eigen::Matrix<ScalarType, worlddim,worlddim> kgMembraneIJ
+            Eigen::Matrix<ScalarType, worlddim, worlddim> kgMembraneIJ
                 = membraneStrain.secondDerivative(gp.position(), Nd, geo, uFunction, localBasis, membraneForces, i, j);
-            Eigen::Matrix<ScalarType, worlddim, worlddim> kgBendingIJ = kgBending(jE, h, Nd, Ndd, a3N, a3, moments, i, j);
+            Eigen::Matrix<ScalarType, worlddim, worlddim> kgBendingIJ
+                = kgBending(jE, h, Nd, Ndd, a3N, a3, moments, i, j);
             KBlock += kgMembraneIJ * intElement;
             KBlock += kgBendingIJ * intElement;
           }

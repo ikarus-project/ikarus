@@ -3,9 +3,9 @@
 
 #include <config.h>
 
+#include "checkfebyautodiff.hh"
 #include "testcommon.hh"
 #include "testhelpers.hh"
-#include "checkfebyautodiff.hh"
 
 #include <dune/common/test/testsuite.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
@@ -144,6 +144,7 @@ static auto NonLinearKLShellLoadControlTR() {
   const auto controlInfo = lc.run();
 
   t.check(controlInfo.success);
+
   const auto maxDisp = std::ranges::max(d);
   std::cout << std::setprecision(16) << maxDisp << std::endl;
   t.check(Dune::FloatCmp::eq(0.2087574597947082, maxDisp, 1e-6))
@@ -152,21 +153,36 @@ static auto NonLinearKLShellLoadControlTR() {
   return t;
 }
 
-template <typename B, typename FEReq>
-using KL = Ikarus::KirchhoffLoveShell<B,FEReq>;
+template <typename Basis_, typename FERequirements_ = Ikarus::FErequirements<>>
+struct KirchhoffLoveShellHelper : Ikarus::KirchhoffLoveShell<Basis_, FERequirements_, false> {
+  using Base = Ikarus::KirchhoffLoveShell<Basis_, FERequirements_, false>;
+  using Base::Base;
+  using FlatBasis = typename Basis_::FlatBasis;
+
+  using LocalView = typename FlatBasis::LocalView;
+  using GridView  = typename FlatBasis::GridView;
+
+  template <typename VolumeLoad = Ikarus::utils::LoadDefault, typename NeumannBoundaryLoad = Ikarus::utils::LoadDefault>
+  KirchhoffLoveShellHelper(const Basis_& globalBasis, const typename LocalView::Element& element, double emod,
+                           double nu, double thickness, VolumeLoad p_volumeLoad = {},
+                           const BoundaryPatch<GridView>* p_neumannBoundary = nullptr,
+                           NeumannBoundaryLoad p_neumannBoundaryLoad        = {})
+      : Base(globalBasis, element, emod, nu, thickness, p_volumeLoad, p_neumannBoundary, p_neumannBoundaryLoad) {}
+};
+
 auto singleElementTest() {
   TestSuite t("Kirchhoff-Love autodiff");
   using namespace Dune::Functions::BasisFactory;
 
   auto volumeLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
-        Eigen::Vector<typename VectorType::field_type,VectorType::dimension> fExt;
+    Eigen::Vector<typename VectorType::field_type, VectorType::dimension> fExt;
     fExt.setZero();
     fExt[1] = 2 * lamb;
     return fExt;
   };
 
   auto neumannBoundaryLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
-    Eigen::Vector<typename VectorType::field_type,VectorType::dimension> fExt;
+    Eigen::Vector<typename VectorType::field_type, VectorType::dimension> fExt;
     fExt.setZero();
     fExt[0] = lamb / 40;
     return fExt;
@@ -177,11 +193,12 @@ auto singleElementTest() {
     /// We artificially apply a Neumann load on the complete boundary
     Dune::BitSetVector<1> neumannVertices(gridView.size(2), true);
     BoundaryPatch neumannBoundary(gridView, neumannVertices);
-      const double E         = 1000;
-  const double nu        = 0.0;
-  const double thickness = 0.1;
+    const double E         = 1000;
+    const double nu        = 0.0;
+    const double thickness = 0.1;
 
-    t.subTest(checkFEByAutoDiff<KL>(gridView,power<3>(nurbs()),E,nu,thickness,volumeLoad,&neumannBoundary,neumannBoundaryLoad));
+    t.subTest(checkFEByAutoDiff<KirchhoffLoveShellHelper>(gridView, power<3>(nurbs()), E, nu, thickness, volumeLoad,
+                                                          &neumannBoundary, neumannBoundaryLoad));
   }
   return t;
 }
@@ -189,6 +206,7 @@ auto singleElementTest() {
 int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t("Kirchhoff-Love");
-  t.subTest(NonLinearKLShellLoadControlTR());
   t.subTest(singleElementTest());
+  t.subTest(NonLinearKLShellLoadControlTR());
+
 }
