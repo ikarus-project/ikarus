@@ -34,13 +34,13 @@ namespace Ikarus::ResultEvaluators {
    */
   struct VonMises {
     template <typename ElementType, typename FERequirements, int size, typename ScalarType>
-    double operator()(const ElementType &fe, const ResultRequirements<FERequirements> &req,
-                      const Dune::FieldVector<ScalarType, size> &pos, [[maybe_unused]] int comp) const
+    double operator()(const ElementType& fe, const ResultRequirements<FERequirements>& req,
+                      const Dune::FieldVector<ScalarType, size>& pos, [[maybe_unused]] int comp) const
         requires(size == 2) {
       ResultTypeMap<ScalarType> res_;
       fe.calculateAt(req, pos, res_);
 
-      const auto &[resultType, sigma] = res_.getSingleResult();
+      const auto& [resultType, sigma] = res_.getSingleResult();
       assert(resultType == ResultType::cauchyStress or resultType == ResultType::PK2Stress);
       const auto s_x  = sigma(0, 0);
       const auto s_y  = sigma(1, 0);
@@ -75,12 +75,12 @@ namespace Ikarus::ResultEvaluators {
    */
   struct PrincipalStress {
     template <typename ElementType, typename FERequirements, int size, typename ScalarType>
-    double operator()(const ElementType &fe, const ResultRequirements<FERequirements> &req,
-                      const Dune::FieldVector<ScalarType, size> &pos, int comp) const requires(size == 2) {
+    double operator()(const ElementType& fe, const ResultRequirements<FERequirements>& req,
+                      const Dune::FieldVector<ScalarType, size>& pos, int comp) const requires(size == 2) {
       ResultTypeMap<ScalarType> res_;
       fe.calculateAt(req, pos, res_);
 
-      const auto &[resultType, sigma] = res_.getSingleResult();
+      const auto& [resultType, sigma] = res_.getSingleResult();
       assert(resultType == ResultType::cauchyStress or resultType == ResultType::PK2Stress);
       const auto s_x  = sigma(0, 0);
       const auto s_y  = sigma(1, 0);

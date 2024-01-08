@@ -7,8 +7,8 @@
  */
 
 #pragma once
-#include <Python.h>
 #include <cstddef>
+#include <Python.h>
 
 #include <dune/fufem/dunepython.hh>
 

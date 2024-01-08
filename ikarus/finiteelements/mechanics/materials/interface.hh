@@ -85,14 +85,14 @@ namespace Ikarus {
      *
      * @return Const reference to the underlying material.
      */
-    constexpr const MaterialImpl &impl() const { return static_cast<MaterialImpl const &>(*this); }
+    constexpr const MaterialImpl& impl() const { return static_cast<MaterialImpl const&>(*this); }
 
     /**
      * @brief Accessor to the underlying material (CRTP).
      *
      * @return Reference to the underlying material.
      */
-    constexpr MaterialImpl &impl() { return static_cast<MaterialImpl &>(*this); }
+    constexpr MaterialImpl& impl() { return static_cast<MaterialImpl&>(*this); }
 
     /**
      * @brief Get the name of the implemented material.
@@ -113,7 +113,7 @@ namespace Ikarus {
      */
     template <StrainTags tag, typename Derived>
     requires CorrectStrainSize<MaterialImpl, Derived>
-    [[nodiscard]] auto storedEnergy(const Eigen::MatrixBase<Derived> &Eraw) const {
+    [[nodiscard]] auto storedEnergy(const Eigen::MatrixBase<Derived>& Eraw) const {
       decltype(auto) Ev = enlargeIfReduced<Material>(Eraw);
       decltype(auto) E  = transformStrain<tag, MaterialImpl::strainTag>(Ev);
 
@@ -137,7 +137,7 @@ namespace Ikarus {
      */
     template <StrainTags tag, bool voigt = true, typename Derived>
     requires CorrectStrainSize<MaterialImpl, Derived>
-    [[nodiscard]] auto stresses(const Eigen::MatrixBase<Derived> &Eraw) const {
+    [[nodiscard]] auto stresses(const Eigen::MatrixBase<Derived>& Eraw) const {
       decltype(auto) Ev = enlargeIfReduced<Material>(Eraw);
       decltype(auto) E  = transformStrain<tag, MaterialImpl::strainTag>(Ev);
       if constexpr (voigt and MaterialImpl::stressToVoigt == false)
@@ -158,7 +158,7 @@ namespace Ikarus {
      */
     template <StrainTags tag, bool voigt = true, typename Derived>
     requires CorrectStrainSize<MaterialImpl, Derived>
-    [[nodiscard]] auto tangentModuli(const Eigen::MatrixBase<Derived> &Eraw) const {
+    [[nodiscard]] auto tangentModuli(const Eigen::MatrixBase<Derived>& Eraw) const {
       decltype(auto) Ev = enlargeIfReduced<Material>(Eraw);
       decltype(auto) E  = transformStrain<tag, MaterialImpl::strainTag>(Ev);
       if constexpr (voigt and MaterialImpl::moduliToVoigt == false)
@@ -183,7 +183,7 @@ namespace Ikarus {
 
   private:
     template <bool voigt = true, typename Derived>
-    auto stressesMaybeTransformInputToVoigt(const Eigen::MatrixBase<Derived> &E) const {
+    auto stressesMaybeTransformInputToVoigt(const Eigen::MatrixBase<Derived>& E) const {
       if constexpr (Concepts::EigenVector<Derived>) {  // receiving vector means Voigt notation
         if constexpr (MaterialImpl::stressAcceptsVoigt)
           return impl().template stressesImpl<voigt>(E);
@@ -194,7 +194,7 @@ namespace Ikarus {
     }
 
     template <bool voigt = true, typename Derived>
-    auto tangentModuliMaybeTransformInputToVoigt(const Eigen::MatrixBase<Derived> &E) const {
+    auto tangentModuliMaybeTransformInputToVoigt(const Eigen::MatrixBase<Derived>& E) const {
       if constexpr (Concepts::EigenVector<Derived>) {  // receiving vector means voigt notation
         if constexpr (MaterialImpl::moduliAcceptsVoigt)
           return impl().template tangentModuliImpl<voigt>(E);

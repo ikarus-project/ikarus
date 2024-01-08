@@ -34,7 +34,7 @@ namespace Ikarus {
      * @return std::array<size_t, 6 - size> The array of free Voigt indices.
      */
     template <size_t size>
-    consteval auto createfreeVoigtIndices(const std::array<StressIndexPair, size> &fixed) {
+    consteval auto createfreeVoigtIndices(const std::array<StressIndexPair, size>& fixed) {
       std::array<size_t, 6 - size> res{};
       std::array<size_t, size> voigtFixedIndices;
       std::ranges::transform(fixed, voigtFixedIndices.begin(), [](auto pair) { return toVoigt(pair.row, pair.col); });
@@ -51,7 +51,7 @@ namespace Ikarus {
      * @return std::array<size_t, size> The array of fixed Voigt indices.
      */
     template <size_t size>
-    consteval auto createFixedVoigtIndices(const std::array<StressIndexPair, size> &fixed) {
+    consteval auto createFixedVoigtIndices(const std::array<StressIndexPair, size>& fixed) {
       std::array<size_t, size> fixedIndices;
       std::ranges::transform(fixed, fixedIndices.begin(), [](auto pair) { return toVoigt(pair.row, pair.col); });
       std::ranges::sort(fixedIndices);
@@ -65,7 +65,7 @@ namespace Ikarus {
      * @return constexpr size_t The number of diagonal indices.
      */
     template <size_t size>
-    constexpr size_t countDiagonalIndices(const std::array<StressIndexPair, size> &fixed) {
+    constexpr size_t countDiagonalIndices(const std::array<StressIndexPair, size>& fixed) {
       size_t count = 0;
       for (auto v : fixed) {
         if (v.col == v.row) ++count;
@@ -126,7 +126,7 @@ namespace Ikarus {
      * @return ScalarType The stored energy.
      */
     template <typename Derived>
-    ScalarType storedEnergyImpl(const Eigen::MatrixBase<Derived> &E) const {
+    ScalarType storedEnergyImpl(const Eigen::MatrixBase<Derived>& E) const {
       const auto [nonOp, Esol] = reduceStress(E);
       return matImpl.storedEnergyImpl(Esol);
     }
@@ -139,7 +139,7 @@ namespace Ikarus {
      * @return StressMatrix The stresses.
      */
     template <bool voigt, typename Derived>
-    auto stressesImpl(const Eigen::MatrixBase<Derived> &E) const {
+    auto stressesImpl(const Eigen::MatrixBase<Derived>& E) const {
       const auto [nonOp, Esol] = reduceStress(E);
       auto stressesRed         = matImpl.template stresses<MaterialImpl::strainTag, true>(Esol);
 
@@ -157,7 +157,7 @@ namespace Ikarus {
      * @return TangentModuli The tangent moduli.
      */
     template <bool voigt, typename Derived>
-    auto tangentModuliImpl(const Eigen::MatrixBase<Derived> &E) const {
+    auto tangentModuliImpl(const Eigen::MatrixBase<Derived>& E) const {
       const auto [nonOp, Esol] = reduceStress(E);
       auto C                   = matImpl.template tangentModuli<MaterialImpl::strainTag, true>(Esol);
       if constexpr (voigt)
@@ -185,7 +185,7 @@ namespace Ikarus {
      * @return decltype(auto) The converted strain matrix.
      */
     template <typename Derived>
-    decltype(auto) maybeFromVoigt(const Eigen::MatrixBase<Derived> &E) const {
+    decltype(auto) maybeFromVoigt(const Eigen::MatrixBase<Derived>& E) const {
       if constexpr (Concepts::EigenVector<Derived>) {  // receiving vector means Voigt notation
         return fromVoigt(E.derived(), true);
       } else
@@ -198,7 +198,7 @@ namespace Ikarus {
      * @param E The input strain matrix.
      */
     template <typename Derived>
-    void initUnknownStrains(Eigen::MatrixBase<Derived> &E) const {
+    void initUnknownStrains(Eigen::MatrixBase<Derived>& E) const {
       for (size_t i = 0; i < fixedPairs.size(); ++i) {
         ScalarType initialVal = E(fixedPairs[i].row, fixedPairs[i].col);
         if constexpr (strainTag == StrainTags::deformationGradient or strainTag == StrainTags::rightCauchyGreenTensor) {
@@ -217,7 +217,7 @@ namespace Ikarus {
      * @return std::pair<NonLinearOperator, decltype(auto)> The stress reduction result.
      */
     template <typename Derived>
-    auto reduceStress(const Eigen::MatrixBase<Derived> &p_Eraw) const {
+    auto reduceStress(const Eigen::MatrixBase<Derived>& p_Eraw) const {
       auto E = maybeFromVoigt(p_Eraw);
       initUnknownStrains(E);
 
@@ -227,11 +227,11 @@ namespace Ikarus {
         if (indexPair[0] == indexPair[1]) fixedDiagonalVoigtIndices[ri++] = i;
       }
 
-      auto f = [&](auto &) {
+      auto f = [&](auto&) {
         auto S = matImpl.template stresses<MaterialImpl::strainTag, true>(E);
         return S(fixedDiagonalVoigtIndices).eval();
       };
-      auto df = [&](auto &) {
+      auto df = [&](auto&) {
         auto moduli = (matImpl.template tangentModuli<MaterialImpl::strainTag, true>(E)).eval();
         return (moduli(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices) / MaterialImpl::derivativeFactor).eval();
       };
@@ -239,8 +239,8 @@ namespace Ikarus {
       auto Er    = E(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices).eval().template cast<ScalarType>();
       auto nonOp = Ikarus::NonLinearOperator(functions(f, df), parameter(Er));
       auto nr    = Ikarus::makeNewtonRaphson(
-             nonOp, [&](auto &r, auto &A) { return (A.inverse() * r).eval(); },
-             [&](auto    &/* Ex33 */, auto &Ecomps) {
+             nonOp, [&](auto& r, auto& A) { return (A.inverse() * r).eval(); },
+             [&](auto& /* Ex33 */, auto& Ecomps) {
             for (int ri = 0; auto i : fixedDiagonalVoigtIndices) {
               auto indexPair = fromVoigt(i);
               E(indexPair[0], indexPair[1]) += Ecomps(ri++);
@@ -280,7 +280,7 @@ namespace Ikarus {
    * @return VanishingStress The created VanishingStress material for plane stress.
    */
   template <typename MaterialImpl>
-  auto planeStress(const MaterialImpl &mat, typename MaterialImpl::ScalarType p_tol = 1e-8) {
+  auto planeStress(const MaterialImpl& mat, typename MaterialImpl::ScalarType p_tol = 1e-8) {
     return makeVanishingStress<Impl::StressIndexPair{2, 1}, Impl::StressIndexPair{2, 0}, Impl::StressIndexPair{2, 2}>(
         mat, p_tol);
   }
@@ -294,7 +294,7 @@ namespace Ikarus {
    * @return VanishingStress The created VanishingStress material for plane stress.
    */
   template <typename MaterialImpl>
-  auto shellMaterial(const MaterialImpl &mat, typename MaterialImpl::ScalarType p_tol = 1e-8) {
+  auto shellMaterial(const MaterialImpl& mat, typename MaterialImpl::ScalarType p_tol = 1e-8) {
     return makeVanishingStress<Impl::StressIndexPair{2, 2}>(mat, p_tol);
   }
 
@@ -307,7 +307,7 @@ namespace Ikarus {
    * @return VanishingStress The created VanishingStress material for plane stress.
    */
   template <typename MaterialImpl>
-  auto beamMaterial(const MaterialImpl &mat, typename MaterialImpl::ScalarType p_tol = 1e-8) {
+  auto beamMaterial(const MaterialImpl& mat, typename MaterialImpl::ScalarType p_tol = 1e-8) {
     return makeVanishingStress<Impl::StressIndexPair{1, 1}, Impl::StressIndexPair{2, 2}>(mat, p_tol);
   }
 }  // namespace Ikarus
