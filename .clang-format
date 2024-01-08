@@ -2,21 +2,23 @@
 # SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: CC0-1.0
   BasedOnStyle: Google
-  AccessModifierOffset: '-2'
+  PointerAlignment: Left
+  DerivePointerAlignment: false
+  AccessModifierOffset: -2
   AlignTrailingComments: true
   AllowAllParametersOfDeclarationOnNextLine: false
-  AlwaysBreakTemplateDeclarations: 'Yes'
+  AlwaysBreakTemplateDeclarations: Yes
   AllowShortLoopsOnASingleLine: false
   BreakBeforeBraces: Attach
   ColumnLimit: 120
   ConstructorInitializerAllOnOneLineOrOnePerLine: true
-  SortIncludes: true
+  SortIncludes: CaseInsensitive
   IndentPPDirectives: AfterHash
   AlignConsecutiveAssignments: Consecutive
-  IndentWidth: '2'
+  IndentWidth: 2
   NamespaceIndentation: All
   BreakBeforeBinaryOperators: All
-  BreakBeforeTernaryOperators: 'true'
+  BreakBeforeTernaryOperators: true
   IncludeBlocks: Regroup
   IncludeCategories:
     - Regex: 'config.h'
