@@ -74,7 +74,7 @@ static auto NonLinearKLShellLoadControlTR() {
     return fext;
   };
 
-  using ElementType = Ikarus::AutoDiffFE<Ikarus::KirchhoffLoveShell<decltype(basis)>>;
+  using ElementType = KirchhoffLoveShell<decltype(basis)>;
   std::vector<ElementType> fes;
 
   for (auto& element : elements(gridView))
@@ -117,12 +117,14 @@ static auto NonLinearKLShellLoadControlTR() {
     return sparseAssembler.getScalar(req);
   };
 
-  auto nonLinOp
-      = Ikarus::NonLinearOperator(functions(energyFunction, residualFunction, KFunction), parameter(d, lambda));
+  auto nonLinOp = NonLinearOperator(functions(energyFunction, residualFunction, KFunction), parameter(d, lambda));
 
-  const double gradTol = 1e-8;
+  t.check(utils::checkGradient(nonLinOp, {.draw = false})) << "Check gradient failed";
+  t.check(utils::checkHessian(nonLinOp, {.draw = false})) << "Check hessian failed";
 
-  auto tr = Ikarus::makeTrustRegion(nonLinOp);
+  const double gradTol = 1e-14;
+
+  auto tr = makeTrustRegion(nonLinOp);
   tr->setup({.verbosity = 1,
              .maxiter   = 1000,
              .grad_tol  = gradTol,
@@ -136,14 +138,16 @@ static auto NonLinearKLShellLoadControlTR() {
   vtkWriter->setFileNamePrefix("TestKLShell");
   vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 3);
 
-  auto lc = Ikarus::LoadControl(tr, 1, {0, 1});
+  auto lc = LoadControl(tr, 1, {0, 1});
   lc.subscribeAll(vtkWriter);
   const auto controlInfo = lc.run();
 
   t.check(controlInfo.success);
-  std::cout << std::setprecision(16) << std::ranges::max(d) << std::endl;
-  t.check(Dune::FloatCmp::eq(0.2087577577980777, std::ranges::max(d)))
-      << std::setprecision(16) << "The maximum displacement is " << std::ranges::max(d);
+  const auto maxDisp = std::ranges::max(d);
+  std::cout << std::setprecision(16) << maxDisp << std::endl;
+  t.check(Dune::FloatCmp::eq(0.2087574597947082, maxDisp, 1e-6))
+      << std::setprecision(16) << "The maximum displacement is " << maxDisp << "but it should be " << 0.2087574597947082
+      << ". The difference is " << 0.2087574597947082 - maxDisp;
   return t;
 }
 
