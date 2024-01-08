@@ -1,5 +1,11 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
+
+/**
+ * \file makeenum.hh
+ * \brief Implementation of the make enum macro
+ */
+
 #pragma once
 // https://www.scs.stanford.edu/~dm/blog/va-opt.html
 
@@ -22,13 +28,22 @@
   case name:            \
     return #name;
 
+/**
+ * \brief Macro to create an enumeration with a string conversion function.
+ *  \ingroup utils
+ * The macro creates an enum class with a BEGIN and END enumerator, and provides a constexpr
+ * toString function for string conversion.
+ *
+ * \param type The name of the enum class.
+ * \param ... Enumerators to be included between BEGIN and END.
+ */
 #define MAKE_ENUM(type, ...)                   \
   enum class type { BEGIN, __VA_ARGS__, END }; \
   constexpr std::string toString(type _e) {    \
     using enum type;                           \
     switch (_e) {                              \
-      FOR_EACH(ENUM_CASE, __VA_ARGS__)         \
       ENUM_CASE(BEGIN)                         \
+      FOR_EACH(ENUM_CASE, __VA_ARGS__)         \
       ENUM_CASE(END)                           \
     }                                          \
     __builtin_unreachable();                   \
@@ -36,6 +51,14 @@
 
 #include <dune/common/exceptions.hh>
 namespace Ikarus {
+  /**
+   * \brief Increments the given enum value.
+   *  \ingroup utils
+   * \tparam MessageType The enum type.
+   * \param e The enum value to increment.
+   * \return The incremented enum value.
+   * \throws Dune::RangeError if trying to increment MessageType::END.
+   */
   template <typename MessageType>
   MessageType& increment(MessageType& e) {
     if (e == MessageType::END) {

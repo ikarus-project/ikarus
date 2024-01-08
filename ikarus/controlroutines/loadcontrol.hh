@@ -1,27 +1,47 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * \file loadcontrol.hh
+ * \brief Defines the LoadControl class.
+ */
+
 #pragma once
+
 #include <memory>
 
 #include <ikarus/controlroutines/controlinfos.hh>
-#include <ikarus/linearalgebra/nonlinearoperator.hh>
-#include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observermessages.hh>
 
 namespace Ikarus {
 
-  /**  The loadControl control routine simply increases the last parameter of a nonlinear operator and then calls
-   * a nonlinear solver, e.g. Newton's method */
+  /**
+   * \class LoadControl
+   * \brief The LoadControl control routine increases the last parameter of a nonlinear operator and calls a nonlinear
+   * solver.
+   *   \ingroup controlroutines
+   * This class represents the LoadControl control routine. It increments the last parameter of a nonlinear operator
+   * and utilizes a nonlinear solver, such as Newton's method, to solve the resulting system at each step.
+   *
+   * \tparam NonLinearSolver Type of the nonlinear solver used in the control routine.
+   */
   template <typename NonLinearSolver>
   class LoadControl : public IObservable<ControlMessages> {
   public:
-    static constexpr std::string_view name_ = "Load Control Method";
+    /** \brief The name of the LoadControl method. */
+    constexpr auto name() const { return std::string("Load Control Method"); }
 
-    LoadControl(const std::shared_ptr<NonLinearSolver>& p_nonLinearSolver, int loadSteps,
+    /**
+     * \brief Constructor for LoadControl.
+     *
+     * \param nonLinearSolver_ Shared pointer to the nonlinear solver.
+     * \param loadSteps Number of load steps in the control routine.
+     * \param tbeginEnd Array representing the range of load parameters [tbegin, tend].
+     */
+    LoadControl(const std::shared_ptr<NonLinearSolver>& nonLinearSolver_, int loadSteps,
                 const std::array<double, 2>& tbeginEnd)
-        : nonLinearSolver{p_nonLinearSolver},
+        : nonLinearSolver{nonLinearSolver_},
           loadSteps_{loadSteps},
           parameterBegin_{tbeginEnd[0]},
           parameterEnd_{tbeginEnd[1]},
@@ -34,35 +54,12 @@ namespace Ikarus {
           "The last parameter (load factor) must be assignable and incrementable with a double!");
     }
 
-    ControlInformation run() {
-      ControlInformation info({false});
-      auto& nonOp = nonLinearSolver->nonLinearOperator();
-      this->notify(ControlMessages::CONTROL_STARTED, static_cast<std::string>(name_));
-      auto& loadParameter = nonOp.lastParameter();
-
-      loadParameter = 0.0;
-      this->notify(ControlMessages::STEP_STARTED, 0, stepSize_);
-      auto solverInfo = nonLinearSolver->solve();
-      info.solverInfos.push_back(solverInfo);
-      info.totalIterations += solverInfo.iterations;
-      if (not solverInfo.success) return info;
-      this->notify(ControlMessages::SOLUTION_CHANGED);
-      this->notify(ControlMessages::STEP_ENDED);
-
-      for (int ls = 0; ls < loadSteps_; ++ls) {
-        this->notify(ControlMessages::STEP_STARTED, ls, stepSize_);
-        loadParameter += stepSize_;
-        solverInfo = nonLinearSolver->solve();
-        info.solverInfos.push_back(solverInfo);
-        info.totalIterations += solverInfo.iterations;
-        if (not solverInfo.success) return info;
-        this->notify(ControlMessages::SOLUTION_CHANGED);
-        this->notify(ControlMessages::STEP_ENDED);
-      }
-      this->notify(ControlMessages::CONTROL_ENDED, info.totalIterations, static_cast<std::string>(name_));
-      info.success = true;
-      return info;
-    }
+    /**
+     * \brief Executes the LoadControl routine.
+     *
+     * \return ControlInformation structure containing information about the control results.
+     */
+    ControlInformation run();
 
   private:
     std::shared_ptr<NonLinearSolver> nonLinearSolver;
@@ -71,4 +68,7 @@ namespace Ikarus {
     double parameterEnd_;
     double stepSize_;
   };
+
 }  // namespace Ikarus
+
+#include <ikarus/controlroutines/loadcontrol.inl>

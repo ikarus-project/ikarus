@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * \file material.hh
+ * \brief Python bindings for materials
+ */
+
 #pragma once
 
 #include <dune/common/classname.hh>

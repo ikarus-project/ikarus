@@ -22,7 +22,7 @@ static auto polyFitTest1() {
   Eigen::VectorXd x = Eigen::VectorXd::LinSpaced(10, 0, 10);
   Eigen::VectorXd y = Eigen::VectorXd::LinSpaced(10, 2, 20);
 
-  auto [poly, normE] = Ikarus::polyfit(x, y, 1);
+  auto [poly, normE] = Ikarus::utils::polyfit(x, y, 1);
   t.check(Dune::FloatCmp::eq(2.0, poly.coefficients()[0]));
   t.check(Dune::FloatCmp::eq(1.8, poly.coefficients()[1]));
   t.check(1e-14 > normE);
@@ -38,7 +38,7 @@ static auto polyFitTest2() {
     y[i] += (1 - i / 10.0) * factor - (1 - i * i / 10.0) * factor + std::sin(i / 10.0);
   }
 
-  auto [poly, normE] = Ikarus::polyfit(x, y, 2);
+  auto [poly, normE] = Ikarus::utils::polyfit(x, y, 2);
 
   t.check(Dune::FloatCmp::eq(-0.0038062785674569739, poly.coefficients()[0]));
   t.check(Dune::FloatCmp::eq(-0.58760441700969401, poly.coefficients()[1]));

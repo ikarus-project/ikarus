@@ -11,9 +11,9 @@
 
 #include <ikarus/finiteelements/mechanics/materials.hh>
 #include <ikarus/finiteelements/physicshelper.hh>
-#include <ikarus/linearalgebra/nonlinearoperator.hh>
 #include <ikarus/utils/functionsanitychecks.hh>
 #include <ikarus/utils/init.hh>
+#include <ikarus/utils/nonlinearoperator.hh>
 
 using namespace Ikarus;
 using Dune::TestSuite;
@@ -102,9 +102,11 @@ auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-14) {
   auto nonLinOp    = Ikarus::NonLinearOperator(functions(f, df, ddf), parameter(ev));
   auto subNonLinOp = nonLinOp.template subOperator<1, 2>();
 
-  t.check(checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true})) << "checkGradient Failed";
-  t.check(checkHessian(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true})) << "checkHessian Failed";
-  t.check(checkJacobian(subNonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true})) << "checkJacobian Failed";
+  t.check(utils::checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}))
+      << "checkGradient Failed";
+  t.check(utils::checkHessian(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true})) << "checkHessian Failed";
+  t.check(utils::checkJacobian(subNonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}))
+      << "checkJacobian Failed";
 
   return t;
 }

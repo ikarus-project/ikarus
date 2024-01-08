@@ -1,6 +1,12 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file enhancedassumedstrains.hh
+ * @brief Definition of the EAS class.
+ * @ingroup  mechanics
+ */
+
 #pragma once
 #if HAVE_DUNE_LOCALFEFUNCTIONS
 #  include <dune/localfefunctions/derivativetransformators.hh>
@@ -11,6 +17,15 @@
 
 namespace Ikarus {
 
+  /**
+   * @brief Calculates the 2D transformation matrix for Enhanced Assumed Strains (EAS).
+   *
+   * This function computes the transformation matrix for 2D EAS using the provided geometry.
+   *
+   * @tparam Geometry The geometry type.
+   * @param geometry Reference to the geometry object.
+   * @return Transformation matrix for 2D EAS.
+   */
   template <typename Geometry>
   Eigen::Matrix3d calcTransformationMatrix2D(const Geometry& geometry) {
     const auto& referenceElement = Dune::ReferenceElements<double, 2>::general(geometry.type());
@@ -34,6 +49,15 @@ namespace Ikarus {
     return T0.inverse() * detJ0;
   }
 
+  /**
+   * @brief Calculates the 3D transformation matrix for Enhanced Assumed Strains (EAS).
+   *
+   * This function computes the transformation matrix for 3D EAS using the provided geometry.
+   *
+   * @tparam Geometry The geometry type.
+   * @param geometry Reference to the geometry object.
+   * @return Transformation matrix for 3D EAS.
+   */
   template <typename Geometry>
   Eigen::Matrix<double, 6, 6> calcTransformationMatrix3D(const Geometry& geometry) {
     const auto& referenceElement = Dune::ReferenceElements<double, 3>::general(geometry.type());
@@ -66,6 +90,15 @@ namespace Ikarus {
     return T0.inverse() * detJ0;
   }
 
+  /**
+   * @brief EASQ1E4 structure for Enhanced Assumed Strains (EAS) with linear strains and 4 enhanced modes.
+   *
+   * \details The EASQ1E4 structure represents an implementation of Enhanced Assumed Strains (EAS)
+   * for a specific case where linear strains are considered, and the method includes
+   * enhancement with 4 additional modes to improve the accuracy of finite element solutions.
+   *
+   * @tparam Geometry The geometry type.
+   */
   template <typename Geometry>
   struct EASQ1E4 {
     static constexpr int strainSize         = 3;
@@ -95,6 +128,13 @@ namespace Ikarus {
     Eigen::Matrix3d T0InverseTransformed;
   };
 
+  /**
+   * @brief Structure representing EAS for Q1 with 5 enhanced strains.
+   *
+   * This structure defines the EAS for Q1 elements with 5 enhanced strains.
+   *
+   * @tparam Geometry The geometry type.
+   */
   template <typename Geometry>
   struct EASQ1E5 {
     static constexpr int strainSize         = 3;
@@ -125,6 +165,13 @@ namespace Ikarus {
     Eigen::Matrix3d T0InverseTransformed;
   };
 
+  /**
+   * @brief Structure representing EAS for Q1 with 7 enhanced strains.
+   *
+   * This structure defines the EAS for Q1 elements with 7 enhanced strains.
+   *
+   * @tparam Geometry The geometry type.
+   */
   template <typename Geometry>
   struct EASQ1E7 {
     static constexpr int strainSize         = 3;
@@ -157,6 +204,13 @@ namespace Ikarus {
     Eigen::Matrix3d T0InverseTransformed;
   };
 
+  /**
+   * @brief Structure representing EAS for H1 with 9 enhanced strains.
+   *
+   * This structure defines the EAS for H1 elements with 9 enhanced strains.
+   *
+   * @tparam Geometry The geometry type.
+   */
   template <typename Geometry>
   struct EASH1E9 {
     static constexpr int strainSize         = 6;
@@ -191,6 +245,13 @@ namespace Ikarus {
     Eigen::Matrix<double, 6, 6> T0InverseTransformed;
   };
 
+  /**
+   * @brief Structure representing EAS for H1 with 21 enhanced strains.
+   *
+   * This structure defines the EAS for H1 elements with 21 enhanced strains.
+   *
+   * @tparam Geometry The geometry type.
+   */
   template <typename Geometry>
   struct EASH1E21 {
     static constexpr int strainSize         = 6;
@@ -241,11 +302,35 @@ namespace Ikarus {
     Eigen::Matrix<double, 6, 6> T0InverseTransformed;
   };
 
+  /**
+   * @brief Variant type for 2D EAS structures.
+   *
+   * This variant type holds different EAS structures for 2D elements.
+   *
+   * @tparam Geometry The geometry type.
+   */
   template <typename Geometry>
   using EAS2DVariant = std::variant<std::monostate, EASQ1E4<Geometry>, EASQ1E5<Geometry>, EASQ1E7<Geometry>>;
+
+  /**
+   * @brief Variant type for 3D EAS structures.
+   *
+   * This variant type holds different EAS structures for 3D elements.
+   *
+   * @tparam Geometry The geometry type.
+   */
   template <typename Geometry>
   using EAS3DVariant = std::variant<std::monostate, EASH1E9<Geometry>, EASH1E21<Geometry>>;
 
+  /**
+   * @brief Wrapper class for using Enhanced Assumed Strains (EAS) with displacement based elements.
+   *
+   * @ingroup mechanics
+   *
+   * This class extends a displacement-based element to support Enhanced Assumed Strains.
+   *
+   * @tparam DisplacementBasedElement The base displacement-based element type.
+   */
   template <typename DisplacementBasedElement>
   class EnhancedAssumedStrains : public DisplacementBasedElement {
   public:
@@ -256,26 +341,64 @@ namespace Ikarus {
     using Traits                 = typename DisplacementBasedElement::Traits;
     using DisplacementBasedElement::localView;
 
-    // Disabling this forwarding constructor if the argument provided is EnhancedAssumedStrains itself, to forward the
+    /**
+ * @brief Constructor for Enhanced Assumed Strains elements.
+    * \details Disabling this forwarding constructor if the argument provided is EnhancedAssumedStrains itself, to
+ forward the
     // calls to the implicit copy constructor
+ * @tparam Args Variadic template for constructor arguments.
+ * @param args Constructor arguments forwarded to the base class.
+ */
     template <typename... Args>
     requires(not std::is_same_v<std::remove_cvref_t<std::tuple_element_t<0, std::tuple<Args...>>>,
                                 EnhancedAssumedStrains>) explicit EnhancedAssumedStrains(Args&&... args)
         : DisplacementBasedElement(std::forward<Args>(args)...) {}
 
-    inline double calculateScalar(const FERequirementType& par) const {
+    /**
+     * @brief Calculates a scalar quantity for the element.
+     *
+     * This function calculates a scalar quantity for the element based on the FERequirementType.
+     *
+     * @param par The FERequirementType object.
+     * @return Computed scalar quantity.
+     */
+    double calculateScalar(const FERequirementType& par) const {
       if (isDisplacementBased()) return DisplacementBasedElement::calculateScalar(par);
       DUNE_THROW(Dune::NotImplemented,
                  "EAS element do not support any scalar calculations, i.e. they are not derivable from a potential");
     }
 
+    /**
+     * @brief Checks if the element is displacement-based and the EAS is turned off.
+     *
+     * @return True if the element is displacement-based, false otherwise.
+     */
     bool isDisplacementBased() const { return std::holds_alternative<std::monostate>(easVariant_); }
 
+    /**
+     * @brief Calculates vectorial quantities for the element.
+     *
+     * This function calculates the vectorial quantities for the element based on the FERequirementType.
+     *
+     * @param par The FERequirementType object.
+     * @param force Vector to store the calculated forces.
+     */
     inline void calculateVector(const FERequirementType& par, typename Traits::template VectorType<> force) const {
       calculateVectorImpl<double>(par, force);
     }
 
+    /**
+     * @brief Gets the variant representing the type of Enhanced Assumed Strains (EAS).
+     *
+     * @return Const reference to the EAS variant.
+     */
     const auto& easVariant() const { return easVariant_; }
+
+    /**
+     * @brief Gets the number of EAS parameters based on the current EAS type.
+     *
+     * @return Number of EAS parameters.
+     */
     auto getNumberOfEASParameters() const {
       return std::visit(
           [&]<typename EAST>(const EAST&) {
@@ -287,6 +410,14 @@ namespace Ikarus {
           easVariant_);
     }
 
+    /**
+     * @brief Calculates the matrix for the element.
+     *
+     * This function calculates the matrix for the element based on the FERequirementType.
+     *
+     * @param par The FERequirementType object.
+     * @param K Matrix to store the calculated stiffness.
+     */
     void calculateMatrix(const FERequirementType& par, typename Traits::template MatrixType<> K) const {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
@@ -312,6 +443,20 @@ namespace Ikarus {
           easVariant_);
     }
 
+    /**
+     * @brief Calculates the results at a given set of local coordinates using the Enhanced Assumed Strains (EAS)
+     * method.
+     *
+     * This function calculates the results at the specified local coordinates .
+     * It takes into account the displacement-based element calculations and, if applicable, incorporates the EAS method
+     * for enhanced accuracy.
+     *
+     * @param req The result requirements.
+     * @param local The local coordinates at which results are to be calculated.
+     * @param result The result container to store the calculated values.
+     *
+     * @tparam ResultRequirementsType The type representing the requirements for results.
+     */
     void calculateAt(const ResultRequirementsType& req, const Dune::FieldVector<double, Traits::mydim>& local,
                      ResultTypeMap<double>& result) const {
       using namespace Dune::Indices;
@@ -353,6 +498,11 @@ namespace Ikarus {
           easVariant_);
     }
 
+    /**
+     * @brief Sets the EAS type for 2D elements.
+     *
+     * @param numberOfEASParameters_ The number of EAS parameters
+     */
     void setEASType(int numberOfEASParameters_) {
       const auto& numNodes = DisplacementBasedElement::numberOfNodes;
       if (not((numNodes == 4 and Traits::mydim == 2) or (numNodes == 8 and Traits::mydim == 3))

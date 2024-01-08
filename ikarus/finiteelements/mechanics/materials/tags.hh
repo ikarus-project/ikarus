@@ -1,11 +1,35 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
+
+/**
+ * @file tags.hh
+ * @brief Definition of several material related enums
+ * @ingroup  materials
+ */
+
 #pragma once
 
 #include <ikarus/utils/makeenum.hh>
 
 namespace Ikarus {
-  MAKE_ENUM(StrainTags, linear, deformationGradient, displacementGradient, greenLagrangian, rightCauchyGreenTensor)
-  MAKE_ENUM(StressTags, linear, PK2, PK1, Cauchy, Kirchhoff)
-  MAKE_ENUM(TangentModuliTags, Material, Spatial, TwoPoint)
+  /**
+   *
+   * \ingroup Materialtags materials
+   * \brief A strongly typed enum class representing the type of the passed strain
+   */
+  MAKE_ENUM(StrainTags, linear, deformationGradient, displacementGradient, greenLagrangian, rightCauchyGreenTensor);
+
+  /**
+   *
+   * \ingroup Materialtags materials
+   * \brief A strongly typed enum class representing the type of the computed stresses
+   */
+  MAKE_ENUM(StressTags, linear, PK2, PK1, Cauchy, Kirchhoff);
+
+  /**
+   *
+   * \ingroup Materialtags materials
+   * \brief A strongly typed enum class representing the type of the computed tangent moduli
+   */
+  MAKE_ENUM(TangentModuliTags, Material, Spatial, TwoPoint);
 }  // namespace Ikarus

@@ -1,17 +1,47 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file svk.hh
+ * @brief Implementation of the Saint Venant-Kirchhoff material model.
+ * @ingroup  materials
+ */
+
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #pragma once
 
 #include <ikarus/finiteelements/mechanics/materials/interface.hh>
 #include <ikarus/utils/tensorutils.hh>
 
 namespace Ikarus {
-  template <typename ScalarType_ = double>
+
+  /**
+   * @brief Implementation of the Saint Venant-Kirchhoff material model.
+   * @ingroup materials
+   *   The energy is computed as
+   *  \f[ \psi(\BE) = \frac{\lambda}{2} (\tr \BE)^2   +\mu \tr (\BE^2) ,\f]
+   *  where \f$ \BE \f$ denotes the Green-Lagrangian strain.
+   *
+   *  The second Piola-Kirchhoff stresses are computed as
+   *     \f[ \BS(\BE) =\fracpt{\psi(\BE)}{\BE} = \lambda \tr \BE \BI  +2 \mu \BE,\f]
+   *
+   * and the material tangent moduli are computed as
+   *      \f[ \BBC(\BE) =\fracpt{^2\psi(\BE)}{\BE^2} =  \lambda \tr \BE \CI  +2 \mu \CI^{\mathrm{sym}},\f]
+   *      where \f$ \CI_{IJKL} =  \de_{IJ}\de_{KL}\f$ and \f$ \CI_{IJKL}^\mathrm{sym} =  \frac{1}{2}(\de_{IK}\de_{JL}+
+   * \de_{IL}\de_{JK})\f$.
+   * @tparam ScalarType_ The scalar type used in the material.
+   */
+  template <typename ScalarType_>
   struct StVenantKirchhoffT : public Material<StVenantKirchhoffT<ScalarType_>> {
     [[nodiscard]] constexpr std::string nameImpl() const { return "StVenantKirchhoff"; }
 
+    /**
+     * @brief Constructor for StVenantKirchhoffT.
+     * @param mpt The material parameters (Lamé's first parameter and shear modulus).
+     */
     explicit StVenantKirchhoffT(const LamesFirstParameterAndShearModulus& mpt) : materialParameter{mpt} {}
+
     using ScalarType                    = ScalarType_;
     static constexpr int worldDimension = 3;
     using StrainMatrix                  = Eigen::Matrix<ScalarType, worldDimension, worldDimension>;
@@ -31,6 +61,12 @@ namespace Ikarus {
     // This factor is pre factor, which is the difference to the actual derivative is written here
     static constexpr double derivativeFactor = 1;
 
+    /**
+     * @brief Computes the stored energy in the Saint Venant-Kirchhoff material model.
+     * @tparam Derived The derived type of the input matrix.
+     * @param E The Green-Lagrangian strain.
+     * @return ScalarType The stored energy.
+     */
     template <typename Derived>
     ScalarType storedEnergyImpl(const Eigen::MatrixBase<Derived>& E) const {
       static_assert(Concepts::EigenMatrixOrVoigtNotation3<Derived>);
@@ -45,50 +81,64 @@ namespace Ikarus {
       }
     }
 
+    /**
+     * @brief Computes the stresses in the Saint Venant-Kirchhoff material model.
+     * @tparam voigt A boolean indicating whether to return stresses in Voigt notation.
+     * @tparam Derived The derived type of the input matrix.
+     * @param E The Green-Lagrangian strain.
+     * @return StressMatrix The stresses.
+     */
     template <bool voigt, typename Derived>
-    auto stressesImpl(const Eigen::MatrixBase<Derived>& EMB) const {
-      static_assert(Concepts::EigenMatrixOrVoigtNotation3<decltype(EMB.eval())>);
-      const auto& E = EMB.derived();
+    auto stressesImpl(const Eigen::MatrixBase<Derived>& E) const {
+      static_assert(Concepts::EigenMatrixOrVoigtNotation3<decltype(E.eval())>);
+      const auto& Ed = E.derived();
       if constexpr (!voigt) {
         if constexpr (Concepts::EigenVector<Derived>) {
           static_assert(Concepts::EigenVector6<Derived>);
           Eigen::Matrix<ScalarType, 3, 3> S;
-          const ScalarType traceE = E.template segment<3>(0).sum();
+          const ScalarType traceE = Ed.template segment<3>(0).sum();
           S.diagonal().array()
-              = materialParameter.lambda * traceE + 2 * materialParameter.mu * E.template segment<3>(0).array();
-          S(1, 2) = S(2, 1) = materialParameter.mu * E(3);
-          S(0, 2) = S(2, 0) = materialParameter.mu * E(4);
-          S(0, 1) = S(1, 0) = materialParameter.mu * E(5);  // no two since E voigt has 2* on off-diagonal terms
+              = materialParameter.lambda * traceE + 2 * materialParameter.mu * Ed.template segment<3>(0).array();
+          S(1, 2) = S(2, 1) = materialParameter.mu * Ed(3);
+          S(0, 2) = S(2, 0) = materialParameter.mu * Ed(4);
+          S(0, 1) = S(1, 0) = materialParameter.mu * Ed(5);  // no two since E voigt has 2* on off-diagonal terms
           return S;
         } else {
           static_assert(Concepts::EigenMatrix33<Derived>);
-          return (materialParameter.lambda * E.trace() * StrainMatrix::Identity() + 2 * materialParameter.mu * E)
+          return (materialParameter.lambda * Ed.trace() * StrainMatrix::Identity() + 2 * materialParameter.mu * Ed)
               .eval();
         }
       } else {
         if constexpr (Concepts::EigenVector<Derived>) {
           static_assert(Concepts::EigenVector6<Derived>);
           Eigen::Matrix<ScalarType, 6, 1> S;
-          const ScalarType traceE          = E.template segment<3>(0).sum();
+          const ScalarType traceE          = Ed.template segment<3>(0).sum();
           S.template segment<3>(0).array() = traceE * materialParameter.lambda;
-          S.template segment<3>(0) += materialParameter.mu * 2 * E.template segment<3>(0);
+          S.template segment<3>(0) += materialParameter.mu * 2 * Ed.template segment<3>(0);
           S.template segment<3>(3)
-              = materialParameter.mu * E.template segment<3>(3);  // no two since E voigt has 2* on off-diagonal terms
+              = materialParameter.mu * Ed.template segment<3>(3);  // no two since E voigt has 2* on off-diagonal terms
           return S;
         } else {
           Eigen::Matrix<ScalarType, 6, 1> S;
-          S.template segment<3>(0).array() = E.trace() * materialParameter.lambda;
-          S.template segment<3>(0) += 2 * materialParameter.mu * E.diagonal();
-          S(3) = 2 * materialParameter.mu * E(1, 2);
-          S(4) = 2 * materialParameter.mu * E(0, 2);
-          S(5) = 2 * materialParameter.mu * E(0, 1);
+          S.template segment<3>(0).array() = Ed.trace() * materialParameter.lambda;
+          S.template segment<3>(0) += 2 * materialParameter.mu * Ed.diagonal();
+          S(3) = 2 * materialParameter.mu * Ed(1, 2);
+          S(4) = 2 * materialParameter.mu * Ed(0, 2);
+          S(5) = 2 * materialParameter.mu * Ed(0, 1);
           return S;
         }
       }
     }
 
+    /**
+     * @brief Computes the tangent moduli in the Saint Venant-Kirchhoff material model.
+     * @tparam voigt A boolean indicating whether to return tangent moduli in Voigt notation.
+     * @tparam Derived The derived type of the input matrix.
+     * @param E The Green-Lagrangian strain.
+     * @return Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<3, 3, 3, 3>> The tangent moduli.
+     */
     template <bool voigt, typename Derived>
-    auto tangentModuliImpl(const Eigen::MatrixBase<Derived>&) const {
+    auto tangentModuliImpl([[maybe_unused]] const Eigen::MatrixBase<Derived>& E) const {
       static_assert(Concepts::EigenMatrixOrVoigtNotation3<Derived>);
       if constexpr (!voigt) {
         Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<3, 3, 3, 3>> moduli;
@@ -105,14 +155,22 @@ namespace Ikarus {
       }
     }
 
+    /**
+     * @brief Rebinds the material to a different scalar type.
+     * @tparam ScalarTypeOther The target scalar type.
+     * @return StVenantKirchhoffT<ScalarTypeOther> The rebound StVenantKirchhoff material.
+     */
     template <typename ScalarTypeOther>
     auto rebind() const {
-      return StVenantKirchhoff<ScalarTypeOther>(materialParameter);
+      return StVenantKirchhoffT<ScalarTypeOther>(materialParameter);
     }
 
     LamesFirstParameterAndShearModulus materialParameter;
   };
 
+  /**
+   * @brief Alias for StVenantKirchhoffT with double as the default scalar type.
+   */
   typedef StVenantKirchhoffT<double> StVenantKirchhoff;
 
 }  // namespace Ikarus

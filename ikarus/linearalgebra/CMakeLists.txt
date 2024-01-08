@@ -2,6 +2,6 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 # install headers
-install(FILES nonlinearoperator.hh truncatedconjugategradient.hh dirichletvalues.hh
+install(FILES truncatedconjugategradient.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/linearalgebra
 )

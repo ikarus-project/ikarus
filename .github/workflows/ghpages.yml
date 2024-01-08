@@ -44,6 +44,7 @@ jobs:
           git clone  https://github.com/jothepro/doxygen-awesome-css.git
           cd doxygen-awesome-css
           make install
+          apt-get install texlive-base -y
           cd ..
           cd repo
           mkdir build_docs

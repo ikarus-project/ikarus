@@ -5,6 +5,11 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * \file flatprebasis.hh
+ * \brief Implementation of creating a flat basis from a possibly blocked basis
+ */
+
 #pragma once
 
 #include <cstddef>
@@ -16,8 +21,9 @@
 #include <dune/functions/functionspacebases/powerbasis.hh>
 
 namespace Ikarus {
-  /// \brief Transform a PreBasis into one with flat index-merging strategy
   /**
+   * \brief Transform a PreBasis into one with flat index-merging strategy
+   *\ingroup utils
    * This utility takes a pre-basis and converts recursively all index-merging strategies
    * into their flat analog, i.e. `BlockedInterleaved` is converted into `FlatInterleaved`
    * and `BlockedLexicographic` is transformed into `FlatLexicographic`.
@@ -25,8 +31,7 @@ namespace Ikarus {
    * This type-trait needs to be specialized for all PreBasis types that need special handling,
    * like PowerPreBasis or CompositePreBasis.
    *
-   * \relates flatPreBasis()
-   * \relates FlatPreBasis_t
+   * \relates decltype(auto) flatPreBasis(PreBasis const& preBasis)
    **/
   template <class PreBasis>
   struct FlatPreBasis {
@@ -94,6 +99,7 @@ namespace Ikarus {
   };
 
   /// \brief Generator function for a flatted PreBasis
+  ///  \ingroup utils
   template <class PreBasis>
   decltype(auto) flatPreBasis(PreBasis const& preBasis) {
     return FlatPreBasis<PreBasis>::create(preBasis);

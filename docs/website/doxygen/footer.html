@@ -1,0 +1,41 @@
+<!--
+SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+SPDX-License-Identifier: LGPL-3.0-or-later
+-->
+
+
+<!-- HTML footer for doxygen 1.9.6-->
+<!-- start footer part -->
+<!--BEGIN GENERATE_TREEVIEW-->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+    <ul>
+        $navpath
+        <li class="footer">
+            &copy; Copyright 2021-<script>document.write(new Date().getFullYear())</script> <a href="https://github.com/ikarus-project/ikarus/blob/main/LICENSE.md">Ikarus project contributors</a>
+            (doc pages: <a href="https://creativecommons.org/licenses/by/4.0/">CC-BY 4.0</a> /
+            code examples: <a href="https://www.gnu.org/licenses/gpl-3.0.en.html">LGPLv3 or later</a>) &#160;
+            <img class="footer" alt="Ikarus" src="$relpath^$projectlogo" height="15"/> $projectnumber
+            &#160; $generatedby <a href="https://www.doxygen.org/index.html"><img class="footer" src="$relpath^doxygen.svg" width="104" height="31" alt="doxygen"/></a> $doxygenversion </li>
+    </ul>
+</div>
+<!--END GENERATE_TREEVIEW-->
+<!--BEGIN !GENERATE_TREEVIEW-->
+<hr class="footer"/><address class="footer"><small>
+    $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="$relpath^doxygen.svg" width="104" height="31" alt="doxygen"/></a> $doxygenversion
+</small></address>
+<!--END !GENERATE_TREEVIEW-->
+<!--MERMAID GRAPHS-->
+<script>
+    mermaid.initialize({
+        startOnLoad: true,
+        theme: 'base',
+        themeVariables: {
+            primaryColor: '#f4f4ff',
+            secondaryColor: 'rgba(244,244,255,0.9)',
+            tertiaryColor: '#F9FAFC',
+        },
+    });
+</script>
+<!--MERMAID GRAPHS-->
+</body>
+</html>

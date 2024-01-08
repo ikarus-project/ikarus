@@ -1,44 +1,38 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * \file pythonautodiffdefinitions.hh
+ * \brief Implementation of forwarding autodiff types from python to c++ and vice versa
+ */
+
 #pragma once
 #include <Python.h>
 #include <cstddef>
-#include <memory>
-#include <utility>
 
 #include <dune/fufem/dunepython.hh>
-#include <dune/functions/functionspacebases/basistags.hh>
 
 #include <autodiff/forward/real/real.hpp>
-
-#include <ikarus/utils/basis.hh>
-
-namespace Ikarus {
-  template <typename... Args>
-  auto makeSharedBasis(Args&&... args) {
-    using namespace Dune::Functions::BasisFactory;
-    using DuneBasis = decltype(makeBasis(std::forward<Args>(args)...));
-    return std::make_shared<DuneBasis>(makeBasis(std::forward<Args>(args)...));
-  }
-
-  template <typename... Args>
-  auto makeConstSharedBasis(Args&&... args) {
-    using namespace Dune::Functions::BasisFactory;
-    using DuneBasis = decltype(makeBasis(std::forward<Args>(args)...));
-    return std::make_shared<const DuneBasis>(makeBasis(std::forward<Args>(args)...));
-  }
-}  // namespace Ikarus
 
 namespace Python {
   // *****************************************************************************
   // specializations of Conversion that do the PyObject* <-> C++-type conversion
   // *****************************************************************************
 
-  // conversion of autodiff::Real
+  /**
+   * @brief Conversion specialization for autodiff::Real type.
+   * @tparam order The order of autodiff::Real.
+   * @tparam T The underlying type of autodiff::Real.
+   */
   template <std::size_t order, class T>
   struct Conversion<autodiff::Real<order, T>> {
     enum { useDefaultConstructorConversion = true };
+
+    /**
+     * @brief Convert autodiff::Real to PyObject*.
+     * @param list Python list object to be populated.
+     * @param v The autodiff::Real object to be converted.
+     */
     static void toC(PyObject* list, autodiff::Real<order, T>& v) {
       auto rlist = Reference(Imp::inc(list));
       // Reference is needed to enable the ".get()" function and "Imp::inc" is
@@ -51,6 +45,11 @@ namespace Python {
         v[i] = PyFloat_AsDouble(wF(i));
     }
 
+    /**
+     * @brief Convert PyObject* to autodiff::Real.
+     * @param v The autodiff::Real object to be populated.
+     * @return PyObject* representing the autodiff::Real object.
+     */
     static PyObject* toPy(const autodiff::Real<order, T>& v) {
       auto pyMain           = Python::main();
       Python::Module module = pyMain.import("autodiff");

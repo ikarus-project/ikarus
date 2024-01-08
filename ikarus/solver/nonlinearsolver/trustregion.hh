@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-/*
- * This code is heavily inspired by the trust-region implementation of
- * https://github.com/NicolasBoumal/manopt/blob/master/manopt/solvers/trustregions/trustregions.m
+/**
+ * \file trustregion.hh
+ * \brief Implementation of the Trust-region method for solving nonlinear equations.
  */
 
 #pragma once
@@ -16,9 +16,9 @@
 
 #include <Eigen/Sparse>
 
-#include <ikarus/linearalgebra/nonlinearoperator.hh>
 #include <ikarus/linearalgebra/truncatedconjugategradient.hh>
 #include <ikarus/solver/nonlinearsolver/solverinfos.hh>
+#include <ikarus/utils/defaultfunctions.hh>
 #include <ikarus/utils/linearalgebrahelper.hh>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observermessages.hh>
@@ -26,23 +26,34 @@
 
 namespace Ikarus {
 
+  /**
+   * \enum PreConditioner
+   * \brief Enumeration of available preconditioners for the trust region solver.
+   */
   enum class PreConditioner { IncompleteCholesky, IdentityPreconditioner, DiagonalPreconditioner };
-
+  /**
+   * \struct TrustRegionSettings
+   * \brief Configuration settings for the TrustRegion solver.
+   */
   struct TrustRegionSettings {
-    int verbosity    = 5;
-    double maxtime   = std::numeric_limits<double>::infinity();
-    int miniter      = 3;
-    int maxiter      = 1000;
-    int debug        = 0;
-    double grad_tol  = 1e-6;
-    double corr_tol  = 1e-6;
-    double rho_prime = 0.01;
-    bool useRand     = false;
-    double rho_reg   = 1e6;
-    double Delta_bar = std::numeric_limits<double>::infinity();
-    double Delta0    = 10;
+    int verbosity    = 5;                                        ///< Verbosity level.
+    double maxtime   = std::numeric_limits<double>::infinity();  ///< Maximum allowable time for solving.
+    int miniter      = 3;                                        ///< Minimum number of iterations.
+    int maxiter      = 1000;                                     ///< Maximum number of iterations.
+    int debug        = 0;                                        ///< Debugging flag.
+    double grad_tol  = 1e-6;                                     ///< Gradient tolerance.
+    double corr_tol  = 1e-6;                                     ///< Correction tolerance.
+    double rho_prime = 0.01;                                     ///< Rho prime value.
+    bool useRand     = false;                                    ///< Flag for using random correction predictor.
+    double rho_reg   = 1e6;                                      ///< Regularization value for rho.
+    double Delta_bar = std::numeric_limits<double>::infinity();  ///< Maximum trust region radius.
+    double Delta0    = 10;                                       ///< Initial trust region radius.
   };
 
+  /**
+   * \enum StopReason
+   * \brief Enumeration of reasons for stopping the TrustRegion solver.
+   */
   enum class StopReason {
     gradientNormTolReached,
     correctionNormTolReached,
@@ -50,22 +61,30 @@ namespace Ikarus {
     maximumIterationsReached,
     dontStop
   };
-  struct AlgoInfo {
-    int consecutive_TRplus   = 0;
-    int consecutive_TRminus  = 0;
-    int consecutive_Rejected = 0;
-    std::string stopReasonString;
-    std::string trstr;
-    std::string accstr;
-    std::string randomString;
-    std::string cauchystr = "                  ";
-    bool acceptProposal;
-    bool used_cauchy = false;
 
-    StopReason stop{StopReason::dontStop};
-    std::string reasonString;
+  /**
+   * \struct AlgoInfo
+   * \brief Additional information about the TrustRegion algorithm.
+   */
+  struct AlgoInfo {
+    int consecutive_TRplus   = 0;                  ///< Consecutive trust region increases.
+    int consecutive_TRminus  = 0;                  ///< Consecutive trust region decreases.
+    int consecutive_Rejected = 0;                  ///< Consecutive rejected proposals.
+    std::string stopReasonString;                  ///< String describing the stopping reason.
+    std::string trstr;                             ///< Trust region change string (TR+, TR-).
+    std::string accstr;                            ///< Acceptance string (REJ, acc).
+    std::string randomPredictionString;            ///< Random prediction string.
+    std::string cauchystr = "                  ";  ///< Used Cauchy step string.
+    bool acceptProposal;                           ///< Flag indicating whether the proposal is accepted.
+    bool used_cauchy = false;                      ///< Flag indicating whether Cauchy point was used.
+    StopReason stop{StopReason::dontStop};         ///< Stopping reason.
+    std::string reasonString;                      ///< String describing the stopping reason.
   };
 
+  /**
+   * \struct Stats
+   * \brief Information about the TrustRegion solver.
+   */
   struct Stats {
     double gradNorm{1};
     double etaNorm{1};
@@ -77,24 +96,42 @@ namespace Ikarus {
     int innerIterSum{0};
   };
 
+  /**
+ * \class TrustRegion
+ * \brief Trust Region solver for non-linear optimization problems.
+ * \details Refer to \cite trustregion for details of the algorithm.
+
+ * This code is heavily inspired by the trust-region implementation of
+ <a href="https://github.com/NicolasBoumal/manopt/blob/master/manopt/solvers/trustregions/trustregions.m">Manopt</a>.
+  * \ingroup solvers
+ * \tparam NonLinearOperatorImpl Type of the nonlinear operator to solve.
+ * \tparam preConditioner Type of preconditioner to use (default is IncompleteCholesky).
+ * \tparam UpdateFunctionTypeImpl Type of the update function
+ */
   template <typename NonLinearOperatorImpl, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
-            typename UpdateType
-            = std::conditional_t<std::is_floating_point_v<typename NonLinearOperatorImpl::template ParameterValue<0>>,
-                                 typename NonLinearOperatorImpl::template ParameterValue<0>, Eigen::VectorXd>>
+            typename UpdateFunctionTypeImpl = utils::UpdateDefault>
   class TrustRegion : public IObservable<NonLinearSolverMessages> {
   public:
-    using ResultType         = typename NonLinearOperatorImpl::template ParameterValue<0>;
-    using UpdateFunctionType = std::function<void(ResultType&, const UpdateType&)>;
-    using ScalarType         = std::remove_cvref_t<typename NonLinearOperatorImpl::template FunctionReturnType<0>>;
-    using MatrixType         = std::remove_cvref_t<typename NonLinearOperatorImpl::template FunctionReturnType<2>>;
+    using ValueType = typename NonLinearOperatorImpl::template ParameterValue<0>;  ///< Type of the parameter vector of
+                                                                                   ///< the nonlinear operator
+    using CorrectionType = typename NonLinearOperatorImpl::DerivativeType;  ///< Type of the correction of x += deltaX.
+    using UpdateFunctionType = UpdateFunctionTypeImpl;                      ///< Type of the update function.
 
-    explicit TrustRegion(
-        const NonLinearOperatorImpl& p_nonLinearOperator,
-        std::function<void(ResultType&, const UpdateType&)> p_updateFunction =
-            [](ResultType& a, const UpdateType& b) {
-              using Ikarus::operator+=;
-              a += b;
-            })
+    using NonLinearOperator = NonLinearOperatorImpl;  ///< Type of the non-linear operator
+
+    using ScalarType
+        = std::remove_cvref_t<typename NonLinearOperatorImpl::template FunctionReturnType<0>>;  ///< Type of the scalar
+                                                                                                ///< cost
+
+    using MatrixType
+        = std::remove_cvref_t<typename NonLinearOperatorImpl::template FunctionReturnType<2>>;  ///< Type of the Hessian
+
+    /**
+     * \brief Constructs a TrustRegion solver instance.
+     * \param p_nonLinearOperator Nonlinear operator to solve.
+     * \param p_updateFunction Update function
+     */
+    explicit TrustRegion(const NonLinearOperatorImpl& p_nonLinearOperator, UpdateFunctionTypeImpl p_updateFunction = {})
         : nonLinearOperator_{p_nonLinearOperator},
           updateFunction{p_updateFunction},
           xOld{nonLinearOperator().firstParameter()} {
@@ -102,8 +139,10 @@ namespace Ikarus {
       Heta.setZero(gradient().size());
     }
 
-    using NonLinearOperator = NonLinearOperatorImpl;
-
+    /**
+     * \brief Sets up the TrustRegion solver with the provided settings and checks feasibility.
+     * \param p_settings TrustRegionSettings containing the solver configuration.
+     */
     void setup(const TrustRegionSettings& p_settings) {
       options = p_settings;
       assert(options.rho_prime < 0.25 && "options.rho_prime must be strictly smaller than 1/4.");
@@ -112,10 +151,17 @@ namespace Ikarus {
              && "options.Delta0 must be positive and smaller than Delta_bar.");
     }
 
+#ifndef DOXYGEN
     struct NoPredictor {};
+#endif
+    /**
+     * \brief Solves the nonlinear optimization problem using the TrustRegion algorithm.
+     * \tparam SolutionType Type of the solution predictor (default is NoPredictor).
+     * \param dx_predictor Solution predictor.
+     * \return NonLinearSolverInformation containing information about the solver result.
+     */
     template <typename SolutionType = NoPredictor>
-    requires std::is_same_v<SolutionType, NoPredictor> || std::is_convertible_v<
-        SolutionType, std::remove_cvref_t<typename NonLinearOperatorImpl::ValueType>>
+    requires std::is_same_v<SolutionType, NoPredictor> || std::is_convertible_v<SolutionType, CorrectionType>
         NonLinearSolverInformation solve(const SolutionType& dx_predictor = NoPredictor{}) {
       this->notify(NonLinearSolverMessages::INIT);
       stats = Stats{};
@@ -153,9 +199,9 @@ namespace Ikarus {
         info.stopReasonString = tcg_stop_reason[static_cast<int>(innerInfo.stop_tCG)];
         Heta                  = hessian() * eta;
         if (options.useRand and stats.outerIter == 0) {
-          info.used_cauchy  = false;
-          info.randomString = " Used Random correction predictor";
-          info.cauchystr    = "                  ";
+          info.used_cauchy            = false;
+          info.randomPredictionString = " Used Random correction predictor";
+          info.cauchystr              = "                  ";
           double tau_c;
           // Check the curvature
           const Eigen::VectorXd Hg = hessian() * gradient();
@@ -268,7 +314,7 @@ namespace Ikarus {
 
         if (options.verbosity == 1) logState();
 
-        info.randomString = "";
+        info.randomPredictionString = "";
 
         if (info.acceptProposal) {
           stats.energy = stats.energyProposal;
@@ -297,7 +343,10 @@ namespace Ikarus {
         this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, solverInformation.iterations);
       return solverInformation;
     }
-
+    /**
+     * \brief Access the nonlinear operator.
+     * \return Reference to the nonlinear operator.
+     */
     auto& nonLinearOperator() { return nonLinearOperator_; }
 
   private:
@@ -307,13 +356,13 @@ namespace Ikarus {
           "{:<73}",
           info.accstr, info.trstr, stats.outerIter, innerInfo.numInnerIter, stats.rho, stats.energy,
           stats.energyProposal, stats.energyProposal - stats.energy, stats.gradNorm, innerInfo.Delta, stats.etaNorm,
-          info.stopReasonString + info.cauchystr + info.randomString);
+          info.stopReasonString + info.cauchystr + info.randomPredictionString);
     }
 
     void logFinalState() {
       spdlog::info("{:>3s} {:>3s} {:>6d} {:>9d}  {: ^6}  {: ^9}  {: ^9}  {: ^11}  {:>9.2e}  {: ^9}  {: ^11}   {:<73}",
                    info.accstr, info.trstr, stats.outerIter, innerInfo.numInnerIter, " ", " ", " ", " ", stats.gradNorm,
-                   " ", " ", info.stopReasonString + info.cauchystr + info.randomString);
+                   " ", " ", info.stopReasonString + info.cauchystr + info.randomPredictionString);
     }
 
     inline const auto& energy() { return nonLinearOperator().value(); }
@@ -388,8 +437,8 @@ namespace Ikarus {
     NonLinearOperatorImpl nonLinearOperator_;
     UpdateFunctionType updateFunction;
     typename NonLinearOperatorImpl::template ParameterValue<0> xOld;
-    UpdateType eta;
-    UpdateType Heta;
+    CorrectionType eta;
+    CorrectionType Heta;
     TrustRegionSettings options;
     AlgoInfo info;
     double choleskyInitialShift = 1e-3;
@@ -409,20 +458,21 @@ namespace Ikarus {
         truncatedConjugateGradient;
   };
 
+  /**
+   * @brief Creates an instance of the TrustRegion solver.
+   *
+   * @tparam NonLinearOperatorImpl Type of the nonlinear operator to solve.
+   * @tparam preConditioner Type of the preconditioner used internally (default is IncompleteCholesky).
+   * @tparam UpdateFunctionType Type of the update function (default is UpdateDefault).
+   * @param p_nonLinearOperator Nonlinear operator to solve.
+   * @param p_updateFunction Update function (default is UpdateDefault).
+   * @return Shared pointer to the TrustRegion solver instance.
+   */
   template <typename NonLinearOperatorImpl, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
-            typename UpdateType
-            = std::conditional_t<std::is_floating_point_v<typename NonLinearOperatorImpl::template ParameterValue<0>>,
-                                 typename NonLinearOperatorImpl::template ParameterValue<0>, Eigen::VectorXd>>
-  std::shared_ptr<TrustRegion<NonLinearOperatorImpl, preConditioner, UpdateType>> makeTrustRegion(
-      const NonLinearOperatorImpl& p_nonLinearOperator,
-      std::function<void(typename NonLinearOperatorImpl::template ParameterValue<0>&, const UpdateType&)>
-          p_updateFunction
-      = [](typename NonLinearOperatorImpl::template ParameterValue<0>& a, const UpdateType& b) {
-          using Ikarus::operator+=;
-          a += b;
-        }) {
-    return std::make_shared<TrustRegion<NonLinearOperatorImpl, preConditioner, UpdateType>>(p_nonLinearOperator,
-                                                                                            p_updateFunction);
+            typename UpdateFunctionType = utils::UpdateDefault>
+  auto makeTrustRegion(const NonLinearOperatorImpl& p_nonLinearOperator, UpdateFunctionType&& p_updateFunction = {}) {
+    return std::make_shared<TrustRegion<NonLinearOperatorImpl, preConditioner, UpdateFunctionType>>(p_nonLinearOperator,
+                                                                                                    p_updateFunction);
   }
 
 }  // namespace Ikarus

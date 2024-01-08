@@ -8,12 +8,19 @@
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                 += @top_srcdir@/ikarus/ \
-                     @top_srcdir@/python/ \
-                    @srcdir@/mainpage.txt \
-                          @srcdir@/modules.txt
+INPUT                 += @top_srcdir@/ikarus @top_srcdir@/python \
+                    @top_srcdir@/LICENSE.md \
+                    @srcdir@/mainpage.md \
+                    @srcdir@/modules.hh \
+                     @top_srcdir@/ikarus/utils/makeenum.hh
 
-FILE_PATTERNS       += *.hh *.dist *.dev *.page *.py
+INCLUDE_PATH += @top_srcdir@/ \
+                @top_srcdir@/ikarus/utils/
+
+SEARCH_INCLUDES = YES
+RECURSIVE              = YES
+
+FILE_PATTERNS       += *.hh *.inl *.dist *.dev *.page *.py
 
 # The EXCLUDE tag can be used to specify files and/or directories that should
 # be excluded from the INPUT source files. This way you can easily exclude a
@@ -32,19 +39,75 @@ EXCLUDE               += @top_srcdir@/tests \
 # directories that contain image that are included in the documentation (see
 # the \image command).
 
-# IMAGE_PATH            += @top_srcdir@/ikarus/pics
+IMAGE_PATH            += @top_srcdir@/docs/website/auxiliaryImages
 CREATE_SUBDIRS = YES
 
 #for https://jothepro.github.io/doxygen-awesome-css/index.html#autotoc_md9
-GENERATE_TREEVIEW      = YES # optional. Also works without treeview
-DISABLE_INDEX = NO
-FULL_SIDEBAR = NO
-HTML_EXTRA_STYLESHEET  = /usr/local/share/doxygen-awesome-css/doxygen-awesome.css @srcdir@/custom.css
+GENERATE_TREEVIEW      = YES
+TREEVIEW_WIDTH         = 320
+DISABLE_INDEX          = NO
+FULL_SIDEBAR           = NO
+HTML_COLORSTYLE        = LIGHT # required with Doxygen >= 1.9.5
+
+REPEAT_BRIEF = NO
+BRIEF_MEMBER_DESC = YES
+ALWAYS_DETAILED_SEC = NO
+
+HTML_HEADER            = @srcdir@/header.html
+HTML_FOOTER            = @srcdir@/footer.html
+
+USE_MDFILE_AS_MAINPAGE = @srcdir@/mainpage.md
+TOC_INCLUDE_HEADINGS   = 4
+ALIASES                += mermaid{1}="@htmlonly <div class=\"mermaid\"> @endhtmlonly @htmlinclude \"\1.mmd\" @htmlonly </div> @endhtmlonly"
+ALIASES                += refdir{1}="@ref @top_srcdir@/\1"
+
+
+HTML_EXTRA_FILES       = /usr/local/share/doxygen-awesome-css/doxygen-awesome-darkmode-toggle.js \
+                         /usr/local/share/doxygen-awesome-css/doxygen-awesome-fragment-copy-button.js \
+                         /usr/local/share/doxygen-awesome-css/doxygen-awesome-paragraph-link.js \
+                         /usr/local/share/doxygen-awesome-css/doxygen-awesome-interactive-toc.js
+
+# if we later want a own layout see https://git.iws.uni-stuttgart.de/dumux-repositories/dumux/-/blob/f3ab261da7e7990f087f70164db092718486b8fd/doc/doxygen/DoxygenDumuxLayout.xml
+#LAYOUT_FILE            = @srcdir@/DoxygenIkarusLayout.xml
+
+HTML_EXTRA_STYLESHEET  = /usr/local/share/doxygen-awesome-css/doxygen-awesome.css \
+                         /usr/local/share/doxygen-awesome-css/doxygen-awesome-sidebar-only.css \
+                         /usr/local/share/doxygen-awesome-css/doxygen-awesome-sidebar-only-darkmode-toggle.css \
+                         @srcdir@/ikarus-custom.css
+
+
+
 HTML_COLORSTYLE        = LIGHT # required with Doxygen >= 1.9.5
 
 
-EXTRA_PACKAGES         = amsmath amssymb
-
+EXTRA_PACKAGES         += amsmath amssymb
+PROJECT_ICON = @top_srcdir@/docs/website/auxiliaryImages/BigLogo_transparent.png
+PROJECT_LOGO = @top_srcdir@/docs/website/auxiliaryImages/BigLogo_transparent.png
 GENERATE_XML = YES
 GENERATE_LATEX = YES
 USE_MATHJAX =YES
+MATHJAX_VERSION        = MathJax_3
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+EXPAND_AS_DEFINED += PARENS ENUM_CASE EXPAND EXPAND1 EXPAND2 EXPAND3 EXPAND4 FOR_EACH FOR_EACH_HELPER FOR_EACH_AGAIN ENUM_CASE MAKE_ENUM __VA_OPT__ MAKE_ASSEMBLER_REGISTERY_FUNCTION
+PREDEFINED += HAVE_DUNE_LOCALFEFUNCTIONS HAVE_DUNE_IGA
+FORMULA_MACROFILE = @top_srcdir@/docs/website/doxygen/latex_shortcuts.tex
+CITE_BIB_FILES = @top_srcdir@/docs/literature.bib
+LATEX_BIB_STYLE        = abbrv
+
+PROJECT_BRIEF         = "C++ library for finite element simulations"
+
+# enable client side searching
+SEARCHENGINE           = YES
+SERVER_BASED_SEARCH    = NO
+DOT_IMAGE_FORMAT       = svg
+CALL_GRAPH = NO
+CALLER_GRAPH = YES
+DIRECTORY_GRAPH = YES
+COLLABORATION_GRAPH  = NO
+MAX_DOT_GRAPH_DEPTH = 0
+DIR_GRAPH_MAX_DEPTH = 5
+GENERATE_LEGEND = YES
+DOT_MULTI_TARGETS = YES
+UML_LOOK = NO

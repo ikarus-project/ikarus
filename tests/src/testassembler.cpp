@@ -21,14 +21,14 @@ using Dune::TestSuite;
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/init.hh>
 
-template <typename TestSuiteType, typename SparseType, typename DenseType, typename DOFSize>
-void checkAssembledQuantities(TestSuiteType& t, SparseType& sType, DenseType& dType, DOFSize dofSize) {
+template <typename TestSuiteType, typename SparseType, typename DenseType>
+void checkAssembledQuantities(TestSuiteType& t, SparseType& sType, DenseType& dType, std::size_t dofSize) {
   t.check(isApproxSame(sType, dType, 1e-15), "Dense==Sparse");
   t.check(sType.rows() == static_cast<Eigen::Index>(dofSize))
       << "DOFsCheck via rows: " << sType.rows() << "rows and " << dofSize << " DOFs";
-  if (not(std::is_same_v<SparseType, Eigen::VectorXd>))
+  if (not(std::is_same_v<std::remove_cvref_t<SparseType>, Eigen::VectorXd>))
     t.check(sType.cols() == static_cast<Eigen::Index>(dofSize))
-        << "DOFsCheck via columns: " << sType.cols() << "cols and " << dofSize << " DOFs";
+        << "DOFsCheck via columns: " << sType.cols() << " cols and " << dofSize << " DOFs";
 }
 
 template <typename PreBasis>

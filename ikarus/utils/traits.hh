@@ -1,38 +1,46 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file traits.hh
+ * @brief Contains stl-like type traits
+ */
+
 #pragma once
-#include <concepts>
-#include <functional>
 #include <optional>
 #include <tuple>
 #include <type_traits>
 
 #include <dune/common/hybridutilities.hh>
-namespace Ikarus::Std {
+namespace Ikarus::traits {
 
+  /**
+   * @brief Concept to check if a type is a pointer or nullptr_t.
+   * @ingroup traits
+   * @tparam T Type to check.
+   */
   template <typename T>
-  concept is_pointer = std::is_pointer_v<T> || std::is_same_v<T, std::nullptr_t>;
+  concept Pointer = std::is_pointer_v<T> || std::is_same_v<T, std::nullptr_t>;
 
-  template <typename T>
-  requires is_pointer<T>
-  auto& returnReferenceOrNulloptIfObjectIsNullPtr(T v) {
-    if constexpr (!std::is_same_v<T, std::nullptr_t>)
-      return *v;
-    else
-      return std::nullopt;
-  }
-
-  // Forward declare functions
-  template <typename... Types>
-  auto makeNestedTupleFlat(std::tuple<Types...> tup);
-
+#ifndef DOXYGEN
   template <typename>
   struct is_tuple : std::false_type {};
-
+#endif
+  /**
+   * @brief Type trait to check if a type is an instantiation of std::tuple.
+   * @ingroup traits
+   *
+   */
   template <typename... T>
   struct is_tuple<std::tuple<T...>> : std::true_type {};
 
+  /**
+   * @brief Metafunction to count the occurrences of a specific type in a tuple.
+   * @ingroup traits
+   * @tparam Tuple Type of the tuple.
+   * @tparam Type Type to count in the tuple.
+   * @return int Number of occurrences of the specified type in the tuple.
+   */
   template <class Tuple, class Type>
   requires is_tuple<Tuple>::value consteval int countType() {
     int count = 0;
@@ -43,30 +51,64 @@ namespace Ikarus::Std {
     return count;
   }
 
+  /**
+   * @brief Type trait to obtain the return type of a callable type when given specific arguments.
+   *
+   * @ingroup traits
+   *
+   * @tparam Fun Callable type.
+   * @tparam Args Argument types.
+   */
   template <typename Fun, typename... Args>
   using ReturnType = std::invoke_result_t<Fun, Args...>;
 
+  /**
+   * @brief Type trait to check if a specified type is present in a tuple.
+   *
+   * @ingroup traits
+   *
+   * @tparam T Type to check.
+   * @tparam Tuple Tuple to search within.
+   */
   template <typename T, typename Tuple>
-  struct hasType;
+  struct hasType : std::false_type {};
 
+#ifndef DOXYGEN
   template <typename T>
   struct hasType<T, std::tuple<>> : std::false_type {};
 
   template <typename T>
   struct hasType<T, T> : std::true_type {};
 
+  /**
+   * @brief Recursive template specialization of hasType trait for tuples.
+   * @ingroup traits
+   * @tparam T Type to check.
+   * @tparam U Current tuple type.
+   * @tparam Ts Remaining types in the tuple.
+   */
   template <typename T, typename U, typename... Ts>
   struct hasType<T, std::tuple<U, Ts...>> : hasType<T, std::tuple<Ts...>> {};
 
   template <typename T, typename... Ts>
   struct hasType<T, std::tuple<T, Ts...>> : std::true_type {};
+#endif
 
+#ifndef DOXYGEN
   template <template <typename...> class, typename...>
-  struct isSpecialization : public std::false_type {};
+  struct isSpecialization : std::false_type {};
+#endif
 
+  /**
+   * @brief Type trait to check if a class is a specialization of a template.
+   *
+   * @ingroup traits
+   *
+   */
   template <template <typename...> class U, typename... T>
-  struct isSpecialization<U, U<T...>> : public std::true_type {};
+  struct isSpecialization<U, U<T...>> : std::true_type {};
 
+#ifndef DOXYGEN
   template <template <typename, auto...> class Type, typename>
   struct isSpecializationTypeAndNonTypes : std::false_type {};
 
@@ -75,247 +117,73 @@ namespace Ikarus::Std {
 
   template <template <auto, typename...> class Type, typename>
   struct isSpecializationNonTypeAndTypes : std::false_type {};
+#endif
 
+  /**
+   * @brief Type trait to check if a class is a specialization of a template with a non-type parameter and types.
+   *
+   * @ingroup traits
+   *
+   * @tparam Type Template class with a non-type parameter and types.
+   * @tparam T Non-type parameter.
+   * @tparam N Types used to instantiate the template.
+   */
   template <template <auto, typename...> class Type, auto T, typename... N>
   struct isSpecializationNonTypeAndTypes<Type, Type<T, N...>> : std::true_type {};
 
+#ifndef DOXYGEN
   template <template <typename, auto, typename> class Type, typename>
   struct isSpecializationTypeNonTypeAndType : std::false_type {};
-
+#endif
+  /**
+   * @brief Type trait to check if a class is a specialization of a template with types and two non-type parameters.
+   *
+   * @ingroup traits
+   *
+   * @tparam Type Template class with types and two non-type parameters.
+   * @tparam T First type parameter.
+   * @tparam M First non-type parameter.
+   * @tparam N Second type parameter.
+   */
   template <template <typename, auto, typename> class Type, typename T, auto M, typename N>
   struct isSpecializationTypeNonTypeAndType<Type, Type<T, M, N>> : std::true_type {};
 
+#ifndef DOXYGEN
   template <template <auto...> class Type, typename>
   struct isSpecializationNonTypes : std::false_type {};
+#endif
 
+  /**
+   * @brief Type trait to check if a class is a specialization of a template with non-type parameters.
+   *
+   * @ingroup traits
+   *
+   * @tparam Type Template class with non-type parameters.
+   * @tparam N Non-type parameters.
+   */
   template <template <auto...> class Type, auto... N>
   struct isSpecializationNonTypes<Type, Type<N...>> : std::true_type {};
 
-  namespace Impl {
-    template <class Tuple, std::size_t... I>
-    constexpr auto makeTupleSubsetImpl(Tuple&& t, std::index_sequence<I...>) {
-      return std::make_tuple(std::get<I>(std::forward<Tuple>(t))...);
-    }
-
-    template <class Tuple, std::size_t... I>
-    constexpr auto makeTupleFromTupleIndicesImpl(Tuple&& t, std::index_sequence<I...>) {
-      return std::make_tuple(std::get<I>(std::forward<Tuple>(t))...);
-    }
-
-    template <typename T, typename... Ts>
-    struct uniqueImpl : std::type_identity<T> {};
-
-    template <typename... Ts, typename U, typename... Us>
-    struct uniqueImpl<std::tuple<Ts...>, U, Us...>
-        : std::conditional_t<(std::is_same_v<U, Ts> || ...), uniqueImpl<std::tuple<Ts...>, Us...>,
-                             uniqueImpl<std::tuple<Ts..., U>, Us...>> {};
-
-    template <typename... Ts>
-    using unique_tupleImpl = typename uniqueImpl<std::tuple<>, Ts...>::type;
-
-    template <typename T, typename... Types>
-    auto makeNestedTupleFlatImpl() {
-      constexpr bool isTuple = isSpecialization<std::tuple, T>::value;
-      if constexpr (sizeof...(Types) > 0) {
-        if constexpr (isTuple)
-          return std::tuple_cat(makeNestedTupleFlat(T()), makeNestedTupleFlatImpl<Types...>());
-        else
-          return std::tuple_cat(std::make_tuple(T()), makeNestedTupleFlatImpl<Types...>());
-      } else {
-        if constexpr (isTuple)
-          return makeNestedTupleFlat(T());
-        else
-          return std::make_tuple(T());
-      }
-    }
-
-    template <typename T, typename... Types>
-    auto makeNestedTupleFlatAndStoreReferencesImpl(const std::tuple<T, Types...>& tup) {
-      constexpr bool isTuple = isSpecialization<std::tuple, std::remove_cvref_t<T>>::value;
-      if constexpr (sizeof...(Types) > 0) {
-        if constexpr (isTuple)
-          return std::tuple_cat(
-              makeNestedTupleFlatAndStoreReferencesImpl(std::get<0>(tup)),
-              std::apply(
-                  [](const T&, const Types&... args) {
-                    return makeNestedTupleFlatAndStoreReferencesImpl(std::make_tuple(std::cref(args)...));
-                  },
-                  tup));
-        else
-          return std::tuple_cat(
-              std::make_tuple(std::cref(std::get<0>(tup))),
-              std::apply(
-                  [](const T&, const Types&... args) {
-                    return makeNestedTupleFlatAndStoreReferencesImpl(std::make_tuple(std::cref(args)...));
-                  },
-                  tup));
-      } else {
-        if constexpr (isTuple)
-          return makeNestedTupleFlatAndStoreReferencesImpl(std::get<0>(tup));
-        else
-          return std::make_tuple(std::cref(std::get<0>(tup)));
-      }
-    }
-
-    template <typename T, typename... Types>
-    auto makeNestedTupleFlatAndStoreReferencesNonConstImpl(const std::tuple<T, Types...>& tupconst) {
-      auto& tup              = const_cast<std::tuple<T, Types...>&>(tupconst);
-      constexpr bool isTuple = isSpecialization<std::tuple, std::remove_cvref_t<T>>::value;
-      if constexpr (sizeof...(Types) > 0) {
-        if constexpr (isTuple)
-          return std::tuple_cat(
-              makeNestedTupleFlatAndStoreReferencesNonConstImpl(std::get<0>(tup)),
-              std::apply(
-                  [](T&, Types&... args) {
-                    return makeNestedTupleFlatAndStoreReferencesNonConstImpl(std::make_tuple(std::ref(args)...));
-                  },
-                  tup));
-        else
-          return std::tuple_cat(
-              std::make_tuple(std::ref(std::get<0>(tup))),
-              std::apply(
-                  [](T&, Types&... args) {
-                    return makeNestedTupleFlatAndStoreReferencesNonConstImpl(std::make_tuple(std::ref(args)...));
-                  },
-                  tup));
-      } else {
-        if constexpr (isTuple)
-          return makeNestedTupleFlatAndStoreReferencesNonConstImpl(std::get<0>(tup));
-        else
-          return std::make_tuple(std::ref(std::get<0>(tup)));
-      }
-    }
-
-  }  // namespace Impl
-
-  template <typename Tuple, typename Predicate>
-  constexpr size_t find_if(Tuple&& tuple, Predicate pred) {
-    size_t index        = std::tuple_size<std::remove_reference_t<Tuple>>::value;
-    size_t currentIndex = 0;
-    bool found          = false;
-
-    Dune::Hybrid::forEach(tuple, [&](auto&& value) {
-      if (!found && pred(value)) {
-        index = currentIndex;
-        found = true;
-      }
-      ++currentIndex;
-    });
-    return index;
-  }
-
-  template <typename Tuple, typename Predicate>
-  bool none_of(Tuple&& tuple, Predicate pred) {
-    return find_if(tuple, pred) == std::tuple_size<std::decay_t<Tuple>>::value;
-  }
-
-  template <typename Tuple, typename Predicate>
-  bool any_of(Tuple&& tuple, Predicate pred) {
-    return !none_of(tuple, pred);
-  }
-
-  template <typename Tuple, typename Predicate>
-  auto filter(Tuple&& tuple, Predicate pred) {
-    return std::apply(
-        [&pred](auto... ts) {
-          return std::tuple_cat(std::conditional_t<pred(ts), std::tuple<decltype(ts)>, std::tuple<>>{}...);
-        },
-        tuple);
-  }
-
-  template <typename... Types>
-  constexpr auto unique(std::tuple<Types...>&&) {
-    return Impl::unique_tupleImpl<Types...>();
-  }
-
-  template <typename Tuple, typename Predicate>
-  constexpr size_t count_if(Tuple&& tuple, Predicate pred) {
-    size_t counter = 0;
-    Dune::Hybrid::forEach(tuple, [&](auto&& value) {
-      if (pred(value)) ++counter;
-    });
-    return counter;
-  }
-
-  template <template <auto...> class Type, typename Tuple>
-  constexpr int findTypeSpecialization() {
-    return find_if(std::remove_cvref_t<Tuple>(),
-                   []<typename T>(T&&) { return isSpecializationNonTypes<Type, std::remove_cvref_t<T>>::value; });
-  }
-  template <template <auto...> class Type, typename Tuple>
-  auto getSpecialization(Tuple&& tuple) {
-    constexpr int index = findTypeSpecialization<Type, Tuple>();
-    return std::get<index>(tuple);
-  }
-
-  template <template <auto...> class Type, typename Tuple>
-  constexpr bool hasTypeSpecialization() {
-    return (find_if(std::remove_cvref_t<Tuple>(),
-                    []<typename T>(T&&) { return isSpecializationNonTypes<Type, std::remove_cvref_t<T>>::value; })
-            < std::tuple_size_v<std::remove_cvref_t<Tuple>>);
-  }
-
-  template <template <auto...> class Type, typename Tuple>
-  constexpr bool countTypeSpecialization() {
-    return count_if(Tuple(),
-                    []<typename T>(T&&) { return isSpecializationNonTypes<Type, std::remove_cvref_t<T>>::value; });
-  }
-  template <template <auto...> class Type, typename Tuple>
-  static constexpr bool countTypeSpecialization_v = countTypeSpecialization<Type, Tuple>();
-
-  template <int N, class Tuple>
-  constexpr auto makeTupleSubset(Tuple&& t) {
-    static_assert(N < std::tuple_size_v<std::remove_reference_t<Tuple>>,
-                  "The requested size needs to be smaller than the size of the tuple.");
-
-    return Impl::makeTupleSubsetImpl(std::forward<Tuple>(t), std::make_index_sequence<N>{});
-  }
-
-  template <class Tuple, std::size_t... I>
-  constexpr auto makeTupleFromTupleIndices(Tuple&& t) {
-    return Impl::makeTupleFromTupleIndicesImpl(std::forward<Tuple>(t), std::index_sequence<I...>{});
-  }
-
-  template <template <auto...> typename, template <auto...> typename>
-  struct isTemplateSame : std::false_type {};
-
-  template <template <auto...> typename TT>
-  struct isTemplateSame<TT, TT> : std::true_type {};
-
-  template <template <auto...> typename TT, template <auto...> typename UU>
-  inline constexpr bool isTemplateSame_v = isTemplateSame<TT, UU>::value;
-
-  template <typename... Types>
-  auto makeNestedTupleFlat(std::tuple<Types...>) {
-    return decltype(Impl::makeNestedTupleFlatImpl<Types...>())();
-  }
-
-  template <typename Tuple>
-  auto makeNestedTupleFlatAndStoreReferences(Tuple&& tup) {
-    if constexpr (std::tuple_size_v<std::remove_cvref_t<Tuple>> == 0)
-      return tup;
-    else if constexpr (!std::is_const_v<std::remove_reference_t<Tuple>>)
-      return Impl::makeNestedTupleFlatAndStoreReferencesNonConstImpl(std::forward<Tuple>(tup));
-    else
-      return Impl::makeNestedTupleFlatAndStoreReferencesImpl(std::forward<Tuple>(tup));
-  }
-
-  /*
-   * Get index of type in tuple
+  /**
+   * @brief Type trait to get the index of a type in a tuple.
+   * @ingroup traits
+   * @details
    * Usage:
-   * using  foo_t = std::tuple<int,double, float>;
+   * ```cpp
+   * using foo_t = std::tuple<int, double, float>;
+   * static_assert(Index<int, foo_t>::value == 0);
+   * static_assert(Index<double, foo_t>::value == 1);
+   * static_assert(Index<float, foo_t>::value == 2);
+   * static_assert(Index<long double, foo_t>::value == 3);
+   * ```
+   * If the type is not found, the returned index is the size of the tuple.
    *
-   * static_assert(Index<int,foo_t>::value==0);
-   * static_assert(Index<double,foo_t>::value==1);
-   * static_assert(Index<float,foo_t>::value==2);
-   * static_assert(Index<long double,foo_t>::value==3);
-   *
-   * >If the type is not found the returned index is the size of the tuple
-
+   * @tparam T Type to find in the tuple.
+   * @tparam Tuple Tuple type.
    */
   template <class T, class Tuple>
   struct Index;
-
+#ifndef DOXYGEN
   template <class T>
   struct Index<T, std::tuple<>> {
     static const std::size_t value = 0;
@@ -330,13 +198,29 @@ namespace Ikarus::Std {
   struct Index<T, std::tuple<U, Types...>> {
     static const std::size_t value = 1 + Index<T, std::tuple<Types...>>::value;
   };
+#endif
 
-  /*
-   * Rebind the underlying type of containers
+  /**
+   * @brief Type trait to rebind the underlying type of containers.
+   *
+   * @details
+   * Specialization for types like std::vector<...> and nested std::vector<std::vector>.
+   * ```cpp
+   * Rebind<std::vector<int>, double>::other; // --> std::vector<double>
+   * Rebind<std::vector<std::vector<int>>, double>::other; // --> std::vector<std::vector<double>>
+   * ```
+   * Specialization for types like std::array<...,N>.
+   * ```cpp
+   * Rebind<std::array<int, 5>, double>::other; // --> std::array<double, 5>
+   * ```
+   *
+   * @tparam Container Original container type.
+   * @tparam NewType New type to rebind to.
    */
   template <class Container, class NewType>
   struct Rebind;
 
+#ifndef DOXYGEN
   /*
    * Specialization for types like std::vector<...> and nested std::vector<std::vector>
    */
@@ -353,22 +237,21 @@ namespace Ikarus::Std {
     using other = Container<NewType, N>;
   };
 
-  template <class T1, class T2>
-  consteval bool areTypesEqual(T1&&, T2&&) {
-    return std::is_same_v<T1, T2>;
-  }
-  template <class T1, class T2>
-  consteval bool areTypesEqual() {
-    return std::is_same_v<T1, T2>;
-  }
+#endif
 
   /**
-   * \brief In the following several traits for functions are defined
-   *        Here we start with the unused general template
+   * @ingroup traits
+   * @brief Type trait for extracting information about functions.
+   *
+   * @details
+   * This trait provides information about the return type, argument types, and the number of arguments of a function.
+   *
+   * @tparam T Type of the function.
    */
   template <typename T, typename = void>
   struct FunctionTraits;
 
+#ifndef DOXYGEN
   /**
    * \brief Specialization for general functions
    */
@@ -408,10 +291,6 @@ namespace Ikarus::Std {
    */
   template <typename T>
   struct FunctionTraits<T, Dune::void_t<decltype(&T::operator())>> : public FunctionTraits<decltype(&T::operator())> {};
+#endif
 
-  template <typename T = void>
-  struct DummyFalse {
-    static constexpr bool value = false;
-  };
-
-}  // namespace Ikarus::Std
+}  // namespace Ikarus::traits

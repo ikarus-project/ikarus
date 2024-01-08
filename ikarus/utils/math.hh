@@ -1,10 +1,25 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
+
+/**
+ * \file math.hh
+ * \brief Implementation of math related algorithms
+ */
+
 #pragma once
 #include <concepts>
 
 namespace Ikarus {
   namespace Impl {
+    /**
+     * @brief Helper function for compile-time square root calculation.
+     *
+     * @tparam T The type for which square root is calculated.
+     * @param x The value for which square root is calculated.
+     * @param lo Lower bound for the search interval.
+     * @param hi Upper bound for the search interval.
+     * @return constexpr T The calculated square root.
+     */
     template <typename T>
     constexpr T sqrt_helper(T x, T lo, T hi) {
       if (lo == hi) return lo;
@@ -19,7 +34,13 @@ namespace Ikarus {
 
   }  // namespace Impl
 
-  // compile time sqrt for integer types
+  /**
+   * @brief Compile-time square root for integer types.
+   *
+   * @tparam T The integral type for which square root is calculated.
+   * @param x The value for which square root is calculated.
+   * @return constexpr T The calculated square root.
+   */
   template <typename T>
   requires std::integral<T>
   constexpr T ct_sqrt(T x) { return Impl::sqrt_helper<T>(x, 0, x / 2 + 1); }

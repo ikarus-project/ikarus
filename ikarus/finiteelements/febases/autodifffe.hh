@@ -1,9 +1,13 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-////
-//
+/**
+ * @file autoDiffFE.hh
+ * @brief Contains the AutoDiffFE class, an automatic differentiation wrapper for finite elements.
+ */
+
 #pragma once
+
 #include <autodiff/forward/dual/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
 
@@ -12,97 +16,150 @@
 #include <ikarus/utils/traits.hh>
 
 namespace Ikarus {
-  template <typename RealElement, typename FERequirementType_ = FErequirements<>, bool useEigenRef = false,
-            bool forceAutoDiff = false>
-  class AutoDiffFE : public RealElement {
-  public:
-    using Base              = RealElement;
-    using Basis             = Base::Basis;
-    using LocalView         = typename Basis::FlatBasis::LocalView;
-    using Traits            = TraitsFromLocalView<LocalView, useEigenRef>;
-    using Element           = typename LocalView::Element;
-    using FERequirementType = FERequirementType_;
 
-    void calculateMatrix(const FERequirementType& par, typename Traits::template MatrixType<> h) const {
-      if constexpr (requires { RealElement::calculateMatrix(par, h); } and not forceAutoDiff) {
-        RealElement::calculateMatrix(par, h);
+  /**
+   * @brief AutoDiffFE class, an automatic differentiation wrapper for finite elements.
+   *
+   * @tparam RealFE_ The type of the original finite element, which does not implement the derivatives
+   * @tparam FERequirementType_ Type of the Finite Element Requirements.
+   * @tparam useEigenRef A boolean indicating whether to use Eigen::Ref for references types in calculateMatrix,...
+   * @tparam forceAutoDiff A boolean indicating whether to force the use of automatic differentiation, even when the
+   * real element implements the derivatives.
+   */
+  template <typename RealFE_, typename FERequirementType_ = FErequirements<>, bool useEigenRef = false,
+            bool forceAutoDiff = false>
+  class AutoDiffFE : public RealFE_ {
+  public:
+    using RealFE            = RealFE_;                                      ///< Type of the base finite element.
+    using Basis             = typename RealFE::Basis;                       ///< Type of the basis.
+    using LocalView         = typename Basis::FlatBasis::LocalView;         ///< Type of the local view.
+    using Traits            = TraitsFromLocalView<LocalView, useEigenRef>;  ///< Type traits for local view.
+    using Element           = typename LocalView::Element;                  ///< Type of the element.
+    using FERequirementType = FERequirementType_;  ///< Type of the Finite Element Requirements.
+
+    /**
+     * @brief Calculate the matrix associated with the finite element.
+     *
+     * @param req Finite Element Requirements.
+     * @param h Matrix to be calculated.
+     */
+    void calculateMatrix(const FERequirementType& req, typename Traits::template MatrixType<> h) const {
+      // real element implements calculateMatrix by itself, then we simply forward the call
+      if constexpr (requires { RealFE::calculateMatrix(req, h); } and not forceAutoDiff) {
+        RealFE::calculateMatrix(req, h);
       } else if constexpr (requires {
                              this->template calculateVectorImpl<autodiff::dual>(
-                                 par, std::declval<typename Traits::template VectorType<autodiff::dual>>(),
+                                 req, std::declval<typename Traits::template VectorType<autodiff::dual>>(),
                                  std::declval<const Eigen::VectorXdual&>());
                            }) {
-        /// This is only valid if the external forces are independent of displacements, for e.g., no follower forces are
-        /// applied
+        // real element implements calculateVector by itself, therefore we only need first order derivatives
         Eigen::VectorXdual dx(this->localView().size());
         Eigen::VectorXdual g(this->localView().size());
         dx.setZero();
         auto f = [&](auto& x) -> auto& {
           g.setZero();
-          this->template calculateVectorImpl<autodiff::dual>(par, g, x);
+          this->template calculateVectorImpl<autodiff::dual>(req, g, x);
           return g;
         };
         jacobian(f, autodiff::wrt(dx), at(dx), g, h);
       } else if constexpr (requires {
                              this->template calculateScalarImpl<autodiff::dual2nd>(
-                                 par, std::declval<typename Traits::template VectorType<autodiff::dual2nd>>());
+                                 req, std::declval<typename Traits::template VectorType<autodiff::dual2nd>>());
                            }) {
+        // real element implements calculateScalar by itself, therefore we need second order derivatives
         Eigen::VectorXdual2nd dx(this->localView().size());
         Eigen::VectorXd g;
         autodiff::dual2nd e;
         dx.setZero();
-        auto f = [&](auto& x) { return this->template calculateScalarImpl<autodiff::dual2nd>(par, x); };
+        auto f = [&](auto& x) { return this->template calculateScalarImpl<autodiff::dual2nd>(req, x); };
         hessian(f, autodiff::wrt(dx), at(dx), e, g, h);
       } else
-        static_assert(Ikarus::Std::DummyFalse<AutoDiffFE>::value,
+        static_assert(Dune::AlwaysFalse<AutoDiffFE>::value,
                       "Appropriate calculateScalarImpl or calculateVectorImpl functions are not implemented for the "
                       "chosen element.");
     }
 
-    inline void calculateVector(const FERequirementType& par, typename Traits::template VectorType<> g) const {
+    /**
+     * @brief Calculate the vector associated with the finite element.
+     *
+     * @param req Finite Element Requirements.
+     * @param g Vector to be calculated.
+     */
+    void calculateVector(const FERequirementType& req, typename Traits::template VectorType<> g) const {
+      // real element implements calculateVector by itself, then we simply forward the call
       if constexpr (requires {
                       this->template calculateVectorImpl<double>(
-                          par, std::declval<typename Traits::template VectorType<double>>(),
+                          req, std::declval<typename Traits::template VectorType<double>>(),
                           std::declval<const Eigen::VectorXd&>());
                     }
                     and not forceAutoDiff) {
-        return this->template calculateVectorImpl<double>(par, g);
+        return this->template calculateVectorImpl<double>(req, g);
       } else if constexpr (requires {
                              this->template calculateScalarImpl<autodiff::dual>(
-                                 par, std::declval<const Eigen::VectorXdual&>());
+                                 req, std::declval<const Eigen::VectorXdual&>());
                            }) {
+        // real element implements calculateScalar by itself, therefore we need first order derivatives
         Eigen::VectorXdual dx(this->localView().size());
         dx.setZero();
         autodiff::dual e;
-        auto f = [&](auto& x) { return this->template calculateScalarImpl<autodiff::dual>(par, x); };
+        auto f = [&](auto& x) { return this->template calculateScalarImpl<autodiff::dual>(req, x); };
         gradient(f, autodiff::wrt(dx), at(dx), e, g);
       } else
-        static_assert(Ikarus::Std::DummyFalse<AutoDiffFE>::value,
+        static_assert(Dune::AlwaysFalse<AutoDiffFE>::value,
                       "Appropriate calculateScalarImpl function is not implemented for the "
                       "chosen element.");
     }
 
-    void calculateLocalSystem(const FERequirementType& par, typename Traits::template MatrixType<> h,
+    /**
+     * @brief Calculate the local system associated with the finite element.
+     *
+     * @param req Finite Element Requirements.
+     * @param h Matrix to be calculated.
+     * @param g Vector to be calculated.
+     */
+    void calculateLocalSystem(const FERequirementType& req, typename Traits::template MatrixType<> h,
                               typename Traits::template VectorType<> g) const {
       Eigen::VectorXdual2nd dx(this->localView().size());
       dx.setZero();
-      auto f = [&](auto& x) { return this->calculateScalarImpl(par, x); };
+      auto f = [&](auto& x) { return this->calculateScalarImpl(req, x); };
       hessian(f, autodiff::wrt(dx), at(dx), g, h);
     }
 
+    /**
+     * @brief Calculate the scalar value associated with the finite element.
+     *
+     * @param par Finite Element Requirements.
+     * @return The calculated scalar value.
+     */
     [[nodiscard]] double calculateScalar(const FERequirementType& par) const {
-      if constexpr (requires { RealElement::calculateScalar(par); }) {
-        return RealElement::calculateScalar(par);
+      // real element implements calculateScalar by itself, then we simply forward the call
+      if constexpr (requires { RealFE::calculateScalar(par); }) {
+        return RealFE::calculateScalar(par);
       } else if constexpr (requires { this->calculateScalarImpl(par); }) {
+        // real element only implements the protected calculateScalarImpl by itself, thus we call that one.
         return this->calculateScalarImpl(par);
-      } else
-        static_assert(Ikarus::Std::DummyFalse<AutoDiffFE>::value,
+      } else {
+        static_assert(Dune::AlwaysFalse<AutoDiffFE>::value,
                       "Appropriate calculateScalar and calculateScalarImpl functions are not implemented for the "
                       "chosen element.");
+      }
     }
 
-    const RealElement& getFE() const { return *this; }
+    /**
+     * @brief Get the reference to the base finite element.
+     *
+     * @return The reference to the base finite element.
+     */
+    const RealFE& realFE() const { return *this; }
 
+    /**
+     * @brief Constructor for the AutoDiffFE class.
+     * Forward the construction to the underlying element
+     *
+     * @tparam Args Variadic template for constructor arguments.
+     * @param args Constructor arguments.
+     */
     template <typename... Args>
-    explicit AutoDiffFE(Args&&... args) : RealElement{std::forward<Args>(args)...} {}
+    explicit AutoDiffFE(Args&&... args) : RealFE{std::forward<Args>(args)...} {}
   };
 }  // namespace Ikarus

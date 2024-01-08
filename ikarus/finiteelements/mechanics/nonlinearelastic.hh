@@ -1,10 +1,15 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file nonlinearelastic.hh
+ * @brief Definition of the NonLinearElastic class for finite element mechanics computations.
+ * @ingroup  mechanics
+ */
+
 #pragma once
 
 #if HAVE_DUNE_LOCALFEFUNCTIONS
-#  include <dune/common/classname.hh>
 #  include <dune/fufem/boundarypatch.hh>
 #  include <dune/geometry/quadraturerules.hh>
 #  include <dune/geometry/type.hh>
@@ -12,9 +17,6 @@
 #  include <dune/localfefunctions/expressions/greenLagrangeStrains.hh>
 #  include <dune/localfefunctions/impl/standardLocalFunction.hh>
 #  include <dune/localfefunctions/manifolds/realTuple.hh>
-
-#  include <autodiff/forward/dual.hpp>
-#  include <autodiff/forward/dual/eigen.hpp>
 
 #  include <ikarus/finiteelements/febases/powerbasisfe.hh>
 #  include <ikarus/finiteelements/ferequirements.hh>
@@ -27,6 +29,16 @@
 
 namespace Ikarus {
 
+  /**
+   * @brief NonLinearElastic class represents a non-linear elastic finite element.
+   *
+   * @ingroup mechanics
+   *
+   * @tparam Basis_ The basis type for the finite element.
+   * @tparam Material_ The material type for the finite element.
+   * @tparam FERequirements_ The requirements for the finite element.
+   * @tparam useEigenRef A boolean flag indicating whether to use Eigen references.
+   */
   template <typename Basis_, typename Material_, typename FERequirements_ = FErequirements<>, bool useEigenRef = false>
   class NonLinearElastic : public PowerBasisFE<typename Basis_::FlatBasis> {
   public:
@@ -44,7 +56,19 @@ namespace Ikarus {
     static constexpr int myDim       = Traits::mydim;
     static constexpr auto strainType = StrainTags::greenLagrangian;
 
-    template <typename VolumeLoad = LoadDefault, typename NeumannBoundaryLoad = LoadDefault>
+    /**
+     * @brief Constructor for the NonLinearElastic class.
+     *
+     * @tparam VolumeLoad The type for the volume load function.
+     * @tparam NeumannBoundaryLoad The type for the Neumann boundary load function.
+     * @param globalBasis The global basis for the finite element.
+     * @param element The element for which the finite element is constructed.
+     * @param p_mat The material for the non-linear elastic element.
+     * @param p_volumeLoad Volume load function (default is LoadDefault).
+     * @param p_neumannBoundary Neumann boundary patch (default is nullptr).
+     * @param p_neumannBoundaryLoad Neumann boundary load function (default is LoadDefault).
+     */
+    template <typename VolumeLoad = utils::LoadDefault, typename NeumannBoundaryLoad = utils::LoadDefault>
     NonLinearElastic(const Basis& globalBasis, const typename LocalView::Element& element, const Material& p_mat,
                      VolumeLoad p_volumeLoad = {}, const BoundaryPatch<GridView>* p_neumannBoundary = nullptr,
                      NeumannBoundaryLoad p_neumannBoundaryLoad = {})
@@ -66,20 +90,29 @@ namespace Ikarus {
         localBasis.bind(Dune::QuadratureRules<double, myDim>::rule(this->localView().element().type(), order),
                         Dune::bindDerivatives(0, 1));
 
-      if constexpr (!std::is_same_v<VolumeLoad, LoadDefault>) volumeLoad = p_volumeLoad;
-      if constexpr (!std::is_same_v<NeumannBoundaryLoad, LoadDefault>) neumannBoundaryLoad = p_neumannBoundaryLoad;
+      if constexpr (!std::is_same_v<VolumeLoad, utils::LoadDefault>) volumeLoad = p_volumeLoad;
+      if constexpr (!std::is_same_v<NeumannBoundaryLoad, utils::LoadDefault>)
+        neumannBoundaryLoad = p_neumannBoundaryLoad;
 
       assert(((not p_neumannBoundary and not neumannBoundaryLoad) or (p_neumannBoundary and neumannBoundaryLoad))
              && "If you pass a Neumann boundary you should also pass the function for the Neumann load!");
     }
 
-  public:
+    /**
+     * @brief Get the displacement function for the given FERequirementType.
+     *
+     * @tparam ScalarType The scalar type for the displacement function.
+     * @param par The FERequirementType object.
+     * @param dx Optional displacement vector.
+     * @return A StandardLocalFunction representing the displacement function.
+     */
     template <typename ScalarType = double>
-    auto getDisplacementFunction(const FERequirementType& par,
-                                 const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
+    auto displacementFunction(const FERequirementType& par,
+                              const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
       const auto& d = par.getGlobalSolution(Ikarus::FESolutions::displacement);
 
       Dune::BlockVector<Dune::RealTuple<ScalarType, Traits::dimension>> disp(dispAtNodes.size());
+      // If optional displacement vector is provided, apply it
       if (dx)
         for (auto i = 0U; i < disp.size(); ++i)
           for (auto k2 = 0U; k2 < myDim; ++k2)
@@ -96,12 +129,29 @@ namespace Ikarus {
       return uFunction;
     }
 
+    /**
+     * @brief The strain function for the given FERequirementType.
+     *
+     * @tparam ScalarType The scalar type for the strain function.
+     * @param par The FERequirementType object.
+     * @param dx Optional displacement vector.
+     * @return The strain function calculated using greenLagrangeStrains.
+     */
     template <typename ScalarType = double>
-    inline auto getStrainFunction(const FERequirementType& par,
-                                  const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
-      return greenLagrangeStrains(getDisplacementFunction(par, dx));
+    auto strainFunction(const FERequirementType& par,
+                        const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
+      return greenLagrangeStrains(displacementFunction(par, dx));
     }
 
+    /**
+     * @brief Get the material tangent for the given strain.
+     *
+     * @tparam ScalarType The scalar type for the material and strain.
+     * @tparam strainDim The dimension of the strain vector.
+     * @tparam voigt Flag indicating whether to use Voigt notation.
+     * @param strain The strain vector.
+     * @return The material tangent calculated using the material's tangentModuli function.
+     */
     template <typename ScalarType, int strainDim, bool voigt = true>
     auto getMaterialTangent(const Eigen::Vector<ScalarType, strainDim>& strain) const {
       if constexpr (std::is_same_v<ScalarType, double>)
@@ -112,6 +162,14 @@ namespace Ikarus {
       }
     }
 
+    /**
+     * @brief Get the internal energy for the given strain.
+     *
+     * @tparam ScalarType The scalar type for the material and strain.
+     * @tparam strainDim The dimension of the strain vector.
+     * @param strain The strain vector.
+     * @return The internal energy calculated using the material's storedEnergy function.
+     */
     template <typename ScalarType, int strainDim>
     auto getInternalEnergy(const Eigen::Vector<ScalarType, strainDim>& strain) const {
       if constexpr (std::is_same_v<ScalarType, double>)
@@ -122,6 +180,15 @@ namespace Ikarus {
       }
     }
 
+    /**
+     * @brief Get the stress for the given strain.
+     *
+     * @tparam ScalarType The scalar type for the material and strain.
+     * @tparam strainDim The dimension of the strain vector.
+     * @tparam voigt A boolean indicating whether to use the Voigt notation for stress.
+     * @param strain The strain vector.
+     * @return The stress vector calculated using the material's stresses function.
+     */
     template <typename ScalarType, int strainDim, bool voigt = true>
     auto getStress(const Eigen::Vector<ScalarType, strainDim>& strain) const {
       if constexpr (std::is_same_v<ScalarType, double>)
@@ -132,16 +199,37 @@ namespace Ikarus {
       }
     }
 
-    inline double calculateScalar(const FERequirementType& par) const { return calculateScalarImpl<double>(par); }
+    /**
+     * @brief Calculate the scalar value associated with the given FERequirementType.
+     *
+     * @tparam ScalarType The scalar type for the calculation.
+     * @param par The FERequirementType object specifying the requirements for the calculation.
+     * @return The calculated scalar value.
+     */
+    double calculateScalar(const FERequirementType& par) const { return calculateScalarImpl<double>(par); }
 
-    inline void calculateVector(const FERequirementType& par, typename Traits::template VectorType<> force) const {
+    /**
+     * @brief Calculate the vector associated with the given FERequirementType.
+     *
+     * @tparam ScalarType The scalar type for the calculation.
+     * @param par The FERequirementType object specifying the requirements for the calculation.
+     * @param force The vector to store the calculated result.
+     */
+    void calculateVector(const FERequirementType& par, typename Traits::template VectorType<> force) const {
       calculateVectorImpl<double>(par, force);
     }
 
+    /**
+     * @brief Calculate the matrix associated with the given FERequirementType.
+     *
+     * @tparam ScalarType The scalar type for the calculation.
+     * @param par The FERequirementType object specifying the requirements for the calculation.
+     * @param K The matrix to store the calculated result.
+     */
     void calculateMatrix(const FERequirementType& par, typename Traits::template MatrixType<> K) const {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
-      const auto eps = getStrainFunction(par);
+      const auto eps = strainFunction(par);
       const auto geo = this->localView().element().geometry();
 
       for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
@@ -160,12 +248,19 @@ namespace Ikarus {
       }
     }
 
+    /**
+     * @brief Calculate specified results at a given local position.
+     *
+     * @param req The ResultRequirementsType object specifying the required results.
+     * @param local The local position for which results are to be calculated.
+     * @param result The ResultTypeMap object to store the calculated results.
+     */
     void calculateAt(const ResultRequirementsType& req, const Dune::FieldVector<double, Traits::mydim>& local,
                      ResultTypeMap<double>& result) const {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
 
-      const auto uFunction = getDisplacementFunction(req.getFERequirements());
+      const auto uFunction = displacementFunction(req.getFERequirements());
       const auto H         = uFunction.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
       const auto E         = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
       const auto EVoigt    = toVoigt(E);
@@ -198,8 +293,8 @@ namespace Ikarus {
                                                            = std::nullopt) const -> ScalarType {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
-      const auto uFunction = getDisplacementFunction(par, dx);
-      const auto eps       = getStrainFunction(par, dx);
+      const auto uFunction = displacementFunction(par, dx);
+      const auto eps       = strainFunction(par, dx);
       const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
       const auto geo       = this->localView().element().geometry();
       ScalarType energy    = 0.0;
@@ -252,7 +347,7 @@ namespace Ikarus {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
       const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
-      const auto eps     = getStrainFunction(par, dx);
+      const auto eps     = strainFunction(par, dx);
       const auto geo     = this->localView().element().geometry();
 
       // Internal forces
@@ -268,7 +363,7 @@ namespace Ikarus {
 
       // External forces volume forces over the domain
       if (volumeLoad) {
-        const auto u = getDisplacementFunction(par, dx);
+        const auto u = displacementFunction(par, dx);
         for (const auto& [gpIndex, gp] : u.viewOverIntegrationPoints()) {
           const double intElement                            = geo.integrationElement(gp.position()) * gp.weight();
           const Eigen::Vector<double, Traits::worlddim> fExt = volumeLoad(toEigen(geo.global(gp.position())), lambda);
@@ -282,7 +377,7 @@ namespace Ikarus {
       // External forces, boundary forces, i.e., at the Neumann boundary
       if (not neumannBoundary and not neumannBoundaryLoad) return;
 
-      const auto u        = getDisplacementFunction(par, dx);
+      const auto u        = displacementFunction(par, dx);
       const auto& element = this->localView().element();
       for (auto&& intersection : intersections(neumannBoundary->gridView(), element)) {
         if (not neumannBoundary->contains(intersection)) continue;

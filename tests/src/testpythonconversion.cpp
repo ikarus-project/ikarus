@@ -5,8 +5,8 @@
 
 #include <dune/common/test/testsuite.hh>
 
-#include <ikarus/utils/duneutilities.hh>
 #include <ikarus/utils/init.hh>
+#include <ikarus/utils/pythonautodiffdefinitions.hh>
 
 using Dune::TestSuite;
 

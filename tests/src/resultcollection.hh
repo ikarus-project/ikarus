@@ -13,7 +13,7 @@ auto getVertexPositions(FiniteElement& fe) {
   const auto& referenceElement = Dune::referenceElement<double, dim>(element.type());
   const int numberOfVertices   = referenceElement.size(dim);
 
-  std::vector<typename FiniteElement::GridElementEntityType::Geometry::LocalCoordinate> positions;
+  std::vector<typename FiniteElement::GridElement::Geometry::LocalCoordinate> positions;
   for (auto i : std::views::iota(0, numberOfVertices))
     positions.push_back(referenceElement.position(i, dim));
 

@@ -17,15 +17,13 @@
 #include <Eigen/Core>
 
 #include <ikarus/assembler/simpleassemblers.hh>
-#include <ikarus/controlroutines/pathfollowingtechnique.hh>
+#include <ikarus/controlroutines/pathfollowing.hh>
 #include <ikarus/finiteelements/mechanics/kirchhoffloveshell.hh>
-#include <ikarus/io/resultfunction.hh>
-#include <ikarus/linearalgebra/dirichletvalues.hh>
-#include <ikarus/linearalgebra/nonlinearoperator.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
-#include <ikarus/utils/algorithms.hh>
 #include <ikarus/utils/basis.hh>
+#include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/init.hh>
+#include <ikarus/utils/nonlinearoperator.hh>
 #include <ikarus/utils/observer/controllogger.hh>
 #include <ikarus/utils/observer/controlvtkwriter.hh>
 #include <ikarus/utils/observer/nonlinearsolverlogger.hh>
@@ -36,7 +34,7 @@ template <typename PathFollowingType>
 auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vector<std::vector<int>>& expectedIterations,
                                   const std::vector<std::vector<double>>& expectedResults, const int targetIterations,
                                   const double stepSize) {
-  TestSuite t("KLShellAndAdaptiveStepSizing --> " + pft.name);
+  TestSuite t("KLShellAndAdaptiveStepSizing --> " + pft.name());
   constexpr auto dimWorld        = 3;
   const std::array<int, 2> order = {2, 1};
 
@@ -94,7 +92,7 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   std::vector<ElementType> fes;
 
   for (auto& element : elements(gridView))
-    fes.emplace_back(basis, element, E, nu, thickness, LoadDefault(), &neumannBoundary, neumannBoundaryLoad);
+    fes.emplace_back(basis, element, E, nu, thickness, utils::LoadDefault(), &neumannBoundary, neumannBoundaryLoad);
 
   auto basisP = std::make_shared<const decltype(basis)>(basis);
   Ikarus::DirichletValues dirichletValues(basisP->flat());
@@ -169,15 +167,15 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(
       basis.flat(), d, 2);
   vtkWriter->setFieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 3);
-  vtkWriter->setFileNamePrefix("testAdaptiveStepSizing" + pft.name);
+  vtkWriter->setFileNamePrefix("testAdaptiveStepSizing" + pft.name());
 
   crWoSS.subscribeAll({vtkWriter, pathFollowingObserver});
   crWoSS.unSubscribeAll(vtkWriter);
   crWSS.subscribeAll({pathFollowingObserver});
   crWSS.subscribe(Ikarus::ControlMessages::SOLUTION_CHANGED, vtkWriter);
 
-  const std::string& message1 = " --> " + pft.name + " with default adaptive step sizing";
-  const std::string& message2 = " --> " + pft.name + " without default adaptive step sizing";
+  const std::string& message1 = " --> " + pft.name() + " with default adaptive step sizing";
+  const std::string& message2 = " --> " + pft.name() + " without default adaptive step sizing";
 
   t.checkThrow<Dune::InvalidStateException>(
       [&]() {
@@ -208,11 +206,11 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
 
   t.check(controlInfoWSS.totalIterations < controlInfoWoSS.totalIterations)
       << "Total iterations should be less --> " << controlInfoWSS.totalIterations << " > "
-      << std::to_string(controlInfoWoSS.totalIterations) + " --> " + pft.name;
+      << std::to_string(controlInfoWoSS.totalIterations) + " --> " + pft.name();
 
   t.check(controlInfoWSSIterations == controlInfoWSS.totalIterations)
       << "Total number of iterations is wrong --> " << controlInfoWSS.totalIterations << " is not equal to "
-      << std::to_string(controlInfoWSSIterations) + " --> " + pft.name;
+      << std::to_string(controlInfoWSSIterations) + " --> " + pft.name();
 
   checkSolverInfos(t, expectedIterations[0], controlInfoWSS, loadSteps, message1);
   checkSolverInfos(t, expectedIterations[1], controlInfoWoSS, loadSteps, message2);
@@ -223,8 +221,8 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
 int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
 
-  auto alc = Ikarus::StandardArcLength{};
-  auto lc  = Ikarus::LoadControlWithSubsidiaryFunction{};
+  auto alc = Ikarus::ArcLength{};
+  auto lc  = Ikarus::LoadControlSubsidiaryFunction{};
 
   /// expected iterations for each step for a path following type with and without step sizing
   const std::vector<std::vector<int>> expectedIterationsALC = {{9, 9, 6, 5, 4, 4}, {9, 8, 6, 5, 5, 5}};

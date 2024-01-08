@@ -10,10 +10,9 @@
 
 #include <Eigen/Core>
 
-#include <ikarus/controlroutines/pathfollowingtechnique.hh>
-#include <ikarus/linearalgebra/nonlinearoperator.hh>
-#include <ikarus/utils/functionsanitychecks.hh>
+#include <ikarus/controlroutines/pathfollowing.hh>
 #include <ikarus/utils/init.hh>
+#include <ikarus/utils/nonlinearoperator.hh>
 #include <ikarus/utils/observer/controllogger.hh>
 #include <ikarus/utils/observer/nonlinearsolverlogger.hh>
 
@@ -41,7 +40,7 @@ template <typename NonLinearOperator>
 static auto simple2DOperatorArcLengthTest(NonLinearOperator& nonLinOp, double stepSize, int loadSteps) {
   resetNonLinearOperatorParametersToZero(nonLinOp);
   auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
-  auto pft       = Ikarus::StandardArcLength{};  // Type of path following technique
+  auto pft       = Ikarus::ArcLength{};  // Type of path following technique
 
   auto nr  = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
   auto alc = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
@@ -59,8 +58,8 @@ static auto simple2DOperatorArcLengthTest(NonLinearOperator& nonLinOp, double st
   TestSuite t("Arc Length with Subsidiary function");
   t.check(controlInfo.success, "No convergence");
   for (auto i = 0; i < 2; ++i)
-    checkScalars(t, nonLinOp.firstParameter()[i], expectedDisplacement[i], " --> " + pft.name);
-  checkScalars(t, nonLinOp.lastParameter(), expectedLambda, " --> " + pft.name);
+    checkScalars(t, nonLinOp.firstParameter()[i], expectedDisplacement[i], " --> " + pft.name());
+  checkScalars(t, nonLinOp.lastParameter(), expectedLambda, " --> " + pft.name());
   checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
   return t;
 }
@@ -94,7 +93,7 @@ template <typename NonLinearOperator>
 static auto simple2DOperatorLoadControlTest(NonLinearOperator& nonLinOp, double stepSize, int loadSteps) {
   resetNonLinearOperatorParametersToZero(nonLinOp);
   auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
-  auto pft       = Ikarus::LoadControlWithSubsidiaryFunction{};  // Type of path following technique
+  auto pft       = Ikarus::LoadControlSubsidiaryFunction{};  // Type of path following technique
 
   auto nr                      = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
   auto lc                      = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
@@ -111,8 +110,8 @@ static auto simple2DOperatorLoadControlTest(NonLinearOperator& nonLinOp, double 
   TestSuite t("Load Control with Subsidiary function");
   t.check(controlInfo.success, "No convergence");
   for (auto i = 0; i < 2; ++i)
-    checkScalars(t, nonLinOp.firstParameter()[i], expectedDisplacement[i], " --> " + pft.name);
-  checkScalars(t, nonLinOp.lastParameter(), expectedLambda, " --> " + pft.name);
+    checkScalars(t, nonLinOp.firstParameter()[i], expectedDisplacement[i], " --> " + pft.name());
+  checkScalars(t, nonLinOp.lastParameter(), expectedLambda, " --> " + pft.name());
   checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
   return t;
 }
@@ -140,8 +139,8 @@ static auto simple2DOperatorDisplacementControlTest(NonLinearOperator& nonLinOp,
   TestSuite t("Displacement Control with Subsidiary function");
   t.check(controlInfo.success, "No convergence");
   for (auto i = 0; i < 2; ++i)
-    checkScalars(t, nonLinOp.firstParameter()[i], expectedDisplacement[i], " --> " + pft.name);
-  checkScalars(t, nonLinOp.lastParameter(), expectedLambda, " --> " + pft.name);
+    checkScalars(t, nonLinOp.firstParameter()[i], expectedDisplacement[i], " --> " + pft.name());
+  checkScalars(t, nonLinOp.lastParameter(), expectedLambda, " --> " + pft.name());
   checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
   return t;
 }

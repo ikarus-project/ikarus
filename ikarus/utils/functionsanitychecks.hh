@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * \file functionsanitychecks.hh
+ * \brief Implementation of function sanity checks
+ */
+
 #pragma once
 #include "findlinesegment.hh"
 
@@ -9,19 +14,39 @@
 #include <dune/common/float_cmp.hh>
 
 #include <spdlog/spdlog.h>
-namespace Ikarus {
-  double drawResultAndReturnSlope(std::string&& functionName, const std::function<double(double)>& ftfunc, bool draw,
-                                  int slopeOfReference);
-
+namespace Ikarus::utils {
+  namespace Impl {
+    /**
+     * @brief Draws the function and returns the slope for a given function.
+     * @param functionName The name of the function.
+     * @param ftfunc The function to be evaluated.
+     * @param draw Flag indicating whether to draw the result.
+     * @param slopeOfReference The reference slope for comparison.
+     * @return The computed slope.
+     */
+    double drawResultAndReturnSlope(std::string&& functionName, const std::function<double(double)>& ftfunc, bool draw,
+                                    int slopeOfReference);
+  }  // namespace Impl
+  /**
+   * @brief Struct to hold flags for function checks.
+   */
   struct CheckFlags {
     bool draw                        = true;
     bool writeSlopeStatementIfFailed = true;
     double tolerance                 = 1e-2;
   };
 
-  /*
-   * The checkgradient function is inspired by http://sma.epfl.ch/~nboumal/book/  Chapter 4.8 and
+  /**
+   * @brief Checks the gradient of a nonlinear operator.
+   * \details The checkgradient function is inspired by http://sma.epfl.ch/~nboumal/book/  Chapter 4.8 and
    * https://github.com/NicolasBoumal/manopt/blob/master/manopt/tools/checkdiff.m
+   * \ingroup utils
+   * @tparam NonlinearOperator Type of the nonlinear operator.
+   * @tparam UpdateType Type of the update.
+   * @param nonLinOp The nonlinear operator.
+   * @param checkFlags Flags for the check.
+   * @param p_updateFunction Update function.
+   * @return True if the check passed, false otherwise.
    */
   template <typename NonlinearOperator, typename UpdateType = typename NonlinearOperator::template ParameterValue<0>>
   bool checkGradient(
@@ -55,7 +80,7 @@ namespace Ikarus {
       return value;
     };
 
-    const double slope = drawResultAndReturnSlope("Gradient", ftfunc, checkFlags.draw, 2);
+    const double slope = Impl::drawResultAndReturnSlope("Gradient", ftfunc, checkFlags.draw, 2);
 
     const bool checkPassed = Dune::FloatCmp::le(2.0, slope, checkFlags.tolerance);
 
@@ -72,9 +97,17 @@ namespace Ikarus {
     return checkPassed;
   }
 
-  /*
-   * The checkjacobian function is inspired by http://sma.epfl.ch/~nboumal/book/  Chapter 4.8 and
+  /**
+   * @brief Checks the Jacobian of a nonlinear operator.
+   * \details The checkjacobian function is inspired by http://sma.epfl.ch/~nboumal/book/  Chapter 4.8 and
    * https://github.com/NicolasBoumal/manopt/blob/master/manopt/tools/checkdiff.m
+   * \ingroup utils
+   * @tparam NonlinearOperator Type of the nonlinear operator.
+   * @tparam UpdateType Type of the update.
+   * @param nonLinOp The nonlinear operator.
+   * @param checkFlags Flags for the check.
+   * @param p_updateFunction Update function.
+   * @return True if the check passed, false otherwise.
    */
   template <typename NonlinearOperator, typename UpdateType = typename NonlinearOperator::template ParameterValue<0>>
   bool checkJacobian(
@@ -101,7 +134,7 @@ namespace Ikarus {
       return value;
     };
 
-    const double slope = drawResultAndReturnSlope("Jacobian", ftfunc, checkFlags.draw, 2);
+    const double slope = Impl::drawResultAndReturnSlope("Jacobian", ftfunc, checkFlags.draw, 2);
 
     const bool checkPassed = Dune::FloatCmp::le(2.0, slope, checkFlags.tolerance);
 
@@ -117,9 +150,17 @@ namespace Ikarus {
     return checkPassed;
   }
 
-  /*
-   * The checkgradient function is inspired by http://sma.epfl.ch/~nboumal/book/  Chapter 6.8 and
+  /**
+   * @brief Checks the Hessian of a nonlinear operator.
+   * \details  The checkHessian function is inspired by http://sma.epfl.ch/~nboumal/book/  Chapter 6.8 and
    * https://github.com/NicolasBoumal/manopt/blob/master/manopt/tools/checkhessian.m
+   * \ingroup utils
+   * @tparam NonlinearOperator Type of the nonlinear operator.
+   * @tparam UpdateType Type of the update.
+   * @param nonLinOp The nonlinear operator.
+   * @param checkFlags Flags for the check.
+   * @param p_updateFunction Update function.
+   * @return True if the check passed, false otherwise.
    */
   template <typename NonlinearOperator, typename UpdateType = typename NonlinearOperator::template ParameterValue<0>>
   bool checkHessian(
@@ -156,7 +197,7 @@ namespace Ikarus {
       return value;
     };
 
-    const double slope = drawResultAndReturnSlope("Hessian", ftfunc, checkFlags.draw, 3);
+    const double slope = Impl::drawResultAndReturnSlope("Hessian", ftfunc, checkFlags.draw, 3);
 
     const bool checkPassed = Dune::FloatCmp::le(3.0, slope, checkFlags.tolerance);
 
@@ -171,4 +212,4 @@ namespace Ikarus {
     nonLinOp.updateAll();
     return checkPassed;
   }
-}  // namespace Ikarus
+}  // namespace Ikarus::utils

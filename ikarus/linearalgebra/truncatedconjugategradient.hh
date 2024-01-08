@@ -5,7 +5,17 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-// this file is modified from the default conjugate gradient method of eigen
+/**
+ * @file truncatedconjugategradient.hh
+ * @brief Definition of TruncatedConjugateGradient class for solving linear systems using truncated conjugate gradient
+ * method.
+ *
+ * This file defines the TruncatedConjugateGradient class, which is an iterative solver for solving linear systems
+ * using the truncated conjugate gradient method. It includes modifications to the original Eigen library's
+ * ConjugateGradient.h file.
+ *
+ */
+
 #pragma once
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -38,14 +48,20 @@ namespace Eigen {
   };
   namespace internal {
 
-    /** \internal Low-level conjugate gradient algorithm
-     * \param mat The matrix A
-     * \param rhs The right hand side vector b
-     * \param x On input and initial solution, on output the computed solution.
-     * \param precond A preconditioner being able to efficiently solve for an
-     *                approximation of Ax=b (regardless of b)
-     * \param iters On input the max number of iteration, on output the number of performed iterations.
-     * \param tol_error On input the tolerance error, on output an estimation of the relative error.
+    /**
+     * @internal
+     * @brief Low-level truncated conjugate gradient algorithm.
+     * @tparam MatrixType Type of the matrix A.
+     * @tparam Rhs Type of the right-hand side vector b.
+     * @tparam Dest Type of the solution vector x.
+     * @tparam Preconditioner Type of the preconditioner.
+     * @param mat The matrix A.
+     * @param rhs The right-hand side vector b.
+     * @param x On input and initial solution, on output the computed solution.
+     * @param precond A preconditioner being able to efficiently solve for an approximation of Ax=b (regardless of b).
+     * @param iters On input the max number of iterations, on output the number of performed iterations.
+     * @param tol_error On input the tolerance error, on output an estimation of the relative error.
+     * @param _info Information about the truncated conjugate gradient algorithm.
      */
     template <typename MatrixType, typename Rhs, typename Dest, typename Preconditioner>
     void truncated_conjugate_gradient(const MatrixType& mat, const Rhs& rhs, Dest& x, const Preconditioner& precond,
@@ -164,6 +180,13 @@ namespace Eigen {
 
   }  // namespace internal
 
+  /**
+   * @class TruncatedConjugateGradient
+   * @brief Iterative solver for solving linear systems using the truncated conjugate gradient method.
+   * @tparam MatrixType_ Type of the matrix A.
+   * @tparam UpLo_ Type of the triangular part of the matrix (Lower or Upper or both).
+   * @tparam Preconditioner_ Type of the preconditioner.
+   */
   template <typename MatrixType_, int UpLo_, typename Preconditioner_>
   class TruncatedConjugateGradient
       : public IterativeSolverBase<TruncatedConjugateGradient<MatrixType_, UpLo_, Preconditioner_> > {
@@ -189,8 +212,16 @@ namespace Eigen {
     enum { UpLo = UpLo_ };
 
   public:
+    /**
+     * @brief Get information about the truncated conjugate gradient algorithm.
+     * @return Information about the algorithm.
+     */
     TCGInfo<typename MatrixType::RealScalar> getInfo() { return algInfo; }
 
+    /**
+     * @brief Set information about the truncated conjugate gradient algorithm.
+     * @param _alginfo Information about the algorithm.
+     */
     void setInfo(TCGInfo<typename MatrixType::RealScalar> _alginfo) { this->algInfo = _alginfo; }
     /** Default constructor. */
     TruncatedConjugateGradient() : Base() {}

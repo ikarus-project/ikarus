@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * \file linearsolver.hh
+ * \brief Type-erased linear solver with templated scalar type
+ */
+
 #pragma once
 #include <memory>
 #include <type_traits>
@@ -13,6 +18,12 @@
 
 namespace Ikarus {
 
+  /**
+   * \enum SolverTypeTag
+   * \brief Enumeration representing different solver types.
+   * \details The prefix s and d stand for sparse and dense solvers and the second prefix i and d stand for iterative or
+   * direct solvers for the sparse case
+   */
   enum class SolverTypeTag {
     none,
     si_ConjugateGradient,
@@ -35,25 +46,61 @@ namespace Ikarus {
     d_LDLT
   };
 
+  /**
+   * \enum MatrixTypeTag
+   * \brief Enumeration representing different matrix types (Dense or Sparse).
+   */
   enum class MatrixTypeTag { Dense, Sparse };
 
-  /** \brief A type-erased solver templated with the scalar type of the linear system */
+  /**
+   * \class LinearSolverTemplate
+   * \brief A type-erased class which wraps most of the linear solvers available in Eigen.
+   * \tparam ScalarType The scalar type of the linear system (default: double).
+   * \ingroup solvers
+   */
   template <typename ScalarType = double>
   class LinearSolverTemplate {
   public:
     using SparseMatrixType = Eigen::SparseMatrix<ScalarType>;
     using DenseMatrixType  = Eigen::MatrixX<ScalarType>;
+
+    /**
+     * \brief Constructor for LinearSolverTemplate.
+     * \param p_solverTypeTag The solver type tag representing the type of the linear solver.
+     */
     explicit LinearSolverTemplate(const SolverTypeTag& p_solverTypeTag);
 
-    ~LinearSolverTemplate()       = default;
+    /**
+     * \brief Destructor for LinearSolverTemplate.
+     */
+    ~LinearSolverTemplate() = default;
+
+    /**
+     * \brief Copy assignment operator.
+     * \param other The LinearSolverTemplate to copy.
+     * \return A reference to the assigned LinearSolverTemplate.
+     */
     LinearSolverTemplate& operator=(const LinearSolverTemplate& other) {
       LinearSolverTemplate tmp(other);
       return *this;
     }
 
-    LinearSolverTemplate(const LinearSolverTemplate& rhs) { *this = LinearSolverTemplate(rhs.solverTypeTag); }
-    LinearSolverTemplate(LinearSolverTemplate&&) noexcept = default;
-    LinearSolverTemplate& operator=(LinearSolverTemplate&&) noexcept = default;
+    /**
+     * \brief Copy constructor.
+     * \param other The LinearSolverTemplate to copy.
+     */
+    LinearSolverTemplate(const LinearSolverTemplate& other) { *this = LinearSolverTemplate(other.solverTypeTag); }
+    /**
+     * \brief Move constructor.
+     * \param other The LinearSolverTemplate to move.
+     */
+    LinearSolverTemplate(LinearSolverTemplate&& other) noexcept = default;
+    /**
+     * \brief Move assignment operator.
+     * \param other The LinearSolverTemplate to move.
+     * \return A reference to the assigned LinearSolverTemplate.
+     */
+    LinearSolverTemplate& operator=(LinearSolverTemplate&& other) noexcept = default;
 
   private:
     struct SolverBase {
@@ -125,23 +172,62 @@ namespace Ikarus {
     SolverTypeTag solverTypeTag{SolverTypeTag::none};
 
   public:
+    /**
+     * \brief Compute the factorization of the matrix.
+     * \tparam MatrixType The type of the matrix (DenseMatrixType or SparseMatrixType).
+     * \param A The matrix for factorization.
+     * \return A reference to the LinearSolverTemplate.
+     */
     template <typename MatrixType>
     requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
     inline LinearSolverTemplate& compute(const MatrixType& A) {
       solverimpl->compute(A);
       return *this;
     }
+
+    /**
+     * \brief Analyze the pattern of the matrix.
+     * \tparam MatrixType The type of the matrix (DenseMatrixType or SparseMatrixType).
+     * \param A The matrix for pattern analysis.
+     */
     template <typename MatrixType>
     requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
     inline void analyzePattern(const MatrixType& A) { solverimpl->analyzePattern(A); }
 
+    /**
+     * \brief Factorize the matrix.
+     * \tparam MatrixType The type of the matrix (DenseMatrixType or SparseMatrixType).
+     * \param A The matrix for factorization.
+     */
     template <typename MatrixType>
     requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
     inline void factorize(const MatrixType& A) { solverimpl->factorize(A); }
 
+    /**
+     * \brief Solve the linear system for a vector.
+     * \param x The solution vector.
+     * \param b The right-hand side vector.
+     */
     void solve(Eigen::VectorX<ScalarType>& x, const Eigen::VectorX<ScalarType>& b) { solverimpl->solve(x, b); }
+
+    /**
+     * \brief Solve the linear system for a `n` times `3` matrix.
+     * \param x The solution matrix.
+     * \param b The right-hand side matrix.
+     */
     void solve(Eigen::MatrixX3<ScalarType>& x, const Eigen::MatrixX3<ScalarType>& b) { solverimpl->solve(x, b); }
+    /**
+     * \brief Solve the linear system for a `n` times `2` matrix.
+     * \param x The solution matrix.
+     * \param b The right-hand side matrix.
+     */
     void solve(Eigen::MatrixX2<ScalarType>& x, const Eigen::MatrixX2<ScalarType>& b) { solverimpl->solve(x, b); }
+
+    /**
+     * \brief Solve the linear system for a `n` times `n` matrix.
+     * \param x The solution matrix.
+     * \param b The right-hand side matrix.
+     */
     void solve(Eigen::MatrixX<ScalarType>& x, const Eigen::MatrixX<ScalarType>& b) { solverimpl->solve(x, b); }
   };
 

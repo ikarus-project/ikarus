@@ -10,10 +10,10 @@
 
 #include <Eigen/Core>
 
-#include <ikarus/linearalgebra/nonlinearoperator.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/utils/functionsanitychecks.hh>
 #include <ikarus/utils/init.hh>
+#include <ikarus/utils/nonlinearoperator.hh>
 #include <ikarus/utils/observer/nonlinearsolverlogger.hh>
 
 using namespace Ikarus;
@@ -178,7 +178,7 @@ static auto secondOrderVectorValuedOperatorTest() {
   auto ddfvLambda = [&](auto&& x_) { return ddf2v(x_, A, b); };
   auto nonLinOp   = Ikarus::NonLinearOperator(functions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
 
-  t.check(checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = false}));
+  t.check(Ikarus::utils::checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = false}));
 
   auto subOperator = nonLinOp.subOperator<1, 2>();
   // Newton method test find root of first derivative
@@ -236,8 +236,8 @@ static auto secondOrderVectorValuedOperatorNonlinearAutodiff() {
 
   auto nonLinOp = Ikarus::NonLinearOperator(functions(fvLambda, dfvLambda, ddfvLambda), parameter(x));
 
-  t.check(checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = false}));
-  t.check(checkHessian(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = false}));
+  t.check(Ikarus::utils::checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = false}));
+  t.check(Ikarus::utils::checkHessian(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = false}));
 
   auto subOperator = nonLinOp.subOperator<1, 2>();
 
