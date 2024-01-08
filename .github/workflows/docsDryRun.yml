@@ -34,6 +34,23 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: 3.x
+      - name: Setup Mkdocs
+        run: |
+          pip install mkdocs
+          pip install git+https://${{ secrets.MKDOCS_TOKEN }}@github.com/squidfunk/mkdocs-material-insiders.git
+          pip install mkdocs-macros-plugin
+          pip install mkdocs-drawio-exporter
+          pip install mkdocs-glightbox
+          pip install mike
+          pip install mkdocs-bibtex
+          pip install pillow cairosvg
+          apt-get update
+          apt-get install libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev -y
+          #wget https://github.com/jgraph/drawio-desktop/releases/download/v16.5.1/drawio-amd64-16.5.1.deb
+          #sudo apt-get install libayatana-appindicator3-1 libnotify4
+          #sudo dpkg -i drawio-amd64-16.5.1.deb
+          #sudo apt-get -y -f install
+          #sudo apt install libasound2 xvfb
 
       - name: Build Doxygen
         run: |

@@ -152,6 +152,8 @@ static auto NonLinearKLShellLoadControlTR() {
   return t;
 }
 
+template <typename B, typename FEReq>
+using KL = Ikarus::KirchhoffLoveShell<B,FEReq>;
 auto singleElementTest() {
   TestSuite t("Kirchhoff-Love autodiff");
   using namespace Dune::Functions::BasisFactory;
@@ -178,7 +180,8 @@ auto singleElementTest() {
       const double E         = 1000;
   const double nu        = 0.0;
   const double thickness = 0.1;
-    t.subTest(checkFEByAutoDiff<Ikarus::KirchhoffLoveShell>(gridView,power<3>(nurbs()),E,nu,thickness,volumeLoad,&neumannBoundary,neumannBoundaryLoad));
+
+    t.subTest(checkFEByAutoDiff<KL>(gridView,power<3>(nurbs()),E,nu,thickness,volumeLoad,&neumannBoundary,neumannBoundaryLoad));
   }
   return t;
 }
