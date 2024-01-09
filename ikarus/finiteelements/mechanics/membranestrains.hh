@@ -27,7 +27,7 @@ namespace Ikarus {
      * \return The strain vector at the given integration point.
      */
     template <typename Geometry>
-    auto value(const Dune::FieldVector<double, 2> &gpPos, const Geometry &geo, const auto &uFunction) const
+    auto value(const Dune::FieldVector<double, 2>& gpPos, const Geometry& geo, const auto& uFunction) const
         -> Eigen::Vector3<typename std::remove_cvref_t<decltype(uFunction)>::ctype> {
       using ScalarType = typename std::remove_cvref_t<decltype(uFunction)>::ctype;
       Eigen::Vector3<ScalarType> epsV;
@@ -61,8 +61,8 @@ namespace Ikarus {
      * \return The strain-displacement matrix for the given node and integration point.
      */
     template <typename Geometry, typename ScalarType>
-    auto derivative(const Dune::FieldVector<double, 2> &gpPos, const Eigen::Matrix<ScalarType, 2, 3> &jcur,
-                    const auto &dNAtGp, const Geometry &geo, const auto &uFunction, const auto &localBasis,
+    auto derivative(const Dune::FieldVector<double, 2>& gpPos, const Eigen::Matrix<ScalarType, 2, 3>& jcur,
+                    const auto& dNAtGp, const Geometry& geo, const auto& uFunction, const auto& localBasis,
                     const int node) const {
       Eigen::Matrix<ScalarType, 3, 3> bop;
       bop.row(0) = jcur.row(0) * dNAtGp(node, 0);
@@ -92,13 +92,13 @@ namespace Ikarus {
      * \return The second derivative of the membrane strain.
      */
     template <typename Geometry, typename ScalarType>
-    auto secondDerivative(const Dune::FieldVector<double, 2> &gpPos, const auto &dNAtGp, const Geometry &geo,
-                          const auto &uFunction, const auto &localBasis, const Eigen::Vector3<ScalarType> &S, int I,
+    auto secondDerivative(const Dune::FieldVector<double, 2>& gpPos, const auto& dNAtGp, const Geometry& geo,
+                          const auto& uFunction, const auto& localBasis, const Eigen::Vector3<ScalarType>& S, int I,
                           int J) const {
-      const auto &dN1i                   = dNAtGp(I, 0);
-      const auto &dN1j                   = dNAtGp(J, 0);
-      const auto &dN2i                   = dNAtGp(I, 1);
-      const auto &dN2j                   = dNAtGp(J, 1);
+      const auto& dN1i                   = dNAtGp(I, 0);
+      const auto& dN1j                   = dNAtGp(J, 0);
+      const auto& dN2i                   = dNAtGp(I, 1);
+      const auto& dN2j                   = dNAtGp(J, 1);
       const ScalarType NS                = dN1i * dN1j * S[0] + dN2i * dN2j * S[1] + (dN1i * dN2j + dN2i * dN1j) * S[2];
       Eigen::Matrix<ScalarType, 3, 3> kg = Eigen::Matrix<double, 3, 3>::Identity() * NS;
       return kg;

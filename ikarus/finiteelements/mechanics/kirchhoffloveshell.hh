@@ -90,9 +90,9 @@ namespace Ikarus {
      * @param p_neumannBoundaryLoad The Neumann boundary load function (optional, default is LoadDefault).
      */
     template <typename VolumeLoad = utils::LoadDefault, typename NeumannBoundaryLoad = utils::LoadDefault>
-    KirchhoffLoveShell(const Basis &globalBasis, const typename LocalView::Element &element, double emod, double nu,
+    KirchhoffLoveShell(const Basis& globalBasis, const typename LocalView::Element& element, double emod, double nu,
                        double thickness, VolumeLoad p_volumeLoad = {},
-                       const BoundaryPatch<GridView> *p_neumannBoundary = nullptr,
+                       const BoundaryPatch<GridView>* p_neumannBoundary = nullptr,
                        NeumannBoundaryLoad p_neumannBoundaryLoad        = {})
         : BasePowerFE(globalBasis.flat(), element),
           neumannBoundary{p_neumannBoundary},
@@ -100,8 +100,8 @@ namespace Ikarus {
           nu_{nu},
           thickness_{thickness} {
       this->localView().bind(element);
-      auto &first_child = this->localView().tree().child(0);
-      const auto &fe    = first_child.finiteElement();
+      auto& first_child = this->localView().tree().child(0);
+      const auto& fe    = first_child.finiteElement();
       numberOfNodes     = fe.size();
       dispAtNodes.resize(fe.size());
       order      = 2 * (fe.localBasis().order());
@@ -136,9 +136,9 @@ namespace Ikarus {
      * @return The displacement function.
      */
     template <typename ScalarType>
-    auto getDisplacementFunction(const FERequirementType &par,
-                                 const std::optional<const Eigen::VectorX<ScalarType>> &dx = std::nullopt) const {
-      const auto &d = par.getGlobalSolution(FESolutions::displacement);
+    auto getDisplacementFunction(const FERequirementType& par,
+                                 const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
+      const auto& d = par.getGlobalSolution(FESolutions::displacement);
       auto geo      = std::make_shared<const typename GridView::GridView::template Codim<0>::Entity::Geometry>(
           this->localView().element().geometry());
       Dune::BlockVector<Dune::RealTuple<ScalarType, Traits::worlddim>> disp(dispAtNodes.size());
@@ -166,7 +166,7 @@ namespace Ikarus {
      * @param req The FERequirements.
      * @return The calculated scalar value.
      */
-    double calculateScalar(const FERequirementType &req) const { return calculateScalarImpl<double>(req); }
+    double calculateScalar(const FERequirementType& req) const { return calculateScalarImpl<double>(req); }
 
     /**
      * @brief Calculate the vector associated with the given FERequirementType.
@@ -175,7 +175,7 @@ namespace Ikarus {
      * @param req The FERequirementType object specifying the requirements for the calculation.
      * @param force The vector to store the calculated result.
      */
-    void calculateVector(const FERequirementType &req, typename Traits::template VectorType<> force) const {
+    void calculateVector(const FERequirementType& req, typename Traits::template VectorType<> force) const {
       calculateVectorImpl<double>(req, force);
     }
     /**
@@ -185,7 +185,7 @@ namespace Ikarus {
      * @param req The FERequirementType object specifying the requirements for the calculation.
      * @param K The matrix to store the calculated result.
      */
-    void calculateMatrix(const FERequirementType &req, typename Traits::template MatrixType<> K) const {
+    void calculateMatrix(const FERequirementType& req, typename Traits::template MatrixType<> K) const {
       calculateMatrixImpl<double>(req, K);
     }
 
@@ -199,22 +199,22 @@ namespace Ikarus {
      * @param local The local coordinates at which results are to be calculated.
      * @param result The result container to store the calculated values.
      */
-    void calculateAt([[maybe_unused]] const ResultRequirementsType &req,
-                     [[maybe_unused]] const Dune::FieldVector<double, Traits::mydim> &local,
-                     [[maybe_unused]] ResultTypeMap<double> &result) const {
+    void calculateAt([[maybe_unused]] const ResultRequirementsType& req,
+                     [[maybe_unused]] const Dune::FieldVector<double, Traits::mydim>& local,
+                     [[maybe_unused]] ResultTypeMap<double>& result) const {
       DUNE_THROW(Dune::NotImplemented, "No results are implemented");
     }
 
     Dune::CachedLocalBasis<
         std::remove_cvref_t<decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis())>>
         localBasis;
-    std::function<Eigen::Vector<double, Traits::worlddim>(const Dune::FieldVector<double, Traits::worlddim> &,
-                                                          const double &)>
+    std::function<Eigen::Vector<double, Traits::worlddim>(const Dune::FieldVector<double, Traits::worlddim>&,
+                                                          const double&)>
         volumeLoad;
-    std::function<Eigen::Vector<double, Traits::worlddim>(const Dune::FieldVector<double, Traits::worlddim> &,
-                                                          const double &)>
+    std::function<Eigen::Vector<double, Traits::worlddim>(const Dune::FieldVector<double, Traits::worlddim>&,
+                                                          const double&)>
         neumannBoundaryLoad;
-    const BoundaryPatch<GridView> *neumannBoundary;
+    const BoundaryPatch<GridView>* neumannBoundary;
     mutable Dune::BlockVector<Dune::RealTuple<double, Traits::dimension>> dispAtNodes;
     DefaultMembraneStrain membraneStrain;
     double emod_;
@@ -243,8 +243,8 @@ namespace Ikarus {
      * the reference position, normal vector, and normalized normal vector at the given
      * integration point.
      */
-    auto computeMaterialAndStrains(const Dune::FieldVector<double, 2> &gpPos, int gpIndex, const Geometry &geo,
-                                   const auto &uFunction) const {
+    auto computeMaterialAndStrains(const Dune::FieldVector<double, 2>& gpPos, int gpIndex, const Geometry& geo,
+                                   const auto& uFunction) const {
       using ScalarType = typename std::remove_cvref_t<decltype(uFunction)>::ctype;
 
       KinematicVariables<ScalarType> kin;
@@ -263,7 +263,7 @@ namespace Ikarus {
 
       kin.epsV = membraneStrain.value(gpPos, geo, uFunction);
 
-      const auto &Ndd                             = localBasis.evaluateSecondDerivatives(gpIndex);
+      const auto& Ndd                             = localBasis.evaluateSecondDerivatives(gpIndex);
       const auto uasMatrix                        = Dune::viewAsEigenMatrixAsDynFixed(uFunction.coefficientsRef());
       const auto hessianu                         = Ndd.transpose().template cast<ScalarType>() * uasMatrix;
       kin.h                                       = kin.H + hessianu;
@@ -280,24 +280,24 @@ namespace Ikarus {
     }
 
     template <typename ScalarType>
-    void calculateMatrixImpl(const FERequirementType &par, typename Traits::template MatrixType<ScalarType> K,
-                             const std::optional<const Eigen::VectorX<ScalarType>> &dx = std::nullopt) const {
+    void calculateMatrixImpl(const FERequirementType& par, typename Traits::template MatrixType<ScalarType> K,
+                             const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
       K.setZero();
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
       const auto uFunction = getDisplacementFunction(par, dx);
-      const auto &lambda   = par.getParameter(FEParameter::loadfactor);
+      const auto& lambda   = par.getParameter(FEParameter::loadfactor);
       const auto geo       = this->localView().element().geometry();
 
-      for (const auto &[gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
+      for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
         const auto intElement = geo.integrationElement(gp.position()) * gp.weight();
         const auto [C, epsV, kappaV, jE, J, h, H, a3N, a3]
             = computeMaterialAndStrains(gp.position(), gpIndex, geo, uFunction);
         const Eigen::Vector<ScalarType, membraneStrainSize> membraneForces = thickness_ * C * epsV;
         const Eigen::Vector<ScalarType, bendingStrainSize> moments = Dune::power(thickness_, 3) / 12.0 * C * kappaV;
 
-        const auto &Nd  = localBasis.evaluateJacobian(gpIndex);
-        const auto &Ndd = localBasis.evaluateSecondDerivatives(gpIndex);
+        const auto& Nd  = localBasis.evaluateJacobian(gpIndex);
+        const auto& Ndd = localBasis.evaluateSecondDerivatives(gpIndex);
         for (size_t i = 0; i < numberOfNodes; ++i) {
           Eigen::Matrix<ScalarType, membraneStrainSize, worlddim> bopIMembrane
               = membraneStrain.derivative(gp.position(), jE, Nd, geo, uFunction, localBasis, i);
@@ -324,24 +324,24 @@ namespace Ikarus {
     }
 
     template <typename ScalarType>
-    void calculateVectorImpl(const FERequirementType &par, typename Traits::template VectorType<ScalarType> force,
-                             const std::optional<const Eigen::VectorX<ScalarType>> &dx = std::nullopt) const {
+    void calculateVectorImpl(const FERequirementType& par, typename Traits::template VectorType<ScalarType> force,
+                             const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
       force.setZero();
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
       const auto uFunction = getDisplacementFunction(par, dx);
-      const auto &lambda   = par.getParameter(FEParameter::loadfactor);
+      const auto& lambda   = par.getParameter(FEParameter::loadfactor);
       const auto geo       = this->localView().element().geometry();
 
       // Internal forces
-      for (const auto &[gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
+      for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
         const auto [C, epsV, kappaV, jE, J, h, H, a3N, a3]
             = computeMaterialAndStrains(gp.position(), gpIndex, geo, uFunction);
         const Eigen::Vector<ScalarType, 3> membraneForces = thickness_ * C * epsV;
         const Eigen::Vector<ScalarType, 3> moments        = Dune::power(thickness_, 3) / 12.0 * C * kappaV;
 
-        const auto &Nd  = localBasis.evaluateJacobian(gpIndex);
-        const auto &Ndd = localBasis.evaluateSecondDerivatives(gpIndex);
+        const auto& Nd  = localBasis.evaluateJacobian(gpIndex);
+        const auto& Ndd = localBasis.evaluateSecondDerivatives(gpIndex);
         for (size_t i = 0; i < numberOfNodes; ++i) {
           Eigen::Matrix<ScalarType, 3, 3> bopIMembrane
               = membraneStrain.derivative(gp.position(), jE, Nd, geo, uFunction, localBasis, i);
@@ -356,7 +356,7 @@ namespace Ikarus {
       // External forces volume forces over the domain
       if (volumeLoad) {
         const auto u = getDisplacementFunction(par, dx);
-        for (const auto &[gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
+        for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
           Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(geo.global(gp.position()), lambda);
           for (size_t i = 0; i < numberOfNodes; ++i) {
             const auto udCi = uFunction.evaluateDerivative(gpIndex, wrt(coeff(i)));
@@ -369,14 +369,14 @@ namespace Ikarus {
       if (not neumannBoundary and not neumannBoundaryLoad) return;
 
       // External forces, boundary forces, i.e. at the Neumann boundary
-      for (auto &&intersection : intersections(neumannBoundary->gridView(), this->localView().element())) {
+      for (auto&& intersection : intersections(neumannBoundary->gridView(), this->localView().element())) {
         if (not neumannBoundary or not neumannBoundary->contains(intersection)) continue;
 
-        const auto &quadLine = QuadratureRules<double, Element::mydimension - 1>::rule(intersection.type(), order);
+        const auto& quadLine = QuadratureRules<double, Element::mydimension - 1>::rule(intersection.type(), order);
 
-        for (const auto &curQuad : quadLine) {
+        for (const auto& curQuad : quadLine) {
           // Local position of the quadrature point
-          const FieldVector<double, Element::mydimension> &quadPos
+          const FieldVector<double, Element::mydimension>& quadPos
               = intersection.geometryInInside().global(curQuad.position());
 
           const double intElement = intersection.geometry().integrationElement(curQuad.position()) * curQuad.weight();
@@ -392,16 +392,16 @@ namespace Ikarus {
     }
 
     template <typename ScalarType>
-    auto calculateScalarImpl(const FERequirementType &par, const std::optional<const Eigen::VectorX<ScalarType>> &dx
+    auto calculateScalarImpl(const FERequirementType& par, const std::optional<const Eigen::VectorX<ScalarType>>& dx
                                                            = std::nullopt) const -> ScalarType {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
       const auto uFunction = getDisplacementFunction(par, dx);
-      const auto &lambda   = par.getParameter(FEParameter::loadfactor);
+      const auto& lambda   = par.getParameter(FEParameter::loadfactor);
       const auto geo       = this->localView().element().geometry();
       ScalarType energy    = 0.0;
 
-      for (const auto &[gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
+      for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
         const auto [C, epsV, kappaV, j, J, h, H, a3N, a3]
             = computeMaterialAndStrains(gp.position(), gpIndex, geo, uFunction);
 
@@ -411,7 +411,7 @@ namespace Ikarus {
       }
 
       if (volumeLoad) {
-        for (const auto &[gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
+        for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
           const auto u                                       = uFunction.evaluate(gpIndex);
           const Eigen::Vector<double, Traits::worlddim> fExt = volumeLoad(geo.global(gp.position()), lambda);
           energy -= u.dot(fExt) * geo.integrationElement(gp.position()) * gp.weight();
@@ -421,15 +421,15 @@ namespace Ikarus {
       if (not neumannBoundary and not neumannBoundaryLoad) return energy;
 
       // line or surface loads, i.e., neumann boundary
-      const auto &element = this->localView().element();
-      for (auto &&intersection : intersections(neumannBoundary->gridView(), element)) {
+      const auto& element = this->localView().element();
+      for (auto&& intersection : intersections(neumannBoundary->gridView(), element)) {
         if (not neumannBoundary or not neumannBoundary->contains(intersection)) continue;
 
-        const auto &quadLine = QuadratureRules<double, Traits::mydim - 1>::rule(intersection.type(), order);
+        const auto& quadLine = QuadratureRules<double, Traits::mydim - 1>::rule(intersection.type(), order);
 
-        for (const auto &curQuad : quadLine) {
+        for (const auto& curQuad : quadLine) {
           // Local position of the quadrature point
-          const FieldVector<double, Traits::mydim> &quadPos
+          const FieldVector<double, Traits::mydim>& quadPos
               = intersection.geometryInInside().global(curQuad.position());
 
           const double intElement = intersection.geometry().integrationElement(curQuad.position());
@@ -446,18 +446,18 @@ namespace Ikarus {
     }
 
     template <typename ScalarType>
-    Eigen::Matrix<ScalarType, 3, 3> kgBending(const Eigen::Matrix<ScalarType, 2, 3> &jcur,
-                                              const Eigen::Matrix3<ScalarType> &h, const auto &dN, const auto &ddN,
-                                              const Eigen::Vector3<ScalarType> &a3N,
-                                              const Eigen::Vector3<ScalarType> &a3, const Eigen::Vector3<ScalarType> &S,
+    Eigen::Matrix<ScalarType, 3, 3> kgBending(const Eigen::Matrix<ScalarType, 2, 3>& jcur,
+                                              const Eigen::Matrix3<ScalarType>& h, const auto& dN, const auto& ddN,
+                                              const Eigen::Vector3<ScalarType>& a3N,
+                                              const Eigen::Vector3<ScalarType>& a3, const Eigen::Vector3<ScalarType>& S,
                                               int I, int J) const {
       Eigen::Matrix<ScalarType, 3, 3> kg;
       kg.setZero();
 
-      const auto &dN1i = dN(I, 0);
-      const auto &dN1j = dN(J, 0);
-      const auto &dN2i = dN(I, 1);
-      const auto &dN2j = dN(J, 1);
+      const auto& dN1i = dN(I, 0);
+      const auto& dN1j = dN(J, 0);
+      const auto& dN2i = dN(I, 1);
+      const auto& dN2j = dN(J, 1);
 
       const Eigen::Matrix<ScalarType, 3, 3> P
           = 1.0 / a3N.norm() * (Eigen::Matrix<double, 3, 3>::Identity() - a3 * a3.transpose());
@@ -476,8 +476,8 @@ namespace Ikarus {
       Eigen::Matrix<ScalarType, 3, 3> a3dJ        = P * a3NdJ;
       for (int i = 0; i < 3; ++i) {
         const auto a_albe               = h.row(i).transpose();
-        const auto &ddNI                = ddN(I, i);
-        const auto &ddNJ                = ddN(J, i);
+        const auto& ddNI                = ddN(I, i);
+        const auto& ddNJ                = ddN(J, i);
         Eigen::Vector3<ScalarType> vecd = P * a_albe;
 
         Eigen::Matrix<ScalarType, 3, 3> a3Ndd
@@ -494,10 +494,10 @@ namespace Ikarus {
     }
 
     template <typename ScalarType>
-    Eigen::Matrix<ScalarType, 3, 3> bopBending(const Eigen::Matrix<ScalarType, 2, 3> &jcur,
-                                               const Eigen::Matrix3<ScalarType> &h, const auto &dN, const auto &ddN,
-                                               const int node, const Eigen::Vector3<ScalarType> &a3N,
-                                               const Eigen::Vector3<ScalarType> &a3) const {
+    Eigen::Matrix<ScalarType, 3, 3> bopBending(const Eigen::Matrix<ScalarType, 2, 3>& jcur,
+                                               const Eigen::Matrix3<ScalarType>& h, const auto& dN, const auto& ddN,
+                                               const int node, const Eigen::Vector3<ScalarType>& a3N,
+                                               const Eigen::Vector3<ScalarType>& a3) const {
       const Eigen::Matrix<ScalarType, 3, 3> a1dxI
           = Eigen::Matrix<double, 3, 3>::Identity() * dN(node, 0);  // this should be double
       // but the cross-product below complains otherwise
@@ -516,7 +516,7 @@ namespace Ikarus {
       return bop;
     }
 
-    Eigen::Matrix<double, 3, 3> materialTangent(const Eigen::Matrix<double, 3, 3> &Aconv) const {
+    Eigen::Matrix<double, 3, 3> materialTangent(const Eigen::Matrix<double, 3, 3>& Aconv) const {
       const double lambda   = emod_ * nu_ / ((1.0 + nu_) * (1.0 - 2.0 * nu_));
       const double mu       = emod_ / (2.0 * (1.0 + nu_));
       const double lambdbar = 2.0 * lambda * mu / (lambda + 2.0 * mu);

@@ -5,6 +5,7 @@
 
 #include "testcommon.hh"
 #include "testhelpers.hh"
+#include "checkfebyautodiff.hh"
 
 #include <dune/common/test/testsuite.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
@@ -29,6 +30,23 @@
 #include <ikarus/utils/observer/nonlinearsolverlogger.hh>
 
 using Dune::TestSuite;
+
+template <typename Basis_, typename FERequirements_ = Ikarus::FErequirements<>>
+struct KirchhoffLoveShellHelper : Ikarus::KirchhoffLoveShell<Basis_, FERequirements_, false> {
+  using Base = Ikarus::KirchhoffLoveShell<Basis_, FERequirements_, false>;
+  using Base::Base;
+  using FlatBasis = typename Basis_::FlatBasis;
+
+  using LocalView = typename FlatBasis::LocalView;
+  using GridView  = typename FlatBasis::GridView;
+
+  template <typename VolumeLoad = Ikarus::utils::LoadDefault, typename NeumannBoundaryLoad = Ikarus::utils::LoadDefault>
+  KirchhoffLoveShellHelper(const Basis_& globalBasis, const typename LocalView::Element& element, double emod,
+                           double nu, double thickness, VolumeLoad p_volumeLoad = {},
+                           const BoundaryPatch<GridView>* p_neumannBoundary = nullptr,
+                           NeumannBoundaryLoad p_neumannBoundaryLoad        = {})
+      : Base(globalBasis, element, emod, nu, thickness, p_volumeLoad, p_neumannBoundary, p_neumannBoundaryLoad) {}
+};
 
 template <typename PathFollowingType>
 auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vector<std::vector<int>>& expectedIterations,
@@ -94,6 +112,9 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   for (auto& element : elements(gridView))
     fes.emplace_back(basis, element, E, nu, thickness, utils::LoadDefault{}, &neumannBoundary, neumannBoundaryLoad);
 
+  t.subTest(checkFEByAutoDiff<KirchhoffLoveShellHelper>(gridView, power<3>(nurbs()), E, nu, thickness, utils::LoadDefault{},
+                                                      &neumannBoundary, neumannBoundaryLoad));
+
   auto basisP = std::make_shared<const decltype(basis)>(basis);
   DirichletValues dirichletValues(basisP->flat());
 
@@ -124,6 +145,12 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
 
   auto req = FERequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
 
+  auto energyFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
+    req.insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
+        .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal);
+    return sparseAssembler.getScalar(req);
+  };
+
   auto residualFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
     req.insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
         .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal);
@@ -136,7 +163,11 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
     return sparseAssembler.getMatrix(req);
   };
 
-  auto nonLinOp  = Ikarus::NonLinearOperator(functions(residualFunction, KFunction), parameter(d, lambda));
+  auto nonLinOpFull
+      = Ikarus::NonLinearOperator(functions(energyFunction, residualFunction, KFunction), parameter(d, lambda));
+
+
+  auto nonLinOp  = nonLinOpFull.template subOperator<1, 2>();
   auto linSolver = LinearSolver(SolverTypeTag::sd_SimplicialLDLT);
 
   int loadSteps = 6;
