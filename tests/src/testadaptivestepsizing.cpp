@@ -219,6 +219,7 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
 }
 
 int main(int argc, char** argv) {
+  TestSuite t("Adaptive Stepsizing");
   Ikarus::init(argc, argv);
 
   auto alc = Ikarus::ArcLength{};
@@ -234,6 +235,7 @@ int main(int argc, char** argv) {
   const std::vector<std::vector<double>> expectedResultsLC
       = {{0.08741028329554587, 0.0002318693543601816}, {0.144353999993308, 6e-4}};
 
-  KLShellAndAdaptiveStepSizing(alc, expectedIterationsALC, expectedResultsALC, 3, 0.4);
-  KLShellAndAdaptiveStepSizing(lc, expectedIterationsLC, expectedResultsLC, 2, 1e-4);
+  t.subTest(KLShellAndAdaptiveStepSizing(alc, expectedIterationsALC, expectedResultsALC, 3, 0.4));
+  t.subTest(KLShellAndAdaptiveStepSizing(lc, expectedIterationsLC, expectedResultsLC, 2, 1e-4));
+  return t.exit();
 }
