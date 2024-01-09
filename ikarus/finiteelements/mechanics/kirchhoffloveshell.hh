@@ -52,6 +52,28 @@ namespace Ikarus {
     static constexpr int bendingStrainSize  = 3;
 
     /**
+     * \brief A structure representing kinematic variables.
+     *
+     * This structure holds various kinematic variables used in a mechanical analysis. It includes material tangent,
+     * membrane strain, bending strain, Jacobian matrices of deformed and reference geometries, Hessian matrices of
+     * deformed and reference geometries, the normal vector, and the normalized normal vector.
+     *
+     * \tparam ScalarType The scalar type for the matrix and vector elements.
+     */
+    template <typename ScalarType = double>
+    struct KinematicVariables {
+      Eigen::Matrix<double, 3, 3> C;      ///< material tangent
+      Eigen::Vector3<ScalarType> epsV;    ///< membrane strain in Voigt notation
+      Eigen::Vector3<ScalarType> kappaV;  ///< bending strain in Voigt notation
+      Eigen::Matrix<ScalarType, 2, 3> j;  ///< Jacobian of the deformed geometry
+      Eigen::Matrix<double, 2, 3> J;      ///< Jacobian of the reference geometry
+      Eigen::Matrix3<ScalarType> h;       ///< Hessian of the deformed geometry
+      Eigen::Matrix3<double> H;           ///< Hessian of the reference geometry
+      Eigen::Vector3<ScalarType> a3N;     ///< Normal vector of the deformed geometry
+      Eigen::Vector3<ScalarType> a3;      ///< normalized normal vector of the deformed geometry
+    };
+
+    /**
      * @brief Constructor for the KirchhoffLoveShell class.
      *
      * Initializes the KirchhoffLoveShell instance with the given parameters.
@@ -215,44 +237,46 @@ namespace Ikarus {
      * \tparam geo The type of the geometry object.
      * \tparam uFunction The type of the displacement field function.
      *
-     * \return A tuple containing the material tangent, membrane strain, curvature variation,
-     *         Jacobian matrix, metric tensor, Hessian matrix, second fundamental form,
-     *         normalized normal vector, and normal vector at the given integration point.
+     * \return A tuple containing the material tangent, membrane strain, bending,
+     *         Jacobian matrix of the reference position,  Jacobian matrix of the current position, Hessian matrix of
+     * the current position, Hessian matrix of
+     * the reference position, normal vector, and normalized normal vector at the given
+     * integration point.
      */
-    auto computeMaterialAndStrains(const Dune::FieldVector<double, 2> &gpPos,
-                                int gpIndex,
-                                const Geometry &geo,
-                                const auto &uFunction) const {
+    auto computeMaterialAndStrains(const Dune::FieldVector<double, 2> &gpPos, int gpIndex, const Geometry &geo,
+                                   const auto &uFunction) const {
       using ScalarType = typename std::remove_cvref_t<decltype(uFunction)>::ctype;
+
+      KinematicVariables<ScalarType> kin;
       using namespace Dune;
       using namespace Dune::DerivativeDirections;
-      const auto [X, Jd, Hd] = geo.impl().zeroFirstAndSecondDerivativeOfPosition(gpPos);
-      const auto J = toEigen(Jd);
-      const auto H = toEigen(Hd);
-      const Eigen::Matrix<double, 2, 2> A = J*J.transpose();
-      Eigen::Matrix<double, 3, 3> G;
-      G.setZero();
-      G.block<2, 2>(0, 0) = A;
-      G(2, 2) = 1;
+      const auto [X, Jd, Hd]              = geo.impl().zeroFirstAndSecondDerivativeOfPosition(gpPos);
+      kin.J                               = toEigen(Jd);
+      kin.H                               = toEigen(Hd);
+      const Eigen::Matrix<double, 2, 2> A = kin.J * kin.J.transpose();
+      Eigen::Matrix<double, 3, 3> G       = Eigen::Matrix<double, 3, 3>::Zero();
+
+      G.block<2, 2>(0, 0)                    = A;
+      G(2, 2)                                = 1;
       const Eigen::Matrix<double, 3, 3> GInv = G.inverse();
-      const auto C = materialTangent(GInv);
+      kin.C                                  = materialTangent(GInv);
 
-      Eigen::Vector3<ScalarType> epsV=membraneStrain.value(gpPos,geo,uFunction);
+      kin.epsV = membraneStrain.value(gpPos, geo, uFunction);
 
-      const auto &Ndd = localBasis.evaluateSecondDerivatives(gpIndex);
-      const auto uasMatrix = Dune::viewAsEigenMatrixAsDynFixed(uFunction.coefficientsRef());
-      const auto hessianu = Ndd.transpose().template cast<ScalarType>()*uasMatrix;
-      const Eigen::Matrix3<ScalarType> h = H + hessianu;
-      const Eigen::Matrix<ScalarType, 3, 2> gradu = toEigen(
-          uFunction.evaluateDerivative(gpIndex, Dune::wrt(spatialAll), Dune::on(Dune::DerivativeDirections::referenceElement)));
-      const Eigen::Matrix<ScalarType, 2, 3> j = J + gradu.transpose();
-      const Eigen::Vector3<ScalarType> a3N = (j.row(0).cross(j.row(1)));
-      const Eigen::Vector3<ScalarType> a3 = a3N.normalized();
-      Eigen::Vector<ScalarType, 3> bV = h*a3;
+      const auto &Ndd                             = localBasis.evaluateSecondDerivatives(gpIndex);
+      const auto uasMatrix                        = Dune::viewAsEigenMatrixAsDynFixed(uFunction.coefficientsRef());
+      const auto hessianu                         = Ndd.transpose().template cast<ScalarType>() * uasMatrix;
+      kin.h                                       = kin.H + hessianu;
+      const Eigen::Matrix<ScalarType, 3, 2> gradu = toEigen(uFunction.evaluateDerivative(
+          gpIndex, Dune::wrt(spatialAll), Dune::on(Dune::DerivativeDirections::referenceElement)));
+      kin.j                                       = kin.J + gradu.transpose();
+      kin.a3N                                     = (kin.j.row(0).cross(kin.j.row(1)));
+      kin.a3                                      = kin.a3N.normalized();
+      Eigen::Vector<ScalarType, 3> bV             = kin.h * kin.a3;
       bV(2) *= 2;  // Voigt notation requires the two here
       const auto BV = toVoigt(toEigen(geo.impl().secondFundamentalForm(gpPos)));
-      const auto kappaV = (BV - bV).eval();
-      return std::make_tuple(C, epsV, kappaV, j, J, h,H, a3N, a3);
+      kin.kappaV    = BV - bV;
+      return kin;
     }
 
     template <typename ScalarType>

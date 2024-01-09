@@ -208,5 +208,4 @@ int main(int argc, char** argv) {
   TestSuite t("Kirchhoff-Love");
   t.subTest(singleElementTest());
   t.subTest(NonLinearKLShellLoadControlTR());
-
 }

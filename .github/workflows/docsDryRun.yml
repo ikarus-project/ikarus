@@ -22,7 +22,7 @@ on:
       - '**.md'
 
 jobs:
-  Build:
+  Build-Docs-Dry-Run:
     runs-on: ubuntu-latest
     container:
       image: ikarusproject/ikarus-dev:latest

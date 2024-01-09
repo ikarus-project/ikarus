@@ -92,7 +92,7 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   std::vector<ElementType> fes;
 
   for (auto& element : elements(gridView))
-    fes.emplace_back(basis, element, E, nu, thickness, {}, &neumannBoundary, neumannBoundaryLoad);
+    fes.emplace_back(basis, element, E, nu, thickness, utils::LoadDefault{}, &neumannBoundary, neumannBoundaryLoad);
 
   auto basisP = std::make_shared<const decltype(basis)>(basis);
   DirichletValues dirichletValues(basisP->flat());

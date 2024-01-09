@@ -3,14 +3,16 @@
 
 #pragma once
 #include <dune/common/test/testsuite.hh>
-#include <ikarus/utils/basis.hh>
-#include <ikarus/finiteelements/febases/autodifffe.hh>
+
 #include <Eigen/Core>
+
+#include <ikarus/finiteelements/febases/autodifffe.hh>
+#include <ikarus/utils/basis.hh>
 
 template <template <typename...> class FE, typename GridView, typename PreBasis, typename... ElementArgsType>
 auto checkFEByAutoDiff(const GridView& gridView, const PreBasis& pb, const ElementArgsType&... eleArgs) {
-  auto basis       = Ikarus::makeBasis(gridView, pb);
-  auto element     = gridView.template begin<0>();
+  auto basis     = Ikarus::makeBasis(gridView, pb);
+  auto element   = gridView.template begin<0>();
   auto localView = basis.flat().localView();
   localView.bind(*element);
   auto nDOF        = localView.size();
@@ -21,7 +23,7 @@ auto checkFEByAutoDiff(const GridView& gridView, const PreBasis& pb, const Eleme
   const std::string feClassName = Dune::className(fe);
   Dune::TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() by Automatic Differentiation for gridDim = "
                     + feClassName);
-  using AutoDiffBasedFE = Ikarus::AutoDiffFE<decltype(fe),typename decltype(fe)::FERequirementType,false,true>;
+  using AutoDiffBasedFE = Ikarus::AutoDiffFE<decltype(fe), typename decltype(fe)::FERequirementType, false, true>;
   AutoDiffBasedFE feAutoDiff(fe);
 
   Eigen::VectorXd d;
@@ -49,12 +51,14 @@ auto checkFEByAutoDiff(const GridView& gridView, const PreBasis& pb, const Eleme
   t.check(K.isApprox(KAutoDiff, tol),
           "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
           "automatic differentiation for "
-              + feClassName)<<"The difference is "<<(K-KAutoDiff);
+              + feClassName)
+      << "The difference is " << (K - KAutoDiff);
 
   t.check(R.isApprox(RAutoDiff, tol),
           "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
           "automatic differentiation for "
-              + feClassName)<<"The difference is "<<(R-RAutoDiff);
+              + feClassName)
+      << "The difference is " << (R - RAutoDiff);
 
   t.check(Dune::FloatCmp::eq(fe.calculateScalar(req), feAutoDiff.calculateScalar(req), tol),
           "Mismatch between the energies obtained from explicit implementation and the one based on "

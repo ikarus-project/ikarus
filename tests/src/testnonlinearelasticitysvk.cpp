@@ -9,10 +9,9 @@
 
 using Dune::TestSuite;
 
-
-template <typename Basis_, typename Material,typename FERequirements_ = Ikarus::FErequirements<>>
-struct NonLinearElasticHelper : Ikarus::NonLinearElastic<Basis_, Material,FERequirements_, false> {
-  using Base = Ikarus::NonLinearElastic<Basis_, Material,FERequirements_, false>;
+template <typename Basis_, typename Material, typename FERequirements_ = Ikarus::FErequirements<>>
+struct NonLinearElasticHelper : Ikarus::NonLinearElastic<Basis_, Material, FERequirements_, false> {
+  using Base = Ikarus::NonLinearElastic<Basis_, Material, FERequirements_, false>;
   using Base::Base;
   using FlatBasis = typename Basis_::FlatBasis;
 
@@ -20,9 +19,9 @@ struct NonLinearElasticHelper : Ikarus::NonLinearElastic<Basis_, Material,FERequ
   using GridView  = typename FlatBasis::GridView;
 
   template <typename VolumeLoad = Ikarus::utils::LoadDefault, typename NeumannBoundaryLoad = Ikarus::utils::LoadDefault>
-  NonLinearElasticHelper(const Basis_& globalBasis, const typename LocalView::Element& element,const Material& mat, VolumeLoad p_volumeLoad = {},
-                           const BoundaryPatch<GridView>* p_neumannBoundary = nullptr,
-                           NeumannBoundaryLoad p_neumannBoundaryLoad        = {})
+  NonLinearElasticHelper(const Basis_& globalBasis, const typename LocalView::Element& element, const Material& mat,
+                         VolumeLoad p_volumeLoad = {}, const BoundaryPatch<GridView>* p_neumannBoundary = nullptr,
+                         NeumannBoundaryLoad p_neumannBoundaryLoad = {})
       : Base(globalBasis, element, mat, p_volumeLoad, p_neumannBoundary, p_neumannBoundaryLoad) {}
 };
 
@@ -66,7 +65,7 @@ int main(int argc, char** argv) {
     Dune::BitSetVector<1> neumannVertices(gridView.size(2), true);
     BoundaryPatch neumannBoundary(gridView, neumannVertices);
     t.subTest(checkFEByAutoDiff<NonLinearElasticHelper>(gridView, power<2>(lagrange<1>()), reducedMat, volumeLoad,
-                                                  &neumannBoundary, neumannBoundaryLoad));
+                                                        &neumannBoundary, neumannBoundaryLoad));
   }
 
   {
@@ -76,7 +75,7 @@ int main(int argc, char** argv) {
     Dune::BitSetVector<1> neumannVertices(gridView.size(3), true);
     BoundaryPatch neumannBoundary(gridView, neumannVertices);
     t.subTest(checkFEByAutoDiff<NonLinearElasticHelper>(gridView, power<3>(lagrange<1>()), matSVK1, volumeLoad,
-                                                  &neumannBoundary, neumannBoundaryLoad));
+                                                        &neumannBoundary, neumannBoundaryLoad));
   }
 
   return t.exit();
