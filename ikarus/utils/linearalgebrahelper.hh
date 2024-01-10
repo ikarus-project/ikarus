@@ -448,6 +448,20 @@ namespace Ikarus {
     return vec;
   }
 
+  /**
+   * \brief Create skew 3x3 matrix from 3d vector.
+   *  \ingroup utils
+   * \tparam ScalarType The type of the coordinates in the vector.
+   * \param a The vector.
+   * \return The skew matrix.
+   */
+  template <typename ScalarType>
+  Eigen::Matrix<ScalarType, 3, 3> skew(const Eigen::Vector<ScalarType, 3>& a) {
+    Eigen::Matrix<ScalarType, 3, 3> A;
+    A << 0, -a(2), a(1), a(2), 0, -a(0), -a(1), a(0), 0;
+    return A;
+  }
+
   namespace Impl {
     constexpr std::tuple<std::array<std::array<int, 2>, 1>, std::array<std::array<int, 2>, 3>,
                          std::array<std::array<int, 2>, 6>>

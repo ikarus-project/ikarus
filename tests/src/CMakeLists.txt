@@ -18,11 +18,12 @@ set(TEST_DEPENDING_ON_LOCALFEFUNCTIONS
     testlinearelasticity
     testnonlinearelasticityneohooke
     testnonlinearelasticitysvk
+    testadaptivestepsizing
 )
 
 set(TEST_DEPENDING_ON_IGA testklshell testadaptivestepsizing)
 
-set(TEST_NEED_MORE_TIME testadaptivestepsizing)
+set(TEST_NEED_MORE_TIME)
 
 foreach(programSourceFile ${programSourceFiles})
   get_filename_component(programName ${programSourceFile} NAME_WLE)

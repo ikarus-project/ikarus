@@ -1,0 +1,80 @@
+# SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-License-Identifier: CC0-1.0
+
+name: Dry Run Documentation
+
+on:
+  push:
+    paths-ignore:
+      - 'docs/**'
+      - '.github/workflows/ghpages.yml'
+      - '.github/workflows/createDockerContainer.yml'
+      - '**.md'
+
+  pull_request:
+    types: [opened]
+    branches:
+      - main
+    paths-ignore:
+      - 'docs/**'
+      - '.github/workflows/ghpages.yml'
+      - '.github/workflows/createDockerContainer.yml'
+      - '**.md'
+
+jobs:
+  Build-Docs-Dry-Run:
+    runs-on: ubuntu-latest
+    container:
+      image: ikarusproject/ikarus-dev:latest
+      options: --memory-swap="20g" --memory="20g" --cpus="2" --user root
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: 'repo'
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
+      - name: Setup Mkdocs
+        run: |
+          pip install mkdocs
+          pip install git+https://${{ secrets.MKDOCS_TOKEN }}@github.com/squidfunk/mkdocs-material-insiders.git
+          pip install mkdocs-macros-plugin
+          pip install mkdocs-drawio-exporter
+          pip install mkdocs-glightbox
+          pip install mike
+          pip install mkdocs-bibtex
+          pip install pillow cairosvg
+          apt-get update
+          apt-get install libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev -y
+          #wget https://github.com/jgraph/drawio-desktop/releases/download/v16.5.1/drawio-amd64-16.5.1.deb
+          #sudo apt-get install libayatana-appindicator3-1 libnotify4
+          #sudo dpkg -i drawio-amd64-16.5.1.deb
+          #sudo apt-get -y -f install
+          #sudo apt install libasound2 xvfb
+
+      - name: Build Doxygen
+        run: |
+          git clone  https://github.com/jothepro/doxygen-awesome-css.git
+          cd doxygen-awesome-css
+          make install
+          apt-get update
+          apt-get install texlive-base -y
+          cd ..
+          cd repo
+          mkdir build_docs
+          cd build_docs
+          cmake .. -DBUILD_DOCS=1 -DDUNE_ENABLE_PYTHONBINDINGS=0
+          cmake --build . --target doxygen_ikarus
+
+      - name: Build Website
+        run: |
+          git clone https://github.com/ikarus-project/ikarus-project.github.io.git
+          cd ikarus-project.github.io
+          export MKDOCSOFFLINE=false
+          git fetch origin gh-pages --depth=1
+          cp -R ../repo/build_docs/ .
+          cp -R ../repo/ikarus/ .
+          git config --local user.email "${{ github.event.head_commit.author.email }}"
+          git config --local user.name "${{ github.event.head_commit.author.name }}"
+          cd build_docs/docs
+          mike deploy dev --config-file mkdocs.insiders.yml

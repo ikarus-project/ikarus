@@ -18,6 +18,6 @@ int main(int argc, char** argv) {
 
   t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Alu>(matNH));
   t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Yasp>(matNH));
-  t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Iga>(matNH));
+  t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::IgaSurfaceIn2D>(matNH));
   return t.exit();
 }

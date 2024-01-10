@@ -3,6 +3,7 @@
 
 #include <config.h>
 
+#include "checkfebyautodiff.hh"
 #include "testcommon.hh"
 #include "testhelpers.hh"
 
@@ -29,6 +30,23 @@
 #include <ikarus/utils/observer/nonlinearsolverlogger.hh>
 
 using Dune::TestSuite;
+
+template <typename Basis_, typename FERequirements_ = Ikarus::FERequirements<>>
+struct KirchhoffLoveShellHelper : Ikarus::KirchhoffLoveShell<Basis_, FERequirements_, false> {
+  using Base = Ikarus::KirchhoffLoveShell<Basis_, FERequirements_, false>;
+  using Base::Base;
+  using FlatBasis = typename Basis_::FlatBasis;
+
+  using LocalView = typename FlatBasis::LocalView;
+  using GridView  = typename FlatBasis::GridView;
+
+  template <typename VolumeLoad = Ikarus::utils::LoadDefault, typename NeumannBoundaryLoad = Ikarus::utils::LoadDefault>
+  KirchhoffLoveShellHelper(const Basis_& globalBasis, const typename LocalView::Element& element, double emod,
+                           double nu, double thickness, VolumeLoad p_volumeLoad = {},
+                           const BoundaryPatch<GridView>* p_neumannBoundary = nullptr,
+                           NeumannBoundaryLoad p_neumannBoundaryLoad        = {})
+      : Base(globalBasis, element, emod, nu, thickness, p_volumeLoad, p_neumannBoundary, p_neumannBoundaryLoad) {}
+};
 
 template <typename PathFollowingType>
 auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vector<std::vector<int>>& expectedIterations,
@@ -88,14 +106,17 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
     return fext;
   };
 
-  using ElementType = Ikarus::AutoDiffFE<Ikarus::KirchhoffLoveShell<decltype(basis)>>;
+  using ElementType = KirchhoffLoveShell<decltype(basis)>;
   std::vector<ElementType> fes;
 
   for (auto& element : elements(gridView))
-    fes.emplace_back(basis, element, E, nu, thickness, utils::LoadDefault(), &neumannBoundary, neumannBoundaryLoad);
+    fes.emplace_back(basis, element, E, nu, thickness, utils::LoadDefault{}, &neumannBoundary, neumannBoundaryLoad);
+
+  t.subTest(checkFEByAutoDiff<KirchhoffLoveShellHelper>(gridView, power<3>(nurbs()), E, nu, thickness,
+                                                        utils::LoadDefault{}, &neumannBoundary, neumannBoundaryLoad));
 
   auto basisP = std::make_shared<const decltype(basis)>(basis);
-  Ikarus::DirichletValues dirichletValues(basisP->flat());
+  DirichletValues dirichletValues(basisP->flat());
 
   /// fix all DOFs at the left edge (x=-0.5)
   dirichletValues.fixDOFs([&](auto& basis_, auto&& dirichletFlags) {
@@ -124,6 +145,12 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
 
   auto req = FERequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
 
+  auto energyFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
+    req.insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
+        .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal);
+    return sparseAssembler.getScalar(req);
+  };
+
   auto residualFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
     req.insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
         .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal);
@@ -136,22 +163,25 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
     return sparseAssembler.getMatrix(req);
   };
 
-  auto nonLinOp  = Ikarus::NonLinearOperator(functions(residualFunction, KFunction), parameter(d, lambda));
-  auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::sd_SimplicialLDLT);
+  auto nonLinOpFull
+      = Ikarus::NonLinearOperator(functions(energyFunction, residualFunction, KFunction), parameter(d, lambda));
+
+  auto nonLinOp  = nonLinOpFull.template subOperator<1, 2>();
+  auto linSolver = LinearSolver(SolverTypeTag::sd_SimplicialLDLT);
 
   int loadSteps = 6;
 
   auto nr   = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
-  auto dass = Ikarus::AdaptiveStepSizing::IterationBased{};
-  auto nass = Ikarus::AdaptiveStepSizing::NoOp{};
+  auto dass = AdaptiveStepSizing::IterationBased{};
+  auto nass = AdaptiveStepSizing::NoOp{};
   dass.setTargetIterations(targetIterations);
 
   /// control routine with and without step sizing
   auto crWSS  = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft, dass);
   auto crWoSS = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft, nass);
 
-  auto nonLinearSolverObserver = std::make_shared<Ikarus::NonLinearSolverLogger>();
-  auto pathFollowingObserver   = std::make_shared<Ikarus::ControlLogger>();
+  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
+  auto pathFollowingObserver   = std::make_shared<ControlLogger>();
   nr->subscribeAll(nonLinearSolverObserver);
 
   t.checkThrow<Dune::InvalidStateException>(
@@ -188,13 +218,16 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
 
   resetNonLinearOperatorParametersToZero(nonLinOp);
   const auto controlInfoWSS = crWSS.run();
-  checkScalars(t, std::ranges::max(d), expectedResults[0][0], message1 + "<Max Displacement>");
-  checkScalars(t, lambda, expectedResults[0][1], message1 + "<Lambda>");
+  const double tolDisp      = 1e-13;
+  const double tolLoad      = 1e-12;
+  checkScalars(t, std::ranges::max(d), expectedResults[0][0], message1 + " <Max Displacement>", tolDisp);
+  checkScalars(t, lambda, expectedResults[0][1], message1 + " <Lambda>", tolLoad);
   resetNonLinearOperatorParametersToZero(nonLinOp);
 
   const auto controlInfoWoSS = crWoSS.run();
-  checkScalars(t, std::ranges::max(d), expectedResults[1][0], message2 + "<Max Displacement>");
-  checkScalars(t, lambda, expectedResults[1][1], message2 + "<Lambda>");
+
+  checkScalars(t, std::ranges::max(d), expectedResults[1][0], message2 + " <Max Displacement>", tolDisp);
+  checkScalars(t, lambda, expectedResults[1][1], message2 + " <Lambda>", tolLoad);
   resetNonLinearOperatorParametersToZero(nonLinOp);
 
   const int controlInfoWSSIterations
@@ -215,6 +248,9 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   checkSolverInfos(t, expectedIterations[0], controlInfoWSS, loadSteps, message1);
   checkSolverInfos(t, expectedIterations[1], controlInfoWoSS, loadSteps, message2);
 
+  t.check(utils::checkGradient(nonLinOpFull, {.draw = false})) << "Check gradient failed";
+  t.check(utils::checkHessian(nonLinOpFull, {.draw = false})) << "Check hessian failed";
+
   return t;
 }
 
@@ -233,7 +269,7 @@ int main(int argc, char** argv) {
   const std::vector<std::vector<double>> expectedResultsALC
       = {{0.1032139637288574, 0.0003103004514250302}, {0.162759603260405, 0.0007765975850229621}};
   const std::vector<std::vector<double>> expectedResultsLC
-      = {{0.08741028329554587, 0.0002318693543601816}, {0.144353999993308, 6e-4}};
+      = {{0.08741028329554552, 0.0002318693543601816}, {0.144353999993308, 6e-4}};
 
   t.subTest(KLShellAndAdaptiveStepSizing(alc, expectedIterationsALC, expectedResultsALC, 3, 0.4));
   t.subTest(KLShellAndAdaptiveStepSizing(lc, expectedIterationsLC, expectedResultsLC, 2, 1e-4));

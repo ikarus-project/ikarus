@@ -51,8 +51,8 @@ namespace Ikarus::Python {
     using Traits         = typename KirchhoffLoveShell::Traits;
     using FERequirements = typename KirchhoffLoveShell::FERequirementType;
 
-    using LoadFunction = std::function<Eigen::Vector<double, Traits::worlddim>(Eigen::Vector<double, Traits::worlddim>,
-                                                                               const double&)>;
+    using LoadFunction = std::function<Eigen::Vector<double, Traits::worlddim>(
+        Dune::FieldVector<double, Traits::worlddim>, const double&)>;
     cls.def(pybind11::init([](const GlobalBasis& basis, const Element& element, double emod, double nu,
                               double thickness, const LoadFunction volumeLoad) {
               return new KirchhoffLoveShell(basis, element, emod, nu, thickness, volumeLoad);

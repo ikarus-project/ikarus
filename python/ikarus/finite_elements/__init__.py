@@ -104,13 +104,7 @@ def KirchhoffLoveShell(
     includes = ["ikarus/python/finiteelements/kirchhoffloveshell.hh"]
 
     includes += ["ikarus/finiteelements/febases/autodifffe.hh"]
-    autodiffWrapper = "AutoDiffFE"
-    element_type = (
-        "Ikarus::"
-        + autodiffWrapper
-        + f"<Ikarus::KirchhoffLoveShell<{basis.cppTypeName},Ikarus::FERequirements<Eigen::Ref<Eigen::VectorXd>>,true>,"
-        f"Ikarus::FERequirements<Eigen::Ref<Eigen::VectorXd>>,true>"
-    )
+    element_type = f"Ikarus::KirchhoffLoveShell<{basis.cppTypeName},Ikarus::FERequirements<Eigen::Ref<Eigen::VectorXd>>,true>"
 
     # else:
     #     element_type = "Ikarus::" + func.__name__ + f"<{basis.cppTypeName},  {material.cppTypeName} ,Ikarus::FERequirements<Eigen::Ref<Eigen::VectorXd>>,true>"

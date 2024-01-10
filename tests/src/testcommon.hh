@@ -34,7 +34,8 @@
 namespace Grids {
   struct Yasp {};
   struct Alu {};
-  struct Iga {};
+  struct IgaSurfaceIn2D {};
+  struct IgaSurfaceIn3D {};
 }  // namespace Grids
 
 template <typename GridType>
@@ -54,10 +55,10 @@ auto createGrid([[maybe_unused]] int elex = 10, [[maybe_unused]] int eley = 10) 
     std::array<int, 2> elementsPerDirection = {elex, eley};
     auto grid                               = std::make_shared<Grid>(bbox, elementsPerDirection);
     return grid;
-  } else if constexpr (std::is_same_v<GridType, Grids::Iga>) {
+  } else if constexpr (std::is_same_v<GridType, Grids::IgaSurfaceIn2D>) {
 #if HAVE_DUNE_IGA
-    constexpr auto dimworld        = 2;
-    const std::array<int, 2> order = {2, 2};
+    constexpr auto dimworld = 2;
+    const std::array order  = {2, 2};
 
     const std::array<std::vector<double>, 2> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
 
@@ -67,6 +68,31 @@ auto createGrid([[maybe_unused]] int elex = 10, [[maybe_unused]] int eley = 10) 
         = {{{.p = {0, 0}, .w = 5}, {.p = {0.5, 0}, .w = 1}, {.p = {1, 0}, .w = 1}},
            {{.p = {0, 0.5}, .w = 1}, {.p = {0.5, 0.5}, .w = 10}, {.p = {1, 0.5}, .w = 1}},
            {{.p = {0, 1}, .w = 1}, {.p = {0.5, 1}, .w = 1}, {.p = {1, 1}, .w = 1}}};
+
+    std::array<int, 2> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
+
+    auto controlNet = Dune::IGA::NURBSPatchData<2, dimworld>::ControlPointNetType(dimsize, controlPoints);
+    using Grid      = Dune::IGA::NURBSGrid<2, dimworld>;
+
+    Dune::IGA::NURBSPatchData<2, dimworld> patchData;
+    patchData.knotSpans     = knotSpans;
+    patchData.degree        = order;
+    patchData.controlPoints = controlNet;
+    auto grid               = std::make_shared<Grid>(patchData);
+    grid->globalRefine(1);
+    return grid;
+  } else if constexpr (std::is_same_v<GridType, Grids::IgaSurfaceIn3D>) {
+    constexpr auto dimworld = 3;
+    const std::array order  = {2, 2};
+
+    const std::array<std::vector<double>, 2> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+
+    using ControlPoint = Dune::IGA::NURBSPatchData<2, dimworld>::ControlPointType;
+
+    const std::vector<std::vector<ControlPoint>> controlPoints
+        = {{{.p = {0, 0, 0.1}, .w = 5}, {.p = {0.5, 0, 0.1}, .w = 1}, {.p = {1, 0, 0.2}, .w = 1}},
+           {{.p = {0, 0.5, -0.2}, .w = 1}, {.p = {0.5, 0.5, 1}, .w = 10}, {.p = {1, 0.5, 0.2}, .w = 1}},
+           {{.p = {0, 1, 0.4}, .w = 1}, {.p = {0.5, 1, -0.25}, .w = 1}, {.p = {1, 1, 0.7}, .w = 1}}};
 
     std::array<int, 2> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
 

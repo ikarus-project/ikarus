@@ -43,7 +43,7 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
   auto localView = flatBasis.localView();
 
   auto volumeLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
-    VectorType fext;
+    Eigen::Vector<typename VectorType::field_type, VectorType::dimension> fext;
     fext.setZero();
     fext[1] = 2 * lamb;
     fext[0] = lamb;
@@ -51,7 +51,7 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
   };
 
   auto neumannBoundaryLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
-    VectorType fext;
+    Eigen::Vector<typename VectorType::field_type, VectorType::dimension> fext;
     fext.setZero();
     fext[1] = lamb / 40;
     fext[0] = 0;
