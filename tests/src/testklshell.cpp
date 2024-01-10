@@ -153,7 +153,7 @@ static auto NonLinearKLShellLoadControlTR() {
   return t;
 }
 
-template <typename Basis_, typename FERequirements_ = Ikarus::FErequirements<>>
+template <typename Basis_, typename FERequirements_ = Ikarus::FERequirements<>>
 struct KirchhoffLoveShellHelper : Ikarus::KirchhoffLoveShell<Basis_, FERequirements_, false> {
   using Base = Ikarus::KirchhoffLoveShell<Basis_, FERequirements_, false>;
   using Base::Base;

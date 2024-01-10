@@ -59,8 +59,8 @@ namespace Ikarus::Python {
               }),
               pybind11::keep_alive<1, 2>(), pybind11::keep_alive<1, 3>());
 
-    using LoadFunction = std::function<Eigen::Vector<double, Traits::worlddim>(Eigen::Vector<double, Traits::worlddim>,
-                                                                               const double&)>;
+    using LoadFunction = std::function<Eigen::Vector<double, Traits::worlddim>(
+        Dune::FieldVector<double, Traits::worlddim>, const double&)>;
     if constexpr (defaultInitializers)
       cls.def(
           pybind11::init([](const GlobalBasis& basis, const Element& element, double emod, double nu,

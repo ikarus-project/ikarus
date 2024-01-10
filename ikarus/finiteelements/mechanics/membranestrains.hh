@@ -40,7 +40,8 @@ namespace Ikarus {
       const Eigen::Matrix<ScalarType, 2, 3> j = J + gradu.transpose();
 
       epsV << J.row(0).dot(gradu.col(0)) + 0.5 * gradu.col(0).squaredNorm(),
-          J.row(1).dot(gradu.col(1)) + 0.5 * gradu.col(1).squaredNorm(), j.row(0).dot(j.row(1));
+          J.row(1).dot(gradu.col(1)) + 0.5 * gradu.col(1).squaredNorm(),
+          j.row(0).dot(j.row(1)) - J.row(0).dot(J.row(1));
       return epsV;
     }
 

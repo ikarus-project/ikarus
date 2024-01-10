@@ -3,9 +3,9 @@
 
 #include <config.h>
 
+#include "checkfebyautodiff.hh"
 #include "testcommon.hh"
 #include "testhelpers.hh"
-#include "checkfebyautodiff.hh"
 
 #include <dune/common/test/testsuite.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
@@ -31,7 +31,7 @@
 
 using Dune::TestSuite;
 
-template <typename Basis_, typename FERequirements_ = Ikarus::FErequirements<>>
+template <typename Basis_, typename FERequirements_ = Ikarus::FERequirements<>>
 struct KirchhoffLoveShellHelper : Ikarus::KirchhoffLoveShell<Basis_, FERequirements_, false> {
   using Base = Ikarus::KirchhoffLoveShell<Basis_, FERequirements_, false>;
   using Base::Base;
@@ -112,8 +112,8 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   for (auto& element : elements(gridView))
     fes.emplace_back(basis, element, E, nu, thickness, utils::LoadDefault{}, &neumannBoundary, neumannBoundaryLoad);
 
-  t.subTest(checkFEByAutoDiff<KirchhoffLoveShellHelper>(gridView, power<3>(nurbs()), E, nu, thickness, utils::LoadDefault{},
-                                                      &neumannBoundary, neumannBoundaryLoad));
+  t.subTest(checkFEByAutoDiff<KirchhoffLoveShellHelper>(gridView, power<3>(nurbs()), E, nu, thickness,
+                                                        utils::LoadDefault{}, &neumannBoundary, neumannBoundaryLoad));
 
   auto basisP = std::make_shared<const decltype(basis)>(basis);
   DirichletValues dirichletValues(basisP->flat());
@@ -165,7 +165,6 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
 
   auto nonLinOpFull
       = Ikarus::NonLinearOperator(functions(energyFunction, residualFunction, KFunction), parameter(d, lambda));
-
 
   auto nonLinOp  = nonLinOpFull.template subOperator<1, 2>();
   auto linSolver = LinearSolver(SolverTypeTag::sd_SimplicialLDLT);
@@ -219,13 +218,16 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
 
   resetNonLinearOperatorParametersToZero(nonLinOp);
   const auto controlInfoWSS = crWSS.run();
-  checkScalars(t, std::ranges::max(d), expectedResults[0][0], message1 + "<Max Displacement>");
-  checkScalars(t, lambda, expectedResults[0][1], message1 + "<Lambda>");
+  const double tolDisp      = 1e-13;
+  const double tolLoad      = 1e-12;
+  checkScalars(t, std::ranges::max(d), expectedResults[0][0], message1 + " <Max Displacement>", tolDisp);
+  checkScalars(t, lambda, expectedResults[0][1], message1 + " <Lambda>", tolLoad);
   resetNonLinearOperatorParametersToZero(nonLinOp);
 
   const auto controlInfoWoSS = crWoSS.run();
-  checkScalars(t, std::ranges::max(d), expectedResults[1][0], message2 + "<Max Displacement>");
-  checkScalars(t, lambda, expectedResults[1][1], message2 + "<Lambda>");
+
+  checkScalars(t, std::ranges::max(d), expectedResults[1][0], message2 + " <Max Displacement>", tolDisp);
+  checkScalars(t, lambda, expectedResults[1][1], message2 + " <Lambda>", tolLoad);
   resetNonLinearOperatorParametersToZero(nonLinOp);
 
   const int controlInfoWSSIterations
@@ -246,6 +248,9 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   checkSolverInfos(t, expectedIterations[0], controlInfoWSS, loadSteps, message1);
   checkSolverInfos(t, expectedIterations[1], controlInfoWoSS, loadSteps, message2);
 
+  t.check(utils::checkGradient(nonLinOpFull, {.draw = false})) << "Check gradient failed";
+  t.check(utils::checkHessian(nonLinOpFull, {.draw = false})) << "Check hessian failed";
+
   return t;
 }
 
@@ -264,7 +269,7 @@ int main(int argc, char** argv) {
   const std::vector<std::vector<double>> expectedResultsALC
       = {{0.1032139637288574, 0.0003103004514250302}, {0.162759603260405, 0.0007765975850229621}};
   const std::vector<std::vector<double>> expectedResultsLC
-      = {{0.08741028329554587, 0.0002318693543601816}, {0.144353999993308, 6e-4}};
+      = {{0.08741028329554552, 0.0002318693543601816}, {0.144353999993308, 6e-4}};
 
   t.subTest(KLShellAndAdaptiveStepSizing(alc, expectedIterationsALC, expectedResultsALC, 3, 0.4));
   t.subTest(KLShellAndAdaptiveStepSizing(lc, expectedIterationsLC, expectedResultsLC, 2, 1e-4));

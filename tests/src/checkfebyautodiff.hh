@@ -11,7 +11,7 @@
 
 template <template <typename...> class FE, typename GridView, typename PreBasis, typename... ElementArgsType>
 auto checkFEByAutoDiff(const GridView& gridView, const PreBasis& pb, const ElementArgsType&... eleArgs) {
-  auto basis     = Ikarus::makeBasis(gridView, pb);
+  auto basis = Ikarus::makeBasis(gridView, pb);
   Eigen::VectorXd d;
   d.setRandom(basis.flat().dimension());
   double lambda = 7.3;
@@ -19,9 +19,8 @@ auto checkFEByAutoDiff(const GridView& gridView, const PreBasis& pb, const Eleme
   auto req = Ikarus::FErequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
   req.insertGlobalSolution(Ikarus::FESolutions::displacement, d)
       .insertParameter(Ikarus::FEParameter::loadfactor, lambda);
-  Dune::TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() by Automatic Differentiation"
-                    );
-  for(auto element : elements(gridView)) {
+  Dune::TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() by Automatic Differentiation");
+  for (auto element : elements(gridView)) {
     auto localView = basis.flat().localView();
     localView.bind(element);
     auto nDOF        = localView.size();
@@ -33,8 +32,6 @@ auto checkFEByAutoDiff(const GridView& gridView, const PreBasis& pb, const Eleme
 
     using AutoDiffBasedFE = Ikarus::AutoDiffFE<decltype(fe), typename decltype(fe)::FERequirementType, false, true>;
     AutoDiffBasedFE feAutoDiff(fe);
-
-
 
     Eigen::MatrixXd K, KAutoDiff;
     K.setZero(nDOF, nDOF);

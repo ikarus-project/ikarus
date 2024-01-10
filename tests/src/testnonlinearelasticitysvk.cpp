@@ -9,7 +9,7 @@
 
 using Dune::TestSuite;
 
-template <typename Basis_, typename Material, typename FERequirements_ = Ikarus::FErequirements<>>
+template <typename Basis_, typename Material, typename FERequirements_ = Ikarus::FERequirements<>>
 struct NonLinearElasticHelper : Ikarus::NonLinearElastic<Basis_, Material, FERequirements_, false> {
   using Base = Ikarus::NonLinearElastic<Basis_, Material, FERequirements_, false>;
   using Base::Base;
