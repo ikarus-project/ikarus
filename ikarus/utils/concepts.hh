@@ -14,6 +14,7 @@
 #include <vector>
 
 #include <dune/functions/functionspacebases/basistags.hh>
+#include <dune/functions/functionspacebases/lagrangebasis.hh>
 
 #include <Eigen/Sparse>
 
@@ -44,6 +45,38 @@ namespace Ikarus {
     concept FlatInterLeavedBasis = requires {
       std::is_same_v<typename Basis::PreBasis::IndexMergingStrategy, Dune::Functions::BasisFactory::FlatInterleaved>;
     };
+
+    namespace Impl {
+      template <template <typename, int, typename> class U, typename T>
+      struct LagrangeNodeHelper : std::false_type {};
+      template <template <typename, int, typename> class U, typename GV, int k, typename R>
+      struct LagrangeNodeHelper<U, U<GV, k, R>> : std::true_type {};
+
+      template <template <typename, int, typename> class U, typename T, int k>
+      struct LagrangeNodeHelperOfOrder : std::false_type {};
+      template <template <typename, int, typename> class U, typename GV, int k, typename R>
+      struct LagrangeNodeHelperOfOrder<U, U<GV, k, R>, k> : std::true_type {};
+    }  // namespace Impl
+
+    /**
+     * \concept LagrangeNode
+     * @brief Concept to check if a node in a basis tree is a Lagrangian node.
+     *
+     *
+     * @tparam Node The node.
+     */
+    template <typename Node>
+    concept LagrangeNode = Impl::LagrangeNodeHelper<Dune::Functions::LagrangeNode, Node>::value;
+
+    /**
+     * \concept LagrangeNode
+     * @brief Concept to check if a node in a basis tree is a Lagrangian node with specific order.
+     *
+     *
+     * @tparam Node The node.
+     */
+    template <typename Node, int order>
+    concept LagrangeNodeOfOrder = Impl::LagrangeNodeHelperOfOrder<Dune::Functions::LagrangeNode, Node, order>::value;
 
     /**
      * \concept FlatLexicographicBasis

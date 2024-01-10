@@ -14,6 +14,7 @@ install(
         findlinesegment.hh
         flatprebasis.hh
         functionsanitychecks.hh
+        functionhelper.hh
         init.hh
         linearalgebrahelper.hh
         makeenum.hh

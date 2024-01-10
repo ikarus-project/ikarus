@@ -22,6 +22,7 @@
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/eigendunetransformations.hh>
+#include <ikarus/utils/functionhelper.hh>
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/linearalgebrahelper.hh>
 #include <ikarus/utils/pythonautodiffdefinitions.hh>
@@ -148,7 +149,7 @@ static auto dirichletBCTest() {
     localView.bind(ele);
     const auto& fe = localView.tree().child(0).finiteElement();
     std::vector<Dune::FieldVector<double, 2>> nodalPos;
-    Ikarus::obtainLagrangeNodePositions<1>(localView, nodalPos);
+    Ikarus::utils::obtainLagrangeNodePositions<1>(localView, nodalPos);
     for (int i = 0; i < fe.size(); i++)
       if ((std::abs(nodalPos[i][0]) < tol) or (std::abs(nodalPos[i][0] - Lx) < tol) or (std::abs(nodalPos[i][1]) < tol)
           or (std::abs(nodalPos[i][1] - Ly) < tol))
