@@ -56,8 +56,8 @@ namespace Ikarus {
    * @brief Interface classf or materials.
    * @ingroup materials
    *    \details Consider a hyper elastic material with the free Helmholtz energy
-   *        \f[\psi: \begin{cases}\mathbb{R}^{3\times 3} \rightarrow \mathbb{R} \\ \BC
-   * \mapsto \psi(\BC) \end{cases}.\f]
+   *        \f[\require{cases}\psi: \begin{cases}\mathbb{R}^{3\times 3} &\rightarrow \mathbb{R} \\ \BC
+   * &\mapsto \psi(\BC) \end{cases}.\f]
    *
    * Then, the value of this potential energy is return by \link Material< MaterialImpl >::storedEnergy storedEnergy
    * \endlink and its first derivative (the stresses) by \link Material< MaterialImpl >::stresses stresses \endlink and

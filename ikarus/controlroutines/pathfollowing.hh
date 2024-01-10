@@ -55,13 +55,13 @@ namespace Ikarus {
    * predefined path.
    *
    * \details Consider a non-linear system of equations
-   *        \f[\mathbf{R}: \begin{cases}\mathbb{R}^n \times \mathbb{R} \rightarrow \mathbb{R}^n \\ (\mathbf{D},\lambda)
-   * \mapsto \mathbf{R}(\mathbf{D},\lambda) \end{cases}.\f]
+   *        \f[\mathbf{R}: \require{cases}\begin{cases}\mathbb{R}^n \times \mathbb{R} &\rightarrow \mathbb{R}^n \\ (\mathbf{D},\lambda)
+   * &\mapsto \mathbf{R}(\mathbf{D},\lambda) \end{cases}.\f]
    *
    * Then in each step \f$k+1\f$ of the path following algorithm, the following problem is solved
-   * \f[ \begin{aligned}
+   * \f[ \begin{align}
    * \mathbf{R}(\mathbf{D}_k+ \mathrm{D}\mathbf{D}, \lambda_k+ \mathrm{D} \lambda) &= \mathbf{0} \\
-   * f(\mathrm{D}\mathbf{D}, \mathrm{D} \lambda) &= 0 \end{aligned} \f]
+   * f(\mathrm{D}\mathbf{D}, \mathrm{D} \lambda) &= 0 \end{align} \f]
    *
    * where \f$\mathrm{D}\mathbf{D}\f$ is the increment of the solution vector and \f$\mathrm{D} \lambda\f$ is the load
    * factor increment. The subsidiary function \f$f\f$ is provided by the user and needs to fulfill the concept

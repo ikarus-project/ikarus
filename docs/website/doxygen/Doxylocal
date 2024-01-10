@@ -80,7 +80,8 @@ HTML_EXTRA_STYLESHEET  = /usr/local/share/doxygen-awesome-css/doxygen-awesome.cs
 HTML_COLORSTYLE        = LIGHT # required with Doxygen >= 1.9.5
 
 
-EXTRA_PACKAGES         += amsmath amssymb
+EXTRA_PACKAGES         = amsmath amssymb
+MATHJAX_EXTENSIONS     = require
 PROJECT_ICON = @top_srcdir@/docs/website/auxiliaryImages/BigLogo_transparent.png
 PROJECT_LOGO = @top_srcdir@/docs/website/auxiliaryImages/BigLogo_transparent.png
 GENERATE_XML = YES
