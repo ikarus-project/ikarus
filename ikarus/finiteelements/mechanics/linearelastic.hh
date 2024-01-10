@@ -10,6 +10,7 @@
 #pragma once
 
 #if HAVE_DUNE_LOCALFEFUNCTIONS
+
 #  include <iosfwd>
 #  include <optional>
 #  include <type_traits>
@@ -21,6 +22,7 @@
 #  include <dune/localfefunctions/manifolds/realTuple.hh>
 
 #  include <ikarus/finiteelements/febases/powerbasisfe.hh>
+#  include <ikarus/finiteelements/fehelper.hh>
 #  include <ikarus/finiteelements/ferequirements.hh>
 #  include <ikarus/finiteelements/mechanics/materials.hh>
 #  include <ikarus/finiteelements/physicshelper.hh>
@@ -41,18 +43,19 @@ namespace Ikarus {
   template <typename Basis_, typename FERequirements_ = FERequirements<>, bool useEigenRef = false>
   class LinearElastic : public PowerBasisFE<typename Basis_::FlatBasis> {
   public:
-    using Basis                  = Basis_;
-    using FlatBasis              = typename Basis::FlatBasis;
-    using BaseDisp               = PowerBasisFE<FlatBasis>;  // Handles globalIndices function
-    using FERequirementType      = FERequirements_;
-    using ResultRequirementsType = ResultRequirements<FERequirementType>;
-    using LocalView              = typename FlatBasis::LocalView;
-    using Element                = typename LocalView::Element;
-    using GridView               = typename FlatBasis::GridView;
-
-    using Traits = TraitsFromLocalView<LocalView, useEigenRef>;
-
-    static constexpr int myDim = Traits::mydim;
+    using Basis                   = Basis_;
+    using FlatBasis               = typename Basis::FlatBasis;
+    using BaseDisp                = PowerBasisFE<FlatBasis>;  // Handles globalIndices function
+    using FERequirementType       = FERequirements_;
+    using ResultRequirementsType  = ResultRequirements<FERequirementType>;
+    using LocalView               = typename FlatBasis::LocalView;
+    using Element                 = typename LocalView::Element;
+    using Traits                  = TraitsFromLocalView<LocalView, useEigenRef>;
+    using Geometry                = typename Element::Geometry;
+    using GridView                = typename FlatBasis::GridView;
+    static constexpr int myDim    = Traits::mydim;
+    static constexpr int worldDim = Traits::worlddim;
+    using LocalBasisType          = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
 
     /**
      * @brief Constructor for the LinearElastic class.
@@ -75,10 +78,10 @@ namespace Ikarus {
       this->localView().bind(element);
       auto& first_child = this->localView().tree().child(0);
       const auto& fe    = first_child.finiteElement();
+      geo_              = std::make_shared<const Geometry>(this->localView().element().geometry());
       numberOfNodes     = fe.size();
-      dispAtNodes.resize(numberOfNodes);
-      order      = 2 * (this->localView().tree().child(0).finiteElement().localBasis().order());
-      localBasis = Dune::CachedLocalBasis(this->localView().tree().child(0).finiteElement().localBasis());
+      order             = 2 * (fe.localBasis().order());
+      localBasis        = Dune::CachedLocalBasis(fe.localBasis());
       if constexpr (requires { this->localView().element().impl().getQuadratureRule(order); })
         if (this->localView().element().impl().isTrimmed())
           localBasis.bind(this->localView().element().impl().getQuadratureRule(order), Dune::bindDerivatives(0, 1));
@@ -104,26 +107,12 @@ namespace Ikarus {
      * @param dx Optional displacement vector.
      * @return The displacement function.
      */
-    template <typename ScalarType>
-    auto getDisplacementFunction(const FERequirementType& par,
-                                 const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
+    template <typename ScalarType = double>
+    auto displacementFunction(const FERequirementType& par,
+                              const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
       const auto& d = par.getGlobalSolution(Ikarus::FESolutions::displacement);
-
-      Dune::BlockVector<Dune::RealTuple<ScalarType, Traits::dimension>> disp(dispAtNodes.size());
-      if (dx) {
-        for (auto i = 0U; i < disp.size(); ++i)
-          for (auto k2 = 0U; k2 < myDim; ++k2)
-            disp[i][k2] = dx.value()[i * myDim + k2]
-                          + d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
-      } else
-        for (auto i = 0U; i < disp.size(); ++i)
-          for (auto k2 = 0U; k2 < myDim; ++k2)
-            disp[i][k2] = d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
-
-      auto geo = std::make_shared<const typename GridView::GridView::template Codim<0>::Entity::Geometry>(
-          this->localView().element().geometry());
-      Dune::StandardLocalFunction uFunction(localBasis, disp, geo);
-
+      auto disp     = Ikarus::FEHelper::localSolutionBlockVector<FERequirementType>(d, this->localView(), dx);
+      Dune::StandardLocalFunction uFunction(localBasis, disp, geo_);
       return uFunction;
     }
     /**
@@ -135,9 +124,9 @@ namespace Ikarus {
      * @return The strain function.
      */
     template <class ScalarType = double>
-    auto getStrainFunction(const FERequirementType& par,
-                           const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
-      return linearStrains(getDisplacementFunction(par, dx));
+    auto strainFunction(const FERequirementType& par,
+                        const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
+      return Dune::linearStrains(displacementFunction(par, dx));
     }
 
     /**
@@ -145,7 +134,7 @@ namespace Ikarus {
      *
      * @return The material tangent matrix.
      */
-    auto getMaterialTangent() const {
+    auto materialTangent() const {
       if constexpr (myDim == 2)
         return planeStressLinearElasticMaterialTangent(emod_, nu_);
       else if constexpr (myDim == 3)
@@ -158,8 +147,8 @@ namespace Ikarus {
      * @param par The FERequirementType object.
      * @return The material tangent function.
      */
-    auto getMaterialTangentFunction([[maybe_unused]] const FERequirementType& par) const {
-      return [&]([[maybe_unused]] auto gp) { return getMaterialTangent(); };
+    auto materialTangentFunction([[maybe_unused]] const FERequirementType& par) const {
+      return [&]([[maybe_unused]] auto gp) { return materialTangent(); };
     }
 
     /**
@@ -187,14 +176,13 @@ namespace Ikarus {
      * @param K Matrix to store the calculated stiffness.
      */
     void calculateMatrix(const FERequirementType& par, typename Traits::template MatrixType<> K) const {
-      const auto eps = getStrainFunction(par);
+      const auto eps = strainFunction(par);
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
 
-      const auto C   = getMaterialTangent();
-      const auto geo = this->localView().element().geometry();
+      const auto C = materialTangent();
       for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
-        const double intElement = geo.integrationElement(gp.position()) * gp.weight();
+        const double intElement = geo_->integrationElement(gp.position()) * gp.weight();
         for (size_t i = 0; i < numberOfNodes; ++i) {
           const auto bopI = eps.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
           for (size_t j = 0; j < numberOfNodes; ++j) {
@@ -218,8 +206,8 @@ namespace Ikarus {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
 
-      const auto eps = getStrainFunction(req.getFERequirements());
-      const auto C   = getMaterialTangent();
+      const auto eps = strainFunction(req.getFERequirements());
+      const auto C   = materialTangent();
       auto epsVoigt  = eps.evaluate(local, on(gridElement));
 
       auto linearStress = (C * epsVoigt).eval();
@@ -230,48 +218,42 @@ namespace Ikarus {
         DUNE_THROW(Dune::NotImplemented, "The requested result type is NOT implemented.");
     }
 
-    Dune::CachedLocalBasis<
-        std::remove_cvref_t<decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis())>>
-        localBasis;
-    std::function<Eigen::Vector<double, Traits::worlddim>(const Dune::FieldVector<double, Traits::worlddim>&,
-                                                          const double&)>
-        volumeLoad;
-    std::function<Eigen::Vector<double, Traits::worlddim>(const Dune::FieldVector<double, Traits::worlddim>&,
-                                                          const double&)>
+    Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType>> localBasis;
+    std::function<Eigen::Vector<double, worldDim>(const Eigen::Vector<double, worldDim>&, const double&)> volumeLoad;
+    std::function<Eigen::Vector<double, worldDim>(const Eigen::Vector<double, worldDim>&, const double&)>
         neumannBoundaryLoad;
     const BoundaryPatch<GridView>* neumannBoundary;
-    mutable Dune::BlockVector<Dune::RealTuple<double, Traits::dimension>> dispAtNodes;
     double emod_;
     double nu_;
     size_t numberOfNodes{0};
     int order{};
+    std::shared_ptr<const Geometry> geo_;
 
   protected:
     template <typename ScalarType>
     auto calculateScalarImpl(const FERequirementType& par, const std::optional<const Eigen::VectorX<ScalarType>>& dx
                                                            = std::nullopt) const -> ScalarType {
-      const auto u       = getDisplacementFunction(par, dx);
-      const auto eps     = getStrainFunction(par, dx);
-      const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
+      const auto uFunction = displacementFunction(par, dx);
+      const auto eps       = strainFunction(par, dx);
+      const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
 
-      const auto C = getMaterialTangent();
+      const auto C = materialTangent();
 
-      const auto geo    = this->localView().element().geometry();
       ScalarType energy = 0.0;
       for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
         const auto EVoigt = eps.evaluate(gpIndex, on(gridElement));
 
-        energy += (0.5 * EVoigt.dot(C * EVoigt)) * geo.integrationElement(gp.position()) * gp.weight();
+        energy += (0.5 * EVoigt.dot(C * EVoigt)) * geo_->integrationElement(gp.position()) * gp.weight();
       }
 
       // External forces volume forces over the domain
       if (volumeLoad) {
         for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
-          const auto uVal                              = u.evaluate(gpIndex);
-          Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(geo.global(gp.position()), lambda);
-          energy -= uVal.dot(fext) * geo.integrationElement(gp.position()) * gp.weight();
+          const auto uVal                              = uFunction.evaluate(gpIndex);
+          Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(toEigen(geo_->global(gp.position())), lambda);
+          energy -= uVal.dot(fext) * geo_->integrationElement(gp.position()) * gp.weight();
         }
       }
 
@@ -291,7 +273,7 @@ namespace Ikarus {
           const double integrationElement = intersection.geometry().integrationElement(curQuad.position());
 
           // The value of the local function
-          const auto uVal = u.evaluate(quadPos);
+          const auto uVal = uFunction.evaluate(quadPos);
 
           // Value of the Neumann data at the current position
           auto neumannValue = neumannBoundaryLoad(intersection.geometry().global(curQuad.position()), lambda);
@@ -305,17 +287,17 @@ namespace Ikarus {
     template <typename ScalarType>
     void calculateVectorImpl(const FERequirementType& par, typename Traits::template VectorType<ScalarType> force,
                              const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
-      const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
-      const auto eps     = getStrainFunction(par, dx);
+      const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
+      const auto uFunction = displacementFunction(par, dx);
+      const auto eps       = strainFunction(par, dx);
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
 
-      const auto C   = getMaterialTangent();
-      const auto geo = this->localView().element().geometry();
+      const auto C = materialTangent();
 
       // Internal forces
       for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
-        const double intElement = geo.integrationElement(gp.position()) * gp.weight();
+        const double intElement = geo_->integrationElement(gp.position()) * gp.weight();
         auto stresses           = (C * eps.evaluate(gpIndex, on(gridElement))).eval();
         for (size_t i = 0; i < numberOfNodes; ++i) {
           const auto bopI = eps.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
@@ -325,21 +307,18 @@ namespace Ikarus {
 
       // External forces volume forces over the domain
       if (volumeLoad) {
-        const auto u = getDisplacementFunction(par, dx);
-        for (const auto& [gpIndex, gp] : u.viewOverIntegrationPoints()) {
-          Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(geo.global(gp.position()), lambda);
+        for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
+          Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(toEigen(geo_->global(gp.position())), lambda);
           for (size_t i = 0; i < numberOfNodes; ++i) {
-            const auto udCi = u.evaluateDerivative(gpIndex, wrt(coeff(i)));
+            const auto udCi = uFunction.evaluateDerivative(gpIndex, wrt(coeff(i)));
             force.template segment<myDim>(myDim * i)
-                -= udCi * fext * geo.integrationElement(gp.position()) * gp.weight();
+                -= udCi * fext * geo_->integrationElement(gp.position()) * gp.weight();
           }
         }
       }
 
-      // External forces, boundary forces, i.e. at the Neumann boundary
+      // External forces, boundary forces, i.e., at the Neumann boundary
       if (not neumannBoundary) return;
-
-      const auto u = getDisplacementFunction(par, dx);
       auto element = this->localView().element();
       for (auto&& intersection : intersections(neumannBoundary->gridView(), element)) {
         if (not neumannBoundary->contains(intersection)) continue;
@@ -352,9 +331,9 @@ namespace Ikarus {
 
           const double integrationElement = intersection.geometry().integrationElement(curQuad.position());
 
-          // The value of the local function wrt the i-th coef
+          // The value of the local function wrt the i-th coeff
           for (size_t i = 0; i < numberOfNodes; ++i) {
-            const auto udCi = u.evaluateDerivative(quadPos, wrt(coeff(i)));
+            const auto udCi = uFunction.evaluateDerivative(quadPos, wrt(coeff(i)));
 
             // Value of the Neumann data at the current position
             auto neumannValue = neumannBoundaryLoad(intersection.geometry().global(curQuad.position()), lambda);

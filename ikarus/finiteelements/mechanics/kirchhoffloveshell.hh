@@ -15,6 +15,7 @@
 #include <dune/localfefunctions/manifolds/realTuple.hh>
 
 #include <ikarus/finiteelements/febases/powerbasisfe.hh>
+#include <ikarus/finiteelements/fehelper.hh>
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/finiteelements/mechanics/materials.hh>
 #include <ikarus/finiteelements/mechanics/membranestrains.hh>
@@ -36,18 +37,19 @@ namespace Ikarus {
   template <typename Basis_, typename FERequirements_ = FERequirements<>, bool useEigenRef = false>
   class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis> {
   public:
-    using Basis                             = Basis_;
-    using FlatBasis                         = typename Basis::FlatBasis;
-    using BasePowerFE                       = PowerBasisFE<FlatBasis>;  // Handles globalIndices function
-    using FERequirementType                 = FERequirements_;
-    using ResultRequirementsType            = ResultRequirements<FERequirementType>;
-    using LocalView                         = typename FlatBasis::LocalView;
-    using Element                           = typename LocalView::Element;
-    using Geometry                          = typename Element::Geometry;
-    using GridView                          = typename FlatBasis::GridView;
-    using Traits                            = TraitsFromLocalView<LocalView, useEigenRef>;
-    static constexpr int myDim              = Traits::mydim;
-    static constexpr int worlddim           = Traits::worlddim;
+    using Basis                   = Basis_;
+    using FlatBasis               = typename Basis::FlatBasis;
+    using BasePowerFE             = PowerBasisFE<FlatBasis>;  // Handles globalIndices function
+    using FERequirementType       = FERequirements_;
+    using ResultRequirementsType  = ResultRequirements<FERequirementType>;
+    using LocalView               = typename FlatBasis::LocalView;
+    using Element                 = typename LocalView::Element;
+    using Geometry                = typename Element::Geometry;
+    using GridView                = typename FlatBasis::GridView;
+    using Traits                  = TraitsFromLocalView<LocalView, useEigenRef>;
+    static constexpr int myDim    = Traits::mydim;
+    static constexpr int worldDim = Traits::worlddim;
+    using LocalBasisType          = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
     static constexpr int membraneStrainSize = 3;
     static constexpr int bendingStrainSize  = 3;
 
@@ -102,10 +104,10 @@ namespace Ikarus {
       this->localView().bind(element);
       auto& first_child = this->localView().tree().child(0);
       const auto& fe    = first_child.finiteElement();
+      geo_              = std::make_shared<const Geometry>(this->localView().element().geometry());
       numberOfNodes     = fe.size();
-      dispAtNodes.resize(fe.size());
-      order      = 2 * (fe.localBasis().order());
-      localBasis = Dune::CachedLocalBasis(fe.localBasis());
+      order             = 2 * (fe.localBasis().order());
+      localBasis        = Dune::CachedLocalBasis(fe.localBasis());
       if constexpr (requires { this->localView().element().impl().getQuadratureRule(order); })
         if (this->localView().element().impl().isTrimmed())
           localBasis.bind(this->localView().element().impl().getQuadratureRule(order), Dune::bindDerivatives(0, 1, 2));
@@ -135,26 +137,12 @@ namespace Ikarus {
      * @param dx Optional additional displacement vector.
      * @return The displacement function.
      */
-    template <typename ScalarType>
-    auto getDisplacementFunction(const FERequirementType& par,
-                                 const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
-      const auto& d = par.getGlobalSolution(FESolutions::displacement);
-      auto geo      = std::make_shared<const typename GridView::GridView::template Codim<0>::Entity::Geometry>(
-          this->localView().element().geometry());
-      Dune::BlockVector<Dune::RealTuple<ScalarType, Traits::worlddim>> disp(dispAtNodes.size());
-
-      if (dx)
-        for (auto i = 0U; i < disp.size(); ++i)
-          for (auto k2 = 0U; k2 < worlddim; ++k2)
-            disp[i][k2] = dx.value()[i * worlddim + k2]
-                          + d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
-      else
-        for (auto i = 0U; i < disp.size(); ++i)
-          for (auto k2 = 0U; k2 < worlddim; ++k2)
-            disp[i][k2] = d[this->localView().index(this->localView().tree().child(k2).localIndex(i))[0]];
-
-      Dune::StandardLocalFunction uFunction(localBasis, disp, geo);
-
+    template <typename ScalarType = double>
+    auto displacementFunction(const FERequirementType& par,
+                              const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
+      const auto& d = par.getGlobalSolution(Ikarus::FESolutions::displacement);
+      auto disp     = Ikarus::FEHelper::localSolutionBlockVector<FERequirementType>(d, this->localView(), dx);
+      Dune::StandardLocalFunction uFunction(localBasis, disp, geo_);
       return uFunction;
     }
 
@@ -205,23 +193,18 @@ namespace Ikarus {
       DUNE_THROW(Dune::NotImplemented, "No results are implemented");
     }
 
-    Dune::CachedLocalBasis<
-        std::remove_cvref_t<decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis())>>
-        localBasis;
-    std::function<Eigen::Vector<double, Traits::worlddim>(const Dune::FieldVector<double, Traits::worlddim>&,
-                                                          const double&)>
-        volumeLoad;
-    std::function<Eigen::Vector<double, Traits::worlddim>(const Dune::FieldVector<double, Traits::worlddim>&,
-                                                          const double&)>
+    Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType>> localBasis;
+    std::function<Eigen::Vector<double, worldDim>(const Eigen::Vector<double, worldDim>&, const double&)> volumeLoad;
+    std::function<Eigen::Vector<double, worldDim>(const Eigen::Vector<double, worldDim>&, const double&)>
         neumannBoundaryLoad;
     const BoundaryPatch<GridView>* neumannBoundary;
-    mutable Dune::BlockVector<Dune::RealTuple<double, Traits::dimension>> dispAtNodes;
     DefaultMembraneStrain membraneStrain;
     double emod_;
     double nu_;
     double thickness_;
     size_t numberOfNodes{0};
     int order{};
+    std::shared_ptr<const Geometry> geo_;
 
   protected:
     /**
@@ -396,9 +379,8 @@ namespace Ikarus {
                                                            = std::nullopt) const -> ScalarType {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
-      const auto uFunction = getDisplacementFunction(par, dx);
-      const auto& lambda   = par.getParameter(FEParameter::loadfactor);
-      const auto geo       = this->localView().element().geometry();
+      const auto uFunction = displacementFunction(par, dx);
+      const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
       ScalarType energy    = 0.0;
 
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
@@ -413,8 +395,8 @@ namespace Ikarus {
       if (volumeLoad) {
         for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
           const auto u                                       = uFunction.evaluate(gpIndex);
-          const Eigen::Vector<double, Traits::worlddim> fExt = volumeLoad(geo.global(gp.position()), lambda);
-          energy -= u.dot(fExt) * geo.integrationElement(gp.position()) * gp.weight();
+          const Eigen::Vector<double, Traits::worlddim> fExt = volumeLoad(toEigen(geo_->global(gp.position())), lambda);
+          energy -= u.dot(fExt) * geo_->integrationElement(gp.position()) * gp.weight();
         }
       }
 

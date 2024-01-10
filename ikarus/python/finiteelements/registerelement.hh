@@ -119,8 +119,8 @@ namespace Ikarus::Python {
         },
         pybind11::arg("FERequirements"), pybind11::arg("elementMatrix").noconvert());
 
-    if constexpr (requires { std::declval<FE>().getMaterialTangent(); })
-      cls.def("getMaterialTangent", [](FE& self) { return self.getMaterialTangent(); });
+    if constexpr (requires { std::declval<FE>().materialTangent(); })
+      cls.def("materialTangent", [](FE& self) { return self.materialTangent(); });
 
     cls.def(
         "resultAt",
