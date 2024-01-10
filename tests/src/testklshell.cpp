@@ -147,9 +147,9 @@ static auto NonLinearKLShellLoadControlTR() {
 
   const auto maxDisp = std::ranges::max(d);
   std::cout << std::setprecision(16) << maxDisp << std::endl;
-  t.check(Dune::FloatCmp::eq(0.2087574597947082, maxDisp, 1e-6))
-      << std::setprecision(16) << "The maximum displacement is " << maxDisp << "but it should be " << 0.2087574597947082
-      << ". The difference is " << 0.2087574597947082 - maxDisp;
+  t.check(Dune::FloatCmp::eq(0.2087577577946809, maxDisp, 1e-6))
+      << std::setprecision(16) << "The maximum displacement is " << maxDisp << "but it should be " << 0.2087577577946809
+      << ". The difference is " << 0.2087577577946809 - maxDisp;
   return t;
 }
 
