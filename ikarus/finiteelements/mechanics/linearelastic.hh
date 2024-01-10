@@ -219,8 +219,9 @@ namespace Ikarus {
     }
 
     Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType>> localBasis;
-    std::function<Eigen::Vector<double, worldDim>(const Eigen::Vector<double, worldDim>&, const double&)> volumeLoad;
-    std::function<Eigen::Vector<double, worldDim>(const Eigen::Vector<double, worldDim>&, const double&)>
+    std::function<Eigen::Vector<double, worldDim>(const Dune::FieldVector<double, worldDim>&, const double&)>
+        volumeLoad;
+    std::function<Eigen::Vector<double, worldDim>(const Dune::FieldVector<double, worldDim>&, const double&)>
         neumannBoundaryLoad;
     const BoundaryPatch<GridView>* neumannBoundary;
     double emod_;
@@ -252,7 +253,7 @@ namespace Ikarus {
       if (volumeLoad) {
         for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
           const auto uVal                              = uFunction.evaluate(gpIndex);
-          Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(toEigen(geo_->global(gp.position())), lambda);
+          Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(geo_->global(gp.position()), lambda);
           energy -= uVal.dot(fext) * geo_->integrationElement(gp.position()) * gp.weight();
         }
       }
@@ -308,7 +309,7 @@ namespace Ikarus {
       // External forces volume forces over the domain
       if (volumeLoad) {
         for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
-          Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(toEigen(geo_->global(gp.position())), lambda);
+          Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(geo_->global(gp.position()), lambda);
           for (size_t i = 0; i < numberOfNodes; ++i) {
             const auto udCi = uFunction.evaluateDerivative(gpIndex, wrt(coeff(i)));
             force.template segment<myDim>(myDim * i)

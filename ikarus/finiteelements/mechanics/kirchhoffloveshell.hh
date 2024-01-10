@@ -194,8 +194,9 @@ namespace Ikarus {
     }
 
     Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType>> localBasis;
-    std::function<Eigen::Vector<double, worldDim>(const Eigen::Vector<double, worldDim>&, const double&)> volumeLoad;
-    std::function<Eigen::Vector<double, worldDim>(const Eigen::Vector<double, worldDim>&, const double&)>
+    std::function<Eigen::Vector<double, worldDim>(const Dune::FieldVector<double, worldDim>&, const double&)>
+        volumeLoad;
+    std::function<Eigen::Vector<double, worldDim>(const Dune::FieldVector<double, worldDim>&, const double&)>
         neumannBoundaryLoad;
     const BoundaryPatch<GridView>* neumannBoundary;
     DefaultMembraneStrain membraneStrain;
@@ -233,7 +234,7 @@ namespace Ikarus {
       KinematicVariables<ScalarType> kin;
       using namespace Dune;
       using namespace Dune::DerivativeDirections;
-      const auto [X, Jd, Hd]              = geo.impl().zeroFirstAndSecondDerivativeOfPosition(gpPos);
+      const auto [X, Jd, Hd]              = geo_->impl().zeroFirstAndSecondDerivativeOfPosition(gpPos);
       kin.J                               = toEigen(Jd);
       kin.H                               = toEigen(Hd);
       const Eigen::Matrix<double, 2, 2> A = kin.J * kin.J.transpose();
@@ -257,7 +258,7 @@ namespace Ikarus {
       kin.a3                                      = kin.a3N.normalized();
       Eigen::Vector<ScalarType, 3> bV             = kin.h * kin.a3;
       bV(2) *= 2;  // Voigt notation requires the two here
-      const auto BV = toVoigt(toEigen(geo.impl().secondFundamentalForm(gpPos)));
+      const auto BV = toVoigt(toEigen(geo_->impl().secondFundamentalForm(gpPos)));
       kin.kappaV    = BV - bV;
       return kin;
     }
@@ -268,35 +269,34 @@ namespace Ikarus {
       K.setZero();
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
-      const auto uFunction = getDisplacementFunction(par, dx);
+      const auto uFunction = displacementFunction(par, dx);
       const auto& lambda   = par.getParameter(FEParameter::loadfactor);
-      const auto geo       = this->localView().element().geometry();
 
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
-        const auto intElement = geo.integrationElement(gp.position()) * gp.weight();
+        const auto intElement = geo_->integrationElement(gp.position()) * gp.weight();
         const auto [C, epsV, kappaV, jE, J, h, H, a3N, a3]
-            = computeMaterialAndStrains(gp.position(), gpIndex, geo, uFunction);
+            = computeMaterialAndStrains(gp.position(), gpIndex, *geo_, uFunction);
         const Eigen::Vector<ScalarType, membraneStrainSize> membraneForces = thickness_ * C * epsV;
         const Eigen::Vector<ScalarType, bendingStrainSize> moments = Dune::power(thickness_, 3) / 12.0 * C * kappaV;
 
         const auto& Nd  = localBasis.evaluateJacobian(gpIndex);
         const auto& Ndd = localBasis.evaluateSecondDerivatives(gpIndex);
         for (size_t i = 0; i < numberOfNodes; ++i) {
-          Eigen::Matrix<ScalarType, membraneStrainSize, worlddim> bopIMembrane
-              = membraneStrain.derivative(gp.position(), jE, Nd, geo, uFunction, localBasis, i);
+          Eigen::Matrix<ScalarType, membraneStrainSize, worldDim> bopIMembrane
+              = membraneStrain.derivative(gp.position(), jE, Nd, *geo_, uFunction, localBasis, i);
 
-          Eigen::Matrix<ScalarType, bendingStrainSize, worlddim> bopIBending = bopBending(jE, h, Nd, Ndd, i, a3N, a3);
+          Eigen::Matrix<ScalarType, bendingStrainSize, worldDim> bopIBending = bopBending(jE, h, Nd, Ndd, i, a3N, a3);
           for (size_t j = i; j < numberOfNodes; ++j) {
-            auto KBlock = K.template block<worlddim, worlddim>(worlddim * i, worlddim * j);
-            Eigen::Matrix<ScalarType, membraneStrainSize, worlddim> bopJMembrane
-                = membraneStrain.derivative(gp.position(), jE, Nd, geo, uFunction, localBasis, j);
-            Eigen::Matrix<ScalarType, bendingStrainSize, worlddim> bopJBending = bopBending(jE, h, Nd, Ndd, j, a3N, a3);
+            auto KBlock = K.template block<worldDim, worldDim>(worldDim * i, worldDim * j);
+            Eigen::Matrix<ScalarType, membraneStrainSize, worldDim> bopJMembrane
+                = membraneStrain.derivative(gp.position(), jE, Nd, *geo_, uFunction, localBasis, j);
+            Eigen::Matrix<ScalarType, bendingStrainSize, worldDim> bopJBending = bopBending(jE, h, Nd, Ndd, j, a3N, a3);
             KBlock += thickness_ * bopIMembrane.transpose() * C * bopJMembrane * intElement;
             KBlock += Dune::power(thickness_, 3) / 12.0 * bopIBending.transpose() * C * bopJBending * intElement;
 
-            Eigen::Matrix<ScalarType, worlddim, worlddim> kgMembraneIJ
-                = membraneStrain.secondDerivative(gp.position(), Nd, geo, uFunction, localBasis, membraneForces, i, j);
-            Eigen::Matrix<ScalarType, worlddim, worlddim> kgBendingIJ
+            Eigen::Matrix<ScalarType, worldDim, worldDim> kgMembraneIJ = membraneStrain.secondDerivative(
+                gp.position(), Nd, *geo_, uFunction, localBasis, membraneForces, i, j);
+            Eigen::Matrix<ScalarType, worldDim, worldDim> kgBendingIJ
                 = kgBending(jE, h, Nd, Ndd, a3N, a3, moments, i, j);
             KBlock += kgMembraneIJ * intElement;
             KBlock += kgBendingIJ * intElement;
@@ -312,14 +312,13 @@ namespace Ikarus {
       force.setZero();
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
-      const auto uFunction = getDisplacementFunction(par, dx);
+      const auto uFunction = displacementFunction(par, dx);
       const auto& lambda   = par.getParameter(FEParameter::loadfactor);
-      const auto geo       = this->localView().element().geometry();
 
       // Internal forces
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
         const auto [C, epsV, kappaV, jE, J, h, H, a3N, a3]
-            = computeMaterialAndStrains(gp.position(), gpIndex, geo, uFunction);
+            = computeMaterialAndStrains(gp.position(), gpIndex, *geo_, uFunction);
         const Eigen::Vector<ScalarType, 3> membraneForces = thickness_ * C * epsV;
         const Eigen::Vector<ScalarType, 3> moments        = Dune::power(thickness_, 3) / 12.0 * C * kappaV;
 
@@ -327,24 +326,24 @@ namespace Ikarus {
         const auto& Ndd = localBasis.evaluateSecondDerivatives(gpIndex);
         for (size_t i = 0; i < numberOfNodes; ++i) {
           Eigen::Matrix<ScalarType, 3, 3> bopIMembrane
-              = membraneStrain.derivative(gp.position(), jE, Nd, geo, uFunction, localBasis, i);
+              = membraneStrain.derivative(gp.position(), jE, Nd, *geo_, uFunction, localBasis, i);
           Eigen::Matrix<ScalarType, 3, 3> bopIBending = bopBending(jE, h, Nd, Ndd, i, a3N, a3);
           force.template segment<3>(3 * i)
-              += bopIMembrane.transpose() * membraneForces * geo.integrationElement(gp.position()) * gp.weight();
+              += bopIMembrane.transpose() * membraneForces * geo_->integrationElement(gp.position()) * gp.weight();
           force.template segment<3>(3 * i)
-              += bopIBending.transpose() * moments * geo.integrationElement(gp.position()) * gp.weight();
+              += bopIBending.transpose() * moments * geo_->integrationElement(gp.position()) * gp.weight();
         }
       }
 
       // External forces volume forces over the domain
       if (volumeLoad) {
-        const auto u = getDisplacementFunction(par, dx);
+        const auto u = displacementFunction(par, dx);
         for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
-          Eigen::Vector<double, Traits::worlddim> fext = volumeLoad(geo.global(gp.position()), lambda);
+          Eigen::Vector<double, worldDim> fext = volumeLoad(geo_->global(gp.position()), lambda);
           for (size_t i = 0; i < numberOfNodes; ++i) {
             const auto udCi = uFunction.evaluateDerivative(gpIndex, wrt(coeff(i)));
-            force.template segment<worlddim>(worlddim * i)
-                -= udCi * fext * geo.integrationElement(gp.position()) * gp.weight();
+            force.template segment<worldDim>(worldDim * i)
+                -= udCi * fext * geo_->integrationElement(gp.position()) * gp.weight();
           }
         }
       }
@@ -368,7 +367,7 @@ namespace Ikarus {
 
             // Value of the Neumann data at the current position
             auto neumannValue = neumannBoundaryLoad(intersection.geometry().global(curQuad.position()), lambda);
-            force.template segment<worlddim>(worlddim * i) -= udCi * neumannValue * intElement;
+            force.template segment<worldDim>(worldDim * i) -= udCi * neumannValue * intElement;
           }
         }
       }
@@ -385,17 +384,17 @@ namespace Ikarus {
 
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
         const auto [C, epsV, kappaV, j, J, h, H, a3N, a3]
-            = computeMaterialAndStrains(gp.position(), gpIndex, geo, uFunction);
+            = computeMaterialAndStrains(gp.position(), gpIndex, *geo_, uFunction);
 
         const ScalarType membraneEnergy = 0.5 * thickness_ * epsV.dot(C * epsV);
         const ScalarType bendingEnergy  = 0.5 * Dune::power(thickness_, 3) / 12.0 * kappaV.dot(C * kappaV);
-        energy += (membraneEnergy + bendingEnergy) * geo.integrationElement(gp.position()) * gp.weight();
+        energy += (membraneEnergy + bendingEnergy) * geo_->integrationElement(gp.position()) * gp.weight();
       }
 
       if (volumeLoad) {
         for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
-          const auto u                                       = uFunction.evaluate(gpIndex);
-          const Eigen::Vector<double, Traits::worlddim> fExt = volumeLoad(toEigen(geo_->global(gp.position())), lambda);
+          const auto u                               = uFunction.evaluate(gpIndex);
+          const Eigen::Vector<double, worldDim> fExt = volumeLoad(geo_->global(gp.position()), lambda);
           energy -= u.dot(fExt) * geo_->integrationElement(gp.position()) * gp.weight();
         }
       }
