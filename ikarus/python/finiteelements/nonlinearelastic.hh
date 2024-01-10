@@ -29,9 +29,9 @@ namespace Ikarus::Python {
     using GridView               = typename GlobalBasis::GridView;
     using Element                = typename NonLinearElastic::Element;
     using Traits                 = typename NonLinearElastic::Traits;
-    using FErequirements         = typename NonLinearElastic::FERequirementType;
+    using FERequirements         = typename NonLinearElastic::FERequirementType;
     using Material               = typename NonLinearElastic::Material;
-    using FErequirements         = typename NonLinearElastic::FERequirementType;
+    using FERequirements         = typename NonLinearElastic::FERequirementType;
     using ResultRequirementsType = typename NonLinearElastic::ResultRequirementsType;
 
     cls.def(pybind11::init([](const GlobalBasis& basis, const Element& element, const Material& mat) {
@@ -89,16 +89,16 @@ namespace Ikarus::Python {
         },
         pybind11::keep_alive<0, 1>());
     cls.def("calculateScalar",
-            [](NonLinearElastic& self, const FErequirements& req) { return self.calculateScalar(req); });
-    cls.def("calculateVector", [](NonLinearElastic& self, const FErequirements& req, Eigen::Ref<Eigen::VectorXd> vec) {
+            [](NonLinearElastic& self, const FERequirements& req) { return self.calculateScalar(req); });
+    cls.def("calculateVector", [](NonLinearElastic& self, const FERequirements& req, Eigen::Ref<Eigen::VectorXd> vec) {
       return self.calculateVector(req, vec);
     });
     cls.def(
         "calculateMatrix",
-        [](NonLinearElastic& self, const FErequirements& req, Eigen::Ref<Eigen::MatrixXd> mat) {
+        [](NonLinearElastic& self, const FERequirements& req, Eigen::Ref<Eigen::MatrixXd> mat) {
           return self.calculateMatrix(req, mat);
         },
-        pybind11::arg("FErequirements"), pybind11::arg("elementMatrix").noconvert());
+        pybind11::arg("FERequirements"), pybind11::arg("elementMatrix").noconvert());
 
     cls.def(
         "resultAt",

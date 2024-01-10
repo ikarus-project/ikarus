@@ -97,10 +97,10 @@ PYBIND11_MODULE(_ikarus, m) {
       .def(double() * py::self)
       .def(py::self * double());
 
-  using FEreq   = FErequirements<Ref<VectorXd>>;
+  using FEreq   = FERequirements<Ref<VectorXd>>;
   auto includes = Dune::Python::IncludeFiles{"ikarus/finiteelements/ferequirements.hh"};
   auto lv       = Dune::Python::insertClass<FEreq>(
-                m, "FErequirements", Dune::Python::GenerateTypeName("FErequirements<Eigen::Ref<Eigen::VectorXd>>"),
+                m, "FERequirements", Dune::Python::GenerateTypeName("FERequirements<Eigen::Ref<Eigen::VectorXd>>"),
                 includes)
                 .first;
   lv.def(py::init());

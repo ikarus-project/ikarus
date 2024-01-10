@@ -83,7 +83,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   d.setZero(basis.flat().size());
   double lambda = 0.0;
 
-  auto req = FErequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
+  auto req = FERequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
 
   auto residualFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
     req.insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
@@ -240,7 +240,7 @@ auto GreenLagrangeStrainTest(const Material& mat) {
   d.setZero(nDOF);
   double lambda = 0.0;
 
-  auto req = Ikarus::FErequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
+  auto req = Ikarus::FERequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
   req.insertGlobalSolution(Ikarus::FESolutions::displacement, d)
       .insertParameter(Ikarus::FEParameter::loadfactor, lambda);
 
@@ -282,7 +282,7 @@ auto SingleElementTest(const Material& mat) {
 
   d << 2, 4, 3.25, -1.2, 0.003, 6, 3, 2.864;
 
-  auto req = Ikarus::FErequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
+  auto req = Ikarus::FERequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
   req.insertGlobalSolution(Ikarus::FESolutions::displacement, d)
       .insertParameter(Ikarus::FEParameter::loadfactor, lambda);
 
@@ -351,7 +351,7 @@ auto checkFEByAutoDiff(const Material& mat) {
   d.setRandom(nDOF);
   double lambda = 7.3;
 
-  auto req = Ikarus::FErequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
+  auto req = Ikarus::FERequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
   req.insertGlobalSolution(Ikarus::FESolutions::displacement, d)
       .insertParameter(Ikarus::FEParameter::loadfactor, lambda);
 

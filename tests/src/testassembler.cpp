@@ -74,7 +74,7 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
     d.setRandom();
     double load = 0.0;
 
-    Ikarus::FErequirements req = Ikarus::FErequirements()
+    Ikarus::FERequirements req = Ikarus::FERequirements()
                                      .insertGlobalSolution(Ikarus::FESolutions::displacement, d)
                                      .insertParameter(Ikarus::FEParameter::loadfactor, load)
                                      .addAffordance(Ikarus::AffordanceCollections::elastoStatics);

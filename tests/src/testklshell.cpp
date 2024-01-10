@@ -97,7 +97,7 @@ static auto NonLinearKLShellLoadControlTR() {
   d.setZero(basis.flat().size());
   double lambda = 0.0;
 
-  auto req = FErequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
+  auto req = FERequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
 
   auto residualFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
     req.insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)

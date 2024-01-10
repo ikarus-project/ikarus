@@ -18,10 +18,10 @@ These functions are `calculateScalar`, `calculateVector` and `calculateMatrix`. 
 Such an interface is provided by the local functions are shown below:
 
 ```cpp
-ScalarType calculateScalar(const FErequirements& req);
-void calculateVector(const FErequirements& req, VectorType& b);
-void calculateMatrix(const FErequirements& req, MatrixType& A);
-void calculateLocalSystem(const FErequirements& req, MatrixType& A, VectorType& b);
+ScalarType calculateScalar(const FERequirements& req);
+void calculateVector(const FERequirements& req, VectorType& b);
+void calculateMatrix(const FERequirements& req, MatrixType& A);
+void calculateLocalSystem(const FERequirements& req, MatrixType& A, VectorType& b);
 void calculateAt(const Resultrequirements& req, const Eigen::Vector<double, Traits::mydim>& local,
                      ResultTypeMap<ScalarType>& result);
 void globalFlatIndices(std::vector<GlobalIndex>& indices);
@@ -33,7 +33,7 @@ These methods are `calculateScalarImpl`, `calculateVectorImpl` and `calculateMat
 `calculateScalar`, `calculateVector` and `calculateMatrix` simply forward to these implementation functions.
 
 Please refer to the [FE requirements](feRequirements.md) to learn more about the finite element requirements and result requirements.
-The first four methods receive an object of type `FErequirements`. This object is responsible for passing different types of information
+The first four methods receive an object of type `FERequirements`. This object is responsible for passing different types of information
 needed for the local evaluation of the local linear algebra objects.
 The first method, `evaluateScalar`, simply returns by value because it is cheaper to return a `double`, for example when evaluating energy.
 The other methods, `evaluateVector`, `evaluateMatrix`, and `calculateLocalSystem`, receive one or two additional output arguments where

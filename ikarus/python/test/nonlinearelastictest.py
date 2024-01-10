@@ -25,7 +25,7 @@ if __name__ == "__main__":
         upperRight.append(1)
         elements.append(3)
 
-    req = ikarus.FErequirements()
+    req = ikarus.FERequirements()
     req.addAffordance(iks.ScalarAffordances.mechanicalPotentialEnergy)
 
     grid = dune.grid.structuredGrid(lowerLeft, upperRight, elements)
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     lambdaLoad = iks.ValueWrapper(3.0)
 
     def energy(dRedInput):
-        reqL = ikarus.FErequirements()
+        reqL = ikarus.FERequirements()
         reqL.addAffordance(iks.ScalarAffordances.mechanicalPotentialEnergy)
         reqL.insertParameter(iks.FEParameter.loadfactor, lambdaLoad)
 
@@ -95,7 +95,7 @@ if __name__ == "__main__":
         return assembler.getScalar(reqL)
 
     def gradient(dRedInput):
-        reqL = ikarus.FErequirements()
+        reqL = ikarus.FERequirements()
         reqL.addAffordance(iks.VectorAffordances.forces)
         reqL.insertParameter(iks.FEParameter.loadfactor, lambdaLoad)
 
@@ -104,7 +104,7 @@ if __name__ == "__main__":
         return assembler.getReducedVector(reqL)
 
     def hess(dRedInput):
-        reqL = ikarus.FErequirements()
+        reqL = ikarus.FERequirements()
         reqL.addAffordance(iks.MatrixAffordances.stiffness)
         reqL.insertParameter(iks.FEParameter.loadfactor, lambdaLoad)
 

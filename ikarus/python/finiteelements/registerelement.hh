@@ -50,7 +50,7 @@ namespace Ikarus::Python {
     using GridView               = typename GlobalBasis::GridView;
     using Element                = typename FE::Element;
     using Traits                 = typename FE::Traits;
-    using FErequirements         = typename FE::FERequirementType;
+    using FERequirements         = typename FE::FERequirementType;
     using ResultRequirementsType = typename FE::ResultRequirementsType;
 
     if constexpr (defaultInitializers)
@@ -108,16 +108,16 @@ namespace Ikarus::Python {
           return lvWrapped;
         },
         pybind11::keep_alive<0, 1>());
-    cls.def("calculateScalar", [](FE& self, const FErequirements& req) { return self.calculateScalar(req); });
-    cls.def("calculateVector", [](FE& self, const FErequirements& req, Eigen::Ref<Eigen::VectorXd> vec) {
+    cls.def("calculateScalar", [](FE& self, const FERequirements& req) { return self.calculateScalar(req); });
+    cls.def("calculateVector", [](FE& self, const FERequirements& req, Eigen::Ref<Eigen::VectorXd> vec) {
       return self.calculateVector(req, vec);
     });
     cls.def(
         "calculateMatrix",
-        [](FE& self, const FErequirements& req, Eigen::Ref<Eigen::MatrixXd> mat) {
+        [](FE& self, const FERequirements& req, Eigen::Ref<Eigen::MatrixXd> mat) {
           return self.calculateMatrix(req, mat);
         },
-        pybind11::arg("FErequirements"), pybind11::arg("elementMatrix").noconvert());
+        pybind11::arg("FERequirements"), pybind11::arg("elementMatrix").noconvert());
 
     if constexpr (requires { std::declval<FE>().getMaterialTangent(); })
       cls.def("getMaterialTangent", [](FE& self) { return self.getMaterialTangent(); });

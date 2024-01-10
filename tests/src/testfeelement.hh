@@ -83,7 +83,7 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
 
   double lambda = 7.3;
 
-  auto requirements = FErequirements()
+  auto requirements = FERequirements()
                           .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
                           .addAffordance(Ikarus::AffordanceCollections::elastoStatics);
 

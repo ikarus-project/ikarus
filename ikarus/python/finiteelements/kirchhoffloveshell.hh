@@ -49,7 +49,7 @@ namespace Ikarus::Python {
     using GridView       = typename GlobalBasis::GridView;
     using Element        = typename KirchhoffLoveShell::Element;
     using Traits         = typename KirchhoffLoveShell::Traits;
-    using FErequirements = typename KirchhoffLoveShell::FERequirementType;
+    using FERequirements = typename KirchhoffLoveShell::FERequirementType;
 
     using LoadFunction = std::function<Eigen::Vector<double, Traits::worlddim>(Eigen::Vector<double, Traits::worlddim>,
                                                                                const double&)>;
