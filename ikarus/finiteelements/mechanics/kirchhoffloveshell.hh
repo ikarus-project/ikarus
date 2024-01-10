@@ -60,7 +60,7 @@ namespace Ikarus {
    * @tparam FERequirements_ The type representing the requirements for finite element calculations.
    * @tparam useEigenRef A boolean indicating whether to use Eigen references for efficiency.
    */
-  template <typename Basis_, typename FERequirements_ = FErequirements<>, bool useEigenRef = false>
+  template <typename Basis_, typename FERequirements_ = FERequirements<>, bool useEigenRef = false>
   class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis> {
   public:
     using Basis                   = Basis_;

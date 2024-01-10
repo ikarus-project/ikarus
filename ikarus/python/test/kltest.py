@@ -90,7 +90,7 @@ if __name__ == "__main__":
     assembler = iks.assembler.sparseFlatAssembler(fes, dirichletValues)
 
     def gradAndhess(dRedInput):
-        req = ikarus.FErequirements()
+        req = ikarus.FERequirements()
         req.addAffordance(iks.ScalarAffordances.mechanicalPotentialEnergy)
         req.insertParameter(iks.FEParameter.loadfactor, lambdaLoad)
         dBig = assembler.createFullVector(dRedInput)

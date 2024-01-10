@@ -101,7 +101,7 @@ finite element requirements as described [here](../01_framework/feRequirements.m
 
 ```cpp
 auto sparseFlatAssembler = SparseFlatAssembler(fes, dirichletValues);
-auto req = FErequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
+auto req = FERequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
 
 auto fextFunction = [&](auto &&lambdaLocal, auto &&dLocal) -> auto & {
   req.insertGlobalSolution(Ikarus::FESolutions::displacement, dLocal)

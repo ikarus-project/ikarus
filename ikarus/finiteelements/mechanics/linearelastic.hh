@@ -38,7 +38,7 @@ namespace Ikarus {
    * @tparam FERequirements_ The requirements for the finite element.
    * @tparam useEigenRef A boolean flag indicating whether to use Eigen references.
    */
-  template <typename Basis_, typename FERequirements_ = FErequirements<>, bool useEigenRef = false>
+  template <typename Basis_, typename FERequirements_ = FERequirements<>, bool useEigenRef = false>
   class LinearElastic : public PowerBasisFE<typename Basis_::FlatBasis> {
   public:
     using Basis                  = Basis_;

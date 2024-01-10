@@ -85,7 +85,7 @@ struct ElementTest<Ikarus::EnhancedAssumedStrains<DisplacementBasedElement>> {
                 }
               },
               easVariant);
-          auto requirements = Ikarus::FErequirements();
+          auto requirements = Ikarus::FERequirements();
           t.checkThrow([&]() { fe.calculateScalar(requirements); })
               << "fe.calculateScalar should have failed for numberOfEASParameter > 0";
         }

@@ -25,7 +25,7 @@ def elementConstructorDecoratorFactory(
                 element_type = (
                     "Ikarus::"
                     + func.__name__
-                    + f"<{basis.cppTypeName},Ikarus::FErequirements<Eigen::Ref<Eigen::VectorXd>>,true>"
+                    + f"<{basis.cppTypeName},Ikarus::FERequirements<Eigen::Ref<Eigen::VectorXd>>,true>"
                 )
             else:
                 includes += ["ikarus/finiteelements/febases/autodifffe.hh"]
@@ -34,12 +34,12 @@ def elementConstructorDecoratorFactory(
                     + autodiffWrapper
                     + "<Ikarus::"
                     + func.__name__
-                    + f"<{basis.cppTypeName},Ikarus::FErequirements<Eigen::Ref<Eigen::VectorXd>>,true>,"
-                    f"Ikarus::FErequirements<Eigen::Ref<Eigen::VectorXd>>,true>"
+                    + f"<{basis.cppTypeName},Ikarus::FERequirements<Eigen::Ref<Eigen::VectorXd>>,true>,"
+                    f"Ikarus::FERequirements<Eigen::Ref<Eigen::VectorXd>>,true>"
                 )
 
             # else:
-            #     element_type = "Ikarus::" + func.__name__ + f"<{basis.cppTypeName},  {material.cppTypeName} ,Ikarus::FErequirements<Eigen::Ref<Eigen::VectorXd>>,true>"
+            #     element_type = "Ikarus::" + func.__name__ + f"<{basis.cppTypeName},  {material.cppTypeName} ,Ikarus::FERequirements<Eigen::Ref<Eigen::VectorXd>>,true>"
 
             if not (
                 (bp is None and neumannBoundaryLoad is None)
@@ -108,12 +108,12 @@ def KirchhoffLoveShell(
     element_type = (
         "Ikarus::"
         + autodiffWrapper
-        + f"<Ikarus::KirchhoffLoveShell<{basis.cppTypeName},Ikarus::FErequirements<Eigen::Ref<Eigen::VectorXd>>,true>,"
-        f"Ikarus::FErequirements<Eigen::Ref<Eigen::VectorXd>>,true>"
+        + f"<Ikarus::KirchhoffLoveShell<{basis.cppTypeName},Ikarus::FERequirements<Eigen::Ref<Eigen::VectorXd>>,true>,"
+        f"Ikarus::FERequirements<Eigen::Ref<Eigen::VectorXd>>,true>"
     )
 
     # else:
-    #     element_type = "Ikarus::" + func.__name__ + f"<{basis.cppTypeName},  {material.cppTypeName} ,Ikarus::FErequirements<Eigen::Ref<Eigen::VectorXd>>,true>"
+    #     element_type = "Ikarus::" + func.__name__ + f"<{basis.cppTypeName},  {material.cppTypeName} ,Ikarus::FERequirements<Eigen::Ref<Eigen::VectorXd>>,true>"
 
     if not (
         (bp is None and neumannBoundaryLoad is None)
@@ -162,7 +162,7 @@ def NonLinearElastic(
         )
 
     generator = MySimpleGenerator("NonLinearElastic", "Ikarus::Python")
-    element_type = f"Ikarus::NonLinearElastic<{basis.cppTypeName},  {material.cppTypeName} ,Ikarus::FErequirements<Eigen::Ref<Eigen::VectorXd>>,true>"
+    element_type = f"Ikarus::NonLinearElastic<{basis.cppTypeName},  {material.cppTypeName} ,Ikarus::FERequirements<Eigen::Ref<Eigen::VectorXd>>,true>"
 
     includes = []
     includes += ["ikarus/python/finiteelements/nonlinearelastic.hh"]

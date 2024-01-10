@@ -55,7 +55,8 @@ namespace Ikarus {
    * predefined path.
    *
    * \details Consider a non-linear system of equations
-   *        \f[\mathbf{R}: \require{cases}\begin{cases}\mathbb{R}^n \times \mathbb{R} &\rightarrow \mathbb{R}^n \\ (\mathbf{D},\lambda)
+   *        \f[\mathbf{R}: \require{cases}\begin{cases}\mathbb{R}^n \times \mathbb{R} &\rightarrow \mathbb{R}^n
+   * \\ (\mathbf{D},\lambda)
    * &\mapsto \mathbf{R}(\mathbf{D},\lambda) \end{cases}.\f]
    *
    * Then in each step \f$k+1\f$ of the path following algorithm, the following problem is solved

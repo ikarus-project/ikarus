@@ -26,7 +26,7 @@ namespace Ikarus {
    * @tparam forceAutoDiff A boolean indicating whether to force the use of automatic differentiation, even when the
    * real element implements the derivatives.
    */
-  template <typename RealFE_, typename FERequirementType_ = FErequirements<>, bool useEigenRef = false,
+  template <typename RealFE_, typename FERequirementType_ = FERequirements<>, bool useEigenRef = false,
             bool forceAutoDiff = false>
   class AutoDiffFE : public RealFE_ {
   public:

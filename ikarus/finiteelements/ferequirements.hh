@@ -154,7 +154,7 @@ namespace Ikarus {
   }  // namespace Impl
 
   /**
-   * \class FErequirements
+   * \class FERequirements
    * \brief Class representing the requirements for finite element calculations.
    *
    * This class defines the requirements for finite element calculations, including the types of solution vectors
@@ -167,12 +167,12 @@ namespace Ikarus {
    */
   template <typename SolutionVectorType_ = std::reference_wrapper<Eigen::VectorXd>,
             typename ParameterType_      = std::reference_wrapper<double>>
-  class FErequirements {
+  class FERequirements {
   public:
     using SolutionVectorType    = SolutionVectorType_;
-    using SolutionVectorTypeRaw = Impl::DeduceRawVectorType<std::remove_cvref_t<SolutionVectorType_>>::Type;
+    using SolutionVectorTypeRaw = typename Impl::DeduceRawVectorType<std::remove_cvref_t<SolutionVectorType_>>::Type;
     using ParameterType         = ParameterType_;
-    using ParameterTypeRaw      = ParameterType_::type;
+    using ParameterTypeRaw      = typename ParameterType_::type;
 
     /**
      * \brief Add an affordance to the requirements.
@@ -181,10 +181,10 @@ namespace Ikarus {
      *
      * \tparam Affordance Type of affordance to be added.
      * \param affordance The affordance to be added.
-     * \return Reference to the updated FErequirements instance.
+     * \return Reference to the updated FERequirements instance.
      */
     template <FEAffordance Affordance>
-    FErequirements& addAffordance(Affordance&& affordance) {
+    FERequirements& addAffordance(Affordance&& affordance) {
       if constexpr (std::is_same_v<Affordance, ScalarAffordances>)
         affordances.scalarAffordances = affordance;
       else if constexpr (std::is_same_v<Affordance, VectorAffordances>)
@@ -203,9 +203,9 @@ namespace Ikarus {
      *
      * \param key The key representing the parameter.
      * \param val Reference to the raw parameter value.
-     * \return Reference to the updated FErequirements instance.
+     * \return Reference to the updated FERequirements instance.
      */
-    FErequirements& insertParameter(const FEParameter& key, ParameterTypeRaw& val) {
+    FERequirements& insertParameter(const FEParameter& key, ParameterTypeRaw& val) {
       parameter.insert_or_assign(key, val);
       return *this;
     }
@@ -217,9 +217,9 @@ namespace Ikarus {
      *
      * \param key The key representing the type of the solution vector.
      * \param sol Reference to the raw global solution vector.
-     * \return Reference to the updated FErequirements instance.
+     * \return Reference to the updated FERequirements instance.
      */
-    FErequirements& insertGlobalSolution(const FESolutions& key, SolutionVectorTypeRaw& sol) {
+    FERequirements& insertGlobalSolution(const FESolutions& key, SolutionVectorTypeRaw& sol) {
       sols.insert_or_assign(key, sol);
       return *this;
     }
@@ -295,6 +295,40 @@ namespace Ikarus {
   };
 
   /**
+   * \class FErequirements
+   * \brief Class representing the requirements for finite element calculations.
+   * \deprecated FErequirements is deprecaded and will be removed after v0.5. Use FERequirements instead.
+   *
+   * This class defines the requirements for finite element calculations, including the types of solution vectors
+   * and parameters needed. It provides methods to add affordances, insert parameters, and manage global solution
+   * vectors.
+   *
+   * \tparam SolutionVectorType_ Type of the solution vector, defaulting to std::reference_wrapper<Eigen::VectorXd>.
+   * \tparam ParameterType_ Type of the parameter, defaulting to std::reference_wrapper<double>.
+   *
+   */
+  template <typename SolutionVectorType_ = std::reference_wrapper<Eigen::VectorXd>,
+            typename ParameterType_      = std::reference_wrapper<double>>
+  class [[deprecated(
+      "FErequirements is deprecaded and will be removed after v0.5. Use FERequirements instead.")]] FErequirements
+      : public FERequirements<SolutionVectorType_, ParameterType_> {
+    using Base = FERequirements<SolutionVectorType_, ParameterType_>;
+
+  public:
+    FErequirements() = default;
+    FErequirements(Base && base) : Base(std::forward<Base>(base)) {}
+    FErequirements(const Base& base) : Base(base) {}
+    FErequirements& operator=(const Base& base) {
+      Base::operator=(base);
+      return *this;
+    }
+    FErequirements& operator=(Base&& base) {
+      Base::operator=(std::forward<Base>(base));
+      return *this;
+    }
+  };
+
+  /**
    * \class ResultTypeMap
    * \brief Class representing a map of result types to result arrays.
    *
@@ -361,38 +395,38 @@ namespace Ikarus {
    * \brief Class representing the requirements for obtaining specific results.
    *
    * This class encapsulates the requirements for obtaining results, including the desired result types,
-   * associated affordances, and input parameters. It is templated on the type of FErequirements.
+   * associated affordances, and input parameters. It is templated on the type of FERequirements.
    *
-   * \tparam FErequirements Type representing the finite element requirements.
-   *                       Default is FErequirements<>.
+   * \tparam FERequirements Type representing the finite element requirements.
+   *                       Default is FERequirements<>.
    *
    */
-  template <typename FErequirements = FErequirements<>>
+  template <typename FERequirements = FERequirements<>>
   class ResultRequirements {
   public:
-    using ParameterTypeRaw      = typename FErequirements::ParameterTypeRaw;
-    using SolutionVectorType    = typename FErequirements::SolutionVectorType;
-    using SolutionVectorTypeRaw = typename FErequirements::SolutionVectorTypeRaw;
+    using ParameterTypeRaw      = typename FERequirements::ParameterTypeRaw;
+    using SolutionVectorType    = typename FERequirements::SolutionVectorType;
+    using SolutionVectorTypeRaw = typename FERequirements::SolutionVectorTypeRaw;
 
     /**
-     * \brief Constructor with FErequirements and result types.
+     * \brief Constructor with FERequirements and result types.
      *
      * Constructs a ResultRequirements object with the given FErequirements and set of result types.
      *
      * \param req Finite element requirements.
      * \param p_resType Set of result types.
      */
-    ResultRequirements(FErequirements&& req, std::set<ResultType>&& p_resType)
+    ResultRequirements(FERequirements&& req, std::set<ResultType>&& p_resType)
         : reqB{req}, resType(std::move(p_resType)) {}
 
     /**
-     * \brief Constructor with only FErequirements.
+     * \brief Constructor with only FERequirements.
      *
-     * Constructs a ResultRequirements object with the given FErequirements and an empty set of result types.
+     * Constructs a ResultRequirements object with the given FERequirements and an empty set of result types.
      *
      * \param req Finite element requirements.
      */
-    explicit ResultRequirements(const FErequirements& req) : reqB{req} {}
+    explicit ResultRequirements(const FERequirements& req) : reqB{req} {}
 
     /**
      * \brief Default constructor.
@@ -498,7 +532,7 @@ namespace Ikarus {
      *
      * \return Reference to the finite element requirements.
      */
-    const FErequirements& getFERequirements() const { return reqB; }
+    const FERequirements& getFERequirements() const { return reqB; }
 
     /**
      * \brief Get the requested result type.
@@ -519,6 +553,6 @@ namespace Ikarus {
 
   private:
     std::set<ResultType> resType;
-    FErequirements reqB;
+    FERequirements reqB;
   };
 }  // namespace Ikarus

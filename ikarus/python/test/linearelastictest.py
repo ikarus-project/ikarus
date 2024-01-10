@@ -25,7 +25,7 @@ if __name__ == "__main__":
         upperRight.append(1)
         elements.append(3)
 
-    req = ikarus.FErequirements()
+    req = ikarus.FERequirements()
     req.addAffordance(iks.ScalarAffordances.mechanicalPotentialEnergy)
 
     grid = dune.grid.structuredGrid(lowerLeft, upperRight, elements)
