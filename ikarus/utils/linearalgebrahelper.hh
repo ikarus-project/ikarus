@@ -466,38 +466,6 @@ namespace Ikarus {
   constexpr auto voigtNotationContainer = std::get<dim - 1>(Impl::voigtIndices);
 
   /**
-   * \brief A function to obtain the global positions of the nodes of an element with Lagrangian basis, see Dune book
-   * page 314
-   *  \ingroup utils
-   * \tparam order Polynomial order of the Lagrangian basis
-   * \tparam size Size of the nodal coordinate vector
-   * \tparam LocalView Type of the local view
-   *
-   * \param localView Local view bounded to an element
-   * \param lagrangeNodeCoords A vector of nodal coordinates to be updated
-   */
-  template <int order, int size, typename LocalView>
-  void obtainLagrangeNodePositions(const LocalView& localView,
-                                   std::vector<Dune::FieldVector<double, size>>& lagrangeNodeCoords) {
-    static_assert(
-        std::is_same_v<typename std::remove_cvref_t<decltype(localView.tree().child(0))>,
-                       Dune::Functions::LagrangeNode<std::remove_cvref_t<decltype(localView.globalBasis().gridView())>,
-                                                     order, double>>,
-        "This function is only supported for Lagrange basis");
-    const auto& localFE = localView.tree().child(0).finiteElement();
-    lagrangeNodeCoords.resize(localFE.size());
-    std::vector<double> out;
-    for (int i = 0; i < size; i++) {
-      auto ithCoord = [&i](const Dune::FieldVector<double, size>& x) { return x[i]; };
-      localFE.localInterpolation().interpolate(ithCoord, out);
-      for (std::size_t j = 0; j < out.size(); j++)
-        lagrangeNodeCoords[j][i] = out[j];
-    }
-    for (auto& nCoord : lagrangeNodeCoords)
-      nCoord = localView.element().geometry().global(nCoord);
-  }
-
-  /**
    * @brief Performs static condensation on a square matrix.
    *  \ingroup utils
    * @tparam Derived Type of the matrix.

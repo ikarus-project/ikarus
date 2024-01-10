@@ -96,9 +96,8 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
     const Eigen::Index fixedDOFs = dirichletValues.fixedDOFsize();
     int boundaryNodes            = (elementsPerDirection[0] * Dune::power(2, ref) + 1) * 2
                         + (elementsPerDirection[1] * Dune::power(2, ref) + 1) * 2 - 4;
-    if (std::is_same_v<typename std::remove_cvref_t<decltype(fes[0].localView().tree().child(0))>,
-                       Dune::Functions::LagrangeNode<
-                           std::remove_cvref_t<decltype(fes[0].localView().globalBasis().gridView())>, 2, double>>)
+    if constexpr (Ikarus::Concepts::LagrangeNodeOfOrder<
+                      std::remove_cvref_t<decltype(fes[0].localView().tree().child(0))>, 2>)
       boundaryNodes *= 2;
     t.check(2 * boundaryNodes == fixedDOFs)
         << "Boundary DOFs (" << 2 * boundaryNodes << ") is not equal to Fixed DOFs (" << fixedDOFs << ")";
