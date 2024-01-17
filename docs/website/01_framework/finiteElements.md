@@ -110,7 +110,7 @@ calculateScalarImpl(const FERequirementType& par, const Eigen::VectorX<ScalarTyp
 calculateVectorImpl(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx, Eigen::VectorX<ScalarType>& force)
 ```
 
-Inside `getStrainFunction(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx)` is used to get the desired strain measure.
+Inside `strainFunction(const FERequirementType& par, const Eigen::VectorX<ScalarType>& dx)` is used to get the desired strain measure.
 It can be used to toggle between the geometrically linear and non-linear cases.
 `LinearStrains` are used for the geometrically linear case, while `GreenLagrangianStrains` are used for the non-linear case.
 These strain measures are defined as expressions in `dune-localfefunctions`. Refer to [Expressions](localFunctions.md#expressions) for more details.

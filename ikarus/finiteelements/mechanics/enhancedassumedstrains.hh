@@ -10,8 +10,10 @@
 #pragma once
 #if HAVE_DUNE_LOCALFEFUNCTIONS
 #  include <dune/localfefunctions/derivativetransformators.hh>
+#  include <dune/localfefunctions/linearAlgebraHelper.hh>
 #  include <dune/localfefunctions/meta.hh>
 
+#  include <ikarus/finiteelements/fehelper.hh>
 #  include <ikarus/finiteelements/ferequirements.hh>
 #  include <ikarus/utils/eigendunetransformations.hh>
 
@@ -467,14 +469,11 @@ namespace Ikarus {
 
       if (isDisplacementBased()) return;
 
-      const auto& d        = req.getGlobalSolution(Ikarus::FESolutions::displacement);
-      const auto C         = DisplacementBasedElement::getMaterialTangentFunction(req.getFERequirements());
-      const auto& numNodes = DisplacementBasedElement::numberOfNodes;
-
-      Eigen::VectorXd disp(localView().size());
-      for (auto i = 0U; i < numNodes; ++i)
-        for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
-          disp[i * Traits::mydim + k2] = d[localView().index(localView().tree().child(k2).localIndex(i))[0]];
+      const auto& par           = req.getFERequirements();
+      const auto C              = DisplacementBasedElement::materialTangentFunction(req.getFERequirements());
+      const auto& numberOfNodes = DisplacementBasedElement::numberOfNodes;
+      auto uFunction            = DisplacementBasedElement::displacementFunction(par);
+      const auto disp           = Dune::viewAsFlatEigenVector(uFunction.coefficientsRef());
 
       std::visit(
           [&]<typename EAST>(const EAST& easFunction) {
@@ -504,8 +503,8 @@ namespace Ikarus {
      * @param numberOfEASParameters_ The number of EAS parameters
      */
     void setEASType(int numberOfEASParameters_) {
-      const auto& numNodes = DisplacementBasedElement::numberOfNodes;
-      if (not((numNodes == 4 and Traits::mydim == 2) or (numNodes == 8 and Traits::mydim == 3))
+      const auto& numberOfNodes = DisplacementBasedElement::numberOfNodes;
+      if (not((numberOfNodes == 4 and Traits::mydim == 2) or (numberOfNodes == 8 and Traits::mydim == 3))
           and (not isDisplacementBased()))
         DUNE_THROW(Dune::NotImplemented, "EAS only supported for Q1 or H1 elements");
 
@@ -561,25 +560,14 @@ namespace Ikarus {
       DisplacementBasedElement::calculateVectorImpl(par, force, dx);
       if (isDisplacementBased()) return;
       using namespace Dune;
-      const auto& d       = par.getGlobalSolution(Ikarus::FESolutions::displacement);
-      auto strainFunction = DisplacementBasedElement::getStrainFunction(par, dx);
-      Eigen::VectorX<ScalarType> disp(localView().size());
-      const auto& numNodes = DisplacementBasedElement::numberOfNodes;
-
-      // FIXME this should not be needed in the future strainFunction should be able to hand out this vector
-      if (dx)
-        for (auto i = 0U; i < numNodes; ++i)
-          for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
-            disp[i * Traits::mydim + k2] = dx.value()[i * Traits::mydim + k2]
-                                           + d[localView().index(localView().tree().child(k2).localIndex(i))[0]];
-      else
-        for (auto i = 0U; i < numNodes; ++i)
-          for (auto k2 = 0U; k2 < Traits::mydim; ++k2)
-            disp[i * Traits::mydim + k2] = d[localView().index(localView().tree().child(k2).localIndex(i))[0]];
+      const auto uFunction      = DisplacementBasedElement::displacementFunction(par, dx);
+      auto strainFunction       = DisplacementBasedElement::strainFunction(par, dx);
+      const auto& numberOfNodes = DisplacementBasedElement::numberOfNodes;
+      const auto disp           = Dune::viewAsFlatEigenVector(uFunction.coefficientsRef());
 
       using namespace Dune::DerivativeDirections;
 
-      auto C         = DisplacementBasedElement::getMaterialTangentFunction(par);
+      auto C         = DisplacementBasedElement::materialTangentFunction(par);
       const auto geo = localView().element().geometry();
 
       // Internal forces from enhanced strains
@@ -597,9 +585,10 @@ namespace Ikarus {
                 const double intElement = geo.integrationElement(gp.position()) * gp.weight();
                 const auto CEval        = C(gpIndex);
                 auto stresses           = (CEval * M * alpha).eval();
-                for (size_t i = 0; i < numNodes; ++i) {
+                for (size_t i = 0; i < numberOfNodes; ++i) {
                   const auto bopI = strainFunction.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
-                  force.template segment<Traits::mydim>(Traits::mydim * i) += bopI.transpose() * stresses * intElement;
+                  force.template segment<Traits::worlddim>(Traits::worlddim * i)
+                      += bopI.transpose() * stresses * intElement;
                 }
               }
             }
@@ -619,10 +608,10 @@ namespace Ikarus {
       using namespace Dune;
       using namespace Dune::DerivativeDirections;
 
-      auto strainFunction = DisplacementBasedElement::getStrainFunction(par);
-      const auto C        = DisplacementBasedElement::getMaterialTangentFunction(par);
-      const auto geo      = localView().element().geometry();
-      const auto numNodes = DisplacementBasedElement::numberOfNodes;
+      auto strainFunction      = DisplacementBasedElement::strainFunction(par);
+      const auto C             = DisplacementBasedElement::materialTangentFunction(par);
+      const auto geo           = localView().element().geometry();
+      const auto numberOfNodes = DisplacementBasedElement::numberOfNodes;
       DMat.setZero();
       LMat.setZero(enhancedStrainSize, localView().size());
       for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
@@ -630,7 +619,7 @@ namespace Ikarus {
         const auto CEval  = C(gpIndex);
         const double detJ = geo.integrationElement(gp.position());
         DMat += M.transpose() * CEval * M * detJ * gp.weight();
-        for (size_t i = 0U; i < numNodes; ++i) {
+        for (size_t i = 0U; i < numberOfNodes; ++i) {
           const size_t I = Traits::worlddim * i;
           const auto Bi  = strainFunction.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
           LMat.template block<enhancedStrainSize, Traits::worlddim>(0, I)
