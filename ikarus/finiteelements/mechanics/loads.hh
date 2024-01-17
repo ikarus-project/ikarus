@@ -21,11 +21,11 @@ namespace Ikarus {
                 const std::optional<const Eigen::VectorX<ScalarType>> dx = std::nullopt) {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
-      const auto [uFunction, uNodes] = ele.getDisplacementFunction(par, dx);
+      const auto uFunction           = ele.displacementFunction(par, dx);
       const auto geo                 = ele.localView().element().geometry();
       const auto& lambda             = par.getParameter(Ikarus::FEParameter::loadfactor);
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
-        const Eigen::Vector<double, worldDim> fext = ele.volumeLoad(toEigen(geo.global(gp.position())), lambda);
+        const Eigen::Vector<double, worldDim> fext = ele.volumeLoad(geo.global(gp.position()), lambda);
         const double intElement                    = geo.integrationElement(gp.position()) * gp.weight();
         for (size_t i = 0; i < ele.numberOfNodes; ++i) {
           const auto udCi = uFunction.evaluateDerivative(gpIndex, wrt(coeff(i)));
@@ -41,7 +41,7 @@ namespace Ikarus {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
       const auto& lambda             = par.getParameter(Ikarus::FEParameter::loadfactor);
-      const auto [uFunction, uNodes] = ele.getDisplacementFunction(par, dx);
+      const auto uFunction           = ele.displacementFunction(par, dx);
       auto element                   = ele.localView().element();
       for (auto&& intersection : intersections(tractionBoundary->gridView(), element)) {
         if (not tractionBoundary->contains(intersection)) continue;
@@ -59,7 +59,7 @@ namespace Ikarus {
 
             /// Value of the Neumann data at the current position
             auto neumannValue
-                = ele.neumannBoundaryLoad(toEigen(intersection.geometry().global(curQuad.position())), lambda);
+                = ele.neumannBoundaryLoad(intersection.geometry().global(curQuad.position()), lambda);
             force.template segment<worldDim>(worldDim * i) -= udCi * neumannValue * curQuad.weight() * intElement;
           }
         }

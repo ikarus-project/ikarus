@@ -309,8 +309,7 @@ namespace Ikarus {
                              const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
-      const auto eps = getStrainFunction(par, dx);
-      const auto geo = this->localView().element().geometry();
+      const auto eps = strainFunction(par, dx);
       Loads loads(*this);
 
       // Internal forces

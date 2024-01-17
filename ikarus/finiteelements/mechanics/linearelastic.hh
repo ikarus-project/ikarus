@@ -269,12 +269,11 @@ namespace Ikarus {
     template <typename ScalarType>
     void calculateVectorImpl(const FERequirementType& par, typename Traits::template VectorType<ScalarType> force,
                              const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
-      const auto eps = getStrainFunction(par, dx);
+      const auto eps = strainFunction(par, dx);
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
 
-      const auto C   = materialTangent();
-      const auto geo = this->localView().element().geometry();
+      const auto C = materialTangent();
       Loads loads(*this);
 
       // Internal forces
