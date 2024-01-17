@@ -259,6 +259,7 @@ namespace Ikarus {
         DUNE_THROW(Dune::NotImplemented, "The requested result type is NOT implemented.");
     }
 
+    std::shared_ptr<const Geometry> geo_;
     Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType>> localBasis;
     std::function<Eigen::Vector<double, worldDim>(const Dune::FieldVector<double, worldDim>&, const double&)>
         volumeLoad;
@@ -268,7 +269,6 @@ namespace Ikarus {
     Material mat;
     size_t numberOfNodes{0};
     int order{};
-    std::shared_ptr<const Geometry> geo_;
 
   protected:
     template <typename ScalarType>

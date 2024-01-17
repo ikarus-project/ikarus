@@ -50,6 +50,7 @@ namespace Ikarus {
     static constexpr int myDim    = Traits::mydim;
     static constexpr int worldDim = Traits::worlddim;
     using LocalBasisType          = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
+
     static constexpr int membraneStrainSize = 3;
     static constexpr int bendingStrainSize  = 3;
 
@@ -193,6 +194,7 @@ namespace Ikarus {
       DUNE_THROW(Dune::NotImplemented, "No results are implemented");
     }
 
+    std::shared_ptr<const Geometry> geo_;
     Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType>> localBasis;
     std::function<Eigen::Vector<double, worldDim>(const Dune::FieldVector<double, worldDim>&, const double&)>
         volumeLoad;
@@ -205,7 +207,6 @@ namespace Ikarus {
     double thickness_;
     size_t numberOfNodes{0};
     int order{};
-    std::shared_ptr<const Geometry> geo_;
 
   protected:
     /**
