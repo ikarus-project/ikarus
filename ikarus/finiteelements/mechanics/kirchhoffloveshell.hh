@@ -354,10 +354,10 @@ namespace Ikarus {
       const auto uFunction = displacementFunction(par, dx);
       const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
       ScalarType energy    = 0.0;
-        const auto disp           = Dune::viewAsFlatEigenVector(uFunction.coefficientsRef());
-        Eigen::VectorX<ScalarType> force;
-        force.setZero(numberOfNodes * worldDim);
-        Loads loads(*this);
+      const auto disp      = Dune::viewAsFlatEigenVector(uFunction.coefficientsRef());
+      Eigen::VectorX<ScalarType> force;
+      force.setZero(numberOfNodes * worldDim);
+      Loads loads(*this);
 
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
         const auto [C, epsV, kappaV, j, J, h, H, a3N, a3]
@@ -368,16 +368,16 @@ namespace Ikarus {
         energy += (membraneEnergy + bendingEnergy) * geo_->integrationElement(gp.position()) * gp.weight();
       }
 
-        // External forces volume forces over the domain
-        if (volumeLoad) loads.volume(par, force, dx);
-        energy += static_cast<ScalarType>(force.transpose() * disp);
-        force.setZero();
+      // External forces volume forces over the domain
+      if (volumeLoad) loads.volume(par, force, dx);
+      energy += static_cast<ScalarType>(force.transpose() * disp);
+      force.setZero();
 
-        // line or surface loads, i.e., neumann boundary
-        if (not neumannBoundary and not neumannBoundaryLoad) return energy;
-        loads.traction(par, neumannBoundary, force, dx);
+      // line or surface loads, i.e., neumann boundary
+      if (not neumannBoundary and not neumannBoundaryLoad) return energy;
+      loads.traction(par, neumannBoundary, force, dx);
 
-        energy += static_cast<ScalarType>(force.transpose() * disp);
+      energy += static_cast<ScalarType>(force.transpose() * disp);
       return energy;
     }
 

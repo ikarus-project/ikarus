@@ -21,9 +21,9 @@ namespace Ikarus {
                 const std::optional<const Eigen::VectorX<ScalarType>> dx = std::nullopt) {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
-      const auto uFunction           = ele.displacementFunction(par, dx);
-      const auto geo                 = ele.localView().element().geometry();
-      const auto& lambda             = par.getParameter(Ikarus::FEParameter::loadfactor);
+      const auto uFunction = ele.displacementFunction(par, dx);
+      const auto geo       = ele.localView().element().geometry();
+      const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
         const Eigen::Vector<double, worldDim> fext = ele.volumeLoad(geo.global(gp.position()), lambda);
         const double intElement                    = geo.integrationElement(gp.position()) * gp.weight();
@@ -40,9 +40,9 @@ namespace Ikarus {
                   const std::optional<const Eigen::VectorX<ScalarType>> dx = std::nullopt) {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
-      const auto& lambda             = par.getParameter(Ikarus::FEParameter::loadfactor);
-      const auto uFunction           = ele.displacementFunction(par, dx);
-      auto element                   = ele.localView().element();
+      const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
+      const auto uFunction = ele.displacementFunction(par, dx);
+      auto element         = ele.localView().element();
       for (auto&& intersection : intersections(tractionBoundary->gridView(), element)) {
         if (not tractionBoundary->contains(intersection)) continue;
 
@@ -58,8 +58,7 @@ namespace Ikarus {
             const auto udCi = uFunction.evaluateDerivative(quadPos, wrt(coeff(i)));
 
             /// Value of the Neumann data at the current position
-            auto neumannValue
-                = ele.neumannBoundaryLoad(intersection.geometry().global(curQuad.position()), lambda);
+            auto neumannValue = ele.neumannBoundaryLoad(intersection.geometry().global(curQuad.position()), lambda);
             force.template segment<worldDim>(worldDim * i) -= udCi * neumannValue * curQuad.weight() * intElement;
           }
         }

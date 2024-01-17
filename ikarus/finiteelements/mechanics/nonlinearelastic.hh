@@ -281,10 +281,10 @@ namespace Ikarus {
       const auto eps       = strainFunction(par, dx);
       const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
       ScalarType energy    = 0.0;
-        const auto disp           = Dune::viewAsFlatEigenVector(uFunction.coefficientsRef());
-        Eigen::VectorX<ScalarType> force;
-        force.setZero(numberOfNodes * worldDim);
-        Loads loads(*this);
+      const auto disp      = Dune::viewAsFlatEigenVector(uFunction.coefficientsRef());
+      Eigen::VectorX<ScalarType> force;
+      force.setZero(numberOfNodes * worldDim);
+      Loads loads(*this);
 
       for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
         const auto EVoigt         = (eps.evaluate(gpIndex, on(gridElement))).eval();

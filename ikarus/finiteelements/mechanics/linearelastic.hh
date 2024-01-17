@@ -242,7 +242,7 @@ namespace Ikarus {
       using namespace Dune;
       Eigen::VectorX<ScalarType> force;
       force.setZero(numberOfNodes * worldDim);
-        const auto disp           = Dune::viewAsFlatEigenVector(uFunction.coefficientsRef());
+      const auto disp = Dune::viewAsFlatEigenVector(uFunction.coefficientsRef());
 
       const auto C = materialTangent();
 
