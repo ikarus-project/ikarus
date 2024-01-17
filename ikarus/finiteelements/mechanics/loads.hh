@@ -1,9 +1,23 @@
 // SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * @file loads.hh
+ * @brief Definition of the Loads class for application of loads for finite element analysis.
+ * @ingroup mechanics
+ */
+
 #pragma once
 
 namespace Ikarus {
+
+  /**
+   * @brief Loads class represents different types of loads that can be applied.
+   *
+   * @ingroup mechanics
+   *
+   * @tparam DisplacementBasedElement The type of the displacement-based finite element.
+   */
   template <typename DisplacementBasedElement>
   class Loads {
   public:
@@ -12,10 +26,23 @@ namespace Ikarus {
     static constexpr int myDim    = Traits::mydim;
     static constexpr int worldDim = Traits::worlddim;
 
+    /**
+     * @brief Constructor for the Loads class.
+     *
+     * @param p_ele The element on which the load is applied.
+     */
     explicit Loads(const DisplacementBasedElement p_ele) : ele{p_ele} {
       order = 2 * ele.localView().tree().child(0).finiteElement().localBasis().order();
     }
 
+    /**
+     * @brief Applies the distributed volume loads on the element domain.
+     *
+     * @tparam ScalarType The scalar type for the force vector.
+     * @param par The FERequirementType object.
+     * @param force The force vector to be updated.
+     * @param dx Optional displacement vector.
+     */
     template <typename ScalarType>
     void volume(const FERequirementType& par, typename Traits::template VectorType<ScalarType> force,
                 const std::optional<const Eigen::VectorX<ScalarType>> dx = std::nullopt) {
@@ -34,6 +61,16 @@ namespace Ikarus {
       }
     }
 
+    /**
+     * @brief Applies the distributed traction loads on the element boundary.
+     *
+     * @tparam ScalarType The scalar type for the force vector.
+     * @tparam BoundaryType The type for the traction boundary.
+     * @param par The FERequirementType object.
+     * @param tractionBoundary The element boundary where traction load is applied.
+     * @param force The force vector to be updated.
+     * @param dx Optional displacement vector.
+     */
     template <typename ScalarType, typename BoundaryType>
     void traction(const FERequirementType& par, const BoundaryType& tractionBoundary,
                   typename Traits::template VectorType<ScalarType> force,
