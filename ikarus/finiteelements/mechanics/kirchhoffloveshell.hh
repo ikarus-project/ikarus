@@ -36,22 +36,27 @@ namespace Ikarus {
    * @tparam useEigenRef A boolean indicating whether to use Eigen references for efficiency.
    */
   template <typename Basis_, typename FERequirements_ = FERequirements<>, bool useEigenRef = false>
-  class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis> {
+  class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis>,
+                             public Volume<KirchhoffLoveShell<Basis_, FERequirements_, useEigenRef>,
+                                           TraitsFromFE<Basis_, FERequirements_, useEigenRef>>,
+                             public Traction<KirchhoffLoveShell<Basis_, FERequirements_, useEigenRef>,
+                                             TraitsFromFE<Basis_, FERequirements_, useEigenRef>> {
   public:
-    using Basis                   = Basis_;
-    using FlatBasis               = typename Basis::FlatBasis;
-    using BasePowerFE             = PowerBasisFE<FlatBasis>;  // Handles globalIndices function
-    using FERequirementType       = FERequirements_;
-    using ResultRequirementsType  = ResultRequirements<FERequirementType>;
-    using LocalView               = typename FlatBasis::LocalView;
-    using Element                 = typename LocalView::Element;
-    using Geometry                = typename Element::Geometry;
-    using GridView                = typename FlatBasis::GridView;
-    using Traits                  = TraitsFromLocalView<LocalView, useEigenRef>;
-    static constexpr int myDim    = Traits::mydim;
-    static constexpr int worldDim = Traits::worlddim;
-    using LocalBasisType          = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
+    using Traits                 = TraitsFromFE<Basis_, FERequirements_, useEigenRef>;
+    using Basis                  = typename Traits::Basis;
+    using FlatBasis              = typename Traits::FlatBasis;
+    using FERequirementType      = typename Traits::FERequirementType;
+    using LocalView              = typename Traits::LocalView;
+    using Geometry               = typename Traits::Geometry;
+    using GridView               = typename Traits::GridView;
+    using BasePowerFE            = PowerBasisFE<FlatBasis>;  // Handles globalIndices function
+    using ResultRequirementsType = ResultRequirements<FERequirementType>;
+    using VolumeType             = Volume<KirchhoffLoveShell<Basis_, FERequirements_, useEigenRef>, Traits>;
+    using TractionType           = Traction<KirchhoffLoveShell<Basis_, FERequirements_, useEigenRef>, Traits>;
+    using LocalBasisType         = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
 
+    static constexpr int myDim              = Traits::mydim;
+    static constexpr int worldDim           = Traits::worlddim;
     static constexpr int membraneStrainSize = 3;
     static constexpr int bendingStrainSize  = 3;
 
@@ -99,7 +104,8 @@ namespace Ikarus {
                        const BoundaryPatch<GridView>* p_neumannBoundary = nullptr,
                        NeumannBoundaryLoad p_neumannBoundaryLoad        = {})
         : BasePowerFE(globalBasis.flat(), element),
-          neumannBoundary{p_neumannBoundary},
+          VolumeType(*this, p_volumeLoad),
+          TractionType(*this, p_neumannBoundary, p_neumannBoundaryLoad),
           emod_{emod},
           nu_{nu},
           thickness_{thickness} {
@@ -107,25 +113,18 @@ namespace Ikarus {
       auto& first_child = this->localView().tree().child(0);
       const auto& fe    = first_child.finiteElement();
       geo_              = std::make_shared<const Geometry>(this->localView().element().geometry());
-      numberOfNodes     = fe.size();
-      order             = 2 * (fe.localBasis().order());
+      numberOfNodes_    = fe.size();
+      order_            = 2 * (fe.localBasis().order());
       localBasis        = Dune::CachedLocalBasis(fe.localBasis());
-      if constexpr (requires { this->localView().element().impl().getQuadratureRule(order); })
+      if constexpr (requires { this->localView().element().impl().getQuadratureRule(order_); })
         if (this->localView().element().impl().isTrimmed())
-          localBasis.bind(this->localView().element().impl().getQuadratureRule(order), Dune::bindDerivatives(0, 1, 2));
+          localBasis.bind(this->localView().element().impl().getQuadratureRule(order_), Dune::bindDerivatives(0, 1, 2));
         else
-          localBasis.bind(Dune::QuadratureRules<double, myDim>::rule(this->localView().element().type(), order),
+          localBasis.bind(Dune::QuadratureRules<double, myDim>::rule(this->localView().element().type(), order_),
                           Dune::bindDerivatives(0, 1, 2));
       else
-        localBasis.bind(Dune::QuadratureRules<double, myDim>::rule(this->localView().element().type(), order),
+        localBasis.bind(Dune::QuadratureRules<double, myDim>::rule(this->localView().element().type(), order_),
                         Dune::bindDerivatives(0, 1, 2));
-
-      if constexpr (!std::is_same_v<VolumeLoad, utils::LoadDefault>) volumeLoad = p_volumeLoad;
-      if constexpr (!std::is_same_v<NeumannBoundaryLoad, utils::LoadDefault>)
-        neumannBoundaryLoad = p_neumannBoundaryLoad;
-
-      assert(((not p_neumannBoundary and not neumannBoundaryLoad) or (p_neumannBoundary and neumannBoundaryLoad))
-             && "If you pass a Neumann boundary you should also pass the function for the Neumann load!");
     }
 
   public:
@@ -143,10 +142,14 @@ namespace Ikarus {
     auto displacementFunction(const FERequirementType& par,
                               const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
       const auto& d = par.getGlobalSolution(Ikarus::FESolutions::displacement);
-      auto disp     = Ikarus::FEHelper::localSolutionBlockVector<FERequirementType>(d, this->localView(), dx);
+      auto disp     = Ikarus::FEHelper::localSolutionBlockVector<Traits>(d, this->localView(), dx);
       Dune::StandardLocalFunction uFunction(localBasis, disp, geo_);
       return uFunction;
     }
+
+    std::shared_ptr<const Geometry> geometry() const { return geo_; }
+    [[nodiscard]] size_t numberOfNodes() const { return numberOfNodes_; }
+    [[nodiscard]] int order() const { return order_; }
 
     /**
      * @brief Calculate the scalar value.
@@ -197,17 +200,12 @@ namespace Ikarus {
 
     std::shared_ptr<const Geometry> geo_;
     Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType>> localBasis;
-    std::function<Eigen::Vector<double, worldDim>(const Dune::FieldVector<double, worldDim>&, const double&)>
-        volumeLoad;
-    std::function<Eigen::Vector<double, worldDim>(const Dune::FieldVector<double, worldDim>&, const double&)>
-        neumannBoundaryLoad;
-    const BoundaryPatch<GridView>* neumannBoundary;
     DefaultMembraneStrain membraneStrain;
     double emod_;
     double nu_;
     double thickness_;
-    size_t numberOfNodes{0};
-    int order{};
+    size_t numberOfNodes_{0};
+    int order_{};
 
   protected:
     /**
@@ -283,12 +281,12 @@ namespace Ikarus {
 
         const auto& Nd  = localBasis.evaluateJacobian(gpIndex);
         const auto& Ndd = localBasis.evaluateSecondDerivatives(gpIndex);
-        for (size_t i = 0; i < numberOfNodes; ++i) {
+        for (size_t i = 0; i < numberOfNodes_; ++i) {
           Eigen::Matrix<ScalarType, membraneStrainSize, worldDim> bopIMembrane
               = membraneStrain.derivative(gp.position(), jE, Nd, *geo_, uFunction, localBasis, i);
 
           Eigen::Matrix<ScalarType, bendingStrainSize, worldDim> bopIBending = bopBending(jE, h, Nd, Ndd, i, a3N, a3);
-          for (size_t j = i; j < numberOfNodes; ++j) {
+          for (size_t j = i; j < numberOfNodes_; ++j) {
             auto KBlock = K.template block<worldDim, worldDim>(worldDim * i, worldDim * j);
             Eigen::Matrix<ScalarType, membraneStrainSize, worldDim> bopJMembrane
                 = membraneStrain.derivative(gp.position(), jE, Nd, *geo_, uFunction, localBasis, j);
@@ -306,6 +304,8 @@ namespace Ikarus {
         }
       }
       K.template triangularView<Eigen::StrictlyLower>() = K.transpose();
+      VolumeType::calculateMatrix(par, K, dx);
+      TractionType::calculateMatrix(par, K, dx);
     }
 
     template <typename ScalarType>
@@ -316,7 +316,6 @@ namespace Ikarus {
       using namespace Dune;
       const auto uFunction = displacementFunction(par, dx);
       const auto& lambda   = par.getParameter(FEParameter::loadfactor);
-      Loads loads(*this);
 
       // Internal forces
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
@@ -327,7 +326,7 @@ namespace Ikarus {
 
         const auto& Nd  = localBasis.evaluateJacobian(gpIndex);
         const auto& Ndd = localBasis.evaluateSecondDerivatives(gpIndex);
-        for (size_t i = 0; i < numberOfNodes; ++i) {
+        for (size_t i = 0; i < numberOfNodes_; ++i) {
           Eigen::Matrix<ScalarType, 3, 3> bopIMembrane
               = membraneStrain.derivative(gp.position(), jE, Nd, *geo_, uFunction, localBasis, i);
           Eigen::Matrix<ScalarType, 3, 3> bopIBending = bopBending(jE, h, Nd, Ndd, i, a3N, a3);
@@ -339,11 +338,10 @@ namespace Ikarus {
       }
 
       // External forces volume forces over the domain
-      if (volumeLoad) loads.volume(par, force, dx);
+      VolumeType::calculateVector(par, force, dx);
 
       // External forces, boundary forces, i.e., at the Neumann boundary
-      if (not neumannBoundary and not neumannBoundaryLoad) return;
-      loads.traction(par, neumannBoundary, force, dx);
+      TractionType::calculateVector(par, force, dx);
     }
 
     template <typename ScalarType>
@@ -354,10 +352,6 @@ namespace Ikarus {
       const auto uFunction = displacementFunction(par, dx);
       const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
       ScalarType energy    = 0.0;
-      const auto disp      = Dune::viewAsFlatEigenVector(uFunction.coefficientsRef());
-      Eigen::VectorX<ScalarType> force;
-      force.setZero(numberOfNodes * worldDim);
-      Loads loads(*this);
 
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
         const auto [C, epsV, kappaV, j, J, h, H, a3N, a3]
@@ -369,15 +363,10 @@ namespace Ikarus {
       }
 
       // External forces volume forces over the domain
-      if (volumeLoad) loads.volume(par, force, dx);
-      energy += static_cast<ScalarType>(force.transpose() * disp);
-      force.setZero();
+      energy += VolumeType::calculateScalar(par, dx);
 
       // line or surface loads, i.e., neumann boundary
-      if (not neumannBoundary and not neumannBoundaryLoad) return energy;
-      loads.traction(par, neumannBoundary, force, dx);
-
-      energy += static_cast<ScalarType>(force.transpose() * disp);
+      energy += TractionType::calculateScalar(par, dx);
       return energy;
     }
 

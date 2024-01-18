@@ -56,14 +56,32 @@ namespace Ikarus {
   }
 
   /**
-   * \brief Traits for handling local views.
+   * \brief Traits for handling finite elements.
    *
-   * \tparam LocalView Type of the local view.
+   * \tparam Basis_ The basis type for the finite element.
+   * \tparam FERequirements_ The requirements for the finite element.
    * \tparam useRef Boolean indicating whether to use Eigen::Ref for VectorType and MatrixType.
    */
-  template <typename LocalView, bool useRef = false>
-  struct TraitsFromLocalView {
+  template <typename Basis_, typename FERequirements_, bool useRef = false>
+  struct TraitsFromFE {
+    using Basis             = Basis_;
+    using FERequirementType = FERequirements_;
+
+    /** \brief Type of the flat basis */
+    using FlatBasis = typename Basis::FlatBasis;
+
+    /** \brief Type of the local view */
+    using LocalView = typename FlatBasis::LocalView;
+
+    /** \brief Type of the grid view */
+    using GridView = typename FlatBasis::GridView;
+
+    /** \brief Type of the grid entity */
     using GridEntity = typename LocalView::Element;
+
+    /** \brief Type of the element geometry */
+    using Geometry = typename GridEntity::Geometry;
+
     /** \brief Dimension of the world space */
     static constexpr int worlddim = GridEntity::Geometry::coorddimension;
 
