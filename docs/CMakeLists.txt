@@ -11,7 +11,7 @@ add_subdirectory(website/doxygen)
 
 add_custom_target(
   site
-  COMMAND xvfb-run -a mkdocs build --config-file mkdocs.insiders.yml
+  COMMAND mkdocs build --config-file mkdocs.insiders.yml
   WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 )
 

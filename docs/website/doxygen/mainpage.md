@@ -1,4 +1,4 @@
-# Introduction {#mainpage}
+# Introduction
 
 <!--
 SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
@@ -37,7 +37,7 @@ the academic context, please cite publication:
 @data{darus-3303_2023,
 author = {Müller, Alexander and Vinod Kumar Mitruka, Tarun Kumar Mitruka},
 publisher = {DaRUS},
-title = {{Ikarus v0.3}},
+title = {Ikarus v0.3},
 year = {2023},
 version = {V1},
 doi = {10.18419/darus-3303},

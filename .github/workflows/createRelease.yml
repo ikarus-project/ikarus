@@ -17,6 +17,9 @@ env:
 jobs:
   Run:
     runs-on: ubuntu-latest
+    container:
+      image: ikarusproject/ikarus-dev:latest
+      options: --memory-swap="20g" --memory="20g" --cpus="2" --user root
     steps:
       - uses: actions/checkout@v2
         with:
@@ -46,14 +49,14 @@ jobs:
         run: |
           pip install mkdocs mkdocs-macros-plugin mkdocs-drawio-exporter mkdocs-bibtex mike mkdocs-glightbox pillow cairosvg
           pip install git+https://${{ secrets.MKDOCS_TOKEN }}@github.com/squidfunk/mkdocs-material-insiders.git
-          sudo apt-get install libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev  
+          apt-get update && apt-get install -y libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev  
 
       - name: Build Doxygen
         run: |
-          git clone  https://github.com/jothepro/doxygen-awesome-css.git
+          git clone https://github.com/jothepro/doxygen-awesome-css.git
           cd doxygen-awesome-css
           make install
-          apt-get install texlive-base
+          apt-get install -y texlive-base
           cd ..
           cd repo
           mkdir build_docs
@@ -84,12 +87,30 @@ jobs:
           path: .cache
       - name: Build Website for offline use
         run: |
-          cd ./repo/docs
-          cmake -B .build
-          cmake --build .build --target site
-          mv site documentation-v$NEWVERSION
+          cd ./repo/
+          mkdir build_docs_offline
+          cd build_docs_offline
+          cmake .. -DBUILD_DOCS=1 -DDUNE_ENABLE_PYTHONBINDINGS=0
+          cmake --build . --target site
+          mv docs/site documentation-v$NEWVERSION
+          apt-get update && apt-get install -y tar gzip zip unzip bzip2
           tar -czf docs-v$NEWVERSION.tar.gz ./documentation-v$NEWVERSION
           zip -9r  docs-v$NEWVERSION.zip    ./documentation-v$NEWVERSION
+      - name: Install docker in Docker container
+        run: |
+          apt-get update
+          apt-get install ca-certificates curl gnupg
+          install -m 0755 -d /etc/apt/keyrings
+          curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+          chmod a+r /etc/apt/keyrings/docker.gpg
+          
+          # Add the repository to Apt sources:
+          echo \
+          "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+          $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+          tee /etc/apt/sources.list.d/docker.list > /dev/null
+          apt-get update
+          apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
       - name: Download, tag, push and save docker images for new release
         run: |
@@ -123,7 +144,6 @@ jobs:
           git config --local user.email "mueller@ibb.uni-stuttgart.de"
           git config --local user.name "AlexanderMueller"
           git tag -a v$NEWVERSION -m "Create release v$NEWVERSION"
-         
           cd ..
           mv ikarus-examples ikarus-examples-v$NEWVERSION
           tar -czf ikarus-examples-v$NEWVERSION.tar.gz ./ikarus-examples-v$NEWVERSION
@@ -154,8 +174,8 @@ jobs:
           prerelease: true
           title: ${{ github.event.inputs.releaseTag }}
           files: |
-            ./repo/docs/docs-v${{ github.event.inputs.releaseTag }}.tar.gz
-            ./repo/docs/docs-v${{ github.event.inputs.releaseTag }}.zip
+            ./repo/build_docs_offline/docs-v${{ github.event.inputs.releaseTag }}.tar.gz
+            ./repo/build_docs_offline/docs-v${{ github.event.inputs.releaseTag }}.zip
             ikarus-dev-docker-v${{ github.event.inputs.releaseTag }}.tar.gz
             ikarus-docker-v${{ github.event.inputs.releaseTag }}.tar.gz
             ikarus-examples-v${{ github.event.inputs.releaseTag }}.tar.gz
