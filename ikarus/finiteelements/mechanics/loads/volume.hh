@@ -36,31 +36,45 @@ namespace Ikarus {
     }
 
     /**
-     * @brief Const accessor to the underlying displacement-based finite element (CRTP).
+     * @brief Calculate the scalar value.
      *
-     * @return Const reference to the underlying displacement-based finite element.
+     * Calculates the scalar value based on the given FERequirements.
+     *
+     * @param req The FERequirements.
+     * @return The calculated scalar value.
      */
-    constexpr const DisplacementBasedElement& dbElement() const {
-      return static_cast<DisplacementBasedElement const&>(*this);
-    }
+    double calculateScalar(const FERequirementType& req) const { return calculateScalarImpl<double>(req); }
 
     /**
-     * @brief Calculates the scalar energy for the given volume load.
+     * @brief Calculate the vector associated with the given FERequirementType.
      *
-     * @tparam ScalarType The scalar type for the energy.
-     *
-     * @param par The FERequirementType object.
-     * @param dx Optional displacement vector.
-     * @return The scalar energy.
+     * @tparam ScalarType The scalar type for the calculation.
+     * @param req The FERequirementType object specifying the requirements for the calculation.
+     * @param force The vector to store the calculated result.
      */
+    void calculateVector(const FERequirementType& req, typename Traits::template VectorType<> force) const {
+      calculateVectorImpl<double>(req, force);
+    }
+    /**
+     * @brief Calculate the matrix associated with the given FERequirementType.
+     *
+     * @tparam ScalarType The scalar type for the calculation.
+     * @param req The FERequirementType object specifying the requirements for the calculation.
+     * @param K The matrix to store the calculated result.
+     */
+    void calculateMatrix(const FERequirementType& req, typename Traits::template MatrixType<> K) const {
+      calculateMatrixImpl<double>(req, K);
+    }
+
+  protected:
     template <typename ScalarType>
-    auto calculateScalar(const FERequirementType& par,
-                         const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const -> ScalarType {
+    auto calculateScalarImpl(const FERequirementType& par, const std::optional<const Eigen::VectorX<ScalarType>>& dx
+                                                           = std::nullopt) const -> ScalarType {
+      if (not volumeLoad) return 0.0;
+      ScalarType energy    = 0.0;
       const auto uFunction = dbElement().displacementFunction(par, dx);
       const auto geo       = dbElement().geometry();
-      ScalarType energy    = 0.0;
       const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
-      if (not(volumeLoad)) return energy;
 
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
         const auto uVal                      = uFunction.evaluate(gpIndex);
@@ -70,24 +84,15 @@ namespace Ikarus {
       return energy;
     }
 
-    /**
-     * @brief Calculates the force vector for the given volume load.
-     *
-     * @tparam ScalarType The scalar type for the force vector.
-     *
-     * @param par The FERequirementType object.
-     * @param force The force vector to be updated.
-     * @param dx Optional displacement vector.
-     */
     template <typename ScalarType>
-    void calculateVector(const FERequirementType& par, typename Traits::template VectorType<ScalarType> force,
-                         const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
+    void calculateVectorImpl(const FERequirementType& par, typename Traits::template VectorType<ScalarType> force,
+                             const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
+      if (not volumeLoad) return;
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
       const auto uFunction = dbElement().displacementFunction(par, dx);
       const auto geo       = dbElement().geometry();
       const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
-      if (not(volumeLoad)) return;
 
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
         const Eigen::Vector<double, worldDim> fext = volumeLoad(geo->global(gp.position()), lambda);
@@ -99,21 +104,21 @@ namespace Ikarus {
       }
     }
 
-    /**
-     * @brief Calculates the matrix stiffness for the given volume load.
-     *
-     * @tparam ScalarType The scalar type for the stiffness matrix.
-     *
-     * @param par The FERequirementType object.
-     * @param K Matrix to store the calculated stiffness.
-     * @param dx Optional displacement vector.
-     */
     template <typename ScalarType>
-    void calculateMatrix(const FERequirementType& par, typename Traits::template MatrixType<> K,
-                         const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {}
+    void calculateMatrixImpl(const FERequirementType& par, typename Traits::template MatrixType<> K,
+                             const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {}
 
   private:
     std::function<Eigen::Vector<double, worldDim>(const Dune::FieldVector<double, worldDim>&, const double&)>
         volumeLoad;
+
+    /**
+     * @brief Const accessor to the underlying displacement-based finite element (CRTP).
+     *
+     * @return Const reference to the underlying displacement-based finite element.
+     */
+    constexpr const DisplacementBasedElement& dbElement() const {
+      return static_cast<DisplacementBasedElement const&>(*this);
+    }
   };
 }  // namespace Ikarus

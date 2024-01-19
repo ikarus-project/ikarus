@@ -11,6 +11,8 @@
 #include <dune/common/float_cmp.hh>
 
 #include <Eigen/Core>
+
+#include <ikarus/finiteelements/ferequirements.hh>
 namespace Ikarus {
 
   /**
@@ -64,8 +66,14 @@ namespace Ikarus {
    */
   template <typename Basis_, typename FERequirements_, bool useRef = false>
   struct TraitsFromFE {
-    using Basis             = Basis_;
+    /** \brief Convenience typedef alias for basis type */
+    using Basis = Basis_;
+
+    /** \brief Convenience typedef alias for FE requirements type */
     using FERequirementType = FERequirements_;
+
+    /** \brief Type of the result requirements */
+    using ResultRequirementsType = ResultRequirements<FERequirementType>;
 
     /** \brief Type of the flat basis */
     using FlatBasis = typename Basis::FlatBasis;

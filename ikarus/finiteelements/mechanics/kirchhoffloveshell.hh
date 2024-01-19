@@ -50,8 +50,8 @@ namespace Ikarus {
     using Geometry               = typename Traits::Geometry;
     using GridView               = typename Traits::GridView;
     using Element                = typename Traits::Element;
+    using ResultRequirementsType = typename Traits::ResultRequirementsType;
     using BasePowerFE            = PowerBasisFE<FlatBasis>;  // Handles globalIndices function
-    using ResultRequirementsType = ResultRequirements<FERequirementType>;
     using VolumeType             = Volume<KirchhoffLoveShell<Basis_, FERequirements_, useEigenRef>, Traits>;
     using TractionType           = Traction<KirchhoffLoveShell<Basis_, FERequirements_, useEigenRef>, Traits>;
     using LocalBasisType         = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
@@ -199,6 +199,7 @@ namespace Ikarus {
       DUNE_THROW(Dune::NotImplemented, "No results are implemented");
     }
 
+  private:
     std::shared_ptr<const Geometry> geo_;
     Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType>> localBasis;
     DefaultMembraneStrain membraneStrain;
@@ -305,8 +306,10 @@ namespace Ikarus {
         }
       }
       K.template triangularView<Eigen::StrictlyLower>() = K.transpose();
-      VolumeType::calculateMatrix(par, K, dx);
-      TractionType::calculateMatrix(par, K, dx);
+
+      // Update due to displacement-dependent external loads, e.g., follower loads
+      VolumeType::calculateMatrixImpl(par, K, dx);
+      TractionType::calculateMatrixImpl(par, K, dx);
     }
 
     template <typename ScalarType>
@@ -339,10 +342,10 @@ namespace Ikarus {
       }
 
       // External forces volume forces over the domain
-      VolumeType::calculateVector(par, force, dx);
+      VolumeType::calculateVectorImpl(par, force, dx);
 
       // External forces, boundary forces, i.e., at the Neumann boundary
-      TractionType::calculateVector(par, force, dx);
+      TractionType::calculateVectorImpl(par, force, dx);
     }
 
     template <typename ScalarType>
@@ -364,10 +367,10 @@ namespace Ikarus {
       }
 
       // External forces volume forces over the domain
-      energy += VolumeType::calculateScalar(par, dx);
+      energy += VolumeType::calculateScalarImpl(par, dx);
 
       // line or surface loads, i.e., neumann boundary
-      energy += TractionType::calculateScalar(par, dx);
+      energy += TractionType::calculateScalarImpl(par, dx);
       return energy;
     }
 

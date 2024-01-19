@@ -55,8 +55,8 @@ namespace Ikarus {
     using Geometry               = typename Traits::Geometry;
     using GridView               = typename Traits::GridView;
     using Element                = typename Traits::Element;
+    using ResultRequirementsType = typename Traits::ResultRequirementsType;
     using BasePowerFE            = PowerBasisFE<FlatBasis>;  // Handles globalIndices function
-    using ResultRequirementsType = ResultRequirements<FERequirementType>;
     using Material               = Material_;
     using VolumeType             = Volume<NonLinearElastic<Basis_, Material_, FERequirements_, useEigenRef>, Traits>;
     using TractionType           = Traction<NonLinearElastic<Basis_, Material_, FERequirements_, useEigenRef>, Traits>;
@@ -239,8 +239,10 @@ namespace Ikarus {
           }
         }
       }
-      VolumeType::template calculateMatrix<double>(par, K);
-      TractionType::template calculateMatrix<double>(par, K);
+
+      // Update due to displacement-dependent external loads, e.g., follower loads
+      VolumeType::calculateMatrix(par, K);
+      TractionType::calculateMatrix(par, K);
     }
 
     /**
@@ -267,6 +269,7 @@ namespace Ikarus {
         DUNE_THROW(Dune::NotImplemented, "The requested result type is NOT implemented.");
     }
 
+  private:
     std::shared_ptr<const Geometry> geo_;
     Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType>> localBasis;
     Material mat;
@@ -291,10 +294,10 @@ namespace Ikarus {
       }
 
       // External forces volume forces over the domain
-      energy += VolumeType::calculateScalar(par, dx);
+      energy += VolumeType::calculateScalarImpl(par, dx);
 
       // line or surface loads, i.e., neumann boundary
-      energy += TractionType::calculateScalar(par, dx);
+      energy += TractionType::calculateScalarImpl(par, dx);
       return energy;
     }
 
@@ -317,10 +320,10 @@ namespace Ikarus {
       }
 
       // External forces volume forces over the domain
-      VolumeType::calculateVector(par, force, dx);
+      VolumeType::calculateVectorImpl(par, force, dx);
 
       // External forces, boundary forces, i.e., at the Neumann boundary
-      TractionType::calculateVector(par, force, dx);
+      TractionType::calculateVectorImpl(par, force, dx);
     }
   };
 }  // namespace Ikarus
