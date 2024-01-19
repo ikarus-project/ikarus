@@ -30,12 +30,12 @@ namespace Ikarus {
             bool forceAutoDiff = false>
   class AutoDiffFE : public RealFE_ {
   public:
-    using RealFE            = RealFE_;                                      ///< Type of the base finite element.
-    using Basis             = typename RealFE::Basis;                       ///< Type of the basis.
-    using LocalView         = typename Basis::FlatBasis::LocalView;         ///< Type of the local view.
-    using Traits            = TraitsFromLocalView<LocalView, useEigenRef>;  ///< Type traits for local view.
-    using Element           = typename LocalView::Element;                  ///< Type of the element.
-    using FERequirementType = FERequirementType_;  ///< Type of the Finite Element Requirements.
+    using RealFE            = RealFE_;                 ///< Type of the base finite element.
+    using Basis             = typename RealFE::Basis;  ///< Type of the basis.
+    using Traits            = TraitsFromFE<Basis, FERequirementType_, useEigenRef>;  ///< Type traits for local view.
+    using LocalView         = typename Traits::LocalView;                            ///< Type of the local view.
+    using Element           = typename Traits::Element;                              ///< Type of the element.
+    using FERequirementType = typename Traits::FERequirementType;  ///< Type of the Finite Element Requirements.
 
     /**
      * @brief Calculate the matrix associated with the finite element.

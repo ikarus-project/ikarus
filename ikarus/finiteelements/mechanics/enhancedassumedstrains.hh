@@ -471,7 +471,7 @@ namespace Ikarus {
 
       const auto& par           = req.getFERequirements();
       const auto C              = DisplacementBasedElement::materialTangentFunction(req.getFERequirements());
-      const auto& numberOfNodes = DisplacementBasedElement::numberOfNodes;
+      const auto& numberOfNodes = DisplacementBasedElement::numberOfNodes();
       auto uFunction            = DisplacementBasedElement::displacementFunction(par);
       const auto disp           = Dune::viewAsFlatEigenVector(uFunction.coefficientsRef());
 
@@ -503,7 +503,7 @@ namespace Ikarus {
      * @param numberOfEASParameters_ The number of EAS parameters
      */
     void setEASType(int numberOfEASParameters_) {
-      const auto& numberOfNodes = DisplacementBasedElement::numberOfNodes;
+      const auto& numberOfNodes = DisplacementBasedElement::numberOfNodes();
       if (not((numberOfNodes == 4 and Traits::mydim == 2) or (numberOfNodes == 8 and Traits::mydim == 3))
           and (not isDisplacementBased()))
         DUNE_THROW(Dune::NotImplemented, "EAS only supported for Q1 or H1 elements");
@@ -562,7 +562,7 @@ namespace Ikarus {
       using namespace Dune;
       const auto uFunction      = DisplacementBasedElement::displacementFunction(par, dx);
       auto strainFunction       = DisplacementBasedElement::strainFunction(par, dx);
-      const auto& numberOfNodes = DisplacementBasedElement::numberOfNodes;
+      const auto& numberOfNodes = DisplacementBasedElement::numberOfNodes();
       const auto disp           = Dune::viewAsFlatEigenVector(uFunction.coefficientsRef());
 
       using namespace Dune::DerivativeDirections;
@@ -611,7 +611,7 @@ namespace Ikarus {
       auto strainFunction      = DisplacementBasedElement::strainFunction(par);
       const auto C             = DisplacementBasedElement::materialTangentFunction(par);
       const auto geo           = localView().element().geometry();
-      const auto numberOfNodes = DisplacementBasedElement::numberOfNodes;
+      const auto numberOfNodes = DisplacementBasedElement::numberOfNodes();
       DMat.setZero();
       LMat.setZero(enhancedStrainSize, localView().size());
       for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {

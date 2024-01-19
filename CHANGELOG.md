@@ -27,6 +27,7 @@ via `pip install pyikarus` ([#152](https://github.com/ikarus-project/ikarus/pull
 - Added a default adaptive step sizing possibility and refactored loggers ([#193](https://github.com/ikarus-project/ikarus/pull/193))
 - Added a wrapper to fix Dirichlet BCs for Lagrange Nodes ([#222](https://github.com/ikarus-project/ikarus/pull/222))
 - Refactored `getDisplacementFunction` in finite elements ([#223](https://github.com/ikarus-project/ikarus/pull/223))
+- Refactored load functions in finite elements ([#221](https://github.com/ikarus-project/ikarus/pull/221))
 
 - Improve material library and Python bindings ([#186](https://github.com/ikarus-project/ikarus/pull/176)), default e.g.
   `StVenantKirchhoff` is

@@ -12,8 +12,7 @@ namespace Ikarus::FEHelper {
   /**
    * @brief Gets the local solution Dune block vector
    *
-   * @tparam FERequirementType Type of the FE requirements.
-   * @tparam LocalView Type of the local view.
+   * @tparam Traits Type of the FE traits.
    * @tparam ScalarType Scalar type for the local solution vector.
    *
    * @param x The global solution vector.
@@ -22,10 +21,10 @@ namespace Ikarus::FEHelper {
    *
    * @return A Dune block vector representing the solution quantities at each node.
    * */
-  template <typename FERequirementType, typename LocalView, typename ScalarType>
-  auto localSolutionBlockVector(const typename FERequirementType::SolutionVectorTypeRaw& x, const LocalView& localView,
+  template <typename Traits, typename ScalarType>
+  auto localSolutionBlockVector(const typename Traits::FERequirementType::SolutionVectorTypeRaw& x,
+                                const typename Traits::LocalView& localView,
                                 const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) {
-    using Traits           = TraitsFromLocalView<LocalView>;
     constexpr int worldDim = Traits::worlddim;
     const auto& fe         = localView.tree().child(0).finiteElement();
     Dune::BlockVector<Dune::RealTuple<ScalarType, worldDim>> localX(fe.size());
