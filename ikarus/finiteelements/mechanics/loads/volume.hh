@@ -26,6 +26,8 @@ namespace Ikarus {
     /**
      * @brief Constructor for the Loads class.
      *
+     * @tparam VolumeLoad The type for the volume load function.
+     *
      * @param p_volumeLoad Volume load function.
      */
     template <typename VolumeLoad>
@@ -43,7 +45,9 @@ namespace Ikarus {
     }
 
     /**
-     * @brief Calculates the scalar energy for the given FERequirementType.
+     * @brief Calculates the scalar energy for the given volume load.
+     *
+     * @tparam ScalarType The scalar type for the energy.
      *
      * @param par The FERequirementType object.
      * @param dx Optional displacement vector.
@@ -67,9 +71,10 @@ namespace Ikarus {
     }
 
     /**
-     * @brief Applies the distributed volume loads on the element domain.
+     * @brief Calculates the force vector for the given volume load.
      *
      * @tparam ScalarType The scalar type for the force vector.
+     *
      * @param par The FERequirementType object.
      * @param force The force vector to be updated.
      * @param dx Optional displacement vector.
@@ -95,7 +100,9 @@ namespace Ikarus {
     }
 
     /**
-     * @brief Calculates the matrix stiffness for the given FERequirementType.
+     * @brief Calculates the matrix stiffness for the given volume load.
+     *
+     * @tparam ScalarType The scalar type for the stiffness matrix.
      *
      * @param par The FERequirementType object.
      * @param K Matrix to store the calculated stiffness.

@@ -30,6 +30,7 @@ namespace Ikarus {
     /**
      * @brief Constructor for the Loads class.
      *
+     * @tparam NeumannBoundaryLoad The type for the Neumann boundary load function.
      * @param p_neumannBoundary Neumann boundary patch.
      * @param p_neumannBoundaryLoad Neumann boundary load function.
      */
@@ -53,7 +54,9 @@ namespace Ikarus {
     }
 
     /**
-     * @brief Calculates the scalar energy for the given FERequirementType.
+     * @brief Calculates the scalar energy for the given traction load.
+     *
+     * @tparam ScalarType The scalar type for the energy.
      *
      * @param par The FERequirementType object.
      * @param dx Optional displacement vector.
@@ -92,9 +95,10 @@ namespace Ikarus {
     }
 
     /**
-     * @brief Applies the distributed traction loads on the element boundary.
+     * @brief Calculates the force vector for the given traction load.
      *
      * @tparam ScalarType The scalar type for the force vector.
+     *
      * @param par The FERequirementType object.
      * @param force The force vector to be updated.
      * @param dx Optional displacement vector.
@@ -132,7 +136,9 @@ namespace Ikarus {
     }
 
     /**
-     * @brief Calculates the matrix stiffness for the given FERequirementType.
+     * @brief Calculates the matrix stiffness for the given traction load.
+     *
+     * @tparam ScalarType The scalar type for the stiffness matrix.
      *
      * @param par The FERequirementType object.
      * @param K Matrix to store the calculated stiffness.
