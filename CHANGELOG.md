@@ -1,9 +1,11 @@
-# Master (becomes Release v0.4)
+# Master (becomes Release v0.5)
 
 <!--
 SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 SPDX-License-Identifier: LGPL-3.0-or-later
 -->
+
+## Release v0.4 (...)
 
 - Add CODE_OF_CONDUCT.md file
 - Refactored Cmake and directory structure  ([#146](https://github.com/ikarus-project/ikarus/pull/146))
@@ -28,6 +30,7 @@ via `pip install pyikarus` ([#152](https://github.com/ikarus-project/ikarus/pull
 - Added a wrapper to fix Dirichlet BCs for Lagrange Nodes ([#222](https://github.com/ikarus-project/ikarus/pull/222))
 - Refactored `getDisplacementFunction` in finite elements ([#223](https://github.com/ikarus-project/ikarus/pull/223))
 - Refactored load functions in finite elements ([#221](https://github.com/ikarus-project/ikarus/pull/221))
+- Added doxygen class documentation ([#220](https://github.com/ikarus-project/ikarus/pull/220))
 
 - Improve material library and Python bindings ([#186](https://github.com/ikarus-project/ikarus/pull/176)), default e.g.
   `StVenantKirchhoff` is
@@ -36,7 +39,6 @@ via `pip install pyikarus` ([#152](https://github.com/ikarus-project/ikarus/pull
 - `Ikarus::ILinearSolver` is no template anymore and renamed and uses double, use
 `Ikarus::LinearSolverT<...>` instead ([#186](https://github.com/ikarus-project/ikarus/pull/176)),
   if you need a fancy scalar type
-- Added doxygen class documentation
 
 ## Release v0.3 (Prometheus)
 

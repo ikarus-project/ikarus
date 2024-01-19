@@ -28,6 +28,7 @@ jobs:
           pip install mkdocs-macros-plugin
           pip install mkdocs-drawio-exporter
           pip install mkdocs-glightbox
+          pip install mkdocs-material[imaging]
           pip install mike
           pip install mkdocs-bibtex
           pip install pillow cairosvg

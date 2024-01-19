@@ -17,11 +17,13 @@ add_custom_target(
 
 add_dependencies(site doxygen_ikarus)
 
+file(GLOB_RECURSE markdownFiles CONFIGURE_DEPENDS *.md)
+
 add_custom_target(
   localSite
   COMMAND ${MKDOCS_EXECUTABLE} serve
   WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-  DEPENDS mkdocs-macros.py mkdocs.yml
+  DEPENDS mkdocs-macros.py mkdocs.yml ${markdownFiles}
 )
 
 add_dependencies(localSite doxygen_ikarus)
