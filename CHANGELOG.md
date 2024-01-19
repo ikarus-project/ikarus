@@ -5,7 +5,7 @@ SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgar
 SPDX-License-Identifier: LGPL-3.0-or-later
 -->
 
-## Release v0.4 (...)
+## Release v0.4 (Ganymede)
 
 - Add CODE_OF_CONDUCT.md file
 - Refactored Cmake and directory structure  ([#146](https://github.com/ikarus-project/ikarus/pull/146))
