@@ -66,10 +66,10 @@ namespace Ikarus {
    */
   template <typename Basis_, typename FERequirements_, bool useRef = false>
   struct TraitsFromFE {
-    /** \brief Convenience typedef alias for basis type */
+    /** \brief Type of the basis of the finite element */
     using Basis = Basis_;
 
-    /** \brief Convenience typedef alias for FE requirements type */
+    /** \brief Type of the requirements for the finite element */
     using FERequirementType = FERequirements_;
 
     /** \brief Type of the result requirements */

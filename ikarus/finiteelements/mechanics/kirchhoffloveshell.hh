@@ -148,7 +148,7 @@ namespace Ikarus {
       return uFunction;
     }
 
-    std::shared_ptr<const Geometry> geometry() const { return geo_; }
+    const Geometry& geometry() const { return *geo_; }
     [[nodiscard]] size_t numberOfNodes() const { return numberOfNodes_; }
     [[nodiscard]] int order() const { return order_; }
 

@@ -78,8 +78,8 @@ namespace Ikarus {
 
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
         const auto uVal                      = uFunction.evaluate(gpIndex);
-        Eigen::Vector<double, worldDim> fext = volumeLoad(geo->global(gp.position()), lambda);
-        energy -= uVal.dot(fext) * geo->integrationElement(gp.position()) * gp.weight();
+        Eigen::Vector<double, worldDim> fext = volumeLoad(geo.global(gp.position()), lambda);
+        energy -= uVal.dot(fext) * geo.integrationElement(gp.position()) * gp.weight();
       }
       return energy;
     }
@@ -95,8 +95,8 @@ namespace Ikarus {
       const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
 
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
-        const Eigen::Vector<double, worldDim> fext = volumeLoad(geo->global(gp.position()), lambda);
-        const double intElement                    = geo->integrationElement(gp.position()) * gp.weight();
+        const Eigen::Vector<double, worldDim> fext = volumeLoad(geo.global(gp.position()), lambda);
+        const double intElement                    = geo.integrationElement(gp.position()) * gp.weight();
         for (size_t i = 0; i < dbElement().numberOfNodes(); ++i) {
           const auto udCi = uFunction.evaluateDerivative(gpIndex, wrt(coeff(i)));
           force.template segment<worldDim>(worldDim * i) -= udCi * fext * intElement;
