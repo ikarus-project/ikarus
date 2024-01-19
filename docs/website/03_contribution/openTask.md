@@ -33,7 +33,6 @@ The following task are open for your contributions.
 ## Finite elements
 
 * Nonlinear Reissner-Mindlin shell [@muller2022consistent]
-* Kirchhoff-Love shell
 * 3D-Beam
 * Standard beam and plate formulations
 * Add calculation of different stress measures (push-forward or pull-back of PK2 stresses or similar)
