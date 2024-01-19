@@ -26,26 +26,34 @@ namespace Ikarus {
     /**
      * @brief Constructor for the Loads class.
      *
-     * @param p_dispFE Displacement-based finite element.
      * @param p_volumeLoad Volume load function.
      */
     template <typename VolumeLoad>
-    explicit Volume(const DisplacementBasedElement& p_dispFE, VolumeLoad p_volumeLoad = {})
-        : dispFE{std::make_shared<DisplacementBasedElement>(p_dispFE)} {
+    explicit Volume(VolumeLoad p_volumeLoad = {}) {
       if constexpr (!std::is_same_v<VolumeLoad, utils::LoadDefault>) volumeLoad = p_volumeLoad;
+    }
+
+    /**
+     * @brief Const accessor to the underlying displacement-based finite element (CRTP).
+     *
+     * @return Const reference to the underlying displacement-based finite element.
+     */
+    constexpr const DisplacementBasedElement& dbElement() const {
+      return static_cast<DisplacementBasedElement const&>(*this);
     }
 
     /**
      * @brief Calculates the scalar energy for the given FERequirementType.
      *
      * @param par The FERequirementType object.
+     * @param dx Optional displacement vector.
      * @return The scalar energy.
      */
     template <typename ScalarType>
     auto calculateScalar(const FERequirementType& par,
                          const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const -> ScalarType {
-      const auto uFunction = dispFE->displacementFunction(par, dx);
-      const auto geo       = dispFE->geometry();
+      const auto uFunction = dbElement().displacementFunction(par, dx);
+      const auto geo       = dbElement().geometry();
       ScalarType energy    = 0.0;
       const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
       if (not(volumeLoad)) return energy;
@@ -71,27 +79,15 @@ namespace Ikarus {
                          const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
-
-      const auto& localView = dispFE->localView();
-      std::cout << "Indices in Volume class\n";
-      for (int i = 0; i < 2; ++i)
-        for (int j = 0; j < 4; ++j) {
-          const auto localIndex = localView.tree().child(i).localIndex(j);
-          std::cout << "localIndex\t" << localIndex << std::endl;
-          const auto globalIndex = localView.index(localIndex)[0];
-          std::cout << "globalIndex\t" << globalIndex << std::endl;
-        }
-      std::cout << "localView().size()\t" << localView.size() << std::endl;
-      std::cout << "finiteElement.size()\t" << localView.tree().child(0).finiteElement().size() << std::endl;
-      const auto uFunction = dispFE->displacementFunction(par, dx);
-      const auto geo       = dispFE->geometry();
+      const auto uFunction = dbElement().displacementFunction(par, dx);
+      const auto geo       = dbElement().geometry();
       const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
       if (not(volumeLoad)) return;
 
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
         const Eigen::Vector<double, worldDim> fext = volumeLoad(geo->global(gp.position()), lambda);
         const double intElement                    = geo->integrationElement(gp.position()) * gp.weight();
-        for (size_t i = 0; i < dispFE->numberOfNodes(); ++i) {
+        for (size_t i = 0; i < dbElement().numberOfNodes(); ++i) {
           const auto udCi = uFunction.evaluateDerivative(gpIndex, wrt(coeff(i)));
           force.template segment<worldDim>(worldDim * i) -= udCi * fext * intElement;
         }
@@ -103,13 +99,13 @@ namespace Ikarus {
      *
      * @param par The FERequirementType object.
      * @param K Matrix to store the calculated stiffness.
+     * @param dx Optional displacement vector.
      */
     template <typename ScalarType>
     void calculateMatrix(const FERequirementType& par, typename Traits::template MatrixType<> K,
                          const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {}
 
   private:
-    const std::shared_ptr<DisplacementBasedElement> dispFE;
     std::function<Eigen::Vector<double, worldDim>(const Dune::FieldVector<double, worldDim>&, const double&)>
         volumeLoad;
   };

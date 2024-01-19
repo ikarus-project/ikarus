@@ -80,8 +80,8 @@ namespace Ikarus {
                   VolumeLoad p_volumeLoad = {}, const BoundaryPatch<GridView>* p_neumannBoundary = nullptr,
                   NeumannBoundaryLoad p_neumannBoundaryLoad = {})
         : BaseDisp(globalBasis.flat(), element),
-          VolumeType(*this, p_volumeLoad),
-          TractionType(*this, p_neumannBoundary, p_neumannBoundaryLoad),
+          VolumeType(p_volumeLoad),
+          TractionType(p_neumannBoundary, p_neumannBoundaryLoad),
           emod_{emod},
           nu_{nu} {
       this->localView().bind(element);

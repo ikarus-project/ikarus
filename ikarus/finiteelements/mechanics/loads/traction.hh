@@ -30,14 +30,12 @@ namespace Ikarus {
     /**
      * @brief Constructor for the Loads class.
      *
-     * @param p_dispFE Displacement-based finite element.
      * @param p_neumannBoundary Neumann boundary patch.
      * @param p_neumannBoundaryLoad Neumann boundary load function.
      */
     template <typename NeumannBoundaryLoad>
-    explicit Traction(const DisplacementBasedElement& p_dispFE, const BoundaryPatch<GridView>* p_neumannBoundary,
-                      NeumannBoundaryLoad p_neumannBoundaryLoad)
-        : dispFE{std::make_shared<DisplacementBasedElement>(p_dispFE)}, neumannBoundary{p_neumannBoundary} {
+    explicit Traction(const BoundaryPatch<GridView>* p_neumannBoundary, NeumannBoundaryLoad p_neumannBoundaryLoad)
+        : neumannBoundary{p_neumannBoundary} {
       if constexpr (!std::is_same_v<NeumannBoundaryLoad, utils::LoadDefault>)
         neumannBoundaryLoad = p_neumannBoundaryLoad;
 
@@ -46,24 +44,34 @@ namespace Ikarus {
     }
 
     /**
+     * @brief Const accessor to the underlying displacement-based finite element (CRTP).
+     *
+     * @return Const reference to the underlying displacement-based finite element.
+     */
+    constexpr const DisplacementBasedElement& dbElement() const {
+      return static_cast<DisplacementBasedElement const&>(*this);
+    }
+
+    /**
      * @brief Calculates the scalar energy for the given FERequirementType.
      *
      * @param par The FERequirementType object.
+     * @param dx Optional displacement vector.
      * @return The scalar energy.
      */
     template <typename ScalarType>
     auto calculateScalar(const FERequirementType& par,
                          const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const -> ScalarType {
-      const auto uFunction = dispFE->displacementFunction(par, dx);
+      const auto uFunction = dbElement().displacementFunction(par, dx);
       ScalarType energy    = 0.0;
       const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
-      auto element         = dispFE->localView().element();
+      auto element         = dbElement().localView().element();
       if (not neumannBoundary and not neumannBoundaryLoad) return energy;
 
       for (auto&& intersection : intersections(neumannBoundary->gridView(), element)) {
         if (not neumannBoundary->contains(intersection)) continue;
 
-        const auto& quadLine = Dune::QuadratureRules<double, myDim - 1>::rule(intersection.type(), dispFE->order());
+        const auto& quadLine = Dune::QuadratureRules<double, myDim - 1>::rule(intersection.type(), dbElement().order());
 
         for (const auto& curQuad : quadLine) {
           // Local position of the quadrature point
@@ -96,23 +104,23 @@ namespace Ikarus {
                          const std::optional<const Eigen::VectorX<ScalarType>> dx = std::nullopt) const {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
-      const auto uFunction = dispFE->displacementFunction(par, dx);
+      const auto uFunction = dbElement().displacementFunction(par, dx);
       const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
-      auto element         = dispFE->localView().element();
+      auto element         = dbElement().localView().element();
       if (not neumannBoundary and not neumannBoundaryLoad) return;
 
       for (auto&& intersection : intersections(neumannBoundary->gridView(), element)) {
         if (not neumannBoundary->contains(intersection)) continue;
 
         /// Integration rule along the boundary
-        const auto& quadLine = Dune::QuadratureRules<double, myDim - 1>::rule(intersection.type(), dispFE->order());
+        const auto& quadLine = Dune::QuadratureRules<double, myDim - 1>::rule(intersection.type(), dbElement().order());
 
         for (const auto& curQuad : quadLine) {
           const Dune::FieldVector<double, myDim>& quadPos = intersection.geometryInInside().global(curQuad.position());
           const double intElement = intersection.geometry().integrationElement(curQuad.position());
 
           /// The value of the local function wrt the i-th coeff
-          for (size_t i = 0; i < dispFE->numberOfNodes(); ++i) {
+          for (size_t i = 0; i < dbElement().numberOfNodes(); ++i) {
             const auto udCi = uFunction.evaluateDerivative(quadPos, wrt(coeff(i)));
 
             /// Value of the Neumann data at the current position
@@ -128,13 +136,13 @@ namespace Ikarus {
      *
      * @param par The FERequirementType object.
      * @param K Matrix to store the calculated stiffness.
+     * @param dx Optional displacement vector.
      */
     template <typename ScalarType>
     void calculateMatrix(const FERequirementType& par, typename Traits::template MatrixType<> K,
                          const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {}
 
   private:
-    const std::shared_ptr<DisplacementBasedElement> dispFE;
     std::function<Eigen::Vector<double, worldDim>(const Dune::FieldVector<double, worldDim>&, const double&)>
         neumannBoundaryLoad;
     const BoundaryPatch<GridView>* neumannBoundary;
