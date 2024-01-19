@@ -6,14 +6,12 @@ name: CodeStyle
 on:
   push:
     paths-ignore:
-      - 'docs/**'
       - '.github/workflows/ghpages.yml'
   pull_request:
     types: [opened]
     branches:
       - main
     paths-ignore:
-      - 'docs/**'
       - '.github/workflows/ghpages.yml'
 
 env:
