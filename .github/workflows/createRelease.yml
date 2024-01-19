@@ -163,8 +163,8 @@ jobs:
           docker push ikarusproject/ikarus-gcc:v$NEWVERSION
           docker push ikarusproject/ikarus-clang:v$NEWVERSION
           cd repo
-          git push origin v$NEWVERSION
           git push origin main
+          git push origin v$NEWVERSION
 
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
