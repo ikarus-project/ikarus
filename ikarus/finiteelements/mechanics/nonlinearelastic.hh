@@ -54,6 +54,7 @@ namespace Ikarus {
     using LocalView              = typename Traits::LocalView;
     using Geometry               = typename Traits::Geometry;
     using GridView               = typename Traits::GridView;
+    using Element                = typename Traits::Element;
     using BasePowerFE            = PowerBasisFE<FlatBasis>;  // Handles globalIndices function
     using ResultRequirementsType = ResultRequirements<FERequirementType>;
     using Material               = Material_;

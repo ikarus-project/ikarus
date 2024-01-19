@@ -76,20 +76,20 @@ namespace Ikarus {
     /** \brief Type of the grid view */
     using GridView = typename FlatBasis::GridView;
 
-    /** \brief Type of the grid entity */
-    using GridEntity = typename LocalView::Element;
+    /** \brief Type of the grid element */
+    using Element = typename LocalView::Element;
 
     /** \brief Type of the element geometry */
-    using Geometry = typename GridEntity::Geometry;
+    using Geometry = typename Element::Geometry;
 
     /** \brief Dimension of the world space */
-    static constexpr int worlddim = GridEntity::Geometry::coorddimension;
+    static constexpr int worlddim = Element::Geometry::coorddimension;
 
     /** \brief Dimension of the geometry */
-    static constexpr int mydim = GridEntity::mydimension;
+    static constexpr int mydim = Element::mydimension;
 
     /** \brief Dimension of the grid */
-    static constexpr int dimension = GridEntity::dimension;
+    static constexpr int dimension = Element::dimension;
 
     /** \brief Type of the internal forces */
     template <typename ScalarType = double>
