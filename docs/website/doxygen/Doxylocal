@@ -40,7 +40,7 @@ EXCLUDE               += @top_srcdir@/tests \
 # the \image command).
 
 IMAGE_PATH            += @top_srcdir@/docs/website/auxiliaryImages
-CREATE_SUBDIRS = YES
+CREATE_SUBDIRS = NO
 
 #for https://jothepro.github.io/doxygen-awesome-css/index.html#autotoc_md9
 GENERATE_TREEVIEW      = YES
