@@ -10,7 +10,7 @@ option(ENABLE_TEST_COVERAGE_SOURCEBASED "Source based code coverage" OFF)
 option(DUNE_PYTHON_ALLOW_GET_PIP "Allow dune-common to install pip into venv" ON)
 project(
   ikarus
-  VERSION 0.3.7
+  VERSION 0.4
   LANGUAGES C CXX
 )
 
