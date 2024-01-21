@@ -21,7 +21,15 @@ def read_old_version():
 
 def bump_patch_number(version_number: str) -> str:
     """Return a copy of `version_number` with the patch number incremented."""
-    major, minor, patch = version_number.split(".")
+    version_number_array = version_number.split(".")
+
+    if len(version_number_array)==2:
+        major, minor = version_number_array
+        patch  =0
+    elif len(version_number_array)==3:
+        major, minor, patch = version_number_array
+    else:
+        raise Exception("Bad versoin number passed!")
     return f"{major}.{minor}.{int(patch) + 1}"
 
 

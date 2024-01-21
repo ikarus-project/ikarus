@@ -166,6 +166,8 @@ jobs:
           cd repo
           git push origin main
           git push origin v$NEWVERSION
+          git pull
+          sleep 20
 
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
