@@ -23,6 +23,7 @@ install(
         polyfit.hh
         pythonautodiffdefinitions.hh
         tensorutils.hh
+        tensorproductquadrule.hh
         traits.hh
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/utils
 )
