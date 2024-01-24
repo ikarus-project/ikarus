@@ -8,7 +8,7 @@ if(ADD_FORMATTARGET)
   include(../CPM.cmake)
   CPMAddPackage(
     NAME Format.cmake
-    VERSION 1.7.3
+    VERSION 1.8.1
     GITHUB_REPOSITORY TheLartians/Format.cmake
     OPTIONS "FORMAT_SKIP_CMAKE NO" "CMAKE_FORMAT_EXCLUDE config.h.cmake"
   )
