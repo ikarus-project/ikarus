@@ -36,13 +36,10 @@ namespace Impl {
   template <typename NonLinearSolver, typename PathFollowingType = ArcLength, typename AdaptiveStepSizing>
   consteval bool checkPathFollowingTemplates() {
     return Concepts::PathFollowingStrategy<PathFollowingType, typename NonLinearSolver::NonLinearOperator,
-                                            SubsidiaryArgs> and
-            Concepts::AdaptiveStepSizingStrategy<
-                AdaptiveStepSizing, NonLinearSolverInformation, SubsidiaryArgs,
-                std::remove_cvref_t<
-                    typename NonLinearSolver::NonLinearOperator>> and Concepts::
-                                                                          NonLinearSolverCheckForPathFollowing<
-                                                                              NonLinearSolver>;
+                                           SubsidiaryArgs> and
+           Concepts::AdaptiveStepSizingStrategy<AdaptiveStepSizing, NonLinearSolverInformation, SubsidiaryArgs,
+                                                std::remove_cvref_t<typename NonLinearSolver::NonLinearOperator>> and
+           Concepts::NonLinearSolverCheckForPathFollowing<NonLinearSolver>;
   }
 
 } // namespace Impl
