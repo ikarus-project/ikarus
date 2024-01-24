@@ -27,8 +27,8 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
                    const ReferenceElement& refElement, F&&... f) {
   constexpr int gridDim = ReferenceElement::dimension;
 
-  Dune::TestSuite t(std::string("testFEElement ") + elementName + " on grid element with dimension "
-                    + std::to_string(gridDim));
+  Dune::TestSuite t(std::string("testFEElement ") + elementName + " on grid element with dimension " +
+                    std::to_string(gridDim));
 
   auto fTuple = std::forward_as_tuple(f...);
 
@@ -127,10 +127,12 @@ inline auto checkJacobianFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe,
   auto subOperator = nonLinOp.template subOperator<1, 2>();
   return checkJacobianOfElement(subOperator);
 };
-inline auto checkResultFunctionFunctor
-    = [](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req) { return checkResultFunction(nonLinOp, fe); };
-inline auto checkFEByAutoDiffFunctor
-    = [](auto& nonLinOp, auto& fe, auto& req) { return checkFEByAutoDiff(nonLinOp, fe, req); };
+inline auto checkResultFunctionFunctor = [](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req) {
+  return checkResultFunction(nonLinOp, fe);
+};
+inline auto checkFEByAutoDiffFunctor = [](auto& nonLinOp, auto& fe, auto& req) {
+  return checkFEByAutoDiff(nonLinOp, fe, req);
+};
 
 auto checkCalculateAtFunctorFactory(const auto& resultCollectionFunction) {
   return [=](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req) {

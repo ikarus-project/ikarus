@@ -32,7 +32,7 @@ static TestSuite spdlogTest() {
   file_sink->set_level(spdlog::level::trace);
   file_sink->set_pattern("[%^%l%$] %v");
 
-  //    spdlog::logger logger("multi_sink", {console_sink, file_sink});
+  // spdlog::logger logger("multi_sink", {console_sink, file_sink});
   spdlog::logger logger("multi_sink", {file_sink});
   spdlog::set_default_logger(std::make_shared<spdlog::logger>(logger));
 
@@ -46,7 +46,7 @@ static TestSuite spdlogTest() {
   logger.info("{:<29}{}", "left aligned", "w");
   logger.info("{:>30}", "right aligned");
 
-  logger.set_level(spdlog::level::debug);  // Set global log level to debug
+  logger.set_level(spdlog::level::debug); // Set global log level to debug
   logger.debug("This message should be displayed..");
 
   foo();

@@ -23,84 +23,86 @@
 
 namespace Ikarus {
 
+/**
+ * @brief Singleton class representing an instance of the Ikarus framework.
+ *
+ * This class manages the initialization and configuration of the Ikarus framework.
+ * It provides functionality to enable a file logger and prints a banner and version information on initialization.
+ */
+class IkarusInstance
+{
+public:
   /**
-   * @brief Singleton class representing an instance of the Ikarus framework.
+   * @brief Gets the singleton instance of the Ikarus framework.
    *
-   * This class manages the initialization and configuration of the Ikarus framework.
-   * It provides functionality to enable a file logger and prints a banner and version information on initialization.
+   * @return The singleton instance.
    */
-  class IkarusInstance {
-  public:
-    /**
-     * @brief Gets the singleton instance of the Ikarus framework.
-     *
-     * @return The singleton instance.
-     */
-    static IkarusInstance& getInstance() {
-      static IkarusInstance instance;
-      return instance;
-    }
-
-    /**
-     * @brief Enables a file logger.
-     *
-     * @param filename The name of the log file. If empty, the executable name is used.
-     */
-    void enableFileLogger(std::string&& filename = "") {
-      using namespace std::chrono;
-      std::string currentTime = fmt::format("_{}", std::chrono::system_clock::now());
-
-      std::ranges::transform(currentTime, currentTime.begin(), [](char ch) {
-        return (ch == ' ' or ch == ':') ? '_' : ch;
-      });  // replace space and colon with underscore
-      auto logFilename = (filename.empty() ? executableName : filename) + currentTime + ".log";
-      auto file_sink   = std::make_shared<spdlog::sinks::basic_file_sink_mt>(logFilename, true);
-      file_sink->set_pattern("%v");
-      file_sink->set_level(spdlog::level::trace);
-      auto logger = spdlog::default_logger();
-      logger->sinks().push_back(file_sink);
-    }
-
-  private:
-    friend void init(int argc, char** argv, bool enableFileLogger);
-    IkarusInstance() = default;
-    std::string executableName;
-
-  public:
-    IkarusInstance(IkarusInstance const&) = delete;
-    void operator=(IkarusInstance const&) = delete;
-  };
-
-  /**
-   * @brief Initializes the Ikarus framework.
-   *
-   * @param argc The number of command-line arguments.
-   * @param argv The command-line arguments.
-   * @param enableFileLogger Flag indicating whether to enable the file logger.
-   */
-  void inline init(int argc, char** argv, bool enableFileLogger = true) {
-    Dune::MPIHelper::instance(argc, argv);
-    auto& instance          = IkarusInstance::getInstance();
-    instance.executableName = argv[0];
-    auto logger             = spdlog::default_logger();
-    logger->set_pattern("%v");
-    if (enableFileLogger) instance.enableFileLogger();
-
-    auto currentTime = std::chrono::system_clock::now();
-    const std::chrono::year_month_day currentYearMonthDay{floor<std::chrono::days>(currentTime)};
-
-    spdlog::info("Start of execution: {}", currentTime);
-    /// https://patorjk.com/software/taag/#p=testall&f=Univers&t=IKARUS (font: Lean)
-    spdlog::info(R"xxx(    _/_/_/  _/    _/    _/_/    _/_/_/    _/    _/    _/_/_/)xxx");
-    spdlog::info(R"xxx(     _/    _/  _/    _/    _/  _/    _/  _/    _/  _/       )xxx");
-    spdlog::info(R"xxx(    _/    _/_/      _/_/_/_/  _/_/_/    _/    _/    _/_/    )xxx");
-    spdlog::info(R"xxx(   _/    _/  _/    _/    _/  _/    _/  _/    _/        _/   )xxx");
-    spdlog::info(R"xxx(_/_/_/  _/    _/  _/    _/  _/    _/    _/_/    _/_/_/      )xxx");
-
-    spdlog::info("© 2021-{} The Ikarus Developers, see LICENSE.md ", static_cast<int>(currentYearMonthDay.year()));
-    spdlog::info("You are using Ikarus v{}. Please don't forget to cite us:", IKARUS_VERSION);
-    spdlog::info(
-        "Müller, A., & Vinod Kumar Mitruka, T. K. M. (2023). Ikarus v0.3 (Version V1). Version V1. "
-        "doi:<https://doi.org/10.18419/darus-3303>");
+  static IkarusInstance& getInstance() {
+    static IkarusInstance instance;
+    return instance;
   }
-}  // namespace Ikarus
+
+  /**
+   * @brief Enables a file logger.
+   *
+   * @param filename The name of the log file. If empty, the executable name is used.
+   */
+  void enableFileLogger(std::string&& filename = "") {
+    using namespace std::chrono;
+    std::string currentTime = fmt::format("_{}", std::chrono::system_clock::now());
+
+    std::ranges::transform(currentTime, currentTime.begin(), [](char ch) {
+      return (ch == ' ' or ch == ':') ? '_' : ch;
+    }); // replace space and colon with underscore
+    auto logFilename = (filename.empty() ? executableName : filename) + currentTime + ".log";
+    auto file_sink   = std::make_shared<spdlog::sinks::basic_file_sink_mt>(logFilename, true);
+    file_sink->set_pattern("%v");
+    file_sink->set_level(spdlog::level::trace);
+    auto logger = spdlog::default_logger();
+    logger->sinks().push_back(file_sink);
+  }
+
+private:
+  friend void init(int argc, char** argv, bool enableFileLogger);
+  IkarusInstance() = default;
+  std::string executableName;
+
+public:
+  IkarusInstance(const IkarusInstance&) = delete;
+  void operator=(const IkarusInstance&) = delete;
+};
+
+/**
+ * @brief Initializes the Ikarus framework.
+ *
+ * @param argc The number of command-line arguments.
+ * @param argv The command-line arguments.
+ * @param enableFileLogger Flag indicating whether to enable the file logger.
+ */
+void inline init(int argc, char** argv, bool enableFileLogger = true) {
+  Dune::MPIHelper::instance(argc, argv);
+  auto& instance          = IkarusInstance::getInstance();
+  instance.executableName = argv[0];
+  auto logger             = spdlog::default_logger();
+  logger->set_pattern("%v");
+  if (enableFileLogger)
+    instance.enableFileLogger();
+
+  auto currentTime = std::chrono::system_clock::now();
+  const std::chrono::year_month_day currentYearMonthDay{floor<std::chrono::days>(currentTime)};
+
+  spdlog::info("Start of execution: {}", currentTime);
+  /// https://patorjk.com/software/taag/#p=testall&f=Univers&t=IKARUS (font: Lean)
+  spdlog::info(R"xxx(    _/_/_/  _/    _/    _/_/    _/_/_/    _/    _/    _/_/_/)xxx");
+  spdlog::info(R"xxx(     _/    _/  _/    _/    _/  _/    _/  _/    _/  _/       )xxx");
+  spdlog::info(R"xxx(    _/    _/_/      _/_/_/_/  _/_/_/    _/    _/    _/_/    )xxx");
+  spdlog::info(R"xxx(   _/    _/  _/    _/    _/  _/    _/  _/    _/        _/   )xxx");
+  spdlog::info(R"xxx(_/_/_/  _/    _/  _/    _/  _/    _/    _/_/    _/_/_/      )xxx");
+
+  spdlog::info("© 2021-{} The Ikarus Developers, see LICENSE.md ", static_cast<int>(currentYearMonthDay.year()));
+  spdlog::info("You are using Ikarus v{}. Please don't forget to cite us:", IKARUS_VERSION);
+  spdlog::info(
+      "Müller, A., & Vinod Kumar Mitruka, T. K. M. (2023). Ikarus v0.3 (Version V1). Version V1. "
+      "doi:<https://doi.org/10.18419/darus-3303>");
+}
+} // namespace Ikarus

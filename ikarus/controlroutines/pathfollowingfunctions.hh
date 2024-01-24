@@ -28,264 +28,267 @@
 #include <ikarus/utils/traits.hh>
 
 namespace Ikarus {
+/**
+ * \struct SubsidiaryArgs
+ * \brief Structure containing arguments for subsidiary functions.
+ *
+ * This structure holds various arguments used by subsidiary functions in control routines.
+ * @ingroup  controlroutines
+ */
+struct SubsidiaryArgs
+{
+  double stepSize;              ///< The step size in the control routine.
+  Eigen::VectorX<double> DD;    ///< The vector representing the solution increment.
+  double Dlambda;               ///< The increment in the load factor.
+  double f;                     ///< The value of the subsidiary function.
+  Eigen::VectorX<double> dfdDD; ///< The derivative of the subsidiary function with respect to DD.
+  double dfdDlambda;            ///< The derivative of the subsidiary function with respect to Dlambda.
+  int currentStep;              ///< The current step index in the control routine.
+};
+
+/**
+ * \struct ArcLength
+ * \brief Structure representing the subsidiary function for the standard arc-length method.
+ *
+ * This structure provides methods to evaluate the subsidiary function, perform initial prediction,
+ * and perform intermediate prediction for the standard arc-length control method.
+ *
+ * \details The equation for the arc length method reads
+ * \f[
+ * f(\mathrm{D}\mathbf{D}, \mathrm{D} \lambda)=
+ * \sqrt{||\mathrm{D}\mathbf{D}||^2+ \psi^2 (\mathrm{D} \lambda)^2 }- \hat{s}, \f]
+ * where \f$\mathrm{D}\mathbf{D}\f$ is the increment of the solution vector and \f$\mathrm{D} \lambda\f$ is the load
+ * factor increment. \f$\psi\f$ is the to-be-determined correction factor for the different dimensionalities between
+ * \f$\mathrm{D}\mathbf{D}\f$ and \f$\mathrm{D} \lambda\f$. The scalar  \f$\hat{s} \f$ defines the requested size of
+ * the step.
+ * @ingroup  controlroutines
+ */
+struct ArcLength
+{
   /**
-   * \struct SubsidiaryArgs
-   * \brief Structure containing arguments for subsidiary functions.
+   * \brief Evaluates the subsidiary function for the standard arc-length method.
    *
-   * This structure holds various arguments used by subsidiary functions in control routines.
-   * @ingroup  controlroutines
+   * This method calculates the subsidiary function value and its derivatives for the given arguments and stores it in
+   * the given args structure.
+   *
+   * \param args The subsidiary function arguments.
    */
-  struct SubsidiaryArgs {
-    double stepSize;               ///< The step size in the control routine.
-    Eigen::VectorX<double> DD;     ///< The vector representing the solution increment.
-    double Dlambda;                ///< The increment in the load factor.
-    double f;                      ///< The value of the subsidiary function.
-    Eigen::VectorX<double> dfdDD;  ///< The derivative of the subsidiary function with respect to DD.
-    double dfdDlambda;             ///< The derivative of the subsidiary function with respect to Dlambda.
-    int currentStep;               ///< The current step index in the control routine.
-  };
-
-  /**
-   * \struct ArcLength
-   * \brief Structure representing the subsidiary function for the standard arc-length method.
-   *
-   * This structure provides methods to evaluate the subsidiary function, perform initial prediction,
-   * and perform intermediate prediction for the standard arc-length control method.
-   *
-   * \details The equation for the arc length method reads
-   * \f[
-   * f(\mathrm{D}\mathbf{D}, \mathrm{D} \lambda)=
-   * \sqrt{||\mathrm{D}\mathbf{D}||^2+ \psi^2 (\mathrm{D} \lambda)^2 }- \hat{s}, \f]
-   * where \f$\mathrm{D}\mathbf{D}\f$ is the increment of the solution vector and \f$\mathrm{D} \lambda\f$ is the load
-   * factor increment. \f$\psi\f$ is the to-be-determined correction factor for the different dimensionalities between
-   * \f$\mathrm{D}\mathbf{D}\f$ and \f$\mathrm{D} \lambda\f$. The scalar  \f$\hat{s} \f$ defines the requested size of
-   * the step.
-   * @ingroup  controlroutines
-   */
-  struct ArcLength {
-    /**
-     * \brief Evaluates the subsidiary function for the standard arc-length method.
-     *
-     * This method calculates the subsidiary function value and its derivatives for the given arguments and stores it in
-     * the given args structure.
-     *
-     * \param args The subsidiary function arguments.
-     */
-    void operator()(SubsidiaryArgs& args) const {
-      if (psi) {
-        const auto root = sqrt(args.DD.squaredNorm() + psi.value() * psi.value() * args.Dlambda * args.Dlambda);
-        args.f          = root - args.stepSize;
-        args.dfdDD      = args.DD / root;
-        args.dfdDlambda = (psi.value() * psi.value() * args.Dlambda) / root;
-      } else {
-        DUNE_THROW(Dune::InvalidStateException,
-                   "You have to call initialPrediction first. Otherwise psi is not defined");
-      }
+  void operator()(SubsidiaryArgs& args) const {
+    if (psi) {
+      const auto root = sqrt(args.DD.squaredNorm() + psi.value() * psi.value() * args.Dlambda * args.Dlambda);
+      args.f          = root - args.stepSize;
+      args.dfdDD      = args.DD / root;
+      args.dfdDlambda = (psi.value() * psi.value() * args.Dlambda) / root;
+    } else {
+      DUNE_THROW(Dune::InvalidStateException, "You have to call initialPrediction first. Otherwise psi is not defined");
     }
-
-    /**
-     * \brief Performs the initial prediction for the standard arc-length method.
-     *
-     * This method initializes the prediction step for the standard arc-length method it computes \f$\psi\f$ and
-     * computes initial \f$\mathrm{D}\mathbf{D}\f$ and \f$\mathrm{D} \lambda\f$.
-     *
-     * \tparam NonLinearOperator Type of the nonlinear operator.
-     * \param nonLinearOperator The nonlinear operator.
-     * \param args The subsidiary function arguments.
-     * @ingroup  controlroutines
-     */
-    template <typename NonLinearOperator>
-    void initialPrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
-      SolverTypeTag solverTag;
-      using JacobianType = std::remove_cvref_t<typename NonLinearOperator::DerivativeType>;
-      static_assert((traits::isSpecializationTypeAndNonTypes<Eigen::Matrix, JacobianType>::value)
-                        or (traits::isSpecializationTypeNonTypeAndType<Eigen::SparseMatrix, JacobianType>::value),
-                    "Linear solver not implemented for the chosen derivative type of the non-linear operator");
-
-      if constexpr (traits::isSpecializationTypeAndNonTypes<Eigen::Matrix, JacobianType>::value)
-        solverTag = SolverTypeTag::d_LDLT;
-      else
-        solverTag = SolverTypeTag::sd_SimplicialLDLT;
-
-      nonLinearOperator.lastParameter() = 1.0;  // lambda =1.0
-      nonLinearOperator.template update<0>();
-      const auto& R = nonLinearOperator.value();
-      const auto& K = nonLinearOperator.derivative();
-
-      static constexpr bool isLinearSolver
-          = Ikarus::Concepts::LinearSolverCheck<decltype(LinearSolver(solverTag)),
-                                                typename NonLinearOperator::DerivativeType,
-                                                typename NonLinearOperator::ValueType>;
-      static_assert(isLinearSolver,
-                    "Initial predictor step in the standard arc-length method doesn't have a linear solver");
-
-      auto linearSolver = LinearSolver(solverTag);  // for the linear predictor step
-      linearSolver.analyzePattern(K);
-      linearSolver.factorize(K);
-      linearSolver.solve(args.DD, -R);
-
-      const auto DD2 = args.DD.squaredNorm();
-
-      psi    = sqrt(DD2);
-      auto s = sqrt(psi.value() * psi.value() + DD2);
-
-      args.DD      = args.DD * args.stepSize / s;
-      args.Dlambda = args.stepSize / s;
-
-      nonLinearOperator.firstParameter() = args.DD;
-      nonLinearOperator.lastParameter()  = args.Dlambda;
-    }
-
-    /**
-     * \brief Performs intermediate prediction for the standard arc-length method.
-     *
-     * This method updates the prediction step for the standard arc-length method.
-     *
-     * \tparam NonLinearOperator Type of the nonlinear operator.
-     * \param nonLinearOperator The nonlinear operator.
-     * \param args The subsidiary function arguments.
-     */
-    template <typename NonLinearOperator>
-    void intermediatePrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
-      nonLinearOperator.firstParameter() += args.DD;
-      nonLinearOperator.lastParameter() += args.Dlambda;
-    }
-
-    /** \brief The name of the PathFollowing method. */
-    constexpr auto name() const { return std::string("Arc length"); }
-
-  private:
-    std::optional<double> psi;
-  };
+  }
 
   /**
-   * \struct LoadControlSubsidiaryFunction
-   * \brief Structure representing the subsidiary function for the load control method.
+   * \brief Performs the initial prediction for the standard arc-length method.
    *
-   * \details The equation for the load control method reads
-   * \f[
-   * f(\mathrm{D}\mathbf{D}, \mathrm{D} \lambda)=
-   * \mathrm{D} \lambda -  \hat{s}, \f]
-   * where \f$\mathrm{D}\mathbf{D}\f$ is the increment of the solution vector and \f$\mathrm{D} \lambda\f$ is the load
-   * factor increment. The scalar   \f$\hat{s} \f$ defines the requested size of the step.
+   * This method initializes the prediction step for the standard arc-length method it computes \f$\psi\f$ and
+   * computes initial \f$\mathrm{D}\mathbf{D}\f$ and \f$\mathrm{D} \lambda\f$.
+   *
+   * \tparam NonLinearOperator Type of the nonlinear operator.
+   * \param nonLinearOperator The nonlinear operator.
+   * \param args The subsidiary function arguments.
    * @ingroup  controlroutines
    */
-  struct LoadControlSubsidiaryFunction {
-    /**
-     * \brief Evaluates the subsidiary function for the load control method.
-     *
-     * This method calculates the subsidiary function value and its derivatives for the given arguments.
-     *
-     * \param args The subsidiary function arguments.
-     */
-    void operator()(SubsidiaryArgs& args) const {
-      args.f = args.Dlambda - args.stepSize;
-      args.dfdDD.setZero();
-      args.dfdDlambda = 1.0;
-    }
+  template <typename NonLinearOperator>
+  void initialPrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
+    SolverTypeTag solverTag;
+    using JacobianType = std::remove_cvref_t<typename NonLinearOperator::DerivativeType>;
+    static_assert((traits::isSpecializationTypeAndNonTypes<Eigen::Matrix, JacobianType>::value) or
+                      (traits::isSpecializationTypeNonTypeAndType<Eigen::SparseMatrix, JacobianType>::value),
+                  "Linear solver not implemented for the chosen derivative type of the non-linear operator");
 
-    /**
-     * \brief Performs initial prediction for the load control method.
-     *
-     * This method initializes the prediction step for the load control method.
-     *
-     * \tparam NonLinearOperator Type of the nonlinear operator.
-     * \param nonLinearOperator The nonlinear operator.
-     * \param args The subsidiary function arguments.
-     */
-    template <typename NonLinearOperator>
-    void initialPrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
-      args.Dlambda                      = args.stepSize;
-      nonLinearOperator.lastParameter() = args.Dlambda;
-    }
+    if constexpr (traits::isSpecializationTypeAndNonTypes<Eigen::Matrix, JacobianType>::value)
+      solverTag = SolverTypeTag::d_LDLT;
+    else
+      solverTag = SolverTypeTag::sd_SimplicialLDLT;
 
-    /**
-     * \brief Performs intermediate prediction for the load control method.
-     *
-     * This method updates the prediction step for the load control method.
-     *
-     * \tparam NonLinearOperator Type of the nonlinear operator.
-     * \param nonLinearOperator The nonlinear operator.
-     * \param args The subsidiary function arguments.
-     */
-    template <typename NonLinearOperator>
-    void intermediatePrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
-      nonLinearOperator.lastParameter() += args.Dlambda;
-    }
+    nonLinearOperator.lastParameter() = 1.0; // lambda =1.0
+    nonLinearOperator.template update<0>();
+    const auto& R = nonLinearOperator.value();
+    const auto& K = nonLinearOperator.derivative();
 
-    /** \brief The name of the PathFollowing method. */
-    constexpr auto name() const { return std::string("Load Control"); }
-  };
+    static constexpr bool isLinearSolver =
+        Ikarus::Concepts::LinearSolverCheck<decltype(LinearSolver(solverTag)),
+                                            typename NonLinearOperator::DerivativeType,
+                                            typename NonLinearOperator::ValueType>;
+    static_assert(isLinearSolver,
+                  "Initial predictor step in the standard arc-length method doesn't have a linear solver");
+
+    auto linearSolver = LinearSolver(solverTag); // for the linear predictor step
+    linearSolver.analyzePattern(K);
+    linearSolver.factorize(K);
+    linearSolver.solve(args.DD, -R);
+
+    const auto DD2 = args.DD.squaredNorm();
+
+    psi    = sqrt(DD2);
+    auto s = sqrt(psi.value() * psi.value() + DD2);
+
+    args.DD      = args.DD * args.stepSize / s;
+    args.Dlambda = args.stepSize / s;
+
+    nonLinearOperator.firstParameter() = args.DD;
+    nonLinearOperator.lastParameter()  = args.Dlambda;
+  }
 
   /**
-   * \struct DisplacementControl
-   * \brief Structure representing the subsidiary function for the displacement control method.
+   * \brief Performs intermediate prediction for the standard arc-length method.
    *
-   * \details The equation for the load control method reads
-   * \f[
-   * f(\mathrm{D}\mathbf{D}, \mathrm{D} \lambda)=
-   * ||\mathrm{D}\mathbf{D}|| -  \hat{s}, \f]
-   * where \f$\mathrm{D}\mathbf{D}\f$ is the increment of the solution vector and \f$\mathrm{D} \lambda\f$ is the load
-   * factor increment. The scalar  \f$\hat{s} \f$ defines the requested size of the step.
-   * @ingroup  controlroutines
+   * This method updates the prediction step for the standard arc-length method.
+   *
+   * \tparam NonLinearOperator Type of the nonlinear operator.
+   * \param nonLinearOperator The nonlinear operator.
+   * \param args The subsidiary function arguments.
    */
-  struct DisplacementControl {
-    /**
-     * \brief Constructor for DisplacementControl.
-     *
-     * \param p_controlledIndices Vector containing the indices of the controlled degrees of freedom.
-     */
-    explicit DisplacementControl(std::vector<int> p_controlledIndices)
-        : controlledIndices{std::move(p_controlledIndices)} {}
+  template <typename NonLinearOperator>
+  void intermediatePrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
+    nonLinearOperator.firstParameter() += args.DD;
+    nonLinearOperator.lastParameter() += args.Dlambda;
+  }
 
-    /**
-     * \brief Evaluates the subsidiary function for the displacement control method.
-     *
-     * This method calculates the subsidiary function value and its derivatives for the given arguments.
-     *
-     * \param args The subsidiary function arguments.
-     */
-    void operator()(SubsidiaryArgs& args) const {
-      const auto controlledDOFsNorm = args.DD(controlledIndices).norm();
-      args.f                        = controlledDOFsNorm - args.stepSize;
-      args.dfdDlambda               = 0.0;
-      args.dfdDD.setZero();
-      args.dfdDD(controlledIndices) = args.DD(controlledIndices) / controlledDOFsNorm;
-    }
+  /** \brief The name of the PathFollowing method. */
+  constexpr auto name() const { return std::string("Arc length"); }
 
-    /**
-     * \brief Performs initial prediction for the displacement control method.
-     *
-     * This method initializes the prediction step for the displacement control method.
-     *
-     * \tparam NonLinearOperator Type of the nonlinear operator.
-     * \param nonLinearOperator The nonlinear operator.
-     * \param args The subsidiary function arguments.
-     */
-    template <typename NonLinearOperator>
-    void initialPrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
-      args.DD(controlledIndices).array() = args.stepSize;
-      nonLinearOperator.firstParameter() = args.DD;
-    }
+private:
+  std::optional<double> psi;
+};
 
-    /**
-     * \brief Performs intermediate prediction for the displacement control method.
-     *
-     * This method updates the prediction step for the displacement control method.
-     *
-     * \tparam NonLinearOperator Type of the nonlinear operator.
-     * \param nonLinearOperator The nonlinear operator.
-     * \param args The subsidiary function arguments.
-     */
-    template <typename NonLinearOperator>
-    void intermediatePrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
-      nonLinearOperator.firstParameter() += args.DD;
-    }
+/**
+ * \struct LoadControlSubsidiaryFunction
+ * \brief Structure representing the subsidiary function for the load control method.
+ *
+ * \details The equation for the load control method reads
+ * \f[
+ * f(\mathrm{D}\mathbf{D}, \mathrm{D} \lambda)=
+ * \mathrm{D} \lambda -  \hat{s}, \f]
+ * where \f$\mathrm{D}\mathbf{D}\f$ is the increment of the solution vector and \f$\mathrm{D} \lambda\f$ is the load
+ * factor increment. The scalar   \f$\hat{s} \f$ defines the requested size of the step.
+ * @ingroup  controlroutines
+ */
+struct LoadControlSubsidiaryFunction
+{
+  /**
+   * \brief Evaluates the subsidiary function for the load control method.
+   *
+   * This method calculates the subsidiary function value and its derivatives for the given arguments.
+   *
+   * \param args The subsidiary function arguments.
+   */
+  void operator()(SubsidiaryArgs& args) const {
+    args.f = args.Dlambda - args.stepSize;
+    args.dfdDD.setZero();
+    args.dfdDlambda = 1.0;
+  }
 
-    /** \brief The name of the PathFollowing method. */
-    constexpr auto name() const { return std::string("Displacement Control"); }
+  /**
+   * \brief Performs initial prediction for the load control method.
+   *
+   * This method initializes the prediction step for the load control method.
+   *
+   * \tparam NonLinearOperator Type of the nonlinear operator.
+   * \param nonLinearOperator The nonlinear operator.
+   * \param args The subsidiary function arguments.
+   */
+  template <typename NonLinearOperator>
+  void initialPrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
+    args.Dlambda                      = args.stepSize;
+    nonLinearOperator.lastParameter() = args.Dlambda;
+  }
 
-  private:
-    std::vector<int> controlledIndices; /**< Vector containing the indices of the controlled degrees of freedom. */
-  };
-}  // namespace Ikarus
+  /**
+   * \brief Performs intermediate prediction for the load control method.
+   *
+   * This method updates the prediction step for the load control method.
+   *
+   * \tparam NonLinearOperator Type of the nonlinear operator.
+   * \param nonLinearOperator The nonlinear operator.
+   * \param args The subsidiary function arguments.
+   */
+  template <typename NonLinearOperator>
+  void intermediatePrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
+    nonLinearOperator.lastParameter() += args.Dlambda;
+  }
+
+  /** \brief The name of the PathFollowing method. */
+  constexpr auto name() const { return std::string("Load Control"); }
+};
+
+/**
+ * \struct DisplacementControl
+ * \brief Structure representing the subsidiary function for the displacement control method.
+ *
+ * \details The equation for the load control method reads
+ * \f[
+ * f(\mathrm{D}\mathbf{D}, \mathrm{D} \lambda)=
+ * ||\mathrm{D}\mathbf{D}|| -  \hat{s}, \f]
+ * where \f$\mathrm{D}\mathbf{D}\f$ is the increment of the solution vector and \f$\mathrm{D} \lambda\f$ is the load
+ * factor increment. The scalar  \f$\hat{s} \f$ defines the requested size of the step.
+ * @ingroup  controlroutines
+ */
+struct DisplacementControl
+{
+  /**
+   * \brief Constructor for DisplacementControl.
+   *
+   * \param p_controlledIndices Vector containing the indices of the controlled degrees of freedom.
+   */
+  explicit DisplacementControl(std::vector<int> p_controlledIndices)
+      : controlledIndices{std::move(p_controlledIndices)} {}
+
+  /**
+   * \brief Evaluates the subsidiary function for the displacement control method.
+   *
+   * This method calculates the subsidiary function value and its derivatives for the given arguments.
+   *
+   * \param args The subsidiary function arguments.
+   */
+  void operator()(SubsidiaryArgs& args) const {
+    const auto controlledDOFsNorm = args.DD(controlledIndices).norm();
+    args.f                        = controlledDOFsNorm - args.stepSize;
+    args.dfdDlambda               = 0.0;
+    args.dfdDD.setZero();
+    args.dfdDD(controlledIndices) = args.DD(controlledIndices) / controlledDOFsNorm;
+  }
+
+  /**
+   * \brief Performs initial prediction for the displacement control method.
+   *
+   * This method initializes the prediction step for the displacement control method.
+   *
+   * \tparam NonLinearOperator Type of the nonlinear operator.
+   * \param nonLinearOperator The nonlinear operator.
+   * \param args The subsidiary function arguments.
+   */
+  template <typename NonLinearOperator>
+  void initialPrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
+    args.DD(controlledIndices).array() = args.stepSize;
+    nonLinearOperator.firstParameter() = args.DD;
+  }
+
+  /**
+   * \brief Performs intermediate prediction for the displacement control method.
+   *
+   * This method updates the prediction step for the displacement control method.
+   *
+   * \tparam NonLinearOperator Type of the nonlinear operator.
+   * \param nonLinearOperator The nonlinear operator.
+   * \param args The subsidiary function arguments.
+   */
+  template <typename NonLinearOperator>
+  void intermediatePrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
+    nonLinearOperator.firstParameter() += args.DD;
+  }
+
+  /** \brief The name of the PathFollowing method. */
+  constexpr auto name() const { return std::string("Displacement Control"); }
+
+private:
+  std::vector<int> controlledIndices; /**< Vector containing the indices of the controlled degrees of freedom. */
+};
+} // namespace Ikarus

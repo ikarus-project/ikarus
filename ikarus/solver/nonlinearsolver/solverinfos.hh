@@ -9,22 +9,23 @@
 #pragma once
 
 namespace Ikarus {
+/**
+ * \brief Information about the result of a non-linear solver.
+ *
+ * This structure holds information about the success of a non-linear solver,
+ * including the residual norm, correction norm, and the number of iterations performed.
+ */
+struct NonLinearSolverInformation
+{
   /**
-   * \brief Information about the result of a non-linear solver.
+   * \brief Conversion operator to check the success of the solver.
    *
-   * This structure holds information about the success of a non-linear solver,
-   * including the residual norm, correction norm, and the number of iterations performed.
+   * \return `true` if the solver was successful, `false` otherwise.
    */
-  struct NonLinearSolverInformation {
-    /**
-     * \brief Conversion operator to check the success of the solver.
-     *
-     * \return `true` if the solver was successful, `false` otherwise.
-     */
-    explicit operator bool() const { return success; }
-    bool success{false};
-    double residualNorm{std::numeric_limits<double>::infinity()};
-    double correctionNorm{std::numeric_limits<double>::infinity()};
-    int iterations{-1};
-  };
-}  // namespace Ikarus
+  explicit operator bool() const { return success; }
+  bool success{false};
+  double residualNorm{std::numeric_limits<double>::infinity()};
+  double correctionNorm{std::numeric_limits<double>::infinity()};
+  int iterations{-1};
+};
+} // namespace Ikarus

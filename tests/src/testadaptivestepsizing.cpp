@@ -32,7 +32,8 @@
 using Dune::TestSuite;
 
 template <typename Basis_, typename FERequirements_ = Ikarus::FERequirements<>>
-struct KirchhoffLoveShellHelper : Ikarus::KirchhoffLoveShell<Basis_, FERequirements_, false> {
+struct KirchhoffLoveShellHelper : Ikarus::KirchhoffLoveShell<Basis_, FERequirements_, false>
+{
   using Base = Ikarus::KirchhoffLoveShell<Basis_, FERequirements_, false>;
   using Base::Base;
   using FlatBasis = typename Basis_::FlatBasis;
@@ -56,14 +57,17 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   constexpr auto dimWorld        = 3;
   const std::array<int, 2> order = {2, 1};
 
-  const std::array<std::vector<double>, 2> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 1, 1}}};
+  const std::array<std::vector<double>, 2> knotSpans = {
+      {{0, 0, 0, 1, 1, 1}, {0, 0, 1, 1}}
+  };
 
   using ControlPoint = Dune::IGA::NURBSPatchData<2, dimWorld>::ControlPointType;
 
-  const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {-0.5, 0, 0.0}, .w = 10}, {.p = {-0.5, 1.0, 0.0}, .w = 1}},
-         {{.p = {0, 0, 0.2}, .w = 0.766044}, {.p = {0, 1.0, 0.2}, .w = 0.766044}},
-         {{.p = {0.5, 0, 0.0}, .w = 1}, {.p = {0.5, 1.0, 0.0}, .w = 1}}};
+  const std::vector<std::vector<ControlPoint>> controlPoints = {
+      {   {.p = {-0.5, 0, 0.0}, .w = 10},     {.p = {-0.5, 1.0, 0.0}, .w = 1}},
+      {{.p = {0, 0, 0.2}, .w = 0.766044}, {.p = {0, 1.0, 0.2}, .w = 0.766044}},
+      {     {.p = {0.5, 0, 0.0}, .w = 1},      {.p = {0.5, 1.0, 0.0}, .w = 1}}
+  };
 
   std::array<int, 2> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
 
@@ -95,7 +99,8 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   /// Neumann boundary condition at right edge (x=0.5)
   Dune::BitSetVector<1> neumannVertices(gridView.size(2), false);
   for (auto&& vertex : vertices(gridView))
-    if (std::abs(vertex.geometry().corner(0)[0] - 0.5) < 1e-8) neumannVertices[indexSet.index(vertex)] = true;
+    if (std::abs(vertex.geometry().corner(0)[0] - 0.5) < 1e-8)
+      neumannVertices[indexSet.index(vertex)] = true;
 
   BoundaryPatch<decltype(gridView)> neumannBoundary(gridView, neumannVertices);
 
@@ -163,8 +168,8 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
     return sparseAssembler.getMatrix(req);
   };
 
-  auto nonLinOpFull
-      = Ikarus::NonLinearOperator(functions(energyFunction, residualFunction, KFunction), parameter(d, lambda));
+  auto nonLinOpFull =
+      Ikarus::NonLinearOperator(functions(energyFunction, residualFunction, KFunction), parameter(d, lambda));
 
   auto nonLinOp  = nonLinOpFull.template subOperator<1, 2>();
   auto linSolver = LinearSolver(SolverTypeTag::sd_SimplicialLDLT);
@@ -230,9 +235,9 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   checkScalars(t, lambda, expectedResults[1][1], message2 + " <Lambda>", tolLoad);
   resetNonLinearOperatorParametersToZero(nonLinOp);
 
-  const int controlInfoWSSIterations
-      = std::accumulate(controlInfoWSS.solverInfos.begin(), controlInfoWSS.solverInfos.end(), 0,
-                        [](int a, auto& b) { return b.iterations + a; });
+  const int controlInfoWSSIterations =
+      std::accumulate(controlInfoWSS.solverInfos.begin(), controlInfoWSS.solverInfos.end(), 0,
+                      [](int a, auto& b) { return b.iterations + a; });
 
   t.check(controlInfoWSS.success, "No convergence" + message1);
   t.check(controlInfoWoSS.success, "No convergence" + message2);
@@ -262,14 +267,24 @@ int main(int argc, char** argv) {
   auto lc  = Ikarus::LoadControlSubsidiaryFunction{};
 
   /// expected iterations for each step for a path following type with and without step sizing
-  const std::vector<std::vector<int>> expectedIterationsALC = {{9, 9, 6, 5, 4, 4}, {9, 8, 6, 5, 5, 5}};
-  const std::vector<std::vector<int>> expectedIterationsLC  = {{10, 4, 4, 3, 3, 3}, {10, 6, 5, 4, 4, 4}};
+  const std::vector<std::vector<int>> expectedIterationsALC = {
+      {9, 9, 6, 5, 4, 4},
+      {9, 8, 6, 5, 5, 5}
+  };
+  const std::vector<std::vector<int>> expectedIterationsLC = {
+      {10, 4, 4, 3, 3, 3},
+      {10, 6, 5, 4, 4, 4}
+  };
 
   /// expected results(max(displacement) and lambda) for a path following type with and without step sizing
-  const std::vector<std::vector<double>> expectedResultsALC
-      = {{0.1032139637288574, 0.0003103004514250302}, {0.162759603260405, 0.0007765975850229621}};
-  const std::vector<std::vector<double>> expectedResultsLC
-      = {{0.08741028329554552, 0.0002318693543601816}, {0.144353999993308, 6e-4}};
+  const std::vector<std::vector<double>> expectedResultsALC = {
+      {0.1032139637288574, 0.0003103004514250302},
+      { 0.162759603260405, 0.0007765975850229621}
+  };
+  const std::vector<std::vector<double>> expectedResultsLC = {
+      {0.08741028329554552, 0.0002318693543601816},
+      {  0.144353999993308,                  6e-4}
+  };
 
   t.subTest(KLShellAndAdaptiveStepSizing(alc, expectedIterationsALC, expectedResultsALC, 3, 0.4));
   t.subTest(KLShellAndAdaptiveStepSizing(lc, expectedIterationsLC, expectedResultsLC, 2, 1e-4));

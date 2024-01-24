@@ -17,297 +17,303 @@
 
 namespace Ikarus {
 
-  namespace Impl {
-
-    /**
-     * @brief Represents a pair of stress matrix indices (row and column).
-     */
-    struct StressIndexPair {
-      Eigen::Index row;  ///< Row index.
-      Eigen::Index col;  ///< Column index.
-    };
-
-    /**
-     * @brief Helper function to create an array of free Voigt indices.
-     * @tparam size The size of the fixed pairs array.
-     * @param fixed An array of StressIndexPair representing fixed indices.
-     * @return std::array<size_t, 6 - size> The array of free Voigt indices.
-     */
-    template <size_t size>
-    consteval auto createfreeVoigtIndices(const std::array<StressIndexPair, size>& fixed) {
-      std::array<size_t, 6 - size> res{};
-      std::array<size_t, size> voigtFixedIndices;
-      std::ranges::transform(fixed, voigtFixedIndices.begin(), [](auto pair) { return toVoigt(pair.row, pair.col); });
-      std::ranges::sort(voigtFixedIndices);
-      std::ranges::set_difference(std::ranges::iota_view(size_t(0), size_t(6)), voigtFixedIndices, res.begin());
-      std::ranges::sort(res);
-      return res;
-    }
-
-    /**
-     * @brief Helper function to create an array of fixed Voigt indices.
-     * @tparam size The size of the fixed pairs array.
-     * @param fixed An array of StressIndexPair representing fixed indices.
-     * @return std::array<size_t, size> The array of fixed Voigt indices.
-     */
-    template <size_t size>
-    consteval auto createFixedVoigtIndices(const std::array<StressIndexPair, size>& fixed) {
-      std::array<size_t, size> fixedIndices;
-      std::ranges::transform(fixed, fixedIndices.begin(), [](auto pair) { return toVoigt(pair.row, pair.col); });
-      std::ranges::sort(fixedIndices);
-      return fixedIndices;
-    }
-
-    /**
-     * @brief Helper function to count the number of diagonal indices in the fixed pairs array.
-     * @tparam size The size of the fixed pairs array.
-     * @param fixed An array of StressIndexPair representing fixed indices.
-     * @return constexpr size_t The number of diagonal indices.
-     */
-    template <size_t size>
-    constexpr size_t countDiagonalIndices(const std::array<StressIndexPair, size>& fixed) {
-      size_t count = 0;
-      for (auto v : fixed) {
-        if (v.col == v.row) ++count;
-      }
-      return count;
-    }
-
-  }  // namespace Impl
+namespace Impl {
 
   /**
-   * @brief VanishingStress material model that enforces stress components to be zero.
-   * @ingroup materials
-   * @tparam stressIndexPair An array of StressIndexPair representing fixed stress components.
-   * @tparam MaterialImpl The underlying material model.
+   * @brief Represents a pair of stress matrix indices (row and column).
    */
-  template <auto stressIndexPair, typename MaterialImpl>
-  struct VanishingStress : public Material<VanishingStress<stressIndexPair, MaterialImpl>> {
-    /**
-     * @brief Constructor for VanishingStress.
-     * @param mat The underlying material model.
-     * @param p_tol Tolerance for stress reduction.
-     */
-    explicit VanishingStress(MaterialImpl mat, typename MaterialImpl::ScalarType p_tol = 1e-12)
-        : matImpl{mat}, tol{p_tol} {}
-
-    using Underlying = MaterialImpl;  ///< The underlying material type.
-
-    static constexpr auto fixedPairs        = stressIndexPair;  ///< Array of fixed stress components.
-    static constexpr auto freeVoigtIndices  = createfreeVoigtIndices(fixedPairs);   ///< Free Voigt indices.
-    static constexpr auto fixedVoigtIndices = createFixedVoigtIndices(fixedPairs);  ///< Fixed Voigt indices.
-    static constexpr auto fixedDiagonalVoigtIndicesSize
-        = countDiagonalIndices(fixedPairs);                                 ///< Number of fixed diagonal indices.
-    static constexpr auto freeStrains = freeVoigtIndices.size();            ///< Number of free strains.
-    using ScalarType                  = typename MaterialImpl::ScalarType;  ///< Scalar type.
-
-    [[nodiscard]] constexpr std::string nameImpl() const noexcept {
-      auto matName = matImpl.name() + "_Vanishing(";
-      for (auto p : fixedPairs)
-        matName += "(" + std::to_string(p.row) + std::to_string(p.col) + ")";
-      matName += ")";
-      return matName;
-    }
-
-    static constexpr auto strainTag          = MaterialImpl::strainTag;           ///< Strain tag.
-    static constexpr auto stressTag          = MaterialImpl::stressTag;           ///< Stress tag.
-    static constexpr auto tangentModuliTag   = MaterialImpl::tangentModuliTag;    ///< Tangent moduli tag.
-    static constexpr bool energyAcceptsVoigt = MaterialImpl::energyAcceptsVoigt;  ///< Energy accepts Voigt notation.
-    static constexpr bool stressToVoigt      = true;                              ///< Stress to Voigt notation.
-    static constexpr bool stressAcceptsVoigt = true;                              ///< Stress accepts Voigt notation.
-    static constexpr bool moduliToVoigt      = true;                              ///< Moduli to Voigt notation.
-    static constexpr bool moduliAcceptsVoigt = true;                              ///< Moduli accepts Voigt notation.
-    static constexpr double derivativeFactor = 1;                                 ///< Derivative factor.
-
-    /**
-     * @brief Computes the stored energy for the VanishingStress material.
-     * @tparam Derived The derived type of the input matrix.
-     * @param E The Green-Lagrangian strain.
-     * @return ScalarType The stored energy.
-     */
-    template <typename Derived>
-    ScalarType storedEnergyImpl(const Eigen::MatrixBase<Derived>& E) const {
-      const auto [nonOp, Esol] = reduceStress(E);
-      return matImpl.storedEnergyImpl(Esol);
-    }
-
-    /**
-     * @brief Computes the stresses for the VanishingStress material.
-     * @tparam voigt A boolean indicating whether to return stresses in Voigt notation.
-     * @tparam Derived The derived type of the input matrix.
-     * @param E The Green-Lagrangian strain.
-     * @return StressMatrix The stresses.
-     */
-    template <bool voigt, typename Derived>
-    auto stressesImpl(const Eigen::MatrixBase<Derived>& E) const {
-      const auto [nonOp, Esol] = reduceStress(E);
-      auto stressesRed         = matImpl.template stresses<MaterialImpl::strainTag, true>(Esol);
-
-      if constexpr (voigt) {
-        return removeCol(stressesRed, fixedVoigtIndices);
-      } else
-        return fromVoigt(stressesRed, false);
-    }
-
-    /**
-     * @brief Computes the tangent moduli for the VanishingStress material.
-     * @tparam voigt A boolean indicating whether to return tangent moduli in Voigt notation.
-     * @tparam Derived The derived type of the input matrix.
-     * @param E The Green-Lagrangian strain.
-     * @return TangentModuli The tangent moduli.
-     */
-    template <bool voigt, typename Derived>
-    auto tangentModuliImpl(const Eigen::MatrixBase<Derived>& E) const {
-      const auto [nonOp, Esol] = reduceStress(E);
-      auto C                   = matImpl.template tangentModuli<MaterialImpl::strainTag, true>(Esol);
-      if constexpr (voigt)
-        return staticCondensation(C, fixedVoigtIndices);
-      else
-        return fromVoigt(C);
-    }
-
-    /**
-     * @brief Rebinds the material to a different scalar type.
-     * @tparam ScalarTypeOther The target scalar type.
-     * @return VanishingStress The rebound VanishingStress material.
-     */
-    template <typename ScalarTypeOther>
-    auto rebind() const {
-      auto reboundMatImpl = matImpl.template rebind<ScalarTypeOther>();
-      return VanishingStress<stressIndexPair, decltype(reboundMatImpl)>(reboundMatImpl, tol);
-    }
-
-  private:
-    /**
-     * @brief Converts the input strain matrix to the appropriate form for stress reduction.
-     * @tparam Derived The derived type of the input matrix.
-     * @param E The input strain matrix.
-     * @return decltype(auto) The converted strain matrix.
-     */
-    template <typename Derived>
-    decltype(auto) maybeFromVoigt(const Eigen::MatrixBase<Derived>& E) const {
-      if constexpr (Concepts::EigenVector<Derived>) {  // receiving vector means Voigt notation
-        return fromVoigt(E.derived(), true);
-      } else
-        return E.derived();
-    }
-
-    /**
-     * @brief Initializes unknown strains based on fixed indices.
-     * @tparam Derived The derived type of the input matrix.
-     * @param E The input strain matrix.
-     */
-    template <typename Derived>
-    void initUnknownStrains(Eigen::MatrixBase<Derived>& E) const {
-      for (size_t i = 0; i < fixedPairs.size(); ++i) {
-        ScalarType initialVal = E(fixedPairs[i].row, fixedPairs[i].col);
-        if constexpr (strainTag == StrainTags::deformationGradient or strainTag == StrainTags::rightCauchyGreenTensor) {
-          if (Dune::FloatCmp::eq(initialVal, ScalarType(0.0)) and (fixedPairs[i].row == fixedPairs[i].col))
-            initialVal = ScalarType(1.0);
-        }
-        if (fixedPairs[i].row != fixedPairs[i].col) initialVal = ScalarType(0.0);
-        E(fixedPairs[i].row, fixedPairs[i].col) = E(fixedPairs[i].col, fixedPairs[i].row) = initialVal;
-      }
-    }
-
-    /**
-     * @brief Reduces stress components to satisfy the vanishing stress condition.
-     * @tparam Derived The derived type of the input matrix.
-     * @param p_Eraw The input strain matrix.
-     * @return std::pair<NonLinearOperator, decltype(auto)> The stress reduction result.
-     */
-    template <typename Derived>
-    auto reduceStress(const Eigen::MatrixBase<Derived>& p_Eraw) const {
-      auto E = maybeFromVoigt(p_Eraw);
-      initUnknownStrains(E);
-
-      std::array<size_t, fixedDiagonalVoigtIndicesSize> fixedDiagonalVoigtIndices;
-      for (size_t ri = 0; auto i : fixedVoigtIndices) {
-        auto indexPair = fromVoigt(i);
-        if (indexPair[0] == indexPair[1]) fixedDiagonalVoigtIndices[ri++] = i;
-      }
-
-      auto f = [&](auto&) {
-        auto S = matImpl.template stresses<MaterialImpl::strainTag, true>(E);
-        return S(fixedDiagonalVoigtIndices).eval();
-      };
-      auto df = [&](auto&) {
-        auto moduli = (matImpl.template tangentModuli<MaterialImpl::strainTag, true>(E)).eval();
-        return (moduli(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices) / MaterialImpl::derivativeFactor).eval();
-      };
-
-      auto Er    = E(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices).eval().template cast<ScalarType>();
-      auto nonOp = Ikarus::NonLinearOperator(functions(f, df), parameter(Er));
-      auto nr    = Ikarus::makeNewtonRaphson(
-             nonOp, [&](auto& r, auto& A) { return (A.inverse() * r).eval(); },
-             [&](auto& /* Ex33 */, auto& Ecomps) {
-            for (int ri = 0; auto i : fixedDiagonalVoigtIndices) {
-              auto indexPair = fromVoigt(i);
-              E(indexPair[0], indexPair[1]) += Ecomps(ri++);
-            }
-             });
-      nr->setup({.tol = tol, .maxIter = 100});
-      if (!static_cast<bool>(nr->solve()))
-        DUNE_THROW(Dune::MathError, "The stress reduction of material " << nameImpl() << " was unsuccessful\n"
-                                                                        << "The strains are\n"
-                                                                        << E << "\n The stresses are\n"
-                                                                        << f(Er));
-      return std::make_pair(nonOp, E);
-    }
-
-    MaterialImpl matImpl;  ///< The underlying material model.
-    double tol{};          ///< Tolerance for stress reduction.
+  struct StressIndexPair
+  {
+    Eigen::Index row; ///< Row index.
+    Eigen::Index col; ///< Column index.
   };
 
   /**
-   * @brief Factory function to create a VanishingStress material with specified stress indices.
-   * @tparam stressIndexPair The array of StressIndexPair representing fixed stress components.
-   * @tparam MaterialImpl The underlying material model.
-   * @param mat The underlying material model.
-   * @param p_tol Tolerance for stress reduction.
-   * @return VanishingStress The created VanishingStress material.
+   * @brief Helper function to create an array of free Voigt indices.
+   * @tparam size The size of the fixed pairs array.
+   * @param fixed An array of StressIndexPair representing fixed indices.
+   * @return std::array<size_t, 6 - size> The array of free Voigt indices.
    */
-  template <Impl::StressIndexPair... stressIndexPair, typename MaterialImpl>
-  auto makeVanishingStress(MaterialImpl mat, typename MaterialImpl::ScalarType p_tol = 1e-12) {
-    return VanishingStress<std::to_array({stressIndexPair...}), MaterialImpl>(mat, p_tol);
+  template <size_t size>
+  consteval auto createfreeVoigtIndices(const std::array<StressIndexPair, size>& fixed) {
+    std::array<size_t, 6 - size> res{};
+    std::array<size_t, size> voigtFixedIndices;
+    std::ranges::transform(fixed, voigtFixedIndices.begin(), [](auto pair) { return toVoigt(pair.row, pair.col); });
+    std::ranges::sort(voigtFixedIndices);
+    std::ranges::set_difference(std::ranges::iota_view(size_t(0), size_t(6)), voigtFixedIndices, res.begin());
+    std::ranges::sort(res);
+    return res;
   }
 
   /**
-   * @brief Factory function to create a VanishingStress material for plane stress conditions.
-   * @tparam MaterialImpl The underlying material model.
-   * @param mat The underlying material model.
-   * @param p_tol Tolerance for stress reduction.
-   * @return VanishingStress The created VanishingStress material for plane stress.
+   * @brief Helper function to create an array of fixed Voigt indices.
+   * @tparam size The size of the fixed pairs array.
+   * @param fixed An array of StressIndexPair representing fixed indices.
+   * @return std::array<size_t, size> The array of fixed Voigt indices.
    */
-  template <typename MaterialImpl>
-  auto planeStress(const MaterialImpl& mat, typename MaterialImpl::ScalarType p_tol = 1e-8) {
-    return makeVanishingStress<Impl::StressIndexPair{2, 1}, Impl::StressIndexPair{2, 0}, Impl::StressIndexPair{2, 2}>(
-        mat, p_tol);
+  template <size_t size>
+  consteval auto createFixedVoigtIndices(const std::array<StressIndexPair, size>& fixed) {
+    std::array<size_t, size> fixedIndices;
+    std::ranges::transform(fixed, fixedIndices.begin(), [](auto pair) { return toVoigt(pair.row, pair.col); });
+    std::ranges::sort(fixedIndices);
+    return fixedIndices;
   }
 
   /**
-   * @brief Factory function to create a VanishingStress material for a shell material with zero normal stress
-   * condition.
-   * @tparam MaterialImpl The underlying material model.
+   * @brief Helper function to count the number of diagonal indices in the fixed pairs array.
+   * @tparam size The size of the fixed pairs array.
+   * @param fixed An array of StressIndexPair representing fixed indices.
+   * @return constexpr size_t The number of diagonal indices.
+   */
+  template <size_t size>
+  constexpr size_t countDiagonalIndices(const std::array<StressIndexPair, size>& fixed) {
+    size_t count = 0;
+    for (auto v : fixed) {
+      if (v.col == v.row)
+        ++count;
+    }
+    return count;
+  }
+
+} // namespace Impl
+
+/**
+ * @brief VanishingStress material model that enforces stress components to be zero.
+ * @ingroup materials
+ * @tparam stressIndexPair An array of StressIndexPair representing fixed stress components.
+ * @tparam MaterialImpl The underlying material model.
+ */
+template <auto stressIndexPair, typename MaterialImpl>
+struct VanishingStress : public Material<VanishingStress<stressIndexPair, MaterialImpl>>
+{
+  /**
+   * @brief Constructor for VanishingStress.
    * @param mat The underlying material model.
    * @param p_tol Tolerance for stress reduction.
-   * @return VanishingStress The created VanishingStress material for plane stress.
    */
-  template <typename MaterialImpl>
-  auto shellMaterial(const MaterialImpl& mat, typename MaterialImpl::ScalarType p_tol = 1e-8) {
-    return makeVanishingStress<Impl::StressIndexPair{2, 2}>(mat, p_tol);
+  explicit VanishingStress(MaterialImpl mat, typename MaterialImpl::ScalarType p_tol = 1e-12)
+      : matImpl{mat},
+        tol{p_tol} {}
+
+  using Underlying = MaterialImpl; ///< The underlying material type.
+
+  static constexpr auto fixedPairs        = stressIndexPair;                     ///< Array of fixed stress components.
+  static constexpr auto freeVoigtIndices  = createfreeVoigtIndices(fixedPairs);  ///< Free Voigt indices.
+  static constexpr auto fixedVoigtIndices = createFixedVoigtIndices(fixedPairs); ///< Fixed Voigt indices.
+  static constexpr auto fixedDiagonalVoigtIndicesSize =
+      countDiagonalIndices(fixedPairs);                                  ///< Number of fixed diagonal indices.
+  static constexpr auto freeStrains = freeVoigtIndices.size();           ///< Number of free strains.
+  using ScalarType                  = typename MaterialImpl::ScalarType; ///< Scalar type.
+
+  [[nodiscard]] constexpr std::string nameImpl() const noexcept {
+    auto matName = matImpl.name() + "_Vanishing(";
+    for (auto p : fixedPairs)
+      matName += "(" + std::to_string(p.row) + std::to_string(p.col) + ")";
+    matName += ")";
+    return matName;
+  }
+
+  static constexpr auto strainTag          = MaterialImpl::strainTag;          ///< Strain tag.
+  static constexpr auto stressTag          = MaterialImpl::stressTag;          ///< Stress tag.
+  static constexpr auto tangentModuliTag   = MaterialImpl::tangentModuliTag;   ///< Tangent moduli tag.
+  static constexpr bool energyAcceptsVoigt = MaterialImpl::energyAcceptsVoigt; ///< Energy accepts Voigt notation.
+  static constexpr bool stressToVoigt      = true;                             ///< Stress to Voigt notation.
+  static constexpr bool stressAcceptsVoigt = true;                             ///< Stress accepts Voigt notation.
+  static constexpr bool moduliToVoigt      = true;                             ///< Moduli to Voigt notation.
+  static constexpr bool moduliAcceptsVoigt = true;                             ///< Moduli accepts Voigt notation.
+  static constexpr double derivativeFactor = 1;                                ///< Derivative factor.
+
+  /**
+   * @brief Computes the stored energy for the VanishingStress material.
+   * @tparam Derived The derived type of the input matrix.
+   * @param E The Green-Lagrangian strain.
+   * @return ScalarType The stored energy.
+   */
+  template <typename Derived>
+  ScalarType storedEnergyImpl(const Eigen::MatrixBase<Derived>& E) const {
+    const auto [nonOp, Esol] = reduceStress(E);
+    return matImpl.storedEnergyImpl(Esol);
   }
 
   /**
-   * @brief Factory function to create a VanishingStress material for a beam material with two zero normal stress
-   * condition.
-   * @tparam MaterialImpl The underlying material model.
-   * @param mat The underlying material model.
-   * @param p_tol Tolerance for stress reduction.
-   * @return VanishingStress The created VanishingStress material for plane stress.
+   * @brief Computes the stresses for the VanishingStress material.
+   * @tparam voigt A boolean indicating whether to return stresses in Voigt notation.
+   * @tparam Derived The derived type of the input matrix.
+   * @param E The Green-Lagrangian strain.
+   * @return StressMatrix The stresses.
    */
-  template <typename MaterialImpl>
-  auto beamMaterial(const MaterialImpl& mat, typename MaterialImpl::ScalarType p_tol = 1e-8) {
-    return makeVanishingStress<Impl::StressIndexPair{1, 1}, Impl::StressIndexPair{2, 2}>(mat, p_tol);
+  template <bool voigt, typename Derived>
+  auto stressesImpl(const Eigen::MatrixBase<Derived>& E) const {
+    const auto [nonOp, Esol] = reduceStress(E);
+    auto stressesRed         = matImpl.template stresses<MaterialImpl::strainTag, true>(Esol);
+
+    if constexpr (voigt) {
+      return removeCol(stressesRed, fixedVoigtIndices);
+    } else
+      return fromVoigt(stressesRed, false);
   }
-}  // namespace Ikarus
+
+  /**
+   * @brief Computes the tangent moduli for the VanishingStress material.
+   * @tparam voigt A boolean indicating whether to return tangent moduli in Voigt notation.
+   * @tparam Derived The derived type of the input matrix.
+   * @param E The Green-Lagrangian strain.
+   * @return TangentModuli The tangent moduli.
+   */
+  template <bool voigt, typename Derived>
+  auto tangentModuliImpl(const Eigen::MatrixBase<Derived>& E) const {
+    const auto [nonOp, Esol] = reduceStress(E);
+    auto C                   = matImpl.template tangentModuli<MaterialImpl::strainTag, true>(Esol);
+    if constexpr (voigt)
+      return staticCondensation(C, fixedVoigtIndices);
+    else
+      return fromVoigt(C);
+  }
+
+  /**
+   * @brief Rebinds the material to a different scalar type.
+   * @tparam ScalarTypeOther The target scalar type.
+   * @return VanishingStress The rebound VanishingStress material.
+   */
+  template <typename ScalarTypeOther>
+  auto rebind() const {
+    auto reboundMatImpl = matImpl.template rebind<ScalarTypeOther>();
+    return VanishingStress<stressIndexPair, decltype(reboundMatImpl)>(reboundMatImpl, tol);
+  }
+
+private:
+  /**
+   * @brief Converts the input strain matrix to the appropriate form for stress reduction.
+   * @tparam Derived The derived type of the input matrix.
+   * @param E The input strain matrix.
+   * @return decltype(auto) The converted strain matrix.
+   */
+  template <typename Derived>
+  decltype(auto) maybeFromVoigt(const Eigen::MatrixBase<Derived>& E) const {
+    if constexpr (Concepts::EigenVector<Derived>) { // receiving vector means Voigt notation
+      return fromVoigt(E.derived(), true);
+    } else
+      return E.derived();
+  }
+
+  /**
+   * @brief Initializes unknown strains based on fixed indices.
+   * @tparam Derived The derived type of the input matrix.
+   * @param E The input strain matrix.
+   */
+  template <typename Derived>
+  void initUnknownStrains(Eigen::MatrixBase<Derived>& E) const {
+    for (size_t i = 0; i < fixedPairs.size(); ++i) {
+      ScalarType initialVal = E(fixedPairs[i].row, fixedPairs[i].col);
+      if constexpr (strainTag == StrainTags::deformationGradient or strainTag == StrainTags::rightCauchyGreenTensor) {
+        if (Dune::FloatCmp::eq(initialVal, ScalarType(0.0)) and (fixedPairs[i].row == fixedPairs[i].col))
+          initialVal = ScalarType(1.0);
+      }
+      if (fixedPairs[i].row != fixedPairs[i].col)
+        initialVal = ScalarType(0.0);
+      E(fixedPairs[i].row, fixedPairs[i].col) = E(fixedPairs[i].col, fixedPairs[i].row) = initialVal;
+    }
+  }
+
+  /**
+   * @brief Reduces stress components to satisfy the vanishing stress condition.
+   * @tparam Derived The derived type of the input matrix.
+   * @param p_Eraw The input strain matrix.
+   * @return std::pair<NonLinearOperator, decltype(auto)> The stress reduction result.
+   */
+  template <typename Derived>
+  auto reduceStress(const Eigen::MatrixBase<Derived>& p_Eraw) const {
+    auto E = maybeFromVoigt(p_Eraw);
+    initUnknownStrains(E);
+
+    std::array<size_t, fixedDiagonalVoigtIndicesSize> fixedDiagonalVoigtIndices;
+    for (size_t ri = 0; auto i : fixedVoigtIndices) {
+      auto indexPair = fromVoigt(i);
+      if (indexPair[0] == indexPair[1])
+        fixedDiagonalVoigtIndices[ri++] = i;
+    }
+
+    auto f = [&](auto&) {
+      auto S = matImpl.template stresses<MaterialImpl::strainTag, true>(E);
+      return S(fixedDiagonalVoigtIndices).eval();
+    };
+    auto df = [&](auto&) {
+      auto moduli = (matImpl.template tangentModuli<MaterialImpl::strainTag, true>(E)).eval();
+      return (moduli(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices) / MaterialImpl::derivativeFactor).eval();
+    };
+
+    auto Er    = E(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices).eval().template cast<ScalarType>();
+    auto nonOp = Ikarus::NonLinearOperator(functions(f, df), parameter(Er));
+    auto nr    = Ikarus::makeNewtonRaphson(
+        nonOp, [&](auto& r, auto& A) { return (A.inverse() * r).eval(); },
+        [&](auto& /* Ex33 */, auto& Ecomps) {
+          for (int ri = 0; auto i : fixedDiagonalVoigtIndices) {
+            auto indexPair = fromVoigt(i);
+            E(indexPair[0], indexPair[1]) += Ecomps(ri++);
+          }
+        });
+    nr->setup({.tol = tol, .maxIter = 100});
+    if (!static_cast<bool>(nr->solve()))
+      DUNE_THROW(Dune::MathError, "The stress reduction of material " << nameImpl() << " was unsuccessful\n"
+                                                                      << "The strains are\n"
+                                                                      << E << "\n The stresses are\n"
+                                                                      << f(Er));
+    return std::make_pair(nonOp, E);
+  }
+
+  MaterialImpl matImpl; ///< The underlying material model.
+  double tol{};         ///< Tolerance for stress reduction.
+};
+
+/**
+ * @brief Factory function to create a VanishingStress material with specified stress indices.
+ * @tparam stressIndexPair The array of StressIndexPair representing fixed stress components.
+ * @tparam MaterialImpl The underlying material model.
+ * @param mat The underlying material model.
+ * @param p_tol Tolerance for stress reduction.
+ * @return VanishingStress The created VanishingStress material.
+ */
+template <Impl::StressIndexPair... stressIndexPair, typename MaterialImpl>
+auto makeVanishingStress(MaterialImpl mat, typename MaterialImpl::ScalarType p_tol = 1e-12) {
+  return VanishingStress<std::to_array({stressIndexPair...}), MaterialImpl>(mat, p_tol);
+}
+
+/**
+ * @brief Factory function to create a VanishingStress material for plane stress conditions.
+ * @tparam MaterialImpl The underlying material model.
+ * @param mat The underlying material model.
+ * @param p_tol Tolerance for stress reduction.
+ * @return VanishingStress The created VanishingStress material for plane stress.
+ */
+template <typename MaterialImpl>
+auto planeStress(const MaterialImpl& mat, typename MaterialImpl::ScalarType p_tol = 1e-8) {
+  return makeVanishingStress<Impl::StressIndexPair{2, 1}, Impl::StressIndexPair{2, 0}, Impl::StressIndexPair{2, 2}>(
+      mat, p_tol);
+}
+
+/**
+ * @brief Factory function to create a VanishingStress material for a shell material with zero normal stress
+ * condition.
+ * @tparam MaterialImpl The underlying material model.
+ * @param mat The underlying material model.
+ * @param p_tol Tolerance for stress reduction.
+ * @return VanishingStress The created VanishingStress material for plane stress.
+ */
+template <typename MaterialImpl>
+auto shellMaterial(const MaterialImpl& mat, typename MaterialImpl::ScalarType p_tol = 1e-8) {
+  return makeVanishingStress<Impl::StressIndexPair{2, 2}>(mat, p_tol);
+}
+
+/**
+ * @brief Factory function to create a VanishingStress material for a beam material with two zero normal stress
+ * condition.
+ * @tparam MaterialImpl The underlying material model.
+ * @param mat The underlying material model.
+ * @param p_tol Tolerance for stress reduction.
+ * @return VanishingStress The created VanishingStress material for plane stress.
+ */
+template <typename MaterialImpl>
+auto beamMaterial(const MaterialImpl& mat, typename MaterialImpl::ScalarType p_tol = 1e-8) {
+  return makeVanishingStress<Impl::StressIndexPair{1, 1}, Impl::StressIndexPair{2, 2}>(mat, p_tol);
+}
+} // namespace Ikarus

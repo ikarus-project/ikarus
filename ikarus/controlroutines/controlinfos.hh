@@ -13,15 +13,16 @@
 
 namespace Ikarus {
 
-  /**
-   * \struct ControlInformation
-   * \brief Structure containing information about the control results.
-   */
-  struct ControlInformation {
-    bool success{false};  ///< Flag indicating the success of the control.
-    std::vector<Ikarus::NonLinearSolverInformation>
-        solverInfos{};       ///< Vector containing information from nonlinear solvers.
-    int totalIterations{0};  ///< Total number of iterations performed.
-  };
+/**
+ * \struct ControlInformation
+ * \brief Structure containing information about the control results.
+ */
+struct ControlInformation
+{
+  bool success{false}; ///< Flag indicating the success of the control.
+  std::vector<Ikarus::NonLinearSolverInformation>
+      solverInfos{};      ///< Vector containing information from nonlinear solvers.
+  int totalIterations{0}; ///< Total number of iterations performed.
+};
 
-}  // namespace Ikarus
+} // namespace Ikarus

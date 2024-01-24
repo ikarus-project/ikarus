@@ -94,8 +94,8 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
     checkAssembledQuantities(t, R, RDense, totalDOFs);
 
     const Eigen::Index fixedDOFs = dirichletValues.fixedDOFsize();
-    int boundaryNodes            = (elementsPerDirection[0] * Dune::power(2, ref) + 1) * 2
-                        + (elementsPerDirection[1] * Dune::power(2, ref) + 1) * 2 - 4;
+    int boundaryNodes            = (elementsPerDirection[0] * Dune::power(2, ref) + 1) * 2 +
+                        (elementsPerDirection[1] * Dune::power(2, ref) + 1) * 2 - 4;
     if constexpr (Ikarus::Concepts::LagrangeNodeOfOrder<
                       std::remove_cvref_t<decltype(fes[0].localView().tree().child(0))>, 2>)
       boundaryNodes *= 2;

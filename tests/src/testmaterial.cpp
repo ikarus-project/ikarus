@@ -33,17 +33,17 @@ auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-14) {
     e                      = 0.5 * (C / esC.eigenvalues().real().maxCoeff() - Eigen::Matrix3d::Identity());
     strainDerivativeFactor = 1;
   } else if (strainTag == StrainTags::rightCauchyGreenTensor) {
-    e = ((e.transpose() + e + 3 * Eigen::Matrix3d::Identity()) / 10).eval();  // create positive definite matrix
+    e = ((e.transpose() + e + 3 * Eigen::Matrix3d::Identity()) / 10).eval(); // create positive definite matrix
     Eigen::EigenSolver<Eigen::Matrix3d> esC(e);
     e /= esC.eigenvalues().real().maxCoeff();
     strainDerivativeFactor = 0.5;
   } else if (strainTag == StrainTags::deformationGradient) {
-    e = (e + 3 * Eigen::Matrix3d::Identity()).eval();  // create positive definite matrix
+    e = (e + 3 * Eigen::Matrix3d::Identity()).eval(); // create positive definite matrix
     e = e.sqrt();
   }
   auto ev = toVoigtAndMaybeReduce(e, mat, true);
-  static_assert(MaterialImpl::isReduced
-                or (decltype(ev)::RowsAtCompileTime == 6 and decltype(ev)::ColsAtCompileTime == 1));
+  static_assert(MaterialImpl::isReduced or
+                (decltype(ev)::RowsAtCompileTime == 6 and decltype(ev)::ColsAtCompileTime == 1));
 
   auto energy     = mat.template storedEnergy<strainTag>(e);
   auto energyV    = mat.template storedEnergy<strainTag>(ev);
@@ -114,10 +114,10 @@ auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-14) {
 template <typename Material>
 auto testMaterial(Material mat) {
   TestSuite t("testMaterial");
-  if constexpr (
-      std::is_same_v<
-          Material,
-          LinearElasticity> or std::is_same_v<Material, Ikarus::VanishingStress<std::array<Ikarus::Impl::StressIndexPair, 1>({{{2, 2}}}), Ikarus::LinearElasticity>>) {
+  if constexpr (std::is_same_v<Material, LinearElasticity> or
+                std::is_same_v<Material,
+                               Ikarus::VanishingStress<std::array<Ikarus::Impl::StressIndexPair, 1>({{{2, 2}}}),
+                                                       Ikarus::LinearElasticity>>) {
     t.subTest(testMaterialWithStrain<StrainTags::linear>(mat));
   } else if constexpr (std::is_same_v<Material,
                                       Ikarus::VanishingStress<std::array<Ikarus::Impl::StressIndexPair, 1>({{{2, 2}}}),
@@ -162,9 +162,9 @@ int main(int argc, char** argv) {
   auto nhRed2 = makeVanishingStress<Impl::StressIndexPair{1, 1}, Impl::StressIndexPair{2, 2}>(nh, 1e-12);
   t.subTest(testMaterial(nhRed2));
 
-  auto nhRed3
-      = makeVanishingStress<Impl::StressIndexPair{2, 1}, Impl::StressIndexPair{2, 0}, Impl::StressIndexPair{2, 2}>(
-          nh, 1e-12);
+  auto nhRed3 =
+      makeVanishingStress<Impl::StressIndexPair{2, 1}, Impl::StressIndexPair{2, 0}, Impl::StressIndexPair{2, 2}>(nh,
+                                                                                                                 1e-12);
   t.subTest(testMaterial(nhRed3));
 
   auto nhRed4 = shellMaterial(nh, 1e-12);

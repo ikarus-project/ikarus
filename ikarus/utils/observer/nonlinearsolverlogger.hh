@@ -11,41 +11,42 @@
 #include "observermessages.hh"
 
 namespace Ikarus {
+/**
+ * @brief Implementation of an observer for logging non-linear solvers.
+ * \ingroup observer
+ * This class inherits from the IObserver class and provides specific
+ * implementations for updating based on NonLinearSolverMessages.
+ */
+class NonLinearSolverLogger : public IObserver<NonLinearSolverMessages>
+{
+public:
   /**
-   * @brief Implementation of an observer for logging non-linear solvers.
-   * \ingroup observer
-   * This class inherits from the IObserver class and provides specific
-   * implementations for updating based on NonLinearSolverMessages.
+   * @brief Handles the update when a NonLinearSolverMessages is received.
+   *
+   * @param message The NonLinearSolverMessages received.
    */
-  class NonLinearSolverLogger : public IObserver<NonLinearSolverMessages> {
-  public:
-    /**
-     * @brief Handles the update when a NonLinearSolverMessages is received.
-     *
-     * @param message The NonLinearSolverMessages received.
-     */
-    void updateImpl(NonLinearSolverMessages message) final;
+  void updateImpl(NonLinearSolverMessages message) final;
 
-    /**
-     * @brief Handles the update when a NonLinearSolverMessages with a double value is received.
-     *
-     * @param message The NonLinearSolverMessages received.
-     * @param val The double value associated with the message.
-     */
-    void updateImpl(NonLinearSolverMessages message, double val) final;
+  /**
+   * @brief Handles the update when a NonLinearSolverMessages with a double value is received.
+   *
+   * @param message The NonLinearSolverMessages received.
+   * @param val The double value associated with the message.
+   */
+  void updateImpl(NonLinearSolverMessages message, double val) final;
 
-    /**
-     * @brief Handles the update when a NonLinearSolverMessages with an integer value is received.
-     *
-     * @param message The NonLinearSolverMessages received.
-     * @param intVal The integer value associated with numberOfIterations.
-     */
-    void updateImpl(NonLinearSolverMessages message, int intVal) final;
+  /**
+   * @brief Handles the update when a NonLinearSolverMessages with an integer value is received.
+   *
+   * @param message The NonLinearSolverMessages received.
+   * @param intVal The integer value associated with numberOfIterations.
+   */
+  void updateImpl(NonLinearSolverMessages message, int intVal) final;
 
-  private:
-    int iters{0};
-    double dNorm{0};
-    double rNorm{0};
-    double lambda{0};
-  };
-}  // namespace Ikarus
+private:
+  int iters{0};
+  double dNorm{0};
+  double rNorm{0};
+  double lambda{0};
+};
+} // namespace Ikarus

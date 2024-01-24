@@ -11,7 +11,8 @@
 #include <ikarus/finiteelements/mechanics/enhancedassumedstrains.hh>
 
 template <typename DisplacementBasedElement>
-struct ElementTest<Ikarus::EnhancedAssumedStrains<DisplacementBasedElement>> {
+struct ElementTest<Ikarus::EnhancedAssumedStrains<DisplacementBasedElement>>
+{
   [[nodiscard]] static auto test() {
     auto easFunctor = [](auto& nonLinOp, auto& fe, auto& req) {
       const auto& localView = fe.localView();
@@ -55,9 +56,9 @@ struct ElementTest<Ikarus::EnhancedAssumedStrains<DisplacementBasedElement>> {
             << "\nEigenValues: \n"
             << newEigenValues.transpose() << "The tolerance is " << 1e-6 * newEigenValues.norm()
             << "The number of EAS parameters is" << numberOfEASParameter << std::endl;
-        if (numberOfEASParameter > 0 and numberOfEASParameter != 5)          // Q1E4 and Q1E5 are the same
-          t.check((newEigenValues.array() <= oldEigenValues.array()).sum())  // Q1E4 and Q1E7 are the same in the case
-                                                                             // of undistorted element
+        if (numberOfEASParameter > 0 and numberOfEASParameter != 5)         // Q1E4 and Q1E5 are the same
+          t.check((newEigenValues.array() <= oldEigenValues.array()).sum()) // Q1E4 and Q1E7 are the same in the case
+                                                                            // of undistorted element
               << "More EAS parameter mean that the stiffness gets reduced. EAS parameter: " << numberOfEASParameter
               << "\noldEigenValues: \n"
               << oldEigenValues.transpose() << "\nnewEigenValues: \n"
@@ -68,7 +69,7 @@ struct ElementTest<Ikarus::EnhancedAssumedStrains<DisplacementBasedElement>> {
         auto rule       = Dune::QuadratureRules<double, gridDim>::rule(localView.element().type(), order);
 
         if (numberOfEASParameter > 0) {
-          auto easVariantCopy    = fe.easVariant();  // This only test if the variant has a copy assignment operator
+          auto easVariantCopy    = fe.easVariant(); // This only test if the variant has a copy assignment operator
           const auto& easVariant = fe.easVariant();
           std::visit(
               [&]<typename EAS>(const EAS& easFunction) {

@@ -99,17 +99,17 @@ static auto dirichletBCTest() {
   Dune::Functions::forEachBoundaryDOF(basisP->flat(), lambdaCheck);
 
   // Check that we can store lambda from python
-  std::string inhomogeneousDisplacementFunction
-      = std::string("lambda globalCoord,lam: ( numpy.array([1*lam*globalCoord[0], 2*lam*globalCoord[1]]) )");
+  std::string inhomogeneousDisplacementFunction =
+      std::string("lambda globalCoord,lam: ( numpy.array([1*lam*globalCoord[0], 2*lam*globalCoord[1]]) )");
 
   Python::start();
   Python::Reference main = Python::import("__main__");
   Python::run("import math");
   Python::run("import numpy");
-  auto pythonFuncdouble
-      = Python::make_function<Dune::FieldVector<double, 2>>(Python::evaluate(inhomogeneousDisplacementFunction));
-  auto pythonFuncdual = Python::make_function<Dune::FieldVector<autodiff::real, 2>>(
-      Python::evaluate(inhomogeneousDisplacementFunction));
+  auto pythonFuncdouble =
+      Python::make_function<Dune::FieldVector<double, 2>>(Python::evaluate(inhomogeneousDisplacementFunction));
+  auto pythonFuncdual =
+      Python::make_function<Dune::FieldVector<autodiff::real, 2>>(Python::evaluate(inhomogeneousDisplacementFunction));
   double lambda             = 7.5;
   auto resVal               = Dune::toEigen(pythonFuncdouble(Dune::FieldVector<double, 2>({1.0, 2.0}), lambda));
   autodiff::real lambdadual = lambda;
@@ -125,8 +125,8 @@ static auto dirichletBCTest() {
       << "derivativeResult's value is not " << derivativeResultExpected << " but " << derivativeResult;
 
   auto inhomogeneousDisplacementFromPython = [&]<typename T>(const auto& globalCoord, const T& lambda_) {
-    auto pythonFunc
-        = Python::make_function<Dune::FieldVector<T, 2>>(Python::evaluate(inhomogeneousDisplacementFunction));
+    auto pythonFunc =
+        Python::make_function<Dune::FieldVector<T, 2>>(Python::evaluate(inhomogeneousDisplacementFunction));
 
     return Dune::toEigen(pythonFunc(globalCoord, lambda_));
   };
@@ -151,8 +151,8 @@ static auto dirichletBCTest() {
     std::vector<Dune::FieldVector<double, 2>> nodalPos;
     Ikarus::utils::obtainLagrangeNodePositions(localView, nodalPos);
     for (int i = 0; i < fe.size(); i++)
-      if ((std::abs(nodalPos[i][0]) < tol) or (std::abs(nodalPos[i][0] - Lx) < tol) or (std::abs(nodalPos[i][1]) < tol)
-          or (std::abs(nodalPos[i][1] - Ly) < tol))
+      if ((std::abs(nodalPos[i][0]) < tol) or (std::abs(nodalPos[i][0] - Lx) < tol) or
+          (std::abs(nodalPos[i][1]) < tol) or (std::abs(nodalPos[i][1] - Ly) < tol))
         for (auto fixedDirection = 0; fixedDirection < 2; ++fixedDirection) {
           auto fixIndex = localView.index(localView.tree().child(fixedDirection).localIndex(i));
           dirichletValues4.fixIthDOF(fixIndex);

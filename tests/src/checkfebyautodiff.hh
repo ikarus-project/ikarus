@@ -49,20 +49,20 @@ auto checkFEByAutoDiff(const GridView& gridView, const PreBasis& pb, const Eleme
 
     t.check(K.isApprox(KAutoDiff, tol),
             "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
-            "automatic differentiation for "
-                + feClassName)
+            "automatic differentiation for " +
+                feClassName)
         << "The difference is " << (K - KAutoDiff);
 
     t.check(R.isApprox(RAutoDiff, tol),
             "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
-            "automatic differentiation for "
-                + feClassName)
+            "automatic differentiation for " +
+                feClassName)
         << "The difference is " << (R - RAutoDiff);
 
     t.check(Dune::FloatCmp::eq(fe.calculateScalar(req), feAutoDiff.calculateScalar(req), tol),
             "Mismatch between the energies obtained from explicit implementation and the one based on "
-            "automatic differentiation for "
-                + feClassName);
+            "automatic differentiation for " +
+                feClassName);
   }
 
   return t;

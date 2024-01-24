@@ -1,11 +1,11 @@
 window.MathJax = {
   loader: {load: ['[tex]/bm']},
   tex: {
-    packages: {'[+]': {'bm'}},
-    inlineMath: [['$', '$'], ['\\(', '\\)']],
-    displayMath: [['\\[', '\\]']],
-    processEscapes: true,
-    processEnvironments: true
+           packages: {'[+]': {'bm'}},
+           inlineMath: [['$', '$'], ['\\(', '\\)']],
+           displayMath: [['\\[', '\\]']],
+           processEscapes: true,
+           processEnvironments: true
   },
   options: {ignoreHtmlClass: '.*|', processHtmlClass: 'arithmatex'}
 };
