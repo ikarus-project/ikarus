@@ -10,7 +10,8 @@
 using Dune::TestSuite;
 
 template <typename Basis_, typename Material, typename FERequirements_ = Ikarus::FERequirements<>>
-struct NonLinearElasticHelper : Ikarus::NonLinearElastic<Basis_, Material, FERequirements_, false> {
+struct NonLinearElasticHelper : Ikarus::NonLinearElastic<Basis_, Material, FERequirements_, false>
+{
   using Base = Ikarus::NonLinearElastic<Basis_, Material, FERequirements_, false>;
   using Base::Base;
   using FlatBasis = typename Basis_::FlatBasis;

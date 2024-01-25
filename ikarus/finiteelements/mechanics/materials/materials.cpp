@@ -12,8 +12,8 @@
 
 namespace Ikarus {
 
-  template struct LinearElasticityT<double>;
-  template struct NeoHookeT<double>;
-  template struct StVenantKirchhoffT<double>;
+template struct LinearElasticityT<double>;
+template struct NeoHookeT<double>;
+template struct StVenantKirchhoffT<double>;
 
-}  // namespace Ikarus
+} // namespace Ikarus

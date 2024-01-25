@@ -10,8 +10,8 @@
 #include <dune/common/test/testsuite.hh>
 #include <dune/common/tuplevector.hh>
 #if HAVE_DUNE_LOCALFEFUNCTIONS
-#  include <dune/localfefunctions/manifolds/realTuple.hh>
-#  include <dune/localfefunctions/manifolds/unitVector.hh>
+  #include <dune/localfefunctions/manifolds/realTuple.hh>
+  #include <dune/localfefunctions/manifolds/unitVector.hh>
 
 #endif
 #include <ikarus/solver/nonlinearsolver/trustregion.hh>

@@ -148,7 +148,7 @@ static auto vectorValuedOperatorNewtonRaphsonTest() {
   // Newton method test
   const double eps  = 1e-14;
   const int maxIter = 20;
-  Ikarus::NewtonRaphson nr(nonLinOp, [&](auto& r, auto& A_) { return A_.inverse() * r; });  // special linear solver
+  Ikarus::NewtonRaphson nr(nonLinOp, [&](auto& r, auto& A_) { return A_.inverse() * r; }); // special linear solver
   return checkNewtonRaphson(nr, x, eps, maxIter, 1, (-A.ldlt().solve(b)).eval(), Eigen::Vector3d::Zero().eval());
 }
 
@@ -188,7 +188,7 @@ static auto secondOrderVectorValuedOperatorTest() {
   checkNewtonRaphson(nr, x, eps, maxIter, 1, (-0.5 * A.ldlt().solve(b)).eval(), Eigen::VectorXd::Zero(3).eval());
   nonLinOp.update<0>();
   t.check(Dune::FloatCmp::eq(-2.6538461538461533, nonLinOp.value()));
-  x << 1, 2, 3;  // Restart and check with predictor
+  x << 1, 2, 3; // Restart and check with predictor
   t.subTest(checkNewtonRaphson(nr, x, eps, maxIter, 1, (-0.5 * A.ldlt().solve(b)).eval(), x));
   nonLinOp.update<0>();
   t.check(Dune::FloatCmp::eq(-2.6538461538461533, nonLinOp.value()));

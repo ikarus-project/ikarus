@@ -12,10 +12,10 @@
 #include <dune/grid/uggrid.hh>
 #include <dune/grid/yaspgrid.hh>
 #if HAVE_DUNE_IGA
-#  include <dune/iga/nurbsgrid.hh>
+  #include <dune/iga/nurbsgrid.hh>
 #endif
 #if HAVE_DUNE_LOCALFEFUNCTIONS
-#  include <dune/localfefunctions/cachedlocalBasis/cachedlocalBasis.hh>
+  #include <dune/localfefunctions/cachedlocalBasis/cachedlocalBasis.hh>
 #endif
 #include "testhelpers.hh"
 
@@ -32,15 +32,23 @@
 #include <ikarus/utils/pythonautodiffdefinitions.hh>
 
 namespace Grids {
-  struct Yasp {};
-  struct Alu {};
-  struct IgaSurfaceIn2D {};
-  struct IgaSurfaceIn3D {};
-}  // namespace Grids
+struct Yasp
+{
+};
+struct Alu
+{
+};
+struct IgaSurfaceIn2D
+{
+};
+struct IgaSurfaceIn3D
+{
+};
+} // namespace Grids
 
 template <typename GridType>
 auto createGrid([[maybe_unused]] int elex = 10, [[maybe_unused]] int eley = 10) {
-  //  //  /// ALUGrid Example
+  // //  /// ALUGrid Example
   if constexpr (std::is_same_v<GridType, Grids::Alu>) {
     using Grid = Dune::ALUGrid<2, 2, Dune::simplex, Dune::conforming>;
     auto grid  = Dune::GmshReader<Grid>::read("testfiles/unstructuredtrianglesfine.msh", false);
@@ -60,14 +68,17 @@ auto createGrid([[maybe_unused]] int elex = 10, [[maybe_unused]] int eley = 10) 
     constexpr auto dimworld = 2;
     const std::array order  = {2, 2};
 
-    const std::array<std::vector<double>, 2> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+    const std::array<std::vector<double>, 2> knotSpans = {
+        {{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}
+    };
 
     using ControlPoint = Dune::IGA::NURBSPatchData<2, dimworld>::ControlPointType;
 
-    const std::vector<std::vector<ControlPoint>> controlPoints
-        = {{{.p = {0, 0}, .w = 5}, {.p = {0.5, 0}, .w = 1}, {.p = {1, 0}, .w = 1}},
-           {{.p = {0, 0.5}, .w = 1}, {.p = {0.5, 0.5}, .w = 10}, {.p = {1, 0.5}, .w = 1}},
-           {{.p = {0, 1}, .w = 1}, {.p = {0.5, 1}, .w = 1}, {.p = {1, 1}, .w = 1}}};
+    const std::vector<std::vector<ControlPoint>> controlPoints = {
+        {  {.p = {0, 0}, .w = 5},    {.p = {0.5, 0}, .w = 1},   {.p = {1, 0}, .w = 1}},
+        {{.p = {0, 0.5}, .w = 1}, {.p = {0.5, 0.5}, .w = 10}, {.p = {1, 0.5}, .w = 1}},
+        {  {.p = {0, 1}, .w = 1},    {.p = {0.5, 1}, .w = 1},   {.p = {1, 1}, .w = 1}}
+    };
 
     std::array<int, 2> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
 
@@ -85,14 +96,17 @@ auto createGrid([[maybe_unused]] int elex = 10, [[maybe_unused]] int eley = 10) 
     constexpr auto dimworld = 3;
     const std::array order  = {2, 2};
 
-    const std::array<std::vector<double>, 2> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+    const std::array<std::vector<double>, 2> knotSpans = {
+        {{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}
+    };
 
     using ControlPoint = Dune::IGA::NURBSPatchData<2, dimworld>::ControlPointType;
 
-    const std::vector<std::vector<ControlPoint>> controlPoints
-        = {{{.p = {0, 0, 0.1}, .w = 5}, {.p = {0.5, 0, 0.1}, .w = 1}, {.p = {1, 0, 0.2}, .w = 1}},
-           {{.p = {0, 0.5, -0.2}, .w = 1}, {.p = {0.5, 0.5, 1}, .w = 10}, {.p = {1, 0.5, 0.2}, .w = 1}},
-           {{.p = {0, 1, 0.4}, .w = 1}, {.p = {0.5, 1, -0.25}, .w = 1}, {.p = {1, 1, 0.7}, .w = 1}}};
+    const std::vector<std::vector<ControlPoint>> controlPoints = {
+        {   {.p = {0, 0, 0.1}, .w = 5},   {.p = {0.5, 0, 0.1}, .w = 1},   {.p = {1, 0, 0.2}, .w = 1}},
+        {{.p = {0, 0.5, -0.2}, .w = 1},  {.p = {0.5, 0.5, 1}, .w = 10}, {.p = {1, 0.5, 0.2}, .w = 1}},
+        {   {.p = {0, 1, 0.4}, .w = 1}, {.p = {0.5, 1, -0.25}, .w = 1},   {.p = {1, 1, 0.7}, .w = 1}}
+    };
 
     std::array<int, 2> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
 
@@ -111,7 +125,8 @@ auto createGrid([[maybe_unused]] int elex = 10, [[maybe_unused]] int eley = 10) 
 }
 
 template <int size>
-struct CornerFactory {
+struct CornerFactory
+{
   static void construct(std::vector<Dune::FieldVector<double, size>>& values, const int corners = 10) {
     values.resize(corners);
     std::generate(values.begin(), values.end(),
@@ -119,11 +134,17 @@ struct CornerFactory {
   }
 };
 
-enum class CornerDistortionFlag { unDistorted, fixedDistorted, randomlyDistorted };
+enum class CornerDistortionFlag
+{
+  unDistorted,
+  fixedDistorted,
+  randomlyDistorted
+};
 
 // Corner factory for element with codim==0, e.g. no surfaces in 3D
 template <int gridDim>
-struct ValidCornerFactory {
+struct ValidCornerFactory
+{
   static void construct(std::vector<Dune::FieldVector<double, gridDim>>& values, const Dune::GeometryType& type,
                         const CornerDistortionFlag& distortionFlag) {
     const auto& refElement = Dune::ReferenceElements<double, gridDim>::general(type);
@@ -182,7 +203,9 @@ auto createUGGridFromCorners(const CornerDistortionFlag& distortionFlag,
 }
 
 template <typename Ele>
-struct ElementTest {};
+struct ElementTest
+{
+};
 
 template <typename NonLinearOperator>
 [[nodiscard]] auto checkGradientOfElement(NonLinearOperator& nonLinearOperator,
@@ -247,8 +270,8 @@ template <typename NonLinearOperator, typename FiniteElement>
   auto element   = elements(gridView).begin();
   using GridView = decltype(gridView);
 
-  using LinearElasticElement
-      = LinearElastic<Basis<std::remove_cvref_t<decltype(fe.localView().globalBasis().preBasis())>>>;
+  using LinearElasticElement =
+      LinearElastic<Basis<std::remove_cvref_t<decltype(fe.localView().globalBasis().preBasis())>>>;
   using EASElement = EnhancedAssumedStrains<
       LinearElastic<Basis<std::remove_cvref_t<decltype(fe.localView().globalBasis().preBasis())>>>>;
 

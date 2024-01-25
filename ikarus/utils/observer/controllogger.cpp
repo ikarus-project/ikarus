@@ -9,52 +9,52 @@
 
 namespace Ikarus {
 
-  void ControlLogger::updateImpl(ControlMessages message) {
-    switch (message) {
-      case ControlMessages::STEP_ENDED:
-        spdlog::info("===============================================================================");
-        break;
-      default:
-        break;  //   default: do nothing when notified
-    }
+void ControlLogger::updateImpl(ControlMessages message) {
+  switch (message) {
+    case ControlMessages::STEP_ENDED:
+      spdlog::info("===============================================================================");
+      break;
+    default:
+      break; // default: do nothing when notified
   }
+}
 
-  void ControlLogger::updateImpl(ControlMessages message, const std::string& pathFollowingName) {
-    switch (message) {
-      case ControlMessages::CONTROL_STARTED:
-        start = std::chrono::high_resolution_clock::now();
-        spdlog::info("===============================================================================");
-        spdlog::info("Started path following with: {}", pathFollowingName);
-        spdlog::info("===============================================================================");
-        break;
-      default:
-        break;
-    }
+void ControlLogger::updateImpl(ControlMessages message, const std::string& pathFollowingName) {
+  switch (message) {
+    case ControlMessages::CONTROL_STARTED:
+      start = std::chrono::high_resolution_clock::now();
+      spdlog::info("===============================================================================");
+      spdlog::info("Started path following with: {}", pathFollowingName);
+      spdlog::info("===============================================================================");
+      break;
+    default:
+      break;
   }
+}
 
-  void ControlLogger::updateImpl(ControlMessages message, int stepNumber, double stepSize) {
-    switch (message) {
-      case ControlMessages::STEP_STARTED:
-        spdlog::info("Load step: {:>4} {:>49} {:<.2e}", stepNumber, "Step size = ", stepSize);
-        spdlog::info("-------------------------------------------------------------------------------");
-        break;
-      default:
-        break;
-    }
+void ControlLogger::updateImpl(ControlMessages message, int stepNumber, double stepSize) {
+  switch (message) {
+    case ControlMessages::STEP_STARTED:
+      spdlog::info("Load step: {:>4} {:>49} {:<.2e}", stepNumber, "Step size = ", stepSize);
+      spdlog::info("-------------------------------------------------------------------------------");
+      break;
+    default:
+      break;
   }
+}
 
-  void ControlLogger::updateImpl(ControlMessages message, int totalIterations, const std::string& pathFollowingName) {
-    switch (message) {
-      case ControlMessages::CONTROL_ENDED:
-        stop     = std::chrono::high_resolution_clock::now();
-        duration = duration_cast<std::chrono::milliseconds>(stop - start);
-        spdlog::info("End of path following with {} control", pathFollowingName);
-        spdlog::info("Total number of iterations: {:3d}", totalIterations);
-        spdlog::info("Elapsed time: {} ms", duration.count());
-        break;
-      default:
-        break;
-    }
+void ControlLogger::updateImpl(ControlMessages message, int totalIterations, const std::string& pathFollowingName) {
+  switch (message) {
+    case ControlMessages::CONTROL_ENDED:
+      stop     = std::chrono::high_resolution_clock::now();
+      duration = duration_cast<std::chrono::milliseconds>(stop - start);
+      spdlog::info("End of path following with {} control", pathFollowingName);
+      spdlog::info("Total number of iterations: {:3d}", totalIterations);
+      spdlog::info("Elapsed time: {} ms", duration.count());
+      break;
+    default:
+      break;
   }
-}  // namespace Ikarus
+}
+} // namespace Ikarus
 #pragma GCC diagnostic pop

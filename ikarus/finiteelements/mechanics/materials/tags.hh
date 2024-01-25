@@ -11,24 +11,24 @@
 #include <ikarus/utils/makeenum.hh>
 
 namespace Ikarus {
-  /**
-   *
-   * \ingroup Materialtags
-   * \brief A strongly typed enum class representing the type of the passed strain
-   */
-  MAKE_ENUM(StrainTags, linear, deformationGradient, displacementGradient, greenLagrangian, rightCauchyGreenTensor);
+/**
+ *
+ * \ingroup Materialtags
+ * \brief A strongly typed enum class representing the type of the passed strain
+ */
+MAKE_ENUM(StrainTags, linear, deformationGradient, displacementGradient, greenLagrangian, rightCauchyGreenTensor);
 
-  /**
-   *
-   * \ingroup Materialtags
-   * \brief A strongly typed enum class representing the type of the computed stresses
-   */
-  MAKE_ENUM(StressTags, linear, PK2, PK1, Cauchy, Kirchhoff);
+/**
+ *
+ * \ingroup Materialtags
+ * \brief A strongly typed enum class representing the type of the computed stresses
+ */
+MAKE_ENUM(StressTags, linear, PK2, PK1, Cauchy, Kirchhoff);
 
-  /**
-   *
-   * \ingroup Materialtags
-   * \brief A strongly typed enum class representing the type of the computed tangent moduli
-   */
-  MAKE_ENUM(TangentModuliTags, Material, Spatial, TwoPoint);
-}  // namespace Ikarus
+/**
+ *
+ * \ingroup Materialtags
+ * \brief A strongly typed enum class representing the type of the computed tangent moduli
+ */
+MAKE_ENUM(TangentModuliTags, Material, Spatial, TwoPoint);
+} // namespace Ikarus

@@ -37,34 +37,39 @@
  * \param type The name of the enum class.
  * \param ... Enumerators to be included between BEGIN and END.
  */
-#define MAKE_ENUM(type, ...)                   \
-  enum class type { BEGIN, __VA_ARGS__, END }; \
-  constexpr std::string toString(type _e) {    \
-    using enum type;                           \
-    switch (_e) {                              \
-      ENUM_CASE(BEGIN)                         \
-      FOR_EACH(ENUM_CASE, __VA_ARGS__)         \
-      ENUM_CASE(END)                           \
-    }                                          \
-    __builtin_unreachable();                   \
+#define MAKE_ENUM(type, ...)                \
+  enum class type                           \
+  {                                         \
+    BEGIN,                                  \
+    __VA_ARGS__,                            \
+    END                                     \
+  };                                        \
+  constexpr std::string toString(type _e) { \
+    using enum type;                        \
+    switch (_e) {                           \
+      ENUM_CASE(BEGIN)                      \
+      FOR_EACH(ENUM_CASE, __VA_ARGS__)      \
+      ENUM_CASE(END)                        \
+    }                                       \
+    __builtin_unreachable();                \
   }
 
 #include <dune/common/exceptions.hh>
 namespace Ikarus {
-  /**
-   * \brief Increments the given enum value.
-   *  \ingroup utils
-   * \tparam MessageType The enum type.
-   * \param e The enum value to increment.
-   * \return The incremented enum value.
-   * \throws Dune::RangeError if trying to increment MessageType::END.
-   */
-  template <typename MessageType>
-  MessageType& increment(MessageType& e) {
-    if (e == MessageType::END) {
-      DUNE_THROW(Dune::RangeError, "for MessageType& operator ++ (MessageType&)");
-    }
-    e = MessageType(static_cast<typename std::underlying_type<MessageType>::type>(e) + 1);
-    return e;
+/**
+ * \brief Increments the given enum value.
+ *  \ingroup utils
+ * \tparam MessageType The enum type.
+ * \param e The enum value to increment.
+ * \return The incremented enum value.
+ * \throws Dune::RangeError if trying to increment MessageType::END.
+ */
+template <typename MessageType>
+MessageType& increment(MessageType& e) {
+  if (e == MessageType::END) {
+    DUNE_THROW(Dune::RangeError, "for MessageType& operator ++ (MessageType&)");
   }
-}  // namespace Ikarus
+  e = MessageType(static_cast<typename std::underlying_type<MessageType>::type>(e) + 1);
+  return e;
+}
+} // namespace Ikarus

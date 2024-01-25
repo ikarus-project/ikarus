@@ -89,8 +89,8 @@ inline auto linearStressResultsOfTetrahedron = [](auto& nonLinearOperator, auto&
   constexpr int quantities = 6;
 
   Eigen::Matrix<double, vertices, quantities> expectedStress;
-  expectedStress.rowwise()
-      = Eigen::Matrix<double, 1, quantities>{576.92307692, 1346.15384615, 576.92307692, 0, 384.61538462, 769.23076923};
+  expectedStress.rowwise() =
+      Eigen::Matrix<double, 1, quantities>{576.92307692, 1346.15384615, 576.92307692, 0, 384.61538462, 769.23076923};
 
   auto& displacement = nonLinearOperator.firstParameter();
   displacement << 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0;

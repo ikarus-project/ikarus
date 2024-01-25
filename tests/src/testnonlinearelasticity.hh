@@ -33,7 +33,8 @@
 
 using Dune::TestSuite;
 
-struct OwnResultFunction {
+struct OwnResultFunction
+{
   template <typename ElementTypeT, typename FERequirements, int size, typename ScalarTypeT>
   double operator()(const ElementTypeT& /* fe */, const Ikarus::ResultRequirements<FERequirements>& /* req */,
                     const Dune::FieldVector<ScalarTypeT, size>& /* pos */, [[maybe_unused]] int /* comp */) const {
@@ -74,7 +75,8 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   Ikarus::DirichletValues dirichletValues(basisP->flat());
 
   dirichletValues.fixBoundaryDOFs([&](auto& dirichletFlags, auto&& localIndex, auto&& localView, auto&& intersection) {
-    if (std::abs(intersection.geometry().center()[1]) < 1e-8) dirichletFlags[localView.index(localIndex)] = true;
+    if (std::abs(intersection.geometry().center()[1]) < 1e-8)
+      dirichletFlags[localView.index(localIndex)] = true;
   });
 
   auto sparseAssembler = SparseFlatAssembler(fes, dirichletValues);
@@ -103,8 +105,8 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
     return sparseAssembler.getScalar(req);
   };
 
-  auto nonLinOp
-      = Ikarus::NonLinearOperator(functions(energyFunction, residualFunction, KFunction), parameter(d, lambda));
+  auto nonLinOp =
+      Ikarus::NonLinearOperator(functions(energyFunction, residualFunction, KFunction), parameter(d, lambda));
 
   const double gradTol = 1e-8;
 
@@ -112,7 +114,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   tr->setup({.verbosity = 1,
              .maxiter   = 1000,
              .grad_tol  = gradTol,
-             .corr_tol  = 1e-16,  // everything should converge to the gradient tolerance
+             .corr_tol  = 1e-16, // everything should converge to the gradient tolerance
              .useRand   = false,
              .rho_reg   = 1e8,
              .Delta0    = 1});
@@ -153,7 +155,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
         << "\nmaxDispExpected: \n"
         << maxDispExpected << "\nmaxDisp: \n"
         << maxDisp;
-  } else {  // using a Neohooke material yields a lower energy and larger displacements
+  } else { // using a Neohooke material yields a lower energy and larger displacements
     t.check(Dune::FloatCmp::gt(energyExpected, nonLinOp.value()), "energyExpected > nonLinOp.value()")
         << "energyExpected: " << energyExpected << "\nnonLinOp.value(): " << nonLinOp.value();
 
@@ -252,8 +254,8 @@ auto GreenLagrangeStrainTest(const Material& mat) {
   feLE.calculateMatrix(req, KLE);
 
   t.check(K.isApprox(KLE, tol),
-          "Mismatch between linear and non-linear stiffness matrix for zero displacements with gridDim = "
-              + std::to_string(gridDim));
+          "Mismatch between linear and non-linear stiffness matrix for zero displacements with gridDim = " +
+              std::to_string(gridDim));
   return t;
 }
 
@@ -303,8 +305,8 @@ auto SingleElementTest(const Material& mat) {
   for (size_t i = 0; i < basis.flat().size(); ++i) {
     if (abs(eigenValuesComputed[i]) > tol) {
       t.check(Dune::FloatCmp::eq(abs(eigenValuesComputed[i]), eigenValuesExpected[i], tol),
-              "Mismatch in the " + std::to_string(i + 1)
-                  + "-th eigen value in single element test for four node non-linear 2D element");
+              "Mismatch in the " + std::to_string(i + 1) +
+                  "-th eigen value in single element test for four node non-linear 2D element");
     }
   }
   return t;

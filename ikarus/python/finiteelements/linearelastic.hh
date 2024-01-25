@@ -27,23 +27,23 @@
 
 namespace Ikarus::Python {
 
-  /**
-   * \brief Register Python bindings for a Linear Elastic class.
-   *
-   * This function registers Python bindings for a LinearElastic class, allowing it to be used in Python scripts.
-   * The registered class will have several initializers with different sets of parameters.
-   *
-   * \tparam LinearElastic The LinearElastic class to be registered.
-   * \tparam options Variadic template parameters for additional options when defining the Python class.
-   *
-   * \param scope A Pybind11 handle representing the Python scope where the class should be registered.
-   * \param cls The Pybind11 class template to be used for registering the LinearElastic class.
-   *
-   * \ingroup pythonbindings
-   */
-  template <class LinearElastic, class... options>
-  void registerLinearElastic(pybind11::handle scope, pybind11::class_<LinearElastic, options...> cls) {
-    registerElement(scope, cls);
-  }
+/**
+ * \brief Register Python bindings for a Linear Elastic class.
+ *
+ * This function registers Python bindings for a LinearElastic class, allowing it to be used in Python scripts.
+ * The registered class will have several initializers with different sets of parameters.
+ *
+ * \tparam LinearElastic The LinearElastic class to be registered.
+ * \tparam options Variadic template parameters for additional options when defining the Python class.
+ *
+ * \param scope A Pybind11 handle representing the Python scope where the class should be registered.
+ * \param cls The Pybind11 class template to be used for registering the LinearElastic class.
+ *
+ * \ingroup pythonbindings
+ */
+template <class LinearElastic, class... options>
+void registerLinearElastic(pybind11::handle scope, pybind11::class_<LinearElastic, options...> cls) {
+  registerElement(scope, cls);
+}
 
-}  // namespace Ikarus::Python
+} // namespace Ikarus::Python

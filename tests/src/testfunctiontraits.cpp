@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include <ikarus/utils/traits.hh>
 
-struct A {
+struct A
+{
   double foo(float b) const;
   double bar(int b, float c);
 };

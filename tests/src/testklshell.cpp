@@ -14,7 +14,7 @@
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/subspacebasis.hh>
 #if HAVE_DUNE_IGA
-#  include <dune/iga/nurbsbasis.hh>
+  #include <dune/iga/nurbsbasis.hh>
 #endif
 #include "spdlog/spdlog.h"
 
@@ -39,12 +39,16 @@ static auto NonLinearKLShellLoadControlTR() {
   constexpr auto dimworld        = 3;
   const std::array<int, 2> order = {1, 1};
 
-  const std::array<std::vector<double>, 2> knotSpans = {{{0, 0, 1, 1}, {0, 0, 1, 1}}};
+  const std::array<std::vector<double>, 2> knotSpans = {
+      {{0, 0, 1, 1}, {0, 0, 1, 1}}
+  };
 
   using ControlPoint = Dune::IGA::NURBSPatchData<2, dimworld>::ControlPointType;
 
-  const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {0, 0, 0}, .w = 1}, {.p = {10, 0, 0}, .w = 1}}, {{.p = {0, 2, 0}, .w = 1}, {.p = {10, 2, 0}, .w = 1}}};
+  const std::vector<std::vector<ControlPoint>> controlPoints = {
+      {{.p = {0, 0, 0}, .w = 1}, {.p = {10, 0, 0}, .w = 1}},
+      {{.p = {0, 2, 0}, .w = 1}, {.p = {10, 2, 0}, .w = 1}}
+  };
 
   std::array<int, 2> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
 
@@ -85,11 +89,13 @@ static auto NonLinearKLShellLoadControlTR() {
   Ikarus::DirichletValues dirichletValues(basisP->flat());
 
   dirichletValues.fixBoundaryDOFs([&](auto& dirichletFlags, auto&& localIndex, auto&& localView, auto&& intersection) {
-    if (std::abs(intersection.geometry().center()[0]) < 1e-8) dirichletFlags[localView.index(localIndex)] = true;
+    if (std::abs(intersection.geometry().center()[0]) < 1e-8)
+      dirichletFlags[localView.index(localIndex)] = true;
   });
 
   dirichletValues.fixBoundaryDOFs([&](auto& dirichletFlags, auto&& localIndex, auto&& localView, auto&& intersection) {
-    if (std::abs(intersection.geometry().center()[0]) > 10.0 - 1e-8) dirichletFlags[localView.index(localIndex)] = true;
+    if (std::abs(intersection.geometry().center()[0]) > 10.0 - 1e-8)
+      dirichletFlags[localView.index(localIndex)] = true;
   });
 
   auto sparseAssembler = SparseFlatAssembler(fes, dirichletValues);
@@ -129,7 +135,7 @@ static auto NonLinearKLShellLoadControlTR() {
   tr->setup({.verbosity = 1,
              .maxiter   = 1000,
              .grad_tol  = gradTol,
-             .corr_tol  = 1e-16,  // everything should converge to the gradient tolerance
+             .corr_tol  = 1e-16, // everything should converge to the gradient tolerance
              .useRand   = false,
              .rho_reg   = 1e8,
              .Delta0    = 1});
@@ -154,7 +160,8 @@ static auto NonLinearKLShellLoadControlTR() {
 }
 
 template <typename Basis_, typename FERequirements_ = Ikarus::FERequirements<>>
-struct KirchhoffLoveShellHelper : Ikarus::KirchhoffLoveShell<Basis_, FERequirements_, false> {
+struct KirchhoffLoveShellHelper : Ikarus::KirchhoffLoveShell<Basis_, FERequirements_, false>
+{
   using Base = Ikarus::KirchhoffLoveShell<Basis_, FERequirements_, false>;
   using Base::Base;
   using FlatBasis = typename Basis_::FlatBasis;

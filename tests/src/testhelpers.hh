@@ -10,15 +10,14 @@
 #include <dune/common/float_cmp.hh>
 
 namespace Eigen {
-  template <typename Derived>
-  struct EigenBase;
+template <typename Derived>
+struct EigenBase;
 }
 
 template <typename Derived, typename OtherDerived>
-requires(std::convertible_to<Derived, Eigen::EigenBase<Derived> const&>and std::convertible_to<
-         OtherDerived, Eigen::EigenBase<OtherDerived> const&>) bool isApproxSame(Derived const& val,
-                                                                                 OtherDerived const& other,
-                                                                                 double prec) {
+requires(std::convertible_to<Derived, const Eigen::EigenBase<Derived>&> and
+         std::convertible_to<OtherDerived, const Eigen::EigenBase<OtherDerived>&>)
+bool isApproxSame(const Derived& val, const OtherDerived& other, double prec) {
   if constexpr (requires {
                   val.isApprox(other, prec);
                   (val - other).isMuchSmallerThan(1, prec);
@@ -26,7 +25,7 @@ requires(std::convertible_to<Derived, Eigen::EigenBase<Derived> const&>and std::
     return val.isApprox(other, prec) or (val - other).isZero(prec);
   else if constexpr (requires { val.isApprox(other, prec); })
     return val.isApprox(other, prec);
-  else  // Eigen::DiagonalMatrix branch
+  else // Eigen::DiagonalMatrix branch
     return val.diagonal().isApprox(other.diagonal(), prec) or (val.diagonal() - other.diagonal()).isZero(prec);
 }
 
@@ -40,11 +39,10 @@ void checkScalars(TestSuiteType& t, const ScalarType val, const ScalarType expec
 }
 
 template <typename TestSuiteType, typename ScalarType>
-requires(not std::is_integral_v<ScalarType>) void checkScalars(TestSuiteType& t, const ScalarType val,
-                                                               const ScalarType expectedVal,
-                                                               const std::string& messageIfFailed = "",
-                                                               double tol
-                                                               = Dune::FloatCmp::DefaultEpsilon<ScalarType>::value()) {
+requires(not std::is_integral_v<ScalarType>)
+void checkScalars(TestSuiteType& t, const ScalarType val, const ScalarType expectedVal,
+                  const std::string& messageIfFailed = "",
+                  double tol                         = Dune::FloatCmp::DefaultEpsilon<ScalarType>::value()) {
   t.check(Dune::FloatCmp::eq(val, expectedVal, tol))
       << std::setprecision(16) << "Incorrect Scalar floating point:\t" << expectedVal << " Actual:\t" << val
       << ". The used tolerance was " << tol << messageIfFailed;

@@ -13,7 +13,8 @@
 // since python does not support passing python float by reference to a double&, we have to wrap everything
 // see also https://pybind11.readthedocs.io/en/stable/faq.html#limitations-involving-reference-arguments
 template <typename T>
-struct ValueWrapper {
+struct ValueWrapper
+{
   T val;
   ValueWrapper operator+(const ValueWrapper& v) const { return ValueWrapper{val + v.val}; }
   ValueWrapper operator-(const ValueWrapper& v) const { return ValueWrapper{val - v.val}; }
@@ -82,8 +83,8 @@ PYBIND11_MODULE(_ikarus, m) {
   resType.value("director", ResultType::director);
 
   using VWd = ValueWrapper<double>;
-  auto valueWrapperDouble
-      = Dune::Python::insertClass<VWd>(m, "ValueWrapper", Dune::Python::GenerateTypeName("ValueWrapper<double>")).first;
+  auto valueWrapperDouble =
+      Dune::Python::insertClass<VWd>(m, "ValueWrapper", Dune::Python::GenerateTypeName("ValueWrapper<double>")).first;
   valueWrapperDouble.def(py::init<double>());
   valueWrapperDouble.def("__repr__", [](const VWd& d) { return std::to_string(d.val); });
   valueWrapperDouble.def("__eq__", [](const VWd& x, const VWd& y) { return Dune::FloatCmp::eq(x.val, y.val); });
@@ -99,10 +100,10 @@ PYBIND11_MODULE(_ikarus, m) {
 
   using FEreq   = FERequirements<Ref<VectorXd>>;
   auto includes = Dune::Python::IncludeFiles{"ikarus/finiteelements/ferequirements.hh"};
-  auto lv       = Dune::Python::insertClass<FEreq>(
-                m, "FERequirements", Dune::Python::GenerateTypeName("FERequirements<Eigen::Ref<Eigen::VectorXd>>"),
-                includes)
-                .first;
+  auto lv =
+      Dune::Python::insertClass<FEreq>(
+          m, "FERequirements", Dune::Python::GenerateTypeName("FERequirements<Eigen::Ref<Eigen::VectorXd>>"), includes)
+          .first;
   lv.def(py::init());
   lv.def("addAffordance", [](FEreq& self, const ScalarAffordances& affordances) { self.addAffordance(affordances); });
   lv.def("addAffordance", [](FEreq& self, const VectorAffordances& affordances) { self.addAffordance(affordances); });

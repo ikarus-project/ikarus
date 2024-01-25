@@ -12,21 +12,21 @@
 
 namespace Ikarus::Python {
 
-  // Python wrapper for the FVAssembler C++ class
-  template <class BoundaryPatch, class... options>
-  void registerBoundaryPatch(pybind11::handle scope, pybind11::class_<BoundaryPatch, options...> cls) {
-    using pybind11::operator""_a;
+// Python wrapper for the FVAssembler C++ class
+template <class BoundaryPatch, class... options>
+void registerBoundaryPatch(pybind11::handle scope, pybind11::class_<BoundaryPatch, options...> cls) {
+  using pybind11::operator""_a;
 
-    using GridView = typename BoundaryPatch::GridView;
+  using GridView = typename BoundaryPatch::GridView;
 
-    cls.def(pybind11::init([](const GridView& gv, Eigen::Ref<Eigen::VectorX<bool>> vec) {
-              Dune::BitSetVector<1> bitSetVector;
-              bitSetVector.resize(vec.size());
-              for (size_t i = 0; i < vec.size(); ++i)
-                bitSetVector[i] = vec[i];
-              return new BoundaryPatch(gv, bitSetVector);
-            }),
-            pybind11::keep_alive<1, 2>(), pybind11::keep_alive<1, 3>());
-  }
+  cls.def(pybind11::init([](const GridView& gv, Eigen::Ref<Eigen::VectorX<bool>> vec) {
+            Dune::BitSetVector<1> bitSetVector;
+            bitSetVector.resize(vec.size());
+            for (size_t i = 0; i < vec.size(); ++i)
+              bitSetVector[i] = vec[i];
+            return new BoundaryPatch(gv, bitSetVector);
+          }),
+          pybind11::keep_alive<1, 2>(), pybind11::keep_alive<1, 3>());
+}
 
-}  // namespace Ikarus::Python
+} // namespace Ikarus::Python

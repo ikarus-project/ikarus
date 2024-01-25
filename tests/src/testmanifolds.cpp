@@ -9,8 +9,8 @@
 
 #include <dune/common/test/testsuite.hh>
 #if HAVE_DUNE_LOCALFEFUNCTIONS
-#  include <dune/localfefunctions/manifolds/realTuple.hh>
-#  include <dune/localfefunctions/manifolds/unitVector.hh>
+  #include <dune/localfefunctions/manifolds/realTuple.hh>
+  #include <dune/localfefunctions/manifolds/unitVector.hh>
 #endif
 #include <Eigen/Core>
 
@@ -41,7 +41,7 @@ static auto testUnitVector() {
 
   t.check(isApproxSame(b.getValue(), Eigen::Vector<double, 3>(0.5, 1.0 / sqrt(2), 0.5), tol));
 
-  UnitVector<double, 3> c{UnitVector<double, 3>{Eigen::Vector<double, 3>::UnitZ() * 2.0}};  // move constructor test
+  UnitVector<double, 3> c{UnitVector<double, 3>{Eigen::Vector<double, 3>::UnitZ() * 2.0}}; // move constructor test
   t.check(isApproxSame(c.getValue(), Eigen::Vector<double, 3>(0.0, 0.0, 1.0), tol));
 
   c.setValue(Eigen::Vector<double, 3>(13.0, -5.0, 1.0));

@@ -89,7 +89,7 @@ the specified `FERequirementType`.   \n <li> `getScalar(req)`: Returns a scalar 
         "reducedSize", [](Assembler& self) { return self.reducedSize(); }, pybind11::return_value_policy::copy);               \
   }
 
-  MAKE_ASSEMBLER_REGISTERY_FUNCTION(SparseFlatAssembler);
-  MAKE_ASSEMBLER_REGISTERY_FUNCTION(DenseFlatAssembler);
+MAKE_ASSEMBLER_REGISTERY_FUNCTION(SparseFlatAssembler);
+MAKE_ASSEMBLER_REGISTERY_FUNCTION(DenseFlatAssembler);
 
-}  // namespace Ikarus::Python
+} // namespace Ikarus::Python

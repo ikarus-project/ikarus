@@ -1,48 +1,103 @@
 ---
 # SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: CC0-1.0
-  BasedOnStyle: Google
-  PointerAlignment: Left
-  DerivePointerAlignment: false
-  AccessModifierOffset: -2
-  AlignTrailingComments: true
-  AllowAllParametersOfDeclarationOnNextLine: false
-  AlwaysBreakTemplateDeclarations: Yes
-  AllowShortLoopsOnASingleLine: false
-  BreakBeforeBraces: Attach
-  ColumnLimit: 120
-  ConstructorInitializerAllOnOneLineOrOnePerLine: true
-  SortIncludes: CaseInsensitive
-  IndentPPDirectives: AfterHash
-  AlignConsecutiveAssignments: Consecutive
-  IndentWidth: 2
-  NamespaceIndentation: All
-  BreakBeforeBinaryOperators: All
-  BreakBeforeTernaryOperators: true
-  IncludeBlocks: Regroup
-  IncludeCategories:
-    - Regex: 'config.h'
-      Priority: -1
-      SortPriority: -1
-    - Regex: '^(<|")dune/'
-      Priority: 3
-      SortPriority: 3
-    - Regex: '^(<|")spdlog/'
-      Priority: 4
-      SortPriority: 4
-    - Regex: '^(<|")Eigen/'
-      Priority: 5
-      SortPriority: 5
-    - Regex: '^(<|")ikarus/'
-      Priority: 10
-      SortPriority: 10
-    - Regex: '^(<|")autodiff/'
-      Priority: 6
-      SortPriority: 6
-    - Regex:           '<([A-Za-z0-9.\/-_])+>'
-      Priority:        2
-      SortPriority: 2
-    - Regex:           '"([A-Za-z0-9.\/-_])+"'
-      Priority:        1
-      SortPriority: 1
+BasedOnStyle: Google
+PointerAlignment: Left
+DerivePointerAlignment: false
+AccessModifierOffset: -2
+AlignTrailingComments: true
+AllowAllParametersOfDeclarationOnNextLine: false
+AlwaysBreakTemplateDeclarations: Yes
+AllowShortLoopsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: false
+ColumnLimit: 120
+QualifierAlignment: Left
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+SortIncludes: CaseInsensitive
+BreakBeforeConceptDeclarations: true
+SpacesBeforeTrailingComments : 1
+AllowAllArgumentsOnNextLine: true
+AlignAfterOpenBracket: Align
+BinPackArguments: true
+BinPackParameters: true
+SpacesInAngles: Never
+AlignArrayOfStructures: Right
+BreakConstructorInitializers: BeforeColon
+PackConstructorInitializers: Never
+RequiresClausePosition: OwnLine
+SpacesInLineCommentPrefix:
+  Minimum: 1
+  Maximum: 1
+IndentRequiresClause: false
+IndentPPDirectives: BeforeHash
+AlignConsecutiveAssignments: true
+IndentWidth: 2
+BreakAfterAttributes: Leave
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterEnum: true
+  AfterStruct: true
+  AfterClass: true
+  SplitEmptyFunction: false
+  AfterFunction: false
+NamespaceIndentation: Inner
+SpaceAfterTemplateKeyword: true
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+  AfterControlStatements: true
+  AfterFunctionDefinitionName: false
+  AfterFunctionDeclarationName: false
+  AfterOverloadedOperator: false
+BreakBeforeBinaryOperators: None
+BreakBeforeTernaryOperators: true
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: 'config.h'
+    Priority: -1
+    SortPriority: -1
+  - Regex: '^(<|")dune/'
+    Priority: 3
+    SortPriority: 3
+  - Regex: '^(<|")spdlog/'
+    Priority: 4
+    SortPriority: 4
+  - Regex: '^(<|")Eigen/'
+    Priority: 5
+    SortPriority: 5
+  - Regex: '^(<|")ikarus/assembler/'
+    Priority: 10
+    SortPriority: 10
+  - Regex: '^(<|")ikarus/controlroutines/'
+    Priority: 10
+    SortPriority: 11
+  - Regex: '^(<|")ikarus/finiteelements/'
+    Priority: 10
+    SortPriority: 12
+  - Regex: '^(<|")ikarus/io/'
+    Priority: 10
+    SortPriority: 13
+  - Regex: '^(<|")ikarus/linearalgebra/'
+    Priority: 10
+    SortPriority: 14
+  - Regex: '^(<|")ikarus/python/'
+    Priority: 10
+    SortPriority: 15
+  - Regex: '^(<|")ikarus/solver/'
+    Priority: 10
+    SortPriority: 16
+  - Regex: '^(<|")ikarus/utils/'
+    Priority: 10
+    SortPriority: 17
+  - Regex: '^(<|")ikarus/'
+    Priority: 10
+    SortPriority: 20
+  - Regex: '^(<|")autodiff/'
+    Priority: 6
+    SortPriority: 6
+  - Regex:           '<([A-Za-z0-9.\/-_])+>'
+    Priority:        2
+    SortPriority: 2
+  - Regex:           '"([A-Za-z0-9.\/-_])+"'
+    Priority:        1
+    SortPriority: 1
 ...
