@@ -64,6 +64,7 @@ public:
   using TractionType           = Traction<LinearElastic<Basis_, FERequirements_, useEigenRef>, Traits>;
   static constexpr int myDim   = Traits::mydim;
   using LocalBasisType         = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
+  using ResultArray = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, 0, 9, 3>;
 
   /**
    * @brief Constructor for the LinearElastic class.
@@ -207,17 +208,19 @@ public:
   }
 
   /**
-   * @brief Calculates results at a specific local position.
+   * @brief Calculates a requested result at a specific local position.
    *
-   * @param req The ResultRequirementsType object specifying the requested results.
+   * @param req The ResultRequirementsType object specifying the requested result.
    * @param local Local position vector.
-   * @param result Map to store the calculated results.
+   * @return calculated result
    */
-  void calculateAt(const ResultRequirementsType& req, const Dune::FieldVector<double, Traits::mydim>& local,
-                   ResultTypeMap<double>& result) const {
+  ResultArray calculateAt(const ResultRequirementsType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
     using namespace Dune::Indices;
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
+
+    if (not req.hasSingleResultRequested())
+      DUNE_THROW(Dune::InvalidStateException, "Ambivalent call to calculateAt(). There are more than one ResultTye requested.");
 
     const auto eps = strainFunction(req.getFERequirements());
     const auto C   = materialTangent();
@@ -226,7 +229,7 @@ public:
     auto linearStress = (C * epsVoigt).eval();
 
     if (req.isResultRequested(ResultType::linearStress))
-      result.insertOrAssignResult(ResultType::linearStress, linearStress);
+      return linearStress;
     else
       DUNE_THROW(Dune::NotImplemented, "The requested result type is NOT implemented.");
   }

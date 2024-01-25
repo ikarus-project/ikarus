@@ -335,66 +335,6 @@ public:
   }
 };
 
-/**
- * \class ResultTypeMap
- * \brief Class representing a map of result types to result arrays.
- *
- * This class provides a mapping between different result types and their corresponding result arrays.
- * It allows inserting or assigning results and retrieving results based on the result type.
- *
- * \tparam ParameterType Type of the parameters, defaulting to double.
- *
- */
-template <typename ParameterType = double>
-class ResultTypeMap
-{
-public:
-  using ResultArray = Eigen::Matrix<ParameterType, Eigen::Dynamic, Eigen::Dynamic, 0, 9, 3>;
-
-  /**
-   * \brief Insert or assign a result to the map.
-   *
-   * This function inserts or assigns the specified result array to the map with the given result type.
-   *
-   * \param resultType The type of the result to be inserted or assigned.
-   * \param resultArray The result array to be inserted or assigned.
-   */
-  void insertOrAssignResult(ResultType&& resultType, const ResultArray& resultArray) {
-    results.insert_or_assign(resultType, resultArray);
-  }
-
-  /**
-   * \brief Get the result array for a specific result type.
-   *
-   * This function retrieves the result array for the specified result type.
-   *
-   * \param resultType The type of the result to be retrieved.
-   * \return Reference to the result array.
-   *
-   * \throws std::out_of_range if the specified result type is not found in the map.
-   */
-  ResultArray& getResult(const ResultType& resultType) { return results.at(resultType); }
-
-  /**
-   * \brief Get the result array for a single result type.
-   *
-   * This function retrieves the result array when only a single result type is present in the map.
-   *
-   * \return Reference to the result array.
-   *
-   * \throws Dune::RangeError if the map does not contain a single result.
-   */
-  auto& getSingleResult() {
-    if (results.size() != 1)
-      DUNE_THROW(Dune::RangeError, "getSingleResult can only be called when a single result was inserted");
-    else
-      return *(results.begin());
-  }
-
-private:
-  std::map<ResultType, ResultArray> results;
-};
-
 template <typename Type>
 concept ResultTypeConcept = std::is_same_v<Type, ResultType>;
 
@@ -560,6 +500,9 @@ public:
     else {
       DUNE_THROW(Dune::InvalidStateException, "This function can only be called when a single result is requested");
     }
+  }
+  auto hasSingleResultRequested() const {
+    return resType.size() == 1;
   }
 
 private:

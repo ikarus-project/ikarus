@@ -63,6 +63,7 @@ public:
   using VolumeType             = Volume<NonLinearElastic<Basis_, Material_, FERequirements_, useEigenRef>, Traits>;
   using TractionType           = Traction<NonLinearElastic<Basis_, Material_, FERequirements_, useEigenRef>, Traits>;
   using LocalBasisType         = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
+  using ResultArray = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, 0, 9, 3>;
 
   static constexpr int myDim       = Traits::mydim;
   static constexpr auto strainType = StrainTags::greenLagrangian;
@@ -248,16 +249,18 @@ public:
   }
 
   /**
-   * @brief Calculate specified results at a given local position.
+   * @brief Calculates a requested result at a specific local position.
    *
-   * @param req The ResultRequirementsType object specifying the required results.
-   * @param local The local position for which results are to be calculated.
-   * @param result The ResultTypeMap object to store the calculated results.
+   * @param req The ResultRequirementsType object specifying the requested result.
+   * @param local Local position vector.
+   * @return calculated result
    */
-  void calculateAt(const ResultRequirementsType& req, const Dune::FieldVector<double, Traits::mydim>& local,
-                   ResultTypeMap<double>& result) const {
+  ResultArray calculateAt(const ResultRequirementsType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
+
+    if (not req.hasSingleResultRequested())
+      DUNE_THROW(Dune::InvalidStateException, "Ambivalent call to calculateAt(). There are more than one ResultTye requested.");
 
     const auto uFunction = displacementFunction(req.getFERequirements());
     const auto H         = uFunction.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
@@ -266,7 +269,7 @@ public:
     auto PK2             = mat.template stresses<StrainTags::greenLagrangian>(EVoigt);
 
     if (req.isResultRequested(ResultType::PK2Stress))
-      result.insertOrAssignResult(ResultType::PK2Stress, PK2);
+      return PK2;
     else
       DUNE_THROW(Dune::NotImplemented, "The requested result type is NOT implemented.");
   }

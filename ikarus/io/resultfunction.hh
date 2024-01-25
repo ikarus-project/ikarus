@@ -55,7 +55,7 @@ public:
   using GridView               = typename ElementType::GridView;
   using ctype                  = typename GridView::ctype;
   constexpr static int griddim = GridView::dimension;
-  typedef typename GridView::template Codim<0>::Entity Entity;
+  using Entity =  typename GridView::template Codim<0>::Entity;
 
   /**
    * @brief Evaluate the component at a given entity and local coordinates.
@@ -83,11 +83,7 @@ public:
     if constexpr (std::is_same_v<UserFunction, Impl::DefaultUserFunction>) {
       Dune::FieldVector<ctype, griddim> val(0.0);
 
-      fes_->at(0).calculateAt(resultRequirements_, val, resultTypeMap);
-      if (resultRequirements_.getRequestedResult() != resultTypeMap.getSingleResult().first)
-        DUNE_THROW(Dune::InvalidStateException, "The return result should be the requested one");
-
-      auto sigma = resultTypeMap.getSingleResult().second;
+      auto sigma = fes_->at(0).calculateAt(resultRequirements_, val);
 
       return static_cast<int>(sigma.rows() * sigma.cols());
     } else
@@ -132,8 +128,7 @@ private:
     if constexpr (!std::is_same_v<UserFunction, Impl::DefaultUserFunction>)
       return userFunction_(fes_->at(eleID), resultRequirements_, local, comp);
     else {
-      fes_->at(eleID).calculateAt(resultRequirements_, local, resultTypeMap);
-      auto result = resultTypeMap.getSingleResult().second;
+      typename ElementType::ResultArray result = fes_->at(eleID).calculateAt(resultRequirements_, local);
       return result(comp);
     }
   }
@@ -141,7 +136,6 @@ private:
   GridView gridView;
   ResultRequirements resultRequirements_;
   std::vector<ElementType>* fes_;
-  mutable ResultTypeMap<ctype> resultTypeMap;
   [[no_unique_address]] std::string name_{};
   UserFunction userFunction_;
 };

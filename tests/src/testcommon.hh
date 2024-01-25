@@ -240,10 +240,9 @@ template <typename NonLinearOperator, typename FiniteElement>
                                     const auto& evaluationPositions, const std::string& messageIfFailed = "") {
   Eigen::MatrixXd computedResults(expectedResult.rows(), expectedResult.cols());
 
-  Ikarus::ResultTypeMap result;
   for (int i = 0; const auto& pos : evaluationPositions) {
-    fe.calculateAt(resultRequirements, pos, result);
-    computedResults.row(i++) = result.getSingleResult().second.transpose();
+    auto result = fe.calculateAt(resultRequirements, pos);
+    computedResults.row(i++) = result.transpose();
   }
 
   Dune::TestSuite t("Test of the calulateAt function for " + Dune::className(fe));
@@ -265,7 +264,6 @@ template <typename NonLinearOperator, typename FiniteElement>
   using namespace Dune::Indices;
   using namespace Dune::Functions::BasisFactory;
 
-  ResultTypeMap result;
   auto gridView  = fe.localView().globalBasis().gridView();
   auto element   = elements(gridView).begin();
   using GridView = decltype(gridView);

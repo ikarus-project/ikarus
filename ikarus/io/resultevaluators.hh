@@ -39,8 +39,7 @@ struct VonMises
                     const Dune::FieldVector<ScalarType, size>& pos, [[maybe_unused]] int comp) const
   requires(size == 2)
   {
-    ResultTypeMap<ScalarType> res_;
-    fe.calculateAt(req, pos, res_);
+    auto res_ = fe.calculateAt(req, pos);
 
     const auto& [resultType, sigma] = res_.getSingleResult();
     assert(resultType == ResultType::cauchyStress or resultType == ResultType::PK2Stress);
@@ -79,11 +78,10 @@ struct PrincipalStress
 {
   template <typename ElementType, typename FERequirements, int size, typename ScalarType>
   double operator()(const ElementType& fe, const ResultRequirements<FERequirements>& req,
-                    const Dune::FieldVector<ScalarType, size>& pos, int comp) const
+                    const Dune::FieldVector<ScalarType, size>& pos, const int comp) const
   requires(size == 2)
   {
-    ResultTypeMap<ScalarType> res_;
-    fe.calculateAt(req, pos, res_);
+    auto res_ = fe.calculateAt(req, pos);
 
     const auto& [resultType, sigma] = res_.getSingleResult();
     assert(resultType == ResultType::cauchyStress or resultType == ResultType::PK2Stress);
