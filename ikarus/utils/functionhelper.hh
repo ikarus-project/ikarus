@@ -12,8 +12,7 @@ namespace Ikarus::utils {
 /**
  * \brief A function to obtain the global positions of the nodes of an element with Lagrangian basis, see Dune book
  * page 314
- *  \ingroup utils
- * \tparam order Polynomial order of the Lagrangian basis
+ * \ingroup utils
  * \tparam size Size of the nodal coordinate vector
  * \tparam LocalView Type of the local view
  *
