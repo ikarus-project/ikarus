@@ -125,14 +125,7 @@ void registerElement(pybind11::handle scope, pybind11::class_<FE, options...> cl
   cls.def(
       "resultAt",
       [](FE& self, const ResultRequirementsType& req, const Dune::FieldVector<double, Traits::mydim>& local,
-         ResultType resType = ResultType::noType) {
-        ResultTypeMap<double> resultTypeMap;
-        self.calculateAt(req, local, resultTypeMap);
-        if (resType == ResultType::noType)
-          return resultTypeMap.getSingleResult().second;
-        else
-          return resultTypeMap.getResult(resType);
-      },
+         ResultType resType = ResultType::noType) { return self.calculateAt(req, local); },
       pybind11::arg("resultRequirements"), pybind11::arg("local"), pybind11::arg("resultType") = ResultType::noType);
 }
 

@@ -501,9 +501,7 @@ public:
       DUNE_THROW(Dune::InvalidStateException, "This function can only be called when a single result is requested");
     }
   }
-  auto hasSingleResultRequested() const {
-    return resType.size() == 1;
-  }
+  auto hasSingleResultRequested() const { return resType.size() == 1; }
 
 private:
   std::set<ResultType> resType;

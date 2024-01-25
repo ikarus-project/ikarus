@@ -105,14 +105,8 @@ void registerNonLinearElastic(pybind11::handle scope, pybind11::class_<NonLinear
   cls.def(
       "resultAt",
       [](NonLinearElastic& self, const ResultRequirementsType& req,
-         const Dune::FieldVector<double, Traits::mydim>& local, ResultType resType = ResultType::noType) {
-        ResultTypeMap<double> resultTypeMap;
-        self.calculateAt(req, local, resultTypeMap);
-        if (resType == ResultType::noType)
-          return resultTypeMap.getSingleResult().second;
-        else
-          return resultTypeMap.getResult(resType);
-      },
+         const Dune::FieldVector<double, Traits::mydim>& local,
+         ResultType resType = ResultType::noType) { return self.calculateAt(req, local); },
       pybind11::arg("resultRequirements"), pybind11::arg("local"), pybind11::arg("resultType") = ResultType::noType);
 }
 

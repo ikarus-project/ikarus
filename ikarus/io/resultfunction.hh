@@ -55,7 +55,7 @@ public:
   using GridView               = typename ElementType::GridView;
   using ctype                  = typename GridView::ctype;
   constexpr static int griddim = GridView::dimension;
-  using Entity =  typename GridView::template Codim<0>::Entity;
+  using Entity                 = typename GridView::template Codim<0>::Entity;
 
   /**
    * @brief Evaluate the component at a given entity and local coordinates.

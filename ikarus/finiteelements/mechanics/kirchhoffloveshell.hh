@@ -56,7 +56,7 @@ public:
   using VolumeType             = Volume<KirchhoffLoveShell<Basis_, FERequirements_, useEigenRef>, Traits>;
   using TractionType           = Traction<KirchhoffLoveShell<Basis_, FERequirements_, useEigenRef>, Traits>;
   using LocalBasisType         = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
-  using ResultArray = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, 0, 9, 3>;
+  using ResultArray            = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, 0, 9, 3>;
 
   static constexpr int myDim              = Traits::mydim;
   static constexpr int worldDim           = Traits::worlddim;
@@ -196,9 +196,10 @@ public:
    * @param local The local coordinates at which results are to be calculated.
    */
   ResultArray calculateAt([[maybe_unused]] const ResultRequirementsType& req,
-                   [[maybe_unused]] const Dune::FieldVector<double, Traits::mydim>& local) const {
+                          [[maybe_unused]] const Dune::FieldVector<double, Traits::mydim>& local) const {
     if (not req.hasSingleResultRequested())
-      DUNE_THROW(Dune::InvalidStateException, "Ambivalent call to calculateAt(). There are more than one ResultTye requested.");
+      DUNE_THROW(Dune::InvalidStateException,
+                 "Ambivalent call to calculateAt(). There are more than one ResultTye requested.");
 
     DUNE_THROW(Dune::NotImplemented, "No results are implemented");
   }

@@ -135,16 +135,7 @@ if __name__ == "__main__":
     stressFuncVec = grid.function(
         lambda e, x: fes[indexSet.index(e)].resultAt(resReq, x)[:, 0]
     )
-
-    # After adding another resReq the function resultAt() should fail if this result was never inserted
-    resReq.addResultRequest(iks.ResultType.cauchyStress)
-    try:
-        fes[0].resultAt(resReq, np.array([0.5, 0.5]), iks.ResultType.cauchyStress)
-    except IndexError:
-        assert True
-    else:
-        assert False
-
+    # Writing results into vtk file
     from utils import output_path
 
     writer = vtkWriter(
@@ -156,3 +147,12 @@ if __name__ == "__main__":
     writer2.addCellData(stressFuncVec, name="stress2")
 
     writer2.write(name=output_path() + "result")
+
+    # After adding another resReq the function resultAt() should fail if this result was never inserted
+    resReq.addResultRequest(iks.ResultType.cauchyStress)
+    try:
+        fes[0].resultAt(resReq, np.array([0.5, 0.5]), iks.ResultType.cauchyStress)
+    except RuntimeError:
+        assert True
+    else:
+        assert False

@@ -39,10 +39,11 @@ struct VonMises
                     const Dune::FieldVector<ScalarType, size>& pos, [[maybe_unused]] int comp) const
   requires(size == 2)
   {
-    auto res_ = fe.calculateAt(req, pos);
+    auto sigma      = fe.calculateAt(req, pos);
+    auto resultType = req.getRequestedResult();
+    assert(resultType == ResultType::cauchyStress or resultType == ResultType::PK2Stress or
+           resultType == ResultType::linearStress);
 
-    const auto& [resultType, sigma] = res_.getSingleResult();
-    assert(resultType == ResultType::cauchyStress or resultType == ResultType::PK2Stress);
     const auto s_x  = sigma(0, 0);
     const auto s_y  = sigma(1, 0);
     const auto s_xy = sigma(2, 0);
@@ -81,10 +82,11 @@ struct PrincipalStress
                     const Dune::FieldVector<ScalarType, size>& pos, const int comp) const
   requires(size == 2)
   {
-    auto res_ = fe.calculateAt(req, pos);
+    auto sigma      = fe.calculateAt(req, pos);
+    auto resultType = req.getRequestedResult();
+    assert(resultType == ResultType::cauchyStress or resultType == ResultType::PK2Stress or
+           resultType == ResultType::linearStress);
 
-    const auto& [resultType, sigma] = res_.getSingleResult();
-    assert(resultType == ResultType::cauchyStress or resultType == ResultType::PK2Stress);
     const auto s_x  = sigma(0, 0);
     const auto s_y  = sigma(1, 0);
     const auto s_xy = sigma(2, 0);

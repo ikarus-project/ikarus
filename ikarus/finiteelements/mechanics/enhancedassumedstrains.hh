@@ -160,14 +160,16 @@ forward the
    *
    * @tparam ResultRequirementsType The type representing the requirements for results.
    */
-  typename DisplacementBasedElement::ResultArray calculateAt(const ResultRequirementsType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
+  typename DisplacementBasedElement::ResultArray calculateAt(
+      const ResultRequirementsType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
     using namespace Dune::Indices;
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
 
     if (not req.hasSingleResultRequested())
-      DUNE_THROW(Dune::InvalidStateException, "Ambivalent call to calculateAt(). There are more than one ResultTye requested.");
-    
+      DUNE_THROW(Dune::InvalidStateException,
+                 "Ambivalent call to calculateAt(). There are more than one ResultTye requested.");
+
     typename DisplacementBasedElement::ResultArray resultVector = DisplacementBasedElement::calculateAt(req, local);
 
     if (isDisplacementBased())

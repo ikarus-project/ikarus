@@ -63,7 +63,7 @@ public:
   using VolumeType             = Volume<NonLinearElastic<Basis_, Material_, FERequirements_, useEigenRef>, Traits>;
   using TractionType           = Traction<NonLinearElastic<Basis_, Material_, FERequirements_, useEigenRef>, Traits>;
   using LocalBasisType         = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
-  using ResultArray = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, 0, 9, 3>;
+  using ResultArray            = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, 0, 9, 3>;
 
   static constexpr int myDim       = Traits::mydim;
   static constexpr auto strainType = StrainTags::greenLagrangian;
@@ -255,12 +255,14 @@ public:
    * @param local Local position vector.
    * @return calculated result
    */
-  ResultArray calculateAt(const ResultRequirementsType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
+  ResultArray calculateAt(const ResultRequirementsType& req,
+                          const Dune::FieldVector<double, Traits::mydim>& local) const {
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
 
     if (not req.hasSingleResultRequested())
-      DUNE_THROW(Dune::InvalidStateException, "Ambivalent call to calculateAt(). There are more than one ResultTye requested.");
+      DUNE_THROW(Dune::InvalidStateException,
+                 "Ambivalent call to calculateAt(). There are more than one ResultTye requested.");
 
     const auto uFunction = displacementFunction(req.getFERequirements());
     const auto H         = uFunction.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));

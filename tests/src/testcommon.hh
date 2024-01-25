@@ -241,7 +241,7 @@ template <typename NonLinearOperator, typename FiniteElement>
   Eigen::MatrixXd computedResults(expectedResult.rows(), expectedResult.cols());
 
   for (int i = 0; const auto& pos : evaluationPositions) {
-    auto result = fe.calculateAt(resultRequirements, pos);
+    auto result              = fe.calculateAt(resultRequirements, pos);
     computedResults.row(i++) = result.transpose();
   }
 
