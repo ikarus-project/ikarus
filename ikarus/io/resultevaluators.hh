@@ -34,8 +34,8 @@ namespace Ikarus::ResultEvaluators {
  */
 struct VonMises
 {
-  template <typename ElementType, typename FERequirements, int size, typename ScalarType>
-  double operator()(const ElementType& fe, const ResultRequirements<FERequirements>& req,
+  template <typename ElementType, int size, typename ScalarType>
+  double operator()(const ElementType& fe, const typename ElementType::FERequirementType& req,
                     const Dune::FieldVector<ScalarType, size>& pos, [[maybe_unused]] int comp) const
   requires(size == 2)
   {
@@ -77,9 +77,9 @@ struct VonMises
  */
 struct PrincipalStress
 {
-  template <typename ElementType, typename FERequirements, int size, typename ScalarType>
-  double operator()(const ElementType& fe, const ResultRequirements<FERequirements>& req,
-                    const Dune::FieldVector<ScalarType, size>& pos, const int comp) const
+  template <typename ElementType, int size, typename ScalarType>
+  double operator()(const ElementType& fe, const typename ElementType::FERequirementType& req,
+                    const Dune::FieldVector<ScalarType, size>& pos, [[maybe_unused]] int comp) const
   requires(size == 2)
   {
     auto sigma      = fe.calculateAt(req, pos);

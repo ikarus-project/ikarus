@@ -46,12 +46,12 @@ namespace Impl {
  * @tparam UserFunction Type of the user-defined function for custom result evaluation (default is
 DefaultUserFunction)
  */
-template <typename ElementType_, typename UserFunction = Impl::DefaultUserFunction>
+template <typename ElementType_, ResultType resType, typename UserFunction = Impl::DefaultUserFunction>
 class ResultFunction : public Dune::VTKFunction<typename ElementType_::GridView>
 {
 public:
   using ElementType            = ElementType_;
-  using ResultRequirements     = typename ElementType::ResultRequirementsType;
+  using FERequirementType      = typename ElementType::FERequirementType;
   using GridView               = typename ElementType::GridView;
   using ctype                  = typename GridView::ctype;
   constexpr static int griddim = GridView::dimension;
@@ -83,7 +83,7 @@ public:
     if constexpr (std::is_same_v<UserFunction, Impl::DefaultUserFunction>) {
       Dune::FieldVector<ctype, griddim> val(0.0);
 
-      auto sigma = fes_->at(0).calculateAt(resultRequirements_, val);
+      auto sigma = fes_->at(0).template calculateAt<resType>(feRequirements_, val);
 
       return static_cast<int>(sigma.rows() * sigma.cols());
     } else
@@ -99,7 +99,7 @@ public:
    */
   [[nodiscard]] constexpr std::string name() const override {
     if constexpr (std::is_same_v<UserFunction, Impl::DefaultUserFunction>)
-      return toString(resultRequirements_.getRequestedResult());
+      return toString(resType);
     else
       return userFunction_.name();
   }
@@ -114,9 +114,9 @@ public:
    * @param req Result requirements for evaluation
    * @param userFunction User-defined function for custom result evaluation (default is DefaultUserFunction)
    */
-  ResultFunction(std::vector<ElementType>* fes, const ResultRequirements& req, UserFunction userFunction = {})
+  ResultFunction(std::vector<ElementType>* fes, const FERequirementType& req, UserFunction userFunction = {})
       : gridView{fes->at(0).localView().globalBasis().gridView()},
-        resultRequirements_{req},
+        feRequirements_{req},
         fes_{fes},
         userFunction_{userFunction} {
     if constexpr (!std::is_same_v<UserFunction, Impl::DefaultUserFunction>)
@@ -126,15 +126,15 @@ public:
 private:
   double evaluateComponent(int eleID, const Dune::FieldVector<ctype, griddim>& local, int comp) const {
     if constexpr (!std::is_same_v<UserFunction, Impl::DefaultUserFunction>)
-      return userFunction_(fes_->at(eleID), resultRequirements_, local, comp);
+      return userFunction_(fes_->at(eleID), feRequirements_, local, comp);
     else {
-      typename ElementType::ResultArray result = fes_->at(eleID).calculateAt(resultRequirements_, local);
+      typename ElementType::ResultArray result = fes_->at(eleID).template calculateAt<resType>(feRequirements_, local);
       return result(comp);
     }
   }
 
   GridView gridView;
-  ResultRequirements resultRequirements_;
+  FERequirementType feRequirements_;
   std::vector<ElementType>* fes_;
   [[no_unique_address]] std::string name_{};
   UserFunction userFunction_;

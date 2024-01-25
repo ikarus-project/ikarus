@@ -58,7 +58,6 @@ public:
   using Geometry               = typename Traits::Geometry;
   using GridView               = typename Traits::GridView;
   using Element                = typename Traits::Element;
-  using ResultRequirementsType = typename Traits::ResultRequirementsType;
   using BaseDisp               = PowerBasisFE<Basis>; // Handles globalIndices function
   using VolumeType             = Volume<LinearElastic<Basis_, FERequirements_, useEigenRef>, Traits>;
   using TractionType           = Traction<LinearElastic<Basis_, FERequirements_, useEigenRef>, Traits>;
@@ -214,26 +213,21 @@ public:
    * @param local Local position vector.
    * @return calculated result
    */
-  ResultArray calculateAt(const ResultRequirementsType& req,
-                          const Dune::FieldVector<double, Traits::mydim>& local) const {
+  template <ResultType resType>
+  auto calculateAt(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
     using namespace Dune::Indices;
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
 
-    if (not req.hasSingleResultRequested())
-      DUNE_THROW(Dune::InvalidStateException,
-                 "Ambivalent call to calculateAt(). There are more than one ResultTye requested.");
+    static_assert(resType == ResultType::linearStress, "The requested result type is NOT implemented.");
 
-    const auto eps = strainFunction(req.getFERequirements());
-    const auto C   = materialTangent();
-    auto epsVoigt  = eps.evaluate(local, on(gridElement));
+    if constexpr (resType == ResultType::linearStress) {
+      const auto eps = strainFunction(req);
+      const auto C   = materialTangent();
+      auto epsVoigt  = eps.evaluate(local, on(gridElement));
 
-    auto linearStress = (C * epsVoigt).eval();
-
-    if (req.isResultRequested(ResultType::linearStress))
-      return linearStress;
-    else
-      DUNE_THROW(Dune::NotImplemented, "The requested result type is NOT implemented.");
+      return (C * epsVoigt).eval();
+    }
   }
 
 private:

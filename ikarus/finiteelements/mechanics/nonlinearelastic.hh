@@ -255,25 +255,21 @@ public:
    * @param local Local position vector.
    * @return calculated result
    */
-  ResultArray calculateAt(const ResultRequirementsType& req,
-                          const Dune::FieldVector<double, Traits::mydim>& local) const {
+  template <ResultType resType>
+  auto calculateAt(const ResultRequirementsType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
 
-    if (not req.hasSingleResultRequested())
-      DUNE_THROW(Dune::InvalidStateException,
-                 "Ambivalent call to calculateAt(). There are more than one ResultTye requested.");
+    static_assert(resType == ResultType::PK2Stress, "The requested result type is NOT implemented.");
 
-    const auto uFunction = displacementFunction(req.getFERequirements());
-    const auto H         = uFunction.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
-    const auto E         = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
-    const auto EVoigt    = toVoigt(E);
-    auto PK2             = mat.template stresses<StrainTags::greenLagrangian>(EVoigt);
+    if constexpr (resType == ResultType::PK2Stress) {
+      const auto uFunction = displacementFunction(req.getFERequirements());
+      const auto H         = uFunction.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
+      const auto E         = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
+      const auto EVoigt    = toVoigt(E);
 
-    if (req.isResultRequested(ResultType::PK2Stress))
-      return PK2;
-    else
-      DUNE_THROW(Dune::NotImplemented, "The requested result type is NOT implemented.");
+      return mat.template stresses<StrainTags::greenLagrangian>(EVoigt);
+    }
   }
 
 private:
