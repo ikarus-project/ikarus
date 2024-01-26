@@ -21,7 +21,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 [![Release](https://badgen.net/badge/Release/0.3/purple?icon=github)](https://github.com/ikarus-project/ikarus/releases)
 [![Doi](https://img.shields.io/badge/DOI-10.18419%2Fdarus--3303-orange)](https://doi.org/10.18419/darus-3303)
 [![SWH](https://archive.softwareheritage.org/badge/origin/https://github.com/ikarus-project/ikarus/)](https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/ikarus-project/ikarus)
-[![SWHRelease](https://archive.softwareheritage.org/badge/swh:1:rel:2cbfacc591c5fa48bdc84b375e42d1ab5304425f/)](https://archive.softwareheritage.org/swh:1:rel:2cbfacc591c5fa48bdc84b375e42d1ab5304425f;origin=https://github.com/ikarus-project/ikarus;visit=swh:1:snp:22424908ab42ab0d38be84c34235b8b5ae7af6c4)
+[![SWHRelease](https://archive.softwareheritage.org/badge/swh:1:rel:740930accfafedda16191ef29c9b7abd098efe6d/)](https://archive.softwareheritage.org/swh:1:rel:740930accfafedda16191ef29c9b7abd098efe6d;origin=https://github.com/ikarus-project/ikarus;visit=swh:1:snp:0d7c00673059d94b15752fc2d6007751bb0b4485)
 
 This project tries to provide an easy to read and an easy to use finite element framework.
 It is heavily inspired by the finite element software [DUNE](https://dune-project.org/), the book
