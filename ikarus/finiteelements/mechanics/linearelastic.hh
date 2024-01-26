@@ -63,7 +63,6 @@ public:
   using TractionType           = Traction<LinearElastic<Basis_, FERequirements_, useEigenRef>, Traits>;
   static constexpr int myDim   = Traits::mydim;
   using LocalBasisType         = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
-  using ResultArray            = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, 0, 9, 3>;
 
   /**
    * @brief Constructor for the LinearElastic class.
@@ -209,9 +208,11 @@ public:
   /**
    * @brief Calculates a requested result at a specific local position.
    *
-   * @param req The ResultRequirementsType object specifying the requested result.
+   * @param req The FERequirementType object holding the global solution.
    * @param local Local position vector.
    * @return calculated result
+   *
+   * @tparam resType The type representing the requested result.
    */
   template <ResultType resType>
   auto calculateAt(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {

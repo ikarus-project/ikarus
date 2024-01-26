@@ -57,13 +57,11 @@ public:
   using Geometry               = typename Traits::Geometry;
   using GridView               = typename Traits::GridView;
   using Element                = typename Traits::Element;
-  using ResultRequirementsType = typename Traits::ResultRequirementsType;
   using BasePowerFE            = PowerBasisFE<Basis>; // Handles globalIndices function
   using Material               = Material_;
   using VolumeType             = Volume<NonLinearElastic<Basis_, Material_, FERequirements_, useEigenRef>, Traits>;
   using TractionType           = Traction<NonLinearElastic<Basis_, Material_, FERequirements_, useEigenRef>, Traits>;
   using LocalBasisType         = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
-  using ResultArray            = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, 0, 9, 3>;
 
   static constexpr int myDim       = Traits::mydim;
   static constexpr auto strainType = StrainTags::greenLagrangian;
@@ -251,19 +249,21 @@ public:
   /**
    * @brief Calculates a requested result at a specific local position.
    *
-   * @param req The ResultRequirementsType object specifying the requested result.
+   * @param req The FERequirementType object holding the global solution.
    * @param local Local position vector.
    * @return calculated result
+   *
+   * @tparam resType The type representing the requested result.
    */
   template <ResultType resType>
-  auto calculateAt(const ResultRequirementsType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
+  auto calculateAt(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
 
     static_assert(resType == ResultType::PK2Stress, "The requested result type is NOT implemented.");
 
     if constexpr (resType == ResultType::PK2Stress) {
-      const auto uFunction = displacementFunction(req.getFERequirements());
+      const auto uFunction = displacementFunction(req);
       const auto H         = uFunction.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
       const auto E         = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
       const auto EVoigt    = toVoigt(E);

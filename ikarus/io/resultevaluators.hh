@@ -26,29 +26,36 @@ namespace Ikarus::ResultEvaluators {
  * @brief Struct for calculating von Mises stress
  * @ingroup resultevaluators
  * @details The VonMises struct provides a function call operator to calculate von Mises stress.
- * @remark  Only 2D stresses are supported
- * @tparam ElementType Type of the finite element
- * @tparam FERequirements Type representing the requirements for finite element calculations
- * @tparam size Size of the stress vector
- * @tparam ScalarType Scalar type for numerical calculations
+ * @tparam dim dimension of stress state
  */
+template <int dim> requires (dim == 2 or dim ==3)
 struct VonMises
 {
-  template <typename ElementType, int size, typename ScalarType>
-  double operator()(const ElementType& fe, const typename ElementType::FERequirementType& req,
-                    const Dune::FieldVector<ScalarType, size>& pos, [[maybe_unused]] int comp) const
-  requires(size == 2)
-  {
-    auto sigma      = fe.calculateAt(req, pos);
-    auto resultType = req.getRequestedResult();
-    assert(resultType == ResultType::cauchyStress or resultType == ResultType::PK2Stress or
-           resultType == ResultType::linearStress);
+  /**
+   * @brief Calculate the result quanity (von Mises stress)
+   * @param resultArray EigenMatrix containing the stress state
+   * @param comp component of result (not used here)
+   * @return von Mises stress
+   */
+  double operator()(const auto& resultArray, [[maybe_unused]] const int comp) {
+    if constexpr (dim == 2) {
+      const auto s_x  = resultArray(0, 0);
+      const auto s_y  = resultArray(1, 0);
+      const auto s_xy = resultArray(2, 0);
 
-    const auto s_x  = sigma(0, 0);
-    const auto s_y  = sigma(1, 0);
-    const auto s_xy = sigma(2, 0);
+      return std::sqrt(std::pow(s_x, 2) + Dune::power(s_y, 2) - s_x * s_y + 3 * Dune::power(s_xy, 2));
+    }
+    else if constexpr (dim == 3) {
+      const auto s_x  = resultArray(0, 0);
+      const auto s_y  = resultArray(1, 0);
+      const auto s_z  = resultArray(2, 0);
+      const auto s_yz = resultArray(4, 0);
+      const auto s_xz = resultArray(5, 0);
+      const auto s_xy = resultArray(6, 0);
 
-    return std::sqrt(std::pow(s_x, 2) + Dune::power(s_y, 2) - s_x * s_y + 3 * Dune::power(s_xy, 2));
+      return std::sqrt(std::pow(s_x, 2) + Dune::power(s_y, 2) + + Dune::power(s_z, 2) - s_x * s_y -
+        s_x * s_z - s_y * s_z + 3 * ( Dune::power(s_xy, 2) + Dune::power(s_xz, 2) + Dune::power(s_yz, 2)));
+    }
   }
 
   /**
@@ -67,29 +74,21 @@ struct VonMises
 /**
  * @brief Struct for calculating principal stresses
  * @ingroup resultevaluators
- *  @details The PrincipalStress struct provides a function call operator to calculate principal stresses.
+ * @details The PrincipalStress struct provides a function call operator to calculate principal stresses.
  * @remark  Only 2D stresses are supported
- *
- * @tparam ElementType Type of the finite element
- * @tparam FERequirements Type representing the requirements for finite element calculations
- * @tparam size Size of the stress vector
- * @tparam ScalarType Scalar type for numerical calculations
  */
 struct PrincipalStress
 {
-  template <typename ElementType, int size, typename ScalarType>
-  double operator()(const ElementType& fe, const typename ElementType::FERequirementType& req,
-                    const Dune::FieldVector<ScalarType, size>& pos, [[maybe_unused]] int comp) const
-  requires(size == 2)
-  {
-    auto sigma      = fe.calculateAt(req, pos);
-    auto resultType = req.getRequestedResult();
-    assert(resultType == ResultType::cauchyStress or resultType == ResultType::PK2Stress or
-           resultType == ResultType::linearStress);
-
-    const auto s_x  = sigma(0, 0);
-    const auto s_y  = sigma(1, 0);
-    const auto s_xy = sigma(2, 0);
+  /**
+  * @brief Calculate the result quanity (principal stress)
+  * @param resultArray EigenMatrix containing the stress state
+  * @param comp component of result
+  * @return von Mises stress
+  */
+  double operator()(const auto& resultArray, const int comp) const {
+    const auto s_x  = resultArray(0, 0);
+    const auto s_y  = resultArray(1, 0);
+    const auto s_xy = resultArray(2, 0);
 
     auto t1 = (s_x + s_y) / 2;
     auto t2 = std::sqrt(Dune::power((s_x - s_y) / 2, 2) + Dune::power(s_xy, 2));

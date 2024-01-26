@@ -31,18 +31,15 @@ namespace Impl {
  * @details
  * Usage:
  * @code
- *   auto resReq = Ikarus::ResultRequirements()
-                              .insertGlobalSolution(Ikarus::FESolutions::displacement, d)
-                              .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
-                              .addResultRequest(ResultType::PK2Stress);
-  auto resultFunction = std::make_shared<ResultFunction<ElementType>>(&fes, resReq);
-
+ *   auto resultFunction = std::make_shared<ResultFunction<ElementType>>(&fes, feReq);
+ *
  * vtkWriter.addPointData(Dune::Vtk::Function<GridView>( resultFunction));
  * // or with Dunes native Vtk
  * vtkWriter.addVertexData(resultFunction);
    * @endcode
-* @ingroup io
-* @tparam ElementType_ Type of the finite element
+ * @ingroup io
+ * @tparam ElementType_ Type of the finite element
+ * @tparam resType requested result type
  * @tparam UserFunction Type of the user-defined function for custom result evaluation (default is
 DefaultUserFunction)
  */
@@ -107,30 +104,25 @@ public:
   /**
    * @brief Constructor for ResultFunction.
    *
-   * Constructs a ResultFunction object with given finite elements, result requirements, and an optional user
-   * function.
+   * Constructs a ResultFunction object with given finite elements, ferequirements
    *
    * @param fes Pointer to a vector of finite elements
-   * @param req Result requirements for evaluation
-   * @param userFunction User-defined function for custom result evaluation (default is DefaultUserFunction)
+   * @param req FERequirements for evaluation
    */
-  ResultFunction(std::vector<ElementType>* fes, const FERequirementType& req, UserFunction userFunction = {})
+  ResultFunction(std::vector<ElementType>* fes, const FERequirementType& req)
       : gridView{fes->at(0).localView().globalBasis().gridView()},
         feRequirements_{req},
         fes_{fes},
-        userFunction_{userFunction} {
-    if constexpr (!std::is_same_v<UserFunction, Impl::DefaultUserFunction>)
-      userFunction_ = userFunction;
-  }
+        userFunction_{UserFunction{}} {}
 
 private:
   double evaluateComponent(int eleID, const Dune::FieldVector<ctype, griddim>& local, int comp) const {
+    auto result = fes_->at(eleID).template calculateAt<resType>(feRequirements_, local);
+
     if constexpr (!std::is_same_v<UserFunction, Impl::DefaultUserFunction>)
-      return userFunction_(fes_->at(eleID), feRequirements_, local, comp);
-    else {
-      typename ElementType::ResultArray result = fes_->at(eleID).template calculateAt<resType>(feRequirements_, local);
+      return userFunction_(result, comp);
+    else
       return result(comp);
-    }
   }
 
   GridView gridView;
