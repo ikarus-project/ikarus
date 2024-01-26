@@ -51,7 +51,6 @@ public:
   using Geometry               = typename Traits::Geometry;
   using GridView               = typename Traits::GridView;
   using Element                = typename Traits::Element;
-  using ResultRequirementsType = typename Traits::ResultRequirementsType;
   using BasePowerFE            = PowerBasisFE<Basis>; // Handles globalIndices function
   using VolumeType             = Volume<KirchhoffLoveShell<Basis_, FERequirements_, useEigenRef>, Traits>;
   using TractionType           = Traction<KirchhoffLoveShell<Basis_, FERequirements_, useEigenRef>, Traits>;
