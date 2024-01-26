@@ -121,19 +121,18 @@ if __name__ == "__main__":
     fx = flatBasis.asFunction(x)
     grid.plot()
 
-    # Test resultAt Function
-    resReq = ikarus.ResultRequirements()
-    resReq.insertGlobalSolution(iks.FESolutions.displacement, x)
-    resReq.insertParameter(iks.FEParameter.loadfactor, lambdaLoad)
-    resReq.addResultRequest(iks.ResultType.linearStress)
-
+    # Test calculateAt Function
     indexSet = grid.indexSet
 
     stressFuncScalar = grid.function(
-        lambda e, x: fes[indexSet.index(e)].resultAt(resReq, x)[0, 0]
+        lambda e, x: fes[indexSet.index(e)].calculateAt(
+            req, x, iks.ResultType.linearStress
+        )[0]
     )
     stressFuncVec = grid.function(
-        lambda e, x: fes[indexSet.index(e)].resultAt(resReq, x)[:, 0]
+        lambda e, x: fes[indexSet.index(e)].calculateAt(
+            req, x, iks.ResultType.linearStress
+        )[:]
     )
     # Writing results into vtk file
     from utils import output_path
@@ -148,10 +147,9 @@ if __name__ == "__main__":
 
     writer2.write(name=output_path() + "result")
 
-    # After adding another resReq the function resultAt() should fail if this result was never inserted
-    resReq.addResultRequest(iks.ResultType.cauchyStress)
+    # Queriing for a different ResultType should result in a runtime error
     try:
-        fes[0].resultAt(resReq, np.array([0.5, 0.5]), iks.ResultType.cauchyStress)
+        fes[0].calculateAt(req, np.array([0.5, 0.5]), iks.ResultType.cauchyStress)
     except RuntimeError:
         assert True
     else:

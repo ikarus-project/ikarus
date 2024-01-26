@@ -45,13 +45,12 @@ template <bool defaultInitializers = true, class FE, class... options>
 void registerElement(pybind11::handle scope, pybind11::class_<FE, options...> cls) {
   using pybind11::operator""_a;
 
-  using GlobalBasis            = typename FE::Basis;
-  using FlatBasis              = typename FE::FlatBasis;
-  using GridView               = typename GlobalBasis::GridView;
-  using Element                = typename FE::Element;
-  using Traits                 = typename FE::Traits;
-  using FERequirements         = typename FE::FERequirementType;
-  using ResultRequirementsType = typename FE::ResultRequirementsType;
+  using GlobalBasis    = typename FE::Basis;
+  using FlatBasis      = typename FE::FlatBasis;
+  using GridView       = typename GlobalBasis::GridView;
+  using Element        = typename FE::Element;
+  using Traits         = typename FE::Traits;
+  using FERequirements = typename FE::FERequirementType;
 
   if constexpr (defaultInitializers)
     cls.def(pybind11::init([](const GlobalBasis& basis, const Element& element, double emod, double nu) {
@@ -123,10 +122,15 @@ void registerElement(pybind11::handle scope, pybind11::class_<FE, options...> cl
     cls.def("materialTangent", [](FE& self) { return self.materialTangent(); });
 
   cls.def(
-      "resultAt",
-      [](FE& self, const ResultRequirementsType& req, const Dune::FieldVector<double, Traits::mydim>& local,
-         ResultType resType = ResultType::noType) { return self.calculateAt(req, local); },
-      pybind11::arg("resultRequirements"), pybind11::arg("local"), pybind11::arg("resultType") = ResultType::noType);
+      "calculateAt",
+      [](FE& self, const FERequirements& req, const Dune::FieldVector<double, Traits::mydim>& local,
+         ResultType resType) {
+        if (resType == ResultType::linearStress)
+          return self.template calculateAt<ResultType::linearStress>(req, local);
+        else
+          DUNE_THROW(Dune::NotImplemented, "Linear-lastic element only supports linearStress as result.");
+      },
+      pybind11::arg("feRequirements"), pybind11::arg("local"), pybind11::arg("resultType"));
 }
 
 } // namespace Ikarus::Python
