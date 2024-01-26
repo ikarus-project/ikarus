@@ -12,7 +12,7 @@
 #include <autodiff/forward/dual/eigen.hpp>
 
 #include <ikarus/finiteelements/ferequirements.hh>
-#include <ikarus/finiteelements/physicshelper.hh>
+#include <ikarus/finiteelements/fetraits.hh>
 #include <ikarus/utils/traits.hh>
 
 namespace Ikarus {
@@ -31,11 +31,11 @@ template <typename RealFE_, typename FERequirementType_ = FERequirements<>, bool
 class AutoDiffFE : public RealFE_
 {
 public:
-  using RealFE            = RealFE_;                                              ///< Type of the base finite element.
-  using Basis             = typename RealFE::Basis;                               ///< Type of the basis.
-  using Traits            = TraitsFromFE<Basis, FERequirementType_, useEigenRef>; ///< Type traits for local view.
-  using LocalView         = typename Traits::LocalView;                           ///< Type of the local view.
-  using Element           = typename Traits::Element;                             ///< Type of the element.
+  using RealFE            = RealFE_;                                          ///< Type of the base finite element.
+  using Basis             = typename RealFE::Basis;                           ///< Type of the basis.
+  using Traits            = FETraits<Basis, FERequirementType_, useEigenRef>; ///< Type traits for local view.
+  using LocalView         = typename Traits::LocalView;                       ///< Type of the local view.
+  using Element           = typename Traits::Element;                         ///< Type of the element.
   using FERequirementType = typename Traits::FERequirementType; ///< Type of the Finite Element Requirements.
 
   /**

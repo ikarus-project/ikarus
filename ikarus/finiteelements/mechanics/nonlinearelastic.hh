@@ -21,6 +21,7 @@
   #include <ikarus/finiteelements/febases/powerbasisfe.hh>
   #include <ikarus/finiteelements/fehelper.hh>
   #include <ikarus/finiteelements/ferequirements.hh>
+  #include <ikarus/finiteelements/fetraits.hh>
   #include <ikarus/finiteelements/mechanics/loads.hh>
   #include <ikarus/finiteelements/mechanics/materials/tags.hh>
   #include <ikarus/finiteelements/physicshelper.hh>
@@ -41,14 +42,14 @@ namespace Ikarus {
  * @tparam useEigenRef A boolean flag indicating whether to use Eigen references.
  */
 template <typename Basis_, typename Material_, typename FERequirements_ = FERequirements<>, bool useEigenRef = false>
-class NonLinearElastic : public PowerBasisFE<typename Basis_::FlatBasis>,
+class NonLinearElastic : public PowerBasisFE<Basis_>,
                          public Volume<NonLinearElastic<Basis_, Material_, FERequirements_, useEigenRef>,
-                                       TraitsFromFE<Basis_, FERequirements_, useEigenRef>>,
+                                       FETraits<Basis_, FERequirements_, useEigenRef>>,
                          public Traction<NonLinearElastic<Basis_, Material_, FERequirements_, useEigenRef>,
-                                         TraitsFromFE<Basis_, FERequirements_, useEigenRef>>
+                                         FETraits<Basis_, FERequirements_, useEigenRef>>
 {
 public:
-  using Traits                 = TraitsFromFE<Basis_, FERequirements_, useEigenRef>;
+  using Traits                 = FETraits<Basis_, FERequirements_, useEigenRef>;
   using Basis                  = typename Traits::Basis;
   using FlatBasis              = typename Traits::FlatBasis;
   using FERequirementType      = typename Traits::FERequirementType;
@@ -57,7 +58,7 @@ public:
   using GridView               = typename Traits::GridView;
   using Element                = typename Traits::Element;
   using ResultRequirementsType = typename Traits::ResultRequirementsType;
-  using BasePowerFE            = PowerBasisFE<FlatBasis>; // Handles globalIndices function
+  using BasePowerFE            = PowerBasisFE<Basis>; // Handles globalIndices function
   using Material               = Material_;
   using VolumeType             = Volume<NonLinearElastic<Basis_, Material_, FERequirements_, useEigenRef>, Traits>;
   using TractionType           = Traction<NonLinearElastic<Basis_, Material_, FERequirements_, useEigenRef>, Traits>;
@@ -82,7 +83,7 @@ public:
   NonLinearElastic(const Basis& globalBasis, const typename LocalView::Element& element, const Material& p_mat,
                    VolumeLoad p_volumeLoad = {}, const BoundaryPatch<GridView>* p_neumannBoundary = nullptr,
                    NeumannBoundaryLoad p_neumannBoundaryLoad = {})
-      : BasePowerFE(globalBasis.flat(), element),
+      : BasePowerFE(globalBasis, element),
         VolumeType(p_volumeLoad),
         TractionType(p_neumannBoundary, p_neumannBoundaryLoad),
         mat{p_mat} {

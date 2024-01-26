@@ -15,7 +15,7 @@ The `struct` named `Solid` is created which is not inherited from any class. It 
 
 ```cpp
 Solid(const Basis &basis, const typename LocalView::Element &element, double emod, double nu)
-    : localView_{basis.flat().localView()}, emod_{emod}, nu_{nu} {
+    : localView_{basis.localView()}, emod_{emod}, nu_{nu} {
   localView_.bind(element);
   mu_       = emod_ / (2 * (1 + nu_));
   lambdaMat = convertLameConstants({.emodul = emod_, .nu = nu_}).toLamesFirstParameter();

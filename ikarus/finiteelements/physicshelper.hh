@@ -11,8 +11,6 @@
 #include <dune/common/float_cmp.hh>
 
 #include <Eigen/Core>
-
-#include <ikarus/finiteelements/ferequirements.hh>
 namespace Ikarus {
 
 /**
@@ -56,58 +54,6 @@ namespace Ikarus {
   C *= E / ((1 + nu) * (1 - 2 * nu));
   return C;
 }
-
-/**
- * \brief Traits for handling finite elements.
- *
- * \tparam Basis_ The basis type for the finite element.
- * \tparam FERequirements_ The requirements for the finite element.
- * \tparam useRef Boolean indicating whether to use Eigen::Ref for VectorType and MatrixType.
- */
-template <typename Basis_, typename FERequirements_, bool useRef = false>
-struct TraitsFromFE
-{
-  /** \brief Type of the basis of the finite element */
-  using Basis = Basis_;
-
-  /** \brief Type of the requirements for the finite element */
-  using FERequirementType = FERequirements_;
-
-  /** \brief Type of the result requirements */
-  using ResultRequirementsType = ResultRequirements<FERequirementType>;
-
-  /** \brief Type of the flat basis */
-  using FlatBasis = typename Basis::FlatBasis;
-
-  /** \brief Type of the local view */
-  using LocalView = typename FlatBasis::LocalView;
-
-  /** \brief Type of the grid view */
-  using GridView = typename FlatBasis::GridView;
-
-  /** \brief Type of the grid element */
-  using Element = typename LocalView::Element;
-
-  /** \brief Type of the element geometry */
-  using Geometry = typename Element::Geometry;
-
-  /** \brief Dimension of the world space */
-  static constexpr int worlddim = Element::Geometry::coorddimension;
-
-  /** \brief Dimension of the geometry */
-  static constexpr int mydim = Element::mydimension;
-
-  /** \brief Dimension of the grid */
-  static constexpr int dimension = Element::dimension;
-
-  /** \brief Type of the internal forces */
-  template <typename ScalarType = double>
-  using VectorType = std::conditional_t<useRef, Eigen::Ref<Eigen::VectorX<ScalarType>>, Eigen::VectorX<ScalarType>&>;
-
-  /** \brief Type of the stiffness matrix */
-  template <typename ScalarType = double>
-  using MatrixType = std::conditional_t<useRef, Eigen::Ref<Eigen::MatrixX<ScalarType>>, Eigen::MatrixX<ScalarType>&>;
-};
 
 ///< Structure representing Young's modulus and Poisson's ratio. \brief see
 ///< https://en.wikipedia.org/wiki/Lam%C3%A9_parameters

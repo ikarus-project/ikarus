@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
+#include <dune/common/float_cmp.hh>
 #include <dune/common/test/testsuite.hh>
 
 #include <Eigen/Core>

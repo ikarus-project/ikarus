@@ -36,14 +36,14 @@ namespace Ikarus {
  * @tparam useEigenRef A boolean indicating whether to use Eigen references for efficiency.
  */
 template <typename Basis_, typename FERequirements_ = FERequirements<>, bool useEigenRef = false>
-class KirchhoffLoveShell : public PowerBasisFE<typename Basis_::FlatBasis>,
+class KirchhoffLoveShell : public PowerBasisFE<Basis_>,
                            public Volume<KirchhoffLoveShell<Basis_, FERequirements_, useEigenRef>,
-                                         TraitsFromFE<Basis_, FERequirements_, useEigenRef>>,
+                                         FETraits<Basis_, FERequirements_, useEigenRef>>,
                            public Traction<KirchhoffLoveShell<Basis_, FERequirements_, useEigenRef>,
-                                           TraitsFromFE<Basis_, FERequirements_, useEigenRef>>
+                                           FETraits<Basis_, FERequirements_, useEigenRef>>
 {
 public:
-  using Traits                 = TraitsFromFE<Basis_, FERequirements_, useEigenRef>;
+  using Traits                 = FETraits<Basis_, FERequirements_, useEigenRef>;
   using Basis                  = typename Traits::Basis;
   using FlatBasis              = typename Traits::FlatBasis;
   using FERequirementType      = typename Traits::FERequirementType;
@@ -52,7 +52,7 @@ public:
   using GridView               = typename Traits::GridView;
   using Element                = typename Traits::Element;
   using ResultRequirementsType = typename Traits::ResultRequirementsType;
-  using BasePowerFE            = PowerBasisFE<FlatBasis>; // Handles globalIndices function
+  using BasePowerFE            = PowerBasisFE<Basis>; // Handles globalIndices function
   using VolumeType             = Volume<KirchhoffLoveShell<Basis_, FERequirements_, useEigenRef>, Traits>;
   using TractionType           = Traction<KirchhoffLoveShell<Basis_, FERequirements_, useEigenRef>, Traits>;
   using LocalBasisType         = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
@@ -106,7 +106,7 @@ public:
                      double thickness, VolumeLoad p_volumeLoad = {},
                      const BoundaryPatch<GridView>* p_neumannBoundary = nullptr,
                      NeumannBoundaryLoad p_neumannBoundaryLoad        = {})
-      : BasePowerFE(globalBasis.flat(), element),
+      : BasePowerFE(globalBasis, element),
         VolumeType(p_volumeLoad),
         TractionType(p_neumannBoundary, p_neumannBoundaryLoad),
         emod_{emod},

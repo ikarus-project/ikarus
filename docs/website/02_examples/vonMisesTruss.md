@@ -13,7 +13,7 @@ It is constructed as shown below:
 
 ```cpp
 Truss(const Basis &basis, const typename LocalView::Element &element, double p_EA)
-    : BaseDisp(basis.flat(), element), EA{p_EA} {
+    : BaseDisp(basis, element), EA{p_EA} {
   this->localView().bind(element);
 }
 ```
