@@ -29,9 +29,6 @@ struct FETraits
   /** \brief Type of the requirements for the finite element */
   using FERequirementType = FERequirements_;
 
-  /** \brief Type of the result requirements */
-  using ResultRequirementsType = ResultRequirements<FERequirementType>;
-
   /** \brief Type of the flat basis */
   using FlatBasis = typename Basis::FlatBasis;
 

@@ -1,10 +1,12 @@
-# Master (becomes Release v0.5)
-
 <!--
 SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 SPDX-License-Identifier: LGPL-3.0-or-later
 -->
 
+# Master (becomes Release v0.5)
+
+- Refactored Interface for `calculateAt`-functions and `ResultFunction` by getting rid of `ResultRequirements`
+([#245](https://github.com/ikarus-project/ikarus/pull/245))
 - Add tensorProduct quadrature rule and [0,1] to [-1,1] transformation ([#238](https://github.com/ikarus-project/ikarus/pull/238))
 - Refactor `enhancedassumedstrains.hh` ([#247](https://github.com/ikarus-project/ikarus/pull/247))
 

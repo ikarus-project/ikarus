@@ -43,18 +43,18 @@ class KirchhoffLoveShell : public PowerBasisFE<Basis_>,
                                            FETraits<Basis_, FERequirements_, useEigenRef>>
 {
 public:
-  using Traits                 = FETraits<Basis_, FERequirements_, useEigenRef>;
-  using Basis                  = typename Traits::Basis;
-  using FlatBasis              = typename Traits::FlatBasis;
-  using FERequirementType      = typename Traits::FERequirementType;
-  using LocalView              = typename Traits::LocalView;
-  using Geometry               = typename Traits::Geometry;
-  using GridView               = typename Traits::GridView;
-  using Element                = typename Traits::Element;
-  using BasePowerFE            = PowerBasisFE<Basis>; // Handles globalIndices function
-  using VolumeType             = Volume<KirchhoffLoveShell<Basis_, FERequirements_, useEigenRef>, Traits>;
-  using TractionType           = Traction<KirchhoffLoveShell<Basis_, FERequirements_, useEigenRef>, Traits>;
-  using LocalBasisType         = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
+  using Traits            = FETraits<Basis_, FERequirements_, useEigenRef>;
+  using Basis             = typename Traits::Basis;
+  using FlatBasis         = typename Traits::FlatBasis;
+  using FERequirementType = typename Traits::FERequirementType;
+  using LocalView         = typename Traits::LocalView;
+  using Geometry          = typename Traits::Geometry;
+  using GridView          = typename Traits::GridView;
+  using Element           = typename Traits::Element;
+  using BasePowerFE       = PowerBasisFE<Basis>; // Handles globalIndices function
+  using VolumeType        = Volume<KirchhoffLoveShell<Basis_, FERequirements_, useEigenRef>, Traits>;
+  using TractionType      = Traction<KirchhoffLoveShell<Basis_, FERequirements_, useEigenRef>, Traits>;
+  using LocalBasisType    = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
 
   static constexpr int myDim              = Traits::mydim;
   static constexpr int worldDim           = Traits::worlddim;
