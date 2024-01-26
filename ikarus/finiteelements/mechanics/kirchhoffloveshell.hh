@@ -194,7 +194,7 @@ public:
    * @tparam resType The type representing the requested result.
    */
   template <ResultType resType>
-  auto calculateAt([[maybe_unused]] const ResultRequirementsType& req,
+  auto calculateAt([[maybe_unused]] const FERequirementType& req,
                    [[maybe_unused]] const Dune::FieldVector<double, Traits::mydim>& local) const {
     DUNE_THROW(Dune::NotImplemented, "No results are implemented");
   }
