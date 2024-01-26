@@ -38,7 +38,7 @@ struct VonMises
    * @param comp component of result (not used here)
    * @return von Mises stress
    */
-  double operator()(const auto& resultArray, [[maybe_unused]] const int comp) {
+  double operator()(const auto& resultArray, [[maybe_unused]] const int comp) const {
     if constexpr (dim == 2) {
       const auto s_x  = resultArray(0, 0);
       const auto s_y  = resultArray(1, 0);
