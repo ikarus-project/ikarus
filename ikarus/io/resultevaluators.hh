@@ -28,11 +28,12 @@ namespace Ikarus::ResultEvaluators {
  * @details The VonMises struct provides a function call operator to calculate von Mises stress.
  * @tparam dim dimension of stress state
  */
-template <int dim> requires (dim == 2 or dim ==3)
+template <int dim>
+requires(dim == 2 or dim == 3)
 struct VonMises
 {
   /**
-   * @brief Calculate the result quanity (von Mises stress)
+   * @brief Calculate the result quantity (von Mises stress)
    * @param resultArray EigenMatrix containing the stress state
    * @param comp component of result (not used here)
    * @return von Mises stress
@@ -43,9 +44,8 @@ struct VonMises
       const auto s_y  = resultArray(1, 0);
       const auto s_xy = resultArray(2, 0);
 
-      return std::sqrt(std::pow(s_x, 2) + Dune::power(s_y, 2) - s_x * s_y + 3 * Dune::power(s_xy, 2));
-    }
-    else if constexpr (dim == 3) {
+      return std::sqrt(Dune::power(s_x, 2) + Dune::power(s_y, 2) - s_x * s_y + 3 * Dune::power(s_xy, 2));
+    } else {
       const auto s_x  = resultArray(0, 0);
       const auto s_y  = resultArray(1, 0);
       const auto s_z  = resultArray(2, 0);
@@ -53,8 +53,8 @@ struct VonMises
       const auto s_xz = resultArray(5, 0);
       const auto s_xy = resultArray(6, 0);
 
-      return std::sqrt(std::pow(s_x, 2) + Dune::power(s_y, 2) + + Dune::power(s_z, 2) - s_x * s_y -
-        s_x * s_z - s_y * s_z + 3 * ( Dune::power(s_xy, 2) + Dune::power(s_xz, 2) + Dune::power(s_yz, 2)));
+      return std::sqrt(Dune::power(s_x, 2) + Dune::power(s_y, 2) + Dune::power(s_z, 2) - s_x * s_y - s_x * s_z -
+                       s_y * s_z + 3 * (Dune::power(s_xy, 2) + Dune::power(s_xz, 2) + Dune::power(s_yz, 2)));
     }
   }
 
@@ -80,11 +80,11 @@ struct VonMises
 struct PrincipalStress
 {
   /**
-  * @brief Calculate the result quanity (principal stress)
-  * @param resultArray EigenMatrix containing the stress state
-  * @param comp component of result
-  * @return von Mises stress
-  */
+   * @brief Calculate the result quantity (principal stress)
+   * @param resultArray EigenMatrix containing the stress state
+   * @param comp component of result
+   * @return principal stress
+   */
   double operator()(const auto& resultArray, const int comp) const {
     const auto s_x  = resultArray(0, 0);
     const auto s_y  = resultArray(1, 0);

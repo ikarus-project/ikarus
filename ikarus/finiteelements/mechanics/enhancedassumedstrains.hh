@@ -160,8 +160,7 @@ forward the
    * @tparam resType The type representing the requested result.
    */
   template <ResultType resType>
-  auto calculateAt(
-      const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
+  auto calculateAt(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
     using namespace Dune::Indices;
     using namespace Dune::DerivativeDirections;
     using namespace Dune;

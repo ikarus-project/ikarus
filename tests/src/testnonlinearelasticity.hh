@@ -35,9 +35,7 @@ using Dune::TestSuite;
 
 struct OwnResultFunction
 {
-  double operator()(const auto& resultArray, [[maybe_unused]] int /* comp */) const {
-    return 7;
-  }
+  double operator()(const auto& resultArray, [[maybe_unused]] int /* comp */) const { return 7; }
   static std::string name() { return "Seven"; }
   static int ncomps() { return 1; }
 };
@@ -171,7 +169,8 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
 
   vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction));
 
-  auto resultFunction2 = ResultFunction<ElementType, ResultType::PK2Stress, ResultEvaluators::PrincipalStress>(&fes, req);
+  auto resultFunction2 =
+      ResultFunction<ElementType, ResultType::PK2Stress, ResultEvaluators::PrincipalStress>(&fes, req);
 
   auto resultFunction2S = std::make_shared<decltype(resultFunction2)>(resultFunction2);
   t.check(resultFunction2S->name() == "PrincipalStress")

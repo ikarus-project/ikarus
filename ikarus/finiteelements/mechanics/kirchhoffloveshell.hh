@@ -196,7 +196,7 @@ public:
    */
   template <ResultType resType>
   auto calculateAt([[maybe_unused]] const ResultRequirementsType& req,
-                          [[maybe_unused]] const Dune::FieldVector<double, Traits::mydim>& local) const {
+                   [[maybe_unused]] const Dune::FieldVector<double, Traits::mydim>& local) const {
     DUNE_THROW(Dune::NotImplemented, "No results are implemented");
   }
 
