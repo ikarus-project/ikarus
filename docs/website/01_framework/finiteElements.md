@@ -35,7 +35,7 @@ These methods are `calculateScalarImpl`, `calculateVectorImpl` and `calculateMat
 Please refer to the [FE requirements](feRequirements.md) to learn more about the finite element requirements and result requirements.
 The first four methods receive an object of type `FERequirements`. This object is responsible for passing different types of information
 needed for the local evaluation of the local linear algebra objects.
-The first method, `evaluateScalar`, simply returns by value because it is cheaper to return a `double`, for example when evaluating energy.
+The first method, `evaluateScalar`, simply returns by value because it is cheaper to return a `double`, for example, when evaluating energy.
 The other methods, `evaluateVector`, `evaluateMatrix`, and `calculateLocalSystem`, receive one or two additional output arguments where
 the results are to be written.
 This interface is needed to circumvent the dynamic memory allocation, that is required if these methods return by value.
@@ -98,7 +98,7 @@ The first argument defines the basis function used to interpolate the solution f
 The next set of arguments are related to the material law to be used.
 For the geometrically linear case, the Young's modulus and the Poisson's ratio are passed, and a `planeStress` material model is assumed.
 For the geometrically non-linear case, the material model is to be passed as an argument.
-This could be for instance, the St. Venant-Kirchhoff material law or the Neo-Hookean material law.
+This could be, for instance, the St. Venant-Kirchhoff material law or the Neo-Hookean material law.
 `volumeLoad` and `neumannBoundaryLoad` are optional parameters that could be passed as per the use case.
 It is necessary to note that a `neumannBoundary` must be defined if a `neumannBoundaryLoad` is to be applied.
 Member functions are defined as per the [interface](finiteElements.md#interface) mentioned above.
@@ -146,12 +146,12 @@ matrix $\mathbf{M}$ for a Q1E4 element is shown below:
 
 ```cpp
 template <typename Geometry>
-struct EASQ1E4 {
+struct Q1E4 {
   static constexpr int strainSize         = 3;
   static constexpr int enhancedStrainSize = 4;
 
-  EASQ1E4() = default;
-  explicit EASQ1E4(const Geometry& geometry)
+  Q1E4() = default;
+  explicit Q1E4(const Geometry& geometry)
       : geometry{std::make_unique<Geometry>(geometry)}, T0InverseTransformed{calcTransformationMatrix2D(geometry)} {}
 
   auto calcM(const Dune::FieldVector<double, 2>& quadPos) const {
@@ -173,20 +173,27 @@ struct EASQ1E4 {
 };
 ```
 
-It is to be noted that the ansatz spaces for the matrix $\mathbf{M}$ are to be modified such that they fulfill the orthogonality
+The implementations of EAS variants for 2D elements can be found at `ikarus/finiteelements/mechanics/eas/eas2d.hh`.
+Similarly,
+the implementations of EAS variants for 3D elements can be found at `ikarus/finiteelements/mechanics/eas/eas3d.hh`.
+It is to be noted that the ansatz spaces for the matrix $\mathbf{M}$ are
+to be modified such that they fulfill the orthogonality
 condition in the $\left[0,1\right]$ element domain used in DUNE, in contrast to the $\left[-1,1\right]$ usually found in
 literature.
 
 In order to add a new EAS element, the following additions are to be made:
 
 1. Create a `#!cpp struct` to calculate the matrix $\mathbf{M}$ as shown above exemplarily for the Q1E4 element.
-2. Add the new variant to the corresponding list of 2D and 3D variants as shown below:
+2. Add the new variant in the file `ikarus/finiteelements/mechanics/easvariants.hh` to the corresponding variant type as shown below:
 
     ```cpp
     template <typename Geometry>
-    using EAS2DVariant = std::variant<EASQ1E4<Geometry>, EASQ1E5<Geometry>, EASQ1E7<Geometry>>;
-    template <typename Geometry>
-    using EAS3DVariant = std::variant<EASH1E9<Geometry>, EASH1E21<Geometry>>;
+    struct Variants{
+    static constexpr int worldDim = Geometry::coorddimension;
+    using EAS2D = std::variant<std::monostate, Q1E4<Geometry>, Q1E5<Geometry>, Q1E7<Geometry>>;
+    using EAS3D = std::variant<std::monostate, H1E9<Geometry>, H1E21<Geometry>>;
+    using type = std::conditional_t<worldDim == 2, EAS2D, EAS3D>;
+    };
     ```
 
 3. Finally, add the new EAS variant with an appropriate switch statement (as shown below) to automatically call the
@@ -200,13 +207,13 @@ In order to add a new EAS element, the following additions are to be made:
               onlyDisplacementBase = true;
               break;
             case 4:
-              easVariant = EASQ1E4(DisplacementBasedElement::getLocalView().element().geometry());
+              easVariant = EAS::Q1E4(DisplacementBasedElement::getLocalView().element().geometry());
               break;
             case 5:
-              easVariant = EASQ1E5(DisplacementBasedElement::getLocalView().element().geometry());
+              easVariant = EAS::Q1E5(DisplacementBasedElement::getLocalView().element().geometry());
               break;
             case 7:
-              easVariant = EASQ1E7(DisplacementBasedElement::getLocalView().element().geometry());
+              easVariant = EAS::Q1E7(DisplacementBasedElement::getLocalView().element().geometry());
               break;
             default:
               DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available for the 2D case.");
@@ -218,10 +225,10 @@ In order to add a new EAS element, the following additions are to be made:
               onlyDisplacementBase = true;
               break;
             case 9:
-              easVariant = EASH1E9(DisplacementBasedElement::getLocalView().element().geometry());
+              easVariant = EAS::H1E9(DisplacementBasedElement::getLocalView().element().geometry());
               break;
             case 21:
-              easVariant = EASH1E21(DisplacementBasedElement::getLocalView().element().geometry());
+              easVariant = EAS::H1E21(DisplacementBasedElement::getLocalView().element().geometry());
               break;
             default:
               DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available for the 3D case.");
@@ -231,6 +238,6 @@ In order to add a new EAS element, the following additions are to be made:
       }
     ```
 
-If the number of EAS parameters is set to zero, the pure displacement formulation is then utilised for analysis.
+If the number of EAS parameters is set to zero, the pure displacement formulation is then utilized for analysis.
 
 \bibliography
