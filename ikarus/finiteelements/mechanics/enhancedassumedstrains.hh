@@ -33,11 +33,11 @@ template <typename DisplacementBasedElement>
 class EnhancedAssumedStrains : public DisplacementBasedElement
 {
 public:
-  using FERequirementType      = typename DisplacementBasedElement::FERequirementType;
-  using LocalView              = typename DisplacementBasedElement::LocalView;
-  using Geometry               = typename DisplacementBasedElement::Geometry;
-  using GridView               = typename DisplacementBasedElement::GridView;
-  using Traits                 = typename DisplacementBasedElement::Traits;
+  using FERequirementType = typename DisplacementBasedElement::FERequirementType;
+  using LocalView         = typename DisplacementBasedElement::LocalView;
+  using Geometry          = typename DisplacementBasedElement::Geometry;
+  using GridView          = typename DisplacementBasedElement::GridView;
+  using Traits            = typename DisplacementBasedElement::Traits;
   using DisplacementBasedElement::localView;
 
   /**
