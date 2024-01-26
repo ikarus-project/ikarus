@@ -23,11 +23,11 @@ template <typename Basis>
 class PowerBasisFE
 {
 public:
-  using RootBasis   = Basis;                          ///< Type of the root basis.
-  using LocalView   = typename Basis::LocalView;      ///< Type of the local view.
-  using GlobalIndex = typename LocalView::MultiIndex; ///< Type of the global index.
-  using GridElement = typename LocalView::Element;    ///< Type of the grid element.
-  using Traits      = FETraits<GridElement>;          ///< Type of the traits.
+  using Traits      = FETraits<Basis>;              ///< Type of the traits.
+  using RootBasis   = typename Traits::FlatBasis;   ///< Type of the root basis.
+  using LocalView   = typename Traits::LocalView;   ///< Type of the local view.
+  using GlobalIndex = typename Traits::GlobalIndex; ///< Type of the global index.
+  using GridElement = typename Traits::Element;     ///< Type of the grid element.
 
   /**
    * @brief Constructor for the PowerBasisFE class.
@@ -36,7 +36,7 @@ public:
    * @param element The local element.
    */
   explicit PowerBasisFE(const Basis& p_basis, const typename LocalView::Element& element)
-      : localView_{p_basis.localView()} {
+      : localView_{p_basis.flat().localView()} {
     static_assert(Ikarus::Concepts::PowerBasis<RootBasis>,
                   "You didn't pass a localview of a power basis to this method");
     static_assert(RootBasis::PreBasis::Node::degree() != 1, "The basis has only one children. Maybe use scalarFE.hh.");

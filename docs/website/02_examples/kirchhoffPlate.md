@@ -16,7 +16,7 @@ It is constructed as shown below:
 ```cpp
 KirchhoffPlate(const Basis &basis, const typename LocalView::Element &element, double p_Emodul, double p_nu,
                double p_thickness)
-    : BaseDisp(basis.flat(), element),
+    : BaseDisp(basis, element),
       Emodul{p_Emodul},
       nu{p_nu},
       thickness{p_thickness} {

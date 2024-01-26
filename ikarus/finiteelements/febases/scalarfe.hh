@@ -21,12 +21,13 @@ template <typename Basis_>
 class ScalarFieldFE
 {
 public:
-  using Basis                   = Basis_;                         ///< Type of the root basis.
-  using LocalView               = typename Basis::LocalView;      ///< Type of the local view.
-  using GlobalIndex             = typename LocalView::MultiIndex; ///< Type of the global index.
-  using GridElement             = typename LocalView::Element;    ///< Type of the grid element.
-  using Traits                  = FETraits<GridElement>;          ///< Type of the traits.
-  static constexpr int worlddim = Traits::worlddim;               ///< Dimension of the world space.
+  using Traits                  = FETraits<Basis_>;             ///< Type of the traits.
+  using Basis                   = typename Traits::Basis;       ///< Type of the basis.
+  using RootBasis               = typename Traits::FlatBasis;   ///< Type of the root basis.
+  using LocalView               = typename Traits::LocalView;   ///< Type of the local view.
+  using GlobalIndex             = typename Traits::GlobalIndex; ///< Type of the global index.
+  using GridElement             = typename Traits::Element;     ///< Type of the grid element.
+  static constexpr int worlddim = Traits::worlddim;             ///< Dimension of the world space.
   /**
    * @brief Constructor for the ScalarFieldFE class.
    *
@@ -34,8 +35,8 @@ public:
    * @param element The local element.
    */
   explicit ScalarFieldFE(const Basis& basis, const typename LocalView::Element& element)
-      : localView_{basis.localView()} {
-    static_assert(Basis::PreBasis::Node::CHILDREN == 0, "This is no scalar basis!");
+      : localView_{basis.flat().localView()} {
+    static_assert(RootBasis::PreBasis::Node::CHILDREN == 0, "This is no scalar basis!");
     localView_.bind(element);
   }
 
