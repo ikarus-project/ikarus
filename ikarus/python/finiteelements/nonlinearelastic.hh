@@ -24,15 +24,14 @@ template <class NonLinearElastic, class... options>
 void registerNonLinearElastic(pybind11::handle scope, pybind11::class_<NonLinearElastic, options...> cls) {
   using pybind11::operator""_a;
 
-  using GlobalBasis            = typename NonLinearElastic::Basis;
-  using FlatBasis              = typename NonLinearElastic::FlatBasis;
-  using GridView               = typename GlobalBasis::GridView;
-  using Element                = typename NonLinearElastic::Element;
-  using Traits                 = typename NonLinearElastic::Traits;
-  using FERequirements         = typename NonLinearElastic::FERequirementType;
-  using Material               = typename NonLinearElastic::Material;
-  using FERequirements         = typename NonLinearElastic::FERequirementType;
-  using ResultRequirementsType = typename NonLinearElastic::ResultRequirementsType;
+  using GlobalBasis    = typename NonLinearElastic::Basis;
+  using FlatBasis      = typename NonLinearElastic::FlatBasis;
+  using GridView       = typename GlobalBasis::GridView;
+  using Element        = typename NonLinearElastic::Element;
+  using Traits         = typename NonLinearElastic::Traits;
+  using FERequirements = typename NonLinearElastic::FERequirementType;
+  using Material       = typename NonLinearElastic::Material;
+  using FERequirements = typename NonLinearElastic::FERequirementType;
 
   cls.def(pybind11::init([](const GlobalBasis& basis, const Element& element, const Material& mat) {
             return new NonLinearElastic(basis, element, mat);
@@ -103,17 +102,15 @@ void registerNonLinearElastic(pybind11::handle scope, pybind11::class_<NonLinear
       pybind11::arg("FERequirements"), pybind11::arg("elementMatrix").noconvert());
 
   cls.def(
-      "resultAt",
-      [](NonLinearElastic& self, const ResultRequirementsType& req,
-         const Dune::FieldVector<double, Traits::mydim>& local, ResultType resType = ResultType::noType) {
-        ResultTypeMap<double> resultTypeMap;
-        self.calculateAt(req, local, resultTypeMap);
-        if (resType == ResultType::noType)
-          return resultTypeMap.getSingleResult().second;
+      "calculateAt",
+      [](NonLinearElastic& self, const FERequirements& req, const Dune::FieldVector<double, Traits::mydim>& local,
+         ResultType resType) {
+        if (resType == ResultType::PK2Stress)
+          return self.template calculateAt<ResultType::PK2Stress>(req, local);
         else
-          return resultTypeMap.getResult(resType);
+          DUNE_THROW(Dune::NotImplemented, "Nonlinear-elastic element only supports PK2 stress as result.");
       },
-      pybind11::arg("resultRequirements"), pybind11::arg("local"), pybind11::arg("resultType") = ResultType::noType);
+      pybind11::arg("feRequirements"), pybind11::arg("local"), pybind11::arg("resultType"));
 }
 
 } // namespace Ikarus::Python

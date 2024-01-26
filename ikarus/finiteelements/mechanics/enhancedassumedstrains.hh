@@ -33,12 +33,11 @@ template <typename DisplacementBasedElement>
 class EnhancedAssumedStrains : public DisplacementBasedElement
 {
 public:
-  using FERequirementType      = typename DisplacementBasedElement::FERequirementType;
-  using ResultRequirementsType = typename DisplacementBasedElement::ResultRequirementsType;
-  using LocalView              = typename DisplacementBasedElement::LocalView;
-  using Geometry               = typename DisplacementBasedElement::Geometry;
-  using GridView               = typename DisplacementBasedElement::GridView;
-  using Traits                 = typename DisplacementBasedElement::Traits;
+  using FERequirementType = typename DisplacementBasedElement::FERequirementType;
+  using LocalView         = typename DisplacementBasedElement::LocalView;
+  using Geometry          = typename DisplacementBasedElement::Geometry;
+  using GridView          = typename DisplacementBasedElement::GridView;
+  using Traits            = typename DisplacementBasedElement::Traits;
   using DisplacementBasedElement::localView;
 
   /**
@@ -147,7 +146,7 @@ forward the
   }
 
   /**
-   * @brief Calculates the results at a given set of local coordinates using the Enhanced Assumed Strains (EAS)
+   * @brief Calculates a requested result at a specific local position using the Enhanced Assumed Strains (EAS)
    * method.
    *
    * This function calculates the results at the specified local coordinates .
@@ -156,25 +155,26 @@ forward the
    *
    * @param req The result requirements.
    * @param local The local coordinates at which results are to be calculated.
-   * @param result The result container to store the calculated values.
+   * @return calculated result
    *
-   * @tparam ResultRequirementsType The type representing the requirements for results.
+   * @tparam resType The type representing the requested result.
    */
-  void calculateAt(const ResultRequirementsType& req, const Dune::FieldVector<double, Traits::mydim>& local,
-                   ResultTypeMap<double>& result) const {
+  template <ResultType resType>
+  auto calculateAt(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
     using namespace Dune::Indices;
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
 
-    DisplacementBasedElement::calculateAt(req, local, result);
+    static_assert(resType == ResultType::linearStress, "The requested result type is NOT implemented.");
+
+    auto resultVector = DisplacementBasedElement::template calculateAt<resType>(req, local);
 
     if (isDisplacementBased())
-      return;
+      return resultVector;
 
-    const auto& par           = req.getFERequirements();
-    const auto C              = DisplacementBasedElement::materialTangentFunction(req.getFERequirements());
+    const auto C              = DisplacementBasedElement::materialTangentFunction(req);
     const auto& numberOfNodes = DisplacementBasedElement::numberOfNodes();
-    auto uFunction            = DisplacementBasedElement::displacementFunction(par);
+    auto uFunction            = DisplacementBasedElement::displacementFunction(req);
     const auto disp           = Dune::viewAsFlatEigenVector(uFunction.coefficientsRef());
 
     std::visit(
@@ -182,21 +182,18 @@ forward the
           if constexpr (not std::is_same_v<std::monostate, EAST>) {
             constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
             Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
-            calculateDAndLMatrix(easFunction, req.getFERequirements(), D, L);
+            calculateDAndLMatrix(easFunction, req, D, L);
             const auto alpha = (-D.inverse() * L * disp).eval();
             const auto M     = easFunction.calcM(local);
             const auto CEval = C(local);
             auto easStress   = (CEval * M * alpha).eval();
-            typename ResultTypeMap<double>::ResultArray resultVector;
-            if (req.isResultRequested(ResultType::linearStress)) {
-              resultVector.resize(3, 1);
-              resultVector = result.getResult(ResultType::linearStress) + easStress;
-              result.insertOrAssignResult(ResultType::linearStress, resultVector);
-            } else
-              DUNE_THROW(Dune::NotImplemented, "The requested result type is NOT implemented.");
+
+            resultVector.resize(3, 1);
+            resultVector = resultVector + easStress;
           }
         },
         easVariant_);
+    return resultVector;
   }
 
   /**

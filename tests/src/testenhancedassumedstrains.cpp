@@ -38,7 +38,8 @@ int main(int argc, char** argv) {
                                       Dune::ReferenceElements<double, 3>::cube(), checkJacobianFunctor));
   t.subTest(testFEElement<EASElement>(
       firstOrderLagrangePrePower2Basis, "EAS", unDistorted, Dune::ReferenceElements<double, 2>::cube(),
-      checkCalculateAtFunctorFactory(linearStressResultsOfSquare), checkResultFunctionFunctor));
+      checkCalculateAtFunctorFactory<Ikarus::ResultType::linearStress>(linearStressResultsOfSquare),
+      checkResultFunctionFunctorFactory<Ikarus::ResultType::linearStress>()));
 
   return t.exit();
 }

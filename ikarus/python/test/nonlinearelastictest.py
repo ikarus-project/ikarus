@@ -131,13 +131,8 @@ if __name__ == "__main__":
     assert np.all(abs(resultd3.grad) < 1e-8)
     assert np.all(abs(resultd4.fun) < 1e-8)
 
-    resReq = ikarus.ResultRequirements()
+    req = ikarus.FERequirements()
     fullD = assembler.createFullVector(resultd2.x)
-    resReq.insertGlobalSolution(iks.FESolutions.displacement, fullD)
-    resReq.insertParameter(iks.FEParameter.loadfactor, lambdaLoad)
-    resReq.addResultRequest(iks.ResultType.PK2Stress)
+    req.insertGlobalSolution(iks.FESolutions.displacement, fullD)
 
-    res1 = fes[0].resultAt(resReq, np.array([0.5, 0.5]))
-    res2 = fes[0].resultAt(resReq, np.array([0.5, 0.5]), iks.ResultType.PK2Stress)
-
-    assert np.allclose(res1, res2, atol=1e-6), f" {res1} is not equal to {res2}"
+    res1 = fes[0].calculateAt(req, np.array([0.5, 0.5]), iks.ResultType.PK2Stress)

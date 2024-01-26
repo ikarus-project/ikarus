@@ -50,20 +50,19 @@ class LinearElastic : public PowerBasisFE<Basis_>,
                                       FETraits<Basis_, FERequirements_, useEigenRef>>
 {
 public:
-  using Traits                 = FETraits<Basis_, FERequirements_, useEigenRef>;
-  using Basis                  = typename Traits::Basis;
-  using FlatBasis              = typename Traits::FlatBasis;
-  using FERequirementType      = typename Traits::FERequirementType;
-  using LocalView              = typename Traits::LocalView;
-  using Geometry               = typename Traits::Geometry;
-  using GridView               = typename Traits::GridView;
-  using Element                = typename Traits::Element;
-  using ResultRequirementsType = typename Traits::ResultRequirementsType;
-  using BaseDisp               = PowerBasisFE<Basis>; // Handles globalIndices function
-  using VolumeType             = Volume<LinearElastic<Basis_, FERequirements_, useEigenRef>, Traits>;
-  using TractionType           = Traction<LinearElastic<Basis_, FERequirements_, useEigenRef>, Traits>;
-  static constexpr int myDim   = Traits::mydim;
-  using LocalBasisType         = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
+  using Traits               = FETraits<Basis_, FERequirements_, useEigenRef>;
+  using Basis                = typename Traits::Basis;
+  using FlatBasis            = typename Traits::FlatBasis;
+  using FERequirementType    = typename Traits::FERequirementType;
+  using LocalView            = typename Traits::LocalView;
+  using Geometry             = typename Traits::Geometry;
+  using GridView             = typename Traits::GridView;
+  using Element              = typename Traits::Element;
+  using BaseDisp             = PowerBasisFE<Basis>; // Handles globalIndices function
+  using VolumeType           = Volume<LinearElastic<Basis_, FERequirements_, useEigenRef>, Traits>;
+  using TractionType         = Traction<LinearElastic<Basis_, FERequirements_, useEigenRef>, Traits>;
+  static constexpr int myDim = Traits::mydim;
+  using LocalBasisType       = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
 
   /**
    * @brief Constructor for the LinearElastic class.
@@ -207,28 +206,25 @@ public:
   }
 
   /**
-   * @brief Calculates results at a specific local position.
+   * @brief Calculates a requested result at a specific local position.
    *
-   * @param req The ResultRequirementsType object specifying the requested results.
+   * @param req The FERequirementType object holding the global solution.
    * @param local Local position vector.
-   * @param result Map to store the calculated results.
+   * @return calculated result
+   *
+   * @tparam resType The type representing the requested result.
    */
-  void calculateAt(const ResultRequirementsType& req, const Dune::FieldVector<double, Traits::mydim>& local,
-                   ResultTypeMap<double>& result) const {
-    using namespace Dune::Indices;
-    using namespace Dune::DerivativeDirections;
-    using namespace Dune;
+  template <ResultType resType>
+  auto calculateAt(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
+    static_assert(resType == ResultType::linearStress, "The requested result type is NOT implemented.");
 
-    const auto eps = strainFunction(req.getFERequirements());
-    const auto C   = materialTangent();
-    auto epsVoigt  = eps.evaluate(local, on(gridElement));
+    if constexpr (resType == ResultType::linearStress) {
+      const auto eps = strainFunction(req);
+      const auto C   = materialTangent();
+      auto epsVoigt  = eps.evaluate(local, Dune::on(Dune::DerivativeDirections::gridElement));
 
-    auto linearStress = (C * epsVoigt).eval();
-
-    if (req.isResultRequested(ResultType::linearStress))
-      result.insertOrAssignResult(ResultType::linearStress, linearStress);
-    else
-      DUNE_THROW(Dune::NotImplemented, "The requested result type is NOT implemented.");
+      return (C * epsVoigt).eval();
+    }
   }
 
 private:

@@ -35,11 +35,7 @@ using Dune::TestSuite;
 
 struct OwnResultFunction
 {
-  template <typename ElementTypeT, typename FERequirements, int size, typename ScalarTypeT>
-  double operator()(const ElementTypeT& /* fe */, const Ikarus::ResultRequirements<FERequirements>& /* req */,
-                    const Dune::FieldVector<ScalarTypeT, size>& /* pos */, [[maybe_unused]] int /* comp */) const {
-    return 7;
-  }
+  double operator()(const auto& resultArray, [[maybe_unused]] int /* comp */) const { return 7; }
   static std::string name() { return "Seven"; }
   static int ncomps() { return 1; }
 };
@@ -165,11 +161,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   }
 
   Dune::Vtk::VtkWriter<GridView> vtkWriter2(gridView);
-  auto resReq = Ikarus::ResultRequirements()
-                    .insertGlobalSolution(Ikarus::FESolutions::displacement, d)
-                    .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
-                    .addResultRequest(ResultType::PK2Stress);
-  auto resultFunction = std::make_shared<ResultFunction<ElementType>>(&fes, resReq);
+  auto resultFunction = std::make_shared<ResultFunction<ElementType, ResultType::PK2Stress>>(&fes, req);
 
   t.check(resultFunction->name() == "PK2Stress")
       << "Test resultName: " << resultFunction->name() << "should be PK2Stress";
@@ -177,36 +169,27 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
 
   vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction));
 
-  auto resultFunction2 = ResultFunction(&fes, resReq, ResultEvaluators::PrincipalStress{});
+  auto resultFunction2 =
+      ResultFunction<ElementType, ResultType::PK2Stress, ResultEvaluators::PrincipalStress>(&fes, req);
 
   auto resultFunction2S = std::make_shared<decltype(resultFunction2)>(resultFunction2);
   t.check(resultFunction2S->name() == "PrincipalStress")
       << "Test resultName: " << resultFunction2S->name() << "should be PrincipalStress";
+
   t.check(resultFunction2S->ncomps() == 2) << "Test result comps: " << resultFunction2S->ncomps() << "should be 2";
   vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction2S));
-  auto resultFunction3  = ResultFunction(&fes, resReq, ResultEvaluators::VonMises{});
+
+  auto resultFunction3  = ResultFunction<ElementType, ResultType::PK2Stress, ResultEvaluators::VonMises<2>>(&fes, req);
   auto resultFunction3S = std::make_shared<decltype(resultFunction3)>(resultFunction3);
   t.check(resultFunction3S->name() == "VonMises")
       << "Test resultName: " << resultFunction2S->name() << "should be VonMises";
   t.check(resultFunction3S->ncomps() == 1) << "Test result comps: " << resultFunction2S->ncomps() << "should be 1";
   vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction3S));
 
-  auto resultFunction4  = ResultFunction(&fes, resReq, OwnResultFunction{});
+  auto resultFunction4  = ResultFunction<ElementType, ResultType::PK2Stress, OwnResultFunction>(&fes, req);
   auto resultFunction4S = std::make_shared<decltype(resultFunction4)>(resultFunction4);
-
   vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction4S));
-
   vtkWriter2.write("EndResult" + Dune::className<Grid>());
-  auto resReq5 = Ikarus::ResultRequirements()
-                     .insertGlobalSolution(Ikarus::FESolutions::displacement, d)
-                     .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
-                     .addResultRequest(ResultType::linearStress);
-  auto resultFunction5 = std::make_shared<ResultFunction<ElementType>>(&fes, resReq5);
-  try {
-    vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction5));
-    t.check(false) << "resultFunction5 should have failed for requesting linearStress here";
-  } catch (const Dune::NotImplemented&) {
-  }
 
   nonLinOp.template update<1>();
   t.check(controlInfo.success, "Successful result");

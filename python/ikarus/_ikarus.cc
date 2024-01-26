@@ -126,35 +126,6 @@ PYBIND11_MODULE(_ikarus, m) {
 
   lv.def("getParameter", [](const FEreq& self, FEParameter parType) { return self.getParameter(std::move(parType)); });
 
-  using ResReq = ResultRequirements<FEreq>;
-
-  auto resReq = Dune::Python::insertClass<ResReq>(m, "ResultRequirements",
-                                                  Dune::Python::GenerateTypeName("ResultRequirements<FEreq>"), includes)
-                    .first;
-
-  resReq.def(py::init());
-  resReq.def("addAffordance",
-             [](ResReq& self, const ScalarAffordances& affordances) { self.addAffordance(affordances); });
-  resReq.def("addAffordance",
-             [](ResReq& self, const VectorAffordances& affordances) { self.addAffordance(affordances); });
-  resReq.def("addAffordance",
-             [](ResReq& self, const MatrixAffordances& affordances) { self.addAffordance(affordances); });
-
-  resReq.def(
-      "insertGlobalSolution",
-      [](ResReq& self, FESolutions solType, Ref<VectorXd> solVec) {
-        self.insertGlobalSolution(std::move(solType), solVec);
-      },
-      "solutionType"_a, "solutionVector"_a.noconvert());
-  resReq.def(
-      "insertParameter",
-      [](ResReq& self, FEParameter parType, ValueWrapper<double>& parVal) {
-        self.insertParameter(std::move(parType), parVal.val);
-      },
-      py::keep_alive<1, 3>(), "FEParameter"_a, "parameterValue"_a.noconvert());
-
-  resReq.def("addResultRequest", [](ResReq& self, ResultType rType) { self.addResultRequest(std::move(rType)); });
-
   auto materials = m.def_submodule("materials", "This is the submodule for materials in Ikarus");
 
   pybind11::class_<LinearElasticity> linElastic(materials, "LinearElasticity");

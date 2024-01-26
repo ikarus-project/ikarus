@@ -234,22 +234,20 @@ template <typename NonLinearOperator>
   return t;
 }
 
-template <typename NonLinearOperator, typename FiniteElement>
-[[nodiscard]] auto checkCalculateAt(NonLinearOperator& nonLinearOperator, FiniteElement& fe,
-                                    const Ikarus::ResultRequirements<>& resultRequirements, const auto& expectedResult,
-                                    const auto& evaluationPositions, const std::string& messageIfFailed = "") {
+template <Ikarus::ResultType resType>
+[[nodiscard]] auto checkCalculateAt(auto& nonLinearOperator, auto& fe, const auto& feRequirements,
+                                    const auto& expectedResult, const auto& evaluationPositions,
+                                    const std::string& messageIfFailed = "") {
   Eigen::MatrixXd computedResults(expectedResult.rows(), expectedResult.cols());
 
-  Ikarus::ResultTypeMap result;
   for (int i = 0; const auto& pos : evaluationPositions) {
-    fe.calculateAt(resultRequirements, pos, result);
-    computedResults.row(i++) = result.getSingleResult().second.transpose();
+    auto result              = fe.template calculateAt<resType>(feRequirements, pos);
+    computedResults.row(i++) = result.transpose();
   }
 
   Dune::TestSuite t("Test of the calulateAt function for " + Dune::className(fe));
   const bool isResultCorrect = isApproxSame(computedResults, expectedResult, 1e-8);
-  t.check(isResultCorrect) << "Computed Result for " << toString(resultRequirements.getRequestedResult())
-                           << " is not the same as expected result:\n"
+  t.check(isResultCorrect) << "Computed Result for " << toString(resType) << " is not the same as expected result:\n"
                            << "It is:\n"
                            << computedResults << "\nBut should be:\n"
                            << expectedResult << "\n"
@@ -257,15 +255,16 @@ template <typename NonLinearOperator, typename FiniteElement>
   return t;
 }
 
-template <typename NonLinearOperator, typename FiniteElement>
-[[nodiscard]] auto checkResultFunction(NonLinearOperator& nonLinearOperator, FiniteElement& fe,
+template <Ikarus::ResultType resType>
+[[nodiscard]] auto checkResultFunction(auto& nonLinearOperator, auto& fe, auto& feReq,
                                        const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Result Function Test");
   using namespace Ikarus;
   using namespace Dune::Indices;
   using namespace Dune::Functions::BasisFactory;
 
-  ResultTypeMap result;
+  using FiniteElement = std::remove_reference_t<decltype(fe)>;
+
   auto gridView  = fe.localView().globalBasis().gridView();
   auto element   = elements(gridView).begin();
   using GridView = decltype(gridView);
@@ -277,29 +276,15 @@ template <typename NonLinearOperator, typename FiniteElement>
 
   auto& displacement = nonLinearOperator.firstParameter();
 
-  auto resultRequirementsLS = ResultRequirements()
-                                  .insertGlobalSolution(FESolutions::displacement, displacement)
-                                  .addResultRequest(ResultType::linearStress);
-
-  auto resultRequirementsPK = ResultRequirements()
-                                  .insertGlobalSolution(FESolutions::displacement, displacement)
-                                  .addResultRequest(ResultType::PK2Stress);
-
   std::vector<FiniteElement> fes{fe};
 
   if constexpr (std::is_same_v<LinearElasticElement, FiniteElement> or std::is_same_v<EASElement, FiniteElement>) {
-    auto resultFunctionLS = localFunction(Dune::Vtk::Function<GridView>(
-        std::make_shared<ResultFunction<std::remove_cvref_t<FiniteElement>>>(&fes, resultRequirementsLS)));
+    auto resultFunction = localFunction(
+        Dune::Vtk::Function<GridView>(std::make_shared<ResultFunction<FiniteElement, resType>>(&fes, feReq)));
 
     t.checkNoThrow([&]() {
-      resultFunctionLS.bind(*element);
-      auto stress = resultFunctionLS(Dune::FieldVector<double, FiniteElement::Traits::mydim>(0));
-    });
-    // This throws while instantiating the Dune::VTK::Function because `calculateAt` is called for determining the
-    // ncomps
-    t.checkThrow<Dune::NotImplemented>([&]() {
-      localFunction(Dune::Vtk::Function<GridView>(
-          std::make_shared<ResultFunction<std::remove_cvref_t<FiniteElement>>>(&fes, resultRequirementsPK)));
+      resultFunction.bind(*element);
+      auto stress = resultFunction(Dune::FieldVector<double, FiniteElement::Traits::mydim>(0));
     });
   } else {
     std::cout << "Result requirement check is skipped as " << Dune::className<FiniteElement>()

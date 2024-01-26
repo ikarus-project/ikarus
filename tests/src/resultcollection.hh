@@ -20,7 +20,7 @@ auto getVertexPositions(FiniteElement& fe) {
   return positions;
 }
 
-inline auto linearStressResultsOfSquare = [](auto& nonLinearOperator, auto& fe) {
+inline auto linearStressResultsOfSquare = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
   constexpr int vertices   = 4;
   constexpr int quantities = 3;
 
@@ -37,15 +37,13 @@ inline auto linearStressResultsOfSquare = [](auto& nonLinearOperator, auto& fe) 
   auto& displacement = nonLinearOperator.firstParameter();
   displacement << 0, 0, 1, 1, 1, 1, 1, 1;
 
-  using namespace Ikarus;
-  auto resultRequirements = ResultRequirements()
-                                .insertGlobalSolution(FESolutions::displacement, displacement)
-                                .addResultRequest(ResultType::linearStress);
+  auto feRequirements =
+      typename FE::FERequirementType().insertGlobalSolution(Ikarus::FESolutions::displacement, displacement);
 
-  return std::make_tuple(resultRequirements, expectedStress, getVertexPositions(fe));
+  return std::make_tuple(feRequirements, expectedStress, getVertexPositions(fe));
 };
 
-inline auto linearStressResultsOfCube = [](auto& nonLinearOperator, auto& fe) {
+inline auto linearStressResultsOfCube = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
   constexpr int vertices   = 8;
   constexpr int quantities = 6;
 
@@ -58,15 +56,13 @@ inline auto linearStressResultsOfCube = [](auto& nonLinearOperator, auto& fe) {
   auto& displacement = nonLinearOperator.firstParameter();
   displacement << 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
 
-  using namespace Ikarus;
-  auto resultRequirements = ResultRequirements()
-                                .insertGlobalSolution(FESolutions::displacement, displacement)
-                                .addResultRequest(ResultType::linearStress);
+  auto feRequirements =
+      typename FE::FERequirementType().insertGlobalSolution(Ikarus::FESolutions::displacement, displacement);
 
-  return std::make_tuple(resultRequirements, expectedStress, getVertexPositions(fe));
+  return std::make_tuple(feRequirements, expectedStress, getVertexPositions(fe));
 };
 
-inline auto linearStressResultsOfTriangle = [](auto& nonLinearOperator, auto& fe) {
+inline auto linearStressResultsOfTriangle = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
   constexpr int vertices   = 3;
   constexpr int quantities = 3;
 
@@ -76,15 +72,13 @@ inline auto linearStressResultsOfTriangle = [](auto& nonLinearOperator, auto& fe
   auto& displacement = nonLinearOperator.firstParameter();
   displacement << 0, 0, 2, 0, 1, 0;
 
-  using namespace Ikarus;
-  auto resultRequirements = ResultRequirements()
-                                .insertGlobalSolution(FESolutions::displacement, displacement)
-                                .addResultRequest(ResultType::linearStress);
+  auto feRequirements =
+      typename FE::FERequirementType().insertGlobalSolution(Ikarus::FESolutions::displacement, displacement);
 
-  return std::make_tuple(resultRequirements, expectedStress, getVertexPositions(fe));
+  return std::make_tuple(feRequirements, expectedStress, getVertexPositions(fe));
 };
 
-inline auto linearStressResultsOfTetrahedron = [](auto& nonLinearOperator, auto& fe) {
+inline auto linearStressResultsOfTetrahedron = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
   constexpr int vertices   = 4;
   constexpr int quantities = 6;
 
@@ -95,10 +89,8 @@ inline auto linearStressResultsOfTetrahedron = [](auto& nonLinearOperator, auto&
   auto& displacement = nonLinearOperator.firstParameter();
   displacement << 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0;
 
-  using namespace Ikarus;
-  auto resultRequirements = ResultRequirements()
-                                .insertGlobalSolution(FESolutions::displacement, displacement)
-                                .addResultRequest(ResultType::linearStress);
+  auto feRequirements =
+      typename FE::FERequirementType().insertGlobalSolution(Ikarus::FESolutions::displacement, displacement);
 
-  return std::make_tuple(resultRequirements, expectedStress, getVertexPositions(fe));
+  return std::make_tuple(feRequirements, expectedStress, getVertexPositions(fe));
 };
