@@ -5,10 +5,13 @@ SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgar
 SPDX-License-Identifier: LGPL-3.0-or-later
 -->
 
+- Add tensorProduct quadrature rule and [0,1] to [-1,1] transformation ([#238](https://github.com/ikarus-project/ikarus/pull/238))
+- Refactor `enhancedassumedstrains.hh` ([#247](https://github.com/ikarus-project/ikarus/pull/247))
+
 ## Release v0.4 (Ganymede)
 
 - Add CODE_OF_CONDUCT.md file
-- Refactored Cmake and directory structure  ([#146](https://github.com/ikarus-project/ikarus/pull/146))
+- Refactored Cmake and directory structure ([#146](https://github.com/ikarus-project/ikarus/pull/146))
 - Added comment section to blog post ([511d83](https://github.com/ikarus-project/ikarus/commit/511d83f9e7c474c9b320db5bc9367114ebe2825d))
 - Updated license information ([#138](https://github.com/ikarus-project/ikarus/pull/138))
 - Added detailed documentation for ikarus-examples ([#140](https://github.com/ikarus-project/ikarus/pull/140))
