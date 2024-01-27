@@ -49,9 +49,9 @@ struct VonMises
       const auto s_x  = resultArray(0, 0);
       const auto s_y  = resultArray(1, 0);
       const auto s_z  = resultArray(2, 0);
-      const auto s_yz = resultArray(4, 0);
-      const auto s_xz = resultArray(5, 0);
-      const auto s_xy = resultArray(6, 0);
+      const auto s_yz = resultArray(3, 0);
+      const auto s_xz = resultArray(4, 0);
+      const auto s_xy = resultArray(5, 0);
 
       return std::sqrt(Dune::power(s_x, 2) + Dune::power(s_y, 2) + Dune::power(s_z, 2) - s_x * s_y - s_x * s_z -
                        s_y * s_z + 3 * (Dune::power(s_xy, 2) + Dune::power(s_xz, 2) + Dune::power(s_yz, 2)));

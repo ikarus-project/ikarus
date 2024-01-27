@@ -11,6 +11,7 @@
 #include <dune/functions/functionspacebases/lagrangedgbasis.hh>
 #include <dune/grid/uggrid.hh>
 #include <dune/grid/yaspgrid.hh>
+#include <dune/grid/io/file/vtk.hh>
 #if HAVE_DUNE_IGA
   #include <dune/iga/nurbsgrid.hh>
 #endif
@@ -30,6 +31,7 @@
 #include <ikarus/utils/functionsanitychecks.hh>
 #include <ikarus/utils/linearalgebrahelper.hh>
 #include <ikarus/utils/pythonautodiffdefinitions.hh>
+#include <ikarus/utils/eigendunetransformations.hh>
 
 namespace Grids {
 struct Yasp
@@ -238,14 +240,14 @@ template <Ikarus::ResultType resType>
 [[nodiscard]] auto checkCalculateAt(auto& nonLinearOperator, auto& fe, const auto& feRequirements,
                                     const auto& expectedResult, const auto& evaluationPositions,
                                     const std::string& messageIfFailed = "") {
-  Eigen::MatrixXd computedResults(expectedResult.rows(), expectedResult.cols());
+  Dune::TestSuite t("Test of the calulateAt function for " + Dune::className(fe));
 
+  Eigen::MatrixXd computedResults(expectedResult.rows(), expectedResult.cols());
   for (int i = 0; const auto& pos : evaluationPositions) {
     auto result              = fe.template calculateAt<resType>(feRequirements, pos);
     computedResults.row(i++) = result.transpose();
   }
 
-  Dune::TestSuite t("Test of the calulateAt function for " + Dune::className(fe));
   const bool isResultCorrect = isApproxSame(computedResults, expectedResult, 1e-8);
   t.check(isResultCorrect) << "Computed Result for " << toString(resType) << " is not the same as expected result:\n"
                            << "It is:\n"
@@ -256,41 +258,45 @@ template <Ikarus::ResultType resType>
 }
 
 template <Ikarus::ResultType resType>
-[[nodiscard]] auto checkResultFunction(auto& nonLinearOperator, auto& fe, auto& feReq,
-                                       const std::string& messageIfFailed = "") {
-  Dune::TestSuite t("Result Function Test");
-  using namespace Ikarus;
-  using namespace Dune::Indices;
-  using namespace Dune::Functions::BasisFactory;
+[[nodiscard]] auto checkResultFunction(auto& nonLinearOperator, auto& fe, const auto& feRequirements,
+                                    const auto& expectedResult, const auto& evaluationPositions,
+                                    const std::string& messageIfFailed = "") {
+  Dune::TestSuite t("Result Function Test" + Dune::className(fe));
 
   using FiniteElement = std::remove_reference_t<decltype(fe)>;
-
+  auto& element = fe.gridElement();
   auto gridView  = fe.localView().globalBasis().gridView();
-  auto element   = elements(gridView).begin();
-  using GridView = decltype(gridView);
-
-  using LinearElasticElement =
-      LinearElastic<Basis<std::remove_cvref_t<decltype(fe.localView().globalBasis().preBasis())>>>;
-  using EASElement = EnhancedAssumedStrains<
-      LinearElastic<Basis<std::remove_cvref_t<decltype(fe.localView().globalBasis().preBasis())>>>>;
-
-  auto& displacement = nonLinearOperator.firstParameter();
-
   std::vector<FiniteElement> fes{fe};
 
-  if constexpr (std::is_same_v<LinearElasticElement, FiniteElement> or std::is_same_v<EASElement, FiniteElement>) {
-    auto resultFunction = localFunction(
-        Dune::Vtk::Function<GridView>(std::make_shared<ResultFunction<FiniteElement, resType>>(&fes, feReq)));
+  Eigen::MatrixXd computedResults(expectedResult.rows(), expectedResult.cols());
+  auto localResultFunction = Ikarus::ResultFunction<FiniteElement, resType>::asLocalFunction(&fes, feRequirements);
+  localResultFunction.bind(element);
 
-    t.checkNoThrow([&]() {
-      resultFunction.bind(*element);
-      auto stress = resultFunction(Dune::FieldVector<double, FiniteElement::Traits::mydim>(0));
-    });
-  } else {
-    std::cout << "Result requirement check is skipped as " << Dune::className<FiniteElement>()
-              << " is not equivalent to " << Dune::className<LinearElasticElement>() << " or "
-              << Dune::className<EASElement>() << std::endl;
+  for (int i = 0; const auto& pos : evaluationPositions) {
+    auto result              = localResultFunction(pos);
+    for (auto j : std::views::iota(0ul, result.size()))
+      computedResults(i, j) = result[j];
+    ++i;
   }
+  const bool isResultCorrect = isApproxSame(computedResults, expectedResult, 1e-8);
+  t.check(isResultCorrect) << "Computed Result for " << toString(resType) << " is not the same as expected result:\n"
+                           << "It is:\n"
+                           << computedResults << "\nBut should be:\n"
+                           << expectedResult << "\n"
+                           << messageIfFailed;
+
+  Dune::Vtk::VtkWriter vtkWriter(gridView);
+  auto vtkResultFunction = Ikarus::ResultFunction<FiniteElement, resType>::asVtkFunction(&fes, feRequirements);
+
+  vtkWriter.addPointData(vtkResultFunction);
+  vtkWriter.write("Vtk_VtkWriter_resultfunction_" + toString(resType) + "_" + std::to_string(FiniteElement::myDim) + std::to_string(element.geometry().type().id()));
+
+
+  Dune::VTKWriter<decltype(gridView)> vtkWriter2(gridView);
+  auto sharedResultFunction = Ikarus::ResultFunction<FiniteElement, resType>::asShared(&fes, feRequirements);
+
+  vtkWriter2.addVertexData(sharedResultFunction);
+  vtkWriter2.write("native_vtkwriter_resultfunction_" + toString(resType) + "_" + std::to_string(FiniteElement::myDim) + std::to_string(element.geometry().type().id()));
 
   return t;
 }

@@ -16,8 +16,8 @@
 #include <dune/vtk/vtkwriter.hh>
 
 #include <ikarus/finiteelements/ferequirements.hh>
-#include <ikarus/io/resultevaluators.hh>
-#include <ikarus/utils/eigendunetransformations.hh>
+#include <dune/vtk/function.hh>
+
 
 namespace Ikarus {
 namespace Impl {
@@ -30,17 +30,19 @@ namespace Impl {
  * \brief Wrapper to evaluate results for a vtkwriter.
  * \details
  * Usage:
- * \code
- *   auto resultFunction = std::make_shared<ResultFunction<FiniteElement>>(&fes, feReq);
+ * @code
+ *   // Usage with Dune::Vtk::VtkWriter
+ *   auto resultFunction = Ikarus::ResultFunction<FiniteElement, resType>::asVtkFunction(&fes, feRequirements);
+ *   vtkwriter.addPointData(resultFunction);
  *
- * vtkWriter.addPointData(Dune::Vtk::Function<GridView>( resultFunction));
- * // or with Dunes native Vtk
- * vtkWriter.addVertexData(resultFunction);
- * \endcode
- * \ingroup io
- * \tparam FE Type of the finite element
- * \tparam resType requested result type
- * \tparam UserFunction Type of the user-defined function for custom result evaluation (default is
+ *   // Usage with the native Dune::VTKWriter
+ *   auto resultFunction = Ikarus::ResultFunction<FiniteElement, resType>::asShared(&fes, feRequirements);
+ *   vtkWriter.addVertexData(resultFunction);
+ * @endcode
+ * @ingroup io
+ * @tparam ElementType_ Type of the finite element
+ * @tparam resType requested result type
+ * @tparam UserFunction Type of the user-defined function for custom result evaluation (default is
 DefaultUserFunction)
  */
 template <typename FE, ResultType resType, typename UserFunction = Impl::DefaultUserFunction>
@@ -114,6 +116,49 @@ public:
         feRequirements_{req},
         fes_{fes},
         userFunction_{UserFunction{}} {}
+
+  /**
+   * @brief Creates the ResultFunction as a function that can be used with dune-vtk
+   *
+   * Constructs a ResultFunction object with given finite elements, ferequirements as `Dune::Vtk::Function`
+   *
+   * @param fes Pointer to a vector of finite elements
+   * @param req FERequirements for evaluation
+   */
+  static auto asVtkFunction(std::vector<ElementType>* fes, const FERequirementType& req) {
+    return Dune::Vtk::Function<GridView>(std::make_shared<ResultFunction>(fes, req));
+  }
+
+  /**
+   * @brief Creates the ResultFunction as a Localfunction that can queried element-wise
+   *
+   * Constructs a ResultFunction object with given finite elements, ferequirements as `Dune::Vtk::LocalFunction`
+   * This leverages the Dune::VTK localfunction interface to be able to query element-wise
+   * Usage:
+   * @code
+   *    auto localResultFunction = Ikarus::ResultFunction<FiniteElement, resType>::asLocalFunction(&fes, feRequirements);
+   *    localResultFunction.bind(element);
+   *    auto result = localResultFunction(pos);
+   * @endcode
+   * @param fes Pointer to a vector of finite elements
+   * @param req FERequirements for evaluation
+   */
+  static auto asLocalFunction(std::vector<ElementType>* fes, const FERequirementType& req) {
+    return localFunction(asVtkFunction(fes, req));
+  }
+
+  /**
+  * @brief Creates the ResultFunction as a function that can be used with dune-vtk
+  *
+  * Constructs a ResultFunction object with given finite elements, ferequirements as shared_ptr to be used with
+  * the native Dune VTKWriter
+  *
+  * @param fes Pointer to a vector of finite elements
+  * @param req FERequirements for evaluation
+  */
+  static auto asShared(std::vector<ElementType>* fes, const FERequirementType& req) {
+    return std::make_shared<ResultFunction>(fes, req);
+  }
 
 private:
   double evaluateComponent(int eleID, const Dune::FieldVector<ctype, griddim>& local, int comp) const {

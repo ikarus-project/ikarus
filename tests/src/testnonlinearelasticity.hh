@@ -12,7 +12,6 @@
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 
-#include "spdlog/spdlog.h"
 
 #include <Eigen/Core>
 
@@ -26,10 +25,10 @@
 #include <ikarus/utils/algorithms.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/dirichletvalues.hh>
-#include <ikarus/utils/drawing/griddrawer.hh>
-#include <ikarus/utils/init.hh>
+
 #include <ikarus/utils/nonlinearoperator.hh>
 #include <ikarus/utils/observer/controlvtkwriter.hh>
+#include <ikarus/io/resultevaluators.hh>
 
 using Dune::TestSuite;
 

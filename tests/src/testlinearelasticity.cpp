@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
   t.subTest(testFEElement<LinearElasticElement>(
       firstOrderLagrangePrePower2Basis, "LinearElastic", unDistorted, Dune::ReferenceElements<double, 2>::cube(),
       checkCalculateAtFunctorFactory<Ikarus::ResultType::linearStress>(linearStressResultsOfSquare),
-      checkResultFunctionFunctorFactory<Ikarus::ResultType::linearStress>()));
+      checkResultFunctionFunctorFactory<Ikarus::ResultType::linearStress>(linearStressResultsOfSquare)));
 
   // Test simplex 2D
   t.subTest(testFEElement<LinearElasticElement>(firstOrderLagrangePrePower2Basis, "LinearElastic", randomlyDistorted,
@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
   t.subTest(testFEElement<LinearElasticElement>(
       firstOrderLagrangePrePower3Basis, "LinearElastic", unDistorted, Dune::ReferenceElements<double, 3>::cube(),
       checkCalculateAtFunctorFactory<Ikarus::ResultType::linearStress>(linearStressResultsOfCube),
-      checkResultFunctionFunctorFactory<Ikarus::ResultType::linearStress>()));
+      checkResultFunctionFunctorFactory<Ikarus::ResultType::linearStress>(linearStressResultsOfCube)));
 
   // Test simplex 3D
   t.subTest(testFEElement<LinearElasticElement>(firstOrderLagrangePrePower3Basis, "LinearElastic", randomlyDistorted,
@@ -90,6 +90,6 @@ int main(int argc, char** argv) {
   t.subTest(testFEElement<LinearElasticElement>(
       firstOrderLagrangePrePower3Basis, "LinearElastic", unDistorted, Dune::ReferenceElements<double, 3>::simplex(),
       checkCalculateAtFunctorFactory<Ikarus::ResultType::linearStress>(linearStressResultsOfTetrahedron),
-      checkResultFunctionFunctorFactory<Ikarus::ResultType::linearStress>()));
+      checkResultFunctionFunctorFactory<Ikarus::ResultType::linearStress>(linearStressResultsOfTetrahedron)));
   return t.exit();
 }
