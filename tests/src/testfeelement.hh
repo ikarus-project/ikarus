@@ -128,11 +128,11 @@ inline auto checkJacobianFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe,
   return checkJacobianOfElement(subOperator);
 };
 
-template <Ikarus::ResultType resType>
+template <Ikarus::ResultType resType, typename ResultEvaluator = Ikarus::Impl::DefaultUserFunction>
 auto checkResultFunctionFunctorFactory(const auto& resultCollectionFunction) {
   return [&](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req) {
     auto [feRequirements, expectedStress, positions] = resultCollectionFunction(nonLinOp, fe);
-    return checkResultFunction<resType>(nonLinOp, fe, feRequirements, expectedStress, positions);
+    return checkResultFunction<resType, ResultEvaluator>(nonLinOp, fe, feRequirements, expectedStress, positions);
   };
 }
 

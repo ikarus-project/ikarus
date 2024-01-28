@@ -3,7 +3,7 @@
 
 /**
  * \file resultfunction.hh
- * \brief Ikarus Result Evaluators for Stress Analysis
+ * \brief Ikarus Result Function for Stress and other finite element results
  * \ingroup io
  *
  */

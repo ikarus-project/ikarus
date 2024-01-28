@@ -3,7 +3,7 @@
 
 /**
  * \file resultevaluators.hh
- * \brief Ikarus Result Evaluators for Stress Analysis
+ * \brief Ikarus Result Evaluators for special stress quantities
  * \ingroup resultevaluators
  *
  */
@@ -11,14 +11,7 @@
 #pragma once
 
 #include <dune/common/math.hh>
-
-#include <ikarus/finiteelements/ferequirements.hh>
-
-namespace Dune {
-// Forward declaration
-template <typename ScalarType, int size>
-class FieldVector;
-} // namespace Dune
+#include <ikarus/utils/tensorutils.hh>
 
 namespace Ikarus::ResultEvaluators {
 
@@ -75,8 +68,10 @@ struct VonMises
  * \brief Struct for calculating principal stresses
  * \ingroup resultevaluators
  * \details The PrincipalStress struct provides a function call operator to calculate principal stresses.
- * \remark  Only 2D stresses are supported
+ * \tparam dim dimension of stress state
  */
+template <int dim>
+requires(dim == 2 or dim == 3)
 struct PrincipalStress
 {
   /**
@@ -86,14 +81,20 @@ struct PrincipalStress
    * \return principal stress
    */
   double operator()(const auto& resultArray, const int comp) const {
-    const auto s_x  = resultArray(0, 0);
-    const auto s_y  = resultArray(1, 0);
-    const auto s_xy = resultArray(2, 0);
+    if constexpr (dim == 2) {
+      const auto s_x  = resultArray(0, 0);
+      const auto s_y  = resultArray(1, 0);
+      const auto s_xy = resultArray(2, 0);
 
-    auto t1 = (s_x + s_y) / 2;
-    auto t2 = std::sqrt(Dune::power((s_x - s_y) / 2, 2) + Dune::power(s_xy, 2));
+      auto t1 = (s_x + s_y) / 2;
+      auto t2 = std::sqrt(Dune::power((s_x - s_y) / 2, 2) + Dune::power(s_xy, 2));
 
-    return comp == 0 ? t1 + t2 : t1 - t2;
+      return comp == 0 ? t1 + t2 : t1 - t2;
+    } else {
+      auto mat = fromVoigt(resultArray, false);
+      Eigen::SelfAdjointEigenSolver<decltype(mat)> eigensolver(mat);
+      return eigensolver.eigenvalues()[comp];
+    }
   }
 
   /**
@@ -103,10 +104,10 @@ struct PrincipalStress
   static std::string name() { return "PrincipalStress"; }
 
   /**
-   * \brief Get the number of components in the result (always 2 for PrincipalStress)
+   * \brief Get the number of components in the result
    * \return Number of components
    */
-  static int ncomps() { return 2; }
+  static int ncomps() { return dim; }
 };
 
 } // namespace Ikarus::ResultEvaluators

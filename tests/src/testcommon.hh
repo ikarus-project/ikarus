@@ -257,7 +257,7 @@ template <Ikarus::ResultType resType>
   return t;
 }
 
-template <Ikarus::ResultType resType>
+template <Ikarus::ResultType resType, typename ResultEvaluator>
 [[nodiscard]] auto checkResultFunction(auto& nonLinearOperator, auto& fe, const auto& feRequirements,
                                     const auto& expectedResult, const auto& evaluationPositions,
                                     const std::string& messageIfFailed = "") {
@@ -269,7 +269,7 @@ template <Ikarus::ResultType resType>
   std::vector<FiniteElement> fes{fe};
 
   Eigen::MatrixXd computedResults(expectedResult.rows(), expectedResult.cols());
-  auto localResultFunction = Ikarus::ResultFunction<FiniteElement, resType>::asLocalFunction(&fes, feRequirements);
+  auto localResultFunction = Ikarus::ResultFunction<FiniteElement, resType, ResultEvaluator>::asLocalFunction(&fes, feRequirements);
   localResultFunction.bind(element);
 
   for (int i = 0; const auto& pos : evaluationPositions) {
@@ -286,17 +286,16 @@ template <Ikarus::ResultType resType>
                            << messageIfFailed;
 
   Dune::Vtk::VtkWriter vtkWriter(gridView);
-  auto vtkResultFunction = Ikarus::ResultFunction<FiniteElement, resType>::asVtkFunction(&fes, feRequirements);
+  auto vtkResultFunction = Ikarus::ResultFunction<FiniteElement, resType, ResultEvaluator>::asVtkFunction(&fes, feRequirements);
 
   vtkWriter.addPointData(vtkResultFunction);
-  vtkWriter.write("Vtk_VtkWriter_resultfunction_" + toString(resType) + "_" + std::to_string(FiniteElement::myDim) + std::to_string(element.geometry().type().id()));
-
+  vtkWriter.write("Vtk_VtkWriter_resultfunction_" + vtkResultFunction.name() + "_" + std::to_string(FiniteElement::myDim) + std::to_string(element.geometry().type().id()));
 
   Dune::VTKWriter<decltype(gridView)> vtkWriter2(gridView);
-  auto sharedResultFunction = Ikarus::ResultFunction<FiniteElement, resType>::asShared(&fes, feRequirements);
+  auto sharedResultFunction = Ikarus::ResultFunction<FiniteElement, resType, ResultEvaluator>::asShared(&fes, feRequirements);
 
   vtkWriter2.addVertexData(sharedResultFunction);
-  vtkWriter2.write("native_vtkwriter_resultfunction_" + toString(resType) + "_" + std::to_string(FiniteElement::myDim) + std::to_string(element.geometry().type().id()));
+  vtkWriter2.write("native_vtkwriter_resultfunction_" + sharedResultFunction->name() + "_" + std::to_string(FiniteElement::myDim) + std::to_string(element.geometry().type().id()));
 
   return t;
 }
