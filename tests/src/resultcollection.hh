@@ -75,7 +75,6 @@ inline auto linearPrincipalStressResultsOfSquare = []<typename NOP, typename FE>
   return std::make_tuple(feRequirements, expectedStress, getVertexPositions(fe));
 };
 
-
 inline auto linearStressResultsOfCube = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
   constexpr int vertices   = 8;
   constexpr int quantities = 6;

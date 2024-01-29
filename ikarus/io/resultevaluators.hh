@@ -11,6 +11,7 @@
 #pragma once
 
 #include <dune/common/math.hh>
+
 #include <ikarus/utils/tensorutils.hh>
 
 namespace Ikarus::ResultEvaluators {

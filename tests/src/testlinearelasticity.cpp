@@ -45,8 +45,10 @@ int main(int argc, char** argv) {
       firstOrderLagrangePrePower2Basis, "LinearElastic", unDistorted, Dune::ReferenceElements<double, 2>::cube(),
       checkCalculateAtFunctorFactory<Ikarus::ResultType::linearStress>(linearStressResultsOfSquare),
       checkResultFunctionFunctorFactory<Ikarus::ResultType::linearStress>(linearStressResultsOfSquare),
-      checkResultFunctionFunctorFactory<Ikarus::ResultType::linearStress, Ikarus::ResultEvaluators::VonMises<2>>(linearVonMisesResultsOfSquare),
-      checkResultFunctionFunctorFactory<Ikarus::ResultType::linearStress, Ikarus::ResultEvaluators::PrincipalStress<2>>(linearPrincipalStressResultsOfSquare)));
+      checkResultFunctionFunctorFactory<Ikarus::ResultType::linearStress, Ikarus::ResultEvaluators::VonMises<2>>(
+          linearVonMisesResultsOfSquare),
+      checkResultFunctionFunctorFactory<Ikarus::ResultType::linearStress, Ikarus::ResultEvaluators::PrincipalStress<2>>(
+          linearPrincipalStressResultsOfSquare)));
 
   // Test simplex 2D
   t.subTest(testFEElement<LinearElasticElement>(firstOrderLagrangePrePower2Basis, "LinearElastic", randomlyDistorted,
@@ -84,8 +86,10 @@ int main(int argc, char** argv) {
       firstOrderLagrangePrePower3Basis, "LinearElastic", unDistorted, Dune::ReferenceElements<double, 3>::cube(),
       checkCalculateAtFunctorFactory<Ikarus::ResultType::linearStress>(linearStressResultsOfCube),
       checkResultFunctionFunctorFactory<Ikarus::ResultType::linearStress>(linearStressResultsOfCube),
-      checkResultFunctionFunctorFactory<Ikarus::ResultType::linearStress, Ikarus::ResultEvaluators::VonMises<3>>(linearVonMisesResultsOfCube),
-      checkResultFunctionFunctorFactory<Ikarus::ResultType::linearStress, Ikarus::ResultEvaluators::PrincipalStress<3>>(linearPrincipalStressResultsOfCube)));
+      checkResultFunctionFunctorFactory<Ikarus::ResultType::linearStress, Ikarus::ResultEvaluators::VonMises<3>>(
+          linearVonMisesResultsOfCube),
+      checkResultFunctionFunctorFactory<Ikarus::ResultType::linearStress, Ikarus::ResultEvaluators::PrincipalStress<3>>(
+          linearPrincipalStressResultsOfCube)));
 
   // Test simplex 3D
   t.subTest(testFEElement<LinearElasticElement>(firstOrderLagrangePrePower3Basis, "LinearElastic", randomlyDistorted,

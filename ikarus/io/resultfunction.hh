@@ -13,11 +13,10 @@
 #include <type_traits>
 #include <utility>
 
+#include <dune/vtk/function.hh>
 #include <dune/vtk/vtkwriter.hh>
 
 #include <ikarus/finiteelements/ferequirements.hh>
-#include <dune/vtk/function.hh>
-
 
 namespace Ikarus {
 namespace Impl {
@@ -136,9 +135,8 @@ public:
    * This leverages the Dune::VTK localfunction interface to be able to query element-wise
    * Usage:
    * @code
-   *    auto localResultFunction = Ikarus::ResultFunction<FiniteElement, resType>::asLocalFunction(&fes, feRequirements);
-   *    localResultFunction.bind(element);
-   *    auto result = localResultFunction(pos);
+   *    auto localResultFunction = Ikarus::ResultFunction<FiniteElement, resType>::asLocalFunction(&fes,
+   * feRequirements); localResultFunction.bind(element); auto result = localResultFunction(pos);
    * @endcode
    * @param fes Pointer to a vector of finite elements
    * @param req FERequirements for evaluation
@@ -148,14 +146,14 @@ public:
   }
 
   /**
-  * @brief Creates the ResultFunction as a function that can be used with dune-vtk
-  *
-  * Constructs a ResultFunction object with given finite elements, ferequirements as shared_ptr to be used with
-  * the native Dune VTKWriter
-  *
-  * @param fes Pointer to a vector of finite elements
-  * @param req FERequirements for evaluation
-  */
+   * @brief Creates the ResultFunction as a function that can be used with dune-vtk
+   *
+   * Constructs a ResultFunction object with given finite elements, ferequirements as shared_ptr to be used with
+   * the native Dune VTKWriter
+   *
+   * @param fes Pointer to a vector of finite elements
+   * @param req FERequirements for evaluation
+   */
   static auto asShared(std::vector<ElementType>* fes, const FERequirementType& req) {
     return std::make_shared<ResultFunction>(fes, req);
   }
