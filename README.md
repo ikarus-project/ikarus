@@ -18,7 +18,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 
 [![Gitter](https://badges.gitter.im/ikarus-project/community.svg)](https://gitter.im/ikarus-project/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 [![PyPI version](https://badge.fury.io/py/pyikarus.svg)](https://badge.fury.io/py/pyikarus)
-[![Release](https://badgen.net/badge/Release/0.3/purple?icon=github)](https://github.com/ikarus-project/ikarus/releases)
+[![Release](https://badgen.net/badge/Release/0.4/purple?icon=github)](https://github.com/ikarus-project/ikarus/releases)
 [![Doi](https://img.shields.io/badge/DOI-10.18419%2Fdarus--3303-orange)](https://doi.org/10.18419/darus-3303)
 [![SWH](https://archive.softwareheritage.org/badge/origin/https://github.com/ikarus-project/ikarus/)](https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/ikarus-project/ikarus)
 [![SWHRelease](https://archive.softwareheritage.org/badge/swh:1:rel:740930accfafedda16191ef29c9b7abd098efe6d/)](https://archive.softwareheritage.org/swh:1:rel:740930accfafedda16191ef29c9b7abd098efe6d;origin=https://github.com/ikarus-project/ikarus;visit=swh:1:snp:0d7c00673059d94b15752fc2d6007751bb0b4485)
