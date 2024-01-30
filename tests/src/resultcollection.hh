@@ -48,7 +48,7 @@ inline auto linearVonMisesResultsOfSquare = []<typename NOP, typename FE>(NOP& n
   constexpr int quantities = 1;
 
   Eigen::Matrix<double, vertices, quantities> expectedStress;
-  expectedStress << 1428.57142857, 1098.90109890, 329.67032967, 0;
+  expectedStress << 1953.44932249, 1182.27663689, 1182.27663689, 0;
 
   auto& displacement = nonLinearOperator.firstParameter();
   displacement << 0, 0, 1, 1, 1, 1, 1, 1;
@@ -64,7 +64,7 @@ inline auto linearPrincipalStressResultsOfSquare = []<typename NOP, typename FE>
   constexpr int quantities = 2;
 
   Eigen::Matrix<double, vertices, quantities> expectedStress;
-  expectedStress << 1428.57142857, 1428.57142857, 1098.90109890, 1098.90109890, 329.67032967, 329.67032967, 0, 0;
+  expectedStress << 659.34065934, 2197.80219780, 170.35742107, 1258.21400751, 170.35742107, 1258.21400751, 0, 0;
 
   auto& displacement = nonLinearOperator.firstParameter();
   displacement << 0, 0, 1, 1, 1, 1, 1, 1;
@@ -99,7 +99,7 @@ inline auto linearVonMisesResultsOfCube = []<typename NOP, typename FE>(NOP& non
   constexpr int quantities = 1;
 
   Eigen::Matrix<double, vertices, quantities> expectedStress;
-  expectedStress << 576.92307692, 1346.15384615, 576.92307692, 384.61538462, 0, 384.61538462, 0, 0;
+  expectedStress << 1216.26063853, 0, 2035.19331620, 1216.26063853, 0, 0, 1216.26063853, 0;
 
   auto& displacement = nonLinearOperator.firstParameter();
   displacement << 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
@@ -115,9 +115,9 @@ inline auto linearPrincipalStressResultsOfCube = []<typename NOP, typename FE>(N
   constexpr int quantities = 3;
 
   Eigen::Matrix<double, vertices, quantities> expectedStress;
-  expectedStress << 576.92307692, 1346.15384615, 576.92307692, 384.61538462, 0, 384.61538462, 0, 0, 0, 0, 0, 0,
-      -1346.15384615, 192.30769231, -1346.15384615, 0, -769.23076923, 0, -1346.15384615, -576.92307692, -576.92307692,
-      0, -384.61538462, 0;
+  expectedStress << 295.36507401, 576.92307692, 1627.71184906, 0, 0, 0, -2115.38461538, -576.92307692, 192.30769231,
+      -1627.71184906, -576.92307692, -295.36507401, 0, 0, 0, 0, 0, 0, -1627.71184906, -576.92307692, -295.36507401, 0,
+      0, 0;
 
   auto& displacement = nonLinearOperator.firstParameter();
   displacement << 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
