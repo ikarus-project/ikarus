@@ -7,6 +7,8 @@
 #include "testcommon.hh"
 #include "testnonlinearelasticity.hh"
 
+#include <ikarus/utils/init.hh>
+
 using Dune::TestSuite;
 
 template <typename Basis_, typename Material, typename FERequirements_ = Ikarus::FERequirements<>>
