@@ -6,6 +6,8 @@
 
 #include "testnonlinearelasticity.hh"
 
+#include <ikarus/utils/init.hh>
+
 using Dune::TestSuite;
 
 int main(int argc, char** argv) {
