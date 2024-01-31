@@ -135,7 +135,7 @@ public:
    * This leverages the Dune::VTK localfunction interface to be able to query element-wise
    * Usage:
    * @code
-   *    auto localResultFunction = Ikarus::ResultFunction<FiniteElement, resType>::asLocalFunction(&fes,
+   * auto localResultFunction = Ikarus::ResultFunction<FiniteElement, resType>::asLocalFunction(&fes,
    * feRequirements); localResultFunction.bind(element); auto result = localResultFunction(pos);
    * @endcode
    * @param fes Pointer to a vector of finite elements

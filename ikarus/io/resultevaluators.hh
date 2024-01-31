@@ -69,7 +69,7 @@ struct VonMises
  * @brief Struct for calculating principal stresses
  * @ingroup resultevaluators
  * @details The PrincipalStress struct provides a function call operator to calculate principal stresses.
- * The components are ordered in an ascending manner ($\sigma_1 < \sigma_2$)
+ * The components are ordered in a descending manner ($\sigma_1 > \sigma_2$)
  * @tparam dim dimension of stress state
  */
 template <int dim>
@@ -91,11 +91,11 @@ struct PrincipalStress
       auto t1 = (s_x + s_y) / 2;
       auto t2 = std::sqrt(Dune::power((s_x - s_y) / 2, 2) + Dune::power(s_xy, 2));
 
-      return comp == 0 ? t1 - t2 : t1 + t2;
+      return comp == 0 ? t1 + t2 : t1 - t2;
     } else {
       auto mat = fromVoigt(resultArray, false);
       Eigen::SelfAdjointEigenSolver<decltype(mat)> eigensolver(mat, Eigen::EigenvaluesOnly);
-      return eigensolver.eigenvalues()[comp];
+      return eigensolver.eigenvalues()[dim - 1 - comp];
     }
   }
 
