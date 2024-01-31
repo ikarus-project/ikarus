@@ -20,6 +20,7 @@ namespace Ikarus::ResultEvaluators {
  * \brief Struct for calculating von Mises stress
  * \ingroup resultevaluators
  * \details The VonMises struct provides a function call operator to calculate von Mises stress.
+ * In 2D, this assumes a plane stress state
  * \tparam dim dimension of stress state
  */
 template <int dim>
@@ -83,20 +84,9 @@ struct PrincipalStress
    * \return principal stress
    */
   double operator()(const auto& resultArray, const int comp) const {
-    if constexpr (dim == 2) {
-      const auto s_x  = resultArray(0, 0);
-      const auto s_y  = resultArray(1, 0);
-      const auto s_xy = resultArray(2, 0);
-
-      auto t1 = (s_x + s_y) / 2;
-      auto t2 = std::sqrt(Dune::power((s_x - s_y) / 2, 2) + Dune::power(s_xy, 2));
-
-      return comp == 0 ? t1 + t2 : t1 - t2;
-    } else {
-      auto mat = fromVoigt(resultArray, false);
-      Eigen::SelfAdjointEigenSolver<decltype(mat)> eigensolver(mat, Eigen::EigenvaluesOnly);
-      return eigensolver.eigenvalues()[dim - 1 - comp];
-    }
+    auto mat = fromVoigt(resultArray, false);
+    Eigen::SelfAdjointEigenSolver<decltype(mat)> eigensolver(mat, Eigen::EigenvaluesOnly);
+    return eigensolver.eigenvalues()[dim - 1 - comp];
   }
 
   /**
