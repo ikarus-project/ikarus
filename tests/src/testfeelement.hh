@@ -16,10 +16,10 @@
 
 /** These tests test your element on some gridElement with some basis
  *
- * @tparam FEElementTemplate The element as template template parameter. The template needs to be the globalBasis
- * @tparam ReferenceElement The reference element, the grid has to be constructed from
- * @tparam PreBasis The preBasis you want to test the element with
- * @tparam F A variadic number of the test functor you want to be checked, they need to accept a non-linear operator and
+ * \tparam FEElementTemplate The element as template template parameter. The template needs to be the globalBasis
+ * \tparam ReferenceElement The reference element, the grid has to be constructed from
+ * \tparam PreBasis The preBasis you want to test the element with
+ * \tparam F A variadic number of the test functor you want to be checked, they need to accept a non-linear operator and
  * the finite element
  */
 template <template <typename> typename FEElementTemplate, typename PreBasis, typename ReferenceElement, typename... F>

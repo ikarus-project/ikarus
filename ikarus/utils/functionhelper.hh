@@ -14,13 +14,13 @@ namespace Ikarus::utils {
  * page 314
  * \ingroup utils
  * \tparam size Size of the nodal coordinate vector
- * \tparam LocalView Type of the local view
+ * \tparam LV Type of the local view
  *
  * \param localView Local view bounded to an element
  * \param lagrangeNodeCoords A vector of nodal coordinates to be updated
  */
-template <int size, typename LocalView>
-void obtainLagrangeNodePositions(const LocalView& localView,
+template <int size, typename LV>
+void obtainLagrangeNodePositions(const LV& localView,
                                  std::vector<Dune::FieldVector<double, size>>& lagrangeNodeCoords) {
   static_assert(Concepts::LagrangeNode<std::remove_cvref_t<decltype(localView.tree().child(0))>>,
                 "This function is only supported for Lagrange basis");

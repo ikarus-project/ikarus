@@ -25,11 +25,11 @@
 namespace Ikarus {
 
 /**
- * @brief Orthonormalizes all Matrix columns using Gram-Schmidt Orthogonalization.
- * @tparam Derived Type of the input matrix.
+ * \brief Orthonormalizes all Matrix columns using Gram-Schmidt Orthogonalization.
+ * \tparam Derived Type of the input matrix.
  * \ingroup utils
- * @param A The input matrix.
- * @return Eigen Matrix with orthonormalized columns.
+ * \param A The input matrix.
+ * \return Eigen Matrix with orthonormalized columns.
  */
 template <typename Derived>
 auto orthonormalizeMatrixColumns(const Eigen::MatrixBase<Derived>& A) {
@@ -47,11 +47,11 @@ auto orthonormalizeMatrixColumns(const Eigen::MatrixBase<Derived>& A) {
 }
 
 /**
- * @brief View Dune::BlockVector as an Eigen::Vector.
+ * \brief View Dune::BlockVector as an Eigen::Vector.
  * \ingroup utils
- * @tparam ValueType Type of the elements in the BlockVector.
- * @param blockedVector Input Dune::BlockVector.
- * @return Eigen::Map of the BlockVector as a flat Eigen::Vector.
+ * \tparam ValueType Type of the elements in the BlockVector.
+ * \param blockedVector Input Dune::BlockVector.
+ * \return Eigen::Map of the BlockVector as a flat Eigen::Vector.
  */
 template <typename ValueType>
 auto viewAsFlatEigenVector(Dune::BlockVector<ValueType>& blockedVector) {
@@ -62,11 +62,11 @@ auto viewAsFlatEigenVector(Dune::BlockVector<ValueType>& blockedVector) {
 }
 
 /**
- * @brief View const Dune::BlockVector as an Eigen::Vector.
+ * \brief View const Dune::BlockVector as an Eigen::Vector.
  *  \ingroup utils
- * @tparam ValueType Type of the elements in the BlockVector.
- * @param blockedVector Input Dune::BlockVector.
- * @return Eigen::Map of the BlockVector as a flat Eigen::Vector (const version).
+ * \tparam ValueType Type of the elements in the BlockVector.
+ * \param blockedVector Input Dune::BlockVector.
+ * \return Eigen::Map of the BlockVector as a flat Eigen::Vector (const version).
  */
 template <typename ValueType>
 auto viewAsFlatEigenVector(const Dune::BlockVector<ValueType>& blockedVector) {
@@ -77,12 +77,12 @@ auto viewAsFlatEigenVector(const Dune::BlockVector<ValueType>& blockedVector) {
 }
 
 /**
- * @brief View Dune::BlockVector as an Eigen::Matrix with dynamic rows and fixed columns depending on the size of the
+ * \brief View Dune::BlockVector as an Eigen::Matrix with dynamic rows and fixed columns depending on the size of the
  * ValueType.
  * \ingroup utils
- * @tparam ValueType Type of the elements in the BlockVector.
- * @param blockedVector Input Dune::BlockVector.
- * @return Eigen::Map of the BlockVector as a dynamic Eigen::Matrix.
+ * \tparam ValueType Type of the elements in the BlockVector.
+ * \param blockedVector Input Dune::BlockVector.
+ * \return Eigen::Map of the BlockVector as a dynamic Eigen::Matrix.
  */
 template <typename ValueType>
 auto viewAsEigenMatrixAsDynFixed(Dune::BlockVector<ValueType>& blockedVector) {
@@ -93,12 +93,12 @@ auto viewAsEigenMatrixAsDynFixed(Dune::BlockVector<ValueType>& blockedVector) {
 }
 
 /**
- * @brief Const view Dune::BlockVector as an Eigen::Matrix with dynamic rows and fixed columns depending on the size
+ * \brief Const view Dune::BlockVector as an Eigen::Matrix with dynamic rows and fixed columns depending on the size
  * of the ValueType.
- * @ingroup utils
- * @tparam ValueType Type of the elements in the BlockVector.
- * @param blockedVector Input Dune::BlockVector.
- * @return Eigen::Map of the BlockVector as a dynamic Eigen::Matrix (const version).
+ * \ingroup utils
+ * \tparam ValueType Type of the elements in the BlockVector.
+ * \param blockedVector Input Dune::BlockVector.
+ * \return Eigen::Map of the BlockVector as a dynamic Eigen::Matrix (const version).
  */
 template <typename ValueType>
 auto viewAsEigenMatrixAsDynFixed(const Dune::BlockVector<ValueType>& blockedVector) {
@@ -109,12 +109,12 @@ auto viewAsEigenMatrixAsDynFixed(const Dune::BlockVector<ValueType>& blockedVect
 }
 
 /**
- * @brief View Dune::BlockVector as an Eigen::Matrix with fixed rows depending on the size of the ValueType and
+ * \brief View Dune::BlockVector as an Eigen::Matrix with fixed rows depending on the size of the ValueType and
  * dynamic columns.
- * @ingroup utils
- * @tparam ValueType Type of the elements in the BlockVector.
- * @param blockedVector Input Dune::BlockVector.
- * @return Eigen::Map of the BlockVector as a fixed-size Eigen::Matrix with dynamic columns.
+ * \ingroup utils
+ * \tparam ValueType Type of the elements in the BlockVector.
+ * \param blockedVector Input Dune::BlockVector.
+ * \return Eigen::Map of the BlockVector as a fixed-size Eigen::Matrix with dynamic columns.
  */
 template <typename ValueType>
 auto viewAsEigenMatrixFixedDyn(Dune::BlockVector<ValueType>& blockedVector) {
@@ -125,11 +125,11 @@ auto viewAsEigenMatrixFixedDyn(Dune::BlockVector<ValueType>& blockedVector) {
 }
 
 /**
- * @brief Const view Dune::BlockVector as an Eigen::Matrix with fixed rows depending on the size of the ValueType and
+ * \brief Const view Dune::BlockVector as an Eigen::Matrix with fixed rows depending on the size of the ValueType and
  * dynamic columns. \ingroup utils
- * @tparam ValueType Type of the elements in the BlockVector.
- * @param blockedVector Input Dune::BlockVector.
- * @return Eigen::Map of the BlockVector as a fixed-size Eigen::Matrix with dynamic columns (const version).
+ * \tparam ValueType Type of the elements in the BlockVector.
+ * \param blockedVector Input Dune::BlockVector.
+ * \return Eigen::Map of the BlockVector as a fixed-size Eigen::Matrix with dynamic columns (const version).
  */
 template <typename ValueType>
 auto viewAsEigenMatrixFixedDyn(const Dune::BlockVector<ValueType>& blockedVector) {
@@ -140,11 +140,11 @@ auto viewAsEigenMatrixFixedDyn(const Dune::BlockVector<ValueType>& blockedVector
 }
 
 /**
- * @brief Returns the total correction size of a block vector with a Manifold as the underlying type.
+ * \brief Returns the total correction size of a block vector with a Manifold as the underlying type.
  *  \ingroup utils
- * @tparam Type Manifold type.
- * @param a Input Dune::BlockVector.
- * @return Total correction size.
+ * \tparam Type Manifold type.
+ * \param a Input Dune::BlockVector.
+ * \return Total correction size.
  */
 template <typename Type>
 size_t correctionSize(const Dune::BlockVector<Type>& a)
@@ -154,11 +154,11 @@ requires requires { Type::correctionSize; }
 }
 
 /**
- * @brief Returns the total value size of a block vector with a Manifold as the underlying type.
+ * \brief Returns the total value size of a block vector with a Manifold as the underlying type.
  *  \ingroup utils
- * @tparam Type Manifold type.
- * @param a Input Dune::BlockVector.
- * @return Total value size.
+ * \tparam Type Manifold type.
+ * \param a Input Dune::BlockVector.
+ * \return Total value size.
  */
 template <typename Type>
 size_t valueSize(const Dune::BlockVector<Type>& a)
@@ -168,13 +168,13 @@ requires requires { Type::valueSize; }
 }
 
 /**
- * @brief Enables the += operator for Dune::BlockVector += Eigen::Vector.
+ * \brief Enables the += operator for Dune::BlockVector += Eigen::Vector.
  *  \ingroup utils
- * @tparam Type Manifold type.
- * @tparam Derived Type of the input Eigen matrix.
- * @param a Input Dune::BlockVector.
- * @param b Input Eigen::Matrix.
- * @return Reference to the modified Dune::BlockVector.
+ * \tparam Type Manifold type.
+ * \tparam Derived Type of the input Eigen matrix.
+ * \param a Input Dune::BlockVector.
+ * \param b Input Eigen::Matrix.
+ * \return Reference to the modified Dune::BlockVector.
  */
 template <typename Type, typename Derived>
 Dune::BlockVector<Type>& operator+=(Dune::BlockVector<Type>& a, const Eigen::MatrixBase<Derived>& b)
@@ -188,13 +188,13 @@ requires(Ikarus::Concepts::AddAssignAble<Type, decltype(b.template segment<Type:
 }
 
 /**
- * @brief Enables the -= operator for Dune::BlockVector += Eigen::Vector.
+ * \brief Enables the -= operator for Dune::BlockVector += Eigen::Vector.
  *  \ingroup utils
- * @tparam Type Manifold type.
- * @tparam Derived Type of the input Eigen matrix.
- * @param a Input Dune::BlockVector.
- * @param b Input Eigen::Matrix.
- * @return Reference to the modified Dune::BlockVector.
+ * \tparam Type Manifold type.
+ * \tparam Derived Type of the input Eigen matrix.
+ * \param a Input Dune::BlockVector.
+ * \param b Input Eigen::Matrix.
+ * \return Reference to the modified Dune::BlockVector.
  */
 template <typename Type, typename Derived>
 Dune::BlockVector<Type>& operator-=(Dune::BlockVector<Type>& a, const Eigen::MatrixBase<Derived>& b)
@@ -205,13 +205,13 @@ requires(Ikarus::Concepts::AddAssignAble<Type, decltype(b.template segment<Type:
 }
 
 /**
- * @brief Enables the += operator for Dune::TupleVector += Eigen::Vector.
+ * \brief Enables the += operator for Dune::TupleVector += Eigen::Vector.
  * \ingroup utils
- * @tparam Types Types of the elements in the TupleVector.
- * @tparam Derived Type of the input Eigen matrix.
- * @param a Input Dune::TupleVector.
- * @param b Input Eigen::Matrix.
- * @return Reference to the modified Dune::TupleVector.
+ * \tparam Types Types of the elements in the TupleVector.
+ * \tparam Derived Type of the input Eigen matrix.
+ * \param a Input Dune::TupleVector.
+ * \param b Input Eigen::Matrix.
+ * \return Reference to the modified Dune::TupleVector.
  */
 template <typename... Types, typename Derived>
 Dune::TupleVector<Types...>& operator+=(Dune::TupleVector<Types...>& a, const Eigen::MatrixBase<Derived>& b) {
@@ -227,13 +227,13 @@ Dune::TupleVector<Types...>& operator+=(Dune::TupleVector<Types...>& a, const Ei
 }
 
 /**
- * @brief Enables the addition in the embedding space of a vector in the space M^n, where M is a manifold with the
+ * \brief Enables the addition in the embedding space of a vector in the space M^n, where M is a manifold with the
  * points of type ManifoldPoint \ingroup utils
- * @tparam ManifoldPoint Manifold type.
- * @tparam Derived ManifoldPoint of the input Eigen matrix.
- * @param a Input Dune::BlockVector.
- * @param b Input Eigen::Matrix.
- * @return Reference to the modified Dune::BlockVector.
+ * \tparam ManifoldPoint Manifold type.
+ * \tparam Derived ManifoldPoint of the input Eigen matrix.
+ * \param a Input Dune::BlockVector.
+ * \param b Input Eigen::Matrix.
+ * \return Reference to the modified Dune::BlockVector.
  */
 template <typename ManifoldPoint, typename Derived>
 Dune::BlockVector<ManifoldPoint>& addInEmbedding(Dune::BlockVector<ManifoldPoint>& a,
@@ -248,11 +248,11 @@ requires(Ikarus::Concepts::AddAssignAble<ManifoldPoint, decltype(b.template segm
 }
 
 /**
- * @brief Adding free norm function to Eigen types.
+ * \brief Adding free norm function to Eigen types.
  *  \ingroup utils
- * @tparam Derived Type of the input Eigen matrix.
- * @param v Input Eigen matrix.
- * @return Norm of the matrix.
+ * \tparam Derived Type of the input Eigen matrix.
+ * \param v Input Eigen matrix.
+ * \return Norm of the matrix.
  */
 template <typename Derived>
 requires(!std::floating_point<Derived>)
@@ -261,21 +261,21 @@ auto norm(const Eigen::MatrixBase<Derived>& v) {
 }
 
 /**
- * @brief Helper Free Function to have the same interface as for Eigen Vector Types.
+ * \brief Helper Free Function to have the same interface as for Eigen Vector Types.
  *  \ingroup utils
- * @param v Input scalar.
- * @return Absolute value of the scalar.
+ * \param v Input scalar.
+ * \return Absolute value of the scalar.
  */
 auto norm(const std::floating_point auto& v) { return std::abs(v); }
 
 /**
- * @brief Eigen::DiagonalMatrix Product Missing in Eigen.
+ * \brief Eigen::DiagonalMatrix Product Missing in Eigen.
  *  \ingroup utils
- * @tparam Scalar Scalar type.
- * @tparam size Size of the diagonal matrix.
- * @param a Input DiagonalMatrix.
- * @param b Input DiagonalMatrix.
- * @return Product of the two DiagonalMatrices.
+ * \tparam Scalar Scalar type.
+ * \tparam size Size of the diagonal matrix.
+ * \param a Input DiagonalMatrix.
+ * \param b Input DiagonalMatrix.
+ * \return Product of the two DiagonalMatrices.
  */
 template <typename Scalar, int size>
 auto operator*(const Eigen::DiagonalMatrix<Scalar, size>& a, const Eigen::DiagonalMatrix<Scalar, size>& b) {
@@ -283,13 +283,13 @@ auto operator*(const Eigen::DiagonalMatrix<Scalar, size>& a, const Eigen::Diagon
 }
 
 /**
- * @brief In-place addition for Eigen::DiagonalMatrix.
+ * \brief In-place addition for Eigen::DiagonalMatrix.
  *  \ingroup utils
- * @tparam Scalar Scalar type.
- * @tparam size Size of the diagonal matrix.
- * @param a Input DiagonalMatrix.
- * @param b Input DiagonalMatrix.
- * @return Reference to the modified DiagonalMatrix.
+ * \tparam Scalar Scalar type.
+ * \tparam size Size of the diagonal matrix.
+ * \param a Input DiagonalMatrix.
+ * \param b Input DiagonalMatrix.
+ * \return Reference to the modified DiagonalMatrix.
  */
 template <typename Scalar, int size>
 auto operator+=(Eigen::DiagonalMatrix<Scalar, size>& a, const Eigen::DiagonalMatrix<Scalar, size>& b) {
@@ -298,14 +298,14 @@ auto operator+=(Eigen::DiagonalMatrix<Scalar, size>& a, const Eigen::DiagonalMat
 }
 
 /**
- * @brief Eigen::Matrix + Eigen::DiagonalMatrix addition missing in Eigen.
+ * \brief Eigen::Matrix + Eigen::DiagonalMatrix addition missing in Eigen.
  *  \ingroup utils
- * @tparam Derived Type of the input Eigen matrix.
- * @tparam Scalar Scalar type.
- * @tparam size Size of the diagonal matrix.
- * @param a Input Eigen matrix.
- * @param b Input DiagonalMatrix.
- * @return Sum of the Eigen matrix and DiagonalMatrix.
+ * \tparam Derived Type of the input Eigen matrix.
+ * \tparam Scalar Scalar type.
+ * \tparam size Size of the diagonal matrix.
+ * \param a Input Eigen matrix.
+ * \param b Input DiagonalMatrix.
+ * \return Sum of the Eigen matrix and DiagonalMatrix.
  */
 template <typename Derived, typename Scalar, int size>
 auto operator+(const Eigen::MatrixBase<Derived>& a, const Eigen::DiagonalMatrix<Scalar, size>& b) {
@@ -315,14 +315,14 @@ auto operator+(const Eigen::MatrixBase<Derived>& a, const Eigen::DiagonalMatrix<
 }
 
 /**
- * @brief Eigen::DiagonalMatrix + Eigen::Matrix addition missing in Eigen.
+ * \brief Eigen::DiagonalMatrix + Eigen::Matrix addition missing in Eigen.
  *  \ingroup utils
- * @tparam Derived Type of the input Eigen matrix.
- * @tparam Scalar Scalar type.
- * @tparam size Size of the diagonal matrix.
- * @param a Input DiagonalMatrix.
- * @param b Input Eigen matrix.
- * @return Sum of the DiagonalMatrix and Eigen matrix.
+ * \tparam Derived Type of the input Eigen matrix.
+ * \tparam Scalar Scalar type.
+ * \tparam size Size of the diagonal matrix.
+ * \param a Input DiagonalMatrix.
+ * \param b Input Eigen matrix.
+ * \return Sum of the DiagonalMatrix and Eigen matrix.
  */
 template <typename Derived, typename Scalar, int size>
 auto operator+(const Eigen::DiagonalMatrix<Scalar, size>& a, const Eigen::MatrixBase<Derived>& b) {
@@ -330,12 +330,12 @@ auto operator+(const Eigen::DiagonalMatrix<Scalar, size>& a, const Eigen::Matrix
 }
 
 /**
- * @brief Unary minus for Eigen::DiagonalMatrix.
+ * \brief Unary minus for Eigen::DiagonalMatrix.
  *  \ingroup utils
- * @tparam Scalar Scalar type.
- * @tparam size Size of the diagonal matrix.
- * @param a Input DiagonalMatrix.
- * @return Negation of the DiagonalMatrix.
+ * \tparam Scalar Scalar type.
+ * \tparam size Size of the diagonal matrix.
+ * \param a Input DiagonalMatrix.
+ * \return Negation of the DiagonalMatrix.
  */
 template <typename Scalar, int size>
 auto operator-(const Eigen::DiagonalMatrix<Scalar, size>& a) {
@@ -343,13 +343,13 @@ auto operator-(const Eigen::DiagonalMatrix<Scalar, size>& a) {
 }
 
 /**
- * @brief Addition of Eigen::Matrix and Eigen::DiagonalWrapper.
+ * \brief Addition of Eigen::Matrix and Eigen::DiagonalWrapper.
  *  \ingroup utils
- * @tparam Derived Type of the input Eigen matrix.
- * @tparam Derived2 Type of the input Eigen DiagonalWrapper.
- * @param a Input Eigen matrix.
- * @param b Input Eigen DiagonalWrapper.
- * @return Sum of Eigen matrix and DiagonalWrapper.
+ * \tparam Derived Type of the input Eigen matrix.
+ * \tparam Derived2 Type of the input Eigen DiagonalWrapper.
+ * \param a Input Eigen matrix.
+ * \param b Input Eigen DiagonalWrapper.
+ * \return Sum of Eigen matrix and DiagonalWrapper.
  */
 template <typename Derived, typename Derived2>
 auto operator+(const Eigen::MatrixBase<Derived>& a, const Eigen::DiagonalWrapper<Derived2>& b) {
@@ -359,13 +359,13 @@ auto operator+(const Eigen::MatrixBase<Derived>& a, const Eigen::DiagonalWrapper
 }
 
 /**
- * @brief Addition of Eigen::DiagonalWrapper and Eigen::Matrix.
+ * \brief Addition of Eigen::DiagonalWrapper and Eigen::Matrix.
  *  \ingroup utils
- * @tparam Derived Type of the input Eigen DiagonalWrapper.
- * @tparam Derived2 Type of the input Eigen matrix.
- * @param a Input Eigen DiagonalWrapper.
- * @param b Input Eigen matrix.
- * @return Sum of DiagonalWrapper and Eigen matrix.
+ * \tparam Derived Type of the input Eigen DiagonalWrapper.
+ * \tparam Derived2 Type of the input Eigen matrix.
+ * \param a Input Eigen DiagonalWrapper.
+ * \param b Input Eigen matrix.
+ * \return Sum of DiagonalWrapper and Eigen matrix.
  */
 template <typename Derived, typename Derived2>
 auto operator+(const Eigen::DiagonalWrapper<Derived>& a, const Eigen::MatrixBase<Derived2>& b) {
@@ -373,13 +373,13 @@ auto operator+(const Eigen::DiagonalWrapper<Derived>& a, const Eigen::MatrixBase
 }
 
 /**
- * @brief Output stream operator for Eigen::DiagonalMatrix.
+ * \brief Output stream operator for Eigen::DiagonalMatrix.
  *  \ingroup utils
- * @tparam Scalar Scalar type.
- * @tparam size Size of the diagonal matrix.
- * @param os Output stream.
- * @param a Input DiagonalMatrix.
- * @return Reference to the output stream.
+ * \tparam Scalar Scalar type.
+ * \tparam size Size of the diagonal matrix.
+ * \param os Output stream.
+ * \param a Input DiagonalMatrix.
+ * \return Reference to the output stream.
  */
 template <typename Scalar, int size>
 std::ostream& operator<<(std::ostream& os, const Eigen::DiagonalMatrix<Scalar, size>& a) {
@@ -388,11 +388,11 @@ std::ostream& operator<<(std::ostream& os, const Eigen::DiagonalMatrix<Scalar, s
 }
 
 /**
- * @brief Returns the symmetric part of a matrix.
+ * \brief Returns the symmetric part of a matrix.
  *  \ingroup utils
- * @tparam Derived Type of the input Eigen matrix.
- * @param A Input Eigen matrix.
- * @return Symmetric part of the matrix.
+ * \tparam Derived Type of the input Eigen matrix.
+ * \param A Input Eigen matrix.
+ * \return Symmetric part of the matrix.
  */
 template <typename Derived>
 Derived sym(const Eigen::MatrixBase<Derived>& A) {
@@ -400,11 +400,11 @@ Derived sym(const Eigen::MatrixBase<Derived>& A) {
 }
 
 /**
- * @brief Returns the skew part of a matrix.
+ * \brief Returns the skew part of a matrix.
  *  \ingroup utils
- * @tparam Derived Type of the input Eigen matrix.
- * @param A Input Eigen matrix.
- * @return Skew part of the matrix.
+ * \tparam Derived Type of the input Eigen matrix.
+ * \param A Input Eigen matrix.
+ * \return Skew part of the matrix.
  */
 template <typename Derived>
 Derived skew(const Eigen::MatrixBase<Derived>& A) {
@@ -475,21 +475,21 @@ namespace Impl {
  * \brief Container for Voigt notation indices based on dimension.
  *  \ingroup utils
  * 1D: 0,0
- * 2D: 0,0 1,1 0,1
- * 3D: 0,0 1,1 2,2 1,2 0,2 0,1
+ * 2D: 0,0; 1,1; 0,1
+ * 3D: 0,0; 1,1; 2,2; 1,2; 0,2; 0,1
  * \tparam dim The dimension for which Voigt indices are needed.
  */
 template <int dim>
 constexpr auto voigtNotationContainer = std::get<dim - 1>(Impl::voigtIndices);
 
 /**
- * @brief Performs static condensation on a square matrix.
+ * \brief Performs static condensation on a square matrix.
  *  \ingroup utils
- * @tparam Derived Type of the matrix.
- * @tparam sizeOfCondensedIndices Size of the condensed indices.
- * @param E Input matrix.
- * @param indices Array of indices to be condensed.
- * @return Resulting matrix after static condensation.
+ * \tparam Derived Type of the matrix.
+ * \tparam sizeOfCondensedIndices Size of the condensed indices.
+ * \param E Input matrix.
+ * \param indices Array of indices to be condensed.
+ * \return Resulting matrix after static condensation.
  *  \details
  * This function performs static condensation on a square matrix. It removes the specified indices from the matrix,
  * computes the remaining submatrices (K11, K12, K22), and returns the result of the static condensation.
@@ -511,13 +511,13 @@ auto staticCondensation(const Eigen::MatrixBase<Derived>& E,
 }
 
 /**
- * @brief Removes specified columns from a matrix.
+ * \brief Removes specified columns from a matrix.
  *  \ingroup utils
- * @tparam Derived Type of the matrix.
- * @tparam sizeOfRemovedCols Size of the columns to be removed.
- * @param E Input matrix.
- * @param indices Array of column indices to be removed.
- * @return Resulting matrix after removing specified columns.
+ * \tparam Derived Type of the matrix.
+ * \tparam sizeOfRemovedCols Size of the columns to be removed.
+ * \param E Input matrix.
+ * \param indices Array of column indices to be removed.
+ * \return Resulting matrix after removing specified columns.
  *  \details
  * This function removes specified columns from a matrix. It computes the remaining columns after removing the
  * specified indices and returns the resulting matrix.
@@ -535,14 +535,14 @@ auto removeCol(const Eigen::MatrixBase<Derived>& E, const std::array<size_t, siz
 }
 
 /**
- * @brief Converts a 3x3 matrix to Voigt notation, possibly reducing it based on material properties.
+ * \brief Converts a 3x3 matrix to Voigt notation, possibly reducing it based on material properties.
  *  \ingroup utils
- * @tparam ST Scalar type of the matrix.
- * @tparam MaterialImpl Type of the material implementation.
- * @param E Input 3x3 matrix.
- * @param material Reference to the material implementation.
- * @param isStrain Flag indicating if the matrix represents strain (default is true).
- * @return Resulting matrix in Voigt notation.
+ * \tparam ST Scalar type of the matrix.
+ * \tparam MaterialImpl Type of the material implementation.
+ * \param E Input 3x3 matrix.
+ * \param material Reference to the material implementation.
+ * \param isStrain Flag indicating if the matrix represents strain (default is true).
+ * \return Resulting matrix in Voigt notation.
  *
  * This function converts a 3x3 matrix to its Voigt notation. If the material is not reduced, the full Voigt notation
  * is returned. Otherwise, the specified columns (based on material properties, such as VanishingStress) are removed,
@@ -565,24 +565,24 @@ auto toVoigtAndMaybeReduce(const Eigen::Matrix<ST, 3, 3>& E, [[maybe_unused]] co
 }
 
 /**
- * @brief Enlarges a matrix if it reduced in the context of material laws, i.e., VanishingStress
+ * \brief Enlarges a matrix if it reduced in the context of material laws, i.e., VanishingStress
  * If the material is not reduced the untouched matrix is returned and rendering the function as a NoOp.
  *  \ingroup utils
- * @tparam Material Type of the material.
- * @tparam Derived Type of the input matrix.
- * @param E Input matrix.
- * @return auto Resulting matrix based on material properties.
+ * \tparam M Type of the material.
+ * \tparam Derived Type of the input matrix.
+ * \param E Input matrix.
+ * \return auto Resulting matrix based on material properties.
  * \details
  * This function takes an input matrix and, based on the material properties, either returns the original matrix
  * (if it is not reduced) or enlarges the matrix by filling in the specified columns with zeros (if it is reduced).
  */
-template <typename Material, typename Derived>
+template <typename M, typename Derived>
 decltype(auto) enlargeIfReduced(const Eigen::MatrixBase<Derived>& E) {
   if constexpr (!Concepts::EigenVector6<Derived> and Concepts::EigenVector<Derived>) {
-    static_assert(Material::isReduced, "You should only end up here, if your material is reduced");
+    static_assert(M::isReduced, "You should only end up here, if your material is reduced");
 
-    auto freeindices = Material::MaterialImplType::freeVoigtIndices;
-    auto p_E         = Eigen::Vector<typename Material::MaterialImplType::ScalarType, 6>::Zero().eval();
+    auto freeindices = M::MaterialImpl::freeVoigtIndices;
+    auto p_E         = Eigen::Vector<typename M::MaterialImpl::ScalarType, 6>::Zero().eval();
     for (int ri = 0; auto i : freeindices)
       p_E(i) = E(ri++);
     return p_E;
@@ -591,10 +591,10 @@ decltype(auto) enlargeIfReduced(const Eigen::MatrixBase<Derived>& E) {
                        Concepts::EigenVector6<Derived>) {
     return E.derived();
   } else {
-    static_assert(Material::isReduced, "You should only end up here, if your material is reduced");
+    static_assert(M::isReduced, "You should only end up here, if your material is reduced");
 
-    auto freeindices = Material::MaterialImpl::freeVoigtIndices;
-    auto p_E         = Eigen::Matrix<typename Material::MaterialImpl::ScalarType, 6, 6>::Zero().eval();
+    auto freeindices = M::MaterialImpl::freeVoigtIndices;
+    auto p_E         = Eigen::Matrix<typename M::MaterialImpl::ScalarType, 6, 6>::Zero().eval();
     for (int ri = 0; auto i : freeindices) {
       for (int rj = 0; auto j : freeindices)
         p_E(i, j) = E(ri, rj++);

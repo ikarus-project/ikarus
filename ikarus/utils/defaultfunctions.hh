@@ -11,16 +11,16 @@
 
 namespace Ikarus::utils {
 /**
- * @struct SolverDefault
- * @ingroup utils
- * @brief Default functor for solving operations.
- * @details This functor provides a default implementation for solving operations by performing division.
+ * \struct SolverDefault
+ * \ingroup utils
+ * \brief Default functor for solving operations.
+ * \details This functor provides a default implementation for solving operations by performing division.
  * It is intended to be used in generic contexts where a default solver is needed.
- * @tparam A Type of the left operand.
- * @tparam B Type of the right operand.
- * @param a The left operand.
- * @param b The right operand.
- * @return The result of the division operation (a / b).
+ * \tparam A Type of the left operand.
+ * \tparam B Type of the right operand.
+ * \param a The left operand.
+ * \param b The right operand.
+ * \return The result of the division operation (a / b).
  */
 struct SolverDefault
 {
@@ -31,16 +31,16 @@ struct SolverDefault
 };
 
 /**
- * @struct UpdateDefault
- * @ingroup utils
- * @brief Default functor for updating operations.
- * @details This functor provides a default implementation for updating operations by performing addition.
+ * \struct UpdateDefault
+ * \ingroup utils
+ * \brief Default functor for updating operations.
+ * \details This functor provides a default implementation for updating operations by performing addition.
  * It is intended to be used in generic contexts where a default updater is needed.
- * @tparam A Type of the target operand to be updated.
- * @tparam B Type of the value to be added for updating.
- * @param a The target operand to be updated.
- * @param b The value to be added for updating.
- * @return The result of the addition operation (a += b).
+ * \tparam A Type of the target operand to be updated.
+ * \tparam B Type of the value to be added for updating.
+ * \param a The target operand to be updated.
+ * \param b The value to be added for updating.
+ * \return The result of the addition operation (a += b).
  */
 struct UpdateDefault
 {
@@ -52,10 +52,10 @@ struct UpdateDefault
 };
 
 /**
- * @struct LoadDefault
- * @ingroup utils
- * @brief Empty struct representing a default load operation.
- * @details This struct is intended to be used in generic contexts where a default load operation is needed.
+ * \struct LoadDefault
+ * \ingroup utils
+ * \brief Empty struct representing a default load operation.
+ * \details This struct is intended to be used in generic contexts where a default load operation is needed.
  * It does not define any operator, leaving it as an empty placeholder for customization if required.
  */
 struct LoadDefault

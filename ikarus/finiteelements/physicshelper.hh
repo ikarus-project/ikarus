@@ -19,12 +19,8 @@ namespace Ikarus {
  * \param E Young's modulus.
  * \param nu Poisson's ratio.
  * \return 3x3 material tangent matrix.
- * \deprecated Use the material library Ikarus::LinearElasticity.
  */
-[[deprecated(
-    "These are hard-coded function you should use the material library Ikarus::LinearElasticity")]] inline Eigen::
-    Matrix3d
-    planeStressLinearElasticMaterialTangent(double E, double nu) {
+inline Eigen::Matrix3d planeStressLinearElasticMaterialTangent(double E, double nu) {
   Eigen::Matrix3d C;
   C.setZero();
   C(0, 0) = C(1, 1) = 1;
@@ -40,12 +36,8 @@ namespace Ikarus {
  * \param E Young's modulus.
  * \param nu Poisson's ratio.
  * \return 6x6 material tangent matrix.
- * \deprecated Use the material library Ikarus::LinearElasticity.
  */
-[[deprecated(
-    "These are hard-coded function you should use the material library: Ikarus::LinearElasticity")]] inline Eigen::
-    Matrix<double, 6, 6>
-    linearElasticMaterialTangent3D(double E, double nu) {
+inline Eigen::Matrix<double, 6, 6> linearElasticMaterialTangent3D(double E, double nu) {
   Eigen::Matrix<double, 6, 6> C;
   C.setZero();
   C(0, 0) = C(1, 1) = C(2, 2) = 1 - nu;
@@ -101,15 +93,13 @@ struct LamesFirstParameterAndShearModulus
 /**
  * \brief Concept for checking if a type is a valid material parameter tuple.
  *
- * \tparam MaterialParameter Type to check.
+ * \tparam MP Type to check.
  */
-template <typename MaterialParameter>
-concept MaterialParameterTuple = std::is_same_v<MaterialParameter, YoungsModulusAndPoissonsRatio> or
-                                 std::is_same_v<MaterialParameter, YoungsModulusAndBulkModulus> or
-                                 std::is_same_v<MaterialParameter, YoungsModulusAndLamesFirstParameter> or
-                                 std::is_same_v<MaterialParameter, BulkModulusAndLamesFirstParameter> or
-                                 std::is_same_v<MaterialParameter, LamesFirstParameterAndShearModulus> or
-                                 std::is_same_v<MaterialParameter, YoungsModulusAndShearModulus>;
+template <typename MP>
+concept MPTuple =
+    std::is_same_v<MP, YoungsModulusAndPoissonsRatio> or std::is_same_v<MP, YoungsModulusAndBulkModulus> or
+    std::is_same_v<MP, YoungsModulusAndLamesFirstParameter> or std::is_same_v<MP, BulkModulusAndLamesFirstParameter> or
+    std::is_same_v<MP, LamesFirstParameterAndShearModulus> or std::is_same_v<MP, YoungsModulusAndShearModulus>;
 
 /**
  * \brief Conversion utility for Lame's constants.
@@ -125,17 +115,17 @@ struct ConvertLameConstants
            !std::is_same_v<ValuePair, LamesFirstParameterAndShearModulus>)
   {
     if constexpr (std::is_same_v<ValuePair, YoungsModulusAndPoissonsRatio>) {
-      const auto& E  = vp.emodul;
-      const auto& nu = vp.nu;
+      const auto& E  = vp_.emodul;
+      const auto& nu = vp_.nu;
       return Dune::FloatCmp::eq(nu, 0.5) ? std::numeric_limits<double>::infinity()
                                          : E * nu / ((1.0 + nu) * (1.0 - 2.0 * nu));
     } else if constexpr (std::is_same_v<ValuePair, YoungsModulusAndShearModulus>) {
-      const auto& E  = vp.emodul;
-      const auto& mu = vp.mu;
+      const auto& E  = vp_.emodul;
+      const auto& mu = vp_.mu;
       return mu * (E - 2.0 * mu) / (3.0 * mu - E);
     } else if constexpr (std::is_same_v<ValuePair, YoungsModulusAndBulkModulus>) {
-      const auto& E = vp.emodul;
-      const auto& K = vp.K;
+      const auto& E = vp_.emodul;
+      const auto& K = vp_.K;
       return 3.0 * K * (3.0 * K - E) / (9.0 * K - E);
     } else
       assert(false && "Your LameParameter request is not implemented");
@@ -146,20 +136,20 @@ struct ConvertLameConstants
            !std::is_same_v<ValuePair, BulkModulusAndLamesFirstParameter>)
   {
     if constexpr (std::is_same_v<ValuePair, YoungsModulusAndPoissonsRatio>) {
-      const auto& E  = vp.emodul;
-      const auto& nu = vp.nu;
+      const auto& E  = vp_.emodul;
+      const auto& nu = vp_.nu;
       return E / (3.0 * (1.0 - 2.0 * nu));
     } else if constexpr (std::is_same_v<ValuePair, YoungsModulusAndShearModulus>) {
-      const auto& E  = vp.emodul;
-      const auto& mu = vp.mu;
+      const auto& E  = vp_.emodul;
+      const auto& mu = vp_.mu;
       return E * mu / (3.0 * (3.0 * mu - E));
     } else if constexpr (std::is_same_v<ValuePair, YoungsModulusAndLamesFirstParameter>) {
-      const auto& E      = vp.emodul;
-      const auto& lambda = vp.lambda;
-      return (E + 3.0 * lambda + calcR(vp)) / 6.0;
+      const auto& E      = vp_.emodul;
+      const auto& lambda = vp_.lambda;
+      return (E + 3.0 * lambda + calcR(vp_)) / 6.0;
     } else if constexpr (std::is_same_v<ValuePair, LamesFirstParameterAndShearModulus>) {
-      const auto& lambda = vp.lambda;
-      const auto& mu     = vp.mu;
+      const auto& lambda = vp_.lambda;
+      const auto& mu     = vp_.mu;
       return lambda + 2.0 * mu / 3.0;
     } else
       assert(false && "Your LameParameter request is not implemented");
@@ -170,20 +160,20 @@ struct ConvertLameConstants
            !std::is_same_v<ValuePair, LamesFirstParameterAndShearModulus>)
   {
     if constexpr (std::is_same_v<ValuePair, YoungsModulusAndPoissonsRatio>) {
-      const auto& E  = vp.emodul;
-      const auto& nu = vp.nu;
+      const auto& E  = vp_.emodul;
+      const auto& nu = vp_.nu;
       return E / (2.0 * (1.0 + nu));
     } else if constexpr (std::is_same_v<ValuePair, YoungsModulusAndBulkModulus>) {
-      const auto& E = vp.emodul;
-      const auto& K = vp.K;
+      const auto& E = vp_.emodul;
+      const auto& K = vp_.K;
       return 3.0 * K * E / (9.0 * K - E);
     } else if constexpr (std::is_same_v<ValuePair, YoungsModulusAndLamesFirstParameter>) {
-      const auto& E      = vp.emodul;
-      const auto& lambda = vp.lambda;
-      return (E - 3.0 * lambda + calcR(vp)) / 4.0;
+      const auto& E      = vp_.emodul;
+      const auto& lambda = vp_.lambda;
+      return (E - 3.0 * lambda + calcR(vp_)) / 4.0;
     } else if constexpr (std::is_same_v<ValuePair, BulkModulusAndLamesFirstParameter>) {
-      const auto& K      = vp.K;
-      const auto& lambda = vp.lambda;
+      const auto& K      = vp_.K;
+      const auto& lambda = vp_.lambda;
       return 3.0 * (K - lambda) / 2.0;
     } else
       assert(false && "Your LameParameter request is not implemented");
@@ -191,28 +181,28 @@ struct ConvertLameConstants
 
   constexpr double toPWaveModulus() {
     if constexpr (std::is_same_v<ValuePair, YoungsModulusAndPoissonsRatio>) {
-      const auto& E  = vp.emodul;
-      const auto& nu = vp.nu;
+      const auto& E  = vp_.emodul;
+      const auto& nu = vp_.nu;
       return E * (1.0 - nu) / ((1.0 + nu) * (1.0 - 2.0 * nu));
     } else if constexpr (std::is_same_v<ValuePair, YoungsModulusAndShearModulus>) {
-      const auto& E  = vp.emodul;
-      const auto& mu = vp.mu;
+      const auto& E  = vp_.emodul;
+      const auto& mu = vp_.mu;
       return mu * (4.0 * mu - E) / (3.0 * mu - E);
     } else if constexpr (std::is_same_v<ValuePair, YoungsModulusAndBulkModulus>) {
-      const auto& E = vp.emodul;
-      const auto& K = vp.K;
+      const auto& E = vp_.emodul;
+      const auto& K = vp_.K;
       return 3.0 * K * (3.0 * K + E) / (9.0 * K - E);
     } else if constexpr (std::is_same_v<ValuePair, YoungsModulusAndLamesFirstParameter>) {
-      const auto& E      = vp.emodul;
-      const auto& lambda = vp.lambda;
-      return (E - lambda + calcR(vp)) / 2.0;
+      const auto& E      = vp_.emodul;
+      const auto& lambda = vp_.lambda;
+      return (E - lambda + calcR(vp_)) / 2.0;
     } else if constexpr (std::is_same_v<ValuePair, BulkModulusAndLamesFirstParameter>) {
-      const auto& K      = vp.K;
-      const auto& lambda = vp.lambda;
+      const auto& K      = vp_.K;
+      const auto& lambda = vp_.lambda;
       return 3.0 * K - 2.0 * lambda;
     } else if constexpr (std::is_same_v<ValuePair, LamesFirstParameterAndShearModulus>) {
-      const auto& lambda = vp.lambda;
-      const auto& mu     = vp.mu;
+      const auto& lambda = vp_.lambda;
+      const auto& mu     = vp_.mu;
       return lambda + 2.0 * mu;
     } else
       assert(false && "Your LameParameter request is not implemented");
@@ -222,24 +212,24 @@ struct ConvertLameConstants
   requires(!std::is_same_v<ValuePair, YoungsModulusAndPoissonsRatio>)
   {
     if constexpr (std::is_same_v<ValuePair, YoungsModulusAndShearModulus>) {
-      const auto& E  = vp.emodul;
-      const auto& mu = vp.mu;
+      const auto& E  = vp_.emodul;
+      const auto& mu = vp_.mu;
       return E / (2.0 * mu) - 1.0;
     } else if constexpr (std::is_same_v<ValuePair, YoungsModulusAndBulkModulus>) {
-      const auto& E = vp.emodul;
-      const auto& K = vp.K;
+      const auto& E = vp_.emodul;
+      const auto& K = vp_.K;
       return (3.0 * K - E) / (6.0 * K);
     } else if constexpr (std::is_same_v<ValuePair, YoungsModulusAndLamesFirstParameter>) {
-      const auto& E      = vp.emodul;
-      const auto& lambda = vp.lambda;
-      return 2.0 * lambda / (E + lambda + calcR(vp));
+      const auto& E      = vp_.emodul;
+      const auto& lambda = vp_.lambda;
+      return 2.0 * lambda / (E + lambda + calcR(vp_));
     } else if constexpr (std::is_same_v<ValuePair, BulkModulusAndLamesFirstParameter>) {
-      const auto& K      = vp.K;
-      const auto& lambda = vp.lambda;
+      const auto& K      = vp_.K;
+      const auto& lambda = vp_.lambda;
       return lambda / (3 * K - lambda);
     } else if constexpr (std::is_same_v<ValuePair, LamesFirstParameterAndShearModulus>) {
-      const auto& lambda = vp.lambda;
-      const auto& mu     = vp.mu;
+      const auto& lambda = vp_.lambda;
+      const auto& mu     = vp_.mu;
       return lambda / (2.0 * (lambda + mu));
     } else
       assert(false && "Your LameParameter request is not implemented");
@@ -252,10 +242,10 @@ struct ConvertLameConstants
            !std::is_same_v<ValuePair, YoungsModulusAndLamesFirstParameter>)
   {
     if constexpr (std::is_same_v<ValuePair, BulkModulusAndLamesFirstParameter>) {
-      return 9.0 * vp.K * (vp.K - vp.lambda) / (3.0 * vp.K - vp.lambda);
+      return 9.0 * vp_.K * (vp_.K - vp_.lambda) / (3.0 * vp_.K - vp_.lambda);
     } else if constexpr (std::is_same_v<ValuePair, LamesFirstParameterAndShearModulus>) {
-      const auto& lambda = vp.lambda;
-      const auto& mu     = vp.mu;
+      const auto& lambda = vp_.lambda;
+      const auto& mu     = vp_.mu;
       return mu * (3.0 * lambda + 2.0 * mu) / (lambda + mu);
     } else
       assert(false && "Your LameParameter request is not implemented");
@@ -263,48 +253,49 @@ struct ConvertLameConstants
 
 private:
   friend ConvertLameConstants<YoungsModulusAndPoissonsRatio> convertLameConstants(
-      const YoungsModulusAndPoissonsRatio& p_vp);
+      const YoungsModulusAndPoissonsRatio& valuePair);
   friend ConvertLameConstants<YoungsModulusAndShearModulus> convertLameConstants(
-      const YoungsModulusAndShearModulus& p_vp);
+      const YoungsModulusAndShearModulus& valuePair);
 
   friend ConvertLameConstants<YoungsModulusAndBulkModulus> convertLameConstants(
-      const YoungsModulusAndBulkModulus& p_vp);
+      const YoungsModulusAndBulkModulus& valuePair);
 
   friend ConvertLameConstants<LamesFirstParameterAndShearModulus> convertLameConstants(
-      const LamesFirstParameterAndShearModulus& p_vp);
+      const LamesFirstParameterAndShearModulus& valuePair);
 
   friend ConvertLameConstants<BulkModulusAndLamesFirstParameter> convertLameConstants(
-      const BulkModulusAndLamesFirstParameter& p_vp);
-  ConvertLameConstants(ValuePair&& p_vp)
-      : vp(p_vp) {}
-  ConvertLameConstants(const ValuePair& p_vp)
-      : vp(p_vp) {}
+      const BulkModulusAndLamesFirstParameter& valuePair);
+  ConvertLameConstants(ValuePair&& valuePair)
+      : vp_(valuePair) {}
+  ConvertLameConstants(const ValuePair& valuePair)
+      : vp_(valuePair) {}
 
-  double calcR(const YoungsModulusAndLamesFirstParameter& vp_) {
-    const auto& E      = vp_.emodul;
-    const auto& lambda = vp_.lambda;
+  double calcR(const YoungsModulusAndLamesFirstParameter& valuePair) {
+    const auto& E      = valuePair.emodul;
+    const auto& lambda = valuePair.lambda;
     return std::sqrt(E * E + 9 * lambda * lambda + 2 * E * lambda);
   }
-  ValuePair vp;
+  ValuePair vp_;
 };
 inline ConvertLameConstants<YoungsModulusAndPoissonsRatio> convertLameConstants(
-    const YoungsModulusAndPoissonsRatio& p_vp) {
-  return {p_vp};
+    const YoungsModulusAndPoissonsRatio& valuePair) {
+  return {valuePair};
 }
 inline ConvertLameConstants<YoungsModulusAndShearModulus> convertLameConstants(
-    const YoungsModulusAndShearModulus& p_vp) {
-  return {p_vp};
+    const YoungsModulusAndShearModulus& valuePair) {
+  return {valuePair};
 }
-inline ConvertLameConstants<YoungsModulusAndBulkModulus> convertLameConstants(const YoungsModulusAndBulkModulus& p_vp) {
-  return {p_vp};
+inline ConvertLameConstants<YoungsModulusAndBulkModulus> convertLameConstants(
+    const YoungsModulusAndBulkModulus& valuePair) {
+  return {valuePair};
 }
 inline ConvertLameConstants<LamesFirstParameterAndShearModulus> convertLameConstants(
-    const LamesFirstParameterAndShearModulus& p_vp) {
-  return {p_vp};
+    const LamesFirstParameterAndShearModulus& valuePair) {
+  return {valuePair};
 }
 inline ConvertLameConstants<BulkModulusAndLamesFirstParameter> convertLameConstants(
-    const BulkModulusAndLamesFirstParameter& p_vp) {
-  return {p_vp};
+    const BulkModulusAndLamesFirstParameter& valuePair) {
+  return {valuePair};
 }
 
 /**

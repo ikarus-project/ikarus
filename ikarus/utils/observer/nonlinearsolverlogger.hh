@@ -12,7 +12,7 @@
 
 namespace Ikarus {
 /**
- * @brief Implementation of an observer for logging non-linear solvers.
+ * \brief Implementation of an observer for logging non-linear solvers.
  * \ingroup observer
  * This class inherits from the IObserver class and provides specific
  * implementations for updating based on NonLinearSolverMessages.
@@ -21,32 +21,32 @@ class NonLinearSolverLogger : public IObserver<NonLinearSolverMessages>
 {
 public:
   /**
-   * @brief Handles the update when a NonLinearSolverMessages is received.
+   * \brief Handles the update when a NonLinearSolverMessages is received.
    *
-   * @param message The NonLinearSolverMessages received.
+   * \param message The NonLinearSolverMessages received.
    */
   void updateImpl(NonLinearSolverMessages message) final;
 
   /**
-   * @brief Handles the update when a NonLinearSolverMessages with a double value is received.
+   * \brief Handles the update when a NonLinearSolverMessages with a double value is received.
    *
-   * @param message The NonLinearSolverMessages received.
-   * @param val The double value associated with the message.
+   * \param message The NonLinearSolverMessages received.
+   * \param val The double value associated with the message.
    */
   void updateImpl(NonLinearSolverMessages message, double val) final;
 
   /**
-   * @brief Handles the update when a NonLinearSolverMessages with an integer value is received.
+   * \brief Handles the update when a NonLinearSolverMessages with an integer value is received.
    *
-   * @param message The NonLinearSolverMessages received.
-   * @param intVal The integer value associated with numberOfIterations.
+   * \param message The NonLinearSolverMessages received.
+   * \param intVal The integer value associated with numberOfIterations.
    */
   void updateImpl(NonLinearSolverMessages message, int intVal) final;
 
 private:
-  int iters{0};
-  double dNorm{0};
-  double rNorm{0};
-  double lambda{0};
+  int iters_{0};
+  double dNorm_{0};
+  double rNorm_{0};
+  double lambda_{0};
 };
 } // namespace Ikarus

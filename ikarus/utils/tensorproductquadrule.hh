@@ -11,19 +11,19 @@
 namespace Ikarus {
 
 /**
- * @brief Computes the tensor product quadrature rule using a base and one-dimensional quadrature rule.
+ * \brief Computes the tensor product quadrature rule using a base and one-dimensional quadrature rule.
  *
- * @details This function constructs a tensor product quadrature rule by combining a base quadrature rule
+ * \details This function constructs a tensor product quadrature rule by combining a base quadrature rule
  * and a one-dimensional quadrature rule. It iterates over the points of the base quadrature and
  * combines them with each point of the one-dimensional quadrature.
  *
- * @tparam BaseQuadrature Type of the base quadrature.
- * @tparam Quadrature Type of the one-dimensional quadrature.
+ * \tparam BaseQuadrature Type of the base quadrature.
+ * \tparam Quadrature Type of the one-dimensional quadrature.
  *
- * @param baseQuad The base quadrature rule.
- * @param onedQuad The one-dimensional quadrature rule.
+ * \param baseQuad The base quadrature rule.
+ * \param onedQuad The one-dimensional quadrature rule.
  *
- * @return Dune::QuadratureRule<double, BaseQuadrature::d + 1> - Tensor product quadrature rule.
+ * \return Dune::QuadratureRule<double, BaseQuadrature::d + 1> - Tensor product quadrature rule.
  */
 template <class BaseQuadrature, class Quadrature>
 auto tensorProductQuadrature(const BaseQuadrature& baseQuad, const Quadrature& onedQuad) {

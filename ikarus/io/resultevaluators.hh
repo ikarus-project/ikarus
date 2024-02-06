@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file resultevaluators.hh
- * @brief Ikarus Result Evaluators for Stress Analysis
- * @ingroup resultevaluators
+ * \file resultevaluators.hh
+ * \brief Ikarus Result Evaluators for Stress Analysis
+ * \ingroup resultevaluators
  *
  */
 
@@ -23,20 +23,20 @@ class FieldVector;
 namespace Ikarus::ResultEvaluators {
 
 /**
- * @brief Struct for calculating von Mises stress
- * @ingroup resultevaluators
- * @details The VonMises struct provides a function call operator to calculate von Mises stress.
- * @tparam dim dimension of stress state
+ * \brief Struct for calculating von Mises stress
+ * \ingroup resultevaluators
+ * \details The VonMises struct provides a function call operator to calculate von Mises stress.
+ * \tparam dim dimension of stress state
  */
 template <int dim>
 requires(dim == 2 or dim == 3)
 struct VonMises
 {
   /**
-   * @brief Calculate the result quantity (von Mises stress)
-   * @param resultArray EigenMatrix containing the stress state
-   * @param comp component of result (not used here)
-   * @return von Mises stress
+   * \brief Calculate the result quantity (von Mises stress)
+   * \param resultArray EigenMatrix containing the stress state
+   * \param comp component of result (not used here)
+   * \return von Mises stress
    */
   double operator()(const auto& resultArray, [[maybe_unused]] const int comp) const {
     if constexpr (dim == 2) {
@@ -59,31 +59,31 @@ struct VonMises
   }
 
   /**
-   * @brief Get the name of the result type (VonMises)
-   * @return String representing the name
+   * \brief Get the name of the result type (VonMises)
+   * \return String representing the name
    */
   static std::string name() { return "VonMises"; }
 
   /**
-   * @brief Get the number of components in the result (always 1 for VonMises)
-   * @return Number of components
+   * \brief Get the number of components in the result (always 1 for VonMises)
+   * \return Number of components
    */
   static int ncomps() { return 1; }
 };
 
 /**
- * @brief Struct for calculating principal stresses
- * @ingroup resultevaluators
- * @details The PrincipalStress struct provides a function call operator to calculate principal stresses.
- * @remark  Only 2D stresses are supported
+ * \brief Struct for calculating principal stresses
+ * \ingroup resultevaluators
+ * \details The PrincipalStress struct provides a function call operator to calculate principal stresses.
+ * \remark  Only 2D stresses are supported
  */
 struct PrincipalStress
 {
   /**
-   * @brief Calculate the result quantity (principal stress)
-   * @param resultArray EigenMatrix containing the stress state
-   * @param comp component of result
-   * @return principal stress
+   * \brief Calculate the result quantity (principal stress)
+   * \param resultArray EigenMatrix containing the stress state
+   * \param comp component of result
+   * \return principal stress
    */
   double operator()(const auto& resultArray, const int comp) const {
     const auto s_x  = resultArray(0, 0);
@@ -97,14 +97,14 @@ struct PrincipalStress
   }
 
   /**
-   * @brief Get the name of the result type (PrincipalStress)
-   * @return String representing the name
+   * \brief Get the name of the result type (PrincipalStress)
+   * \return String representing the name
    */
   static std::string name() { return "PrincipalStress"; }
 
   /**
-   * @brief Get the number of components in the result (always 2 for PrincipalStress)
-   * @return Number of components
+   * \brief Get the number of components in the result (always 2 for PrincipalStress)
+   * \return Number of components
    */
   static int ncomps() { return 2; }
 };

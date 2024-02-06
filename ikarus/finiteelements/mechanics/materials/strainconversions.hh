@@ -8,7 +8,7 @@
  * This file provides implementation for strain-related functions, including the creation and transformation of
  * different strain tensors.
  *
- * @ingroup  materials
+ * \ingroup  materials
  */
 
 #pragma once
@@ -36,7 +36,7 @@ namespace Impl {
  *
  * This function creates Green-Lagrangian strains based on the input strain matrix.
  * What to do is decided by the provided strain tag
- * @ingroup  materials
+ * \ingroup  materials
  * \tparam tag Type of the strain tag.
  * \tparam Derived Type of the Eigen matrix.
  * \param eMB Eigen matrix representing the input strain.
@@ -61,7 +61,7 @@ auto createGreenLagrangianStrains(const Eigen::MatrixBase<Derived>& eMB) {
  *
  * This function creates deformation gradient based on the input strain matrix.
  * What to do is decided by the provided strain tag
- * @ingroup  materials
+ * \ingroup  materials
  * \tparam tag Type of the strain tag.
  * \tparam Derived Type of the Eigen matrix.
  * \param eMB Eigen matrix representing the input strain.
@@ -92,7 +92,7 @@ decltype(auto) createDeformationGradient(const Eigen::MatrixBase<Derived>& eMB) 
  *
  * This function creates Right Cauchy-Green tensor based on the input strain matrix.
  * What to do is decided by the provided strain tag
- * @ingroup  materials
+ * \ingroup  materials
  * \tparam tag Type of the strain tag.
  * \tparam Derived Type of the Eigen matrix.
  * \param eMB Eigen matrix representing the input strain.
@@ -121,7 +121,7 @@ decltype(auto) createRightCauchyGreen(const Eigen::MatrixBase<Derived>& eMB) {
  * \brief Transform strain from one type to another.
  *
  * This function transforms one strain component matrix from one type to another, based on the provided strain tags
- * @ingroup  materials
+ * \ingroup  materials
  * \tparam from Type of the source strain tag.
  * \tparam to Type of the target strain tag.
  * \tparam Derived Type of the Eigen matrix.

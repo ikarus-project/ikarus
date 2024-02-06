@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file adaptivestepsizing.hh
- * @brief Contains the AdaptiveStepSizing namespace with strategies for adaptive step sizing.
+ * \file adaptivestepsizing.hh
+ * \brief Contains the AdaptiveStepSizing namespace with strategies for adaptive step sizing.
  *
  * This file defines two strategies for adaptive step sizing: NoOp and IterationBased.
- * @ingroup  controlroutines
+ * \ingroup  controlroutines
  */
 
 #pragma once
@@ -17,40 +17,41 @@
 namespace Ikarus::AdaptiveStepSizing {
 
 /**
- * @brief The NoOp strategy for adaptive step sizing.
+ * \brief The NoOp strategy for adaptive step sizing.
  *
  * This strategy does nothing and keeps the step size constant.
  */
 struct NoOp
 {
   /**
-   * @brief Call operator for the NoOp strategy.
+   * \brief Call operator for the NoOp strategy.
    *
    * Does nothing.
    *
-   * @param solverInfo Information about the nonlinear solver.
-   * @param subsidiaryArgs Subsidiary arguments for adaptive step sizing.
-   * @param nonLinearOperator The nonlinear operator.
+   * \param solverInfo Information about the nonlinear solver.
+   * \param subsidiaryArgs Subsidiary arguments for adaptive step sizing.
+   * \param nonLinearOperator The nonlinear operator.
+   * \tparam NLO The nonlinear operator type.
    */
-  template <typename NonLinearOperator>
+  template <typename NLO>
   void operator()(const NonLinearSolverInformation& solverInfo, SubsidiaryArgs& subsidiaryArgs,
-                  const NonLinearOperator& nonLinearOperator) {}
+                  const NLO& nonLinearOperator) {}
 
   /**
-   * @brief Get the target iterations.
-   * @return Always returns 0, indicating no specific target.
+   * \brief Get the target iterations.
+   * \return Always returns 0, indicating no specific target.
    */
   [[nodiscard]] int targetIterations() const { return 0; }
 
   /**
-   * @brief Set the target iterations.
-   * @param targetIterations The target iterations (ignored).
+   * \brief Set the target iterations.
+   * \param targetIterations The target iterations (ignored).
    */
   void setTargetIterations([[maybe_unused]] int targetIterations) {}
 };
 
 /**
- * @brief The IterationBased strategy for adaptive step sizing.
+ * \brief The IterationBased strategy for adaptive step sizing.
  *
  * This strategy adjusts the step size based on the ratio of target iterations to previous iterations.
  *
@@ -62,17 +63,18 @@ struct NoOp
 struct IterationBased
 {
   /**
-   * @brief Call operator of the IterationBased strategy.
+   * \brief Call operator of the IterationBased strategy.
    *
    * Adjusts the step size based on the ratio of target iterations to previous iterations.
    *
-   * @param solverInfo Information about the nonlinear solver.
-   * @param subsidiaryArgs Subsidiary arguments for adaptive step sizing.
-   * @tparam NonLinearOperator The nonlinear operator.
+   * \param solverInfo Information about the nonlinear solver.
+   * \param subsidiaryArgs Subsidiary arguments for adaptive step sizing.
+   * \param nonLinearOperator The nonlinear operator.
+   * \tparam NLO The nonlinear operator.
    */
-  template <typename NonLinearOperator>
+  template <typename NLO>
   void operator()(const NonLinearSolverInformation& solverInfo, SubsidiaryArgs& subsidiaryArgs,
-                  const NonLinearOperator&) {
+                  const NLO& nonLinearOperator) {
     if (subsidiaryArgs.currentStep == 0)
       return;
     if (targetIterations_ == 0)
@@ -86,14 +88,14 @@ struct IterationBased
   }
 
   /**
-   * @brief Get the target iterations.
-   * @return The number of target iterations.
+   * \brief Get the target iterations.
+   * \return The number of target iterations.
    */
   [[nodiscard]] int targetIterations() const { return targetIterations_; }
 
   /**
-   * @brief Set the target iterations.
-   * @param targetIterations The number of target iterations.
+   * \brief Set the target iterations.
+   * \param targetIterations The number of target iterations.
    */
   void setTargetIterations(int targetIterations) { targetIterations_ = targetIterations; }
 

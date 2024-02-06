@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file enhancedassumedstrains.hh
- * @brief Definition of the EAS class.
- * @ingroup  mechanics
+ * \file enhancedassumedstrains.hh
+ * \brief Definition of the EAS class.
+ * \ingroup  mechanics
  */
 
 #pragma once
@@ -21,32 +21,33 @@
 namespace Ikarus {
 
 /**
- * @brief Wrapper class for using Enhanced Assumed Strains (EAS) with displacement based elements.
+ * \brief Wrapper class for using Enhanced Assumed Strains (EAS) with displacement based elements.
  *
- * @ingroup mechanics
+ * \ingroup mechanics
  *
  * This class extends a displacement-based element to support Enhanced Assumed Strains.
  *
- * @tparam DisplacementBasedElement The base displacement-based element type.
+ * \tparam DFE The base displacement-based element type.
  */
-template <typename DisplacementBasedElement>
-class EnhancedAssumedStrains : public DisplacementBasedElement
+template <typename DFE>
+class EnhancedAssumedStrains : public DFE
 {
 public:
-  using FERequirementType = typename DisplacementBasedElement::FERequirementType;
-  using LocalView         = typename DisplacementBasedElement::LocalView;
-  using Geometry          = typename DisplacementBasedElement::Geometry;
-  using GridView          = typename DisplacementBasedElement::GridView;
-  using Traits            = typename DisplacementBasedElement::Traits;
+  using DisplacementBasedElement = DFE;
+  using FERequirementType        = typename DisplacementBasedElement::FERequirementType;
+  using LocalView                = typename DisplacementBasedElement::LocalView;
+  using Geometry                 = typename DisplacementBasedElement::Geometry;
+  using GridView                 = typename DisplacementBasedElement::GridView;
+  using Traits                   = typename DisplacementBasedElement::Traits;
   using DisplacementBasedElement::localView;
 
   /**
-* @brief Constructor for Enhanced Assumed Strains elements.
+* \brief Constructor for Enhanced Assumed Strains elements.
   * \details Disabling this forwarding constructor if the argument provided is EnhancedAssumedStrains itself, to
 forward the
   // calls to the implicit copy constructor
-* @tparam Args Variadic template for constructor arguments.
-* @param args Constructor arguments forwarded to the base class.
+* \tparam Args Variadic template for constructor arguments.
+* \param args Constructor arguments forwarded to the base class.
 */
   template <typename... Args>
   requires(
@@ -55,12 +56,12 @@ forward the
       : DisplacementBasedElement(std::forward<Args>(args)...) {}
 
   /**
-   * @brief Calculates a scalar quantity for the element.
+   * \brief Calculates a scalar quantity for the element.
    *
    * This function calculates a scalar quantity for the element based on the FERequirementType.
    *
-   * @param par The FERequirementType object.
-   * @return Computed scalar quantity.
+   * \param par The FERequirementType object.
+   * \return Computed scalar quantity.
    */
   double calculateScalar(const FERequirementType& par) const {
     if (isDisplacementBased())
@@ -70,35 +71,35 @@ forward the
   }
 
   /**
-   * @brief Checks if the element is displacement-based and the EAS is turned off.
+   * \brief Checks if the element is displacement-based and the EAS is turned off.
    *
-   * @return True if the element is displacement-based, false otherwise.
+   * \return True if the element is displacement-based, false otherwise.
    */
   bool isDisplacementBased() const { return std::holds_alternative<std::monostate>(easVariant_); }
 
   /**
-   * @brief Calculates vectorial quantities for the element.
+   * \brief Calculates vectorial quantities for the element.
    *
    * This function calculates the vectorial quantities for the element based on the FERequirementType.
    *
-   * @param par The FERequirementType object.
-   * @param force Vector to store the calculated forces.
+   * \param par The FERequirementType object.
+   * \param force Vector to store the calculated forces.
    */
   inline void calculateVector(const FERequirementType& par, typename Traits::template VectorType<> force) const {
     calculateVectorImpl<double>(par, force);
   }
 
   /**
-   * @brief Gets the variant representing the type of Enhanced Assumed Strains (EAS).
+   * \brief Gets the variant representing the type of Enhanced Assumed Strains (EAS).
    *
-   * @return Const reference to the EAS variant.
+   * \return Const reference to the EAS variant.
    */
   const auto& easVariant() const { return easVariant_; }
 
   /**
-   * @brief Gets the number of EAS parameters based on the current EAS type.
+   * \brief Gets the number of EAS parameters based on the current EAS type.
    *
-   * @return Number of EAS parameters.
+   * \return Number of EAS parameters.
    */
   auto getNumberOfEASParameters() const {
     return std::visit(
@@ -112,12 +113,12 @@ forward the
   }
 
   /**
-   * @brief Calculates the matrix for the element.
+   * \brief Calculates the matrix for the element.
    *
    * This function calculates the matrix for the element based on the FERequirementType.
    *
-   * @param par The FERequirementType object.
-   * @param K Matrix to store the calculated stiffness.
+   * \param par The FERequirementType object.
+   * \param K Matrix to store the calculated stiffness.
    */
   void calculateMatrix(const FERequirementType& par, typename Traits::template MatrixType<> K) const {
     using namespace Dune::DerivativeDirections;
@@ -136,9 +137,9 @@ forward the
           if constexpr (not std::is_same_v<std::monostate, EAST>) {
             constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
             Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
-            calculateDAndLMatrix(easFunction, par, D, L);
+            calculateDAndLMatrix(easFunction, par, D, L_);
 
-            K.template triangularView<Eigen::Upper>() -= L.transpose() * D.inverse() * L;
+            K.template triangularView<Eigen::Upper>() -= L_.transpose() * D.inverse() * L_;
             K.template triangularView<Eigen::StrictlyLower>() = K.transpose();
           }
         },
@@ -146,18 +147,18 @@ forward the
   }
 
   /**
-   * @brief Calculates a requested result at a specific local position using the Enhanced Assumed Strains (EAS)
+   * \brief Calculates a requested result at a specific local position using the Enhanced Assumed Strains (EAS)
    * method.
    *
    * This function calculates the results at the specified local coordinates .
    * It takes into account the displacement-based element calculations and, if applicable, incorporates the EAS method
    * for enhanced accuracy.
    *
-   * @param req The result requirements.
-   * @param local The local coordinates at which results are to be calculated.
-   * @return calculated result
+   * \param req The result requirements.
+   * \param local The local coordinates at which results are to be calculated.
+   * \return calculated result
    *
-   * @tparam resType The type representing the requested result.
+   * \tparam resType The type representing the requested result.
    */
   template <ResultType resType>
   auto calculateAt(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
@@ -182,8 +183,8 @@ forward the
           if constexpr (not std::is_same_v<std::monostate, EAST>) {
             constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
             Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
-            calculateDAndLMatrix(easFunction, req, D, L);
-            const auto alpha = (-D.inverse() * L * disp).eval();
+            calculateDAndLMatrix(easFunction, req, D, L_);
+            const auto alpha = (-D.inverse() * L_ * disp).eval();
             const auto M     = easFunction.calcM(local);
             const auto CEval = C(local);
             auto easStress   = (CEval * M * alpha).eval();
@@ -197,18 +198,18 @@ forward the
   }
 
   /**
-   * @brief Sets the EAS type for 2D elements.
+   * \brief Sets the EAS type for 2D elements.
    *
-   * @param numberOfEASParameters_ The number of EAS parameters
+   * \param numberOfEASParameters The number of EAS parameters
    */
-  void setEASType(int numberOfEASParameters_) {
+  void setEASType(int numberOfEASParameters) {
     const auto& numberOfNodes = DisplacementBasedElement::numberOfNodes();
     if (not((numberOfNodes == 4 and Traits::mydim == 2) or (numberOfNodes == 8 and Traits::mydim == 3)) and
         (not isDisplacementBased()))
       DUNE_THROW(Dune::NotImplemented, "EAS only supported for Q1 or H1 elements");
 
     if constexpr (Traits::mydim == 2) {
-      switch (numberOfEASParameters_) {
+      switch (numberOfEASParameters) {
         case 0:
           easVariant_ = std::monostate();
           break;
@@ -226,7 +227,7 @@ forward the
           break;
       }
     } else if constexpr (Traits::mydim == 3) {
-      switch (numberOfEASParameters_) {
+      switch (numberOfEASParameters) {
         case 0:
           easVariant_ = std::monostate();
           break;
@@ -276,9 +277,9 @@ protected:
           if constexpr (not std::is_same_v<std::monostate, EAST>) {
             constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
             Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
-            calculateDAndLMatrix(easFunction, par, D, L);
+            calculateDAndLMatrix(easFunction, par, D, L_);
 
-            const auto alpha = (-D.inverse() * L * disp).eval();
+            const auto alpha = (-D.inverse() * L_ * disp).eval();
 
             for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
               const auto M            = easFunction.calcM(gp.position());
@@ -299,7 +300,7 @@ protected:
 private:
   using EASVariant = EAS::Variants<Geometry>::type;
   EASVariant easVariant_;
-  mutable Eigen::MatrixXd L;
+  mutable Eigen::MatrixXd L_;
   template <int enhancedStrainSize>
   void calculateDAndLMatrix(const auto& easFunction, const auto& par,
                             Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>& DMat,

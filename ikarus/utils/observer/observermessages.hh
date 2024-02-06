@@ -10,7 +10,7 @@
 
 namespace Ikarus {
 /**
- * @brief Enum class defining control-routine-related messages.
+ * \brief Enum class defining control-routine-related messages.
  * \ingroup observer
  */
 enum class ControlMessages
@@ -25,7 +25,7 @@ enum class ControlMessages
 };
 
 /**
- * @brief Enum class defining non-linear solver-related messages.
+ * \brief Enum class defining non-linear solver-related messages.
  * \ingroup observer
  */
 enum class NonLinearSolverMessages

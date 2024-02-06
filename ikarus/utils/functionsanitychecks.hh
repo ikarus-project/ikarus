@@ -17,19 +17,19 @@
 namespace Ikarus::utils {
 namespace Impl {
   /**
-   *@internal
-   * @brief Draws the function and returns the slope for a given function.
-   * @param functionName The name of the function.
-   * @param ftfunc The function to be evaluated.
-   * @param draw Flag indicating whether to draw the result.
-   * @param slopeOfReference The reference slope for comparison.
-   * @return The computed slope.
+   * \internal
+   * \brief Draws the function and returns the slope for a given function.
+   * \param functionName The name of the function.
+   * \param ftfunc The function to be evaluated.
+   * \param draw Flag indicating whether to draw the result.
+   * \param slopeOfReference The reference slope for comparison.
+   * \return The computed slope.
    */
   double drawResultAndReturnSlope(std::string&& functionName, const std::function<double(double)>& ftfunc, bool draw,
                                   int slopeOfReference);
 } // namespace Impl
 /**
- * @brief Struct to hold flags for function checks.
+ * \brief Struct to hold flags for function checks.
  */
 struct CheckFlags
 {
@@ -39,16 +39,16 @@ struct CheckFlags
 };
 
 /**
- * @brief Checks the gradient of a nonlinear operator.
+ * \brief Checks the gradient of a nonlinear operator.
  * \details The checkgradient function is inspired by http://sma.epfl.ch/~nboumal/book/  Chapter 4.8 and
  * https://github.com/NicolasBoumal/manopt/blob/master/manopt/tools/checkdiff.m
  * \ingroup utils
- * @tparam NonlinearOperator Type of the nonlinear operator.
- * @tparam UpdateType Type of the update.
- * @param nonLinOp The nonlinear operator.
- * @param checkFlags Flags for the check.
- * @param p_updateFunction Update function.
- * @return True if the check passed, false otherwise.
+ * \tparam NonlinearOperator Type of the nonlinear operator.
+ * \tparam UpdateType Type of the update.
+ * \param nonLinOp The nonlinear operator.
+ * \param checkFlags Flags for the check.
+ * \param p_updateFunction Update function.
+ * \return True if the check passed, false otherwise.
  */
 template <typename NonlinearOperator, typename UpdateType = typename NonlinearOperator::template ParameterValue<0>>
 bool checkGradient(
@@ -100,16 +100,16 @@ bool checkGradient(
 }
 
 /**
- * @brief Checks the Jacobian of a nonlinear operator.
+ * \brief Checks the Jacobian of a nonlinear operator.
  * \details The checkjacobian function is inspired by http://sma.epfl.ch/~nboumal/book/  Chapter 4.8 and
  * https://github.com/NicolasBoumal/manopt/blob/master/manopt/tools/checkdiff.m
  * \ingroup utils
- * @tparam NonlinearOperator Type of the nonlinear operator.
- * @tparam UpdateType Type of the update.
- * @param nonLinOp The nonlinear operator.
- * @param checkFlags Flags for the check.
- * @param p_updateFunction Update function.
- * @return True if the check passed, false otherwise.
+ * \tparam NonlinearOperator Type of the nonlinear operator.
+ * \tparam UpdateType Type of the update.
+ * \param nonLinOp The nonlinear operator.
+ * \param checkFlags Flags for the check.
+ * \param p_updateFunction Update function.
+ * \return True if the check passed, false otherwise.
  */
 template <typename NonlinearOperator, typename UpdateType = typename NonlinearOperator::template ParameterValue<0>>
 bool checkJacobian(
@@ -153,16 +153,16 @@ bool checkJacobian(
 }
 
 /**
- * @brief Checks the Hessian of a nonlinear operator.
+ * \brief Checks the Hessian of a nonlinear operator.
  * \details  The checkHessian function is inspired by http://sma.epfl.ch/~nboumal/book/  Chapter 6.8 and
  * https://github.com/NicolasBoumal/manopt/blob/master/manopt/tools/checkhessian.m
  * \ingroup utils
- * @tparam NonlinearOperator Type of the nonlinear operator.
- * @tparam UpdateType Type of the update.
- * @param nonLinOp The nonlinear operator.
- * @param checkFlags Flags for the check.
- * @param p_updateFunction Update function.
- * @return True if the check passed, false otherwise.
+ * \tparam NonlinearOperator Type of the nonlinear operator.
+ * \tparam UpdateType Type of the update.
+ * \param nonLinOp The nonlinear operator.
+ * \param checkFlags Flags for the check.
+ * \param p_updateFunction Update function.
+ * \return True if the check passed, false otherwise.
  */
 template <typename NonlinearOperator, typename UpdateType = typename NonlinearOperator::template ParameterValue<0>>
 bool checkHessian(

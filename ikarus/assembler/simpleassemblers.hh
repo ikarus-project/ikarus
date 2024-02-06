@@ -24,54 +24,54 @@ namespace Ikarus {
  * \brief The FlatAssemblerBase takes care of common subtasks done by flat assemblers.
  * \ingroup assembler
  *
- * \tparam FEContainer_ Type of the finite element container.
- * \tparam DirichletValuesType_ Type of the Dirichlet values.
+ * \tparam FEC Type of the finite element container.
+ * \tparam DV Type of the Dirichlet values.
  */
-template <typename FEContainer_, typename DirichletValuesType_>
+template <typename FEC, typename DV>
 class FlatAssemblerBase
 {
 public:
-  using FEContainerRaw    = std::remove_cvref_t<FEContainer_>; ///< Type of the raw finite element container.
+  using FEContainerRaw    = std::remove_cvref_t<FEC>; ///< Type of the raw finite element container.
   using FERequirementType = typename FEContainerRaw::value_type::FERequirementType;
   ///< Type of the finite element requirement.
   using GlobalIndex     = typename FEContainerRaw::value_type::GlobalIndex; ///< Type of the global index.
-  using Basis           = typename DirichletValuesType_::Basis;             ///< Type of the basis.
+  using Basis           = typename DV::Basis;                               ///< Type of the basis.
   using GridView        = typename Basis::GridView;                         ///< Type of the grid view.
-  using FEContainer     = FEContainer_;                                     ///< Type of the finite element container.
+  using FEContainer     = FEC;                                              ///< Type of the finite element container.
   using FEContainerType = std::conditional_t<std::is_reference_v<FEContainer>, const FEContainer, FEContainer>;
   ///< Type of the finite element container (reference or by value).
-  using DirichletValuesType = DirichletValuesType_; ///< Type of the Dirichlet values.
+  using DirichletValuesType = DV; ///< Type of the Dirichlet values.
 
   /**
    * \brief Constructor for FlatAssemblerBase.
    *
    * \param fes Finite element container.
-   * \param p_dirichletValues Reference to Dirichlet values.
+   * \param dirichletValues Reference to Dirichlet values.
    */
-  FlatAssemblerBase(FEContainer&& fes, const DirichletValuesType& p_dirichletValues)
-      : feContainer{std::forward<FEContainer>(fes)},
-        dirichletValues{&p_dirichletValues} {
-    constraintsBelow_.reserve(dirichletValues->size());
+  FlatAssemblerBase(FEContainer&& fes, const DirichletValuesType& dirichletValues)
+      : feContainer_{std::forward<FEContainer>(fes)},
+        dirichletValues_{&dirichletValues} {
+    constraintsBelow_.reserve(dirichletValues_->size());
     size_t counter = 0;
-    for (auto iv : std::ranges::iota_view{decltype(dirichletValues->size())(0), dirichletValues->size()}) {
+    for (auto iv : std::ranges::iota_view{decltype(dirichletValues_->size())(0), dirichletValues_->size()}) {
       constraintsBelow_.emplace_back(counter);
-      if (dirichletValues->isConstrained(iv))
+      if (dirichletValues_->isConstrained(iv))
         ++counter;
     }
-    fixedDofs = dirichletValues->fixedDOFsize();
+    fixedDofs_ = dirichletValues_->fixedDOFsize();
   }
 
   /**
    * \brief Returns the size of the free degrees of freedom, which are not fixed by a Dirichlet boundary condition.
    * \return Size of the reduced degrees of freedom.
    */
-  size_t reducedSize() { return dirichletValues->size() - fixedDofs; }
+  size_t reducedSize() { return dirichletValues_->size() - fixedDofs_; }
 
   /**
    * \brief Returns the size of nodes, i.e., the number of degrees of freedom.
    * \return Size of the degrees of freedom.
    */
-  size_t size() { return dirichletValues->size(); }
+  size_t size() { return dirichletValues_->size(); }
 
   /**
    * \brief Creates the full-sized vector of size Dof and inserts the values of a reduced vector at the "free"
@@ -86,7 +86,7 @@ public:
    * \brief Returns the container of finite elements.
    * \return Reference to the finite element container.
    */
-  auto& finiteElements() const { return feContainer; }
+  auto& finiteElements() const { return feContainer_; }
 
   /**
    * \brief Returns the number of constraints below a given degrees of freedom index.
@@ -102,7 +102,7 @@ public:
    * \param i Index of the degree of freedom.
    * \return True if the degree of freedom is fixed; false otherwise.
    */
-  [[nodiscard]] bool isConstrained(size_t i) const { return dirichletValues->isConstrained(i); }
+  [[nodiscard]] bool isConstrained(size_t i) const { return dirichletValues_->isConstrained(i); }
 
   /**
    * \brief Coarse estimate of node connectivity, i.e., this relates to the bandwidth of a sparse matrix.
@@ -111,33 +111,33 @@ public:
    * \return Size_t Coarse estimate of node connectivity.
    */
   [[nodiscard]] size_t estimateOfConnectivity() const {
-    return dirichletValues->basis().gridView().size(GridView::dimension) * 8;
+    return dirichletValues_->basis().gridView().size(GridView::dimension) * 8;
   }
 
 private:
-  FEContainerType feContainer;
-  const DirichletValuesType* dirichletValues;
+  FEContainerType feContainer_;
+  const DirichletValuesType* dirichletValues_;
   std::vector<size_t> constraintsBelow_{};
-  size_t fixedDofs{};
+  size_t fixedDofs_{};
 };
 
 #ifndef DOXYGEN
 template <class T, class DirichletValuesType>
-FlatAssemblerBase(T&& fes, const DirichletValuesType& dirichletValues_) -> FlatAssemblerBase<T, DirichletValuesType>;
+FlatAssemblerBase(T&& fes, const DirichletValuesType& dirichletValues) -> FlatAssemblerBase<T, DirichletValuesType>;
 #endif
 
 /**
  * \class ScalarAssembler
  * \brief ScalarAssembler assembles scalar quantities.
  * \ingroup assembler
- * \tparam FEContainer_ Type of the finite element container.
- * \tparam DirichletValuesType_ Type of the Dirichlet values.
+ * \tparam FEC Type of the finite element container.
+ * \tparam DV Type of the Dirichlet values.
  */
-template <typename FEContainer_, typename DirichletValuesType_>
-class ScalarAssembler : public FlatAssemblerBase<FEContainer_, DirichletValuesType_>
+template <typename FEC, typename DV>
+class ScalarAssembler : public FlatAssemblerBase<FEC, DV>
 {
-  using FEContainerRaw = std::remove_cvref_t<FEContainer_>; ///< Type of the raw finite element container.
-  using Base           = FlatAssemblerBase<FEContainer_, DirichletValuesType_>;
+  using FEContainerRaw = std::remove_cvref_t<FEC>; ///< Type of the raw finite element container.
+  using Base           = FlatAssemblerBase<FEC, DV>;
 
 public:
   using typename Base::Basis;
@@ -150,10 +150,10 @@ public:
    * \brief Constructor for ScalarAssembler.
    *
    * \param fes Finite element container.
-   * \param dirichletValues_ Reference to Dirichlet values.
+   * \param dirichletValues Reference to Dirichlet values.
    */
-  ScalarAssembler(FEContainer&& fes, const DirichletValuesType& dirichletValues_)
-      : FlatAssemblerBase<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues_) {}
+  ScalarAssembler(FEContainer&& fes, const DirichletValuesType& dirichletValues)
+      : FlatAssemblerBase<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues) {}
 
   /**
    * \brief Calculates the scalar quantity requested by feRequirements and returns a reference.
@@ -171,33 +171,33 @@ private:
    * \return Reference to the calculated scalar quantity.
    */
   double& getScalarImpl(const FERequirementType& feRequirements) {
-    scal = 0.0;
+    scal_ = 0.0;
     for (auto& fe : this->finiteElements()) {
-      scal += fe.calculateScalar(feRequirements);
+      scal_ += fe.calculateScalar(feRequirements);
     }
-    return scal;
+    return scal_;
   }
 
-  double scal{0.0};
+  double scal_{0.0};
 };
 
 #ifndef DOXYGEN
 template <class T, class DirichletValuesType>
-ScalarAssembler(T&& fes, const DirichletValuesType& dirichletValues_) -> ScalarAssembler<T, DirichletValuesType>;
+ScalarAssembler(T&& fes, const DirichletValuesType& dirichletValues) -> ScalarAssembler<T, DirichletValuesType>;
 #endif
 
 /**
  * \class VectorFlatAssembler
  * \brief VectorFlatAssembler assembles vector quantities using a flat basis Indexing strategy.
  *\ingroup assembler
- * \tparam FEContainer_ Type of the finite element container.
- * \tparam DirichletValuesType_ Type of the Dirichlet values.
+ * \tparam FEC Type of the finite element container.
+ * \tparam DV Type of the Dirichlet values.
  */
-template <typename FEContainer_, typename DirichletValuesType_>
-class VectorFlatAssembler : public ScalarAssembler<FEContainer_, DirichletValuesType_>
+template <typename FEC, typename DV>
+class VectorFlatAssembler : public ScalarAssembler<FEC, DV>
 {
-  using FEContainerRaw = std::remove_cvref_t<FEContainer_>; ///< Type of the raw finite element container.
-  using Base           = ScalarAssembler<FEContainer_, DirichletValuesType_>;
+  using FEContainerRaw = std::remove_cvref_t<FEC>; ///< Type of the raw finite element container.
+  using Base           = ScalarAssembler<FEC, DV>;
 
 public:
   using typename Base::Basis;
@@ -211,10 +211,10 @@ public:
    * \brief Constructor for VectorFlatAssembler.
    *
    * \param fes Finite element container.
-   * \param dirichletValues_ Reference to Dirichlet values.
+   * \param dirichletValues Reference to Dirichlet values.
    */
-  VectorFlatAssembler(FEContainer&& fes, const DirichletValuesType& dirichletValues_)
-      : ScalarAssembler<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues_) {}
+  VectorFlatAssembler(FEContainer&& fes, const DirichletValuesType& dirichletValues)
+      : ScalarAssembler<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues) {}
 
   /**
    * \brief Calculates the vectorial quantity requested by feRequirements and returns a reference.
@@ -253,15 +253,14 @@ private:
 
   Eigen::VectorXd& getReducedVectorImpl(const FERequirementType& feRequirements);
 
-  Eigen::VectorXd vecRaw{}; ///< Raw vector without changes for dirichlet degrees of freedom
-  Eigen::VectorXd vec{};    ///< Vector quantity.
-  Eigen::VectorXd vecRed{}; ///< Reduced vector quantity.
+  Eigen::VectorXd vecRaw_{}; ///< Raw vector without changes for dirichlet degrees of freedom
+  Eigen::VectorXd vec_{};    ///< Vector quantity.
+  Eigen::VectorXd vecRed_{}; ///< Reduced vector quantity.
 };
 
 #ifndef DOXYGEN
 template <class T, class DirichletValuesType>
-VectorFlatAssembler(T&& fes, const DirichletValuesType& dirichletValues_)
-    -> VectorFlatAssembler<T, DirichletValuesType>;
+VectorFlatAssembler(T&& fes, const DirichletValuesType& dirichletValues) -> VectorFlatAssembler<T, DirichletValuesType>;
 #endif
 
 /**
@@ -269,15 +268,15 @@ VectorFlatAssembler(T&& fes, const DirichletValuesType& dirichletValues_)
  * \brief SparseFlatAssembler assembles matrix quantities using a flat basis Indexing strategy.
  * The matrix is stored in a sparse matrix format. This format is exploited during the assembly process.
  * \ingroup assembler
- * \tparam FEContainer_ Type of the finite element container.
- * \tparam DirichletValuesType_ Type of the Dirichlet values.
+ * \tparam FEC Type of the finite element container.
+ * \tparam DV Type of the Dirichlet values.
  */
-template <typename FEContainer_, typename DirichletValuesType_>
-class SparseFlatAssembler : public VectorFlatAssembler<FEContainer_, DirichletValuesType_>
+template <typename FEC, typename DV>
+class SparseFlatAssembler : public VectorFlatAssembler<FEC, DV>
 {
 public:
-  using FEContainerRaw = std::remove_cvref_t<FEContainer_>; ///< Type of the raw finite element container.
-  using Base           = VectorFlatAssembler<FEContainer_, DirichletValuesType_>;
+  using FEContainerRaw = std::remove_cvref_t<FEC>; ///< Type of the raw finite element container.
+  using Base           = VectorFlatAssembler<FEC, DV>;
 
   using typename Base::Basis;
   using typename Base::DirichletValuesType;
@@ -289,10 +288,10 @@ public:
    * \brief Constructor for SparseFlatAssembler.
    *
    * \param fes Finite element container.
-   * \param dirichletValues_ Reference to Dirichlet values.
+   * \param dirichletValues Reference to Dirichlet values.
    */
-  SparseFlatAssembler(FEContainer&& fes, const DirichletValuesType& dirichletValues_)
-      : VectorFlatAssembler<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues_) {}
+  SparseFlatAssembler(FEContainer&& fes, const DirichletValuesType& dirichletValues)
+      : VectorFlatAssembler<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues) {}
 
   using GridView = typename Basis::GridView; ///< Type of the grid view.
 
@@ -355,21 +354,20 @@ private:
   /** Pre-processes the reduced sparse matrix before assembly. */
   void preProcessSparseMatrixReduced(Eigen::SparseMatrix<double>& assemblyMat);
 
-  Eigen::SparseMatrix<double> spMatRaw;     ///< Raw sparse matrix without changes for dirichlet degrees of freedom.
-  Eigen::SparseMatrix<double> spMat;        ///< Sparse matrix.
-  Eigen::SparseMatrix<double> spMatReduced; ///< Reduced sparse matrix.
+  Eigen::SparseMatrix<double> spMatRaw_;     ///< Raw sparse matrix without changes for dirichlet degrees of freedom.
+  Eigen::SparseMatrix<double> spMat_;        ///< Sparse matrix.
+  Eigen::SparseMatrix<double> spMatReduced_; ///< Reduced sparse matrix.
   std::vector<std::vector<Eigen::Index>>
-      elementLinearIndices; ///< Vector storing indices of matrix entries in linear storage
+      elementLinearIndices_; ///< Vector storing indices of matrix entries in linear storage
   std::vector<std::vector<Eigen::Index>>
-      elementLinearReducedIndices; ///< Vector storing indices of matrix entries in linear storage
-  std::once_flag sparsePreProcessorRaw, sparsePreProcessor,
-      sparsePreProcessorReduced; ///< flags that store if the sparsity pattern construction happened
+      elementLinearReducedIndices_; ///< Vector storing indices of matrix entries in linear storage
+  std::once_flag sparsePreProcessorRaw_, sparsePreProcessor_,
+      sparsePreProcessorReduced_; ///< flags that store if the sparsity pattern construction happened
 };
 
 #ifndef DOXYGEN
-template <class T, class DirichletValuesType>
-SparseFlatAssembler(T&& fes, const DirichletValuesType& dirichletValues_)
-    -> SparseFlatAssembler<T, DirichletValuesType>;
+template <class FEC, class DV>
+SparseFlatAssembler(FEC&& fes, const DV& dirichletValues) -> SparseFlatAssembler<FEC, DV>;
 #endif
 
 /**
@@ -377,16 +375,16 @@ SparseFlatAssembler(T&& fes, const DirichletValuesType& dirichletValues_)
  * \brief DenseFlatAssembler assembles matrix quantities using a flat basis Indexing strategy.
  * The matrix is stored in a dense matrix format. This format is exploited during the assembly process.
  * \ingroup assembler
- * \tparam FEContainer_ Type of the finite element container.
- * \tparam DirichletValuesType_ Type of the Dirichlet values.
+ * \tparam FEC Type of the finite element container.
+ * \tparam DV Type of the Dirichlet values.
  * \note Requires Ikarus::Concepts::FlatIndexBasis<BasisEmbedded>.
  */
-template <typename FEContainer_, typename DirichletValuesType_>
-class DenseFlatAssembler : public VectorFlatAssembler<FEContainer_, DirichletValuesType_>
+template <typename FEC, typename DV>
+class DenseFlatAssembler : public VectorFlatAssembler<FEC, DV>
 {
 public:
-  using FEContainerRaw = std::remove_cvref_t<FEContainer_>; ///< Type of the raw finite element container.
-  using Base           = VectorFlatAssembler<FEContainer_, DirichletValuesType_>; ///< Type alias for the base class.
+  using FEContainerRaw = std::remove_cvref_t<FEC>;     ///< Type of the raw finite element container.
+  using Base           = VectorFlatAssembler<FEC, DV>; ///< Type alias for the base class.
 
   using typename Base::Basis;               ///< Type of the basis.
   using typename Base::DirichletValuesType; ///< Type of the Dirichlet values.
@@ -398,10 +396,10 @@ public:
    * \brief Constructor for DenseFlatAssembler.
    *
    * \param fes Finite element container.
-   * \param dirichletValues_ Reference to Dirichlet values.
+   * \param dirichletValues Reference to Dirichlet values.
    */
-  explicit DenseFlatAssembler(FEContainer&& fes, const DirichletValuesType& dirichletValues_)
-      : VectorFlatAssembler<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues_) {}
+  explicit DenseFlatAssembler(FEContainer&& fes, const DirichletValuesType& dirichletValues)
+      : VectorFlatAssembler<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues) {}
 
   /**
    * \brief Calculates the matrix quantity requested by feRequirements and returns a reference.
@@ -439,15 +437,15 @@ private:
   Eigen::MatrixXd& getMatrixImpl(const FERequirementType& feRequirements);
   Eigen::MatrixXd& getReducedMatrixImpl(const FERequirementType& feRequirements);
 
-  Eigen::MatrixXd matRaw{}; ///< Raw dense matrix for assembly.
-  Eigen::MatrixXd mat{};    ///< Dense matrix quantity.
-  Eigen::MatrixXd matRed{}; ///< Reduced dense matrix quantity.
+  Eigen::MatrixXd matRaw_{}; ///< Raw dense matrix for assembly.
+  Eigen::MatrixXd mat_{};    ///< Dense matrix quantity.
+  Eigen::MatrixXd matRed_{}; ///< Reduced dense matrix quantity.
 };
 
 #ifndef DOXYGEN
 // https://en.cppreference.com/w/cpp/language/class_template_argument_deduction
-template <class T, class DirichletValuesType>
-DenseFlatAssembler(T&& fes, const DirichletValuesType& dirichletValues_) -> DenseFlatAssembler<T, DirichletValuesType>;
+template <class FEC, class DV>
+DenseFlatAssembler(FEC&& fes, const DV& dirichletValues) -> DenseFlatAssembler<FEC, DV>;
 #endif
 } // namespace Ikarus
 

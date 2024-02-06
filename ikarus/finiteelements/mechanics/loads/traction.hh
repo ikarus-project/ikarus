@@ -11,14 +11,14 @@
 namespace Ikarus {
 
 /**
- * @brief Traction class represents distributed traction load that can be applied.
+ * \brief Traction class represents distributed traction load that can be applied.
  *
- * @ingroup mechanics
+ * \ingroup mechanics
  *
- * @tparam DisplacementBasedElement The type of the displacement-based finite element.
- * @tparam Traits Type of traits for handling finite elements.
+ * \tparam DFE The type of the displacement-based finite element.
+ * \tparam Traits Type of traits for handling finite elements.
  */
-template <typename DisplacementBasedElement, typename Traits>
+template <typename DFE, typename Traits>
 class Traction
 {
 public:
@@ -29,67 +29,66 @@ public:
   static constexpr int worldDim = Traits::worlddim;
 
   /**
-   * @brief Constructor for the Loads class.
+   * \brief Constructor for the Loads class.
    *
-   * @tparam NeumannBoundaryLoad The type for the Neumann boundary load function.
-   * @param p_neumannBoundary Neumann boundary patch.
-   * @param p_neumannBoundaryLoad Neumann boundary load function.
+   * \tparam NBL The type for the Neumann boundary load function.
+   * \param neumannBoundary Neumann boundary patch.
+   * \param neumannBoundaryLoad Neumann boundary load function.
    */
-  template <typename NeumannBoundaryLoad>
-  explicit Traction(const BoundaryPatch<GridView>* p_neumannBoundary, NeumannBoundaryLoad p_neumannBoundaryLoad)
-      : neumannBoundary{p_neumannBoundary} {
-    if constexpr (!std::is_same_v<NeumannBoundaryLoad, utils::LoadDefault>)
-      neumannBoundaryLoad = p_neumannBoundaryLoad;
+  template <typename NBL>
+  explicit Traction(const BoundaryPatch<GridView>* neumannBoundary, NBL neumannBoundaryLoad)
+      : neumannBoundary_{neumannBoundary} {
+    if constexpr (!std::is_same_v<NBL, utils::LoadDefault>)
+      neumannBoundaryLoad_ = neumannBoundaryLoad;
 
-    assert(((not p_neumannBoundary and not neumannBoundaryLoad) or (p_neumannBoundary and neumannBoundaryLoad)) &&
+    assert(((not neumannBoundary and not neumannBoundaryLoad_) or (neumannBoundary and neumannBoundaryLoad_)) &&
            "If you pass a Neumann boundary you should also pass the function for the Neumann load!");
   }
 
   /**
-   * @brief Calculate the scalar value.
+   * \brief Calculate the scalar value.
    *
    * Calculates the scalar value based on the given FERequirements.
    *
-   * @param req The FERequirements.
-   * @return The calculated scalar value.
+   * \param req The FERequirements.
+   * \return The calculated scalar value.
    */
   double calculateScalar(const FERequirementType& req) const { return calculateScalarImpl<double>(req); }
 
   /**
-   * @brief Calculate the vector associated with the given FERequirementType.
+   * \brief Calculate the vector associated with the given FERequirementType.
    *
-   * @tparam ScalarType The scalar type for the calculation.
-   * @param req The FERequirementType object specifying the requirements for the calculation.
-   * @param force The vector to store the calculated result.
+   * \tparam ScalarType The scalar type for the calculation.
+   * \param req The FERequirementType object specifying the requirements for the calculation.
+   * \param force The vector to store the calculated result.
    */
   void calculateVector(const FERequirementType& req, typename Traits::template VectorType<> force) const {
     calculateVectorImpl<double>(req, force);
   }
   /**
-   * @brief Calculate the matrix associated with the given FERequirementType.
+   * \brief Calculate the matrix associated with the given FERequirementType.
    *
-   * @tparam ScalarType The scalar type for the calculation.
-   * @param req The FERequirementType object specifying the requirements for the calculation.
-   * @param K The matrix to store the calculated result.
+   * \tparam ScalarType The scalar type for the calculation.
+   * \param req The FERequirementType object specifying the requirements for the calculation.
+   * \param K The matrix to store the calculated result.
    */
   void calculateMatrix(const FERequirementType& req, typename Traits::template MatrixType<> K) const {
     calculateMatrixImpl<double>(req, K);
   }
 
 protected:
-  template <typename ScalarType>
+  template <typename ST>
   auto calculateScalarImpl(const FERequirementType& par,
-                           const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const
-      -> ScalarType {
-    if (not neumannBoundary and not neumannBoundaryLoad)
+                           const std::optional<const Eigen::VectorX<ST>>& dx = std::nullopt) const -> ST {
+    if (not neumannBoundary_ and not neumannBoundaryLoad_)
       return 0.0;
-    ScalarType energy    = 0.0;
+    ST energy            = 0.0;
     const auto uFunction = dbElement().displacementFunction(par, dx);
     const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
     auto& element        = dbElement().localView().element();
 
-    for (auto&& intersection : intersections(neumannBoundary->gridView(), element)) {
-      if (not neumannBoundary->contains(intersection))
+    for (auto&& intersection : intersections(neumannBoundary_->gridView(), element)) {
+      if (not neumannBoundary_->contains(intersection))
         continue;
 
       const auto& quadLine = Dune::QuadratureRules<double, myDim - 1>::rule(intersection.type(), dbElement().order());
@@ -104,7 +103,7 @@ protected:
         const auto uVal = uFunction.evaluate(quadPos);
 
         // Value of the Neumann data at the current position
-        auto neumannValue = neumannBoundaryLoad(intersection.geometry().global(curQuad.position()), lambda);
+        auto neumannValue = neumannBoundaryLoad_(intersection.geometry().global(curQuad.position()), lambda);
 
         energy -= neumannValue.dot(uVal) * curQuad.weight() * integrationElement;
       }
@@ -112,10 +111,10 @@ protected:
     return energy;
   }
 
-  template <typename ScalarType>
-  void calculateVectorImpl(const FERequirementType& par, typename Traits::template VectorType<ScalarType> force,
-                           const std::optional<const Eigen::VectorX<ScalarType>> dx = std::nullopt) const {
-    if (not neumannBoundary and not neumannBoundaryLoad)
+  template <typename ST>
+  void calculateVectorImpl(const FERequirementType& par, typename Traits::template VectorType<ST> force,
+                           const std::optional<const Eigen::VectorX<ST>> dx = std::nullopt) const {
+    if (not neumannBoundary_ and not neumannBoundaryLoad_)
       return;
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
@@ -123,8 +122,8 @@ protected:
     const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
     auto& element        = dbElement().localView().element();
 
-    for (auto&& intersection : intersections(neumannBoundary->gridView(), element)) {
-      if (not neumannBoundary->contains(intersection))
+    for (auto&& intersection : intersections(neumannBoundary_->gridView(), element)) {
+      if (not neumannBoundary_->contains(intersection))
         continue;
 
       /// Integration rule along the boundary
@@ -139,29 +138,27 @@ protected:
           const auto udCi = uFunction.evaluateDerivative(quadPos, wrt(coeff(i)));
 
           /// Value of the Neumann data at the current position
-          auto neumannValue = neumannBoundaryLoad(intersection.geometry().global(curQuad.position()), lambda);
+          auto neumannValue = neumannBoundaryLoad_(intersection.geometry().global(curQuad.position()), lambda);
           force.template segment<worldDim>(worldDim * i) -= udCi * neumannValue * curQuad.weight() * intElement;
         }
       }
     }
   }
 
-  template <typename ScalarType>
+  template <typename ST>
   void calculateMatrixImpl(const FERequirementType& par, typename Traits::template MatrixType<> K,
-                           const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {}
+                           const std::optional<const Eigen::VectorX<ST>>& dx = std::nullopt) const {}
 
 private:
   std::function<Eigen::Vector<double, worldDim>(const Dune::FieldVector<double, worldDim>&, const double&)>
-      neumannBoundaryLoad;
-  const BoundaryPatch<GridView>* neumannBoundary;
+      neumannBoundaryLoad_;
+  const BoundaryPatch<GridView>* neumannBoundary_;
 
   /**
-   * @brief Const accessor to the underlying displacement-based finite element (CRTP).
+   * \brief Const accessor to the underlying displacement-based finite element (CRTP).
    *
-   * @return Const reference to the underlying displacement-based finite element.
+   * \return Const reference to the underlying displacement-based finite element.
    */
-  constexpr const DisplacementBasedElement& dbElement() const {
-    return static_cast<const DisplacementBasedElement&>(*this);
-  }
+  constexpr const DFE& dbElement() const { return static_cast<const DFE&>(*this); }
 };
 } // namespace Ikarus

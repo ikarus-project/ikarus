@@ -24,9 +24,9 @@ namespace Ikarus {
  * This class represents the LoadControl control routine. It increments the last parameter of a nonlinear operator
  * and utilizes a nonlinear solver, such as Newton's method, to solve the resulting system at each step.
  *
- * \tparam NonLinearSolver Type of the nonlinear solver used in the control routine.
+ * \tparam NLS Type of the nonlinear solver used in the control routine.
  */
-template <typename NonLinearSolver>
+template <typename NLS>
 class LoadControl : public IObservable<ControlMessages>
 {
 public:
@@ -36,21 +36,20 @@ public:
   /**
    * \brief Constructor for LoadControl.
    *
-   * \param nonLinearSolver_ Shared pointer to the nonlinear solver.
+   * \param nonLinearSolver Shared pointer to the nonlinear solver.
    * \param loadSteps Number of load steps in the control routine.
    * \param tbeginEnd Array representing the range of load parameters [tbegin, tend].
    */
-  LoadControl(const std::shared_ptr<NonLinearSolver>& nonLinearSolver_, int loadSteps,
-              const std::array<double, 2>& tbeginEnd)
-      : nonLinearSolver{nonLinearSolver_},
+  LoadControl(const std::shared_ptr<NLS>& nonLinearSolver, int loadSteps, const std::array<double, 2>& tbeginEnd)
+      : nonLinearSolver_{nonLinearSolver},
         loadSteps_{loadSteps},
         parameterBegin_{tbeginEnd[0]},
         parameterEnd_{tbeginEnd[1]},
         stepSize_{(parameterEnd_ - parameterBegin_) / loadSteps_} {
     static_assert(
         requires {
-          nonLinearSolver->nonLinearOperator().lastParameter() = 0.0;
-          nonLinearSolver->nonLinearOperator().lastParameter() += 0.0;
+          nonLinearSolver_->nonLinearOperator().lastParameter() = 0.0;
+          nonLinearSolver_->nonLinearOperator().lastParameter() += 0.0;
         }, "The last parameter (load factor) must be assignable and incrementable with a double!");
   }
 
@@ -62,7 +61,7 @@ public:
   ControlInformation run();
 
 private:
-  std::shared_ptr<NonLinearSolver> nonLinearSolver;
+  std::shared_ptr<NLS> nonLinearSolver_;
   int loadSteps_;
   double parameterBegin_;
   double parameterEnd_;

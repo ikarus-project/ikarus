@@ -10,16 +10,16 @@
 #pragma once
 
 namespace Ikarus {
-template <typename NonLinearSolver>
-ControlInformation LoadControl<NonLinearSolver>::run() {
+template <typename NLS>
+ControlInformation LoadControl<NLS>::run() {
   ControlInformation info({false});
-  auto& nonOp = nonLinearSolver->nonLinearOperator();
+  auto& nonOp = nonLinearSolver_->nonLinearOperator();
   this->notify(ControlMessages::CONTROL_STARTED, static_cast<std::string>(this->name()));
   auto& loadParameter = nonOp.lastParameter();
 
   loadParameter = 0.0;
   this->notify(ControlMessages::STEP_STARTED, 0, stepSize_);
-  auto solverInfo = nonLinearSolver->solve();
+  auto solverInfo = nonLinearSolver_->solve();
   info.solverInfos.push_back(solverInfo);
   info.totalIterations += solverInfo.iterations;
   if (not solverInfo.success)
@@ -30,7 +30,7 @@ ControlInformation LoadControl<NonLinearSolver>::run() {
   for (int ls = 0; ls < loadSteps_; ++ls) {
     this->notify(ControlMessages::STEP_STARTED, ls, stepSize_);
     loadParameter += stepSize_;
-    solverInfo = nonLinearSolver->solve();
+    solverInfo = nonLinearSolver_->solve();
     info.solverInfos.push_back(solverInfo);
     info.totalIterations += solverInfo.iterations;
     if (not solverInfo.success)

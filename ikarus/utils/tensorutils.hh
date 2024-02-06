@@ -19,14 +19,14 @@
 namespace Ikarus {
 
 /**
- * @brief View an Eigen matrix as an Eigen Tensor with specified dimensions.
+ * \brief View an Eigen matrix as an Eigen Tensor with specified dimensions.
  * \ingroup tensor
- * @tparam Derived Type of the input Eigen matrix.
- * @tparam T Type of the elements in the matrix.
- * @tparam rank Rank of the resulting Tensor.
- * @param matrix Input Eigen matrix to be cast.
- * @param dims Dimensions of the resulting Tensor.
- * @return Eigen::Tensor<typename Derived::Scalar, rank> The casted Eigen Tensor.
+ * \tparam Derived Type of the input Eigen matrix.
+ * \tparam T Type of the elements in the matrix.
+ * \tparam rank Rank of the resulting Tensor.
+ * \param matrix Input Eigen matrix to be cast.
+ * \param dims Dimensions of the resulting Tensor.
+ * \return Eigen::Tensor<typename Derived::Scalar, rank> The casted Eigen Tensor.
  */
 template <typename Derived, typename T, auto rank>
 Eigen::Tensor<typename Derived::Scalar, rank> tensorView(const Eigen::EigenBase<Derived>& matrix,
@@ -37,12 +37,12 @@ Eigen::Tensor<typename Derived::Scalar, rank> tensorView(const Eigen::EigenBase<
 }
 
 /**
- * @brief Computes the dyadic product of two Eigen tensors.
+ * \brief Computes the dyadic product of two Eigen tensors.
  * \details The components of the result read  \f[ \CI_{ijkl} = A_{ij}B_{kl}. \f]
  * \ingroup tensor
- * @param A_ij First tensor.
- * @param B_kl Second tensor.
- * @return  Resulting tensor after the dyadic product.
+ * \param A_ij First tensor.
+ * \param B_kl Second tensor.
+ * \return  Resulting tensor after the dyadic product.
  */
 auto dyadic(const auto& A_ij, const auto& B_kl) {
   Eigen::array<Eigen::IndexPair<long>, 0> empty_index_list = {};
@@ -50,11 +50,11 @@ auto dyadic(const auto& A_ij, const auto& B_kl) {
 }
 
 /**
- * @brief Generates a symmetric identity fourth-order tensor.
+ * \brief Generates a symmetric identity fourth-order tensor.
  * \ingroup tensor
- * @tparam ScalarType Type of the elements in the tensor.
- * @tparam dim Dimension of the tensor.
- * @return  Symmetric identity fourth-order tensor.
+ * \tparam ScalarType Type of the elements in the tensor.
+ * \tparam dim Dimension of the tensor.
+ * \return  Symmetric identity fourth-order tensor.
  */
 template <typename ScalarType = double, int dim = 3>
 auto symmetricIdentityFourthOrder() {
@@ -68,15 +68,15 @@ auto symmetricIdentityFourthOrder() {
 }
 
 /**
- * @brief Generates a symmetric fourth-order tensor based on two second-order input tensors.
+ * \brief Generates a symmetric fourth-order tensor based on two second-order input tensors.
  * \ingroup tensor
  * \details The components of the result read  \f[ \CI_{ijkl} = \frac{1}{2} \left(A_{ik}B_{jl}+A_{il}B_{jk} \right) .
  * \f]
- * @tparam ScalarType Type of the elements in the tensors.
- * @tparam dim Dimension of the tensors.
- * @param A First tensor.
- * @param B Second tensor.
- * @return  Symmetric fourth-order tensor.
+ * \tparam ScalarType Type of the elements in the tensors.
+ * \tparam dim Dimension of the tensors.
+ * \param A First tensor.
+ * \param B Second tensor.
+ * \return  Symmetric fourth-order tensor.
  */
 template <typename ScalarType = double, int dim = 3>
 auto symmetricFourthOrder(const auto& A, const auto& B) {
@@ -90,12 +90,12 @@ auto symmetricFourthOrder(const auto& A, const auto& B) {
 }
 
 /**
- * @brief Generates an identity fourth-order tensor.
+ * \brief Generates an identity fourth-order tensor.
  *  \ingroup tensor
  * \details The components of the result read  \f[ \CI_{ijkl} = \de_{ij}\de_{kl}. \f]
- * @tparam ScalarType Type of the elements in the tensor.
- * @tparam dim Dimension of the tensor.
- * @return  Identity fourth-order tensor.
+ * \tparam ScalarType Type of the elements in the tensor.
+ * \tparam dim Dimension of the tensor.
+ * \return  Identity fourth-order tensor.
  */
 template <typename ScalarType = double, int dim = 3>
 auto identityFourthOrder() {
@@ -108,15 +108,15 @@ auto identityFourthOrder() {
 }
 
 /**
- * @brief Computes the IKJL product of two matrices.
+ * \brief Computes the IKJL product of two matrices.
  *  \ingroup tensor
  * \details The components of the result read  \f[ \CI_{ijkl} = A_{ik}B_{jl}, \f] which simply swaps the inner slots
  * `j`and `k`
- * @tparam AType Type of the first matrix.
- * @tparam BType Type of the second matrix.
- * @param A First matrix.
- * @param B Second matrix.
- * @return  Resulting tensor of the IKJL product.
+ * \tparam AType Type of the first matrix.
+ * \tparam BType Type of the second matrix.
+ * \param A First matrix.
+ * \param B Second matrix.
+ * \return  Resulting tensor of the IKJL product.
  */
 template <typename AType, typename BType>
 auto fourthOrderIKJL(const Eigen::MatrixBase<AType>& A, const Eigen::MatrixBase<BType>& B) {
@@ -134,12 +134,12 @@ auto fourthOrderIKJL(const Eigen::MatrixBase<AType>& A, const Eigen::MatrixBase<
 }
 
 /**
- * @brief Creates a symmetric fourth-order tensor in the two specified slots of the input tensor.
+ * \brief Creates a symmetric fourth-order tensor in the two specified slots of the input tensor.
  *  \ingroup tensor
- * @tparam ScalarType Type of the elements in the tensor.
- * @param t Input tensor.
- * @param slots Indices of the slots to be swapped.
- * @return  Fourth-order Tensor which is symmetric in the given slots.
+ * \tparam ScalarType Type of the elements in the tensor.
+ * \param t Input tensor.
+ * \param slots Indices of the slots to be swapped.
+ * \return  Fourth-order Tensor which is symmetric in the given slots.
  */
 template <typename ScalarType, long int dim>
 auto symTwoSlots(const Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<dim, dim, dim, dim>>& t,
@@ -151,11 +151,11 @@ auto symTwoSlots(const Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<dim, dim,
 }
 
 /**
- * @brief Converts 2D indices to Voigt notation index.
+ * \brief Converts 2D indices to Voigt notation index.
  *  \ingroup tensor
- * @param i Row index.
- * @param j Column index.
- * @return Eigen::Index Voigt notation index.
+ * \param i Row index.
+ * \param j Column index.
+ * \return Eigen::Index Voigt notation index.
  *
  * This function converts 2D indices (i, j) to a Voigt notation index.
  * The Voigt notation is used to represent the six unique components of a symmetric 3x3 matrix
@@ -177,11 +177,11 @@ constexpr Eigen::Index toVoigt(Eigen::Index i, Eigen::Index j) noexcept {
 }
 
 /**
- * @brief Converts a fourth-order tensor of fixed size 3x3x3x3 to a Voigt notation matrix of size 6x6.
+ * \brief Converts a fourth-order tensor of fixed size 3x3x3x3 to a Voigt notation matrix of size 6x6.
  *  \ingroup tensor
- * @tparam ScalarType Data type of the tensor elements.
- * @param ft Fourth-order tensor .
- * @return Voigt notation matrix.
+ * \tparam ScalarType Data type of the tensor elements.
+ * \param ft Fourth-order tensor .
+ * \return Voigt notation matrix.
  *
  * This function converts a fourth-order tensor to a Voigt notation matrix, which is a symmetric 6x6 matrix
  * containing the unique components of the input tensor. The mapping from the tensor indices to the Voigt notation
@@ -202,14 +202,14 @@ Eigen::Matrix<ScalarType, 6, 6> toVoigt(const Eigen::TensorFixedSize<ScalarType,
 }
 
 /**
- * @brief Converts a square 2x2 or 3x3 matrix to a Voigt notation vector.
+ * \brief Converts a square 2x2 or 3x3 matrix to a Voigt notation vector.
  *  \ingroup tensor
- * @tparam ST Data type of the matrix elements.
- * @tparam size Number of rows and columns of the square matrix.
- * @tparam Options Eigen matrix options.
- * @param E Input matrix of size (size x size).
- * @param isStrain Flag indicating whether the conversion is for strain (true) or not (false).
- * @return  Vector with components in Voigt notation vector.
+ * \tparam ST Data type of the matrix elements.
+ * \tparam size Number of rows and columns of the square matrix.
+ * \tparam Options Eigen matrix options.
+ * \param E Input matrix of size (size x size).
+ * \param isStrain Flag indicating whether the conversion is for strain (true) or not (false).
+ * \return  Vector with components in Voigt notation vector.
  *
  * This function converts a square matrix to a Voigt notation vector, which contains the unique components of
  * the input matrix. The mapping from the matrix indices to the Voigt notation indices is performed by the toVoigt
@@ -237,13 +237,13 @@ auto toVoigt(const Eigen::Matrix<ST, size, size, Options, size, size>& E, bool i
 }
 
 /**
- * @brief Converts a vector given in Voigt notation to a matrix.
+ * \brief Converts a vector given in Voigt notation to a matrix.
  *  \ingroup tensor
- * @tparam ST Scalar type of the vector elements.
- * @tparam size Size of the Voigt notation vector.
- * @param EVoigt Voigt notation vector.
- * @param isStrain Flag indicating whether the vector represents a strain (default is true).
- * @return Matrix corresponding to the vector in Voigt notation.
+ * \tparam ST Scalar type of the vector elements.
+ * \tparam size Size of the Voigt notation vector.
+ * \param EVoigt Voigt notation vector.
+ * \param isStrain Flag indicating whether the vector represents a strain (default is true).
+ * \return Matrix corresponding to the vector in Voigt notation.
  *  \details
  * This function converts a vector given in Voigt notation to the corresponding matrix. The conversion depends on the
  * size The parameter `isStrain` is used to determine the conversion factor for off-diagonal components, which need to
@@ -270,10 +270,10 @@ auto fromVoigt(const Eigen::Vector<ST, size>& EVoigt, bool isStrain = true) {
 }
 
 /**
- * @brief Converts a Voigt notation index to matrix indices.
+ * \brief Converts a Voigt notation index to matrix indices.
  *  \ingroup tensor
- * @param i Voigt notation index.
- * @return Matrix indices corresponding to the Voigt notation index.
+ * \param i Voigt notation index.
+ * \return Matrix indices corresponding to the Voigt notation index.
  *  \details
  * This function converts a Voigt notation index to the corresponding matrix indices. The mapping is based on the
  * assumption that the Voigt notation indices 0, 1, and 2 represent the diagonal components `00`, `11`, and `22`,
@@ -298,11 +298,11 @@ constexpr std::array<size_t, 2> fromVoigt(size_t i) {
 }
 
 /**
- * @brief Converts a matrix in Voigt notation to a Fourth-order tensor.
+ * \brief Converts a matrix in Voigt notation to a Fourth-order tensor.
  *  \ingroup tensor
- * @tparam ScalarType Scalar type of the matrix elements.
- * @param CVoigt Voigt notation matrix.
- * @return Fourth-order tensor corresponding to the matrix in Voigt notation.
+ * \tparam ScalarType Scalar type of the matrix elements.
+ * \param CVoigt Voigt notation matrix.
+ * \return Fourth-order tensor corresponding to the matrix in Voigt notation.
  *  \details
  * This function converts a Voigt notation matrix to the corresponding 4th-order tensor. The function uses the
  * `fromVoigt` function to map matrix indices to tensor indices. The resulting tensor is symmetric due to symmetry
@@ -323,14 +323,14 @@ auto fromVoigt(const Eigen::Matrix<ScalarType, 6, 6>& CVoigt) {
 }
 
 /**
- * @brief Calculates the 2D transformation matrix.
+ * \brief Calculates the 2D transformation matrix.
  *
- * @details This function computes the transformation matrix needed to transform second-order tensors
+ * \details This function computes the transformation matrix needed to transform second-order tensors
  * represented in Voigt notation from local to global coordinate system for 2D elements.
  *
- * @tparam Geometry The geometry type.
- * @param geometry Reference to the geometry object.
- * @return The transformation matrix for 2D elements.
+ * \tparam Geometry The geometry type.
+ * \param geometry Reference to the geometry object.
+ * \return The transformation matrix for 2D elements.
  */
 template <typename Geometry>
 Eigen::Matrix3d calcTransformationMatrix2D(const Geometry& geometry) {
@@ -356,14 +356,14 @@ Eigen::Matrix3d calcTransformationMatrix2D(const Geometry& geometry) {
 }
 
 /**
- * @brief Calculates the 3D transformation matrix.
+ * \brief Calculates the 3D transformation matrix.
  *
- * @details This function computes the transformation matrix needed to transform second-order tensors
+ * \details This function computes the transformation matrix needed to transform second-order tensors
  * represented in Voigt notation from local to global coordinate system for 3D elements.
  *
- * @tparam Geometry The geometry type.
- * @param geometry Reference to the geometry object.
- * @return The transformation matrix for 3D elements.
+ * \tparam Geometry The geometry type.
+ * \param geometry Reference to the geometry object.
+ * \return The transformation matrix for 3D elements.
  */
 template <typename Geometry>
 Eigen::Matrix<double, 6, 6> calcTransformationMatrix3D(const Geometry& geometry) {

@@ -6,8 +6,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file truncatedconjugategradient.hh
- * @brief Definition of TruncatedConjugateGradient class for solving linear systems using truncated conjugate gradient
+ * \file truncatedconjugategradient.hh
+ * \brief Definition of TruncatedConjugateGradient class for solving linear systems using truncated conjugate gradient
  * method.
  *
  * This file defines the TruncatedConjugateGradient class, which is an iterative solver for solving linear systems
@@ -52,18 +52,18 @@ namespace internal {
 
   /**
    * @internal
-   * @brief Low-level truncated conjugate gradient algorithm.
-   * @tparam MatrixType Type of the matrix A.
-   * @tparam Rhs Type of the right-hand side vector b.
-   * @tparam Dest Type of the solution vector x.
-   * @tparam Preconditioner Type of the preconditioner.
-   * @param mat The matrix A.
-   * @param rhs The right-hand side vector b.
-   * @param x On input and initial solution, on output the computed solution.
-   * @param precond A preconditioner being able to efficiently solve for an approximation of Ax=b (regardless of b).
-   * @param iters On input the max number of iterations, on output the number of performed iterations.
-   * @param tol_error On input the tolerance error, on output an estimation of the relative error.
-   * @param _info Information about the truncated conjugate gradient algorithm.
+   * \brief Low-level truncated conjugate gradient algorithm.
+   * \tparam MatrixType Type of the matrix A.
+   * \tparam Rhs Type of the right-hand side vector b.
+   * \tparam Dest Type of the solution vector x.
+   * \tparam Preconditioner Type of the preconditioner.
+   * \param mat The matrix A.
+   * \param rhs The right-hand side vector b.
+   * \param x On input and initial solution, on output the computed solution.
+   * \param precond A preconditioner being able to efficiently solve for an approximation of Ax=b (regardless of b).
+   * \param iters On input the max number of iterations, on output the number of performed iterations.
+   * \param tol_error On input the tolerance error, on output an estimation of the relative error.
+   * \param _info Information about the truncated conjugate gradient algorithm.
    */
   template <typename MatrixType, typename Rhs, typename Dest, typename Preconditioner>
   void truncated_conjugate_gradient(const MatrixType& mat, const Rhs& rhs, Dest& x, const Preconditioner& precond,
@@ -186,20 +186,19 @@ namespace internal {
 
 /**
  * @class TruncatedConjugateGradient
- * @brief Iterative solver for solving linear systems using the truncated conjugate gradient method.
- * @tparam MatrixType_ Type of the matrix A.
- * @tparam UpLo_ Type of the triangular part of the matrix (Lower or Upper or both).
- * @tparam Preconditioner_ Type of the preconditioner.
+ * \brief Iterative solver for solving linear systems using the truncated conjugate gradient method.
+ * \tparam M Type of the matrix A.
+ * \tparam upLo Type of the triangular part of the matrix (Lower or Upper or both).
+ * \tparam PC Type of the preconditioner.
  */
-template <typename MatrixType_, int UpLo_, typename Preconditioner_>
-class TruncatedConjugateGradient
-    : public IterativeSolverBase<TruncatedConjugateGradient<MatrixType_, UpLo_, Preconditioner_> >
+template <typename M, int upLo, typename PC>
+class TruncatedConjugateGradient : public IterativeSolverBase<TruncatedConjugateGradient<M, upLo, PC> >
 {
 public:
   typedef IterativeSolverBase<TruncatedConjugateGradient> Base;
   TruncatedConjugateGradient(TruncatedConjugateGradient&& other) noexcept
       : Base(std::move(other)),
-        algInfo{other.algInfo} {}
+        algInfo_{other.algInfo_} {}
 
 private:
   using Base::m_error;
@@ -207,31 +206,31 @@ private:
   using Base::m_isInitialized;
   using Base::m_iterations;
   using Base::matrix;
-  mutable TCGInfo<typename MatrixType_::RealScalar> algInfo;
+  mutable TCGInfo<typename M::RealScalar> algInfo_;
 
 public:
-  typedef MatrixType_ MatrixType;
-  typedef typename MatrixType::Scalar Scalar;
-  typedef typename MatrixType::RealScalar RealScalar;
-  typedef Preconditioner_ Preconditioner;
+  using MatrixType     = M;
+  using Scalar         = typename MatrixType::Scalar;
+  using RealScalar     = typename MatrixType::RealScalar;
+  using Preconditioner = PC;
 
   enum
   {
-    UpLo = UpLo_
+    UpLo = upLo
   };
 
 public:
   /**
-   * @brief Get information about the truncated conjugate gradient algorithm.
-   * @return Information about the algorithm.
+   * \brief Get information about the truncated conjugate gradient algorithm.
+   * \return Information about the algorithm.
    */
-  TCGInfo<typename MatrixType::RealScalar> getInfo() { return algInfo; }
+  TCGInfo<typename MatrixType::RealScalar> getInfo() { return algInfo_; }
 
   /**
-   * @brief Set information about the truncated conjugate gradient algorithm.
-   * @param _alginfo Information about the algorithm.
+   * \brief Set information about the truncated conjugate gradient algorithm.
+   * \param _alginfo Information about the algorithm.
    */
-  void setInfo(TCGInfo<typename MatrixType::RealScalar> _alginfo) { this->algInfo = _alginfo; }
+  void setInfo(TCGInfo<typename MatrixType::RealScalar> alginfo) { this->algInfo_ = alginfo; }
   /** Default constructor. */
   TruncatedConjugateGradient()
       : Base() {}
@@ -275,11 +274,9 @@ public:
 
     RowMajorWrapper row_mat(matrix());
     internal::truncated_conjugate_gradient(SelfAdjointWrapper(row_mat), b, x, Base::m_preconditioner, m_iterations,
-                                           m_error, algInfo);
+                                           m_error, algInfo_);
     m_info = m_error <= Base::m_tolerance ? Success : NoConvergence;
   }
-
-protected:
 };
 
 } // end namespace Eigen

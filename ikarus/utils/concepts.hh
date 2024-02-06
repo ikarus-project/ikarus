@@ -35,11 +35,11 @@ namespace Concepts {
 
   /**
    * \concept FlatInterLeavedBasis
-   * @brief Concept to check if a basis uses FlatInterleaved indexing strategy.
+   * \brief Concept to check if a basis uses FlatInterleaved indexing strategy.
    *
    * This concept checks if the given Basis type uses FlatInterleaved indexing strategy.
    *
-   * @tparam Basis The basis type.
+   * \tparam Basis The basis type.
    */
   template <typename Basis>
   concept FlatInterLeavedBasis = requires {
@@ -68,55 +68,55 @@ namespace Concepts {
 
   /**
    * \concept LagrangeNode
-   * @brief Concept to check if a node in a basis tree is a Lagrangian node.
+   * \brief Concept to check if a node in a basis tree is a Lagrangian node.
    *
    *
-   * @tparam Node The node.
+   * \tparam N The node.
    */
-  template <typename Node>
-  concept LagrangeNode = Impl::LagrangeNodeHelper<Dune::Functions::LagrangeNode, Node>::value;
+  template <typename N>
+  concept LagrangeNode = Impl::LagrangeNodeHelper<Dune::Functions::LagrangeNode, N>::value;
 
   /**
    * \concept LagrangeNode
-   * @brief Concept to check if a node in a basis tree is a Lagrangian node with specific order.
+   * \brief Concept to check if a node in a basis tree is a Lagrangian node with specific order.
    *
    *
-   * @tparam Node The node.
+   * \tparam N The node.
    */
-  template <typename Node, int order>
-  concept LagrangeNodeOfOrder = Impl::LagrangeNodeHelperOfOrder<Dune::Functions::LagrangeNode, Node, order>::value;
+  template <typename N, int order>
+  concept LagrangeNodeOfOrder = Impl::LagrangeNodeHelperOfOrder<Dune::Functions::LagrangeNode, N, order>::value;
 
   /**
    * \concept FlatLexicographicBasis
-   * @brief Concept to check if a basis uses FlatLexicographic indexing strategy.
+   * \brief Concept to check if a basis uses FlatLexicographic indexing strategy.
    *
    * This concept checks if the given Basis type uses FlatLexicographic indexing strategy.
    *
-   * @tparam Basis The basis type.
+   * \tparam B The basis type.
    */
-  template <typename Basis>
+  template <typename B>
   concept FlatLexicographicBasis = requires {
-    std::is_same_v<typename Basis::PreBasis::IndexMergingStrategy, Dune::Functions::BasisFactory::FlatLexicographic>;
+    std::is_same_v<typename B::PreBasis::IndexMergingStrategy, Dune::Functions::BasisFactory::FlatLexicographic>;
   };
 
   /**
    * \concept FlatIndexBasis
-   * @brief Concept to check if a basis uses FlatIndex indexing strategy.
+   * \brief Concept to check if a basis uses FlatIndex indexing strategy.
    *
    * This concept checks if the given Basis type uses either FlatLexicographic or FlatInterleaved indexing strategy.
    *
-   * @tparam Basis The basis type.
+   * \tparam B The basis type.
    */
-  template <typename Basis>
-  concept FlatIndexBasis = FlatLexicographicBasis<Basis> or FlatInterLeavedBasis<Basis>;
+  template <typename B>
+  concept FlatIndexBasis = FlatLexicographicBasis<B> or FlatInterLeavedBasis<B>;
 
   /**
    * \concept BlockedInterLeavedBasis
-   * @brief Concept to check if a basis uses BlockedInterleaved indexing strategy.
+   * \brief Concept to check if a basis uses BlockedInterleaved indexing strategy.
    *
    * This concept checks if the given Basis type uses BlockedInterleaved indexing strategy.
    *
-   * @tparam Basis The basis type.
+   * \tparam Basis The basis type.
    */
   template <typename Basis>
   concept BlockedInterLeavedBasis = requires {
@@ -125,70 +125,70 @@ namespace Concepts {
 
   /**
    * \concept BlockedLexicographicBasis
-   * @brief Concept to check if a basis uses BlockedLexicographic indexing strategy.
+   * \brief Concept to check if a basis uses BlockedLexicographic indexing strategy.
    *
    * This concept checks if the given Basis type uses BlockedLexicographic indexing strategy.
    *
-   * @tparam Basis The basis type.
+   * \tparam B The basis type.
    */
-  template <typename Basis>
+  template <typename B>
   concept BlockedLexicographicBasis = requires {
-    std::is_same_v<typename Basis::PreBasis::IndexMergingStrategy, Dune::Functions::BasisFactory::BlockedLexicographic>;
+    std::is_same_v<typename B::PreBasis::IndexMergingStrategy, Dune::Functions::BasisFactory::BlockedLexicographic>;
   };
 
   /**
    * \concept DuneLocalBasis
-   * @brief Concept to check if a local basis is a duneLocalBasis.
-   * @tparam DuneLocalBasisImpl The basis type.
+   * \brief Concept to check if a local basis is a duneLocalBasis.
+   * \tparam DLB The dune local basis type .
    */
-  template <typename DuneLocalBasisImpl>
-  concept DuneLocalBasis = requires(DuneLocalBasisImpl& duneLocalBasis) {
-    typename DuneLocalBasisImpl::Traits::RangeType;
-    typename DuneLocalBasisImpl::Traits::JacobianType;
-    DuneLocalBasisImpl::Traits::dimDomain;
-    typename DuneLocalBasisImpl::Traits::DomainType;
+  template <typename DLB>
+  concept DuneLocalBasis = requires(DLB& duneLocalBasis) {
+    typename DLB::Traits::RangeType;
+    typename DLB::Traits::JacobianType;
+    DLB::Traits::dimDomain;
+    typename DLB::Traits::DomainType;
 
-    typename DuneLocalBasisImpl::Traits::DomainFieldType;
-    typename DuneLocalBasisImpl::Traits::RangeFieldType;
+    typename DLB::Traits::DomainFieldType;
+    typename DLB::Traits::RangeFieldType;
 
-    duneLocalBasis.evaluateFunction(std::declval<typename DuneLocalBasisImpl::Traits::DomainType>(),
-                                    std::declval<std::vector<typename DuneLocalBasisImpl::Traits::RangeType>&>());
-    duneLocalBasis.evaluateJacobian(std::declval<typename DuneLocalBasisImpl::Traits::DomainType>(),
-                                    std::declval<std::vector<typename DuneLocalBasisImpl::Traits::JacobianType>&>());
+    duneLocalBasis.evaluateFunction(std::declval<typename DLB::Traits::DomainType>(),
+                                    std::declval<std::vector<typename DLB::Traits::RangeType>&>());
+    duneLocalBasis.evaluateJacobian(std::declval<typename DLB::Traits::DomainType>(),
+                                    std::declval<std::vector<typename DLB::Traits::JacobianType>&>());
   };
 
   /**
    * \concept BlockedIndexBasis
-   * @brief Concept to check if a basis uses either BlockedLexicographic or BlockedInterleaved indexing strategy.
+   * \brief Concept to check if a basis uses either BlockedLexicographic or BlockedInterleaved indexing strategy.
    *
    * This concept checks if the given Basis type uses either BlockedLexicographic or BlockedInterleaved indexing
    * strategy.
    *
-   * @tparam Basis The basis type.
+   * \tparam B The basis type.
    */
-  template <typename Basis>
-  concept BlockedIndexBasis = BlockedLexicographicBasis<Basis> or BlockedInterLeavedBasis<Basis>;
+  template <typename B>
+  concept BlockedIndexBasis = BlockedLexicographicBasis<B> or BlockedInterLeavedBasis<B>;
 
   /**
    * \concept PowerBasis
-   * @brief Concept to check if a basis uses power indexing strategy.
+   * \brief Concept to check if a basis uses power indexing strategy.
    *
    * This concept checks if the given Basis type uses power indexing strategy.
    *
-   * @tparam Basis The basis type.
+   * \tparam B The basis type.
    */
-  template <typename Basis>
-  concept PowerBasis = requires { Basis::PreBasis::Node::isPower == true; };
+  template <typename B>
+  concept PowerBasis = requires { B::PreBasis::Node::isPower == true; };
 
   /**
-   * @concept PathFollowingStrategy
-   * @brief Concept defining the requirements for a path-following strategy.
-   * @tparam PathFollowingImpl Type representing the path-following strategy.
-   * @tparam NonLinearOperator Type representing the non-linear operator.
-   * @tparam SubsidiaryArgs Type representing the subsidiary arguments.
+   * \concept PathFollowingStrategy
+   * \brief Concept defining the requirements for a path-following strategy.
+   * \tparam PF Type representing the path-following strategy.
+   * \tparam NLO Type representing the non-linear operator.
+   * \tparam SA Type representing the subsidiary arguments.
    */
-  template <typename PathFollowingImpl, typename NonLinearOperator, typename SubsidiaryArgs>
-  concept PathFollowingStrategy = requires(PathFollowingImpl pft, NonLinearOperator nop, SubsidiaryArgs args) {
+  template <typename PF, typename NLO, typename SA>
+  concept PathFollowingStrategy = requires(PF pft, NLO nop, SA args) {
     { pft(args) } -> std::same_as<void>;
     { pft.initialPrediction(nop, args) } -> std::same_as<void>;
     { pft.intermediatePrediction(nop, args) } -> std::same_as<void>;
@@ -196,170 +196,168 @@ namespace Concepts {
 
   /**
    * \concept AdaptiveStepSizingStrategy
-   * @brief Concept to check if a type implements all the needed functions to be an adaptive step sizing method.
+   * \brief Concept to check if a type implements all the needed functions to be an adaptive step sizing method.
    *
-   * @tparam AdaptiveStepSizing The adaptive step sizing type.
-   * @tparam NonLinearSolverInformation The non-linear solver information type.
-   * @tparam SubsidiaryArgs The subsidiary arguments type.
+   * \tparam ASS The adaptive step sizing type.
+   * \tparam NLSI The non-linear solver information type.
+   * \tparam SA The subsidiary arguments type.
    */
-  template <typename AdaptiveStepSizing, typename NonLinearSolverInformation, typename SubsidiaryArgs,
-            typename NonLinearOperator>
-  concept AdaptiveStepSizingStrategy = requires(AdaptiveStepSizing adaptiveSS, NonLinearSolverInformation info,
-                                                SubsidiaryArgs args, NonLinearOperator nop) {
-    { adaptiveSS(info, args, nop) } -> std::same_as<void>;
-    { adaptiveSS.targetIterations() } -> std::same_as<int>;
-    { adaptiveSS.setTargetIterations(std::declval<int>()) } -> std::same_as<void>;
+  template <typename ASS, typename NLSI, typename SA, typename NonLinearOperator>
+  concept AdaptiveStepSizingStrategy = requires(ASS adaptiveStepSizing, NLSI info, SA args, NonLinearOperator nop) {
+    { adaptiveStepSizing(info, args, nop) } -> std::same_as<void>;
+    { adaptiveStepSizing.targetIterations() } -> std::same_as<int>;
+    { adaptiveStepSizing.setTargetIterations(std::declval<int>()) } -> std::same_as<void>;
   };
 
   /**
    * \concept LinearSolverCheck
-   * @brief Concept to check if a linear solver implements all the needed functions for given vector and matrix types.
+   * \brief Concept to check if a linear solver implements all the needed functions for given vector and matrix types.
    *
-   * @tparam LinearSolver The linear solver type.
-   * @tparam MatrixType The matrix type.
-   * @tparam VectorType The vector type.
+   * \tparam LS The linear solver type.
+   * \tparam M The matrix type.
+   * \tparam V The vector type.
    */
-  template <typename LinearSolver, typename MatrixType, typename VectorType>
-  concept LinearSolverCheck = requires(LinearSolver& linearSolver, MatrixType& Ax, VectorType& vec) {
-    linearSolver.analyzePattern(Ax);
-    linearSolver.factorize(Ax);
+  template <typename LS, typename M, typename V>
+  concept LinearSolverCheck = requires(LS& linearSolver, M& A, V& vec) {
+    linearSolver.analyzePattern(A);
+    linearSolver.factorize(A);
     linearSolver.solve(vec, vec);
   };
 
   /**
    * \concept NonLinearSolverCheckForPathFollowing
-   * @brief Concept to check if a non-linear solver with its non-linear operator satisfies  requirements for path
+   * \brief Concept to check if a non-linear solver with its non-linear operator satisfies  requirements for path
    * following.
    *
-   * @tparam NonLinearSolver The non-linear solver type.
+   * \tparam NLS The non-linear solver type.
    */
-  template <typename NonLinearSolver>
+  template <typename NLS>
   concept NonLinearSolverCheckForPathFollowing = requires {
-    std::tuple_size<typename NonLinearSolver::NonLinearOperator::ParameterValues>::value == 2;
-    not(std::is_same_v<typename NonLinearSolver::NonLinearOperator::ValueType, double> and
-        ((traits::isSpecializationTypeAndNonTypes<
-             Eigen::Matrix, typename NonLinearSolver::NonLinearOperator::DerivativeType>::value) or
-         (traits::isSpecializationTypeNonTypeAndType<
-             Eigen::SparseMatrix, typename NonLinearSolver::NonLinearOperator::DerivativeType>::value)));
+    std::tuple_size<typename NLS::NonLinearOperator::ParameterValues>::value == 2;
+    not(std::is_same_v<typename NLS::NonLinearOperator::ValueType, double> and
+        ((traits::isSpecializationTypeAndNonTypes<Eigen::Matrix,
+                                                  typename NLS::NonLinearOperator::DerivativeType>::value) or
+         (traits::isSpecializationTypeNonTypeAndType<Eigen::SparseMatrix,
+                                                     typename NLS::NonLinearOperator::DerivativeType>::value)));
   };
 
   /**
-   * @concept MultiplyAble
-   * @brief Concept defining the requirements for types that support multiplication.
-   * @tparam L Type of the left operand.
-   * @tparam R Type of the right operand.
-   * @details The concept specifies that instances of types `L` and `R` can be multiplied using the `*` operator.
+   * \concept MultiplyAble
+   * \brief Concept defining the requirements for types that support multiplication.
+   * \tparam L Type of the left operand.
+   * \tparam R Type of the right operand.
+   * \details The concept specifies that instances of types `L` and `R` can be multiplied using the `*` operator.
    */
   template <typename L, typename R>
   concept MultiplyAble = requires(L x, R y) { x* y; };
 
   /**
-   * @concept AddAble
-   * @brief Concept defining the requirements for types that support addition.
-   * @tparam L Type of the left operand.
-   * @tparam R Type of the right operand.
-   * @details The concept specifies that instances of types `L` and `R` can be added using the `+` operator.
+   * \concept AddAble
+   * \brief Concept defining the requirements for types that support addition.
+   * \tparam L Type of the left operand.
+   * \tparam R Type of the right operand.
+   * \details The concept specifies that instances of types `L` and `R` can be added using the `+` operator.
    */
   template <typename L, typename R>
   concept AddAble = requires(L x, R y) { x + y; };
 
   /**
-   * @concept SubstractAble
-   * @brief Concept defining the requirements for types that support subtraction.
-   * @tparam L Type of the left operand.
-   * @tparam R Type of the right operand.
-   * @details The concept specifies that instances of types `L` and `R` can be subtracted using the `-` operator.
+   * \concept SubstractAble
+   * \brief Concept defining the requirements for types that support subtraction.
+   * \tparam L Type of the left operand.
+   * \tparam R Type of the right operand.
+   * \details The concept specifies that instances of types `L` and `R` can be subtracted using the `-` operator.
    */
   template <typename L, typename R>
   concept SubstractAble = requires(L x, R y) { x - y; };
 
   /**
-   * @concept MultiplyAssignAble
-   * @brief Concept defining the requirements for types that support in-place multiplication.
-   * @tparam L Type of the left operand.
-   * @tparam R Type of the right operand.
-   * @details The concept specifies that instances of type `L` can be multiplied in-place by instances of type `R`
+   * \concept MultiplyAssignAble
+   * \brief Concept defining the requirements for types that support in-place multiplication.
+   * \tparam L Type of the left operand.
+   * \tparam R Type of the right operand.
+   * \details The concept specifies that instances of type `L` can be multiplied in-place by instances of type `R`
    * using the `*=` operator.
    */
   template <typename L, typename R>
   concept MultiplyAssignAble = requires(L x, R y) { x *= y; };
 
   /**
-   * @concept DivideAssignAble
-   * @brief Concept defining the requirements for types that support in-place division.
-   * @tparam L Type of the left operand.
-   * @tparam R Type of the right operand.
-   * @details The concept specifies that instances of type `L` can be divided in-place by instances of type `R` using
+   * \concept DivideAssignAble
+   * \brief Concept defining the requirements for types that support in-place division.
+   * \tparam L Type of the left operand.
+   * \tparam R Type of the right operand.
+   * \details The concept specifies that instances of type `L` can be divided in-place by instances of type `R` using
    * the `/=` operator.
    */
   template <typename L, typename R>
   concept DivideAssignAble = requires(L x, R y) { x /= y; };
 
   /**
-   * @concept AddAssignAble
-   * @brief Concept defining the requirements for types that support in-place addition.
-   * @tparam L Type of the left operand.
-   * @tparam R Type of the right operand.
-   * @details The concept specifies that instances of type `L` can be added in-place by instances of type `R` using
+   * \concept AddAssignAble
+   * \brief Concept defining the requirements for types that support in-place addition.
+   * \tparam L Type of the left operand.
+   * \tparam R Type of the right operand.
+   * \details The concept specifies that instances of type `L` can be added in-place by instances of type `R` using
    * the `+=` operator.
    */
   template <typename L, typename R>
   concept AddAssignAble = requires(L x, R y) { x += y; };
 
   /**
-   * @concept SubstractAssignAble
-   * @brief Concept defining the requirements for types that support in-place subtraction.
-   * @tparam L Type of the left operand.
-   * @tparam R Type of the right operand.
-   * @details The concept specifies that instances of type `L` can be subtracted in-place by instances of type `R`
+   * \concept SubstractAssignAble
+   * \brief Concept defining the requirements for types that support in-place subtraction.
+   * \tparam L Type of the left operand.
+   * \tparam R Type of the right operand.
+   * \details The concept specifies that instances of type `L` can be subtracted in-place by instances of type `R`
    * using the `-=` operator.
    */
   template <typename L, typename R>
   concept SubstractAssignAble = requires(L x, R y) { x -= y; };
 
   /**
-   * @concept DivideAble
-   * @brief Concept defining the requirements for types that support division.
-   * @tparam L Type of the left operand.
-   * @tparam R Type of the right operand.
-   * @details The concept specifies that instances of types `L` and `R` can be divided using the `/` operator.
+   * \concept DivideAble
+   * \brief Concept defining the requirements for types that support division.
+   * \tparam L Type of the left operand.
+   * \tparam R Type of the right operand.
+   * \details The concept specifies that instances of types `L` and `R` can be divided using the `/` operator.
    */
   template <typename L, typename R>
   concept DivideAble = requires(L x, R y) { x / y; };
 
   /**
-   * @concept NegateAble
-   * @brief Concept defining the requirements for types that support negation.
-   * @tparam L Type of the operand.
-   * @details The concept specifies that instances of type `L` can be negated using the unary `-` operator.
+   * \concept NegateAble
+   * \brief Concept defining the requirements for types that support negation.
+   * \tparam L Type of the operand.
+   * \details The concept specifies that instances of type `L` can be negated using the unary `-` operator.
    */
   template <typename L>
   concept NegateAble = requires(L x) { -x; };
 
   /**
-   * @concept TransposeAble
-   * @brief Concept defining the requirements for types that support transposition.
-   * @tparam L Type of the operand.
-   * @details The concept specifies that instances of type `L` can be transposed using the `transpose` function.
+   * \concept TransposeAble
+   * \brief Concept defining the requirements for types that support transposition.
+   * \tparam L Type of the operand.
+   * \details The concept specifies that instances of type `L` can be transposed using the `transpose` function.
    */
   template <typename L>
   concept TransposeAble = requires(L x) { transpose(x); };
 
   /**
-   * @concept IsFunctorWithArgs
-   * @brief Concept defining the requirements for functors with arguments.
-   * @tparam Op Type of the functor.
-   * @tparam Args Types of the arguments.
-   * @details The concept specifies that an instance of type `Op` can be invoked with arguments of types `Args`.
+   * \concept IsFunctorWithArgs
+   * \brief Concept defining the requirements for functors with arguments.
+   * \tparam Op Type of the functor.
+   * \tparam Args Types of the arguments.
+   * \details The concept specifies that an instance of type `Op` can be invoked with arguments of types `Args`.
    */
   template <typename Op, typename... Args>
   concept IsFunctorWithArgs = requires(Op op, Args... args) { op(args...); };
 
   /**
-   * @concept EigenVector
-   * @brief Concept defining the requirements for Eigen vectors.
-   * @tparam V Type representing an Eigen vector.
-   * @details The concept specifies that the type `V` is an Eigen vector based on its compile-time information
+   * \concept EigenVector
+   * \brief Concept defining the requirements for Eigen vectors.
+   * \tparam V Type representing an Eigen vector.
+   * \details The concept specifies that the type `V` is an Eigen vector based on its compile-time information
    * (`IsVectorAtCompileTime`).
    */
   template <typename V>
@@ -444,11 +442,11 @@ namespace Concepts {
     }
   } // namespace Impl
   /**
-   * @concept IsMaterial
-   * @brief Concept defining the requirements for a material type.
-   * @tparam MaterialToCheck Template representing the material type to check.
-   * @tparam Material Type representing the material to be checked.
-   * @details A type satisfies the IsMaterial concept if it meets one of the following conditions:
+   * \concept IsMaterial
+   * \brief Concept defining the requirements for a material type.
+   * \tparam MaterialToCheck Template representing the material type to check.
+   * \tparam Material Type representing the material to be checked.
+   * \details A type satisfies the IsMaterial concept if it meets one of the following conditions:
    *
    * 1. The material is a specialization of the specified template `MaterialToCheck`.
    * 2. The material is a specialization of `VanishingStress` with an underlying type that is a specialization of the

@@ -16,18 +16,18 @@ namespace Ikarus {
 /**
  * \brief Traits for handling finite elements.
  *
- * \tparam Basis_ The basis type for the finite element.
- * \tparam FERequirements_ The requirements for the finite element.
+ * \tparam B The basis type for the finite element.
+ * \tparam FER The requirements for the finite element.
  * \tparam useRef Boolean indicating whether to use Eigen::Ref for VectorType and MatrixType.
  */
-template <typename Basis_, typename FERequirements_ = FERequirements<>, bool useRef = false>
+template <typename B, typename FER = FERequirements<>, bool useRef = false>
 struct FETraits
 {
   /** \brief Type of the basis of the finite element */
-  using Basis = Basis_;
+  using Basis = B;
 
   /** \brief Type of the requirements for the finite element */
-  using FERequirementType = FERequirements_;
+  using FERequirementType = FER;
 
   /** \brief Type of the flat basis */
   using FlatBasis = typename Basis::FlatBasis;

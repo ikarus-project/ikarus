@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file neohooke.hh
- * @brief Implementation of the NeoHooke material model.
- * @ingroup  materials
+ * \file neohooke.hh
+ * \brief Implementation of the NeoHooke material model.
+ * \ingroup  materials
  */
 
 #pragma once
@@ -15,8 +15,8 @@
 namespace Ikarus {
 
 /**
- * @brief Implementation of the Neo-Hookean material model.
-* @ingroup materials
+ * \brief Implementation of the Neo-Hookean material model.
+* \ingroup materials
 *  The energy is computed as
 *  \f[ \psi(\BC) = \frac{\mu}{2} (\tr \BC-3- 2 \log \sqrt{\det \BC}) + \frac{\lambda}{2} (\log \sqrt{\det \BC})^2 ,\f]
 * where \f$ \BC \f$ denotes the right Cauchy-Green strain tensor.
@@ -30,21 +30,21 @@ namespace Ikarus {
 *      where \f$ \CI_{IJKL} =  \frac{1}{2}({(\BC^{-1})}^{IK}{(\BC^{-1})}^{JL}+{(\BC^{-1})}^{IL} {(\BC^{-1})}^{JK}).\f$
 *
 *  \remark See \cite bonet2008nonlinear, Section 6.4.3 for a discussion of this material
- * @tparam ScalarType_ The scalar type for the strains and stresses,....
+ * \tparam ST The scalar type for the strains and stresses,....
  */
-template <typename ScalarType_>
-struct NeoHookeT : public Material<NeoHookeT<ScalarType_>>
+template <typename ST>
+struct NeoHookeT : public Material<NeoHookeT<ST>>
 {
   [[nodiscard]] constexpr std::string nameImpl() const noexcept { return "NeoHooke"; }
 
   /**
-   * @brief Constructor for NeoHookeT.
-   * @param mpt The Lame's parameters (first parameter and shear modulus).
+   * \brief Constructor for NeoHookeT.
+   * \param mpt The Lame's parameters (first parameter and shear modulus).
    */
   explicit NeoHookeT(const LamesFirstParameterAndShearModulus& mpt)
-      : lambdaAndmu{mpt} {}
+      : lambdaAndmu_{mpt} {}
 
-  using ScalarType                    = ScalarType_;
+  using ScalarType                    = ST;
   static constexpr int worldDimension = 3;
   using StrainMatrix                  = Eigen::Matrix<ScalarType, worldDimension, worldDimension>;
   using StressMatrix                  = StrainMatrix;
@@ -60,10 +60,10 @@ struct NeoHookeT : public Material<NeoHookeT<ScalarType_>>
   static constexpr double derivativeFactor = 2;
 
   /**
-   * @brief Computes the stored energy in the Neo-Hookean material model.
-   * @tparam Derived The derived type of the input matrix.
-   * @param C The right Cauchy-Green tensor.
-   * @return ScalarType The stored energy.
+   * \brief Computes the stored energy in the Neo-Hookean material model.
+   * \tparam Derived The derived type of the input matrix.
+   * \param C The right Cauchy-Green tensor.
+   * \return ScalarType The stored energy.
    */
   template <typename Derived>
   ScalarType storedEnergyImpl(const Eigen::MatrixBase<Derived>& C) const noexcept {
@@ -71,18 +71,18 @@ struct NeoHookeT : public Material<NeoHookeT<ScalarType_>>
     if constexpr (!Concepts::EigenVector<Derived>) {
       const auto traceC  = C.trace();
       const auto logdetF = log(sqrt(C.determinant()));
-      return lambdaAndmu.mu / 2.0 * (traceC - 3 - 2 * logdetF) + lambdaAndmu.lambda / 2.0 * logdetF * logdetF;
+      return lambdaAndmu_.mu / 2.0 * (traceC - 3 - 2 * logdetF) + lambdaAndmu_.lambda / 2.0 * logdetF * logdetF;
     } else
       static_assert(!Concepts::EigenVector<Derived>,
                     "NeoHooke energy can only be called with a matrix and not a vector in Voigt notation");
   }
 
   /**
-   * @brief Computes the stresses in the Neo-Hookean material model.
-   * @tparam voigt A boolean indicating whether to return stresses in Voigt notation.
-   * @tparam Derived The derived type of the input matrix.
-   * @param C The right Cauchy-Green tensor.
-   * @return StressMatrix The stresses.
+   * \brief Computes the stresses in the Neo-Hookean material model.
+   * \tparam voigt A boolean indicating whether to return stresses in Voigt notation.
+   * \tparam Derived The derived type of the input matrix.
+   * \param C The right Cauchy-Green tensor.
+   * \return StressMatrix The stresses.
    */
   template <bool voigt, typename Derived>
   auto stressesImpl(const Eigen::MatrixBase<Derived>& C) const {
@@ -91,7 +91,7 @@ struct NeoHookeT : public Material<NeoHookeT<ScalarType_>>
       if constexpr (!Concepts::EigenVector<Derived>) {
         const auto logdetF = log(sqrt(C.determinant()));
         const auto invC    = C.inverse().eval();
-        return (lambdaAndmu.mu * (StrainMatrix::Identity() - invC) + lambdaAndmu.lambda * logdetF * invC).eval();
+        return (lambdaAndmu_.mu * (StrainMatrix::Identity() - invC) + lambdaAndmu_.lambda * logdetF * invC).eval();
       } else
         static_assert(!Concepts::EigenVector<Derived>,
                       "NeoHooke can only be called with a matrix and not a vector in Voigt notation");
@@ -100,11 +100,11 @@ struct NeoHookeT : public Material<NeoHookeT<ScalarType_>>
   }
 
   /**
-   * @brief Computes the tangent moduli in the Neo-Hookean material model.
-   * @tparam voigt A boolean indicating whether to return tangent moduli in Voigt notation.
-   * @tparam Derived The derived type of the input matrix.
-   * @param C The right Cauchy-Green tensor.
-   * @return Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<3, 3, 3, 3>> The tangent moduli.
+   * \brief Computes the tangent moduli in the Neo-Hookean material model.
+   * \tparam voigt A boolean indicating whether to return tangent moduli in Voigt notation.
+   * \tparam Derived The derived type of the input matrix.
+   * \param C The right Cauchy-Green tensor.
+   * \return Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<3, 3, 3, 3>> The tangent moduli.
    */
   template <bool voigt, typename Derived>
   auto tangentModuliImpl(const Eigen::MatrixBase<Derived>& C) const {
@@ -115,8 +115,8 @@ struct NeoHookeT : public Material<NeoHookeT<ScalarType_>>
       const auto CTinv   = tensorView(invC, std::array<Eigen::Index, 2>({3, 3}));
       static_assert(Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<3, 3>>::NumIndices == 2);
       Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<3, 3, 3, 3>> moduli =
-          (lambdaAndmu.lambda * dyadic(CTinv, CTinv) +
-           2 * (lambdaAndmu.mu - lambdaAndmu.lambda * logdetF) * symTwoSlots(fourthOrderIKJL(invC, invC), {2, 3}))
+          (lambdaAndmu_.lambda * dyadic(CTinv, CTinv) +
+           2 * (lambdaAndmu_.mu - lambdaAndmu_.lambda * logdetF) * symTwoSlots(fourthOrderIKJL(invC, invC), {2, 3}))
               .eval();
       return moduli;
     } else
@@ -124,21 +124,22 @@ struct NeoHookeT : public Material<NeoHookeT<ScalarType_>>
   }
 
   /**
-   * @brief Rebinds the material to a different scalar type.
-   * @tparam ScalarTypeOther The target scalar type.
-   * @return NeoHookeT<ScalarTypeOther> The rebound NeoHooke material.
+   * \brief Rebinds the material to a different scalar type.
+   * \tparam STO The target scalar type.
+   * \return NeoHookeT<ScalarTypeOther> The rebound NeoHooke material.
    */
-  template <typename ScalarTypeOther>
+  template <typename STO>
   auto rebind() const {
-    return NeoHookeT<ScalarTypeOther>(lambdaAndmu);
+    return NeoHookeT<STO>(lambdaAndmu_);
   }
 
-  LamesFirstParameterAndShearModulus lambdaAndmu;
+private:
+  LamesFirstParameterAndShearModulus lambdaAndmu_;
 };
 
 /**
- * @brief Alias for NeoHookeT with double as the default scalar type.
+ * \brief Alias for NeoHookeT with double as the default scalar type.
  */
-typedef NeoHookeT<double> NeoHooke;
+using NeoHooke = NeoHookeT<double>;
 
 } // namespace Ikarus

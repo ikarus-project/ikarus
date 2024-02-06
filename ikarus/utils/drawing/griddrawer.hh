@@ -17,33 +17,33 @@
 #include <dune/geometry/dimension.hh>
 
 /**
- * @brief Draw function for visualizing the elements of a DUNE grid view.
+ * \brief Draw function for visualizing the elements of a DUNE grid view.
  *
  * This function uses the Matplot library to visualize the elements of a DUNE grid view. It draws the edges of the
  * elements in either 2D or 3D space.
  *
- * @tparam GridView The type of the DUNE grid view.
- * @param gridView The DUNE grid view to visualize.
- * @param forever If true, the plot will be displayed until closed; otherwise, it will be displayed for a short
+ * \tparam GV The type of the DUNE grid view.
+ * \param gridView The DUNE grid view to visualize.
+ * \param forever If true, the plot will be displayed until closed; otherwise, it will be displayed for a short
  * duration.
  */
-template <typename GridView>
-void draw(const GridView& gridView, bool forever = false) {
+template <typename GV>
+void draw(const GV& gridView, bool forever = false) {
   using namespace matplot;
   auto f  = figure(true);
   auto ax = gca();
   hold(ax, true);
-  constexpr int edgeCodim = GridView::dimension - 1;
+  constexpr int edgeCodim = GV::dimension - 1;
   for (auto&& element : elements(gridView)) {
-    std::array<std::array<double, 2>, GridView::dimensionworld> edgeCoords{};
+    std::array<std::array<double, 2>, GV::dimensionworld> edgeCoords{};
     for (size_t edgeIndex = 0; edgeIndex < element.subEntities(edgeCodim); ++edgeIndex) {
       auto edge = element.template subEntity<edgeCodim>(edgeIndex);
       for (int i = 0; i < 2; ++i) {
         const auto vertCoords = edge.geometry().corner(i);
-        for (int j = 0; j < GridView::dimensionworld; ++j)
+        for (int j = 0; j < GV::dimensionworld; ++j)
           edgeCoords[j][i] = vertCoords[j];
       }
-      if constexpr (GridView::dimensionworld == 3) {
+      if constexpr (GV::dimensionworld == 3) {
         auto l = ax->plot3(edgeCoords[0], edgeCoords[1], edgeCoords[2], "-o");
         l->line_width(2);
         l->color("black");

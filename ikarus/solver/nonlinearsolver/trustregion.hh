@@ -113,51 +113,49 @@ struct Stats
 * This code is heavily inspired by the trust-region implementation of
 <a href="https://github.com/NicolasBoumal/manopt/blob/master/manopt/solvers/trustregions/trustregions.m">Manopt</a>.
 * \ingroup solvers
-* \tparam NonLinearOperatorImpl Type of the nonlinear operator to solve.
+* \tparam NLO Type of the nonlinear operator to solve.
 * \tparam preConditioner Type of preconditioner to use (default is IncompleteCholesky).
-* \tparam UpdateFunctionTypeImpl Type of the update function
+* \tparam UF Type of the update function
 */
-template <typename NonLinearOperatorImpl, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
-          typename UpdateFunctionTypeImpl = utils::UpdateDefault>
+template <typename NLO, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
+          typename UF = utils::UpdateDefault>
 class TrustRegion : public IObservable<NonLinearSolverMessages>
 {
 public:
-  using ValueType = typename NonLinearOperatorImpl::template ParameterValue<0>; ///< Type of the parameter vector of
-                                                                                ///< the nonlinear operator
-  using CorrectionType     = typename NonLinearOperatorImpl::DerivativeType; ///< Type of the correction of x += deltaX.
-  using UpdateFunctionType = UpdateFunctionTypeImpl;                         ///< Type of the update function.
+  using ValueType = typename NLO::template ParameterValue<0>; ///< Type of the parameter vector of
+                                                              ///< the nonlinear operator
+  using CorrectionType = typename NLO::DerivativeType;        ///< Type of the correction of x += deltaX.
+  using UpdateFunction = UF;                                  ///< Type of the update function.
 
-  using NonLinearOperator = NonLinearOperatorImpl; ///< Type of the non-linear operator
+  using NonLinearOperator = NLO; ///< Type of the non-linear operator
 
-  using ScalarType =
-      std::remove_cvref_t<typename NonLinearOperatorImpl::template FunctionReturnType<0>>; ///< Type of the scalar
-                                                                                           ///< cost
+  using ScalarType = std::remove_cvref_t<typename NLO::template FunctionReturnType<0>>; ///< Type of the scalar
+                                                                                        ///< cost
 
-  using MatrixType =
-      std::remove_cvref_t<typename NonLinearOperatorImpl::template FunctionReturnType<2>>; ///< Type of the Hessian
+  using MatrixType = std::remove_cvref_t<typename NLO::template FunctionReturnType<2>>; ///< Type of the Hessian
 
   /**
    * \brief Constructs a TrustRegion solver instance.
-   * \param p_nonLinearOperator Nonlinear operator to solve.
-   * \param p_updateFunction Update function
+   * \param nonLinearOperator Nonlinear operator to solve.
+   * \param updateFunction Update function
    */
-  explicit TrustRegion(const NonLinearOperatorImpl& p_nonLinearOperator, UpdateFunctionTypeImpl p_updateFunction = {})
-      : nonLinearOperator_{p_nonLinearOperator},
-        updateFunction{p_updateFunction},
-        xOld{nonLinearOperator().firstParameter()} {
-    eta.setZero(gradient().size());
-    Heta.setZero(gradient().size());
+  explicit TrustRegion(const NLO& nonLinearOperator, UF updateFunction = {})
+      : nonLinearOperator_{nonLinearOperator},
+        updateFunction_{updateFunction},
+        xOld_{this->nonLinearOperator().firstParameter()} {
+    eta_.setZero(gradient().size());
+    Heta_.setZero(gradient().size());
   }
 
   /**
    * \brief Sets up the TrustRegion solver with the provided settings and checks feasibility.
    * \param p_settings TrustRegionSettings containing the solver configuration.
    */
-  void setup(const TrustRegionSettings& p_settings) {
-    options = p_settings;
-    assert(options.rho_prime < 0.25 && "options.rho_prime must be strictly smaller than 1/4.");
-    assert(options.Delta_bar > 0 && "options.Delta_bar must be positive.");
-    assert(options.Delta0 > 0 && options.Delta0 < options.Delta_bar &&
+  void setup(const TrustRegionSettings& settings) {
+    options_ = settings;
+    assert(options_.rho_prime < 0.25 && "options.rho_prime must be strictly smaller than 1/4.");
+    assert(options_.Delta_bar > 0 && "options.Delta_bar must be positive.");
+    assert(options_.Delta0 > 0 && options_.Delta0 < options_.Delta_bar &&
            "options.Delta0 must be positive and smaller than Delta_bar.");
   }
 
@@ -169,190 +167,190 @@ public:
   /**
    * \brief Solves the nonlinear optimization problem using the TrustRegion algorithm.
    * \tparam SolutionType Type of the solution predictor (default is NoPredictor).
-   * \param dx_predictor Solution predictor.
+   * \param dxPredictor Solution predictor.
    * \return NonLinearSolverInformation containing information about the solver result.
    */
   template <typename SolutionType = NoPredictor>
   requires std::is_same_v<SolutionType, NoPredictor> || std::is_convertible_v<SolutionType, CorrectionType>
-  NonLinearSolverInformation solve(const SolutionType& dx_predictor = NoPredictor{}) {
+  NonLinearSolverInformation solve(const SolutionType& dxPredictor = NoPredictor{}) {
     this->notify(NonLinearSolverMessages::INIT);
-    stats = Stats{};
-    info  = AlgoInfo{};
+    stats_ = Stats{};
+    info_  = AlgoInfo{};
 
     NonLinearSolverInformation solverInformation;
     nonLinearOperator().updateAll();
-    stats.energy   = energy();
-    auto& x        = nonLinearOperator().firstParameter();
-    xOld           = x;
-    stats.gradNorm = norm(gradient());
+    stats_.energy   = energy();
+    auto& x         = nonLinearOperator().firstParameter();
+    xOld_           = x;
+    stats_.gradNorm = norm(gradient());
     if constexpr (not std::is_same_v<SolutionType, NoPredictor>)
-      updateFunction(x, dx_predictor);
-    truncatedConjugateGradient.analyzePattern(hessian());
+      updateFunction(x, dxPredictor);
+    truncatedConjugateGradient_.analyzePattern(hessian());
 
-    innerInfo.Delta = options.Delta0;
+    innerInfo_.Delta = options_.Delta0;
     spdlog::info(
         "        | iter | inner_i |   rho |   energy | energy_p | energy_inc |  norm(g) |    Delta | norm(corr) | "
         "InnerBreakReason");
     spdlog::info("{:-^143}", "-");
     while (not stoppingCriterion()) {
       this->notify(NonLinearSolverMessages::ITERATION_STARTED);
-      if (options.useRand) {
-        if (stats.outerIter == 0) {
-          eta.setRandom();
-          while (eta.dot(hessian() * eta) > innerInfo.Delta * innerInfo.Delta)
-            eta *= eps; // eps is sqrt(sqrt(maschine-precision))
+      if (options_.useRand) {
+        if (stats_.outerIter == 0) {
+          eta_.setRandom();
+          while (eta_.dot(hessian() * eta_) > innerInfo_.Delta * innerInfo_.Delta)
+            eta_ *= eps_; // eps is sqrt(sqrt(maschine-precision))
         } else
-          eta.setZero();
+          eta_.setZero();
       } else
-        eta.setZero();
+        eta_.setZero();
 
       solveInnerProblem();
-      stats.innerIterSum += innerInfo.numInnerIter;
+      stats_.innerIterSum += innerInfo_.numInnerIter;
 
-      info.stopReasonString = tcg_stop_reason[static_cast<int>(innerInfo.stop_tCG)];
-      Heta                  = hessian() * eta;
-      if (options.useRand and stats.outerIter == 0) {
-        info.used_cauchy            = false;
-        info.randomPredictionString = " Used Random correction predictor";
-        info.cauchystr              = "                  ";
-        double tau_c;
+      info_.stopReasonString = tcg_stop_reason_[static_cast<int>(innerInfo_.stop_tCG)];
+      Heta_                  = hessian() * eta_;
+      if (options_.useRand and stats_.outerIter == 0) {
+        info_.used_cauchy            = false;
+        info_.randomPredictionString = " Used Random correction predictor";
+        info_.cauchystr              = "                  ";
+        double tauC;
         // Check the curvature
         const Eigen::VectorXd Hg = hessian() * gradient();
         const auto g_Hg          = (gradient().dot(Hg));
         if (g_Hg <= 0)
-          tau_c = 1;
+          tauC = 1;
         else
-          tau_c = std::min(Dune::power(stats.gradNorm, 3) / (innerInfo.Delta * g_Hg), 1.0);
+          tauC = std::min(Dune::power(stats_.gradNorm, 3) / (innerInfo_.Delta * g_Hg), 1.0);
 
         // generate the Cauchy point.
-        const Eigen::VectorXd eta_c  = -tau_c * innerInfo.Delta / stats.gradNorm * gradient();
-        const Eigen::VectorXd Heta_c = -tau_c * innerInfo.Delta / stats.gradNorm * Hg;
+        const Eigen::VectorXd etaC  = -tauC * innerInfo_.Delta / stats_.gradNorm * gradient();
+        const Eigen::VectorXd HetaC = -tauC * innerInfo_.Delta / stats_.gradNorm * Hg;
 
-        const double mdle  = stats.energy + gradient().dot(eta) + .5 * Heta.dot(eta);
-        const double mdlec = stats.energy + gradient().dot(eta_c) + .5 * Heta_c.dot(eta_c);
-        if (mdlec < mdle && stats.outerIter == 0) {
-          eta              = eta_c;
-          Heta             = Heta_c;
-          info.used_cauchy = true;
+        const double mdle  = stats_.energy + gradient().dot(eta_) + .5 * Heta_.dot(eta_);
+        const double mdlec = stats_.energy + gradient().dot(etaC) + .5 * HetaC.dot(etaC);
+        if (mdlec < mdle && stats_.outerIter == 0) {
+          eta_              = etaC;
+          Heta_             = HetaC;
+          info_.used_cauchy = true;
 
-          info.cauchystr = " USED CAUCHY POINT!";
+          info_.cauchystr = " USED CAUCHY POINT!";
         }
       } else
-        info.cauchystr = "                  ";
+        info_.cauchystr = "                  ";
 
-      stats.etaNorm = eta.norm();
+      stats_.etaNorm = eta_.norm();
 
-      updateFunction(x, eta);
+      updateFunction_(x, eta_);
 
       // Calculate energy of our proposed update step
       nonLinearOperator().template update<0>();
-      stats.energyProposal = energy();
+      stats_.energyProposal = energy();
 
       // Will we accept the proposal or not?
       // Check the performance of the quadratic model against the actual energy.
-      auto rhonum = stats.energy - stats.energyProposal;
-      auto rhoden = -eta.dot(gradient() + 0.5 * Heta);
+      auto rhonum = stats_.energy - stats_.energyProposal;
+      auto rhoden = -eta_.dot(gradient() + 0.5 * Heta_);
 
       /*  Close to convergence the proposed energy and the real energy almost coincide.
        *  Therefore, the performance check of our model becomes ill-conditioned
        *  The regularisation fixes this */
-      const auto rho_reg = std::max(1.0, abs(stats.energy)) * eps * options.rho_reg;
-      rhonum             = rhonum + rho_reg;
-      rhoden             = rhoden + rho_reg;
+      const auto rhoReg = std::max(1.0, abs(stats_.energy)) * eps_ * options_.rho_reg;
+      rhonum            = rhonum + rhoReg;
+      rhoden            = rhoden + rhoReg;
 
-      const bool model_decreased = rhoden > 0.0;
+      const bool modelDecreased = rhoden > 0.0;
 
-      if (!model_decreased)
-        info.stopReasonString.append(", model did not decrease");
+      if (!modelDecreased)
+        info_.stopReasonString.append(", model did not decrease");
 
-      stats.rho = rhonum / rhoden;
-      stats.rho = stats.rho < 0.0 ? -1.0 : stats.rho; // move rho to the domain [-1.0,inf]
+      stats_.rho = rhonum / rhoden;
+      stats_.rho = stats_.rho < 0.0 ? -1.0 : stats_.rho; // move rho to the domain [-1.0,inf]
 
-      info.trstr = "   ";
+      info_.trstr = "   ";
 
       // measure if energy decreased
-      const bool energyDecreased = Dune::FloatCmp::ge(stats.energy - stats.energyProposal, -1e-12);
+      const bool energyDecreased = Dune::FloatCmp::ge(stats_.energy - stats_.energyProposal, -1e-12);
 
       // If the model behaves badly or if the energy increased we reduce the trust region size
-      if (stats.rho < 1e-4 || not model_decreased || std::isnan(stats.rho) || not energyDecreased) {
-        info.trstr = "TR-";
-        innerInfo.Delta /= 4.0;
-        info.consecutive_TRplus = 0;
-        info.consecutive_TRminus++;
-        if (info.consecutive_TRminus >= 5 && options.verbosity >= 1) {
-          info.consecutive_TRminus = -std::numeric_limits<int>::infinity();
+      if (stats_.rho < 1e-4 || not modelDecreased || std::isnan(stats_.rho) || not energyDecreased) {
+        info_.trstr = "TR-";
+        innerInfo_.Delta /= 4.0;
+        info_.consecutive_TRplus = 0;
+        info_.consecutive_TRminus++;
+        if (info_.consecutive_TRminus >= 5 && options_.verbosity >= 1) {
+          info_.consecutive_TRminus = -std::numeric_limits<int>::infinity();
           spdlog::info(" +++ Detected many consecutive TR- (radius decreases).");
           spdlog::info(" +++ Consider decreasing options.Delta_bar by an order of magnitude.");
         }
 
-      } else if (stats.rho > 0.99 && (innerInfo.stop_tCG == Eigen::TCGStopReason::negativeCurvature ||
-                                      innerInfo.stop_tCG == Eigen::TCGStopReason::exceededTrustRegion)) {
-        info.trstr               = "TR+";
-        innerInfo.Delta          = std::min(3.5 * innerInfo.Delta, options.Delta_bar);
-        info.consecutive_TRminus = 0;
-        info.consecutive_TRplus++;
-        if (info.consecutive_TRplus >= 5 && options.verbosity >= 1) {
-          info.consecutive_TRplus = -std::numeric_limits<int>::infinity();
+      } else if (stats_.rho > 0.99 && (innerInfo_.stop_tCG == Eigen::TCGStopReason::negativeCurvature ||
+                                       innerInfo_.stop_tCG == Eigen::TCGStopReason::exceededTrustRegion)) {
+        info_.trstr               = "TR+";
+        innerInfo_.Delta          = std::min(3.5 * innerInfo_.Delta, options_.Delta_bar);
+        info_.consecutive_TRminus = 0;
+        info_.consecutive_TRplus++;
+        if (info_.consecutive_TRplus >= 5 && options_.verbosity >= 1) {
+          info_.consecutive_TRplus = -std::numeric_limits<int>::infinity();
           spdlog::info(" +++ Detected many consecutive TR+ (radius increases)");
           spdlog::info(" +++ Consider increasing options.Delta_bar by an order of magnitude");
 
         } else {
-          info.consecutive_TRplus  = 0;
-          info.consecutive_TRminus = 0;
+          info_.consecutive_TRplus  = 0;
+          info_.consecutive_TRminus = 0;
         }
       }
 
-      if (model_decreased && stats.rho > options.rho_prime && energyDecreased) {
-        if (stats.energyProposal > stats.energy)
+      if (modelDecreased && stats_.rho > options_.rho_prime && energyDecreased) {
+        if (stats_.energyProposal > stats_.energy)
           spdlog::info(
               "Energy function increased by {} (step size: {}). Since this is small we accept the step and hope for "
               "convergence of the gradient norm.",
-              stats.energyProposal - stats.energy, stats.etaNorm);
+              stats_.energyProposal - stats_.energy, stats_.etaNorm);
 
-        info.acceptProposal       = true;
-        info.accstr               = "acc";
-        info.consecutive_Rejected = 0;
+        info_.acceptProposal       = true;
+        info_.accstr               = "acc";
+        info_.consecutive_Rejected = 0;
       } else {
-        info.acceptProposal = false;
-        info.accstr         = "REJ";
+        info_.acceptProposal = false;
+        info_.accstr         = "REJ";
 
-        if (info.consecutive_Rejected >= 5)
-          innerInfo.Delta /= 2;
+        if (info_.consecutive_Rejected >= 5)
+          innerInfo_.Delta /= 2;
         else
-          innerInfo.Delta = std::min(innerInfo.Delta, stats.etaNorm / 2.0);
-        ++info.consecutive_Rejected;
+          innerInfo_.Delta = std::min(innerInfo_.Delta, stats_.etaNorm / 2.0);
+        ++info_.consecutive_Rejected;
       }
 
-      stats.outerIter++;
+      stats_.outerIter++;
 
-      if (options.verbosity == 1)
+      if (options_.verbosity == 1)
         logState();
 
-      info.randomPredictionString = "";
+      info_.randomPredictionString = "";
 
-      if (info.acceptProposal) {
-        stats.energy = stats.energyProposal;
+      if (info_.acceptProposal) {
+        stats_.energy = stats_.energyProposal;
         nonLinearOperator_.updateAll();
-        xOld = x;
-        this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, stats.etaNorm);
-        this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, stats.gradNorm);
+        xOld_ = x;
+        this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, stats_.etaNorm);
+        this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, stats_.gradNorm);
         this->notify(NonLinearSolverMessages::SOLUTION_CHANGED);
       } else {
-        x = xOld;
-        eta.setZero();
+        x = xOld_;
+        eta_.setZero();
       }
       nonLinearOperator_.updateAll();
-      stats.gradNorm = gradient().norm();
+      stats_.gradNorm = gradient().norm();
       this->notify(NonLinearSolverMessages::ITERATION_ENDED);
     }
-    spdlog::info("{}", info.reasonString);
-    spdlog::info("Total iterations: {} Total CG Iterations: {}", stats.outerIter, stats.innerIterSum);
+    spdlog::info("{}", info_.reasonString);
+    spdlog::info("Total iterations: {} Total CG Iterations: {}", stats_.outerIter, stats_.innerIterSum);
 
     solverInformation.success =
-        (info.stop == StopReason::correctionNormTolReached) or (info.stop == StopReason::gradientNormTolReached);
+        (info_.stop == StopReason::correctionNormTolReached) or (info_.stop == StopReason::gradientNormTolReached);
 
-    solverInformation.iterations   = stats.outerIter;
-    solverInformation.residualNorm = stats.gradNorm;
+    solverInformation.iterations   = stats_.outerIter;
+    solverInformation.residualNorm = stats_.gradNorm;
     if (solverInformation.success)
       this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, solverInformation.iterations);
     return solverInformation;
@@ -368,15 +366,15 @@ private:
     spdlog::info(
         "{:>3s} {:>3s} {:>6d} {:>9d}  {:>6.2f}  {:>9.2e}  {:>9.2e}  {:>11.2e}  {:>9.2e}  {:>9.2e}  {:>11.2e}   "
         "{:<73}",
-        info.accstr, info.trstr, stats.outerIter, innerInfo.numInnerIter, stats.rho, stats.energy, stats.energyProposal,
-        stats.energyProposal - stats.energy, stats.gradNorm, innerInfo.Delta, stats.etaNorm,
-        info.stopReasonString + info.cauchystr + info.randomPredictionString);
+        info_.accstr, info_.trstr, stats_.outerIter, innerInfo_.numInnerIter, stats_.rho, stats_.energy,
+        stats_.energyProposal, stats_.energyProposal - stats_.energy, stats_.gradNorm, innerInfo_.Delta, stats_.etaNorm,
+        info_.stopReasonString + info_.cauchystr + info_.randomPredictionString);
   }
 
   void logFinalState() {
     spdlog::info("{:>3s} {:>3s} {:>6d} {:>9d}  {: ^6}  {: ^9}  {: ^9}  {: ^11}  {:>9.2e}  {: ^9}  {: ^11}   {:<73}",
-                 info.accstr, info.trstr, stats.outerIter, innerInfo.numInnerIter, " ", " ", " ", " ", stats.gradNorm,
-                 " ", " ", info.stopReasonString + info.cauchystr + info.randomPredictionString);
+                 info_.accstr, info_.trstr, stats_.outerIter, innerInfo_.numInnerIter, " ", " ", " ", " ",
+                 stats_.gradNorm, " ", " ", info_.stopReasonString + info_.cauchystr + info_.randomPredictionString);
   }
 
   inline const auto& energy() { return nonLinearOperator().value(); }
@@ -386,82 +384,82 @@ private:
   bool stoppingCriterion() {
     std::ostringstream stream;
     /** Gradient correction tolerance reached  */
-    if (stats.gradNorm < options.grad_tol && stats.outerIter != 0) {
+    if (stats_.gradNorm < options_.grad_tol && stats_.outerIter != 0) {
       logFinalState();
       spdlog::info("CONVERGENCE:  Energy: {:1.16e}    norm(gradient): {:1.16e}", nonLinearOperator().value(),
-                   stats.gradNorm);
-      stream << "Gradient norm tolerance reached; options.tolerance = " << options.grad_tol;
+                   stats_.gradNorm);
+      stream << "Gradient norm tolerance reached; options.tolerance = " << options_.grad_tol;
 
-      info.reasonString = stream.str();
+      info_.reasonString = stream.str();
 
-      info.stop = StopReason::gradientNormTolReached;
+      info_.stop = StopReason::gradientNormTolReached;
       return true;
-    } else if (stats.etaNorm < options.corr_tol && stats.outerIter != 0) {
+    } else if (stats_.etaNorm < options_.corr_tol && stats_.outerIter != 0) {
       logFinalState();
       spdlog::info("CONVERGENCE:  Energy: {:1.16e}    norm(correction): {:1.16e}", nonLinearOperator().value(),
-                   stats.etaNorm);
-      stream << "Displacement norm tolerance reached;  = " << options.corr_tol << "." << std::endl;
+                   stats_.etaNorm);
+      stream << "Displacement norm tolerance reached;  = " << options_.corr_tol << "." << std::endl;
 
-      info.reasonString = stream.str();
-      info.stop         = StopReason::correctionNormTolReached;
+      info_.reasonString = stream.str();
+      info_.stop         = StopReason::correctionNormTolReached;
       return true;
     }
 
     /** Maximum Time reached  */
-    if (stats.time >= options.maxtime) {
+    if (stats_.time >= options_.maxtime) {
       logFinalState();
-      stream << "Max time exceeded; options.maxtime = " << options.maxtime << ".";
-      info.reasonString = stream.str();
-      info.stop         = StopReason::maximumTimeReached;
+      stream << "Max time exceeded; options.maxtime = " << options_.maxtime << ".";
+      info_.reasonString = stream.str();
+      info_.stop         = StopReason::maximumTimeReached;
       return true;
     }
 
     /** Maximum Iterations reached  */
-    if (stats.outerIter >= options.maxiter) {
+    if (stats_.outerIter >= options_.maxiter) {
       logFinalState();
-      stream << "Max iteration count reached; options.maxiter = " << options.maxiter << ".";
-      info.reasonString = stream.str();
-      info.stop         = StopReason::maximumIterationsReached;
+      stream << "Max iteration count reached; options.maxiter = " << options_.maxiter << ".";
+      info_.reasonString = stream.str();
+      info_.stop         = StopReason::maximumIterationsReached;
       return true;
     }
     return false;
   }
 
   void solveInnerProblem() {
-    truncatedConjugateGradient.setInfo(innerInfo);
+    truncatedConjugateGradient_.setInfo(innerInfo_);
     int attempts = 0;
-    truncatedConjugateGradient.factorize(hessian());
+    truncatedConjugateGradient_.factorize(hessian());
     // If the preconditioner is IncompleteCholesky the factorization may fail if we have negative diagonal entries and
     // the initial shift is too small. Therefore, if the factorization fails we increase the initial shift by a factor
     // of 5.
     if constexpr (preConditioner == PreConditioner::IncompleteCholesky) {
-      while (truncatedConjugateGradient.info() != Eigen::Success) {
-        choleskyInitialShift *= 5;
-        truncatedConjugateGradient.preconditioner().setInitialShift(choleskyInitialShift);
-        truncatedConjugateGradient.factorize(hessian());
+      while (truncatedConjugateGradient_.info() != Eigen::Success) {
+        choleskyInitialShift_ *= 5;
+        truncatedConjugateGradient_.preconditioner().setInitialShift(choleskyInitialShift_);
+        truncatedConjugateGradient_.factorize(hessian());
         if (attempts > 5)
           DUNE_THROW(Dune::MathError, "Factorization of preconditioner failed!");
         ++attempts;
       }
-      if (truncatedConjugateGradient.info() == Eigen::Success)
-        choleskyInitialShift = 1e-3;
+      if (truncatedConjugateGradient_.info() == Eigen::Success)
+        choleskyInitialShift_ = 1e-3;
     }
-    eta       = truncatedConjugateGradient.solveWithGuess(-gradient(), eta);
-    innerInfo = truncatedConjugateGradient.getInfo();
+    eta_       = truncatedConjugateGradient_.solveWithGuess(-gradient(), eta_);
+    innerInfo_ = truncatedConjugateGradient_.getInfo();
   }
 
-  NonLinearOperatorImpl nonLinearOperator_;
-  UpdateFunctionType updateFunction;
-  typename NonLinearOperatorImpl::template ParameterValue<0> xOld;
-  CorrectionType eta;
-  CorrectionType Heta;
-  TrustRegionSettings options;
-  AlgoInfo info;
-  double choleskyInitialShift = 1e-3;
-  Eigen::TCGInfo<double> innerInfo;
-  Stats stats;
-  static constexpr double eps = 0.0001220703125; // 0.0001220703125 is sqrt(sqrt(maschine-precision))
-  std::array<std::string, 6> tcg_stop_reason{
+  NLO nonLinearOperator_;
+  UpdateFunction updateFunction_;
+  typename NLO::template ParameterValue<0> xOld_;
+  CorrectionType eta_;
+  CorrectionType Heta_;
+  TrustRegionSettings options_;
+  AlgoInfo info_;
+  double choleskyInitialShift_ = 1e-3;
+  Eigen::TCGInfo<double> innerInfo_;
+  Stats stats_;
+  static constexpr double eps_ = 0.0001220703125; // 0.0001220703125 is sqrt(sqrt(maschine-precision))
+  std::array<std::string, 6> tcg_stop_reason_{
       {"negative curvature", "exceeded trust region", "reached target residual-kappa (linear)",
        "reached target residual-theta (superlinear)", "maximum inner iterations", "model increased"}
   };
@@ -472,24 +470,23 @@ private:
                                             typename Eigen::DiagonalPreconditioner<ScalarType>,
                                             typename Eigen::IncompleteCholesky<ScalarType>>>;
   Eigen::TruncatedConjugateGradient<MatrixType, Eigen::Lower | Eigen::Upper, PreConditionerType>
-      truncatedConjugateGradient;
+      truncatedConjugateGradient_;
 };
 
 /**
- * @brief Creates an instance of the TrustRegion solver.
+ * \brief Creates an instance of the TrustRegion solver.
  *
- * @tparam NonLinearOperatorImpl Type of the nonlinear operator to solve.
- * @tparam preConditioner Type of the preconditioner used internally (default is IncompleteCholesky).
- * @tparam UpdateFunctionType Type of the update function (default is UpdateDefault).
- * @param p_nonLinearOperator Nonlinear operator to solve.
- * @param p_updateFunction Update function (default is UpdateDefault).
- * @return Shared pointer to the TrustRegion solver instance.
+ * \tparam NLO Type of the nonlinear operator to solve.
+ * \tparam preConditioner Type of the preconditioner used internally (default is IncompleteCholesky).
+ * \tparam UF Type of the update function (default is UpdateDefault).
+ * \param nonLinearOperator Nonlinear operator to solve.
+ * \param updateFunction Update function (default is UpdateDefault).
+ * \return Shared pointer to the TrustRegion solver instance.
  */
-template <typename NonLinearOperatorImpl, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
-          typename UpdateFunctionType = utils::UpdateDefault>
-auto makeTrustRegion(const NonLinearOperatorImpl& p_nonLinearOperator, UpdateFunctionType&& p_updateFunction = {}) {
-  return std::make_shared<TrustRegion<NonLinearOperatorImpl, preConditioner, UpdateFunctionType>>(p_nonLinearOperator,
-                                                                                                  p_updateFunction);
+template <typename NLO, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
+          typename UF = utils::UpdateDefault>
+auto makeTrustRegion(const NLO& nonLinearOperator, UF&& updateFunction = {}) {
+  return std::make_shared<TrustRegion<NLO, preConditioner, UF>>(nonLinearOperator, updateFunction);
 }
 
 } // namespace Ikarus
