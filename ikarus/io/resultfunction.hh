@@ -29,7 +29,7 @@ namespace Impl {
  * \brief Wrapper to evaluate results for a vtkwriter.
  * \details
  * Usage:
- * @code
+ * \code
  *   // Usage with Dune::Vtk::VtkWriter
  *   auto resultFunction = Ikarus::ResultFunction<FiniteElement, resType>::asVtkFunction(&fes, feRequirements);
  *   vtkwriter.addPointData(resultFunction);
@@ -37,11 +37,11 @@ namespace Impl {
  *   // Usage with the native Dune::VTKWriter
  *   auto resultFunction = Ikarus::ResultFunction<FiniteElement, resType>::asShared(&fes, feRequirements);
  *   vtkWriter.addVertexData(resultFunction);
- * @endcode
- * @ingroup io
- * @tparam ElementType_ Type of the finite element
- * @tparam resType requested result type
- * @tparam UserFunction Type of the user-defined function for custom result evaluation (default is
+ * \endcode
+ * \ingroup io
+ * \tparam ElementType_ Type of the finite element
+ * \tparam resType requested result type
+ * \tparam UserFunction Type of the user-defined function for custom result evaluation (default is
 DefaultUserFunction)
  */
 template <typename FE, ResultType resType, typename UserFunction = Impl::DefaultUserFunction>

@@ -67,11 +67,11 @@ struct VonMises
 };
 
 /**
- * @brief Struct for calculating principal stresses
- * @ingroup resultevaluators
- * @details The PrincipalStress struct provides a function call operator to calculate principal stresses.
+ * \brief Struct for calculating principal stresses
+ * \ingroup resultevaluators
+ * \details The PrincipalStress struct provides a function call operator to calculate principal stresses.
  * The components are ordered in a descending manner ($\sigma_1 > \sigma_2$)
- * @tparam dim dimension of stress state
+ * \tparam dim dimension of stress state
  */
 template <int dim>
 requires(dim == 2 or dim == 3)
