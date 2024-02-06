@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file kirchhoffloveshell.hh
- * @brief Definition of the KirchhoffLoveShell class for Kirchhoff-Love shell elements in Ikarus.
+ * \file kirchhoffloveshell.hh
+ * \brief Definition of the KirchhoffLoveShell class for Kirchhoff-Love shell elements in Ikarus.
  */
 
 #pragma once
@@ -25,25 +25,23 @@
 namespace Ikarus {
 
 /**
- * @brief Kirchhoff-Love shell finite element class.
+ * \brief Kirchhoff-Love shell finite element class.
  *
  * This class represents Kirchhoff-Love shell finite elements.
  *
- * @ingroup mechanics
+ * \ingroup mechanics
  *
- * @tparam Basis_ The basis type for the finite element.
- * @tparam FERequirements_ The type representing the requirements for finite element calculations.
- * @tparam useEigenRef A boolean indicating whether to use Eigen references for efficiency.
+ * \tparam B The basis type for the finite element.
+ * \tparam FER The type representing the requirements for finite element calculations.
+ * \tparam useEigenRef A boolean indicating whether to use Eigen references for efficiency.
  */
-template <typename Basis_, typename FERequirements_ = FERequirements<>, bool useEigenRef = false>
-class KirchhoffLoveShell : public PowerBasisFE<Basis_>,
-                           public Volume<KirchhoffLoveShell<Basis_, FERequirements_, useEigenRef>,
-                                         FETraits<Basis_, FERequirements_, useEigenRef>>,
-                           public Traction<KirchhoffLoveShell<Basis_, FERequirements_, useEigenRef>,
-                                           FETraits<Basis_, FERequirements_, useEigenRef>>
+template <typename B, typename FER = FERequirements<>, bool useEigenRef = false>
+class KirchhoffLoveShell : public PowerBasisFE<B>,
+                           public Volume<KirchhoffLoveShell<B, FER, useEigenRef>, FETraits<B, FER, useEigenRef>>,
+                           public Traction<KirchhoffLoveShell<B, FER, useEigenRef>, FETraits<B, FER, useEigenRef>>
 {
 public:
-  using Traits            = FETraits<Basis_, FERequirements_, useEigenRef>;
+  using Traits            = FETraits<B, FER, useEigenRef>;
   using Basis             = typename Traits::Basis;
   using FlatBasis         = typename Traits::FlatBasis;
   using FERequirementType = typename Traits::FERequirementType;
@@ -52,8 +50,8 @@ public:
   using GridView          = typename Traits::GridView;
   using Element           = typename Traits::Element;
   using BasePowerFE       = PowerBasisFE<Basis>; // Handles globalIndices function
-  using VolumeType        = Volume<KirchhoffLoveShell<Basis_, FERequirements_, useEigenRef>, Traits>;
-  using TractionType      = Traction<KirchhoffLoveShell<Basis_, FERequirements_, useEigenRef>, Traits>;
+  using VolumeType        = Volume<KirchhoffLoveShell, Traits>;
+  using TractionType      = Traction<KirchhoffLoveShell, Traits>;
   using LocalBasisType    = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
 
   static constexpr int myDim              = Traits::mydim;
@@ -68,84 +66,84 @@ public:
    * membrane strain, bending strain, Jacobian matrices of deformed and reference geometries, Hessian matrices of
    * deformed and reference geometries, the normal vector, and the normalized normal vector.
    *
-   * \tparam ScalarType The scalar type for the matrix and vector elements.
+   * \tparam ST The scalar type for the matrix and vector elements.
    */
-  template <typename ScalarType = double>
+  template <typename ST = double>
   struct KinematicVariables
   {
-    Eigen::Matrix<double, 3, 3> C;     ///< material tangent
-    Eigen::Vector3<ScalarType> epsV;   ///< membrane strain in Voigt notation
-    Eigen::Vector3<ScalarType> kappaV; ///< bending strain in Voigt notation
-    Eigen::Matrix<ScalarType, 2, 3> j; ///< Jacobian of the deformed geometry
-    Eigen::Matrix<double, 2, 3> J;     ///< Jacobian of the reference geometry
-    Eigen::Matrix3<ScalarType> h;      ///< Hessian of the deformed geometry
-    Eigen::Matrix3<double> H;          ///< Hessian of the reference geometry
-    Eigen::Vector3<ScalarType> a3N;    ///< Normal vector of the deformed geometry
-    Eigen::Vector3<ScalarType> a3;     ///< normalized normal vector of the deformed geometry
+    Eigen::Matrix<double, 3, 3> C; ///< material tangent
+    Eigen::Vector3<ST> epsV;       ///< membrane strain in Voigt notation
+    Eigen::Vector3<ST> kappaV;     ///< bending strain in Voigt notation
+    Eigen::Matrix<ST, 2, 3> j;     ///< Jacobian of the deformed geometry
+    Eigen::Matrix<double, 2, 3> J; ///< Jacobian of the reference geometry
+    Eigen::Matrix3<ST> h;          ///< Hessian of the deformed geometry
+    Eigen::Matrix3<double> H;      ///< Hessian of the reference geometry
+    Eigen::Vector3<ST> a3N;        ///< Normal vector of the deformed geometry
+    Eigen::Vector3<ST> a3;         ///< normalized normal vector of the deformed geometry
   };
 
   /**
-   * @brief Constructor for the KirchhoffLoveShell class.
+   * \brief Constructor for the KirchhoffLoveShell class.
    *
    * Initializes the KirchhoffLoveShell instance with the given parameters.
    *
-   * @tparam VolumeLoad The type representing the volume load function.
-   * @tparam NeumannBoundaryLoad The type representing the Neumann boundary load function.
-   * @param globalBasis The global basis for the finite element.
-   * @param element The local element to bind.
-   * @param emod Young's modulus of the material.
-   * @param nu Poisson's ratio of the material.
-   * @param thickness Thickness of the shell.
-   * @param p_volumeLoad The volume load function (optional, default is utils::LoadDefault).
-   * @param p_neumannBoundary The Neumann boundary patch (optional, default is nullptr).
-   * @param p_neumannBoundaryLoad The Neumann boundary load function (optional, default is LoadDefault).
+   * \tparam VolumeLoad The type representing the volume load function.
+   * \tparam NeumannBoundaryLoad The type representing the Neumann boundary load function.
+   * \param globalBasis The global basis for the finite element.
+   * \param element The local element to bind.
+   * \param emod Young's modulus of the material.
+   * \param nu Poisson's ratio of the material.
+   * \param thickness Thickness of the shell.
+   * \param volumeLoad The volume load function (optional, default is utils::LoadDefault).
+   * \param neumannBoundary The Neumann boundary patch (optional, default is nullptr).
+   * \param neumannBoundaryLoad The Neumann boundary load function (optional, default is LoadDefault).
    */
   template <typename VolumeLoad = utils::LoadDefault, typename NeumannBoundaryLoad = utils::LoadDefault>
   KirchhoffLoveShell(const Basis& globalBasis, const typename LocalView::Element& element, double emod, double nu,
-                     double thickness, VolumeLoad p_volumeLoad = {},
-                     const BoundaryPatch<GridView>* p_neumannBoundary = nullptr,
-                     NeumannBoundaryLoad p_neumannBoundaryLoad        = {})
+                     double thickness, VolumeLoad volumeLoad = {},
+                     const BoundaryPatch<GridView>* neumannBoundary = nullptr,
+                     NeumannBoundaryLoad neumannBoundaryLoad        = {})
       : BasePowerFE(globalBasis, element),
-        VolumeType(p_volumeLoad),
-        TractionType(p_neumannBoundary, p_neumannBoundaryLoad),
+        VolumeType(volumeLoad),
+        TractionType(neumannBoundary, neumannBoundaryLoad),
         emod_{emod},
         nu_{nu},
         thickness_{thickness} {
     this->localView().bind(element);
-    auto& first_child = this->localView().tree().child(0);
-    const auto& fe    = first_child.finiteElement();
-    geo_              = std::make_shared<const Geometry>(this->localView().element().geometry());
-    numberOfNodes_    = fe.size();
-    order_            = 2 * (fe.localBasis().order());
-    localBasis        = Dune::CachedLocalBasis(fe.localBasis());
+    auto& firstChild = this->localView().tree().child(0);
+    const auto& fe   = firstChild.finiteElement();
+    geo_             = std::make_shared<const Geometry>(this->localView().element().geometry());
+    numberOfNodes_   = fe.size();
+    order_           = 2 * (fe.localBasis().order());
+    localBasis_      = Dune::CachedLocalBasis(fe.localBasis());
     if constexpr (requires { this->localView().element().impl().getQuadratureRule(order_); })
       if (this->localView().element().impl().isTrimmed())
-        localBasis.bind(this->localView().element().impl().getQuadratureRule(order_), Dune::bindDerivatives(0, 1, 2));
+        localBasis_.bind(this->localView().element().impl().getQuadratureRule(order_), Dune::bindDerivatives(0, 1, 2));
       else
-        localBasis.bind(Dune::QuadratureRules<double, myDim>::rule(this->localView().element().type(), order_),
-                        Dune::bindDerivatives(0, 1, 2));
+        localBasis_.bind(Dune::QuadratureRules<double, myDim>::rule(this->localView().element().type(), order_),
+                         Dune::bindDerivatives(0, 1, 2));
     else
-      localBasis.bind(Dune::QuadratureRules<double, myDim>::rule(this->localView().element().type(), order_),
-                      Dune::bindDerivatives(0, 1, 2));
+      localBasis_.bind(Dune::QuadratureRules<double, myDim>::rule(this->localView().element().type(), order_),
+                       Dune::bindDerivatives(0, 1, 2));
   }
 
 public:
   /**
-   * @brief Get the displacement function and nodal displacements.
+   * \brief Get the displacement function and nodal displacements.
    *
    * Retrieves the displacement function and nodal displacements based on the given FERequirements.
    *
-   * @tparam ScalarType The scalar type used for calculations.
-   * @param par The FERequirements.
-   * @param dx Optional additional displacement vector.
-   * @return The displacement function.
+   * \tparam ST The scalar type used for calculations.
+   * \param par The FERequirements.
+   * \param dx Optional additional displacement vector.
+   * \return The displacement function.
    */
-  template <typename ScalarType = double>
+  template <typename ST = double>
   auto displacementFunction(const FERequirementType& par,
-                            const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
+                            const std::optional<const Eigen::VectorX<ST>>& dx = std::nullopt) const {
     const auto& d = par.getGlobalSolution(Ikarus::FESolutions::displacement);
     auto disp     = Ikarus::FEHelper::localSolutionBlockVector<Traits>(d, this->localView(), dx);
-    Dune::StandardLocalFunction uFunction(localBasis, disp, geo_);
+    Dune::StandardLocalFunction uFunction(localBasis_, disp, geo_);
     return uFunction;
   }
 
@@ -154,44 +152,44 @@ public:
   [[nodiscard]] int order() const { return order_; }
 
   /**
-   * @brief Calculate the scalar value.
+   * \brief Calculate the scalar value.
    *
    * Calculates the scalar value based on the given FERequirements.
    *
-   * @param req The FERequirements.
-   * @return The calculated scalar value.
+   * \param req The FERequirements.
+   * \return The calculated scalar value.
    */
   double calculateScalar(const FERequirementType& req) const { return calculateScalarImpl<double>(req); }
 
   /**
-   * @brief Calculate the vector associated with the given FERequirementType.
+   * \brief Calculate the vector associated with the given FERequirementType.
    *
-   * @tparam ScalarType The scalar type for the calculation.
-   * @param req The FERequirementType object specifying the requirements for the calculation.
-   * @param force The vector to store the calculated result.
+   * \tparam ST The scalar type for the calculation.
+   * \param req The FERequirementType object specifying the requirements for the calculation.
+   * \param force The vector to store the calculated result.
    */
   void calculateVector(const FERequirementType& req, typename Traits::template VectorType<> force) const {
     calculateVectorImpl<double>(req, force);
   }
   /**
-   * @brief Calculate the matrix associated with the given FERequirementType.
+   * \brief Calculate the matrix associated with the given FERequirementType.
    *
-   * @tparam ScalarType The scalar type for the calculation.
-   * @param req The FERequirementType object specifying the requirements for the calculation.
-   * @param K The matrix to store the calculated result.
+   * \tparam ST The scalar type for the calculation.
+   * \param req The FERequirementType object specifying the requirements for the calculation.
+   * \param K The matrix to store the calculated result.
    */
   void calculateMatrix(const FERequirementType& req, typename Traits::template MatrixType<> K) const {
     calculateMatrixImpl<double>(req, K);
   }
 
   /**
-   * @brief Calculates a requested result at a specific local position.
+   * \brief Calculates a requested result at a specific local position.
    *
-   * @param req The FERequirementType object holding the global solution.
-   * @param local Local position vector.
-   * @return calculated result
+   * \param req The FERequirementType object holding the global solution.
+   * \param local Local position vector.
+   * \return calculated result
    *
-   * @tparam resType The type representing the requested result.
+   * \tparam resType The type representing the requested result.
    */
   template <ResultType resType>
   auto calculateAt([[maybe_unused]] const FERequirementType& req,
@@ -201,8 +199,8 @@ public:
 
 private:
   std::shared_ptr<const Geometry> geo_;
-  Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType>> localBasis;
-  DefaultMembraneStrain membraneStrain;
+  Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType>> localBasis_;
+  DefaultMembraneStrain membraneStrain_;
   double emod_;
   double nu_;
   double thickness_;
@@ -231,9 +229,9 @@ protected:
    */
   auto computeMaterialAndStrains(const Dune::FieldVector<double, 2>& gpPos, int gpIndex, const Geometry& geo,
                                  const auto& uFunction) const {
-    using ScalarType = typename std::remove_cvref_t<decltype(uFunction)>::ctype;
+    using ST = typename std::remove_cvref_t<decltype(uFunction)>::ctype;
 
-    KinematicVariables<ScalarType> kin;
+    KinematicVariables<ST> kin;
     using namespace Dune;
     using namespace Dune::DerivativeDirections;
     const auto [X, Jd, Hd]              = geo_->impl().zeroFirstAndSecondDerivativeOfPosition(gpPos);
@@ -247,27 +245,27 @@ protected:
     const Eigen::Matrix<double, 3, 3> GInv = G.inverse();
     kin.C                                  = materialTangent(GInv);
 
-    kin.epsV = membraneStrain.value(gpPos, geo, uFunction);
+    kin.epsV = membraneStrain_.value(gpPos, geo, uFunction);
 
-    const auto& Ndd                             = localBasis.evaluateSecondDerivatives(gpIndex);
-    const auto uasMatrix                        = Dune::viewAsEigenMatrixAsDynFixed(uFunction.coefficientsRef());
-    const auto hessianu                         = Ndd.transpose().template cast<ScalarType>() * uasMatrix;
-    kin.h                                       = kin.H + hessianu;
-    const Eigen::Matrix<ScalarType, 3, 2> gradu = toEigen(uFunction.evaluateDerivative(
+    const auto& Ndd                     = localBasis_.evaluateSecondDerivatives(gpIndex);
+    const auto uasMatrix                = Dune::viewAsEigenMatrixAsDynFixed(uFunction.coefficientsRef());
+    const auto hessianu                 = Ndd.transpose().template cast<ST>() * uasMatrix;
+    kin.h                               = kin.H + hessianu;
+    const Eigen::Matrix<ST, 3, 2> gradu = toEigen(uFunction.evaluateDerivative(
         gpIndex, Dune::wrt(spatialAll), Dune::on(Dune::DerivativeDirections::referenceElement)));
-    kin.j                                       = kin.J + gradu.transpose();
-    kin.a3N                                     = (kin.j.row(0).cross(kin.j.row(1)));
-    kin.a3                                      = kin.a3N.normalized();
-    Eigen::Vector<ScalarType, 3> bV             = kin.h * kin.a3;
+    kin.j                               = kin.J + gradu.transpose();
+    kin.a3N                             = (kin.j.row(0).cross(kin.j.row(1)));
+    kin.a3                              = kin.a3N.normalized();
+    Eigen::Vector<ST, 3> bV             = kin.h * kin.a3;
     bV(2) *= 2; // Voigt notation requires the two here
     const auto BV = toVoigt(toEigen(geo_->impl().secondFundamentalForm(gpPos)));
     kin.kappaV    = BV - bV;
     return kin;
   }
 
-  template <typename ScalarType>
-  void calculateMatrixImpl(const FERequirementType& par, typename Traits::template MatrixType<ScalarType> K,
-                           const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
+  template <typename ST>
+  void calculateMatrixImpl(const FERequirementType& par, typename Traits::template MatrixType<ST> K,
+                           const std::optional<const Eigen::VectorX<ST>>& dx = std::nullopt) const {
     K.setZero();
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
@@ -278,27 +276,27 @@ protected:
       const auto intElement = geo_->integrationElement(gp.position()) * gp.weight();
       const auto [C, epsV, kappaV, jE, J, h, H, a3N, a3] =
           computeMaterialAndStrains(gp.position(), gpIndex, *geo_, uFunction);
-      const Eigen::Vector<ScalarType, membraneStrainSize> membraneForces = thickness_ * C * epsV;
-      const Eigen::Vector<ScalarType, bendingStrainSize> moments = Dune::power(thickness_, 3) / 12.0 * C * kappaV;
+      const Eigen::Vector<ST, membraneStrainSize> membraneForces = thickness_ * C * epsV;
+      const Eigen::Vector<ST, bendingStrainSize> moments         = Dune::power(thickness_, 3) / 12.0 * C * kappaV;
 
-      const auto& Nd  = localBasis.evaluateJacobian(gpIndex);
-      const auto& Ndd = localBasis.evaluateSecondDerivatives(gpIndex);
+      const auto& Nd  = localBasis_.evaluateJacobian(gpIndex);
+      const auto& Ndd = localBasis_.evaluateSecondDerivatives(gpIndex);
       for (size_t i = 0; i < numberOfNodes_; ++i) {
-        Eigen::Matrix<ScalarType, membraneStrainSize, worldDim> bopIMembrane =
-            membraneStrain.derivative(gp.position(), jE, Nd, *geo_, uFunction, localBasis, i);
+        Eigen::Matrix<ST, membraneStrainSize, worldDim> bopIMembrane =
+            membraneStrain_.derivative(gp.position(), jE, Nd, *geo_, uFunction, localBasis_, i);
 
-        Eigen::Matrix<ScalarType, bendingStrainSize, worldDim> bopIBending = bopBending(jE, h, Nd, Ndd, i, a3N, a3);
+        Eigen::Matrix<ST, bendingStrainSize, worldDim> bopIBending = bopBending(jE, h, Nd, Ndd, i, a3N, a3);
         for (size_t j = i; j < numberOfNodes_; ++j) {
           auto KBlock = K.template block<worldDim, worldDim>(worldDim * i, worldDim * j);
-          Eigen::Matrix<ScalarType, membraneStrainSize, worldDim> bopJMembrane =
-              membraneStrain.derivative(gp.position(), jE, Nd, *geo_, uFunction, localBasis, j);
-          Eigen::Matrix<ScalarType, bendingStrainSize, worldDim> bopJBending = bopBending(jE, h, Nd, Ndd, j, a3N, a3);
+          Eigen::Matrix<ST, membraneStrainSize, worldDim> bopJMembrane =
+              membraneStrain_.derivative(gp.position(), jE, Nd, *geo_, uFunction, localBasis_, j);
+          Eigen::Matrix<ST, bendingStrainSize, worldDim> bopJBending = bopBending(jE, h, Nd, Ndd, j, a3N, a3);
           KBlock += thickness_ * bopIMembrane.transpose() * C * bopJMembrane * intElement;
           KBlock += Dune::power(thickness_, 3) / 12.0 * bopIBending.transpose() * C * bopJBending * intElement;
 
-          Eigen::Matrix<ScalarType, worldDim, worldDim> kgMembraneIJ =
-              membraneStrain.secondDerivative(gp.position(), Nd, *geo_, uFunction, localBasis, membraneForces, i, j);
-          Eigen::Matrix<ScalarType, worldDim, worldDim> kgBendingIJ = kgBending(jE, h, Nd, Ndd, a3N, a3, moments, i, j);
+          Eigen::Matrix<ST, worldDim, worldDim> kgMembraneIJ =
+              membraneStrain_.secondDerivative(gp.position(), Nd, *geo_, uFunction, localBasis_, membraneForces, i, j);
+          Eigen::Matrix<ST, worldDim, worldDim> kgBendingIJ = kgBending(jE, h, Nd, Ndd, a3N, a3, moments, i, j);
           KBlock += kgMembraneIJ * intElement;
           KBlock += kgBendingIJ * intElement;
         }
@@ -311,9 +309,9 @@ protected:
     TractionType::calculateMatrixImpl(par, K, dx);
   }
 
-  template <typename ScalarType>
-  void calculateVectorImpl(const FERequirementType& par, typename Traits::template VectorType<ScalarType> force,
-                           const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
+  template <typename ST>
+  void calculateVectorImpl(const FERequirementType& par, typename Traits::template VectorType<ST> force,
+                           const std::optional<const Eigen::VectorX<ST>>& dx = std::nullopt) const {
     force.setZero();
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
@@ -324,15 +322,15 @@ protected:
     for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
       const auto [C, epsV, kappaV, jE, J, h, H, a3N, a3] =
           computeMaterialAndStrains(gp.position(), gpIndex, *geo_, uFunction);
-      const Eigen::Vector<ScalarType, 3> membraneForces = thickness_ * C * epsV;
-      const Eigen::Vector<ScalarType, 3> moments        = Dune::power(thickness_, 3) / 12.0 * C * kappaV;
+      const Eigen::Vector<ST, 3> membraneForces = thickness_ * C * epsV;
+      const Eigen::Vector<ST, 3> moments        = Dune::power(thickness_, 3) / 12.0 * C * kappaV;
 
-      const auto& Nd  = localBasis.evaluateJacobian(gpIndex);
-      const auto& Ndd = localBasis.evaluateSecondDerivatives(gpIndex);
+      const auto& Nd  = localBasis_.evaluateJacobian(gpIndex);
+      const auto& Ndd = localBasis_.evaluateSecondDerivatives(gpIndex);
       for (size_t i = 0; i < numberOfNodes_; ++i) {
-        Eigen::Matrix<ScalarType, 3, 3> bopIMembrane =
-            membraneStrain.derivative(gp.position(), jE, Nd, *geo_, uFunction, localBasis, i);
-        Eigen::Matrix<ScalarType, 3, 3> bopIBending = bopBending(jE, h, Nd, Ndd, i, a3N, a3);
+        Eigen::Matrix<ST, 3, 3> bopIMembrane =
+            membraneStrain_.derivative(gp.position(), jE, Nd, *geo_, uFunction, localBasis_, i);
+        Eigen::Matrix<ST, 3, 3> bopIBending = bopBending(jE, h, Nd, Ndd, i, a3N, a3);
         force.template segment<3>(3 * i) +=
             bopIMembrane.transpose() * membraneForces * geo_->integrationElement(gp.position()) * gp.weight();
         force.template segment<3>(3 * i) +=
@@ -347,22 +345,21 @@ protected:
     TractionType::calculateVectorImpl(par, force, dx);
   }
 
-  template <typename ScalarType>
+  template <typename ST>
   auto calculateScalarImpl(const FERequirementType& par,
-                           const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const
-      -> ScalarType {
+                           const std::optional<const Eigen::VectorX<ST>>& dx = std::nullopt) const -> ST {
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     const auto uFunction = displacementFunction(par, dx);
     const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
-    ScalarType energy    = 0.0;
+    ST energy            = 0.0;
 
     for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
       const auto [C, epsV, kappaV, j, J, h, H, a3N, a3] =
           computeMaterialAndStrains(gp.position(), gpIndex, *geo_, uFunction);
 
-      const ScalarType membraneEnergy = 0.5 * thickness_ * epsV.dot(C * epsV);
-      const ScalarType bendingEnergy  = 0.5 * Dune::power(thickness_, 3) / 12.0 * kappaV.dot(C * kappaV);
+      const ST membraneEnergy = 0.5 * thickness_ * epsV.dot(C * epsV);
+      const ST bendingEnergy  = 0.5 * Dune::power(thickness_, 3) / 12.0 * kappaV.dot(C * kappaV);
       energy += (membraneEnergy + bendingEnergy) * geo_->integrationElement(gp.position()) * gp.weight();
     }
 
@@ -374,12 +371,11 @@ protected:
     return energy;
   }
 
-  template <typename ScalarType>
-  Eigen::Matrix<ScalarType, 3, 3> kgBending(const Eigen::Matrix<ScalarType, 2, 3>& jcur,
-                                            const Eigen::Matrix3<ScalarType>& h, const auto& dN, const auto& ddN,
-                                            const Eigen::Vector3<ScalarType>& a3N, const Eigen::Vector3<ScalarType>& a3,
-                                            const Eigen::Vector3<ScalarType>& S, int I, int J) const {
-    Eigen::Matrix<ScalarType, 3, 3> kg;
+  template <typename ST>
+  Eigen::Matrix<ST, 3, 3> kgBending(const Eigen::Matrix<ST, 2, 3>& jcur, const Eigen::Matrix3<ST>& h, const auto& dN,
+                                    const auto& ddN, const Eigen::Vector3<ST>& a3N, const Eigen::Vector3<ST>& a3,
+                                    const Eigen::Vector3<ST>& S, int I, int J) const {
+    Eigen::Matrix<ST, 3, 3> kg;
     kg.setZero();
 
     const auto& dN1i = dN(I, 0);
@@ -387,33 +383,33 @@ protected:
     const auto& dN2i = dN(I, 1);
     const auto& dN2j = dN(J, 1);
 
-    const Eigen::Matrix<ScalarType, 3, 3> P =
+    const Eigen::Matrix<ST, 3, 3> P =
         1.0 / a3N.norm() * (Eigen::Matrix<double, 3, 3>::Identity() - a3 * a3.transpose());
 
     const auto a1dxI = Eigen::Matrix<double, 3, 3>::Identity() *
                        dN1i; // the auto here allows the exploitation of the identity matrices,
     // due to Eigen's expression templates
-    const auto a2dxI                            = Eigen::Matrix<double, 3, 3>::Identity() * dN2i;
-    const auto a1dxJ                            = Eigen::Matrix<double, 3, 3>::Identity() * dN1j;
-    const auto a2dxJ                            = Eigen::Matrix<double, 3, 3>::Identity() * dN2j;
-    const auto a1                               = jcur.row(0);
-    const auto a2                               = jcur.row(1);
-    const Eigen::Matrix<ScalarType, 3, 3> a3NdI = a1dxI.colwise().cross(a2) - a2dxI.colwise().cross(a1);
-    const Eigen::Matrix<ScalarType, 3, 3> a3NdJ = a1dxJ.colwise().cross(a2) - a2dxJ.colwise().cross(a1);
-    Eigen::Matrix<ScalarType, 3, 3> a3dI        = P * a3NdI;
-    Eigen::Matrix<ScalarType, 3, 3> a3dJ        = P * a3NdJ;
+    const auto a2dxI                    = Eigen::Matrix<double, 3, 3>::Identity() * dN2i;
+    const auto a1dxJ                    = Eigen::Matrix<double, 3, 3>::Identity() * dN1j;
+    const auto a2dxJ                    = Eigen::Matrix<double, 3, 3>::Identity() * dN2j;
+    const auto a1                       = jcur.row(0);
+    const auto a2                       = jcur.row(1);
+    const Eigen::Matrix<ST, 3, 3> a3NdI = a1dxI.colwise().cross(a2) - a2dxI.colwise().cross(a1);
+    const Eigen::Matrix<ST, 3, 3> a3NdJ = a1dxJ.colwise().cross(a2) - a2dxJ.colwise().cross(a1);
+    Eigen::Matrix<ST, 3, 3> a3dI        = P * a3NdI;
+    Eigen::Matrix<ST, 3, 3> a3dJ        = P * a3NdJ;
     for (int i = 0; i < 3; ++i) {
-      const auto a_albe               = h.row(i).transpose();
-      const auto& ddNI                = ddN(I, i);
-      const auto& ddNJ                = ddN(J, i);
-      Eigen::Vector3<ScalarType> vecd = P * a_albe;
+      const auto a_albe       = h.row(i).transpose();
+      const auto& ddNI        = ddN(I, i);
+      const auto& ddNJ        = ddN(J, i);
+      Eigen::Vector3<ST> vecd = P * a_albe;
 
-      Eigen::Matrix<ScalarType, 3, 3> a3Ndd =
+      Eigen::Matrix<ST, 3, 3> a3Ndd =
           1.0 / a3N.squaredNorm() *
           ((3 * a3 * a3.transpose() - Eigen::Matrix<double, 3, 3>::Identity()) * (a3.dot(a_albe)) -
            a_albe * a3.transpose() - a3 * a_albe.transpose());
 
-      Eigen::Matrix<ScalarType, 3, 3> secondDerivativeDirectorIJ = skew(((dN2i * dN1j - dN1i * dN2j) * vecd).eval());
+      Eigen::Matrix<ST, 3, 3> secondDerivativeDirectorIJ = skew(((dN2i * dN1j - dN1i * dN2j) * vecd).eval());
       kg -= (a3NdI.transpose() * a3Ndd * a3NdJ + secondDerivativeDirectorIJ + (ddNI * a3dJ + ddNJ * a3dI.transpose())) *
             S[i] * (i == 2 ? 2 : 1);
     }
@@ -421,24 +417,23 @@ protected:
     return kg;
   }
 
-  template <typename ScalarType>
-  Eigen::Matrix<ScalarType, 3, 3> bopBending(const Eigen::Matrix<ScalarType, 2, 3>& jcur,
-                                             const Eigen::Matrix3<ScalarType>& h, const auto& dN, const auto& ddN,
-                                             const int node, const Eigen::Vector3<ScalarType>& a3N,
-                                             const Eigen::Vector3<ScalarType>& a3) const {
-    const Eigen::Matrix<ScalarType, 3, 3> a1dxI =
+  template <typename ST>
+  Eigen::Matrix<ST, 3, 3> bopBending(const Eigen::Matrix<ST, 2, 3>& jcur, const Eigen::Matrix3<ST>& h, const auto& dN,
+                                     const auto& ddN, const int node, const Eigen::Vector3<ST>& a3N,
+                                     const Eigen::Vector3<ST>& a3) const {
+    const Eigen::Matrix<ST, 3, 3> a1dxI =
         Eigen::Matrix<double, 3, 3>::Identity() * dN(node, 0); // this should be double
     // but the cross-product below complains otherwise
-    const Eigen::Matrix<ScalarType, 3, 3> a2dxI = Eigen::Matrix<double, 3, 3>::Identity() * dN(node, 1);
-    const auto a1                               = jcur.row(0);
-    const auto a2                               = jcur.row(1);
-    const Eigen::Matrix<ScalarType, 3, 3> a3NdI =
+    const Eigen::Matrix<ST, 3, 3> a2dxI = Eigen::Matrix<double, 3, 3>::Identity() * dN(node, 1);
+    const auto a1                       = jcur.row(0);
+    const auto a2                       = jcur.row(1);
+    const Eigen::Matrix<ST, 3, 3> a3NdI =
         a1dxI.colwise().cross(a2) - a2dxI.colwise().cross(a1); // minus needed since order has
     // to be swapped to get column-wise cross product working
-    const Eigen::Matrix<ScalarType, 3, 3> a3d1 =
+    const Eigen::Matrix<ST, 3, 3> a3d1 =
         1.0 / a3N.norm() * (Eigen::Matrix<double, 3, 3>::Identity() - a3 * a3.transpose()) * a3NdI;
 
-    Eigen::Matrix<ScalarType, 3, 3> bop = -(h * a3d1 + (a3 * ddN.row(node)).transpose());
+    Eigen::Matrix<ST, 3, 3> bop = -(h * a3d1 + (a3 * ddN.row(node)).transpose());
     bop.row(2) *= 2;
 
     return bop;

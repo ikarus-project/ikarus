@@ -33,7 +33,7 @@ namespace Ikarus {
  * \brief Structure containing arguments for subsidiary functions.
  *
  * This structure holds various arguments used by subsidiary functions in control routines.
- * @ingroup  controlroutines
+ * \ingroup  controlroutines
  */
 struct SubsidiaryArgs
 {
@@ -61,7 +61,7 @@ struct SubsidiaryArgs
  * factor increment. \f$\psi\f$ is the to-be-determined correction factor for the different dimensionalities between
  * \f$\mathrm{D}\mathbf{D}\f$ and \f$\mathrm{D} \lambda\f$. The scalar  \f$\hat{s} \f$ defines the requested size of
  * the step.
- * @ingroup  controlroutines
+ * \ingroup  controlroutines
  */
 struct ArcLength
 {
@@ -90,15 +90,15 @@ struct ArcLength
    * This method initializes the prediction step for the standard arc-length method it computes \f$\psi\f$ and
    * computes initial \f$\mathrm{D}\mathbf{D}\f$ and \f$\mathrm{D} \lambda\f$.
    *
-   * \tparam NonLinearOperator Type of the nonlinear operator.
+   * \tparam NLO Type of the nonlinear operator.
    * \param nonLinearOperator The nonlinear operator.
    * \param args The subsidiary function arguments.
-   * @ingroup  controlroutines
+   * \ingroup  controlroutines
    */
-  template <typename NonLinearOperator>
-  void initialPrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
+  template <typename NLO>
+  void initialPrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) {
     SolverTypeTag solverTag;
-    using JacobianType = std::remove_cvref_t<typename NonLinearOperator::DerivativeType>;
+    using JacobianType = std::remove_cvref_t<typename NLO::DerivativeType>;
     static_assert((traits::isSpecializationTypeAndNonTypes<Eigen::Matrix, JacobianType>::value) or
                       (traits::isSpecializationTypeNonTypeAndType<Eigen::SparseMatrix, JacobianType>::value),
                   "Linear solver not implemented for the chosen derivative type of the non-linear operator");
@@ -114,9 +114,8 @@ struct ArcLength
     const auto& K = nonLinearOperator.derivative();
 
     static constexpr bool isLinearSolver =
-        Ikarus::Concepts::LinearSolverCheck<decltype(LinearSolver(solverTag)),
-                                            typename NonLinearOperator::DerivativeType,
-                                            typename NonLinearOperator::ValueType>;
+        Ikarus::Concepts::LinearSolverCheck<decltype(LinearSolver(solverTag)), typename NLO::DerivativeType,
+                                            typename NLO::ValueType>;
     static_assert(isLinearSolver,
                   "Initial predictor step in the standard arc-length method doesn't have a linear solver");
 
@@ -142,12 +141,12 @@ struct ArcLength
    *
    * This method updates the prediction step for the standard arc-length method.
    *
-   * \tparam NonLinearOperator Type of the nonlinear operator.
+   * \tparam NLO Type of the nonlinear operator.
    * \param nonLinearOperator The nonlinear operator.
    * \param args The subsidiary function arguments.
    */
-  template <typename NonLinearOperator>
-  void intermediatePrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
+  template <typename NLO>
+  void intermediatePrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) {
     nonLinearOperator.firstParameter() += args.DD;
     nonLinearOperator.lastParameter() += args.Dlambda;
   }
@@ -169,7 +168,7 @@ private:
  * \mathrm{D} \lambda -  \hat{s}, \f]
  * where \f$\mathrm{D}\mathbf{D}\f$ is the increment of the solution vector and \f$\mathrm{D} \lambda\f$ is the load
  * factor increment. The scalar   \f$\hat{s} \f$ defines the requested size of the step.
- * @ingroup  controlroutines
+ * \ingroup  controlroutines
  */
 struct LoadControlSubsidiaryFunction
 {
@@ -191,12 +190,12 @@ struct LoadControlSubsidiaryFunction
    *
    * This method initializes the prediction step for the load control method.
    *
-   * \tparam NonLinearOperator Type of the nonlinear operator.
+   * \tparam NLO Type of the nonlinear operator.
    * \param nonLinearOperator The nonlinear operator.
    * \param args The subsidiary function arguments.
    */
-  template <typename NonLinearOperator>
-  void initialPrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
+  template <typename NLO>
+  void initialPrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) {
     args.Dlambda                      = args.stepSize;
     nonLinearOperator.lastParameter() = args.Dlambda;
   }
@@ -206,12 +205,12 @@ struct LoadControlSubsidiaryFunction
    *
    * This method updates the prediction step for the load control method.
    *
-   * \tparam NonLinearOperator Type of the nonlinear operator.
+   * \tparam NLO Type of the nonlinear operator.
    * \param nonLinearOperator The nonlinear operator.
    * \param args The subsidiary function arguments.
    */
-  template <typename NonLinearOperator>
-  void intermediatePrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
+  template <typename NLO>
+  void intermediatePrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) {
     nonLinearOperator.lastParameter() += args.Dlambda;
   }
 
@@ -229,7 +228,7 @@ struct LoadControlSubsidiaryFunction
  * ||\mathrm{D}\mathbf{D}|| -  \hat{s}, \f]
  * where \f$\mathrm{D}\mathbf{D}\f$ is the increment of the solution vector and \f$\mathrm{D} \lambda\f$ is the load
  * factor increment. The scalar  \f$\hat{s} \f$ defines the requested size of the step.
- * @ingroup  controlroutines
+ * \ingroup  controlroutines
  */
 struct DisplacementControl
 {
@@ -261,12 +260,12 @@ struct DisplacementControl
    *
    * This method initializes the prediction step for the displacement control method.
    *
-   * \tparam NonLinearOperator Type of the nonlinear operator.
+   * \tparam NLO Type of the nonlinear operator.
    * \param nonLinearOperator The nonlinear operator.
    * \param args The subsidiary function arguments.
    */
-  template <typename NonLinearOperator>
-  void initialPrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
+  template <typename NLO>
+  void initialPrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) {
     args.DD(controlledIndices).array() = args.stepSize;
     nonLinearOperator.firstParameter() = args.DD;
   }
@@ -276,12 +275,12 @@ struct DisplacementControl
    *
    * This method updates the prediction step for the displacement control method.
    *
-   * \tparam NonLinearOperator Type of the nonlinear operator.
+   * \tparam NLO Type of the nonlinear operator.
    * \param nonLinearOperator The nonlinear operator.
    * \param args The subsidiary function arguments.
    */
-  template <typename NonLinearOperator>
-  void intermediatePrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
+  template <typename NLO>
+  void intermediatePrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) {
     nonLinearOperator.firstParameter() += args.DD;
   }
 

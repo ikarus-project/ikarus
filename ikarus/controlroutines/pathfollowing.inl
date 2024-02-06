@@ -21,11 +21,11 @@
 
 namespace Ikarus {
 
-template <typename NonLinearSolver, typename PathFollowingType, typename AdaptiveStepSizing>
-requires(Impl::checkPathFollowingTemplates<NonLinearSolver, PathFollowingType, AdaptiveStepSizing>())
-ControlInformation PathFollowing<NonLinearSolver, PathFollowingType, AdaptiveStepSizing>::run() {
+template <typename NLS, typename PF, typename ASS>
+requires(Impl::checkPathFollowingTemplates<NLS, PF, ASS>())
+ControlInformation PathFollowing<NLS, PF, ASS>::run() {
   ControlInformation info;
-  auto& nonOp = nonLinearSolver->nonLinearOperator();
+  auto& nonOp = nonLinearSolver_->nonLinearOperator();
   this->notify(ControlMessages::CONTROL_STARTED, pathFollowingType_.name());
 
   SubsidiaryArgs subsidiaryArgs;
@@ -39,7 +39,7 @@ ControlInformation PathFollowing<NonLinearSolver, PathFollowingType, AdaptiveSte
   this->notify(ControlMessages::STEP_STARTED, 0, subsidiaryArgs.stepSize);
   auto subsidiaryFunctionPtr = [&](auto&& args) { return pathFollowingType_(args); };
   pathFollowingType_.initialPrediction(nonOp, subsidiaryArgs);
-  auto solverInfo = nonLinearSolver->solve(subsidiaryFunctionPtr, subsidiaryArgs);
+  auto solverInfo = nonLinearSolver_->solve(subsidiaryFunctionPtr, subsidiaryArgs);
   info.solverInfos.push_back(solverInfo);
   info.totalIterations += solverInfo.iterations;
   if (not solverInfo.success)
@@ -51,13 +51,13 @@ ControlInformation PathFollowing<NonLinearSolver, PathFollowingType, AdaptiveSte
   for (int ls = 1; ls < steps_; ++ls) {
     subsidiaryArgs.currentStep = ls;
 
-    adaptiveStepSizing(solverInfo, subsidiaryArgs, nonOp);
+    adaptiveStepSizing_(solverInfo, subsidiaryArgs, nonOp);
 
     this->notify(ControlMessages::STEP_STARTED, subsidiaryArgs.currentStep, subsidiaryArgs.stepSize);
 
     pathFollowingType_.intermediatePrediction(nonOp, subsidiaryArgs);
 
-    solverInfo = nonLinearSolver->solve(subsidiaryFunctionPtr, subsidiaryArgs);
+    solverInfo = nonLinearSolver_->solve(subsidiaryFunctionPtr, subsidiaryArgs);
 
     info.solverInfos.push_back(solverInfo);
     info.totalIterations += solverInfo.iterations;

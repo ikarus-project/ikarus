@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file resultfunction.hh
- * @brief Ikarus Result Evaluators for Stress Analysis
- * @ingroup io
+ * \file resultfunction.hh
+ * \brief Ikarus Result Evaluators for Stress Analysis
+ * \ingroup io
  *
  */
 
@@ -27,54 +27,54 @@ namespace Impl {
 } // namespace Impl
 
 /**
- * @brief Wrapper to evaluate results for a vtkwriter.
- * @details
+ * \brief Wrapper to evaluate results for a vtkwriter.
+ * \details
  * Usage:
- * @code
- *   auto resultFunction = std::make_shared<ResultFunction<ElementType>>(&fes, feReq);
+ * \code
+ *   auto resultFunction = std::make_shared<ResultFunction<FiniteElement>>(&fes, feReq);
  *
  * vtkWriter.addPointData(Dune::Vtk::Function<GridView>( resultFunction));
  * // or with Dunes native Vtk
  * vtkWriter.addVertexData(resultFunction);
-   * @endcode
- * @ingroup io
- * @tparam ElementType_ Type of the finite element
- * @tparam resType requested result type
- * @tparam UserFunction Type of the user-defined function for custom result evaluation (default is
+ * \endcode
+ * \ingroup io
+ * \tparam FE Type of the finite element
+ * \tparam resType requested result type
+ * \tparam UserFunction Type of the user-defined function for custom result evaluation (default is
 DefaultUserFunction)
  */
-template <typename ElementType_, ResultType resType, typename UserFunction = Impl::DefaultUserFunction>
-class ResultFunction : public Dune::VTKFunction<typename ElementType_::GridView>
+template <typename FE, ResultType resType, typename UserFunction = Impl::DefaultUserFunction>
+class ResultFunction : public Dune::VTKFunction<typename FE::GridView>
 {
 public:
-  using ElementType            = ElementType_;
-  using FERequirementType      = typename ElementType::FERequirementType;
-  using GridView               = typename ElementType::GridView;
+  using FiniteElement          = FE;
+  using FERequirementType      = typename FiniteElement::FERequirementType;
+  using GridView               = typename FiniteElement::GridView;
   using ctype                  = typename GridView::ctype;
   constexpr static int griddim = GridView::dimension;
   using Entity                 = typename GridView::template Codim<0>::Entity;
 
   /**
-   * @brief Evaluate the component at a given entity and local coordinates.
+   * \brief Evaluate the component at a given entity and local coordinates.
    *
    * This function is required by the Dune::VTKFunction interface.
    *
-   * @param comp Stress component index
-   * @param e Entity on which to evaluate the stress
-   * @param local Local coordinates within the entity
-   * @return Stress component value
+   * \param comp Stress component index
+   * \param e Entity on which to evaluate the stress
+   * \param local Local coordinates within the entity
+   * \return Stress component value
    */
   double evaluate(int comp, const Entity& e, const Dune::FieldVector<ctype, griddim>& local) const override {
-    auto index = gridView.indexSet().index(e);
+    auto index = gridView_.indexSet().index(e);
     return evaluateComponent(index, local, comp);
   }
 
   /**
-   * @brief Get the number of components.
+   * \brief Get the number of components.
    *
    * This function is required by the Dune::VTKFunction interface.
    *
-   * @return Number of stress components
+   * \return Number of stress components
    */
   [[nodiscard]] int ncomps() const override {
     if constexpr (std::is_same_v<UserFunction, Impl::DefaultUserFunction>) {
@@ -88,11 +88,11 @@ public:
   }
 
   /**
-   * @brief Get the name of the result type.
+   * \brief Get the name of the result type.
    *
    * This function is required by the Dune::VTKFunction interface.
    *
-   * @return String representing the name of the result type
+   * \return String representing the name of the result type
    */
   [[nodiscard]] constexpr std::string name() const override {
     if constexpr (std::is_same_v<UserFunction, Impl::DefaultUserFunction>)
@@ -102,15 +102,15 @@ public:
   }
 
   /**
-   * @brief Constructor for ResultFunction.
+   * \brief Constructor for ResultFunction.
    *
    * Constructs a ResultFunction object with given finite elements, ferequirements
    *
-   * @param fes Pointer to a vector of finite elements
-   * @param req FERequirements for evaluation
+   * \param fes Pointer to a vector of finite elements
+   * \param req FERequirements for evaluation
    */
-  ResultFunction(std::vector<ElementType>* fes, const FERequirementType& req)
-      : gridView{fes->at(0).localView().globalBasis().gridView()},
+  ResultFunction(std::vector<FiniteElement>* fes, const FERequirementType& req)
+      : gridView_{fes->at(0).localView().globalBasis().gridView()},
         feRequirements_{req},
         fes_{fes},
         userFunction_{UserFunction{}} {}
@@ -125,9 +125,9 @@ private:
       return result(comp);
   }
 
-  GridView gridView;
+  GridView gridView_;
   FERequirementType feRequirements_;
-  std::vector<ElementType>* fes_;
+  std::vector<FiniteElement>* fes_;
   [[no_unique_address]] std::string name_{};
   UserFunction userFunction_;
 };

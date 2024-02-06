@@ -4,7 +4,7 @@
 /**
  * \file
  * \brief Defines the ControlInformation structure for storing control results.
- * @ingroup  controlroutines
+ * \ingroup  controlroutines
  */
 
 #pragma once

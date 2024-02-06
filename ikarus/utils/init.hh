@@ -24,7 +24,7 @@
 namespace Ikarus {
 
 /**
- * @brief Singleton class representing an instance of the Ikarus framework.
+ * \brief Singleton class representing an instance of the Ikarus framework.
  *
  * This class manages the initialization and configuration of the Ikarus framework.
  * It provides functionality to enable a file logger and prints a banner and version information on initialization.
@@ -33,9 +33,9 @@ class IkarusInstance
 {
 public:
   /**
-   * @brief Gets the singleton instance of the Ikarus framework.
+   * \brief Gets the singleton instance of the Ikarus framework.
    *
-   * @return The singleton instance.
+   * \return The singleton instance.
    */
   static IkarusInstance& getInstance() {
     static IkarusInstance instance;
@@ -43,9 +43,9 @@ public:
   }
 
   /**
-   * @brief Enables a file logger.
+   * \brief Enables a file logger.
    *
-   * @param filename The name of the log file. If empty, the executable name is used.
+   * \param filename The name of the log file. If empty, the executable name is used.
    */
   void enableFileLogger(std::string&& filename = "") {
     using namespace std::chrono;
@@ -54,18 +54,18 @@ public:
     std::ranges::transform(currentTime, currentTime.begin(), [](char ch) {
       return (ch == ' ' or ch == ':') ? '_' : ch;
     }); // replace space and colon with underscore
-    auto logFilename = (filename.empty() ? executableName : filename) + currentTime + ".log";
-    auto file_sink   = std::make_shared<spdlog::sinks::basic_file_sink_mt>(logFilename, true);
-    file_sink->set_pattern("%v");
-    file_sink->set_level(spdlog::level::trace);
+    auto logFilename = (filename.empty() ? executableName_ : filename) + currentTime + ".log";
+    auto fileSink    = std::make_shared<spdlog::sinks::basic_file_sink_mt>(logFilename, true);
+    fileSink->set_pattern("%v");
+    fileSink->set_level(spdlog::level::trace);
     auto logger = spdlog::default_logger();
-    logger->sinks().push_back(file_sink);
+    logger->sinks().push_back(fileSink);
   }
 
 private:
   friend void init(int argc, char** argv, bool enableFileLogger);
   IkarusInstance() = default;
-  std::string executableName;
+  std::string executableName_;
 
 public:
   IkarusInstance(const IkarusInstance&) = delete;
@@ -73,17 +73,17 @@ public:
 };
 
 /**
- * @brief Initializes the Ikarus framework.
+ * \brief Initializes the Ikarus framework.
  *
- * @param argc The number of command-line arguments.
- * @param argv The command-line arguments.
- * @param enableFileLogger Flag indicating whether to enable the file logger.
+ * \param argc The number of command-line arguments.
+ * \param argv The command-line arguments.
+ * \param enableFileLogger Flag indicating whether to enable the file logger.
  */
 void inline init(int argc, char** argv, bool enableFileLogger = true) {
   Dune::MPIHelper::instance(argc, argv);
-  auto& instance          = IkarusInstance::getInstance();
-  instance.executableName = argv[0];
-  auto logger             = spdlog::default_logger();
+  auto& instance           = IkarusInstance::getInstance();
+  instance.executableName_ = argv[0];
+  auto logger              = spdlog::default_logger();
   logger->set_pattern("%v");
   if (enableFileLogger)
     instance.enableFileLogger();

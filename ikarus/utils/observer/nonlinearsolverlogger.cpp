@@ -14,16 +14,16 @@ void NonLinearSolverLogger::updateImpl(NonLinearSolverMessages message) {
     case NonLinearSolverMessages::ITERATION_STARTED:
       break;
     case NonLinearSolverMessages::INIT:
-      iters = 1;
-      rNorm = 0.0;
-      dNorm = 0.0;
+      iters_ = 1;
+      rNorm_ = 0.0;
+      dNorm_ = 0.0;
       spdlog::info("Non-linear solver started:");
       spdlog::info("{:<11} {:<20} {:<20} {:<20}", "Ite", "normR", "normD", "lambda");
       spdlog::info("-------------------------------------------------------------------------------");
       break;
     case NonLinearSolverMessages::ITERATION_ENDED:
-      spdlog::info("{} {:<10d} {:<20.2e} {:<20.2e} {:<20.2e}", "", iters, rNorm, dNorm, lambda);
-      ++iters;
+      spdlog::info("{} {:<10d} {:<20.2e} {:<20.2e} {:<20.2e}", "", iters_, rNorm_, dNorm_, lambda_);
+      ++iters_;
       break;
     default:
       break;
@@ -33,13 +33,13 @@ void NonLinearSolverLogger::updateImpl(NonLinearSolverMessages message) {
 void NonLinearSolverLogger::updateImpl(NonLinearSolverMessages message, double val) {
   switch (message) {
     case NonLinearSolverMessages::RESIDUALNORM_UPDATED:
-      rNorm = val;
+      rNorm_ = val;
       break;
     case NonLinearSolverMessages::SOLUTION_CHANGED:
-      lambda = val;
+      lambda_ = val;
       break;
     case NonLinearSolverMessages::CORRECTIONNORM_UPDATED:
-      dNorm = val;
+      dNorm_ = val;
       break;
     default:
       break;

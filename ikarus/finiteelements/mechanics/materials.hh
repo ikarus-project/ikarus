@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file materials.hh
- * @brief Header file for material models in Ikarus finite element mechanics.
- * @ingroup  mechanics
+ * \file materials.hh
+ * \brief Header file for material models in Ikarus finite element mechanics.
+ * \ingroup  mechanics
  */
 
 #pragma once

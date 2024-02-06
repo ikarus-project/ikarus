@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file tags.hh
- * @brief Definition of several material related enums
+ * \file tags.hh
+ * \brief Definition of several material related enums
  */
 
 #pragma once

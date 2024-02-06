@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file ferequirements.hh
- * @brief Definition of the LinearElastic class for finite element mechanics computations.
- * @ingroup finiteelements
+ * \file ferequirements.hh
+ * \brief Definition of the LinearElastic class for finite element mechanics computations.
+ * \ingroup finiteelements
  */
 
 #pragma once
@@ -117,11 +117,11 @@ struct AffordanceCollectionImpl
 /**
  * \brief Concept to check if a given type is one of the predefined affordance enums or the AffordanceCollectionImpl.
  */
-template <typename Type>
-concept FEAffordance = std::is_same_v<std::remove_cvref_t<Type>, ScalarAffordances> or
-                       std::is_same_v<std::remove_cvref_t<Type>, VectorAffordances> or
-                       std::is_same_v<std::remove_cvref_t<Type>, MatrixAffordances> or
-                       std::is_same_v<std::remove_cvref_t<Type>, AffordanceCollectionImpl>;
+template <typename T>
+concept FEAffordance = std::is_same_v<std::remove_cvref_t<T>, ScalarAffordances> or
+                       std::is_same_v<std::remove_cvref_t<T>, VectorAffordances> or
+                       std::is_same_v<std::remove_cvref_t<T>, MatrixAffordances> or
+                       std::is_same_v<std::remove_cvref_t<T>, AffordanceCollectionImpl>;
 
 inline constexpr VectorAffordances forces = VectorAffordances::forces;
 
@@ -164,19 +164,18 @@ namespace Impl {
  * and parameters needed. It provides methods to add affordances, insert parameters, and manage global solution
  * vectors.
  *
- * \tparam SolutionVectorType_ Type of the solution vector, defaulting to std::reference_wrapper<Eigen::VectorXd>.
- * \tparam ParameterType_ Type of the parameter, defaulting to std::reference_wrapper<double>.
+ * \tparam SV Type of the solution vector, defaulting to std::reference_wrapper<Eigen::VectorXd>.
+ * \tparam PM Type of the parameter, defaulting to std::reference_wrapper<double>.
  *
  */
-template <typename SolutionVectorType_ = std::reference_wrapper<Eigen::VectorXd>,
-          typename ParameterType_      = std::reference_wrapper<double>>
+template <typename SV = std::reference_wrapper<Eigen::VectorXd>, typename PM = std::reference_wrapper<double>>
 class FERequirements
 {
 public:
-  using SolutionVectorType    = SolutionVectorType_;
-  using SolutionVectorTypeRaw = typename Impl::DeduceRawVectorType<std::remove_cvref_t<SolutionVectorType_>>::Type;
-  using ParameterType         = ParameterType_;
-  using ParameterTypeRaw      = typename ParameterType_::type;
+  using SolutionVectorType    = SV;
+  using SolutionVectorTypeRaw = typename Impl::DeduceRawVectorType<std::remove_cvref_t<SV>>::Type;
+  using ParameterType         = PM;
+  using ParameterTypeRaw      = typename PM::type;
 
   /**
    * \brief Add an affordance to the requirements.
@@ -190,13 +189,13 @@ public:
   template <FEAffordance Affordance>
   FERequirements& addAffordance(Affordance&& affordance) {
     if constexpr (std::is_same_v<Affordance, ScalarAffordances>)
-      affordances.scalarAffordances = affordance;
+      affordances_.scalarAffordances = affordance;
     else if constexpr (std::is_same_v<Affordance, VectorAffordances>)
-      affordances.vectorAffordances = affordance;
+      affordances_.vectorAffordances = affordance;
     else if constexpr (std::is_same_v<Affordance, MatrixAffordances>)
-      affordances.matrixAffordances = affordance;
+      affordances_.matrixAffordances = affordance;
     else if constexpr (std::is_same_v<Affordance, AffordanceCollectionImpl>)
-      affordances = affordance;
+      affordances_ = affordance;
     return *this;
   }
 
@@ -210,7 +209,7 @@ public:
    * \return Reference to the updated FERequirements instance.
    */
   FERequirements& insertParameter(const FEParameter& key, ParameterTypeRaw& val) {
-    parameter.insert_or_assign(key, val);
+    parameter_.insert_or_assign(key, val);
     return *this;
   }
 
@@ -224,7 +223,7 @@ public:
    * \return Reference to the updated FERequirements instance.
    */
   FERequirements& insertGlobalSolution(const FESolutions& key, SolutionVectorTypeRaw& sol) {
-    sols.insert_or_assign(key, sol);
+    sols_.insert_or_assign(key, sol);
     return *this;
   }
 
@@ -241,9 +240,9 @@ public:
   const SolutionVectorTypeRaw& getGlobalSolution(const FESolutions& key) const {
     try {
       if constexpr (std::is_same_v<SolutionVectorType, std::reference_wrapper<Eigen::VectorXd>>)
-        return sols.at(key).get();
+        return sols_.at(key).get();
       else
-        return sols.at(key);
+        return sols_.at(key);
     } catch (std::out_of_range& oor) {
       DUNE_THROW(Dune::RangeError, std::string("Out of Range error: ") + std::string(oor.what()) +
                                        " in getGlobalSolution with key" + toString(key));
@@ -263,7 +262,7 @@ public:
    */
   const ParameterTypeRaw& getParameter(FEParameter&& key) const {
     try {
-      return parameter.at(key).get();
+      return parameter_.at(key).get();
     } catch (std::out_of_range& oor) {
       DUNE_THROW(Dune::RangeError, std::string("Out of Range error: ") + std::string(oor.what()) +
                                        " in getParameter with key" + toString(key));
@@ -283,19 +282,19 @@ public:
   template <FEAffordance Affordance>
   bool hasAffordance(Affordance&& affordance) const {
     if constexpr (std::is_same_v<Affordance, ScalarAffordances>)
-      return affordances.scalarAffordances == affordance;
+      return affordances_.scalarAffordances == affordance;
     else if constexpr (std::is_same_v<Affordance, VectorAffordances>)
-      return affordances.vectorAffordances == affordance;
+      return affordances_.vectorAffordances == affordance;
     else if constexpr (std::is_same_v<Affordance, MatrixAffordances>)
-      return affordances.matrixAffordances == affordance;
+      return affordances_.matrixAffordances == affordance;
     else if constexpr (std::is_same_v<Affordance, AffordanceCollectionImpl>)
-      return affordances == affordance;
+      return affordances_ == affordance;
   }
 
 private:
-  std::map<FESolutions, SolutionVectorType> sols;
-  std::map<FEParameter, ParameterType> parameter;
-  AffordanceCollectionImpl affordances;
+  std::map<FESolutions, SolutionVectorType> sols_;
+  std::map<FEParameter, ParameterType> parameter_;
+  AffordanceCollectionImpl affordances_;
 };
 
 /**
@@ -307,17 +306,16 @@ private:
  * and parameters needed. It provides methods to add affordances, insert parameters, and manage global solution
  * vectors.
  *
- * \tparam SolutionVectorType_ Type of the solution vector, defaulting to std::reference_wrapper<Eigen::VectorXd>.
- * \tparam ParameterType_ Type of the parameter, defaulting to std::reference_wrapper<double>.
+ * \tparam SV Type of the solution vector, defaulting to std::reference_wrapper<Eigen::VectorXd>.
+ * \tparam PM Type of the parameter, defaulting to std::reference_wrapper<double>.
  *
  */
-template <typename SolutionVectorType_ = std::reference_wrapper<Eigen::VectorXd>,
-          typename ParameterType_      = std::reference_wrapper<double>>
+template <typename SV = std::reference_wrapper<Eigen::VectorXd>, typename PM = std::reference_wrapper<double>>
 class [[deprecated(
     "FErequirements is deprecaded and will be removed after v0.5. Use FERequirements instead.")]] FErequirements
-    : public FERequirements<SolutionVectorType_, ParameterType_>
+    : public FERequirements<SV, PM>
 {
-  using Base = FERequirements<SolutionVectorType_, ParameterType_>;
+  using Base = FERequirements<SV, PM>;
 
 public:
   FErequirements() = default;

@@ -18,38 +18,41 @@
 namespace Ikarus {
 
 /**
- * @brief GenericObserver class for observing specific messages.
+ * \brief GenericObserver class for observing specific messages.
  *
  * This class template implements an observer for a specific message type.
  *
- * @tparam Messages The type of messages to be observed.
+ * \tparam M The type of messages to be observed.
  */
-template <typename Messages>
-class GenericObserver : public IObserver<Messages>
+template <typename M>
+class GenericObserver : public IObserver<M>
 {
+  using Messages = M;
+
 public:
   /**
-   * @brief Constructor for GenericObserver.
+   * \brief Constructor for GenericObserver.
    *
    * Initializes the observer with a specific message and a function to be executed upon observation.
    *
-   * @tparam F Type of the function to be executed.
-   * @param p_message The message to be observed.
-   * @param p_f The function to be executed with the current step .
+   * \tparam F Type of the function to be executed.
+   * \param p_message The message to be observed.
+   * \param p_f The function to be executed with the current step .
    */
   template <typename F>
-  GenericObserver(Messages p_message, F&& p_f)
-      : message{p_message},
-        f{p_f} {}
-  void updateImpl(Messages p_message) override {
-    if (p_message == message) {
-      f(step);
-      ++step;
+  GenericObserver(Messages message, F&& f)
+      : message_{message},
+        f_{f} {}
+  void updateImpl(Messages message) override {
+    if (message_ == message) {
+      f_(step_);
+      ++step_;
     }
   }
 
-  Messages message;
-  std::function<void(int)> f;
-  int step{0};
+private:
+  Messages message_;
+  std::function<void(int)> f_;
+  int step_{0};
 };
 } // namespace Ikarus

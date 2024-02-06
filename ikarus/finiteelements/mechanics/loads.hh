@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file loads.hh
- * @brief Header file for types of loads in Ikarus finite element mechanics.
- * @ingroup  mechanics
+ * \file loads.hh
+ * \brief Header file for types of loads in Ikarus finite element mechanics.
+ * \ingroup  mechanics
  */
 
 #pragma once

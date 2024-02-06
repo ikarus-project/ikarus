@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file linearelasticity.hh
- * @brief Contains the LinearElasticityT class implementation.
- * @ingroup  materials
+ * \file linearelasticity.hh
+ * \brief Contains the LinearElasticityT class implementation.
+ * \ingroup  materials
  */
 
 #pragma once
@@ -12,13 +12,12 @@
 #include "svk.hh"
 
 #include <ikarus/finiteelements/mechanics/materials/interface.hh>
-#include <ikarus/utils/tensorutils.hh>
 
 namespace Ikarus {
 
 /**
- * @brief Implementation of the Linear Elasticity material model.
- * @ingroup materials
+ * \brief Implementation of the Linear Elasticity material model.
+ * \ingroup materials
  *   The energy is computed as
  *  \f[ \psi(\Bvep) = \frac{\lambda}{2} (\tr \Bvep)^2   +\mu \tr (\Bvep^2) ,\f]
  *  where \f$ \Bvep \f$ denotes the linear strain tensor.
@@ -30,23 +29,23 @@ namespace Ikarus {
  *      \f[ \BBC(\Bvep) =\fracpt{^2\psi(\Bvep)}{\Bvep^2} =  \lambda \tr \Bvep \CI  +2 \mu \CI^{\mathrm{sym}},\f]
  *      where \f$ \CI_{IJKL} =  \de_{IJ}\de_{KL}\f$ and \f$ \CI_{IJKL}^\mathrm{sym} =  \frac{1}{2}(\de_{IK}\de_{JL}+
  * \de_{IL}\de_{JK})\f$.
- * @tparam ScalarType_ The scalar type used in the material.
+ * \tparam ST The scalar type used in the material.
  */
-template <typename ScalarType_>
-struct LinearElasticityT : public Material<LinearElasticityT<ScalarType_>>
+template <typename ST>
+struct LinearElasticityT : Material<LinearElasticityT<ST>>
 {
   [[nodiscard]] constexpr std::string nameImpl() const noexcept { return "LinearElasticity"; }
 
-  using ScalarType = ScalarType_;
+  using ScalarType = ST;
   using Base       = StVenantKirchhoffT<ScalarType>;
 
   /**
-   * @brief Constructor for LinearElasticityT.
+   * \brief Constructor for LinearElasticityT.
    *
-   * @param mpt The LamesFirstParameterAndShearModulus object.
+   * \param mpt The LamesFirstParameterAndShearModulus object.
    */
   explicit LinearElasticityT(const LamesFirstParameterAndShearModulus& mpt)
-      : svk{mpt} {}
+      : svk_{mpt} {}
 
   using field_type                    = ScalarType;
   static constexpr int worldDimension = 3;
@@ -69,62 +68,63 @@ struct LinearElasticityT : public Material<LinearElasticityT<ScalarType_>>
   static constexpr double derivativeFactor = 1;
 
   /**
-   * @brief Calculates the stored energy in the material.
+   * \brief Calculates the stored energy in the material.
    *
-   * @tparam Derived The underlying Eigen type.
-   * @param E The strain tensor components.
-   * @return Scalar return of stored energy.
+   * \tparam Derived The underlying Eigen type.
+   * \param E The strain tensor components.
+   * \return Scalar return of stored energy.
    */
   template <typename Derived>
   ScalarType storedEnergyImpl(const Eigen::MatrixBase<Derived>& E) const {
-    return svk.template storedEnergyImpl(E);
+    return svk_.template storedEnergyImpl(E);
   }
 
   /**
-   * @brief Calculates the stresses in the material.
+   * \brief Calculates the stresses in the material.
    *
-   * @tparam voigt Boolean indicating whether to return Voigt-shaped result.
-   * @tparam Derived The underlying Eigen type.
-   * @param E The strain tensor components.
-   * @return Matrix valued return of stresses.
+   * \tparam voigt Boolean indicating whether to return Voigt-shaped result.
+   * \tparam Derived The underlying Eigen type.
+   * \param E The strain tensor components.
+   * \return Matrix valued return of stresses.
    */
   template <bool voigt, typename Derived>
   auto stressesImpl(const Eigen::MatrixBase<Derived>& E) const {
-    return svk.template stressesImpl<voigt>(E);
+    return svk_.template stressesImpl<voigt>(E);
   }
 
   /**
-   * @brief Calculates the tangent moduli in the material.
+   * \brief Calculates the tangent moduli in the material.
    *
-   * @tparam voigt Boolean indicating whether to return Voigt-shaped result.
-   * @tparam Derived The underlying Eigen type.
-   * @param E The strain tensor components.
-   * @return Tangent moduli as fourth-order tensor.
+   * \tparam voigt Boolean indicating whether to return Voigt-shaped result.
+   * \tparam Derived The underlying Eigen type.
+   * \param E The strain tensor components.
+   * \return Tangent moduli as fourth-order tensor.
    */
   template <bool voigt, typename Derived>
   auto tangentModuliImpl(const Eigen::MatrixBase<Derived>& E) const {
-    return svk.template tangentModuliImpl<voigt>(E);
+    return svk_.template tangentModuliImpl<voigt>(E);
   }
 
   /**
-   * @brief Rebind material to a different scalar type.
+   * \brief Rebind material to a different scalar type.
    *
-   * @tparam ScalarTypeOther The scalar type to rebind to.
-   * @return Rebound material.
+   * \tparam STO The scalar type to rebind to.
+   * \return Rebound material.
    */
-  template <typename ScalarTypeOther>
+  template <typename STO>
   auto rebind() const {
-    LinearElasticityT<ScalarTypeOther> leRebound;
-    leRebound.svk = svk.template rebind<ScalarTypeOther>();
+    LinearElasticityT<STO> leRebound;
+    leRebound.svk = svk_.template rebind<STO>();
     return leRebound;
   }
 
-  StVenantKirchhoffT<ScalarType> svk;
+private:
+  StVenantKirchhoffT<ScalarType> svk_;
 };
 
 /**
- * @brief Convenience typedef for LinearElasticity with double as ScalarType.
+ * \brief Convenience typedef for LinearElasticity with double as ScalarType.
  */
-typedef LinearElasticityT<double> LinearElasticity;
+using LinearElasticity = LinearElasticityT<double>;
 
 } // namespace Ikarus

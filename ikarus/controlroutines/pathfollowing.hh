@@ -27,19 +27,18 @@ namespace Impl {
    * This consteval function checks whether the provided template parameters meet the requirements
    * for path-following control routines.
    *
-   * \tparam NonLinearSolver Type of the nonlinear solver.
-   * \tparam PathFollowingType Type of the path-following strategy.
-   * \tparam AdaptiveStepSizing Type of the adaptive step sizing strategy.
+   * \tparam NLS Type of the nonlinear solver.
+   * \tparam PF Type of the path-following strategy.
+   * \tparam ASS Type of the adaptive step sizing strategy.
    *
    * \return True if the templates meet the requirements, false otherwise.
    */
-  template <typename NonLinearSolver, typename PathFollowingType = ArcLength, typename AdaptiveStepSizing>
+  template <typename NLS, typename PF = ArcLength, typename ASS>
   consteval bool checkPathFollowingTemplates() {
-    return Concepts::PathFollowingStrategy<PathFollowingType, typename NonLinearSolver::NonLinearOperator,
-                                           SubsidiaryArgs> and
-           Concepts::AdaptiveStepSizingStrategy<AdaptiveStepSizing, NonLinearSolverInformation, SubsidiaryArgs,
-                                                std::remove_cvref_t<typename NonLinearSolver::NonLinearOperator>> and
-           Concepts::NonLinearSolverCheckForPathFollowing<NonLinearSolver>;
+    return Concepts::PathFollowingStrategy<PF, typename NLS::NonLinearOperator, SubsidiaryArgs> and
+           Concepts::AdaptiveStepSizingStrategy<ASS, NonLinearSolverInformation, SubsidiaryArgs,
+                                                std::remove_cvref_t<typename NLS::NonLinearOperator>> and
+           Concepts::NonLinearSolverCheckForPathFollowing<NLS>;
   }
 
 } // namespace Impl
@@ -69,13 +68,12 @@ namespace Impl {
  *  Currently the following subsidiary functions are implemented \ref LoadControlSubsidiaryFunction, ArcLength and
  * DisplacementControl
  * \ingroup controlroutines
- * \tparam NonLinearSolver Type of the nonlinear solver used in the control routine.
- * \tparam PathFollowingType Type of the path-following strategy.
- * \tparam AdaptiveStepSizing Type of the adaptive step sizing strategy.
+ * \tparam NLS Type of the nonlinear solver used in the control routine.
+ * \tparam PF Type of the path-following strategy.
+ * \tparam ASS Type of the adaptive step sizing strategy.
  */
-template <typename NonLinearSolver, typename PathFollowingType = ArcLength,
-          typename AdaptiveStepSizing = AdaptiveStepSizing::NoOp>
-requires(Impl::checkPathFollowingTemplates<NonLinearSolver, PathFollowingType, AdaptiveStepSizing>())
+template <typename NLS, typename PF = ArcLength, typename ASS = AdaptiveStepSizing::NoOp>
+requires(Impl::checkPathFollowingTemplates<NLS, PF, ASS>())
 class PathFollowing : public IObservable<ControlMessages>
 {
 public:
@@ -85,19 +83,19 @@ public:
   /**
    * \brief Constructor for PathFollowing.
    *
-   * \param p_nonLinearSolver Shared pointer to the nonlinear solver.
+   * \param nonLinearSolver Shared pointer to the nonlinear solver.
    * \param steps Number of steps in the control routine.
    * \param stepSize Size of each step.
-   * \param p_pathFollowingType Type of the path-following function.
-   * \param p_adaptiveStepSizing Type of the adaptive step sizing strategy.
+   * \param pathFollowingType Type of the path-following function.
+   * \param adaptiveStepSizing Type of the adaptive step sizing strategy.
    */
-  PathFollowing(const std::shared_ptr<NonLinearSolver>& p_nonLinearSolver, int steps, double stepSize,
-                PathFollowingType p_pathFollowingType = ArcLength{}, AdaptiveStepSizing p_adaptiveStepSizing = {})
-      : nonLinearSolver{p_nonLinearSolver},
+  PathFollowing(const std::shared_ptr<NLS>& nonLinearSolver, int steps, double stepSize,
+                PF pathFollowingType = ArcLength{}, ASS adaptiveStepSizing = {})
+      : nonLinearSolver_{nonLinearSolver},
         steps_{steps},
         stepSize_{stepSize},
-        pathFollowingType_{p_pathFollowingType},
-        adaptiveStepSizing{p_adaptiveStepSizing} {}
+        pathFollowingType_{pathFollowingType},
+        adaptiveStepSizing_{adaptiveStepSizing} {}
 
   /**
    * \brief Executes the PathFollowing routine.
@@ -107,11 +105,11 @@ public:
   ControlInformation run();
 
 private:
-  std::shared_ptr<NonLinearSolver> nonLinearSolver;
+  std::shared_ptr<NLS> nonLinearSolver_;
   int steps_;
   double stepSize_;
-  PathFollowingType pathFollowingType_;
-  AdaptiveStepSizing adaptiveStepSizing;
+  PF pathFollowingType_;
+  ASS adaptiveStepSizing_;
 };
 
 } // namespace Ikarus

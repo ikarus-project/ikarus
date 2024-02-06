@@ -13,12 +13,12 @@
 #include <Eigen/Dense>
 namespace Ikarus::utils {
 /**
- * @brief Fits a polynomial of a given degree to the given data points.
+ * \brief Fits a polynomial of a given degree to the given data points.
  * \ingroup utils
- * @param x The input vector of x-coordinates.
- * @param y The input vector of y-coordinates.
- * @param deg The degree of the polynomial to fit.
- * @return std::tuple<Dune::Functions::Polynomial<double>, double> A tuple containing the fitted polynomial and the
+ * \param x The input vector of x-coordinates.
+ * \param y The input vector of y-coordinates.
+ * \param deg The degree of the polynomial to fit.
+ * \return std::tuple<Dune::Functions::Polynomial<double>, double> A tuple containing the fitted polynomial and the
  * least square error.
  */
 std::tuple<Dune::Functions::Polynomial<double>, double> polyfit(const Eigen::Ref<const Eigen::VectorXd>& x,

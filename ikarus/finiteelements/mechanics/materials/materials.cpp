@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file materials.cpp
- * @brief Explicit instantiations for material templates.
+ * \file materials.cpp
+ * \brief Explicit instantiations for material templates.
  */
 
 #include <ikarus/finiteelements/mechanics/materials/linearelasticity.hh>

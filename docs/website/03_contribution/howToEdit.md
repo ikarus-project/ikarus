@@ -63,10 +63,10 @@ double complicatedCalculation(double number, double anotherNumber)
 
 Look at the Markdown file (`03_contribution/howToEdit.md`) to see how tables, warnings and notes can be inserted.
 
-| Grid Entity Interface        ||
-| :------------ | :-----------: |
-| `#!cpp GridViewType leafGridView()`     |
-| `#!cpp GridViewType levelGridView(int level)`     |
+|          Grid Entity Interface                   |
+|:------------------------------------------------:|
+|       `#!cpp GridViewType leafGridView()`        |
+|  `#!cpp GridViewType levelGridView(int level)`   |
 
 !!! warning "Insert a warning"
     Note that the **four** spaces at the beginning of this line are essential for the warning to be displayed

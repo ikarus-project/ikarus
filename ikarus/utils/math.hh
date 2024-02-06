@@ -12,13 +12,13 @@
 namespace Ikarus {
 namespace Impl {
   /**
-   * @brief Helper function for compile-time square root calculation.
+   * \brief Helper function for compile-time square root calculation.
    *
-   * @tparam T The type for which square root is calculated.
-   * @param x The value for which square root is calculated.
-   * @param lo Lower bound for the search interval.
-   * @param hi Upper bound for the search interval.
-   * @return constexpr T The calculated square root.
+   * \tparam T The type for which square root is calculated.
+   * \param x The value for which square root is calculated.
+   * \param lo Lower bound for the search interval.
+   * \param hi Upper bound for the search interval.
+   * \return constexpr T The calculated square root.
    */
   template <typename T>
   constexpr T sqrt_helper(T x, T lo, T hi) {
@@ -36,11 +36,11 @@ namespace Impl {
 } // namespace Impl
 
 /**
- * @brief Compile-time square root for integer types.
+ * \brief Compile-time square root for integer types.
  *
- * @tparam T The integral type for which square root is calculated.
- * @param x The value for which square root is calculated.
- * @return constexpr T The calculated square root.
+ * \tparam T The integral type for which square root is calculated.
+ * \param x The value for which square root is calculated.
+ * \return constexpr T The calculated square root.
  */
 template <typename T>
 requires std::integral<T>

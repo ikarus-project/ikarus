@@ -60,21 +60,22 @@ enum class MatrixTypeTag
 /**
  * \class LinearSolverTemplate
  * \brief A type-erased class which wraps most of the linear solvers available in Eigen.
- * \tparam ScalarType The scalar type of the linear system (default: double).
+ * \tparam ST The scalar type of the linear system (default: double).
  * \ingroup solvers
  */
-template <typename ScalarType = double>
+template <typename ST = double>
 class LinearSolverTemplate
 {
 public:
+  using ScalarType       = ST;
   using SparseMatrixType = Eigen::SparseMatrix<ScalarType>;
   using DenseMatrixType  = Eigen::MatrixX<ScalarType>;
 
   /**
    * \brief Constructor for LinearSolverTemplate.
-   * \param p_solverTypeTag The solver type tag representing the type of the linear solver.
+   * \param solverTypeTag The solver type tag representing the type of the linear solver.
    */
-  explicit LinearSolverTemplate(const SolverTypeTag& p_solverTypeTag);
+  explicit LinearSolverTemplate(const SolverTypeTag& solverTypeTag);
 
   /**
    * \brief Destructor for LinearSolverTemplate.
@@ -95,7 +96,7 @@ public:
    * \brief Copy constructor.
    * \param other The LinearSolverTemplate to copy.
    */
-  LinearSolverTemplate(const LinearSolverTemplate& other) { *this = LinearSolverTemplate(other.solverTypeTag); }
+  LinearSolverTemplate(const LinearSolverTemplate& other) { *this = LinearSolverTemplate(other.solverTypeTag_); }
   /**
    * \brief Move constructor.
    * \param other The LinearSolverTemplate to move.
@@ -174,8 +175,8 @@ private:
     Solver solver;
   };
 
-  std::unique_ptr<SolverBase> solverimpl;
-  SolverTypeTag solverTypeTag{SolverTypeTag::none};
+  std::unique_ptr<SolverBase> solverimpl_;
+  SolverTypeTag solverTypeTag_{SolverTypeTag::none};
 
 public:
   /**
@@ -187,7 +188,7 @@ public:
   template <typename MatrixType>
   requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
   inline LinearSolverTemplate& compute(const MatrixType& A) {
-    solverimpl->compute(A);
+    solverimpl_->compute(A);
     return *this;
   }
 
@@ -199,7 +200,7 @@ public:
   template <typename MatrixType>
   requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
   inline void analyzePattern(const MatrixType& A) {
-    solverimpl->analyzePattern(A);
+    solverimpl_->analyzePattern(A);
   }
 
   /**
@@ -210,7 +211,7 @@ public:
   template <typename MatrixType>
   requires std::is_same_v<MatrixType, DenseMatrixType> || std::is_same_v<MatrixType, SparseMatrixType>
   inline void factorize(const MatrixType& A) {
-    solverimpl->factorize(A);
+    solverimpl_->factorize(A);
   }
 
   /**
@@ -218,29 +219,29 @@ public:
    * \param x The solution vector.
    * \param b The right-hand side vector.
    */
-  void solve(Eigen::VectorX<ScalarType>& x, const Eigen::VectorX<ScalarType>& b) { solverimpl->solve(x, b); }
+  void solve(Eigen::VectorX<ScalarType>& x, const Eigen::VectorX<ScalarType>& b) { solverimpl_->solve(x, b); }
 
   /**
    * \brief Solve the linear system for a `n` times `3` matrix.
    * \param x The solution matrix.
    * \param b The right-hand side matrix.
    */
-  void solve(Eigen::MatrixX3<ScalarType>& x, const Eigen::MatrixX3<ScalarType>& b) { solverimpl->solve(x, b); }
+  void solve(Eigen::MatrixX3<ScalarType>& x, const Eigen::MatrixX3<ScalarType>& b) { solverimpl_->solve(x, b); }
   /**
    * \brief Solve the linear system for a `n` times `2` matrix.
    * \param x The solution matrix.
    * \param b The right-hand side matrix.
    */
-  void solve(Eigen::MatrixX2<ScalarType>& x, const Eigen::MatrixX2<ScalarType>& b) { solverimpl->solve(x, b); }
+  void solve(Eigen::MatrixX2<ScalarType>& x, const Eigen::MatrixX2<ScalarType>& b) { solverimpl_->solve(x, b); }
 
   /**
    * \brief Solve the linear system for a `n` times `n` matrix.
    * \param x The solution matrix.
    * \param b The right-hand side matrix.
    */
-  void solve(Eigen::MatrixX<ScalarType>& x, const Eigen::MatrixX<ScalarType>& b) { solverimpl->solve(x, b); }
+  void solve(Eigen::MatrixX<ScalarType>& x, const Eigen::MatrixX<ScalarType>& b) { solverimpl_->solve(x, b); }
 };
 
-typedef LinearSolverTemplate<double> LinearSolver;
+using LinearSolver = LinearSolverTemplate<double>;
 extern template class LinearSolverTemplate<double>;
 } // namespace Ikarus

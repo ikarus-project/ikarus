@@ -17,13 +17,13 @@
 namespace Ikarus::utils {
 
 /**
- * @brief Sorts and removes duplicate elements from a random access range.
+ * \brief Sorts and removes duplicate elements from a random access range.
  * \ingroup algos
  *    *\details
  * This function sorts the elements of the given random access range and removes duplicate elements,
  * leaving only unique elements in the range.
  *
- * @param r The random access range to be modified.
+ * \param r The random access range to be modified.
  */
 void makeUniqueAndSort(std::ranges::random_access_range auto& r) {
   sort(r.begin(), r.end());
@@ -31,65 +31,65 @@ void makeUniqueAndSort(std::ranges::random_access_range auto& r) {
 }
 
 /**
- * @brief Appends a value to the range if it is not already present.
+ * \brief Appends a value to the range if it is not already present.
  *\details
  * This function appends a value to the given random access range only if the value is not already present in the
  *range. It returns the index of the value in the range, whether it was added or already existed. \ingroup algos
- * @tparam Value The type of the value to be appended.
- * @param r The random access range to be modified.
- * @param v The value to be appended.
- * @return The index of the value in the range.
+ * \tparam T The type of the value to be appended.
+ * \param r The random access range to be modified.
+ * \param v The value to be appended.
+ * \return The index of the value in the range.
  */
-template <typename Value>
-auto appendUnique(std::ranges::random_access_range auto& r, Value&& v) {
+template <typename T>
+auto appendUnique(std::ranges::random_access_range auto& r, T&& v) {
   static_assert(std::is_same_v<typename decltype(begin(r))::value_type, std::remove_reference_t<decltype(v)>>);
   const auto it = find(begin(r), end(r), v);
   size_t index  = std::distance(begin(r), it);
   if (it == end(r))
-    r.push_back(std::forward<Value>(v));
+    r.push_back(std::forward<T>(v));
 
   return index;
 }
 
 /**
- * @brief Prints the contents of a container to the specified output stream.
+ * \brief Prints the contents of a container to the specified output stream.
  *\details
  * This function prints the contents of the given container to the specified output stream.
  * \ingroup algos
- * @tparam Container The type of the container to be printed.
- * @param c The container whose contents will be printed.
- * @param os The output stream where the contents will be printed. Default is std::cout.
+ * \tparam C The type of the container to be printed.
+ * \param c The container whose contents will be printed.
+ * \param os The output stream where the contents will be printed. Default is std::cout.
  */
-template <class Container>
-void printContent(Container&& c, std::ostream& os = std::cout) {
+template <class C>
+void printContent(C&& c, std::ostream& os = std::cout) {
   std::ranges::for_each(c, [&os](auto&& var) { os << var << '\n'; });
 }
 
 /**
- * @brief Transforms a value range to a pointer range.
+ * \brief Transforms a value range to a pointer range.
  *
  * \ingroup algos
- * @tparam Container The type of the container containing values.
- * @param cont The container whose values will be transformed to pointers.
- * @return A subrange containing pointers to the values.
+ * \tparam C The type of the container containing values.
+ * \param cont The container whose values will be transformed to pointers.
+ * \return A subrange containing pointers to the values.
  */
-template <class Container>
-auto transformValueRangeToPointerRange(Container& cont) {
+template <class C>
+auto transformValueRangeToPointerRange(C& cont) {
   auto transformValueToPointer = [](auto&& obj) { return &obj; };
   return (std::ranges::subrange(cont.begin(), cont.end()) | std::views::transform(transformValueToPointer));
 }
 
 /**
- * @brief Transforms a pointer range to a reference range.
+ * \brief Transforms a pointer range to a reference range.
  *\details
  * This function transforms a range of pointers to a range of references.
  * \ingroup algos
- * @tparam Container The type of the container containing pointers.
- * @param cont The container whose pointers will be transformed to references.
- * @return A subrange containing references to the pointed objects.
+ * \tparam C The type of the container containing pointers.
+ * \param cont The container whose pointers will be transformed to references.
+ * \return A subrange containing references to the pointed objects.
  */
-template <class Container>
-auto transformPointerRangeToReferenceRange(Container& cont) {
+template <class C>
+auto transformPointerRangeToReferenceRange(C& cont) {
   auto transformValueToPointer = [](auto&& obj) -> auto& { return *obj; };
   return (std::ranges::subrange(cont.begin(), cont.end()) | std::views::transform(transformValueToPointer));
 }
@@ -202,13 +202,13 @@ namespace Impl {
 } // namespace Impl
 
 /**
- * @brief Finds the index of the first element in the tuple satisfying a predicate.
+ * \brief Finds the index of the first element in the tuple satisfying a predicate.
  *
- * @tparam Tuple Type of the input tuple.
- * @tparam Predicate Type of the predicate function.
- * @param tuple Input tuple.
- * @param pred Predicate function to check each element.
- * @return Index of the first element satisfying the predicate. If no element satisfies the
+ * \tparam Tuple Type of the input tuple.
+ * \tparam Predicate Type of the predicate function.
+ * \param tuple Input tuple.
+ * \param pred Predicate function to check each element.
+ * \return Index of the first element satisfying the predicate. If no element satisfies the
  *         predicate, it returns the size of the tuple.
  *
  * \details This function takes a tuple and a predicate function and finds the index of the first element in the
@@ -233,13 +233,13 @@ constexpr size_t find_if(Tuple&& tuple, Predicate pred) {
 }
 
 /**
- * @brief Checks if none of the elements in the tuple satisfy a given predicate.
+ * \brief Checks if none of the elements in the tuple satisfy a given predicate.
  *
- * @tparam Tuple Type of the input tuple.
- * @tparam Predicate Type of the predicate function.
- * @param tuple Input tuple.
- * @param pred Predicate function to check each element.
- * @return bool True if none of the elements satisfy the predicate, false otherwise.
+ * \tparam Tuple Type of the input tuple.
+ * \tparam Predicate Type of the predicate function.
+ * \param tuple Input tuple.
+ * \param pred Predicate function to check each element.
+ * \return bool True if none of the elements satisfy the predicate, false otherwise.
  *
  *
  * \ingroup algos
@@ -250,13 +250,13 @@ bool none_of(Tuple&& tuple, Predicate pred) {
 }
 
 /**
- * @brief Checks if any of the elements in the tuple satisfy a given predicate.
+ * \brief Checks if any of the elements in the tuple satisfy a given predicate.
  *
- * @tparam Tuple Type of the input tuple.
- * @tparam Predicate Type of the predicate function.
- * @param tuple Input tuple.
- * @param pred Predicate function to check each element.
- * @return bool True if any of the elements satisfy the predicate, false otherwise.
+ * \tparam Tuple Type of the input tuple.
+ * \tparam Predicate Type of the predicate function.
+ * \param tuple Input tuple.
+ * \param pred Predicate function to check each element.
+ * \return bool True if any of the elements satisfy the predicate, false otherwise.
  *
  *
  * \ingroup algos
@@ -267,13 +267,13 @@ bool any_of(Tuple&& tuple, Predicate pred) {
 }
 
 /**
- * @brief Filters the elements of a tuple based on a given predicate.
+ * \brief Filters the elements of a tuple based on a given predicate.
  *
- * @tparam Tuple Type of the input tuple.
- * @tparam Predicate Type of the predicate function.
- * @param tuple Input tuple.
- * @param pred Predicate function to filter the elements.
- * @return auto Tuple containing elements that satisfy the predicate.
+ * \tparam Tuple Type of the input tuple.
+ * \tparam Predicate Type of the predicate function.
+ * \param tuple Input tuple.
+ * \param pred Predicate function to filter the elements.
+ * \return auto Tuple containing elements that satisfy the predicate.
  *
  * \details This function applies the given predicate to each element of the tuple. It constructs a new tuple
  * containing only those elements for which the predicate returns true. The resulting tuple is returned.
@@ -290,11 +290,11 @@ auto filter(Tuple&& tuple, Predicate pred) {
 }
 
 /**
- * @brief Creates a tuple with unique types from the given tuple.
+ * \brief Creates a tuple with unique types from the given tuple.
  *
- * @tparam Types Variadic template parameters representing types.
- * @param tuple Input tuple.
- * @return auto Tuple with unique types.
+ * \tparam Types Variadic template parameters representing types.
+ * \param tuple Input tuple.
+ * \return auto Tuple with unique types.
  *
  * \details This function takes a tuple and returns a new tuple containing only unique types from the input tuple.
  *
@@ -306,13 +306,13 @@ constexpr auto unique([[maybe_unused]] std::tuple<Types...>&& tuple) {
 }
 
 /**
- * @brief Counts the number of elements in the tuple satisfying the given predicate.
+ * \brief Counts the number of elements in the tuple satisfying the given predicate.
  *
- * @tparam Tuple Type of the tuple.
- * @tparam Predicate Predicate function determining whether an element satisfies the condition.
- * @param tuple Input tuple.
- * @param pred Predicate function.
- * @return constexpr size_t Number of elements satisfying the predicate.
+ * \tparam Tuple Type of the tuple.
+ * \tparam Predicate Predicate function determining whether an element satisfies the condition.
+ * \param tuple Input tuple.
+ * \param pred Predicate function.
+ * \return constexpr size_t Number of elements satisfying the predicate.
  *
  * \details This function counts the number of elements in the tuple that satisfy the given predicate.
  *
@@ -329,11 +329,11 @@ constexpr size_t count_if(Tuple&& tuple, Predicate pred) {
 }
 
 /**
- * @brief Finds the index of the first element in the tuple that is a specialization of the given template type.
+ * \brief Finds the index of the first element in the tuple that is a specialization of the given template type.
  *
- * @tparam Type Template type to search for.
- * @tparam Tuple Type of the tuple.
- * @return Index of the first specialization in the tuple
+ * \tparam Type Template type to search for.
+ * \tparam Tuple Type of the tuple.
+ * \return Index of the first specialization in the tuple
  *
  * \details This function finds the index of the first element in the tuple that is a specialization of the given
  * template type. It returns the size of the tuple if the template type is not found
@@ -347,12 +347,12 @@ constexpr int findTypeSpecialization() {
 }
 
 /**
- * @brief Gets the specialization of the given template type from the tuple.
+ * \brief Gets the specialization of the given template type from the tuple.
  *
- * @tparam Type Template type to search for.
- * @tparam Tuple Type of the tuple.
- * @param tuple The tuple containing elements.
- * @return The specialization element
+ * \tparam Type Template type to search for.
+ * \tparam Tuple Type of the tuple.
+ * \param tuple The tuple containing elements.
+ * \return The specialization element
  *
  * \details This function retrieves the specialization of a template type from the tuple.
  *
@@ -367,11 +367,11 @@ auto getSpecialization(Tuple&& tuple) {
 }
 
 /**
- * @brief Checks if a tuple has a specialization of a template type.
+ * \brief Checks if a tuple has a specialization of a template type.
  *
- * @tparam Type Template type to check for.
- * @tparam Tuple Type of the tuple.
- * @return true if the tuple has the specialization; otherwise, false.
+ * \tparam Type Template type to check for.
+ * \tparam Tuple Type of the tuple.
+ * \return true if the tuple has the specialization; otherwise, false.
  *
  * \details This function checks if a tuple has a specialization of a template type.
  * It uses `find_if` to search for the type and returns true if the index is less than the tuple size; otherwise,
@@ -387,11 +387,11 @@ constexpr bool hasTypeSpecialization() {
 }
 
 /**
- * @brief Counts the occurrences of a specialization of a template type in a tuple.
+ * \brief Counts the occurrences of a specialization of a template type in a tuple.
  *
- * @tparam Type Template type to count occurrences for.
- * @tparam Tuple Type of the tuple.
- * @return The count of occurrences of the specialization.
+ * \tparam Type Template type to count occurrences for.
+ * \tparam Tuple Type of the tuple.
+ * \return The count of occurrences of the specialization.
  *
  * \details This function counts the occurrences of a specialization of a template type in a tuple.
  *
@@ -404,10 +404,10 @@ constexpr bool countTypeSpecialization() {
 }
 
 /**
- * @brief Variable template for counting the occurrences of a specialization of a template type in a tuple.
+ * \brief Variable template for counting the occurrences of a specialization of a template type in a tuple.
  *
- * @tparam Type Template type to count occurrences for.
- * @tparam Tuple Type of the tuple.
+ * \tparam Type Template type to count occurrences for.
+ * \tparam Tuple Type of the tuple.
  *
  * \details This variable template provides a compile-time constant for the count of occurrences
  * of a specialization of a template type in a tuple.
@@ -418,12 +418,12 @@ template <template <auto...> class Type, typename Tuple>
 static constexpr bool countTypeSpecialization_v = countTypeSpecialization<Type, Tuple>();
 
 /**
- * @brief Creates a subset tuple with the first N elements from the given tuple.
+ * \brief Creates a subset tuple with the first N elements from the given tuple.
  *
- * @tparam N Number of elements in the subset.
- * @tparam Tuple Type of the original tuple.
- * @param t The original tuple.
- * @return A new tuple containing the first N elements of the original tuple.
+ * \tparam N Number of elements in the subset.
+ * \tparam Tuple Type of the original tuple.
+ * \param t The original tuple.
+ * \return A new tuple containing the first N elements of the original tuple.
  *
  * \details This function creates a subset tuple with the first N elements from the given tuple.
  *
@@ -438,12 +438,12 @@ constexpr auto makeTupleSubset(Tuple&& t) {
 }
 
 /**
- * @brief Creates a new tuple using indices from the original tuple.
+ * \brief Creates a new tuple using indices from the original tuple.
  *
- * @tparam Tuple Type of the original tuple.
- * @tparam I Indices to include in the new tuple.
- * @param t The original tuple.
- * @return A new tuple containing elements from the original tuple based on the specified indices.
+ * \tparam Tuple Type of the original tuple.
+ * \tparam I Indices to include in the new tuple.
+ * \param t The original tuple.
+ * \return A new tuple containing elements from the original tuple based on the specified indices.
  *
  * \details This function creates a new tuple using indices from the original tuple.
  * It uses `makeTupleFromTupleIndicesImpl` from the `Impl` namespace to implement the tuple creation.
@@ -456,10 +456,10 @@ constexpr auto makeTupleFromTupleIndices(Tuple&& t) {
 }
 
 /**
- * @brief Creates a flattened nested tuple.
+ * \brief Creates a flattened nested tuple.
  *
- * @tparam Types Types contained in the original tuple.
- * @return A new flattened nested tuple.
+ * \tparam Types Types contained in the original tuple.
+ * \return A new flattened nested tuple.
  *
  */
 template <typename... Types>
@@ -468,11 +468,11 @@ auto makeNestedTupleFlat(std::tuple<Types...>) {
 }
 
 /**
- * @brief Creates a flattened nested tuple and stores references.
+ * \brief Creates a flattened nested tuple and stores references.
  *
- * @tparam Tuple Type of the original tuple.
- * @param tup The original tuple.
- * @return A new tuple with stored references.
+ * \tparam Tuple Type of the original tuple.
+ * \param tup The original tuple.
+ * \return A new tuple with stored references.
  *
  * \details This function creates a flattened nested tuple and stores references.
  */
@@ -487,11 +487,11 @@ auto makeNestedTupleFlatAndStoreReferences(Tuple&& tup) {
 }
 
 /**
- * @brief Returns a reference or std::nullopt if the object is a nullptr.
+ * \brief Returns a reference or std::nullopt if the object is a nullptr.
  * \ingroup tr
- * @tparam T Type of the pointer.
- * @param v Pointer value.
- * @return Reference or std::nullopt.
+ * \tparam T Type of the pointer.
+ * \param v Pointer value.
+ * \return Reference or std::nullopt.
  */
 template <typename T>
 requires traits::Pointer<T>

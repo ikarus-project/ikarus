@@ -9,10 +9,10 @@
 #pragma once
 
 /**
- * @brief Get the linear index corresponding to the given row and column indices.
- * @param row The row index.
- * @param col The column index.
- * @return The linear index.
+ * \brief Get the linear index corresponding to the given row and column indices.
+ * \param row The row index.
+ * \param col The column index.
+ * \return The linear index.
  * @note The function assumes that `IsRowMajor`, `rows()`, `cols()`, `m_outerIndex`, `m_innerNonZeros`,
  * and `m_data` are accessible within the scope.
  */

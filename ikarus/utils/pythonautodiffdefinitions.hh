@@ -20,9 +20,9 @@ namespace Python {
 // *****************************************************************************
 
 /**
- * @brief Conversion specialization for autodiff::Real type.
- * @tparam order The order of autodiff::Real.
- * @tparam T The underlying type of autodiff::Real.
+ * \brief Conversion specialization for autodiff::Real type.
+ * \tparam order The order of autodiff::Real.
+ * \tparam T The underlying type of autodiff::Real.
  */
 template <std::size_t order, class T>
 struct Conversion<autodiff::Real<order, T>>
@@ -33,9 +33,9 @@ struct Conversion<autodiff::Real<order, T>>
   };
 
   /**
-   * @brief Convert autodiff::Real to PyObject*.
-   * @param list Python list object to be populated.
-   * @param v The autodiff::Real object to be converted.
+   * \brief Convert autodiff::Real to PyObject*.
+   * \param list Python list object to be populated.
+   * \param v The autodiff::Real object to be converted.
    */
   static void toC(PyObject* list, autodiff::Real<order, T>& v) {
     auto rlist = Reference(Imp::inc(list));
@@ -50,9 +50,9 @@ struct Conversion<autodiff::Real<order, T>>
   }
 
   /**
-   * @brief Convert PyObject* to autodiff::Real.
-   * @param v The autodiff::Real object to be populated.
-   * @return PyObject* representing the autodiff::Real object.
+   * \brief Convert PyObject* to autodiff::Real.
+   * \param v The autodiff::Real object to be populated.
+   * \return PyObject* representing the autodiff::Real object.
    */
   static PyObject* toPy(const autodiff::Real<order, T>& v) {
     auto pyMain           = Python::main();

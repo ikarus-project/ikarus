@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file autoDiffFE.hh
- * @brief Contains the AutoDiffFE class, an automatic differentiation wrapper for finite elements.
+ * \file autoDiffFE.hh
+ * \brief Contains the AutoDiffFE class, an automatic differentiation wrapper for finite elements.
  */
 
 #pragma once
@@ -18,31 +18,30 @@
 namespace Ikarus {
 
 /**
- * @brief AutoDiffFE class, an automatic differentiation wrapper for finite elements.
+ * \brief AutoDiffFE class, an automatic differentiation wrapper for finite elements.
  *
- * @tparam RealFE_ The type of the original finite element, which does not implement the derivatives
- * @tparam FERequirementType_ Type of the Finite Element Requirements.
- * @tparam useEigenRef A boolean indicating whether to use Eigen::Ref for references types in calculateMatrix,...
- * @tparam forceAutoDiff A boolean indicating whether to force the use of automatic differentiation, even when the
+ * \tparam FEImpl The type of the original finite element, which does not implement the derivatives
+ * \tparam FER Type of the Finite Element Requirements.
+ * \tparam useEigenRef A boolean indicating whether to use Eigen::Ref for references types in calculateMatrix,...
+ * \tparam forceAutoDiff A boolean indicating whether to force the use of automatic differentiation, even when the
  * real element implements the derivatives.
  */
-template <typename RealFE_, typename FERequirementType_ = FERequirements<>, bool useEigenRef = false,
-          bool forceAutoDiff = false>
-class AutoDiffFE : public RealFE_
+template <typename FEImpl, typename FER = FERequirements<>, bool useEigenRef = false, bool forceAutoDiff = false>
+class AutoDiffFE : public FEImpl
 {
 public:
-  using RealFE            = RealFE_;                                          ///< Type of the base finite element.
-  using Basis             = typename RealFE::Basis;                           ///< Type of the basis.
-  using Traits            = FETraits<Basis, FERequirementType_, useEigenRef>; ///< Type traits for local view.
-  using LocalView         = typename Traits::LocalView;                       ///< Type of the local view.
-  using Element           = typename Traits::Element;                         ///< Type of the element.
+  using RealFE            = FEImpl;                             ///< Type of the base finite element.
+  using Basis             = typename RealFE::Basis;             ///< Type of the basis.
+  using Traits            = FETraits<Basis, FER, useEigenRef>;  ///< Type traits for local view.
+  using LocalView         = typename Traits::LocalView;         ///< Type of the local view.
+  using Element           = typename Traits::Element;           ///< Type of the element.
   using FERequirementType = typename Traits::FERequirementType; ///< Type of the Finite Element Requirements.
 
   /**
-   * @brief Calculate the matrix associated with the finite element.
+   * \brief Calculate the matrix associated with the finite element.
    *
-   * @param req Finite Element Requirements.
-   * @param h Matrix to be calculated.
+   * \param req Finite Element Requirements.
+   * \param h Matrix to be calculated.
    */
   void calculateMatrix(const FERequirementType& req, typename Traits::template MatrixType<> h) const {
     // real element implements calculateMatrix by itself, then we simply forward the call
@@ -81,10 +80,10 @@ public:
   }
 
   /**
-   * @brief Calculate the vector associated with the finite element.
+   * \brief Calculate the vector associated with the finite element.
    *
-   * @param req Finite Element Requirements.
-   * @param g Vector to be calculated.
+   * \param req Finite Element Requirements.
+   * \param g Vector to be calculated.
    */
   void calculateVector(const FERequirementType& req, typename Traits::template VectorType<> g) const {
     // real element implements calculateVector by itself, then we simply forward the call
@@ -111,11 +110,11 @@ public:
   }
 
   /**
-   * @brief Calculate the local system associated with the finite element.
+   * \brief Calculate the local system associated with the finite element.
    *
-   * @param req Finite Element Requirements.
-   * @param h Matrix to be calculated.
-   * @param g Vector to be calculated.
+   * \param req Finite Element Requirements.
+   * \param h Matrix to be calculated.
+   * \param g Vector to be calculated.
    */
   void calculateLocalSystem(const FERequirementType& req, typename Traits::template MatrixType<> h,
                             typename Traits::template VectorType<> g) const {
@@ -126,10 +125,10 @@ public:
   }
 
   /**
-   * @brief Calculate the scalar value associated with the finite element.
+   * \brief Calculate the scalar value associated with the finite element.
    *
-   * @param par Finite Element Requirements.
-   * @return The calculated scalar value.
+   * \param par Finite Element Requirements.
+   * \return The calculated scalar value.
    */
   [[nodiscard]] double calculateScalar(const FERequirementType& par) const {
     // real element implements calculateScalar by itself, then we simply forward the call
@@ -146,18 +145,18 @@ public:
   }
 
   /**
-   * @brief Get the reference to the base finite element.
+   * \brief Get the reference to the base finite element.
    *
-   * @return The reference to the base finite element.
+   * \return The reference to the base finite element.
    */
   const RealFE& realFE() const { return *this; }
 
   /**
-   * @brief Constructor for the AutoDiffFE class.
+   * \brief Constructor for the AutoDiffFE class.
    * Forward the construction to the underlying element
    *
-   * @tparam Args Variadic template for constructor arguments.
-   * @param args Constructor arguments.
+   * \tparam Args Variadic template for constructor arguments.
+   * \param args Constructor arguments.
    */
   template <typename... Args>
   explicit AutoDiffFE(Args&&... args)

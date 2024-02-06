@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file interface.hh
- * @brief Contains the Material interface class and related template functions for material properties.
- * @ingroup  materials
+ * \file interface.hh
+ * \brief Contains the Material interface class and related template functions for material properties.
+ * \ingroup  materials
  */
 
 #pragma once
@@ -19,43 +19,43 @@
 namespace Ikarus {
 
 #ifndef DOXYGEN
-template <class MaterialImpl>
+template <class MImpl>
 struct Material;
 
-template <auto stressIndexPair, typename MaterialImpl>
+template <auto stressIndexPair, typename MImpl>
 struct VanishingStress;
 #endif
 
 /**
- * @brief Template function for checking if the strain size is correct.
+ * \brief Template function for checking if the strain size is correct.
  *
  * The given strain quantity has to be a Eigen::Vector6 or a Eigen::Matrix3
  *
- * @tparam Material Type of the material.
- * @tparam Strains Type of the strains.
+ * \tparam MAT Type of the material.
+ * \tparam S Type of the strains.
  */
-template <typename Material, typename Strains>
+template <typename MAT, typename S>
 consteval bool hasCorrectSize() {
-  if constexpr (Concepts::EigenVector6<Strains> or Concepts::EigenMatrix33<Strains>)
+  if constexpr (Concepts::EigenVector6<S> or Concepts::EigenMatrix33<S>)
     return true;
-  if constexpr (Material::isReduced and Concepts::EigenVector<Strains>) {
-    return Strains::RowsAtCompileTime == Material::freeStrains;
+  if constexpr (MAT::isReduced and Concepts::EigenVector<S>) {
+    return S::RowsAtCompileTime == MAT::freeStrains;
   } else
     return false;
 }
 
 /**
- * @brief Template concept for ensuring correct strain size.
+ * \brief Template concept for ensuring correct strain size.
  *
- * @tparam Material Type of the material.
- * @tparam Strains Type of the strains.
+ * \tparam MAT Type of the material.
+ * \tparam S Type of the strains.
  */
-template <typename Material, typename Strains>
-concept CorrectStrainSize = hasCorrectSize<Material, Strains>();
+template <typename MAT, typename S>
+concept CorrectStrainSize = hasCorrectSize<MAT, S>();
 
 /**
- * @brief Interface classf or materials.
- * @ingroup materials
+ * \brief Interface classf or materials.
+ * \ingroup materials
  *    \details Consider a hyper elastic material with the free Helmholtz energy
  *        \f[\require{cases}\psi: \begin{cases}\mathbb{R}^{3\times 3} &\rightarrow \mathbb{R} \\ \BC
  * &\mapsto \psi(\BC) \end{cases}.\f]
@@ -70,48 +70,48 @@ concept CorrectStrainSize = hasCorrectSize<Material, Strains>();
  * tensor](https://en.wikipedia.org/wiki/Finite_strain_theory#Cauchy_strain_tensor_(right_Cauchy%E2%80%93Green_deformation_tensor)),
  * the [deformation gradient](https://en.wikipedia.org/wiki/Finite_strain_theory#Deformation_gradient_tensor)
  * \f$\mathbf{F}\f$ or linear strains. The current supported tags are given by Ikarus::StrainTags.
- * @tparam MaterialImpl Type of the underlying material implementation.
+ * \tparam MI Type of the underlying material implementation.
  */
-template <class MaterialImpl>
+template <class MI>
 struct Material
 {
-  using MaterialImplType = MaterialImpl; ///< Type of material implementation
+  using MaterialImpl = MI; ///< Type of material implementation
 
   /**
-   * @brief Static constant for determining if the material has vanishing stress components (is reduced).
+   * \brief Static constant for determining if the material has vanishing stress components (is reduced).
    */
   static constexpr bool isReduced = traits::isSpecializationNonTypeAndTypes<VanishingStress, MaterialImpl>::value;
 
   /**
-   * @brief Const accessor to the underlying material (CRTP).
+   * \brief Const accessor to the underlying material (CRTP).
    *
-   * @return Const reference to the underlying material.
+   * \return Const reference to the underlying material.
    */
   constexpr const MaterialImpl& impl() const { return static_cast<const MaterialImpl&>(*this); }
 
   /**
-   * @brief Accessor to the underlying material (CRTP).
+   * \brief Accessor to the underlying material (CRTP).
    *
-   * @return Reference to the underlying material.
+   * \return Reference to the underlying material.
    */
   constexpr MaterialImpl& impl() { return static_cast<MaterialImpl&>(*this); }
 
   /**
-   * @brief Get the name of the implemented material.
+   * \brief Get the name of the implemented material.
    *
-   * @return Name of the material.
+   * \return Name of the material.
    */
   [[nodiscard]] constexpr std::string name() const { return impl().nameImpl(); }
 
   /**
-   * @brief Return the stored potential energy of the material.
+   * \brief Return the stored potential energy of the material.
    *
    *\details This function return the free Helmholtz energy of the material
    *
-   * @tparam tag Strain tag indicating which strain tensor components are passed.
-   * @tparam Derived The underlying Eigen type.
-   * @param Eraw The strain tensor components passed in Voigt notation or matrix notation.
-   * @return Scalar return of stored energy.
+   * \tparam tag Strain tag indicating which strain tensor components are passed.
+   * \tparam Derived The underlying Eigen type.
+   * \param Eraw The strain tensor components passed in Voigt notation or matrix notation.
+   * \return Scalar return of stored energy.
    */
   template <StrainTags tag, typename Derived>
   requires CorrectStrainSize<MaterialImpl, Derived>
@@ -129,13 +129,13 @@ struct Material
   }
 
   /**
-   * @brief Get the stresses of the material.
+   * \brief Get the stresses of the material.
    *
-   * @tparam tag Strain tag indicating which strain tensor components are passed.
-   * @tparam voigt Boolean indicating whether to return Voigt-shaped result.
-   * @tparam Derived The underlying Eigen type.
-   * @param Eraw The strain tensor components passed in Voigt notation or matrix notation.
-   * @return Vectorial or Matrix return of stresses.
+   * \tparam tag Strain tag indicating which strain tensor components are passed.
+   * \tparam voigt Boolean indicating whether to return Voigt-shaped result.
+   * \tparam Derived The underlying Eigen type.
+   * \param Eraw The strain tensor components passed in Voigt notation or matrix notation.
+   * \return Vectorial or Matrix return of stresses.
    */
   template <StrainTags tag, bool voigt = true, typename Derived>
   requires CorrectStrainSize<MaterialImpl, Derived>
@@ -150,13 +150,13 @@ struct Material
   }
 
   /**
-   * @brief Get the tangentModuli of the material.
+   * \brief Get the tangentModuli of the material.
    *
-   * @tparam tag Strain tag indicating which strain tensor components are passed.
-   * @tparam voigt Boolean indicating whether to return Voigt-shaped result.
-   * @tparam Derived The underlying Eigen type.
-   * @param Eraw The strain tensor components passed in Voigt notation or matrix notation.
-   * @return Tangent moduli in Voigt notation or as fourth-order tensor.
+   * \tparam tag Strain tag indicating which strain tensor components are passed.
+   * \tparam voigt Boolean indicating whether to return Voigt-shaped result.
+   * \tparam Derived The underlying Eigen type.
+   * \param Eraw The strain tensor components passed in Voigt notation or matrix notation.
+   * \return Tangent moduli in Voigt notation or as fourth-order tensor.
    */
   template <StrainTags tag, bool voigt = true, typename Derived>
   requires CorrectStrainSize<MaterialImpl, Derived>
@@ -171,16 +171,16 @@ struct Material
   }
 
   /**
-   * @brief Rebind material to a different scalar type.
+   * \brief Rebind material to a different scalar type.
    *
    * Useful for using automatic differentiation.
    *
-   * @tparam ScalarTypeOther The scalar type to rebind to.
-   * @return Rebound material.
+   * \tparam STO The scalar type to rebind to.
+   * \return Rebound material.
    */
-  template <typename ScalarTypeOther>
+  template <typename STO>
   auto rebind() const {
-    return impl().template rebind<ScalarTypeOther>();
+    return impl().template rebind<STO>();
   }
 
 private:

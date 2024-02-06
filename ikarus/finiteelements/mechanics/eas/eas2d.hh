@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file eas2d.hh
- * @brief Definition of the types of EAS formulations for 2D elements.
- * @ingroup  eas
+ * \file eas2d.hh
+ * \brief Definition of the types of EAS formulations for 2D elements.
+ * \ingroup  eas
  */
 
 #pragma once
@@ -14,15 +14,15 @@
 namespace Ikarus::EAS {
 
 /**
- * @brief Q1E4 structure for EAS with linear strains and 4 enhanced modes.
+ * \brief Q1E4 structure for EAS with linear strains and 4 enhanced modes.
  *
  * \details The Q1E4 structure represents an implementation of EAS for a
  * specific case where linear strains are considered, and the method includes
  * enhancement with 4 additional modes to improve the accuracy of finite element solutions.
  *
- * @tparam Geometry The geometry type.
+ * \tparam GEO The geometry type.
  */
-template <typename Geometry>
+template <typename GEO>
 struct Q1E4
 {
   static constexpr int strainSize         = 3;
@@ -30,9 +30,9 @@ struct Q1E4
   using MType                             = Eigen::Matrix<double, strainSize, enhancedStrainSize>;
 
   Q1E4() = default;
-  explicit Q1E4(const Geometry& geometry_)
-      : geometry{std::make_shared<Geometry>(geometry_)},
-        T0InverseTransformed{calcTransformationMatrix2D(geometry_)} {}
+  explicit Q1E4(const GEO& geometry)
+      : geometry_{std::make_shared<GEO>(geometry)},
+        T0InverseTransformed_{calcTransformationMatrix2D(geometry)} {}
 
   auto calcM(const Dune::FieldVector<double, 2>& quadPos) const {
     MType M;
@@ -43,23 +43,24 @@ struct Q1E4
     M(1, 1)           = 2 * eta - 1.0;
     M(2, 2)           = 2 * xi - 1.0;
     M(2, 3)           = 2 * eta - 1.0;
-    const double detJ = geometry->integrationElement(quadPos);
-    M                 = T0InverseTransformed / detJ * M;
+    const double detJ = geometry_->integrationElement(quadPos);
+    M                 = T0InverseTransformed_ / detJ * M;
     return M;
   }
 
-  std::shared_ptr<Geometry> geometry;
-  Eigen::Matrix3d T0InverseTransformed;
+private:
+  std::shared_ptr<GEO> geometry_;
+  Eigen::Matrix3d T0InverseTransformed_;
 };
 
 /**
- * @brief Structure representing EAS for Q1 with 5 enhanced strains.
+ * \brief Structure representing EAS for Q1 with 5 enhanced strains.
  *
  * This structure defines the EAS for Q1 elements with 5 enhanced strains.
  *
- * @tparam Geometry The geometry type.
+ * \tparam GEO The geometry type.
  */
-template <typename Geometry>
+template <typename GEO>
 struct Q1E5
 {
   static constexpr int strainSize         = 3;
@@ -67,9 +68,9 @@ struct Q1E5
   using MType                             = Eigen::Matrix<double, strainSize, enhancedStrainSize>;
 
   Q1E5() = default;
-  explicit Q1E5(const Geometry& geometry_)
-      : geometry{std::make_shared<Geometry>(geometry_)},
-        T0InverseTransformed{calcTransformationMatrix2D(geometry_)} {}
+  explicit Q1E5(const GEO& geometry)
+      : geometry_{std::make_shared<GEO>(geometry)},
+        T0InverseTransformed_{calcTransformationMatrix2D(geometry)} {}
 
   auto calcM(const Dune::FieldVector<double, 2>& quadPos) const {
     MType M;
@@ -81,23 +82,24 @@ struct Q1E5
     M(2, 2)           = 2 * xi - 1.0;
     M(2, 3)           = 2 * eta - 1.0;
     M(2, 4)           = (2 * xi - 1.0) * (2 * eta - 1.0);
-    const double detJ = geometry->integrationElement(quadPos);
-    M                 = T0InverseTransformed / detJ * M;
+    const double detJ = geometry_->integrationElement(quadPos);
+    M                 = T0InverseTransformed_ / detJ * M;
     return M;
   }
 
-  std::shared_ptr<Geometry> geometry;
-  Eigen::Matrix3d T0InverseTransformed;
+private:
+  std::shared_ptr<GEO> geometry_;
+  Eigen::Matrix3d T0InverseTransformed_;
 };
 
 /**
- * @brief Structure representing EAS for Q1 with 7 enhanced strains.
+ * \brief Structure representing EAS for Q1 with 7 enhanced strains.
  *
  * This structure defines the EAS for Q1 elements with 7 enhanced strains.
  *
- * @tparam Geometry The geometry type.
+ * \tparam GEO The geometry type.
  */
-template <typename Geometry>
+template <typename GEO>
 struct Q1E7
 {
   static constexpr int strainSize         = 3;
@@ -105,9 +107,9 @@ struct Q1E7
   using MType                             = Eigen::Matrix<double, strainSize, enhancedStrainSize>;
 
   Q1E7() = default;
-  explicit Q1E7(const Geometry& geometry_)
-      : geometry{std::make_shared<Geometry>(geometry_)},
-        T0InverseTransformed{calcTransformationMatrix2D(geometry_)} {}
+  explicit Q1E7(const GEO& geometry)
+      : geometry_{std::make_shared<GEO>(geometry)},
+        T0InverseTransformed_{calcTransformationMatrix2D(geometry)} {}
 
   auto calcM(const Dune::FieldVector<double, 2>& quadPos) const {
     MType M;
@@ -121,12 +123,13 @@ struct Q1E7
     M(0, 4)           = (2 * xi - 1.0) * (2 * eta - 1.0);
     M(1, 5)           = (2 * xi - 1.0) * (2 * eta - 1.0);
     M(2, 6)           = (2 * xi - 1.0) * (2 * eta - 1.0);
-    const double detJ = geometry->integrationElement(quadPos);
-    M                 = T0InverseTransformed / detJ * M;
+    const double detJ = geometry_->integrationElement(quadPos);
+    M                 = T0InverseTransformed_ / detJ * M;
     return M;
   }
 
-  std::shared_ptr<Geometry> geometry;
-  Eigen::Matrix3d T0InverseTransformed;
+private:
+  std::shared_ptr<GEO> geometry_;
+  Eigen::Matrix3d T0InverseTransformed_;
 };
 } // namespace Ikarus::EAS
