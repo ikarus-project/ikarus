@@ -269,8 +269,9 @@ template <Ikarus::ResultType resType, typename ResultEvaluator>
   std::vector<FiniteElement> fes{fe};
 
   Eigen::MatrixXd computedResults(expectedResult.rows(), expectedResult.cols());
-  auto localResultFunction =
-      Ikarus::ResultFunction<FiniteElement, resType, ResultEvaluator>::asLocalFunction(&fes, feRequirements);
+
+  auto vtkResultFunction = Ikarus::makeResultVtkFunction<resType, FiniteElement, ResultEvaluator>(&fes, feRequirements);
+  auto localResultFunction = localFunction(vtkResultFunction);
   localResultFunction.bind(element);
 
   for (int i = 0; const auto& pos : evaluationPositions) {
@@ -287,8 +288,6 @@ template <Ikarus::ResultType resType, typename ResultEvaluator>
                            << messageIfFailed;
 
   Dune::Vtk::VtkWriter vtkWriter(gridView);
-  auto vtkResultFunction =
-      Ikarus::ResultFunction<FiniteElement, resType, ResultEvaluator>::asVtkFunction(&fes, feRequirements);
 
   vtkWriter.addPointData(vtkResultFunction);
   vtkWriter.write("Vtk_VtkWriter_resultfunction_" + vtkResultFunction.name() + "_" +

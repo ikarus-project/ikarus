@@ -158,7 +158,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   }
 
   Dune::Vtk::VtkWriter<GridView> vtkWriter2(gridView);
-  auto resultFunction = ResultFunction<ElementType, ResultType::PK2Stress>::asShared(&fes, req);
+  auto resultFunction = makeResultFunction<ResultType::PK2Stress>(&fes, req);
 
   t.check(resultFunction->name() == "PK2Stress")
       << "Test resultName: " << resultFunction->name() << "should be PK2Stress";
@@ -167,7 +167,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction));
 
   auto resultFunction2 =
-      ResultFunction<ElementType, ResultType::PK2Stress, ResultEvaluators::PrincipalStress<2>>::asShared(&fes, req);
+      makeResultFunction<ResultType::PK2Stress, ElementType, ResultEvaluators::PrincipalStress<2>>(&fes, req);
   t.check(resultFunction2->name() == "PrincipalStress")
       << "Test resultName: " << resultFunction2->name() << "should be PrincipalStress";
 
@@ -175,14 +175,13 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction2));
 
   auto resultFunction3 =
-      ResultFunction<ElementType, ResultType::PK2Stress, ResultEvaluators::VonMises<2>>::asShared(&fes, req);
+      makeResultFunction<ResultType::PK2Stress, ElementType, ResultEvaluators::VonMises<2>>(&fes, req);
   t.check(resultFunction3->name() == "VonMises")
       << "Test resultName: " << resultFunction2->name() << "should be VonMises";
   t.check(resultFunction3->ncomps() == 1) << "Test result comps: " << resultFunction2->ncomps() << "should be 1";
   vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction3));
 
-  auto resultFunction4 =
-      ResultFunction<ElementType, ResultType::PK2Stress, OwnResultFunction>::asVtkFunction(&fes, req);
+  auto resultFunction4 = makeResultVtkFunction<ResultType::PK2Stress, ElementType, OwnResultFunction>(&fes, req);
   vtkWriter2.addPointData(resultFunction4);
   vtkWriter2.write("EndResult" + Dune::className<Grid>());
 
