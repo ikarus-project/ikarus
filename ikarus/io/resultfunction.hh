@@ -58,7 +58,7 @@ public:
 
   /**
    * \brief Evaluate the component at a given entity and local coordinates.
-   *
+   * \details
    * This function is required by the Dune::VTKFunction interface.
    *
    * \param comp Stress component index
@@ -73,7 +73,7 @@ public:
 
   /**
    * \brief Get the number of components.
-   *
+   * \details
    * This function is required by the Dune::VTKFunction interface.
    *
    * \return Number of stress components
@@ -91,7 +91,7 @@ public:
 
   /**
    * \brief Get the name of the result type.
-   *
+   * \details
    * This function is required by the Dune::VTKFunction interface.
    *
    * \return String representing the name of the result type
@@ -105,7 +105,7 @@ public:
 
   /**
    * \brief Constructor for ResultFunction.
-   *
+   * \details
    * Constructs a ResultFunction object with given finite elements, ferequirements
    *
    * \param fes Pointer to a vector of finite elements
@@ -136,7 +136,7 @@ private:
 
 /**
  * \brief Function to create a ResultFunction as a shared_ptr
- *
+ * \details
  * Constructs a ResultFunction object with given finite elements, ferequirements as shared_ptr to be used with
  * the native Dune VTKWriter
  *
@@ -153,7 +153,7 @@ auto makeResultFunction(std::vector<FE>* fes, const typename FE::FERequirementTy
 
 /**
  * \brief Function to create a ResultFunction as a gridfunction that can be used with dune-vtk
- *
+ * \details
  * Constructs a ResultFunction object with given finite elements, ferequirements as a VTK::Function to be used with
  * dune-vtk It is possible to construct a localFunction from this as follows
  * \code
