@@ -294,11 +294,10 @@ template <Ikarus::ResultType resType, typename ResultEvaluator>
                   std::to_string(FiniteElement::myDim) + std::to_string(element.geometry().type().id()));
 
   Dune::VTKWriter<decltype(gridView)> vtkWriter2(gridView);
-  auto sharedResultFunction =
-      Ikarus::ResultFunction<FiniteElement, resType, ResultEvaluator>::asShared(&fes, feRequirements);
+  auto resultFunction = Ikarus::makeResultFunction<resType, FiniteElement, ResultEvaluator>(&fes, feRequirements);
 
-  vtkWriter2.addVertexData(sharedResultFunction);
-  vtkWriter2.write("native_vtkwriter_resultfunction_" + sharedResultFunction->name() + "_" +
+  vtkWriter2.addVertexData(resultFunction);
+  vtkWriter2.write("native_vtkwriter_resultfunction_" + resultFunction->name() + "_" +
                    std::to_string(FiniteElement::myDim) + std::to_string(element.geometry().type().id()));
 
   return t;

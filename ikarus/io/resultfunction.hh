@@ -155,10 +155,15 @@ auto makeResultFunction(std::vector<FE>* fes, const typename FE::FERequirementTy
  * \brief Function to create a ResultFunction as a gridfunction that can be used with dune-vtk
  *
  * Constructs a ResultFunction object with given finite elements, ferequirements as a VTK::Function to be used with
- * dune-vtk It is possible to construct a localFunction from this as follows \code auto localResultFunction =
- * localFunction(vtkResultFunction); localResultFunction.bind(element); \endcode \param fes Pointer to a vector of
- * finite elements \param req FERequirements for evaluation \tparam FE Type of the finite element \tparam resType
- * requested result type \tparam UserFunction Type of the user-defined function for custom result evaluation (default is
+ * dune-vtk It is possible to construct a localFunction from this as follows
+ * \code
+ * auto localResultFunction = localFunction(vtkResultFunction); localResultFunction.bind(element);
+ * \endcode
+ * \param fes Pointer to a vector of finite elements
+ * \param req FERequirements for evaluation
+ * \tparam FE Type of the finite element
+ * \tparam resType requested result type
+ * \tparam UserFunction Type of the user-defined function for custom result evaluation (default is
  * DefaultUserFunction)
  */
 template <ResultType resType, typename FE, typename UserFunction = Impl::DefaultUserFunction>
