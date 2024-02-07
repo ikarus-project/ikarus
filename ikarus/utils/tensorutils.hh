@@ -256,7 +256,7 @@ requires(size == 1 or size == 3 or size == 6)
 auto fromVoigt(const Eigen::Vector<ST, size>& EVoigt, bool isStrain = true) {
   constexpr int matrixSize = (-1 + ct_sqrt(1 + 8 * size)) / 2;
   Eigen::Matrix<ST, matrixSize, matrixSize> E;
-  E.diagonal() = EVoigt.template segment<3>(0);
+  E.diagonal() = EVoigt.template head<matrixSize>();
 
   const ST possibleStrainFactor = isStrain ? 0.5 : 1.0;
   if constexpr (matrixSize == 2)

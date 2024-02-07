@@ -3,7 +3,7 @@
 
 /**
  * \file resultfunction.hh
- * \brief Ikarus Result Evaluators for Stress Analysis
+ * \brief Ikarus Result Function for Stress and other finite element results
  * \ingroup io
  *
  */
@@ -13,11 +13,10 @@
 #include <type_traits>
 #include <utility>
 
+#include <dune/vtk/function.hh>
 #include <dune/vtk/vtkwriter.hh>
 
 #include <ikarus/finiteelements/ferequirements.hh>
-#include <ikarus/io/resultevaluators.hh>
-#include <ikarus/utils/eigendunetransformations.hh>
 
 namespace Ikarus {
 namespace Impl {
@@ -31,13 +30,16 @@ namespace Impl {
  * \details
  * Usage:
  * \code
- *   auto resultFunction = std::make_shared<ResultFunction<FiniteElement>>(&fes, feReq);
+ * // Usage with Dune::Vtk::VtkWriter
+ * auto resultFunction = Ikarus::makeResultVtkFunction<resType>(&fes, feRequirements);
+ * vtkwriter.addPointData(resultFunction);
  *
- * vtkWriter.addPointData(Dune::Vtk::Function<GridView>( resultFunction));
- * // or with Dunes native Vtk
+ * // Usage with the native Dune::VTKWriter
+ * auto resultFunction = Ikarus::makeResultFunction<resType>(&fes, feRequirements);
  * vtkWriter.addVertexData(resultFunction);
  * \endcode
  * \ingroup io
+ * \relates
  * \tparam FE Type of the finite element
  * \tparam resType requested result type
  * \tparam UserFunction Type of the user-defined function for custom result evaluation (default is
@@ -56,7 +58,7 @@ public:
 
   /**
    * \brief Evaluate the component at a given entity and local coordinates.
-   *
+   * \details
    * This function is required by the Dune::VTKFunction interface.
    *
    * \param comp Stress component index
@@ -71,7 +73,7 @@ public:
 
   /**
    * \brief Get the number of components.
-   *
+   * \details
    * This function is required by the Dune::VTKFunction interface.
    *
    * \return Number of stress components
@@ -89,7 +91,7 @@ public:
 
   /**
    * \brief Get the name of the result type.
-   *
+   * \details
    * This function is required by the Dune::VTKFunction interface.
    *
    * \return String representing the name of the result type
@@ -103,7 +105,7 @@ public:
 
   /**
    * \brief Constructor for ResultFunction.
-   *
+   * \details
    * Constructs a ResultFunction object with given finite elements, ferequirements
    *
    * \param fes Pointer to a vector of finite elements
@@ -131,4 +133,44 @@ private:
   [[no_unique_address]] std::string name_{};
   UserFunction userFunction_;
 };
+
+/**
+ * \brief Function to create a ResultFunction as a shared_ptr
+ * \details
+ * Constructs a ResultFunction object with given finite elements, ferequirements as shared_ptr to be used with
+ * the native Dune VTKWriter
+ *
+ * \param fes Pointer to a vector of finite elements
+ * \param req FERequirements for evaluation
+ * \tparam FE Type of the finite element
+ * \tparam resType requested result type
+ * \tparam UserFunction Type of the user-defined function for custom result evaluation (default is DefaultUserFunction)
+ */
+template <ResultType resType, typename UserFunction = Impl::DefaultUserFunction, typename FE>
+auto makeResultFunction(std::vector<FE>* fes, const typename FE::FERequirementType& req) {
+  return std::make_shared<ResultFunction<FE, resType, UserFunction>>(fes, req);
+}
+
+/**
+ * \brief Function to create a ResultFunction as a gridfunction that can be used with dune-vtk
+ * \details
+ * Constructs a ResultFunction object with given finite elements, ferequirements as a VTK::Function to be used with
+ * dune-vtk It is possible to construct a localFunction from this as follows
+ * \code
+ * auto localResultFunction = localFunction(vtkResultFunction);
+ * localResultFunction.bind(element);
+ * \endcode
+ * \param fes Pointer to a vector of finite elements
+ * \param req FERequirements for evaluation
+ * \tparam FE Type of the finite element
+ * \tparam resType requested result type
+ * \tparam UserFunction Type of the user-defined function for custom result evaluation (default is
+ * DefaultUserFunction)
+ */
+template <ResultType resType, typename UserFunction = Impl::DefaultUserFunction, typename FE>
+auto makeResultVtkFunction(std::vector<FE>* fes, const typename FE::FERequirementType& req) {
+  return Dune::Vtk::Function<typename FE::GridView>(
+      std::make_shared<ResultFunction<FE, resType, UserFunction>>(fes, req));
+}
+
 } // namespace Ikarus

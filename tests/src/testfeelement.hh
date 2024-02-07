@@ -128,10 +128,11 @@ inline auto checkJacobianFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe,
   return checkJacobianOfElement(subOperator);
 };
 
-template <Ikarus::ResultType resType>
-auto checkResultFunctionFunctorFactory() {
-  return [](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req) {
-    return checkResultFunction<resType>(nonLinOp, fe, req);
+template <Ikarus::ResultType resType, typename ResultEvaluator = Ikarus::Impl::DefaultUserFunction>
+auto checkResultFunctionFunctorFactory(const auto& resultCollectionFunction) {
+  return [&](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req) {
+    auto [feRequirements, expectedStress, positions] = resultCollectionFunction(nonLinOp, fe);
+    return checkResultFunction<resType, ResultEvaluator>(nonLinOp, fe, feRequirements, expectedStress, positions);
   };
 }
 
@@ -141,7 +142,7 @@ inline auto checkFEByAutoDiffFunctor = [](auto& nonLinOp, auto& fe, auto& req) {
 
 template <Ikarus::ResultType resType>
 auto checkCalculateAtFunctorFactory(const auto& resultCollectionFunction) {
-  return [=](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req) {
+  return [&](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req) {
     auto [feRequirements, expectedStress, positions] = resultCollectionFunction(nonLinOp, fe);
     return checkCalculateAt<resType>(nonLinOp, fe, feRequirements, expectedStress, positions);
   };

@@ -12,22 +12,19 @@
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 
-#include "spdlog/spdlog.h"
-
 #include <Eigen/Core>
 
 #include <ikarus/assembler/simpleassemblers.hh>
 #include <ikarus/controlroutines/loadcontrol.hh>
 #include <ikarus/finiteelements/mechanics/linearelastic.hh>
 #include <ikarus/finiteelements/mechanics/nonlinearelastic.hh>
+#include <ikarus/io/resultevaluators.hh>
 #include <ikarus/io/resultfunction.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/solver/nonlinearsolver/trustregion.hh>
 #include <ikarus/utils/algorithms.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/dirichletvalues.hh>
-#include <ikarus/utils/drawing/griddrawer.hh>
-#include <ikarus/utils/init.hh>
 #include <ikarus/utils/nonlinearoperator.hh>
 #include <ikarus/utils/observer/controlvtkwriter.hh>
 
@@ -161,7 +158,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   }
 
   Dune::Vtk::VtkWriter<GridView> vtkWriter2(gridView);
-  auto resultFunction = std::make_shared<ResultFunction<ElementType, ResultType::PK2Stress>>(&fes, req);
+  auto resultFunction = makeResultFunction<ResultType::PK2Stress>(&fes, req);
 
   t.check(resultFunction->name() == "PK2Stress")
       << "Test resultName: " << resultFunction->name() << "should be PK2Stress";
@@ -169,26 +166,21 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
 
   vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction));
 
-  auto resultFunction2 =
-      ResultFunction<ElementType, ResultType::PK2Stress, ResultEvaluators::PrincipalStress>(&fes, req);
+  auto resultFunction2 = makeResultFunction<ResultType::PK2Stress, ResultEvaluators::PrincipalStress<2>>(&fes, req);
+  t.check(resultFunction2->name() == "PrincipalStress")
+      << "Test resultName: " << resultFunction2->name() << "should be PrincipalStress";
 
-  auto resultFunction2S = std::make_shared<decltype(resultFunction2)>(resultFunction2);
-  t.check(resultFunction2S->name() == "PrincipalStress")
-      << "Test resultName: " << resultFunction2S->name() << "should be PrincipalStress";
+  t.check(resultFunction2->ncomps() == 2) << "Test result comps: " << resultFunction2->ncomps() << "should be 2";
+  vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction2));
 
-  t.check(resultFunction2S->ncomps() == 2) << "Test result comps: " << resultFunction2S->ncomps() << "should be 2";
-  vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction2S));
+  auto resultFunction3 = makeResultFunction<ResultType::PK2Stress, ResultEvaluators::VonMises<2>>(&fes, req);
+  t.check(resultFunction3->name() == "VonMises")
+      << "Test resultName: " << resultFunction2->name() << "should be VonMises";
+  t.check(resultFunction3->ncomps() == 1) << "Test result comps: " << resultFunction2->ncomps() << "should be 1";
+  vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction3));
 
-  auto resultFunction3  = ResultFunction<ElementType, ResultType::PK2Stress, ResultEvaluators::VonMises<2>>(&fes, req);
-  auto resultFunction3S = std::make_shared<decltype(resultFunction3)>(resultFunction3);
-  t.check(resultFunction3S->name() == "VonMises")
-      << "Test resultName: " << resultFunction2S->name() << "should be VonMises";
-  t.check(resultFunction3S->ncomps() == 1) << "Test result comps: " << resultFunction2S->ncomps() << "should be 1";
-  vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction3S));
-
-  auto resultFunction4  = ResultFunction<ElementType, ResultType::PK2Stress, OwnResultFunction>(&fes, req);
-  auto resultFunction4S = std::make_shared<decltype(resultFunction4)>(resultFunction4);
-  vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction4S));
+  auto resultFunction4 = makeResultVtkFunction<ResultType::PK2Stress, OwnResultFunction>(&fes, req);
+  vtkWriter2.addPointData(resultFunction4);
   vtkWriter2.write("EndResult" + Dune::className<Grid>());
 
   nonLinOp.template update<1>();
