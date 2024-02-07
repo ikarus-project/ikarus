@@ -30,13 +30,13 @@ namespace Impl {
  * \details
  * Usage:
  * \code
- *   // Usage with Dune::Vtk::VtkWriter
- *   auto resultFunction = Ikarus::makeResultVtkFunction<resType>(&fes, feRequirements);
- *   vtkwriter.addPointData(resultFunction);
+ * // Usage with Dune::Vtk::VtkWriter
+ * auto resultFunction = Ikarus::makeResultVtkFunction<resType>(&fes, feRequirements);
+ * vtkwriter.addPointData(resultFunction);
  *
- *   // Usage with the native Dune::VTKWriter
- *   auto resultFunction = Ikarus::makeResultFunction<resType>(&fes, feRequirements);
- *   vtkWriter.addVertexData(resultFunction);
+ * // Usage with the native Dune::VTKWriter
+ * auto resultFunction = Ikarus::makeResultFunction<resType>(&fes, feRequirements);
+ * vtkWriter.addVertexData(resultFunction);
  * \endcode
  * \ingroup io
  * \relates
@@ -146,7 +146,7 @@ private:
  * \tparam resType requested result type
  * \tparam UserFunction Type of the user-defined function for custom result evaluation (default is DefaultUserFunction)
  */
-template <ResultType resType, typename FE, typename UserFunction = Impl::DefaultUserFunction>
+template <ResultType resType, typename UserFunction = Impl::DefaultUserFunction, typename FE>
 auto makeResultFunction(std::vector<FE>* fes, const typename FE::FERequirementType& req) {
   return std::make_shared<ResultFunction<FE, resType, UserFunction>>(fes, req);
 }
@@ -157,7 +157,8 @@ auto makeResultFunction(std::vector<FE>* fes, const typename FE::FERequirementTy
  * Constructs a ResultFunction object with given finite elements, ferequirements as a VTK::Function to be used with
  * dune-vtk It is possible to construct a localFunction from this as follows
  * \code
- * auto localResultFunction = localFunction(vtkResultFunction); localResultFunction.bind(element);
+ * auto localResultFunction = localFunction(vtkResultFunction);
+ * localResultFunction.bind(element);
  * \endcode
  * \param fes Pointer to a vector of finite elements
  * \param req FERequirements for evaluation
@@ -166,7 +167,7 @@ auto makeResultFunction(std::vector<FE>* fes, const typename FE::FERequirementTy
  * \tparam UserFunction Type of the user-defined function for custom result evaluation (default is
  * DefaultUserFunction)
  */
-template <ResultType resType, typename FE, typename UserFunction = Impl::DefaultUserFunction>
+template <ResultType resType, typename UserFunction = Impl::DefaultUserFunction, typename FE>
 auto makeResultVtkFunction(std::vector<FE>* fes, const typename FE::FERequirementType& req) {
   return Dune::Vtk::Function<typename FE::GridView>(
       std::make_shared<ResultFunction<FE, resType, UserFunction>>(fes, req));

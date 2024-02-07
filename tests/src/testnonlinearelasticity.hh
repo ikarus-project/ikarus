@@ -166,22 +166,20 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
 
   vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction));
 
-  auto resultFunction2 =
-      makeResultFunction<ResultType::PK2Stress, ElementType, ResultEvaluators::PrincipalStress<2>>(&fes, req);
+  auto resultFunction2 = makeResultFunction<ResultType::PK2Stress, ResultEvaluators::PrincipalStress<2>>(&fes, req);
   t.check(resultFunction2->name() == "PrincipalStress")
       << "Test resultName: " << resultFunction2->name() << "should be PrincipalStress";
 
   t.check(resultFunction2->ncomps() == 2) << "Test result comps: " << resultFunction2->ncomps() << "should be 2";
   vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction2));
 
-  auto resultFunction3 =
-      makeResultFunction<ResultType::PK2Stress, ElementType, ResultEvaluators::VonMises<2>>(&fes, req);
+  auto resultFunction3 = makeResultFunction<ResultType::PK2Stress, ResultEvaluators::VonMises<2>>(&fes, req);
   t.check(resultFunction3->name() == "VonMises")
       << "Test resultName: " << resultFunction2->name() << "should be VonMises";
   t.check(resultFunction3->ncomps() == 1) << "Test result comps: " << resultFunction2->ncomps() << "should be 1";
   vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction3));
 
-  auto resultFunction4 = makeResultVtkFunction<ResultType::PK2Stress, ElementType, OwnResultFunction>(&fes, req);
+  auto resultFunction4 = makeResultVtkFunction<ResultType::PK2Stress, OwnResultFunction>(&fes, req);
   vtkWriter2.addPointData(resultFunction4);
   vtkWriter2.write("EndResult" + Dune::className<Grid>());
 

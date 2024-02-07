@@ -270,7 +270,7 @@ template <Ikarus::ResultType resType, typename ResultEvaluator>
 
   Eigen::MatrixXd computedResults(expectedResult.rows(), expectedResult.cols());
 
-  auto vtkResultFunction = Ikarus::makeResultVtkFunction<resType, FiniteElement, ResultEvaluator>(&fes, feRequirements);
+  auto vtkResultFunction   = Ikarus::makeResultVtkFunction<resType, ResultEvaluator>(&fes, feRequirements);
   auto localResultFunction = localFunction(vtkResultFunction);
   localResultFunction.bind(element);
 
@@ -294,7 +294,7 @@ template <Ikarus::ResultType resType, typename ResultEvaluator>
                   std::to_string(FiniteElement::myDim) + std::to_string(element.geometry().type().id()));
 
   Dune::VTKWriter<decltype(gridView)> vtkWriter2(gridView);
-  auto resultFunction = Ikarus::makeResultFunction<resType, FiniteElement, ResultEvaluator>(&fes, feRequirements);
+  auto resultFunction = Ikarus::makeResultFunction<resType, ResultEvaluator>(&fes, feRequirements);
 
   vtkWriter2.addVertexData(resultFunction);
   vtkWriter2.write("native_vtkwriter_resultfunction_" + resultFunction->name() + "_" +
