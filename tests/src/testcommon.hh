@@ -242,18 +242,24 @@ template <Ikarus::ResultType resType>
                                     const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Test of the calulateAt function for " + Dune::className(fe));
 
+  using FiniteElement = std::remove_cvref_t<decltype(fe)>;
   Eigen::MatrixXd computedResults(expectedResult.rows(), expectedResult.cols());
-  for (int i = 0; const auto& pos : evaluationPositions) {
-    auto result              = fe.template calculateAt<resType>(feRequirements, pos);
-    computedResults.row(i++) = result.transpose();
-  }
 
-  const bool isResultCorrect = isApproxSame(computedResults, expectedResult, 1e-8);
-  t.check(isResultCorrect) << "Computed Result for " << toString(resType) << " is not the same as expected result:\n"
-                           << "It is:\n"
-                           << computedResults << "\nBut should be:\n"
-                           << expectedResult << "\n"
-                           << messageIfFailed;
+  if constexpr (FiniteElement::template canProvideResultType<resType>()) {
+    for (int i = 0; const auto& pos : evaluationPositions) {
+      auto result              = fe.template calculateAt<resType>(feRequirements, pos);
+      computedResults.row(i++) = result.transpose();
+    }
+    const bool isResultCorrect = isApproxSame(computedResults, expectedResult, 1e-8);
+    t.check(isResultCorrect) << "Computed Result for " << toString(resType) << " is not the same as expected result:\n"
+                             << "It is:\n"
+                             << computedResults << "\nBut should be:\n"
+                             << expectedResult << "\n"
+                             << messageIfFailed;
+  }
+  else
+    t.check(false) << "Element can not provide the requested RsultType " << toString(resType) << messageIfFailed;
+
   return t;
 }
 
