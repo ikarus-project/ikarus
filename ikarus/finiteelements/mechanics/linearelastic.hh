@@ -225,6 +225,14 @@ public:
     }
   }
 
+  template <ResultType resultType>
+  static constexpr bool canProvideResultType() {
+    if constexpr (resultType == ResultType::linearStress)
+      return true;
+    else
+      return false;
+  }
+
 private:
   std::shared_ptr<const Geometry> geo_;
   Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType>> localBasis_;
