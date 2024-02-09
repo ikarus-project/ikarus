@@ -23,6 +23,7 @@
 #include <ikarus/finiteelements/febases/autodifffe.hh>
 #include <ikarus/finiteelements/febases/powerbasisfe.hh>
 #include <ikarus/finiteelements/ferequirements.hh>
+#include <ikarus/finiteelements/feresulttypes.hh>
 #include <ikarus/finiteelements/mechanics/enhancedassumedstrains.hh>
 #include <ikarus/finiteelements/mechanics/linearelastic.hh>
 #include <ikarus/finiteelements/mechanics/nonlinearelastic.hh>
@@ -247,18 +248,27 @@ template <typename resType>
 
   if constexpr (FiniteElement::template canProvideResultType<resType>()) {
     for (int i = 0; const auto& pos : evaluationPositions) {
-      auto result              = fe.template calculateAt<resType>(feRequirements, pos);
+      auto result = fe.template calculateAt<resType>(feRequirements, pos);
+      static_assert(std::is_same_v<decltype(result), Ikarus::resultType_t<resType, FiniteElement::myDim, true>>);
       computedResults.row(i++) = result.transpose();
     }
     const bool isResultCorrect = isApproxSame(computedResults, expectedResult, 1e-8);
-    t.check(isResultCorrect) << "Computed Result for " << toString(resType{}) << " is not the same as expected result:\n"
+    t.check(isResultCorrect) << "Computed Result for " << toString(resType{})
+                             << " is not the same as expected result:\n"
                              << "It is:\n"
                              << computedResults << "\nBut should be:\n"
                              << expectedResult << "\n"
                              << messageIfFailed;
-  }
-  else
+  } else
     t.check(false) << "Element can not provide the requested RsultType " << toString(resType{}) << messageIfFailed;
+
+  std::cout << fe.template calculateAt<Ikarus::ResultType::director>(feRequirements, evaluationPositions[0])
+            << std::endl;
+  std::cout << fe.template calculateAt<Ikarus::ResultType::linearStress, false>(feRequirements, evaluationPositions[0])
+            << std::endl;
+
+  // Instantiate a default type
+  using Mat = Ikarus::resultType_t<Ikarus::ResultType::customType, 2>;
 
   return t;
 }

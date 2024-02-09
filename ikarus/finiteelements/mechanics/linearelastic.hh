@@ -212,39 +212,32 @@ public:
    *
    * \tparam RT The type representing the requested result.
    */
-  template <typename  RT>
-  auto calculateAt(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
-
-    if constexpr (std::is_same_v<RT,ResultType::linearStress> ) {
+  template <typename RT, bool voigt = true>
+  auto calculateAt(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const
+      -> resultType_t<RT, myDim, voigt> {
+    if constexpr (std::is_same_v<RT, ResultType::linearStress>) {
       const auto eps = strainFunction(req);
       const auto C   = materialTangent();
       auto epsVoigt  = eps.evaluate(local, Dune::on(Dune::DerivativeDirections::gridElement));
-
-      return (C * epsVoigt).eval();
-    }else
+      if constexpr (voigt)
+        return (C * epsVoigt).eval();
+      else
+        return fromVoigt((C * epsVoigt).eval(), false);
+    } else if constexpr (std::is_same_v<RT, ResultType::director>) {
+      return resultType_t<RT, myDim>::Zero();
+    } else
       static_assert(Dune::AlwaysFalse<RT>::value, "The requested result type is NOT implemented.");
-
+    __builtin_unreachable();
   }
 
   template <typename RT>
   static constexpr bool canProvideResultType() {
     if constexpr (std::is_same_v<RT, ResultType::linearStress>)
       return true;
-    else
-      return false;
+    if constexpr (std::is_same_v<RT, ResultType::director>)
+      return true;
+    return false;
   }
-
-//   template<typename ... Args>
-//   struct giveType
-//   {  };
-//
-//   template<int worldDim, int gridDim, typename ScalarType>
-// struct giveType<ResultType::linearStress,worldDim,gridDim,ScalarType>
-//   {
-//     constexpr static int matrixSize = (-1 + ct_sqrt(1 + 8 * gridDim)) / 2;
-//     using type =  Eigen::Matrix<ScalarType, matrixSize, 1>;
-//     using voigtype =  Eigen::Matrix<ScalarType, matrixSize, 1>;
-//   };
 
 private:
   std::shared_ptr<const Geometry> geo_;

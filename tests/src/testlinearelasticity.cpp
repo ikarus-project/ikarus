@@ -11,10 +11,10 @@
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 
+#include <ikarus/finiteelements/feresulttypes.hh>
 #include <ikarus/finiteelements/mechanics/linearelastic.hh>
 #include <ikarus/io/resultevaluators.hh>
 #include <ikarus/utils/init.hh>
-#include <ikarus/finiteelements/feresulttypes.hh>
 
 using Dune::TestSuite;
 
