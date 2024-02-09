@@ -253,19 +253,20 @@ public:
    *
    * \tparam resType The type representing the requested result.
    */
-  template <ResultType resType>
+  template <typename  RT>
   auto calculateAt(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
-    static_assert(resType == ResultType::PK2Stress, "The requested result type is NOT implemented.");
-
     using namespace Dune::DerivativeDirections;
-    if constexpr (resType == ResultType::PK2Stress) {
+
+    if constexpr (std::is_same_v<RT,ResultType::linearStress> ) {
       const auto uFunction = displacementFunction(req);
       const auto H         = uFunction.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
       const auto E         = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
       const auto EVoigt    = toVoigt(E);
 
       return mat_.template stresses<StrainTags::greenLagrangian>(EVoigt);
-    }
+    } else
+      static_assert(Dune::AlwaysFalse<RT>::value, "The requested result type is NOT implemented.");
+
   }
 
 private:

@@ -210,28 +210,41 @@ public:
    * \param local Local position vector.
    * \return calculated result
    *
-   * \tparam resType The type representing the requested result.
+   * \tparam RT The type representing the requested result.
    */
-  template <ResultType resType>
+  template <typename  RT>
   auto calculateAt(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
-    static_assert(resType == ResultType::linearStress, "The requested result type is NOT implemented.");
 
-    if constexpr (resType == ResultType::linearStress) {
+    if constexpr (std::is_same_v<RT,ResultType::linearStress> ) {
       const auto eps = strainFunction(req);
       const auto C   = materialTangent();
       auto epsVoigt  = eps.evaluate(local, Dune::on(Dune::DerivativeDirections::gridElement));
 
       return (C * epsVoigt).eval();
-    }
+    }else
+      static_assert(Dune::AlwaysFalse<RT>::value, "The requested result type is NOT implemented.");
+
   }
 
-  template <ResultType resultType>
+  template <typename RT>
   static constexpr bool canProvideResultType() {
-    if constexpr (resultType == ResultType::linearStress)
+    if constexpr (std::is_same_v<RT, ResultType::linearStress>)
       return true;
     else
       return false;
   }
+
+//   template<typename ... Args>
+//   struct giveType
+//   {  };
+//
+//   template<int worldDim, int gridDim, typename ScalarType>
+// struct giveType<ResultType::linearStress,worldDim,gridDim,ScalarType>
+//   {
+//     constexpr static int matrixSize = (-1 + ct_sqrt(1 + 8 * gridDim)) / 2;
+//     using type =  Eigen::Matrix<ScalarType, matrixSize, 1>;
+//     using voigtype =  Eigen::Matrix<ScalarType, matrixSize, 1>;
+//   };
 
 private:
   std::shared_ptr<const Geometry> geo_;

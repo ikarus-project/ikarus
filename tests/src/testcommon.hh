@@ -236,7 +236,7 @@ template <typename NonLinearOperator>
   return t;
 }
 
-template <Ikarus::ResultType resType>
+template <typename resType>
 [[nodiscard]] auto checkCalculateAt(auto& nonLinearOperator, auto& fe, const auto& feRequirements,
                                     const auto& expectedResult, const auto& evaluationPositions,
                                     const std::string& messageIfFailed = "") {
@@ -251,19 +251,19 @@ template <Ikarus::ResultType resType>
       computedResults.row(i++) = result.transpose();
     }
     const bool isResultCorrect = isApproxSame(computedResults, expectedResult, 1e-8);
-    t.check(isResultCorrect) << "Computed Result for " << toString(resType) << " is not the same as expected result:\n"
+    t.check(isResultCorrect) << "Computed Result for " << toString(resType{}) << " is not the same as expected result:\n"
                              << "It is:\n"
                              << computedResults << "\nBut should be:\n"
                              << expectedResult << "\n"
                              << messageIfFailed;
   }
   else
-    t.check(false) << "Element can not provide the requested RsultType " << toString(resType) << messageIfFailed;
+    t.check(false) << "Element can not provide the requested RsultType " << toString(resType{}) << messageIfFailed;
 
   return t;
 }
 
-template <Ikarus::ResultType resType, typename ResultEvaluator>
+template <typename resType, typename ResultEvaluator>
 [[nodiscard]] auto checkResultFunction(auto& nonLinearOperator, auto& fe, const auto& feRequirements,
                                        const auto& expectedResult, const auto& evaluationPositions,
                                        const std::string& messageIfFailed = "") {
@@ -287,7 +287,7 @@ template <Ikarus::ResultType resType, typename ResultEvaluator>
     ++i;
   }
   const bool isResultCorrect = isApproxSame(computedResults, expectedResult, 1e-8);
-  t.check(isResultCorrect) << "Computed Result for " << toString(resType) << " is not the same as expected result:\n"
+  t.check(isResultCorrect) << "Computed Result for " << toString(resType{}) << " is not the same as expected result:\n"
                            << "It is:\n"
                            << computedResults << "\nBut should be:\n"
                            << expectedResult << "\n"
