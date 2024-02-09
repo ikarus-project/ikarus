@@ -160,13 +160,13 @@ forward the
    *
    * \tparam resType The type representing the requested result.
    */
-  template <ResultType resType>
+  template <typename resType>
   auto calculateAt(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
     using namespace Dune::Indices;
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
 
-    static_assert(resType == ResultType::linearStress, "The requested result type is NOT implemented.");
+    // static_assert(resType == ResultType::linearStress, "The requested result type is NOT implemented.");
 
     auto resultVector = DisplacementBasedElement::template calculateAt<resType>(req, local);
 

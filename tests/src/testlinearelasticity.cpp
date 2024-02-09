@@ -14,6 +14,7 @@
 #include <ikarus/finiteelements/mechanics/linearelastic.hh>
 #include <ikarus/io/resultevaluators.hh>
 #include <ikarus/utils/init.hh>
+#include <ikarus/finiteelements/feresulttypes.hh>
 
 using Dune::TestSuite;
 

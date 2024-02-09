@@ -19,6 +19,7 @@
 #include <Eigen/Core>
 
 #include <ikarus/utils/makeenum.hh>
+#include <ikarus/finiteelements/feresulttypes.hh>
 
 namespace Ikarus {
 // clang-format off
@@ -83,26 +84,8 @@ namespace Ikarus {
             magnetizationAndVectorPotential
       );
 
-  /**
-*
-* \ingroup FEParameterTags
-* \brief A strongly typed enum class representing the type of the result request
-*/
-  MAKE_ENUM(ResultType,
-            noType,
-            magnetization,
-            gradientNormOfMagnetization,
-            vectorPotential,
-            divergenceOfVectorPotential,
-            BField,
-            HField,
-            cauchyStress,
-            PK2Stress,
-            linearStress,
-            director
-      );
-
 // clang-format on
+
 
 /**
  * \brief Struct representing a collection of affordances.
@@ -333,7 +316,7 @@ public:
   }
 };
 
-template <typename Type>
-concept ResultTypeConcept = std::is_same_v<Type, ResultType>;
+// template <typename Type>
+// concept ResultTypeConcept = std::is_same_v<Type, ResultType>;
 
 } // namespace Ikarus
