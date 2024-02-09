@@ -18,8 +18,8 @@
 
 #include <Eigen/Core>
 
-#include <ikarus/utils/makeenum.hh>
 #include <ikarus/finiteelements/feresulttypes.hh>
+#include <ikarus/utils/makeenum.hh>
 
 namespace Ikarus {
 // clang-format off
@@ -85,7 +85,6 @@ namespace Ikarus {
       );
 
 // clang-format on
-
 
 /**
  * \brief Struct representing a collection of affordances.
