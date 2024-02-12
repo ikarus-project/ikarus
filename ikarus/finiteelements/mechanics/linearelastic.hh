@@ -232,6 +232,11 @@ public:
     __builtin_unreachable();
   }
 
+  /**
+   * \brief Returns whether an element can provide a requested result. Can be used in constant expressions
+   * \tparam RT The type representing the requested result.
+   * \return boolean indicating if a requested result can be provided
+   */
   template <typename RT>
   static constexpr bool canProvideResultType() {
     return static_cast<bool>(std::is_same_v<RT, ResultType::linearStress>);

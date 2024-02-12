@@ -124,8 +124,8 @@ void registerElement(pybind11::handle scope, pybind11::class_<FE, options...> cl
   cls.def(
       "calculateAt",
       [](FE& self, const FERequirements& req, const Dune::FieldVector<double, Traits::mydim>& local,
-         ResultType resType) {
-        if (resType == ResultType::linearStress)
+         std::string& resType) {
+        if (resType == "linearStress")
           return self.template calculateAt<ResultType::linearStress>(req, local);
         else
           DUNE_THROW(Dune::NotImplemented, "Linear-lastic element only supports linearStress as result.");

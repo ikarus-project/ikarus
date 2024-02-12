@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <ranges>
+
 namespace Ikarus::utils {
 /**
  * \brief A function to obtain the global positions of the nodes of an element with Lagrangian basis, see Dune book
@@ -36,6 +38,26 @@ void obtainLagrangeNodePositions(const LV& localView,
   }
   for (auto& nCoord : lagrangeNodeCoords)
     nCoord = localView.element().geometry().global(nCoord);
+}
+/**
+ * \brief A function to obtain the local coordinates of the vertices of an FiniteElement
+ * \ingroup utils
+ * \tparam FiniteElement Type of the finite element
+ * \param fe finite element
+ * \return std::vector of LocalCoordinates of the element
+ */
+template <typename FiniteElement>
+auto getVertexPositions(FiniteElement& fe) {
+  constexpr int dim            = FiniteElement::Traits::mydim;
+  const auto& element          = fe.gridElement();
+  const auto& referenceElement = Dune::referenceElement<double, dim>(element.type());
+  const int numberOfVertices   = referenceElement.size(dim);
+
+  std::vector<typename FiniteElement::GridElement::Geometry::LocalCoordinate> positions;
+  for (auto i : std::views::iota(0, numberOfVertices))
+    positions.push_back(referenceElement.position(i, dim));
+
+  return positions;
 }
 
 } // namespace Ikarus::utils

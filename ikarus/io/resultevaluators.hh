@@ -34,15 +34,13 @@ struct VonMises
    * \return von Mises stress
    */
   double operator()(const auto& resultArray, [[maybe_unused]] const int comp) const {
-    if constexpr (dim == 2) {
-      const auto s_x  = resultArray(0, 0);
-      const auto s_y  = resultArray(1, 0);
-      const auto s_xy = resultArray(2, 0);
+    const auto s_x = resultArray(0, 0);
+    const auto s_y = resultArray(1, 0);
 
+    if constexpr (dim == 2) {
+      const auto s_xy = resultArray(2, 0);
       return std::sqrt(Dune::power(s_x, 2) + Dune::power(s_y, 2) - s_x * s_y + 3 * Dune::power(s_xy, 2));
     } else {
-      const auto s_x  = resultArray(0, 0);
-      const auto s_y  = resultArray(1, 0);
       const auto s_z  = resultArray(2, 0);
       const auto s_yz = resultArray(3, 0);
       const auto s_xz = resultArray(4, 0);

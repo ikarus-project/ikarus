@@ -267,12 +267,20 @@ public:
       const auto H         = uFunction.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
       const auto E         = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
 
-      return mat_.template stresses<StrainTags::greenLagrangian, voigt>(toVoigt(E));
+      if constexpr (voigt)
+        return mat_.template stresses<StrainTags::greenLagrangian>(toVoigt(E));
+      else
+        return fromVoigt(mat_.template stresses<StrainTags::greenLagrangian>(toVoigt(E)), false);
     } else
       static_assert(Dune::AlwaysFalse<RT>::value, "The requested result type is NOT implemented.");
     __builtin_unreachable();
   }
 
+  /**
+   * \brief Returns whether an element can provide a requested result. Can be used in constant expressions
+   * \tparam RT The type representing the requested result.
+   * \return boolean indicating if a requested result can be provided
+   */
   template <typename RT>
   static constexpr bool canProvideResultType() {
     return static_cast<bool>(std::is_same_v<RT, ResultType::PK2Stress>);
