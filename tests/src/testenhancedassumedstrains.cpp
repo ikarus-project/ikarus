@@ -39,6 +39,7 @@ int main(int argc, char** argv) {
   t.subTest(testFEElement<EASElement>(
       firstOrderLagrangePrePower2Basis, "EAS", unDistorted, Dune::ReferenceElements<double, 2>::cube(),
       checkCalculateAtFunctorFactory<Ikarus::ResultType::linearStress>(linearStressResultsOfSquare),
+      checkCalculateAtFunctorFactory<Ikarus::ResultType::linearStress, false>(linearStressResultsOfSquare),
       checkResultFunctionFunctorFactory<Ikarus::ResultType::linearStress>(linearStressResultsOfSquare)));
 
   return t.exit();

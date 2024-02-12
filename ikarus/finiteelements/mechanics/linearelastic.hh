@@ -62,6 +62,9 @@ public:
   static constexpr int myDim = Traits::mydim;
   using LocalBasisType       = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
 
+  template <typename RT, bool voigt = true>
+  using ResultTypeType = resultType_t<RT, myDim, Traits::worlddim, voigt>;
+
   /**
    * \brief Constructor for the LinearElastic class.
    *
@@ -211,10 +214,11 @@ public:
    * \return calculated result
    *
    * \tparam RT The type representing the requested result.
+   * \tparam voigt Returns result in Voigt notation (if applicable)
    */
   template <typename RT, bool voigt = true>
   auto calculateAt(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const
-      -> resultType_t<RT, myDim, voigt> {
+      -> ResultTypeType<RT, voigt> {
     if constexpr (std::is_same_v<RT, ResultType::linearStress>) {
       const auto eps = strainFunction(req);
       const auto C   = materialTangent();
@@ -223,8 +227,6 @@ public:
         return (C * epsVoigt).eval();
       else
         return fromVoigt((C * epsVoigt).eval(), false);
-    } else if constexpr (std::is_same_v<RT, ResultType::director>) {
-      return resultType_t<RT, myDim>::Zero();
     } else
       static_assert(Dune::AlwaysFalse<RT>::value, "The requested result type is NOT implemented.");
     __builtin_unreachable();
@@ -232,11 +234,7 @@ public:
 
   template <typename RT>
   static constexpr bool canProvideResultType() {
-    if constexpr (std::is_same_v<RT, ResultType::linearStress>)
-      return true;
-    if constexpr (std::is_same_v<RT, ResultType::director>)
-      return true;
-    return false;
+    return static_cast<bool>(std::is_same_v<RT, ResultType::linearStress>);
   }
 
 private:

@@ -174,3 +174,19 @@ inline auto linearStressResultsOfTetrahedron = []<typename NOP, typename FE>(NOP
 
   return std::make_tuple(feRequirements, expectedStress, getVertexPositions(fe));
 };
+
+template <typename CompileTimeMatrix>
+auto stressResultsToMatrix(const CompileTimeMatrix& expectedResults) {
+  constexpr int vertices   = CompileTimeMatrix::CompileTimeTraits::RowsAtCompileTime;
+  constexpr int voigtComps = CompileTimeMatrix::CompileTimeTraits::ColsAtCompileTime;
+  constexpr int matrixSize = (-1 + Ikarus::ct_sqrt(1 + 8 * vertices)) / 2;
+  constexpr int comps      = matrixSize * matrixSize;
+
+  Eigen::Matrix<double, vertices, comps> transformedResults;
+  for (const auto i : std::views::iota(0, vertices)) {
+    auto stressMatrix         = Ikarus::fromVoigt(Eigen::Vector<double, voigtComps>(expectedResults.row(i)), false);
+    transformedResults.row(i) = Eigen::Map<Eigen::VectorXd>(stressMatrix.data(), comps);
+    ;
+  }
+  return transformedResults;
+}
