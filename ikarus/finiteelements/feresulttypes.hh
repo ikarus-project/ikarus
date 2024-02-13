@@ -138,7 +138,7 @@ concept HasVoigt = std::is_same_v<typename RT::voigtApplicable, std::true_type> 
 
 namespace Ikarus {
 
-template <typename RT, int gridDim, int worldDim, bool>
+template <ResultType::ResultTypeConcept RT, int gridDim, int worldDim, bool>
 struct getResultType
 {
   using type = typename RT::template type<gridDim, worldDim>;
@@ -150,7 +150,7 @@ struct getResultType<RT, gridDim, worldDim, voigt>
   using type = typename RT::template type<gridDim, worldDim, voigt>;
 };
 
-template <typename RT, int gridDim, int worldDim = gridDim, bool voigt = true>
+template <ResultType::ResultTypeConcept RT, int gridDim, int worldDim = gridDim, bool voigt = true>
 using resultType_t = typename getResultType<RT, gridDim, worldDim, voigt>::type;
 
 } // namespace Ikarus
