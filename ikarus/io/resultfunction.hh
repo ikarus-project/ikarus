@@ -97,10 +97,10 @@ public:
    * \return String representing the name of the result type
    */
   [[nodiscard]] constexpr std::string name() const override {
-    if constexpr (std::is_same_v<UserFunction, Impl::DefaultUserFunction>)
-      return toString(resType{});
-    else
+    if constexpr (requires { UserFunction::name(); })
       return userFunction_.name();
+    else
+      return toString(resType{});
   }
 
   /**

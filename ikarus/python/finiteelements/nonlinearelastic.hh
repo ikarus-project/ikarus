@@ -104,8 +104,8 @@ void registerNonLinearElastic(pybind11::handle scope, pybind11::class_<NonLinear
   cls.def(
       "calculateAt",
       [](NonLinearElastic& self, const FERequirements& req, const Dune::FieldVector<double, Traits::mydim>& local,
-         ResultType resType) {
-        if (resType == ResultType::PK2Stress)
+         std::string& resType) {
+        if (resType == "PK2Stress")
           return self.template calculateAt<ResultType::PK2Stress>(req, local);
         else
           DUNE_THROW(Dune::NotImplemented, "Nonlinear-elastic element only supports PK2 stress as result.");

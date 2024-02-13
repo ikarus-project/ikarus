@@ -140,10 +140,14 @@ inline auto checkFEByAutoDiffFunctor = [](auto& nonLinOp, auto& fe, auto& req) {
   return checkFEByAutoDiff(nonLinOp, fe, req);
 };
 
-template <typename resType>
+template <typename resType, bool voigt = true>
 auto checkCalculateAtFunctorFactory(const auto& resultCollectionFunction) {
   return [&](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req) {
     auto [feRequirements, expectedStress, positions] = resultCollectionFunction(nonLinOp, fe);
-    return checkCalculateAt<resType>(nonLinOp, fe, feRequirements, expectedStress, positions);
+    if constexpr (voigt)
+      return checkCalculateAt<resType>(nonLinOp, fe, feRequirements, expectedStress, positions);
+    else
+      return checkCalculateAt<resType, voigt>(nonLinOp, fe, feRequirements, stressResultsToMatrix(expectedStress),
+                                              positions);
   };
 }

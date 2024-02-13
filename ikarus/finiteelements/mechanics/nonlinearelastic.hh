@@ -64,6 +64,9 @@ public:
   static constexpr int myDim       = Traits::mydim;
   static constexpr auto strainType = StrainTags::greenLagrangian;
 
+  template <typename RT, bool voigt = true>
+  using ResultTypeType = resultType_t<RT, myDim, Traits::worlddim, voigt>;
+
   /**
    * \brief Constructor for the NonLinearElastic class.
    *
@@ -251,21 +254,36 @@ public:
    * \param local Local position vector.
    * \return calculated result
    *
-   * \tparam resType The type representing the requested result.
+   * \tparam RT The type representing the requested result.
+   * \tparam voigt Returns result in Voigt notation (if applicable)
    */
-  template <typename RT>
-  auto calculateAt(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
+  template <typename RT, bool voigt = true>
+  auto calculateAt(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const
+      -> ResultTypeType<RT, voigt> {
     using namespace Dune::DerivativeDirections;
 
-    if constexpr (std::is_same_v<RT, ResultType::linearStress>) {
+    if constexpr (std::is_same_v<RT, ResultType::PK2Stress>) {
       const auto uFunction = displacementFunction(req);
       const auto H         = uFunction.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
       const auto E         = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
-      const auto EVoigt    = toVoigt(E);
 
-      return mat_.template stresses<StrainTags::greenLagrangian>(EVoigt);
+      if constexpr (voigt)
+        return mat_.template stresses<StrainTags::greenLagrangian>(toVoigt(E));
+      else
+        return fromVoigt(mat_.template stresses<StrainTags::greenLagrangian>(toVoigt(E)), false);
     } else
       static_assert(Dune::AlwaysFalse<RT>::value, "The requested result type is NOT implemented.");
+    __builtin_unreachable();
+  }
+
+  /**
+   * \brief Returns whether an element can provide a requested result. Can be used in constant expressions
+   * \tparam RT The type representing the requested result.
+   * \return boolean indicating if a requested result can be provided
+   */
+  template <typename RT>
+  static constexpr bool canProvideResultType() {
+    return static_cast<bool>(std::is_same_v<RT, ResultType::PK2Stress>);
   }
 
 private:

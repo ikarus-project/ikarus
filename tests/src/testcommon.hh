@@ -237,8 +237,8 @@ template <typename NonLinearOperator>
   return t;
 }
 
-template <typename resType>
-[[nodiscard]] auto checkCalculateAt(auto& nonLinearOperator, auto& fe, const auto& feRequirements,
+template <typename resType, bool voigt = true>
+[[nodiscard]] auto checkCalculateAt(auto& /*nonLinearOperator*/, auto& fe, const auto& feRequirements,
                                     const auto& expectedResult, const auto& evaluationPositions,
                                     const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Test of the calulateAt function for " + Dune::className(fe));
@@ -248,9 +248,14 @@ template <typename resType>
 
   if constexpr (FiniteElement::template canProvideResultType<resType>()) {
     for (int i = 0; const auto& pos : evaluationPositions) {
-      auto result = fe.template calculateAt<resType>(feRequirements, pos);
-      static_assert(std::is_same_v<decltype(result), Ikarus::resultType_t<resType, FiniteElement::myDim, true>>);
-      computedResults.row(i++) = result.transpose();
+      auto result = fe.template calculateAt<resType, voigt>(feRequirements, pos);
+      static_assert(std::is_same_v<decltype(result), typename FiniteElement::template ResultTypeType<resType, voigt>>);
+      if constexpr (voigt)
+        computedResults.row(i++) = result.transpose();
+      else {
+        Eigen::Map<Eigen::VectorXd> vector(result.data(), result.size());
+        computedResults.row(i++) = vector.transpose();
+      }
     }
     const bool isResultCorrect = isApproxSame(computedResults, expectedResult, 1e-8);
     t.check(isResultCorrect) << "Computed Result for " << toString(resType{})
@@ -262,19 +267,11 @@ template <typename resType>
   } else
     t.check(false) << "Element can not provide the requested RsultType " << toString(resType{}) << messageIfFailed;
 
-  std::cout << fe.template calculateAt<Ikarus::ResultType::director>(feRequirements, evaluationPositions[0])
-            << std::endl;
-  std::cout << fe.template calculateAt<Ikarus::ResultType::linearStress, false>(feRequirements, evaluationPositions[0])
-            << std::endl;
-
-  // Instantiate a default type
-  using Mat = Ikarus::resultType_t<Ikarus::ResultType::customType, 2>;
-
   return t;
 }
 
 template <typename resType, typename ResultEvaluator>
-[[nodiscard]] auto checkResultFunction(auto& nonLinearOperator, auto& fe, const auto& feRequirements,
+[[nodiscard]] auto checkResultFunction(auto& /*nonLinearOperator*/, auto& fe, const auto& feRequirements,
                                        const auto& expectedResult, const auto& evaluationPositions,
                                        const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Result Function Test" + Dune::className(fe));

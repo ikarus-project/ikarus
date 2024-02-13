@@ -14,7 +14,7 @@ namespace Ikarus::ResultType {
 #define REGISTER_RT(structName) \
   friend auto toString(structName) { return #structName; }
 
-namespace Impl {
+namespace Util {
   template <int dim>
   constexpr int voigtSize() {
     return dim * (dim + 1) / 2;
@@ -25,24 +25,67 @@ namespace Impl {
     return (-1 + ct_sqrt(1 + 8 * voigtSize<dim>())) / 2;
   }
 
-} // namespace Impl
-
-struct noType;
-struct magnetization;
-struct gradientNormOfMagnetization;
-struct vectorPotential;
-struct divergenceOfVectorPotential;
-struct BField;
-struct HField;
-struct cauchyStress;
-struct PK2Stress;
-struct linearStress;
-struct director;
-struct customType;
+} // namespace Util
 
 struct noType
 {
   REGISTER_RT(noType);
+};
+
+struct linearStress
+{
+  REGISTER_RT(linearStress);
+
+  using voigtApplicable = std::true_type;
+
+  template <int dim>
+  using matrixType = Eigen::Matrix<double, Util::matrixSize<dim>(), Util::matrixSize<dim>()>;
+
+  template <int dim>
+  using voigtType = Eigen::Vector<double, Util::voigtSize<dim>()>;
+
+  template <int gridDim, int worldDim, bool voigt>
+  using type = std::conditional_t<voigt, voigtType<gridDim>, matrixType<gridDim>>;
+};
+
+struct PK2Stress
+{
+  REGISTER_RT(PK2Stress);
+
+  using voigtApplicable = std::true_type;
+
+  template <int dim>
+  using matrixType = Eigen::Matrix<double, Util::matrixSize<dim>(), Util::matrixSize<dim>()>;
+
+  template <int dim>
+  using voigtType = Eigen::Vector<double, Util::voigtSize<dim>()>;
+
+  template <int gridDim, int worldDim, bool voigt>
+  using type = std::conditional_t<voigt, voigtType<gridDim>, matrixType<gridDim>>;
+};
+
+struct cauchyStress
+{
+  REGISTER_RT(cauchyStress);
+
+  using voigtApplicable = std::true_type;
+
+  template <int dim>
+  using matrixType = Eigen::Matrix<double, Util::matrixSize<dim>(), Util::matrixSize<dim>()>;
+
+  template <int dim>
+  using voigtType = Eigen::Vector<double, Util::voigtSize<dim>()>;
+
+  template <int gridDim, int worldDim, bool voigt>
+  using type = std::conditional_t<voigt, voigtType<gridDim>, matrixType<gridDim>>;
+};
+
+struct director
+{
+  REGISTER_RT(director);
+
+  template <int gridDim, int worldDim>
+  using type = Eigen::Vector<double, worldDim>;
 };
 
 struct magnetization
@@ -54,106 +97,60 @@ struct gradientNormOfMagnetization
 {
   REGISTER_RT(gradientNormOfMagnetization);
 };
+
 struct vectorPotential
 {
   REGISTER_RT(vectorPotential);
 };
+
 struct divergenceOfVectorPotential
 {
   REGISTER_RT(divergenceOfVectorPotential);
 };
+
 struct BField
 {
   REGISTER_RT(BField);
 };
+
 struct HField
 {
   REGISTER_RT(HField);
-};
-struct cauchyStress
-{
-  REGISTER_RT(cauchyStress);
-
-  static constexpr bool voigtApplicable = true;
-
-  template <int gridDim>
-  using matrixType = Eigen::Matrix<double, Impl::matrixSize<gridDim>(), Impl::matrixSize<gridDim>()>;
-
-  template <int gridDim>
-  using voigtType = Eigen::Vector<double, Impl::voigtSize<gridDim>()>;
-
-  template <int gridDim, bool voigt>
-  using type = std::conditional_t<voigt, voigtType<gridDim>, matrixType<gridDim>>;
-};
-struct PK2Stress
-{
-  REGISTER_RT(PK2Stress);
-
-  static constexpr bool voigtApplicable = true;
-
-  template <int gridDim>
-  using matrixType = Eigen::Matrix<double, Impl::matrixSize<gridDim>(), Impl::matrixSize<gridDim>()>;
-
-  template <int gridDim>
-  using voigtType = Eigen::Vector<double, Impl::voigtSize<gridDim>()>;
-
-  template <int gridDim, bool voigt>
-  using type = std::conditional_t<voigt, voigtType<gridDim>, matrixType<gridDim>>;
-};
-struct linearStress
-{
-  REGISTER_RT(linearStress);
-
-  static constexpr bool voigtApplicable = true;
-
-  template <int gridDim>
-  using matrixType = Eigen::Matrix<double, Impl::matrixSize<gridDim>(), Impl::matrixSize<gridDim>()>;
-
-  template <int gridDim>
-  using voigtType = Eigen::Vector<double, Impl::voigtSize<gridDim>()>;
-
-  template <int gridDim, bool voigt>
-  using type = std::conditional_t<voigt, voigtType<gridDim>, matrixType<gridDim>>;
-};
-struct director
-{
-  REGISTER_RT(director);
-
-  static constexpr bool voigtApplicable = false;
-
-  template <int gridDim>
-  using type = Eigen::Vector<double, gridDim>;
 };
 
 struct customType
 {
   REGISTER_RT(customType);
 
-  template <int gridDim>
+  template <int gridDim, int worldDim>
   using type = Eigen::MatrixXd;
 };
+
+template <typename RT>
+concept ResultTypeConcept = requires(RT t) {
+  { toString(t) } -> std::convertible_to<std::string>;
+};
+
+template <typename RT>
+concept HasVoigt = std::is_same_v<typename RT::voigtApplicable, std::true_type> && ResultTypeConcept<RT>;
 
 } // namespace Ikarus::ResultType
 
 namespace Ikarus {
 
-template <typename RT>
-concept HasVoigt = std::same_as<RT, ResultType::linearStress> || std::same_as<RT, ResultType::cauchyStress> ||
-                   std::same_as<RT, ResultType::PK2Stress>;
-
-template <typename RT, int gridDim, bool voigt>
+template <ResultType::ResultTypeConcept RT, int gridDim, int worldDim, bool>
 struct getResultType
 {
-  using type = typename RT::template type<gridDim>;
+  using type = typename RT::template type<gridDim, worldDim>;
 };
 
-template <HasVoigt RT, int gridDim, bool voigt>
-struct getResultType<RT, gridDim, voigt>
+template <ResultType::HasVoigt RT, int gridDim, int worldDim, bool voigt>
+struct getResultType<RT, gridDim, worldDim, voigt>
 {
-  using type = typename RT::template type<gridDim, voigt>;
+  using type = typename RT::template type<gridDim, worldDim, voigt>;
 };
 
-template <typename RT, int gridDim, bool voigt = true>
-using resultType_t = typename getResultType<RT, gridDim, voigt>::type;
+template <ResultType::ResultTypeConcept RT, int gridDim, int worldDim = gridDim, bool voigt = true>
+using resultType_t = typename getResultType<RT, gridDim, worldDim, voigt>::type;
 
 } // namespace Ikarus

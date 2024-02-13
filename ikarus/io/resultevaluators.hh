@@ -33,15 +33,12 @@ struct VonMises
    */
   template <typename R>
   double operator()(const R& resultArray, [[maybe_unused]] const int comp) const {
+    const auto s_x = resultArray(0, 0);
+    const auto s_y = resultArray(1, 0);
     if constexpr (R::CompileTimeTraits::RowsAtCompileTime == 3) {
-      const auto s_x  = resultArray(0, 0);
-      const auto s_y  = resultArray(1, 0);
       const auto s_xy = resultArray(2, 0);
-
       return std::sqrt(Dune::power(s_x, 2) + Dune::power(s_y, 2) - s_x * s_y + 3 * Dune::power(s_xy, 2));
     } else {
-      const auto s_x  = resultArray(0, 0);
-      const auto s_y  = resultArray(1, 0);
       const auto s_z  = resultArray(2, 0);
       const auto s_yz = resultArray(3, 0);
       const auto s_xz = resultArray(4, 0);
