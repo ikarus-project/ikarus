@@ -1,8 +1,21 @@
-//
-// Created by ac136110 on 13.02.2024.
-//
+// SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
-#ifndef FESETTINGS_HH
-#define FESETTINGS_HH
+#pragma once
 
-#endif //FESETTINGS_HH
+#include <ikarus/utils/refl.hpp>
+
+namespace Ikarus {
+
+// Macro definition
+#define registerSetting(name, type) type name{};
+
+struct SettingsContainer
+{
+  registerSetting(nGP, int);
+  registerSetting(orderGP, int);
+};
+
+} // namespace Ikarus
+
+REFL_AUTO(type(Ikarus::SettingsContainer), field(nGP), field(orderGP))

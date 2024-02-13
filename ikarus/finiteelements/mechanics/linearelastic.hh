@@ -28,6 +28,7 @@
   #include <ikarus/finiteelements/mechanics/loads.hh>
   #include <ikarus/finiteelements/mechanics/materials.hh>
   #include <ikarus/finiteelements/physicshelper.hh>
+  #include <ikarus/io/loadfesettings.hh>
   #include <ikarus/utils/defaultfunctions.hh>
   #include <ikarus/utils/linearalgebrahelper.hh>
 
@@ -64,6 +65,8 @@ public:
 
   template <typename RT, bool voigt = true>
   using ResultTypeType = resultType_t<RT, myDim, Traits::worlddim, voigt>;
+
+  using Settings = Settings<LinearElastic>;
 
   /**
    * \brief Constructor for the LinearElastic class.
@@ -240,6 +243,14 @@ public:
   template <typename RT>
   static constexpr bool canProvideResultType() {
     return static_cast<bool>(std::is_same_v<RT, ResultType::linearStress>);
+  }
+
+  void registerSettings(const Settings& settings) {
+    auto& container     = settings.getContainer();
+    auto isDefaultValue = []<typename T>(T t) -> bool { return t == T{}; };
+
+    if (not isDefaultValue(container.nGP))
+      std::cout << "New nGP set " << container.nGP << std::endl;
   }
 
 private:
