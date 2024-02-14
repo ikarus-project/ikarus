@@ -66,8 +66,6 @@ public:
   template <typename RT, bool voigt = true>
   using ResultTypeType = resultType_t<RT, myDim, Traits::worlddim, voigt>;
 
-  using Settings = Settings<LinearElastic>;
-
   /**
    * \brief Constructor for the LinearElastic class.
    *
@@ -97,15 +95,8 @@ public:
     numberOfNodes_   = fe.size();
     order_           = 2 * (fe.localBasis().order());
     localBasis_      = Dune::CachedLocalBasis(fe.localBasis());
-    if constexpr (requires { this->localView().element().impl().getQuadratureRule(order_); })
-      if (this->localView().element().impl().isTrimmed())
-        localBasis_.bind(this->localView().element().impl().getQuadratureRule(order_), Dune::bindDerivatives(0, 1));
-      else
-        localBasis_.bind(Dune::QuadratureRules<double, myDim>::rule(this->localView().element().type(), order_),
-                         Dune::bindDerivatives(0, 1));
-    else
-      localBasis_.bind(Dune::QuadratureRules<double, myDim>::rule(this->localView().element().type(), order_),
-                       Dune::bindDerivatives(0, 1));
+
+    bindQuadratureRule(order_);
   }
   /**
    * \brief Gets the displacement function for the given FERequirementType and optional displacement vector.
@@ -245,12 +236,16 @@ public:
     return static_cast<bool>(std::is_same_v<RT, ResultType::linearStress>);
   }
 
-  void registerSettings(const Settings& settings) {
-    auto& container     = settings.getContainer();
-    auto isDefaultValue = []<typename T>(T t) -> bool { return t == T{}; };
+  void registerSettings(const FESettings& settings) {
+    const auto& container           = settings.getContainer();
+    constexpr auto defaultContainer = FESettings::Container{};
 
-    if (not isDefaultValue(container.nGP))
-      std::cout << "New nGP set " << container.nGP << std::endl;
+    if (container.nGP != defaultContainer.nGP and container.orderGP != defaultContainer.orderGP)
+      std::cout << "Quadrature Rule Setting couldn't be set" << std::endl;
+    else if (container.nGP != defaultContainer.nGP)
+      bindQuadratureRule(container.nGP, true);
+    else if (container.orderGP != defaultContainer.orderGP)
+      bindQuadratureRule(container.nGP, false);
   }
 
 private:
@@ -260,6 +255,20 @@ private:
   double nu_;
   size_t numberOfNodes_{0};
   int order_{};
+
+  void bindQuadratureRule(const int orderOrN, const bool inputIsGPperDirection = false) {
+    const int order = inputIsGPperDirection ? 2 * orderOrN : orderOrN;
+
+    if constexpr (requires { this->localView().element().impl().getQuadratureRule(order); }) {
+      if (this->localView().element().impl().isTrimmed())
+        localBasis_.bind(this->localView().element().impl().getQuadratureRule(order), Dune::bindDerivatives(0, 1));
+      else
+        localBasis_.bind(Dune::QuadratureRules<double, myDim>::rule(this->localView().element().type(), order),
+                         Dune::bindDerivatives(0, 1));
+    } else
+      localBasis_.bind(Dune::QuadratureRules<double, myDim>::rule(this->localView().element().type(), order),
+                       Dune::bindDerivatives(0, 1));
+  }
 
 protected:
   template <typename ScalarType>

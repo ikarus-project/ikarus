@@ -7,15 +7,19 @@
 
 namespace Ikarus {
 
-// Macro definition
-#define registerSetting(name, type) type name{};
-
-struct SettingsContainer
+struct FESettingsContainer
 {
-  registerSetting(nGP, int);
-  registerSetting(orderGP, int);
+  int nGP            = std::numeric_limits<int>::max();
+  int orderGP        = std::numeric_limits<int>::max();
+  float someSettings = std::numeric_limits<float>::max();
 };
 
 } // namespace Ikarus
 
-REFL_AUTO(type(Ikarus::SettingsContainer), field(nGP), field(orderGP))
+// clang-format off
+REFL_AUTO(
+  type(Ikarus::FESettingsContainer),
+  field(nGP),
+  field(orderGP)
+  )
+
