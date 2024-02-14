@@ -7,7 +7,7 @@
 
 #include <Eigen/Core>
 
-#include <ikarus/finiteelements/febases/autodifffe.hh>
+#include <ikarus/finiteelements/autodiff/autodifffe.hh>
 #include <ikarus/utils/basis.hh>
 
 template <template <typename...> class FE, typename GridView, typename PreBasis, typename... ElementArgsType>

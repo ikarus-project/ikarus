@@ -76,7 +76,7 @@ This information originates from a `basis` object. See existing implementations 
 
 `LinearElastic` and `NonLinearElastic` classes are designed in a generic way.
 This means that they could be directly used for any $n$-dimensional finite element in the geometrically linear and non-linear cases.
-They inherit from the class `PowerBasisFE`, which helps to arrange the nodal degrees of freedom in a `FlatInterleaved` format.
+They inherit from the class `FEBases`, which helps to arrange the nodal degrees of freedom in a `FlatInterleaved` format.
 Refer DUNE[@sander2020dune] for more details. The constructor for both classes of elements has the following signature:
 
 ```cpp

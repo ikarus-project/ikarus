@@ -14,7 +14,7 @@
 #include <dune/localfefunctions/impl/standardLocalFunction.hh>
 #include <dune/localfefunctions/manifolds/realTuple.hh>
 
-#include <ikarus/finiteelements/febases/powerbasisfe.hh>
+#include <ikarus/finiteelements/febases.hh>
 #include <ikarus/finiteelements/fehelper.hh>
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/finiteelements/mechanics/loads.hh>
@@ -36,7 +36,7 @@ namespace Ikarus {
  * \tparam useEigenRef A boolean indicating whether to use Eigen references for efficiency.
  */
 template <typename B, typename FER = FERequirements<>, bool useEigenRef = false>
-class KirchhoffLoveShell : public PowerBasisFE<B>,
+class KirchhoffLoveShell : public FEBases<B>,
                            public Volume<KirchhoffLoveShell<B, FER, useEigenRef>, FETraits<B, FER, useEigenRef>>,
                            public Traction<KirchhoffLoveShell<B, FER, useEigenRef>, FETraits<B, FER, useEigenRef>>
 {
@@ -49,7 +49,7 @@ public:
   using Geometry          = typename Traits::Geometry;
   using GridView          = typename Traits::GridView;
   using Element           = typename Traits::Element;
-  using BasePowerFE       = PowerBasisFE<Basis>; // Handles globalIndices function
+  using BasePowerFE       = FEBases<Basis>; // Handles globalIndices function
   using VolumeType        = Volume<KirchhoffLoveShell, Traits>;
   using TractionType      = Traction<KirchhoffLoveShell, Traits>;
   using LocalBasisType    = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());

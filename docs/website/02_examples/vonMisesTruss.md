@@ -7,7 +7,7 @@ standard Von-Mises truss example found in literature (refer to Section 2[@misesT
 
 ## Code highlights
 
-The struct named `Truss` is created such that it inherits from `PowerBasisFE`.
+The struct named `Truss` is created such that it inherits from `FEBases`.
 It must be decorated with `AutoDiffFE` as well to compute the stiffness matrix and load vectors during construction.
 It is constructed as shown below:
 

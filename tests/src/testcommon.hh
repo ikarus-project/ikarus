@@ -20,8 +20,7 @@
 #endif
 #include "testhelpers.hh"
 
-#include <ikarus/finiteelements/febases/autodifffe.hh>
-#include <ikarus/finiteelements/febases/powerbasisfe.hh>
+#include <ikarus/finiteelements/autodiff/autodifffe.hh>
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/finiteelements/mechanics/enhancedassumedstrains.hh>
 #include <ikarus/finiteelements/mechanics/linearelastic.hh>

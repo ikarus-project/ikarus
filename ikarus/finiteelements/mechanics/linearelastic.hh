@@ -21,7 +21,7 @@
   #include <dune/localfefunctions/impl/standardLocalFunction.hh>
   #include <dune/localfefunctions/manifolds/realTuple.hh>
 
-  #include <ikarus/finiteelements/febases/powerbasisfe.hh>
+  #include <ikarus/finiteelements/febases.hh>
   #include <ikarus/finiteelements/fehelper.hh>
   #include <ikarus/finiteelements/ferequirements.hh>
   #include <ikarus/finiteelements/fetraits.hh>
@@ -43,7 +43,7 @@ namespace Ikarus {
  * \tparam useEigenRef A boolean flag indicating whether to use Eigen references.
  */
 template <typename B, typename FER = FERequirements<>, bool useEigenRef = false>
-class LinearElastic : public PowerBasisFE<B>,
+class LinearElastic : public FEBases<B>,
                       public Volume<LinearElastic<B, FER, useEigenRef>, FETraits<B, FER, useEigenRef>>,
                       public Traction<LinearElastic<B, FER, useEigenRef>, FETraits<B, FER, useEigenRef>>
 {
@@ -56,7 +56,7 @@ public:
   using Geometry             = typename Traits::Geometry;
   using GridView             = typename Traits::GridView;
   using Element              = typename Traits::Element;
-  using BaseDisp             = PowerBasisFE<Basis>; // Handles globalIndices function
+  using BaseDisp             = FEBases<Basis>; // Handles globalIndices function
   using VolumeType           = Volume<LinearElastic, Traits>;
   using TractionType         = Traction<LinearElastic, Traits>;
   static constexpr int myDim = Traits::mydim;

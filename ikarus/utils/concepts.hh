@@ -170,17 +170,6 @@ namespace Concepts {
   concept BlockedIndexBasis = BlockedLexicographicBasis<B> or BlockedInterLeavedBasis<B>;
 
   /**
-   * \concept PowerBasis
-   * \brief Concept to check if a basis uses power indexing strategy.
-   *
-   * This concept checks if the given Basis type uses power indexing strategy.
-   *
-   * \tparam B The basis type.
-   */
-  template <typename B>
-  concept PowerBasis = requires { B::PreBasis::Node::isPower == true; };
-
-  /**
    * \concept PathFollowingStrategy
    * \brief Concept defining the requirements for a path-following strategy.
    * \tparam PF Type representing the path-following strategy.
