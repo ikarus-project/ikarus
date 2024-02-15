@@ -62,7 +62,8 @@ for (auto &element : elements(gridView))
   fes.emplace_back(*basis, element, reducedMat, &neumannBoundary, neumannBoundaryLoad, volumeLoad);
 ```
 
-The functors `volumeLoad` and `neumannBoundaryLoad` are used to obtain the external volume and surface loads acting on a particular position.
+The functors `volumeLoad` and `neumannBoundaryLoad` are used to obtain the external volume and surface loads acting on a particular
+position.
 We use a Saint Venant–Kirchhoff material model, which we transform to a plane stress material law for our two-dimensional simulation.
 The line $y=0$ is clamped by applying the Dirichlet boundary condition expressed below:
 
@@ -121,6 +122,30 @@ lc.subscribeAll(vtkWriter);
 lc.run();
 ```
 
+For postprocessing purposes we now write our results in a different VTK File. First we take a look at the stresses, in this case
+the second Piola-Kirchhoff stress tensor. This quantity can be computed with the elements' `calculateAt()` function.
+But here we will be using a so-called `ResultFunction`. This is a helper function that gathers the results over the
+whole grid and can be used to generate data for a `VTKWriter`. To create this function, we can use the following helper
+
+```cpp
+auto stressFunction = Ikarus::makeResultFunction<ResultType::PK2Stress>(&fes, req);
+```
+
+To add this as vertex data to the VTK file we can do the following:
+
+```cpp
+Dune::VTKWriter resultWriter(gridView);
+resultWriter.addVertexData(stressFunction);
+```
+
+As this functionality only writes out the results of the `calculateAt()` function as is, we can use `ResultEvaluators`
+to further process our results. For example, we can use `ResultEvaluators::VonMises<dim>` to compute the Von Mises stress:
+
+```cpp
+  auto vonMisesFunction
+      = Ikarus::makeResultFunction<ResultType::PK2Stress, ResultEvaluators::VonMises<gridDim>>(&fes, req);
+```
+
 ## Takeaways
 
 - Grid types, finite element discretizations, and solver types are independent entities that are used to solve the problem at hand and
@@ -129,3 +154,4 @@ lc.run();
 - A geometrically non-linear elastic finite element can be used from the Ikarus library.
 - The Newton-Raphson and trust regions methods can be used as non-linear solvers.
 - The load control method is used here as the path-following technique.
+- Stress results can be written to a VTK file with a `ResultFunction`.
