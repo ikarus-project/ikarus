@@ -30,6 +30,8 @@ auto getBasis(const GridView& gridView, const PreBasis& preBasis) {
 template <typename TestSuiteType, typename... Args>
 void checkBases(TestSuiteType& t, const std::vector<int>& expectedNumberOfChildren,
                 const std::vector<int>& expectedSize, const std::string& basisName, const Args&... args) {
+  assert(sizeof...(args) == expectedNumberOfChildren.size() && "Input size mismatch for number of children.");
+  assert(sizeof...(args) == expectedSize.size() && "Input size mismatch for local view size.");
   int i = 0;
   (
       [&] {
@@ -73,9 +75,6 @@ auto FEBasesTest() {
   const auto scalarCompositePreBasis = composite(firstOrderLagrangePreBasis);
   const auto powerCompositePreBasis  = composite(firstOrderLagrangePowerPreBasis);
 
-  const auto powerPowerScalarCompositeBasis =
-      composite(firstOrderLagrangePowerPreBasis, secondOrderLagrangePowerPreBasis, firstOrderLagrangePreBasis);
-
   const auto scalar1 = getBasis(gridView, firstOrderLagrangePreBasis);
   const auto scalar2 = getBasis(gridView, secondOrderLagrangePreBasis);
 
@@ -93,15 +92,6 @@ auto FEBasesTest() {
   checkBases(t, {2, 5}, {8, 45}, " Power Basis", power1, power2);
   checkBases(t, {2, 2, 2, 2, 1, 1}, {13, 49, 17, 53, 4, 8}, " Composite Basis", composite1, composite2, composite3,
              composite4, composite5, composite6);
-
-  t.checkThrow<Dune::NotImplemented>(
-      [&]() {
-        const auto composite7 = getBasis(gridView, powerPowerScalarCompositeBasis);
-        using GlobalIndex     = typename std::remove_cvref_t<decltype(composite7.localView())>::MultiIndex;
-        std::vector<GlobalIndex> dofs;
-        composite7.globalFlatIndices(dofs);
-      },
-      "FEBases should have failed for calling a composite basis with more than two children.");
 
   return t;
 }

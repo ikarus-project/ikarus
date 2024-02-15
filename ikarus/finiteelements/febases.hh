@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "fetraits.hh"
+#include <ikarus/finiteelements/fetraits.hh>
 
 namespace Ikarus {
 
@@ -25,10 +25,21 @@ class FEBases
 {
 public:
   using Traits      = FETraits<B>;                  ///< Type of the traits.
-  using FlatBasis   = typename Traits::FlatBasis;   ///< Type of the flat basis.
   using LocalView   = typename Traits::LocalView;   ///< Type of the local view.
   using GlobalIndex = typename Traits::GlobalIndex; ///< Type of the global index.
   using GridElement = typename Traits::Element;     ///< Type of the grid element.
+
+  /** \brief Bool to check if the basis is a power basis. */
+  static constexpr bool isPower = B::PreBasis::Node::isPower;
+
+  /** \brief Bool to check if the basis is a composite basis. */
+  static constexpr bool isComposite = B::PreBasis::Node::isComposite;
+
+  /** \brief Bool to check if the basis is a scalar basis. */
+  static constexpr bool isScalar = B::PreBasis::Node::isLeaf;
+
+  /** \brief Number of children in the basis. */
+  static constexpr int numChildren = B::PreBasis::Node::degree();
 
   /**
    * \brief Constructor for the FEBases class.
@@ -40,18 +51,6 @@ public:
       : localView_{basis.flat().localView()} {
     localView_.bind(element);
   }
-
-  /** \brief Bool to check if the basis is a power basis. */
-  static constexpr bool isPower = FlatBasis::PreBasis::Node::isPower;
-
-  /** \brief Bool to check if the basis is a composite basis. */
-  static constexpr bool isComposite = FlatBasis::PreBasis::Node::isComposite;
-
-  /** \brief Bool to check if the basis is a scalar basis. */
-  static constexpr bool isScalar = FlatBasis::PreBasis::Node::isLeaf;
-
-  /** \brief Number of children in the basis. */
-  static constexpr int numChildren = FlatBasis::PreBasis::Node::degree();
 
   /**
    * \brief Get the size of the local view.
@@ -99,105 +98,81 @@ private:
   LocalView localView_;
 
   /**
-   * \brief A helper function to handle global indices of a power basis.
+   * \brief A helper function to handle global indices of a scalar basis.
    *
-   * \tparam FE Type of the finite element.
    * \tparam ChildIndex Type of the index for the child, see dune/common/indices.hh
    *
-   * \param fe The finite element
-   * \param childrenSize The size of the children of a power node.
    * \param globalIndices Output vector to store global indices.
    * \param childIndex The index of the child.
    */
-  template <typename FE, typename ChildIndex>
-  void globalPowerFlatIndices(const FE& fe, int childrenSize, std::vector<GlobalIndex>& globalIndices,
-                              const ChildIndex childIndex) const {
-    if constexpr (requires { localView_.tree().child(childIndex).finiteElement(); })
+  template <typename ChildIndex>
+  void globalScalarFlatIndices(std::vector<GlobalIndex>& globalIndices, const ChildIndex childIndex) const {
+    if constexpr (requires { localView_.tree().child(childIndex).finiteElement(); }) {
+      const auto& fe = localView_.tree().child(childIndex).finiteElement();
       for (size_t i = 0; i < fe.size(); ++i)
-        for (int j = 0; j < childrenSize; ++j)
-          globalIndices.push_back(localView_.index((localView_.tree().child(j).localIndex(i))));
-    else
+        globalIndices.push_back(localView_.index((localView_.tree().child(childIndex).localIndex(i))));
+    } else {
+      const auto& fe = localView_.tree().finiteElement();
       for (size_t i = 0; i < fe.size(); ++i)
-        for (int j = 0; j < childrenSize; ++j)
-          globalIndices.push_back(localView_.index((localView_.tree().child(childIndex, j).localIndex(i))));
+        globalIndices.push_back(localView_.index(localView_.tree().localIndex(i)));
+    }
   }
 
   /**
-   * \brief A helper function to handle global indices of a scalar basis.
+   * \brief A helper function to handle global indices of a power basis.
    *
-   * \tparam FE Type of the finite element.
    * \tparam ChildIndex Type of the index for the child, see dune/common/indices.hh
    *
-   * \param fe The finite element
    * \param globalIndices Output vector to store global indices.
    * \param childIndex The index of the child.
    */
-  template <typename FE, typename ChildIndex>
-  void globalScalarFlatIndices(const FE& fe, std::vector<GlobalIndex>& globalIndices,
-                               const ChildIndex childIndex) const {
-    if constexpr (requires { localView_.tree().child(childIndex).finiteElement(); })
+  template <typename ChildIndex>
+  void globalPowerFlatIndices(std::vector<GlobalIndex>& globalIndices, const ChildIndex childIndex) const {
+    if constexpr (requires { localView_.tree().child(childIndex).finiteElement(); }) {
+      const auto& fe             = localView_.tree().child(0).finiteElement();
+      constexpr int childrenSize = LocalView::Tree::degree();
       for (size_t i = 0; i < fe.size(); ++i)
-        globalIndices.push_back(localView_.index((localView_.tree().child(childIndex).localIndex(i))));
+        for (int j = 0; j < childrenSize; ++j)
+          globalIndices.push_back(localView_.index((localView_.tree().child(j).localIndex(i))));
+    } else {
+      const auto& fe             = localView_.tree().child(childIndex, 0).finiteElement();
+      constexpr int childrenSize = LocalView::Tree::template Child<childIndex>::Type::degree();
+      for (size_t i = 0; i < fe.size(); ++i)
+        for (int j = 0; j < childrenSize; ++j)
+          globalIndices.push_back(localView_.index((localView_.tree().child(childIndex, j).localIndex(i))));
+    }
+  }
+
+  /**
+   * \brief A helper function to handle global indices of a composite basis.
+   *
+   * \tparam ChildIndex Type of the index for the child, see dune/common/indices.hh
+   *
+   * \param globalIndices Output vector to store global indices.
+   * \param childIndex The index of the child.
+   */
+  template <typename ChildIndex>
+  void globalCompositeFlatIndices(std::vector<GlobalIndex>& globalIndices, const ChildIndex childIndex) const {
+    constexpr int localNumChildren = LocalView::Tree::template Child<childIndex>::Type::degree();
+    if constexpr (localNumChildren == 0)
+      globalScalarFlatIndices(globalIndices, childIndex);
     else
-      for (size_t i = 0; i < fe.size(); ++i)
-        globalIndices.push_back(localView_.index(localView_.tree().localIndex(i)));
+      globalPowerFlatIndices(globalIndices, childIndex);
   }
 
   void globalFlatIndicesImpl(std::vector<GlobalIndex>& globalIndices) const {
     globalIndices.clear();
     using namespace Dune::Indices;
-    if constexpr (isPower) {
-      /// A power basis
-      const auto& fe = localView_.tree().child(0).finiteElement();
-      globalPowerFlatIndices(fe, numChildren, globalIndices, _0);
-    } else if constexpr (isScalar) {
-      /// A scalar basis
-      const auto& fe = localView_.tree().finiteElement();
-      globalScalarFlatIndices(fe, globalIndices, _0);
-    } else if constexpr (isComposite) {
-      if constexpr (numChildren == 1) {
-        constexpr int numFirstChild = LocalView::Tree::template Child<0>::Type::degree();
-        if constexpr (numFirstChild == 0) {
-          /// A composite(scalar) basis
-          const auto& fe = localView_.tree().child(_0).finiteElement();
-          globalScalarFlatIndices(fe, globalIndices, _0);
-        } else {
-          /// A composite(power) basis
-          const auto& fe              = localView_.tree().child(_0, 0).finiteElement();
-          const int localChildrenSize = localView_.tree().child(_0).degree();
-          globalPowerFlatIndices(fe, localChildrenSize, globalIndices, _0);
-        }
-      } else if constexpr (numChildren == 2) {
-        constexpr int numFirstChild  = LocalView::Tree::template Child<0>::Type::degree();
-        constexpr int numSecondChild = LocalView::Tree::template Child<1>::Type::degree();
-        if constexpr ((numFirstChild == 0) and (numSecondChild == 0)) {
-          /// A composite(scalar, scalar) basis
-          const auto& fe0 = localView_.tree().child(_0).finiteElement();
-          const auto& fe1 = localView_.tree().child(_1).finiteElement();
-          globalScalarFlatIndices(fe0, globalIndices, _0);
-          globalScalarFlatIndices(fe1, globalIndices, _1);
-        } else if constexpr ((numFirstChild == 0) and (numSecondChild != 0)) {
-          /// A composite(scalar, power) basis
-          const auto& fe0             = localView_.tree().child(_0).finiteElement();
-          const auto& fe1             = localView_.tree().child(_1, 0).finiteElement();
-          const int localChildrenSize = numSecondChild;
-          globalScalarFlatIndices(fe0, globalIndices, _0);
-          globalPowerFlatIndices(fe1, localChildrenSize, globalIndices, _1);
-        } else if constexpr ((numFirstChild != 0) and (numSecondChild == 0)) {
-          /// A composite(power, scalar) basis
-          const auto& fe0 = localView_.tree().child(_0, 0).finiteElement();
-          const auto& fe1 = localView_.tree().child(_1).finiteElement();
-          globalPowerFlatIndices(fe0, numFirstChild, globalIndices, _0);
-          globalScalarFlatIndices(fe1, globalIndices, _1);
-        } else {
-          /// A composite(power, power) basis
-          const auto& fe0 = localView_.tree().child(_0, 0).finiteElement();
-          const auto& fe1 = localView_.tree().child(_1, 0).finiteElement();
-          globalPowerFlatIndices(fe0, numFirstChild, globalIndices, _0);
-          globalPowerFlatIndices(fe1, numSecondChild, globalIndices, _1);
-        }
-      } else
-        DUNE_THROW(Dune::NotImplemented, "The provided composite basis type is not implemented.");
+    if constexpr (isPower)
+      globalPowerFlatIndices(globalIndices, _0);
+    else if constexpr (isScalar)
+      globalScalarFlatIndices(globalIndices, _0);
+    else if constexpr (isComposite) {
+      Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<numChildren>()), [&](const auto i) {
+        static_assert(not(LocalView::Tree::template Child<i>::Type::isComposite),
+                      "Composite Basis cannot have a composite basis");
+        globalCompositeFlatIndices(globalIndices, i);
+      });
     } else
       DUNE_THROW(Dune::NotImplemented, "The provided basis type is not implemented.");
   }
