@@ -27,21 +27,21 @@ auto getBasis(const GridView& gridView, const PreBasis& preBasis) {
   return Ikarus::FEBases<decltype(basis)>(basis, *element);
 }
 
-template <typename TestSuiteType, typename... Args>
+template <typename TestSuiteType, typename... Bases>
 void checkBases(TestSuiteType& t, const std::vector<int>& expectedNumberOfChildren,
-                const std::vector<int>& expectedSize, const std::string& basisName, const Args&... args) {
-  assert(sizeof...(args) == expectedNumberOfChildren.size() && "Input size mismatch for number of children.");
-  assert(sizeof...(args) == expectedSize.size() && "Input size mismatch for local view size.");
+                const std::vector<int>& expectedSize, const std::string& basisName, const Bases&... bases) {
+  assert(sizeof...(bases) == expectedNumberOfChildren.size() && "Input size mismatch for number of children.");
+  assert(sizeof...(bases) == expectedSize.size() && "Input size mismatch for local view size.");
   int i = 0;
   (
       [&] {
-        checkScalars(t, args.numberOfChildren(), expectedNumberOfChildren[i],
+        checkScalars(t, bases.numberOfChildren(), expectedNumberOfChildren[i],
                      " Number of children is incorrect for i = " + std::to_string(i) + basisName);
-        checkScalars(t, static_cast<int>(args.size()), expectedSize[i],
+        checkScalars(t, static_cast<int>(bases.size()), expectedSize[i],
                      " Size is incorrect for i = " + std::to_string(i) + basisName);
-        std::vector<typename std::remove_cvref_t<decltype(args.localView())>::MultiIndex> dofs;
-        args.globalFlatIndices(dofs);
-        checkScalars(t, dofs.size(), args.size(),
+        std::vector<typename std::remove_cvref_t<decltype(bases.localView())>::MultiIndex> dofs;
+        bases.globalFlatIndices(dofs);
+        checkScalars(t, dofs.size(), bases.size(),
                      " Size of dofs and args are not equal for i = " + std::to_string(i) + basisName);
         ++i;
       }(),
@@ -75,12 +75,15 @@ auto FEBasesTest() {
   const auto scalarCompositePreBasis = composite(firstOrderLagrangePreBasis);
   const auto powerCompositePreBasis  = composite(firstOrderLagrangePowerPreBasis);
 
+  /// Types of scalar FE bases
   const auto scalar1 = getBasis(gridView, firstOrderLagrangePreBasis);
   const auto scalar2 = getBasis(gridView, secondOrderLagrangePreBasis);
 
+  /// Types of power FE bases
   const auto power1 = getBasis(gridView, firstOrderLagrangePowerPreBasis);
   const auto power2 = getBasis(gridView, secondOrderLagrangePowerPreBasis);
 
+  /// Types of composite FE bases
   const auto composite1 = getBasis(gridView, scalarScalarCompositePreBasis);
   const auto composite2 = getBasis(gridView, scalarPowerCompositePreBasis);
   const auto composite3 = getBasis(gridView, powerScalarCompositePreBasis);
