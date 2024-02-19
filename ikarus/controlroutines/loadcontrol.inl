@@ -12,33 +12,39 @@
 namespace Ikarus {
 template <typename NLS>
 ControlInformation LoadControl<NLS>::run() {
-  ControlInformation info({false});
+  ControlInformation info{.success = false, .totalIterations = 0};
+  ControlLoggerInformation logInfo{.currentStep = 0, .totalIterations = 0, .stepSize = stepSize_, .name = this->name()};
   auto& nonOp = nonLinearSolver_->nonLinearOperator();
-  this->notify(ControlMessages::CONTROL_STARTED, static_cast<std::string>(this->name()));
+  this->notify(ControlMessages::CONTROL_STARTED, logInfo);
   auto& loadParameter = nonOp.lastParameter();
 
-  loadParameter = 0.0;
-  this->notify(ControlMessages::STEP_STARTED, 0, stepSize_);
+  loadParameter += stepSize_;
+  this->notify(ControlMessages::STEP_STARTED, logInfo);
   auto solverInfo = nonLinearSolver_->solve();
   info.solverInfos.push_back(solverInfo);
   info.totalIterations += solverInfo.iterations;
+  logInfo.totalIterations = info.totalIterations;
   if (not solverInfo.success)
     return info;
-  this->notify(ControlMessages::SOLUTION_CHANGED);
-  this->notify(ControlMessages::STEP_ENDED);
+  logInfo.lambda = nonOp.lastParameter();
+  this->notify(ControlMessages::SOLUTION_CHANGED, logInfo);
+  this->notify(ControlMessages::STEP_ENDED, logInfo);
 
-  for (int ls = 0; ls < loadSteps_; ++ls) {
-    this->notify(ControlMessages::STEP_STARTED, ls, stepSize_);
+  for (int ls = 1; ls < loadSteps_; ++ls) {
+    logInfo.currentStep = ls;
+    this->notify(ControlMessages::STEP_STARTED, logInfo);
     loadParameter += stepSize_;
     solverInfo = nonLinearSolver_->solve();
     info.solverInfos.push_back(solverInfo);
     info.totalIterations += solverInfo.iterations;
+    logInfo.totalIterations = info.totalIterations;
     if (not solverInfo.success)
       return info;
-    this->notify(ControlMessages::SOLUTION_CHANGED);
-    this->notify(ControlMessages::STEP_ENDED);
+    logInfo.lambda = nonOp.lastParameter();
+    this->notify(ControlMessages::SOLUTION_CHANGED, logInfo);
+    this->notify(ControlMessages::STEP_ENDED, logInfo);
   }
-  this->notify(ControlMessages::CONTROL_ENDED, info.totalIterations, static_cast<std::string>(this->name()));
+  this->notify(ControlMessages::CONTROL_ENDED, logInfo);
   info.success = true;
   return info;
 }

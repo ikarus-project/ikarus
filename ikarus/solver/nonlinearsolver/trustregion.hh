@@ -119,7 +119,7 @@ struct Stats
 */
 template <typename NLO, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
           typename UF = utils::UpdateDefault>
-class TrustRegion : public IObservable<NonLinearSolverMessages>
+class TrustRegion : public IObservable<NonLinearSolverMessages, NonLinearSolverLoggingInformation>
 {
 public:
   using ValueType = typename NLO::template ParameterValue<0>; ///< Type of the parameter vector of
@@ -174,7 +174,8 @@ public:
   template <typename SolutionType = NoPredictor>
   requires std::is_same_v<SolutionType, NoPredictor> || std::is_convertible_v<SolutionType, CorrectionType>
   NonLinearSolverInformation solve(const SolutionType& dxPredictor = NoPredictor{}) {
-    this->notify(NonLinearSolverMessages::INIT);
+    NonLinearSolverLoggingInformation logInfo{.iterations = 0};
+    this->notify(NonLinearSolverMessages::INIT, logInfo);
     stats_ = Stats{};
     info_  = AlgoInfo{};
 
@@ -194,7 +195,7 @@ public:
         "InnerBreakReason");
     spdlog::info("{:-^143}", "-");
     while (not stoppingCriterion()) {
-      this->notify(NonLinearSolverMessages::ITERATION_STARTED);
+      this->notify(NonLinearSolverMessages::ITERATION_STARTED, logInfo);
       if (options_.useRand) {
         if (stats_.outerIter == 0) {
           eta_.setRandom();
@@ -332,17 +333,20 @@ public:
       if (info_.acceptProposal) {
         stats_.energy = stats_.energyProposal;
         nonLinearOperator_.updateAll();
-        xOld_ = x;
-        this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, stats_.etaNorm);
-        this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, stats_.gradNorm);
-        this->notify(NonLinearSolverMessages::SOLUTION_CHANGED);
+        xOld_                  = x;
+        logInfo.correctionNorm = stats_.etaNorm;
+        logInfo.residualNorm   = stats_.gradNorm;
+        this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, logInfo);
+        this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, logInfo);
+        this->notify(NonLinearSolverMessages::SOLUTION_CHANGED, logInfo);
       } else {
         x = xOld_;
         eta_.setZero();
       }
       nonLinearOperator_.updateAll();
-      stats_.gradNorm = gradient().norm();
-      this->notify(NonLinearSolverMessages::ITERATION_ENDED);
+      stats_.gradNorm     = gradient().norm();
+      logInfo.currentIter = stats_.outerIter;
+      this->notify(NonLinearSolverMessages::ITERATION_ENDED, logInfo);
     }
     spdlog::info("{}", info_.reasonString);
     spdlog::info("Total iterations: {} Total CG Iterations: {}", stats_.outerIter, stats_.innerIterSum);
@@ -352,8 +356,9 @@ public:
 
     solverInformation.iterations   = stats_.outerIter;
     solverInformation.residualNorm = stats_.gradNorm;
+    logInfo.iterations             = stats_.outerIter;
     if (solverInformation.success)
-      this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, solverInformation.iterations);
+      this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, logInfo);
     return solverInformation;
   }
   /**

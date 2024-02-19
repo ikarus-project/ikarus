@@ -39,7 +39,8 @@ struct NewtonRaphsonWithSubsidiaryFunctionSettings
  * \tparam UF Type of the update function (default is UpdateDefault).
  */
 template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
-class NewtonRaphsonWithSubsidiaryFunction : public IObservable<NonLinearSolverMessages>
+class NewtonRaphsonWithSubsidiaryFunction
+    : public IObservable<NonLinearSolverMessages, NonLinearSolverLoggingInformation>
 {
 public:
   ///< Compile-time boolean indicating if the linear solver satisfies the non-linear solver concept
@@ -96,7 +97,8 @@ public:
       "it was successful")]] NonLinearSolverInformation
   solve(SubsidiaryType&& subsidiaryFunction, SubsidiaryArgs& subsidiaryArgs,
         const SolutionType& dxPredictor = NoPredictor{}) {
-    this->notify(NonLinearSolverMessages::INIT);
+    NonLinearSolverLoggingInformation logInfo{.iterations = 0};
+    this->notify(NonLinearSolverMessages::INIT, logInfo);
 
     /// Initializations
     Ikarus::NonLinearSolverInformation solverInformation;
@@ -139,7 +141,7 @@ public:
 
     /// Iterative solving scheme
     while (rNorm > settings_.tol && iter < settings_.maxIter) {
-      this->notify(NonLinearSolverMessages::ITERATION_STARTED);
+      this->notify(NonLinearSolverMessages::ITERATION_STARTED, logInfo);
 
       /// Two-step solving procedure
       residual2d.resize(rx.rows(), 2);
@@ -169,12 +171,15 @@ public:
       nonLinearOperator().updateAll();
       rNorm = sqrt(rx.dot(rx) + subsidiaryArgs.f * subsidiaryArgs.f);
 
-      this->notify(NonLinearSolverMessages::SOLUTION_CHANGED, static_cast<double>(lambda));
-      this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, static_cast<double>(dNorm));
-      this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, static_cast<double>(rNorm));
-      this->notify(NonLinearSolverMessages::ITERATION_ENDED);
+      logInfo.residualNorm   = static_cast<double>(rNorm);
+      logInfo.correctionNorm = static_cast<double>(dNorm);
 
       ++iter;
+      logInfo.currentIter = iter;
+      this->notify(NonLinearSolverMessages::SOLUTION_CHANGED, logInfo);
+      this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, logInfo);
+      this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, logInfo);
+      this->notify(NonLinearSolverMessages::ITERATION_ENDED, logInfo);
     }
 
     if (iter == settings_.maxIter)
@@ -182,8 +187,9 @@ public:
     solverInformation.iterations     = iter;
     solverInformation.residualNorm   = rNorm;
     solverInformation.correctionNorm = dNorm;
+    logInfo.iterations               = iter;
     if (solverInformation.success)
-      this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, iter);
+      this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, logInfo);
 
     return solverInformation;
   }

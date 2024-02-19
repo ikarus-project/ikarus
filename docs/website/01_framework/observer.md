@@ -26,38 +26,45 @@ enum class NonLinearSolverMessages {
 ## IObservable
 
 A class can be observable. The class then sends notifications when events are happening. To become observable, a class
-must inherit from `IObservable<MessageType>`, for example,
+must inherit from `IObservable<MessageType, InfoType>`, for example,
 
 ```cpp
-class NewtonRaphson : public IObservable<NonLinearSolverMessages> {...};
+class NewtonRaphson : public IObservable<NonLinearSolverMessages, NonLinearSolverLoggingInformation> {...};
 ```
 
-The function `this->notify(MessageType::Message)` is called at the appropriate position in the code to send a
-notification. This could be, for example,
+The function `this->notify(MessageType message, const InfoType& info)` is called at the appropriate position in the code
+to send a notification.
+This could be, for example,
 
 ```cpp
-this->notify(NonLinearSolverMessages::SOLUTION_CHANGED);
+this->notify(NonLinearSolverMessages::SOLUTION_CHANGED, logInfo);
 ```
 
 ## IObserver
 
-A class can be an observer. The class is then notified when events are happening and can perform actions. A very simple
-example is shown below. To become an observer, the class must inherit from ``IObserver<MessageType>``, where ``MessageType``
-is the `enum` of messages to use (see above).
+A class can be an observer.
+The class is then notified when events are happening and can perform actions.
+To become an observer, the class must inherit from ``IObserver<MessageType, InfoType>``.
+Here, ``MessageType``
+is the `enum` of messages to use (see above)
+and ``InfoType`` can either be ``NonLinearSolverLoggingInformation`` or ``ControlLoggerInformation``.
+A basic example is shown below.
 
 ```cpp
-class OurFirstObserver : public IObserver<NonLinearSolverMessages> {
+class OurFirstObserver : public IObserver<NonLinearSolverMessages, NonLinearSolverLoggingInformation> {
 public:
-  void updateImpl(NonLinearSolverMessages message) override {
+  void updateImpl(NonLinearSolverMessages message, const Ikarus::NonLinearSolverLoggingInformation &) override {
     if (message == NonLinearSolverMessages::ITERATION_STARTED) std::cout << "Iteration started.\n";
   }
 };
 ```
 
-The observer has to implement the function ``void updateImpl(MessageType message)``. In this function, all actions can
+The observer has to implement the function ``void updateImpl(MessageType message, const InfoType& info)``.
+In this function, all actions can
 be implemented that should be performed when the corresponding message is received.
 
-To connect observer and observable, one has to call ``observalbe.subscribe(MessageType::Message,observer)``. Example:
+To connect observer and observable, one has to call ``observalbe.subscribe(MessageType::Message,observer)``.
+Example:
 
 ```cpp
 Ikarus::NewtonRaphson nr(...);
@@ -85,13 +92,17 @@ unSubscribe(...) // (4)!
 To send a message together with data, the sender (observable) calls
 
 ```cpp
-this->notify(MessageType::Message, data);
+this->notify(MessageType message, const InfoType& info);
 ```
 
 and the receiver (observer) has to implement
 
 ```cpp
-void updateImpl(MessageType message, data) override {...}
+void updateImpl(MessageType message, const InfoType& info) override {...}
 ```
 
-To see all available options for ``data``, we refer to the file ``observer.hh``.
+To see all available options for ``NonLinearSolverLoggingInformation``,
+we refer to the file ``ikarus/solver/nonlinearsolver/solverinfos.hh``.
+
+To see all available options for ``ControlLoggerInformation``,
+we refer to the file ``ikarus/controlroutines/controlinfos.hh``.

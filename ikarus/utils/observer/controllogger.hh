@@ -12,6 +12,7 @@
 
 #include <chrono>
 
+#include <ikarus/controlroutines/controlinfos.hh>
 namespace Ikarus {
 /**
  * \brief ControlLogger class for logging control messages.
@@ -19,7 +20,7 @@ namespace Ikarus {
  * This class implements an observer for control messages and logs relevant information based on the received
  * messages.
  */
-class ControlLogger : public IObserver<ControlMessages>
+class ControlLogger : public IObserver<ControlMessages, ControlLoggerInformation>
 {
 public:
   /**
@@ -27,30 +28,7 @@ public:
    *
    * \param message The received control message.
    */
-  void updateImpl(ControlMessages message) final;
-  /**
-   * \brief Implementation of the update method for logging control messages with string values.
-   *
-   * \param message The received control message.
-   * \param val The string value associated with the message.
-   */
-  void updateImpl(ControlMessages message, const std::string& val) final;
-  /**
-   * \brief Implementation of the update method for logging control messages with an integer and a string value.
-   *
-   * \param message The received control message.
-   * \param val1 The integer value associated with the message.
-   * \param val2 The string value associated with the message.
-   */
-  void updateImpl(ControlMessages message, int val1, const std::string& val2) final;
-  /**
-   * \brief Implementation of the update method for logging control messages with an integer and a double value.
-   *
-   * \param message The received control message.
-   * \param val1 The integer value associated with the message.
-   * \param val2 The double value associated with the message.
-   */
-  void updateImpl(ControlMessages message, int val1, double val2) final;
+  void updateImpl(ControlMessages message, const ControlLoggerInformation& info) final;
 
 private:
   using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;

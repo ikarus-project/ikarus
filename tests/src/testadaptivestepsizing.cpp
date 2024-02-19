@@ -174,11 +174,11 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   nr->subscribeAll(nonLinearSolverObserver);
 
   t.checkThrow<Dune::InvalidStateException>(
-      [&]() { nonLinearSolverObserver->update(Ikarus::NonLinearSolverMessages::BEGIN); },
+      [&]() { nonLinearSolverObserver->update(NonLinearSolverMessages::BEGIN, NonLinearSolverLoggingInformation{}); },
       "nonLinearSolverObserver should have failed for the BEGIN message");
 
   t.checkThrow<Dune::InvalidStateException>(
-      [&]() { nonLinearSolverObserver->update(Ikarus::NonLinearSolverMessages::END); },
+      [&]() { nonLinearSolverObserver->update(NonLinearSolverMessages::END, NonLinearSolverLoggingInformation{}); },
       "nonLinearSolverObserver should have failed for the END message");
 
   /// Create Observer which writes vtk files when control routines messages

@@ -23,11 +23,13 @@ namespace Ikarus {
  * This class template implements an observer for a specific message type.
  *
  * \tparam M The type of messages to be observed.
+ * \tparam IT The type of logging information.
  */
-template <typename M>
-class GenericObserver : public IObserver<M>
+template <typename M, typename IT>
+class GenericObserver : public IObserver<M, IT>
 {
   using Messages = M;
+  using InfoType = IT;
 
 public:
   /**
@@ -43,7 +45,7 @@ public:
   GenericObserver(Messages message, F&& f)
       : message_{message},
         f_{f} {}
-  void updateImpl(Messages message) override {
+  void updateImpl(Messages message, const InfoType&) override {
     if (message_ == message) {
       f_(step_);
       ++step_;

@@ -9,47 +9,26 @@
 
 namespace Ikarus {
 
-void NonLinearSolverLogger::updateImpl(NonLinearSolverMessages message) {
+void NonLinearSolverLogger::updateImpl(NonLinearSolverMessages message, const NonLinearSolverLoggingInformation& info) {
   switch (message) {
+    case NonLinearSolverMessages::INIT:
+      spdlog::info("Non-linear solver started:");
+      spdlog::info("{:<11} {:<20} {:<20}", "Ite", "normR", "normD");
+      spdlog::info("---------------------------------------------------------------------");
+      break;
     case NonLinearSolverMessages::ITERATION_STARTED:
       break;
-    case NonLinearSolverMessages::INIT:
-      iters_ = 1;
-      rNorm_ = 0.0;
-      dNorm_ = 0.0;
-      spdlog::info("Non-linear solver started:");
-      spdlog::info("{:<11} {:<20} {:<20} {:<20}", "Ite", "normR", "normD", "lambda");
-      spdlog::info("-------------------------------------------------------------------------------");
-      break;
     case NonLinearSolverMessages::ITERATION_ENDED:
-      spdlog::info("{} {:<10d} {:<20.2e} {:<20.2e} {:<20.2e}", "", iters_, rNorm_, dNorm_, lambda_);
-      ++iters_;
+      spdlog::info("{} {:<10d} {:<20.2e} {:<20.2e}", "", info.currentIter, info.residualNorm, info.correctionNorm);
       break;
-    default:
-      break;
-  }
-}
-
-void NonLinearSolverLogger::updateImpl(NonLinearSolverMessages message, double val) {
-  switch (message) {
     case NonLinearSolverMessages::RESIDUALNORM_UPDATED:
-      rNorm_ = val;
-      break;
-    case NonLinearSolverMessages::SOLUTION_CHANGED:
-      lambda_ = val;
       break;
     case NonLinearSolverMessages::CORRECTIONNORM_UPDATED:
-      dNorm_ = val;
       break;
-    default:
+    case NonLinearSolverMessages::SOLUTION_CHANGED:
       break;
-  }
-}
-
-void NonLinearSolverLogger::updateImpl(NonLinearSolverMessages message, int numberOfIterations) {
-  switch (message) {
     case NonLinearSolverMessages::FINISHED_SUCESSFULLY:
-      spdlog::info("Number of iterations: {}", numberOfIterations);
+      spdlog::info("Number of iterations by the non-linear solver: {}", info.iterations);
       break;
     default:
       break;

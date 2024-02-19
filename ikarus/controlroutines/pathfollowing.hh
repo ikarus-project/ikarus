@@ -74,7 +74,7 @@ namespace Impl {
  */
 template <typename NLS, typename PF = ArcLength, typename ASS = AdaptiveStepSizing::NoOp>
 requires(Impl::checkPathFollowingTemplates<NLS, PF, ASS>())
-class PathFollowing : public IObservable<ControlMessages>
+class PathFollowing : public IObservable<ControlMessages, ControlLoggerInformation>
 {
 public:
   /** \brief The name of the PathFollowing method. */

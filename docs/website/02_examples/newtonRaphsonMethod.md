@@ -81,9 +81,9 @@ This is exemplified by the function `#!cpp void newtonRaphsonBasicExampleWithLog
 It is also possible to subscribe to the existing non-linear solver messages mentioned [here](../01_framework/observer.md#messages).
 
 ```cpp
-class OurFirstObserver : public IObserver<NonLinearSolverMessages> {
+class OurFirstObserver : public IObserver<NonLinearSolverMessages, Ikarus::NonLinearSolverLoggingInformation> {
  public:
-  void updateImpl(NonLinearSolverMessages message) override {
+  void updateImpl(NonLinearSolverMessages message, const Ikarus::NonLinearSolverLoggingInformation &) override {
     if (message == NonLinearSolverMessages::ITERATION_STARTED) std::cout << "Iteration started.\n";
   }
 };

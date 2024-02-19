@@ -27,7 +27,7 @@ namespace Ikarus {
  * \tparam NLS Type of the nonlinear solver used in the control routine.
  */
 template <typename NLS>
-class LoadControl : public IObservable<ControlMessages>
+class LoadControl : public IObservable<ControlMessages, ControlLoggerInformation>
 {
 public:
   /** \brief The name of the LoadControl method. */
@@ -51,6 +51,8 @@ public:
           nonLinearSolver_->nonLinearOperator().lastParameter() = 0.0;
           nonLinearSolver_->nonLinearOperator().lastParameter() += 0.0;
         }, "The last parameter (load factor) must be assignable and incrementable with a double!");
+    if (loadSteps_ <= 0)
+      DUNE_THROW(Dune::InvalidStateException, "Number of load steps should be greater than zero.");
   }
 
   /**

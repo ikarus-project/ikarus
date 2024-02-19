@@ -9,11 +9,12 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 - Refactored Interface for `calculateAt`-functions and `ResultFunction` by getting rid of `ResultRequirements`
   ([#245](https://github.com/ikarus-project/ikarus/pull/245))
 - Refactor `enhancedassumedstrains.hh` ([#247](https://github.com/ikarus-project/ikarus/pull/247))
-- add factory functions to `ResultFunction` ([#251](https://github.com/ikarus-project/ikarus/pull/251))
+- Add factory functions to `ResultFunction` ([#251](https://github.com/ikarus-project/ikarus/pull/251))
 - Refactor `febases` to handle any type of basis ([#256](https://github.com/ikarus-project/ikarus/pull/256))
 - Move `autodiffhelper.hh` from `utils` to `autodiff` folder ([#259](https://github.com/ikarus-project/ikarus/pull/259))
 - Added a unified, generic interface for `ResultTypes` with the ability to register new
   ones ([#261](https://github.com/ikarus-project/ikarus/pull/261))
+- Refactor oberserver pattern and logging information ([#260](https://github.com/ikarus-project/ikarus/pull/260))
 
 ## Release v0.4 (Ganymede)
 
