@@ -143,11 +143,11 @@ resultWriter.addVertexData(stressFunction);
 ```
 
 As this functionality only writes out the results of the `calculateAt()` function as is, we can use `ResultEvaluators`
-to further process our results. For example, we can use `ResultEvaluators::VonMises<dim>` to compute the Von Mises stress:
+to further process our results. For example, we can use `ResultEvaluators::VonMises` to compute the Von Mises stress:
 
 ```cpp
   auto vonMisesFunction
-      = Ikarus::makeResultFunction<ResultType::PK2Stress, ResultEvaluators::VonMises<gridDim>>(&fes, req);
+      = Ikarus::makeResultFunction<ResultType::PK2Stress, ResultEvaluators::VonMises>(&fes, req);
 ```
 
 ## Takeaways

@@ -21,20 +21,19 @@ namespace Ikarus::ResultEvaluators {
  * \ingroup resultevaluators
  * \details The VonMises struct provides a function call operator to calculate von Mises stress.
  * In 2D, this assumes a plane stress state
- * \tparam dim dimension of stress state
  */
-template <int dim>
-requires(dim == 2 or dim == 3)
 struct VonMises
 {
   /**
    * \brief Calculate the result quantity (von Mises stress)
    * \param resultArray EigenMatrix containing the stress state
    * \param comp component of result (not used here)
+   * \tparam R Type of the matrix
    * \return von Mises stress
    */
-  double operator()(const auto& resultArray, [[maybe_unused]] const int comp) const {
-    if constexpr (dim == 2) {
+  template <typename R>
+  double operator()(const R& resultArray, [[maybe_unused]] const int comp) const {
+    if constexpr (R::CompileTimeTraits::RowsAtCompileTime == 3) {
       const auto s_x  = resultArray(0, 0);
       const auto s_y  = resultArray(1, 0);
       const auto s_xy = resultArray(2, 0);
