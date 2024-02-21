@@ -173,7 +173,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   t.check(resultFunction2->ncomps() == 2) << "Test result comps: " << resultFunction2->ncomps() << "should be 2";
   vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction2));
 
-  auto resultFunction3 = makeResultFunction<ResultType::PK2Stress, ResultEvaluators::VonMises<2>>(&fes, req);
+  auto resultFunction3 = makeResultFunction<ResultType::PK2Stress, ResultEvaluators::VonMises>(&fes, req);
   t.check(resultFunction3->name() == "VonMises")
       << "Test resultName: " << resultFunction2->name() << "should be VonMises";
   t.check(resultFunction3->ncomps() == 1) << "Test result comps: " << resultFunction2->ncomps() << "should be 1";
