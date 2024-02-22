@@ -16,6 +16,7 @@
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 
+#include <ikarus/finiteelements/fehelper.hh>
 #include <ikarus/utils/dirichletvalues.hh>
 
 namespace Ikarus {

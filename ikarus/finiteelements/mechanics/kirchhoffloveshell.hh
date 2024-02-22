@@ -36,7 +36,7 @@ namespace Ikarus {
  * \tparam useEigenRef A boolean indicating whether to use Eigen references for efficiency.
  */
 template <typename B, typename FER = FERequirements<>, bool useEigenRef = false>
-class KirchhoffLoveShell : public FEBases<B>,
+class KirchhoffLoveShell : public FEBase<B>,
                            public Volume<KirchhoffLoveShell<B, FER, useEigenRef>, FETraits<B, FER, useEigenRef>>,
                            public Traction<KirchhoffLoveShell<B, FER, useEigenRef>, FETraits<B, FER, useEigenRef>>
 {
@@ -49,7 +49,7 @@ public:
   using Geometry          = typename Traits::Geometry;
   using GridView          = typename Traits::GridView;
   using Element           = typename Traits::Element;
-  using BasePowerFE       = FEBases<Basis>; // Handles globalIndices function
+  using BasePowerFE       = FEBase<Basis>; // Handles globalIndices function
   using VolumeType        = Volume<KirchhoffLoveShell, Traits>;
   using TractionType      = Traction<KirchhoffLoveShell, Traits>;
   using LocalBasisType    = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());

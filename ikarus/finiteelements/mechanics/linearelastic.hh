@@ -43,7 +43,7 @@ namespace Ikarus {
  * \tparam useEigenRef A boolean flag indicating whether to use Eigen references.
  */
 template <typename B, typename FER = FERequirements<>, bool useEigenRef = false>
-class LinearElastic : public FEBases<B>,
+class LinearElastic : public FEBase<B>,
                       public Volume<LinearElastic<B, FER, useEigenRef>, FETraits<B, FER, useEigenRef>>,
                       public Traction<LinearElastic<B, FER, useEigenRef>, FETraits<B, FER, useEigenRef>>
 {
@@ -56,7 +56,7 @@ public:
   using Geometry             = typename Traits::Geometry;
   using GridView             = typename Traits::GridView;
   using Element              = typename Traits::Element;
-  using BaseDisp             = FEBases<Basis>; // Handles globalIndices function
+  using BaseDisp             = FEBase<Basis>; // Handles globalIndices function
   using VolumeType           = Volume<LinearElastic, Traits>;
   using TractionType         = Traction<LinearElastic, Traits>;
   static constexpr int myDim = Traits::mydim;
@@ -276,6 +276,12 @@ protected:
       for (size_t i = 0; i < numberOfNodes_; ++i) {
         const auto bopI = eps.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
         force.template segment<myDim>(myDim * i) += bopI.transpose() * stresses * intElement;
+        // auto localForce = (bopI.transpose() * stresses * intElement).eval();
+        // for (int j = 0; j < myDim; ++j)
+        // {
+        //   auto& firstChild = this->localView().tree().child(j);
+        //   force[firstChild.localIndex(i)] += localForce[j];
+        // }
       }
     }
 

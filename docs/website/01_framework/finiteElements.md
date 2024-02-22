@@ -24,7 +24,6 @@ void calculateMatrix(const FERequirements& req, MatrixType& A);
 void calculateLocalSystem(const FERequirements& req, MatrixType& A, VectorType& b);
 void calculateAt(const Resultrequirements& req, const Eigen::Vector<double, Traits::mydim>& local,
                      ResultTypeMap<ScalarType>& result);
-void globalFlatIndices(std::vector<GlobalIndex>& indices);
 ```
 
 Since we would also like to use `autodiff` for our element, we have their protected implementations.
@@ -69,14 +68,17 @@ if(req.isResultRequested( ResultType::cauchyStress)) {
     `#!cpp ResultTypeMap<double>::ResultArray` is an object of type `#!cpp Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,0,3,3>`.
     Thus, the maximum size of `result` is limited to a 3x3 matrix. This is used to circumvent dynamic memory allocations again.
 
-The last method is the `globalFlatIndices`. It is used to write a finite element's global indices to the output parameter `indices`.
-This information originates from a `basis` object. See existing implementations for details.
+The method `FEHelper::globalFlatIndices` is used
+to write a finite element's global indices to an output parameter of type `std::vector<LocalView::MultiIndex>`.
+This information originates from a `basis` object.
+Here `FlatInterleaved` type of indexing is assumed.
+See existing implementations for details.
 
 ## Linear and Non-linear Elasticity
 
 `LinearElastic` and `NonLinearElastic` classes are designed in a generic way.
 This means that they could be directly used for any $n$-dimensional finite element in the geometrically linear and non-linear cases.
-They inherit from the class `FEBases`, which helps to arrange the nodal degrees of freedom in a `FlatInterleaved` format.
+They inherit from the class `FEBase`, which helps to arrange the nodal degrees of freedom in a `FlatInterleaved` format.
 Refer DUNE[@sander2020dune] for more details. The constructor for both classes of elements has the following signature:
 
 ```cpp

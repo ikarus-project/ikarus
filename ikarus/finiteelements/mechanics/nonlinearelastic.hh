@@ -42,7 +42,7 @@ namespace Ikarus {
  * \tparam useEigenRef A boolean flag indicating whether to use Eigen references.
  */
 template <typename B, typename MAT, typename FER = FERequirements<>, bool useEigenRef = false>
-class NonLinearElastic : public FEBases<B>,
+class NonLinearElastic : public FEBase<B>,
                          public Volume<NonLinearElastic<B, MAT, FER, useEigenRef>, FETraits<B, FER, useEigenRef>>,
                          public Traction<NonLinearElastic<B, MAT, FER, useEigenRef>, FETraits<B, FER, useEigenRef>>
 {
@@ -55,7 +55,7 @@ public:
   using Geometry          = typename Traits::Geometry;
   using GridView          = typename Traits::GridView;
   using Element           = typename Traits::Element;
-  using BasePowerFE       = FEBases<Basis>; // Handles globalIndices function
+  using BasePowerFE       = FEBase<Basis>; // Handles globalIndices function
   using Material          = MAT;
   using VolumeType        = Volume<NonLinearElastic, Traits>;
   using TractionType      = Traction<NonLinearElastic, Traits>;
