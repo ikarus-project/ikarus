@@ -19,6 +19,7 @@ set(TEST_DEPENDING_ON_LOCALFEFUNCTIONS
     testnonlinearelasticityneohooke
     testnonlinearelasticitysvk
     testadaptivestepsizing
+    testfesettings
 )
 
 set(TEST_DEPENDING_ON_IGA testklshell testadaptivestepsizing)
@@ -91,4 +92,4 @@ foreach(programSourceFile ${programSourceFiles})
 
 endforeach()
 
-file(COPY testfiles/unstructuredtrianglesfine.msh DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/testfiles)
+file(COPY testfiles/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/testfiles)

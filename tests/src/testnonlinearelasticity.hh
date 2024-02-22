@@ -157,6 +157,14 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
                                                                   << maxDisp;
   }
 
+  auto result = fes.front().template calculateAt<ResultType::PK2Stress, true>(req, {0, 0});
+  static_assert(
+      std::is_same_v<decltype(result), typename ElementType::template ResultTypeType<ResultType::PK2Stress, true>>);
+
+  auto result2 = fes.front().template calculateAt<ResultType::PK2Stress, false>(req, {0, 0});
+  static_assert(
+      std::is_same_v<decltype(result2), typename ElementType::template ResultTypeType<ResultType::PK2Stress, false>>);
+
   Dune::Vtk::VtkWriter<GridView> vtkWriter2(gridView);
   auto resultFunction = makeResultFunction<ResultType::PK2Stress>(&fes, req);
 

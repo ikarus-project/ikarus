@@ -125,14 +125,10 @@ if __name__ == "__main__":
     indexSet = grid.indexSet
 
     stressFuncScalar = grid.function(
-        lambda e, x: fes[indexSet.index(e)].calculateAt(
-            req, x, iks.ResultType.linearStress
-        )[0]
+        lambda e, x: fes[indexSet.index(e)].calculateAt(req, x, "linearStress")[0]
     )
     stressFuncVec = grid.function(
-        lambda e, x: fes[indexSet.index(e)].calculateAt(
-            req, x, iks.ResultType.linearStress
-        )[:]
+        lambda e, x: fes[indexSet.index(e)].calculateAt(req, x, "linearStress")[:]
     )
     # Writing results into vtk file
     from utils import output_path
@@ -147,9 +143,9 @@ if __name__ == "__main__":
 
     writer2.write(name=output_path() + "result")
 
-    # Queriing for a different ResultType should result in a runtime error
+    # Querying for a different ResultType should result in a runtime error
     try:
-        fes[0].calculateAt(req, np.array([0.5, 0.5]), iks.ResultType.cauchyStress)
+        fes[0].calculateAt(req, np.array([0.5, 0.5]), "PK2Stress")
     except RuntimeError:
         assert True
     else:

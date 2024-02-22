@@ -23,6 +23,7 @@
 #include <ikarus/finiteelements/febases/autodifffe.hh>
 #include <ikarus/finiteelements/febases/powerbasisfe.hh>
 #include <ikarus/finiteelements/ferequirements.hh>
+#include <ikarus/finiteelements/feresulttypes.hh>
 #include <ikarus/finiteelements/mechanics/enhancedassumedstrains.hh>
 #include <ikarus/finiteelements/mechanics/linearelastic.hh>
 #include <ikarus/finiteelements/mechanics/nonlinearelastic.hh>
@@ -236,29 +237,41 @@ template <typename NonLinearOperator>
   return t;
 }
 
-template <Ikarus::ResultType resType>
-[[nodiscard]] auto checkCalculateAt(auto& nonLinearOperator, auto& fe, const auto& feRequirements,
+template <typename resType, bool voigt = true>
+[[nodiscard]] auto checkCalculateAt(auto& /*nonLinearOperator*/, auto& fe, const auto& feRequirements,
                                     const auto& expectedResult, const auto& evaluationPositions,
                                     const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Test of the calulateAt function for " + Dune::className(fe));
 
+  using FiniteElement = std::remove_cvref_t<decltype(fe)>;
   Eigen::MatrixXd computedResults(expectedResult.rows(), expectedResult.cols());
-  for (int i = 0; const auto& pos : evaluationPositions) {
-    auto result              = fe.template calculateAt<resType>(feRequirements, pos);
-    computedResults.row(i++) = result.transpose();
-  }
 
-  const bool isResultCorrect = isApproxSame(computedResults, expectedResult, 1e-8);
-  t.check(isResultCorrect) << "Computed Result for " << toString(resType) << " is not the same as expected result:\n"
-                           << "It is:\n"
-                           << computedResults << "\nBut should be:\n"
-                           << expectedResult << "\n"
-                           << messageIfFailed;
+  if constexpr (FiniteElement::template canProvideResultType<resType>()) {
+    for (int i = 0; const auto& pos : evaluationPositions) {
+      auto result = fe.template calculateAt<resType, voigt>(feRequirements, pos);
+      static_assert(std::is_same_v<decltype(result), typename FiniteElement::template ResultTypeType<resType, voigt>>);
+      if constexpr (voigt)
+        computedResults.row(i++) = result.transpose();
+      else {
+        Eigen::Map<Eigen::VectorXd> vector(result.data(), result.size());
+        computedResults.row(i++) = vector.transpose();
+      }
+    }
+    const bool isResultCorrect = isApproxSame(computedResults, expectedResult, 1e-8);
+    t.check(isResultCorrect) << "Computed Result for " << toString(resType{})
+                             << " is not the same as expected result:\n"
+                             << "It is:\n"
+                             << computedResults << "\nBut should be:\n"
+                             << expectedResult << "\n"
+                             << messageIfFailed;
+  } else
+    t.check(false) << "Element can not provide the requested RsultType " << toString(resType{}) << messageIfFailed;
+
   return t;
 }
 
-template <Ikarus::ResultType resType, typename ResultEvaluator>
-[[nodiscard]] auto checkResultFunction(auto& nonLinearOperator, auto& fe, const auto& feRequirements,
+template <typename resType, typename ResultEvaluator>
+[[nodiscard]] auto checkResultFunction(auto& /*nonLinearOperator*/, auto& fe, const auto& feRequirements,
                                        const auto& expectedResult, const auto& evaluationPositions,
                                        const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Result Function Test" + Dune::className(fe));
@@ -281,7 +294,7 @@ template <Ikarus::ResultType resType, typename ResultEvaluator>
     ++i;
   }
   const bool isResultCorrect = isApproxSame(computedResults, expectedResult, 1e-8);
-  t.check(isResultCorrect) << "Computed Result for " << toString(resType) << " is not the same as expected result:\n"
+  t.check(isResultCorrect) << "Computed Result for " << toString(resType{}) << " is not the same as expected result:\n"
                            << "It is:\n"
                            << computedResults << "\nBut should be:\n"
                            << expectedResult << "\n"

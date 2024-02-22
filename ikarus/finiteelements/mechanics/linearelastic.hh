@@ -28,6 +28,7 @@
   #include <ikarus/finiteelements/mechanics/loads.hh>
   #include <ikarus/finiteelements/mechanics/materials.hh>
   #include <ikarus/finiteelements/physicshelper.hh>
+  #include <ikarus/io/loadfesettings.hh>
   #include <ikarus/utils/defaultfunctions.hh>
   #include <ikarus/utils/linearalgebrahelper.hh>
 
@@ -62,6 +63,9 @@ public:
   static constexpr int myDim = Traits::mydim;
   using LocalBasisType       = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
 
+  template <typename RT, bool voigt = true>
+  using ResultTypeType = resultType_t<RT, myDim, Traits::worlddim, voigt>;
+
   /**
    * \brief Constructor for the LinearElastic class.
    *
@@ -91,15 +95,8 @@ public:
     numberOfNodes_   = fe.size();
     order_           = 2 * (fe.localBasis().order());
     localBasis_      = Dune::CachedLocalBasis(fe.localBasis());
-    if constexpr (requires { this->localView().element().impl().getQuadratureRule(order_); })
-      if (this->localView().element().impl().isTrimmed())
-        localBasis_.bind(this->localView().element().impl().getQuadratureRule(order_), Dune::bindDerivatives(0, 1));
-      else
-        localBasis_.bind(Dune::QuadratureRules<double, myDim>::rule(this->localView().element().type(), order_),
-                         Dune::bindDerivatives(0, 1));
-    else
-      localBasis_.bind(Dune::QuadratureRules<double, myDim>::rule(this->localView().element().type(), order_),
-                       Dune::bindDerivatives(0, 1));
+
+    bindQuadratureRule(order_);
   }
   /**
    * \brief Gets the displacement function for the given FERequirementType and optional displacement vector.
@@ -210,19 +207,45 @@ public:
    * \param local Local position vector.
    * \return calculated result
    *
-   * \tparam resType The type representing the requested result.
+   * \tparam RT The type representing the requested result.
+   * \tparam voigt Returns result in Voigt notation (if applicable)
    */
-  template <ResultType resType>
-  auto calculateAt(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
-    static_assert(resType == ResultType::linearStress, "The requested result type is NOT implemented.");
-
-    if constexpr (resType == ResultType::linearStress) {
+  template <typename RT, bool voigt = true>
+  auto calculateAt(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const
+      -> ResultTypeType<RT, voigt> {
+    if constexpr (std::is_same_v<RT, ResultType::linearStress>) {
       const auto eps = strainFunction(req);
       const auto C   = materialTangent();
       auto epsVoigt  = eps.evaluate(local, Dune::on(Dune::DerivativeDirections::gridElement));
+      if constexpr (voigt)
+        return (C * epsVoigt).eval();
+      else
+        return fromVoigt((C * epsVoigt).eval(), false);
+    } else
+      static_assert(Dune::AlwaysFalse<RT>::value, "The requested result type is NOT implemented.");
+    __builtin_unreachable();
+  }
 
-      return (C * epsVoigt).eval();
-    }
+  /**
+   * \brief Returns whether an element can provide a requested result. Can be used in constant expressions
+   * \tparam RT The type representing the requested result.
+   * \return boolean indicating if a requested result can be provided
+   */
+  template <typename RT>
+  static constexpr bool canProvideResultType() {
+    return static_cast<bool>(std::is_same_v<RT, ResultType::linearStress>);
+  }
+
+  void registerSettings(const FESettings& settings) {
+    const auto& container           = settings.getContainer();
+    constexpr auto defaultContainer = FESettings::Container{};
+
+    if (container.nGP != defaultContainer.nGP and container.orderGP != defaultContainer.orderGP)
+      std::cout << "Quadrature Rule Setting couldn't be set" << std::endl;
+    else if (container.nGP != defaultContainer.nGP)
+      bindQuadratureRule(container.nGP, true);
+    else if (container.orderGP != defaultContainer.orderGP)
+      bindQuadratureRule(container.nGP, false);
   }
 
 private:
@@ -232,6 +255,20 @@ private:
   double nu_;
   size_t numberOfNodes_{0};
   int order_{};
+
+  void bindQuadratureRule(const int orderOrN, const bool inputIsGPperDirection = false) {
+    const int order = inputIsGPperDirection ? 2 * orderOrN : orderOrN;
+
+    if constexpr (requires { this->localView().element().impl().getQuadratureRule(order); }) {
+      if (this->localView().element().impl().isTrimmed())
+        localBasis_.bind(this->localView().element().impl().getQuadratureRule(order), Dune::bindDerivatives(0, 1));
+      else
+        localBasis_.bind(Dune::QuadratureRules<double, myDim>::rule(this->localView().element().type(), order),
+                         Dune::bindDerivatives(0, 1));
+    } else
+      localBasis_.bind(Dune::QuadratureRules<double, myDim>::rule(this->localView().element().type(), order),
+                       Dune::bindDerivatives(0, 1));
+  }
 
 protected:
   template <typename ScalarType>

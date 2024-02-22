@@ -69,19 +69,6 @@ PYBIND11_MODULE(_ikarus, m) {
   fePar.value("loadfactor", FEParameter::loadfactor);
   fePar.value("time", FEParameter::time);
 
-  py::enum_<ResultType> resType(m, "ResultType");
-  resType.value("noType", ResultType::noType);
-  resType.value("magnetization", ResultType::magnetization);
-  resType.value("gradientNormOfMagnetization", ResultType::gradientNormOfMagnetization);
-  resType.value("vectorPotential", ResultType::vectorPotential);
-  resType.value("divergenceOfVectorPotential", ResultType::divergenceOfVectorPotential);
-  resType.value("BField", ResultType::BField);
-  resType.value("HField", ResultType::HField);
-  resType.value("cauchyStress", ResultType::cauchyStress);
-  resType.value("PK2Stress", ResultType::PK2Stress);
-  resType.value("linearStress", ResultType::linearStress);
-  resType.value("director", ResultType::director);
-
   using VWd = ValueWrapper<double>;
   auto valueWrapperDouble =
       Dune::Python::insertClass<VWd>(m, "ValueWrapper", Dune::Python::GenerateTypeName("ValueWrapper<double>")).first;

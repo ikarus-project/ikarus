@@ -135,4 +135,4 @@ if __name__ == "__main__":
     fullD = assembler.createFullVector(resultd2.x)
     req.insertGlobalSolution(iks.FESolutions.displacement, fullD)
 
-    res1 = fes[0].calculateAt(req, np.array([0.5, 0.5]), iks.ResultType.PK2Stress)
+    res1 = fes[0].calculateAt(req, np.array([0.5, 0.5]), "PK2Stress")
