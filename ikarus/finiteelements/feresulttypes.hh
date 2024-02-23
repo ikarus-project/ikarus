@@ -19,8 +19,8 @@ namespace Util {
   struct VectorizeWithVoigt
   {
     template <typename Derived>
-    auto operator()(const Eigen::MatrixBase<Derived>& mat) const {
-      return toVoigt(mat.derived(), false);
+    auto operator()(const Eigen::MatrixBase<Derived>& mat, const bool strainLike = false) const {
+      return toVoigt(mat.derived(), strainLike);
     }
   };
 
@@ -35,8 +35,8 @@ namespace Util {
   struct MatricizeWithVoigt
   {
     template <typename Derived>
-    auto operator()(const Eigen::MatrixBase<Derived>& vec) const {
-      return fromVoigt(vec.derived(), false);
+    auto operator()(const Eigen::MatrixBase<Derived>& vec, const bool strainLike = false) const {
+      return fromVoigt(vec.derived(), strainLike);
     }
   };
 
@@ -84,8 +84,8 @@ namespace ResultType {
   REGISTER_RESULTTYPE(vectorPotential, worldDim, 1);
   REGISTER_RESULTTYPE(divergenceOfVectorPotential, 1, 1);
 
-  REGISTER_RESULTTYPE(BField, 1, 1);
-  REGISTER_RESULTTYPE(HField, 1, 1);
+  REGISTER_RESULTTYPE(BField, worldDim, 1);
+  REGISTER_RESULTTYPE(HField, worldDim, 1);
 
   REGISTER_RESULTTYPE(customType, Eigen::Dynamic, Eigen::Dynamic);
 } // namespace ResultType
@@ -93,7 +93,13 @@ namespace ResultType {
 template <template <typename, int, int> class RT1, template <typename, int, int> class RT2>
 constexpr bool isSameResultType = std::is_same_v<RT1<double, 1, 1>, RT2<double, 1, 1>>;
 
-template <typename RT, bool inputIsVec>
+/**
+ * \brief Container that is used for FE Results. It gives access to the stored value, but can also be used to access
+ * the result in Matrix and Vector form
+ * \tparam RT A specified ResultType
+ * \tparam inputIsVec boolean indicating wether the stored result is in its vector form, defaults to true
+ */
+template <typename RT, bool inputIsVec = true>
 struct ResultTypeContainer : RT
 {
 private:
@@ -113,29 +119,33 @@ public:
   using ResultType = RT;
 
   const InputType& operator()() const { return value_; }
-  const InputType& operator()() { return value_; }
 
+  /**
+   * \brief Returns the stored value as Vector
+   */
   auto asVec() const {
     if constexpr (inputIsVec)
       return value_;
     else
-      return vectorizer_(value_);
+      return typename RT::Vectorizer{}(value_);
   }
+
+  /**
+   * \brief Returns the stored value as Matrix (if possible)
+   */
   auto asMat() const {
     if constexpr (inputIsVec and not registeredTypeIsVector)
-      return matricizer_(value_);
+      return typename RT::Matricizer{}(value_);
     else
       return value_;
   }
 
-  void emplace(const InputType& t) { value_ = std::move(t); }
-
   explicit ResultTypeContainer() = default;
+
+  void emplace(const InputType&& value) { value_ = std::move(value); }
 
 private:
   InputType value_{};
-  typename RT::Vectorizer vectorizer_{};
-  typename RT::Matricizer matricizer_{};
 };
 
 template <template <typename, int, int> class RT>

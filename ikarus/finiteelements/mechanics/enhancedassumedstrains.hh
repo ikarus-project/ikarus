@@ -147,14 +147,14 @@ forward the
    */
   template <template <typename, int, int> class RT>
   auto calculateAt(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
+    if (isDisplacementBased())
+      return DisplacementBasedElement::template calculateAt<RT>(req, local);
+
     ResultTypeContainer<RT<typename Traits::ctype, Traits::mydim, Traits::worlddim>, true> result;
     using namespace Dune::Indices;
     using namespace Dune::DerivativeDirections;
 
     if constexpr (isSameResultType<RT, ResultType::linearStress>) {
-      if (isDisplacementBased())
-        return DisplacementBasedElement::template calculateAt<RT>(req, local);
-
       const auto C              = DisplacementBasedElement::materialTangentFunction(req);
       const auto& numberOfNodes = DisplacementBasedElement::numberOfNodes();
       auto uFunction            = DisplacementBasedElement::displacementFunction(req);
