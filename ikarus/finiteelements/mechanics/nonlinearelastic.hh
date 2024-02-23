@@ -252,21 +252,33 @@ public:
    * \param local Local position vector.
    * \return calculated result
    *
-   * \tparam resType The type representing the requested result.
+   * \tparam RT The type representing the requested result.
+   * \tparam voigt Returns result in Voigt notation (if applicable)
    */
-  template <ResultType resType>
+  template <template <typename, int, int> class RT>
   auto calculateAt(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
-    static_assert(resType == ResultType::PK2Stress, "The requested result type is NOT implemented.");
-
     using namespace Dune::DerivativeDirections;
-    if constexpr (resType == ResultType::PK2Stress) {
+
+    ResultTypeContainer<RT<typename Traits::ctype, myDim, Traits::worlddim>, true> result;
+    if constexpr (isSameResultType<RT, ResultType::PK2Stress>) {
       const auto uFunction = displacementFunction(req);
       const auto H         = uFunction.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
       const auto E         = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
-      const auto EVoigt    = toVoigt(E);
 
-      return mat_.template stresses<StrainTags::greenLagrangian>(EVoigt);
-    }
+      result.emplace(mat_.template stresses<StrainTags::greenLagrangian>(toVoigt(E)));
+    } else
+      static_assert(Dune::AlwaysFalse<B>::value, "The requested result type is NOT implemented.");
+    return result;
+  }
+
+  /**
+   * \brief Returns whether an element can provide a requested result. Can be used in constant expressions
+   * \tparam RT The type representing the requested result.
+   * \return boolean indicating if a requested result can be provided
+   */
+  template <template <typename, int, int> class RT>
+  static constexpr bool canProvideResultType() {
+    return isSameResultType<RT, ResultType::PK2Stress>;
   }
 
 private:

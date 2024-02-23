@@ -191,12 +191,23 @@ public:
    * \param local Local position vector.
    * \return calculated result
    *
-   * \tparam resType The type representing the requested result.
+   * \tparam RT The type representing the requested result.
    */
-  template <ResultType resType>
+  template <template <typename, int, int> class RT>
   auto calculateAt([[maybe_unused]] const FERequirementType& req,
-                   [[maybe_unused]] const Dune::FieldVector<double, Traits::mydim>& local) const {
+                   [[maybe_unused]] const Dune::FieldVector<double, Traits::mydim>& local)
+      -> const ResultTypeContainer<RT<double, myDim, worldDim>, true> {
     DUNE_THROW(Dune::NotImplemented, "No results are implemented");
+  }
+
+  /**
+   * \brief Returns whether an element can provide a requested result. Can be used in constant expressions
+   * \tparam RT The type representing the requested result.
+   * \return boolean indicating if a requested result can be provided
+   */
+  template <template <typename, int, int> class RT>
+  static constexpr bool canProvideResultType() {
+    return false;
   }
 
 private:

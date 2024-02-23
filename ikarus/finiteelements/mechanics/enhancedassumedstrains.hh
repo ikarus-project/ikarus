@@ -39,6 +39,7 @@ public:
   using Geometry                 = typename DisplacementBasedElement::Geometry;
   using GridView                 = typename DisplacementBasedElement::GridView;
   using Traits                   = typename DisplacementBasedElement::Traits;
+
   using DisplacementBasedElement::localView;
 
   /**
@@ -142,18 +143,41 @@ forward the
    * \param local The local coordinates at which results are to be calculated.
    * \return calculated result
    *
-   * \tparam resType The type representing the requested result.
+   * \tparam RT The type representing the requested result.
    */
-  template <ResultType resType>
+  template <template <typename, int, int> class RT>
   auto calculateAt(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
+    ResultTypeContainer<RT<typename Traits::ctype, Traits::mydim, Traits::worlddim>, true> result;
     using namespace Dune::Indices;
     using namespace Dune::DerivativeDirections;
-    using namespace Dune;
 
-    static_assert(resType == ResultType::linearStress, "The requested result type is NOT implemented.");
+    if constexpr (isSameResultType<RT, ResultType::linearStress>) {
+      if (isDisplacementBased())
+        return DisplacementBasedElement::template calculateAt<RT>(req, local);
 
-    auto resultVector = DisplacementBasedElement::template calculateAt<resType>(req, local);
+      const auto C              = DisplacementBasedElement::materialTangentFunction(req);
+      const auto& numberOfNodes = DisplacementBasedElement::numberOfNodes();
+      auto uFunction            = DisplacementBasedElement::displacementFunction(req);
+      const auto disp           = Dune::viewAsFlatEigenVector(uFunction.coefficientsRef());
 
+      std::visit(
+          [&]<typename EAST>(const EAST& easFunction) {
+            if constexpr (not std::is_same_v<std::monostate, EAST>) {
+              constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
+              Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
+              calculateDAndLMatrix(easFunction, req, D, L_);
+              const auto alpha = (-D.inverse() * L_ * disp).eval();
+              const auto M     = easFunction.calcM(local);
+              const auto CEval = C(local);
+              auto easStress   = (CEval * M * alpha).eval();
+              result.emplace(DisplacementBasedElement::template calculateAt<RT>(req, local)() + easStress);
+            }
+          },
+          easVariant_);
+      return result;
+    } else
+      static_assert(Dune::AlwaysFalse<DFE>::value, "The requested result type is NOT implemented.");
+    return result;
     const auto C              = DisplacementBasedElement::materialTangentFunction(req);
     const auto& numberOfNodes = DisplacementBasedElement::numberOfNodes();
     auto uFunction            = DisplacementBasedElement::displacementFunction(req);

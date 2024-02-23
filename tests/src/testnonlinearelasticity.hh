@@ -157,6 +157,8 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
                                                                   << maxDisp;
   }
 
+  auto result = fes.front().template calculateAt<ResultType::PK2Stress>(req, {0, 0}).asVec();
+
   Dune::Vtk::VtkWriter<GridView> vtkWriter2(gridView);
   auto resultFunction = makeResultFunction<ResultType::PK2Stress>(&fes, req);
 
