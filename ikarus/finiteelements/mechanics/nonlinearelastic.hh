@@ -265,7 +265,7 @@ public:
       const auto H         = uFunction.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
       const auto E         = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
 
-      result.emplace(mat_.template stresses<StrainTags::greenLagrangian>(toVoigt(E)));
+      result=mat_.template stresses<StrainTags::greenLagrangian>(toVoigt(E));
     } else
       static_assert(Dune::AlwaysFalse<B>::value, "The requested result type is NOT implemented.");
     return result;
