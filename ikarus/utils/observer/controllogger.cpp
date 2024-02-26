@@ -9,7 +9,7 @@
 
 namespace Ikarus {
 
-void ControlLogger::updateImpl(ControlMessages message, const ControlLoggerInformation& info) {
+void ControlLogger::updateImpl(ControlMessages message, const ControlState& info) {
   switch (message) {
     case ControlMessages::CONTROL_STARTED:
       start_ = std::chrono::high_resolution_clock::now();

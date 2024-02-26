@@ -11,41 +11,39 @@
 
 namespace Ikarus {
 template <typename NLS>
-ControlInformation LoadControl<NLS>::run() {
-  ControlInformation info{.success = false, .totalIterations = 0};
-  ControlLoggerInformation logInfo{.currentStep = 0, .totalIterations = 0, .stepSize = stepSize_, .name = this->name()};
+ControlState LoadControl<NLS>::run() {
+  ControlState controlState{
+      .success = false, .currentStep = 0, .totalIterations = 0, .stepSize = stepSize_, .name = this->name()};
   auto& nonOp = nonLinearSolver_->nonLinearOperator();
-  this->notify(ControlMessages::CONTROL_STARTED, logInfo);
+  this->notify(ControlMessages::CONTROL_STARTED, controlState);
   auto& loadParameter = nonOp.lastParameter();
 
   loadParameter += stepSize_;
-  this->notify(ControlMessages::STEP_STARTED, logInfo);
+  this->notify(ControlMessages::STEP_STARTED, controlState);
   auto solverInfo = nonLinearSolver_->solve();
-  info.solverInfos.push_back(solverInfo);
-  info.totalIterations += solverInfo.iterations;
-  logInfo.totalIterations = info.totalIterations;
+  controlState.solverInfos.push_back(solverInfo);
+  controlState.totalIterations += solverInfo.iterations;
   if (not solverInfo.success)
-    return info;
-  logInfo.lambda = nonOp.lastParameter();
-  this->notify(ControlMessages::SOLUTION_CHANGED, logInfo);
-  this->notify(ControlMessages::STEP_ENDED, logInfo);
+    return controlState;
+  controlState.lambda = nonOp.lastParameter();
+  this->notify(ControlMessages::SOLUTION_CHANGED, controlState);
+  this->notify(ControlMessages::STEP_ENDED, controlState);
 
   for (int ls = 1; ls < loadSteps_; ++ls) {
-    logInfo.currentStep = ls;
-    this->notify(ControlMessages::STEP_STARTED, logInfo);
+    controlState.currentStep = ls;
+    this->notify(ControlMessages::STEP_STARTED, controlState);
     loadParameter += stepSize_;
     solverInfo = nonLinearSolver_->solve();
-    info.solverInfos.push_back(solverInfo);
-    info.totalIterations += solverInfo.iterations;
-    logInfo.totalIterations = info.totalIterations;
+    controlState.solverInfos.push_back(solverInfo);
+    controlState.totalIterations += solverInfo.iterations;
     if (not solverInfo.success)
-      return info;
-    logInfo.lambda = nonOp.lastParameter();
-    this->notify(ControlMessages::SOLUTION_CHANGED, logInfo);
-    this->notify(ControlMessages::STEP_ENDED, logInfo);
+      return controlState;
+    controlState.lambda = nonOp.lastParameter();
+    this->notify(ControlMessages::SOLUTION_CHANGED, controlState);
+    this->notify(ControlMessages::STEP_ENDED, controlState);
   }
-  this->notify(ControlMessages::CONTROL_ENDED, logInfo);
-  info.success = true;
-  return info;
+  this->notify(ControlMessages::CONTROL_ENDED, controlState);
+  controlState.success = true;
+  return controlState;
 }
 } // namespace Ikarus

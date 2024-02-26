@@ -36,7 +36,7 @@ namespace Impl {
   template <typename NLS, typename PF = ArcLength, typename ASS>
   consteval bool checkPathFollowingTemplates() {
     return Concepts::PathFollowingStrategy<PF, typename NLS::NonLinearOperator, SubsidiaryArgs> and
-           Concepts::AdaptiveStepSizingStrategy<ASS, NonLinearSolverInformation, SubsidiaryArgs,
+           Concepts::AdaptiveStepSizingStrategy<ASS, NonLinearSolverState, SubsidiaryArgs,
                                                 std::remove_cvref_t<typename NLS::NonLinearOperator>> and
            Concepts::NonLinearSolverCheckForPathFollowing<NLS>;
   }
@@ -74,7 +74,7 @@ namespace Impl {
  */
 template <typename NLS, typename PF = ArcLength, typename ASS = AdaptiveStepSizing::NoOp>
 requires(Impl::checkPathFollowingTemplates<NLS, PF, ASS>())
-class PathFollowing : public IObservable<ControlMessages, ControlLoggerInformation>
+class PathFollowing : public IObservable<ControlMessages, ControlState>
 {
 public:
   /** \brief The name of the PathFollowing method. */
@@ -102,7 +102,7 @@ public:
    *
    * \return ControlInformation structure containing information about the control results.
    */
-  ControlInformation run();
+  ControlState run();
 
 private:
   std::shared_ptr<NLS> nonLinearSolver_;

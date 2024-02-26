@@ -23,11 +23,11 @@ namespace Ikarus {
 
 template <typename NLS, typename PF, typename ASS>
 requires(Impl::checkPathFollowingTemplates<NLS, PF, ASS>())
-ControlInformation PathFollowing<NLS, PF, ASS>::run() {
-  ControlInformation info{.success = false, .totalIterations = 0};
-  ControlLoggerInformation logInfo{.currentStep = 0, .totalIterations = 0, .stepSize = stepSize_, .name = this->name()};
+ControlState PathFollowing<NLS, PF, ASS>::run() {
+  ControlState controlState{
+      .success = false, .currentStep = 0, .totalIterations = 0, .stepSize = stepSize_, .name = this->name()};
   auto& nonOp = nonLinearSolver_->nonLinearOperator();
-  this->notify(ControlMessages::CONTROL_STARTED, logInfo);
+  this->notify(ControlMessages::CONTROL_STARTED, controlState);
 
   SubsidiaryArgs subsidiaryArgs;
 
@@ -36,18 +36,17 @@ ControlInformation PathFollowing<NLS, PF, ASS>::run() {
   subsidiaryArgs.DD.setZero();
 
   /// Initializing solver
-  this->notify(ControlMessages::STEP_STARTED, logInfo);
+  this->notify(ControlMessages::STEP_STARTED, controlState);
   auto subsidiaryFunctionPtr = [&](auto&& args) { return pathFollowingType_(args); };
   pathFollowingType_.initialPrediction(nonOp, subsidiaryArgs);
-  auto solverInfo = nonLinearSolver_->solve(pathFollowingType_, subsidiaryArgs);
-  info.solverInfos.push_back(solverInfo);
-  info.totalIterations += solverInfo.iterations;
-  logInfo.totalIterations = info.totalIterations;
+  auto solverInfo = nonLinearSolver_->solve(subsidiaryFunctionPtr, subsidiaryArgs);
+  controlState.solverInfos.push_back(solverInfo);
+  controlState.totalIterations += solverInfo.iterations;
   if (not solverInfo.success)
-    return info;
-  logInfo.lambda = nonOp.lastParameter();
-  this->notify(ControlMessages::SOLUTION_CHANGED, logInfo);
-  this->notify(ControlMessages::STEP_ENDED, logInfo);
+    return controlState;
+  controlState.lambda = nonOp.lastParameter();
+  this->notify(ControlMessages::SOLUTION_CHANGED, controlState);
+  this->notify(ControlMessages::STEP_ENDED, controlState);
 
   /// Calculate predictor for a particular step
   for (int ls = 1; ls < steps_; ++ls) {
@@ -55,27 +54,26 @@ ControlInformation PathFollowing<NLS, PF, ASS>::run() {
 
     adaptiveStepSizing_(solverInfo, subsidiaryArgs, nonOp);
 
-    logInfo.currentStep = subsidiaryArgs.currentStep;
-    logInfo.stepSize    = subsidiaryArgs.stepSize;
+    controlState.currentStep = subsidiaryArgs.currentStep;
+    controlState.stepSize    = subsidiaryArgs.stepSize;
 
-    this->notify(ControlMessages::STEP_STARTED, logInfo);
+    this->notify(ControlMessages::STEP_STARTED, controlState);
 
     pathFollowingType_.intermediatePrediction(nonOp, subsidiaryArgs);
 
     solverInfo = nonLinearSolver_->solve(pathFollowingType_, subsidiaryArgs);
 
-    info.solverInfos.push_back(solverInfo);
-    info.totalIterations += solverInfo.iterations;
-    logInfo.totalIterations = info.totalIterations;
+    controlState.solverInfos.push_back(solverInfo);
+    controlState.totalIterations += solverInfo.iterations;
     if (not solverInfo.success)
-      return info;
-    logInfo.lambda = nonOp.lastParameter();
-    this->notify(ControlMessages::SOLUTION_CHANGED, logInfo);
-    this->notify(ControlMessages::STEP_ENDED, logInfo);
+      return controlState;
+    controlState.lambda = nonOp.lastParameter();
+    this->notify(ControlMessages::SOLUTION_CHANGED, controlState);
+    this->notify(ControlMessages::STEP_ENDED, controlState);
   }
 
-  this->notify(ControlMessages::CONTROL_ENDED, logInfo);
-  info.success = true;
-  return info;
+  this->notify(ControlMessages::CONTROL_ENDED, controlState);
+  controlState.success = true;
+  return controlState;
 }
 } // namespace Ikarus

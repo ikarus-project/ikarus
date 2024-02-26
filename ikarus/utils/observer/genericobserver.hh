@@ -26,7 +26,7 @@ namespace Ikarus {
  * \tparam IT The type of logging information.
  */
 template <typename M, typename IT>
-class GenericObserver : public IObserver<M, IT>
+class GenericObserver : public IObserver<IObservable<M, IT>>
 {
   using Messages = M;
   using InfoType = IT;

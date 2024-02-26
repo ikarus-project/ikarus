@@ -30,7 +30,7 @@ namespace Ikarus {
  * \tparam B The type of the grid basis.
  */
 template <typename B>
-class ControlSubsamplingVertexVTKWriter : public IObserver<ControlMessages, ControlLoggerInformation>
+class ControlSubsamplingVertexVTKWriter : public IObserver<IObservable<ControlMessages, ControlState>>
 {
   using Basis                     = B;
   static constexpr int components = Basis::LocalView::Tree::degree() == 0 ? 1 : Basis::LocalView::Tree::degree();
@@ -80,7 +80,7 @@ public:
    *
    * \param message The received control message.
    */
-  void updateImpl(ControlMessages message, const ControlLoggerInformation&) final {
+  void updateImpl(ControlMessages message, const ControlState&) final {
     assert(isFieldInfoSet_ && "You need to call setFieldInfo first!");
     switch (message) {
       case ControlMessages::SOLUTION_CHANGED: {

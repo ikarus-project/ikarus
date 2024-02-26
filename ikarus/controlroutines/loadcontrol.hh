@@ -27,7 +27,7 @@ namespace Ikarus {
  * \tparam NLS Type of the nonlinear solver used in the control routine.
  */
 template <typename NLS>
-class LoadControl : public IObservable<ControlMessages, ControlLoggerInformation>
+class LoadControl : public IObservable<ControlMessages, ControlState>
 {
 public:
   /** \brief The name of the LoadControl method. */
@@ -60,7 +60,7 @@ public:
    *
    * \return ControlInformation structure containing information about the control results.
    */
-  ControlInformation run();
+  ControlState run();
 
 private:
   std::shared_ptr<NLS> nonLinearSolver_;

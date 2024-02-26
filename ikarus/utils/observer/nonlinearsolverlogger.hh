@@ -19,7 +19,7 @@ namespace Ikarus {
  * This class inherits from the IObserver class and provides specific
  * implementations for updating based on NonLinearSolverMessages.
  */
-class NonLinearSolverLogger : public IObserver<NonLinearSolverMessages, NonLinearSolverLoggingInformation>
+class NonLinearSolverLogger : public IObserver<IObservable<NonLinearSolverMessages, NonLinearSolverState>>
 {
 public:
   /**
@@ -28,6 +28,6 @@ public:
    * \param message The NonLinearSolverMessages received.
    * \param info The non-linear solver information needed for logging.
    */
-  void updateImpl(NonLinearSolverMessages message, const NonLinearSolverLoggingInformation& info) final;
+  void updateImpl(NonLinearSolverMessages message, const NonLinearSolverState& info) final;
 };
 } // namespace Ikarus

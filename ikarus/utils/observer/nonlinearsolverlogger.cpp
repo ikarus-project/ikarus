@@ -9,7 +9,7 @@
 
 namespace Ikarus {
 
-void NonLinearSolverLogger::updateImpl(NonLinearSolverMessages message, const NonLinearSolverLoggingInformation& info) {
+void NonLinearSolverLogger::updateImpl(NonLinearSolverMessages message, const NonLinearSolverState& info) {
   switch (message) {
     case NonLinearSolverMessages::INIT:
       spdlog::info("Non-linear solver started:");

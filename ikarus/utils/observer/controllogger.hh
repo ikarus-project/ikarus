@@ -20,7 +20,7 @@ namespace Ikarus {
  * This class implements an observer for control messages and logs relevant information based on the received
  * messages.
  */
-class ControlLogger : public IObserver<ControlMessages, ControlLoggerInformation>
+class ControlLogger : public IObserver<IObservable<ControlMessages, ControlState>>
 {
 public:
   /**
@@ -28,7 +28,7 @@ public:
    *
    * \param message The received control message.
    */
-  void updateImpl(ControlMessages message, const ControlLoggerInformation& info) final;
+  void updateImpl(ControlMessages message, const ControlState& info) final;
 
 private:
   using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
