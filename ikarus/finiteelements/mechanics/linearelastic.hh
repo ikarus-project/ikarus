@@ -215,16 +215,16 @@ public:
    */
   template <template <typename, int, int> class RT>
   auto calculateAt(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
-    ResultTypeContainer<RT<typename Traits::ctype, myDim, Traits::worlddim>, true> result;
+    using RTWrapper = ResultTypeContainer<RT<typename Traits::ctype, myDim, Traits::worlddim>, true>;
     if constexpr (isSameResultType<RT, ResultType::linearStress>) {
       const auto eps = strainFunction(req);
       const auto C   = materialTangent();
       auto epsVoigt  = eps.evaluate(local, Dune::on(Dune::DerivativeDirections::gridElement));
 
-      result.emplace((C * epsVoigt).eval());
+      return RTWrapper{(C * epsVoigt).eval()};
     } else
       static_assert(Dune::AlwaysFalse<B>::value, "The requested result type is NOT implemented.");
-    return result;
+    __builtin_unreachable();
   }
 
   /**

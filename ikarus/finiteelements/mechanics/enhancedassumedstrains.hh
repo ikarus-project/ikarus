@@ -150,7 +150,7 @@ forward the
     if (isDisplacementBased())
       return DisplacementBasedElement::template calculateAt<RT>(req, local);
 
-    ResultTypeContainer<RT<typename Traits::ctype, Traits::mydim, Traits::worlddim>, true> result;
+    using RTWrapper = ResultTypeContainer<RT<typename Traits::ctype, Traits::mydim, Traits::worlddim>, true>;
     using namespace Dune::Indices;
     using namespace Dune::DerivativeDirections;
 
@@ -160,7 +160,7 @@ forward the
       auto uFunction            = DisplacementBasedElement::displacementFunction(req);
       const auto disp           = Dune::viewAsFlatEigenVector(uFunction.coefficientsRef());
 
-      std::visit(
+      return std::visit(
           [&]<typename EAST>(const EAST& easFunction) {
             if constexpr (not std::is_same_v<std::monostate, EAST>) {
               constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
@@ -170,11 +170,11 @@ forward the
               const auto M     = easFunction.calcM(local);
               const auto CEval = C(local);
               auto easStress   = (CEval * M * alpha).eval();
-              result.emplace(DisplacementBasedElement::template calculateAt<RT>(req, local)() + easStress);
-            }
+              return RTWrapper{DisplacementBasedElement::template calculateAt<RT>(req, local).asVec() + easStress};
+            } else
+              return DisplacementBasedElement::template calculateAt<RT>(req, local);
           },
           easVariant_);
-      return result;
     } else
       static_assert(Dune::AlwaysFalse<DFE>::value, "The requested result type is NOT implemented.");
     return result;

@@ -14,7 +14,7 @@
  */
 
 namespace Ikarus {
-namespace Util {
+namespace Impl {
 
   template<bool strainlike=false>
   struct VectorizeWithVoigt
@@ -54,7 +54,7 @@ namespace Util {
 
   };
 
-} // namespace Util
+} // namespace Impl
 
 namespace ResultType {
 #define REGISTER_RESULTTYPE_IMPL(structName, rowsExpr, ColsExpr,MaxRowsExpr,MaxColsExpr, VectorizeStruct, MatricizeStruct) \

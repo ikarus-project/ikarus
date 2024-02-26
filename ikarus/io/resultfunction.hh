@@ -82,7 +82,7 @@ public:
     if constexpr (std::is_same_v<UserFunction, Impl::DefaultUserFunction>) {
       Dune::FieldVector<ctype, griddim> val(0.0);
 
-      auto sigma = fes_->at(0).template calculateAt<resType>(feRequirements_, val)();
+      auto sigma = fes_->at(0).template calculateAt<resType>(feRequirements_, val).asVec();
 
       return static_cast<int>(sigma.rows() * sigma.cols());
     } else
@@ -119,7 +119,7 @@ public:
 
 private:
   double evaluateComponent(int eleID, const Dune::FieldVector<ctype, griddim>& local, int comp) const {
-    auto result = fes_->at(eleID).template calculateAt<resType>(feRequirements_, local)();
+    auto result = fes_->at(eleID).template calculateAt<resType>(feRequirements_, local).asVec();
 
     if constexpr (!std::is_same_v<UserFunction, Impl::DefaultUserFunction>)
       return userFunction_(result, comp);
