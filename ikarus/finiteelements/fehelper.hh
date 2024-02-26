@@ -77,7 +77,6 @@ void forEachLeafOrPowerNode(T&& tree, ChildIndex&& childIndex, PowerFunc&& power
  *
  * \details The global indices are collected in a FlatInterLeaved order. I.e. x_0, y_0, z_0, ..., x_n, y_n, z_n
  * This function can handle a scalar basis, power basis, and a composite basis.
- * The maximum number of children for the composite basis is 2.
  *
  * \tparam LocalView Type of the local view
  *
