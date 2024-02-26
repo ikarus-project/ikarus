@@ -40,86 +40,36 @@ auto localSolutionBlockVector(const typename Traits::FERequirementType::Solution
 }
 
 /**
- * \brief A helper function to handle global indices of a scalar basis.
+ * \brief A function which loops over all the nodes of a tree and performs different actions
+ * for a power node and a leaf node depending on the corresponding functor passed.
  *
- * \tparam LocalView Type of the local view
- * \tparam Child Type of the child
+ * \details This function is inspired from the function Dune::TypeTree::Detail::forEachNode
+ * available in dune/typetree/traversal.hh
  *
- * \param localView Local view of the element.
- * \param globalIndices Output vector to store global indices.
- * \param child The child of a tree.
- */
-template <typename LocalView, typename Child>
-void globalScalarFlatIndices(const LocalView& localView, std::vector<typename LocalView::MultiIndex>& globalIndices,
-                             const Child& child) {
-  const auto& fe = child.finiteElement();
-  for (size_t i = 0; i < fe.size(); ++i)
-    globalIndices.push_back(localView.index(child.localIndex(i)));
-}
-
-/**
- * \brief A helper function to handle global indices of a power basis.
- *
- * \tparam LocalView Type of the local view
- * \tparam Tree Type of the tree
- * \tparam ChildIndex Type of the index for the child, see dune/common/indices.hh
- *
- * \param localView Local view of the element.
- * \param globalIndices Output vector to store global indices.
- * \param tree The tree of the child.
+ * \tparam T Type of tree.
+ * \tparam ChildIndex Type of the index of the child.
+ * \tparam PowerFunc Type of the functor called for a power node.
+ * \tparam LeafFunc Type of the functor called for a leaf node.
+ * \param tree Tree whose nodes are to be looped over.
  * \param childIndex The index of the child.
+ * \param powerFunc A functor to be called for a power node.
+ * \param leafFunc A functor to be called for a leaf node.
  */
-template <typename LocalView, typename Tree, typename ChildIndex>
-void globalPowerFlatIndices(const LocalView& localView, std::vector<typename LocalView::MultiIndex>& globalIndices,
-                            const Tree& tree, const ChildIndex childIndex) {
-  if constexpr (requires { tree.child(childIndex).finiteElement(); }) {
-    const auto& fe             = tree.child(childIndex).finiteElement();
-    constexpr int childrenSize = Tree::degree();
-    for (size_t i = 0; i < fe.size(); ++i)
-      for (int j = 0; j < childrenSize; ++j)
-        globalIndices.push_back(localView.index(tree.child(j).localIndex(i)));
+template <class T, class ChildIndex, class PowerFunc, class LeafFunc>
+void forEachLeafOrPowerNode(T&& tree, ChildIndex&& childIndex, PowerFunc&& powerFunc, LeafFunc&& leafFunc) {
+  using Tree = std::decay_t<T>;
+  if constexpr (Tree::isLeaf) {
+    leafFunc(tree);
+  } else if constexpr (Tree::isPower) {
+    if constexpr (Tree::template Child<Dune::Indices::_0>::Type::isComposite) {
+      auto indices = std::make_index_sequence<Tree::degree()>{};
+      Dune::Hybrid::forEach(indices, [&](auto i) { forEachLeafOrPowerNode(tree.child(i), i, powerFunc, leafFunc); });
+    } else
+      powerFunc(tree, childIndex);
   } else {
-    constexpr int childrenSize = Tree::template Child<childIndex>::Type::degree();
-    const auto& fe             = tree.child(childIndex, 0).finiteElement();
-    for (size_t i = 0; i < fe.size(); ++i)
-      for (int j = 0; j < childrenSize; ++j)
-        globalIndices.push_back(localView.index(tree.child(childIndex, j).localIndex(i)));
+    auto indices = std::make_index_sequence<Tree::degree()>{};
+    Dune::Hybrid::forEach(indices, [&](auto i) { forEachLeafOrPowerNode(tree.child(i), i, powerFunc, leafFunc); });
   }
-}
-
-/**
- * \brief A helper function to handle global indices of a composite basis.
- *
- * \tparam LocalView Type of the local view
- * \tparam Tree Type of the tree
- *
- * \param localView Local view of the element.
- * \param globalIndices Output vector to store global indices.
- * \param tree The tree of the child.
- */
-template <typename Tree, typename LocalView>
-void globalCompositeFlatIndices(const LocalView& localView, std::vector<typename LocalView::MultiIndex>& globalIndices,
-                                const Tree& tree) {
-  using namespace Dune::Indices;
-  Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<Tree::degree()>()), [&](const auto i) {
-    using ChildType   = std::tuple_element_t<i, typename Tree::ChildTypes>;
-    const auto& child = tree.child(i);
-    if constexpr (ChildType::isLeaf)
-      globalScalarFlatIndices(localView, globalIndices, child);
-    else if constexpr (ChildType::isPower) {
-      if constexpr (ChildType::template Child<_0>::Type::isComposite) {
-        Dune::Hybrid::forEach(
-            Dune::Hybrid::integralRange(Dune::index_constant<ChildType::degree()>()), [&](const auto j) {
-              globalCompositeFlatIndices<std::remove_cvref_t<typename ChildType::template Child<j>::Type>>(
-                  localView, globalIndices, child.child(j));
-            });
-      } else
-        globalPowerFlatIndices(localView, globalIndices, tree, i);
-    } else if constexpr (ChildType::isComposite)
-      globalCompositeFlatIndices<std::remove_cvref_t<ChildType>>(localView, globalIndices, child);
-    else
-      DUNE_THROW(Dune::NotImplemented, "globalCompositeFlatIndices is not implemented for the provided basis type.");
-  });
 }
 
 /**
@@ -138,26 +88,31 @@ template <typename LocalView>
 void globalFlatIndices(const LocalView& localView, std::vector<typename LocalView::MultiIndex>& globalIndices) {
   globalIndices.clear();
   using namespace Dune::Indices;
-  using Tree = typename std::remove_cvref_t<LocalView>::Tree;
 
-  /** \brief Bool to check if the basis is a power basis. */
-  constexpr bool isPower = Tree::isPower;
+  /** \brief Functor to obtain global indices of a leaf node. */
+  auto leafOpFunc = [&](auto&& node) {
+    const auto& fe = node.finiteElement();
+    for (size_t i = 0; i < fe.size(); ++i) {
+      globalIndices.push_back(localView.index(node.localIndex(i)));
+    }
+  };
 
-  /** \brief Bool to check if the basis is a composite basis. */
-  constexpr bool isComposite = Tree::isComposite;
-
-  /** \brief Bool to check if the basis is a scalar basis. */
-  constexpr bool isScalar = Tree::isLeaf;
-
-  const auto tree = localView.tree();
-
-  if constexpr (isPower)
-    globalPowerFlatIndices(localView, globalIndices, tree, _0);
-  else if constexpr (isScalar)
-    globalScalarFlatIndices(localView, globalIndices, tree);
-  else if constexpr (isComposite)
-    globalCompositeFlatIndices<Tree>(localView, globalIndices, tree);
-  else
-    DUNE_THROW(Dune::NotImplemented, "globalFlatIndices is not implemented for the provided basis type.");
+  /** \brief Functor to obtain global indices of a power node. */
+  auto powerOpFunc = [&](auto&& node, auto&& ci) {
+    if constexpr (requires { node.child(ci).finiteElement(); }) {
+      const auto& fe         = node.child(ci).finiteElement();
+      const int childrenSize = node.degree();
+      for (size_t i = 0; i < fe.size(); ++i)
+        for (int j = 0; j < childrenSize; ++j)
+          globalIndices.push_back(localView.index(node.child(j).localIndex(i)));
+    } else {
+      const int childrenSize = node.child(ci, 0).degree();
+      const auto& fe         = node.child(ci, 0).finiteElement();
+      for (size_t i = 0; i < fe.size(); ++i)
+        for (int j = 0; j < childrenSize; ++j)
+          globalIndices.push_back(localView.index(node.child(ci, j).localIndex(i)));
+    }
+  };
+  forEachLeafOrPowerNode(localView.tree(), _0, powerOpFunc, leafOpFunc);
 }
 } // namespace Ikarus::FEHelper

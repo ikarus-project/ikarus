@@ -22,77 +22,6 @@ using Dune::TestSuite;
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/init.hh>
 
-template <class T, class ChildIndex, class PowerFunc, class LeafFunc>
-void forEachLeafOrPowerNode(T&& tree, ChildIndex childIndex, PowerFunc&& powerFunc, LeafFunc&& leafFunc) {
-  using Tree = std::decay_t<T>;
-  if constexpr (Tree::isLeaf) {
-    leafFunc(tree);
-  } else if constexpr (Tree::isPower) {
-    if constexpr (Tree::template Child<Dune::Indices::_0>::Type::isComposite) {
-      auto indices = std::make_index_sequence<Tree::degree()>{};
-      Dune::Hybrid::forEach(indices, [&](auto i) { forEachLeafOrPowerNode(tree.child(i), i, powerFunc, leafFunc); });
-    } else
-      powerFunc(tree, childIndex);
-  } else {
-    auto indices = std::make_index_sequence<Tree::degree()>{};
-    Dune::Hybrid::forEach(indices, [&](auto i) { forEachLeafOrPowerNode(tree.child(i), i, powerFunc, leafFunc); });
-  }
-}
-
-template <typename LocalView>
-void globalFlatIndicesNew(const LocalView& localView, std::vector<typename LocalView::MultiIndex>& globalIndices) {
-  globalIndices.clear();
-
-  auto leafOpFunc = [&](auto&& node) {
-    if constexpr (node.isLeaf) {
-      const auto& fe = node.finiteElement();
-      for (size_t i = 0; i < fe.size(); ++i) {
-        globalIndices.push_back(localView.index(node.localIndex(i)));
-      }
-    }
-  };
-
-  auto powerOpFunc = [&](auto&& node, auto&& ci) {
-    if constexpr (node.isPower) {
-      if constexpr (requires { node.child(ci).finiteElement(); }) {
-        const auto& fe         = node.child(ci).finiteElement();
-        const int childrenSize = std::remove_cvref_t<decltype(node)>::degree();
-        for (size_t i = 0; i < fe.size(); ++i)
-          for (int j = 0; j < childrenSize; ++j)
-            globalIndices.push_back(localView.index(node.child(j).localIndex(i)));
-      } else {
-        const int childrenSize = node.child(ci, 0).degree();
-        const auto& fe         = node.child(ci, 0).finiteElement();
-        for (size_t i = 0; i < fe.size(); ++i)
-          for (int j = 0; j < childrenSize; ++j)
-            globalIndices.push_back(localView.index(node.child(ci, j).localIndex(i)));
-      }
-    }
-  };
-  forEachLeafOrPowerNode(localView.tree(), Dune::Indices::_0, powerOpFunc, leafOpFunc);
-}
-
-/**
- * \brief LeafNodeVisitor helps to perform specific operations
- * at a leaf node, see dune/typetree/visitor.hh for more details
- *
- * \tparam LeafOp Type of the functor to perform operations at the leaf node
- */
-template <class LeafOp = Dune::TypeTree::NoOp>
-struct LeafNodeVisitor : Dune::TypeTree::TreeVisitor, Dune::TypeTree::DynamicTraversal
-{
-  explicit LeafNodeVisitor(const LeafOp& leafOp = {})
-      : leafOp_(leafOp) {}
-
-  template <class Node, class TreePath>
-  void leaf(Node&& node, TreePath tp) const {
-    leafOp_(node, tp);
-  }
-
-private:
-  LeafOp leafOp_;
-};
-
 /**
  * \brief A helper function to get a FEBase.
  *
@@ -110,33 +39,6 @@ auto getBasis(const GridView& gridView, const PreBasis& preBasis) {
   const auto& localView = basis.flat().localView();
   auto element          = elements(gridView).begin();
   return Ikarus::FEBase<decltype(basis)>(basis, *element);
-}
-
-/**
- * \brief A helper function to get global indices using LeafNodeVisitor.
- *
- * \tparam Basis Type of the FEBase
- *
- * \param basis The FE base to access localView functionalities.
- *
- * \return Output vector to store global indices.
- */
-template <typename Basis>
-auto leafNodeIndices(const Basis& basis) {
-  std::vector<typename std::remove_cvref_t<decltype(basis.localView())>::MultiIndex> dofs;
-
-  auto leafOpFunc = [&](auto&& node, auto&&) {
-    const auto& fe = node.finiteElement();
-    for (size_t i = 0; i < fe.size(); ++i) {
-      dofs.push_back(basis.localView().index(node.localIndex(i)));
-    }
-  };
-
-  auto visitor = LeafNodeVisitor(leafOpFunc);
-
-  Dune::TypeTree::applyToTree(basis.localView().tree(), visitor);
-
-  return dofs;
 }
 
 /**
@@ -164,15 +66,10 @@ auto BasisTest(const std::array<int, numberOfBases>& expectedNumberOfChildren,
                  " Number of children is incorrect" + message);
     checkScalars(t, static_cast<int>(basis.size()), expectedSize[i], " Size is incorrect" + message);
     std::vector<MultiIndex> dofs;
-    std::vector<MultiIndex> dofsNew;
     Ikarus::FEHelper::globalFlatIndices(basis.localView(), dofs);
-    globalFlatIndicesNew(basis.localView(), dofsNew);
-    t.check(dofs == dofsNew, "dofs is not equal to dofsNew before sorting" + message);
     checkScalars(t, dofs.size(), basis.size(), " Size of dofs and basis is not equal" + message);
     t.check(!dofs.empty(), "dofs is empty" + message);
     std::ranges::sort(dofs);
-    std::ranges::sort(dofsNew);
-    t.check(dofs == dofsNew, "dofs is not equal to dofsNew after sorting" + message);
     t.check(dofs[0] == 0, "Smallest index contains a non-zero entry" + message);
     const bool hasDuplicates = std::adjacent_find(dofs.begin(), dofs.end()) == dofs.end();
     t.check(hasDuplicates) << "The sorted dofs vector has duplicates" + message;

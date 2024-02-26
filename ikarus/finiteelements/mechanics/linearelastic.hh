@@ -276,12 +276,6 @@ protected:
       for (size_t i = 0; i < numberOfNodes_; ++i) {
         const auto bopI = eps.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
         force.template segment<myDim>(myDim * i) += bopI.transpose() * stresses * intElement;
-        // auto localForce = (bopI.transpose() * stresses * intElement).eval();
-        // for (int j = 0; j < myDim; ++j)
-        // {
-        //   auto& firstChild = this->localView().tree().child(j);
-        //   force[firstChild.localIndex(i)] += localForce[j];
-        // }
       }
     }
 
