@@ -73,25 +73,27 @@ struct ElementTest<Ikarus::EnhancedAssumedStrains<DisplacementBasedElement>>
           const auto& easVariant = fe.easVariant();
           std::visit(
               [&]<typename EAS>(const EAS& easFunction) {
-                if constexpr (not std::is_same_v<std::monostate, EAS>) {
-                  typename EAS::MType MIntegrated;
-                  MIntegrated.setZero();
-                  for (const auto& gp : rule) {
-                    const auto M = easFunction.calcM(gp.position());
+                typename EAS::MType MIntegrated;
+                MIntegrated.setZero();
+                for (const auto& gp : rule) {
+                  const auto M = easFunction.calcM(gp.position());
 
-                    const double detJ = element.geometry().integrationElement(gp.position());
-                    MIntegrated += M * detJ * gp.weight();
-                  }
-                  t.check(MIntegrated.isZero())
-                      << "Orthogonality condition check: The M matrix of the EAS method should be "
-                         "zero, integrated over the domain.";
+                  const double detJ = element.geometry().integrationElement(gp.position());
+                  MIntegrated += M * detJ * gp.weight();
                 }
+                t.check(MIntegrated.isZero())
+                    << "Orthogonality condition check: The M matrix of the EAS method should be "
+                       "zero, integrated over the domain.";
               },
               easVariant);
           auto requirements = Ikarus::FERequirements();
           t.checkThrow([&]() { fe.calculateScalar(requirements); })
               << "fe.calculateScalar should have failed for numberOfEASParameter > 0";
         }
+
+        t.check(numberOfEASParameter == fe.getNumberOfEASParameters())
+            << "Number of EAS Parameters should be " << numberOfEASParameter << "but is "
+            << fe.getNumberOfEASParameters();
 
         t.checkThrow([&]() { fe.setEASType(100); }) << "fe.setEASType(100) should have failed";
       }

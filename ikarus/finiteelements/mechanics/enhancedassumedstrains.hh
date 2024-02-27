@@ -105,7 +105,7 @@ forward the
   auto getNumberOfEASParameters() const {
     return std::visit(
         [&]<typename EAST>(const EAST&) {
-          if constexpr (std::is_same_v<std::monostate, EAST>)
+          if constexpr (std::is_same_v<EASBaseType, EAST>)
             return 0;
           else
             return EAST::enhancedStrainSize;

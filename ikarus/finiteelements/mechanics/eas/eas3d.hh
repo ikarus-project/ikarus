@@ -13,6 +13,9 @@
 
 namespace Ikarus::EAS {
 
+/**
+ * \brief Dummy struct for displacement-based EAS elements, i.e. 0 enhanced modes
+ */
 template <typename GEO>
 struct H1E0
 {
