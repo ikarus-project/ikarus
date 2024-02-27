@@ -29,10 +29,10 @@ struct Variants
   static_assert((worldDim == 2) or (worldDim == 3), "EAS variants are only available 2D and 3D elements.");
 
   /** \brief Variant type holding different EAS formulations for 2D elements. */
-  using EAS2D = std::variant<std::monostate, Q1E4<GEO>, Q1E5<GEO>, Q1E7<GEO>>;
+  using EAS2D = std::variant<Q1E0<GEO>, Q1E4<GEO>, Q1E5<GEO>, Q1E7<GEO>>;
 
   /** \brief Variant type holding different EAS formulations for 3D elements. */
-  using EAS3D = std::variant<std::monostate, H1E9<GEO>, H1E21<GEO>>;
+  using EAS3D = std::variant<H1E0<GEO>, H1E9<GEO>, H1E21<GEO>>;
 
   /** \brief Type of the EAS variant depending on the grid dimension. */
   using type = std::conditional_t<worldDim == 2, EAS2D, EAS3D>;

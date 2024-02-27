@@ -40,6 +40,7 @@ public:
   using GridView                 = typename DisplacementBasedElement::GridView;
   using Traits                   = typename DisplacementBasedElement::Traits;
   using DisplacementBasedElement::localView;
+  using EASBaseType = std::conditional_t<Traits::mydim == 2, EAS::Q1E0<Geometry>, EAS::H1E0<Geometry>>;
 
   /**
 * \brief Constructor for Enhanced Assumed Strains elements.
@@ -75,7 +76,7 @@ forward the
    *
    * \return True if the element is displacement-based, false otherwise.
    */
-  bool isDisplacementBased() const { return std::holds_alternative<std::monostate>(easVariant_); }
+  bool isDisplacementBased() const { return std::holds_alternative<EASBaseType>(easVariant_); }
 
   /**
    * \brief Calculates vectorial quantities for the element.
@@ -134,14 +135,12 @@ forward the
 
     std::visit(
         [&]<typename EAST>(const EAST& easFunction) {
-          if constexpr (not std::is_same_v<std::monostate, EAST>) {
-            constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
-            Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
-            calculateDAndLMatrix(easFunction, par, D, L_);
+          constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
+          Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
+          calculateDAndLMatrix(easFunction, par, D, L_);
 
-            K.template triangularView<Eigen::Upper>() -= L_.transpose() * D.inverse() * L_;
-            K.template triangularView<Eigen::StrictlyLower>() = K.transpose();
-          }
+          K.template triangularView<Eigen::Upper>() -= L_.transpose() * D.inverse() * L_;
+          K.template triangularView<Eigen::StrictlyLower>() = K.transpose();
         },
         easVariant_);
   }
@@ -180,18 +179,16 @@ forward the
 
     std::visit(
         [&]<typename EAST>(const EAST& easFunction) {
-          if constexpr (not std::is_same_v<std::monostate, EAST>) {
-            constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
-            Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
-            calculateDAndLMatrix(easFunction, req, D, L_);
-            const auto alpha = (-D.inverse() * L_ * disp).eval();
-            const auto M     = easFunction.calcM(local);
-            const auto CEval = C(local);
-            auto easStress   = (CEval * M * alpha).eval();
+          constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
+          Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
+          calculateDAndLMatrix(easFunction, req, D, L_);
+          const auto alpha = (-D.inverse() * L_ * disp).eval();
+          const auto M     = easFunction.calcM(local);
+          const auto CEval = C(local);
+          auto easStress   = (CEval * M * alpha).eval();
 
-            resultVector.resize(3, 1);
-            resultVector = resultVector + easStress;
-          }
+          resultVector.resize(3, 1);
+          resultVector = resultVector + easStress;
         },
         easVariant_);
     return resultVector;
@@ -211,7 +208,7 @@ forward the
     if constexpr (Traits::mydim == 2) {
       switch (numberOfEASParameters) {
         case 0:
-          easVariant_ = std::monostate();
+          easVariant_ = EAS::Q1E0(localView().element().geometry());
           break;
         case 4:
           easVariant_ = EAS::Q1E4(localView().element().geometry());
@@ -229,7 +226,7 @@ forward the
     } else if constexpr (Traits::mydim == 3) {
       switch (numberOfEASParameters) {
         case 0:
-          easVariant_ = std::monostate();
+          easVariant_ = EAS::H1E0(localView().element().geometry());
           break;
         case 9:
           easVariant_ = EAS::H1E9(localView().element().geometry());
@@ -274,23 +271,21 @@ protected:
     // Internal forces from enhanced strains
     std::visit(
         [&]<typename EAST>(const EAST& easFunction) {
-          if constexpr (not std::is_same_v<std::monostate, EAST>) {
-            constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
-            Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
-            calculateDAndLMatrix(easFunction, par, D, L_);
+          constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
+          Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
+          calculateDAndLMatrix(easFunction, par, D, L_);
 
-            const auto alpha = (-D.inverse() * L_ * disp).eval();
+          const auto alpha = (-D.inverse() * L_ * disp).eval();
 
-            for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
-              const auto M            = easFunction.calcM(gp.position());
-              const double intElement = geo.integrationElement(gp.position()) * gp.weight();
-              const auto CEval        = C(gpIndex);
-              auto stresses           = (CEval * M * alpha).eval();
-              for (size_t i = 0; i < numberOfNodes; ++i) {
-                const auto bopI = strainFunction.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
-                force.template segment<Traits::worlddim>(Traits::worlddim * i) +=
-                    bopI.transpose() * stresses * intElement;
-              }
+          for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
+            const auto M            = easFunction.calcM(gp.position());
+            const double intElement = geo.integrationElement(gp.position()) * gp.weight();
+            const auto CEval        = C(gpIndex);
+            auto stresses           = (CEval * M * alpha).eval();
+            for (size_t i = 0; i < numberOfNodes; ++i) {
+              const auto bopI = strainFunction.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
+              force.template segment<Traits::worlddim>(Traits::worlddim * i) +=
+                  bopI.transpose() * stresses * intElement;
             }
           }
         },
@@ -301,6 +296,7 @@ private:
   using EASVariant = EAS::Variants<Geometry>::type;
   EASVariant easVariant_;
   mutable Eigen::MatrixXd L_;
+
   template <int enhancedStrainSize>
   void calculateDAndLMatrix(const auto& easFunction, const auto& par,
                             Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>& DMat,

@@ -13,6 +13,19 @@
 
 namespace Ikarus::EAS {
 
+template <typename GEO>
+struct H1E0
+{
+  static constexpr int strainSize         = 6;
+  static constexpr int enhancedStrainSize = 6;
+  using MType                             = Eigen::Matrix<double, strainSize, enhancedStrainSize>;
+
+  H1E0() = default;
+  explicit H1E0(const GEO& /*geometry*/) {}
+
+  static auto calcM(const Dune::FieldVector<double, 3>& /*quadPos*/) -> MType { return MType::Identity(); }
+};
+
 /**
  * \brief Structure representing EAS for H1 with 9 enhanced strains.
  *
