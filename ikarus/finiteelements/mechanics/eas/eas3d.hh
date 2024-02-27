@@ -20,13 +20,14 @@ template <typename GEO>
 struct H1E0
 {
   static constexpr int strainSize         = 6;
-  static constexpr int enhancedStrainSize = 6;
+  static constexpr int enhancedStrainSize = 0;
   using MType                             = Eigen::Matrix<double, strainSize, enhancedStrainSize>;
+  using DType                             = Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>;
 
   H1E0() = default;
   explicit H1E0(const GEO& /*geometry*/) {}
 
-  static auto calcM(const Dune::FieldVector<double, 3>& /*quadPos*/) -> MType { return MType::Identity(); }
+  static auto calcM(const Dune::FieldVector<double, 3>& /*quadPos*/) { return MType::Zero(); }
 };
 
 /**
@@ -42,6 +43,7 @@ struct H1E9
   static constexpr int strainSize         = 6;
   static constexpr int enhancedStrainSize = 9;
   using MType                             = Eigen::Matrix<double, strainSize, enhancedStrainSize>;
+  using DType                             = Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>;
 
   H1E9() = default;
   explicit H1E9(const GEO& geometry)
@@ -86,6 +88,7 @@ struct H1E21
   static constexpr int strainSize         = 6;
   static constexpr int enhancedStrainSize = 21;
   using MType                             = Eigen::Matrix<double, strainSize, enhancedStrainSize>;
+  using DType                             = Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>;
 
   H1E21() = default;
   explicit H1E21(const Geometry& geometry_)

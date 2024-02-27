@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <ikarus/finiteelements/mechanics/easvariants.hh>
 #include <ikarus/utils/tensorutils.hh>
 
 namespace Ikarus::EAS {
@@ -20,13 +21,14 @@ template <typename GEO>
 struct Q1E0
 {
   static constexpr int strainSize         = 3;
-  static constexpr int enhancedStrainSize = 3;
+  static constexpr int enhancedStrainSize = 0;
   using MType                             = Eigen::Matrix<double, strainSize, enhancedStrainSize>;
+  using DType                             = Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>;
 
   Q1E0() = default;
   explicit Q1E0(const GEO& /*geometry*/) {}
 
-  static auto calcM(const Dune::FieldVector<double, 2>& /*quadPos*/) -> MType { return MType::Identity(); }
+  static auto calcM(const Dune::FieldVector<double, 2>& /*quadPos*/) { return MType::Zero(); }
 };
 
 /**
@@ -44,6 +46,7 @@ struct Q1E4
   static constexpr int strainSize         = 3;
   static constexpr int enhancedStrainSize = 4;
   using MType                             = Eigen::Matrix<double, strainSize, enhancedStrainSize>;
+  using DType                             = Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>;
 
   Q1E4() = default;
   explicit Q1E4(const GEO& geometry)
@@ -82,6 +85,7 @@ struct Q1E5
   static constexpr int strainSize         = 3;
   static constexpr int enhancedStrainSize = 5;
   using MType                             = Eigen::Matrix<double, strainSize, enhancedStrainSize>;
+  using DType                             = Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>;
 
   Q1E5() = default;
   explicit Q1E5(const GEO& geometry)
@@ -121,6 +125,7 @@ struct Q1E7
   static constexpr int strainSize         = 3;
   static constexpr int enhancedStrainSize = 7;
   using MType                             = Eigen::Matrix<double, strainSize, enhancedStrainSize>;
+  using DType                             = Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>;
 
   Q1E7() = default;
   explicit Q1E7(const GEO& geometry)
@@ -148,4 +153,5 @@ private:
   std::shared_ptr<GEO> geometry_;
   Eigen::Matrix3d T0InverseTransformed_;
 };
+
 } // namespace Ikarus::EAS
