@@ -21,10 +21,10 @@ from dune.generator.generator import SimpleGenerator
 
 
 def globalBasis(gv, tree):
-    generator = SimpleGenerator("Basis", "Ikarus::Python")
+    generator = SimpleGenerator("BasisHandler", "Ikarus::Python")
 
     pbfName = preBasisTypeName(tree, gv.cppTypeName)
-    element_type = f"Ikarus::Basis<{pbfName}>"
+    element_type = f"Ikarus::BasisHandler<{pbfName}>"
     includes = []
     includes += list(gv.cppIncludes)
     includes += ["dune/iga/nurbsbasis.hh"]
@@ -35,7 +35,7 @@ def globalBasis(gv, tree):
         includes=includes, typeName=element_type, moduleName=moduleName
     )
     basis = defaultGlobalBasis(gv, tree)
-    return module.Basis(basis)
+    return module.BasisHandler(basis)
 
 
 if __name__ == "__main__":

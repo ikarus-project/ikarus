@@ -10,17 +10,16 @@ simply supported case.
 ## Code highlights
 
 Similar to the `struct` named `Solid` in `iks003_incompressible_LinearElasticity.cpp`, here a `struct` named `KirchhoffPlate` is created.
-It inherits from `ScalarFieldFE` and it must be decorated with `AutoDiffFE` as well to compute the required matrices and vectors.
+It inherits from `FEBase` and it must be decorated with `AutoDiffFE` as well to compute the required matrices and vectors.
 It is constructed as shown below:
 
 ```cpp
-KirchhoffPlate(const Basis &basis, const typename LocalView::Element &element, double p_Emodul, double p_nu,
-               double p_thickness)
-    : BaseDisp(basis, element),
+KirchhoffPlate(const BasisHandler &basisHandler, const typename LocalView::Element &element, double p_Emodul,
+               double p_nu, double p_thickness)
+    : Base(basisHandler, element),
       Emodul{p_Emodul},
       nu{p_nu},
       thickness{p_thickness} {
-  this->localView().bind(element);
   geometry_.emplace(this->localView().element().geometry());
 }
 ```

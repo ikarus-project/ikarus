@@ -44,7 +44,7 @@ namespace Ikarus::Python {
 template <class KirchhoffLoveShell, class... options>
 void registerKirchhoffLoveShell(pybind11::handle scope, pybind11::class_<KirchhoffLoveShell, options...> cls) {
   registerElement<false, KirchhoffLoveShell, options...>(scope, cls);
-  using GlobalBasis    = typename KirchhoffLoveShell::Basis;
+  using GlobalBasis    = typename KirchhoffLoveShell::BasisHandler;
   using FlatBasis      = typename KirchhoffLoveShell::FlatBasis;
   using GridView       = typename GlobalBasis::GridView;
   using Element        = typename KirchhoffLoveShell::Element;

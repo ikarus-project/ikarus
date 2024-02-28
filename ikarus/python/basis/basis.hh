@@ -25,30 +25,30 @@ namespace Ikarus::Python {
 /**
  * \brief Register a Python wrapper for an Ikarus basis class.
  *
- * \tparam Basis The Ikarus basis class to be registered.
+ * \tparam BasisHandler The Ikarus handler basis class to be registered.
  * \tparam options Variadic template parameters for additional options when defining the Python class.
  *
  * \param scope A Pybind11 handle representing the Python scope where the class should be registered.
- * \param cls The Pybind11 class template to be used for registering the Ikarus basis class.
+ * \param cls The Pybind11 class template to be used for registering the Ikarus basis handler class.
  *
  * \ingroup pythonbindings
  */
-template <class Basis, class... options>
-void registerBasis(pybind11::handle scope, pybind11::class_<Basis, options...> cls) {
+template <class BasisHandler, class... options>
+void registerBasisHandler(pybind11::handle scope, pybind11::class_<BasisHandler, options...> cls) {
   using pybind11::operator""_a;
 
-  using GridView       = typename Basis::GridView;
-  using PreBasis       = typename Basis::PreBasis;
-  using UntouchedBasis = typename Basis::UntouchedBasis;
-  using FlatBasis      = typename Basis::FlatBasis;
+  using GridView       = typename BasisHandler::GridView;
+  using PreBasis       = typename BasisHandler::PreBasis;
+  using UntouchedBasis = typename BasisHandler::UntouchedBasis;
+  using FlatBasis      = typename BasisHandler::FlatBasis;
 
-  cls.def(pybind11::init([](const UntouchedBasis& gb) { return new Basis(gb.preBasis()); }));
-
-  cls.def(
-      "flat", [](Basis& self) { return self.flat(); }, pybind11::return_value_policy::reference);
+  cls.def(pybind11::init([](const UntouchedBasis& gb) { return new BasisHandler(gb.preBasis()); }));
 
   cls.def(
-      "untouched", [](Basis& self) { return self.untouched(); }, pybind11::return_value_policy::reference);
+      "flat", [](BasisHandler& self) { return self.flat(); }, pybind11::return_value_policy::reference);
+
+  cls.def(
+      "untouched", [](BasisHandler& self) { return self.untouched(); }, pybind11::return_value_policy::reference);
 }
 
 } // namespace Ikarus::Python

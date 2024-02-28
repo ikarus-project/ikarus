@@ -8,10 +8,10 @@ from .generator import MySimpleGenerator
 
 
 def basis(gv, tree):
-    generator = MySimpleGenerator("Basis", "Ikarus::Python")
+    generator = MySimpleGenerator("BasisHandler", "Ikarus::Python")
 
     pbfName = preBasisTypeName(tree, gv.cppTypeName)
-    element_type = f"Ikarus::Basis<{pbfName}>"
+    element_type = f"Ikarus::BasisHandler<{pbfName}>"
 
     includes = []
     includes += ["ikarus/python/basis/basis.hh"]
@@ -20,4 +20,4 @@ def basis(gv, tree):
         includes=includes, typeName=element_type, moduleName=moduleName
     )
     basis = defaultGlobalBasis(gv, tree)
-    return module.Basis(basis)
+    return module.BasisHandler(basis)

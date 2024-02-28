@@ -45,7 +45,7 @@ template <bool defaultInitializers = true, class FE, class... options>
 void registerElement(pybind11::handle scope, pybind11::class_<FE, options...> cls) {
   using pybind11::operator""_a;
 
-  using GlobalBasis    = typename FE::Basis;
+  using GlobalBasis    = typename FE::BasisHandler;
   using FlatBasis      = typename FE::FlatBasis;
   using GridView       = typename GlobalBasis::GridView;
   using Element        = typename FE::Element;

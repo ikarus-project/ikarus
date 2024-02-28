@@ -26,7 +26,7 @@ namespace Ikarus {
  * \tparam PB The type of the pre-basis used to construct the hierarchical basis.
  */
 template <typename PB>
-class Basis
+class BasisHandler
 {
 public:
   using PreBasis = PB;                          ///< The type of the untouched pre basis
@@ -43,7 +43,7 @@ public:
    *
    * \param pb The pre-basis used to construct the hierarchical basis.
    */
-  explicit Basis(const PreBasis& pb)
+  explicit BasisHandler(const PreBasis& pb)
       : bb_{Dune::Functions::DefaultGlobalBasis(pb)},
         fb_{Dune::Functions::DefaultGlobalBasis(Ikarus::flatPreBasis(pb))} {}
 
@@ -108,7 +108,7 @@ private:
 template <typename GV, typename PBF>
 auto makeBasis(const GV& gv, const PBF& pb) {
   auto preBasis = pb(gv);
-  return Basis(preBasis);
+  return BasisHandler(preBasis);
 }
 
 /**
@@ -121,6 +121,6 @@ auto makeBasis(const GV& gv, const PBF& pb) {
  */
 template <typename PB>
 auto makeBasis(const Dune::Functions::DefaultGlobalBasis<PB>& gb) {
-  return Basis(gb.preBasis());
+  return BasisHandler(gb.preBasis());
 }
 } // namespace Ikarus

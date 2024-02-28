@@ -25,6 +25,7 @@ install(
         tensorutils.hh
         tensorproductquadrule.hh
         traits.hh
+        traversal.hh
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/utils
 )
 

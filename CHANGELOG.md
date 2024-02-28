@@ -10,6 +10,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 - Add tensorProduct quadrature rule and [0,1] to [-1,1] transformation ([#238](https://github.com/ikarus-project/ikarus/pull/238))
 - Refactor `enhancedassumedstrains.hh` ([#247](https://github.com/ikarus-project/ikarus/pull/247))
 - add factory functions to `ResultFunction` ([#251](https://github.com/ikarus-project/ikarus/pull/251))
+- Refactor `febases` to handle any type of basis ([#256](https://github.com/ikarus-project/ikarus/pull/256))
 
 ## Release v0.4 (Ganymede)
 

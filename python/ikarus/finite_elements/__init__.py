@@ -28,7 +28,7 @@ def elementConstructorDecoratorFactory(
                     + f"<{basis.cppTypeName},Ikarus::FERequirements<Eigen::Ref<Eigen::VectorXd>>,true>"
                 )
             else:
-                includes += ["ikarus/finiteelements/febases/autodifffe.hh"]
+                includes += ["ikarus/finiteelements/autodiff/autodifffe.hh"]
                 element_type = (
                     "Ikarus::"
                     + autodiffWrapper
@@ -103,7 +103,7 @@ def KirchhoffLoveShell(
     generator = MySimpleGenerator("KirchhoffLoveShell", "Ikarus::Python")
     includes = ["ikarus/python/finiteelements/kirchhoffloveshell.hh"]
 
-    includes += ["ikarus/finiteelements/febases/autodifffe.hh"]
+    includes += ["ikarus/finiteelements/autodiff/autodifffe.hh"]
     element_type = f"Ikarus::KirchhoffLoveShell<{basis.cppTypeName},Ikarus::FERequirements<Eigen::Ref<Eigen::VectorXd>>,true>"
 
     # else:

@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 # install headers
-install(FILES ferequirements.hh fetraits.hh fehelper.hh physicshelper.hh
+install(FILES ferequirements.hh fetraits.hh fehelper.hh physicshelper.hh febase.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/finiteelements
 )
 
-add_subdirectory(febases)
+add_subdirectory(autodiff)
 add_subdirectory(mechanics)

@@ -20,8 +20,7 @@
 #endif
 #include "testhelpers.hh"
 
-#include <ikarus/finiteelements/febases/autodifffe.hh>
-#include <ikarus/finiteelements/febases/powerbasisfe.hh>
+#include <ikarus/finiteelements/autodiff/autodifffe.hh>
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/finiteelements/mechanics/enhancedassumedstrains.hh>
 #include <ikarus/finiteelements/mechanics/linearelastic.hh>
@@ -310,7 +309,7 @@ template <typename NonLinearOperator, typename FiniteElement,
   Dune::TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() by Automatic Differentiation");
   auto& basis           = fe.localView().globalBasis();
   auto nDOF             = basis.size();
-  using AutoDiffBasedFE = Ikarus::AutoDiffFE<FiniteElement, FERequirementType, false, true>;
+  using AutoDiffBasedFE = Ikarus::AutoDiffFE<FiniteElement, true>;
   AutoDiffBasedFE feAutoDiff(fe);
 
   const double tol = 1e-10;
