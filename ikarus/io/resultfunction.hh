@@ -41,11 +41,11 @@ namespace Impl {
  * \ingroup io
  * \relates
  * \tparam FE Type of the finite element
- * \tparam resType requested result type
+ * \tparam RT requested result type
  * \tparam UserFunction Type of the user-defined function for custom result evaluation (default is
 DefaultUserFunction)
  */
-template <typename FE, template <typename, int, int> class resType, typename UserFunction = Impl::DefaultUserFunction>
+template <typename FE, template <typename, int, int> class RT, typename UserFunction = Impl::DefaultUserFunction>
 class ResultFunction : public Dune::VTKFunction<typename FE::GridView>
 {
 public:
@@ -81,10 +81,8 @@ public:
   [[nodiscard]] int ncomps() const override {
     if constexpr (std::is_same_v<UserFunction, Impl::DefaultUserFunction>) {
       Dune::FieldVector<ctype, griddim> val(0.0);
-
-      auto sigma = fes_->at(0).template calculateAt<resType>(feRequirements_, val).asVec();
-
-      return static_cast<int>(sigma.rows() * sigma.cols());
+      auto sigma = fes_->at(0).template calculateAt<RT>(feRequirements_, val).asVec();
+      return static_cast<int>(sigma.size());
     } else
       return userFunction_.ncomps();
   }
@@ -97,10 +95,10 @@ public:
    * \return String representing the name of the result type
    */
   [[nodiscard]] constexpr std::string name() const override {
-    if constexpr (requires { UserFunction::name(); })
+    if constexpr (requires { userFunction_.name(); })
       return userFunction_.name();
     else
-      return toString<resType>();
+      return toString<RT>();
   }
 
   /**
@@ -119,7 +117,7 @@ public:
 
 private:
   double evaluateComponent(int eleID, const Dune::FieldVector<ctype, griddim>& local, int comp) const {
-    auto result = fes_->at(eleID).template calculateAt<resType>(feRequirements_, local).asVec();
+    auto result = fes_->at(eleID).template calculateAt<RT>(feRequirements_, local).asVec();
 
     if constexpr (!std::is_same_v<UserFunction, Impl::DefaultUserFunction>)
       return userFunction_(result, comp);
@@ -143,12 +141,12 @@ private:
  * \param fes Pointer to a vector of finite elements
  * \param req FERequirements for evaluation
  * \tparam FE Type of the finite element
- * \tparam resType requested result type
+ * \tparam RT requested result type
  * \tparam UserFunction Type of the user-defined function for custom result evaluation (default is DefaultUserFunction)
  */
-template <template <typename, int, int> class resType, typename UserFunction = Impl::DefaultUserFunction, typename FE>
+template <template <typename, int, int> class RT, typename UserFunction = Impl::DefaultUserFunction, typename FE>
 auto makeResultFunction(std::vector<FE>* fes, const typename FE::FERequirementType& req) {
-  return std::make_shared<ResultFunction<FE, resType, UserFunction>>(fes, req);
+  return std::make_shared<ResultFunction<FE, RT, UserFunction>>(fes, req);
 }
 
 /**
@@ -163,14 +161,13 @@ auto makeResultFunction(std::vector<FE>* fes, const typename FE::FERequirementTy
  * \param fes Pointer to a vector of finite elements
  * \param req FERequirements for evaluation
  * \tparam FE Type of the finite element
- * \tparam resType requested result type
+ * \tparam RT requested result type
  * \tparam UserFunction Type of the user-defined function for custom result evaluation (default is
  * DefaultUserFunction)
  */
-template <template <typename, int, int> class resType, typename UserFunction = Impl::DefaultUserFunction, typename FE>
+template <template <typename, int, int> class RT, typename UserFunction = Impl::DefaultUserFunction, typename FE>
 auto makeResultVtkFunction(std::vector<FE>* fes, const typename FE::FERequirementType& req) {
-  return Dune::Vtk::Function<typename FE::GridView>(
-      std::make_shared<ResultFunction<FE, resType, UserFunction>>(fes, req));
+  return Dune::Vtk::Function<typename FE::GridView>(std::make_shared<ResultFunction<FE, RT, UserFunction>>(fes, req));
 }
 
 } // namespace Ikarus

@@ -44,6 +44,20 @@ namespace Ikarus::Python {
 template <class LinearElastic, class... options>
 void registerLinearElastic(pybind11::handle scope, pybind11::class_<LinearElastic, options...> cls) {
   registerElement(scope, cls);
+
+  using Traits         = typename LinearElastic::Traits;
+  using FERequirements = typename LinearElastic::FERequirementType;
+
+  cls.def(
+      "calculateAt",
+      [](LinearElastic& self, const FERequirements& req, const Dune::FieldVector<double, Traits::mydim>& local,
+         std::string resType) {
+        if (resType == "linearStress")
+          return self.template calculateAt<ResultType::linearStress>(req, local).asVec();
+        else
+          DUNE_THROW(Dune::NotImplemented, "Linear-lastic element only supports linearStress as result.");
+      },
+      pybind11::arg("feRequirements"), pybind11::arg("local"), pybind11::arg("resultType"));
 }
 
 } // namespace Ikarus::Python

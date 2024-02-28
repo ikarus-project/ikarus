@@ -40,24 +40,22 @@ void obtainLagrangeNodePositions(const LV& localView,
     nCoord = localView.element().geometry().global(nCoord);
 }
 /**
- * \brief A function to obtain the local coordinates of the vertices of an FiniteElement
+ * \brief A function to obtain the local coordinates of subentities of an FiniteElement
  * \ingroup utils
- * \tparam FiniteElement Type of the finite element
+ * \tparam FE Type of the finite element
  * \param fe finite element
- * \return std::vector of LocalCoordinates of the element
+ * \param codim codim of requested subentity, defaults to vertices
+ * \return view over the position of the subenties
  */
-template <typename FiniteElement>
-auto getVertexPositions(FiniteElement& fe) {
-  constexpr int dim            = FiniteElement::Traits::mydim;
+template <typename FE>
+auto referenceElementSubEntitiyPositions(FE& fe, const int codim = FE::Traits::mydim) {
+  constexpr int dim            = FE::Traits::mydim;
   const auto& element          = fe.gridElement();
   const auto& referenceElement = Dune::referenceElement<double, dim>(element.type());
-  const int numberOfVertices   = referenceElement.size(dim);
+  const int numberOfVertices   = referenceElement.size(codim);
 
-  std::vector<typename FiniteElement::GridElement::Geometry::LocalCoordinate> positions;
-  for (auto i : std::views::iota(0, numberOfVertices))
-    positions.push_back(referenceElement.position(i, dim));
-
-  return positions;
+  auto getPosition = [=](const int i) { return referenceElement.position(i, codim); };
+  return std::views::transform(std::views::iota(0, numberOfVertices), getPosition);
 }
 
 } // namespace Ikarus::utils

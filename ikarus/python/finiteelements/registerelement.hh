@@ -120,17 +120,10 @@ void registerElement(pybind11::handle scope, pybind11::class_<FE, options...> cl
 
   if constexpr (requires { std::declval<FE>().materialTangent(); })
     cls.def("materialTangent", [](FE& self) { return self.materialTangent(); });
-
-  cls.def(
-      "calculateAt",
-      [](FE& self, const FERequirements& req, const Dune::FieldVector<double, Traits::mydim>& local,
-         std::string& resType) {
-        if (resType == "linearStress")
-          return self.template calculateAt<ResultType::linearStress>(req, local)();
-        else
-          DUNE_THROW(Dune::NotImplemented, "Linear-lastic element only supports linearStress as result.");
-      },
-      pybind11::arg("feRequirements"), pybind11::arg("local"), pybind11::arg("resultType"));
 }
+
+template <bool defaultInitializers = true, class FE, class... options, typename Args...>
+void registerElement(pybind11::handle scope, pybind11::class_<FE, options...> cls, std::tuple<Args...> restultTypes) {
+  Dune::Hybrid::forEach(resultTypes, [](auto stringRepr) { if (stringRepr == "linearStress") })
 
 } // namespace Ikarus::Python

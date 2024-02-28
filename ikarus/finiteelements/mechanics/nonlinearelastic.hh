@@ -246,6 +246,16 @@ public:
   }
 
   /**
+   * \brief Returns whether an element can provide a requested result. Can be used in constant expressions
+   * \tparam RT The type representing the requested result.
+   * \return boolean indicating if a requested result can be provided
+   */
+  template <template <typename, int, int> class RT>
+  static consteval bool canProvideResultType() {
+    return isSameResultType<RT, ResultType::PK2Stress>;
+  }
+
+  /**
    * \brief Calculates a requested result at a specific local position.
    *
    * \param req The FERequirementType object holding the global solution.
@@ -253,32 +263,21 @@ public:
    * \return calculated result
    *
    * \tparam RT The type representing the requested result.
-   * \tparam voigt Returns result in Voigt notation (if applicable)
    */
   template <template <typename, int, int> class RT>
+  requires(canProvideResultType<RT>())
   auto calculateAt(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
     using namespace Dune::DerivativeDirections;
 
-    ResultTypeContainer<RT<typename Traits::ctype, myDim, Traits::worlddim>, true> result;
+    using RTWrapper = ResultWrapper<RT<typename Traits::ctype, myDim, Traits::worlddim>, ResultShape::Vector>;
     if constexpr (isSameResultType<RT, ResultType::PK2Stress>) {
       const auto uFunction = displacementFunction(req);
       const auto H         = uFunction.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
       const auto E         = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
 
-      result=mat_.template stresses<StrainTags::greenLagrangian>(toVoigt(E));
+      return RTWrapper{mat_.template stresses<StrainTags::greenLagrangian>(toVoigt(E))};
     } else
       static_assert(Dune::AlwaysFalse<B>::value, "The requested result type is NOT implemented.");
-    return result;
-  }
-
-  /**
-   * \brief Returns whether an element can provide a requested result. Can be used in constant expressions
-   * \tparam RT The type representing the requested result.
-   * \return boolean indicating if a requested result can be provided
-   */
-  template <template <typename, int, int> class RT>
-  static constexpr bool canProvideResultType() {
-    return isSameResultType<RT, ResultType::PK2Stress>;
   }
 
 private:

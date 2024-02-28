@@ -7,6 +7,7 @@
 
 #include <dune/alugrid/grid.hh>
 #include <dune/common/test/testsuite.hh>
+#include <dune/common/typetraits.hh>
 #include <dune/fufem/boundarypatch.hh>
 #include <dune/functions/functionspacebases/lagrangedgbasis.hh>
 #include <dune/grid/io/file/vtk.hh>
@@ -233,7 +234,7 @@ template <typename NonLinearOperator>
   return t;
 }
 
-template <template <typename, int, int> class resType, bool voigt = true>
+template <template <typename, int, int> class RT, bool vectorizedResult = true>
 [[nodiscard]] auto checkCalculateAt(auto& /*nonLinearOperator*/, auto& fe, const auto& feRequirements,
                                     const auto& expectedResult, const auto& evaluationPositions,
                                     const std::string& messageIfFailed = "") {
@@ -242,27 +243,25 @@ template <template <typename, int, int> class resType, bool voigt = true>
   using FiniteElement = std::remove_cvref_t<decltype(fe)>;
   Eigen::MatrixXd computedResults(expectedResult.rows(), expectedResult.cols());
 
-  if constexpr (FiniteElement::template canProvideResultType<resType>()) {
+  if constexpr (FiniteElement::template canProvideResultType<RT>()) {
     for (int i = 0; const auto& pos : evaluationPositions) {
-      if constexpr (voigt) {
-        auto result              = fe.template calculateAt<resType>(feRequirements, pos).asVec();
+      if constexpr (vectorizedResult) {
+        auto result              = fe.template calculateAt<RT>(feRequirements, pos).asVec();
         computedResults.row(i++) = result.transpose();
       } else {
-        auto result = fe.template calculateAt<resType>(feRequirements, pos).asMat();
-        Eigen::Map<Eigen::VectorXd> vector(result.data(), result.size());
-        computedResults.row(i++) = vector.transpose();
+        auto result              = fe.template calculateAt<RT>(feRequirements, pos).asMat();
+        computedResults.row(i++) = result.reshaped().transpose();
       }
     }
     const bool isResultCorrect = isApproxSame(computedResults, expectedResult, 1e-8);
-    t.check(isResultCorrect) << "Computed Result for " << Ikarus::toString<resType>()
+    t.check(isResultCorrect) << "Computed Result for " << Ikarus::toString<RT>()
                              << " is not the same as expected result:\n"
                              << "It is:\n"
                              << computedResults << "\nBut should be:\n"
                              << expectedResult << "\n"
                              << messageIfFailed;
   } else
-    t.check(false) << "Element can not provide the requested RsultType " << Ikarus::toString<resType>()
-                   << messageIfFailed;
+    static_assert(Dune::AlwaysFalse<FiniteElement>::value, "Element can not provide the requested RsultType ");
 
   return t;
 }

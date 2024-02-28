@@ -146,11 +146,12 @@ forward the
    * \tparam RT The type representing the requested result.
    */
   template <template <typename, int, int> class RT>
+  requires(DisplacementBasedElement::template canProvideResultType<RT>())
   auto calculateAt(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
     if (isDisplacementBased())
       return DisplacementBasedElement::template calculateAt<RT>(req, local);
 
-    using RTWrapper = ResultTypeContainer<RT<typename Traits::ctype, Traits::mydim, Traits::worlddim>, true>;
+    using RTWrapper = ResultWrapper<RT<typename Traits::ctype, Traits::mydim, Traits::worlddim>, ResultShape::Vector>;
     using namespace Dune::Indices;
     using namespace Dune::DerivativeDirections;
 
