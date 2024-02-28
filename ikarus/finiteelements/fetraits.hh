@@ -16,27 +16,34 @@ namespace Ikarus {
 /**
  * \brief Traits for handling finite elements.
  *
- * \tparam B The basis type for the finite element.
+ * \tparam BH The basis handler type for the finite element.
+ * \tparam useFlat A boolean indicating if the type of the underlying basis is of the flat or the untouched version.
  * \tparam FER The requirements for the finite element.
  * \tparam useRef Boolean indicating whether to use Eigen::Ref for VectorType and MatrixType.
  */
-template <typename B, typename FER = FERequirements<>, bool useRef = false>
+template <typename BH, bool useFlat, typename FER = FERequirements<>, bool useRef = false>
 struct FETraits
 {
-  /** \brief Type of the basis of the finite element */
-  using Basis = B;
+  /** \brief Type of the basis handler of the finite element */
+  using BasisHandler = BH;
 
   /** \brief Type of the requirements for the finite element */
   using FERequirementType = FER;
 
   /** \brief Type of the flat basis */
-  using FlatBasis = typename Basis::FlatBasis;
+  using FlatBasis = typename BasisHandler::FlatBasis;
+
+  /** \brief Type of the untouched basis */
+  using UntouchedBasis = typename BasisHandler::UntouchedBasis;
+
+  /** \brief Type of the basis version*/
+  using Basis = std::conditional_t<useFlat, FlatBasis, UntouchedBasis>;
 
   /** \brief Type of the local view */
-  using LocalView = typename FlatBasis::LocalView;
+  using LocalView = typename Basis::LocalView;
 
   /** \brief Type of the grid view */
-  using GridView = typename FlatBasis::GridView;
+  using GridView = typename Basis::GridView;
 
   /** \brief Type of the grid element */
   using Element = typename LocalView::Element;

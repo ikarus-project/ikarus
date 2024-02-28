@@ -21,10 +21,9 @@
   #include <dune/localfefunctions/impl/standardLocalFunction.hh>
   #include <dune/localfefunctions/manifolds/realTuple.hh>
 
-  #include <ikarus/finiteelements/febases.hh>
+  #include <ikarus/finiteelements/febase.hh>
   #include <ikarus/finiteelements/fehelper.hh>
   #include <ikarus/finiteelements/ferequirements.hh>
-  #include <ikarus/finiteelements/fetraits.hh>
   #include <ikarus/finiteelements/mechanics/loads.hh>
   #include <ikarus/finiteelements/mechanics/materials.hh>
   #include <ikarus/finiteelements/physicshelper.hh>
@@ -38,25 +37,28 @@ namespace Ikarus {
  *
  * \ingroup mechanics
  *
- * \tparam B The basis type for the finite element.
+ * \tparam BH The basis handler type for the finite element.
  * \tparam FER The requirements for the finite element.
  * \tparam useEigenRef A boolean flag indicating whether to use Eigen references.
+ * \tparam useFlat A boolean indicating if the type of the underlying basis is of the flat or the untouched version.
  */
-template <typename B, typename FER = FERequirements<>, bool useEigenRef = false>
-class LinearElastic : public FEBase<B>,
-                      public Volume<LinearElastic<B, FER, useEigenRef>, FETraits<B, FER, useEigenRef>>,
-                      public Traction<LinearElastic<B, FER, useEigenRef>, FETraits<B, FER, useEigenRef>>
+template <typename BH, typename FER = FERequirements<>, bool useEigenRef = false, bool useFlat = true>
+class LinearElastic : public FEBase<BH, useFlat, FER, useEigenRef>,
+                      public Volume<LinearElastic<BH, FER, useEigenRef, useFlat>,
+                                    typename FEBase<BH, useFlat, FER, useEigenRef>::Traits>,
+                      public Traction<LinearElastic<BH, FER, useEigenRef, useFlat>,
+                                      typename FEBase<BH, useFlat, FER, useEigenRef>::Traits>
 {
 public:
-  using Traits               = FETraits<B, FER, useEigenRef>;
-  using Basis                = typename Traits::Basis;
+  using Base                 = FEBase<BH, useFlat, FER, useEigenRef>;
+  using Traits               = typename Base::Traits;
+  using BasisHandler         = typename Traits::BasisHandler;
   using FlatBasis            = typename Traits::FlatBasis;
   using FERequirementType    = typename Traits::FERequirementType;
   using LocalView            = typename Traits::LocalView;
   using Geometry             = typename Traits::Geometry;
   using GridView             = typename Traits::GridView;
   using Element              = typename Traits::Element;
-  using BaseDisp             = FEBase<Basis>; // Handles globalIndices function
   using VolumeType           = Volume<LinearElastic, Traits>;
   using TractionType         = Traction<LinearElastic, Traits>;
   static constexpr int myDim = Traits::mydim;
@@ -67,7 +69,7 @@ public:
    *
    * \tparam VolumeLoad The type for the volume load function.
    * \tparam NeumannBoundaryLoad The type for the Neumann boundary load function.
-   * \param globalBasis The global basis for the finite element.
+   * \param basisHandler The basis handler for the finite element.
    * \param element The element for which the finite element is constructed.
    * \param emod Young's modulus.
    * \param nu Poisson's ratio.
@@ -76,15 +78,14 @@ public:
    * \param neumannBoundaryLoad Neumann boundary load function (default is LoadDefault).
    */
   template <typename VolumeLoad = utils::LoadDefault, typename NeumannBoundaryLoad = utils::LoadDefault>
-  LinearElastic(const Basis& globalBasis, const typename LocalView::Element& element, double emod, double nu,
+  LinearElastic(const BasisHandler& basisHandler, const typename LocalView::Element& element, double emod, double nu,
                 VolumeLoad volumeLoad = {}, const BoundaryPatch<GridView>* neumannBoundary = nullptr,
                 NeumannBoundaryLoad neumannBoundaryLoad = {})
-      : BaseDisp(globalBasis, element),
+      : Base(basisHandler, element),
         VolumeType(volumeLoad),
         TractionType(neumannBoundary, neumannBoundaryLoad),
         emod_{emod},
         nu_{nu} {
-    this->localView().bind(element);
     auto& firstChild = this->localView().tree().child(0);
     const auto& fe   = firstChild.finiteElement();
     geo_             = std::make_shared<const Geometry>(this->localView().element().geometry());

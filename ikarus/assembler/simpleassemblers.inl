@@ -38,7 +38,8 @@ void VectorFlatAssembler<B, FEC>::assembleRawVectorImpl(const FERequirementType&
     vecLocal.setZero(fe.size());
     dofs.resize(0);
     fe.calculateVector(feRequirements, vecLocal);
-    FEHelper::globalFlatIndices(fe.localView(), dofs);
+    using FEHelper::globalIndices;
+    globalIndices(fe, dofs);
     for (int i = 0; auto id : dofs) {
       assemblyVec(id[0]) += vecLocal(i);
       ++i;
@@ -70,7 +71,8 @@ Eigen::VectorXd& VectorFlatAssembler<B, FEC>::getReducedVectorImpl(const FERequi
     vecLocal.setZero(fe.size());
     dofs.resize(0);
     fe.calculateVector(feRequirements, vecLocal);
-    FEHelper::globalFlatIndices(fe.localView(), dofs);
+    using FEHelper::globalIndices;
+    globalIndices(fe, dofs);
     assert(static_cast<long int>(dofs.size()) == vecLocal.size() && "The returned vector has wrong rowSize!");
     for (int localConstrainedCounter = 0; auto&& dofIndex : dofs) {
       if (this->isConstrained(dofIndex)) {
@@ -135,7 +137,8 @@ Eigen::SparseMatrix<double>& SparseFlatAssembler<B, FEC>::getReducedMatrixImpl(
     A.setZero(fe.size(), fe.size());
     dofs.resize(0);
     fe.calculateMatrix(feRequirements, A);
-    FEHelper::globalFlatIndices(fe.localView(), dofs);
+    using FEHelper::globalIndices;
+    globalIndices(fe, dofs);
     assert(dofs.size() == static_cast<unsigned>(A.rows()) && "The returned matrix has wrong rowSize!");
     assert(dofs.size() == static_cast<unsigned>(A.cols()) && "The returned matrix has wrong colSize!");
     Eigen::Index linearIndex = 0;
@@ -164,7 +167,8 @@ void SparseFlatAssembler<B, FEC>::createOccupationPattern(Eigen::SparseMatrix<do
   std::vector<GlobalIndex> dofs;
   for (auto&& fe : this->finiteElements()) {
     dofs.resize(0);
-    FEHelper::globalFlatIndices(fe.localView(), dofs);
+    using FEHelper::globalIndices;
+    globalIndices(fe, dofs);
     for (auto idi : dofs)
       for (auto idj : dofs)
         vectorOfTriples.emplace_back(idi[0], idj[0], 0.0);
@@ -182,7 +186,8 @@ void SparseFlatAssembler<B, FEC>::createReducedOccupationPattern(Eigen::SparseMa
   std::vector<GlobalIndex> dofs;
   for (auto& fe : this->finiteElements()) {
     dofs.resize(0);
-    FEHelper::globalFlatIndices(fe.localView(), dofs);
+    using FEHelper::globalIndices;
+    globalIndices(fe, dofs);
     for (auto r = 0U; r < dofs.size(); ++r) {
       if (this->isConstrained(dofs[r][0]))
         continue;
@@ -204,7 +209,8 @@ void SparseFlatAssembler<B, FEC>::createLinearDOFsPerElement(Eigen::SparseMatrix
   std::vector<GlobalIndex> dofs;
   for (auto&& fe : this->finiteElements()) {
     dofs.resize(0);
-    FEHelper::globalFlatIndices(fe.localView(), dofs);
+    using FEHelper::globalIndices;
+    globalIndices(fe, dofs);
     elementLinearIndices_.emplace_back(Dune::power(dofs.size(), 2));
     for (Eigen::Index linearIndexOfElement = 0; auto&& c : dofs)
       for (auto&& r : dofs)
@@ -217,7 +223,8 @@ void SparseFlatAssembler<B, FEC>::createLinearDOFsPerElementReduced(Eigen::Spars
   std::vector<GlobalIndex> dofs;
   for (auto&& fe : this->finiteElements()) {
     dofs.resize(0);
-    FEHelper::globalFlatIndices(fe.localView(), dofs);
+    using FEHelper::globalIndices;
+    globalIndices(fe, dofs);
     elementLinearReducedIndices_.emplace_back();
     for (auto r = 0U; r < dofs.size(); ++r) {
       if (this->isConstrained(dofs[r][0]))
@@ -254,7 +261,8 @@ void DenseFlatAssembler<B, FEC>::assembleRawMatrixImpl(const FERequirementType& 
     matLocal.setZero(fe.size(), fe.size());
     dofs.resize(0);
     fe.calculateMatrix(feRequirements, matLocal);
-    FEHelper::globalFlatIndices(fe.localView(), dofs);
+    using FEHelper::globalIndices;
+    globalIndices(fe, dofs);
     for (auto i = 0; auto idi : dofs) {
       for (auto j = 0; auto idj : dofs) {
         assemblyMat(idi[0], idj[0]) += matLocal(i, j);
@@ -295,7 +303,8 @@ Eigen::MatrixXd& DenseFlatAssembler<B, FEC>::getReducedMatrixImpl(const FERequir
     matLocal.setZero(fe.size(), fe.size());
     dofs.resize(0);
     fe.calculateMatrix(feRequirements, matLocal);
-    FEHelper::globalFlatIndices(fe.localView(), dofs);
+    using FEHelper::globalIndices;
+    globalIndices(fe, dofs);
     assert(dofs.size() == static_cast<unsigned>(matLocal.rows()) && "The returned matrix has wrong rowSize!");
     assert(dofs.size() == static_cast<unsigned>(matLocal.cols()) && "The returned matrix has wrong colSize!");
     for (auto r = 0U; r < dofs.size(); ++r) {

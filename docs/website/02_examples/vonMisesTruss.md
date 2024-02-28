@@ -12,13 +12,11 @@ It must be decorated with `AutoDiffFE` as well to compute the stiffness matrix a
 It is constructed as shown below:
 
 ```cpp
-Truss(const Basis &basis, const typename LocalView::Element &element, double p_EA)
-    : BaseDisp(basis, element), EA{p_EA} {
-  this->localView().bind(element);
-}
+Truss(const BasisHandler &basisHandler, const typename LocalView::Element &element, double p_EA)
+    : Base(basisHandler, element), EA{p_EA} {}
 ```
 
-It takes a reference to the basis function (`&basis`), the element (`&element`), and the axial stiffness of the
+It takes a reference to the basis handler (`&basisHandler`), the element (`&element`), and the axial stiffness of the
 truss structure (`p_EA`) as arguments during construction.
 
 `ScalarType calculateScalarImpl(const FERequirementType &par, const Eigen::VectorX<ScalarType> &dx)` is

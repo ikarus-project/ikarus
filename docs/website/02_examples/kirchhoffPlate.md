@@ -14,13 +14,12 @@ It inherits from `FEBase` and it must be decorated with `AutoDiffFE` as well to 
 It is constructed as shown below:
 
 ```cpp
-KirchhoffPlate(const Basis &basis, const typename LocalView::Element &element, double p_Emodul, double p_nu,
-               double p_thickness)
-    : BaseDisp(basis, element),
+KirchhoffPlate(const BasisHandler &basisHandler, const typename LocalView::Element &element, double p_Emodul,
+               double p_nu, double p_thickness)
+    : Base(basisHandler, element),
       Emodul{p_Emodul},
       nu{p_nu},
       thickness{p_thickness} {
-  this->localView().bind(element);
   geometry_.emplace(this->localView().element().geometry());
 }
 ```

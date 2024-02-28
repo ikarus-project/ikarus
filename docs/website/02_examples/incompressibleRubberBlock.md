@@ -8,22 +8,24 @@ for such a system is defined in the `Solid struct` by the function
 `calculateScalarImpl(const FERequirementType &par, const Eigen::VectorX<ScalarType> &dx)`.
 This function uses the principles of automatic differentiation to provide the stiffness matrix and
 other necessary quantities to perform a static structural analysis.
+It inherits from `FEBase` which provides information about the `localView` of the element.
 
 ## Code highlights
 
-The `struct` named `Solid` is created which is not inherited from any class. It is constructed as shown below:
+The `struct` named `Solid` is created. It is constructed as shown below:
 
 ```cpp
-Solid(const Basis &basis, const typename LocalView::Element &element, double emod, double nu)
-    : localView_{basis.localView()}, emod_{emod}, nu_{nu} {
-  localView_.bind(element);
-  mu_       = emod_ / (2 * (1 + nu_));
-  lambdaMat = convertLameConstants({.emodul = emod_, .nu = nu_}).toLamesFirstParameter();
+Solid(const BasisHandler &basisHandler, const typename LocalView::Element &element, double emod, double nu)
+      : Base(basisHandler, element), emod_{emod}, nu_{nu} {
+    mu_       = emod_ / (2 * (1 + nu_));
+    lambdaMat = convertLameConstants({.emodul = emod_, .nu = nu_}).toLamesFirstParameter();
 }
 ```
 
-It takes a reference to the basis function (`&basis`), the element (`&element`), and the material parameters, namely Young's modulus
-(`emod`) and Poisson's ratio (`nu`), as arguments during construction. The function `convertLameConstants()` is a helper function
+It takes a reference to the basis handler (`&basisHandler`),
+the element (`&element`), and the material parameters, namely Young's modulus
+(`emod`) and Poisson's ratio (`nu`), as arguments during construction.
+The function `convertLameConstants()` is a helper function
 to switch between the Lame parameters.
 
 `ScalarType calculateScalarImpl(const FERequirementType &par, const Eigen::VectorX<ScalarType> &dx)` is

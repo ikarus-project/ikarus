@@ -5,8 +5,7 @@
 
 #include <dune/localfefunctions/manifolds/realTuple.hh>
 
-#include <ikarus/finiteelements/ferequirements.hh>
-#include <ikarus/finiteelements/physicshelper.hh>
+#include <ikarus/utils/traversal.hh>
 
 namespace Ikarus::FEHelper {
 /**
@@ -39,44 +38,48 @@ auto localSolutionBlockVector(const typename Traits::FERequirementType::Solution
   return localX;
 }
 
-/**
- * \brief A function which loops over all the nodes of a tree and performs different actions
- * for a power node and a leaf node depending on the corresponding functor passed.
- *
- * \details This function is inspired from the function Dune::TypeTree::Detail::forEachNode
- * available in dune/typetree/traversal.hh
- *
- * \tparam T Type of tree.
- * \tparam ChildIndex Type of the index of the child.
- * \tparam PowerFunc Type of the functor called for a power node.
- * \tparam LeafFunc Type of the functor called for a leaf node.
- * \param tree Tree whose nodes are to be looped over.
- * \param childIndex The index of the child.
- * \param powerFunc A functor to be called for a power node.
- * \param leafFunc A functor to be called for a leaf node.
- */
-template <class T, class ChildIndex, class PowerFunc, class LeafFunc>
-void forEachLeafOrPowerNode(T&& tree, ChildIndex&& childIndex, PowerFunc&& powerFunc, LeafFunc&& leafFunc) {
-  using Tree = std::decay_t<T>;
-  if constexpr (Tree::isLeaf) {
-    leafFunc(tree);
-  } else if constexpr (Tree::isPower) {
-    if constexpr (Tree::template Child<Dune::Indices::_0>::Type::isComposite) {
-      auto indices = std::make_index_sequence<Tree::degree()>{};
-      Dune::Hybrid::forEach(indices, [&](auto i) { forEachLeafOrPowerNode(tree.child(i), i, powerFunc, leafFunc); });
-    } else
-      powerFunc(tree, childIndex);
-  } else {
-    auto indices = std::make_index_sequence<Tree::degree()>{};
-    Dune::Hybrid::forEach(indices, [&](auto i) { forEachLeafOrPowerNode(tree.child(i), i, powerFunc, leafFunc); });
+namespace Impl {
+  /**
+   * \brief A helper function to handle global indices of a scalar basis at a leaf node.
+   *
+   * \tparam LocalView Type of the local view
+   * \tparam Node Type of the leaf node
+   *
+   * \param localView Local view of the element.
+   * \param node Leaf node of a tree.
+   * \param globalIndices Output vector to store global indices.
+   */
+  template <typename LocalView, typename Node>
+  void leafNodeIndices(const LocalView& localView, const Node& node,
+                       std::vector<typename LocalView::MultiIndex>& globalIndices) {
+    const auto& fe = node.finiteElement();
+    for (size_t i = 0; i < fe.size(); ++i)
+      globalIndices.push_back(localView.index(node.localIndex(i)));
   }
-}
+
+  /**
+   * \brief A helper function to handle global indices of a power basis at a power node.
+   *
+   * \tparam LocalView Type of the local view
+   * \tparam Node Type of the power node
+   *
+   * \param localView Local view of the element.
+   * \param node Power node of a tree.
+   * \param globalIndices Output vector to store global indices.
+   */
+  template <typename LocalView, typename Node>
+  void powerNodeIndices(const LocalView& localView, const Node& node,
+                        std::vector<typename LocalView::MultiIndex>& globalIndices) {
+    const auto& fe         = node.child(0).finiteElement();
+    const int childrenSize = node.degree();
+    for (size_t i = 0; i < fe.size(); ++i)
+      for (int j = 0; j < childrenSize; ++j)
+        globalIndices.push_back(localView.index(node.child(j).localIndex(i)));
+  }
+} // namespace Impl
 
 /**
- * \brief Get the global flat indices for the provided basis.
- *
- * \details The global indices are collected in a FlatInterLeaved order. I.e. x_0, y_0, z_0, ..., x_n, y_n, z_n
- * This function can handle a scalar basis, power basis, and a composite basis.
+ * \brief Get the global indices for the provided local view of an element.
  *
  * \tparam LocalView Type of the local view
  *
@@ -84,34 +87,36 @@ void forEachLeafOrPowerNode(T&& tree, ChildIndex&& childIndex, PowerFunc&& power
  * \param globalIndices Output vector to store global indices.
  */
 template <typename LocalView>
-void globalFlatIndices(const LocalView& localView, std::vector<typename LocalView::MultiIndex>& globalIndices) {
+void globalIndicesFromLocalView(const LocalView& localView,
+                                std::vector<typename LocalView::MultiIndex>& globalIndices) {
   globalIndices.clear();
   using namespace Dune::Indices;
+  using namespace FEHelper::Impl;
 
-  /** \brief Functor to obtain global indices of a leaf node. */
-  auto leafOpFunc = [&](auto&& node) {
-    const auto& fe = node.finiteElement();
-    for (size_t i = 0; i < fe.size(); ++i) {
-      globalIndices.push_back(localView.index(node.localIndex(i)));
-    }
+  auto leafOpFunc = [&](auto&& node, [[maybe_unused]] auto&& treePath) {
+    leafNodeIndices(localView, node, globalIndices);
   };
 
-  /** \brief Functor to obtain global indices of a power node. */
-  auto powerOpFunc = [&](auto&& node, auto&& ci) {
-    if constexpr (requires { node.child(ci).finiteElement(); }) {
-      const auto& fe         = node.child(ci).finiteElement();
-      const int childrenSize = node.degree();
-      for (size_t i = 0; i < fe.size(); ++i)
-        for (int j = 0; j < childrenSize; ++j)
-          globalIndices.push_back(localView.index(node.child(j).localIndex(i)));
-    } else {
-      const int childrenSize = node.child(ci, 0).degree();
-      const auto& fe         = node.child(ci, 0).finiteElement();
-      for (size_t i = 0; i < fe.size(); ++i)
-        for (int j = 0; j < childrenSize; ++j)
-          globalIndices.push_back(localView.index(node.child(ci, j).localIndex(i)));
-    }
+  auto powerOpFunc = [&](auto&& node, [[maybe_unused]] auto&& treePath) {
+    powerNodeIndices(localView, node, globalIndices);
   };
-  forEachLeafOrPowerNode(localView.tree(), _0, powerOpFunc, leafOpFunc);
+
+  utils::forEachLeafOrPowerLeafNode(localView.tree(), Dune::TypeTree::hybridTreePath(), powerOpFunc, leafOpFunc);
+}
+
+/**
+ * \brief Get the global indices for the provided finite element.
+ *
+ * \details The global indices are collected in a FlatInterLeaved order or in BlockedInterleaved order.
+ * This function can handle a scalar basis, power basis, and a composite basis.
+ *
+ * \tparam FiniteElement Type of the local view
+ *
+ * \param fe The finite element.
+ * \param globalIndices Output vector to store global indices.
+ */
+template <typename FiniteElement>
+void globalIndices(const FiniteElement& fe, std::vector<typename FiniteElement::LocalView::MultiIndex>& globalIndices) {
+  globalIndicesFromLocalView(fe.localView(), globalIndices);
 }
 } // namespace Ikarus::FEHelper

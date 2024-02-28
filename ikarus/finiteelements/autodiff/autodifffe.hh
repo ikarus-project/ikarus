@@ -12,7 +12,6 @@
 #include <autodiff/forward/dual/eigen.hpp>
 
 #include <ikarus/finiteelements/ferequirements.hh>
-#include <ikarus/finiteelements/fetraits.hh>
 #include <ikarus/utils/traits.hh>
 
 namespace Ikarus {
@@ -21,18 +20,17 @@ namespace Ikarus {
  * \brief AutoDiffFE class, an automatic differentiation wrapper for finite elements.
  *
  * \tparam FEImpl The type of the original finite element, which does not implement the derivatives
- * \tparam FER Type of the Finite Element Requirements.
- * \tparam useEigenRef A boolean indicating whether to use Eigen::Ref for references types in calculateMatrix,...
  * \tparam forceAutoDiff A boolean indicating whether to force the use of automatic differentiation, even when the
  * real element implements the derivatives.
  */
-template <typename FEImpl, typename FER = FERequirements<>, bool useEigenRef = false, bool forceAutoDiff = false>
+template <typename FEImpl, bool forceAutoDiff = false>
 class AutoDiffFE : public FEImpl
 {
 public:
   using RealFE            = FEImpl;                             ///< Type of the base finite element.
-  using Basis             = typename RealFE::Basis;             ///< Type of the basis.
-  using Traits            = FETraits<Basis, FER, useEigenRef>;  ///< Type traits for local view.
+  using BasisHandler      = typename RealFE::BasisHandler;      ///< Type of the basis handler.
+  using Base              = typename RealFE::Base;              ///< Type of the FEBase.
+  using Traits            = typename Base::Traits;              ///< Type traits for local view.
   using LocalView         = typename Traits::LocalView;         ///< Type of the local view.
   using Element           = typename Traits::Element;           ///< Type of the element.
   using FERequirementType = typename Traits::FERequirementType; ///< Type of the Finite Element Requirements.

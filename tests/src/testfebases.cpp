@@ -17,7 +17,7 @@
 
 using Dune::TestSuite;
 
-#include <ikarus/finiteelements/febases.hh>
+#include <ikarus/finiteelements/febase.hh>
 #include <ikarus/finiteelements/fehelper.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/init.hh>
@@ -25,6 +25,7 @@ using Dune::TestSuite;
 /**
  * \brief A helper function to get a FEBase.
  *
+ * \tparam useFlat A boolean indicating if the type of the underlying basis is of the flat or the untouched version.
  * \tparam GridView Type of the grid view
  * \tparam PreBasis Type of the pre basis
  * *
@@ -33,50 +34,50 @@ using Dune::TestSuite;
  *
  * \return FEBase corresponding to the gridView and preBasis.
  */
-template <typename GridView, typename PreBasis>
-auto getBasis(const GridView& gridView, const PreBasis& preBasis) {
-  const auto basis      = Ikarus::makeBasis(gridView, preBasis);
-  const auto& localView = basis.flat().localView();
-  auto element          = elements(gridView).begin();
-  return Ikarus::FEBase<decltype(basis)>(basis, *element);
+template <bool useFlat, typename GridView, typename PreBasis>
+auto getFEBase(const GridView& gridView, const PreBasis& preBasis) {
+  const auto basis = Ikarus::makeBasis(gridView, preBasis);
+  auto element     = elements(gridView).begin();
+  return Ikarus::FEBase<decltype(basis), useFlat>(basis, *element);
 }
 
 /**
  * \brief A test suite to test a set of bases.
  * \tparam numberOfBases Number of bases to be tested.
- * \tparam Bases Type of different bases.
+ * \tparam FEBases Type of different FEBases.
  * \param expectedNumberOfChildren Expected number of children for each basis.
  * \param expectedSize Expected size for each basis.
- * \param bases A tuple of bases.
+ * \param feBases A tuple of FEBases.
  * \param basisName Name of the types of bases.
  * \return Test suite object.
  */
-template <size_t numberOfBases, typename... Bases>
-auto BasisTest(const std::array<int, numberOfBases>& expectedNumberOfChildren,
-               const std::array<int, numberOfBases>& expectedSize, const std::tuple<Bases...>& bases,
-               const std::string& basisName) {
-  static_assert(std::tuple_size_v<std::tuple<Bases...>> == numberOfBases, "Input size mismatch in BasisTest.");
-  TestSuite t("BasisTest");
+template <size_t numberOfBases, typename... FEBases>
+auto FEBaseAndIndicesTest(const std::array<int, numberOfBases>& expectedNumberOfChildren,
+                          const std::array<int, numberOfBases>& expectedSize, const std::tuple<FEBases...>& feBases,
+                          const std::string& basisName) {
+  static_assert(std::tuple_size_v<std::tuple<FEBases...>> == numberOfBases,
+                "Input size mismatch in FEBaseAndIndicesTest.");
+  TestSuite t("FEBaseAndIndicesTest");
   Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<numberOfBases>()), [&](const auto i) {
-    const auto basis          = std::get<i>(bases);
+    const auto febase         = std::get<i>(feBases);
     const std::string message = " for i = " + std::to_string(i) + " -> " + basisName;
-    using MultiIndex          = typename std::remove_cvref_t<decltype(basis.localView())>::MultiIndex;
+    using MultiIndex          = typename std::remove_cvref_t<decltype(febase.localView())>::MultiIndex;
     static_assert(Dune::IsIndexable<MultiIndex>(), "MultiIndex must support operator[]");
-    checkScalars(t, basis.numberOfChildren(), expectedNumberOfChildren[i],
+    checkScalars(t, static_cast<int>(febase.localView().tree().degree()), expectedNumberOfChildren[i],
                  " Number of children is incorrect" + message);
-    checkScalars(t, static_cast<int>(basis.size()), expectedSize[i], " Size is incorrect" + message);
+    checkScalars(t, static_cast<int>(febase.size()), expectedSize[i], " Size is incorrect" + message);
     std::vector<MultiIndex> dofs;
-    Ikarus::FEHelper::globalFlatIndices(basis.localView(), dofs);
-    checkScalars(t, dofs.size(), basis.size(), " Size of dofs and basis is not equal" + message);
+    Ikarus::FEHelper::globalIndicesFromLocalView(febase.localView(), dofs);
+    checkScalars(t, dofs.size(), febase.size(), " Size of dofs and basis is not equal" + message);
     t.check(!dofs.empty(), "dofs is empty" + message);
     std::ranges::sort(dofs);
-    t.check(dofs[0] == 0, "Smallest index contains a non-zero entry" + message);
     const bool hasDuplicates = std::adjacent_find(dofs.begin(), dofs.end()) == dofs.end();
     t.check(hasDuplicates) << "The sorted dofs vector has duplicates" + message;
   });
   return t;
 }
 
+template <bool useFlat>
 auto FEBaseTest() {
   TestSuite t("FEBaseTest");
   using Grid = Dune::YaspGrid<2>;
@@ -117,40 +118,40 @@ auto FEBaseTest() {
       composite(lagrangeDGPowerPreBasis, nedelecScalarPreBasis, raviartThomasScalarPreBasis);
 
   /// Types of scalar bases
-  const auto scalar1 = getBasis(gridView, firstOrderLagrangePreBasis);
-  const auto scalar2 = getBasis(gridView, secondOrderLagrangePreBasis);
+  const auto scalar1 = getFEBase<useFlat>(gridView, firstOrderLagrangePreBasis);
+  const auto scalar2 = getFEBase<useFlat>(gridView, secondOrderLagrangePreBasis);
 
   /// Types of power bases
-  const auto power1 = getBasis(gridView, firstOrderLagrangePowerPreBasis);
-  const auto power2 = getBasis(gridView, secondOrderLagrangePowerPreBasis);
+  const auto power1 = getFEBase<useFlat>(gridView, firstOrderLagrangePowerPreBasis);
+  const auto power2 = getFEBase<useFlat>(gridView, secondOrderLagrangePowerPreBasis);
 
   /// Types of composite bases
-  const auto composite1 = getBasis(gridView, scalarScalarCompositePreBasis);
-  const auto composite2 = getBasis(gridView, scalarPowerCompositePreBasis);
-  const auto composite3 = getBasis(gridView, powerScalarCompositePreBasis);
-  const auto composite4 = getBasis(gridView, powerPowerCompositePreBasis);
-  const auto composite5 = getBasis(gridView, scalarCompositePreBasis);
-  const auto composite6 = getBasis(gridView, powerCompositePreBasis);
-  const auto composite7 = getBasis(gridView, combinedPreBasis);
-  const auto composite8 = getBasis(gridView, compositePowerCombinedBasis);
+  const auto composite1 = getFEBase<useFlat>(gridView, scalarScalarCompositePreBasis);
+  const auto composite2 = getFEBase<useFlat>(gridView, scalarPowerCompositePreBasis);
+  const auto composite3 = getFEBase<useFlat>(gridView, powerScalarCompositePreBasis);
+  const auto composite4 = getFEBase<useFlat>(gridView, powerPowerCompositePreBasis);
+  const auto composite5 = getFEBase<useFlat>(gridView, scalarCompositePreBasis);
+  const auto composite6 = getFEBase<useFlat>(gridView, powerCompositePreBasis);
+  const auto composite7 = getFEBase<useFlat>(gridView, combinedPreBasis);
+  const auto composite8 = getFEBase<useFlat>(gridView, compositePowerCombinedBasis);
 
   /// Types of special bases
-  const auto special1 = getBasis(gridView, lagrangeDGPowerPreBasis);
-  const auto special2 = getBasis(gridView, nedelecScalarPreBasis);
-  const auto special3 = getBasis(gridView, raviartThomasScalarPreBasis);
-  const auto special4 = getBasis(gridView, specialCompositePreBasis);
+  const auto special1 = getFEBase<useFlat>(gridView, lagrangeDGPowerPreBasis);
+  const auto special2 = getFEBase<useFlat>(gridView, nedelecScalarPreBasis);
+  const auto special3 = getFEBase<useFlat>(gridView, raviartThomasScalarPreBasis);
+  const auto special4 = getFEBase<useFlat>(gridView, specialCompositePreBasis);
 
-  t.subTest(BasisTest<2>({0, 0}, {4, 9}, std::make_tuple(scalar1, scalar2), "Scalar basis"));
-  t.subTest(BasisTest<2>({2, 5}, {8, 45}, std::make_tuple(power1, power2), "Power Basis"));
-  t.subTest(BasisTest<6>({2, 2, 2, 2, 1, 1}, {13, 49, 17, 53, 4, 8},
-                         std::make_tuple(composite1, composite2, composite3, composite4, composite5, composite6),
-                         "Composite Basis"));
-  t.subTest(BasisTest<1>({2}, {106}, std::make_tuple(composite7), "Combined Composite Basis"));
-  t.subTest(BasisTest<1>({2}, {1069}, std::make_tuple(composite8), "Combined Composite and Power Basis"));
-  t.subTest(BasisTest<1>({6}, {96}, std::make_tuple(special1), "Lagrange DG Basis"));
-  t.subTest(BasisTest<1>({0}, {4}, std::make_tuple(special2), "Nedelec Basis"));
-  t.subTest(BasisTest<1>({0}, {24}, std::make_tuple(special3), "Raviart Thomas Basis"));
-  t.subTest(BasisTest<1>({3}, {124}, std::make_tuple(special4), "Special Composite Basis"));
+  t.subTest(FEBaseAndIndicesTest<2>({0, 0}, {4, 9}, std::make_tuple(scalar1, scalar2), "Scalar basis"));
+  t.subTest(FEBaseAndIndicesTest<2>({2, 5}, {8, 45}, std::make_tuple(power1, power2), "Power Basis"));
+  t.subTest(FEBaseAndIndicesTest<6>(
+      {2, 2, 2, 2, 1, 1}, {13, 49, 17, 53, 4, 8},
+      std::make_tuple(composite1, composite2, composite3, composite4, composite5, composite6), "Composite Basis"));
+  t.subTest(FEBaseAndIndicesTest<2>({2, 2}, {106, 1069}, std::make_tuple(composite7, composite8),
+                                    "Combined Composite Basis"));
+  t.subTest(FEBaseAndIndicesTest<1>({6}, {96}, std::make_tuple(special1), "Lagrange DG Basis"));
+  t.subTest(FEBaseAndIndicesTest<1>({0}, {4}, std::make_tuple(special2), "Nedelec Basis"));
+  t.subTest(FEBaseAndIndicesTest<1>({0}, {24}, std::make_tuple(special3), "Raviart Thomas Basis"));
+  t.subTest(FEBaseAndIndicesTest<1>({3}, {124}, std::make_tuple(special4), "Special Composite Basis"));
 
   return t;
 }
@@ -159,6 +160,7 @@ int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t;
 
-  t.subTest(FEBaseTest());
+  t.subTest(FEBaseTest<true>());
+  t.subTest(FEBaseTest<false>());
   return t.exit();
 }

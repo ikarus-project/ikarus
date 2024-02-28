@@ -68,10 +68,10 @@ if(req.isResultRequested( ResultType::cauchyStress)) {
     `#!cpp ResultTypeMap<double>::ResultArray` is an object of type `#!cpp Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,0,3,3>`.
     Thus, the maximum size of `result` is limited to a 3x3 matrix. This is used to circumvent dynamic memory allocations again.
 
-The method `FEHelper::globalFlatIndices` is used
+The method `FEHelper::globalIndices` is used
 to write a finite element's global indices to an output parameter of type `std::vector<LocalView::MultiIndex>`.
 This information originates from a `basis` object.
-Here `FlatInterleaved` type of indexing is assumed.
+It works for both `FlatInterleaved` and `BlockedInterleaved` types of indexing.
 See existing implementations for details.
 
 ## Linear and Non-linear Elasticity

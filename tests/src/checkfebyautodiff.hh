@@ -31,7 +31,7 @@ auto checkFEByAutoDiff(const GridView& gridView, const PreBasis& pb, const Eleme
 
     const std::string feClassName = Dune::className(fe);
 
-    using AutoDiffBasedFE = Ikarus::AutoDiffFE<decltype(fe), typename decltype(fe)::FERequirementType, false, true>;
+    using AutoDiffBasedFE = Ikarus::AutoDiffFE<decltype(fe), true>;
     AutoDiffBasedFE feAutoDiff(fe);
 
     Eigen::MatrixXd K, KAutoDiff;

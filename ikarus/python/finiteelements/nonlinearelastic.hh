@@ -24,7 +24,7 @@ template <class NonLinearElastic, class... options>
 void registerNonLinearElastic(pybind11::handle scope, pybind11::class_<NonLinearElastic, options...> cls) {
   using pybind11::operator""_a;
 
-  using GlobalBasis    = typename NonLinearElastic::Basis;
+  using GlobalBasis    = typename NonLinearElastic::BasisHandler;
   using FlatBasis      = typename NonLinearElastic::FlatBasis;
   using GridView       = typename GlobalBasis::GridView;
   using Element        = typename NonLinearElastic::Element;
