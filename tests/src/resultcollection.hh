@@ -28,7 +28,7 @@ inline auto linearStressResultsOfSquare = []<typename NOP, typename FE>(NOP& non
   auto feRequirements =
       typename FE::FERequirementType().insertGlobalSolution(Ikarus::FESolutions::displacement, displacement);
 
-  return std::make_tuple(feRequirements, expectedStress, Ikarus::utils::referenceElementSubEntitiyPositions(fe));
+  return std::make_tuple(feRequirements, expectedStress, Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
 inline auto linearVonMisesResultsOfSquare = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
@@ -43,7 +43,7 @@ inline auto linearVonMisesResultsOfSquare = []<typename NOP, typename FE>(NOP& n
   auto feRequirements =
       typename FE::FERequirementType().insertGlobalSolution(Ikarus::FESolutions::displacement, displacement);
 
-  return std::make_tuple(feRequirements, expectedStress, Ikarus::utils::referenceElementSubEntitiyPositions(fe));
+  return std::make_tuple(feRequirements, expectedStress, Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
 inline auto linearPrincipalStressResultsOfSquare = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
@@ -63,7 +63,7 @@ inline auto linearPrincipalStressResultsOfSquare = []<typename NOP, typename FE>
   auto feRequirements =
       typename FE::FERequirementType().insertGlobalSolution(Ikarus::FESolutions::displacement, displacement);
 
-  return std::make_tuple(feRequirements, expectedStress, Ikarus::utils::referenceElementSubEntitiyPositions(fe));
+  return std::make_tuple(feRequirements, expectedStress, Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
 inline auto linearStressResultsOfCube = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
@@ -87,7 +87,7 @@ inline auto linearStressResultsOfCube = []<typename NOP, typename FE>(NOP& nonLi
   auto feRequirements =
       typename FE::FERequirementType().insertGlobalSolution(Ikarus::FESolutions::displacement, displacement);
 
-  return std::make_tuple(feRequirements, expectedStress, Ikarus::utils::referenceElementSubEntitiyPositions(fe));
+  return std::make_tuple(feRequirements, expectedStress, Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
 inline auto linearVonMisesResultsOfCube = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
@@ -103,7 +103,7 @@ inline auto linearVonMisesResultsOfCube = []<typename NOP, typename FE>(NOP& non
   auto feRequirements =
       typename FE::FERequirementType().insertGlobalSolution(Ikarus::FESolutions::displacement, displacement);
 
-  return std::make_tuple(feRequirements, expectedStress, Ikarus::utils::referenceElementSubEntitiyPositions(fe));
+  return std::make_tuple(feRequirements, expectedStress, Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
 inline auto linearPrincipalStressResultsOfCube = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
@@ -127,7 +127,7 @@ inline auto linearPrincipalStressResultsOfCube = []<typename NOP, typename FE>(N
   auto feRequirements =
       typename FE::FERequirementType().insertGlobalSolution(Ikarus::FESolutions::displacement, displacement);
 
-  return std::make_tuple(feRequirements, expectedStress, Ikarus::utils::referenceElementSubEntitiyPositions(fe));
+  return std::make_tuple(feRequirements, expectedStress, Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
 inline auto linearStressResultsOfTriangle = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
@@ -143,7 +143,7 @@ inline auto linearStressResultsOfTriangle = []<typename NOP, typename FE>(NOP& n
   auto feRequirements =
       typename FE::FERequirementType().insertGlobalSolution(Ikarus::FESolutions::displacement, displacement);
 
-  return std::make_tuple(feRequirements, expectedStress, Ikarus::utils::referenceElementSubEntitiyPositions(fe));
+  return std::make_tuple(feRequirements, expectedStress, Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
 inline auto linearStressResultsOfTetrahedron = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
@@ -160,7 +160,7 @@ inline auto linearStressResultsOfTetrahedron = []<typename NOP, typename FE>(NOP
   auto feRequirements =
       typename FE::FERequirementType().insertGlobalSolution(Ikarus::FESolutions::displacement, displacement);
 
-  return std::make_tuple(feRequirements, expectedStress, Ikarus::utils::referenceElementSubEntitiyPositions(fe));
+  return std::make_tuple(feRequirements, expectedStress, Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
 template <typename CompileTimeMatrix>

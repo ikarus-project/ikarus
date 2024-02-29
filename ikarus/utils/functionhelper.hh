@@ -44,11 +44,11 @@ void obtainLagrangeNodePositions(const LV& localView,
  * \ingroup utils
  * \tparam FE Type of the finite element
  * \param fe finite element
- * \param codim codim of requested subentity, defaults to vertices
+ * \param codim codim of requested subentity
  * \return view over the position of the subenties
  */
 template <typename FE>
-auto referenceElementSubEntitiyPositions(FE& fe, const int codim = FE::Traits::mydim) {
+auto referenceElementSubEntityPositions(FE& fe, int codim) {
   constexpr int dim            = FE::Traits::mydim;
   const auto& element          = fe.gridElement();
   const auto& referenceElement = Dune::referenceElement<double, dim>(element.type());
@@ -56,6 +56,18 @@ auto referenceElementSubEntitiyPositions(FE& fe, const int codim = FE::Traits::m
 
   auto getPosition = [=](const int i) { return referenceElement.position(i, codim); };
   return std::views::transform(std::views::iota(0, numberOfVertices), getPosition);
+}
+
+/**
+ * \brief A function to obtain the local coordinates the vertices of an FiniteElement
+ * \ingroup utils
+ * \tparam FE Type of the finite element
+ * \param fe finite element
+ * \return
+ */
+template <typename FE>
+auto referenceElementVertexPositions(FE& fe) {
+  return referenceElementSubEntityPositions(fe, FE::Traits::mydim);
 }
 
 } // namespace Ikarus::utils

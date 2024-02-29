@@ -77,7 +77,7 @@ namespace ResultType {
   }
 
 /**
- * \brief Used to refister a symmetric ResultType with compile-time fixed rows and columns (uses Voigt notation)
+ * \brief Used to register a symmetric ResultType with compile-time fixed rows and columns (uses Voigt notation)
  * \param resultTypeName name of the ResultType
  * \param rowsExpr expression for rows, e.g. `gridDim` or `worldDim`
  * \param colsExpr expression for rows, e.g. `gridDim` or `worldDim`
@@ -88,7 +88,7 @@ namespace ResultType {
                            Ikarus::Impl::VectorizeWithVoigt<strainlike>, Ikarus::Impl::MatricizeWithVoigt<strainlike>)
 
   /**
-   * \brief Used to refister a general ResultType with potentially dynamic size without reserved memeroy
+   * \brief Used to register a general ResultType with potentially dynamic size without reserved memeroy
    * rows and columns
    * \param resultTypeName name of the ResultType
    * \param rowsExpr expression for rows, e.g. `Eigen::Dynamic` or `worldDim`
@@ -98,7 +98,7 @@ namespace ResultType {
   REGISTER_RESULTTYPE_IMPL(resultTypeName, rowsExpr, colsExpr, Ikarus::Impl::VectorizeGeneric, \
                            Ikarus::Impl::MatricizeGeneric)
   /**
-   * \brief Used to refister a general ResultType with potentially dynamic size and defined maximum amount of
+   * \brief Used to register a general ResultType with potentially dynamic size and defined maximum amount of
    * rows and columns
    * \param resultTypeName name of the ResultType
    * \param rowsExpr expression for rows, e.g. `Eigen::Dynamic` or `worldDim`
@@ -110,7 +110,7 @@ namespace ResultType {
   REGISTER_RESULTTYPE_IMPL(resultTypeName, rowsExpr, colsExpr, MaxRowsExpr, MaxColsExpr,           \
                            Ikarus::Impl::VectorizeGeneric, Ikarus::Impl::MatricizeGeneric)
 /**
- * \brief Used to refister a general ResultType with potentially dynamic size, with reserved memory according to
+ * \brief Used to register a general ResultType with potentially dynamic size, with reserved memory according to
  * passed in rowsExpr and colsExpr
  * \param resultTypeName name of the ResultType
  * \param rowsExpr expression for rows, e.g. `Eigen::Dynamic` or `worldDim`
@@ -141,8 +141,7 @@ namespace ResultType {
 enum class ResultShape
 {
   Vector,
-  Matrix,
-  Scalar
+  Matrix
 };
 
 /**
