@@ -19,6 +19,8 @@
 #include <dune/python/pybind11/pybind11.h>
 #include <dune/python/pybind11/stl.h>
 
+#include <spdlog/spdlog.h>
+
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/finiteelements/mechanics/linearelastic.hh>
 #include <ikarus/utils/basis.hh>
@@ -122,8 +124,33 @@ void registerElement(pybind11::handle scope, pybind11::class_<FE, options...> cl
     cls.def("materialTangent", [](FE& self) { return self.materialTangent(); });
 }
 
-template <bool defaultInitializers = true, class FE, class... options, typename Args...>
-void registerElement(pybind11::handle scope, pybind11::class_<FE, options...> cls, std::tuple<Args...> restultTypes) {
-  Dune::Hybrid::forEach(resultTypes, [](auto stringRepr) { if (stringRepr == "linearStress") })
+template <bool defaultInitializers = true, class FE, class... options>
+void registerCalculateAt(pybind11::handle scope, pybind11::class_<FE, options...> cls, auto restultTypesTuple) {
+  using Traits         = typename FE::Traits;
+  using FERequirements = typename FE::FERequirementType;
+  cls.def(
+      "calculateAt",
+      [&](FE& self, const FERequirements& req, const Dune::FieldVector<double, Traits::mydim>& local,
+          std::string resType) {
+        Eigen::VectorXd result;
+        bool success = false;
+        Dune::Hybrid::forEach(restultTypesTuple, [&](auto i) {
+          using RT = typename std::invoke_result_t<decltype(i)>;
+          if (resType == toString<RT::template Rebind>()) {
+            success = true;
+            result  = self.template calculateAt<RT::template Rebind>(req, local).asVec();
+          }
+        });
+        if (success)
+          return result;
+        DUNE_THROW(Dune::NotImplemented, "Element doesn't support ResultType " + resType);
+      },
+      pybind11::arg("feRequirements"), pybind11::arg("local"), pybind11::arg("resultType"));
+}
+
+template <template <typename, int, int> class RT>
+auto makeRT() {
+  return Impl::DummyRT<RT>{};
+}
 
 } // namespace Ikarus::Python

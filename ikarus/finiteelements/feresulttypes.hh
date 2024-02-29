@@ -71,6 +71,9 @@ namespace ResultType {
     using type       = Eigen::Matrix<ScalarType, rowsExpr, colsExpr, 0, MaxRowsExpr, MaxColsExpr>;              \
     using Vectorizer = VectorizeStruct;                                                                         \
     using Matricizer = MatricizeStruct;                                                                         \
+                                                                                                                \
+    template <typename ScalarType_, int gridDim_, int worldDim_>                                                \
+    using Rebind = resultTypeName<ScalarType_, gridDim_, worldDim_>;                                            \
   }
 
 /**
@@ -78,14 +81,14 @@ namespace ResultType {
  * \param resultTypeName name of the ResultType
  * \param rowsExpr expression for rows, e.g. `gridDim` or `worldDim`
  * \param colsExpr expression for rows, e.g. `gridDim` or `worldDim`
- * \param strainlike boolean indicating wheather result should be treated as a strain-like quantity
+ * \param strainlike boolean indicating whether the result should be treated as a strain-like quantity
  */
 #define REGISTER_SIMPLE_SYMMETRIC_RESULTTYPE(resultTypeName, rowsExpr, colsExpr, strainlike) \
   REGISTER_RESULTTYPE_IMPL(resultTypeName, rowsExpr, colsExpr, rowsExpr, colsExpr,           \
                            Ikarus::Impl::VectorizeWithVoigt<strainlike>, Ikarus::Impl::MatricizeWithVoigt<strainlike>)
 
   /**
-   * \brief Used to refister a generel ResultType with potentially dynamic size without reserved memeroy
+   * \brief Used to refister a general ResultType with potentially dynamic size without reserved memeroy
    * rows and columns
    * \param resultTypeName name of the ResultType
    * \param rowsExpr expression for rows, e.g. `Eigen::Dynamic` or `worldDim`
@@ -95,7 +98,7 @@ namespace ResultType {
   REGISTER_RESULTTYPE_IMPL(resultTypeName, rowsExpr, colsExpr, Ikarus::Impl::VectorizeGeneric, \
                            Ikarus::Impl::MatricizeGeneric)
   /**
-   * \brief Used to refister a generel ResultType with potentially dynamic size and defined maximum amount of
+   * \brief Used to refister a general ResultType with potentially dynamic size and defined maximum amount of
    * rows and columns
    * \param resultTypeName name of the ResultType
    * \param rowsExpr expression for rows, e.g. `Eigen::Dynamic` or `worldDim`
@@ -107,7 +110,7 @@ namespace ResultType {
   REGISTER_RESULTTYPE_IMPL(resultTypeName, rowsExpr, colsExpr, MaxRowsExpr, MaxColsExpr,           \
                            Ikarus::Impl::VectorizeGeneric, Ikarus::Impl::MatricizeGeneric)
 /**
- * \brief Used to refister a generel ResultType with potentially dynamic size, with reserved memory according to
+ * \brief Used to refister a general ResultType with potentially dynamic size, with reserved memory according to
  * passed in rowsExpr and colsExpr
  * \param resultTypeName name of the ResultType
  * \param rowsExpr expression for rows, e.g. `Eigen::Dynamic` or `worldDim`
@@ -188,13 +191,11 @@ public:
       if constexpr (rowsAtCompileTime == Eigen::Dynamic)
         assert(rows != rowsAtCompileTime &&
                "For dynamic size result types you have to pass rows by hand, since it is not clear how the result "
-               "should be "
-               "reshaped");
+               "should be reshaped");
       if constexpr (colsAtCompileTime == Eigen::Dynamic)
         assert(cols != colsAtCompileTime &&
                "For dynamic size result types you have to pass cols by hand, since it is not clear how the result "
-               "should be "
-               "reshaped");
+               "should be reshaped");
       return RT::Matricizer::template transform<VecType, rowsAtCompileTime, colsAtCompileTime>(value_, rows, cols);
     } else
       return value_;
@@ -221,7 +222,7 @@ namespace Impl {
 }
 
 /**
- * \brief Retrieves a string respresentation of the ResultType template
+ * \brief Retrieves a string representation of the ResultType template
  * \tparam RT the ResultType template
  * \return the name of the ResultType
  */

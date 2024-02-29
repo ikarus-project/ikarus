@@ -3,12 +3,13 @@
 
 #include <config.h>
 
-#include "testcommon.hh"
-
 #include <dune/common/test/testsuite.hh>
+
+#include <Eigen/Core>
 
 #include <ikarus/finiteelements/feresulttypes.hh>
 #include <ikarus/utils/init.hh>
+#include <ikarus/utils/makeenum.hh>
 
 using Dune::TestSuite;
 using namespace Ikarus;
