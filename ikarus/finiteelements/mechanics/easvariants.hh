@@ -107,8 +107,4 @@ private:
   Variant var_;
 };
 
-// // Deduction guide
-// template <typename Geometry>
-// EASVariant(Geometry) -> EASVariant<Geometry>;
-
 } // namespace Ikarus::EAS
