@@ -4,7 +4,6 @@
 # install headers
 install(
   FILES algorithms.hh
-        autodiffhelper.hh
         basis.hh
         concepts.hh
         defaultfunctions.hh

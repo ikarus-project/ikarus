@@ -7,7 +7,7 @@
 
 #include <dune/common/test/testsuite.hh>
 
-#include <ikarus/utils/autodiffhelper.hh>
+#include <ikarus/finiteelements/autodiff/autodiffhelper.hh>
 #include <ikarus/utils/init.hh>
 
 using Dune::TestSuite;
@@ -25,7 +25,7 @@ static auto hessianN() {
   Eigen::Vector2dual2nd u;
   std::array<Eigen::Vector<double, 3>, 2> g;
   std::array<Eigen::Matrix<double, 3, 3>, 2> h;
-  Ikarus::utils::hessianN(f<autodiff::dual2nd>, wrt(x), at(x), u, g, h);
+  Ikarus::hessianN(f<autodiff::dual2nd>, wrt(x), at(x), u, g, h);
 
   for (Eigen::Index i = 0; i < 2; ++i) {
     Eigen::Vector3d gExpected;

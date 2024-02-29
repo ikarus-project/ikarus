@@ -11,6 +11,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 - Refactor `enhancedassumedstrains.hh` ([#247](https://github.com/ikarus-project/ikarus/pull/247))
 - add factory functions to `ResultFunction` ([#251](https://github.com/ikarus-project/ikarus/pull/251))
 - Refactor `febases` to handle any type of basis ([#256](https://github.com/ikarus-project/ikarus/pull/256))
+- Move `autodiffhelper.hh` from `utils` to `autodiff` folder ([#259](https://github.com/ikarus-project/ikarus/pull/259))
 
 ## Release v0.4 (Ganymede)
 

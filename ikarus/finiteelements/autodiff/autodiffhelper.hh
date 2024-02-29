@@ -10,7 +10,7 @@
 #include <autodiff/forward/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
 
-namespace Ikarus::utils {
+namespace Ikarus {
 
 /**
  * \brief Computes the Hessian matrix for each parameter of a given function.
@@ -41,4 +41,4 @@ void hessianN(const Fun& f, const autodiff::Wrt<Vars...>& wrt, const autodiff::A
   for (int i = 0; i < U::RowsAtCompileTime; ++i)
     hessian(fEntry(i), wrt, at, u[i], g[i], h[i]);
 }
-} // namespace Ikarus::utils
+} // namespace Ikarus

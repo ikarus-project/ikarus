@@ -2,4 +2,6 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 # install headers
-install(FILES autodifffe.hh DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/finiteelements/autodiff)
+install(FILES autodifffe.hh autodiffhelper.hh
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/finiteelements/autodiff
+)
