@@ -14,23 +14,6 @@
 namespace Ikarus::EAS {
 
 /**
- * \brief Dummy struct for displacement-based EAS elements, i.e. 0 enhanced modes
- */
-template <typename GEO>
-struct H1E0
-{
-  static constexpr int strainSize         = 6;
-  static constexpr int enhancedStrainSize = 0;
-  using MType                             = Eigen::Matrix<double, strainSize, enhancedStrainSize>;
-  using DType                             = Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>;
-
-  H1E0() = default;
-  explicit H1E0(const GEO& /*geometry*/) {}
-
-  static auto calcM(const Dune::FieldVector<double, 3>& /*quadPos*/) { return MType::Zero(); }
-};
-
-/**
  * \brief Structure representing EAS for H1 with 9 enhanced strains.
  *
  * This structure defines the EAS for H1 elements with 9 enhanced strains.

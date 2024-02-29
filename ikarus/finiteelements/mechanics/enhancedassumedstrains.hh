@@ -40,7 +40,6 @@ public:
   using GridView                 = typename DisplacementBasedElement::GridView;
   using Traits                   = typename DisplacementBasedElement::Traits;
   using DisplacementBasedElement::localView;
-  using EASBaseType = std::conditional_t<Traits::mydim == 2, EAS::Q1E0<Geometry>, EAS::H1E0<Geometry>>;
 
   /**
 * \brief Constructor for Enhanced Assumed Strains elements.
@@ -76,7 +75,7 @@ forward the
    *
    * \return True if the element is displacement-based, false otherwise.
    */
-  bool isDisplacementBased() const { return std::holds_alternative<EASBaseType>(easVariant_.var); }
+  bool isDisplacementBased() const { return easVariant_.isDisplacmentBased(); }
 
   /**
    * \brief Calculates vectorial quantities for the element.
@@ -102,7 +101,7 @@ forward the
    *
    * \return Number of EAS parameters.
    */
-  auto getNumberOfEASParameters() const { return easVariant_.getNumberOfEASParameters(); }
+  auto numberOfEASParameters() const { return easVariant_.numberOfEASParameters(); }
 
   /**
    * \brief Calculates the matrix for the element.
@@ -186,41 +185,7 @@ forward the
     if (not((numberOfNodes == 4 and Traits::mydim == 2) or (numberOfNodes == 8 and Traits::mydim == 3)) and
         (not isDisplacementBased()))
       DUNE_THROW(Dune::NotImplemented, "EAS only supported for Q1 or H1 elements");
-
-    if constexpr (Traits::mydim == 2) {
-      switch (numberOfEASParameters) {
-        case 0:
-          easVariant_.var = EAS::Q1E0(localView().element().geometry());
-          break;
-        case 4:
-          easVariant_.var = EAS::Q1E4(localView().element().geometry());
-          break;
-        case 5:
-          easVariant_.var = EAS::Q1E5(localView().element().geometry());
-          break;
-        case 7:
-          easVariant_.var = EAS::Q1E7(localView().element().geometry());
-          break;
-        default:
-          DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available for the 2D case.");
-          break;
-      }
-    } else if constexpr (Traits::mydim == 3) {
-      switch (numberOfEASParameters) {
-        case 0:
-          easVariant_.var = EAS::H1E0(localView().element().geometry());
-          break;
-        case 9:
-          easVariant_.var = EAS::H1E9(localView().element().geometry());
-          break;
-        case 21:
-          easVariant_.var = EAS::H1E21(localView().element().geometry());
-          break;
-        default:
-          DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available for the 3D case.");
-          break;
-      }
-    }
+    easVariant_.setEASType(numberOfEASParameters, localView().element().geometry());
   }
 
 protected:

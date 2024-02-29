@@ -9,7 +9,6 @@
 
 #pragma once
 
-#include <ikarus/finiteelements/mechanics/easvariants.hh>
 #include <ikarus/utils/tensorutils.hh>
 
 namespace Ikarus::EAS {
@@ -18,16 +17,17 @@ namespace Ikarus::EAS {
  * \brief Dummy struct for displacement-based EAS elements, i.e. 0 enhanced modes
  */
 template <typename GEO>
-struct Q1E0
+struct E0
 {
-  static constexpr int strainSize         = 3;
+  static constexpr int strainSize         = GEO::mydimension * (GEO::mydimension + 1) / 2;
   static constexpr int enhancedStrainSize = 0;
   using MType                             = Eigen::Matrix<double, strainSize, enhancedStrainSize>;
   using DType                             = Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>;
 
-  Q1E0() = default;
-  explicit Q1E0(const GEO& /*geometry*/) {}
+  E0() = default;
+  explicit E0(const GEO& /*geometry*/) {}
 
+  // returns an Eigen zero expression for optimization purposes
   static auto calcM(const Dune::FieldVector<double, 2>& /*quadPos*/) { return MType::Zero(); }
 };
 

@@ -90,9 +90,8 @@ struct ElementTest<Ikarus::EnhancedAssumedStrains<DisplacementBasedElement>>
               << "fe.calculateScalar should have failed for numberOfEASParameter > 0";
         }
 
-        t.check(numberOfEASParameter == fe.getNumberOfEASParameters())
-            << "Number of EAS Parameters should be " << numberOfEASParameter << "but is "
-            << fe.getNumberOfEASParameters();
+        t.check(numberOfEASParameter == fe.numberOfEASParameters())
+            << "Number of EAS Parameters should be " << numberOfEASParameter << "but is " << fe.numberOfEASParameters();
 
         t.checkThrow([&]() { fe.setEASType(100); }) << "fe.setEASType(100) should have failed";
       }
