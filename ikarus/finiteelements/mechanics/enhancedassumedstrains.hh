@@ -151,53 +151,31 @@ forward the
     if (isDisplacementBased())
       return DisplacementBasedElement::template calculateAt<RT>(req, local);
 
-    using RTWrapper = ResultWrapper<RT<typename Traits::ctype, Traits::mydim, Traits::worlddim>, ResultShape::Vector>;
     using namespace Dune::Indices;
     using namespace Dune::DerivativeDirections;
+
+    using RTWrapper = ResultWrapper<RT<typename Traits::ctype, Traits::mydim, Traits::worlddim>, ResultShape::Vector>;
+    RTWrapper resultWrapper{};
 
     if constexpr (isSameResultType<RT, ResultType::linearStress>) {
       const auto C              = DisplacementBasedElement::materialTangentFunction(req);
       const auto& numberOfNodes = DisplacementBasedElement::numberOfNodes();
       auto uFunction            = DisplacementBasedElement::displacementFunction(req);
-      const auto disp           = Dune::viewAsFlatEigenVector(uFunction.coefficientsRef());
 
-      return std::visit(
-          [&]<typename EAST>(const EAST& easFunction) {
-            if constexpr (not std::is_same_v<std::monostate, EAST>) {
-              constexpr int enhancedStrainSize = EAST::enhancedStrainSize;
-              Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize> D;
-              calculateDAndLMatrix(easFunction, req, D, L_);
-              const auto alpha = (-D.inverse() * L_ * disp).eval();
-              const auto M     = easFunction.calcM(local);
-              const auto CEval = C(local);
-              auto easStress   = (CEval * M * alpha).eval();
-              return RTWrapper{DisplacementBasedElement::template calculateAt<RT>(req, local).asVec() + easStress};
-            } else
-              return DisplacementBasedElement::template calculateAt<RT>(req, local);
-          },
-          easVariant_);
-    } else
-      static_assert(Dune::AlwaysFalse<DFE>::value, "The requested result type is NOT implemented.");
-    return result;
-    const auto C              = DisplacementBasedElement::materialTangentFunction(req);
-    const auto& numberOfNodes = DisplacementBasedElement::numberOfNodes();
-    auto uFunction            = DisplacementBasedElement::displacementFunction(req);
+      auto calculateAtContribution = [&]<typename EAST>(const EAST& easFunction) {
+        typename EAST::DType D;
+        calculateDAndLMatrix(easFunction, req, D, L_);
 
-    auto calculateAtContribution = [&]<typename EAST>(const EAST& easFunction) {
-      typename EAST::DType D;
-      calculateDAndLMatrix(easFunction, req, D, L_);
-
-      const auto disp  = Dune::viewAsFlatEigenVector(uFunction.coefficientsRef());
-      const auto alpha = (-D.inverse() * L_ * disp).eval();
-      const auto M     = easFunction.calcM(local);
-      const auto CEval = C(local);
-      auto easStress   = (CEval * M * alpha).eval();
-
-      resultVector.resize(3, 1);
-      resultVector = resultVector + easStress;
-    };
-    easVariant_(calculateAtContribution);
-    return resultVector;
+        const auto disp  = Dune::viewAsFlatEigenVector(uFunction.coefficientsRef());
+        const auto alpha = (-D.inverse() * L_ * disp).eval();
+        const auto M     = easFunction.calcM(local);
+        const auto CEval = C(local);
+        auto easStress   = (CEval * M * alpha).eval();
+        resultWrapper = RTWrapper{DisplacementBasedElement::template calculateAt<RT>(req, local).asVec() + easStress};
+      };
+      easVariant_(calculateAtContribution);
+      return resultWrapper;
+    }
   }
 
   /**
