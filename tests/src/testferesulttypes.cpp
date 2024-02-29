@@ -148,7 +148,7 @@ auto testRTs() {
   testShapes.operator()<ElementHasResultType::Vector, ResultShape::Vector>({3, 1}, {3, 1});
 
   // Scalar case
-  testShapes.operator()<ElementHasResultType::Scalar, ResultShape::Scalar>({1, 1}, {1, 1});
+  testShapes.operator()<ElementHasResultType::Scalar, ResultShape::Vector>({1, 1}, {1, 1});
 
   // Dynamic case
   testShapes.operator()<ElementHasResultType::Custom, ResultShape::Matrix>({9, 1}, {3, 3});
