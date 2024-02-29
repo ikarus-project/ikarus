@@ -277,7 +277,7 @@ public:
 
       return RTWrapper{mat_.template stresses<StrainTags::greenLagrangian>(toVoigt(E))};
     } else
-      static_assert(Dune::AlwaysFalse<B>::value, "The requested result type is NOT implemented.");
+      static_assert(Dune::AlwaysFalse<BH>::value, "The requested result type is NOT implemented.");
   }
 
 private:
