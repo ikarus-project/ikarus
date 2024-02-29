@@ -70,8 +70,10 @@ struct EASVariant
   bool isDisplacmentBased() const { return numberOfEASParameters() == 0; }
 
   void setEASType(int numberOfEASParameters, const Geometry& geometry) {
-    if (numberOfEASParameters == 0)
+    if (numberOfEASParameters == 0) {
       var_ = E0(geometry);
+      return;
+    }
 
     if constexpr (Geometry::mydimension == 2) {
       switch (numberOfEASParameters) {
