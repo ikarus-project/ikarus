@@ -26,6 +26,7 @@ struct H1E9
   static constexpr int strainSize         = 6;
   static constexpr int enhancedStrainSize = 9;
   using MType                             = Eigen::Matrix<double, strainSize, enhancedStrainSize>;
+  using DType                             = Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>;
 
   H1E9() = default;
   explicit H1E9(const GEO& geometry)
@@ -70,6 +71,7 @@ struct H1E21
   static constexpr int strainSize         = 6;
   static constexpr int enhancedStrainSize = 21;
   using MType                             = Eigen::Matrix<double, strainSize, enhancedStrainSize>;
+  using DType                             = Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>;
 
   H1E21() = default;
   explicit H1E21(const Geometry& geometry_)

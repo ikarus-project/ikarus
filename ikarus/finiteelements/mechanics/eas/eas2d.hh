@@ -14,6 +14,24 @@
 namespace Ikarus::EAS {
 
 /**
+ * \brief Dummy struct for displacement-based EAS elements, i.e. 0 enhanced modes
+ */
+template <typename GEO>
+struct E0
+{
+  static constexpr int strainSize         = GEO::mydimension * (GEO::mydimension + 1) / 2;
+  static constexpr int enhancedStrainSize = 0;
+  using MType                             = Eigen::Matrix<double, strainSize, enhancedStrainSize>;
+  using DType                             = Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>;
+
+  E0() = default;
+  explicit E0(const GEO& /*geometry*/) {}
+
+  // returns an Eigen zero expression for optimization purposes
+  static auto calcM(const Dune::FieldVector<double, 2>& /*quadPos*/) { return MType::Zero(); }
+};
+
+/**
  * \brief Q1E4 structure for EAS with linear strains and 4 enhanced modes.
  *
  * \details The Q1E4 structure represents an implementation of EAS for a
@@ -28,6 +46,7 @@ struct Q1E4
   static constexpr int strainSize         = 3;
   static constexpr int enhancedStrainSize = 4;
   using MType                             = Eigen::Matrix<double, strainSize, enhancedStrainSize>;
+  using DType                             = Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>;
 
   Q1E4() = default;
   explicit Q1E4(const GEO& geometry)
@@ -66,6 +85,7 @@ struct Q1E5
   static constexpr int strainSize         = 3;
   static constexpr int enhancedStrainSize = 5;
   using MType                             = Eigen::Matrix<double, strainSize, enhancedStrainSize>;
+  using DType                             = Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>;
 
   Q1E5() = default;
   explicit Q1E5(const GEO& geometry)
@@ -105,6 +125,7 @@ struct Q1E7
   static constexpr int strainSize         = 3;
   static constexpr int enhancedStrainSize = 7;
   using MType                             = Eigen::Matrix<double, strainSize, enhancedStrainSize>;
+  using DType                             = Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>;
 
   Q1E7() = default;
   explicit Q1E7(const GEO& geometry)
@@ -132,4 +153,5 @@ private:
   std::shared_ptr<GEO> geometry_;
   Eigen::Matrix3d T0InverseTransformed_;
 };
+
 } // namespace Ikarus::EAS

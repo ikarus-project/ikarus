@@ -71,27 +71,27 @@ struct ElementTest<Ikarus::EnhancedAssumedStrains<DisplacementBasedElement>>
         if (numberOfEASParameter > 0) {
           auto easVariantCopy    = fe.easVariant(); // This only test if the variant has a copy assignment operator
           const auto& easVariant = fe.easVariant();
-          std::visit(
-              [&]<typename EAS>(const EAS& easFunction) {
-                if constexpr (not std::is_same_v<std::monostate, EAS>) {
-                  typename EAS::MType MIntegrated;
-                  MIntegrated.setZero();
-                  for (const auto& gp : rule) {
-                    const auto M = easFunction.calcM(gp.position());
+          auto testM             = [&]<typename EAS>(const EAS& easFunction) {
+            typename EAS::MType MIntegrated;
+            MIntegrated.setZero();
+            for (const auto& gp : rule) {
+              const auto M = easFunction.calcM(gp.position());
 
-                    const double detJ = element.geometry().integrationElement(gp.position());
-                    MIntegrated += M * detJ * gp.weight();
-                  }
-                  t.check(MIntegrated.isZero())
-                      << "Orthogonality condition check: The M matrix of the EAS method should be "
-                         "zero, integrated over the domain.";
-                }
-              },
-              easVariant);
+              const double detJ = element.geometry().integrationElement(gp.position());
+              MIntegrated += M * detJ * gp.weight();
+            }
+            t.check(MIntegrated.isZero()) << "Orthogonality condition check: The M matrix of the EAS method should be "
+                                                         "zero, integrated over the domain.";
+          };
+          easVariant(testM);
+
           auto requirements = Ikarus::FERequirements();
           t.checkThrow([&]() { fe.calculateScalar(requirements); })
               << "fe.calculateScalar should have failed for numberOfEASParameter > 0";
         }
+
+        t.check(numberOfEASParameter == fe.numberOfEASParameters())
+            << "Number of EAS Parameters should be " << numberOfEASParameter << "but is " << fe.numberOfEASParameters();
 
         t.checkThrow([&]() { fe.setEASType(100); }) << "fe.setEASType(100) should have failed";
       }
