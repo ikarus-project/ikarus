@@ -205,25 +205,36 @@ public:
   }
 
   /**
+   * \brief Returns whether an element can provide a requested result. Can be used in constant expressions
+   * \tparam RT The type representing the requested result.
+   * \return boolean indicating if a requested result can be provided
+   */
+  template <template <typename, int, int> class RT>
+  static consteval bool canProvideResultType() {
+    return isSameResultType<RT, ResultType::linearStress>;
+  }
+
+  /**
    * \brief Calculates a requested result at a specific local position.
    *
    * \param req The FERequirementType object holding the global solution.
    * \param local Local position vector.
    * \return calculated result
    *
-   * \tparam resType The type representing the requested result.
+   * \tparam RT The type representing the requested result.
    */
-  template <ResultType resType>
+  template <template <typename, int, int> class RT>
+  requires(canProvideResultType<RT>())
   auto calculateAt(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
-    static_assert(resType == ResultType::linearStress, "The requested result type is NOT implemented.");
-
-    if constexpr (resType == ResultType::linearStress) {
+    using RTWrapper = ResultWrapper<RT<typename Traits::ctype, myDim, Traits::worlddim>, ResultShape::Vector>;
+    if constexpr (isSameResultType<RT, ResultType::linearStress>) {
       const auto eps = strainFunction(req);
       const auto C   = materialTangent();
       auto epsVoigt  = eps.evaluate(local, Dune::on(Dune::DerivativeDirections::gridElement));
 
-      return (C * epsVoigt).eval();
+      return RTWrapper{(C * epsVoigt).eval()};
     }
+    __builtin_unreachable();
   }
 
 private:

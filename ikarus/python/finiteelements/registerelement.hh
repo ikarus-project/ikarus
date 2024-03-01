@@ -120,17 +120,34 @@ void registerElement(pybind11::handle scope, pybind11::class_<FE, options...> cl
 
   if constexpr (requires { std::declval<FE>().materialTangent(); })
     cls.def("materialTangent", [](FE& self) { return self.materialTangent(); });
+}
 
+template <bool defaultInitializers = true, class FE, class... options>
+void registerCalculateAt(pybind11::handle scope, pybind11::class_<FE, options...> cls, auto restultTypesTuple) {
+  using Traits         = typename FE::Traits;
+  using FERequirements = typename FE::FERequirementType;
   cls.def(
       "calculateAt",
-      [](FE& self, const FERequirements& req, const Dune::FieldVector<double, Traits::mydim>& local,
-         ResultType resType) {
-        if (resType == ResultType::linearStress)
-          return self.template calculateAt<ResultType::linearStress>(req, local);
-        else
-          DUNE_THROW(Dune::NotImplemented, "Linear-lastic element only supports linearStress as result.");
+      [&](FE& self, const FERequirements& req, const Dune::FieldVector<double, Traits::mydim>& local,
+          std::string resType) {
+        Eigen::VectorXd result;
+        bool success = false;
+        Dune::Hybrid::forEach(restultTypesTuple, [&]<typename RT>(RT i) {
+          if (resType == toString(i)) {
+            success = true;
+            result  = self.template calculateAt<RT::template Rebind>(req, local).asVec();
+          }
+        });
+        if (success)
+          return result;
+        DUNE_THROW(Dune::NotImplemented, "Element doesn't support ResultType " + resType);
       },
       pybind11::arg("feRequirements"), pybind11::arg("local"), pybind11::arg("resultType"));
+}
+
+template <template <typename, int, int> class RT>
+auto makeRT() {
+  return Impl::DummyRT<RT>{};
 }
 
 } // namespace Ikarus::Python

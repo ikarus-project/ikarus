@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "registerelement.hh"
+
 #include <dune/fufem/boundarypatch.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
@@ -101,16 +103,8 @@ void registerNonLinearElastic(pybind11::handle scope, pybind11::class_<NonLinear
       },
       pybind11::arg("FERequirements"), pybind11::arg("elementMatrix").noconvert());
 
-  cls.def(
-      "calculateAt",
-      [](NonLinearElastic& self, const FERequirements& req, const Dune::FieldVector<double, Traits::mydim>& local,
-         ResultType resType) {
-        if (resType == ResultType::PK2Stress)
-          return self.template calculateAt<ResultType::PK2Stress>(req, local);
-        else
-          DUNE_THROW(Dune::NotImplemented, "Nonlinear-elastic element only supports PK2 stress as result.");
-      },
-      pybind11::arg("feRequirements"), pybind11::arg("local"), pybind11::arg("resultType"));
+  auto resultTypes = Dune::makeTupleVector(makeRT<ResultType::PK2Stress>());
+  registerCalculateAt(scope, cls, resultTypes);
 }
 
 } // namespace Ikarus::Python

@@ -7,11 +7,13 @@
 
 #include <dune/alugrid/grid.hh>
 #include <dune/common/test/testsuite.hh>
+#include <dune/common/typetraits.hh>
 #include <dune/fufem/boundarypatch.hh>
 #include <dune/functions/functionspacebases/lagrangedgbasis.hh>
 #include <dune/grid/io/file/vtk.hh>
 #include <dune/grid/uggrid.hh>
 #include <dune/grid/yaspgrid.hh>
+#include <dune/vtk/vtkwriter.hh>
 #if HAVE_DUNE_IGA
   #include <dune/iga/nurbsgrid.hh>
 #endif
@@ -22,11 +24,8 @@
 
 #include <ikarus/finiteelements/autodiff/autodifffe.hh>
 #include <ikarus/finiteelements/ferequirements.hh>
-#include <ikarus/finiteelements/mechanics/enhancedassumedstrains.hh>
-#include <ikarus/finiteelements/mechanics/linearelastic.hh>
-#include <ikarus/finiteelements/mechanics/nonlinearelastic.hh>
+#include <ikarus/finiteelements/feresulttypes.hh>
 #include <ikarus/io/resultfunction.hh>
-#include <ikarus/utils/basis.hh>
 #include <ikarus/utils/eigendunetransformations.hh>
 #include <ikarus/utils/functionsanitychecks.hh>
 #include <ikarus/utils/linearalgebrahelper.hh>
@@ -235,29 +234,40 @@ template <typename NonLinearOperator>
   return t;
 }
 
-template <Ikarus::ResultType resType>
-[[nodiscard]] auto checkCalculateAt(auto& nonLinearOperator, auto& fe, const auto& feRequirements,
+template <template <typename, int, int> class RT, bool vectorizedResult = true>
+[[nodiscard]] auto checkCalculateAt(auto& /*nonLinearOperator*/, auto& fe, const auto& feRequirements,
                                     const auto& expectedResult, const auto& evaluationPositions,
                                     const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Test of the calulateAt function for " + Dune::className(fe));
 
+  using FiniteElement = std::remove_cvref_t<decltype(fe)>;
   Eigen::MatrixXd computedResults(expectedResult.rows(), expectedResult.cols());
-  for (int i = 0; const auto& pos : evaluationPositions) {
-    auto result              = fe.template calculateAt<resType>(feRequirements, pos);
-    computedResults.row(i++) = result.transpose();
-  }
 
-  const bool isResultCorrect = isApproxSame(computedResults, expectedResult, 1e-8);
-  t.check(isResultCorrect) << "Computed Result for " << toString(resType) << " is not the same as expected result:\n"
-                           << "It is:\n"
-                           << computedResults << "\nBut should be:\n"
-                           << expectedResult << "\n"
-                           << messageIfFailed;
+  if constexpr (FiniteElement::template canProvideResultType<RT>()) {
+    for (int i = 0; const auto& pos : evaluationPositions) {
+      if constexpr (vectorizedResult) {
+        auto result              = fe.template calculateAt<RT>(feRequirements, pos).asVec();
+        computedResults.row(i++) = result.transpose();
+      } else {
+        auto result              = fe.template calculateAt<RT>(feRequirements, pos).asMat();
+        computedResults.row(i++) = result.reshaped().transpose();
+      }
+    }
+    const bool isResultCorrect = isApproxSame(computedResults, expectedResult, 1e-8);
+    t.check(isResultCorrect) << "Computed Result for " << Ikarus::toString<RT>()
+                             << " is not the same as expected result:\n"
+                             << "It is:\n"
+                             << computedResults << "\nBut should be:\n"
+                             << expectedResult << "\n"
+                             << messageIfFailed;
+  } else
+    static_assert(Dune::AlwaysFalse<FiniteElement>::value, "Element can not provide the requested RsultType ");
+
   return t;
 }
 
-template <Ikarus::ResultType resType, typename ResultEvaluator>
-[[nodiscard]] auto checkResultFunction(auto& nonLinearOperator, auto& fe, const auto& feRequirements,
+template <template <typename, int, int> class resType, typename ResultEvaluator>
+[[nodiscard]] auto checkResultFunction(auto& /*nonLinearOperator*/, auto& fe, const auto& feRequirements,
                                        const auto& expectedResult, const auto& evaluationPositions,
                                        const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Result Function Test" + Dune::className(fe));
@@ -280,7 +290,8 @@ template <Ikarus::ResultType resType, typename ResultEvaluator>
     ++i;
   }
   const bool isResultCorrect = isApproxSame(computedResults, expectedResult, 1e-8);
-  t.check(isResultCorrect) << "Computed Result for " << toString(resType) << " is not the same as expected result:\n"
+  t.check(isResultCorrect) << "Computed Result for " << Ikarus::toString<resType>()
+                           << " is not the same as expected result:\n"
                            << "It is:\n"
                            << computedResults << "\nBut should be:\n"
                            << expectedResult << "\n"

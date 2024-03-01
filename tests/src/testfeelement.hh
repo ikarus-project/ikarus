@@ -128,11 +128,11 @@ inline auto checkJacobianFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe,
   return checkJacobianOfElement(subOperator);
 };
 
-template <Ikarus::ResultType resType, typename ResultEvaluator = Ikarus::Impl::DefaultUserFunction>
+template <template <typename, int, int> class RT, typename ResultEvaluator = Ikarus::Impl::DefaultUserFunction>
 auto checkResultFunctionFunctorFactory(const auto& resultCollectionFunction) {
   return [&](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req) {
     auto [feRequirements, expectedStress, positions] = resultCollectionFunction(nonLinOp, fe);
-    return checkResultFunction<resType, ResultEvaluator>(nonLinOp, fe, feRequirements, expectedStress, positions);
+    return checkResultFunction<RT, ResultEvaluator>(nonLinOp, fe, feRequirements, expectedStress, positions);
   };
 }
 
@@ -140,10 +140,14 @@ inline auto checkFEByAutoDiffFunctor = [](auto& nonLinOp, auto& fe, auto& req) {
   return checkFEByAutoDiff(nonLinOp, fe, req);
 };
 
-template <Ikarus::ResultType resType>
+template <template <typename, int, int> class RT, bool voigt = true>
 auto checkCalculateAtFunctorFactory(const auto& resultCollectionFunction) {
   return [&](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req) {
     auto [feRequirements, expectedStress, positions] = resultCollectionFunction(nonLinOp, fe);
-    return checkCalculateAt<resType>(nonLinOp, fe, feRequirements, expectedStress, positions);
+    if constexpr (voigt)
+      return checkCalculateAt<RT>(nonLinOp, fe, feRequirements, expectedStress, positions);
+    else
+      return checkCalculateAt<RT, voigt>(nonLinOp, fe, feRequirements, stressResultsToMatrix(expectedStress),
+                                         positions);
   };
 }

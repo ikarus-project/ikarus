@@ -10,6 +10,7 @@
 
 #include "registerelement.hh"
 
+#include <dune/common/tuplevector.hh>
 #include <dune/fufem/boundarypatch.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
@@ -44,6 +45,9 @@ namespace Ikarus::Python {
 template <class LinearElastic, class... options>
 void registerLinearElastic(pybind11::handle scope, pybind11::class_<LinearElastic, options...> cls) {
   registerElement(scope, cls);
+
+  auto resultTypes = Dune::makeTupleVector(makeRT<ResultType::linearStress>());
+  registerCalculateAt(scope, cls, resultTypes);
 }
 
 } // namespace Ikarus::Python

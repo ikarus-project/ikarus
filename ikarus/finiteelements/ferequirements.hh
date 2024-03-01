@@ -18,6 +18,7 @@
 
 #include <Eigen/Core>
 
+#include <ikarus/finiteelements/feresulttypes.hh>
 #include <ikarus/utils/makeenum.hh>
 
 namespace Ikarus {
@@ -81,25 +82,6 @@ namespace Ikarus {
             velocity,
             director,
             magnetizationAndVectorPotential
-      );
-
-  /**
-*
-* \ingroup FEParameterTags
-* \brief A strongly typed enum class representing the type of the result request
-*/
-  MAKE_ENUM(ResultType,
-            noType,
-            magnetization,
-            gradientNormOfMagnetization,
-            vectorPotential,
-            divergenceOfVectorPotential,
-            BField,
-            HField,
-            cauchyStress,
-            PK2Stress,
-            linearStress,
-            director
       );
 
 // clang-format on
@@ -332,8 +314,5 @@ public:
     return *this;
   }
 };
-
-template <typename Type>
-concept ResultTypeConcept = std::is_same_v<Type, ResultType>;
 
 } // namespace Ikarus
