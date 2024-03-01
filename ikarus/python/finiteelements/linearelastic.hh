@@ -46,7 +46,7 @@ template <class LinearElastic, class... options>
 void registerLinearElastic(pybind11::handle scope, pybind11::class_<LinearElastic, options...> cls) {
   registerElement(scope, cls);
 
-  auto resultTypes = Dune::makeTupleVector(makeRT<ResultType::linearStress>);
+  auto resultTypes = Dune::makeTupleVector(makeRT<ResultType::linearStress>());
   registerCalculateAt(scope, cls, resultTypes);
 }
 

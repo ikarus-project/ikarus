@@ -132,9 +132,8 @@ void registerCalculateAt(pybind11::handle scope, pybind11::class_<FE, options...
           std::string resType) {
         Eigen::VectorXd result;
         bool success = false;
-        Dune::Hybrid::forEach(restultTypesTuple, [&](auto i) {
-          using RT = typename std::invoke_result_t<decltype(i)>;
-          if (resType == toString<RT::template Rebind>()) {
+        Dune::Hybrid::forEach(restultTypesTuple, [&]<typename RT>(RT i) {
+          if (resType == toString(i)) {
             success = true;
             result  = self.template calculateAt<RT::template Rebind>(req, local).asVec();
           }

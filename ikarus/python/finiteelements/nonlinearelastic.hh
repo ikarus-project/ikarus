@@ -103,7 +103,7 @@ void registerNonLinearElastic(pybind11::handle scope, pybind11::class_<NonLinear
       },
       pybind11::arg("FERequirements"), pybind11::arg("elementMatrix").noconvert());
 
-  auto resultTypes = Dune::makeTupleVector(makeRT<ResultType::PK2Stress>);
+  auto resultTypes = Dune::makeTupleVector(makeRT<ResultType::PK2Stress>());
   registerCalculateAt(scope, cls, resultTypes);
 }
 
