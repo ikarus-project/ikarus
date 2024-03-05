@@ -79,6 +79,14 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
                                      .insertParameter(Ikarus::FEParameter::loadfactor, load)
                                      .addAffordance(Ikarus::AffordanceCollections::elastoStatics);
 
+    t.check(req.hasAffordance(Ikarus::MatrixAffordances::stiffness));
+    t.check(not req.hasAffordance(Ikarus::MatrixAffordances::mass));
+    t.check(req.hasAffordance(Ikarus::ScalarAffordances::mechanicalPotentialEnergy));
+    t.check(req.hasAffordance(Ikarus::VectorAffordances::forces));
+
+    Ikarus::FERequirements req2 = Ikarus::FERequirements().addAffordance(Ikarus::mass);
+    t.check(req2.hasAffordance(Ikarus::MatrixAffordances::mass));
+
     auto& KRawDense = denseFlatAssembler.getRawMatrix(req);
     auto& KRaw      = sparseFlatAssembler.getRawMatrix(req);
     auto& RRawDense = denseFlatAssembler.getRawVector(req);

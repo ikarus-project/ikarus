@@ -170,13 +170,13 @@ public:
    */
   template <FEAffordance Affordance>
   FERequirements& addAffordance(Affordance&& affordance) {
-    if constexpr (std::is_same_v<Affordance, ScalarAffordances>)
+    if constexpr (std::is_same_v<std::remove_cvref_t<Affordance>, ScalarAffordances>)
       affordances_.scalarAffordances = affordance;
-    else if constexpr (std::is_same_v<Affordance, VectorAffordances>)
+    else if constexpr (std::is_same_v<std::remove_cvref_t<Affordance>, VectorAffordances>)
       affordances_.vectorAffordances = affordance;
-    else if constexpr (std::is_same_v<Affordance, MatrixAffordances>)
+    else if constexpr (std::is_same_v<std::remove_cvref_t<Affordance>, MatrixAffordances>)
       affordances_.matrixAffordances = affordance;
-    else if constexpr (std::is_same_v<Affordance, AffordanceCollectionImpl>)
+    else if constexpr (std::is_same_v<std::remove_cvref_t<Affordance>, AffordanceCollectionImpl>)
       affordances_ = affordance;
     return *this;
   }
@@ -263,13 +263,13 @@ public:
    */
   template <FEAffordance Affordance>
   bool hasAffordance(Affordance&& affordance) const {
-    if constexpr (std::is_same_v<Affordance, ScalarAffordances>)
+    if constexpr (std::is_same_v<std::remove_cvref_t<Affordance>, ScalarAffordances>)
       return affordances_.scalarAffordances == affordance;
-    else if constexpr (std::is_same_v<Affordance, VectorAffordances>)
+    else if constexpr (std::is_same_v<std::remove_cvref_t<Affordance>, VectorAffordances>)
       return affordances_.vectorAffordances == affordance;
-    else if constexpr (std::is_same_v<Affordance, MatrixAffordances>)
+    else if constexpr (std::is_same_v<std::remove_cvref_t<Affordance>, MatrixAffordances>)
       return affordances_.matrixAffordances == affordance;
-    else if constexpr (std::is_same_v<Affordance, AffordanceCollectionImpl>)
+    else if constexpr (std::is_same_v<std::remove_cvref_t<Affordance>, AffordanceCollectionImpl>)
       return affordances_ == affordance;
   }
 
