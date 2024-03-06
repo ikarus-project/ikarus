@@ -38,73 +38,73 @@ namespace Impl {
     /** \brief Type of the EAS variant depending on the grid dimension. */
     using type = std::conditional_t<worldDim == 2, EAS2D, EAS3D>;
   };
-} // namespace Impl
-
-/**
- * \brief Wrapper around the EAS variant, contains helper functions
- * \tparam Geometry the Geometry type of the udderlying grid element
- */
-template <typename Geometry>
-struct EASVariant
-{
-  using Variant = Impl::Variants<Geometry>::type;
 
   /**
-   * \brief Executes a function F on the variant, if `enhancedStrainSize` is not zero
-   * \tparam F the Type of the function F
-   * \param f the function, which takes the eas element as an argument
+   * \brief Wrapper around the EAS variant, contains helper functions
+   * \tparam Geometry the Geometry type of the udderlying grid element
    */
-  template <typename F>
-  void operator()(F&& f) const {
-    std::visit(
-        [&]<typename EAST>(const EAST& easFunction) {
-          if constexpr (EAST::enhancedStrainSize != 0)
-            f(easFunction);
-        },
-        var_);
-  }
+  template <typename Geometry>
+  struct EASVariant
+  {
+    using Variant = Impl::Variants<Geometry>::type;
 
-  auto numberOfEASParameters() const {
-    return std::visit([]<typename EAST>(const EAST&) -> int { return EAST::enhancedStrainSize; }, var_);
-  }
-  bool isDisplacmentBased() const { return numberOfEASParameters() == 0; }
-
-  void setEASType(int numberOfEASParameters, const Geometry& geometry) {
-    if (numberOfEASParameters == 0) {
-      var_ = E0(geometry);
-      return;
+    /**
+     * \brief Executes a function F on the variant, if `enhancedStrainSize` is not zero
+     * \tparam F the Type of the function F
+     * \param f the function, which takes the eas element as an argument
+     */
+    template <typename F>
+    void operator()(F&& f) const {
+      std::visit(
+          [&]<typename EAST>(const EAST& easFunction) {
+            if constexpr (EAST::enhancedStrainSize != 0)
+              f(easFunction);
+          },
+          var_);
     }
 
-    if constexpr (Geometry::mydimension == 2) {
-      switch (numberOfEASParameters) {
-        case 4:
-          var_ = Q1E4(geometry);
-          break;
-        case 5:
-          var_ = Q1E5(geometry);
-          break;
-        case 7:
-          var_ = Q1E7(geometry);
-          break;
-        default:
-          DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available for the 2D case.");
+    auto numberOfEASParameters() const {
+      return std::visit([]<typename EAST>(const EAST&) -> int { return EAST::enhancedStrainSize; }, var_);
+    }
+    bool isDisplacmentBased() const { return numberOfEASParameters() == 0; }
+    void setEASType(int numberOfEASParameters) { numberOfEASParameters_ = numberOfEASParameters; }
+    void bind(const Geometry& geometry) {
+      if (numberOfEASParameters_ == 0) {
+        var_ = E0(geometry);
+        return;
       }
-    } else if constexpr (Geometry::mydimension == 3) {
-      switch (numberOfEASParameters) {
-        case 9:
-          var_ = H1E9(geometry);
-          break;
-        case 21:
-          var_ = H1E21(geometry);
-          break;
-        default:
-          DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available for the 3D case.");
+
+      if constexpr (Geometry::mydimension == 2) {
+        switch (numberOfEASParameters_) {
+          case 4:
+            var_ = Q1E4(geometry);
+            break;
+          case 5:
+            var_ = Q1E5(geometry);
+            break;
+          case 7:
+            var_ = Q1E7(geometry);
+            break;
+          default:
+            DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available for the 2D case.");
+        }
+      } else if constexpr (Geometry::mydimension == 3) {
+        switch (numberOfEASParameters_) {
+          case 9:
+            var_ = H1E9(geometry);
+            break;
+          case 21:
+            var_ = H1E21(geometry);
+            break;
+          default:
+            DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available for the 3D case.");
+        }
       }
     }
-  }
 
-private:
-  Variant var_;
-};
-
+  private:
+    Variant var_;
+    int numberOfEASParameters_;
+  };
+} // namespace Impl
 } // namespace Ikarus::EAS

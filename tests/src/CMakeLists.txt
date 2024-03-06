@@ -4,10 +4,34 @@
 option(ENABLE_TEST_COVERAGE "Enable test coverage" OFF)
 set(IWYU_ARGS "-Xiwyu --mapping_file=iwyu.imp")
 include(../../cmake/tools.cmake)
-# find_dependency(Eigen3 3.3.9 REQUIRED) find_dependency(spdlog REQUIRED) find_dependency(autodiff
-# REQUIRED) find_dependency(Matplot++ REQUIRED)
 
-file(GLOB programSourceFiles CONFIGURE_DEPENDS *.cpp)
+file(
+  GLOB programSourceFiles
+  RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+  CONFIGURE_DEPENDS *.cpp
+)
+set(programSourceFiles
+    testadaptivestepsizing.cpp
+    testassembler.cpp
+    testautodiffhelper.cpp
+    testdependencies.cpp
+    testdirichletvalue.cpp
+    testenhancedassumedstrains.cpp
+    testfebasis.cpp
+    testferesulttypes.cpp
+    testklshell.cpp
+    testlinearelasticity.cpp
+    testmanifolds.cpp
+    testmaterial.cpp
+    testnonlinearelasticityneohooke.cpp
+    testnonlinearelasticitysvk.cpp
+    testnonlinearoperator.cpp
+    testpathfollowing.cpp
+    testpolyfit.cpp
+    testpythonconversion.cpp
+    testshellthicknessquadrule.cpp
+    testtrustregion.cpp
+)
 
 set(TEST_DEPENDING_ON_LOCALFEFUNCTIONS
     testmanifolds
@@ -20,10 +44,31 @@ set(TEST_DEPENDING_ON_LOCALFEFUNCTIONS
     testnonlinearelasticitysvk
     testadaptivestepsizing
 )
+# Compile only tests
+dune_add_test(
+  SOURCES
+  testfemixin.cpp
+  LINK_LIBRARIES
+  ikarus
+  COMPILE_ONLY
+  LABELS
+  cpp
+)
+target_compile_features(testfemixin PUBLIC cxx_std_20)
+dune_add_test(
+  SOURCES
+  testfunctiontraits.cpp
+  LINK_LIBRARIES
+  ikarus
+  COMPILE_ONLY
+  LABELS
+  cpp
+)
+target_compile_features(testfunctiontraits PUBLIC cxx_std_20)
 
 set(TEST_DEPENDING_ON_IGA testklshell testadaptivestepsizing)
 
-set(TEST_NEED_MORE_TIME)
+set(TEST_NEED_MORE_TIME testadaptivestepsizing)
 
 foreach(programSourceFile ${programSourceFiles})
   get_filename_component(programName ${programSourceFile} NAME_WLE)
@@ -49,6 +94,7 @@ foreach(programSourceFile ${programSourceFiles})
   include_directories(SYSTEM ${PYTHON_INCLUDE_DIRS})
   target_link_libraries(${programName} PUBLIC ${PYTHON_LIBRARIES})
 
+  target_compile_options(${programName} PUBLIC -ftemplate-backtrace-limit=0)
   if(ENABLE_WARNINGS)
     target_compile_options(
       ${programName}

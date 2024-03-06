@@ -51,15 +51,4 @@ struct UpdateDefault
   }
 };
 
-/**
- * \struct LoadDefault
- * \ingroup utils
- * \brief Empty struct representing a default load operation.
- * \details This struct is intended to be used in generic contexts where a default load operation is needed.
- * It does not define any operator, leaving it as an empty placeholder for customization if required.
- */
-struct LoadDefault
-{
-};
-
 } // namespace Ikarus::utils

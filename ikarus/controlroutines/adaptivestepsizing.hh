@@ -79,7 +79,7 @@ struct IterationBased
       return;
     if (targetIterations_ == 0)
       DUNE_THROW(Dune::InvalidStateException,
-                 "For IterationBased, targetIterations should not be equal to 0. Try calling "
+                 "TargetIterations should not be equal to 0. Try calling "
                  "setTargetIterations(int) first.");
     const auto previousIterations = solverInfo.iterations;
     if (previousIterations > targetIterations_)
@@ -97,7 +97,11 @@ struct IterationBased
    * \brief Set the target iterations.
    * \param targetIterations The number of target iterations.
    */
-  void setTargetIterations(int targetIterations) { targetIterations_ = targetIterations; }
+  void setTargetIterations(int targetIterations) {
+    if (targetIterations == 0)
+      DUNE_THROW(Dune::InvalidStateException, "TargetIterations should not be equal to 0.");
+    targetIterations_ = targetIterations;
+  }
 
 private:
   int targetIterations_{0};

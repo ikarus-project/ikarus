@@ -27,6 +27,8 @@ void registerBoundaryPatch(pybind11::handle scope, pybind11::class_<BoundaryPatc
             return new BoundaryPatch(gv, bitSetVector);
           }),
           pybind11::keep_alive<1, 2>(), pybind11::keep_alive<1, 3>());
+
+  cls.def("gridView", &BoundaryPatch::gridView);
 }
 
 } // namespace Ikarus::Python

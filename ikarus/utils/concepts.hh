@@ -445,5 +445,28 @@ namespace Concepts {
   template <template <typename...> class MaterialToCheck, typename Material>
   concept IsMaterial = Impl::isMaterial<MaterialToCheck, Material>();
 
+  namespace Impl {
+    template <typename T>
+    concept ResultType = requires(T t) {
+      typename T::type;                             // The nested type 'type'
+      typename T::Vectorizer;                       // The nested type 'Vectorizer'
+      typename T::Matricizer;                       // The nested type 'Matricizer'
+      { toString(t) } -> std::same_as<std::string>; // The toString function
+    };
+  }
+
+  /**
+   * @concept ResultType
+   * @brief A concept to check if a template type satisfies the ResultType requirements.
+   * @tparam RT A template type with parameters (typename, int, int).
+   *            The first parameter is the data type, and the next two parameters are the grid dimension and the world
+   * dimension. It checks for various instantiations to ensure they meet the ResultType concept. Specifically, it checks
+   * for the nested types 'type', 'Vectorizer', 'Matricizer', and the presence of a toString function returning a
+   * std::string.
+   */
+  template <template <typename, int, int> typename RT>
+  concept ResultType =
+      Impl::ResultType<RT<double, 1, 1>> or Impl::ResultType<RT<double, 1, 2>> or Impl::ResultType<RT<double, 1, 3>> or
+      Impl::ResultType<RT<double, 2, 3>> or Impl::ResultType<RT<double, 3, 3>>;
 } // namespace Concepts
 } // namespace Ikarus

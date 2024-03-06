@@ -30,79 +30,82 @@
 
 namespace Ikarus {
 
+template <typename PreFE, typename FE, typename PRE>
+class NonLinearElastic;
+
+/**
+ * \brief A PreFE struct for non-linear elastic elements.
+ * \tparam MAT Type of the material.
+ */
+template <typename MAT>
+struct NonLinearElasticPre
+{
+  using Material = MAT;
+  MAT material;
+
+  template <typename PreFE, typename FE>
+  using Skill = NonLinearElastic<PreFE, FE, NonLinearElasticPre>;
+};
+
 /**
  * \brief NonLinearElastic class represents a non-linear elastic finite element.
  *
  * \ingroup mechanics
  *
- * \tparam BH The basis handler type for the finite element.
- * \tparam MAT The material type for the finite element.
- * \tparam FER The requirements for the finite element.
- * \tparam useEigenRef A boolean flag indicating whether to use Eigen references.
- * \tparam useFlat A boolean indicating if the type of the underlying basis is of the flat or the untouched version.
+ * \tparam PreFE The type of the  pre finite element.
+ * \tparam FE The type of the finite element.
+ * \tparam PRE The type of the non-linear elastic pre finite element.
  */
-template <typename BH, typename MAT, typename FER = FERequirements<>, bool useEigenRef = false, bool useFlat = true>
-class NonLinearElastic : public FEBase<BH, useFlat, FER, useEigenRef>,
-                         public Volume<NonLinearElastic<BH, MAT, FER, useEigenRef, useFlat>,
-                                       typename FEBase<BH, useFlat, FER, useEigenRef>::Traits>,
-                         public Traction<NonLinearElastic<BH, MAT, FER, useEigenRef, useFlat>,
-                                         typename FEBase<BH, useFlat, FER, useEigenRef>::Traits>
+template <typename PreFE, typename FE, typename PRE>
+class NonLinearElastic
 {
 public:
-  using Base              = FEBase<BH, useFlat, FER, useEigenRef>;
-  using Traits            = typename Base::Traits;
-  using BasisHandler      = typename Traits::BasisHandler;
+  using Traits            = PreFE::Traits;
+  using Basis             = typename Traits::Basis;
   using FlatBasis         = typename Traits::FlatBasis;
   using FERequirementType = typename Traits::FERequirementType;
   using LocalView         = typename Traits::LocalView;
   using Geometry          = typename Traits::Geometry;
   using GridView          = typename Traits::GridView;
   using Element           = typename Traits::Element;
-  using Material          = MAT;
-  using VolumeType        = Volume<NonLinearElastic, Traits>;
-  using TractionType      = Traction<NonLinearElastic, Traits>;
-  using LocalBasisType    = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
+  using Material          = PRE::Material;
+  using Pre               = PRE;
+
+  using LocalBasisType = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
 
   static constexpr int myDim       = Traits::mydim;
   static constexpr auto strainType = StrainTags::greenLagrangian;
 
   /**
    * \brief Constructor for the NonLinearElastic class.
-   *
-   * \tparam VolumeLoad The type for the volume load function.
-   * \tparam NeumannBoundaryLoad The type for the Neumann boundary load function.
-   * \param basisHandler The basis handler for the finite element.
-   * \param element The element for which the finite element is constructed.
-   * \param mat The material for the non-linear elastic element.
-   * \param volumeLoad Volume load function (default is LoadDefault).
-   * \param neumannBoundary Neumann boundary patch (default is nullptr).
-   * \param neumannBoundaryLoad Neumann boundary load function (default is LoadDefault).
+   * \param linPre The pre fe
    */
-  template <typename VolumeLoad = utils::LoadDefault, typename NeumannBoundaryLoad = utils::LoadDefault>
-  NonLinearElastic(const BasisHandler& basisHandler, const typename LocalView::Element& element, const Material& mat,
-                   VolumeLoad volumeLoad = {}, const BoundaryPatch<GridView>* neumannBoundary = nullptr,
-                   NeumannBoundaryLoad neumannBoundaryLoad = {})
-      : Base(basisHandler, element),
-        VolumeType(volumeLoad),
-        TractionType(neumannBoundary, neumannBoundaryLoad),
-        mat_{mat} {
-    auto& firstChild = this->localView().tree().child(0);
-    const auto& fe   = firstChild.finiteElement();
-    geo_             = std::make_shared<const Geometry>(this->localView().element().geometry());
-    numberOfNodes_   = fe.size();
-    order_           = 2 * (fe.localBasis().order());
-    localBasis_      = Dune::CachedLocalBasis(fe.localBasis());
-    if constexpr (requires { this->localView().element().impl().getQuadratureRule(order_); })
-      if (this->localView().element().impl().isTrimmed())
-        localBasis_.bind(this->localView().element().impl().getQuadratureRule(order_), Dune::bindDerivatives(0, 1));
+  explicit NonLinearElastic(Pre linPre)
+      : mat_{linPre.material} {}
+
+  /**
+   * \brief A helper function to bind the local view to the element.
+   */
+  void bindImpl() {
+    const auto& localView = underlying().localView();
+    const auto& element   = localView.element();
+    auto& firstChild      = localView.tree().child(0);
+    const auto& fe        = firstChild.finiteElement();
+    geo_                  = std::make_shared<const Geometry>(element.geometry());
+    numberOfNodes_        = fe.size();
+    order_                = 2 * (fe.localBasis().order());
+    localBasis_           = Dune::CachedLocalBasis(fe.localBasis());
+    if constexpr (requires { element.impl().getQuadratureRule(order_); })
+      if (element.impl().isTrimmed())
+        localBasis_.bind(element.impl().getQuadratureRule(order_), Dune::bindDerivatives(0, 1));
       else
-        localBasis_.bind(Dune::QuadratureRules<double, myDim>::rule(this->localView().element().type(), order_),
+        localBasis_.bind(Dune::QuadratureRules<double, myDim>::rule(element.type(), order_),
                          Dune::bindDerivatives(0, 1));
     else
-      localBasis_.bind(Dune::QuadratureRules<double, myDim>::rule(this->localView().element().type(), order_),
-                       Dune::bindDerivatives(0, 1));
+      localBasis_.bind(Dune::QuadratureRules<double, myDim>::rule(element.type(), order_), Dune::bindDerivatives(0, 1));
   }
 
+public:
   /**
    * \brief Get the displacement function for the given FERequirementType.
    *
@@ -112,10 +115,11 @@ public:
    * \return A StandardLocalFunction representing the displacement function.
    */
   template <typename ScalarType = double>
-  auto displacementFunction(const FERequirementType& par,
-                            const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
+  auto displacementFunction(
+      const FERequirementType& par,
+      const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
     const auto& d = par.getGlobalSolution(Ikarus::FESolutions::displacement);
-    auto disp     = Ikarus::FEHelper::localSolutionBlockVector<Traits>(d, this->localView(), dx);
+    auto disp     = Ikarus::FEHelper::localSolutionBlockVector<Traits>(d, underlying().localView(), dx);
     Dune::StandardLocalFunction uFunction(localBasis_, disp, geo_);
     return uFunction;
   }
@@ -129,8 +133,9 @@ public:
    * \return The strain function calculated using greenLagrangeStrains.
    */
   template <typename ScalarType = double>
-  inline auto strainFunction(const FERequirementType& par,
-                             const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
+  inline auto strainFunction(
+      const FERequirementType& par,
+      const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
     return Dune::greenLagrangeStrains(displacementFunction(par, dx));
   }
 
@@ -195,25 +200,55 @@ public:
   [[nodiscard]] int order() const { return order_; }
 
   /**
-   * \brief Calculate the scalar value associated with the given FERequirementType.
-   *
-   * \tparam ScalarType The scalar type for the calculation.
-   * \param par The FERequirementType object specifying the requirements for the calculation.
-   * \return The calculated scalar value.
+   * \brief Returns whether an element can provide a requested result. Can be used in constant expressions
+   * \tparam RT The type representing the requested result.
+   * \return boolean indicating if a requested result can be provided
    */
-  double calculateScalar(const FERequirementType& par) const { return calculateScalarImpl<double>(par); }
-
-  /**
-   * \brief Calculate the vector associated with the given FERequirementType.
-   *
-   * \tparam ScalarType The scalar type for the calculation.
-   * \param par The FERequirementType object specifying the requirements for the calculation.
-   * \param force The vector to store the calculated result.
-   */
-  void calculateVector(const FERequirementType& par, typename Traits::template VectorType<> force) const {
-    calculateVectorImpl<double>(par, force);
+  template <template <typename, int, int> class RT>
+  static consteval bool canProvideResultType() {
+    return isSameResultType<RT, ResultTypes::PK2Stress>;
   }
 
+  using SupportedResultTypes = std::tuple<decltype(makeRT<ResultTypes::PK2Stress>())>;
+
+  /**
+   * \brief Calculates a requested result at a specific local position.
+   *
+   * \param req The FERequirementType object holding the global solution.
+   * \param local Local position vector.
+   * \return calculated result
+   *
+   * \tparam RT The type representing the requested result.
+   */
+  template <template <typename, int, int> class RT>
+  requires(canProvideResultType<RT>())
+  auto calculateAtImpl(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local,
+                       Dune::PriorityTag<1>) const {
+    using namespace Dune::DerivativeDirections;
+
+    using RTWrapper = ResultWrapper<RT<typename Traits::ctype, myDim, Traits::worlddim>, ResultShape::Vector>;
+    if constexpr (isSameResultType<RT, ResultTypes::PK2Stress>) {
+      const auto uFunction = displacementFunction(req);
+      const auto H         = uFunction.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
+      const auto E         = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
+
+      return RTWrapper{mat_.template stresses<StrainTags::greenLagrangian>(toVoigt(E))};
+    } else
+      static_assert(Dune::AlwaysFalse<RT<typename Traits::ctype, myDim, Traits::worlddim>>::value,
+                    "The requested result type is NOT implemented.");
+  }
+
+private:
+  //> CRTP
+  const auto& underlying() const { return static_cast<const FE&>(*this); }
+  auto& underlying() { return static_cast<FE&>(*this); }
+  std::shared_ptr<const Geometry> geo_;
+  Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType>> localBasis_;
+  Material mat_;
+  size_t numberOfNodes_{0};
+  int order_{};
+
+protected:
   /**
    * \brief Calculate the matrix associated with the given FERequirementType.
    *
@@ -221,10 +256,13 @@ public:
    * \param par The FERequirementType object specifying the requirements for the calculation.
    * \param K The matrix to store the calculated result.
    */
-  void calculateMatrix(const FERequirementType& par, typename Traits::template MatrixType<> K) const {
+  template <typename ScalarType>
+  void calculateMatrixImpl(
+      const FERequirementType& par, typename Traits::template MatrixType<> K,
+      const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
-    const auto eps = strainFunction(par);
+    const auto eps = strainFunction(par, dx);
     for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
       const double intElement = geo_->integrationElement(gp.position()) * gp.weight();
       const auto EVoigt       = (eps.evaluate(gpIndex, on(gridElement))).eval();
@@ -239,59 +277,12 @@ public:
         }
       }
     }
-
-    // Update due to displacement-dependent external loads, e.g., follower loads
-    VolumeType::calculateMatrix(par, K);
-    TractionType::calculateMatrix(par, K);
   }
 
-  /**
-   * \brief Returns whether an element can provide a requested result. Can be used in constant expressions
-   * \tparam RT The type representing the requested result.
-   * \return boolean indicating if a requested result can be provided
-   */
-  template <template <typename, int, int> class RT>
-  static consteval bool canProvideResultType() {
-    return isSameResultType<RT, ResultType::PK2Stress>;
-  }
-
-  /**
-   * \brief Calculates a requested result at a specific local position.
-   *
-   * \param req The FERequirementType object holding the global solution.
-   * \param local Local position vector.
-   * \return calculated result
-   *
-   * \tparam RT The type representing the requested result.
-   */
-  template <template <typename, int, int> class RT>
-  requires(canProvideResultType<RT>())
-  auto calculateAt(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
-    using namespace Dune::DerivativeDirections;
-
-    using RTWrapper = ResultWrapper<RT<typename Traits::ctype, myDim, Traits::worlddim>, ResultShape::Vector>;
-    if constexpr (isSameResultType<RT, ResultType::PK2Stress>) {
-      const auto uFunction = displacementFunction(req);
-      const auto H         = uFunction.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
-      const auto E         = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
-
-      return RTWrapper{mat_.template stresses<StrainTags::greenLagrangian>(toVoigt(E))};
-    } else
-      static_assert(Dune::AlwaysFalse<BH>::value, "The requested result type is NOT implemented.");
-  }
-
-private:
-  std::shared_ptr<const Geometry> geo_;
-  Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType>> localBasis_;
-  Material mat_;
-  size_t numberOfNodes_{0};
-  int order_{};
-
-protected:
   template <typename ScalarType>
   auto calculateScalarImpl(const FERequirementType& par,
-                           const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const
-      -> ScalarType {
+                           const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx =
+                               std::nullopt) const -> ScalarType {
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     const auto uFunction = displacementFunction(par, dx);
@@ -305,17 +296,13 @@ protected:
       energy += internalEnergy * geo_->integrationElement(gp.position()) * gp.weight();
     }
 
-    // External forces volume forces over the domain
-    energy += VolumeType::calculateScalarImpl(par, dx);
-
-    // line or surface loads, i.e., neumann boundary
-    energy += TractionType::calculateScalarImpl(par, dx);
     return energy;
   }
 
   template <typename ScalarType>
-  void calculateVectorImpl(const FERequirementType& par, typename Traits::template VectorType<ScalarType> force,
-                           const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
+  void calculateVectorImpl(
+      const FERequirementType& par, typename Traits::template VectorType<ScalarType> force,
+      const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     const auto eps = strainFunction(par, dx);
@@ -330,14 +317,22 @@ protected:
         force.template segment<myDim>(myDim * i) += bopI.transpose() * stresses * intElement;
       }
     }
-
-    // External forces volume forces over the domain
-    VolumeType::calculateVectorImpl(par, force, dx);
-
-    // External forces, boundary forces, i.e., at the Neumann boundary
-    TractionType::calculateVectorImpl(par, force, dx);
   }
 };
+
+/**
+ * \brief A helper function to create a non-linear elastic pre finite element.
+ * \tparam MAT Type of the material.
+ * \param mat Material parameters for the non-linear elastic element.
+ * \return A non-linear elastic pre finite element.
+ */
+template <typename MAT>
+auto nonLinearElastic(const MAT& mat) {
+  NonLinearElasticPre<MAT> pre(mat);
+
+  return pre;
+}
+
 } // namespace Ikarus
 
 #else

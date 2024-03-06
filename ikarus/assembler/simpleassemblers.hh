@@ -174,7 +174,7 @@ private:
   double& getScalarImpl(const FERequirementType& feRequirements) {
     scal_ = 0.0;
     for (auto& fe : this->finiteElements()) {
-      scal_ += fe.calculateScalar(feRequirements);
+      scal_ += calculateScalar(fe, feRequirements);
     }
     return scal_;
   }

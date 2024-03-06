@@ -13,12 +13,11 @@
 #include <dune/functions/functionspacebases/subspacebasis.hh>
 #include <dune/iga/nurbsbasis.hh>
 
-#include <spdlog/spdlog.h>
-
 #include <Eigen/Core>
 
 #include <ikarus/assembler/simpleassemblers.hh>
 #include <ikarus/controlroutines/pathfollowing.hh>
+#include <ikarus/finiteelements/fefactory.hh>
 #include <ikarus/finiteelements/mechanics/kirchhoffloveshell.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/utils/basis.hh>
@@ -30,24 +29,6 @@
 #include <ikarus/utils/observer/nonlinearsolverlogger.hh>
 
 using Dune::TestSuite;
-
-template <typename Basis_, typename FERequirements_ = Ikarus::FERequirements<>>
-struct KirchhoffLoveShellHelper : Ikarus::KirchhoffLoveShell<Basis_, FERequirements_, false>
-{
-  using Base = Ikarus::KirchhoffLoveShell<Basis_, FERequirements_, false>;
-  using Base::Base;
-  using FlatBasis = typename Basis_::FlatBasis;
-
-  using LocalView = typename FlatBasis::LocalView;
-  using GridView  = typename FlatBasis::GridView;
-
-  template <typename VolumeLoad = Ikarus::utils::LoadDefault, typename NeumannBoundaryLoad = Ikarus::utils::LoadDefault>
-  KirchhoffLoveShellHelper(const Basis_& globalBasis, const typename LocalView::Element& element, double emod,
-                           double nu, double thickness, VolumeLoad p_volumeLoad = {},
-                           const BoundaryPatch<GridView>* p_neumannBoundary = nullptr,
-                           NeumannBoundaryLoad p_neumannBoundaryLoad        = {})
-      : Base(globalBasis, element, emod, nu, thickness, p_volumeLoad, p_neumannBoundary, p_neumannBoundaryLoad) {}
-};
 
 template <typename PathFollowingType>
 auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vector<std::vector<int>>& expectedIterations,
@@ -104,21 +85,24 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
 
   BoundaryPatch<decltype(gridView)> neumannBoundary(gridView, neumannVertices);
 
-  auto neumannBoundaryLoad = [&](auto& globalCoord, auto& lamb) {
+  auto nBL = [&](auto& globalCoord, auto& lamb) {
     Eigen::Vector3d fext;
     fext.setZero();
     fext[0] = -lamb;
     return fext;
   };
 
-  using ElementType = KirchhoffLoveShell<decltype(basis)>;
-  std::vector<ElementType> fes;
+  Ikarus::KlArgs args = {E, nu, thickness};
+  t.subTest(checkFESByAutoDiff(gridView, power<3>(nurbs()),
+                               skills(kirchhoffLoveShell(args), neumannBoundaryLoad(&neumannBoundary, nBL))));
 
-  for (auto& element : elements(gridView))
-    fes.emplace_back(basis, element, E, nu, thickness, utils::LoadDefault{}, &neumannBoundary, neumannBoundaryLoad);
+  auto preFE = makeFE(basis, skills(kirchhoffLoveShell(args), neumannBoundaryLoad(&neumannBoundary, nBL)));
+  std::vector<decltype(preFE)> fes;
 
-  t.subTest(checkFEByAutoDiff<KirchhoffLoveShellHelper>(gridView, power<3>(nurbs()), E, nu, thickness,
-                                                        utils::LoadDefault{}, &neumannBoundary, neumannBoundaryLoad));
+  for (auto& element : elements(gridView)) {
+    fes.emplace_back(preFE);
+    fes.back().bind(element);
+  }
 
   auto basisP = std::make_shared<const decltype(basis)>(basis);
   DirichletValues dirichletValues(basisP->flat());
@@ -171,7 +155,8 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   auto nonLinOpFull =
       Ikarus::NonLinearOperator(functions(energyFunction, residualFunction, KFunction), parameter(d, lambda));
 
-  auto nonLinOp  = nonLinOpFull.template subOperator<1, 2>();
+  auto nonLinOp = nonLinOpFull.template subOperator<1, 2>();
+  nonLinOp.updateAll();
   auto linSolver = LinearSolver(SolverTypeTag::sd_SimplicialLDLT);
 
   int loadSteps = 6;
@@ -207,15 +192,14 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   crWoSS.subscribeAll({vtkWriter, pathFollowingObserver});
   crWoSS.unSubscribeAll(vtkWriter);
   crWSS.subscribeAll({pathFollowingObserver});
-  crWSS.subscribe(Ikarus::ControlMessages::SOLUTION_CHANGED, vtkWriter);
+  crWSS.subscribe(ControlMessages::SOLUTION_CHANGED, vtkWriter);
 
   const std::string& message1 = " --> " + pft.name() + " with default adaptive step sizing";
   const std::string& message2 = " --> " + pft.name() + " without default adaptive step sizing";
 
   t.checkThrow<Dune::InvalidStateException>(
       [&]() {
-        auto dass2 = Ikarus::AdaptiveStepSizing::IterationBased{};
-        dass2.setTargetIterations(0);
+        auto dass2                 = AdaptiveStepSizing::IterationBased{};
         auto crWSS2                = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft, dass2);
         const auto controlInfoWSS2 = crWSS2.run();
       },
@@ -258,8 +242,9 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
 
   return t;
 }
-
+#include <cfenv>
 int main(int argc, char** argv) {
+  feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);
   TestSuite t("Adaptive Stepsizing");
   Ikarus::init(argc, argv);
 

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 import setpath
+import os
 
 setpath.set_path()
 import ikarus as iks
@@ -15,8 +16,11 @@ import scipy as sp
 import dune.grid
 import dune.functions
 from dune.vtk import vtkWriter, vtkUnstructuredGridWriter
+os.environ['DUNE_LOG_LEVEL'] = 'debug'
+os.environ['DUNE_SAVE_BUILD'] = 'console'
 
-if __name__ == "__main__":
+
+def linElasticTest(easBool):
     lowerLeft = []
     upperRight = []
     elements = []
@@ -29,7 +33,7 @@ if __name__ == "__main__":
     req.addAffordance(iks.ScalarAffordances.mechanicalPotentialEnergy)
 
     grid = dune.grid.structuredGrid(lowerLeft, upperRight, elements)
-    grid.hierarchicalGrid.globalRefine(4)
+    #grid.hierarchicalGrid.globalRefine(4)
     basisLagrange12 = dune.functions.defaultGlobalBasis(
         grid, dune.functions.Power(dune.functions.Lagrange(order=1), 2)
     )
@@ -58,8 +62,10 @@ if __name__ == "__main__":
     assert (d2 == d).all()
     fes = []
 
-    def volumeLoad(x, lambdaVal):
+    def vL(x, lambdaVal):
         return np.array([lambdaVal * x[0] * 2, 2 * lambdaVal * x[1] * 0])
+
+    vLoad = iks.finite_elements.volumeLoad2D(vL)
 
     def neumannLoad(x, lambdaVal):
         return np.array([lambdaVal * 0, lambdaVal])
@@ -67,26 +73,22 @@ if __name__ == "__main__":
     neumannVertices = np.zeros(grid.size(2) * 2, dtype=bool)
     assert len(neumannVertices) == len(flatBasis)
 
-    flatBasis.interpolate(neumannVertices, lambda x: True if x[1] > 0.9 else False)
+    flatBasis.interpolate(neumannVertices, lambda x: True if x[1] > 0.999 else False)
 
     boundaryPatch = iks.utils.boundaryPatch(grid, neumannVertices)
+    #print(help(iks.finite_elements))
+    nBLoad= iks.finite_elements.neumannBoundaryLoad(boundaryPatch,neumannLoad)
 
-    # the following should throw
-    try:
-        for e in grid.elements:
-            iks.finite_elements.LinearElastic(
-                basisLagrange1, e, 1000, 0.2, volumeLoad, boundaryPatch
-            )
-        assert False
-    except TypeError:
-        pass
+    linElastic = iks.finite_elements.linearElastic(youngs_modulus=1000, nu=0.2)
+    easF= iks.finite_elements.eas(4)
 
     for e in grid.elements:
-        fes.append(
-            iks.finite_elements.LinearElastic(
-                basisLagrange1, e, 1000, 0.2, volumeLoad, boundaryPatch, neumannLoad
-            )
-        )
+        if easBool:
+            
+            fes.append(iks.finite_elements.makeFE(basisLagrange1,linElastic,easF,vLoad,nBLoad))
+        else:
+            fes.append(iks.finite_elements.makeFE(basisLagrange1,linElastic,vLoad,nBLoad))
+        fes[-1].bind(e)
 
     forces = np.zeros(8)
     stiffness = np.zeros((8, 8))
@@ -104,7 +106,7 @@ if __name__ == "__main__":
         vec[1] = True
 
     def fixLeftHandEdge(vec, localIndex, localView, intersection):
-        if intersection.geometry.center[1] < -0.9:
+        if intersection.geometry.center[1] < -0.99999:
             vec[localView.index(localIndex)] = True
 
     dirichletValues.fixBoundaryDOFs(fixFirstIndex)
@@ -119,8 +121,8 @@ if __name__ == "__main__":
 
     x = sp.sparse.linalg.spsolve(Msparse, -forces)
     fx = flatBasis.asFunction(x)
-    grid.plot()
-
+    #grid.plot()
+    req.insertGlobalSolution(iks.FESolutions.displacement, x)
     # Test calculateAt Function
     indexSet = grid.indexSet
 
@@ -134,14 +136,14 @@ if __name__ == "__main__":
     from utils import output_path
 
     writer = vtkWriter(
-        grid, output_path() + "result", pointData={("displacement", (0, 1)): fx}
+        grid, output_path() + "resultdisplacement"+ ("EAS" if easBool else ""), pointData={("displacement", (0, 1)): fx}
     )
 
     writer2 = vtkUnstructuredGridWriter(grid)
     writer2.addCellData(stressFuncScalar, name="stress")
     writer2.addCellData(stressFuncVec, name="stress2")
 
-    writer2.write(name=output_path() + "result")
+    writer2.write(name=output_path() + "result"+ ("EAS" if easBool else ""))
 
     # Querying for a different ResultType should result in a runtime error
     try:
@@ -150,3 +152,7 @@ if __name__ == "__main__":
         assert True
     else:
         assert False
+
+if __name__ == "__main__":
+    linElasticTest(easBool=False)
+   linElasticTest(easBool=True)

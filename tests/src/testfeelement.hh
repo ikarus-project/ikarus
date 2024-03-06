@@ -9,22 +9,25 @@
 #include <dune/fufem/boundarypatch.hh>
 
 #include <ikarus/assembler/simpleassemblers.hh>
+#include <ikarus/finiteelements/fefactory.hh>
 #include <ikarus/finiteelements/ferequirements.hh>
+#include <ikarus/finiteelements/mechanics/loads.hh>
+#include <ikarus/finiteelements/mixin.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/nonlinearoperator.hh>
 
 /** These tests test your element on some gridElement with some basis
  *
- * \tparam FEElementTemplate The element as template template parameter. The template needs to be the globalBasis
+ * \tparam PREFunc Type of the functor returning a pre finite element.
  * \tparam ReferenceElement The reference element, the grid has to be constructed from
  * \tparam PreBasis The preBasis you want to test the element with
  * \tparam F A variadic number of the test functor you want to be checked, they need to accept a non-linear operator and
  * the finite element
  */
-template <template <typename> typename FEElementTemplate, typename PreBasis, typename ReferenceElement, typename... F>
+template <typename PREFunc, typename PreBasis, typename ReferenceElement, typename Skills, typename... F>
 auto testFEElement(const PreBasis& preBasis, const std::string& elementName, const CornerDistortionFlag& distortionFlag,
-                   const ReferenceElement& refElement, F&&... f) {
+                   const ReferenceElement& refElement, PREFunc&& preFunc, Skills&& additionalSkills, F&&... f) {
   constexpr int gridDim = ReferenceElement::dimension;
 
   Dune::TestSuite t(std::string("testFEElement ") + elementName + " on grid element with dimension " +
@@ -42,7 +45,7 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
 
   auto localView = flatBasis.localView();
 
-  auto volumeLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
+  auto vL = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
     Eigen::Vector<typename VectorType::field_type, VectorType::dimension> fext;
     fext.setZero();
     fext[1] = 2 * lamb;
@@ -50,7 +53,7 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
     return fext;
   };
 
-  auto neumannBoundaryLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
+  auto neumannBl = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
     Eigen::Vector<typename VectorType::field_type, VectorType::dimension> fext;
     fext.setZero();
     fext[1] = lamb / 40;
@@ -63,22 +66,25 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
 
   BoundaryPatch<decltype(gridView)> neumannBoundary(gridView, neumannVertices);
 
-  const double youngsModulus = 1000;
-  const double poissonsRatio = 0.3;
-  auto element               = gridView.template begin<0>();
+  auto element = gridView.template begin<0>();
 
-  using FEElementType = FEElementTemplate<decltype(basis)>;
-  std::vector<FEElementType> fes;
-  fes.emplace_back(basis, *element, youngsModulus, poissonsRatio, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
-  auto basisP = std::make_shared<const decltype(basis)>(basis);
+  static constexpr int worldDim = std::remove_reference_t<decltype(*grid)>::dimensionworld;
+  auto skillsMerged             = merge(skills(preFunc({.emodul = 1000, .nu = 0.3}), volumeLoad<worldDim>(vL),
+                                               neumannBoundaryLoad(&neumannBoundary, neumannBl)),
+                                        std::move(additionalSkills));
+  auto preFE                    = Ikarus::makeFE(basis, std::move(skillsMerged));
+  using FEType                  = decltype(preFE);
+  std::vector<FEType> fes;
+  fes.emplace_back(preFE);
+  fes[0].bind(*element);
 
-  Ikarus::DirichletValues dirichletValues(basisP->flat());
+  Ikarus::DirichletValues dirichletValues(basis.flat());
   auto& fe             = fes[0];
   auto sparseAssembler = SparseFlatAssembler(fes, dirichletValues);
 
   static_assert(std::is_reference_v<typename decltype(sparseAssembler)::FEContainerType>);
 
-  typename FEElementType::FERequirementType::SolutionVectorTypeRaw d;
+  typename FEType::FERequirementType::SolutionVectorTypeRaw d;
   d.setRandom(basis.flat().size());
 
   double lambda = 7.3;
@@ -108,11 +114,11 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
                         [&](auto i) { t.subTest(std::get<i.value>(fTuple)(nonLinOp, fe, requirements)); });
 
   // check if element has a test functor, if yes we execute it
-  if constexpr (requires { ElementTest<FEElementType>::test(); }) {
-    auto testFunctor = ElementTest<FEElementType>::test();
+  if constexpr (requires { ElementTest<FEType>::test(); }) {
+    auto testFunctor = ElementTest<FEType>::test();
     t.subTest(testFunctor(nonLinOp, fe, requirements));
   } else
-    spdlog::info("No element test functor found for {}", Dune::className<FEElementType>());
+    spdlog::info("No element test functor found for {}", Dune::className<FEType>());
 
   return t;
 }

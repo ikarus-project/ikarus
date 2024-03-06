@@ -3,6 +3,9 @@
 
 #pragma once
 
+#include <functional>
+#include <optional>
+
 #include <dune/localfefunctions/manifolds/realTuple.hh>
 
 #include <ikarus/utils/traversal.hh>
@@ -21,16 +24,17 @@ namespace Ikarus::FEHelper {
  * \return A Dune block vector representing the solution quantities at each node.
  * */
 template <typename Traits, typename ST>
-auto localSolutionBlockVector(const typename Traits::FERequirementType::SolutionVectorTypeRaw& x,
-                              const typename Traits::LocalView& localView,
-                              const std::optional<const Eigen::VectorX<ST>>& dx = std::nullopt) {
+auto localSolutionBlockVector(
+    const typename Traits::FERequirementType::SolutionVectorTypeRaw& x, const typename Traits::LocalView& localView,
+    const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) {
   constexpr int worldDim = Traits::worlddim;
   const auto& fe         = localView.tree().child(0).finiteElement();
   Dune::BlockVector<Dune::RealTuple<ST, worldDim>> localX(fe.size());
   if (dx)
     for (auto i = 0U; i < localX.size(); ++i)
       for (auto j = 0U; j < worldDim; ++j)
-        localX[i][j] = dx.value()[i * worldDim + j] + x[localView.index(localView.tree().child(j).localIndex(i))[0]];
+        localX[i][j] =
+            dx.value().get()[i * worldDim + j] + x[localView.index(localView.tree().child(j).localIndex(i))[0]];
   else
     for (auto i = 0U; i < localX.size(); ++i)
       for (auto j = 0U; j < worldDim; ++j)
@@ -110,7 +114,7 @@ void globalIndicesFromLocalView(const LocalView& localView,
  * \details The global indices are collected in a FlatInterLeaved order or in BlockedInterleaved order.
  * This function can handle a scalar basis, power basis, and a composite basis.
  *
- * \tparam FiniteElement Type of the local view
+ * \tparam FiniteElement Type of the finite element.
  *
  * \param fe The finite element.
  * \param globalIndices Output vector to store global indices.

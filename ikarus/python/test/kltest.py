@@ -65,16 +65,17 @@ if __name__ == "__main__":
     lambdaLoad = iks.ValueWrapper(1.0)
     thickness = 0.1
 
-    def volumeLoad(x, lambdaVal):
+    def vL(x, lambdaVal):
         return np.array([0, 0, 2 * thickness**3 * lambdaVal])
+    
+    vLoad = iks.finite_elements.volumeLoad3D(vL)
+
+    klShell = iks.finite_elements.kirchhoffLoveShell(youngs_modulus=1000, nu=0.0,thickness=thickness)
 
     fes = []
     for e in gridView.elements:
-        fes.append(
-            iks.finite_elements.KirchhoffLoveShell(
-                basis, e, 1000, 0.0, thickness, volumeLoad
-            )
-        )
+        fes.append(iks.finite_elements.makeFE(basis,klShell,vLoad))
+        fes[-1].bind(e)
 
     dirichletValues = iks.dirichletValues(flatBasis)
 

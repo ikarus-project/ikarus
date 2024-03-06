@@ -72,18 +72,23 @@ static auto NonLinearKLShellLoadControlTR() {
   const double nu        = 0.0;
   const double thickness = 0.1;
   auto basis             = Ikarus::makeBasis(gridView, power<3>(nurbs(), FlatInterleaved()));
-  auto volumeLoad        = [thickness]([[maybe_unused]] auto& globalCoord, auto& lamb) {
+  auto vL                = [thickness]([[maybe_unused]] auto& globalCoord, auto& lamb) {
     Eigen::Vector3d fext;
     fext.setZero();
     fext[2] = 2 * Dune::power(thickness, 3) * lamb;
     return fext;
   };
 
-  using ElementType = KirchhoffLoveShell<decltype(basis)>;
-  std::vector<ElementType> fes;
+  auto fe = Ikarus::makeFE(
+      basis, skills(kirchhoffLoveShell({.youngs_modulus = E, .nu = nu, .thickness = thickness}), volumeLoad<3>(vL)));
 
-  for (auto& element : elements(gridView))
-    fes.emplace_back(basis, element, E, nu, thickness, volumeLoad);
+  using FEType = decltype(fe);
+  std::vector<FEType> fes;
+
+  for (auto& element : elements(gridView)) {
+    fes.emplace_back(fe);
+    fes.back().bind(element);
+  }
 
   auto basisP = std::make_shared<const decltype(basis)>(basis);
   Ikarus::DirichletValues dirichletValues(basisP->flat());
@@ -109,12 +114,14 @@ static auto NonLinearKLShellLoadControlTR() {
   auto residualFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
     req.insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
         .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal);
+   // std::cout << sparseAssembler.getVector(req) << std::endl;
     return sparseAssembler.getVector(req);
   };
 
   auto KFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
     req.insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
         .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal);
+   // std::cout << sparseAssembler.getMatrix(req) << std::endl;
     return sparseAssembler.getMatrix(req);
   };
 
@@ -126,8 +133,8 @@ static auto NonLinearKLShellLoadControlTR() {
 
   auto nonLinOp = NonLinearOperator(functions(energyFunction, residualFunction, KFunction), parameter(d, lambda));
 
-  t.check(utils::checkGradient(nonLinOp, {.draw = false})) << "Check gradient failed";
-  t.check(utils::checkHessian(nonLinOp, {.draw = false})) << "Check hessian failed";
+  t.check(utils::checkGradient(nonLinOp, {.draw = true,.writeSlopeStatementIfFailed = true})) << "Check gradient failed";
+  t.check(utils::checkHessian(nonLinOp, {.draw = true,.writeSlopeStatementIfFailed = true})) << "Check hessian failed";
 
   const double gradTol = 1e-14;
 
@@ -159,36 +166,18 @@ static auto NonLinearKLShellLoadControlTR() {
   return t;
 }
 
-template <typename Basis_, typename FERequirements_ = Ikarus::FERequirements<>>
-struct KirchhoffLoveShellHelper : Ikarus::KirchhoffLoveShell<Basis_, FERequirements_, false>
-{
-  using Base = Ikarus::KirchhoffLoveShell<Basis_, FERequirements_, false>;
-  using Base::Base;
-  using FlatBasis = typename Basis_::FlatBasis;
-
-  using LocalView = typename FlatBasis::LocalView;
-  using GridView  = typename FlatBasis::GridView;
-
-  template <typename VolumeLoad = Ikarus::utils::LoadDefault, typename NeumannBoundaryLoad = Ikarus::utils::LoadDefault>
-  KirchhoffLoveShellHelper(const Basis_& globalBasis, const typename LocalView::Element& element, double emod,
-                           double nu, double thickness, VolumeLoad p_volumeLoad = {},
-                           const BoundaryPatch<GridView>* p_neumannBoundary = nullptr,
-                           NeumannBoundaryLoad p_neumannBoundaryLoad        = {})
-      : Base(globalBasis, element, emod, nu, thickness, p_volumeLoad, p_neumannBoundary, p_neumannBoundaryLoad) {}
-};
-
 auto singleElementTest() {
   TestSuite t("Kirchhoff-Love autodiff");
   using namespace Dune::Functions::BasisFactory;
 
-  auto volumeLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
+  auto vL = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
     Eigen::Vector<typename VectorType::field_type, VectorType::dimension> fExt;
     fExt.setZero();
     fExt[1] = 2 * lamb;
     return fExt;
   };
 
-  auto neumannBoundaryLoad = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
+  auto nBL = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
     Eigen::Vector<typename VectorType::field_type, VectorType::dimension> fExt;
     fExt.setZero();
     fExt[0] = lamb / 40;
@@ -200,12 +189,12 @@ auto singleElementTest() {
     /// We artificially apply a Neumann load on the complete boundary
     Dune::BitSetVector<1> neumannVertices(gridView.size(2), true);
     BoundaryPatch neumannBoundary(gridView, neumannVertices);
-    const double E         = 1000;
-    const double nu        = 0.0;
-    const double thickness = 0.1;
 
-    t.subTest(checkFEByAutoDiff<KirchhoffLoveShellHelper>(gridView, power<3>(nurbs()), E, nu, thickness, volumeLoad,
-                                                          &neumannBoundary, neumannBoundaryLoad));
+    auto klShell = Ikarus::kirchhoffLoveShell({.youngs_modulus = 1000, .nu = 0.0, .thickness = 0.1});
+
+    t.subTest(checkFESByAutoDiff(
+        gridView, power<3>(nurbs()),
+        Ikarus::skills(klShell, Ikarus::volumeLoad<3>(vL), Ikarus::neumannBoundaryLoad(&neumannBoundary, nBL))));
   }
   return t;
 }

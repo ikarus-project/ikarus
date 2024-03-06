@@ -94,7 +94,7 @@ public:
   [[nodiscard(
       "The solve method returns information of the solution process. You should store this information and check if "
       "it was successful")]] NonLinearSolverInformation
-  solve(SubsidiaryType& subsidiaryFunction, SubsidiaryArgs& subsidiaryArgs,
+  solve(SubsidiaryType&& subsidiaryFunction, SubsidiaryArgs& subsidiaryArgs,
         const SolutionType& dxPredictor = NoPredictor{}) {
     this->notify(NonLinearSolverMessages::INIT);
 

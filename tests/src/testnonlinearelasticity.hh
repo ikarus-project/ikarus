@@ -16,13 +16,12 @@
 
 #include <ikarus/assembler/simpleassemblers.hh>
 #include <ikarus/controlroutines/loadcontrol.hh>
+#include <ikarus/finiteelements/fefactory.hh>
 #include <ikarus/finiteelements/mechanics/linearelastic.hh>
 #include <ikarus/finiteelements/mechanics/nonlinearelastic.hh>
 #include <ikarus/io/resultevaluators.hh>
 #include <ikarus/io/resultfunction.hh>
-#include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/solver/nonlinearsolver/trustregion.hh>
-#include <ikarus/utils/algorithms.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/nonlinearoperator.hh>
@@ -47,8 +46,8 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   using namespace Ikarus;
   using namespace Dune::Functions::BasisFactory;
 
-  auto basis      = Ikarus::makeBasis(gridView, power<2>(lagrange<1>(), FlatInterleaved()));
-  auto volumeLoad = []([[maybe_unused]] auto& globalCoord, auto& lamb) {
+  auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<1>(), FlatInterleaved()));
+  auto vL    = []([[maybe_unused]] auto& globalCoord, auto& lamb) {
     Eigen::Vector2d fext;
     fext.setZero();
     fext[1] = 2 * lamb;
@@ -57,12 +56,13 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   };
 
   auto reducedMat = planeStress(mat, 1e-8);
+  auto preFE      = makeFE(basis, skills(nonLinearElastic(reducedMat), volumeLoad<2>(vL)));
+  std::vector<decltype(preFE)> fes;
 
-  using ElementType = Ikarus::NonLinearElastic<decltype(basis), decltype(reducedMat)>;
-  std::vector<ElementType> fes;
-
-  for (auto& element : elements(gridView))
-    fes.emplace_back(basis, element, reducedMat, volumeLoad);
+  for (auto&& ge : elements(gridView)) {
+    fes.emplace_back(preFE);
+    fes.back().bind(ge);
+  }
 
   auto basisP = std::make_shared<const decltype(basis)>(basis);
   Ikarus::DirichletValues dirichletValues(basisP->flat());
@@ -158,7 +158,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   }
 
   Dune::Vtk::VtkWriter<GridView> vtkWriter2(gridView);
-  auto resultFunction = makeResultFunction<ResultType::PK2Stress>(&fes, req);
+  auto resultFunction = makeResultFunction<ResultTypes::PK2Stress>(&fes, req);
 
   t.check(resultFunction->name() == "PK2Stress")
       << "Test resultName: " << resultFunction->name() << "should be PK2Stress";
@@ -166,20 +166,20 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
 
   vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction));
 
-  auto resultFunction2 = makeResultFunction<ResultType::PK2Stress, ResultEvaluators::PrincipalStress<2>>(&fes, req);
+  auto resultFunction2 = makeResultFunction<ResultTypes::PK2Stress, ResultEvaluators::PrincipalStress<2>>(&fes, req);
   t.check(resultFunction2->name() == "PrincipalStress")
       << "Test resultName: " << resultFunction2->name() << "should be PrincipalStress";
 
   t.check(resultFunction2->ncomps() == 2) << "Test result comps: " << resultFunction2->ncomps() << "should be 2";
   vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction2));
 
-  auto resultFunction3 = makeResultFunction<ResultType::PK2Stress, ResultEvaluators::VonMises>(&fes, req);
+  auto resultFunction3 = makeResultFunction<ResultTypes::PK2Stress, ResultEvaluators::VonMises>(&fes, req);
   t.check(resultFunction3->name() == "VonMises")
       << "Test resultName: " << resultFunction2->name() << "should be VonMises";
   t.check(resultFunction3->ncomps() == 1) << "Test result comps: " << resultFunction2->ncomps() << "should be 1";
   vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction3));
 
-  auto resultFunction4 = makeResultVtkFunction<ResultType::PK2Stress, OwnResultFunction>(&fes, req);
+  auto resultFunction4 = makeResultVtkFunction<ResultTypes::PK2Stress, OwnResultFunction>(&fes, req);
   vtkWriter2.addPointData(resultFunction4);
   vtkWriter2.write("EndResult" + Dune::className<Grid>());
 
@@ -207,12 +207,10 @@ auto GreenLagrangeStrainTest(const Material& mat) {
   auto element = gridView.template begin<0>();
   auto nDOF    = basis.flat().size();
 
-  using NonLinearElasticity = Ikarus::NonLinearElastic<decltype(basis), decltype(mat)>;
-  using LinearElasticity    = Ikarus::LinearElastic<decltype(basis)>;
-
-  NonLinearElasticity fe(basis, *element, mat);
-  LinearElasticity feLE(basis, *element, 1000.0, 0.0);
-
+  auto fe   = makeFE(basis, skills(nonLinearElastic(mat)));
+  auto feLE = makeFE(basis, skills(Ikarus::linearElastic({.emodul = 1000, .nu = 0.0})));
+  fe.bind(*element);
+  feLE.bind(*element);
   Eigen::VectorXd d;
   d.setZero(nDOF);
   double lambda = 0.0;
@@ -225,8 +223,8 @@ auto GreenLagrangeStrainTest(const Material& mat) {
   K.setZero(nDOF, nDOF);
   KLE.setZero(nDOF, nDOF);
 
-  fe.calculateMatrix(req, K);
-  feLE.calculateMatrix(req, KLE);
+  calculateMatrix(fe, req, K);
+  calculateMatrix(feLE, req, KLE);
 
   t.check(K.isApprox(KLE, tol),
           "Mismatch between linear and non-linear stiffness matrix for zero displacements with gridDim = " +
@@ -251,8 +249,8 @@ auto SingleElementTest(const Material& mat) {
   auto nDOF        = basis.flat().size();
   const double tol = 1e-10;
 
-  using NonLinearElastic = NonLinearElastic<decltype(basis), decltype(mat)>;
-  NonLinearElastic fe(basis, *element, mat);
+  auto fe = makeFE(basis, skills(nonLinearElastic(mat)));
+  fe.bind(*element);
 
   Eigen::VectorXd d;
   d.setZero(nDOF);
@@ -266,7 +264,7 @@ auto SingleElementTest(const Material& mat) {
 
   Eigen::MatrixXd K;
   K.setZero(nDOF, nDOF);
-  fe.calculateMatrix(req, K);
+  calculateMatrix(fe, req, K);
 
   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> essaK;
   essaK.compute(K);

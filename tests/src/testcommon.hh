@@ -22,7 +22,7 @@
 #endif
 #include "testhelpers.hh"
 
-#include <ikarus/finiteelements/autodiff/autodifffe.hh>
+#include <ikarus/finiteelements/autodifffe.hh>
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/finiteelements/feresulttypes.hh>
 #include <ikarus/io/resultfunction.hh>
@@ -238,7 +238,7 @@ template <template <typename, int, int> class RT, bool vectorizedResult = true>
 [[nodiscard]] auto checkCalculateAt(auto& /*nonLinearOperator*/, auto& fe, const auto& feRequirements,
                                     const auto& expectedResult, const auto& evaluationPositions,
                                     const std::string& messageIfFailed = "") {
-  Dune::TestSuite t("Test of the calulateAt function for " + Dune::className(fe));
+  Dune::TestSuite t("Test of the calulateAt function for " + Dune::className(fe), Dune::TestSuite::AlwaysThrow);
 
   using FiniteElement = std::remove_cvref_t<decltype(fe)>;
   Eigen::MatrixXd computedResults(expectedResult.rows(), expectedResult.cols());
@@ -329,8 +329,8 @@ template <typename NonLinearOperator, typename FiniteElement,
   K.setZero(nDOF, nDOF);
   KAutoDiff.setZero(nDOF, nDOF);
 
-  fe.calculateMatrix(req, K);
-  feAutoDiff.calculateMatrix(req, KAutoDiff);
+  calculateMatrix(fe, req, K);
+  calculateMatrix(feAutoDiff, req, KAutoDiff);
 
   if constexpr (requires { feAutoDiff.getFE().getNumberOfEASParameters(); }) {
     t.check(fe.getNumberOfEASParameters() == feAutoDiff.getFE().getNumberOfEASParameters())
@@ -351,8 +351,8 @@ template <typename NonLinearOperator, typename FiniteElement,
     R.setZero(nDOF);
     RAutoDiff.setZero(nDOF);
 
-    fe.calculateVector(req, R);
-    feAutoDiff.calculateVector(req, RAutoDiff);
+    calculateVector(fe, req, R);
+    calculateVector(feAutoDiff, req, RAutoDiff);
     t.check(R.isApprox(RAutoDiff, tol),
             "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
             "automatic differentiation")
@@ -364,8 +364,8 @@ template <typename NonLinearOperator, typename FiniteElement,
   }
 
   try {
-    auto energy         = fe.calculateScalar(req);
-    auto energyAutoDiff = feAutoDiff.calculateScalar(req);
+    auto energy         = calculateScalar(fe, req);
+    auto energyAutoDiff = calculateScalar(feAutoDiff, req);
     t.check(Dune::FloatCmp::eq(energy, energyAutoDiff, tol),
             "Mismatch between the energies obtained from explicit implementation and the one based on "
             "automatic differentiation")
