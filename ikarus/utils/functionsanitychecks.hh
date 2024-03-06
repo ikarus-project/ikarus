@@ -138,7 +138,7 @@ bool checkJacobian(
 
   const double slope = Impl::drawResultAndReturnSlope("Jacobian", ftfunc, checkFlags.draw, 2);
 
-  const bool checkPassed = Dune::FloatCmp::le(2.0, slope, checkFlags.tolerance) and slope != std::numeric_limits<double>::infinity();
+  const bool checkPassed = Dune::FloatCmp::le(2.0, slope, checkFlags.tolerance);
 
   if (checkFlags.writeSlopeStatementIfFailed and not checkPassed) {
     spdlog::info("Jacobian check:");
@@ -201,7 +201,7 @@ bool checkHessian(
 
   const double slope = Impl::drawResultAndReturnSlope("Hessian", ftfunc, checkFlags.draw, 3);
 
-  const bool checkPassed = Dune::FloatCmp::le(3.0, slope, checkFlags.tolerance) and slope !=std::numeric_limits<double>::infinity() ;
+  const bool checkPassed = Dune::FloatCmp::le(3.0, slope, checkFlags.tolerance);
 
   if (checkFlags.writeSlopeStatementIfFailed and not checkPassed) {
     spdlog::info("Hessian check:");

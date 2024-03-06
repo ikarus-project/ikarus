@@ -67,42 +67,51 @@ namespace Impl {
       return std::visit([]<typename EAST>(const EAST&) -> int { return EAST::enhancedStrainSize; }, var_);
     }
     bool isDisplacmentBased() const { return numberOfEASParameters() == 0; }
-    void setEASType(int numberOfEASParameters) { numberOfEASParameters_ = numberOfEASParameters; }
+    void setEASType(int numberOfEASParameters) {
+      numberOfEASParameters_ = numberOfEASParameters;
+      if (geometry_)
+        createEASType();
+    }
     void bind(const Geometry& geometry) {
+      geometry_=std::make_shared<Geometry>(geometry);
+      createEASType();
+    }
+
+  private:
+    void createEASType() {
       if (numberOfEASParameters_ == 0) {
-        var_ = E0(geometry);
+        var_ = E0(geometry_.get());
         return;
       }
 
       if constexpr (Geometry::mydimension == 2) {
         switch (numberOfEASParameters_) {
           case 4:
-            var_ = Q1E4(geometry);
-            break;
+            var_ = Q1E4(geometry_.get());
+          break;
           case 5:
-            var_ = Q1E5(geometry);
-            break;
+            var_ = Q1E5(geometry_.get());
+          break;
           case 7:
-            var_ = Q1E7(geometry);
-            break;
+            var_ = Q1E7(geometry_.get());
+          break;
           default:
             DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available for the 2D case.");
         }
       } else if constexpr (Geometry::mydimension == 3) {
         switch (numberOfEASParameters_) {
           case 9:
-            var_ = H1E9(geometry);
-            break;
+            var_ = H1E9(geometry_.get());
+          break;
           case 21:
-            var_ = H1E21(geometry);
-            break;
+            var_ = H1E21(geometry_.get());
+          break;
           default:
             DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available for the 3D case.");
         }
       }
     }
-
-  private:
+    std::shared_ptr<Geometry> geometry_;
     Variant var_;
     int numberOfEASParameters_;
   };

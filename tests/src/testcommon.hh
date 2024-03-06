@@ -212,7 +212,7 @@ template <typename NonLinearOperator>
                                           const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Check gradient");
   t.check(Ikarus::utils::checkGradient(nonLinearOperator, {.draw = false, .writeSlopeStatementIfFailed = true}))
-      << "The gradient of calculateVector is not the gradient of calculateScalar." << messageIfFailed;
+      << "calculateVector is not the gradient of calculateScalar." << messageIfFailed;
   return t;
 }
 
@@ -221,7 +221,7 @@ template <typename NonLinearOperator>
                                          const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Check Hessian");
   t.check(Ikarus::utils::checkHessian(nonLinearOperator, {.draw = false, .writeSlopeStatementIfFailed = true}))
-      << "The Hessian of calculateMatrix is not the Hessian of calculateScalar. " << messageIfFailed;
+      << "calculateMatrix is not the Hessian of calculateScalar. " << messageIfFailed;
   return t;
 }
 
@@ -230,7 +230,7 @@ template <typename NonLinearOperator>
                                           const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Check Jacobian");
   t.check(Ikarus::utils::checkJacobian(nonLinearOperator, {.draw = false, .writeSlopeStatementIfFailed = true}))
-      << "The Jacobian of calculateMatrix is not the Jacobian of calculateVector." << messageIfFailed;
+      << "The Jacobian of calculateVector is not calculateMatrix." << messageIfFailed;
   return t;
 }
 

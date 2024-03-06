@@ -134,7 +134,9 @@ static auto NonLinearKLShellLoadControlTR() {
   auto nonLinOp = NonLinearOperator(functions(energyFunction, residualFunction, KFunction), parameter(d, lambda));
 
   t.check(utils::checkGradient(nonLinOp, {.draw = true,.writeSlopeStatementIfFailed = true})) << "Check gradient failed";
-  t.check(utils::checkHessian(nonLinOp, {.draw = true,.writeSlopeStatementIfFailed = true})) << "Check hessian failed";
+  t.check(utils::checkHessian(nonLinOp, {.draw = true,.writeSlopeStatementIfFailed = true})) << "Check Hessian failed";
+  auto subOp = nonLinOp.template subOperator<1,2>();
+  t.check(utils::checkJacobian(subOp, {.draw = true,.writeSlopeStatementIfFailed = true})) << "Check Jacobian failed";
 
   const double gradTol = 1e-14;
 

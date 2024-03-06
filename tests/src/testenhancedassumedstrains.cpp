@@ -34,11 +34,15 @@ int main(int argc, char** argv) {
 
   t.subTest(testFEElement(firstOrderLagrangePrePower2Basis, "EAS", randomlyDistorted,
                           Dune::ReferenceElements<double, 2>::cube(), &Ikarus::linearElastic,
-                          Ikarus::skills(Ikarus::eas()), checkJacobianFunctor));
+                          Ikarus::skills(Ikarus::eas())
+                          ,checkJacobianFunctor
+                          ));
 
   t.subTest(testFEElement(firstOrderLagrangePrePower3Basis, "EAS", randomlyDistorted,
                           Dune::ReferenceElements<double, 3>::cube(), &Ikarus::linearElastic,
-                          Ikarus::skills(Ikarus::eas()), checkJacobianFunctor));
+                          Ikarus::skills(Ikarus::eas())
+                           ,checkJacobianFunctor
+                          ));
 
   t.subTest(testFEElement(
       firstOrderLagrangePrePower2Basis, "EAS", unDistorted, Dune::ReferenceElements<double, 2>::cube(),

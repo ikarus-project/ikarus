@@ -29,9 +29,9 @@ struct H1E9
   using DType                             = Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>;
 
   H1E9() = default;
-  explicit H1E9(const GEO& geometry)
-      : geometry_{std::make_shared<GEO>(geometry)},
-        T0InverseTransformed_{calcTransformationMatrix3D(geometry)} {}
+  explicit H1E9(const GEO* geometry)
+      : geometry_{geometry},
+        T0InverseTransformed_{calcTransformationMatrix3D(*geometry)} {}
 
   auto calcM(const Dune::FieldVector<double, 3>& quadPos) const {
     MType M;
@@ -54,7 +54,7 @@ struct H1E9
   }
 
 private:
-  std::shared_ptr<GEO> geometry_;
+  const GEO* geometry_;
   Eigen::Matrix<double, strainSize, strainSize> T0InverseTransformed_;
 };
 
@@ -63,9 +63,9 @@ private:
  *
  * This structure defines the EAS for H1 elements with 21 enhanced strains.
  *
- * \tparam Geometry The geometry type.
+ * \tparam GEO The geometry type.
  */
-template <typename Geometry>
+template <typename GEO>
 struct H1E21
 {
   static constexpr int strainSize         = 6;
@@ -74,9 +74,9 @@ struct H1E21
   using DType                             = Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>;
 
   H1E21() = default;
-  explicit H1E21(const Geometry& geometry_)
-      : geometry{std::make_shared<Geometry>(geometry_)},
-        T0InverseTransformed{calcTransformationMatrix3D(geometry_)} {}
+  explicit H1E21(const GEO* geometry)
+      : geometry_{geometry},
+        T0InverseTransformed{calcTransformationMatrix3D(*geometry_)} {}
 
   auto calcM(const Dune::FieldVector<double, 3>& quadPos) const {
     MType M;
@@ -108,13 +108,13 @@ struct H1E21
     M(2, 19) = (2 * xi - 1.0) * (2 * zeta - 1.0);
     M(2, 20) = (2 * eta - 1.0) * (2 * zeta - 1.0);
 
-    const double detJ = geometry->integrationElement(quadPos);
+    const double detJ = geometry_->integrationElement(quadPos);
     M                 = T0InverseTransformed / detJ * M;
     return M;
   }
 
 private:
-  std::shared_ptr<Geometry> geometry;
+  const GEO* geometry_;
   Eigen::Matrix<double, strainSize, strainSize> T0InverseTransformed;
 };
 } // namespace Ikarus::EAS

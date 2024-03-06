@@ -201,10 +201,7 @@ protected:
     const auto uFunction      = underlying().displacementFunction(par, dx);
     auto strainFunction       = underlying().strainFunction(par, dx);
     const auto& numberOfNodes = underlying().numberOfNodes();
-    const auto disp           = Dune::viewAsFlatEigenVector(uFunction.coefficientsRef());
 
-    auto C                          = underlying().materialTangentFunction(par);
-    const auto geo                  = underlying().localView().element().geometry();
     auto calculateForceContribution = [&]<typename EAST>(const EAST& easFunction) {
       typename EAST::DType D;
       calculateDAndLMatrix(easFunction, par, D, L_);
@@ -218,6 +215,7 @@ protected:
       const auto disp  = Dune::viewAsFlatEigenVector(uFunction.coefficientsRef());
       const auto alpha = (-D.inverse() * L_ * disp).eval();
       const auto geo   = underlying().localView().element().geometry();
+      auto C                          = underlying().materialTangentFunction(par);
 
       for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
         const auto M            = easFunction.calcM(gp.position());
