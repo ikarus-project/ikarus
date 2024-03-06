@@ -108,6 +108,7 @@ foreach(programSourceFile ${programSourceFiles})
              -Wno-ctad-maybe-unsupported
              -Wno-sign-conversion
              -Wno-c++20-extensions
+             -Wno-shorten-64-to-32
     )
 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

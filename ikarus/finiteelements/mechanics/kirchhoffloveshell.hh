@@ -17,6 +17,7 @@
 #include <ikarus/finiteelements/mechanics/loads.hh>
 #include <ikarus/finiteelements/mechanics/membranestrains.hh>
 #include <ikarus/finiteelements/physicshelper.hh>
+#include <ikarus/utils/linearalgebrahelper.hh>
 
 namespace Ikarus {
 template <typename PreFE, typename FE>
