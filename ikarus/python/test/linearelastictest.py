@@ -71,7 +71,7 @@ if __name__ == "__main__":
 
     indexSet = grid.indexSet
     for v in grid.vertices:
-        neumannVertices[indexSet.index(v)]=loadTopEdgePredicate(v.geometry().center())
+        neumannVertices[indexSet.index(v)]=loadTopEdgePredicate(v.geometry.center)
 
     boundaryPatch = iks.utils.boundaryPatch(grid, neumannVertices)
 
