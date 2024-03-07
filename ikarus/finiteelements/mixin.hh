@@ -135,7 +135,7 @@ struct FEMixin : Skills<PreFE, typename PreFE::template FE<Skills...>>...
       const FERequirementType& par,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
     return (Skills<PreFE, typename PreFE::template FE<Skills...>>::template calculateScalarImpl<ScalarType>(par, dx) +
-            ...+ScalarType{0});
+            ... + ScalarType{0});
   }
 
   /**

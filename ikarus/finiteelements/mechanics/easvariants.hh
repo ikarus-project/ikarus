@@ -73,7 +73,7 @@ namespace Impl {
         createEASType();
     }
     void bind(const Geometry& geometry) {
-      geometry_=std::make_shared<Geometry>(geometry);
+      geometry_ = std::make_shared<Geometry>(geometry);
       createEASType();
     }
 
@@ -88,13 +88,13 @@ namespace Impl {
         switch (numberOfEASParameters_) {
           case 4:
             var_ = Q1E4(geometry_.get());
-          break;
+            break;
           case 5:
             var_ = Q1E5(geometry_.get());
-          break;
+            break;
           case 7:
             var_ = Q1E7(geometry_.get());
-          break;
+            break;
           default:
             DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available for the 2D case.");
         }
@@ -102,10 +102,10 @@ namespace Impl {
         switch (numberOfEASParameters_) {
           case 9:
             var_ = H1E9(geometry_.get());
-          break;
+            break;
           case 21:
             var_ = H1E21(geometry_.get());
-          break;
+            break;
           default:
             DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available for the 3D case.");
         }

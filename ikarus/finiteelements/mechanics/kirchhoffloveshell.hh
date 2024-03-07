@@ -99,7 +99,6 @@ public:
       : mat_{linPre.material},
         thickness_{linPre.thickness} {}
 
-
   /**
    * \brief A helper function to bind the local view to the element.
    */
@@ -109,7 +108,7 @@ public:
     auto& firstChild      = localView.tree().child(0);
 
     const auto& fe = firstChild.finiteElement();
-    geo_           = std::make_shared<const Geometry>(element.geometry());
+    geo_.emplace(element.geometry());
     numberOfNodes_ = fe.size();
     order_         = 2 * (fe.localBasis().order());
     localBasis_    = Dune::CachedLocalBasis(fe.localBasis());
@@ -182,7 +181,7 @@ private:
   //> CRTP
   const auto& underlying() const { return static_cast<const FE&>(*this); }
   auto& underlying() { return static_cast<FE&>(*this); }
-  std::shared_ptr<const Geometry> geo_;
+  std::optional<Geometry> geo_;
   Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType>> localBasis_;
   DefaultMembraneStrain membraneStrain_;
   YoungsModulusAndPoissonsRatio mat_;

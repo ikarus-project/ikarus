@@ -71,7 +71,6 @@ public:
   explicit LinearElastic(const Pre& linPre)
       : mat_{linPre.material} {}
 
-
   /**
    * \brief A helper function to bind the local view to the element.
    */

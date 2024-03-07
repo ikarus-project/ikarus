@@ -84,13 +84,12 @@ static auto NonLinearKLShellLoadControlTR() {
   auto fe = Ikarus::makeFE(
       basis, skills(kirchhoffLoveShell({.youngs_modulus = E, .nu = nu, .thickness = thickness}), volumeLoad<3>(vL)));
   auto fe2 = fe;
-  
+
   using FEType = decltype(fe);
   std::vector<FEType> fes;
 
   for (auto&& element : elements(gridView)) {
-    fes.emplace_back(Ikarus::makeFE(
-      basis, skills(kirchhoffLoveShell({.youngs_modulus = E, .nu = nu, .thickness = thickness}), volumeLoad<3>(vL))));
+    fes.emplace_back(fe);
     fes.back().bind(element);
   }
 
@@ -118,14 +117,12 @@ static auto NonLinearKLShellLoadControlTR() {
   auto residualFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
     req.insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
         .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal);
-   // std::cout << sparseAssembler.getVector(req) << std::endl;
     return sparseAssembler.getVector(req);
   };
 
   auto KFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
     req.insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
         .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal);
-   // std::cout << sparseAssembler.getMatrix(req) << std::endl;
     return sparseAssembler.getMatrix(req);
   };
 
@@ -152,14 +149,6 @@ static auto NonLinearKLShellLoadControlTR() {
              .useRand   = false,
              .rho_reg   = 1e8,
              .Delta0    = 1});
-
-  // auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::sd_UmfPackLU);
-  // auto tr = makeNewtonRaphson(subOp,std::move(linSolver));
-  // tr->setup({.maxIter   = 1000,
-  //            .tol  = gradTol,
-  //            });
-  // auto nonLinearSolverObserver = std::make_shared<Ikarus::NonLinearSolverLogger>();
-  // tr->subscribeAll(nonLinearSolverObserver);
 
   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(
       basis.flat(), d, 2);

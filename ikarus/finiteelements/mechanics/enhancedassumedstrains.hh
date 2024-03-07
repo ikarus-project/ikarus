@@ -215,7 +215,7 @@ protected:
       const auto disp  = Dune::viewAsFlatEigenVector(uFunction.coefficientsRef());
       const auto alpha = (-D.inverse() * L_ * disp).eval();
       const auto geo   = underlying().localView().element().geometry();
-      auto C                          = underlying().materialTangentFunction(par);
+      auto C           = underlying().materialTangentFunction(par);
 
       for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
         const auto M            = easFunction.calcM(gp.position());
