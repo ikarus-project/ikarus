@@ -44,8 +44,8 @@ struct TrustRegionSettings
 {
   int verbosity    = 5;                                       ///< Verbosity level.
   double maxtime   = std::numeric_limits<double>::infinity(); ///< Maximum allowable time for solving.
-  int miniter      = 3;                                       ///< Minimum number of iterations.
-  int maxiter      = 1000;                                    ///< Maximum number of iterations.
+  int minIter      = 3;                                       ///< Minimum number of iterations.
+  int maxIter      = 1000;                                    ///< Maximum number of iterations.
   int debug        = 0;                                       ///< Debugging flag.
   double grad_tol  = 1e-6;                                    ///< Gradient tolerance.
   double corr_tol  = 1e-6;                                    ///< Correction tolerance.
@@ -415,9 +415,9 @@ private:
     }
 
     /** Maximum Iterations reached  */
-    if (stats_.outerIter >= options_.maxiter) {
+    if (stats_.outerIter >= options_.maxIter) {
       logFinalState();
-      stream << "Max iteration count reached; options.maxiter = " << options_.maxiter << ".";
+      stream << "Max iteration count reached; options.maxiter = " << options_.maxIter << ".";
       info_.reasonString = stream.str();
       info_.stop         = StopReason::maximumIterationsReached;
       return true;

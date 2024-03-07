@@ -93,6 +93,7 @@ namespace Impl {
 template <typename LocalView>
 void globalIndicesFromLocalView(const LocalView& localView,
                                 std::vector<typename LocalView::MultiIndex>& globalIndices) {
+  assert(localView.bound());
   globalIndices.clear();
   using namespace Dune::Indices;
   using namespace FEHelper::Impl;

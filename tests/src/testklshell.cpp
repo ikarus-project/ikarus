@@ -24,6 +24,7 @@
 #include <ikarus/controlroutines/loadcontrol.hh>
 #include <ikarus/finiteelements/mechanics/kirchhoffloveshell.hh>
 #include <ikarus/io/resultfunction.hh>
+#include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/solver/nonlinearsolver/trustregion.hh>
 #include <ikarus/utils/algorithms.hh>
 #include <ikarus/utils/basis.hh>
@@ -31,6 +32,7 @@
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/nonlinearoperator.hh>
 #include <ikarus/utils/observer/controlvtkwriter.hh>
+#include <ikarus/utils/observer/nonlinearsolverlogger.hh>
 
 using Dune::TestSuite;
 
@@ -133,21 +135,29 @@ static auto NonLinearKLShellLoadControlTR() {
 
   auto nonLinOp = NonLinearOperator(functions(energyFunction, residualFunction, KFunction), parameter(d, lambda));
 
-  t.check(utils::checkGradient(nonLinOp, {.draw = true,.writeSlopeStatementIfFailed = true})) << "Check gradient failed";
-  t.check(utils::checkHessian(nonLinOp, {.draw = true,.writeSlopeStatementIfFailed = true})) << "Check Hessian failed";
+  t.check(utils::checkGradient(nonLinOp, {.draw = false,.writeSlopeStatementIfFailed = true})) << "Check gradient failed";
+  t.check(utils::checkHessian(nonLinOp, {.draw = false,.writeSlopeStatementIfFailed = true})) << "Check Hessian failed";
   auto subOp = nonLinOp.template subOperator<1,2>();
-  t.check(utils::checkJacobian(subOp, {.draw = true,.writeSlopeStatementIfFailed = true})) << "Check Jacobian failed";
+  t.check(utils::checkJacobian(subOp, {.draw = false,.writeSlopeStatementIfFailed = true})) << "Check Jacobian failed";
 
   const double gradTol = 1e-14;
 
   auto tr = makeTrustRegion(nonLinOp);
   tr->setup({.verbosity = 1,
-             .maxiter   = 1000,
+             .maxIter   = 1000,
              .grad_tol  = gradTol,
              .corr_tol  = 1e-16, // everything should converge to the gradient tolerance
              .useRand   = false,
              .rho_reg   = 1e8,
              .Delta0    = 1});
+
+  // auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::sd_UmfPackLU);
+  // auto tr = makeNewtonRaphson(subOp,std::move(linSolver));
+  // tr->setup({.maxIter   = 1000,
+  //            .tol  = gradTol,
+  //            });
+  // auto nonLinearSolverObserver = std::make_shared<Ikarus::NonLinearSolverLogger>();
+  // tr->subscribeAll(nonLinearSolverObserver);
 
   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(
       basis.flat(), d, 2);
@@ -186,7 +196,33 @@ auto singleElementTest() {
     return fExt;
   };
   {
-    auto grid     = createGrid<Grids::IgaSurfaceIn3D>();
+    constexpr auto dimworld        = 3;
+    const std::array<int, 2> order = {1, 1};
+
+    const std::array<std::vector<double>, 2> knotSpans = {
+      {{0, 0, 1, 1}, {0, 0, 1, 1}}
+    };
+
+    using ControlPoint = Dune::IGA::NURBSPatchData<2, dimworld>::ControlPointType;
+
+    const std::vector<std::vector<ControlPoint>> controlPoints = {
+      {{.p = {0, 0, 0}, .w = 1}, {.p = {10, 0, 0}, .w = 1}},
+      {{.p = {0, 2, 0}, .w = 1}, {.p = {10, 2, 0}, .w = 1}}
+    };
+
+    std::array<int, 2> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
+
+    auto controlNet = Dune::IGA::NURBSPatchData<2, dimworld>::ControlPointNetType(dimsize, controlPoints);
+    using Grid      = Dune::IGA::NURBSGrid<2, dimworld>;
+
+    Dune::IGA::NURBSPatchData<2, dimworld> patchData;
+    patchData.knotSpans     = knotSpans;
+    patchData.degree        = order;
+    patchData.controlPoints = controlNet;
+    for (int i = 0; i < 2; ++i)
+      patchData = degreeElevate(patchData, i, 1);
+
+    auto grid = std::make_shared<Grid>(patchData);
     auto gridView = grid->leafGridView();
     /// We artificially apply a Neumann load on the complete boundary
     Dune::BitSetVector<1> neumannVertices(gridView.size(2), true);
