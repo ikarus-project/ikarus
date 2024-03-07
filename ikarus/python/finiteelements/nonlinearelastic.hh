@@ -75,8 +75,8 @@ void registerNonLinearElastic(pybind11::handle scope, pybind11::class_<NonLinear
 
   auto basisName = Dune::className<FlatBasis>();
   auto entry     = Dune::Python::insertClass<FlatBasis>(scopedf, "DefaultGlobalBasis", pybind11::buffer_protocol(),
-                                                    Dune::Python::GenerateTypeName(basisName),
-                                                    Dune::Python::IncludeFiles{"dune/python/functions/globalbasis.hh"});
+                                                        Dune::Python::GenerateTypeName(basisName),
+                                                        Dune::Python::IncludeFiles{"dune/python/functions/globalbasis.hh"});
   if (entry.second)
     Dune::Python::registerGlobalBasis(scopedf, entry.first);
 
