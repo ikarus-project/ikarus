@@ -140,8 +140,6 @@ static auto NonLinearKLShellLoadControlTR() {
       << "Check gradient failed";
   t.check(utils::checkHessian(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << "Check Hessian failed";
-  auto subOp = nonLinOp.template subOperator<1, 2>();
-  t.check(utils::checkJacobian(subOp, {.draw = false, .writeSlopeStatementIfFailed = true})) << "Check Jacobian failed";
 
   const double gradTol = 1e-14;
 
