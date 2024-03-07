@@ -45,7 +45,7 @@ struct PreFE
 
 namespace Impl {
   // Since base classes are initialized, in declaration order before member variables, we have to make sure the
-  // localview_ object of FE is defined. To do this we add this artifical inheritance by inheriting below first from
+  // localview_ object of FE is defined. To do this we add this artificial inheritance by inheriting below first from
   // FEInit, which initializes the localview object first, siche we the other FEMixin base class constructors are called
   template <typename PreFE, typename FE>
   struct FEInit

@@ -34,7 +34,7 @@ jobs:
          path: 'repo'
       - name: Install format dependencies
         run: |
-          pip install clang-format
+          pip install clang-format==17.0.6
           clang-format --version
           pip install cmake_format==0.6.13 pyyaml
           pip install black==23.3.0
