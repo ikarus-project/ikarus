@@ -83,7 +83,8 @@ static auto NonLinearKLShellLoadControlTR() {
 
   auto fe = Ikarus::makeFE(
       basis, skills(kirchhoffLoveShell({.youngs_modulus = E, .nu = nu, .thickness = thickness}), volumeLoad<3>(vL)));
-
+  auto fe2 = fe;
+  
   using FEType = decltype(fe);
   std::vector<FEType> fes;
 
