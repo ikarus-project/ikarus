@@ -289,9 +289,8 @@ private:
 
 protected:
   template <typename ScalarType>
-  auto calculateScalarImpl(const FERequirementType& par,
-                           const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const
-      -> ScalarType {
+  auto calculateScalarImpl(const FERequirementType& par, const std::optional<const Eigen::VectorX<ScalarType>>& dx =
+                                                             std::nullopt) const -> ScalarType {
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     const auto uFunction = displacementFunction(par, dx);

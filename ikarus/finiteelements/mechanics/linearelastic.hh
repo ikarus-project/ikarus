@@ -247,9 +247,8 @@ private:
 
 protected:
   template <typename ScalarType>
-  auto calculateScalarImpl(const FERequirementType& par,
-                           const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const
-      -> ScalarType {
+  auto calculateScalarImpl(const FERequirementType& par, const std::optional<const Eigen::VectorX<ScalarType>>& dx =
+                                                             std::nullopt) const -> ScalarType {
     const auto uFunction = displacementFunction(par, dx);
     const auto eps       = strainFunction(par, dx);
     const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
