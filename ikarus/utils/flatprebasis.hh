@@ -41,7 +41,7 @@ struct FlatPreBasis
   /// Try to construct the pre-basis using a `gridView`.
   template <class PB>
   static type create(PB const& preBasis) {
-    return {preBasis.gridView()};
+    return type(preBasis.gridView());
   }
 
   /// Do not transform the preBasis if already flat
@@ -87,7 +87,7 @@ struct FlatPreBasis<Dune::Functions::CompositePreBasis<IMS, SPB...>>
 
   template <class PreBasis, std::size_t... I>
   static type create(const PreBasis& preBasis, std::index_sequence<I...>) {
-    return {FlatPreBasis<SPB>::create(preBasis.subPreBasis(Dune::index_constant<I>{}))...};
+    return type(FlatPreBasis<SPB>::create(preBasis.subPreBasis(Dune::index_constant<I>{}))...);
   }
 };
 
@@ -100,7 +100,7 @@ struct FlatPreBasis<Dune::Functions::PowerPreBasis<IMS, SPB, C>>
 
   template <class PreBasis>
   static type create(const PreBasis& preBasis) {
-    return {FlatPreBasis<SPB>::create(preBasis.subPreBasis())};
+    return type(FlatPreBasis<SPB>::create(preBasis.subPreBasis()));
   }
 };
 
