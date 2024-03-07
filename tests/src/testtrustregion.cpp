@@ -226,7 +226,7 @@ static auto ddf3R(const Dune::UnitVector<double, 2>& x) {
 static auto trustRegion4_RiemanianUnitSphere() {
   TestSuite t("trustRegion4_RiemanianUnitSphere");
 
-  auto d = Dune::UnitVector<double, 2>(Eigen::Vector2d::UnitX()+0.1*Eigen::Vector2d::UnitY());
+  auto d = Dune::UnitVector<double, 2>(Eigen::Vector2d::UnitX() + 0.1 * Eigen::Vector2d::UnitY());
   d.update(Eigen::Vector<double, 1>::Ones());
   auto fvLambda = [](auto&& xL) { return f3R(xL); };
 

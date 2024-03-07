@@ -33,12 +33,13 @@ auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-13) {
     e                      = 0.5 * (C / esC.eigenvalues().real().maxCoeff() - Eigen::Matrix3d::Identity());
     strainDerivativeFactor = 1;
   } else if (strainTag == StrainTags::rightCauchyGreenTensor) {
-    e = (e.transpose() + e ).eval();
+    e = (e.transpose() + e).eval();
     Eigen::EigenSolver<Eigen::Matrix3d> esC(e);
-    e+= (-esC.eigenvalues().real().minCoeff()+1)*Eigen::Matrix3d::Identity();
-     esC.compute(e);
-    e/=esC.eigenvalues().real().maxCoeff();
-    t.check(esC.eigenvalues().real().minCoeff()>0)<<" The smallest eigenvalue is negative this is unsuitable for the tests";
+    e += (-esC.eigenvalues().real().minCoeff() + 1) * Eigen::Matrix3d::Identity();
+    esC.compute(e);
+    e /= esC.eigenvalues().real().maxCoeff();
+    t.check(esC.eigenvalues().real().minCoeff() > 0)
+        << " The smallest eigenvalue is negative this is unsuitable for the tests";
     strainDerivativeFactor = 0.5;
   } else if (strainTag == StrainTags::deformationGradient) {
     e = (e + 3 * Eigen::Matrix3d::Identity()).eval(); // create positive definite matrix
@@ -57,8 +58,8 @@ auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-13) {
   auto moduliVV = mat.template tangentModuli<strainTag>(ev);
 
   t.check(Dune::FloatCmp::le(std::abs(energyV - energy), tol))
-      << std::string("Energy obtained from matrix and from Voigt representation do not coincide \n")
-      << energy << "\n and \n"
+      << std::string("Energy obtained from matrix and from Voigt representation do not coincide \n") << energy
+      << "\n and \n"
       << energyV << "\n Diff: " << energy - energyV << " with tol: " << tol;
   if constexpr (requires { mat.impl().template stressesImpl<false>(e); }) {
     auto stresses   = mat.template stresses<strainTag, false>(e);
@@ -73,11 +74,13 @@ auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-13) {
         << stressesVM << "\n and \n"
         << stressesV;
   }
-  t.check(isApproxSame(stressesVV, stressesV, tol)) << std::string("Voigt representation of stresses obtained with strains from "
-                                                       "voigt, does not coincide with matrix representation \n")
-                                                    << stressesVV << "\n and \n"
-                                                    << stressesV << "\n Diff: \n"
-                                                    << stressesVV - stressesV;
+  t.check(isApproxSame(stressesVV, stressesV, tol))
+      << std::string(
+             "Voigt representation of stresses obtained with strains from "
+             "voigt, does not coincide with matrix representation \n")
+      << stressesVV << "\n and \n"
+      << stressesV << "\n Diff: \n"
+      << stressesVV - stressesV;
 
   if constexpr (requires { mat.impl().template tangentModuliImpl<false>(e); }) {
     auto moduli = mat.template tangentModuli<strainTag, false>(e);
@@ -88,11 +91,12 @@ auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-13) {
           << moduliV;
     }
 
-    t.check(isApproxSame(moduliVV, moduliV, tol))
-        << std::string("Voigt representation of tangent moduli obtained with Voigt object does not coincide with tangent moduli "
-           "obtained with matrix object  \n")
-        << moduliVV << "\n and \n"
-        << moduliV;
+    t.check(isApproxSame(moduliVV, moduliV, tol)) << std::string(
+                                                         "Voigt representation of tangent moduli obtained with Voigt "
+                                                         "object does not coincide with tangent moduli "
+                                                         "obtained with matrix object  \n")
+                                                  << moduliVV << "\n and \n"
+                                                  << moduliV;
   }
 
   auto f  = [&](auto& xv) { return mat.template storedEnergy<strainTag>(xv); };
@@ -107,7 +111,8 @@ auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-13) {
 
   t.check(utils::checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << std::string("checkGradient Failed");
-  t.check(utils::checkHessian(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true})) << std::string("checkHessian Failed");
+  t.check(utils::checkHessian(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}))
+      << std::string("checkHessian Failed");
   t.check(utils::checkJacobian(subNonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << std::string("checkJacobian Failed");
 
@@ -139,7 +144,7 @@ auto testMaterial(Material mat) {
 }
 
 int main(int argc, char** argv) {
-  //Ikarus::init(argc, argv);
+  Ikarus::init(argc, argv);
   TestSuite t;
 
   LamesFirstParameterAndShearModulus matPar{.lambda = 1000, .mu = 500};

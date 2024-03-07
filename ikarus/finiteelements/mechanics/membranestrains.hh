@@ -29,7 +29,7 @@ struct DefaultMembraneStrain
    */
   template <typename GEO>
   static auto value(const Dune::FieldVector<double, 2>& gpPos, const GEO& geo,
-             const auto& uFunction) -> Eigen::Vector3<typename std::remove_cvref_t<decltype(uFunction)>::ctype> {
+                    const auto& uFunction) -> Eigen::Vector3<typename std::remove_cvref_t<decltype(uFunction)>::ctype> {
     using ScalarType = typename std::remove_cvref_t<decltype(uFunction)>::ctype;
     Eigen::Vector3<ScalarType> epsV;
     const auto J = Dune::toEigen(geo.jacobianTransposed(gpPos));

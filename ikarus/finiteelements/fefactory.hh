@@ -39,8 +39,6 @@ public:
       : basisHandler_{&basisHandler},
         skills{std::forward<SK2>(sk)} {}
 
-
-
   auto operator()() {
     return std::apply(
         [&]<typename... Args>(Args&&... args) {
