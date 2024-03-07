@@ -85,8 +85,7 @@ the specified `FERequirementType`.   \n <li> `getScalar(req)`: Returns a scalar 
         "createFullVector",                                                                                                    \
         [](Assembler& self, Eigen::Ref<const Eigen::VectorXd> redVec) { return self.createFullVector(redVec); },               \
         pybind11::return_value_policy::move);                                                                                  \
-    cls.def(                                                                                                                   \
-        "reducedSize", [](Assembler& self) { return self.reducedSize(); }, pybind11::return_value_policy::copy);               \
+    cls.def("reducedSize", [](Assembler& self) { return self.reducedSize(); }, pybind11::return_value_policy::copy);           \
   }
 
 MAKE_ASSEMBLER_REGISTERY_FUNCTION(SparseFlatAssembler);

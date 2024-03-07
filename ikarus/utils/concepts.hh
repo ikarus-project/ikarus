@@ -453,7 +453,7 @@ namespace Concepts {
       typename T::Matricizer;                       // The nested type 'Matricizer'
       { toString(t) } -> std::same_as<std::string>; // The toString function
     };
-  }
+  } // namespace Impl
 
   /**
    * @concept ResultType

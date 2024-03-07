@@ -20,9 +20,8 @@ void registerLinearElasticPre(pybind11::handle scope, pybind11::class_<LinearEla
 
 template <class KirchhoffLoveShellPre, class... options>
 void registerKirchhoffLoveShellPre(pybind11::handle scope, pybind11::class_<KirchhoffLoveShellPre, options...> cls) {
-  cls.def(pybind11::init([](const double& E, const double& nu, const double& h) {
-    return new KirchhoffLoveShellPre({E, nu}, h);
-  }));
+  cls.def(pybind11::init(
+      [](const double& E, const double& nu, const double& h) { return new KirchhoffLoveShellPre({E, nu}, h); }));
 }
 
 template <class EASPre, class... options>
