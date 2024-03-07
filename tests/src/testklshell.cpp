@@ -81,15 +81,17 @@ static auto NonLinearKLShellLoadControlTR() {
     return fext;
   };
 
+  auto skillsS= skills(kirchhoffLoveShell({.youngs_modulus = E, .nu = nu, .thickness = thickness}), volumeLoad<3>(vL));
   auto fe = Ikarus::makeFE(
-      basis, skills(kirchhoffLoveShell({.youngs_modulus = E, .nu = nu, .thickness = thickness}), volumeLoad<3>(vL)));
+      basis, skillsS);
   auto fe2 = fe;
 
   using FEType = decltype(fe);
   std::vector<FEType> fes;
 
   for (auto&& element : elements(gridView)) {
-    fes.emplace_back(fe);
+    fes.emplace_back(Ikarus::makeFE(
+      basis, skillsS));
     fes.back().bind(element);
   }
 

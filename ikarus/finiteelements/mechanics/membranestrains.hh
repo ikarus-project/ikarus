@@ -28,7 +28,7 @@ struct DefaultMembraneStrain
    * \return The strain vector at the given integration point.
    */
   template <typename GEO>
-  auto value(const Dune::FieldVector<double, 2>& gpPos, const GEO& geo, const auto& uFunction) const
+  static auto value(const Dune::FieldVector<double, 2>& gpPos, const GEO& geo, const auto& uFunction)
       -> Eigen::Vector3<typename std::remove_cvref_t<decltype(uFunction)>::ctype> {
     using ScalarType = typename std::remove_cvref_t<decltype(uFunction)>::ctype;
     Eigen::Vector3<ScalarType> epsV;
@@ -62,8 +62,8 @@ struct DefaultMembraneStrain
    * \return The strain-displacement matrix for the given node and integration point.
    */
   template <typename GEO, typename ST>
-  auto derivative(const Dune::FieldVector<double, 2>& gpPos, const Eigen::Matrix<ST, 2, 3>& jcur, const auto& dNAtGp,
-                  const GEO& geo, const auto& uFunction, const auto& localBasis, const int node) const {
+  static auto derivative(const Dune::FieldVector<double, 2>& gpPos, const Eigen::Matrix<ST, 2, 3>& jcur, const auto& dNAtGp,
+                  const GEO& geo, const auto& uFunction, const auto& localBasis, const int node)  {
     Eigen::Matrix<ST, 3, 3> bop;
     bop.row(0) = jcur.row(0) * dNAtGp(node, 0);
     bop.row(1) = jcur.row(1) * dNAtGp(node, 1);
@@ -92,9 +92,9 @@ struct DefaultMembraneStrain
    * \return The second derivative of the membrane strain.
    */
   template <typename GEO, typename ST>
-  auto secondDerivative(const Dune::FieldVector<double, 2>& gpPos, const auto& dNAtGp, const GEO& geo,
+  static auto secondDerivative(const Dune::FieldVector<double, 2>& gpPos, const auto& dNAtGp, const GEO& geo,
                         const auto& uFunction, const auto& localBasis, const Eigen::Vector3<ST>& S, int I,
-                        int J) const {
+                        int J)  {
     const auto& dN1i           = dNAtGp(I, 0);
     const auto& dN1j           = dNAtGp(J, 0);
     const auto& dN2i           = dNAtGp(I, 1);

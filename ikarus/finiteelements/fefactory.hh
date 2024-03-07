@@ -34,17 +34,18 @@ public:
    * \param basisHandler The basis handler.
    * \param sk Skill arguments.
    */
-  FEFactory(const BH& basisHandler, SK&& sk)
+  template<typename SK2=SK>
+  FEFactory(const BH& basisHandler, SK2&& sk)
       : basisHandler_{&basisHandler},
-        skills{std::move(sk)} {}
+        skills{std::forward<SK2>(sk)} {}
   /**
    * \brief Constructor for FEFactory
    * \param basisHandler The basis handler.
    * \param sk Skill arguments.
    */
-  FEFactory(const BH& basisHandler, const SK& sk)
-      : basisHandler_{&basisHandler},
-        skills{sk} {}
+  // FEFactory(const BH& basisHandler, const SK& sk)
+  //     : basisHandler_{&basisHandler},
+  //       skills{sk} {}
 
   auto operator()() {
     return std::apply(
