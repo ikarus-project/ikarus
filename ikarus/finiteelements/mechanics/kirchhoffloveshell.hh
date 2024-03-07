@@ -140,7 +140,7 @@ public:
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const {
     const auto& d = par.getGlobalSolution(Ikarus::FESolutions::displacement);
     auto disp     = Ikarus::FEHelper::localSolutionBlockVector<Traits>(d, underlying().localView(), dx);
-    Dune::StandardLocalFunction uFunction(localBasis_, disp, geo_);
+    Dune::StandardLocalFunction uFunction(localBasis_, disp, std::make_shared<Geometry>(geo_.value()));
     return uFunction;
   }
 
