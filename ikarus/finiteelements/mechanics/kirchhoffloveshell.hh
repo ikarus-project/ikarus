@@ -93,11 +93,11 @@ public:
    *
    * Initializes the KirchhoffLoveShell instance with the given parameters.
    *
-   * \param linPre The pre fe
+   * \param pre The pre fe
    */
-  KirchhoffLoveShell(Pre linPre)
-      : mat_{linPre.material},
-        thickness_{linPre.thickness} {}
+  KirchhoffLoveShell(const Pre& pre)
+      : mat_{pre.material},
+        thickness_{pre.thickness} {}
 
   /**
    * \brief A helper function to bind the local view to the element.
@@ -267,7 +267,7 @@ protected:
             DefaultMembraneStrain::derivative(gp.position(), jE, Nd, geo, uFunction, localBasis_, i);
 
         Eigen::Matrix<ST, bendingStrainSize, worldDim> bopIBending = bopBending(jE, h, Nd, Ndd, i, a3N, a3);
-        for (size_t j = 0; j < numberOfNodes_; ++j) {
+        for (size_t j = i; j < numberOfNodes_; ++j) {
           auto KBlock = K.template block<worldDim, worldDim>(worldDim * i, worldDim * j);
           Eigen::Matrix<ST, membraneStrainSize, worldDim> bopJMembrane =
               DefaultMembraneStrain::derivative(gp.position(), jE, Nd, geo, uFunction, localBasis_, j);
@@ -283,7 +283,7 @@ protected:
         }
       }
     }
-    // K.template triangularView<Eigen::StrictlyLower>() = K.transpose();
+    K.template triangularView<Eigen::StrictlyLower>() = K.transpose();
   }
 
   template <typename ST>

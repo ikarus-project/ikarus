@@ -53,7 +53,7 @@ public:
   using Pre                     = NeumannBoundaryLoadPre<GridView>;
 
   /**
-   * \brief Constructor for the Traction class.
+   * \brief Constructor for the traction class.
    *
    * \param pre The pre finite element
    */

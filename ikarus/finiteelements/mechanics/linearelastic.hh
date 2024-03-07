@@ -66,10 +66,10 @@ public:
 
   /**
    * \brief Constructor for the LinearElastic class.
-   * \param linPre The pre fe
+   * \param pre The pre fe
    */
-  explicit LinearElastic(const Pre& linPre)
-      : mat_{linPre.material} {}
+  explicit LinearElastic(const Pre& pre)
+      : mat_{pre.material} {}
 
   /**
    * \brief A helper function to bind the local view to the element.
@@ -152,6 +152,7 @@ public:
   [[nodiscard]] size_t numberOfNodes() const { return numberOfNodes_; }
   [[nodiscard]] int order() const { return order_; }
 
+
   using SupportedResultTypes = std::tuple<decltype(makeRT<ResultTypes::linearStress>())>;
 
   /**
@@ -164,7 +165,7 @@ public:
    *
    * \tparam RT The type representing the requested result.
    */
-  template <template <typename, int, int> class RT>
+  template <template <typename, int, int> class RT> requires(canProvideResultType<RT>())
   auto calculateAtImpl(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<1>) const {
     using RTWrapper = ResultWrapper<RT<typename Traits::ctype, myDim, Traits::worlddim>, ResultShape::Vector>;
@@ -174,18 +175,14 @@ public:
       auto epsVoigt  = eps.evaluate(local, Dune::on(Dune::DerivativeDirections::gridElement));
 
       return RTWrapper{(C * epsVoigt).eval()};
-    } else {
-      static_assert(Dune::AlwaysFalse<RT<typename Traits::ctype, myDim, Traits::worlddim>>::value,
-                    "Skill does not provide calculateAt function");
     }
   }
 
+private:
   template <template <typename, int, int> class RT>
   static consteval bool canProvideResultType() {
-    return isSameResultType<RT, ResultTypes::linearStress>; // requires {calculateAt<RT>();} ;
+    return isSameResultType<RT, ResultTypes::linearStress>;
   }
-
-private:
   //> CRTP
   const auto& underlying() const { return static_cast<const FE&>(*this); }
   auto& underlying() { return static_cast<FE&>(*this); }

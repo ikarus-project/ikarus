@@ -52,7 +52,7 @@ struct NonLinearElasticPre
  *
  * \ingroup mechanics
  *
- * \tparam PreFE The type of the  pre finite element.
+ * \tparam PreFE The type of the total pre finite element.
  * \tparam FE The type of the finite element.
  * \tparam PRE The type of the non-linear elastic pre finite element.
  */
@@ -78,10 +78,10 @@ public:
 
   /**
    * \brief Constructor for the NonLinearElastic class.
-   * \param linPre The pre fe
+   * \param pre The pre fe
    */
-  explicit NonLinearElastic(Pre linPre)
-      : mat_{linPre.material} {}
+  explicit NonLinearElastic(const Pre& pre)
+      : mat_{pre.material} {}
 
   /**
    * \brief A helper function to bind the local view to the element.
@@ -199,15 +199,6 @@ public:
   [[nodiscard]] size_t numberOfNodes() const { return numberOfNodes_; }
   [[nodiscard]] int order() const { return order_; }
 
-  /**
-   * \brief Returns whether an element can provide a requested result. Can be used in constant expressions
-   * \tparam RT The type representing the requested result.
-   * \return boolean indicating if a requested result can be provided
-   */
-  template <template <typename, int, int> class RT>
-  static consteval bool canProvideResultType() {
-    return isSameResultType<RT, ResultTypes::PK2Stress>;
-  }
 
   using SupportedResultTypes = std::tuple<decltype(makeRT<ResultTypes::PK2Stress>())>;
 
@@ -233,12 +224,14 @@ public:
       const auto E         = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
 
       return RTWrapper{mat_.template stresses<StrainTags::greenLagrangian>(toVoigt(E))};
-    } else
-      static_assert(Dune::AlwaysFalse<RT<typename Traits::ctype, myDim, Traits::worlddim>>::value,
-                    "The requested result type is NOT implemented.");
+    }
   }
 
 private:
+  template <template <typename, int, int> class RT>
+  static consteval bool canProvideResultType() {
+    return isSameResultType<RT, ResultTypes::PK2Stress>;
+  }
   //> CRTP
   const auto& underlying() const { return static_cast<const FE&>(*this); }
   auto& underlying() { return static_cast<FE&>(*this); }

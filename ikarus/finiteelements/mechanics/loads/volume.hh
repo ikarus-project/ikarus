@@ -53,10 +53,10 @@ public:
   /**
    * \brief Constructor for the Loads class.
    *
-   * \param volumeLoadPre Volume load pre object.
+   * \param pre Volume load pre object.
    */
-  explicit VolumeLoad(const Pre& volumeLoadPre = {})
-      : volumeLoad_{volumeLoadPre.volumeLoad} {}
+  explicit VolumeLoad(const Pre& pre = {})
+      : volumeLoad_{pre.volumeLoad} {}
 
   using SupportedResultTypes = std::tuple<>;
 

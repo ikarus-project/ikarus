@@ -29,7 +29,7 @@ class EnhancedAssumedStrains;
  */
 struct EnhancedAssumedStrainsPre
 {
-  int numberOfParameter{};
+  int numberOfParameters{};
 
   template <typename PreFE, typename FE>
   using Skill = EnhancedAssumedStrains<PreFE, FE>;
@@ -62,7 +62,7 @@ public:
    * \brief Constructor for Enhanced Assumed Strains elements.
    * \param pre The pre finite element
    */
-  explicit EnhancedAssumedStrains(const Pre& pre) { this->setEASType(pre.numberOfParameter); }
+  explicit EnhancedAssumedStrains(const Pre& pre) { this->setEASType(pre.numberOfParameters); }
 
   /**
    * \brief Checks if the element is displacement-based and the EAS is turned off.
@@ -136,7 +136,7 @@ public:
    */
   void setEASType(int numberOfEASParameters) {
     if (numberOfEASParameters != 0)
-      check();
+      easApplicabilityCheck();
     easVariant_.setEASType(numberOfEASParameters);
   }
 
@@ -146,7 +146,7 @@ public:
   }
 
 protected:
-  inline void check() const {
+  inline void easApplicabilityCheck() const {
     const auto& numberOfNodes = underlying().numberOfNodes();
     assert(not(not((numberOfNodes == 4 and Traits::mydim == 2) or (numberOfNodes == 8 and Traits::mydim == 3)) and
                (not isDisplacementBased())) &&
@@ -159,7 +159,7 @@ protected:
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
-    check();
+    easApplicabilityCheck();
     if (isDisplacementBased())
       return;
 
@@ -184,7 +184,7 @@ protected:
   inline ScalarType calculateScalarImpl(
       const FERequirementType& par,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
-    check();
+    easApplicabilityCheck();
     if (isDisplacementBased())
       return 0.0;
     DUNE_THROW(Dune::NotImplemented,
@@ -195,7 +195,7 @@ protected:
   void calculateVectorImpl(
       const FERequirementType& par, typename Traits::template VectorType<ScalarType> force,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
-    check();
+    easApplicabilityCheck();
     using namespace Dune;
     using namespace Dune::DerivativeDirections;
     const auto uFunction      = underlying().displacementFunction(par, dx);
@@ -269,11 +269,11 @@ private:
 
 /**
  * \brief A helper function to create an enhanced assumed strain pre finite element.
- * \param easParameter Number of EAS parameters
+ * \param numberOfEASParameters Number of EAS parameters
  * \return An enhanced assumed strain pre finite element.
  */
-auto eas(int easParameter = 0) {
-  EnhancedAssumedStrainsPre pre(easParameter);
+auto eas(int numberOfEASParameters = 0) {
+  EnhancedAssumedStrainsPre pre(numberOfEASParameters);
 
   return pre;
 }
