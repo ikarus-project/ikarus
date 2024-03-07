@@ -145,6 +145,7 @@ public:
         xOld_{this->nonLinearOperator().firstParameter()} {
     eta_.setZero(gradient().size());
     Heta_.setZero(gradient().size());
+    truncatedConjugateGradient_.analyzePattern(hessian());
   }
 
   /**

@@ -226,7 +226,7 @@ static auto ddf3R(const Dune::UnitVector<double, 2>& x) {
 static auto trustRegion4_RiemanianUnitSphere() {
   TestSuite t("trustRegion4_RiemanianUnitSphere");
 
-  auto d = Dune::UnitVector<double, 2>(Eigen::Vector2d::UnitX());
+  auto d = Dune::UnitVector<double, 2>(Eigen::Vector2d::UnitX()+0.1*Eigen::Vector2d::UnitY());
   d.update(Eigen::Vector<double, 1>::Ones());
   auto fvLambda = [](auto&& xL) { return f3R(xL); };
 
@@ -252,7 +252,7 @@ static auto trustRegion4_RiemanianUnitSphere() {
   t.check(tol > solverInfo3.residualNorm) << "Trust region didn't reach the correct norm";
   nonLinOp.update<0>();
   t.check(1e-17 >= nonLinOp.value()) << "Trust region energy is not zero";
-  t.check(isApproxSame(nonLinOp.firstParameter().getValue(), Eigen::Vector2d::UnitY(), 1e-15))
+  t.check(isApproxSame(nonLinOp.firstParameter().getValue(), -Eigen::Vector2d::UnitY(), 1e-15))
       << "Trust region solution is wrong";
   return t;
 }
