@@ -55,7 +55,7 @@ namespace Impl {
     using LocalView    = typename Traits::LocalView; ///< Type of the local view.
     friend FE;
     FEInit(const BasisHandler& basisHandler)
-        : localView_{[&]() -> decltype(auto) {
+        : localView_{[&]() -> LocalView {
             if constexpr (Traits::useFlatBasis)
               return basisHandler.flat().localView();
             else

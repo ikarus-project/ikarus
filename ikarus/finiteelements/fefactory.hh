@@ -34,7 +34,7 @@ public:
    * \param basisHandler The basis handler.
    * \param sk Skill arguments.
    */
-  template<typename SK2=SK>
+  template <typename SK2 = SK>
   FEFactory(const BH& basisHandler, SK2&& sk)
       : basisHandler_{&basisHandler},
         skills{std::forward<SK2>(sk)} {}

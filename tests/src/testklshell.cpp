@@ -81,17 +81,17 @@ static auto NonLinearKLShellLoadControlTR() {
     return fext;
   };
 
-  auto skillsS= skills(kirchhoffLoveShell({.youngs_modulus = E, .nu = nu, .thickness = thickness}), volumeLoad<3>(vL));
-  auto fe = Ikarus::makeFE(
-      basis, skillsS);
-  auto fe2 = fe;
+  auto sk = skills(kirchhoffLoveShell({.youngs_modulus = E, .nu = nu, .thickness = thickness}), volumeLoad<3>(vL));
+  auto fe      = Ikarus::makeFE(basis, sk);
+  auto fe2     = fe;
+
+  t.check(&fe.localView() != &fe2.localView()) << " The contained local views should be different";
 
   using FEType = decltype(fe);
   std::vector<FEType> fes;
 
   for (auto&& element : elements(gridView)) {
-    fes.emplace_back(Ikarus::makeFE(
-      basis, skillsS));
+    fes.emplace_back(fe);
     fes.back().bind(element);
   }
 
@@ -136,10 +136,12 @@ static auto NonLinearKLShellLoadControlTR() {
 
   auto nonLinOp = NonLinearOperator(functions(energyFunction, residualFunction, KFunction), parameter(d, lambda));
 
-  t.check(utils::checkGradient(nonLinOp, {.draw = false,.writeSlopeStatementIfFailed = true})) << "Check gradient failed";
-  t.check(utils::checkHessian(nonLinOp, {.draw = false,.writeSlopeStatementIfFailed = true})) << "Check Hessian failed";
-  auto subOp = nonLinOp.template subOperator<1,2>();
-  t.check(utils::checkJacobian(subOp, {.draw = false,.writeSlopeStatementIfFailed = true})) << "Check Jacobian failed";
+  t.check(utils::checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}))
+      << "Check gradient failed";
+  t.check(utils::checkHessian(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}))
+      << "Check Hessian failed";
+  auto subOp = nonLinOp.template subOperator<1, 2>();
+  t.check(utils::checkJacobian(subOp, {.draw = false, .writeSlopeStatementIfFailed = true})) << "Check Jacobian failed";
 
   const double gradTol = 1e-14;
 
@@ -193,14 +195,14 @@ auto singleElementTest() {
     const std::array<int, 2> order = {1, 1};
 
     const std::array<std::vector<double>, 2> knotSpans = {
-      {{0, 0, 1, 1}, {0, 0, 1, 1}}
+        {{0, 0, 1, 1}, {0, 0, 1, 1}}
     };
 
     using ControlPoint = Dune::IGA::NURBSPatchData<2, dimworld>::ControlPointType;
 
     const std::vector<std::vector<ControlPoint>> controlPoints = {
-      {{.p = {0, 0, 0}, .w = 1}, {.p = {10, 0, 0}, .w = 1}},
-      {{.p = {0, 2, 0}, .w = 1}, {.p = {10, 2, 0}, .w = 1}}
+        {{.p = {0, 0, 0}, .w = 1}, {.p = {10, 0, 0}, .w = 1}},
+        {{.p = {0, 2, 0}, .w = 1}, {.p = {10, 2, 0}, .w = 1}}
     };
 
     std::array<int, 2> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
@@ -215,7 +217,7 @@ auto singleElementTest() {
     for (int i = 0; i < 2; ++i)
       patchData = degreeElevate(patchData, i, 1);
 
-    auto grid = std::make_shared<Grid>(patchData);
+    auto grid     = std::make_shared<Grid>(patchData);
     auto gridView = grid->leafGridView();
     /// We artificially apply a Neumann load on the complete boundary
     Dune::BitSetVector<1> neumannVertices(gridView.size(2), true);

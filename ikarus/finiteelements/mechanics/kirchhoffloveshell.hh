@@ -105,11 +105,11 @@ public:
   void bindImpl() {
     const auto& localView = underlying().localView();
     assert(localView.bound());
-    const auto& element   = localView.element();
-    auto& firstChild      = localView.tree().child(0);
+    const auto& element = localView.element();
+    auto& firstChild    = localView.tree().child(0);
 
     const auto& fe = firstChild.finiteElement();
-    //geo_.emplace(element.geometry());
+    // geo_.emplace(element.geometry());
     numberOfNodes_ = fe.size();
     order_         = 2 * (fe.localBasis().order());
     localBasis_    = Dune::CachedLocalBasis(fe.localBasis());
@@ -141,12 +141,12 @@ public:
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const {
     const auto& d = par.getGlobalSolution(Ikarus::FESolutions::displacement);
     auto disp     = Ikarus::FEHelper::localSolutionBlockVector<Traits>(d, underlying().localView(), dx);
-    Dune::StandardLocalFunction uFunction(localBasis_, disp, std::make_shared<const Geometry>(underlying().localView().element().geometry()));
+    Dune::StandardLocalFunction uFunction(
+        localBasis_, disp, std::make_shared<const Geometry>(underlying().localView().element().geometry()));
     return uFunction;
   }
 
-   Geometry geometry() const { return  underlying().localView().element().geometry();
- }
+  Geometry geometry() const { return underlying().localView().element().geometry(); }
   [[nodiscard]] size_t numberOfNodes() const { return numberOfNodes_; }
   [[nodiscard]] int order() const { return order_; }
 
@@ -183,9 +183,9 @@ private:
   //> CRTP
   const auto& underlying() const { return static_cast<const FE&>(*this); }
   auto& underlying() { return static_cast<FE&>(*this); }
-  //std::optional<Geometry> geo_;
+  // std::optional<Geometry> geo_;
   Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType>> localBasis_;
-  //DefaultMembraneStrain membraneStrain_;
+  // DefaultMembraneStrain membraneStrain_;
   YoungsModulusAndPoissonsRatio mat_;
   double thickness_;
 
@@ -251,7 +251,7 @@ protected:
     using namespace Dune;
     const auto uFunction = displacementFunction(par, dx);
     const auto& lambda   = par.getParameter(FEParameter::loadfactor);
-    const auto geo= underlying().localView().element().geometry();
+    const auto geo       = underlying().localView().element().geometry();
 
     for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
       const auto intElement = geo.integrationElement(gp.position()) * gp.weight();
@@ -275,15 +275,15 @@ protected:
           KBlock += thickness_ * bopIMembrane.transpose() * C * bopJMembrane * intElement;
           KBlock += Dune::power(thickness_, 3) / 12.0 * bopIBending.transpose() * C * bopJBending * intElement;
 
-          Eigen::Matrix<ST, worldDim, worldDim> kgMembraneIJ =
-              DefaultMembraneStrain::secondDerivative(gp.position(), Nd, geo, uFunction, localBasis_, membraneForces, i, j);
+          Eigen::Matrix<ST, worldDim, worldDim> kgMembraneIJ = DefaultMembraneStrain::secondDerivative(
+              gp.position(), Nd, geo, uFunction, localBasis_, membraneForces, i, j);
           Eigen::Matrix<ST, worldDim, worldDim> kgBendingIJ = kgBending(jE, h, Nd, Ndd, a3N, a3, moments, i, j);
           KBlock += kgMembraneIJ * intElement;
           KBlock += kgBendingIJ * intElement;
         }
       }
     }
-    //K.template triangularView<Eigen::StrictlyLower>() = K.transpose();
+    // K.template triangularView<Eigen::StrictlyLower>() = K.transpose();
   }
 
   template <typename ST>
@@ -294,8 +294,7 @@ protected:
     using namespace Dune;
     const auto uFunction = displacementFunction(par, dx);
     const auto& lambda   = par.getParameter(FEParameter::loadfactor);
-    const auto geo= underlying().localView().element().geometry();
-
+    const auto geo       = underlying().localView().element().geometry();
 
     // Internal forces
     for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
@@ -328,8 +327,7 @@ protected:
     const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
     ST energy            = 0.0;
 
-    const auto geo= underlying().localView().element().geometry();
-
+    const auto geo = underlying().localView().element().geometry();
 
     for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
       const auto [C, epsV, kappaV, j, J, h, H, a3N, a3] =
