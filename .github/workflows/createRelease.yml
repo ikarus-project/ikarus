@@ -21,8 +21,6 @@ jobs:
       image: ikarusproject/ikarus-dev:latest
       options: --memory-swap="20g" --memory="20g" --cpus="2" --user root
     steps:
-      - name: Delete huge unnecessary tools folder
-        run: rm -rf /opt/hostedtoolcache
       - uses: actions/checkout@v4
         with:
           path: 'repo'
@@ -97,7 +95,7 @@ jobs:
           cmake --build . --target site
           mv docs/site documentation-v$NEWVERSION
           apt-get update && apt-get install -y tar gzip zip unzip bzip2
-          tar -czf docs-v$NEWVERSION.tar.gz ./documentation-v$NEWVERSION
+          #tar -czf docs-v$NEWVERSION.tar.gz ./documentation-v$NEWVERSION
           zip -9r  docs-v$NEWVERSION.zip    ./documentation-v$NEWVERSION
       - name: Install docker in Docker container
         run: |
@@ -135,9 +133,9 @@ jobs:
           docker pull ikarusproject/ikarus-clang:latest
           docker tag ikarusproject/ikarus-clang:latest ikarusproject/ikarus-clang:v$NEWVERSION
         
-          docker save ikarusproject/ikarus-dev:v$NEWVERSION > ikarus-dev-docker-v$NEWVERSION.tar
+          #docker save ikarusproject/ikarus-dev:v$NEWVERSION > ikarus-dev-docker-v$NEWVERSION.tar
           docker save ikarusproject/ikarus:v$NEWVERSION     > ikarus-docker-v$NEWVERSION.tar
-          gzip -c9 ikarus-dev-docker-v$NEWVERSION.tar > ikarus-dev-docker-v$NEWVERSION.tar.gz
+          #gzip -c9 ikarus-dev-docker-v$NEWVERSION.tar > ikarus-dev-docker-v$NEWVERSION.tar.gz
           gzip -c9 ikarus-docker-v$NEWVERSION.tar > ikarus-docker-v$NEWVERSION.tar.gz
 
       - name: Checkout ikarus-examples and create tag, push it, zip it
@@ -149,7 +147,7 @@ jobs:
           git tag -a v$NEWVERSION -m "Create release v$NEWVERSION"
           cd ..
           mv ikarus-examples ikarus-examples-v$NEWVERSION
-          tar -czf ikarus-examples-v$NEWVERSION.tar.gz ./ikarus-examples-v$NEWVERSION
+          #tar -czf ikarus-examples-v$NEWVERSION.tar.gz ./ikarus-examples-v$NEWVERSION
           zip -9r  ikarus-examples-v$NEWVERSION.zip    ./ikarus-examples-v$NEWVERSION
 
       - name: Push and finalize
@@ -178,9 +176,9 @@ jobs:
           prerelease: true
           title: ${{ github.event.inputs.releaseTag }}
           files: |
-            ./repo/build_docs_offline/docs-v${{ github.event.inputs.releaseTag }}.tar.gz
             ./repo/build_docs_offline/docs-v${{ github.event.inputs.releaseTag }}.zip
-            ikarus-dev-docker-v${{ github.event.inputs.releaseTag }}.tar.gz
             ikarus-docker-v${{ github.event.inputs.releaseTag }}.tar.gz
-            ikarus-examples-v${{ github.event.inputs.releaseTag }}.tar.gz
-            ikarus-examples-v${{ github.event.inputs.releaseTag }}.zip
+            #./repo/build_docs_offline/docs-v${{ github.event.inputs.releaseTag }}.tar.gz
+            #ikarus-dev-docker-v${{ github.event.inputs.releaseTag }}.tar.gz
+            #ikarus-examples-v${{ github.event.inputs.releaseTag }}.tar.gz
+            #ikarus-examples-v${{ github.event.inputs.releaseTag }}.zip
