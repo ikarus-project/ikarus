@@ -73,27 +73,27 @@ namespace Impl {
         createEASType();
     }
     void bind(const Geometry& geometry) {
-      geometry_ = std::make_shared<Geometry>(geometry);
+      geometry_ = std::make_optional<Geometry>(geometry);
       createEASType();
     }
 
   private:
     void createEASType() {
       if (numberOfEASParameters_ == 0) {
-        var_ = E0(geometry_.get());
+        var_ = E0(geometry_.value());
         return;
       }
 
       if constexpr (Geometry::mydimension == 2) {
         switch (numberOfEASParameters_) {
           case 4:
-            var_ = Q1E4(geometry_.get());
+            var_ = Q1E4(geometry_.value());
             break;
           case 5:
-            var_ = Q1E5(geometry_.get());
+            var_ = Q1E5(geometry_.value());
             break;
           case 7:
-            var_ = Q1E7(geometry_.get());
+            var_ = Q1E7(geometry_.value());
             break;
           default:
             DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available for the 2D case.");
@@ -101,17 +101,17 @@ namespace Impl {
       } else if constexpr (Geometry::mydimension == 3) {
         switch (numberOfEASParameters_) {
           case 9:
-            var_ = H1E9(geometry_.get());
+            var_ = H1E9(geometry_.value());
             break;
           case 21:
-            var_ = H1E21(geometry_.get());
+            var_ = H1E21(geometry_.value());
             break;
           default:
             DUNE_THROW(Dune::NotImplemented, "The given EAS parameters are not available for the 3D case.");
         }
       }
     }
-    std::shared_ptr<Geometry> geometry_;
+    std::optional<Geometry> geometry_;
     Variant var_;
     int numberOfEASParameters_;
   };
