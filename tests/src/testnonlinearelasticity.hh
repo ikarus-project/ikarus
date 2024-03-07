@@ -105,7 +105,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
 
   auto tr = Ikarus::makeTrustRegion(nonLinOp);
   tr->setup({.verbosity = 1,
-             .maxiter   = 1000,
+             .maxIter   = 1000,
              .grad_tol  = gradTol,
              .corr_tol  = 1e-16, // everything should converge to the gradient tolerance
              .useRand   = false,
