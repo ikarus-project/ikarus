@@ -44,11 +44,9 @@ void registerBasisHandler(pybind11::handle scope, pybind11::class_<BasisHandler,
 
   cls.def(pybind11::init([](const UntouchedBasis& gb) { return new BasisHandler(gb.preBasis()); }));
 
-  cls.def(
-      "flat", [](BasisHandler& self) { return self.flat(); }, pybind11::return_value_policy::reference);
+  cls.def("flat", [](BasisHandler& self) { return self.flat(); }, pybind11::return_value_policy::reference);
 
-  cls.def(
-      "untouched", [](BasisHandler& self) { return self.untouched(); }, pybind11::return_value_policy::reference);
+  cls.def("untouched", [](BasisHandler& self) { return self.untouched(); }, pybind11::return_value_policy::reference);
 }
 
 } // namespace Ikarus::Python
