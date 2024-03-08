@@ -106,8 +106,12 @@ void registerDirichletValues(pybind11::handle scope, pybind11::class_<DirichletV
       });
 
   cls.def("fixDOFs",
-          [](DirichletValues& self, const std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, const Basis&)>& f) {
-            self.fixBoundaryDOFs(f);
+          [](DirichletValues& self, const std::function<void(const Basis&, Eigen::Ref<Eigen::VectorX<bool>>)>& f) {
+            auto lambda = [&](const Basis& basis, BackendType& vec) {
+              // we explicitly only allow flat indices
+              f(basis, vec.vector());
+            };
+            self.fixDOFs(lambda);
           });
 }
 
