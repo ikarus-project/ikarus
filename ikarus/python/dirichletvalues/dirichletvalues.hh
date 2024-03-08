@@ -106,8 +106,8 @@ void registerDirichletValues(pybind11::handle scope, pybind11::class_<DirichletV
       });
 
   cls.def("fixDOFs",
-          [](DirichletValues& self, const std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, const Basis&)>& f) {
-            self.fixBoundaryDOFs(f);
+          [](DirichletValues& self, const std::function<void(const Basis&, Eigen::Ref<Eigen::VectorX<bool>>)>& f) {
+            self.fixDOFs(f);
           });
 }
 
