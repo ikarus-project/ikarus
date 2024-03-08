@@ -243,7 +243,7 @@ template <template <typename, int, int> class RT, bool vectorizedResult = true>
   using FiniteElement = std::remove_cvref_t<decltype(fe)>;
   Eigen::MatrixXd computedResults(expectedResult.rows(), expectedResult.cols());
 
-  if constexpr (FiniteElement::template canProvideResultType<RT>()) {
+  if constexpr (requires { fe.template calculateAt<RT>(feRequirements, evaluationPositions[0]); }) {
     for (int i = 0; const auto& pos : evaluationPositions) {
       if constexpr (vectorizedResult) {
         auto result              = fe.template calculateAt<RT>(feRequirements, pos).asVec();

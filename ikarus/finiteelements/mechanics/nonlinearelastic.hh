@@ -86,7 +86,7 @@ public:
   /**
    * \brief A helper function to bind the local view to the element.
    */
-  void bindImpl() {
+  void bind() {
     const auto& localView = underlying().localView();
     const auto& element   = localView.element();
     auto& firstChild      = localView.tree().child(0);
@@ -199,9 +199,15 @@ public:
   [[nodiscard]] size_t numberOfNodes() const { return numberOfNodes_; }
   [[nodiscard]] int order() const { return order_; }
 
-
   using SupportedResultTypes = std::tuple<decltype(makeRT<ResultTypes::PK2Stress>())>;
 
+private:
+  template <template <typename, int, int> class RT>
+  static consteval bool canProvideResultType() {
+    return isSameResultType<RT, ResultTypes::PK2Stress>;
+  }
+
+public:
   /**
    * \brief Calculates a requested result at a specific local position.
    *
@@ -228,10 +234,6 @@ public:
   }
 
 private:
-  template <template <typename, int, int> class RT>
-  static consteval bool canProvideResultType() {
-    return isSameResultType<RT, ResultTypes::PK2Stress>;
-  }
   //> CRTP
   const auto& underlying() const { return static_cast<const FE&>(*this); }
   auto& underlying() { return static_cast<FE&>(*this); }

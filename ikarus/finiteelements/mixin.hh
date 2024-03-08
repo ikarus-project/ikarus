@@ -116,8 +116,8 @@ struct FEMixin : Skills<PreFE, typename PreFE::template FE<Skills...>>...
    */
   void bind() {
     auto skVisitor = []<typename Skill>(Skill& skill) {
-      if constexpr (requires { skill.bindImpl(); })
-        skill.bindImpl();
+      if constexpr (requires { skill.bind(); })
+        skill.bind();
     };
     (skVisitor(static_cast<Skills<PreFE, typename PreFE::template FE<Skills...>>&>(*this)), ...);
   }

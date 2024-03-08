@@ -74,7 +74,7 @@ public:
   /**
    * \brief A helper function to bind the local view to the element.
    */
-  void bindImpl() {
+  void bind() {
     const auto& localView = underlying().localView();
     const auto& element   = localView.element();
     auto& firstChild      = localView.tree().child(0);
@@ -152,20 +152,26 @@ public:
   [[nodiscard]] size_t numberOfNodes() const { return numberOfNodes_; }
   [[nodiscard]] int order() const { return order_; }
 
-
   using SupportedResultTypes = std::tuple<decltype(makeRT<ResultTypes::linearStress>())>;
 
+  template <template <typename, int, int> class RT>
+  static consteval bool canProvideResultType() {
+    return isSameResultType<RT, ResultTypes::linearStress>;
+  }
+
+public:
   /**
    * \brief Calculates a requested result at a specific local position.
    *
    * \param req The FERequirementType object holding the global solution.
    * \param local Local position vector.
-   * \tparam overrideRequire This bool allows the usage of this function, even when some skill disabled it
+   * \tparam RT The requested result type
    * \return calculated result
    *
    * \tparam RT The type representing the requested result.
    */
-  template <template <typename, int, int> class RT> requires(canProvideResultType<RT>())
+  template <template <typename, int, int> class RT>
+  requires(canProvideResultType<RT>())
   auto calculateAtImpl(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<1>) const {
     using RTWrapper = ResultWrapper<RT<typename Traits::ctype, myDim, Traits::worlddim>, ResultShape::Vector>;
@@ -179,10 +185,6 @@ public:
   }
 
 private:
-  template <template <typename, int, int> class RT>
-  static consteval bool canProvideResultType() {
-    return isSameResultType<RT, ResultTypes::linearStress>;
-  }
   //> CRTP
   const auto& underlying() const { return static_cast<const FE&>(*this); }
   auto& underlying() { return static_cast<FE&>(*this); }

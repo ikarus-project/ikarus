@@ -102,7 +102,7 @@ public:
   /**
    * \brief A helper function to bind the local view to the element.
    */
-  void bindImpl() {
+  void bind() {
     const auto& localView = underlying().localView();
     assert(localView.bound());
     const auto& element = localView.element();

@@ -59,10 +59,12 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
       fext[0] = lamb;
       return fext;
     };
-    auto preFE = makeFE(basis, skills(nonLinearElastic(reducedMat), volumeLoad<2>(vL)));
-    std::vector<decltype(preFE)> fes;
+
+    FE fe = makeFE(basis, skills(nonLinearElastic(reducedMat), volumeLoad<2>(vL)));
+
+    std::vector<decltype(fe)> fes;
     for (auto&& ge : elements(gridView)) {
-      fes.emplace_back(preFE);
+      fes.emplace_back(fe);
       fes.back().bind(ge);
     }
 

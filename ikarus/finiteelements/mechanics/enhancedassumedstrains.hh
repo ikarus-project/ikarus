@@ -140,7 +140,7 @@ public:
     easVariant_.setEASType(numberOfEASParameters);
   }
 
-  void bindImpl() {
+  void bind() {
     assert(underlying().localView().bound());
     easVariant_.bind(underlying().localView().element().geometry());
   }
