@@ -91,7 +91,7 @@ static auto NonLinearKLShellLoadControlTR() {
   std::vector<FEType> fes;
 
   for (auto&& element : elements(gridView)) {
-    fes.emplace_back(fe);
+    fes.emplace_back(Ikarus::makeFE(basis, sk));
     fes.back().bind(element);
   }
 
