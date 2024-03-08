@@ -72,10 +72,9 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
   auto skillsMerged             = merge(skills(preFunc({.emodul = 1000, .nu = 0.3}), volumeLoad<worldDim>(vL),
                                                neumannBoundaryLoad(&neumannBoundary, neumannBl)),
                                         std::move(additionalSkills));
-  auto preFE                    = Ikarus::makeFE(basis, std::move(skillsMerged));
-  using FEType                  = decltype(preFE);
+  using FEType                  = decltype(Ikarus::makeFE(basis, std::move(skillsMerged)));
   std::vector<FEType> fes;
-  fes.emplace_back(preFE);
+  fes.emplace_back(Ikarus::makeFE(basis, std::move(skillsMerged)));
   fes[0].bind(*element);
 
   Ikarus::DirichletValues dirichletValues(basis.flat());

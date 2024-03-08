@@ -56,11 +56,11 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   };
 
   auto reducedMat = planeStress(mat, 1e-8);
-  auto preFE      = makeFE(basis, skills(nonLinearElastic(reducedMat), volumeLoad<2>(vL)));
-  std::vector<decltype(preFE)> fes;
+  auto sk         = skills(nonLinearElastic(reducedMat), volumeLoad<2>(vL));
+  std::vector<decltype(makeFE(basis, sk))> fes;
 
   for (auto&& ge : elements(gridView)) {
-    fes.emplace_back(preFE);
+    fes.emplace_back(makeFE(basis, sk));
     fes.back().bind(ge);
   }
 

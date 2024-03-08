@@ -83,6 +83,7 @@ static auto NonLinearKLShellLoadControlTR() {
 
   auto sk  = skills(kirchhoffLoveShell({.youngs_modulus = E, .nu = nu, .thickness = thickness}), volumeLoad<3>(vL));
   auto fe  = Ikarus::makeFE(basis, sk);
+  auto fe3 = Ikarus::makeFE(basis, sk);
   auto fe2 = fe;
 
   t.check(&fe.localView() != &fe2.localView()) << " The contained local views should be different";
