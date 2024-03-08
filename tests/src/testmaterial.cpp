@@ -144,7 +144,7 @@ auto testMaterial(Material mat) {
 }
 
 int main(int argc, char** argv) {
-  Ikarus::init(argc, argv);
+  // Ikarus::init(argc, argv);
   TestSuite t;
 
   LamesFirstParameterAndShearModulus matPar{.lambda = 1000, .mu = 500};

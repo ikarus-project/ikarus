@@ -70,10 +70,14 @@ def linElasticTest(easBool):
     def neumannLoad(x, lambdaVal):
         return np.array([lambdaVal * 0, lambdaVal])
 
-    neumannVertices = np.zeros(grid.size(2) * 2, dtype=bool)
-    assert len(neumannVertices) == len(flatBasis)
+    neumannVertices = np.zeros(grid.size(2), dtype=bool)
 
-    flatBasis.interpolate(neumannVertices, lambda x: True if x[1] > 0.999 else False)
+    def loadTopEdgePredicate(x):
+        return True if x[1] > 0.999 else False
+
+    indexSet = grid.indexSet
+    for v in grid.vertices:
+        neumannVertices[indexSet.index(v)]=loadTopEdgePredicate(v.geometry.center)
 
     boundaryPatch = iks.utils.boundaryPatch(grid, neumannVertices)
     #print(help(iks.finite_elements))
