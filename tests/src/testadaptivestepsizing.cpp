@@ -95,12 +95,11 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   Ikarus::KlArgs args = {E, nu, thickness};
   t.subTest(checkFESByAutoDiff(gridView, power<3>(nurbs()),
                                skills(kirchhoffLoveShell(args), neumannBoundaryLoad(&neumannBoundary, nBL))));
-
-  auto preFE = makeFE(basis, skills(kirchhoffLoveShell(args), neumannBoundaryLoad(&neumannBoundary, nBL)));
-  std::vector<decltype(preFE)> fes;
+  auto sk = skills(kirchhoffLoveShell(args), neumannBoundaryLoad(&neumannBoundary, nBL));
+  std::vector<decltype(makeFE(basis, sk))> fes;
 
   for (auto& element : elements(gridView)) {
-    fes.emplace_back(preFE);
+    fes.emplace_back(makeFE(basis, sk));
     fes.back().bind(element);
   }
 
