@@ -88,7 +88,7 @@ def linElasticTest(easBool):
 
     for e in grid.elements:
         if easBool:
-            
+
             fes.append(iks.finite_elements.makeFE(basisLagrange1,linElastic,easF,vLoad,nBLoad))
         else:
             fes.append(iks.finite_elements.makeFE(basisLagrange1,linElastic,vLoad,nBLoad))
@@ -159,4 +159,4 @@ def linElasticTest(easBool):
 
 if __name__ == "__main__":
     linElasticTest(easBool=False)
-   linElasticTest(easBool=True)
+    linElasticTest(easBool=True)
