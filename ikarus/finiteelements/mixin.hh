@@ -205,7 +205,7 @@ struct Skills
  */
 template <typename... Args>
 auto skills(Args&&... args) {
-  return Skills<Args&&...>{std::forward_as_tuple(std::forward<Args>(args)...)};
+  return Skills<Args...>{std::forward_as_tuple(std::decay_t<Args>(args)...)};
 }
 
 /**

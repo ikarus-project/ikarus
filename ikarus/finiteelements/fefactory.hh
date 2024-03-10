@@ -26,7 +26,7 @@ struct FEFactory
 
 private:
   const BH* basisHandler_;
-  SK skills;
+  SK skills_;
 
 public:
   /**
@@ -35,9 +35,9 @@ public:
    * \param sk Skill arguments.
    */
   template <typename SK2 = SK>
-  FEFactory(const BH& basisHandler, SK2&& sk)
+  FEFactory(const BH& basisHandler, const SK2& sk)
       : basisHandler_{&basisHandler},
-        skills{std::forward<SK2>(sk)} {}
+        skills_{sk} {}
 
   auto operator()() {
     return std::apply(
@@ -50,7 +50,7 @@ public:
 
           return fe;
         },
-        skills.args);
+        skills_.args);
   }
 };
 
@@ -64,8 +64,8 @@ public:
  * object.
  */
 template <typename FER = FERequirements<>, bool useFlat = true, bool useEigenRef = false, typename BH, typename SK>
-auto makeFE(const BH& basisHandler, SK&& sk) {
-  FEFactory<BH, SK, FER, useFlat, useEigenRef> factory(basisHandler, std::forward<SK>(sk));
+auto makeFE(const BH& basisHandler, const SK& sk) {
+  FEFactory<BH, SK, FER, useFlat, useEigenRef> factory(basisHandler, sk);
 
   return factory();
 }
