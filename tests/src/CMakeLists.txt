@@ -5,9 +5,9 @@ option(ENABLE_TEST_COVERAGE "Enable test coverage" OFF)
 set(IWYU_ARGS "-Xiwyu --mapping_file=iwyu.imp")
 option(IKARUS_SANITIZERS "Add sanitizers to the compilation" OFF)
 if(IKARUS_SANITIZERS)
-  add_definitions(-DDUSE_SANITIZER="Address,Memory,MemoryWithOrigins,Undefined,Thread,Leak,'Address;Undefined'")
+  add_definitions(-DUSE_SANITIZER="Address,Memory,MemoryWithOrigins,Undefined,Thread,Leak")
 endif(IKARUS_SANITIZERS)
-  include(../../cmake/tools.cmake)
+include(../../cmake/tools.cmake)
 
 file(
   GLOB programSourceFiles

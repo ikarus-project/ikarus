@@ -94,7 +94,7 @@ public:
     geo_                  = std::make_shared<const Geometry>(element.geometry());
     numberOfNodes_        = fe.size();
     order_                = 2 * (fe.localBasis().order());
-    localBasis_= Dune::CachedLocalBasis(fe.localBasis());
+    localBasis_           = Dune::CachedLocalBasis(fe.localBasis());
     if constexpr (requires { element.impl().getQuadratureRule(order_); })
       if (element.impl().isTrimmed())
         localBasis_.bind(element.impl().getQuadratureRule(order_), Dune::bindDerivatives(0, 1));
@@ -258,14 +258,14 @@ protected:
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     const auto uFunction = displacementFunction(par, dx);
-    const auto eps = strainFunction(par, dx);
+    const auto eps       = strainFunction(par, dx);
     for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
       const double intElement = geo_->integrationElement(gp.position()) * gp.weight();
       const auto EVoigt       = (eps.evaluate(gpIndex, on(gridElement))).eval();
-      const auto u       = (uFunction.evaluate(gpIndex, on(gridElement))).eval();
+      const auto u            = (uFunction.evaluate(gpIndex, on(gridElement))).eval();
       const auto C            = materialTangent(EVoigt);
 
-      const auto stresses     = getStress(EVoigt);
+      const auto stresses = getStress(EVoigt);
       for (size_t i = 0; i < numberOfNodes_; ++i) {
         const auto bopI = eps.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
         for (size_t j = 0; j < numberOfNodes_; ++j) {
@@ -284,9 +284,9 @@ protected:
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
 
-    const auto eps       = strainFunction(par, dx);
-    const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
-    ScalarType energy    = 0.0;
+    const auto eps     = strainFunction(par, dx);
+    const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
+    ScalarType energy  = 0.0;
 
     for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
       const auto EVoigt         = (eps.evaluate(gpIndex, on(gridElement))).eval();

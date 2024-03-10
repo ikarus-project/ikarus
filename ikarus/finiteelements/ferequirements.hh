@@ -29,7 +29,7 @@ namespace Ikarus {
  * \ingroup Affordancestags
  * \brief A strongly typed enum class representing the scalar affordance
  */
- // cppcheck-suppress MAKE_ENUM
+// cppcheck-suppress MAKE_ENUM
  MAKE_ENUM(ScalarAffordances,
             noAffordance,
             mechanicalPotentialEnergy,

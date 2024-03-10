@@ -112,7 +112,7 @@ public:
     // geo_.emplace(element.geometry());
     numberOfNodes_ = fe.size();
     order_         = 2 * (fe.localBasis().order());
-    localBasis_= Dune::CachedLocalBasis(fe.localBasis());
+    localBasis_    = Dune::CachedLocalBasis(fe.localBasis());
     if constexpr (requires { element.impl().getQuadratureRule(order_); })
       if (element.impl().isTrimmed())
         localBasis_.bind(element.impl().getQuadratureRule(order_), Dune::bindDerivatives(0, 1, 2));
