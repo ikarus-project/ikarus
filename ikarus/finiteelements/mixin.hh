@@ -128,6 +128,11 @@ private:
       Sk::bindImpl();
   }
 
+  INVOKEIF(Bind,bindImpl);
+
+  static constexpr bool implementsCalculateScalarImpl= (requires(FEMixin m,const FERequirementType& par,
+const std::optional<std::reference_wrapper<const Eigen::VectorX<double>>>& dx){m.Skills<PreFE, typename PreFE::template FE<Skills...>>::calculateScalarImpl(par,dx);} || ...);
+
 public:
   /**
    * @brief Call all bind functions if the skill implements it
@@ -142,7 +147,7 @@ public:
    * @param dx Optional vector used in the calculation.
    * @return The calculated scalar value.
    */
-  template <typename ScalarType = double>
+  template <typename ScalarType = double> requires implementsCalculateScalarImpl
   auto calculateScalarImpl(
       const FERequirementType& par,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
@@ -150,6 +155,10 @@ public:
             ... + ScalarType{0});
   }
 
+  private:
+  static constexpr bool implementsCalculateVectorImpl= (requires(FEMixin m,const FERequirementType& par,typename Traits::template VectorType<double> force,
+const std::optional<std::reference_wrapper<const Eigen::VectorX<double>>>& dx){m.Skills<PreFE, typename PreFE::template FE<Skills...>>::calculateVectorImpl(par, force, dx);} || ...);
+  public:
   /**
    * @brief Calculate the vector for each skill
    *
@@ -158,13 +167,18 @@ public:
    * @param force The vector to store the calculated result.
    * @param dx Optional vector used in the calculation.
    */
-  template <typename ScalarType>
+  template <typename ScalarType> requires implementsCalculateVectorImpl
   void calculateVectorImpl(
       const FERequirementType& par, typename Traits::template VectorType<ScalarType> force,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
     (Skills<PreFE, typename PreFE::template FE<Skills...>>::template calculateVectorImpl<ScalarType>(par, force, dx),
      ...);
   }
+
+  private:
+  static constexpr bool implementsCalculateMatrixImpl= (requires(FEMixin m,const FERequirementType& par,typename Traits::template MatrixType<double> K,
+const std::optional<std::reference_wrapper<const Eigen::VectorX<double>>>& dx){m.Skills<PreFE, typename PreFE::template FE<Skills...>>::calculateMatrixImpl(par, K, dx);} || ...);
+  public:
 
   /**
    * @brief Calculate the matrix for each skill
@@ -174,7 +188,7 @@ public:
    * @param K The matrix to store the calculated result.
    * @param dx Optional vector used in the calculation.
    */
-  template <typename ScalarType>
+  template <typename ScalarType> requires implementsCalculateMatrixImpl
   void calculateMatrixImpl(
       const FERequirementType& par, typename Traits::template MatrixType<ScalarType> K,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
