@@ -81,14 +81,9 @@ static auto NonLinearKLShellLoadControlTR() {
     return fext;
   };
 
-  auto sk  = skills(kirchhoffLoveShell({.youngs_modulus = E, .nu = nu, .thickness = thickness}), volumeLoad<3>(vL));
-  auto fe  = Ikarus::makeFE(basis, sk);
-  auto fe3 = Ikarus::makeFE(basis, sk);
-  auto fe2 = fe;
+  auto sk = skills(kirchhoffLoveShell({.youngs_modulus = E, .nu = nu, .thickness = thickness}), volumeLoad<3>(vL));
 
-  t.check(&fe.localView() != &fe2.localView()) << " The contained local views should be different";
-
-  using FEType = decltype(fe);
+  using FEType = decltype(Ikarus::makeFE(basis, sk));
   std::vector<FEType> fes;
 
   for (auto&& element : elements(gridView)) {

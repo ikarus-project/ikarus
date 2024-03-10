@@ -58,8 +58,6 @@ public:
   explicit VolumeLoad(const Pre& pre = {})
       : volumeLoad_{pre.volumeLoad} {}
 
-  using SupportedResultTypes = std::tuple<>;
-
   template <template <typename, int, int> class RT>
   requires Dune::AlwaysFalse<RT<double, 1, 1>>::value
   auto calculateAtImpl(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local,

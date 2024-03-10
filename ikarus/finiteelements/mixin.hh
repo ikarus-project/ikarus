@@ -47,11 +47,21 @@ struct FEMixin : Skills<PreFE, typename PreFE::template FE<Skills...>>...
                                    std::tuple<Skills<PreFE, typename PreFE::template FE<Skills...>>...>>::value;
   }
 
+private:
+  template <typename T>
+  consteval static auto computeSupportedResultTypes() {
+    if constexpr (requires { T::SupportedResultTypes(); })
+      return T::SupportedResultTypes();
+    else
+      return std::tuple();
+  }
+
+public:
   /**
    * @brief Type alias for the supported result types by the mixin.
    */
-  using SupportedResultTypes = decltype(std::tuple_cat(
-      std::declval<typename Skills<PreFE, typename PreFE::template FE<Skills...>>::SupportedResultTypes>()...));
+  using SupportedResultTypes =
+      decltype(std::tuple_cat(computeSupportedResultTypes<Skills<PreFE, typename PreFE::template FE<Skills...>>>()...));
 
   using Traits                  = PreFE::Traits;
   using FERequirementType       = typename Traits::FERequirementType;
@@ -205,7 +215,7 @@ struct Skills
  */
 template <typename... Args>
 auto skills(Args&&... args) {
-  return Skills<Args...>{std::forward_as_tuple(std::decay_t<Args>(args)...)};
+  return Skills<std::decay_t<Args>...>{std::forward_as_tuple(std::decay_t<Args>(args)...)};
 }
 
 /**

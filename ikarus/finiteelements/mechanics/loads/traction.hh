@@ -61,7 +61,6 @@ public:
       : neumannBoundaryLoad_{pre.load},
         neumannBoundary_{pre.neumannBoundary} {}
 
-  using SupportedResultTypes = std::tuple<>;
   template <template <typename, int, int> class RT>
   requires Dune::AlwaysFalse<RT<double, 1, 1>>::value
   auto calculateAtImpl(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local,
