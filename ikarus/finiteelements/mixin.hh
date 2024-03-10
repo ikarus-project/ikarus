@@ -121,16 +121,18 @@ public:
     return this->template calculateAtImpl<RT>(req, local, Dune::PriorityTag<10>());
   }
 
-  /**
-   * @brief Call all bind functions if the skill implement it
-   */
-  void bind() {
-    auto skVisitor = []<typename Skill>(Skill& skill) {
-      if constexpr (requires { this->Skill::bindImpl(); })
-        this->Skill::bind();
-    };
-    (skVisitor(static_cast<Skills<PreFE, typename PreFE::template FE<Skills...>>&>(*this)), ...);
+private:
+  template <typename Sk>
+  auto invokeBind() {
+    if constexpr (requires { this->Sk::bindImpl(); })
+      Sk::bindImpl();
   }
+
+public:
+  /**
+   * @brief Call all bind functions if the skill implements it
+   */
+  void bind() { (invokeBind<Skills<PreFE, typename PreFE::template FE<Skills...>>>(), ...); }
 
   /**
    * @brief Calculate the scalar value in each skill and joins them by `+`.
