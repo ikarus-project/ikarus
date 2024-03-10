@@ -99,10 +99,11 @@ public:
       : mat_{pre.material},
         thickness_{pre.thickness} {}
 
+protected:
   /**
    * \brief A helper function to bind the local view to the element.
    */
-  void bind() {
+  void bindImpl() {
     const auto& localView = underlying().localView();
     assert(localView.bound());
     const auto& element = localView.element();

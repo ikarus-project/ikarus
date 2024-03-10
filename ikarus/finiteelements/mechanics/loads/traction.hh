@@ -61,12 +61,12 @@ public:
       : neumannBoundaryLoad_{pre.load},
         neumannBoundary_{pre.neumannBoundary} {}
 
+protected:
   template <template <typename, int, int> class RT>
   requires Dune::AlwaysFalse<RT<double, 1, 1>>::value
   auto calculateAtImpl(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<0>) const {}
 
-protected:
   template <typename ST>
   auto calculateScalarImpl(
       const FERequirementType& par,

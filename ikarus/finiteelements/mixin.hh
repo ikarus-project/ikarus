@@ -126,8 +126,8 @@ public:
    */
   void bind() {
     auto skVisitor = []<typename Skill>(Skill& skill) {
-      if constexpr (requires { skill.bind(); })
-        skill.bind();
+      if constexpr (requires { this->Skill::bindImpl(); })
+        this->Skill::bind();
     };
     (skVisitor(static_cast<Skills<PreFE, typename PreFE::template FE<Skills...>>&>(*this)), ...);
   }

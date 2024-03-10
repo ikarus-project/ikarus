@@ -140,11 +140,13 @@ public:
     easVariant_.setEASType(numberOfEASParameters);
   }
 
-  void bind() {
+protected:
+  void bindImpl() {
     assert(underlying().localView().bound());
     easVariant_.bind(underlying().localView().element().geometry());
   }
 
+public:
 protected:
   inline void easApplicabilityCheck() const {
     const auto& numberOfNodes = underlying().numberOfNodes();

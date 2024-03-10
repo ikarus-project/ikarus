@@ -83,10 +83,11 @@ public:
   explicit NonLinearElastic(const Pre& pre)
       : mat_{pre.material} {}
 
+protected:
   /**
    * \brief A helper function to bind the local view to the element.
    */
-  void bind() {
+  void bindImpl() {
     const auto& localView = underlying().localView();
     const auto& element   = localView.element();
     auto& firstChild      = localView.tree().child(0);
