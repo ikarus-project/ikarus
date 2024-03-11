@@ -18,9 +18,6 @@
 
 using Dune::TestSuite;
 
-template <typename Basis>
-using EASElement = Ikarus::EnhancedAssumedStrains<Ikarus::LinearElastic<Basis>>;
-
 int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t("EAS");
@@ -31,16 +28,24 @@ int main(int argc, char** argv) {
   constexpr auto randomlyDistorted      = CornerDistortionFlag::randomlyDistorted;
   constexpr auto unDistorted            = CornerDistortionFlag::unDistorted;
 
-  t.subTest(testFEElement<EASElement>(firstOrderLagrangePrePower2Basis, "EAS", randomlyDistorted,
-                                      Dune::ReferenceElements<double, 2>::cube(), checkJacobianFunctor));
+  auto linearElasticEASFunc = [](const Ikarus::YoungsModulusAndPoissonsRatio& mat) {
+    return Ikarus::linearElastic(mat);
+  };
 
-  t.subTest(testFEElement<EASElement>(firstOrderLagrangePrePower3Basis, "EAS", randomlyDistorted,
-                                      Dune::ReferenceElements<double, 3>::cube(), checkJacobianFunctor));
-  t.subTest(testFEElement<EASElement>(
+  t.subTest(testFEElement(firstOrderLagrangePrePower2Basis, "EAS", randomlyDistorted,
+                          Dune::ReferenceElements<double, 2>::cube(), &Ikarus::linearElastic,
+                          Ikarus::skills(Ikarus::eas()), checkJacobianFunctor));
+
+  t.subTest(testFEElement(firstOrderLagrangePrePower3Basis, "EAS", randomlyDistorted,
+                          Dune::ReferenceElements<double, 3>::cube(), &Ikarus::linearElastic,
+                          Ikarus::skills(Ikarus::eas()), checkJacobianFunctor));
+
+  t.subTest(testFEElement(
       firstOrderLagrangePrePower2Basis, "EAS", unDistorted, Dune::ReferenceElements<double, 2>::cube(),
-      checkCalculateAtFunctorFactory<Ikarus::ResultType::linearStress>(linearStressResultsOfSquare),
-      checkCalculateAtFunctorFactory<Ikarus::ResultType::linearStress, false>(linearStressResultsOfSquare),
-      checkResultFunctionFunctorFactory<Ikarus::ResultType::linearStress>(linearStressResultsOfSquare)));
+      linearElasticEASFunc, Ikarus::skills(Ikarus::eas()),
+      checkCalculateAtFunctorFactory<Ikarus::ResultTypes::linearStress>(linearStressResultsOfSquare),
+      checkCalculateAtFunctorFactory<Ikarus::ResultTypes::linearStress, false>(linearStressResultsOfSquare),
+      checkResultFunctionFunctorFactory<Ikarus::ResultTypes::linearStress>(linearStressResultsOfSquare)));
 
   return t.exit();
 }

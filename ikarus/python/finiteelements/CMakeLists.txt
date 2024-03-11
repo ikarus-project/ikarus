@@ -3,6 +3,6 @@
 
 add_subdirectory(materials)
 
-set(HEADERS linearelastic.hh nonlinearelastic.hh kirchhoffloveshell.hh registerelement.hh)
+set(HEADERS fe.hh registerpreelement.hh)
 
 install(FILES ${HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/python/finiteelements)

@@ -37,7 +37,7 @@ void VectorFlatAssembler<B, FEC>::assembleRawVectorImpl(const FERequirementType&
   for (auto& fe : this->finiteElements()) {
     vecLocal.setZero(fe.size());
     dofs.resize(0);
-    fe.calculateVector(feRequirements, vecLocal);
+    calculateVector(fe, feRequirements, vecLocal);
     using FEHelper::globalIndices;
     globalIndices(fe, dofs);
     for (int i = 0; auto id : dofs) {
@@ -70,7 +70,7 @@ Eigen::VectorXd& VectorFlatAssembler<B, FEC>::getReducedVectorImpl(const FERequi
   for (auto& fe : this->finiteElements()) {
     vecLocal.setZero(fe.size());
     dofs.resize(0);
-    fe.calculateVector(feRequirements, vecLocal);
+    calculateVector(fe, feRequirements, vecLocal);
     using FEHelper::globalIndices;
     globalIndices(fe, dofs);
     assert(static_cast<long int>(dofs.size()) == vecLocal.size() && "The returned vector has wrong rowSize!");
@@ -92,7 +92,7 @@ void SparseFlatAssembler<B, FEC>::assembleRawMatrixImpl(const FERequirementType&
   Eigen::MatrixXd A;
   for (size_t elementIndex = 0; const auto& fe : this->finiteElements()) {
     A.setZero(fe.size(), fe.size());
-    fe.calculateMatrix(feRequirements, A);
+    calculateMatrix(fe, feRequirements, A);
     assert(static_cast<Eigen::Index>(std::sqrt(elementLinearIndices_[elementIndex].size())) == A.rows() &&
            "The returned matrix has wrong rowSize!");
     assert(static_cast<Eigen::Index>(std::sqrt(elementLinearIndices_[elementIndex].size())) == A.cols() &&
@@ -136,7 +136,7 @@ Eigen::SparseMatrix<double>& SparseFlatAssembler<B, FEC>::getReducedMatrixImpl(
   for (size_t elementIndex = 0; const auto& fe : this->finiteElements()) {
     A.setZero(fe.size(), fe.size());
     dofs.resize(0);
-    fe.calculateMatrix(feRequirements, A);
+    calculateMatrix(fe, feRequirements, A);
     using FEHelper::globalIndices;
     globalIndices(fe, dofs);
     assert(dofs.size() == static_cast<unsigned>(A.rows()) && "The returned matrix has wrong rowSize!");
@@ -260,7 +260,7 @@ void DenseFlatAssembler<B, FEC>::assembleRawMatrixImpl(const FERequirementType& 
   for (auto& fe : this->finiteElements()) {
     matLocal.setZero(fe.size(), fe.size());
     dofs.resize(0);
-    fe.calculateMatrix(feRequirements, matLocal);
+    calculateMatrix(fe, feRequirements, matLocal);
     using FEHelper::globalIndices;
     globalIndices(fe, dofs);
     for (auto i = 0; auto idi : dofs) {
@@ -302,7 +302,7 @@ Eigen::MatrixXd& DenseFlatAssembler<B, FEC>::getReducedMatrixImpl(const FERequir
   for (auto& fe : this->finiteElements()) {
     matLocal.setZero(fe.size(), fe.size());
     dofs.resize(0);
-    fe.calculateMatrix(feRequirements, matLocal);
+    calculateMatrix(fe, feRequirements, matLocal);
     using FEHelper::globalIndices;
     globalIndices(fe, dofs);
     assert(dofs.size() == static_cast<unsigned>(matLocal.rows()) && "The returned matrix has wrong rowSize!");

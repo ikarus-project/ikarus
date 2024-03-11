@@ -15,6 +15,8 @@
 #include <dune/functions/functionspacebases/raviartthomasbasis.hh>
 #include <dune/grid/yaspgrid.hh>
 
+#include <ikarus/finiteelements/fefactory.hh>
+
 using Dune::TestSuite;
 
 #include <ikarus/finiteelements/febase.hh>
@@ -38,7 +40,9 @@ template <bool useFlat, typename GridView, typename PreBasis>
 auto getFEBase(const GridView& gridView, const PreBasis& preBasis) {
   const auto basis = Ikarus::makeBasis(gridView, preBasis);
   auto element     = elements(gridView).begin();
-  return Ikarus::FEBase<decltype(basis), useFlat>(basis, *element);
+  auto fe          = Ikarus::makeFE<Ikarus::FERequirements<>, useFlat>(basis, Ikarus::skills());
+  fe.bind(*element);
+  return fe;
 }
 
 /**

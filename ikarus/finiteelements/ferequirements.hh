@@ -23,12 +23,14 @@
 
 namespace Ikarus {
 // clang-format off
+
   /**
  * ScalarAffordances
  * \ingroup Affordancestags
  * \brief A strongly typed enum class representing the scalar affordance
  */
-  MAKE_ENUM(ScalarAffordances,
+// cppcheck-suppress MAKE_ENUM
+ MAKE_ENUM(ScalarAffordances,
             noAffordance,
             mechanicalPotentialEnergy,
             microMagneticPotentialEnergy

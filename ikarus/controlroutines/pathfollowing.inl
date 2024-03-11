@@ -37,9 +37,8 @@ ControlInformation PathFollowing<NLS, PF, ASS>::run() {
 
   /// Initializing solver
   this->notify(ControlMessages::STEP_STARTED, 0, subsidiaryArgs.stepSize);
-  auto subsidiaryFunctionPtr = [&](auto&& args) { return pathFollowingType_(args); };
   pathFollowingType_.initialPrediction(nonOp, subsidiaryArgs);
-  auto solverInfo = nonLinearSolver_->solve(subsidiaryFunctionPtr, subsidiaryArgs);
+  auto solverInfo = nonLinearSolver_->solve(pathFollowingType_, subsidiaryArgs);
   info.solverInfos.push_back(solverInfo);
   info.totalIterations += solverInfo.iterations;
   if (not solverInfo.success)
@@ -57,7 +56,7 @@ ControlInformation PathFollowing<NLS, PF, ASS>::run() {
 
     pathFollowingType_.intermediatePrediction(nonOp, subsidiaryArgs);
 
-    solverInfo = nonLinearSolver_->solve(subsidiaryFunctionPtr, subsidiaryArgs);
+    solverInfo = nonLinearSolver_->solve(pathFollowingType_, subsidiaryArgs);
 
     info.solverInfos.push_back(solverInfo);
     info.totalIterations += solverInfo.iterations;

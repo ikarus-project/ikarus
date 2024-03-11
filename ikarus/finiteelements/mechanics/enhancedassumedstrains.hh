@@ -8,6 +8,7 @@
  */
 
 #pragma once
+
 #if HAVE_DUNE_LOCALFEFUNCTIONS
   #include <dune/localfefunctions/derivativetransformators.hh>
   #include <dune/localfefunctions/linearAlgebraHelper.hh>
@@ -16,9 +17,23 @@
   #include <ikarus/finiteelements/fehelper.hh>
   #include <ikarus/finiteelements/ferequirements.hh>
   #include <ikarus/finiteelements/mechanics/easvariants.hh>
-  #include <ikarus/utils/eigendunetransformations.hh>
+  #include <ikarus/finiteelements/mixin.hh>
 
 namespace Ikarus {
+
+template <typename PreFE, typename FE>
+class EnhancedAssumedStrains;
+
+/**
+ * \brief A PreFE struct for Enhanced Assumed Strains.
+ */
+struct EnhancedAssumedStrainsPre
+{
+  int numberOfParameters{};
+
+  template <typename PreFE, typename FE>
+  using Skill = EnhancedAssumedStrains<PreFE, FE>;
+};
 
 /**
  * \brief Wrapper class for using Enhanced Assumed Strains (EAS) with displacement based elements.
@@ -27,49 +42,27 @@ namespace Ikarus {
  *
  * This class extends a displacement-based element to support Enhanced Assumed Strains.
  *
- * \tparam DFE The base displacement-based element type.
+ * \tparam PreFE Type of the pre finite element.
+ * \tparam FE Type of the finite element.
  */
-template <typename DFE>
-class EnhancedAssumedStrains : public DFE
+template <typename PreFE, typename FE>
+class EnhancedAssumedStrains
 {
 public:
-  using DisplacementBasedElement = DFE;
-  using FERequirementType        = typename DisplacementBasedElement::FERequirementType;
-  using LocalView                = typename DisplacementBasedElement::LocalView;
-  using Geometry                 = typename DisplacementBasedElement::Geometry;
-  using GridView                 = typename DisplacementBasedElement::GridView;
-  using Traits                   = typename DisplacementBasedElement::Traits;
+  using Traits            = PreFE::Traits;
+  using FERequirementType = typename Traits::FERequirementType;
+  using LocalView         = typename Traits::LocalView;
+  using Geometry          = typename Traits::Geometry;
+  using GridView          = typename Traits::GridView;
+  using Pre               = EnhancedAssumedStrainsPre;
 
-  using DisplacementBasedElement::localView;
-
-  /**
-* \brief Constructor for Enhanced Assumed Strains elements.
-  * \details Disabling this forwarding constructor if the argument provided is EnhancedAssumedStrains itself, to
-forward the
-  // calls to the implicit copy constructor
-* \tparam Args Variadic template for constructor arguments.
-* \param args Constructor arguments forwarded to the base class.
-*/
-  template <typename... Args>
-  requires(
-      not std::is_same_v<std::remove_cvref_t<std::tuple_element_t<0, std::tuple<Args...>>>, EnhancedAssumedStrains>)
-  explicit EnhancedAssumedStrains(Args&&... args)
-      : DisplacementBasedElement(std::forward<Args>(args)...) {}
+  using SupportedResultTypes = std::tuple<decltype(makeRT<ResultTypes::linearStress>())>;
 
   /**
-   * \brief Calculates a scalar quantity for the element.
-   *
-   * This function calculates a scalar quantity for the element based on the FERequirementType.
-   *
-   * \param par The FERequirementType object.
-   * \return Computed scalar quantity.
+   * \brief Constructor for Enhanced Assumed Strains elements.
+   * \param pre The pre finite element
    */
-  double calculateScalar(const FERequirementType& par) const {
-    if (isDisplacementBased())
-      return DisplacementBasedElement::calculateScalar(par);
-    DUNE_THROW(Dune::NotImplemented,
-               "EAS element do not support any scalar calculations, i.e. they are not derivable from a potential");
-  }
+  explicit EnhancedAssumedStrains(const Pre& pre) { this->setEASType(pre.numberOfParameters); }
 
   /**
    * \brief Checks if the element is displacement-based and the EAS is turned off.
@@ -77,18 +70,6 @@ forward the
    * \return True if the element is displacement-based, false otherwise.
    */
   bool isDisplacementBased() const { return easVariant_.isDisplacmentBased(); }
-
-  /**
-   * \brief Calculates vectorial quantities for the element.
-   *
-   * This function calculates the vectorial quantities for the element based on the FERequirementType.
-   *
-   * \param par The FERequirementType object.
-   * \param force Vector to store the calculated forces.
-   */
-  inline void calculateVector(const FERequirementType& par, typename Traits::template VectorType<> force) const {
-    calculateVectorImpl<double>(par, force);
-  }
 
   /**
    * \brief Gets the variant representing the type of Enhanced Assumed Strains (EAS).
@@ -105,33 +86,6 @@ forward the
   auto numberOfEASParameters() const { return easVariant_.numberOfEASParameters(); }
 
   /**
-   * \brief Calculates the matrix for the element.
-   *
-   * This function calculates the matrix for the element based on the FERequirementType.
-   *
-   * \param par The FERequirementType object.
-   * \param K Matrix to store the calculated stiffness.
-   */
-  void calculateMatrix(const FERequirementType& par, typename Traits::template MatrixType<> K) const {
-    using namespace Dune::DerivativeDirections;
-    using namespace Dune;
-
-    /// fill K with displacement-based stiffness.
-    /// It is assumed to be assembled block-wise on element level.
-    /// This means the displacements x,y,z of node I are grouped together.
-    DisplacementBasedElement::calculateMatrix(par, K);
-
-    auto calculateMatrixContribution = [&]<typename EAST>(const EAST& easFunction) {
-      typename EAST::DType D;
-      calculateDAndLMatrix(easFunction, par, D, L_);
-
-      K.template triangularView<Eigen::Upper>() -= L_.transpose() * D.inverse() * L_;
-      K.template triangularView<Eigen::StrictlyLower>() = K.transpose();
-    };
-    easVariant_(calculateMatrixContribution);
-  }
-
-  /**
    * \brief Calculates a requested result at a specific local position using the Enhanced Assumed Strains (EAS)
    * method.
    *
@@ -146,32 +100,29 @@ forward the
    * \tparam RT The type representing the requested result.
    */
   template <template <typename, int, int> class RT>
-  requires(DisplacementBasedElement::template canProvideResultType<RT>())
-  auto calculateAt(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local) const {
+  auto calculateAtImpl(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local,
+                       Dune::PriorityTag<2>) const {
     if (isDisplacementBased())
-      return DisplacementBasedElement::template calculateAt<RT>(req, local);
+      return underlying().template calculateAtImpl<RT>(req, local, Dune::PriorityTag<1>());
 
     using namespace Dune::Indices;
     using namespace Dune::DerivativeDirections;
-
-    using RTWrapper = ResultWrapper<RT<typename Traits::ctype, Traits::mydim, Traits::worlddim>, ResultShape::Vector>;
-    RTWrapper resultWrapper{};
-
-    if constexpr (isSameResultType<RT, ResultType::linearStress>) {
-      const auto C              = DisplacementBasedElement::materialTangentFunction(req);
-      const auto& numberOfNodes = DisplacementBasedElement::numberOfNodes();
-      auto uFunction            = DisplacementBasedElement::displacementFunction(req);
+    auto resultVector = underlying().template calculateAtImpl<RT>(req, local, Dune::PriorityTag<1>());
+    if constexpr (isSameResultType<RT, ResultTypes::linearStress>) {
+      using RTWrapper = ResultWrapper<RT<typename Traits::ctype, Traits::mydim, Traits::worlddim>, ResultShape::Vector>;
+      RTWrapper resultWrapper;
 
       auto calculateAtContribution = [&]<typename EAST>(const EAST& easFunction) {
         typename EAST::DType D;
         calculateDAndLMatrix(easFunction, req, D, L_);
-
-        const auto disp  = Dune::viewAsFlatEigenVector(uFunction.coefficientsRef());
+        const auto ufunc = underlying().displacementFunction(req);
+        const auto disp  = Dune::viewAsFlatEigenVector(ufunc.coefficientsRef());
+        const auto C     = underlying().materialTangentFunction(req);
         const auto alpha = (-D.inverse() * L_ * disp).eval();
         const auto M     = easFunction.calcM(local);
         const auto CEval = C(local);
         auto easStress   = (CEval * M * alpha).eval();
-        resultWrapper = RTWrapper{DisplacementBasedElement::template calculateAt<RT>(req, local).asVec() + easStress};
+        resultWrapper    = resultVector.asVec() + easStress;
       };
       easVariant_(calculateAtContribution);
       return resultWrapper;
@@ -184,44 +135,89 @@ forward the
    * \param numberOfEASParameters The number of EAS parameters
    */
   void setEASType(int numberOfEASParameters) {
-    const auto& numberOfNodes = DisplacementBasedElement::numberOfNodes();
-    if (not((numberOfNodes == 4 and Traits::mydim == 2) or (numberOfNodes == 8 and Traits::mydim == 3)) and
-        (not isDisplacementBased()))
-      DUNE_THROW(Dune::NotImplemented, "EAS only supported for Q1 or H1 elements");
-    easVariant_.setEASType(numberOfEASParameters, localView().element().geometry());
+    if (numberOfEASParameters != 0)
+      easApplicabilityCheck();
+    easVariant_.setEASType(numberOfEASParameters);
   }
 
 protected:
+  void bindImpl() {
+    assert(underlying().localView().bound());
+    easVariant_.bind(underlying().localView().element().geometry());
+  }
+
+public:
+protected:
+  inline void easApplicabilityCheck() const {
+    const auto& numberOfNodes = underlying().numberOfNodes();
+    assert(not(not((numberOfNodes == 4 and Traits::mydim == 2) or (numberOfNodes == 8 and Traits::mydim == 3)) and
+               (not isDisplacementBased())) &&
+           "EAS only supported for Q1 or H1 elements");
+  }
+
+  template <typename ScalarType>
+  void calculateMatrixImpl(
+      const FERequirementType& par, typename Traits::template MatrixType<> K,
+      const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
+    using namespace Dune::DerivativeDirections;
+    using namespace Dune;
+    easApplicabilityCheck();
+    if (isDisplacementBased())
+      return;
+
+    decltype(auto) LMat = [this]() -> decltype(auto) {
+      if constexpr (std::is_same_v<ScalarType, double>)
+        return [this]() -> Eigen::MatrixXd& { return L_; }();
+      else
+        return Eigen::MatrixX<ScalarType>{};
+    }();
+
+    auto calculateMatrixContribution = [&]<typename EAST>(const EAST& easFunction) {
+      typename EAST::DType D;
+      calculateDAndLMatrix(easFunction, par, D, LMat, dx);
+
+      K.template triangularView<Eigen::Upper>() -= LMat.transpose() * D.inverse() * LMat;
+      K.template triangularView<Eigen::StrictlyLower>() = K.transpose();
+    };
+    easVariant_(calculateMatrixContribution);
+  }
+
   template <typename ScalarType>
   inline ScalarType calculateScalarImpl(
-      const FERequirementType& par, const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
+      const FERequirementType& par,
+      const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
+    easApplicabilityCheck();
     if (isDisplacementBased())
-      return DisplacementBasedElement::template calculateScalarImpl<ScalarType>(par, dx);
+      return 0.0;
     DUNE_THROW(Dune::NotImplemented,
                "EAS element do not support any scalar calculations, i.e. they are not derivable from a potential");
   }
 
   template <typename ScalarType>
-  void calculateVectorImpl(const FERequirementType& par, typename Traits::template VectorType<ScalarType> force,
-                           const std::optional<const Eigen::VectorX<ScalarType>>& dx = std::nullopt) const {
+  void calculateVectorImpl(
+      const FERequirementType& par, typename Traits::template VectorType<ScalarType> force,
+      const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
+    easApplicabilityCheck();
     using namespace Dune;
     using namespace Dune::DerivativeDirections;
-
-    DisplacementBasedElement::calculateVectorImpl(par, force, dx);
-
-    const auto uFunction      = DisplacementBasedElement::displacementFunction(par, dx);
-    auto strainFunction       = DisplacementBasedElement::strainFunction(par, dx);
-    const auto& numberOfNodes = DisplacementBasedElement::numberOfNodes();
-
-    auto C = DisplacementBasedElement::materialTangentFunction(par);
+    const auto uFunction      = underlying().displacementFunction(par, dx);
+    auto strainFunction       = underlying().strainFunction(par, dx);
+    const auto& numberOfNodes = underlying().numberOfNodes();
 
     auto calculateForceContribution = [&]<typename EAST>(const EAST& easFunction) {
       typename EAST::DType D;
       calculateDAndLMatrix(easFunction, par, D, L_);
 
+      decltype(auto) LMat = [this]() -> decltype(auto) {
+        if constexpr (std::is_same_v<ScalarType, double>)
+          return [this]() -> Eigen::MatrixXd& { return L_; }();
+        else
+          return Eigen::MatrixX<ScalarType>{};
+      }();
       const auto disp  = Dune::viewAsFlatEigenVector(uFunction.coefficientsRef());
       const auto alpha = (-D.inverse() * L_ * disp).eval();
-      const auto geo   = localView().element().geometry();
+      const auto geo   = underlying().localView().element().geometry();
+      auto C           = underlying().materialTangentFunction(par);
 
       for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
         const auto M            = easFunction.calcM(gp.position());
@@ -238,36 +234,52 @@ protected:
   }
 
 private:
-  EAS::EASVariant<Geometry> easVariant_;
+  EAS::Impl::EASVariant<Geometry> easVariant_;
   mutable Eigen::MatrixXd L_;
 
-  template <int enhancedStrainSize>
-  void calculateDAndLMatrix(const auto& easFunction, const auto& par,
-                            Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>& DMat,
-                            Eigen::MatrixXd& LMat) const {
+  //> CRTP
+  const auto& underlying() const { return static_cast<const FE&>(*this); }
+  auto& underlying() { return static_cast<FE&>(*this); }
+
+  template <typename ScalarType, int enhancedStrainSize>
+  void calculateDAndLMatrix(
+      const auto& easFunction, const auto& par, Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>& DMat,
+      Eigen::MatrixX<ScalarType>& LMat,
+      const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
     using namespace Dune;
     using namespace Dune::DerivativeDirections;
 
-    auto strainFunction      = DisplacementBasedElement::strainFunction(par);
-    const auto C             = DisplacementBasedElement::materialTangentFunction(par);
-    const auto geo           = localView().element().geometry();
-    const auto numberOfNodes = DisplacementBasedElement::numberOfNodes();
+    auto strainFunction      = underlying().strainFunction(par, dx);
+    const auto C             = underlying().materialTangentFunction(par);
+    const auto geo           = underlying().localView().element().geometry();
+    const auto numberOfNodes = underlying().numberOfNodes();
     DMat.setZero();
-    LMat.setZero(enhancedStrainSize, localView().size());
+    LMat.setZero(enhancedStrainSize, underlying().localView().size());
     for (const auto& [gpIndex, gp] : strainFunction.viewOverIntegrationPoints()) {
-      const auto M      = easFunction.calcM(gp.position());
-      const auto CEval  = C(gpIndex);
-      const double detJ = geo.integrationElement(gp.position());
-      DMat += M.transpose() * CEval * M * detJ * gp.weight();
+      const auto M            = easFunction.calcM(gp.position());
+      const auto CEval        = C(gpIndex);
+      const double detJTimesW = geo.integrationElement(gp.position()) * gp.weight();
+      DMat += M.transpose() * CEval * M * detJTimesW;
       for (size_t i = 0U; i < numberOfNodes; ++i) {
         const size_t I = Traits::worlddim * i;
         const auto Bi  = strainFunction.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
-        LMat.template block<enhancedStrainSize, Traits::worlddim>(0, I) +=
-            M.transpose() * CEval * Bi * detJ * gp.weight();
+        LMat.template block<enhancedStrainSize, Traits::worlddim>(0, I) += M.transpose() * CEval * Bi * detJTimesW;
       }
     }
   }
 };
+
+/**
+ * \brief A helper function to create an enhanced assumed strain pre finite element.
+ * \param numberOfEASParameters Number of EAS parameters
+ * \return An enhanced assumed strain pre finite element.
+ */
+auto eas(int numberOfEASParameters = 0) {
+  EnhancedAssumedStrainsPre pre(numberOfEASParameters);
+
+  return pre;
+}
+
 } // namespace Ikarus
 
 #else

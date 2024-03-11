@@ -15,6 +15,7 @@
 using Dune::TestSuite;
 
 #include <ikarus/assembler/simpleassemblers.hh>
+#include <ikarus/finiteelements/fefactory.hh>
 #include <ikarus/finiteelements/mechanics/materials.hh>
 #include <ikarus/finiteelements/mechanics/materials/svk.hh>
 #include <ikarus/finiteelements/mechanics/nonlinearelastic.hh>
@@ -34,6 +35,7 @@ void checkAssembledQuantities(TestSuiteType& t, SparseType& sType, DenseType& dT
 template <typename PreBasis>
 auto SimpleAssemblersTest(const PreBasis& preBasis) {
   TestSuite t("SimpleAssemblersTest");
+  using namespace Ikarus;
   using Grid = Dune::YaspGrid<2>;
 
   Dune::FieldVector<double, 2> bbox       = {4, 2};
@@ -49,17 +51,22 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
 
     Ikarus::StVenantKirchhoff matSVK(matParameter);
     auto reducedMat = planeStress(matSVK, 1e-8);
-    std::vector<Ikarus::NonLinearElastic<decltype(basis), decltype(reducedMat)>> fes;
 
-    auto volumeLoad = []([[maybe_unused]] const auto& globalCoord, const auto& lamb) {
+    auto vL = []([[maybe_unused]] const auto& globalCoord, const auto& lamb) {
       Eigen::Vector2d fext;
       fext.setZero();
       fext[1] = 2 * lamb;
       fext[0] = lamb;
       return fext;
     };
-    for (auto&& ge : elements(gridView))
-      fes.emplace_back(basis, ge, reducedMat, volumeLoad);
+
+    auto sk = skills(nonLinearElastic(reducedMat), volumeLoad<2>(vL));
+
+    std::vector<decltype(makeFE(basis, sk))> fes;
+    for (auto&& ge : elements(gridView)) {
+      fes.emplace_back(makeFE(basis, sk));
+      fes.back().bind(ge);
+    }
 
     auto basisP = std::make_shared<const decltype(basis)>(basis);
     Ikarus::DirichletValues dirichletValues(basisP->flat());

@@ -115,6 +115,13 @@ struct Shape
 };
 
 auto testRTs() {
+  static_assert(Concepts::ResultType<Res1>);
+  static_assert(Concepts::ResultType<Res2>);
+  static_assert(Concepts::ResultType<Res3>);
+  static_assert(Concepts::ResultType<Res4>);
+  static_assert(Concepts::ResultType<Res5>);
+  static_assert(Concepts::ResultType<Res6>);
+  static_assert(Concepts::ResultType<Res7>);
   TestSuite t("Test FE ResultTypes");
 
   auto testShapes = [&]<ElementHasResultType rt, Ikarus::ResultShape shape>(Shape expectedShapeVec,
@@ -158,7 +165,7 @@ auto testRTs() {
   testShapes.operator()<ElementHasResultType::Crazy, ResultShape::Matrix>({66, 1}, {6, 11});
   testShapes.operator()<ElementHasResultType::Crazy, ResultShape::Vector>({66, 1}, {6, 11});
 
-  // Crazy case
+  // Non_Square case
   testShapes.operator()<ElementHasResultType::Non_Square, ResultShape::Matrix>({6, 1}, {3, 2});
   testShapes.operator()<ElementHasResultType::Non_Square, ResultShape::Vector>({6, 1}, {3, 2});
 

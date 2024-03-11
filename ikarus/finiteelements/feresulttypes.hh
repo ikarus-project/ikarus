@@ -60,13 +60,13 @@ namespace Impl {
 
 } // namespace Impl
 
-namespace ResultType {
+namespace ResultTypes {
 #define REGISTER_RESULTTYPE_IMPL(resultTypeName, rowsExpr, colsExpr, MaxRowsExpr, MaxColsExpr, VectorizeStruct, \
                                  MatricizeStruct)                                                               \
   template <typename ScalarType, int gridDim, int worldDim>                                                     \
   struct resultTypeName                                                                                         \
   {                                                                                                             \
-    friend auto toString(resultTypeName) { return #resultTypeName; }                                            \
+    friend std::string toString(resultTypeName) { return #resultTypeName; }                                     \
                                                                                                                 \
     using type       = Eigen::Matrix<ScalarType, rowsExpr, colsExpr, 0, MaxRowsExpr, MaxColsExpr>;              \
     using Vectorizer = VectorizeStruct;                                                                         \
@@ -136,7 +136,7 @@ namespace ResultType {
   REGISTER_SIMPLE_RESULTTYPE(HField, worldDim, 1);
 
   REGISTER_SIMPLE_RESULTTYPE(customType, Eigen::Dynamic, Eigen::Dynamic);
-} // namespace ResultType
+} // namespace ResultTypes
 
 enum class ResultShape
 {
@@ -218,6 +218,16 @@ private:
 namespace Impl {
   template <template <typename, int, int> class RT>
   using DummyRT = RT<double, 1, 1>;
+}
+
+/**
+ * \brief Creates a dummy resultType which can be stored in a variable
+ * \tparam RT The ResultType template
+ * \return The ResultType
+ */
+template <template <typename, int, int> class RT>
+auto makeRT() {
+  return Impl::DummyRT<RT>{};
 }
 
 /**

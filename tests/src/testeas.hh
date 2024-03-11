@@ -10,8 +10,9 @@
 
 #include <ikarus/finiteelements/mechanics/enhancedassumedstrains.hh>
 
-template <typename DisplacementBasedElement>
-struct ElementTest<Ikarus::EnhancedAssumedStrains<DisplacementBasedElement>>
+template <typename FE>
+requires(FE::template hasSkill<Ikarus::EnhancedAssumedStrainsPre::Skill>())
+struct ElementTest<FE>
 {
   [[nodiscard]] static auto test() {
     auto easFunctor = [](auto& nonLinOp, auto& fe, auto& req) {
@@ -85,7 +86,7 @@ struct ElementTest<Ikarus::EnhancedAssumedStrains<DisplacementBasedElement>>
           easVariant(testM);
 
           auto requirements = Ikarus::FERequirements();
-          t.checkThrow([&]() { fe.calculateScalar(requirements); })
+          t.checkThrow([&]() { calculateScalar(fe, requirements); })
               << "fe.calculateScalar should have failed for numberOfEASParameter > 0";
         }
 

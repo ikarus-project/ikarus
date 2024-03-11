@@ -3,7 +3,6 @@
 add_subdirectory(ikarus)
 set(CMAKE_CXX_STANDARD 20)
 
-message(STATUS "PYPI_PACKAGE_NAME ${PYPI_PACKAGE_NAME}")
 dune_python_configure_bindings(
   PATH
   "."

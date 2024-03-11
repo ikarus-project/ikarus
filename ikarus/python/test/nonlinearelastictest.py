@@ -35,11 +35,16 @@ if __name__ == "__main__":
     )
     flatBasis = basisLagrange1.flat()
 
+
+
     forces = np.zeros(8)
     stiffness = np.zeros((8, 8))
 
-    def volumeLoad(x, lambdaVal):
+    def vL(x, lambdaVal):
         return np.array([lambdaVal * x[0] * 2, 2 * lambdaVal * x[1] * 0])
+    
+    vLoad = iks.finite_elements.volumeLoad2D(vL)
+
 
     def neumannLoad(x, lambdaVal):
         return np.array([lambdaVal * 0, lambdaVal])
@@ -55,16 +60,19 @@ if __name__ == "__main__":
 
     boundaryPatch = iks.utils.boundaryPatch(grid, neumannVertices)
 
+    nBLoad= iks.finite_elements.neumannBoundaryLoad(boundaryPatch,neumannLoad)
+
+
     svk = iks.materials.StVenantKirchhoff(E=1000, nu=0.3)
 
-    psNH = svk.asPlaneStress()
+    svkPS = svk.asPlaneStress()
+
+    nonLinElastic = iks.finite_elements.nonLinearElastic(svkPS)
+
     fes = []
     for e in grid.elements:
-        fes.append(
-            iks.finite_elements.NonLinearElastic(
-                basisLagrange1, e, psNH, volumeLoad, boundaryPatch, neumannLoad
-            )
-        )
+        fes.append(iks.finite_elements.makeFE(basisLagrange1,nonLinElastic,vLoad,nBLoad))
+        fes[-1].bind(e)
 
     dirichletValues = iks.dirichletValues(flatBasis)
 

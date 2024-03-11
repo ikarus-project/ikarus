@@ -7,11 +7,12 @@
 
 #include <Eigen/Core>
 
-#include <ikarus/finiteelements/autodiff/autodifffe.hh>
+#include <ikarus/finiteelements/autodifffe.hh>
+#include <ikarus/finiteelements/fefactory.hh>
 #include <ikarus/utils/basis.hh>
 
-template <template <typename...> class FE, typename GridView, typename PreBasis, typename... ElementArgsType>
-auto checkFEByAutoDiff(const GridView& gridView, const PreBasis& pb, const ElementArgsType&... eleArgs) {
+template <typename GridView, typename PreBasis, typename Skills>
+auto checkFESByAutoDiff(const GridView& gridView, const PreBasis& pb, Skills&& skills) {
   auto basis = Ikarus::makeBasis(gridView, pb);
   Eigen::VectorXd d;
   d.setRandom(basis.flat().dimension());
@@ -27,7 +28,8 @@ auto checkFEByAutoDiff(const GridView& gridView, const PreBasis& pb, const Eleme
     auto nDOF        = localView.size();
     const double tol = 1e-10;
 
-    FE fe(basis, element, eleArgs...);
+    auto fe = Ikarus::makeFE(basis, std::forward<Skills>(skills));
+    fe.bind(element);
 
     const std::string feClassName = Dune::className(fe);
 
@@ -42,17 +44,19 @@ auto checkFEByAutoDiff(const GridView& gridView, const PreBasis& pb, const Eleme
     R.setZero(nDOF);
     RAutoDiff.setZero(nDOF);
 
-    fe.calculateMatrix(req, K);
-    feAutoDiff.calculateMatrix(req, KAutoDiff);
+    calculateMatrix(fe, req, K);
+    calculateMatrix(feAutoDiff, req, KAutoDiff);
 
-    fe.calculateVector(req, R);
-    feAutoDiff.calculateVector(req, RAutoDiff);
+    calculateVector(fe, req, R);
+    calculateVector(feAutoDiff, req, RAutoDiff);
 
     t.check(K.isApprox(KAutoDiff, tol),
             "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
             "automatic differentiation for " +
                 feClassName)
-        << "The difference is " << (K - KAutoDiff);
+        << "K is \n"
+        << K << "\n KAutoDiff is \n"
+        << KAutoDiff << "The difference is " << (K - KAutoDiff);
 
     t.check(R.isApprox(RAutoDiff, tol),
             "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
@@ -60,7 +64,7 @@ auto checkFEByAutoDiff(const GridView& gridView, const PreBasis& pb, const Eleme
                 feClassName)
         << "The difference is " << (R - RAutoDiff);
 
-    t.check(Dune::FloatCmp::eq(fe.calculateScalar(req), feAutoDiff.calculateScalar(req), tol),
+    t.check(Dune::FloatCmp::eq(calculateScalar(fe, req), calculateScalar(feAutoDiff, req), tol),
             "Mismatch between the energies obtained from explicit implementation and the one based on "
             "automatic differentiation for " +
                 feClassName);
