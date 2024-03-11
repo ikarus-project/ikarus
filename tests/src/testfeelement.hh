@@ -92,7 +92,7 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
                           .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
                           .addAffordance(Ikarus::AffordanceCollections::elastoStatics);
   bool successlinearStressCalculateAt = false;
-  Dune::Hybrid::forEach(typename FEType::SupportedResultTypes(), [&,gridDim]<typename RT>(RT i) {
+  Dune::Hybrid::forEach(typename FEType::SupportedResultTypes(), [&, gridDim]<typename RT>(RT i) {
     static_assert(requires {
       fes[0].template calculateAt<RT::template Rebind>(requirements, Dune::FieldVector<double, gridDim>());
     });
