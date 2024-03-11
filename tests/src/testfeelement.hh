@@ -91,6 +91,20 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
   auto requirements = FERequirements()
                           .insertParameter(Ikarus::FEParameter::loadfactor, lambda)
                           .addAffordance(Ikarus::AffordanceCollections::elastoStatics);
+  bool successlinearStressCalculateAt = false;
+  Dune::Hybrid::forEach(typename FEType::SupportedResultTypes(), [&]<typename RT>(RT i) {
+    static_assert(requires {
+      fes[0].template calculateAt<RT::template Rebind>(requirements, Dune::FieldVector<double, gridDim>());
+    });
+
+    if ("linearStress" == toString(i))
+      successlinearStressCalculateAt = true;
+  });
+  t.check(successlinearStressCalculateAt)
+      << "linearStress call for calculateAt didn't work." << "\nThe supported types are "
+      << Dune::className<typename FEType::SupportedResultTypes>() << "\n"
+      << "The element is \n"
+      << Dune::className<FEType>();
 
   auto fvLambda = [&](auto&& d_) -> auto {
     requirements.insertGlobalSolution(Ikarus::FESolutions::displacement, d_);

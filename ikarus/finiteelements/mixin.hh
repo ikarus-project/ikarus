@@ -50,8 +50,8 @@ struct FEMixin : Skills<PreFE, typename PreFE::template FE<Skills...>>...
 private:
   template <typename T>
   consteval static auto computeSupportedResultTypes() {
-    if constexpr (requires { T::SupportedResultTypes(); })
-      return T::SupportedResultTypes();
+    if constexpr (requires { typename T::SupportedResultTypes; })
+      return typename T::SupportedResultTypes();
     else
       return std::tuple();
   }

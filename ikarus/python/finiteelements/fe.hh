@@ -64,7 +64,7 @@ void registerCalculateAt(pybind11::handle scope, pybind11::class_<FE, options...
         });
         if (success)
           return result;
-        DUNE_THROW(Dune::NotImplemented, "Element doesn't support ResultType " + resType);
+        DUNE_THROW(Dune::NotImplemented, "Element " + Dune::className<FE>() + " doesn't support ResultType " + resType);
       },
       pybind11::arg("feRequirements"), pybind11::arg("local"), pybind11::arg("resultType"));
 }
