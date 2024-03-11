@@ -244,8 +244,8 @@ struct Skills
  * @return A Skills instance containing the specified skills.
  */
 template <typename... Args>
-auto skills(Args&&... args) {
-  return Skills<std::decay_t<Args>...>{std::forward_as_tuple(std::decay_t<Args>(args)...)};
+auto skills(const Args&... args) {
+  return Skills<std::remove_cvref_t<Args>...>{std::forward_as_tuple(std::remove_cvref_t<Args>(args)...)};
 }
 
 /**
@@ -258,8 +258,8 @@ auto skills(Args&&... args) {
  * @return A new Skills instance containing the merged skills.
  */
 template <typename... Args1, typename... Args2>
-auto merge(Skills<Args1...>&& sk1, Skills<Args2...>&& sk2) {
-  return Skills<Args1..., Args2...>{std::tuple_cat(std::move(sk1.args), std::move(sk2.args))};
+auto merge(const Skills<Args1...>& sk1, const Skills<Args2...>& sk2) {
+  return Skills<std::remove_cvref_t<Args1>..., std::remove_cvref_t<Args2>...>{std::tuple_cat(sk1.args, sk2.args)};
 }
 
 } // namespace Ikarus
