@@ -4,8 +4,15 @@
 from dune.common.hashit import hashIt
 from ikarus.generator import MySimpleGenerator
 
-
 def boundaryPatch(gridView, booleanVector):
+    """
+    @brief Creates a boundary patch for the given grid view and boolean vector.
+
+    @param gridView: The grid view.
+    @param booleanVector: The boolean vector.
+
+    @return: The created boundary patch.
+    """
     generator = MySimpleGenerator("BoundaryPatch", "Ikarus::Python")
     element_type = f"BoundaryPatch<{gridView.cppTypeName}>"
 

@@ -4,8 +4,15 @@
 from dune.common.hashit import hashIt
 from ikarus.generator import MySimpleGenerator
 
-
 def sparseFlatAssembler(fes, dirichletValues):
+    """
+    @brief Creates a sparse flat assembler for the given finite elements and Dirichlet values.
+
+    @param fes: The list of finite elements.
+    @param dirichletValues: The Dirichlet values.
+
+    @return: The created sparse flat assembler.
+    """
     element_type = f"Ikarus::SparseFlatAssembler<std::vector<{fes[0].cppTypeName}>,{dirichletValues.cppTypeName}>"
     generator = MySimpleGenerator("SparseFlatAssembler", "Ikarus::Python")
 
@@ -21,6 +28,14 @@ def sparseFlatAssembler(fes, dirichletValues):
 
 
 def denseFlatAssembler(fes, dirichletValues):
+    """
+    @brief Creates a dense flat assembler for the given finite elements and Dirichlet values.
+
+    @param fes: The list of finite elements.
+    @param dirichletValues: The Dirichlet values.
+
+    @return: The created dense flat assembler.
+    """
     element_type = f"Ikarus::DenseFlatAssembler<std::vector<{fes[0].cppTypeName}>,{dirichletValues.cppTypeName}>"
     generator = MySimpleGenerator("DenseFlatAssembler", "Ikarus::Python")
 

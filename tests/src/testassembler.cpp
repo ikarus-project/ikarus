@@ -16,9 +16,11 @@ using Dune::TestSuite;
 
 #include <ikarus/assembler/simpleassemblers.hh>
 #include <ikarus/finiteelements/fefactory.hh>
+#include <ikarus/finiteelements/mechanics/enhancedassumedstrains.hh>
+#include <ikarus/finiteelements/mechanics/linearelastic.hh>
+#include <ikarus/finiteelements/mechanics/loads/volume.hh>
 #include <ikarus/finiteelements/mechanics/materials.hh>
 #include <ikarus/finiteelements/mechanics/materials/svk.hh>
-#include <ikarus/finiteelements/mechanics/nonlinearelastic.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/init.hh>
 
@@ -60,7 +62,8 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
       return fext;
     };
 
-    auto sk = skills(nonLinearElastic(reducedMat), volumeLoad<2>(vL));
+    auto sk = skills(linearElastic({100, 0.1}), eas(basis.flat().preBasis().subPreBasis().order() == 1 ? 4 : 0),
+                     volumeLoad<2>(vL));
 
     std::vector<decltype(makeFE(basis, sk))> fes;
     for (auto&& ge : elements(gridView)) {
