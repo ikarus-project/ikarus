@@ -76,7 +76,7 @@ struct H1E21
   H1E21() = default;
   explicit H1E21(const GEO& geometry)
       : geometry_{std::make_optional<GEO>(geometry)},
-        T0InverseTransformed{calcTransformationMatrix3D(geometry_)} {}
+        T0InverseTransformed{calcTransformationMatrix3D(geometry)} {}
 
   auto calcM(const Dune::FieldVector<double, 3>& quadPos) const {
     MType M;

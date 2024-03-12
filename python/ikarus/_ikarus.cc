@@ -10,8 +10,8 @@
 #include <dune/python/pybind11/pybind11.h>
 
 #include <ikarus/finiteelements/ferequirements.hh>
-#include <ikarus/finiteelements/mechanics/linearelastic.hh>
-#include <ikarus/python/finiteelements/materials/material.hh>
+#include <ikarus/finiteelements/mechanics/materials.hh>
+#include <ikarus/python/finiteelements/material.hh>
 
 // since python does not support passing python float by reference to a double&, we have to wrap everything
 // see also https://pybind11.readthedocs.io/en/stable/faq.html#limitations-involving-reference-arguments

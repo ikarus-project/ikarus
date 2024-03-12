@@ -36,6 +36,9 @@ def volumeLoad(f, d: int):
     @return: The registered volume load pre-element function.
     """
     includes = ["ikarus/finiteelements/mechanics/loads/volume.hh"]
+    includes += ["dune/python/pybind11/functional.h"]
+    includes += ["dune/python/pybind11/stl.h"]
+    includes += ["dune/python/pybind11/eigen.h"]
 
     element_type = f"Ikarus::VolumeLoadPre<{d}>"
     return registerPreElement("VolumeLoadPre", includes, element_type, f)
@@ -80,9 +83,12 @@ def neumannBoundaryLoad(boundaryPatch, f):
     @return: The registered Neumann boundary load pre-element function.
     """
     includes = ["ikarus/finiteelements/mechanics/loads/traction.hh"]
+    includes += ["dune/python/pybind11/functional.h"]
+    includes += ["dune/python/pybind11/stl.h"]
+    includes += ["dune/python/pybind11/eigen.h"]
     includes += boundaryPatch._includes
     element_type = f"Ikarus::NeumannBoundaryLoadPre<{boundaryPatch.gridView().cppTypeName}>"
-    return registerPreElement("VolumeLoadPre", includes, element_type, boundaryPatch, f)
+    return registerPreElement("NeumannBoundaryLoadPre", includes, element_type, boundaryPatch, f)
 
 def nonLinearElastic(mat):
     """
