@@ -25,7 +25,7 @@ struct E0
   using DType                             = Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>;
 
   E0() = default;
-  explicit E0(const GEO* /*geometry*/) {}
+  explicit E0(const GEO& /*geometry*/) {}
 
   // returns an Eigen zero expression for optimization purposes
   static auto calcM(const Dune::FieldVector<double, 2>& /*quadPos*/) { return MType::Zero(); }
@@ -49,9 +49,9 @@ struct Q1E4
   using DType                             = Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>;
 
   Q1E4() = default;
-  explicit Q1E4(const GEO* geometry)
-      : geometry_{geometry},
-        T0InverseTransformed_{calcTransformationMatrix2D(*geometry)} {}
+  explicit Q1E4(const GEO& geometry)
+      : geometry_{std::make_optional<GEO>(geometry)},
+        T0InverseTransformed_{calcTransformationMatrix2D(geometry)} {}
 
   auto calcM(const Dune::FieldVector<double, 2>& quadPos) const {
     MType M;
@@ -68,7 +68,7 @@ struct Q1E4
   }
 
 private:
-  const GEO* geometry_;
+  std::optional<GEO> geometry_;
   Eigen::Matrix3d T0InverseTransformed_;
 };
 
@@ -88,9 +88,9 @@ struct Q1E5
   using DType                             = Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>;
 
   Q1E5() = default;
-  explicit Q1E5(const GEO* geometry)
-      : geometry_{geometry},
-        T0InverseTransformed_{calcTransformationMatrix2D(*geometry)} {}
+  explicit Q1E5(const GEO& geometry)
+      : geometry_{std::make_optional<GEO>(geometry)},
+        T0InverseTransformed_{calcTransformationMatrix2D(geometry)} {}
 
   auto calcM(const Dune::FieldVector<double, 2>& quadPos) const {
     MType M;
@@ -108,7 +108,7 @@ struct Q1E5
   }
 
 private:
-  const GEO* geometry_;
+  std::optional<GEO> geometry_;
   Eigen::Matrix3d T0InverseTransformed_;
 };
 
@@ -128,9 +128,9 @@ struct Q1E7
   using DType                             = Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>;
 
   Q1E7() = default;
-  explicit Q1E7(const GEO* geometry)
-      : geometry_{geometry},
-        T0InverseTransformed_{calcTransformationMatrix2D(*geometry)} {}
+  explicit Q1E7(const GEO& geometry)
+      : geometry_{std::make_optional<GEO>(geometry)},
+        T0InverseTransformed_{calcTransformationMatrix2D(geometry)} {}
 
   auto calcM(const Dune::FieldVector<double, 2>& quadPos) const {
     MType M;
@@ -150,7 +150,7 @@ struct Q1E7
   }
 
 private:
-  const GEO* geometry_;
+  std::optional<GEO> geometry_;
   Eigen::Matrix3d T0InverseTransformed_;
 };
 

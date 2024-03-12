@@ -47,9 +47,8 @@ void registerLinearElasticPre(pybind11::handle scope, pybind11::class_<LinearEla
  */
 template <class KirchhoffLoveShellPre, class... options>
 void registerKirchhoffLoveShellPre(pybind11::handle scope, pybind11::class_<KirchhoffLoveShellPre, options...> cls) {
-  cls.def(pybind11::init([](const double& E, const double& nu, const double& h) {
-            return new KirchhoffLoveShellPre({E, nu}, h);
-          }));
+  cls.def(pybind11::init(
+      [](const double& E, const double& nu, const double& h) { return new KirchhoffLoveShellPre({E, nu}, h); }));
 }
 
 /**
@@ -104,4 +103,4 @@ void registerVolumeLoadPre(pybind11::handle scope, pybind11::class_<VolumeLoadPr
   cls.def(pybind11::init([](LoadFunction volumeLoad) { return new VolumeLoadPre(volumeLoad); }));
 }
 
-}  // namespace Ikarus::Python
+} // namespace Ikarus::Python

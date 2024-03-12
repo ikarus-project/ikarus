@@ -29,9 +29,9 @@ struct H1E9
   using DType                             = Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>;
 
   H1E9() = default;
-  explicit H1E9(const GEO* geometry)
-      : geometry_{geometry},
-        T0InverseTransformed_{calcTransformationMatrix3D(*geometry)} {}
+  explicit H1E9(const GEO& geometry)
+      : geometry_{std::make_optional<GEO>(geometry)},
+        T0InverseTransformed_{calcTransformationMatrix3D(geometry)} {}
 
   auto calcM(const Dune::FieldVector<double, 3>& quadPos) const {
     MType M;
@@ -54,7 +54,7 @@ struct H1E9
   }
 
 private:
-  const GEO* geometry_;
+  std::optional<GEO> geometry_;
   Eigen::Matrix<double, strainSize, strainSize> T0InverseTransformed_;
 };
 
@@ -74,9 +74,9 @@ struct H1E21
   using DType                             = Eigen::Matrix<double, enhancedStrainSize, enhancedStrainSize>;
 
   H1E21() = default;
-  explicit H1E21(const GEO* geometry)
-      : geometry_{geometry},
-        T0InverseTransformed{calcTransformationMatrix3D(*geometry_)} {}
+  explicit H1E21(const GEO& geometry)
+      : geometry_{std::make_optional<GEO>(geometry)},
+        T0InverseTransformed{calcTransformationMatrix3D(geometry_)} {}
 
   auto calcM(const Dune::FieldVector<double, 3>& quadPos) const {
     MType M;
@@ -114,7 +114,7 @@ struct H1E21
   }
 
 private:
-  const GEO* geometry_;
+  std::optional<GEO> geometry_;
   Eigen::Matrix<double, strainSize, strainSize> T0InverseTransformed;
 };
 } // namespace Ikarus::EAS
