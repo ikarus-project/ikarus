@@ -6,8 +6,15 @@ from dune.functions.globalbasis import preBasisTypeName
 from dune.functions import defaultGlobalBasis
 from .generator import MySimpleGenerator
 
-
 def basis(gv, tree):
+    """
+    @brief Creates a basis handler for the given grid view and tree.
+
+    @param gv: The grid view.
+    @param tree: The tree of pre basis types.
+
+    @return: The created basis handler.
+    """
     generator = MySimpleGenerator("BasisHandler", "Ikarus::Python")
 
     pbfName = preBasisTypeName(tree, gv.cppTypeName)

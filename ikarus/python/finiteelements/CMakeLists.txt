@@ -3,6 +3,6 @@
 
 add_subdirectory(materials)
 
-set(HEADERS fe.hh registerpreelement.hh)
+set(HEADERS fe.hh registerpreelement.hh material.hh)
 
 install(FILES ${HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/python/finiteelements)
