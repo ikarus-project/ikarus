@@ -26,21 +26,21 @@ For the license, see \ref LICENSE.md "License".
 
 Ikarus is research software and developed at research institutions.
 You can cite **specific releases** via [**DaRUS**](https://darus.uni-stuttgart.de/dataverse/ikarus).
-You can also cite individual code files or even lines via **Software Heritage**: [![SWHRelease](https://archive.softwareheritage.org/badge/swh:1:rel:2cbfacc591c5fa48bdc84b375e42d1ab5304425f/)](https://archive.softwareheritage.org/swh:1:rel:2cbfacc591c5fa48bdc84b375e42d1ab5304425f;origin=https://github.com/ikarus-project/ikarus;visit=swh:1:snp:22424908ab42ab0d38be84c34235b8b5ae7af6c4)
+You can also cite individual code files or even lines via **Software Heritage**: [![SWH](https://archive.softwareheritage.org/badge/swh:1:rel:740930accfafedda16191ef29c9b7abd098efe6d/)](https://archive.softwareheritage.org/swh:1:rel:740930accfafedda16191ef29c9b7abd098efe6d;origin=https://github.com/ikarus-project/ikarus;visit=swh:1:snp:b4f08f128cb90cd10a37b8c657a7d01baef0ac24)
 
 If you are using Ikarus in scientific publications and in
 the academic context, please cite publication:
 
-**Ikarus v0.3.** [![Doi](https://img.shields.io/badge/DOI-10.18419%2Fdarus--3303-orange)](https://doi.org/10.18419/darus-3303)
+**Ikarus v0.4.** [![Doi](https://img.shields.io/badge/DOI-10.18419%2Fdarus--3889-orange)](https://doi.org/10.18419/darus-3889)
 
 ```bib
 @data{darus-3303_2023,
-author = {Müller, Alexander and Vinod Kumar Mitruka, Tarun Kumar Mitruka},
+author = {Müller, Alexander and Vinod Kumar Mitruka, Tarun Kumar Mitruka and Jakob, Henrik},
 publisher = {DaRUS},
-title = {Ikarus v0.3},
-year = {2023},
+title = {Ikarus v0.4},
+year = {2024},
 version = {V1},
-doi = {10.18419/darus-3303},
-url = {https://doi.org/10.18419/darus-3303}
+doi = {10.18419/darus-3889},
+url = {https://doi.org/10.18419/darus-3889}
 }
 ```
