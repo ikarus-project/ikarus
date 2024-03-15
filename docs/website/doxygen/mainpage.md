@@ -31,7 +31,7 @@ You can also cite individual code files or even lines via **Software Heritage**:
 If you are using Ikarus in scientific publications and in
 the academic context, please cite publication:
 
-**Ikarus v0.3.** [![Doi](https://img.shields.io/badge/DOI-10.18419%2Fdarus--3889-orange)](https://doi.org/10.18419/darus-3889)
+**Ikarus v0.4.** [![Doi](https://img.shields.io/badge/DOI-10.18419%2Fdarus--3889-orange)](https://doi.org/10.18419/darus-3889)
 
 ```bib
 @data{darus-3303_2023,
