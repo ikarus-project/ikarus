@@ -35,7 +35,7 @@ the academic context, please cite publication:
 
 ```bib
 @data{darus-3303_2023,
-author = {Müller, Alexander, and Vinod Kumar Mitruka, Tarun Kumar Mitruka and Jakob, Henrik},
+author = {Müller, Alexander and Vinod Kumar Mitruka, Tarun Kumar Mitruka and Jakob, Henrik},
 publisher = {DaRUS},
 title = {Ikarus v0.4},
 year = {2024},
