@@ -102,7 +102,7 @@ void inline init(int argc, char** argv, bool enableFileLogger = true) {
   spdlog::info("© 2021-{} The Ikarus Developers, see LICENSE.md ", static_cast<int>(currentYearMonthDay.year()));
   spdlog::info("You are using Ikarus v{}. Please don't forget to cite us:", IKARUS_VERSION);
   spdlog::info(
-      "Müller, A., & Vinod Kumar Mitruka, T. K. M. (2023). Ikarus v0.3 (Version V1). Version V1. "
-      "doi:<https://doi.org/10.18419/darus-3303>");
+      "Müller, A., Vinod Kumar Mitruka, T. K. M., Jakob, H. (2024). Ikarus v0.4 (Version V1). "
+      "doi:<https://doi.org/10.18419/darus-3889>");
 }
 } // namespace Ikarus
