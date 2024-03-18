@@ -11,7 +11,7 @@ option(DUNE_PYTHON_ALLOW_GET_PIP "Allow dune-common to install pip into venv" ON
 
 project(
   ikarus
-  VERSION 0.4
+  VERSION 0.4.1
   LANGUAGES C CXX
 )
 
