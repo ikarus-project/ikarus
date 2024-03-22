@@ -12,6 +12,7 @@
 
 #include <ikarus/controlroutines/loadcontrol.hh>
 #include <ikarus/controlroutines/pathfollowing.hh>
+#include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/nonlinearoperator.hh>
 #include <ikarus/utils/observer/controllogger.hh>
