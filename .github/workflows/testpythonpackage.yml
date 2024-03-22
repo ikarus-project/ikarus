@@ -61,7 +61,7 @@ jobs:
       - name: Delete checked out files except pytests folder
         run: |
           find . -mindepth 1 -maxdepth 1 -type d ! -name 'pytests' -exec rm -rf {} +
-          rm *
+          find . -maxdepth 1 -type f -exec rm {} +
 
       - name: Run Tests
         run: |
