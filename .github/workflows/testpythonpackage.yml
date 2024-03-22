@@ -29,14 +29,20 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Activate Dune environment
+        run: |
+          source /dune/dune-common/build-cmake/dune-env/bin/activate 
+          echo "Dune environment activated"
+
       - name: Install twine and scikit-build
         run: |
-          /dune/dune-common/build-cmake/run-in-dune-env pip install twine scikit-build
+          pip install twine scikit-build
           git config --global --add safe.directory /__w/ikarus/ikarus
 
       - name: Create tarball
         run: |
-          /dune/dune-common/build-cmake/run-in-dune-env python setup.py sdist
+          python setup.py sdist
       
       - name: Get package version
         id: get_version
@@ -45,11 +51,10 @@ jobs:
           
       - name: Install package from tarball
         run: |
-          /dune/dune-common/build-cmake/run-in-dune-env pip install dist/pyikarus-$version.tar.gz --verbose --upgrade --no-build-isolation
+          pip install dist/pyikarus-$version.tar.gz --verbose --upgrade --no-build-isolation
       
       - name: Run Tests
         run: |
-          /dune/dune-common/build-cmake/run-in-dune-env python ikarus/python/test/linearelastictest.py
-          /dune/dune-common/build-cmake/run-in-dune-env python ikarus/python/test/kltest.py
-          /dune/dune-common/build-cmake/run-in-dune-env python ikarus/python/test/nonlinearelastictest.py
-          /dune/dune-common/build-cmake/run-in-dune-env python ikarus/python/test/testmaterials.py
+          for file in ikarus/python/test/*.py; do
+            python "$file"
+          done
