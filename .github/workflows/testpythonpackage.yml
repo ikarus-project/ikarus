@@ -33,4 +33,5 @@ jobs:
         
       - name: Install package from tarball
         run: |
-          /dune/dune-common/build-cmake/run-in-dune-env pip install dist/pyikarus.tar.gz --verbose --upgrade --no-build-isolation
+          ls dist/
+          /dune/dune-common/build-cmake/run-in-dune-env pip install dist/pyikarus-0.4.tar.gz --verbose --upgrade --no-build-isolation
