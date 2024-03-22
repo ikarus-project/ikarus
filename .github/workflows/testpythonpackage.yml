@@ -43,3 +43,6 @@ jobs:
       - name: Run Tests
         run: |
           /dune/dune-common/build-cmake/run-in-dune-env python ikarus/python/test/linearelastictest.py
+          /dune/dune-common/build-cmake/run-in-dune-env python ikarus/python/test/kltest.py
+          /dune/dune-common/build-cmake/run-in-dune-env python ikarus/python/test/nonlinearelastictest.py
+          /dune/dune-common/build-cmake/run-in-dune-env python ikarus/python/test/testmaterials.py
