@@ -1,0 +1,43 @@
+# SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-License-Identifier: CC0-1.0
+
+name: Test Python Package
+on:
+  push:
+    paths-ignore:
+      - '.github/workflows/ghpages.yml'
+  pull_request:
+    types: [opened]
+    branches:
+      - main
+    paths-ignore:
+      - '.github/workflows/ghpages.yml'
+
+jobs:
+  build-package:
+    runs-on: ubuntu-latest
+    container:
+      image: ikarusproject/ikarus-dev:latest
+      options: --memory-swap="20g" --memory="20g" --cpus="2" --user root
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install twine and scikit-build
+        run: |
+          /dune/dune-common/build-cmake/run-in-dune-env pip install twine scikit-build
+          git config --global --add safe.directory /__w/ikarus/ikarus
+
+      - name: Create tarball
+        run: |
+          /dune/dune-common/build-cmake/run-in-dune-env python setup.py sdist
+      
+      - name: Publish distribution to Test PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.TESTPYPI_TOKEN }}
+          repository-url: https://test.pypi.org/legacy/
+  
+      - name: Install Python package from Test PyPI
+        run: |
+          pip install --pre pyikarus --verbose --upgrade --no-build-isolation -i https://test.pypi.org/simple/ pyikarus
+          
