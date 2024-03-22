@@ -155,4 +155,4 @@ def linElasticTest(easBool):
 
 if __name__ == "__main__":
     linElasticTest(easBool=False)
-   linElasticTest(easBool=True)
+    linElasticTest(easBool=True)
