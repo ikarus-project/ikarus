@@ -30,11 +30,17 @@ jobs:
       - name: Create tarball
         run: |
           /dune/dune-common/build-cmake/run-in-dune-env python setup.py sdist
-        
+      
+      - name: Get package version
+        id: get_version
+        run: |
+          version=$(grep -oP 'ikarusVersion = "\K[^"]+' setup.py)
+          echo "::set-output name=version::$version"
+          
       - name: Install package from tarball
         run: |
-          /dune/dune-common/build-cmake/run-in-dune-env pip install dist/pyikarus-0.4.tar.gz --verbose --upgrade --no-build-isolation
-
+          /dune/dune-common/build-cmake/run-in-dune-env pip install dist/pyikarus-$version.tar.gz --verbose --upgrade --no-build-isolation
+      
       - name: Run Tests
         run: |
           /dune/dune-common/build-cmake/run-in-dune-env python ikarus/python/test/linearelastictest.py
