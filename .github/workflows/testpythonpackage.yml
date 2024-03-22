@@ -21,7 +21,7 @@ on:
       - '**.md'
 
 jobs:
-  build-package:
+  build-n-test:
     runs-on: ubuntu-latest
     container:
       image: ikarusproject/ikarus-dev:latest
@@ -32,7 +32,7 @@ jobs:
 
       - name: Activate Dune environment
         run: |
-          source /dune/dune-common/build-cmake/dune-env/bin/activate 
+          . /dune/dune-common/build-cmake/dune-env/bin/activate 
           echo "Dune environment activated"
 
       - name: Install twine and scikit-build
