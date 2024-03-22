@@ -27,20 +27,10 @@ jobs:
           /dune/dune-common/build-cmake/run-in-dune-env pip install twine scikit-build
           git config --global --add safe.directory /__w/ikarus/ikarus
 
-      - name: Bump dev version
-        run: /dune/dune-common/build-cmake/run-in-dune-env python .github/workflows/scripts/release.py dev
-        
       - name: Create tarball
         run: |
           /dune/dune-common/build-cmake/run-in-dune-env python setup.py sdist
-      
-      - name: Publish distribution to Test PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.TESTPYPI_TOKEN }}
-          repository-url: https://test.pypi.org/legacy/
-
-      - name: Install Python package from Test PyPI
+        
+      - name: Install package from tarball
         run: |
-          pip install --pre pyikarus --verbose --upgrade --no-build-isolation -i https://test.pypi.org/simple/ pyikarus
-          
+          /dune/dune-common/build-cmake/run-in-dune-env pip install dist/pyikarus.tar.gz --verbose --upgrade --no-build-isolation
