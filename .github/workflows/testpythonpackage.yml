@@ -33,5 +33,8 @@ jobs:
         
       - name: Install package from tarball
         run: |
-          ls dist/
           /dune/dune-common/build-cmake/run-in-dune-env pip install dist/pyikarus-0.4.tar.gz --verbose --upgrade --no-build-isolation
+
+      - name: Run Tests
+        run: |
+          /dune/dune-common/build-cmake/run-in-dune-env python ikarus/python/test/linearelastictest.py
