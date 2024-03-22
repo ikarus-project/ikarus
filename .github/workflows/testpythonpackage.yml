@@ -53,8 +53,19 @@ jobs:
         run: |
           pip install dist/pyikarus-$version.tar.gz --verbose --upgrade --no-build-isolation
       
+      - name: Copy test files to pytests folder
+        run: |
+          mkdir -p pytests
+          cp ikarus/python/test/* pytests/ -r
+
+      - name: Delete checked out files except pytests folder
+        run: |
+          find . -mindepth 1 -maxdepth 1 -type d ! -name 'pytests' -exec rm -rf {} +
+          rm *
+
       - name: Run Tests
         run: |
-          for file in ikarus/python/test/*.py; do
+          for file in pytests/*.py; do
+            echo Testing $file
             python "$file"
           done
