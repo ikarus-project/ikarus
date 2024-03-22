@@ -34,8 +34,7 @@ jobs:
       - name: Get package version
         id: get_version
         run: |
-          version=$(grep -oP 'ikarusVersion = "\K[^"]+' setup.py)
-          echo "::set-output name=version::$version"
+          echo "version=$(grep -oP 'ikarusVersion = "\K[^"]+' setup.py)" >> "$GITHUB_ENV"
           
       - name: Install package from tarball
         run: |
