@@ -55,7 +55,7 @@ jobs:
       
       - name: Copy test files to pytests folder
         run: |
-          mkdir -p pytests
+          mkdir -p ../pytests
           cp ikarus/python/test/* ../pytests/ -r
 
       - name: Delete checked out files
