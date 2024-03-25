@@ -56,16 +56,16 @@ jobs:
       - name: Copy test files to pytests folder
         run: |
           mkdir -p pytests
-          cp ikarus/python/test/* pytests/ -r
+          cp ikarus/python/test/* ../pytests/ -r
 
-      - name: Delete checked out files except pytests folder
+      - name: Delete checked out files
         run: |
-          find . -mindepth 1 -maxdepth 1 -type d ! -name 'pytests' -exec rm -rf {} +
-          find . -maxdepth 1 -type f -exec rm {} +
+          rm -rf *
 
       - name: Run Tests
         run: |
-          for file in pytests/*.py; do
+          cd ../pytests
+          for file in *.py; do
             echo Testing $file
             python "$file"
           done
