@@ -89,7 +89,7 @@ public:
    * \param pathFollowingType Type of the path-following function.
    * \param adaptiveStepSizing Type of the adaptive step sizing strategy.
    */
-  PathFollowing(const std::shared_ptr<NLS>& nonLinearSolver, int steps, double stepSize,
+  PathFollowing(const std::shared_ptr<NLS>& nonLinearSolver, size_t steps, double stepSize,
                 PF pathFollowingType = ArcLength{}, ASS adaptiveStepSizing = {})
       : nonLinearSolver_{nonLinearSolver},
         steps_{steps},
@@ -106,7 +106,7 @@ public:
 
 private:
   std::shared_ptr<NLS> nonLinearSolver_;
-  int steps_;
+  size_t steps_;
   double stepSize_;
   PF pathFollowingType_;
   ASS adaptiveStepSizing_;

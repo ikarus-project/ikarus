@@ -158,7 +158,7 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   nonLinOp.updateAll();
   auto linSolver = LinearSolver(SolverTypeTag::sd_SimplicialLDLT);
 
-  int loadSteps = 6;
+  size_t loadSteps = 6;
 
   auto nr   = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
   auto dass = AdaptiveStepSizing::IterationBased{};

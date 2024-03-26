@@ -74,10 +74,12 @@ struct ArcLength
    * \param args The subsidiary function arguments.
    */
   void operator()(SubsidiaryArgs& args) const {
-    const auto root = sqrt(args.DD.squaredNorm() + psi * psi * args.Dlambda * args.Dlambda);
-    args.f          = root - args.stepSize;
-    args.dfdDD      = args.DD / root;
-    args.dfdDlambda = (psi * psi * args.Dlambda) / root;
+    if (psi != std::numeric_limits<double>::infinity()) {
+        const auto root = sqrt(args.DD.squaredNorm() + psi * psi * args.Dlambda * args.Dlambda);
+        args.f          = root - args.stepSize;
+        args.dfdDD      = args.DD / root;
+        args.dfdDlambda = (psi * psi * args.Dlambda) / root;
+    }
   }
 
   /**
