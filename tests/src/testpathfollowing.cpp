@@ -143,9 +143,7 @@ static auto simple2DOperatorLoadControlTest(NonLinearOperator& nonLinOp, double 
   checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
 
   t.checkThrow<Dune::InvalidStateException>(
-      [&]() {
-        auto lc1 = Ikarus::LoadControl(nr, 0, {0, 1});
-      },
+      [&]() { auto lc1 = Ikarus::LoadControl(nr, 0, {0, 1}); },
       "An object of LoadControl should not have been constructed with loadSteps = 0.");
   return t;
 }

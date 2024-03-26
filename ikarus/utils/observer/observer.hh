@@ -40,7 +40,7 @@ public:
   }
 
 protected:
-  virtual void updateImpl(MessageType message, const InfoType&){};
+  virtual void updateImpl(MessageType message, const InfoType&) {};
 
 private:
   void checkMessageType(MessageType message) {
