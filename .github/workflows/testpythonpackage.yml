@@ -1,0 +1,71 @@
+# SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-License-Identifier: CC0-1.0
+
+name: Test Python Package
+on:
+  push:
+    paths-ignore:
+      - 'docs/**'
+      - '.github/workflows/ghpages.yml'
+      - '.github/workflows/createDockerContainer.yml'
+      - '**.md'
+
+  pull_request:
+    types: [opened]
+    branches:
+      - main
+    paths-ignore:
+      - 'docs/**'
+      - '.github/workflows/ghpages.yml'
+      - '.github/workflows/createDockerContainer.yml'
+      - '**.md'
+
+jobs:
+  build-n-test:
+    runs-on: ubuntu-latest
+    container:
+      image: ikarusproject/ikarus-dev:latest
+      options: --memory-swap="20g" --memory="20g" --cpus="2" --user root
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Activate Dune environment
+        run: |
+          . /dune/dune-common/build-cmake/dune-env/bin/activate 
+          echo "Dune environment activated"
+
+      - name: Install twine and scikit-build
+        run: |
+          pip install twine scikit-build
+          git config --global --add safe.directory /__w/ikarus/ikarus
+
+      - name: Create tarball
+        run: |
+          python setup.py sdist
+      
+      - name: Get package version
+        id: get_version
+        run: |
+          echo "version=$(grep -oP 'ikarusVersion = "\K[^"]+' setup.py)" >> "$GITHUB_ENV"
+          
+      - name: Install package from tarball
+        run: |
+          pip install dist/pyikarus-$version.tar.gz --verbose --upgrade --no-build-isolation
+      
+      - name: Copy test files to pytests folder
+        run: |
+          mkdir -p ../pytests
+          cp ikarus/python/test/* ../pytests/ -r
+
+      - name: Delete checked out files
+        run: |
+          rm -rf *
+
+      - name: Run Tests
+        run: |
+          cd ../pytests
+          for file in *.py; do
+            echo Testing $file
+            python "$file"
+          done
