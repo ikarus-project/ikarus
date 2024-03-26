@@ -69,6 +69,14 @@ private:
   double parameterEnd_;
   double stepSize_;
 
+  /**
+   * \brief A wrapper function to update controlState after a nonlinear solver is executed successfully.
+   * The resulting controlState is then passed for further notifications.
+   *
+   * \param controlState Information about the state of the control routine.
+   * \param nonOp The non-linear operator.
+   * \param sovlerState State of the nonlinear solver.
+   */
   void updateAndNotifyControlState(ControlState& controlState, typename NLS::NonLinearOperator& nonOp,
                                    const NonLinearSolverState& sovlerState) {
     controlState.solverState.push_back(sovlerState);

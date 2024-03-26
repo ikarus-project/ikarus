@@ -28,7 +28,7 @@ struct NoOp
    *
    * Does nothing.
    *
-   * \param solverState Information about the nonlinear solver state.
+   * \param solverState State of the nonlinear solver.
    * \param subsidiaryArgs Subsidiary arguments for adaptive step sizing.
    * \param nonLinearOperator The nonlinear operator.
    * \tparam NLO The nonlinear operator type.
@@ -67,7 +67,7 @@ struct IterationBased
    *
    * Adjusts the step size based on the ratio of target iterations to previous iterations.
    *
-   * \param solverState Information about the nonlinear solver state.
+   * \param solverState State of the nonlinear solver.
    * \param subsidiaryArgs Subsidiary arguments for adaptive step sizing.
    * \param nonLinearOperator The nonlinear operator.
    * \tparam NLO The nonlinear operator.

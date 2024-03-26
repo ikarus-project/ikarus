@@ -3,5 +3,5 @@
 
 # install headers
 install(FILES newtonraphson.hh trustregion.hh newtonraphsonwithscalarsubsidiaryfunction.hh
-        solverstate.hh DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/solver/nonlinearsolver
+              solverstate.hh DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/solver/nonlinearsolver
 )

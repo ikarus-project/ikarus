@@ -40,10 +40,10 @@ ControlState PathFollowing<NLS, PF, ASS>::run() {
   /// Dummy execution of the code inorder to save information of the undeformed (or initial)
   /// configuration while using, for example, the class ControlSubsamplingVertexVTKWriter
   this->notify(ControlMessages::STEP_STARTED, controlState);
-  auto solverState           = nonLinearSolver_->solve(pathFollowingType_, subsidiaryArgs);
+  auto solverState = nonLinearSolver_->solve(pathFollowingType_, subsidiaryArgs);
   if (not solverState.success)
     return controlState;
-  this->updateAndNotifyControlState(controlState, nonOp, solverState);
+  updateAndNotifyControlState(controlState, nonOp, solverState);
 
   for (int ls = 0; ls < steps_; ++ls) {
     subsidiaryArgs.currentStep = ls;
@@ -54,17 +54,17 @@ ControlState PathFollowing<NLS, PF, ASS>::run() {
       solverState = nonLinearSolver_->solve(pathFollowingType_, subsidiaryArgs);
       if (not solverState.success)
         return controlState;
-      this->updateAndNotifyControlState(controlState, nonOp, solverState);
+      updateAndNotifyControlState(controlState, nonOp, solverState);
     } else {
       adaptiveStepSizing_(solverState, subsidiaryArgs, nonOp);
-      controlState.stepSize    = subsidiaryArgs.stepSize;
+      controlState.stepSize = subsidiaryArgs.stepSize;
 
       this->notify(ControlMessages::STEP_STARTED, controlState);
       pathFollowingType_.intermediatePrediction(nonOp, subsidiaryArgs);
       solverState = nonLinearSolver_->solve(pathFollowingType_, subsidiaryArgs);
       if (not solverState.success)
         return controlState;
-      this->updateAndNotifyControlState(controlState, nonOp, solverState);
+      updateAndNotifyControlState(controlState, nonOp, solverState);
     }
   }
 

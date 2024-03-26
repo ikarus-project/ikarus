@@ -26,8 +26,8 @@ public:
    * \brief Handles the update when a NonLinearSolverMessages with a NonLinearSolverLoggingInformation is received.
    *
    * \param message The NonLinearSolverMessages received.
-   * \param info The non-linear solver information needed for logging.
+   * \param state The state of the non-linear solver needed for logging.
    */
-  void updateImpl(NonLinearSolverMessages message, const NonLinearSolverState& info) final;
+  void updateImpl(NonLinearSolverMessages message, const NonLinearSolverState& state) final;
 };
 } // namespace Ikarus

@@ -26,21 +26,22 @@ class IObserver
 {
 public:
   using MessageType = typename OBS::MessageType;
-  using InfoType    = typename OBS::InfoType;
+  using StateType   = typename OBS::StateType;
   /** * \brief Virtual destructor for the observer interface. */
   virtual ~IObserver() = default;
 
   /**
    * \brief Update method for receiving notifications with a message.
    * \param message The message to be received.
+   * \param state The state needed for logging.
    */
-  void update(MessageType message, const InfoType& info) {
+  void update(MessageType message, const StateType& state) {
     checkMessageType(message);
-    updateImpl(message, info);
+    updateImpl(message, state);
   }
 
 protected:
-  virtual void updateImpl(MessageType message, const InfoType&) {};
+  virtual void updateImpl(MessageType message, const StateType&) {};
 
 private:
   void checkMessageType(MessageType message) {
@@ -55,15 +56,15 @@ private:
  * \brief Generic observable interface for the Observer design pattern.
  * See \cite gamma1995design for a description of the design pattern
  * \tparam MT The type of message that the observable can handle.
- * \tparam IT The type of logging information.
+ * \tparam ST The type of the state of the observable.
  * \ingroup observer
  */
-template <typename MT, typename IT>
+template <typename MT, typename ST>
 class IObservable
 {
 public:
   using MessageType = MT;
-  using InfoType    = IT;
+  using StateType   = ST;
   IObservable() {
     for (MessageType msg = MessageType::BEGIN; msg != MessageType::END; Ikarus::increment(msg))
       messages_.push_back(msg);
@@ -99,9 +100,9 @@ public:
   /**
    * \brief Notify observers about a specific message type.
    * \param message The message type to notify about.
-   * \param info The information to be logged.
+   * \param state The state information needed for logging.
    */
-  void notify(MessageType message, const InfoType& info);
+  void notify(MessageType message, const StateType& state);
 
 private:
   using ObserverVector = std::vector<std::shared_ptr<IObserver<IObservable>>>;
@@ -110,42 +111,42 @@ private:
   std::vector<MessageType> messages_;
 };
 
-template <typename MT, typename IT>
-void IObservable<MT, IT>::subscribe(MT message, std::shared_ptr<IObserver<IObservable>> observer) {
+template <typename MT, typename ST>
+void IObservable<MT, ST>::subscribe(MT message, std::shared_ptr<IObserver<IObservable>> observer) {
   observers_[message];
   auto&& vectorOfObserversOfASpecificMessage = observers_[message];
   vectorOfObserversOfASpecificMessage.push_back(observer);
 }
 
-template <typename MT, typename IT>
-void IObservable<MT, IT>::subscribeAll(std::shared_ptr<IObserver<IObservable>> observer) {
+template <typename MT, typename ST>
+void IObservable<MT, ST>::subscribeAll(std::shared_ptr<IObserver<IObservable>> observer) {
   for (auto& msg : messages_)
     subscribe(msg, observer);
 }
 
-template <typename MT, typename IT>
-void IObservable<MT, IT>::subscribeAll(std::initializer_list<std::shared_ptr<IObserver<IObservable>>> observers) {
+template <typename MT, typename ST>
+void IObservable<MT, ST>::subscribeAll(std::initializer_list<std::shared_ptr<IObserver<IObservable>>> observers) {
   for (auto& observer : observers)
     for (auto& msg : messages_)
       subscribe(msg, observer);
 }
 
-template <typename MT, typename IT>
-void IObservable<MT, IT>::unSubscribe(MT message, std::shared_ptr<IObserver<IObservable>> observer) {
+template <typename MT, typename ST>
+void IObservable<MT, ST>::unSubscribe(MT message, std::shared_ptr<IObserver<IObservable>> observer) {
   auto vectorOfObserversOfASpecificMessage = observers_[message];
   std::ranges::remove_if(vectorOfObserversOfASpecificMessage, [&observer](auto&& obs) { return obs == observer; });
 }
 
-template <typename MT, typename IT>
-void IObservable<MT, IT>::unSubscribeAll(std::shared_ptr<IObserver<IObservable>> observer) {
+template <typename MT, typename ST>
+void IObservable<MT, ST>::unSubscribeAll(std::shared_ptr<IObserver<IObservable>> observer) {
   for (auto& msg : messages_)
     unSubscribe(msg, observer);
 }
 
-template <typename MT, typename IT>
-void IObservable<MT, IT>::notify(MT message, const IT& info) {
+template <typename MT, typename ST>
+void IObservable<MT, ST>::notify(MT message, const ST& state) {
   auto vectorOfObserversOfASpecificMessage = observers_[message];
   for (auto&& obs : vectorOfObserversOfASpecificMessage)
-    obs->update(message, info);
+    obs->update(message, state);
 }
 } // namespace Ikarus

@@ -9,7 +9,7 @@
 
 namespace Ikarus {
 
-void NonLinearSolverLogger::updateImpl(NonLinearSolverMessages message, const NonLinearSolverState& info) {
+void NonLinearSolverLogger::updateImpl(NonLinearSolverMessages message, const NonLinearSolverState& state) {
   switch (message) {
     case NonLinearSolverMessages::INIT:
       spdlog::info("Non-linear solver started:");
@@ -19,7 +19,7 @@ void NonLinearSolverLogger::updateImpl(NonLinearSolverMessages message, const No
     case NonLinearSolverMessages::ITERATION_STARTED:
       break;
     case NonLinearSolverMessages::ITERATION_ENDED:
-      spdlog::info("{} {:<10d} {:<20.2e} {:<20.2e}", "", info.currentIter, info.residualNorm, info.correctionNorm);
+      spdlog::info("{} {:<10d} {:<20.2e} {:<20.2e}", "", state.currentIter, state.residualNorm, state.correctionNorm);
       break;
     case NonLinearSolverMessages::RESIDUALNORM_UPDATED:
       break;
@@ -28,7 +28,7 @@ void NonLinearSolverLogger::updateImpl(NonLinearSolverMessages message, const No
     case NonLinearSolverMessages::SOLUTION_CHANGED:
       break;
     case NonLinearSolverMessages::FINISHED_SUCESSFULLY:
-      spdlog::info("Number of iterations by the non-linear solver: {}", info.iterations);
+      spdlog::info("Number of iterations by the non-linear solver: {}", state.iterations);
       break;
     default:
       break;

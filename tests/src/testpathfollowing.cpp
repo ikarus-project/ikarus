@@ -96,10 +96,10 @@ static auto simple2DOperatorArcLengthTestAsDefault(NonLinearOperator& nonLinOp, 
 }
 
 template <typename NonLinearOperator>
-static auto simple2DOperatorLoadControlWithSubsidiaryFunctionTest(NonLinearOperator& nonLinOp, double stepSize,
-                                                                  size_t loadSteps) {
+static auto simple2DOperatorLoadControlAsSubsidiaryFunctionTest(NonLinearOperator& nonLinOp, double stepSize,
+                                                                size_t loadSteps) {
   resetNonLinearOperatorParametersToZero(nonLinOp);
-  TestSuite t("Load Control with Subsidiary function");
+  TestSuite t("Load Control as Subsidiary function");
   std::vector<int> expectedIterations = {0, 2, 3, 3, 3, 3};
   Eigen::Vector2d expectedDisplacement;
   expectedDisplacement << 0.0908533884835060, 0.3581294588381901;
@@ -205,7 +205,7 @@ int main(int argc, char** argv) {
 
   t.subTest(simple2DOperatorArcLengthTest(nonLinOp, stepSize, loadSteps));
   t.subTest(simple2DOperatorArcLengthTestAsDefault(nonLinOp, stepSize, loadSteps));
-  t.subTest(simple2DOperatorLoadControlWithSubsidiaryFunctionTest(nonLinOp, stepSize, loadSteps));
+  t.subTest(simple2DOperatorLoadControlAsSubsidiaryFunctionTest(nonLinOp, stepSize, loadSteps));
   t.subTest(simple2DOperatorLoadControlTest(nonLinOp, stepSize, loadSteps));
   t.subTest(simple2DOperatorDisplacementControlTest(nonLinOp, stepSize, loadSteps));
 

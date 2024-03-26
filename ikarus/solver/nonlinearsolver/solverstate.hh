@@ -3,7 +3,7 @@
 
 /**
  * \file solverstate.hh
- * \brief Implementation of the Newton-Raphson method for solving nonlinear equations.
+ * \brief Defines the NonLinearSolverState structure for storing results of a non-linear solver.
  */
 
 #pragma once
@@ -12,8 +12,8 @@ namespace Ikarus {
 /**
  * \brief Information about the state of a non-linear solver.
  *
- * This structure holds information about the success of a non-linear solver,
- * including the residual norm, correction norm, and the number of iterations performed.
+ * \details This structure holds information about the success of a non-linear solver,
+ * including the residual norm, correction norm, the number of iterations performed and the current iteration number.
  */
 struct NonLinearSolverState
 {

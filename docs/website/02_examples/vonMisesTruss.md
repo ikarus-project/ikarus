@@ -59,9 +59,8 @@ This is implemented as depicted in the following:
 const int loadSteps = 10;
 Eigen::Matrix3Xd lambdaAndDisp;
 lambdaAndDisp.setZero(Eigen::NoChange, loadSteps + 1);
-auto lvkObserver
-    = std::make_shared<Ikarus::GenericObserver<Ikarus::ControlMessages, Ikarus::ControlLoggerInformation>>(
-        Ikarus::ControlMessages::SOLUTION_CHANGED, [&](int step) {
+auto lvkObserver = std::make_shared<GenericObserver<ControlMessages, ControlState>>(
+        ControlMessages::SOLUTION_CHANGED, [&](int step) {
           lambdaAndDisp(0, step) = lambda;
           lambdaAndDisp(1, step) = d[2];
           lambdaAndDisp(2, step) = d[3];

@@ -27,8 +27,9 @@ public:
    * \brief Implementation of the update method for control message logging.
    *
    * \param message The received control message.
+   * \param state The state of the control routine needed for logging.
    */
-  void updateImpl(ControlMessages message, const ControlState& info) final;
+  void updateImpl(ControlMessages message, const ControlState& state) final;
 
 private:
   using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;

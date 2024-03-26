@@ -75,10 +75,10 @@ struct ArcLength
    */
   void operator()(SubsidiaryArgs& args) const {
     if (psi != std::numeric_limits<double>::infinity()) {
-        const auto root = sqrt(args.DD.squaredNorm() + psi * psi * args.Dlambda * args.Dlambda);
-        args.f          = root - args.stepSize;
-        args.dfdDD      = args.DD / root;
-        args.dfdDlambda = (psi * psi * args.Dlambda) / root;
+      const auto root = sqrt(args.DD.squaredNorm() + psi * psi * args.Dlambda * args.Dlambda);
+      args.f          = root - args.stepSize;
+      args.dfdDD      = args.DD / root;
+      args.dfdDlambda = (psi * psi * args.Dlambda) / root;
     }
   }
 

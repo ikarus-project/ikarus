@@ -25,7 +25,7 @@ ControlState LoadControl<NLS>::run() {
   auto solverState = nonLinearSolver_->solve();
   if (not solverState.success)
     return controlState;
-  this->updateAndNotifyControlState(controlState, nonOp, solverState);
+  updateAndNotifyControlState(controlState, nonOp, solverState);
 
   for (int ls = 0; ls < loadSteps_; ++ls) {
     controlState.currentStep = ls;
@@ -34,7 +34,7 @@ ControlState LoadControl<NLS>::run() {
     solverState = nonLinearSolver_->solve();
     if (not solverState.success)
       return controlState;
-    this->updateAndNotifyControlState(controlState, nonOp, solverState);
+    updateAndNotifyControlState(controlState, nonOp, solverState);
   }
   this->notify(ControlMessages::CONTROL_ENDED, controlState);
   controlState.success = true;

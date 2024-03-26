@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * \file
- * \brief Defines the ControlInformation structure for storing control results.
+ * \file controlstate.hh
+ * \brief Defines the ControlState structure for storing results of a control routine.
  * \ingroup  controlroutines
  */
 
@@ -16,6 +16,10 @@ namespace Ikarus {
 /**
  * \struct ControlState
  * \brief Structure containing information about the state of the control routine.
+ *
+ * \details This structure holds information about the success of a control routine,
+ * including current load step number, total number of iterations performed by the non-linear solver,
+ * load step size, value of the load factor, state of the non-linear solver and the name of the control routine.
  */
 struct ControlState
 {
@@ -24,8 +28,9 @@ struct ControlState
   int totalIterations{-1};                                  ///< Information about the total iterations performed.
   double stepSize{std::numeric_limits<double>::infinity()}; ///< Information about the step size.
   double lambda{std::numeric_limits<double>::infinity()};   ///< Value of the load factor.
-  std::vector<NonLinearSolverState> solverState{};          ///< Vector containing information from nonlinear solvers.
-  std::string name{};                                       ///< Information about the name of the control method.
+  std::vector<NonLinearSolverState>
+      solverState{};  ///< Vector containing information about the state of the nonlinear solver.
+  std::string name{}; ///< Information about the name of the control method.
 };
 
 } // namespace Ikarus
