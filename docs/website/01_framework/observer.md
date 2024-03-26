@@ -34,11 +34,22 @@ must inherit from `IObservable<MessageType, StateType>`, for example,
 class NewtonRaphson : public IObservable<NonLinearSolverMessages, NonLinearSolverState> {...};
 ```
 
+Here, ``MessageType``
+is the `enum` of messages to use (see above)
+and ``StateType`` can either be ``NonLinearSolverState`` or ``ControlState``.
+``StateType`` must adhere to the following concept:
+
+```cpp
+template <typename ST>
+concept ObservableState = requires {std::is_same_v<ST, ControlState> || std::is_same_v<ST, NonLinearSolverState>;};
+```
+
 The function `this->notify(MessageType message, const StateType& state)` is called at the appropriate position in the code
 to send a notification.
 This could be, for example,
 
 ```cpp
+NonLinearSolverState solverState;
 this->notify(NonLinearSolverMessages::SOLUTION_CHANGED, solverState);
 ```
 
@@ -47,9 +58,6 @@ this->notify(NonLinearSolverMessages::SOLUTION_CHANGED, solverState);
 A class can be an observer.
 The class is then notified when events are happening and can perform actions.
 To become an observer, the class must inherit from ``IObserver<IObservable<MessageType, StateType>>``.
-Here, ``MessageType``
-is the `enum` of messages to use (see above)
-and ``StateType`` can either be ``NonLinearSolverState`` or ``ControlState``.
 A basic example is shown below.
 
 ```cpp
@@ -91,14 +99,8 @@ unSubscribe(...) // (4)!
 3. Multiple observers can subscribe at once.
 4. Unsubscribe from specific messages or all messages.
 
-To send a message together with data, the sender (observable) calls, for example,
-
-```cpp
-NonLinearSolverState solverState;
-this->notify(MessageType::Message, solverState);
-```
-
-and the receiver (observer) has to implement
+To send a message together with data,
+the sender (observable) calls the ``notify`` function as shown before and the receiver (observer) has to implement
 
 ```cpp
 void updateImpl(MessageType message, const StateType& state) override {...}

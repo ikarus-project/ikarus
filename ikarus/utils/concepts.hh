@@ -18,6 +18,8 @@
 
 #include <Eigen/Sparse>
 
+#include <ikarus/controlroutines/controlstate.hh>
+#include <ikarus/solver/nonlinearsolver/solverstate.hh>
 #include <ikarus/utils/traits.hh>
 
 namespace Eigen {
@@ -197,6 +199,15 @@ namespace Concepts {
     { adaptiveStepSizing.targetIterations() } -> std::same_as<int>;
     { adaptiveStepSizing.setTargetIterations(std::declval<int>()) } -> std::same_as<void>;
   };
+
+  /**
+   * \concept ObservableState
+   * \brief Concept to check if the type of state passed to an observable is valid or not.
+   *
+   * \tparam ST The state type of the observable.
+   */
+  template <typename ST>
+  concept ObservableState = requires { std::is_same_v<ST, ControlState> || std::is_same_v<ST, NonLinearSolverState>; };
 
   /**
    * \concept LinearSolverCheck
