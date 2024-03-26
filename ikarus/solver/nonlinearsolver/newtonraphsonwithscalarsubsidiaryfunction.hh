@@ -12,7 +12,7 @@
 #include <utility>
 
 #include <ikarus/controlroutines/pathfollowingfunctions.hh>
-#include <ikarus/solver/nonlinearsolver/solverinfos.hh>
+#include <ikarus/solver/nonlinearsolver/solverstate.hh>
 #include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observermessages.hh>

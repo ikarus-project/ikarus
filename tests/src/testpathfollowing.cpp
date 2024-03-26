@@ -39,7 +39,7 @@ static auto stiffnessMatrix(const Eigen::VectorXd& D, [[maybe_unused]] double la
 }
 
 template <typename NonLinearOperator>
-static auto simple2DOperatorArcLengthTest(NonLinearOperator& nonLinOp, double stepSize, int loadSteps) {
+static auto simple2DOperatorArcLengthTest(NonLinearOperator& nonLinOp, double stepSize, size_t loadSteps) {
   resetNonLinearOperatorParametersToZero(nonLinOp);
   auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
   auto pft       = Ikarus::ArcLength{}; // Type of path following technique
@@ -52,7 +52,7 @@ static auto simple2DOperatorArcLengthTest(NonLinearOperator& nonLinOp, double st
   nr->subscribeAll(nonLinearSolverObserver);
   alc.subscribeAll(pathFollowingObserver);
   const auto controlInfo              = alc.run();
-  std::vector<int> expectedIterations = {1, 3, 3, 3, 3};
+  std::vector<int> expectedIterations = {0, 1, 3, 3, 3, 3};
   Eigen::Vector2d expectedDisplacement;
   expectedDisplacement << 0.0883524725970593, 0.3486891582376427;
   double expectedLambda = 0.4877655288280236;
@@ -62,12 +62,14 @@ static auto simple2DOperatorArcLengthTest(NonLinearOperator& nonLinOp, double st
   for (auto i = 0; i < 2; ++i)
     checkScalars(t, nonLinOp.firstParameter()[i], expectedDisplacement[i], " --> " + alc.name());
   checkScalars(t, nonLinOp.lastParameter(), expectedLambda, " --> " + alc.name());
-  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
+
+  /// (loadSteps + 1) is passed such that 0 iterations for the first step is checked (undeformed configuration)
+  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps + 1);
   return t;
 }
 
 template <typename NonLinearOperator>
-static auto simple2DOperatorArcLengthTestAsDefault(NonLinearOperator& nonLinOp, double stepSize, int loadSteps) {
+static auto simple2DOperatorArcLengthTestAsDefault(NonLinearOperator& nonLinOp, double stepSize, size_t loadSteps) {
   resetNonLinearOperatorParametersToZero(nonLinOp);
   auto linSolver               = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
   auto nr                      = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
@@ -77,7 +79,7 @@ static auto simple2DOperatorArcLengthTestAsDefault(NonLinearOperator& nonLinOp, 
   nr->subscribeAll(nonLinearSolverObserver);
   alc.subscribeAll(pathFollowingObserver);
   const auto controlInfo              = alc.run();
-  std::vector<int> expectedIterations = {1, 3, 3, 3, 3};
+  std::vector<int> expectedIterations = {0, 1, 3, 3, 3, 3};
   Eigen::Vector2d expectedDisplacement;
   expectedDisplacement << 0.0883524725970593, 0.3486891582376427;
   double expectedLambda = 0.4877655288280236;
@@ -87,16 +89,18 @@ static auto simple2DOperatorArcLengthTestAsDefault(NonLinearOperator& nonLinOp, 
   for (auto i = 0; i < 2; ++i)
     checkScalars(t, nonLinOp.firstParameter()[i], expectedDisplacement[i]);
   checkScalars(t, nonLinOp.lastParameter(), expectedLambda);
-  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
+
+  /// (loadSteps + 1) is passed such that 0 iterations for the first step is checked (undeformed configuration)
+  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps + 1);
   return t;
 }
 
 template <typename NonLinearOperator>
 static auto simple2DOperatorLoadControlWithSubsidiaryFunctionTest(NonLinearOperator& nonLinOp, double stepSize,
-                                                                  int loadSteps) {
+                                                                  size_t loadSteps) {
   resetNonLinearOperatorParametersToZero(nonLinOp);
   TestSuite t("Load Control with Subsidiary function");
-  std::vector<int> expectedIterations = {2, 3, 3, 3, 3};
+  std::vector<int> expectedIterations = {0, 2, 3, 3, 3, 3};
   Eigen::Vector2d expectedDisplacement;
   expectedDisplacement << 0.0908533884835060, 0.3581294588381901;
   double expectedLambda = 0.5;
@@ -114,15 +118,17 @@ static auto simple2DOperatorLoadControlWithSubsidiaryFunctionTest(NonLinearOpera
   for (auto i = 0; i < 2; ++i)
     checkScalars(t, nonLinOp.firstParameter()[i], expectedDisplacement[i], " --> " + lc.name());
   checkScalars(t, nonLinOp.lastParameter(), expectedLambda, " --> " + lc.name());
-  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
+
+  /// (loadSteps + 1) is passed such that 0 iterations for the first step is checked (undeformed configuration)
+  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps + 1);
   return t;
 }
 
 template <typename NonLinearOperator>
-static auto simple2DOperatorLoadControlTest(NonLinearOperator& nonLinOp, double stepSize, int loadSteps) {
+static auto simple2DOperatorLoadControlTest(NonLinearOperator& nonLinOp, double stepSize, size_t loadSteps) {
   resetNonLinearOperatorParametersToZero(nonLinOp);
   TestSuite t("Load Control Method");
-  std::vector<int> expectedIterations = {2, 3, 3, 3, 3};
+  std::vector<int> expectedIterations = {0, 2, 3, 3, 3, 3};
   Eigen::Vector2d expectedDisplacement;
   expectedDisplacement << 0.0908533884835060, 0.3581294588381901;
   double expectedLambda = 0.5;
@@ -140,7 +146,9 @@ static auto simple2DOperatorLoadControlTest(NonLinearOperator& nonLinOp, double 
   for (auto i = 0; i < 2; ++i)
     checkScalars(t, nonLinOp.firstParameter()[i], expectedDisplacement[i], " --> " + lc.name());
   checkScalars(t, nonLinOp.lastParameter(), expectedLambda, " --> " + lc.name());
-  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
+
+  /// (loadSteps + 1) is passed such that 0 iterations for the first step is checked (undeformed configuration)
+  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps + 1);
 
   t.checkThrow<Dune::InvalidStateException>(
       [&]() { auto lc1 = Ikarus::LoadControl(nr, 0, {0, 1}); },
@@ -149,7 +157,7 @@ static auto simple2DOperatorLoadControlTest(NonLinearOperator& nonLinOp, double 
 }
 
 template <typename NonLinearOperator>
-static auto simple2DOperatorDisplacementControlTest(NonLinearOperator& nonLinOp, double stepSize, int loadSteps) {
+static auto simple2DOperatorDisplacementControlTest(NonLinearOperator& nonLinOp, double stepSize, size_t loadSteps) {
   resetNonLinearOperatorParametersToZero(nonLinOp);
   auto linSolver                     = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
   std::vector<int> controlledIndices = {0};
@@ -163,7 +171,7 @@ static auto simple2DOperatorDisplacementControlTest(NonLinearOperator& nonLinOp,
   nr->subscribeAll(nonLinearSolverObserver);
   dc.subscribeAll(pathFollowingObserver);
   const auto controlInfo              = dc.run();
-  std::vector<int> expectedIterations = {3, 3, 3, 3, 3};
+  std::vector<int> expectedIterations = {0, 3, 3, 3, 3, 3};
   Eigen::Vector2d expectedDisplacement;
   expectedDisplacement << 0.5, 1.4781013410920430;
   double expectedLambda = 0.5045466678049050;
@@ -173,7 +181,9 @@ static auto simple2DOperatorDisplacementControlTest(NonLinearOperator& nonLinOp,
   for (auto i = 0; i < 2; ++i)
     checkScalars(t, nonLinOp.firstParameter()[i], expectedDisplacement[i], " --> " + dc.name());
   checkScalars(t, nonLinOp.lastParameter(), expectedLambda, " --> " + dc.name());
-  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
+
+  /// (loadSteps + 1) is passed such that 0 iterations for the first step is checked (undeformed configuration)
+  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps + 1);
   return t;
 }
 
@@ -190,8 +200,8 @@ int main(int argc, char** argv) {
 
   auto nonLinOp = Ikarus::NonLinearOperator(Ikarus::functions(fvLambda, dfvLambda), Ikarus::parameter(D, lambda));
 
-  constexpr double stepSize = 0.1;
-  constexpr int loadSteps   = 5;
+  constexpr double stepSize  = 0.1;
+  constexpr size_t loadSteps = 5;
 
   t.subTest(simple2DOperatorArcLengthTest(nonLinOp, stepSize, loadSteps));
   t.subTest(simple2DOperatorArcLengthTestAsDefault(nonLinOp, stepSize, loadSteps));

@@ -10,7 +10,7 @@
 #include "observer.hh"
 #include "observermessages.hh"
 
-#include <ikarus/solver/nonlinearsolver/solverinfos.hh>
+#include <ikarus/solver/nonlinearsolver/solverstate.hh>
 
 namespace Ikarus {
 /**

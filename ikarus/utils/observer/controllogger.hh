@@ -12,7 +12,7 @@
 
 #include <chrono>
 
-#include <ikarus/controlroutines/controlinfos.hh>
+#include <ikarus/controlroutines/controlstate.hh>
 namespace Ikarus {
 /**
  * \brief ControlLogger class for logging control messages.

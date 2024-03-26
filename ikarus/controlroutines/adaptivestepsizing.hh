@@ -12,7 +12,7 @@
 #pragma once
 
 #include <ikarus/controlroutines/pathfollowingfunctions.hh>
-#include <ikarus/solver/nonlinearsolver/solverinfos.hh>
+#include <ikarus/solver/nonlinearsolver/solverstate.hh>
 
 namespace Ikarus::AdaptiveStepSizing {
 

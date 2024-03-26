@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include <ikarus/solver/nonlinearsolver/solverinfos.hh>
+#include <ikarus/solver/nonlinearsolver/solverstate.hh>
 
 namespace Ikarus {
 
@@ -24,7 +24,7 @@ struct ControlState
   int totalIterations{-1};                                  ///< Information about the total iterations performed.
   double stepSize{std::numeric_limits<double>::infinity()}; ///< Information about the step size.
   double lambda{std::numeric_limits<double>::infinity()};   ///< Value of the load factor.
-  std::vector<NonLinearSolverState> solverInfos{};          ///< Vector containing information from nonlinear solvers.
+  std::vector<NonLinearSolverState> solverState{};          ///< Vector containing information from nonlinear solvers.
   std::string name{};                                       ///< Information about the name of the control method.
 };
 

@@ -9,7 +9,7 @@
 #pragma once
 
 #include <ikarus/solver/linearsolver/linearsolver.hh>
-#include <ikarus/solver/nonlinearsolver/solverinfos.hh>
+#include <ikarus/solver/nonlinearsolver/solverstate.hh>
 #include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/defaultfunctions.hh>
 #include <ikarus/utils/linearalgebrahelper.hh>
@@ -96,9 +96,10 @@ public:
     if constexpr (not std::is_same_v<SolutionType, NoPredictor>)
       updateFunction_(x, dxPredictor);
     nonLinearOperator().updateAll();
-    const auto& rx = nonLinearOperator().value();
-    const auto& Ax = nonLinearOperator().derivative();
-    auto rNorm     = norm(rx);
+    const auto& rx           = nonLinearOperator().value();
+    const auto& Ax           = nonLinearOperator().derivative();
+    auto rNorm               = norm(rx);
+    solverState.residualNorm = static_cast<double>(rNorm);
     decltype(rNorm) dNorm;
     int iter{0};
     if constexpr (isLinearSolver)

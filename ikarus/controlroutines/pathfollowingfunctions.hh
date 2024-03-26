@@ -74,14 +74,10 @@ struct ArcLength
    * \param args The subsidiary function arguments.
    */
   void operator()(SubsidiaryArgs& args) const {
-    if (psi) {
-      const auto root = sqrt(args.DD.squaredNorm() + psi.value() * psi.value() * args.Dlambda * args.Dlambda);
-      args.f          = root - args.stepSize;
-      args.dfdDD      = args.DD / root;
-      args.dfdDlambda = (psi.value() * psi.value() * args.Dlambda) / root;
-    } else {
-      DUNE_THROW(Dune::InvalidStateException, "You have to call initialPrediction first. Otherwise psi is not defined");
-    }
+    const auto root = sqrt(args.DD.squaredNorm() + psi * psi * args.Dlambda * args.Dlambda);
+    args.f          = root - args.stepSize;
+    args.dfdDD      = args.DD / root;
+    args.dfdDlambda = (psi * psi * args.Dlambda) / root;
   }
 
   /**
@@ -126,8 +122,8 @@ struct ArcLength
 
     const auto DD2 = args.DD.squaredNorm();
 
-    psi    = sqrt(DD2);
-    auto s = sqrt(psi.value() * psi.value() + DD2);
+    psi      = sqrt(DD2);
+    double s = sqrt(psi * psi + DD2);
 
     args.DD      = args.DD * args.stepSize / s;
     args.Dlambda = args.stepSize / s;
@@ -155,7 +151,7 @@ struct ArcLength
   constexpr auto name() const { return std::string("Arc length"); }
 
 private:
-  std::optional<double> psi;
+  double psi{std::numeric_limits<double>::infinity()};
 };
 
 /**

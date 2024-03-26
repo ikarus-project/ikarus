@@ -219,7 +219,7 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   resetNonLinearOperatorParametersToZero(nonLinOp);
 
   const int controlInfoWSSIterations =
-      std::accumulate(controlInfoWSS.solverInfos.begin(), controlInfoWSS.solverInfos.end(), 0,
+      std::accumulate(controlInfoWSS.solverState.begin(), controlInfoWSS.solverState.end(), 0,
                       [](int a, auto& b) { return b.iterations + a; });
 
   t.check(controlInfoWSS.success, "No convergence" + message1);
@@ -233,8 +233,9 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
       << "Total number of iterations is wrong --> " << controlInfoWSS.totalIterations << " is not equal to "
       << std::to_string(controlInfoWSSIterations) + " --> " + pft.name();
 
-  checkSolverInfos(t, expectedIterations[0], controlInfoWSS, loadSteps, message1);
-  checkSolverInfos(t, expectedIterations[1], controlInfoWoSS, loadSteps, message2);
+  /// (loadSteps + 1) is passed such that 0 iterations for the first step is checked (undeformed configuration)
+  checkSolverInfos(t, expectedIterations[0], controlInfoWSS, loadSteps + 1, message1);
+  checkSolverInfos(t, expectedIterations[1], controlInfoWoSS, loadSteps + 1, message2);
 
   t.check(utils::checkGradient(nonLinOpFull, {.draw = false})) << "Check gradient failed";
   t.check(utils::checkHessian(nonLinOpFull, {.draw = false})) << "Check hessian failed";
@@ -252,12 +253,12 @@ int main(int argc, char** argv) {
 
   /// expected iterations for each step for a path following type with and without step sizing
   const std::vector<std::vector<int>> expectedIterationsALC = {
-      {9, 9, 6, 5, 4, 4},
-      {9, 8, 6, 5, 5, 5}
+      {0, 9, 9, 6, 5, 4, 4},
+      {0, 9, 8, 6, 5, 5, 5}
   };
   const std::vector<std::vector<int>> expectedIterationsLC = {
-      {10, 4, 4, 3, 3, 3},
-      {10, 6, 5, 4, 4, 4}
+      {0, 10, 4, 4, 3, 3, 3},
+      {0, 10, 6, 5, 4, 4, 4}
   };
 
   /// expected results(max(displacement) and lambda) for a path following type with and without step sizing

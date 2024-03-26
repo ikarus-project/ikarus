@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * \file solverinfos.hh
+ * \file solverstate.hh
  * \brief Implementation of the Newton-Raphson method for solving nonlinear equations.
  */
 

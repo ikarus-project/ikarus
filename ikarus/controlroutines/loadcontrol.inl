@@ -18,29 +18,23 @@ ControlState LoadControl<NLS>::run() {
   this->notify(ControlMessages::CONTROL_STARTED, controlState);
   auto& loadParameter = nonOp.lastParameter();
 
-  loadParameter += stepSize_;
+  /// Dummy execution of the code with loadParameter as 0 inorder to save information of the undeformed (or initial)
+  /// configuration while using, for example, the class ControlSubsamplingVertexVTKWriter
+  loadParameter = 0.0;
   this->notify(ControlMessages::STEP_STARTED, controlState);
-  auto solverInfo = nonLinearSolver_->solve();
-  controlState.solverInfos.push_back(solverInfo);
-  controlState.totalIterations += solverInfo.iterations;
-  if (not solverInfo.success)
+  auto solverState = nonLinearSolver_->solve();
+  if (not solverState.success)
     return controlState;
-  controlState.lambda = nonOp.lastParameter();
-  this->notify(ControlMessages::SOLUTION_CHANGED, controlState);
-  this->notify(ControlMessages::STEP_ENDED, controlState);
+  this->updateAndNotifyControlState(controlState, nonOp, solverState);
 
-  for (int ls = 1; ls < loadSteps_; ++ls) {
+  for (int ls = 0; ls < loadSteps_; ++ls) {
     controlState.currentStep = ls;
     this->notify(ControlMessages::STEP_STARTED, controlState);
     loadParameter += stepSize_;
-    solverInfo = nonLinearSolver_->solve();
-    controlState.solverInfos.push_back(solverInfo);
-    controlState.totalIterations += solverInfo.iterations;
-    if (not solverInfo.success)
+    solverState = nonLinearSolver_->solve();
+    if (not solverState.success)
       return controlState;
-    controlState.lambda = nonOp.lastParameter();
-    this->notify(ControlMessages::SOLUTION_CHANGED, controlState);
-    this->notify(ControlMessages::STEP_ENDED, controlState);
+    this->updateAndNotifyControlState(controlState, nonOp, solverState);
   }
   this->notify(ControlMessages::CONTROL_ENDED, controlState);
   controlState.success = true;

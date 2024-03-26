@@ -53,9 +53,9 @@ void checkSolverInfos(TestSuiteType& t, const std::vector<int>& expectedIteratio
                       const ControlInformation& controlInfo, const int loadSteps,
                       const std::string& messageIfFailed = "") {
   for (size_t i = 0U; i < loadSteps; ++i) {
-    t.check(expectedIterations[i] == controlInfo.solverInfos[i].iterations)
+    t.check(expectedIterations[i] == controlInfo.solverState[i].iterations)
         << "Incorrect number of iterations at step " << i << " with expected:\t" << expectedIterations[i]
-        << " and actual:\t" << controlInfo.solverInfos[i].iterations << messageIfFailed;
-    t.check(controlInfo.solverInfos[i].success) << "Failed to converge at step " << i;
+        << " and actual:\t" << controlInfo.solverState[i].iterations << messageIfFailed;
+    t.check(controlInfo.solverState[i].success) << "Failed to converge at step " << i;
   }
 }

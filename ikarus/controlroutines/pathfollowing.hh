@@ -11,7 +11,7 @@
 #include <memory>
 
 #include <ikarus/controlroutines/adaptivestepsizing.hh>
-#include <ikarus/controlroutines/controlinfos.hh>
+#include <ikarus/controlroutines/controlstate.hh>
 #include <ikarus/controlroutines/pathfollowingfunctions.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphsonwithscalarsubsidiaryfunction.hh>
 #include <ikarus/utils/observer/observer.hh>
@@ -110,6 +110,15 @@ private:
   double stepSize_;
   PF pathFollowingType_;
   ASS adaptiveStepSizing_;
+
+  void updateAndNotifyControlState(ControlState& controlState, typename NLS::NonLinearOperator& nonOp,
+                                   const NonLinearSolverState& sovlerState) {
+    controlState.solverState.push_back(sovlerState);
+    controlState.totalIterations += sovlerState.iterations;
+    controlState.lambda = nonOp.lastParameter();
+    this->notify(ControlMessages::SOLUTION_CHANGED, controlState);
+    this->notify(ControlMessages::STEP_ENDED, controlState);
+  }
 };
 
 } // namespace Ikarus

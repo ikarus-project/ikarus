@@ -12,7 +12,7 @@
 #include <Eigen/Core>
 
 #include <ikarus/controlroutines/adaptivestepsizing.hh>
-#include <ikarus/controlroutines/controlinfos.hh>
+#include <ikarus/controlroutines/controlstate.hh>
 #include <ikarus/controlroutines/pathfollowingfunctions.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphsonwithscalarsubsidiaryfunction.hh>
 #include <ikarus/utils/nonlinearoperator.hh>
@@ -34,42 +34,44 @@ ControlState PathFollowing<NLS, PF, ASS>::run() {
   subsidiaryArgs.stepSize = stepSize_;
   subsidiaryArgs.DD.resizeLike(nonOp.firstParameter());
   subsidiaryArgs.DD.setZero();
+  subsidiaryArgs.Dlambda = 0.0;
 
   /// Initializing solver
+  /// Dummy execution of the code inorder to save information of the undeformed (or initial)
+  /// configuration while using, for example, the class ControlSubsamplingVertexVTKWriter
   this->notify(ControlMessages::STEP_STARTED, controlState);
   auto subsidiaryFunctionPtr = [&](auto&& args) { return pathFollowingType_(args); };
-  pathFollowingType_.initialPrediction(nonOp, subsidiaryArgs);
-  auto solverInfo = nonLinearSolver_->solve(subsidiaryFunctionPtr, subsidiaryArgs);
-  controlState.solverInfos.push_back(solverInfo);
-  controlState.totalIterations += solverInfo.iterations;
-  if (not solverInfo.success)
+  auto solverState           = nonLinearSolver_->solve(subsidiaryFunctionPtr, subsidiaryArgs);
+  if (not solverState.success)
     return controlState;
-  controlState.lambda = nonOp.lastParameter();
-  this->notify(ControlMessages::SOLUTION_CHANGED, controlState);
-  this->notify(ControlMessages::STEP_ENDED, controlState);
+  this->updateAndNotifyControlState(controlState, nonOp, solverState);
 
   /// Calculate predictor for a particular step
-  for (int ls = 1; ls < steps_; ++ls) {
+  for (int ls = 0; ls < steps_; ++ls) {
     subsidiaryArgs.currentStep = ls;
+    if (ls == 0) {
+      this->notify(ControlMessages::STEP_STARTED, controlState);
+      pathFollowingType_.initialPrediction(nonOp, subsidiaryArgs);
+      solverState = nonLinearSolver_->solve(subsidiaryFunctionPtr, subsidiaryArgs);
+      if (not solverState.success)
+        return controlState;
+      this->updateAndNotifyControlState(controlState, nonOp, solverState);
+    } else {
+      adaptiveStepSizing_(solverState, subsidiaryArgs, nonOp);
 
-    adaptiveStepSizing_(solverInfo, subsidiaryArgs, nonOp);
+      controlState.currentStep = subsidiaryArgs.currentStep;
+      controlState.stepSize    = subsidiaryArgs.stepSize;
 
-    controlState.currentStep = subsidiaryArgs.currentStep;
-    controlState.stepSize    = subsidiaryArgs.stepSize;
+      this->notify(ControlMessages::STEP_STARTED, controlState);
 
-    this->notify(ControlMessages::STEP_STARTED, controlState);
+      pathFollowingType_.intermediatePrediction(nonOp, subsidiaryArgs);
 
-    pathFollowingType_.intermediatePrediction(nonOp, subsidiaryArgs);
+      solverState = nonLinearSolver_->solve(pathFollowingType_, subsidiaryArgs);
 
-    solverInfo = nonLinearSolver_->solve(pathFollowingType_, subsidiaryArgs);
-
-    controlState.solverInfos.push_back(solverInfo);
-    controlState.totalIterations += solverInfo.iterations;
-    if (not solverInfo.success)
-      return controlState;
-    controlState.lambda = nonOp.lastParameter();
-    this->notify(ControlMessages::SOLUTION_CHANGED, controlState);
-    this->notify(ControlMessages::STEP_ENDED, controlState);
+      if (not solverState.success)
+        return controlState;
+      this->updateAndNotifyControlState(controlState, nonOp, solverState);
+    }
   }
 
   this->notify(ControlMessages::CONTROL_ENDED, controlState);

@@ -17,7 +17,7 @@
 #include <Eigen/Sparse>
 
 #include <ikarus/linearalgebra/truncatedconjugategradient.hh>
-#include <ikarus/solver/nonlinearsolver/solverinfos.hh>
+#include <ikarus/solver/nonlinearsolver/solverstate.hh>
 #include <ikarus/utils/defaultfunctions.hh>
 #include <ikarus/utils/linearalgebrahelper.hh>
 #include <ikarus/utils/observer/observer.hh>

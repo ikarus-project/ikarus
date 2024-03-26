@@ -15,7 +15,7 @@
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 
-#include <ikarus/controlroutines/controlinfos.hh>
+#include <ikarus/controlroutines/controlstate.hh>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wswitch-enum"
