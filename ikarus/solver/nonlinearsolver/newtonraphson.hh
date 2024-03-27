@@ -132,8 +132,7 @@ public:
     if (iter == settings_.maxIter)
       solverState.success = false;
     solverState.iterations = iter;
-    if (solverState.success)
-      this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, solverState);
+    this->notify(NonLinearSolverMessages::SOLVER_FINISHED, solverState);
     return solverState;
   }
 

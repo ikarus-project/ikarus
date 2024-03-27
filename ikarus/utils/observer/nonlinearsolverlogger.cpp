@@ -27,8 +27,11 @@ void NonLinearSolverLogger::updateImpl(NonLinearSolverMessages message, const No
       break;
     case NonLinearSolverMessages::SOLUTION_CHANGED:
       break;
-    case NonLinearSolverMessages::FINISHED_SUCESSFULLY:
-      spdlog::info("Number of iterations by the non-linear solver: {}", state.iterations);
+    case NonLinearSolverMessages::SOLVER_FINISHED:
+      if (state.success)
+        spdlog::info("Number of iterations by the non-linear solver: {}", state.iterations);
+      else
+        spdlog::warn("The non-linear solver FAILED to converge.");
       break;
     default:
       break;

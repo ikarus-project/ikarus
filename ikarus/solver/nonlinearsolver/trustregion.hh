@@ -355,8 +355,7 @@ public:
 
     solverState.iterations   = stats_.outerIter;
     solverState.residualNorm = stats_.gradNorm;
-    if (solverState.success)
-      this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, solverState);
+    this->notify(NonLinearSolverMessages::SOLVER_FINISHED, solverState);
     return solverState;
   }
   /**
