@@ -23,7 +23,10 @@ namespace Ikarus {
 
 template <typename NLS, typename PF, typename ASS>
 requires(Impl::checkPathFollowingTemplates<NLS, PF, ASS>())
-ControlState PathFollowing<NLS, PF, ASS>::run() {
+[[nodiscard(
+    "The run method returns information of the control routine. You should store this information and check if "
+    "it was successful")]] ControlState
+PathFollowing<NLS, PF, ASS>::run() {
   ControlState controlState{
       .success = false, .currentStep = 0, .totalIterations = 0, .stepSize = stepSize_, .name = this->name()};
   auto& nonOp = nonLinearSolver_->nonLinearOperator();
