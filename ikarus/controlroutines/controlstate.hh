@@ -23,14 +23,16 @@ namespace Ikarus {
  */
 struct ControlState
 {
-  bool success{false};                                      ///< Flag indicating the success of the control.
-  int currentStep{-1};                                      ///< Information about the current step number.
-  int totalIterations{-1};                                  ///< Information about the total iterations performed.
+  bool success{false};      ///< Flag indicating the success of the control.
+  bool initialConfig{true}; ///< Flag indicating if the state of deformation is in the initial configuration
+  int currentStep{-1};      ///< Information about the current step number.
+  int totalIterations{-1};  ///< Information about the total iterations performed.
   double stepSize{std::numeric_limits<double>::infinity()}; ///< Information about the step size.
   double lambda{std::numeric_limits<double>::infinity()};   ///< Value of the load factor.
   std::vector<NonLinearSolverState>
-      solverState{};  ///< Vector containing information about the state of the nonlinear solver.
-  std::string name{}; ///< Information about the name of the control method.
+      solverState{};   ///< Vector containing information about the state of the nonlinear solver.
+  std::string name{};  ///< Information about the name of the control method.
+  Eigen::VectorXd sol; ///< The solution vector, for example, the displacement vector.
 };
 
 } // namespace Ikarus

@@ -23,21 +23,21 @@ ControlState LoadControl<NLS>::run() {
   loadParameter = 0.0;
   this->notify(ControlMessages::STEP_STARTED, controlState);
   auto solverState = nonLinearSolver_->solve();
+  updateAndNotifyControlState(controlState, nonOp, solverState);
   if (not solverState.success)
     return controlState;
-  updateAndNotifyControlState(controlState, nonOp, solverState);
 
   for (int ls = 0; ls < loadSteps_; ++ls) {
     controlState.currentStep = ls;
     this->notify(ControlMessages::STEP_STARTED, controlState);
     loadParameter += stepSize_;
     solverState = nonLinearSolver_->solve();
+    updateAndNotifyControlState(controlState, nonOp, solverState);
     if (not solverState.success)
       return controlState;
-    updateAndNotifyControlState(controlState, nonOp, solverState);
   }
-  this->notify(ControlMessages::CONTROL_ENDED, controlState);
   controlState.success = true;
+  this->notify(ControlMessages::CONTROL_ENDED, controlState);
   return controlState;
 }
 } // namespace Ikarus

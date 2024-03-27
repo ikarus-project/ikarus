@@ -61,7 +61,7 @@ private:
  * \ingroup observer
  */
 template <typename MT, typename ST>
-requires(Concepts::ObservableState<ST>)
+requires(Concepts::Observable<MT, ST>)
 class IObservable
 {
 public:
@@ -114,7 +114,7 @@ private:
 };
 
 template <typename MT, typename ST>
-requires(Concepts::ObservableState<ST>)
+requires(Concepts::Observable<MT, ST>)
 void IObservable<MT, ST>::subscribe(MT message, std::shared_ptr<IObserver<IObservable>> observer) {
   observers_[message];
   auto&& vectorOfObserversOfASpecificMessage = observers_[message];
@@ -122,14 +122,14 @@ void IObservable<MT, ST>::subscribe(MT message, std::shared_ptr<IObserver<IObser
 }
 
 template <typename MT, typename ST>
-requires(Concepts::ObservableState<ST>)
+requires(Concepts::Observable<MT, ST>)
 void IObservable<MT, ST>::subscribeAll(std::shared_ptr<IObserver<IObservable>> observer) {
   for (auto& msg : messages_)
     subscribe(msg, observer);
 }
 
 template <typename MT, typename ST>
-requires(Concepts::ObservableState<ST>)
+requires(Concepts::Observable<MT, ST>)
 void IObservable<MT, ST>::subscribeAll(std::initializer_list<std::shared_ptr<IObserver<IObservable>>> observers) {
   for (auto& observer : observers)
     for (auto& msg : messages_)
@@ -137,21 +137,21 @@ void IObservable<MT, ST>::subscribeAll(std::initializer_list<std::shared_ptr<IOb
 }
 
 template <typename MT, typename ST>
-requires(Concepts::ObservableState<ST>)
+requires(Concepts::Observable<MT, ST>)
 void IObservable<MT, ST>::unSubscribe(MT message, std::shared_ptr<IObserver<IObservable>> observer) {
   auto vectorOfObserversOfASpecificMessage = observers_[message];
   std::ranges::remove_if(vectorOfObserversOfASpecificMessage, [&observer](auto&& obs) { return obs == observer; });
 }
 
 template <typename MT, typename ST>
-requires(Concepts::ObservableState<ST>)
+requires(Concepts::Observable<MT, ST>)
 void IObservable<MT, ST>::unSubscribeAll(std::shared_ptr<IObserver<IObservable>> observer) {
   for (auto& msg : messages_)
     unSubscribe(msg, observer);
 }
 
 template <typename MT, typename ST>
-requires(Concepts::ObservableState<ST>)
+requires(Concepts::Observable<MT, ST>)
 void IObservable<MT, ST>::notify(MT message, const ST& state) {
   auto vectorOfObserversOfASpecificMessage = observers_[message];
   for (auto&& obs : vectorOfObserversOfASpecificMessage)

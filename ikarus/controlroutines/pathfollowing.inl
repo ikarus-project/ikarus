@@ -41,20 +41,21 @@ ControlState PathFollowing<NLS, PF, ASS>::run() {
   /// configuration while using, for example, the class ControlSubsamplingVertexVTKWriter
   this->notify(ControlMessages::STEP_STARTED, controlState);
   auto solverState = nonLinearSolver_->solve(pathFollowingType_, subsidiaryArgs);
+  updateAndNotifyControlState(controlState, nonOp, solverState);
   if (not solverState.success)
     return controlState;
-  updateAndNotifyControlState(controlState, nonOp, solverState);
 
   for (int ls = 0; ls < steps_; ++ls) {
+    controlState.initialConfig = false;
     subsidiaryArgs.currentStep = ls;
     controlState.currentStep   = subsidiaryArgs.currentStep;
     if (ls == 0) {
       this->notify(ControlMessages::STEP_STARTED, controlState);
       pathFollowingType_.initialPrediction(nonOp, subsidiaryArgs);
       solverState = nonLinearSolver_->solve(pathFollowingType_, subsidiaryArgs);
+      updateAndNotifyControlState(controlState, nonOp, solverState);
       if (not solverState.success)
         return controlState;
-      updateAndNotifyControlState(controlState, nonOp, solverState);
     } else {
       adaptiveStepSizing_(solverState, subsidiaryArgs, nonOp);
       controlState.stepSize = subsidiaryArgs.stepSize;
@@ -62,14 +63,14 @@ ControlState PathFollowing<NLS, PF, ASS>::run() {
       this->notify(ControlMessages::STEP_STARTED, controlState);
       pathFollowingType_.intermediatePrediction(nonOp, subsidiaryArgs);
       solverState = nonLinearSolver_->solve(pathFollowingType_, subsidiaryArgs);
+      updateAndNotifyControlState(controlState, nonOp, solverState);
       if (not solverState.success)
         return controlState;
-      updateAndNotifyControlState(controlState, nonOp, solverState);
     }
   }
 
-  this->notify(ControlMessages::CONTROL_ENDED, controlState);
   controlState.success = true;
+  this->notify(ControlMessages::CONTROL_ENDED, controlState);
   return controlState;
 }
 } // namespace Ikarus

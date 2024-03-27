@@ -117,12 +117,13 @@ private:
    *
    * \param controlState Information about the state of the control routine.
    * \param nonOp The non-linear operator.
-   * \param sovlerState State of the nonlinear solver.
+   * \param solverState State of the nonlinear solver.
    */
   void updateAndNotifyControlState(ControlState& controlState, typename NLS::NonLinearOperator& nonOp,
-                                   const NonLinearSolverState& sovlerState) {
-    controlState.solverState.push_back(sovlerState);
-    controlState.totalIterations += sovlerState.iterations;
+                                   const NonLinearSolverState& solverState) {
+    controlState.solverState.push_back(solverState);
+    controlState.totalIterations += solverState.iterations;
+    controlState.sol    = nonOp.firstParameter();
     controlState.lambda = nonOp.lastParameter();
     this->notify(ControlMessages::SOLUTION_CHANGED, controlState);
     this->notify(ControlMessages::STEP_ENDED, controlState);

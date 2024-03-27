@@ -40,8 +40,9 @@ and ``StateType`` can either be ``NonLinearSolverState`` or ``ControlState``.
 ``StateType`` must adhere to the following concept:
 
 ```cpp
-template <typename ST>
-concept ObservableState = requires {std::is_same_v<ST, ControlState> || std::is_same_v<ST, NonLinearSolverState>;};
+template <typename MT, typename ST>
+concept Observable = requires { (std::is_same_v<MT, ControlMessages> && std::is_same_v<ST, ControlState>) ||
+      (std::is_same_v<MT, NonLinearSolverMessages> && std::is_same_v<ST, NonLinearSolverState>); };
 ```
 
 The function `this->notify(MessageType message, const StateType& state)` is called at the appropriate position in the code

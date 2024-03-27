@@ -20,6 +20,7 @@
 
 #include <ikarus/controlroutines/controlstate.hh>
 #include <ikarus/solver/nonlinearsolver/solverstate.hh>
+#include <ikarus/utils/observer/observermessages.hh>
 #include <ikarus/utils/traits.hh>
 
 namespace Eigen {
@@ -201,13 +202,17 @@ namespace Concepts {
   };
 
   /**
-   * \concept ObservableState
+   * \concept Observable
    * \brief Concept to check if the type of state passed to an observable is valid or not.
    *
-   * \tparam ST The state type of the observable.
+   * \tparam MT The type of message that the observable can handle.
+   * \tparam ST The type of the state of the observable.
    */
-  template <typename ST>
-  concept ObservableState = requires { std::is_same_v<ST, ControlState> || std::is_same_v<ST, NonLinearSolverState>; };
+  template <typename MT, typename ST>
+  concept Observable = requires {
+    (std::is_same_v<MT, ControlMessages> && std::is_same_v<ST, ControlState>) ||
+        (std::is_same_v<MT, NonLinearSolverMessages> && std::is_same_v<ST, NonLinearSolverState>);
+  };
 
   /**
    * \concept LinearSolverCheck

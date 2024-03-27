@@ -14,7 +14,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 - Move `autodiffhelper.hh` from `utils` to `autodiff` folder ([#259](https://github.com/ikarus-project/ikarus/pull/259))
 - Added a unified, generic interface for `ResultTypes` with the ability to register new
   ones ([#261](https://github.com/ikarus-project/ikarus/pull/261))
-- Refactor oberserver pattern and logging information ([#260](https://github.com/ikarus-project/ikarus/pull/260))
+- Refactor observer patterns and unify logging information ([#260](https://github.com/ikarus-project/ikarus/pull/260))
 
 ## Release v0.4 (Ganymede)
 
