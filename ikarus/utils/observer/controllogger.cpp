@@ -25,22 +25,14 @@ void ControlLogger::updateImpl(ControlMessages message, const ControlState& stat
       spdlog::info("Elapsed time: {} ms", duration_.count());
       break;
     case ControlMessages::STEP_STARTED:
-      if (state.initialConfig) {
-        spdlog::info("Load step started for the initial configuration.");
-        spdlog::info("---------------------------------------------------------------------");
-      } else {
-        spdlog::info("Load step: {:>4} {:>39} {:<.2e}", state.currentStep, "Step size = ", state.stepSize);
-        spdlog::info("---------------------------------------------------------------------");
-      }
+      spdlog::info("Load step: {:>4} {:>39} {:<.2e}", state.currentStep, "Step size = ", state.stepSize);
+      spdlog::info("---------------------------------------------------------------------");
       break;
     case ControlMessages::STEP_ENDED:
-      if (state.initialConfig) {
-        spdlog::info("Load step ended for the initial configuration.");
-        spdlog::info("---------------------------------------------------------------------");
-      } else {
-        spdlog::info("Load factor after completion of load step {:>2} {:>4} {:<.2e}", state.currentStep, " is ",
-                     state.lambda);
+      if (not state.initialConfig) {
+        spdlog::info("Load factor: {:<.2e}", state.lambda);
         spdlog::info("=====================================================================");
+      } else {
       }
       break;
     default:

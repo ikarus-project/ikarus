@@ -44,7 +44,7 @@ class OurDispObserver : public Ikarus::IObserver<Ikarus::IObservable<Ikarus::Con
 public:
   void updateImpl(Ikarus::ControlMessages message, const Ikarus::ControlState& state) override {
     if (message == Ikarus::ControlMessages::SOLUTION_CHANGED)
-      std::cout << std::setprecision(16) << "The displacement is \t" << state.sol.transpose() << std::endl;
+      std::cout << std::setprecision(16) << "The displacement is \t" << state.sol->transpose() << std::endl;
   }
 };
 

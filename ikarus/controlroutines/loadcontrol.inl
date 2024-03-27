@@ -18,18 +18,15 @@ ControlState LoadControl<NLS>::run() {
   this->notify(ControlMessages::CONTROL_STARTED, controlState);
   auto& loadParameter = nonOp.lastParameter();
 
-  /// Dummy execution of the code with loadParameter as 0 inorder to save information of the undeformed (or initial)
+  /// Dummy execution of the code with loadParameter as 0 in order to save information of the undeformed (or initial)
   /// configuration while using, for example, the class ControlSubsamplingVertexVTKWriter
-  loadParameter = 0.0;
-  this->notify(ControlMessages::STEP_STARTED, controlState);
-  auto solverState = nonLinearSolver_->solve();
+  NonLinearSolverState solverState{.success = true, .iterations = 0, .currentIter = 0};
   updateAndNotifyControlState(controlState, nonOp, solverState);
-  if (not solverState.success)
-    return controlState;
+  controlState.initialConfig = false;
 
   for (int ls = 0; ls < loadSteps_; ++ls) {
-    controlState.currentStep = ls;
     this->notify(ControlMessages::STEP_STARTED, controlState);
+    controlState.currentStep = ls;
     loadParameter += stepSize_;
     solverState = nonLinearSolver_->solve();
     updateAndNotifyControlState(controlState, nonOp, solverState);

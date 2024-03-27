@@ -30,9 +30,9 @@ struct ControlState
   double stepSize{std::numeric_limits<double>::infinity()}; ///< Information about the step size.
   double lambda{std::numeric_limits<double>::infinity()};   ///< Value of the load factor.
   std::vector<NonLinearSolverState>
-      solverState{};   ///< Vector containing information about the state of the nonlinear solver.
-  std::string name{};  ///< Information about the name of the control method.
-  Eigen::VectorXd sol; ///< The solution vector, for example, the displacement vector.
+      solverState{};                 ///< Vector containing information about the state of the nonlinear solver.
+  std::string name{};                ///< Information about the name of the control method.
+  const Eigen::VectorX<double>* sol; ///< A pointer to the solution vector, for example, the displacement vector.
 };
 
 } // namespace Ikarus

@@ -14,6 +14,7 @@
 #include <ikarus/controlroutines/controlstate.hh>
 #include <ikarus/controlroutines/pathfollowingfunctions.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphsonwithscalarsubsidiaryfunction.hh>
+#include <ikarus/solver/nonlinearsolver/solverstate.hh>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observermessages.hh>
 
@@ -114,16 +115,12 @@ private:
   /**
    * \brief A wrapper function to update controlState after a nonlinear solver is executed successfully.
    * The resulting controlState is then passed for further notifications.
-   *
-   * \param controlState Information about the state of the control routine.
-   * \param nonOp The non-linear operator.
-   * \param solverState State of the nonlinear solver.
    */
   void updateAndNotifyControlState(ControlState& controlState, typename NLS::NonLinearOperator& nonOp,
                                    const NonLinearSolverState& solverState) {
     controlState.solverState.push_back(solverState);
     controlState.totalIterations += solverState.iterations;
-    controlState.sol    = nonOp.firstParameter();
+    controlState.sol    = &nonOp.firstParameter();
     controlState.lambda = nonOp.lastParameter();
     this->notify(ControlMessages::SOLUTION_CHANGED, controlState);
     this->notify(ControlMessages::STEP_ENDED, controlState);

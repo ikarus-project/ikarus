@@ -37,36 +37,31 @@ ControlState PathFollowing<NLS, PF, ASS>::run() {
   subsidiaryArgs.Dlambda = 0.0;
 
   /// Initializing solver
-  /// Dummy execution of the code inorder to save information of the undeformed (or initial)
+  /// Dummy execution of the code in order to save information of the undeformed (or initial)
   /// configuration while using, for example, the class ControlSubsamplingVertexVTKWriter
+  NonLinearSolverState solverState{.success = true, .iterations = 0, .currentIter = 0};
+  updateAndNotifyControlState(controlState, nonOp, solverState);
+
   this->notify(ControlMessages::STEP_STARTED, controlState);
-  auto solverState = nonLinearSolver_->solve(pathFollowingType_, subsidiaryArgs);
+  controlState.initialConfig = false;
+  pathFollowingType_.initialPrediction(nonOp, subsidiaryArgs);
+  solverState = nonLinearSolver_->solve(pathFollowingType_, subsidiaryArgs);
   updateAndNotifyControlState(controlState, nonOp, solverState);
   if (not solverState.success)
     return controlState;
 
-  for (int ls = 0; ls < steps_; ++ls) {
-    controlState.initialConfig = false;
+  for (int ls = 1; ls < steps_; ++ls) {
     subsidiaryArgs.currentStep = ls;
     controlState.currentStep   = subsidiaryArgs.currentStep;
-    if (ls == 0) {
-      this->notify(ControlMessages::STEP_STARTED, controlState);
-      pathFollowingType_.initialPrediction(nonOp, subsidiaryArgs);
-      solverState = nonLinearSolver_->solve(pathFollowingType_, subsidiaryArgs);
-      updateAndNotifyControlState(controlState, nonOp, solverState);
-      if (not solverState.success)
-        return controlState;
-    } else {
-      adaptiveStepSizing_(solverState, subsidiaryArgs, nonOp);
-      controlState.stepSize = subsidiaryArgs.stepSize;
+    adaptiveStepSizing_(solverState, subsidiaryArgs, nonOp);
+    controlState.stepSize = subsidiaryArgs.stepSize;
 
-      this->notify(ControlMessages::STEP_STARTED, controlState);
-      pathFollowingType_.intermediatePrediction(nonOp, subsidiaryArgs);
-      solverState = nonLinearSolver_->solve(pathFollowingType_, subsidiaryArgs);
-      updateAndNotifyControlState(controlState, nonOp, solverState);
-      if (not solverState.success)
-        return controlState;
-    }
+    this->notify(ControlMessages::STEP_STARTED, controlState);
+    pathFollowingType_.intermediatePrediction(nonOp, subsidiaryArgs);
+    solverState = nonLinearSolver_->solve(pathFollowingType_, subsidiaryArgs);
+    updateAndNotifyControlState(controlState, nonOp, solverState);
+    if (not solverState.success)
+      return controlState;
   }
 
   controlState.success = true;
