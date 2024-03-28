@@ -15,6 +15,8 @@
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 
+#include <ikarus/controlroutines/controlstate.hh>
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wswitch-enum"
 
@@ -28,7 +30,7 @@ namespace Ikarus {
  * \tparam B The type of the grid basis.
  */
 template <typename B>
-class ControlSubsamplingVertexVTKWriter : public IObserver<ControlMessages>
+class ControlSubsamplingVertexVTKWriter : public IObserver<IObservable<ControlMessages, ControlState>>
 {
   using Basis                     = B;
   static constexpr int components = Basis::LocalView::Tree::degree() == 0 ? 1 : Basis::LocalView::Tree::degree();
@@ -78,7 +80,7 @@ public:
    *
    * \param message The received control message.
    */
-  void updateImpl(ControlMessages message) final {
+  void updateImpl(ControlMessages message, const ControlState&) final {
     assert(isFieldInfoSet_ && "You need to call setFieldInfo first!");
     switch (message) {
       case ControlMessages::SOLUTION_CHANGED: {

@@ -9,7 +9,7 @@
 #pragma once
 
 #include <ikarus/solver/linearsolver/linearsolver.hh>
-#include <ikarus/solver/nonlinearsolver/solverinfos.hh>
+#include <ikarus/solver/nonlinearsolver/solverstate.hh>
 #include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/defaultfunctions.hh>
 #include <ikarus/utils/linearalgebrahelper.hh>
@@ -38,7 +38,7 @@ struct NewtonRaphsonSettings
  * \ingroup solvers
  */
 template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
-class NewtonRaphson : public IObservable<NonLinearSolverMessages>
+class NewtonRaphson : public IObservable<NonLinearSolverMessages, NonLinearSolverState>
 {
 public:
   ///< Compile-time boolean indicating if the linear solver satisfies the non-linear solver concept
@@ -87,24 +87,25 @@ public:
            std::is_convertible_v<SolutionType, std::remove_cvref_t<typename NonLinearOperator::ValueType>>
   [[nodiscard(
       "The solve method returns information of the solution process. You should store this information and check if "
-      "it was successful")]] Ikarus::NonLinearSolverInformation
+      "it was successful")]] NonLinearSolverState
   solve(const SolutionType& dxPredictor = NoPredictor{}) {
-    this->notify(NonLinearSolverMessages::INIT);
-    Ikarus::NonLinearSolverInformation solverInformation;
-    solverInformation.success = true;
-    auto& x                   = nonLinearOperator().firstParameter();
+    NonLinearSolverState solverState{.iterations = 0};
+    this->notify(NonLinearSolverMessages::INIT, solverState);
+    solverState.success = true;
+    auto& x             = nonLinearOperator().firstParameter();
     if constexpr (not std::is_same_v<SolutionType, NoPredictor>)
       updateFunction_(x, dxPredictor);
     nonLinearOperator().updateAll();
-    const auto& rx = nonLinearOperator().value();
-    const auto& Ax = nonLinearOperator().derivative();
-    auto rNorm     = norm(rx);
+    const auto& rx           = nonLinearOperator().value();
+    const auto& Ax           = nonLinearOperator().derivative();
+    auto rNorm               = norm(rx);
+    solverState.residualNorm = static_cast<double>(rNorm);
     decltype(rNorm) dNorm;
     int iter{0};
     if constexpr (isLinearSolver)
       linearSolver_.analyzePattern(Ax);
     while (rNorm > settings_.tol && iter < settings_.maxIter) {
-      this->notify(NonLinearSolverMessages::ITERATION_STARTED);
+      this->notify(NonLinearSolverMessages::ITERATION_STARTED, solverState);
       if constexpr (isLinearSolver) {
         linearSolver_.factorize(Ax);
         linearSolver_.solve(correction_, -rx);
@@ -115,22 +116,24 @@ public:
         dNorm       = norm(correction_);
         updateFunction_(x, correction_);
       }
-      this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, static_cast<double>(dNorm));
-      this->notify(NonLinearSolverMessages::SOLUTION_CHANGED);
+      solverState.correctionNorm = static_cast<double>(dNorm);
+      this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, solverState);
+      this->notify(NonLinearSolverMessages::SOLUTION_CHANGED, solverState);
       nonLinearOperator().updateAll();
-      rNorm = norm(rx);
-      this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, static_cast<double>(rNorm));
-      this->notify(NonLinearSolverMessages::ITERATION_ENDED);
+      rNorm                    = norm(rx);
+      solverState.residualNorm = static_cast<double>(rNorm);
+
       ++iter;
+      solverState.currentIter = iter;
+
+      this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, solverState);
+      this->notify(NonLinearSolverMessages::ITERATION_ENDED, solverState);
     }
     if (iter == settings_.maxIter)
-      solverInformation.success = false;
-    solverInformation.iterations     = iter;
-    solverInformation.residualNorm   = static_cast<double>(rNorm);
-    solverInformation.correctionNorm = static_cast<double>(dNorm);
-    if (solverInformation.success)
-      this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, iter);
-    return solverInformation;
+      solverState.success = false;
+    solverState.iterations = iter;
+    this->notify(NonLinearSolverMessages::SOLVER_FINISHED, solverState);
+    return solverState;
   }
 
   /**

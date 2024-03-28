@@ -8,48 +8,37 @@
 #pragma GCC diagnostic ignored "-Wswitch-enum"
 
 namespace Ikarus {
-
-void NonLinearSolverLogger::updateImpl(NonLinearSolverMessages message) {
+void NonLinearSolverLogger::updateImpl(NonLinearSolverMessages message, const NonLinearSolverState& state) {
   switch (message) {
+    case NonLinearSolverMessages::INIT:
+      spdlog::info("Non-linear solver started:");
+      if (state.lambda and state.subsidiaryFunction)
+        spdlog::info("{:>4} {:>17} {:>19} {:>23} {:>15}", "Ite", "ResidualNorm", "CorrectionNorm", "SubsidiaryFunction",
+                     "LoadFactor");
+      else
+        spdlog::info("{:>4} {:>17} {:>19}", "Ite", "ResidualNorm", "CorrectionNorm");
+      spdlog::info("----------------------------------------------------------------------------------");
+      break;
     case NonLinearSolverMessages::ITERATION_STARTED:
       break;
-    case NonLinearSolverMessages::INIT:
-      iters_ = 1;
-      rNorm_ = 0.0;
-      dNorm_ = 0.0;
-      spdlog::info("Non-linear solver started:");
-      spdlog::info("{:<11} {:<20} {:<20} {:<20}", "Ite", "normR", "normD", "lambda");
-      spdlog::info("-------------------------------------------------------------------------------");
-      break;
     case NonLinearSolverMessages::ITERATION_ENDED:
-      spdlog::info("{} {:<10d} {:<20.2e} {:<20.2e} {:<20.2e}", "", iters_, rNorm_, dNorm_, lambda_);
-      ++iters_;
+      if (state.lambda and state.subsidiaryFunction)
+        spdlog::info("{} {:>3d} {:>17.3e} {:>19.3e} {:>23.3e} {:>15.3e}", "", state.currentIter, state.residualNorm,
+                     state.correctionNorm, state.subsidiaryFunction.value(), state.lambda.value());
+      else
+        spdlog::info("{} {:>3d} {:>17.3e} {:>19.3e}", "", state.currentIter, state.residualNorm, state.correctionNorm);
       break;
-    default:
-      break;
-  }
-}
-
-void NonLinearSolverLogger::updateImpl(NonLinearSolverMessages message, double val) {
-  switch (message) {
     case NonLinearSolverMessages::RESIDUALNORM_UPDATED:
-      rNorm_ = val;
-      break;
-    case NonLinearSolverMessages::SOLUTION_CHANGED:
-      lambda_ = val;
       break;
     case NonLinearSolverMessages::CORRECTIONNORM_UPDATED:
-      dNorm_ = val;
       break;
-    default:
+    case NonLinearSolverMessages::SOLUTION_CHANGED:
       break;
-  }
-}
-
-void NonLinearSolverLogger::updateImpl(NonLinearSolverMessages message, int numberOfIterations) {
-  switch (message) {
-    case NonLinearSolverMessages::FINISHED_SUCESSFULLY:
-      spdlog::info("Number of iterations: {}", numberOfIterations);
+    case NonLinearSolverMessages::SOLVER_FINISHED:
+      if (state.success)
+        spdlog::info("Number of iterations by the non-linear solver: {}", state.iterations);
+      else
+        spdlog::warn("The non-linear solver FAILED to converge.");
       break;
     default:
       break;

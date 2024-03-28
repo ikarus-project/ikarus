@@ -1,6 +1,6 @@
 # Observer and Observable
 
-To write output messages when desired by the user, the observer pattern is implemented in Ikarus.
+To write output messages when desired by the user, an observer pattern is implemented in Ikarus.
 Four things are necessary to understand the implementation of observer patterns: `Messages`, `IObservable`,
 `IObserver` and `Subscriptions`.
 
@@ -18,46 +18,64 @@ enum class NonLinearSolverMessages {
   RESIDUALNORM_UPDATED,
   CORRECTIONNORM_UPDATED,
   SOLUTION_CHANGED,
-  FINISHED_SUCESSFULLY,
+  SOLVER_FINISHED,
   END
 };
 ```
 
 ## IObservable
 
-A class can be observable. The class then sends notifications when events are happening. To become observable, a class
-must inherit from `IObservable<MessageType>`, for example,
+A class can be observable.
+The class then sends notifications when certain events are happening.
+To become observable, a class
+must inherit from `IObservable<MessageType, StateType>`, for example,
 
 ```cpp
-class NewtonRaphson : public IObservable<NonLinearSolverMessages> {...};
+class NewtonRaphson : public IObservable<NonLinearSolverMessages, NonLinearSolverState> {...};
 ```
 
-The function `this->notify(MessageType::Message)` is called at the appropriate position in the code to send a
-notification. This could be, for example,
+Here, ``MessageType``
+is the `enum` of messages to use (see above)
+and ``StateType`` can either be ``NonLinearSolverState`` or ``ControlState``.
+``StateType`` must adhere to the following concept:
 
 ```cpp
-this->notify(NonLinearSolverMessages::SOLUTION_CHANGED);
+template <typename MT, typename ST>
+concept Observable = requires { (std::is_same_v<MT, ControlMessages> && std::is_same_v<ST, ControlState>) ||
+      (std::is_same_v<MT, NonLinearSolverMessages> && std::is_same_v<ST, NonLinearSolverState>); };
+```
+
+The function `this->notify(MessageType message, const StateType& state)` is called at the appropriate position in the code
+to send a notification.
+This could be, for example,
+
+```cpp
+NonLinearSolverState solverState;
+this->notify(NonLinearSolverMessages::SOLUTION_CHANGED, solverState);
 ```
 
 ## IObserver
 
-A class can be an observer. The class is then notified when events are happening and can perform actions. A very simple
-example is shown below. To become an observer, the class must inherit from ``IObserver<MessageType>``, where ``MessageType``
-is the `enum` of messages to use (see above).
+A class can be an observer.
+The class is then notified when events are happening and can perform actions.
+To become an observer, the class must inherit from ``IObserver<IObservable<MessageType, StateType>>``.
+A basic example is shown below.
 
 ```cpp
-class OurFirstObserver : public IObserver<NonLinearSolverMessages> {
+class OurFirstObserver : public IObserver<IObservable<NonLinearSolverMessages, NonLinearSolverState>> {
 public:
-  void updateImpl(NonLinearSolverMessages message) override {
+  void updateImpl(NonLinearSolverMessages message, const Ikarus::NonLinearSolverState &) override {
     if (message == NonLinearSolverMessages::ITERATION_STARTED) std::cout << "Iteration started.\n";
   }
 };
 ```
 
-The observer has to implement the function ``void updateImpl(MessageType message)``. In this function, all actions can
+The observer has to implement the function ``void updateImpl(MessageType message, const StateType& state)``.
+In this function, all actions can
 be implemented that should be performed when the corresponding message is received.
 
-To connect observer and observable, one has to call ``observalbe.subscribe(MessageType::Message,observer)``. Example:
+To connect the observer and the observable, one has to call ``observalbe.subscribe(MessageType::Message, observer)``.
+Example:
 
 ```cpp
 Ikarus::NewtonRaphson nr(...);
@@ -71,9 +89,9 @@ nr.subscribe(NonLinearSolverMessages::ITERATION_STARTED, ourSimpleObserver);
 There are a couple of options for the subscription:
 
 ```cpp
-subscribe(MessageType::Message,observer) // (1)!
+subscribe(MessageType::Message, observer) // (1)!
 subscribeAll(observer) // (2)!
-subscribeAll({observer1,observer2}) // (3)!
+subscribeAll({observer1, observer2}) // (3)!
 unSubscribe(...) // (4)!
 ```
 
@@ -82,16 +100,15 @@ unSubscribe(...) // (4)!
 3. Multiple observers can subscribe at once.
 4. Unsubscribe from specific messages or all messages.
 
-To send a message together with data, the sender (observable) calls
+To send a message together with data,
+the sender (observable) calls the ``notify`` function as shown before and the receiver (observer) has to implement
 
 ```cpp
-this->notify(MessageType::Message, data);
+void updateImpl(MessageType message, const StateType& state) override {...}
 ```
 
-and the receiver (observer) has to implement
+To see all available options for ``NonLinearSolverState``,
+we refer to the file ``ikarus/solver/nonlinearsolver/solverstate.hh``.
 
-```cpp
-void updateImpl(MessageType message, data) override {...}
-```
-
-To see all available options for ``data``, we refer to the file ``observer.hh``.
+To see all available options for ``ControlState``,
+we refer to the file ``ikarus/controlroutines/controlstate.hh``.

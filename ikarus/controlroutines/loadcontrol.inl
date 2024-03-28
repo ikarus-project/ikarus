@@ -11,35 +11,33 @@
 
 namespace Ikarus {
 template <typename NLS>
-ControlInformation LoadControl<NLS>::run() {
-  ControlInformation info({false});
+[[nodiscard(
+    "The run method returns information of the control routine. You should store this information and check if "
+    "it was successful")]] ControlState
+LoadControl<NLS>::run() {
+  ControlState controlState{
+      .success = false, .currentStep = 0, .totalIterations = 0, .stepSize = stepSize_, .name = this->name()};
   auto& nonOp = nonLinearSolver_->nonLinearOperator();
-  this->notify(ControlMessages::CONTROL_STARTED, static_cast<std::string>(this->name()));
+  this->notify(ControlMessages::CONTROL_STARTED, controlState);
   auto& loadParameter = nonOp.lastParameter();
 
-  loadParameter = 0.0;
-  this->notify(ControlMessages::STEP_STARTED, 0, stepSize_);
-  auto solverInfo = nonLinearSolver_->solve();
-  info.solverInfos.push_back(solverInfo);
-  info.totalIterations += solverInfo.iterations;
-  if (not solverInfo.success)
-    return info;
-  this->notify(ControlMessages::SOLUTION_CHANGED);
-  this->notify(ControlMessages::STEP_ENDED);
+  /// Dummy execution of the code with loadParameter as 0 in order to save information of the undeformed (or initial)
+  /// configuration while using, for example, the class ControlSubsamplingVertexVTKWriter
+  NonLinearSolverState solverState{.success = true, .iterations = 0, .currentIter = 0};
+  updateAndNotifyControlState(controlState, nonOp, solverState);
+  controlState.initialConfig = false;
 
   for (int ls = 0; ls < loadSteps_; ++ls) {
-    this->notify(ControlMessages::STEP_STARTED, ls, stepSize_);
+    this->notify(ControlMessages::STEP_STARTED, controlState);
+    controlState.currentStep = ls;
     loadParameter += stepSize_;
-    solverInfo = nonLinearSolver_->solve();
-    info.solverInfos.push_back(solverInfo);
-    info.totalIterations += solverInfo.iterations;
-    if (not solverInfo.success)
-      return info;
-    this->notify(ControlMessages::SOLUTION_CHANGED);
-    this->notify(ControlMessages::STEP_ENDED);
+    solverState = nonLinearSolver_->solve();
+    updateAndNotifyControlState(controlState, nonOp, solverState);
+    if (not solverState.success)
+      return controlState;
   }
-  this->notify(ControlMessages::CONTROL_ENDED, info.totalIterations, static_cast<std::string>(this->name()));
-  info.success = true;
-  return info;
+  controlState.success = true;
+  this->notify(ControlMessages::CONTROL_ENDED, controlState);
+  return controlState;
 }
 } // namespace Ikarus

@@ -81,10 +81,12 @@ This is exemplified by the function `#!cpp void newtonRaphsonBasicExampleWithLog
 It is also possible to subscribe to the existing non-linear solver messages mentioned [here](../01_framework/observer.md#messages).
 
 ```cpp
-class OurFirstObserver : public IObserver<NonLinearSolverMessages> {
- public:
-  void updateImpl(NonLinearSolverMessages message) override {
-    if (message == NonLinearSolverMessages::ITERATION_STARTED) std::cout << "Iteration started.\n";
+class OurFirstObserver : public IObserver<IObservable<NonLinearSolverMessages, NonLinearSolverState>>
+{
+public:
+  void updateImpl(NonLinearSolverMessages message, const NonLinearSolverState&) override {
+    if (message == NonLinearSolverMessages::ITERATION_STARTED)
+      std::cout << "Iteration started.\n";
   }
 };
 

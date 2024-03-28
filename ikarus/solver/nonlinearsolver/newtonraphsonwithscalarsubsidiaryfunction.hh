@@ -12,8 +12,9 @@
 #include <utility>
 
 #include <ikarus/controlroutines/pathfollowingfunctions.hh>
-#include <ikarus/solver/nonlinearsolver/solverinfos.hh>
+#include <ikarus/solver/nonlinearsolver/solverstate.hh>
 #include <ikarus/utils/concepts.hh>
+#include <ikarus/utils/defaultfunctions.hh>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observermessages.hh>
 
@@ -39,7 +40,7 @@ struct NewtonRaphsonWithSubsidiaryFunctionSettings
  * \tparam UF Type of the update function (default is UpdateDefault).
  */
 template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
-class NewtonRaphsonWithSubsidiaryFunction : public IObservable<NonLinearSolverMessages>
+class NewtonRaphsonWithSubsidiaryFunction : public IObservable<NonLinearSolverMessages, NonLinearSolverState>
 {
 public:
   ///< Compile-time boolean indicating if the linear solver satisfies the non-linear solver concept
@@ -93,15 +94,17 @@ public:
            std::is_convertible_v<SolutionType, std::remove_cvref_t<typename NLO::ValueType>>
   [[nodiscard(
       "The solve method returns information of the solution process. You should store this information and check if "
-      "it was successful")]] NonLinearSolverInformation
-  solve(SubsidiaryType&& subsidiaryFunction, SubsidiaryArgs& subsidiaryArgs,
+      "it was successful")]] NonLinearSolverState
+  solve(SubsidiaryType& subsidiaryFunction, SubsidiaryArgs& subsidiaryArgs,
         const SolutionType& dxPredictor = NoPredictor{}) {
-    this->notify(NonLinearSolverMessages::INIT);
+    NonLinearSolverState solverState{.iterations = 0};
+    solverState.lambda             = nonLinearOperator().lastParameter();
+    solverState.subsidiaryFunction = subsidiaryArgs.f;
+    this->notify(NonLinearSolverMessages::INIT, solverState);
 
     /// Initializations
-    Ikarus::NonLinearSolverInformation solverInformation;
-    solverInformation.success = true;
-    auto& x                   = nonLinearOperator().firstParameter(); // x = D (Displacements)
+    solverState.success = true;
+    auto& x             = nonLinearOperator().firstParameter(); // x = D (Displacements)
     if constexpr (not std::is_same_v<SolutionType, NoPredictor>)
       updateFunction_(x, dxPredictor);
     auto& lambda = nonLinearOperator().lastParameter();
@@ -139,7 +142,7 @@ public:
 
     /// Iterative solving scheme
     while (rNorm > settings_.tol && iter < settings_.maxIter) {
-      this->notify(NonLinearSolverMessages::ITERATION_STARTED);
+      this->notify(NonLinearSolverMessages::ITERATION_STARTED, solverState);
 
       /// Two-step solving procedure
       residual2d.resize(rx.rows(), 2);
@@ -169,23 +172,25 @@ public:
       nonLinearOperator().updateAll();
       rNorm = sqrt(rx.dot(rx) + subsidiaryArgs.f * subsidiaryArgs.f);
 
-      this->notify(NonLinearSolverMessages::SOLUTION_CHANGED, static_cast<double>(lambda));
-      this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, static_cast<double>(dNorm));
-      this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, static_cast<double>(rNorm));
-      this->notify(NonLinearSolverMessages::ITERATION_ENDED);
+      solverState.residualNorm   = static_cast<double>(rNorm);
+      solverState.correctionNorm = static_cast<double>(dNorm);
 
       ++iter;
+      solverState.currentIter        = iter;
+      solverState.lambda             = lambda;
+      solverState.subsidiaryFunction = subsidiaryArgs.f;
+      this->notify(NonLinearSolverMessages::SOLUTION_CHANGED, solverState);
+      this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, solverState);
+      this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, solverState);
+      this->notify(NonLinearSolverMessages::ITERATION_ENDED, solverState);
     }
 
     if (iter == settings_.maxIter)
-      solverInformation.success = false;
-    solverInformation.iterations     = iter;
-    solverInformation.residualNorm   = rNorm;
-    solverInformation.correctionNorm = dNorm;
-    if (solverInformation.success)
-      this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, iter);
+      solverState.success = false;
+    solverState.iterations = iter;
+    this->notify(NonLinearSolverMessages::SOLVER_FINISHED, solverState);
 
-    return solverInformation;
+    return solverState;
   }
 
   /**

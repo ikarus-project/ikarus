@@ -10,7 +10,8 @@
 
 #include <memory>
 
-#include <ikarus/controlroutines/controlinfos.hh>
+#include <ikarus/controlroutines/controlstate.hh>
+#include <ikarus/solver/nonlinearsolver/solverstate.hh>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observermessages.hh>
 
@@ -27,7 +28,7 @@ namespace Ikarus {
  * \tparam NLS Type of the nonlinear solver used in the control routine.
  */
 template <typename NLS>
-class LoadControl : public IObservable<ControlMessages>
+class LoadControl : public IObservable<ControlMessages, ControlState>
 {
 public:
   /** \brief The name of the LoadControl method. */
@@ -40,7 +41,7 @@ public:
    * \param loadSteps Number of load steps in the control routine.
    * \param tbeginEnd Array representing the range of load parameters [tbegin, tend].
    */
-  LoadControl(const std::shared_ptr<NLS>& nonLinearSolver, int loadSteps, const std::array<double, 2>& tbeginEnd)
+  LoadControl(const std::shared_ptr<NLS>& nonLinearSolver, size_t loadSteps, const std::array<double, 2>& tbeginEnd)
       : nonLinearSolver_{nonLinearSolver},
         loadSteps_{loadSteps},
         parameterBegin_{tbeginEnd[0]},
@@ -51,6 +52,8 @@ public:
           nonLinearSolver_->nonLinearOperator().lastParameter() = 0.0;
           nonLinearSolver_->nonLinearOperator().lastParameter() += 0.0;
         }, "The last parameter (load factor) must be assignable and incrementable with a double!");
+    if (loadSteps_ == 0)
+      DUNE_THROW(Dune::InvalidStateException, "Number of load steps should be greater than zero.");
   }
 
   /**
@@ -58,14 +61,28 @@ public:
    *
    * \return ControlInformation structure containing information about the control results.
    */
-  ControlInformation run();
+  ControlState run();
 
 private:
   std::shared_ptr<NLS> nonLinearSolver_;
-  int loadSteps_;
+  size_t loadSteps_;
   double parameterBegin_;
   double parameterEnd_;
   double stepSize_;
+
+  /**
+   * \brief A wrapper function to update controlState after a nonlinear solver is executed successfully.
+   * The resulting controlState is then passed for further notifications.
+   */
+  void updateAndNotifyControlState(ControlState& controlState, typename NLS::NonLinearOperator& nonOp,
+                                   const NonLinearSolverState& solverState) {
+    controlState.solverState.push_back(solverState);
+    controlState.totalIterations += solverState.iterations;
+    controlState.sol    = &nonOp.firstParameter();
+    controlState.lambda = nonOp.lastParameter();
+    this->notify(ControlMessages::SOLUTION_CHANGED, controlState);
+    this->notify(ControlMessages::STEP_ENDED, controlState);
+  }
 };
 
 } // namespace Ikarus
