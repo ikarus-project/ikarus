@@ -18,8 +18,12 @@ namespace Ikarus {
  * \brief Structure containing information about the state of the control routine.
  *
  * \details This structure holds information about the success of a control routine,
+ * the flag indicating if the state of deformation is in the initial configuration,
  * including current load step number, total number of iterations performed by the non-linear solver,
- * load step size, value of the load factor, state of the non-linear solver and the name of the control routine.
+ * load step size, value of the load factor, the solution vector,
+ * state of the non-linear solver and the name of the control routine.
+ *
+ * \ingroup  controlroutines
  */
 struct ControlState
 {

@@ -14,6 +14,7 @@
 #include <ikarus/controlroutines/pathfollowingfunctions.hh>
 #include <ikarus/solver/nonlinearsolver/solverstate.hh>
 #include <ikarus/utils/concepts.hh>
+#include <ikarus/utils/defaultfunctions.hh>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observermessages.hh>
 
@@ -97,6 +98,8 @@ public:
   solve(SubsidiaryType& subsidiaryFunction, SubsidiaryArgs& subsidiaryArgs,
         const SolutionType& dxPredictor = NoPredictor{}) {
     NonLinearSolverState solverState{.iterations = 0};
+    solverState.lambda             = nonLinearOperator().lastParameter();
+    solverState.subsidiaryFunction = subsidiaryArgs.f;
     this->notify(NonLinearSolverMessages::INIT, solverState);
 
     /// Initializations
@@ -173,7 +176,9 @@ public:
       solverState.correctionNorm = static_cast<double>(dNorm);
 
       ++iter;
-      solverState.currentIter = iter;
+      solverState.currentIter        = iter;
+      solverState.lambda             = lambda;
+      solverState.subsidiaryFunction = subsidiaryArgs.f;
       this->notify(NonLinearSolverMessages::SOLUTION_CHANGED, solverState);
       this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, solverState);
       this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, solverState);

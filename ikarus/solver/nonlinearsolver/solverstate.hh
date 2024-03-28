@@ -8,12 +8,15 @@
 
 #pragma once
 
+#include <optional>
+
 namespace Ikarus {
 /**
  * \brief Information about the state of a non-linear solver.
  *
  * \details This structure holds information about the success of a non-linear solver,
- * including the residual norm, correction norm, the number of iterations performed and the current iteration number.
+ * including the residual norm, correction norm, the load factor, the subsidiary function,
+ * the number of iterations performed and the current iteration number.
  */
 struct NonLinearSolverState
 {
@@ -23,10 +26,14 @@ struct NonLinearSolverState
    * \return `true` if the solver was successful, `false` otherwise.
    */
   explicit operator bool() const { return success; }
-  bool success{false};                                            ///< Flag indicating the success of the solver.
-  double residualNorm{std::numeric_limits<double>::infinity()};   ///< Value of the residual norm.
-  double correctionNorm{std::numeric_limits<double>::infinity()}; ///< Value of the correction norm.
+  bool success{false}; ///< Flag indicating the success of the solver.
   int iterations{-1};  ///< Total number of iterations performed by the non-linear solver.
   int currentIter{-1}; ///< Current iteration number.
+  double residualNorm{std::numeric_limits<double>::infinity()};   ///< Value of the residual norm.
+  double correctionNorm{std::numeric_limits<double>::infinity()}; ///< Value of the correction norm.
+
+  // optional variables specific for the solver NewtonRaphsonWithSubsidiaryFunction
+  std::optional<double> lambda;             ///< Value of the load factor.
+  std::optional<double> subsidiaryFunction; ///< Value of the subsidiary function (f)
 };
 } // namespace Ikarus

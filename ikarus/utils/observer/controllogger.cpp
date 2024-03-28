@@ -13,9 +13,8 @@ void ControlLogger::updateImpl(ControlMessages message, const ControlState& stat
   switch (message) {
     case ControlMessages::CONTROL_STARTED:
       start_ = std::chrono::high_resolution_clock::now();
-      spdlog::info("=====================================================================");
+      spdlog::info("==================================================================================");
       spdlog::info("Started {}", state.name);
-      spdlog::info("=====================================================================");
       break;
     case ControlMessages::CONTROL_ENDED:
       stop_     = std::chrono::high_resolution_clock::now();
@@ -25,13 +24,13 @@ void ControlLogger::updateImpl(ControlMessages message, const ControlState& stat
       spdlog::info("Elapsed time: {} ms", duration_.count());
       break;
     case ControlMessages::STEP_STARTED:
-      spdlog::info("Load step: {:>4} {:>39} {:<.2e}", state.currentStep, "Step size = ", state.stepSize);
-      spdlog::info("---------------------------------------------------------------------");
+      spdlog::info("Load step: {:>4} {:>56} {:<.3e}", state.currentStep, "Step size = ", state.stepSize);
+      spdlog::info("----------------------------------------------------------------------------------");
       break;
     case ControlMessages::STEP_ENDED:
       if (not state.initialConfig) {
-        spdlog::info("Load factor: {:<.2e}", state.lambda);
-        spdlog::info("=====================================================================");
+        spdlog::info("Load factor: {:<.3e}", state.lambda);
+        spdlog::info("==================================================================================");
       } else {
       }
       break;

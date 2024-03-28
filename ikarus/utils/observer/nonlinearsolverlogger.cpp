@@ -8,18 +8,25 @@
 #pragma GCC diagnostic ignored "-Wswitch-enum"
 
 namespace Ikarus {
-
 void NonLinearSolverLogger::updateImpl(NonLinearSolverMessages message, const NonLinearSolverState& state) {
   switch (message) {
     case NonLinearSolverMessages::INIT:
       spdlog::info("Non-linear solver started:");
-      spdlog::info("{:<11} {:<20} {:<20}", "Ite", "normR", "normD");
-      spdlog::info("---------------------------------------------------------------------");
+      if (state.lambda and state.subsidiaryFunction)
+        spdlog::info("{:>4} {:>17} {:>19} {:>23} {:>15}", "Ite", "ResidualNorm", "CorrectionNorm", "SubsidiaryFunction",
+                     "LoadFactor");
+      else
+        spdlog::info("{:>4} {:>17} {:>19}", "Ite", "ResidualNorm", "CorrectionNorm");
+      spdlog::info("----------------------------------------------------------------------------------");
       break;
     case NonLinearSolverMessages::ITERATION_STARTED:
       break;
     case NonLinearSolverMessages::ITERATION_ENDED:
-      spdlog::info("{} {:<10d} {:<20.2e} {:<20.2e}", "", state.currentIter, state.residualNorm, state.correctionNorm);
+      if (state.lambda and state.subsidiaryFunction)
+        spdlog::info("{} {:>3d} {:>17.3e} {:>19.3e} {:>23.3e} {:>15.3e}", "", state.currentIter, state.residualNorm,
+                     state.correctionNorm, state.subsidiaryFunction.value(), state.lambda.value());
+      else
+        spdlog::info("{} {:>3d} {:>17.3e} {:>19.3e}", "", state.currentIter, state.residualNorm, state.correctionNorm);
       break;
     case NonLinearSolverMessages::RESIDUALNORM_UPDATED:
       break;
