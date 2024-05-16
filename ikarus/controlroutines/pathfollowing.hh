@@ -10,12 +10,14 @@
 
 #include <memory>
 
+#include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
 #include <ikarus/controlroutines/adaptivestepsizing.hh>
 #include <ikarus/controlroutines/controlinfos.hh>
 #include <ikarus/controlroutines/pathfollowingfunctions.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphsonwithscalarsubsidiaryfunction.hh>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observermessages.hh>
+#include <ikarus/utils/nonlinopfactory.hh>
 
 namespace Ikarus {
 
@@ -82,16 +84,15 @@ public:
 
   /**
    * \brief Constructor for PathFollowing.
-   *
-   * \param nonLinearSolver Shared pointer to the nonlinear solver.
+   * \param nls The non linear solver.
    * \param steps Number of steps in the control routine.
    * \param stepSize Size of each step.
    * \param pathFollowingType Type of the path-following function.
    * \param adaptiveStepSizing Type of the adaptive step sizing strategy.
    */
-  PathFollowing(const std::shared_ptr<NLS>& nonLinearSolver, int steps, double stepSize,
-                PF pathFollowingType = ArcLength{}, ASS adaptiveStepSizing = {})
-      : nonLinearSolver_{nonLinearSolver},
+  PathFollowing(const std::shared_ptr<NLS>& nls, int steps, double stepSize, PF pathFollowingType = ArcLength{},
+                ASS adaptiveStepSizing = {})
+      : nonLinearSolver_{nls},
         steps_{steps},
         stepSize_{stepSize},
         pathFollowingType_{pathFollowingType},
@@ -104,13 +105,18 @@ public:
    */
   ControlInformation run();
 
+/* \brief returns the nonlinear solver */
+  NLS& nonlinearSolver() { return *nonLinearSolver_; }
+
 private:
   std::shared_ptr<NLS> nonLinearSolver_;
+
   int steps_;
   double stepSize_;
   PF pathFollowingType_;
   ASS adaptiveStepSizing_;
 };
+
 
 } // namespace Ikarus
 

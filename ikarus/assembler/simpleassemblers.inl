@@ -29,7 +29,7 @@ Eigen::VectorXd FlatAssemblerBase<B, FEC>::createFullVector(Eigen::Ref<const Eig
 }
 
 template <typename B, typename FEC>
-void VectorFlatAssembler<B, FEC>::assembleRawVectorImpl(const FERequirementType& feRequirements,
+void VectorFlatAssembler<B, FEC>::assembleRawVectorImpl(const FERequirement& feRequirements,VectorAffordance affo,
                                                         Eigen::VectorXd& assemblyVec) {
   assemblyVec.setZero(this->size());
   Eigen::VectorXd vecLocal;
@@ -37,7 +37,7 @@ void VectorFlatAssembler<B, FEC>::assembleRawVectorImpl(const FERequirementType&
   for (auto& fe : this->finiteElements()) {
     vecLocal.setZero(fe.size());
     dofs.resize(0);
-    calculateVector(fe, feRequirements, vecLocal);
+    calculateVector(fe, feRequirements,affo, vecLocal);
     using FEHelper::globalIndices;
     globalIndices(fe, dofs);
     for (int i = 0; auto id : dofs) {
@@ -48,14 +48,14 @@ void VectorFlatAssembler<B, FEC>::assembleRawVectorImpl(const FERequirementType&
 }
 
 template <typename B, typename FEC>
-Eigen::VectorXd& VectorFlatAssembler<B, FEC>::getRawVectorImpl(const FERequirementType& feRequirements) {
-  assembleRawVectorImpl(feRequirements, vecRaw_);
+Eigen::VectorXd& VectorFlatAssembler<B, FEC>::getRawVectorImpl(const FERequirement& feRequirements,VectorAffordance affo) {
+  assembleRawVectorImpl(feRequirements,affo, vecRaw_);
   return vecRaw_;
 }
 
 template <typename B, typename FEC>
-Eigen::VectorXd& VectorFlatAssembler<B, FEC>::getVectorImpl(const FERequirementType& feRequirements) {
-  assembleRawVectorImpl(feRequirements, vec_);
+Eigen::VectorXd& VectorFlatAssembler<B, FEC>::getVectorImpl(const FERequirement& feRequirements,VectorAffordance affo) {
+  assembleRawVectorImpl(feRequirements,affo, vec_);
   for (auto i = 0U; i < this->size(); ++i)
     if (this->isConstrained(i))
       vec_[i] = 0;
@@ -63,14 +63,14 @@ Eigen::VectorXd& VectorFlatAssembler<B, FEC>::getVectorImpl(const FERequirementT
 }
 
 template <typename B, typename FEC>
-Eigen::VectorXd& VectorFlatAssembler<B, FEC>::getReducedVectorImpl(const FERequirementType& feRequirements) {
+Eigen::VectorXd& VectorFlatAssembler<B, FEC>::getReducedVectorImpl(const FERequirement& feRequirements,VectorAffordance affo) {
   vecRed_.setZero(this->reducedSize());
   Eigen::VectorXd vecLocal;
   std::vector<GlobalIndex> dofs;
   for (auto& fe : this->finiteElements()) {
     vecLocal.setZero(fe.size());
     dofs.resize(0);
-    calculateVector(fe, feRequirements, vecLocal);
+    calculateVector(fe, feRequirements,affo, vecLocal);
     using FEHelper::globalIndices;
     globalIndices(fe, dofs);
     assert(static_cast<long int>(dofs.size()) == vecLocal.size() && "The returned vector has wrong rowSize!");
@@ -86,13 +86,13 @@ Eigen::VectorXd& VectorFlatAssembler<B, FEC>::getReducedVectorImpl(const FERequi
 }
 
 template <typename B, typename FEC>
-void SparseFlatAssembler<B, FEC>::assembleRawMatrixImpl(const FERequirementType& feRequirements,
+void SparseFlatAssembler<B, FEC>::assembleRawMatrixImpl(const FERequirement& feRequirements,MatrixAffordance affordance,
                                                         Eigen::SparseMatrix<double>& assemblyMat) {
   assemblyMat.coeffs().setZero();
   Eigen::MatrixXd A;
   for (size_t elementIndex = 0; const auto& fe : this->finiteElements()) {
     A.setZero(fe.size(), fe.size());
-    calculateMatrix(fe, feRequirements, A);
+    calculateMatrix(fe, feRequirements,affordance, A);
     assert(static_cast<Eigen::Index>(std::sqrt(elementLinearIndices_[elementIndex].size())) == A.rows() &&
            "The returned matrix has wrong rowSize!");
     assert(static_cast<Eigen::Index>(std::sqrt(elementLinearIndices_[elementIndex].size())) == A.cols() &&
@@ -104,16 +104,24 @@ void SparseFlatAssembler<B, FEC>::assembleRawMatrixImpl(const FERequirementType&
 }
 
 template <typename B, typename FEC>
-Eigen::SparseMatrix<double>& SparseFlatAssembler<B, FEC>::getRawMatrixImpl(const FERequirementType& feRequirements) {
-  std::call_once(sparsePreProcessorRaw_, [&]() { preProcessSparseMatrix(spMatRaw_); });
-  assembleRawMatrixImpl(feRequirements, spMatRaw_);
+Eigen::SparseMatrix<double>& SparseFlatAssembler<B, FEC>::getRawMatrixImpl(const FERequirement& feRequirements,MatrixAffordance affordance) {
+  if (not sparsePreProcessorRaw_)
+   {preProcessSparseMatrix(spMatRaw_);
+   sparsePreProcessorRaw_=true;
+   }
+
+  assembleRawMatrixImpl(feRequirements,affordance, spMatRaw_);
   return spMatRaw_;
 }
 
 template <typename B, typename FEC>
-Eigen::SparseMatrix<double>& SparseFlatAssembler<B, FEC>::getMatrixImpl(const FERequirementType& feRequirements) {
-  std::call_once(sparsePreProcessor_, [&]() { preProcessSparseMatrix(spMat_); });
-  assembleRawMatrixImpl(feRequirements, spMat_);
+Eigen::SparseMatrix<double>& SparseFlatAssembler<B, FEC>::getMatrixImpl(const FERequirement& feRequirements,MatrixAffordance affordance) {
+    if (not sparsePreProcessor_)
+    {
+       preProcessSparseMatrix(spMat_);
+       sparsePreProcessor_=true;
+    }
+  assembleRawMatrixImpl(feRequirements,affordance, spMat_);
   for (auto i = 0U; i < this->size(); ++i)
     if (this->isConstrained(i))
       spMat_.col(i) *= 0;
@@ -128,15 +136,19 @@ Eigen::SparseMatrix<double>& SparseFlatAssembler<B, FEC>::getMatrixImpl(const FE
 
 template <typename B, typename FEC>
 Eigen::SparseMatrix<double>& SparseFlatAssembler<B, FEC>::getReducedMatrixImpl(
-    const FERequirementType& feRequirements) {
-  std::call_once(sparsePreProcessorReduced_, [&]() { preProcessSparseMatrixReduced(spMatReduced_); });
+    const FERequirement& feRequirements,MatrixAffordance affordance) {
+          if (not sparsePreProcessorReduced_)
+    {
+       preProcessSparseMatrixReduced(spMatReduced_);
+       sparsePreProcessorReduced_=true;
+    }
   spMatReduced_.coeffs().setZero();
   Eigen::MatrixXd A;
   std::vector<GlobalIndex> dofs;
   for (size_t elementIndex = 0; const auto& fe : this->finiteElements()) {
     A.setZero(fe.size(), fe.size());
     dofs.resize(0);
-    calculateMatrix(fe, feRequirements, A);
+    calculateMatrix(fe, feRequirements,affordance, A);
     using FEHelper::globalIndices;
     globalIndices(fe, dofs);
     assert(dofs.size() == static_cast<unsigned>(A.rows()) && "The returned matrix has wrong rowSize!");
@@ -252,7 +264,7 @@ void SparseFlatAssembler<B, FEC>::preProcessSparseMatrixReduced(Eigen::SparseMat
 }
 
 template <typename B, typename FEC>
-void DenseFlatAssembler<B, FEC>::assembleRawMatrixImpl(const FERequirementType& feRequirements,
+void DenseFlatAssembler<B, FEC>::assembleRawMatrixImpl(const FERequirement& feRequirements,MatrixAffordance affordance,
                                                        Eigen::MatrixXd& assemblyMat) {
   assemblyMat.setZero(this->size(), this->size());
   Eigen::MatrixXd matLocal;
@@ -260,7 +272,7 @@ void DenseFlatAssembler<B, FEC>::assembleRawMatrixImpl(const FERequirementType& 
   for (auto& fe : this->finiteElements()) {
     matLocal.setZero(fe.size(), fe.size());
     dofs.resize(0);
-    calculateMatrix(fe, feRequirements, matLocal);
+    calculateMatrix(fe, feRequirements,affordance, matLocal);
     using FEHelper::globalIndices;
     globalIndices(fe, dofs);
     for (auto i = 0; auto idi : dofs) {
@@ -274,14 +286,14 @@ void DenseFlatAssembler<B, FEC>::assembleRawMatrixImpl(const FERequirementType& 
 }
 
 template <typename B, typename FEC>
-Eigen::MatrixXd& DenseFlatAssembler<B, FEC>::getRawMatrixImpl(const FERequirementType& feRequirements) {
-  assembleRawMatrixImpl(feRequirements, matRaw_);
+Eigen::MatrixXd& DenseFlatAssembler<B, FEC>::getRawMatrixImpl(const FERequirement& feRequirements,MatrixAffordance affordance) {
+  assembleRawMatrixImpl(feRequirements,affordance, matRaw_);
   return matRaw_;
 }
 
 template <typename B, typename FEC>
-Eigen::MatrixXd& DenseFlatAssembler<B, FEC>::getMatrixImpl(const FERequirementType& feRequirements) {
-  assembleRawMatrixImpl(feRequirements, mat_);
+Eigen::MatrixXd& DenseFlatAssembler<B, FEC>::getMatrixImpl(const FERequirement& feRequirements,MatrixAffordance affordance) {
+  assembleRawMatrixImpl(feRequirements,affordance, mat_);
   for (auto i = 0U; i < this->size(); ++i)
     if (this->isConstrained(i))
       mat_.col(i).setZero();
@@ -295,14 +307,14 @@ Eigen::MatrixXd& DenseFlatAssembler<B, FEC>::getMatrixImpl(const FERequirementTy
 }
 
 template <typename B, typename FEC>
-Eigen::MatrixXd& DenseFlatAssembler<B, FEC>::getReducedMatrixImpl(const FERequirementType& feRequirements) {
+Eigen::MatrixXd& DenseFlatAssembler<B, FEC>::getReducedMatrixImpl(const FERequirement& feRequirements,MatrixAffordance affordance) {
   matRed_.setZero(this->reducedSize(), this->reducedSize());
   Eigen::MatrixXd matLocal;
   std::vector<GlobalIndex> dofs;
   for (auto& fe : this->finiteElements()) {
     matLocal.setZero(fe.size(), fe.size());
     dofs.resize(0);
-    calculateMatrix(fe, feRequirements, matLocal);
+    calculateMatrix(fe, feRequirements,affordance, matLocal);
     using FEHelper::globalIndices;
     globalIndices(fe, dofs);
     assert(dofs.size() == static_cast<unsigned>(matLocal.rows()) && "The returned matrix has wrong rowSize!");

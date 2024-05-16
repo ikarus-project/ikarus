@@ -11,16 +11,19 @@
 #include <ikarus/finiteelements/fefactory.hh>
 #include <ikarus/utils/basis.hh>
 
-template <typename GridView, typename PreBasis, typename Skills>
-auto checkFESByAutoDiff(const GridView& gridView, const PreBasis& pb, Skills&& skills) {
+template <typename GridView, typename PreBasis, typename Skills,typename AffordanceColl>
+auto checkFESByAutoDiff(const GridView& gridView, const PreBasis& pb, Skills&& skills,AffordanceColl affo) {
   auto basis = Ikarus::makeBasis(gridView, pb);
   Eigen::VectorXd d;
   d.setRandom(basis.flat().dimension());
   double lambda = 7.3;
 
-  auto req = Ikarus::FErequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
-  req.insertGlobalSolution(Ikarus::FESolutions::displacement, d)
-      .insertParameter(Ikarus::FEParameter::loadfactor, lambda);
+  auto fe = Ikarus::makeFE(basis, std::forward<Skills>(skills));
+  using FE = decltype(fe);
+
+  auto req = typename FE::Requirement();
+  req.insertGlobalSolution( d)
+      .insertParameter( lambda);
   Dune::TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() by Automatic Differentiation");
   for (auto element : elements(gridView)) {
     auto localView = basis.flat().localView();
@@ -28,7 +31,7 @@ auto checkFESByAutoDiff(const GridView& gridView, const PreBasis& pb, Skills&& s
     auto nDOF        = localView.size();
     const double tol = 1e-10;
 
-    auto fe = Ikarus::makeFE(basis, std::forward<Skills>(skills));
+    
     fe.bind(element);
 
     const std::string feClassName = Dune::className(fe);
@@ -44,11 +47,11 @@ auto checkFESByAutoDiff(const GridView& gridView, const PreBasis& pb, Skills&& s
     R.setZero(nDOF);
     RAutoDiff.setZero(nDOF);
 
-    calculateMatrix(fe, req, K);
-    calculateMatrix(feAutoDiff, req, KAutoDiff);
+    calculateMatrix(fe, req,affo.matrixAffordance(), K);
+    calculateMatrix(feAutoDiff, req,affo.matrixAffordance(), KAutoDiff);
 
-    calculateVector(fe, req, R);
-    calculateVector(feAutoDiff, req, RAutoDiff);
+    calculateVector(fe, req,affo.vectorAffordance(), R);
+    calculateVector(feAutoDiff, req,affo.vectorAffordance(), RAutoDiff);
 
     t.check(K.isApprox(KAutoDiff, tol),
             "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
@@ -64,7 +67,7 @@ auto checkFESByAutoDiff(const GridView& gridView, const PreBasis& pb, Skills&& s
                 feClassName)
         << "The difference is " << (R - RAutoDiff);
 
-    t.check(Dune::FloatCmp::eq(calculateScalar(fe, req), calculateScalar(feAutoDiff, req), tol),
+    t.check(Dune::FloatCmp::eq(calculateScalar(fe, req,affo.scalarAffordance()), calculateScalar(feAutoDiff, req,affo.scalarAffordance()), tol),
             "Mismatch between the energies obtained from explicit implementation and the one based on "
             "automatic differentiation for " +
                 feClassName);

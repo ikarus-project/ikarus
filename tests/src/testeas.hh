@@ -15,7 +15,7 @@ requires(FE::template hasSkill<Ikarus::EnhancedAssumedStrainsPre::Skill>())
 struct ElementTest<FE>
 {
   [[nodiscard]] static auto test() {
-    auto easFunctor = [](auto& nonLinOp, auto& fe, auto& req) {
+    auto easFunctor = [](auto& nonLinOp, auto& fe, auto& req, auto& affo) {
       const auto& localView = fe.localView();
       const auto& element   = localView.element();
       constexpr int gridDim = std::remove_cvref_t<decltype(element)>::dimension;
@@ -42,7 +42,7 @@ struct ElementTest<FE>
         }
         t.subTest(checkJacobianOfElement(subOp, messageIfFailed));
 
-        t.subTest(checkFEByAutoDiff(nonLinOp, fe, req, messageIfFailed));
+        t.subTest(checkFEByAutoDiff(nonLinOp, fe, req,affo, messageIfFailed));
 
         auto stiffnessMatrix = subOp.derivative();
 
@@ -85,8 +85,8 @@ struct ElementTest<FE>
           };
           easVariant(testM);
 
-          auto requirements = Ikarus::FERequirements();
-          t.checkThrow([&]() { calculateScalar(fe, requirements); })
+          auto requirements = typename std::remove_cvref_t<decltype(fe)>::Requirement();
+          t.checkThrow([&]() { calculateScalar(fe, requirements, Ikarus::ScalarAffordance::mechanicalPotentialEnergy); })
               << "fe.calculateScalar should have failed for numberOfEASParameter > 0";
         }
 

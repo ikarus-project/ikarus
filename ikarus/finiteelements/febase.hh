@@ -29,15 +29,14 @@ class FE;
  * \tparam FER The requirements for the finite element.
  * \tparam useEigenRef A boolean flag indicating whether to use Eigen references.
  */
-template <typename BH, typename FER = FERequirements<>, bool useFlat = true, bool useEigenRef = false>
+template <typename BH, bool useFlat = true, bool useEigenRef = false>
 struct PreFE
 {
   using BasisHandler                      = BH;
-  using FERequirements                    = FER;
   static constexpr int worldDim           = BasisHandler::Basis::worlddim;
   static constexpr bool useEigenReference = useEigenRef;
   static constexpr bool useFlatBasis      = useFlat;
-  using Traits                            = FETraits<BH, FER, useEigenRef, useFlat>;
+  using Traits                            = FETraits<BH, useEigenRef, useFlat>;
 
   template <template <typename, typename> class... Skills>
   using FE = FE<PreFE, Skills...>;
@@ -92,7 +91,7 @@ public:
   using GridView          = typename Traits::GridView;    ///< Type of the global view.
   using GlobalIndex       = typename Traits::GlobalIndex; ///< Type of the global index.
   using GridElement       = typename Traits::Element;     ///< Type of the grid element.
-  using FERequirementType = typename Traits::FERequirementType;
+  using typename Mixin::Requirement;
 
   static constexpr int myDim    = Traits::mydim;
   static constexpr int worldDim = Traits::worlddim;

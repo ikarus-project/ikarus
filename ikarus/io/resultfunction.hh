@@ -50,7 +50,7 @@ class ResultFunction : public Dune::VTKFunction<typename FE::GridView>
 {
 public:
   using FiniteElement          = FE;
-  using FERequirementType      = typename FiniteElement::FERequirementType;
+  using FERequirementType      = typename FiniteElement::Requirement;
   using GridView               = typename FiniteElement::GridView;
   using ctype                  = typename GridView::ctype;
   constexpr static int griddim = GridView::dimension;
@@ -145,7 +145,7 @@ private:
  * \tparam UserFunction Type of the user-defined function for custom result evaluation (default is DefaultUserFunction)
  */
 template <template <typename, int, int> class RT, typename UserFunction = Impl::DefaultUserFunction, typename FE>
-auto makeResultFunction(std::vector<FE>* fes, const typename FE::FERequirementType& req) {
+auto makeResultFunction(std::vector<FE>* fes, const typename FE::Requirement& req) {
   return std::make_shared<ResultFunction<FE, RT, UserFunction>>(fes, req);
 }
 
@@ -166,7 +166,7 @@ auto makeResultFunction(std::vector<FE>* fes, const typename FE::FERequirementTy
  * DefaultUserFunction)
  */
 template <template <typename, int, int> class RT, typename UserFunction = Impl::DefaultUserFunction, typename FE>
-auto makeResultVtkFunction(std::vector<FE>* fes, const typename FE::FERequirementType& req) {
+auto makeResultVtkFunction(std::vector<FE>* fes, const typename FE::Requirement& req) {
   return Dune::Vtk::Function<typename FE::GridView>(std::make_shared<ResultFunction<FE, RT, UserFunction>>(fes, req));
 }
 

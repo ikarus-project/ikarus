@@ -30,6 +30,7 @@ Eigen::VectorXd createFullVector(const Eigen::VectorXd &reducedVector) // (4)!
 size_t constraintsBelow(size_t i) // (5)!
 bool isConstrained(size_t i) // (6)!
 size_t estimateOfConnectivity() // (7)!
+void bind(const RequirementType& fErequirements, AffordanceCollection<ScalarAffordance,VectorAffordance,MatrixAffordance> affo) // (8)!
 ```
 
 1. Returns the number of degrees of freedom.
@@ -39,14 +40,16 @@ size_t estimateOfConnectivity() // (7)!
     obtained from the reduced vector.
 5. Indicates how many degrees of freedom {0,1,...i-1} are fixed.
 6. Indicates whether the degree of freedom `i` is fixed.
-7. Returns 8x the number of grid elements, which is an estimate for the connectivity. It can be used to allocate vectors.
+7. An estimate for the connectivity. It can be used to allocate vectors.
+8. The assembler can be bound to specific requirements and an affordance collection
 
 ## Scalar assembler
 
 It has the capabilities of [FlatAssemblerBase](#flatassemblerbase) plus one additional function:
 
 ```cpp
-double& getScalar(const RequirementType& fErequirements)
+double& scalar(const RequirementType& fErequirements, ScalarAffordance affo)
+double& scalar()
 ```
 
 This assembler can be used when only a scalar quantity is of interest and the assembly of matrices or vectors is irrelevant.
@@ -57,7 +60,7 @@ It assembles the requested scalar quantity. A call to this function could look l
 
 ```cpp
 ScalarAssembler myAssembler(...) // (1)!
-const auto& K = myAssembler.getScalar(feRequirements) // (2)!
+const auto& K = myAssembler.scalar(feRequirements, scalarAffordance) // (2)!
 ```
 
 1. Represents the construction of the desired assembler.
@@ -68,13 +71,13 @@ const auto& K = myAssembler.getScalar(feRequirements) // (2)!
 It has all the features of [ScalarAssembler](#scalarassembler) plus more, like:
 
 ```cpp
-Eigen::VectorXd& getRawVector(const FERequirementType &feRequirements)
-Eigen::VectorXd& getVector(const FERequirementType& feRequirements)
-Eigen::VectorXd& getReducedVector(const FERequirementType& feRequirements)
+Eigen::VectorXd& vector(const FERequirementType& feRequirements, VectorAffordance affo, EnforcingDBCOption qt)
+Eigen::VectorXd& vector( EnforcingDBCOption qt)
 ```
-
-The first one returns a vector without considering the boundary conditions.
-The remaining, as the name suggests, returns a full vector or a reduced vector considering boundary conditions.
+The Enum `EnforcingDBCOption` dictates how the Dirichlet boundary conditions should be applied
+The `EnforcingDBCOption::Raw` returns a vector without considering the boundary conditions.
+The `EnforcingDBCOption::Full` option returns a full vector, where zeros are written for the fixed degrees of freedom and `EnforcingDBCOption::Reduced` returns reduced vector removing the fixed degrees of freedom.
+The second function can be used if the assembler is bound to specific fe requirements and affordances.
 They work in the same way as the scalar assembly functions of [ScalarAssembler](#scalarassembler).
 The available FE requirements are explained on the [FE requirements](feRequirements.md) page.
 
@@ -83,12 +86,16 @@ The available FE requirements are explained on the [FE requirements](feRequireme
 It offers the functions of [VectorFlatAssembler](#vectorflatassembler) plus more, like:
 
 ```cpp
-Eigen::SparseMatrix<double> &getRawMatrix(const FERequirementType &feRequirements)
-Eigen::SparseMatrix<double> &getMatrix(const FERequirementType &feRequirements)
-Eigen::SparseMatrix<double> &getReducedMatrix(const FERequirementType &feRequirements)
+Eigen::SparseMatrix<double> &matrix(const FERequirementType &feRequirements,MatrixAffordance affo, EnforcingDBCOption qt)
+Eigen::SparseMatrix<double> &matrix(EnforcingDBCOption qt)
 ```
 
 A sparse matrix is returned.
+The Enum `EnforcingDBCOption` dictates how the Dirichlet boundary conditions should be applied
+The `EnforcingDBCOption::Raw` returns a matrix without considering the boundary conditions.
+The `EnforcingDBCOption::Full` option returns a full matrx, where zeros are written on the  rows and columns associated to fixed degrees of freedom  and a one is written on the diagonal.
+ `EnforcingDBCOption::Reduced` returns reduced matrix removing the rows and columns associated to fixed degrees of freedom.
+The second function can be used if the assembler is bound to specific fe requirements and affordances.
 They work in the same way as the vector assembly functions of [VectorFlatAssembler](#vectorflatassembler).
 The available FE requirements are explained on the [FE requirements](feRequirements.md) page.
 
@@ -98,7 +105,6 @@ The only difference between the [SparseFlatAssembler](#sparseflatassembler) and 
 DenseFlatAssembler returns a dense matrix.
 
 ```cpp
-Eigen::MatrixXd &getRawMatrix(const FERequirementType &feRequirements)
-Eigen::MatrixXd &getMatrix(const FERequirementType &feRequirements)
-Eigen::MatrixXd &getReducedMatrix(const FERequirementType &feRequirements)
+Eigen::MatrixXd &matrix(const FERequirementType &feRequirements,MatrixAffordance affo, EnforcingDBCOption qt)
+Eigen::MatrixXd &matrix(EnforcingDBCOption qt)
 ```

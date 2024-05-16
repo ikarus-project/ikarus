@@ -2,6 +2,6 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 # install headers
-install(FILES simpleassemblers.inl simpleassemblers.hh
+install(FILES simpleassemblers.inl simpleassemblers.hh dirichletbcenforcement.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/assembler
 )

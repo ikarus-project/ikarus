@@ -2,6 +2,6 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 # install headers
-install(FILES newtonraphson.hh trustregion.hh newtonraphsonwithscalarsubsidiaryfunction.hh
+install(FILES newtonraphson.hh trustregion.hh newtonraphsonwithscalarsubsidiaryfunction.hh nonlinearsolverfactory.hh settingsbase.hh
               solverinfos.hh DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/solver/nonlinearsolver
 )

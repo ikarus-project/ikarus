@@ -28,10 +28,10 @@ def linElasticTest(easBool):
         elements.append(3)
 
     req = ikarus.FERequirements()
-    req.addAffordance(iks.ScalarAffordances.mechanicalPotentialEnergy)
+    req.addAffordance(iks.ScalarAffordance.mechanicalPotentialEnergy)
 
     grid = dune.grid.structuredGrid(lowerLeft, upperRight, elements)
-    #grid.hierarchicalGrid.globalRefine(4)
+    # grid.hierarchicalGrid.globalRefine(4)
     basisLagrange12 = dune.functions.defaultGlobalBasis(
         grid, dune.functions.Power(dune.functions.Lagrange(order=1), 2)
     )
@@ -78,7 +78,7 @@ def linElasticTest(easBool):
         neumannVertices[indexSet.index(v)]=loadTopEdgePredicate(v.geometry.center)
 
     boundaryPatch = iks.utils.boundaryPatch(grid, neumannVertices)
-    #print(help(iks.finite_elements))
+    # print(help(iks.finite_elements))
     nBLoad= iks.finite_elements.neumannBoundaryLoad(boundaryPatch,neumannLoad)
 
     linElastic = iks.finite_elements.linearElastic(youngs_modulus=1000, nu=0.2)
@@ -118,12 +118,14 @@ def linElasticTest(easBool):
     assembler = iks.assembler.sparseFlatAssembler(fes, dirichletValues)
     assemblerDense = iks.assembler.denseFlatAssembler(fes, dirichletValues)
 
-    Msparse = assembler.getMatrix(req)
+    Msparse = assembler.matrix(
+        req, iks.MatrixAffordance.stiffness, iks.EnforcingDBCOption
+    .Full)
     forces = assembler.getVector(req)
 
     x = sp.sparse.linalg.spsolve(Msparse, -forces)
     fx = flatBasis.asFunction(x)
-    #grid.plot()
+    # grid.plot()
     req.insertGlobalSolution(iks.FESolutions.displacement, x)
     # Test calculateAt Function
     indexSet = grid.indexSet

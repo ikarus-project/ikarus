@@ -23,6 +23,7 @@
 #include <ikarus/assembler/simpleassemblers.hh>
 #include <ikarus/controlroutines/loadcontrol.hh>
 #include <ikarus/finiteelements/mechanics/kirchhoffloveshell.hh>
+#include <ikarus/utils/nonlinopfactory.hh>
 #include <ikarus/io/resultfunction.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/solver/nonlinearsolver/trustregion.hh>
@@ -104,33 +105,20 @@ static auto NonLinearKLShellLoadControlTR() {
       dirichletFlags[localView.index(localIndex)] = true;
   });
 
-  auto sparseAssembler = SparseFlatAssembler(fes, dirichletValues);
+  auto sparseAssembler = makeSparseFlatAssembler(fes, dirichletValues);
 
   Eigen::VectorXd d;
   d.setZero(basis.flat().size());
   double lambda = 0.0;
 
-  auto req = FERequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
+  auto req = FEType::Requirement();
+    req.insertGlobalSolution( d)
+        .insertParameter(lambda);
 
-  auto residualFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
-    req.insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
-        .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal);
-    return sparseAssembler.getVector(req);
-  };
+  [[maybe_unused]] auto req2 = FEType::Requirement(d,lambda);
 
-  auto KFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
-    req.insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
-        .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal);
-    return sparseAssembler.getMatrix(req);
-  };
-
-  auto energyFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
-    req.insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
-        .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal);
-    return sparseAssembler.getScalar(req);
-  };
-
-  auto nonLinOp = NonLinearOperator(functions(energyFunction, residualFunction, KFunction), parameter(d, lambda));
+  sparseAssembler->bind(req, Ikarus::AffordanceCollections::elastoStatics);
+  auto nonLinOp = Ikarus::NonLinearOperatorFactory::op(sparseAssembler, EnforcingDBCOption::Reduced);
 
   t.check(utils::checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << "Check gradient failed";
@@ -221,7 +209,8 @@ auto singleElementTest() {
 
     t.subTest(checkFESByAutoDiff(
         gridView, power<3>(nurbs()),
-        Ikarus::skills(klShell, Ikarus::volumeLoad<3>(vL), Ikarus::neumannBoundaryLoad(&neumannBoundary, nBL))));
+        Ikarus::skills(klShell, Ikarus::volumeLoad<3>(vL), Ikarus::neumannBoundaryLoad(&neumannBoundary, nBL)),Ikarus::AffordanceCollections::elastoStatics
+        ));
   }
   return t;
 }

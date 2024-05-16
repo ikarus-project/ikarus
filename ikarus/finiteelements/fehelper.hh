@@ -16,6 +16,7 @@ namespace Ikarus::FEHelper {
  *
  * \tparam Traits Type of the FE traits.
  * \tparam ST Scalar type for the local solution vector.
+ * \tparam Vector Global solution vector
  *
  * \param x The global solution vector.
  * \param localView Local view of the element.
@@ -23,9 +24,9 @@ namespace Ikarus::FEHelper {
  *
  * \return A Dune block vector representing the solution quantities at each node.
  * */
-template <typename Traits, typename ST>
+template <typename Traits, typename Vector, typename ST>
 auto localSolutionBlockVector(
-    const typename Traits::FERequirementType::SolutionVectorTypeRaw& x, const typename Traits::LocalView& localView,
+    const Vector& x, const typename Traits::LocalView& localView,
     const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) {
   constexpr int worldDim = Traits::worlddim;
   const auto& fe         = localView.tree().child(0).finiteElement();

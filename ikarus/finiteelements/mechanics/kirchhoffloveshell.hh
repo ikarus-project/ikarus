@@ -52,7 +52,7 @@ public:
   using Traits            = PreFE::Traits;
   using BasisHandler      = typename Traits::BasisHandler;
   using FlatBasis         = typename Traits::FlatBasis;
-  using FERequirementType = typename Traits::FERequirementType;
+  using Requirement = FERequirementsFactory<FESolutions::displacement, FEParameter::loadfactor,Traits::useEigenRef>::type;
   using LocalView         = typename Traits::LocalView;
   using Geometry          = typename Traits::Geometry;
   using GridView          = typename Traits::GridView;
@@ -138,9 +138,9 @@ public:
    */
   template <typename ST = double>
   auto displacementFunction(
-      const FERequirementType& par,
+      const Requirement& par,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const {
-    const auto& d = par.getGlobalSolution(Ikarus::FESolutions::displacement);
+    const auto& d = par.globalSolution();
     auto disp     = Ikarus::FEHelper::localSolutionBlockVector<Traits>(d, underlying().localView(), dx);
     Dune::StandardLocalFunction uFunction(
         localBasis_, disp, std::make_shared<const Geometry>(underlying().localView().element().geometry()));
@@ -174,7 +174,7 @@ public:
    */
   template <template <typename, int, int> class RT>
   requires(canProvideResultType<RT>())
-  auto calculateAtImpl([[maybe_unused]] const FERequirementType& req,
+  auto calculateAtImpl([[maybe_unused]] const Requirement& req,
                        [[maybe_unused]] const Dune::FieldVector<double, Traits::mydim>& local)
       -> ResultWrapper<RT<double, myDim, worldDim>, ResultShape::Vector> {
     DUNE_THROW(Dune::NotImplemented, "No results are implemented");
@@ -246,12 +246,14 @@ protected:
 
   template <typename ST>
   void calculateMatrixImpl(
-      const FERequirementType& par, typename Traits::template MatrixType<ST> K,
+      const Requirement& par, const MatrixAffordance& affo,typename Traits::template MatrixType<ST> K,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const {
+                        if (affo != MatrixAffordance::stiffness)
+        DUNE_THROW(Dune::NotImplemented, "MatrixAffordance not implemented: "+toString(affo));
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     const auto uFunction = displacementFunction(par, dx);
-    const auto& lambda   = par.getParameter(FEParameter::loadfactor);
+    const auto& lambda   = par.parameter();
     const auto geo       = underlying().localView().element().geometry();
 
     for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
@@ -289,12 +291,14 @@ protected:
 
   template <typename ST>
   void calculateVectorImpl(
-      const FERequirementType& par, typename Traits::template VectorType<ST> force,
+      const Requirement& par, const VectorAffordance& affo, typename Traits::template VectorType<ST> force,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const {
+                if (affo != VectorAffordance::forces)
+        DUNE_THROW(Dune::NotImplemented, "VectorAffordance not implemented: "+ toString(affo));
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     const auto uFunction = displacementFunction(par, dx);
-    const auto& lambda   = par.getParameter(FEParameter::loadfactor);
+    const auto& lambda   = par.parameter();
     const auto geo       = underlying().localView().element().geometry();
 
     // Internal forces
@@ -320,12 +324,14 @@ protected:
 
   template <typename ST>
   auto calculateScalarImpl(
-      const FERequirementType& par,
+      const Requirement& par, const ScalarAffordance& affo,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const -> ST {
+        if (affo != ScalarAffordance::mechanicalPotentialEnergy)
+        DUNE_THROW(Dune::NotImplemented, "ScalarAffordance not implemented: " + toString(affo));
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     const auto uFunction = displacementFunction(par, dx);
-    const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
+    const auto& lambda   = par.parameter();
     ST energy            = 0.0;
 
     const auto geo = underlying().localView().element().geometry();

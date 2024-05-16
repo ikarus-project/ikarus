@@ -45,7 +45,7 @@ class Traction
 {
 public:
   using Traits                  = PreFE::Traits;
-  using FERequirementType       = typename Traits::FERequirementType;
+  using Requirement = FERequirementsFactory<FESolutions::displacement, FEParameter::loadfactor,Traits::useEigenRef>::type;
   using LocalView               = typename Traits::LocalView;
   using GridView                = typename Traits::GridView;
   static constexpr int myDim    = Traits::mydim;
@@ -64,18 +64,18 @@ public:
 protected:
   template <template <typename, int, int> class RT>
   requires Dune::AlwaysFalse<RT<double, 1, 1>>::value
-  auto calculateAtImpl(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local,
+  auto calculateAtImpl(const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<0>) const {}
 
   template <typename ST>
   auto calculateScalarImpl(
-      const FERequirementType& par,
+      const Requirement& par,const ScalarAffordance& affo,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const -> ST {
     if (not neumannBoundary_ and not neumannBoundaryLoad_)
       return 0.0;
     ST energy            = 0.0;
     const auto uFunction = underlying().displacementFunction(par, dx);
-    const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
+    const auto& lambda   = par.parameter();
     auto& element        = underlying().localView().element();
 
     for (auto&& intersection : intersections(neumannBoundary_->gridView(), element)) {
@@ -104,14 +104,14 @@ protected:
 
   template <typename ST>
   void calculateVectorImpl(
-      const FERequirementType& par, typename Traits::template VectorType<ST> force,
+      const Requirement& par,const VectorAffordance& affo, typename Traits::template VectorType<ST> force,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const {
     if (not neumannBoundary_ and not neumannBoundaryLoad_)
       return;
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     const auto uFunction = underlying().displacementFunction(par, dx);
-    const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
+    const auto& lambda   = par.parameter();
     auto& element        = underlying().localView().element();
 
     for (auto&& intersection : intersections(neumannBoundary_->gridView(), element)) {
@@ -139,7 +139,7 @@ protected:
 
   template <typename ST>
   void calculateMatrixImpl(
-      const FERequirementType&, typename Traits::template MatrixType<>,
+      const Requirement&,const MatrixAffordance& , typename Traits::template MatrixType<>,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& = std::nullopt) const {}
 
 private:

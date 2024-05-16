@@ -46,7 +46,7 @@ class VolumeLoad
 {
 public:
   using Traits                  = PreFE::Traits;
-  using FERequirementType       = typename Traits::FERequirementType;
+  using Requirement       = FERequirementsFactory<FESolutions::displacement, FEParameter::loadfactor,Traits::useEigenRef>::type;
   static constexpr int worldDim = Traits::worlddim;
   using Pre                     = VolumeLoadPre<worldDim>;
 
@@ -61,19 +61,19 @@ public:
 protected:
   template <template <typename, int, int> class RT>
   requires Dune::AlwaysFalse<RT<double, 1, 1>>::value
-  auto calculateAtImpl(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local,
+  auto calculateAtImpl(const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<0>) const {}
 
   template <typename ST>
   auto calculateScalarImpl(
-      const FERequirementType& par,
+      const Requirement& par, ScalarAffordance affo,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const -> ST {
     if (not volumeLoad_)
       return 0.0;
     ST energy            = 0.0;
     const auto uFunction = underlying().displacementFunction(par, dx);
     const auto geo       = underlying().geometry();
-    const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
+    const auto& lambda   = par.parameter();
 
     for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
       const auto uVal                      = uFunction.evaluate(gpIndex);
@@ -85,7 +85,7 @@ protected:
 
   template <typename ST>
   void calculateVectorImpl(
-      const FERequirementType& par, typename Traits::template VectorType<ST> force,
+      const Requirement& par, VectorAffordance affo, typename Traits::template VectorType<ST> force,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const {
     if (not volumeLoad_)
       return;
@@ -93,7 +93,7 @@ protected:
     using namespace Dune;
     const auto uFunction = underlying().displacementFunction(par, dx);
     const auto geo       = underlying().geometry();
-    const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
+    const auto& lambda   = par.parameter();
 
     for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
       const Eigen::Vector<double, worldDim> fext = volumeLoad_(geo.global(gp.position()), lambda);
@@ -107,7 +107,7 @@ protected:
 
   template <typename ST>
   void calculateMatrixImpl(
-      const FERequirementType& par, typename Traits::template MatrixType<> K,
+      const Requirement& par, MatrixAffordance, typename Traits::template MatrixType<> K,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const {}
 
 private:

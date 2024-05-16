@@ -40,7 +40,7 @@ template <bool useFlat, typename GridView, typename PreBasis>
 auto getFEBase(const GridView& gridView, const PreBasis& preBasis) {
   const auto basis = Ikarus::makeBasis(gridView, preBasis);
   auto element     = elements(gridView).begin();
-  auto fe          = Ikarus::makeFE<Ikarus::FERequirements<>, useFlat>(basis, Ikarus::skills());
+  auto fe          = Ikarus::makeFE<useFlat>(basis, Ikarus::skills());
   fe.bind(*element);
   return fe;
 }

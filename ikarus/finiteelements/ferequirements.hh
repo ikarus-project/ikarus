@@ -25,34 +25,34 @@ namespace Ikarus {
 // clang-format off
 
   /**
- * ScalarAffordances
- * \ingroup Affordancestags
+ * ScalarAffordance
+ * \ingroup Affordancetags
  * \brief A strongly typed enum class representing the scalar affordance
  */
 // cppcheck-suppress MAKE_ENUM
- MAKE_ENUM(ScalarAffordances,
+ MAKE_ENUM(ScalarAffordance,
             noAffordance,
             mechanicalPotentialEnergy,
             microMagneticPotentialEnergy
       );
 
   /**
-* VectorAffordances
-* \ingroup Affordancestags
+* VectorAffordance
+* \ingroup Affordancetags
 * \brief A strongly typed enum class representing the vector affordance
 */
-  MAKE_ENUM(VectorAffordances,
+  MAKE_ENUM(VectorAffordance,
             noAffordance,
             forces,
             microMagneticForces
       );
 
   /**
-* MatrixAffordances
-* \ingroup Affordancestags
+* MatrixAffordance
+* \ingroup Affordancetags
 * \brief A strongly typed enum class representing the matrix affordance
 */
-  MAKE_ENUM(MatrixAffordances,
+  MAKE_ENUM(MatrixAffordance,
             noAffordance,
             stiffness,
             materialstiffness,
@@ -88,43 +88,129 @@ namespace Ikarus {
 
 // clang-format on
 
+
+/**
+ * \brief Concept to check if a given type is one of the predefined affordance enums or the AffordanceCollection
+ */
+template <typename T>
+concept FEAffordance = std::is_same_v<std::remove_cvref_t<T>, ScalarAffordance> or
+                       std::is_same_v<std::remove_cvref_t<T>, VectorAffordance> or
+                       std::is_same_v<std::remove_cvref_t<T>, MatrixAffordance>;
+
 /**
  * \brief Struct representing a collection of affordances.
  */
-struct AffordanceCollectionImpl
+  template<FEAffordance... Affos> requires (sizeof...(Affos)<=3)
+  struct AffordanceCollection : public std::tuple<Affos...>
 {
-  ScalarAffordances scalarAffordances{ScalarAffordances::noAffordance};
-  VectorAffordances vectorAffordances{VectorAffordances::noAffordance};
-  MatrixAffordances matrixAffordances{MatrixAffordances::noAffordance};
+  using Base = std::tuple<Affos...>;
+
+AffordanceCollection()=default;
+constexpr AffordanceCollection(Affos... affos) : Base(affos...){}
+
+        static constexpr bool hasScalarAffordance = traits::hasType<ScalarAffordance,std::tuple<Affos...>>::value;
+        static constexpr bool hasVectorAffordance = traits::hasType<VectorAffordance,std::tuple<Affos...>>::value;
+        static constexpr bool hasMatrixAffordance = traits::hasType<MatrixAffordance,std::tuple<Affos...>>::value;
+    /**
+   * \brief Check if a specific affordance is present in the requirements.
+   *
+   * This function checks if the specified affordance is present in the requirements.
+   *
+   * \tparam Affordance Type of affordance to be checked.
+   * \param affordance The affordance to be checked.
+   * \return True if the affordance is present, false otherwise.
+   */
+  template <FEAffordance Affordance>
+  constexpr bool hasAffordance(Affordance&& affordances) const {
+     if constexpr (std::is_same_v<std::remove_cvref_t<Affordance>, AffordanceCollection>)
+      return affordances == *this;
+     else
+     {
+        if constexpr (std::is_same_v<std::remove_cvref_t<Affordance>, ScalarAffordance>)
+{        if constexpr (hasScalarAffordance)
+            return affordances == std::get<ScalarAffordance>(*this);
+            else
+            return false;}
+if constexpr (std::is_same_v<std::remove_cvref_t<Affordance>, VectorAffordance>)
+{        if constexpr (hasVectorAffordance)
+            return affordances == std::get<VectorAffordance>(*this);
+            else
+            return false;}
+            if constexpr (std::is_same_v<std::remove_cvref_t<Affordance>, MatrixAffordance>)
+{        if constexpr (hasMatrixAffordance)
+            return affordances == std::get<MatrixAffordance>(*this);
+            else
+            return false;}
+     }
+     return false;
+  }
+
+  auto scalarAffordance() const requires hasScalarAffordance
+  {
+    return std::get<ScalarAffordance>(*this);
+  }
+    auto vectorAffordance() const requires hasVectorAffordance
+  {
+    return std::get<VectorAffordance>(*this);
+  }
+    auto matrixAffordance() const requires hasMatrixAffordance
+  {
+    return std::get<MatrixAffordance>(*this);
+  }
+
+
+
 };
 
-/**
- * \brief Concept to check if a given type is one of the predefined affordance enums or the AffordanceCollectionImpl.
- */
-template <typename T>
-concept FEAffordance = std::is_same_v<std::remove_cvref_t<T>, ScalarAffordances> or
-                       std::is_same_v<std::remove_cvref_t<T>, VectorAffordances> or
-                       std::is_same_v<std::remove_cvref_t<T>, MatrixAffordances> or
-                       std::is_same_v<std::remove_cvref_t<T>, AffordanceCollectionImpl>;
 
-inline constexpr VectorAffordances forces = VectorAffordances::forces;
 
-inline constexpr MatrixAffordances stiffness                   = MatrixAffordances::stiffness;
-inline constexpr MatrixAffordances stiffnessdiffBucklingVector = MatrixAffordances::stiffnessdiffBucklingVector;
-inline constexpr MatrixAffordances mass                        = MatrixAffordances::mass;
+inline constexpr VectorAffordance forces = VectorAffordance::forces;
 
-inline constexpr ScalarAffordances potentialEnergy = ScalarAffordances::mechanicalPotentialEnergy;
+inline constexpr MatrixAffordance stiffness                   = MatrixAffordance::stiffness;
+inline constexpr MatrixAffordance stiffnessdiffBucklingVector = MatrixAffordance::stiffnessdiffBucklingVector;
+inline constexpr MatrixAffordance mass                        = MatrixAffordance::mass;
+inline constexpr ScalarAffordance potentialEnergy = ScalarAffordance::mechanicalPotentialEnergy;
+
+auto vectorAffordance(MatrixAffordance affoM)
+{
+  if (affoM == MatrixAffordance::stiffness)
+    return VectorAffordance::forces;
+    else if (affoM==MatrixAffordance::microMagneticHessian)
+    return VectorAffordance::microMagneticForces;
+  else
+    return VectorAffordance::noAffordance;
+}
+
+auto scalarAffordance(MatrixAffordance affoM)
+{
+  if (affoM == MatrixAffordance::stiffness)
+    return ScalarAffordance::mechanicalPotentialEnergy;
+    else if (affoM==MatrixAffordance::microMagneticHessian)
+    return ScalarAffordance::microMagneticPotentialEnergy;
+  else
+    return ScalarAffordance::noAffordance;
+}
+
+auto scalarAffordance(VectorAffordance affoV)
+{
+  if (affoV ==  VectorAffordance::forces)
+    return ScalarAffordance::mechanicalPotentialEnergy;
+    else if (affoV==VectorAffordance::microMagneticForces)
+    return ScalarAffordance::microMagneticPotentialEnergy;
+  else
+    return ScalarAffordance::noAffordance;
+}
 
 namespace AffordanceCollections {
-  inline constexpr AffordanceCollectionImpl elastoStatics = {ScalarAffordances::mechanicalPotentialEnergy,
-                                                             VectorAffordances::forces, MatrixAffordances::stiffness};
+  inline constexpr AffordanceCollection elastoStatics(ScalarAffordance::mechanicalPotentialEnergy,
+                                                             VectorAffordance::forces, MatrixAffordance::stiffness);
 }
 
 namespace Impl {
   template <typename T>
   struct DeduceRawVectorType
   {
-    static_assert(!std::is_same<T, T>::value, "You should end up in the provided specializations");
+    using Type = T;
   };
 
   template <typename T>
@@ -152,48 +238,32 @@ namespace Impl {
  * \tparam PM Type of the parameter, defaulting to std::reference_wrapper<double>.
  *
  */
-template <typename SV = std::reference_wrapper<Eigen::VectorXd>, typename PM = std::reference_wrapper<double>>
+template <FESolutions sol, FEParameter para, typename SV = Eigen::VectorXd, typename PM = double>
 class FERequirements
 {
 public:
+static constexpr FESolutions globalSolutionTag = sol;
+static constexpr FEParameter parameterTag = para;
   using SolutionVectorType    = SV;
-  using SolutionVectorTypeRaw = typename Impl::DeduceRawVectorType<std::remove_cvref_t<SV>>::Type;
+  //using SolutionVectorTypeRaw = typename Impl::DeduceRawVectorType<std::remove_cvref_t<SV>>::Type;
   using ParameterType         = PM;
-  using ParameterTypeRaw      = typename PM::type;
 
-  /**
-   * \brief Add an affordance to the requirements.
-   *
-   * This function adds the specified affordance to the requirements.
-   *
-   * \tparam Affordance Type of affordance to be added.
-   * \param affordance The affordance to be added.
-   * \return Reference to the updated FERequirements instance.
-   */
-  template <FEAffordance Affordance>
-  FERequirements& addAffordance(Affordance&& affordance) {
-    if constexpr (std::is_same_v<std::remove_cvref_t<Affordance>, ScalarAffordances>)
-      affordances_.scalarAffordances = affordance;
-    else if constexpr (std::is_same_v<std::remove_cvref_t<Affordance>, VectorAffordances>)
-      affordances_.vectorAffordances = affordance;
-    else if constexpr (std::is_same_v<std::remove_cvref_t<Affordance>, MatrixAffordances>)
-      affordances_.matrixAffordances = affordance;
-    else if constexpr (std::is_same_v<std::remove_cvref_t<Affordance>, AffordanceCollectionImpl>)
-      affordances_ = affordance;
-    return *this;
-  }
+
+  FERequirements() =default;
+  FERequirements(SolutionVectorType& solVec, ParameterType& parameter)
+      : sol_{solVec},
+        parameter_{parameter} {}
 
   /**
    * \brief Insert a parameter into the requirements.
    *
    * This function inserts the specified parameter into the requirements.
    *
-   * \param key The key representing the parameter.
    * \param val Reference to the raw parameter value.
    * \return Reference to the updated FERequirements instance.
    */
-  FERequirements& insertParameter(const FEParameter& key, ParameterTypeRaw& val) {
-    parameter_.insert_or_assign(key, val);
+  FERequirements& insertParameter(ParameterType& val) {
+    parameter_= val;
     return *this;
   }
 
@@ -202,119 +272,81 @@ public:
    *
    * This function inserts the specified global solution vector into the requirements.
    *
-   * \param key The key representing the type of the solution vector.
-   * \param sol Reference to the raw global solution vector.
+   * \param solVec Reference to the raw global solution vector.
    * \return Reference to the updated FERequirements instance.
    */
-  FERequirements& insertGlobalSolution(const FESolutions& key, SolutionVectorTypeRaw& sol) {
-    sols_.insert_or_assign(key, sol);
+  FERequirements& insertGlobalSolution(SolutionVectorType& solVec) {
+    sol_=solVec;
     return *this;
   }
 
   /**
-   * \brief Get the raw global solution vector for a specific type.
+   * \brief Get the global solution vector.
    *
-   * This function retrieves the raw global solution vector for the specified type.
+   * \return Reference to the raw global solution vector.
    *
-   * \param key The key representing the type of the solution vector.
-   * \return Const reference to the raw global solution vector.
-   *
-   * \throws Dune::RangeError if the specified type is not found in the requirements.
    */
-  const SolutionVectorTypeRaw& getGlobalSolution(const FESolutions& key) const {
-    try {
-      if constexpr (std::is_same_v<SolutionVectorType, std::reference_wrapper<Eigen::VectorXd>>)
-        return sols_.at(key).get();
-      else
-        return sols_.at(key);
-    } catch (std::out_of_range& oor) {
-      DUNE_THROW(Dune::RangeError, std::string("Out of Range error: ") + std::string(oor.what()) +
-                                       " in getGlobalSolution with key" + toString(key));
-      abort();
-    }
+  SolutionVectorType& globalSolution() { return sol_.value().get(); }
+
+  /**
+   * \brief Get the  global solution vector.
+   *   *
+   * \return Const reference to the global solution vector.
+   *
+   */
+  const SolutionVectorType& globalSolution() const { return sol_.value().get(); }
+
+  /**
+   * \brief Get the parameter value.
+   *
+   *
+   * \return Const reference to the parameter value.
+   *
+   */
+  const ParameterType& parameter() const {
+    return parameter_.value().get();
+    ;
   }
 
   /**
-   * \brief Get the raw parameter value for a specific key.
+   * \brief Get the parameter value.
    *
-   * This function retrieves the raw parameter value for the specified key.
+   * \return Reference to the parameter value.
    *
-   * \param key The key representing the parameter.
-   * \return Const reference to the raw parameter value.
-   *
-   * \throws Dune::RangeError if the specified key is not found in the requirements.
    */
-  const ParameterTypeRaw& getParameter(FEParameter&& key) const {
-    try {
-      return parameter_.at(key).get();
-    } catch (std::out_of_range& oor) {
-      DUNE_THROW(Dune::RangeError, std::string("Out of Range error: ") + std::string(oor.what()) +
-                                       " in getParameter with key" + toString(key));
-      abort();
-    }
+  ParameterType& parameter() {
+    return parameter_.value().get();
+
   }
 
   /**
-   * \brief Check if a specific affordance is present in the requirements.
+   * \brief Tells if the class contains all needed values
    *
-   * This function checks if the specified affordance is present in the requirements.
+   * \return Bool if the all values are assigned
    *
-   * \tparam Affordance Type of affordance to be checked.
-   * \param affordance The affordance to be checked.
-   * \return True if the affordance is present, false otherwise.
    */
-  template <FEAffordance Affordance>
-  bool hasAffordance(Affordance&& affordance) const {
-    if constexpr (std::is_same_v<std::remove_cvref_t<Affordance>, ScalarAffordances>)
-      return affordances_.scalarAffordances == affordance;
-    else if constexpr (std::is_same_v<std::remove_cvref_t<Affordance>, VectorAffordances>)
-      return affordances_.vectorAffordances == affordance;
-    else if constexpr (std::is_same_v<std::remove_cvref_t<Affordance>, MatrixAffordances>)
-      return affordances_.matrixAffordances == affordance;
-    else if constexpr (std::is_same_v<std::remove_cvref_t<Affordance>, AffordanceCollectionImpl>)
-      return affordances_ == affordance;
+  bool populated() const {
+      return sol_.has_value() and parameter_.has_value();
   }
+
 
 private:
-  std::map<FESolutions, SolutionVectorType> sols_;
-  std::map<FEParameter, ParameterType> parameter_;
-  AffordanceCollectionImpl affordances_;
+  std::optional<std::reference_wrapper<SolutionVectorType>> sol_;
+  std::optional<std::reference_wrapper<ParameterType>> parameter_;
 };
 
-/**
- * \class FErequirements
- * \brief Class representing the requirements for finite element calculations.
- * \deprecated FErequirements is deprecaded and will be removed after v0.5. Use FERequirements instead.
- *
- * This class defines the requirements for finite element calculations, including the types of solution vectors
- * and parameters needed. It provides methods to add affordances, insert parameters, and manage global solution
- * vectors.
- *
- * \tparam SV Type of the solution vector, defaulting to std::reference_wrapper<Eigen::VectorXd>.
- * \tparam PM Type of the parameter, defaulting to std::reference_wrapper<double>.
- *
- */
-template <typename SV = std::reference_wrapper<Eigen::VectorXd>, typename PM = std::reference_wrapper<double>>
-class [[deprecated(
-    "FErequirements is deprecaded and will be removed after v0.5. Use FERequirements instead.")]] FErequirements
-    : public FERequirements<SV, PM>
+
+template <FESolutions sol, FEParameter para, bool wrapWithRef=false, typename SV = Eigen::VectorXd, typename PM = double>
+struct FERequirementsFactory
 {
-  using Base = FERequirements<SV, PM>;
+  private:
+
+  using typeEigen =
+      std::conditional_t<wrapWithRef and  Ikarus::Concepts::EigenMatrix<SV>, Eigen::Ref<SV>, SV>;
 
 public:
-  FErequirements() = default;
-  FErequirements(Base&& base)
-      : Base(std::forward<Base>(base)) {}
-  FErequirements(const Base& base)
-      : Base(base) {}
-  FErequirements& operator=(const Base& base) {
-    Base::operator=(base);
-    return *this;
-  }
-  FErequirements& operator=(Base&& base) {
-    Base::operator=(std::forward<Base>(base));
-    return *this;
-  }
+  using type = FERequirements<sol,para,typeEigen,PM>;
 };
+
 
 } // namespace Ikarus

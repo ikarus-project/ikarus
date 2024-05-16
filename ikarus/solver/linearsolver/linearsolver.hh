@@ -16,6 +16,7 @@
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
 
+#include <ikarus/utils/makeenum.hh>
 namespace Ikarus {
 
 /**
@@ -24,8 +25,7 @@ namespace Ikarus {
  * \details The prefix s and d stand for sparse and dense solvers and the second prefix i and d stand for iterative or
  * direct solvers for the sparse case
  */
-enum class SolverTypeTag
-{
+MAKE_ENUM(SolverTypeTag,
   none,
   si_ConjugateGradient,
   si_LeastSquaresConjugateGradient,
@@ -45,7 +45,7 @@ enum class SolverTypeTag
   d_CompleteOrthogonalDecomposition,
   d_LLT,
   d_LDLT
-};
+);
 
 /**
  * \enum MatrixTypeTag
@@ -71,17 +71,23 @@ public:
   using SparseMatrixType = Eigen::SparseMatrix<ScalarType>;
   using DenseMatrixType  = Eigen::MatrixX<ScalarType>;
 
-  /**
-   * \brief Constructor for LinearSolverTemplate.
-   * \param solverTypeTag The solver type tag representing the type of the linear solver.
-   */
-  explicit LinearSolverTemplate(const SolverTypeTag& solverTypeTag);
+  LinearSolverTemplate()=default;
+
+      /**
+       * \brief Constructor for LinearSolverTemplate.
+       * \param solverTypeTag The solver type tag representing the type of the linear solver.
+       */
+      explicit LinearSolverTemplate(const SolverTypeTag& solverTypeTag);
 
   /**
    * \brief Destructor for LinearSolverTemplate.
    */
   ~LinearSolverTemplate() = default;
 
+  friend void swap(LinearSolverTemplate& lhs, LinearSolverTemplate& rhs) noexcept {
+    std::swap(lhs.solverimpl_, rhs.solverimpl_);
+    std::swap(lhs.solverTypeTag_, rhs.solverTypeTag_);
+  }
   /**
    * \brief Copy assignment operator.
    * \param other The LinearSolverTemplate to copy.
@@ -89,7 +95,8 @@ public:
    */
   LinearSolverTemplate& operator=(const LinearSolverTemplate& other) {
     LinearSolverTemplate tmp(other);
-    return *this;
+    swap(*this, tmp);
+     return *this;
   }
 
   /**

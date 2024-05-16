@@ -9,11 +9,10 @@ FE requirements are used to pass information from [assemblers](assembler.md) to 
 Usually the construction is as follows:
 
 ```cpp linenums="1"
-FErequirements req = FErequirements()
-                           .insertGlobalSolution(FESolutions::displacement, d)
-                           .insertParameter(FEParameter::loadfactor, lambda)
-                           .addAffordance(MatrixAffordances::stiffness);
-MatrixType A = sparseFlatAssembler.getReducedMatrix(req);
+FErequirements req = fe.createRequirement()
+                           .insertGlobalSolution( d)
+                           .insertParameter( lambda);
+MatrixType A = sparseFlatAssembler.matrix(req,MatrixAffordance::stiffness,EnforcingDBCOption::Full);
 ```
 
 All the methods return a reference to `FErequirements`, so they can be chained together.
@@ -35,10 +34,8 @@ Currently, the following are defined:
 Inside the finite element, the information can then be conveniently extracted:
 
 ```cpp linenums="1"
-const auto& d      = req.getGlobalSolution(FESolutions::displacement);
-const auto& lambda = req.getParameter(FEParameter::loadfactor);
-if(req.hasAffordance(stiffness))
-  ...
+const auto& d      = req.globalSolution();
+const auto& lambda = req.parameter();
 ```
 
 Thus, the local finite element can be developed.
@@ -47,6 +44,9 @@ Thus, the local finite element can be developed.
         It is good style to indicate that you cannot fulfill an affordance by throwing an appropriate exception!
 
 ### FE result requirements
+!!! bug "Bug"
+
+    This section is outdated!
 
 In addition to the above-mentioned finite element requirements, there are also result requirements.
 They accept the same parameter types as the `FErequirements` and add one more, the `ResultType`.

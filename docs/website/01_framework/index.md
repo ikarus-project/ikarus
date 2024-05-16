@@ -24,27 +24,27 @@ classDiagram
   NonlinearSolver <|-- IObservable
   Observer ..> IObservable
   FERequirements <-- Affordances
-  Affordances <-- ScalarAffordances
-  Affordances <-- VectorAffordances
-  Affordances <-- MatrixAffordances
+  Affordances <-- ScalarAffordance
+  Affordances <-- VectorAffordance
+  Affordances <-- MatrixAffordance
   ResultRequirements <-- ResultType
 
 
-  class ScalarAffordances{
+  class ScalarAffordance{
   <<enumeration>>
       mechanicalPotentialEnergy
       microMagneticPotentialEnergy
       ...
   }
 
-  class VectorAffordances{
+  class VectorAffordance{
         <<enumeration>>
       forces
       microMagneticForces
       ...
   }
 
-  class MatrixAffordances{
+  class MatrixAffordance{
         <<enumeration>>
       stiffness
       materialstiffness
@@ -97,11 +97,9 @@ classDiagram
   }
 
   class Assembler{
-    +getScalar()
-    +getVector()
-    +getMatrix()
-    +getReducedMatrix()
-    +getReducedVector()
+    +scalar()
+    +matrix()
+    +vector()
     +createFullVector()
   }
   class GridView{

@@ -54,7 +54,7 @@ public:
   using Traits            = PreFE::Traits;
   using BasisHandler      = typename Traits::BasisHandler;
   using FlatBasis         = typename Traits::FlatBasis;
-  using FERequirementType = typename Traits::FERequirementType;
+  using Requirement = FERequirementsFactory<FESolutions::displacement, FEParameter::loadfactor,Traits::useEigenRef>::type;
   using LocalView         = typename Traits::LocalView;
   using Geometry          = typename Traits::Geometry;
   using GridView          = typename Traits::GridView;
@@ -96,33 +96,33 @@ protected:
 
 public:
   /**
-   * \brief Gets the displacement function for the given FERequirementType and optional displacement vector.
+   * \brief Gets the displacement function for the given Requirement and optional displacement vector.
    *
    * \tparam ScalarType The scalar type for the displacement vector.
-   * \param par The FERequirementType object.
+   * \param par The Requirement object.
    * \param dx Optional displacement vector.
    * \return The displacement function.
    */
   template <typename ScalarType = double>
   auto displacementFunction(
-      const FERequirementType& par,
+      const Requirement& par,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
-    const auto& d = par.getGlobalSolution(Ikarus::FESolutions::displacement);
+    const auto& d = par.globalSolution();
     auto disp     = Ikarus::FEHelper::localSolutionBlockVector<Traits>(d, underlying().localView(), dx);
     Dune::StandardLocalFunction uFunction(localBasis_, disp, geo_);
     return uFunction;
   }
   /**
-   * \brief Gets the strain function for the given FERequirementType and optional displacement vector.
+   * \brief Gets the strain function for the given Requirement and optional displacement vector.
    *
    * \tparam ScalarType The scalar type for the strain vector.
-   * \param par The FERequirementType object.
+   * \param par The Requirement object.
    * \param dx Optional displacement vector.
    * \return The strain function.
    */
   template <class ScalarType = double>
   auto strainFunction(
-      const FERequirementType& par,
+      const Requirement& par,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
     return Dune::linearStrains(displacementFunction(par, dx));
   }
@@ -140,12 +140,12 @@ public:
   }
 
   /**
-   * \brief Gets the material tangent function for the given FERequirementType.
+   * \brief Gets the material tangent function for the given Requirement.
    *
-   * \param par The FERequirementType object.
+   * \param par The Requirement object.
    * \return The material tangent function.
    */
-  auto materialTangentFunction([[maybe_unused]] const FERequirementType& par) const {
+  auto materialTangentFunction([[maybe_unused]] const Requirement& par) const {
     return [&]([[maybe_unused]] auto gp) { return materialTangent(); };
   }
 
@@ -164,7 +164,7 @@ public:
   /**
    * \brief Calculates a requested result at a specific local position.
    *
-   * \param req The FERequirementType object holding the global solution.
+   * \param req The Requirement object holding the global solution.
    * \param local Local position vector.
    * \tparam RT The requested result type
    * \return calculated result
@@ -173,7 +173,7 @@ public:
    */
   template <template <typename, int, int> class RT>
   requires(canProvideResultType<RT>())
-  auto calculateAtImpl(const FERequirementType& req, const Dune::FieldVector<double, Traits::mydim>& local,
+  auto calculateAtImpl(const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<1>) const {
     using RTWrapper = ResultWrapper<RT<typename Traits::ctype, myDim, Traits::worlddim>, ResultShape::Vector>;
     if constexpr (isSameResultType<RT, ResultTypes::linearStress>) {
@@ -199,7 +199,7 @@ private:
 protected:
   template <typename ScalarType>
   void calculateMatrixImpl(
-      const FERequirementType& par, typename Traits::template MatrixType<> K,
+      const Requirement& par,const MatrixAffordance& affo, typename Traits::template MatrixType<> K,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
     const auto eps = strainFunction(par, dx);
     using namespace Dune::DerivativeDirections;
@@ -219,12 +219,12 @@ protected:
   }
 
   template <typename ScalarType>
-  auto calculateScalarImpl(const FERequirementType& par,
+  auto calculateScalarImpl(const Requirement& par,const ScalarAffordance& affo,
                            const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx =
                                std::nullopt) const -> ScalarType {
     const auto uFunction = displacementFunction(par, dx);
     const auto eps       = strainFunction(par, dx);
-    const auto& lambda   = par.getParameter(Ikarus::FEParameter::loadfactor);
+    const auto& lambda   = par.parameter();
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
 
@@ -240,7 +240,7 @@ protected:
 
   template <typename ScalarType>
   void calculateVectorImpl(
-      const FERequirementType& par, typename Traits::template VectorType<ScalarType> force,
+      const Requirement& par,const VectorAffordance& affo, typename Traits::template VectorType<ScalarType> force,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
     const auto eps = strainFunction(par, dx);
     using namespace Dune::DerivativeDirections;

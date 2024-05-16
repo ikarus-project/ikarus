@@ -16,6 +16,7 @@
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 
+#include <Eigen/Dense>
 #include <Eigen/Sparse>
 
 #include <ikarus/utils/traits.hh>
@@ -337,7 +338,6 @@ namespace Concepts {
    * \brief Concept defining the requirements for functors with arguments.
    * \tparam Op Type of the functor.
    * \tparam Args Types of the arguments.
-   * \details The concept specifies that an instance of type `Op` can be invoked with arguments of types `Args`.
    */
   template <typename Op, typename... Args>
   concept IsFunctorWithArgs = requires(Op op, Args... args) { op(args...); };
@@ -346,11 +346,17 @@ namespace Concepts {
    * \concept EigenVector
    * \brief Concept defining the requirements for Eigen vectors.
    * \tparam V Type representing an Eigen vector.
-   * \details The concept specifies that the type `V` is an Eigen vector based on its compile-time information
-   * (`IsVectorAtCompileTime`).
    */
   template <typename V>
   concept EigenVector = static_cast<bool>(V::IsVectorAtCompileTime);
+
+    /**
+   * \concept EigenMatrix
+   * \brief Concept defining the requirements for Eigen matrices. This also includes Eigen vectors
+   * \tparam V Type representing an Eigen vector.
+   */
+  template <typename M>
+  concept EigenMatrix = traits::isSpecializationTypeAndNonTypes<Eigen::Matrix,M>::value;
 
 #define MAKE_EIGEN_FIXED_VECTOR_CONCEPT(Size) \
   template <typename V>                       \

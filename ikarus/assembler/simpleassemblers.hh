@@ -7,7 +7,7 @@
  */
 
 #pragma once
-#include <mutex>
+
 #include <ranges>
 #include <utility>
 
@@ -16,8 +16,10 @@
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 
+#include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/finiteelements/fehelper.hh>
 #include <ikarus/utils/dirichletvalues.hh>
+#include <ikarus/assembler/dirichletbcenforcement.hh>
 
 namespace Ikarus {
 /**
@@ -33,7 +35,7 @@ class FlatAssemblerBase
 {
 public:
   using FEContainerRaw    = std::remove_cvref_t<FEC>; ///< Type of the raw finite element container.
-  using FERequirementType = typename FEContainerRaw::value_type::FERequirementType;
+  using FERequirement     = typename FEContainerRaw::value_type::Requirement;
   ///< Type of the finite element requirement.
   using GlobalIndex     = typename FEContainerRaw::value_type::GlobalIndex; ///< Type of the global index.
   using Basis           = typename DV::Basis;                               ///< Type of the basis.
@@ -116,10 +118,127 @@ public:
   }
 
 private:
+  using AffordanceC = AffordanceCollection<ScalarAffordance, VectorAffordance, MatrixAffordance>;
+  public:
+  /**
+   * \brief Binds the assembler to a set of finite element requirement and affordance.
+   *
+   * \param req Reference to the finite element requirement.
+   * \param affo The affordance
+   */
+    void bind(const FERequirement& req, AffordanceC affo, EnforcingDBCOption qt = EnforcingDBCOption::Full) {
+      req_                = std::make_optional<FERequirement>(req);
+      affos_              = std::make_optional<AffordanceC>(affo);
+      enforcingDBCOption_ = std::make_optional<EnforcingDBCOption>(qt);
+    }
+
+  /**
+   * \brief Binds the assembler to a  finite element requirement.
+   *
+   * \param req Reference to the finite element requirement.
+   */
+  void bind(const FERequirement& req) {
+    req_   = std::make_optional<FERequirement>(req);
+  }
+
+  /**
+   * \brief Binds the assembler to an affordance collection.
+   *
+   * \param affo The affordance collection
+   */
+  void bind( AffordanceC affo) {
+    affos_ = std::make_optional<AffordanceC>(affo);
+  }
+
+  /**
+   * \brief Binds the assembler to an affordance collection.
+   *
+   * \param affo The affordance collection
+   */
+  void bind(EnforcingDBCOption qt) { enforcingDBCOption_ = std::make_optional<EnforcingDBCOption>(qt); }
+
+  /**
+   * \brief Returns true if the assembler is bound to a finite element requirement and affordance.
+   *
+   * \return True if the assembler is bound; false otherwise.
+   */
+  [[nodiscard]]
+  bool bound() const {
+    return req_.has_value() and affos_.has_value() and enforcingDBCOption_.has_value();
+  }
+
+  /**
+   * \brief Returns true if the assembler is bound to a finite element requirement.
+   *
+   * \return True if the assembler is bound; false otherwise.
+   */
+  [[nodiscard]]
+  bool boundToRequirement() const {
+    return req_.has_value() ;
+  }
+
+  /**
+   * \brief Returns true if the assembler is bound to an affordance collection.
+   *
+   * \return True if the assembler is bound; false otherwise.
+   */
+  [[nodiscard]]
+  bool boundToAffordanceCollection() const {
+    return affos_.has_value();
+  }
+
+  /**
+   * \brief Returns true if the assembler is bound to an affordance collection.
+   *
+   * \return True if the assembler is bound; false otherwise.
+   */
+  [[nodiscard]]
+  bool boundToEnforcingDBCOption() const {
+    return enforcingDBCOption_.has_value();
+  }
+
+  /**
+   * \brief Returns the requirement.
+   *
+   */
+  FERequirement& requirement() {
+    if (req_.has_value())
+      return req_.value();
+    else
+      DUNE_THROW(Dune::InvalidStateException, "The requirement can only be obtained after binding");
+  }
+
+  /**
+   * \brief Returns the affordance.
+   *
+   */
+  AffordanceC affordanceCollection() const {
+    if (affos_.has_value())
+      return affos_.value();
+    else
+      DUNE_THROW(Dune::InvalidStateException, "The affordance can only be obtained after binding");
+  }
+
+  /**
+   * \brief Returns the dirichlet boundary condition enforcement option.
+   *
+   */
+  EnforcingDBCOption enforcingDBCOption() const {
+    if (enforcingDBCOption_.has_value())
+      return enforcingDBCOption_.value();
+    else
+      DUNE_THROW(Dune::InvalidStateException, "The enforcingDBCOption can only be obtained after binding");
+  }
+
+  private :
+
   FEContainerType feContainer_;
   const DirichletValuesType* dirichletValues_;
+  std::optional<FERequirement> req_;
+  std::optional<AffordanceC> affos_;
   std::vector<size_t> constraintsBelow_{};
   size_t fixedDofs_{};
+  std::optional<EnforcingDBCOption> enforcingDBCOption_;
 };
 
 #ifndef DOXYGEN
@@ -144,7 +263,7 @@ public:
   using typename Base::Basis;
   using typename Base::DirichletValuesType;
   using typename Base::FEContainer;
-  using typename Base::FERequirementType;
+  using typename Base::FERequirement;
   using typename Base::GlobalIndex;
 
   /**
@@ -157,12 +276,22 @@ public:
       : FlatAssemblerBase<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues) {}
 
   /**
-   * \brief Calculates the scalar quantity requested by feRequirements and returns a reference.
+   * \brief Calculates the scalar quantity requested by feRequirements and affordance.
    *
    * \param feRequirements Reference to the finite element requirements.
+  * \param affordance The scalar affordance
    * \return Const reference to the calculated scalar quantity.
    */
-  const double& getScalar(const FERequirementType& feRequirements) { return getScalarImpl(feRequirements); }
+  const double& scalar(const FERequirement& feRequirements,ScalarAffordance affordance) { return getScalarImpl(feRequirements,affordance); }
+
+  /**
+   * \brief Calculates the scalar quantity requested by the bound feRequirements and returns a reference.
+   *
+   * \return Const reference to the calculated scalar quantity.
+   */
+  const double& scalar() {
+    return getScalarImpl(this->requirement(), this->affordanceCollection().scalarAffordance());
+  }
 
 private:
   /**
@@ -171,10 +300,10 @@ private:
    * \param feRequirements Reference to the finite element requirements.
    * \return Reference to the calculated scalar quantity.
    */
-  double& getScalarImpl(const FERequirementType& feRequirements) {
+  double& getScalarImpl(const FERequirement& feRequirements,ScalarAffordance affordance) {
     scal_ = 0.0;
     for (auto& fe : this->finiteElements()) {
-      scal_ += calculateScalar(fe, feRequirements);
+      scal_ += calculateScalar(fe, feRequirements,affordance);
     }
     return scal_;
   }
@@ -204,7 +333,7 @@ public:
   using typename Base::Basis;
   using typename Base::DirichletValuesType;
   using typename Base::FEContainer;
-  using typename Base::FERequirementType;
+  using typename Base::FERequirement;
   using typename Base::GlobalIndex;
 
 public:
@@ -218,41 +347,71 @@ public:
       : ScalarAssembler<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues) {}
 
   /**
-   * \brief Calculates the vectorial quantity requested by feRequirements and returns a reference.
+   * \brief Calculates the vectorial quantity requested by the  feRequirements and the affordance.
+   Depending on the requested EnforcingDBCOption, the raw, reduced or full vector is returned.
+    Raw means the degrees of freedom associated with dirichlet boundary conditions are not changed.
+    Full means that degrees of freedom associated with dirichlet boundary conditions are set to zero in the vector.
+    Reduced means that degrees of freedom associated with dirichlet boundary conditions are removed and the returned
+   vector has reduced size.
    *
    * \param feRequirements Reference to the finite element requirements.
+   * \param affordance The vector affordance
+   * \param qt The EnforcingDBCOption
    * \return Const reference to the calculated vectorial quantity.
    */
-  const Eigen::VectorXd& getRawVector(const FERequirementType& feRequirements) {
-    return getRawVectorImpl(feRequirements);
+  const Eigen::VectorXd& vector(const FERequirement& feRequirements, VectorAffordance affordance,
+                                EnforcingDBCOption qt = EnforcingDBCOption::Full) {
+    if (qt == EnforcingDBCOption::Raw) {
+      return getRawVectorImpl(feRequirements, affordance);
+    } else if (qt == EnforcingDBCOption::Reduced) {
+      return getReducedVectorImpl(feRequirements, affordance);
+    } else if (qt == EnforcingDBCOption::Full) {
+      return getVectorImpl(feRequirements, affordance);
+    }
+    __builtin_unreachable();
   }
 
   /**
-   * \brief Calculates the vectorial quantity requested by feRequirements and returns a reference.
-   * A zero is written on fixed degrees of freedom.
-   *
-   * \param feRequirements Reference to the finite element requirements.
-   * \return Const reference to the calculated vectorial quantity.
-   */
-  const Eigen::VectorXd& getVector(const FERequirementType& feRequirements) { return getVectorImpl(feRequirements); }
+ * \brief Calculates the vectorial quantity requested by the bound feRequirements and the affordance.
+ Depending on the requested EnforcingDBCOption, the raw, reduced or full vector is returned.
+  Raw means the degrees of freedom associated with dirichlet boundary conditions are not changed.
+  Full means that degrees of freedom associated with dirichlet boundary conditions are set to zero in the vector.
+  Reduced means that degrees of freedom associated with dirichlet boundary conditions are removed and the returned
+ vector has reduced size.
+  * \see const Eigen::VectorXd& getVector(const FERequirement& feRequirements, VectorAffordance affordance,
+ EnforcingDBCOption qt)
+ * \param qt The EnforcingDBCOption
+ * \return Const reference to the calculated vectorial quantity.
+ */
+  const Eigen::VectorXd& vector(EnforcingDBCOption qt = EnforcingDBCOption::Full) {
+    if (qt == EnforcingDBCOption::Raw) {
+      return getRawVectorImpl(this->requirement(), this->affordanceCollection().vectorAffordance());
+    } else if (qt == EnforcingDBCOption::Reduced) {
+      return getReducedVectorImpl(this->requirement(), this->affordanceCollection().vectorAffordance());
+    } else if (qt == EnforcingDBCOption::Full) {
+      return getVectorImpl(this->requirement(), this->affordanceCollection().vectorAffordance());
+    }
+    __builtin_unreachable();
+  }
 
   /**
-   * \brief Calculates the vectorial quantity requested by feRequirements and returns a reference.
-   * This vector has a reduced size by the number of fixed degrees of freedom.
-   *
-   * \param feRequirements Reference to the finite element requirements.
-   * \return Const reference to the calculated reduced vectorial quantity.
-   */
-  const Eigen::VectorXd& getReducedVector(const FERequirementType& feRequirements) {
-    return getReducedVectorImpl(feRequirements);
-  }
+* \brief Calculates the vectorial quantity requested by the bound feRequirements,  the affordance and the
+enforcingDBCOption. Depending on the EnforcingDBCOption, the raw, reduced or full vector is returned. Raw
+means the degrees of freedom associated with dirichlet boundary conditions are not changed. Full means that degrees of
+freedom associated with dirichlet boundary conditions are set to zero in the vector. Reduced means that degrees of
+freedom associated with dirichlet boundary conditions are removed and the returned vector has reduced size.
+* \see const Eigen::VectorXd& getVector(const FERequirement& feRequirements, VectorAffordance affordance,
+EnforcingDBCOption qt)
+* \return Const reference to the calculated vectorial quantity.
+*/
+  const Eigen::VectorXd& vector() { return vector(this->enforcingDBCOption()); }
 
 private:
-  void assembleRawVectorImpl(const FERequirementType& feRequirements, Eigen::VectorXd& assemblyVec);
-  Eigen::VectorXd& getRawVectorImpl(const FERequirementType& feRequirements);
-  Eigen::VectorXd& getVectorImpl(const FERequirementType& feRequirements);
+  void assembleRawVectorImpl(const FERequirement& feRequirements,VectorAffordance affordance, Eigen::VectorXd& assemblyVec);
+  Eigen::VectorXd& getRawVectorImpl(const FERequirement& feRequirements,VectorAffordance affordance);
+  Eigen::VectorXd& getVectorImpl(const FERequirement& feRequirements,VectorAffordance affordance);
 
-  Eigen::VectorXd& getReducedVectorImpl(const FERequirementType& feRequirements);
+  Eigen::VectorXd& getReducedVectorImpl(const FERequirement& feRequirements,VectorAffordance affordance);
 
   Eigen::VectorXd vecRaw_{}; ///< Raw vector without changes for dirichlet degrees of freedom
   Eigen::VectorXd vec_{};    ///< Vector quantity.
@@ -282,7 +441,7 @@ public:
   using typename Base::Basis;
   using typename Base::DirichletValuesType;
   using typename Base::FEContainer;
-  using typename Base::FERequirementType;
+  using typename Base::FERequirement;
   using typename Base::GlobalIndex;
 
   /**
@@ -297,42 +456,64 @@ public:
   using GridView = typename Basis::GridView; ///< Type of the grid view.
 
   /**
-   * \brief Calculates the matrix quantity requested by feRequirements and returns a reference.
-   *
-   * \param feRequirements Reference to the finite element requirements.
-   * \return Const reference to the raw sparse matrix quantity.
-   */
-  const Eigen::SparseMatrix<double>& getRawMatrix(const FERequirementType& feRequirements) {
-    return getRawMatrixImpl(feRequirements);
-  }
+   * \brief Calculates the matrix quantity requested by feRequirements and the affordance.
+   * For EnforcingDBCOption::Full a zero is written on fixed degrees of freedom rows and columns, and a one is written
+   * on the diagonal. For EnforcingDBCOption::Raw the untouched matrix is returned.
+   * For EnforcingDBCOption::Reduced the matrix is reduced in size by removing the fixed degrees of freedom.
 
-  /**
-   * \brief Calculates the matrix quantity requested by feRequirements and returns a reference.
-   * A zero is written on fixed degrees of freedom rows and columns, and a one is written on the diagonal.
-   *
-   * \param feRequirements Reference to the finite element requirements.
+    \param feRequirements Reference to the finite element requirements.
+   * \param affordance The matrix affordance
+   * \param qt The EnforcingDBCOption
    * \return Const reference to the modified sparse matrix quantity.
    */
-  const Eigen::SparseMatrix<double>& getMatrix(const FERequirementType& feRequirements) {
-    return getMatrixImpl(feRequirements);
+  const Eigen::SparseMatrix<double>& matrix(const FERequirement& feRequirements, MatrixAffordance affordance,
+                                            EnforcingDBCOption qt = EnforcingDBCOption::Full) {
+    if (qt == EnforcingDBCOption::Raw) {
+      return getRawMatrixImpl(feRequirements, affordance);
+    } else if (qt == EnforcingDBCOption::Reduced) {
+      return getReducedMatrixImpl(feRequirements, affordance);
+    } else if (qt == EnforcingDBCOption::Full) {
+      return getMatrixImpl(feRequirements, affordance);
+    }
+    __builtin_unreachable();
   }
 
   /**
-   * \brief Calculates the matrix quantity requested by feRequirements and returns a reference.
-   * The size of the matrix has the size of the free degrees of freedom.
-   *
-   * \param feRequirements Reference to the finite element requirements.
-   * \return Const reference to the reduced sparse matrix quantity.
+   * \brief Calculates the matrix quantity requested by the bound feRequirements and the affordance.
+   * \see const Eigen::SparseMatrix<double>& getMatrix(const FERequirement& feRequirements,MatrixAffordance affordance,
+   EnforcingDBCOption qt)
+
+   * \param qt The EnforcingDBCOption
+   * \return Const reference to the modified sparse matrix quantity.
    */
-  const Eigen::SparseMatrix<double>& getReducedMatrix(const FERequirementType& feRequirements) {
-    return getReducedMatrixImpl(feRequirements);
+  const Eigen::SparseMatrix<double>& matrix(EnforcingDBCOption qt = EnforcingDBCOption::Full) {
+    if (qt == EnforcingDBCOption::Raw) {
+      return getRawMatrixImpl(this->requirement(), this->affordanceCollection().matrixAffordance());
+    } else if (qt == EnforcingDBCOption::Reduced) {
+      return getReducedMatrixImpl(this->requirement(), this->affordanceCollection().matrixAffordance());
+    } else if (qt == EnforcingDBCOption::Full) {
+      return getMatrixImpl(this->requirement(), this->affordanceCollection().matrixAffordance());
+    }
+    __builtin_unreachable();
+  }
+
+  /**
+ * \brief Calculates the matrix quantity requested by the bound feRequirements, the affordance and the
+enforcingDBCOption.
+ * \see const Eigen::SparseMatrix<double>& getMatrix(const FERequirement& feRequirements,MatrixAffordance affordance,
+ EnforcingDBCOption qt)
+
+ * \return Const reference to the modified sparse matrix quantity.
+ */
+  const Eigen::SparseMatrix<double>& matrix() {
+    return matrix(this->enforcingDBCOption());
   }
 
 private:
-  void assembleRawMatrixImpl(const FERequirementType& feRequirements, Eigen::SparseMatrix<double>& assemblyMat);
-  Eigen::SparseMatrix<double>& getRawMatrixImpl(const FERequirementType& feRequirements);
-  Eigen::SparseMatrix<double>& getMatrixImpl(const FERequirementType& feRequirements);
-  Eigen::SparseMatrix<double>& getReducedMatrixImpl(const FERequirementType& feRequirements);
+  void assembleRawMatrixImpl(const FERequirement& feRequirements,MatrixAffordance affordance, Eigen::SparseMatrix<double>& assemblyMat);
+  Eigen::SparseMatrix<double>& getRawMatrixImpl(const FERequirement& feRequirements,MatrixAffordance affordance);
+  Eigen::SparseMatrix<double>& getMatrixImpl(const FERequirement& feRequirements,MatrixAffordance affordance);
+  Eigen::SparseMatrix<double>& getReducedMatrixImpl(const FERequirement& feRequirements,MatrixAffordance affordance);
 
   /** Calculates the non-zero entries in the full sparse matrix and passes them to the underlying Eigen sparse matrix.
    */
@@ -362,8 +543,8 @@ private:
       elementLinearIndices_; ///< Vector storing indices of matrix entries in linear storage
   std::vector<std::vector<Eigen::Index>>
       elementLinearReducedIndices_; ///< Vector storing indices of matrix entries in linear storage
-  std::once_flag sparsePreProcessorRaw_, sparsePreProcessor_,
-      sparsePreProcessorReduced_; ///< flags that store if the sparsity pattern construction happened
+  bool sparsePreProcessorRaw_{}, sparsePreProcessor_{},
+      sparsePreProcessorReduced_{}; ///< flags that store if the sparsity pattern construction happened
 };
 
 #ifndef DOXYGEN
@@ -371,17 +552,23 @@ template <class FEC, class DV>
 SparseFlatAssembler(FEC&& fes, const DV& dirichletValues) -> SparseFlatAssembler<FEC, DV>;
 #endif
 
-/**
- * \class DenseFlatAssembler
- * \brief DenseFlatAssembler assembles matrix quantities using a flat basis Indexing strategy.
- * The matrix is stored in a dense matrix format. This format is exploited during the assembly process.
- * \ingroup assembler
- * \tparam FEC Type of the finite element container.
- * \tparam DV Type of the Dirichlet values.
- * \note Requires Ikarus::Concepts::FlatIndexBasis<BasisEmbedded>.
- */
 template <typename FEC, typename DV>
-class DenseFlatAssembler : public VectorFlatAssembler<FEC, DV>
+auto makeSparseFlatAssembler(FEC&& fes, const DV& dirichletValues)
+{
+  return std::make_shared<SparseFlatAssembler<FEC, DV>>(std::forward<FEC>(fes), dirichletValues);
+}
+
+    /**
+     * \class DenseFlatAssembler
+     * \brief DenseFlatAssembler assembles matrix quantities using a flat basis Indexing strategy.
+     * The matrix is stored in a dense matrix format. This format is exploited during the assembly process.
+     * \ingroup assembler
+     * \tparam FEC Type of the finite element container.
+     * \tparam DV Type of the Dirichlet values.
+     * \note Requires Ikarus::Concepts::FlatIndexBasis<BasisEmbedded>.
+     */
+    template <typename FEC, typename DV>
+    class DenseFlatAssembler : public VectorFlatAssembler<FEC, DV>
 {
 public:
   using FEContainerRaw = std::remove_cvref_t<FEC>;     ///< Type of the raw finite element container.
@@ -390,7 +577,7 @@ public:
   using typename Base::Basis;               ///< Type of the basis.
   using typename Base::DirichletValuesType; ///< Type of the Dirichlet values.
   using typename Base::FEContainer;         ///< Type of the finite element container.
-  using typename Base::FERequirementType;   ///< Type of the finite element requirement.
+  using typename Base::FERequirement;   ///< Type of the finite element requirement.
   using typename Base::GlobalIndex;         ///< Type of the global index.
 
   /**
@@ -402,45 +589,71 @@ public:
   explicit DenseFlatAssembler(FEContainer&& fes, const DirichletValuesType& dirichletValues)
       : VectorFlatAssembler<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues) {}
 
+
   /**
-   * \brief Calculates the matrix quantity requested by feRequirements and returns a reference.
+   * \brief  Calculates the matrix quantity requested by feRequirements and the affordance.
+   * For EnforcingDBCOption::Full a zero is written on fixed degrees of freedom rows and columns, and a one is written
+   * on the diagonal. For EnforcingDBCOption::Raw the untouched matrix is returned.
+   * For EnforcingDBCOption::Reduced the matrix is reduced in size by removing the fixed degrees of freedom.
    *
-   * \param feRequirements Reference to the finite element requirements.
+   * \param qt The EnforcingDBCOption
+
    * \return Reference to the raw dense matrix quantity.
    */
-  const Eigen::MatrixXd& getRawMatrix(const FERequirementType& feRequirements) {
-    return getRawMatrixImpl(feRequirements);
+  const Eigen::MatrixXd& matrix(const FERequirement& feRequirements, MatrixAffordance affordance,
+                                EnforcingDBCOption qt = EnforcingDBCOption::Full) {
+    if (qt == EnforcingDBCOption::Raw) {
+      return getRawMatrixImpl(feRequirements, affordance);
+    } else if (qt == EnforcingDBCOption::Reduced) {
+      return getReducedMatrixImpl(feRequirements, affordance);
+    } else if (qt == EnforcingDBCOption::Full) {
+      return getMatrixImpl(feRequirements, affordance);
+    }
+    __builtin_unreachable();
   }
 
-  /**
-   * \brief Calculates the matrix quantity requested by feRequirements and returns a reference.
-   * A zero is written on fixed degrees of freedom rows and columns, and a one is written on the diagonal.
-   *
-   * \param feRequirements Reference to the finite element requirements.
-   * \return Reference to the modified dense matrix quantity.
-   */
-  const Eigen::MatrixXd& getMatrix(const FERequirementType& feRequirements) { return getMatrixImpl(feRequirements); }
 
-  /**
-   * \brief Calculates the matrix quantity requested by feRequirements and returns a reference.
-   * The size of the matrix has the size of the free degrees of freedom.
-   *
-   * \param feRequirements Reference to the finite element requirements.
-   * \return Reference to the reduced dense matrix quantity.
-   */
-  const Eigen::MatrixXd& getReducedMatrix(const FERequirementType& feRequirements) {
-    return getReducedMatrixImpl(feRequirements);
-  }
+    /**
+ * \brief  Calculates the matrix quantity requested by the bound  feRequirements and the affordance.
+ * For EnforcingDBCOption::Full a zero is written on fixed degrees of freedom rows and columns, and a one is written
+ * on the diagonal. For EnforcingDBCOption::Raw the untouched matrix is returned.
+ * For EnforcingDBCOption::Reduced the matrix is reduced in size by removing the fixed degrees of freedom.
+ *
+ * \param feRequirements Reference to the finite element requirements.
+ * \param affordance The matrix affordance
+ * \param qt The EnforcingDBCOption
 
-private:
-  void assembleRawMatrixImpl(const FERequirementType& feRequirements, Eigen::MatrixXd& assemblyMat);
-  Eigen::MatrixXd& getRawMatrixImpl(const FERequirementType& feRequirements);
-  Eigen::MatrixXd& getMatrixImpl(const FERequirementType& feRequirements);
-  Eigen::MatrixXd& getReducedMatrixImpl(const FERequirementType& feRequirements);
+ * \return Reference to the raw dense matrix quantity.
+ */
+    const Eigen::MatrixXd& matrix(EnforcingDBCOption qt = EnforcingDBCOption::Full) {
+      if (qt == EnforcingDBCOption::Raw) {
+        return getRawMatrixImpl(this->requirement(), this->affordanceCollection().matrixAffordance());
+      } else if (qt == EnforcingDBCOption::Reduced) {
+        return getReducedMatrixImpl(this->requirement(), this->affordanceCollection().matrixAffordance());
+      } else if (qt == EnforcingDBCOption::Full) {
+        return getMatrixImpl(this->requirement(), this->affordanceCollection().matrixAffordance());
+      }
+      __builtin_unreachable();
+    }
 
-  Eigen::MatrixXd matRaw_{}; ///< Raw dense matrix for assembly.
-  Eigen::MatrixXd mat_{};    ///< Dense matrix quantity.
-  Eigen::MatrixXd matRed_{}; ///< Reduced dense matrix quantity.
+    /**
+     * \brief  Calculates the matrix quantity requested by the bound  feRequirements, the affordance and the
+enforcingDBCOption.
+     * \see const Eigen::MatrixXd& matrix(EnforcingDBCOption qt)
+     * \return Reference to the dense matrix quantity.
+     */
+    const Eigen::MatrixXd& matrix() { return matrix(this->enforcingDBCOption()); }
+
+  private:
+    void assembleRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance,
+                               Eigen::MatrixXd& assemblyMat);
+    Eigen::MatrixXd& getRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance);
+    Eigen::MatrixXd& getMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance);
+    Eigen::MatrixXd& getReducedMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance);
+
+    Eigen::MatrixXd matRaw_{}; ///< Raw dense matrix for assembly.
+    Eigen::MatrixXd mat_{};    ///< Dense matrix quantity.
+    Eigen::MatrixXd matRed_{}; ///< Reduced dense matrix quantity.
 };
 
 #ifndef DOXYGEN
@@ -448,6 +661,11 @@ private:
 template <class FEC, class DV>
 DenseFlatAssembler(FEC&& fes, const DV& dirichletValues) -> DenseFlatAssembler<FEC, DV>;
 #endif
+
+template <typename FEC, typename DV>
+auto makeDenseFlatAssembler(FEC&& fes, const DV& dirichletValues) {
+  return std::make_shared<DenseFlatAssembler<FEC, DV>>(std::forward<FEC>(fes), dirichletValues);
+}
 } // namespace Ikarus
 
 #include "simpleassemblers.inl"

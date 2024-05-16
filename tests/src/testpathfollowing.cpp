@@ -42,7 +42,9 @@ static auto simple2DOperatorArcLengthTest(NonLinearOperator& nonLinOp, double st
   auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
   auto pft       = Ikarus::ArcLength{}; // Type of path following technique
 
-  auto nr  = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
+  auto nrSettings = Ikarus::NewtonRaphsonWithSubsidiaryFunctionSettings{.linearSolver = linSolver};
+  auto nr         = Ikarus::createNonlinearSolver(nrSettings, nonLinOp);
+
   auto alc = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
 
   auto nonLinearSolverObserver = std::make_shared<Ikarus::NonLinearSolverLogger>();
@@ -68,7 +70,8 @@ template <typename NonLinearOperator>
 static auto simple2DOperatorArcLengthTestAsDefault(NonLinearOperator& nonLinOp, double stepSize, int loadSteps) {
   resetNonLinearOperatorParametersToZero(nonLinOp);
   auto linSolver               = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
-  auto nr                      = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
+  auto nrSettings              = Ikarus::NewtonRaphsonWithSubsidiaryFunctionSettings{.linearSolver = linSolver};
+  auto nr                      = Ikarus::createNonlinearSolver(nrSettings, nonLinOp);
   auto alc                     = Ikarus::PathFollowing(nr, loadSteps, stepSize);
   auto nonLinearSolverObserver = std::make_shared<Ikarus::NonLinearSolverLogger>();
   auto pathFollowingObserver   = std::make_shared<Ikarus::ControlLogger>();
@@ -95,7 +98,8 @@ static auto simple2DOperatorLoadControlTest(NonLinearOperator& nonLinOp, double 
   auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
   auto pft       = Ikarus::LoadControlSubsidiaryFunction{}; // Type of path following technique
 
-  auto nr                      = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
+  auto nrSettings              = Ikarus::NewtonRaphsonWithSubsidiaryFunctionSettings{.linearSolver=linSolver};
+  auto nr                      = Ikarus::createNonlinearSolver(nrSettings, nonLinOp);
   auto lc                      = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
   auto nonLinearSolverObserver = std::make_shared<Ikarus::NonLinearSolverLogger>();
   auto pathFollowingObserver   = std::make_shared<Ikarus::ControlLogger>();
@@ -124,7 +128,8 @@ static auto simple2DOperatorDisplacementControlTest(NonLinearOperator& nonLinOp,
 
   auto pft = Ikarus::DisplacementControl{controlledIndices}; // Type of path following technique
 
-  auto nr                      = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
+  auto nrSettings              = Ikarus::NewtonRaphsonWithSubsidiaryFunctionSettings{.linearSolver = linSolver};
+  auto nr                      = Ikarus::createNonlinearSolver(nrSettings, nonLinOp);
   auto dc                      = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
   auto nonLinearSolverObserver = std::make_shared<Ikarus::NonLinearSolverLogger>();
   auto pathFollowingObserver   = std::make_shared<Ikarus::ControlLogger>();
