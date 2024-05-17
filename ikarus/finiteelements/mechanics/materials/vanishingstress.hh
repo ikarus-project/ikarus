@@ -246,17 +246,20 @@ private:
     auto Er    = E(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices).eval().template cast<ScalarType>();
     auto nonOp = Ikarus::NonLinearOperator(functions(f, df), parameter(Er));
 
-    NewtonRaphsonConfig nrs{
-        .parameters   = {.tol = tol_, .maxIter = 100},
-        .linearSolver = [](auto& r, auto& A) { return (A.inverse() * r).eval(); },
-        .updateFunction =
+    auto linearSolver= [](auto& r, auto& A) { return (A.inverse() * r).eval(); };
+    auto updateFunction =
             [&](auto&  /* Ex33 */, auto& ecomps) {
               for (int ri = 0; auto i : fixedDiagonalVoigtIndices) {
                 auto indexPair = fromVoigt(i);
                 E(indexPair[0], indexPair[1]) += ecomps(ri++);
-              }
-                         }
-    };
+              }  };
+              //THE CTAD is broken for designated initializers in clang 16, when we drop support this can be simplified
+    NewtonRaphsonConfig<decltype(linearSolver),decltype(updateFunction)> nrs{
+        .parameters   = {.tol = tol_, .maxIter = 100},
+        .linearSolver = linearSolver,
+        .updateFunction =updateFunction
+                         };
+  
 
     auto nr = createNonlinearSolver(std::move(nrs), nonOp);
     if (!static_cast<bool>(nr->solve()))

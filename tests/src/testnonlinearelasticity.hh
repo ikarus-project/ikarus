@@ -88,7 +88,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
 
   const double gradTol = 1e-8;
 
-  TrustRegionConfig trSettings{
+  TrustRegionConfig<> trSettings{
       .parameters = {.verbosity = 1,
                      .maxIter   = 1000,
                      .grad_tol  = gradTol,

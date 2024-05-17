@@ -126,7 +126,7 @@ public:
    * \param updateFunction Update function (default is UpdateDefault).
    */
   template <typename LS2 = LS, typename UF2 = UF>
-  explicit NewtonRaphsonWithSubsidiaryFunction(const NLO& nonLinearOperator, LS&& linearSolver = {},
+  explicit NewtonRaphsonWithSubsidiaryFunction(const NLO& nonLinearOperator, LS2&& linearSolver = {},
                                                UF2&& updateFunction = {})
       : nonLinearOperator_{nonLinearOperator},
         linearSolver_{std::forward<LS2>(linearSolver)},
