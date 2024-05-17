@@ -188,10 +188,10 @@ public:
    * \param nonLinearOperator Nonlinear operator to solve.
    * \param updateFunction Update function
    */
-  explicit TrustRegion(const NLO& nonLinearOperator, UF updateFunction = {})
-      : nonLinearOperator_{nonLinearOperator},
-        updateFunction_{updateFunction},
-        xOld_{this->nonLinearOperator().firstParameter()} {
+  template <typename UF2 = UF>
+   explicit TrustRegion(const NLO& nonLinearOperator,
+                                                   UF2&& updateFunction = {}) : nonLinearOperator_{nonLinearOperator},
+            updateFunction_{std::forward<UF2>(updateFunction)}, xOld_{this->nonLinearOperator().firstParameter()} {
     eta_.setZero(gradient().size());
     Heta_.setZero(gradient().size());
     truncatedConjugateGradient_.analyzePattern(hessian());
@@ -538,5 +538,9 @@ template <typename NLO, PreConditioner preConditioner = PreConditioner::Incomple
 auto makeTrustRegion(const NLO& nonLinearOperator, UF&& updateFunction = {}) {
   return std::make_shared<TrustRegion<NLO, preConditioner, UF>>(nonLinearOperator, updateFunction);
 }
+
+template <typename NLO, PreConditioner preConditioner = PreConditioner::IncompleteCholesky, typename UF2>
+    TrustRegion(const NLO& nonLinearOperator, UF2&& updateFunction = {})->TrustRegion < NLO,
+    preConditioner, std::remove_cvref_t<UF2>>;
 
 } // namespace Ikarus

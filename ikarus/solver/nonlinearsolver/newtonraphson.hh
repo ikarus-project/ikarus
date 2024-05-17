@@ -62,25 +62,30 @@ struct NewtonRaphsonConfig
  * \return Shared pointer to the NewtonRaphson solver instance.
  */
 template <typename NLO, typename NRConfig>
-requires traits::isSpecialization<NewtonRaphsonConfig, NRConfig>::value
+requires traits::isSpecialization<NewtonRaphsonConfig, std::remove_cvref_t<NRConfig>>::value
 auto createNonlinearSolver(NRConfig&& config, NLO&& nonLinearOperator) {
-  using LS = std::remove_cvref_t<NRConfig>::LinearSolver;
-  using UF = std::remove_cvref_t<NRConfig>::UpdateFunction;
+  using LS           = std::remove_cvref_t<NRConfig>::LinearSolver;
+  using UF           = std::remove_cvref_t<NRConfig>::UpdateFunction;
+  auto solverFactory = []<class NLO2, class LS2, class UF2>(NLO2&& nlo2, LS2&& ls, UF2&& uf) {
+    return std::make_shared<NewtonRaphson<std::remove_cvref_t<NLO2>, std::remove_cvref_t<LS2>,
+                                                                std::remove_cvref_t<UF2>>>(nlo2, std::forward<LS2>(ls),
+                                                                                           std::forward<UF2>(uf));
+  };
+
   if constexpr (nonLinearOperator.numberOfFunctions == 3) {
-    auto solver = [config]<class NLO2, class LS2, class UF2>(NLO2&& nlo2, LS2&& ls, UF2&& uf) {
-      return std::make_shared<NewtonRaphson<NLO2, LS2, UF2>>(std::forward<NLO2>(nlo2),
-                                                             std::forward<NRConfig>(config).linearSolver,
-                                                             std::forward<NRConfig>(config).updateFunction);
-    }(nonLinearOperator.template subOperator<1, 2>());
+    auto solver =
+        solverFactory(nonLinearOperator.template subOperator<1, 2>(), std::forward<NRConfig>(config).linearSolver,
+                      std::forward<NRConfig>(config).updateFunction);
     solver->setup(config.parameters);
     return solver;
   } else {
     static_assert(nonLinearOperator.numberOfFunctions > 1,
                   "The number of derivatives in the nonlinear operator have to be more than 1");
-    auto solver = std::make_shared<NewtonRaphson<std::remove_cvref_t<NLO>, LS, UF>>(
-        nonLinearOperator, std::forward<NRConfig>(config).linearSolver, std::forward<NRConfig>(config).updateFunction);
+    auto solver = solverFactory(nonLinearOperator, std::forward<NRConfig>(config).linearSolver,
+                                std::forward<NRConfig>(config).updateFunction);
+    ;
 
-    solver->setup(config.parameters);
+    solver->setup(std::forward<NRConfig>(config).parameters);
     return solver;
   }
 }
@@ -115,10 +120,11 @@ public:
    * \param linearSolver Linear solver used internally (default is SolverDefault).
    * \param updateFunction Update function (default is UpdateDefault).
    */
-  explicit NewtonRaphson(const NonLinearOperator& nonLinearOperator, LS&& linearSolver = {}, UF&& updateFunction = {})
+  template <typename LS2 = LS, typename UF2 = UF>
+  explicit NewtonRaphson(const NonLinearOperator& nonLinearOperator, LS2&& linearSolver = {}, UF2&& updateFunction = {})
       : nonLinearOperator_{nonLinearOperator},
-        linearSolver_{std::forward<LS>(linearSolver)},
-        updateFunction_{std::forward<UF>(updateFunction)} {
+        linearSolver_{std::forward<LS2>(linearSolver)},
+        updateFunction_{std::forward<UF2>(updateFunction)} {
     if constexpr (std::is_same_v<typename NonLinearOperator::ValueType, Eigen::VectorXd>)
       correction_.setZero(this->nonLinearOperator().value().size());
   }
@@ -219,5 +225,9 @@ auto makeNewtonRaphson(const NLO& nonLinearOperator, LS&& linearSolver = {}, UF&
   return std::make_shared<NewtonRaphson<NLO, LS, UF>>(nonLinearOperator, std::forward<LS>(linearSolver),
                                                       std::move(updateFunction));
 }
+
+template <typename NLO, typename LS, typename UF>
+    NewtonRaphson(const NLO& nonLinearOperator, LS&& linearSolver = {}, UF&& updateFunction = {})->NewtonRaphson < NLO,
+    std::remove_cvref_t<LS>, std::remove_cvref_t<UF>>;
 
 } // namespace Ikarus
