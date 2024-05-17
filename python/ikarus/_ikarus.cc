@@ -9,7 +9,7 @@
 #include <dune/python/pybind11/operators.h>
 #include <dune/python/pybind11/pybind11.h>
 
-#include <ikarus/assembler/EnforcingDBCOption.hh>
+#include <ikarus/assembler/dirichletbcenforcement.hh>
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/finiteelements/mechanics/materials.hh>
 #include <ikarus/python/finiteelements/material.hh>
