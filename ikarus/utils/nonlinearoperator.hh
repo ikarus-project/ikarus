@@ -113,7 +113,7 @@ namespace Impl {
  */
 template <typename... Args>
 auto parameter(Args&&... args) {
-  return Impl::Parameter{std::forward_as_tuple(std::forward<Args>(args)...)};
+  return Impl::Parameter<Args&&...>{std::forward_as_tuple(std::forward<Args>(args)...)};
 }
 
 /**
@@ -125,7 +125,7 @@ auto parameter(Args&&... args) {
  */
 template <typename... Args>
 auto functions(Args&&... args) {
-  return Impl::Functions{std::forward_as_tuple(std::forward<Args>(args)...)};
+  return Impl::Functions<Args&&...>{std::forward_as_tuple(std::forward<Args>(args)...)};
 }
 
 /**
