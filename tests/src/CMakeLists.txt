@@ -103,7 +103,7 @@ foreach(programSourceFile ${programSourceFiles})
   target_link_libraries(${programName} PUBLIC ${PYTHON_LIBRARIES})
 
   target_compile_options(
-    ${programName} PUBLIC -ftemplate-backtrace-limit=0 -fconcepts-diagnostics-depth=2
+    ${programName} PUBLIC -ftemplate-backtrace-limit=0
   )
   if(ENABLE_WARNINGS)
     target_compile_options(

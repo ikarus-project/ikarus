@@ -72,14 +72,14 @@ auto createNonlinearSolver(NRConfig&& config, NLO&& nonLinearOperator) {
                                                                                            std::forward<UF2>(uf));
   };
 
-  if constexpr (nonLinearOperator.numberOfFunctions == 3) {
+  if constexpr (std::remove_cvref_t<NLO>::numberOfFunctions == 3) {
     auto solver =
         solverFactory(nonLinearOperator.template subOperator<1, 2>(), std::forward<NRConfig>(config).linearSolver,
                       std::forward<NRConfig>(config).updateFunction);
     solver->setup(config.parameters);
     return solver;
   } else {
-    static_assert(nonLinearOperator.numberOfFunctions > 1,
+    static_assert(std::remove_cvref_t<NLO>::numberOfFunctions > 1,
                   "The number of derivatives in the nonlinear operator have to be more than 1");
     auto solver = solverFactory(nonLinearOperator, std::forward<NRConfig>(config).linearSolver,
                                 std::forward<NRConfig>(config).updateFunction);

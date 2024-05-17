@@ -96,7 +96,7 @@ requires traits::isSpecializationNonTypeAndTypes<TrustRegionConfig, std::remove_
 auto createNonlinearSolver(TRConfig&& config, NLO&& nonLinearOperator) {
   static constexpr PreConditioner preConditioner = std::remove_cvref_t<TRConfig>::preConditionerType;
   using UF                                       = std::remove_cvref_t<TRConfig>::UpdateFunction;
-  static_assert(NLO::numberOfFunctions == 3,
+  static_assert(std::remove_cvref_t<NLO>::numberOfFunctions == 3,
                 "The number of derivatives in the nonlinear operator have to be exactly 3.");
   auto solver = std::make_shared<TrustRegion<NLO, preConditioner, UF>>(nonLinearOperator,
                                                                        std::forward<TRConfig>(config).updateFunction);
