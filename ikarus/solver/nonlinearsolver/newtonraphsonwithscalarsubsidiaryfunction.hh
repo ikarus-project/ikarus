@@ -267,9 +267,8 @@ private:
   UF updateFunction_;
   Settings settings_;
 };
-template <typename NLO, typename LS, typename UF>
-    NewtonRaphsonWithSubsidiaryFunction(const NLO& nonLinearOperator, LS&& linearSolver = {}, UF&& updateFunction = {})
-        ->NewtonRaphsonWithSubsidiaryFunction < NLO,
-    std::remove_cvref_t<LS>, std::remove_cvref_t<UF>>;
+template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
+NewtonRaphsonWithSubsidiaryFunction(const NLO& nonLinearOperator, LS&& linearSolver = {}, UF&& updateFunction = {})
+    -> NewtonRaphsonWithSubsidiaryFunction<NLO, std::remove_cvref_t<LS>, std::remove_cvref_t<UF>>;
 
 } // namespace Ikarus

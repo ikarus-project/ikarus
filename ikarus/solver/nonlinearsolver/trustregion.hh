@@ -539,8 +539,9 @@ auto makeTrustRegion(const NLO& nonLinearOperator, UF&& updateFunction = {}) {
   return std::make_shared<TrustRegion<NLO, preConditioner, UF>>(nonLinearOperator, updateFunction);
 }
 
-template <typename NLO, PreConditioner preConditioner = PreConditioner::IncompleteCholesky, typename UF2>
-    TrustRegion(const NLO& nonLinearOperator, UF2&& updateFunction = {})->TrustRegion < NLO,
-    preConditioner, std::remove_cvref_t<UF2>>;
+template <typename NLO, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
+          typename UF2 = utils::UpdateDefault>
+TrustRegion(const NLO& nonLinearOperator,
+            UF2&& updateFunction = {}) -> TrustRegion<NLO, preConditioner, std::remove_cvref_t<UF2>>;
 
 } // namespace Ikarus

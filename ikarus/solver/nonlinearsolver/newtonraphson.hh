@@ -226,8 +226,8 @@ auto makeNewtonRaphson(const NLO& nonLinearOperator, LS&& linearSolver = {}, UF&
                                                       std::move(updateFunction));
 }
 
-template <typename NLO, typename LS, typename UF>
-    NewtonRaphson(const NLO& nonLinearOperator, LS&& linearSolver = {}, UF&& updateFunction = {})->NewtonRaphson < NLO,
-    std::remove_cvref_t<LS>, std::remove_cvref_t<UF>>;
+template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
+NewtonRaphson(const NLO& nonLinearOperator, LS&& linearSolver = {},
+              UF&& updateFunction = {}) -> NewtonRaphson<NLO, std::remove_cvref_t<LS>, std::remove_cvref_t<UF>>;
 
 } // namespace Ikarus
