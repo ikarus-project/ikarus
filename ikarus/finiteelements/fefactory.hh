@@ -63,9 +63,9 @@ public:
  * to use Eigen references. \param basisHandler The basis handler. \param sk Skill arguments. \return An FEFactory
  * object.
  */
-template < bool useFlat = true, bool useEigenRef = false, typename BH, typename SK>
+template <bool useFlat = true, bool useEigenRef = false, typename BH, typename SK>
 auto makeFE(const BH& basisHandler, const SK& sk) {
-  FEFactory<BH, SK,  useFlat, useEigenRef> factory(basisHandler, sk);
+  FEFactory<BH, SK, useFlat, useEigenRef> factory(basisHandler, sk);
 
   return factory();
 }
@@ -80,7 +80,7 @@ auto makeFE(const BH& basisHandler, const SK& sk) {
  * \param sk Skill arguments.
  * \return An FEFactory object.
  */
-template < bool useEigenRef = false, typename BH, typename SK>
+template <bool useEigenRef = false, typename BH, typename SK>
 auto makeFEWithUnTouchedBasis(const BH& basisHandler, SK&& sk) {
   FEFactory<BH, SK, false, useEigenRef> factory(basisHandler, std::forward<SK>(sk));
 

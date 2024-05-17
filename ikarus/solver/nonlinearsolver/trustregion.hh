@@ -36,13 +36,8 @@ enum class PreConditioner
   IdentityPreconditioner,
   DiagonalPreconditioner
 };
-/**
- * \struct TrustRegionSettings
- * \brief Configuration settings for the TrustRegion solver.
- */
 
-template <PreConditioner preConditioner = PreConditioner::IncompleteCholesky,typename UF = utils::UpdateDefault >
-struct TrustRegionSettings
+struct TRSettings
 {
   int verbosity    = 5;                                       ///< Verbosity level.
   double maxtime   = std::numeric_limits<double>::infinity(); ///< Maximum allowable time for solving.
@@ -56,54 +51,57 @@ struct TrustRegionSettings
   double rho_reg   = 1e6;                                     ///< Regularization value for rho.
   double Delta_bar = std::numeric_limits<double>::infinity(); ///< Maximum trust region radius.
   double Delta0    = 10;                                      ///< Initial trust region radius.
+};
 
-  using UpdateFunction = UF;
+/**
+ * \struct TrustRegionSettings
+ * \brief Configuration settings for the TrustRegion solver.
+ */
+
+template <PreConditioner preConditioner = PreConditioner::IncompleteCholesky, typename UF = utils::UpdateDefault>
+struct TrustRegionConfig
+{
+  static_assert(std::copy_constructible<UF>,
+                " The update function should be copy constructable. If it is a lambda wrap it in a std::function");
+
+  using UpdateFunction                               = UF;
+
+  TRSettings parameters;
   static constexpr PreConditioner preConditionerType = preConditioner;
-
   UF updateFunction;
   template <typename UF2>
   auto rebindUpdateFunction(UF2&& updateFunction) const {
-    TrustRegionSettings<preConditioner,UF2> settings{.verbosity      = verbosity,
-                                                      .maxtime        = maxtime,
-                                                      .minIter        = minIter,
-                                                      .maxIter        = maxIter,
-                                                      .debug          = debug,
-                                                      .grad_tol       = grad_tol,
-                                                      .corr_tol       = corr_tol,
-                                                      .rho_prime      = rho_prime,
-                                                      .useRand        = useRand,
-                                                      .rho_reg        = rho_reg,
-                                                      .Delta_bar      = Delta_bar,
-                                                      .Delta0         = Delta0,
-                                                      .updateFunction = std::forward<UF2>(updateFunction)};
+    TrustRegionConfig<preConditioner, UF2> settings{.parameters     = parameters,
+                                                    .updateFunction = std::forward<UF2>(updateFunction)};
     return settings;
   }
-
-
 };
 
 template <typename NLO, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
           typename UF = utils::UpdateDefault>
 class TrustRegion;
 
-    /**
-     * \brief Function to create a NewtonRaphson with subsidiary function solver instance.
-     * \tparam NLO Type of the nonlinear operator to solve.
-     * \tparam LS Type of the linear solver used internally (default is SolverDefault).
-     * \tparam UF Type of the update function (default is UpdateDefault).
-     * \param settings Settings for the solver.
-     * \param nonLinearOperator Nonlinear operator to solve.
-     * \param linearSolver Linear solver used internally (default is SolverDefault).
-     * \param updateFunction Update function (default is UpdateDefault).
-     * \return Shared pointer to the NewtonRaphson solver instance.
-     */
-template <typename NLO, PreConditioner preConditioner, typename UF>
-auto createNonlinearSolver(const TrustRegionSettings<preConditioner,UF>& settings, NLO&& nonLinearOperator) {
+/**
+ * \brief Function to create a trust region non-linear solver
+ * \tparam NLO Type of the nonlinear operator to solve.
+ * \tparam TRConfig Type of the nonlinear solver config.
+ * \param config Config for the solver.
+ * \param nonLinearOperator Nonlinear operator to solve.
+ * \param linearSolver Linear solver used internally (default is SolverDefault).
+ * \param updateFunction Update function (default is UpdateDefault).
+ * \return Shared pointer to the TrustRegion solver instance.
+ */
+template <typename NLO, typename TRConfig>
+requires traits::isSpecializationNonTypeAndTypes<TrustRegionConfig, std::remove_cvref_t<TRConfig>>::value
+auto createNonlinearSolver(TRConfig&& config, NLO&& nonLinearOperator) {
+  static constexpr PreConditioner preConditioner = std::remove_cvref_t<TRConfig>::preConditionerType;
+  using UF                                       = std::remove_cvref_t<TRConfig>::UpdateFunction;
   static_assert(NLO::numberOfFunctions == 3,
                 "The number of derivatives in the nonlinear operator have to be exactly 3.");
-  auto solver = TrustRegion<NLO, preConditioner,UF>(nonLinearOperator);
+  auto solver = std::make_shared<TrustRegion<NLO, preConditioner, UF>>(nonLinearOperator,
+                                                                       std::forward<TRConfig>(config).updateFunction);
 
-  solver.setup(settings);
+  solver->setup(config.parameters);
   return solver;
 }
 
@@ -168,12 +166,11 @@ struct Stats
 * \tparam preConditioner Type of preconditioner to use (default is IncompleteCholesky).
 * \tparam UF Type of the update function
 */
-template <typename NLO, PreConditioner preConditioner,
-          typename UF >
+template <typename NLO, PreConditioner preConditioner, typename UF>
 class TrustRegion : public IObservable<NonLinearSolverMessages>
 {
 public:
-  using Settings  = TrustRegionSettings<preConditioner,UF>;
+  using Settings  = TRSettings;                               ///< Type of the settings for the TrustRegion solver
   using ValueType = typename NLO::template ParameterValue<0>; ///< Type of the parameter vector of
                                                               ///< the nonlinear operator
   using CorrectionType = typename NLO::DerivativeType;        ///< Type of the correction of x += deltaX.

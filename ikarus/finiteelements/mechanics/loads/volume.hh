@@ -45,8 +45,9 @@ template <typename PreFE, typename FE>
 class VolumeLoad
 {
 public:
-  using Traits                  = PreFE::Traits;
-  using Requirement       = FERequirementsFactory<FESolutions::displacement, FEParameter::loadfactor,Traits::useEigenRef>::type;
+  using Traits = PreFE::Traits;
+  using Requirement =
+      FERequirementsFactory<FESolutions::displacement, FEParameter::loadfactor, Traits::useEigenRef>::type;
   static constexpr int worldDim = Traits::worlddim;
   using Pre                     = VolumeLoadPre<worldDim>;
 

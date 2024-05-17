@@ -23,7 +23,6 @@
 #include <ikarus/assembler/simpleassemblers.hh>
 #include <ikarus/controlroutines/loadcontrol.hh>
 #include <ikarus/finiteelements/mechanics/kirchhoffloveshell.hh>
-#include <ikarus/utils/nonlinopfactory.hh>
 #include <ikarus/io/resultfunction.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/solver/nonlinearsolver/trustregion.hh>
@@ -32,6 +31,7 @@
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/nonlinearoperator.hh>
+#include <ikarus/utils/nonlinopfactory.hh>
 #include <ikarus/utils/observer/controlvtkwriter.hh>
 #include <ikarus/utils/observer/nonlinearsolverlogger.hh>
 
@@ -112,10 +112,9 @@ static auto NonLinearKLShellLoadControlTR() {
   double lambda = 0.0;
 
   auto req = FEType::Requirement();
-    req.insertGlobalSolution( d)
-        .insertParameter(lambda);
+  req.insertGlobalSolution(d).insertParameter(lambda);
 
-  [[maybe_unused]] auto req2 = FEType::Requirement(d,lambda);
+  [[maybe_unused]] auto req2 = FEType::Requirement(d, lambda);
 
   sparseAssembler->bind(req, Ikarus::AffordanceCollections::elastoStatics);
   auto nonLinOp = Ikarus::NonLinearOperatorFactory::op(sparseAssembler, EnforcingDBCOption::Reduced);
@@ -209,8 +208,8 @@ auto singleElementTest() {
 
     t.subTest(checkFESByAutoDiff(
         gridView, power<3>(nurbs()),
-        Ikarus::skills(klShell, Ikarus::volumeLoad<3>(vL), Ikarus::neumannBoundaryLoad(&neumannBoundary, nBL)),Ikarus::AffordanceCollections::elastoStatics
-        ));
+        Ikarus::skills(klShell, Ikarus::volumeLoad<3>(vL), Ikarus::neumannBoundaryLoad(&neumannBoundary, nBL)),
+        Ikarus::AffordanceCollections::elastoStatics));
   }
   return t;
 }

@@ -63,27 +63,30 @@ public:
   using SupportedResultTypes =
       decltype(std::tuple_cat(computeSupportedResultTypes<Skills<PreFE, typename PreFE::template FE<Skills...>>>()...));
 
-  template<bool,typename =void>
+  template <bool, typename = void>
   struct RequirementType;
 
-  template<typename T>
-  struct RequirementType<false,T>
+  template <typename T>
+  struct RequirementType<false, T>
   {
-    using type = FERequirements<FESolutions::noSolution,FEParameter::noParameter>;
+    using type = FERequirements<FESolutions::noSolution, FEParameter::noParameter>;
   };
 
-    template<typename T>
-  struct RequirementType<true,T>
+  template <typename T>
+  struct RequirementType<true, T>
   {
     using type = std::common_type_t<typename Skills<PreFE, typename PreFE::template FE<Skills...>>::Requirement...>;
   };
 
 private:
-static constexpr bool requirementDetected = Dune::Std::is_detected_v<std::common_type_t,typename Skills<PreFE, typename PreFE::template FE<Skills...>>::Requirement...>;
-  static_assert(requirementDetected or sizeof...(Skills)==0, "The skills must have a common fe requirement type.");
+  static constexpr bool requirementDetected =
+      Dune::Std::is_detected_v<std::common_type_t,
+                               typename Skills<PreFE, typename PreFE::template FE<Skills...>>::Requirement...>;
+  static_assert(requirementDetected or sizeof...(Skills) == 0, "The skills must have a common fe requirement type.");
+
 public:
   using Traits                  = PreFE::Traits;
-  using Requirement = RequirementType<requirementDetected>::type;
+  using Requirement             = RequirementType<requirementDetected>::type;
   using LocalView               = typename Traits::LocalView;
   static constexpr int worldDim = Traits::worlddim;
 
@@ -92,9 +95,7 @@ public:
    *
    * @return The created Requirement object.
    */
-  static auto createRequirement()  {
-    return Requirement();
-  }
+  static auto createRequirement() { return Requirement(); }
 
   /**
    * \brief Calculate the scalar value associated with the given Requirement.
@@ -103,8 +104,8 @@ public:
    * \param req The Requirement object specifying the requirements for the calculation.
    * \return The calculated scalar value.
    */
-  friend auto calculateScalar(const FEMixin& self, const Requirement& req,ScalarAffordance affo) {
-    return self.template calculateScalarImpl<double>(req,affo);
+  friend auto calculateScalar(const FEMixin& self, const Requirement& req, ScalarAffordance affo) {
+    return self.template calculateScalarImpl<double>(req, affo);
   }
 
   /**
@@ -114,9 +115,9 @@ public:
    * \param req The Requirement object specifying the requirements for the calculation.
    * \param force The vector to store the calculated result.
    */
-  friend void calculateVector(const FEMixin& self, const Requirement& req,VectorAffordance affo,
+  friend void calculateVector(const FEMixin& self, const Requirement& req, VectorAffordance affo,
                               typename Traits::template VectorType<> force) {
-    self.template calculateVectorImpl<double>(req,affo, force);
+    self.template calculateVectorImpl<double>(req, affo, force);
   }
 
   /**
@@ -128,7 +129,7 @@ public:
    */
   friend void calculateMatrix(const FEMixin& self, const Requirement& req, MatrixAffordance affo,
                               typename Traits::template MatrixType<> K) {
-    self.template calculateMatrixImpl<double>(req,affo, K);
+    self.template calculateMatrixImpl<double>(req, affo, K);
   }
 
   using Skills<PreFE, typename PreFE::template FE<Skills...>>::calculateAtImpl...;
@@ -159,7 +160,7 @@ private:
   static constexpr bool implementsCalculateScalarImpl =
       (requires(FEMixin m, const Requirement& par, ScalarAffordance affo,
                 const std::optional<std::reference_wrapper<const Eigen::VectorX<double>>>& dx) {
-        m.Skills<PreFE, typename PreFE::template FE<Skills...>>::calculateScalarImpl(par,affo, dx);
+        m.Skills<PreFE, typename PreFE::template FE<Skills...>>::calculateScalarImpl(par, affo, dx);
       } ||
        ...);
 
@@ -182,15 +183,17 @@ public:
   auto calculateScalarImpl(
       const Requirement& par, ScalarAffordance affo,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
-    return (Skills<PreFE, typename PreFE::template FE<Skills...>>::template calculateScalarImpl<ScalarType>(par, affo,dx) +
-            ... + ScalarType{0});
+    return (
+        Skills<PreFE, typename PreFE::template FE<Skills...>>::template calculateScalarImpl<ScalarType>(par, affo, dx) +
+        ... + ScalarType{0});
   }
 
 private:
   static constexpr bool implementsCalculateVectorImpl =
-      (requires(FEMixin m, const Requirement& par,VectorAffordance affo,  typename Traits::template VectorType<double> force,
+      (requires(FEMixin m, const Requirement& par, VectorAffordance affo,
+                typename Traits::template VectorType<double> force,
                 const std::optional<std::reference_wrapper<const Eigen::VectorX<double>>>& dx) {
-        m.Skills<PreFE, typename PreFE::template FE<Skills...>>::calculateVectorImpl(par, affo,force, dx);
+        m.Skills<PreFE, typename PreFE::template FE<Skills...>>::calculateVectorImpl(par, affo, force, dx);
       } ||
        ...);
 
@@ -206,17 +209,19 @@ public:
   template <typename ScalarType>
   requires implementsCalculateVectorImpl
   void calculateVectorImpl(
-      const Requirement& par,VectorAffordance affo,  typename Traits::template VectorType<ScalarType> force,
+      const Requirement& par, VectorAffordance affo, typename Traits::template VectorType<ScalarType> force,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
-    (Skills<PreFE, typename PreFE::template FE<Skills...>>::template calculateVectorImpl<ScalarType>(par, affo, force, dx),
+    (Skills<PreFE, typename PreFE::template FE<Skills...>>::template calculateVectorImpl<ScalarType>(par, affo, force,
+                                                                                                     dx),
      ...);
   }
 
 private:
   static constexpr bool implementsCalculateMatrixImpl =
-      (requires(FEMixin m, const Requirement& par, MatrixAffordance affo,  typename Traits::template MatrixType<double> K,
+      (requires(FEMixin m, const Requirement& par, MatrixAffordance affo,
+                typename Traits::template MatrixType<double> K,
                 const std::optional<std::reference_wrapper<const Eigen::VectorX<double>>>& dx) {
-        m.Skills<PreFE, typename PreFE::template FE<Skills...>>::calculateMatrixImpl(par,affo,  K, dx);
+        m.Skills<PreFE, typename PreFE::template FE<Skills...>>::calculateMatrixImpl(par, affo, K, dx);
       } ||
        ...);
 
@@ -234,7 +239,8 @@ public:
   void calculateMatrixImpl(
       const Requirement& par, MatrixAffordance affo, typename Traits::template MatrixType<ScalarType> K,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
-    (Skills<PreFE, typename PreFE::template FE<Skills...>>::template calculateMatrixImpl<ScalarType>(par, affo,K, dx), ...);
+    (Skills<PreFE, typename PreFE::template FE<Skills...>>::template calculateMatrixImpl<ScalarType>(par, affo, K, dx),
+     ...);
   }
 
 protected:

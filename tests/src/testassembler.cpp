@@ -65,7 +65,7 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
     auto sk = skills(linearElastic({100, 0.1}), eas(basis.flat().preBasis().subPreBasis().order() == 1 ? 4 : 0),
                      volumeLoad<2>(vL));
 
-using FEType = decltype(makeFE(basis, sk));
+    using FEType = decltype(makeFE(basis, sk));
     std::vector<FEType> fes;
     for (auto&& ge : elements(gridView)) {
       fes.emplace_back(makeFE(basis, sk));
@@ -85,16 +85,16 @@ using FEType = decltype(makeFE(basis, sk));
     d.setRandom();
     double load = 0.0;
 
-  auto req = typename FEType::Requirement(d,load);
+    auto req = typename FEType::Requirement(d, load);
 
-    auto& KRawDense = denseFlatAssembler.matrix(req,MatrixAffordance::stiffness,EnforcingDBCOption::Raw);
+    auto& KRawDense = denseFlatAssembler.matrix(req, MatrixAffordance::stiffness, EnforcingDBCOption::Raw);
     auto& KRaw      = sparseFlatAssembler.matrix(req, MatrixAffordance::stiffness, EnforcingDBCOption::Raw);
     auto& RRawDense = denseFlatAssembler.vector(req, VectorAffordance::forces, EnforcingDBCOption::Raw);
     auto& RRaw      = sparseFlatAssembler.vector(req, VectorAffordance::forces, EnforcingDBCOption::Raw);
     checkAssembledQuantities(t, KRaw, KRawDense, totalDOFs);
     checkAssembledQuantities(t, RRaw, RRawDense, totalDOFs);
 
-    auto& KDense = denseFlatAssembler.matrix(req,MatrixAffordance::stiffness,EnforcingDBCOption::Full);
+    auto& KDense = denseFlatAssembler.matrix(req, MatrixAffordance::stiffness, EnforcingDBCOption::Full);
     auto& K      = sparseFlatAssembler.matrix(req, MatrixAffordance::stiffness, EnforcingDBCOption::Full);
     auto& RDense = denseFlatAssembler.vector(req, VectorAffordance::forces, EnforcingDBCOption::Full);
     auto& R      = sparseFlatAssembler.vector(req, VectorAffordance::forces, EnforcingDBCOption::Full);
@@ -133,7 +133,7 @@ using FEType = decltype(makeFE(basis, sk));
     }
 
     auto& KRedDense = denseFlatAssembler.matrix(req, MatrixAffordance::stiffness, EnforcingDBCOption::Reduced);
-    auto& KRed = sparseFlatAssembler.matrix(req, MatrixAffordance::stiffness, EnforcingDBCOption::Reduced);
+    auto& KRed      = sparseFlatAssembler.matrix(req, MatrixAffordance::stiffness, EnforcingDBCOption::Reduced);
     auto& RRedDense = denseFlatAssembler.vector(req, VectorAffordance::forces, EnforcingDBCOption::Reduced);
     auto& RRed      = sparseFlatAssembler.vector(req, VectorAffordance::forces, EnforcingDBCOption::Reduced);
     checkAssembledQuantities(t, KRed, KRedDense, totalDOFs - fixedDOFs);

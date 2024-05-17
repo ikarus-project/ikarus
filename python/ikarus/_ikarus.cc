@@ -9,12 +9,12 @@
 #include <dune/python/pybind11/operators.h>
 #include <dune/python/pybind11/pybind11.h>
 
+#include <ikarus/assembler/EnforcingDBCOption.hh>
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/finiteelements/mechanics/materials.hh>
-#include <ikarus/assembler/EnforcingDBCOption.hh>
 #include <ikarus/python/finiteelements/material.hh>
-#include <ikarus/solver/linearsolver/linearsolver.hh>
 #include <ikarus/python/finiteelements/valuewrapper.hh>
+#include <ikarus/solver/linearsolver/linearsolver.hh>
 // clang-format off
 #define ENUM_BINDINGS(Type)                        \
   py::enum_<Type> Type##Enum(m, #Type);           \
@@ -38,17 +38,18 @@ PYBIND11_MODULE(_ikarus, m) {
   ENUM_BINDINGS(SolverTypeTag);
   ENUM_BINDINGS(EnforcingDBCOption);
 
-py::class_<std::tuple<ScalarAffordance, VectorAffordance, MatrixAffordance>>(m, "Base");
+  py::class_<std::tuple<ScalarAffordance, VectorAffordance, MatrixAffordance>>(m, "Base");
   auto affordanceCollections3 =
-      Dune::Python::insertClass<AffordanceCollection<ScalarAffordance,VectorAffordance,MatrixAffordance>,
+      Dune::Python::insertClass<AffordanceCollection<ScalarAffordance, VectorAffordance, MatrixAffordance>,
                                 std::tuple<ScalarAffordance, VectorAffordance, MatrixAffordance>>(
-          m, "AffordanceCollection", Dune::Python::GenerateTypeName("AffordanceCollection<ScalarAffordance,VectorAffordance,MatrixAffordance>"),
-          Dune::Python::IncludeFiles("ikarus/finiteelements/ferequirements.hh")).first;
-
+          m, "AffordanceCollection",
+          Dune::Python::GenerateTypeName("AffordanceCollection<ScalarAffordance,VectorAffordance,MatrixAffordance>"),
+          Dune::Python::IncludeFiles("ikarus/finiteelements/ferequirements.hh"))
+          .first;
 
   affordanceCollections3.def(py::init<ScalarAffordance, VectorAffordance, MatrixAffordance>());
   affordanceCollections3.def_property_readonly_static("elastoStatics",
-                                                     [](py::object) { return AffordanceCollections::elastoStatics; });
+                                                      [](py::object) { return AffordanceCollections::elastoStatics; });
 
   using VWd = ValueWrapper<double>;
   auto valueWrapperDouble =

@@ -9,10 +9,7 @@
 #include <ikarus/utils/defaultfunctions.hh>
 #include <ikarus/utils/nonlinopfactory.hh>
 
-namespace Ikarus
-{
-
-
+namespace Ikarus {
 
 template <typename NLSSetting>
 struct NonlinearSolverFactory
@@ -24,9 +21,10 @@ struct NonlinearSolverFactory
 
 public:
   template <typename Assembler>
+  requires Concepts::FlatAssembler<typename std::remove_cvref_t<Assembler>::element_type>
   auto create(Assembler&& assembler) const {
-    auto nonLinOp             = NonLinearOperatorFactory::op(assembler);
-    std::function updateF     = [assembler, setting = settings](decltype(nonLinOp.firstParameter())& a,
+    auto nonLinOp         = NonLinearOperatorFactory::op(assembler);
+    std::function updateF = [assembler, setting = settings](decltype(nonLinOp.firstParameter())& a,
                                                             const decltype(nonLinOp.derivative())& b) {
       if (assembler->enforcingDBCOption() == EnforcingDBCOption::Reduced) {
         setting.updateFunction(a, assembler->createFullVector(b));
@@ -36,5 +34,5 @@ public:
     auto settingsNew = settings.rebindUpdateFunction(std::move(updateF));
     return createNonlinearSolver(std::move(settingsNew), std::move(nonLinOp));
   }
-  };
 };
+}; // namespace Ikarus

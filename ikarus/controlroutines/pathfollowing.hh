@@ -10,14 +10,14 @@
 
 #include <memory>
 
-#include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
 #include <ikarus/controlroutines/adaptivestepsizing.hh>
 #include <ikarus/controlroutines/controlinfos.hh>
 #include <ikarus/controlroutines/pathfollowingfunctions.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphsonwithscalarsubsidiaryfunction.hh>
+#include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
+#include <ikarus/utils/nonlinopfactory.hh>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observermessages.hh>
-#include <ikarus/utils/nonlinopfactory.hh>
 
 namespace Ikarus {
 
@@ -105,7 +105,7 @@ public:
    */
   ControlInformation run();
 
-/* \brief returns the nonlinear solver */
+  /* \brief returns the nonlinear solver */
   NLS& nonlinearSolver() { return *nonLinearSolver_; }
 
 private:
@@ -116,7 +116,6 @@ private:
   PF pathFollowingType_;
   ASS adaptiveStepSizing_;
 };
-
 
 } // namespace Ikarus
 

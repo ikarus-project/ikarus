@@ -18,15 +18,72 @@
 
 namespace Ikarus {
 
-/**
- * \struct NewtonRaphsonSettings
- * \brief Settings for the Newton-Raphson solver.
- */
-struct NewtonRaphsonSettings
+template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
+class NewtonRaphson;
+
+struct NRSettings
 {
   double tol{1e-8};
   int maxIter{20};
 };
+
+/**
+ * \struct NewtonRaphsonSettings
+ * \brief Settings for the Newton-Raphson solver.
+ */
+template <typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
+struct NewtonRaphsonConfig
+{
+  using LinearSolver   = LS;
+  using UpdateFunction = UF;
+  NRSettings parameters;
+  LS linearSolver;
+  UF updateFunction;
+
+  template <typename UF2>
+  auto rebindUpdateFunction(UF2&& updateFunction) const {
+    NewtonRaphsonConfig<LS, UF2> settings{
+        .parameters = parameters, .linearSolver = linearSolver, .updateFunction = std::forward<UF2>(updateFunction)};
+    return settings;
+  }
+
+  template <typename NLO>
+  using Solver = NewtonRaphson<NLO, LS, UF>;
+};
+
+/**
+ * \brief Function to create a NewtonRaphson with subsidiary function solver instance.
+ * \tparam NLO Type of the nonlinear operator to solve.
+ * \tparam NRConfig Type of the nonlinear solver config.
+ * \param config Config for the solver.
+ * \param nonLinearOperator Nonlinear operator to solve.
+ * \param linearSolver Linear solver used internally (default is SolverDefault).
+ * \param updateFunction Update function (default is UpdateDefault).
+ * \return Shared pointer to the NewtonRaphson solver instance.
+ */
+template <typename NLO, typename NRConfig>
+requires traits::isSpecialization<NewtonRaphsonConfig, NRConfig>::value
+auto createNonlinearSolver(NRConfig&& config, NLO&& nonLinearOperator) {
+  using LS = std::remove_cvref_t<NRConfig>::LinearSolver;
+  using UF = std::remove_cvref_t<NRConfig>::UpdateFunction;
+  if constexpr (nonLinearOperator.numberOfFunctions == 3) {
+    auto solver = [config]<class NLO2, class LS2, class UF2>(NLO2&& nlo2, LS2&& ls, UF2&& uf) {
+      return std::make_shared<NewtonRaphson<NLO2, LS2, UF2>>(std::forward<NLO2>(nlo2),
+                                                             std::forward<NRConfig>(config).linearSolver,
+                                                             std::forward<NRConfig>(config).updateFunction);
+    }(nonLinearOperator.template subOperator<1, 2>());
+    solver->setup(config.parameters);
+    return solver;
+  } else {
+    static_assert(nonLinearOperator.numberOfFunctions > 1,
+                  "The number of derivatives in the nonlinear operator have to be more than 1");
+    auto solver = std::make_shared<NewtonRaphson<std::remove_cvref_t<NLO>, LS, UF>>(
+        nonLinearOperator, std::forward<NRConfig>(config).linearSolver, std::forward<NRConfig>(config).updateFunction);
+
+    solver->setup(config.parameters);
+    return solver;
+  }
+}
 
 /**
  * \class NewtonRaphson
@@ -37,10 +94,11 @@ struct NewtonRaphsonSettings
  * \relates makeNewtonRaphson
  * \ingroup solvers
  */
-template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
+template <typename NLO, typename LS, typename UF>
 class NewtonRaphson : public IObservable<NonLinearSolverMessages>
 {
 public:
+  using Settings = NRSettings;
   ///< Compile-time boolean indicating if the linear solver satisfies the non-linear solver concept
   static constexpr bool isLinearSolver =
       Ikarus::Concepts::LinearSolverCheck<LinearSolver, typename NLO::DerivativeType, typename NLO::ValueType>;
@@ -57,11 +115,10 @@ public:
    * \param linearSolver Linear solver used internally (default is SolverDefault).
    * \param updateFunction Update function (default is UpdateDefault).
    */
-  explicit NewtonRaphson(const NonLinearOperator& nonLinearOperator, LS&& linearSolver = {},
-                         UpdateFunction updateFunction = {})
+  explicit NewtonRaphson(const NonLinearOperator& nonLinearOperator, LS&& linearSolver = {}, UF&& updateFunction = {})
       : nonLinearOperator_{nonLinearOperator},
-        linearSolver_{std::move(linearSolver)},
-        updateFunction_{updateFunction} {
+        linearSolver_{std::forward<LS>(linearSolver)},
+        updateFunction_{std::forward<UF>(updateFunction)} {
     if constexpr (std::is_same_v<typename NonLinearOperator::ValueType, Eigen::VectorXd>)
       correction_.setZero(this->nonLinearOperator().value().size());
   }
@@ -70,7 +127,7 @@ public:
    * \brief Set up the solver with the given settings.
    * \param settings Newton-Raphson settings.
    */
-  void setup(const NewtonRaphsonSettings& settings) { settings_ = settings; }
+  void setup(const Settings& settings) { settings_ = settings; }
 
 #ifndef DOXYGEN
   struct NoPredictor
@@ -144,7 +201,7 @@ private:
   typename NonLinearOperator::ValueType correction_;
   LS linearSolver_;
   UpdateFunction updateFunction_;
-  NewtonRaphsonSettings settings_;
+  Settings settings_;
 };
 
 /**

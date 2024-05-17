@@ -12,6 +12,7 @@
 #pragma once
 
 #include <ikarus/finiteelements/mechanics/materials/interface.hh>
+#include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/utils/nonlinearoperator.hh>
 
@@ -244,15 +245,20 @@ private:
 
     auto Er    = E(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices).eval().template cast<ScalarType>();
     auto nonOp = Ikarus::NonLinearOperator(functions(f, df), parameter(Er));
-    auto nr    = Ikarus::makeNewtonRaphson(
-        nonOp, [&](auto& r, auto& A) { return (A.inverse() * r).eval(); },
-        [&](auto& /* Ex33 */, auto& ecomps) {
-          for (int ri = 0; auto i : fixedDiagonalVoigtIndices) {
-            auto indexPair = fromVoigt(i);
-            E(indexPair[0], indexPair[1]) += ecomps(ri++);
-          }
-        });
-    nr->setup({.tol = tol_, .maxIter = 100});
+
+    NewtonRaphsonConfig nrs{
+        .parameters   = {.tol = tol_, .maxIter = 100},
+        .linearSolver = [](auto& r, auto& A) { return (A.inverse() * r).eval(); },
+        .updateFunction =
+            [&](auto&  /* Ex33 */, auto& ecomps) {
+              for (int ri = 0; auto i : fixedDiagonalVoigtIndices) {
+                auto indexPair = fromVoigt(i);
+                E(indexPair[0], indexPair[1]) += ecomps(ri++);
+              }
+                         }
+    };
+
+    auto nr = createNonlinearSolver(std::move(nrs), nonOp);
     if (!static_cast<bool>(nr->solve()))
       DUNE_THROW(Dune::MathError, "The stress reduction of material " << nameImpl() << " was unsuccessful\n"
                                                                       << "The strains are\n"

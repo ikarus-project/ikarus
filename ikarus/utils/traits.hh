@@ -96,7 +96,6 @@ struct hasType<T, T> : std::true_type
 {
 };
 
-
 /**
  * \brief Recursive template specialization of hasType trait for tuples.
  * \ingroup traits
@@ -116,11 +115,11 @@ struct hasType<T, std::tuple<T, Ts...>> : std::true_type
 #endif
 
 /**
-  * \brief Function to return the n-th object of a variadic template.
-  *
-  * \ingroup traits
-  *
-  */
+ * \brief Function to return the n-th object of a variadic template.
+ *
+ * \ingroup traits
+ *
+ */
 struct NthArgument
 {
   /** \brief Function to return the n-th object of a variadic template.
@@ -161,7 +160,6 @@ struct isSharedPtr<std::shared_ptr<T>> : std::true_type
 {
 };
 #endif
-
 
 template <typename T>
 class remove_pointer

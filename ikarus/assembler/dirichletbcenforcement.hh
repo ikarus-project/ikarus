@@ -3,10 +3,6 @@
 #include <ikarus/utils/makeenum.hh>
 
 #pragma once
-namespace Ikarus{
-MAKE_ENUM(EnforcingDBCOption,
-  Raw,
-  Reduced,
-  Full
-);
+namespace Ikarus {
+MAKE_ENUM(EnforcingDBCOption, Raw, Reduced, Full);
 }

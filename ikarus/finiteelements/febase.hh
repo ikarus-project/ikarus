@@ -85,12 +85,12 @@ protected:
   friend Mixin;
 
 public:
-  using Traits            = PreFE::Traits;                ///< Type traits
-  using BasisHandler      = Traits::BasisHandler;         ///< Type of the basisHandler.
-  using LocalView         = typename Traits::LocalView;   ///< Type of the local view.
-  using GridView          = typename Traits::GridView;    ///< Type of the global view.
-  using GlobalIndex       = typename Traits::GlobalIndex; ///< Type of the global index.
-  using GridElement       = typename Traits::Element;     ///< Type of the grid element.
+  using Traits       = PreFE::Traits;                ///< Type traits
+  using BasisHandler = Traits::BasisHandler;         ///< Type of the basisHandler.
+  using LocalView    = typename Traits::LocalView;   ///< Type of the local view.
+  using GridView     = typename Traits::GridView;    ///< Type of the global view.
+  using GlobalIndex  = typename Traits::GlobalIndex; ///< Type of the global index.
+  using GridElement  = typename Traits::Element;     ///< Type of the grid element.
   using typename Mixin::Requirement;
 
   static constexpr int myDim    = Traits::mydim;

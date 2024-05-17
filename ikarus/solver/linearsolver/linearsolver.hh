@@ -25,27 +25,10 @@ namespace Ikarus {
  * \details The prefix s and d stand for sparse and dense solvers and the second prefix i and d stand for iterative or
  * direct solvers for the sparse case
  */
-MAKE_ENUM(SolverTypeTag,
-  none,
-  si_ConjugateGradient,
-  si_LeastSquaresConjugateGradient,
-  si_BiCGSTAB,
-  sd_SimplicialLLT,
-  sd_SimplicialLDLT,
-  sd_SparseLU,
-  sd_SparseQR,
-  sd_CholmodSupernodalLLT,
-  sd_UmfPackLU,
-  sd_SuperLU,
-  d_PartialPivLU,
-  d_FullPivLU,
-  d_HouseholderQR,
-  d_ColPivHouseholderQR,
-  d_FullPivHouseholderQR,
-  d_CompleteOrthogonalDecomposition,
-  d_LLT,
-  d_LDLT
-);
+MAKE_ENUM(SolverTypeTag, none, si_ConjugateGradient, si_LeastSquaresConjugateGradient, si_BiCGSTAB, sd_SimplicialLLT,
+          sd_SimplicialLDLT, sd_SparseLU, sd_SparseQR, sd_CholmodSupernodalLLT, sd_UmfPackLU, sd_SuperLU,
+          d_PartialPivLU, d_FullPivLU, d_HouseholderQR, d_ColPivHouseholderQR, d_FullPivHouseholderQR,
+          d_CompleteOrthogonalDecomposition, d_LLT, d_LDLT);
 
 /**
  * \enum MatrixTypeTag
@@ -71,13 +54,13 @@ public:
   using SparseMatrixType = Eigen::SparseMatrix<ScalarType>;
   using DenseMatrixType  = Eigen::MatrixX<ScalarType>;
 
-  LinearSolverTemplate()=default;
+  LinearSolverTemplate() = default;
 
-      /**
-       * \brief Constructor for LinearSolverTemplate.
-       * \param solverTypeTag The solver type tag representing the type of the linear solver.
-       */
-      explicit LinearSolverTemplate(const SolverTypeTag& solverTypeTag);
+  /**
+   * \brief Constructor for LinearSolverTemplate.
+   * \param solverTypeTag The solver type tag representing the type of the linear solver.
+   */
+  explicit LinearSolverTemplate(const SolverTypeTag& solverTypeTag);
 
   /**
    * \brief Destructor for LinearSolverTemplate.
@@ -96,7 +79,7 @@ public:
   LinearSolverTemplate& operator=(const LinearSolverTemplate& other) {
     LinearSolverTemplate tmp(other);
     swap(*this, tmp);
-     return *this;
+    return *this;
   }
 
   /**

@@ -62,7 +62,7 @@ auto mixinTest(const PreBasis& preBasis) {
   auto preFE = makeFE(
       basis, skills(nonLinearElastic(reducedMat), volumeLoad(vL), neumannBoundaryLoad(&neumannBoundary, nBLoad)));
 
-using FEType = decltype(preFE);
+  using FEType = decltype(preFE);
   std::vector<FEType> fes;
 
   for (auto&& ge : elements(gridView)) {
@@ -75,7 +75,7 @@ using FEType = decltype(preFE);
   d.setRandom();
   double load = 0.0;
 
-  auto req = typename FEType::Requirement(d,load);
+  auto req = typename FEType::Requirement(d, load);
 
   Eigen::VectorXd forces(fes.begin()->size());
   forces.setZero();

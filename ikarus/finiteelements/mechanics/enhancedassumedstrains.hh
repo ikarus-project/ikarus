@@ -49,12 +49,13 @@ template <typename PreFE, typename FE>
 class EnhancedAssumedStrains
 {
 public:
-  using Traits            = PreFE::Traits;
-  using Requirement = FERequirementsFactory<FESolutions::displacement, FEParameter::loadfactor,Traits::useEigenRef>::type;
-  using LocalView         = typename Traits::LocalView;
-  using Geometry          = typename Traits::Geometry;
-  using GridView          = typename Traits::GridView;
-  using Pre               = EnhancedAssumedStrainsPre;
+  using Traits = PreFE::Traits;
+  using Requirement =
+      FERequirementsFactory<FESolutions::displacement, FEParameter::loadfactor, Traits::useEigenRef>::type;
+  using LocalView = typename Traits::LocalView;
+  using Geometry  = typename Traits::Geometry;
+  using GridView  = typename Traits::GridView;
+  using Pre       = EnhancedAssumedStrainsPre;
 
   using SupportedResultTypes = std::tuple<decltype(makeRT<ResultTypes::linearStress>())>;
 
@@ -157,7 +158,7 @@ protected:
 
   template <typename ScalarType>
   void calculateMatrixImpl(
-      const Requirement& par,const MatrixAffordance& affo, typename Traits::template MatrixType<> K,
+      const Requirement& par, const MatrixAffordance& affo, typename Traits::template MatrixType<> K,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
@@ -184,7 +185,7 @@ protected:
 
   template <typename ScalarType>
   inline ScalarType calculateScalarImpl(
-      const Requirement& par,const ScalarAffordance& affo,
+      const Requirement& par, const ScalarAffordance& affo,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
     easApplicabilityCheck();
     if (isDisplacementBased())
@@ -195,7 +196,7 @@ protected:
 
   template <typename ScalarType>
   void calculateVectorImpl(
-      const Requirement& par,const VectorAffordance& affo, typename Traits::template VectorType<ScalarType> force,
+      const Requirement& par, const VectorAffordance& affo, typename Traits::template VectorType<ScalarType> force,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
     easApplicabilityCheck();
     using namespace Dune;

@@ -49,16 +49,17 @@ template <typename PreFE, typename FE>
 class KirchhoffLoveShell
 {
 public:
-  using Traits            = PreFE::Traits;
-  using BasisHandler      = typename Traits::BasisHandler;
-  using FlatBasis         = typename Traits::FlatBasis;
-  using Requirement = FERequirementsFactory<FESolutions::displacement, FEParameter::loadfactor,Traits::useEigenRef>::type;
-  using LocalView         = typename Traits::LocalView;
-  using Geometry          = typename Traits::Geometry;
-  using GridView          = typename Traits::GridView;
-  using Element           = typename Traits::Element;
-  using LocalBasisType    = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
-  using Pre               = KirchhoffLoveShellPre;
+  using Traits       = PreFE::Traits;
+  using BasisHandler = typename Traits::BasisHandler;
+  using FlatBasis    = typename Traits::FlatBasis;
+  using Requirement =
+      FERequirementsFactory<FESolutions::displacement, FEParameter::loadfactor, Traits::useEigenRef>::type;
+  using LocalView      = typename Traits::LocalView;
+  using Geometry       = typename Traits::Geometry;
+  using GridView       = typename Traits::GridView;
+  using Element        = typename Traits::Element;
+  using LocalBasisType = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
+  using Pre            = KirchhoffLoveShellPre;
 
   static constexpr int myDim              = Traits::mydim;
   static constexpr int worldDim           = Traits::worlddim;
@@ -246,10 +247,10 @@ protected:
 
   template <typename ST>
   void calculateMatrixImpl(
-      const Requirement& par, const MatrixAffordance& affo,typename Traits::template MatrixType<ST> K,
+      const Requirement& par, const MatrixAffordance& affo, typename Traits::template MatrixType<ST> K,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const {
-                        if (affo != MatrixAffordance::stiffness)
-        DUNE_THROW(Dune::NotImplemented, "MatrixAffordance not implemented: "+toString(affo));
+    if (affo != MatrixAffordance::stiffness)
+      DUNE_THROW(Dune::NotImplemented, "MatrixAffordance not implemented: " + toString(affo));
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     const auto uFunction = displacementFunction(par, dx);
@@ -293,8 +294,8 @@ protected:
   void calculateVectorImpl(
       const Requirement& par, const VectorAffordance& affo, typename Traits::template VectorType<ST> force,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const {
-                if (affo != VectorAffordance::forces)
-        DUNE_THROW(Dune::NotImplemented, "VectorAffordance not implemented: "+ toString(affo));
+    if (affo != VectorAffordance::forces)
+      DUNE_THROW(Dune::NotImplemented, "VectorAffordance not implemented: " + toString(affo));
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     const auto uFunction = displacementFunction(par, dx);
@@ -326,8 +327,8 @@ protected:
   auto calculateScalarImpl(
       const Requirement& par, const ScalarAffordance& affo,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const -> ST {
-        if (affo != ScalarAffordance::mechanicalPotentialEnergy)
-        DUNE_THROW(Dune::NotImplemented, "ScalarAffordance not implemented: " + toString(affo));
+    if (affo != ScalarAffordance::mechanicalPotentialEnergy)
+      DUNE_THROW(Dune::NotImplemented, "ScalarAffordance not implemented: " + toString(affo));
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     const auto uFunction = displacementFunction(par, dx);

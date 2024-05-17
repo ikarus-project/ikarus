@@ -42,7 +42,7 @@ struct ElementTest<FE>
         }
         t.subTest(checkJacobianOfElement(subOp, messageIfFailed));
 
-        t.subTest(checkFEByAutoDiff(nonLinOp, fe, req,affo, messageIfFailed));
+        t.subTest(checkFEByAutoDiff(nonLinOp, fe, req, affo, messageIfFailed));
 
         auto stiffnessMatrix = subOp.derivative();
 
@@ -86,8 +86,9 @@ struct ElementTest<FE>
           easVariant(testM);
 
           auto requirements = typename std::remove_cvref_t<decltype(fe)>::Requirement();
-          t.checkThrow([&]() { calculateScalar(fe, requirements, Ikarus::ScalarAffordance::mechanicalPotentialEnergy); })
-              << "fe.calculateScalar should have failed for numberOfEASParameter > 0";
+          t.checkThrow([&]() {
+            calculateScalar(fe, requirements, Ikarus::ScalarAffordance::mechanicalPotentialEnergy);
+          }) << "fe.calculateScalar should have failed for numberOfEASParameter > 0";
         }
 
         t.check(numberOfEASParameter == fe.numberOfEASParameters())

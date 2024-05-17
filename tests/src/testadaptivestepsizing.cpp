@@ -95,7 +95,8 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
 
   Ikarus::KlArgs args = {E, nu, thickness};
   t.subTest(checkFESByAutoDiff(gridView, power<3>(nurbs()),
-                               skills(kirchhoffLoveShell(args), neumannBoundaryLoad(&neumannBoundary, nBL)),Ikarus::AffordanceCollections::elastoStatics));
+                               skills(kirchhoffLoveShell(args), neumannBoundaryLoad(&neumannBoundary, nBL)),
+                               Ikarus::AffordanceCollections::elastoStatics));
   auto sk = skills(kirchhoffLoveShell(args), neumannBoundaryLoad(&neumannBoundary, nBL));
 
   using FEType = decltype(Ikarus::makeFE(basis, sk));
@@ -142,94 +143,94 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
 
   int loadSteps = 6;
 
-  auto nrSettings         = NewtonRaphsonWithSubsidiaryFunctionSettings{.linearSolver=linSolver};
+  auto nrSettings = NewtonRaphsonWithSubsidiaryFunctionConfig{.linearSolver = linSolver};
 
-   NonlinearSolverFactory nrFactory(nrSettings );
-   auto nr = nrFactory.create(sparseAssembler);
-   auto nr2 = nrFactory.create(sparseAssembler);
+  NonlinearSolverFactory nrFactory(nrSettings);
+  auto nr  = nrFactory.create(sparseAssembler);
+  auto nr2 = nrFactory.create(sparseAssembler);
 
-   auto dass               = AdaptiveStepSizing::IterationBased{};
-   auto nass               = AdaptiveStepSizing::NoOp{};
-   dass.setTargetIterations(targetIterations);
+  auto dass = AdaptiveStepSizing::IterationBased{};
+  auto nass = AdaptiveStepSizing::NoOp{};
+  dass.setTargetIterations(targetIterations);
 
-   /// control routine with and without step sizing
-   auto crWSS  = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft, dass);
-   auto crWoSS = Ikarus::PathFollowing(nr2, loadSteps, stepSize, pft, nass);
+  /// control routine with and without step sizing
+  auto crWSS  = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft, dass);
+  auto crWoSS = Ikarus::PathFollowing(nr2, loadSteps, stepSize, pft, nass);
 
-   auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
-   auto pathFollowingObserver   = std::make_shared<ControlLogger>();
-   crWSS.nonlinearSolver().subscribeAll(nonLinearSolverObserver);
-   crWoSS.nonlinearSolver().subscribeAll(nonLinearSolverObserver);
+  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
+  auto pathFollowingObserver   = std::make_shared<ControlLogger>();
+  crWSS.nonlinearSolver().subscribeAll(nonLinearSolverObserver);
+  crWoSS.nonlinearSolver().subscribeAll(nonLinearSolverObserver);
 
-   t.checkThrow<Dune::InvalidStateException>(
-       [&]() { nonLinearSolverObserver->update(Ikarus::NonLinearSolverMessages::BEGIN); },
-       "nonLinearSolverObserver should have failed for the BEGIN message");
+  t.checkThrow<Dune::InvalidStateException>(
+      [&]() { nonLinearSolverObserver->update(Ikarus::NonLinearSolverMessages::BEGIN); },
+      "nonLinearSolverObserver should have failed for the BEGIN message");
 
-   t.checkThrow<Dune::InvalidStateException>(
-       [&]() { nonLinearSolverObserver->update(Ikarus::NonLinearSolverMessages::END); },
-       "nonLinearSolverObserver should have failed for the END message");
+  t.checkThrow<Dune::InvalidStateException>(
+      [&]() { nonLinearSolverObserver->update(Ikarus::NonLinearSolverMessages::END); },
+      "nonLinearSolverObserver should have failed for the END message");
 
-   /// Create Observer which writes vtk files when control routines messages
-   /// SOLUTION_CHANGED
-   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(
-       basis.flat(), d, 2);
-   vtkWriter->setFieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 3);
-   vtkWriter->setFileNamePrefix("testAdaptiveStepSizing" + pft.name());
+  /// Create Observer which writes vtk files when control routines messages
+  /// SOLUTION_CHANGED
+  auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(
+      basis.flat(), d, 2);
+  vtkWriter->setFieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 3);
+  vtkWriter->setFileNamePrefix("testAdaptiveStepSizing" + pft.name());
 
-   crWoSS.subscribeAll({vtkWriter, pathFollowingObserver});
-   crWoSS.unSubscribeAll(vtkWriter);
-   crWSS.subscribeAll({pathFollowingObserver});
-   crWSS.subscribe(ControlMessages::SOLUTION_CHANGED, vtkWriter);
+  crWoSS.subscribeAll({vtkWriter, pathFollowingObserver});
+  crWoSS.unSubscribeAll(vtkWriter);
+  crWSS.subscribeAll({pathFollowingObserver});
+  crWSS.subscribe(ControlMessages::SOLUTION_CHANGED, vtkWriter);
 
-   const std::string& message1 = " --> " + pft.name() + " with default adaptive step sizing";
-   const std::string& message2 = " --> " + pft.name() + " without default adaptive step sizing";
+  const std::string& message1 = " --> " + pft.name() + " with default adaptive step sizing";
+  const std::string& message2 = " --> " + pft.name() + " without default adaptive step sizing";
 
-   t.checkThrow<Dune::InvalidStateException>(
-       [&]() {
-         auto dass2  = AdaptiveStepSizing::IterationBased{};
-         auto nr3                   = nrFactory.create(sparseAssembler);
-         auto crWSS2 = Ikarus::PathFollowing(nr3, loadSteps, stepSize, pft, dass2);
-         const auto controlInfoWSS2 = crWSS2.run();
-       },
-       "IterationBased should fail for targetIterations being 0");
+  t.checkThrow<Dune::InvalidStateException>(
+      [&]() {
+        auto dass2                 = AdaptiveStepSizing::IterationBased{};
+        auto nr3                   = nrFactory.create(sparseAssembler);
+        auto crWSS2                = Ikarus::PathFollowing(nr3, loadSteps, stepSize, pft, dass2);
+        const auto controlInfoWSS2 = crWSS2.run();
+      },
+      "IterationBased should fail for targetIterations being 0");
 
-   resetNonLinearOperatorParametersToZero(crWSS.nonlinearSolver().nonLinearOperator());
-   const auto controlInfoWSS = crWSS.run();
-   const double tolDisp      = 1e-13;
-   const double tolLoad      = 1e-12;
-   checkScalars(t, std::ranges::max(d), expectedResults[0][0], message1 + " <Max Displacement>", tolDisp);
-   checkScalars(t, lambda, expectedResults[0][1], message1 + " <Lambda>", tolLoad);
-   resetNonLinearOperatorParametersToZero(crWSS.nonlinearSolver().nonLinearOperator());
+  resetNonLinearOperatorParametersToZero(crWSS.nonlinearSolver().nonLinearOperator());
+  const auto controlInfoWSS = crWSS.run();
+  const double tolDisp      = 1e-13;
+  const double tolLoad      = 1e-12;
+  checkScalars(t, std::ranges::max(d), expectedResults[0][0], message1 + " <Max Displacement>", tolDisp);
+  checkScalars(t, lambda, expectedResults[0][1], message1 + " <Lambda>", tolLoad);
+  resetNonLinearOperatorParametersToZero(crWSS.nonlinearSolver().nonLinearOperator());
 
-   const auto controlInfoWoSS = crWoSS.run();
+  const auto controlInfoWoSS = crWoSS.run();
 
-   checkScalars(t, std::ranges::max(d), expectedResults[1][0], message2 + " <Max Displacement>", tolDisp);
-   checkScalars(t, lambda, expectedResults[1][1], message2 + " <Lambda>", tolLoad);
-   resetNonLinearOperatorParametersToZero(crWSS.nonlinearSolver().nonLinearOperator());
+  checkScalars(t, std::ranges::max(d), expectedResults[1][0], message2 + " <Max Displacement>", tolDisp);
+  checkScalars(t, lambda, expectedResults[1][1], message2 + " <Lambda>", tolLoad);
+  resetNonLinearOperatorParametersToZero(crWSS.nonlinearSolver().nonLinearOperator());
 
-   const int controlInfoWSSIterations =
-       std::accumulate(controlInfoWSS.solverInfos.begin(), controlInfoWSS.solverInfos.end(), 0,
-                       [](int a, auto& b) { return b.iterations + a; });
+  const int controlInfoWSSIterations =
+      std::accumulate(controlInfoWSS.solverInfos.begin(), controlInfoWSS.solverInfos.end(), 0,
+                      [](int a, auto& b) { return b.iterations + a; });
 
-   t.check(controlInfoWSS.success, "No convergence" + message1);
-   t.check(controlInfoWoSS.success, "No convergence" + message2);
+  t.check(controlInfoWSS.success, "No convergence" + message1);
+  t.check(controlInfoWoSS.success, "No convergence" + message2);
 
-   t.check(controlInfoWSS.totalIterations < controlInfoWoSS.totalIterations)
-       << "Total iterations should be less --> " << controlInfoWSS.totalIterations << " > "
-       << std::to_string(controlInfoWoSS.totalIterations) + " --> " + pft.name();
+  t.check(controlInfoWSS.totalIterations < controlInfoWoSS.totalIterations)
+      << "Total iterations should be less --> " << controlInfoWSS.totalIterations << " > "
+      << std::to_string(controlInfoWoSS.totalIterations) + " --> " + pft.name();
 
-   t.check(controlInfoWSSIterations == controlInfoWSS.totalIterations)
-       << "Total number of iterations is wrong --> " << controlInfoWSS.totalIterations << " is not equal to "
-       << std::to_string(controlInfoWSSIterations) + " --> " + pft.name();
+  t.check(controlInfoWSSIterations == controlInfoWSS.totalIterations)
+      << "Total number of iterations is wrong --> " << controlInfoWSS.totalIterations << " is not equal to "
+      << std::to_string(controlInfoWSSIterations) + " --> " + pft.name();
 
-   checkSolverInfos(t, expectedIterations[0], controlInfoWSS, loadSteps, message1);
-   checkSolverInfos(t, expectedIterations[1], controlInfoWoSS, loadSteps, message2);
+  checkSolverInfos(t, expectedIterations[0], controlInfoWSS, loadSteps, message1);
+  checkSolverInfos(t, expectedIterations[1], controlInfoWoSS, loadSteps, message2);
 
-   auto nonLinOp = NonLinearOperatorFactory::op(sparseAssembler);
-   t.check(utils::checkGradient(nonLinOp, {.draw = false})) << "Check gradient failed";
-   t.check(utils::checkHessian(nonLinOp, {.draw = false})) << "Check hessian failed";
+  auto nonLinOp = NonLinearOperatorFactory::op(sparseAssembler);
+  t.check(utils::checkGradient(nonLinOp, {.draw = false})) << "Check gradient failed";
+  t.check(utils::checkHessian(nonLinOp, {.draw = false})) << "Check hessian failed";
 
-   return t;
+  return t;
 }
 #include <cfenv>
 int main(int argc, char** argv) {

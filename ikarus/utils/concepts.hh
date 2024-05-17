@@ -19,6 +19,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
+#include "ikarus/assembler/dirichletbcenforcement.hh"
 #include <ikarus/utils/traits.hh>
 
 namespace Eigen {
@@ -350,13 +351,13 @@ namespace Concepts {
   template <typename V>
   concept EigenVector = static_cast<bool>(V::IsVectorAtCompileTime);
 
-    /**
+  /**
    * \concept EigenMatrix
    * \brief Concept defining the requirements for Eigen matrices. This also includes Eigen vectors
    * \tparam V Type representing an Eigen vector.
    */
   template <typename M>
-  concept EigenMatrix = traits::isSpecializationTypeAndNonTypes<Eigen::Matrix,M>::value;
+  concept EigenMatrix = traits::isSpecializationTypeAndNonTypes<Eigen::Matrix, M>::value;
 
 #define MAKE_EIGEN_FIXED_VECTOR_CONCEPT(Size) \
   template <typename V>                       \
@@ -474,5 +475,49 @@ namespace Concepts {
   concept ResultType =
       Impl::ResultType<RT<double, 1, 1>> or Impl::ResultType<RT<double, 1, 2>> or Impl::ResultType<RT<double, 1, 3>> or
       Impl::ResultType<RT<double, 2, 3>> or Impl::ResultType<RT<double, 3, 3>>;
+
+  /**
+
+   * @brief Concept representing the requirements for a FlatAssembler.
+   * @concept FlatAssembler
+   * A type T satisfies FlatAssembler if it provides the necessary member functions
+   * and data types for assembling sparse matrices in a flat structure.
+   */
+  template <typename T>
+  concept FlatAssembler = requires(T t, const typename T::FERequirement& req, typename T::AffordanceCollectionType affo,
+                                   EnforcingDBCOption qt) {
+    { t.scalar(req, affo.scalarAffordance()) } -> std::convertible_to<const double&>;
+    { t.scalar() } -> std::convertible_to<const double&>;
+
+    { t.vector(req, affo.vectorAffordance(), qt) } -> std::convertible_to<const Eigen::VectorXd&>;
+    { t.vector(qt) } -> std::convertible_to<const Eigen::VectorXd&>;
+    { t.vector() } -> std::convertible_to<const Eigen::VectorXd&>;
+
+    { t.matrix(req, affo.matrixAffordance(), qt) } -> std::convertible_to<const Eigen::SparseMatrix<double>&>;
+    { t.matrix(qt) } -> std::convertible_to<const Eigen::SparseMatrix<double>&>;
+    { t.matrix() } -> std::convertible_to<const Eigen::SparseMatrix<double>&>;
+
+    { t.requirement() } -> std::convertible_to<typename T::FERequirement&>;
+    { t.affordanceCollection() } -> std::convertible_to<typename T::AffordanceCollectionType>;
+    { t.enforcingDBCOption() } -> std::convertible_to<EnforcingDBCOption>;
+
+    { t.bind(req, affo, qt) } -> std::same_as<void>;
+    { t.bind(req) } -> std::same_as<void>;
+    { t.bind(affo) } -> std::same_as<void>;
+    { t.bind(qt) } -> std::same_as<void>;
+
+    { t.bound() } -> std::convertible_to<bool>;
+    { t.boundToRequirement() } -> std::convertible_to<bool>;
+    { t.boundToAffordanceCollection() } -> std::convertible_to<bool>;
+    { t.boundToEnforcingDBCOption() } -> std::convertible_to<bool>;
+    { t.estimateOfConnectivity() } -> std::convertible_to<size_t>;
+
+    { t.createFullVector(std::declval<Eigen::Ref<const Eigen::VectorXd>>()) } -> std::convertible_to<Eigen::VectorXd>;
+    { t.constraintsBelow(std::declval<size_t>()) } -> std::convertible_to<size_t>;
+    { t.isConstrained(std::declval<size_t>()) } -> std::convertible_to<bool>;
+    { t.size() } -> std::convertible_to<size_t>;
+    { t.reducedSize() } -> std::convertible_to<size_t>;
+  };
+
 } // namespace Concepts
 } // namespace Ikarus

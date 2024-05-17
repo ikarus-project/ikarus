@@ -99,7 +99,6 @@ namespace Impl {
   template <typename... Args>
   struct Parameter
   {
-
     std::tuple<Args...> args;
   };
 
@@ -178,7 +177,7 @@ public:
       std::tuple<Ikarus::traits::ReturnType<DerivativeArgs, ParameterArgs&...>...>; ///< Function return values
   using ParameterValues = std::tuple<ParameterArgs...>;                             ///< Types of the parameters
 
-  static constexpr int numberOfFunctions = sizeof...(DerivativeArgs); ///< Number of functions
+  static constexpr int numberOfFunctions  = sizeof...(DerivativeArgs); ///< Number of functions
   static constexpr int numberOfParameters = sizeof...(ParameterArgs);  ///< Number of parameters
 
   /**
@@ -208,15 +207,15 @@ public:
    * \param derivativesFunctions The Functions object for derivative arguments.
    * \param parameterI The Parameter object for parameter arguments.
    */
-   template<typename U=void> requires (not std::is_rvalue_reference_v<DerivativeArgs> and ... )
+  template <typename U = void>
+  requires(not std::is_rvalue_reference_v<DerivativeArgs> and ...)
   explicit NonLinearOperator(const Impl::Functions<DerivativeArgs...>& derivativesFunctions,
                              const Impl::Parameter<ParameterArgs...>& parameterI)
       : derivatives_{derivativesFunctions.args},
         args_{parameterI.args},
         derivativesEvaluated_(initResults(derivatives_, args_)) {}
 
-
-          /**
+  /**
    * \brief Constructor for NonLinearOperator.
    *
    * \param derivativesFunctions The Functions object for derivative arguments.
@@ -356,20 +355,20 @@ public:
     auto fs          = functions([&]() -> std::tuple_element_t<Derivatives, std::tuple<DerivativeArgs...>> {
       return std::get<Derivatives>(derivatives_);
     }()...);
-    Ikarus::NonLinearOperator<Impl::Functions<std::tuple_element_t<Derivatives,std::tuple<DerivativeArgs...>>...>,Impl::Parameter<ParameterArgs...>>  subOp(std::move(fs),Impl::applyAndRemoveReferenceWrapper(parameter<ParameterArgs...>,args_));
- // auto derivatives2 = std::make_tuple(std::get<Derivatives>(derivatives_)...);
- // auto args2 = args_;
-// subOp.derivativesEvaluated_ = std::make_tuple(std::get<Derivatives>(derivativesEvaluated_)...);
+    Ikarus::NonLinearOperator<Impl::Functions<std::tuple_element_t<Derivatives, std::tuple<DerivativeArgs...>>...>,
+                              Impl::Parameter<ParameterArgs...>>
+        subOp(std::move(fs), Impl::applyAndRemoveReferenceWrapper(parameter<ParameterArgs...>, args_));
+    // auto derivatives2 = std::make_tuple(std::get<Derivatives>(derivatives_)...);
+    // auto args2 = args_;
+    // subOp.derivativesEvaluated_ = std::make_tuple(std::get<Derivatives>(derivativesEvaluated_)...);
     return subOp;
   }
 
 private:
-
   using FunctionReturnValuesWrapper = std::tuple<std::conditional_t<
       std::is_reference_v<Ikarus::traits::ReturnType<DerivativeArgs, ParameterArgs&...>>,
       std::reference_wrapper<std::remove_reference_t<Ikarus::traits::ReturnType<DerivativeArgs, ParameterArgs&...>>>,
       std::remove_cvref_t<Ikarus::traits::ReturnType<DerivativeArgs, ParameterArgs&...>>>...>;
-
 
   std::tuple<std::conditional_t<std::is_lvalue_reference_v<DerivativeArgs>,
                                 std::reference_wrapper<std::remove_reference_t<DerivativeArgs>>,
@@ -383,7 +382,7 @@ private:
   FunctionReturnValuesWrapper derivativesEvaluated_{};
 };
 
-
 template <typename... DerivativeArgs, typename... ParameterArgs>
- NonLinearOperator(const Impl::Functions<DerivativeArgs&&...>& a, const Impl::Parameter<ParameterArgs...>& b) -> NonLinearOperator<Impl::Functions<DerivativeArgs...>, Impl::Parameter<ParameterArgs...>>;
+NonLinearOperator(const Impl::Functions<DerivativeArgs&&...>& a, const Impl::Parameter<ParameterArgs...>& b)
+    -> NonLinearOperator<Impl::Functions<DerivativeArgs...>, Impl::Parameter<ParameterArgs...>>;
 } // namespace Ikarus

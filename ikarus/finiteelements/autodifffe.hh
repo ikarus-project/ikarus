@@ -27,12 +27,12 @@ template <typename FEImpl, bool forceAutoDiff = false>
 class AutoDiffFE : public FEImpl
 {
 public:
-  using RealFE            = FEImpl;                             ///< Type of the base finite element.
-  using BasisHandler      = typename RealFE::BasisHandler;      ///< Type of the basis handler.
-  using Traits            = typename RealFE::Traits;            ///< Type traits for local view.
-  using LocalView         = typename Traits::LocalView;         ///< Type of the local view.
-  using Element           = typename Traits::Element;           ///< Type of the element.
-  using Requirement = typename RealFE::Requirement; ///< Type of the Finite Element Requirements.
+  using RealFE       = FEImpl;                        ///< Type of the base finite element.
+  using BasisHandler = typename RealFE::BasisHandler; ///< Type of the basis handler.
+  using Traits       = typename RealFE::Traits;       ///< Type traits for local view.
+  using LocalView    = typename Traits::LocalView;    ///< Type of the local view.
+  using Element      = typename Traits::Element;      ///< Type of the element.
+  using Requirement  = typename RealFE::Requirement;  ///< Type of the Finite Element Requirements.
 private:
   using Mixin = FEImpl::Mixin;
 
@@ -44,9 +44,9 @@ public:
    * \param par Finite Element Requirements.
    * \param h Matrix to be calculated.
    */
-  friend void calculateMatrix(const AutoDiffFE& self, const Requirement& par,const MatrixAffordance& affo,
+  friend void calculateMatrix(const AutoDiffFE& self, const Requirement& par, const MatrixAffordance& affo,
                               typename Traits::template MatrixType<> h) {
-    self.calculateMatrix(par,affo, h);
+    self.calculateMatrix(par, affo, h);
   }
 
   /**
@@ -58,7 +58,7 @@ public:
    */
   friend void calculateVector(const AutoDiffFE& self, const Requirement& par, const VectorAffordance& affo,
                               typename Traits::template VectorType<double> g) {
-    self.calculateVector(par,affo, g);
+    self.calculateVector(par, affo, g);
   }
 
   /**
@@ -69,9 +69,10 @@ public:
    * \param h Matrix to be calculated.
    * \param g Vector to be calculated.
    */
-  friend void calculateLocalSystem(const AutoDiffFE& self, const Requirement& par,const MatrixAffordance& affoM,const VectorAffordance& affoV,
-                                   typename Traits::template MatrixType<> h, typename Traits::template VectorType<> g) {
-    self.calculateLocalSystem(par,affoM,affoV, h, g);
+  friend void calculateLocalSystem(const AutoDiffFE& self, const Requirement& par, const MatrixAffordance& affoM,
+                                   const VectorAffordance& affoV, typename Traits::template MatrixType<> h,
+                                   typename Traits::template VectorType<> g) {
+    self.calculateLocalSystem(par, affoM, affoV, h, g);
   }
 
   /**
@@ -81,8 +82,8 @@ public:
    * \param par Finite Element Requirements.
    * \return The calculated scalar value.
    */
-  friend auto calculateScalar(const AutoDiffFE& self, const Requirement& par,const ScalarAffordance& affo) {
-    return self.calculateScalar(par,affo);
+  friend auto calculateScalar(const AutoDiffFE& self, const Requirement& par, const ScalarAffordance& affo) {
+    return self.calculateScalar(par, affo);
   }
 
   /**
@@ -104,43 +105,47 @@ public:
       : RealFE{std::forward<Args>(args)...} {}
 
 private:
-  void calculateMatrix(const Requirement& req, const MatrixAffordance& affo,typename Traits::template MatrixType<> h) const {
+  void calculateMatrix(const Requirement& req, const MatrixAffordance& affo,
+                       typename Traits::template MatrixType<> h) const {
     // real element implements calculateMatrix by itself, then we simply forward the call
 
     if constexpr (requires(Eigen::VectorXd v) {
                     static_cast<const Mixin&>(std::declval<AutoDiffFE>())
-                        .template calculateMatrixImpl<double>(req, affo,h, v);
+                        .template calculateMatrixImpl<double>(req, affo, h, v);
                   } and not forceAutoDiff) {
-      return Mixin::template calculateMatrixImpl<double>(req,affo, h);
+      return Mixin::template calculateMatrixImpl<double>(req, affo, h);
     } else if constexpr (requires(Eigen::VectorXdual v) {
                            static_cast<const Mixin&>(std::declval<AutoDiffFE>())
                                .template calculateVectorImpl<autodiff::dual>(
-                                   req,vectorAffordance(affo), std::declval<typename Traits::template VectorType<autodiff::dual>>(), v);
+                                   req, vectorAffordance(affo),
+                                   std::declval<typename Traits::template VectorType<autodiff::dual>>(), v);
                          }) {
       // real element implements calculateVector by itself, therefore we only need first order derivatives
       Eigen::VectorXdual dx(this->localView().size());
       Eigen::VectorXdual g(this->localView().size());
       dx.setZero();
-      auto f = [this, &req,affo, &g](auto& x) -> auto& {
+      auto f = [this, &req, affo, &g](auto& x) -> auto& {
         // Since req is const as a function argument, we can not make this lambda capture by mutable reference
         // But we have to do this since for efficiency reason we reuse the g vector
         // therefore, the only remaining option is to cast the const away from g
         Eigen::VectorXdual& gref = const_cast<Eigen::VectorXdual&>(g);
         gref.setZero();
-        Mixin::template calculateVectorImpl<autodiff::dual>(req,vectorAffordance(affo), gref, x);
+        Mixin::template calculateVectorImpl<autodiff::dual>(req, vectorAffordance(affo), gref, x);
         return g;
       };
       jacobian(f, autodiff::wrt(dx), at(dx), g, h);
     } else if constexpr (requires(typename Traits::template VectorType<autodiff::dual2nd> v) {
                            static_cast<const Mixin&>(std::declval<AutoDiffFE>())
-                               .template calculateScalarImpl<autodiff::dual2nd>(req,scalarAffordance(affo), v);
+                               .template calculateScalarImpl<autodiff::dual2nd>(req, scalarAffordance(affo), v);
                          }) {
       // real element implements calculateScalar by itself, therefore we need second order derivatives
       Eigen::VectorXdual2nd dx(this->localView().size());
       Eigen::VectorXd g;
       autodiff::dual2nd e;
       dx.setZero();
-      auto f = [this, &req,affo](auto& x) { return Mixin::template calculateScalarImpl<autodiff::dual2nd>(req,scalarAffordance(affo), x); };
+      auto f = [this, &req, affo](auto& x) {
+        return Mixin::template calculateScalarImpl<autodiff::dual2nd>(req, scalarAffordance(affo), x);
+      };
       hessian(f, autodiff::wrt(dx), at(dx), e, g, h);
     } else
       static_assert(Dune::AlwaysFalse<AutoDiffFE>::value,
@@ -148,18 +153,19 @@ private:
                     "chosen element.");
   }
 
-  void calculateVector(const Requirement& req, const VectorAffordance& affo, typename Traits::template VectorType<> g) const {
+  void calculateVector(const Requirement& req, const VectorAffordance& affo,
+                       typename Traits::template VectorType<> g) const {
     // real element implements calculateVector by itself, then we simply forward the call
     if constexpr (requires {
                     static_cast<const Mixin&>(std::declval<AutoDiffFE>())
                         .template calculateVectorImpl<double>(
-                            req,affo, std::declval<typename Traits::template VectorType<double>>(),
+                            req, affo, std::declval<typename Traits::template VectorType<double>>(),
                             std::declval<const Eigen::VectorXd&>());
                   } and not forceAutoDiff) {
-      return Mixin::template calculateVectorImpl<double>(req,affo, g);
+      return Mixin::template calculateVectorImpl<double>(req, affo, g);
     } else if constexpr (requires {
                            static_cast<const Mixin&>(std::declval<AutoDiffFE>())
-                               .template calculateScalarImpl<autodiff::dual>(req,scalarAffordance(affo),
+                               .template calculateScalarImpl<autodiff::dual>(req, scalarAffordance(affo),
                                                                              std::declval<const Eigen::VectorXdual&>());
                          }) {
       // real element implements calculateScalar by itself but no calculateVectorImpl, therefore we need first order
@@ -167,7 +173,9 @@ private:
       Eigen::VectorXdual dx(this->localView().size());
       dx.setZero();
       autodiff::dual e;
-      auto f = [this, &req,affo](auto& x) { return Mixin::template calculateScalarImpl<autodiff::dual>(req,scalarAffordance(affo), x); };
+      auto f = [this, &req, affo](auto& x) {
+        return Mixin::template calculateScalarImpl<autodiff::dual>(req, scalarAffordance(affo), x);
+      };
       gradient(f, autodiff::wrt(dx), at(dx), e, g);
     } else
       static_assert(Dune::AlwaysFalse<AutoDiffFE>::value,
@@ -175,7 +183,7 @@ private:
                     "chosen element.");
   }
 
-  [[nodiscard]] double calculateScalar(const Requirement& par,const ScalarAffordance& affo) const {
+  [[nodiscard]] double calculateScalar(const Requirement& par, const ScalarAffordance& affo) const {
     // real element implements calculateScalar by itself, then we simply forward the call
     if constexpr (requires {
                     static_cast<const Mixin&>(std::declval<AutoDiffFE>())
@@ -190,12 +198,12 @@ private:
     }
   }
 
-  void calculateLocalSystem(const Requirement& req, const MatrixAffordance& affoM,const VectorAffordance& affoV, typename Traits::template MatrixType<> h,
-                            typename Traits::template VectorType<> g) const {
-                              assert(scalarAffordance(affoM)==scalarAffordance(affoV));
+  void calculateLocalSystem(const Requirement& req, const MatrixAffordance& affoM, const VectorAffordance& affoV,
+                            typename Traits::template MatrixType<> h, typename Traits::template VectorType<> g) const {
+    assert(scalarAffordance(affoM) == scalarAffordance(affoV));
     Eigen::VectorXdual2nd dx(this->localView().size());
     dx.setZero();
-    auto f = [&](auto& x) { return Mixin::calculateScalarImpl(req,scalarAffordance(affoV), x); };
+    auto f = [&](auto& x) { return Mixin::calculateScalarImpl(req, scalarAffordance(affoV), x); };
     hessian(f, autodiff::wrt(dx), at(dx), g, h);
   }
 };
