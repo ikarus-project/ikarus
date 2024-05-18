@@ -31,15 +31,17 @@ auto localSolutionBlockVector(
   constexpr int worldDim = Traits::worlddim;
   const auto& fe         = localView.tree().child(0).finiteElement();
   Dune::BlockVector<Dune::RealTuple<ST, worldDim>> localX(fe.size());
-  if (dx)
+  if (dx) {
     for (auto i = 0U; i < localX.size(); ++i)
       for (auto j = 0U; j < worldDim; ++j)
         localX[i][j] =
             dx.value().get()[i * worldDim + j] + x[localView.index(localView.tree().child(j).localIndex(i))[0]];
-  else
+  } else {
     for (auto i = 0U; i < localX.size(); ++i)
       for (auto j = 0U; j < worldDim; ++j)
         localX[i][j] = x[localView.index(localView.tree().child(j).localIndex(i))[0]];
+  }
+
   return localX;
 }
 

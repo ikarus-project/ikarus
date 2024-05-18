@@ -64,7 +64,7 @@ struct TrustRegionConfig
   static_assert(std::copy_constructible<UF>,
                 " The update function should be copy constructable. If it is a lambda wrap it in a std::function");
 
-  using UpdateFunction                               = UF;
+  using UpdateFunction = UF;
 
   TRSettings parameters;
   static constexpr PreConditioner preConditionerType = preConditioner;
@@ -189,9 +189,10 @@ public:
    * \param updateFunction Update function
    */
   template <typename UF2 = UF>
-   explicit TrustRegion(const NLO& nonLinearOperator,
-                                                   UF2&& updateFunction = {}) : nonLinearOperator_{nonLinearOperator},
-            updateFunction_{std::forward<UF2>(updateFunction)}, xOld_{this->nonLinearOperator().firstParameter()} {
+  explicit TrustRegion(const NLO& nonLinearOperator, UF2&& updateFunction = {})
+      : nonLinearOperator_{nonLinearOperator},
+        updateFunction_{std::forward<UF2>(updateFunction)},
+        xOld_{this->nonLinearOperator().firstParameter()} {
     eta_.setZero(gradient().size());
     Heta_.setZero(gradient().size());
     truncatedConjugateGradient_.analyzePattern(hessian());

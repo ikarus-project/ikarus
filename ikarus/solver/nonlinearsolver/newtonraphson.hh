@@ -67,9 +67,9 @@ auto createNonlinearSolver(NRConfig&& config, NLO&& nonLinearOperator) {
   using LS           = std::remove_cvref_t<NRConfig>::LinearSolver;
   using UF           = std::remove_cvref_t<NRConfig>::UpdateFunction;
   auto solverFactory = []<class NLO2, class LS2, class UF2>(NLO2&& nlo2, LS2&& ls, UF2&& uf) {
-    return std::make_shared<NewtonRaphson<std::remove_cvref_t<NLO2>, std::remove_cvref_t<LS2>,
-                                                                std::remove_cvref_t<UF2>>>(nlo2, std::forward<LS2>(ls),
-                                                                                           std::forward<UF2>(uf));
+    return std::make_shared<
+        NewtonRaphson<std::remove_cvref_t<NLO2>, std::remove_cvref_t<LS2>, std::remove_cvref_t<UF2>>>(
+        nlo2, std::forward<LS2>(ls), std::forward<UF2>(uf));
   };
 
   if constexpr (std::remove_cvref_t<NLO>::numberOfFunctions == 3) {

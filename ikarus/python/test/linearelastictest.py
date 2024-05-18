@@ -27,9 +27,6 @@ def linElasticTest(easBool):
         upperRight.append(1)
         elements.append(3)
 
-    req = ikarus.FERequirements()
-    req.addAffordance(iks.ScalarAffordance.mechanicalPotentialEnergy)
-
     grid = dune.grid.structuredGrid(lowerLeft, upperRight, elements)
     # grid.hierarchicalGrid.globalRefine(4)
     basisLagrange12 = dune.functions.defaultGlobalBasis(
@@ -45,19 +42,7 @@ def linElasticTest(easBool):
     d[0] = 0.0
 
     lambdaLoad = iks.ValueWrapper(3.0)
-    req.insertParameter(iks.FEParameter.loadfactor, lambdaLoad)
 
-    assert req.getParameter(iks.FEParameter.loadfactor) == lambdaLoad
-    req.insertGlobalSolution(iks.FESolutions.displacement, d)
-
-    d2 = req.getGlobalSolution(iks.FESolutions.displacement)
-
-    # check that is really the same data address
-    assert ("{}".format(hex(d2.__array_interface__["data"][0]))) == (
-        "{}".format(hex(d.__array_interface__["data"][0]))
-    )
-    assert len(d2) == len(d)
-    assert (d2 == d).all()
     fes = []
 
     def vL(x, lambdaVal):
@@ -92,10 +77,25 @@ def linElasticTest(easBool):
             fes.append(iks.finite_elements.makeFE(basisLagrange1,linElastic,vLoad,nBLoad))
         fes[-1].bind(e)
 
+    req = fes[0].createRequirement()
+    req.insertParameter(lambdaLoad)
+
+    assert req.parameter() == lambdaLoad
+    req.insertGlobalSolution(d)
+
+    d2 = req.globalSolution()
+
+    # check that is really the same data address
+    assert ("{}".format(hex(d2.__array_interface__["data"][0]))) == (
+        "{}".format(hex(d.__array_interface__["data"][0]))
+    )
+    assert len(d2) == len(d)
+    assert (d2 == d).all()
+
     forces = np.zeros(8)
     stiffness = np.zeros((8, 8))
-    fes[0].calculateVector(req, forces)
-    fes[0].calculateMatrix(req, stiffness)
+    fes[0].calculateVector(req,iks.VectorAffordance.forces, forces)
+    fes[0].calculateMatrix(req,iks.MatrixAffordance.stiffness, stiffness)
     fes[0].localView()
 
     dirichletValues = iks.dirichletValues(flatBasis)
@@ -117,16 +117,15 @@ def linElasticTest(easBool):
 
     assembler = iks.assembler.sparseFlatAssembler(fes, dirichletValues)
     assemblerDense = iks.assembler.denseFlatAssembler(fes, dirichletValues)
+    assembler.bind(req, iks.AffordanceCollection.elastoStatics, iks.EnforcingDBCOption.Full)
 
-    Msparse = assembler.matrix(
-        req, iks.MatrixAffordance.stiffness, iks.EnforcingDBCOption
-    .Full)
-    forces = assembler.getVector(req)
+    Msparse = assembler.matrix()
+    forces = assembler.vector()
 
     x = sp.sparse.linalg.spsolve(Msparse, -forces)
     fx = flatBasis.asFunction(x)
     # grid.plot()
-    req.insertGlobalSolution(iks.FESolutions.displacement, x)
+    req.globalSolution()
     # Test calculateAt Function
     indexSet = grid.indexSet
 

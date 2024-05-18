@@ -110,7 +110,7 @@ if __name__ == "__main__":
         print(k, r_norm, norm(deltad))
         if r_norm < abs_tolerance:
             break
-    print(d)
+
     dBig = assembler.createFullVector(d)
     displacementFunc = flatBasis.asFunction(dBig)
     vtkWriter = gridView.trimmedVtkWriter()

@@ -14,10 +14,12 @@ void registerFERequirement(pybind11::handle scope, pybind11::class_<FE, options.
   using FERequirements     = typename FE::Requirement;
   using SolutionVectorType = typename FERequirements::SolutionVectorType;
   using ParameterType      = typename FERequirements::ParameterType;
+
+  using ParameterType = typename FERequirements::ParameterType;
   using namespace pybind11::literals;
 
-  cls.def_static(
-      "createRequirement", [&](pybind11::object /* self */) { return new FERequirements(); },
+  cls.def(
+      "createRequirement", [](pybind11::object /* self */) { return FERequirements(); },
       pybind11::return_value_policy::copy);
 
   auto includes              = Dune::Python::IncludeFiles{"ikarus/finiteelements/ferequirements.hh"};

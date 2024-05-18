@@ -64,18 +64,18 @@ based on the specified `FERequirementType`.   \n <li> `scalar(req,affo)`: Return
     cls.def(                                                                                                                   \
         "matrix",                                                                                                              \
         [](Assembler& self, const FERequirementType& req, Ikarus::MatrixAffordance affo,                                       \
-           Ikarus::EnforcingDBCOption qt) -> std::remove_cvref_t<decltype(self.getMatrix(req, affo))> {                        \
+           Ikarus::EnforcingDBCOption qt) -> std::remove_cvref_t<decltype(self.matrix(req, affo))> {                           \
           return self.matrix(req, affo, qt);                                                                                   \
         },                                                                                                                     \
         pybind11::return_value_policy::copy);                                                                                  \
                                                                                                                                \
     cls.def(                                                                                                                   \
-        "matrix", [](Assembler& self) -> std::remove_cvref_t<decltype(self.getMatrix())> { return self.matrix(); },            \
+        "matrix", [](Assembler& self) -> std::remove_cvref_t<decltype(self.matrix())> { return self.matrix(); },               \
         pybind11::return_value_policy::copy);                                                                                  \
                                                                                                                                \
     cls.def(                                                                                                                   \
         "matrix",                                                                                                              \
-        [](Assembler& self, Ikarus::EnforcingDBCOption qt) -> std::remove_cvref_t<decltype(self.getMatrix(qt))> {              \
+        [](Assembler& self, Ikarus::EnforcingDBCOption qt) -> std::remove_cvref_t<decltype(self.matrix(qt))> {                 \
           return self.matrix(qt);                                                                                              \
         },                                                                                                                     \
         pybind11::return_value_policy::copy);                                                                                  \

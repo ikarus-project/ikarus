@@ -5,6 +5,7 @@ import os
 
 os.environ["DUNE_LOG_LEVEL"] = "debug"
 os.environ["DUNE_SAVE_BUILD"] = "console"
+os.environ["DUNE_CMAKE_FLAGS"] = "-CMAKE_BUILD_TYPE=debug"
 import ikarus as iks
 import ikarus.finite_elements
 import ikarus.utils
@@ -98,6 +99,7 @@ if __name__ == "__main__":
         feReq.insertParameter( lambdaLoad)
         dBig = assembler.createFullVector(dRedInput)
         feReq.insertGlobalSolution( dBig)
+        feReq.globalSolution()
         return assembler.scalar(
             feReq, iks.ScalarAffordance.mechanicalPotentialEnergy
         )
@@ -139,7 +141,7 @@ if __name__ == "__main__":
     assert np.all(abs(resultd3.grad) < 1e-8)
     assert np.all(abs(resultd4.fun) < 1e-8)
 
-    feReq = fes[0].feRequirements
+    feReq = fes[0].createRequirement()
     fullD = assembler.createFullVector(resultd2.x)
     feReq.insertGlobalSolution( fullD)
 

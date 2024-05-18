@@ -66,8 +66,8 @@ struct NewtonRaphsonWithSubsidiaryFunctionConfig
 template <typename NLO, typename NRConfig>
 requires traits::isSpecialization<NewtonRaphsonWithSubsidiaryFunctionConfig, std::remove_cvref_t<NRConfig>>::value
 auto createNonlinearSolver(NRConfig&& config, NLO&& nonLinearOperator) {
-  using LS = std::remove_cvref_t<NRConfig>::LinearSolver;
-  using UF = std::remove_cvref_t<NRConfig>::UpdateFunction;
+  using LS           = std::remove_cvref_t<NRConfig>::LinearSolver;
+  using UF           = std::remove_cvref_t<NRConfig>::UpdateFunction;
   auto solverFactory = []<class NLO2, class LS2, class UF2>(NLO2&& nlo2, LS2&& ls, UF2&& uf) {
     return std::make_shared<NewtonRaphsonWithSubsidiaryFunction<std::remove_cvref_t<NLO2>, std::remove_cvref_t<LS2>,
                                                                 std::remove_cvref_t<UF2>>>(nlo2, std::forward<LS2>(ls),
@@ -77,11 +77,10 @@ auto createNonlinearSolver(NRConfig&& config, NLO&& nonLinearOperator) {
   if constexpr (std::remove_cvref_t<NLO>::numberOfFunctions == 3) {
     auto solver =
         solverFactory(nonLinearOperator.template subOperator<1, 2>(), std::forward<NRConfig>(config).linearSolver,
-                       std::forward<NRConfig>(config).updateFunction);
+                      std::forward<NRConfig>(config).updateFunction);
     solver->setup(config.parameters);
     return solver;
-  }
-  else {
+  } else {
     static_assert(std::remove_cvref_t<NLO>::numberOfFunctions > 1,
                   "The number of derivatives in the nonlinear operator have to be more than 1");
     auto solver = solverFactory(nonLinearOperator, std::forward<NRConfig>(config).linearSolver,

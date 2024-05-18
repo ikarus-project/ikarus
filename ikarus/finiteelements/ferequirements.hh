@@ -206,21 +206,31 @@ namespace AffordanceCollections {
 
 namespace Impl {
   template <typename T>
-  struct DeduceRawVectorType
+  struct DeduceTypes
   {
-    using Type = T;
+    using InputType       = T&;
+    using StorageType     = std::reference_wrapper<T>;
+    using ReturnType      = T&;
+    using ConstReturnType = const T&;
   };
 
   template <typename T>
-  struct DeduceRawVectorType<std::reference_wrapper<T>>
+  struct DeduceTypes<std::reference_wrapper<T>>
   {
-    using Type = T;
+    using InputType       = T&;
+    using StorageType     = std::reference_wrapper<T>;
+    using ReturnType      = T&;
+    using ConstReturnType = const T&;
   };
 
   template <typename T>
-  struct DeduceRawVectorType<Eigen::Ref<T>>
+  struct DeduceTypes<Eigen::Ref<T>>
   {
-    using Type = Eigen::Ref<T>;
+    using InputType   = Eigen::Ref<T>&;
+    using StorageType = Eigen::Ref<T>;
+
+    using ReturnType      = Eigen::Ref<T>&;
+    using ConstReturnType = const Eigen::Ref<T>&;
   };
 } // namespace Impl
 
@@ -232,8 +242,8 @@ namespace Impl {
  * and parameters needed. It provides methods to add affordances, insert parameters, and manage global solution
  * vectors.
  *
- * \tparam SV Type of the solution vector, defaulting to std::reference_wrapper<Eigen::VectorXd>.
- * \tparam PM Type of the parameter, defaulting to std::reference_wrapper<double>.
+ * \tparam SV Type of the solution vector, defaulting to <Eigen::VectorXd.
+ * \tparam PM Type of the parameter, defaulting to double.
  *
  */
 template <FESolutions sol, FEParameter para, typename SV = Eigen::VectorXd, typename PM = double>
@@ -242,12 +252,23 @@ class FERequirements
 public:
   static constexpr FESolutions globalSolutionTag = sol;
   static constexpr FEParameter parameterTag      = para;
-  using SolutionVectorType                       = SV;
-  // using SolutionVectorTypeRaw = typename Impl::DeduceRawVectorType<std::remove_cvref_t<SV>>::Type;
-  using ParameterType = PM;
+
+private:
+  using SVHelper                  = Impl::DeduceTypes<std::remove_cvref_t<SV>>;
+  using PMHelper                  = Impl::DeduceTypes<std::remove_cvref_t<PM>>;
+  using SolutionVectorReturnType  = SVHelper::ReturnType;
+  using ParameterReturnType       = PMHelper::ReturnType;
+  using SolutionVectorStorageType = SVHelper::StorageType;
+  using ParameterStorageType      = PMHelper::StorageType;
+  using SolutionVectorInputType   = SVHelper::InputType;
+  using ParameterInputType        = PMHelper::InputType;
+
+public:
+  using SolutionVectorType = SV;
+  using ParameterType      = PM;
 
   FERequirements() = default;
-  FERequirements(SolutionVectorType& solVec, ParameterType& parameter)
+  FERequirements(SolutionVectorInputType solVec, ParameterInputType parameter)
       : sol_{solVec},
         parameter_{parameter} {}
 
@@ -259,7 +280,7 @@ public:
    * \param val Reference to the raw parameter value.
    * \return Reference to the updated FERequirements instance.
    */
-  FERequirements& insertParameter(ParameterType& val) {
+  FERequirements& insertParameter(ParameterInputType val) {
     parameter_ = val;
     return *this;
   }
@@ -272,7 +293,7 @@ public:
    * \param solVec Reference to the raw global solution vector.
    * \return Reference to the updated FERequirements instance.
    */
-  FERequirements& insertGlobalSolution(SolutionVectorType& solVec) {
+  FERequirements& insertGlobalSolution(SolutionVectorInputType solVec) {
     sol_ = solVec;
     return *this;
   }
@@ -283,7 +304,7 @@ public:
    * \return Reference to the raw global solution vector.
    *
    */
-  SolutionVectorType& globalSolution() { return sol_.value().get(); }
+  SolutionVectorReturnType globalSolution() { return sol_.value(); }
 
   /**
    * \brief Get the  global solution vector.
@@ -291,7 +312,7 @@ public:
    * \return Const reference to the global solution vector.
    *
    */
-  const SolutionVectorType& globalSolution() const { return sol_.value().get(); }
+  SVHelper::ConstReturnType globalSolution() const { return sol_.value(); }
 
   /**
    * \brief Get the parameter value.
@@ -300,8 +321,8 @@ public:
    * \return Const reference to the parameter value.
    *
    */
-  const ParameterType& parameter() const {
-    return parameter_.value().get();
+  PMHelper::ConstReturnType parameter() const {
+    return parameter_.value();
     ;
   }
 
@@ -311,7 +332,7 @@ public:
    * \return Reference to the parameter value.
    *
    */
-  ParameterType& parameter() { return parameter_.value().get(); }
+  ParameterReturnType parameter() { return parameter_.value(); }
 
   /**
    * \brief Tells if the class contains all needed values
@@ -322,8 +343,8 @@ public:
   bool populated() const { return sol_.has_value() and parameter_.has_value(); }
 
 private:
-  std::optional<std::reference_wrapper<SolutionVectorType>> sol_;
-  std::optional<std::reference_wrapper<ParameterType>> parameter_;
+  std::optional<SolutionVectorStorageType> sol_;
+  std::optional<ParameterStorageType> parameter_;
 };
 
 template <FESolutions sol, FEParameter para, bool wrapWithRef = false, typename SV = Eigen::VectorXd,
