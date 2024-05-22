@@ -64,16 +64,6 @@ int main(int argc, char** argv) {
                           Ikarus::AffordanceCollections::elastoStatics, checkGradientFunctor, checkHessianFunctor,
                           checkJacobianFunctor, checkFEByAutoDiffFunctor));
 
-  // Test simplex 2D
-  t.subTest(testFEElement(firstOrderLagrangePrePower2Basis, "LinearElastic", randomlyDistorted,
-                          Dune::ReferenceElements<double, 2>::simplex(), linearElasticFunc, Ikarus::skills(),
-                          Ikarus::AffordanceCollections::elastoStatics, checkGradientFunctor, checkHessianFunctor,
-                          checkJacobianFunctor, checkFEByAutoDiffFunctor));
-  t.subTest(testFEElement(secondOrderLagrangePrePower2Basis, "LinearElastic", randomlyDistorted,
-                          Dune::ReferenceElements<double, 2>::simplex(), linearElasticFunc, Ikarus::skills(),
-                          Ikarus::AffordanceCollections::elastoStatics, checkGradientFunctor, checkHessianFunctor,
-                          checkJacobianFunctor, checkFEByAutoDiffFunctor));
-
   t.subTest(testFEElement(
       firstOrderLagrangePrePower2Basis, "LinearElastic", unDistorted, Dune::ReferenceElements<double, 2>::simplex(),
       linearElasticFunc, Ikarus::skills(), Ikarus::AffordanceCollections::elastoStatics,

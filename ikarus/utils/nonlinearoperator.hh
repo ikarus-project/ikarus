@@ -221,7 +221,8 @@ public:
    * \param derivativesFunctions The Functions object for derivative arguments.
    * \param parameterI The Parameter object for parameter arguments.
    */
-  explicit NonLinearOperator(const Impl::Functions<DerivativeArgs&&...>& derivativesFunctions,
+  template <typename Funcs>
+  explicit NonLinearOperator(const Funcs& derivativesFunctions,
                              const Impl::Parameter<ParameterArgs...>& parameterI)
       : derivatives_{derivativesFunctions.args},
         args_{parameterI.args},
@@ -352,15 +353,14 @@ public:
   template <int... Derivatives>
   auto subOperator() {
     auto derivatives = derivatives_;
-    auto fs          = functions([&]() -> std::tuple_element_t<Derivatives, std::tuple<DerivativeArgs...>> {
-      return std::get<Derivatives>(derivatives_);
+    auto fs          = functions([&derivatives]() -> decltype(auto) {
+      return std::get<Derivatives>(derivatives);
     }()...);
-    Ikarus::NonLinearOperator<Impl::Functions<std::tuple_element_t<Derivatives, std::tuple<DerivativeArgs...>>...>,
+    std::cout<<Dune::className(std::get<0>(fs.args))<<std::endl;
+    Ikarus::NonLinearOperator<Impl::Functions<std::tuple_element_t<Derivatives, decltype(derivatives_)>...>,
                               Impl::Parameter<ParameterArgs...>>
         subOp(std::move(fs), Impl::applyAndRemoveReferenceWrapper(parameter<ParameterArgs...>, args_));
-    // auto derivatives2 = std::make_tuple(std::get<Derivatives>(derivatives_)...);
-    // auto args2 = args_;
-    // subOp.derivativesEvaluated_ = std::make_tuple(std::get<Derivatives>(derivativesEvaluated_)...);
+
     return subOp;
   }
 
