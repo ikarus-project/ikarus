@@ -1,0 +1,40 @@
+{
+  "dockerComposeFile": [
+    "../docker-compose.yml"
+  ],
+	"workspaceFolder": "/workspaces/ikarus",
+	"service": "OpenIkarusContainer",
+	"shutdownAction": "stopCompose",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-vscode.cpptools",
+				"ms-vscode.cmake-tools",
+				"ms-vscode.cpptools-extension-pack",
+				"llvm-vs-code-extensions.vscode-clangd",
+				"ms-python.python",
+				"eamodio.gitlens",
+				"ms-python.black-formatter"
+			],
+			"settings": {
+				"C_Cpp.intelliSenseEngine": "disabled",
+				"cmake.configureArgs": [
+					"-DADD_FORMATTARGET=1"
+				],
+				"python.pythonPath": "/dune/dune-common/build-cmake/dune-env/bin/python",
+				"python.defaultInterpreterPath": "/dune/dune-common/build-cmake/dune-env/bin/python",
+				"clangd.arguments": [
+					"--compile-commands-dir=${workspaceFolder}/build-cmake",
+					"--completion-style=detailed",
+					"--header-insertion=never",
+					//"-include config.h",
+					"-pretty"
+				],
+				"cmake.automaticReconfigure": false
+
+			}
+		}
+	},
+	"postStartCommand": "apt update && apt install python3-gmsh -y && pip install gmsh"
+
+  }
