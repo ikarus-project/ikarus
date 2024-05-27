@@ -51,7 +51,7 @@ struct NonLinearOperatorFactory
 
     assert(req.populated() && " Before you calls this method you have to pass poplated fe requirements");
     if constexpr (affordances.hasScalarAffordance) {
-      [[maybe_unused]] auto energyFunction = [ assembler = assemblerPtr, affordances](
+      [[maybe_unused]] auto energyFunction = [assembler = assemblerPtr, affordances](
                                                  typename FERequirement::SolutionVectorType& globalSol,
                                                  typename FERequirement::ParameterType& parameter) -> auto& {
         FERequirement req;

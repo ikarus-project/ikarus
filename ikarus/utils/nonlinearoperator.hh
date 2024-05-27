@@ -222,8 +222,7 @@ public:
    * \param parameterI The Parameter object for parameter arguments.
    */
   template <typename Funcs>
-  explicit NonLinearOperator(const Funcs& derivativesFunctions,
-                             const Impl::Parameter<ParameterArgs...>& parameterI)
+  explicit NonLinearOperator(const Funcs& derivativesFunctions, const Impl::Parameter<ParameterArgs...>& parameterI)
       : derivatives_{derivativesFunctions.args},
         args_{parameterI.args},
         derivativesEvaluated_(initResults(derivatives_, args_)) {}
@@ -353,10 +352,8 @@ public:
   template <int... Derivatives>
   auto subOperator() {
     auto derivatives = derivatives_;
-    auto fs          = functions([&derivatives]() -> decltype(auto) {
-      return std::get<Derivatives>(derivatives);
-    }()...);
-    std::cout<<Dune::className(std::get<0>(fs.args))<<std::endl;
+    auto fs = functions([&derivatives]() -> decltype(auto) { return std::get<Derivatives>(derivatives); }()...);
+    std::cout << Dune::className(std::get<0>(fs.args)) << std::endl;
     Ikarus::NonLinearOperator<Impl::Functions<std::tuple_element_t<Derivatives, decltype(derivatives_)>...>,
                               Impl::Parameter<ParameterArgs...>>
         subOp(std::move(fs), Impl::applyAndRemoveReferenceWrapper(parameter<ParameterArgs...>, args_));
