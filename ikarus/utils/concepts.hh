@@ -494,8 +494,8 @@ namespace Concepts {
     { t.vector() } -> std::convertible_to<const Eigen::VectorXd&>;
 
     { t.matrix(req, affo.matrixAffordance(), qt) };
-    { t.matrix(qt) } -> std::convertible_to<const Eigen::SparseMatrix<double>&>;
-    { t.matrix() } -> std::convertible_to<const Eigen::SparseMatrix<double>&>;
+    { t.matrix(qt) };
+    { t.matrix() };
 
     { t.requirement() } -> std::convertible_to<typename T::FERequirement&>;
     { t.affordanceCollection() } -> std::convertible_to<typename T::AffordanceCollectionType>;
