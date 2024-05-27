@@ -56,7 +56,7 @@ public:
    * \param par Finite Element Requirements.
    * \param g Vector to be calculated.
    */
-  friend void calculateVector(const AutoDiffFE& self, const Requirement& par, const VectorAffordance& affo,
+  friend void calculateVector(const AutoDiffFE& self, const Requirement& par, VectorAffordance affo,
                               typename Traits::template VectorType<double> g) {
     self.calculateVector(par, affo, g);
   }
@@ -70,7 +70,7 @@ public:
    * \param g Vector to be calculated.
    */
   friend void calculateLocalSystem(const AutoDiffFE& self, const Requirement& par, const MatrixAffordance& affoM,
-                                   const VectorAffordance& affoV, typename Traits::template MatrixType<> h,
+                                   VectorAffordance affoV, typename Traits::template MatrixType<> h,
                                    typename Traits::template VectorType<> g) {
     self.calculateLocalSystem(par, affoM, affoV, h, g);
   }
@@ -82,7 +82,7 @@ public:
    * \param par Finite Element Requirements.
    * \return The calculated scalar value.
    */
-  friend auto calculateScalar(const AutoDiffFE& self, const Requirement& par, const ScalarAffordance& affo) {
+  friend auto calculateScalar(const AutoDiffFE& self, const Requirement& par, ScalarAffordance affo) {
     return self.calculateScalar(par, affo);
   }
 
@@ -153,8 +153,7 @@ private:
                     "chosen element.");
   }
 
-  void calculateVector(const Requirement& req, const VectorAffordance& affo,
-                       typename Traits::template VectorType<> g) const {
+  void calculateVector(const Requirement& req, VectorAffordance affo, typename Traits::template VectorType<> g) const {
     // real element implements calculateVector by itself, then we simply forward the call
     if constexpr (requires {
                     static_cast<const Mixin&>(std::declval<AutoDiffFE>())
@@ -183,7 +182,7 @@ private:
                     "chosen element.");
   }
 
-  [[nodiscard]] double calculateScalar(const Requirement& par, const ScalarAffordance& affo) const {
+  [[nodiscard]] double calculateScalar(const Requirement& par, ScalarAffordance affo) const {
     // real element implements calculateScalar by itself, then we simply forward the call
     if constexpr (requires {
                     static_cast<const Mixin&>(std::declval<AutoDiffFE>())
@@ -198,7 +197,7 @@ private:
     }
   }
 
-  void calculateLocalSystem(const Requirement& req, const MatrixAffordance& affoM, const VectorAffordance& affoV,
+  void calculateLocalSystem(const Requirement& req, const MatrixAffordance& affoM, VectorAffordance affoV,
                             typename Traits::template MatrixType<> h, typename Traits::template VectorType<> g) const {
     assert(scalarAffordance(affoM) == scalarAffordance(affoV));
     Eigen::VectorXdual2nd dx(this->localView().size());

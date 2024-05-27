@@ -280,7 +280,7 @@ protected:
   }
 
   template <typename ScalarType>
-  auto calculateScalarImpl(const Requirement& par, const ScalarAffordance& affo,
+  auto calculateScalarImpl(const Requirement& par, ScalarAffordance affo,
                            const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx =
                                std::nullopt) const -> ScalarType {
     using namespace Dune::DerivativeDirections;
@@ -301,7 +301,7 @@ protected:
 
   template <typename ScalarType>
   void calculateVectorImpl(
-      const Requirement& par, const VectorAffordance& affo, typename Traits::template VectorType<ScalarType> force,
+      const Requirement& par, VectorAffordance affo, typename Traits::template VectorType<ScalarType> force,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
     using namespace Dune::DerivativeDirections;
     using namespace Dune;

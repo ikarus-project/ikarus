@@ -185,7 +185,7 @@ protected:
 
   template <typename ScalarType>
   inline ScalarType calculateScalarImpl(
-      const Requirement& par, const ScalarAffordance& affo,
+      const Requirement& par, ScalarAffordance affo,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
     easApplicabilityCheck();
     if (isDisplacementBased())
@@ -196,7 +196,7 @@ protected:
 
   template <typename ScalarType>
   void calculateVectorImpl(
-      const Requirement& par, const VectorAffordance& affo, typename Traits::template VectorType<ScalarType> force,
+      const Requirement& par, VectorAffordance affo, typename Traits::template VectorType<ScalarType> force,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
     easApplicabilityCheck();
     using namespace Dune;

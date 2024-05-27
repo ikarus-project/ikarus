@@ -70,7 +70,7 @@ protected:
 
   template <typename ST>
   auto calculateScalarImpl(
-      const Requirement& par, const ScalarAffordance& affo,
+      const Requirement& par, ScalarAffordance affo,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const -> ST {
     if (not neumannBoundary_ and not neumannBoundaryLoad_)
       return 0.0;
@@ -105,7 +105,7 @@ protected:
 
   template <typename ST>
   void calculateVectorImpl(
-      const Requirement& par, const VectorAffordance& affo, typename Traits::template VectorType<ST> force,
+      const Requirement& par, VectorAffordance affo, typename Traits::template VectorType<ST> force,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const {
     if (not neumannBoundary_ and not neumannBoundaryLoad_)
       return;
@@ -140,7 +140,7 @@ protected:
 
   template <typename ST>
   void calculateMatrixImpl(
-      const Requirement&, const MatrixAffordance&, typename Traits::template MatrixType<>,
+      const Requirement&, MatrixAffordance, typename Traits::template MatrixType<>,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& = std::nullopt) const {}
 
 private:
