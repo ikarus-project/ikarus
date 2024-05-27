@@ -493,7 +493,7 @@ namespace Concepts {
     { t.vector(qt) } -> std::convertible_to<const Eigen::VectorXd&>;
     { t.vector() } -> std::convertible_to<const Eigen::VectorXd&>;
 
-    { t.matrix(req, affo.matrixAffordance(), qt) } -> std::convertible_to<const Eigen::SparseMatrix<double>&> or std::convertible_to<const Eigen::Matrixd&>;
+    { t.matrix(req, affo.matrixAffordance(), qt) };
     { t.matrix(qt) } -> std::convertible_to<const Eigen::SparseMatrix<double>&>;
     { t.matrix() } -> std::convertible_to<const Eigen::SparseMatrix<double>&>;
 
