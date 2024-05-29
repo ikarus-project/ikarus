@@ -22,7 +22,7 @@ struct NonLinearOperatorFactory
 {
   template <typename Assembler, typename... Affordances>
   static auto op(Assembler&& as, typename traits::remove_pointer_t<std::remove_cvref_t<Assembler>>::FERequirement& req,
-                 AffordanceCollection<Affordances...> affordances, EnforcingDBCOption qt = EnforcingDBCOption::Full) {
+                 AffordanceCollection<Affordances...> affordances, EnforcingDBCOption qt) {
     auto assemblerPtr = [as]() {
       if constexpr (std::is_pointer_v<std::remove_cvref_t<Assembler>> or
                     traits::isSharedPtr<std::remove_cvref_t<Assembler>>::value)
@@ -49,7 +49,7 @@ struct NonLinearOperatorFactory
       return assembler->vector(req, affordances.vectorAffordance(), qt);
     };
 
-    assert(req.populated() && " Before you calls this method you have to pass poplated fe requirements");
+    assert(req.populated() && " Before you calls this method you have to pass populated fe requirements");
     if constexpr (affordances.hasScalarAffordance) {
       [[maybe_unused]] auto energyFunction = [assembler = assemblerPtr, affordances](
                                                  typename FERequirement::SolutionVectorType& globalSol,
@@ -133,7 +133,7 @@ struct NonLinearOperatorFactory
 
   template <typename Assembler, typename... Affordances>
   static auto op(Assembler&& as, typename traits::remove_pointer_t<std::remove_cvref_t<Assembler>>::FERequirement& req,
-                 EnforcingDBCOption qt = EnforcingDBCOption::Full) {
+                 EnforcingDBCOption qt) {
     auto ex = []() {
       DUNE_THROW(Dune::InvalidStateException,
                  "Assembler has to be bound to an affordance collection before you can call "
