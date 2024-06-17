@@ -131,7 +131,7 @@ struct NonLinearOperatorFactory
     }
   }
 
-  template <typename Assembler, typename... Affordances>
+  template <typename Assembler>
   static auto op(Assembler&& as, typename traits::remove_pointer_t<std::remove_cvref_t<Assembler>>::FERequirement& req,
                  EnforcingDBCOption qt) {
     auto ex = []() {
