@@ -28,12 +28,6 @@ void NonLinearSolverLogger::updateImpl(MessageType message, const StateType& sta
       else
         spdlog::info("{} {:>3d} {:>25.3e} {:>19.3e}", "", state.currentIter, state.residualNorm, state.correctionNorm);
       break;
-    case NonLinearSolverMessages::RESIDUALNORM_UPDATED:
-      break;
-    case NonLinearSolverMessages::CORRECTIONNORM_UPDATED:
-      break;
-    case NonLinearSolverMessages::SOLUTION_CHANGED:
-      break;
     case NonLinearSolverMessages::SOLVER_FINISHED:
       if (state.success)
         spdlog::info("Number of iterations by the non-linear solver: {}", state.iterations);

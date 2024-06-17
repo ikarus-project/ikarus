@@ -28,6 +28,7 @@ namespace Ikarus {
  * \tparam NLS Type of the nonlinear solver used in the control routine.
  */
 template <typename NLS>
+requires(Concepts::NonLinearSolverCheckForPathFollowing<NLS>)
 class LoadControl : public ControlObservable
 {
 public:
