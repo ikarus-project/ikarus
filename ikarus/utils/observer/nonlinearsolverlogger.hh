@@ -7,8 +7,11 @@
  */
 
 #pragma once
+#include "observable.hh"
 #include "observer.hh"
 #include "observermessages.hh"
+
+#include <ikarus/solver/nonlinearsolver/solverstate.hh>
 
 namespace Ikarus {
 /**
@@ -17,36 +20,15 @@ namespace Ikarus {
  * This class inherits from the IObserver class and provides specific
  * implementations for updating based on NonLinearSolverMessages.
  */
-class NonLinearSolverLogger : public IObserver<NonLinearSolverMessages>
+class NonLinearSolverLogger : public IObserver<NonLinearSolverObservable>
 {
 public:
   /**
-   * \brief Handles the update when a NonLinearSolverMessages is received.
+   * \brief Handles the update when a NonLinearSolverMessages with a NonLinearSolverState is received.
    *
    * \param message The NonLinearSolverMessages received.
+   * \param state The state of the non-linear solver needed for logging.
    */
-  void updateImpl(NonLinearSolverMessages message) final;
-
-  /**
-   * \brief Handles the update when a NonLinearSolverMessages with a double value is received.
-   *
-   * \param message The NonLinearSolverMessages received.
-   * \param val The double value associated with the message.
-   */
-  void updateImpl(NonLinearSolverMessages message, double val) final;
-
-  /**
-   * \brief Handles the update when a NonLinearSolverMessages with an integer value is received.
-   *
-   * \param message The NonLinearSolverMessages received.
-   * \param intVal The integer value associated with numberOfIterations.
-   */
-  void updateImpl(NonLinearSolverMessages message, int intVal) final;
-
-private:
-  int iters_{0};
-  double dNorm_{0};
-  double rNorm_{0};
-  double lambda_{0};
+  void updateImpl(MessageType message, const StateType& state) final;
 };
 } // namespace Ikarus
