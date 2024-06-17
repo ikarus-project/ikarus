@@ -120,7 +120,7 @@ if __name__ == "__main__":
         feReq.insertGlobalSolution(dBig)
         return assembler.matrix(
             feReq, iks.MatrixAffordance.stiffness, iks.EnforcingDBCOption.Reduced
-        ).todense()
+        ).todense() # this is slow, but for this test we don't care
 
     resultd = minimize(energy, x0=dRed, options={"disp": True}, tol=1e-14)
     resultd2 = minimize(
