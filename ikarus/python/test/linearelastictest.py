@@ -1,7 +1,9 @@
 # SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
-import os
+
+import debug_info
+debug_info.setDebugFlags()
 
 import ikarus as iks
 import ikarus.finite_elements
@@ -14,8 +16,6 @@ import scipy as sp
 import dune.grid
 import dune.functions
 from dune.vtk import vtkWriter, vtkUnstructuredGridWriter
-os.environ['DUNE_LOG_LEVEL'] = 'debug'
-os.environ['DUNE_SAVE_BUILD'] = 'console'
 
 
 def linElasticTest(easBool):

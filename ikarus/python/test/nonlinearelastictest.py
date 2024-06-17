@@ -1,11 +1,9 @@
 # SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
-import os
+import debug_info
+debug_info.setDebugFlags()
 
-os.environ["DUNE_LOG_LEVEL"] = "debug"
-os.environ["DUNE_SAVE_BUILD"] = "console"
-os.environ["DUNE_CMAKE_FLAGS"] = "-CMAKE_BUILD_TYPE=debug"
 import ikarus as iks
 import ikarus.finite_elements
 import ikarus.utils
