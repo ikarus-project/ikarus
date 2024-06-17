@@ -1,7 +1,3 @@
----
-status: new
----
-
 # Control routines
 
 ## Load control
@@ -182,9 +178,9 @@ The general interface for adaptive step-sizing is represented by the following c
 
 ```cpp
 namespace Ikarus::Concepts {
-    template <typename AdaptiveStepSizing, typename NonLinearSolverInformation, typename SubsidiaryArgs,
+    template <typename AdaptiveStepSizing, typename NonLinearSolverState, typename SubsidiaryArgs,
               typename NonLinearOperator>
-    concept AdaptiveStepSizingStrategy = requires(AdaptiveStepSizing adaptiveSS, NonLinearSolverInformation info,
+    concept AdaptiveStepSizingStrategy = requires(AdaptiveStepSizing adaptiveSS, NonLinearSolverState info,
                                                   SubsidiaryArgs args, NonLinearOperator nop) {
       { adaptiveSS(info, args, nop) } -> std::same_as<void>; // (1)!
       { adaptiveSS.targetIterations() } -> std::same_as<int>; // (2)!
