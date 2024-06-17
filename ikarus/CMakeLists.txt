@@ -10,7 +10,7 @@ file(
 )
 
 dune_add_library(
-  ikarus
+  ${PROJECT_NAME}
   ${sources}
   EXPORT_NAME
   Ikarus
