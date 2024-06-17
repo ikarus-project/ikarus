@@ -59,6 +59,10 @@ dune_add_test(
   cpp
 )
 target_compile_features(testfemixin PUBLIC cxx_std_20)
+add_dune_pythonlibs_flags(testfemixin)
+find_package(PythonLibs REQUIRED)
+include_directories(SYSTEM ${PYTHON_INCLUDE_DIRS})
+target_link_libraries(testfemixin PUBLIC ${PYTHON_LIBRARIES})
 dune_add_test(
   SOURCES
   testfunctiontraits.cpp

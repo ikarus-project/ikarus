@@ -52,8 +52,9 @@ struct ElementTest<FE>
         t.check((newEigenValues.array() < 1e-6 * newEigenValues.norm()).count() == 3 * gridDim - 3,
                 "Number of eigenvalues")
             << "We always should have " << 3 * gridDim - 3 << " zero eigenvalues, for " << 3 * gridDim - 3
-            << " rigid body motions" << " but we counted "
-            << (newEigenValues.array() < 1e-6 * newEigenValues.norm()).count() << "\nEigenValues: \n"
+            << " rigid body motions"
+            << " but we counted " << (newEigenValues.array() < 1e-6 * newEigenValues.norm()).count()
+            << "\nEigenValues: \n"
             << newEigenValues.transpose() << "The tolerance is " << 1e-6 * newEigenValues.norm()
             << "The number of EAS parameters is" << numberOfEASParameter << std::endl;
         if (numberOfEASParameter > 0 and numberOfEASParameter != 5)         // Q1E4 and Q1E5 are the same
