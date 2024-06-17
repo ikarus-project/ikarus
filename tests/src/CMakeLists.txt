@@ -35,6 +35,7 @@ set(programSourceFiles
     testpythonconversion.cpp
     testshellthicknessquadrule.cpp
     testtrustregion.cpp
+        testresultfunction.cpp
 )
 
 set(TEST_DEPENDING_ON_LOCALFEFUNCTIONS
@@ -47,6 +48,8 @@ set(TEST_DEPENDING_ON_LOCALFEFUNCTIONS
     testnonlinearelasticityneohooke
     testnonlinearelasticitysvk
     testadaptivestepsizing
+        testresultfunction.cpp
+
 )
 # Compile only tests
 dune_add_test(
