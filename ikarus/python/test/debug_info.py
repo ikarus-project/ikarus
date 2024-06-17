@@ -5,9 +5,9 @@ os.environ["DUNE_LOG_LEVEL"] = "debug"
 os.environ["DUNE_SAVE_BUILD"] = "terminal"
 os.environ["DUNE_CMAKE_FLAGS"] = "-CMAKE_BUILD_TYPE=debug"
 def setDebugFlags():
-    from ikarus.generator import mySimpleGenerator
-    mySimpleGenerator.setFlags("-g -Wfatal-errors",noChecks=True)
+    from ikarus.generator import MySimpleGenerator
+    MySimpleGenerator.setFlags("-g -Wfatal-errors",noChecks=True)
 
 def unsetDebugFlags():
-    from ikarus.generator import mySimpleGenerator
-    mySimpleGenerator.reset()
+    from ikarus.generator import MySimpleGenerator
+    MySimpleGenerator.reset()
