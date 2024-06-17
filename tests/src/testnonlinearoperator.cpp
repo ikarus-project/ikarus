@@ -24,19 +24,19 @@ auto checkNewtonRaphson(NewtonRaphson& nr, SolutionType& x, double tolerance, in
                         const SolutionTypeExpected& xExpected, const auto& x_Predictor) {
   TestSuite t("checkNewtonRaphson");
   nr.setup({tolerance, maxIter});
-  const auto solverInfo = nr.solve(x_Predictor);
+  const auto solverState = nr.solve(x_Predictor);
 
   if constexpr (std::is_same_v<SolutionType, double>)
     t.check(Dune::FloatCmp::eq(xExpected, x));
   else
     t.check(isApproxSame(x, xExpected, 1e-15));
 
-  t.check(true == solverInfo.success) << "NewtonRaphson wasn't successful.";
-  t.check(tolerance >= solverInfo.residualNorm)
-      << "Residual norm is not below tolerance " << tolerance << " Actual: " << solverInfo.residualNorm;
-  t.check(iterExpected == solverInfo.iterations)
+  t.check(true == solverState.success) << "NewtonRaphson wasn't successful.";
+  t.check(tolerance >= solverState.residualNorm)
+      << "Residual norm is not below tolerance " << tolerance << " Actual: " << solverState.residualNorm;
+  t.check(iterExpected == solverState.iterations)
       << "The iteration count does not match the expected number. Expected: " << iterExpected
-      << " Actual: " << solverInfo.iterations;
+      << " Actual: " << solverState.iterations;
   return t;
 }
 
@@ -96,10 +96,10 @@ static auto simple1DOperatorNewtonRaphsonWithWrongDerivativeTest() {
   TestSuite t("checkNewtonRaphsonFailing");
   Ikarus::NewtonRaphson nr(nonLinOp);
   nr.setup({eps, maxIter});
-  const auto solverInfo = nr.solve(1000.0);
+  const auto solverState = nr.solve(1000.0);
 
-  t.check(false == solverInfo.success);
-  t.check(maxIter == solverInfo.iterations);
+  t.check(false == solverState.success);
+  t.check(maxIter == solverState.iterations);
 
   return t;
 }
