@@ -11,12 +11,14 @@
 #include <memory>
 
 #include <ikarus/controlroutines/adaptivestepsizing.hh>
-#include <ikarus/controlroutines/controlinfos.hh>
+#include <ikarus/controlroutines/controlstate.hh>
 #include <ikarus/controlroutines/pathfollowingfunctions.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphsonwithscalarsubsidiaryfunction.hh>
 #include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
 #include <ikarus/utils/nonlinopfactory.hh>
 #include <ikarus/utils/observer/observer.hh>
+#include <ikarus/solver/nonlinearsolver/solverstate.hh>
+#include <ikarus/utils/observer/observable.hh>
 #include <ikarus/utils/observer/observermessages.hh>
 
 namespace Ikarus {
@@ -38,7 +40,7 @@ namespace Impl {
   template <typename NLS, typename PF = ArcLength, typename ASS>
   consteval bool checkPathFollowingTemplates() {
     return Concepts::PathFollowingStrategy<PF, typename NLS::NonLinearOperator, SubsidiaryArgs> and
-           Concepts::AdaptiveStepSizingStrategy<ASS, NonLinearSolverInformation, SubsidiaryArgs,
+           Concepts::AdaptiveStepSizingStrategy<ASS, NonLinearSolverState, SubsidiaryArgs,
                                                 std::remove_cvref_t<typename NLS::NonLinearOperator>> and
            Concepts::NonLinearSolverCheckForPathFollowing<NLS>;
   }
@@ -76,7 +78,7 @@ namespace Impl {
  */
 template <typename NLS, typename PF = ArcLength, typename ASS = AdaptiveStepSizing::NoOp>
 requires(Impl::checkPathFollowingTemplates<NLS, PF, ASS>())
-class PathFollowing : public IObservable<ControlMessages>
+class PathFollowing : public ControlObservable
 {
 public:
   /** \brief The name of the PathFollowing method. */
@@ -90,7 +92,7 @@ public:
    * \param pathFollowingType Type of the path-following function.
    * \param adaptiveStepSizing Type of the adaptive step sizing strategy.
    */
-  PathFollowing(const std::shared_ptr<NLS>& nls, int steps, double stepSize, PF pathFollowingType = ArcLength{},
+  PathFollowing(const std::shared_ptr<NLS>& nls, size_t steps, double stepSize, PF pathFollowingType = ArcLength{},
                 ASS adaptiveStepSizing = {})
       : nonLinearSolver_{nls},
         steps_{steps},
@@ -101,20 +103,33 @@ public:
   /**
    * \brief Executes the PathFollowing routine.
    *
-   * \return ControlInformation structure containing information about the control results.
+   * \return ControlState structure containing information about the control results.
    */
-  ControlInformation run();
+  ControlState run();
 
   /* \brief returns the nonlinear solver */
   NLS& nonlinearSolver() { return *nonLinearSolver_; }
 
 private:
   std::shared_ptr<NLS> nonLinearSolver_;
-
-  int steps_;
+  
+  size_t steps_;
   double stepSize_;
   PF pathFollowingType_;
   ASS adaptiveStepSizing_;
+
+  /**
+   * \brief A wrapper function to update controlState after a nonlinear solver is executed successfully.
+   * The resulting controlState is then passed for further notifications.
+   */
+  void updateAndNotifyControlState(ControlState& controlState, typename NLS::NonLinearOperator& nonOp,
+                                   const NonLinearSolverState& solverState) {
+    controlState.solverStates.push_back(solverState);
+    controlState.sol    = &nonOp.firstParameter();
+    controlState.lambda = nonOp.lastParameter();
+    this->notify(ControlMessages::SOLUTION_CHANGED, controlState);
+    this->notify(ControlMessages::STEP_ENDED, controlState);
+  }
 };
 
 } // namespace Ikarus
