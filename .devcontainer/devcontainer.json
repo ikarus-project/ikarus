@@ -13,6 +13,7 @@
 				"ms-vscode.cpptools-extension-pack",
 				"llvm-vs-code-extensions.vscode-clangd",
 				"ms-python.python",
+				"benjamin-simmonds.pythoncpp-debug",
 				"eamodio.gitlens",
 				"ms-python.black-formatter"
 			],
