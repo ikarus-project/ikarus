@@ -183,9 +183,9 @@ public:
   auto calculateScalarImpl(
       const Requirement& par, ScalarAffordance affordance,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
-    return (
-        Skills<PreFE, typename PreFE::template FE<Skills...>>::template calculateScalarImpl<ScalarType>(par, affordance, dx) +
-        ... + ScalarType{0});
+    return (Skills<PreFE, typename PreFE::template FE<Skills...>>::template calculateScalarImpl<ScalarType>(
+                par, affordance, dx) +
+            ... + ScalarType{0});
   }
 
 private:
@@ -211,8 +211,8 @@ public:
   void calculateVectorImpl(
       const Requirement& par, VectorAffordance affordance, typename Traits::template VectorType<ScalarType> force,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
-    (Skills<PreFE, typename PreFE::template FE<Skills...>>::template calculateVectorImpl<ScalarType>(par, affordance, force,
-                                                                                                     dx),
+    (Skills<PreFE, typename PreFE::template FE<Skills...>>::template calculateVectorImpl<ScalarType>(par, affordance,
+                                                                                                     force, dx),
      ...);
   }
 
@@ -239,7 +239,8 @@ public:
   void calculateMatrixImpl(
       const Requirement& par, MatrixAffordance affordance, typename Traits::template MatrixType<ScalarType> K,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
-    (Skills<PreFE, typename PreFE::template FE<Skills...>>::template calculateMatrixImpl<ScalarType>(par, affordance, K, dx),
+    (Skills<PreFE, typename PreFE::template FE<Skills...>>::template calculateMatrixImpl<ScalarType>(par, affordance, K,
+                                                                                                     dx),
      ...);
   }
 

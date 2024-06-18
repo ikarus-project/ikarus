@@ -29,8 +29,8 @@ Eigen::VectorXd FlatAssemblerBase<B, FEC>::createFullVector(Eigen::Ref<const Eig
 }
 
 template <typename B, typename FEC>
-void VectorFlatAssembler<B, FEC>::assembleRawVectorImpl(const FERequirement& feRequirements, VectorAffordance affordance,
-                                                        Eigen::VectorXd& assemblyVec) {
+void VectorFlatAssembler<B, FEC>::assembleRawVectorImpl(const FERequirement& feRequirements,
+                                                        VectorAffordance affordance, Eigen::VectorXd& assemblyVec) {
   assemblyVec.setZero(this->size());
   Eigen::VectorXd vecLocal;
   std::vector<GlobalIndex> dofs;

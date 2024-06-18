@@ -59,9 +59,11 @@ public:
  * \tparam BH The type of the basis handler.
  * \tparam SK Type of the skills.
  * \tparam useFlat A boolean indicating if the  the underlying basis should be handed out as flat or the untouched
- * version. \tparam useEigenRef A boolean flag indicating whether
- * to use Eigen references. \param basisHandler The basis handler. \param sk Skill arguments. \return An FEFactory
- * object.
+ * version.
+ * \tparam useEigenRef A boolean flag indicating whether to use Eigen references.
+ * \param basisHandler The basis handler.
+ * \param sk Skill arguments.
+ * \return An FEFactory object.
  */
 template <bool useFlat = true, bool useEigenRef = false, typename BH, typename SK>
 auto makeFE(const BH& basisHandler, const SK& sk) {

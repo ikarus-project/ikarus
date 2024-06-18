@@ -85,10 +85,10 @@ void registerCalculateAt(pybind11::handle scope, pybind11::class_<FE, options...
  */
 template <class FE, class... options>
 void registerFE(pybind11::handle scope, pybind11::class_<FE, options...> cls) {
-  using BH             = typename FE::BasisHandler;
-  using GridElement    = typename FE::GridElement;
-  using FERequirements = typename FE::Requirement;
-  using FlatBasis      = typename FE::Traits::FlatBasis;
+  using BH          = typename FE::BasisHandler;
+  using GridElement = typename FE::GridElement;
+  using Requirement = typename FE::Requirement;
+  using FlatBasis   = typename FE::Traits::FlatBasis;
 
   int index = 0;
   cls.def(pybind11::init([](const BH& basisHandler, typename FE::PreTuple argsTuple) {
@@ -100,17 +100,17 @@ void registerFE(pybind11::handle scope, pybind11::class_<FE, options...> cls) {
           pybind11::keep_alive<1, 2>());
 
   cls.def("bind", [](FE& self, const GridElement& e) { self.bind(e); });
-  cls.def("calculateScalar", [](FE& self, const FERequirements& req, Ikarus::ScalarAffordance affordance) {
+  cls.def("calculateScalar", [](FE& self, const Requirement& req, Ikarus::ScalarAffordance affordance) {
     return calculateScalar(self, req, affordance);
   });
-  cls.def("calculateVector", [](FE& self, const FERequirements& req, Ikarus::VectorAffordance affordance,
+  cls.def("calculateVector", [](FE& self, const Requirement& req, Ikarus::VectorAffordance affordance,
                                 Eigen::Ref<Eigen::VectorXd> vec) { calculateVector(self, req, affordance, vec); });
   cls.def(
       "calculateMatrix",
-      [](FE& self, const FERequirements& req, Ikarus::MatrixAffordance affordance, Eigen::Ref<Eigen::MatrixXd> mat) {
+      [](FE& self, const Requirement& req, Ikarus::MatrixAffordance affordance, Eigen::Ref<Eigen::MatrixXd> mat) {
         calculateMatrix(self, req, affordance, mat);
       },
-      pybind11::arg("FERequirements"), pybind11::arg("MatrixAffordance"), pybind11::arg("elementMatrix").noconvert());
+      pybind11::arg("Requirement"), pybind11::arg("MatrixAffordance"), pybind11::arg("elementMatrix").noconvert());
 
   pybind11::module scopedf = pybind11::module::import("dune.functions");
 

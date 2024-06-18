@@ -315,8 +315,8 @@ template <template <typename, int, int> class resType, typename ResultEvaluator>
 
 template <typename NonLinearOperator, typename FiniteElement,
           typename FERequirementType = typename FiniteElement::FERequirementType, typename AffordanceColl>
-[[nodiscard]] auto checkFEByAutoDiff(NonLinearOperator&, FiniteElement& fe, FERequirementType req, AffordanceColl affordance,
-                                     const std::string& messageIfFailed = "") {
+[[nodiscard]] auto checkFEByAutoDiff(NonLinearOperator&, FiniteElement& fe, FERequirementType req,
+                                     AffordanceColl affordance, const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() by Automatic Differentiation");
   auto& basis           = fe.localView().globalBasis();
   auto nDOF             = basis.size();

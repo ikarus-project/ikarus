@@ -125,9 +125,10 @@ public:
    * \param req Reference to the finite element requirement.
    * \param affordance The affordance
    */
-  void bind(const FERequirement& req, AffordanceCollectionType affordance,  EnforcingDBCOption qt = EnforcingDBCOption::Full) {
+  void bind(const FERequirement& req, AffordanceCollectionType affordance,
+            EnforcingDBCOption qt = EnforcingDBCOption::Full) {
     req_                = std::make_optional<FERequirement>(req);
-    affordances_             = std::make_optional<AffordanceCollectionType>(affordance) ;
+    affordances_        = std::make_optional<AffordanceCollectionType>(affordance);
     enforcingDBCOption_ = std::make_optional<EnforcingDBCOption>(qt);
   }
 
@@ -143,7 +144,9 @@ public:
    *
    * \param affordance The affordance collection
    */
-  void bind(AffordanceCollectionType affordance)  { affordances_ = std::make_optional<AffordanceCollectionType>(affordance) ; }
+  void bind(AffordanceCollectionType affordance) {
+    affordances_ = std::make_optional<AffordanceCollectionType>(affordance);
+  }
 
   /**
    * \brief Binds the assembler to an affordance collection.

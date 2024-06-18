@@ -484,8 +484,8 @@ namespace Concepts {
    * and data types for assembling sparse matrices in a flat structure.
    */
   template <typename T>
-  concept FlatAssembler = requires(T t, const typename T::FERequirement& req, typename T::AffordanceCollectionType affordance,
-                                   EnforcingDBCOption qt) {
+  concept FlatAssembler = requires(T t, const typename T::FERequirement& req,
+                                   typename T::AffordanceCollectionType affordance, EnforcingDBCOption qt) {
     { t.scalar(req, affordance.scalarAffordance()) } -> std::convertible_to<const double&>;
     { t.scalar() } -> std::convertible_to<const double&>;
 

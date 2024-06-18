@@ -153,7 +153,8 @@ private:
                     "chosen element.");
   }
 
-  void calculateVector(const Requirement& req, VectorAffordance affordance, typename Traits::template VectorType<> g) const {
+  void calculateVector(const Requirement& req, VectorAffordance affordance,
+                       typename Traits::template VectorType<> g) const {
     // real element implements calculateVector by itself, then we simply forward the call
     if constexpr (requires {
                     static_cast<const Mixin&>(std::declval<AutoDiffFE>())

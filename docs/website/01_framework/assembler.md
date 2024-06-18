@@ -7,7 +7,7 @@ the available assemblers and how they can be used.
 Each of the assemblers is constructed as follows:
 
 ```cpp
-AssemblerName(const Basis& basis, const FEContainer& fes, const std::vector<bool>& dirichletFlags)
+AssemblerName(const FEContainer& fes, const std::vector<bool>& dirichletFlags)
 ```
 
 - `basis` is the basis that was used to construct the finite elements. The implementation of the bases involves four different
@@ -30,7 +30,7 @@ Eigen::VectorXd createFullVector(const Eigen::VectorXd &reducedVector) // (4)!
 size_t constraintsBelow(size_t i) // (5)!
 bool isConstrained(size_t i) // (6)!
 size_t estimateOfConnectivity() // (7)!
-void bind(const RequirementType& fErequirements, AffordanceCollection<ScalarAffordance,VectorAffordance,MatrixAffordance> affordance)  // (8)!
+void bind(const RequirementType& fErequirements, AffordanceCollection<ScalarAffordance, VectorAffordance, MatrixAffordance> affordance)  // (8)!
 ```
 
 1. Returns the number of degrees of freedom.
@@ -88,8 +88,8 @@ The available FE requirements are explained on the [FE requirements](feRequireme
 It offers the functions of [VectorFlatAssembler](#vectorflatassembler) plus more, like:
 
 ```cpp
-Eigen::SparseMatrix<double> &matrix(const FERequirementType &feRequirements,MatrixAffordance affordance,  EnforcingDBCOption qt)
-Eigen::SparseMatrix<double> &matrix(EnforcingDBCOption qt)
+Eigen::SparseMatrix<double>& matrix(const FERequirementType& feRequirements, MatrixAffordance affordance, EnforcingDBCOption qt)
+Eigen::SparseMatrix<double>& matrix(EnforcingDBCOption qt)
 ```
 
 A sparse matrix is returned.
@@ -108,6 +108,6 @@ The only difference between the [SparseFlatAssembler](#sparseflatassembler) and 
 DenseFlatAssembler returns a dense matrix.
 
 ```cpp
-Eigen::MatrixXd &matrix(const FERequirementType &feRequirements,MatrixAffordance affordance,  EnforcingDBCOption qt)
-Eigen::MatrixXd &matrix(EnforcingDBCOption qt)
+Eigen::MatrixXd& matrix(const FERequirementType& feRequirements, MatrixAffordance affordance, EnforcingDBCOption qt)
+Eigen::MatrixXd& matrix(EnforcingDBCOption qt)
 ```

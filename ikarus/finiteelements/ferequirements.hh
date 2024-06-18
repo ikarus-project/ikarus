@@ -123,22 +123,23 @@ struct AffordanceCollection : public std::tuple<affordances...>
    */
   template <FEAffordance Affordance>
   constexpr bool hasAffordance(Affordance&& affordances) const {
-    if constexpr (std::is_same_v<std::remove_cvref_t<Affordance>, AffordanceCollection>)
+    using AffordanceRaw = std::remove_cvref_t<Affordance>;
+    if constexpr (std::is_same_v<AffordanceRaw, AffordanceCollection>)
       return affordances == *this;
     else {
-      if constexpr (std::is_same_v<std::remove_cvref_t<Affordance>, ScalarAffordance>) {
+      if constexpr (std::is_same_v<AffordanceRaw, ScalarAffordance>) {
         if constexpr (hasScalarAffordance)
           return affordances == std::get<ScalarAffordance>(*this);
         else
           return false;
       }
-      if constexpr (std::is_same_v<std::remove_cvref_t<Affordance>, VectorAffordance>) {
+      if constexpr (std::is_same_v<AffordanceRaw, VectorAffordance>) {
         if constexpr (hasVectorAffordance)
           return affordances == std::get<VectorAffordance>(*this);
         else
           return false;
       }
-      if constexpr (std::is_same_v<std::remove_cvref_t<Affordance>, MatrixAffordance>) {
+      if constexpr (std::is_same_v<AffordanceRaw, MatrixAffordance>) {
         if constexpr (hasMatrixAffordance)
           return affordances == std::get<MatrixAffordance>(*this);
         else
