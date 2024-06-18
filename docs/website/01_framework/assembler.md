@@ -74,6 +74,7 @@ It has all the features of [ScalarAssembler](#scalarassembler) plus more, like:
 Eigen::VectorXd& vector(const FERequirementType& feRequirements, VectorAffordance affo, EnforcingDBCOption qt)
 Eigen::VectorXd& vector( EnforcingDBCOption qt)
 ```
+
 The Enum `EnforcingDBCOption` dictates how the Dirichlet boundary conditions should be applied
 The `EnforcingDBCOption::Raw` returns a vector without considering the boundary conditions.
 The `EnforcingDBCOption::Full` option returns a full vector, where zeros are written for the fixed degrees of freedom and `EnforcingDBCOption::Reduced` returns reduced vector removing the fixed degrees of freedom.
