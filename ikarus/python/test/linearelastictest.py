@@ -6,10 +6,6 @@ import debug_info
 debug_info.setDebugFlags()
 
 import ikarus as iks
-import ikarus.finite_elements
-import ikarus.utils
-import ikarus.assembler
-import ikarus.dirichlet_values
 import numpy as np
 import scipy as sp
 

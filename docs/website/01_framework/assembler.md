@@ -77,7 +77,8 @@ Eigen::VectorXd& vector( EnforcingDBCOption qt)
 
 The Enum `EnforcingDBCOption` dictates how the Dirichlet boundary conditions should be applied
 The `EnforcingDBCOption::Raw` returns a vector without considering the boundary conditions.
-The `EnforcingDBCOption::Full` option returns a full vector, where zeros are written for the fixed degrees of freedom and `EnforcingDBCOption::Reduced` returns reduced vector removing the fixed degrees of freedom.
+The `EnforcingDBCOption::Full` option returns a full vector, where zeros are written for the fixed degrees of freedom and `EnforcingDBCOption::Reduced`
+returns reduced vector removing the fixed degrees of freedom.
 The second function can be used if the assembler is bound to specific fe requirements and affordances.
 They work in the same way as the scalar assembly functions of [ScalarAssembler](#scalarassembler).
 The available FE requirements are explained on the [FE requirements](feRequirements.md) page.
@@ -94,7 +95,8 @@ Eigen::SparseMatrix<double> &matrix(EnforcingDBCOption qt)
 A sparse matrix is returned.
 The Enum `EnforcingDBCOption` dictates how the Dirichlet boundary conditions should be applied
 The `EnforcingDBCOption::Raw` returns a matrix without considering the boundary conditions.
-The `EnforcingDBCOption::Full` option returns a full matrx, where zeros are written on the  rows and columns associated to fixed degrees of freedom  and a one is written on the diagonal.
+The `EnforcingDBCOption::Full` option returns a full matrx, where zeros are written on the  rows and columns associated to fixed degrees of
+freedom  and a one is written on the diagonal.
  `EnforcingDBCOption::Reduced` returns reduced matrix removing the rows and columns associated to fixed degrees of freedom.
 The second function can be used if the assembler is bound to specific fe requirements and affordances.
 They work in the same way as the vector assembly functions of [VectorFlatAssembler](#vectorflatassembler).
