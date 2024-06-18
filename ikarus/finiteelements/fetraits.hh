@@ -72,7 +72,7 @@ struct FETraits
   /** \brief Type of the ParameterSpace coordinate */
   using ParameterSpaceType = Eigen::Matrix<ctype, mydim, 1>;
 
-  /** \brief Bool indicating wether the raw Eigen types should be used or wrapped with Eigen::Ref<..>. (Needed for
+  /** \brief Bool indicating whether the raw Eigen types should be used or wrapped with Eigen::Ref<..>. (Needed for
    * Python bindings) */
   static constexpr bool useEigenRef = useRef;
 

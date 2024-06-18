@@ -15,30 +15,28 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 - Added a unified, generic interface for `ResultTypes` with the ability to register new
   ones ([#261](https://github.com/ikarus-project/ikarus/pull/261))
 - Big refactor of fe requirements and non linear operator construction ([#289](https://github.com/ikarus-project/ikarus/pull/289))
-  - The fe requirement type is not any longer standalone but it is dictated by the element. Therefore, the elements are no longer a template of the requirements. It can be obtained statically by `FEType::Requirement` or obtaining an object be `fe.createRequirement()`
-  - The exported type by the finite elements is `Requirement` and no longer `FERequirementType`
-  - FE requirements no longer contain the affordance information, they now have to be passed separate.
-  - The fe requirements only contain now a single solution vector and a single parameter.
-  - The getter are renamed from `getGlobalSolution` and `getParameter` to without the `get`.
-  - The fe requirements now have a method `populated` to indicated, if the needed quantities are inserted.
-  - The assemblers can now be bound to specific fe requirements, affordances and an EnforcingDBCOption.
-  - The assemblers now only implement a single function `matrix` and `vector`, where also affordance and the `EnforcingDBCOption` have to be passed. The
-    EnforcingDBCOption decides whether a raw, a reduced or a full matrix is obtained. Full means that the Dirichlet boundary conditions are written in the matrix but keeps the size
-  - The finite element functions `calculateMatrix`,`calculateVector` and `calculateScalar` now directly accept the affordances
-  - The affordances are now all singular `ScalarAffordances` --> `ScalarAffordance`
-  - The affordances now also now about each others relation therefore calling the function `vectorAffordance(MatrixAffordance::stiffness)` returns `VectorAffordance::forces`
-  - Nonlinear operators can now conveniently be constructed by `NonLinearOperatorFactory`. A bound assembler can be passed to the `op` function but all options can also be passed directly
-  - The linear solver are now fully copyable and moveable
-  - The non-linear solver creation can now be simply done by using the new class `NonlinearSolverFactory` which receives the settings of the non-linear solver and
-    adds the function `.create`, which accepts a *bound* assembler, where a non-linear operator can be constructed on the fly. For this to work all non-linear solvers have to implement a method `createNonlinearSolver`, which accepts the settings of the class and a nonlinear operator. See e.g. `NewtonRaphsonWithSubsidiaryFunction`.
-
-  - Python:
-    - Bindings for Enums can now be done conveniently with the `ENUM_BINDINGS` macro
+    - The fe requirement type is not any longer standalone but it is dictated by the element. Therefore, the elements are no longer a template of the requirements. It can be obtained statically by `FEType::Requirement` or obtaining an object be `fe.createRequirement()`
+    - The exported type by the finite elements is `Requirement` and no longer `FERequirementType`
+    - FE requirements no longer contain the affordance information, they now have to be passed separate.
+    - The fe requirements only contain now a single solution vector and a single parameter.
+    - The getter are renamed from `getGlobalSolution` and `getParameter` to without the `get`.
+    - The fe requirements now have a method `populated` to indicated, if the needed quantities are inserted.
+    - The assemblers can now be bound to specific fe requirements, affordances and an EnforcingDBCOption.
+    - The assemblers now only implement a single function `matrix` and `vector`, where also affordance and the `EnforcingDBCOption` have to be passed. The
+      EnforcingDBCOption decides whether a raw, a reduced or a full matrix is obtained. Full means that the Dirichlet boundary conditions are written in the matrix but keeps the size
     - The finite element functions `calculateMatrix`,`calculateVector` and `calculateScalar` now directly accept the affordances
-    - The assembler bindings now also accept affordances and `EnforcingDBCOption` and they are also renamed to simply `matrix`, `vector`, `scalar`
-    - The assemblers also export the binding functions to bind the assemblers
+    - The affordances are now all singular `ScalarAffordances` --> `ScalarAffordance`
+    - The affordances now also now about each others relation therefore calling the function `vectorAffordance(MatrixAffordance::stiffness)` returns `VectorAffordance::forces`
+    - Nonlinear operators can now conveniently be constructed by `NonLinearOperatorFactory`. A bound assembler can be passed to the `op` function but all options can also be passed directly
+    - The linear solver are now fully copyable and moveable
+    - The non-linear solver creation can now be simply done by using the new class `NonlinearSolverFactory` which receives the settings of the non-linear solver and
+      adds the function `.create`, which accepts a *bound* assembler, where a non-linear operator can be constructed on the fly. For this to work all non-linear solvers have to implement a method `createNonlinearSolver`, which accepts the settings of the class and a nonlinear operator. See e.g. `NewtonRaphsonWithSubsidiaryFunction`.
 
-
+    - Python:
+        - Bindings for Enums can now be done conveniently with the `ENUM_BINDINGS` macro
+        - The finite element functions `calculateMatrix`,`calculateVector` and `calculateScalar` now directly accept the affordances
+        - The assembler bindings now also accept affordances and `EnforcingDBCOption` and they are also renamed to simply `matrix`, `vector`, `scalar`
+        - The assemblers also export the binding functions to bind the assemblers
 
 ## Release v0.4 (Ganymede)
 

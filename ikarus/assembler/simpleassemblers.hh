@@ -159,11 +159,11 @@ public:
    */
   [[nodiscard]]
   bool bound() const {
-    if(boundToRequirement() and boundToAffordanceCollection() and boundToEnforcingDBCOption())
+    if (boundToRequirement() and boundToAffordanceCollection() and boundToEnforcingDBCOption())
       return true;
-      else
-        DUNE_THROW(Dune::InvalidStateException, "The assembler is not bound to a requirement, affordance or enforcingDBCOption.");
-
+    else
+      DUNE_THROW(Dune::InvalidStateException,
+                 "The assembler is not bound to a requirement, affordance or enforcingDBCOption.");
   }
 
   /**
