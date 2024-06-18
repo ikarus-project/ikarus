@@ -41,7 +41,6 @@ def denseFlatAssembler(fes, dirichletValues):
 
     includes = []
     includes += ["ikarus/assembler/simpleassemblers.hh"]
-    includes += ["ikarus/finiteelements/mechanics/linearelastic.hh"]
     includes += ["ikarus/python/assembler/flatassembler.hh"]
     includes += fes[0]._includes  # include header of finite element
     moduleName = "SparseFlatAssembler_" + hashIt(element_type)
