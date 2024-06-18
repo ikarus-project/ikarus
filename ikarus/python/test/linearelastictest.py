@@ -137,9 +137,10 @@ def linElasticTest(easBool):
     )
     # Writing results into vtk file
     from utils import output_path
-
+    fileName= output_path() + "resultdisplacement"+ ("EAS" if easBool else "")
+    print(fileName)
     writer = vtkWriter(
-        grid, output_path() + "resultdisplacement"+ ("EAS" if easBool else ""), pointData={("displacement", (0, 1)): fx}
+        grid, fileName, pointData={("displacement", (0, 1)): fx}
     )
 
     writer2 = vtkUnstructuredGridWriter(grid)
