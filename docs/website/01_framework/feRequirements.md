@@ -44,6 +44,7 @@ Thus, the local finite element can be developed.
         It is good style to indicate that you cannot fulfill an affordance by throwing an appropriate exception!
 
 ### FE result requirements
+
 !!! bug "Bug"
 
     This section is outdated!
