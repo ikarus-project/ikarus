@@ -99,19 +99,19 @@ concept FEAffordance = std::is_same_v<std::remove_cvref_t<T>, ScalarAffordance> 
 /**
  * \brief Struct representing a collection of affordances.
  */
-template <FEAffordance... affordances>
-requires(sizeof...(affordances) <= 3)
-struct AffordanceCollection : public std::tuple<affordances...>
+template <FEAffordance... Affordances>
+requires(sizeof...(Affordances) <= 3)
+struct AffordanceCollection : public std::tuple<Affordances...>
 {
-  using Base = std::tuple<affordances...>;
+  using Base = std::tuple<Affordances...>;
 
   AffordanceCollection() = default;
-  constexpr AffordanceCollection(affordances... affordances)
+  constexpr AffordanceCollection(Affordances... affordances)
       : Base(affordances...) {}
 
-  static constexpr bool hasScalarAffordance = traits::hasType<ScalarAffordance, std::tuple<affordances...>>::value;
-  static constexpr bool hasVectorAffordance = traits::hasType<VectorAffordance, std::tuple<affordances...>>::value;
-  static constexpr bool hasMatrixAffordance = traits::hasType<MatrixAffordance, std::tuple<affordances...>>::value;
+  static constexpr bool hasScalarAffordance = traits::hasType<ScalarAffordance, std::tuple<Affordances...>>::value;
+  static constexpr bool hasVectorAffordance = traits::hasType<VectorAffordance, std::tuple<Affordances...>>::value;
+  static constexpr bool hasMatrixAffordance = traits::hasType<MatrixAffordance, std::tuple<Affordances...>>::value;
   /**
    * \brief Check if a specific affordance is present in the requirements.
    *
