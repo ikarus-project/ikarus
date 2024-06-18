@@ -136,9 +136,9 @@ def linElasticTest(easBool):
         lambda e, x: fes[indexSet.index(e)].calculateAt(req, x, "linearStress")[:]
     )
     # Writing results into vtk file
-    from utils import output_path
-    fileName= output_path() + "resultdisplacement"+ ("EAS" if easBool else "")
-    print(fileName)
+
+    fileName=  "resultdisplacement"+ ("EAS" if easBool else "")
+
     writer = vtkWriter(
         grid, fileName, pointData={("displacement", (0, 1)): fx}
     )
@@ -147,7 +147,7 @@ def linElasticTest(easBool):
     writer2.addCellData(stressFuncScalar, name="stress")
     writer2.addCellData(stressFuncVec, name="stress2")
 
-    writer2.write(name=output_path() + "result"+ ("EAS" if easBool else ""))
+    writer2.write(name= "result"+ ("EAS" if easBool else ""))
 
     # Querying for a different ResultType should result in a runtime error
     try:
