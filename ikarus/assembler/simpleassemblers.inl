@@ -29,7 +29,7 @@ Eigen::VectorXd FlatAssemblerBase<B, FEC>::createFullVector(Eigen::Ref<const Eig
 }
 
 template <typename B, typename FEC>
-void VectorFlatAssembler<B, FEC>::assembleRawVectorImpl(const FERequirement& feRequirements, VectorAffordance affo,
+void VectorFlatAssembler<B, FEC>::assembleRawVectorImpl(const FERequirement& feRequirements, VectorAffordance affordance,
                                                         Eigen::VectorXd& assemblyVec) {
   assemblyVec.setZero(this->size());
   Eigen::VectorXd vecLocal;
@@ -37,7 +37,7 @@ void VectorFlatAssembler<B, FEC>::assembleRawVectorImpl(const FERequirement& feR
   for (auto& fe : this->finiteElements()) {
     vecLocal.setZero(fe.size());
     dofs.resize(0);
-    calculateVector(fe, feRequirements, affo, vecLocal);
+    calculateVector(fe, feRequirements, affordance, vecLocal);
     using FEHelper::globalIndices;
     globalIndices(fe, dofs);
     for (int i = 0; auto id : dofs) {
@@ -49,15 +49,15 @@ void VectorFlatAssembler<B, FEC>::assembleRawVectorImpl(const FERequirement& feR
 
 template <typename B, typename FEC>
 Eigen::VectorXd& VectorFlatAssembler<B, FEC>::getRawVectorImpl(const FERequirement& feRequirements,
-                                                               VectorAffordance affo) {
-  assembleRawVectorImpl(feRequirements, affo, vecRaw_);
+                                                               VectorAffordance affordance) {
+  assembleRawVectorImpl(feRequirements, affordance, vecRaw_);
   return vecRaw_;
 }
 
 template <typename B, typename FEC>
 Eigen::VectorXd& VectorFlatAssembler<B, FEC>::getVectorImpl(const FERequirement& feRequirements,
-                                                            VectorAffordance affo) {
-  assembleRawVectorImpl(feRequirements, affo, vec_);
+                                                            VectorAffordance affordance) {
+  assembleRawVectorImpl(feRequirements, affordance, vec_);
   for (auto i = 0U; i < this->size(); ++i)
     if (this->isConstrained(i))
       vec_[i] = 0;
@@ -66,14 +66,14 @@ Eigen::VectorXd& VectorFlatAssembler<B, FEC>::getVectorImpl(const FERequirement&
 
 template <typename B, typename FEC>
 Eigen::VectorXd& VectorFlatAssembler<B, FEC>::getReducedVectorImpl(const FERequirement& feRequirements,
-                                                                   VectorAffordance affo) {
+                                                                   VectorAffordance affordance) {
   vecRed_.setZero(this->reducedSize());
   Eigen::VectorXd vecLocal;
   std::vector<GlobalIndex> dofs;
   for (auto& fe : this->finiteElements()) {
     vecLocal.setZero(fe.size());
     dofs.resize(0);
-    calculateVector(fe, feRequirements, affo, vecLocal);
+    calculateVector(fe, feRequirements, affordance, vecLocal);
     using FEHelper::globalIndices;
     globalIndices(fe, dofs);
     assert(static_cast<long int>(dofs.size()) == vecLocal.size() && "The returned vector has wrong rowSize!");

@@ -484,16 +484,16 @@ namespace Concepts {
    * and data types for assembling sparse matrices in a flat structure.
    */
   template <typename T>
-  concept FlatAssembler = requires(T t, const typename T::FERequirement& req, typename T::AffordanceCollectionType affo,
+  concept FlatAssembler = requires(T t, const typename T::FERequirement& req, typename T::AffordanceCollectionType affordance,
                                    EnforcingDBCOption qt) {
-    { t.scalar(req, affo.scalarAffordance()) } -> std::convertible_to<const double&>;
+    { t.scalar(req, affordance.scalarAffordance()) } -> std::convertible_to<const double&>;
     { t.scalar() } -> std::convertible_to<const double&>;
 
-    { t.vector(req, affo.vectorAffordance(), qt) } -> std::convertible_to<const Eigen::VectorXd&>;
+    { t.vector(req, affordance.vectorAffordance(), qt) } -> std::convertible_to<const Eigen::VectorXd&>;
     { t.vector(qt) } -> std::convertible_to<const Eigen::VectorXd&>;
     { t.vector() } -> std::convertible_to<const Eigen::VectorXd&>;
 
-    { t.matrix(req, affo.matrixAffordance(), qt) };
+    { t.matrix(req, affordance.matrixAffordance(), qt) };
     { t.matrix(qt) };
     { t.matrix() };
 
@@ -501,9 +501,9 @@ namespace Concepts {
     { t.affordanceCollection() } -> std::convertible_to<typename T::AffordanceCollectionType>;
     { t.enforcingDBCOption() } -> std::convertible_to<EnforcingDBCOption>;
 
-    { t.bind(req, affo, qt) } -> std::same_as<void>;
+    { t.bind(req, affordance, qt) } -> std::same_as<void>;
     { t.bind(req) } -> std::same_as<void>;
-    { t.bind(affo) } -> std::same_as<void>;
+    { t.bind(affordance) } -> std::same_as<void>;
     { t.bind(qt) } -> std::same_as<void>;
 
     { t.bound() } -> std::convertible_to<bool>;

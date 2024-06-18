@@ -12,7 +12,7 @@
 #include <ikarus/utils/basis.hh>
 
 template <typename GridView, typename PreBasis, typename Skills, typename AffordanceColl>
-auto checkFESByAutoDiff(const GridView& gridView, const PreBasis& pb, Skills&& skills, AffordanceColl affo) {
+auto checkFESByAutoDiff(const GridView& gridView, const PreBasis& pb, Skills&& skills, AffordanceColl affordance) {
   auto basis = Ikarus::makeBasis(gridView, pb);
   Eigen::VectorXd d;
   d.setRandom(basis.flat().dimension());
@@ -45,11 +45,11 @@ auto checkFESByAutoDiff(const GridView& gridView, const PreBasis& pb, Skills&& s
     R.setZero(nDOF);
     RAutoDiff.setZero(nDOF);
 
-    calculateMatrix(fe, req, affo.matrixAffordance(), K);
-    calculateMatrix(feAutoDiff, req, affo.matrixAffordance(), KAutoDiff);
+    calculateMatrix(fe, req, affordance.matrixAffordance(), K);
+    calculateMatrix(feAutoDiff, req, affordance.matrixAffordance(), KAutoDiff);
 
-    calculateVector(fe, req, affo.vectorAffordance(), R);
-    calculateVector(feAutoDiff, req, affo.vectorAffordance(), RAutoDiff);
+    calculateVector(fe, req, affordance.vectorAffordance(), R);
+    calculateVector(feAutoDiff, req, affordance.vectorAffordance(), RAutoDiff);
 
     t.check(K.isApprox(KAutoDiff, tol),
             "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
@@ -65,8 +65,8 @@ auto checkFESByAutoDiff(const GridView& gridView, const PreBasis& pb, Skills&& s
                 feClassName)
         << "The difference is " << (R - RAutoDiff);
 
-    t.check(Dune::FloatCmp::eq(calculateScalar(fe, req, affo.scalarAffordance()),
-                               calculateScalar(feAutoDiff, req, affo.scalarAffordance()), tol),
+    t.check(Dune::FloatCmp::eq(calculateScalar(fe, req, affordance.scalarAffordance()),
+                               calculateScalar(feAutoDiff, req, affordance.scalarAffordance()), tol),
             "Mismatch between the energies obtained from explicit implementation and the one based on "
             "automatic differentiation for " +
                 feClassName);

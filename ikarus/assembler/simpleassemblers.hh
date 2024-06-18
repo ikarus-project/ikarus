@@ -123,11 +123,11 @@ public:
    * \brief Binds the assembler to a set of finite element requirement and affordance.
    *
    * \param req Reference to the finite element requirement.
-   * \param affo The affordance
+   * \param affordance The affordance
    */
-  void bind(const FERequirement& req, AffordanceCollectionType affo, EnforcingDBCOption qt = EnforcingDBCOption::Full) {
+  void bind(const FERequirement& req, AffordanceCollectionType affordance,  EnforcingDBCOption qt = EnforcingDBCOption::Full) {
     req_                = std::make_optional<FERequirement>(req);
-    affos_              = std::make_optional<AffordanceCollectionType>(affo);
+    affordances_             = std::make_optional<AffordanceCollectionType>(affordance) ;
     enforcingDBCOption_ = std::make_optional<EnforcingDBCOption>(qt);
   }
 
@@ -141,14 +141,14 @@ public:
   /**
    * \brief Binds the assembler to an affordance collection.
    *
-   * \param affo The affordance collection
+   * \param affordance The affordance collection
    */
-  void bind(AffordanceCollectionType affo) { affos_ = std::make_optional<AffordanceCollectionType>(affo); }
+  void bind(AffordanceCollectionType affordance)  { affordances_ = std::make_optional<AffordanceCollectionType>(affordance) ; }
 
   /**
    * \brief Binds the assembler to an affordance collection.
    *
-   * \param affo The affordance collection
+   * \param qt The EnforcingDBC option
    */
   void bind(EnforcingDBCOption qt) { enforcingDBCOption_ = std::make_optional<EnforcingDBCOption>(qt); }
 
@@ -183,7 +183,7 @@ public:
    */
   [[nodiscard]]
   bool boundToAffordanceCollection() const {
-    return affos_.has_value();
+    return affordances_.has_value();
   }
 
   /**
@@ -212,8 +212,8 @@ public:
    *
    */
   AffordanceCollectionType affordanceCollection() const {
-    if (affos_.has_value())
-      return affos_.value();
+    if (affordances_.has_value())
+      return affordances_.value();
     else
       DUNE_THROW(Dune::InvalidStateException, "The affordance can only be obtained after binding");
   }
@@ -233,7 +233,7 @@ private:
   FEContainerType feContainer_;
   const DirichletValuesType* dirichletValues_;
   std::optional<FERequirement> req_;
-  std::optional<AffordanceCollectionType> affos_;
+  std::optional<AffordanceCollectionType> affordances_;
   std::vector<size_t> constraintsBelow_{};
   size_t fixedDofs_{};
   std::optional<EnforcingDBCOption> enforcingDBCOption_;

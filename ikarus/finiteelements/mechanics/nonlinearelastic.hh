@@ -255,7 +255,7 @@ protected:
    */
   template <typename ScalarType>
   void calculateMatrixImpl(
-      const Requirement& par, const MatrixAffordance& affo, typename Traits::template MatrixType<> K,
+      const Requirement& par, const MatrixAffordance& affordance, typename Traits::template MatrixType<> K,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
@@ -280,7 +280,7 @@ protected:
   }
 
   template <typename ScalarType>
-  auto calculateScalarImpl(const Requirement& par, ScalarAffordance affo,
+  auto calculateScalarImpl(const Requirement& par, ScalarAffordance affordance,
                            const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx =
                                std::nullopt) const -> ScalarType {
     using namespace Dune::DerivativeDirections;
@@ -301,7 +301,7 @@ protected:
 
   template <typename ScalarType>
   void calculateVectorImpl(
-      const Requirement& par, VectorAffordance affo, typename Traits::template VectorType<ScalarType> force,
+      const Requirement& par, VectorAffordance affordance, typename Traits::template VectorType<ScalarType> force,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
     using namespace Dune::DerivativeDirections;
     using namespace Dune;

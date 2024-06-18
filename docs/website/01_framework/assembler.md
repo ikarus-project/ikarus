@@ -30,7 +30,7 @@ Eigen::VectorXd createFullVector(const Eigen::VectorXd &reducedVector) // (4)!
 size_t constraintsBelow(size_t i) // (5)!
 bool isConstrained(size_t i) // (6)!
 size_t estimateOfConnectivity() // (7)!
-void bind(const RequirementType& fErequirements, AffordanceCollection<ScalarAffordance,VectorAffordance,MatrixAffordance> affo) // (8)!
+void bind(const RequirementType& fErequirements, AffordanceCollection<ScalarAffordance,VectorAffordance,MatrixAffordance> affordance)  // (8)!
 ```
 
 1. Returns the number of degrees of freedom.
@@ -48,7 +48,7 @@ void bind(const RequirementType& fErequirements, AffordanceCollection<ScalarAffo
 It has the capabilities of [FlatAssemblerBase](#flatassemblerbase) plus one additional function:
 
 ```cpp
-double& scalar(const RequirementType& fErequirements, ScalarAffordance affo)
+double& scalar(const RequirementType& fErequirements, ScalarAffordance affordance)
 double& scalar()
 ```
 
@@ -71,7 +71,7 @@ const auto& K = myAssembler.scalar(feRequirements, scalarAffordance) // (2)!
 It has all the features of [ScalarAssembler](#scalarassembler) plus more, like:
 
 ```cpp
-Eigen::VectorXd& vector(const FERequirementType& feRequirements, VectorAffordance affo, EnforcingDBCOption qt)
+Eigen::VectorXd& vector(const FERequirementType& feRequirements, VectorAffordance affordance,  EnforcingDBCOption qt)
 Eigen::VectorXd& vector( EnforcingDBCOption qt)
 ```
 
@@ -88,7 +88,7 @@ The available FE requirements are explained on the [FE requirements](feRequireme
 It offers the functions of [VectorFlatAssembler](#vectorflatassembler) plus more, like:
 
 ```cpp
-Eigen::SparseMatrix<double> &matrix(const FERequirementType &feRequirements,MatrixAffordance affo, EnforcingDBCOption qt)
+Eigen::SparseMatrix<double> &matrix(const FERequirementType &feRequirements,MatrixAffordance affordance,  EnforcingDBCOption qt)
 Eigen::SparseMatrix<double> &matrix(EnforcingDBCOption qt)
 ```
 
@@ -108,6 +108,6 @@ The only difference between the [SparseFlatAssembler](#sparseflatassembler) and 
 DenseFlatAssembler returns a dense matrix.
 
 ```cpp
-Eigen::MatrixXd &matrix(const FERequirementType &feRequirements,MatrixAffordance affo, EnforcingDBCOption qt)
+Eigen::MatrixXd &matrix(const FERequirementType &feRequirements,MatrixAffordance affordance,  EnforcingDBCOption qt)
 Eigen::MatrixXd &matrix(EnforcingDBCOption qt)
 ```

@@ -29,8 +29,8 @@ namespace Ikarus::Python {
   \n                                                                                                                           \
    The registered class will have an initializer that takes a list of finite elements (`fes`) and a                            \
 `DirichletValuesType` object. \n It exposes several member functions to Python:  \n <ul> <li> `matrix(req)`:                   \
-Returns a dense matrix based on the specified `FERequirementType`.    \n <li> `vector(req,affo,qt)`: Returns a vector          \
-based on the specified `FERequirementType`.   \n <li> `scalar(req,affo)`: Returns a scalar based on the specified              \
+Returns a dense matrix based on the specified `FERequirementType`.    \n <li> `vector(req,affordance,qt)`: Returns a vector          \
+based on the specified `FERequirementType`.   \n <li> `scalar(req,affordance)`: Returns a scalar based on the specified              \
 `FERequirementType`.    \n <li> `createFullVector(redVec)`: Creates a full vector from a reduced vector.   \n <li>             \
 `reducedSize()`: Returns the size of the reduced space.   \n                                                                   \
   </ul> \n                                                                                                                     \
@@ -63,9 +63,9 @@ based on the specified `FERequirementType`.   \n <li> `scalar(req,affo)`: Return
      */                                                                                                                        \
     cls.def(                                                                                                                   \
         "matrix",                                                                                                              \
-        [](Assembler& self, const FERequirementType& req, Ikarus::MatrixAffordance affo,                                       \
-           Ikarus::EnforcingDBCOption qt) -> std::remove_cvref_t<decltype(self.matrix(req, affo))> {                           \
-          return self.matrix(req, affo, qt);                                                                                   \
+        [](Assembler& self, const FERequirementType& req, Ikarus::MatrixAffordance affordance,                                       \
+           Ikarus::EnforcingDBCOption qt) -> std::remove_cvref_t<decltype(self.matrix(req, affordance))> {                           \
+          return self.matrix(req, affordance, qt);                                                                                   \
         },                                                                                                                     \
         pybind11::return_value_policy::copy);                                                                                  \
                                                                                                                                \
@@ -82,8 +82,8 @@ based on the specified `FERequirementType`.   \n <li> `scalar(req,affo)`: Return
                                                                                                                                \
     cls.def(                                                                                                                   \
         "vector",                                                                                                              \
-        [](Assembler& self, const FERequirementType& req, Ikarus::VectorAffordance affo,                                       \
-           Ikarus::EnforcingDBCOption qt) { return self.vector(req, affo, qt); },                                              \
+        [](Assembler& self, const FERequirementType& req, Ikarus::VectorAffordance affordance,                                       \
+           Ikarus::EnforcingDBCOption qt) { return self.vector(req, affordance, qt); },                                              \
         pybind11::return_value_policy::reference);                                                                             \
                                                                                                                                \
     cls.def("vector", [](Assembler& self) { return self.vector(); }, pybind11::return_value_policy::reference);                \
@@ -94,8 +94,8 @@ based on the specified `FERequirementType`.   \n <li> `scalar(req,affo)`: Return
                                                                                                                                \
     cls.def(                                                                                                                   \
         "scalar",                                                                                                              \
-        [](Assembler& self, const FERequirementType& req, Ikarus::ScalarAffordance affo) {                                     \
-          return self.scalar(req, affo);                                                                                       \
+        [](Assembler& self, const FERequirementType& req, Ikarus::ScalarAffordance affordance) {                                     \
+          return self.scalar(req, affordance);                                                                                       \
         },                                                                                                                     \
         pybind11::return_value_policy::copy);                                                                                  \
                                                                                                                                \
@@ -106,10 +106,10 @@ based on the specified `FERequirementType`.   \n <li> `scalar(req,affo)`: Return
         [](Assembler& self, Eigen::Ref<const Eigen::VectorXd> redVec) { return self.createFullVector(redVec); },               \
         pybind11::return_value_policy::move);                                                                                  \
     cls.def("reducedSize", [](Assembler& self) { return self.reducedSize(); }, pybind11::return_value_policy::copy);           \
-    cls.def("bind", [](Assembler& self, const FERequirementType& req, AffordanceCollectionType affo,                           \
-                       EnforcingDBCOption qt = EnforcingDBCOption::Full) { return self.bind(req, affo, qt); });                \
+    cls.def("bind", [](Assembler& self, const FERequirementType& req, AffordanceCollectionType affordance,                           \
+                       EnforcingDBCOption qt = EnforcingDBCOption::Full) { return self.bind(req, affordance, qt); });                \
     cls.def("bind", [](Assembler& self, const FERequirementType& req) { return self.bind(req); });                             \
-    cls.def("bind", [](Assembler& self, const AffordanceCollectionType affo) { return self.bind(affo); });                     \
+    cls.def("bind", [](Assembler& self, const AffordanceCollectionType affordance) { return self.bind(affordance); });                     \
     cls.def("bind", [](Assembler& self, const EnforcingDBCOption qt) { return self.bind(qt); });                               \
     cls.def("bound", &Assembler::bound);                                                                                       \
     cls.def("boundToRequirement", &Assembler::boundToRequirement);                                                             \

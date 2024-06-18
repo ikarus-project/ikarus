@@ -247,10 +247,10 @@ protected:
 
   template <typename ST>
   void calculateMatrixImpl(
-      const Requirement& par, const MatrixAffordance& affo, typename Traits::template MatrixType<ST> K,
+      const Requirement& par, const MatrixAffordance& affordance, typename Traits::template MatrixType<ST> K,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const {
-    if (affo != MatrixAffordance::stiffness)
-      DUNE_THROW(Dune::NotImplemented, "MatrixAffordance not implemented: " + toString(affo));
+    if (affordance != MatrixAffordance::stiffness)
+      DUNE_THROW(Dune::NotImplemented, "MatrixAffordance not implemented: " + toString(affordance));
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     const auto uFunction = displacementFunction(par, dx);
@@ -292,10 +292,10 @@ protected:
 
   template <typename ST>
   void calculateVectorImpl(
-      const Requirement& par, const VectorAffordance& affo, typename Traits::template VectorType<ST> force,
+      const Requirement& par, const VectorAffordance& affordance, typename Traits::template VectorType<ST> force,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const {
-    if (affo != VectorAffordance::forces)
-      DUNE_THROW(Dune::NotImplemented, "VectorAffordance not implemented: " + toString(affo));
+    if (affordance != VectorAffordance::forces)
+      DUNE_THROW(Dune::NotImplemented, "VectorAffordance not implemented: " + toString(affordance));
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     const auto uFunction = displacementFunction(par, dx);
@@ -325,10 +325,10 @@ protected:
 
   template <typename ST>
   auto calculateScalarImpl(
-      const Requirement& par, const ScalarAffordance& affo,
+      const Requirement& par, const ScalarAffordance& affordance,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const -> ST {
-    if (affo != ScalarAffordance::mechanicalPotentialEnergy)
-      DUNE_THROW(Dune::NotImplemented, "ScalarAffordance not implemented: " + toString(affo));
+    if (affordance != ScalarAffordance::mechanicalPotentialEnergy)
+      DUNE_THROW(Dune::NotImplemented, "ScalarAffordance not implemented: " + toString(affordance));
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     const auto uFunction = displacementFunction(par, dx);

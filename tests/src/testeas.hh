@@ -15,7 +15,7 @@ requires(FE::template hasSkill<Ikarus::EnhancedAssumedStrainsPre::Skill>())
 struct ElementTest<FE>
 {
   [[nodiscard]] static auto test() {
-    auto easFunctor = [](auto& nonLinOp, auto& fe, auto& req, auto& affo) {
+    auto easFunctor = [](auto& nonLinOp, auto& fe, auto& req, auto& affordance) {
       const auto& localView = fe.localView();
       const auto& element   = localView.element();
       constexpr int gridDim = std::remove_cvref_t<decltype(element)>::dimension;
@@ -42,7 +42,7 @@ struct ElementTest<FE>
         }
         t.subTest(checkJacobianOfElement(subOp, messageIfFailed));
 
-        t.subTest(checkFEByAutoDiff(nonLinOp, fe, req, affo, messageIfFailed));
+        t.subTest(checkFEByAutoDiff(nonLinOp, fe, req, affordance, messageIfFailed));
 
         auto stiffnessMatrix = subOp.derivative();
 

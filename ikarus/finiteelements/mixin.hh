@@ -104,8 +104,8 @@ public:
    * \param req The Requirement object specifying the requirements for the calculation.
    * \return The calculated scalar value.
    */
-  friend auto calculateScalar(const FEMixin& self, const Requirement& req, ScalarAffordance affo) {
-    return self.template calculateScalarImpl<double>(req, affo);
+  friend auto calculateScalar(const FEMixin& self, const Requirement& req, ScalarAffordance affordance) {
+    return self.template calculateScalarImpl<double>(req, affordance);
   }
 
   /**
@@ -115,9 +115,9 @@ public:
    * \param req The Requirement object specifying the requirements for the calculation.
    * \param force The vector to store the calculated result.
    */
-  friend void calculateVector(const FEMixin& self, const Requirement& req, VectorAffordance affo,
+  friend void calculateVector(const FEMixin& self, const Requirement& req, VectorAffordance affordance,
                               typename Traits::template VectorType<> force) {
-    self.template calculateVectorImpl<double>(req, affo, force);
+    self.template calculateVectorImpl<double>(req, affordance, force);
   }
 
   /**
@@ -127,9 +127,9 @@ public:
    * \param req The Requirement object specifying the requirements for the calculation.
    * \param K The matrix to store the calculated result.
    */
-  friend void calculateMatrix(const FEMixin& self, const Requirement& req, MatrixAffordance affo,
+  friend void calculateMatrix(const FEMixin& self, const Requirement& req, MatrixAffordance affordance,
                               typename Traits::template MatrixType<> K) {
-    self.template calculateMatrixImpl<double>(req, affo, K);
+    self.template calculateMatrixImpl<double>(req, affordance, K);
   }
 
   using Skills<PreFE, typename PreFE::template FE<Skills...>>::calculateAtImpl...;
@@ -158,9 +158,9 @@ private:
   }
 
   static constexpr bool implementsCalculateScalarImpl =
-      (requires(FEMixin m, const Requirement& par, ScalarAffordance affo,
+      (requires(FEMixin m, const Requirement& par, ScalarAffordance affordance,
                 const std::optional<std::reference_wrapper<const Eigen::VectorX<double>>>& dx) {
-        m.Skills<PreFE, typename PreFE::template FE<Skills...>>::calculateScalarImpl(par, affo, dx);
+        m.Skills<PreFE, typename PreFE::template FE<Skills...>>::calculateScalarImpl(par, affordance, dx);
       } ||
        ...);
 
@@ -181,19 +181,19 @@ public:
   template <typename ScalarType = double>
   requires implementsCalculateScalarImpl
   auto calculateScalarImpl(
-      const Requirement& par, ScalarAffordance affo,
+      const Requirement& par, ScalarAffordance affordance,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
     return (
-        Skills<PreFE, typename PreFE::template FE<Skills...>>::template calculateScalarImpl<ScalarType>(par, affo, dx) +
+        Skills<PreFE, typename PreFE::template FE<Skills...>>::template calculateScalarImpl<ScalarType>(par, affordance, dx) +
         ... + ScalarType{0});
   }
 
 private:
   static constexpr bool implementsCalculateVectorImpl =
-      (requires(FEMixin m, const Requirement& par, VectorAffordance affo,
+      (requires(FEMixin m, const Requirement& par, VectorAffordance affordance,
                 typename Traits::template VectorType<double> force,
                 const std::optional<std::reference_wrapper<const Eigen::VectorX<double>>>& dx) {
-        m.Skills<PreFE, typename PreFE::template FE<Skills...>>::calculateVectorImpl(par, affo, force, dx);
+        m.Skills<PreFE, typename PreFE::template FE<Skills...>>::calculateVectorImpl(par, affordance, force, dx);
       } ||
        ...);
 
@@ -209,19 +209,19 @@ public:
   template <typename ScalarType>
   requires implementsCalculateVectorImpl
   void calculateVectorImpl(
-      const Requirement& par, VectorAffordance affo, typename Traits::template VectorType<ScalarType> force,
+      const Requirement& par, VectorAffordance affordance, typename Traits::template VectorType<ScalarType> force,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
-    (Skills<PreFE, typename PreFE::template FE<Skills...>>::template calculateVectorImpl<ScalarType>(par, affo, force,
+    (Skills<PreFE, typename PreFE::template FE<Skills...>>::template calculateVectorImpl<ScalarType>(par, affordance, force,
                                                                                                      dx),
      ...);
   }
 
 private:
   static constexpr bool implementsCalculateMatrixImpl =
-      (requires(FEMixin m, const Requirement& par, MatrixAffordance affo,
+      (requires(FEMixin m, const Requirement& par, MatrixAffordance affordance,
                 typename Traits::template MatrixType<double> K,
                 const std::optional<std::reference_wrapper<const Eigen::VectorX<double>>>& dx) {
-        m.Skills<PreFE, typename PreFE::template FE<Skills...>>::calculateMatrixImpl(par, affo, K, dx);
+        m.Skills<PreFE, typename PreFE::template FE<Skills...>>::calculateMatrixImpl(par, affordance, K, dx);
       } ||
        ...);
 
@@ -237,9 +237,9 @@ public:
   template <typename ScalarType>
   requires implementsCalculateMatrixImpl
   void calculateMatrixImpl(
-      const Requirement& par, MatrixAffordance affo, typename Traits::template MatrixType<ScalarType> K,
+      const Requirement& par, MatrixAffordance affordance, typename Traits::template MatrixType<ScalarType> K,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
-    (Skills<PreFE, typename PreFE::template FE<Skills...>>::template calculateMatrixImpl<ScalarType>(par, affo, K, dx),
+    (Skills<PreFE, typename PreFE::template FE<Skills...>>::template calculateMatrixImpl<ScalarType>(par, affordance, K, dx),
      ...);
   }
 

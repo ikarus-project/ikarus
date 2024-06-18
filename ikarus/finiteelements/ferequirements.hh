@@ -99,19 +99,19 @@ concept FEAffordance = std::is_same_v<std::remove_cvref_t<T>, ScalarAffordance> 
 /**
  * \brief Struct representing a collection of affordances.
  */
-template <FEAffordance... Affos>
-requires(sizeof...(Affos) <= 3)
-struct AffordanceCollection : public std::tuple<Affos...>
+template <FEAffordance... affordances>
+requires(sizeof...(affordances) <= 3)
+struct AffordanceCollection : public std::tuple<affordances...>
 {
-  using Base = std::tuple<Affos...>;
+  using Base = std::tuple<affordances...>;
 
   AffordanceCollection() = default;
-  constexpr AffordanceCollection(Affos... affos)
-      : Base(affos...) {}
+  constexpr AffordanceCollection(affordances... affordances)
+      : Base(affordances...) {}
 
-  static constexpr bool hasScalarAffordance = traits::hasType<ScalarAffordance, std::tuple<Affos...>>::value;
-  static constexpr bool hasVectorAffordance = traits::hasType<VectorAffordance, std::tuple<Affos...>>::value;
-  static constexpr bool hasMatrixAffordance = traits::hasType<MatrixAffordance, std::tuple<Affos...>>::value;
+  static constexpr bool hasScalarAffordance = traits::hasType<ScalarAffordance, std::tuple<affordances...>>::value;
+  static constexpr bool hasVectorAffordance = traits::hasType<VectorAffordance, std::tuple<affordances...>>::value;
+  static constexpr bool hasMatrixAffordance = traits::hasType<MatrixAffordance, std::tuple<affordances...>>::value;
   /**
    * \brief Check if a specific affordance is present in the requirements.
    *
@@ -172,28 +172,28 @@ inline constexpr MatrixAffordance stiffnessdiffBucklingVector = MatrixAffordance
 inline constexpr MatrixAffordance mass                        = MatrixAffordance::mass;
 inline constexpr ScalarAffordance potentialEnergy             = ScalarAffordance::mechanicalPotentialEnergy;
 
-auto vectorAffordance(MatrixAffordance affoM) {
-  if (affoM == MatrixAffordance::stiffness)
+auto vectorAffordance(MatrixAffordance affordanceM) {
+  if (affordanceM == MatrixAffordance::stiffness)
     return VectorAffordance::forces;
-  else if (affoM == MatrixAffordance::microMagneticHessian)
+  else if (affordanceM == MatrixAffordance::microMagneticHessian)
     return VectorAffordance::microMagneticForces;
   else
     return VectorAffordance::noAffordance;
 }
 
-auto scalarAffordance(MatrixAffordance affoM) {
-  if (affoM == MatrixAffordance::stiffness)
+auto scalarAffordance(MatrixAffordance affordanceM) {
+  if (affordanceM == MatrixAffordance::stiffness)
     return ScalarAffordance::mechanicalPotentialEnergy;
-  else if (affoM == MatrixAffordance::microMagneticHessian)
+  else if (affordanceM == MatrixAffordance::microMagneticHessian)
     return ScalarAffordance::microMagneticPotentialEnergy;
   else
     return ScalarAffordance::noAffordance;
 }
 
-auto scalarAffordance(VectorAffordance affoV) {
-  if (affoV == VectorAffordance::forces)
+auto scalarAffordance(VectorAffordance affordanceV) {
+  if (affordanceV == VectorAffordance::forces)
     return ScalarAffordance::mechanicalPotentialEnergy;
-  else if (affoV == VectorAffordance::microMagneticForces)
+  else if (affordanceV == VectorAffordance::microMagneticForces)
     return ScalarAffordance::microMagneticPotentialEnergy;
   else
     return ScalarAffordance::noAffordance;
