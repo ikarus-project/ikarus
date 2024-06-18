@@ -4,6 +4,7 @@
 import debug_info
 debug_info.setDebugFlags()
 import ikarus as iks
+from ikarus import finite_elements, assembler
 import numpy as np
 import scipy as sp
 

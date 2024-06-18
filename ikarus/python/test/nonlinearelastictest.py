@@ -5,6 +5,7 @@ import debug_info
 debug_info.setDebugFlags()
 
 import ikarus as iks
+from ikarus import finite_elements, utils, assembler
 import numpy as np
 import scipy as sp
 from scipy.optimize import minimize
@@ -23,7 +24,7 @@ if __name__ == "__main__":
 
     grid = dune.grid.structuredGrid(lowerLeft, upperRight, elements)
     grid.hierarchicalGrid.globalRefine(0)
-    basisLagrange1 = ikarus.basis(
+    basisLagrange1 = iks.basis(
         grid, dune.functions.Power(dune.functions.Lagrange(order=1), 2)
     )
     flatBasis = basisLagrange1.flat()
