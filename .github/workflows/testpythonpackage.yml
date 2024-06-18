@@ -19,6 +19,7 @@ on:
       - '.github/workflows/ghpages.yml'
       - '.github/workflows/createDockerContainer.yml'
       - '**.md'
+  workflow_dispatch:
 
 jobs:
   build-n-test:
@@ -32,7 +33,7 @@ jobs:
 
       - name: Activate Dune environment
         run: |
-          . /dune/dune-common/build-cmake/dune-env/bin/activate 
+          . /dune/dune-common/build-cmake/dune-env/bin/activate
           echo "Dune environment activated"
 
       - name: Install twine and scikit-build
@@ -43,16 +44,16 @@ jobs:
       - name: Create tarball
         run: |
           python setup.py sdist
-      
+
       - name: Get package version
         id: get_version
         run: |
           echo "version=$(grep -oP 'ikarusVersion = "\K[^"]+' setup.py)" >> "$GITHUB_ENV"
-          
+
       - name: Install package from tarball
         run: |
           pip install dist/pyikarus-$version.tar.gz --verbose --upgrade --no-build-isolation
-      
+
       - name: Copy test files to pytests folder
         run: |
           mkdir -p ../pytests

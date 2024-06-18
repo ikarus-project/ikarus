@@ -10,7 +10,6 @@ on:
       - '.github/workflows/createDockerContainer.yml'
       - '**.md'
 
-
   pull_request:
     types: [opened]
     branches:
@@ -20,6 +19,8 @@ on:
       - '.github/workflows/ghpages.yml'
       - '.github/workflows/createDockerContainer.yml'
       - '**.md'
+  workflow_dispatch:
+
 jobs:
   Build:
     name: ${{ matrix.config.name }} Examples
