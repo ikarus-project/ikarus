@@ -118,7 +118,7 @@ struct AffordanceCollection : public std::tuple<Affordances...>
    * This function checks if the specified affordance is present in the requirements.
    *
    * \tparam Affordance Type of affordance to be checked.
-   * \param affordance The affordance to be checked.
+   * \param affordance The affordance to be checked. This can also be an affordance collection.
    * \return True if the affordance is present, false otherwise.
    */
   template <FEAffordance Affordance>

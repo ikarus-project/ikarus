@@ -42,7 +42,8 @@ public:
    *
    * \param self The finite element based on AutoDiff itself.
    * \param par Finite Element Requirements.
-   * \param h Matrix to be calculated.
+   * \param affordance The matrix affordance.
+   * \param[out] h Matrix to be calculated.
    */
   friend void calculateMatrix(const AutoDiffFE& self, const Requirement& par, const MatrixAffordance& affordance,
                               typename Traits::template MatrixType<> h) {
@@ -54,7 +55,8 @@ public:
    *
    * \param self The finite element based on AutoDiff itself.
    * \param par Finite Element Requirements.
-   * \param g Vector to be calculated.
+   * \param affordance The vector affordance.
+   * \param[out] g Vector to be calculated.
    */
   friend void calculateVector(const AutoDiffFE& self, const Requirement& par, VectorAffordance affordance,
                               typename Traits::template VectorType<double> g) {
@@ -66,8 +68,10 @@ public:
    *
    * \param self The finite element based on AutoDiff itself.
    * \param par Finite Element Requirements.
-   * \param h Matrix to be calculated.
-   * \param g Vector to be calculated.
+   * \param affordanceM The matrix affordance.
+   * \param affordanceV The vector affordance.
+   * \param[out] h Matrix to be calculated.
+   * \param[out] g Vector to be calculated.
    */
   friend void calculateLocalSystem(const AutoDiffFE& self, const Requirement& par, const MatrixAffordance& affordanceM,
                                    VectorAffordance affordanceV, typename Traits::template MatrixType<> h,
@@ -80,6 +84,7 @@ public:
    *
    * \param self The finite element based on AutoDiff itself.
    * \param par Finite Element Requirements.
+   * \param affordance The scalar affordance.
    * \return The calculated scalar value.
    */
   friend auto calculateScalar(const AutoDiffFE& self, const Requirement& par, ScalarAffordance affordance) {

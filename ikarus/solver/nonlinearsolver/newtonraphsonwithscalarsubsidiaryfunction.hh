@@ -59,8 +59,6 @@ struct NewtonRaphsonWithSubsidiaryFunctionConfig
  * \tparam NRConfig Type of the nonlinear solver config.
  * \param config Config for the solver.
  * \param nonLinearOperator Nonlinear operator to solve.
- * \param linearSolver Linear solver used internally (default is SolverDefault).
- * \param updateFunction Update function (default is UpdateDefault).
  * \return Shared pointer to the NewtonRaphson solver instance.
  */
 template <typename NLO, typename NRConfig>

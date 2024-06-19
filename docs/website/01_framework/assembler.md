@@ -30,7 +30,7 @@ Eigen::VectorXd createFullVector(const Eigen::VectorXd &reducedVector) // (4)!
 size_t constraintsBelow(size_t i) // (5)!
 bool isConstrained(size_t i) // (6)!
 size_t estimateOfConnectivity() // (7)!
-void bind(const RequirementType& fErequirements, AffordanceCollection<ScalarAffordance, VectorAffordance, MatrixAffordance> affordance)  // (8)!
+void bind(const RequirementType& feRequirements, AffordanceCollection<ScalarAffordance, VectorAffordance, MatrixAffordance> affordance)  // (8)!
 ```
 
 1. Returns the number of degrees of freedom.
@@ -41,14 +41,14 @@ void bind(const RequirementType& fErequirements, AffordanceCollection<ScalarAffo
 5. Indicates how many degrees of freedom {0,1,...i-1} are fixed.
 6. Indicates whether the degree of freedom `i` is fixed.
 7. An estimate for the connectivity. It can be used to allocate vectors.
-8. The assembler can be bound to specific requirements and an affordance collection
+8. The assembler can be bound to specific FE requirements and an affordance collection
 
 ## Scalar assembler
 
 It has the capabilities of [FlatAssemblerBase](#flatassemblerbase) plus one additional function:
 
 ```cpp
-double& scalar(const RequirementType& fErequirements, ScalarAffordance affordance)
+double& scalar(const RequirementType& feRequirements, ScalarAffordance affordance)
 double& scalar()
 ```
 

@@ -16,7 +16,6 @@ namespace Ikarus {
  * \tparam BH The type of the basis handler.
  * \tparam SK Type of the skills.
  * \tparam useFlat A boolean indicating if the type of the underlying basis is of the flat or the untouched version.
- * \tparam FER The requirements for the finite element.
  * \tparam useEigenRef A boolean flag indicating whether to use Eigen references.
  */
 template <typename BH, typename SK, bool useFlat = true, bool useEigenRef = false>

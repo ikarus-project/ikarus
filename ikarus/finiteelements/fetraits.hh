@@ -18,7 +18,6 @@ namespace Ikarus {
  *
  * \tparam BH The basis handler type for the finite element.
  * \tparam useFlat A boolean indicating if the type of the underlying basis is of the flat or the untouched version.
- * \tparam FER The requirements for the finite element.
  * \tparam useRef Boolean indicating whether to use Eigen::Ref for VectorType and MatrixType.
  */
 template <typename BH, bool useRef = false, bool useFlat = true>

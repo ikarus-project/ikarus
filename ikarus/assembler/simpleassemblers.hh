@@ -123,12 +123,12 @@ public:
    * \brief Binds the assembler to a set of finite element requirement and affordance.
    *
    * \param req Reference to the finite element requirement.
-   * \param affordance The affordance
+   * \param affordanceCollection The affordance collection
    */
-  void bind(const FERequirement& req, AffordanceCollectionType affordance,
+  void bind(const FERequirement& req, AffordanceCollectionType affordanceCollection,
             EnforcingDBCOption qt = EnforcingDBCOption::Full) {
     req_                = std::make_optional<FERequirement>(req);
-    affordances_        = std::make_optional<AffordanceCollectionType>(affordance);
+    affordances_        = std::make_optional<AffordanceCollectionType>(affordanceCollection);
     enforcingDBCOption_ = std::make_optional<EnforcingDBCOption>(qt);
   }
 
@@ -142,10 +142,10 @@ public:
   /**
    * \brief Binds the assembler to an affordance collection.
    *
-   * \param affordance The affordance collection
+   * \param affordanceCollection The affordance collection
    */
-  void bind(AffordanceCollectionType affordance) {
-    affordances_ = std::make_optional<AffordanceCollectionType>(affordance);
+  void bind(AffordanceCollectionType affordanceCollection) {
+    affordances_ = std::make_optional<AffordanceCollectionType>(affordanceCollection);
   }
 
   /**
@@ -379,8 +379,6 @@ public:
   Full means that degrees of freedom associated with dirichlet boundary conditions are set to zero in the vector.
   Reduced means that degrees of freedom associated with dirichlet boundary conditions are removed and the returned
  vector has reduced size.
-  * \see const Eigen::VectorXd& getVector(const FERequirement& feRequirements, VectorAffordance affordance,
- EnforcingDBCOption qt)
  * \param qt The EnforcingDBCOption
  * \return Const reference to the calculated vectorial quantity.
  */
@@ -394,8 +392,6 @@ enforcingDBCOption. Depending on the EnforcingDBCOption, the raw, reduced or ful
 means the degrees of freedom associated with dirichlet boundary conditions are not changed. Full means that degrees of
 freedom associated with dirichlet boundary conditions are set to zero in the vector. Reduced means that degrees of
 freedom associated with dirichlet boundary conditions are removed and the returned vector has reduced size.
-* \see const Eigen::VectorXd& getVector(const FERequirement& feRequirements, VectorAffordance affordance,
-EnforcingDBCOption qt)
 * \return Const reference to the calculated vectorial quantity.
 */
   const Eigen::VectorXd& vector() { return vector(this->enforcingDBCOption()); }
@@ -475,7 +471,7 @@ public:
 
   /**
    * \brief Calculates the matrix quantity requested by the bound feRequirements and the affordance.
-   * \see const Eigen::SparseMatrix<double>& getMatrix(const FERequirement& feRequirements,MatrixAffordance affordance,
+   * \see const Eigen::SparseMatrix<double>& matrix(const FERequirement& feRequirements,MatrixAffordance affordance,
    EnforcingDBCOption qt)
 
    * \param qt The EnforcingDBCOption
@@ -488,7 +484,7 @@ public:
   /**
  * \brief Calculates the matrix quantity requested by the bound feRequirements, the affordance and the
 enforcingDBCOption.
- * \see const Eigen::SparseMatrix<double>& getMatrix(const FERequirement& feRequirements,MatrixAffordance affordance,
+ * \see const Eigen::SparseMatrix<double>& matrix(const FERequirement& feRequirements,MatrixAffordance affordance,
  EnforcingDBCOption qt)
 
  * \return Const reference to the modified sparse matrix quantity.
@@ -581,6 +577,8 @@ public:
    * on the diagonal. For EnforcingDBCOption::Raw the untouched matrix is returned.
    * For EnforcingDBCOption::Reduced the matrix is reduced in size by removing the fixed degrees of freedom.
    *
+   * \param feRequirements Reference to the finite element requirements.
+   * \param affordance The matrix affordance 
    * \param qt The EnforcingDBCOption
 
    * \return Reference to the raw dense matrix quantity.
@@ -603,10 +601,7 @@ public:
 * on the diagonal. For EnforcingDBCOption::Raw the untouched matrix is returned.
 * For EnforcingDBCOption::Reduced the matrix is reduced in size by removing the fixed degrees of freedom.
 *
-* \param feRequirements Reference to the finite element requirements.
-* \param affordance The matrix affordance
 * \param qt The EnforcingDBCOption
-
 * \return Reference to the raw dense matrix quantity.
 */
   const Eigen::MatrixXd& matrix(EnforcingDBCOption qt) {

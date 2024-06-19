@@ -52,13 +52,11 @@ struct NewtonRaphsonConfig
 };
 
 /**
- * \brief Function to create a NewtonRaphson with subsidiary function solver instance.
+ * \brief Function to create a NewtonRaphson solver instance.
  * \tparam NLO Type of the nonlinear operator to solve.
  * \tparam NRConfig Type of the nonlinear solver config.
  * \param config Config for the solver.
  * \param nonLinearOperator Nonlinear operator to solve.
- * \param linearSolver Linear solver used internally (default is SolverDefault).
- * \param updateFunction Update function (default is UpdateDefault).
  * \return Shared pointer to the NewtonRaphson solver instance.
  */
 template <typename NLO, typename NRConfig>
@@ -210,21 +208,6 @@ private:
   Settings settings_;
 };
 
-/**
- * \brief Function to create a NewtonRaphson solver instance.
- * \tparam NLO Type of the nonlinear operator to solve.
- * \tparam LS Type of the linear solver used internally (default is SolverDefault).
- * \tparam UF Type of the update function (default is UpdateDefault).
- * \param nonLinearOperator Nonlinear operator to solve.
- * \param linearSolver Linear solver used internally (default is SolverDefault).
- * \param updateFunction Update function (default is UpdateDefault).
- * \return Shared pointer to the NewtonRaphson solver instance.
- */
-template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
-auto makeNewtonRaphson(const NLO& nonLinearOperator, LS&& linearSolver = {}, UF&& updateFunction = {}) {
-  return std::make_shared<NewtonRaphson<NLO, LS, UF>>(nonLinearOperator, std::forward<LS>(linearSolver),
-                                                      std::move(updateFunction));
-}
 
 template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
 NewtonRaphson(const NLO& nonLinearOperator, LS&& linearSolver = {},
