@@ -15,22 +15,23 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 - Added a unified, generic interface for `ResultTypes` with the ability to register new
   ones ([#261](https://github.com/ikarus-project/ikarus/pull/261))
 - Refactor of FE requirements and non-linear operator construction ([#289](https://github.com/ikarus-project/ikarus/pull/289))
-    - The FE requirement type is no longer standalone but is rather dictated by the element. Therefore, the elements no longer contain the 
-      template argument `FERequirements`. It can be obtained statically by `FEType::Requirement` or by obtaining an object 
-      via `fe.createRequirement()`.
+    - The FE requirement type is no longer standalone but is rather dictated by the element.
+      Therefore, the elements no longer contain the template argument `FERequirements`.
+      It can be obtained statically by `FEType::Requirement` or by getting an object via `fe.createRequirement()`.
     - The exported type by the finite elements is `Requirement` and no longer `FERequirementType`.
     - FE requirements no longer contain affordance information; they now have to be passed separately while calling methods of the assembler.
     - The FE requirements only contain a single solution vector and a single parameter.
     - The getter functions are renamed from `getGlobalSolution` and `getParameter` to `globalSolution` and `parameter`, respectively.
     - The `FErequirements` now have a method `populated` to indicate if the quantities needed by the FE are inserted.
     - The assemblers can now be bound to specific FE requirements, affordances, and an EnforcingDBCOption.
-    - The assemblers now implement a single function `matrix` to assemble matrix quantities and `vector` to assemble the corresponding vector 
-      quantity, where also affordance and the `EnforcingDBCOption` have to
-      be passed. The `EnforcingDBCOption` decides whether a raw, a reduced, or a full matrix is to be obtained.
+    - The assemblers now implement a single function `matrix` to assemble matrix quantities.
+      Similarly, a single function `vector` is implemented to assemble the corresponding vector quantities.
+      Here also, affordance and the `EnforcingDBCOption` have to be passed.
+      The `EnforcingDBCOption` decides whether a raw, a reduced, or a full matrix is to be obtained.
     - The finite element functions `calculateMatrix`, `calculateVector`, and `calculateScalar` now directly accept the affordances.
     - The affordances are now all singular, `ScalarAffordances` --> `ScalarAffordance`
-    - The affordances now know about each other's relationships. Therefore, calling the function `vectorAffordance(MatrixAffordance::stiffness)`
-      returns `VectorAffordance::forces`
+    - The affordances now know about each other.
+      Therefore, calling the function `vectorAffordance(MatrixAffordance::stiffness)` returns `VectorAffordance::forces`.
     - Nonlinear operators can now conveniently be constructed by `NonLinearOperatorFactory`. A bound assembler can be passed to the `op` function,
       but all options can also be passed directly.
     - The linear solver is now fully copyable and moveable.
