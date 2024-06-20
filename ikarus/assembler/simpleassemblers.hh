@@ -126,10 +126,10 @@ public:
    * \param affordanceCollection The affordance collection
    */
   void bind(const FERequirement& req, AffordanceCollectionType affordanceCollection,
-            EnforcingDBCOption qt = EnforcingDBCOption::Full) {
+            DBCOption qt = DBCOption::Full) {
     req_                = std::make_optional<FERequirement>(req);
     affordances_        = std::make_optional<AffordanceCollectionType>(affordanceCollection);
-    enforcingDBCOption_ = std::make_optional<EnforcingDBCOption>(qt);
+    dBCOption_ = std::make_optional<DBCOption>(qt);
   }
 
   /**
@@ -153,7 +153,7 @@ public:
    *
    * \param qt The EnforcingDBC option
    */
-  void bind(EnforcingDBCOption qt) { enforcingDBCOption_ = std::make_optional<EnforcingDBCOption>(qt); }
+  void bind(DBCOption qt) { dBCOption_ = std::make_optional<DBCOption>(qt); }
 
   /**
    * \brief Returns true if the assembler is bound to a finite element requirement and affordance.
@@ -162,11 +162,11 @@ public:
    */
   [[nodiscard]]
   bool bound() const {
-    if (boundToRequirement() and boundToAffordanceCollection() and boundToEnforcingDBCOption())
+    if (boundToRequirement() and boundToAffordanceCollection() and boundToDBCOption())
       return true;
     else
       DUNE_THROW(Dune::InvalidStateException,
-                 "The assembler is not bound to a requirement, affordance or enforcingDBCOption.");
+                 "The assembler is not bound to a requirement, affordance or dBCOption.");
   }
 
   /**
@@ -195,8 +195,8 @@ public:
    * \return True if the assembler is bound; false otherwise.
    */
   [[nodiscard]]
-  bool boundToEnforcingDBCOption() const {
-    return enforcingDBCOption_.has_value();
+  bool boundToDBCOption() const {
+    return dBCOption_.has_value();
   }
 
   /**
@@ -225,11 +225,11 @@ public:
    * \brief Returns the dirichlet boundary condition enforcement option.
    *
    */
-  EnforcingDBCOption enforcingDBCOption() const {
-    if (enforcingDBCOption_.has_value())
-      return enforcingDBCOption_.value();
+  DBCOption dBCOption() const {
+    if (dBCOption_.has_value())
+      return dBCOption_.value();
     else
-      DUNE_THROW(Dune::InvalidStateException, "The enforcingDBCOption can only be obtained after binding");
+      DUNE_THROW(Dune::InvalidStateException, "The dBCOption can only be obtained after binding");
   }
 
 private:
@@ -239,7 +239,7 @@ private:
   std::optional<AffordanceCollectionType> affordances_;
   std::vector<size_t> constraintsBelow_{};
   size_t fixedDofs_{};
-  std::optional<EnforcingDBCOption> enforcingDBCOption_;
+  std::optional<DBCOption> dBCOption_;
 };
 
 #ifndef DOXYGEN
@@ -349,7 +349,7 @@ public:
 
   /**
    * \brief Calculates the vectorial quantity requested by the  feRequirements and the affordance.
-   Depending on the requested EnforcingDBCOption, the raw, reduced or full vector is returned.
+   Depending on the requested DBCOption, the raw, reduced or full vector is returned.
     Raw means the degrees of freedom associated with dirichlet boundary conditions are not changed.
     Full means that degrees of freedom associated with dirichlet boundary conditions are set to zero in the vector.
     Reduced means that degrees of freedom associated with dirichlet boundary conditions are removed and the returned
@@ -357,16 +357,16 @@ public:
    *
    * \param feRequirements Reference to the finite element requirements.
    * \param affordance The vector affordance
-   * \param qt The EnforcingDBCOption
+   * \param qt The DBCOption
    * \return Const reference to the calculated vectorial quantity.
    */
   const Eigen::VectorXd& vector(const FERequirement& feRequirements, VectorAffordance affordance,
-                                EnforcingDBCOption qt = EnforcingDBCOption::Full) {
-    if (qt == EnforcingDBCOption::Raw) {
+                                DBCOption qt = DBCOption::Full) {
+    if (qt == DBCOption::Raw) {
       return getRawVectorImpl(feRequirements, affordance);
-    } else if (qt == EnforcingDBCOption::Reduced) {
+    } else if (qt == DBCOption::Reduced) {
       return getReducedVectorImpl(feRequirements, affordance);
-    } else if (qt == EnforcingDBCOption::Full) {
+    } else if (qt == DBCOption::Full) {
       return getVectorImpl(feRequirements, affordance);
     }
     __builtin_unreachable();
@@ -374,27 +374,27 @@ public:
 
   /**
  * \brief Calculates the vectorial quantity requested by the bound feRequirements and the affordance.
- Depending on the requested EnforcingDBCOption, the raw, reduced or full vector is returned.
+ Depending on the requested DBCOption, the raw, reduced or full vector is returned.
   Raw means the degrees of freedom associated with dirichlet boundary conditions are not changed.
   Full means that degrees of freedom associated with dirichlet boundary conditions are set to zero in the vector.
   Reduced means that degrees of freedom associated with dirichlet boundary conditions are removed and the returned
  vector has reduced size.
- * \param qt The EnforcingDBCOption
+ * \param qt The DBCOption
  * \return Const reference to the calculated vectorial quantity.
  */
-  const Eigen::VectorXd& vector(EnforcingDBCOption qt) {
+  const Eigen::VectorXd& vector(DBCOption qt) {
     return vector(this->requirement(), this->affordanceCollection().vectorAffordance(), qt);
   }
 
   /**
 * \brief Calculates the vectorial quantity requested by the bound feRequirements,  the affordance and the
-enforcingDBCOption. Depending on the EnforcingDBCOption, the raw, reduced or full vector is returned. Raw
+dBCOption. Depending on the DBCOption, the raw, reduced or full vector is returned. Raw
 means the degrees of freedom associated with dirichlet boundary conditions are not changed. Full means that degrees of
 freedom associated with dirichlet boundary conditions are set to zero in the vector. Reduced means that degrees of
 freedom associated with dirichlet boundary conditions are removed and the returned vector has reduced size.
 * \return Const reference to the calculated vectorial quantity.
 */
-  const Eigen::VectorXd& vector() { return vector(this->enforcingDBCOption()); }
+  const Eigen::VectorXd& vector() { return vector(this->dBCOption()); }
 
 private:
   void assembleRawVectorImpl(const FERequirement& feRequirements, VectorAffordance affordance,
@@ -448,22 +448,22 @@ public:
 
   /**
    * \brief Calculates the matrix quantity requested by feRequirements and the affordance.
-   * For EnforcingDBCOption::Full a zero is written on fixed degrees of freedom rows and columns, and a one is written
-   * on the diagonal. For EnforcingDBCOption::Raw the untouched matrix is returned.
-   * For EnforcingDBCOption::Reduced the matrix is reduced in size by removing the fixed degrees of freedom.
+   * For DBCOption::Full a zero is written on fixed degrees of freedom rows and columns, and a one is written
+   * on the diagonal. For DBCOption::Raw the untouched matrix is returned.
+   * For DBCOption::Reduced the matrix is reduced in size by removing the fixed degrees of freedom.
 
     \param feRequirements Reference to the finite element requirements.
    * \param affordance The matrix affordance
-   * \param qt The EnforcingDBCOption
+   * \param qt The DBCOption
    * \return Const reference to the modified sparse matrix quantity.
    */
   const Eigen::SparseMatrix<double>& matrix(const FERequirement& feRequirements, MatrixAffordance affordance,
-                                            EnforcingDBCOption qt = EnforcingDBCOption::Full) {
-    if (qt == EnforcingDBCOption::Raw) {
+                                            DBCOption qt = DBCOption::Full) {
+    if (qt == DBCOption::Raw) {
       return getRawMatrixImpl(feRequirements, affordance);
-    } else if (qt == EnforcingDBCOption::Reduced) {
+    } else if (qt == DBCOption::Reduced) {
       return getReducedMatrixImpl(feRequirements, affordance);
-    } else if (qt == EnforcingDBCOption::Full) {
+    } else if (qt == DBCOption::Full) {
       return getMatrixImpl(feRequirements, affordance);
     }
     __builtin_unreachable();
@@ -472,24 +472,24 @@ public:
   /**
    * \brief Calculates the matrix quantity requested by the bound feRequirements and the affordance.
    * \see const Eigen::SparseMatrix<double>& matrix(const FERequirement& feRequirements,MatrixAffordance affordance,
-   EnforcingDBCOption qt)
+   DBCOption qt)
 
-   * \param qt The EnforcingDBCOption
+   * \param qt The DBCOption
    * \return Const reference to the modified sparse matrix quantity.
    */
-  const Eigen::SparseMatrix<double>& matrix(EnforcingDBCOption qt) {
+  const Eigen::SparseMatrix<double>& matrix(DBCOption qt) {
     return matrix(this->requirement(), this->affordanceCollection().matrixAffordance(), qt);
   }
 
   /**
  * \brief Calculates the matrix quantity requested by the bound feRequirements, the affordance and the
-enforcingDBCOption.
+dBCOption.
  * \see const Eigen::SparseMatrix<double>& matrix(const FERequirement& feRequirements,MatrixAffordance affordance,
- EnforcingDBCOption qt)
+ DBCOption qt)
 
  * \return Const reference to the modified sparse matrix quantity.
  */
-  const Eigen::SparseMatrix<double>& matrix() { return matrix(this->enforcingDBCOption()); }
+  const Eigen::SparseMatrix<double>& matrix() { return matrix(this->dBCOption()); }
 
 private:
   void assembleRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance,
@@ -573,23 +573,23 @@ public:
 
   /**
    * \brief  Calculates the matrix quantity requested by feRequirements and the affordance.
-   * For EnforcingDBCOption::Full a zero is written on fixed degrees of freedom rows and columns, and a one is written
-   * on the diagonal. For EnforcingDBCOption::Raw the untouched matrix is returned.
-   * For EnforcingDBCOption::Reduced the matrix is reduced in size by removing the fixed degrees of freedom.
+   * For DBCOption::Full a zero is written on fixed degrees of freedom rows and columns, and a one is written
+   * on the diagonal. For DBCOption::Raw the untouched matrix is returned.
+   * For DBCOption::Reduced the matrix is reduced in size by removing the fixed degrees of freedom.
    *
    * \param feRequirements Reference to the finite element requirements.
    * \param affordance The matrix affordance 
-   * \param qt The EnforcingDBCOption
+   * \param qt The DBCOption
 
    * \return Reference to the raw dense matrix quantity.
    */
   const Eigen::MatrixXd& matrix(const FERequirement& feRequirements, MatrixAffordance affordance,
-                                EnforcingDBCOption qt = EnforcingDBCOption::Full) {
-    if (qt == EnforcingDBCOption::Raw) {
+                                DBCOption qt = DBCOption::Full) {
+    if (qt == DBCOption::Raw) {
       return getRawMatrixImpl(feRequirements, affordance);
-    } else if (qt == EnforcingDBCOption::Reduced) {
+    } else if (qt == DBCOption::Reduced) {
       return getReducedMatrixImpl(feRequirements, affordance);
-    } else if (qt == EnforcingDBCOption::Full) {
+    } else if (qt == DBCOption::Full) {
       return getMatrixImpl(feRequirements, affordance);
     }
     __builtin_unreachable();
@@ -597,24 +597,24 @@ public:
 
   /**
 * \brief  Calculates the matrix quantity requested by the bound  feRequirements and the affordance.
-* For EnforcingDBCOption::Full a zero is written on fixed degrees of freedom rows and columns, and a one is written
-* on the diagonal. For EnforcingDBCOption::Raw the untouched matrix is returned.
-* For EnforcingDBCOption::Reduced the matrix is reduced in size by removing the fixed degrees of freedom.
+* For DBCOption::Full a zero is written on fixed degrees of freedom rows and columns, and a one is written
+* on the diagonal. For DBCOption::Raw the untouched matrix is returned.
+* For DBCOption::Reduced the matrix is reduced in size by removing the fixed degrees of freedom.
 *
-* \param qt The EnforcingDBCOption
+* \param qt The DBCOption
 * \return Reference to the raw dense matrix quantity.
 */
-  const Eigen::MatrixXd& matrix(EnforcingDBCOption qt) {
+  const Eigen::MatrixXd& matrix(DBCOption qt) {
     return matrix(this->requirement(), this->affordanceCollection().matrixAffordance(), qt);
   }
 
   /**
    * \brief  Calculates the matrix quantity requested by the bound  feRequirements, the affordance and the
-enforcingDBCOption.
-   * \see const Eigen::MatrixXd& matrix(EnforcingDBCOption qt)
+dBCOption.
+   * \see const Eigen::MatrixXd& matrix(DBCOption qt)
    * \return Reference to the dense matrix quantity.
    */
-  const Eigen::MatrixXd& matrix() { return matrix(this->enforcingDBCOption()); }
+  const Eigen::MatrixXd& matrix() { return matrix(this->dBCOption()); }
 
 private:
   void assembleRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance,

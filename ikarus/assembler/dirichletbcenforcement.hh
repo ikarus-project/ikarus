@@ -4,5 +4,5 @@
 
 #pragma once
 namespace Ikarus {
-MAKE_ENUM(EnforcingDBCOption, Raw, Reduced, Full);
+MAKE_ENUM(DBCOption, Raw, Reduced, Full);
 }

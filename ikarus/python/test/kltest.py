@@ -91,8 +91,8 @@ if __name__ == "__main__":
         req.insertParameter( lambdaLoad)
         dBig = assembler.createFullVector(dRedInput)
         req.insertGlobalSolution( dBig)
-        g = assembler.vector(req,iks.VectorAffordance.forces, iks.EnforcingDBCOption.Reduced)
-        h = assembler.matrix(req,iks.MatrixAffordance.stiffness, iks.EnforcingDBCOption.Reduced)
+        g = assembler.vector(req,iks.VectorAffordance.forces, iks.DBCOption.Reduced)
+        h = assembler.matrix(req,iks.MatrixAffordance.stiffness, iks.DBCOption
         return [g, h]
 
     from numpy.linalg import norm

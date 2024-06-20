@@ -12,7 +12,7 @@ Usually the construction is as follows:
 FErequirements req = fe.createRequirement()
                            .insertGlobalSolution( d)
                            .insertParameter( lambda);
-MatrixType A = sparseFlatAssembler.matrix(req,MatrixAffordance::stiffness,EnforcingDBCOption::Full);
+MatrixType A = sparseFlatAssembler.matrix(req,MatrixAffordance::stiffness,DBCOption::Full);
 ```
 
 All the methods return a reference to `FErequirements`, so they can be chained together.

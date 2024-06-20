@@ -84,7 +84,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   auto req = typename FEType::Requirement(d, lambda);
 
   sparseAssembler->bind(req, Ikarus::AffordanceCollections::elastoStatics);
-  auto nonLinOp = Ikarus::NonLinearOperatorFactory::op(sparseAssembler, EnforcingDBCOption::Reduced);
+  auto nonLinOp = Ikarus::NonLinearOperatorFactory::op(sparseAssembler, DBCOption::Reduced);
 
   const double gradTol = 1e-8;
 

@@ -23,11 +23,11 @@ SPDX-License-Identifier: LGPL-3.0-or-later
     - The FE requirements only contain a single solution vector and a single parameter.
     - The getter functions are renamed from `getGlobalSolution` and `getParameter` to `globalSolution` and `parameter`, respectively.
     - The `FErequirements` now have a method `populated` to indicate if the quantities needed by the FE are inserted.
-    - The assemblers can now be bound to specific FE requirements, affordances, and an EnforcingDBCOption.
+    - The assemblers can now be bound to specific FE requirements, affordances, and an DBCOption.
     - The assemblers now implement a single function `matrix` to assemble matrix quantities.
       Similarly, a single function `vector` is implemented to assemble the corresponding vector quantities.
-      Here also, affordance and the `EnforcingDBCOption` have to be passed.
-      The `EnforcingDBCOption` decides whether a raw, a reduced, or a full matrix is to be obtained.
+      Here also, affordance and the `DBCOption` have to be passed.
+      The `DBCOption` decides whether a raw, a reduced, or a full matrix is to be obtained.
     - The finite element functions `calculateMatrix`, `calculateVector`, and `calculateScalar` now directly accept the affordances.
     - The affordances are now all singular, `ScalarAffordances` --> `ScalarAffordance`
     - The affordances now know about each other.
@@ -44,7 +44,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
     - Python:
         - Bindings for Enums can now be done conveniently with the `ENUM_BINDINGS` macro.
         - The finite element functions `calculateMatrix`, `calculateVector`, and `calculateScalar` now directly accept the affordances.
-        - The assembler bindings now also accept affordances and `EnforcingDBCOption`, and they are also renamed to simply `matrix`, `vector`
+        - The assembler bindings now also accept affordances and `DBCOption`, and they are also renamed to simply `matrix`, `vector`
           and `scalar`.
         - The assemblers also export the binding functions to bind the assemblers.
 

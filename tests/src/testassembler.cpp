@@ -87,17 +87,17 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
 
     auto req = typename FEType::Requirement(d, load);
 
-    auto& KRawDense = denseFlatAssembler.matrix(req, MatrixAffordance::stiffness, EnforcingDBCOption::Raw);
-    auto& KRaw      = sparseFlatAssembler.matrix(req, MatrixAffordance::stiffness, EnforcingDBCOption::Raw);
-    auto& RRawDense = denseFlatAssembler.vector(req, VectorAffordance::forces, EnforcingDBCOption::Raw);
-    auto& RRaw      = sparseFlatAssembler.vector(req, VectorAffordance::forces, EnforcingDBCOption::Raw);
+    auto& KRawDense = denseFlatAssembler.matrix(req, MatrixAffordance::stiffness, DBCOption::Raw);
+    auto& KRaw      = sparseFlatAssembler.matrix(req, MatrixAffordance::stiffness, DBCOption::Raw);
+    auto& RRawDense = denseFlatAssembler.vector(req, VectorAffordance::forces, DBCOption::Raw);
+    auto& RRaw      = sparseFlatAssembler.vector(req, VectorAffordance::forces, DBCOption::Raw);
     checkAssembledQuantities(t, KRaw, KRawDense, totalDOFs);
     checkAssembledQuantities(t, RRaw, RRawDense, totalDOFs);
 
-    auto& KDense = denseFlatAssembler.matrix(req, MatrixAffordance::stiffness, EnforcingDBCOption::Full);
-    auto& K      = sparseFlatAssembler.matrix(req, MatrixAffordance::stiffness, EnforcingDBCOption::Full);
-    auto& RDense = denseFlatAssembler.vector(req, VectorAffordance::forces, EnforcingDBCOption::Full);
-    auto& R      = sparseFlatAssembler.vector(req, VectorAffordance::forces, EnforcingDBCOption::Full);
+    auto& KDense = denseFlatAssembler.matrix(req, MatrixAffordance::stiffness, DBCOption::Full);
+    auto& K      = sparseFlatAssembler.matrix(req, MatrixAffordance::stiffness, DBCOption::Full);
+    auto& RDense = denseFlatAssembler.vector(req, VectorAffordance::forces, DBCOption::Full);
+    auto& R      = sparseFlatAssembler.vector(req, VectorAffordance::forces, DBCOption::Full);
     checkAssembledQuantities(t, K, KDense, totalDOFs);
     checkAssembledQuantities(t, R, RDense, totalDOFs);
 
@@ -132,10 +132,10 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
       }
     }
 
-    auto& KRedDense = denseFlatAssembler.matrix(req, MatrixAffordance::stiffness, EnforcingDBCOption::Reduced);
-    auto& KRed      = sparseFlatAssembler.matrix(req, MatrixAffordance::stiffness, EnforcingDBCOption::Reduced);
-    auto& RRedDense = denseFlatAssembler.vector(req, VectorAffordance::forces, EnforcingDBCOption::Reduced);
-    auto& RRed      = sparseFlatAssembler.vector(req, VectorAffordance::forces, EnforcingDBCOption::Reduced);
+    auto& KRedDense = denseFlatAssembler.matrix(req, MatrixAffordance::stiffness, DBCOption::Reduced);
+    auto& KRed      = sparseFlatAssembler.matrix(req, MatrixAffordance::stiffness, DBCOption::Reduced);
+    auto& RRedDense = denseFlatAssembler.vector(req, VectorAffordance::forces, DBCOption::Reduced);
+    auto& RRed      = sparseFlatAssembler.vector(req, VectorAffordance::forces, DBCOption::Reduced);
     checkAssembledQuantities(t, KRed, KRedDense, totalDOFs - fixedDOFs);
     checkAssembledQuantities(t, RRed, RRedDense, totalDOFs - fixedDOFs);
 

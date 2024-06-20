@@ -36,7 +36,7 @@ PYBIND11_MODULE(_ikarus, m) {
   ENUM_BINDINGS(FESolutions);
   ENUM_BINDINGS(FEParameter);
   ENUM_BINDINGS(SolverTypeTag);
-  ENUM_BINDINGS(EnforcingDBCOption);
+  ENUM_BINDINGS(DBCOption);
 
   py::class_<std::tuple<ScalarAffordance, VectorAffordance, MatrixAffordance>>(m, "Base");
   auto affordanceCollections3 =

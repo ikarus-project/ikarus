@@ -485,7 +485,7 @@ namespace Concepts {
    */
   template <typename T>
   concept FlatAssembler = requires(T t, const typename T::FERequirement& req,
-                                   typename T::AffordanceCollectionType affordance, EnforcingDBCOption qt) {
+                                   typename T::AffordanceCollectionType affordance, DBCOption qt) {
     { t.scalar(req, affordance.scalarAffordance()) } -> std::convertible_to<const double&>;
     { t.scalar() } -> std::convertible_to<const double&>;
 
@@ -499,7 +499,7 @@ namespace Concepts {
 
     { t.requirement() } -> std::convertible_to<typename T::FERequirement&>;
     { t.affordanceCollection() } -> std::convertible_to<typename T::AffordanceCollectionType>;
-    { t.enforcingDBCOption() } -> std::convertible_to<EnforcingDBCOption>;
+    { t.dBCOption() } -> std::convertible_to<DBCOption>;
 
     { t.bind(req, affordance, qt) } -> std::same_as<void>;
     { t.bind(req) } -> std::same_as<void>;
@@ -509,7 +509,7 @@ namespace Concepts {
     { t.bound() } -> std::convertible_to<bool>;
     { t.boundToRequirement() } -> std::convertible_to<bool>;
     { t.boundToAffordanceCollection() } -> std::convertible_to<bool>;
-    { t.boundToEnforcingDBCOption() } -> std::convertible_to<bool>;
+    { t.boundToDBCOption() } -> std::convertible_to<bool>;
     { t.estimateOfConnectivity() } -> std::convertible_to<size_t>;
 
     { t.createFullVector(std::declval<Eigen::Ref<const Eigen::VectorXd>>()) } -> std::convertible_to<Eigen::VectorXd>;

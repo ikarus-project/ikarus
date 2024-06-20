@@ -114,7 +114,7 @@ def linElasticTest(easBool):
 
     assembler = iks.assembler.sparseFlatAssembler(fes, dirichletValues)
     assemblerDense = iks.assembler.denseFlatAssembler(fes, dirichletValues)
-    assembler.bind(req, iks.AffordanceCollection.elastoStatics, iks.EnforcingDBCOption.Full)
+    assembler.bind(req, iks.AffordanceCollection.elastoStatics, iks.DBCOption.Full)
 
     Msparse = assembler.matrix()
     forces = assembler.vector()

@@ -20,7 +20,7 @@ struct NonLinearOperatorFactory
 {
   template <typename Assembler, typename... Affordances>
   static auto op(Assembler&& as, typename traits::remove_pointer_t<std::remove_cvref_t<Assembler>>::FERequirement& req,
-                 AffordanceCollection<Affordances...> affordances, EnforcingDBCOption qt) {
+                 AffordanceCollection<Affordances...> affordances, DBCOption qt) {
     auto assemblerPtr = [as]() {
       if constexpr (std::is_pointer_v<std::remove_cvref_t<Assembler>> or
                     traits::isSharedPtr<std::remove_cvref_t<Assembler>>::value)
@@ -65,7 +65,7 @@ struct NonLinearOperatorFactory
   }
 
   template <typename Assembler>
-  static auto op(Assembler&& as, EnforcingDBCOption qt) {
+  static auto op(Assembler&& as, DBCOption qt) {
     auto ex = []() {
       DUNE_THROW(Dune::InvalidStateException,
                  "Assembler has to be bound to a fe requirement and an affordance collection before you can call "
@@ -93,24 +93,24 @@ struct NonLinearOperatorFactory
     auto ex = []() {
       DUNE_THROW(Dune::InvalidStateException,
                  "Assembler has to be bound to a fe requirement to an affordance collection and to an "
-                 "EnforcingDBCOption before you can call "
+                 "DBCOption before you can call "
                  "this method");
     };
     if constexpr (std::is_pointer_v<std::remove_cvref_t<Assembler>> or
                   traits::isSharedPtr<std::remove_cvref_t<Assembler>>::value) {
       if (not as->bound())
         ex();
-      return op(std::forward<Assembler>(as), as->requirement(), as->affordanceCollection(), as->enforcingDBCOption());
+      return op(std::forward<Assembler>(as), as->requirement(), as->affordanceCollection(), as->dBCOption());
     } else {
       if (not as.bound())
         ex();
-      return op(std::forward<Assembler>(as), as.requirement(), as.affordanceCollection(), as->enforcingDBCOption());
+      return op(std::forward<Assembler>(as), as.requirement(), as.affordanceCollection(), as->dBCOption());
     }
   }
 
   template <typename Assembler, typename... Affordances>
   static auto op(Assembler&& as, AffordanceCollection<Affordances...> affordances,
-                 EnforcingDBCOption qt = EnforcingDBCOption::Full) {
+                 DBCOption qt = DBCOption::Full) {
     auto ex = []() {
       DUNE_THROW(Dune::InvalidStateException,
                  "Assembler has to be bound to a fe requirement before you can call "
@@ -131,7 +131,7 @@ struct NonLinearOperatorFactory
 
   template <typename Assembler>
   static auto op(Assembler&& as, typename traits::remove_pointer_t<std::remove_cvref_t<Assembler>>::FERequirement& req,
-                 EnforcingDBCOption qt) {
+                 DBCOption qt) {
     auto ex = []() {
       DUNE_THROW(Dune::InvalidStateException,
                  "Assembler has to be bound to an affordance collection before you can call "

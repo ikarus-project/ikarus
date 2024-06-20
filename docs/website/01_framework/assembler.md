@@ -71,13 +71,13 @@ const auto& K = myAssembler.scalar(feRequirements, scalarAffordance) // (2)!
 It has all the features of [ScalarAssembler](#scalarassembler) plus more, like:
 
 ```cpp
-Eigen::VectorXd& vector(const FERequirementType& feRequirements, VectorAffordance affordance,  EnforcingDBCOption qt)
-Eigen::VectorXd& vector( EnforcingDBCOption qt)
+Eigen::VectorXd& vector(const FERequirementType& feRequirements, VectorAffordance affordance,  DBCOption qt)
+Eigen::VectorXd& vector( DBCOption qt)
 ```
 
-The Enum `EnforcingDBCOption` dictates how the Dirichlet boundary conditions should be applied
-The `EnforcingDBCOption::Raw` returns a vector without considering the boundary conditions.
-The `EnforcingDBCOption::Full` option returns a full vector, where zeros are written for the fixed degrees of freedom and `EnforcingDBCOption::Reduced`
+The Enum `DBCOption` dictates how the Dirichlet boundary conditions should be applied
+The `DBCOption::Raw` returns a vector without considering the boundary conditions.
+The `DBCOption::Full` option returns a full vector, where zeros are written for the fixed degrees of freedom and `DBCOption::Reduced`
 returns reduced vector removing the fixed degrees of freedom.
 The second function can be used if the assembler is bound to specific fe requirements and affordances.
 They work in the same way as the scalar assembly functions of [ScalarAssembler](#scalarassembler).
@@ -88,16 +88,16 @@ The available FE requirements are explained on the [FE requirements](feRequireme
 It offers the functions of [VectorFlatAssembler](#vectorflatassembler) plus more, like:
 
 ```cpp
-Eigen::SparseMatrix<double>& matrix(const FERequirementType& feRequirements, MatrixAffordance affordance, EnforcingDBCOption qt)
-Eigen::SparseMatrix<double>& matrix(EnforcingDBCOption qt)
+Eigen::SparseMatrix<double>& matrix(const FERequirementType& feRequirements, MatrixAffordance affordance, DBCOption qt)
+Eigen::SparseMatrix<double>& matrix(DBCOption qt)
 ```
 
 A sparse matrix is returned.
-The Enum `EnforcingDBCOption` dictates how the Dirichlet boundary conditions should be applied
-The `EnforcingDBCOption::Raw` returns a matrix without considering the boundary conditions.
-The `EnforcingDBCOption::Full` option returns a full matrx, where zeros are written on the  rows and columns associated to fixed degrees of
+The Enum `DBCOption` dictates how the Dirichlet boundary conditions should be applied
+The `DBCOption::Raw` returns a matrix without considering the boundary conditions.
+The `DBCOption::Full` option returns a full matrx, where zeros are written on the  rows and columns associated to fixed degrees of
 freedom  and a one is written on the diagonal.
- `EnforcingDBCOption::Reduced` returns reduced matrix removing the rows and columns associated to fixed degrees of freedom.
+ `DBCOption::Reduced` returns reduced matrix removing the rows and columns associated to fixed degrees of freedom.
 The second function can be used if the assembler is bound to specific fe requirements and affordances.
 They work in the same way as the vector assembly functions of [VectorFlatAssembler](#vectorflatassembler).
 The available FE requirements are explained on the [FE requirements](feRequirements.md) page.
@@ -108,6 +108,6 @@ The only difference between the [SparseFlatAssembler](#sparseflatassembler) and 
 DenseFlatAssembler returns a dense matrix.
 
 ```cpp
-Eigen::MatrixXd& matrix(const FERequirementType& feRequirements, MatrixAffordance affordance, EnforcingDBCOption qt)
-Eigen::MatrixXd& matrix(EnforcingDBCOption qt)
+Eigen::MatrixXd& matrix(const FERequirementType& feRequirements, MatrixAffordance affordance, DBCOption qt)
+Eigen::MatrixXd& matrix(DBCOption qt)
 ```

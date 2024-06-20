@@ -105,7 +105,7 @@ if __name__ == "__main__":
         dBig = assembler.createFullVector(dRedInput)
         feReq.insertGlobalSolution(dBig)
         return assembler.vector(
-            feReq, iks.VectorAffordance.forces, iks.EnforcingDBCOption
+            feReq, iks.VectorAffordance.forces, iks.DBCOption
         .Reduced)
 
     def hess(dRedInput):
@@ -114,7 +114,7 @@ if __name__ == "__main__":
         dBig = assembler.createFullVector(dRedInput)
         feReq.insertGlobalSolution(dBig)
         return assembler.matrix(
-            feReq, iks.MatrixAffordance.stiffness, iks.EnforcingDBCOption.Reduced
+            feReq, iks.MatrixAffordance.stiffness, iks.DBCOption.Reduced
         ).todense() # this is slow, but for this test we don't care
 
     resultd = minimize(energy, x0=dRed, options={"disp": True}, tol=1e-14)

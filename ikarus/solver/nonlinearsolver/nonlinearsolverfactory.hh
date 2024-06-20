@@ -46,7 +46,7 @@ struct NonlinearSolverFactory
    * @param assembler The assembler to be used for creating the nonlinear solver.
    * @return The created nonlinear solver.
    *
-   * @note The assembler's enforcingDBCOption is checked, and the appropriate update function
+   * @note The assembler's dBCOption is checked, and the appropriate update function
    *       is used based on whether the option is set to Reduced or not.
    */
   template <typename Assembler>
@@ -55,7 +55,7 @@ struct NonlinearSolverFactory
     auto nonLinOp         = NonLinearOperatorFactory::op(assembler);
     std::function updateF = [assembler, setting = settings](decltype(nonLinOp.firstParameter())& a,
                                                             const decltype(nonLinOp.derivative())& b) {
-      if (assembler->enforcingDBCOption() == EnforcingDBCOption::Reduced) {
+      if (assembler->dBCOption() == DBCOption::Reduced) {
         setting.updateFunction(a, assembler->createFullVector(b));
       } else
         setting.updateFunction(a, b);
