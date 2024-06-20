@@ -22,6 +22,7 @@ def basis(gv, tree):
 
     includes = []
     includes += ["ikarus/python/basis/basis.hh"]
+    includes += gv.cppIncludes
     moduleName = "Basis_" + hashIt(element_type)
     module = generator.load(
         includes=includes, typeName=element_type, moduleName=moduleName
