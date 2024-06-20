@@ -463,9 +463,9 @@ namespace Concepts {
   } // namespace Impl
 
   /**
-   * @concept ResultType
-   * @brief A concept to check if a template type satisfies the ResultType requirements.
-   * @tparam RT A template type with parameters (typename, int, int).
+   * \concept ResultType
+   * \brief A concept to check if a template type satisfies the ResultType requirements.
+   * \tparam RT A template type with parameters (typename, int, int).
    *            The first parameter is the data type, and the next two parameters are the grid dimension and the world
    * dimension. It checks for various instantiations to ensure they meet the ResultType concept. Specifically, it checks
    * for the nested types 'type', 'Vectorizer', 'Matricizer', and the presence of a toString function returning a
@@ -478,8 +478,8 @@ namespace Concepts {
 
   /**
 
-   * @brief Concept representing the requirements for a FlatAssembler.
-   * @concept FlatAssembler
+   * \brief Concept representing the requirements for a FlatAssembler.
+   * \concept FlatAssembler
    * A type T satisfies FlatAssembler if it provides the necessary member functions
    * and data types for assembling sparse matrices in a flat structure.
    */

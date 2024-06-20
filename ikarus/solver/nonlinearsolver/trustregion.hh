@@ -87,8 +87,6 @@ class TrustRegion;
  * \tparam TRConfig Type of the nonlinear solver config.
  * \param config Config for the solver.
  * \param nonLinearOperator Nonlinear operator to solve.
- * \param linearSolver Linear solver used internally (default is SolverDefault).
- * \param updateFunction Update function (default is UpdateDefault).
  * \return Shared pointer to the TrustRegion solver instance.
  */
 template <typename NLO, typename TRConfig>
@@ -523,22 +521,6 @@ private:
   Eigen::TruncatedConjugateGradient<MatrixType, Eigen::Lower | Eigen::Upper, PreConditionerType>
       truncatedConjugateGradient_;
 };
-
-/**
- * \brief Creates an instance of the TrustRegion solver.
- *
- * \tparam NLO Type of the nonlinear operator to solve.
- * \tparam preConditioner Type of the preconditioner used internally (default is IncompleteCholesky).
- * \tparam UF Type of the update function (default is UpdateDefault).
- * \param nonLinearOperator Nonlinear operator to solve.
- * \param updateFunction Update function (default is UpdateDefault).
- * \return Shared pointer to the TrustRegion solver instance.
- */
-template <typename NLO, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
-          typename UF = utils::UpdateDefault>
-auto makeTrustRegion(const NLO& nonLinearOperator, UF&& updateFunction = {}) {
-  return std::make_shared<TrustRegion<NLO, preConditioner, UF>>(nonLinearOperator, updateFunction);
-}
 
 template <typename NLO, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
           typename UF2 = utils::UpdateDefault>

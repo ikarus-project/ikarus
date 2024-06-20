@@ -2,10 +2,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * \file problem.hh
- * \brief Ikarus default problem definition
- * \ingroup problem
- *
+ * \file nonlinopfactory.hh
+ * \brief Contains the generic NonLinearOperatorFactory class.
  */
 
 #pragma once

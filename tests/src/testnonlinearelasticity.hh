@@ -88,7 +88,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
 
   const double gradTol = 1e-8;
 
-  TrustRegionConfig<> trSettings{
+  TrustRegionConfig<> trConfig{
       .parameters = {.verbosity = 1,
                      .maxIter   = 1000,
                      .grad_tol  = gradTol,
@@ -98,7 +98,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
                      .Delta0    = 1}
   };
 
-  Ikarus::NonlinearSolverFactory trFactory(trSettings);
+  Ikarus::NonlinearSolverFactory trFactory(trConfig);
   auto tr = trFactory.create(sparseAssembler);
 
   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(

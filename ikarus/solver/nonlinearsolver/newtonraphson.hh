@@ -28,8 +28,8 @@ struct NRSettings
 };
 
 /**
- * \struct NewtonRaphsonSettings
- * \brief Settings for the Newton-Raphson solver.
+ * \struct NewtonRaphsonConfig
+ * \brief Config for the Newton-Raphson solver.
  */
 template <typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
 struct NewtonRaphsonConfig

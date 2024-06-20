@@ -143,9 +143,9 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
 
   int loadSteps = 6;
 
-  auto nrSettings = NewtonRaphsonWithSubsidiaryFunctionConfig<decltype(linSolver)>{.linearSolver = linSolver};
+  auto nrConfig = NewtonRaphsonWithSubsidiaryFunctionConfig<decltype(linSolver)>{.linearSolver = linSolver};
 
-  NonlinearSolverFactory nrFactory(nrSettings);
+  NonlinearSolverFactory nrFactory(nrConfig);
   auto nr  = nrFactory.create(sparseAssembler);
   auto nr2 = nrFactory.create(sparseAssembler);
 
