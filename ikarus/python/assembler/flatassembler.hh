@@ -114,7 +114,7 @@ reduced vector. \n <li> `reducedSize()`: Returns the size of the reduced space. 
     cls.def("bound", &Assembler::bound);                                                                                       \
     cls.def("boundToRequirement", &Assembler::boundToRequirement);                                                             \
     cls.def("boundToAffordanceCollection", &Assembler::boundToAffordanceCollection);                                           \
-    cls.def("boundToDBCOption", &Assembler::boundToDBCOption                      \
+    cls.def("boundToDBCOption", &Assembler::boundToDBCOption);                                                                 \
     cls.def("requirement", &Assembler::requirement);                                                                           \
     cls.def("affordanceCollection", &Assembler::affordanceCollection);                                                         \
     cls.def("dBCOption", &Assembler::dBCOption);                                                                               \
