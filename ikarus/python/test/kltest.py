@@ -1,11 +1,10 @@
 # SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
+import debug_info
+debug_info.setDebugFlags()
 import ikarus as iks
-import ikarus.finite_elements
-import ikarus.utils
-import ikarus.assembler
-import ikarus.dirichlet_values
+from ikarus import finite_elements, assembler
 import numpy as np
 import scipy as sp
 
@@ -64,7 +63,7 @@ if __name__ == "__main__":
 
     def vL(x, lambdaVal):
         return np.array([0, 0, 2 * thickness**3 * lambdaVal])
-    
+
     vLoad = iks.finite_elements.volumeLoad3D(vL)
 
     klShell = iks.finite_elements.kirchhoffLoveShell(youngs_modulus=1000, nu=0.0,thickness=thickness)
@@ -88,13 +87,12 @@ if __name__ == "__main__":
     assembler = iks.assembler.sparseFlatAssembler(fes, dirichletValues)
 
     def gradAndhess(dRedInput):
-        req = ikarus.FERequirements()
-        req.addAffordance(iks.ScalarAffordances.mechanicalPotentialEnergy)
-        req.insertParameter(iks.FEParameter.loadfactor, lambdaLoad)
+        req = fes[0].createRequirement()
+        req.insertParameter( lambdaLoad)
         dBig = assembler.createFullVector(dRedInput)
-        req.insertGlobalSolution(iks.FESolutions.displacement, dBig)
-        g = assembler.getReducedVector(req)
-        h = assembler.getReducedMatrix(req)
+        req.insertGlobalSolution( dBig)
+        g = assembler.vector(req,iks.VectorAffordance.forces, iks.DBCOption.Reduced)
+        h = assembler.matrix(req,iks.MatrixAffordance.stiffness, iks.DBCOption.Reduced)
         return [g, h]
 
     from numpy.linalg import norm
@@ -111,7 +109,7 @@ if __name__ == "__main__":
         print(k, r_norm, norm(deltad))
         if r_norm < abs_tolerance:
             break
-    print(d)
+
     dBig = assembler.createFullVector(d)
     displacementFunc = flatBasis.asFunction(dBig)
     vtkWriter = gridView.trimmedVtkWriter()

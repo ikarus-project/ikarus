@@ -36,11 +36,8 @@ enum class PreConditioner
   IdentityPreconditioner,
   DiagonalPreconditioner
 };
-/**
- * \struct TrustRegionSettings
- * \brief Configuration settings for the TrustRegion solver.
- */
-struct TrustRegionSettings
+
+struct TRSettings
 {
   int verbosity    = 5;                                       ///< Verbosity level.
   double maxtime   = std::numeric_limits<double>::infinity(); ///< Maximum allowable time for solving.
@@ -55,6 +52,56 @@ struct TrustRegionSettings
   double Delta_bar = std::numeric_limits<double>::infinity(); ///< Maximum trust region radius.
   double Delta0    = 10;                                      ///< Initial trust region radius.
 };
+
+/**
+ * \struct TrustRegionSettings
+ * \brief Configuration settings for the TrustRegion solver.
+ */
+
+template <PreConditioner preConditioner = PreConditioner::IncompleteCholesky, typename UF = utils::UpdateDefault>
+struct TrustRegionConfig
+{
+  static_assert(std::copy_constructible<UF>,
+                " The update function should be copy constructable. If it is a lambda wrap it in a std::function");
+
+  using UpdateFunction = UF;
+
+  TRSettings parameters;
+  static constexpr PreConditioner preConditionerType = preConditioner;
+  UF updateFunction;
+  template <typename UF2>
+  auto rebindUpdateFunction(UF2&& updateFunction) const {
+    TrustRegionConfig<preConditioner, UF2> settings{.parameters     = parameters,
+                                                    .updateFunction = std::forward<UF2>(updateFunction)};
+    return settings;
+  }
+};
+
+template <typename NLO, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
+          typename UF = utils::UpdateDefault>
+class TrustRegion;
+
+/**
+ * \brief Function to create a trust region non-linear solver
+ * \tparam NLO Type of the nonlinear operator to solve.
+ * \tparam TRConfig Type of the nonlinear solver config.
+ * \param config Config for the solver.
+ * \param nonLinearOperator Nonlinear operator to solve.
+ * \return Shared pointer to the TrustRegion solver instance.
+ */
+template <typename NLO, typename TRConfig>
+requires traits::isSpecializationNonTypeAndTypes<TrustRegionConfig, std::remove_cvref_t<TRConfig>>::value
+auto createNonlinearSolver(TRConfig&& config, NLO&& nonLinearOperator) {
+  static constexpr PreConditioner preConditioner = std::remove_cvref_t<TRConfig>::preConditionerType;
+  using UF                                       = std::remove_cvref_t<TRConfig>::UpdateFunction;
+  static_assert(std::remove_cvref_t<NLO>::numberOfFunctions == 3,
+                "The number of derivatives in the nonlinear operator have to be exactly 3.");
+  auto solver = std::make_shared<TrustRegion<NLO, preConditioner, UF>>(nonLinearOperator,
+                                                                       std::forward<TRConfig>(config).updateFunction);
+
+  solver->setup(config.parameters);
+  return solver;
+}
 
 /**
  * \enum StopReason
@@ -117,11 +164,11 @@ struct Stats
 * \tparam preConditioner Type of preconditioner to use (default is IncompleteCholesky).
 * \tparam UF Type of the update function
 */
-template <typename NLO, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
-          typename UF = utils::UpdateDefault>
+template <typename NLO, PreConditioner preConditioner, typename UF>
 class TrustRegion : public IObservable<NonLinearSolverMessages>
 {
 public:
+  using Settings  = TRSettings;                               ///< Type of the settings for the TrustRegion solver
   using ValueType = typename NLO::template ParameterValue<0>; ///< Type of the parameter vector of
                                                               ///< the nonlinear operator
   using CorrectionType = typename NLO::DerivativeType;        ///< Type of the correction of x += deltaX.
@@ -139,9 +186,10 @@ public:
    * \param nonLinearOperator Nonlinear operator to solve.
    * \param updateFunction Update function
    */
-  explicit TrustRegion(const NLO& nonLinearOperator, UF updateFunction = {})
+  template <typename UF2 = UF>
+  explicit TrustRegion(const NLO& nonLinearOperator, UF2&& updateFunction = {})
       : nonLinearOperator_{nonLinearOperator},
-        updateFunction_{updateFunction},
+        updateFunction_{std::forward<UF2>(updateFunction)},
         xOld_{this->nonLinearOperator().firstParameter()} {
     eta_.setZero(gradient().size());
     Heta_.setZero(gradient().size());
@@ -152,11 +200,11 @@ public:
    * \brief Sets up the TrustRegion solver with the provided settings and checks feasibility.
    * \param p_settings TrustRegionSettings containing the solver configuration.
    */
-  void setup(const TrustRegionSettings& settings) {
-    options_ = settings;
-    assert(options_.rho_prime < 0.25 && "options.rho_prime must be strictly smaller than 1/4.");
-    assert(options_.Delta_bar > 0 && "options.Delta_bar must be positive.");
-    assert(options_.Delta0 > 0 && options_.Delta0 < options_.Delta_bar &&
+  void setup(const Settings& settings) {
+    settings_ = settings;
+    assert(settings_.rho_prime < 0.25 && "options.rho_prime must be strictly smaller than 1/4.");
+    assert(settings_.Delta_bar > 0 && "options.Delta_bar must be positive.");
+    assert(settings_.Delta0 > 0 && settings_.Delta0 < settings_.Delta_bar &&
            "options.Delta0 must be positive and smaller than Delta_bar.");
   }
 
@@ -188,14 +236,14 @@ public:
       updateFunction(x, dxPredictor);
     truncatedConjugateGradient_.analyzePattern(hessian());
 
-    innerInfo_.Delta = options_.Delta0;
+    innerInfo_.Delta = settings_.Delta0;
     spdlog::info(
         "        | iter | inner_i |   rho |   energy | energy_p | energy_inc |  norm(g) |    Delta | norm(corr) | "
         "InnerBreakReason");
     spdlog::info("{:-^143}", "-");
     while (not stoppingCriterion()) {
       this->notify(NonLinearSolverMessages::ITERATION_STARTED);
-      if (options_.useRand) {
+      if (settings_.useRand) {
         if (stats_.outerIter == 0) {
           eta_.setRandom();
           while (eta_.dot(hessian() * eta_) > innerInfo_.Delta * innerInfo_.Delta)
@@ -210,7 +258,7 @@ public:
 
       info_.stopReasonString = tcg_stop_reason_[static_cast<int>(innerInfo_.stop_tCG)];
       Heta_                  = hessian() * eta_;
-      if (options_.useRand and stats_.outerIter == 0) {
+      if (settings_.useRand and stats_.outerIter == 0) {
         info_.used_cauchy            = false;
         info_.randomPredictionString = " Used Random correction predictor";
         info_.cauchystr              = "                  ";
@@ -255,7 +303,7 @@ public:
       /*  Close to convergence the proposed energy and the real energy almost coincide.
        *  Therefore, the performance check of our model becomes ill-conditioned
        *  The regularisation fixes this */
-      const auto rhoReg = std::max(1.0, abs(stats_.energy)) * eps_ * options_.rho_reg;
+      const auto rhoReg = std::max(1.0, abs(stats_.energy)) * eps_ * settings_.rho_reg;
       rhonum            = rhonum + rhoReg;
       rhoden            = rhoden + rhoReg;
 
@@ -278,7 +326,7 @@ public:
         innerInfo_.Delta /= 4.0;
         info_.consecutive_TRplus = 0;
         info_.consecutive_TRminus++;
-        if (info_.consecutive_TRminus >= 5 && options_.verbosity >= 1) {
+        if (info_.consecutive_TRminus >= 5 && settings_.verbosity >= 1) {
           info_.consecutive_TRminus = -std::numeric_limits<int>::infinity();
           spdlog::info(" +++ Detected many consecutive TR- (radius decreases).");
           spdlog::info(" +++ Consider decreasing options.Delta_bar by an order of magnitude.");
@@ -287,10 +335,10 @@ public:
       } else if (stats_.rho > 0.99 && (innerInfo_.stop_tCG == Eigen::TCGStopReason::negativeCurvature ||
                                        innerInfo_.stop_tCG == Eigen::TCGStopReason::exceededTrustRegion)) {
         info_.trstr               = "TR+";
-        innerInfo_.Delta          = std::min(3.5 * innerInfo_.Delta, options_.Delta_bar);
+        innerInfo_.Delta          = std::min(3.5 * innerInfo_.Delta, settings_.Delta_bar);
         info_.consecutive_TRminus = 0;
         info_.consecutive_TRplus++;
-        if (info_.consecutive_TRplus >= 5 && options_.verbosity >= 1) {
+        if (info_.consecutive_TRplus >= 5 && settings_.verbosity >= 1) {
           info_.consecutive_TRplus = -std::numeric_limits<int>::infinity();
           spdlog::info(" +++ Detected many consecutive TR+ (radius increases)");
           spdlog::info(" +++ Consider increasing options.Delta_bar by an order of magnitude");
@@ -301,7 +349,7 @@ public:
         }
       }
 
-      if (modelDecreased && stats_.rho > options_.rho_prime && energyDecreased) {
+      if (modelDecreased && stats_.rho > settings_.rho_prime && energyDecreased) {
         if (stats_.energyProposal > stats_.energy)
           spdlog::info(
               "Energy function increased by {} (step size: {}). Since this is small we accept the step and hope for "
@@ -324,7 +372,7 @@ public:
 
       stats_.outerIter++;
 
-      if (options_.verbosity == 1)
+      if (settings_.verbosity == 1)
         logState();
 
       info_.randomPredictionString = "";
@@ -385,21 +433,21 @@ private:
   bool stoppingCriterion() {
     std::ostringstream stream;
     /** Gradient correction tolerance reached  */
-    if (stats_.gradNorm < options_.grad_tol && stats_.outerIter != 0) {
+    if (stats_.gradNorm < settings_.grad_tol && stats_.outerIter != 0) {
       logFinalState();
       spdlog::info("CONVERGENCE:  Energy: {:1.16e}    norm(gradient): {:1.16e}", nonLinearOperator().value(),
                    stats_.gradNorm);
-      stream << "Gradient norm tolerance reached; options.tolerance = " << options_.grad_tol;
+      stream << "Gradient norm tolerance reached; options.tolerance = " << settings_.grad_tol;
 
       info_.reasonString = stream.str();
 
       info_.stop = StopReason::gradientNormTolReached;
       return true;
-    } else if (stats_.etaNorm < options_.corr_tol && stats_.outerIter != 0) {
+    } else if (stats_.etaNorm < settings_.corr_tol && stats_.outerIter != 0) {
       logFinalState();
       spdlog::info("CONVERGENCE:  Energy: {:1.16e}    norm(correction): {:1.16e}", nonLinearOperator().value(),
                    stats_.etaNorm);
-      stream << "Displacement norm tolerance reached;  = " << options_.corr_tol << "." << std::endl;
+      stream << "Displacement norm tolerance reached;  = " << settings_.corr_tol << "." << std::endl;
 
       info_.reasonString = stream.str();
       info_.stop         = StopReason::correctionNormTolReached;
@@ -407,18 +455,18 @@ private:
     }
 
     /** Maximum Time reached  */
-    if (stats_.time >= options_.maxtime) {
+    if (stats_.time >= settings_.maxtime) {
       logFinalState();
-      stream << "Max time exceeded; options.maxtime = " << options_.maxtime << ".";
+      stream << "Max time exceeded; options.maxtime = " << settings_.maxtime << ".";
       info_.reasonString = stream.str();
       info_.stop         = StopReason::maximumTimeReached;
       return true;
     }
 
     /** Maximum Iterations reached  */
-    if (stats_.outerIter >= options_.maxIter) {
+    if (stats_.outerIter >= settings_.maxIter) {
       logFinalState();
-      stream << "Max iteration count reached; options.maxiter = " << options_.maxIter << ".";
+      stream << "Max iteration count reached; options.maxiter = " << settings_.maxIter << ".";
       info_.reasonString = stream.str();
       info_.stop         = StopReason::maximumIterationsReached;
       return true;
@@ -454,7 +502,7 @@ private:
   typename NLO::template ParameterValue<0> xOld_;
   CorrectionType eta_;
   CorrectionType Heta_;
-  TrustRegionSettings options_;
+  Settings settings_;
   AlgoInfo info_;
   double choleskyInitialShift_ = 1e-3;
   Eigen::TCGInfo<double> innerInfo_;
@@ -489,5 +537,10 @@ template <typename NLO, PreConditioner preConditioner = PreConditioner::Incomple
 auto makeTrustRegion(const NLO& nonLinearOperator, UF&& updateFunction = {}) {
   return std::make_shared<TrustRegion<NLO, preConditioner, UF>>(nonLinearOperator, updateFunction);
 }
+
+template <typename NLO, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
+          typename UF2 = utils::UpdateDefault>
+TrustRegion(const NLO& nonLinearOperator,
+            UF2&& updateFunction = {}) -> TrustRegion<NLO, preConditioner, std::remove_cvref_t<UF2>>;
 
 } // namespace Ikarus

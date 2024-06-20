@@ -1,12 +1,11 @@
 # SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
+import debug_info
+debug_info.setDebugFlags()
 
 import ikarus as iks
-import ikarus.finite_elements
-import ikarus.utils
-import ikarus.assembler
-import ikarus.dirichlet_values
+from ikarus import finite_elements, utils, assembler
 import numpy as np
 import scipy as sp
 from scipy.optimize import minimize
@@ -23,26 +22,20 @@ if __name__ == "__main__":
         upperRight.append(1)
         elements.append(3)
 
-    req = ikarus.FERequirements()
-    req.addAffordance(iks.ScalarAffordances.mechanicalPotentialEnergy)
-
     grid = dune.grid.structuredGrid(lowerLeft, upperRight, elements)
     grid.hierarchicalGrid.globalRefine(0)
-    basisLagrange1 = ikarus.basis(
+    basisLagrange1 = iks.basis(
         grid, dune.functions.Power(dune.functions.Lagrange(order=1), 2)
     )
     flatBasis = basisLagrange1.flat()
-
-
 
     forces = np.zeros(8)
     stiffness = np.zeros((8, 8))
 
     def vL(x, lambdaVal):
         return np.array([lambdaVal * x[0] * 2, 2 * lambdaVal * x[1] * 0])
-    
-    vLoad = iks.finite_elements.volumeLoad2D(vL)
 
+    vLoad = iks.finite_elements.volumeLoad2D(vL)
 
     def neumannLoad(x, lambdaVal):
         return np.array([lambdaVal * 0, lambdaVal])
@@ -59,7 +52,6 @@ if __name__ == "__main__":
     boundaryPatch = iks.utils.boundaryPatch(grid, neumannVertices)
 
     nBLoad= iks.finite_elements.neumannBoundaryLoad(boundaryPatch,neumannLoad)
-
 
     svk = iks.materials.StVenantKirchhoff(E=1000, nu=0.3)
 
@@ -95,32 +87,34 @@ if __name__ == "__main__":
 
     lambdaLoad = iks.ValueWrapper(3.0)
 
-    def energy(dRedInput):
-        reqL = ikarus.FERequirements()
-        reqL.addAffordance(iks.ScalarAffordances.mechanicalPotentialEnergy)
-        reqL.insertParameter(iks.FEParameter.loadfactor, lambdaLoad)
+    feReq = fes[0].createRequirement()
 
+    def energy(dRedInput):
+        feReq = fes[0].createRequirement()
+        feReq.insertParameter( lambdaLoad)
         dBig = assembler.createFullVector(dRedInput)
-        reqL.insertGlobalSolution(iks.FESolutions.displacement, dBig)
-        return assembler.getScalar(reqL)
+        feReq.insertGlobalSolution( dBig)
+        feReq.globalSolution()
+        return assembler.scalar(
+            feReq, iks.ScalarAffordance.mechanicalPotentialEnergy
+        )
 
     def gradient(dRedInput):
-        reqL = ikarus.FERequirements()
-        reqL.addAffordance(iks.VectorAffordances.forces)
-        reqL.insertParameter(iks.FEParameter.loadfactor, lambdaLoad)
-
+        feReq = fes[0].createRequirement()
+        feReq.insertParameter(lambdaLoad)
         dBig = assembler.createFullVector(dRedInput)
-        reqL.insertGlobalSolution(iks.FESolutions.displacement, dBig)
-        return assembler.getReducedVector(reqL)
+        feReq.insertGlobalSolution(dBig)
+        return assembler.vector(
+            feReq, iks.VectorAffordance.forces, iks.DBCOption.Reduced)
 
     def hess(dRedInput):
-        reqL = ikarus.FERequirements()
-        reqL.addAffordance(iks.MatrixAffordances.stiffness)
-        reqL.insertParameter(iks.FEParameter.loadfactor, lambdaLoad)
-
+        feReq = fes[0].createRequirement()
+        feReq.insertParameter(lambdaLoad)
         dBig = assembler.createFullVector(dRedInput)
-        reqL.insertGlobalSolution(iks.FESolutions.displacement, dBig)
-        return assembler.getReducedMatrix(reqL).todense()
+        feReq.insertGlobalSolution(dBig)
+        return assembler.matrix(
+            feReq, iks.MatrixAffordance.stiffness, iks.DBCOption.Reduced
+        ).todense() # this is slow, but for this test we don't care
 
     resultd = minimize(energy, x0=dRed, options={"disp": True}, tol=1e-14)
     resultd2 = minimize(
@@ -141,8 +135,8 @@ if __name__ == "__main__":
     assert np.all(abs(resultd3.grad) < 1e-8)
     assert np.all(abs(resultd4.fun) < 1e-8)
 
-    req = ikarus.FERequirements()
+    feReq = fes[0].createRequirement()
     fullD = assembler.createFullVector(resultd2.x)
-    req.insertGlobalSolution(iks.FESolutions.displacement, fullD)
+    feReq.insertGlobalSolution( fullD)
 
-    res1 = fes[0].calculateAt(req, np.array([0.5, 0.5]), "PK2Stress")
+    res1 = fes[0].calculateAt(feReq, np.array([0.5, 0.5]), "PK2Stress")

@@ -314,9 +314,9 @@ template <template <typename, int, int> class resType, typename ResultEvaluator>
 }
 
 template <typename NonLinearOperator, typename FiniteElement,
-          typename FERequirementType = typename FiniteElement::FERequirementType>
+          typename FERequirementType = typename FiniteElement::FERequirementType, typename AffordanceColl>
 [[nodiscard]] auto checkFEByAutoDiff(NonLinearOperator&, FiniteElement& fe, FERequirementType req,
-                                     const std::string& messageIfFailed = "") {
+                                     AffordanceColl affordance, const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() by Automatic Differentiation");
   auto& basis           = fe.localView().globalBasis();
   auto nDOF             = basis.size();
@@ -329,8 +329,8 @@ template <typename NonLinearOperator, typename FiniteElement,
   K.setZero(nDOF, nDOF);
   KAutoDiff.setZero(nDOF, nDOF);
 
-  calculateMatrix(fe, req, K);
-  calculateMatrix(feAutoDiff, req, KAutoDiff);
+  calculateMatrix(fe, req, affordance.matrixAffordance(), K);
+  calculateMatrix(feAutoDiff, req, affordance.matrixAffordance(), KAutoDiff);
 
   if constexpr (requires { feAutoDiff.getFE().getNumberOfEASParameters(); }) {
     t.check(fe.getNumberOfEASParameters() == feAutoDiff.getFE().getNumberOfEASParameters())
@@ -351,8 +351,8 @@ template <typename NonLinearOperator, typename FiniteElement,
     R.setZero(nDOF);
     RAutoDiff.setZero(nDOF);
 
-    calculateVector(fe, req, R);
-    calculateVector(feAutoDiff, req, RAutoDiff);
+    calculateVector(fe, req, affordance.vectorAffordance(), R);
+    calculateVector(feAutoDiff, req, affordance.vectorAffordance(), RAutoDiff);
     t.check(R.isApprox(RAutoDiff, tol),
             "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
             "automatic differentiation")
@@ -364,8 +364,8 @@ template <typename NonLinearOperator, typename FiniteElement,
   }
 
   try {
-    auto energy         = calculateScalar(fe, req);
-    auto energyAutoDiff = calculateScalar(feAutoDiff, req);
+    auto energy         = calculateScalar(fe, req, affordance.scalarAffordance());
+    auto energyAutoDiff = calculateScalar(feAutoDiff, req, affordance.scalarAffordance());
     t.check(Dune::FloatCmp::eq(energy, energyAutoDiff, tol),
             "Mismatch between the energies obtained from explicit implementation and the one based on "
             "automatic differentiation")

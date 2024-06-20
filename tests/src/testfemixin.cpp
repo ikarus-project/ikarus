@@ -62,7 +62,8 @@ auto mixinTest(const PreBasis& preBasis) {
   auto preFE = makeFE(
       basis, skills(nonLinearElastic(reducedMat), volumeLoad(vL), neumannBoundaryLoad(&neumannBoundary, nBLoad)));
 
-  std::vector<decltype(preFE)> fes;
+  using FEType = decltype(preFE);
+  std::vector<FEType> fes;
 
   for (auto&& ge : elements(gridView)) {
     fes.emplace_back(preFE);
@@ -74,18 +75,15 @@ auto mixinTest(const PreBasis& preBasis) {
   d.setRandom();
   double load = 0.0;
 
-  Ikarus::FERequirements req = Ikarus::FERequirements()
-                                   .insertGlobalSolution(Ikarus::FESolutions::displacement, d)
-                                   .insertParameter(Ikarus::FEParameter::loadfactor, load)
-                                   .addAffordance(Ikarus::AffordanceCollections::elastoStatics);
+  auto req = typename FEType::Requirement(d, load);
 
   Eigen::VectorXd forces(fes.begin()->size());
   forces.setZero();
   Eigen::MatrixXd stiffness(fes.begin()->size(), fes.begin()->size());
   stiffness.setZero();
   const FE firstFE = *fes.begin();
-  calculateVector(firstFE, req, forces);
-  calculateMatrix(firstFE, req, stiffness);
+  calculateVector(firstFE, req, VectorAffordance::forces, forces);
+  calculateMatrix(firstFE, req, MatrixAffordance::stiffness, stiffness);
   Dune::FieldVector<double, 2> local;
   static_assert(not requires { firstFE.template calculateAt<ResultTypes::linearStress>(req, local); });
   static_assert(requires { firstFE.template calculateAt<ResultTypes::PK2Stress>(req, local); });

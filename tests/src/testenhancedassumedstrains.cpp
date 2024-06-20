@@ -34,15 +34,17 @@ int main(int argc, char** argv) {
 
   t.subTest(testFEElement(firstOrderLagrangePrePower2Basis, "EAS", randomlyDistorted,
                           Dune::ReferenceElements<double, 2>::cube(), &Ikarus::linearElastic,
-                          Ikarus::skills(Ikarus::eas()), checkJacobianFunctor));
+                          Ikarus::skills(Ikarus::eas()), Ikarus::AffordanceCollections::elastoStatics,
+                          checkJacobianFunctor));
 
   t.subTest(testFEElement(firstOrderLagrangePrePower3Basis, "EAS", randomlyDistorted,
                           Dune::ReferenceElements<double, 3>::cube(), &Ikarus::linearElastic,
-                          Ikarus::skills(Ikarus::eas()), checkJacobianFunctor));
+                          Ikarus::skills(Ikarus::eas()), Ikarus::AffordanceCollections::elastoStatics,
+                          checkJacobianFunctor));
 
   t.subTest(testFEElement(
       firstOrderLagrangePrePower2Basis, "EAS", unDistorted, Dune::ReferenceElements<double, 2>::cube(),
-      linearElasticEASFunc, Ikarus::skills(Ikarus::eas()),
+      linearElasticEASFunc, Ikarus::skills(Ikarus::eas()), Ikarus::AffordanceCollections::elastoStatics,
       checkCalculateAtFunctorFactory<Ikarus::ResultTypes::linearStress>(linearStressResultsOfSquare),
       checkCalculateAtFunctorFactory<Ikarus::ResultTypes::linearStress, false>(linearStressResultsOfSquare),
       checkResultFunctionFunctorFactory<Ikarus::ResultTypes::linearStress>(linearStressResultsOfSquare)));

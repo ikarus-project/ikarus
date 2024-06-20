@@ -19,6 +19,8 @@ on:
       - '.github/workflows/ghpages.yml'
       - '.github/workflows/createDockerContainer.yml'
       - '**.md'
+  workflow_dispatch:
+
 env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -37,15 +39,15 @@ jobs:
           mkdir cmake-build-debug-coverage
           cd cmake-build-debug-coverage
           cmake ../  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -GNinja -DENABLE_TEST_COVERAGE=1
-          cmake --build . --parallel 2 --target ikarus  
-          cmake --build . --parallel 2 --target build_cpp_tests 
+          cmake --build . --parallel 2 --target ikarus
+          cmake --build . --parallel 2 --target build_cpp_tests
 
       - name: Tests
         working-directory: ./cmake-build-debug-coverage
         run: |
           ctest --output-on-failure --parallel 2 -C Debug -L cpp_quick
           cd ..
-          llvm-cov-16 gcov $(find ./cmake-build-debug-coverage -not -path "*dune-env/*" -type f -name "*.gcno" | sed  's/gcno//g') 
+          llvm-cov-16 gcov $(find ./cmake-build-debug-coverage -not -path "*dune-env/*" -type f -name "*.gcno" | sed  's/gcno//g')
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3

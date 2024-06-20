@@ -7,9 +7,13 @@
  */
 
 #pragma once
-#include <optional>
 #include <tuple>
 #include <type_traits>
+
+namespace std {
+template <class T>
+class shared_ptr;
+}
 
 #include <dune/common/hybridutilities.hh>
 namespace Ikarus::traits {
@@ -116,6 +120,39 @@ struct isSpecialization : std::false_type
 {
 };
 #endif
+
+/**
+ * \brief Type trait to check if a type is a isSharedPtr.
+ *
+ * \ingroup traits
+ *
+ * \tparam T Class to check.
+ */
+template <typename T>
+struct isSharedPtr : std::false_type
+{
+};
+
+#ifndef DOXYGEN
+template <typename T>
+struct isSharedPtr<std::shared_ptr<T>> : std::true_type
+{
+};
+#endif
+
+template <typename T>
+class remove_pointer
+{
+  template <typename U = T>
+  static auto test(int) -> std::remove_reference<decltype(*std::declval<U>())>;
+  static auto test(...) -> std::remove_cv<T>;
+
+public:
+  using type = typename decltype(test(0))::type;
+};
+
+template <typename T>
+using remove_pointer_t = typename remove_pointer<T>::type;
 
 /**
  * \brief Type trait to check if a class is a specialization of a template.

@@ -65,7 +65,8 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
     auto sk = skills(linearElastic({100, 0.1}), eas(basis.flat().preBasis().subPreBasis().order() == 1 ? 4 : 0),
                      volumeLoad<2>(vL));
 
-    std::vector<decltype(makeFE(basis, sk))> fes;
+    using FEType = decltype(makeFE(basis, sk));
+    std::vector<FEType> fes;
     for (auto&& ge : elements(gridView)) {
       fes.emplace_back(makeFE(basis, sk));
       fes.back().bind(ge);
@@ -84,30 +85,19 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
     d.setRandom();
     double load = 0.0;
 
-    Ikarus::FERequirements req = Ikarus::FERequirements()
-                                     .insertGlobalSolution(Ikarus::FESolutions::displacement, d)
-                                     .insertParameter(Ikarus::FEParameter::loadfactor, load)
-                                     .addAffordance(Ikarus::AffordanceCollections::elastoStatics);
+    auto req = typename FEType::Requirement(d, load);
 
-    t.check(req.hasAffordance(Ikarus::MatrixAffordances::stiffness));
-    t.check(not req.hasAffordance(Ikarus::MatrixAffordances::mass));
-    t.check(req.hasAffordance(Ikarus::ScalarAffordances::mechanicalPotentialEnergy));
-    t.check(req.hasAffordance(Ikarus::VectorAffordances::forces));
-
-    Ikarus::FERequirements req2 = Ikarus::FERequirements().addAffordance(Ikarus::mass);
-    t.check(req2.hasAffordance(Ikarus::MatrixAffordances::mass));
-
-    auto& KRawDense = denseFlatAssembler.getRawMatrix(req);
-    auto& KRaw      = sparseFlatAssembler.getRawMatrix(req);
-    auto& RRawDense = denseFlatAssembler.getRawVector(req);
-    auto& RRaw      = sparseFlatAssembler.getRawVector(req);
+    auto& KRawDense = denseFlatAssembler.matrix(req, MatrixAffordance::stiffness, DBCOption::Raw);
+    auto& KRaw      = sparseFlatAssembler.matrix(req, MatrixAffordance::stiffness, DBCOption::Raw);
+    auto& RRawDense = denseFlatAssembler.vector(req, VectorAffordance::forces, DBCOption::Raw);
+    auto& RRaw      = sparseFlatAssembler.vector(req, VectorAffordance::forces, DBCOption::Raw);
     checkAssembledQuantities(t, KRaw, KRawDense, totalDOFs);
     checkAssembledQuantities(t, RRaw, RRawDense, totalDOFs);
 
-    auto& KDense = denseFlatAssembler.getMatrix(req);
-    auto& K      = sparseFlatAssembler.getMatrix(req);
-    auto& RDense = denseFlatAssembler.getVector(req);
-    auto& R      = sparseFlatAssembler.getVector(req);
+    auto& KDense = denseFlatAssembler.matrix(req, MatrixAffordance::stiffness, DBCOption::Full);
+    auto& K      = sparseFlatAssembler.matrix(req, MatrixAffordance::stiffness, DBCOption::Full);
+    auto& RDense = denseFlatAssembler.vector(req, VectorAffordance::forces, DBCOption::Full);
+    auto& R      = sparseFlatAssembler.vector(req, VectorAffordance::forces, DBCOption::Full);
     checkAssembledQuantities(t, K, KDense, totalDOFs);
     checkAssembledQuantities(t, R, RDense, totalDOFs);
 
@@ -142,10 +132,10 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
       }
     }
 
-    auto& KRedDense = denseFlatAssembler.getReducedMatrix(req);
-    auto& KRed      = sparseFlatAssembler.getReducedMatrix(req);
-    auto& RRedDense = denseFlatAssembler.getReducedVector(req);
-    auto& RRed      = sparseFlatAssembler.getReducedVector(req);
+    auto& KRedDense = denseFlatAssembler.matrix(req, MatrixAffordance::stiffness, DBCOption::Reduced);
+    auto& KRed      = sparseFlatAssembler.matrix(req, MatrixAffordance::stiffness, DBCOption::Reduced);
+    auto& RRedDense = denseFlatAssembler.vector(req, VectorAffordance::forces, DBCOption::Reduced);
+    auto& RRed      = sparseFlatAssembler.vector(req, VectorAffordance::forces, DBCOption::Reduced);
     checkAssembledQuantities(t, KRed, KRedDense, totalDOFs - fixedDOFs);
     checkAssembledQuantities(t, RRed, RRedDense, totalDOFs - fixedDOFs);
 

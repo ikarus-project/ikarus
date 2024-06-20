@@ -77,7 +77,7 @@ namespace Impl {
   template <class Pars, class Tuple, std::size_t... I>
   constexpr decltype(auto) makeTupleOfValuesAndReferences(Tuple&& t, Pars&& p, std::index_sequence<I...>) {
     return std::make_tuple(
-        forwardasReferenceWrapperIfIsReference(applyAndRemoveReferenceWrapper(std::get<I>(t), p.args))...);
+        forwardasReferenceWrapperIfIsReference(applyAndRemoveReferenceWrapper(std::get<I>(t), p))...);
   }
 
   /**
@@ -88,7 +88,7 @@ namespace Impl {
   template <typename... Args>
   struct Functions
   {
-    std::tuple<std::reference_wrapper<std::remove_reference_t<Args>>...> args;
+    std::tuple<Args...> args;
   };
 
   /**
@@ -99,7 +99,7 @@ namespace Impl {
   template <typename... Args>
   struct Parameter
   {
-    std::tuple<std::reference_wrapper<std::remove_reference_t<Args>>...> args;
+    std::tuple<Args...> args;
   };
 
 } // namespace Impl
@@ -138,11 +138,11 @@ auto functions(Args&&... args) {
  * \return auto The initialized results.
  */
 template <typename... DerivativeArgs, typename... ParameterArgs>
-auto initResults(const Impl::Functions<DerivativeArgs...>& derivativesFunctions,
-                 const Impl::Parameter<ParameterArgs...>& parameter) {
+auto initResults(const std::tuple<DerivativeArgs...>& derivativesFunctions,
+                 const std::tuple<ParameterArgs...>& parameter) {
   return Impl::makeTupleOfValuesAndReferences(
-      derivativesFunctions.args, parameter,
-      std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<decltype(derivativesFunctions.args)>>>{});
+      derivativesFunctions, parameter,
+      std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<decltype(derivativesFunctions)>>>{});
 }
 
 /**
@@ -164,7 +164,7 @@ public:
 
 /**
  * \brief NonLinearOperator is a class taking linear algebra function and their arguments.
- * The fcuntion are assumed to be derivatvies of each other w.r.t. the first parameter
+ * The function are assumed to be derivatives of each other w.r.t. the first parameter
  *
  * \tparam DerivativeArgs The types of derivative arguments.
  * \tparam ParameterArgs The types of parameter arguments.
@@ -176,6 +176,9 @@ public:
   using FunctionReturnValues =
       std::tuple<Ikarus::traits::ReturnType<DerivativeArgs, ParameterArgs&...>...>; ///< Function return values
   using ParameterValues = std::tuple<ParameterArgs...>;                             ///< Types of the parameters
+
+  static constexpr int numberOfFunctions  = sizeof...(DerivativeArgs); ///< Number of functions
+  static constexpr int numberOfParameters = sizeof...(ParameterArgs);  ///< Number of parameters
 
   /**
    * \brief Alias for the return type of a function.
@@ -204,11 +207,25 @@ public:
    * \param derivativesFunctions The Functions object for derivative arguments.
    * \param parameterI The Parameter object for parameter arguments.
    */
+  template <typename U = void>
+  requires(not std::is_rvalue_reference_v<DerivativeArgs> and ...)
   explicit NonLinearOperator(const Impl::Functions<DerivativeArgs...>& derivativesFunctions,
                              const Impl::Parameter<ParameterArgs...>& parameterI)
       : derivatives_{derivativesFunctions.args},
         args_{parameterI.args},
-        derivativesEvaluated_(initResults(derivativesFunctions, parameterI)) {}
+        derivativesEvaluated_(initResults(derivatives_, args_)) {}
+
+  /**
+   * \brief Constructor for NonLinearOperator.
+   *
+   * \param derivativesFunctions The Functions object for derivative arguments.
+   * \param parameterI The Parameter object for parameter arguments.
+   */
+  template <typename Funcs>
+  explicit NonLinearOperator(const Funcs& derivativesFunctions, const Impl::Parameter<ParameterArgs...>& parameterI)
+      : derivatives_{derivativesFunctions.args},
+        args_{parameterI.args},
+        derivativesEvaluated_(initResults(derivatives_, args_)) {}
 
   /**
    * \brief Updates all functions.
@@ -334,8 +351,14 @@ public:
    */
   template <int... Derivatives>
   auto subOperator() {
-    return Ikarus::NonLinearOperator(functions(std::get<Derivatives>(derivatives_)...),
-                                     Impl::applyAndRemoveReferenceWrapper(parameter<ParameterArgs...>, args_));
+    auto derivatives = derivatives_;
+    auto fs = functions([&derivatives]() -> decltype(auto) { return std::get<Derivatives>(derivatives); }()...);
+    std::cout << Dune::className(std::get<0>(fs.args)) << std::endl;
+    Ikarus::NonLinearOperator<Impl::Functions<std::tuple_element_t<Derivatives, decltype(derivatives_)>...>,
+                              Impl::Parameter<ParameterArgs...>>
+        subOp(std::move(fs), Impl::applyAndRemoveReferenceWrapper(parameter<ParameterArgs...>, args_));
+
+    return subOp;
   }
 
 private:
@@ -343,14 +366,20 @@ private:
       std::is_reference_v<Ikarus::traits::ReturnType<DerivativeArgs, ParameterArgs&...>>,
       std::reference_wrapper<std::remove_reference_t<Ikarus::traits::ReturnType<DerivativeArgs, ParameterArgs&...>>>,
       std::remove_cvref_t<Ikarus::traits::ReturnType<DerivativeArgs, ParameterArgs&...>>>...>;
-  std::tuple<std::conditional_t<std::is_reference_v<DerivativeArgs>,
+
+  std::tuple<std::conditional_t<std::is_lvalue_reference_v<DerivativeArgs>,
                                 std::reference_wrapper<std::remove_reference_t<DerivativeArgs>>,
                                 std::remove_reference_t<DerivativeArgs>>...>
       derivatives_;
-  std::tuple<std::conditional_t<std::is_reference_v<ParameterArgs>,
+
+  std::tuple<std::conditional_t<std::is_lvalue_reference_v<ParameterArgs>,
                                 std::reference_wrapper<std::remove_reference_t<ParameterArgs>>,
                                 std::remove_reference_t<ParameterArgs>>...>
       args_;
   FunctionReturnValuesWrapper derivativesEvaluated_{};
 };
+
+template <typename... DerivativeArgs, typename... ParameterArgs>
+NonLinearOperator(const Impl::Functions<DerivativeArgs&&...>& a, const Impl::Parameter<ParameterArgs...>& b)
+    -> NonLinearOperator<Impl::Functions<DerivativeArgs...>, Impl::Parameter<ParameterArgs...>>;
 } // namespace Ikarus

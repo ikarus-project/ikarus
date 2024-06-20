@@ -1,21 +1,18 @@
 # SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
-import os
+
+import debug_info
+debug_info.setDebugFlags()
 
 import ikarus as iks
-import ikarus.finite_elements
-import ikarus.utils
-import ikarus.assembler
-import ikarus.dirichlet_values
+from ikarus import finite_elements, utils, assembler
 import numpy as np
 import scipy as sp
 
 import dune.grid
 import dune.functions
 from dune.vtk import vtkWriter, vtkUnstructuredGridWriter
-os.environ['DUNE_LOG_LEVEL'] = 'debug'
-os.environ['DUNE_SAVE_BUILD'] = 'console'
 
 
 def linElasticTest(easBool):
@@ -27,11 +24,8 @@ def linElasticTest(easBool):
         upperRight.append(1)
         elements.append(3)
 
-    req = ikarus.FERequirements()
-    req.addAffordance(iks.ScalarAffordances.mechanicalPotentialEnergy)
-
     grid = dune.grid.structuredGrid(lowerLeft, upperRight, elements)
-    #grid.hierarchicalGrid.globalRefine(4)
+    # grid.hierarchicalGrid.globalRefine(4)
     basisLagrange12 = dune.functions.defaultGlobalBasis(
         grid, dune.functions.Power(dune.functions.Lagrange(order=1), 2)
     )
@@ -45,19 +39,7 @@ def linElasticTest(easBool):
     d[0] = 0.0
 
     lambdaLoad = iks.ValueWrapper(3.0)
-    req.insertParameter(iks.FEParameter.loadfactor, lambdaLoad)
 
-    assert req.getParameter(iks.FEParameter.loadfactor) == lambdaLoad
-    req.insertGlobalSolution(iks.FESolutions.displacement, d)
-
-    d2 = req.getGlobalSolution(iks.FESolutions.displacement)
-
-    # check that is really the same data address
-    assert ("{}".format(hex(d2.__array_interface__["data"][0]))) == (
-        "{}".format(hex(d.__array_interface__["data"][0]))
-    )
-    assert len(d2) == len(d)
-    assert (d2 == d).all()
     fes = []
 
     def vL(x, lambdaVal):
@@ -78,7 +60,7 @@ def linElasticTest(easBool):
         neumannVertices[indexSet.index(v)]=loadTopEdgePredicate(v.geometry.center)
 
     boundaryPatch = iks.utils.boundaryPatch(grid, neumannVertices)
-    #print(help(iks.finite_elements))
+    # print(help(iks.finite_elements))
     nBLoad= iks.finite_elements.neumannBoundaryLoad(boundaryPatch,neumannLoad)
 
     linElastic = iks.finite_elements.linearElastic(youngs_modulus=1000, nu=0.2)
@@ -92,10 +74,25 @@ def linElasticTest(easBool):
             fes.append(iks.finite_elements.makeFE(basisLagrange1,linElastic,vLoad,nBLoad))
         fes[-1].bind(e)
 
+    req = fes[0].createRequirement()
+    req.insertParameter(lambdaLoad)
+
+    assert req.parameter() == lambdaLoad
+    req.insertGlobalSolution(d)
+
+    d2 = req.globalSolution()
+
+    # check that is really the same data address
+    assert ("{}".format(hex(d2.__array_interface__["data"][0]))) == (
+        "{}".format(hex(d.__array_interface__["data"][0]))
+    )
+    assert len(d2) == len(d)
+    assert (d2 == d).all()
+
     forces = np.zeros(8)
     stiffness = np.zeros((8, 8))
-    fes[0].calculateVector(req, forces)
-    fes[0].calculateMatrix(req, stiffness)
+    fes[0].calculateVector(req,iks.VectorAffordance.forces, forces)
+    fes[0].calculateMatrix(req,iks.MatrixAffordance.stiffness, stiffness)
     fes[0].localView()
 
     dirichletValues = iks.dirichletValues(flatBasis)
@@ -117,14 +114,15 @@ def linElasticTest(easBool):
 
     assembler = iks.assembler.sparseFlatAssembler(fes, dirichletValues)
     assemblerDense = iks.assembler.denseFlatAssembler(fes, dirichletValues)
+    assembler.bind(req, iks.AffordanceCollection.elastoStatics, iks.DBCOption.Full)
 
-    Msparse = assembler.getMatrix(req)
-    forces = assembler.getVector(req)
+    Msparse = assembler.matrix()
+    forces = assembler.vector()
 
     x = sp.sparse.linalg.spsolve(Msparse, -forces)
     fx = flatBasis.asFunction(x)
-    #grid.plot()
-    req.insertGlobalSolution(iks.FESolutions.displacement, x)
+    # grid.plot()
+    req.globalSolution()
     # Test calculateAt Function
     indexSet = grid.indexSet
 
@@ -135,17 +133,18 @@ def linElasticTest(easBool):
         lambda e, x: fes[indexSet.index(e)].calculateAt(req, x, "linearStress")[:]
     )
     # Writing results into vtk file
-    from utils import output_path
+
+    fileName = "resultdisplacement"+ ("EAS" if easBool else "")
 
     writer = vtkWriter(
-        grid, output_path() + "resultdisplacement"+ ("EAS" if easBool else ""), pointData={("displacement", (0, 1)): fx}
+        grid, fileName, pointData={("displacement", (0, 1)): fx}
     )
 
     writer2 = vtkUnstructuredGridWriter(grid)
     writer2.addCellData(stressFuncScalar, name="stress")
     writer2.addCellData(stressFuncVec, name="stress2")
 
-    writer2.write(name=output_path() + "result"+ ("EAS" if easBool else ""))
+    writer2.write(name= "result"+ ("EAS" if easBool else ""))
 
     # Querying for a different ResultType should result in a runtime error
     try:

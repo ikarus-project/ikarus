@@ -153,7 +153,7 @@ def makeFE(basis, *skills):
     @return: The created finite element.
     """
     includes = ["ikarus/python/finiteelements/fe.hh"]
-    preFE_type = f"Ikarus::PreFE<{basis.cppTypeName},Ikarus::FERequirements<Eigen::Ref<Eigen::VectorXd>>,true,true>"
+    preFE_type = f"Ikarus::PreFE<{basis.cppTypeName},true,true>"
     element_type = f"Ikarus::FE<{preFE_type},"
 
     for arg in skills:

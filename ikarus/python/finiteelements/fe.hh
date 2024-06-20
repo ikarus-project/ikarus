@@ -16,6 +16,7 @@
 #include <dune/python/pybind11/stl.h>
 
 #include <ikarus/finiteelements/fefactory.hh>
+#include <ikarus/python/finiteelements/registerferequirements.hh>
 
 namespace Ikarus::Python {
 
@@ -49,7 +50,7 @@ namespace Ikarus::Python {
 template <class FE, class... options>
 void registerCalculateAt(pybind11::handle scope, pybind11::class_<FE, options...> cls, auto restultTypesTuple) {
   using Traits         = typename FE::Traits;
-  using FERequirements = typename FE::FERequirementType;
+  using FERequirements = typename FE::Requirement;
   cls.def(
       "calculateAt",
       [&](FE& self, const FERequirements& req, const Dune::FieldVector<double, Traits::mydim>& local,
@@ -84,10 +85,10 @@ void registerCalculateAt(pybind11::handle scope, pybind11::class_<FE, options...
  */
 template <class FE, class... options>
 void registerFE(pybind11::handle scope, pybind11::class_<FE, options...> cls) {
-  using BH             = typename FE::BasisHandler;
-  using GridElement    = typename FE::GridElement;
-  using FERequirements = typename FE::FERequirementType;
-  using FlatBasis      = typename FE::Traits::FlatBasis;
+  using BH          = typename FE::BasisHandler;
+  using GridElement = typename FE::GridElement;
+  using Requirement = typename FE::Requirement;
+  using FlatBasis   = typename FE::Traits::FlatBasis;
 
   int index = 0;
   cls.def(pybind11::init([](const BH& basisHandler, typename FE::PreTuple argsTuple) {
@@ -99,14 +100,17 @@ void registerFE(pybind11::handle scope, pybind11::class_<FE, options...> cls) {
           pybind11::keep_alive<1, 2>());
 
   cls.def("bind", [](FE& self, const GridElement& e) { self.bind(e); });
-  cls.def("calculateScalar", [](FE& self, const FERequirements& req) { return calculateScalar(self, req); });
-  cls.def("calculateVector", [](FE& self, const FERequirements& req, Eigen::Ref<Eigen::VectorXd> vec) {
-    calculateVector(self, req, vec);
+  cls.def("calculateScalar", [](FE& self, const Requirement& req, Ikarus::ScalarAffordance affordance) {
+    return calculateScalar(self, req, affordance);
   });
+  cls.def("calculateVector", [](FE& self, const Requirement& req, Ikarus::VectorAffordance affordance,
+                                Eigen::Ref<Eigen::VectorXd> vec) { calculateVector(self, req, affordance, vec); });
   cls.def(
       "calculateMatrix",
-      [](FE& self, const FERequirements& req, Eigen::Ref<Eigen::MatrixXd> mat) { calculateMatrix(self, req, mat); },
-      pybind11::arg("FERequirements"), pybind11::arg("elementMatrix").noconvert());
+      [](FE& self, const Requirement& req, Ikarus::MatrixAffordance affordance, Eigen::Ref<Eigen::MatrixXd> mat) {
+        calculateMatrix(self, req, affordance, mat);
+      },
+      pybind11::arg("Requirement"), pybind11::arg("MatrixAffordance"), pybind11::arg("elementMatrix").noconvert());
 
   pybind11::module scopedf = pybind11::module::import("dune.functions");
 
@@ -138,6 +142,7 @@ void registerFE(pybind11::handle scope, pybind11::class_<FE, options...> cls) {
       pybind11::keep_alive<0, 1>());
 
   registerCalculateAt(scope, cls, typename FE::SupportedResultTypes());
+  registerFERequirement(scope, cls);
 }
 
 } // namespace Ikarus::Python

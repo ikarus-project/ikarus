@@ -53,7 +53,8 @@ int main(int argc, char** argv) {
     BoundaryPatch neumannBoundary(gridView, neumannVertices);
     t.subTest(checkFESByAutoDiff(
         gridView, power<2>(lagrange<1>()),
-        skills(Ikarus::nonLinearElastic(reducedMat), volumeLoad<2>(vL), neumannBoundaryLoad(&neumannBoundary, nBL))));
+        skills(Ikarus::nonLinearElastic(reducedMat), volumeLoad<2>(vL), neumannBoundaryLoad(&neumannBoundary, nBL)),
+        Ikarus::AffordanceCollections::elastoStatics));
   }
 
   {
@@ -64,7 +65,8 @@ int main(int argc, char** argv) {
     BoundaryPatch neumannBoundary(gridView, neumannVertices);
     t.subTest(checkFESByAutoDiff(
         gridView, power<3>(lagrange<1>()),
-        skills(Ikarus::nonLinearElastic(matSVK1), volumeLoad<3>(vL), neumannBoundaryLoad(&neumannBoundary, nBL))));
+        skills(Ikarus::nonLinearElastic(matSVK1), volumeLoad<3>(vL), neumannBoundaryLoad(&neumannBoundary, nBL)),
+        Ikarus::AffordanceCollections::elastoStatics));
   }
 
   return t.exit();

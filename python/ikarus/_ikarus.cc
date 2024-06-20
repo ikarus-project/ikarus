@@ -9,31 +9,20 @@
 #include <dune/python/pybind11/operators.h>
 #include <dune/python/pybind11/pybind11.h>
 
+#include <ikarus/assembler/dirichletbcenforcement.hh>
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/finiteelements/mechanics/materials.hh>
 #include <ikarus/python/finiteelements/material.hh>
-
-// since python does not support passing python float by reference to a double&, we have to wrap everything
-// see also https://pybind11.readthedocs.io/en/stable/faq.html#limitations-involving-reference-arguments
-template <typename T>
-struct ValueWrapper
-{
-  T val;
-  ValueWrapper operator+(const ValueWrapper& v) const { return ValueWrapper{val + v.val}; }
-  ValueWrapper operator-(const ValueWrapper& v) const { return ValueWrapper{val - v.val}; }
-  ValueWrapper operator-() const { return ValueWrapper{-val}; }
-  ValueWrapper operator*(T value) const { return ValueWrapper{val * value}; }
-  ValueWrapper& operator+=(const ValueWrapper& v) {
-    val += v.val;
-    return *this;
-  }
-  ValueWrapper& operator*=(T v) {
-    val *= v;
-    return *this;
-  }
-
-  friend ValueWrapper operator*(T f, const ValueWrapper& v) { return ValueWrapper{f * v.val}; }
-};
+#include <ikarus/python/finiteelements/valuewrapper.hh>
+#include <ikarus/solver/linearsolver/linearsolver.hh>
+// clang-format off
+#define ENUM_BINDINGS(Type)                        \
+  py::enum_<Type> Type##Enum(m, #Type);           \
+  Type Type##EnumV = Type::BEGIN;                          \
+  Ikarus::increment(Type##EnumV);                          \
+  for (; Type##EnumV != Type::END; Ikarus::increment(Type##EnumV)) \
+    Type##Enum.value(toString(Type##EnumV).c_str(), Type##EnumV);
+// clang-format on
 
 PYBIND11_MODULE(_ikarus, m) {
   namespace py = pybind11;
@@ -41,36 +30,26 @@ PYBIND11_MODULE(_ikarus, m) {
   using namespace Ikarus;
   using namespace Eigen;
 
-  py::enum_<ScalarAffordances> enumSA(m, "ScalarAffordances");
-  enumSA.value("noAffordance", ScalarAffordances::noAffordance);
-  enumSA.value("mechanicalPotentialEnergy", ScalarAffordances::mechanicalPotentialEnergy);
-  enumSA.value("microMagneticPotentialEnergy", ScalarAffordances::microMagneticPotentialEnergy);
+  ENUM_BINDINGS(ScalarAffordance);
+  ENUM_BINDINGS(VectorAffordance);
+  ENUM_BINDINGS(MatrixAffordance);
+  ENUM_BINDINGS(FESolutions);
+  ENUM_BINDINGS(FEParameter);
+  ENUM_BINDINGS(SolverTypeTag);
+  ENUM_BINDINGS(DBCOption);
 
-  py::enum_<VectorAffordances> enumVA(m, "VectorAffordances");
-  enumVA.value("noAffordance", VectorAffordances::noAffordance);
-  enumVA.value("forces", VectorAffordances::forces);
-  enumVA.value("microMagneticForces", VectorAffordances::microMagneticForces);
+  py::class_<std::tuple<ScalarAffordance, VectorAffordance, MatrixAffordance>>(m, "Base");
+  auto affordanceCollections3 =
+      Dune::Python::insertClass<AffordanceCollection<ScalarAffordance, VectorAffordance, MatrixAffordance>,
+                                std::tuple<ScalarAffordance, VectorAffordance, MatrixAffordance>>(
+          m, "AffordanceCollection",
+          Dune::Python::GenerateTypeName("AffordanceCollection<ScalarAffordance,VectorAffordance,MatrixAffordance>"),
+          Dune::Python::IncludeFiles("ikarus/finiteelements/ferequirements.hh"))
+          .first;
 
-  py::enum_<MatrixAffordances> enumMA(m, "MatrixAffordances");
-  enumMA.value("noAffordance", MatrixAffordances::noAffordance);
-  enumMA.value("geometricstiffness", MatrixAffordances::geometricstiffness);
-  enumMA.value("mass", MatrixAffordances::mass);
-  enumMA.value("materialstiffness", MatrixAffordances::materialstiffness);
-  enumMA.value("stiffness", MatrixAffordances::stiffness);
-  enumMA.value("microMagneticHessian", MatrixAffordances::microMagneticHessian);
-  enumMA.value("stiffnessdiffBucklingVector", MatrixAffordances::stiffnessdiffBucklingVector);
-
-  py::enum_<FESolutions> feSol(m, "FESolutions");
-  feSol.value("noSolution", FESolutions::noSolution);
-  feSol.value("displacement", FESolutions::displacement);
-  feSol.value("velocity", FESolutions::velocity);
-  feSol.value("director", FESolutions::director);
-  feSol.value("magnetizationAndVectorPotential", FESolutions::magnetizationAndVectorPotential);
-
-  py::enum_<FEParameter> fePar(m, "FEParameter");
-  fePar.value("noParameter", FEParameter::noParameter);
-  fePar.value("loadfactor", FEParameter::loadfactor);
-  fePar.value("time", FEParameter::time);
+  affordanceCollections3.def(py::init<ScalarAffordance, VectorAffordance, MatrixAffordance>());
+  affordanceCollections3.def_property_readonly_static("elastoStatics",
+                                                      [](py::object) { return AffordanceCollections::elastoStatics; });
 
   using VWd = ValueWrapper<double>;
   auto valueWrapperDouble =
@@ -87,34 +66,6 @@ PYBIND11_MODULE(_ikarus, m) {
       .def(py::self *= double())
       .def(double() * py::self)
       .def(py::self * double());
-
-  using FEreq   = FERequirements<Ref<VectorXd>>;
-  auto includes = Dune::Python::IncludeFiles{"ikarus/finiteelements/ferequirements.hh"};
-  auto lv =
-      Dune::Python::insertClass<FEreq>(
-          m, "FERequirements", Dune::Python::GenerateTypeName("FERequirements<Eigen::Ref<Eigen::VectorXd>>"), includes)
-          .first;
-  lv.def(py::init());
-  lv.def("addAffordance", [](FEreq& self, const ScalarAffordances& affordances) { self.addAffordance(affordances); });
-  lv.def("addAffordance", [](FEreq& self, const VectorAffordances& affordances) { self.addAffordance(affordances); });
-  lv.def("addAffordance", [](FEreq& self, const MatrixAffordances& affordances) { self.addAffordance(affordances); });
-  lv.def(
-      "insertGlobalSolution",
-      [](FEreq& self, FESolutions solType, Ref<VectorXd> solVec) {
-        self.insertGlobalSolution(std::move(solType), solVec);
-      },
-      "solutionType"_a, "solutionVector"_a.noconvert());
-  lv.def(
-      "getGlobalSolution", [](FEreq& self, FESolutions solType) { return self.getGlobalSolution(std::move(solType)); },
-      py::return_value_policy::reference_internal);
-  lv.def(
-      "insertParameter",
-      [](FEreq& self, FEParameter parType, ValueWrapper<double>& parVal) {
-        self.insertParameter(std::move(parType), parVal.val);
-      },
-      py::keep_alive<1, 3>(), "FEParameter"_a, "parameterValue"_a.noconvert());
-
-  lv.def("getParameter", [](const FEreq& self, FEParameter parType) { return self.getParameter(std::move(parType)); });
 
   auto materials = m.def_submodule("materials", "This is the submodule for materials in Ikarus");
 

@@ -17,9 +17,9 @@ def dirichletValues(basis):
 
     includes = []
     includes += basis._includes
-    includes += ["ikarus/assembler/simpleassemblers.hh"]
+    includes += ["ikarus/utils/dirichletvalues.hh"]
     includes += ["ikarus/python/dirichletvalues/dirichletvalues.hh"]
-    moduleName = "SparseFlatAssembler_" + hashIt(element_type)
+    moduleName = "dirichletValues_" + hashIt(element_type)
     module = generator.load(
         includes=includes, typeName=element_type, moduleName=moduleName
     )

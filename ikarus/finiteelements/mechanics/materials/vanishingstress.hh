@@ -13,6 +13,7 @@
 
 #include <ikarus/finiteelements/mechanics/materials/interface.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
+#include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
 #include <ikarus/utils/nonlinearoperator.hh>
 
 namespace Ikarus {
@@ -244,15 +245,21 @@ private:
 
     auto Er    = E(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices).eval().template cast<ScalarType>();
     auto nonOp = Ikarus::NonLinearOperator(functions(f, df), parameter(Er));
-    auto nr    = Ikarus::makeNewtonRaphson(
-        nonOp, [&](auto& r, auto& A) { return (A.inverse() * r).eval(); },
-        [&](auto& /* Ex33 */, auto& ecomps) {
-          for (int ri = 0; auto i : fixedDiagonalVoigtIndices) {
-            auto indexPair = fromVoigt(i);
-            E(indexPair[0], indexPair[1]) += ecomps(ri++);
-          }
-        });
-    nr->setup({.tol = tol_, .maxIter = 100});
+
+    auto linearSolver   = [](auto& r, auto& A) { return (A.inverse() * r).eval(); };
+    auto updateFunction = [&](auto& /* Ex33 */, auto& ecomps) {
+      for (int ri = 0; auto i : fixedDiagonalVoigtIndices) {
+        auto indexPair = fromVoigt(i);
+        E(indexPair[0], indexPair[1]) += ecomps(ri++);
+      }
+    };
+    // THE CTAD is broken for designated initializers in clang 16, when we drop support this can be simplified
+    NewtonRaphsonConfig<decltype(linearSolver), decltype(updateFunction)> nrs{
+        .parameters = {.tol = tol_, .maxIter = 100},
+          .linearSolver = linearSolver, .updateFunction = updateFunction
+    };
+
+    auto nr = createNonlinearSolver(std::move(nrs), nonOp);
     if (!static_cast<bool>(nr->solve()))
       DUNE_THROW(Dune::MathError, "The stress reduction of material " << nameImpl() << " was unsuccessful\n"
                                                                       << "The strains are\n"

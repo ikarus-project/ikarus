@@ -103,17 +103,17 @@ finite element requirements as described [here](../01_framework/feRequirements.m
 
 ```cpp
 auto sparseFlatAssembler = SparseFlatAssembler(fes, dirichletValues);
-auto req = FERequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
+auto req = fe.createRequirement();
 
 auto fextFunction = [&](auto &&lambdaLocal, auto &&dLocal) -> auto & {
-  req.insertGlobalSolution(Ikarus::FESolutions::displacement, dLocal)
-      .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal);
-  return sparseFlatAssembler.getReducedVector(req);
+  req.insertGlobalSolution( dLocal)
+      .insertParameter( lambdaLocal);
+  return sparseFlatAssembler.vector(req,VectorAffordance::forces);
 };
 auto KFunction = [&](auto &&lambdaLocal, auto &&dLocal) -> auto & {
-  req.insertGlobalSolution(Ikarus::FESolutions::displacement, dLocal)
-      .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal);
-  return sparseFlatAssembler.getReducedMatrix(req);
+  req.insertGlobalSolution( dLocal)
+      .insertParameter( lambdaLocal);
+  return sparseFlatAssembler.matrix(req,MatrixAffordance::stiffness);
 };
 ```
 

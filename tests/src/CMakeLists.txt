@@ -58,6 +58,10 @@ dune_add_test(
   LABELS
   cpp
 )
+add_dune_pythonlibs_flags(testfemixin)
+find_package(PythonLibs REQUIRED)
+include_directories(SYSTEM ${PYTHON_INCLUDE_DIRS})
+target_link_libraries(testfemixin PUBLIC ${PYTHON_LIBRARIES})
 target_compile_features(testfemixin PUBLIC cxx_std_20)
 dune_add_test(
   SOURCES

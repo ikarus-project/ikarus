@@ -16,8 +16,10 @@
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 
+#include <Eigen/Dense>
 #include <Eigen/Sparse>
 
+#include "ikarus/assembler/dirichletbcenforcement.hh"
 #include <ikarus/utils/traits.hh>
 
 namespace Eigen {
@@ -337,7 +339,6 @@ namespace Concepts {
    * \brief Concept defining the requirements for functors with arguments.
    * \tparam Op Type of the functor.
    * \tparam Args Types of the arguments.
-   * \details The concept specifies that an instance of type `Op` can be invoked with arguments of types `Args`.
    */
   template <typename Op, typename... Args>
   concept IsFunctorWithArgs = requires(Op op, Args... args) { op(args...); };
@@ -346,11 +347,17 @@ namespace Concepts {
    * \concept EigenVector
    * \brief Concept defining the requirements for Eigen vectors.
    * \tparam V Type representing an Eigen vector.
-   * \details The concept specifies that the type `V` is an Eigen vector based on its compile-time information
-   * (`IsVectorAtCompileTime`).
    */
   template <typename V>
   concept EigenVector = static_cast<bool>(V::IsVectorAtCompileTime);
+
+  /**
+   * \concept EigenMatrix
+   * \brief Concept defining the requirements for Eigen matrices. This also includes Eigen vectors
+   * \tparam V Type representing an Eigen vector.
+   */
+  template <typename M>
+  concept EigenMatrix = traits::isSpecializationTypeAndNonTypes<Eigen::Matrix, M>::value;
 
 #define MAKE_EIGEN_FIXED_VECTOR_CONCEPT(Size) \
   template <typename V>                       \
@@ -456,9 +463,9 @@ namespace Concepts {
   } // namespace Impl
 
   /**
-   * @concept ResultType
-   * @brief A concept to check if a template type satisfies the ResultType requirements.
-   * @tparam RT A template type with parameters (typename, int, int).
+   * \concept ResultType
+   * \brief A concept to check if a template type satisfies the ResultType requirements.
+   * \tparam RT A template type with parameters (typename, int, int).
    *            The first parameter is the data type, and the next two parameters are the grid dimension and the world
    * dimension. It checks for various instantiations to ensure they meet the ResultType concept. Specifically, it checks
    * for the nested types 'type', 'Vectorizer', 'Matricizer', and the presence of a toString function returning a
@@ -468,5 +475,49 @@ namespace Concepts {
   concept ResultType =
       Impl::ResultType<RT<double, 1, 1>> or Impl::ResultType<RT<double, 1, 2>> or Impl::ResultType<RT<double, 1, 3>> or
       Impl::ResultType<RT<double, 2, 3>> or Impl::ResultType<RT<double, 3, 3>>;
+
+  /**
+
+   * \brief Concept representing the requirements for a FlatAssembler.
+   * \concept FlatAssembler
+   * A type T satisfies FlatAssembler if it provides the necessary member functions
+   * and data types for assembling sparse matrices in a flat structure.
+   */
+  template <typename T>
+  concept FlatAssembler = requires(T t, const typename T::FERequirement& req,
+                                   typename T::AffordanceCollectionType affordance, DBCOption dbcOption) {
+    { t.scalar(req, affordance.scalarAffordance()) } -> std::convertible_to<const double&>;
+    { t.scalar() } -> std::convertible_to<const double&>;
+
+    { t.vector(req, affordance.vectorAffordance(), dbcOption) } -> std::convertible_to<const Eigen::VectorXd&>;
+    { t.vector(dbcOption) } -> std::convertible_to<const Eigen::VectorXd&>;
+    { t.vector() } -> std::convertible_to<const Eigen::VectorXd&>;
+
+    { t.matrix(req, affordance.matrixAffordance(), dbcOption) };
+    { t.matrix(dbcOption) };
+    { t.matrix() };
+
+    { t.requirement() } -> std::convertible_to<typename T::FERequirement&>;
+    { t.affordanceCollection() } -> std::convertible_to<typename T::AffordanceCollectionType>;
+    { t.dBCOption() } -> std::convertible_to<DBCOption>;
+
+    { t.bind(req, affordance, dbcOption) } -> std::same_as<void>;
+    { t.bind(req) } -> std::same_as<void>;
+    { t.bind(affordance) } -> std::same_as<void>;
+    { t.bind(dbcOption) } -> std::same_as<void>;
+
+    { t.bound() } -> std::convertible_to<bool>;
+    { t.boundToRequirement() } -> std::convertible_to<bool>;
+    { t.boundToAffordanceCollection() } -> std::convertible_to<bool>;
+    { t.boundToDBCOption() } -> std::convertible_to<bool>;
+    { t.estimateOfConnectivity() } -> std::convertible_to<size_t>;
+
+    { t.createFullVector(std::declval<Eigen::Ref<const Eigen::VectorXd>>()) } -> std::convertible_to<Eigen::VectorXd>;
+    { t.constraintsBelow(std::declval<size_t>()) } -> std::convertible_to<size_t>;
+    { t.isConstrained(std::declval<size_t>()) } -> std::convertible_to<bool>;
+    { t.size() } -> std::convertible_to<size_t>;
+    { t.reducedSize() } -> std::convertible_to<size_t>;
+  };
+
 } // namespace Concepts
 } // namespace Ikarus

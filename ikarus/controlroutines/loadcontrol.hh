@@ -60,6 +60,9 @@ public:
    */
   ControlInformation run();
 
+  /* \brief returns the nonlinear solver */
+  NLS& nonlinearSolver() { return *nonLinearSolver_; }
+
 private:
   std::shared_ptr<NLS> nonLinearSolver_;
   int loadSteps_;

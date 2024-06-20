@@ -18,17 +18,13 @@ namespace Ikarus {
  *
  * \tparam BH The basis handler type for the finite element.
  * \tparam useFlat A boolean indicating if the type of the underlying basis is of the flat or the untouched version.
- * \tparam FER The requirements for the finite element.
  * \tparam useRef Boolean indicating whether to use Eigen::Ref for VectorType and MatrixType.
  */
-template <typename BH, typename FER = FERequirements<>, bool useEigenRef = false, bool useFlat = true>
+template <typename BH, bool useRef = false, bool useFlat = true>
 struct FETraits
 {
   /** \brief Type of the basis of the finite element */
   using BasisHandler = BH;
-
-  /** \brief Type of the requirements for the finite element */
-  using FERequirementType = FER;
 
   /** \brief A bool to indicate if the provided basishandler should hand out the flat basis */
   static constexpr bool useFlatBasis = useFlat;
@@ -75,12 +71,16 @@ struct FETraits
   /** \brief Type of the ParameterSpace coordinate */
   using ParameterSpaceType = Eigen::Matrix<ctype, mydim, 1>;
 
-  /** \brief Type of the internal forces */
+  /** \brief Bool indicating whether the raw Eigen types should be used or wrapped with Eigen::Ref<..>. (Needed for
+   * Python bindings) */
+  static constexpr bool useEigenRef = useRef;
+
+  /** \brief Type of the vector passed to calculateVector */
   template <typename ScalarType = ctype>
   using VectorType =
       std::conditional_t<useEigenRef, Eigen::Ref<Eigen::VectorX<ScalarType>>, Eigen::VectorX<ScalarType>&>;
 
-  /** \brief Type of the stiffness matrix */
+  /** \brief Type of the matrix  passed to calculateMatrix */
   template <typename ScalarType = ctype>
   using MatrixType =
       std::conditional_t<useEigenRef, Eigen::Ref<Eigen::MatrixX<ScalarType>>, Eigen::MatrixX<ScalarType>&>;

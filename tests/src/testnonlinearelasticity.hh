@@ -21,10 +21,12 @@
 #include <ikarus/finiteelements/mechanics/nonlinearelastic.hh>
 #include <ikarus/io/resultevaluators.hh>
 #include <ikarus/io/resultfunction.hh>
+#include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
 #include <ikarus/solver/nonlinearsolver/trustregion.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/nonlinearoperator.hh>
+#include <ikarus/utils/nonlinopfactory.hh>
 #include <ikarus/utils/observer/controlvtkwriter.hh>
 
 using Dune::TestSuite;
@@ -57,7 +59,8 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
 
   auto reducedMat = planeStress(mat, 1e-8);
   auto sk         = skills(nonLinearElastic(reducedMat), volumeLoad<2>(vL));
-  std::vector<decltype(makeFE(basis, sk))> fes;
+  using FEType    = decltype(makeFE(basis, sk));
+  std::vector<FEType> fes;
 
   for (auto&& ge : elements(gridView)) {
     fes.emplace_back(makeFE(basis, sk));
@@ -72,45 +75,31 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
       dirichletFlags[localView.index(localIndex)] = true;
   });
 
-  auto sparseAssembler = SparseFlatAssembler(fes, dirichletValues);
+  auto sparseAssembler = makeSparseFlatAssembler(fes, dirichletValues);
 
   Eigen::VectorXd d;
   d.setZero(basis.flat().size());
   double lambda = 0.0;
 
-  auto req = FERequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
+  auto req = typename FEType::Requirement(d, lambda);
 
-  auto residualFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
-    req.insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
-        .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal);
-    return sparseAssembler.getVector(req);
-  };
-
-  auto KFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
-    req.insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
-        .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal);
-    return sparseAssembler.getMatrix(req);
-  };
-
-  auto energyFunction = [&](auto&& disp_, auto&& lambdaLocal) -> auto& {
-    req.insertGlobalSolution(Ikarus::FESolutions::displacement, disp_)
-        .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLocal);
-    return sparseAssembler.getScalar(req);
-  };
-
-  auto nonLinOp =
-      Ikarus::NonLinearOperator(functions(energyFunction, residualFunction, KFunction), parameter(d, lambda));
+  sparseAssembler->bind(req, Ikarus::AffordanceCollections::elastoStatics);
+  auto nonLinOp = Ikarus::NonLinearOperatorFactory::op(sparseAssembler, DBCOption::Reduced);
 
   const double gradTol = 1e-8;
 
-  auto tr = Ikarus::makeTrustRegion(nonLinOp);
-  tr->setup({.verbosity = 1,
-             .maxIter   = 1000,
-             .grad_tol  = gradTol,
-             .corr_tol  = 1e-16, // everything should converge to the gradient tolerance
-             .useRand   = false,
-             .rho_reg   = 1e8,
-             .Delta0    = 1});
+  TrustRegionConfig<> trConfig{
+      .parameters = {.verbosity = 1,
+                     .maxIter   = 1000,
+                     .grad_tol  = gradTol,
+                     .corr_tol  = 1e-16, // everything should converge to the gradient tolerance
+                     .useRand   = false,
+                     .rho_reg   = 1e8,
+                     .Delta0    = 1}
+  };
+
+  Ikarus::NonlinearSolverFactory trFactory(trConfig);
+  auto tr = trFactory.create(sparseAssembler);
 
   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(
       basis.flat(), d, 2);
@@ -215,16 +204,15 @@ auto GreenLagrangeStrainTest(const Material& mat) {
   d.setZero(nDOF);
   double lambda = 0.0;
 
-  auto req = Ikarus::FERequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
-  req.insertGlobalSolution(Ikarus::FESolutions::displacement, d)
-      .insertParameter(Ikarus::FEParameter::loadfactor, lambda);
+  auto req   = typename decltype(fe)::Requirement(d, lambda);
+  auto reqLE = typename decltype(feLE)::Requirement(d, lambda);
 
   Eigen::MatrixXd K, KLE;
   K.setZero(nDOF, nDOF);
   KLE.setZero(nDOF, nDOF);
 
-  calculateMatrix(fe, req, K);
-  calculateMatrix(feLE, req, KLE);
+  calculateMatrix(fe, req, Ikarus::MatrixAffordance::stiffness, K);
+  calculateMatrix(feLE, reqLE, Ikarus::MatrixAffordance::stiffness, KLE);
 
   t.check(K.isApprox(KLE, tol),
           "Mismatch between linear and non-linear stiffness matrix for zero displacements with gridDim = " +
@@ -258,13 +246,11 @@ auto SingleElementTest(const Material& mat) {
 
   d << 2, 4, 3.25, -1.2, 0.003, 6, 3, 2.864;
 
-  auto req = Ikarus::FERequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
-  req.insertGlobalSolution(Ikarus::FESolutions::displacement, d)
-      .insertParameter(Ikarus::FEParameter::loadfactor, lambda);
+  auto req = typename decltype(fe)::Requirement(d, lambda);
 
   Eigen::MatrixXd K;
   K.setZero(nDOF, nDOF);
-  calculateMatrix(fe, req, K);
+  calculateMatrix(fe, req, Ikarus::MatrixAffordance::stiffness, K);
 
   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> essaK;
   essaK.compute(K);

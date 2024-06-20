@@ -15,7 +15,7 @@ requires(FE::template hasSkill<Ikarus::EnhancedAssumedStrainsPre::Skill>())
 struct ElementTest<FE>
 {
   [[nodiscard]] static auto test() {
-    auto easFunctor = [](auto& nonLinOp, auto& fe, auto& req) {
+    auto easFunctor = [](auto& nonLinOp, auto& fe, auto& req, auto& affordance) {
       const auto& localView = fe.localView();
       const auto& element   = localView.element();
       constexpr int gridDim = std::remove_cvref_t<decltype(element)>::dimension;
@@ -42,7 +42,7 @@ struct ElementTest<FE>
         }
         t.subTest(checkJacobianOfElement(subOp, messageIfFailed));
 
-        t.subTest(checkFEByAutoDiff(nonLinOp, fe, req, messageIfFailed));
+        t.subTest(checkFEByAutoDiff(nonLinOp, fe, req, affordance, messageIfFailed));
 
         auto stiffnessMatrix = subOp.derivative();
 
@@ -52,8 +52,9 @@ struct ElementTest<FE>
         t.check((newEigenValues.array() < 1e-6 * newEigenValues.norm()).count() == 3 * gridDim - 3,
                 "Number of eigenvalues")
             << "We always should have " << 3 * gridDim - 3 << " zero eigenvalues, for " << 3 * gridDim - 3
-            << " rigid body motions" << " but we counted "
-            << (newEigenValues.array() < 1e-6 * newEigenValues.norm()).count() << "\nEigenValues: \n"
+            << " rigid body motions"
+            << " but we counted " << (newEigenValues.array() < 1e-6 * newEigenValues.norm()).count()
+            << "\nEigenValues: \n"
             << newEigenValues.transpose() << "The tolerance is " << 1e-6 * newEigenValues.norm()
             << "The number of EAS parameters is" << numberOfEASParameter << std::endl;
         if (numberOfEASParameter > 0 and numberOfEASParameter != 5)         // Q1E4 and Q1E5 are the same
@@ -85,9 +86,10 @@ struct ElementTest<FE>
           };
           easVariant(testM);
 
-          auto requirements = Ikarus::FERequirements();
-          t.checkThrow([&]() { calculateScalar(fe, requirements); })
-              << "fe.calculateScalar should have failed for numberOfEASParameter > 0";
+          auto requirements = typename std::remove_cvref_t<decltype(fe)>::Requirement();
+          t.checkThrow([&]() {
+            calculateScalar(fe, requirements, Ikarus::ScalarAffordance::mechanicalPotentialEnergy);
+          }) << "fe.calculateScalar should have failed for numberOfEASParameter > 0";
         }
 
         t.check(numberOfEASParameter == fe.numberOfEASParameters())

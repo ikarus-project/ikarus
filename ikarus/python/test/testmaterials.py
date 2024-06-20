@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
+import debug_info
+debug_info.setDebugFlags()
 
 import ikarus as iks
 import numpy as np
@@ -224,9 +226,6 @@ def checkWithStrain(strain):
 
 
 if __name__ == "__main__":
-    help(iks)
-    help(iks.materials)
-
     strain = np.array([1.2, 1.1, 0.9, 0.1, 0.2, 0.2])
     checkWithStrain(strain)
 

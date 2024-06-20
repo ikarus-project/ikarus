@@ -26,18 +26,16 @@ class FE;
  *
  * \tparam BH The type of the basis handler.
  * \tparam useFlat A boolean indicating if the type of the underlying basis is of the flat or the untouched version.
- * \tparam FER The requirements for the finite element.
  * \tparam useEigenRef A boolean flag indicating whether to use Eigen references.
  */
-template <typename BH, typename FER = FERequirements<>, bool useFlat = true, bool useEigenRef = false>
+template <typename BH, bool useFlat = true, bool useEigenRef = false>
 struct PreFE
 {
   using BasisHandler                      = BH;
-  using FERequirements                    = FER;
   static constexpr int worldDim           = BasisHandler::Basis::worlddim;
   static constexpr bool useEigenReference = useEigenRef;
   static constexpr bool useFlatBasis      = useFlat;
-  using Traits                            = FETraits<BH, FER, useEigenRef, useFlat>;
+  using Traits                            = FETraits<BH, useEigenRef, useFlat>;
 
   template <template <typename, typename> class... Skills>
   using FE = FE<PreFE, Skills...>;
@@ -86,13 +84,13 @@ protected:
   friend Mixin;
 
 public:
-  using Traits            = PreFE::Traits;                ///< Type traits
-  using BasisHandler      = Traits::BasisHandler;         ///< Type of the basisHandler.
-  using LocalView         = typename Traits::LocalView;   ///< Type of the local view.
-  using GridView          = typename Traits::GridView;    ///< Type of the global view.
-  using GlobalIndex       = typename Traits::GlobalIndex; ///< Type of the global index.
-  using GridElement       = typename Traits::Element;     ///< Type of the grid element.
-  using FERequirementType = typename Traits::FERequirementType;
+  using Traits       = PreFE::Traits;                ///< Type traits
+  using BasisHandler = Traits::BasisHandler;         ///< Type of the basisHandler.
+  using LocalView    = typename Traits::LocalView;   ///< Type of the local view.
+  using GridView     = typename Traits::GridView;    ///< Type of the global view.
+  using GlobalIndex  = typename Traits::GlobalIndex; ///< Type of the global index.
+  using GridElement  = typename Traits::Element;     ///< Type of the grid element.
+  using typename Mixin::Requirement;
 
   static constexpr int myDim    = Traits::mydim;
   static constexpr int worldDim = Traits::worlddim;

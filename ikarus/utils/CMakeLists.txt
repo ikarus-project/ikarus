@@ -20,6 +20,7 @@ install(
         makeenum.hh
         math.hh
         nonlinearoperator.hh
+        nonlinopfactory.hh
         polyfit.hh
         pythonautodiffdefinitions.hh
         tensorutils.hh
