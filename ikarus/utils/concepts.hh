@@ -485,26 +485,26 @@ namespace Concepts {
    */
   template <typename T>
   concept FlatAssembler = requires(T t, const typename T::FERequirement& req,
-                                   typename T::AffordanceCollectionType affordance, DBCOption qt) {
+                                   typename T::AffordanceCollectionType affordance, DBCOption dbcOption) {
     { t.scalar(req, affordance.scalarAffordance()) } -> std::convertible_to<const double&>;
     { t.scalar() } -> std::convertible_to<const double&>;
 
-    { t.vector(req, affordance.vectorAffordance(), qt) } -> std::convertible_to<const Eigen::VectorXd&>;
-    { t.vector(qt) } -> std::convertible_to<const Eigen::VectorXd&>;
+    { t.vector(req, affordance.vectorAffordance(), dbcOption) } -> std::convertible_to<const Eigen::VectorXd&>;
+    { t.vector(dbcOption) } -> std::convertible_to<const Eigen::VectorXd&>;
     { t.vector() } -> std::convertible_to<const Eigen::VectorXd&>;
 
-    { t.matrix(req, affordance.matrixAffordance(), qt) };
-    { t.matrix(qt) };
+    { t.matrix(req, affordance.matrixAffordance(), dbcOption) };
+    { t.matrix(dbcOptioncOption) };
     { t.matrix() };
 
     { t.requirement() } -> std::convertible_to<typename T::FERequirement&>;
     { t.affordanceCollection() } -> std::convertible_to<typename T::AffordanceCollectionType>;
     { t.dBCOption() } -> std::convertible_to<DBCOption>;
 
-    { t.bind(req, affordance, qt) } -> std::same_as<void>;
+    { t.bind(req, affordance, dbcOption) } -> std::same_as<void>;
     { t.bind(req) } -> std::same_as<void>;
     { t.bind(affordance) } -> std::same_as<void>;
-    { t.bind(qt) } -> std::same_as<void>;
+    { t.bind(dbcOption) } -> std::same_as<void>;
 
     { t.bound() } -> std::convertible_to<bool>;
     { t.boundToRequirement() } -> std::convertible_to<bool>;

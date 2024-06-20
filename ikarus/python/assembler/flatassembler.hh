@@ -29,10 +29,10 @@ namespace Ikarus::Python {
   \n                                                                                                                           \
    The registered class will have an initializer that takes a list of finite elements (`fes`) and a                            \
 `DirichletValuesType` object. \n It exposes several member functions to Python:  \n <ul> <li> `matrix(req)`:                   \
-Returns a dense matrix based on the specified `FERequirementType`.    \n <li> `vector(req,affordance,qt)`: Returns a           \
-vector based on the specified `FERequirementType`.   \n <li> `scalar(req,affordance)`: Returns a scalar based on the           \
-specified `FERequirementType`.    \n <li> `createFullVector(redVec)`: Creates a full vector from a reduced vector. \n          \
-<li> `reducedSize()`: Returns the size of the reduced space.   \n                                                              \
+Returns a dense matrix based on the specified `FERequirementType`.    \n <li> `vector(req,affordance,dbcOption)`:              \
+Returns a vector based on the specified `FERequirementType`.   \n <li> `scalar(req,affordance)`: Returns a scalar              \
+based on the specified `FERequirementType`.    \n <li> `createFullVector(redVec)`: Creates a full vector from a                \
+reduced vector. \n <li> `reducedSize()`: Returns the size of the reduced space.   \n                                           \
   </ul> \n                                                                                                                     \
    \tparam Assembler The name class to be registered.                                                                          \
    \tparam options Variadic template parameters for additional options when defining the Python class.                         \
@@ -64,8 +64,8 @@ specified `FERequirementType`.    \n <li> `createFullVector(redVec)`: Creates a 
     cls.def(                                                                                                                   \
         "matrix",                                                                                                              \
         [](Assembler& self, const FERequirementType& req, Ikarus::MatrixAffordance affordance,                                 \
-           Ikarus::DBCOption qt) -> std::remove_cvref_t<decltype(self.matrix(req, affordance))> {                              \
-          return self.matrix(req, affordance, qt);                                                                             \
+           Ikarus::DBCOption dbcOption) -> std::remove_cvref_t<decltype(self.matrix(req, affordance))> {                       \
+          return self.matrix(req, affordance, dbcOption);                                                                      \
         },                                                                                                                     \
         pybind11::return_value_policy::copy);                                                                                  \
                                                                                                                                \
@@ -75,22 +75,21 @@ specified `FERequirementType`.    \n <li> `createFullVector(redVec)`: Creates a 
                                                                                                                                \
     cls.def(                                                                                                                   \
         "matrix",                                                                                                              \
-        [](Assembler& self, Ikarus::DBCOption qt) -> std::remove_cvref_t<decltype(self.matrix(qt))> {                          \
-          return self.matrix(qt);                                                                                              \
+        [](Assembler& self, Ikarus::DBCOption dbcOption) -> std::remove_cvref_t<decltype(self.matrix(dbcOption))> {            \
+          return self.matrix(dbcOption);                                                                                       \
         },                                                                                                                     \
         pybind11::return_value_policy::copy);                                                                                  \
                                                                                                                                \
     cls.def(                                                                                                                   \
         "vector",                                                                                                              \
-        [](Assembler& self, const FERequirementType& req, Ikarus::VectorAffordance affordance, Ikarus::DBCOption qt) {         \
-          return self.vector(req, affordance, qt);                                                                             \
-        },                                                                                                                     \
+        [](Assembler& self, const FERequirementType& req, Ikarus::VectorAffordance affordance,                                 \
+           Ikarus::DBCOption dbcOption) { return self.vector(req, affordance, dbcOption); },                                   \
         pybind11::return_value_policy::reference);                                                                             \
                                                                                                                                \
     cls.def("vector", [](Assembler& self) { return self.vector(); }, pybind11::return_value_policy::reference);                \
                                                                                                                                \
     cls.def(                                                                                                                   \
-        "vector", [](Assembler& self, Ikarus::DBCOption qt) { return self.vector(qt); },                                       \
+        "vector", [](Assembler& self, Ikarus::DBCOption dbcOption) { return self.vector(dbcOption); },                         \
         pybind11::return_value_policy::reference);                                                                             \
                                                                                                                                \
     cls.def(                                                                                                                   \
@@ -108,10 +107,10 @@ specified `FERequirementType`.    \n <li> `createFullVector(redVec)`: Creates a 
         pybind11::return_value_policy::move);                                                                                  \
     cls.def("reducedSize", [](Assembler& self) { return self.reducedSize(); }, pybind11::return_value_policy::copy);           \
     cls.def("bind", [](Assembler& self, const FERequirementType& req, AffordanceCollectionType affordance,                     \
-                       DBCOption qt = DBCOption::Full) { return self.bind(req, affordance, qt); });                            \
+                       DBCOption dbcOption = DBCOption::Full) { return self.bind(req, affordance, dbcOption); });              \
     cls.def("bind", [](Assembler& self, const FERequirementType& req) { return self.bind(req); });                             \
     cls.def("bind", [](Assembler& self, const AffordanceCollectionType affordance) { return self.bind(affordance); });         \
-    cls.def("bind", [](Assembler& self, const DBCOption qt) { return self.bind(qt); });                                        \
+    cls.def("bind", [](Assembler& self, const DBCOption dbcOption) { return self.bind(dbcOption); });                          \
     cls.def("bound", &Assembler::bound);                                                                                       \
     cls.def("boundToRequirement", &Assembler::boundToRequirement);                                                             \
     cls.def("boundToAffordanceCollection", &Assembler::boundToAffordanceCollection);                                           \

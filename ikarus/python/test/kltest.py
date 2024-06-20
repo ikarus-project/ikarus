@@ -92,7 +92,7 @@ if __name__ == "__main__":
         dBig = assembler.createFullVector(dRedInput)
         req.insertGlobalSolution( dBig)
         g = assembler.vector(req,iks.VectorAffordance.forces, iks.DBCOption.Reduced)
-        h = assembler.matrix(req,iks.MatrixAffordance.stiffness, iks.DBCOption
+        h = assembler.matrix(req,iks.MatrixAffordance.stiffness, iks.DBCOption.Reduced)
         return [g, h]
 
     from numpy.linalg import norm

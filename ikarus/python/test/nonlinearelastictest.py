@@ -105,8 +105,7 @@ if __name__ == "__main__":
         dBig = assembler.createFullVector(dRedInput)
         feReq.insertGlobalSolution(dBig)
         return assembler.vector(
-            feReq, iks.VectorAffordance.forces, iks.DBCOption
-        .Reduced)
+            feReq, iks.VectorAffordance.forces, iks.DBCOption.Reduced)
 
     def hess(dRedInput):
         feReq = fes[0].createRequirement()

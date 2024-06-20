@@ -71,8 +71,8 @@ const auto& K = myAssembler.scalar(feRequirements, scalarAffordance) // (2)!
 It has all the features of [ScalarAssembler](#scalarassembler) plus more, like:
 
 ```cpp
-Eigen::VectorXd& vector(const FERequirementType& feRequirements, VectorAffordance affordance,  DBCOption qt)
-Eigen::VectorXd& vector( DBCOption qt)
+Eigen::VectorXd& vector(const FERequirementType& feRequirements, VectorAffordance affordance,  DBCOption dbcOption)
+Eigen::VectorXd& vector( DBCOption dbcOption)
 ```
 
 The Enum `DBCOption` dictates how the Dirichlet boundary conditions should be applied
@@ -88,8 +88,8 @@ The available FE requirements are explained on the [FE requirements](feRequireme
 It offers the functions of [VectorFlatAssembler](#vectorflatassembler) plus more, like:
 
 ```cpp
-Eigen::SparseMatrix<double>& matrix(const FERequirementType& feRequirements, MatrixAffordance affordance, DBCOption qt)
-Eigen::SparseMatrix<double>& matrix(DBCOption qt)
+Eigen::SparseMatrix<double>& matrix(const FERequirementType& feRequirements, MatrixAffordance affordance, DBCOption dbcOption)
+Eigen::SparseMatrix<double>& matrix(DBCOption dbcOption)
 ```
 
 A sparse matrix is returned.
@@ -108,6 +108,6 @@ The only difference between the [SparseFlatAssembler](#sparseflatassembler) and 
 DenseFlatAssembler returns a dense matrix.
 
 ```cpp
-Eigen::MatrixXd& matrix(const FERequirementType& feRequirements, MatrixAffordance affordance, DBCOption qt)
-Eigen::MatrixXd& matrix(DBCOption qt)
+Eigen::MatrixXd& matrix(const FERequirementType& feRequirements, MatrixAffordance affordance, DBCOption dbcOption)
+Eigen::MatrixXd& matrix(DBCOption dbcOption)
 ```
