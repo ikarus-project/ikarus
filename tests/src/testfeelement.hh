@@ -102,8 +102,8 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
       successlinearStressCalculateAt = true;
   });
   t.check(successlinearStressCalculateAt)
-      << "linearStress call for calculateAt didn't work." << "\nThe supported types are "
-      << Dune::className<typename FEType::SupportedResultTypes>() << "\n"
+      << "linearStress call for calculateAt didn't work."
+      << "\nThe supported types are " << Dune::className<typename FEType::SupportedResultTypes>() << "\n"
       << "The element is \n"
       << Dune::className<FEType>();
 

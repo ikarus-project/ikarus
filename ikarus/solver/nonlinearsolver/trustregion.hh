@@ -522,6 +522,22 @@ private:
       truncatedConjugateGradient_;
 };
 
+/**
+ * \brief Creates an instance of the TrustRegion solver.
+ *
+ * \tparam NLO Type of the nonlinear operator to solve.
+ * \tparam preConditioner Type of the preconditioner used internally (default is IncompleteCholesky).
+ * \tparam UF Type of the update function (default is UpdateDefault).
+ * \param nonLinearOperator Nonlinear operator to solve.
+ * \param updateFunction Update function (default is UpdateDefault).
+ * \return Shared pointer to the TrustRegion solver instance.
+ */
+template <typename NLO, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
+          typename UF = utils::UpdateDefault>
+auto makeTrustRegion(const NLO& nonLinearOperator, UF&& updateFunction = {}) {
+  return std::make_shared<TrustRegion<NLO, preConditioner, UF>>(nonLinearOperator, updateFunction);
+}
+
 template <typename NLO, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
           typename UF2 = utils::UpdateDefault>
 TrustRegion(const NLO& nonLinearOperator,

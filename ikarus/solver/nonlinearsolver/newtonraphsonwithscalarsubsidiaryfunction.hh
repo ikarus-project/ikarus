@@ -264,6 +264,23 @@ private:
   UF updateFunction_;
   Settings settings_;
 };
+/**
+ * \brief Function to create a NewtonRaphson with subsidiary function solver instance.
+ * \tparam NLO Type of the nonlinear operator to solve.
+ * \tparam LS Type of the linear solver used internally (default is SolverDefault).
+ * \tparam UF Type of the update function (default is UpdateDefault).
+ * \param nonLinearOperator Nonlinear operator to solve.
+ * \param linearSolver Linear solver used internally (default is SolverDefault).
+ * \param updateFunction Update function (default is UpdateDefault).
+ * \return Shared pointer to the NewtonRaphson solver instance.
+ */
+template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
+auto makeNewtonRaphsonWithSubsidiaryFunction(const NLO& nonLinearOperator, LS&& linearSolver = {},
+                                             UF&& updateFunction = {}) {
+  return std::make_shared<NewtonRaphsonWithSubsidiaryFunction<NLO, LS, UF>>(
+      nonLinearOperator, std::forward<LS>(linearSolver), std::move(updateFunction));
+}
+
 template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
 NewtonRaphsonWithSubsidiaryFunction(const NLO& nonLinearOperator, LS&& linearSolver = {}, UF&& updateFunction = {})
     -> NewtonRaphsonWithSubsidiaryFunction<NLO, std::remove_cvref_t<LS>, std::remove_cvref_t<UF>>;
