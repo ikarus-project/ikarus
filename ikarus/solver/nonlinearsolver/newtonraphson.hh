@@ -208,7 +208,6 @@ private:
   Settings settings_;
 };
 
-
 template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
 NewtonRaphson(const NLO& nonLinearOperator, LS&& linearSolver = {},
               UF&& updateFunction = {}) -> NewtonRaphson<NLO, std::remove_cvref_t<LS>, std::remove_cvref_t<UF>>;

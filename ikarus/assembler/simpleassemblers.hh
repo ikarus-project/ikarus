@@ -125,11 +125,10 @@ public:
    * \param req Reference to the finite element requirement.
    * \param affordanceCollection The affordance collection
    */
-  void bind(const FERequirement& req, AffordanceCollectionType affordanceCollection,
-            DBCOption qt = DBCOption::Full) {
-    req_                = std::make_optional<FERequirement>(req);
-    affordances_        = std::make_optional<AffordanceCollectionType>(affordanceCollection);
-    dBCOption_ = std::make_optional<DBCOption>(qt);
+  void bind(const FERequirement& req, AffordanceCollectionType affordanceCollection, DBCOption qt = DBCOption::Full) {
+    req_         = std::make_optional<FERequirement>(req);
+    affordances_ = std::make_optional<AffordanceCollectionType>(affordanceCollection);
+    dBCOption_   = std::make_optional<DBCOption>(qt);
   }
 
   /**
@@ -165,8 +164,7 @@ public:
     if (boundToRequirement() and boundToAffordanceCollection() and boundToDBCOption())
       return true;
     else
-      DUNE_THROW(Dune::InvalidStateException,
-                 "The assembler is not bound to a requirement, affordance or dBCOption.");
+      DUNE_THROW(Dune::InvalidStateException, "The assembler is not bound to a requirement, affordance or dBCOption.");
   }
 
   /**
@@ -578,7 +576,7 @@ public:
    * For DBCOption::Reduced the matrix is reduced in size by removing the fixed degrees of freedom.
    *
    * \param feRequirements Reference to the finite element requirements.
-   * \param affordance The matrix affordance 
+   * \param affordance The matrix affordance
    * \param qt The DBCOption
 
    * \return Reference to the raw dense matrix quantity.
@@ -596,14 +594,14 @@ public:
   }
 
   /**
-* \brief  Calculates the matrix quantity requested by the bound  feRequirements and the affordance.
-* For DBCOption::Full a zero is written on fixed degrees of freedom rows and columns, and a one is written
-* on the diagonal. For DBCOption::Raw the untouched matrix is returned.
-* For DBCOption::Reduced the matrix is reduced in size by removing the fixed degrees of freedom.
-*
-* \param qt The DBCOption
-* \return Reference to the raw dense matrix quantity.
-*/
+   * \brief  Calculates the matrix quantity requested by the bound  feRequirements and the affordance.
+   * For DBCOption::Full a zero is written on fixed degrees of freedom rows and columns, and a one is written
+   * on the diagonal. For DBCOption::Raw the untouched matrix is returned.
+   * For DBCOption::Reduced the matrix is reduced in size by removing the fixed degrees of freedom.
+   *
+   * \param qt The DBCOption
+   * \return Reference to the raw dense matrix quantity.
+   */
   const Eigen::MatrixXd& matrix(DBCOption qt) {
     return matrix(this->requirement(), this->affordanceCollection().matrixAffordance(), qt);
   }

@@ -37,7 +37,7 @@ struct NonlinearSolverFactory
 
   NLSSetting settings;
 
- /**
+  /**
    * @brief Creates a nonlinear solver using the provided assembler.
    *
    * The assembler must satisfy the FlatAssembler concept.

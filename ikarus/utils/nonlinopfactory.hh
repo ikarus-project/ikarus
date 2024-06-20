@@ -109,8 +109,7 @@ struct NonLinearOperatorFactory
   }
 
   template <typename Assembler, typename... Affordances>
-  static auto op(Assembler&& as, AffordanceCollection<Affordances...> affordances,
-                 DBCOption qt = DBCOption::Full) {
+  static auto op(Assembler&& as, AffordanceCollection<Affordances...> affordances, DBCOption qt = DBCOption::Full) {
     auto ex = []() {
       DUNE_THROW(Dune::InvalidStateException,
                  "Assembler has to be bound to a fe requirement before you can call "
