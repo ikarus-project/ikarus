@@ -494,7 +494,7 @@ namespace Concepts {
     { t.vector() } -> std::convertible_to<const Eigen::VectorXd&>;
 
     { t.matrix(req, affordance.matrixAffordance(), dbcOption) };
-    { t.matrix(dbcOptioncOption) };
+    { t.matrix(dbcOption) };
     { t.matrix() };
 
     { t.requirement() } -> std::convertible_to<typename T::FERequirement&>;
