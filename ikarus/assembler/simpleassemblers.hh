@@ -607,6 +607,12 @@ public:
     return matrix(this->requirement(), this->affordanceCollection().matrixAffordance(), dbcOption);
   }
 
+* \return Reference to the raw dense matrix quantity.
+*/
+  const Eigen::MatrixXd& matrix(EnforcingDBCOption qt) {
+    return matrix(this->requirement(), this->affordanceCollection().matrixAffordance(), qt);
+  }
+
   /**
    * \brief  Calculates the matrix quantity requested by the bound  feRequirements, the affordance and the
 dBCOption.

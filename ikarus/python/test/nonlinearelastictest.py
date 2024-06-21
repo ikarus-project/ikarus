@@ -4,6 +4,9 @@
 import debug_info
 debug_info.setDebugFlags()
 
+os.environ["DUNE_LOG_LEVEL"] = "debug"
+os.environ["DUNE_SAVE_BUILD"] = "console"
+os.environ["DUNE_CMAKE_FLAGS"] = "-CMAKE_BUILD_TYPE=debug"
 import ikarus as iks
 from ikarus import finite_elements, utils, assembler
 import numpy as np

@@ -175,6 +175,7 @@ class NonLinearOperator<Impl::Functions<DerivativeArgs...>, Impl::Parameter<Para
 public:
   using FunctionReturnValues =
       std::tuple<Ikarus::traits::ReturnType<DerivativeArgs, ParameterArgs&...>...>; ///< Function return values
+  using FunctionTuple   = std::tuple<DerivativeArgs...>;                            ///< Types of the parameters
   using ParameterValues = std::tuple<ParameterArgs...>;                             ///< Types of the parameters
 
   static constexpr int numberOfFunctions  = sizeof...(DerivativeArgs); ///< Number of functions

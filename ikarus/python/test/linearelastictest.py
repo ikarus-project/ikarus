@@ -68,7 +68,6 @@ def linElasticTest(easBool):
 
     for e in grid.elements:
         if easBool:
-
             fes.append(iks.finite_elements.makeFE(basisLagrange1,linElastic,easF,vLoad,nBLoad))
         else:
             fes.append(iks.finite_elements.makeFE(basisLagrange1,linElastic,vLoad,nBLoad))
@@ -116,6 +115,12 @@ def linElasticTest(easBool):
     assemblerDense = iks.assembler.denseFlatAssembler(fes, dirichletValues)
     assembler.bind(req, iks.AffordanceCollection.elastoStatics, iks.DBCOption.Full)
 
+    Msparse = assembler.matrix()
+    forces = assembler.vector()
+
+    print(f"Energy: {nonLinOp.value()}")
+    nonLinOp.derivative()
+    nonLinOp.secoondDerivative()
     Msparse = assembler.matrix()
     forces = assembler.vector()
 

@@ -25,3 +25,6 @@ def boundaryPatch(gridView, booleanVector):
         includes=includes, typeName=element_type, moduleName=moduleName
     )
     return module.BoundaryPatch(gridView, booleanVector)
+
+
+from .nonlinop import *
