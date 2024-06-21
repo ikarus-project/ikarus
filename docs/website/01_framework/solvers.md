@@ -72,13 +72,13 @@ It has the following interface:
 
 ```cpp
 void setup(const NewtonRaphsonSettings& p_settings); // (1)!
-SolverInformation solve(const SolutionType& dx_predictor = NoPredictor{}); // (2)!
+NonLinearSolverState solve(const SolutionType& dx_predictor = NoPredictor{}); // (2)!
 auto& nonLinearOperator(); // (3)!
 ```
 
 1. With this function, several properties of the nonlinear solver can be set. E.g., residual tolerance or maximum number of iterations
 2. Solves the non-linear problem. An initial guess to the function can be passed, otherwise, a zero vector is assumed.
-   It returns the `SolverInformation` which contains information like the success of the solution step and more.
+   It returns the `NonLinearSolverState` which contains information like the success of the solution step and more.
 3. Just returns the underlying `nonLinearOperator`, see [link](nonlinearOperator.md).
 
 !!! note

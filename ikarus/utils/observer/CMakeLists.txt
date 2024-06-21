@@ -2,7 +2,14 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 # install headers
-install(FILES controllogger.hh controlvtkwriter.hh genericobserver.hh nonlinearsolverlogger.hh
-              observer.hh observermessages.hh
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/utils/observer
+install(
+  FILES controllogger.hh
+        controlvtkwriter.hh
+        genericobserver.hh
+        nonlinearsolverlogger.hh
+        observer.hh
+        observermessages.hh
+        observable.hh
+        observable.inl
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/utils/observer
 )

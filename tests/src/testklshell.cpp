@@ -142,9 +142,9 @@ static auto NonLinearKLShellLoadControlTR() {
 
   auto lc = LoadControl(tr, 1, {0, 1});
   lc.subscribeAll(vtkWriter);
-  const auto controlInfo = lc.run();
+  const auto controlState = lc.run();
 
-  t.check(controlInfo.success);
+  t.check(controlState.success);
 
   const auto maxDisp = std::ranges::max(d);
   std::cout << std::setprecision(16) << maxDisp << std::endl;

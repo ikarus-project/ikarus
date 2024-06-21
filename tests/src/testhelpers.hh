@@ -48,14 +48,13 @@ void checkScalars(TestSuiteType& t, const ScalarType val, const ScalarType expec
       << ". The used tolerance was " << tol << messageIfFailed;
 }
 
-template <typename TestSuiteType, typename ControlInformation>
-void checkSolverInfos(TestSuiteType& t, const std::vector<int>& expectedIterations,
-                      const ControlInformation& controlInfo, const int loadSteps,
-                      const std::string& messageIfFailed = "") {
+template <typename TestSuiteType, typename ControlState>
+void checkSolverInfos(TestSuiteType& t, const std::vector<int>& expectedIterations, const ControlState& controlState,
+                      const int loadSteps, const std::string& messageIfFailed = "") {
   for (size_t i = 0U; i < loadSteps; ++i) {
-    t.check(expectedIterations[i] == controlInfo.solverInfos[i].iterations)
+    t.check(expectedIterations[i] == controlState.solverStates[i].iterations)
         << "Incorrect number of iterations at step " << i << " with expected:\t" << expectedIterations[i]
-        << " and actual:\t" << controlInfo.solverInfos[i].iterations << messageIfFailed;
-    t.check(controlInfo.solverInfos[i].success) << "Failed to converge at step " << i;
+        << " and actual:\t" << controlState.solverStates[i].iterations << messageIfFailed;
+    t.check(controlState.solverStates[i].success) << "Failed to converge at step " << i;
   }
 }
