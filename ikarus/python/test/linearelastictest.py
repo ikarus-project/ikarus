@@ -118,9 +118,15 @@ def linElasticTest(easBool):
     Msparse = assembler.matrix()
     forces = assembler.vector()
 
-    print(f"Energy: {nonLinOp.value()}")
+    nonLinOp = iks.utils.makeNonLinearOperator(assembler)
+    if not easBool:
+        print(f"Energy: {nonLinOp.value()}")
+    else:
+        print("EAS element do not support any scalar calculations, i.e. they are not derivable from a potential")
+
+    subOp= nonLinOp.subOperator(1,2)
     nonLinOp.derivative()
-    nonLinOp.secoondDerivative()
+    nonLinOp.secondDerivative()
     Msparse = assembler.matrix()
     forces = assembler.vector()
 

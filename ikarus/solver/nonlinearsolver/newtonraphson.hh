@@ -23,21 +23,8 @@ class NewtonRaphson;
 
 struct NRSettings
 {
-  using LinearSolver   = LS;
-  using UpdateFunction = UF;
-  NRSettings parameters;
-  LS linearSolver;
-  UF updateFunction;
-
-  template <typename UF2>
-  auto rebindUpdateFunction(UF2&& updateFunction) const {
-    NewtonRaphsonConfig<LS, UF2> settings{
-        .parameters = parameters, .linearSolver = linearSolver, .updateFunction = std::forward<UF2>(updateFunction)};
-    return settings;
-  }
-
-  template <typename NLO>
-  using Solver = NewtonRaphson<NLO, LS, UF>;
+  double tol{1e-8};
+  int maxIter{20};
 };
 
 /**

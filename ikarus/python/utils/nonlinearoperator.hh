@@ -53,12 +53,15 @@ void registerNonLinearOperator(pybind11::handle scope, pybind11::class_<NLO, opt
     cls.def("value", &NLO::value, py::return_value_policy::reference_internal);
     cls.def_property_readonly_static(
         "valueCppTypeName", [](py::object) { return Dune::className<typename NLO::template FunctionReturnType<0>>(); });
+    cls.def("__subOperator0", &NLO::subOperator<0>());
+
   }
   if constexpr (functionCount > 1) {
     cls.def("derivative", &NLO::derivative, py::return_value_policy::reference_internal);
     cls.def_property_readonly_static("derivativeCppTypeName", [](py::object) {
       return Dune::className<typename NLO::template FunctionReturnType<1>>();
     });
+    cls.def("__subOperator1", &NLO::subOperator<1>());
   }
 
   if constexpr (functionCount > 2) {
@@ -66,6 +69,9 @@ void registerNonLinearOperator(pybind11::handle scope, pybind11::class_<NLO, opt
     cls.def_property_readonly_static("secondDerivativeCppTypeName", [](py::object) {
       return Dune::className<typename NLO::template FunctionReturnType<2>>();
     });
+    cls.def("__subOperator01", &NLO::subOperator<0,1>());
+    cls.def("__subOperator12", &NLO::subOperator<1,2>());
+    cls.def("__subOperator2", &NLO::subOperator<2>());
   }
 
   if constexpr (functionCount > 0) {
@@ -142,17 +148,10 @@ void registerNonLinearOperatorFactory(pybind11::handle scope, pybind11::class_<N
          std::optional<
              std::reference_wrapper<typename traits::remove_pointer_t<std::remove_cvref_t<Assembler>>::FERequirement>>
              req,
-         std::optional<AffordanceCollection> affordances, std::optional<EnforcingDBCOption> enforce) {
-        if (req.has_value() and affordances.has_value() and  enforce.has_value()) {
-          return NonLinearOperatorFactory::op(self.as, req.value().get(), affordances.value(), enforce.value());
-        } else if (req.has_value() and affordances.has_value()) {
-          return NonLinearOperatorFactory::op(self.as, req.value().get(), affordances.value());
-        } else if (req.has_value() ) {
-          return NonLinearOperatorFactory::op(self.as, req.value().get());
-        } else {
-          return NonLinearOperatorFactory::op(self.as);
+         std::optional<AffordanceCollection> affordances, std::optional<DBCOption> enforce) {
+          return NonLinearOperatorFactory::op(self.as,req,affordances,enforce);
         }
-      },
+      ,
       "Create a nonlinear operator from the given assembler and the optional fe requirements, affordances and "
       "enforcing dbc option.",
       py::arg("requirement") = py::none(), py::arg("affordances") = py::none(),
