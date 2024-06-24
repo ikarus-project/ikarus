@@ -135,6 +135,8 @@ namespace ResultTypes {
   REGISTER_SIMPLE_RESULTTYPE(BField, worldDim, 1);
   REGISTER_SIMPLE_RESULTTYPE(HField, worldDim, 1);
 
+  REGISTER_SIMPLE_RESULTTYPE(axialForce, 1, 1);
+
   REGISTER_SIMPLE_RESULTTYPE(customType, Eigen::Dynamic, Eigen::Dynamic);
 } // namespace ResultTypes
 
