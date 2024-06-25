@@ -60,7 +60,7 @@ def linElasticTest(easBool):
         neumannVertices[indexSet.index(v)] = loadTopEdgePredicate(v.geometry.center)
 
     boundaryPatch = iks.utils.boundaryPatch(grid, neumannVertices)
-    # print(help(iks.finite_elements))
+
     nBLoad = iks.finite_elements.neumannBoundaryLoad(boundaryPatch, neumannLoad)
 
     linElastic = iks.finite_elements.linearElastic(youngs_modulus=1000, nu=0.2)
@@ -141,7 +141,7 @@ def linElasticTest(easBool):
 
     fileName = "resultdisplacement" + ("EAS" if easBool else "")
 
-    writer = vtkWriter(grid, fileName, pointData={("displacement", (0, 1)): fx})
+    vtkWriter(grid, fileName, pointData={("displacement", (0, 1)): fx})
 
     writer2 = vtkUnstructuredGridWriter(grid)
     writer2.addCellData(stressFuncScalar, name="stress")

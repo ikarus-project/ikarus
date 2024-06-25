@@ -16,7 +16,7 @@ def makeGrid():
     lowerLeft = []
     upperRight = []
     elements = []
-    for i in range(2):
+    for _ in range(2):
         lowerLeft.append(-1)
         upperRight.append(1)
         elements.append(3)
