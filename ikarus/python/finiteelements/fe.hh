@@ -48,7 +48,7 @@ namespace Ikarus::Python {
  * \throws Dune::NotImplemented If the specified resultType is not supported by the finite element.
  */
 template <class FE, class... options>
-void registerCalculateAt(pybind11::handle scope, pybind11::class_<FE, options...> cls, auto restultTypesTuple) {
+void registerCalculateAt(pybind11::handle scope, pybind11::class_<FE, options...> cls, auto resultTypesTuple) {
   using Traits         = typename FE::Traits;
   using FERequirements = typename FE::Requirement;
   cls.def(
@@ -57,7 +57,7 @@ void registerCalculateAt(pybind11::handle scope, pybind11::class_<FE, options...
           std::string resType) {
         Eigen::VectorXd result;
         bool success = false;
-        Dune::Hybrid::forEach(restultTypesTuple, [&]<typename RT>(RT i) {
+        Dune::Hybrid::forEach(resultTypesTuple, [&]<typename RT>(RT i) {
           if (resType == toString(i)) {
             success = true;
             result  = self.template calculateAt<RT::template Rebind>(req, local).asVec();

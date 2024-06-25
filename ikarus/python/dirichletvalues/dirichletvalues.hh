@@ -137,6 +137,9 @@ void registerDirichletValues(pybind11::handle scope, pybind11::class_<DirichletV
       },
       pybind11::arg("functor"));
 
+  cls.def("fixBoundaryDOFsOfSubSpaceBasis", [](DirichletValues& self, const pybind11::function& functor,
+                                               const pybind11::object& ssb) { pybind11::print(ssb); });
+
   cls.def("fixDOFs",
           [](DirichletValues& self, const std::function<void(const Basis&, Eigen::Ref<Eigen::VectorX<bool>>)>& f) {
             auto lambda = [&](const Basis& basis, BackendType& vec) {

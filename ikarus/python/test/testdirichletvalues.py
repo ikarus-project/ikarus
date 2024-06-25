@@ -68,6 +68,8 @@ def testDirichletValues():
     indicesPerDirection: int = (math.sqrt(grid.size(0)) + 1) * 2
     assert sum(dirichletValues.container) == 2 + indicesPerDirection
 
+    ssb0 = dune.functions.subspaceBasis(basis, 0)
+    dirichletValues.fixBoundaryDOFsOfSubSpaceBasis(fixTopSide, ssb0)
 
 if __name__ == "__main__":
     testDirichletValues()

@@ -82,7 +82,16 @@ public:
       Dune::Functions::forEachBoundaryDOF(basis_, lambda);
     }
   }
-
+  /**
+   * \brief Function to fix (set boolean values to true or false) degrees of freedom on the boundary using a
+   * SubSpaceBasis of the Basis used to create the DirichletValues
+   *
+    This function takes a callback function, which will be called with the boolean vector of fixed boundary
+   * degrees of freedom and the usual arguments of `Dune::Functions::forEachBoundaryDOF`.
+   *
+   * \param f A callback function
+   * \param ssb A subspace basis (compile-time-checked to be an actual subspace basis of basis)
+   */
   template <typename F, typename SSB>
   requires(std::is_same_v<typename std::remove_cvref_t<SSB>::RootBasis, Basis>)
   void fixBoundaryDOFs(F&& f, SSB&& ssb) {
