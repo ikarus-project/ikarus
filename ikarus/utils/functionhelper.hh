@@ -71,7 +71,7 @@ auto globalIndexFromGlobalPosition(const FEC& fes, const Eigen::Vector<double, s
     const auto& localFE = localView.tree().child(0).finiteElement();
     for (int i = 0; i < localFE.size(); i++)
       if (Dune::toEigen(lagrangeNodeCoords[i]).isApprox(pos, tol)) {
-        index = localView.index(localView.tree().child(childIndex).localIndex(i));
+        index         = localView.index(localView.tree().child(childIndex).localIndex(i));
         positionFound = true;
       }
   }
