@@ -71,7 +71,7 @@ void registerDirichletValues(pybind11::handle scope, pybind11::class_<DirichletV
   auto fixBoundaryDOFs_ = [](DirichletValues& self,
                              const std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int)>& f) {
     auto lambda = [&](BackendType& vec, const MultiIndex& indexGlobal) {
-      assert(indexGlobal.size() == 1 && "fixBoundaryDOFs: Passed in MultiIndex should have lenth 1");
+      // we explicitly only allow flat indices
       f(vec.vector(), indexGlobal[0]);
     };
     self.fixBoundaryDOFs(lambda);

@@ -1,4 +1,11 @@
+# SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-License-Identifier: LGPL-3.0-or-later
 
+import debug_info
+
+debug_info.setDebugFlags()
+
+import ikarus as iks
 import numpy as np
 import math
 
