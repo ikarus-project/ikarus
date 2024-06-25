@@ -26,7 +26,6 @@
 #include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/dirichletvalues.hh>
-#include <ikarus/utils/eigendunetransformations.hh>
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/observer/controlvtkwriter.hh>
 #include <ikarus/utils/observer/genericobserver.hh>
@@ -35,12 +34,12 @@
 using namespace Ikarus;
 using Dune::TestSuite;
 
-static auto TrussTest() {
-  TestSuite t("TrussTest");
+static auto vonMisesTrussTest() {
+  TestSuite t("vonMisesTrussTest");
   /// Construct grid
   Dune::GridFactory<Dune::FoamGrid<1, 2, double>> gridFactory;
-  const double h = 1.0;
-  const double L = 10.0;
+  constexpr double h = 1.0;
+  constexpr double L = 10.0;
   gridFactory.insertVertex({0, 0});
   gridFactory.insertVertex({L, h});
   gridFactory.insertVertex({2 * L, 0});
@@ -66,59 +65,54 @@ static auto TrussTest() {
 
   /// Collect dirichlet nodes
   auto basisP = std::make_shared<const decltype(basis)>(basis);
-  Ikarus::DirichletValues dirichletValues(basisP->flat());
+  DirichletValues dirichletValues(basisP->flat());
   dirichletValues.fixBoundaryDOFs(
       [&](auto& dirichletFlags, auto&& globalIndex) { dirichletFlags[globalIndex] = true; });
+  t.check(dirichletValues.fixedDOFsize() == 4, "Number of fixed DOFs is not equal to 4");
 
   /// Create assembler
   auto denseFlatAssembler = makeDenseFlatAssembler(fes, dirichletValues);
 
   /// Create non-linear operator
-  double lambda = 0;
+  double lambda = 0.0;
   Eigen::VectorXd d;
   d.setZero(basis.flat().size());
 
   auto req = FEType::Requirement();
   req.insertGlobalSolution(d).insertParameter(lambda);
-  denseFlatAssembler->bind(req, Ikarus::AffordanceCollections::elastoStatics, Ikarus::DBCOption::Full);
+  denseFlatAssembler->bind(req, AffordanceCollections::elastoStatics, DBCOption::Full);
 
   /// Choose linear solver
-  auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
+  auto linSolver = LinearSolver(SolverTypeTag::d_LDLT);
 
-  /// Create Nonlinear solver for controlroutine, i.e. a Newton-Rahpson object
-  NewtonRaphsonConfig<decltype(linSolver)> nrConfig{
-      .parameters = {.tol = 1e-8, .maxIter = 100},
-        .linearSolver = linSolver
-  };
+  NewtonRaphsonConfig<decltype(linSolver)> nrConfig{.linearSolver = linSolver};
 
-  Ikarus::NonlinearSolverFactory nrFactory(nrConfig);
+  NonlinearSolverFactory nrFactory(nrConfig);
   auto nr = nrFactory.create(denseFlatAssembler);
 
-  /// Create Observer to write information of the non-linear solver on the
-  /// console
+  /// Create Observer to write information of the non-linear solver
   auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
 
-  const int loadSteps = 20;
+  constexpr int loadSteps = 10;
+
   Eigen::Matrix3Xd lambdaAndDisp;
   lambdaAndDisp.setZero(Eigen::NoChange, loadSteps + 1);
   /// Create Observer which executes when control routines messages
-  /// SOLUTION_CHANGED
-  auto lvkObserver = std::make_shared<Ikarus::GenericObserver<Ikarus::ControlMessages>>(
-      Ikarus::ControlMessages::SOLUTION_CHANGED, [&](int step) {
-        lambdaAndDisp(0, step) = lambda;
-        lambdaAndDisp(1, step) = d[2];
-        lambdaAndDisp(2, step) = d[3];
+  auto lvkObserver =
+      std::make_shared<GenericObserver<ControlMessages>>(ControlMessages::SOLUTION_CHANGED, [&](int step) {
+        lambdaAndDisp(0, step) = lambda; // load factor
+        lambdaAndDisp(1, step) = d[2];   // horizontal displacement at center node
+        lambdaAndDisp(2, step) = d[3];   // vertical displacement at center node
       });
 
   /// Create Observer which writes vtk files when control routines messages
-  /// SOLUTION_CHANGED
   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(
       basis.flat(), d, 2);
   vtkWriter->setFieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2);
   vtkWriter->setFileNamePrefix("vonMisesTruss");
 
   /// Create loadcontrol
-  auto lc = Ikarus::LoadControl(nr, loadSteps, {0, 0.5});
+  auto lc = LoadControl(nr, loadSteps, {0, 0.5});
   lc.nonlinearSolver().subscribeAll(nonLinearSolverObserver);
   lc.subscribeAll({vtkWriter, lvkObserver});
 
@@ -126,29 +120,32 @@ static auto TrussTest() {
   auto controlInfo = lc.run();
   t.check(controlInfo.success == true) << "Load control failed to converge";
 
-  /// Postprocess
-  using namespace matplot;
   Eigen::VectorXd lambdaVec = lambdaAndDisp.row(0);
-  Eigen::VectorXd dVec      = -lambdaAndDisp.row(2);
-  auto f                    = figure(true);
+  Eigen::VectorXd uVec      = lambdaAndDisp.row(1);
+  Eigen::VectorXd vVec      = -lambdaAndDisp.row(2);
 
-  title("Load-Displacement Curve");
-  xlabel("y-Displacement");
-  ylabel("LoadFactor");
-
-  auto analyticalLoadDisplacementCurve = [&](auto& w) {
+  // return the load factor as a function of the vertical displacement
+  auto analyticalLoadDisplacementCurve = [&](auto& v) {
     const double Ltruss = std::sqrt(h * h + L * L);
     return 2.0 * E * A * Dune::power(h, 3) / Dune::power(Ltruss, 3) *
-           (w / h - 1.5 * Dune::power(w / h, 2) + 0.5 * Dune::power(w / h, 3));
+           (v / h - 1.5 * Dune::power(v / h, 2) + 0.5 * Dune::power(v / h, 3));
   };
 
-  std::vector<double> x  = linspace(0.0, dVec.maxCoeff());
-  std::vector<double> y1 = transform(x, [&](auto x) { return analyticalLoadDisplacementCurve(x); });
-  auto p                 = plot(x, y1, dVec, lambdaVec);
-  p[0]->line_width(3);
-  p[1]->line_width(2);
-  p[1]->marker(line_spec::marker_style::asterisk);
-  save("vonMisesTruss.png");
+  constexpr double tol = 1e-14;
+
+  for (std::size_t i = 0; i < lambdaAndDisp.cols(); ++i) {
+    checkScalars(t, lambdaVec[i], analyticalLoadDisplacementCurve(vVec[i]), " Incorrect load factor", tol);
+    checkScalars(t, uVec[i], 0.0, " Incorrect horizontal displacement", tol);
+  }
+
+  double expectedAxialForce = -2.785092479363964262;
+
+  // due to the symmetry of the problem, same axial forces are expected in both elements
+  for (const auto& fe : fes) {
+    const auto N = fe.calculateAt<ResultTypes::axialForce>(req, {0.5, 0.5}).asVec()[0];
+    checkScalars(t, N, expectedAxialForce, " Incorrect Axial force", tol);
+  }
+
   return t;
 }
 
@@ -168,8 +165,8 @@ auto singleElementTest() {
     auto grid     = gridFactory.createGrid();
     auto gridView = grid->leafGridView();
 
-    t.subTest(checkFESByAutoDiff(gridView, power<2>(lagrange<1>()), Ikarus::skills(truss(1000.0, 0.0956)),
-                                 Ikarus::AffordanceCollections::elastoStatics));
+    t.subTest(checkFESByAutoDiff(gridView, power<2>(lagrange<1>()), skills(truss(1000.0, 0.0956)),
+                                 AffordanceCollections::elastoStatics));
   }
   return t;
 }
@@ -178,6 +175,6 @@ int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t("TrussTest");
   t.subTest(singleElementTest());
-  t.subTest(TrussTest());
+  t.subTest(vonMisesTrussTest());
   return t.exit();
 }

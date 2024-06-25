@@ -108,7 +108,7 @@ public:
    * \return A tuple containing Green-Lagrange strain, its first and second derivatives w.r.t displacements and
    * the length of the undeformed and deformed geometry.
    */
-  template <class ST>
+  template <class ST = double>
   KinematicVariables<ST> computeStrain(
       const Requirement& par,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const {
@@ -172,10 +172,11 @@ public:
   requires(canProvideResultType<RT>())
   auto calculateAtImpl(const Requirement& req, [[maybe_unused]] const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<0>) const {
-    using RTWrapper = ResultWrapper<RT<double, 1, 1>, ResultShape::Vector>;
+    using RTWrapper = ResultWrapper<RT<double, myDim, myDim>, ResultShape::Vector>;
     if constexpr (isSameResultType<RT, ResultTypes::axialForce>) {
       const auto [L, l, Egl, dEdu, ddEddu] = computeStrain(req);
-      return RTWrapper{E * A * Egl};
+      auto N = Eigen::Vector<double, 1>{E * A * Egl * l / L}; // Axial force in deformed configuration
+      return RTWrapper{N};
     }
   }
 
