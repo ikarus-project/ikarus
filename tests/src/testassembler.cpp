@@ -12,6 +12,8 @@
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/grid/yaspgrid.hh>
 
+#include <ikarus/utils/functionhelper.hh>
+
 using Dune::TestSuite;
 
 #include <ikarus/assembler/simpleassemblers.hh>
@@ -78,6 +80,24 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
       Dune::Functions::forEachBoundaryDOF(basis_, [&](auto&& indexGlobal) { dirichletFlags[indexGlobal] = true; });
     });
 
+    // center position to be fixed in all directions
+    Eigen::Vector2d fixPos{2.0, 1.0};
+    int centerNode = 1; // number of nodes at the center (fixPos)
+    if (Ikarus::Concepts::LagrangeNodeOfOrder<std::remove_cvref_t<decltype(fes[0].localView().tree().child(0))>, 1> and
+        ref == 0) {
+      t.checkThrow<Dune::InvalidStateException>(
+        [&](){auto fixIndex = utils::globalIndexFromGlobalPosition(fes, fixPos, 0);},
+        "globalIndexFromGlobalPosition should have failed for order = 1 and ref = 0 as no node exists at "
+        "the center.");
+      centerNode = 0;
+    }
+    else {
+      for (auto fixedDirection = 0; fixedDirection < 2; ++fixedDirection) {
+        auto fixIndex = utils::globalIndexFromGlobalPosition(fes, fixPos, fixedDirection);
+        dirichletValues.fixIthDOF(fixIndex);
+      }
+    }
+
     Ikarus::SparseFlatAssembler sparseFlatAssembler(fes, dirichletValues);
     Ikarus::DenseFlatAssembler denseFlatAssembler(fes, dirichletValues);
 
@@ -107,8 +127,9 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
     if constexpr (Ikarus::Concepts::LagrangeNodeOfOrder<
                       std::remove_cvref_t<decltype(fes[0].localView().tree().child(0))>, 2>)
       boundaryNodes *= 2;
-    t.check(2 * boundaryNodes == fixedDOFs)
-        << "Boundary DOFs (" << 2 * boundaryNodes << ") is not equal to Fixed DOFs (" << fixedDOFs << ")";
+
+    t.check(2 * (boundaryNodes + centerNode) == fixedDOFs)
+        << "Boundary DOFs (" << 2 * (boundaryNodes + centerNode) << ") is not equal to Fixed DOFs (" << fixedDOFs << ")";
 
     /// check if full matrices and full vectors are correct after applying boundary conditions
     t.check(std::ranges::count(KDense.reshaped(), 1) == fixedDOFs) << "Correct number of ones in matrix";
