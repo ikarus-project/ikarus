@@ -3,6 +3,7 @@
 
 
 import debug_info
+
 debug_info.setDebugFlags()
 
 import ikarus as iks
@@ -57,21 +58,26 @@ def linElasticTest(easBool):
 
     indexSet = grid.indexSet
     for v in grid.vertices:
-        neumannVertices[indexSet.index(v)]=loadTopEdgePredicate(v.geometry.center)
+        neumannVertices[indexSet.index(v)] = loadTopEdgePredicate(v.geometry.center)
 
     boundaryPatch = iks.utils.boundaryPatch(grid, neumannVertices)
     # print(help(iks.finite_elements))
-    nBLoad= iks.finite_elements.neumannBoundaryLoad(boundaryPatch,neumannLoad)
+    nBLoad = iks.finite_elements.neumannBoundaryLoad(boundaryPatch, neumannLoad)
 
     linElastic = iks.finite_elements.linearElastic(youngs_modulus=1000, nu=0.2)
-    easF= iks.finite_elements.eas(4)
+    easF = iks.finite_elements.eas(4)
 
     for e in grid.elements:
         if easBool:
-
-            fes.append(iks.finite_elements.makeFE(basisLagrange1,linElastic,easF,vLoad,nBLoad))
+            fes.append(
+                iks.finite_elements.makeFE(
+                    basisLagrange1, linElastic, easF, vLoad, nBLoad
+                )
+            )
         else:
-            fes.append(iks.finite_elements.makeFE(basisLagrange1,linElastic,vLoad,nBLoad))
+            fes.append(
+                iks.finite_elements.makeFE(basisLagrange1, linElastic, vLoad, nBLoad)
+            )
         fes[-1].bind(e)
 
     req = fes[0].createRequirement()
@@ -91,8 +97,8 @@ def linElasticTest(easBool):
 
     forces = np.zeros(8)
     stiffness = np.zeros((8, 8))
-    fes[0].calculateVector(req,iks.VectorAffordance.forces, forces)
-    fes[0].calculateMatrix(req,iks.MatrixAffordance.stiffness, stiffness)
+    fes[0].calculateVector(req, iks.VectorAffordance.forces, forces)
+    fes[0].calculateMatrix(req, iks.MatrixAffordance.stiffness, stiffness)
     fes[0].localView()
 
     dirichletValues = iks.dirichletValues(flatBasis)
@@ -134,17 +140,15 @@ def linElasticTest(easBool):
     )
     # Writing results into vtk file
 
-    fileName = "resultdisplacement"+ ("EAS" if easBool else "")
+    fileName = "resultdisplacement" + ("EAS" if easBool else "")
 
-    writer = vtkWriter(
-        grid, fileName, pointData={("displacement", (0, 1)): fx}
-    )
+    writer = vtkWriter(grid, fileName, pointData={("displacement", (0, 1)): fx})
 
     writer2 = vtkUnstructuredGridWriter(grid)
     writer2.addCellData(stressFuncScalar, name="stress")
     writer2.addCellData(stressFuncVec, name="stress2")
 
-    writer2.write(name= "result"+ ("EAS" if easBool else ""))
+    writer2.write(name="result" + ("EAS" if easBool else ""))
 
     # Querying for a different ResultType should result in a runtime error
     try:
@@ -153,6 +157,7 @@ def linElasticTest(easBool):
         assert True
     else:
         assert False
+
 
 if __name__ == "__main__":
     linElasticTest(easBool=False)

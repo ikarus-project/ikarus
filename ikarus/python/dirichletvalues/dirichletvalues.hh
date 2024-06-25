@@ -66,11 +66,15 @@ void registerDirichletValues(pybind11::handle scope, pybind11::class_<DirichletV
 
   cls.def(pybind11::init([](const Basis& basis) { return new DirichletValues(basis); }), pybind11::keep_alive<1, 2>());
 
+
+  
+
+
   // Eigen::Ref needed due to https://pybind11.readthedocs.io/en/stable/advanced/cast/eigen.html#pass-by-reference
   cls.def("fixBoundaryDOFs",
           [](DirichletValues& self, const std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int)>& f) {
             auto lambda = [&](BackendType& vec, const MultiIndex& indexGlobal) {
-              // we explicitly only allow flat indices
+              assert(indexGlobal.size() == 1 && "fixBoundaryDOFs: Passed in MultiIndex should have lenth 1");
               f(vec.vector(), indexGlobal[0]);
             };
             self.fixBoundaryDOFs(lambda);
@@ -83,8 +87,8 @@ void registerDirichletValues(pybind11::handle scope, pybind11::class_<DirichletV
               auto lvWrapper = LocalViewWrapper(lv.globalBasis());
               // this can be simplified when
               // https://gitlab.dune-project.org/staging/dune-functions/-/merge_requests/418 becomes available
-              pybind11::object obj = pybind11::cast(lv.element());
-              lvWrapper.bind(obj);
+              // pybind11::object obj = pybind11::cast(lv.element());
+              lvWrapper.bind(lv.element());
               f(vec.vector(), localIndex, lvWrapper);
             };
             self.fixBoundaryDOFs(lambda);
@@ -98,8 +102,8 @@ void registerDirichletValues(pybind11::handle scope, pybind11::class_<DirichletV
           auto lvWrapper = LocalViewWrapper(lv.globalBasis());
           // this can be simplified when
           // https://gitlab.dune-project.org/staging/dune-functions/-/merge_requests/418 becomes available
-          pybind11::object obj = pybind11::cast(lv.element());
-          lvWrapper.bind(obj);
+          //pybind11::object obj = pybind11::cast(lv.element());
+          lvWrapper.bind(lv.element());
           f(vec.vector(), localIndex, lvWrapper, intersection);
         };
         self.fixBoundaryDOFs(lambda);
@@ -113,6 +117,8 @@ void registerDirichletValues(pybind11::handle scope, pybind11::class_<DirichletV
             };
             self.fixDOFs(lambda);
           });
+  cls.def_property_readonly("container", [](DirichletValues& self) { return self.container(); });
+  cls.def_property_readonly("size", [](DirichletValues& self) -> int { return self.size(); });
 }
 
 } // namespace Ikarus::Python
