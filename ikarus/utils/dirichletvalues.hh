@@ -83,6 +83,24 @@ public:
     }
   }
 
+  template <typename F, typename SSB>
+  requires(std::is_same_v<typename std::remove_cvref_t<SSB>::RootBasis, Basis>)
+  void fixBoundaryDOFs(F&& f, SSB&& ssb) {
+    if constexpr (Concepts::IsFunctorWithArgs<F, BackendType, typename Basis::MultiIndex>) {
+      auto lambda = [&](auto&& indexGlobal) { f(dirichletFlagsBackend_, indexGlobal); };
+      Dune::Functions::forEachBoundaryDOF(std::forward<SSB>(ssb), lambda);
+    } else if constexpr (Concepts::IsFunctorWithArgs<F, BackendType, int, typename Basis::LocalView>) {
+      auto lambda = [&](auto&& localIndex, auto&& localView) { f(dirichletFlagsBackend_, localIndex, localView); };
+      Dune::Functions::forEachBoundaryDOF(std::forward<SSB>(ssb), lambda);
+    } else if constexpr (Concepts::IsFunctorWithArgs<F, BackendType, int, typename Basis::LocalView,
+                                                     typename Basis::GridView::Intersection>) {
+      auto lambda = [&](auto&& localIndex, auto&& localView, auto&& intersection) {
+        f(dirichletFlagsBackend_, localIndex, localView, intersection);
+      };
+      Dune::Functions::forEachBoundaryDOF(std::forward<SSB>(ssb), lambda);
+    }
+  }
+
   /**
    * \brief Function to fix (set boolean values to true or false) degrees of freedom.
    *

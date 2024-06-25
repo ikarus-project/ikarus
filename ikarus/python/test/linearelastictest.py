@@ -115,8 +115,8 @@ def linElasticTest(easBool):
             vec[localView.index(localIndex)] = True
 
     dirichletValues.fixBoundaryDOFs(fixFirstIndex)
-    dirichletValues.fixBoundaryDOFsUsingLocalView(fixAnotherVertex)
-    dirichletValues.fixBoundaryDOFsUsingLocalViewAndIntersection(fixLeftHandEdge)
+    dirichletValues.fixBoundaryDOFs(fixAnotherVertex)
+    dirichletValues.fixBoundaryDOFs(fixLeftHandEdge)
 
     assembler = iks.assembler.sparseFlatAssembler(fes, dirichletValues)
     assemblerDense = iks.assembler.denseFlatAssembler(fes, dirichletValues)

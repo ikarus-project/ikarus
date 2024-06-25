@@ -51,7 +51,7 @@ def testDirichletValues():
         assert isinstance(localView.index(localIndex), list)
         assert isinstance(localView.index(localIndex)[0], int)
 
-    dirichletValues.fixBoundaryDOFsUsingLocalView(fixAnotherIndexWithLocalView)
+    dirichletValues.fixBoundaryDOFs(fixAnotherIndexWithLocalView)
     assert sum(dirichletValues.container) == 2
 
     def fixTopSide(vec, localIndex, localView, intersection):
@@ -62,7 +62,7 @@ def testDirichletValues():
         assert isinstance(localView.index(localIndex), list)
         assert isinstance(localView.index(localIndex)[0], int)
 
-    dirichletValues.fixBoundaryDOFsUsingLocalViewAndIntersection(fixTopSide)
+    dirichletValues.fixBoundaryDOFs(fixTopSide)
 
     # This assmues a structured grid
     indicesPerDirection: int = (math.sqrt(grid.size(0)) + 1) * 2

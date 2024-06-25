@@ -82,7 +82,7 @@ if __name__ == "__main__":
         ):
             vec[localView.index(localIndex)] = True
 
-    dirichletValues.fixBoundaryDOFsUsingLocalViewAndIntersection(fixLeftAndRightEdge)
+    dirichletValues.fixBoundaryDOFs(fixLeftAndRightEdge)
 
     assembler = iks.assembler.sparseFlatAssembler(fes, dirichletValues)
 
