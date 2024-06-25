@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 import debug_info
+
 debug_info.setDebugFlags()
 
 import ikarus as iks

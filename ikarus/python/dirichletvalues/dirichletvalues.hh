@@ -20,6 +20,7 @@
 #include <dune/python/pybind11/stl_bind.h>
 
 #include <ikarus/finiteelements/ferequirements.hh>
+
 // PYBIND11_MAKE_OPAQUE(std::vector<bool>);
 namespace Ikarus::Python {
 
@@ -57,6 +58,7 @@ void registerDirichletValues(pybind11::handle scope, pybind11::class_<DirichletV
   using Intersection = typename Basis::GridView::Intersection;
 
   pybind11::module scopedf = pybind11::module::import("dune.functions");
+
   typedef Dune::Python::LocalViewWrapper<Basis> LocalViewWrapper;
   auto includes = Dune::Python::IncludeFiles{"dune/python/functions/globalbasis.hh"};
   auto lv       = Dune::Python::insertClass<LocalViewWrapper>(
@@ -66,32 +68,30 @@ void registerDirichletValues(pybind11::handle scope, pybind11::class_<DirichletV
 
   cls.def(pybind11::init([](const Basis& basis) { return new DirichletValues(basis); }), pybind11::keep_alive<1, 2>());
 
-  // Eigen::Ref needed due to https://pybind11.readthedocs.io/en/stable/advanced/cast/eigen.html#pass-by-reference
-  cls.def("fixBoundaryDOFs",
-          [](DirichletValues& self, const std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int)>& f) {
-            auto lambda = [&](BackendType& vec, const MultiIndex& indexGlobal) {
-              // we explicitly only allow flat indices
-              f(vec.vector(), indexGlobal[0]);
-            };
-            self.fixBoundaryDOFs(lambda);
-          });
+  auto fixBoundaryDOFs_ = [](DirichletValues& self,
+                             const std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int)>& f) {
+    auto lambda = [&](BackendType& vec, const MultiIndex& indexGlobal) {
+      // we explicitly only allow flat indices
+      f(vec.vector(), indexGlobal[0]);
+    };
+    self.fixBoundaryDOFs(lambda);
+  };
 
-  cls.def("fixBoundaryDOFsUsingLocalView",
-          [](DirichletValues& self,
-             const std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int, LocalViewWrapper&)>& f) {
-            auto lambda = [&](BackendType& vec, int localIndex, LocalView& lv) {
-              auto lvWrapper = LocalViewWrapper(lv.globalBasis());
-              // this can be simplified when
-              // https://gitlab.dune-project.org/staging/dune-functions/-/merge_requests/418 becomes available
-              pybind11::object obj = pybind11::cast(lv.element());
-              lvWrapper.bind(obj);
-              f(vec.vector(), localIndex, lvWrapper);
-            };
-            self.fixBoundaryDOFs(lambda);
-          });
+  auto fixBoundaryDOFsUsingLocalView_ =
+      [](DirichletValues& self,
+         const std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int, LocalViewWrapper&)>& f) {
+        auto lambda = [&](BackendType& vec, int localIndex, LocalView& lv) {
+          auto lvWrapper = LocalViewWrapper(lv.globalBasis());
+          // this can be simplified when
+          // https://gitlab.dune-project.org/staging/dune-functions/-/merge_requests/418 becomes available
+          pybind11::object obj = pybind11::cast(lv.element());
+          lvWrapper.bind(obj);
+          f(vec.vector(), localIndex, lvWrapper);
+        };
+        self.fixBoundaryDOFs(lambda);
+      };
 
-  cls.def(
-      "fixBoundaryDOFsUsingLocalViewAndIntersection",
+  auto fixBoundaryDOFsUsingLocalViewAndIntersection_ =
       [](DirichletValues& self,
          const std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int, LocalViewWrapper&, const Intersection&)>& f) {
         auto lambda = [&](BackendType& vec, int localIndex, LocalView& lv, const Intersection& intersection) {
@@ -103,7 +103,42 @@ void registerDirichletValues(pybind11::handle scope, pybind11::class_<DirichletV
           f(vec.vector(), localIndex, lvWrapper, intersection);
         };
         self.fixBoundaryDOFs(lambda);
-      });
+      };
+
+  cls.def(
+      "fixBoundaryDOFs",
+      [&](DirichletValues& self, const pybind11::function& functor) {
+        using FixBoundaryDOFsWithGlobalIndexFunction = std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int)>;
+        using FixBoundaryDOFsWithLocalViewFunction =
+            std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int, LocalViewWrapper&)>;
+        using FixBoundaryDOFsWithIntersectionFunction =
+            std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int, LocalViewWrapper&, const Intersection&)>;
+
+        // Disambiguate by number of arguments, as casting doesn't properly work with functions
+        pybind11::module inspect_module = pybind11::module::import("inspect");
+        pybind11::object result         = inspect_module.attr("signature")(functor).attr("parameters");
+        size_t numParams                = pybind11::len(result);
+
+        if (numParams == 2) {
+          auto& function = functor.template cast<const FixBoundaryDOFsWithGlobalIndexFunction>();
+          fixBoundaryDOFs_(self, function);
+
+        } else if (numParams == 3) {
+          auto& function = functor.template cast<const FixBoundaryDOFsWithLocalViewFunction>();
+          fixBoundaryDOFsUsingLocalView_(self, function);
+
+        } else if (numParams == 4) {
+          auto& function = functor.template cast<const FixBoundaryDOFsWithIntersectionFunction>();
+          fixBoundaryDOFsUsingLocalViewAndIntersection_(self, function);
+
+        } else {
+          DUNE_THROW(Dune::NotImplemented, "fixBoundaryDOFs: A function with this signature is not supported");
+        }
+      },
+      pybind11::arg("functor"));
+
+  cls.def("fixBoundaryDOFsOfSubSpaceBasis", [](DirichletValues& self, const pybind11::function& functor,
+                                               const pybind11::object& ssb) { pybind11::print(ssb); });
 
   cls.def("fixDOFs",
           [](DirichletValues& self, const std::function<void(const Basis&, Eigen::Ref<Eigen::VectorX<bool>>)>& f) {
@@ -113,6 +148,8 @@ void registerDirichletValues(pybind11::handle scope, pybind11::class_<DirichletV
             };
             self.fixDOFs(lambda);
           });
+  cls.def_property_readonly("container", [](DirichletValues& self) { return self.container(); });
+  cls.def_property_readonly("size", [](DirichletValues& self) -> int { return self.size(); });
 }
 
 } // namespace Ikarus::Python

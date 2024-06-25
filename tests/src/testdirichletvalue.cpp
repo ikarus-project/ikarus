@@ -14,6 +14,7 @@
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
+#include <dune/functions/functionspacebases/subspacebasis.hh>
 #include <dune/grid/yaspgrid.hh>
 #include <dune/localfefunctions/eigenDuneTransformations.hh>
 
@@ -57,6 +58,27 @@ static auto dirichletBCTest() {
     t.check(dirichletValues1.isConstrained(i) == dirichletValues2.isConstrained(i))
         << "Different dirichlet value creations (dirichletValues1 and dirichletValues2) didn't provide the same "
            "result. Index: i="
+        << i;
+
+  // Test subspacebasis
+  auto subBasis0 = Dune::Functions::subspaceBasis(basisP->flat(), Dune::Indices::_0);
+  auto subBasis1 = Dune::Functions::subspaceBasis(basisP->flat(), Dune::Indices::_1);
+  Ikarus::DirichletValues dirichletValues_SSB(basisP->flat());
+  dirichletValues_SSB.fixBoundaryDOFs([](auto& dirichFlags, auto&& indexGlobal) { dirichFlags[indexGlobal] = true; },
+                                      subBasis0);
+
+  t.check(dirichletValues2.fixedDOFsize() == dirichletValues_SSB.fixedDOFsize() * 2)
+      << "DirichletValues with subspace basis should have half as many fixed DOFs as the full basis, but has "
+      << dirichletValues_SSB.fixedDOFsize() << ", where as the full basis has " << dirichletValues2.fixedDOFsize()
+      << " fixed DOFs";
+
+  dirichletValues_SSB.fixBoundaryDOFs([](auto& dirichFlags, auto&& indexGlobal) { dirichFlags[indexGlobal] = true; },
+                                      subBasis1);
+
+  for (std::size_t i = 0; i < basisP->flat().size(); ++i)
+    t.check(dirichletValues_SSB.isConstrained(i) == dirichletValues2.isConstrained(i))
+        << "Different dirichlet value creations with subspace basis didn't provide the same result as with full basis. "
+           "Index: i="
         << i;
 
   auto inhomogeneousDisplacement = []<typename T>(const auto& globalCoord, const T& lambda) {
