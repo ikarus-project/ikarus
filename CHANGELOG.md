@@ -47,6 +47,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
         - The assembler bindings now also accept affordances and `DBCOption`, and they are also renamed to simply `matrix`, `vector`
           and `scalar`.
         - The assemblers also export the binding functions to bind the assemblers.
+- Add a truss element ([#302](https://github.com/ikarus-project/ikarus/pull/302))
 
 ## Release v0.4 (Ganymede)
 
