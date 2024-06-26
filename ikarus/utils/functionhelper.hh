@@ -10,6 +10,7 @@
 
 #include <ranges>
 
+#include <dune/common/float_cmp.hh>
 #include <dune/grid/utility/hierarchicsearch.hh>
 
 #include <ikarus/utils/concepts.hh>
