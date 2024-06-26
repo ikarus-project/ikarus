@@ -149,7 +149,7 @@ static auto dirichletBCTest() {
     localView.bind(ele);
     const auto& fe = localView.tree().child(0).finiteElement();
     std::vector<Dune::FieldVector<double, 2>> nodalPos;
-    Ikarus::utils::obtainLagrangeNodePositions(localView, nodalPos);
+    Ikarus::utils::obtainLagrangeGlobalNodePositions(localView, nodalPos);
     for (int i = 0; i < fe.size(); i++)
       if ((std::abs(nodalPos[i][0]) < tol) or (std::abs(nodalPos[i][0] - Lx) < tol) or
           (std::abs(nodalPos[i][1]) < tol) or (std::abs(nodalPos[i][1] - Ly) < tol))

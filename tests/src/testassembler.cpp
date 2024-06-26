@@ -16,6 +16,8 @@
 
 using Dune::TestSuite;
 
+#include <dune/foamgrid/foamgrid.hh>
+
 #include <ikarus/assembler/assemblermanipulator.hh>
 #include <ikarus/assembler/simpleassemblers.hh>
 #include <ikarus/finiteelements/fefactory.hh>
@@ -26,7 +28,6 @@ using Dune::TestSuite;
 #include <ikarus/finiteelements/mechanics/materials/svk.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/init.hh>
-
 template <typename TestSuiteType, typename SparseType, typename DenseType>
 void checkAssembledQuantities(TestSuiteType& t, SparseType& sType, DenseType& dType, std::size_t dofSize) {
   t.check(isApproxSame(sType, dType, 1e-15), "Dense==Sparse");
@@ -82,20 +83,19 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
     });
 
     // center position to be fixed in all directions
-    Eigen::Vector2d fixPos{2.0, 1.0};
+    Dune::FieldVector<double, 2> fixPos{2.0, 1.0};
     int centerNode = 1; // number of nodes at the center (fixPos)
     if (Ikarus::Concepts::LagrangeNodeOfOrder<std::remove_cvref_t<decltype(fes[0].localView().tree().child(0))>, 1> and
         ref == 0) {
-      t.checkThrow<Dune::InvalidStateException>(
-          [&]() { auto fixIndex = utils::globalIndexFromGlobalPosition(fes, fixPos, 0); },
+      t.checkThrow<Dune::GridError>(
+          [&]() { auto fixIndices = utils::globalIndexFromGlobalPosition(basis.flat(), fixPos); },
           "globalIndexFromGlobalPosition should have failed for order = 1 and ref = 0 as no node exists at "
           "the center.");
       centerNode = 0;
     } else {
-      for (auto fixedDirection = 0; fixedDirection < 2; ++fixedDirection) {
-        auto fixIndex = utils::globalIndexFromGlobalPosition(fes, fixPos, fixedDirection);
-        dirichletValues.fixIthDOF(fixIndex);
-      }
+      const auto fixIndices = utils::globalIndexFromGlobalPosition(basis.flat(), fixPos);
+      for (const auto idx : fixIndices)
+        dirichletValues.fixIthDOF(idx);
     }
 
     Ikarus::SparseFlatAssembler sparseFlatAssembler(fes, dirichletValues);
