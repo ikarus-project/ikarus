@@ -39,19 +39,21 @@ public:
   using Assembler                = A;
   using FERequirement            = typename A::FERequirement;
   using AffordanceCollectionType = typename A::AffordanceCollectionType;
+  using ScalarType               = double;
+  using VectorType               = Eigen::VectorX<ScalarType>;
   using MatrixType =
       std::conditional_t<std::is_same_v<Assembler, SparseFlatAssembler<typename Assembler::FEContainer,
                                                                        typename Assembler::DirichletValuesType>>,
-                         Eigen::SparseMatrix<double>, Eigen::MatrixXd>;
+                         Eigen::SparseMatrix<ScalarType>, Eigen::MatrixX<ScalarType>>;
 
-  using scalarFunction = std::function<void(const FERequirement&, const ScalarAffordance&, const double&)>;
-  using vectorFunction = std::function<void(const FERequirement&, const VectorAffordance&, const Eigen::VectorXd&)>;
-  using matrixFunction = std::function<void(const FERequirement&, const MatrixAffordance&, const MatrixType&)>;
+  using scalarFunction = std::function<void(const FERequirement&, ScalarAffordance, ScalarType&)>;
+  using vectorFunction = std::function<void(const FERequirement&, VectorAffordance, DBCOption, VectorType&)>;
+  using matrixFunction = std::function<void(const FERequirement&, MatrixAffordance, DBCOption, MatrixType&)>;
 
   template <typename... Args>
   requires(not std::is_same_v<std::remove_cvref_t<std::tuple_element_t<0, std::tuple<Args...>>>, AssemblerManipulator>)
   explicit AssemblerManipulator(Args&&... args)
-      : baseAssembler(std::forward<Args>(args)...) {}
+      : baseAssembler(std::forward<std::remove_cvref_t<Args>>(args)...) {}
 
   /**
    * \brief Calculates the scalar quantity requested by feRequirements and affordance.
@@ -60,11 +62,13 @@ public:
    * \param affordance The scalar affordance
    * \return Const reference to the calculated scalar quantity.
    */
-  const double& scalar(const FERequirement& feRequirements, ScalarAffordance affordance) {
-    double s = baseAssembler.scalar(feRequirements, affordance);
+  const ScalarType& scalar(const FERequirement& feRequirements, ScalarAffordance affordance) {
+    sca = baseAssembler.scalar(feRequirements, affordance);
+    if (sfs.empty())
+      return sca;
     for (const auto sf : sfs)
-      sf(feRequirements, affordance, s);
-    return s;
+      sf(feRequirements, affordance, sca);
+    return sca;
   }
 
   /**
@@ -72,7 +76,7 @@ public:
    *
    * \return Const reference to the calculated scalar quantity.
    */
-  const double& scalar() {
+  const ScalarType& scalar() {
     return scalar(baseAssembler.requirement(), baseAssembler.affordanceCollection().scalarAffordance());
   }
 
@@ -85,12 +89,14 @@ public:
     * \param dbcOption The DBCOption
     * \return Const reference to the calculated vectorial quantity.
     */
-  const Eigen::VectorXd& vector(const FERequirement& feRequirements, VectorAffordance affordance,
-                                DBCOption dbcOption = DBCOption::Full) {
-    const auto& v = baseAssembler.vector(feRequirements, affordance, dbcOption);
+  const VectorType& vector(const FERequirement& feRequirements, VectorAffordance affordance,
+                           DBCOption dbcOption = DBCOption::Full) {
+    vec = baseAssembler.vector(feRequirements, affordance, dbcOption);
+    if (vfs.empty())
+      return vec;
     for (const auto vf : vfs)
-      vf(feRequirements, affordance, v);
-    return v;
+      vf(feRequirements, affordance, dbcOption, vec);
+    return vec;
   }
 
   /**
@@ -99,7 +105,7 @@ public:
   * \param dbcOption The DBCOption
   * \return Const reference to the calculated vectorial quantity.
   */
-  const Eigen::VectorXd& vector(DBCOption dbcOption) {
+  const VectorType& vector(DBCOption dbcOption) {
     return vector(baseAssembler.requirement(), baseAssembler.affordanceCollection().vectorAffordance(), dbcOption);
   }
 
@@ -108,7 +114,7 @@ public:
    * Depending on the DBCOption, the raw, reduced or full vector is returned.
    * \return Const reference to the calculated vectorial quantity.
    */
-  const Eigen::VectorXd& vector() { return vector(baseAssembler.dBCOption()); }
+  const VectorType& vector() { return vector(baseAssembler.dBCOption()); }
 
   /**
     * \brief  Calculates the matrix quantity requested by feRequirements and the affordance.
@@ -121,10 +127,12 @@ public:
     */
   const MatrixType& matrix(const FERequirement& feRequirements, MatrixAffordance affordance,
                            DBCOption dbcOption = DBCOption::Full) {
-    const auto& m = baseAssembler.matrix(feRequirements, affordance, dbcOption);
+    mat = baseAssembler.matrix(feRequirements, affordance, dbcOption);
+    if (mfs.empty())
+      return mat;
     for (const auto mf : mfs)
-      mf(feRequirements, affordance, m);
-    return m;
+      mf(feRequirements, affordance, dbcOption, mat);
+    return mat;
   }
 
   /**
@@ -133,7 +141,7 @@ public:
    * \param dbcOption The DBCOption
    * \return Reference to the raw dense matrix quantity.
    */
-  const Eigen::MatrixXd& matrix(DBCOption dbcOption) {
+  const MatrixType& matrix(DBCOption dbcOption) {
     return matrix(baseAssembler.requirement(), baseAssembler.affordanceCollection().matrixAffordance(), dbcOption);
   }
 
@@ -141,7 +149,7 @@ public:
    * \brief  Calculates the matrix quantity requested by the bound  feRequirements, the affordance and the dBCOption.
    * \return Reference to the dense matrix quantity.
    */
-  const Eigen::MatrixXd& matrix() { return matrix(baseAssembler.dBCOption()); }
+  const MatrixType& matrix() { return matrix(baseAssembler.dBCOption()); }
 
   /**
    * \brief A helper function to add functions that can be used to manipulate the assembled quantity.
@@ -149,20 +157,29 @@ public:
    * \param f A function that manipulates the assembled quantity.
    */
   template <typename F>
-  requires(std::is_same_v<F, scalarFunction> or std::is_same_v<F, vectorFunction> or std::is_same_v<F, matrixFunction>)
+  requires(std::convertible_to<F, scalarFunction> or std::convertible_to<F, vectorFunction> or
+           std::convertible_to<F, matrixFunction>)
   void bind(F&& f) {
-    if constexpr (std::is_same_v<F, scalarFunction>)
+    if constexpr (std::convertible_to<F, scalarFunction>)
       sfs.emplace_back(std::forward<F>(f));
-    else if constexpr (std::is_same_v<F, vectorFunction>)
+    else if constexpr (std::convertible_to<F, vectorFunction>)
       vfs.emplace_back(std::forward<F>(f));
-    else
+    else if constexpr (std::convertible_to<F, matrixFunction>)
       mfs.emplace_back(std::forward<F>(f));
+    else
+      DUNE_THROW(Dune::IOError, "Function type doesn't meet the requirements.");
   }
 
 private:
   std::vector<scalarFunction> sfs;
   std::vector<vectorFunction> vfs;
   std::vector<matrixFunction> mfs;
+
+  // In order to manipulate and modify the assembled quantities, a copy has to be first created
+  // as the flat assemblers only provide a const reference
+  ScalarType sca{0.0};
+  VectorType vec{};
+  MatrixType mat{};
   A baseAssembler;
 };
 } // namespace Ikarus

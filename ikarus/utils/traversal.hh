@@ -76,8 +76,8 @@ void forEachLagrangeNodePosition(const LV& localView, F&& f) {
     for (std::size_t j = 0; j < out.size(); j++)
       lagrangeNodeCoords[j][i] = out[j];
   }
-  for (int i = 0; auto& nCoord : lagrangeNodeCoords)
-    if (f(i++, std::move(nCoord)))
+  for (int nodeNumber = 0; auto& nCoord : lagrangeNodeCoords)
+    if (f(nodeNumber++, std::move(nCoord)))
       break;
 }
 } // namespace Ikarus::utils

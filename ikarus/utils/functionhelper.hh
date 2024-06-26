@@ -29,7 +29,7 @@ namespace Ikarus::utils {
 template <int size, typename LV>
 void obtainLagrangeGlobalNodePositions(const LV& localView,
                                        std::vector<Dune::FieldVector<double, size>>& lagrangeNodeGlobalCoords) {
-  auto fT = [&](int, Dune::FieldVector<double, size>&& localCoordinate) {
+  auto fT = [&]([[maybe_unused]] int nodeNumber, Dune::FieldVector<double, size>&& localCoordinate) {
     lagrangeNodeGlobalCoords.emplace_back(localView.element().geometry().global(localCoordinate));
     return false;
   };
