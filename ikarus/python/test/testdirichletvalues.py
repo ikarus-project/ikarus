@@ -84,6 +84,7 @@ def testDirichletValues():
     dirichletValues2.fixIthDOF(1)
     assert dirichletValues2.fixedDOFsize == 2 + indicesPerDirection + 1
     assert dirichletValues2.container[1]
+    assert dirichletValues2.isConstrained(1)
 
 
 if __name__ == "__main__":
