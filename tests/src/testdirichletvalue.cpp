@@ -80,6 +80,36 @@ static auto dirichletBCTest() {
            "Index: i="
         << i;
 
+  // Test with Intersection
+  auto fixLambda = [](auto& dirichletFlags, auto&& localIndex, auto&& localView, auto&& intersection) {
+    if (intersection.geometry().center()[0] > 4 - 1e-8)
+      dirichletFlags[localView.index(localIndex)] = true;
+  };
+  Ikarus::DirichletValues dirichletValues5(basisP->flat());
+  dirichletValues5.fixBoundaryDOFs(fixLambda);
+
+  Ikarus::DirichletValues dirichletValues_SSB2(basisP->flat());
+  dirichletValues_SSB2.fixBoundaryDOFs(fixLambda, subBasis0);
+
+  t.check(dirichletValues5.fixedDOFsize() == dirichletValues_SSB2.fixedDOFsize() * 2)
+      << "DirichletValues with subspace basis should have half as many fixed DOFs as the full basis, but has "
+      << dirichletValues_SSB2.fixedDOFsize() << ", where as the full basis has " << dirichletValues5.fixedDOFsize()
+      << " fixed DOFs";
+
+  dirichletValues_SSB2.fixBoundaryDOFs(fixLambda, subBasis1);
+
+  t.check(dirichletValues_SSB2.fixedDOFsize() > 0);
+  t.check(dirichletValues5.fixedDOFsize() == dirichletValues_SSB2.fixedDOFsize())
+      << "DirichletValues with subspace basis should have as many fixed DOFs as the full basis, but has "
+      << dirichletValues_SSB2.fixedDOFsize() << ", where as the full basis has " << dirichletValues5.fixedDOFsize()
+      << " fixed DOFs";
+
+  for (std::size_t i = 0; i < basisP->flat().size(); ++i)
+    t.check(dirichletValues_SSB2.isConstrained(i) == dirichletValues5.isConstrained(i))
+        << "Different dirichlet value creations with subspace basis didn't provide the same result as with full basis. "
+           "Index: i="
+        << i;
+
   auto inhomogeneousDisplacement = []<typename T>(const auto& globalCoord, const T& lambda) {
     Eigen::Vector<T, 2> localInhomogeneous;
     if (globalCoord[0] > 4 - 1e-8) {
