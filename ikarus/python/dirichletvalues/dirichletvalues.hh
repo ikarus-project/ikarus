@@ -76,38 +76,17 @@ void registerDirichletValues(pybind11::handle scope, pybind11::class_<DirichletV
   cls.def_property_readonly("fixedDOFsize", &DirichletValues::fixedDOFsize);
   cls.def("isConstrained", [](DirichletValues& self, std::size_t i) -> bool { return self.isConstrained(i); });
 
-  cls.def("fixIthDOF", [](DirichletValues& self, const MultiIndex& i) { self.fixIthDOF(i); });
+  cls.def("fixIthDOF", [](DirichletValues& self, std::size_t i) { self.fixIthDOF(MultiIndex(std::array{i})); });
 
-  auto fixBoundaryDOFs_ = [](DirichletValues& self,
-                             const std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int)>& f) {
-    auto lambda = [&](BackendType& vec, const MultiIndex& indexGlobal) {
-      // we explicitly only allow flat indices
-      f(vec.vector(), indexGlobal[0]);
-    };
-    self.fixBoundaryDOFs(lambda);
-  };
-
-  auto fixBoundaryDOFsUsingLocalView_ =
-      [](DirichletValues& self,
-         const std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int, LocalViewWrapper&)>& f) {
-
-      };
-
-  auto fixBoundaryDOFsUsingLocalViewAndIntersection_ =
-      [](DirichletValues& self,
-         const std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int, LocalViewWrapper&, const Intersection&)>& f) {
-
-      };
+  using FixBoundaryDOFsWithGlobalIndexFunction = std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int)>;
+  using FixBoundaryDOFsWithLocalViewFunction =
+      std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int, LocalViewWrapper&)>;
+  using FixBoundaryDOFsWithIntersectionFunction =
+      std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int, LocalViewWrapper&, const Intersection&)>;
 
   cls.def(
       "fixBoundaryDOFs",
       [&](DirichletValues& self, const pybind11::function& functor) {
-        using FixBoundaryDOFsWithGlobalIndexFunction = std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int)>;
-        using FixBoundaryDOFsWithLocalViewFunction =
-            std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int, LocalViewWrapper&)>;
-        using FixBoundaryDOFsWithIntersectionFunction =
-            std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int, LocalViewWrapper&, const Intersection&)>;
-
         // Disambiguate by number of arguments, as casting doesn't properly work with functions
         pybind11::module inspect_module = pybind11::module::import("inspect");
         pybind11::object result         = inspect_module.attr("signature")(functor).attr("parameters");
@@ -145,12 +124,6 @@ void registerDirichletValues(pybind11::handle scope, pybind11::class_<DirichletV
 
   auto fixBoundaryDOFsOfSubSpaceBasis_ = [&]<typename SSB>(DirichletValues& self, const pybind11::function& functor,
                                                            const SSB& ssb) {
-    using FixBoundaryDOFsWithGlobalIndexFunction = std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int)>;
-    using FixBoundaryDOFsWithLocalViewFunction =
-        std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int, LocalViewWrapper&)>;
-    using FixBoundaryDOFsWithIntersectionFunction =
-        std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int, LocalViewWrapper&, const Intersection&)>;
-
     // Disambiguate by number of arguments, as casting doesn't properly work with functions
     pybind11::module inspect_module = pybind11::module::import("inspect");
     pybind11::object result         = inspect_module.attr("signature")(functor).attr("parameters");
