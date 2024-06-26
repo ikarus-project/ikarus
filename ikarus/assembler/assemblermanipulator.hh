@@ -52,8 +52,8 @@ public:
 
   template <typename... Args>
   requires(not std::is_same_v<std::remove_cvref_t<std::tuple_element_t<0, std::tuple<Args...>>>, AssemblerManipulator>)
-  explicit AssemblerManipulator(Args&&... args)
-      : baseAssembler(std::forward<std::remove_cvref_t<Args>>(args)...) {}
+  explicit AssemblerManipulator(Args... args)
+      : baseAssembler(std::forward<Args>(args)...) {}
 
   /**
    * \brief Calculates the scalar quantity requested by feRequirements and affordance.
