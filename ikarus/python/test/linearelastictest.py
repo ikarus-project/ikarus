@@ -125,10 +125,30 @@ def linElasticTest(easBool):
         print("EAS element do not support any scalar calculations, i.e. they are not derivable from a potential")
 
     subOp= nonLinOp.subOperator(1,2)
+    try:
+        nonLinOp.subOperator(0,1,4)
+    except ValueError:
+        pass
+
+    try:
+        nonLinOp.subOperator()
+    except ValueError:
+        pass
+
+    try:
+        subOp.subOperator(0,1,2)
+    except ValueError:
+        pass
+
+    try:
+        subOp.subOperator(1,2)
+    except ValueError:
+        pass
+
+    nonLinOp.value()
     nonLinOp.derivative()
-    nonLinOp.secondDerivative()
-    Msparse = assembler.matrix()
-    forces = assembler.vector()
+    Msparse = nonLinOp.derivative()
+    forces = nonLinOp.value()
 
     x = sp.sparse.linalg.spsolve(Msparse, -forces)
     fx = flatBasis.asFunction(x)

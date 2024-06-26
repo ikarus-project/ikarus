@@ -1,9 +1,49 @@
 # SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
+
+from io import StringIO
+import types
 from dune.common.hashit import hashIt
 from ikarus.generator import MySimpleGenerator
-from dune.generator.algorithm import cppType
+from dune.generator.algorithm import cppType, run
+
+def __SubOperator(nonLinOp):
+    # def __subOperatorFunc(nonLinOp,*args: int):
+    #     runCode="""
+    #     template <class NLO>
+    #     void subOperator(const NLO& nlo)
+    #     {{
+    #     return nlo.template subOperator<{indices}>();
+    #     }}
+    #     """.format(indices=",".join([str(i) for i in args]))
+    #     return run("subOperator",StringIO(runCode),nonLinOp)
+
+    def __subOperatorFunc(nonLinOp, *args):
+        sorted = all(args[i] <= args[i+1] for i in range(len(args) - 1))
+        if(not sorted):
+            raise ValueError("The indices passed to the subOperator function are not sorted")
+        if(len(args)>=nonLinOp.numberOfFunctions):
+            raise ValueError("You passed too many arguments to the subOperator function")
+        elif(len(args)==0):
+            raise ValueError("At least one argument is needed")
+        elif(any([arg>=nonLinOp.numberOfFunctions-1 for arg in args])):
+            raise ValueError("You passed an index that is too high")
+        elif(len(args)==1):
+            if(args[0] == 0):
+                return nonLinOp.__subOperator0()
+            elif(args[0] == 1):
+                return nonLinOp.__subOperator1()
+            elif(args[0] == 2):
+                return nonLinOp.__subOperator2()
+        elif(len(args)==2):
+            if(args[0] == 0 and args[1] == 1):
+                return nonLinOp.__subOperator01()
+            elif(args[0] == 1 and args[1] == 2):
+                return nonLinOp.__subOperator12()
+        else:
+            raise ValueError("The subOperator function does not know how to handle the given indices")
+    return __subOperatorFunc
 
 
 def NonLinearOperator(functions, parameters):
@@ -35,9 +75,12 @@ def NonLinearOperator(functions, parameters):
     includes += ["ikarus/python/utils/nonlinearoperator.hh"]
     moduleName = "NonLinearOperator_" + hashIt(element_type)
     module = generator.load(
-        includes=includes, typeName=element_type, moduleName=moduleName
+        includes=includes, typeName=element_type, moduleName=moduleName,dynamicAttr=True # dynamicAttr is needed to allow the addition of the subOperator function
     )
-    return module.NonLinearOperator(functions, parameters)
+    nonLinOp = module.NonLinearOperator(functions, parameters)
+
+    nonLinOp.subOperator = types.MethodType(__SubOperator(nonLinOp),nonLinOp)
+    return nonLinOp
 
 
 def makeNonLinearOperator(assembler, requirement=None,affordances=None, enforcingBCOption=None):
@@ -52,10 +95,13 @@ def makeNonLinearOperator(assembler, requirement=None,affordances=None, enforcin
         includes=includes, typeName=element_type, moduleName=moduleName
     )
     factory= module.NonLinearOperatorFactory(assembler)
-    factory
+
     element_type = factory.nonLinearOperatorType
-    moduleNameNonLinOp = "NonLinearOperator" + hashIt(element_type)
-    moduleForNonLinOp = generator.load(
-        includes=includes, typeName=element_type, moduleName=moduleName
-    )
-    return factory.op(requirement,affordances,enforcingBCOption)
+    # moduleNameNonLinOp = "NonLinearOperator" + hashIt(element_type)
+    # moduleForNonLinOp = generator.load(
+    #     includes=includes, typeName=element_type, moduleName=moduleName
+    # )
+
+    nonLinOp =  factory.op(requirement,affordances,enforcingBCOption)
+    nonLinOp.subOperator = types.MethodType(__SubOperator(nonLinOp),nonLinOp)
+    return nonLinOp

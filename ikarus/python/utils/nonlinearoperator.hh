@@ -36,55 +36,62 @@ void registerNonLinearOperator(pybind11::handle scope, pybind11::class_<NLO, opt
 
   cls.def("updateAll", &NLO::updateAll, "Update all functions values");
 
-  constexpr int functionCount  = std::tuple_size_v<FunctionTuple>;
-  constexpr int parameterCount = std::tuple_size_v<ParameterValues>;
+  constexpr int numberOfFunctions  = std::tuple_size_v<FunctionTuple>;
+  constexpr int numberOfParameters = std::tuple_size_v<ParameterValues>;
 
+  cls.def_property_readonly_static("numberOfFunctions", [](py::object) {
+     return numberOfFunctions;
+   });
+
+     cls.def_property_readonly_static("numberOfParameters", [](py::object) {
+     return numberOfParameters;
+   });
   cls.def(
       "update",
-      [functionCount](NLO& self, size_t index) {
-        if (index >= functionCount)
+      [numberOfFunctions](NLO& self, size_t index) {
+        if (index >= numberOfFunctions)
           throw py::index_error();
-        Dune::Hybrid::switchCases(Dune::Hybrid::integralRange(Dune::index_constant<functionCount>()), index,
+        Dune::Hybrid::switchCases(Dune::Hybrid::integralRange(Dune::index_constant<numberOfFunctions>()), index,
                                   [&](auto i) { self.template update<i>(); });
       },
       py::arg("index"), "Update the function value of the given index");
 
-  if constexpr (functionCount > 0) {
+  if constexpr (numberOfFunctions > 0) {
     cls.def("value", &NLO::value, py::return_value_policy::reference_internal);
     cls.def_property_readonly_static(
         "valueCppTypeName", [](py::object) { return Dune::className<typename NLO::template FunctionReturnType<0>>(); });
-    cls.def("__subOperator0", &NLO::subOperator<0>());
+    cls.def("__subOperator0", []( NLO& self) {return self.template subOperator<0>();});
 
   }
-  if constexpr (functionCount > 1) {
+  if constexpr (numberOfFunctions > 1) {
     cls.def("derivative", &NLO::derivative, py::return_value_policy::reference_internal);
     cls.def_property_readonly_static("derivativeCppTypeName", [](py::object) {
       return Dune::className<typename NLO::template FunctionReturnType<1>>();
     });
-    cls.def("__subOperator1", &NLO::subOperator<1>());
+    cls.def("__subOperator1", []( NLO& self) {return self.template subOperator<1>();});
   }
 
-  if constexpr (functionCount > 2) {
+  if constexpr (numberOfFunctions > 2) {
     cls.def("secondDerivative", &NLO::secondDerivative, py::return_value_policy::reference_internal);
     cls.def_property_readonly_static("secondDerivativeCppTypeName", [](py::object) {
       return Dune::className<typename NLO::template FunctionReturnType<2>>();
     });
-    cls.def("__subOperator01", &NLO::subOperator<0,1>());
-    cls.def("__subOperator12", &NLO::subOperator<1,2>());
-    cls.def("__subOperator2", &NLO::subOperator<2>());
+    cls.def("__subOperator01", []( NLO& self) {return self.template subOperator<0,1>();});
+    cls.def("__subOperator12", []( NLO& self) {return self.template subOperator<1,2>();});
+    cls.def("__subOperator2", []( NLO& self) {return self.template subOperator<2>();});
   }
 
-  if constexpr (functionCount > 0) {
+  if constexpr (numberOfFunctions > 0) {
     cls.def("lastParameter", &NLO::lastParameter, py::return_value_policy::reference_internal);
     cls.def_property_readonly_static("lastParameterCppTypeName", [](py::object) {
-      return Dune::className<typename NLO::template ParameterValue<parameterCount - 1>>();
+      return Dune::className<typename NLO::template ParameterValue<numberOfParameters - 1>>();
     });
     cls.def("firstParameter", &NLO::firstParameter, py::return_value_policy::reference_internal);
     cls.def_property_readonly_static("firstParameterCppTypeName", [](py::object) {
       return Dune::className<typename NLO::template ParameterValue<0>>();
     });
   }
-  if constexpr (functionCount > 1) {
+  if constexpr (numberOfFunctions > 1) {
     cls.def("secondParameter", &NLO::secondParameter, py::return_value_policy::reference_internal);
     cls.def_property_readonly_static("secondParameterCppTypeName", [](py::object) {
       return Dune::className<typename NLO::template ParameterValue<1>>();
@@ -137,7 +144,7 @@ void registerNonLinearOperatorFactory(pybind11::handle scope, pybind11::class_<N
   auto includes = Dune::Python::IncludeFiles{"ikarus/utils/nonlinearoperator.hh"};
 
   auto [clsNonLinearOperator, notRegisteredNonLinOp] = Dune::Python::insertClass<NonLinearOperator>(
-      cls, "NonLinearOperator", Dune::Python::GenerateTypeName(nonLinOpName), includes);
+      cls, "NonLinearOperator", pybind11::dynamic_attr(), Dune::Python::GenerateTypeName(nonLinOpName), includes);
   if (notRegisteredNonLinOp)
     registerNonLinearOperator(scope,clsNonLinearOperator);
 
