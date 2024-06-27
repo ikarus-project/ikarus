@@ -29,7 +29,7 @@
 using Dune::TestSuite;
 
 static auto dirichletBCTest() {
-  TestSuite t("dirichletBCTest");
+  TestSuite t("DirichletValueTest");
   using Grid = Dune::YaspGrid<2>;
 
   const double Lx                         = 4.0;
@@ -119,6 +119,41 @@ static auto dirichletBCTest() {
         << "Different dirichlet value creations with subspace basis didn't provide the same result as with full basis. "
            "Index: i="
         << i;
+
+  auto sum = [](const auto& container_) {
+    return std::accumulate(container_.begin(), container_.end(), 0, std::plus());
+  };
+  auto manual_sum = [](const auto& dv) {
+    int sum = 0;
+    for (auto i : Dune::range(dv.size()))
+      if (dv.isConstrained(i))
+        ++sum;
+    return sum;
+  };
+
+  // Test container
+  auto& container = dirichletValues2.container();
+  static_assert(std::is_reference_v<decltype(container)>, "container should be a reference");
+  static_assert(std::is_const_v<std::remove_reference_t<decltype(container)>>, "container should be const");
+
+  t.check(std::ranges::all_of(container, [](auto&& flag) { return flag; })) << "All values should be fixed";
+
+  auto sumPre    = sum(container);
+  auto sumManual = manual_sum(dirichletValues2);
+
+  t.check(sumManual == sumPre)
+      << "Summing over container should yield the same amount of fixed DOFs then checking manually";
+
+  dirichletValues2.unfixIthDOF({1});
+  t.check(sum(container) == sumPre - 1) << "The sum of fixed DOFs should be one less then after unfixing one";
+
+  t.check(manual_sum(dirichletValues2) == sumPre - 1)
+      << "Summing over container should yield the same amount of fixed DOFs then checking manually";
+
+  // Reset
+  dirichletValues2.reset();
+  t.check(sum(container) == 0) << "After resetting container should have only false entries";
+  t.check(manual_sum(dirichletValues2) == 0) << "After resetting all DOFs should be false";
 
   auto inhomogeneousDisplacement = []<typename T>(const auto& globalCoord, const T& lambda) {
     Eigen::Vector<T, 2> localInhomogeneous;

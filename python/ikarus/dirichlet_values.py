@@ -22,7 +22,10 @@ def __fixBoundaryDOFs(dirichletValues):
         template <typename DV>
         void fixBoundaryDofs(DV& dirichletValues, const pybind11::function& functor)
         {{
-        Ikarus::Python::forwardCorrectFunction(dirichletValues, functor, [&](auto&& functor_) {{ return dirichletValues.fixBoundaryDOFs(functor_, {prefixPathType}{{}}); }});
+        Ikarus::Python::forwardCorrectFunction(dirichletValues, functor, 
+        [&](auto&& functor_) {{ 
+        return dirichletValues.fixBoundaryDOFs(functor_, {prefixPathType}{{}});
+          }});
         }}
         """.format(prefixPathType=prefixPathTypeName)
         return run("fixBoundaryDofs", StringIO(runCode), dirichletValues, f)
