@@ -18,6 +18,7 @@
 
 #include <dune/functions/backends/istlvectorbackend.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
+#include <dune/functions/functionspacebases/subspacebasis.hh>
 
 #include <Eigen/Core>
 

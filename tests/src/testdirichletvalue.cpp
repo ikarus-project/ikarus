@@ -14,7 +14,6 @@
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
-#include <dune/functions/functionspacebases/subspacebasis.hh>
 #include <dune/grid/yaspgrid.hh>
 #include <dune/localfefunctions/eigenDuneTransformations.hh>
 
