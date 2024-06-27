@@ -80,15 +80,20 @@ void forwardCorrectFunction(DirichletValues& dirichletValues, const pybind11::fu
  * This function registers Python bindings for a DirichletValues class, allowing it to be used in Python scripts.
  * The registered class will have an initializer that takes a `Basis` object. It exposes several member functions to
  * Python:
- *   - `fixBoundaryDOFs(f)`: Fixes boundary degrees of freedom. This function can be overloaded with the following
- * arguments:
- *    - using a user-defined function `f`.
- *    -  using a user-defined function `f` with a `LocalView` argument.
- *    -  using a user-defined function `f` with `LocalView` and `Intersection` arguments.
- *    - `fixDOFs(f)`: Fixes boundary degrees of freedom using a user-defined function `f` with the boolean vector and
- * the basis as arguments.
- *  -  - `fixBoundaryDOFsOfSubSpaceBasis(f)`: Same implementation but you can pass a index of a child basis of a Power
- * Basis
+ *  - `fixBoundaryDOFs(f)`: Fixes boundary degrees of freedom using a user-defined function `f` than can be called
+ * with the following arguments:
+ *   -  with the boolean vector and the global index.
+ *   -  with the boolean vector, the local index and the `LocalView`.
+ *   -  with the boolean vector, the local index, the `LocalView` and the `Intersection`.
+ *  - `fixDOFs(f)`: Fixes boundary degrees of freedom using a user-defined function `f` with the basis and the boolean
+ * vector as arguments.
+ *  - `fixIthDOF(i): Fixes DOF with index i
+ *  - `isConstrained(i)`: Checks wether index i is constrained
+ *
+ * The following properties can be accessed:
+ *  - `container`: the underlying container of dirichlet flags (as a const reference)
+ *  - `size`: the size of the underlying basis
+ *  - `fixedDOFsize`: the amount of DOFs currently fixed
  *
  * \tparam DirichletValues The DirichletValues class to be registered.
  * \tparam options Variadic template parameters for additional options when defining the Python class.
@@ -120,7 +125,7 @@ void registerDirichletValues(pybind11::handle scope, pybind11::class_<DirichletV
 
   cls.def(pybind11::init([](const Basis& basis) { return new DirichletValues(basis); }), pybind11::keep_alive<1, 2>());
 
-  cls.def_property_readonly("container", &DirichletValues::container);
+  cls.def_property_readonly("container", &DirichletValues::container, pybind11::return_value_policy::reference);
   cls.def_property_readonly("size", &DirichletValues::size);
   cls.def_property_readonly("fixedDOFsize", &DirichletValues::fixedDOFsize);
   cls.def("isConstrained", [](DirichletValues& self, std::size_t i) -> bool { return self.isConstrained(i); });

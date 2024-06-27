@@ -52,7 +52,9 @@ def testDirichletValues():
         assert isinstance(localView.index(localIndex)[0], int)
 
     dirichletValues.fixBoundaryDOFs(fixAnotherIndexWithLocalView)
-    assert sum(dirichletValues.container) == 2
+    container = dirichletValues.container
+
+    assert sum(container) == 2
     assert dirichletValues.fixedDOFsize == 2
 
     def fixTopSide(vec, localIndex, localView, intersection):
@@ -68,6 +70,9 @@ def testDirichletValues():
     # This assmues a structured grid
     indicesPerDirection: int = (math.sqrt(grid.size(0)) + 1) * 2
     assert dirichletValues.fixedDOFsize == 2 + indicesPerDirection
+
+    # This checks wether container is a reference
+    sum(container) == dirichletValues.fixedDOFsize
 
     # Test Subbasis
     dirichletValues2 = iks.dirichletValues(basis)
@@ -85,7 +90,6 @@ def testDirichletValues():
     assert dirichletValues2.fixedDOFsize == 2 + indicesPerDirection + 1
     assert dirichletValues2.container[1]
     assert dirichletValues2.isConstrained(1)
-    
 
 
 if __name__ == "__main__":
