@@ -25,7 +25,8 @@
 namespace Ikarus::Python {
 
 template <class DirichletValues, typename CppVisitor>
-void forwardCorrectFunction(DirichletValues& self, const pybind11::function& functor, CppVisitor&& cppFunction) {
+void forwardCorrectFunction(DirichletValues& dirichletValues, const pybind11::function& functor,
+                            CppVisitor&& cppFunction) {
   using Basis        = typename DirichletValues::Basis;
   using Intersection = typename Basis::GridView::Intersection;
   using BackendType  = typename DirichletValues::BackendType;
