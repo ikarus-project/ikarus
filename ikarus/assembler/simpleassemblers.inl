@@ -11,8 +11,8 @@
 
 namespace Ikarus {
 
-template <typename B, typename FEC>
-typename ScalarAssembler<B, FEC>::ScalarType& ScalarAssembler<B, FEC>::getScalarImpl(
+template <typename B, typename FEC,typename TAG>
+typename ScalarAssembler<B, FEC,TAG>::ScalarType& ScalarAssembler<B, FEC,TAG>::getScalarImpl(
     const FERequirement& feRequirements, ScalarAffordance affordance) {
   scal_ = 0.0;
   for (auto& fe : this->finiteElements()) {
@@ -21,8 +21,8 @@ typename ScalarAssembler<B, FEC>::ScalarType& ScalarAssembler<B, FEC>::getScalar
   return scal_;
 }
 
-template <typename B, typename FEC>
-Eigen::VectorXd FlatAssemblerBase<B, FEC>::createFullVector(Eigen::Ref<const Eigen::VectorXd> reducedVector) {
+template <typename B, typename FEC,typename TAG>
+Eigen::VectorXd FlatAssemblerBase<B, FEC,TAG>::createFullVector(Eigen::Ref<const Eigen::VectorXd> reducedVector) {
   assert(reducedVector.size() == static_cast<Eigen::Index>(this->reducedSize()) &&
          "The reduced vector you passed has the wrong dimensions.");
   Eigen::Index reducedCounter = 0;
@@ -38,8 +38,8 @@ Eigen::VectorXd FlatAssemblerBase<B, FEC>::createFullVector(Eigen::Ref<const Eig
   return fullVec;
 }
 
-template <typename B, typename FEC>
-void VectorFlatAssembler<B, FEC>::assembleRawVectorImpl(const FERequirement& feRequirements,
+template <typename B, typename FEC,typename TAG>
+void VectorFlatAssembler<B, FEC,TAG>::assembleRawVectorImpl(const FERequirement& feRequirements,
                                                         VectorAffordance affordance,
                                                         typename VectorFlatAssembler::VectorType& assemblyVec) {
   assemblyVec.setZero(this->size());
@@ -58,15 +58,15 @@ void VectorFlatAssembler<B, FEC>::assembleRawVectorImpl(const FERequirement& feR
   }
 }
 
-template <typename B, typename FEC>
-typename VectorFlatAssembler<B, FEC>::VectorType& VectorFlatAssembler<B, FEC>::getRawVectorImpl(
+template <typename B, typename FEC,typename TAG>
+typename VectorFlatAssembler<B, FEC,TAG>::VectorType& VectorFlatAssembler<B, FEC,TAG>::getRawVectorImpl(
     const FERequirement& feRequirements, VectorAffordance affordance) {
   assembleRawVectorImpl(feRequirements, affordance, vecRaw_);
   return vecRaw_;
 }
 
-template <typename B, typename FEC>
-typename VectorFlatAssembler<B, FEC>::VectorType& VectorFlatAssembler<B, FEC>::getVectorImpl(
+template <typename B, typename FEC,typename TAG>
+typename VectorFlatAssembler<B, FEC,TAG>::VectorType& VectorFlatAssembler<B, FEC,TAG>::getVectorImpl(
     const FERequirement& feRequirements, VectorAffordance affordance) {
   assembleRawVectorImpl(feRequirements, affordance, vec_);
   for (auto i = 0U; i < this->size(); ++i)
@@ -75,8 +75,8 @@ typename VectorFlatAssembler<B, FEC>::VectorType& VectorFlatAssembler<B, FEC>::g
   return vec_;
 }
 
-template <typename B, typename FEC>
-typename VectorFlatAssembler<B, FEC>::VectorType& VectorFlatAssembler<B, FEC>::getReducedVectorImpl(
+template <typename B, typename FEC,typename TAG>
+typename VectorFlatAssembler<B, FEC,TAG>::VectorType& VectorFlatAssembler<B, FEC,TAG>::getReducedVectorImpl(
     const FERequirement& feRequirements, VectorAffordance affordance) {
   vecRed_.setZero(this->reducedSize());
   Eigen::VectorXd vecLocal;

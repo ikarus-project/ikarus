@@ -29,8 +29,9 @@ namespace Ikarus {
  *
  * \tparam FEC Type of the finite element container.
  * \tparam DV Type of the Dirichlet values.
+ * \tparam TAG This is only used to circumvent diamond shaped inheritance for CRTP
  */
-template <typename FEC, typename DV>
+template <typename FEC, typename DV,typename TAG>
 class FlatAssemblerBase
 {
 public:
@@ -250,14 +251,14 @@ private:
 };
 
 #ifndef DOXYGEN
-template <class T, class DirichletValuesType>
-FlatAssemblerBase(T&& fes, const DirichletValuesType& dirichletValues) -> FlatAssemblerBase<T, DirichletValuesType>;
+template <class T, class DirichletValuesType,typename TAG>
+FlatAssemblerBase(T&& fes, const DirichletValuesType& dirichletValues) -> FlatAssemblerBase<T, DirichletValuesType,TAG>;
 #endif
 
 template <typename ScalarAssembler, typename FEC, typename DV, typename ST>
-class ScalarAssemblerBase : public FlatAssemblerBase<FEC, DV>
+class ScalarAssemblerBase
 {
-  using Base = FlatAssemblerBase<FEC, DV>;
+  using Base = FlatAssemblerBase<FEC, DV,ScalarAssemblerBase<ScalarAssembler,FEC,DV,ST>>;
 
 public:
   using ScalarType      = ST;
@@ -273,7 +274,7 @@ public:
    * \param dirichletValues Reference to Dirichlet values.
    */
   ScalarAssemblerBase(FEContainer&& fes, const DirichletValuesType& dirichletValues)
-      : FlatAssemblerBase<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues) {}
+      : FlatAssemblerBase<FEContainer, DirichletValuesType,ScalarAssemblerBase>(std::forward<FEContainer>(fes), dirichletValues) {}
 
   /**
    * \brief Calculates the scalar quantity requested by feRequirements and affordance.
@@ -308,8 +309,9 @@ private:
  * \tparam FEC Type of the finite element container.
  * \tparam DV Type of the Dirichlet values.
  */
-template <typename FEC, typename DV>
-class ScalarAssembler : public ScalarAssemblerBase<ScalarAssembler<FEC, DV>, FEC, DV, double>
+template <typename FEC, typename DV,typename TAG>
+class ScalarAssembler : public ScalarAssemblerBase<ScalarAssembler<FEC, DV,TAG>, FEC, DV, double>,
+                       : public FlatAssemblerBase<FEC, DV,ScalarAssembler<FEC,DV,TAG>>
 {
 protected:
   template <typename Assembler>
@@ -341,14 +343,14 @@ protected:
 };
 
 #ifndef DOXYGEN
-template <class T, class DirichletValuesType>
-ScalarAssembler(T&& fes, const DirichletValuesType& dirichletValues) -> ScalarAssembler<T, DirichletValuesType>;
+template <class T, class DirichletValuesType,typename TAG>
+ScalarAssembler(T&& fes, const DirichletValuesType& dirichletValues) -> ScalarAssembler<T, DirichletValuesType,TAG>;
 #endif
 
 template <typename VectorAssembler, typename FEC, typename DV, typename VT>
-class VectorAssemblerBase : public ScalarAssembler<FEC, DV>
+class VectorAssemblerBase
 {
-  using Base = ScalarAssembler<FEC, DV>;
+  using Base = ScalarAssembler<FEC, DV,VectorAssemblerBase>;
 
 public:
   using VectorType      = VT;
@@ -366,7 +368,7 @@ public:
    * \param dirichletValues Reference to Dirichlet values.
    */
   VectorAssemblerBase(FEContainer&& fes, const DirichletValuesType& dirichletValues)
-      : ScalarAssembler<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues) {}
+      : ScalarAssembler<FEContainer, DirichletValuesType,VectorAssemblerBase>(std::forward<FEContainer>(fes), dirichletValues) {}
 
   /**
      * \brief Calculates the vectorial quantity requested by the  feRequirements and the affordance.
@@ -430,8 +432,8 @@ private:
  * \tparam FEC Type of the finite element container.
  * \tparam DV Type of the Dirichlet values.
  */
-template <typename FEC, typename DV>
-class VectorFlatAssembler : public VectorAssemblerBase<VectorFlatAssembler<FEC, DV>, FEC, DV, Eigen::VectorXd>
+template <typename FEC, typename DV,typename TAG>
+class VectorFlatAssembler : public ScalarFlatAssembler,public VectorAssemblerBase<VectorFlatAssembler<FEC, DV,TAG>, FEC, DV, Eigen::VectorXd>
 {
 protected:
   template <typename Assembler>
@@ -469,14 +471,14 @@ protected:
 };
 
 #ifndef DOXYGEN
-template <class T, class DirichletValuesType>
-VectorFlatAssembler(T&& fes, const DirichletValuesType& dirichletValues) -> VectorFlatAssembler<T, DirichletValuesType>;
+template <class T, class DirichletValuesType,typename TAG>
+VectorFlatAssembler(T&& fes, const DirichletValuesType& dirichletValues) -> VectorFlatAssembler<T, DirichletValuesType,TAG>;
 #endif
 
-template <typename MatrixAssembler, typename FEC, typename DV, typename MT>
-class MatrixAssemblerBase : public VectorFlatAssembler<FEC, DV>
+template <typename Assembler, typename FEC, typename DV, typename MT>
+class MatrixAssemblerBase
 {
-  using Base = VectorFlatAssembler<FEC, DV>;
+  using Base = VectorAssemblerBase<Assembler, FEC, DV, VT>;
 
 public:
   using MatrixType      = MT;
@@ -495,7 +497,7 @@ public:
    * \param dirichletValues Reference to Dirichlet values.
    */
   MatrixAssemblerBase(FEContainer&& fes, const DirichletValuesType& dirichletValues)
-      : VectorFlatAssembler<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues) {}
+      : VectorFlatAssembler<FEContainer, DirichletValuesType,MatrixAssemblerBase>(std::forward<FEContainer>(fes), dirichletValues) {}
 
   /**
    * \brief Calculates the matrix quantity requested by feRequirements and the affordance.
@@ -558,7 +560,8 @@ private:
  */
 template <typename FEC, typename DV>
 class SparseFlatAssembler
-    : public MatrixAssemblerBase<SparseFlatAssembler<FEC, DV>, FEC, DV, Eigen::SparseMatrix<double>>
+    : public MatrixAssemblerBase<SparseFlatAssembler<FEC, DV>, FEC, DV, Eigen::SparseMatrix<double>>,
+    public VectorFlatAssembler
 {
 protected:
   template <typename Assembler>
@@ -584,10 +587,11 @@ public:
 
 private:
   void assembleRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance, MatrixType& assemblyMat);
+protected:
   MatrixType& getRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance);
   MatrixType& getMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance);
   MatrixType& getReducedMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance);
-
+private:
   /** Calculates the non-zero entries in the full sparse matrix and passes them to the underlying Eigen sparse matrix.
    */
   void createOccupationPattern(MatrixType& assemblyMat);
@@ -666,10 +670,11 @@ public:
 
 private:
   void assembleRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance, MatrixType& assemblyMat);
+protected:
   MatrixType& getRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance);
   MatrixType& getMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance);
   MatrixType& getReducedMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance);
-
+private:
   MatrixType matRaw_{}; ///< Raw dense matrix for assembly.
   MatrixType mat_{};    ///< Dense matrix quantity.
   MatrixType matRed_{}; ///< Reduced dense matrix quantity.

@@ -28,29 +28,35 @@ namespace Ikarus {
  * \tparam A Type of the assembler.
  */
 template <Concepts::FlatAssembler A>
-class AssemblerManipulator : public A, public A::template BaseTemplate<A>
+class AssemblerManipulator : private A, public A::template BaseTemplate<AssemblerManipulator<A>>
 {
 protected:
-  friend typename A::template BaseTemplate<A>;
+  friend typename A::template BaseTemplate<AssemblerManipulator>;
+
+  using Base = A::template BaseTemplate<AssemblerManipulator<A>>;
 
 public:
-  using BaseAssembler            = A;
+  using Assembler            = A;
   using FERequirement            = typename A::FERequirement;
   using AffordanceCollectionType = typename A::AffordanceCollectionType;
-  using typename BaseAssembler::MatrixType;
-  using typename BaseAssembler::ScalarType;
-  using typename BaseAssembler::VectorType;
+  using typename Assembler::MatrixType;
+  using typename Assembler::ScalarType;
+  using typename Assembler::VectorType;
 
-  using scalarFunction = std::function<void(const BaseAssembler&, const FERequirement&, ScalarAffordance, ScalarType&)>;
+  using Base::matrix;
+  using Base::vector;
+  using Base::scalar;
+
+  using scalarFunction = std::function<void(const AssemblerManipulator&, const FERequirement&, ScalarAffordance, ScalarType&)>;
   using vectorFunction =
-      std::function<void(const BaseAssembler&, const FERequirement&, VectorAffordance, DBCOption, VectorType&)>;
+      std::function<void(const AssemblerManipulator&, const FERequirement&, VectorAffordance, DBCOption, VectorType&)>;
   using matrixFunction =
-      std::function<void(const BaseAssembler&, const FERequirement&, MatrixAffordance, DBCOption, MatrixType&)>;
+      std::function<void(const AssemblerManipulator&, const FERequirement&, MatrixAffordance, DBCOption, MatrixType&)>;
 
   template <typename... Args>
   requires(not std::is_same_v<std::remove_cvref_t<std::tuple_element_t<0, std::tuple<Args...>>>, AssemblerManipulator>)
   explicit AssemblerManipulator(Args&&... args)
-      : baseAssembler(std::forward<Args>(args)...) {}
+      : Assembler(std::forward<Args>(args)...),Base(std::forward<Args>(args)...) {}
 
   /**
    * \brief A helper function to add functions that can be used to manipulate the assembled quantity.
@@ -73,51 +79,51 @@ public:
 
 private:
   ScalarType& getScalarImpl(const FERequirement& feRequirements, ScalarAffordance affordance) {
-    auto& sca = baseAssembler.getScalarImpl(feRequirements, affordance);
+    auto& sca = Assembler::getScalarImpl(feRequirements, affordance);
     for (const auto sf : sfs)
-      sf(baseAssembler, feRequirements, affordance, sca);
+      sf(*this, feRequirements, affordance, sca);
     return sca;
   }
 
   const VectorType& getRawVectorImpl(const FERequirement& feRequirements, VectorAffordance affordance) {
-    auto& vec = baseAssembler.getRawVectorImpl(feRequirements, affordance);
+    auto& vec = Assembler::getRawVectorImpl(feRequirements, affordance);
     for (const auto vf : vfs)
-      vf(baseAssembler, feRequirements, affordance, DBCOption::Raw, vec);
+      vf(*this, feRequirements, affordance, DBCOption::Raw, vec);
     return vec;
   }
 
   const VectorType& getVectorImpl(const FERequirement& feRequirements, VectorAffordance affordance) {
-    auto& vec = baseAssembler.getVectorImpl(feRequirements, affordance);
+    auto& vec = Assembler::getVectorImpl(feRequirements, affordance);
     for (const auto vf : vfs)
-      vf(baseAssembler, feRequirements, affordance, DBCOption::Full, vec);
+      vf(*this, feRequirements, affordance, DBCOption::Full, vec);
     return vec;
   }
 
   const VectorType& getReducedVectorImpl(const FERequirement& feRequirements, VectorAffordance affordance) {
-    auto& vec = baseAssembler.getReducedVectorImpl(feRequirements, affordance);
+    auto& vec = Assembler::getReducedVectorImpl(feRequirements, affordance);
     for (const auto vf : vfs)
-      vf(baseAssembler, feRequirements, affordance, DBCOption::Reduced, vec);
+      vf(*this, feRequirements, affordance, DBCOption::Reduced, vec);
     return vec;
   }
 
   const MatrixType& getRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance) {
-    MatrixType& mat = baseAssembler.getRawMatrixImpl(feRequirements, affordance);
+    MatrixType& mat = Assembler::getRawMatrixImpl(feRequirements, affordance);
     for (const auto mf : mfs)
-      mf(baseAssembler, feRequirements, affordance, DBCOption::Raw, mat);
+      mf(*this, feRequirements, affordance, DBCOption::Raw, mat);
     return mat;
   }
 
   const MatrixType& getMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance) {
-    MatrixType& mat = baseAssembler.getMatrixImpl(feRequirements, affordance);
+    MatrixType& mat = Assembler::getMatrixImpl(feRequirements, affordance);
     for (const auto mf : mfs)
-      mf(baseAssembler, feRequirements, affordance, DBCOption::Full, mat);
+      mf(*this, feRequirements, affordance, DBCOption::Full, mat);
     return mat;
   }
 
   const MatrixType& getReducedMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance) {
-    MatrixType& mat = baseAssembler.getReducedMatrixImpl(feRequirements, affordance);
+    MatrixType& mat = Assembler::getReducedMatrixImpl(feRequirements, affordance);
     for (const auto mf : mfs)
-      mf(baseAssembler, feRequirements, affordance, DBCOption::Reduced, mat);
+      mf(*this, feRequirements, affordance, DBCOption::Reduced, mat);
     return mat;
   }
 
@@ -125,6 +131,6 @@ private:
   std::vector<vectorFunction> vfs;
   std::vector<matrixFunction> mfs;
 
-  A baseAssembler;
+  // A baseAssembler;
 };
 } // namespace Ikarus
