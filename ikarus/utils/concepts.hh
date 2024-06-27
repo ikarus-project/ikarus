@@ -341,7 +341,7 @@ namespace Concepts {
    * \tparam Args Types of the arguments.
    */
   template <typename Op, typename... Args>
-  concept IsFunctorWithArgs = requires(Op op, Args... args) { op(args...); };
+  concept IsFunctorWithArgs = requires(Op op, Args&&... args) { op(std::forward<Args>(args)...); };
 
   /**
    * \concept EigenVector
