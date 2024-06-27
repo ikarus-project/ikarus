@@ -46,7 +46,7 @@ void forwardCorrectFunction(DirichletValues& dirichletValues, const pybind11::fu
   size_t numParams                = pybind11::len(result);
 
   if (numParams == 2) {
-    auto& function = functor.template cast<const FixBoundaryDOFsWithGlobalIndexFunction>();
+    auto function = functor.template cast<const FixBoundaryDOFsWithGlobalIndexFunction>();
     auto lambda    = [&](BackendType& vec, const MultiIndex& indexGlobal) {
       // we explicitly only allow flat indices
       function(vec.vector(), indexGlobal[0]);
@@ -54,7 +54,7 @@ void forwardCorrectFunction(DirichletValues& dirichletValues, const pybind11::fu
     cppFunction(lambda);
 
   } else if (numParams == 3) {
-    auto& function = functor.template cast<const FixBoundaryDOFsWithLocalViewFunction>();
+    auto function = functor.template cast<const FixBoundaryDOFsWithLocalViewFunction>();
     auto lambda    = [&](BackendType& vec, int localIndex, auto& lv) {
       auto lvWrapper = LocalViewWrapper(lv.rootLocalView());
       function(vec.vector(), localIndex, lvWrapper);
@@ -62,7 +62,7 @@ void forwardCorrectFunction(DirichletValues& dirichletValues, const pybind11::fu
     cppFunction(lambda);
 
   } else if (numParams == 4) {
-    auto& function = functor.template cast<const FixBoundaryDOFsWithIntersectionFunction>();
+    auto function = functor.template cast<const FixBoundaryDOFsWithIntersectionFunction>();
     auto lambda    = [&](BackendType& vec, int localIndex, auto& lv, const Intersection& intersection) {
       auto lvWrapper = LocalViewWrapper(lv.rootLocalView());
       function(vec.vector(), localIndex, lvWrapper, intersection);
