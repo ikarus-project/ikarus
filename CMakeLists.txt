@@ -16,6 +16,7 @@ project(
 )
 
 add_definitions(-DDUNE_LOCALFEFUNCTIONS_USE_EIGEN=1)
+add_definitions(-DDUNE_DISABLE_PYTHON_DEPRECATION_WARNINGS=1)
 add_definitions(-DCMAKE_DISABLE_FIND_PACKAGE_Vc=1)
 add_definitions(-DCMAKE_DISABLE_FIND_PACKAGE_LATEX=1)
 add_definitions(-DBUILD_SHARED_LIBS=1)

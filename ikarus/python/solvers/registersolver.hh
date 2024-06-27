@@ -8,10 +8,6 @@
 #include <ikarus/python/solvers/registersolver.hh>
 namespace Ikarus::Python {
 
-#define SETTINGS_FROM_DICT(settings, setting, dict, type) \
-  if (dict.contains(#setting))                            \
-    settings.key = dict[#setting].cast<type>();
-
 /**
  * @brief Registers the trust region non-linear solver class in Python.
  *
@@ -37,18 +33,23 @@ void registerTrustRegion(pybind11::handle scope, pybind11::class_<TR, options...
       "setup",
       [](Solver& self, py::dict dict) {
         TrustRegionSettings set;
-        SETTINGS_FROM_DICT(set, verbosity, dict, int)
-        SETTINGS_FROM_DICT(set, maxtime, dict, double)
-        SETTINGS_FROM_DICT(set, minIter, dict, int)
-        SETTINGS_FROM_DICT(set, maxIter, dict, int)
-        SETTINGS_FROM_DICT(set, debug, dict, int)
-        SETTINGS_FROM_DICT(set, grad_tol, dict, double)
-        SETTINGS_FROM_DICT(set, corr_tol, dict, double)
-        SETTINGS_FROM_DICT(set, rho_prime, dict, double)
-        SETTINGS_FROM_DICT(set, useRand, dict, bool)
-        SETTINGS_FROM_DICT(set, rho_reg, dict, double)
-        SETTINGS_FROM_DICT(set, Delta_bar, dict, double)
-        SETTINGS_FROM_DICT(set, Delta0, dict, double)
+        auto settingsFromDict =[&]<typename To>(std::string from){
+          if (dict.contains(from))
+            set.key = dict[from].cast<To>();
+        };
+        }
+        settingsFromDict<int>( "verbosity" );
+        settingsFromDict<double>( "maxtime" );
+        settingsFromDict<int>( "minIter" );
+        settingsFromDict<int>( "maxIter" );
+        settingsFromDict<int>( "debug" );
+        settingsFromDict<double>( "grad_tol" );
+        settingsFromDict<double>( "corr_tol" );
+        settingsFromDict<double>( "rho_prime" );
+        settingsFromDict<bool>( "useRand" );
+        settingsFromDict<double>( "rho_reg" );
+        settingsFromDict<double>( "Delta_bar" );
+        settingsFromDict<double>( "Delta0" );
       },
       R"(
         This function sets up the solver with settings provided

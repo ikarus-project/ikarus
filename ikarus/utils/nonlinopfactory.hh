@@ -22,7 +22,7 @@ namespace Ikarus {
 T optionalDecider(Check&& c,F&& valueFunction, const std::optional<T>& b)
 {
     if(c())
-         {  
+         {
              return valueFunction();}
             else if(b.has_value())
             {
@@ -35,9 +35,11 @@ T optionalDecider(Check&& c,F&& valueFunction, const std::optional<T>& b)
 
 struct NonLinearOperatorFactory
 {
-  template <typename Assembler, typename... Affordances>
+  template <typename Assembler, typename... Affordances,int ... derivatives>
   static auto op(Assembler&& as, typename traits::remove_pointer_t<std::remove_cvref_t<Assembler>>::FERequirement& req,
                  AffordanceCollection<Affordances...> affordances, DBCOption dbcOption) {
+
+                  constexpr std::array<int,sizeof...(derivatives)> derivArray{derivatives...};
     auto assemblerPtr = [as]() {
       if constexpr (std::is_pointer_v<std::remove_cvref_t<Assembler>> or
                     traits::isSharedPtr<std::remove_cvref_t<Assembler>>::value)
@@ -65,7 +67,7 @@ struct NonLinearOperatorFactory
     };
 
     assert(req.populated() && " Before you calls this method you have to pass populated fe requirements");
-    if constexpr (affordances.hasScalarAffordance) {
+    if constexpr (affordances.hasScalarAffordance and (derivArray.size()==0 or derivArray.size()==3)) {
       [[maybe_unused]] auto energyFunction = [assembler = assemblerPtr, affordances](
                                                  typename FERequirement::SolutionVectorType& globalSol,
                                                  typename FERequirement::ParameterType& parameter) -> auto& {
@@ -76,7 +78,7 @@ struct NonLinearOperatorFactory
       };
       return NonLinearOperator(functions(std::move(energyFunction), std::move(residualFunction), std::move(KFunction)),
                                parameter(req.globalSolution(), req.parameter()));
-    } else
+    } else if constexpr (affordances.hasScalarAffordance and (derivArray.size()==2 and derivArray[0]==1 and derivArray[1]==2))
       return NonLinearOperator(functions(std::move(residualFunction), std::move(KFunction)),
                                parameter(req.globalSolution(), req.parameter()));
   }
@@ -97,10 +99,10 @@ struct NonLinearOperatorFactory
     }();
               FERequirement& req = Impl::optionalDecider([&](){return assemblerPtr->boundToRequirement();},[&]() mutable{return std::ref(assemblerPtr->requirement());},reqArg);
               const auto dbcOption = Impl::optionalDecider([&](){return assemblerPtr->boundToDBCOption();},[&](){return assemblerPtr->dBCOption();},dbCOptionArg);
-               
+
                const auto affordances = [&](){
                   using AffoCollectionOfAssembler= typename std::decay_t<decltype(assemblerPtr->affordanceCollection())>;
-                 if constexpr(sizeof...(Affordances)==0) 
+                 if constexpr(sizeof...(Affordances)==0)
                  return assemblerPtr->affordanceCollection();
                  else if constexpr (std::tuple_size<AffoCollectionOfAssembler>::value==sizeof...(Affordances))
                  return Impl::optionalDecider([&](){return assemblerPtr->boundToAffordanceCollection();},[&](){return assemblerPtr->affordanceCollection();},affordancesArg);
@@ -112,7 +114,7 @@ struct NonLinearOperatorFactory
              DUNE_THROW(Dune::InvalidStateException,"Neither the assembler is bound to an affordance collection nor was a value passed");
 
                   }
-                  
+
                }();
 
               return op(assemblerPtr,req,affordances,dbcOption);

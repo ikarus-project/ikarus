@@ -199,8 +199,7 @@ public:
 
   using ValueType =
       std::remove_cvref_t<std::tuple_element_t<0, FunctionReturnValues>>; ///< Return value of the first function
-  using DerivativeType =
-      std::remove_cvref_t<std::tuple_element_t<1, FunctionReturnValues>>; ///< Return value of the second function
+
 
   /**
    * \brief Constructor for NonLinearOperator.

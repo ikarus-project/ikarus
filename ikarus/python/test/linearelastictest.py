@@ -147,8 +147,8 @@ def linElasticTest(easBool):
 
     nonLinOp.value()
     nonLinOp.derivative()
-    Msparse = nonLinOp.derivative()
-    forces = nonLinOp.value()
+    Msparse = subOp.derivative()
+    forces = subOp.value()
 
     x = sp.sparse.linalg.spsolve(Msparse, -forces)
     fx = flatBasis.asFunction(x)

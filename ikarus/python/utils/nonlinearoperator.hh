@@ -12,6 +12,39 @@
 #include <ikarus/utils/nonlinopfactory.hh>
 namespace Ikarus::Python {
 
+template <class NLO, class... options>
+void registerNonLinearOperator(pybind11::handle scope, pybind11::class_<NLO, options...> cls) ;
+
+namespace Impl
+{
+  template<typename NLO,int... i>
+  struct SubOperatorHelper
+  {
+    using SubOperator = decltype(std::declval<NLO>().template subOperator<i...>());
+  };
+
+  template<typename NLO, class... Args >
+  auto maybeRegisterNonlinearOperator(pybind11::handle scope, std::string name,Args... args )
+  {
+
+      auto includes = Dune::Python::IncludeFiles{"ikarus/utils/nonlinearoperator.hh"};
+    auto [clsNonLinearOperator, notRegisteredNonLinOp] = Dune::Python::insertClass<NLO>(
+    scope,name , pybind11::dynamic_attr(),args..., Dune::Python::GenerateTypeName(Dune::className<NLO>()), includes);
+
+    if (notRegisteredNonLinOp)
+      registerNonLinearOperator(scope,clsNonLinearOperator);
+      return clsNonLinearOperator;
+  }
+
+  template<int... i,typename NLO, class... options>
+  auto maybeRegisterNonlinearSubOperator(pybind11::handle scope, pybind11::class_<NLO, options...> cls)
+  {
+  auto clsSub= maybeRegisterNonlinearOperator<typename SubOperatorHelper<NLO,i...>::SubOperator>(cls,("NonlinearOperator"+(std::to_string(i)+...)));
+  cls.def(("__subOperator"+(std::to_string(i)+...)).c_str(), []( NLO& self) {return self.template subOperator<i...>();});
+  return clsSub;
+}
+} // namespace Impl
+
 /**
  * @brief Registers a nonlinear operator class in Python.
  *
@@ -60,15 +93,14 @@ void registerNonLinearOperator(pybind11::handle scope, pybind11::class_<NLO, opt
     cls.def("value", &NLO::value, py::return_value_policy::reference_internal);
     cls.def_property_readonly_static(
         "valueCppTypeName", [](py::object) { return Dune::className<typename NLO::template FunctionReturnType<0>>(); });
-    cls.def("__subOperator0", []( NLO& self) {return self.template subOperator<0>();});
-
+     Impl::maybeRegisterNonlinearSubOperator<0>(scope,cls);
   }
   if constexpr (numberOfFunctions > 1) {
     cls.def("derivative", &NLO::derivative, py::return_value_policy::reference_internal);
     cls.def_property_readonly_static("derivativeCppTypeName", [](py::object) {
       return Dune::className<typename NLO::template FunctionReturnType<1>>();
     });
-    cls.def("__subOperator1", []( NLO& self) {return self.template subOperator<1>();});
+    Impl::maybeRegisterNonlinearSubOperator<1>(scope,cls);
   }
 
   if constexpr (numberOfFunctions > 2) {
@@ -76,9 +108,9 @@ void registerNonLinearOperator(pybind11::handle scope, pybind11::class_<NLO, opt
     cls.def_property_readonly_static("secondDerivativeCppTypeName", [](py::object) {
       return Dune::className<typename NLO::template FunctionReturnType<2>>();
     });
-    cls.def("__subOperator01", []( NLO& self) {return self.template subOperator<0,1>();});
-    cls.def("__subOperator12", []( NLO& self) {return self.template subOperator<1,2>();});
-    cls.def("__subOperator2", []( NLO& self) {return self.template subOperator<2>();});
+      Impl::maybeRegisterNonlinearSubOperator<0,1>(scope,cls);
+      Impl::maybeRegisterNonlinearSubOperator<1,2>(scope,cls);
+      Impl::maybeRegisterNonlinearSubOperator<2>(scope,cls);
   }
 
   if constexpr (numberOfFunctions > 0) {
@@ -108,6 +140,8 @@ struct NonLinearOperatorFactoryWrapper
   Assembler as;
 };
 
+
+
   /**
     * @brief Registers the nonlinear operator factory in Python.
     *
@@ -125,29 +159,16 @@ void registerNonLinearOperatorFactory(pybind11::handle scope, pybind11::class_<N
   using AffordanceCollection = AffordanceCollection<ScalarAffordance,VectorAffordance,MatrixAffordance>;
 
   cls.def(pybind11::init([](const Assembler& as) {
-    return new NLOFW{.as=as};
+    return new NLOFW{as};
   }));
 
   cls.def(pybind11::init(
       [](const Assembler& as) { return new NLOFW{.as = as}; }));
 
-  std::string nonLinOpName =
-      Dune::className<decltype(NonLinearOperatorFactory::op(std::declval<Assembler&>()))>();
-
-  cls.def_property_readonly_static(
-      "nonLinearOperatorType", [nonLinOpName](py::object) { return nonLinOpName; },
-      "Get the cpp type of the nonlinear operator");
-
   using NonLinearOperator =
       decltype(NonLinearOperatorFactory::op(std::declval<Assembler&>()));
 
-  auto includes = Dune::Python::IncludeFiles{"ikarus/utils/nonlinearoperator.hh"};
-
-  auto [clsNonLinearOperator, notRegisteredNonLinOp] = Dune::Python::insertClass<NonLinearOperator>(
-      cls, "NonLinearOperator", pybind11::dynamic_attr(), Dune::Python::GenerateTypeName(nonLinOpName), includes);
-  if (notRegisteredNonLinOp)
-    registerNonLinearOperator(scope,clsNonLinearOperator);
-
+  Impl::maybeRegisterNonlinearOperator<NonLinearOperator>(cls,"NonLinearOperator");
 
   cls.def(
       "op",

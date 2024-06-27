@@ -27,22 +27,24 @@ def __SubOperator(nonLinOp):
             raise ValueError("You passed too many arguments to the subOperator function")
         elif(len(args)==0):
             raise ValueError("At least one argument is needed")
-        elif(any([arg>=nonLinOp.numberOfFunctions-1 for arg in args])):
+        elif(any([arg>nonLinOp.numberOfFunctions-1 for arg in args])):
             raise ValueError("You passed an index that is too high")
         elif(len(args)==1):
             if(args[0] == 0):
-                return nonLinOp.__subOperator0()
+                subOp = nonLinOp.__subOperator0()
             elif(args[0] == 1):
-                return nonLinOp.__subOperator1()
+                subOp = nonLinOp.__subOperator1()
             elif(args[0] == 2):
-                return nonLinOp.__subOperator2()
+                subOp = nonLinOp.__subOperator2()
         elif(len(args)==2):
             if(args[0] == 0 and args[1] == 1):
-                return nonLinOp.__subOperator01()
+                subOp = nonLinOp.__subOperator01()
             elif(args[0] == 1 and args[1] == 2):
-                return nonLinOp.__subOperator12()
+                subOp = nonLinOp.__subOperator12()
         else:
             raise ValueError("The subOperator function does not know how to handle the given indices")
+        subOp.subOperator = types.MethodType(__SubOperator(nonLinOp),nonLinOp)
+        return subOp
     return __subOperatorFunc
 
 
@@ -83,7 +85,7 @@ def NonLinearOperator(functions, parameters):
     return nonLinOp
 
 
-def makeNonLinearOperator(assembler, requirement=None,affordances=None, enforcingBCOption=None):
+def makeNonLinearOperator(assembler,derivativeIndices=None, requirement=None,affordances=None, enforcingBCOption=None):
     generator = MySimpleGenerator("NonLinearOperatorFactory", "Ikarus::Python")
     includes = []
     element_type = f"Ikarus::Python::NonLinearOperatorFactoryWrapper<std::shared_ptr<{assembler.cppTypeName}>>"
@@ -95,12 +97,6 @@ def makeNonLinearOperator(assembler, requirement=None,affordances=None, enforcin
         includes=includes, typeName=element_type, moduleName=moduleName
     )
     factory= module.NonLinearOperatorFactory(assembler)
-
-    element_type = factory.nonLinearOperatorType
-    # moduleNameNonLinOp = "NonLinearOperator" + hashIt(element_type)
-    # moduleForNonLinOp = generator.load(
-    #     includes=includes, typeName=element_type, moduleName=moduleName
-    # )
 
     nonLinOp =  factory.op(requirement,affordances,enforcingBCOption)
     nonLinOp.subOperator = types.MethodType(__SubOperator(nonLinOp),nonLinOp)
