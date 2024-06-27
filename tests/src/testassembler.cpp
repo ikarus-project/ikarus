@@ -180,16 +180,17 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
       const auto globalIndices = utils::globalIndexFromGlobalPosition(basis.flat(), pos);
       double springStiffness   = 596482;
       double pointF            = 64.23;
-      auto doubleEnergy        = [&](const auto&, auto, double& energyL) -> void { energyL *= 2.0; };
-      auto pointLoad           = [&](const auto&, auto, auto, Eigen::VectorXd& vec) -> void {
+      auto doubleEnergy        = [&](const auto&, const auto&, auto, double& energyL) -> void { energyL *= 2.0; };
+      auto pointLoad           = [&](const auto&, const auto&, auto, auto, Eigen::VectorXd& vec) -> void {
         vec[globalIndices[0]] += pointF;
         vec[globalIndices[1]] += pointF;
       };
-      auto addSpringStiffnessDense = [&](const auto&, auto, auto, Eigen::MatrixXd& mat) -> void {
+      auto addSpringStiffnessDense = [&](const auto&, const auto&, auto, auto, Eigen::MatrixXd& mat) -> void {
         mat.diagonal()[globalIndices[0]] += springStiffness;
         mat.diagonal()[globalIndices[1]] += springStiffness;
       };
-      auto addSpringStiffnessSparse = [&](const auto&, auto, auto, Eigen::SparseMatrix<double>& mat) -> void {
+      auto addSpringStiffnessSparse = [&](const auto&, const auto&, auto, auto,
+                                          Eigen::SparseMatrix<double>& mat) -> void {
         mat.diagonal()[globalIndices[0]] += springStiffness;
         mat.diagonal()[globalIndices[1]] += springStiffness;
       };

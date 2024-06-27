@@ -8,14 +8,9 @@
 
 #pragma once
 
-#include "simpleassemblers.hh"
-
 #include <utility>
 
 #include <dune/functions/backends/istlvectorbackend.hh>
-
-#include <Eigen/Core>
-#include <Eigen/Sparse>
 
 #include <ikarus/assembler/dirichletbcenforcement.hh>
 #include <ikarus/finiteelements/fehelper.hh>
@@ -33,123 +28,29 @@ namespace Ikarus {
  * \tparam A Type of the assembler.
  */
 template <Concepts::FlatAssembler A>
-class AssemblerManipulator
+class AssemblerManipulator : public A, public A::template BaseTemplate<A>
 {
+protected:
+  friend typename A::template BaseTemplate<A>;
+
 public:
-  using Assembler                = A;
+  using BaseAssembler            = A;
   using FERequirement            = typename A::FERequirement;
   using AffordanceCollectionType = typename A::AffordanceCollectionType;
-  using ScalarType               = double;
-  using VectorType               = Eigen::VectorX<ScalarType>;
-  using MatrixType =
-      std::conditional_t<std::is_same_v<Assembler, SparseFlatAssembler<typename Assembler::FEContainer,
-                                                                       typename Assembler::DirichletValuesType>>,
-                         Eigen::SparseMatrix<ScalarType>, Eigen::MatrixX<ScalarType>>;
+  using typename BaseAssembler::MatrixType;
+  using typename BaseAssembler::ScalarType;
+  using typename BaseAssembler::VectorType;
 
-  using scalarFunction = std::function<void(const FERequirement&, ScalarAffordance, ScalarType&)>;
-  using vectorFunction = std::function<void(const FERequirement&, VectorAffordance, DBCOption, VectorType&)>;
-  using matrixFunction = std::function<void(const FERequirement&, MatrixAffordance, DBCOption, MatrixType&)>;
+  using scalarFunction = std::function<void(const BaseAssembler&, const FERequirement&, ScalarAffordance, ScalarType&)>;
+  using vectorFunction =
+      std::function<void(const BaseAssembler&, const FERequirement&, VectorAffordance, DBCOption, VectorType&)>;
+  using matrixFunction =
+      std::function<void(const BaseAssembler&, const FERequirement&, MatrixAffordance, DBCOption, MatrixType&)>;
 
   template <typename... Args>
   requires(not std::is_same_v<std::remove_cvref_t<std::tuple_element_t<0, std::tuple<Args...>>>, AssemblerManipulator>)
   explicit AssemblerManipulator(Args... args)
       : baseAssembler(std::forward<Args>(args)...) {}
-
-  /**
-   * \brief Calculates the scalar quantity requested by feRequirements and affordance.
-   *
-   * \param feRequirements Reference to the finite element requirements.
-   * \param affordance The scalar affordance
-   * \return Const reference to the calculated scalar quantity.
-   */
-  const ScalarType& scalar(const FERequirement& feRequirements, ScalarAffordance affordance) {
-    sca = baseAssembler.scalar(feRequirements, affordance);
-    if (sfs.empty())
-      return sca;
-    for (const auto sf : sfs)
-      sf(feRequirements, affordance, sca);
-    return sca;
-  }
-
-  /**
-   * \brief Calculates the scalar quantity requested by the bound feRequirements and returns a reference.
-   *
-   * \return Const reference to the calculated scalar quantity.
-   */
-  const ScalarType& scalar() {
-    return scalar(baseAssembler.requirement(), baseAssembler.affordanceCollection().scalarAffordance());
-  }
-
-  /**
-    * \brief Calculates the vectorial quantity requested by the  feRequirements and the affordance.
-    Depending on the requested DBCOption, the raw, reduced or full vector is returned.
-    *
-    * \param feRequirements Reference to the finite element requirements.
-    * \param affordance The vector affordance
-    * \param dbcOption The DBCOption
-    * \return Const reference to the calculated vectorial quantity.
-    */
-  const VectorType& vector(const FERequirement& feRequirements, VectorAffordance affordance,
-                           DBCOption dbcOption = DBCOption::Full) {
-    vec = baseAssembler.vector(feRequirements, affordance, dbcOption);
-    if (vfs.empty())
-      return vec;
-    for (const auto vf : vfs)
-      vf(feRequirements, affordance, dbcOption, vec);
-    return vec;
-  }
-
-  /**
-  * \brief Calculates the vectorial quantity requested by the bound feRequirements and the affordance.
-  Depending on the requested DBCOption, the raw, reduced or full vector is returned.
-  * \param dbcOption The DBCOption
-  * \return Const reference to the calculated vectorial quantity.
-  */
-  const VectorType& vector(DBCOption dbcOption) {
-    return vector(baseAssembler.requirement(), baseAssembler.affordanceCollection().vectorAffordance(), dbcOption);
-  }
-
-  /**
-   * \brief Calculates the vectorial quantity requested by the bound feRequirements, the affordance and the dBCOption.
-   * Depending on the DBCOption, the raw, reduced or full vector is returned.
-   * \return Const reference to the calculated vectorial quantity.
-   */
-  const VectorType& vector() { return vector(baseAssembler.dBCOption()); }
-
-  /**
-    * \brief  Calculates the matrix quantity requested by feRequirements and the affordance.
-    *
-    * \param feRequirements Reference to the finite element requirements.
-    * \param affordance The matrix affordance
-    * \param dbcOption The DBCOption
-
-    * \return Reference to the raw dense matrix quantity.
-    */
-  const MatrixType& matrix(const FERequirement& feRequirements, MatrixAffordance affordance,
-                           DBCOption dbcOption = DBCOption::Full) {
-    mat = baseAssembler.matrix(feRequirements, affordance, dbcOption);
-    if (mfs.empty())
-      return mat;
-    for (const auto mf : mfs)
-      mf(feRequirements, affordance, dbcOption, mat);
-    return mat;
-  }
-
-  /**
-   * \brief  Calculates the matrix quantity requested by the bound  feRequirements and the affordance.
-   *
-   * \param dbcOption The DBCOption
-   * \return Reference to the raw dense matrix quantity.
-   */
-  const MatrixType& matrix(DBCOption dbcOption) {
-    return matrix(baseAssembler.requirement(), baseAssembler.affordanceCollection().matrixAffordance(), dbcOption);
-  }
-
-  /**
-   * \brief  Calculates the matrix quantity requested by the bound  feRequirements, the affordance and the dBCOption.
-   * \return Reference to the dense matrix quantity.
-   */
-  const MatrixType& matrix() { return matrix(baseAssembler.dBCOption()); }
 
   /**
    * \brief A helper function to add functions that can be used to manipulate the assembled quantity.
@@ -171,15 +72,59 @@ public:
   }
 
 private:
+  ScalarType& getScalarImpl(const FERequirement& feRequirements, ScalarAffordance affordance) {
+    auto& sca = baseAssembler.getScalarImpl(feRequirements, affordance);
+    for (const auto sf : sfs)
+      sf(baseAssembler, feRequirements, affordance, sca);
+    return sca;
+  }
+
+  const VectorType& getRawVectorImpl(const FERequirement& feRequirements, VectorAffordance affordance) {
+    auto& vec = baseAssembler.getRawVectorImpl(feRequirements, affordance);
+    for (const auto vf : vfs)
+      vf(baseAssembler, feRequirements, affordance, DBCOption::Raw, vec);
+    return vec;
+  }
+
+  const VectorType& getVectorImpl(const FERequirement& feRequirements, VectorAffordance affordance) {
+    auto& vec = baseAssembler.getVectorImpl(feRequirements, affordance);
+    for (const auto vf : vfs)
+      vf(baseAssembler, feRequirements, affordance, DBCOption::Full, vec);
+    return vec;
+  }
+
+  const VectorType& getReducedVectorImpl(const FERequirement& feRequirements, VectorAffordance affordance) {
+    auto& vec = baseAssembler.getReducedVectorImpl(feRequirements, affordance);
+    for (const auto vf : vfs)
+      vf(baseAssembler, feRequirements, affordance, DBCOption::Reduced, vec);
+    return vec;
+  }
+
+  const MatrixType& getRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance) {
+    MatrixType& mat = baseAssembler.getRawMatrixImpl(feRequirements, affordance);
+    for (const auto mf : mfs)
+      mf(baseAssembler, feRequirements, affordance, DBCOption::Raw, mat);
+    return mat;
+  }
+
+  const MatrixType& getMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance) {
+    MatrixType& mat = baseAssembler.getMatrixImpl(feRequirements, affordance);
+    for (const auto mf : mfs)
+      mf(baseAssembler, feRequirements, affordance, DBCOption::Full, mat);
+    return mat;
+  }
+
+  const MatrixType& getReducedMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance) {
+    MatrixType& mat = baseAssembler.getReducedMatrixImpl(feRequirements, affordance);
+    for (const auto mf : mfs)
+      mf(baseAssembler, feRequirements, affordance, DBCOption::Reduced, mat);
+    return mat;
+  }
+
   std::vector<scalarFunction> sfs;
   std::vector<vectorFunction> vfs;
   std::vector<matrixFunction> mfs;
 
-  // In order to manipulate and modify the assembled quantities, a copy has to be first created
-  // as the flat assemblers only provide a const reference
-  ScalarType sca{0.0};
-  VectorType vec{};
-  MatrixType mat{};
   A baseAssembler;
 };
 } // namespace Ikarus
