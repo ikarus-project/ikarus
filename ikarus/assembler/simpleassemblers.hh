@@ -260,13 +260,20 @@ class ScalarAssemblerBase : public FlatAssemblerBase<FEC, DV>
   using Base = FlatAssemblerBase<FEC, DV>;
 
 public:
-  ScalarAssemblerBase() = default;
   using ScalarType      = ST;
   using typename Base::Basis;
   using typename Base::DirichletValuesType;
   using typename Base::FEContainer;
   using typename Base::FERequirement;
   using typename Base::GlobalIndex;
+  /**
+   * \brief Constructor for ScalarAssemblerBase.
+   *
+   * \param fes Finite element container.
+   * \param dirichletValues Reference to Dirichlet values.
+   */
+  ScalarAssemblerBase(FEContainer&& fes, const DirichletValuesType& dirichletValues)
+      : FlatAssemblerBase<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues) {}
 
   /**
    * \brief Calculates the scalar quantity requested by feRequirements and affordance.
@@ -325,7 +332,7 @@ public:
    * \param dirichletValues Reference to Dirichlet values.
    */
   ScalarAssembler(FEContainer&& fes, const DirichletValuesType& dirichletValues)
-      : FlatAssemblerBase<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues) {}
+      : ScalarAssemblerBase<ScalarAssembler,FEContainer, DirichletValuesType, ScalarType>(std::forward<FEContainer>(fes), dirichletValues) {}
 
 protected:
   ScalarType& getScalarImpl(const FERequirement& feRequirements, ScalarAffordance affordance);
@@ -344,7 +351,6 @@ class VectorAssemblerBase : public ScalarAssembler<FEC, DV>
   using Base = ScalarAssembler<FEC, DV>;
 
 public:
-  VectorAssemblerBase() = default;
   using VectorType      = VT;
   using typename Base::Basis;
   using typename Base::DirichletValuesType;
@@ -352,6 +358,15 @@ public:
   using typename Base::FERequirement;
   using typename Base::GlobalIndex;
   using typename Base::ScalarType;
+
+  /**
+   * \brief Constructor for VectorAssemblerBase.
+   *
+   * \param fes Finite element container.
+   * \param dirichletValues Reference to Dirichlet values.
+   */
+  VectorAssemblerBase(FEContainer&& fes, const DirichletValuesType& dirichletValues)
+      : ScalarAssembler<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues) {}
 
   /**
      * \brief Calculates the vectorial quantity requested by the  feRequirements and the affordance.
@@ -439,7 +454,7 @@ public:
    * \param dirichletValues Reference to Dirichlet values.
    */
   VectorFlatAssembler(FEContainer&& fes, const DirichletValuesType& dirichletValues)
-      : ScalarAssembler<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues) {}
+      : VectorAssemblerBase<VectorFlatAssembler, FEContainer, DirichletValuesType, VectorType>(std::forward<FEContainer>(fes), dirichletValues) {}
 
 protected:
   void assembleRawVectorImpl(const FERequirement& feRequirements, VectorAffordance affordance, VectorType& assemblyVec);
@@ -464,7 +479,6 @@ class MatrixAssemblerBase : public VectorFlatAssembler<FEC, DV>
   using Base = VectorFlatAssembler<FEC, DV>;
 
 public:
-  MatrixAssemblerBase() = default;
   using MatrixType      = MT;
   using typename Base::Basis;
   using typename Base::DirichletValuesType;
@@ -473,6 +487,15 @@ public:
   using typename Base::GlobalIndex;
   using typename Base::ScalarType;
   using typename Base::VectorType;
+
+  /**
+   * \brief Constructor for MatrixAssemblerBase.
+   *
+   * \param fes Finite element container.
+   * \param dirichletValues Reference to Dirichlet values.
+   */
+  MatrixAssemblerBase(FEContainer&& fes, const DirichletValuesType& dirichletValues)
+      : VectorFlatAssembler<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues) {}
 
   /**
    * \brief Calculates the matrix quantity requested by feRequirements and the affordance.
@@ -541,6 +564,7 @@ protected:
   template <typename Assembler>
   using BaseTemplate = MatrixAssemblerBase<Assembler, FEC, DV, Eigen::SparseMatrix<double>>;
   using Base         = BaseTemplate<SparseFlatAssembler>; ///< Type alias for the base class.
+  friend Base;
 public:
   using typename Base::Basis;
   using typename Base::DirichletValuesType;
@@ -556,7 +580,7 @@ public:
    * \param dirichletValues Reference to Dirichlet values.
    */
   SparseFlatAssembler(FEContainer&& fes, const DirichletValuesType& dirichletValues)
-      : VectorFlatAssembler<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues) {}
+      : MatrixAssemblerBase<SparseFlatAssembler, FEContainer, DirichletValuesType, MatrixType>(std::forward<FEContainer>(fes), dirichletValues) {}
 
 private:
   void assembleRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance, MatrixType& assemblyMat);
@@ -622,7 +646,7 @@ protected:
   template <typename Assembler>
   using BaseTemplate = MatrixAssemblerBase<Assembler, FEC, DV, Eigen::MatrixXd>;
   using Base         = BaseTemplate<DenseFlatAssembler>; ///< Type alias for the base class.
-
+  friend Base;
 public:
   using typename Base::Basis;               ///< Type of the basis.
   using typename Base::DirichletValuesType; ///< Type of the Dirichlet values.
@@ -638,7 +662,7 @@ public:
    * \param dirichletValues Reference to Dirichlet values.
    */
   explicit DenseFlatAssembler(FEContainer&& fes, const DirichletValuesType& dirichletValues)
-      : VectorFlatAssembler<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues) {}
+      : MatrixAssemblerBase<DenseFlatAssembler, FEContainer, DirichletValuesType, MatrixType>(std::forward<FEContainer>(fes), dirichletValues) {}
 
 private:
   void assembleRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance, MatrixType& assemblyMat);

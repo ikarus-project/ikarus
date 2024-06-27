@@ -92,8 +92,8 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
         dirichletValues.fixIthDOF(idx);
     }
 
-    using SparseAssembler = SparseFlatAssembler<decltype(fes), decltype(dirichletValues)>;
-    using DenseAssembler  = DenseFlatAssembler<decltype(fes), decltype(dirichletValues)>;
+    using SparseAssembler = SparseFlatAssembler<decltype(fes)&, decltype(dirichletValues)>;
+    using DenseAssembler  = DenseFlatAssembler<decltype(fes)&, decltype(dirichletValues)>;
     AssemblerManipulator<SparseAssembler> sparseFlatAssembler(fes, dirichletValues);
     AssemblerManipulator<DenseAssembler> denseFlatAssembler(fes, dirichletValues);
 
