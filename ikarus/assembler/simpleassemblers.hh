@@ -314,16 +314,16 @@ class ScalarAssembler : public ScalarAssemblerBase<ScalarAssembler<FEC, DV>, FEC
 protected:
   template <typename Assembler>
   using BaseTemplate = ScalarAssemblerBase<Assembler, FEC, DV, double>;
-  using Base         = BaseTemplate<ScalarAssembler>; ///< Type alias for the base class.
-  friend Base;
 
 public:
-  using typename Base::Basis;
-  using typename Base::DirichletValuesType;
-  using typename Base::FEContainer;
-  using typename Base::FERequirement;
-  using typename Base::GlobalIndex;
-  using typename Base::ScalarType;
+  using Base         = BaseTemplate<ScalarAssembler>; ///< Type alias for the base class.
+  friend Base;
+  using typename Base::Basis;               ///< Type of the basis.
+  using typename Base::DirichletValuesType; ///< Type of the Dirichlet values.
+  using typename Base::FEContainer;         ///< Type of the finite element container.
+  using typename Base::FERequirement;       ///< Type of the finite element requirement.
+  using typename Base::GlobalIndex;         ///< Type of the global index.
+  using typename Base::ScalarType;          ///< Type of the scalar.
 
   /**
    * \brief Constructor for ScalarAssembler.
@@ -436,16 +436,17 @@ class VectorFlatAssembler : public VectorAssemblerBase<VectorFlatAssembler<FEC, 
 protected:
   template <typename Assembler>
   using BaseTemplate = VectorAssemblerBase<Assembler, FEC, DV, Eigen::VectorXd>;
-  using Base         = BaseTemplate<VectorFlatAssembler>; ///< Type alias for the base class.
-  friend Base;
 
 public:
-  using typename Base::Basis;
-  using typename Base::DirichletValuesType;
-  using typename Base::FEContainer;
-  using typename Base::FERequirement;
-  using typename Base::GlobalIndex;
-  using typename Base::VectorType;
+  using Base         = BaseTemplate<VectorFlatAssembler>; ///< Type alias for the base class.
+  friend Base;
+  using typename Base::Basis;               ///< Type of the basis.
+  using typename Base::DirichletValuesType; ///< Type of the Dirichlet values.
+  using typename Base::FEContainer;         ///< Type of the finite element container.
+  using typename Base::FERequirement;       ///< Type of the finite element requirement.
+  using typename Base::GlobalIndex;         ///< Type of the global index.
+  using typename Base::ScalarType;          ///< Type of the scalar.
+  using typename Base::VectorType;          ///< Type of the vector.
 
   /**
    * \brief Constructor for VectorFlatAssembler.
@@ -563,15 +564,17 @@ class SparseFlatAssembler
 protected:
   template <typename Assembler>
   using BaseTemplate = MatrixAssemblerBase<Assembler, FEC, DV, Eigen::SparseMatrix<double>>;
+public:
   using Base         = BaseTemplate<SparseFlatAssembler>; ///< Type alias for the base class.
   friend Base;
-public:
-  using typename Base::Basis;
-  using typename Base::DirichletValuesType;
-  using typename Base::FEContainer;
-  using typename Base::FERequirement;
-  using typename Base::GlobalIndex;
-  using typename Base::MatrixType;
+  using typename Base::Basis;               ///< Type of the basis.
+  using typename Base::DirichletValuesType; ///< Type of the Dirichlet values.
+  using typename Base::FEContainer;         ///< Type of the finite element container.
+  using typename Base::FERequirement;       ///< Type of the finite element requirement.
+  using typename Base::GlobalIndex;         ///< Type of the global index.
+  using typename Base::ScalarType;          ///< Type of the scalar.
+  using typename Base::VectorType;          ///< Type of the vector.
+  using typename Base::MatrixType;          ///< Type of the matrix.
 
   /**
    * \brief Constructor for SparseFlatAssembler.
@@ -645,14 +648,16 @@ class DenseFlatAssembler : public MatrixAssemblerBase<DenseFlatAssembler<FEC, DV
 protected:
   template <typename Assembler>
   using BaseTemplate = MatrixAssemblerBase<Assembler, FEC, DV, Eigen::MatrixXd>;
+public:
   using Base         = BaseTemplate<DenseFlatAssembler>; ///< Type alias for the base class.
   friend Base;
-public:
   using typename Base::Basis;               ///< Type of the basis.
   using typename Base::DirichletValuesType; ///< Type of the Dirichlet values.
   using typename Base::FEContainer;         ///< Type of the finite element container.
   using typename Base::FERequirement;       ///< Type of the finite element requirement.
   using typename Base::GlobalIndex;         ///< Type of the global index.
+  using typename Base::ScalarType;          ///< Type of the scalar.
+  using typename Base::VectorType;          ///< Type of the vector.
   using typename Base::MatrixType;          ///< Type of the matrix.
 
   /**
