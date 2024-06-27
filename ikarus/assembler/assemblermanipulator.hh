@@ -13,78 +13,85 @@
 #include <dune/functions/backends/istlvectorbackend.hh>
 
 #include <ikarus/assembler/dirichletbcenforcement.hh>
+#include <ikarus/assembler/simpleassemblers.hh> //TODO ALEX TARUN chagne this to interface.hh
 #include <ikarus/finiteelements/fehelper.hh>
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/dirichletvalues.hh>
 
 namespace Ikarus {
-/**
- * \class AssemblerManipulator
- * \brief The AssemblerManipulator defines a decorator for the assemblers that
- * helps to manipulate the assembled quantities.
- * \ingroup assembler
- *
- * \tparam A Type of the assembler.
- */
-template <Concepts::FlatAssembler A>
-class AssemblerManipulator : private A, public A::template BaseTemplate<AssemblerManipulator<A>>
+
+template <template <typename> typename Wrapper, typename Assembler>
+requires true
+struct ScalarWrapperBase
+    : Assembler,
+      public ScalarAssemblerBase<Wrapper<Assembler>, typename Assembler::FEContainer,
+                                 typename Assembler::DirichletValuesType, typename Assembler::ScalarType>
 {
-protected:
-  friend typename A::template BaseTemplate<AssemblerManipulator>;
+  using WrappedAssembler = Wrapper<Assembler>;
+  using FEC              = typename Assembler::FEContainer;
+  using DV               = typename Assembler::DirichletValuesType;
+  using FERequirement    = typename Assembler::FERequirement;
 
-  using Base = A::template BaseTemplate<AssemblerManipulator<A>>;
-
-public:
-  using Assembler            = A;
-  using FERequirement            = typename A::FERequirement;
-  using AffordanceCollectionType = typename A::AffordanceCollectionType;
-  using typename Assembler::MatrixType;
-  using typename Assembler::ScalarType;
-  using typename Assembler::VectorType;
-
-  using Base::matrix;
-  using Base::vector;
-  using Base::scalar;
-
-  using scalarFunction = std::function<void(const AssemblerManipulator&, const FERequirement&, ScalarAffordance, ScalarType&)>;
-  using vectorFunction =
-      std::function<void(const AssemblerManipulator&, const FERequirement&, VectorAffordance, DBCOption, VectorType&)>;
-  using matrixFunction =
-      std::function<void(const AssemblerManipulator&, const FERequirement&, MatrixAffordance, DBCOption, MatrixType&)>;
-
-  template <typename... Args>
-  requires(not std::is_same_v<std::remove_cvref_t<std::tuple_element_t<0, std::tuple<Args...>>>, AssemblerManipulator>)
-  explicit AssemblerManipulator(Args&&... args)
-      : Assembler(std::forward<Args>(args)...),Base(std::forward<Args>(args)...) {}
-
+  using ScalarType      = Assembler::ScalarType;
+  using ScalarInterface = ScalarAssemblerBase<Wrapper<Assembler>, FEC, DV, ScalarType>;
+  friend ScalarInterface;
+  using scalarFunction =
+      std::function<void(const Wrapper<Assembler>&, const FERequirement&, ScalarAffordance, ScalarType&)>;
   /**
    * \brief A helper function to add functions that can be used to manipulate the assembled quantity.
    * \tparam F Type of the function
    * \param f A function that manipulates the assembled quantity.
    */
   template <typename F>
-  requires(std::convertible_to<F, scalarFunction> or std::convertible_to<F, vectorFunction> or
-           std::convertible_to<F, matrixFunction>)
+  requires Concepts::IsFunctorWithArgs<F, const Wrapper<Assembler>&, const FERequirement&, ScalarAffordance,
+                                       ScalarType&>
   void bind(F&& f) {
-    if constexpr (std::convertible_to<F, scalarFunction>)
-      sfs.emplace_back(std::forward<F>(f));
-    else if constexpr (std::convertible_to<F, vectorFunction>)
-      vfs.emplace_back(std::forward<F>(f));
-    else if constexpr (std::convertible_to<F, matrixFunction>)
-      mfs.emplace_back(std::forward<F>(f));
-    else
-      DUNE_THROW(Dune::IOError, "Function type doesn't meet the requirements.");
+    sfs.emplace_back(std::forward<F>(f));
   }
+  std::vector<scalarFunction> sfs;
 
-private:
+protected:
   ScalarType& getScalarImpl(const FERequirement& feRequirements, ScalarAffordance affordance) {
     auto& sca = Assembler::getScalarImpl(feRequirements, affordance);
     for (const auto sf : sfs)
       sf(*this, feRequirements, affordance, sca);
     return sca;
   }
+};
 
+template <template <typename> typename Wrapper, typename Assembler>
+requires true
+struct VectorWrapperBase
+    : Assembler,
+      public VectorAssemblerBase<Wrapper<Assembler>, typename Assembler::FEContainer,
+                                 typename Assembler::DirichletValuesType, typename Assembler::VectorType>
+{
+  using WrappedAssembler = Wrapper<Assembler>;
+  using FEC              = typename Assembler::FEContainer;
+  using DV               = typename Assembler::DirichletValuesType;
+  using FERequirement    = typename Assembler::FERequirement;
+
+  using VectorType      = Assembler::VectorType;
+  using VectorInterface = VectorAssemblerBase<Wrapper<Assembler>, typename Assembler::FEContainer,
+                                              typename Assembler::DirichletValuesType, typename Assembler::VectorType>;
+  friend VectorInterface;
+  using vectorFunction =
+      std::function<void(const Wrapper<Assembler>&, const FERequirement&, VectorAffordance, DBCOption, VectorType&)>;
+  /**
+   * \brief A helper function to add functions that can be used to manipulate the assembled quantity.
+   * \tparam F Type of the function
+   * \param f A function that manipulates the assembled quantity.
+   */
+  template <typename F>
+  requires Concepts::IsFunctorWithArgs<F, const Wrapper<Assembler>&, const FERequirement&, VectorAffordance, DBCOption,
+                                       VectorType&>
+  void bind(F&& f) {
+    vfs.emplace_back(std::forward<F>(f));
+  }
+  std::vector<vectorFunction> vfs;
+
+protected:
   const VectorType& getRawVectorImpl(const FERequirement& feRequirements, VectorAffordance affordance) {
     auto& vec = Assembler::getRawVectorImpl(feRequirements, affordance);
     for (const auto vf : vfs)
@@ -105,7 +112,39 @@ private:
       vf(*this, feRequirements, affordance, DBCOption::Reduced, vec);
     return vec;
   }
+};
 
+template <template <typename> typename Wrapper, typename Assembler>
+requires true
+struct MatrixWrapperBase : public Assembler,
+                           MatrixAssemblerBase<Wrapper<Assembler>, typename Assembler::FEContainer,
+                                               typename Assembler::DirichletValuesType, typename Assembler::MatrixType>
+{
+  using WrappedAssembler = Wrapper<Assembler>;
+  using FEC              = typename Assembler::FEContainer;
+  using DV               = typename Assembler::DirichletValuesType;
+  using FERequirement    = typename Assembler::FERequirement;
+
+  using MatrixType      = Assembler::MatrixType;
+  using MatrixInterface = MatrixAssemblerBase<Wrapper<Assembler>, typename Assembler::FEContainer,
+                                              typename Assembler::DirichletValuesType, typename Assembler::MatrixType>;
+  friend MatrixInterface;
+  using matrixFunction =
+      std::function<void(const Wrapper<Assembler>&, const FERequirement&, MatrixAffordance, DBCOption, MatrixType&)>;
+  /**
+   * \brief A helper function to add functions that can be used to manipulate the assembled quantity.
+   * \tparam F Type of the function
+   * \param f A function that manipulates the assembled quantity.
+   */
+  template <typename F>
+  requires Concepts::IsFunctorWithArgs<F, const Wrapper<Assembler>&, const FERequirement&, MatrixAffordance, DBCOption,
+                                       MatrixType&>
+  void bind(F&& f) {
+    mfs.emplace_back(std::forward<F>(f));
+  }
+  std::vector<matrixFunction> mfs;
+
+private:
   const MatrixType& getRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance) {
     MatrixType& mat = Assembler::getRawMatrixImpl(feRequirements, affordance);
     for (const auto mf : mfs)
@@ -126,11 +165,68 @@ private:
       mf(*this, feRequirements, affordance, DBCOption::Reduced, mat);
     return mat;
   }
+};
 
-  std::vector<scalarFunction> sfs;
-  std::vector<vectorFunction> vfs;
-  std::vector<matrixFunction> mfs;
+template <template <typename> typename Wrapper, typename Assembler>
+struct AssemblerWrapperAllBase : public ScalarWrapperBase<Wrapper, Assembler>,
+                                 public VectorWrapperBase<Wrapper, Assembler>,
+                                 public MatrixWrapperBase<Wrapper, Assembler>
+{
+  using WrappedAssembler = Wrapper<Assembler>;
+  using FEC              = typename Assembler::FEContainer;
+  using DV               = typename Assembler::DirichletValuesType;
+  using FERequirement    = typename Assembler::FERequirement;
+  using MatrixType       = Assembler::MatrixType;
+  using VectorType       = Assembler::VectorType;
+  using ScalarType       = Assembler::ScalarType;
+  using MatrixInterface  = MatrixAssemblerBase<Wrapper<Assembler>, FEC, DV, MatrixType>;
+  using VectorInterface  = VectorAssemblerBase<Wrapper<Assembler>, FEC, DV, VectorType>;
+  using ScalarInterface  = ScalarAssemblerBase<Wrapper<Assembler>, FEC, DV, ScalarType>;
 
-  // A baseAssembler;
+  using MatrixInterface::matrix;
+  using ScalarInterface::scalar;
+  using VectorInterface::vector;
+
+  using MatrixWrapperBase<Wrapper, Assembler>::bind;
+  using VectorWrapperBase<Wrapper, Assembler>::bind;
+  using ScalarWrapperBase<Wrapper, Assembler>::bind;
+};
+
+template <template <typename> typename Wrapper, typename Assembler>
+struct AssemblerWrapperScalarBase : private Assembler, public ScalarWrapperBase<Wrapper, Assembler>
+{
+  using WrappedAssembler = Wrapper<Assembler>;
+  using FEC              = typename Assembler::FEContainer;
+  using DV               = typename Assembler::DirichletValuesType;
+  using FERequirement    = typename Assembler::FERequirement;
+
+  using ScalarType      = Assembler::ScalarType;
+  using ScalarInterface = ScalarAssemblerBase<Wrapper<Assembler>, FEC, DV, ScalarType>;
+  using ScalarInterface::scalar;
+};
+struct InheritanceDecider
+{
+  template <template <typename> typename Wrapper, typename Assembler>
+  using Type = std::conditional_t<Concepts::FlatAssembler<Assembler>, AssemblerWrapperAllBase<Wrapper, Assembler>,
+                                  AssemblerWrapperAllBase<Wrapper, Assembler>>;
+};
+/**
+ * \class AssemblerManipulator
+ * \brief The AssemblerManipulator defines a decorator for the assemblers that
+ * helps to manipulate the assembled quantities.
+ * \ingroup assembler
+ *
+ * \tparam A Type of the assembler.
+ */
+template <Concepts::FlatAssembler A>
+class AssemblerManipulator : public InheritanceDecider::Type<AssemblerManipulator, A>
+{
+public:
+  using Base = InheritanceDecider::Type<AssemblerManipulator, A>;
+
+  template <typename... Args>
+  requires(not std::is_same_v<std::remove_cvref_t<std::tuple_element_t<0, std::tuple<Args...>>>, AssemblerManipulator>)
+  explicit AssemblerManipulator(Args&&... args)
+      : Base(std::forward<Args>(args)...) {}
 };
 } // namespace Ikarus
