@@ -3,7 +3,7 @@
 
 import debug_info
 
-debug_info.setDebugFlags()
+debug_info.unsetDebugFlags()
 
 import ikarus as iks
 import dune.grid
@@ -72,19 +72,20 @@ def testDirichletValues():
     # Test Subbasis
     dirichletValues2 = iks.dirichletValues(basis)
 
-    dirichletValues2.fixBoundaryDOFsOfSubSpaceBasis(fixOneIndex, 0)
-    dirichletValues2.fixBoundaryDOFsOfSubSpaceBasis(fixAnotherIndexWithLocalView, 0)
-    dirichletValues2.fixBoundaryDOFsOfSubSpaceBasis(fixTopSide, 0)
+    dirichletValues2.fixBoundaryDOFs(fixOneIndex, 0)
+    dirichletValues2.fixBoundaryDOFs(fixAnotherIndexWithLocalView, 0)
+    dirichletValues2.fixBoundaryDOFs(fixTopSide, 0)
 
     assert dirichletValues2.fixedDOFsize == int(2 + indicesPerDirection / 2)
 
-    dirichletValues2.fixBoundaryDOFsOfSubSpaceBasis(fixTopSide, 1)
+    dirichletValues2.fixBoundaryDOFs(fixTopSide, 1)
     assert dirichletValues2.fixedDOFsize == 2 + indicesPerDirection
 
     dirichletValues2.fixIthDOF(1)
     assert dirichletValues2.fixedDOFsize == 2 + indicesPerDirection + 1
     assert dirichletValues2.container[1]
     assert dirichletValues2.isConstrained(1)
+    
 
 
 if __name__ == "__main__":
