@@ -3,7 +3,7 @@
 
 import debug_info
 
-debug_info.setDebugFlags()
+debug_info.unsetDebugFlags()
 
 import ikarus as iks
 import dune.grid
@@ -53,6 +53,7 @@ def testDirichletValues():
 
     dirichletValues.fixBoundaryDOFs(fixAnotherIndexWithLocalView)
     assert sum(dirichletValues.container) == 2
+    assert dirichletValues.fixedDOFsize == 2
 
     def fixTopSide(vec, localIndex, localView, intersection):
         if intersection.geometry.center[0] == 1.0:
@@ -66,10 +67,26 @@ def testDirichletValues():
 
     # This assmues a structured grid
     indicesPerDirection: int = (math.sqrt(grid.size(0)) + 1) * 2
-    assert sum(dirichletValues.container) == 2 + indicesPerDirection
+    assert dirichletValues.fixedDOFsize == 2 + indicesPerDirection
 
-    ssb0 = dune.functions.subspaceBasis(basis, 0)
-    dirichletValues.fixBoundaryDOFsOfSubSpaceBasis(fixTopSide, ssb0)
+    # Test Subbasis
+    dirichletValues2 = iks.dirichletValues(basis)
+
+    dirichletValues2.fixBoundaryDOFs(fixOneIndex, 0)
+    dirichletValues2.fixBoundaryDOFs(fixAnotherIndexWithLocalView, 0)
+    dirichletValues2.fixBoundaryDOFs(fixTopSide, 0)
+
+    assert dirichletValues2.fixedDOFsize == int(2 + indicesPerDirection / 2)
+
+    dirichletValues2.fixBoundaryDOFs(fixTopSide, 1)
+    assert dirichletValues2.fixedDOFsize == 2 + indicesPerDirection
+
+    dirichletValues2.fixIthDOF(1)
+    assert dirichletValues2.fixedDOFsize == 2 + indicesPerDirection + 1
+    assert dirichletValues2.container[1]
+    assert dirichletValues2.isConstrained(1)
+    
+
 
 if __name__ == "__main__":
     testDirichletValues()

@@ -24,19 +24,70 @@
 // PYBIND11_MAKE_OPAQUE(std::vector<bool>);
 namespace Ikarus::Python {
 
+template <class DirichletValues, typename CppVisitor>
+void forwardCorrectFunction(DirichletValues& self, const pybind11::function& functor, CppVisitor&& cppFunction) {
+  using Basis        = typename DirichletValues::Basis;
+  using Intersection = typename Basis::GridView::Intersection;
+  using BackendType  = typename DirichletValues::BackendType;
+  using MultiIndex   = typename Basis::MultiIndex;
+
+  using LocalViewWrapper = Dune::Python::LocalViewWrapper<Basis>;
+
+  using FixBoundaryDOFsWithGlobalIndexFunction = std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int)>;
+  using FixBoundaryDOFsWithLocalViewFunction =
+      std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int, LocalViewWrapper&)>;
+  using FixBoundaryDOFsWithIntersectionFunction =
+      std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int, LocalViewWrapper&, const Intersection&)>;
+
+  // Disambiguate by number of arguments, as casting doesn't properly work with functions
+  pybind11::module inspect_module = pybind11::module::import("inspect");
+  pybind11::object result         = inspect_module.attr("signature")(functor).attr("parameters");
+  size_t numParams                = pybind11::len(result);
+
+  if (numParams == 2) {
+    auto& function = functor.template cast<const FixBoundaryDOFsWithGlobalIndexFunction>();
+    auto lambda    = [&](BackendType& vec, const MultiIndex& indexGlobal) {
+      // we explicitly only allow flat indices
+      function(vec.vector(), indexGlobal[0]);
+    };
+    cppFunction(lambda);
+
+  } else if (numParams == 3) {
+    auto& function = functor.template cast<const FixBoundaryDOFsWithLocalViewFunction>();
+    auto lambda    = [&](BackendType& vec, int localIndex, auto& lv) {
+      auto lvWrapper = LocalViewWrapper(lv.rootLocalView());
+      function(vec.vector(), localIndex, lvWrapper);
+    };
+    cppFunction(lambda);
+
+  } else if (numParams == 4) {
+    auto& function = functor.template cast<const FixBoundaryDOFsWithIntersectionFunction>();
+    auto lambda    = [&](BackendType& vec, int localIndex, auto& lv, const Intersection& intersection) {
+      auto lvWrapper = LocalViewWrapper(lv.rootLocalView());
+      function(vec.vector(), localIndex, lvWrapper, intersection);
+    };
+    cppFunction(lambda);
+
+  } else {
+    DUNE_THROW(Dune::NotImplemented, "fixBoundaryDOFs: A function with this signature is not supported");
+  }
+}
+
 /**
  * \brief Register Python bindings for a DirichletValues class.
  *
  * This function registers Python bindings for a DirichletValues class, allowing it to be used in Python scripts.
  * The registered class will have an initializer that takes a `Basis` object. It exposes several member functions to
  * Python:
- *   - `fixBoundaryDOFs(f)`: Fixes boundary degrees of freedom using a user-defined function `f`.
- *   - `fixBoundaryDOFsUsingLocalView(f)`: Fixes boundary degrees of freedom using a user-defined function `f` with a
- * `LocalView` argument.
- *   - `fixBoundaryDOFsUsingLocalViewAndIntersection(f)`: Fixes boundary degrees of freedom using a user-defined
- * function `f` with `LocalView` and `Intersection` arguments.
- *   - `fixDOFs(f)`: Fixes boundary degrees of freedom using a user-defined function `f` with the boolean vector and
+ *   - `fixBoundaryDOFs(f)`: Fixes boundary degrees of freedom. This function can be overloaded with the following
+ * arguments:
+ *    - using a user-defined function `f`.
+ *    -  using a user-defined function `f` with a `LocalView` argument.
+ *    -  using a user-defined function `f` with `LocalView` and `Intersection` arguments.
+ *    - `fixDOFs(f)`: Fixes boundary degrees of freedom using a user-defined function `f` with the boolean vector and
  * the basis as arguments.
+ *  -  - `fixBoundaryDOFsOfSubSpaceBasis(f)`: Same implementation but you can pass a index of a child basis of a Power
+ * Basis
  *
  * \tparam DirichletValues The DirichletValues class to be registered.
  * \tparam options Variadic template parameters for additional options when defining the Python class.
@@ -61,84 +112,19 @@ void registerDirichletValues(pybind11::handle scope, pybind11::class_<DirichletV
 
   typedef Dune::Python::LocalViewWrapper<Basis> LocalViewWrapper;
   auto includes = Dune::Python::IncludeFiles{"dune/python/functions/globalbasis.hh"};
-  auto lv       = Dune::Python::insertClass<LocalViewWrapper>(
-                scopedf, "LocalView",
-                Dune::Python::GenerateTypeName("Dune::Python::LocalViewWrapper", Dune::MetaType<Basis>()), includes)
-                .first;
+  auto lv_      = Dune::Python::insertClass<LocalViewWrapper>(
+                 scopedf, "LocalView",
+                 Dune::Python::GenerateTypeName("Dune::Python::LocalViewWrapper", Dune::MetaType<Basis>()), includes)
+                 .first;
 
   cls.def(pybind11::init([](const Basis& basis) { return new DirichletValues(basis); }), pybind11::keep_alive<1, 2>());
 
-  auto fixBoundaryDOFs_ = [](DirichletValues& self,
-                             const std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int)>& f) {
-    auto lambda = [&](BackendType& vec, const MultiIndex& indexGlobal) {
-      // we explicitly only allow flat indices
-      f(vec.vector(), indexGlobal[0]);
-    };
-    self.fixBoundaryDOFs(lambda);
-  };
+  cls.def_property_readonly("container", &DirichletValues::container);
+  cls.def_property_readonly("size", &DirichletValues::size);
+  cls.def_property_readonly("fixedDOFsize", &DirichletValues::fixedDOFsize);
+  cls.def("isConstrained", [](DirichletValues& self, std::size_t i) -> bool { return self.isConstrained(i); });
 
-  auto fixBoundaryDOFsUsingLocalView_ =
-      [](DirichletValues& self,
-         const std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int, LocalViewWrapper&)>& f) {
-        auto lambda = [&](BackendType& vec, int localIndex, LocalView& lv) {
-          auto lvWrapper = LocalViewWrapper(lv.globalBasis());
-          // this can be simplified when
-          // https://gitlab.dune-project.org/staging/dune-functions/-/merge_requests/418 becomes available
-          pybind11::object obj = pybind11::cast(lv.element());
-          lvWrapper.bind(obj);
-          f(vec.vector(), localIndex, lvWrapper);
-        };
-        self.fixBoundaryDOFs(lambda);
-      };
-
-  auto fixBoundaryDOFsUsingLocalViewAndIntersection_ =
-      [](DirichletValues& self,
-         const std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int, LocalViewWrapper&, const Intersection&)>& f) {
-        auto lambda = [&](BackendType& vec, int localIndex, LocalView& lv, const Intersection& intersection) {
-          auto lvWrapper = LocalViewWrapper(lv.globalBasis());
-          // this can be simplified when
-          // https://gitlab.dune-project.org/staging/dune-functions/-/merge_requests/418 becomes available
-          pybind11::object obj = pybind11::cast(lv.element());
-          lvWrapper.bind(obj);
-          f(vec.vector(), localIndex, lvWrapper, intersection);
-        };
-        self.fixBoundaryDOFs(lambda);
-      };
-
-  cls.def(
-      "fixBoundaryDOFs",
-      [&](DirichletValues& self, const pybind11::function& functor) {
-        using FixBoundaryDOFsWithGlobalIndexFunction = std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int)>;
-        using FixBoundaryDOFsWithLocalViewFunction =
-            std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int, LocalViewWrapper&)>;
-        using FixBoundaryDOFsWithIntersectionFunction =
-            std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int, LocalViewWrapper&, const Intersection&)>;
-
-        // Disambiguate by number of arguments, as casting doesn't properly work with functions
-        pybind11::module inspect_module = pybind11::module::import("inspect");
-        pybind11::object result         = inspect_module.attr("signature")(functor).attr("parameters");
-        size_t numParams                = pybind11::len(result);
-
-        if (numParams == 2) {
-          auto& function = functor.template cast<const FixBoundaryDOFsWithGlobalIndexFunction>();
-          fixBoundaryDOFs_(self, function);
-
-        } else if (numParams == 3) {
-          auto& function = functor.template cast<const FixBoundaryDOFsWithLocalViewFunction>();
-          fixBoundaryDOFsUsingLocalView_(self, function);
-
-        } else if (numParams == 4) {
-          auto& function = functor.template cast<const FixBoundaryDOFsWithIntersectionFunction>();
-          fixBoundaryDOFsUsingLocalViewAndIntersection_(self, function);
-
-        } else {
-          DUNE_THROW(Dune::NotImplemented, "fixBoundaryDOFs: A function with this signature is not supported");
-        }
-      },
-      pybind11::arg("functor"));
-
-  cls.def("fixBoundaryDOFsOfSubSpaceBasis", [](DirichletValues& self, const pybind11::function& functor,
-                                               const pybind11::object& ssb) { pybind11::print(ssb); });
+  cls.def("fixIthDOF", [](DirichletValues& self, std::size_t i) { self.fixIthDOF(MultiIndex(std::array{i})); });
 
   cls.def("fixDOFs",
           [](DirichletValues& self, const std::function<void(const Basis&, Eigen::Ref<Eigen::VectorX<bool>>)>& f) {
@@ -148,8 +134,6 @@ void registerDirichletValues(pybind11::handle scope, pybind11::class_<DirichletV
             };
             self.fixDOFs(lambda);
           });
-  cls.def_property_readonly("container", [](DirichletValues& self) { return self.container(); });
-  cls.def_property_readonly("size", [](DirichletValues& self) -> int { return self.size(); });
 }
 
 } // namespace Ikarus::Python

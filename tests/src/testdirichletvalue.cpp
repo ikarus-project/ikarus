@@ -14,7 +14,6 @@
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
-#include <dune/functions/functionspacebases/subspacebasis.hh>
 #include <dune/grid/yaspgrid.hh>
 #include <dune/localfefunctions/eigenDuneTransformations.hh>
 
@@ -60,23 +59,63 @@ static auto dirichletBCTest() {
            "result. Index: i="
         << i;
 
-  // Test subspacebasis
-  auto subBasis0 = Dune::Functions::subspaceBasis(basisP->flat(), Dune::Indices::_0);
-  auto subBasis1 = Dune::Functions::subspaceBasis(basisP->flat(), Dune::Indices::_1);
-  Ikarus::DirichletValues dirichletValues_SSB(basisP->flat());
-  dirichletValues_SSB.fixBoundaryDOFs([](auto& dirichFlags, auto&& indexGlobal) { dirichFlags[indexGlobal] = true; },
-                                      subBasis0);
+  auto testSubSpaceBasis = [&](auto&& tree1, auto&& tree2) {
+    Ikarus::DirichletValues dirichletValues_SSB(basisP->flat());
+    dirichletValues_SSB.fixBoundaryDOFs([](auto& dirichFlags, auto&& indexGlobal) { dirichFlags[indexGlobal] = true; },
+                                        tree1);
 
-  t.check(dirichletValues2.fixedDOFsize() == dirichletValues_SSB.fixedDOFsize() * 2)
+    t.check(dirichletValues2.fixedDOFsize() == dirichletValues_SSB.fixedDOFsize() * 2)
+        << "DirichletValues with subspace basis should have half as many fixed DOFs as the full basis, but has "
+        << dirichletValues_SSB.fixedDOFsize() << ", where as the full basis has " << dirichletValues2.fixedDOFsize()
+        << " fixed DOFs";
+
+    dirichletValues_SSB.fixBoundaryDOFs([](auto& dirichFlags, auto&& indexGlobal) { dirichFlags[indexGlobal] = true; },
+                                        tree2);
+
+    for (std::size_t i = 0; i < basisP->flat().size(); ++i)
+      t.check(dirichletValues_SSB.isConstrained(i) == dirichletValues2.isConstrained(i))
+          << "Different dirichlet value creations with subspace basis didn't provide the same result as with full "
+             "basis. "
+             "Index: i="
+          << i;
+  };
+
+  // Static tree path
+  auto treePath0 = Dune::Indices::_0;
+  auto treePath1 = Dune::Indices::_1;
+  testSubSpaceBasis(treePath0, treePath1);
+
+  // Dynamic tree path
+  auto treePath0d = 0;
+  auto subBasis1d = 1;
+  testSubSpaceBasis(treePath0d, subBasis1d);
+
+  // Test with Intersection
+  auto fixLambda = [](auto& dirichletFlags, auto&& localIndex, auto&& localView, auto&& intersection) {
+    if (intersection.geometry().center()[0] > 4 - 1e-8)
+      dirichletFlags[localView.index(localIndex)] = true;
+  };
+  Ikarus::DirichletValues dirichletValues5(basisP->flat());
+  dirichletValues5.fixBoundaryDOFs(fixLambda);
+
+  Ikarus::DirichletValues dirichletValues_SSB2(basisP->flat());
+  dirichletValues_SSB2.fixBoundaryDOFs(fixLambda, treePath0);
+
+  t.check(dirichletValues5.fixedDOFsize() == dirichletValues_SSB2.fixedDOFsize() * 2)
       << "DirichletValues with subspace basis should have half as many fixed DOFs as the full basis, but has "
-      << dirichletValues_SSB.fixedDOFsize() << ", where as the full basis has " << dirichletValues2.fixedDOFsize()
+      << dirichletValues_SSB2.fixedDOFsize() << ", where as the full basis has " << dirichletValues5.fixedDOFsize()
       << " fixed DOFs";
 
-  dirichletValues_SSB.fixBoundaryDOFs([](auto& dirichFlags, auto&& indexGlobal) { dirichFlags[indexGlobal] = true; },
-                                      subBasis1);
+  dirichletValues_SSB2.fixBoundaryDOFs(fixLambda, treePath1);
+
+  t.check(dirichletValues_SSB2.fixedDOFsize() > 0);
+  t.check(dirichletValues5.fixedDOFsize() == dirichletValues_SSB2.fixedDOFsize())
+      << "DirichletValues with subspace basis should have as many fixed DOFs as the full basis, but has "
+      << dirichletValues_SSB2.fixedDOFsize() << ", where as the full basis has " << dirichletValues5.fixedDOFsize()
+      << " fixed DOFs";
 
   for (std::size_t i = 0; i < basisP->flat().size(); ++i)
-    t.check(dirichletValues_SSB.isConstrained(i) == dirichletValues2.isConstrained(i))
+    t.check(dirichletValues_SSB2.isConstrained(i) == dirichletValues5.isConstrained(i))
         << "Different dirichlet value creations with subspace basis didn't provide the same result as with full basis. "
            "Index: i="
         << i;

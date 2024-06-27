@@ -18,6 +18,7 @@
 
 #include <dune/functions/backends/istlvectorbackend.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
+#include <dune/functions/functionspacebases/subspacebasis.hh>
 
 #include <Eigen/Core>
 
@@ -84,49 +85,24 @@ public:
    * degrees of freedom and the usual arguments of `Dune::Functions::forEachBoundaryDOF`.
    *
    * \param f A callback function
+   * \param treePath An optional argument specifying a tree path to a subspacebasis, e.g. Dune::Indices::_0
    */
-  template <typename F>
-  void fixBoundaryDOFs(F&& f) {
+  template <typename F, typename TreePath = Dune::TypeTree::HybridTreePath<>>
+  void fixBoundaryDOFs(F&& f, TreePath&& treePath = {}) {
+    using namespace Dune::Functions;
+
     if constexpr (Concepts::IsFunctorWithArgs<F, BackendType, typename Basis::MultiIndex>) {
       auto lambda = [&](auto&& indexGlobal) { f(dirichletFlagsBackend_, indexGlobal); };
-      Dune::Functions::forEachBoundaryDOF(basis_, lambda);
+      Dune::Functions::forEachBoundaryDOF(subspaceBasis(basis_, std::forward<TreePath>(treePath)), lambda);
     } else if constexpr (Concepts::IsFunctorWithArgs<F, BackendType, int, typename Basis::LocalView>) {
       auto lambda = [&](auto&& localIndex, auto&& localView) { f(dirichletFlagsBackend_, localIndex, localView); };
-      Dune::Functions::forEachBoundaryDOF(basis_, lambda);
+      Dune::Functions::forEachBoundaryDOF(subspaceBasis(basis_, std::forward<TreePath>(treePath)), lambda);
     } else if constexpr (Concepts::IsFunctorWithArgs<F, BackendType, int, typename Basis::LocalView,
                                                      typename Basis::GridView::Intersection>) {
       auto lambda = [&](auto&& localIndex, auto&& localView, auto&& intersection) {
         f(dirichletFlagsBackend_, localIndex, localView, intersection);
       };
-      Dune::Functions::forEachBoundaryDOF(basis_, lambda);
-    } else
-      DUNE_THROW(Dune::IOError, "Invalid callback function passed to fixBoundaryDOFs");
-  }
-  /**
-   * \brief Function to fix (set boolean values to true or false) degrees of freedom on the boundary using a
-   * SubSpaceBasis of the Basis used to create the DirichletValues
-   *
-    This function takes a callback function, which will be called with the boolean vector of fixed boundary
-   * degrees of freedom and the usual arguments of `Dune::Functions::forEachBoundaryDOF`.
-   *
-   * \param f A callback function
-   * \param ssb A subspace basis (compile-time-checked to be an actual subspace basis of basis)
-   */
-  template <typename F, typename SSB>
-  requires(std::is_same_v<typename std::remove_cvref_t<SSB>::RootBasis, Basis>)
-  void fixBoundaryDOFs(F&& f, SSB&& ssb) {
-    if constexpr (Concepts::IsFunctorWithArgs<F, BackendType, typename Basis::MultiIndex>) {
-      auto lambda = [&](auto&& indexGlobal) { f(dirichletFlagsBackend_, indexGlobal); };
-      Dune::Functions::forEachBoundaryDOF(std::forward<SSB>(ssb), lambda);
-    } else if constexpr (Concepts::IsFunctorWithArgs<F, BackendType, int, typename Basis::LocalView>) {
-      auto lambda = [&](auto&& localIndex, auto&& localView) { f(dirichletFlagsBackend_, localIndex, localView); };
-      Dune::Functions::forEachBoundaryDOF(std::forward<SSB>(ssb), lambda);
-    } else if constexpr (Concepts::IsFunctorWithArgs<F, BackendType, int, typename Basis::LocalView,
-                                                     typename Basis::GridView::Intersection>) {
-      auto lambda = [&](auto&& localIndex, auto&& localView, auto&& intersection) {
-        f(dirichletFlagsBackend_, localIndex, localView, intersection);
-      };
-      Dune::Functions::forEachBoundaryDOF(std::forward<SSB>(ssb), lambda);
+      Dune::Functions::forEachBoundaryDOF(subspaceBasis(basis_, std::forward<TreePath>(treePath)), lambda);
     }
   }
 
