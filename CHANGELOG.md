@@ -47,6 +47,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
         - The assembler bindings now also accept affordances and `DBCOption`, and they are also renamed to simply `matrix`, `vector`
           and `scalar`.
         - The assemblers also export the binding functions to bind the assemblers.
+- Rework Python Interface for `DirichletValues` plus adding support to easily fix boundary DOFs of subspacebasis in C++ and Python ([#305](https://github.com/ikarus-project/ikarus/pull/305))
 
 ## Release v0.4 (Ganymede)
 
