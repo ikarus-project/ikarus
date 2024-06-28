@@ -106,7 +106,7 @@ public:
    * \details
    * This function is part of the Dune::VTKFunction interface.
    * This has no affect when the ResultFunction is used as part of a the dune-vtk module
-   * 
+   *
    * \return Precision (i.e. float64 or float32)
    */
   Dune::VTK::Precision precision() const override { return prec_; }
