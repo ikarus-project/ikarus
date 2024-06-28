@@ -42,7 +42,7 @@ def testDirichletValues():
     # This is equivalent to values[0] == True, but this syntax is discouraged by PEP
     assert dirichletValues.container[0]
 
-    # Note that the result of localView.index(localIndex) is a multiIndex even for a flat basis, the localIndex appears to be a int
+    # Note that the result of localView.index(localIndex) is a multiIndex even for a flat basis, the localIndex is an int
     def fixAnotherIndexWithLocalView(vec, localIndex, localView):
         if localView.index(localIndex) == [4]:
             vec[localView.index(localIndex)] = True
