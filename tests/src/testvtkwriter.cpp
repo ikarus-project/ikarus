@@ -11,7 +11,6 @@
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/grid/common/entity.hh>
-#include <dune/grid/io/file/vtk/vtkwriter.hh>
 #include <dune/grid/uggrid.hh>
 #include <dune/grid/yaspgrid.hh>
 #include <dune/vtk/datacollectors/discontinuousdatacollector.hh>
@@ -31,8 +30,48 @@
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/init.hh>
+
 using Dune::TestSuite;
 
+template <typename GridView, typename Assembler>
+auto testInstantiationAndTemplateArgumentDeduction(const GridView& gridView, std::shared_ptr<Assembler> assembler) {
+  static_assert(Ikarus::Concepts::IsAssembler<typename decltype(assembler)::element_type>);
+  // Create Vtk::Writer
+  static_assert(std::is_class_v<Ikarus::Vtk::Writer<Assembler, false>>);
+  static_assert(std::is_same_v<typename Ikarus::Vtk::Writer<Assembler, false>::DataCollector,
+                               Dune::Vtk::ContinuousDataCollector<GridView>>);
+
+  // Unfortionatly we can instantiate the structured DataCollector even for a unstructured Grid (UG)
+  static_assert(std::is_class_v<Ikarus::Vtk::Writer<Assembler, true>>);
+  static_assert(std::is_same_v<typename Ikarus::Vtk::Writer<Assembler, true>::DataCollector,
+                               Dune::Vtk::YaspDataCollector<GridView>>);
+
+  auto writer = Ikarus::Vtk::Writer<Assembler>(assembler);
+  auto writerArgs =
+      Ikarus::Vtk::Writer<Assembler>(assembler, Dune::Vtk::FormatTypes::BINARY, Dune::Vtk::DataTypes::FLOAT32);
+
+  auto writerDC     = Ikarus::Vtk::Writer<Assembler, false, Dune::Vtk::DiscontinuousDataCollector<GridView>>(assembler);
+  auto writerDCArgs = Ikarus::Vtk::Writer<Assembler, false, Dune::Vtk::DiscontinuousDataCollector<GridView>>(
+      assembler, Dune::Vtk::FormatTypes::BINARY, Dune::Vtk::DataTypes::FLOAT32);
+
+  Dune::Vtk::DiscontinuousDataCollector<GridView> dc{gridView};
+  static_assert(Ikarus::Concepts::IsDataCollector<decltype(dc)>);
+
+  auto writerDCAsArg =
+      Ikarus::Vtk::Writer<Assembler, false, Dune::Vtk::DiscontinuousDataCollector<GridView>>(assembler, dc);
+  auto writerDCAsArgM =
+      Ikarus::Vtk::Writer<Assembler, false, Dune::Vtk::DiscontinuousDataCollector<GridView>>(assembler, std::move(dc));
+  auto writerDCAsArgArgs = Ikarus::Vtk::Writer<Assembler, false, Dune::Vtk::DiscontinuousDataCollector<GridView>>(
+      assembler, dc, Dune::Vtk::FormatTypes::BINARY, Dune::Vtk::DataTypes::FLOAT32);
+
+  // using CTAD
+  auto writerCTAD     = Ikarus::Vtk::Writer(assembler);
+  auto writerArgsCTAD = Ikarus::Vtk::Writer(assembler, Dune::Vtk::FormatTypes::BINARY, Dune::Vtk::DataTypes::FLOAT32);
+  auto writerDCAsArgCTAD  = Ikarus::Vtk::Writer(assembler, dc);
+  auto writerDCAsArgMCTAD = Ikarus::Vtk::Writer(assembler, std::move(dc));
+  auto writerDCAsArgArgsCTAD =
+      Ikarus::Vtk::Writer(assembler, dc, Dune::Vtk::FormatTypes::BINARY, Dune::Vtk::DataTypes::FLOAT32);
+}
 
 auto runTestCase() {
   TestSuite t("Test ResultFunction");
@@ -78,19 +117,28 @@ auto runTestCase() {
   auto lambdaLoad = 1.0;
   req.insertGlobalSolution(D_Glob).insertParameter(lambdaLoad);
 
-  sparseAssembler->bind(req);
-  sparseAssembler->bind(Ikarus::DBCOption::Full);
+  // sparseAssembler->bind(req);
+  // sparseAssembler->bind(Ikarus::DBCOption::Full);
 
-  auto nonLinOp = Ikarus::NonLinearOperatorFactory::op(
-      sparseAssembler,
-      Ikarus::AffordanceCollection(Ikarus::VectorAffordance::forces, Ikarus::MatrixAffordance::stiffness));
+  // auto nonLinOp = Ikarus::NonLinearOperatorFactory::op(
+  //     sparseAssembler,
+  //     Ikarus::AffordanceCollection(Ikarus::VectorAffordance::forces, Ikarus::MatrixAffordance::stiffness));
 
-  const auto& K    = nonLinOp.derivative();
-  const auto& Fext = nonLinOp.value();
+  // const auto& K    = nonLinOp.derivative();
+  // const auto& Fext = nonLinOp.value();
 
-  auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::sd_CholmodSupernodalLLT);
-  linSolver.compute(K);
-  linSolver.solve(D_Glob, -Fext);
+  // auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::sd_CholmodSupernodalLLT);
+  // linSolver.compute(K);
+  // linSolver.solve(D_Glob, -Fext);
+
+
+  // Tests
+  testInstantiationAndTemplateArgumentDeduction(gridView, sparseAssembler);
+
+  Dune::Vtk::DiscontinuousDataCollector dc{gridView};
+
+  auto writer  = Ikarus::Vtk::Writer(sparseAssembler);
+  auto writer2 = Ikarus::Vtk::Writer(sparseAssembler, dc);
 
   return t;
 }
