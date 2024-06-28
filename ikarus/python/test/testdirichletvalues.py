@@ -71,7 +71,7 @@ def testDirichletValues():
     indicesPerDirection: int = (math.sqrt(grid.size(0)) + 1) * 2
     assert dirichletValues.fixedDOFsize == 2 + indicesPerDirection
 
-    # This checks wether container is a reference
+    # This checks whether container is a reference
     assert sum(container) == dirichletValues.fixedDOFsize
 
     # Test Subbasis

@@ -29,6 +29,7 @@ const auto& basis() const; // (5)!
 bool isConstrained(std::size_t i) const; // (6)!
 auto fixedDOFsize() const; // (7)!
 auto size() const ; // (8)!
+auto reset(); // (9)!
 ```
 
 1. Create class by inserting a global basis, [@sander2020dune] Chapter 10.
@@ -42,5 +43,6 @@ auto size() const ; // (8)!
 6. Indicates whether the degree of freedom `i` is fixed.
 7. Returns the number of fixed degrees of freedom.
 8. Returns the number of all dirichlet degrees of freedom.
+9. Resets the whole container
 
 \bibliography

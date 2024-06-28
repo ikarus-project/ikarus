@@ -104,7 +104,7 @@ public:
    * \brief Fixes (set boolean value to true) a specific degree of freedom
    *
    * \param i An index indicating the DOF number to be fixed
-   * \param flag Boolean indicating wether the DOF should fixed or not
+   * \param flag Boolean indicating whether the DOF should fixed or not
    */
   template <typename MultiIndex>
   requires(not std::integral<MultiIndex>)
@@ -116,7 +116,7 @@ public:
    * \brief Fixes (set boolean value to true) a specific degree of freedom
    *
    * \param i An index indicating the DOF number to be fixed
-   * \param flag Boolean indicating wether the DOF should fixed or not
+   * \param flag Boolean indicating whether the DOF should fixed or not
    */
   void setSingleDOF(std::size_t i, bool flag) { dirichletFlags_[i] = flag; }
 

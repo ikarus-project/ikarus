@@ -87,7 +87,8 @@ void forwardCorrectFunction(DirichletValues& dirichletValues, const pybind11::fu
  *  - `fixDOFs(f)`: Fixes boundary degrees of freedom using a user-defined function `f` with the basis and the boolean
  * vector as arguments.
  *  - `setSingleDOF(i, flag: bool): Fixes or unfixes DOF with index i
- *  - `isConstrained(i)`: Checks wether index i is constrained
+ *  - `isConstrained(i)`: Checks whether index i is constrained
+ *  - `reset()`: Resets the whole container
  *
  * The following properties can be accessed:
  *  - `container`: the underlying container of dirichlet flags (as a const reference)
