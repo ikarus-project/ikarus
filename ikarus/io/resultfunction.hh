@@ -102,6 +102,16 @@ public:
   }
 
   /**
+   * \brief Get the precision used for this result
+   * \details
+   * This function is part of the Dune::VTKFunction interface.
+   * This has no affect when the ResultFunction is used as part of a the dune-vtk module
+   *
+   * \return Precision (i.e. float64 or float32)
+   */
+  Dune::VTK::Precision precision() const override { return prec_; }
+
+  /**
    * \brief Constructor for ResultFunction.
    * \details
    * Constructs a ResultFunction object with given finite elements, ferequirements
@@ -109,10 +119,12 @@ public:
    * \param fes Pointer to a vector of finite elements
    * \param req FERequirements for evaluation
    */
-  ResultFunction(std::vector<FiniteElement>* fes, const FERequirementType& req)
+  ResultFunction(std::vector<FiniteElement>* fes, const FERequirementType& req,
+                 Dune::VTK::Precision prec = Dune::VTK::Precision::float64)
       : gridView_{fes->at(0).localView().globalBasis().gridView()},
         feRequirements_{req},
         fes_{fes},
+        prec_{prec},
         userFunction_{UserFunction{}} {}
 
 private:
@@ -128,6 +140,7 @@ private:
   GridView gridView_;
   FERequirementType feRequirements_;
   std::vector<FiniteElement>* fes_;
+  Dune::VTK::Precision prec_;
   [[no_unique_address]] std::string name_{};
   UserFunction userFunction_;
 };
@@ -145,8 +158,9 @@ private:
  * \tparam UserFunction Type of the user-defined function for custom result evaluation (default is DefaultUserFunction)
  */
 template <template <typename, int, int> class RT, typename UserFunction = Impl::DefaultUserFunction, typename FE>
-auto makeResultFunction(std::vector<FE>* fes, const typename FE::Requirement& req) {
-  return std::make_shared<ResultFunction<FE, RT, UserFunction>>(fes, req);
+auto makeResultFunction(std::vector<FE>* fes, const typename FE::Requirement& req,
+                        Dune::VTK::Precision prec = Dune::VTK::Precision::float64) {
+  return std::make_shared<ResultFunction<FE, RT, UserFunction>>(fes, req, prec);
 }
 
 /**
