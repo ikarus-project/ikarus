@@ -92,6 +92,12 @@ public:
   auto& finiteElements() const { return feContainer_; }
 
   /**
+   *\ brief Returns the gridView of finite elements.
+   * \return Reference to the finite element's gridView.
+   */
+  auto& gridView() const { return dirichletValues_->basis().gridView(); }
+
+  /**
    * \brief Returns the number of constraints below a given degrees of freedom index.
    *
    * \param i Index of the degree of freedom.
