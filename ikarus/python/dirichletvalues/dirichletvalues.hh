@@ -24,9 +24,8 @@
 // PYBIND11_MAKE_OPAQUE(std::vector<bool>);
 namespace Ikarus::Python {
 
-template <class DirichletValues, typename CppVisitor>
-void forwardCorrectFunction(DirichletValues& dirichletValues, const pybind11::function& functor,
-                            CppVisitor&& cppFunction) {
+template <class DirichletValues>
+void forwardCorrectFunction(DirichletValues& dirichletValues, const pybind11::function& functor, auto&& cppFunction) {
   using Basis        = typename DirichletValues::Basis;
   using Intersection = typename Basis::GridView::Intersection;
   using BackendType  = typename DirichletValues::BackendType;
@@ -47,7 +46,7 @@ void forwardCorrectFunction(DirichletValues& dirichletValues, const pybind11::fu
 
   if (numParams == 2) {
     auto function = functor.template cast<const FixBoundaryDOFsWithGlobalIndexFunction>();
-    auto lambda    = [&](BackendType& vec, const MultiIndex& indexGlobal) {
+    auto lambda   = [&](BackendType& vec, const MultiIndex& indexGlobal) {
       // we explicitly only allow flat indices
       function(vec.vector(), indexGlobal[0]);
     };
@@ -55,7 +54,7 @@ void forwardCorrectFunction(DirichletValues& dirichletValues, const pybind11::fu
 
   } else if (numParams == 3) {
     auto function = functor.template cast<const FixBoundaryDOFsWithLocalViewFunction>();
-    auto lambda    = [&](BackendType& vec, int localIndex, auto& lv) {
+    auto lambda   = [&](BackendType& vec, int localIndex, auto& lv) {
       auto lvWrapper = LocalViewWrapper(lv.rootLocalView());
       function(vec.vector(), localIndex, lvWrapper);
     };
@@ -63,7 +62,7 @@ void forwardCorrectFunction(DirichletValues& dirichletValues, const pybind11::fu
 
   } else if (numParams == 4) {
     auto function = functor.template cast<const FixBoundaryDOFsWithIntersectionFunction>();
-    auto lambda    = [&](BackendType& vec, int localIndex, auto& lv, const Intersection& intersection) {
+    auto lambda   = [&](BackendType& vec, int localIndex, auto& lv, const Intersection& intersection) {
       auto lvWrapper = LocalViewWrapper(lv.rootLocalView());
       function(vec.vector(), localIndex, lvWrapper, intersection);
     };
@@ -87,7 +86,7 @@ void forwardCorrectFunction(DirichletValues& dirichletValues, const pybind11::fu
  *   -  with the boolean vector, the local index, the `LocalView` and the `Intersection`.
  *  - `fixDOFs(f)`: Fixes boundary degrees of freedom using a user-defined function `f` with the basis and the boolean
  * vector as arguments.
- *  - `fixIthDOF(i): Fixes DOF with index i
+ *  - `setSingleDOF(i, flag: bool): Fixes or unfixes DOF with index i
  *  - `isConstrained(i)`: Checks wether index i is constrained
  *
  * The following properties can be accessed:
@@ -129,8 +128,8 @@ void registerDirichletValues(pybind11::handle scope, pybind11::class_<DirichletV
   cls.def_property_readonly("size", &DirichletValues::size);
   cls.def_property_readonly("fixedDOFsize", &DirichletValues::fixedDOFsize);
   cls.def("isConstrained", [](DirichletValues& self, std::size_t i) -> bool { return self.isConstrained(i); });
-
-  cls.def("fixIthDOF", [](DirichletValues& self, std::size_t i) { self.fixIthDOF(MultiIndex(std::array{i})); });
+  cls.def("setSingleDOF", [](DirichletValues& self, std::size_t i, bool flag) { self.setSingleDOF(i, flag); });
+  cls.def("reset", &DirichletValues::reset);
 
   cls.def("fixDOFs",
           [](DirichletValues& self, const std::function<void(const Basis&, Eigen::Ref<Eigen::VectorX<bool>>)>& f) {

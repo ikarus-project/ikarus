@@ -25,7 +25,6 @@
 #include <ikarus/utils/linearalgebrahelper.hh>
 #include <ikarus/utils/pythonautodiffdefinitions.hh>
 
-
 using Dune::TestSuite;
 
 static auto dirichletBCTest() {
@@ -43,22 +42,23 @@ static auto dirichletBCTest() {
   using namespace Dune::Functions::BasisFactory;
   auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<1>()));
 
-  auto basisP = std::make_shared<const decltype(basis)>(basis);
+  auto basisP    = std::make_shared<const decltype(basis)>(basis);
+  auto flatBasis = basisP->flat();
 
-  Ikarus::DirichletValues dirichletValues1(basisP->flat());
+  Ikarus::DirichletValues dirichletValues1(flatBasis);
   dirichletValues1.fixDOFs([](auto& basis_, auto& dirichFlags) {
     Dune::Functions::forEachBoundaryDOF(basis_, [&](auto&& indexGlobal) { dirichFlags[indexGlobal] = true; });
   });
 
-  Ikarus::DirichletValues dirichletValues2(basisP->flat());
+  Ikarus::DirichletValues dirichletValues2(flatBasis);
   dirichletValues2.fixBoundaryDOFs([](auto& dirichFlags, auto&& indexGlobal) { dirichFlags[indexGlobal] = true; });
 
-  for (std::size_t i = 0; i < basisP->flat().size(); ++i)
+  for (std::size_t i = 0; i < flatBasis.size(); ++i)
     t.check(dirichletValues1.isConstrained(i) == dirichletValues2.isConstrained(i))
         << "Different dirichlet value creations didn't provide the same result. Index: i=" << i;
 
   auto testSubSpaceBasis = [&](auto&& tree1, auto&& tree2) {
-    Ikarus::DirichletValues dirichletValues_SSB(basisP->flat());
+    Ikarus::DirichletValues dirichletValues_SSB(flatBasis);
     dirichletValues_SSB.fixBoundaryDOFs([](auto& dirichFlags, auto&& indexGlobal) { dirichFlags[indexGlobal] = true; },
                                         tree1);
 
@@ -93,10 +93,10 @@ static auto dirichletBCTest() {
     if (intersection.geometry().center()[0] > 4 - 1e-8)
       dirichletFlags[localView.index(localIndex)] = true;
   };
-  Ikarus::DirichletValues dirichletValues5(basisP->flat());
+  Ikarus::DirichletValues dirichletValues5(flatBasis);
   dirichletValues5.fixBoundaryDOFs(fixLambda);
 
-  Ikarus::DirichletValues dirichletValues_SSB2(basisP->flat());
+  Ikarus::DirichletValues dirichletValues_SSB2(flatBasis);
   dirichletValues_SSB2.fixBoundaryDOFs(fixLambda, treePath0);
 
   t.check(dirichletValues5.fixedDOFsize() == dirichletValues_SSB2.fixedDOFsize() * 2)
@@ -112,15 +112,13 @@ static auto dirichletBCTest() {
       << dirichletValues_SSB2.fixedDOFsize() << ", where as the full basis has " << dirichletValues5.fixedDOFsize()
       << " fixed DOFs";
 
-  for (std::size_t i = 0; i < basisP->flat().size(); ++i)
+  for (std::size_t i = 0; i < flatBasis.size(); ++i)
     t.check(dirichletValues_SSB2.isConstrained(i) == dirichletValues5.isConstrained(i))
         << "Different dirichlet value creations with subspace basis didn't provide the same result as with full basis. "
            "Index: i="
         << i;
 
-  auto sum = [](const auto& container_) {
-    return std::accumulate(container_.begin(), container_.end(), 0, std::plus());
-  };
+  auto sum        = [](const auto& container_) { return std::accumulate(container_.begin(), container_.end(), 0); };
   auto manual_sum = [](const auto& dv) {
     int sum = 0;
     for (auto i : Dune::range(dv.size()))
@@ -142,11 +140,14 @@ static auto dirichletBCTest() {
   t.check(sumManual == sumPre)
       << "Summing over container should yield the same amount of fixed DOFs then checking manually";
 
-  dirichletValues2.unfixIthDOF({1});
+  dirichletValues2.setSingleDOF(decltype(flatBasis)::MultiIndex{1}, false);
   t.check(sum(container) == sumPre - 1) << "The sum of fixed DOFs should be one less then after unfixing one";
 
   t.check(manual_sum(dirichletValues2) == sumPre - 1)
       << "Summing over container should yield the same amount of fixed DOFs then checking manually";
+
+  dirichletValues2.setSingleDOF(2, false);
+  t.check(sum(container) == sumPre - 2) << "The sum of fixed DOFs should be two less then after unfixing two";
 
   // Reset
   dirichletValues2.reset();
@@ -251,7 +252,7 @@ static auto dirichletBCTest() {
           (std::abs(nodalPos[i][1]) < tol) or (std::abs(nodalPos[i][1] - Ly) < tol))
         for (auto fixedDirection = 0; fixedDirection < 2; ++fixedDirection) {
           auto fixIndex = localView.index(localView.tree().child(fixedDirection).localIndex(i));
-          dirichletValues4.fixIthDOF(fixIndex);
+          dirichletValues4.setSingleDOF(fixIndex, true);
         }
   }
 
