@@ -107,7 +107,8 @@ struct AffordanceCollection : public std::tuple<Affordances...>
 
   AffordanceCollection() = default;
 
-  constexpr AffordanceCollection(Affordances... affordances) requires (sizeof...(Affordances) > 0)
+  constexpr AffordanceCollection(Affordances... affordances)
+  requires(sizeof...(Affordances) > 0)
       : Base(affordances...) {}
 
   static constexpr bool hasScalarAffordance = traits::hasType<ScalarAffordance, std::tuple<Affordances...>>::value;
@@ -166,7 +167,6 @@ struct AffordanceCollection : public std::tuple<Affordances...>
     return std::get<MatrixAffordance>(*this);
   }
 };
-
 
 inline constexpr VectorAffordance forces = VectorAffordance::forces;
 
@@ -363,10 +363,11 @@ public:
 
 } // namespace Ikarus
 
-namespace std
-{
-  template <Ikarus::FEAffordance... Affordances>
+namespace std {
+template <Ikarus::FEAffordance... Affordances>
 requires(sizeof...(Affordances) <= 3)
-struct tuple_size< Ikarus::AffordanceCollection<Affordances...> >
-    : std::integral_constant<std::size_t, sizeof...(Affordances)> { };
-}
+struct tuple_size<Ikarus::AffordanceCollection<Affordances...>>
+    : std::integral_constant<std::size_t, sizeof...(Affordances)>
+{
+};
+} // namespace std

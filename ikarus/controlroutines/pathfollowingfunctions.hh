@@ -114,8 +114,8 @@ struct ArcLength
     const auto& K = nonLinearOperator.derivative();
 
     static constexpr bool isLinearSolver =
-        Ikarus::Concepts::LinearSolverCheck<decltype(LinearSolver(solverTag)), typename NLO::template FunctionReturnType<1>,
-                                            typename NLO::ValueType>;
+        Ikarus::Concepts::LinearSolverCheck<decltype(LinearSolver(solverTag)),
+                                            typename NLO::template FunctionReturnType<1>, typename NLO::ValueType>;
     static_assert(isLinearSolver,
                   "Initial predictor step in the standard arc-length method doesn't have a linear solver");
 

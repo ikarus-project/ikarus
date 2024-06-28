@@ -9,17 +9,19 @@ from ikarus.generator import MySimpleGenerator
 from dune.generator.algorithm import cppType, run
 
 def __SubOperator(nonLinOp):
-    # def __subOperatorFunc(nonLinOp,*args: int):
-    #     runCode="""
-    #     template <class NLO>
-    #     void subOperator(const NLO& nlo)
-    #     {{
-    #     return nlo.template subOperator<{indices}>();
-    #     }}
-    #     """.format(indices=",".join([str(i) for i in args]))
-    #     return run("subOperator",StringIO(runCode),nonLinOp)
+    # This would be nice to have, but it is not possible to generate the code for the subOperator function
+    def __subOperatorFunc(nonLinOp,*args: int):
+        runCode="""
+        template <class NLO>
+        void subOperator( NLO& nlo)
+        {{
+        return nlo.template subOperator<{indices}>();
+        }}
+        """.format(indices=",".join([str(i) for i in args]))
+        return run("subOperator",StringIO(runCode),nonLinOp)
 
     def __subOperatorFunc(nonLinOp, *args):
+        from itertools import accumulate
         sorted = all(args[i] <= args[i+1] for i in range(len(args) - 1))
         if(not sorted):
             raise ValueError("The indices passed to the subOperator function are not sorted")
@@ -29,21 +31,10 @@ def __SubOperator(nonLinOp):
             raise ValueError("At least one argument is needed")
         elif(any([arg>nonLinOp.numberOfFunctions-1 for arg in args])):
             raise ValueError("You passed an index that is too high")
-        elif(len(args)==1):
-            if(args[0] == 0):
-                subOp = nonLinOp.__subOperator0()
-            elif(args[0] == 1):
-                subOp = nonLinOp.__subOperator1()
-            elif(args[0] == 2):
-                subOp = nonLinOp.__subOperator2()
-        elif(len(args)==2):
-            if(args[0] == 0 and args[1] == 1):
-                subOp = nonLinOp.__subOperator01()
-            elif(args[0] == 1 and args[1] == 2):
-                subOp = nonLinOp.__subOperator12()
-        else:
-            raise ValueError("The subOperator function does not know how to handle the given indices")
-        subOp.subOperator = types.MethodType(__SubOperator(nonLinOp),nonLinOp)
+
+        func = getattr(nonLinOp, '__subOperator'.join([str(x) for x in args]))
+        subOp = func()
+        subOp.subOperator = types.MethodType(__SubOperator(subOp),subOp)
         return subOp
     return __subOperatorFunc
 
@@ -85,7 +76,35 @@ def NonLinearOperator(functions, parameters):
     return nonLinOp
 
 
-def makeNonLinearOperator(assembler,derivativeIndices=None, requirement=None,affordances=None, enforcingBCOption=None):
+def __op(nonLinOpFactory):
+    # This would be nice to have, but it is not possible to generate the code for the subOperator function
+    def __opFunc(nonLinOpFactory,requirement,affordances,enforcingBCOption,*args: int):
+        runCode="""
+        template <class NLO>
+        void subOperator( NLO& nlo)
+        {{
+        return nlo.template subOperator<{indices}>();
+        }}
+        """.format(indices=",".join([str(i) for i in args]))
+        op = run("subOperator",StringIO(runCode),nonLinOp)
+        op.subOperator = types.MethodType(__opFunc(op),op)
+        return op
+
+    # def __opFunc(nonLinOpFactory, *args):
+    #     from itertools import accumulate
+    #     sorted = all(args[i] <= args[i+1] for i in range(len(args) - 1))
+    #     if(not sorted):
+    #         raise ValueError("The indices passed to the subOperator function are not sorted")
+    #     if(len(args)>=nonLinOp.numberOfFunctions):
+    #         raise ValueError("You passed too many arguments to the subOperator function")
+    #     elif(len(args)==0):
+    #         raise ValueError("At least one argument is needed")
+    #     elif(any([arg>nonLinOp.numberOfFunctions-1 for arg in args])):
+    #         raise ValueError("You passed an index that is too high")
+
+    return __opFunc
+
+def makeNonLinearOperator(assembler,derivativeIndices=None, requirement=None,affordances=None, enforcingBCOption=None,*args: int):
     generator = MySimpleGenerator("NonLinearOperatorFactory", "Ikarus::Python")
     includes = []
     element_type = f"Ikarus::Python::NonLinearOperatorFactoryWrapper<std::shared_ptr<{assembler.cppTypeName}>>"
@@ -94,10 +113,10 @@ def makeNonLinearOperator(assembler,derivativeIndices=None, requirement=None,aff
     includes+= assembler.cppIncludes
     moduleName = "NonLinearOperatorFactory_" + hashIt(element_type)
     module = generator.load(
-        includes=includes, typeName=element_type, moduleName=moduleName
+        includes=includes, typeName=element_type, moduleName=moduleName, dynamicAttr=True
     )
     factory= module.NonLinearOperatorFactory(assembler)
-
-    nonLinOp =  factory.op(requirement,affordances,enforcingBCOption)
+    factory.op = types.MethodType(__op(factory),factory)
+    nonLinOp =  factory.op(requirement,affordances,enforcingBCOption,*args)
     nonLinOp.subOperator = types.MethodType(__SubOperator(nonLinOp),nonLinOp)
     return nonLinOp

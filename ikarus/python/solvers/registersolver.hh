@@ -32,11 +32,11 @@ void registerTrustRegion(pybind11::handle scope, pybind11::class_<TR, options...
   cls.def(
       "setup",
       [](Solver& self, py::dict dict) {
-        TrustRegionSettings set;
-        auto settingsFromDict =[&]<typename To>(std::string from){
-          if (dict.contains(from))
-            set.key = dict[from].cast<To>();
-        };
+    TrustRegionSettings set;
+    auto settingsFromDict = [&]<typename To>(std::string from) {
+      if (dict.contains(from))
+        set.key = dict[from].cast<To>();
+    };
         }
         settingsFromDict<int>( "verbosity" );
         settingsFromDict<double>( "maxtime" );
@@ -50,7 +50,7 @@ void registerTrustRegion(pybind11::handle scope, pybind11::class_<TR, options...
         settingsFromDict<double>( "rho_reg" );
         settingsFromDict<double>( "Delta_bar" );
         settingsFromDict<double>( "Delta0" );
-      },
+},
       R"(
         This function sets up the solver with settings provided
         through a Python dictionary.
