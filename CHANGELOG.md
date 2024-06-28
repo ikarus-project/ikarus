@@ -40,6 +40,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
       adds the function `create`, which accepts a *bound* assembler, where a non-linear operator can be constructed on the fly. For this to
       work, all non-linear solvers have to implement a method `createNonlinearSolver`, which accepts the settings of the class and a nonlinear
       operator. See, e.g., `NewtonRaphsonWithSubsidiaryFunction`.
+- Add an About Ikarus page in the documentation ([#291](https://github.com/ikarus-project/ikarus/pull/291))
 
     - Python:
         - Bindings for Enums can now be done conveniently with the `ENUM_BINDINGS` macro.

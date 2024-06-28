@@ -81,6 +81,7 @@ nav:
   - C++ recommendations: 05_cppReferences/cppRef.md
   - Literature: 99_Literature/99Literature.md
   - Gallery: gallery.md
+  - About: about.md
   - Blog:
       - 04_blog/index.md
 #      - 04_blog/posts/v0.3.md #remove comments here for local draft
