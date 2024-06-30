@@ -8,6 +8,9 @@
  *
  */
 
+#pragma once
+
+#include "dune/functions/gridfunctions/discreteglobalbasisfunction.hh"
 #include <dune/vtk/vtkwriter.hh>
 #include <dune/vtk/writers/unstructuredgridwriter.hh>
 
@@ -32,6 +35,19 @@ concept IsDataCollector = requires(DC dc) {
 } // namespace Ikarus::Concepts
 
 namespace Ikarus::Vtk {
+
+namespace Impl {
+  struct AsCellData
+  {
+  };
+  struct AsPointData
+  {
+  };
+  namespace Concepts {
+    template <typename DT>
+    concept DataType = std::is_same_v<DT, AsCellData> or std::is_same_v<DT, AsPointData>;
+  }
+} // namespace Impl
 
 template <typename AS, bool structured = false, typename DC = void>
 requires(Concepts::IsAssembler<AS> and (std::is_same_v<DC, void> or Concepts::IsDataCollector<DC>))
@@ -71,8 +87,68 @@ public:
       : writer_(std::move(dc), args...),
         assembler_(assembler) {}
 
-  template <typename RF>
-  void addResultFunction(RF&& resultFunction) {}
+  // Sets the VTK file format
+  void setFormat(Dune::Vtk::FormatTypes format) { writer_.setFormat(format); }
+
+  /// Sets the global datatype used for coordinates and other global float values
+  void setDatatype(Dune::Vtk::DataTypes datatype) { writer_.setDatatype(datatype); }
+
+  /// Sets the integer type used in binary data headers
+  void setHeadertype(Dune::Vtk::DataTypes datatype) { writer_.setHeadertype(datatype); }
+
+  auto& writer() const { return writer_; }
+  auto& writer() { return writer_; }
+
+  template <typename RF, Impl::Concepts::DataType DT>
+  void addResultFunction(RF&& resultFunction, DT /*type */) {
+    if constexpr (std::is_same_v<DT, Impl::AsCellData>)
+      writer_.addCellData(std::forward<RF>(resultFunction));
+    else
+      writer_.addPointData(std::forward<RF>(resultFunction));
+  }
+
+  template <template <typename, int, int> class RT, Impl::Concepts::DataType DT>
+  void addResult(DT type) {
+    auto resFunction = makeResultVtkFunction<RT>(&(assembler_->finiteElements()), requirement());
+    addResultFunction(std::move(resFunction), type);
+  }
+
+  template <typename GF, Impl::Concepts::DataType DT>
+  void addGridFunction(GF&& gridFunction, const std::string& name, size_t size, DT /* type */) {
+    auto fieldInfo = Dune::Vtk::FieldInfo(name, size);
+    if constexpr (std::is_same_v<DT, Impl::AsCellData>)
+      writer_.addCellData(std::forward<GF>(gridFunction), fieldInfo);
+    else
+      writer_.addPointData(std::forward<GF>(gridFunction), fieldInfo);
+  }
+
+  template <typename GF, typename FieldInfo, Impl::Concepts::DataType DT>
+  requires(std::same_as<FieldInfo, Dune::VTK::FieldInfo> or std::same_as<FieldInfo, Dune::Vtk::FieldInfo>)
+  void addGridFunction(GF&& gridFunction, FieldInfo fieldInfo, DT /* type */) {
+    if constexpr (std::is_same_v<DT, Impl::AsCellData>)
+      writer_.addCellData(std::forward<GF>(gridFunction), fieldInfo);
+    else
+      writer_.addPointData(std::forward<GF>(gridFunction), fieldInfo);
+  }
+
+  template <class... Args>
+  void addCellData(Args&&... args) {
+    writer_.addCellData(std::forward<Args>(args)...);
+  }
+
+  template <class... Args>
+  void addPointData(Args&&... args) {
+    writer_.addCellData(std::forward<Args>(args)...);
+  }
+
+  // NB: the basis can be a subspace basis of Assembler::Basis
+  template <int dim, typename R, typename Basis, Impl::Concepts::DataType DT>
+  void addInterpolation(R&& vals, const Basis& basis, const std::string& name, DT type) {
+    auto gridFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, dim>>(basis, vals);
+    addGridFunction(std::move(gridFunction), name, dim, type);
+  }
+
+  std::string write(const std::string& fn, std::optional<std::string> dir = {}) const { return writer_.write(fn, dir); }
 
 private:
   const FEContainer& finiteElements() { return assembler_->finiteElements(); }
@@ -95,5 +171,10 @@ Writer(std::shared_ptr<Assembler>, DC&, Args...) -> Writer<Assembler, false, DC>
 template <typename DC, typename Assembler, class... Args, Dune::Vtk::IsDataCollector<DC> = true>
 requires(Concepts::IsAssembler<Assembler>)
 Writer(std::shared_ptr<Assembler>, DC&&, Args...) -> Writer<Assembler, false, DC>;
+
+// Helpers
+inline auto asCellData() { return Impl::AsCellData{}; }
+
+inline auto asPointData() { return Impl::AsPointData{}; }
 
 } // namespace Ikarus::Vtk

@@ -107,7 +107,7 @@ auto testFile(const std::string& fileName, Dune::Vtk::DataTypes precision, bool 
   return t;
 }
 
-auto runTestCase() {
+auto runTest() {
   TestSuite t("Test ResultFunction");
   std::string fileName = "ResultFunctionTest";
 
@@ -213,7 +213,7 @@ int main(const int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t;
 
-  t.subTest(runTestCase());
+  t.subTest(runTest());
 
   return t.exit();
 }
