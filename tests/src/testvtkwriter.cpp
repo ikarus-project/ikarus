@@ -3,6 +3,9 @@
 
 #include <config.h>
 
+#include "dummyproblem.hh"
+#include "testhelpers.hh"
+
 #include <memory>
 
 #include <dune/common/float_cmp.hh>
@@ -20,8 +23,8 @@
 #include <Eigen/Core>
 
 #include <ikarus/assembler/simpleassemblers.hh>
-#include "ikarus/finiteelements/feresulttypes.hh"
 #include <ikarus/finiteelements/fefactory.hh>
+#include <ikarus/finiteelements/feresulttypes.hh>
 #include <ikarus/finiteelements/mechanics/linearelastic.hh>
 #include <ikarus/finiteelements/mechanics/loads/volume.hh>
 #include <ikarus/finiteelements/mixin.hh>
@@ -35,13 +38,13 @@ using Dune::TestSuite;
 
 template <typename GridView, typename Assembler>
 auto testInstantiationAndTemplateArgumentDeduction(const GridView& gridView, std::shared_ptr<Assembler> assembler) {
-  static_assert(Ikarus::Concepts::IsAssembler<typename decltype(assembler)::element_type>);
+  static_assert(Ikarus::Concepts::FlatAssembler<typename decltype(assembler)::element_type>);
   // Create Vtk::Writer
   static_assert(std::is_class_v<Ikarus::Vtk::Writer<Assembler, false>>);
   static_assert(std::is_same_v<typename Ikarus::Vtk::Writer<Assembler, false>::DataCollector,
                                Dune::Vtk::ContinuousDataCollector<GridView>>);
 
-  // Unfortionatly we can instantiate the structured DataCollector even for a unstructured Grid (UG)
+  // Unfortionatly we can instantiate the structured Writer and DataCollector even for a unstructured Grid (UG)
   static_assert(std::is_class_v<Ikarus::Vtk::Writer<Assembler, true>>);
   static_assert(std::is_same_v<typename Ikarus::Vtk::Writer<Assembler, true>::DataCollector,
                                Dune::Vtk::YaspDataCollector<GridView>>);
@@ -73,72 +76,91 @@ auto testInstantiationAndTemplateArgumentDeduction(const GridView& gridView, std
       Ikarus::Vtk::Writer(assembler, dc, Dune::Vtk::FormatTypes::BINARY, Dune::Vtk::DataTypes::FLOAT32);
 }
 
-auto runTestCase() {
+auto runTest() {
   TestSuite t("Test ResultFunction");
   std::string fileName = "ResultFunctionTest";
 
   using Grid     = Dune::UGGrid<2>;
   using GridView = Grid::LeafGridView;
 
-  constexpr double Lx                                    = 4.0;
-  constexpr double Ly                                    = 4.0;
-  const Dune::FieldVector<double, 2> bbox                = {Lx, Ly};
-  const std::array<unsigned int, 2> elementsPerDirection = {2, 2};
+  DummyProblem<Grid> testCase{};
 
-  auto grid     = Dune::StructuredGridFactory<Grid>::createCubeGrid({0, 0}, bbox, elementsPerDirection);
-  auto gridView = grid->leafGridView();
-
-  using namespace Dune::Functions::BasisFactory;
-  auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<1>()));
-
-  Ikarus::DirichletValues dirichletValues(basis.flat());
-  dirichletValues.fixBoundaryDOFs([&](auto& dirichletFlags, auto&& localIndex, auto&& localView, auto&& intersection) {
-    if (std::abs(intersection.geometry().center()[1]) < 1e-8)
-      dirichletFlags[localView.index(localIndex)] = true;
-  });
-
-  auto vL      = []([[maybe_unused]] auto& globalCoord, auto& lamb) { return Eigen::Vector2d{0, -1}; };
-  auto skills_ = Ikarus::skills(Ikarus::linearElastic({.emodul = 100, .nu = 0.2}), Ikarus::volumeLoad<2>(vL));
-
-  using LinearElastic = decltype(Ikarus::makeFE(basis, skills_));
-  std::vector<LinearElastic> fes;
-
-  for (auto&& element : elements(gridView)) {
-    fes.emplace_back(Ikarus::makeFE(basis, skills_));
-    fes.back().bind(element);
-  }
-
-  /// Create a sparse assembler
-  auto sparseAssembler = makeSparseFlatAssembler(fes, dirichletValues);
-
-  Eigen::VectorXd D_Glob = Eigen::VectorXd::Zero(basis.flat().size());
-
-  auto req        = LinearElastic::Requirement();
-  auto lambdaLoad = 1.0;
-  req.insertGlobalSolution(D_Glob).insertParameter(lambdaLoad);
-
-  // sparseAssembler->bind(req);
-  // sparseAssembler->bind(Ikarus::DBCOption::Full);
-
-  // auto nonLinOp = Ikarus::NonLinearOperatorFactory::op(
-  //     sparseAssembler,
-  //     Ikarus::AffordanceCollection(Ikarus::VectorAffordance::forces, Ikarus::MatrixAffordance::stiffness));
-
-  // const auto& K    = nonLinOp.derivative();
-  // const auto& Fext = nonLinOp.value();
-
-  // auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::sd_CholmodSupernodalLLT);
-  // linSolver.compute(K);
-  // linSolver.solve(D_Glob, -Fext);
-
+  auto& gridView       = testCase.gridView();
+  auto sparseAssembler = testCase.sparseAssembler();
+  auto& req            = testCase.requirement();
+  auto& basis          = testCase.basis();
+  auto& D_Glob         = req.globalSolution();
 
   // Tests
   testInstantiationAndTemplateArgumentDeduction(gridView, sparseAssembler);
 
   Dune::Vtk::DiscontinuousDataCollector dc{gridView};
 
-  auto writer  = Ikarus::Vtk::Writer(sparseAssembler);
-  auto writer2 = Ikarus::Vtk::Writer(sparseAssembler, dc);
+  auto writer = Ikarus::Vtk::Writer(sparseAssembler);
+
+  using Ikarus::Vtk::asCellData;
+  using Ikarus::Vtk::asPointData;
+
+  writer.setDatatype(Dune::Vtk::DataTypes::FLOAT64);
+  writer.setFormat(Dune::Vtk::FormatTypes::ASCII);
+
+  writer.addResult<Ikarus::ResultTypes::linearStress>(asPointData());
+  writer.addResultFunction(Ikarus::makeResultFunction<Ikarus::ResultTypes::linearStress>(sparseAssembler),
+                           asCellData());
+
+  writer.addInterpolation<2>(D_Glob, basis.flat(), "displacement", asPointData());
+  writer.addGridFunction(
+      Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis.flat(), D_Glob),
+      "displacements_gf", 2, asCellData());
+
+  writer.addGridFunction(
+      Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis.flat(), D_Glob),
+      Dune::Vtk::FieldInfo("displacements_gf", 2, Dune::Vtk::RangeTypes::VECTOR), asPointData());
+
+  writer.addCellData(
+      Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis.flat(), D_Glob),
+      Dune::Vtk::FieldInfo("displacements_gf2", 2, Dune::Vtk::RangeTypes::VECTOR));
+
+  auto vtkFileName = writer.write(fileName);
+
+  Dune::GridFactory<Grid> factory;
+  Dune::Vtk::VtkReader reader{factory};
+
+  reader.read(vtkFileName);
+  auto gridRead     = reader.createGrid();
+  auto gridViewRead = gridRead->leafGridView();
+
+  t.check(gridView.size(0) == gridViewRead.size(0));
+
+  auto stressData = reader.getPointData("linearStress");
+  t.check(stressData.numComponents() == 3)
+      << testLocation() << "Num components should be 3, but is " << stressData.numComponents();
+  t.check(stressData.dataType() == Dune::Vtk::DataTypes::FLOAT64)
+      << testLocation() << std::source_location::current().line() << "Precision should be float64";
+
+  auto stressDataCell = reader.getCellData("linearStress");
+  t.check(stressDataCell.numComponents() == 3)
+      << testLocation() << "Num components should be 3, but is " << stressDataCell.numComponents();
+  t.check(stressDataCell.dataType() == Dune::Vtk::DataTypes::FLOAT64)
+      << testLocation() << "Precision is should be float64";
+
+  // Writing out as a vector does always seem to yield 3 (or potentially more) entries
+  auto displacementData = reader.getPointData("displacement");
+  t.check(displacementData.numComponents() == 3)
+      << testLocation() << "Num components should be 3, but is " << displacementData.numComponents();
+
+  auto displacementDataGF = reader.getPointData("displacements_gf");
+  t.check(displacementDataGF.numComponents() == 3)
+      << testLocation() << "Num components should be 3, but is " << displacementDataGF.numComponents();
+
+  auto writer2 = Ikarus::Vtk::Writer(sparseAssembler, Dune::Vtk::DiscontinuousDataCollector<GridView>{gridView});
+  writer2.addAllResults(asPointData());
+  writer2.addAllResults(asCellData());
+  auto vtkFileName2 = writer2.write(fileName + "_2");
+
+  reader.read(vtkFileName2);
+  t.checkNoThrow([&]() { reader.getPointData("linearStress"); });
+  t.checkNoThrow([&]() { reader.getCellData("linearStress"); });
 
   return t;
 }
@@ -147,7 +169,7 @@ int main(const int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t;
 
-  t.subTest(runTestCase());
+  t.subTest(runTest());
 
   return t.exit();
 }

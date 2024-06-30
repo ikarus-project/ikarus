@@ -5,6 +5,7 @@
 #include <concepts>
 #include <iomanip>
 #include <iostream>
+#include <source_location>
 #include <vector>
 
 #include <dune/common/float_cmp.hh>
@@ -58,4 +59,8 @@ void checkSolverInfos(TestSuiteType& t, const std::vector<int>& expectedIteratio
         << " and actual:\t" << controlInfo.solverInfos[i].iterations << messageIfFailed;
     t.check(controlInfo.solverInfos[i].success) << "Failed to converge at step " << i;
   }
+}
+
+inline auto testLocation(std::source_location loc = std::source_location::current()) {
+  return loc.function_name() + std::string("(L ") + std::to_string(loc.line()) + "): ";
 }

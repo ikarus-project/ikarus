@@ -17,6 +17,7 @@
 #include <dune/vtk/vtkwriter.hh>
 
 #include <ikarus/finiteelements/ferequirements.hh>
+#include <ikarus/utils/concepts.hh>
 
 namespace Ikarus {
 namespace Impl {
@@ -31,11 +32,11 @@ namespace Impl {
  * Usage:
  * \code
  * // Usage with Dune::Vtk::VtkWriter
- * auto resultFunction = Ikarus::makeResultVtkFunction<resType>(&fes, feRequirements);
+ * auto resultFunction = Ikarus::makeResultVtkFunction<resType>(assembler);
  * vtkwriter.addPointData(resultFunction);
  *
  * // Usage with the native Dune::VTKWriter
- * auto resultFunction = Ikarus::makeResultFunction<resType>(&fes, feRequirements);
+ * auto resultFunction = Ikarus::makeResultFunction<resType>(assembler);
  * vtkWriter.addVertexData(resultFunction);
  * \endcode
  * \ingroup io
@@ -45,13 +46,17 @@ namespace Impl {
  * \tparam UserFunction Type of the user-defined function for custom result evaluation (default is
 DefaultUserFunction)
  */
-template <typename FE, template <typename, int, int> class RT, typename UserFunction = Impl::DefaultUserFunction>
-class ResultFunction : public Dune::VTKFunction<typename FE::GridView>
+template <typename AS, template <typename, int, int> class RT, typename UserFunction = Impl::DefaultUserFunction>
+requires(Concepts::FlatAssembler<AS> and Concepts::ResultType<RT>)
+class ResultFunction : public Dune::VTKFunction<typename AS::GridView>
 {
 public:
-  using FiniteElement          = FE;
-  using FERequirementType      = typename FiniteElement::Requirement;
-  using GridView               = typename FiniteElement::GridView;
+  using Assembler         = AS;
+  using GridView          = typename Assembler::GridView;
+  using FERequirementType = typename Assembler::FERequirement;
+  using FEContainer       = typename Assembler::FEContainerType;
+  using FiniteElement     = typename std::remove_cvref_t<FEContainer>::value_type;
+
   using ctype                  = typename GridView::ctype;
   constexpr static int griddim = GridView::dimension;
   using Entity                 = typename GridView::template Codim<0>::Entity;
@@ -67,7 +72,7 @@ public:
    * \return Stress component value
    */
   double evaluate(int comp, const Entity& e, const Dune::FieldVector<ctype, griddim>& local) const override {
-    auto index = gridView_.indexSet().index(e);
+    const auto index = gridView().indexSet().index(e);
     return evaluateComponent(index, local, comp);
   }
 
@@ -81,7 +86,7 @@ public:
   [[nodiscard]] int ncomps() const override {
     if constexpr (std::is_same_v<UserFunction, Impl::DefaultUserFunction>) {
       Dune::FieldVector<ctype, griddim> val(0.0);
-      auto sigma = fes_->at(0).template calculateAt<RT>(feRequirements_, val).asVec();
+      auto sigma = finiteElements().at(0).template calculateAt<RT>(requirement(), val).asVec();
       return static_cast<int>(sigma.size());
     } else
       return userFunction_.ncomps();
@@ -119,17 +124,14 @@ public:
    * \param fes Pointer to a vector of finite elements
    * \param req FERequirements for evaluation
    */
-  ResultFunction(std::vector<FiniteElement>* fes, const FERequirementType& req,
-                 Dune::VTK::Precision prec = Dune::VTK::Precision::float64)
-      : gridView_{fes->at(0).localView().globalBasis().gridView()},
-        feRequirements_{req},
-        fes_{fes},
+  ResultFunction(std::shared_ptr<Assembler> assembler, Dune::VTK::Precision prec = Dune::VTK::Precision::float64)
+      : assembler_(assembler),
         prec_{prec},
         userFunction_{UserFunction{}} {}
 
 private:
   double evaluateComponent(int eleID, const Dune::FieldVector<ctype, griddim>& local, int comp) const {
-    auto result = fes_->at(eleID).template calculateAt<RT>(feRequirements_, local).asVec();
+    auto result = finiteElements().at(eleID).template calculateAt<RT>(requirement(), local).asVec();
 
     if constexpr (!std::is_same_v<UserFunction, Impl::DefaultUserFunction>)
       return userFunction_(result, comp);
@@ -137,9 +139,12 @@ private:
       return result(comp);
   }
 
-  GridView gridView_;
-  FERequirementType feRequirements_;
-  std::vector<FiniteElement>* fes_;
+  const FEContainer& finiteElements() const { return assembler_->finiteElements(); }
+  const FERequirementType& requirement() const { return assembler_->requirement(); }
+  const GridView& gridView() const { return assembler_->gridView(); }
+
+  std::shared_ptr<Assembler> assembler_;
+
   Dune::VTK::Precision prec_;
   [[no_unique_address]] std::string name_{};
   UserFunction userFunction_;
@@ -157,10 +162,9 @@ private:
  * \tparam RT requested result type
  * \tparam UserFunction Type of the user-defined function for custom result evaluation (default is DefaultUserFunction)
  */
-template <template <typename, int, int> class RT, typename UserFunction = Impl::DefaultUserFunction, typename FE>
-auto makeResultFunction(std::vector<FE>* fes, const typename FE::Requirement& req,
-                        Dune::VTK::Precision prec = Dune::VTK::Precision::float64) {
-  return std::make_shared<ResultFunction<FE, RT, UserFunction>>(fes, req, prec);
+template <template <typename, int, int> class RT, typename UserFunction = Impl::DefaultUserFunction, typename AS>
+auto makeResultFunction(std::shared_ptr<AS> assembler, Dune::VTK::Precision prec = Dune::VTK::Precision::float64) {
+  return std::make_shared<ResultFunction<AS, RT, UserFunction>>(assembler, prec);
 }
 
 /**
@@ -179,9 +183,9 @@ auto makeResultFunction(std::vector<FE>* fes, const typename FE::Requirement& re
  * \tparam UserFunction Type of the user-defined function for custom result evaluation (default is
  * DefaultUserFunction)
  */
-template <template <typename, int, int> class RT, typename UserFunction = Impl::DefaultUserFunction, typename FE>
-auto makeResultVtkFunction(std::vector<FE>* fes, const typename FE::Requirement& req) {
-  return Dune::Vtk::Function<typename FE::GridView>(std::make_shared<ResultFunction<FE, RT, UserFunction>>(fes, req));
+template <template <typename, int, int> class RT, typename UserFunction = Impl::DefaultUserFunction, typename AS>
+auto makeResultVtkFunction(std::shared_ptr<AS> assembler) {
+  return Dune::Vtk::Function<typename AS::GridView>(std::make_shared<ResultFunction<AS, RT, UserFunction>>(assembler));
 }
 
 } // namespace Ikarus

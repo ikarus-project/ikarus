@@ -15,6 +15,7 @@
 #include <ikarus/python/finiteelements/material.hh>
 #include <ikarus/python/finiteelements/scalarwrapper.hh>
 #include <ikarus/solver/linearsolver/linearsolver.hh>
+
 // clang-format off
 #define ENUM_BINDINGS(Type)                        \
   py::enum_<Type> Type##Enum(m, #Type);           \
