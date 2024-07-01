@@ -96,7 +96,7 @@ def __op(nonLinOpFactory):
             auto req = requirement.is_none() ? std::optional<std::reference_wrapper<FERequirements>>{{}} : std::optional<std::reference_wrapper<FERequirements>>(std::in_place, requirement.cast<FERequirements&>());
             auto aff = affordances.is_none() ? std::optional<{affoCppType}>{{}} : std::optional<{affoCppType}>(std::in_place,affordances.cast<{affoCppType}>());
             auto eBCo = enforcingBCOption.is_none() ? std::optional<Ikarus::DBCOption>{{}} : std::optional<Ikarus::DBCOption>(std::in_place, enforcingBCOption.cast<Ikarus::DBCOption>());
-            return NonLinearOperatorFactory::op<{indices}>(factory.as, req, aff, eBCo);
+            return Ikarus::NonLinearOperatorFactory::op<{indices}>(factory.as, req, aff, eBCo);
         }}
         """.format(indices=",".join([str(i) for i in args]), affoCppType=affordanceCppType)
         op = run("op",StringIO(runCode),nonLinOpFactory,requirement,affordances,enforcingBCOption,*args)
