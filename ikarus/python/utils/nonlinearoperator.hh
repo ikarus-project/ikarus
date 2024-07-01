@@ -155,19 +155,19 @@ void registerNonLinearOperatorFactory(pybind11::handle scope, pybind11::class_<N
 
 
 
-  auto registerNonLinearOperator = [&cls]<int... i>(std::index_sequence <i ...>) {
+  auto registerNonLinearOperatorL = [&cls]<size_t... i>(std::index_sequence <i ...>) {
 
- Impl::maybeRegisterNonlinearOperator<decltype(NonLinearOperatorFactory::template op<i...>(std::declval<Assembler&>()))>(cls, ("NonLinearOperator" + (std::to_string(i) + ...)).c_str());
+ Impl::maybeRegisterNonlinearOperator<decltype(NonLinearOperatorFactory::template op<i...>(std::declval<Assembler&>()))>(cls, ("NonLinearOperator" + (std::to_string(i) + ...+std::string(""))).c_str());
   };
 
-  registerNonLinearOperator(std::index_sequence<>());
-  registerNonLinearOperator(std::index_sequence<0>());
-  registerNonLinearOperator(std::index_sequence<1>());
-  registerNonLinearOperator(std::index_sequence<2>());
+  registerNonLinearOperatorL(std::index_sequence<>());
+  registerNonLinearOperatorL(std::index_sequence<0>());
+  registerNonLinearOperatorL(std::index_sequence<1>());
+  registerNonLinearOperatorL(std::index_sequence<2>());
 
-  registerNonLinearOperator(std::index_sequence<0,1>());
-  registerNonLinearOperator(std::index_sequence<1,2>());
-  registerNonLinearOperator(std::index_sequence<0,2>());
+  registerNonLinearOperatorL(std::index_sequence<0,1>());
+  registerNonLinearOperatorL(std::index_sequence<1,2>());
+  registerNonLinearOperatorL(std::index_sequence<0,2>());
 
 
   // cls.def(

@@ -79,28 +79,29 @@ def NonLinearOperator(functions, parameters):
 def __op(nonLinOpFactory):
     # This would be nice to have, but it is not possible to generate the code for the subOperator function
     def __opFunc(nonLinOpFactory,requirement,affordances,enforcingBCOption,*args: int):
+        if affordances is None:
+            affordanceCppType= "Ikarus::AffordanceCollection<>"
+        else:
+            affordanceCppType = cppType(affordances)[0]
+        print(f"affordanceCppType: {affordanceCppType}")
         runCode="""
-        template <class NLO>
-        void subOperator( NLO& nlo)
+        #include<optional>
+        #include <dune/python/pybind11/pybind11.h>
+        #include <ikarus/finiteelements/ferequirements.hh>
+        #include <ikarus/utils/nonlinopfactory.hh>
+        template <class NonlinopFactoryWrapper>
+        void op(const NonlinopFactoryWrapper& factory, pybind11::object requirement, pybind11::object affordances, pybind11::object enforcingBCOption)
         {{
-        return nlo.template subOperator<{indices}>();
+            using FERequirements = NonlinopFactoryWrapper::Assembler::element_type::FERequirement;
+            auto req = requirement.is_none() ? std::optional<std::reference_wrapper<FERequirements>>{{}} : std::optional<std::reference_wrapper<FERequirements>>(std::in_place, requirement.cast<FERequirements&>());
+            auto aff = affordances.is_none() ? std::optional<{affoCppType}>{{}} : std::optional<{affoCppType}>(std::in_place,affordances.cast<{affoCppType}>());
+            auto eBCo = enforcingBCOption.is_none() ? std::optional<Ikarus::DBCOption>{{}} : std::optional<Ikarus::DBCOption>(std::in_place, enforcingBCOption.cast<Ikarus::DBCOption>());
+            return NonLinearOperatorFactory::op<{indices}>(factory.as, req, aff, eBCo);
         }}
-        """.format(indices=",".join([str(i) for i in args]))
-        op = run("subOperator",StringIO(runCode),nonLinOp)
+        """.format(indices=",".join([str(i) for i in args]), affoCppType=affordanceCppType)
+        op = run("op",StringIO(runCode),nonLinOpFactory,requirement,affordances,enforcingBCOption,*args)
         op.subOperator = types.MethodType(__opFunc(op),op)
         return op
-
-    # def __opFunc(nonLinOpFactory, *args):
-    #     from itertools import accumulate
-    #     sorted = all(args[i] <= args[i+1] for i in range(len(args) - 1))
-    #     if(not sorted):
-    #         raise ValueError("The indices passed to the subOperator function are not sorted")
-    #     if(len(args)>=nonLinOp.numberOfFunctions):
-    #         raise ValueError("You passed too many arguments to the subOperator function")
-    #     elif(len(args)==0):
-    #         raise ValueError("At least one argument is needed")
-    #     elif(any([arg>nonLinOp.numberOfFunctions-1 for arg in args])):
-    #         raise ValueError("You passed an index that is too high")
 
     return __opFunc
 
