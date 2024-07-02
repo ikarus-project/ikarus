@@ -13,7 +13,7 @@
 #include <dune/functions/backends/istlvectorbackend.hh>
 
 #include <ikarus/assembler/dirichletbcenforcement.hh>
-#include <ikarus/assembler/simpleassemblers.hh> //TODO ALEX TARUN chagne this to interface.hh
+#include <ikarus/assembler/interface.hh>
 #include <ikarus/finiteelements/fehelper.hh>
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/utils/concepts.hh>
@@ -23,21 +23,19 @@ namespace Ikarus {
 
 template <template <typename> typename Wrapper, typename Assembler>
 requires true
-struct ScalarWrapperBase
-    : Assembler,
-      public ScalarAssemblerBase<Wrapper<Assembler>, typename Assembler::FEContainer,
-                                 typename Assembler::DirichletValuesType, typename Assembler::ScalarType>
+struct ScalarWrapperBase : public Assembler, public ScalarAssembler<Wrapper<Assembler>, typename Assembler::FEContainer,
+                                           typename Assembler::DirichletValuesType, typename Assembler::ScalarType>
 {
   using WrappedAssembler = Wrapper<Assembler>;
   using FEC              = typename Assembler::FEContainer;
   using DV               = typename Assembler::DirichletValuesType;
   using FERequirement    = typename Assembler::FERequirement;
-
-  using ScalarType      = Assembler::ScalarType;
-  using ScalarInterface = ScalarAssemblerBase<Wrapper<Assembler>, FEC, DV, ScalarType>;
-  friend ScalarInterface;
-  using scalarFunction =
+  using ScalarType       = typename Assembler::ScalarType;
+  using Interface        = ScalarAssembler<WrappedAssembler, FEC, DV, ScalarType>;
+  friend Interface;
+  using FunctionType =
       std::function<void(const Wrapper<Assembler>&, const FERequirement&, ScalarAffordance, ScalarType&)>;
+
   /**
    * \brief A helper function to add functions that can be used to manipulate the assembled quantity.
    * \tparam F Type of the function
@@ -49,7 +47,7 @@ struct ScalarWrapperBase
   void bind(F&& f) {
     sfs.emplace_back(std::forward<F>(f));
   }
-  std::vector<scalarFunction> sfs;
+  std::vector<FunctionType> sfs;
 
 protected:
   ScalarType& getScalarImpl(const FERequirement& feRequirements, ScalarAffordance affordance) {
@@ -63,21 +61,21 @@ protected:
 template <template <typename> typename Wrapper, typename Assembler>
 requires true
 struct VectorWrapperBase
-    : Assembler,
-      public VectorAssemblerBase<Wrapper<Assembler>, typename Assembler::FEContainer,
-                                 typename Assembler::DirichletValuesType, typename Assembler::VectorType>
+    : public Assembler, public VectorAssembler<Wrapper<Assembler>, typename Assembler::FEContainer,
+                             typename Assembler::DirichletValuesType, typename Assembler::VectorType>
 {
   using WrappedAssembler = Wrapper<Assembler>;
   using FEC              = typename Assembler::FEContainer;
   using DV               = typename Assembler::DirichletValuesType;
   using FERequirement    = typename Assembler::FERequirement;
 
-  using VectorType      = Assembler::VectorType;
-  using VectorInterface = VectorAssemblerBase<Wrapper<Assembler>, typename Assembler::FEContainer,
-                                              typename Assembler::DirichletValuesType, typename Assembler::VectorType>;
-  friend VectorInterface;
-  using vectorFunction =
+  using VectorType = typename Assembler::VectorType;
+  using Interface  = VectorAssembler<Wrapper<Assembler>, typename Assembler::FEContainer,
+                                     typename Assembler::DirichletValuesType, typename Assembler::VectorType>;
+  friend Interface;
+  using FunctionType =
       std::function<void(const Wrapper<Assembler>&, const FERequirement&, VectorAffordance, DBCOption, VectorType&)>;
+
   /**
    * \brief A helper function to add functions that can be used to manipulate the assembled quantity.
    * \tparam F Type of the function
@@ -89,7 +87,7 @@ struct VectorWrapperBase
   void bind(F&& f) {
     vfs.emplace_back(std::forward<F>(f));
   }
-  std::vector<vectorFunction> vfs;
+  std::vector<FunctionType> vfs;
 
 protected:
   const VectorType& getRawVectorImpl(const FERequirement& feRequirements, VectorAffordance affordance) {
@@ -116,21 +114,22 @@ protected:
 
 template <template <typename> typename Wrapper, typename Assembler>
 requires true
-struct MatrixWrapperBase : public Assembler,
-                           MatrixAssemblerBase<Wrapper<Assembler>, typename Assembler::FEContainer,
-                                               typename Assembler::DirichletValuesType, typename Assembler::MatrixType>
+struct MatrixWrapperBase
+    : public Assembler, public MatrixAssembler<Wrapper<Assembler>, typename Assembler::FEContainer,
+                             typename Assembler::DirichletValuesType, typename Assembler::MatrixType>
 {
   using WrappedAssembler = Wrapper<Assembler>;
   using FEC              = typename Assembler::FEContainer;
   using DV               = typename Assembler::DirichletValuesType;
   using FERequirement    = typename Assembler::FERequirement;
 
-  using MatrixType      = Assembler::MatrixType;
-  using MatrixInterface = MatrixAssemblerBase<Wrapper<Assembler>, typename Assembler::FEContainer,
-                                              typename Assembler::DirichletValuesType, typename Assembler::MatrixType>;
-  friend MatrixInterface;
-  using matrixFunction =
+  using MatrixType = typename Assembler::MatrixType;
+  using Interface  = MatrixAssembler<Wrapper<Assembler>, typename Assembler::FEContainer,
+                                     typename Assembler::DirichletValuesType, typename Assembler::MatrixType>;
+  friend Interface;
+  using FunctionType =
       std::function<void(const Wrapper<Assembler>&, const FERequirement&, MatrixAffordance, DBCOption, MatrixType&)>;
+
   /**
    * \brief A helper function to add functions that can be used to manipulate the assembled quantity.
    * \tparam F Type of the function
@@ -142,9 +141,9 @@ struct MatrixWrapperBase : public Assembler,
   void bind(F&& f) {
     mfs.emplace_back(std::forward<F>(f));
   }
-  std::vector<matrixFunction> mfs;
+  std::vector<FunctionType> mfs;
 
-private:
+protected:
   const MatrixType& getRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance) {
     MatrixType& mat = Assembler::getRawMatrixImpl(feRequirements, affordance);
     for (const auto mf : mfs)
@@ -176,33 +175,49 @@ struct AssemblerWrapperAllBase : public ScalarWrapperBase<Wrapper, Assembler>,
   using FEC              = typename Assembler::FEContainer;
   using DV               = typename Assembler::DirichletValuesType;
   using FERequirement    = typename Assembler::FERequirement;
-  using MatrixType       = Assembler::MatrixType;
-  using VectorType       = Assembler::VectorType;
-  using ScalarType       = Assembler::ScalarType;
-  using MatrixInterface  = MatrixAssemblerBase<Wrapper<Assembler>, FEC, DV, MatrixType>;
-  using VectorInterface  = VectorAssemblerBase<Wrapper<Assembler>, FEC, DV, VectorType>;
-  using ScalarInterface  = ScalarAssemblerBase<Wrapper<Assembler>, FEC, DV, ScalarType>;
+  using ScalarType       = typename Assembler::ScalarType;
+  using VectorType       = typename Assembler::VectorType;
+  using MatrixType       = typename Assembler::MatrixType;
+  using ScalarWrapper    = ScalarWrapperBase<Wrapper, Assembler>;
+  using VectorWrapper    = VectorWrapperBase<Wrapper, Assembler>;
+  using MatrixWrapper    = MatrixWrapperBase<Wrapper, Assembler>;
+  using ScalarInterface  = typename ScalarWrapper::Interface;
+  using VectorInterface  = typename VectorWrapper::Interface;
+  using MatrixInterface  = typename MatrixWrapper::Interface;
 
   using MatrixInterface::matrix;
   using ScalarInterface::scalar;
   using VectorInterface::vector;
 
-  using MatrixWrapperBase<Wrapper, Assembler>::bind;
-  using VectorWrapperBase<Wrapper, Assembler>::bind;
-  using ScalarWrapperBase<Wrapper, Assembler>::bind;
+  using MatrixWrapper::bind;
+  using ScalarWrapper::bind;
+  using VectorWrapper::bind;
+
+  using ScalarWrapper::getScalarImpl;
+
+  using VectorWrapper::getRawVectorImpl;
+  using VectorWrapper::getReducedVectorImpl;
+  using VectorWrapper::getVectorImpl;
+
+  using MatrixWrapper::getMatrixImpl;
+  using MatrixWrapper::getRawMatrixImpl;
+  using MatrixWrapper::getReducedMatrixImpl;
 };
 
 template <template <typename> typename Wrapper, typename Assembler>
-struct AssemblerWrapperScalarBase : private Assembler, public ScalarWrapperBase<Wrapper, Assembler>
+struct AssemblerWrapperScalarBase : public ScalarWrapperBase<Wrapper, Assembler>
 {
   using WrappedAssembler = Wrapper<Assembler>;
   using FEC              = typename Assembler::FEContainer;
   using DV               = typename Assembler::DirichletValuesType;
   using FERequirement    = typename Assembler::FERequirement;
 
-  using ScalarType      = Assembler::ScalarType;
-  using ScalarInterface = ScalarAssemblerBase<Wrapper<Assembler>, FEC, DV, ScalarType>;
+  using ScalarType      = typename Assembler::ScalarType;
+  using ScalarInterface = ScalarAssembler<Wrapper<Assembler>, FEC, DV, ScalarType>;
+  using ScalarWrapper   = ScalarWrapperBase<Wrapper, Assembler>;
   using ScalarInterface::scalar;
+  using ScalarWrapper::bind;
+  using ScalarWrapper::getScalarImpl;
 };
 struct InheritanceDecider
 {

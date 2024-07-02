@@ -12,7 +12,7 @@
 namespace Ikarus {
 
 template <typename B, typename FEC>
-typename ScalarAssembler<B, FEC>::ScalarType& ScalarAssembler<B, FEC>::getScalarImpl(
+typename ScalarFlatAssembler<B, FEC>::ScalarType& ScalarFlatAssembler<B, FEC>::getScalarImpl(
     const FERequirement& feRequirements, ScalarAffordance affordance) {
   scal_ = 0.0;
   for (auto& fe : this->finiteElements()) {
