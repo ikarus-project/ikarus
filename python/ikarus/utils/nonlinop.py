@@ -10,15 +10,15 @@ from dune.generator.algorithm import cppType, run
 
 def __SubOperator(nonLinOp):
     # This would be nice to have, but it is not possible to generate the code for the subOperator function
-    def __subOperatorFunc(nonLinOp,*args: int):
-        runCode="""
-        template <class NLO>
-        void subOperator( NLO& nlo)
-        {{
-        return nlo.template subOperator<{indices}>();
-        }}
-        """.format(indices=",".join([str(i) for i in args]))
-        return run("subOperator",StringIO(runCode),nonLinOp)
+    #def __subOperatorFunc(nonLinOp,*args: int):
+        # runCode="""
+        # template <class NLO>
+        # void subOperator( NLO& nlo)
+        # {{
+        # return nlo.template subOperator<{indices}>();
+        # }}
+        # """.format(indices=",".join([str(i) for i in args]))
+        # return run("subOperator",StringIO(runCode),nonLinOp)
 
     def __subOperatorFunc(nonLinOp, *args):
         from itertools import accumulate
@@ -32,7 +32,7 @@ def __SubOperator(nonLinOp):
         elif(any([arg>nonLinOp.numberOfFunctions-1 for arg in args])):
             raise ValueError("You passed an index that is too high")
 
-        func = getattr(nonLinOp, '__subOperator'.join([str(x) for x in args]))
+        func = getattr(nonLinOp, '__subOperator'+"".join([str(x) for x in args]))
         subOp = func()
         subOp.subOperator = types.MethodType(__SubOperator(subOp),subOp)
         return subOp
@@ -78,11 +78,14 @@ def NonLinearOperator(functions, parameters):
 
 def __op(nonLinOpFactory):
     # This would be nice to have, but it is not possible to generate the code for the subOperator function
-    def __opFunc(nonLinOpFactory,requirement,affordances,enforcingBCOption,*args: int):
+    def __opFunc(nonLinOpFactory,requirement,affordances,enforcingBCOption,derivativeIndices=None):
         if affordances is None:
             affordanceCppType= "Ikarus::AffordanceCollection<>"
         else:
             affordanceCppType = cppType(affordances)[0]
+        if derivativeIndices is None:
+            derivativeIndices =[]
+
         runCode="""
         #include<optional>
         #include <dune/python/pybind11/pybind11.h>
@@ -97,14 +100,14 @@ def __op(nonLinOpFactory):
             auto eBCo = enforcingBCOption.is_none() ? std::optional<Ikarus::DBCOption>{{}} : std::optional<Ikarus::DBCOption>(std::in_place, enforcingBCOption.cast<Ikarus::DBCOption>());
             return Ikarus::NonLinearOperatorFactory::op<{indices}>(factory.as, req, aff, eBCo);
         }}
-        """.format(indices=",".join([str(i) for i in args]), affoCppType=affordanceCppType)
-        op = run("op",StringIO(runCode),nonLinOpFactory,requirement,affordances,enforcingBCOption,*args)
-        op.subOperator = types.MethodType(__opFunc(op),op)
-        return op
+        """.format(indices=",".join([str(i) for i in derivativeIndices]), affoCppType=affordanceCppType)
+        nonLinOp = run("op",StringIO(runCode),nonLinOpFactory,requirement,affordances,enforcingBCOption)
+        nonLinOp.subOperator = types.MethodType(__SubOperator(nonLinOp),nonLinOp)
+        return nonLinOp
 
     return __opFunc
 
-def makeNonLinearOperator(assembler,derivativeIndices=None, requirement=None,affordances=None, enforcingBCOption=None,*args: int):
+def makeNonLinearOperatorFactory(assembler,derivativeIndices=None, requirement=None,affordances=None, enforcingBCOption=None):
     generator = MySimpleGenerator("NonLinearOperatorFactory", "Ikarus::Python")
     includes = []
     element_type = f"Ikarus::Python::NonLinearOperatorFactoryWrapper<std::shared_ptr<{assembler.cppTypeName}>>"
@@ -117,6 +120,10 @@ def makeNonLinearOperator(assembler,derivativeIndices=None, requirement=None,aff
     )
     factory= module.NonLinearOperatorFactory(assembler)
     factory.op = types.MethodType(__op(factory),factory)
-    nonLinOp =  factory.op(requirement,affordances,enforcingBCOption,*args)
+    return factory
+
+def makeNonLinearOperator(assembler,derivativeIndices=None, requirement=None,affordances=None, enforcingBCOption=None):
+    factory = makeNonLinearOperatorFactory(assembler,derivativeIndices, requirement,affordances, enforcingBCOption)
+    nonLinOp =  factory.op(requirement,affordances,enforcingBCOption,derivativeIndices)
     nonLinOp.subOperator = types.MethodType(__SubOperator(nonLinOp),nonLinOp)
     return nonLinOp

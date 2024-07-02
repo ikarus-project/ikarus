@@ -37,7 +37,7 @@ namespace Impl {
   template <int... i, typename NLO, class... options>
   auto maybeRegisterNonlinearSubOperator(pybind11::handle scope, pybind11::class_<NLO, options...> cls) {
     auto clsSub = maybeRegisterNonlinearOperator<typename SubOperatorHelper<NLO, i...>::SubOperator>(
-        cls, ("NonlinearOperator" + (std::to_string(i) + ...)));
+        scope, ("NonlinearOperator" + (std::to_string(i) + ...)));
     cls.def(("__subOperator" + (std::to_string(i) + ...)).c_str(),
             [](NLO& self) { return self.template subOperator<i...>(); });
     return clsSub;
@@ -155,9 +155,9 @@ void registerNonLinearOperatorFactory(pybind11::handle scope, pybind11::class_<N
 
 
 
-  auto registerNonLinearOperatorL = [&cls]<size_t... i>(std::index_sequence <i ...>) {
+  auto registerNonLinearOperatorL = [&scope]<size_t... i>(std::index_sequence <i ...>) {
 
- Impl::maybeRegisterNonlinearOperator<decltype(NonLinearOperatorFactory::template op<i...>(std::declval<Assembler&>()))>(cls, ("NonLinearOperator" + (std::to_string(i) + ...+std::string(""))).c_str());
+ Impl::maybeRegisterNonlinearOperator<decltype(NonLinearOperatorFactory::template op<i...>(std::declval<Assembler&>()))>(scope, ("NonLinearOperator" + (std::to_string(i) + ...+std::string(""))).c_str());
   };
 
   registerNonLinearOperatorL(std::index_sequence<>());
