@@ -83,14 +83,13 @@ def __op(nonLinOpFactory):
             affordanceCppType= "Ikarus::AffordanceCollection<>"
         else:
             affordanceCppType = cppType(affordances)[0]
-        print(f"affordanceCppType: {affordanceCppType}")
         runCode="""
         #include<optional>
         #include <dune/python/pybind11/pybind11.h>
         #include <ikarus/finiteelements/ferequirements.hh>
         #include <ikarus/utils/nonlinopfactory.hh>
         template <class NonlinopFactoryWrapper>
-        void op(const NonlinopFactoryWrapper& factory, pybind11::object requirement, pybind11::object affordances, pybind11::object enforcingBCOption)
+        auto op(const NonlinopFactoryWrapper& factory, pybind11::object requirement, pybind11::object affordances, pybind11::object enforcingBCOption)
         {{
             using FERequirements = NonlinopFactoryWrapper::Assembler::element_type::FERequirement;
             auto req = requirement.is_none() ? std::optional<std::reference_wrapper<FERequirements>>{{}} : std::optional<std::reference_wrapper<FERequirements>>(std::in_place, requirement.cast<FERequirements&>());
