@@ -59,7 +59,7 @@ The available requirements are explained on the [FE requirements page](feRequire
 It assembles the requested scalar quantity. A call to this function could look like this:
 
 ```cpp
-ScalarAssembler myAssembler(...) // (1)!
+ScalarFlatAssembler myAssembler(...) // (1)!
 const auto& K = myAssembler.scalar(feRequirements, scalarAffordance) // (2)!
 ```
 
@@ -68,7 +68,7 @@ const auto& K = myAssembler.scalar(feRequirements, scalarAffordance) // (2)!
 
 ## Flat vector assembler
 
-It has all the features of [ScalarAssembler](#scalarassembler) plus more, like:
+It has all the features of [ScalarFlatAssembler](#scalarassembler) plus more, like:
 
 ```cpp
 Eigen::VectorXd& vector(const FERequirementType& feRequirements, VectorAffordance affordance,  DBCOption dbcOption)
@@ -80,7 +80,7 @@ The `DBCOption::Raw` returns a vector without considering the boundary condition
 The `DBCOption::Full` option returns a full vector, where zeros are written for the fixed degrees of freedom and `DBCOption::Reduced`
 returns reduced vector removing the fixed degrees of freedom.
 The second function can be used if the assembler is bound to specific fe requirements and affordances.
-They work in the same way as the scalar assembly functions of [ScalarAssembler](#scalarassembler).
+They work in the same way as the scalar assembly functions of [ScalarFlatAssembler](#scalarassembler).
 The available FE requirements are explained on the [FE requirements](feRequirements.md) page.
 
 ## Flat sparse assembler

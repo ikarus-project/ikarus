@@ -17,6 +17,7 @@
 #include <Eigen/Sparse>
 
 #include <ikarus/assembler/dirichletbcenforcement.hh>
+#include <ikarus/assembler/interface.hh>
 #include <ikarus/finiteelements/fehelper.hh>
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/utils/dirichletvalues.hh>
@@ -44,6 +45,8 @@ public:
   using FEContainerType = std::conditional_t<std::is_reference_v<FEContainer>, const FEContainer, FEContainer>;
   ///< Type of the finite element container (reference or by value).
   using DirichletValuesType = DV; ///< Type of the Dirichlet values.
+  using SizeType =
+      typename DirichletValuesType::FlagsType::size_type; ///< size_type of the container storing Dirichlet flags
 
   /**
    * \brief Constructor for FlatAssemblerBase.
@@ -92,12 +95,18 @@ public:
   auto& finiteElements() const { return feContainer_; }
 
   /**
+   * \brief Returns the dirichlet value object.
+   * \return Reference to the dirichlet value object.
+   */
+  const auto& dirichletValues() const { return *dirichletValues_; }
+
+  /**
    * \brief Returns the number of constraints below a given degrees of freedom index.
    *
    * \param i Index of the degree of freedom.
    * \return Number of constraints below the given index.
    */
-  [[nodiscard]] size_t constraintsBelow(size_t i) const { return constraintsBelow_[i]; }
+  [[nodiscard]] size_t constraintsBelow(SizeType i) const { return constraintsBelow_[i]; }
 
   /**
    * \brief Returns true if a given degree of freedom is fixed by a Dirichlet boundary condition.
@@ -105,7 +114,7 @@ public:
    * \param i Index of the degree of freedom.
    * \return True if the degree of freedom is fixed; false otherwise.
    */
-  [[nodiscard]] bool isConstrained(size_t i) const { return dirichletValues_->isConstrained(i); }
+  [[nodiscard]] bool isConstrained(SizeType i) const { return dirichletValues_->isConstrained(i); }
 
   /**
    * \brief Coarse estimate of node connectivity, i.e., this relates to the bandwidth of a sparse matrix.
@@ -247,17 +256,19 @@ FlatAssemblerBase(T&& fes, const DirichletValuesType& dirichletValues) -> FlatAs
 #endif
 
 /**
- * \class ScalarAssembler
- * \brief ScalarAssembler assembles scalar quantities.
+ * \class ScalarFlatAssembler
+ * \brief ScalarFlatAssembler assembles scalar quantities.
  * \ingroup assembler
  * \tparam FEC Type of the finite element container.
  * \tparam DV Type of the Dirichlet values.
  */
 template <typename FEC, typename DV>
-class ScalarAssembler : public FlatAssemblerBase<FEC, DV>
+class ScalarFlatAssembler : public ScalarAssembler<ScalarFlatAssembler<FEC, DV>, FEC, DV, double>,
+                            public FlatAssemblerBase<FEC, DV>
 {
-  using FEContainerRaw = std::remove_cvref_t<FEC>; ///< Type of the raw finite element container.
-  using Base           = FlatAssemblerBase<FEC, DV>;
+protected:
+  using Base = FlatAssemblerBase<FEC, DV>; ///< Type alias for the base class.
+  friend ScalarAssembler<ScalarFlatAssembler, FEC, DV, double>;
 
 public:
   using typename Base::Basis;
@@ -265,55 +276,26 @@ public:
   using typename Base::FEContainer;
   using typename Base::FERequirement;
   using typename Base::GlobalIndex;
+  using typename ScalarAssembler<ScalarFlatAssembler, FEC, DV, double>::ScalarType;
 
   /**
-   * \brief Constructor for ScalarAssembler.
+   * \brief Constructor for ScalarFlatAssembler.
    *
    * \param fes Finite element container.
    * \param dirichletValues Reference to Dirichlet values.
    */
-  ScalarAssembler(FEContainer&& fes, const DirichletValuesType& dirichletValues)
-      : FlatAssemblerBase<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues) {}
+  ScalarFlatAssembler(FEContainer&& fes, const DirichletValuesType& dirichletValues)
+      : FlatAssemblerBase<FEC, DV>(std::forward<FEContainer>(fes), dirichletValues) {}
 
-  /**
-   * \brief Calculates the scalar quantity requested by feRequirements and affordance.
-   *
-   * \param feRequirements Reference to the finite element requirements.
-   * \param affordance The scalar affordance
-   * \return Const reference to the calculated scalar quantity.
-   */
-  const double& scalar(const FERequirement& feRequirements, ScalarAffordance affordance) {
-    return getScalarImpl(feRequirements, affordance);
-  }
+protected:
+  ScalarType& getScalarImpl(const FERequirement& feRequirements, ScalarAffordance affordance);
 
-  /**
-   * \brief Calculates the scalar quantity requested by the bound feRequirements and returns a reference.
-   *
-   * \return Const reference to the calculated scalar quantity.
-   */
-  const double& scalar() { return getScalarImpl(this->requirement(), this->affordanceCollection().scalarAffordance()); }
-
-private:
-  /**
-   * \brief Helper function to calculate the scalar quantity based on finite element requirements.
-   *
-   * \param feRequirements Reference to the finite element requirements.
-   * \return Reference to the calculated scalar quantity.
-   */
-  double& getScalarImpl(const FERequirement& feRequirements, ScalarAffordance affordance) {
-    scal_ = 0.0;
-    for (auto& fe : this->finiteElements()) {
-      scal_ += calculateScalar(fe, feRequirements, affordance);
-    }
-    return scal_;
-  }
-
-  double scal_{0.0};
+  ScalarType scal_{0.0};
 };
 
 #ifndef DOXYGEN
 template <class T, class DirichletValuesType>
-ScalarAssembler(T&& fes, const DirichletValuesType& dirichletValues) -> ScalarAssembler<T, DirichletValuesType>;
+ScalarFlatAssembler(T&& fes, const DirichletValuesType& dirichletValues) -> ScalarFlatAssembler<T, DirichletValuesType>;
 #endif
 
 /**
@@ -324,10 +306,12 @@ ScalarAssembler(T&& fes, const DirichletValuesType& dirichletValues) -> ScalarAs
  * \tparam DV Type of the Dirichlet values.
  */
 template <typename FEC, typename DV>
-class VectorFlatAssembler : public ScalarAssembler<FEC, DV>
+class VectorFlatAssembler : public ScalarFlatAssembler<FEC, DV>,
+                            public VectorAssembler<VectorFlatAssembler<FEC, DV>, FEC, DV, Eigen::VectorXd>
 {
-  using FEContainerRaw = std::remove_cvref_t<FEC>; ///< Type of the raw finite element container.
-  using Base           = ScalarAssembler<FEC, DV>;
+protected:
+  using Base = ScalarFlatAssembler<FEC, DV>; ///< Type alias for the base class.
+  friend VectorAssembler<VectorFlatAssembler, FEC, DV, Eigen::VectorXd>;
 
 public:
   using typename Base::Basis;
@@ -336,7 +320,9 @@ public:
   using typename Base::FERequirement;
   using typename Base::GlobalIndex;
 
-public:
+  using typename Base::ScalarType;
+  using typename VectorAssembler<VectorFlatAssembler, FEC, DV, Eigen::VectorXd>::VectorType;
+
   /**
    * \brief Constructor for VectorFlatAssembler.
    *
@@ -344,68 +330,18 @@ public:
    * \param dirichletValues Reference to Dirichlet values.
    */
   VectorFlatAssembler(FEContainer&& fes, const DirichletValuesType& dirichletValues)
-      : ScalarAssembler<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues) {}
+      : Base(std::forward<FEContainer>(fes), dirichletValues) {}
 
-  /**
-   * \brief Calculates the vectorial quantity requested by the  feRequirements and the affordance.
-   Depending on the requested DBCOption, the raw, reduced or full vector is returned.
-    Raw means the degrees of freedom associated with dirichlet boundary conditions are not changed.
-    Full means that degrees of freedom associated with dirichlet boundary conditions are set to zero in the vector.
-    Reduced means that degrees of freedom associated with dirichlet boundary conditions are removed and the returned
-   vector has reduced size.
-   *
-   * \param feRequirements Reference to the finite element requirements.
-   * \param affordance The vector affordance
-   * \param dbcOption The DBCOption
-   * \return Const reference to the calculated vectorial quantity.
-   */
-  const Eigen::VectorXd& vector(const FERequirement& feRequirements, VectorAffordance affordance,
-                                DBCOption dbcOption = DBCOption::Full) {
-    if (dbcOption == DBCOption::Raw) {
-      return getRawVectorImpl(feRequirements, affordance);
-    } else if (dbcOption == DBCOption::Reduced) {
-      return getReducedVectorImpl(feRequirements, affordance);
-    } else if (dbcOption == DBCOption::Full) {
-      return getVectorImpl(feRequirements, affordance);
-    }
-    __builtin_unreachable();
-  }
+protected:
+  void assembleRawVectorImpl(const FERequirement& feRequirements, VectorAffordance affordance, VectorType& assemblyVec);
+  VectorType& getRawVectorImpl(const FERequirement& feRequirements, VectorAffordance affordance);
+  VectorType& getVectorImpl(const FERequirement& feRequirements, VectorAffordance affordance);
 
-  /**
- * \brief Calculates the vectorial quantity requested by the bound feRequirements and the affordance.
- Depending on the requested DBCOption, the raw, reduced or full vector is returned.
-  Raw means the degrees of freedom associated with dirichlet boundary conditions are not changed.
-  Full means that degrees of freedom associated with dirichlet boundary conditions are set to zero in the vector.
-  Reduced means that degrees of freedom associated with dirichlet boundary conditions are removed and the returned
- vector has reduced size.
- * \param dbcOption The DBCOption
- * \return Const reference to the calculated vectorial quantity.
- */
-  const Eigen::VectorXd& vector(DBCOption dbcOption) {
-    return vector(this->requirement(), this->affordanceCollection().vectorAffordance(), dbcOption);
-  }
+  VectorType& getReducedVectorImpl(const FERequirement& feRequirements, VectorAffordance affordance);
 
-  /**
-* \brief Calculates the vectorial quantity requested by the bound feRequirements,  the affordance and the
-dBCOption. Depending on the DBCOption, the raw, reduced or full vector is returned. Raw
-means the degrees of freedom associated with dirichlet boundary conditions are not changed. Full means that degrees of
-freedom associated with dirichlet boundary conditions are set to zero in the vector. Reduced means that degrees of
-freedom associated with dirichlet boundary conditions are removed and the returned vector has reduced size.
-* \return Const reference to the calculated vectorial quantity.
-*/
-  const Eigen::VectorXd& vector() { return vector(this->dBCOption()); }
-
-private:
-  void assembleRawVectorImpl(const FERequirement& feRequirements, VectorAffordance affordance,
-                             Eigen::VectorXd& assemblyVec);
-  Eigen::VectorXd& getRawVectorImpl(const FERequirement& feRequirements, VectorAffordance affordance);
-  Eigen::VectorXd& getVectorImpl(const FERequirement& feRequirements, VectorAffordance affordance);
-
-  Eigen::VectorXd& getReducedVectorImpl(const FERequirement& feRequirements, VectorAffordance affordance);
-
-  Eigen::VectorXd vecRaw_{}; ///< Raw vector without changes for dirichlet degrees of freedom
-  Eigen::VectorXd vec_{};    ///< Vector quantity.
-  Eigen::VectorXd vecRed_{}; ///< Reduced vector quantity.
+  VectorType vecRaw_{}; ///< Raw vector without changes for dirichlet degrees of freedom
+  VectorType vec_{};    ///< Vector quantity.
+  VectorType vecRed_{}; ///< Reduced vector quantity.
 };
 
 #ifndef DOXYGEN
@@ -422,17 +358,22 @@ VectorFlatAssembler(T&& fes, const DirichletValuesType& dirichletValues) -> Vect
  * \tparam DV Type of the Dirichlet values.
  */
 template <typename FEC, typename DV>
-class SparseFlatAssembler : public VectorFlatAssembler<FEC, DV>
+class SparseFlatAssembler : public MatrixAssembler<SparseFlatAssembler<FEC, DV>, FEC, DV, Eigen::SparseMatrix<double>>,
+                            public VectorFlatAssembler<FEC, DV>
 {
-public:
-  using FEContainerRaw = std::remove_cvref_t<FEC>; ///< Type of the raw finite element container.
-  using Base           = VectorFlatAssembler<FEC, DV>;
+protected:
+  using Base = VectorFlatAssembler<FEC, DV>; ///< Type alias for the base class.
+  friend MatrixAssembler<SparseFlatAssembler, FEC, DV, Eigen::SparseMatrix<double>>;
 
+public:
   using typename Base::Basis;
   using typename Base::DirichletValuesType;
   using typename Base::FEContainer;
   using typename Base::FERequirement;
   using typename Base::GlobalIndex;
+  using typename Base::ScalarType;
+  using typename Base::VectorType;
+  using typename MatrixAssembler<SparseFlatAssembler, FEC, DV, Eigen::SparseMatrix<double>>::MatrixType;
 
   /**
    * \brief Constructor for SparseFlatAssembler.
@@ -441,86 +382,41 @@ public:
    * \param dirichletValues Reference to Dirichlet values.
    */
   SparseFlatAssembler(FEContainer&& fes, const DirichletValuesType& dirichletValues)
-      : VectorFlatAssembler<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues) {}
-
-  using GridView = typename Basis::GridView; ///< Type of the grid view.
-
-  /**
-   * \brief Calculates the matrix quantity requested by feRequirements and the affordance.
-   * For DBCOption::Full a zero is written on fixed degrees of freedom rows and columns, and a one is written
-   * on the diagonal. For DBCOption::Raw the untouched matrix is returned.
-   * For DBCOption::Reduced the matrix is reduced in size by removing the fixed degrees of freedom.
-
-    \param feRequirements Reference to the finite element requirements.
-   * \param affordance The matrix affordance
-   * \param dbcOption The DBCOption
-   * \return Const reference to the modified sparse matrix quantity.
-   */
-  const Eigen::SparseMatrix<double>& matrix(const FERequirement& feRequirements, MatrixAffordance affordance,
-                                            DBCOption dbcOption = DBCOption::Full) {
-    if (dbcOption == DBCOption::Raw) {
-      return getRawMatrixImpl(feRequirements, affordance);
-    } else if (dbcOption == DBCOption::Reduced) {
-      return getReducedMatrixImpl(feRequirements, affordance);
-    } else if (dbcOption == DBCOption::Full) {
-      return getMatrixImpl(feRequirements, affordance);
-    }
-    __builtin_unreachable();
-  }
-
-  /**
-   * \brief Calculates the matrix quantity requested by the bound feRequirements and the affordance.
-   * \see const Eigen::SparseMatrix<double>& matrix(const FERequirement& feRequirements,MatrixAffordance affordance,
-   DBCOption dbcOption)
-
-   * \param dbcOption The DBCOption
-   * \return Const reference to the modified sparse matrix quantity.
-   */
-  const Eigen::SparseMatrix<double>& matrix(DBCOption dbcOption) {
-    return matrix(this->requirement(), this->affordanceCollection().matrixAffordance(), dbcOption);
-  }
-
-  /**
- * \brief Calculates the matrix quantity requested by the bound feRequirements, the affordance and the
-dBCOption.
- * \see const Eigen::SparseMatrix<double>& matrix(const FERequirement& feRequirements,MatrixAffordance affordance,
- DBCOption dbcOption)
-
- * \return Const reference to the modified sparse matrix quantity.
- */
-  const Eigen::SparseMatrix<double>& matrix() { return matrix(this->dBCOption()); }
+      : Base(std::forward<FEContainer>(fes), dirichletValues) {}
 
 private:
-  void assembleRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance,
-                             Eigen::SparseMatrix<double>& assemblyMat);
-  Eigen::SparseMatrix<double>& getRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance);
-  Eigen::SparseMatrix<double>& getMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance);
-  Eigen::SparseMatrix<double>& getReducedMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance);
+  void assembleRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance, MatrixType& assemblyMat);
 
+protected:
+  MatrixType& getRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance);
+  MatrixType& getMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance);
+  MatrixType& getReducedMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance);
+
+private:
   /** Calculates the non-zero entries in the full sparse matrix and passes them to the underlying Eigen sparse matrix.
    */
-  void createOccupationPattern(Eigen::SparseMatrix<double>& assemblyMat);
+  void createOccupationPattern(MatrixType& assemblyMat);
 
   /** Calculates the non-zero entries in the sparse matrix and passes them to the underlying Eigen sparse matrix.
    * The size of the matrix has the size of the free degrees of freedom. */
-  void createReducedOccupationPattern(Eigen::SparseMatrix<double>& assemblyMat);
+  void createReducedOccupationPattern(MatrixType& assemblyMat);
 
   /** Saves the degree of freedom indices of each element in the vector elementLinearIndices. */
-  void createLinearDOFsPerElement(Eigen::SparseMatrix<double>& assemblyMat);
+  void createLinearDOFsPerElement(MatrixType& assemblyMat);
 
   /** Saves the degree of freedom indices of each element in the vector elementLinearIndices but excludes fixed
    * degrees of freedom. */
-  void createLinearDOFsPerElementReduced(Eigen::SparseMatrix<double>& assemblyMat);
+  void createLinearDOFsPerElementReduced(MatrixType& assemblyMat);
 
   /** Pre-processes the raw sparse matrix before assembly. */
-  void preProcessSparseMatrix(Eigen::SparseMatrix<double>& assemblyMat);
+  void preProcessSparseMatrix(MatrixType& assemblyMat);
 
   /** Pre-processes the reduced sparse matrix before assembly. */
-  void preProcessSparseMatrixReduced(Eigen::SparseMatrix<double>& assemblyMat);
+  void preProcessSparseMatrixReduced(MatrixType& assemblyMat);
 
-  Eigen::SparseMatrix<double> spMatRaw_;     ///< Raw sparse matrix without changes for dirichlet degrees of freedom.
-  Eigen::SparseMatrix<double> spMat_;        ///< Sparse matrix.
-  Eigen::SparseMatrix<double> spMatReduced_; ///< Reduced sparse matrix.
+  MatrixType spMatRaw_;     ///< Raw sparse matrix without changes for dirichlet degrees of freedom.
+  MatrixType spMat_;        ///< Sparse matrix.
+  MatrixType spMatReduced_; ///< Reduced sparse matrix.
   std::vector<std::vector<Eigen::Index>>
       elementLinearIndices_; ///< Vector storing indices of matrix entries in linear storage
   std::vector<std::vector<Eigen::Index>>
@@ -549,17 +445,22 @@ auto makeSparseFlatAssembler(FEC&& fes, const DV& dirichletValues) {
  * \note Requires Ikarus::Concepts::FlatIndexBasis<BasisEmbedded>.
  */
 template <typename FEC, typename DV>
-class DenseFlatAssembler : public VectorFlatAssembler<FEC, DV>
+class DenseFlatAssembler : public MatrixAssembler<DenseFlatAssembler<FEC, DV>, FEC, DV, Eigen::MatrixXd>,
+                           public VectorFlatAssembler<FEC, DV>
 {
-public:
-  using FEContainerRaw = std::remove_cvref_t<FEC>;     ///< Type of the raw finite element container.
-  using Base           = VectorFlatAssembler<FEC, DV>; ///< Type alias for the base class.
+protected:
+  using Base = VectorFlatAssembler<FEC, DV>; ///< Type alias for the base class.
+  friend MatrixAssembler<DenseFlatAssembler, FEC, DV, Eigen::MatrixXd>;
 
-  using typename Base::Basis;               ///< Type of the basis.
-  using typename Base::DirichletValuesType; ///< Type of the Dirichlet values.
-  using typename Base::FEContainer;         ///< Type of the finite element container.
-  using typename Base::FERequirement;       ///< Type of the finite element requirement.
-  using typename Base::GlobalIndex;         ///< Type of the global index.
+public:
+  using typename Base::Basis;
+  using typename Base::DirichletValuesType;
+  using typename Base::FEContainer;
+  using typename Base::FERequirement;
+  using typename Base::GlobalIndex;
+  using typename Base::ScalarType;
+  using typename Base::VectorType;
+  using typename MatrixAssembler<DenseFlatAssembler, FEC, DV, Eigen::MatrixXd>::MatrixType;
 
   /**
    * \brief Constructor for DenseFlatAssembler.
@@ -568,63 +469,20 @@ public:
    * \param dirichletValues Reference to Dirichlet values.
    */
   explicit DenseFlatAssembler(FEContainer&& fes, const DirichletValuesType& dirichletValues)
-      : VectorFlatAssembler<FEContainer, DirichletValuesType>(std::forward<FEContainer>(fes), dirichletValues) {}
-
-  /**
-   * \brief  Calculates the matrix quantity requested by feRequirements and the affordance.
-   * For DBCOption::Full a zero is written on fixed degrees of freedom rows and columns, and a one is written
-   * on the diagonal. For DBCOption::Raw the untouched matrix is returned.
-   * For DBCOption::Reduced the matrix is reduced in size by removing the fixed degrees of freedom.
-   *
-   * \param feRequirements Reference to the finite element requirements.
-   * \param affordance The matrix affordance
-   * \param dbcOption The DBCOption
-
-   * \return Reference to the raw dense matrix quantity.
-   */
-  const Eigen::MatrixXd& matrix(const FERequirement& feRequirements, MatrixAffordance affordance,
-                                DBCOption dbcOption = DBCOption::Full) {
-    if (dbcOption == DBCOption::Raw) {
-      return getRawMatrixImpl(feRequirements, affordance);
-    } else if (dbcOption == DBCOption::Reduced) {
-      return getReducedMatrixImpl(feRequirements, affordance);
-    } else if (dbcOption == DBCOption::Full) {
-      return getMatrixImpl(feRequirements, affordance);
-    }
-    __builtin_unreachable();
-  }
-
-  /**
-   * \brief  Calculates the matrix quantity requested by the bound  feRequirements and the affordance.
-   * For DBCOption::Full a zero is written on fixed degrees of freedom rows and columns, and a one is written
-   * on the diagonal. For DBCOption::Raw the untouched matrix is returned.
-   * For DBCOption::Reduced the matrix is reduced in size by removing the fixed degrees of freedom.
-   *
-   * \param dbcOption The DBCOption
-   * \return Reference to the raw dense matrix quantity.
-   */
-  const Eigen::MatrixXd& matrix(DBCOption dbcOption) {
-    return matrix(this->requirement(), this->affordanceCollection().matrixAffordance(), dbcOption);
-  }
-
-  /**
-   * \brief  Calculates the matrix quantity requested by the bound  feRequirements, the affordance and the
-dBCOption.
-   * \see const Eigen::MatrixXd& matrix(DBCOption dbcOption)
-   * \return Reference to the dense matrix quantity.
-   */
-  const Eigen::MatrixXd& matrix() { return matrix(this->dBCOption()); }
+      : Base(std::forward<FEContainer>(fes), dirichletValues) {}
 
 private:
-  void assembleRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance,
-                             Eigen::MatrixXd& assemblyMat);
-  Eigen::MatrixXd& getRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance);
-  Eigen::MatrixXd& getMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance);
-  Eigen::MatrixXd& getReducedMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance);
+  void assembleRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance, MatrixType& assemblyMat);
 
-  Eigen::MatrixXd matRaw_{}; ///< Raw dense matrix for assembly.
-  Eigen::MatrixXd mat_{};    ///< Dense matrix quantity.
-  Eigen::MatrixXd matRed_{}; ///< Reduced dense matrix quantity.
+protected:
+  MatrixType& getRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance);
+  MatrixType& getMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance);
+  MatrixType& getReducedMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance);
+
+private:
+  MatrixType matRaw_{}; ///< Raw dense matrix for assembly.
+  MatrixType mat_{};    ///< Dense matrix quantity.
+  MatrixType matRed_{}; ///< Reduced dense matrix quantity.
 };
 
 #ifndef DOXYGEN

@@ -7,6 +7,7 @@
  */
 
 #pragma once
+#include <ikarus/utils/concepts.hh>
 
 namespace Ikarus::utils {
 
@@ -47,5 +48,36 @@ void forEachLeafOrPowerLeafNode(T&& tree, TreePath&& treePath, PowerFunc&& power
       forEachLeafOrPowerLeafNode(tree.child(i), childTreePath, powerFunc, leafFunc);
     });
   }
+}
+
+/**
+ * \brief A helper function that helps in traversing over the local coordinates of an element and
+ * call a user-desired function
+ * \see Dune book page 314 for details
+ * \tparam size Size of the global nodal coordinate vector
+ * \tparam LV Type of the local view
+ * \tparam F Type of the functor that traverses over the local coordinate of an element
+ * \param localView Local view bounded to an element
+ * \param f A function that traverses over the local coordinate of an element
+ */
+template <typename LV, typename F, int size = LV::Element::Geometry::coorddimension>
+requires(std::convertible_to<F, std::function<bool(int, Dune::FieldVector<double, size> &&)>>)
+void forEachLagrangeNodePosition(const LV& localView, F&& f) {
+  static_assert(Concepts::LagrangeNode<std::remove_cvref_t<decltype(localView.tree().child(0))>>,
+                "forEachLagrangeNodePosition is only supported for Lagrange power basis");
+  assert(localView.bound() && "The local view must be bound to an element");
+  const auto& localFE = localView.tree().child(0).finiteElement();
+  std::vector<Dune::FieldVector<double, size>> lagrangeNodeCoords;
+  lagrangeNodeCoords.resize(localFE.size());
+  std::vector<double> out;
+  for (int i = 0; i < size; i++) {
+    auto ithCoord = [&i](const Dune::FieldVector<double, size>& x) { return x[i]; };
+    localFE.localInterpolation().interpolate(ithCoord, out);
+    for (std::size_t j = 0; j < out.size(); j++)
+      lagrangeNodeCoords[j][i] = out[j];
+  }
+  for (int nodeNumber = 0; auto& nCoord : lagrangeNodeCoords)
+    if (f(nodeNumber++, std::move(nCoord)))
+      break;
 }
 } // namespace Ikarus::utils
