@@ -83,6 +83,8 @@ if __name__ == "__main__":
 
     assembler = iks.assembler.sparseFlatAssembler(fes, dirichletValues)
 
+    nonLinOp = iks.utils.makeNonLinearOperator(assembler)
+
     dRed = np.zeros(assembler.reducedSize())
 
     lambdaLoad = iks.ValueWrapper(3.0)

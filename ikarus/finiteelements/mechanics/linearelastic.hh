@@ -10,7 +10,7 @@
 #pragma once
 
 #if HAVE_DUNE_LOCALFEFUNCTIONS
-
+  #include <Eigen/Dense>
   #include <optional>
   #include <type_traits>
 

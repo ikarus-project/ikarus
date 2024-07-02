@@ -106,7 +106,9 @@ struct AffordanceCollection : public std::tuple<Affordances...>
   using Base = std::tuple<Affordances...>;
 
   AffordanceCollection() = default;
+
   constexpr AffordanceCollection(Affordances... affordances)
+  requires(sizeof...(Affordances) > 0)
       : Base(affordances...) {}
 
   static constexpr bool hasScalarAffordance = traits::hasType<ScalarAffordance, std::tuple<Affordances...>>::value;
@@ -360,3 +362,12 @@ public:
 };
 
 } // namespace Ikarus
+
+namespace std {
+template <Ikarus::FEAffordance... Affordances>
+requires(sizeof...(Affordances) <= 3)
+struct tuple_size<Ikarus::AffordanceCollection<Affordances...>>
+    : std::integral_constant<std::size_t, sizeof...(Affordances)>
+{
+};
+} // namespace std

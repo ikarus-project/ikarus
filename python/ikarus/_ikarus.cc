@@ -53,7 +53,9 @@ PYBIND11_MODULE(_ikarus, m) {
 
   using VWd = ValueWrapper<double>;
   auto valueWrapperDouble =
-      Dune::Python::insertClass<VWd>(m, "ValueWrapper", Dune::Python::GenerateTypeName("ValueWrapper<double>")).first;
+      Dune::Python::insertClass<VWd>(m, "ValueWrapper", Dune::Python::GenerateTypeName("ValueWrapper<double>"),
+                                     Dune::Python::IncludeFiles("ikarus/python/finiteelements/valuewrapper.hh"))
+          .first;
   valueWrapperDouble.def(py::init<double>());
   valueWrapperDouble.def("__repr__", [](const VWd& d) { return std::to_string(d.val); });
   valueWrapperDouble.def("__eq__", [](const VWd& x, const VWd& y) { return Dune::FloatCmp::eq(x.val, y.val); });
