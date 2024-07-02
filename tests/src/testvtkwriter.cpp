@@ -4,9 +4,9 @@
 #include <config.h>
 
 #include "dummyproblem.hh"
+#include "testhelpers.hh"
 
 #include <memory>
-#include <source_location>
 
 #include <dune/common/float_cmp.hh>
 #include <dune/common/fvector.hh>
@@ -36,13 +36,9 @@
 
 using Dune::TestSuite;
 
-auto testLocation(std::source_location loc = std::source_location::current()) {
-  return loc.function_name() + std::string("(L ") + std::to_string(loc.line()) + "): ";
-}
-
 template <typename GridView, typename Assembler>
 auto testInstantiationAndTemplateArgumentDeduction(const GridView& gridView, std::shared_ptr<Assembler> assembler) {
-  static_assert(Ikarus::Concepts::IsAssembler<typename decltype(assembler)::element_type>);
+  static_assert(Ikarus::Concepts::FlatAssembler<typename decltype(assembler)::element_type>);
   // Create Vtk::Writer
   static_assert(std::is_class_v<Ikarus::Vtk::Writer<Assembler, false>>);
   static_assert(std::is_same_v<typename Ikarus::Vtk::Writer<Assembler, false>::DataCollector,
@@ -80,7 +76,6 @@ auto testInstantiationAndTemplateArgumentDeduction(const GridView& gridView, std
       Ikarus::Vtk::Writer(assembler, dc, Dune::Vtk::FormatTypes::BINARY, Dune::Vtk::DataTypes::FLOAT32);
 }
 
-
 auto runTest() {
   TestSuite t("Test ResultFunction");
   std::string fileName = "ResultFunctionTest";
@@ -90,11 +85,11 @@ auto runTest() {
 
   DummyProblem<Grid> testCase{};
 
-  auto& gridView = testCase.gridView();
-  auto sparseAssembler = testCase.sparseAssembler(); 
-  auto& req = testCase.requirement();
-  auto& basis = testCase.basis();
-  auto& D_Glob = req.globalSolution();
+  auto& gridView       = testCase.gridView();
+  auto sparseAssembler = testCase.sparseAssembler();
+  auto& req            = testCase.requirement();
+  auto& basis          = testCase.basis();
+  auto& D_Glob         = req.globalSolution();
 
   // Tests
   testInstantiationAndTemplateArgumentDeduction(gridView, sparseAssembler);
@@ -103,20 +98,24 @@ auto runTest() {
 
   auto writer = Ikarus::Vtk::Writer(sparseAssembler);
 
+  using Ikarus::Vtk::asCellData;
+  using Ikarus::Vtk::asPointData;
+
   writer.setDatatype(Dune::Vtk::DataTypes::FLOAT64);
   writer.setFormat(Dune::Vtk::FormatTypes::ASCII);
 
-  writer.addResult<Ikarus::ResultTypes::linearStress>(Ikarus::Vtk::asPointData());
-  writer.addResult<Ikarus::ResultTypes::linearStress>(Ikarus::Vtk::asCellData());
+  writer.addResult<Ikarus::ResultTypes::linearStress>(asPointData());
+  writer.addResultFunction(Ikarus::makeResultFunction<Ikarus::ResultTypes::linearStress>(sparseAssembler),
+                           asCellData());
 
-  writer.addInterpolation<2>(D_Glob, basis.flat(), "displacement", Ikarus::Vtk::asPointData());
+  writer.addInterpolation<2>(D_Glob, basis.flat(), "displacement", asPointData());
   writer.addGridFunction(
       Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis.flat(), D_Glob),
-      "displacements_gf", 2, Ikarus::Vtk::asCellData());
+      "displacements_gf", 2, asCellData());
 
   writer.addGridFunction(
       Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis.flat(), D_Glob),
-      Dune::Vtk::FieldInfo("displacements_gf", 2, Dune::Vtk::RangeTypes::VECTOR), Ikarus::Vtk::asPointData());
+      Dune::Vtk::FieldInfo("displacements_gf", 2, Dune::Vtk::RangeTypes::VECTOR), asPointData());
 
   writer.addCellData(
       Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis.flat(), D_Glob),
@@ -137,7 +136,7 @@ auto runTest() {
   t.check(stressData.numComponents() == 3)
       << testLocation() << "Num components should be 3, but is " << stressData.numComponents();
   t.check(stressData.dataType() == Dune::Vtk::DataTypes::FLOAT64)
-      << testLocation() << std::source_location::current().line() << "Precision is should be float64";
+      << testLocation() << std::source_location::current().line() << "Precision should be float64";
 
   auto stressDataCell = reader.getCellData("linearStress");
   t.check(stressDataCell.numComponents() == 3)
@@ -153,6 +152,15 @@ auto runTest() {
   auto displacementDataGF = reader.getPointData("displacements_gf");
   t.check(displacementDataGF.numComponents() == 3)
       << testLocation() << "Num components should be 3, but is " << displacementDataGF.numComponents();
+
+  auto writer2 = Ikarus::Vtk::Writer(sparseAssembler, Dune::Vtk::DiscontinuousDataCollector<GridView>{gridView});
+  writer2.addAllResults(asPointData());
+  writer2.addAllResults(asCellData());
+  auto vtkFileName2 = writer2.write(fileName + "_2");
+
+  reader.read(vtkFileName2);
+  t.checkNoThrow([&]() { reader.getPointData("linearStress"); });
+  t.checkNoThrow([&]() { reader.getCellData("linearStress"); });
 
   return t;
 }

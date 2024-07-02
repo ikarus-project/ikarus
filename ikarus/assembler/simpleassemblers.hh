@@ -92,13 +92,6 @@ public:
   auto& finiteElements() const { return feContainer_; }
 
   /**
-   * \brief Returns the container of finite elements.
-   * \return Reference to the finite element container.
-   */
-  // TODO this is not needed when resultfunction takes the assembler as shared_ptr 
-  auto& finiteElements() { return feContainer_; }
-
-  /**
    *\ brief Returns the gridView of the finite elements.
    * \return Reference to the finite element's gridView.
    */

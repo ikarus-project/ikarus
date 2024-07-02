@@ -7,9 +7,7 @@
 
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
-#include <dune/grid/common/defaultgridview.hh>
 #include <dune/grid/uggrid.hh>
-#include <dune/grid/uggrid/uggridleafiterator.hh>
 
 #include <ikarus/assembler/simpleassemblers.hh>
 #include <ikarus/finiteelements/fefactory.hh>
@@ -21,11 +19,12 @@
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/init.hh>
 
+
 template <typename G = Dune::UGGrid<2>>
 struct DummyProblem
 {
   using Grid     = G;
-  using GridView = Grid::LeafGridView;
+  using GridView = typename Grid::LeafGridView;
 
   using Basis =
       Ikarus::BasisHandler<Dune::Functions::PowerPreBasis<Dune::Functions::BasisFactory::BlockedInterleaved,
@@ -35,7 +34,7 @@ struct DummyProblem
       Ikarus::FE<Ikarus::PreFE<Basis>, Ikarus::LinearElasticPre::Skill, Ikarus::VolumeLoadPre<2>::Skill>;
 
   using SparseAssmblerT =
-      Ikarus::SparseFlatAssembler<std::vector<LinearElastic>, Ikarus::DirichletValues<typename Basis::FlatBasis>>;
+      Ikarus::SparseFlatAssembler<std::vector<LinearElastic>&, Ikarus::DirichletValues<typename Basis::FlatBasis>>;
 
   explicit DummyProblem(const std::array<unsigned int, 2>& elementsPerDirection = {10, 10})
       : grid_([&]() {
@@ -68,7 +67,7 @@ struct DummyProblem
           }
           return std::move(fes);
         }()),
-        sparseAssembler_{std::make_shared<SparseAssmblerT>(std::move(fes_), dirichletValues_)},
+        sparseAssembler_{std::make_shared<SparseAssmblerT>(fes_, dirichletValues_)},
         requirement_(typename LinearElastic::Requirement())
 
   {
@@ -96,7 +95,7 @@ struct DummyProblem
   auto& gridView() { return gridView_; }
   auto& basis() { return basis_; }
   auto& requirement() { return requirement_; }
-  auto sparseAssembler() { return sparseAssembler_; }
+  auto& sparseAssembler() { return sparseAssembler_; }
   auto& dirichletValues() { return dirichletValues_; }
   auto& finiteElements() { return fes_; }
 
