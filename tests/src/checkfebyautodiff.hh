@@ -56,14 +56,16 @@ auto checkFESByAutoDiff(const GridView& gridView, const PreBasis& pb, Skills&& s
             "automatic differentiation for " +
                 feClassName)
         << "K is \n"
-        << K << "\n KAutoDiff is \n"
-        << KAutoDiff << "The difference is " << (K - KAutoDiff);
+        << K << "\nKAutoDiff is \n"
+        << KAutoDiff << "\nThe difference is\n"
+        << (K - KAutoDiff);
 
     t.check(R.isApprox(RAutoDiff, tol),
             "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
             "automatic differentiation for " +
                 feClassName)
-        << "The difference is " << (R - RAutoDiff);
+        << "R is " << R.transpose() << "\nRAutoDiff is " << RAutoDiff.transpose() << "\nThe difference is "
+        << (R - RAutoDiff).transpose();
 
     t.check(Dune::FloatCmp::eq(calculateScalar(fe, req, affordance.scalarAffordance()),
                                calculateScalar(feAutoDiff, req, affordance.scalarAffordance()), tol),

@@ -353,7 +353,6 @@ public:
   auto subOperator() {
     auto derivatives = derivatives_;
     auto fs = functions([&derivatives]() -> decltype(auto) { return std::get<Derivatives>(derivatives); }()...);
-    std::cout << Dune::className(std::get<0>(fs.args)) << std::endl;
     Ikarus::NonLinearOperator<Impl::Functions<std::tuple_element_t<Derivatives, decltype(derivatives_)>...>,
                               Impl::Parameter<ParameterArgs...>>
         subOp(std::move(fs), Impl::applyAndRemoveReferenceWrapper(parameter<ParameterArgs...>, args_));

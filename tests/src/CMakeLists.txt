@@ -36,6 +36,7 @@ set(programSourceFiles
     testshellthicknessquadrule.cpp
     testtrustregion.cpp
     testresultfunction.cpp
+    testtruss.cpp
 )
 
 set(TEST_DEPENDING_ON_LOCALFEFUNCTIONS
