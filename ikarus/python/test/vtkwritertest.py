@@ -20,116 +20,141 @@ from dune.grid import gridFunction
 from dune.vtk import FormatTypes, DataTypes
 
 
-def runTest():
-    lowerLeft = []
-    upperRight = []
-    elements = []
-    for i in range(2):
-        lowerLeft.append(-1)
-        upperRight.append(1)
-        elements.append(3)
-
-    grid = dune.grid.structuredGrid(lowerLeft, upperRight, elements)
-
-    basisLagrange1 = iks.basis(
-        grid, dune.functions.Power(dune.functions.Lagrange(order=1), 2)
-    )
-    flatBasis = basisLagrange1.flat()
-    d = np.zeros(len(flatBasis))
-    d[0] = 0.0
-
-    lambdaLoad = iks.ValueWrapper(3.0)
-
-    fes = []
-
-    def vL(x, lambdaVal):
-        return np.array([lambdaVal * x[0] * 2, 2 * lambdaVal * x[1] * 0])
-
-    vLoad = iks.finite_elements.volumeLoad2D(vL)
-
-    linElastic = iks.finite_elements.linearElastic(youngs_modulus=1000, nu=0.2)
-    for e in grid.elements:
-        fes.append(iks.finite_elements.makeFE(basisLagrange1, linElastic, vLoad))
-        fes[-1].bind(e)
-
-    req = fes[0].createRequirement()
-    req.insertParameter(lambdaLoad)
-    req.insertGlobalSolution(d)
-
-    dirichletValues = iks.dirichletValues(flatBasis)
-
-    def fixLeftHandEdge(vec, localIndex, localView, intersection):
-        if intersection.geometry.center[1] < -0.99999:
-            vec[localView.index(localIndex)] = True
-
-    dirichletValues.fixBoundaryDOFsUsingLocalViewAndIntersection(fixLeftHandEdge)
-
-    sparseAssembler = iks.assembler.sparseFlatAssembler(fes, dirichletValues)
-    sparseAssembler.bind(
-        req, iks.AffordanceCollection.elastoStatics, iks.DBCOption.Full
-    )
-
-    Msparse = sparseAssembler.matrix()
-    forces = sparseAssembler.vector()
-
-    x = sp.sparse.linalg.spsolve(Msparse, -forces)
-    req.insertGlobalSolution(x)
-
-    _ = iks.io.vtkWriter(
-        sparseAssembler, datatype=DataTypes.Float64, headertype=DataTypes.UInt32
-    )
+import unittest
 
 
-    writer = iks.io.vtkWriter(sparseAssembler, format=FormatTypes.ascii)
-    writer.addInterpolation(x, flatBasis, "displacements", 2)
+class TestVtkWriter(unittest.TestCase):
+    def setUp(self):
+        lowerLeft = []
+        upperRight = []
+        elements = []
+        for i in range(2):
+            lowerLeft.append(-1)
+            upperRight.append(1)
+            elements.append(3)
 
+        self.grid = dune.grid.structuredGrid(lowerLeft, upperRight, elements)
 
-    writer.addAllResultsAsCellData()
-    writer.addAllResultsAsPointData()
+        basisLagrange1 = iks.basis(
+            self.grid, dune.functions.Power(dune.functions.Lagrange(order=1), 2)
+        )
+        self.flatBasis = basisLagrange1.flat()
+        d = np.zeros(len(self.flatBasis))
+        d[0] = 0.0
 
-    writer.write("file")
+        lambdaLoad = iks.ValueWrapper(3.0)
 
-    assert iks.io.dataCollectors[0] == "lagrange"
-    assert iks.io.dataCollectors[1] == "discontinous"
+        def vL(x, lambdaVal):
+            return np.array([lambdaVal * x[0] * 2, 2 * lambdaVal * x[1] * 0])
 
-    writer2 = iks.io.vtkWriter(sparseAssembler, dataCollector="lagrange", order=2)
+        vLoad = iks.finite_elements.volumeLoad2D(vL)
 
-    writer2.addResultAsCellData("linearStress")
-    writer2.addResultAsPointData("linearStress")
+        fes = []
+        linElastic = iks.finite_elements.linearElastic(youngs_modulus=1000, nu=0.2)
+        for e in self.grid.elements:
+            fes.append(iks.finite_elements.makeFE(basisLagrange1, linElastic, vLoad))
+            fes[-1].bind(e)
 
-    writer2.setFormat(FormatTypes.ascii)
-    writer2.setDatatype(DataTypes.Float64)
-    writer2.setHeadertype(DataTypes.UInt16)
+        req = fes[0].createRequirement()
+        req.insertParameter(lambdaLoad)
+        req.insertGlobalSolution(d)
 
-    @gridFunction(grid)
-    def g(x):
-        return [math.sin(2 * math.pi * x[0] * x[1]), x[0] * x[1]] * 5
+        self.dirichletValues = iks.dirichletValues(self.flatBasis)
 
-    writer2.addPointData(g, name="g", components=(0, 1))
-    writer2.addPointData(g, name="g2", components=[0, 1, 2])
+        def fixLeftHandEdge(vec, localIndex, localView, intersection):
+            if intersection.geometry.center[1] < -0.99999:
+                vec[localView.index(localIndex)] = True
 
-    writer2.write("file2")
+        self.dirichletValues.fixBoundaryDOFsUsingLocalViewAndIntersection(
+            fixLeftHandEdge
+        )
 
-    # Structured writer
-    writer3 = iks.io.vtkWriter(
-        sparseAssembler, structured=True, format=FormatTypes.ascii
-    )
-    writer3.addAllResultsAsCellData()
-    fileName = writer3.write("file3")
-    assert fileName[-3:] == "vtr"
+        self.sparseAssembler = iks.assembler.sparseFlatAssembler(
+            fes, self.dirichletValues
+        )
+        self.sparseAssembler.bind(
+            req, iks.AffordanceCollection.elastoStatics, iks.DBCOption.Full
+        )
 
-    # These two constructors should result in a warning
-    _ = iks.io.vtkWriter(sparseAssembler, dataCollector="lagrange", structured=True)
-    _ = iks.io.vtkWriter(sparseAssembler, dataCollector="unknown")
+        Msparse = self.sparseAssembler.matrix()
+        forces = self.sparseAssembler.vector()
 
-    
-    discontinousVtkWriter = iks.io.vtkWriter(sparseAssembler, dataCollector=iks.io.dataCollectors[1])
-    discontinousVtkWriter.addAllResultsAsPointData()
+        self.x = sp.sparse.linalg.spsolve(Msparse, -forces)
+        req.insertGlobalSolution(self.x)
 
-    discontinousVtkWriter.addInterpolation(x, flatBasis, "displacements", 2)
-    discontinousVtkWriter.write("file4")
+    def test(self):
+        _ = iks.io.vtkWriter(
+            self.sparseAssembler,
+            datatype=DataTypes.Float64,
+            headertype=DataTypes.UInt32,
+        )
 
+        writer = iks.io.vtkWriter(self.sparseAssembler, format=FormatTypes.ascii)
+        writer.addInterpolationAsPointData(
+            self.x, self.flatBasis, "displacements", size=2
+        )
+        writer.addInterpolationAsCellData(
+            self.x, self.flatBasis, "displacements", size=2
+        )
+
+        xDisplacementBasis = dune.functions.subspaceBasis(self.flatBasis, 0)
+        writer.addInterpolationAsPointData(self.x, xDisplacementBasis, "u", size=1)
+
+        writer.addAllResultsAsCellData()
+        writer.addAllResultsAsPointData()
+
+        fileName = writer.write("file")
+        self.assertEqual(fileName[-3:], "vtu")
+
+        self.assertEqual(iks.io.dataCollectors[0], "lagrange")
+        self.assertEqual(iks.io.dataCollectors[1], "discontinuous")
+
+        writer2 = iks.io.vtkWriter(
+            self.sparseAssembler, dataCollector="lagrange", order=2
+        )
+
+        writer2.addResultAsCellData("linearStress")
+        writer2.addResultAsPointData("linearStress")
+
+        writer2.setFormat(FormatTypes.ascii)
+        writer2.setDatatype(DataTypes.Float64)
+        writer2.setHeadertype(DataTypes.UInt16)
+
+        @gridFunction(self.grid)
+        def g(x):
+            return [math.sin(2 * math.pi * x[0] * x[1]), x[0] * x[1]] * 5
+
+        writer2.addPointData(g, name="g", components=(0, 1))
+        writer2.addPointData(g, name="g2", components=[0, 1, 2])
+
+        writer2.write("file2")
+
+        # Structured writer
+        writer3 = iks.io.vtkWriter(
+            self.sparseAssembler, structured=True, format=FormatTypes.ascii
+        )
+        writer3.addAllResultsAsCellData()
+        fileName = writer3.write("file3")
+        assert fileName[-3:] == "vtr"
+
+        # These two constructors should result in a warning
+        with self.assertWarns(Warning):
+            _ = iks.io.vtkWriter(
+                self.sparseAssembler, dataCollector="lagrange", structured=True
+            )
+        with self.assertWarns(Warning):    
+            _ = iks.io.vtkWriter(self.sparseAssembler, dataCollector="unknown")
+
+        discontinuousVtkWriter = iks.io.vtkWriter(
+            self.sparseAssembler, dataCollector=iks.io.dataCollectors[1]
+        )
+        discontinuousVtkWriter.addAllResultsAsPointData()
+
+        discontinuousVtkWriter.addInterpolationAsPointData(
+            self.x, self.flatBasis, "displacements", size=2
+        )
+        discontinuousVtkWriter.write("file4")
 
 
 if __name__ == "__main__":
-    runTest()
+    unittest.main()
