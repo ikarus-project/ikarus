@@ -3,7 +3,7 @@
 
 import debug_info
 
-debug_info.unsetDebugFlags()
+debug_info.setDebugFlags()
 
 import ikarus as iks
 import dune.grid
@@ -42,7 +42,7 @@ def testDirichletValues():
     # This is equivalent to values[0] == True, but this syntax is discouraged by PEP
     assert dirichletValues.container[0]
 
-    # Note that the result of localView.index(localIndex) is a multiIndex even for a flat basis, the localIndex appears to be a int
+    # Note that the result of localView.index(localIndex) is a multiIndex even for a flat basis, the localIndex is an int
     def fixAnotherIndexWithLocalView(vec, localIndex, localView):
         if localView.index(localIndex) == [4]:
             vec[localView.index(localIndex)] = True
@@ -52,7 +52,9 @@ def testDirichletValues():
         assert isinstance(localView.index(localIndex)[0], int)
 
     dirichletValues.fixBoundaryDOFs(fixAnotherIndexWithLocalView)
-    assert sum(dirichletValues.container) == 2
+    container = dirichletValues.container
+
+    assert sum(container) == 2
     assert dirichletValues.fixedDOFsize == 2
 
     def fixTopSide(vec, localIndex, localView, intersection):
@@ -69,6 +71,9 @@ def testDirichletValues():
     indicesPerDirection: int = (math.sqrt(grid.size(0)) + 1) * 2
     assert dirichletValues.fixedDOFsize == 2 + indicesPerDirection
 
+    # This checks whether container is a reference
+    assert sum(container) == dirichletValues.fixedDOFsize
+
     # Test Subbasis
     dirichletValues2 = iks.dirichletValues(basis)
 
@@ -81,11 +86,18 @@ def testDirichletValues():
     dirichletValues2.fixBoundaryDOFs(fixTopSide, 1)
     assert dirichletValues2.fixedDOFsize == 2 + indicesPerDirection
 
-    dirichletValues2.fixIthDOF(1)
+    dirichletValues2.setSingleDOF(1, True)
     assert dirichletValues2.fixedDOFsize == 2 + indicesPerDirection + 1
     assert dirichletValues2.container[1]
     assert dirichletValues2.isConstrained(1)
-    
+
+    dirichletValues2.setSingleDOF(1, False)
+    assert dirichletValues2.fixedDOFsize == 2 + indicesPerDirection
+    assert not dirichletValues2.isConstrained(1)
+
+    dirichletValues2.reset()
+    assert dirichletValues2.fixedDOFsize == 0
+    assert sum(dirichletValues2.container) == 0
 
 
 if __name__ == "__main__":
