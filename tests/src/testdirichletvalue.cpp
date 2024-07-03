@@ -128,18 +128,6 @@ static auto dirichletBCTest() {
     return sum;
   };
 
-  // Fix non-boundaryDOFs
-  // Ikarus::DirichletValues dirichletValues6(flatBasis);
-  // dirichletValues6.fixDOFs([](const auto& basis, auto& dirichletFlags) {
-  //   Dune::Functions::forEachBoundaryDOF(basis, [&](auto&& localIndex, auto&& localView, auto&& intersection) {
-  //     dirichletFlags[localView.index(localIndex)] = true;
-  //   });
-  // });
-
-  // t.check(dirichletValues6.fixedDOFsize() == flatBasis.size())
-  //     << "All Dofs should be fixed but only " << dirichletValues6.fixedDOFsize() << "out of " << flatBasis.size()
-  //     << "are fixed";
-
   // Test container
   auto& container = dirichletValues2.container();
   static_assert(std::is_reference_v<decltype(container)>, "container should be a reference");
