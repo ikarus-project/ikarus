@@ -6,8 +6,30 @@ from ikarus.generator import MySimpleGenerator
 from dune.vtk import FormatTypes, DataTypes
 
 from logging import warn
+from io import StringIO
+from dune.generator.algorithm import run
+import types
 
+# The list of supported dataCollectors
 dataCollectors = ["lagrange", "discontinous", "iga"]
+
+
+def __addInterpolation(writer):
+    def __addInterpolationFunc(writer, vals_, basis, name: str, size: int):
+        runCode = """
+            #define EIGEN_DEFAULT_TO_ROW_MAJOR 1
+            #include <ikarus/python/io/vtkwriter.hh>
+            #include <dune/python/pybind11/eigen.h>
+            template <typename Writer, typename Basis>
+            void addInterPolation(Writer& writer, auto vals_, const Basis& basis, std::string name) {{
+                auto vals = vals_.template cast<Eigen::VectorX<double>>();
+                writer.template addInterpolation<{size}>(std::move(vals), basis, name, Ikarus::Vtk::asPointData());
+            }}  
+        """.format(size=size)
+
+        return run("addInterPolation", StringIO(runCode), writer, vals_, basis, name)
+
+    return __addInterpolationFunc
 
 
 def vtkWriter(
@@ -31,7 +53,7 @@ def vtkWriter(
     structuredStr = "true" if structured else "false"
     gridViewName = assembler.grid().cppTypeName
     dataCollectorName: str = ""
-    
+
     if dataCollector is not None:
         if dataCollector == dataCollectors[0]:
             dataCollectorName = (
@@ -42,7 +64,9 @@ def vtkWriter(
             dataCollectorName = f"Dune::Vtk::DiscontinuousDataCollector<{gridViewName}>"
             includes += ["dune/vtk/datacollectors/discontinuousdatacollector.hh"]
         elif dataCollector == dataCollectors[2]:
-            dataCollectorName = f"Dune::Vtk::DiscontinuousIgaDataCollector<{gridViewName}>"
+            dataCollectorName = (
+                f"Dune::Vtk::DiscontinuousIgaDataCollector<{gridViewName}>"
+            )
             includes += ["dune/iga/io/igadatacollector.hh"]
         else:
             warn(
@@ -62,6 +86,14 @@ def vtkWriter(
     includes += assembler._includes
     moduleName = "vtkWriter_" + hashIt(element_type)
     module = generator.load(
-        includes=includes, typeName=element_type, moduleName=moduleName
+        includes=includes,
+        typeName=element_type,
+        moduleName=moduleName,
+        dynamicAttr=True,
     )
-    return module.VtkWriter(assembler, format, datatype, headertype)
+    writerModule = module.VtkWriter(assembler, format, datatype, headertype)
+    writerModule.addInterpolation = types.MethodType(
+        __addInterpolation(writerModule), writerModule
+    )
+
+    return writerModule

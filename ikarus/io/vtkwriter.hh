@@ -134,7 +134,7 @@ public:
 
   template <int dim, typename R, typename Basis, Impl::Concepts::DataType DT>
   void addInterpolation(R&& vals, const Basis& basis, const std::string& name, DT type) {
-    auto gridFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, dim>>(basis, vals);
+    auto gridFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, dim>>(basis, std::forward<R>(vals));
     addGridFunction(std::move(gridFunction), name, dim, type);
   }
 

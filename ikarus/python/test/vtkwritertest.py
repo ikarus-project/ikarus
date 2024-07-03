@@ -81,6 +81,8 @@ def runTest():
 
 
     writer = iks.io.vtkWriter(sparseAssembler, format=FormatTypes.ascii)
+    writer.addInterpolation(x, flatBasis, "displacements", 2)
+
 
     writer.addAllResultsAsCellData()
     writer.addAllResultsAsPointData()
@@ -123,8 +125,9 @@ def runTest():
     
     discontinousVtkWriter = iks.io.vtkWriter(sparseAssembler, dataCollector=iks.io.dataCollectors[1])
     discontinousVtkWriter.addAllResultsAsPointData()
-    discontinousVtkWriter.write("file4")
 
+    discontinousVtkWriter.addInterpolation(x, flatBasis, "displacements", 2)
+    discontinousVtkWriter.write("file4")
 
 
 

@@ -11,7 +11,6 @@
 #pragma once
 
 #include <type_traits>
-#include <utility>
 
 #include <dune/vtk/function.hh>
 #include <dune/vtk/vtkwriter.hh>
