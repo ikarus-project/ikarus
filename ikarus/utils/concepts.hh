@@ -554,5 +554,15 @@ namespace Concepts {
                                   { t.matrix() };
                                 };
 
+  // adapted from /dune/dune-vtk/dune/vtk/utility/concepts.hh
+  template <class DC>
+  concept DataCollector = requires(DC dc) {
+    typename DC::GridView;
+    { dc.update() } -> std::same_as<void>;
+    { dc.numPoints() } -> std::convertible_to<std::uint64_t>;
+    { dc.numCells() } -> std::convertible_to<std::uint64_t>;
+    { dc.gridView() } -> std::same_as<const typename DC::GridView&>;
+  };
+
 } // namespace Concepts
 } // namespace Ikarus

@@ -8,6 +8,8 @@
 
 #include <memory>
 
+#include "dune/common/indices.hh"
+#include "dune/functions/functionspacebases/subspacebasis.hh"
 #include <dune/common/float_cmp.hh>
 #include <dune/common/fvector.hh>
 #include <dune/common/test/testsuite.hh>
@@ -58,7 +60,7 @@ auto testInstantiationAndTemplateArgumentDeduction(const GridView& gridView, std
       assembler, Dune::Vtk::FormatTypes::BINARY, Dune::Vtk::DataTypes::FLOAT32);
 
   Dune::Vtk::DiscontinuousDataCollector<GridView> dc{gridView};
-  static_assert(Ikarus::Concepts::IsDataCollector<decltype(dc)>);
+  static_assert(Ikarus::Concepts::DataCollector<decltype(dc)>);
 
   auto writerDCAsArg =
       Ikarus::Vtk::Writer<Assembler, false, Dune::Vtk::DiscontinuousDataCollector<GridView>>(assembler, dc);
@@ -98,28 +100,22 @@ auto runTest() {
 
   auto writer = Ikarus::Vtk::Writer(sparseAssembler);
 
-  using Ikarus::Vtk::asCellData;
-  using Ikarus::Vtk::asPointData;
+  using ::asCellData;
+  using ::asPointData;
 
   writer.setDatatype(Dune::Vtk::DataTypes::FLOAT64);
   writer.setFormat(Dune::Vtk::FormatTypes::ASCII);
 
-  writer.addResult<Ikarus::ResultTypes::linearStress>(asPointData());
-  writer.addResultFunction(Ikarus::makeResultFunction<Ikarus::ResultTypes::linearStress>(sparseAssembler),
-                           asCellData());
+  writer.addResult<Ikarus::ResultTypes::linearStress>(asPointData);
+  writer.addResultFunction(Ikarus::makeResultFunction<Ikarus::ResultTypes::linearStress>(sparseAssembler), asCellData);
 
-  writer.addInterpolation<2>(D_Glob, basis.flat(), "displacement", asPointData());
-  writer.addGridFunction(
-      Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis.flat(), D_Glob),
-      "displacements_gf", 2, asCellData());
+  writer.addInterpolation<2>(D_Glob, basis.flat(), "displacement", asPointData);
+  writer.addInterpolation<1>(D_Glob, Dune::Functions::subspaceBasis(basis.flat(), Dune::index_constant<0>()),
+                             "displacement_u", asPointData);
 
-  writer.addGridFunction(
+  writer.addPointData(
       Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis.flat(), D_Glob),
-      Dune::Vtk::FieldInfo("displacements_gf", 2, Dune::Vtk::RangeTypes::VECTOR), asPointData());
-
-  writer.addCellData(
-      Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis.flat(), D_Glob),
-      Dune::Vtk::FieldInfo("displacements_gf2", 2, Dune::Vtk::RangeTypes::VECTOR));
+      Dune::Vtk::FieldInfo("displacements_gf", 2, Dune::Vtk::RangeTypes::VECTOR));
 
   auto vtkFileName = writer.write(fileName);
 
@@ -154,8 +150,8 @@ auto runTest() {
       << testLocation() << "Num components should be 3, but is " << displacementDataGF.numComponents();
 
   auto writer2 = Ikarus::Vtk::Writer(sparseAssembler, Dune::Vtk::DiscontinuousDataCollector<GridView>{gridView});
-  writer2.addAllResults(asPointData());
-  writer2.addAllResults(asCellData());
+  writer2.addAllResults(asPointData);
+  writer2.addAllResults(asCellData);
   auto vtkFileName2 = writer2.write(fileName + "_2");
 
   reader.read(vtkFileName2);
