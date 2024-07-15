@@ -41,8 +41,7 @@ static auto dirichletBCTest() {
   using namespace Dune::Functions::BasisFactory;
   auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<1>()));
 
-  auto basisP    = std::make_shared<const decltype(basis)>(basis);
-  auto flatBasis = basisP->flat();
+  auto flatBasis = basis.flat();
 
   Ikarus::DirichletValues dirichletValues1(flatBasis);
   dirichletValues1.fixDOFs([](auto& basis_, auto& dirichFlags) {
@@ -71,7 +70,7 @@ static auto dirichletBCTest() {
     dirichletValues_SSB.fixBoundaryDOFs([](auto& dirichFlags, auto&& indexGlobal) { dirichFlags[indexGlobal] = true; },
                                         tree2);
 
-    for (std::size_t i = 0; i < basisP->flat().size(); ++i)
+    for (std::size_t i = 0; i < flatBasis.size(); ++i)
       t.check(dirichletValues_SSB.isConstrained(i) == dirichletValues2.isConstrained(i))
           << "Different dirichlet value creations with subspace basis didn't provide the same result as with full "
              "basis. "
@@ -194,7 +193,7 @@ static auto dirichletBCTest() {
           << "Values differ dispDerivs[i]: " << dispDerivs[globalIndex0];
     }
   };
-  Dune::Functions::forEachBoundaryDOF(basisP->flat(), lambdaCheck);
+  Dune::Functions::forEachBoundaryDOF(flatBasis, lambdaCheck);
 
   // Check that we can store lambda from python
   std::string inhomogeneousDisplacementFunction =
@@ -229,7 +228,7 @@ static auto dirichletBCTest() {
     return Dune::toEigen(pythonFunc(globalCoord, lambda_));
   };
   //
-  Ikarus::DirichletValues dirichletValues3(basisP->flat());
+  Ikarus::DirichletValues dirichletValues3(flatBasis);
   dirichletValues3.fixBoundaryDOFs([](auto& dirichFlags, auto&& indexGlobal) { dirichFlags[indexGlobal] = true; });
 
   Eigen::VectorXd disps2, dispDerivs2;
@@ -240,7 +239,7 @@ static auto dirichletBCTest() {
   t.check(disps2.isApprox(dispDerivs2 * lambda3));
 
   // Check if all boundary DOFs found manually using obtainLagrangeNodePositions is the same as using forEachBoundaryDOF
-  Ikarus::DirichletValues dirichletValues4(basisP->flat());
+  Ikarus::DirichletValues dirichletValues4(flatBasis);
   constexpr double tol = 1e-8;
   auto localView       = basis.flat().localView();
   for (auto& ele : elements(gridView)) {
@@ -257,7 +256,7 @@ static auto dirichletBCTest() {
         }
   }
 
-  for (std::size_t i = 0; i < basisP->flat().size(); ++i)
+  for (std::size_t i = 0; i < flatBasis.size(); ++i)
     t.check(dirichletValues1.isConstrained(i) == dirichletValues4.isConstrained(i))
         << "Different dirichlet value creations (dirichletValues1 and dirichletValues4) didn't provide the same "
            "result. Index: i="

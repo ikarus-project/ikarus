@@ -18,6 +18,7 @@
 
 #include <dune/functions/backends/istlvectorbackend.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
+#include <dune/functions/functionspacebases/flatmultiindex.hh>
 #include <dune/functions/functionspacebases/subspacebasis.hh>
 
 #include <Eigen/Core>
@@ -137,7 +138,12 @@ public:
    * \param i An index indicating the DOF number to be fixed
    * \param flag Boolean indicating whether the DOF should fixed or not
    */
-  void setSingleDOF(std::size_t i, bool flag) { dirichletFlags_[i] = flag; }
+
+  void setSingleDOF(std::size_t i, bool flag)
+  requires(std::same_as<typename Basis::MultiIndex, Dune::Functions::FlatMultiIndex<size_t>>)
+  {
+    dirichletFlags_[i] = flag;
+  }
 
   /**
    * \brief Resets all degrees of freedom
@@ -158,7 +164,11 @@ public:
   }
 
   /* \brief Returns a boolean values, if the i-th degree of freedom is constrained */
-  [[nodiscard]] bool isConstrained(std::size_t i) const { return dirichletFlags_[i]; }
+  [[nodiscard]] bool isConstrained(std::size_t i) const
+  requires(std::same_as<typename Basis::MultiIndex, Dune::Functions::FlatMultiIndex<size_t>>)
+  {
+    return dirichletFlags_[i];
+  }
 
   /* \brief Returns how many degrees of freedoms are fixed */
   auto fixedDOFsize() const { return std::ranges::count(dirichletFlags_, true); }

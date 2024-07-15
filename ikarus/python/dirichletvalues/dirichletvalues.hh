@@ -46,10 +46,7 @@ void forwardCorrectFunction(DirichletValues& dirichletValues, const pybind11::fu
 
   if (numParams == 2) {
     auto function = functor.template cast<const FixBoundaryDOFsWithGlobalIndexFunction>();
-    auto lambda   = [&](BackendType& vec, const MultiIndex& indexGlobal) {
-      // we explicitly only allow flat indices
-      function(vec.vector(), indexGlobal[0]);
-    };
+    auto lambda   = [&](BackendType& vec, const MultiIndex& indexGlobal) { function(vec.vector(), indexGlobal); };
     cppFunction(lambda);
 
   } else if (numParams == 3) {
@@ -125,19 +122,18 @@ void registerDirichletValues(pybind11::handle scope, pybind11::class_<DirichletV
 
   cls.def(pybind11::init([](const Basis& basis) { return new DirichletValues(basis); }), pybind11::keep_alive<1, 2>());
 
-  cls.def_property_readonly("container", &DirichletValues::container, pybind11::return_value_policy::reference);
+  cls.def_property_readonly("container", &DirichletValues::container);
   cls.def_property_readonly("size", &DirichletValues::size);
   cls.def_property_readonly("fixedDOFsize", &DirichletValues::fixedDOFsize);
   cls.def("isConstrained", [](DirichletValues& self, std::size_t i) -> bool { return self.isConstrained(i); });
   cls.def("setSingleDOF", [](DirichletValues& self, std::size_t i, bool flag) { self.setSingleDOF(i, flag); });
+  cls.def("isConstrained", [](DirichletValues& self, MultiIndex i) -> bool { return self.isConstrained(i); });
+  cls.def("setSingleDOF", [](DirichletValues& self, MultiIndex i, bool flag) { self.setSingleDOF(i, flag); });
   cls.def("reset", &DirichletValues::reset);
 
   cls.def("fixDOFs",
           [](DirichletValues& self, const std::function<void(const Basis&, Eigen::Ref<Eigen::VectorX<bool>>)>& f) {
-            auto lambda = [&](const Basis& basis, BackendType& vec) {
-              // we explicitly only allow flat indices
-              f(basis, vec.vector());
-            };
+            auto lambda = [&](const Basis& basis, BackendType& vec) { f(basis, vec.vector()); };
             self.fixDOFs(lambda);
           });
 }

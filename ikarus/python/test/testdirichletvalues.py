@@ -91,9 +91,9 @@ def testDirichletValues():
     assert dirichletValues2.container[1]
     assert dirichletValues2.isConstrained(1)
 
-    dirichletValues2.setSingleDOF(1, False)
+    dirichletValues2.setSingleDOF((1), False)  # via MultiIndex
     assert dirichletValues2.fixedDOFsize == 2 + indicesPerDirection
-    assert not dirichletValues2.isConstrained(1)
+    assert not dirichletValues2.isConstrained((1))  # via MultiIndex
 
     dirichletValues2.reset()
     assert dirichletValues2.fixedDOFsize == 0
