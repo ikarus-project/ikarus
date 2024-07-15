@@ -39,7 +39,7 @@ void forwardCorrectFunction(DirichletValues& dirichletValues, const pybind11::fu
   using FixBoundaryDOFsWithIntersectionFunction =
       std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int, LocalViewWrapper&, const Intersection&)>;
 
-  // Disambiguate by number of arguments, as casting doesn't properly work with functions
+  // Disambiguate by number of arguments
   pybind11::module inspect_module = pybind11::module::import("inspect");
   pybind11::object result         = inspect_module.attr("signature")(functor).attr("parameters");
   size_t numParams                = pybind11::len(result);
@@ -124,6 +124,7 @@ void registerDirichletValues(pybind11::handle scope, pybind11::class_<DirichletV
 
   cls.def_property_readonly("container", &DirichletValues::container);
   cls.def_property_readonly("size", &DirichletValues::size);
+  cls.def("__len__", [](DirichletValues& self) -> int { return self.size(); });
   cls.def_property_readonly("fixedDOFsize", &DirichletValues::fixedDOFsize);
   cls.def("isConstrained", [](DirichletValues& self, std::size_t i) -> bool { return self.isConstrained(i); });
   cls.def("setSingleDOF", [](DirichletValues& self, std::size_t i, bool flag) { self.setSingleDOF(i, flag); });

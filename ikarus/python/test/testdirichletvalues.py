@@ -32,6 +32,7 @@ def testDirichletValues():
     dirichletValues = iks.dirichletValues(basis)
 
     assert basis.size() == dirichletValues.size
+    assert basis.size() == len(dirichletValues)
 
     def fixOneIndex(vec, globalIndex):
         if globalIndex == 0:
