@@ -8,6 +8,10 @@
 
 #pragma once
 
+#include <cstdlib>
+#include <string>
+
+#include "dune/common/classname.hh"
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/grid/yaspgrid.hh>
@@ -46,25 +50,28 @@ namespace Impl {
     if constexpr (registerBasis) {
       auto construct = [](const Basis& basis) { return new Basis(basis); };
 
-      auto [basisCls, isNotRegistered] = Dune::Python::insertClass<Basis>(
-          scopedf, "SubspaceBasis", Dune::Python::GenerateTypeName(Dune::className<Basis>()), includes);
-      if (isNotRegistered)
-        Dune::Python::registerSubspaceBasis(scopedf, basisCls);
+      // This if statement does absolutly nothing
+      if (Dune::Python::findInTypeRegistry<Basis>().second) {
+        auto [basisCls, isNotRegistered] = Dune::Python::insertClass<Basis>(
+            scopedf, "SubspaceBasis", Dune::Python::GenerateTypeName(Dune::className<Basis>()), includes);
+        if (isNotRegistered)
+          Dune::Python::registerSubspaceBasis(scopedf, basisCls);
+      }
       // Dune::Python::registerBasisType(scopedf, basisCls, construct, std::false_type{});
-    }
+    } else {
+      // auto [lv, isNotRegistered] = Dune::Python::insertClass<LocalView>(
+      //     scopedf, "LocalView",
+      //     Dune::Python::GenerateTypeName("Dune::Python::LocalViewWrapper", Dune::MetaType<Basis>()), includes);
 
-    auto [lv, isNotRegistered] = Dune::Python::insertClass<LocalView>(
-        scopedf, "LocalView", Dune::Python::GenerateTypeName("Dune::Python::LocalViewWrapper", Dune::MetaType<Basis>()),
-        includes);
+      // if (isNotRegistered) {
+      //   lv.def("bind", &LocalView::bind);
+      //   lv.def("unbind", &LocalView::unbind);
+      //   lv.def("index", [](const LocalView& localView, int index) { return localView.index(index); });
+      //   lv.def("__len__", [](LocalView& self) -> int { return self.size(); });
 
-    if (isNotRegistered) {
-      lv.def("bind", &LocalView::bind);
-      lv.def("unbind", &LocalView::unbind);
-      lv.def("index", [](const LocalView& localView, int index) { return localView.index(index); });
-      lv.def("__len__", [](LocalView& self) -> int { return self.size(); });
-
-      Dune::Python::Functions::registerTree<typename LocalView::Tree>(lv);
-      lv.def("tree", [](const LocalView& view) { return view.tree(); });
+      // Dune::Python::Functions::registerTree<typename LocalView::Tree>(lv);
+      // lv.def("tree", [](const LocalView& view) { return view.tree(); });
+      // }
     }
   }
 } // namespace Impl
