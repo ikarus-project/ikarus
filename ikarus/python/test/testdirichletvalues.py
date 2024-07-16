@@ -100,6 +100,5 @@ def testDirichletValues():
     assert dirichletValues2.fixedDOFsize == 0
     assert sum(dirichletValues2.container) == 0
 
-
 if __name__ == "__main__":
     testDirichletValues()

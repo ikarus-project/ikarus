@@ -91,14 +91,16 @@ public:
   template <typename F, typename TreePath = Dune::TypeTree::HybridTreePath<>>
   void fixBoundaryDOFs(F&& f, TreePath&& treePath = {}) {
     using namespace Dune::Functions;
+    using SubSpaceLocalView =
+        typename std::remove_cvref_t<decltype(subspaceBasis(basis_, std::forward<TreePath>(treePath)))>::LocalView;
 
     if constexpr (Concepts::IsFunctorWithArgs<F, BackendType, typename Basis::MultiIndex>) {
       auto lambda = [&](auto&& indexGlobal) { f(dirichletFlagsBackend_, indexGlobal); };
       Dune::Functions::forEachBoundaryDOF(subspaceBasis(basis_, std::forward<TreePath>(treePath)), lambda);
-    } else if constexpr (Concepts::IsFunctorWithArgs<F, BackendType, int, typename Basis::LocalView>) {
+    } else if constexpr (Concepts::IsFunctorWithArgs<F, BackendType, int, SubSpaceLocalView>) {
       auto lambda = [&](auto&& localIndex, auto&& localView) { f(dirichletFlagsBackend_, localIndex, localView); };
       Dune::Functions::forEachBoundaryDOF(subspaceBasis(basis_, std::forward<TreePath>(treePath)), lambda);
-    } else if constexpr (Concepts::IsFunctorWithArgs<F, BackendType, int, typename Basis::LocalView,
+    } else if constexpr (Concepts::IsFunctorWithArgs<F, BackendType, int, SubSpaceLocalView,
                                                      typename Basis::GridView::Intersection>) {
       auto lambda = [&](auto&& localIndex, auto&& localView, auto&& intersection) {
         f(dirichletFlagsBackend_, localIndex, localView, intersection);
