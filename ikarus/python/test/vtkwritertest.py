@@ -106,9 +106,12 @@ class TestVtkWriter(unittest.TestCase):
         fileName = writer.write("file")
         self.assertEqual(fileName[-3:], "vtu")
 
+    def test_listOfDataCollectors(self):
         self.assertEqual(iks.io.dataCollectors[0], "lagrange")
         self.assertEqual(iks.io.dataCollectors[1], "discontinuous")
+        self.assertEqual(iks.io.dataCollectors[2], "iga")
 
+    def test_lagrange(self):
         writer2 = iks.io.vtkWriter(
             self.sparseAssembler, dataCollector="lagrange", order=2
         )
@@ -129,6 +132,7 @@ class TestVtkWriter(unittest.TestCase):
 
         writer2.write("file2")
 
+    def test_structuredWriter(self):
         # Structured writer
         writer3 = iks.io.vtkWriter(
             self.sparseAssembler, structured=True, format=FormatTypes.ascii
@@ -142,9 +146,10 @@ class TestVtkWriter(unittest.TestCase):
             _ = iks.io.vtkWriter(
                 self.sparseAssembler, dataCollector="lagrange", structured=True
             )
-        with self.assertWarns(Warning):    
+        with self.assertWarns(Warning):
             _ = iks.io.vtkWriter(self.sparseAssembler, dataCollector="unknown")
 
+    def test_discontinuousWriter(self):
         discontinuousVtkWriter = iks.io.vtkWriter(
             self.sparseAssembler, dataCollector=iks.io.dataCollectors[1]
         )

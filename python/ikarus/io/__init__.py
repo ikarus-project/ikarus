@@ -5,7 +5,7 @@ from dune.common.hashit import hashIt
 from ikarus.generator import MySimpleGenerator
 from dune.vtk import FormatTypes, DataTypes
 
-from warnings import warn 
+from warnings import warn
 from io import StringIO
 from dune.generator.algorithm import run
 import types
@@ -15,9 +15,11 @@ dataCollectors = ["lagrange", "discontinuous", "iga"]
 
 
 def __addInterpolation(writer, flag: int):
-    typeStr = "Ikarus::Vtk::asPointData()" if flag == 1 else "Ikarus::Vtk::asCellData()"
+    typeStr = "Ikarus::Vtk::asPointData" if flag == 1 else "Ikarus::Vtk::asCellData"
 
     def __addInterpolationFunc(writer, vals_, basis, name: str, size: int):
+        containerStr = f"Dune::FieldVector<double, {size}>" if size > 1 else "double"
+
         runCode = """
             #define EIGEN_DEFAULT_TO_ROW_MAJOR 1
             #include <ikarus/python/io/vtkwriter.hh>
@@ -25,9 +27,9 @@ def __addInterpolation(writer, flag: int):
             template <typename Writer, typename Basis>
             void addInterPolation(Writer& writer, const auto& vals_, const Basis& basis, std::string name) {{
                 auto vals = vals_.template cast<Eigen::VectorX<double>>();
-                writer.template addInterpolation<{size}>(std::move(vals), basis, name, {typeStr});
+                writer.template addInterpolation<Basis, {containerStr}>(std::move(vals), basis, name, {typeStr});
             }}  
-        """.format(size=size, typeStr=typeStr)
+        """.format(containerStr=containerStr, typeStr=typeStr)
 
         return run("addInterPolation", StringIO(runCode), writer, vals_, basis, name)
 
@@ -79,8 +81,12 @@ def vtkWriter(
     generator = MySimpleGenerator("VtkWriter", "Ikarus::Python")
     if dataCollector is None:
         element_type = f"Ikarus::Vtk::Writer<{assembler.cppTypeName}, {structuredStr}>"
+        dataCollectorName = f"Ikarus::Vtk::Impl::DefaultDataCollector<typename {assembler.cppTypeName}::GridView, {structuredStr}>::Type"
+
     else:
         element_type = f"Ikarus::Vtk::Writer<{assembler.cppTypeName}, {structuredStr}, {dataCollectorName}>"
+
+    baseType = f"Ikarus::Vtk::Impl::UnderlyingVTKWriter<typename {dataCollectorName}, {structuredStr}>::Type"
 
     includes += ["ikarus/assembler/simpleassemblers.hh"]
     includes += ["ikarus/io/vtkwriter.hh"]
@@ -91,6 +97,7 @@ def vtkWriter(
         includes=includes,
         typeName=element_type,
         moduleName=moduleName,
+        baseClasses=[baseType],
         dynamicAttr=True,
     )
     writerModule = module.VtkWriter(assembler, format, datatype, headertype)

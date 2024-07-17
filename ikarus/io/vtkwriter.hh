@@ -10,6 +10,13 @@
 
 #pragma once
 
+#include <array>
+#include <cstddef>
+#include <tuple>
+
+#include "dune/common/fvector.hh"
+#include "dune/common/math.hh"
+#include "dune/functions/functionspacebases/powerbasis.hh"
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/grid/yaspgrid.hh>
 #include <dune/vtk/vtkwriter.hh>
@@ -18,23 +25,19 @@
 #include <ikarus/io/resultfunction.hh>
 #include <ikarus/utils/concepts.hh>
 
-namespace Ikarus::Concepts {
-
-
-} // namespace Ikarus::Concepts
+namespace Ikarus::Concepts {} // namespace Ikarus::Concepts
 
 // inline auto asCellData() { return Impl::AsCellData{}; }
 
 // inline auto asPointData() { return Impl::AsPointData{}; }
 
+namespace Ikarus::Vtk {
 struct AsCellData
 {
 } asCellData;
 struct AsPointData
 {
 } asPointData;
-
-namespace Ikarus::Vtk {
 
 namespace Impl {
 
@@ -56,6 +59,27 @@ namespace Impl {
     template <typename DT>
     concept DataType = std::is_same_v<DT, AsCellData> or std::is_same_v<DT, AsPointData>;
   }
+
+  template <typename Basis>
+  constexpr auto dimBasis = []() {
+    // Case 1 PowerBasis
+    if constexpr (requires { Basis::PreBasis::children; })
+      return Basis::PreBasis::children;
+    // Case 2 SubSpaceBasis or Scalar Basis
+    else
+      return 1;
+  }();
+
+  template <typename Container>
+  constexpr auto sizeOfContainer = []() {
+    if constexpr (requires { Container::dimension; })
+      return Container::dimension;
+    else if constexpr (requires { std::tuple_size<Container>::value; })
+      return std::tuple_size<Container>::value;
+    else
+      return 1ul;
+  }();
+
 } // namespace Impl
 
 template <typename AS, bool structured = false,
@@ -110,11 +134,11 @@ public:
     Dune::Hybrid::forEach(ResultTuple(), [&]<typename RT>(RT i) { addResult<RT::template Rebind>(type); });
   }
 
-  template <int dim, typename R, typename Basis, Impl::Concepts::DataType DT>
+  template <typename Basis, typename Container = Dune::FieldVector<double, Impl::dimBasis<Basis>>,
+            Impl::Concepts::DataType DT, typename R>
   void addInterpolation(R&& vals, const Basis& basis, const std::string& name, DT type) {
-    auto gridFunction =
-        Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, dim>>(basis, std::forward<R>(vals));
-    auto fieldInfo = Dune::Vtk::FieldInfo(name, dim);
+    auto gridFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<Container>(basis, std::forward<R>(vals));
+    auto fieldInfo    = Dune::Vtk::FieldInfo(name, Impl::sizeOfContainer<Container>);
 
     if constexpr (std::is_same_v<DT, AsCellData>)
       Base::addCellData(std::move(gridFunction), fieldInfo);

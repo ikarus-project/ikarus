@@ -7,12 +7,15 @@
 #include "testhelpers.hh"
 
 #include <memory>
+#include <type_traits>
 
 #include "dune/common/indices.hh"
+#include "dune/common/tuplevector.hh"
 #include "dune/functions/functionspacebases/subspacebasis.hh"
 #include <dune/common/float_cmp.hh>
 #include <dune/common/fvector.hh>
 #include <dune/common/test/testsuite.hh>
+#include <dune/common/tuplevector.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/grid/common/entity.hh>
@@ -100,8 +103,8 @@ auto runTest() {
 
   auto writer = Ikarus::Vtk::Writer(sparseAssembler);
 
-  using ::asCellData;
-  using ::asPointData;
+  using Ikarus::Vtk::asCellData;
+  using Ikarus::Vtk::asPointData;
 
   writer.setDatatype(Dune::Vtk::DataTypes::FLOAT64);
   writer.setFormat(Dune::Vtk::FormatTypes::ASCII);
@@ -109,9 +112,13 @@ auto runTest() {
   writer.addResult<Ikarus::ResultTypes::linearStress>(asPointData);
   writer.addResultFunction(Ikarus::makeResultFunction<Ikarus::ResultTypes::linearStress>(sparseAssembler), asCellData);
 
-  writer.addInterpolation<2>(D_Glob, basis.flat(), "displacement", asPointData);
-  writer.addInterpolation<1>(D_Glob, Dune::Functions::subspaceBasis(basis.flat(), Dune::index_constant<0>()),
-                             "displacement_u", asPointData);
+  writer.addInterpolation(D_Glob, basis.flat(), "displacement", asPointData);
+  writer.addInterpolation<std::remove_cvref_t<decltype(basis.flat())>, std::array<double, 2>>(
+      D_Glob, basis.flat(), "displacement2", asPointData);
+
+  auto subspaceBasis = Dune::Functions::subspaceBasis(basis.flat(), Dune::index_constant<0>());
+  writer.addInterpolation(D_Glob, subspaceBasis, "displacement_u", asPointData);
+  writer.addInterpolation<decltype(subspaceBasis), double>(D_Glob, subspaceBasis, "displacement_u2", asPointData);
 
   writer.addPointData(
       Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis.flat(), D_Glob),

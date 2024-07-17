@@ -53,9 +53,9 @@ void registerVtkWriter(pybind11::handle scope, pybind11::class_<Writer, options.
   cls.def("setDatatype", &Writer::setDatatype);
   cls.def("setHeadertype", &Writer::setHeadertype);
 
-  cls.def("addAllResultsAsCellData", [](Writer& self) { self.addAllResults(asCellData()); });
+  cls.def("addAllResultsAsCellData", [](Writer& self) { self.addAllResults(asCellData); });
 
-  cls.def("addAllResultsAsPointData", [](Writer& self) { self.addAllResults(asPointData()); });
+  cls.def("addAllResultsAsPointData", [](Writer& self) { self.addAllResults(asPointData); });
 
   auto addResultImpl = [](Writer& self, const std::string& resType, auto type) {
     bool success = false;
@@ -70,10 +70,10 @@ void registerVtkWriter(pybind11::handle scope, pybind11::class_<Writer, options.
   };
 
   cls.def("addResultAsCellData",
-          [&](Writer& self, const std::string& resType) { addResultImpl(self, resType, asCellData()); }, pybind11::arg("resType"));
+          [&](Writer& self, const std::string& resType) { addResultImpl(self, resType, asCellData); }, pybind11::arg("resType"));
 
   cls.def("addResultAsPointData",
-          [&](Writer& self, const std::string& resType) { addResultImpl(self, resType, asPointData()); }, pybind11::arg("resType"));
+          [&](Writer& self, const std::string& resType) { addResultImpl(self, resType, asPointData); }, pybind11::arg("resType"));
 
   cls.def("write", [](Writer& self, const std::string& fileName) { return self.write(fileName); }, pybind11::arg("fileName"));
 
