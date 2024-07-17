@@ -113,21 +113,22 @@ void registerFE(pybind11::handle scope, pybind11::class_<FE, options...> cls) {
       pybind11::arg("Requirement"), pybind11::arg("MatrixAffordance"), pybind11::arg("elementMatrix").noconvert());
 
   pybind11::module scopedf = pybind11::module::import("dune.functions");
+  using LocalViewWrapper   = Dune::Python::LocalViewWrapper<FlatBasis>;
 
-  typedef Dune::Python::LocalViewWrapper<FlatBasis> LocalViewWrapper;
-  auto includes = Dune::Python::IncludeFiles{"dune/python/functions/globalbasis.hh"};
-  auto lv       = Dune::Python::insertClass<LocalViewWrapper>(
-                scopedf, "LocalViewWrapper",
-                Dune::Python::GenerateTypeName("Dune::Python::LocalViewWrapperWrapper", Dune::MetaType<FlatBasis>()),
-                includes)
-                .first;
-  lv.def("bind", &LocalViewWrapper::bind);
-  lv.def("unbind", &LocalViewWrapper::unbind);
-  lv.def("index", [](const LocalViewWrapper& localView, int index) { return localView.index(index); });
-  lv.def("__len__", [](LocalViewWrapper& self) -> int { return self.size(); });
+  auto includes    = Dune::Python::IncludeFiles{"dune/python/functions/globalbasis.hh"};
+  auto [lv, isNew] = Dune::Python::insertClass<LocalViewWrapper>(
+      scopedf, "LocalViewWrapper",
+      Dune::Python::GenerateTypeName("Dune::Python::LocalViewWrapperWrapper", Dune::MetaType<FlatBasis>()), includes);
 
-  Dune::Python::Functions::registerTree<typename LocalViewWrapper::Tree>(lv);
-  lv.def("tree", [](const LocalViewWrapper& view) { return view.tree(); });
+  if (isNew) {
+    lv.def("bind", &LocalViewWrapper::bind);
+    lv.def("unbind", &LocalViewWrapper::unbind);
+    lv.def("index", [](const LocalViewWrapper& localView, int index) { return localView.index(index); });
+    lv.def("__len__", [](LocalViewWrapper& self) -> int { return self.size(); });
+
+    Dune::Python::Functions::registerTree<typename LocalViewWrapper::Tree>(lv);
+    lv.def("tree", [](const LocalViewWrapper& view) { return view.tree(); });
+  }
 
   cls.def(
       "localView",

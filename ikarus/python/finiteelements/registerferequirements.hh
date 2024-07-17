@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <dune/python/common/typeregistry.hh>
 #include <dune/python/pybind11/pybind11.h>
 
 #include <ikarus/python/finiteelements/scalarwrapper.hh>
@@ -22,18 +23,19 @@ void registerFERequirement(pybind11::handle scope, pybind11::class_<FE, options.
       "createRequirement", [](pybind11::object /* self */) { return FERequirements(); },
       pybind11::return_value_policy::copy);
 
-  auto includes              = Dune::Python::IncludeFiles{"ikarus/finiteelements/ferequirements.hh"};
-  auto [lv, isNotRegistered] = Dune::Python::insertClass<FERequirements>(
+  auto includes     = Dune::Python::IncludeFiles{"ikarus/finiteelements/ferequirements.hh"};
+  auto [req, isNew] = Dune::Python::insertClass<FERequirements>(
       scope, "FERequirements", Dune::Python::GenerateTypeName(Dune::className<FERequirements>()), includes);
-  if (isNotRegistered) {
-    lv.def(pybind11::init());
-    lv.def(pybind11::init<SolutionVectorType&, ParameterType&>());
 
-    lv.def(
+  if (isNew) {
+    req.def(pybind11::init());
+    req.def(pybind11::init<SolutionVectorType&, ParameterType&>());
+
+    req.def(
         "insertGlobalSolution",
         [](FERequirements& self, SolutionVectorType solVec) { self.insertGlobalSolution(solVec); },
         "solutionVector"_a.noconvert());
-    lv.def(
+    req.def(
         "globalSolution", [](FERequirements& self) { return self.globalSolution(); },
         pybind11::return_value_policy::reference_internal);
     lv.def(
@@ -41,7 +43,7 @@ void registerFERequirement(pybind11::handle scope, pybind11::class_<FE, options.
         [](FERequirements& self, ScalarWrapper<double>& parVal) { self.insertParameter(parVal.value()); },
         pybind11::keep_alive<1, 2>(), "parameterValue"_a.noconvert());
 
-    lv.def("parameter", [](const FERequirements& self) { return self.parameter(); });
+    req.def("parameter", [](const FERequirements& self) { return self.parameter(); });
   }
 }
 } // namespace Ikarus::Python

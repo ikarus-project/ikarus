@@ -39,39 +39,27 @@ namespace Impl {
   using FixBoundaryDOFsWithIntersectionFunction =
       std::function<void(Eigen::Ref<Eigen::VectorX<bool>>, int, LV&, const IS&)>;
 
-  template <typename Basis, bool registerBasis = false>
-  auto registerLocalView() {
+  template <typename Basis>
+  auto registerSubSpaceLocalView() {
     pybind11::module scopedf = pybind11::module::import("dune.functions");
-    using LocalView          = Dune::Python::LocalViewWrapper<Basis>;
+    using LocalViewWrapper   = Dune::Python::LocalViewWrapper<Basis>;
 
     auto includes = Dune::Python::IncludeFiles{"dune/python/functions/globalbasis.hh"};
 
-    // also register subspace basis
-    if constexpr (registerBasis) {
-      auto construct = [](const Basis& basis) { return new Basis(basis); };
+    Dune::Python::insertClass<Basis>(scopedf, "SubspaceBasis_" + Dune::className<typename Basis::PrefixPath>(),
+                                     Dune::Python::GenerateTypeName(Dune::className<Basis>()), includes);
 
-      // This if statement does absolutly nothing
-      if (Dune::Python::findInTypeRegistry<Basis>().second) {
-        auto [basisCls, isNotRegistered] = Dune::Python::insertClass<Basis>(
-            scopedf, "SubspaceBasis", Dune::Python::GenerateTypeName(Dune::className<Basis>()), includes);
-        if (isNotRegistered)
-          Dune::Python::registerSubspaceBasis(scopedf, basisCls);
-      }
-      // Dune::Python::registerBasisType(scopedf, basisCls, construct, std::false_type{});
-    } else {
-      // auto [lv, isNotRegistered] = Dune::Python::insertClass<LocalView>(
-      //     scopedf, "LocalView",
-      //     Dune::Python::GenerateTypeName("Dune::Python::LocalViewWrapper", Dune::MetaType<Basis>()), includes);
+    auto [lv, isNew] = Dune::Python::insertClass<LocalViewWrapper>(
+        scopedf, "LocalView_" + Dune::className<typename Basis::PrefixPath>(),
+        Dune::Python::GenerateTypeName("Dune::Python::LocalViewWrapper", Dune::MetaType<Basis>()), includes);
+    if (isNew) {
+      lv.def("bind", &LocalViewWrapper::bind);
+      lv.def("unbind", &LocalViewWrapper::unbind);
+      lv.def("index", [](const LocalViewWrapper& localView, int index) { return localView.index(index); });
+      lv.def("__len__", [](LocalViewWrapper& self) -> int { return self.size(); });
 
-      // if (isNotRegistered) {
-      //   lv.def("bind", &LocalView::bind);
-      //   lv.def("unbind", &LocalView::unbind);
-      //   lv.def("index", [](const LocalView& localView, int index) { return localView.index(index); });
-      //   lv.def("__len__", [](LocalView& self) -> int { return self.size(); });
-
-      // Dune::Python::Functions::registerTree<typename LocalView::Tree>(lv);
-      // lv.def("tree", [](const LocalView& view) { return view.tree(); });
-      // }
+      Dune::Python::Functions::registerTree<typename LocalViewWrapper::Tree>(lv);
+      lv.def("tree", [](const LocalViewWrapper& view) { return view.tree(); });
     }
   }
 } // namespace Impl
@@ -82,8 +70,6 @@ void forwardCorrectFunction(DirichletValues& dirichletValues, const pybind11::fu
   using Intersection = typename Basis::GridView::Intersection;
   using BackendType  = typename DirichletValues::BackendType;
   using MultiIndex   = typename Basis::MultiIndex;
-
-  // using LocalViewWrapper = Dune::Python::LocalViewWrapper<Basis>;
 
   // Disambiguate by number of arguments
   pybind11::module inspect_module = pybind11::module::import("inspect");
@@ -98,7 +84,7 @@ void forwardCorrectFunction(DirichletValues& dirichletValues, const pybind11::fu
   } else if (numParams == 3) {
     auto lambda = [&](BackendType& vec, int localIndex, auto&& lv) {
       using SubSpaceBasis = typename std::remove_cvref_t<decltype(lv)>::GlobalBasis;
-      Impl::registerLocalView<SubSpaceBasis, true>();
+      Impl::registerSubSpaceLocalView<SubSpaceBasis>();
 
       using SubSpaceLocalViewWrapper = Dune::Python::LocalViewWrapper<SubSpaceBasis>;
       auto lvWrapper                 = SubSpaceLocalViewWrapper(lv);
@@ -112,7 +98,7 @@ void forwardCorrectFunction(DirichletValues& dirichletValues, const pybind11::fu
   } else if (numParams == 4) {
     auto lambda = [&](BackendType& vec, int localIndex, auto&& lv, const Intersection& intersection) {
       using SubSpaceBasis = typename std::remove_cvref_t<decltype(lv)>::GlobalBasis;
-      Impl::registerLocalView<SubSpaceBasis, true>();
+      Impl::registerSubSpaceLocalView<SubSpaceBasis>();
 
       using SubSpaceLocalViewWrapper = Dune::Python::LocalViewWrapper<SubSpaceBasis>;
       auto lvWrapper                 = SubSpaceLocalViewWrapper(lv);
@@ -169,7 +155,23 @@ void registerDirichletValues(pybind11::handle scope, pybind11::class_<DirichletV
   using LocalView    = typename Basis::LocalView;
   using Intersection = typename Basis::GridView::Intersection;
 
-  Impl::registerLocalView<Basis>();
+  pybind11::module scopedf = pybind11::module::import("dune.functions");
+  using LocalViewWrapper   = Dune::Python::LocalViewWrapper<Basis>;
+
+  auto includes    = Dune::Python::IncludeFiles{"dune/python/functions/globalbasis.hh"};
+  auto [lv, isNew] = Dune::Python::insertClass<LocalViewWrapper>(
+      scopedf, "LocalView", Dune::Python::GenerateTypeName("Dune::Python::LocalViewWrapper", Dune::MetaType<Basis>()),
+      includes);
+
+  if (isNew) {
+    lv.def("bind", &LocalViewWrapper::bind);
+    lv.def("unbind", &LocalViewWrapper::unbind);
+    lv.def("index", [](const LocalViewWrapper& localView, int index) { return localView.index(index); });
+    lv.def("__len__", [](LocalViewWrapper& self) -> int { return self.size(); });
+
+    Dune::Python::Functions::registerTree<typename LocalViewWrapper::Tree>(lv);
+    lv.def("tree", [](const LocalViewWrapper& view) { return view.tree(); });
+  }
 
   cls.def(pybind11::init([](const Basis& basis) { return new DirichletValues(basis); }), pybind11::keep_alive<1, 2>());
 
