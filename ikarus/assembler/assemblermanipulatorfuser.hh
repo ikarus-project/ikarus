@@ -86,6 +86,7 @@ public:
   using WrappedAssembler::dBCOption;
   using WrappedAssembler::reducedSize;
   using WrappedAssembler::requirement;
+  using WrappedAssembler::size;
 
   // functions from implementations
   using ScalarAssemblerImpl::bind;
@@ -171,6 +172,7 @@ public:
   using WrappedAssembler::dBCOption;
   using WrappedAssembler::reducedSize;
   using WrappedAssembler::requirement;
+  using WrappedAssembler::size;
 
   // functions from implementations
   using ScalarAssemblerImpl::bind;
@@ -275,6 +277,7 @@ public:
   using WrappedAssembler::dBCOption;
   using WrappedAssembler::reducedSize;
   using WrappedAssembler::requirement;
+  using WrappedAssembler::size;
 
   // functions from implementations
   using MatrixAssemblerImpl::bind;

@@ -162,39 +162,65 @@ def linElasticTest(easBool):
     assemblerManipulatorDense = iks.assembler.assemblerManipulator(assemblerDense)
 
     if not easBool:
-        def scalarf(assembler,req,affordance,scalar):
-            scalar*=2
+
+        def scalarf(assembler, req, affordance, scalar):
+            scalar *= 2
+
         assemblerManipulator.addScalarCallBack(scalarf)
         assemblerManipulatorDense.addScalarCallBack(scalarf)
         req3 = assemblerManipulator.requirement()
-        d3= req3.globalSolution()
-        d3 +=1
-        assert abs(2*assembler.scalar() - assemblerManipulator.scalar())<1e-6, f"assembler.scalar(): {assembler.scalar()}, assemblerManipulator.scalar(): {assemblerManipulator.scalar()}"
-        assert abs(2*assembler.scalar() - assemblerManipulatorDense.scalar())<1e-6, f"assembler.scalar(): {assembler.scalar()}, assemblerManipulator.scalar(): {assemblerManipulatorDense.scalar()}"
+        d3 = req3.globalSolution()
+        d3 += 1
+        assert (
+            abs(2 * assembler.scalar() - assemblerManipulator.scalar()) < 1e-6
+        ), f"assembler.scalar(): {assembler.scalar()}, assemblerManipulator.scalar(): {assemblerManipulator.scalar()}"
+        assert (
+            abs(2 * assembler.scalar() - assemblerManipulatorDense.scalar()) < 1e-6
+        ), f"assembler.scalar(): {assembler.scalar()}, assemblerManipulator.scalar(): {assemblerManipulatorDense.scalar()}"
 
-    def vectorf(assembler,req,affordance,dbcOption,vector):
-        vector[5]+=2
+    def vectorf(assembler, req, affordance, dbcOption, vector):
+        vector[5] += 2
+
     assemblerManipulator.addVectorCallBack(vectorf)
     assemblerManipulatorDense.addVectorCallBack(vectorf)
-    assert abs(assembler.vector()[5] - (assemblerManipulator.vector()[5]-2))<1e-6, f"assembler.vector()[5]: {assembler.vector()[5]}, assemblerManipulator.vector()[5]: {assemblerManipulator.vector()[5]}"
-    assert abs(assembler.vector()[5] - (assemblerManipulatorDense.vector()[5]-2))<1e-6, f"assembler.vector()[5]: {assembler.vector()[5]}, assemblerManipulator.vector()[5]: {assemblerManipulatorDense.vector()[5]}"
+    assert (
+        abs(assembler.vector()[5] - (assemblerManipulator.vector()[5] - 2)) < 1e-6
+    ), f"assembler.vector()[5]: {assembler.vector()[5]}, assemblerManipulator.vector()[5]: {assemblerManipulator.vector()[5]}"
+    assert (
+        abs(assembler.vector()[5] - (assemblerManipulatorDense.vector()[5] - 2)) < 1e-6
+    ), f"assembler.vector()[5]: {assembler.vector()[5]}, assemblerManipulator.vector()[5]: {assemblerManipulatorDense.vector()[5]}"
 
-    def matrixf(assembler,req,affordance,dbcOption,matrix):
-        matrix[5,6]=matrix[5,6]+2.0
+    def matrixf(assembler, req, affordance, dbcOption, matrix):
+        matrix[5, 6] = matrix[5, 6] + 2.0
+
     assemblerManipulator.addMatrixCallBack(matrixf)
     assemblerManipulatorDense.addMatrixCallBack(matrixf)
-    assert abs(assembler.matrix()[5,6] - (assemblerManipulator.matrix()[5,6]-2))<1e-6, f"assembler.matrix()[5,6]: {assembler.matrix()[5,6]}, assemblerManipulator.matrix()[5,6]: {assemblerManipulator.matrix()[5,6]}"
-    assert abs(assembler.matrix()[5,6] - (assemblerManipulatorDense.matrix()[5,6]-2))<1e-6, f"assembler.matrix()[5,6]: {assembler.matrix()[5,6]}, assemblerManipulator.matrix()[5,6]: {assemblerManipulatorDense.matrix()[5,6]}"
+    assert (
+        abs(assembler.matrix()[5, 6] - (assemblerManipulator.matrix()[5, 6] - 2)) < 1e-6
+    ), f"assembler.matrix()[5,6]: {assembler.matrix()[5,6]}, assemblerManipulator.matrix()[5,6]: {assemblerManipulator.matrix()[5,6]}"
+    assert (
+        abs(assembler.matrix()[5, 6] - (assemblerManipulatorDense.matrix()[5, 6] - 2))
+        < 1e-6
+    ), f"assembler.matrix()[5,6]: {assembler.matrix()[5,6]}, assemblerManipulator.matrix()[5,6]: {assemblerManipulatorDense.matrix()[5,6]}"
 
-    startX=-1
-    incX=2/3
-    startY=-1
-    incY=2/3
+    startX = -1
+    incX = 2 / 3
+    startY = -1
+    incY = 2 / 3
     for j in range(4):
         for i in range(4):
-            indices= iks.utils.globalIndexFromGlobalPosition(flatBasis,(startX+i*incX,startY+j*incY))
-            assert indices[0]==i+4*j, f"Expected {i+4*j} from {i},{j}, got {indices[0]} at pos {(startX+i*incX,startY+j*incY)}"
-            assert indices[1]==i+4*j+16, f"Expected {i+4*j+16} from {i},{j}, got {indices[1]} at pos {(startX+i*incX,startY+j*incY)}"
+            indices = iks.utils.globalIndexFromGlobalPosition(
+                flatBasis, (startX + i * incX, startY + j * incY)
+            )
+            assert (
+                indices[0] == i + 4 * j
+            ), f"Expected {i+4*j} from {i},{j}, got {indices[0]} at pos {(startX+i*incX,startY+j*incY)}"
+            assert (
+                indices[1] == i + 4 * j + 16
+            ), f"Expected {i+4*j+16} from {i},{j}, got {indices[1]} at pos {(startX+i*incX,startY+j*incY)}"
+
+    assert assembler.size == assemblerManipulator.size == flatBasis.size()
+    assert len(assembler) == len(assemblerManipulator) == len(flatBasis)
 
 
 if __name__ == "__main__":
