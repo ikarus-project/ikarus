@@ -3,5 +3,6 @@
 
 # install headers
 install(FILES simpleassemblers.inl simpleassemblers.hh dirichletbcenforcement.hh
+              assemblermanipulatorfuser.hh interface.hh assemblermanipulatorbuildingblocks.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/assembler
 )

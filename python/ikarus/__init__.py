@@ -14,6 +14,15 @@ try:
 except ImportError:
     pass
 
+
+
+import warnings
 from ._ikarus import *
 from .dirichlet_values import dirichletValues
 from .basis import basis
+
+from warnings import warn
+def ValueWrapper(*args, **kwargs):
+    warnings.warn("The 'ValueWrapper' class was renamed to Scalar. Please use 'Scalar' instead.",
+                  DeprecationWarning, stacklevel=2 )
+    return _ikarus.Scalar(*args, **kwargs)

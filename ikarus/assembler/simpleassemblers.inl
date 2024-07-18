@@ -12,13 +12,23 @@
 namespace Ikarus {
 
 template <typename B, typename FEC>
+typename ScalarFlatAssembler<B, FEC>::ScalarType& ScalarFlatAssembler<B, FEC>::getScalarImpl(
+    const FERequirement& feRequirements, ScalarAffordance affordance) {
+  scal_ = 0.0;
+  for (auto& fe : this->finiteElements()) {
+    scal_ += calculateScalar(fe, feRequirements, affordance);
+  }
+  return scal_;
+}
+
+template <typename B, typename FEC>
 Eigen::VectorXd FlatAssemblerBase<B, FEC>::createFullVector(Eigen::Ref<const Eigen::VectorXd> reducedVector) {
   assert(reducedVector.size() == static_cast<Eigen::Index>(this->reducedSize()) &&
          "The reduced vector you passed has the wrong dimensions.");
   Eigen::Index reducedCounter = 0;
   Eigen::VectorXd fullVec(this->size());
   for (Eigen::Index i = 0; i < fullVec.size(); ++i) {
-    if (dirichletValues_->isConstrained(i)) {
+    if (this->isConstrained(i)) {
       ++reducedCounter;
       fullVec[i] = 0.0;
       continue;
@@ -30,7 +40,8 @@ Eigen::VectorXd FlatAssemblerBase<B, FEC>::createFullVector(Eigen::Ref<const Eig
 
 template <typename B, typename FEC>
 void VectorFlatAssembler<B, FEC>::assembleRawVectorImpl(const FERequirement& feRequirements,
-                                                        VectorAffordance affordance, Eigen::VectorXd& assemblyVec) {
+                                                        VectorAffordance affordance,
+                                                        typename VectorFlatAssembler::VectorType& assemblyVec) {
   assemblyVec.setZero(this->size());
   Eigen::VectorXd vecLocal;
   std::vector<GlobalIndex> dofs;
@@ -48,15 +59,15 @@ void VectorFlatAssembler<B, FEC>::assembleRawVectorImpl(const FERequirement& feR
 }
 
 template <typename B, typename FEC>
-Eigen::VectorXd& VectorFlatAssembler<B, FEC>::getRawVectorImpl(const FERequirement& feRequirements,
-                                                               VectorAffordance affordance) {
+typename VectorFlatAssembler<B, FEC>::VectorType& VectorFlatAssembler<B, FEC>::getRawVectorImpl(
+    const FERequirement& feRequirements, VectorAffordance affordance) {
   assembleRawVectorImpl(feRequirements, affordance, vecRaw_);
   return vecRaw_;
 }
 
 template <typename B, typename FEC>
-Eigen::VectorXd& VectorFlatAssembler<B, FEC>::getVectorImpl(const FERequirement& feRequirements,
-                                                            VectorAffordance affordance) {
+typename VectorFlatAssembler<B, FEC>::VectorType& VectorFlatAssembler<B, FEC>::getVectorImpl(
+    const FERequirement& feRequirements, VectorAffordance affordance) {
   assembleRawVectorImpl(feRequirements, affordance, vec_);
   for (auto i = 0U; i < this->size(); ++i)
     if (this->isConstrained(i))
@@ -65,8 +76,8 @@ Eigen::VectorXd& VectorFlatAssembler<B, FEC>::getVectorImpl(const FERequirement&
 }
 
 template <typename B, typename FEC>
-Eigen::VectorXd& VectorFlatAssembler<B, FEC>::getReducedVectorImpl(const FERequirement& feRequirements,
-                                                                   VectorAffordance affordance) {
+typename VectorFlatAssembler<B, FEC>::VectorType& VectorFlatAssembler<B, FEC>::getReducedVectorImpl(
+    const FERequirement& feRequirements, VectorAffordance affordance) {
   vecRed_.setZero(this->reducedSize());
   Eigen::VectorXd vecLocal;
   std::vector<GlobalIndex> dofs;
@@ -91,7 +102,7 @@ Eigen::VectorXd& VectorFlatAssembler<B, FEC>::getReducedVectorImpl(const FERequi
 template <typename B, typename FEC>
 void SparseFlatAssembler<B, FEC>::assembleRawMatrixImpl(const FERequirement& feRequirements,
                                                         MatrixAffordance affordance,
-                                                        Eigen::SparseMatrix<double>& assemblyMat) {
+                                                        typename SparseFlatAssembler::MatrixType& assemblyMat) {
   assemblyMat.coeffs().setZero();
   Eigen::MatrixXd A;
   for (size_t elementIndex = 0; const auto& fe : this->finiteElements()) {
@@ -108,8 +119,8 @@ void SparseFlatAssembler<B, FEC>::assembleRawMatrixImpl(const FERequirement& feR
 }
 
 template <typename B, typename FEC>
-Eigen::SparseMatrix<double>& SparseFlatAssembler<B, FEC>::getRawMatrixImpl(const FERequirement& feRequirements,
-                                                                           MatrixAffordance affordance) {
+typename SparseFlatAssembler<B, FEC>::MatrixType& SparseFlatAssembler<B, FEC>::getRawMatrixImpl(
+    const FERequirement& feRequirements, MatrixAffordance affordance) {
   if (not sparsePreProcessorRaw_) {
     preProcessSparseMatrix(spMatRaw_);
     sparsePreProcessorRaw_ = true;
@@ -120,8 +131,8 @@ Eigen::SparseMatrix<double>& SparseFlatAssembler<B, FEC>::getRawMatrixImpl(const
 }
 
 template <typename B, typename FEC>
-Eigen::SparseMatrix<double>& SparseFlatAssembler<B, FEC>::getMatrixImpl(const FERequirement& feRequirements,
-                                                                        MatrixAffordance affordance) {
+typename SparseFlatAssembler<B, FEC>::MatrixType& SparseFlatAssembler<B, FEC>::getMatrixImpl(
+    const FERequirement& feRequirements, MatrixAffordance affordance) {
   if (not sparsePreProcessor_) {
     preProcessSparseMatrix(spMat_);
     sparsePreProcessor_ = true;
@@ -140,8 +151,8 @@ Eigen::SparseMatrix<double>& SparseFlatAssembler<B, FEC>::getMatrixImpl(const FE
 }
 
 template <typename B, typename FEC>
-Eigen::SparseMatrix<double>& SparseFlatAssembler<B, FEC>::getReducedMatrixImpl(const FERequirement& feRequirements,
-                                                                               MatrixAffordance affordance) {
+typename SparseFlatAssembler<B, FEC>::MatrixType& SparseFlatAssembler<B, FEC>::getReducedMatrixImpl(
+    const FERequirement& feRequirements, MatrixAffordance affordance) {
   if (not sparsePreProcessorReduced_) {
     preProcessSparseMatrixReduced(spMatReduced_);
     sparsePreProcessorReduced_ = true;
@@ -175,7 +186,7 @@ Eigen::SparseMatrix<double>& SparseFlatAssembler<B, FEC>::getReducedMatrixImpl(c
 }
 
 template <typename B, typename FEC>
-void SparseFlatAssembler<B, FEC>::createOccupationPattern(Eigen::SparseMatrix<double>& assemblyMat) {
+void SparseFlatAssembler<B, FEC>::createOccupationPattern(typename SparseFlatAssembler::MatrixType& assemblyMat) {
   assemblyMat.resize(this->size(), this->size());
   std::vector<Eigen::Triplet<double>> vectorOfTriples;
 
@@ -193,7 +204,8 @@ void SparseFlatAssembler<B, FEC>::createOccupationPattern(Eigen::SparseMatrix<do
 }
 
 template <typename B, typename FEC>
-void SparseFlatAssembler<B, FEC>::createReducedOccupationPattern(Eigen::SparseMatrix<double>& assemblyMat) {
+void SparseFlatAssembler<B, FEC>::createReducedOccupationPattern(
+    typename SparseFlatAssembler::MatrixType& assemblyMat) {
   assemblyMat.resize(this->reducedSize(), this->reducedSize());
   std::vector<Eigen::Triplet<double>> vectorOfTriples;
   using std::size;
@@ -221,7 +233,7 @@ void SparseFlatAssembler<B, FEC>::createReducedOccupationPattern(Eigen::SparseMa
 }
 
 template <typename B, typename FEC>
-void SparseFlatAssembler<B, FEC>::createLinearDOFsPerElement(Eigen::SparseMatrix<double>& assemblyMat) {
+void SparseFlatAssembler<B, FEC>::createLinearDOFsPerElement(typename SparseFlatAssembler::MatrixType& assemblyMat) {
   std::vector<GlobalIndex> dofs;
   for (auto&& fe : this->finiteElements()) {
     dofs.resize(0);
@@ -235,7 +247,8 @@ void SparseFlatAssembler<B, FEC>::createLinearDOFsPerElement(Eigen::SparseMatrix
 }
 
 template <typename B, typename FEC>
-void SparseFlatAssembler<B, FEC>::createLinearDOFsPerElementReduced(Eigen::SparseMatrix<double>& assemblyMat) {
+void SparseFlatAssembler<B, FEC>::createLinearDOFsPerElementReduced(
+    typename SparseFlatAssembler::MatrixType& assemblyMat) {
   std::vector<GlobalIndex> dofs;
   for (auto&& fe : this->finiteElements()) {
     dofs.resize(0);
@@ -256,20 +269,20 @@ void SparseFlatAssembler<B, FEC>::createLinearDOFsPerElementReduced(Eigen::Spars
 }
 
 template <typename B, typename FEC>
-void SparseFlatAssembler<B, FEC>::preProcessSparseMatrix(Eigen::SparseMatrix<double>& assemblyMat) {
+void SparseFlatAssembler<B, FEC>::preProcessSparseMatrix(typename SparseFlatAssembler::MatrixType& assemblyMat) {
   createOccupationPattern(assemblyMat);
   createLinearDOFsPerElement(assemblyMat);
 }
 
 template <typename B, typename FEC>
-void SparseFlatAssembler<B, FEC>::preProcessSparseMatrixReduced(Eigen::SparseMatrix<double>& assemblyMat) {
+void SparseFlatAssembler<B, FEC>::preProcessSparseMatrixReduced(typename SparseFlatAssembler::MatrixType& assemblyMat) {
   createReducedOccupationPattern(assemblyMat);
   createLinearDOFsPerElementReduced(assemblyMat);
 }
 
 template <typename B, typename FEC>
 void DenseFlatAssembler<B, FEC>::assembleRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance,
-                                                       Eigen::MatrixXd& assemblyMat) {
+                                                       typename DenseFlatAssembler::MatrixType& assemblyMat) {
   assemblyMat.setZero(this->size(), this->size());
   Eigen::MatrixXd matLocal;
   std::vector<GlobalIndex> dofs;
@@ -290,15 +303,15 @@ void DenseFlatAssembler<B, FEC>::assembleRawMatrixImpl(const FERequirement& feRe
 }
 
 template <typename B, typename FEC>
-Eigen::MatrixXd& DenseFlatAssembler<B, FEC>::getRawMatrixImpl(const FERequirement& feRequirements,
-                                                              MatrixAffordance affordance) {
+typename DenseFlatAssembler<B, FEC>::MatrixType& DenseFlatAssembler<B, FEC>::getRawMatrixImpl(
+    const FERequirement& feRequirements, MatrixAffordance affordance) {
   assembleRawMatrixImpl(feRequirements, affordance, matRaw_);
   return matRaw_;
 }
 
 template <typename B, typename FEC>
-Eigen::MatrixXd& DenseFlatAssembler<B, FEC>::getMatrixImpl(const FERequirement& feRequirements,
-                                                           MatrixAffordance affordance) {
+typename DenseFlatAssembler<B, FEC>::MatrixType& DenseFlatAssembler<B, FEC>::getMatrixImpl(
+    const FERequirement& feRequirements, MatrixAffordance affordance) {
   assembleRawMatrixImpl(feRequirements, affordance, mat_);
   for (auto i = 0U; i < this->size(); ++i)
     if (this->isConstrained(i))
@@ -313,8 +326,8 @@ Eigen::MatrixXd& DenseFlatAssembler<B, FEC>::getMatrixImpl(const FERequirement& 
 }
 
 template <typename B, typename FEC>
-Eigen::MatrixXd& DenseFlatAssembler<B, FEC>::getReducedMatrixImpl(const FERequirement& feRequirements,
-                                                                  MatrixAffordance affordance) {
+typename DenseFlatAssembler<B, FEC>::MatrixType& DenseFlatAssembler<B, FEC>::getReducedMatrixImpl(
+    const FERequirement& feRequirements, MatrixAffordance affordance) {
   matRed_.setZero(this->reducedSize(), this->reducedSize());
   Eigen::MatrixXd matLocal;
   std::vector<GlobalIndex> dofs;

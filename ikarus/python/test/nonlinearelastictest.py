@@ -85,7 +85,7 @@ if __name__ == "__main__":
 
     dRed = np.zeros(assembler.reducedSize())
 
-    lambdaLoad = iks.ValueWrapper(3.0)
+    lambdaLoad = iks.Scalar(3.0)
 
     feReq = fes[0].createRequirement()
 

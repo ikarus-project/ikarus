@@ -58,7 +58,7 @@ if __name__ == "__main__":
     print("Number of dofs: ", len(flatBasis))
     d = np.zeros(len(flatBasis))
 
-    lambdaLoad = iks.ValueWrapper(1.0)
+    lambdaLoad = iks.Scalar(1.0)
     thickness = 0.1
 
     def vL(x, lambdaVal):

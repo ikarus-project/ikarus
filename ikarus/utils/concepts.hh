@@ -354,7 +354,7 @@ namespace Concepts {
   /**
    * \concept EigenMatrix
    * \brief Concept defining the requirements for Eigen matrices. This also includes Eigen vectors
-   * \tparam V Type representing an Eigen vector.
+   * \tparam M Type representing an Eigen vector.
    */
   template <typename M>
   concept EigenMatrix = traits::isSpecializationTypeAndNonTypes<Eigen::Matrix, M>::value;
@@ -486,17 +486,6 @@ namespace Concepts {
   template <typename T>
   concept FlatAssembler = requires(T t, const typename T::FERequirement& req,
                                    typename T::AffordanceCollectionType affordance, DBCOption dbcOption) {
-    { t.scalar(req, affordance.scalarAffordance()) } -> std::convertible_to<const double&>;
-    { t.scalar() } -> std::convertible_to<const double&>;
-
-    { t.vector(req, affordance.vectorAffordance(), dbcOption) } -> std::convertible_to<const Eigen::VectorXd&>;
-    { t.vector(dbcOption) } -> std::convertible_to<const Eigen::VectorXd&>;
-    { t.vector() } -> std::convertible_to<const Eigen::VectorXd&>;
-
-    { t.matrix(req, affordance.matrixAffordance(), dbcOption) };
-    { t.matrix(dbcOption) };
-    { t.matrix() };
-
     { t.requirement() } -> std::convertible_to<typename T::FERequirement&>;
     { t.affordanceCollection() } -> std::convertible_to<typename T::AffordanceCollectionType>;
     { t.dBCOption() } -> std::convertible_to<DBCOption>;
@@ -518,6 +507,52 @@ namespace Concepts {
     { t.size() } -> std::convertible_to<size_t>;
     { t.reducedSize() } -> std::convertible_to<size_t>;
   };
+
+  /**
+   * \brief Concept representing the requirements for a ScalarFlatAssembler.
+   * \concept ScalarFlatAssembler
+   * A type T satisfies ScalarFlatAssembler if it is a FlatAssembler and if it provides the necessary scalar() member
+   * functions.
+   */
+  template <typename T>
+  concept ScalarFlatAssembler =
+      Concepts::FlatAssembler<T> and requires(T t, const typename T::FERequirement& req,
+                                              typename T::AffordanceCollectionType affordance, DBCOption dbcOption) {
+        { t.scalar(req, affordance.scalarAffordance()) } -> std::convertible_to<const double&>;
+        { t.scalar() } -> std::convertible_to<const double&>;
+      };
+
+  /**
+   * \brief Concept representing the requirements for a VectorFlatAssembler.
+   * \concept VectorFlatAssembler
+   * A type T satisfies VectorFlatAssembler if it is a ScalarFlatAssembler and if it provides the necessary vector()
+   * member functions.
+   */
+  template <typename T>
+  concept VectorFlatAssembler = Concepts::ScalarFlatAssembler<T> and
+                                requires(T t, const typename T::FERequirement& req,
+                                         typename T::AffordanceCollectionType affordance, DBCOption dbcOption) {
+                                  {
+                                    t.vector(req, affordance.vectorAffordance(), dbcOption)
+                                  } -> std::convertible_to<const Eigen::VectorXd&>;
+                                  { t.vector(dbcOption) } -> std::convertible_to<const Eigen::VectorXd&>;
+                                  { t.vector() } -> std::convertible_to<const Eigen::VectorXd&>;
+                                };
+
+  /**
+   * \brief Concept representing the requirements for a MatrixFlatAssembler.
+   * \concept MatrixFlatAssembler
+   * A type T satisfies MatrixFlatAssembler if it is a VectorFlatAssembler and if it provides the necessary matrix()
+   * member functions.
+   */
+  template <typename T>
+  concept MatrixFlatAssembler = Concepts::VectorFlatAssembler<T> and
+                                requires(T t, const typename T::FERequirement& req,
+                                         typename T::AffordanceCollectionType affordance, DBCOption dbcOption) {
+                                  { t.matrix(req, affordance.matrixAffordance(), dbcOption) };
+                                  { t.matrix(dbcOption) };
+                                  { t.matrix() };
+                                };
 
 } // namespace Concepts
 } // namespace Ikarus

@@ -18,7 +18,8 @@ def sparseFlatAssembler(fes, dirichletValues):
 
     includes = []
     includes += ["ikarus/assembler/simpleassemblers.hh"]
-    includes += fes[0]._includes  # include header of finite element
+    includes += fes[0].cppIncludes  # include header of finite element
+    includes += dirichletValues.cppIncludes
     includes += ["ikarus/python/assembler/flatassembler.hh"]
     moduleName = "SparseFlatAssembler_" + hashIt(element_type)
     module = generator.load(
@@ -42,9 +43,31 @@ def denseFlatAssembler(fes, dirichletValues):
     includes = []
     includes += ["ikarus/assembler/simpleassemblers.hh"]
     includes += ["ikarus/python/assembler/flatassembler.hh"]
-    includes += fes[0]._includes  # include header of finite element
-    moduleName = "SparseFlatAssembler_" + hashIt(element_type)
+    includes += fes[0].cppIncludes  # include header of finite element
+    includes += dirichletValues.cppIncludes
+    moduleName = "DenseFlatAssembler_" + hashIt(element_type)
     module = generator.load(
         includes=includes, typeName=element_type, moduleName=moduleName
     )
     return module.DenseFlatAssembler(fes, dirichletValues)
+
+def assemblerManipulator(assembler):
+    """
+    @brief Creates an assembler manipulator for the given assembler. The manipulation happens by providing call back functions
+
+    @param assembler: The assembler.
+
+    @return: The created assembler manipulator.
+    """
+    element_type = f"decltype(Ikarus::makeAssemblerManipulator(std::declval<{assembler.cppTypeName}>()))"
+    generator = MySimpleGenerator("AssemblerManipulator", "Ikarus::Python")
+
+    includes = []
+    includes += assembler.cppIncludes
+    includes += ["ikarus/assembler/assemblermanipulatorfuser.hh"]
+    includes += ["ikarus/python/assembler/flatassemblermanipulator.hh"]
+    moduleName = "AssemblerManipulator_" + hashIt(element_type)
+    module = generator.load(
+        includes=includes, typeName=element_type, moduleName=moduleName
+    )
+    return module.AssemblerManipulator(assembler)

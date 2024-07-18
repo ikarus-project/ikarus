@@ -10,35 +10,72 @@
 
 #include <ranges>
 
+#include <dune/common/float_cmp.hh>
+#include <dune/grid/utility/hierarchicsearch.hh>
+
+#include <ikarus/utils/concepts.hh>
+#include <ikarus/utils/traversal.hh>
+
 namespace Ikarus::utils {
 /**
- * \brief A function to obtain the global positions of the nodes of an element with Lagrangian basis, see Dune book
- * page 314
+ * \brief A function to obtain the global positions of the nodes of an element with Lagrangian basis
  * \ingroup utils
- * \tparam size Size of the nodal coordinate vector
+ * \tparam size Size of the global nodal coordinate vector
  * \tparam LV Type of the local view
  *
  * \param localView Local view bounded to an element
- * \param lagrangeNodeCoords A vector of nodal coordinates to be updated
+ * \param lagrangeNodeGlobalCoords A vector of global nodal coordinates to be updated
  */
 template <int size, typename LV>
-void obtainLagrangeNodePositions(const LV& localView,
-                                 std::vector<Dune::FieldVector<double, size>>& lagrangeNodeCoords) {
-  static_assert(Concepts::LagrangeNode<std::remove_cvref_t<decltype(localView.tree().child(0))>>,
-                "This function is only supported for Lagrange basis");
-  assert(localView.bound() && "The local view must be bound to an element");
-  const auto& localFE = localView.tree().child(0).finiteElement();
-  lagrangeNodeCoords.resize(localFE.size());
-  std::vector<double> out;
-  for (int i = 0; i < size; i++) {
-    auto ithCoord = [&i](const Dune::FieldVector<double, size>& x) { return x[i]; };
-    localFE.localInterpolation().interpolate(ithCoord, out);
-    for (std::size_t j = 0; j < out.size(); j++)
-      lagrangeNodeCoords[j][i] = out[j];
-  }
-  for (auto& nCoord : lagrangeNodeCoords)
-    nCoord = localView.element().geometry().global(nCoord);
+void obtainLagrangeGlobalNodePositions(const LV& localView,
+                                       std::vector<Dune::FieldVector<double, size>>& lagrangeNodeGlobalCoords) {
+  auto fT = [&]([[maybe_unused]] int nodeNumber, Dune::FieldVector<double, size>&& localCoordinate) {
+    lagrangeNodeGlobalCoords.emplace_back(localView.element().geometry().global(localCoordinate));
+    return false;
+  };
+  forEachLagrangeNodePosition(localView, fT);
 }
+
+/**
+ * \brief A helper function to obtain the global index from the global positions for a Lagrange node
+ * \ingroup utils
+ * \tparam size Size of the global nodal coordinate vector
+ * \tparam Basis Type of the basis.
+ *
+ * \param basis The grid basis.
+ * \param pos Global position
+ * \return Global index
+ */
+template <int size, typename Basis>
+auto globalIndexFromGlobalPosition(const Basis& basis, const Dune::FieldVector<double, size>& pos) {
+  static_assert(Concepts::LagrangeNode<std::remove_cvref_t<decltype(basis.localView().tree().child(0))>>,
+                "globalIndexFromGlobalPosition is only supported for Lagrange basis");
+  constexpr double tol = 1e-8;
+  using LocalView      = std::remove_cvref_t<decltype(basis.localView())>;
+  using MultiIndex     = typename LocalView::MultiIndex;
+  Dune::HierarchicSearch hSearch(basis.gridView().grid(), basis.gridView().indexSet());
+  const auto& ele = hSearch.findEntity(pos);
+  auto localView  = basis.localView();
+  localView.bind(ele);
+  const auto geo   = localView.element().geometry();
+  const auto& node = localView.tree();
+  std::optional<std::array<MultiIndex, size>> globalIndices;
+
+  auto fT = [&](int nodeNumber, Dune::FieldVector<double, size>&& localCoordinate) {
+    if (Dune::FloatCmp::eq(geo.global(localCoordinate), pos, tol)) {
+      globalIndices.emplace();
+      for (int j = 0; j < size; j++)
+        globalIndices.value()[j] = localView.index(node.child(j).localIndex(nodeNumber));
+      return true;
+    }
+    return false;
+  };
+  forEachLagrangeNodePosition(localView, fT);
+  if (not globalIndices.has_value())
+    DUNE_THROW(Dune::GridError, "No Lagrange node found at the given position in the grid.");
+  return globalIndices.value();
+}
+
 /**
  * \brief A function to obtain the local coordinates of subentities of an FiniteElement
  * \ingroup utils

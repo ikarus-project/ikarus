@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 set(HEADERS fe.hh registerpreelement.hh material.hh registerferequirements.hh registerpreelement.hh
-            valuewrapper.hh
+            scalarwrapper.hh
 )
 
 install(FILES ${HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/python/finiteelements)

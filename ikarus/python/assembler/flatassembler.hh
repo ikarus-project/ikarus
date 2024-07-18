@@ -20,106 +20,108 @@
 
 namespace Ikarus::Python {
 
-#define MAKE_ASSEMBLER_REGISTERY_FUNCTION(name)                                                                                \
-  /**                                                                                                                          \
-   \brief Register Python bindings for a name class.                                                                           \
-\n                                                                                                                             \
-    \details This function registers Python bindings for a name class, allowing it to be used in Python scripts.   \n          \
-  This function is a result of the macro `MAKE_ASSEMBLER_REGISTERY_FUNCTION(name)`.   \n                                       \
-  \n                                                                                                                           \
-   The registered class will have an initializer that takes a list of finite elements (`fes`) and a                            \
-`DirichletValuesType` object. \n It exposes several member functions to Python:  \n <ul> <li> `matrix(req)`:                   \
-Returns a dense matrix based on the specified `FERequirementType`.    \n <li> `vector(req,affordance,dbcOption)`:              \
-Returns a vector based on the specified `FERequirementType`.   \n <li> `scalar(req,affordance)`: Returns a scalar              \
-based on the specified `FERequirementType`.    \n <li> `createFullVector(redVec)`: Creates a full vector from a                \
-reduced vector. \n <li> `reducedSize()`: Returns the size of the reduced space.   \n                                           \
-  </ul> \n                                                                                                                     \
-   \tparam Assembler The name class to be registered.                                                                          \
-   \tparam options Variadic template parameters for additional options when defining the Python class.                         \
-   \param scope A Pybind11 handle representing the Python scope where the class should be registered.                          \
-   \param cls The Pybind11 class template to be used for registering the name class.                                           \
-   \ingroup pythonbindings                                                                                                     \
-  */                                                                                                                           \
-  template <class Assembler, class... options>                                                                                 \
-  void register##name(pybind11::handle scope, pybind11::class_<Assembler, options...> cls) {                                   \
-    using pybind11::operator""_a;                                                                                              \
-    using FEContainer              = typename Assembler::FEContainer;                                                          \
-    using Basis                    = typename Assembler::Basis;                                                                \
-    using DirichletValuesType      = typename Assembler::DirichletValuesType;                                                  \
-    using AffordanceCollectionType = typename Assembler::AffordanceCollectionType;                                             \
-    using FERequirementType        = typename Assembler::FERequirement;                                                        \
-    pybind11::module m             = pybind11::module::import("ikarus");                                                       \
-    cls.def(pybind11::init([](const pybind11::list& fes, const DirichletValuesType& dirichletValues) {                         \
-              /*here a copy of the whole vector of fes takes place! There is no way to prevent this if we want that            \
-               * the user can pass native python lists here, see                                                               \
-               * https://pybind11.readthedocs.io/en/stable/advanced/cast/stl.html */                                           \
-              FEContainer fesV = fes.template cast<FEContainer>();                                                             \
-              return new Assembler(std::move(fesV), dirichletValues);                                                          \
-            }),                                                                                                                \
-            pybind11::keep_alive<1, 3>());                                                                                     \
-                                                                                                                               \
-    /* sparse matrices need to be copied to python therefore we remove the reference of the return type, see */                \
-    /*  https://github.com/pybind/pybind11/blob/cbb876cc7b02c5f57e715cbc2c46ead3d1fbcf79/tests/test_eigen_matrix.cpp#L332-L341 \
-     */                                                                                                                        \
-    cls.def(                                                                                                                   \
-        "matrix",                                                                                                              \
-        [](Assembler& self, const FERequirementType& req, Ikarus::MatrixAffordance affordance,                                 \
-           Ikarus::DBCOption dbcOption) -> std::remove_cvref_t<decltype(self.matrix(req, affordance))> {                       \
-          return self.matrix(req, affordance, dbcOption);                                                                      \
-        },                                                                                                                     \
-        pybind11::return_value_policy::copy);                                                                                  \
-                                                                                                                               \
-    cls.def(                                                                                                                   \
-        "matrix", [](Assembler& self) -> std::remove_cvref_t<decltype(self.matrix())> { return self.matrix(); },               \
-        pybind11::return_value_policy::copy);                                                                                  \
-                                                                                                                               \
-    cls.def(                                                                                                                   \
-        "matrix",                                                                                                              \
-        [](Assembler& self, Ikarus::DBCOption dbcOption) -> std::remove_cvref_t<decltype(self.matrix(dbcOption))> {            \
-          return self.matrix(dbcOption);                                                                                       \
-        },                                                                                                                     \
-        pybind11::return_value_policy::copy);                                                                                  \
-                                                                                                                               \
-    cls.def(                                                                                                                   \
-        "vector",                                                                                                              \
-        [](Assembler& self, const FERequirementType& req, Ikarus::VectorAffordance affordance,                                 \
-           Ikarus::DBCOption dbcOption) { return self.vector(req, affordance, dbcOption); },                                   \
-        pybind11::return_value_policy::reference);                                                                             \
-                                                                                                                               \
-    cls.def("vector", [](Assembler& self) { return self.vector(); }, pybind11::return_value_policy::reference);                \
-                                                                                                                               \
-    cls.def(                                                                                                                   \
-        "vector", [](Assembler& self, Ikarus::DBCOption dbcOption) { return self.vector(dbcOption); },                         \
-        pybind11::return_value_policy::reference);                                                                             \
-                                                                                                                               \
-    cls.def(                                                                                                                   \
-        "scalar",                                                                                                              \
-        [](Assembler& self, const FERequirementType& req, Ikarus::ScalarAffordance affordance) {                               \
-          return self.scalar(req, affordance);                                                                                 \
-        },                                                                                                                     \
-        pybind11::return_value_policy::copy);                                                                                  \
-                                                                                                                               \
-    cls.def("scalar", [](Assembler& self) { return self.scalar(); }, pybind11::return_value_policy::copy);                     \
-                                                                                                                               \
-    cls.def(                                                                                                                   \
-        "createFullVector",                                                                                                    \
-        [](Assembler& self, Eigen::Ref<const Eigen::VectorXd> redVec) { return self.createFullVector(redVec); },               \
-        pybind11::return_value_policy::move);                                                                                  \
-    cls.def("reducedSize", [](Assembler& self) { return self.reducedSize(); }, pybind11::return_value_policy::copy);           \
-    cls.def("bind", [](Assembler& self, const FERequirementType& req, AffordanceCollectionType affordance,                     \
-                       DBCOption dbcOption = DBCOption::Full) { return self.bind(req, affordance, dbcOption); });              \
-    cls.def("bind", [](Assembler& self, const FERequirementType& req) { return self.bind(req); });                             \
-    cls.def("bind", [](Assembler& self, const AffordanceCollectionType affordance) { return self.bind(affordance); });         \
-    cls.def("bind", [](Assembler& self, const DBCOption dbcOption) { return self.bind(dbcOption); });                          \
-    cls.def("bound", &Assembler::bound);                                                                                       \
-    cls.def("boundToRequirement", &Assembler::boundToRequirement);                                                             \
-    cls.def("boundToAffordanceCollection", &Assembler::boundToAffordanceCollection);                                           \
-    cls.def("boundToDBCOption", &Assembler::boundToDBCOption);                                                                 \
-    cls.def("requirement", &Assembler::requirement);                                                                           \
-    cls.def("affordanceCollection", &Assembler::affordanceCollection);                                                         \
-    cls.def("dBCOption", &Assembler::dBCOption);                                                                               \
+/**
+ \brief Register Python bindings for a assembler class.
+\n
+
+ The registered class will have an initializer that takes a list of finite elements (`fes`) and a
+`DirichletValuesType` object. \n It exposes several member functions to Python:  \n <ul> <li> `matrix(req)`:
+Returns a dense matrix based on the specified `FERequirementType`.    \n <li> `vector(req,affordance,dbcOption)`:
+Returns a vector based on the specified `FERequirementType`.   \n <li> `scalar(req,affordance)`: Returns a scalar
+based on the specified `FERequirementType`.    \n <li> `createFullVector(redVec)`: Creates a full vector from a
+reduced vector. \n <li> `reducedSize()`: Returns the size of the reduced space.   \n
+</ul> \n
+ \tparam Assembler The assembler class to be registered.
+ \tparam options Variadic template parameters for additional options when defining the Python class.
+ \param scope A Pybind11 handle representing the Python scope where the class should be registered.
+ \param cls The Pybind11 class template to be used for registering the assembler class.
+ \ingroup pythonbindings
+*/
+template <class Assembler, class... options>
+void registerFlatAssembler(pybind11::handle scope, pybind11::class_<Assembler, options...> cls) {
+  using pybind11::operator""_a;
+  using FEContainer              = typename Assembler::FEContainer;
+  using Basis                    = typename Assembler::Basis;
+  using DirichletValuesType      = typename Assembler::DirichletValuesType;
+  using AffordanceCollectionType = typename Assembler::AffordanceCollectionType;
+  using FERequirementType        = typename Assembler::FERequirement;
+  cls.def(pybind11::init([](const pybind11::list& fes, const DirichletValuesType& dirichletValues) {
+            /*here a copy of the whole vector of fes takes place! There is no way to prevent this if we want that
+             * the user can pass native python lists here, see
+             * https://pybind11.readthedocs.io/en/stable/advanced/cast/stl.html */
+            FEContainer fesV = fes.template cast<FEContainer>();
+            return new Assembler(std::move(fesV), dirichletValues);
+          }),
+          pybind11::keep_alive<1, 3>());
+
+  /* sparse matrices need to be copied to python therefore we remove the reference of the return type, see */
+  /*  https://github.com/pybind/pybind11/blob/cbb876cc7b02c5f57e715cbc2c46ead3d1fbcf79/tests/test_eigen_matrix.cpp#L332-L341
+   */
+  cls.def(
+      "matrix",
+      [](Assembler& self, const FERequirementType& req, Ikarus::MatrixAffordance affordance,
+         Ikarus::DBCOption dbcOption) -> std::remove_cvref_t<decltype(self.matrix(req, affordance))> {
+        return self.matrix(req, affordance, dbcOption);
+      },
+      pybind11::return_value_policy::copy);
+
+  cls.def(
+      "matrix", [](Assembler& self) -> std::remove_cvref_t<decltype(self.matrix())> { return self.matrix(); },
+      pybind11::return_value_policy::copy);
+
+  cls.def(
+      "matrix",
+      [](Assembler& self, Ikarus::DBCOption dbcOption) -> std::remove_cvref_t<decltype(self.matrix(dbcOption))> {
+        return self.matrix(dbcOption);
+      },
+      pybind11::return_value_policy::copy);
+
+  cls.def(
+      "vector",
+      [](Assembler& self, const FERequirementType& req, Ikarus::VectorAffordance affordance,
+         Ikarus::DBCOption dbcOption) { return self.vector(req, affordance, dbcOption); },
+      pybind11::return_value_policy::reference);
+
+  cls.def("vector", [](Assembler& self) { return self.vector(); }, pybind11::return_value_policy::reference);
+
+  cls.def(
+      "vector", [](Assembler& self, Ikarus::DBCOption dbcOption) { return self.vector(dbcOption); },
+      pybind11::return_value_policy::reference);
+
+  cls.def(
+      "scalar",
+      [](Assembler& self, const FERequirementType& req, Ikarus::ScalarAffordance affordance) {
+        return self.scalar(req, affordance);
+      },
+      pybind11::return_value_policy::copy);
+
+  cls.def("scalar", [](Assembler& self) { return self.scalar(); }, pybind11::return_value_policy::copy);
+
+  cls.def(
+      "createFullVector",
+      [](Assembler& self, Eigen::Ref<const Eigen::VectorXd> redVec) { return self.createFullVector(redVec); },
+      pybind11::return_value_policy::move);
+  cls.def("reducedSize", [](Assembler& self) { return self.reducedSize(); }, pybind11::return_value_policy::copy);
+  cls.def("bind", [](Assembler& self, const FERequirementType& req, AffordanceCollectionType affordance,
+                     DBCOption dbcOption = DBCOption::Full) { return self.bind(req, affordance, dbcOption); });
+  cls.def("bind", [](Assembler& self, const FERequirementType& req) { return self.bind(req); });
+  cls.def("bind", [](Assembler& self, const AffordanceCollectionType affordance) { return self.bind(affordance); });
+  cls.def("bind", [](Assembler& self, const DBCOption dbcOption) { return self.bind(dbcOption); });
+  cls.def("bound", [](Assembler& self) { return self.bound(); });
+  cls.def("boundToRequirement", [](Assembler& self) { return self.boundToRequirement(); });
+  cls.def("boundToAffordanceCollection", [](Assembler& self) { return self.boundToAffordanceCollection(); });
+  cls.def("boundToDBCOption", [](Assembler& self) { return self.boundToDBCOption(); });
+  cls.def("requirement", [](Assembler& self) { return self.requirement(); });
+  cls.def("affordanceCollection", [](Assembler& self) { return self.affordanceCollection(); });
+  cls.def("dBCOption", [](Assembler& self) { return self.dBCOption(); });
+}
+
+#define MAKE_ASSEMBLER_REGISTERY_FUNCTION(name)                                              \
+  template <class Assembler, class... options>                                               \
+  void register##name(pybind11::handle scope, pybind11::class_<Assembler, options...> cls) { \
+    registerFlatAssembler(scope, cls);                                                       \
   }
-// TODO Alex add binding functions
+
 MAKE_ASSEMBLER_REGISTERY_FUNCTION(SparseFlatAssembler);
 MAKE_ASSEMBLER_REGISTERY_FUNCTION(DenseFlatAssembler);
 

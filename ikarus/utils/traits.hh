@@ -7,6 +7,7 @@
  */
 
 #pragma once
+#include <functional>
 #include <tuple>
 #include <type_traits>
 
@@ -337,8 +338,10 @@ template <typename R, typename... Args>
 struct FunctionTraits<R (*)(Args...)>
 {
   using return_type = R;
+  using ArgsTuple   = std::tuple<Args...>;
+
   template <int i>
-  using args_type                        = typename std::tuple_element<i, std::tuple<Args...>>::type;
+  using args_type                        = typename std::tuple_element<i, ArgsTuple>::type;
   static constexpr int numberOfArguments = sizeof...(Args);
 };
 
@@ -349,8 +352,10 @@ template <typename R, typename C, typename... Args>
 struct FunctionTraits<R (C::*)(Args...) const>
 {
   using return_type = R;
+  using ArgsTuple   = std::tuple<Args...>;
+
   template <int i>
-  using args_type                        = typename std::tuple_element<i, std::tuple<Args...>>::type;
+  using args_type                        = typename std::tuple_element<i, ArgsTuple>::type;
   static constexpr int numberOfArguments = sizeof...(Args);
 };
 
@@ -361,8 +366,10 @@ template <typename R, typename C, typename... Args>
 struct FunctionTraits<R (C::*)(Args...)>
 {
   using return_type = R;
+  using ArgsTuple   = std::tuple<Args...>;
+
   template <int i>
-  using args_type                        = typename std::tuple_element<i, std::tuple<Args...>>::type;
+  using args_type                        = typename std::tuple_element<i, ArgsTuple>::type;
   static constexpr int numberOfArguments = sizeof...(Args);
 };
 
@@ -373,6 +380,86 @@ struct FunctionTraits<R (C::*)(Args...)>
 template <typename T>
 struct FunctionTraits<T, Dune::void_t<decltype(&T::operator())>> : public FunctionTraits<decltype(&T::operator())>
 {
+};
+#endif
+
+/**
+ * @brief Helper to replace the type at a specific position in a tuple.
+ *
+ * @tparam Tuple The tuple type.
+ * @tparam Pos The position to replace.
+ * @tparam NewType The new type to insert.
+ */
+template <typename Tuple, std::size_t Pos, typename NewType>
+struct ReplaceTypeAtPos;
+
+#ifndef DOXYGEN
+template <typename NewType, std::size_t Pos, typename... Args>
+struct ReplaceTypeAtPos<std::tuple<Args...>, Pos, NewType>
+{
+private:
+  template <std::size_t... Is>
+  static auto replace_impl(std::index_sequence<Is...>) -> std::tuple<std::conditional_t<Is == Pos, NewType, Args>...>;
+
+public:
+  using type = decltype(replace_impl(std::index_sequence_for<Args...>{}));
+};
+#endif
+
+/**
+ * @brief Alias template for ReplaceTypeAtPos.
+ *
+ * @tparam Tuple The tuple type.
+ * @tparam Pos The position to replace.
+ * @tparam NewType The new type to insert.
+ */
+template <typename Tuple, std::size_t Pos, typename NewType>
+using ReplaceTypeAtPos_t = typename ReplaceTypeAtPos<Tuple, Pos, NewType>::type;
+
+/**
+ * @brief Helper to convert a tuple to a function type.
+ *
+ * @tparam R The return type.
+ * @tparam Tuple The tuple type representing the argument types.
+ */
+template <typename R, typename Tuple>
+struct TupleToFunctionType;
+
+#ifndef DOXYGEN
+template <typename R, typename... Args>
+struct TupleToFunctionType<R, std::tuple<Args...>>
+{
+  using type = std::function<R(Args...)>;
+};
+#endif
+
+/**
+ * @brief Alias template for TupleToFunctionType.
+ *
+ * @tparam R The return type.
+ * @tparam Tuple The tuple type representing the argument types.
+ */
+template <typename R, typename Tuple>
+using TupleToFunctionType_t = typename TupleToFunctionType<R, Tuple>::type;
+
+/**
+ * @brief Main function to wrap the type at position pos in a std::function.
+ *
+ * @tparam Func The std::function type.
+ * @tparam Pos The position to wrap.
+ * @tparam NewType The new type to wrap.
+ */
+template <typename Func, std::size_t Pos, typename NewType>
+struct ChangeArgTypeAtPos;
+
+#ifndef DOXYGEN
+template <typename R, typename... Args, std::size_t Pos, typename NewType>
+struct ChangeArgTypeAtPos<std::function<R(Args...)>, Pos, NewType>
+{
+  using OriginalFunction = std::function<R(Args...)>;
+  using Traits           = FunctionTraits<OriginalFunction>;
+  using NewArgsTuple     = ReplaceTypeAtPos_t<typename Traits::ArgsTuple, Pos, NewType>;
+  using NewFunctionType  = TupleToFunctionType_t<R, NewArgsTuple>;
 };
 #endif
 
