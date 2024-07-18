@@ -18,6 +18,8 @@
 
 #include <dune/functions/backends/istlvectorbackend.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
+#include <dune/functions/functionspacebases/flatmultiindex.hh>
+#include <dune/functions/functionspacebases/subspacebasis.hh>
 
 #include <Eigen/Core>
 
@@ -84,23 +86,29 @@ public:
    * degrees of freedom and the usual arguments of `Dune::Functions::forEachBoundaryDOF`.
    *
    * \param f A callback function
+   * \param treePath An optional argument specifying a tree path to a subspacebasis, e.g. Dune::Indices::_0
    */
-  template <typename F>
-  void fixBoundaryDOFs(F&& f) {
+  template <typename F, typename TreePath = Dune::TypeTree::HybridTreePath<>>
+  void fixBoundaryDOFs(F&& f, TreePath&& treePath = {}) {
+    using namespace Dune::Functions;
+    using SubSpaceLocalView =
+        typename std::remove_cvref_t<decltype(subspaceBasis(basis_, std::forward<TreePath>(treePath)))>::LocalView;
+
     if constexpr (Concepts::IsFunctorWithArgs<F, BackendType, typename Basis::MultiIndex>) {
       auto lambda = [&](auto&& indexGlobal) { f(dirichletFlagsBackend_, indexGlobal); };
-      Dune::Functions::forEachBoundaryDOF(basis_, lambda);
-    } else if constexpr (Concepts::IsFunctorWithArgs<F, BackendType, int, typename Basis::LocalView>) {
+      Dune::Functions::forEachBoundaryDOF(subspaceBasis(basis_, std::forward<TreePath>(treePath)), lambda);
+    } else if constexpr (Concepts::IsFunctorWithArgs<F, BackendType, int, SubSpaceLocalView>) {
       auto lambda = [&](auto&& localIndex, auto&& localView) { f(dirichletFlagsBackend_, localIndex, localView); };
-      Dune::Functions::forEachBoundaryDOF(basis_, lambda);
-    } else if constexpr (Concepts::IsFunctorWithArgs<F, BackendType, int, typename Basis::LocalView,
+      Dune::Functions::forEachBoundaryDOF(subspaceBasis(basis_, std::forward<TreePath>(treePath)), lambda);
+    } else if constexpr (Concepts::IsFunctorWithArgs<F, BackendType, int, SubSpaceLocalView,
                                                      typename Basis::GridView::Intersection>) {
       auto lambda = [&](auto&& localIndex, auto&& localView, auto&& intersection) {
         f(dirichletFlagsBackend_, localIndex, localView, intersection);
       };
-      Dune::Functions::forEachBoundaryDOF(basis_, lambda);
-    } else
-      DUNE_THROW(Dune::IOError, "Invalid callback function passed to fixBoundaryDOFs");
+      Dune::Functions::forEachBoundaryDOF(subspaceBasis(basis_, std::forward<TreePath>(treePath)), lambda);
+    } else {
+      static_assert(Dune::AlwaysFalse<F>(), "fixBoundaryDOFs: A function with this signature is not supported");
+    }
   }
 
   /**
@@ -117,11 +125,37 @@ public:
   }
 
   /**
-   * \brief Function to fix (set boolean values to true or false) of degrees of freedom
+   * \brief Fixes and unfixes (set boolean value to true or false) a specific degree of freedom
    *
    * \param i An index indicating the DOF number to be fixed
+   * \param flag Boolean indicating whether the DOF should fixed or not
    */
-  void fixIthDOF(typename Basis::MultiIndex i) { dirichletFlagsBackend_[i] = true; }
+  template <typename MultiIndex>
+  requires(not std::integral<MultiIndex>)
+  void setSingleDOF(const MultiIndex i, bool flag) {
+    dirichletFlagsBackend_[i] = flag;
+  }
+
+  /**
+   * \brief Fixes or unfixes (set boolean value to true or false) a specific degree of freedom
+   *
+   * \param i An index indicating the DOF number to be fixed
+   * \param flag Boolean indicating whether the DOF should fixed or not
+   */
+
+  void setSingleDOF(std::size_t i, bool flag)
+  requires(std::same_as<typename Basis::MultiIndex, Dune::Functions::FlatMultiIndex<size_t>>)
+  {
+    dirichletFlags_[i] = flag;
+  }
+
+  /**
+   * \brief Resets all degrees of freedom
+   */
+  void reset() {
+    std::fill(dirichletFlags_.begin(), dirichletFlags_.end(), false);
+    inhomogeneousBoundaryVectorDummy_.setZero(static_cast<Eigen::Index>(basis_.size()));
+  }
 
   /* \brief Returns the local basis object */
   const auto& basis() const { return basis_; }
@@ -134,7 +168,11 @@ public:
   }
 
   /* \brief Returns a boolean values, if the i-th degree of freedom is constrained */
-  [[nodiscard]] bool isConstrained(std::size_t i) const { return dirichletFlags_[i]; }
+  [[nodiscard]] bool isConstrained(std::size_t i) const
+  requires(std::same_as<typename Basis::MultiIndex, Dune::Functions::FlatMultiIndex<size_t>>)
+  {
+    return dirichletFlags_[i];
+  }
 
   /* \brief Returns how many degrees of freedoms are fixed */
   auto fixedDOFsize() const { return std::ranges::count(dirichletFlags_, true); }

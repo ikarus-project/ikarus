@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include <config.h>
 
-#include "testhelpers.hh"
-
 #include <vector>
 
 #include <dune/common/float_cmp.hh>
@@ -29,7 +27,7 @@
 using Dune::TestSuite;
 
 static auto dirichletBCTest() {
-  TestSuite t("dirichletBCTest");
+  TestSuite t("DirichletValueTest");
   using Grid = Dune::YaspGrid<2>;
 
   const double Lx                         = 4.0;
@@ -43,22 +41,120 @@ static auto dirichletBCTest() {
   using namespace Dune::Functions::BasisFactory;
   auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<1>()));
 
-  auto basisP = std::make_shared<const decltype(basis)>(basis);
+  auto flatBasis = basis.flat();
 
-  Ikarus::DirichletValues dirichletValues1(basisP->flat());
+  Ikarus::DirichletValues dirichletValues1(flatBasis);
   dirichletValues1.fixDOFs([](auto& basis_, auto& dirichFlags) {
     Dune::Functions::forEachBoundaryDOF(basis_, [&](auto&& indexGlobal) { dirichFlags[indexGlobal] = true; });
   });
 
-  Ikarus::DirichletValues dirichletValues2(basisP->flat());
+  Ikarus::DirichletValues dirichletValues2(flatBasis);
   dirichletValues2.fixBoundaryDOFs([](auto& dirichFlags, auto&& indexGlobal) { dirichFlags[indexGlobal] = true; });
 
-  for (std::size_t i = 0; i < basisP->flat().size(); ++i)
+  for (std::size_t i = 0; i < flatBasis.size(); ++i)
     t.check(dirichletValues1.isConstrained(i) == dirichletValues2.isConstrained(i))
         << "Different dirichlet value creations (dirichletValues1 and dirichletValues2) didn't provide the same "
            "result. Index: i="
         << i;
 
+  auto testSubSpaceBasis = [&](auto&& tree1, auto&& tree2) {
+    Ikarus::DirichletValues dirichletValues_SSB(flatBasis);
+    dirichletValues_SSB.fixBoundaryDOFs([](auto& dirichFlags, auto&& indexGlobal) { dirichFlags[indexGlobal] = true; },
+                                        tree1);
+
+    t.check(dirichletValues2.fixedDOFsize() == dirichletValues_SSB.fixedDOFsize() * 2)
+        << "DirichletValues with subspace basis should have half as many fixed DOFs as the full basis, but has "
+        << dirichletValues_SSB.fixedDOFsize() << ", where as the full basis has " << dirichletValues2.fixedDOFsize()
+        << " fixed DOFs";
+
+    dirichletValues_SSB.fixBoundaryDOFs([](auto& dirichFlags, auto&& indexGlobal) { dirichFlags[indexGlobal] = true; },
+                                        tree2);
+
+    for (std::size_t i = 0; i < flatBasis.size(); ++i)
+      t.check(dirichletValues_SSB.isConstrained(i) == dirichletValues2.isConstrained(i))
+          << "Different dirichlet value creations with subspace basis didn't provide the same result as with full "
+             "basis. "
+             "Index: i="
+          << i;
+  };
+
+  // Static tree path
+  auto treePath0 = Dune::Indices::_0;
+  auto treePath1 = Dune::Indices::_1;
+  testSubSpaceBasis(treePath0, treePath1);
+
+  // Dynamic tree path
+  auto treePath0d = 0;
+  auto subBasis1d = 1;
+  testSubSpaceBasis(treePath0d, subBasis1d);
+
+  // Test with Intersection
+  auto fixLambda = [](auto& dirichletFlags, auto&& localIndex, auto&& localView, auto&& intersection) {
+    if (intersection.geometry().center()[0] > 4 - 1e-8)
+      dirichletFlags[localView.index(localIndex)] = true;
+  };
+  Ikarus::DirichletValues dirichletValues5(flatBasis);
+  dirichletValues5.fixBoundaryDOFs(fixLambda);
+
+  Ikarus::DirichletValues dirichletValues_SSB2(flatBasis);
+  dirichletValues_SSB2.fixBoundaryDOFs(fixLambda, treePath0);
+
+  t.check(dirichletValues5.fixedDOFsize() == dirichletValues_SSB2.fixedDOFsize() * 2)
+      << "DirichletValues with subspace basis should have half as many fixed DOFs as the full basis, but has "
+      << dirichletValues_SSB2.fixedDOFsize() << ", where as the full basis has " << dirichletValues5.fixedDOFsize()
+      << " fixed DOFs";
+
+  dirichletValues_SSB2.fixBoundaryDOFs(fixLambda, treePath1);
+
+  t.check(dirichletValues_SSB2.fixedDOFsize() > 0);
+  t.check(dirichletValues5.fixedDOFsize() == dirichletValues_SSB2.fixedDOFsize())
+      << "DirichletValues with subspace basis should have as many fixed DOFs as the full basis, but has "
+      << dirichletValues_SSB2.fixedDOFsize() << ", where as the full basis has " << dirichletValues5.fixedDOFsize()
+      << " fixed DOFs";
+
+  for (std::size_t i = 0; i < flatBasis.size(); ++i)
+    t.check(dirichletValues_SSB2.isConstrained(i) == dirichletValues5.isConstrained(i))
+        << "Different dirichlet value creations with subspace basis didn't provide the same result as with full basis. "
+           "Index: i="
+        << i;
+
+  auto sum        = [](const auto& container_) { return std::accumulate(container_.begin(), container_.end(), 0); };
+  auto manual_sum = [](const auto& dv) {
+    int sum = 0;
+    for (auto i : Dune::range(dv.size()))
+      if (dv.isConstrained(i))
+        ++sum;
+    return sum;
+  };
+
+  // Test container
+  auto& container = dirichletValues2.container();
+  static_assert(std::is_reference_v<decltype(container)>, "container should be a reference");
+  static_assert(std::is_const_v<std::remove_reference_t<decltype(container)>>, "container should be const");
+
+  t.check(std::ranges::all_of(container, [](auto&& flag) { return flag; })) << "All values should be fixed";
+
+  auto sumPre    = sum(container);
+  auto sumManual = manual_sum(dirichletValues2);
+
+  t.check(sumManual == sumPre)
+      << "Summing over container should yield the same amount of fixed DOFs then checking manually";
+
+  dirichletValues2.setSingleDOF(decltype(flatBasis)::MultiIndex{1}, false);
+  t.check(sum(container) == sumPre - 1) << "The sum of fixed DOFs should be one less then after unfixing one";
+
+  t.check(manual_sum(dirichletValues2) == sumPre - 1)
+      << "Summing over container should yield the same amount of fixed DOFs then checking manually";
+
+  dirichletValues2.setSingleDOF(2, false);
+  t.check(sum(container) == sumPre - 2) << "The sum of fixed DOFs should be two less then after unfixing two";
+
+  // Reset
+  dirichletValues2.reset();
+  t.check(sum(container) == 0) << "After resetting container should have only false entries";
+  t.check(manual_sum(dirichletValues2) == 0) << "After resetting, all DOFs should be false";
+
+  // Inhomogenious Boundary Conditions
   auto inhomogeneousDisplacement = []<typename T>(const auto& globalCoord, const T& lambda) {
     Eigen::Vector<T, 2> localInhomogeneous;
     if (globalCoord[0] > 4 - 1e-8) {
@@ -97,7 +193,7 @@ static auto dirichletBCTest() {
           << "Values differ dispDerivs[i]: " << dispDerivs[globalIndex0];
     }
   };
-  Dune::Functions::forEachBoundaryDOF(basisP->flat(), lambdaCheck);
+  Dune::Functions::forEachBoundaryDOF(flatBasis, lambdaCheck);
 
   // Check that we can store lambda from python
   std::string inhomogeneousDisplacementFunction =
@@ -132,7 +228,7 @@ static auto dirichletBCTest() {
     return Dune::toEigen(pythonFunc(globalCoord, lambda_));
   };
   //
-  Ikarus::DirichletValues dirichletValues3(basisP->flat());
+  Ikarus::DirichletValues dirichletValues3(flatBasis);
   dirichletValues3.fixBoundaryDOFs([](auto& dirichFlags, auto&& indexGlobal) { dirichFlags[indexGlobal] = true; });
 
   Eigen::VectorXd disps2, dispDerivs2;
@@ -143,7 +239,7 @@ static auto dirichletBCTest() {
   t.check(disps2.isApprox(dispDerivs2 * lambda3));
 
   // Check if all boundary DOFs found manually using obtainLagrangeNodePositions is the same as using forEachBoundaryDOF
-  Ikarus::DirichletValues dirichletValues4(basisP->flat());
+  Ikarus::DirichletValues dirichletValues4(flatBasis);
   constexpr double tol = 1e-8;
   auto localView       = basis.flat().localView();
   for (auto& ele : elements(gridView)) {
@@ -156,11 +252,11 @@ static auto dirichletBCTest() {
           (std::abs(nodalPos[i][1]) < tol) or (std::abs(nodalPos[i][1] - Ly) < tol))
         for (auto fixedDirection = 0; fixedDirection < 2; ++fixedDirection) {
           auto fixIndex = localView.index(localView.tree().child(fixedDirection).localIndex(i));
-          dirichletValues4.fixIthDOF(fixIndex);
+          dirichletValues4.setSingleDOF(fixIndex, true);
         }
   }
 
-  for (std::size_t i = 0; i < basisP->flat().size(); ++i)
+  for (std::size_t i = 0; i < flatBasis.size(); ++i)
     t.check(dirichletValues1.isConstrained(i) == dirichletValues4.isConstrained(i))
         << "Different dirichlet value creations (dirichletValues1 and dirichletValues4) didn't provide the same "
            "result. Index: i="

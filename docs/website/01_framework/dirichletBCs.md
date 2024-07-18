@@ -24,23 +24,25 @@ The interface of `#!cpp Ikarus::DirichletValues` is represented by the following
 Ikarus::DirichletValues dirichletValues2(basis); // (1)!
 void fixBoundaryDOFs(f); // (2)!
 void fixDOFs(f); // (3)!
-void fixIthDOF(i); // (4)!
+void setSingleDOF(i, flag); // (4)!
 const auto& basis() const; // (5)!
-bool isConstrained(std::size_t i) const; // (6)!
+bool isConstrained(i) const; // (6)!
 auto fixedDOFsize() const; // (7)!
 auto size() const ; // (8)!
+auto reset(); // (9)!
 ```
 
 1. Create class by inserting a global basis, [@sander2020dune] Chapter 10.
-2. Accepts a functor to fix boundary degrees of freedom. `f` is  a functor that will be called with the boolean vector of fixed boundary.
+2. Accepts a functor to fix boundary degrees of freedom. `f` is  a functor that will be called with the Boolean vector of fixed boundary.
  degrees of freedom and the usual arguments of `Dune::Functions::forEachBoundaryDOF`, as defined on page 388 of the Dune
    [@sander2020dune] book.
-3. A more general version of `fixBoundaryDOFs`. Here, a functor is to be provided that accepts a basis and the corresponding boolean
-4. A function that helps to fix the $i$-th degree of freedom
+3. A more general version of `fixBoundaryDOFs`. Here, a functor is to be provided that accepts a basis and the corresponding Boolean
+4. A function that helps to fix or unfix the $i$-th degree of freedom
    vector considering the Dirichlet degrees of freedom.
 5. Returns the underlying basis.
-6. Indicates whether the degree of freedom `i` is fixed.
+6. Indicates whether the degree of freedom $i$ is fixed.
 7. Returns the number of fixed degrees of freedom.
-8. Returns the number of all dirichlet degrees of freedom.
+8. Returns the number of all Dirichlet degrees of freedom.
+9. Resets the whole container
 
 \bibliography

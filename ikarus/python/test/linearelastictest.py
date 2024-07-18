@@ -1,8 +1,8 @@
 # SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
-
 import debug_info
+
 debug_info.setDebugFlags()
 
 import ikarus as iks
@@ -57,20 +57,26 @@ def linElasticTest(easBool):
 
     indexSet = grid.indexSet
     for v in grid.vertices:
-        neumannVertices[indexSet.index(v)]=loadTopEdgePredicate(v.geometry.center)
+        neumannVertices[indexSet.index(v)] = loadTopEdgePredicate(v.geometry.center)
 
     boundaryPatch = iks.utils.boundaryPatch(grid, neumannVertices)
-    nBLoad= iks.finite_elements.neumannBoundaryLoad(boundaryPatch,neumannLoad)
+
+    nBLoad = iks.finite_elements.neumannBoundaryLoad(boundaryPatch, neumannLoad)
 
     linElastic = iks.finite_elements.linearElastic(youngs_modulus=1000, nu=0.2)
-    easF= iks.finite_elements.eas(4)
+    easF = iks.finite_elements.eas(4)
 
     for e in grid.elements:
         if easBool:
-
-            fes.append(iks.finite_elements.makeFE(basisLagrange1,linElastic,easF,vLoad,nBLoad))
+            fes.append(
+                iks.finite_elements.makeFE(
+                    basisLagrange1, linElastic, easF, vLoad, nBLoad
+                )
+            )
         else:
-            fes.append(iks.finite_elements.makeFE(basisLagrange1,linElastic,vLoad,nBLoad))
+            fes.append(
+                iks.finite_elements.makeFE(basisLagrange1, linElastic, vLoad, nBLoad)
+            )
         fes[-1].bind(e)
 
     req = fes[0].createRequirement()
@@ -90,8 +96,8 @@ def linElasticTest(easBool):
 
     forces = np.zeros(8)
     stiffness = np.zeros((8, 8))
-    fes[0].calculateVector(req,iks.VectorAffordance.forces, forces)
-    fes[0].calculateMatrix(req,iks.MatrixAffordance.stiffness, stiffness)
+    fes[0].calculateVector(req, iks.VectorAffordance.forces, forces)
+    fes[0].calculateMatrix(req, iks.MatrixAffordance.stiffness, stiffness)
     fes[0].localView()
 
     dirichletValues = iks.dirichletValues(flatBasis)
@@ -108,8 +114,8 @@ def linElasticTest(easBool):
             vec[localView.index(localIndex)] = True
 
     dirichletValues.fixBoundaryDOFs(fixFirstIndex)
-    dirichletValues.fixBoundaryDOFsUsingLocalView(fixAnotherVertex)
-    dirichletValues.fixBoundaryDOFsUsingLocalViewAndIntersection(fixLeftHandEdge)
+    dirichletValues.fixBoundaryDOFs(fixAnotherVertex)
+    dirichletValues.fixBoundaryDOFs(fixLeftHandEdge)
 
     assembler = iks.assembler.sparseFlatAssembler(fes, dirichletValues)
     assemblerDense = iks.assembler.denseFlatAssembler(fes, dirichletValues)
@@ -134,17 +140,15 @@ def linElasticTest(easBool):
     )
     # Writing results into vtk file
 
-    fileName = "resultdisplacement"+ ("EAS" if easBool else "")
+    fileName = "resultdisplacement" + ("EAS" if easBool else "")
 
-    writer = vtkWriter(
-        grid, fileName, pointData={("displacement", (0, 1)): fx}
-    )
+    vtkWriter(grid, fileName, pointData={("displacement", (0, 1)): fx})
 
     writer2 = vtkUnstructuredGridWriter(grid)
     writer2.addCellData(stressFuncScalar, name="stress")
     writer2.addCellData(stressFuncVec, name="stress2")
 
-    writer2.write(name= "result"+ ("EAS" if easBool else ""))
+    writer2.write(name="result" + ("EAS" if easBool else ""))
 
     # Querying for a different ResultType should result in a runtime error
     try:

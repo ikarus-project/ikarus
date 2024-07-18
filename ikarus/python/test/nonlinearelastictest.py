@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 import debug_info
+
 debug_info.setDebugFlags()
 
 import ikarus as iks
@@ -47,11 +48,11 @@ if __name__ == "__main__":
 
     indexSet = grid.indexSet
     for v in grid.vertices:
-        neumannVertices[indexSet.index(v)]=loadTopEdgePredicate(v.geometry.center)
+        neumannVertices[indexSet.index(v)] = loadTopEdgePredicate(v.geometry.center)
 
     boundaryPatch = iks.utils.boundaryPatch(grid, neumannVertices)
 
-    nBLoad= iks.finite_elements.neumannBoundaryLoad(boundaryPatch,neumannLoad)
+    nBLoad = iks.finite_elements.neumannBoundaryLoad(boundaryPatch, neumannLoad)
 
     svk = iks.materials.StVenantKirchhoff(E=1000, nu=0.3)
 
@@ -61,7 +62,9 @@ if __name__ == "__main__":
 
     fes = []
     for e in grid.elements:
-        fes.append(iks.finite_elements.makeFE(basisLagrange1,nonLinElastic,vLoad,nBLoad))
+        fes.append(
+            iks.finite_elements.makeFE(basisLagrange1, nonLinElastic, vLoad, nBLoad)
+        )
         fes[-1].bind(e)
 
     dirichletValues = iks.dirichletValues(flatBasis)
@@ -78,8 +81,8 @@ if __name__ == "__main__":
             vec[localView.index(localIndex)] = True
 
     dirichletValues.fixBoundaryDOFs(fixFirstIndex)
-    dirichletValues.fixBoundaryDOFsUsingLocalView(fixAnotherVertex)
-    dirichletValues.fixBoundaryDOFsUsingLocalViewAndIntersection(fixLeftHandEdge)
+    dirichletValues.fixBoundaryDOFs(fixAnotherVertex)
+    dirichletValues.fixBoundaryDOFs(fixLeftHandEdge)
 
     assembler = iks.assembler.sparseFlatAssembler(fes, dirichletValues)
 
@@ -91,13 +94,11 @@ if __name__ == "__main__":
 
     def energy(dRedInput):
         feReq = fes[0].createRequirement()
-        feReq.insertParameter( lambdaLoad)
+        feReq.insertParameter(lambdaLoad)
         dBig = assembler.createFullVector(dRedInput)
-        feReq.insertGlobalSolution( dBig)
+        feReq.insertGlobalSolution(dBig)
         feReq.globalSolution()
-        return assembler.scalar(
-            feReq, iks.ScalarAffordance.mechanicalPotentialEnergy
-        )
+        return assembler.scalar(feReq, iks.ScalarAffordance.mechanicalPotentialEnergy)
 
     def gradient(dRedInput):
         feReq = fes[0].createRequirement()
@@ -105,7 +106,8 @@ if __name__ == "__main__":
         dBig = assembler.createFullVector(dRedInput)
         feReq.insertGlobalSolution(dBig)
         return assembler.vector(
-            feReq, iks.VectorAffordance.forces, iks.DBCOption.Reduced)
+            feReq, iks.VectorAffordance.forces, iks.DBCOption.Reduced
+        )
 
     def hess(dRedInput):
         feReq = fes[0].createRequirement()
@@ -114,7 +116,7 @@ if __name__ == "__main__":
         feReq.insertGlobalSolution(dBig)
         return assembler.matrix(
             feReq, iks.MatrixAffordance.stiffness, iks.DBCOption.Reduced
-        ).todense() # this is slow, but for this test we don't care
+        ).todense()  # this is slow, but for this test we don't care
 
     resultd = minimize(energy, x0=dRed, options={"disp": True}, tol=1e-14)
     resultd2 = minimize(
@@ -137,6 +139,6 @@ if __name__ == "__main__":
 
     feReq = fes[0].createRequirement()
     fullD = assembler.createFullVector(resultd2.x)
-    feReq.insertGlobalSolution( fullD)
+    feReq.insertGlobalSolution(fullD)
 
     res1 = fes[0].calculateAt(feReq, np.array([0.5, 0.5]), "PK2Stress")

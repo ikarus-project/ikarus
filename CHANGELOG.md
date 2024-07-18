@@ -52,6 +52,8 @@ SPDX-License-Identifier: LGPL-3.0-or-later
   ([#304](https://github.com/ikarus-project/ikarus/pull/304))
     - This can be used, for instance, to apply concentrated forces or to add spring stiffness in a particular direction.
     - Furthermore, a helper function to get the global index of a Lagrange node at the given global position is added.
+- Rework Python Interface for `DirichletValues` plus adding support to easily fix boundary DOFs of subspacebasis in C++ and Python ([#305](https://github.com/ikarus-project/ikarus/pull/305))
+- Rework the Python Interface for `DirichletValues` plus add support to easily fix boundary DOFs of `Subspacebasis` in C++ and Python ([#305](https://github.com/ikarus-project/ikarus/pull/305))
 
 ## Release v0.4 (Ganymede)
 

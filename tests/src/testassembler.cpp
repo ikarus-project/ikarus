@@ -89,7 +89,7 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
     } else {
       const auto fixIndices = utils::globalIndexFromGlobalPosition(basis.flat(), pos);
       for (const auto idx : fixIndices)
-        dirichletValues.fixIthDOF(idx);
+        dirichletValues.setSingleDOF(idx, true);
     }
 
     using SparseAssembler = SparseFlatAssembler<decltype(fes), decltype(dirichletValues)>;
