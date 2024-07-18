@@ -10,6 +10,7 @@ import dune.grid
 import dune.functions
 
 import math
+import numpy as np
 
 
 def makeGrid():
@@ -101,10 +102,10 @@ def testDirichletValues():
     assert sum(dirichletValues2.container) == 0
 
     def fixDOFFunction(basis, vec):
-        vec[0] = True
+        vec[:] = np.ones(dirichletValues2.size)
 
     dirichletValues2.fixDOFs(fixDOFFunction)
-    assert dirichletValues2.fixedDOFsize == 1
+    assert dirichletValues2.fixedDOFsize == dirichletValues2.size
 
 
 if __name__ == "__main__":
