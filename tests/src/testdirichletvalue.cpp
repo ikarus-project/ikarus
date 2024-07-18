@@ -24,13 +24,12 @@
 #include <ikarus/utils/eigendunetransformations.hh>
 #include <ikarus/utils/functionhelper.hh>
 #include <ikarus/utils/init.hh>
-#include <ikarus/utils/linearalgebrahelper.hh>
 #include <ikarus/utils/pythonautodiffdefinitions.hh>
 
 using Dune::TestSuite;
 
 static auto dirichletBCTest() {
-  TestSuite t("SimpleAssemblersTest");
+  TestSuite t("dirichletBCTest");
   using Grid = Dune::YaspGrid<2>;
 
   const double Lx                         = 4.0;
@@ -56,7 +55,9 @@ static auto dirichletBCTest() {
 
   for (std::size_t i = 0; i < basisP->flat().size(); ++i)
     t.check(dirichletValues1.isConstrained(i) == dirichletValues2.isConstrained(i))
-        << "Different dirichlet value creations didn't provide the same result. Index: i=" << i;
+        << "Different dirichlet value creations (dirichletValues1 and dirichletValues2) didn't provide the same "
+           "result. Index: i="
+        << i;
 
   auto inhomogeneousDisplacement = []<typename T>(const auto& globalCoord, const T& lambda) {
     Eigen::Vector<T, 2> localInhomogeneous;
@@ -149,7 +150,7 @@ static auto dirichletBCTest() {
     localView.bind(ele);
     const auto& fe = localView.tree().child(0).finiteElement();
     std::vector<Dune::FieldVector<double, 2>> nodalPos;
-    Ikarus::utils::obtainLagrangeNodePositions(localView, nodalPos);
+    Ikarus::utils::obtainLagrangeGlobalNodePositions(localView, nodalPos);
     for (int i = 0; i < fe.size(); i++)
       if ((std::abs(nodalPos[i][0]) < tol) or (std::abs(nodalPos[i][0] - Lx) < tol) or
           (std::abs(nodalPos[i][1]) < tol) or (std::abs(nodalPos[i][1] - Ly) < tol))
@@ -161,7 +162,9 @@ static auto dirichletBCTest() {
 
   for (std::size_t i = 0; i < basisP->flat().size(); ++i)
     t.check(dirichletValues1.isConstrained(i) == dirichletValues4.isConstrained(i))
-        << "Different dirichlet value creations didn't provide the same result. Index: i=" << i;
+        << "Different dirichlet value creations (dirichletValues1 and dirichletValues4) didn't provide the same "
+           "result. Index: i="
+        << i;
 
   return t;
 }

@@ -38,7 +38,7 @@ def linElasticTest(easBool):
     d = np.zeros(len(flatBasis))
     d[0] = 0.0
 
-    lambdaLoad = iks.ValueWrapper(3.0)
+    lambdaLoad = iks.Scalar(3.0)
 
     fes = []
 
@@ -60,7 +60,6 @@ def linElasticTest(easBool):
         neumannVertices[indexSet.index(v)]=loadTopEdgePredicate(v.geometry.center)
 
     boundaryPatch = iks.utils.boundaryPatch(grid, neumannVertices)
-    # print(help(iks.finite_elements))
     nBLoad= iks.finite_elements.neumannBoundaryLoad(boundaryPatch,neumannLoad)
 
     linElastic = iks.finite_elements.linearElastic(youngs_modulus=1000, nu=0.2)
@@ -115,6 +114,7 @@ def linElasticTest(easBool):
     assembler = iks.assembler.sparseFlatAssembler(fes, dirichletValues)
     assemblerDense = iks.assembler.denseFlatAssembler(fes, dirichletValues)
     assembler.bind(req, iks.AffordanceCollection.elastoStatics, iks.DBCOption.Full)
+    assemblerDense.bind(req, iks.AffordanceCollection.elastoStatics, iks.DBCOption.Full)
 
     Msparse = assembler.matrix()
     forces = assembler.vector()
@@ -153,6 +153,45 @@ def linElasticTest(easBool):
         assert True
     else:
         assert False
+
+    assemblerManipulator = iks.assembler.assemblerManipulator(assembler)
+    assemblerManipulatorDense = iks.assembler.assemblerManipulator(assemblerDense)
+
+    if not easBool:
+        def scalarf(assembler,req,affordance,scalar):
+            scalar*=2
+        assemblerManipulator.addScalarCallBack(scalarf)
+        assemblerManipulatorDense.addScalarCallBack(scalarf)
+        req3 = assemblerManipulator.requirement()
+        d3= req3.globalSolution()
+        d3 +=1
+        assert abs(2*assembler.scalar() - assemblerManipulator.scalar())<1e-6, f"assembler.scalar(): {assembler.scalar()}, assemblerManipulator.scalar(): {assemblerManipulator.scalar()}"
+        assert abs(2*assembler.scalar() - assemblerManipulatorDense.scalar())<1e-6, f"assembler.scalar(): {assembler.scalar()}, assemblerManipulator.scalar(): {assemblerManipulatorDense.scalar()}"
+
+    def vectorf(assembler,req,affordance,dbcOption,vector):
+        vector[5]+=2
+    assemblerManipulator.addVectorCallBack(vectorf)
+    assemblerManipulatorDense.addVectorCallBack(vectorf)
+    assert abs(assembler.vector()[5] - (assemblerManipulator.vector()[5]-2))<1e-6, f"assembler.vector()[5]: {assembler.vector()[5]}, assemblerManipulator.vector()[5]: {assemblerManipulator.vector()[5]}"
+    assert abs(assembler.vector()[5] - (assemblerManipulatorDense.vector()[5]-2))<1e-6, f"assembler.vector()[5]: {assembler.vector()[5]}, assemblerManipulator.vector()[5]: {assemblerManipulatorDense.vector()[5]}"
+
+    def matrixf(assembler,req,affordance,dbcOption,matrix):
+        matrix[5,6]=matrix[5,6]+2.0
+    assemblerManipulator.addMatrixCallBack(matrixf)
+    assemblerManipulatorDense.addMatrixCallBack(matrixf)
+    assert abs(assembler.matrix()[5,6] - (assemblerManipulator.matrix()[5,6]-2))<1e-6, f"assembler.matrix()[5,6]: {assembler.matrix()[5,6]}, assemblerManipulator.matrix()[5,6]: {assemblerManipulator.matrix()[5,6]}"
+    assert abs(assembler.matrix()[5,6] - (assemblerManipulatorDense.matrix()[5,6]-2))<1e-6, f"assembler.matrix()[5,6]: {assembler.matrix()[5,6]}, assemblerManipulator.matrix()[5,6]: {assemblerManipulatorDense.matrix()[5,6]}"
+
+    startX=-1
+    incX=2/3
+    startY=-1
+    incY=2/3
+    for j in range(4):
+        for i in range(4):
+            indices= iks.utils.globalIndexFromGlobalPosition(flatBasis,(startX+i*incX,startY+j*incY))
+            assert indices[0]==i+4*j, f"Expected {i+4*j} from {i},{j}, got {indices[0]} at pos {(startX+i*incX,startY+j*incY)}"
+            assert indices[1]==i+4*j+16, f"Expected {i+4*j+16} from {i},{j}, got {indices[1]} at pos {(startX+i*incX,startY+j*incY)}"
+
 
 if __name__ == "__main__":
     linElasticTest(easBool=False)

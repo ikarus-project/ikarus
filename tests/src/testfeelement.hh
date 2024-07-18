@@ -84,7 +84,7 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
   auto& fe             = fes[0];
   auto sparseAssembler = makeSparseFlatAssembler(fes, dirichletValues);
 
-  static_assert(std::is_reference_v<typename decltype(sparseAssembler)::element_type::FEContainerType>);
+  static_assert(std::is_reference_v<typename decltype(sparseAssembler)::element_type::FEContainer>);
 
   typename FEType::Requirement::SolutionVectorType d;
   d.setRandom(basis.flat().size());

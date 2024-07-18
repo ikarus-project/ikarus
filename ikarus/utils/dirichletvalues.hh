@@ -33,6 +33,24 @@ class FieldVector;
 namespace Ikarus {
 
 /**
+ * \brief A helper struct to derive the SizeType of the underlying container.
+ */
+template <class>
+struct DeriveSizeType;
+
+template <Concepts::EigenVector T>
+struct DeriveSizeType<T>
+{
+  using SizeType = Eigen::Index;
+};
+
+template <>
+struct DeriveSizeType<std::vector<bool>>
+{
+  using SizeType = std::vector<bool>::size_type;
+};
+
+/**
  * \brief Class for handling Dirichlet boundary conditions in Ikarus.
  * \ingroup  utils
  * \details The DirichletValues class provides functionalities for fixing degrees of freedom and storing inhomogeneous
@@ -50,6 +68,7 @@ public:
   using FlagsType                     = FC;
   static constexpr int worldDimension = Basis::GridView::dimensionworld;
   using BackendType                   = decltype(Dune::Functions::istlVectorBackend(std::declval<FlagsType&>()));
+  using SizeType                      = typename DeriveSizeType<FlagsType>::SizeType;
   explicit DirichletValues(const B& basis)
       : basis_{basis},
         dirichletFlagsBackend_{dirichletFlags_} {
@@ -80,7 +99,8 @@ public:
         f(dirichletFlagsBackend_, localIndex, localView, intersection);
       };
       Dune::Functions::forEachBoundaryDOF(basis_, lambda);
-    }
+    } else
+      DUNE_THROW(Dune::IOError, "Invalid callback function passed to fixBoundaryDOFs");
   }
 
   /**

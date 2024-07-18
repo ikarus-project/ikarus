@@ -6,7 +6,7 @@ os.environ["DUNE_SAVE_BUILD"] = "terminal"
 
 def setDebugFlags():
     import dune.generator as generator
-    generator.setFlags("-g -Wfatal-errors",noChecks=False)
+    generator.setFlags("-g ",noChecks=False)
 
 def unsetDebugFlags():
     import dune.generator as generator

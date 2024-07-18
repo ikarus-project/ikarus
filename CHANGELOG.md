@@ -47,6 +47,11 @@ SPDX-License-Identifier: LGPL-3.0-or-later
         - The assembler bindings now also accept affordances and `DBCOption`, and they are also renamed to simply `matrix`, `vector`
           and `scalar`.
         - The assemblers also export the binding functions to bind the assemblers.
+- Added a new class `AssemblerManipulator` that wraps an existing assembler
+  and helps to manipulate the assembled quantities.
+  ([#304](https://github.com/ikarus-project/ikarus/pull/304))
+    - This can be used, for instance, to apply concentrated forces or to add spring stiffness in a particular direction.
+    - Furthermore, a helper function to get the global index of a Lagrange node at the given global position is added.
 
 ## Release v0.4 (Ganymede)
 
