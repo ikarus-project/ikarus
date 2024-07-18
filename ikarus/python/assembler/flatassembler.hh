@@ -114,8 +114,6 @@ void registerFlatAssembler(pybind11::handle scope, pybind11::class_<Assembler, o
   cls.def("requirement", [](Assembler& self) { return self.requirement(); });
   cls.def("affordanceCollection", [](Assembler& self) { return self.affordanceCollection(); });
   cls.def("dBCOption", [](Assembler& self) { return self.dBCOption(); });
-  cls.def_property_readonly("size", &Assembler::size);
-  cls.def("__len__", [](Assembler& self) -> int { return self.size(); });
 }
 
 #define MAKE_ASSEMBLER_REGISTERY_FUNCTION(name)                                              \
