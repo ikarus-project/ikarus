@@ -137,7 +137,7 @@ public:
   }
 
   /**
-   * \brief Fixes or unfixes (set boolean value to true or flase) a specific degree of freedom
+   * \brief Fixes or unfixes (set boolean value to true or false) a specific degree of freedom
    *
    * \param i An index indicating the DOF number to be fixed
    * \param flag Boolean indicating whether the DOF should fixed or not
