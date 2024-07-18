@@ -100,6 +100,12 @@ def testDirichletValues():
     assert dirichletValues2.fixedDOFsize == 0
     assert sum(dirichletValues2.container) == 0
 
+    def fixDOFFunction(basis, vec):
+        vec[0] = True
+
+    dirichletValues2.fixDOFs(fixDOFFunction)
+    assert dirichletValues2.fixedDOFsize == 1
+
 
 if __name__ == "__main__":
     testDirichletValues()
