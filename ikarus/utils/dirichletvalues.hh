@@ -106,6 +106,8 @@ public:
         f(dirichletFlagsBackend_, localIndex, localView, intersection);
       };
       Dune::Functions::forEachBoundaryDOF(subspaceBasis(basis_, std::forward<TreePath>(treePath)), lambda);
+    } else {
+      static_assert(Dune::AlwaysFalse<F>(), "fixBoundaryDOFs: A function with this signature is not supported");
     }
   }
 
@@ -123,7 +125,7 @@ public:
   }
 
   /**
-   * \brief Fixes (set boolean value to true) a specific degree of freedom
+   * \brief Fixes and unfixes (set boolean value to true or false) a specific degree of freedom
    *
    * \param i An index indicating the DOF number to be fixed
    * \param flag Boolean indicating whether the DOF should fixed or not
@@ -135,7 +137,7 @@ public:
   }
 
   /**
-   * \brief Fixes (set boolean value to true) a specific degree of freedom
+   * \brief Fixes or unfixes (set boolean value to true or flase) a specific degree of freedom
    *
    * \param i An index indicating the DOF number to be fixed
    * \param flag Boolean indicating whether the DOF should fixed or not
