@@ -38,7 +38,7 @@ void registerFERequirement(pybind11::handle scope, pybind11::class_<FE, options.
     req.def(
         "globalSolution", [](FERequirements& self) { return self.globalSolution(); },
         pybind11::return_value_policy::reference_internal);
-    lv.def(
+    req.def(
         "insertParameter",
         [](FERequirements& self, ScalarWrapper<double>& parVal) { self.insertParameter(parVal.value()); },
         pybind11::keep_alive<1, 2>(), "parameterValue"_a.noconvert());
