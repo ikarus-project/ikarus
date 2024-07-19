@@ -217,40 +217,40 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
         mat.diagonal()[globalIndices[1]] += springStiffness;
       };
 
-      scalarFlatAssemblerAM.bind(doubleEnergy);
+      scalarFlatAssemblerAM->bind(doubleEnergy);
 
-      vectorFlatAssemblerAM.bind(pointLoad);
+      vectorFlatAssemblerAM->bind(pointLoad);
 
-      sparseFlatAssemblerAM.bind(doubleEnergy);
-      sparseFlatAssemblerAM.bind(pointLoad);
-      sparseFlatAssemblerAM.bind(addSpringStiffnessSparse);
+      sparseFlatAssemblerAM->bind(doubleEnergy);
+      sparseFlatAssemblerAM->bind(pointLoad);
+      sparseFlatAssemblerAM->bind(addSpringStiffnessSparse);
 
-      denseFlatAssemblerAM.bind(doubleEnergy);
-      denseFlatAssemblerAM.bind(doubleEnergy); // doubled twice
-      denseFlatAssemblerAM.bind(pointLoad);
-      denseFlatAssemblerAM.bind(addSpringStiffnessDense);
+      denseFlatAssemblerAM->bind(doubleEnergy);
+      denseFlatAssemblerAM->bind(doubleEnergy); // doubled twice
+      denseFlatAssemblerAM->bind(pointLoad);
+      denseFlatAssemblerAM->bind(addSpringStiffnessDense);
 
-      const auto& mKRawDense = denseFlatAssemblerAM.matrix(req, MatrixAffordance::stiffness, DBCOption::Raw);
-      const auto& mKRaw      = sparseFlatAssemblerAM.matrix(req, MatrixAffordance::stiffness, DBCOption::Raw);
-      const auto& mRRawDense = denseFlatAssemblerAM.vector(req, VectorAffordance::forces, DBCOption::Raw);
-      const auto& mRRaw      = sparseFlatAssemblerAM.vector(req, VectorAffordance::forces, DBCOption::Raw);
-      const auto& mRVecRaw   = vectorFlatAssemblerAM.vector(req, VectorAffordance::forces, DBCOption::Raw);
+      const auto& mKRawDense = denseFlatAssemblerAM->matrix(req, MatrixAffordance::stiffness, DBCOption::Raw);
+      const auto& mKRaw      = sparseFlatAssemblerAM->matrix(req, MatrixAffordance::stiffness, DBCOption::Raw);
+      const auto& mRRawDense = denseFlatAssemblerAM->vector(req, VectorAffordance::forces, DBCOption::Raw);
+      const auto& mRRaw      = sparseFlatAssemblerAM->vector(req, VectorAffordance::forces, DBCOption::Raw);
+      const auto& mRVecRaw   = vectorFlatAssemblerAM->vector(req, VectorAffordance::forces, DBCOption::Raw);
       checkAssembledQuantities(t, mKRaw, mKRawDense, totalDOFs);
       checkAssembledQuantities(t, mRRaw, mRRawDense, totalDOFs);
       checkAssembledQuantities(t, mRVecRaw, mRRawDense, totalDOFs);
 
-      const auto& mKDense = denseFlatAssemblerAM.matrix(req, MatrixAffordance::stiffness, DBCOption::Full);
-      const auto& mK      = sparseFlatAssemblerAM.matrix(req, MatrixAffordance::stiffness, DBCOption::Full);
-      const auto& mRDense = denseFlatAssemblerAM.vector(req, VectorAffordance::forces, DBCOption::Full);
-      const auto& mR      = sparseFlatAssemblerAM.vector(req, VectorAffordance::forces, DBCOption::Full);
-      const auto& mRVec   = vectorFlatAssemblerAM.vector(req, VectorAffordance::forces, DBCOption::Full);
+      const auto& mKDense = denseFlatAssemblerAM->matrix(req, MatrixAffordance::stiffness, DBCOption::Full);
+      const auto& mK      = sparseFlatAssemblerAM->matrix(req, MatrixAffordance::stiffness, DBCOption::Full);
+      const auto& mRDense = denseFlatAssemblerAM->vector(req, VectorAffordance::forces, DBCOption::Full);
+      const auto& mR      = sparseFlatAssemblerAM->vector(req, VectorAffordance::forces, DBCOption::Full);
+      const auto& mRVec   = vectorFlatAssemblerAM->vector(req, VectorAffordance::forces, DBCOption::Full);
       checkAssembledQuantities(t, mK, mKDense, totalDOFs);
       checkAssembledQuantities(t, mR, mRDense, totalDOFs);
       checkAssembledQuantities(t, mRVec, mRDense, totalDOFs);
 
-      const double mEnergyDense = denseFlatAssemblerAM.scalar(req, ScalarAffordance::mechanicalPotentialEnergy);
-      const double mEnergy      = sparseFlatAssemblerAM.scalar(req, ScalarAffordance::mechanicalPotentialEnergy);
-      const double mEnergySca   = scalarFlatAssemblerAM.scalar(req, ScalarAffordance::mechanicalPotentialEnergy);
+      const double mEnergyDense = denseFlatAssemblerAM->scalar(req, ScalarAffordance::mechanicalPotentialEnergy);
+      const double mEnergy      = sparseFlatAssemblerAM->scalar(req, ScalarAffordance::mechanicalPotentialEnergy);
+      const double mEnergySca   = scalarFlatAssemblerAM->scalar(req, ScalarAffordance::mechanicalPotentialEnergy);
       checkScalars(t, mEnergy * 2, mEnergyDense, " Incorrect energies for manipulated sparse and dense assemblers");
       checkScalars(t, mEnergySca * 2, mEnergyDense, " Incorrect energies for manipulated scalar and dense assemblers");
       checkScalars(t, mEnergy, 2.0 * energy, " Incorrect energy for sparse assembler after manipulation");
