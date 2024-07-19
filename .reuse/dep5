@@ -9,6 +9,19 @@ Source: https://github.com/ikarus-project/ikarus
 # Copyright: $YEAR $NAME <$CONTACT>
 # License: ...
 
+Files: sandbox/src/*
+Copyright: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+License: CC0-1.0
+
+
+Files: ikarus/python/test/*
+Copyright: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+License: CC0-1.0
+
+Files: tests/src/testfiles/*
+Copyright: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+License: CC0-1.0
+
 Files: tests/src/testfiles/*
 Copyright: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 License: CC0-1.0
