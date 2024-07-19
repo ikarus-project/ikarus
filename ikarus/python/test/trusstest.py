@@ -19,7 +19,7 @@ import dune.functions
 def trussTest(worldDim):
     assert worldDim == 2 or worldDim == 3
     gridDim = 1
-    filename = r'../pytests/auxiliaryfiles/truss' + str(worldDim) + 'd.msh'
+    filename = f"auxiliaryfiles/truss{worldDim}d.msh"
     reader = (dune.grid.reader.gmsh, filename)
 
     grid = dune.foamgrid.foamGrid(reader, gridDim, worldDim)
@@ -31,7 +31,7 @@ def trussTest(worldDim):
     flatBasis = basisLagrange1.flat()
     d = np.zeros(len(flatBasis))
 
-    lambdaLoad = iks.ValueWrapper(0.0)
+    lambdaLoad = iks.Scalar(0.0)
 
     fes = []
 
