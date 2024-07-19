@@ -14,6 +14,17 @@ dune_python_add_test(
 
 dune_python_add_test(
   NAME
+  pytrussTest
+  SCRIPT
+  trusstest.py
+  WORKING_DIRECTORY
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  LABELS
+  python
+)
+
+dune_python_add_test(
+  NAME
   pynonLinearElasticTest
   SCRIPT
   nonlinearelastictest.py

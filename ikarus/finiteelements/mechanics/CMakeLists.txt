@@ -13,5 +13,6 @@ install(
         membranestrains.hh
         loads.hh
         easvariants.hh
+        truss.hh
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/finiteelements/mechanics
 )
