@@ -81,7 +81,7 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
     Dune::FieldVector<double, 2> pos{2.0, 1.0};
     int centerNode = 1; // number of nodes at the center ( = pos)
     if (Ikarus::Concepts::LagrangeNodeOfOrder<ChildType, 1> and ref == 0) {
-      t.checkThrow<Dune::GridError>(
+      t.checkThrow<Dune::InvalidFutureException>(
           [&]() { auto fixIndices = utils::globalIndexFromGlobalPosition(basis.flat(), pos); },
           "globalIndexFromGlobalPosition should have failed for order = 1 and ref = 0 as no node exists at "
           "the center.");

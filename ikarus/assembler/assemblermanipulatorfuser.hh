@@ -73,6 +73,7 @@ public:
   using typename WrappedAssembler::FEContainer;
   using typename WrappedAssembler::FERequirement;
   using typename WrappedAssembler::ScalarType;
+  using typename WrappedAssembler::SizeType;
 
   // functions from FlatAssemblerBase
   using WrappedAssembler::bind;
@@ -161,6 +162,7 @@ public:
   using typename WrappedAssembler::FEContainer;
   using typename WrappedAssembler::FERequirement;
   using typename WrappedAssembler::ScalarType;
+  using typename WrappedAssembler::SizeType;
   using typename WrappedAssembler::VectorType;
 
   // functions from FlatAssemblerBase
@@ -269,6 +271,7 @@ public:
   using typename WrappedAssembler::FERequirement;
   using typename WrappedAssembler::MatrixType;
   using typename WrappedAssembler::ScalarType;
+  using typename WrappedAssembler::SizeType;
   using typename WrappedAssembler::VectorType;
 
   // functions from FlatAssemblerBase
