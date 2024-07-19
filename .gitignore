@@ -25,4 +25,4 @@ python/pyikarus.egg-info/
 dist/
 _skbuild/
 MANIFEST.in
-ikarus/python/test/*.vtu
+*.vtu

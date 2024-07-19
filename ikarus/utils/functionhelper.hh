@@ -72,7 +72,7 @@ auto globalIndexFromGlobalPosition(const Basis& basis, const Dune::FieldVector<d
   };
   forEachLagrangeNodePosition(localView, fT);
   if (not globalIndices.has_value())
-    DUNE_THROW(Dune::GridError, "No Lagrange node found at the given position in the grid.");
+    DUNE_THROW(Dune::InvalidStateException, "No Lagrange node found at the given position in the grid.");
   return globalIndices.value();
 }
 

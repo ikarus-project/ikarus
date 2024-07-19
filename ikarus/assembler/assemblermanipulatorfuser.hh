@@ -73,6 +73,7 @@ public:
   using typename WrappedAssembler::FEContainer;
   using typename WrappedAssembler::FERequirement;
   using typename WrappedAssembler::ScalarType;
+  using typename WrappedAssembler::SizeType;
 
   // functions from FlatAssemblerBase
   using WrappedAssembler::bind;
@@ -83,9 +84,13 @@ public:
   using WrappedAssembler::createFullVector;
 
   using WrappedAssembler::affordanceCollection;
+  using WrappedAssembler::constraintsBelow;
   using WrappedAssembler::dBCOption;
+  using WrappedAssembler::estimateOfConnectivity;
+  using WrappedAssembler::isConstrained;
   using WrappedAssembler::reducedSize;
   using WrappedAssembler::requirement;
+  using WrappedAssembler::size;
 
   // functions from implementations
   using ScalarAssemblerImpl::bind;
@@ -157,6 +162,7 @@ public:
   using typename WrappedAssembler::FEContainer;
   using typename WrappedAssembler::FERequirement;
   using typename WrappedAssembler::ScalarType;
+  using typename WrappedAssembler::SizeType;
   using typename WrappedAssembler::VectorType;
 
   // functions from FlatAssemblerBase
@@ -168,9 +174,13 @@ public:
   using WrappedAssembler::createFullVector;
 
   using WrappedAssembler::affordanceCollection;
+  using WrappedAssembler::constraintsBelow;
   using WrappedAssembler::dBCOption;
+  using WrappedAssembler::estimateOfConnectivity;
+  using WrappedAssembler::isConstrained;
   using WrappedAssembler::reducedSize;
   using WrappedAssembler::requirement;
+  using WrappedAssembler::size;
 
   // functions from implementations
   using ScalarAssemblerImpl::bind;
@@ -261,6 +271,7 @@ public:
   using typename WrappedAssembler::FERequirement;
   using typename WrappedAssembler::MatrixType;
   using typename WrappedAssembler::ScalarType;
+  using typename WrappedAssembler::SizeType;
   using typename WrappedAssembler::VectorType;
 
   // functions from FlatAssemblerBase
@@ -272,9 +283,13 @@ public:
   using WrappedAssembler::createFullVector;
 
   using WrappedAssembler::affordanceCollection;
+  using WrappedAssembler::constraintsBelow;
   using WrappedAssembler::dBCOption;
+  using WrappedAssembler::estimateOfConnectivity;
+  using WrappedAssembler::isConstrained;
   using WrappedAssembler::reducedSize;
   using WrappedAssembler::requirement;
+  using WrappedAssembler::size;
 
   // functions from implementations
   using MatrixAssemblerImpl::bind;
@@ -342,16 +357,17 @@ auto makeAssemblerManipulator(A&& a) {
   constexpr bool vec  = Concepts::VectorFlatAssembler<std::remove_cvref_t<A>>;
   constexpr bool mat  = Concepts::MatrixFlatAssembler<std::remove_cvref_t<A>>;
   if constexpr (scal && vec && mat)
-    return AssemblerManipulator<std::remove_cvref_t<A>,
-                                Impl::AssemblerInterfaceHelper<ScalarAssembler, ScalarManipulator>,
-                                Impl::AssemblerInterfaceHelper<VectorAssembler, VectorManipulator>,
-                                Impl::AssemblerInterfaceHelper<MatrixAssembler, MatrixManipulator>>(std::forward<A>(a));
+    return std::make_shared<
+        AssemblerManipulator<std::remove_cvref_t<A>, Impl::AssemblerInterfaceHelper<ScalarAssembler, ScalarManipulator>,
+                             Impl::AssemblerInterfaceHelper<VectorAssembler, VectorManipulator>,
+                             Impl::AssemblerInterfaceHelper<MatrixAssembler, MatrixManipulator>>>(std::forward<A>(a));
   else if constexpr (scal && vec)
-    return AssemblerManipulator<std::remove_cvref_t<A>,
-                                Impl::AssemblerInterfaceHelper<ScalarAssembler, ScalarManipulator>,
-                                Impl::AssemblerInterfaceHelper<VectorAssembler, VectorManipulator>>(std::forward<A>(a));
+    return std::make_shared<
+        AssemblerManipulator<std::remove_cvref_t<A>, Impl::AssemblerInterfaceHelper<ScalarAssembler, ScalarManipulator>,
+                             Impl::AssemblerInterfaceHelper<VectorAssembler, VectorManipulator>>>(std::forward<A>(a));
   else if constexpr (scal)
-    return AssemblerManipulator<std::remove_cvref_t<A>,
-                                Impl::AssemblerInterfaceHelper<ScalarAssembler, ScalarManipulator>>(std::forward<A>(a));
+    return std::make_shared<AssemblerManipulator<std::remove_cvref_t<A>,
+                                                 Impl::AssemblerInterfaceHelper<ScalarAssembler, ScalarManipulator>>>(
+        std::forward<A>(a));
 }
 } // namespace Ikarus

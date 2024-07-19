@@ -45,6 +45,8 @@ void registerFlatAssembler(pybind11::handle scope, pybind11::class_<Assembler, o
   using DirichletValuesType      = typename Assembler::DirichletValuesType;
   using AffordanceCollectionType = typename Assembler::AffordanceCollectionType;
   using FERequirementType        = typename Assembler::FERequirement;
+  using SizeType                 = typename Assembler::SizeType;
+
   cls.def(pybind11::init([](const pybind11::list& fes, const DirichletValuesType& dirichletValues) {
             /*here a copy of the whole vector of fes takes place! There is no way to prevent this if we want that
              * the user can pass native python lists here, see
@@ -114,6 +116,10 @@ void registerFlatAssembler(pybind11::handle scope, pybind11::class_<Assembler, o
   cls.def("requirement", [](Assembler& self) { return self.requirement(); });
   cls.def("affordanceCollection", [](Assembler& self) { return self.affordanceCollection(); });
   cls.def("dBCOption", [](Assembler& self) { return self.dBCOption(); });
+  cls.def_property_readonly("size", [](Assembler& self) { return self.size(); });
+  cls.def("__len__", [](Assembler& self) { return self.size(); });
+  cls.def("constraintsBelow", [](Assembler& self, SizeType i) { return self.constraintsBelow(i); });
+  cls.def("isConstrained", [](Assembler& self, SizeType i) { return self.isConstrained(i); });
 }
 
 #define MAKE_ASSEMBLER_REGISTERY_FUNCTION(name)                                              \

@@ -104,7 +104,7 @@ struct NonLinearOperatorFactory
     } else {
       if (not as.bound())
         ex();
-      return op(std::forward<Assembler>(as), as.requirement(), as.affordanceCollection(), as->dBCOption());
+      return op(std::forward<Assembler>(as), as.requirement(), as.affordanceCollection(), as.dBCOption());
     }
   }
 

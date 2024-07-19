@@ -59,7 +59,7 @@ def assemblerManipulator(assembler):
 
     @return: The created assembler manipulator.
     """
-    element_type = f"decltype(Ikarus::makeAssemblerManipulator(std::declval<{assembler.cppTypeName}>()))"
+    element_type = f"decltype(Ikarus::makeAssemblerManipulator(std::declval<{assembler.cppTypeName}>()))::element_type"
     generator = MySimpleGenerator("AssemblerManipulator", "Ikarus::Python")
 
     includes = []
