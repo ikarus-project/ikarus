@@ -135,7 +135,7 @@ def linElasticTest(easBool):
         print("EAS element do not support any scalar calculations, i.e. they are not derivable from a potential")
         nonLinOp = iks.utils.makeNonLinearOperator(assembler, derivativeIndices=[1,2])
 
-
+    nonLinOp.update(0)
     Ksparse = nonLinOp.derivative()
     forces = nonLinOp.value()
     with np.printoptions(precision=3, suppress=True):
