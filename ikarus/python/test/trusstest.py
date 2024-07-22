@@ -10,6 +10,7 @@ import ikarus as iks
 from ikarus import finite_elements, assembler
 import numpy as np
 import scipy as sp
+import os
 
 import dune.foamgrid
 import dune.grid
@@ -19,16 +20,17 @@ import dune.functions
 def trussTest(worldDim):
     assert worldDim == 2 or worldDim == 3
     gridDim = 1
-    filename = f"auxiliaryfiles/truss{worldDim}d.msh"
+    dir = os.path.dirname(__file__)
+    filename = os.path.join(dir, f"auxiliaryfiles/truss{worldDim}d.msh")
     reader = (dune.grid.reader.gmsh, filename)
 
     grid = dune.foamgrid.foamGrid(reader, gridDim, worldDim)
 
-    basisLagrange1 = iks.basis(
+    basis = iks.basis(
         grid, dune.functions.Power(dune.functions.Lagrange(order=1), worldDim)
     )
 
-    flatBasis = basisLagrange1.flat()
+    flatBasis = basis.flat()
     d = np.zeros(len(flatBasis))
 
     lambdaLoad = iks.Scalar(0.0)
@@ -47,7 +49,7 @@ def trussTest(worldDim):
     trusses = finite_elements.truss(youngs_modulus=E, cross_section=A)
 
     for e in grid.elements:
-        fes.append(finite_elements.makeFE(basisLagrange1, trusses))
+        fes.append(finite_elements.makeFE(basis, trusses))
         fes[-1].bind(e)
 
     req = fes[0].createRequirement()
@@ -108,14 +110,14 @@ def trussTest(worldDim):
     req.insertGlobalSolution(x)
 
     # Test calculateAt Function
-    N0 = fes[0].calculateAt(req, np.array([0.5]), "axialForce")[0]
-    N1 = fes[1].calculateAt(req, np.array([0.5]), "axialForce")[0]
+    N0 = fes[0].calculateAt(req, np.array([0.5]), "cauchyAxialForce")[0]
+    N1 = fes[1].calculateAt(req, np.array([0.5]), "cauchyAxialForce")[0]
     N = np.array([N0, N1])
 
     for i in range(2):
         assert (
             abs(expectedAxialForce[i] - N[i]) < tol
-        ), f"The expected axial force for element {i} is {expectedAxialForce[i]} but is {N[i]}"
+        ), f"The expected Cauchy axial force for element {i} is {expectedAxialForce[i]} but is {N[i]}"
 
     # Querying for a different ResultType should result in a runtime error
     try:

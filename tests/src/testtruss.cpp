@@ -87,8 +87,6 @@ static auto vonMisesTrussTest() {
   req.insertGlobalSolution(d).insertParameter(lambda);
   denseFlatAssembler->bind(req, AffordanceCollections::elastoStatics, DBCOption::Full);
 
-  Dune::FieldVector<double, 2> pos{L, h};
-  // const auto globalIndices = utils::globalIndexFromGlobalPosition(basis.flat(), pos);
   auto pointLoad = [&](const auto&, const auto&, auto, auto, Eigen::VectorXd& vec) -> void { vec[3] -= -lambda; };
   denseFlatAssembler->bind(pointLoad);
 
@@ -173,12 +171,15 @@ static auto vonMisesTrussTest() {
     checkScalars(t, uVec[i], 0.0, " Incorrect horizontal displacement", tol);
   }
 
-  double expectedAxialForce = -2.785092479363964262;
+  double expectedCauchyAxialForce = -2.785092479363964262;
+  double expectedPK2AxialForce    = -2.787684078189828;
 
   // due to the symmetry of the problem, same axial forces are expected in both elements
   for (const auto& fe : fes) {
-    const auto N = fe.calculateAt<ResultTypes::axialForce>(req, {0.5}).asVec()[0];
-    checkScalars(t, N, expectedAxialForce, " Incorrect Axial force", tol);
+    const auto N    = fe.calculateAt<ResultTypes::cauchyAxialForce>(req, {0.5}).asVec()[0];
+    const auto NPK2 = fe.calculateAt<ResultTypes::PK2AxialForce>(req, {0.5}).asVec()[0];
+    checkScalars(t, N, expectedCauchyAxialForce, " Incorrect Cauchy Axial force", tol);
+    checkScalars(t, NPK2, expectedPK2AxialForce, " Incorrect PK2 Axial force", tol);
   }
 
   return t;
@@ -243,7 +244,7 @@ static auto truss3dTest() {
 
   Eigen::Vector2d axialForces = Eigen::Vector2d::Zero();
   for (int i = 0; const auto& fe : fes) {
-    axialForces[i] = fe.calculateAt<ResultTypes::axialForce>(req, {0.5}).asVec()[0];
+    axialForces[i] = fe.calculateAt<ResultTypes::linearAxialForce>(req, {0.5}).asVec()[0];
     ++i;
   }
 
@@ -253,7 +254,7 @@ static auto truss3dTest() {
   expectedAxialForces.setZero(2);
   expectedDisplacements << 0, 0, 0, 0, -0.0008521190304919996, 0.0002491175412207767, 0, 0, 0;
   expectedEigenValues << 1, 1, 1, 1, 1, 1, 1, 1081.004736091822, 734025.9250446925;
-  expectedAxialForces << 13.785353834067782586, -14.910220788494811472;
+  expectedAxialForces << 13.78521130992862, -14.91038752769381;
 
   t.check(isApproxSame(expectedEigenValues, eigenValuesComputed, tol))
       << std::setprecision(16) << "Incorrect eigenvalues of K - Expected: " << expectedEigenValues.transpose()

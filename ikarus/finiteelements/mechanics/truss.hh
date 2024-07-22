@@ -73,6 +73,7 @@ public:
   {
     double L;                  ///< Length of the reference geometry
     ST l;                      ///< Length of the deformed geometry
+    ST Elin;                   ///< Linear strain
     ST Egl;                    ///< Green-Lagrange strain
     Eigen::VectorX<ST> dEdu;   ///< first derivative of Egl w.r.t displacements
     Eigen::MatrixX<ST> ddEddu; ///< second derivative of Egl w.r.t displacements
@@ -135,6 +136,9 @@ public:
     kin.L = sqrt(Lsquared);
     kin.l = sqrt(lsquared);
 
+    // Linear strain
+    kin.Elin = (kin.l - kin.L) / kin.L;
+
     // Green-Lagrange strains
     kin.Egl = 0.5 * (lsquared - Lsquared) / Lsquared;
 
@@ -152,12 +156,15 @@ public:
     return kin;
   }
 
-  using SupportedResultTypes = std::tuple<decltype(makeRT<ResultTypes::axialForce>())>;
+  using SupportedResultTypes =
+      std::tuple<decltype(makeRT<ResultTypes::cauchyAxialForce>()), decltype(makeRT<ResultTypes::PK2AxialForce>()),
+                 decltype(makeRT<ResultTypes::linearAxialForce>())>;
 
 private:
   template <template <typename, int, int> class RT>
   static consteval bool canProvideResultType() {
-    return isSameResultType<RT, ResultTypes::axialForce>;
+    return isSameResultType<RT, ResultTypes::cauchyAxialForce> or isSameResultType<RT, ResultTypes::PK2AxialForce> or
+           isSameResultType<RT, ResultTypes::linearAxialForce>;
   }
 
 public:
@@ -175,10 +182,18 @@ public:
   requires(canProvideResultType<RT>())
   auto calculateAtImpl(const Requirement& req, [[maybe_unused]] const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<0>) const {
-    using RTWrapper = ResultWrapper<RT<double, myDim, myDim>, ResultShape::Vector>;
-    if constexpr (isSameResultType<RT, ResultTypes::axialForce>) {
-      const auto [L, l, Egl, dEdu, ddEddu] = computeStrain(req);
+    using RTWrapper                            = ResultWrapper<RT<double, myDim, myDim>, ResultShape::Vector>;
+    const auto [L, l, Elin, Egl, dEdu, ddEddu] = computeStrain(req);
+    if constexpr (isSameResultType<RT, ResultTypes::cauchyAxialForce>) {
       auto N = Eigen::Vector<double, 1>{E * A * Egl * l / L}; // Axial force in deformed configuration
+      return RTWrapper{N};
+    }
+    if constexpr (isSameResultType<RT, ResultTypes::PK2AxialForce>) {
+      auto N = Eigen::Vector<double, 1>{E * A * Egl}; // Axial force in undeformed configuration
+      return RTWrapper{N};
+    }
+    if constexpr (isSameResultType<RT, ResultTypes::linearAxialForce>) {
+      auto N = Eigen::Vector<double, 1>{E * A * Elin};
       return RTWrapper{N};
     }
   }
@@ -196,7 +211,7 @@ protected:
   void calculateMatrixImpl(
       const Requirement& par, const MatrixAffordance& affordance, typename Traits::template MatrixType<> K,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
-    const auto [L, l, Egl, dEdu, ddEddu] = computeStrain(par, dx);
+    const auto [L, l, Elin, Egl, dEdu, ddEddu] = computeStrain(par, dx);
     K += E * A * L * (dEdu * dEdu.transpose() + ddEddu * Egl);
   }
 
@@ -204,7 +219,7 @@ protected:
   auto calculateScalarImpl(const Requirement& par, ScalarAffordance affordance,
                            const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx =
                                std::nullopt) const -> ScalarType {
-    const auto [L, l, Egl, dEdu, ddEddu] = computeStrain(par, dx);
+    const auto [L, l, Elin, Egl, dEdu, ddEddu] = computeStrain(par, dx);
     return 0.5 * E * A * L * Egl * Egl;
   }
 
@@ -212,7 +227,7 @@ protected:
   void calculateVectorImpl(
       const Requirement& par, VectorAffordance affordance, typename Traits::template VectorType<ScalarType> force,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
-    const auto [L, l, Egl, dEdu, ddEddu] = computeStrain(par, dx);
+    const auto [L, l, Elin, Egl, dEdu, ddEddu] = computeStrain(par, dx);
     force += E * A * Egl * L * dEdu;
   }
 };

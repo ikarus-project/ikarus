@@ -34,7 +34,7 @@ requires std::is_integral_v<ScalarType>
 void checkScalars(TestSuiteType& t, const ScalarType val, const ScalarType expectedVal,
                   const std::string& messageIfFailed = "") {
   if constexpr (std::is_integral_v<ScalarType>)
-    t.check(val == expectedVal) << std::setprecision(16) << "Incorrect Scalar: Expected:\t" << expectedVal
+    t.check(val == expectedVal) << std::setprecision(16) << "Incorrect Scalar. Expected:\t" << expectedVal
                                 << " Actual:\t" << val << messageIfFailed;
 }
 
@@ -44,7 +44,7 @@ void checkScalars(TestSuiteType& t, const ScalarType val, const ScalarType expec
                   const std::string& messageIfFailed = "",
                   double tol                         = Dune::FloatCmp::DefaultEpsilon<ScalarType>::value()) {
   t.check(Dune::FloatCmp::eq(val, expectedVal, tol))
-      << std::setprecision(16) << "Incorrect Scalar: Expected:\t" << expectedVal << " Actual:\t" << val
+      << std::setprecision(16) << "Incorrect Scalar. Expected:\t" << expectedVal << " Actual:\t" << val
       << ". The used tolerance was " << tol << messageIfFailed;
 }
 
