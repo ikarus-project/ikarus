@@ -143,7 +143,9 @@ void registerNonLinearOperator(pybind11::handle scope, pybind11::class_<NLO, opt
         if (index >= numberOfFunctions)
           throw py::index_error();
         Dune::Hybrid::switchCases(Dune::Hybrid::integralRange(Dune::index_constant<numberOfFunctions>()), index,
-                                  [&](auto i) { self.template update<i>(); });
+                                  [&](auto i) {
+                                    std::cout<<"update "<<i<<" index: "<<index<<std::endl;
+                                    self.template update<i>(); });
       },
       py::arg("index"), "Update the function value of the given index");
 
