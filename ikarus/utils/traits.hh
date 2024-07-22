@@ -115,6 +115,27 @@ struct hasType<T, std::tuple<T, Ts...>> : std::true_type
 };
 #endif
 
+/**
+ * \brief Function to return the n-th object of a variadic template.
+ *
+ * \ingroup traits
+ *
+ */
+struct NthArgument
+{
+  /** \brief Function to return the n-th object of a variadic template.
+   *
+   * \tparam N Index of the object to return.
+   * \tparam Args Types of the variadic template.
+   * \param args Variadic template.
+   * \return N-th object of the variadic template.
+   */
+  template <int N, typename... Args>
+  static std::tuple_element_t<N, std::tuple<Args&&...>> arg(Args&&... args) {
+    return std::get<N>(std::forward_as_tuple(std::forward<Args>(args)...));
+  }
+};
+
 #ifndef DOXYGEN
 template <template <typename...> class, typename...>
 struct isSpecialization : std::false_type

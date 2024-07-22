@@ -171,8 +171,8 @@ public:
   using Settings  = TRSettings;                               ///< Type of the settings for the TrustRegion solver
   using ValueType = typename NLO::template ParameterValue<0>; ///< Type of the parameter vector of
                                                               ///< the nonlinear operator
-  using CorrectionType = typename NLO::DerivativeType;        ///< Type of the correction of x += deltaX.
-  using UpdateFunction = UF;                                  ///< Type of the update function.
+  using CorrectionType = typename NLO::template FunctionReturnType<1>; ///< Type of the correction of x += deltaX.
+  using UpdateFunction = UF;                                           ///< Type of the update function.
 
   using NonLinearOperator = NLO; ///< Type of the non-linear operator
 

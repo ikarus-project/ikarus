@@ -20,6 +20,7 @@ import warnings
 from ._ikarus import *
 from .dirichlet_values import dirichletValues
 from .basis import basis
+from .solvers import *
 
 from warnings import warn
 def ValueWrapper(*args, **kwargs):

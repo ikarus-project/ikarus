@@ -3,6 +3,8 @@
 
 include(CMakeFindDependencyMacro)
 
+include(AddDuneLocalFeFlags)
+
 find_package(spdlog)
 include(AddSpdlogFlags)
 

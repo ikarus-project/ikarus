@@ -8,7 +8,6 @@ def decoratePre(pre):
     def wrappedPre(*args, **kwargs):
         preamble = pre(*args, **kwargs)
         newPreamble = ""
-        newPreamble += "#define DUNE_LOCALFEFUNCTIONS_USE_EIGEN 1\n"
         newPreamble += "#define EIGEN_DEFAULT_TO_ROW_MAJOR 1\n"  # needed to have conforming Matrix storage between eigen and numpy otherwise references are not working
         newPreamble += preamble
         return newPreamble

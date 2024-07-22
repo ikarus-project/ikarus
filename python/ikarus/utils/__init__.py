@@ -3,6 +3,7 @@
 
 from dune.common.hashit import hashIt
 from ikarus.generator import MySimpleGenerator
+from .nonlinop import *
 
 def boundaryPatch(gridView, booleanVector):
     """
@@ -53,3 +54,5 @@ def globalIndexFromGlobalPosition(basis, pos):
     pos = FieldVector(pos)
 
     return run("callGlobalIndexFromGlobalPosition", StringIO(runCode), basis, pos)
+
+
