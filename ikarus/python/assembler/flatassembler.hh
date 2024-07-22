@@ -52,7 +52,7 @@ void registerFlatAssembler(pybind11::handle scope, pybind11::class_<Assembler, o
              * the user can pass native python lists here, see
              * https://pybind11.readthedocs.io/en/stable/advanced/cast/stl.html */
             FEContainer fesV = fes.template cast<FEContainer>();
-            return new Assembler(std::move(fesV), dirichletValues);
+            return std::make_shared< Assembler>(std::move(fesV), dirichletValues);
           }),
           pybind11::keep_alive<1, 3>());
 
