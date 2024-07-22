@@ -77,13 +77,13 @@ def NonLinearOperator(functions, parameters):
 
 def __op(nonLinOpFactory):
     # This would be nice to have, but it is not possible to generate the code for the subOperator function
-    def __opFunc(nonLinOpFactory,requirement,affordances,enforcingBCOption,derivativeIndices=None):
+    def __opFunc(nonLinOpFactory,requirement=None,affordances=None,enforcingBCOption=None,derivativeIndices=None):
         if affordances is None:
             affordanceCppType= "Ikarus::AffordanceCollection<>"
         else:
             affordanceCppType = cppType(affordances)[0]
         if derivativeIndices is None:
-            derivativeIndices =[]
+            derivativeIndices =(0,1,2)
 
         runCode="""
         #include<optional>
@@ -107,7 +107,7 @@ def __op(nonLinOpFactory):
 
     return __opFunc
 
-def makeNonLinearOperatorFactory(assembler,derivativeIndices=None, requirement=None,affordances=None, enforcingBCOption=None):
+def makeNonLinearOperatorFactory(assembler):
     generator = MySimpleGenerator("NonLinearOperatorFactory", "Ikarus::Python")
     includes = []
     element_type = f"Ikarus::Python::NonLinearOperatorFactoryWrapper<std::shared_ptr<{assembler.cppTypeName}>>"
@@ -118,12 +118,13 @@ def makeNonLinearOperatorFactory(assembler,derivativeIndices=None, requirement=N
     module = generator.load(
         includes=includes, typeName=element_type, moduleName=moduleName, dynamicAttr=True
     )
+    print(f"{assembler.cppTypeName}")
     factory= module.NonLinearOperatorFactory(assembler)
     factory.op = types.MethodType(__op(factory),factory)
     return factory
 
 def makeNonLinearOperator(assembler,derivativeIndices=None, requirement=None,affordances=None, enforcingBCOption=None):
-    factory = makeNonLinearOperatorFactory(assembler,derivativeIndices, requirement,affordances, enforcingBCOption)
+    factory = makeNonLinearOperatorFactory(assembler)
     nonLinOp =  factory.op(requirement,affordances,enforcingBCOption,derivativeIndices)
     nonLinOp.subOperator = types.MethodType(__SubOperator(nonLinOp),nonLinOp)
     return nonLinOp

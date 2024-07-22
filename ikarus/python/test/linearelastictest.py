@@ -31,7 +31,7 @@ def linElasticTest(easBool):
     for i in range(2):
         lowerLeft.append(-1)
         upperRight.append(1)
-        elements.append(1)
+        elements.append(3)
 
     grid = dune.grid.structuredGrid(lowerLeft, upperRight, elements)
     # grid.hierarchicalGrid.globalRefine(4)
@@ -134,40 +134,6 @@ def linElasticTest(easBool):
     print(assembler.requirement().globalSolution())
     MsparseA = assembler.matrix().copy()
     forcesA = assembler.vector().copy()
-
-   #import dune.generated.NonLinearOperatorFactory_a9ee937a426ab44d2ca2c7fe61baaa70 as nonLinOpFactory
-    #print("======================================================")
-    #import inspect
-    #print([o[0] for o in inspect.getmembers(dune.generated) if inspect.ismodule(o[1])])
-    #print(dune.generated.NonLinearOperatorFactory_a9ee937a426ab44d2ca2c7fe61baaa70.__module__)
-
-    #import pyclbr
-    #di = pyclbr.readmodule("dune.generated.NonLinearOperatorFactory_a9ee937a426ab44d2ca2c7fe61baaa70")
-    import sys, inspect
-    def print_classes(mod=""):
-        for name, obj in inspect.getmembers(sys.modules["dune.generated"+ mod]):
-            print(name,obj)
-            if name.startswith("NonLinearOperatorFactory_"):
-                if inspect.isclass(obj):
-                    print("Class:",name)
-                    print(f"=================Start of methods of======={name}======\n")
-                    for nameC, objC in inspect.getmembers(obj):
-                        if inspect.isfunction(objC):
-                            print(f"Method: {nameC}")
-                        else:
-                            print(f"{nameC} is not a function but {type(objC)}")
-
-                elif inspect.ismodule(obj):
-                    print("Module:",name)
-                    print(f"=================Start of module classes======={name}======\n")
-                    print_classes("."+name)
-                    print("\n=================End of module classes=============",name)
-                else:
-                    print(f"{name} is not a class but {type(obj)}")
-    #print("======================================================")
-    #print_classes()
-    #print("======================================================")
-    #print(classesinmodule(dune.generated))
 
     if not easBool:
         nonLinOp = iks.utils.makeNonLinearOperator(assembler)

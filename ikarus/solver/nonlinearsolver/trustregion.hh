@@ -23,6 +23,7 @@
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observermessages.hh>
 #include <ikarus/utils/traits.hh>
+#include "solversettings.hh"
 
 namespace Ikarus {
 
@@ -37,24 +38,24 @@ enum class PreConditioner
   DiagonalPreconditioner
 };
 
-struct TRSettings
-{
-  int verbosity    = 5;                                       ///< Verbosity level.
-  double maxtime   = std::numeric_limits<double>::infinity(); ///< Maximum allowable time for solving.
-  int minIter      = 3;                                       ///< Minimum number of iterations.
-  int maxIter      = 1000;                                    ///< Maximum number of iterations.
-  int debug        = 0;                                       ///< Debugging flag.
-  double grad_tol  = 1e-6;                                    ///< Gradient tolerance.
-  double corr_tol  = 1e-6;                                    ///< Correction tolerance.
-  double rho_prime = 0.01;                                    ///< Rho prime value.
-  bool useRand     = false;                                   ///< Flag for using random correction predictor.
-  double rho_reg   = 1e6;                                     ///< Regularization value for rho.
-  double Delta_bar = std::numeric_limits<double>::infinity(); ///< Maximum trust region radius.
-  double Delta0    = 10;                                      ///< Initial trust region radius.
-};
+#define TRSETTINGS_FIELDS(MACRONAME)                                                                              \
+    MACRONAME(verbosity, int, 5, "Verbosity level.")                                                           \
+    MACRONAME(maxtime, double, std::numeric_limits<double>::infinity(), "Maximum allowable time for solving.") \
+    MACRONAME(minIter, int, 3, "Minimum number of iterations.")                                                \
+    MACRONAME(maxIter, int, 1000, "Maximum number of iterations.")                                             \
+    MACRONAME(debug, int, 0, "Debugging flag.")                                                                \
+    MACRONAME(grad_tol, double, 1e-6, "Gradient tolerance.")                                                   \
+    MACRONAME(corr_tol, double, 1e-6, "Correction tolerance.")                                                 \
+    MACRONAME(rho_prime, double, 0.01, "Rho prime value.")                                                     \
+    MACRONAME(useRand, bool, false, "Flag for using random correction predictor.")                             \
+    MACRONAME(rho_reg, double, 1e6, "Regularization value for rho.")                                           \
+    MACRONAME(Delta_bar, double, std::numeric_limits<double>::infinity(), "Maximum trust region radius.")      \
+    MACRONAME(Delta0, double, 10, "Initial trust region radius.")
+
+SOLVERSETTINGS(TRSettings, TRSETTINGS_FIELDS)
 
 /**
- * \struct TrustRegionSettings
+ * \struct TrustRegionConfig
  * \brief Configuration settings for the TrustRegion solver.
  */
 

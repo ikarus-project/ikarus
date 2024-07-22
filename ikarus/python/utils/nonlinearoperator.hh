@@ -219,11 +219,7 @@ void registerNonLinearOperatorFactory(pybind11::handle scope, pybind11::class_<N
   using Assembler            = NLOFW::Assembler;
   using AffordanceCollection = AffordanceCollection<ScalarAffordance, VectorAffordance, MatrixAffordance>;
 
-  cls.def(pybind11::init([](const Assembler& as) { return new NLOFW{as}; }));
-
   cls.def(pybind11::init([](const Assembler& as) { return new NLOFW{.as = as}; }));
-
-
 
   auto registerNonLinearOperatorL = [&scope]<size_t... i>(std::index_sequence <i ...> iSeq) {
 
