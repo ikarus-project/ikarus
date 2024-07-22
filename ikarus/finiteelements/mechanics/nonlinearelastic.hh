@@ -203,10 +203,14 @@ public:
 
   using SupportedResultTypes = std::tuple<decltype(makeRT<ResultTypes::PK2Stress>())>;
 
-private:
+  /**
+   * \brief Returns whether an element can provide a requested result. Can be used in constant expressions
+   * \tparam RT The type representing the requested result.
+   * \return boolean indicating if a requested result can be provided
+   */
   template <template <typename, int, int> class RT>
   static consteval bool canProvideResultType() {
-    return isSameResultType<RT, ResultTypes::PK2Stress>;
+    return isSupportedResultType<SupportedResultTypes, RT>();
   }
 
 public:

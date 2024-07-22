@@ -159,7 +159,7 @@ public:
    */
   template <template <typename, int, int> class RT>
   static consteval bool canProvideResultType() {
-    return false;
+    return isSupportedResultType<SupportedResultTypes, RT>();
   }
 
   using SupportedResultTypes = std::tuple<>;

@@ -252,4 +252,19 @@ auto toString() {
 template <template <typename, int, int> class RT1, template <typename, int, int> class RT2>
 constexpr bool isSameResultType = std::is_same_v<Impl::DummyRT<RT1>, Impl::DummyRT<RT2>>;
 
+/**
+ * \brief Meta function to test whether a given ResultType is in a tuple of supported ResultTypes
+ * \tparam SupportedRT tuple type of supported RestultTypes (exported by the elements)
+ * \tparam RT ResultType template to be checked
+ */
+template <typename SupportedRT, template <typename, int, int> class RT>
+static consteval bool isSupportedResultType() {
+  bool result;
+  Dune::Hybrid::forEach(SupportedRT(), [&]<typename RT_>(RT_ rt) {
+    if constexpr (isSameResultType<RT, RT_::template Rebind>)
+      result = true;
+  });
+  return result;
+}
+
 } // namespace Ikarus
