@@ -161,6 +161,7 @@ protected:
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     easApplicabilityCheck();
+    std::cout<<"calculateMatrixImpl of EAS called with " +std::to_string(numberOfEASParameters())+" Parameters."<<std::endl;
     if (isDisplacementBased())
       return;
 

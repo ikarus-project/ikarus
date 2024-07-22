@@ -16,14 +16,6 @@ from dune.vtk import vtkWriter, vtkUnstructuredGridWriter
 
 import types
 
-
-def imports(mod=globals()):
-    for name, val in mod.items():
-        if isinstance(val, types.ModuleType):
-            yield imports(val)
-            yield val.__name__
-
-
 def linElasticTest(easBool):
     lowerLeft = []
     upperRight = []
@@ -132,17 +124,26 @@ def linElasticTest(easBool):
     assemblerDense.bind(req, iks.AffordanceCollection.elastoStatics, iks.DBCOption.Full)
 
     print(assembler.requirement().globalSolution())
-    MsparseA = assembler.matrix().copy()
+    KsparseA = assembler.matrix()
     forcesA = assembler.vector().copy()
 
     if not easBool:
         nonLinOp = iks.utils.makeNonLinearOperator(assembler)
         print(f"Energy: {nonLinOp.value()}")
         nonLinOp= nonLinOp.subOperator(1,2)
-
     else:
         print("EAS element do not support any scalar calculations, i.e. they are not derivable from a potential")
         nonLinOp = iks.utils.makeNonLinearOperator(assembler, derivativeIndices=[1,2])
+
+
+    Ksparse = nonLinOp.derivative()
+    forces = nonLinOp.value()
+    with np.printoptions(precision=3, suppress=True):
+        assert np.allclose(KsparseA.data, Ksparse.data, atol=1e-6) ,"The "+("EAS" if easBool else "") + f" sparse Matrix \
+            from assembler\n {KsparseA.todense()}\n  not equal to sparse matrix from non linear operator: \n {Ksparse.todense()} \
+        \nDifference\n {KsparseA.todense()-Ksparse.todense()} \n"
+        assert np.allclose(forcesA, forces, atol=1e-6), f"Forces not equal {forcesA}\n\n {forces}"
+
     try:
         nonLinOp.subOperator(0,1,4)
     except ValueError:
@@ -165,13 +166,9 @@ def linElasticTest(easBool):
     print(nonLinOp)
     print(nonLinOp.firstParameter())
 
-    Msparse = nonLinOp.derivative()
-    forces = nonLinOp.value()
-    with np.printoptions(precision=3, suppress=True):
-        assert np.allclose(MsparseA.data, Msparse.data, atol=1e-6) ,f"Sparse Matrix not equal{MsparseA.todense()}\n\n {Msparse.todense()} \n\n {MsparseA.todense()-Msparse.todense()} \n \n {assembler.matrix().todense()}"
-        assert np.allclose(forcesA, forces, atol=1e-6), f"Forces not equal {forcesA}\n\n {forces}"
 
-    x = sp.sparse.linalg.spsolve(Msparse, -forces)
+
+    x = sp.sparse.linalg.spsolve(Ksparse, -forces)
     fx = flatBasis.asFunction(x)
     # grid.plot()
     # Test calculateAt Function
