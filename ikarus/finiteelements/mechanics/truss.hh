@@ -160,13 +160,6 @@ public:
       std::tuple<decltype(makeRT<ResultTypes::cauchyAxialForce>()), decltype(makeRT<ResultTypes::PK2AxialForce>()),
                  decltype(makeRT<ResultTypes::linearAxialForce>())>;
 
-private:
-  template <template <typename, int, int> class RT>
-  static consteval bool canProvideResultType() {
-    return isSameResultType<RT, ResultTypes::cauchyAxialForce> or isSameResultType<RT, ResultTypes::PK2AxialForce> or
-           isSameResultType<RT, ResultTypes::linearAxialForce>;
-  }
-
 public:
   /**
    * \brief Calculates a requested result at a specific local position.
@@ -179,7 +172,7 @@ public:
    * \tparam RT The type representing the requested result.
    */
   template <template <typename, int, int> class RT>
-  requires(canProvideResultType<RT>())
+  requires(isSupportedResultType<SupportedResultTypes, RT>())
   auto calculateAtImpl(const Requirement& req, [[maybe_unused]] const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<0>) const {
     using RTWrapper                            = ResultWrapper<RT<double, myDim, myDim>, ResultShape::Vector>;
