@@ -259,7 +259,7 @@ constexpr bool isSameResultType = std::is_same_v<Impl::DummyRT<RT1>, Impl::Dummy
  */
 template <typename SupportedRT, template <typename, int, int> class RT>
 static consteval bool isSupportedResultType() {
-  bool result;
+  bool result{};
   Dune::Hybrid::forEach(SupportedRT(), [&]<typename RT_>(RT_ rt) {
     if constexpr (isSameResultType<RT, RT_::template Rebind>)
       result = true;
