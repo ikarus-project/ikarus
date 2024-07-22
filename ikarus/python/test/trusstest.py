@@ -20,8 +20,8 @@ import dune.functions
 def trussTest(worldDim):
     assert worldDim == 2 or worldDim == 3
     gridDim = 1
-    dir = os.path.dirname(__file__)
-    filename = os.path.join(dir, f"auxiliaryfiles/truss{worldDim}d.msh")
+    filedir = os.path.dirname(__file__)
+    filename = os.path.join(filedir, f"auxiliaryfiles/truss{worldDim}d.msh")
     reader = (dune.grid.reader.gmsh, filename)
 
     grid = dune.foamgrid.foamGrid(reader, gridDim, worldDim)
