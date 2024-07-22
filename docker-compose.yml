@@ -1,0 +1,11 @@
+version: "3.3"
+services:
+  OpenIkarusContainer:
+    image: ikarusproject/ikarus-dev:latest
+    user: root
+    entrypoint: /bin/bash
+    tty: true
+    volumes:
+     - ./:/workspaces/ikarus
+     #- C:\Users\Alex\Documents\Paper_Mueller-Bischoff-Keip-MicroMagnetoStatics\simulations:/mshfiles
+    working_dir: /workspaces/ikarus

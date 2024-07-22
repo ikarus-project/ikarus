@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <Eigen/Core>
+
 #include <dune/localfefunctions/derivativetransformators.hh>
 #include <dune/localfefunctions/meta.hh>
 

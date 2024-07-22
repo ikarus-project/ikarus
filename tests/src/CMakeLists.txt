@@ -9,11 +9,6 @@ if(IKARUS_SANITIZERS)
 endif(IKARUS_SANITIZERS)
 include(../../cmake/tools.cmake)
 
-file(
-  GLOB programSourceFiles
-  RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-  CONFIGURE_DEPENDS *.cpp
-)
 set(programSourceFiles
     testadaptivestepsizing.cpp
     testassembler.cpp
@@ -77,6 +72,19 @@ dune_add_test(
   cpp
 )
 target_compile_features(testfunctiontraits PUBLIC cxx_std_20)
+
+dune_add_test(
+  SOURCES
+  testintegersequence.cpp
+  LINK_LIBRARIES
+  ikarus
+  COMPILE_ONLY
+  LABELS
+  cpp
+)
+target_compile_features(testfunctiontraits PUBLIC cxx_std_20)
+
+# Compile and run tests
 
 set(TEST_DEPENDING_ON_IGA testklshell testadaptivestepsizing)
 

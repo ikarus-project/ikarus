@@ -107,7 +107,7 @@ public:
   using Settings = NewtonRaphsonWithSubsidiaryFunctionSettings;
   ///< Compile-time boolean indicating if the linear solver satisfies the non-linear solver concept
   static constexpr bool isLinearSolver =
-      Ikarus::Concepts::LinearSolverCheck<LS, typename NLO::DerivativeType, typename NLO::ValueType>;
+      Ikarus::Concepts::LinearSolverCheck<LS, typename NLO::template FunctionReturnType<1>, typename NLO::ValueType>;
 
   ///< Type representing the parameter vector of the nonlinear operator.
   using ValueType = typename NLO::template ParameterValue<0>;

@@ -16,6 +16,7 @@ install(
         functionsanitychecks.hh
         functionhelper.hh
         init.hh
+        integersequence.hh
         linearalgebrahelper.hh
         makeenum.hh
         math.hh

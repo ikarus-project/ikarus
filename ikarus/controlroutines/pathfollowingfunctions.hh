@@ -98,7 +98,7 @@ struct ArcLength
   template <typename NLO>
   void initialPrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) {
     SolverTypeTag solverTag;
-    using JacobianType = std::remove_cvref_t<typename NLO::DerivativeType>;
+    using JacobianType = std::remove_cvref_t<typename NLO::template FunctionReturnType<1>>;
     static_assert((traits::isSpecializationTypeAndNonTypes<Eigen::Matrix, JacobianType>::value) or
                       (traits::isSpecializationTypeNonTypeAndType<Eigen::SparseMatrix, JacobianType>::value),
                   "Linear solver not implemented for the chosen derivative type of the non-linear operator");
@@ -114,8 +114,8 @@ struct ArcLength
     const auto& K = nonLinearOperator.derivative();
 
     static constexpr bool isLinearSolver =
-        Ikarus::Concepts::LinearSolverCheck<decltype(LinearSolver(solverTag)), typename NLO::DerivativeType,
-                                            typename NLO::ValueType>;
+        Ikarus::Concepts::LinearSolverCheck<decltype(LinearSolver(solverTag)),
+                                            typename NLO::template FunctionReturnType<1>, typename NLO::ValueType>;
     static_assert(isLinearSolver,
                   "Initial predictor step in the standard arc-length method doesn't have a linear solver");
 
