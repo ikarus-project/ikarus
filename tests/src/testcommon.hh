@@ -8,6 +8,7 @@
 #include <dune/alugrid/grid.hh>
 #include <dune/common/test/testsuite.hh>
 #include <dune/common/typetraits.hh>
+#include <dune/foamgrid/foamgrid.hh>
 #include <dune/fufem/boundarypatch.hh>
 #include <dune/functions/functionspacebases/lagrangedgbasis.hh>
 #include <dune/grid/io/file/vtk.hh>
@@ -42,6 +43,12 @@ struct IgaSurfaceIn2D
 {
 };
 struct IgaSurfaceIn3D
+{
+};
+struct OneDFoamGridIn2D
+{
+};
+struct OneDFoamGridIn3D
 {
 };
 } // namespace Grids
@@ -121,7 +128,28 @@ auto createGrid([[maybe_unused]] int elex = 10, [[maybe_unused]] int eley = 10) 
     grid->globalRefine(1);
     return grid;
 #endif
-  }
+  } else if constexpr (std::is_same_v<GridType, Grids::OneDFoamGridIn2D>) {
+    Dune::GridFactory<Dune::FoamGrid<1, 2, double>> gridFactory;
+    constexpr double h = 1.0;
+    constexpr double L = 10.0;
+    gridFactory.insertVertex({0, 0});
+    gridFactory.insertVertex({L, h});
+    gridFactory.insertVertex({2 * L, 0});
+    gridFactory.insertElement(Dune::GeometryTypes::line, {0, 1});
+    gridFactory.insertElement(Dune::GeometryTypes::line, {1, 2});
+    auto grid = gridFactory.createGrid();
+    return grid;
+  } else if constexpr (std::is_same_v<GridType, Grids::OneDFoamGridIn3D>) {
+    Dune::GridFactory<Dune::FoamGrid<1, 3, double>> gridFactory;
+    gridFactory.insertVertex({0, 0, 0});
+    gridFactory.insertVertex({2, 1, 4});
+    gridFactory.insertVertex({4, 0, 1});
+    gridFactory.insertElement(Dune::GeometryTypes::line, {0, 1});
+    gridFactory.insertElement(Dune::GeometryTypes::line, {1, 2});
+    auto grid = gridFactory.createGrid();
+    return grid;
+  } else
+    DUNE_THROW(Dune::NotImplemented, "The requested GridType is not implemented.");
 }
 
 template <int size>

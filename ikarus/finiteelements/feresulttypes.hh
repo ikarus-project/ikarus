@@ -135,6 +135,10 @@ namespace ResultTypes {
   REGISTER_SIMPLE_RESULTTYPE(BField, worldDim, 1);
   REGISTER_SIMPLE_RESULTTYPE(HField, worldDim, 1);
 
+  REGISTER_SIMPLE_RESULTTYPE(cauchyAxialForce, 1, 1);
+  REGISTER_SIMPLE_RESULTTYPE(PK2AxialForce, 1, 1);
+  REGISTER_SIMPLE_RESULTTYPE(linearAxialForce, 1, 1);
+
   REGISTER_SIMPLE_RESULTTYPE(customType, Eigen::Dynamic, Eigen::Dynamic);
 } // namespace ResultTypes
 

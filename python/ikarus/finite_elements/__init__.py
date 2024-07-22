@@ -117,6 +117,19 @@ def linearElastic(youngs_modulus, nu):
     element_type = "Ikarus::LinearElasticPre"
     return registerPreElement("LinearElasticPre", includes, element_type, youngs_modulus, nu)
 
+def truss(youngs_modulus, cross_section):
+    """
+    @brief Creates a truss pre-element.
+
+    @param youngs_modulus: Young's modulus.
+    @param cross_section: Cross-section area.
+
+    @return: The registered truss pre-element function.
+    """
+    includes = ["ikarus/finiteelements/mechanics/truss.hh"]
+    element_type = "Ikarus::TrussPre"
+    return registerPreElement("TrussPre", includes, element_type, youngs_modulus, cross_section)
+
 def eas(numberofparameters):
     """
     @brief Creates an enhanced assumed strains pre-element.

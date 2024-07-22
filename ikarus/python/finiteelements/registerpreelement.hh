@@ -37,6 +37,20 @@ void registerLinearElasticPre(pybind11::handle scope, pybind11::class_<LinearEla
 }
 
 /**
+ * @brief Registers a TrussPre class in Python.
+ *
+ * @tparam TrussPre The TrussPre class.
+ * @tparam options Additional options for the pybind11 class.
+ *
+ * @param scope Python handle to the module or class scope.
+ * @param cls The pybind11 class to register.
+ */
+template <class TrussPre, class... options>
+void registerTrussPre(pybind11::handle scope, pybind11::class_<TrussPre, options...> cls) {
+  cls.def(pybind11::init([](double emod, double area) { return new TrussPre({emod, area}); }));
+}
+
+/**
  * @brief Registers a KirchhoffLoveShellPre class in Python.
  *
  * @tparam KirchhoffLoveShellPre The KirchhoffLoveShellPre class.
