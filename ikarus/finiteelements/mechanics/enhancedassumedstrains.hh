@@ -57,17 +57,7 @@ public:
   using GridView  = typename Traits::GridView;
   using Pre       = EnhancedAssumedStrainsPre;
 
-  using SupportedResultTypes = typename FE::SupportedResultTypes;
-
-  /**
-   * \brief Returns whether an element can provide a requested result. Can be used in constant expressions
-   * \tparam RT The type representing the requested result.
-   * \return boolean indicating if a requested result can be provided
-   */
-  template <template <typename, int, int> class RT>
-  static consteval bool canProvideResultType() {
-    return isSupportedResultType<SupportedResultTypes, RT>();
-  }
+  using SupportedResultTypes = std::tuple<decltype(makeRT<ResultTypes::linearStress>())>;
 
   /**
    * \brief Constructor for Enhanced Assumed Strains elements.
@@ -111,6 +101,7 @@ public:
    * \tparam RT The type representing the requested result.
    */
   template <template <typename, int, int> class RT>
+  requires(isSupportedResultType<SupportedResultTypes, RT>())
   auto calculateAtImpl(const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<2>) const {
     if (isDisplacementBased())

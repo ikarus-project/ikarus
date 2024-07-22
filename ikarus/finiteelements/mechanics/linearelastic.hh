@@ -156,16 +156,6 @@ public:
 
   using SupportedResultTypes = std::tuple<decltype(makeRT<ResultTypes::linearStress>())>;
 
-  /**
-   * \brief Returns whether an element can provide a requested result. Can be used in constant expressions
-   * \tparam RT The type representing the requested result.
-   * \return boolean indicating if a requested result can be provided
-   */
-  template <template <typename, int, int> class RT>
-  static consteval bool canProvideResultType() {
-    return isSupportedResultType<SupportedResultTypes, RT>();
-  }
-
 public:
   /**
    * \brief Calculates a requested result at a specific local position.
@@ -178,7 +168,7 @@ public:
    * \tparam RT The type representing the requested result.
    */
   template <template <typename, int, int> class RT>
-  requires(canProvideResultType<RT>())
+  requires(isSupportedResultType<SupportedResultTypes, RT>())
   auto calculateAtImpl(const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<1>) const {
     using RTWrapper = ResultWrapper<RT<typename Traits::ctype, myDim, Traits::worlddim>, ResultShape::Vector>;
