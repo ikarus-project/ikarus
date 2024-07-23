@@ -1,0 +1,5 @@
+# SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-License-Identifier: CC0-1.0
+CompileFlags:                                         # Tweak the parse settings
+  Add: -include=build/config.h                        # Add config.h to parse first 
+  Remove: -fext-numeric-literals*                     # strip all other warning-related flags
