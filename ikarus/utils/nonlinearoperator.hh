@@ -212,7 +212,9 @@ public:
                              const Impl::Parameter<ParameterArgs...>& parameterI)
       : derivatives_{derivativesFunctions.args},
         args_{parameterI.args},
-        derivativesEvaluated_(initResults(derivatives_, args_)) {}
+        derivativesEvaluated_(initResults(derivatives_, args_)) {
+          std::cout<<"NonLinearOperator(const Impl::Functions<DerivativeArgs...>& derivativesFunctions, const Impl::Parameter<ParameterArgs...>& parameterI)"<<std::endl;
+        }
 
   /**
    * \brief Constructor for NonLinearOperator.
@@ -224,7 +226,9 @@ public:
   explicit NonLinearOperator(const Funcs& derivativesFunctions, const Impl::Parameter<ParameterArgs...>& parameterI)
       : derivatives_{derivativesFunctions.args},
         args_{parameterI.args},
-        derivativesEvaluated_(initResults(derivatives_, args_)) {}
+        derivativesEvaluated_(initResults(derivatives_, args_)) {
+          std::cout<<"NonLinearOperator(const Funcs& derivativesFunctions, const Impl::Parameter<ParameterArgs...>& parameterI)"<<std::endl;
+        }
 
   /**
    * \brief Updates all functions.
