@@ -40,7 +40,6 @@ SPDX-License-Identifier: LGPL-3.0-or-later
       adds the function `create`, which accepts a *bound* assembler, where a non-linear operator can be constructed on the fly. For this to
       work, all non-linear solvers have to implement a method `createNonlinearSolver`, which accepts the settings of the class and a nonlinear
       operator. See, e.g., `NewtonRaphsonWithSubsidiaryFunction`.
-
     - Python:
         - Bindings for Enums can now be done conveniently with the `ENUM_BINDINGS` macro.
         - The finite element functions `calculateMatrix`, `calculateVector`, and `calculateScalar` now directly accept the affordances.
@@ -54,6 +53,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
     - Furthermore, a helper function to get the global index of a Lagrange node at the given global position is added.
 - Rework the Python Interface for `DirichletValues` plus add support to easily fix boundary DOFs of `Subspacebasis` in C++ and Python ([#305](https://github.com/ikarus-project/ikarus/pull/305))
 - Add a truss element ([#302](https://github.com/ikarus-project/ikarus/pull/302))
+- Add an About Ikarus page in the documentation ([#291](https://github.com/ikarus-project/ikarus/pull/291))
 
 ## Release v0.4 (Ganymede)
 
