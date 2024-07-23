@@ -14,6 +14,7 @@
 
 #include <ikarus/finiteelements/fehelper.hh>
 #include <ikarus/finiteelements/ferequirements.hh>
+#include <ikarus/finiteelements/feresulttypes.hh>
 #include <ikarus/finiteelements/mechanics/loads.hh>
 #include <ikarus/finiteelements/mechanics/membranestrains.hh>
 #include <ikarus/finiteelements/physicshelper.hh>
@@ -46,7 +47,7 @@ struct KirchhoffLoveShellPre
  * \tparam FE Type of the finite element.
  */
 template <typename PreFE, typename FE>
-class KirchhoffLoveShell
+class KirchhoffLoveShell : public ResultTypeBase<KirchhoffLoveShell<PreFE, FE>>
 {
 public:
   using Traits       = PreFE::Traits;
@@ -152,8 +153,6 @@ public:
   [[nodiscard]] size_t numberOfNodes() const { return numberOfNodes_; }
   [[nodiscard]] int order() const { return order_; }
 
-  using SupportedResultTypes = std::tuple<>;
-
   /**
    * \brief Calculates a requested result at a specific local position.
    *
@@ -164,7 +163,7 @@ public:
    * \tparam RT The type representing the requested result.
    */
   template <template <typename, int, int> class RT>
-  requires(isSupportedResultType<SupportedResultTypes, RT>())
+  requires(KirchhoffLoveShell::template supportsResultType<RT>())
   auto calculateAtImpl([[maybe_unused]] const Requirement& req,
                        [[maybe_unused]] const Dune::FieldVector<double, Traits::mydim>& local)
       -> ResultWrapper<RT<double, myDim, worldDim>, ResultShape::Vector> {

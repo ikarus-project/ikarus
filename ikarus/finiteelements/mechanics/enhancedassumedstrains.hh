@@ -46,7 +46,7 @@ struct EnhancedAssumedStrainsPre
  * \tparam FE Type of the finite element.
  */
 template <typename PreFE, typename FE>
-class EnhancedAssumedStrains
+class EnhancedAssumedStrains : public ResultTypeBase<EnhancedAssumedStrains<PreFE, FE>, ResultTypes::linearStress>
 {
 public:
   using Traits = PreFE::Traits;
@@ -56,8 +56,6 @@ public:
   using Geometry  = typename Traits::Geometry;
   using GridView  = typename Traits::GridView;
   using Pre       = EnhancedAssumedStrainsPre;
-
-  using SupportedResultTypes = std::tuple<decltype(makeRT<ResultTypes::linearStress>())>;
 
   /**
    * \brief Constructor for Enhanced Assumed Strains elements.
@@ -101,7 +99,6 @@ public:
    * \tparam RT The type representing the requested result.
    */
   template <template <typename, int, int> class RT>
-  requires(isSupportedResultType<SupportedResultTypes, RT>())
   auto calculateAtImpl(const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<2>) const {
     if (isDisplacementBased())

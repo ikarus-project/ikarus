@@ -20,6 +20,7 @@
 
   #include <ikarus/finiteelements/fehelper.hh>
   #include <ikarus/finiteelements/ferequirements.hh>
+  #include <ikarus/finiteelements/feresulttypes.hh>
   #include <ikarus/finiteelements/mechanics/materials.hh>
   #include <ikarus/finiteelements/physicshelper.hh>
 
@@ -48,7 +49,7 @@ struct LinearElasticPre
  * \tparam FE The type of the finite element.
  */
 template <typename PreFE, typename FE>
-class LinearElastic
+class LinearElastic : public ResultTypeBase<LinearElastic<PreFE, FE>, ResultTypes::linearStress>
 {
 public:
   using Traits       = PreFE::Traits;
@@ -154,8 +155,6 @@ public:
   [[nodiscard]] size_t numberOfNodes() const { return numberOfNodes_; }
   [[nodiscard]] int order() const { return order_; }
 
-  using SupportedResultTypes = std::tuple<decltype(makeRT<ResultTypes::linearStress>())>;
-
 public:
   /**
    * \brief Calculates a requested result at a specific local position.
@@ -168,7 +167,7 @@ public:
    * \tparam RT The type representing the requested result.
    */
   template <template <typename, int, int> class RT>
-  requires(isSupportedResultType<SupportedResultTypes, RT>())
+  requires(LinearElastic::template supportsResultType<RT>())
   auto calculateAtImpl(const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<1>) const {
     using RTWrapper = ResultWrapper<RT<typename Traits::ctype, myDim, Traits::worlddim>, ResultShape::Vector>;

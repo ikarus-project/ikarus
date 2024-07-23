@@ -108,11 +108,11 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
       << "The element is \n"
       << Dune::className<FEType>();
 
-  t.check(isSupportedResultType<typename FEType::SupportedResultTypes, ResultTypes::linearStress>() == true)
+  t.check(FEType::template supportsResultType<ResultTypes::linearStress>() == true)
       << "Element should support result type LinearStress, but doesn't"
       << "\nThe supported types are " << Dune::className<typename FEType::SupportedResultTypes>() << "\n";
 
-  t.check(isSupportedResultType<typename FEType::SupportedResultTypes, ResultTypes::PK2Stress>() == false)
+  t.check(fe.template supportsResultType<ResultTypes::PK2Stress>() == false)
       << "Element should not support result type PK2Stress, but does"
       << "\nThe supported types are " << Dune::className<typename FEType::SupportedResultTypes>() << "\n";
 
