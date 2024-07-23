@@ -46,7 +46,7 @@ struct EnhancedAssumedStrainsPre
  * \tparam FE Type of the finite element.
  */
 template <typename PreFE, typename FE>
-class EnhancedAssumedStrains : public ResultTypeBase<EnhancedAssumedStrains<PreFE, FE>, ResultTypes::linearStress>
+class EnhancedAssumedStrains
 {
 public:
   using Traits = PreFE::Traits;

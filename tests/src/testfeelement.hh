@@ -112,7 +112,7 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
       << "Element should support result type LinearStress, but doesn't"
       << "\nThe supported types are " << Dune::className<typename FEType::SupportedResultTypes>() << "\n";
 
-  t.check(fe.template supportsResultType<ResultTypes::PK2Stress>() == false)
+  t.check(FEType::template supportsResultType<ResultTypes::PK2Stress>() == false)
       << "Element should not support result type PK2Stress, but does"
       << "\nThe supported types are " << Dune::className<typename FEType::SupportedResultTypes>() << "\n";
 
