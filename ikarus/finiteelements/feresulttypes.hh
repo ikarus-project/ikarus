@@ -8,6 +8,7 @@
 #include <Eigen/Core>
 
 #include <ikarus/utils/tensorutils.hh>
+#include <ikarus/utils/traits.hh>
 
 /**
  * \file feresulttypes.hh
@@ -259,12 +260,7 @@ constexpr bool isSameResultType = std::is_same_v<Impl::DummyRT<RT1>, Impl::Dummy
  */
 template <typename SupportedRT, template <typename, int, int> class RT>
 static consteval bool isSupportedResultType() {
-  bool result{};
-  Dune::Hybrid::forEach(SupportedRT(), [&]<typename RT_>(RT_ rt) {
-    if constexpr (isSameResultType<RT, RT_::template Rebind>)
-      result = true;
-  });
-  return result;
+  return traits::hasType<decltype(makeRT<RT>()), SupportedRT>::value;
 }
 
 } // namespace Ikarus
