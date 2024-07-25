@@ -24,9 +24,18 @@
 
 namespace Ikarus::Vtk {
 
+/**
+ * \struct AsCellData
+ * \brief Tag structure indicating cell data.
+ */
 struct AsCellData
 {
 } asCellData;
+
+/**
+ * \struct AsPointData
+ * \brief Tag structure indicating point data.
+ */
 struct AsPointData
 {
 } asPointData;
@@ -60,6 +69,14 @@ namespace Impl {
 
 } // namespace Impl
 
+/**
+ * \struct Writer
+ * \brief Manages writing results using VTK, based on assembler and data collector.
+ *
+ * \tparam AS Type of the assembler.
+ * \tparam DC Type of the data collector.
+ * \tparam Base Base class for VTK writer.
+ */
 template <typename AS, typename DC, typename Base>
 requires(Concepts::FlatAssembler<AS> && Concepts::DataCollector<DC>)
 struct Writer : public Base
@@ -74,46 +91,94 @@ public:
   using DataCollector = DC;
   using VTKWriter     = Base;
 
+  /**
+   * \brief Constructor with assembler and additional arguments.
+   *
+   * \param assembler Shared pointer to assembler.
+   * \param args Additional arguments.
+   */
   template <class... Args>
   Writer(std::shared_ptr<AS> assembler, Args... args)
       : Base(assembler->gridView(), std::forward<Args>(args)...),
         assembler_(assembler) {}
 
+  /**
+   * \brief Constructor with assembler, data collector reference, and additional arguments.
+   *
+   * \param assembler Shared pointer to assembler.
+   * \param dc Reference to data collector
+   * \param args Additional arguments.
+   */
   template <class... Args>
   Writer(std::shared_ptr<AS> assembler, DC& dc, Args... args)
       : Base(dc, std::forward<Args>(args)...),
         assembler_(assembler) {}
 
+  /**
+   * \brief Constructor with assembler, data collector, and additional arguments.
+   *
+   * \param assembler Shared pointer to assembler.
+   * \param dc Data collector as a rvalue reference
+   * \param args Additional arguments.
+   */
   template <class... Args>
   Writer(std::shared_ptr<AS> assembler, DC&& dc, Args... args)
       : Base(std::move(dc), std::forward<Args>(args)...),
         assembler_(assembler) {}
 
+  /**
+   * \brief Adds a result function for the given data tag.
+   *
+   * \tparam RF Type of the result function.
+   * \param resultFunction The Ikarus::ResultFunction.
+   * \param dataTag The data tag.
+   */
   template <typename RF, Impl::Concepts::DataType DT>
-  void addResultFunction(RF&& resultFunction, DT type) {
+  void addResultFunction(RF&& resultFunction, DT dataTag) {
     if constexpr (std::is_same_v<DT, AsCellData>)
       Base::addCellData(std::forward<RF>(resultFunction));
     else
       Base::addPointData(std::forward<RF>(resultFunction));
   }
 
+  /**
+   * \brief Adds a result for the given data tag.
+   *
+   * \tparam RT Result type template.
+   * \param dataTag The data tag.
+   */
   template <template <typename, int, int> class RT, Impl::Concepts::DataType DT>
   requires(Concepts::ResultType<RT>)
-  void addResult(DT type) {
+  void addResult(DT dataTag) {
     auto resFunction = makeResultVtkFunction<RT>(assembler_);
-    addResultFunction(std::move(resFunction), type);
+    addResultFunction(std::move(resFunction), dataTag);
   }
 
+  /**
+   * \brief Adds all results for the given data tag.
+   *
+   * \param dataTag The data tag.
+   */
   template <Impl::Concepts::DataType DT>
-  void addAllResults(DT type) {
+  void addAllResults(DT dataTag) {
     using ResultTuple = typename FEType::SupportedResultTypes;
 
-    Dune::Hybrid::forEach(ResultTuple(), [&]<typename RT>(RT i) { addResult<RT::template Rebind>(type); });
+    Dune::Hybrid::forEach(ResultTuple(), [&]<typename RT>(RT i) { addResult<RT::template Rebind>(dataTag); });
   }
 
+  /**
+   * \brief Adds interpolation data for the given basis and container.
+   *
+   * \tparam Container Type of the container used by the gridfunction. This can be deduced for power basis and
+   * scalarbasis, otherwise define a Dune::FieldVector<ctype, dim> yourself
+   * \param vals Coefficient vector to be interpolated.
+   * \param basis The underlying basis, can be a subspacebasis
+   * \param name Name of the field.
+   * \param dataTag The data tag.
+   */
   template <typename Basis, typename Container = Dune::FieldVector<double, Impl::dimBasis<Basis>>,
             Impl::Concepts::DataType DT, typename R>
-  void addInterpolation(R&& vals, const Basis& basis, const std::string& name, DT type) {
+  void addInterpolation(R&& vals, const Basis& basis, const std::string& name, DT dataTag) {
     auto gridFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<Container>(basis, std::forward<R>(vals));
     auto fieldInfo    = Dune::Vtk::FieldInfo(name, Impl::sizeOfContainer<Container>);
 
