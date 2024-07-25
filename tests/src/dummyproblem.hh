@@ -19,7 +19,7 @@
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/init.hh>
 
-template <typename G = Dune::UGGrid<2>>
+template <typename G = Dune::UGGrid<2>, bool useYASP = false>
 struct DummyProblem
 {
   using Grid     = G;
@@ -35,13 +35,17 @@ struct DummyProblem
   using SparseAssmblerT =
       Ikarus::SparseFlatAssembler<std::vector<LinearElastic>&, Ikarus::DirichletValues<typename Basis::FlatBasis>>;
 
-  explicit DummyProblem(const std::array<unsigned int, 2>& elementsPerDirection = {10, 10})
+  // YASPGrid needs an int, structuresgridfactory an unsigned int haha
+  explicit DummyProblem(const std::array<std::conditional_t<useYASP, int, unsigned int>, 2>& elementsPerDirection = {10, 10})
       : grid_([&]() {
           constexpr double Lx                     = 4.0;
           constexpr double Ly                     = 4.0;
           const Dune::FieldVector<double, 2> bbox = {Lx, Ly};
 
-          return Dune::StructuredGridFactory<Grid>::createCubeGrid({0, 0}, bbox, elementsPerDirection);
+          if constexpr (not useYASP)
+            return Dune::StructuredGridFactory<Grid>::createCubeGrid({0, 0}, bbox, elementsPerDirection);
+          else
+            return make_unique<Grid>(bbox, elementsPerDirection);
         }()),
         gridView_([&]() { return grid_->leafGridView(); }()),
         basis_([&]() {

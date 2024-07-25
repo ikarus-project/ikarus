@@ -11,12 +11,9 @@
 #pragma once
 
 #include <array>
-#include <cstddef>
 #include <tuple>
+#include <dune/common/fvector.hh>
 
-#include "dune/common/fvector.hh"
-#include "dune/common/math.hh"
-#include "dune/functions/functionspacebases/powerbasis.hh"
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/grid/yaspgrid.hh>
 #include <dune/vtk/vtkwriter.hh>
@@ -25,13 +22,8 @@
 #include <ikarus/io/resultfunction.hh>
 #include <ikarus/utils/concepts.hh>
 
-namespace Ikarus::Concepts {} // namespace Ikarus::Concepts
-
-// inline auto asCellData() { return Impl::AsCellData{}; }
-
-// inline auto asPointData() { return Impl::AsPointData{}; }
-
 namespace Ikarus::Vtk {
+
 struct AsCellData
 {
 } asCellData;
@@ -40,20 +32,6 @@ struct AsPointData
 } asPointData;
 
 namespace Impl {
-
-  template <typename GV, bool structured>
-  struct DefaultDataCollector
-  {
-    using Type =
-        std::conditional_t<structured, Dune::Vtk::YaspDataCollector<GV>, Dune::Vtk::ContinuousDataCollector<GV>>;
-  };
-
-  template <typename DC, bool structured>
-  struct UnderlyingVTKWriter
-  {
-    using Type = std::conditional_t<structured, Dune::Vtk::RectilinearGridWriter<typename DC::GridView, DC>,
-                                    Dune::Vtk::UnstructuredGridWriter<typename DC::GridView, DC>>;
-  };
 
   namespace Concepts {
     template <typename DT>
@@ -82,34 +60,33 @@ namespace Impl {
 
 } // namespace Impl
 
-template <typename AS, bool structured = false,
-          typename DC = Impl::DefaultDataCollector<typename AS::GridView, structured>::Type>
-requires(Concepts::FlatAssembler<AS> and Concepts::DataCollector<DC>)
-class Writer : public Impl::UnderlyingVTKWriter<DC, structured>::Type
+template <typename AS, typename DC, typename Base>
+requires(Concepts::FlatAssembler<AS> && Concepts::DataCollector<DC>)
+struct Writer : public Base
 {
 public:
   using Assembler     = AS;
   using GridView      = typename Assembler::GridView;
   using FERequirement = typename Assembler::FERequirement;
-  using FEContainer   = typename Assembler::FEContainerType;
+  using FEContainer   = typename Assembler::FEContainer;
   using FEType        = typename std::remove_cvref_t<FEContainer>::value_type;
 
   using DataCollector = DC;
-  using Base          = Impl::UnderlyingVTKWriter<DC, structured>::Type;
+  using VTKWriter     = Base;
 
   template <class... Args>
-  explicit Writer(std::shared_ptr<Assembler> assembler, Args... args)
-      : Base(assembler->gridView(), args...),
+  Writer(std::shared_ptr<AS> assembler, Args... args)
+      : Base(assembler->gridView(), std::forward<Args>(args)...),
         assembler_(assembler) {}
 
   template <class... Args>
-  Writer(std::shared_ptr<Assembler> assembler, DataCollector& dc, Args... args)
-      : Base(dc, args...),
+  Writer(std::shared_ptr<AS> assembler, DC& dc, Args... args)
+      : Base(dc, std::forward<Args>(args)...),
         assembler_(assembler) {}
 
   template <class... Args>
-  Writer(std::shared_ptr<Assembler> assembler, DataCollector&& dc, Args... args)
-      : Base(std::move(dc), args...),
+  Writer(std::shared_ptr<AS> assembler, DC&& dc, Args... args)
+      : Base(std::move(dc), std::forward<Args>(args)...),
         assembler_(assembler) {}
 
   template <typename RF, Impl::Concepts::DataType DT>
@@ -150,18 +127,58 @@ private:
   std::shared_ptr<Assembler> assembler_;
 };
 
-// Deduction guide
+/**
+ * \brief Meta type to check whether a grid is structured, inherits from false_type
+ *
+ * \tparam G Grid type
+ */
+template <typename G>
+struct IsStructured : std::false_type
+{
+};
 
-template <typename Assembler, class... Args>
-requires(Concepts::FlatAssembler<Assembler>)
-Writer(std::shared_ptr<Assembler>, Args...) -> Writer<Assembler>;
+/**
+ * \brief Specialization of IsStructured for YASPGrids, inherits from true_type
+ */
+template <int dim, typename Coordinates>
+struct IsStructured<Dune::YaspGrid<dim, Coordinates>> : std::true_type
+{
+};
 
-template <typename DC, typename Assembler, class... Args, Dune::Vtk::IsDataCollector<DC> = true>
-requires(Concepts::FlatAssembler<Assembler>)
-Writer(std::shared_ptr<Assembler>, DC&, Args...) -> Writer<Assembler, false, DC>;
+/**
+ * \brief Manages the default template parameter for the `Vtk::Writer`
+ *
+ * \tparam GV given GridView type
+ */
+template <typename GV>
+requires Concepts::GridView<GV>
+struct DefaultVTKWriterManager
+{
+  static constexpr bool isStructured = IsStructured<typename GV::Grid>::value;
+  using DefaultDataCollector =
+      std::conditional_t<isStructured, Dune::Vtk::YaspDataCollector<GV>, Dune::Vtk::ContinuousDataCollector<GV>>;
 
-template <typename DC, typename Assembler, class... Args, Dune::Vtk::IsDataCollector<DC> = true>
-requires(Concepts::FlatAssembler<Assembler>)
-Writer(std::shared_ptr<Assembler>, DC&&, Args...) -> Writer<Assembler, false, DC>;
+  template <typename DC = DefaultDataCollector>
+  using DefaultVTKWriter = std::conditional_t<isStructured, Dune::Vtk::RectilinearGridWriter<typename DC::GridView, DC>,
+                                              Dune::Vtk::UnstructuredGridWriter<typename DC::GridView, DC>>;
+};
+
+// Class template argument deduction guides for VTK::Writer
+
+template <typename AS, class... Args>
+requires(Ikarus::Concepts::FlatAssembler<AS>)
+Writer(std::shared_ptr<AS>,
+       Args...) -> Writer<AS, typename DefaultVTKWriterManager<typename AS::GridView>::DefaultDataCollector,
+                          typename DefaultVTKWriterManager<typename AS::GridView>::template DefaultVTKWriter<>>;
+
+template <typename AS, typename DC, class... Args, Dune::Vtk::IsDataCollector<DC> = true>
+requires(Ikarus::Concepts::FlatAssembler<AS>)
+Writer(std::shared_ptr<AS>, DC&, Args...)
+    -> Writer<AS, DC, typename DefaultVTKWriterManager<typename AS::GridView>::template DefaultVTKWriter<DC>>;
+
+template <typename AS, typename DC, class... Args, Dune::Vtk::IsDataCollector<DC> = true>
+requires(Ikarus::Concepts::FlatAssembler<AS>)
+Writer(std::shared_ptr<AS>, DC&&, Args...)
+    -> Writer<AS, DC, typename DefaultVTKWriterManager<typename AS::GridView>::template DefaultVTKWriter<DC>>;
 
 } // namespace Ikarus::Vtk

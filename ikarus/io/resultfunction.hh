@@ -53,7 +53,7 @@ public:
   using Assembler         = AS;
   using GridView          = typename Assembler::GridView;
   using FERequirementType = typename Assembler::FERequirement;
-  using FEContainer       = typename Assembler::FEContainerType;
+  using FEContainer       = typename Assembler::FEContainer;
   using FiniteElement     = typename std::remove_cvref_t<FEContainer>::value_type;
 
   using ctype                  = typename GridView::ctype;

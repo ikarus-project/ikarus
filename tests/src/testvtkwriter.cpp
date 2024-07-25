@@ -10,7 +10,6 @@
 #include <type_traits>
 
 #include "dune/common/indices.hh"
-#include "dune/common/tuplevector.hh"
 #include "dune/functions/functionspacebases/subspacebasis.hh"
 #include <dune/common/float_cmp.hh>
 #include <dune/common/fvector.hh>
@@ -41,47 +40,7 @@
 
 using Dune::TestSuite;
 
-template <typename GridView, typename Assembler>
-auto testInstantiationAndTemplateArgumentDeduction(const GridView& gridView, std::shared_ptr<Assembler> assembler) {
-  static_assert(Ikarus::Concepts::FlatAssembler<typename decltype(assembler)::element_type>);
-  // Create Vtk::Writer
-  static_assert(std::is_class_v<Ikarus::Vtk::Writer<Assembler, false>>);
-  static_assert(std::is_same_v<typename Ikarus::Vtk::Writer<Assembler, false>::DataCollector,
-                               Dune::Vtk::ContinuousDataCollector<GridView>>);
-
-  // Unfortionatly we can instantiate the structured Writer and DataCollector even for a unstructured Grid (UG)
-  static_assert(std::is_class_v<Ikarus::Vtk::Writer<Assembler, true>>);
-  static_assert(std::is_same_v<typename Ikarus::Vtk::Writer<Assembler, true>::DataCollector,
-                               Dune::Vtk::YaspDataCollector<GridView>>);
-
-  auto writer = Ikarus::Vtk::Writer<Assembler>(assembler);
-  auto writerArgs =
-      Ikarus::Vtk::Writer<Assembler>(assembler, Dune::Vtk::FormatTypes::BINARY, Dune::Vtk::DataTypes::FLOAT32);
-
-  auto writerDC     = Ikarus::Vtk::Writer<Assembler, false, Dune::Vtk::DiscontinuousDataCollector<GridView>>(assembler);
-  auto writerDCArgs = Ikarus::Vtk::Writer<Assembler, false, Dune::Vtk::DiscontinuousDataCollector<GridView>>(
-      assembler, Dune::Vtk::FormatTypes::BINARY, Dune::Vtk::DataTypes::FLOAT32);
-
-  Dune::Vtk::DiscontinuousDataCollector<GridView> dc{gridView};
-  static_assert(Ikarus::Concepts::DataCollector<decltype(dc)>);
-
-  auto writerDCAsArg =
-      Ikarus::Vtk::Writer<Assembler, false, Dune::Vtk::DiscontinuousDataCollector<GridView>>(assembler, dc);
-  auto writerDCAsArgM =
-      Ikarus::Vtk::Writer<Assembler, false, Dune::Vtk::DiscontinuousDataCollector<GridView>>(assembler, std::move(dc));
-  auto writerDCAsArgArgs = Ikarus::Vtk::Writer<Assembler, false, Dune::Vtk::DiscontinuousDataCollector<GridView>>(
-      assembler, dc, Dune::Vtk::FormatTypes::BINARY, Dune::Vtk::DataTypes::FLOAT32);
-
-  // using CTAD
-  auto writerCTAD     = Ikarus::Vtk::Writer(assembler);
-  auto writerArgsCTAD = Ikarus::Vtk::Writer(assembler, Dune::Vtk::FormatTypes::BINARY, Dune::Vtk::DataTypes::FLOAT32);
-  auto writerDCAsArgCTAD  = Ikarus::Vtk::Writer(assembler, dc);
-  auto writerDCAsArgMCTAD = Ikarus::Vtk::Writer(assembler, std::move(dc));
-  auto writerDCAsArgArgsCTAD =
-      Ikarus::Vtk::Writer(assembler, dc, Dune::Vtk::FormatTypes::BINARY, Dune::Vtk::DataTypes::FLOAT32);
-}
-
-auto runTest() {
+auto vtkWriterTest() {
   TestSuite t("Test ResultFunction");
   std::string fileName = "ResultFunctionTest";
 
@@ -97,8 +56,6 @@ auto runTest() {
   auto& D_Glob         = req.globalSolution();
 
   // Tests
-  testInstantiationAndTemplateArgumentDeduction(gridView, sparseAssembler);
-
   Dune::Vtk::DiscontinuousDataCollector dc{gridView};
 
   auto writer = Ikarus::Vtk::Writer(sparseAssembler);
@@ -168,11 +125,95 @@ auto runTest() {
   return t;
 }
 
+auto testUnstructuredInstantiaionAndDeduction() {
+  TestSuite t;
+
+  using Grid     = Dune::UGGrid<2>;
+  using GridView = Grid::LeafGridView;
+
+  DummyProblem<Grid> testCase{};
+
+  auto& gridView       = testCase.gridView();
+  auto sparseAssembler = testCase.sparseAssembler();
+
+  static_assert(not Ikarus::Vtk::IsStructured<Grid>::value);
+
+  Ikarus::Vtk::Writer writer(sparseAssembler);
+
+  using DC   = typename decltype(writer)::DataCollector;
+  using VTKW = typename decltype(writer)::VTKWriter;
+
+  static_assert(std::is_same_v<DC, Dune::Vtk::ContinuousDataCollector<GridView>>);
+  static_assert(std::is_same_v<VTKW, Dune::Vtk::UnstructuredGridWriter<GridView, DC>>);
+
+  // Second writer with a DiscontinousWriter
+  auto discontinousDC = Dune::Vtk::DiscontinuousDataCollector<GridView>(gridView);
+  Ikarus::Vtk::Writer writer2(sparseAssembler, discontinousDC);
+
+  using DC2   = typename decltype(writer2)::DataCollector;
+  using VTKW2 = typename decltype(writer2)::VTKWriter;
+
+  static_assert(std::is_same_v<DC2, Dune::Vtk::DiscontinuousDataCollector<GridView>>);
+  static_assert(std::is_same_v<VTKW2, Dune::Vtk::UnstructuredGridWriter<GridView, decltype(discontinousDC)>>);
+
+  // Use Args
+  Ikarus::Vtk::Writer writer4(sparseAssembler, Dune::Vtk::FormatTypes::BINARY, Dune::Vtk::DataTypes::FLOAT32);
+  Ikarus::Vtk::Writer writer5(sparseAssembler, discontinousDC, Dune::Vtk::FormatTypes::BINARY,
+                              Dune::Vtk::DataTypes::FLOAT32);
+  Ikarus::Vtk::Writer writer6(sparseAssembler, std::move(discontinousDC), Dune::Vtk::FormatTypes::BINARY,
+                              Dune::Vtk::DataTypes::FLOAT32);
+
+  return t;
+}
+
+auto testStructuredInstantiaionAndDeduction() {
+  TestSuite t;
+
+  using Grid     = Dune::YaspGrid<2>;
+  using GridView = Grid::LeafGridView;
+
+  DummyProblem<Grid, true> testCase{};
+
+  auto& gridView       = testCase.gridView();
+  auto sparseAssembler = testCase.sparseAssembler();
+
+  static_assert(Ikarus::Vtk::IsStructured<Grid>::value);
+
+  Ikarus::Vtk::Writer writer(sparseAssembler);
+
+  using DC   = typename decltype(writer)::DataCollector;
+  using VTKW = typename decltype(writer)::VTKWriter;
+
+  static_assert(std::is_same_v<DC, Dune::Vtk::YaspDataCollector<GridView>>);
+  static_assert(std::is_same_v<VTKW, Dune::Vtk::RectilinearGridWriter<GridView, DC>>);
+
+  // Second writer with a StructuredDataCollector
+  auto structuredDC = Dune::Vtk::StructuredDataCollector<GridView>(gridView);
+  Ikarus::Vtk::Writer writer2(sparseAssembler, structuredDC);
+
+  using DC2   = typename decltype(writer2)::DataCollector;
+  using VTKW2 = typename decltype(writer2)::VTKWriter;
+
+  static_assert(std::is_same_v<DC2, Dune::Vtk::StructuredDataCollector<GridView>>);
+  static_assert(std::is_same_v<VTKW2, Dune::Vtk::RectilinearGridWriter<GridView, decltype(structuredDC)>>);
+
+  // Use Args
+  Ikarus::Vtk::Writer writer4(sparseAssembler, Dune::Vtk::FormatTypes::BINARY, Dune::Vtk::DataTypes::FLOAT32);
+  Ikarus::Vtk::Writer writer5(sparseAssembler, structuredDC, Dune::Vtk::FormatTypes::BINARY,
+                              Dune::Vtk::DataTypes::FLOAT32);
+  Ikarus::Vtk::Writer writer6(sparseAssembler, std::move(structuredDC), Dune::Vtk::FormatTypes::BINARY,
+                              Dune::Vtk::DataTypes::FLOAT32);
+
+  return t;
+}
+
 int main(const int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t;
 
-  t.subTest(runTest());
+  t.subTest(testStructuredInstantiaionAndDeduction());
+  t.subTest(testUnstructuredInstantiaionAndDeduction());
+  t.subTest(vtkWriterTest());
 
   return t.exit();
 }

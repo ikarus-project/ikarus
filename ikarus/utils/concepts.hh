@@ -564,5 +564,14 @@ namespace Concepts {
     { dc.gridView() } -> std::same_as<const typename DC::GridView&>;
   };
 
+  template <class GV>
+  concept GridView = requires(GV g) {
+    typename GV::Grid;
+    GV::dimension;
+    GV::dimensionworld;
+
+    { g.grid() };
+  };
+
 } // namespace Concepts
 } // namespace Ikarus
