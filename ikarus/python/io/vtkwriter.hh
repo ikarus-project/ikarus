@@ -23,9 +23,30 @@
 namespace Ikarus::Python {
 
 /**
- * \brief Register Python bindings for a VtkWriter class.
+ * \brief Register Python bindings for a VtkWriter class. \n
+ *
+ * The registered VtkWriter class provides functionalities for writing VTK files from assembled data.
+ * This class supports adding result data as cell or point data and configuring VTK output formats.
+ *
+ * This function registers the following methods for the VtkWriter class:
+ * - `setFormat(type: dune.vtk.FormatTypes)`
+ * - `setDatatype(type: dune.vtk.DataTypes)`
+ * - `setHeadertype(type: dune.vtk.DataTypes)`
+ * - `addAllResultsAsCellData()`
+ * - `addAllResultsAsPointData()`
+ * - `addResultAsCellData(resType: str)`
+ * - `addResultAsPointData(resType: str)`
+ * - `write(fileName)`
+ * - `addInterPolation(writer, vals_::np.array, basis, name: str, size: int)`
+ * - `addPointData()` (multiple overloads)
+ * - `addCellData()` (multiple overloads)
  *
  * \ingroup pythonbindings
+ *
+ * \tparam Writer The writer class type.
+ * \tparam options Additional options for the writer class.
+ * \param scope The scope in which to register the class.
+ * \param cls The class object to register the methods with.
  */
 template <class Writer, class... options>
 void registerVtkWriter(pybind11::handle scope, pybind11::class_<Writer, options...> cls) {
