@@ -13,7 +13,6 @@ import types
 # The list of supported dataCollectors
 dataCollectors = ["lagrange", "discontinuous", "iga"]
 
-
 def __addInterpolation(writer, flag: int):
     typeStr = "Ikarus::Vtk::asPointData" if flag == 1 else "Ikarus::Vtk::asCellData"
 
@@ -25,13 +24,13 @@ def __addInterpolation(writer, flag: int):
             #include <ikarus/python/io/vtkwriter.hh>
             #include <dune/python/pybind11/eigen.h>
             template <typename Writer, typename Basis>
-            void addInterPolation(Writer& writer, const auto& vals_, const Basis& basis, std::string name) {{
+            void addInterpolation(Writer& writer, const auto& vals_, const Basis& basis, std::string name) {{
                 auto vals = vals_.template cast<Eigen::VectorX<double>>();
                 writer.template addInterpolation<Basis, {containerStr}>(std::move(vals), basis, name, {typeStr});
             }}  
         """.format(containerStr=containerStr, typeStr=typeStr)
 
-        return run("addInterPolation", StringIO(runCode), writer, vals_, basis, name)
+        return run("addInterpolation", StringIO(runCode), writer, vals_, basis, name)
 
     return __addInterpolationFunc
 
@@ -40,22 +39,13 @@ def vtkWriter(
     assembler,
     dataCollector: str = None,
     order: int = 1,
-    structured=False,
     format=FormatTypes.binary,
     datatype=DataTypes.Float32,
     headertype=DataTypes.UInt32,
 ):
-    """ """
-
     includes = []
 
-    # If we have a structured gridwriter, we default to the yaspdatacollector on the c++ side
-    if dataCollector is not None and structured:
-        warn("DataCollector Argument ignored, as Writer is set to structured")
-        dataCollector = None
-
-    structuredStr = "true" if structured else "false"
-    gridViewName = assembler.grid().cppTypeName
+    gridViewName = assembler.grid.cppTypeName
     dataCollectorName: str = ""
 
     if dataCollector is not None:
@@ -79,14 +69,23 @@ def vtkWriter(
             dataCollector = None
 
     generator = MySimpleGenerator("VtkWriter", "Ikarus::Python")
+
+    defaultManager = f"Ikarus::Vtk::DefaultVTKWriterManager<{gridViewName}>"
+    vtkWriterName = ""
+    element_type = ""
+
     if dataCollector is None:
-        element_type = f"Ikarus::Vtk::Writer<{assembler.cppTypeName}, {structuredStr}>"
-        dataCollectorName = f"Ikarus::Vtk::Impl::DefaultDataCollector<typename {assembler.cppTypeName}::GridView, {structuredStr}>::Type"
+        vtkWriterName = f"typename {defaultManager}::template DefaultVTKWriter<>"
+        dataCollectorName = f"typename {defaultManager}::DefaultDataCollector"
+        element_type = f"Ikarus::Vtk::Writer<{assembler.cppTypeName}, {dataCollectorName}, {vtkWriterName}>"
 
     else:
-        element_type = f"Ikarus::Vtk::Writer<{assembler.cppTypeName}, {structuredStr}, {dataCollectorName}>"
+        vtkWriterName = (
+            f"typename {defaultManager}::template DefaultVTKWriter<{dataCollectorName}>"
+        )
+        element_type = f"Ikarus::Vtk::Writer<{assembler.cppTypeName}, {dataCollectorName}, {vtkWriterName}>"
 
-    baseType = f"Ikarus::Vtk::Impl::UnderlyingVTKWriter<typename {dataCollectorName}, {structuredStr}>::Type"
+    baseType = vtkWriterName
 
     includes += ["ikarus/assembler/simpleassemblers.hh"]
     includes += ["ikarus/io/vtkwriter.hh"]

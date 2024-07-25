@@ -1,10 +1,8 @@
 # SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
-
-import debug_info
-
-debug_info.unsetDebugFlags()
+# import debug_info
+# debug_info.setDebugFlags()
 
 import math
 
@@ -19,30 +17,26 @@ import dune.functions
 from dune.grid import gridFunction
 from dune.vtk import FormatTypes, DataTypes
 
-
+import os
 import unittest
 
+from dirichletvaluetest import makeGrid
 
 class TestVtkWriter(unittest.TestCase):
     def setUp(self):
-        lowerLeft = []
-        upperRight = []
-        elements = []
-        for i in range(2):
-            lowerLeft.append(-1)
-            upperRight.append(1)
-            elements.append(3)
+        reader = (
+            dune.grid.reader.gmsh,
+            os.path.join(os.path.dirname(__file__), "auxiliaryfiles/quad2d.msh"),
+        )
+        self.grid = dune.grid.ugGrid(reader, dimgrid=2)
 
-        self.grid = dune.grid.structuredGrid(lowerLeft, upperRight, elements)
-
-        basisLagrange1 = iks.basis(
+        basis = iks.basis(
             self.grid, dune.functions.Power(dune.functions.Lagrange(order=1), 2)
         )
-        self.flatBasis = basisLagrange1.flat()
+        self.flatBasis = basis.flat()
         d = np.zeros(len(self.flatBasis))
-        d[0] = 0.0
 
-        lambdaLoad = iks.ValueWrapper(3.0)
+        lambdaLoad = iks.Scalar(3.0)
 
         def vL(x, lambdaVal):
             return np.array([lambdaVal * x[0] * 2, 2 * lambdaVal * x[1] * 0])
@@ -52,7 +46,7 @@ class TestVtkWriter(unittest.TestCase):
         fes = []
         linElastic = iks.finite_elements.linearElastic(youngs_modulus=1000, nu=0.2)
         for e in self.grid.elements:
-            fes.append(iks.finite_elements.makeFE(basisLagrange1, linElastic, vLoad))
+            fes.append(iks.finite_elements.makeFE(basis, linElastic, vLoad))
             fes[-1].bind(e)
 
         req = fes[0].createRequirement()
@@ -65,9 +59,7 @@ class TestVtkWriter(unittest.TestCase):
             if intersection.geometry.center[1] < -0.99999:
                 vec[localView.index(localIndex)] = True
 
-        self.dirichletValues.fixBoundaryDOFsUsingLocalViewAndIntersection(
-            fixLeftHandEdge
-        )
+        self.dirichletValues.fixBoundaryDOFs(fixLeftHandEdge)
 
         self.sparseAssembler = iks.assembler.sparseFlatAssembler(
             fes, self.dirichletValues
@@ -133,19 +125,44 @@ class TestVtkWriter(unittest.TestCase):
         writer2.write("file2")
 
     def test_structuredWriter(self):
-        # Structured writer
-        writer3 = iks.io.vtkWriter(
-            self.sparseAssembler, structured=True, format=FormatTypes.ascii
-        )
-        writer3.addAllResultsAsCellData()
-        fileName = writer3.write("file3")
-        assert fileName[-3:] == "vtr"
+        gridUG = makeGrid()
 
-        # These two constructors should result in a warning
-        with self.assertWarns(Warning):
-            _ = iks.io.vtkWriter(
-                self.sparseAssembler, dataCollector="lagrange", structured=True
-            )
+        basis = iks.basis(
+            gridUG, dune.functions.Power(dune.functions.Lagrange(order=1), 2)
+        )
+        flatBasisYASP = basis.flat()
+        d = np.zeros(len(flatBasisYASP))
+
+        lambdaLoad = iks.Scalar(3.0)
+
+        fes = []
+        linElastic = iks.finite_elements.linearElastic(youngs_modulus=1000, nu=0.2)
+        for e in gridUG.elements:
+            fes.append(iks.finite_elements.makeFE(basis, linElastic))
+            fes[-1].bind(e)
+
+        req = fes[0].createRequirement()
+        lambdaLoad = iks.Scalar(3.0)
+        req.insertParameter(lambdaLoad)
+        req.insertGlobalSolution(d)
+
+        dirichletValuesYASP = iks.dirichletValues(flatBasisYASP)
+        sparseAssemblerYASP = iks.assembler.sparseFlatAssembler(
+            fes, dirichletValuesYASP
+        )
+
+        sparseAssemblerYASP.bind(
+            req, iks.AffordanceCollection.elastoStatics, iks.DBCOption.Full
+        )
+
+        writer3 = iks.io.vtkWriter(sparseAssemblerYASP, format=FormatTypes.ascii)
+        writer3.addAllResultsAsCellData()
+
+        print(writer3.cppTypeName)
+
+        fileName = writer3.write("file3")
+        self.assertEqual(fileName[-3:], "vtr")
+
         with self.assertWarns(Warning):
             _ = iks.io.vtkWriter(self.sparseAssembler, dataCollector="unknown")
 

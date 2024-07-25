@@ -25,8 +25,6 @@ namespace Ikarus::Python {
 /**
  * \brief Register Python bindings for a VtkWriter class.
  *
- *
- *
  * \ingroup pythonbindings
  */
 template <class Writer, class... options>
@@ -69,13 +67,19 @@ void registerVtkWriter(pybind11::handle scope, pybind11::class_<Writer, options.
       DUNE_THROW(Dune::NotImplemented, "Element " + Dune::className<FE>() + " doesn't support ResultType " + resType);
   };
 
-  cls.def("addResultAsCellData",
-          [&](Writer& self, const std::string& resType) { addResultImpl(self, resType, asCellData); }, pybind11::arg("resType"));
+  cls.def(
+      "addResultAsCellData",
+      [&](Writer& self, const std::string& resType) { addResultImpl(self, resType, asCellData); },
+      pybind11::arg("resType"));
 
-  cls.def("addResultAsPointData",
-          [&](Writer& self, const std::string& resType) { addResultImpl(self, resType, asPointData); }, pybind11::arg("resType"));
+  cls.def(
+      "addResultAsPointData",
+      [&](Writer& self, const std::string& resType) { addResultImpl(self, resType, asPointData); },
+      pybind11::arg("resType"));
 
-  cls.def("write", [](Writer& self, const std::string& fileName) { return self.write(fileName); }, pybind11::arg("fileName"));
+  cls.def(
+      "write", [](Writer& self, const std::string& fileName) { return self.write(fileName); },
+      pybind11::arg("fileName"));
 
   // The following bindings are directly copied from /dune/dune-vtk/dune/python/vtk/writer.hh, maybe there is a better
   // way to do this

@@ -12,8 +12,8 @@
 
 #include <array>
 #include <tuple>
-#include <dune/common/fvector.hh>
 
+#include <dune/common/fvector.hh>
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/grid/yaspgrid.hh>
 #include <dune/vtk/vtkwriter.hh>

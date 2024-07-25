@@ -36,7 +36,8 @@ struct DummyProblem
       Ikarus::SparseFlatAssembler<std::vector<LinearElastic>&, Ikarus::DirichletValues<typename Basis::FlatBasis>>;
 
   // YASPGrid needs an int, structuresgridfactory an unsigned int haha
-  explicit DummyProblem(const std::array<std::conditional_t<useYASP, int, unsigned int>, 2>& elementsPerDirection = {10, 10})
+  explicit DummyProblem(
+      const std::array<std::conditional_t<useYASP, int, unsigned int>, 2>& elementsPerDirection = {10, 10})
       : grid_([&]() {
           constexpr double Lx                     = 4.0;
           constexpr double Ly                     = 4.0;
