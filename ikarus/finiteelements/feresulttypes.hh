@@ -252,4 +252,34 @@ auto toString() {
 template <template <typename, int, int> class RT1, template <typename, int, int> class RT2>
 constexpr bool isSameResultType = std::is_same_v<Impl::DummyRT<RT1>, Impl::DummyRT<RT2>>;
 
+namespace Impl {
+  template <typename T, typename Tuple>
+  struct hasType;
+
+  template <typename T, typename... Us>
+  struct hasType<T, std::tuple<Us...>> : std::disjunction<std::is_same<T, Us>...>
+  {
+  };
+} // namespace Impl
+
+/**
+ * \brief Base class for element definitions that provides common functionality for ResultTypes
+ *
+ * \tparam ResultTypes supported ResultTypes
+ */
+template <template <typename, int, int> typename... ResultTypes>
+struct ResultTypeBase
+{
+  /**
+   * \brief Returns whether a ResultType is provided by the element
+   * \tparam RT requested ResultType
+   */
+  template <template <typename, int, int> typename RT>
+  static consteval bool supportsResultType() {
+    return Impl::hasType<decltype(makeRT<RT>()), SupportedResultTypes>::value;
+  }
+
+  using SupportedResultTypes = std::tuple<decltype(makeRT<ResultTypes>())...>;
+};
+
 } // namespace Ikarus

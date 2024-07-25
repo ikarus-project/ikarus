@@ -57,8 +57,6 @@ public:
   using GridView  = typename Traits::GridView;
   using Pre       = EnhancedAssumedStrainsPre;
 
-  using SupportedResultTypes = std::tuple<decltype(makeRT<ResultTypes::linearStress>())>;
-
   /**
    * \brief Constructor for Enhanced Assumed Strains elements.
    * \param pre The pre finite element
