@@ -49,7 +49,7 @@ struct LinearElasticPre
  * \tparam FE The type of the finite element.
  */
 template <typename PreFE, typename FE>
-class LinearElastic : public ResultTypeBase<LinearElastic<PreFE, FE>, ResultTypes::linearStress>
+class LinearElastic : public ResultTypeBase<ResultTypes::linearStress>
 {
 public:
   using Traits       = PreFE::Traits;
@@ -167,7 +167,7 @@ public:
    * \tparam RT The type representing the requested result.
    */
   template <template <typename, int, int> class RT>
-  requires(LinearElastic::template supportsResultType<RT>())
+  requires(supportsResultType<RT>())
   auto calculateAtImpl(const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<1>) const {
     using RTWrapper = ResultWrapper<RT<typename Traits::ctype, myDim, Traits::worlddim>, ResultShape::Vector>;

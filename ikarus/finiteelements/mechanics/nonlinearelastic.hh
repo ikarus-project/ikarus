@@ -57,7 +57,7 @@ struct NonLinearElasticPre
  * \tparam PRE The type of the non-linear elastic pre finite element.
  */
 template <typename PreFE, typename FE, typename PRE>
-class NonLinearElastic : public ResultTypeBase<NonLinearElastic<PreFE, FE, PRE>, ResultTypes::PK2Stress>
+class NonLinearElastic : public ResultTypeBase<ResultTypes::PK2Stress>
 {
 public:
   using Traits    = PreFE::Traits;
@@ -212,7 +212,7 @@ public:
    * \tparam RT The type representing the requested result.
    */
   template <template <typename, int, int> class RT>
-  requires(NonLinearElastic::template supportsResultType<RT>())
+  requires(supportsResultType<RT>())
   auto calculateAtImpl(const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<1>) const {
     using namespace Dune::DerivativeDirections;

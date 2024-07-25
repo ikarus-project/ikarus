@@ -47,7 +47,7 @@ struct KirchhoffLoveShellPre
  * \tparam FE Type of the finite element.
  */
 template <typename PreFE, typename FE>
-class KirchhoffLoveShell : public ResultTypeBase<KirchhoffLoveShell<PreFE, FE>>
+class KirchhoffLoveShell : public ResultTypeBase<>
 {
 public:
   using Traits       = PreFE::Traits;
@@ -163,7 +163,7 @@ public:
    * \tparam RT The type representing the requested result.
    */
   template <template <typename, int, int> class RT>
-  requires(KirchhoffLoveShell::template supportsResultType<RT>())
+  requires(supportsResultType<RT>())
   auto calculateAtImpl([[maybe_unused]] const Requirement& req,
                        [[maybe_unused]] const Dune::FieldVector<double, Traits::mydim>& local)
       -> ResultWrapper<RT<double, myDim, worldDim>, ResultShape::Vector> {

@@ -265,10 +265,9 @@ namespace Impl {
 /**
  * \brief Base class for element definitions that provides common functionality for ResultTypes
  *
- * \tparam Derived FE Base Class
  * \tparam ResultTypes supported ResultTypes
  */
-template <typename Derived, template <typename, int, int> typename... ResultTypes>
+template <template <typename, int, int> typename... ResultTypes>
 struct ResultTypeBase
 {
   /**

@@ -42,8 +42,8 @@ struct TrussPre
  * \tparam FE The type of the finite element.
  */
 template <typename PreFE, typename FE>
-class Truss : public ResultTypeBase<Truss<PreFE, FE>, ResultTypes::cauchyAxialForce, ResultTypes::PK2AxialForce,
-                                    ResultTypes::linearAxialForce>
+class Truss
+    : public ResultTypeBase<ResultTypes::cauchyAxialForce, ResultTypes::PK2AxialForce, ResultTypes::linearAxialForce>
 {
 public:
   using Traits       = PreFE::Traits;
@@ -169,7 +169,7 @@ public:
    * \tparam RT The type representing the requested result.
    */
   template <template <typename, int, int> class RT>
-  requires(Truss::template supportsResultType<RT>())
+  requires(supportsResultType<RT>())
   auto calculateAtImpl(const Requirement& req, [[maybe_unused]] const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<0>) const {
     using RTWrapper                            = ResultWrapper<RT<double, myDim, myDim>, ResultShape::Vector>;
