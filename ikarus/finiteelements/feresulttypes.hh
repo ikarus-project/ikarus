@@ -271,7 +271,7 @@ template <template <typename, int, int> typename... ResultTypes>
 struct ResultTypeBase
 {
   /**
-   * \brief returns whether a ResultType is provided by the element
+   * \brief Returns whether a ResultType is provided by the element
    * \tparam RT requested ResultType
    */
   template <template <typename, int, int> typename RT>
