@@ -40,7 +40,7 @@ namespace Impl {
  * \endcode
  * \ingroup io
  * \relates
- * \tparam FE Type of the finite element
+ * \tparam AS underlying assembler (provides the finite elements and the requested results)
  * \tparam RT requested result type
  * \tparam UserFunction Type of the user-defined function for custom result evaluation (default is
 DefaultUserFunction)
@@ -120,8 +120,10 @@ public:
    * \details
    * Constructs a ResultFunction object with given finite elements, ferequirements
    *
-   * \param fes Pointer to a vector of finite elements
-   * \param req FERequirements for evaluation
+   * \param assembler shared pointer to the underlying assembler (provides the finite elements and the requested
+   * results)
+   * \param prec (optional) specify the used precision (only has an effect when using resultfunciton with
+   * Dune::VTK::VTKWriter)
    */
   ResultFunction(std::shared_ptr<Assembler> assembler, Dune::VTK::Precision prec = Dune::VTK::Precision::float64)
       : assembler_(assembler),
@@ -155,9 +157,9 @@ private:
  * Constructs a ResultFunction object with given finite elements, ferequirements as shared_ptr to be used with
  * the native Dune VTKWriter
  *
- * \param fes Pointer to a vector of finite elements
- * \param req FERequirements for evaluation
- * \tparam FE Type of the finite element
+ * \param assembler shared pointer to the underlying assembler (provides the finite elements and the requested results)
+ * \tparam AS type of the assembler
+ * \param prec (optional) specify the used precision
  * \tparam RT requested result type
  * \tparam UserFunction Type of the user-defined function for custom result evaluation (default is DefaultUserFunction)
  */
@@ -175,9 +177,8 @@ auto makeResultFunction(std::shared_ptr<AS> assembler, Dune::VTK::Precision prec
  * auto localResultFunction = localFunction(vtkResultFunction);
  * localResultFunction.bind(element);
  * \endcode
- * \param fes Pointer to a vector of finite elements
- * \param req FERequirements for evaluation
- * \tparam FE Type of the finite element
+ * \param assembler shared pointer to the underlying assembler (provides the finite elements and the requested results)
+ * \tparam AS  type of the assembler
  * \tparam RT requested result type
  * \tparam UserFunction Type of the user-defined function for custom result evaluation (default is
  * DefaultUserFunction)
