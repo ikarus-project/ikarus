@@ -168,6 +168,23 @@ struct AffordanceCollection : public std::tuple<Affordances...>
   }
 };
 
+/**
+ * @brief Type trait to check if a type is an AffordanceCollection.
+ *
+ * @tparam T Type to check.
+ */
+template<typename T>
+struct IsAffordanceCollection : std::false_type {};
+
+#ifndef DOXYGEN
+
+template<typename... Ts>
+struct IsAffordanceCollection<AffordanceCollection<Ts...>> : std::true_type {};
+#endif
+
+template<typename T>
+constexpr bool IsAffordanceCollection_v = IsAffordanceCollection<T>::value;
+
 inline constexpr VectorAffordance forces = VectorAffordance::forces;
 
 inline constexpr MatrixAffordance stiffness                   = MatrixAffordance::stiffness;

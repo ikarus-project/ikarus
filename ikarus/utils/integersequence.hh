@@ -10,8 +10,10 @@
 
 #include <type_traits>
 #include <utility>
+#include <array>
 
 #include <dune/common/indices.hh>
+#include <dune/common/integersequence.hh>
 
 
 // we put this function into the dune namespace, since in <dune/common/integersequence.hh> similar function reside

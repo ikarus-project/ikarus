@@ -65,7 +65,7 @@ NonlinearOperator_012_2  -> NonlinearOperator_2
     // for(auto i: subIndices)
      //std::cout<<" "<<i<<std::endl;
      std::array<T,std::tuple_size_v<typename NLO::FunctionTuple>> subFunctions;
-    for(auto i=0;i<subIndices.size();i++)
+    for(auto i=0;i<subIndices.size();++i)
         {
             subFunctions[i]=baseIndices[subIndices[i]];
             name+= std::to_string(subFunctions[i]);

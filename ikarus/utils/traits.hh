@@ -10,6 +10,7 @@
 #include <functional>
 #include <tuple>
 #include <type_traits>
+#include <optional>
 
 namespace std {
 template <class T>
@@ -17,6 +18,7 @@ class shared_ptr;
 }
 
 #include <dune/common/hybridutilities.hh>
+
 namespace Ikarus::traits {
 
 /**
@@ -483,5 +485,44 @@ struct ChangeArgTypeAtPos<std::function<R(Args...)>, Pos, NewType>
   using NewFunctionType  = TupleToFunctionType_t<R, NewArgsTuple>;
 };
 #endif
+
+
+/**
+ * @brief Type trait to check if a type is an AffordanceCollection.
+ *
+ * @tparam T Type to check.
+ */
+template<typename T>
+struct IsIntegerSequence : std::false_type {};
+
+#ifndef DOXYGEN
+
+template<typename T, T... t>
+struct IsIntegerSequence<std::integer_sequence<T,t...>> : std::true_type {};
+#endif
+
+template<typename T>
+constexpr bool IsIntegerSequence_v = IsIntegerSequence<T>::value;
+
+/**
+ * @brief Type trait to check if a type is an optional reference wrapper.
+ *
+ * @tparam T Type to check.
+ */
+template<typename T>
+struct isOptionalRefWrapper : std::false_type {};
+#ifndef DOXYGEN
+template<typename T>
+struct isOptionalRefWrapper<std::optional<std::reference_wrapper<T>>> : std::true_type {};
+#endif
+
+/**
+ * @brief Helper variable template to check if a type is an optional reference wrapper.
+ *
+ * @tparam T Type to check.
+ */
+template<typename T>
+constexpr bool isOptionalRefWrapper_v = isOptionalRefWrapper<T>::value;
+
 
 } // namespace Ikarus::traits
