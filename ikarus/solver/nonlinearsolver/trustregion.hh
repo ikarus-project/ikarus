@@ -243,7 +243,7 @@ public:
     spdlog::info("{:-^143}", "-");
     while (not stoppingCriterion()) {
       this->notify(NonLinearSolverMessages::ITERATION_STARTED, solverState);
-      if (options_.useRand) {
+      if (settings_.useRand) {
         if (stats_.outerIter == 0) {
           eta_.setRandom();
           while (eta_.dot(hessian() * eta_) > innerInfo_.Delta * innerInfo_.Delta)
