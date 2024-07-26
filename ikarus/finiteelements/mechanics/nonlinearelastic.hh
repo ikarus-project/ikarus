@@ -10,6 +10,8 @@
 #pragma once
 
 #if HAVE_DUNE_LOCALFEFUNCTIONS
+  #include <Eigen/Core>
+
   #include <dune/fufem/boundarypatch.hh>
   #include <dune/geometry/quadraturerules.hh>
   #include <dune/geometry/type.hh>

@@ -175,6 +175,7 @@ class NonLinearOperator<Impl::Functions<DerivativeArgs...>, Impl::Parameter<Para
 public:
   using FunctionReturnValues =
       std::tuple<Ikarus::traits::ReturnType<DerivativeArgs, ParameterArgs&...>...>; ///< Function return values
+  using FunctionTuple   = std::tuple<DerivativeArgs...>;                            ///< Types of the parameters
   using ParameterValues = std::tuple<ParameterArgs...>;                             ///< Types of the parameters
 
   static constexpr int numberOfFunctions  = sizeof...(DerivativeArgs); ///< Number of functions
@@ -198,8 +199,6 @@ public:
 
   using ValueType =
       std::remove_cvref_t<std::tuple_element_t<0, FunctionReturnValues>>; ///< Return value of the first function
-  using DerivativeType =
-      std::remove_cvref_t<std::tuple_element_t<1, FunctionReturnValues>>; ///< Return value of the second function
 
   /**
    * \brief Constructor for NonLinearOperator.
@@ -213,7 +212,9 @@ public:
                              const Impl::Parameter<ParameterArgs...>& parameterI)
       : derivatives_{derivativesFunctions.args},
         args_{parameterI.args},
-        derivativesEvaluated_(initResults(derivatives_, args_)) {}
+        derivativesEvaluated_(initResults(derivatives_, args_)) {
+          std::cout<<"NonLinearOperator(const Impl::Functions<DerivativeArgs...>& derivativesFunctions, const Impl::Parameter<ParameterArgs...>& parameterI)"<<std::endl;
+        }
 
   /**
    * \brief Constructor for NonLinearOperator.
@@ -225,7 +226,9 @@ public:
   explicit NonLinearOperator(const Funcs& derivativesFunctions, const Impl::Parameter<ParameterArgs...>& parameterI)
       : derivatives_{derivativesFunctions.args},
         args_{parameterI.args},
-        derivativesEvaluated_(initResults(derivatives_, args_)) {}
+        derivativesEvaluated_(initResults(derivatives_, args_)) {
+          std::cout<<"NonLinearOperator(const Funcs& derivativesFunctions, const Impl::Parameter<ParameterArgs...>& parameterI)"<<std::endl;
+        }
 
   /**
    * \brief Updates all functions.

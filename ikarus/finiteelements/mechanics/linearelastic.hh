@@ -10,7 +10,7 @@
 #pragma once
 
 #if HAVE_DUNE_LOCALFEFUNCTIONS
-
+  #include <Eigen/Dense>
   #include <optional>
   #include <type_traits>
 
@@ -199,6 +199,7 @@ protected:
     const auto eps = strainFunction(par, dx);
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
+        std::cout<<"calculateMatrixImpl of LinearElastic called"<<std::endl;
 
     const auto C = materialTangent();
     for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {

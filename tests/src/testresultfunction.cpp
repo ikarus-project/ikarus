@@ -156,7 +156,7 @@ auto runTestCase() {
 
   auto nonLinOp = Ikarus::NonLinearOperatorFactory::op(
       sparseAssembler,
-      Ikarus::AffordanceCollection(Ikarus::VectorAffordance::forces, Ikarus::MatrixAffordance::stiffness));
+      Ikarus::AffordanceCollection(Ikarus::VectorAffordance::forces, Ikarus::MatrixAffordance::stiffness),std::index_sequence <1,2>{});
 
   const auto& K    = nonLinOp.derivative();
   const auto& Fext = nonLinOp.value();
