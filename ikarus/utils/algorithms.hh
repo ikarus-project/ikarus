@@ -245,7 +245,7 @@ constexpr size_t find_if(Tuple&& tuple, Predicate pred) {
  * \ingroup algos
  */
 template <typename Tuple, typename Predicate>
-bool none_of(Tuple&& tuple, Predicate pred) {
+constexpr bool none_of(Tuple&& tuple, Predicate pred) {
   return find_if(tuple, pred) == std::tuple_size<std::decay_t<Tuple>>::value;
 }
 
@@ -262,7 +262,7 @@ bool none_of(Tuple&& tuple, Predicate pred) {
  * \ingroup algos
  */
 template <typename Tuple, typename Predicate>
-bool any_of(Tuple&& tuple, Predicate pred) {
+constexpr bool any_of(Tuple&& tuple, Predicate pred) {
   return !none_of(tuple, pred);
 }
 
@@ -281,7 +281,7 @@ bool any_of(Tuple&& tuple, Predicate pred) {
  * \ingroup algos
  */
 template <typename Tuple, typename Predicate>
-auto filter(Tuple&& tuple, Predicate pred) {
+constexpr auto filter(Tuple&& tuple, Predicate pred) {
   return std::apply(
       [&pred](auto... ts) {
         return std::tuple_cat(std::conditional_t<pred(ts), std::tuple<decltype(ts)>, std::tuple<>>{}...);

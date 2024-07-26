@@ -13,7 +13,10 @@
 #include <ikarus/assembler/dirichletbcenforcement.hh>
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/utils/nonlinearoperator.hh>
+#include <ikarus/utils/traits.hh>
+#include <ikarus/utils/algorithms.hh>
 #include <dune/common/integersequence.hh>
+#include <dune/common/indices.hh>
 
 namespace Ikarus {
 
@@ -33,64 +36,49 @@ namespace Impl {
 
 struct NonLinearOperatorFactory
 {
-
-  template<typename Assembler, typename... Affordances>
-  static auto scalarFunction(std::shared_ptr<Assembler> assemblerPtr,AffordanceCollection<Affordances...> affordances) {
+  struct DummyEmpty{};
+  template<int index,typename Assembler, typename... Affordances > requires (index<3 and index>=0)
+  static auto function(std::shared_ptr<Assembler> assemblerPtr,AffordanceCollection<Affordances...> affordances, DBCOption dbcOption) {
         using FERequirement             = typename traits::remove_pointer_t<std::remove_cvref_t<Assembler>>::FERequirement;
+    // Since it is not possible to have [[no_unique_address]] with a lambda, we have to use a dummy type, to remove the lambda overhead capturing dbcOption for the scalar function
+      struct DummyEmpty{};
 
-    return [assembler = assemblerPtr, affordances](
-                                                 typename FERequirement::SolutionVectorType& globalSol,
-                                                 typename FERequirement::ParameterType& parameter) -> auto& {
-        FERequirement req;
-        req.insertGlobalSolution(globalSol).insertParameter(parameter);
-
+        struct DummyLambda {
+        decltype(auto) operator()(  typename FERequirement::SolutionVectorType& globalSol,
+                                                 typename FERequirement::ParameterType& parameter)const {
+                                                        FERequirement req;
+      req.insertGlobalSolution(globalSol).insertParameter(parameter);
+      if constexpr(index==0)
         return assembler->scalar(req, affordances.scalarAffordance());
-      };
-  }
+      else if constexpr(index==1)
+        return assembler->vector(req, affordances.vectorAffordance(), dbcOption);
+      else if constexpr(index==2)
+        return assembler->matrix(req, affordances.matrixAffordance(), dbcOption);
+                                                 }
 
-    template<typename Assembler, typename... Affordances>
-  static auto vectorFunction(std::shared_ptr<Assembler> assemblerPtr,AffordanceCollection<Affordances...> affordances,DBCOption dbcOption) {
-        using FERequirement             = typename traits::remove_pointer_t<std::remove_cvref_t<Assembler>>::FERequirement;
-
-    return [dbcOption, assembler = assemblerPtr, affordances](
-                                                 typename FERequirement::SolutionVectorType& globalSol,
-                                                 typename FERequirement::ParameterType& parameter) -> auto& {
-      FERequirement req;
-      req.insertGlobalSolution(globalSol).insertParameter(parameter);
-      return assembler->vector(req, affordances.vectorAffordance(), dbcOption);
+        std::shared_ptr<Assembler> assembler;
+         AffordanceCollection<Affordances...> affordances;
+                [[no_unique_address]] std::conditional_t<index==0,DummyEmpty,DBCOption> dbcOption;
     };
+    DummyLambda result;
+    result.assembler = assemblerPtr;
+    result.affordances = affordances;
+    if constexpr(index!=0)
+      result.dbcOption = dbcOption;
+
+    return result;
   }
-
-
-    template<typename Assembler, typename... Affordances>
-  static auto matrixFunction(std::shared_ptr<Assembler> assemblerPtr,AffordanceCollection<Affordances...> affordances,DBCOption dbcOption) {
-        using FERequirement             = typename traits::remove_pointer_t<std::remove_cvref_t<Assembler>>::FERequirement;
-
-    return [dbcOption, assembler = assemblerPtr, affordances](
-                                          typename FERequirement::SolutionVectorType& globalSol,
-                                          typename FERequirement::ParameterType& parameter) -> auto& {
-      FERequirement req;
-      req.insertGlobalSolution(globalSol).insertParameter(parameter);
-
-      return assembler->matrix(req, affordances.matrixAffordance(), dbcOption);
-    };
-  }
-//TODO Alex makes this into a singlew function templated with i
-
-
-
-
-
 
   template <size_t... funcs, typename Assembler, typename... Affordances>
   static auto op(Assembler&& as, typename traits::remove_pointer_t<std::remove_cvref_t<Assembler>>::FERequirement& req,
                  AffordanceCollection<Affordances...> affordances, DBCOption dbcOption,
-                 std::integer_sequence<size_t,funcs...> funcIndices = {}) {
+                 std::index_sequence <funcs...> funcIndices = {}) {
     constexpr int funcIndexSize = funcIndices.size();
     static_assert(Dune::equal(Dune::sorted(funcIndices),funcIndices), "The function indices you request have to be sorted");
-    static_assert(funcIndexSize < 4, "The function indices you request have to be less than 4");
+    static_assert(funcIndexSize < 4, "The number of function indices you request have to be less than 4");
     static_assert(Dune::filter([](auto i) { return i < 3; },funcIndices).size() == funcIndexSize,
                   "The function indices you request have to be less than 3");
+                  static_assert((sizeof...(funcs)==sizeof...(Affordances)) or funcIndexSize==0,"The number of functions and affordances have to be equal.");
     using namespace Dune::Indices;
 
     constexpr bool provideScalar =
@@ -99,6 +87,14 @@ struct NonLinearOperatorFactory
         (affordances.hasVectorAffordance and (funcIndexSize == 0 or Dune::contains(funcIndices, _1)));
     constexpr bool provideMatrix =
         (affordances.hasMatrixAffordance and (funcIndexSize == 0 or Dune::contains(funcIndices, _2)));
+  // static_assert(provideVector);
+  // static_assert(provideMatrix);
+  // static_assert(not provideScalar);
+
+
+constexpr std::array<bool,3> provide{provideScalar,provideVector,provideMatrix};
+        auto funcs2 = Dune::filter([&](auto i) constexpr{ return std::bool_constant<provide[i]>{}; },std::make_index_sequence<3>{});
+   static_assert(funcs2.size()==provideScalar+provideVector+provideMatrix);
     auto assemblerPtr = [as]() {
       if constexpr (std::is_pointer_v<std::remove_cvref_t<Assembler>> or
                     traits::isSharedPtr<std::remove_cvref_t<Assembler>>::value)
@@ -108,68 +104,26 @@ struct NonLinearOperatorFactory
     }();
 
     using FERequirement             = typename traits::remove_pointer_t<std::remove_cvref_t<Assembler>>::FERequirement;
-    // [[maybe_unused]] auto KFunction = [dbcOption, assembler = assemblerPtr, affordances](
-    //                                       typename FERequirement::SolutionVectorType& globalSol,
-    //                                       typename FERequirement::ParameterType& parameter) -> auto& {
-    //   FERequirement req;
-    //   req.insertGlobalSolution(globalSol).insertParameter(parameter);
-
-    //   return assembler->matrix(req, affordances.matrixAffordance(), dbcOption);
-    // };
-
-    // [[maybe_unused]] auto residualFunction = [dbcOption, assembler = assemblerPtr, affordances](
-    //                                              typename FERequirement::SolutionVectorType& globalSol,
-    //                                              typename FERequirement::ParameterType& parameter) -> auto& {
-    //   FERequirement req;
-    //   req.insertGlobalSolution(globalSol).insertParameter(parameter);
-    //   return assembler->vector(req, affordances.vectorAffordance(), dbcOption);
-    // };
 
     assert(req.populated() && " Before you calls this method you have to pass populated fe requirements");
-    if constexpr (provideScalar) {
-      // [[maybe_unused]] auto energyFunction = [assembler = assemblerPtr, affordances](
-      //                                            typename FERequirement::SolutionVectorType& globalSol,
-      //                                            typename FERequirement::ParameterType& parameter) -> auto& {
-      //   FERequirement req;
-      //   req.insertGlobalSolution(globalSol).insertParameter(parameter);
-
-      //   return assembler->scalar(req, affordances.scalarAffordance());
-      // };
-      if constexpr (provideVector and provideMatrix)
-        return NonLinearOperator(
-            functions(scalarFunction(assemblerPtr,affordances), vectorFunction(assemblerPtr,affordances,dbcOption), matrixFunction(assemblerPtr,affordances,dbcOption)),
+    auto createNonLinearOp= [&]<size_t... funcs3>(std::index_sequence <funcs3...>) {
+      // static_assert(sizeof...(funcs3)==2);
+         return NonLinearOperator(
+            functions(function<funcs3>(assemblerPtr,affordances,dbcOption)...),
             parameter(req.globalSolution(), req.parameter()));
-      else if constexpr (provideVector)
-        return NonLinearOperator(functions(scalarFunction(assemblerPtr,affordances), vectorFunction(assemblerPtr,affordances,dbcOption)),
-                                 parameter(req.globalSolution(), req.parameter()));
-      else if constexpr (provideMatrix)
-        return NonLinearOperator(functions(scalarFunction(assemblerPtr,affordances), matrixFunction(assemblerPtr,affordances,dbcOption)),
-                                 parameter(req.globalSolution(), req.parameter()));
-      else
-        return NonLinearOperator(functions(scalarFunction(assemblerPtr,affordances)),
-                                 parameter(req.globalSolution(), req.parameter()));
-
-    } else if constexpr (provideVector) {
-      if constexpr (provideMatrix)
-        return NonLinearOperator(functions(vectorFunction(assemblerPtr,affordances,dbcOption), matrixFunction(assemblerPtr,affordances,dbcOption)),
-                                 parameter(req.globalSolution(), req.parameter()));
-      else
-        return NonLinearOperator(functions(vectorFunction(assemblerPtr,affordances,dbcOption)),
-                                 parameter(req.globalSolution(), req.parameter()));
-    } else if constexpr (provideMatrix)
-      return NonLinearOperator(functions(matrixFunction(assemblerPtr,affordances,dbcOption)), parameter(req.globalSolution(), req.parameter()));
-    else
-      static_assert(Dune::AlwaysFalse<Assembler>::value, "You provided unsutiable function indices");
+    };
+      return createNonLinearOp(funcs2);
   }
 
+private:
   template <size_t... funcs, typename Assembler, typename... Affordances>
-  static auto op(
+  static auto op_impl(
       Assembler&& as,
       std::optional<
           std::reference_wrapper<typename traits::remove_pointer_t<std::remove_cvref_t<Assembler>>::FERequirement>>
           reqArg                                                         = std::nullopt,
       std::optional<AffordanceCollection<Affordances...>> affordancesArg = std::nullopt,
-      std::optional<DBCOption> dbCOptionArg                              = std::nullopt,std::integer_sequence<size_t,funcs...> funcIndices = {}) {
+      std::optional<DBCOption> dbCOptionArg                              = std::nullopt,std::index_sequence<funcs...> funcIndices = {}) {
     using FERequirement = typename traits::remove_pointer_t<std::remove_cvref_t<Assembler>>::FERequirement;
     auto assemblerPtr   = [as]() {
       if constexpr (std::is_pointer_v<std::remove_cvref_t<Assembler>> or
@@ -202,92 +156,77 @@ struct NonLinearOperatorFactory
     return op(assemblerPtr, req, affordances, dbcOption,funcIndices);
   }
 
-  // template <typename Assembler>
-  // static auto op(Assembler&& as, DBCOption dbcOption) {
-  //   auto ex = []() {
-  //     DUNE_THROW(Dune::InvalidStateException,
-  //                "Assembler has to be bound to a fe requirement and an affordance collection before you can call "
-  //                "this method");
-  //   };
-  //   if constexpr (std::is_pointer_v<std::remove_cvref_t<Assembler>> or
-  //                 traits::isSharedPtr<std::remove_cvref_t<Assembler>>::value) {
-  //     if (as->boundToRequirement() and as->boundToAffordanceCollection()) {
-  //       return op(std::forward<Assembler>(as), as->requirement(), as->affordanceCollection(), dbcOption);
-  //     } else {
-  //       ex();
-  //     }
-  //   } else {
-  //     if (as->boundToRequirement() and as->boundToAffordanceCollection()) {
-  //       return op(std::forward<Assembler>(as), as.requirement(), as.affordanceCollection(), dbcOption);
-  //     } else {
-  //       ex();
-  //     }
-  //   }
-  //   __builtin_unreachable();
-  // }
+public:
+template < typename Assembler, typename... Args>
+static auto op(Assembler&& as, Args&&... args) {
+    // Define the default values
+    using ReqType=
+    std::optional<std::reference_wrapper<typename traits::remove_pointer_t<std::remove_cvref_t<Assembler>>::FERequirement>>;
+    ReqType reqArg = std::nullopt;
+    std::optional<AffordanceCollection<>> affordancesArg = std::nullopt;
+    std::optional<DBCOption> dbCOptionArg = std::nullopt;
+    std::index_sequence <> funcIndicesDefault = {};
 
-  // template <typename Assembler>
-  // static auto op(Assembler&& as) {
-  //   auto ex = []() {
-  //     DUNE_THROW(Dune::InvalidStateException,
-  //                "Assembler has to be bound to a fe requirement to an affordance collection and to an "
-  //                "DBCOption before you can call "
-  //                "this method");
-  //   };
-  //   if constexpr (std::is_pointer_v<std::remove_cvref_t<Assembler>> or
-  //                 traits::isSharedPtr<std::remove_cvref_t<Assembler>>::value) {
-  //     if (not as->bound())
-  //       ex();
-  //     return op(std::forward<Assembler>(as), as->requirement(), as->affordanceCollection(), as->dBCOption());
-  //   } else {
-  //     if (not as.bound())
-  //       ex();
-  //     return op(std::forward<Assembler>(as), as.requirement(), as.affordanceCollection(), as->dBCOption());
-  //   }
-  // }
+    auto aCCorrectIndex= Dune::index_constant <1>{};
+    auto funcIndicesCorrectIndex= Dune::index_constant <3>{};
+    auto argumentDefaultTuple = std::make_tuple(reqArg, affordancesArg, dbCOptionArg,funcIndicesDefault);
+    auto argumentTupleRaw = std::make_tuple(std::forward<Args>(args)...);
 
-  // template <typename Assembler, typename... Affordances>
-  // static auto op(Assembler&& as, AffordanceCollection<Affordances...> affordances,
-  //                DBCOption dbcOption = DBCOption::Full) {
-  //   auto ex = []() {
-  //     DUNE_THROW(Dune::InvalidStateException,
-  //                "Assembler has to be bound to a fe requirement before you can call "
-  //                "this method");
-  //   };
+    //static_assert(std::tuple_size_v<decltype(argumentDefaultTuple)> ==4);
+    //static_assert(std::tuple_size_v<decltype(argumentTupleRaw)> ==1);
 
-  // if constexpr (std::is_pointer_v<std::remove_cvref_t<Assembler>> or
-  //               traits::isSharedPtr<std::remove_cvref_t<Assembler>>::value) {
-  //   if (not as->boundToRequirement())
-  //     ex();
-  //   return op(std::forward<Assembler>(as), as->requirement(), affordances, dbcOption);
-  // } else {
-  //   if (not as.boundToRequirement())
-  //     ex();
-  //   return op(std::forward<Assembler>(as), as.requirement(), affordances, dbcOption);
-  // }
-  // }
+    constexpr auto AIndex = Ikarus::utils::find_if(argumentTupleRaw, [](const auto& arg) {
+       // static_assert(std::is_same_v<std::remove_cvref_t<decltype(arg)>,double>);
+       // static_assert(Ikarus::IsAffordanceCollection_v<typename std::remove_cvref_t<decltype(arg)>::value_type>);
+        return Ikarus::IsAffordanceCollection_v< std::remove_cvref_t<decltype(arg)>>;
+    });
 
-  // template <typename Assembler>
-  // static auto op(Assembler&& as, typename traits::remove_pointer_t<std::remove_cvref_t<Assembler>>::FERequirement&
-  // req,
-  //                DBCOption dbcOption) {
-  //   auto ex = []() {
-  //     DUNE_THROW(Dune::InvalidStateException,
-  //                "Assembler has to be bound to an affordance collection before you can call "
-  //                "this method");
-  //   };
+    constexpr auto FIIndex = Ikarus::utils::find_if(argumentTupleRaw, [](const auto& arg) {
+        return Ikarus::traits::IsIntegerSequence_v< std::remove_cvref_t<decltype(arg)>>;
+    });
+    auto argumentTupleLambda = [&](auto tuple,auto tupleRaw,auto correctIndex, auto index,auto wrapInOptional) constexpr -> decltype(auto) {
+        if constexpr (index < sizeof...(Args))
+{
+  using NewType =  typename std::tuple_element<
+                    index, decltype(tupleRaw)>::type;
+   auto result= Ikarus::traits::ReplaceTypeAtPos_t<
+                decltype(tuple), correctIndex,
+                    std::conditional_t<wrapInOptional, std::optional<NewType>, NewType>
+                    >{};
+                    Dune::Hybrid::forEach(std::make_index_sequence<std::tuple_size_v<decltype(result)> >{},[&](auto i){
+                      if constexpr (i!=correctIndex)
+                         std::get<i>(result) = std::get<i>(tuple);
+                        else
+                          std::get<correctIndex>(result) = std::get<index>(tupleRaw);});
 
-  // if constexpr (std::is_pointer_v<std::remove_cvref_t<Assembler>> or
-  //               traits::isSharedPtr<std::remove_cvref_t<Assembler>>::value) {
-  //   if (not as->boundToAffordanceCollection())
-  //     ex();
-  //   return op(std::forward<Assembler>(as), as->requirement(), as->affordanceCollection(), dbcOption);
-  // } else {
-  //   if (not as.boundToAffordanceCollection())
-  //     ex();
-  //   return op(std::forward<Assembler>(as), as.requirement(), as.affordanceCollection(), dbcOption);
-  // }
-  // }
+                          return result;
+                    }
+        else
+            return tuple;
+    };
+    auto argumentTupleT=argumentTupleLambda(argumentDefaultTuple,argumentTupleRaw,aCCorrectIndex, Dune::index_constant <AIndex>{},std::bool_constant<true>{});
+      // static_assert(std::tuple_size_v<decltype(argumentTupleT)> ==4);
+    auto argumentTuple=argumentTupleLambda(argumentTupleT,argumentTupleRaw,funcIndicesCorrectIndex, Dune::index_constant <FIIndex>{},std::bool_constant<false>{});
+      // static_assert(std::tuple_size_v<decltype(argumentTuple)> ==4);
+      //   std::cout<<"argumentTuple: "<<Dune::className(argumentTuple)<<std::endl;
+
+
+
+    auto range = std::make_index_sequence <sizeof...(Args)>{};
+    Dune::Hybrid::forEach(range,[&](auto i){
+        auto arg = std::get<i>(argumentTupleRaw);
+        using Arg= std::remove_cvref_t<decltype(arg)>;
+        std::cout<<"Arg:"<<Dune::className<Arg>()<<std::endl;
+        if constexpr (std::is_same_v<Arg,typename traits::remove_pointer_t<std::remove_cvref_t<Assembler>>::FERequirement&>) {
+            std::get<0>(argumentTuple) = std::get<i>(argumentTupleRaw) ;
+        } else if constexpr (std::is_same_v<Arg,DBCOption>) {
+            std::get<2>(argumentTuple) = std::get<i>(argumentTupleRaw) ;
+        }
+    });
+        //  static_assert(std::tuple_size_v<decltype(argumentTuple)> ==4);
+    return std::apply([&]<typename... Args2>(Args2&&... args2){return op_impl(std::forward<Assembler>(as), std::forward<Args2>(args2)...);},argumentTuple);
+}
+
 };
 
 } // namespace Ikarus
