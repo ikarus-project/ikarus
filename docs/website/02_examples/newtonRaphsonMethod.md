@@ -64,11 +64,11 @@ One could also use the existing functionality in Ikarus to obtain a similar solu
 ```cpp
 Ikarus::NewtonRaphson nr(nonLinOp);
 nr.setup({eps, maxIter});
-const auto solverInfo = nr.solve(x);
+const auto solverState = nr.solve(x);
 
-std::cout << "success: " << solverInfo.success << "\n";
-std::cout << "iterations: " << solverInfo.iterations << "\n";
-std::cout << "residuum: " << solverInfo.residualNorm << "\n";
+std::cout << "success: " << solverState.success << "\n";
+std::cout << "iterations: " << solverState.iterations << "\n";
+std::cout << "residuum: " << solverState.residualNorm << "\n";
 std::cout << "solution: " << x << "\n";
 std::cout << "expected solution: " << xExpected << "\n";
 ```
@@ -81,10 +81,12 @@ This is exemplified by the function `#!cpp void newtonRaphsonBasicExampleWithLog
 It is also possible to subscribe to the existing non-linear solver messages mentioned [here](../01_framework/observer.md#messages).
 
 ```cpp
-class OurFirstObserver : public IObserver<NonLinearSolverMessages> {
- public:
-  void updateImpl(NonLinearSolverMessages message) override {
-    if (message == NonLinearSolverMessages::ITERATION_STARTED) std::cout << "Iteration started.\n";
+class OurFirstObserver : public Ikarus::IObserver<Ikarus::NonLinearSolverObservable>
+{
+public:
+  void updateImpl(MessageType message, const StateType&) override {
+    if (message == Ikarus::NonLinearSolverMessages::ITERATION_STARTED)
+      std::cout << "Iteration started.\n";
   }
 };
 
@@ -104,8 +106,8 @@ void newtonRaphsonBasicExampleWithLogger() {
   auto ourSimpleObserver = std::make_shared<OurFirstObserver>();
   nr.subscribe(NonLinearSolverMessages::ITERATION_STARTED, ourSimpleObserver);
 
-  const auto solverInfo = nr.solve(x);
-  if (solverInfo.success)
+  const auto solverState = nr.solve(x);
+  if (solverState.success)
     std::cout << "solution: " << x << "\n";
   else
     std::cout << "The Newton-Raphson procedure failed to converge" << std::endl;

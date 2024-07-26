@@ -7,13 +7,8 @@
  */
 
 #pragma once
-#include <concepts>
-#include <string>
-
-#include <spdlog/spdlog.h>
 
 #include <ikarus/utils/observer/observer.hh>
-#include <ikarus/utils/observer/observermessages.hh>
 
 namespace Ikarus {
 
@@ -22,28 +17,29 @@ namespace Ikarus {
  *
  * This class template implements an observer for a specific message type.
  *
- * \tparam M The type of messages to be observed.
+ * \tparam OBS The type of observable.
  */
-template <typename M>
-class GenericObserver : public IObserver<M>
+template <typename OBS>
+class GenericObserver : public IObserver<OBS>
 {
-  using Messages = M;
-
 public:
+  using MessageType = typename OBS::MessageType;
+  using StateType   = typename OBS::StateType;
+
   /**
    * \brief Constructor for GenericObserver.
    *
    * Initializes the observer with a specific message and a function to be executed upon observation.
    *
    * \tparam F Type of the function to be executed.
-   * \param p_message The message to be observed.
-   * \param p_f The function to be executed with the current step .
+   * \param message The message to be observed.
+   * \param f The function to be executed with the current step .
    */
   template <typename F>
-  GenericObserver(Messages message, F&& f)
+  GenericObserver(MessageType message, F&& f)
       : message_{message},
         f_{f} {}
-  void updateImpl(Messages message) override {
+  void updateImpl(MessageType message, const StateType&) override {
     if (message_ == message) {
       f_(step_);
       ++step_;
@@ -51,7 +47,7 @@ public:
   }
 
 private:
-  Messages message_;
+  MessageType message_;
   std::function<void(int)> f_;
   int step_{0};
 };

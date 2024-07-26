@@ -141,7 +141,7 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
 
   auto linSolver = LinearSolver(SolverTypeTag::sd_SimplicialLDLT);
 
-  int loadSteps = 6;
+  size_t loadSteps = 6;
 
   auto nrConfig = NewtonRaphsonWithSubsidiaryFunctionConfig<decltype(linSolver)>{.linearSolver = linSolver};
 
@@ -163,11 +163,11 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   crWoSS.nonlinearSolver().subscribeAll(nonLinearSolverObserver);
 
   t.checkThrow<Dune::InvalidStateException>(
-      [&]() { nonLinearSolverObserver->update(Ikarus::NonLinearSolverMessages::BEGIN); },
+      [&]() { nonLinearSolverObserver->update(NonLinearSolverMessages::BEGIN, NonLinearSolverState{}); },
       "nonLinearSolverObserver should have failed for the BEGIN message");
 
   t.checkThrow<Dune::InvalidStateException>(
-      [&]() { nonLinearSolverObserver->update(Ikarus::NonLinearSolverMessages::END); },
+      [&]() { nonLinearSolverObserver->update(NonLinearSolverMessages::END, NonLinearSolverState{}); },
       "nonLinearSolverObserver should have failed for the END message");
 
   /// Create Observer which writes vtk files when control routines messages
@@ -190,41 +190,41 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
         auto dass2                 = AdaptiveStepSizing::IterationBased{};
         auto nr3                   = nrFactory.create(sparseAssembler);
         auto crWSS2                = Ikarus::PathFollowing(nr3, loadSteps, stepSize, pft, dass2);
-        const auto controlInfoWSS2 = crWSS2.run();
+        const auto controlStateWSS2 = crWSS2.run();
       },
       "IterationBased should fail for targetIterations being 0");
 
   resetNonLinearOperatorParametersToZero(crWSS.nonlinearSolver().nonLinearOperator());
-  const auto controlInfoWSS = crWSS.run();
+  const auto controlStateWSS = crWSS.run();
   const double tolDisp      = 1e-13;
   const double tolLoad      = 1e-12;
   checkScalars(t, std::ranges::max(d), expectedResults[0][0], message1 + " <Max Displacement>", tolDisp);
   checkScalars(t, lambda, expectedResults[0][1], message1 + " <Lambda>", tolLoad);
   resetNonLinearOperatorParametersToZero(crWSS.nonlinearSolver().nonLinearOperator());
 
-  const auto controlInfoWoSS = crWoSS.run();
+  const auto controlStateWoSS = crWoSS.run();
 
   checkScalars(t, std::ranges::max(d), expectedResults[1][0], message2 + " <Max Displacement>", tolDisp);
   checkScalars(t, lambda, expectedResults[1][1], message2 + " <Lambda>", tolLoad);
   resetNonLinearOperatorParametersToZero(crWSS.nonlinearSolver().nonLinearOperator());
 
-  const int controlInfoWSSIterations =
-      std::accumulate(controlInfoWSS.solverInfos.begin(), controlInfoWSS.solverInfos.end(), 0,
+  const int controlStateWSSIterations =
+      std::accumulate(controlStateWSS.solverStates.begin(), controlStateWSS.solverStates.end(), 0,
                       [](int a, auto& b) { return b.iterations + a; });
 
-  t.check(controlInfoWSS.success, "No convergence" + message1);
-  t.check(controlInfoWoSS.success, "No convergence" + message2);
+  const int controlStateWoSSIterations =
+      std::accumulate(controlStateWoSS.solverStates.begin(), controlStateWoSS.solverStates.end(), 0,
+                      [](int a, auto& b) { return b.iterations + a; });
 
-  t.check(controlInfoWSS.totalIterations < controlInfoWoSS.totalIterations)
-      << "Total iterations should be less --> " << controlInfoWSS.totalIterations << " > "
-      << std::to_string(controlInfoWoSS.totalIterations) + " --> " + pft.name();
+  t.check(controlStateWSS.success, "No convergence" + message1);
+  t.check(controlStateWoSS.success, "No convergence" + message2);
 
-  t.check(controlInfoWSSIterations == controlInfoWSS.totalIterations)
-      << "Total number of iterations is wrong --> " << controlInfoWSS.totalIterations << " is not equal to "
-      << std::to_string(controlInfoWSSIterations) + " --> " + pft.name();
+  t.check(controlStateWSSIterations < controlStateWoSSIterations)
+      << "Total iterations should be less --> " << controlStateWSSIterations << " > "
+      << std::to_string(controlStateWoSSIterations) + " --> " + pft.name();
 
-  checkSolverInfos(t, expectedIterations[0], controlInfoWSS, loadSteps, message1);
-  checkSolverInfos(t, expectedIterations[1], controlInfoWoSS, loadSteps, message2);
+  checkSolverInfos(t, expectedIterations[0], controlStateWSS, loadSteps, message1);
+  checkSolverInfos(t, expectedIterations[1], controlStateWoSS, loadSteps, message2);
 
   auto nonLinOp = NonLinearOperatorFactory::op(sparseAssembler);
   t.check(utils::checkGradient(nonLinOp, {.draw = false})) << "Check gradient failed";

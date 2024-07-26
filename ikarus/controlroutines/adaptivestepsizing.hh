@@ -12,7 +12,7 @@
 #pragma once
 
 #include <ikarus/controlroutines/pathfollowingfunctions.hh>
-#include <ikarus/solver/nonlinearsolver/solverinfos.hh>
+#include <ikarus/solver/nonlinearsolver/solverstate.hh>
 
 namespace Ikarus::AdaptiveStepSizing {
 
@@ -28,13 +28,13 @@ struct NoOp
    *
    * Does nothing.
    *
-   * \param solverInfo Information about the nonlinear solver.
+   * \param solverState State of the nonlinear solver.
    * \param subsidiaryArgs Subsidiary arguments for adaptive step sizing.
    * \param nonLinearOperator The nonlinear operator.
    * \tparam NLO The nonlinear operator type.
    */
   template <typename NLO>
-  void operator()(const NonLinearSolverInformation& solverInfo, SubsidiaryArgs& subsidiaryArgs,
+  void operator()(const NonLinearSolverState& solverState, SubsidiaryArgs& subsidiaryArgs,
                   const NLO& nonLinearOperator) {}
 
   /**
@@ -67,13 +67,13 @@ struct IterationBased
    *
    * Adjusts the step size based on the ratio of target iterations to previous iterations.
    *
-   * \param solverInfo Information about the nonlinear solver.
+   * \param solverState State of the nonlinear solver.
    * \param subsidiaryArgs Subsidiary arguments for adaptive step sizing.
    * \param nonLinearOperator The nonlinear operator.
    * \tparam NLO The nonlinear operator.
    */
   template <typename NLO>
-  void operator()(const NonLinearSolverInformation& solverInfo, SubsidiaryArgs& subsidiaryArgs,
+  void operator()(const NonLinearSolverState& solverState, SubsidiaryArgs& subsidiaryArgs,
                   const NLO& nonLinearOperator) {
     if (subsidiaryArgs.currentStep == 0)
       return;
@@ -81,7 +81,7 @@ struct IterationBased
       DUNE_THROW(Dune::InvalidStateException,
                  "TargetIterations should not be equal to 0. Try calling "
                  "setTargetIterations(int) first.");
-    const auto previousIterations = solverInfo.iterations;
+    const auto previousIterations = solverState.iterations;
     if (previousIterations > targetIterations_)
       subsidiaryArgs.stepSize =
           sqrt(static_cast<double>(targetIterations_) / previousIterations) * subsidiaryArgs.stepSize;

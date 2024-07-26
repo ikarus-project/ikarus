@@ -17,10 +17,10 @@
 #include <Eigen/Sparse>
 
 #include <ikarus/linearalgebra/truncatedconjugategradient.hh>
-#include <ikarus/solver/nonlinearsolver/solverinfos.hh>
+#include <ikarus/solver/nonlinearsolver/solverstate.hh>
 #include <ikarus/utils/defaultfunctions.hh>
 #include <ikarus/utils/linearalgebrahelper.hh>
-#include <ikarus/utils/observer/observer.hh>
+#include <ikarus/utils/observer/observable.hh>
 #include <ikarus/utils/observer/observermessages.hh>
 #include <ikarus/utils/traits.hh>
 
@@ -165,7 +165,7 @@ struct Stats
 * \tparam UF Type of the update function
 */
 template <typename NLO, PreConditioner preConditioner, typename UF>
-class TrustRegion : public IObservable<NonLinearSolverMessages>
+class TrustRegion : public NonLinearSolverObservable
 {
 public:
   using Settings  = TRSettings;                               ///< Type of the settings for the TrustRegion solver
@@ -217,16 +217,16 @@ public:
    * \brief Solves the nonlinear optimization problem using the TrustRegion algorithm.
    * \tparam SolutionType Type of the solution predictor (default is NoPredictor).
    * \param dxPredictor Solution predictor.
-   * \return NonLinearSolverInformation containing information about the solver result.
+   * \return NonLinearSolverState containing information about the solver result.
    */
   template <typename SolutionType = NoPredictor>
   requires std::is_same_v<SolutionType, NoPredictor> || std::is_convertible_v<SolutionType, CorrectionType>
-  NonLinearSolverInformation solve(const SolutionType& dxPredictor = NoPredictor{}) {
-    this->notify(NonLinearSolverMessages::INIT);
+  NonLinearSolverState solve(const SolutionType& dxPredictor = NoPredictor{}) {
+    NonLinearSolverState solverState{.iterations = 0};
+    this->notify(NonLinearSolverMessages::INIT, solverState);
     stats_ = Stats{};
     info_  = AlgoInfo{};
 
-    NonLinearSolverInformation solverInformation;
     nonLinearOperator().updateAll();
     stats_.energy   = energy();
     auto& x         = nonLinearOperator().firstParameter();
@@ -242,8 +242,8 @@ public:
         "InnerBreakReason");
     spdlog::info("{:-^143}", "-");
     while (not stoppingCriterion()) {
-      this->notify(NonLinearSolverMessages::ITERATION_STARTED);
-      if (settings_.useRand) {
+      this->notify(NonLinearSolverMessages::ITERATION_STARTED, solverState);
+      if (options_.useRand) {
         if (stats_.outerIter == 0) {
           eta_.setRandom();
           while (eta_.dot(hessian() * eta_) > innerInfo_.Delta * innerInfo_.Delta)
@@ -380,29 +380,31 @@ public:
       if (info_.acceptProposal) {
         stats_.energy = stats_.energyProposal;
         nonLinearOperator_.updateAll();
-        xOld_ = x;
-        this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, stats_.etaNorm);
-        this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, stats_.gradNorm);
-        this->notify(NonLinearSolverMessages::SOLUTION_CHANGED);
+        xOld_                      = x;
+        solverState.correctionNorm = stats_.etaNorm;
+        solverState.residualNorm   = stats_.gradNorm;
+        this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, solverState);
+        this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, solverState);
+        this->notify(NonLinearSolverMessages::SOLUTION_CHANGED, solverState);
       } else {
         x = xOld_;
         eta_.setZero();
       }
       nonLinearOperator_.updateAll();
-      stats_.gradNorm = gradient().norm();
-      this->notify(NonLinearSolverMessages::ITERATION_ENDED);
+      stats_.gradNorm         = gradient().norm();
+      solverState.currentIter = stats_.outerIter;
+      this->notify(NonLinearSolverMessages::ITERATION_ENDED, solverState);
     }
     spdlog::info("{}", info_.reasonString);
     spdlog::info("Total iterations: {} Total CG Iterations: {}", stats_.outerIter, stats_.innerIterSum);
 
-    solverInformation.success =
+    solverState.success =
         (info_.stop == StopReason::correctionNormTolReached) or (info_.stop == StopReason::gradientNormTolReached);
 
-    solverInformation.iterations   = stats_.outerIter;
-    solverInformation.residualNorm = stats_.gradNorm;
-    if (solverInformation.success)
-      this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, solverInformation.iterations);
-    return solverInformation;
+    solverState.iterations   = stats_.outerIter;
+    solverState.residualNorm = stats_.gradNorm;
+    this->notify(NonLinearSolverMessages::SOLVER_FINISHED, solverState);
+    return solverState;
   }
   /**
    * \brief Access the nonlinear operator.

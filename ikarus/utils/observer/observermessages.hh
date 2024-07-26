@@ -37,7 +37,7 @@ enum class NonLinearSolverMessages
   RESIDUALNORM_UPDATED,
   CORRECTIONNORM_UPDATED,
   SOLUTION_CHANGED,
-  FINISHED_SUCESSFULLY,
+  SOLVER_FINISHED,
   END
 };
 } // namespace Ikarus
