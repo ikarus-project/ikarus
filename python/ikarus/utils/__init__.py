@@ -4,6 +4,7 @@
 from dune.common.hashit import hashIt
 from ikarus.generator import MySimpleGenerator
 
+
 def boundaryPatch(gridView, booleanVector):
     """
     @brief Creates a boundary patch for the given grid view and boolean vector.
@@ -26,9 +27,11 @@ def boundaryPatch(gridView, booleanVector):
     )
     return module.BoundaryPatch(gridView, booleanVector)
 
+
 from io import StringIO
 from dune.generator.algorithm import run
 from dune.common import FieldVector
+
 
 def globalIndexFromGlobalPosition(basis, pos):
 

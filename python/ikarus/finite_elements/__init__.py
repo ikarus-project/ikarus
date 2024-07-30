@@ -4,6 +4,7 @@
 from dune.common.hashit import hashIt
 from ikarus.generator import MySimpleGenerator
 
+
 def registerPreElement(name, includes, element_type, *args):
     """
     @brief Registers a pre-element with the specified parameters.
@@ -26,6 +27,7 @@ def registerPreElement(name, includes, element_type, *args):
     f = getattr(module, name)
     return f(*args)
 
+
 def volumeLoad(f, d: int):
     """
     @brief Creates a volume load pre-element for the specified dimension.
@@ -43,6 +45,7 @@ def volumeLoad(f, d: int):
     element_type = f"Ikarus::VolumeLoadPre<{d}>"
     return registerPreElement("VolumeLoadPre", includes, element_type, f)
 
+
 def volumeLoad1D(f):
     """
     @brief Creates a 1D volume load pre-element.
@@ -52,6 +55,7 @@ def volumeLoad1D(f):
     @return: The registered 1D volume load pre-element function.
     """
     return volumeLoad(f, 1)
+
 
 def volumeLoad2D(f):
     """
@@ -63,6 +67,7 @@ def volumeLoad2D(f):
     """
     return volumeLoad(f, 2)
 
+
 def volumeLoad3D(f):
     """
     @brief Creates a 3D volume load pre-element.
@@ -72,6 +77,7 @@ def volumeLoad3D(f):
     @return: The registered 3D volume load pre-element function.
     """
     return volumeLoad(f, 3)
+
 
 def neumannBoundaryLoad(boundaryPatch, f):
     """
@@ -87,8 +93,13 @@ def neumannBoundaryLoad(boundaryPatch, f):
     includes += ["dune/python/pybind11/stl.h"]
     includes += ["dune/python/pybind11/eigen.h"]
     includes += boundaryPatch._includes
-    element_type = f"Ikarus::NeumannBoundaryLoadPre<{boundaryPatch.gridView().cppTypeName}>"
-    return registerPreElement("NeumannBoundaryLoadPre", includes, element_type, boundaryPatch, f)
+    element_type = (
+        f"Ikarus::NeumannBoundaryLoadPre<{boundaryPatch.gridView().cppTypeName}>"
+    )
+    return registerPreElement(
+        "NeumannBoundaryLoadPre", includes, element_type, boundaryPatch, f
+    )
+
 
 def nonLinearElastic(mat):
     """
@@ -104,6 +115,7 @@ def nonLinearElastic(mat):
     includes += mat._includes
     return registerPreElement("NonLinearElasticPre", includes, element_type, mat)
 
+
 def linearElastic(youngs_modulus, nu):
     """
     @brief Creates a linear elastic pre-element.
@@ -115,7 +127,10 @@ def linearElastic(youngs_modulus, nu):
     """
     includes = ["ikarus/finiteelements/mechanics/linearelastic.hh"]
     element_type = "Ikarus::LinearElasticPre"
-    return registerPreElement("LinearElasticPre", includes, element_type, youngs_modulus, nu)
+    return registerPreElement(
+        "LinearElasticPre", includes, element_type, youngs_modulus, nu
+    )
+
 
 def truss(youngs_modulus, cross_section):
     """
@@ -128,7 +143,10 @@ def truss(youngs_modulus, cross_section):
     """
     includes = ["ikarus/finiteelements/mechanics/truss.hh"]
     element_type = "Ikarus::TrussPre"
-    return registerPreElement("TrussPre", includes, element_type, youngs_modulus, cross_section)
+    return registerPreElement(
+        "TrussPre", includes, element_type, youngs_modulus, cross_section
+    )
+
 
 def eas(numberofparameters):
     """
@@ -140,7 +158,10 @@ def eas(numberofparameters):
     """
     includes = ["ikarus/finiteelements/mechanics/enhancedassumedstrains.hh"]
     element_type = "Ikarus::EnhancedAssumedStrainsPre"
-    return registerPreElement("EnhancedAssumedStrainsPre", includes, element_type, numberofparameters)
+    return registerPreElement(
+        "EnhancedAssumedStrainsPre", includes, element_type, numberofparameters
+    )
+
 
 def kirchhoffLoveShell(youngs_modulus: float, nu, thickness):
     """
@@ -154,7 +175,10 @@ def kirchhoffLoveShell(youngs_modulus: float, nu, thickness):
     """
     includes = ["ikarus/finiteelements/mechanics/kirchhoffloveshell.hh"]
     element_type = "Ikarus::KirchhoffLoveShellPre"
-    return registerPreElement("KirchhoffLoveShellPre", includes, element_type, youngs_modulus, nu, thickness)
+    return registerPreElement(
+        "KirchhoffLoveShellPre", includes, element_type, youngs_modulus, nu, thickness
+    )
+
 
 def makeFE(basis, *skills):
     """

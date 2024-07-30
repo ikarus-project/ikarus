@@ -23,10 +23,10 @@ def bump_patch_number(version_number: str) -> str:
     """Return a copy of `version_number` with the patch number incremented."""
     version_number_array = version_number.split(".")
 
-    if len(version_number_array)==2:
+    if len(version_number_array) == 2:
         major, minor = version_number_array
-        patch  =0
-    elif len(version_number_array)==3:
+        patch = 0
+    elif len(version_number_array) == 3:
         major, minor, patch = version_number_array
     else:
         raise Exception("Bad versoin number passed!")
