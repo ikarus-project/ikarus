@@ -24,13 +24,13 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - uses: actions/cache@v2
         with:
           path: "**/cpm_modules"
           key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
          path: 'repo'
       - name: Install format dependencies
@@ -83,7 +83,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Validating lowercase file names
         uses: scheduleonce/lint-filenames@v2.0.0
         with:
