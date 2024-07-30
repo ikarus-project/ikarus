@@ -50,7 +50,7 @@ def process_directory(directory):
     for root, _, files in os.walk(directory):
         for file in files:
             file_path = os.path.join(root, file)
-            if os.path.basename(file_path) == 'dep5':
+            if os.path.basename(file_path) == "dep5":
                 update_dep5(file_path)
             else:
                 update_license_header(file_path)

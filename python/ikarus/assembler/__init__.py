@@ -4,6 +4,7 @@
 from dune.common.hashit import hashIt
 from ikarus.generator import MySimpleGenerator
 
+
 def sparseFlatAssembler(fes, dirichletValues):
     """
     @brief Creates a sparse flat assembler for the given finite elements and Dirichlet values.
@@ -50,6 +51,7 @@ def denseFlatAssembler(fes, dirichletValues):
         includes=includes, typeName=element_type, moduleName=moduleName
     )
     return module.DenseFlatAssembler(fes, dirichletValues)
+
 
 def assemblerManipulator(assembler):
     """

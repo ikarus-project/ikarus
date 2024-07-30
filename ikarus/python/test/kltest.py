@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 import debug_info
+
 debug_info.setDebugFlags()
 import ikarus as iks
 from ikarus import finite_elements, assembler
@@ -66,11 +67,13 @@ if __name__ == "__main__":
 
     vLoad = iks.finite_elements.volumeLoad3D(vL)
 
-    klShell = iks.finite_elements.kirchhoffLoveShell(youngs_modulus=1000, nu=0.0,thickness=thickness)
+    klShell = iks.finite_elements.kirchhoffLoveShell(
+        youngs_modulus=1000, nu=0.0, thickness=thickness
+    )
 
     fes = []
     for e in gridView.elements:
-        fes.append(iks.finite_elements.makeFE(basis,klShell,vLoad))
+        fes.append(iks.finite_elements.makeFE(basis, klShell, vLoad))
         fes[-1].bind(e)
 
     dirichletValues = iks.dirichletValues(flatBasis)
@@ -88,11 +91,11 @@ if __name__ == "__main__":
 
     def gradAndhess(dRedInput):
         req = fes[0].createRequirement()
-        req.insertParameter( lambdaLoad)
+        req.insertParameter(lambdaLoad)
         dBig = assembler.createFullVector(dRedInput)
-        req.insertGlobalSolution( dBig)
-        g = assembler.vector(req,iks.VectorAffordance.forces, iks.DBCOption.Reduced)
-        h = assembler.matrix(req,iks.MatrixAffordance.stiffness, iks.DBCOption.Reduced)
+        req.insertGlobalSolution(dBig)
+        g = assembler.vector(req, iks.VectorAffordance.forces, iks.DBCOption.Reduced)
+        h = assembler.matrix(req, iks.MatrixAffordance.stiffness, iks.DBCOption.Reduced)
         return [g, h]
 
     from numpy.linalg import norm
@@ -115,4 +118,6 @@ if __name__ == "__main__":
     vtkWriter = gridView.trimmedVtkWriter()
     vtkWriter.addPointData(displacementFunc, name="displacement")
     vtkWriter.write("KLshell")
-    assert (0.2087577577980777 - max(d)) < 1e-6, f"The maximum displacement should be 0.2087577577980777 but is {max(d)}"
+    assert (
+        0.2087577577980777 - max(d)
+    ) < 1e-6, f"The maximum displacement should be 0.2087577577980777 but is {max(d)}"

@@ -27,7 +27,9 @@ def __fixBoundaryDOFs(dirichletValues):
         return dirichletValues.fixBoundaryDOFs(functor_, {prefixPathType}{{}});
           }});
         }}
-        """.format(prefixPathType=prefixPathTypeName)
+        """.format(
+            prefixPathType=prefixPathTypeName
+        )
         return run("fixBoundaryDofs", StringIO(runCode), dirichletValues, f)
 
     return __fixBoundaryDOFsFunc
@@ -50,7 +52,10 @@ def dirichletValues(basis):
     includes += ["ikarus/python/dirichletvalues/dirichletvalues.hh"]
     moduleName = "dirichletValues_" + hashIt(element_type)
     module = generator.load(
-        includes=includes, typeName=element_type, moduleName=moduleName, dynamicAttr=True
+        includes=includes,
+        typeName=element_type,
+        moduleName=moduleName,
+        dynamicAttr=True,
     )
 
     dv = module.DirichletValues(basis)

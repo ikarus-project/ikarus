@@ -222,8 +222,13 @@ def linElasticTest(easBool):
     assert assembler.size == assemblerManipulator.size == flatBasis.size()
     assert len(assembler) == len(assemblerManipulator) == len(flatBasis)
 
-    assert assembler.isConstrained(1) == assemblerManipulator.isConstrained(1) == dirichletValues.isConstrained(1)
+    assert (
+        assembler.isConstrained(1)
+        == assemblerManipulator.isConstrained(1)
+        == dirichletValues.isConstrained(1)
+    )
     assert assembler.constraintsBelow(i) == assemblerManipulator.constraintsBelow(i)
+
 
 if __name__ == "__main__":
     linElasticTest(easBool=False)

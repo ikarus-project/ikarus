@@ -6,6 +6,7 @@ from dune.functions.globalbasis import preBasisTypeName
 from dune.functions import defaultGlobalBasis
 from .generator import MySimpleGenerator
 
+
 def basis(gv, tree):
     """
     @brief Creates a basis handler for the given grid view and tree.
