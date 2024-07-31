@@ -123,7 +123,7 @@ The load control method is executed by the following commands:
 ```cpp
 auto lc = Ikarus::LoadControl(nr, 20, {0, 2000});
 lc.subscribeAll(vtkWriter);
-lc.run();
+const auto controlState = lc.run();
 ```
 
 For postprocessing purposes we now write our results in a different VTK File. First we take a look at the stresses, in this case

@@ -9,7 +9,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 - Refactored Interface for `calculateAt`-functions and `ResultFunction` by getting rid of `ResultRequirements`
   ([#245](https://github.com/ikarus-project/ikarus/pull/245))
 - Refactor `enhancedassumedstrains.hh` ([#247](https://github.com/ikarus-project/ikarus/pull/247))
-- add factory functions to `ResultFunction` ([#251](https://github.com/ikarus-project/ikarus/pull/251))
+- Add factory functions to `ResultFunction` ([#251](https://github.com/ikarus-project/ikarus/pull/251))
 - Refactor `febases` to handle any type of basis ([#256](https://github.com/ikarus-project/ikarus/pull/256))
 - Move `autodiffhelper.hh` from `utils` to `autodiff` folder ([#259](https://github.com/ikarus-project/ikarus/pull/259))
 - Added a unified, generic interface for `ResultTypes` with the ability to register new
@@ -40,6 +40,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
       adds the function `create`, which accepts a *bound* assembler, where a non-linear operator can be constructed on the fly. For this to
       work, all non-linear solvers have to implement a method `createNonlinearSolver`, which accepts the settings of the class and a nonlinear
       operator. See, e.g., `NewtonRaphsonWithSubsidiaryFunction`.
+
     - Python:
         - Bindings for Enums can now be done conveniently with the `ENUM_BINDINGS` macro.
         - The finite element functions `calculateMatrix`, `calculateVector`, and `calculateScalar` now directly accept the affordances.
@@ -54,6 +55,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 - Rework the Python Interface for `DirichletValues` plus add support to easily fix boundary DOFs of `Subspacebasis` in C++ and Python ([#305](https://github.com/ikarus-project/ikarus/pull/305))
 - Add a truss element ([#302](https://github.com/ikarus-project/ikarus/pull/302))
 - Add an About Ikarus page in the documentation ([#291](https://github.com/ikarus-project/ikarus/pull/291))
+- Refactor observer patterns and unify logging information ([#260](https://github.com/ikarus-project/ikarus/pull/260))
 
 ## Release v0.4 (Ganymede)
 

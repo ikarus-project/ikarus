@@ -108,7 +108,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
 
   auto lc = Ikarus::LoadControl(tr, 1, {0, 50});
   lc.subscribeAll(vtkWriter);
-  const auto controlInfo = lc.run();
+  const auto controlState = lc.run();
   nonLinOp.template update<0>();
   const auto maxDisp = std::ranges::max(d);
   double energyExpected;
@@ -173,7 +173,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   vtkWriter2.write("EndResult" + Dune::className<Grid>());
 
   nonLinOp.template update<1>();
-  t.check(controlInfo.success, "Successful result");
+  t.check(controlState.success, "Successful result");
   t.check(gradTol >= nonLinOp.derivative().norm(), "Gradient Tolerance should be larger than actual tolerance");
   return t;
 }

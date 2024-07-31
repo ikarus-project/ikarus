@@ -24,7 +24,6 @@
 
 #include <ikarus/solver/linearsolver/linearsolver.hh>
 #include <ikarus/utils/concepts.hh>
-#include <ikarus/utils/defaultfunctions.hh>
 #include <ikarus/utils/traits.hh>
 
 namespace Ikarus {

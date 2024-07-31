@@ -19,7 +19,10 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
-#include "ikarus/assembler/dirichletbcenforcement.hh"
+#include <ikarus/assembler/dirichletbcenforcement.hh>
+#include <ikarus/controlroutines/controlstate.hh>
+#include <ikarus/solver/nonlinearsolver/solverstate.hh>
+#include <ikarus/utils/observer/observermessages.hh>
 #include <ikarus/utils/traits.hh>
 
 namespace Eigen {
@@ -34,7 +37,6 @@ struct VanishingStress;
 template <typename Derived>
 auto transpose(const Eigen::EigenBase<Derived>& A);
 namespace Concepts {
-
   /**
    * \concept FlatInterLeavedBasis
    * \brief Concept to check if a basis uses FlatInterleaved indexing strategy.
@@ -199,6 +201,34 @@ namespace Concepts {
     { adaptiveStepSizing.targetIterations() } -> std::same_as<int>;
     { adaptiveStepSizing.setTargetIterations(std::declval<int>()) } -> std::same_as<void>;
   };
+
+  /**
+   * \concept ObserverMessage
+   * \brief Concept to check if the type of observer message is valid or not.
+   *
+   * \tparam MT The type of message that the observable can handle.
+   * */
+  template <typename MT>
+  concept ObserverMessage = std::is_same_v<MT, ControlMessages> or std::is_same_v<MT, NonLinearSolverMessages>;
+
+  /**
+   * \concept ObserverState
+   * \brief Concept to check if the type of observer state is valid or not.
+   *
+   * \tparam ST The type of the state of the observable.
+   */
+  template <typename ST>
+  concept ObserverState = std::is_same_v<ST, ControlState> or std::is_same_v<ST, NonLinearSolverState>;
+
+  /**
+   * \concept Observable
+   * \brief Concept to check if the type of the observable is valid or not.
+   *
+   * \tparam MT The type of message that the observable can handle.
+   * \tparam ST The type of the state of the observable.
+   */
+  template <typename MT, typename ST>
+  concept Observable = ObserverMessage<MT> and ObserverState<ST>;
 
   /**
    * \concept LinearSolverCheck
