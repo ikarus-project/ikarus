@@ -59,7 +59,7 @@ if(ADD_PYTHONFORMATTING)
     set(PYTHONFORMATTINGCOMAND
         pip
         install
-        black
+        black==24.4.2
         &&
         python
         -m
@@ -75,7 +75,7 @@ if(ADD_PYTHONFORMATTING)
     set(PYTHONFORMATTINGCOMANDCHECK
         pip
         install
-        black
+        black==24.4.2
         &&
         python
         -m
