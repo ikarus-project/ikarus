@@ -3,7 +3,7 @@
 
 from dune.common.hashit import hashIt
 from ikarus.generator import MySimpleGenerator
-from dune.vtk import FormatTypes, DataTypes, vtkWriter
+from dune.vtk import FormatTypes, DataTypes
 import dune.vtk
 
 from warnings import warn
@@ -22,13 +22,12 @@ def __addInterpolation(writer, flag: int):
         containerStr = f"Dune::FieldVector<double, {size}>" if size > 1 else "double"
 
         runCode = """
-            #define EIGEN_DEFAULT_TO_ROW_MAJOR 1
             #include <ikarus/python/io/vtkwriter.hh>
             #include <dune/python/pybind11/eigen.h>
             template <typename Writer, typename Basis>
             void addInterpolation(Writer& writer, const auto& vals_, const Basis& basis, std::string name) {{
                 auto vals = vals_.template cast<Eigen::VectorX<double>>();
-                writer.template addInterpolation<Basis, {containerStr}>(std::move(vals), basis, name, {typeStr});
+                writer.template addInterpolation(std::move(vals), basis, name, {typeStr});
             }}  
         """.format(
             containerStr=containerStr, typeStr=typeStr
@@ -58,7 +57,7 @@ def vtkWriter(
     includes += ["ikarus/assembler/simpleassemblers.hh"]
     includes += assembler._includes
 
-    gridViewName = assembler.grid.cppTypeName
+    gridViewName = assembler.gridView.cppTypeName
     dataCollectorName: str = ""
 
     if dataCollector is not None:
@@ -66,7 +65,6 @@ def vtkWriter(
             dataCollectorName = (
                 f"Dune::Vtk::LagrangeDataCollector<{gridViewName}, {order}>"
             )
-            includes += ["dune/vtk/datacollectors/lagrangedatacollector.hh"]
         elif dataCollector == dataCollectors[1]:
             dataCollectorName = f"Dune::Vtk::DiscontinuousDataCollector<{gridViewName}>"
             includes += ["dune/vtk/datacollectors/discontinuousdatacollector.hh"]

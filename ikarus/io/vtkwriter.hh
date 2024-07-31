@@ -13,6 +13,8 @@
 #include <array>
 #include <tuple>
 
+#include "dune/functions/functionspacebases/powerbasis.hh"
+#include "dune/functions/functionspacebases/subspacebasis.hh"
 #include <dune/common/fvector.hh>
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/grid/yaspgrid.hh>
@@ -25,47 +27,54 @@
 namespace Ikarus::Vtk {
 
 /**
- * \struct AsCellData
- * \brief Tag structure indicating cell data.
+ * \enum DataTag
+ * \brief Tag structure indicating cell data or point data.
  */
-struct AsCellData
+MAKE_ENUM(DataTag, asCellData, asPointData);
+
+// enum class DataTag
+// {
+//   asCellData,
+//   asPointData
+// }
+
+namespace Impl
 {
-} asCellData;
-
-/**
- * \struct AsPointData
- * \brief Tag structure indicating point data.
- */
-struct AsPointData
-{
-} asPointData;
-
-namespace Impl {
-
-  namespace Concepts {
-    template <typename DT>
-    concept DataType = std::is_same_v<DT, AsCellData> or std::is_same_v<DT, AsPointData>;
-  }
-
-  template <typename Basis>
-  constexpr auto dimBasis = []() {
-    // Case 1 PowerBasis
-    if constexpr (requires { Basis::PreBasis::children; })
-      return Basis::PreBasis::children;
-    // Case 2 SubSpaceBasis or Scalar Basis
-    else
-      return 1;
-  }();
-
   template <typename Container>
   constexpr auto sizeOfContainer = []() {
-    if constexpr (requires { Container::dimension; })
-      return Container::dimension;
-    else if constexpr (requires { std::tuple_size<Container>::value; })
+    if constexpr (requires { std::tuple_size<Container>::value; })
       return std::tuple_size<Container>::value;
     else
       return 1ul;
   }();
+
+  template <class PreBasis>
+  struct ResultContainerPre
+  {
+    using type = double;
+  };
+
+  template <class Basis>
+  struct ResultContainer
+  {
+    using type = ResultContainerPre<typename Basis::PreBasis>::type;
+  };
+
+  template <class RB, class PP>
+  struct ResultContainer<Dune::Functions::SubspaceBasis<RB, PP>>
+  {
+    using type = double;
+  };
+
+  template <class Basis>
+  using ResultContainer_t = typename ResultContainer<Basis>::type;
+
+  // specialization for power basis
+  template <class IMS, class SPB, std::size_t size>
+  struct ResultContainerPre<Dune::Functions::PowerPreBasis<IMS, SPB, size>>
+  {
+    using type = std::array<typename ResultContainerPre<SPB>::type, size>;
+  };
 
 } // namespace Impl
 
@@ -133,9 +142,9 @@ public:
    * \param resultFunction The Ikarus::ResultFunction.
    * \param dataTag The data tag.
    */
-  template <typename RF, Impl::Concepts::DataType DT>
-  void addResultFunction(RF&& resultFunction, DT dataTag) {
-    if constexpr (std::is_same_v<DT, AsCellData>)
+  template <typename RF>
+  void addResultFunction(RF&& resultFunction, DataTag dataTag) {
+    if (dataTag == DataTag::asCellData)
       Base::addCellData(std::forward<RF>(resultFunction));
     else
       Base::addPointData(std::forward<RF>(resultFunction));
@@ -147,9 +156,9 @@ public:
    * \tparam RT Result type template.
    * \param dataTag The data tag.
    */
-  template <template <typename, int, int> class RT, Impl::Concepts::DataType DT>
+  template <template <typename, int, int> class RT>
   requires(Concepts::ResultType<RT>)
-  void addResult(DT dataTag) {
+  void addResult(DataTag dataTag) {
     auto resFunction = makeResultVtkFunction<RT>(assembler_);
     addResultFunction(std::move(resFunction), dataTag);
   }
@@ -159,8 +168,7 @@ public:
    *
    * \param dataTag The data tag.
    */
-  template <Impl::Concepts::DataType DT>
-  void addAllResults(DT dataTag) {
+  void addAllResults(DataTag dataTag) {
     using ResultTuple = typename FEType::SupportedResultTypes;
 
     Dune::Hybrid::forEach(ResultTuple(), [&]<typename RT>(RT i) { addResult<RT::template Rebind>(dataTag); });
@@ -176,13 +184,25 @@ public:
    * \param name Name of the field.
    * \param dataTag The data tag.
    */
-  template <typename Basis, typename Container = Dune::FieldVector<double, Impl::dimBasis<Basis>>,
-            Impl::Concepts::DataType DT, typename R>
-  void addInterpolation(R&& vals, const Basis& basis, const std::string& name, DT dataTag) {
+  // template <typename Basis, typename Container = Dune::FieldVector<double, Impl::dimBasis<Basis>>,
+  //           Impl::Concepts::DataType DT, typename R>
+  // void addInterpolation(R&& vals, const Basis& basis, const std::string& name, DT dataTag) {
+  //   auto gridFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<Container>(basis, std::forward<R>(vals));
+  //   auto fieldInfo    = Dune::Vtk::FieldInfo(name, Impl::sizeOfContainer<Container>);
+
+  // if constexpr (std::is_same_v<DT, AsCellData>)
+  //   Base::addCellData(std::move(gridFunction), fieldInfo);
+  // else
+  //   Base::addPointData(std::move(gridFunction), fieldInfo);
+  // }
+  template <typename Basis, typename R>
+  void addInterpolation(R&& vals, const Basis& basis, const std::string& name, DataTag dataTag) {
+    using Container = Impl::ResultContainer_t<Basis>;
+
     auto gridFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<Container>(basis, std::forward<R>(vals));
     auto fieldInfo    = Dune::Vtk::FieldInfo(name, Impl::sizeOfContainer<Container>);
 
-    if constexpr (std::is_same_v<DT, AsCellData>)
+    if (dataTag == DataTag::asCellData)
       Base::addCellData(std::move(gridFunction), fieldInfo);
     else
       Base::addPointData(std::move(gridFunction), fieldInfo);

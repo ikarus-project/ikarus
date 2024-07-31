@@ -25,9 +25,9 @@ struct DummyProblem
   using Grid     = G;
   using GridView = typename Grid::LeafGridView;
 
-  using Basis =
-      Ikarus::BasisHandler<Dune::Functions::PowerPreBasis<Dune::Functions::BasisFactory::BlockedInterleaved,
-                                                          Dune::Functions::LagrangePreBasis<GridView, 1>, 2ul>>;
+  using PreBasis = Dune::Functions::PowerPreBasis<Dune::Functions::BasisFactory::BlockedInterleaved,
+                                                  Dune::Functions::LagrangePreBasis<GridView, 1>, 2ul>;
+  using Basis    = Ikarus::BasisHandler<PreBasis>;
 
   using LinearElastic =
       Ikarus::FE<Ikarus::PreFE<Basis>, Ikarus::LinearElasticPre::Skill, Ikarus::VolumeLoadPre<2>::Skill>;

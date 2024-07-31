@@ -29,6 +29,8 @@ class TestVtkWriter(unittest.TestCase):
             dune.grid.reader.gmsh,
             os.path.join(os.path.dirname(__file__), "auxiliaryfiles/quad2d.msh"),
         )
+        iks.io.DataTag.asCellData
+
         self.grid = dune.grid.ugGrid(reader, dimgrid=2)
 
         basis = iks.basis(

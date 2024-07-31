@@ -19,7 +19,6 @@
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/io/vtkwriter.hh>
 
-// PYBIND11_MAKE_OPAQUE(std::vector<bool>);
 namespace Ikarus::Python {
 
 /**
@@ -52,17 +51,17 @@ template <class Writer, class... options>
 void registerVtkWriter(pybind11::handle scope, pybind11::class_<Writer, options...> cls) {
   using pybind11::operator""_a;
 
-  using Ikarus::Vtk::asCellData;
-  using Ikarus::Vtk::asPointData;
+  using Ikarus::Vtk::DataTag;
+  // using Ikarus::Vtk::DataTag::asPointData;
 
   using Assembler     = typename Writer::Assembler;
   using FE            = typename Writer::FEType;
   using GridView      = typename Writer::GridView;
   using VirtualizedGF = Dune::Vtk::Function<GridView>;
 
-  cls.def(pybind11::init([](const Assembler& assembler, Dune::Vtk::FormatTypes format, Dune::Vtk::DataTypes datatype,
+  cls.def(pybind11::init([](std::shared_ptr<Assembler> assembler, Dune::Vtk::FormatTypes format, Dune::Vtk::DataTypes datatype,
                             Dune::Vtk::DataTypes headertype) {
-            return new Writer(std::make_shared<Assembler>(assembler), format, datatype, headertype);
+            return new Writer(assembler, format, datatype, headertype);
           }),
           pybind11::arg("assembler"), pybind11::arg("format") = Dune::Vtk::FormatTypes::BINARY,
           pybind11::arg("datatype")   = Dune::Vtk::DataTypes::FLOAT32,
@@ -72,9 +71,8 @@ void registerVtkWriter(pybind11::handle scope, pybind11::class_<Writer, options.
   cls.def("setDatatype", &Writer::setDatatype);
   cls.def("setHeadertype", &Writer::setHeadertype);
 
-  cls.def("addAllResultsAsCellData", [](Writer& self) { self.addAllResults(asCellData); });
+  cls.def("addAllResults", [](Writer& self, DataTag tag) { self.addAllResults(tag); });
 
-  cls.def("addAllResultsAsPointData", [](Writer& self) { self.addAllResults(asPointData); });
 
   auto addResultImpl = [](Writer& self, const std::string& resType, auto type) {
     bool success = false;
@@ -89,14 +87,11 @@ void registerVtkWriter(pybind11::handle scope, pybind11::class_<Writer, options.
   };
 
   cls.def(
-      "addResultAsCellData",
-      [&](Writer& self, const std::string& resType) { addResultImpl(self, resType, asCellData); },
+      "addResult",
+      [&](Writer& self, const std::string& resType, DataTag tag) { addResultImpl(self, resType, tag); },
       pybind11::arg("resType"));
 
-  cls.def(
-      "addResultAsPointData",
-      [&](Writer& self, const std::string& resType) { addResultImpl(self, resType, asPointData); },
-      pybind11::arg("resType"));
+
 
   cls.def(
       "write", [](Writer& self, const std::string& fileName) { return self.write(fileName); },

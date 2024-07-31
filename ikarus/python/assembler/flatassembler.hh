@@ -120,7 +120,7 @@ void registerFlatAssembler(pybind11::handle scope, pybind11::class_<Assembler, o
   cls.def("__len__", [](Assembler& self) { return self.size(); });
   cls.def("constraintsBelow", [](Assembler& self, SizeType i) { return self.constraintsBelow(i); });
   cls.def("isConstrained", [](Assembler& self, SizeType i) { return self.isConstrained(i); });
-  cls.def_property_readonly("grid", [](Assembler& self) { return self.gridView(); });
+  cls.def_property_readonly("gridView", [](Assembler& self) { return self.gridView(); });
 }
 
 #define MAKE_ASSEMBLER_REGISTERY_FUNCTION(name)                                              \
