@@ -41,7 +41,7 @@ jobs:
           pip install black==24.4.2
 
       - name: configure
-        run: cmake -S "cmake/FormatTarget" -Bbuild -DADD_FORMATTARGET=TRUE -DADD_PYTHONFORMATTING=1
+        run: cmake -S "cmake/FormatTarget" -Bbuild -DADD_FORMATTARGET=TRUE
 
       - name: check style
         run: |
