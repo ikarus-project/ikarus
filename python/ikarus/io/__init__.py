@@ -3,7 +3,8 @@
 
 from dune.common.hashit import hashIt
 from ikarus.generator import MySimpleGenerator
-from dune.vtk import FormatTypes, DataTypes
+from dune.vtk import FormatTypes, DataTypes, vtkWriter
+import dune.vtk
 
 from warnings import warn
 from io import StringIO
@@ -12,6 +13,7 @@ import types
 
 # The list of supported dataCollectors
 dataCollectors = ["lagrange", "discontinuous", "iga"]
+
 
 def __addInterpolation(writer, flag: int):
     typeStr = "Ikarus::Vtk::asPointData" if flag == 1 else "Ikarus::Vtk::asCellData"
@@ -28,7 +30,9 @@ def __addInterpolation(writer, flag: int):
                 auto vals = vals_.template cast<Eigen::VectorX<double>>();
                 writer.template addInterpolation<Basis, {containerStr}>(std::move(vals), basis, name, {typeStr});
             }}  
-        """.format(containerStr=containerStr, typeStr=typeStr)
+        """.format(
+            containerStr=containerStr, typeStr=typeStr
+        )
 
         return run("addInterpolation", StringIO(runCode), writer, vals_, basis, name)
 
@@ -44,6 +48,15 @@ def vtkWriter(
     headertype=DataTypes.UInt32,
 ):
     includes = []
+    includes += ["dune/python/vtk/writer.hh"]
+    includes += ["dune/vtk/writers/unstructuredgridwriter.hh"]
+    includes += [
+        "dune/vtk/writers/unstructuredgridwriter.hh",
+        "dune/vtk/datacollectors/lagrangedatacollector.hh",
+    ]
+    includes += ["ikarus/io/vtkwriter.hh"]
+    includes += ["ikarus/assembler/simpleassemblers.hh"]
+    includes += assembler._includes
 
     gridViewName = assembler.grid.cppTypeName
     dataCollectorName: str = ""
@@ -85,18 +98,16 @@ def vtkWriter(
         )
         element_type = f"Ikarus::Vtk::Writer<{assembler.cppTypeName}, {dataCollectorName}, {vtkWriterName}>"
 
-    baseType = vtkWriterName
+    # Register VTKWriter
+    dune.vtk.load(includes, vtkWriterName)
 
-    includes += ["ikarus/assembler/simpleassemblers.hh"]
-    includes += ["ikarus/io/vtkwriter.hh"]
     includes += ["ikarus/python/io/vtkwriter.hh"]
-    includes += assembler._includes
     moduleName = "vtkWriter_" + hashIt(element_type)
     module = generator.load(
         includes=includes,
         typeName=element_type,
         moduleName=moduleName,
-        baseClasses=[baseType],
+        baseClasses=[vtkWriterName],
         dynamicAttr=True,
     )
     writerModule = module.VtkWriter(assembler, format, datatype, headertype)

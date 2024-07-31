@@ -22,6 +22,7 @@ import unittest
 
 from dirichletvaluetest import makeGrid
 
+
 class TestVtkWriter(unittest.TestCase):
     def setUp(self):
         reader = (
