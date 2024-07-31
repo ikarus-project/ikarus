@@ -57,6 +57,10 @@ if(ADD_PYTHONFORMATTING)
     message("Adding python format command")
 
     set(PYTHONFORMATTINGCOMAND
+        pip
+        install
+        black==24.4.2
+        &&
         python
         -m
         black
@@ -69,6 +73,10 @@ if(ADD_PYTHONFORMATTING)
     )
 
     set(PYTHONFORMATTINGCOMANDCHECK
+        pip
+        install
+        black==24.4.2
+        &&
         python
         -m
         black
