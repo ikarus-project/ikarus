@@ -18,6 +18,7 @@
 
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/io/vtkwriter.hh>
+#include <ikarus/io/vtkdatatag.hh>
 
 namespace Ikarus::Python {
 
@@ -89,7 +90,7 @@ void registerVtkWriter(pybind11::handle scope, pybind11::class_<Writer, options.
   cls.def(
       "addResult",
       [&](Writer& self, const std::string& resType, DataTag tag) { addResultImpl(self, resType, tag); },
-      pybind11::arg("resType"));
+      pybind11::arg("resType"), pybind11::arg("tag"));
 
 
 

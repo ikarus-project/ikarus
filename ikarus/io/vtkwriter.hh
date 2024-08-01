@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include "vtkdatatag.hh"
+
 #include <array>
 #include <tuple>
 
@@ -24,22 +26,10 @@
 #include <ikarus/io/resultfunction.hh>
 #include <ikarus/utils/concepts.hh>
 
+
 namespace Ikarus::Vtk {
 
-/**
- * \enum DataTag
- * \brief Tag structure indicating cell data or point data.
- */
-MAKE_ENUM(DataTag, asCellData, asPointData);
-
-// enum class DataTag
-// {
-//   asCellData,
-//   asPointData
-// }
-
-namespace Impl
-{
+namespace Impl {
   template <typename Container>
   constexpr auto sizeOfContainer = []() {
     if constexpr (requires { std::tuple_size<Container>::value; })

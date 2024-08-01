@@ -8,6 +8,7 @@ import math
 
 import ikarus as iks
 from ikarus import finite_elements, utils, assembler, io
+
 import numpy as np
 import scipy as sp
 
@@ -29,7 +30,6 @@ class TestVtkWriter(unittest.TestCase):
             dune.grid.reader.gmsh,
             os.path.join(os.path.dirname(__file__), "auxiliaryfiles/quad2d.msh"),
         )
-        iks.io.DataTag.asCellData
 
         self.grid = dune.grid.ugGrid(reader, dimgrid=2)
 
@@ -85,34 +85,29 @@ class TestVtkWriter(unittest.TestCase):
         )
 
         writer = iks.io.vtkWriter(self.sparseAssembler, format=FormatTypes.ascii)
-        writer.addInterpolationAsPointData(
-            self.x, self.flatBasis, "displacements", size=2
+        writer.addInterpolation(
+            self.x, self.flatBasis, "displacements", io.DataTag.asPointData
         )
-        writer.addInterpolationAsCellData(
-            self.x, self.flatBasis, "displacements", size=2
+        writer.addInterpolation(
+            self.x, self.flatBasis, "displacements", io.DataTag.asCellData
         )
 
         xDisplacementBasis = dune.functions.subspaceBasis(self.flatBasis, 0)
-        writer.addInterpolationAsPointData(self.x, xDisplacementBasis, "u", size=1)
+        writer.addInterpolation(self.x, xDisplacementBasis, "u", io.DataTag.asPointData)
 
-        writer.addAllResultsAsCellData()
-        writer.addAllResultsAsPointData()
+        writer.addAllResults(io.DataTag.asCellData)
+        writer.addAllResults(io.DataTag.asPointData)
 
         fileName = writer.write("file")
         self.assertEqual(fileName[-3:], "vtu")
 
-    def test_listOfDataCollectors(self):
-        self.assertEqual(iks.io.dataCollectors[0], "lagrange")
-        self.assertEqual(iks.io.dataCollectors[1], "discontinuous")
-        self.assertEqual(iks.io.dataCollectors[2], "iga")
-
     def test_lagrange(self):
         writer2 = iks.io.vtkWriter(
-            self.sparseAssembler, dataCollector="lagrange", order=2
+            self.sparseAssembler, dataCollector=iks.io.DataCollector.lagrange, order=2
         )
 
-        writer2.addResultAsCellData("linearStress")
-        writer2.addResultAsPointData("linearStress")
+        writer2.addResult("linearStress", io.DataTag.asCellData)
+        writer2.addResult("linearStress", io.DataTag.asPointData)
 
         writer2.setFormat(FormatTypes.ascii)
         writer2.setDatatype(DataTypes.Float64)
@@ -159,27 +154,29 @@ class TestVtkWriter(unittest.TestCase):
         )
 
         writer3 = iks.io.vtkWriter(sparseAssemblerYASP, format=FormatTypes.ascii)
-        writer3.addAllResultsAsCellData()
+        writer3.addAllResults(io.DataTag.asCellData)
 
         print(writer3.cppTypeName)
 
         fileName = writer3.write("file3")
         self.assertEqual(fileName[-3:], "vtr")
 
-        with self.assertWarns(Warning):
-            _ = iks.io.vtkWriter(self.sparseAssembler, dataCollector="unknown")
+        # with self.assertWarns(Warning):
+        #     _ = iks.io.vtkWriter(self.sparseAssembler, dataCollector="unknown")
+        
 
     def test_discontinuousWriter(self):
         discontinuousVtkWriter = iks.io.vtkWriter(
-            self.sparseAssembler, dataCollector=iks.io.dataCollectors[1]
+            self.sparseAssembler, dataCollector=iks.io.DataCollector.discontinuous
         )
-        discontinuousVtkWriter.addAllResultsAsPointData()
+        discontinuousVtkWriter.addAllResults(io.DataTag.asPointData)
 
-        discontinuousVtkWriter.addInterpolationAsPointData(
-            self.x, self.flatBasis, "displacements", size=2
+        discontinuousVtkWriter.addInterpolation(
+            self.x, self.flatBasis, "displacements", io.DataTag.asPointData
         )
         discontinuousVtkWriter.write("file4")
 
 
 if __name__ == "__main__":
     unittest.main()
+

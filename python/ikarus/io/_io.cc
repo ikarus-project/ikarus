@@ -5,7 +5,7 @@
 #include <dune/python/pybind11/operators.h>
 #include <dune/python/pybind11/pybind11.h>
 
-#include <ikarus/io/vtkwriter.hh>
+#include <ikarus/io/vtkdatatag.hh>
 
 //clang-format off
 #define ENUM_BINDINGS(Type)                        \

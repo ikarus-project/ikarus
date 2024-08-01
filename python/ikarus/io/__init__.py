@@ -2,45 +2,50 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 from dune.common.hashit import hashIt
+from dune.generator.algorithm import run
+
 from ikarus.generator import MySimpleGenerator
 from dune.vtk import FormatTypes, DataTypes
 import dune.vtk
 
 from warnings import warn
 from io import StringIO
-from dune.generator.algorithm import run
 import types
+from enum import Enum
+
+from ._io import *
 
 # The list of supported dataCollectors
-dataCollectors = ["lagrange", "discontinuous", "iga"]
+DataCollector = Enum("DataCollector", ["default", "lagrange", "discontinuous", "iga"])
 
 
-def __addInterpolation(writer, flag: int):
-    typeStr = "Ikarus::Vtk::asPointData" if flag == 1 else "Ikarus::Vtk::asCellData"
-
-    def __addInterpolationFunc(writer, vals_, basis, name: str, size: int):
-        containerStr = f"Dune::FieldVector<double, {size}>" if size > 1 else "double"
-
+def __addInterpolation(writer):
+    def __addInterpolationFunc(writer, vals_, basis, name: str, dataTag):
         runCode = """
             #include <ikarus/python/io/vtkwriter.hh>
             #include <dune/python/pybind11/eigen.h>
             template <typename Writer, typename Basis>
-            void addInterpolation(Writer& writer, const auto& vals_, const Basis& basis, std::string name) {{
+            void addInterpolation(Writer& writer, const auto& vals_, const Basis& basis, std::string name, int dataTag) {{
                 auto vals = vals_.template cast<Eigen::VectorX<double>>();
-                writer.template addInterpolation(std::move(vals), basis, name, {typeStr});
+                writer.template addInterpolation(std::move(vals), basis, name,  static_cast<Ikarus::Vtk::DataTag>(dataTag));
             }}  
-        """.format(
-            containerStr=containerStr, typeStr=typeStr
+        """
+        return run(
+            "addInterpolation",
+            StringIO(runCode),
+            writer,
+            vals_,
+            basis,
+            name,
+            dataTag.value,
         )
-
-        return run("addInterpolation", StringIO(runCode), writer, vals_, basis, name)
 
     return __addInterpolationFunc
 
 
 def vtkWriter(
     assembler,
-    dataCollector: str = None,
+    dataCollector: DataCollector = DataCollector.default,
     order: int = 1,
     format=FormatTypes.binary,
     datatype=DataTypes.Float32,
@@ -60,24 +65,19 @@ def vtkWriter(
     gridViewName = assembler.gridView.cppTypeName
     dataCollectorName: str = ""
 
-    if dataCollector is not None:
-        if dataCollector == dataCollectors[0]:
+    if dataCollector is not DataCollector.default:
+        if dataCollector == DataCollector.lagrange:
             dataCollectorName = (
                 f"Dune::Vtk::LagrangeDataCollector<{gridViewName}, {order}>"
             )
-        elif dataCollector == dataCollectors[1]:
+        elif dataCollector == DataCollector.discontinuous:
             dataCollectorName = f"Dune::Vtk::DiscontinuousDataCollector<{gridViewName}>"
             includes += ["dune/vtk/datacollectors/discontinuousdatacollector.hh"]
-        elif dataCollector == dataCollectors[2]:
+        elif dataCollector == DataCollector.iga:
             dataCollectorName = (
                 f"Dune::Vtk::DiscontinuousIgaDataCollector<{gridViewName}>"
             )
             includes += ["dune/iga/io/igadatacollector.hh"]
-        else:
-            warn(
-                f"DataCollector Argument ignored, as DataCollector {dataCollector} is unknown"
-            )
-            dataCollector = None
 
     generator = MySimpleGenerator("VtkWriter", "Ikarus::Python")
 
@@ -85,7 +85,7 @@ def vtkWriter(
     vtkWriterName = ""
     element_type = ""
 
-    if dataCollector is None:
+    if dataCollector is DataCollector.default:
         vtkWriterName = f"typename {defaultManager}::template DefaultVTKWriter<>"
         dataCollectorName = f"typename {defaultManager}::DefaultDataCollector"
         element_type = f"Ikarus::Vtk::Writer<{assembler.cppTypeName}, {dataCollectorName}, {vtkWriterName}>"
@@ -109,11 +109,8 @@ def vtkWriter(
         dynamicAttr=True,
     )
     writerModule = module.VtkWriter(assembler, format, datatype, headertype)
-    writerModule.addInterpolationAsPointData = types.MethodType(
-        __addInterpolation(writerModule, 1), writerModule
-    )
-    writerModule.addInterpolationAsCellData = types.MethodType(
-        __addInterpolation(writerModule, 2), writerModule
+    writerModule.addInterpolation = types.MethodType(
+        __addInterpolation(writerModule), writerModule
     )
 
     return writerModule
