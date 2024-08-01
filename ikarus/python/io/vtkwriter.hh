@@ -17,8 +17,8 @@
 #include <dune/vtk/vtkwriter.hh>
 
 #include <ikarus/finiteelements/ferequirements.hh>
-#include <ikarus/io/vtkwriter.hh>
 #include <ikarus/io/vtkdatatag.hh>
+#include <ikarus/io/vtkwriter.hh>
 
 namespace Ikarus::Python {
 
@@ -60,10 +60,9 @@ void registerVtkWriter(pybind11::handle scope, pybind11::class_<Writer, options.
   using GridView      = typename Writer::GridView;
   using VirtualizedGF = Dune::Vtk::Function<GridView>;
 
-  cls.def(pybind11::init([](std::shared_ptr<Assembler> assembler, Dune::Vtk::FormatTypes format, Dune::Vtk::DataTypes datatype,
-                            Dune::Vtk::DataTypes headertype) {
-            return new Writer(assembler, format, datatype, headertype);
-          }),
+  cls.def(pybind11::init(
+              [](std::shared_ptr<Assembler> assembler, Dune::Vtk::FormatTypes format, Dune::Vtk::DataTypes datatype,
+                 Dune::Vtk::DataTypes headertype) { return new Writer(assembler, format, datatype, headertype); }),
           pybind11::arg("assembler"), pybind11::arg("format") = Dune::Vtk::FormatTypes::BINARY,
           pybind11::arg("datatype")   = Dune::Vtk::DataTypes::FLOAT32,
           pybind11::arg("headertype") = Dune::Vtk::DataTypes::UINT32, pybind11::keep_alive<1, 2>());
@@ -73,7 +72,6 @@ void registerVtkWriter(pybind11::handle scope, pybind11::class_<Writer, options.
   cls.def("setHeadertype", &Writer::setHeadertype);
 
   cls.def("addAllResults", [](Writer& self, DataTag tag) { self.addAllResults(tag); });
-
 
   auto addResultImpl = [](Writer& self, const std::string& resType, auto type) {
     bool success = false;
@@ -88,11 +86,8 @@ void registerVtkWriter(pybind11::handle scope, pybind11::class_<Writer, options.
   };
 
   cls.def(
-      "addResult",
-      [&](Writer& self, const std::string& resType, DataTag tag) { addResultImpl(self, resType, tag); },
+      "addResult", [&](Writer& self, const std::string& resType, DataTag tag) { addResultImpl(self, resType, tag); },
       pybind11::arg("resType"), pybind11::arg("tag"));
-
-
 
   cls.def(
       "write", [](Writer& self, const std::string& fileName) { return self.write(fileName); },

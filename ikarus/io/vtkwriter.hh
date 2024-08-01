@@ -26,7 +26,6 @@
 #include <ikarus/io/resultfunction.hh>
 #include <ikarus/utils/concepts.hh>
 
-
 namespace Ikarus::Vtk {
 
 namespace Impl {
