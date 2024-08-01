@@ -163,7 +163,6 @@ class TestVtkWriter(unittest.TestCase):
 
         # with self.assertWarns(Warning):
         #     _ = iks.io.vtkWriter(self.sparseAssembler, dataCollector="unknown")
-        
 
     def test_discontinuousWriter(self):
         discontinuousVtkWriter = iks.io.vtkWriter(
@@ -179,4 +178,3 @@ class TestVtkWriter(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

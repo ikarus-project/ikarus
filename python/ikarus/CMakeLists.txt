@@ -9,8 +9,6 @@ add_python_targets(ikarus __init__ dirichlet_values basis generator)
 
 dune_add_pybind11_module(NAME _ikarus)
 
-# dune_add_pybind11_submodule(NAME _io MODULE _ikarus SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/io/_io.cc)
-
 set_property(
   TARGET _ikarus
   PROPERTY LINK_LIBRARIES dunecommon ikarus
@@ -19,4 +17,6 @@ set_property(
 if(SKBUILD)
   install(TARGETS _ikarus LIBRARY DESTINATION python/ikarus)
 endif()
+
+# As we are adding a submodule here, the actual _ikarus target has to be already known
 add_subdirectory(io)

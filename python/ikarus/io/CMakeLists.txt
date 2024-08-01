@@ -3,8 +3,6 @@
 
 add_python_targets(io __init__)
 
-# dune_add_pybind11_module(NAME _io SOURCES _io.cc)
-
 dune_add_pybind11_submodule(NAME _io MODULE _ikarus SOURCES _io.cc)
 
 set_property(
@@ -14,5 +12,5 @@ set_property(
 )
 
 if(SKBUILD)
-  install(TARGETS _io LIBRARY DESTINATION python/ikarus/io)
+  install(TARGETS _ikarus LIBRARY DESTINATION python/ikarus/io)
 endif()
