@@ -3,7 +3,7 @@
 
 add_python_targets(io __init__)
 
-dune_add_pybind11_submodule(NAME _io MODULE _ikarus SOURCES _io.cc)
+dune_add_pybind11_module(NAME _io SOURCES _io.cc)
 
 set_property(
   TARGET _io
