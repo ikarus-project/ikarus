@@ -68,7 +68,8 @@ void registerVtkWriter(pybind11::handle scope, pybind11::class_<Writer, options.
   cls.def("setDatatype", &Writer::setDatatype);
   cls.def("setHeadertype", &Writer::setHeadertype);
 
-  cls.def("addAllResults", [](Writer& self, DataTag tag) { self.addAllResults(tag); });
+  cls.def(
+      "addAllResults", [](Writer& self, DataTag dataTag) { self.addAllResults(dataTag); }, pybind11::arg("dataTag"));
 
   auto addResultImpl = [](Writer& self, const std::string& resType, auto type) {
     bool success = false;
