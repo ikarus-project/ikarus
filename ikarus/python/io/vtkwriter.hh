@@ -29,15 +29,15 @@ namespace Ikarus::Python {
  * This class supports adding result data as cell or point data and configuring VTK output formats.
  *
  * This function registers the following methods for the VtkWriter class:
- * - `setFormat(type: dune.vtk.FormatTypes)`
- * - `setDatatype(type: dune.vtk.DataTypes)`
- * - `setHeadertype(type: dune.vtk.DataTypes)`
  * - `addAllResults(dataTag: DataTag)`
  * - `addResult(resType: str, dataTag: ikarus.io.DataTag)`
  * - `write(fileName)`, returns actual fileName
  * - `addInterPolation(writer, vals_::np.array, basis, name: str, dataTag: ikarus.io.DataTag)`
  * - `addPointData()` (multiple overloads)
  * - `addCellData()` (multiple overloads)
+ * - `setFormat(type: dune.vtk.FormatTypes)`
+ * - `setDatatype(type: dune.vtk.DataTypes)`
+ * - `setHeadertype(type: dune.vtk.DataTypes)`
  *
  * \ingroup pythonbindings
  *
@@ -51,7 +51,6 @@ void registerVtkWriter(pybind11::handle scope, pybind11::class_<Writer, options.
   using pybind11::operator""_a;
 
   using Ikarus::Vtk::DataTag;
-  // using Ikarus::Vtk::DataTag::asPointData;
 
   using Assembler     = typename Writer::Assembler;
   using FE            = typename Writer::FEType;
