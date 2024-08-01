@@ -101,27 +101,16 @@ public:
         assembler_(assembler) {}
 
   /**
-   * \brief Constructor with assembler, data collector reference, and additional arguments.
-   *
-   * \param assembler Shared pointer to assembler.
-   * \param dc Reference to data collector
-   * \param args Additional arguments.
-   */
-  template <class... Args>
-  Writer(std::shared_ptr<AS> assembler, DC& dc, Args... args)
-      : Base(dc, std::forward<Args>(args)...),
-        assembler_(assembler) {}
-
-  /**
    * \brief Constructor with assembler, data collector, and additional arguments.
    *
    * \param assembler Shared pointer to assembler.
-   * \param dc Data collector as a rvalue reference
+   * \param dc Data collector
    * \param args Additional arguments.
    */
-  template <class... Args>
-  Writer(std::shared_ptr<AS> assembler, DC&& dc, Args... args)
-      : Base(std::move(dc), std::forward<Args>(args)...),
+  template <typename DC_, class... Args>
+  requires Concepts::DataCollector<std::decay_t<DC_>>
+  Writer(std::shared_ptr<AS> assembler, DC_&& dc, Args... args)
+      : Base(std::forward<std::decay_t<DC_>>(dc), std::forward<Args>(args)...),
         assembler_(assembler) {}
 
   /**
@@ -237,14 +226,10 @@ Writer(std::shared_ptr<AS>,
        Args...) -> Writer<AS, typename DefaultVTKWriterManager<typename AS::GridView>::DefaultDataCollector,
                           typename DefaultVTKWriterManager<typename AS::GridView>::template DefaultVTKWriter<>>;
 
-template <typename AS, typename DC, class... Args, Dune::Vtk::IsDataCollector<DC> = true>
-requires(Ikarus::Concepts::FlatAssembler<AS>)
-Writer(std::shared_ptr<AS>, DC&, Args...)
-    -> Writer<AS, DC, typename DefaultVTKWriterManager<typename AS::GridView>::template DefaultVTKWriter<DC>>;
-
-template <typename AS, typename DC, class... Args, Dune::Vtk::IsDataCollector<DC> = true>
+template <typename AS, typename DC, class... Args, Dune::Vtk::IsDataCollector<std::decay_t<DC>> = true>
 requires(Ikarus::Concepts::FlatAssembler<AS>)
 Writer(std::shared_ptr<AS>, DC&&, Args...)
-    -> Writer<AS, DC, typename DefaultVTKWriterManager<typename AS::GridView>::template DefaultVTKWriter<DC>>;
+    -> Writer<AS, std::decay_t<DC>,
+              typename DefaultVTKWriterManager<typename AS::GridView>::template DefaultVTKWriter<std::decay_t<DC>>>;
 
 } // namespace Ikarus::Vtk
