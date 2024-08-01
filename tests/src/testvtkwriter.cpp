@@ -213,8 +213,8 @@ int main(const int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t;
 
-  // t.subTest(testStructuredInstantiaionAndDeduction());
-  // t.subTest(testUnstructuredInstantiaionAndDeduction());
+  t.subTest(testStructuredInstantiaionAndDeduction());
+  t.subTest(testUnstructuredInstantiaionAndDeduction());
   t.subTest(vtkWriterTest());
 
   return t.exit();

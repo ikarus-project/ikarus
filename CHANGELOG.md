@@ -54,7 +54,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 - Rework the Python Interface for `DirichletValues` plus add support to easily fix boundary DOFs of `Subspacebasis` in C++ and Python ([#305](https://github.com/ikarus-project/ikarus/pull/305))
 - Add a truss element ([#302](https://github.com/ikarus-project/ikarus/pull/302))
 - Add an About Ikarus page in the documentation ([#291](https://github.com/ikarus-project/ikarus/pull/291))
-- Add new class `Vtk::Writer`, which implements some convinience methods over the exting `dune-vtk` module ([#309](https://github.com/ikarus-project/ikarus/pull/309))
+- Add new class `Vtk::Writer`, which implements some convenience methods over the existing `dune-vtk` module ([#309](https://github.com/ikarus-project/ikarus/pull/309))
 
 ## Release v0.4 (Ganymede)
 
