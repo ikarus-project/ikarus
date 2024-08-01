@@ -12,5 +12,5 @@ set_property(
 )
 
 if(SKBUILD)
-  install(TARGETS _ikarus LIBRARY DESTINATION python/ikarus/io)
+  install(TARGETS _io LIBRARY DESTINATION python/ikarus/io)
 endif()

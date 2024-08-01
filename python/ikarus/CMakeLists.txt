@@ -14,9 +14,10 @@ set_property(
   PROPERTY LINK_LIBRARIES dunecommon ikarus
   APPEND
 )
-if(SKBUILD)
-  install(TARGETS _ikarus LIBRARY DESTINATION python/ikarus)
-endif()
 
 # As we are adding a submodule here, the actual _ikarus target has to be already known
 add_subdirectory(io)
+
+if(SKBUILD)
+  install(TARGETS _ikarus LIBRARY DESTINATION python/ikarus)
+endif()
