@@ -3,6 +3,8 @@
 
 #include <config.h>
 
+#include "pythonhelpers.hh"
+
 #include <dune/common/float_cmp.hh>
 #include <dune/python/common/typeregistry.hh>
 #include <dune/python/pybind11/eigen.h>
@@ -16,14 +18,6 @@
 #include <ikarus/python/finiteelements/scalarwrapper.hh>
 #include <ikarus/solver/linearsolver/linearsolver.hh>
 
-// clang-format off
-#define ENUM_BINDINGS(Type)                        \
-  py::enum_<Type> Type##Enum(m, #Type);           \
-  Type Type##EnumV = Type::BEGIN;                          \
-  Ikarus::increment(Type##EnumV);                          \
-  for (; Type##EnumV != Type::END; Ikarus::increment(Type##EnumV)) \
-    Type##Enum.value(toString(Type##EnumV).c_str(), Type##EnumV);
-// clang-format on
 
 /**
  * \brief Registers the ScalarWrapper class template with pybind11, adding various operations and constructors.

@@ -122,6 +122,6 @@ if __name__ == "__main__":
         0.2087577577980777 - max(d)
     ) < 1e-6, f"The maximum displacement should be 0.2087577577980777 but is {max(d)}"
 
-    vtkWriter2 = iks.io.vtkWriter(assembler, dataCollector="iga")
+    vtkWriter2 = iks.io.vtkWriter(assembler, io.DataCollector.iga)
     vtkWriter2.addPointData(displacementFunc, name="displacement")
     vtkWriter2.write("KLshell2")

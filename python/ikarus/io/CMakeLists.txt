@@ -13,6 +13,6 @@ set_property(
   APPEND
 )
 
-# if(SKBUILD)
-#   install(TARGETS _io LIBRARY DESTINATION python/ikarus/io)
-# endif()
+if(SKBUILD)
+  install(TARGETS _io LIBRARY DESTINATION python/ikarus/io)
+endif()
