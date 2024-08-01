@@ -32,12 +32,10 @@ namespace Ikarus::Python {
  * - `setFormat(type: dune.vtk.FormatTypes)`
  * - `setDatatype(type: dune.vtk.DataTypes)`
  * - `setHeadertype(type: dune.vtk.DataTypes)`
- * - `addAllResultsAsCellData()`
- * - `addAllResultsAsPointData()`
- * - `addResultAsCellData(resType: str)`
- * - `addResultAsPointData(resType: str)`
- * - `write(fileName)`
- * - `addInterPolation(writer, vals_::np.array, basis, name: str, size: int)`
+ * - `addAllResults(dataTag: DataTag)`
+ * - `addResult(resType: str, dataTag: ikarus.io.DataTag)`
+ * - `write(fileName)`, returns actual fileName
+ * - `addInterPolation(writer, vals_::np.array, basis, name: str, dataTag: ikarus.io.DataTag)`
  * - `addPointData()` (multiple overloads)
  * - `addCellData()` (multiple overloads)
  *

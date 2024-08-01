@@ -167,23 +167,15 @@ public:
    * \brief Adds interpolation data for the given basis and container.
    *
    * \tparam Container Type of the container used by the gridfunction. This can be deduced for power basis and
-   * scalarbasis, otherwise define a Dune::FieldVector<ctype, dim> yourself
-   * \param vals Coefficient vector to be interpolated.
-   * \param basis The underlying basis, can be a subspacebasis
-   * \param name Name of the field.
-   * \param dataTag The data tag.
+   * scalarbasis, otherwise define a Dune::FieldVector<ctype, dim> yourself \n
+   * This only works properly with scalar, power and scalar subspacebasis at the moment. If you need more granular
+   * control over your output format, create the gridFunction yourself and add it with `writer.addPointData(gridFuntion,
+   * fieldInfo)` manually
+   \param vals Coefficient vector to be interpolated.
+   \param basis The underlying basis, can be a subspacebasis
+   \param name Name of the field.
+   \param dataTag The data tag.
    */
-  // template <typename Basis, typename Container = Dune::FieldVector<double, Impl::dimBasis<Basis>>,
-  //           Impl::Concepts::DataType DT, typename R>
-  // void addInterpolation(R&& vals, const Basis& basis, const std::string& name, DT dataTag) {
-  //   auto gridFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<Container>(basis, std::forward<R>(vals));
-  //   auto fieldInfo    = Dune::Vtk::FieldInfo(name, Impl::sizeOfContainer<Container>);
-
-  // if constexpr (std::is_same_v<DT, AsCellData>)
-  //   Base::addCellData(std::move(gridFunction), fieldInfo);
-  // else
-  //   Base::addPointData(std::move(gridFunction), fieldInfo);
-  // }
   template <typename Basis, typename R>
   void addInterpolation(R&& vals, const Basis& basis, const std::string& name, DataTag dataTag) {
     using Container = Impl::ResultContainer_t<Basis>;
