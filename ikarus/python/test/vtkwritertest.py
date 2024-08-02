@@ -82,7 +82,7 @@ class TestVtkWriter(unittest.TestCase):
             headertype=DataTypes.UInt32,
         )
 
-        writer = io.vtkWriter(self.sparseAssembler, format=FormatTypes.ascii)
+        writer = io.vtkWriter(self.sparseAssembler, dataFormat=FormatTypes.ascii)
         writer.addInterpolation(
             self.x, self.flatBasis, "displacements", io.DataTag.asPointData
         )
@@ -148,7 +148,7 @@ class TestVtkWriter(unittest.TestCase):
             req, iks.AffordanceCollection.elastoStatics, iks.DBCOption.Full
         )
 
-        writer3 = io.vtkWriter(sparseAssemblerYASP, format=FormatTypes.ascii)
+        writer3 = io.vtkWriter(sparseAssemblerYASP, dataFormat=FormatTypes.ascii)
         writer3.addAllResults(io.DataTag.asCellData)
 
         fileName = writer3.write("vtk_test_structured")
