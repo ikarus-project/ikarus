@@ -114,7 +114,6 @@ auto testUnstructuredInstantiaionAndDeduction() {
   auto& gridView        = testCase.gridView();
   auto& sparseAssembler = testCase.sparseAssembler();
   auto& req             = testCase.requirement();
-  auto& basis           = testCase.basis();
   auto& D_Glob          = req.globalSolution();
   auto fes              = &(testCase.finiteElements());
 

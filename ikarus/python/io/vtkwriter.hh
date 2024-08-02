@@ -69,7 +69,8 @@ void registerVtkWriter(pybind11::handle scope, pybind11::class_<Writer, options.
   cls.def("setHeadertype", &Writer::setHeadertype);
 
   cls.def(
-      "addAllResults", [](Writer& self, DataTag dataTag) { self.addAllResults(dataTag); }, pybind11::arg("dataTag"));
+      "addAllResults", [](Writer& self, DataTag dataTag = Vtk::DataTag::asPointData) { self.addAllResults(dataTag); },
+      pybind11::arg("dataTag") = Vtk::DataTag::asPointData);
 
   auto addResultImpl = [](Writer& self, const std::string& resType, auto type) {
     bool success = false;
@@ -84,8 +85,11 @@ void registerVtkWriter(pybind11::handle scope, pybind11::class_<Writer, options.
   };
 
   cls.def(
-      "addResult", [&](Writer& self, const std::string& resType, DataTag tag) { addResultImpl(self, resType, tag); },
-      pybind11::arg("resType"), pybind11::arg("tag"));
+      "addResult",
+      [&](Writer& self, const std::string& resType, DataTag tag = Vtk::DataTag::asPointData) {
+        addResultImpl(self, resType, tag);
+      },
+      pybind11::arg("resType"), pybind11::arg("tag") = Vtk::DataTag::asPointData);
 
   cls.def(
       "write", [](Writer& self, const std::string& fileName) { return self.write(fileName); },

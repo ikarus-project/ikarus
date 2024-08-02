@@ -2,43 +2,29 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 from dune.common.hashit import hashIt
-from dune.generator.algorithm import run
 
 from ikarus.generator import MySimpleGenerator
 from dune.vtk import FormatTypes, DataTypes
 import dune.vtk
 
-from warnings import warn
-from io import StringIO
 import types
 from enum import Enum
 
-from ._io import *
+from ._io import DataTag
 
 # The list of supported dataCollectors
 DataCollector = Enum("DataCollector", ["default", "lagrange", "discontinuous", "iga"])
 
 
 def __addInterpolation(writer):
-    def __addInterpolationFunc(writer, vals_, basis, name: str, dataTag):
-        runCode = """
-            #include <ikarus/python/io/vtkwriter.hh>
-            #include <dune/python/pybind11/eigen.h>
-            template <typename Writer, typename Basis>
-            void addInterpolation(Writer& writer, const auto& vals_, const Basis& basis, std::string name, int dataTag) {{
-                auto vals = vals_.template cast<Eigen::VectorX<double>>();
-                writer.template addInterpolation(std::move(vals), basis, name,  static_cast<Ikarus::Vtk::DataTag>(dataTag));
-            }}  
-        """
-        return run(
-            "addInterpolation",
-            StringIO(runCode),
-            writer,
-            vals_,
-            basis,
-            name,
-            dataTag.value,
-        )
+    def __addInterpolationFunc(
+        writer, vals_, basis, name: str, dataTag=DataTag.asPointData
+    ):
+        gf = basis.asFunction(vals_)
+        if dataTag == DataTag.asPointData or DataTag.asCellAndPointData:
+            writer.addPointData(gf, name)
+        if dataTag == DataTag.asCellData or DataTag.asCellAndPointData:
+            writer.addCellData(gf, name)
 
     return __addInterpolationFunc
 
@@ -47,17 +33,15 @@ def vtkWriter(
     assembler,
     dataCollector: DataCollector = DataCollector.default,
     order: int = 1,
-    format=FormatTypes.binary,
+    dataFormat=FormatTypes.binary,
     datatype=DataTypes.Float32,
     headertype=DataTypes.UInt32,
 ):
     includes = []
     includes += ["dune/python/vtk/writer.hh"]
     includes += ["dune/vtk/writers/unstructuredgridwriter.hh"]
-    includes += [
-        "dune/vtk/writers/unstructuredgridwriter.hh",
-        "dune/vtk/datacollectors/lagrangedatacollector.hh",
-    ]
+    includes += ["dune/vtk/writers/unstructuredgridwriter.hh"]
+    includes += ["dune/vtk/datacollectors/lagrangedatacollector.hh"]
     includes += ["ikarus/io/vtkwriter.hh"]
     includes += ["ikarus/assembler/simpleassemblers.hh"]
     includes += assembler._includes
@@ -108,7 +92,7 @@ def vtkWriter(
         baseClasses=[vtkWriterName],
         dynamicAttr=True,
     )
-    writerModule = module.VtkWriter(assembler, format, datatype, headertype)
+    writerModule = module.VtkWriter(assembler, dataFormat, datatype, headertype)
     writerModule.addInterpolation = types.MethodType(
         __addInterpolation(writerModule), writerModule
     )

@@ -10,5 +10,5 @@ namespace Ikarus::Vtk {
  * \enum DataTag
  * \brief Tag enum indicating cell data or point data.
  */
-MAKE_ENUM(DataTag, asCellData, asPointData);
+MAKE_ENUM(DataTag, asCellData, asPointData, asCellAndPointData);
 } // namespace Ikarus::Vtk

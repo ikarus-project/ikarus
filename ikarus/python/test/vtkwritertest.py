@@ -7,7 +7,7 @@
 import math
 
 import ikarus as iks
-from ikarus import finite_elements, utils, assembler, io
+from ikarus import finite_elements, assembler, io
 
 import numpy as np
 import scipy as sp
@@ -44,12 +44,12 @@ class TestVtkWriter(unittest.TestCase):
         def vL(x, lambdaVal):
             return np.array([lambdaVal * x[0] * 2, 2 * lambdaVal * x[1] * 0])
 
-        vLoad = iks.finite_elements.volumeLoad2D(vL)
+        vLoad = finite_elements.volumeLoad2D(vL)
 
         fes = []
-        linElastic = iks.finite_elements.linearElastic(youngs_modulus=1000, nu=0.2)
+        linElastic = finite_elements.linearElastic(youngs_modulus=1000, nu=0.2)
         for e in self.grid.elements:
-            fes.append(iks.finite_elements.makeFE(basis, linElastic, vLoad))
+            fes.append(finite_elements.makeFE(basis, linElastic, vLoad))
             fes[-1].bind(e)
 
         req = fes[0].createRequirement()
@@ -59,14 +59,12 @@ class TestVtkWriter(unittest.TestCase):
         self.dirichletValues = iks.dirichletValues(self.flatBasis)
 
         def fixLeftHandEdge(vec, localIndex, localView, intersection):
-            if intersection.geometry.center[1] < -0.99999:
+            if intersection.geometry.center[0] < 1e-8:
                 vec[localView.index(localIndex)] = True
 
         self.dirichletValues.fixBoundaryDOFs(fixLeftHandEdge)
 
-        self.sparseAssembler = iks.assembler.sparseFlatAssembler(
-            fes, self.dirichletValues
-        )
+        self.sparseAssembler = assembler.sparseFlatAssembler(fes, self.dirichletValues)
         self.sparseAssembler.bind(
             req, iks.AffordanceCollection.elastoStatics, iks.DBCOption.Full
         )
@@ -78,13 +76,13 @@ class TestVtkWriter(unittest.TestCase):
         req.insertGlobalSolution(self.x)
 
     def test(self):
-        _ = iks.io.vtkWriter(
+        _ = io.vtkWriter(
             self.sparseAssembler,
             datatype=DataTypes.Float64,
             headertype=DataTypes.UInt32,
         )
 
-        writer = iks.io.vtkWriter(self.sparseAssembler, format=FormatTypes.ascii)
+        writer = io.vtkWriter(self.sparseAssembler, format=FormatTypes.ascii)
         writer.addInterpolation(
             self.x, self.flatBasis, "displacements", io.DataTag.asPointData
         )
@@ -98,12 +96,12 @@ class TestVtkWriter(unittest.TestCase):
         writer.addAllResults(io.DataTag.asCellData)
         writer.addAllResults(io.DataTag.asPointData)
 
-        fileName = writer.write("file")
+        fileName = writer.write("vtk_test")
         self.assertEqual(fileName[-3:], "vtu")
 
     def test_lagrange(self):
-        writer2 = iks.io.vtkWriter(
-            self.sparseAssembler, dataCollector=iks.io.DataCollector.lagrange, order=2
+        writer2 = io.vtkWriter(
+            self.sparseAssembler, dataCollector=io.DataCollector.lagrange, order=2
         )
 
         writer2.addResult("linearStress", io.DataTag.asCellData)
@@ -111,7 +109,6 @@ class TestVtkWriter(unittest.TestCase):
 
         writer2.setFormat(FormatTypes.ascii)
         writer2.setDatatype(DataTypes.Float64)
-        writer2.setHeadertype(DataTypes.UInt16)
 
         @gridFunction(self.grid)
         def g(x):
@@ -120,7 +117,7 @@ class TestVtkWriter(unittest.TestCase):
         writer2.addPointData(g, name="g", components=(0, 1))
         writer2.addPointData(g, name="g2", components=[0, 1, 2])
 
-        writer2.write("file2")
+        writer2.write("vtk_test_lagrange")
 
     def test_structuredWriter(self):
         gridUG = makeGrid()
@@ -134,9 +131,9 @@ class TestVtkWriter(unittest.TestCase):
         lambdaLoad = iks.Scalar(3.0)
 
         fes = []
-        linElastic = iks.finite_elements.linearElastic(youngs_modulus=1000, nu=0.2)
+        linElastic = finite_elements.linearElastic(youngs_modulus=1000, nu=0.2)
         for e in gridUG.elements:
-            fes.append(iks.finite_elements.makeFE(basis, linElastic))
+            fes.append(finite_elements.makeFE(basis, linElastic))
             fes[-1].bind(e)
 
         req = fes[0].createRequirement()
@@ -145,35 +142,28 @@ class TestVtkWriter(unittest.TestCase):
         req.insertGlobalSolution(d)
 
         dirichletValuesYASP = iks.dirichletValues(flatBasisYASP)
-        sparseAssemblerYASP = iks.assembler.sparseFlatAssembler(
-            fes, dirichletValuesYASP
-        )
+        sparseAssemblerYASP = assembler.sparseFlatAssembler(fes, dirichletValuesYASP)
 
         sparseAssemblerYASP.bind(
             req, iks.AffordanceCollection.elastoStatics, iks.DBCOption.Full
         )
 
-        writer3 = iks.io.vtkWriter(sparseAssemblerYASP, format=FormatTypes.ascii)
+        writer3 = io.vtkWriter(sparseAssemblerYASP, format=FormatTypes.ascii)
         writer3.addAllResults(io.DataTag.asCellData)
 
-        print(writer3.cppTypeName)
-
-        fileName = writer3.write("file3")
+        fileName = writer3.write("vtk_test_structured")
         self.assertEqual(fileName[-3:], "vtr")
 
-        # with self.assertWarns(Warning):
-        #     _ = iks.io.vtkWriter(self.sparseAssembler, dataCollector="unknown")
-
     def test_discontinuousWriter(self):
-        discontinuousVtkWriter = iks.io.vtkWriter(
-            self.sparseAssembler, dataCollector=iks.io.DataCollector.discontinuous
+        discontinuousVtkWriter = io.vtkWriter(
+            self.sparseAssembler, dataCollector=io.DataCollector.discontinuous
         )
-        discontinuousVtkWriter.addAllResults(io.DataTag.asPointData)
+        discontinuousVtkWriter.addAllResults()  # defaults to pointData
 
         discontinuousVtkWriter.addInterpolation(
-            self.x, self.flatBasis, "displacements", io.DataTag.asPointData
+            self.x, self.flatBasis, "displacements", io.DataTag.asCellAndPointData
         )
-        discontinuousVtkWriter.write("file4")
+        discontinuousVtkWriter.write("vtk_test_discontinous")
 
 
 if __name__ == "__main__":

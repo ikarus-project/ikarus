@@ -61,19 +61,20 @@ auto vtkWriterTest() {
 
   auto writer = Ikarus::Vtk::Writer(sparseAssembler);
 
+  using Ikarus::Vtk::DataTag::asCellAndPointData;
   using Ikarus::Vtk::DataTag::asCellData;
   using Ikarus::Vtk::DataTag::asPointData;
 
   writer.setDatatype(Dune::Vtk::DataTypes::FLOAT64);
   writer.setFormat(Dune::Vtk::FormatTypes::ASCII);
 
-  writer.addResult<Ikarus::ResultTypes::linearStress>(asPointData);
+  writer.addResult<Ikarus::ResultTypes::linearStress>(); // Defaults to pointData
   writer.addResultFunction(Ikarus::makeResultFunction<Ikarus::ResultTypes::linearStress>(sparseAssembler), asCellData);
 
   writer.addInterpolation(D_Glob, basis.flat(), "displacement", asPointData);
 
   auto subspaceBasis = Dune::Functions::subspaceBasis(basis.flat(), Dune::index_constant<0>());
-  writer.addInterpolation(D_Glob, subspaceBasis, "displacement_u", asPointData);
+  writer.addInterpolation(D_Glob, subspaceBasis, "displacement_u", asCellAndPointData);
 
   writer.addPointData(
       Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis.flat(), D_Glob),

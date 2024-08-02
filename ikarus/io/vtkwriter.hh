@@ -118,13 +118,13 @@ public:
    *
    * \tparam RF Type of the result function.
    * \param resultFunction The Ikarus::ResultFunction.
-   * \param dataTag The data tag.
+   * \param dataTag The data tag (defaults to DataTag::asPointData).
    */
   template <typename RF>
   void addResultFunction(RF&& resultFunction, DataTag dataTag) {
-    if (dataTag == DataTag::asCellData)
+    if (dataTag == DataTag::asCellData or dataTag == DataTag::asCellAndPointData)
       Base::addCellData(std::forward<RF>(resultFunction));
-    else
+    if (dataTag == DataTag::asPointData or dataTag == DataTag::asCellAndPointData)
       Base::addPointData(std::forward<RF>(resultFunction));
   }
 
@@ -132,11 +132,11 @@ public:
    * \brief Adds a result for the given data tag.
    *
    * \tparam RT Result type template.
-   * \param dataTag The data tag.
+   * \param dataTag The data tag (defaults to DataTag::asPointData).
    */
   template <template <typename, int, int> class RT>
   requires(Concepts::ResultType<RT>)
-  void addResult(DataTag dataTag) {
+  void addResult(DataTag dataTag = DataTag::asPointData) {
     auto resFunction = makeResultVtkFunction<RT>(assembler_);
     addResultFunction(std::move(resFunction), dataTag);
   }
@@ -144,9 +144,9 @@ public:
   /**
    * \brief Adds all results for the given data tag.
    *
-   * \param dataTag The data tag.
+   * \param dataTag The data tag (defaults to DataTag::asPointData).
    */
-  void addAllResults(DataTag dataTag) {
+  void addAllResults(DataTag dataTag = DataTag::asPointData) {
     using ResultTuple = typename FEType::SupportedResultTypes;
 
     Dune::Hybrid::forEach(ResultTuple(), [&]<typename RT>(RT i) { addResult<RT::template Rebind>(dataTag); });
@@ -166,15 +166,15 @@ public:
    \param dataTag The data tag.
    */
   template <typename Basis, typename R>
-  void addInterpolation(R&& vals, const Basis& basis, const std::string& name, DataTag dataTag) {
+  void addInterpolation(R&& vals, const Basis& basis, const std::string& name, DataTag dataTag = DataTag::asPointData) {
     using Container = Impl::ResultContainer_t<Basis>;
 
     auto gridFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<Container>(basis, std::forward<R>(vals));
     auto fieldInfo    = Dune::Vtk::FieldInfo(name, Impl::sizeOfContainer<Container>);
 
-    if (dataTag == DataTag::asCellData)
+    if (dataTag == DataTag::asCellData or dataTag == DataTag::asCellAndPointData)
       Base::addCellData(std::move(gridFunction), fieldInfo);
-    else
+    if (dataTag == DataTag::asPointData or dataTag == DataTag::asCellAndPointData)
       Base::addPointData(std::move(gridFunction), fieldInfo);
   }
 
