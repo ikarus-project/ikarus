@@ -132,7 +132,7 @@ But here we will be using a so-called `ResultFunction`. This is a helper functio
 whole grid and can be used to generate data for a `VTKWriter`. To create this function, we can use the following helper
 
 ```cpp
-auto stressFunction = Ikarus::makeResultFunction<ResultType::PK2Stress>(&fes, req);
+auto stressFunction = Ikarus::makeResultFunction<ResultType::PK2Stress>(assembler);
 ```
 
 To add this as vertex data to the VTK file we can do the following:
@@ -147,7 +147,7 @@ to further process our results. For example, we can use `ResultEvaluators::VonMi
 
 ```cpp
   auto vonMisesFunction
-      = Ikarus::makeResultFunction<ResultType::PK2Stress, ResultEvaluators::VonMises>(&fes, req);
+      = Ikarus::makeResultFunction<ResultType::PK2Stress, ResultEvaluators::VonMises>(assembler);
 ```
 
 ## Takeaways
