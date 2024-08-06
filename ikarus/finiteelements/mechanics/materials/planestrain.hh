@@ -40,6 +40,10 @@ struct PlaneStrain : public Material<PlaneStrain<MI>>
     return matName;
   }
 
+  static constexpr auto freeStrains       = 3;                              ///< Number of free strains.
+  static constexpr auto freeVoigtIndices  = std::array<size_t, 3>{0, 1, 5}; ///< Free Voigt indices.
+  static constexpr auto fixedVoigtIndices = std::array<size_t, 3>{2, 3, 4}; ///< Fixed Voigt indices.
+
   static constexpr auto strainTag          = Underlying::strainTag;          ///< Strain tag.
   static constexpr auto stressTag          = Underlying::stressTag;          ///< Stress tag.
   static constexpr auto tangentModuliTag   = Underlying::tangentModuliTag;   ///< Tangent moduli tag.
@@ -48,10 +52,6 @@ struct PlaneStrain : public Material<PlaneStrain<MI>>
   static constexpr bool stressAcceptsVoigt = true;                           ///< Stress accepts Voigt notation.
   static constexpr bool moduliToVoigt      = true;                           ///< Moduli to Voigt notation.
   static constexpr bool moduliAcceptsVoigt = true;                           ///< Moduli accepts Voigt notation.
-
-  static constexpr auto freeStrains       = 3;                              ///< Number of free strains.
-  static constexpr auto freeVoigtIndices  = std::array<size_t, 3>{0, 1, 5}; ///< Free Voigt indices.
-  static constexpr auto fixedVoigtIndices = std::array<size_t, 3>{2, 3, 4}; ///< Fixed Voigt indices.
 
   /**
    * \brief Computes the stored energy for the PlaneStrain material.
@@ -73,9 +73,9 @@ struct PlaneStrain : public Material<PlaneStrain<MI>>
    */
   template <bool voigt, typename Derived>
   auto stressesImpl(const Eigen::MatrixBase<Derived>& Eraw) const {
-    auto E         = maybeFromVoigt(Eraw);
+    auto E         = maybeToVoigt(Eraw);
     auto stresses  = matImpl_.template stresses<Underlying::strainTag, true>(E);
-    auto stressRed = stresses({0, 1, 5}).eval();
+    auto stressRed = stresses(freeVoigtIndices).eval();
     if constexpr (voigt)
       return stressRed;
     else
@@ -91,9 +91,9 @@ struct PlaneStrain : public Material<PlaneStrain<MI>>
    */
   template <bool voigt, typename Derived>
   auto tangentModuliImpl(const Eigen::MatrixBase<Derived>& Eraw) const {
-    auto E                              = maybeFromVoigt(Eraw);
+    auto E                              = maybeToVoigt(Eraw);
     auto C                              = matImpl_.template tangentModuli<Underlying::strainTag, true>(E);
-    Eigen::Matrix<ScalarType, 3, 3> C33 = C({0, 1, 5}, {0, 1, 5}).eval();
+    Eigen::Matrix<ScalarType, 3, 3> C33 = C(freeVoigtIndices, freeVoigtIndices).eval();
     if constexpr (voigt)
       return C33;
     else
@@ -115,17 +115,17 @@ private:
   Underlying matImpl_; ///< The underlying material model.
 
   /**
-   * \brief Converts the input strain matrix to the appropriate form for stress reduction.
+   * \brief Converts the input strain matrix to voigt if necessary
    * \tparam Derived The derived type of the input matrix.
    * \param E The input strain matrix.
    * \return decltype(auto) The converted strain matrix.
    */
   template <typename Derived>
-  decltype(auto) maybeFromVoigt(const Eigen::MatrixBase<Derived>& E) const {
-    if constexpr (Concepts::EigenVector<Derived>) { // receiving vector means Voigt notation
-      return fromVoigt(E.derived(), true);
-    } else
+  decltype(auto) maybeToVoigt(const Eigen::MatrixBase<Derived>& E) const {
+    if constexpr (Concepts::EigenVector<Derived>) {
       return E.derived();
+    } else
+      return toVoigt(E.derived(), true);
   }
 };
 
