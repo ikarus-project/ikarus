@@ -65,11 +65,11 @@ struct PlaneStrain : public Material<PlaneStrain<MI>>
   }
 
   /**
-   * \brief Computes the straines for the PlaneStrain material.
-   * \tparam voigt A boolean indicating whether to return straines in Voigt notation.
+   * \brief Computes the strains for the PlaneStrain material.
+   * \tparam voigt A boolean indicating whether to return strains in Voigt notation.
    * \tparam Derived The derived type of the input matrix.
    * \param E The Green-Lagrangian strain.
-   * \return StressMatrix The straines.
+   * \return StressMatrix The strains.
    */
   template <bool voigt, typename Derived>
   auto stressesImpl(const Eigen::MatrixBase<Derived>& Eraw) const {
