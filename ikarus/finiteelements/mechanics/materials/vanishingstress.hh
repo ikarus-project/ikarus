@@ -106,8 +106,8 @@ struct VanishingStress : public Material<VanishingStress<stressIndexPair, MI>>
   static constexpr auto freeStrains = freeVoigtIndices.size();         ///< Number of free strains.
   using ScalarType                  = typename Underlying::ScalarType; ///< Scalar type.
 
-  [[nodiscard]] constexpr std::string nameImpl() const noexcept {
-    auto matName = matImpl_.name() + "_Vanishing(";
+  [[nodiscard]] constexpr static std::string nameImpl() noexcept {
+    auto matName = MI::name() + "_Vanishing(";
     for (auto p : fixedPairs)
       matName += "(" + std::to_string(p.row) + std::to_string(p.col) + ")";
     matName += ")";

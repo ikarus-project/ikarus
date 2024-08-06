@@ -36,7 +36,7 @@ struct PlaneStrain : public Material<PlaneStrain<MI>>
   using ScalarType = typename Underlying::ScalarType; ///< Scalar type.
 
   [[nodiscard]] constexpr std::string nameImpl() const noexcept {
-    auto matName = matImpl_.name() + "_PlaneStrain";
+    auto matName = MI::name() + "_PlaneStrain";
     return matName;
   }
 
