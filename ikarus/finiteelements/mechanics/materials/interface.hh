@@ -24,6 +24,9 @@ struct Material;
 
 template <auto stressIndexPair, typename MImpl>
 struct VanishingStress;
+
+template <typename MImpl>
+struct PlaneStrain;
 #endif
 
 /**
@@ -80,7 +83,8 @@ struct Material
   /**
    * \brief Static constant for determining if the material has vanishing stress components (is reduced).
    */
-  static constexpr bool isReduced = traits::isSpecializationNonTypeAndTypes<VanishingStress, MaterialImpl>::value;
+  static constexpr bool isReduced = traits::isSpecializationNonTypeAndTypes<VanishingStress, MaterialImpl>::value or
+                                    traits::isSpecialization<PlaneStrain, MaterialImpl>::value;
 
   /**
    * \brief Const accessor to the underlying material (CRTP).
@@ -101,7 +105,7 @@ struct Material
    *
    * \return Name of the material.
    */
-  [[nodiscard]] constexpr std::string name() const { return impl().nameImpl(); }
+  [[nodiscard]] constexpr static std::string name() { return MI::nameImpl(); }
 
   /**
    * \brief Return the stored potential energy of the material.

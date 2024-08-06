@@ -14,3 +14,4 @@
 #include <ikarus/finiteelements/mechanics/materials/svk.hh>
 #include <ikarus/finiteelements/mechanics/materials/tags.hh>
 #include <ikarus/finiteelements/mechanics/materials/vanishingstress.hh>
+#include <ikarus/finiteelements/mechanics/materials/planestrain.hh>

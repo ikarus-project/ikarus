@@ -34,7 +34,7 @@ namespace Ikarus {
 template <typename ST>
 struct LinearElasticityT : Material<LinearElasticityT<ST>>
 {
-  [[nodiscard]] constexpr std::string nameImpl() const noexcept { return "LinearElasticity"; }
+  [[nodiscard]] constexpr static std::string nameImpl() noexcept { return "LinearElasticity"; }
 
   using ScalarType = ST;
   using Base       = StVenantKirchhoffT<ScalarType>;

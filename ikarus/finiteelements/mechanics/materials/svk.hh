@@ -35,7 +35,7 @@ namespace Ikarus {
 template <typename ST>
 struct StVenantKirchhoffT : public Material<StVenantKirchhoffT<ST>>
 {
-  [[nodiscard]] constexpr std::string nameImpl() const { return "StVenantKirchhoff"; }
+  [[nodiscard]] constexpr static std::string nameImpl() { return "StVenantKirchhoff"; }
 
   /**
    * \brief Constructor for StVenantKirchhoffT.

@@ -427,7 +427,7 @@ namespace Concepts {
       if constexpr (traits::isSpecialization<MaterialToCheck, Material>::value)
         return true;
 
-      if constexpr (traits::isSpecializationNonTypeAndTypes<VanishingStress, Material>::value) {
+      if constexpr (Material::isReduced) {
         if constexpr (traits::isSpecialization<MaterialToCheck, typename Material::Underlying>::value) {
           return true;
         } else {

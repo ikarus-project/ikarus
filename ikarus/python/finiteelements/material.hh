@@ -49,99 +49,82 @@
       },                                                                                                               \
       "StrainName"_a, "strainVector"_a);
 
-#define MAKE_MATERIAL_REGISTERY_FUNCTION(Materialname, vecSize)                                                                \
-  template <class Materialname, class... options>                                                                              \
-  void register##Materialname(pybind11::handle scope, pybind11::class_<Materialname, options...> cls##Materialname) {          \
-    using pybind11::operator""_a;                                                                                              \
-    namespace py = pybind11;                                                                                                   \
-    cls##Materialname.def(pybind11::init([](double emod, double nu) {                                                          \
-                            auto matParameter =                                                                                \
-                                Ikarus::toLamesFirstParameterAndShearModulus({.emodul = emod, .nu = nu});                      \
-                            return new Materialname(matParameter);                                                             \
-                          }),                                                                                                  \
-                          "Material constructor that takes Young's modulus E and Poisson's ratio nu", "E"_a, "nu"_a);          \
-    MAKE_MaterialFunction(cls##Materialname, Materialname, storedEnergy, vecSize);                                             \
-    MAKE_MaterialFunction(cls##Materialname, Materialname, stresses, vecSize);                                                 \
-    MAKE_MaterialFunction(cls##Materialname, Materialname, tangentModuli, vecSize);                                            \
-                                                                                                                               \
-    using PlaneStressClass = decltype(planeStress(std::declval<Materialname>()));                                              \
-    auto includes          = Dune::Python::IncludeFiles{"ikarus/finiteelements/mechanics/materials.hh"};                       \
-    auto pS                = Dune::Python::insertClass<PlaneStressClass>(                                                      \
-                  scope, std::string("PlaneStress_") + #Materialname,                                           \
-                  Dune::Python::GenerateTypeName(                                                               \
-                      "Ikarus::VanishingStress<std::array<Ikarus::Impl::StressIndexPair, "                      \
-                                     "3ul>{{Ikarus::Impl::StressIndexPair{2ul, 1ul}, Ikarus::Impl::StressIndexPair{2ul,0ul}, " \
-                                     "Ikarus::Impl::StressIndexPair{2ul, 2ul}}}," +                                            \
-                      Dune::className<Materialname>() + ">"),                                                   \
-                  includes)                                                                                     \
-                  .first;                                                                                                      \
-    MAKE_MaterialFunction(pS, PlaneStressClass, storedEnergy, 3);                                                              \
-    MAKE_MaterialFunction(pS, PlaneStressClass, stresses, 3);                                                                  \
-    MAKE_MaterialFunction(pS, PlaneStressClass, tangentModuli, 3);                                                             \
-    MAKE_MaterialFunction(pS, PlaneStressClass, storedEnergy, 6);                                                              \
-    MAKE_MaterialFunction(pS, PlaneStressClass, stresses, 6);                                                                  \
-    MAKE_MaterialFunction(pS, PlaneStressClass, tangentModuli, 6);                                                             \
-    cls##Materialname.def("asPlaneStress", [](Materialname& self) {                                                            \
-      return planeStress(self);                                                                                                \
-    }); /* no keep_alive since planeStress copies the material */                                                              \
-    using shellMaterialClass = decltype(shellMaterial(std::declval<Materialname>()));                                          \
-    auto shellmaterial =                                                                                                       \
-        Dune::Python::insertClass<shellMaterialClass>(                                                                         \
-            scope, std::string("Shell_") + #Materialname,                                                                      \
-            Dune::Python::GenerateTypeName("Ikarus::VanishingStress<std::array<Ikarus::Impl::StressIndexPair, "                \
-                                           "1ul>{{Ikarus::Impl::StressIndexPair{2ul, 2ul}}}," +                                \
-                                           Dune::className<Materialname>() + ">"),                                             \
-            includes)                                                                                                          \
-            .first;                                                                                                            \
-    MAKE_MaterialFunction(shellmaterial, shellMaterialClass, storedEnergy, 5);                                                 \
-    MAKE_MaterialFunction(shellmaterial, shellMaterialClass, stresses, 5);                                                     \
-    MAKE_MaterialFunction(shellmaterial, shellMaterialClass, tangentModuli, 5);                                                \
-    MAKE_MaterialFunction(shellmaterial, shellMaterialClass, storedEnergy, 6);                                                 \
-    MAKE_MaterialFunction(shellmaterial, shellMaterialClass, stresses, 6);                                                     \
-    MAKE_MaterialFunction(shellmaterial, shellMaterialClass, tangentModuli, 6);                                                \
-    cls##Materialname.def("asShellMaterial", [](Materialname& self) {                                                          \
-      return shellMaterial(self);                                                                                              \
-    }); /* no keep_alive since shellMaterial copies the material */                                                            \
-    using beamMaterialClass = decltype(beamMaterial(std::declval<Materialname>()));                                            \
-    auto beammaterial       = Dune::Python::insertClass<beamMaterialClass>(                                                    \
-                            scope, std::string("Beam_") + #Materialname,                                                 \
-                            Dune::Python::GenerateTypeName(                                                              \
-                                "Ikarus::VanishingStress<std::array<Ikarus::Impl::StressIndexPair, "                     \
-                                      "2ul>{{Impl::StressIndexPair{1, 1},Ikarus::Impl::StressIndexPair{2ul, 2ul}}}," +         \
-                                Dune::className<Materialname>() + ">"),                                                  \
-                            includes)                                                                                    \
-                            .first;                                                                                            \
-    MAKE_MaterialFunction(beammaterial, beamMaterialClass, storedEnergy, 4);                                                   \
-    MAKE_MaterialFunction(beammaterial, beamMaterialClass, stresses, 4);                                                       \
-    MAKE_MaterialFunction(beammaterial, beamMaterialClass, tangentModuli, 4);                                                  \
-    MAKE_MaterialFunction(beammaterial, beamMaterialClass, storedEnergy, 6);                                                   \
-    MAKE_MaterialFunction(beammaterial, beamMaterialClass, stresses, 6);                                                       \
-    MAKE_MaterialFunction(beammaterial, beamMaterialClass, tangentModuli, 6);                                                  \
-    cls##Materialname.def("asBeamMaterial", [](Materialname& self) {                                                           \
-      return beamMaterial(self);                                                                                               \
-    }); /* no keep_alive since beamMaterial copies the material */                                                             \
-  }
-
-#define MAKE_MATERIAL_CLASS_IN_MODULE(Materialname, args)                                                    \
-  auto includes##Materialname = Dune::Python::IncludeFiles{"ikarus/finiteelements/mechanics/materials.hh"};  \
-  auto cls##Materialname =                                                                                   \
-      Dune::Python::insertClass<Ikarus::Materialname<args>>(                                                 \
-          m, #Materialname, Dune::Python::GenerateTypeName("Ikarus::" + std::string(#Materialname<##args>)), \
-          includes##Materialname)                                                                            \
-          .first;                                                                                            \
-  cls##Materialname.def(pybind11::init([](double emod, double nu) {                                          \
-                          auto matParameter =                                                                \
-                              Ikarus::toLamesFirstParameterAndShearModulus({.emodul = emod, .nu = nu});      \
-                          return new Materialname(matParameter);                                             \
-                        }),                                                                                  \
-                        "Material constructor that takes Young's modulus E and Poisson's ratio nu"           \
-                        "E"_a,                                                                               \
-                        "nu"_a);                                                                             \
-  MAKE_MaterialFunction(Materialname<##args>, storedEnergy);                                                 \
-  MAKE_MaterialFunction(Materialname<##args>, stresses);                                                     \
-  MAKE_MaterialFunction(Materialname<##args>, tangentModuli);
-
 namespace Ikarus::Python {
+
+template <class Material, size_t vecSize, class... options>
+void registerMaterial(pybind11::handle scope, pybind11::class_<Material, options...> cls) {
+  using pybind11::operator""_a;
+
+  std::string materialname = Material::name();
+  cls.def(pybind11::init([](double emod, double nu) {
+            auto matParameter = Ikarus::toLamesFirstParameterAndShearModulus({.emodul = emod, .nu = nu});
+            return new Material(matParameter);
+          }),
+          "Material constructor that takes Young's modulus E and Poisson's ratio nu", "E"_a, "nu"_a);
+  MAKE_MaterialFunction(cls, Material, storedEnergy, vecSize);
+  MAKE_MaterialFunction(cls, Material, stresses, vecSize);
+  MAKE_MaterialFunction(cls, Material, tangentModuli, vecSize);
+
+  using PlaneStressClass = decltype(planeStress(std::declval<Material>()));
+  auto includes          = Dune::Python::IncludeFiles{"ikarus/finiteelements/mechanics/materials.hh"};
+  auto pS                = Dune::Python::insertClass<PlaneStressClass>(
+                scope, std::string("PlaneStress_") + materialname,
+                Dune::Python::GenerateTypeName(Dune::className<PlaneStressClass>()), includes)
+                .first;
+  MAKE_MaterialFunction(pS, PlaneStressClass, storedEnergy, 3);
+  MAKE_MaterialFunction(pS, PlaneStressClass, stresses, 3);
+  MAKE_MaterialFunction(pS, PlaneStressClass, tangentModuli, 3);
+  MAKE_MaterialFunction(pS, PlaneStressClass, storedEnergy, 6);
+  MAKE_MaterialFunction(pS, PlaneStressClass, stresses, 6);
+  MAKE_MaterialFunction(pS, PlaneStressClass, tangentModuli, 6);
+  cls.def("asPlaneStress",
+          [](Material& self) { return planeStress(self); }); /* no keep_alive since planeStress copies the material */
+
+  using PlaneStrainClass = decltype(planeStrain(std::declval<Material>()));
+  auto pStrain =
+      Dune::Python::insertClass<PlaneStrainClass>(
+          scope, std::string("PlaneStrain_") + materialname,
+          Dune::Python::GenerateTypeName("Ikarus::PlaneStrain<" + Dune::className<Material>() + ">"), includes)
+          .first;
+  MAKE_MaterialFunction(pStrain, PlaneStrainClass, tangentModuli, 3);
+
+  cls.def("asPlaneStrain",
+          [](Material& self) { return planeStrain(self); }); /* no keep_alive since planeStress copies the material */
+  using ShellMaterialClass = decltype(shellMaterial(std::declval<Material>()));
+  auto shellmaterial       = Dune::Python::insertClass<ShellMaterialClass>(
+                           scope, std::string("Shell_") + materialname,
+                           Dune::Python::GenerateTypeName(Dune::className<ShellMaterialClass>()), includes)
+                           .first;
+  MAKE_MaterialFunction(shellmaterial, ShellMaterialClass, storedEnergy, 5);
+  MAKE_MaterialFunction(shellmaterial, ShellMaterialClass, stresses, 5);
+  MAKE_MaterialFunction(shellmaterial, ShellMaterialClass, tangentModuli, 5);
+  MAKE_MaterialFunction(shellmaterial, ShellMaterialClass, storedEnergy, 6);
+  MAKE_MaterialFunction(shellmaterial, ShellMaterialClass, stresses, 6);
+  MAKE_MaterialFunction(shellmaterial, ShellMaterialClass, tangentModuli, 6);
+
+  cls.def("asShellMaterial", [](Material& self) {
+    return shellMaterial(self);
+  }); /* no keep_alive since shellMaterial copies the material */
+  using BeamMaterialClass = decltype(beamMaterial(std::declval<Material>()));
+  auto beammaterial       = Dune::Python::insertClass<BeamMaterialClass>(
+                          scope, std::string("Beam_") + materialname,
+                          Dune::Python::GenerateTypeName(Dune::className<BeamMaterialClass>()), includes)
+                          .first;
+  MAKE_MaterialFunction(beammaterial, BeamMaterialClass, storedEnergy, 4);
+  MAKE_MaterialFunction(beammaterial, BeamMaterialClass, stresses, 4);
+  MAKE_MaterialFunction(beammaterial, BeamMaterialClass, tangentModuli, 4);
+  MAKE_MaterialFunction(beammaterial, BeamMaterialClass, storedEnergy, 6);
+  MAKE_MaterialFunction(beammaterial, BeamMaterialClass, stresses, 6);
+  MAKE_MaterialFunction(beammaterial, BeamMaterialClass, tangentModuli, 6);
+  cls.def("asBeamMaterial",
+          [](Material& self) { return beamMaterial(self); }); /* no keep_alive since beamMaterial copies the material */
+}
+
+#define MAKE_MATERIAL_REGISTERY_FUNCTION(name, vecSize)                                     \
+  template <class Material, class... options>                                               \
+  void register##name(pybind11::handle scope, pybind11::class_<Material, options...> cls) { \
+    Ikarus::Python::registerMaterial<Material, vecSize>(scope, cls);                        \
+  }
 
 MAKE_MATERIAL_REGISTERY_FUNCTION(LinearElasticity, 6);
 MAKE_MATERIAL_REGISTERY_FUNCTION(StVenantKirchhoff, 6);

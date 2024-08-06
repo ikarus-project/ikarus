@@ -35,7 +35,7 @@ namespace Ikarus {
 template <typename ST>
 struct NeoHookeT : public Material<NeoHookeT<ST>>
 {
-  [[nodiscard]] constexpr std::string nameImpl() const noexcept { return "NeoHooke"; }
+  [[nodiscard]] constexpr static std::string nameImpl() noexcept { return "NeoHooke"; }
 
   /**
    * \brief Constructor for NeoHookeT.
