@@ -35,7 +35,7 @@ struct PlaneStrain : public Material<PlaneStrain<MI>>
   using Underlying = MI;                              ///< The underlying material type.
   using ScalarType = typename Underlying::ScalarType; ///< Scalar type.
 
-  [[nodiscard]] constexpr std::string nameImpl() const noexcept {
+  [[nodiscard]] constexpr static std::string nameImpl() noexcept {
     auto matName = MI::name() + "_PlaneStrain";
     return matName;
   }
@@ -52,6 +52,7 @@ struct PlaneStrain : public Material<PlaneStrain<MI>>
   static constexpr bool stressAcceptsVoigt = true;                           ///< Stress accepts Voigt notation.
   static constexpr bool moduliToVoigt      = true;                           ///< Moduli to Voigt notation.
   static constexpr bool moduliAcceptsVoigt = true;                           ///< Moduli accepts Voigt notation.
+  static constexpr double derivativeFactor = Underlying::derivativeFactor;   ///< Derivative factor.
 
   /**
    * \brief Computes the stored energy for the PlaneStrain material.
@@ -73,13 +74,16 @@ struct PlaneStrain : public Material<PlaneStrain<MI>>
    */
   template <bool voigt, typename Derived>
   auto stressesImpl(const Eigen::MatrixBase<Derived>& Eraw) const {
-    auto E         = maybeToVoigt(Eraw);
-    auto stresses  = matImpl_.template stresses<Underlying::strainTag, true>(E);
-    auto stressRed = stresses(freeVoigtIndices).eval();
-    if constexpr (voigt)
+    auto E        = maybeToVoigt(Eraw);
+    auto stresses = matImpl_.template stresses<Underlying::strainTag, true>(E);
+    if constexpr (voigt) {
+      auto stressRed = stresses(freeVoigtIndices).eval();
       return stressRed;
-    else
-      return fromVoigt(stressRed, false);
+    } else {
+      // return always 3x3 matrix -> see VanishingStress
+      stresses(fixedVoigtIndices).setZero();
+      return fromVoigt(stresses, false);
+    }
   }
 
   /**

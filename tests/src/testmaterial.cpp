@@ -49,9 +49,11 @@ auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-13) {
   static_assert(MaterialImpl::isReduced or
                 (decltype(ev)::RowsAtCompileTime == 6 and decltype(ev)::ColsAtCompileTime == 1));
 
-  auto energy     = mat.template storedEnergy<strainTag>(e);
-  auto energyV    = mat.template storedEnergy<strainTag>(ev);
-  auto stressesV  = mat.template stresses<strainTag>(e);
+  auto energy    = mat.template storedEnergy<strainTag>(e);
+  auto energyV   = mat.template storedEnergy<strainTag>(ev);
+  auto stressesV = mat.template stresses<strainTag>(e);
+
+  std::cout << " test" << Dune::className(stressesV) << std::endl;
   auto stressesVV = mat.template stresses<strainTag>(ev);
 
   auto moduliV  = mat.template tangentModuli<strainTag>(e);
@@ -183,6 +185,12 @@ int main(int argc, char** argv) {
 
   auto nhRed6 = planeStress(nh, 1e-12);
   t.subTest(testMaterial(nhRed6));
+
+  auto svkPlainStrain = planeStrain(svk);
+  t.subTest(testMaterial(svkPlainStrain));
+
+  auto nhPlainStrain = planeStrain(nh);
+  t.subTest(testMaterial(nhPlainStrain));
 
   return t.exit();
 }
