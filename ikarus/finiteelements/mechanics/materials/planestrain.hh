@@ -57,11 +57,13 @@ struct PlaneStrain : public Material<PlaneStrain<MI>>
   /**
    * \brief Computes the stored energy for the PlaneStrain material.
    * \tparam Derived The derived type of the input matrix.
-   * \param E The Green-Lagrangian strain.
+   * \param Eraw The Green-Lagrangian strain.
    * \return ScalarType The stored energy.
    */
   template <typename Derived>
-  ScalarType storedEnergyImpl(const Eigen::MatrixBase<Derived>& E) const {
+  ScalarType storedEnergyImpl(const Eigen::MatrixBase<Derived>& Eraw) const {
+    auto E = maybeToVoigt(Eraw);
+    E[2] = E[3] = E[4] = 0.0;
     return matImpl_.storedEnergyImpl(E);
   }
 
@@ -69,12 +71,13 @@ struct PlaneStrain : public Material<PlaneStrain<MI>>
    * \brief Computes the strains for the PlaneStrain material.
    * \tparam voigt A boolean indicating whether to return strains in Voigt notation.
    * \tparam Derived The derived type of the input matrix.
-   * \param E The Green-Lagrangian strain.
+   * \param Eraw The Green-Lagrangian strain.
    * \return StressMatrix The strains.
    */
   template <bool voigt, typename Derived>
   auto stressesImpl(const Eigen::MatrixBase<Derived>& Eraw) const {
     auto E        = maybeToVoigt(Eraw);
+    E[2] = E[3] = E[4] = 0.0;
     auto stresses = matImpl_.template stresses<Underlying::strainTag, true>(E);
     if constexpr (voigt) {
       auto stressRed = stresses(freeVoigtIndices).eval();
