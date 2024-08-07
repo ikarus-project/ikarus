@@ -13,6 +13,7 @@
 
 #include <ikarus/finiteelements/mechanics/materials/interface.hh>
 #include <ikarus/finiteelements/mechanics/materials/strainconversions.hh>
+#include <ikarus/finiteelements/mechanics/materials/vanishingstress.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/utils/nonlinearoperator.hh>
 
@@ -137,6 +138,7 @@ private:
   }
 
   template <typename Derived>
+  requires(strainTag != StrainTags::linear)
   auto reduceStrain(const Eigen::MatrixBase<Derived>& Eraw) const {
     decltype(auto) E                     = maybeFromVoigt(Eraw);
     std::remove_cvref_t<decltype(E)> Egl = transformStrain<strainTag, StrainTags::greenLagrangian>(E);
@@ -147,6 +149,19 @@ private:
     }
 
     return transformStrain<StrainTags::greenLagrangian, strainTag>(Egl).derived();
+  }
+
+  template <typename Derived>
+  requires(strainTag == StrainTags::linear)
+  auto reduceStrain(const Eigen::MatrixBase<Derived>& Eraw) const {
+    Eigen::Matrix3<ScalarType> E = maybeFromVoigt(Eraw);
+
+    for (auto [i, j] : fixedTensorIndices) {
+      E(i, j) = 0;
+      E(j, i) = 0;
+    }
+
+    return E;
   }
 };
 
