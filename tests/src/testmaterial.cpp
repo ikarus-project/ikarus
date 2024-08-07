@@ -226,7 +226,7 @@ auto testPlaneStrainAgainstPlaneStress(const double tol = 1e-10) {
   testUpper(mat, planeStrainMat);
 
   // New Mat with \nu != 0
-  LamesFirstParameterAndShearModulus matPar2{.lambda = 500, .mu = 1000};
+  LamesFirstParameterAndShearModulus matPar2{.lambda = 1000, .mu = 500};
   auto mat2            = MaterialImpl{matPar2};
   auto planeStrainMat2 = planeStrain(mat2);
 
