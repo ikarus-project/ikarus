@@ -199,7 +199,6 @@ auto testPlaneStrainAgainstPlaneStress(const double tol = 1e-10) {
 
   // If we compare the plain stress material tensor with plain strain material tensor it should be the same for nu = 0
 
-  auto matTangent            = toVoigt(mat.template tangentModuliImpl<false>(e));
   auto matTangentPlaneStrain = toVoigt(planeStrainMat.template tangentModuliImpl<false>(e));
   auto matTangentPlaneStress = toVoigt(planeStressMat.template tangentModuliImpl<false>(e));
 
@@ -210,14 +209,28 @@ auto testPlaneStrainAgainstPlaneStress(const double tol = 1e-10) {
       << "\n Diff: " << matTangentPlaneStrain - matTangentPlaneStress << " with tol: " << tol;
 
   // Test upper block
-  auto matTagentUpper            = matTangent.template block<2, 2>(0, 0);
-  auto matTangentPlanStrainUpper = matTangentPlaneStrain.template block<2, 2>(0, 0);
+  auto testUpper = [&](const auto& mat, const auto& matPS) {
+    auto matTangent            = toVoigt(mat.template tangentModuliImpl<false>(e));
+    auto matTangentPlaneStrain = toVoigt(matPS.template tangentModuliImpl<false>(e));
 
-  t.check(isApproxSame(matTagentUpper, matTangentPlanStrainUpper, tol))
-      << "Upper part of material tangent for 3d model and plane strain  should be the same but are"
-      << "\n"
-      << matTagentUpper << "\nand\n " << matTangentPlanStrainUpper
-      << "\n Diff: " << matTagentUpper - matTangentPlanStrainUpper << " with tol: " << tol;
+    auto matTagentUpper    = matTangent.template block<2, 2>(0, 0);
+    auto matTangentPSUpper = matTangentPlaneStrain.template block<2, 2>(0, 0);
+
+    t.check(isApproxSame(matTagentUpper, matTangentPSUpper, tol))
+        << "Upper part of material tangent for 3d model and plane strain  should be the same but are"
+        << "\n"
+        << matTagentUpper << "\nand\n " << matTangentPSUpper << "\n Diff: " << matTagentUpper - matTangentPSUpper
+        << " with tol: " << tol;
+  };
+
+  testUpper(mat, planeStrainMat);
+
+  // New Mat with \nu != 0
+  LamesFirstParameterAndShearModulus matPar2{.lambda = 500, .mu = 1000};
+  auto mat2            = MaterialImpl{matPar2};
+  auto planeStrainMat2 = planeStrain(mat2);
+
+  testUpper(mat2, planeStrainMat2);
 
   return t;
 }
@@ -272,6 +285,7 @@ int main(int argc, char** argv) {
   auto linPlaneStrain = planeStrain(le);
   t.subTest(testMaterialWithStrain<StrainTags::linear>(linPlaneStrain));
 
+  t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::linear, LinearElasticity>());
   t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::greenLagrangian, StVenantKirchhoff>());
   // t.subTest(testPlaneStrinAgainstPlaneStress<StrainTags::rightCauchyGreenTensor, NeoHooke>());
 
