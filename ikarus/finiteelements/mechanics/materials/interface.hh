@@ -25,8 +25,8 @@ struct Material;
 template <auto stressIndexPair, typename MImpl>
 struct VanishingStress;
 
-template <typename MImpl>
-struct PlaneStrain;
+template <auto stressIndexPair, typename MImpl>
+struct VanishingStrain;
 #endif
 
 /**
@@ -84,7 +84,7 @@ struct Material
    * \brief Static constant for determining if the material has vanishing stress components (is reduced).
    */
   static constexpr bool isReduced = traits::isSpecializationNonTypeAndTypes<VanishingStress, MaterialImpl>::value or
-                                    traits::isSpecialization<PlaneStrain, MaterialImpl>::value;
+                                    traits::isSpecializationNonTypeAndTypes<VanishingStrain, MaterialImpl>::value;
 
   /**
    * \brief Const accessor to the underlying material (CRTP).
