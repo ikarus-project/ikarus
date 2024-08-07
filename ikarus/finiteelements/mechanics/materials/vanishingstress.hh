@@ -107,7 +107,7 @@ struct VanishingStress : public Material<VanishingStress<stressIndexPair, MI>>
   using ScalarType                  = typename Underlying::ScalarType; ///< Scalar type.
 
   [[nodiscard]] constexpr static std::string nameImpl() noexcept {
-    auto matName = MI::name() + "_Vanishing(";
+    auto matName = MI::name() + "_VanishingStress(";
     for (auto p : fixedPairs)
       matName += "(" + std::to_string(p.row) + std::to_string(p.col) + ")";
     matName += ")";

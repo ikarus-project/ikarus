@@ -12,7 +12,6 @@
 #include <ikarus/finiteelements/mechanics/materials/vanishingstrain.hh>
 #include <ikarus/finiteelements/mechanics/materials/vanishingstress.hh>
 
-
 namespace Ikarus {
 
 template struct LinearElasticityT<double>;
