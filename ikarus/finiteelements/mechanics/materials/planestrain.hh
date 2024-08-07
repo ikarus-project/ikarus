@@ -12,6 +12,7 @@
 #pragma once
 
 #include <ikarus/finiteelements/mechanics/materials/interface.hh>
+#include <ikarus/finiteelements/mechanics/materials/strainconversions.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/utils/nonlinearoperator.hh>
 
@@ -40,9 +41,14 @@ struct PlaneStrain : public Material<PlaneStrain<MI>>
     return matName;
   }
 
-  static constexpr auto freeStrains       = 3;                              ///< Number of free strains.
-  static constexpr auto freeVoigtIndices  = std::array<size_t, 3>{0, 1, 5}; ///< Free Voigt indices.
-  static constexpr auto fixedVoigtIndices = std::array<size_t, 3>{2, 3, 4}; ///< Fixed Voigt indices.
+  static constexpr auto freeStrains        = 3;                              ///< Number of free strains.
+  static constexpr auto freeVoigtIndices   = std::array<size_t, 3>{0, 1, 5}; ///< Free Voigt indices.
+  static constexpr auto fixedVoigtIndices  = std::array<size_t, 3>{2, 3, 4}; ///< Fixed Voigt indices.
+  static constexpr auto fixedTensorIndices = std::array<std::pair<size_t, size_t>, 3>{
+      std::pair<size_t, size_t>{2, 0},
+      {2, 1},
+      {2, 2}
+  };
 
   static constexpr auto strainTag          = Underlying::strainTag;          ///< Strain tag.
   static constexpr auto stressTag          = Underlying::stressTag;          ///< Stress tag.
@@ -52,19 +58,17 @@ struct PlaneStrain : public Material<PlaneStrain<MI>>
   static constexpr bool stressAcceptsVoigt = true;                           ///< Stress accepts Voigt notation.
   static constexpr bool moduliToVoigt      = true;                           ///< Moduli to Voigt notation.
   static constexpr bool moduliAcceptsVoigt = true;                           ///< Moduli accepts Voigt notation.
-  static constexpr double derivativeFactor = Underlying::derivativeFactor;   ///< Derivative factor.
 
   /**
    * \brief Computes the stored energy for the PlaneStrain material.
    * \tparam Derived The derived type of the input matrix.
-   * \param Eraw The Green-Lagrangian strain.
+   * \param Eraw The strain mesasure
    * \return ScalarType The stored energy.
    */
   template <typename Derived>
-  ScalarType storedEnergyImpl(const Eigen::MatrixBase<Derived>& Eraw) const {
-    auto E = maybeToVoigt(Eraw);
-    E[2] = E[3] = E[4] = 0.0;
-    return matImpl_.storedEnergyImpl(E);
+  ScalarType storedEnergyImpl(const Eigen::MatrixBase<Derived>& E) const {
+    const auto Esol = reduceStrain(E);
+    return matImpl_.storedEnergyImpl(Esol);
   }
 
   /**
@@ -75,17 +79,15 @@ struct PlaneStrain : public Material<PlaneStrain<MI>>
    * \return StressMatrix The strains.
    */
   template <bool voigt, typename Derived>
-  auto stressesImpl(const Eigen::MatrixBase<Derived>& Eraw) const {
-    auto E        = maybeToVoigt(Eraw);
-    E[2] = E[3] = E[4] = 0.0;
-    auto stresses = matImpl_.template stresses<Underlying::strainTag, true>(E);
+  auto stressesImpl(const Eigen::MatrixBase<Derived>& E) const {
+    const auto Esol  = reduceStrain(E);
+    auto stressesRed = matImpl_.template stresses<Underlying::strainTag, true>(Esol);
+
     if constexpr (voigt) {
-      auto stressRed = stresses(freeVoigtIndices).eval();
-      return stressRed;
+      return removeCol(stressesRed, fixedVoigtIndices);
     } else {
-      // return always 3x3 matrix -> see VanishingStress
-      stresses(fixedVoigtIndices).setZero();
-      return fromVoigt(stresses, false);
+      stressesRed(fixedVoigtIndices).setZero();
+      return fromVoigt(stressesRed, false);
     }
   }
 
@@ -97,12 +99,11 @@ struct PlaneStrain : public Material<PlaneStrain<MI>>
    * \return TangentModuli The tangent moduli.
    */
   template <bool voigt, typename Derived>
-  auto tangentModuliImpl(const Eigen::MatrixBase<Derived>& Eraw) const {
-    auto E                              = maybeToVoigt(Eraw);
-    auto C                              = matImpl_.template tangentModuli<Underlying::strainTag, true>(E);
-    Eigen::Matrix<ScalarType, 3, 3> C33 = C(freeVoigtIndices, freeVoigtIndices).eval();
+  auto tangentModuliImpl(const Eigen::MatrixBase<Derived>& E) const {
+    const auto Esol = reduceStrain(E);
+    auto C          = matImpl_.template tangentModuli<Underlying::strainTag, true>(Esol);
     if constexpr (voigt)
-      return C33;
+      return staticCondensation(C, fixedVoigtIndices);
     else
       return fromVoigt(C);
   }
@@ -122,17 +123,30 @@ private:
   Underlying matImpl_; ///< The underlying material model.
 
   /**
-   * \brief Converts the input strain matrix to voigt if necessary
+   * \brief Converts the input strain matrix to the appropriate form for stress reduction.
    * \tparam Derived The derived type of the input matrix.
    * \param E The input strain matrix.
    * \return decltype(auto) The converted strain matrix.
    */
   template <typename Derived>
-  decltype(auto) maybeToVoigt(const Eigen::MatrixBase<Derived>& E) const {
-    if constexpr (Concepts::EigenVector<Derived>) {
-      return E.derived();
+  decltype(auto) maybeFromVoigt(const Eigen::MatrixBase<Derived>& E) const {
+    if constexpr (Concepts::EigenVector<Derived>) { // receiving vector means Voigt notation
+      return fromVoigt(E.derived(), true);
     } else
-      return toVoigt(E.derived(), true);
+      return E.derived();
+  }
+
+  template <typename Derived>
+  auto reduceStrain(const Eigen::MatrixBase<Derived>& Eraw) const {
+    decltype(auto) E                     = maybeFromVoigt(Eraw);
+    std::remove_cvref_t<decltype(E)> Egl = transformStrain<strainTag, StrainTags::greenLagrangian>(E);
+
+    for (auto [i, j] : fixedTensorIndices) {
+      Egl(i, j) = 0;
+      Egl(j, i) = 0;
+    }
+
+    return transformStrain<StrainTags::greenLagrangian, strainTag>(Egl).derived();
   }
 };
 
