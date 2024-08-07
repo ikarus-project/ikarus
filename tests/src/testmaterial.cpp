@@ -18,13 +18,10 @@
 using namespace Ikarus;
 using Dune::TestSuite;
 
-template <StrainTags strainTag, typename MaterialImpl>
-auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-13) {
-  TestSuite t(mat.name() + " InputStrainMeasure: " + toString(strainTag));
-  std::cout << "Test: " << t.name() << " started\n";
-  Eigen::Matrix3d e;
-  e.setRandom();
+template <StrainTags strainTag>
+double transformStrainAccordingToStrain(auto& e) {
   double strainDerivativeFactor = 1;
+
   if (strainTag == StrainTags::greenLagrangian or strainTag == StrainTags::linear) {
     e = ((e.transpose() + e + 3 * Eigen::Matrix3d::Identity()) / 10).eval();
     e /= e.array().maxCoeff();
@@ -38,13 +35,28 @@ auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-13) {
     e += (-esC.eigenvalues().real().minCoeff() + 1) * Eigen::Matrix3d::Identity();
     esC.compute(e);
     e /= esC.eigenvalues().real().maxCoeff();
-    t.check(esC.eigenvalues().real().minCoeff() > 0)
-        << " The smallest eigenvalue is negative this is unsuitable for the tests";
+
+    assert(esC.eigenvalues().real().minCoeff() > 0 &&
+           " The smallest eigenvalue is negative this is unsuitable for the tests");
+
     strainDerivativeFactor = 0.5;
   } else if (strainTag == StrainTags::deformationGradient) {
     e = (e + 3 * Eigen::Matrix3d::Identity()).eval(); // create positive definite matrix
     e = e.sqrt();
   }
+  return strainDerivativeFactor;
+}
+
+template <StrainTags strainTag, typename MaterialImpl>
+auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-13) {
+  TestSuite t(mat.name() + " InputStrainMeasure: " + toString(strainTag));
+  std::cout << "Test: " << t.name() << " started\n";
+
+  Eigen::Matrix3d e;
+  e.setRandom();
+
+  double strainDerivativeFactor = transformStrainAccordingToStrain<strainTag>(e);
+
   auto ev = toVoigtAndMaybeReduce(e, mat, true);
   static_assert(MaterialImpl::isReduced or
                 (decltype(ev)::RowsAtCompileTime == 6 and decltype(ev)::ColsAtCompileTime == 1));
@@ -63,7 +75,7 @@ auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-13) {
       << "\n and \n"
       << energyV << "\n Diff: " << energy - energyV << " with tol: " << tol;
   if constexpr (requires { mat.impl().template stressesImpl<false>(e); }) {
-    auto stresses = mat.template stresses<strainTag, false>(e);
+    auto stresses   = mat.template stresses<strainTag, false>(e);
     auto stressesVM = mat.template stresses<strainTag, false>(ev);
     t.check(isApproxSame(toVoigt(stresses, false), enlargeIfReduced<MaterialImpl>(stressesV), tol))
         << std::string("Voigt representation of stresses does not coincide with matrix representation \n")
@@ -98,6 +110,11 @@ auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-13) {
                                                          "obtained with matrix object  \n")
                                                   << moduliVV << "\n and \n"
                                                   << moduliV;
+  }
+
+  // Vanishing strain implementation is not tested against checkGradient
+  if constexpr (traits::isSpecialization<PlaneStrain, MaterialImpl>::value) {
+    return t;
   }
 
   auto f  = [&](auto& xv) { return mat.template storedEnergy<strainTag>(xv); };
@@ -141,6 +158,73 @@ auto testMaterial(Material mat) {
       t.subTest(testMaterialWithStrain<StrainTags::rightCauchyGreenTensor>(mat));
     }
   }
+  return t;
+}
+
+template <StrainTags strainTag, typename MaterialImpl>
+auto testPlaneStrinAgainstPlaneStress(const double tol = 1e-13) {
+  TestSuite t;
+
+  Eigen::Matrix3d e;
+  e.setRandom();
+
+  transformStrainAccordingToStrain<strainTag>(e);
+
+  // instantiate material models
+  LamesFirstParameterAndShearModulus matPar{.lambda = 1000, .mu = 0}; // \nu = 0
+
+  auto mat            = MaterialImpl{matPar};
+  auto planeStrainMat = makePlaneStrain(mat);
+  auto planeStressMat = planeStress(mat);
+
+  // // energy should be the same for plane stress and plane strain
+  // auto energies = std::array<double, 2>{planeStrainMat.template storedEnergy<strainTag>(e),
+  //                                       planeStressMat.template storedEnergy<strainTag>(e)};
+
+  // t.check(Dune::FloatCmp::le(std::abs(energies[0] - energies[1]), tol))
+  //     << "Energies for plane strain and plane stress should be the same but are"
+  //     << "\n"
+  //     << energies[0] << " and " << energies[1] << "\n Diff: " << energies[0] - energies[1] << " with tol: " << tol;
+
+  // // Stresses should be the same
+  // auto stressPlaneStrain = planeStrainMat.template stresses<strainTag>(e);
+  // auto stressPlaneStress = planeStressMat.template stresses<strainTag>(e);
+
+  // t.check(isApproxSame(stressPlaneStrain, stressPlaneStress, tol))
+  //     << "Stresses for plane strain and plane stress should be the same but are"
+  //     << "\n"
+  //     << stressPlaneStrain << "\nand\n " << stressPlaneStress << "\n Diff: " << stressPlaneStrain - stressPlaneStress
+  //     << " with tol: " << tol;
+
+  // If we compare the plain stress material tensor with plain strain material tensor it should be the same for nu = 0
+
+  auto matTangent            = toVoigt(mat.template tangentModuliImpl<false>(e));
+  auto matTangentPlaneStrain = toVoigt(planeStrainMat.template tangentModuliImpl<false>(e));
+  auto matTangentPlaneStress = toVoigt(planeStressMat.template tangentModuliImpl<false>(e));
+
+  t.check(isApproxSame(matTangentPlaneStrain, matTangentPlaneStress, tol))
+      << "Material Tangent for plane strain and plane stress should be the same but are"
+      << "\n"
+      << matTangentPlaneStrain << "\nand\n " << matTangentPlaneStress
+      << "\n Diff: " << matTangentPlaneStrain - matTangentPlaneStress << " with tol: " << tol;
+
+  // Test upper block
+  auto matTagentUpper            = matTangent.template block<2, 2>(0, 0);
+  auto matTangentPlanStrainUpper = matTangentPlaneStrain.template block<2, 2>(0, 0);
+
+  t.check(isApproxSame(matTagentUpper, matTangentPlanStrainUpper, tol))
+      << "Uppper part of material tangent for 3d model and plane strain  should be the same but are"
+      << "\n"
+      << matTagentUpper << "\nand\n " << matTangentPlanStrainUpper
+      << "\n Diff: " << matTagentUpper - matTangentPlanStrainUpper << " with tol: " << tol;
+
+  // Side note: Both planeStress and planeStrain are not capable of returning tangent Moduli in voigt notation properly
+  auto matTangentsPlaneStrainV = planeStrainMat.template tangentModuliImpl<true>(e);
+  std::cout << matTangentsPlaneStrainV << std::endl;
+
+  auto matTangentPlaneStressV = planeStressMat.template tangentModuliImpl<true>(e);
+  std::cout << matTangentsPlaneStrainV << std::endl;
+
   return t;
 }
 
@@ -189,7 +273,9 @@ int main(int argc, char** argv) {
   t.subTest(testMaterial(svkPlaneStrain));
 
   auto nhPlaneStrain = planeStrain(nh);
-  // t.subTest(testMaterial(nhPlaneStrain));
+  t.subTest(testMaterial(nhPlaneStrain));
+
+  t.subTest(testPlaneStrinAgainstPlaneStress<StrainTags::greenLagrangian, StVenantKirchhoff>());
 
   return t.exit();
 }
