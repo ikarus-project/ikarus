@@ -214,7 +214,7 @@ auto testPlaneStrainAgainstPlaneStress(const double tol = 1e-10) {
   auto matTangentPlanStrainUpper = matTangentPlaneStrain.template block<2, 2>(0, 0);
 
   t.check(isApproxSame(matTagentUpper, matTangentPlanStrainUpper, tol))
-      << "Uppper part of material tangent for 3d model and plane strain  should be the same but are"
+      << "Upper part of material tangent for 3d model and plane strain  should be the same but are"
       << "\n"
       << matTagentUpper << "\nand\n " << matTangentPlanStrainUpper
       << "\n Diff: " << matTagentUpper - matTangentPlanStrainUpper << " with tol: " << tol;
