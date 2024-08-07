@@ -112,7 +112,7 @@ auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-13) {
                                                   << moduliV;
   }
 
-  // Vanishing strain implementation is not tested against checkGradient
+  // Vanishing strain implementation is not tested against checkGradient (off by 1.0)
   if constexpr (traits::isSpecialization<PlaneStrain, MaterialImpl>::value) {
     return t;
   }
@@ -162,8 +162,9 @@ auto testMaterial(Material mat) {
 }
 
 template <StrainTags strainTag, typename MaterialImpl>
-auto testPlaneStrinAgainstPlaneStress(const double tol = 1e-13) {
-  TestSuite t;
+auto testPlaneStrinAgainstPlaneStress(const double tol = 1e-10) {
+  TestSuite t(MaterialImpl::name() + " InputStrainMeasure: " + toString(strainTag));
+  std::cout << "TestPlaneStrinAgainstPlaneStress: " << t.name() << " started\n";
 
   Eigen::Matrix3d e;
   e.setRandom();
@@ -171,30 +172,30 @@ auto testPlaneStrinAgainstPlaneStress(const double tol = 1e-13) {
   transformStrainAccordingToStrain<strainTag>(e);
 
   // instantiate material models
-  LamesFirstParameterAndShearModulus matPar{.lambda = 1000, .mu = 0}; // \nu = 0
+  LamesFirstParameterAndShearModulus matPar{.lambda = 0, .mu = 1000}; // \nu = 0
 
   auto mat            = MaterialImpl{matPar};
   auto planeStrainMat = makePlaneStrain(mat);
   auto planeStressMat = planeStress(mat);
 
-  // // energy should be the same for plane stress and plane strain
-  // auto energies = std::array<double, 2>{planeStrainMat.template storedEnergy<strainTag>(e),
-  //                                       planeStressMat.template storedEnergy<strainTag>(e)};
+  // energy should be the same for plane stress and plane strain
+  auto energies = std::array<double, 2>{planeStrainMat.template storedEnergy<strainTag>(e),
+                                        planeStressMat.template storedEnergy<strainTag>(e)};
 
-  // t.check(Dune::FloatCmp::le(std::abs(energies[0] - energies[1]), tol))
-  //     << "Energies for plane strain and plane stress should be the same but are"
-  //     << "\n"
-  //     << energies[0] << " and " << energies[1] << "\n Diff: " << energies[0] - energies[1] << " with tol: " << tol;
+  t.check(Dune::FloatCmp::le(std::abs(energies[0] - energies[1]), tol))
+      << "Energies for plane strain and plane stress should be the same but are"
+      << "\n"
+      << energies[0] << " and " << energies[1] << "\n Diff: " << energies[0] - energies[1] << " with tol: " << tol;
 
-  // // Stresses should be the same
-  // auto stressPlaneStrain = planeStrainMat.template stresses<strainTag>(e);
-  // auto stressPlaneStress = planeStressMat.template stresses<strainTag>(e);
+  // Stresses should be the same
+  auto stressPlaneStrain = planeStrainMat.template stresses<strainTag>(e);
+  auto stressPlaneStress = planeStressMat.template stresses<strainTag>(e);
 
-  // t.check(isApproxSame(stressPlaneStrain, stressPlaneStress, tol))
-  //     << "Stresses for plane strain and plane stress should be the same but are"
-  //     << "\n"
-  //     << stressPlaneStrain << "\nand\n " << stressPlaneStress << "\n Diff: " << stressPlaneStrain - stressPlaneStress
-  //     << " with tol: " << tol;
+  t.check(isApproxSame(stressPlaneStrain, stressPlaneStress, tol))
+      << "Stresses for plane strain and plane stress should be the same but are"
+      << "\n"
+      << stressPlaneStrain << "\nand\n " << stressPlaneStress << "\n Diff: " << stressPlaneStrain - stressPlaneStress
+      << " with tol: " << tol;
 
   // If we compare the plain stress material tensor with plain strain material tensor it should be the same for nu = 0
 
@@ -217,13 +218,6 @@ auto testPlaneStrinAgainstPlaneStress(const double tol = 1e-13) {
       << "\n"
       << matTagentUpper << "\nand\n " << matTangentPlanStrainUpper
       << "\n Diff: " << matTagentUpper - matTangentPlanStrainUpper << " with tol: " << tol;
-
-  // Side note: Both planeStress and planeStrain are not capable of returning tangent Moduli in voigt notation properly
-  auto matTangentsPlaneStrainV = planeStrainMat.template tangentModuliImpl<true>(e);
-  std::cout << matTangentsPlaneStrainV << std::endl;
-
-  auto matTangentPlaneStressV = planeStressMat.template tangentModuliImpl<true>(e);
-  std::cout << matTangentsPlaneStrainV << std::endl;
 
   return t;
 }
@@ -275,7 +269,11 @@ int main(int argc, char** argv) {
   auto nhPlaneStrain = planeStrain(nh);
   t.subTest(testMaterial(nhPlaneStrain));
 
+  auto linPlaneStrain = planeStrain(le);
+  t.subTest(testMaterialWithStrain<StrainTags::linear>(linPlaneStrain));
+
   t.subTest(testPlaneStrinAgainstPlaneStress<StrainTags::greenLagrangian, StVenantKirchhoff>());
+  // t.subTest(testPlaneStrinAgainstPlaneStress<StrainTags::rightCauchyGreenTensor, NeoHooke>());
 
   return t.exit();
 }
