@@ -62,7 +62,8 @@ def checkMaterial(mat, strain, nonlinear=True, size=6):
         pass
 
 
-def checkPlaneStressReducedFullEquality(material, strainName, strain):
+# This checks plane stress and plane strain
+def check2DReducedFullEquality(material, strainName, strain):
     strainFull = np.array(
         [
             strain[0],
@@ -165,22 +166,24 @@ def checkWithStrain(strain):
         checkMaterial(nh.asPlaneStress(), strain, True, 3)
         checkMaterial(svk.asPlaneStress(), strain, True, 3)
 
-        checkPlaneStressReducedFullEquality(
-            nh.asPlaneStress(), "rightCauchyGreenTensor", strain
-        )
-        checkPlaneStressReducedFullEquality(
+        check2DReducedFullEquality(nh.asPlaneStress(), "rightCauchyGreenTensor", strain)
+        check2DReducedFullEquality(nh.asPlaneStrain(), "rightCauchyGreenTensor", strain)
+        check2DReducedFullEquality(
             svk.asPlaneStress(), "rightCauchyGreenTensor", strain
+        )
+        check2DReducedFullEquality(
+            svk.asPlaneStrain(), "rightCauchyGreenTensor", strain
         )
 
         strain[0] = strain[0] - 1
         strain[1] = strain[1] - 1
-        checkPlaneStressReducedFullEquality(lin.asPlaneStress(), "linear", strain)
-        checkPlaneStressReducedFullEquality(
-            nh.asPlaneStress(), "greenLagrangian", strain
-        )
-        checkPlaneStressReducedFullEquality(
-            svk.asPlaneStress(), "greenLagrangian", strain
-        )
+        check2DReducedFullEquality(lin.asPlaneStress(), "linear", strain)
+        check2DReducedFullEquality(lin.asPlaneStrain(), "linear", strain)
+
+        check2DReducedFullEquality(nh.asPlaneStress(), "greenLagrangian", strain)
+        check2DReducedFullEquality(nh.asPlaneStrain(), "greenLagrangian", strain)
+        check2DReducedFullEquality(svk.asPlaneStress(), "greenLagrangian", strain)
+        check2DReducedFullEquality(svk.asPlaneStrain(), "greenLagrangian", strain)
 
     elif len(strain) == 5:
         checkMaterial(lin.asShellMaterial(), strain, False, 5)

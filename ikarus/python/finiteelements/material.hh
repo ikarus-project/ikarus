@@ -86,11 +86,15 @@ void registerMaterial(pybind11::handle scope, pybind11::class_<Material, options
           [](Material& self) { return planeStress(self); }); /* no keep_alive since planeStress copies the material */
 
   using PlaneStrainClass = decltype(planeStrain(std::declval<Material>()));
-  auto pStrain =
-      Dune::Python::insertClass<PlaneStrainClass>(
-          scope, std::string("PlaneStrain_") + materialname,
-          Dune::Python::GenerateTypeName("Ikarus::PlaneStrain<" + Dune::className<Material>() + ">"), includes)
-          .first;
+  auto pStrain           = Dune::Python::insertClass<PlaneStrainClass>(
+                     scope, std::string("PlaneStrain_") + materialname,
+                     Dune::Python::GenerateTypeName(
+                         "Ikarus::VanishingStrain<std::array<Ikarus::Impl::StressIndexPair, "
+                                   "3ul>{{Ikarus::Impl::StressIndexPair{2ul, 1ul}, Ikarus::Impl::StressIndexPair{2ul,0ul}, "
+                                   "Ikarus::Impl::StressIndexPair{2ul, 2ul}}}," +
+                         Dune::className<Material>() + ">"),
+                     includes)
+                     .first;
   MAKE_MaterialFunction(pStrain, PlaneStrainClass, storedEnergy, 3);
   MAKE_MaterialFunction(pStrain, PlaneStrainClass, stresses, 3);
   MAKE_MaterialFunction(pStrain, PlaneStrainClass, tangentModuli, 3);

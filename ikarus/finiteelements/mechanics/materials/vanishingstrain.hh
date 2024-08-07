@@ -38,7 +38,10 @@ struct VanishingStrain : public Material<VanishingStrain<strainIndexPair, MI>>
   using ScalarType = typename Underlying::ScalarType; ///< Scalar type.
 
   [[nodiscard]] constexpr static std::string nameImpl() noexcept {
-    auto matName = MI::name() + "_PlaneStrain";
+    auto matName = MI::name() + "_VanishingStrain(";
+    for (auto p : fixedPairs)
+      matName += "(" + std::to_string(p.row) + std::to_string(p.col) + ")";
+    matName += ")";
     return matName;
   }
   static constexpr auto fixedPairs = strainIndexPair; ///< Array of fixed stress components.
