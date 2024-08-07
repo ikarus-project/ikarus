@@ -142,11 +142,7 @@ private:
     decltype(auto) E                     = maybeFromVoigt(Eraw);
     std::remove_cvref_t<decltype(E)> Egl = transformStrain<strainTag, StrainTags::greenLagrangian>(E);
 
-    for (auto [i, j] : fixedPairs) {
-      Egl(i, j) = 0;
-      Egl(j, i) = 0;
-    }
-
+    setStrainsToZero(Egl);
     return transformStrain<StrainTags::greenLagrangian, strainTag>(Egl).derived();
   }
 
@@ -155,12 +151,15 @@ private:
   auto reduceStrain(const Eigen::MatrixBase<Derived>& Eraw) const {
     Eigen::Matrix3<ScalarType> E = maybeFromVoigt(Eraw);
 
+    setStrainsToZero(E);
+    return E;
+  }
+
+  inline void setStrainsToZero(auto& E) const {
     for (auto [i, j] : fixedPairs) {
       E(i, j) = 0;
       E(j, i) = 0;
     }
-
-    return E;
   }
 };
 
