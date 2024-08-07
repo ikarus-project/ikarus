@@ -10,6 +10,6 @@ install(
         svk.hh
         tags.hh
         vanishingstress.hh
-        planestrain.hh
+        vanishingstrain.hh
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/finiteelements/mechanics/materials
 )

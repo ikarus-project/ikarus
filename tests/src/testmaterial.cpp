@@ -113,7 +113,7 @@ auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-13) {
   }
 
   // Vanishing strain implementation is not tested against checkGradient (off by 1.0)
-  if constexpr (traits::isSpecialization<PlaneStrain, MaterialImpl>::value) {
+  if constexpr (traits::isSpecializationNonTypeAndTypes<VanishingStrain, MaterialImpl>::value) {
     return t;
   }
 
@@ -162,7 +162,7 @@ auto testMaterial(Material mat) {
 }
 
 template <StrainTags strainTag, typename MaterialImpl>
-auto testPlaneStrinAgainstPlaneStress(const double tol = 1e-10) {
+auto testPlaneStrainAgainstPlaneStress(const double tol = 1e-10) {
   TestSuite t(MaterialImpl::name() + " InputStrainMeasure: " + toString(strainTag));
   std::cout << "TestPlaneStrinAgainstPlaneStress: " << t.name() << " started\n";
 
@@ -175,7 +175,7 @@ auto testPlaneStrinAgainstPlaneStress(const double tol = 1e-10) {
   LamesFirstParameterAndShearModulus matPar{.lambda = 0, .mu = 1000}; // \nu = 0
 
   auto mat            = MaterialImpl{matPar};
-  auto planeStrainMat = makePlaneStrain(mat);
+  auto planeStrainMat = planeStrain(mat);
   auto planeStressMat = planeStress(mat);
 
   // energy should be the same for plane stress and plane strain
@@ -272,7 +272,7 @@ int main(int argc, char** argv) {
   auto linPlaneStrain = planeStrain(le);
   t.subTest(testMaterialWithStrain<StrainTags::linear>(linPlaneStrain));
 
-  t.subTest(testPlaneStrinAgainstPlaneStress<StrainTags::greenLagrangian, StVenantKirchhoff>());
+  t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::greenLagrangian, StVenantKirchhoff>());
   // t.subTest(testPlaneStrinAgainstPlaneStress<StrainTags::rightCauchyGreenTensor, NeoHooke>());
 
   return t.exit();

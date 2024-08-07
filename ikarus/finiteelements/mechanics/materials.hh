@@ -11,7 +11,7 @@
 
 #include <ikarus/finiteelements/mechanics/materials/linearelasticity.hh>
 #include <ikarus/finiteelements/mechanics/materials/neohooke.hh>
-#include <ikarus/finiteelements/mechanics/materials/planestrain.hh>
+#include <ikarus/finiteelements/mechanics/materials/vanishingstrain.hh>
 #include <ikarus/finiteelements/mechanics/materials/svk.hh>
 #include <ikarus/finiteelements/mechanics/materials/tags.hh>
 #include <ikarus/finiteelements/mechanics/materials/vanishingstress.hh>

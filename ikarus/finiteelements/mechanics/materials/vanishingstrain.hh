@@ -24,14 +24,14 @@ namespace Ikarus {
  * \ingroup materials
  * \tparam MI The underlying material model.
  */
-template <typename MI>
-struct PlaneStrain : public Material<PlaneStrain<MI>>
+template <auto strainIndexPair, typename MI>
+struct VanishingStrain : public Material<VanishingStrain<strainIndexPair, MI>>
 {
   /**
    * \brief Constructor for PlaneStrain.
    * \param mat The underlying material model.
    */
-  explicit PlaneStrain(MI mat)
+  explicit VanishingStrain(MI mat)
       : matImpl_{mat} {}
 
   using Underlying = MI;                              ///< The underlying material type.
@@ -41,15 +41,11 @@ struct PlaneStrain : public Material<PlaneStrain<MI>>
     auto matName = MI::name() + "_PlaneStrain";
     return matName;
   }
+  static constexpr auto fixedPairs = strainIndexPair; ///< Array of fixed stress components.
 
-  static constexpr auto freeStrains        = 3;                              ///< Number of free strains.
-  static constexpr auto freeVoigtIndices   = std::array<size_t, 3>{0, 1, 5}; ///< Free Voigt indices.
-  static constexpr auto fixedVoigtIndices  = std::array<size_t, 3>{2, 3, 4}; ///< Fixed Voigt indices.
-  static constexpr auto fixedTensorIndices = std::array<std::pair<size_t, size_t>, 3>{
-      std::pair<size_t, size_t>{2, 0},
-      {2, 1},
-      {2, 2}
-  };
+  static constexpr auto freeVoigtIndices  = createfreeVoigtIndices(fixedPairs);  ///< Free Voigt indices.
+  static constexpr auto fixedVoigtIndices = createFixedVoigtIndices(fixedPairs); ///< Fixed Voigt indices.
+  static constexpr auto freeStrains       = freeVoigtIndices.size();             ///< Number of free strains.
 
   static constexpr auto strainTag          = Underlying::strainTag;          ///< Strain tag.
   static constexpr auto stressTag          = Underlying::stressTag;          ///< Stress tag.
@@ -143,7 +139,7 @@ private:
     decltype(auto) E                     = maybeFromVoigt(Eraw);
     std::remove_cvref_t<decltype(E)> Egl = transformStrain<strainTag, StrainTags::greenLagrangian>(E);
 
-    for (auto [i, j] : fixedTensorIndices) {
+    for (auto [i, j] : fixedPairs) {
       Egl(i, j) = 0;
       Egl(j, i) = 0;
     }
@@ -156,7 +152,7 @@ private:
   auto reduceStrain(const Eigen::MatrixBase<Derived>& Eraw) const {
     Eigen::Matrix3<ScalarType> E = maybeFromVoigt(Eraw);
 
-    for (auto [i, j] : fixedTensorIndices) {
+    for (auto [i, j] : fixedPairs) {
       E(i, j) = 0;
       E(j, i) = 0;
     }
@@ -166,14 +162,16 @@ private:
 };
 
 /**
- * \brief Factory function to create a PlaneStrain material.
+ * \brief Factory function to create a VanishingStress material with specified stress indices.
+ * \tparam stressIndexPair The array of StressIndexPair representing fixed stress components.
  * \tparam MaterialImpl The underlying material model.
  * \param mat The underlying material model.
- * \return PlaneStrain The created PlaneStrain material.
+ * \param p_tol Tolerance for stress reduction.
+ * \return VanishingStress The created VanishingStress material.
  */
-template <typename MaterialImpl>
-auto makePlaneStrain(MaterialImpl mat) {
-  return PlaneStrain<MaterialImpl>(mat);
+template <Impl::StressIndexPair... stressIndexPair, typename MaterialImpl>
+auto makeVanishingStrain(MaterialImpl mat) {
+  return VanishingStrain<std::to_array({stressIndexPair...}), MaterialImpl>(mat);
 }
 
 /**
@@ -184,6 +182,7 @@ auto makePlaneStrain(MaterialImpl mat) {
  */
 template <typename MaterialImpl>
 auto planeStrain(const MaterialImpl& mat) {
-  return makePlaneStrain(mat);
+  return makeVanishingStrain<Impl::StressIndexPair{2, 1}, Impl::StressIndexPair{2, 0}, Impl::StressIndexPair{2, 2}>(
+      mat);
 }
 } // namespace Ikarus
