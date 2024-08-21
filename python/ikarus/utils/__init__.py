@@ -21,7 +21,7 @@ def boundaryPatch(gridView, booleanVector):
     includes = []
     includes += ["dune/fufem/boundarypatch.hh"]
     includes += ["ikarus/python/utils/boundarypatch.hh"]
-    includes += gridView._includes
+    includes += gridView.cppIncludes
     moduleName = "boundaryPatch_" + hashIt(element_type)
     module = generator.load(
         includes=includes, typeName=element_type, moduleName=moduleName

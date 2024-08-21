@@ -70,7 +70,7 @@ struct NonLinearOperatorFactory
   }
 
   template <size_t... funcs, typename Assembler, typename... Affordances>
-  static auto op(Assembler&& as, typename traits::remove_pointer_t<std::remove_cvref_t<Assembler>>::FERequirement& req,
+  static auto op_impl2(Assembler&& as, typename traits::remove_pointer_t<std::remove_cvref_t<Assembler>>::FERequirement& req,
                  AffordanceCollection<Affordances...> affordances, DBCOption dbcOption,
                  std::index_sequence <funcs...> funcIndices = {}) {
     constexpr int funcIndexSize = funcIndices.size();
@@ -153,7 +153,7 @@ private:
       }
     }();
 
-    return op(assemblerPtr, req, affordances, dbcOption,funcIndices);
+    return op_impl2(assemblerPtr, req, affordances, dbcOption,funcIndices);
   }
 
 public:
@@ -224,6 +224,7 @@ static auto op(Assembler&& as, Args&&... args) {
         }
     });
         //  static_assert(std::tuple_size_v<decltype(argumentTuple)> ==4);
+        std::cout<<"argumentTuple: "<<Dune::className(argumentTuple)<<std::endl;
     return std::apply([&]<typename... Args2>(Args2&&... args2){return op_impl(std::forward<Assembler>(as), std::forward<Args2>(args2)...);},argumentTuple);
 }
 

@@ -112,7 +112,7 @@ def nonLinearElastic(mat):
     includes = ["ikarus/finiteelements/mechanics/nonlinearelastic.hh"]
 
     element_type = f"Ikarus::NonLinearElasticPre<{mat.cppTypeName}>"
-    includes += mat._includes
+    includes += mat.cppIncludes
     return registerPreElement("NonLinearElasticPre", includes, element_type, mat)
 
 
@@ -200,9 +200,9 @@ def makeFE(basis, *skills):
 
     generator = MySimpleGenerator("FE", "Ikarus::Python")
 
-    includes += basis._includes
+    includes += basis.cppIncludes
     for arg in skills:
-        includes += arg._includes
+        includes += arg.cppIncludes
 
     moduleName = "FE" + "_" + hashIt(element_type)
     module = generator.load(

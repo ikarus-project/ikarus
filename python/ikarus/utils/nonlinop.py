@@ -78,6 +78,7 @@ def NonLinearOperator(functions, parameters):
 def __op(nonLinOpFactory):
     # This would be nice to have, but it is not possible to generate the code for the subOperator function
     def __opFunc(nonLinOpFactory,requirement=None,affordances=None,enforcingBCOption=None,derivativeIndices=None):
+        print("derivativeIndices",derivativeIndices)
         if affordances is None:
             affordanceCppType= "Ikarus::AffordanceCollection<>"
         else:
@@ -98,7 +99,7 @@ def __op(nonLinOpFactory):
             auto req = requirement.is_none() ? std::optional<std::reference_wrapper<FERequirements>>{{}} : std::optional<std::reference_wrapper<FERequirements>>(std::in_place, requirement.cast<FERequirements&>());
             auto aff = affordances.is_none() ? std::optional<{affoCppType}>{{}} : std::optional<{affoCppType}>(std::in_place,affordances.cast<{affoCppType}>());
             auto eBCo = enforcingBCOption.is_none() ? std::optional<Ikarus::DBCOption>{{}} : std::optional<Ikarus::DBCOption>(std::in_place, enforcingBCOption.cast<Ikarus::DBCOption>());
-            return Ikarus::NonLinearOperatorFactory::op<{indices}>(factory.as, req, aff, eBCo);
+            return Ikarus::NonLinearOperatorFactory::op(factory.as, req, aff, eBCo,std::index_sequence<{indices}>{{}});
         }}
         """.format(indices=",".join([str(i) for i in derivativeIndices]), affoCppType=affordanceCppType)
         nonLinOp = run("op",StringIO(runCode),nonLinOpFactory,requirement,affordances,enforcingBCOption)

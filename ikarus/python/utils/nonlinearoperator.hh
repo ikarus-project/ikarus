@@ -225,7 +225,7 @@ void registerNonLinearOperatorFactory(pybind11::handle scope, pybind11::class_<N
 
   auto registerNonLinearOperatorL = [&scope]<size_t... i>(std::index_sequence <i ...> iSeq) {
 
- Impl::maybeRegisterNonlinearOperator<decltype(NonLinearOperatorFactory::template op<i...>(std::declval<Assembler&>()))>(scope,Dune::makeArrayFromIndexSequence(iSeq));
+ Impl::maybeRegisterNonlinearOperator<decltype(NonLinearOperatorFactory::op(std::declval<Assembler&>(),iSeq))>(scope,Dune::makeArrayFromIndexSequence(iSeq));
   };
 
   registerNonLinearOperatorL(std::index_sequence<0,1,2>());
