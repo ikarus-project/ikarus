@@ -28,23 +28,43 @@ int main(int argc, char** argv) {
   constexpr auto randomlyDistorted      = CornerDistortionFlag::randomlyDistorted;
   constexpr auto unDistorted            = CornerDistortionFlag::unDistorted;
 
-  auto linearElasticEASFunc = [](const Ikarus::YoungsModulusAndPoissonsRatio& mat) {
-    return Ikarus::linearElastic(mat);
+  auto linearElasticFunc3D = [](const Ikarus::YoungsModulusAndPoissonsRatio& parameter) {
+    Ikarus::LinearElasticity lin(Ikarus::toLamesFirstParameterAndShearModulus(parameter));
+    return Ikarus::linearElastic(lin);
+  };
+  auto linearElasticFuncPlaneStress = [](const Ikarus::YoungsModulusAndPoissonsRatio& parameter) {
+    Ikarus::LinearElasticity lin(Ikarus::toLamesFirstParameterAndShearModulus(parameter));
+    auto linPS = Ikarus::planeStress(lin, 1e-12);
+    return Ikarus::linearElastic(linPS);
+  };
+  auto linearElasticFuncPlaneStrain = [](const Ikarus::YoungsModulusAndPoissonsRatio& parameter) {
+    Ikarus::LinearElasticity lin(Ikarus::toLamesFirstParameterAndShearModulus(parameter));
+    auto linPS = Ikarus::planeStrain(lin);
+    return Ikarus::linearElastic(linPS);
   };
 
   t.subTest(testFEElement(firstOrderLagrangePrePower2Basis, "EAS", randomlyDistorted,
-                          Dune::ReferenceElements<double, 2>::cube(), &Ikarus::linearElastic,
+                          Dune::ReferenceElements<double, 2>::cube(), linearElasticFuncPlaneStress,
                           Ikarus::skills(Ikarus::eas()), Ikarus::AffordanceCollections::elastoStatics,
                           checkJacobianFunctor));
 
   t.subTest(testFEElement(firstOrderLagrangePrePower3Basis, "EAS", randomlyDistorted,
-                          Dune::ReferenceElements<double, 3>::cube(), &Ikarus::linearElastic,
+                          Dune::ReferenceElements<double, 3>::cube(), linearElasticFunc3D,
                           Ikarus::skills(Ikarus::eas()), Ikarus::AffordanceCollections::elastoStatics,
                           checkJacobianFunctor));
 
+  // Plane Stress
   t.subTest(testFEElement(
       firstOrderLagrangePrePower2Basis, "EAS", unDistorted, Dune::ReferenceElements<double, 2>::cube(),
-      linearElasticEASFunc, Ikarus::skills(Ikarus::eas()), Ikarus::AffordanceCollections::elastoStatics,
+      linearElasticFuncPlaneStress, Ikarus::skills(Ikarus::eas()), Ikarus::AffordanceCollections::elastoStatics,
+      checkCalculateAtFunctorFactory<Ikarus::ResultTypes::linearStress>(linearStressResultsOfSquare),
+      checkCalculateAtFunctorFactory<Ikarus::ResultTypes::linearStress, false>(linearStressResultsOfSquare),
+      checkResultFunctionFunctorFactory<Ikarus::ResultTypes::linearStress>(linearStressResultsOfSquare)));
+  
+  // Plane Strain
+  t.subTest(testFEElement(
+      firstOrderLagrangePrePower2Basis, "EAS", unDistorted, Dune::ReferenceElements<double, 2>::cube(),
+      linearElasticFuncPlaneStrain, Ikarus::skills(Ikarus::eas()), Ikarus::AffordanceCollections::elastoStatics,
       checkCalculateAtFunctorFactory<Ikarus::ResultTypes::linearStress>(linearStressResultsOfSquare),
       checkCalculateAtFunctorFactory<Ikarus::ResultTypes::linearStress, false>(linearStressResultsOfSquare),
       checkResultFunctionFunctorFactory<Ikarus::ResultTypes::linearStress>(linearStressResultsOfSquare)));

@@ -197,8 +197,15 @@ auto GreenLagrangeStrainTest(const Material& mat) {
   auto element = gridView.template begin<0>();
   auto nDOF    = basis.flat().size();
 
-  auto fe   = makeFE(basis, skills(nonLinearElastic(mat)));
-  auto feLE = makeFE(basis, skills(Ikarus::linearElastic({.emodul = 1000, .nu = 0.0})));
+  auto fe     = makeFE(basis, skills(nonLinearElastic(mat)));
+  auto linMat = []() {
+    auto linMat = Ikarus::LinearElasticity{Ikarus::toLamesFirstParameterAndShearModulus({.emodul = 1000, .nu = 0.0})};
+    if constexpr (gridDim == 3)
+      return linMat;
+    else
+      return Ikarus::planeStress(linMat);
+  }();
+  auto feLE = makeFE(basis, skills(Ikarus::linearElastic(linMat)));
   fe.bind(*element);
   feLE.bind(*element);
   Eigen::VectorXd d;

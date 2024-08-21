@@ -132,7 +132,7 @@ template <StrainTags from, StrainTags to, typename Derived>
 decltype(auto) transformStrain(const Eigen::MatrixBase<Derived>& eRaw) {
   static_assert((from == to) or (from != StrainTags::linear and to != StrainTags::linear),
                 "No useful transformation available for linear strains.");
-  decltype(auto) e = Impl::mayTransformFromVoigt(eRaw, true);
+  decltype(auto) e = Impl::mayTransformFromVoigt(eRaw.eval(), true);
   if constexpr (from == to)
     return e;
   else if constexpr (to == StrainTags::greenLagrangian)

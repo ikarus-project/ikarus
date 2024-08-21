@@ -515,7 +515,7 @@ template <typename Derived, size_t sizeOfCondensedIndices>
 auto reduceMatrix(const Eigen::MatrixBase<Derived>& E, const std::array<size_t, sizeOfCondensedIndices>& indices) {
   constexpr size_t colsFull = std::remove_cvref_t<Derived>::ColsAtCompileTime;
   constexpr size_t rowsFull = std::remove_cvref_t<Derived>::RowsAtCompileTime;
-  static_assert(colsFull == rowsFull, "staticCondensation only allowed for square matrices");
+  static_assert(colsFull == rowsFull, "reduceMatrix only allowed for square matrices");
   std::array<size_t, rowsFull - sizeOfCondensedIndices> remainingIndices{};
   std::ranges::set_difference(std::ranges::iota_view(size_t(0), size_t(colsFull)), indices, remainingIndices.begin());
 

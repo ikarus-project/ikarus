@@ -19,8 +19,12 @@ inline auto linearStressResultsOfSquare = []<typename NOP, typename FE>(NOP& non
   Eigen::Matrix<double, vertices, quantities> expectedStress;
   if constexpr (requires { fe.setEASType(4); }) {
     fe.setEASType(4);
-    expectedStress << 1214.28571429, 1214.28571429, 384.61538462, 1214.28571429, 214.28571429, 384.61538462,
-        214.28571429, 1214.28571429, 384.61538462, 214.28571429, 214.28571429, 384.61538462;
+    if (isPlaneStress<typename FE::Material>)
+      expectedStress << 1214.28571429, 1214.28571429, 384.61538462, 1214.28571429, 214.28571429, 384.61538462,
+          214.28571429, 1214.28571429, 384.61538462, 214.28571429, 214.28571429, 384.61538462;
+    else
+      expectedStress << 1510.98901099, 1510.98901099, 384.61538462, 1510.98901099, 412.08791209, 384.61538462,
+          412.08791209, 1510.98901099, 384.61538462, 412.08791209, 412.08791209, 384.61538462;
   } else {
     if (isPlaneStress<typename FE::Material>)
       expectedStress << 1428.57142857, 1428.57142857, 769.23076923, 1098.90109890, 329.67032967, 384.61538462,
@@ -147,7 +151,10 @@ inline auto linearStressResultsOfTriangle = []<typename NOP, typename FE>(NOP& n
   constexpr int quantities = 3;
 
   Eigen::Matrix<double, vertices, quantities> expectedStress;
-  expectedStress.rowwise() = Eigen::Matrix<double, 1, quantities>{2197.80219780, 659.34065934, 384.61538462};
+  if (isPlaneStress<typename FE::Material>)
+    expectedStress.rowwise() = Eigen::Matrix<double, 1, quantities>{2197.80219780, 659.34065934, 384.61538462};
+  else
+    expectedStress.rowwise() = Eigen::Matrix<double, 1, quantities>{2692.30769231, 1153.84615385, 384.61538462};
 
   auto& displacement = nonLinearOperator.firstParameter();
   displacement << 0, 0, 2, 0, 1, 0;

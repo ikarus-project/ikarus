@@ -166,7 +166,7 @@ struct Material
   requires CorrectStrainSize<MaterialImpl, Derived>
   [[nodiscard]] auto tangentModuli(const Eigen::MatrixBase<Derived>& Eraw) const {
     decltype(auto) Ev = enlargeIfReduced<Material>(Eraw);
-    decltype(auto) E  = transformStrain<tag, MaterialImpl::strainTag>(Ev);
+    decltype(auto) E  = transformStrain<tag, MaterialImpl::strainTag>(Ev).eval();
     if constexpr (voigt and MaterialImpl::moduliToVoigt == false)
       // user request a Voigt shaped return but material is not able to. Therefore, we transform it here.
       return toVoigt(tangentModuliMaybeTransformInputToVoigt<false>(E));

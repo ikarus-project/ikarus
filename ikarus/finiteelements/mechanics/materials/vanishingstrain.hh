@@ -18,7 +18,6 @@
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/utils/nonlinearoperator.hh>
 
-
 namespace Ikarus {
 
 /**
@@ -124,12 +123,11 @@ struct VanishingStrain : public Material<VanishingStrain<strainIndexPair, MI>>
 private:
   Underlying matImpl_; ///< The underlying material model.
 
-
-
   template <typename Derived>
   requires(strainTag != StrainTags::linear)
   auto reduceStrain(const Eigen::MatrixBase<Derived>& Eraw) const {
-    decltype(auto) E                     = Impl::maybeFromVoigt(Eraw);
+    decltype(auto) E = Impl::maybeFromVoigt(Eraw);
+    // TODO only transform if strain Tag is not greenLagrangian or linear
     std::remove_cvref_t<decltype(E)> Egl = transformStrain<strainTag, StrainTags::greenLagrangian>(E);
 
     setStrainsToZero(Egl);

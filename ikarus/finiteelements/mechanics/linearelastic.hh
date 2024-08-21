@@ -144,12 +144,8 @@ public:
       else
         return 6;
     }();
-    return mat_.template tangentModuli<StrainTags::linear, true>(Eigen::Vector<double, strainSize>::Zero());
 
-    // if constexpr (myDim == 2)
-    //   return planeStressLinearElasticMaterialTangent(mat_.emodul, mat_.nu);
-    // else if constexpr (myDim == 3)
-    //   return linearElasticMaterialTangent3D(mat_.emodul, mat_.nu);
+    return mat_.template tangentModuli<StrainTags::linear, true>(Eigen::Vector<double, strainSize>::Zero());
   }
 
   /**
