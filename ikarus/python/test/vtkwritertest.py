@@ -20,6 +20,7 @@ from dune.vtk import FormatTypes, DataTypes
 
 import os
 import unittest
+import pathlib
 
 from dirichletvaluetest import makeGrid
 
@@ -75,6 +76,10 @@ class TestVtkWriter(unittest.TestCase):
         self.x = sp.sparse.linalg.spsolve(Msparse, -forces)
         req.insertGlobalSolution(self.x)
 
+    def assertIsFile(self, path):
+        if not pathlib.Path(path).resolve().is_file():
+            raise AssertionError("File does not exist: %s" % str(path))
+
     def test(self):
         _ = io.vtkWriter(
             self.sparseAssembler,
@@ -96,8 +101,8 @@ class TestVtkWriter(unittest.TestCase):
         writer.addAllResults(io.DataTag.asCellData)
         writer.addAllResults(io.DataTag.asPointData)
 
-        fileName = writer.write("vtk_test")
-        self.assertEqual(fileName[-3:], "vtu")
+        writer.write("vtk_test")
+        self.assertIsFile("vtk_test.vtu")
 
     def test_lagrange(self):
         writer2 = io.vtkWriter(
@@ -151,8 +156,10 @@ class TestVtkWriter(unittest.TestCase):
         writer3 = io.vtkWriter(sparseAssemblerYASP, dataFormat=FormatTypes.ascii)
         writer3.addAllResults(io.DataTag.asCellData)
 
-        fileName = writer3.write("vtk_test_structured")
-        self.assertEqual(fileName[-3:], "vtr")
+        writer3.write("vtk_test_structured")
+        self.assertIsFile("vtk_test_structured.vtr")
+
+        # self.assertEqual(fileName[-3:], "vtr")
 
     def test_discontinuousWriter(self):
         discontinuousVtkWriter = io.vtkWriter(

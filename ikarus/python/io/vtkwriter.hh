@@ -90,10 +90,6 @@ void registerVtkWriter(pybind11::handle scope, pybind11::class_<Writer, options.
         addResultImpl(self, resType, tag);
       },
       pybind11::arg("resType"), pybind11::arg("tag") = Vtk::DataTag::asPointData);
-
-  cls.def(
-      "write", [](Writer& self, const std::string& fileName) { return self.write(fileName); },
-      pybind11::arg("fileName"));
 }
 
 } // namespace Ikarus::Python
