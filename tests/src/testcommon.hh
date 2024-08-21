@@ -293,7 +293,7 @@ template <template <typename, int, int> class RT, bool vectorizedResult = true>
                              << expectedResult << "\n"
                              << messageIfFailed;
   } else
-    static_assert(Dune::AlwaysFalse<FiniteElement>::value, "Element can not provide the requested RsultType ");
+    static_assert(Dune::AlwaysFalse<FiniteElement>::value, "Element can not provide the requested ResultType ");
 
   return t;
 }

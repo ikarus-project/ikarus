@@ -142,11 +142,11 @@ auto testMaterial(Material mat) {
   TestSuite t("testMaterial");
   if constexpr (std::is_same_v<Material, LinearElasticity> or
                 std::is_same_v<Material,
-                               Ikarus::VanishingStress<std::array<Ikarus::Impl::StressIndexPair, 1>({{{2, 2}}}),
+                               Ikarus::VanishingStress<std::array<Ikarus::Impl::MatrixIndexPair, 1>({{{2, 2}}}),
                                                        Ikarus::LinearElasticity>>) {
     t.subTest(testMaterialWithStrain<StrainTags::linear>(mat));
   } else if constexpr (std::is_same_v<Material,
-                                      Ikarus::VanishingStress<std::array<Ikarus::Impl::StressIndexPair, 1>({{{2, 2}}}),
+                                      Ikarus::VanishingStress<std::array<Ikarus::Impl::MatrixIndexPair, 1>({{{2, 2}}}),
                                                               Ikarus::StVenantKirchhoff>>) {
     t.subTest(testMaterialWithStrain<StrainTags::greenLagrangian>(mat));
   } else {
@@ -250,20 +250,20 @@ int main(int argc, char** argv) {
   auto le = LinearElasticity(matPar);
   t.subTest(testMaterial(le));
 
-  auto leRed = makeVanishingStress<Impl::StressIndexPair{2, 2}>(le, 1e-12);
+  auto leRed = makeVanishingStress<Impl::MatrixIndexPair{2, 2}>(le, 1e-12);
   t.subTest(testMaterial(leRed));
 
-  auto svkRed = makeVanishingStress<Impl::StressIndexPair{2, 2}>(svk, 1e-12);
+  auto svkRed = makeVanishingStress<Impl::MatrixIndexPair{2, 2}>(svk, 1e-12);
   t.subTest(testMaterial(svkRed));
 
-  auto nhRed = makeVanishingStress<Impl::StressIndexPair{2, 2}>(nh, 1e-12);
+  auto nhRed = makeVanishingStress<Impl::MatrixIndexPair{2, 2}>(nh, 1e-12);
   t.subTest(testMaterial(nhRed));
 
-  auto nhRed2 = makeVanishingStress<Impl::StressIndexPair{1, 1}, Impl::StressIndexPair{2, 2}>(nh, 1e-12);
+  auto nhRed2 = makeVanishingStress<Impl::MatrixIndexPair{1, 1}, Impl::MatrixIndexPair{2, 2}>(nh, 1e-12);
   t.subTest(testMaterial(nhRed2));
 
   auto nhRed3 =
-      makeVanishingStress<Impl::StressIndexPair{2, 1}, Impl::StressIndexPair{2, 0}, Impl::StressIndexPair{2, 2}>(nh,
+      makeVanishingStress<Impl::MatrixIndexPair{2, 1}, Impl::MatrixIndexPair{2, 0}, Impl::MatrixIndexPair{2, 2}>(nh,
                                                                                                                  1e-12);
   t.subTest(testMaterial(nhRed3));
 
@@ -284,6 +284,9 @@ int main(int argc, char** argv) {
 
   auto linPlaneStrain = planeStrain(le);
   t.subTest(testMaterialWithStrain<StrainTags::linear>(linPlaneStrain));
+
+  // auto nhRed8 = makeVanishingStrain<Impl::StressIndexPair{1, 1}, Impl::StressIndexPair{2, 2}>(nh);
+  // t.subTest(testMaterial(nhRed8));
 
   t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::linear, LinearElasticity>());
   t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::greenLagrangian, StVenantKirchhoff>());

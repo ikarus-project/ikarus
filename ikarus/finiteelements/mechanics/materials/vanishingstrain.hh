@@ -11,11 +11,13 @@
 
 #pragma once
 
+#include "vanishinghelpers.hh"
+
 #include <ikarus/finiteelements/mechanics/materials/interface.hh>
 #include <ikarus/finiteelements/mechanics/materials/strainconversions.hh>
-#include <ikarus/finiteelements/mechanics/materials/vanishingstress.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/utils/nonlinearoperator.hh>
+
 
 namespace Ikarus {
 
@@ -103,7 +105,7 @@ struct VanishingStrain : public Material<VanishingStrain<strainIndexPair, MI>>
     const auto Esol = reduceStrain(E);
     auto C          = matImpl_.template tangentModuli<Underlying::strainTag, true>(Esol);
     if constexpr (voigt)
-      return staticCondensation(C, fixedVoigtIndices);
+      return reduceMatrix(C, fixedVoigtIndices);
     else
       return fromVoigt(C);
   }
@@ -122,24 +124,12 @@ struct VanishingStrain : public Material<VanishingStrain<strainIndexPair, MI>>
 private:
   Underlying matImpl_; ///< The underlying material model.
 
-  /**
-   * \brief Converts the input strain matrix to the appropriate form for stress reduction.
-   * \tparam Derived The derived type of the input matrix.
-   * \param E The input strain matrix.
-   * \return decltype(auto) The converted strain matrix.
-   */
-  template <typename Derived>
-  decltype(auto) maybeFromVoigt(const Eigen::MatrixBase<Derived>& E) const {
-    if constexpr (Concepts::EigenVector<Derived>) { // receiving vector means Voigt notation
-      return fromVoigt(E.derived(), true);
-    } else
-      return E.derived();
-  }
+
 
   template <typename Derived>
   requires(strainTag != StrainTags::linear)
   auto reduceStrain(const Eigen::MatrixBase<Derived>& Eraw) const {
-    decltype(auto) E                     = maybeFromVoigt(Eraw);
+    decltype(auto) E                     = Impl::maybeFromVoigt(Eraw);
     std::remove_cvref_t<decltype(E)> Egl = transformStrain<strainTag, StrainTags::greenLagrangian>(E);
 
     setStrainsToZero(Egl);
@@ -149,7 +139,7 @@ private:
   template <typename Derived>
   requires(strainTag == StrainTags::linear)
   auto reduceStrain(const Eigen::MatrixBase<Derived>& Eraw) const {
-    Eigen::Matrix3<ScalarType> E = maybeFromVoigt(Eraw);
+    Eigen::Matrix3<ScalarType> E = Impl::maybeFromVoigt(Eraw);
 
     setStrainsToZero(E);
     return E;
@@ -164,14 +154,14 @@ private:
 };
 
 /**
- * \brief Factory function to create a VanishingStress material with specified stress indices.
- * \tparam stressIndexPair The array of StressIndexPair representing fixed stress components.
+ * \brief Factory function to create a PlaneStrain material with specified strain indices.
+ * \tparam stressIndexPair The array of StressIndexPair representing fixed strain components.
  * \tparam MaterialImpl The underlying material model.
  * \param mat The underlying material model.
  * \param p_tol Tolerance for stress reduction.
  * \return VanishingStress The created VanishingStress material.
  */
-template <Impl::StressIndexPair... stressIndexPair, typename MaterialImpl>
+template <Impl::MatrixIndexPair... stressIndexPair, typename MaterialImpl>
 auto makeVanishingStrain(MaterialImpl mat) {
   return VanishingStrain<std::to_array({stressIndexPair...}), MaterialImpl>(mat);
 }
@@ -184,7 +174,7 @@ auto makeVanishingStrain(MaterialImpl mat) {
  */
 template <typename MaterialImpl>
 auto planeStrain(const MaterialImpl& mat) {
-  return makeVanishingStrain<Impl::StressIndexPair{2, 1}, Impl::StressIndexPair{2, 0}, Impl::StressIndexPair{2, 2}>(
+  return makeVanishingStrain<Impl::MatrixIndexPair{2, 1}, Impl::MatrixIndexPair{2, 0}, Impl::MatrixIndexPair{2, 2}>(
       mat);
 }
 } // namespace Ikarus
