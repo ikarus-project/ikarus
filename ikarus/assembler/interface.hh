@@ -95,6 +95,12 @@ public:
   const auto& dirichletValues() const { return Dune::resolveRef(dirichletValues_); }
 
   /**
+   * \brief Returns the gridView object.
+   * \return Reference to the gridView object.
+   */
+  const auto& gridView() const { return Dune::resolveRef(dirichletValues_.basis().gridView()); }
+
+  /**
    * \brief Returns the number of constraints below a given degrees of freedom index.
    *
    * \param i Index of the degree of freedom.

@@ -37,6 +37,7 @@ set(programSourceFiles
     testtrustregion.cpp
     testresultfunction.cpp
     testtruss.cpp
+    testvtkwriter.cpp
 )
 
 set(TEST_DEPENDING_ON_LOCALFEFUNCTIONS

@@ -15,6 +15,10 @@
 #include <dune/grid/uggrid.hh>
 #include <dune/grid/yaspgrid.hh>
 #include <dune/vtk/vtkwriter.hh>
+
+#include "ikarus/assembler/simpleassemblers.hh"
+#include "ikarus/utils/dirichletvalues.hh"
+
 #if HAVE_DUNE_IGA
   #include <dune/iga/nurbsgrid.hh>
 #endif
@@ -307,7 +311,13 @@ template <template <typename, int, int> class resType, typename ResultEvaluator>
 
   Eigen::MatrixXd computedResults(expectedResult.rows(), expectedResult.cols());
 
-  auto vtkResultFunction   = Ikarus::makeResultVtkFunction<resType, ResultEvaluator>(&fes, feRequirements);
+  // Make a dummy assembler that holds the elements
+  Ikarus::DirichletValues dirichletValues(fe.localView().globalBasis());
+  auto sparseAssembler = Ikarus::makeSparseFlatAssembler(fes, dirichletValues);
+  sparseAssembler->bind(feRequirements);
+  sparseAssembler->bind(Ikarus::DBCOption::Full);
+
+  auto vtkResultFunction   = Ikarus::makeResultVtkFunction<resType, ResultEvaluator>(sparseAssembler);
   auto localResultFunction = localFunction(vtkResultFunction);
   localResultFunction.bind(element);
 
@@ -332,7 +342,7 @@ template <template <typename, int, int> class resType, typename ResultEvaluator>
                   std::to_string(FiniteElement::myDim) + std::to_string(element.geometry().type().id()));
 
   Dune::VTKWriter<decltype(gridView)> vtkWriter2(gridView);
-  auto resultFunction = Ikarus::makeResultFunction<resType, ResultEvaluator>(&fes, feRequirements);
+  auto resultFunction = Ikarus::makeResultFunction<resType, ResultEvaluator>(sparseAssembler);
 
   vtkWriter2.addVertexData(resultFunction);
   vtkWriter2.write("native_vtkwriter_resultfunction_" + resultFunction->name() + "_" +

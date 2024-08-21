@@ -26,7 +26,6 @@
 
 #include <ikarus/finiteelements/ferequirements.hh>
 
-// PYBIND11_MAKE_OPAQUE(std::vector<bool>);
 namespace Ikarus::Python {
 
 namespace Impl {

@@ -26,3 +26,4 @@ dist/
 _skbuild/
 MANIFEST.in
 *.vtu
+*.vtr

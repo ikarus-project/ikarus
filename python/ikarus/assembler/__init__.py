@@ -24,7 +24,10 @@ def sparseFlatAssembler(fes, dirichletValues):
     includes += ["ikarus/python/assembler/flatassembler.hh"]
     moduleName = "SparseFlatAssembler_" + hashIt(element_type)
     module = generator.load(
-        includes=includes, typeName=element_type, moduleName=moduleName
+        includes=includes,
+        typeName=element_type,
+        moduleName=moduleName,
+        holder="std::shared_ptr",
     )
     return module.SparseFlatAssembler(fes, dirichletValues)
 
@@ -48,7 +51,10 @@ def denseFlatAssembler(fes, dirichletValues):
     includes += dirichletValues.cppIncludes
     moduleName = "DenseFlatAssembler_" + hashIt(element_type)
     module = generator.load(
-        includes=includes, typeName=element_type, moduleName=moduleName
+        includes=includes,
+        typeName=element_type,
+        moduleName=moduleName,
+        holder="std::shared_ptr",
     )
     return module.DenseFlatAssembler(fes, dirichletValues)
 
@@ -70,6 +76,9 @@ def assemblerManipulator(assembler):
     includes += ["ikarus/python/assembler/flatassemblermanipulator.hh"]
     moduleName = "AssemblerManipulator_" + hashIt(element_type)
     module = generator.load(
-        includes=includes, typeName=element_type, moduleName=moduleName
+        includes=includes,
+        typeName=element_type,
+        moduleName=moduleName,
+        holder="std::shared_ptr",
     )
     return module.AssemblerManipulator(assembler)
