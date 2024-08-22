@@ -33,6 +33,7 @@ class LinearElastic;
  * \brief A PreFE struct for linear elastic elements.
  */
 template <typename MAT>
+requires(MAT::strainTag == StrainTags::linear)
 struct LinearElasticPre
 {
   using Material = MAT;

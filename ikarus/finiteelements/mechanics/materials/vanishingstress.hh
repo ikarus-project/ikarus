@@ -206,9 +206,9 @@ private:
  * \param p_tol Tolerance for stress reduction.
  * \return VanishingStress The created VanishingStress material.
  */
-template <Impl::MatrixIndexPair... matrixIndexPair, typename MaterialImpl>
+template <Impl::MatrixIndexPair... stressIndexPair, typename MaterialImpl>
 auto makeVanishingStress(MaterialImpl mat, typename MaterialImpl::ScalarType p_tol = 1e-12) {
-  return VanishingStress<std::to_array({matrixIndexPair...}), MaterialImpl>(mat, p_tol);
+  return VanishingStress<std::to_array({stressIndexPair...}), MaterialImpl>(mat, p_tol);
 }
 
 /**
