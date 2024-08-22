@@ -70,9 +70,9 @@ void registerMaterial(pybind11::handle scope, pybind11::class_<Material, options
   auto pS                = Dune::Python::insertClass<PlaneStressClass>(
                 scope, std::string("PlaneStress_") + materialname,
                 Dune::Python::GenerateTypeName(
-                    "Ikarus::VanishingStress<std::array<Ikarus::Impl::StressIndexPair, "
-                                   "3ul>{{Ikarus::Impl::StressIndexPair{2ul, 1ul}, Ikarus::Impl::StressIndexPair{2ul,0ul}, "
-                                   "Ikarus::Impl::StressIndexPair{2ul, 2ul}}}," +
+                    "Ikarus::VanishingStress<std::array<Ikarus::Impl::MatrixIndexPair, "
+                                   "3ul>{{Ikarus::Impl::MatrixIndexPair{2ul, 1ul}, Ikarus::Impl::MatrixIndexPair{2ul,0ul}, "
+                                   "Ikarus::Impl::MatrixIndexPair{2ul, 2ul}}}," +
                     Dune::className<Material>() + ">"),
                 includes)
                 .first;
@@ -89,9 +89,9 @@ void registerMaterial(pybind11::handle scope, pybind11::class_<Material, options
   auto pStrain           = Dune::Python::insertClass<PlaneStrainClass>(
                      scope, std::string("PlaneStrain_") + materialname,
                      Dune::Python::GenerateTypeName(
-                         "Ikarus::VanishingStrain<std::array<Ikarus::Impl::StressIndexPair, "
-                                   "3ul>{{Ikarus::Impl::StressIndexPair{2ul, 1ul}, Ikarus::Impl::StressIndexPair{2ul,0ul}, "
-                                   "Ikarus::Impl::StressIndexPair{2ul, 2ul}}}," +
+                         "Ikarus::VanishingStrain<std::array<Ikarus::Impl::MatrixIndexPair, "
+                                   "3ul>{{Ikarus::Impl::MatrixIndexPair{2ul, 1ul}, Ikarus::Impl::MatrixIndexPair{2ul,0ul}, "
+                                   "Ikarus::Impl::MatrixIndexPair{2ul, 2ul}}}," +
                          Dune::className<Material>() + ">"),
                      includes)
                      .first;
@@ -103,13 +103,13 @@ void registerMaterial(pybind11::handle scope, pybind11::class_<Material, options
   MAKE_MaterialFunction(pStrain, PlaneStrainClass, tangentModuli, 6);
 
   cls.def("asPlaneStrain",
-          [](Material& self) { return planeStrain(self); }); /* no keep_alive since planeStress copies the material */
+          [](Material& self) { return planeStrain(self); }); /* no keep_alive since planeStrain copies the material */
   using ShellMaterialClass = decltype(shellMaterial(std::declval<Material>()));
   auto shellmaterial =
       Dune::Python::insertClass<ShellMaterialClass>(
           scope, std::string("Shell_") + materialname,
-          Dune::Python::GenerateTypeName("Ikarus::VanishingStress<std::array<Ikarus::Impl::StressIndexPair, "
-                                         "1ul>{{Ikarus::Impl::StressIndexPair{2ul, 2ul}}}," +
+          Dune::Python::GenerateTypeName("Ikarus::VanishingStress<std::array<Ikarus::Impl::MatrixIndexPair, "
+                                         "1ul>{{Ikarus::Impl::MatrixIndexPair{2ul, 2ul}}}," +
                                          Dune::className<Material>() + ">"),
           includes)
           .first;
@@ -127,8 +127,8 @@ void registerMaterial(pybind11::handle scope, pybind11::class_<Material, options
   auto beammaterial       = Dune::Python::insertClass<BeamMaterialClass>(
                           scope, std::string("Beam_") + materialname,
                           Dune::Python::GenerateTypeName(
-                              "Ikarus::VanishingStress<std::array<Ikarus::Impl::StressIndexPair, "
-                                    "2ul>{{Impl::StressIndexPair{1, 1},Ikarus::Impl::StressIndexPair{2ul, 2ul}}}," +
+                              "Ikarus::VanishingStress<std::array<Ikarus::Impl::MatrixIndexPair, "
+                                    "2ul>{{Impl::MatrixIndexPair{1, 1},Ikarus::Impl::MatrixIndexPair{2ul, 2ul}}}," +
                               Dune::className<Material>() + ">"),
                           includes)
                           .first;

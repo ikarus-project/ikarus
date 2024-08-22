@@ -28,7 +28,7 @@ struct EigenBase;
 }
 
 namespace Ikarus {
-template <auto stressIndexPair, typename MaterialImpl>
+template <auto matrixIndexPair, typename MaterialImpl>
 struct VanishingStress;
 
 template <typename Derived>

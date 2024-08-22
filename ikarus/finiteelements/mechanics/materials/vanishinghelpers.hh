@@ -23,7 +23,7 @@ struct MatrixIndexPair
 /**
  * \brief Helper function to create an array of free Voigt indices.
  * \tparam size The size of the fixed pairs array.
- * \param fixed An array of StressIndexPair representing fixed indices.
+ * \param fixed An array of MatrixIndexPair representing fixed indices.
  * \return std::array<size_t, 6 - size> The array of free Voigt indices.
  */
 template <size_t size>
@@ -40,7 +40,7 @@ consteval auto createfreeVoigtIndices(const std::array<MatrixIndexPair, size>& f
 /**
  * \brief Helper function to create an array of fixed Voigt indices.
  * \tparam size The size of the fixed pairs array.
- * \param fixed An array of StressIndexPair representing fixed indices.
+ * \param fixed An array of MatrixIndexPair representing fixed indices.
  * \return std::array<size_t, size> The array of fixed Voigt indices.
  */
 template <size_t size>
@@ -54,7 +54,7 @@ consteval auto createFixedVoigtIndices(const std::array<MatrixIndexPair, size>& 
 /**
  * \brief Helper function to count the number of diagonal indices in the fixed pairs array.
  * \tparam size The size of the fixed pairs array.
- * \param fixed An array of StressIndexPair representing fixed indices.
+ * \param fixed An array of MatrixIndexPair representing fixed indices.
  * \return constexpr size_t The number of diagonal indices.
  */
 template <size_t size>

@@ -3,7 +3,7 @@
 
 /**
  * \file vanishingstrain.hh
- * \brief Defines the PlaneStrain material model and related functions.
+ * \brief Defines the VanishingStrain material model and related functions.
  * \ingroup  materials
  */
 
@@ -21,15 +21,16 @@
 namespace Ikarus {
 
 /**
- * \brief PlaneStrain material model that enforces strain components to be zero.
+ * \brief VanishingStrain material model that enforces strain components to be zero.
  * \ingroup materials
+ * \tparam strainIndexPair An array of MatrixIndexPair representing fixed stress components.
  * \tparam MI The underlying material model.
  */
 template <auto strainIndexPair, typename MI>
 struct VanishingStrain : public Material<VanishingStrain<strainIndexPair, MI>>
 {
   /**
-   * \brief Constructor for PlaneStrain.
+   * \brief Constructor for VanishingStrain.
    * \param mat The underlying material model.
    */
   explicit VanishingStrain(MI mat)
@@ -45,8 +46,7 @@ struct VanishingStrain : public Material<VanishingStrain<strainIndexPair, MI>>
     matName += ")";
     return matName;
   }
-  static constexpr auto fixedPairs = strainIndexPair; ///< Array of fixed stress components.
-
+  static constexpr auto fixedPairs        = strainIndexPair;                     ///< Array of fixed stress components.
   static constexpr auto freeVoigtIndices  = createfreeVoigtIndices(fixedPairs);  ///< Free Voigt indices.
   static constexpr auto fixedVoigtIndices = createFixedVoigtIndices(fixedPairs); ///< Fixed Voigt indices.
   static constexpr auto freeStrains       = freeVoigtIndices.size();             ///< Number of free strains.
@@ -59,6 +59,7 @@ struct VanishingStrain : public Material<VanishingStrain<strainIndexPair, MI>>
   static constexpr bool stressAcceptsVoigt = true;                           ///< Stress accepts Voigt notation.
   static constexpr bool moduliToVoigt      = true;                           ///< Moduli to Voigt notation.
   static constexpr bool moduliAcceptsVoigt = true;                           ///< Moduli accepts Voigt notation.
+  static constexpr double derivativeFactor = 1;                              ///< Derivative factor.
 
   /**
    * \brief Computes the stored energy for the PlaneStrain material.
@@ -96,7 +97,7 @@ struct VanishingStrain : public Material<VanishingStrain<strainIndexPair, MI>>
    * \brief Computes the tangent moduli for the PlaneStrain material.
    * \tparam voigt A boolean indicating whether to return tangent moduli in Voigt notation.
    * \tparam Derived The derived type of the input matrix.
-   * \param E The Green-Lagrangian strain.
+   * \param E The strain measure.
    * \return TangentModuli The tangent moduli.
    */
   template <bool voigt, typename Derived>
@@ -124,23 +125,17 @@ private:
   Underlying matImpl_; ///< The underlying material model.
 
   template <typename Derived>
-  requires(strainTag != StrainTags::linear)
   auto reduceStrain(const Eigen::MatrixBase<Derived>& Eraw) const {
-    decltype(auto) E = Impl::maybeFromVoigt(Eraw);
-    // TODO only transform if strain Tag is not greenLagrangian or linear
-    std::remove_cvref_t<decltype(E)> Egl = transformStrain<strainTag, StrainTags::greenLagrangian>(E);
-
-    setStrainsToZero(Egl);
-    return transformStrain<StrainTags::greenLagrangian, strainTag>(Egl).derived();
-  }
-
-  template <typename Derived>
-  requires(strainTag == StrainTags::linear)
-  auto reduceStrain(const Eigen::MatrixBase<Derived>& Eraw) const {
-    Eigen::Matrix3<ScalarType> E = Impl::maybeFromVoigt(Eraw);
-
-    setStrainsToZero(E);
-    return E;
+    if constexpr (strainTag == StrainTags::linear or strainTag == StrainTags::greenLagrangian) {
+      Eigen::Matrix3<ScalarType> E = Impl::maybeFromVoigt(Eraw);
+      setStrainsToZero(E);
+      return E;
+    } else {
+      decltype(auto) E               = Impl::maybeFromVoigt(Eraw);
+      Eigen::Matrix3<ScalarType> Egl = transformStrain<strainTag, StrainTags::greenLagrangian>(E);
+      setStrainsToZero(Egl);
+      return transformStrain<StrainTags::greenLagrangian, strainTag>(Egl).derived();
+    }
   }
 
   inline void setStrainsToZero(auto& E) const {
@@ -153,15 +148,15 @@ private:
 
 /**
  * \brief Factory function to create a PlaneStrain material with specified strain indices.
- * \tparam stressIndexPair The array of StressIndexPair representing fixed strain components.
+ * \tparam matrixIndexPair The array of MatrixIndexPair representing fixed strain components.
  * \tparam MaterialImpl The underlying material model.
  * \param mat The underlying material model.
  * \param p_tol Tolerance for stress reduction.
  * \return VanishingStress The created VanishingStress material.
  */
-template <Impl::MatrixIndexPair... stressIndexPair, typename MaterialImpl>
+template <Impl::MatrixIndexPair... matrixIndexPair, typename MaterialImpl>
 auto makeVanishingStrain(MaterialImpl mat) {
-  return VanishingStrain<std::to_array({stressIndexPair...}), MaterialImpl>(mat);
+  return VanishingStrain<std::to_array({matrixIndexPair...}), MaterialImpl>(mat);
 }
 
 /**

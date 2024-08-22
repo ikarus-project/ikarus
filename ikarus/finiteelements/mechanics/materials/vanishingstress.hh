@@ -21,7 +21,7 @@ namespace Ikarus {
 /**
  * \brief VanishingStress material model that enforces stress components to be zero.
  * \ingroup materials
- * \tparam stressIndexPair An array of StressIndexPair representing fixed stress components.
+ * \tparam stressIndexPair An array of MatrixIndexPair representing fixed stress components.
  * \tparam MI The underlying material model.
  */
 template <auto stressIndexPair, typename MI>
@@ -123,7 +123,6 @@ struct VanishingStress : public Material<VanishingStress<stressIndexPair, MI>>
   }
 
 private:
-
   /**
    * \brief Initializes unknown strains based on fixed indices.
    * \tparam Derived The derived type of the input matrix.
@@ -201,15 +200,15 @@ private:
 
 /**
  * \brief Factory function to create a VanishingStress material with specified stress indices.
- * \tparam stressIndexPair The array of StressIndexPair representing fixed stress components.
+ * \tparam matrixIndexPair The array of MatrixIndexPair representing fixed stress components.
  * \tparam MaterialImpl The underlying material model.
  * \param mat The underlying material model.
  * \param p_tol Tolerance for stress reduction.
  * \return VanishingStress The created VanishingStress material.
  */
-template <Impl::MatrixIndexPair... stressIndexPair, typename MaterialImpl>
+template <Impl::MatrixIndexPair... matrixIndexPair, typename MaterialImpl>
 auto makeVanishingStress(MaterialImpl mat, typename MaterialImpl::ScalarType p_tol = 1e-12) {
-  return VanishingStress<std::to_array({stressIndexPair...}), MaterialImpl>(mat, p_tol);
+  return VanishingStress<std::to_array({matrixIndexPair...}), MaterialImpl>(mat, p_tol);
 }
 
 /**

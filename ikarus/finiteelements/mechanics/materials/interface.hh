@@ -25,7 +25,7 @@ struct Material;
 template <auto stressIndexPair, typename MImpl>
 struct VanishingStress;
 
-template <auto stressIndexPair, typename MImpl>
+template <auto strainIndexPair, typename MImpl>
 struct VanishingStrain;
 #endif
 

@@ -116,20 +116,18 @@ def nonLinearElastic(mat):
     return registerPreElement("NonLinearElasticPre", includes, element_type, mat)
 
 
-def linearElastic(youngs_modulus, nu):
+def linearElastic(mat):
     """
     @brief Creates a linear elastic pre-element.
 
-    @param youngs_modulus: Young's modulus.
-    @param nu: Poisson's ratio.
+    @param mat: The material.
 
     @return: The registered linear elastic pre-element function.
     """
     includes = ["ikarus/finiteelements/mechanics/linearelastic.hh"]
-    element_type = "Ikarus::LinearElasticPre"
-    return registerPreElement(
-        "LinearElasticPre", includes, element_type, youngs_modulus, nu
-    )
+    element_type = f"Ikarus::LinearElasticPre<{mat.cppTypeName}>"
+    includes += mat._includes
+    return registerPreElement("LinearElasticPre", includes, element_type, mat)
 
 
 def truss(youngs_modulus, cross_section):

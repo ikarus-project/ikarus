@@ -63,7 +63,9 @@ def linElasticTest(easBool):
 
     nBLoad = iks.finite_elements.neumannBoundaryLoad(boundaryPatch, neumannLoad)
 
-    linElastic = iks.finite_elements.linearElastic(youngs_modulus=1000, nu=0.2)
+    linMat = iks.materials.LinearElasticity(E=1000, nu=0.2).asPlaneStress()
+
+    linElastic = iks.finite_elements.linearElastic(linMat)
     easF = iks.finite_elements.eas(4)
 
     for e in grid.elements:

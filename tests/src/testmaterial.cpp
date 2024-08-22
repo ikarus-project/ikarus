@@ -112,11 +112,6 @@ auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-13) {
                                                   << moduliV;
   }
 
-  // Vanishing strain implementation is not tested against checkGradient (off by 1.0)
-  if constexpr (traits::isSpecializationNonTypeAndTypes<VanishingStrain, MaterialImpl>::value) {
-    return t;
-  }
-
   auto f  = [&](auto& xv) { return mat.template storedEnergy<strainTag>(xv); };
   auto df = [&](auto& xv) { return (mat.template stresses<strainTag>(xv) * strainDerivativeFactor).eval(); };
 
@@ -230,6 +225,7 @@ auto testPlaneStrainAgainstPlaneStress(const double tol = 1e-10) {
   auto mat2            = MaterialImpl{matPar2};
   auto planeStrainMat2 = planeStrain(mat2);
 
+  // Upper block should be the same for 3D and plane strain
   testUpper(mat2, planeStrainMat2);
 
   return t;
@@ -285,12 +281,12 @@ int main(int argc, char** argv) {
   auto linPlaneStrain = planeStrain(le);
   t.subTest(testMaterialWithStrain<StrainTags::linear>(linPlaneStrain));
 
-  // auto nhRed8 = makeVanishingStrain<Impl::StressIndexPair{1, 1}, Impl::StressIndexPair{2, 2}>(nh);
-  // t.subTest(testMaterial(nhRed8));
+  auto nhRed8 = makeVanishingStrain<Impl::MatrixIndexPair{1, 1}, Impl::MatrixIndexPair{2, 2}>(nh);
+  t.subTest(testMaterial(nhRed8));
 
   t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::linear, LinearElasticity>());
   t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::greenLagrangian, StVenantKirchhoff>());
-  // t.subTest(testPlaneStrinAgainstPlaneStress<StrainTags::rightCauchyGreenTensor, NeoHooke>());
+  // t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::rightCauchyGreenTensor, NeoHooke>());
 
   return t.exit();
 }

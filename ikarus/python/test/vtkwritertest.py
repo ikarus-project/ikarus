@@ -48,7 +48,8 @@ class TestVtkWriter(unittest.TestCase):
         vLoad = finite_elements.volumeLoad2D(vL)
 
         fes = []
-        linElastic = finite_elements.linearElastic(youngs_modulus=1000, nu=0.2)
+        linMat = iks.materials.LinearElasticity(E=1000, nu=0.2).asPlaneStress()
+        linElastic = finite_elements.linearElastic(linMat)
         for e in self.grid.elements:
             fes.append(finite_elements.makeFE(basis, linElastic, vLoad))
             fes[-1].bind(e)
