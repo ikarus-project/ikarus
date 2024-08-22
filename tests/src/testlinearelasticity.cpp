@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
                           Ikarus::AffordanceCollections::elastoStatics, checkGradientFunctor, checkHessianFunctor,
                           checkJacobianFunctor, checkFEByAutoDiffFunctor));
 
- // Plane stress 
+  // Plane stress
   t.subTest(testFEElement(
       firstOrderLagrangePrePower2Basis, "LinearElastic", unDistorted, Dune::ReferenceElements<double, 2>::cube(),
       linearElasticFuncPlaneStress, Ikarus::skills(), Ikarus::AffordanceCollections::elastoStatics,

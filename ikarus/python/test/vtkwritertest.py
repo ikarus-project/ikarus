@@ -137,7 +137,8 @@ class TestVtkWriter(unittest.TestCase):
         lambdaLoad = iks.Scalar(3.0)
 
         fes = []
-        linElastic = finite_elements.linearElastic(youngs_modulus=1000, nu=0.2)
+        linMat = iks.materials.LinearElasticity(E=1000, nu=0.2).asPlaneStress()
+        linElastic = finite_elements.linearElastic(linMat)
         for e in gridUG.elements:
             fes.append(finite_elements.makeFE(basis, linElastic))
             fes[-1].bind(e)

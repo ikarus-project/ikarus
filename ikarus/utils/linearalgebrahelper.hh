@@ -510,7 +510,6 @@ auto staticCondensation(const Eigen::MatrixBase<Derived>& E,
   return (K11 - K12.transpose() * K22.inverse() * K12).eval();
 }
 
-
 template <typename Derived, size_t sizeOfCondensedIndices>
 auto reduceMatrix(const Eigen::MatrixBase<Derived>& E, const std::array<size_t, sizeOfCondensedIndices>& indices) {
   constexpr size_t colsFull = std::remove_cvref_t<Derived>::ColsAtCompileTime;
