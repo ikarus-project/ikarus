@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
   };
   auto linearElasticFuncPlaneStress = [](const Ikarus::YoungsModulusAndPoissonsRatio& parameter) {
     Ikarus::LinearElasticity lin(Ikarus::toLamesFirstParameterAndShearModulus(parameter));
-    auto linPS = Ikarus::planeStress(lin, 1e-12);
+    auto linPS = Ikarus::planeStress(lin);
     return Ikarus::linearElastic(linPS);
   };
   auto linearElasticFuncPlaneStrain = [](const Ikarus::YoungsModulusAndPoissonsRatio& parameter) {
