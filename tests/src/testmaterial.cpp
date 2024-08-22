@@ -193,9 +193,8 @@ auto testPlaneStrainAgainstPlaneStress(const double tol = 1e-10) {
       << " with tol: " << tol;
 
   // If we compare the plain stress material tensor with plain strain material tensor it should be the same for nu = 0
-
-  auto matTangentPlaneStrain = toVoigt(planeStrainMat.template tangentModuliImpl<false>(e));
-  auto matTangentPlaneStress = toVoigt(planeStressMat.template tangentModuliImpl<false>(e));
+  auto matTangentPlaneStrain = planeStrainMat.template tangentModuli<strainTag>(e);
+  auto matTangentPlaneStress = planeStressMat.template tangentModuli<strainTag>(e);
 
   t.check(isApproxSame(matTangentPlaneStrain, matTangentPlaneStress, tol))
       << "Material Tangent for plane strain and plane stress should be the same but are"
@@ -205,8 +204,8 @@ auto testPlaneStrainAgainstPlaneStress(const double tol = 1e-10) {
 
   // Test upper block
   auto testUpper = [&](const auto& mat, const auto& matPS) {
-    auto matTangent            = toVoigt(mat.template tangentModuliImpl<false>(e));
-    auto matTangentPlaneStrain = toVoigt(matPS.template tangentModuliImpl<false>(e));
+    auto matTangent            = mat.template tangentModuli<strainTag>(e);
+    auto matTangentPlaneStrain = matPS.template tangentModuli<strainTag>(e);
 
     auto matTagentUpper    = matTangent.template block<2, 2>(0, 0);
     auto matTangentPSUpper = matTangentPlaneStrain.template block<2, 2>(0, 0);
