@@ -52,7 +52,7 @@ jobs:
 
       - name: Install package from tarball
         run: |
-          CMAKE_FLAGS=$DUNE_CMAKE_FLAGS pip install dist/pyikarus-$version.tar.gz --verbose --upgrade --no-build-isolation
+          CMAKE_FLAGS="-DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++" pip install dist/pyikarus-$version.tar.gz --verbose --upgrade --no-build-isolation
 
       - name: Copy test files to pytests folder
         run: |
