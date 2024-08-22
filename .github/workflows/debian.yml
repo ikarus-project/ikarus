@@ -49,7 +49,7 @@ jobs:
               testRegex: "cpp",
             }
           - {
-            name: "Clang-12-Python",
+            name: "Clang-16-Python",
             config: Release,
             compilerC: clang-16,
             compilerCxx: clang++-16,
