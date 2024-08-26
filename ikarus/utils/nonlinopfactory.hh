@@ -38,31 +38,39 @@ struct NonLinearOperatorFactory
 {
   struct DummyEmpty{};
   template<int index,typename Assembler, typename... Affordances > requires (index<3 and index>=0)
-  static auto function(std::shared_ptr<Assembler> assemblerPtr,AffordanceCollection<Affordances...> affordances, DBCOption dbcOption) {
+  static auto function(std::shared_ptr<Assembler> assemblerPtr,AffordanceCollection<Affordances...> affordancesInput, DBCOption dbcOption) {
         using FERequirement             = typename traits::remove_pointer_t<std::remove_cvref_t<Assembler>>::FERequirement;
     // Since it is not possible to have [[no_unique_address]] with a lambda, we have to use a dummy type, to remove the lambda overhead capturing dbcOption for the scalar function
       struct DummyEmpty{};
+
+            auto affordances = [affordancesInput,&assemblerPtr](){
+        if constexpr (sizeof...(Affordances) == 0)
+          return assemblerPtr->affordanceCollection();
+        else
+          return affordancesInput;
+        }();
 
         struct DummyLambda {
         decltype(auto) operator()(  typename FERequirement::SolutionVectorType& globalSol,
                                                  typename FERequirement::ParameterType& parameter)const {
                                                         FERequirement req;
       req.insertGlobalSolution(globalSol).insertParameter(parameter);
+
       if constexpr(index==0)
-        return assembler->scalar(req, affordances.scalarAffordance());
+        return assembler->scalar(req, affordancesArg.scalarAffordance());
       else if constexpr(index==1)
-        return assembler->vector(req, affordances.vectorAffordance(), dbcOption);
+        return assembler->vector(req, affordancesArg.vectorAffordance(), dbcOption);
       else if constexpr(index==2)
-        return assembler->matrix(req, affordances.matrixAffordance(), dbcOption);
+        return assembler->matrix(req, affordancesArg.matrixAffordance(), dbcOption);
                                                  }
 
         std::shared_ptr<Assembler> assembler;
-         AffordanceCollection<Affordances...> affordances;
+        decltype(affordances) affordancesArg;
                 [[no_unique_address]] std::conditional_t<index==0,DummyEmpty,DBCOption> dbcOption;
     };
     DummyLambda result;
     result.assembler = assemblerPtr;
-    result.affordances = affordances;
+    result.affordancesArg = affordances;
     if constexpr(index!=0)
       result.dbcOption = dbcOption;
 
@@ -78,7 +86,7 @@ struct NonLinearOperatorFactory
     static_assert(funcIndexSize < 4, "The number of function indices you request have to be less than 4");
     static_assert(Dune::filter([](auto i) { return i < 3; },funcIndices).size() == funcIndexSize,
                   "The function indices you request have to be less than 3");
-                  static_assert((sizeof...(funcs)==sizeof...(Affordances)) or funcIndexSize==0,"The number of functions and affordances have to be equal.");
+                  // static_assert((sizeof...(funcs)==sizeof...(Affordances)) or funcIndexSize==0,"The number of functions and affordances have to be equal.");
     using namespace Dune::Indices;
 
     constexpr bool provideScalar =
