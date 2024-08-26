@@ -12,7 +12,7 @@ dune_add_pybind11_module(NAME _ikarus)
 
 set_property(
   TARGET _ikarus
-  PROPERTY LINK_LIBRARIES dunecommon ikarus _io
+  PROPERTY LINK_LIBRARIES dunecommon ikarus 
   APPEND
 )
 
