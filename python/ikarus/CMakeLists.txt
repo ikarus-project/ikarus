@@ -15,6 +15,7 @@ set_property(
   PROPERTY LINK_LIBRARIES dunecommon ikarus 
   APPEND
 )
+add_dependencies(_ikarus _io)
 
 if(SKBUILD)
   install(TARGETS _ikarus LIBRARY DESTINATION python/ikarus)
