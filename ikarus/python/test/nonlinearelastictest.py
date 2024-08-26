@@ -5,6 +5,9 @@ import debug_info
 
 debug_info.setDebugFlags()
 
+from dune.common import FieldVector
+FieldVector([2,2])
+
 import ikarus as iks
 from ikarus import finite_elements, utils, assembler
 import numpy as np
