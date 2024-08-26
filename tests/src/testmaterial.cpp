@@ -189,8 +189,8 @@ auto testPlaneStrainAgainstPlaneStress(const double tol = 1e-10) {
   t.check(isApproxSame(stressPlaneStrain, stressPlaneStress, tol))
       << "Stresses for plane strain and plane stress should be the same but are"
       << "\n"
-      << stressPlaneStrain << "\nand\n " << stressPlaneStress << "\n Diff: " << stressPlaneStrain - stressPlaneStress
-      << " with tol: " << tol;
+      << stressPlaneStrain << "\nand\n " << stressPlaneStress << "\nDiff:\n"
+      << stressPlaneStrain - stressPlaneStress << " with tol: " << tol;
 
   // If we compare the plain stress material tensor with plain strain material tensor it should be the same for nu = 0
   auto matTangentPlaneStrain = planeStrainMat.template tangentModuli<strainTag>(e);
@@ -199,8 +199,9 @@ auto testPlaneStrainAgainstPlaneStress(const double tol = 1e-10) {
   t.check(isApproxSame(matTangentPlaneStrain, matTangentPlaneStress, tol))
       << "Material Tangent for plane strain and plane stress should be the same but are"
       << "\n"
-      << matTangentPlaneStrain << "\nand\n " << matTangentPlaneStress
-      << "\n Diff: " << matTangentPlaneStrain - matTangentPlaneStress << " with tol: " << tol;
+      << matTangentPlaneStrain << "\nand\n"
+      << matTangentPlaneStress << "\n Diff:\n"
+      << matTangentPlaneStrain - matTangentPlaneStress << " with tol: " << tol;
 
   // Test upper block
   auto testUpper = [&](const auto& mat, const auto& matPS) {
@@ -213,8 +214,9 @@ auto testPlaneStrainAgainstPlaneStress(const double tol = 1e-10) {
     t.check(isApproxSame(matTagentUpper, matTangentPSUpper, tol))
         << "Upper part of material tangent for 3d model and plane strain  should be the same but are"
         << "\n"
-        << matTagentUpper << "\nand\n " << matTangentPSUpper << "\n Diff: " << matTagentUpper - matTangentPSUpper
-        << " with tol: " << tol;
+        << matTagentUpper << "\nand\n"
+        << matTangentPSUpper << "\nDiff:\n"
+        << matTagentUpper - matTangentPSUpper << " with tol: " << tol;
   };
 
   testUpper(mat, planeStrainMat);
