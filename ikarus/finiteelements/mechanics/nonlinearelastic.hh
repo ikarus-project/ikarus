@@ -10,8 +10,6 @@
 #pragma once
 
 #if HAVE_DUNE_LOCALFEFUNCTIONS
-  #include <Eigen/Core>
-
   #include <dune/fufem/boundarypatch.hh>
   #include <dune/geometry/quadraturerules.hh>
   #include <dune/geometry/type.hh>
@@ -19,6 +17,8 @@
   #include <dune/localfefunctions/expressions/greenLagrangeStrains.hh>
   #include <dune/localfefunctions/impl/standardLocalFunction.hh>
   #include <dune/localfefunctions/manifolds/realTuple.hh>
+
+  #include <Eigen/Core>
 
   #include <ikarus/finiteelements/febase.hh>
   #include <ikarus/finiteelements/fehelper.hh>

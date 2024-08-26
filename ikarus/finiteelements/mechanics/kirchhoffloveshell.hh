@@ -8,10 +8,11 @@
 
 #pragma once
 
-  #include <Eigen/Core>
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/localfefunctions/cachedlocalBasis/cachedlocalBasis.hh>
 #include <dune/localfefunctions/impl/standardLocalFunction.hh>
+
+#include <Eigen/Core>
 
 #include <ikarus/finiteelements/fehelper.hh>
 #include <ikarus/finiteelements/ferequirements.hh>

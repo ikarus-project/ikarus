@@ -173,16 +173,20 @@ struct AffordanceCollection : public std::tuple<Affordances...>
  *
  * @tparam T Type to check.
  */
-template<typename T>
-struct IsAffordanceCollection : std::false_type {};
+template <typename T>
+struct IsAffordanceCollection : std::false_type
+{
+};
 
 #ifndef DOXYGEN
 
-template<typename... Ts>
-struct IsAffordanceCollection<AffordanceCollection<Ts...>> : std::true_type {};
+template <typename... Ts>
+struct IsAffordanceCollection<AffordanceCollection<Ts...>> : std::true_type
+{
+};
 #endif
 
-template<typename T>
+template <typename T>
 constexpr bool IsAffordanceCollection_v = IsAffordanceCollection<T>::value;
 
 inline constexpr VectorAffordance forces = VectorAffordance::forces;

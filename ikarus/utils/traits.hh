@@ -8,9 +8,9 @@
 
 #pragma once
 #include <functional>
+#include <optional>
 #include <tuple>
 #include <type_traits>
-#include <optional>
 
 namespace std {
 template <class T>
@@ -486,22 +486,25 @@ struct ChangeArgTypeAtPos<std::function<R(Args...)>, Pos, NewType>
 };
 #endif
 
-
 /**
  * @brief Type trait to check if a type is an AffordanceCollection.
  *
  * @tparam T Type to check.
  */
-template<typename T>
-struct IsIntegerSequence : std::false_type {};
+template <typename T>
+struct IsIntegerSequence : std::false_type
+{
+};
 
 #ifndef DOXYGEN
 
-template<typename T, T... t>
-struct IsIntegerSequence<std::integer_sequence<T,t...>> : std::true_type {};
+template <typename T, T... t>
+struct IsIntegerSequence<std::integer_sequence<T, t...>> : std::true_type
+{
+};
 #endif
 
-template<typename T>
+template <typename T>
 constexpr bool IsIntegerSequence_v = IsIntegerSequence<T>::value;
 
 /**
@@ -509,11 +512,15 @@ constexpr bool IsIntegerSequence_v = IsIntegerSequence<T>::value;
  *
  * @tparam T Type to check.
  */
-template<typename T>
-struct isOptionalRefWrapper : std::false_type {};
+template <typename T>
+struct isOptionalRefWrapper : std::false_type
+{
+};
 #ifndef DOXYGEN
-template<typename T>
-struct isOptionalRefWrapper<std::optional<std::reference_wrapper<T>>> : std::true_type {};
+template <typename T>
+struct isOptionalRefWrapper<std::optional<std::reference_wrapper<T>>> : std::true_type
+{
+};
 #endif
 
 /**
@@ -521,8 +528,7 @@ struct isOptionalRefWrapper<std::optional<std::reference_wrapper<T>>> : std::tru
  *
  * @tparam T Type to check.
  */
-template<typename T>
+template <typename T>
 constexpr bool isOptionalRefWrapper_v = isOptionalRefWrapper<T>::value;
-
 
 } // namespace Ikarus::traits
