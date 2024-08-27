@@ -26,7 +26,7 @@ jobs:
     name: ${{ matrix.config.name }}
     runs-on: ubuntu-latest
     container:
-      image: henrij22/ikarus-dev-clang:latest
+      image: ikarusproject/ikarus-dev-clang:latest
       options: --memory-swap="20g" --memory="20g" --cpus="2" --user root
     strategy:
       fail-fast: false
@@ -77,7 +77,7 @@ jobs:
     name: ${{ matrix.config.name }}
     runs-on: ubuntu-latest
     container:
-      image: ikarusproject/ikarus-dev:latest
+      image: ikarusproject/ikarus-dev-gcc:latest
       options: --memory-swap="20g" --memory="20g" --cpus="2" --user root
     strategy:
       fail-fast: false
