@@ -22,94 +22,73 @@ on:
   workflow_dispatch:
 
 env:
-  IKARUS_PYTHON_TEST_BUILD_TYPE: 'Release'
+  IKARUS_PYTHON_TEST_BUILD_TYPE_OVERRIDE: 'Release'
 
 jobs:
-  Build-Clang:
+  Build:
     name: ${{ matrix.config.name }}
     runs-on: ubuntu-latest
-    container:
-      image: ikarusproject/ikarus-dev-clang:latest
-      options: --memory-swap="20g" --memory="20g" --cpus="2" --user root
     strategy:
       fail-fast: false
       matrix:
         config:
           - {
               name: "Clang-16-Debug",
+              container: "ikarusproject/ikarus-dev-clang:latest",
               config: Debug,
               compilerC: clang-16,
               compilerCxx: clang++-16,
               lib: "-stdlib=libc++",
-              testRegex: "cpp_quick",
+              testRegex: "cpp_quick"
             }
           - {
               name: "Clang-16-Release",
+              container: "ikarusproject/ikarus-dev-clang:latest",
               config: Release,
               compilerC: clang-16,
               compilerCxx: clang++-16,
               lib: "-stdlib=libc++",
-              testRegex: "cpp",
+              testRegex: "cpp"
             }
           - {
-            name: "Clang-16-Python",
-            config: Release,
-            compilerC: clang-16,
-            compilerCxx: clang++-16,
-            lib: "-stdlib=libc++",
-            testRegex: "python"
-           }
-    steps:
-      - uses: actions/checkout@v4
-        with:
-         path: 'repo'
-      - name: Build
-        working-directory: ./repo
-        run: |
-          mkdir cmake-build-${{ matrix.config.config }}
-          cd cmake-build-${{ matrix.config.config }}
-          cmake ../  -DCMAKE_BUILD_TYPE=${{ matrix.config.config }} -GNinja -DCMAKE_C_COMPILER=${{ matrix.config.compilerC }} -DCMAKE_CXX_COMPILER=${{ matrix.config.compilerCxx }}
-          cmake --build . --parallel 2 --target ikarus
-          cmake --build . --parallel 2 --target _ikarus
-          cmake --build . --parallel 2 --target build_${{ matrix.config.testRegex }}_tests
-      - name: Tests
-        working-directory: ./repo/cmake-build-${{ matrix.config.config }}
-        run: ctest --output-on-failure --parallel 2 -L ${{ matrix.config.testRegex }}
-
-  Build-Gcc:
-    name: ${{ matrix.config.name }}
-    runs-on: ubuntu-latest
-    container:
-      image: ikarusproject/ikarus-dev-gcc:latest
-      options: --memory-swap="20g" --memory="20g" --cpus="2" --user root
-    strategy:
-      fail-fast: false
-      matrix:
-        config:
+              name: "Clang-16-Python",
+              container: "ikarusproject/ikarus-dev-clang:latest",
+              config: Release,
+              compilerC: clang-16,
+              compilerCxx: clang++-16,
+              lib: "-stdlib=libc++",
+              testRegex: "python"
+            }
           - {
-            name: "Gcc-12-Debug",
-            config: Debug,
-            compilerC: gcc-12,
-            compilerCxx: g++-12,
-            lib: "",
-            testRegex: "cpp_quick"
-          }
+              name: "Gcc-12-Debug",
+              container: "ikarusproject/ikarus-dev-gcc:latest",
+              config: Debug,
+              compilerC: gcc-12,
+              compilerCxx: g++-12,
+              lib: "",
+              testRegex: "cpp_quick"
+            }
           - {
               name: "Gcc-12-Release",
+              container: "ikarusproject/ikarus-dev-gcc:latest",
               config: Release,
               compilerC: gcc-12,
               compilerCxx: g++-12,
               lib: "",
-              testRegex: "cpp",
+              testRegex: "cpp"
             }
           - {
               name: "Gcc-12-Python",
+              container: "ikarusproject/ikarus-dev-gcc:latest",
               config: Release,
               compilerC: gcc-12,
               compilerCxx: g++-12,
               lib: "",
-              testRegex: "python",
+              testRegex: "python"
             }
+    container:
+      image: ${{ matrix.config.container }}
+      options: --memory-swap="20g" --memory="20g" --cpus="2" --user root
     steps:
       - uses: actions/checkout@v4
         with:

@@ -22,7 +22,7 @@ on:
   workflow_dispatch:
 
 env:
-  IKARUS_PYTHON_TEST_BUILD_TYPE: 'Release'
+  IKARUS_PYTHON_TEST_BUILD_TYPE_OVERRIDE: 'Release'
 
 jobs:
   build-n-test:

@@ -13,7 +13,7 @@ def setDebugFlags():
         generator.setFlags("-g ", noChecks=False)
 
     # Check if the environment variable is set
-    build_type = os.environ.get("IKARUS_PYTHON_TEST_BUILD_TYPE")
+    build_type = os.environ.get("IKARUS_PYTHON_TEST_BUILD_TYPE_OVERRIDE")
 
     # Apply flags only if the build type is Debug, or if the variable is not set
     if build_type == "Debug" or build_type is None:
