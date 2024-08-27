@@ -111,6 +111,7 @@ struct AffordanceCollection : public std::tuple<Affordances...>
   requires(sizeof...(Affordances) > 0)
       : Base(affordances...) {}
 
+  static constexpr size_t size = sizeof...(Affordances);
   static constexpr bool hasScalarAffordance = traits::hasType<ScalarAffordance, std::tuple<Affordances...>>::value;
   static constexpr bool hasVectorAffordance = traits::hasType<VectorAffordance, std::tuple<Affordances...>>::value;
   static constexpr bool hasMatrixAffordance = traits::hasType<MatrixAffordance, std::tuple<Affordances...>>::value;

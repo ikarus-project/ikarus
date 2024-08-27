@@ -6,7 +6,7 @@ import debug_info
 debug_info.setDebugFlags()
 
 import ikarus as iks
-from ikarus import finite_elements, utils, assembler
+from ikarus import finite_elements, utils, assembler, solvers
 import numpy as np
 import scipy as sp
 from scipy.optimize import minimize
@@ -86,41 +86,47 @@ if __name__ == "__main__":
 
     assembler = iks.assembler.sparseFlatAssembler(fes, dirichletValues)
 
+    d = np.zeros(assembler.fullDOFsize())
+    feReq = fes[0].createRequirement()
+    lambdaLoad = iks.Scalar(3.0)
+    feReq.insertParameter(lambdaLoad)
+
+    feReq.insertGlobalSolution(d)
+    assembler.bind(feReq)
+    assembler.bind(iks.AffordanceCollection.elastoStatics)
+    assembler.bind(iks.DBCOption.Reduced)
+
     nonLinOp = iks.utils.makeNonLinearOperator(assembler)
 
-    dRed = np.zeros(assembler.reducedSize())
-
-    lambdaLoad = iks.Scalar(3.0)
-
-    feReq = fes[0].createRequirement()
+    solver=iks.solvers.TrustRegion(nonLinOp)
+    solver.setup({"maxIter":100})
 
     def energy(dRedInput):
-        feReq = fes[0].createRequirement()
-        feReq.insertParameter(lambdaLoad)
-        dBig = assembler.createFullVector(dRedInput)
-        feReq.insertGlobalSolution(dBig)
-        feReq.globalSolution()
-        return assembler.scalar(feReq, iks.ScalarAffordance.mechanicalPotentialEnergy)
+        # global d
+        #d = assembler.createFullVector(dRedInput).copy()
+        np.copyto(d, assembler.createFullVector(dRedInput))
+        #feReq.insertGlobalSolution(d)
+        return assembler.scalar()
 
     def gradient(dRedInput):
-        feReq = fes[0].createRequirement()
-        feReq.insertParameter(lambdaLoad)
-        dBig = assembler.createFullVector(dRedInput)
-        feReq.insertGlobalSolution(dBig)
-        return assembler.vector(
-            feReq, iks.VectorAffordance.forces, iks.DBCOption.Reduced
-        )
+        # global d
+        np.copyto(d, assembler.createFullVector(dRedInput))
+        # d = assembler.createFullVector(dRedInput).copy()
+        #feReq.insertGlobalSolution(d)
+        # print(assembler.vector())
+        return assembler.vector()
 
     def hess(dRedInput):
-        feReq = fes[0].createRequirement()
-        feReq.insertParameter(lambdaLoad)
-        dBig = assembler.createFullVector(dRedInput)
-        feReq.insertGlobalSolution(dBig)
-        return assembler.matrix(
-            feReq, iks.MatrixAffordance.stiffness, iks.DBCOption.Reduced
-        ).todense()  # this is slow, but for this test we don't care
+        # global d
+        np.copyto(d, assembler.createFullVector(dRedInput))
+        # d = assembler.createFullVector(dRedInput).copy()
+        #feReq.insertGlobalSolution(d)
+        # print(assembler.matrix())
+        return assembler.matrix().todense()  # this is slow, but for this test we don't care
 
+    dRed = np.zeros(assembler.reducedDOFsize())
     resultd = minimize(energy, x0=dRed, options={"disp": True}, tol=1e-14)
+    assert resultd.success
     resultd2 = minimize(
         energy, x0=dRed, jac=gradient, options={"disp": True}, tol=1e-14
     )

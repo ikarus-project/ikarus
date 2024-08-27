@@ -213,9 +213,6 @@ public:
       : derivatives_{derivativesFunctions.args},
         args_{parameterI.args},
         derivativesEvaluated_(initResults(derivatives_, args_)) {
-    std::cout << "NonLinearOperator(const Impl::Functions<DerivativeArgs...>& derivativesFunctions, const "
-                 "Impl::Parameter<ParameterArgs...>& parameterI)"
-              << std::endl;
   }
 
   /**
@@ -229,9 +226,6 @@ public:
       : derivatives_{derivativesFunctions.args},
         args_{parameterI.args},
         derivativesEvaluated_(initResults(derivatives_, args_)) {
-    std::cout
-        << "NonLinearOperator(const Funcs& derivativesFunctions, const Impl::Parameter<ParameterArgs...>& parameterI)"
-        << std::endl;
   }
 
   /**

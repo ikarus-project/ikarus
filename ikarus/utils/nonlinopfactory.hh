@@ -83,14 +83,10 @@ struct NonLinearOperatorFactory
     if constexpr (index != 0)
       result.dbcOption = dbcOption;
 
+      std::cout<<"result:"<<Dune::className(result)<<std::endl;
+
     return result;
   }
-
-  template <size_t... funcs, typename Assembler, typename... Affordances>
-  static auto op_impl2(Assembler&& as,
-                       typename traits::remove_pointer_t<std::remove_cvref_t<Assembler>>::FERequirement& req,
-                       AffordanceCollection<Affordances...> affordances, DBCOption dbcOption,
-                       std::index_sequence<funcs...> funcIndices = {}) {}
 
   template <typename Assembler, typename... Args>
   static auto op(Assembler&& as, Args&&... args) {
@@ -150,7 +146,12 @@ struct NonLinearOperatorFactory
         std::get<2>(argumentTuple) = std::get<i>(argumentTupleRaw);
       }
     });
-
+    using RT= decltype(std::apply(
+        [&]<typename... Args2>(Args2&&... args2) {
+          return op_impl(std::forward<Assembler>(as), std::forward<Args2>(args2)...);
+        },
+        argumentTuple));
+        std::cout<<"RT:"<<Dune::className<RT>()<<std::endl;
     return std::apply(
         [&]<typename... Args2>(Args2&&... args2) {
           return op_impl(std::forward<Assembler>(as), std::forward<Args2>(args2)...);
@@ -217,8 +218,45 @@ private:
     static_assert(funcs2.size() == provideScalar + provideVector + provideMatrix);
 
     assert(req.populated() && " Before you calls this method you have to pass populated fe requirements");
+
+    auto dummyLambda= [&]<size_t index>(std::integral_constant<size_t,index>) {
+
+      auto lambda = [&](typename FERequirement::SolutionVectorType& globalSol,
+                                typename FERequirement::ParameterType& parameter)  {
+        FERequirement req;
+        req.insertGlobalSolution(globalSol).insertParameter(parameter);
+
+        if constexpr (index == 0)
+          return assemblerPtr->scalar(req, affordances.scalarAffordance());
+        else if constexpr (index == 1)
+          return assemblerPtr->vector(req, affordances.vectorAffordance(), dbcOption);
+        else if constexpr (index == 2)
+          return assemblerPtr->matrix(req, affordances.matrixAffordance(), dbcOption);
+      };
+      return std::function(lambda);
+
+      // std::shared_ptr<Assembler> assembler;
+      // std::remove_reference_t<decltype(affordances)> affordancesArg;
+      // [[no_unique_address]] std::conditional_t<index == 0, DummyEmpty, DBCOption> dbcOption;
+    };
+    // DummyLambda result;
+    // result.assembler      = assemblerPtr;
+    // result.affordancesArg = affordances;
+    // if constexpr (index != 0)
+    //   result.dbcOption = dbcOption;
+
     auto createNonLinearOp = [&]<size_t... funcs3>(std::index_sequence<funcs3...>) {
-      return NonLinearOperator(functions(function<funcs3>(assemblerPtr, affordances, dbcOption)...),
+      // using funcs0 = decltype(functions(function<funcs3>(assemblerPtr, affordances, dbcOption)...));
+      // std::cout<<"funcs0:"<<Dune::className<funcs0>()<<std::endl;
+      // using Pars= decltype(parameter(req.globalSolution(), req.parameter()));
+      // std::cout<<"Pars:"<<Dune::className<Pars>()<<std::endl;
+      // using NLOT = decltype(NonLinearOperator(functions(dummyLambda<funcs3>()...),
+                                              // parameter(req.globalSolution(), req.parameter())));
+                                              // std::cout<<"NLOT:"<<Dune::className<NLOT>()<<std::endl;
+
+
+
+      return NonLinearOperator(functions(dummyLambda(std::integral_constant<size_t,funcs3>{})...),
                                parameter(req.globalSolution(), req.parameter()));
     };
     return createNonLinearOp(funcs2);

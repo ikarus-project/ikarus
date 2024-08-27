@@ -7,7 +7,7 @@ add_subdirectory(solvers)
 add_subdirectory(utils)
 add_subdirectory(io)
 
-add_python_targets(ikarus __init__ dirichlet_values basis generator)
+add_python_targets(ikarus __init__ dirichlet_values basis generator solvers)
 
 dune_add_pybind11_module(
   NAME _ikarus COMPILE_DEFINITIONS

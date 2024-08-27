@@ -21,7 +21,6 @@
 #include <ikarus/linearalgebra/truncatedconjugategradient.hh>
 #include <ikarus/solver/nonlinearsolver/solverinfos.hh>
 #include <ikarus/utils/defaultfunctions.hh>
-#include <ikarus/utils/linearalgebrahelper.hh>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observermessages.hh>
 #include <ikarus/utils/traits.hh>
@@ -53,7 +52,7 @@ enum class PreConditioner
   MACRONAME(Delta_bar, double, std::numeric_limits<double>::infinity(), "Maximum trust region radius.")      \
   MACRONAME(Delta0, double, 10, "Initial trust region radius.")
 
-SOLVERSETTINGS(TRSettings, TRSETTINGS_FIELDS)
+SOLVERSETTINGS(TrustRegionSettings, TRSETTINGS_FIELDS)
 
 /**
  * \struct TrustRegionConfig
@@ -68,7 +67,7 @@ struct TrustRegionConfig
 
   using UpdateFunction = UF;
 
-  TRSettings parameters;
+  TrustRegionSettings parameters;
   static constexpr PreConditioner preConditionerType = preConditioner;
   UF updateFunction;
   template <typename UF2>
@@ -170,7 +169,7 @@ template <typename NLO, PreConditioner preConditioner, typename UF>
 class TrustRegion : public IObservable<NonLinearSolverMessages>
 {
 public:
-  using Settings  = TRSettings;                               ///< Type of the settings for the TrustRegion solver
+  using Settings  = TrustRegionSettings;                               ///< Type of the settings for the TrustRegion solver
   using ValueType = typename NLO::template ParameterValue<0>; ///< Type of the parameter vector of
                                                               ///< the nonlinear operator
   using CorrectionType = typename NLO::template FunctionReturnType<1>; ///< Type of the correction of x += deltaX.

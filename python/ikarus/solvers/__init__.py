@@ -18,12 +18,14 @@ def TrustRegion(nonlinearOperator,PreConditioner="IncompleteCholesky", updateFun
     @return: The registered pre-element function.
     """
     generator = MySimpleGenerator("TrustRegion", "Ikarus::Python")
+    #includes = ["ikarus/solver/nonlinearsolver/trustregion.hh"]
     includes = ["ikarus/python/solvers/registersolver.hh"]
     includes += nonlinearOperator.cppIncludes
     updateFunctionType = f"std::function<void({nonlinearOperator.firstParameterCppTypeName}&,const {nonlinearOperator.derivativeCppTypeName}&)>"
     element_type = (
-        f"Ikarus::TrustRegion<{nonlinearOperator.cppTypeName},{PreConditioner},{updateFunctionType}>"
+        f"Ikarus::TrustRegion<{nonlinearOperator.cppTypeName},Ikarus::PreConditioner::{PreConditioner},{updateFunctionType}>"
     )
+    print("element_type: ", element_type)
 
     moduleName = "TrustRegion" + hashIt(element_type)
     module = generator.load(

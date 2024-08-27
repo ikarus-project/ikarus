@@ -18,6 +18,7 @@
 #include <ikarus/python/finiteelements/material.hh>
 #include <ikarus/python/finiteelements/scalarwrapper.hh>
 #include <ikarus/solver/linearsolver/linearsolver.hh>
+#include <ikarus/utils/defaultfunctions.hh>
 
 /**
  * \brief Registers the ScalarWrapper class template with pybind11, adding various operations and constructors.
@@ -111,4 +112,7 @@ PYBIND11_MODULE(_ikarus, m) {
   Ikarus::Python::registerNeoHooke(materials, nh);
 
   addBindingsToIO();
+
+  pybind11::class_<Ikarus::utils::UpdateDefault> ud(m, "UpdateDefault");
+
 }

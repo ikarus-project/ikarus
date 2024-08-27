@@ -5,7 +5,9 @@
 #include <dune/python/pybind11/functional.h>
 #include <dune/python/pybind11/pybind11.h>
 
-#include <ikarus/python/solvers/registersolver.hh>
+#include <ikarus/solver/nonlinearsolver/trustregion.hh>
+
+
 namespace Ikarus::Python {
 
 /**
@@ -27,29 +29,26 @@ void registerTrustRegion(pybind11::handle scope, pybind11::class_<TR, options...
   cls.def(pybind11::init([](const NonLinearOperator& nonLinearOperator, UpdateFunction updateFunction) {
             return new TR(nonLinearOperator, updateFunction);
           }),
-          py::arg("nonLinearOperator"), py::arg("updateFunction") = Ikarus::utils::UpdateDefault);
+          py::arg("nonLinearOperator"), py::arg("updateFunction") = Ikarus::utils::UpdateDefault{});
 
   cls.def(
       "setup",
-      [](Solver& self, py::dict dict) {
-    TrustRegionSettings set;
-    auto settingsFromDict = [&]<typename To>(std::string from) {
-      if (dict.contains(from))
-        set.key = dict[from].cast<To>();
-    };
-        }
-        settingsFromDict<int>( "verbosity" );
-        settingsFromDict<double>( "maxtime" );
-        settingsFromDict<int>( "minIter" );
-        settingsFromDict<int>( "maxIter" );
-        settingsFromDict<int>( "debug" );
-        settingsFromDict<double>( "grad_tol" );
-        settingsFromDict<double>( "corr_tol" );
-        settingsFromDict<double>( "rho_prime" );
-        settingsFromDict<bool>( "useRand" );
-        settingsFromDict<double>( "rho_reg" );
-        settingsFromDict<double>( "Delta_bar" );
-        settingsFromDict<double>( "Delta0" );
+      [](TR& self, py::dict dict) {
+    TrustRegionSettings settings;
+    settings.populate(dict);
+    self.setup(settings);
+        // settingsFromDict<int>( "verbosity" );
+        // settingsFromDict<double>( "maxtime" );
+        // settingsFromDict<int>( "minIter" );
+        // settingsFromDict<int>( "maxIter" );
+        // settingsFromDict<int>( "debug" );
+        // settingsFromDict<double>( "grad_tol" );
+        // settingsFromDict<double>( "corr_tol" );
+        // settingsFromDict<double>( "rho_prime" );
+        // settingsFromDict<bool>( "useRand" );
+        // settingsFromDict<double>( "rho_reg" );
+        // settingsFromDict<double>( "Delta_bar" );
+        // settingsFromDict<double>( "Delta0" );
 },
       R"(
         This function sets up the solver with settings provided
