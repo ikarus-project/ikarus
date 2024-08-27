@@ -21,6 +21,9 @@ on:
       - "**.md"
   workflow_dispatch:
 
+env:
+  IKARUS_PYTHON_TEST_BUILD_TYPE: 'Release'
+
 jobs:
   build-n-test:
     runs-on: ubuntu-latest
