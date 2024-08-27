@@ -17,36 +17,36 @@
 #include <ikarus/finiteelements/mechanics/materials.hh>
 #include <ikarus/utils/concepts.hh>
 
-#define MAKE_MaterialFunction(clsName, materialName, functionname, vecSize)                                            \
-  clsName.def(                                                                                                         \
-      #functionname,                                                                                                   \
-      [](materialName& self, const std::string& straintag, Eigen::Ref<const Eigen::Vector<double, vecSize>> eVoigt_) { \
-        if constexpr (not Concepts::IsMaterial<LinearElasticityT, materialName>) {                                     \
-          Eigen::Vector<double, vecSize> eVoigt = eVoigt_;                                                             \
-          if (straintag == toString(StrainTags::rightCauchyGreenTensor))                                               \
-            return self.template functionname<StrainTags::rightCauchyGreenTensor>(eVoigt);                             \
-          else if (straintag == toString(StrainTags::greenLagrangian))                                                 \
-            return self.template functionname<StrainTags::greenLagrangian>(eVoigt);                                    \
-          else if (straintag == toString(StrainTags::linear))                                                          \
-            DUNE_THROW(Dune::MathError, "Passing linear strain to " + std::string(#materialName) +                     \
-                                            " does not makes sense use LinearElastic class");                          \
-          else if (straintag == toString(StrainTags::displacementGradient))                                            \
-            DUNE_THROW(Dune::MathError,                                                                                \
-                       "Passing displacementGradient strain in 6d Voigt notation does not make any sense!");           \
-          else if (straintag == toString(StrainTags::deformationGradient))                                             \
-            DUNE_THROW(Dune::MathError,                                                                                \
-                       "Passing deformationGradient strain in 6d Voigt notation does not make any sense!");            \
-          else                                                                                                         \
-            DUNE_THROW(Dune::MathError, straintag + "is not a valid strain tag.");                                     \
-        } else {                                                                                                       \
-          Eigen::Vector<double, vecSize> eVoigt = eVoigt_; /* Linear elastic path */                                   \
-          if (straintag == toString(StrainTags::linear))                                                               \
-            return self.template functionname<StrainTags::linear>(eVoigt);                                             \
-          else                                                                                                         \
-            DUNE_THROW(Dune::MathError, "Linear elastic material only accepts linear strains!");                       \
-        }                                                                                                              \
-        __builtin_unreachable();                                                                                       \
-      },                                                                                                               \
+#define MAKE_MaterialFunction(clsName, materialName, functionname, vecSize)                                    \
+  clsName.def(                                                                                                 \
+      #functionname,                                                                                           \
+      [](materialName& self, StrainTags straintag, Eigen::Ref<const Eigen::Vector<double, vecSize>> eVoigt_) { \
+        if constexpr (not Concepts::IsMaterial<LinearElasticityT, materialName>) {                             \
+          Eigen::Vector<double, vecSize> eVoigt = eVoigt_;                                                     \
+          if (straintag == StrainTags::rightCauchyGreenTensor)                                                 \
+            return self.template functionname<StrainTags::rightCauchyGreenTensor>(eVoigt);                     \
+          else if (straintag == StrainTags::greenLagrangian)                                                   \
+            return self.template functionname<StrainTags::greenLagrangian>(eVoigt);                            \
+          else if (straintag == StrainTags::linear)                                                            \
+            DUNE_THROW(Dune::MathError, "Passing linear strain to " + std::string(#materialName) +             \
+                                            " does not makes sense use LinearElastic class");                  \
+          else if (straintag == StrainTags::displacementGradient)                                              \
+            DUNE_THROW(Dune::MathError,                                                                        \
+                       "Passing displacementGradient strain in 6d Voigt notation does not make any sense!");   \
+          else if (straintag == StrainTags::deformationGradient)                                               \
+            DUNE_THROW(Dune::MathError,                                                                        \
+                       "Passing deformationGradient strain in 6d Voigt notation does not make any sense!");    \
+          else                                                                                                 \
+            DUNE_THROW(Dune::MathError, toString(straintag) + "is not a valid strain tag.");                   \
+        } else {                                                                                               \
+          Eigen::Vector<double, vecSize> eVoigt = eVoigt_; /* Linear elastic path */                           \
+          if (straintag == StrainTags::linear)                                                                 \
+            return self.template functionname<StrainTags::linear>(eVoigt);                                     \
+          else                                                                                                 \
+            DUNE_THROW(Dune::MathError, "Linear elastic material only accepts linear strains!");               \
+        }                                                                                                      \
+        __builtin_unreachable();                                                                               \
+      },                                                                                                       \
       "StrainName"_a, "strainVector"_a);
 
 namespace Ikarus::Python {

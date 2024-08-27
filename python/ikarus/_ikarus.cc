@@ -15,6 +15,7 @@
 #include <ikarus/assembler/dirichletbcenforcement.hh>
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/finiteelements/mechanics/materials.hh>
+#include <ikarus/finiteelements/mechanics/materials/tags.hh>
 #include <ikarus/python/finiteelements/material.hh>
 #include <ikarus/python/finiteelements/scalarwrapper.hh>
 #include <ikarus/solver/linearsolver/linearsolver.hh>
@@ -100,6 +101,10 @@ PYBIND11_MODULE(_ikarus, m) {
                                                         "ScalarWrapper<std::reference_wrapper<double>>");
 
   auto materials = m.def_submodule("materials", "This is the submodule for materials in Ikarus");
+
+  ENUM_BINDINGS_WITH_MODULE(StrainTags, materials);
+  ENUM_BINDINGS_WITH_MODULE(StressTags, materials);
+  ENUM_BINDINGS_WITH_MODULE(TangentModuliTags, materials);
 
   pybind11::class_<LinearElasticity> linElastic(materials, "LinearElasticity");
   Ikarus::Python::registerLinearElasticity(materials, linElastic);

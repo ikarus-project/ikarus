@@ -6,6 +6,8 @@ import debug_info
 debug_info.setDebugFlags()
 
 import ikarus as iks
+from ikarus import materials
+
 import numpy as np
 import math
 
@@ -24,23 +26,23 @@ def checkSizes(A, expected_rows, expected_cols):
 
 def checkMaterial(mat, strain, nonlinear=True, size=6):
     if nonlinear:
-        mat.storedEnergy("greenLagrangian", strain)
-        mat.storedEnergy("rightCauchyGreenTensor", strain)
-        S = mat.stresses("greenLagrangian", strain)
+        mat.storedEnergy(materials.StrainTags.greenLagrangian, strain)
+        mat.storedEnergy(materials.StrainTags.rightCauchyGreenTensor, strain)
+        S = mat.stresses(materials.StrainTags.greenLagrangian, strain)
         checkSizes(S, size, 1)
-        S = mat.stresses("rightCauchyGreenTensor", strain)
+        S = mat.stresses(materials.StrainTags.rightCauchyGreenTensor, strain)
         checkSizes(S, size, 1)
-        C = mat.tangentModuli("greenLagrangian", strain)
+        C = mat.tangentModuli(materials.StrainTags.greenLagrangian, strain)
         checkSizes(C, size, size)
-        C = mat.tangentModuli("rightCauchyGreenTensor", strain)
+        C = mat.tangentModuli(materials.StrainTags.rightCauchyGreenTensor, strain)
         checkSizes(C, size, size)
-        C = mat.tangentModuli("greenLagrangian", strain)
+        C = mat.tangentModuli(materials.StrainTags.greenLagrangian, strain)
         checkSizes(C, size, size)
     else:
-        mat.storedEnergy("linear", strain)
-        S = mat.stresses("linear", strain)
+        mat.storedEnergy(materials.StrainTags.linear, strain)
+        S = mat.stresses(materials.StrainTags.linear, strain)
         checkSizes(S, size, 1)
-        C = mat.tangentModuli("linear", strain)
+        C = mat.tangentModuli(materials.StrainTags.linear, strain)
         checkSizes(C, size, size)
 
     try:
@@ -50,13 +52,13 @@ def checkMaterial(mat, strain, nonlinear=True, size=6):
         pass
 
     try:
-        mat.stresses("displacementGradient", strain)
+        mat.stresses(materials.StrainTags.displacementGradient, strain)
         assert False
     except RuntimeError:
         pass
 
     try:
-        mat.stresses("deformationGradient", strain)
+        mat.stresses(materials.StrainTags.deformationGradient, strain)
         assert False
     except RuntimeError:
         pass
@@ -68,7 +70,12 @@ def check2DReducedFullEquality(material, strainName, strain):
         [
             strain[0],
             strain[1],
-            0 if strainName == "linear" or strainName == "greenLagrangian" else 1,
+            (
+                0
+                if strainName == materials.StrainTags.linear
+                or strainName == materials.StrainTags.greenLagrangian
+                else 1
+            ),
             0,
             0,
             strain[2],
@@ -94,7 +101,12 @@ def checkShellStressReducedFullEquality(material, strainName, strain):
         [
             strain[0],
             strain[1],
-            0 if strainName == "linear" or strainName == "greenLagrangian" else 1,
+            (
+                0
+                if strainName == materials.StrainTags.linear
+                or strainName == materials.StrainTags.greenLagrangian
+                else 1
+            ),
             strain[2],
             strain[3],
             strain[4],
@@ -119,8 +131,18 @@ def checkBeamStressReducedFullEquality(material, strainName, strain):
     strainFull = np.array(
         [
             strain[0],
-            0 if strainName == "linear" or strainName == "greenLagrangian" else 1,
-            0 if strainName == "linear" or strainName == "greenLagrangian" else 1,
+            (
+                0
+                if strainName == materials.StrainTags.linear
+                or strainName == materials.StrainTags.greenLagrangian
+                else 1
+            ),
+            (
+                0
+                if strainName == materials.StrainTags.linear
+                or strainName == materials.StrainTags.greenLagrangian
+                else 1
+            ),
             strain[1],
             strain[2],
             strain[3],
@@ -166,24 +188,40 @@ def checkWithStrain(strain):
         checkMaterial(nh.asPlaneStress(), strain, True, 3)
         checkMaterial(svk.asPlaneStress(), strain, True, 3)
 
-        check2DReducedFullEquality(nh.asPlaneStress(), "rightCauchyGreenTensor", strain)
-        check2DReducedFullEquality(nh.asPlaneStrain(), "rightCauchyGreenTensor", strain)
         check2DReducedFullEquality(
-            svk.asPlaneStress(), "rightCauchyGreenTensor", strain
+            nh.asPlaneStress(), materials.StrainTags.rightCauchyGreenTensor, strain
         )
         check2DReducedFullEquality(
-            svk.asPlaneStrain(), "rightCauchyGreenTensor", strain
+            nh.asPlaneStrain(), materials.StrainTags.rightCauchyGreenTensor, strain
+        )
+        check2DReducedFullEquality(
+            svk.asPlaneStress(), materials.StrainTags.rightCauchyGreenTensor, strain
+        )
+        check2DReducedFullEquality(
+            svk.asPlaneStrain(), materials.StrainTags.rightCauchyGreenTensor, strain
         )
 
         strain[0] = strain[0] - 1
         strain[1] = strain[1] - 1
-        check2DReducedFullEquality(lin.asPlaneStress(), "linear", strain)
-        check2DReducedFullEquality(lin.asPlaneStrain(), "linear", strain)
+        check2DReducedFullEquality(
+            lin.asPlaneStress(), materials.StrainTags.linear, strain
+        )
+        check2DReducedFullEquality(
+            lin.asPlaneStrain(), materials.StrainTags.linear, strain
+        )
 
-        check2DReducedFullEquality(nh.asPlaneStress(), "greenLagrangian", strain)
-        check2DReducedFullEquality(nh.asPlaneStrain(), "greenLagrangian", strain)
-        check2DReducedFullEquality(svk.asPlaneStress(), "greenLagrangian", strain)
-        check2DReducedFullEquality(svk.asPlaneStrain(), "greenLagrangian", strain)
+        check2DReducedFullEquality(
+            nh.asPlaneStress(), materials.StrainTags.greenLagrangian, strain
+        )
+        check2DReducedFullEquality(
+            nh.asPlaneStrain(), materials.StrainTags.greenLagrangian, strain
+        )
+        check2DReducedFullEquality(
+            svk.asPlaneStress(), materials.StrainTags.greenLagrangian, strain
+        )
+        check2DReducedFullEquality(
+            svk.asPlaneStrain(), materials.StrainTags.greenLagrangian, strain
+        )
 
     elif len(strain) == 5:
         checkMaterial(lin.asShellMaterial(), strain, False, 5)
@@ -191,20 +229,22 @@ def checkWithStrain(strain):
         checkMaterial(svk.asShellMaterial(), strain, True, 5)
 
         checkShellStressReducedFullEquality(
-            nh.asShellMaterial(), "rightCauchyGreenTensor", strain
+            nh.asShellMaterial(), materials.StrainTags.rightCauchyGreenTensor, strain
         )
         checkShellStressReducedFullEquality(
-            svk.asShellMaterial(), "rightCauchyGreenTensor", strain
+            svk.asShellMaterial(), materials.StrainTags.rightCauchyGreenTensor, strain
         )
 
         strain[0] = strain[0] - 1
         strain[1] = strain[1] - 1
-        checkShellStressReducedFullEquality(lin.asShellMaterial(), "linear", strain)
         checkShellStressReducedFullEquality(
-            nh.asShellMaterial(), "greenLagrangian", strain
+            lin.asShellMaterial(), materials.StrainTags.linear, strain
         )
         checkShellStressReducedFullEquality(
-            svk.asShellMaterial(), "greenLagrangian", strain
+            nh.asShellMaterial(), materials.StrainTags.greenLagrangian, strain
+        )
+        checkShellStressReducedFullEquality(
+            svk.asShellMaterial(), materials.StrainTags.greenLagrangian, strain
         )
 
     elif len(strain) == 4:
@@ -213,19 +253,21 @@ def checkWithStrain(strain):
         checkMaterial(svk.asBeamMaterial(), strain, True, 4)
 
         checkBeamStressReducedFullEquality(
-            nh.asBeamMaterial(), "rightCauchyGreenTensor", strain
+            nh.asBeamMaterial(), materials.StrainTags.rightCauchyGreenTensor, strain
         )
         checkBeamStressReducedFullEquality(
-            svk.asBeamMaterial(), "rightCauchyGreenTensor", strain
+            svk.asBeamMaterial(), materials.StrainTags.rightCauchyGreenTensor, strain
         )
 
         strain[0] = strain[0] - 1
-        checkBeamStressReducedFullEquality(lin.asBeamMaterial(), "linear", strain)
         checkBeamStressReducedFullEquality(
-            nh.asBeamMaterial(), "greenLagrangian", strain
+            lin.asBeamMaterial(), materials.StrainTags.linear, strain
         )
         checkBeamStressReducedFullEquality(
-            svk.asBeamMaterial(), "greenLagrangian", strain
+            nh.asBeamMaterial(), materials.StrainTags.greenLagrangian, strain
+        )
+        checkBeamStressReducedFullEquality(
+            svk.asBeamMaterial(), materials.StrainTags.greenLagrangian, strain
         )
 
 
