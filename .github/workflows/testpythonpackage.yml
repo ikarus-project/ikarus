@@ -29,7 +29,7 @@ jobs:
       options: --memory-swap="20g" --memory="20g" --cpus="2" --user root
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Activate Dune environment
         run: |

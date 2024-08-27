@@ -50,7 +50,7 @@ jobs:
           llvm-cov-16 gcov $(find ./cmake-build-debug-coverage -not -path "*dune-env/*" -type f -name "*.gcno" | sed  's/gcno//g')
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: tests
