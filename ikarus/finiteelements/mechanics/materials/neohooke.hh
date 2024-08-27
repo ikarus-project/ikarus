@@ -35,19 +35,11 @@ namespace Ikarus {
 template <typename ST>
 struct NeoHookeT : public Material<NeoHookeT<ST>>
 {
-  [[nodiscard]] constexpr static std::string nameImpl() noexcept { return "NeoHooke"; }
-
-  /**
-   * \brief Constructor for NeoHookeT.
-   * \param mpt The Lame's parameters (first parameter and shear modulus).
-   */
-  explicit NeoHookeT(const LamesFirstParameterAndShearModulus& mpt)
-      : lambdaAndmu_{mpt} {}
-
   using ScalarType                    = ST;
   static constexpr int worldDimension = 3;
   using StrainMatrix                  = Eigen::Matrix<ScalarType, worldDimension, worldDimension>;
   using StressMatrix                  = StrainMatrix;
+  using MaterialParameters            = LamesFirstParameterAndShearModulus;
 
   static constexpr auto strainTag          = StrainTags::rightCauchyGreenTensor;
   static constexpr auto stressTag          = StressTags::PK2;
@@ -58,6 +50,20 @@ struct NeoHookeT : public Material<NeoHookeT<ST>>
   static constexpr bool moduliToVoigt      = false;
   static constexpr bool moduliAcceptsVoigt = false;
   static constexpr double derivativeFactor = 2;
+
+  [[nodiscard]] constexpr static std::string nameImpl() noexcept { return "NeoHooke"; }
+
+  /**
+   * \brief Constructor for NeoHookeT.
+   * \param mpt The Lame's parameters (first parameter and shear modulus).
+   */
+  explicit NeoHookeT(const MaterialParameters& mpt)
+      : lambdaAndmu_{mpt} {}
+
+  /**
+   * \brief Returns the material parameters stored in the material
+   */
+  MaterialParameters materialParametersImpl() const { return lambdaAndmu_; }
 
   /**
    * \brief Computes the stored energy in the Neo-Hookean material model.
@@ -134,7 +140,7 @@ struct NeoHookeT : public Material<NeoHookeT<ST>>
   }
 
 private:
-  LamesFirstParameterAndShearModulus lambdaAndmu_;
+  MaterialParameters lambdaAndmu_;
 };
 
 /**

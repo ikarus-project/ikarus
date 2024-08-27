@@ -108,6 +108,12 @@ struct Material
   [[nodiscard]] constexpr static std::string name() { return MI::nameImpl(); }
 
   /**
+   * \brief Returns the material parameters stored in the implemented material.
+   * \return Material parameter.
+   */
+  [[nodiscard]] auto materialParameters() const { return impl().materialParametersImpl(); }
+
+  /**
    * \brief Return the stored potential energy of the material.
    *
    *\details This function return the free Helmholtz energy of the material

@@ -29,23 +29,10 @@ namespace Ikarus {
 template <auto strainIndexPair, typename MI>
 struct VanishingStrain : public Material<VanishingStrain<strainIndexPair, MI>>
 {
-  /**
-   * \brief Constructor for VanishingStrain.
-   * \param mat The underlying material model.
-   */
-  explicit VanishingStrain(MI mat)
-      : matImpl_{mat} {}
+  using Underlying         = MI;                              ///< The underlying material type.
+  using ScalarType         = typename Underlying::ScalarType; ///< Scalar type.
+  using MaterialParameters = typename Underlying::MaterialParameters;
 
-  using Underlying = MI;                              ///< The underlying material type.
-  using ScalarType = typename Underlying::ScalarType; ///< Scalar type.
-
-  [[nodiscard]] constexpr static std::string nameImpl() noexcept {
-    auto matName = MI::name() + "_VanishingStrain(";
-    for (auto p : fixedPairs)
-      matName += "(" + std::to_string(p.row) + std::to_string(p.col) + ")";
-    matName += ")";
-    return matName;
-  }
   static constexpr auto fixedPairs        = strainIndexPair;                     ///< Array of fixed stress components.
   static constexpr auto freeVoigtIndices  = createfreeVoigtIndices(fixedPairs);  ///< Free Voigt indices.
   static constexpr auto fixedVoigtIndices = createFixedVoigtIndices(fixedPairs); ///< Fixed Voigt indices.
@@ -60,6 +47,26 @@ struct VanishingStrain : public Material<VanishingStrain<strainIndexPair, MI>>
   static constexpr bool moduliToVoigt      = true;                           ///< Moduli to Voigt notation.
   static constexpr bool moduliAcceptsVoigt = true;                           ///< Moduli accepts Voigt notation.
   static constexpr double derivativeFactor = 1;                              ///< Derivative factor.
+
+  /**
+   * \brief Constructor for VanishingStrain.
+   * \param mat The underlying material model.
+   */
+  explicit VanishingStrain(MI mat)
+      : matImpl_{mat} {}
+
+  [[nodiscard]] constexpr static std::string nameImpl() noexcept {
+    auto matName = MI::name() + "_VanishingStrain(";
+    for (auto p : fixedPairs)
+      matName += "(" + std::to_string(p.row) + std::to_string(p.col) + ")";
+    matName += ")";
+    return matName;
+  }
+
+  /**
+   * \brief Returns the material parameters stored in the material
+   */
+  MaterialParameters materialParametersImpl() const { return matImpl_.materialParametersImpl(); }
 
   /**
    * \brief Computes the stored energy for the PlaneStrain material.

@@ -27,16 +27,8 @@ namespace Ikarus {
 template <auto stressIndexPair, typename MI>
 struct VanishingStress : public Material<VanishingStress<stressIndexPair, MI>>
 {
-  /**
-   * \brief Constructor for VanishingStress.
-   * \param mat The underlying material model.
-   * \param tol Tolerance for stress reduction.
-   */
-  explicit VanishingStress(MI mat, typename MI::ScalarType tol = 1e-12)
-      : matImpl_{mat},
-        tol_{tol} {}
-
-  using Underlying = MI; ///< The underlying material type.
+  using Underlying         = MI; ///< The underlying material type.
+  using MaterialParameters = typename Underlying::MaterialParameters;
 
   static constexpr auto fixedPairs        = stressIndexPair;                     ///< Array of fixed stress components.
   static constexpr auto freeVoigtIndices  = createfreeVoigtIndices(fixedPairs);  ///< Free Voigt indices.
@@ -45,14 +37,6 @@ struct VanishingStress : public Material<VanishingStress<stressIndexPair, MI>>
       countDiagonalIndices(fixedPairs);                                ///< Number of fixed diagonal indices.
   static constexpr auto freeStrains = freeVoigtIndices.size();         ///< Number of free strains.
   using ScalarType                  = typename Underlying::ScalarType; ///< Scalar type.
-
-  [[nodiscard]] constexpr static std::string nameImpl() noexcept {
-    auto matName = MI::name() + "_VanishingStress(";
-    for (auto p : fixedPairs)
-      matName += "(" + std::to_string(p.row) + std::to_string(p.col) + ")";
-    matName += ")";
-    return matName;
-  }
 
   static constexpr auto strainTag          = Underlying::strainTag;          ///< Strain tag.
   static constexpr auto stressTag          = Underlying::stressTag;          ///< Stress tag.
@@ -63,6 +47,28 @@ struct VanishingStress : public Material<VanishingStress<stressIndexPair, MI>>
   static constexpr bool moduliToVoigt      = true;                           ///< Moduli to Voigt notation.
   static constexpr bool moduliAcceptsVoigt = true;                           ///< Moduli accepts Voigt notation.
   static constexpr double derivativeFactor = 1;                              ///< Derivative factor.
+
+  /**
+   * \brief Constructor for VanishingStress.
+   * \param mat The underlying material model.
+   * \param tol Tolerance for stress reduction.
+   */
+  explicit VanishingStress(MI mat, typename MI::ScalarType tol = 1e-12)
+      : matImpl_{mat},
+        tol_{tol} {}
+
+  [[nodiscard]] constexpr static std::string nameImpl() noexcept {
+    auto matName = MI::name() + "_VanishingStress(";
+    for (auto p : fixedPairs)
+      matName += "(" + std::to_string(p.row) + std::to_string(p.col) + ")";
+    matName += ")";
+    return matName;
+  }
+
+  /**
+   * \brief Returns the material parameters stored in the material
+   */
+  MaterialParameters materialParametersImpl() const { return matImpl_.materialParametersImpl(); }
 
   /**
    * \brief Computes the stored energy for the VanishingStress material.

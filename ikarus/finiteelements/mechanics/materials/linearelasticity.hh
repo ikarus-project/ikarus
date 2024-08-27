@@ -34,23 +34,14 @@ namespace Ikarus {
 template <typename ST>
 struct LinearElasticityT : Material<LinearElasticityT<ST>>
 {
-  [[nodiscard]] constexpr static std::string nameImpl() noexcept { return "LinearElasticity"; }
-
   using ScalarType = ST;
   using Base       = StVenantKirchhoffT<ScalarType>;
-
-  /**
-   * \brief Constructor for LinearElasticityT.
-   *
-   * \param mpt The LamesFirstParameterAndShearModulus object.
-   */
-  explicit LinearElasticityT(const LamesFirstParameterAndShearModulus& mpt)
-      : svk_{mpt} {}
 
   using field_type                    = ScalarType;
   static constexpr int worldDimension = 3;
   using StrainMatrix                  = Eigen::Matrix<ScalarType, worldDimension, worldDimension>;
   using StressMatrix                  = StrainMatrix;
+  using MaterialParameters            = typename Base::MaterialParameters;
 
   static constexpr auto strainTag          = StrainTags::linear;
   static constexpr auto stressTag          = StressTags::linear;
@@ -60,13 +51,23 @@ struct LinearElasticityT : Material<LinearElasticityT<ST>>
   static constexpr bool stressAcceptsVoigt = Base::stressAcceptsVoigt;
   static constexpr bool moduliToVoigt      = Base::moduliToVoigt;
   static constexpr bool moduliAcceptsVoigt = Base::moduliAcceptsVoigt;
-
-  // This factor denotes the differences between the returned stresses and moduli
-  // and the passed strain. For neoHooke the inserted quantity is C, the right Cauchy-Green tensor.
-  // The function relation between the energy and the stresses is S = 2*\partial \psi(C)/ \partial C.
-  // This factor is a pre-factor, which is the difference to the actual derivative is written here.
   static constexpr double derivativeFactor = 1;
 
+  [[nodiscard]] constexpr static std::string nameImpl() noexcept { return "LinearElasticity"; }
+
+  /**
+   * \brief Constructor for LinearElasticityT.
+   *
+   * \param mpt The LamesFirstParameterAndShearModulus object.
+   */
+  explicit LinearElasticityT(const MaterialParameters& mpt)
+      : svk_{mpt} {}
+
+  /**
+   * \brief Returns the material parameters stored in the material
+   */
+  MaterialParameters materialParametersImpl() const { return svk_.materialParametersImpl(); }
+  
   /**
    * \brief Calculates the stored energy in the material.
    *

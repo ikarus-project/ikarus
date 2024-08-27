@@ -22,14 +22,16 @@ int main(int argc, char** argv) {
 
   StVenantKirchhoff matSVK1(matParameter1);
   StVenantKirchhoff matSVK2(matParameter2);
-  auto reducedMat = planeStress(matSVK2, 1e-8);
+  auto planeStressMat = planeStress(matSVK2, 1e-8);
+  auto planeStrainMat = planeStrain(matSVK1);
 
   t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Alu>(matSVK1));
   t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Yasp>(matSVK1));
   t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::IgaSurfaceIn2D>(matSVK1));
-  t.subTest(GreenLagrangeStrainTest<2>(reducedMat));
+  t.subTest(GreenLagrangeStrainTest<2>(planeStressMat));
+  t.subTest(GreenLagrangeStrainTest<2>(planeStrainMat));
   t.subTest(GreenLagrangeStrainTest<3>(matSVK2));
-  t.subTest(SingleElementTest(reducedMat));
+  t.subTest(SingleElementTest(planeStressMat));
 
   auto vL = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
     Eigen::Vector<typename VectorType::field_type, VectorType::dimension> fExt;
@@ -53,7 +55,7 @@ int main(int argc, char** argv) {
     BoundaryPatch neumannBoundary(gridView, neumannVertices);
     t.subTest(checkFESByAutoDiff(
         gridView, power<2>(lagrange<1>()),
-        skills(Ikarus::nonLinearElastic(reducedMat), volumeLoad<2>(vL), neumannBoundaryLoad(&neumannBoundary, nBL)),
+        skills(Ikarus::nonLinearElastic(planeStressMat), volumeLoad<2>(vL), neumannBoundaryLoad(&neumannBoundary, nBL)),
         Ikarus::AffordanceCollections::elastoStatics));
   }
 
