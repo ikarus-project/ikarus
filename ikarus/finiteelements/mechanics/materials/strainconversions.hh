@@ -83,7 +83,7 @@ decltype(auto) createDeformationGradient(const Eigen::MatrixBase<Derived>& eMB) 
   else if constexpr (tag == StrainTags::displacementGradient)
     return (e + Derived::Identity()).eval();
   else if constexpr (tag == StrainTags::rightCauchyGreenTensor) {
-    return (e.sqrt()).eval(); // this looses information, since the rotation information from an original F is lost!
+    return (e.sqrt()).eval(); // this looses information, since the rotation information from the original F is lost!
   }
 }
 
@@ -125,7 +125,7 @@ decltype(auto) createRightCauchyGreen(const Eigen::MatrixBase<Derived>& eMB) {
  * \tparam from Type of the source strain tag.
  * \tparam to Type of the target strain tag.
  * \tparam Derived Type of the Eigen matrix.
- * \param eRaw Eigen matrix representing the input strain.
+ * \param eRaw Eigen matrix representing the input strain (can be in Voigt notation).
  * \return The transformed strain matrix.
  */
 template <StrainTags from, StrainTags to, typename Derived>
