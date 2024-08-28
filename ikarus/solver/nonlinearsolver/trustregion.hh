@@ -234,7 +234,7 @@ public:
     xOld_           = x;
     stats_.gradNorm = norm(gradient());
     if constexpr (not std::is_same_v<SolutionType, NoPredictor>)
-      updateFunction(x, dxPredictor);
+      updateFunction_(x, dxPredictor);
     truncatedConjugateGradient_.analyzePattern(hessian());
 
     innerInfo_.Delta = settings_.Delta0;
@@ -448,7 +448,7 @@ private:
       logFinalState();
       spdlog::info("CONVERGENCE:  Energy: {:1.16e}    norm(correction): {:1.16e}", nonLinearOperator().value(),
                    stats_.etaNorm);
-      stream << "Displacement norm tolerance reached;  = " << settings_.corr_tol << "." << std::endl;
+      stream << "Displacement norm tolerance reached  = " << settings_.corr_tol << "." << std::endl;
 
       info_.reasonString = stream.str();
       info_.stop         = StopReason::correctionNormTolReached;

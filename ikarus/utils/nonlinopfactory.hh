@@ -221,7 +221,7 @@ private:
 
     auto dummyLambda= [&]<size_t index>(std::integral_constant<size_t,index>) {
 
-      auto lambda = [&](typename FERequirement::SolutionVectorType& globalSol,
+      auto lambda = [assemblerPtr,&req,affordances,dbcOption](typename FERequirement::SolutionVectorType& globalSol,
                                 typename FERequirement::ParameterType& parameter)  {
         FERequirement req;
         req.insertGlobalSolution(globalSol).insertParameter(parameter);

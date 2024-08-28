@@ -32,4 +32,7 @@ def TrustRegion(nonlinearOperator,PreConditioner="IncompleteCholesky", updateFun
         includes=includes, typeName=element_type, moduleName=moduleName
     )
 
-    return module.TrustRegion(nonlinearOperator, updateFunction)
+    if updateFunction is None:
+        return module.TrustRegion(nonlinearOperator)
+    else:
+        return module.TrustRegion(nonlinearOperator, updateFunction)

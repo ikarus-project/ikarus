@@ -4,6 +4,7 @@
 #pragma once
 #include <dune/python/pybind11/functional.h>
 #include <dune/python/pybind11/pybind11.h>
+#include <dune/python/pybind11/eigen.h>
 
 #include <ikarus/solver/nonlinearsolver/trustregion.hh>
 
@@ -29,7 +30,7 @@ void registerTrustRegion(pybind11::handle scope, pybind11::class_<TR, options...
   cls.def(pybind11::init([](const NonLinearOperator& nonLinearOperator, UpdateFunction updateFunction) {
             return new TR(nonLinearOperator, updateFunction);
           }),
-          py::arg("nonLinearOperator"), py::arg("updateFunction") = Ikarus::utils::UpdateDefault{});
+          py::arg("nonLinearOperator"), py::arg("updateFunction") = UpdateFunction(Ikarus::utils::UpdateDefault{}));
 
   cls.def(
       "setup",
@@ -77,5 +78,21 @@ void registerTrustRegion(pybind11::handle scope, pybind11::class_<TR, options...
             solver = MySolver()
             solver.setup({'verbosity': 2, 'maxtime': 10.0, 'minIter': 5}));
         )");
+
+          cls.def(
+      "solve",
+      [](TR& self, const typename TR::CorrectionType& dx) {
+          self.solve(dx);
+      }, py::arg("predictor") );
+
+  cls.def(
+      "solve",
+      [](TR& self) {
+          self.solve();
+      });
+
+      cls.def("nonLinearOperator", &TR::nonLinearOperator, py::return_value_policy::reference_internal);
 }
+
+
 } // namespace Ikarus::Python
