@@ -5,6 +5,7 @@
 	"workspaceFolder": "/workspaces/ikarus",
 	"service": "OpenIkarusContainer",
 	"shutdownAction": "stopCompose",
+
 	"customizations": {
 		"vscode": {
 			"extensions": [
@@ -14,7 +15,8 @@
 				"llvm-vs-code-extensions.vscode-clangd",
 				"ms-python.python",
 				"eamodio.gitlens",
-				"ms-python.black-formatter"
+				"ms-python.black-formatter",
+				"benjamin-simmonds.pythoncpp-debug"
 			],
 			"settings": {
 				"C_Cpp.intelliSenseEngine": "disabled",

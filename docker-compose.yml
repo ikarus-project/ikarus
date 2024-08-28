@@ -9,3 +9,5 @@ services:
      - ./:/workspaces/ikarus
      #- C:\Users\Alex\Documents\Paper_Mueller-Bischoff-Keip-MicroMagnetoStatics\simulations:/mshfiles
     working_dir: /workspaces/ikarus
+    cap_add:
+     - SYS_PTRACE
