@@ -3,11 +3,12 @@
 
 # set HAVE_dune-localfefunctions for config.h
 set(HAVE_DUNE_LOCALFEFUNCTIONS ${dune-localfefunctions_FOUND})
+set(DUNE_LOCALFEFUNCTIONS_USE_EIGEN 1)
 
 # register all dune-localfefunctions related flags
 if(dune-localfefunctions_FOUND)
   dune_register_package_flags(
-    COMPILE_DEFINITIONS "ENABLE_DUNE_LOCALFEFUNCTIONS=1;DUNE_LOCALFEFUNCTIONS_USE_EIGEN=1"
+    COMPILE_DEFINITIONS "ENABLE_DUNE_LOCALFEFUNCTIONS=1;DUNE_LOCALFEFUNCTIONS_USE_EIGEN=TRUE"
   )
 endif()
 
@@ -18,7 +19,7 @@ function(add_dune_dune-localfefunctions_flags _targets)
       target_compile_definitions(
         ${_target}
         PUBLIC ENABLE_DUNE_LOCALFEFUNCTIONS=1
-        PUBLIC DUNE_LOCALFEFUNCTIONS_USE_EIGEN=1
+        PUBLIC DUNE_LOCALFEFUNCTIONS_USE_EIGEN=TRUE
       )
     endforeach(_target)
   endif()

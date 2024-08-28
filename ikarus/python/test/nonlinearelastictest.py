@@ -121,6 +121,10 @@ if __name__ == "__main__":
     print(d)
     assembler.bind(iks.DBCOption.Reduced)
 
+    newton= iks.solvers.NewtonRaphson(nonLinOp,iks.SolverTypeTag.sd_UmfPackLU,updateFunction)
+    newton.setup({"maxIter":100})
+    newton.solve()
+
     def energy(dRedInput):
         # global d
         #d = assembler.createFullVector(dRedInput).copy()

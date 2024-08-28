@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include "solversettings.hh"
+
 #include <ikarus/solver/linearsolver/linearsolver.hh>
 #include <ikarus/solver/nonlinearsolver/solverinfos.hh>
 #include <ikarus/utils/concepts.hh>
@@ -21,11 +23,12 @@ namespace Ikarus {
 template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
 class NewtonRaphson;
 
-struct NRSettings
-{
-  double tol{1e-8};
-  int maxIter{20};
-};
+
+#define NRSETTINGS_FIELDS(MACRONAME)                                                                         \
+  MACRONAME(res_tol, double, 1e-8, "Residual tolerance.")                                                   \
+  MACRONAME(maxIter, int, 20, "Maximum number of iterations.")                                                 
+
+SOLVERSETTINGS(NewtonRaphsonSettings, NRSETTINGS_FIELDS)
 
 /**
  * \struct NewtonRaphsonConfig
@@ -36,7 +39,7 @@ struct NewtonRaphsonConfig
 {
   using LinearSolver   = LS;
   using UpdateFunction = UF;
-  NRSettings parameters;
+  NewtonRaphsonSettings parameters;
   LS linearSolver;
   UF updateFunction;
 
@@ -101,7 +104,8 @@ template <typename NLO, typename LS, typename UF>
 class NewtonRaphson : public IObservable<NonLinearSolverMessages>
 {
 public:
-  using Settings = NRSettings;
+  using Settings = NewtonRaphsonSettings;
+  using LinearSolver =LS;
   ///< Compile-time boolean indicating if the linear solver satisfies the non-linear solver concept
   static constexpr bool isLinearSolver =
       Ikarus::Concepts::LinearSolverCheck<LinearSolver, typename NLO::template FunctionReturnType<1>,
@@ -165,7 +169,7 @@ public:
     int iter{0};
     if constexpr (isLinearSolver)
       linearSolver_.analyzePattern(Ax);
-    while (rNorm > settings_.tol && iter < settings_.maxIter) {
+    while (rNorm > settings_.res_tol && iter < settings_.maxIter) {
       this->notify(NonLinearSolverMessages::ITERATION_STARTED);
       if constexpr (isLinearSolver) {
         linearSolver_.factorize(Ax);

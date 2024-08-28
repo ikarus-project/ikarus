@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <dune/python/pybind11/pybind11.h>
+
 #define MEMBERVARIABLES(name, type, default_value, comment) type name{default_value}; /* #comment */
 
 #define MEMBERVARIABLESSETTER(name, type, default_value, comment)                                                  \

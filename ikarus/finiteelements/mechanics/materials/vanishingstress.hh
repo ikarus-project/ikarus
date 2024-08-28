@@ -255,7 +255,7 @@ private:
     };
     // THE CTAD is broken for designated initializers in clang 16, when we drop support this can be simplified
     NewtonRaphsonConfig<decltype(linearSolver), decltype(updateFunction)> nrs{
-        .parameters = {.tol = tol_, .maxIter = 100},
+        .parameters = {.res_tol = tol_, .maxIter = 100},
           .linearSolver = linearSolver, .updateFunction = updateFunction
     };
 

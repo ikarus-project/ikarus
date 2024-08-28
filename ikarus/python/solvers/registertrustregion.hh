@@ -38,18 +38,6 @@ void registerTrustRegion(pybind11::handle scope, pybind11::class_<TR, options...
     TrustRegionSettings settings;
     settings.populate(dict);
     self.setup(settings);
-        // settingsFromDict<int>( "verbosity" );
-        // settingsFromDict<double>( "maxtime" );
-        // settingsFromDict<int>( "minIter" );
-        // settingsFromDict<int>( "maxIter" );
-        // settingsFromDict<int>( "debug" );
-        // settingsFromDict<double>( "grad_tol" );
-        // settingsFromDict<double>( "corr_tol" );
-        // settingsFromDict<double>( "rho_prime" );
-        // settingsFromDict<bool>( "useRand" );
-        // settingsFromDict<double>( "rho_reg" );
-        // settingsFromDict<double>( "Delta_bar" );
-        // settingsFromDict<double>( "Delta0" );
 },
       R"(
         This function sets up the solver with settings provided

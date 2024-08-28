@@ -8,18 +8,15 @@ from typing import Callable
 
 def TrustRegion(nonlinearOperator,PreConditioner="IncompleteCholesky", updateFunction=None):
     """
-    @brief Registers a pre-element with the specified parameters.
+    @brief 
 
-    @param name: The name of the pre-element.
-    @param includes: List of additional include files.
-    @param element_type: The type of the pre-element.
-    @param args: Additional arguments required for the pre-element registration.
+    @param 
 
-    @return: The registered pre-element function.
+    @return: 
     """
     generator = MySimpleGenerator("TrustRegion", "Ikarus::Python")
     #includes = ["ikarus/solver/nonlinearsolver/trustregion.hh"]
-    includes = ["ikarus/python/solvers/registersolver.hh"]
+    includes = ["ikarus/python/solvers/registertrustregion.hh"]
     includes += nonlinearOperator.cppIncludes
     updateFunctionType = f"std::function<void({nonlinearOperator.firstParameterCppTypeName}&,const {nonlinearOperator.derivativeCppTypeName}&)>"
     element_type = (
@@ -36,3 +33,36 @@ def TrustRegion(nonlinearOperator,PreConditioner="IncompleteCholesky", updateFun
         return module.TrustRegion(nonlinearOperator)
     else:
         return module.TrustRegion(nonlinearOperator, updateFunction)
+    
+
+def NewtonRaphson(nonlinearOperator,linearSolver="UmfPack", updateFunction=None):
+    """
+    @brief 
+
+    @param 
+
+    @return: 
+    """
+    generator = MySimpleGenerator("NewtonRaphson", "Ikarus::Python")
+    #includes = ["ikarus/solver/nonlinearsolver/trustregion.hh"]
+    includes = ["ikarus/python/solvers/registernewton.hh"]
+    includes += nonlinearOperator.cppIncludes
+    if nonlinearOperator.numberOfFunctions == 2:
+        updateFunctionType = f"std::function<void({nonlinearOperator.firstParameterCppTypeName}&,const {nonlinearOperator.valueCppTypeName}&)>"
+    elif nonlinearOperator.numberOfFunctions == 3:
+        updateFunctionType = f"std::function<void({nonlinearOperator.secondParameterCppTypeName}&,const {nonlinearOperator.derivativeCppTypeName}&)>"
+
+    element_type = (
+        f"Ikarus::NewtonRaphson<{nonlinearOperator.cppTypeName},Ikarus::LinearSolver,{updateFunctionType}>"
+    )
+    print("element_type: ", element_type)
+
+    moduleName = "NewtonRaphson" + hashIt(element_type)
+    module = generator.load(
+        includes=includes, typeName=element_type, moduleName=moduleName
+    )
+
+    if updateFunction is None:
+        return module.NewtonRaphson(nonlinearOperator,linearSolver)
+    else:
+        return module.NewtonRaphson(nonlinearOperator,linearSolver, updateFunction)
