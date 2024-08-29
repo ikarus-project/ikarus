@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: 'repo'
+          path: "repo"
       - uses: actions/setup-python@v5
         with:
           python-version: 3.x
@@ -68,4 +68,5 @@ jobs:
           mike deploy dev --config-file mkdocs.insiders.yml
           git remote set-url origin https://${{ secrets.ORGANIZATION_TOKEN }}@github.com/ikarus-project/ikarus-project.github.io.git
           git push origin gh-pages
+
 #          git commit --amend -m "Deploy dev at ${{ github.event.head_commit.message }} ikarus-project/ikarus@${{ github.event.head_commit.id }}"

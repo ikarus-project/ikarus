@@ -5,20 +5,20 @@ name: Debian
 on:
   push:
     paths-ignore:
-      - 'docs/**'
-      - '.github/workflows/ghpages.yml'
-      - '.github/workflows/createDockerContainer.yml'
-      - '**.md'
+      - "docs/**"
+      - ".github/workflows/ghpages.yml"
+      - ".github/workflows/createDockerContainer.yml"
+      - "**.md"
 
   pull_request:
     types: [opened]
     branches:
       - main
     paths-ignore:
-      - 'docs/**'
-      - '.github/workflows/ghpages.yml'
-      - '.github/workflows/createDockerContainer.yml'
-      - '**.md'
+      - "docs/**"
+      - ".github/workflows/ghpages.yml"
+      - ".github/workflows/createDockerContainer.yml"
+      - "**.md"
   workflow_dispatch:
 
 jobs:
@@ -33,49 +33,49 @@ jobs:
       matrix:
         config:
           - {
-            name: "Clang-16-Debug",
-            config: Debug,
-            compilerC: clang-16,
-            compilerCxx: clang++-16,
-            lib: "-stdlib=libc++",
-            testRegex: "cpp_quick"
-           }
+              name: "Clang-16-Debug",
+              config: Debug,
+              compilerC: clang-16,
+              compilerCxx: clang++-16,
+              lib: "-stdlib=libc++",
+              testRegex: "cpp_quick",
+            }
           - {
-            name: "Clang-16-Release",
-            config: Release,
-            compilerC: clang-16,
-            compilerCxx: clang++-16,
-            lib: "-stdlib=libc++",
-            testRegex: "cpp"
-           }
+              name: "Clang-16-Release",
+              config: Release,
+              compilerC: clang-16,
+              compilerCxx: clang++-16,
+              lib: "-stdlib=libc++",
+              testRegex: "cpp",
+            }
           - {
-            name: "Gcc-12-Debug",
-            config: Debug,
-            compilerC: gcc-12,
-            compilerCxx: g++-12,
-            lib: "",
-            testRegex: "cpp_quick"
-          }
+              name: "Gcc-12-Debug",
+              config: Debug,
+              compilerC: gcc-12,
+              compilerCxx: g++-12,
+              lib: "",
+              testRegex: "cpp_quick",
+            }
           - {
-            name: "Gcc-12-Release",
-            config: Release,
-            compilerC: gcc-12,
-            compilerCxx: g++-12,
-            lib: "",
-            testRegex: "cpp"
-          }
+              name: "Gcc-12-Release",
+              config: Release,
+              compilerC: gcc-12,
+              compilerCxx: g++-12,
+              lib: "",
+              testRegex: "cpp",
+            }
           - {
-            name: "Gcc-12-Python",
-            config: Release,
-            compilerC: gcc-12,
-            compilerCxx: g++-12,
-            lib: "",
-            testRegex: "python"
-          }
+              name: "Gcc-12-Python",
+              config: Release,
+              compilerC: gcc-12,
+              compilerCxx: g++-12,
+              lib: "",
+              testRegex: "python",
+            }
     steps:
       - uses: actions/checkout@v4
         with:
-         path: 'repo'
+          path: "repo"
       - name: Build
         working-directory: ./repo
         run: |

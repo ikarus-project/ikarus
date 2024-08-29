@@ -5,20 +5,20 @@ name: CodeCoverage
 on:
   push:
     paths-ignore:
-      - 'docs/**'
-      - '.github/workflows/ghpages.yml'
-      - '.github/workflows/createDockerContainer.yml'
-      - '**.md'
+      - "docs/**"
+      - ".github/workflows/ghpages.yml"
+      - ".github/workflows/createDockerContainer.yml"
+      - "**.md"
 
   pull_request:
     types: [opened]
     branches:
       - main
     paths-ignore:
-      - 'docs/**'
-      - '.github/workflows/ghpages.yml'
-      - '.github/workflows/createDockerContainer.yml'
-      - '**.md'
+      - "docs/**"
+      - ".github/workflows/ghpages.yml"
+      - ".github/workflows/createDockerContainer.yml"
+      - "**.md"
   workflow_dispatch:
 
 env:

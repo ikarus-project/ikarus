@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       releaseTag:
-        description: 'Release version'
+        description: "Release version"
         required: true
 
 env:
@@ -23,9 +23,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: 'repo'
+          path: "repo"
           token: ${{ secrets.ORGANIZATION_TOKEN }}
-          fetch-depth: '0'
+          fetch-depth: "0"
       - name: Create tag and push tag
         run: |
           cd repo
@@ -50,7 +50,7 @@ jobs:
         run: |
           pip install mkdocs mkdocs-macros-plugin mkdocs-drawio-exporter mkdocs-bibtex mike mkdocs-glightbox pillow cairosvg
           pip install git+https://${{ secrets.MKDOCS_TOKEN }}@github.com/squidfunk/mkdocs-material-insiders.git
-          apt-get update && apt-get install -y libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev  
+          apt-get update && apt-get install -y libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev
 
       - name: Build Doxygen
         run: |
@@ -104,7 +104,7 @@ jobs:
           install -m 0755 -d /etc/apt/keyrings
           curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
           chmod a+r /etc/apt/keyrings/docker.gpg
-          
+
           # Add the repository to Apt sources:
           echo \
           "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
@@ -117,22 +117,22 @@ jobs:
         run: |
           docker pull ikarusproject/ikarus-dev:latest
           docker tag ikarusproject/ikarus-dev:latest ikarusproject/ikarus-dev:v$NEWVERSION
-          
+
           docker pull ikarusproject/ikarus-dev-gcc:latest
           docker tag ikarusproject/ikarus-dev-gcc:latest ikarusproject/ikarus-dev-gcc:v$NEWVERSION
-          
+
           docker pull ikarusproject/ikarus-dev-clang:latest
           docker tag ikarusproject/ikarus-dev-clang:latest ikarusproject/ikarus-dev-clang:v$NEWVERSION
-          
+
           docker pull ikarusproject/ikarus:latest
           docker tag ikarusproject/ikarus:latest ikarusproject/ikarus:v$NEWVERSION
-          
+
           docker pull ikarusproject/ikarus-gcc:latest
           docker tag ikarusproject/ikarus-gcc:latest ikarusproject/ikarus-gcc:v$NEWVERSION
-          
+
           docker pull ikarusproject/ikarus-clang:latest
           docker tag ikarusproject/ikarus-clang:latest ikarusproject/ikarus-clang:v$NEWVERSION
-        
+
           #docker save ikarusproject/ikarus-dev:v$NEWVERSION > ikarus-dev-docker-v$NEWVERSION.tar
           docker save ikarusproject/ikarus:v$NEWVERSION     > ikarus-docker-v$NEWVERSION.tar
           #gzip -c9 ikarus-dev-docker-v$NEWVERSION.tar > ikarus-dev-docker-v$NEWVERSION.tar.gz
@@ -151,7 +151,7 @@ jobs:
           zip -9r  ikarus-examples-v$NEWVERSION.zip    ./ikarus-examples-v$NEWVERSION
 
       - name: Push and finalize
-        run: |    
+        run: |
           cd ikarus-project.github.io 
           git push origin gh-pages     
           cd ../ikarus-examples-v$NEWVERSION

@@ -5,7 +5,7 @@ name: License Year Update
 
 on:
   schedule:
-    - cron:  '0 0 1 1 *'
+    - cron: "0 0 1 1 *"
   workflow_dispatch:
 
 jobs:
@@ -14,9 +14,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: 'repo'
+          path: "repo"
           token: ${{ secrets.ORGANIZATION_TOKEN_WITH_WORKFLOWS }}
-
 
       - name: Update headers
         run: |
