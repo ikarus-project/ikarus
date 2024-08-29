@@ -3,10 +3,14 @@ from ikarus import materials
 
 import numpy as np
 
-svk = materials.StVenantKirchhoff(E=1000, nu=0.3)
+Emod = 1000
+nu = 0.0
+
+svk = materials.StVenantKirchhoff(E=Emod, nu=nu)
 ps = svk.asPlaneStress()
 
-E_ = np.array([[100, 0, 1], [0, 230, 110], [1, 110, 50]], dtype=float)
+E_ = np.array([[-0.375,   0,    0], [0, 0, 0], [0, 0, 0]], dtype=float)
+ 
 
 print(type(E_))
 
@@ -20,22 +24,25 @@ C_ = materials.tramsformStrain(
 C = materials.toVoigt(C_)
 print(C)
 
+nh = materials.NeoHooke(E=Emod, nu=nu)
+psNH = nh.asPlaneStress()
+planeStrainNH = nh.asPlaneStrain()
+
 
 S = svk.stresses(materials.StrainTags.greenLagrangian, E)
-print(materials.fromVoigt(S))
+print(materials.fromVoigt(S, False))
 
 S = ps.stresses(materials.StrainTags.greenLagrangian, E)
-print(materials.fromVoigt(S))
+print(materials.fromVoigt(S, False))
 
-nh = materials.NeoHooke(E=1000, nu=0.3)
-psNH = nh.asPlaneStress()
+S = nh.stresses(materials.StrainTags.rightCauchyGreenTensor, C)
+print(materials.fromVoigt(S, False))
 
-S = nh.stresses(materials.StrainTags.greenLagrangian, C)
-print(materials.fromVoigt(S))
+S = psNH.stresses(materials.StrainTags.rightCauchyGreenTensor, C)
+print(materials.fromVoigt(S, False))
 
-S = psNH.stresses(materials.StrainTags.greenLagrangian, C)
-print(materials.fromVoigt(S))
-
+S = planeStrainNH.stresses(materials.StrainTags.rightCauchyGreenTensor, C)
+print(materials.fromVoigt(S, False))
 
 # C = svk.tangentModuli(materials.StrainTags.greenLagrangian, E)
 # print(C)

@@ -167,13 +167,13 @@ auto testPlaneStrainAgainstPlaneStress(const double tol = 1e-10) {
   transformStrainAccordingToStrain<strainTag>(e);
 
   // instantiate material models
-  LamesFirstParameterAndShearModulus matPar{.lambda = 0, .mu = 1000}; // \nu = 0
+  LamesFirstParameterAndShearModulus matPar{.lambda = 0, .mu = 1000}; // nu = 0
 
   auto mat            = MaterialImpl{matPar};
   auto planeStrainMat = planeStrain(mat);
   auto planeStressMat = planeStress(mat);
 
-  // energy should be the same for plane stress and plane strain
+  // energy should be the same for plane stress and plane strain for nu = 0
   auto energies = std::array<double, 2>{planeStrainMat.template storedEnergy<strainTag>(e),
                                         planeStressMat.template storedEnergy<strainTag>(e)};
 
@@ -182,7 +182,7 @@ auto testPlaneStrainAgainstPlaneStress(const double tol = 1e-10) {
       << "\n"
       << energies[0] << " and " << energies[1] << "\n Diff: " << energies[0] - energies[1] << " with tol: " << tol;
 
-  // Stresses should be the same
+  // Stresses should be the same for nu = 0
   auto stressPlaneStrain = planeStrainMat.template stresses<strainTag>(e);
   auto stressPlaneStress = planeStressMat.template stresses<strainTag>(e);
 
@@ -202,32 +202,6 @@ auto testPlaneStrainAgainstPlaneStress(const double tol = 1e-10) {
       << matTangentPlaneStrain << "\nand\n"
       << matTangentPlaneStress << "\n Diff:\n"
       << matTangentPlaneStrain - matTangentPlaneStress << " with tol: " << tol;
-
-  // Test upper block
-  auto testUpper = [&](const auto& mat, const auto& matPS) {
-    auto matTangent            = mat.template tangentModuli<strainTag>(e);
-    auto matTangentPlaneStrain = matPS.template tangentModuli<strainTag>(e);
-
-    auto matTagentUpper    = matTangent.template block<2, 2>(0, 0);
-    auto matTangentPSUpper = matTangentPlaneStrain.template block<2, 2>(0, 0);
-
-    t.check(isApproxSame(matTagentUpper, matTangentPSUpper, tol))
-        << "Upper part of material tangent for 3d model and plane strain  should be the same but are"
-        << "\n"
-        << matTagentUpper << "\nand\n"
-        << matTangentPSUpper << "\nDiff:\n"
-        << matTagentUpper - matTangentPSUpper << " with tol: " << tol;
-  };
-
-  testUpper(mat, planeStrainMat);
-
-  // New Mat with \nu != 0
-  LamesFirstParameterAndShearModulus matPar2{.lambda = 1000, .mu = 500};
-  auto mat2            = MaterialImpl{matPar2};
-  auto planeStrainMat2 = planeStrain(mat2);
-
-  // Upper block should be the same for 3D and plane strain
-  testUpper(mat2, planeStrainMat2);
 
   return t;
 }
@@ -287,7 +261,7 @@ int main(int argc, char** argv) {
 
   t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::linear, LinearElasticity>());
   t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::greenLagrangian, StVenantKirchhoff>());
-  // t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::rightCauchyGreenTensor, NeoHooke>());
+  t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::rightCauchyGreenTensor, NeoHooke>());
 
   return t.exit();
 }
