@@ -110,5 +110,5 @@ PYBIND11_MODULE(_ikarus, m) {
   pybind11::class_<NeoHooke> nh(materials, "NeoHooke");
   Ikarus::Python::registerNeoHooke(materials, nh);
 
-  addIOSubModule();
+  addBindingsToIO();
 }

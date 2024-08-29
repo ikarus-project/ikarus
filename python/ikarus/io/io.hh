@@ -1,6 +1,10 @@
-// SPDX - FileCopyrightText : 2021 - 2024 The Ikarus Developers mueller @ibb.uni -stuttgart.de
+// SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * \file io.hh
+ * \brief Additional python bindings for submodule io
+ */
 #include "../pythonhelpers.hh"
 
 #include <dune/python/pybind11/eigen.h>
@@ -9,7 +13,7 @@
 
 #include <ikarus/io/vtkdatatag.hh>
 
-void addIOSubModule() {
+void addBindingsToIO() {
   namespace py = pybind11;
   using namespace pybind11::literals;
   using namespace Ikarus;
