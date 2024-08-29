@@ -25,15 +25,13 @@ jobs:
   Build:
     name: ${{ matrix.config.name }}
     runs-on: ubuntu-latest
-    container:
-      image: ikarusproject/ikarus-dev:latest # this does not work for the python binding tests since the dune base bindings are configured with gcc and here ikarus her executed with clang, we may use ikarus-dev-clang later here
-      options: --memory-swap="20g" --memory="20g" --cpus="2" --user root
     strategy:
       fail-fast: false
       matrix:
         config:
           - {
               name: "Clang-16-Debug",
+              container: "ikarusproject/ikarus-dev-clang:latest",
               config: Debug,
               compilerC: clang-16,
               compilerCxx: clang++-16,
@@ -42,6 +40,7 @@ jobs:
             }
           - {
               name: "Clang-16-Release",
+              container: "ikarusproject/ikarus-dev-clang:latest",
               config: Release,
               compilerC: clang-16,
               compilerCxx: clang++-16,
@@ -49,7 +48,26 @@ jobs:
               testRegex: "cpp",
             }
           - {
+              name: "Clang-16-Python-Release",
+              container: "ikarusproject/ikarus-dev-clang:latest",
+              config: Release,
+              compilerC: clang-16,
+              compilerCxx: clang++-16,
+              lib: "-stdlib=libc++",
+              testRegex: "python",
+            }
+          - {
+              name: "Clang-16-Python-Debug",
+              container: "ikarusproject/ikarus-dev-clang:latest",
+              config: Debug,
+              compilerC: clang-16,
+              compilerCxx: clang++-16,
+              lib: "-stdlib=libc++",
+              testRegex: "python",
+            }
+          - {
               name: "Gcc-12-Debug",
+              container: "ikarusproject/ikarus-dev-gcc:latest",
               config: Debug,
               compilerC: gcc-12,
               compilerCxx: g++-12,
@@ -58,6 +76,7 @@ jobs:
             }
           - {
               name: "Gcc-12-Release",
+              container: "ikarusproject/ikarus-dev-gcc:latest",
               config: Release,
               compilerC: gcc-12,
               compilerCxx: g++-12,
@@ -65,13 +84,28 @@ jobs:
               testRegex: "cpp",
             }
           - {
-              name: "Gcc-12-Python",
+              name: "Gcc-12-Python-Release",
+              container: "ikarusproject/ikarus-dev-gcc:latest",
               config: Release,
               compilerC: gcc-12,
               compilerCxx: g++-12,
               lib: "",
               testRegex: "python",
             }
+          - {
+            name: "Gcc-12-Python-Debug",
+            container: "ikarusproject/ikarus-dev-gcc:latest",
+            config: Debug,
+            compilerC: gcc-12,
+            compilerCxx: g++-12,
+            lib: "",
+            testRegex: "python",
+          }
+    container:
+      image: ${{ matrix.config.container }}
+      options: --memory-swap="20g" --memory="20g" --cpus="2" --user root
+    env:
+      IKARUS_PYTHON_TEST_BUILD_TYPE_OVERRIDE: ${{ matrix.config.config }} 
     steps:
       - uses: actions/checkout@v4
         with:

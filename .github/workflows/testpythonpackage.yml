@@ -21,11 +21,14 @@ on:
       - "**.md"
   workflow_dispatch:
 
+env:
+  IKARUS_PYTHON_TEST_BUILD_TYPE_OVERRIDE: "Debug"
+
 jobs:
   build-n-test:
     runs-on: ubuntu-latest
     container:
-      image: ikarusproject/ikarus-dev:latest
+      image: ikarusproject/ikarus-dev-clang:latest
       options: --memory-swap="20g" --memory="20g" --cpus="2" --user root
 
     steps:
