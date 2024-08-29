@@ -120,4 +120,4 @@ jobs:
           cmake --build . --parallel 2 --target build_${{ matrix.config.testRegex }}_tests
       - name: Tests
         working-directory: ./repo/cmake-build-${{ matrix.config.config }}
-        run: ctest --output-on-failure --parallel 2 -L ${{ matrix.config.testRegex }}
+        run: ctest --verbose --parallel 2 -L ${{ matrix.config.testRegex }}
