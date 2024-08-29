@@ -104,6 +104,8 @@ jobs:
     container:
       image: ${{ matrix.config.container }}
       options: --memory-swap="20g" --memory="20g" --cpus="2" --user root
+    env:
+      IKARUS_PYTHON_TEST_BUILD_TYPE_OVERRIDE: ${{ matrix.config.config }} 
     steps:
       - uses: actions/checkout@v4
         with:
@@ -111,7 +113,6 @@ jobs:
       - name: Build
         working-directory: ./repo
         run: |
-          export IKARUS_PYTHON_TEST_BUILD_TYPE_OVERRIDE=${{ matrix.config.config }}
           mkdir cmake-build-${{ matrix.config.config }}
           cd cmake-build-${{ matrix.config.config }}
           cmake ../  -DCMAKE_BUILD_TYPE=${{ matrix.config.config }} -GNinja -DCMAKE_C_COMPILER=${{ matrix.config.compilerC }} -DCMAKE_CXX_COMPILER=${{ matrix.config.compilerCxx }}
