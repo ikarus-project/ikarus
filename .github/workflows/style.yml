@@ -6,13 +6,13 @@ name: CodeStyle
 on:
   push:
     paths-ignore:
-      - ".github/workflows/ghpages.yml"
+      - '.github/workflows/ghpages.yml'
   pull_request:
     types: [opened]
     branches:
       - main
     paths-ignore:
-      - ".github/workflows/ghpages.yml"
+      - '.github/workflows/ghpages.yml'
   workflow_dispatch:
 
 env:
@@ -32,7 +32,7 @@ jobs:
           key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
       - uses: actions/checkout@v4
         with:
-          path: "repo"
+         path: 'repo'
       - name: Install format dependencies
         run: |
           pip install clang-format==18.1.8
@@ -76,7 +76,7 @@ jobs:
       - uses: articulate/actions-markdownlint@v1
         with:
           config: docs/markdownlint-config.yaml
-          files: "**/*.md"
+          files: '**/*.md'
 
   lint-filenames:
     name: Lint filenames
@@ -85,8 +85,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Validating lowercase file names
-        uses: batista/lint-filenames@v2.0.0
+        uses: scheduleonce/lint-filenames@v2.0.0
         with:
-          path: "{./ikarus/**,./python/**}"
-          pattern: '^[a-z0-9_\-]+(\.hh|\.cpp|\.inl|\.py|\.py\.in|\.cc|\.msh)$|CMakeLists\.txt'
+          path: '{./ikarus/**,./python/**}'
+          pattern: '^[a-z0-9_\-]+(\.hh|\.cpp|\.inl|\.py|\.py\.in|\.cc|\.msh|)$|CMakeLists\.txt'
           # match all lowercase names with extensions .hh/.cpp/.inl/.py/.py.in/.cc and ignore CMakeLists.txt
