@@ -22,7 +22,7 @@ on:
   workflow_dispatch:
 
 env:
-  IKARUS_PYTHON_TEST_BUILD_TYPE_OVERRIDE: 'Release'
+  IKARUS_PYTHON_TEST_BUILD_TYPE_OVERRIDE: "Release"
 
 jobs:
   Build:
@@ -39,7 +39,7 @@ jobs:
               compilerC: clang-16,
               compilerCxx: clang++-16,
               lib: "-stdlib=libc++",
-              testRegex: "cpp_quick"
+              testRegex: "cpp_quick",
             }
           - {
               name: "Clang-16-Release",
@@ -48,7 +48,7 @@ jobs:
               compilerC: clang-16,
               compilerCxx: clang++-16,
               lib: "-stdlib=libc++",
-              testRegex: "cpp"
+              testRegex: "cpp",
             }
           - {
               name: "Clang-16-Python",
@@ -57,7 +57,7 @@ jobs:
               compilerC: clang-16,
               compilerCxx: clang++-16,
               lib: "-stdlib=libc++",
-              testRegex: "python"
+              testRegex: "python",
             }
           - {
               name: "Gcc-12-Debug",
@@ -66,7 +66,7 @@ jobs:
               compilerC: gcc-12,
               compilerCxx: g++-12,
               lib: "",
-              testRegex: "cpp_quick"
+              testRegex: "cpp_quick",
             }
           - {
               name: "Gcc-12-Release",
@@ -75,7 +75,7 @@ jobs:
               compilerC: gcc-12,
               compilerCxx: g++-12,
               lib: "",
-              testRegex: "cpp"
+              testRegex: "cpp",
             }
           - {
               name: "Gcc-12-Python",
@@ -84,7 +84,7 @@ jobs:
               compilerC: gcc-12,
               compilerCxx: g++-12,
               lib: "",
-              testRegex: "python"
+              testRegex: "python",
             }
     container:
       image: ${{ matrix.config.container }}
