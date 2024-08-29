@@ -3,16 +3,15 @@
 
 #pragma once
 
+#include <dune/common/bitsetvector.hh>
 #include <dune/python/pybind11/eigen.h>
 #include <dune/python/pybind11/functional.h>
 #include <dune/python/pybind11/pybind11.h>
 #include <dune/python/pybind11/stl.h>
 
-#include <ikarus/finiteelements/ferequirements.hh>
-
 namespace Ikarus::Python {
 
-// Python wrapper for the FVAssembler C++ class
+// Python wrapper for the BoundaryPatch C++ class
 template <class BoundaryPatch, class... options>
 void registerBoundaryPatch(pybind11::handle scope, pybind11::class_<BoundaryPatch, options...> cls) {
   using pybind11::operator""_a;
