@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 import os
 import dune.generator as generator
-from logging import debug
+from logging import warn
 
 os.environ["DUNE_LOG_LEVEL"] = "debug"
 os.environ["DUNE_SAVE_BUILD"] = "terminal"
@@ -18,9 +18,9 @@ def setDebugFlags():
     # Apply flags only if the build type is Debug, or if the variable is not set
     if build_type == "Debug" or build_type is None:
         apply_debug_flags()
-        debug("JIT Python Bindings BUILD_TYPE: Debug")
+        warn("JIT Python Bindings BUILD_TYPE: Debug")
     else:
-        debug("JIT Python Bindings BUILD_TYPE: Release")
+        warn("JIT Python Bindings BUILD_TYPE: Release")
 
 
 def unsetDebugFlags():
