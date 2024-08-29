@@ -10,8 +10,6 @@ import dune.vtk
 import types
 from enum import Enum
 
-from ._io import DataTag
-
 # The list of supported dataCollectors
 DataCollector = Enum("DataCollector", ["default", "lagrange", "discontinuous", "iga"])
 
