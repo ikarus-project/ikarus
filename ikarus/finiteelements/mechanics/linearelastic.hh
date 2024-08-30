@@ -139,14 +139,7 @@ public:
    * \return The material tangent matrix.
    */
   auto materialTangent() const {
-    constexpr auto strainSize = []() {
-      if constexpr (myDim == 2)
-        return 3;
-      else
-        return 6;
-    }();
-
-    return mat_.template tangentModuli<StrainTags::linear, true>(Eigen::Vector<double, strainSize>::Zero());
+    return mat_.template tangentModuli<StrainTags::linear, true>(Eigen::Vector<double, 6>::Zero());
   }
 
   /**
