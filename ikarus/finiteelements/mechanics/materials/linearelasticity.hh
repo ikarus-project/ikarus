@@ -67,7 +67,7 @@ struct LinearElasticityT : Material<LinearElasticityT<ST>>
    * \brief Returns the material parameters stored in the material
    */
   MaterialParameters materialParametersImpl() const { return svk_.materialParametersImpl(); }
-  
+
   /**
    * \brief Calculates the stored energy in the material.
    *

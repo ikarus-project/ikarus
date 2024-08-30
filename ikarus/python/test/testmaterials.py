@@ -6,7 +6,7 @@ import debug_info
 debug_info.setDebugFlags()
 
 import ikarus as iks
-from ikarus import materials
+from ikarus import materials, utils
 
 import numpy as np
 import math
@@ -271,6 +271,40 @@ def checkWithStrain(strain):
         )
 
 
+def checkStrainTransformation():
+    glVoigt = [1.2, 1.1, 0.9, 0.1, 0.2, 0.2]
+    glTensor = utils.fromVoigt(glVoigt)
+
+    c = materials.transformStrain(
+        materials.StrainTags.greenLagrangian,
+        materials.StrainTags.rightCauchyGreenTensor,
+        glVoigt,
+    )
+    c2 = materials.transformStrain(
+        materials.StrainTags.greenLagrangian,
+        materials.StrainTags.rightCauchyGreenTensor,
+        glTensor,
+    )
+
+    assert np.allclose(c, 2 * glTensor + np.identity(3))
+    assert np.allclose(c2, 2 * glTensor + np.identity(3))
+
+    gl = materials.transformStrain(
+        materials.StrainTags.rightCauchyGreenTensor,
+        materials.StrainTags.greenLagrangian,
+        c,
+    )
+
+    assert np.allclose(gl, glTensor)
+    assert np.allclose(gl, 0.5 * (c - np.identity(3)))
+
+    gl2 = materials.transformStrain(
+        materials.StrainTags.greenLagrangian, materials.StrainTags.greenLagrangian, gl
+    )
+
+    assert np.allclose(gl, gl2)
+
+
 if __name__ == "__main__":
     strain = np.array([1.2, 1.1, 0.9, 0.1, 0.2, 0.2])
     checkWithStrain(strain)
@@ -286,3 +320,5 @@ if __name__ == "__main__":
     # check if passing beam strains is enough
     strain = np.array([1.2, 0.1, 0.05, 0.2])
     checkWithStrain(strain)
+
+    checkStrainTransformation()

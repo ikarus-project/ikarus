@@ -32,7 +32,7 @@ void addMaterialsSubModule(pybind11::module& m) {
   Ikarus::Python::registerStVenantKirchhoff(materials, svk);
 
   pybind11::class_<NeoHooke> nh(materials, "NeoHooke");
-  Ikarus::Python::registerNeoHooke(materials, nh); 
+  Ikarus::Python::registerNeoHooke(materials, nh);
 
   /**
    * \brief Transform strain from one type to another.
@@ -45,16 +45,21 @@ void addMaterialsSubModule(pybind11::module& m) {
    * \return The transformed strain matrix.
    */
   materials.def(
-      "tramsformStrain",
+      "transformStrain",
       [](StrainTags from, StrainTags to, Eigen::MatrixXd E) -> Eigen::MatrixXd {
         auto callTransformStrain =
             []<StrainTags from_, StrainTags to_>(const Eigen::MatrixXd& eRaw) -> Eigen::MatrixXd {
-          return transformStrain<from_, to_>(Eigen::Matrix<double, 3, 3>(eRaw));
+          if (eRaw.cols() == 1) {
+            Eigen::Vector<double, 6> E = eRaw;
+            return transformStrain<from_, to_>(E);
+          } else {
+            Eigen::Matrix<double, 3, 3> E = eRaw;
+            return transformStrain<from_, to_>(E);
+          }
         };
-        if ((E.rows() != 3 and E.cols() != 3) or (E.rows() == 6))
+        if (!((E.rows() == 3 && E.cols() == 3) || (E.rows() == 6 && E.cols() == 1)))
           DUNE_THROW(Dune::IOError,
-                     "Strain converseions are only implemented for matrices of dimension 3 or the corresponding Voigt "
-                     "notation");
+                     "Strain conversions are only implemented for matrices of dimension 3 or Voigt vectors of size 6");
 
         if (from == StrainTags::linear) {
           spdlog::warn("No useful transformation available for linear strains");

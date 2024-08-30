@@ -4,8 +4,8 @@
 #include <config.h>
 
 #include "materials/materials.hh"
-#include "utils/utils.hh"
 #include "pythonhelpers.hh"
+#include "utils/utils.hh"
 
 #include <dune/common/float_cmp.hh>
 #include <dune/python/common/typeregistry.hh>
@@ -17,7 +17,6 @@
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/python/finiteelements/scalarwrapper.hh>
 #include <ikarus/solver/linearsolver/linearsolver.hh>
-
 
 /**
  * \brief Registers the ScalarWrapper class template with pybind11, adding various operations and constructors.
