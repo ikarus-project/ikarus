@@ -3,9 +3,11 @@
 
 #pragma once
 
-#define ENUM_BINDINGS(Type)                                        \
-  py::enum_<Type> Type##Enum(m, #Type);                            \
+#define ENUM_BINDINGS_WITH_MODULE(Type, module)                    \
+  py::enum_<Type> Type##Enum(module, #Type);                       \
   Type Type##EnumV = Type::BEGIN;                                  \
   Ikarus::increment(Type##EnumV);                                  \
   for (; Type##EnumV != Type::END; Ikarus::increment(Type##EnumV)) \
     Type##Enum.value(toString(Type##EnumV).c_str(), Type##EnumV);
+
+#define ENUM_BINDINGS(Type) ENUM_BINDINGS_WITH_MODULE(Type, m)

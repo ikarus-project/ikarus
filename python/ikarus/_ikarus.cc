@@ -3,6 +3,7 @@
 
 #include <config.h>
 
+#include "io/io.hh"
 #include "pythonhelpers.hh"
 
 #include <dune/common/float_cmp.hh>
@@ -108,4 +109,6 @@ PYBIND11_MODULE(_ikarus, m) {
 
   pybind11::class_<NeoHooke> nh(materials, "NeoHooke");
   Ikarus::Python::registerNeoHooke(materials, nh);
+
+  addBindingsToIO();
 }
