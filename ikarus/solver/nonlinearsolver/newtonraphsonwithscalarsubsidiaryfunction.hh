@@ -23,11 +23,13 @@ namespace Ikarus {
 template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
 class NewtonRaphsonWithSubsidiaryFunction;
 
-struct NewtonRaphsonWithSubsidiaryFunctionSettings
-{
-  double tol{1e-8};
-  int maxIter{20};
-};
+#define NRWSFSETTINGS_FIELDS(MACRONAME)                                                                         \
+  MACRONAME(res_tol, double, 1e-8, "Residual tolerance.")                                                   \
+  MACRONAME(maxIter, int, 20, "Maximum number of iterations.")
+
+SOLVERSETTINGS(NewtonRaphsonWithSubsidiaryFunctionSettings, NRWSFSETTINGS_FIELDS)
+
+
 
 /**
  * \struct NewtonRaphsonWithSubsidiaryFunctionConfig
@@ -151,6 +153,7 @@ public:
    * \param subsidiaryArgs Additional arguments for the subsidiary function.
    * \param dxPredictor Predictor for the solution increment (default is NoPredictor).
    * \return Information about the solution process.
+     \see PathFollowing
    */
   template <typename SolutionType = NoPredictor, typename SubsidiaryType>
   requires std::is_same_v<SolutionType, NoPredictor> ||
