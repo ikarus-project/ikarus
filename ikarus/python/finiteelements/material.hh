@@ -51,16 +51,67 @@
 
 namespace Ikarus::Python {
 
+namespace Impl {
+  // Function to extract and convert parameters using a conversion strategy
+  template <typename T>
+  LamesFirstParameterAndShearModulus convertMaterialParameters(const pybind11::kwargs& kwargs,
+                                                               const std::string& param1, const std::string& param2) {
+    auto converter =
+        convertLameConstants(T{kwargs[param1.c_str()].cast<double>(), kwargs[param2.c_str()].cast<double>()});
+
+    // This is necessary as the converter cannnot convert to a parameter already present due to compile-time constraints
+    double lamesFirst = [&]() {
+      if constexpr (requires { converter.toLamesFirstParameter(); })
+        return converter.toLamesFirstParameter();
+      else
+        return kwargs["Lambda"].cast<double>();
+    }();
+    double shearModulus = [&]() {
+      if constexpr (requires { converter.toShearModulus(); })
+        return converter.toShearModulus();
+      else
+        return kwargs["mu"].cast<double>();
+    }();
+    return {lamesFirst, shearModulus};
+  }
+
+  Ikarus::LamesFirstParameterAndShearModulus extractMaterialParameters(const pybind11::kwargs& kwargs) {
+    // clang-format off
+  static const std::map<std::pair<std::string, std::string>, std::function<LamesFirstParameterAndShearModulus(const pybind11::kwargs&)>> conversionMap = {
+    {{"E", "nu"}, [](const auto& kw){ return convertMaterialParameters<YoungsModulusAndPoissonsRatio>(kw, "E", "nu"); }},
+    {{"E", "mu"}, [](const auto& kw){ return convertMaterialParameters<YoungsModulusAndShearModulus>(kw, "E", "mu"); }},
+    {{"E", "K"}, [](const auto& kw){ return convertMaterialParameters<YoungsModulusAndBulkModulus>(kw, "E", "K"); }},
+    {{"E", "Lambda"}, [](const auto& kw){ return convertMaterialParameters<YoungsModulusAndLamesFirstParameter>(kw, "E", "Lambda"); }},
+    {{"K", "Lambda"}, [](const auto& kw){ return convertMaterialParameters<BulkModulusAndLamesFirstParameter>(kw, "K", "Lambda"); }},
+    {{"Lambda", "mu"}, [](const auto& kw){ return LamesFirstParameterAndShearModulus{kw["Lambda"].template cast<double>(), kw["mu"].template cast<double>()}; }}
+  };
+  // clang-format off
+
+  if (kwargs.size() != 2)
+    throw std::runtime_error("The number of material parameters passed to the material should be 2");
+
+  for (const auto& conversion : conversionMap) {
+    if (kwargs.contains(conversion.first.first) && kwargs.contains(conversion.first.second)) {
+      return conversion.second(kwargs);
+    }
+  }
+  DUNE_THROW(Dune::IOError,
+               "No suitable combination of material parameters found, valid combinations are: (E, nu), (E, mu), (E, "
+               "lambda), (K, lambda), (lambda, nu)");
+}
+}
 template <class Material, size_t vecSize, class... options>
 void registerMaterial(pybind11::handle scope, pybind11::class_<Material, options...> cls) {
   using pybind11::operator""_a;
+  namespace py = pybind11;
+
+  cls.def(pybind11::init([](const py::kwargs& kwargs) {
+    auto matParameter = Impl::extractMaterialParameters(kwargs);
+    return new Material(matParameter);
+  }));
 
   std::string materialname = Material::name();
-  cls.def(pybind11::init([](double emod, double nu) {
-            auto matParameter = Ikarus::toLamesFirstParameterAndShearModulus({.emodul = emod, .nu = nu});
-            return new Material(matParameter);
-          }),
-          "Material constructor that takes Young's modulus E and Poisson's ratio nu", "E"_a, "nu"_a);
+
   MAKE_MaterialFunction(cls, Material, storedEnergy, vecSize);
   MAKE_MaterialFunction(cls, Material, stresses, vecSize);
   MAKE_MaterialFunction(cls, Material, tangentModuli, vecSize);

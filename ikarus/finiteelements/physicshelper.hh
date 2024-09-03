@@ -231,6 +231,10 @@ private:
 
   friend ConvertLameConstants<BulkModulusAndLamesFirstParameter> convertLameConstants(
       const BulkModulusAndLamesFirstParameter& valuePair);
+
+  friend ConvertLameConstants<YoungsModulusAndLamesFirstParameter> convertLameConstants(
+      const YoungsModulusAndLamesFirstParameter& valuePair);
+
   ConvertLameConstants(ValuePair&& valuePair)
       : vp_(valuePair) {}
   ConvertLameConstants(const ValuePair& valuePair)
@@ -261,6 +265,10 @@ inline ConvertLameConstants<LamesFirstParameterAndShearModulus> convertLameConst
 }
 inline ConvertLameConstants<BulkModulusAndLamesFirstParameter> convertLameConstants(
     const BulkModulusAndLamesFirstParameter& valuePair) {
+  return {valuePair};
+}
+inline ConvertLameConstants<YoungsModulusAndLamesFirstParameter> convertLameConstants(
+    const YoungsModulusAndLamesFirstParameter& valuePair) {
   return {valuePair};
 }
 

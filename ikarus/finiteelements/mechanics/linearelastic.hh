@@ -119,7 +119,8 @@ public:
     return uFunction;
   }
   /**
-   * \brief Gets the strain function for the given Requirement and optional displacement vector.
+   * \brief Gets the strain function for the given Requirement and optional di
+   splacement vector.
    *
    * \tparam ScalarType The scalar type for the strain vector.
    * \param par The Requirement object.

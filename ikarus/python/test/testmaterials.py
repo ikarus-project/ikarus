@@ -322,3 +322,10 @@ if __name__ == "__main__":
     checkWithStrain(strain)
 
     checkStrainTransformation()
+
+    # Check different constructors (no physical meaning)
+    svk = iks.materials.StVenantKirchhoff(E=1000, mu=500)
+    svk = iks.materials.StVenantKirchhoff(E=1000, K=500)
+    svk = iks.materials.StVenantKirchhoff(E=1000, Lambda=500)
+    svk = iks.materials.StVenantKirchhoff(K=1000, Lambda=500)
+    svk = iks.materials.StVenantKirchhoff(Lambda=1000, mu=500)
