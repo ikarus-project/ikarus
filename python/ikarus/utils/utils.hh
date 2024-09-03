@@ -7,7 +7,7 @@
 
 #include <ikarus/utils/tensorutils.hh>
 
-void addUtilsSubModule(pybind11::module& m) {
+void addBindingsToUtils() {
   namespace py = pybind11;
   using namespace pybind11::literals;
   using namespace Ikarus;

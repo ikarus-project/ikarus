@@ -3,6 +3,7 @@
 
 #include <config.h>
 
+#include "io/io.hh"
 #include "materials/materials.hh"
 #include "pythonhelpers.hh"
 #include "utils/utils.hh"
@@ -17,6 +18,7 @@
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/python/finiteelements/scalarwrapper.hh>
 #include <ikarus/solver/linearsolver/linearsolver.hh>
+
 
 /**
  * \brief Registers the ScalarWrapper class template with pybind11, adding various operations and constructors.
@@ -99,5 +101,7 @@ PYBIND11_MODULE(_ikarus, m) {
                                                         "ScalarWrapper<std::reference_wrapper<double>>");
 
   addMaterialsSubModule(m);
-  addUtilsSubModule(m);
+
+  addBindingsToUtils();
+  addBindingsToIO();
 }
