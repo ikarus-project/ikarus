@@ -46,7 +46,7 @@ struct VanishingStress : public Material<VanishingStress<stressIndexPair, MI>>
   static constexpr bool stressAcceptsVoigt = true;                           ///< Stress accepts Voigt notation.
   static constexpr bool moduliToVoigt      = true;                           ///< Moduli to Voigt notation.
   static constexpr bool moduliAcceptsVoigt = true;                           ///< Moduli accepts Voigt notation.
-  static constexpr double derivativeFactor = 1;                              ///< Derivative factor.
+  static constexpr double derivativeFactor = Underlying::derivativeFactor;   ///< Derivative factor.
 
   /**
    * \brief Constructor for VanishingStress.
