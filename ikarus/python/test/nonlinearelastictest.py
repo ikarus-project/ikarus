@@ -125,6 +125,8 @@ if __name__ == "__main__":
     newton.setup({"maxIter":100})
     newton.solve()
 
+    newtonWithFunc=iks.solvers.NewtonRaphsonWithSubsidiaryFunction(nonLinOp,iks.SolverTypeTag.sd_UmfPackLU,updateFunction)
+
     def energy(dRedInput):
         # global d
         #d = assembler.createFullVector(dRedInput).copy()

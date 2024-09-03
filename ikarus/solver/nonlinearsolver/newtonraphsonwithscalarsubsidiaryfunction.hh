@@ -113,6 +113,7 @@ public:
 
   ///< Type representing the parameter vector of the nonlinear operator.
   using ValueType = typename NLO::template ParameterValue<0>;
+    using CorrectionType = typename NLO::ValueType; ///< Type of the correction of x += deltaX.
   ///< Type representing the update function.
   using UpdateFunctionType = UF;
   using NonLinearOperator  = NLO; ///< Type of the non-linear operator

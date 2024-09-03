@@ -26,7 +26,7 @@ class NewtonRaphson;
 
 #define NRSETTINGS_FIELDS(MACRONAME)                                                                         \
   MACRONAME(res_tol, double, 1e-8, "Residual tolerance.")                                                   \
-  MACRONAME(maxIter, int, 20, "Maximum number of iterations.")                                                 
+  MACRONAME(maxIter, int, 20, "Maximum number of iterations.")
 
 SOLVERSETTINGS(NewtonRaphsonSettings, NRSETTINGS_FIELDS)
 
@@ -115,6 +115,8 @@ public:
   using ValueType = typename NLO::template ParameterValue<0>;
 
   using UpdateFunction    = UF;  ///< Type representing the update function.
+  using CorrectionType =  typename NLO::ValueType; ///< Type of the correction of x += deltaX.
+
   using NonLinearOperator = NLO; ///< Type of the non-linear operator
 
   /**

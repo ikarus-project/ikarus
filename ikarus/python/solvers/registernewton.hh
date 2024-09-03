@@ -35,7 +35,7 @@ void registerNewtonRaphson(pybind11::handle scope, pybind11::class_<NR, options.
 
   cls.def(
       "setup",
-      [](TR& self, py::dict dict) {
+      [](NR& self, py::dict dict) {
     NewtonRaphsonSettings settings;
     settings.populate(dict);
     self.setup(settings);
@@ -60,7 +60,7 @@ void registerNewtonRaphson(pybind11::handle scope, pybind11::class_<NR, options.
 
           cls.def(
       "solve",
-      [](NR& self, const typename TR::CorrectionType& dx) {
+      [](NR& self, const typename NR::CorrectionType& dx) {
           self.solve(dx);
       }, py::arg("predictor") );
 
@@ -70,7 +70,7 @@ void registerNewtonRaphson(pybind11::handle scope, pybind11::class_<NR, options.
           self.solve();
       });
 
-      cls.def("nonLinearOperator", &TR::nonLinearOperator, py::return_value_policy::reference_internal);
+      cls.def("nonLinearOperator", &NR::nonLinearOperator, py::return_value_policy::reference_internal);
 }
 
 

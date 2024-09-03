@@ -7,6 +7,7 @@
 #include <dune/python/pybind11/eigen.h>
 
 #include <ikarus/solver/nonlinearsolver/newtonraphsonwithscalarsubsidiaryfunction.hh>
+#include <ikarus/python/controlroutines/pathfollowingfunctionspythonwrapper.hh>
 
 
 namespace Ikarus::Python {
@@ -27,6 +28,7 @@ void registerNewtonRaphsonWithSubsidiaryFunction(pybind11::handle scope, pybind1
   using NonLinearOperator = NR::NonLinearOperator;
   using UpdateFunction    = NR::UpdateFunction;
   using LinearSolver = NR::LinearSolver;
+  using PySF = PySubsidaryFunction<NonLinearOperator>;
 
   cls.def(pybind11::init([](const NonLinearOperator& nonLinearOperator,Ikarus::SolverTypeTag solverTag, UpdateFunction updateFunction) {
             return new NR(nonLinearOperator, Ikarus::LinearSolver(solverTag), std::move(updateFunction));
@@ -35,7 +37,7 @@ void registerNewtonRaphsonWithSubsidiaryFunction(pybind11::handle scope, pybind1
 
   cls.def(
       "setup",
-      [](TR& self, py::dict dict) {
+      [](NR& self, py::dict dict) {
     NewtonRaphsonWithSubsidiaryFunctionSettings settings;
     settings.populate(dict);
     self.setup(settings);
@@ -60,17 +62,19 @@ void registerNewtonRaphsonWithSubsidiaryFunction(pybind11::handle scope, pybind1
 
           cls.def(
       "solve",
-      [](NR& self, const SubsidiaryType& subsidiaryFunction, SubsidiaryArgs& subsidiaryArgs, const typename TR::CorrectionType& dx) {
+      [](NR& self, const PySF& subsidiaryFunction, SubsidiaryArgs& subsidiaryArgs, const typename TR::CorrectionType& dx) {
           self.solve(subsidiaryFunction,subsidiaryArgs,dx);
       }, py::arg("subsidiaryFunction") , py::arg("subsidiaryArgs"), py::arg("predictor"));
 
           cls.def(
       "solve",
-      [](NR& self, const SubsidiaryType& subsidiaryFunction, SubsidiaryArgs& subsidiaryArgs) {
+      [](NR& self, const PySF& subsidiaryFunction, SubsidiaryArgs& subsidiaryArgs) {
           self.solve(subsidiaryFunction,subsidiaryArgs);
       } );
 
-      cls.def("nonLinearOperator", &TR::nonLinearOperator, py::return_value_policy::reference_internal);
+      cls.def("nonLinearOperator", &NR::nonLinearOperator, py::return_value_policy::reference_internal);
+
+      registerSubsidaryFunction<NonLinearOperator>(cls);
 }
 
 
