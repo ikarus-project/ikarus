@@ -373,7 +373,7 @@ public:
 
       stats_.outerIter++;
 
-      if (settings_.verbosity == 1)
+      if (settings_.verbosity >= 1)
         logState();
 
       info_.randomPredictionString = "";
@@ -401,6 +401,7 @@ public:
 
     solverInformation.iterations   = stats_.outerIter;
     solverInformation.residualNorm = stats_.gradNorm;
+    solverInformation.correctionNorm = stats_.etaNorm;
     if (solverInformation.success)
       this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, solverInformation.iterations);
     return solverInformation;

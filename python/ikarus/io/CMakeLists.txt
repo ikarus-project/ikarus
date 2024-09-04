@@ -2,3 +2,7 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 add_python_targets(io __init__)
+
+install(FILES io.hh
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/python/ikarus/io
+)

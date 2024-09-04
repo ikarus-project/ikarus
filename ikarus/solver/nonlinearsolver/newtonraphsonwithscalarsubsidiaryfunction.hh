@@ -7,11 +7,10 @@
  */
 
 #pragma once
+#include "solversettings.hh"
 
-#include <iosfwd>
 #include <utility>
 
-#include "ikarus/assembler/dirichletbcenforcement.hh"
 #include <ikarus/controlroutines/pathfollowingfunctions.hh>
 #include <ikarus/solver/nonlinearsolver/solverinfos.hh>
 #include <ikarus/utils/concepts.hh>
@@ -23,8 +22,8 @@ namespace Ikarus {
 template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
 class NewtonRaphsonWithSubsidiaryFunction;
 
-#define NRWSFSETTINGS_FIELDS(MACRONAME)                                                                         \
-  MACRONAME(res_tol, double, 1e-8, "Residual tolerance.")                                                   \
+#define NRWSFSETTINGS_FIELDS(MACRONAME)                      \
+  MACRONAME(res_tol, double, 1e-8, "Residual tolerance.")                   \
   MACRONAME(maxIter, int, 20, "Maximum number of iterations.")
 
 SOLVERSETTINGS(NewtonRaphsonWithSubsidiaryFunctionSettings, NRWSFSETTINGS_FIELDS)
@@ -115,7 +114,8 @@ public:
   using ValueType = typename NLO::template ParameterValue<0>;
     using CorrectionType = typename NLO::ValueType; ///< Type of the correction of x += deltaX.
   ///< Type representing the update function.
-  using UpdateFunctionType = UF;
+  using UpdateFunction = UF;
+   using LinearSolver = LS;
   using NonLinearOperator  = NLO; ///< Type of the non-linear operator
 
   /**
@@ -206,7 +206,7 @@ public:
       linearSolver_.analyzePattern(Ax);
 
     /// Iterative solving scheme
-    while (rNorm > settings_.tol && iter < settings_.maxIter) {
+    while (rNorm > settings_.res_tol && iter < settings_.maxIter) {
       this->notify(NonLinearSolverMessages::ITERATION_STARTED);
 
       /// Two-step solving procedure

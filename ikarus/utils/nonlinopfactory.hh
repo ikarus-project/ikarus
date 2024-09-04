@@ -138,7 +138,6 @@ struct NonLinearOperatorFactory
     Dune::Hybrid::forEach(range, [&](auto i) {
       auto arg  = std::get<i>(argumentTupleRaw);
       using Arg = std::remove_cvref_t<decltype(arg)>;
-      std::cout << "Arg:" << Dune::className<Arg>() << std::endl;
       if constexpr (std::is_same_v<Arg,
                                    typename traits::remove_pointer_t<std::remove_cvref_t<Assembler>>::FERequirement&>) {
         std::get<0>(argumentTuple) = std::get<i>(argumentTupleRaw);

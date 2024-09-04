@@ -6,9 +6,10 @@
  * \brief
 
  */
-
+ #pragma once 
+#include <ikarus/controlroutines/pathfollowingfunctions.hh>
  namespace Ikarus{
-template<NLO>
+template<typename NLO>
 class SubsidaryFunction {
 
     struct SFConcept {
@@ -17,7 +18,7 @@ class SubsidaryFunction {
         virtual void call_(SubsidiaryArgs& args) = 0;
         virtual void initialPrediction_(NLO& nonLinearOperator, SubsidiaryArgs& args) = 0;
         virtual void intermediatePrediction_(NLO& nonLinearOperator, SubsidiaryArgs& args) = 0;
-        virtual auto name_() const = 0;
+        virtual std::string name_() const = 0;
     };
 
     template <typename T> struct SFModel : SFConcept {
@@ -28,7 +29,7 @@ class SubsidaryFunction {
         void call_(SubsidiaryArgs& args) override { value_.call(args); }
         void initialPrediction_(NLO& nonLinearOperator, SubsidiaryArgs& args) override { value_.initialPrediction(nonLinearOperator, args); }
         void intermediatePrediction_(NLO& nonLinearOperator, SubsidiaryArgs& args) override { value_.intermediatePrediction(nonLinearOperator, args); }
-        auto name_() const override { return value_.name(); }
+        std::string name_() const override { return value_.name(); }
 
         T value_;
     };
@@ -42,7 +43,7 @@ public:
     void operator()(SubsidiaryArgs& args) { value_->call_(args); }
     void initialPrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) { value_->initialPrediction_(nonLinearOperator, args); }
     void intermediatePrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) { value_->intermediatePrediction_(nonLinearOperator, args); }
-    auto name() const { return value_->name_(); }
+    std::string name() const { return value_->name_(); }
 
 private:
     std::unique_ptr<SFConcept> value_;

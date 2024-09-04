@@ -5,6 +5,7 @@
 #include <dune/python/pybind11/functional.h>
 #include <dune/python/pybind11/pybind11.h>
 #include <dune/python/pybind11/eigen.h>
+#include <dune/python/pybind11/iostream.h>
 
 #include <ikarus/solver/nonlinearsolver/trustregion.hh>
 
@@ -70,14 +71,22 @@ void registerTrustRegion(pybind11::handle scope, pybind11::class_<TR, options...
           cls.def(
       "solve",
       [](TR& self, const typename TR::CorrectionType& dx) {
-          self.solve(dx);
-      }, py::arg("predictor") );
+                    py::scoped_ostream_redirect stream(
+        std::cout,                               // std::ostream&
+        py::module_::import("sys").attr("stdout") // Python output
+    );
+          return self.solve(dx);
+      }, py::arg("predictor"),py::return_value_policy::copy );
 
   cls.def(
       "solve",
       [](TR& self) {
-          self.solve();
-      });
+            py::scoped_ostream_redirect stream(
+        std::cout,                               // std::ostream&
+        py::module_::import("sys").attr("stdout") // Python output
+    );
+          return self.solve();
+      },py::return_value_policy::copy);
 
       cls.def("nonLinearOperator", &TR::nonLinearOperator, py::return_value_policy::reference_internal);
 }

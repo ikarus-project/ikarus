@@ -25,12 +25,12 @@ template <class NR, class... options>
 void registerNewtonRaphsonWithSubsidiaryFunction(pybind11::handle scope, pybind11::class_<NR, options...> cls) {
   namespace py = pybind11;
 
-  using NonLinearOperator = NR::NonLinearOperator;
+  using NonLinearOp = NR::NonLinearOperator;
   using UpdateFunction    = NR::UpdateFunction;
   using LinearSolver = NR::LinearSolver;
-  using PySF = PySubsidaryFunction<NonLinearOperator>;
+  using PySF = PySubsidaryFunction<NonLinearOp>;
 
-  cls.def(pybind11::init([](const NonLinearOperator& nonLinearOperator,Ikarus::SolverTypeTag solverTag, UpdateFunction updateFunction) {
+  cls.def(pybind11::init([](const NonLinearOp& nonLinearOperator,Ikarus::SolverTypeTag solverTag, UpdateFunction updateFunction) {
             return new NR(nonLinearOperator, Ikarus::LinearSolver(solverTag), std::move(updateFunction));
           }),
           py::arg("nonLinearOperator"), py::arg("linearSolverTag"), py::arg("updateFunction") = UpdateFunction(Ikarus::utils::UpdateDefault{}));
@@ -62,19 +62,19 @@ void registerNewtonRaphsonWithSubsidiaryFunction(pybind11::handle scope, pybind1
 
           cls.def(
       "solve",
-      [](NR& self, const PySF& subsidiaryFunction, SubsidiaryArgs& subsidiaryArgs, const typename TR::CorrectionType& dx) {
-          self.solve(subsidiaryFunction,subsidiaryArgs,dx);
+      [](NR& self, const PySF& subsidiaryFunction, SubsidiaryArgs& subsidiaryArgs, const typename NR::CorrectionType& dx) {
+          return self.solve(subsidiaryFunction,subsidiaryArgs,dx);
       }, py::arg("subsidiaryFunction") , py::arg("subsidiaryArgs"), py::arg("predictor"));
 
           cls.def(
       "solve",
       [](NR& self, const PySF& subsidiaryFunction, SubsidiaryArgs& subsidiaryArgs) {
-          self.solve(subsidiaryFunction,subsidiaryArgs);
+          return self.solve(subsidiaryFunction,subsidiaryArgs);
       } );
 
       cls.def("nonLinearOperator", &NR::nonLinearOperator, py::return_value_policy::reference_internal);
 
-      registerSubsidaryFunction<NonLinearOperator>(cls);
+      registerSubsidaryFunction<NonLinearOp>(cls);
 }
 
 

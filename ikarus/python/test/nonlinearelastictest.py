@@ -10,7 +10,10 @@ from ikarus import finite_elements, utils, assembler, solvers
 import numpy as np
 import scipy as sp
 from scipy.optimize import minimize
-
+import spdlog
+logger = spdlog.ConsoleLogger("Test")
+logger.set_level(spdlog.LogLevel.DEBUG)
+iks.register_logger(logger.get_underlying_logger())
 import dune.grid
 import dune.functions
 
@@ -117,15 +120,17 @@ if __name__ == "__main__":
     nonLinOp2 = iks.utils.makeNonLinearOperator(assembler)
     solver2=iks.solvers.TrustRegion(nonLinOp2)
     solver2.setup({"maxIter":100})
-    solver2.solve()
+    info=solver2.solve()
+    print(info)
+    assert info
     print(d)
     assembler.bind(iks.DBCOption.Reduced)
-
-    newton= iks.solvers.NewtonRaphson(nonLinOp,iks.SolverTypeTag.sd_UmfPackLU,updateFunction)
+    nonLinOp3 = nonLinOp.subOperator(1,2)
+    newton= iks.solvers.NewtonRaphson(nonLinOp3,iks.SolverTypeTag.sd_UmfPackLU,updateFunction)
     newton.setup({"maxIter":100})
-    newton.solve()
-
-    newtonWithFunc=iks.solvers.NewtonRaphsonWithSubsidiaryFunction(nonLinOp,iks.SolverTypeTag.sd_UmfPackLU,updateFunction)
+    info=newton.solve()
+    assert info
+    newtonWithFunc=iks.solvers.NewtonRaphsonWithSubsidiaryFunction(nonLinOp3,iks.SolverTypeTag.sd_UmfPackLU,updateFunction)
 
     def energy(dRedInput):
         # global d
@@ -169,7 +174,7 @@ if __name__ == "__main__":
     ) # minize with explicitly given gradient
     assert resultd2.success
     assert resultd2.nit == 34
-    print(d)
+    print(resultd2)
     print("Step 3: Minimize with explicitly given gradient and hessian")
     resultd3 = minimize(
         energy,

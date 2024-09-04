@@ -67,7 +67,7 @@ void registerNewtonRaphson(pybind11::handle scope, pybind11::class_<NR, options.
   cls.def(
       "solve",
       [](NR& self) {
-          self.solve();
+         return self.solve();
       });
 
       cls.def("nonLinearOperator", &NR::nonLinearOperator, py::return_value_policy::reference_internal);

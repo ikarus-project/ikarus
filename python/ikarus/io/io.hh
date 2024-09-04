@@ -13,6 +13,7 @@
 
 #include <ikarus/io/vtkdatatag.hh>
 
+namespace Ikarus::Python{
 void addBindingsToIO() {
   namespace py = pybind11;
   using namespace pybind11::literals;
@@ -23,4 +24,5 @@ void addBindingsToIO() {
   using namespace Ikarus::Vtk;
   using namespace Ikarus;
   ENUM_BINDINGS_WITH_MODULE(DataTag, io);
+}
 }

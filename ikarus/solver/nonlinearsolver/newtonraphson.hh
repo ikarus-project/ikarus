@@ -24,8 +24,8 @@ template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils:
 class NewtonRaphson;
 
 
-#define NRSETTINGS_FIELDS(MACRONAME)                                                                         \
-  MACRONAME(res_tol, double, 1e-8, "Residual tolerance.")                                                   \
+#define NRSETTINGS_FIELDS(MACRONAME)                                        \
+  MACRONAME(res_tol, double, 1e-8, "Residual tolerance.")            \
   MACRONAME(maxIter, int, 20, "Maximum number of iterations.")
 
 SOLVERSETTINGS(NewtonRaphsonSettings, NRSETTINGS_FIELDS)

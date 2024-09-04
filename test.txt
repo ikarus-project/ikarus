@@ -1,0 +1,12 @@
+[2024-09-04 14:42:15.077] [Test] [info]         | iter | inner_i |   rho |   energy | energy_p | energy_inc |  norm(g) |    Delta | norm(corr) | InnerBreakReason
+[2024-09-04 14:42:15.077] [Test] [info] -----------------------------------------------------------------------------------------------------------------------------------------------
+[2024-09-04 14:42:17.804] [Test] [info] acc         17         3                                              2.10e-09                           reached target residual-theta (superlinear)                              
+[2024-09-04 14:42:17.804] [Test] [info] CONVERGENCE:  Energy: -3.3789662962369679e-05    norm(gradient): 2.0953156381691045e-09
+[2024-09-04 14:42:17.804] [Test] [info] Gradient norm tolerance reached; options.tolerance = 1e-06
+[2024-09-04 14:42:17.804] [Test] [info] Total iterations: 17 Total CG Iterations: 19
+[2024-09-04 14:42:17.960] [Test] [info]         | iter | inner_i |   rho |   energy | energy_p | energy_inc |  norm(g) |    Delta | norm(corr) | InnerBreakReason
+[2024-09-04 14:42:17.960] [Test] [info] -----------------------------------------------------------------------------------------------------------------------------------------------
+[2024-09-04 14:42:18.457] [Test] [info] acc          3         4                                              5.16e-14                           reached target residual-theta (superlinear)                              
+[2024-09-04 14:42:18.457] [Test] [info] CONVERGENCE:  Energy: -3.3789662962369679e-05    norm(gradient): 5.1603710228729907e-14
+[2024-09-04 14:42:18.457] [Test] [info] Gradient norm tolerance reached; options.tolerance = 1e-06
+[2024-09-04 14:42:18.457] [Test] [info] Total iterations: 3 Total CG Iterations: 7

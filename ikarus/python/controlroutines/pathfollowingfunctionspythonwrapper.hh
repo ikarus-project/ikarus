@@ -8,24 +8,28 @@
  *
  */
 
+#include <dune/python/common/typeregistry.hh>
  #include <ikarus/controlroutines/pathfollowingfunctions.hh>
  #include <ikarus/utils/nonlinearoperator.hh>
  #include <ikarus/controlroutines/pathfollowingfunctionsinterface.hh>
 
  namespace Ikarus::Python{
 
-template<NLO>
+template<typename NLO>
 struct PySubsidaryFunction :  SubsidaryFunction<NLO> {
-   using SubsidaryFunction<NLO>::SubsidaryFunction<NLO>;
+    using Base= SubsidaryFunction<NLO>;
+   using Base::Base;
+
+
 
     void operator()(SubsidiaryArgs& args) {
-    PYBIND11_OVERRIDE_PURE_NAME(void, SubsidaryFunction<NLO>, "__call__",operator(), args);
+    PYBIND11_OVERRIDE_PURE_NAME(void, Base, "__call__",operator(), args);
          }
     void initialPrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) {
-         PYBIND11_OVERRIDE_PURE(void, SubsidaryFunction<NLO>,initialPrediction, nonLinearOperator,args);
+         PYBIND11_OVERRIDE_PURE(void, Base,initialPrediction, nonLinearOperator,args);
     }
     void intermediatePrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) {
-                 PYBIND11_OVERRIDE_PURE(void, SubsidaryFunction<NLO>,intermediatePrediction, nonLinearOperator,args);
+                 PYBIND11_OVERRIDE_PURE(void, Base,intermediatePrediction, nonLinearOperator,args);
          }
     std::string name() const {
                         PYBIND11_OVERRIDE_PURE(std::string, SubsidaryFunction<NLO>,name);
