@@ -77,15 +77,15 @@ namespace Impl {
 
   Ikarus::LamesFirstParameterAndShearModulus extractMaterialParameters(const pybind11::kwargs& kwargs) {
     // clang-format off
-  static const std::map<std::pair<std::string, std::string>, std::function<LamesFirstParameterAndShearModulus(const pybind11::kwargs&)>> conversionMap = {
-    {{"E", "nu"}, [](const auto& kw){ return convertMaterialParameters<YoungsModulusAndPoissonsRatio>(kw, "E", "nu"); }},
-    {{"E", "mu"}, [](const auto& kw){ return convertMaterialParameters<YoungsModulusAndShearModulus>(kw, "E", "mu"); }},
-    {{"E", "K"}, [](const auto& kw){ return convertMaterialParameters<YoungsModulusAndBulkModulus>(kw, "E", "K"); }},
-    {{"E", "Lambda"}, [](const auto& kw){ return convertMaterialParameters<YoungsModulusAndLamesFirstParameter>(kw, "E", "Lambda"); }},
-    {{"K", "Lambda"}, [](const auto& kw){ return convertMaterialParameters<BulkModulusAndLamesFirstParameter>(kw, "K", "Lambda"); }},
-    {{"Lambda", "mu"}, [](const auto& kw){ return LamesFirstParameterAndShearModulus{kw["Lambda"].template cast<double>(), kw["mu"].template cast<double>()}; }}
-  };
-  // clang-format off
+    static const std::map<std::pair<std::string, std::string>, std::function<LamesFirstParameterAndShearModulus(const pybind11::kwargs&)>> conversionMap = {
+      {{"E", "nu"}, [](const auto& kw){ return convertMaterialParameters<YoungsModulusAndPoissonsRatio>(kw, "E", "nu"); }},
+      {{"E", "mu"}, [](const auto& kw){ return convertMaterialParameters<YoungsModulusAndShearModulus>(kw, "E", "mu"); }},
+      {{"E", "K"}, [](const auto& kw){ return convertMaterialParameters<YoungsModulusAndBulkModulus>(kw, "E", "K"); }},
+      {{"E", "Lambda"}, [](const auto& kw){ return convertMaterialParameters<YoungsModulusAndLamesFirstParameter>(kw, "E", "Lambda"); }},
+      {{"K", "Lambda"}, [](const auto& kw){ return convertMaterialParameters<BulkModulusAndLamesFirstParameter>(kw, "K", "Lambda"); }},
+      {{"Lambda", "mu"}, [](const auto& kw){ return LamesFirstParameterAndShearModulus{kw["Lambda"].template cast<double>(), kw["mu"].template cast<double>()}; }}
+    };
+    // clang-format off
 
   if (kwargs.size() != 2)
     throw std::runtime_error("The number of material parameters passed to the material should be 2");
@@ -97,7 +97,7 @@ namespace Impl {
   }
   DUNE_THROW(Dune::IOError,
                "No suitable combination of material parameters found, valid combinations are: (E, nu), (E, mu), (E, "
-               "lambda), (K, lambda), (lambda, nu)");
+               "K), (E, Lambda), (K, Lambda), (Lambda, nu)");
 }
 }
 template <class Material, size_t vecSize, class... options>
