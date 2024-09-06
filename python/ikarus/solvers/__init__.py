@@ -18,7 +18,8 @@ def TrustRegion(nonlinearOperator,PreConditioner="IncompleteCholesky", updateFun
     #includes = ["ikarus/solver/nonlinearsolver/trustregion.hh"]
     includes = ["ikarus/python/solvers/registertrustregion.hh"]
     includes += nonlinearOperator.cppIncludes
-    updateFunctionType = f"std::function<void({nonlinearOperator.firstParameterCppTypeName}&,const {nonlinearOperator.derivativeCppTypeName}&)>"
+    assert "Eigen::Ref" in nonlinearOperator.firstParameterCppTypeName
+    updateFunctionType = f"std::function<void( {nonlinearOperator.firstParameterCppTypeName},const Eigen::Ref<const {nonlinearOperator.derivativeCppTypeName}>&)>"
     element_type = (
         f"Ikarus::TrustRegion<{nonlinearOperator.cppTypeName},Ikarus::PreConditioner::{PreConditioner},{updateFunctionType}>"
     )
@@ -34,6 +35,13 @@ def TrustRegion(nonlinearOperator,PreConditioner="IncompleteCholesky", updateFun
     else:
         return module.TrustRegion(nonlinearOperator, updateFunction)
 
+def __updateFunctionType(nonlinearOperator):
+    assert "Eigen::Ref" in nonlinearOperator.firstParameterCppTypeName
+    if nonlinearOperator.numberOfFunctions == 2:
+        updateFunctionType = f"std::function<void({nonlinearOperator.firstParameterCppTypeName},const Eigen::Ref<const {nonlinearOperator.valueCppTypeName}>&)>"
+    elif nonlinearOperator.numberOfFunctions == 3:
+        updateFunctionType = f"std::function<void({nonlinearOperator.secondParameterCppTypeName},const Eigen::Ref<const {nonlinearOperator.derivativeCppTypeName}>&)>"
+    return updateFunctionType
 
 def NewtonRaphson(nonlinearOperator,linearSolver="UmfPack", updateFunction=None):
     """
@@ -47,10 +55,7 @@ def NewtonRaphson(nonlinearOperator,linearSolver="UmfPack", updateFunction=None)
     #includes = ["ikarus/solver/nonlinearsolver/trustregion.hh"]
     includes = ["ikarus/python/solvers/registernewton.hh"]
     includes += nonlinearOperator.cppIncludes
-    if nonlinearOperator.numberOfFunctions == 2:
-        updateFunctionType = f"std::function<void({nonlinearOperator.firstParameterCppTypeName}&,const {nonlinearOperator.valueCppTypeName}&)>"
-    elif nonlinearOperator.numberOfFunctions == 3:
-        updateFunctionType = f"std::function<void({nonlinearOperator.secondParameterCppTypeName}&,const {nonlinearOperator.derivativeCppTypeName}&)>"
+    updateFunctionType = __updateFunctionType(nonlinearOperator)
 
     element_type = (
         f"Ikarus::NewtonRaphson<{nonlinearOperator.cppTypeName},Ikarus::LinearSolver,{updateFunctionType}>"
@@ -79,10 +84,7 @@ def NewtonRaphsonWithSubsidiaryFunction(nonlinearOperator,linearSolver="UmfPack"
     generator = MySimpleGenerator("NewtonRaphsonWithSubsidiaryFunction", "Ikarus::Python")
     includes = ["ikarus/python/solvers/registernewtonwithsubsidaryfunction.hh"]
     includes += nonlinearOperator.cppIncludes
-    if nonlinearOperator.numberOfFunctions == 2:
-        updateFunctionType = f"std::function<void({nonlinearOperator.firstParameterCppTypeName}&,const {nonlinearOperator.valueCppTypeName}&)>"
-    elif nonlinearOperator.numberOfFunctions == 3:
-        updateFunctionType = f"std::function<void({nonlinearOperator.secondParameterCppTypeName}&,const {nonlinearOperator.derivativeCppTypeName}&)>"
+    updateFunctionType = __updateFunctionType(nonlinearOperator)
 
     element_type = (
         f"Ikarus::NewtonRaphsonWithSubsidiaryFunction<{nonlinearOperator.cppTypeName},Ikarus::LinearSolver,{updateFunctionType}>"
@@ -95,6 +97,6 @@ def NewtonRaphsonWithSubsidiaryFunction(nonlinearOperator,linearSolver="UmfPack"
     )
 
     if updateFunction is None:
-        return module.NewtonRaphson(nonlinearOperator,linearSolver)
+        return module.NewtonRaphsonWithSubsidiaryFunction(nonlinearOperator,linearSolver)
     else:
-        return module.NewtonRaphson(nonlinearOperator,linearSolver, updateFunction)
+        return module.NewtonRaphsonWithSubsidiaryFunction(nonlinearOperator,linearSolver, updateFunction)

@@ -15,7 +15,7 @@ class SubsidaryFunction {
     struct SFConcept {
         virtual ~SFConcept() = default;
         virtual std::unique_ptr<SFConcept> copy_() const = 0;
-        virtual void call_(SubsidiaryArgs& args) = 0;
+        virtual void call_(SubsidiaryArgs& args) const = 0;
         virtual void initialPrediction_(NLO& nonLinearOperator, SubsidiaryArgs& args) = 0;
         virtual void intermediatePrediction_(NLO& nonLinearOperator, SubsidiaryArgs& args) = 0;
         virtual std::string name_() const = 0;
@@ -26,7 +26,7 @@ class SubsidaryFunction {
         std::unique_ptr<SFConcept> copy_() const override {
             return std::make_unique<SFModel>(value_);
         }
-        void call_(SubsidiaryArgs& args) override { value_.call(args); }
+        void call_(SubsidiaryArgs& args) const override { value_.call(args); }
         void initialPrediction_(NLO& nonLinearOperator, SubsidiaryArgs& args) override { value_.initialPrediction(nonLinearOperator, args); }
         void intermediatePrediction_(NLO& nonLinearOperator, SubsidiaryArgs& args) override { value_.intermediatePrediction(nonLinearOperator, args); }
         std::string name_() const override { return value_.name(); }
@@ -40,7 +40,7 @@ public:
     }
     SubsidaryFunction(const SubsidaryFunction& other) : value_(other.value_->copy_()) {}
 
-    void operator()(SubsidiaryArgs& args) { value_->call_(args); }
+    void operator()(SubsidiaryArgs& args) const { value_->call_(args); }
     void initialPrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) { value_->initialPrediction_(nonLinearOperator, args); }
     void intermediatePrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) { value_->intermediatePrediction_(nonLinearOperator, args); }
     std::string name() const { return value_->name_(); }

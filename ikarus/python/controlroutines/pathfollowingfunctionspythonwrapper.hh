@@ -15,32 +15,31 @@
 
  namespace Ikarus::Python{
 
-template<typename NLO>
-struct PySubsidaryFunction :  SubsidaryFunction<NLO> {
-    using Base= SubsidaryFunction<NLO>;
-   using Base::Base;
+// template<typename NLO>
+// struct PySubsidaryFunction :  SubsidaryFunction<NLO> {
+//     using Base= SubsidaryFunction<NLO>;
+//    using Base::Base;
 
 
-
-    void operator()(SubsidiaryArgs& args) {
-    PYBIND11_OVERRIDE_PURE_NAME(void, Base, "__call__",operator(), args);
-         }
-    void initialPrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) {
-         PYBIND11_OVERRIDE_PURE(void, Base,initialPrediction, nonLinearOperator,args);
-    }
-    void intermediatePrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) {
-                 PYBIND11_OVERRIDE_PURE(void, Base,intermediatePrediction, nonLinearOperator,args);
-         }
-    std::string name() const {
-                        PYBIND11_OVERRIDE_PURE(std::string, SubsidaryFunction<NLO>,name);
-        }
-};
+//     void operator()(SubsidiaryArgs& args) const {
+//     PYBIND11_OVERRIDE_PURE_NAME(void, Base, "__call__",operator(), args);
+//          }
+//     void initialPrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) {
+//          PYBIND11_OVERRIDE_PURE(void, Base,initialPrediction, nonLinearOperator,args);
+//     }
+//     void intermediatePrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) {
+//                  PYBIND11_OVERRIDE_PURE(void, Base,intermediatePrediction, nonLinearOperator,args);
+//          }
+//     std::string name() const {
+//                         PYBIND11_OVERRIDE_PURE(std::string, SubsidaryFunction<NLO>,name);
+//         }
+// };
 
 template <class NLO>
 void registerSubsidaryFunction(pybind11::handle scope) {
     using SF = SubsidaryFunction<NLO>;
     auto includes              = Dune::Python::IncludeFiles{"ikarus/controlroutines/pathfollowingfunctionsinterface.hh"};
-    auto [lv, isNotRegistered] = Dune::Python::insertClass<SF,PySubsidaryFunction<NLO>>(
+    auto [lv, isNotRegistered] = Dune::Python::insertClass<SF>(
         scope, "SubsidaryFunction", Dune::Python::GenerateTypeName(Dune::className<SF>()), includes);
     if (isNotRegistered) {
         lv.def(pybind11::init<SF>())

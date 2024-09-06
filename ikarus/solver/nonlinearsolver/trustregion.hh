@@ -238,10 +238,11 @@ public:
     truncatedConjugateGradient_.analyzePattern(hessian());
 
     innerInfo_.Delta = settings_.Delta0;
-    spdlog::info(
+    if (settings_.verbosity >= 1)
+   { spdlog::info(
         "        | iter | inner_i |   rho |   energy | energy_p | energy_inc |  norm(g) |    Delta | norm(corr) | "
         "InnerBreakReason");
-    spdlog::info("{:-^143}", "-");
+    spdlog::info("{:-^143}", "-");}
     while (not stoppingCriterion()) {
       this->notify(NonLinearSolverMessages::ITERATION_STARTED);
       if (settings_.useRand) {
@@ -373,8 +374,7 @@ public:
 
       stats_.outerIter++;
 
-      if (settings_.verbosity >= 1)
-        logState();
+      logState();
 
       info_.randomPredictionString = "";
 
@@ -414,6 +414,7 @@ public:
 
 private:
   void logState() const {
+    if (settings_.verbosity >= 2)
     spdlog::info(
         "{:>3s} {:>3s} {:>6d} {:>9d}  {:>6.2f}  {:>9.2e}  {:>9.2e}  {:>11.2e}  {:>9.2e}  {:>9.2e}  {:>11.2e}   "
         "{:<73}",
@@ -423,6 +424,7 @@ private:
   }
 
   void logFinalState() {
+    if (settings_.verbosity >= 1)
     spdlog::info("{:>3s} {:>3s} {:>6d} {:>9d}  {: ^6}  {: ^9}  {: ^9}  {: ^11}  {:>9.2e}  {: ^9}  {: ^11}   {:<73}",
                  info_.accstr, info_.trstr, stats_.outerIter, innerInfo_.numInnerIter, " ", " ", " ", " ",
                  stats_.gradNorm, " ", " ", info_.stopReasonString + info_.cauchystr + info_.randomPredictionString);

@@ -11,6 +11,7 @@
 
 #include <utility>
 
+#include <ikarus/solver/linearsolver/linearsolver.hh>
 #include <ikarus/controlroutines/pathfollowingfunctions.hh>
 #include <ikarus/solver/nonlinearsolver/solverinfos.hh>
 #include <ikarus/utils/concepts.hh>

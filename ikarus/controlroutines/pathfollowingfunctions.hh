@@ -35,7 +35,7 @@ namespace Ikarus {
  * This structure holds various arguments used by subsidiary functions in control routines.
  * \ingroup  controlroutines
  */
-struct SubsidiaryArgs
+ struct SubsidiaryArgs
 {
   double stepSize;              ///< The step size in the control routine.
   Eigen::VectorX<double> DD;    ///< The vector representing the solution increment.

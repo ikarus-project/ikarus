@@ -113,8 +113,10 @@ if __name__ == "__main__":
     v2= nonLinOp2.derivative()
     v3 = nonLinOp2.secondDerivative()
     solver.setup({"maxIter":100,"verbosity":5,"debug":1,"Delta0":1e-10,"corr_tol":1e-20})
-    solver.solve()
-    print(d)
+    info= solver.solve()
+    assert info
+    assert  info.iterations == 17
+
     d[:] = np.zeros(assembler.fullDOFsize())
     assembler.bind(iks.DBCOption.Full)
     nonLinOp2 = iks.utils.makeNonLinearOperator(assembler)
@@ -123,13 +125,18 @@ if __name__ == "__main__":
     info=solver2.solve()
     print(info)
     assert info
+    assert info.iterations == 3
     print(d)
+    d[:] = np.zeros(assembler.fullDOFsize())
     assembler.bind(iks.DBCOption.Reduced)
     nonLinOp3 = nonLinOp.subOperator(1,2)
     newton= iks.solvers.NewtonRaphson(nonLinOp3,iks.SolverTypeTag.sd_UmfPackLU,updateFunction)
     newton.setup({"maxIter":100})
     info=newton.solve()
+    print(info)
     assert info
+    assert info.iterations == 2
+    d[:] = np.zeros(assembler.fullDOFsize())
     newtonWithFunc=iks.solvers.NewtonRaphsonWithSubsidiaryFunction(nonLinOp3,iks.SolverTypeTag.sd_UmfPackLU,updateFunction)
 
     def energy(dRedInput):

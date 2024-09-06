@@ -28,7 +28,7 @@ void registerNewtonRaphsonWithSubsidiaryFunction(pybind11::handle scope, pybind1
   using NonLinearOp = NR::NonLinearOperator;
   using UpdateFunction    = NR::UpdateFunction;
   using LinearSolver = NR::LinearSolver;
-  using PySF = PySubsidaryFunction<NonLinearOp>;
+  using PySF = SubsidaryFunction<NonLinearOp>;
 
   cls.def(pybind11::init([](const NonLinearOp& nonLinearOperator,Ikarus::SolverTypeTag solverTag, UpdateFunction updateFunction) {
             return new NR(nonLinearOperator, Ikarus::LinearSolver(solverTag), std::move(updateFunction));
