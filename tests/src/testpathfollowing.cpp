@@ -42,7 +42,7 @@ static auto simple2DOperatorArcLengthTest(NonLinearOperator& nonLinOp, double st
   auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
   auto pft       = Ikarus::ArcLength{}; // Type of path following technique
 
-  auto nrSettings = Ikarus::NewtonRaphsonWithSubsidiaryFunctionConfig<decltype(linSolver)>{.linearSolver = linSolver};
+  auto NewtonRaphsonSettings = Ikarus::NewtonRaphsonWithSubsidiaryFunctionConfig<decltype(linSolver)>{.linearSolver = linSolver};
   auto nr         = Ikarus::createNonlinearSolver(nrSettings, nonLinOp);
 
   auto alc = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);

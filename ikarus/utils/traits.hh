@@ -8,6 +8,7 @@
 
 #pragma once
 #include <functional>
+#include <optional>
 #include <tuple>
 #include <type_traits>
 
@@ -17,6 +18,7 @@ class shared_ptr;
 }
 
 #include <dune/common/hybridutilities.hh>
+
 namespace Ikarus::traits {
 
 /**
@@ -114,6 +116,27 @@ struct hasType<T, std::tuple<T, Ts...>> : std::true_type
 {
 };
 #endif
+
+/**
+ * \brief Function to return the n-th object of a variadic template.
+ *
+ * \ingroup traits
+ *
+ */
+struct NthArgument
+{
+  /** \brief Function to return the n-th object of a variadic template.
+   *
+   * \tparam N Index of the object to return.
+   * \tparam Args Types of the variadic template.
+   * \param args Variadic template.
+   * \return N-th object of the variadic template.
+   */
+  template <int N, typename... Args>
+  static std::tuple_element_t<N, std::tuple<Args&&...>> arg(Args&&... args) {
+    return std::get<N>(std::forward_as_tuple(std::forward<Args>(args)...));
+  }
+};
 
 #ifndef DOXYGEN
 template <template <typename...> class, typename...>
@@ -462,5 +485,50 @@ struct ChangeArgTypeAtPos<std::function<R(Args...)>, Pos, NewType>
   using NewFunctionType  = TupleToFunctionType_t<R, NewArgsTuple>;
 };
 #endif
+
+/**
+ * @brief Type trait to check if a type is an AffordanceCollection.
+ *
+ * @tparam T Type to check.
+ */
+template <typename T>
+struct IsIntegerSequence : std::false_type
+{
+};
+
+#ifndef DOXYGEN
+
+template <typename T, T... t>
+struct IsIntegerSequence<std::integer_sequence<T, t...>> : std::true_type
+{
+};
+#endif
+
+template <typename T>
+constexpr bool IsIntegerSequence_v = IsIntegerSequence<T>::value;
+
+/**
+ * @brief Type trait to check if a type is an optional reference wrapper.
+ *
+ * @tparam T Type to check.
+ */
+template <typename T>
+struct isOptionalRefWrapper : std::false_type
+{
+};
+#ifndef DOXYGEN
+template <typename T>
+struct isOptionalRefWrapper<std::optional<std::reference_wrapper<T>>> : std::true_type
+{
+};
+#endif
+
+/**
+ * @brief Helper variable template to check if a type is an optional reference wrapper.
+ *
+ * @tparam T Type to check.
+ */
+template <typename T>
+constexpr bool isOptionalRefWrapper_v = isOptionalRefWrapper<T>::value;
 
 } // namespace Ikarus::traits

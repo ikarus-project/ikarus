@@ -3,13 +3,16 @@
 
 add_subdirectory(assembler)
 add_subdirectory(finite_elements)
+add_subdirectory(solvers)
 add_subdirectory(utils)
 add_subdirectory(io)
 
-add_python_targets(ikarus __init__ dirichlet_values basis generator)
+add_python_targets(ikarus __init__ dirichlet_values basis generator solvers)
 
-dune_add_pybind11_module(NAME _ikarus)
-
+dune_add_pybind11_module(
+  NAME _ikarus COMPILE_DEFINITIONS
+  "DUNE_LOCALFEFUNCTIONS_USE_EIGEN=1;PYBIND11_DETAILED_ERROR_MESSAGES=1;EIGEN_DEFAULT_TO_ROW_MAJOR=1"
+)
 set_property(
   TARGET _ikarus
   PROPERTY LINK_LIBRARIES dunecommon ikarus

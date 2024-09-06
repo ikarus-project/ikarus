@@ -10,13 +10,14 @@
 #pragma once
 
 #if HAVE_DUNE_LOCALFEFUNCTIONS
-
   #include <optional>
   #include <type_traits>
 
   #include <dune/geometry/quadraturerules.hh>
   #include <dune/localfefunctions/expressions/linearStrainsExpr.hh>
   #include <dune/localfefunctions/impl/standardLocalFunction.hh>
+
+  #include <Eigen/Dense>
 
   #include <ikarus/finiteelements/fehelper.hh>
   #include <ikarus/finiteelements/ferequirements.hh>
@@ -199,6 +200,7 @@ protected:
     const auto eps = strainFunction(par, dx);
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
+    std::cout << "calculateMatrixImpl of LinearElastic called" << std::endl;
 
     const auto C = materialTangent();
     for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {

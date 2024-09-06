@@ -106,9 +106,12 @@ struct AffordanceCollection : public std::tuple<Affordances...>
   using Base = std::tuple<Affordances...>;
 
   AffordanceCollection() = default;
+
   constexpr AffordanceCollection(Affordances... affordances)
+  requires(sizeof...(Affordances) > 0)
       : Base(affordances...) {}
 
+  static constexpr size_t size = sizeof...(Affordances);
   static constexpr bool hasScalarAffordance = traits::hasType<ScalarAffordance, std::tuple<Affordances...>>::value;
   static constexpr bool hasVectorAffordance = traits::hasType<VectorAffordance, std::tuple<Affordances...>>::value;
   static constexpr bool hasMatrixAffordance = traits::hasType<MatrixAffordance, std::tuple<Affordances...>>::value;
@@ -165,6 +168,27 @@ struct AffordanceCollection : public std::tuple<Affordances...>
     return std::get<MatrixAffordance>(*this);
   }
 };
+
+/**
+ * @brief Type trait to check if a type is an AffordanceCollection.
+ *
+ * @tparam T Type to check.
+ */
+template <typename T>
+struct IsAffordanceCollection : std::false_type
+{
+};
+
+#ifndef DOXYGEN
+
+template <typename... Ts>
+struct IsAffordanceCollection<AffordanceCollection<Ts...>> : std::true_type
+{
+};
+#endif
+
+template <typename T>
+constexpr bool IsAffordanceCollection_v = IsAffordanceCollection<T>::value;
 
 inline constexpr VectorAffordance forces = VectorAffordance::forces;
 
@@ -360,3 +384,12 @@ public:
 };
 
 } // namespace Ikarus
+
+namespace std {
+template <Ikarus::FEAffordance... Affordances>
+requires(sizeof...(Affordances) <= 3)
+struct tuple_size<Ikarus::AffordanceCollection<Affordances...>>
+    : std::integral_constant<std::size_t, sizeof...(Affordances)>
+{
+};
+} // namespace std

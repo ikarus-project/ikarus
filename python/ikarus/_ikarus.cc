@@ -4,6 +4,7 @@
 #include <config.h>
 
 #include "io/io.hh"
+#include "solvers/registersolverinfo.hh"
 #include "pythonhelpers.hh"
 
 #include <dune/common/float_cmp.hh>
@@ -18,6 +19,8 @@
 #include <ikarus/python/finiteelements/material.hh>
 #include <ikarus/python/finiteelements/scalarwrapper.hh>
 #include <ikarus/solver/linearsolver/linearsolver.hh>
+#include <ikarus/utils/defaultfunctions.hh>
+#include <spdlog/spdlog.h>
 
 /**
  * \brief Registers the ScalarWrapper class template with pybind11, adding various operations and constructors.
@@ -110,5 +113,14 @@ PYBIND11_MODULE(_ikarus, m) {
   pybind11::class_<NeoHooke> nh(materials, "NeoHooke");
   Ikarus::Python::registerNeoHooke(materials, nh);
 
-  addBindingsToIO();
+  Ikarus::Python::addBindingsToIO();
+  Ikarus::Python::registerSolverInformation();
+
+  pybind11::class_<Ikarus::utils::UpdateDefault> ud(m, "UpdateDefault");
+
+   m.def("register_logger", []( std::shared_ptr<spdlog::logger>& logger){
+    spdlog::register_logger(logger);
+    spdlog::set_default_logger(logger);}
+    );
+
 }

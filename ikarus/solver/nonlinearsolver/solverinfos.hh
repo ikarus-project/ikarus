@@ -7,7 +7,7 @@
  */
 
 #pragma once
-
+#include <limits>
 namespace Ikarus {
 /**
  * \brief Information about the result of a non-linear solver.

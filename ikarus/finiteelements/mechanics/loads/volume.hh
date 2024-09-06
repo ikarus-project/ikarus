@@ -6,6 +6,8 @@
 #include <dune/localfefunctions/derivativetransformators.hh>
 #include <dune/localfefunctions/meta.hh>
 
+#include <Eigen/Core>
+
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/traits.hh>

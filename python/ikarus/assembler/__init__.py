@@ -76,9 +76,7 @@ def assemblerManipulator(assembler):
     includes += ["ikarus/python/assembler/flatassemblermanipulator.hh"]
     moduleName = "AssemblerManipulator_" + hashIt(element_type)
     module = generator.load(
-        includes=includes,
-        typeName=element_type,
-        moduleName=moduleName,
-        holder="std::shared_ptr",
+        includes=includes, typeName=element_type, moduleName=moduleName,
+        holder="std::shared_ptr"
     )
     return module.AssemblerManipulator(assembler)

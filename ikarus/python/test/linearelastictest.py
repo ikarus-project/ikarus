@@ -14,6 +14,7 @@ import dune.grid
 import dune.functions
 from dune.vtk import vtkWriter, vtkUnstructuredGridWriter
 
+import types
 
 def linElasticTest(easBool):
     lowerLeft = []
@@ -122,13 +123,54 @@ def linElasticTest(easBool):
     assembler.bind(req, iks.AffordanceCollection.elastoStatics, iks.DBCOption.Full)
     assemblerDense.bind(req, iks.AffordanceCollection.elastoStatics, iks.DBCOption.Full)
 
-    Msparse = assembler.matrix()
-    forces = assembler.vector()
+    print(assembler.requirement().globalSolution())
+    KsparseA = assembler.matrix()
+    forcesA = assembler.vector().copy()
 
-    x = sp.sparse.linalg.spsolve(Msparse, -forces)
+    if not easBool:
+        nonLinOp = iks.utils.makeNonLinearOperator(assembler)
+        print(f"Energy: {nonLinOp.value()}")
+        nonLinOp= nonLinOp.subOperator(1,2)
+    else:
+        print("EAS element do not support any scalar calculations, i.e. they are not derivable from a potential")
+        nonLinOp = iks.utils.makeNonLinearOperator(assembler, derivativeIndices=[1,2])
+        nonLinOp.update(1)
+
+    Ksparse = nonLinOp.derivative()
+    forces = nonLinOp.value()
+    with np.printoptions(precision=3, suppress=True):
+        assert np.allclose(KsparseA.data, Ksparse.data, atol=1e-6) ,"The "+("EAS" if easBool else "") + f" sparse Matrix \
+            from assembler\n {KsparseA.todense()}\n  not equal to sparse matrix from non linear operator: \n {Ksparse.todense()} \
+        \nDifference\n {KsparseA.todense()-Ksparse.todense()} \n"
+        assert np.allclose(forcesA, forces, atol=1e-6), f"Forces not equal {forcesA}\n\n {forces}"
+
+    try:
+        nonLinOp.subOperator(0,1,4)
+    except ValueError:
+        pass
+
+    try:
+        nonLinOp.subOperator()
+    except ValueError:
+        pass
+
+    try:
+        nonLinOp.subOperator(0,1,2)
+    except ValueError:
+        pass
+
+    try:
+        nonLinOp.subOperator(1,2)
+    except ValueError:
+        pass
+    print(nonLinOp)
+    print(nonLinOp.firstParameter())
+
+
+
+    x = sp.sparse.linalg.spsolve(Ksparse, -forces)
     fx = flatBasis.asFunction(x)
     # grid.plot()
-    req.globalSolution()
     # Test calculateAt Function
     indexSet = grid.indexSet
 

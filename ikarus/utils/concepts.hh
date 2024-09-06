@@ -226,10 +226,10 @@ namespace Concepts {
   concept NonLinearSolverCheckForPathFollowing = requires {
     std::tuple_size<typename NLS::NonLinearOperator::ParameterValues>::value == 2;
     not(std::is_same_v<typename NLS::NonLinearOperator::ValueType, double> and
-        ((traits::isSpecializationTypeAndNonTypes<Eigen::Matrix,
-                                                  typename NLS::NonLinearOperator::DerivativeType>::value) or
-         (traits::isSpecializationTypeNonTypeAndType<Eigen::SparseMatrix,
-                                                     typename NLS::NonLinearOperator::DerivativeType>::value)));
+        ((traits::isSpecializationTypeAndNonTypes<
+             Eigen::Matrix, typename NLS::NonLinearOperator::template FunctionReturnType<1>>::value) or
+         (traits::isSpecializationTypeNonTypeAndType<
+             Eigen::SparseMatrix, typename NLS::NonLinearOperator::template FunctionReturnType<1>>::value)));
   };
 
   /**

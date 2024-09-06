@@ -18,6 +18,8 @@
   #include <dune/localfefunctions/impl/standardLocalFunction.hh>
   #include <dune/localfefunctions/manifolds/realTuple.hh>
 
+  #include <Eigen/Core>
+
   #include <ikarus/finiteelements/febase.hh>
   #include <ikarus/finiteelements/fehelper.hh>
   #include <ikarus/finiteelements/ferequirements.hh>

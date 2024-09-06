@@ -3,6 +3,7 @@
 
 from dune.common.hashit import hashIt
 from ikarus.generator import MySimpleGenerator
+from .nonlinop import *
 
 
 def boundaryPatch(gridView, booleanVector):
@@ -20,7 +21,7 @@ def boundaryPatch(gridView, booleanVector):
     includes = []
     includes += ["dune/fufem/boundarypatch.hh"]
     includes += ["ikarus/python/utils/boundarypatch.hh"]
-    includes += gridView._includes
+    includes += gridView.cppIncludes
     moduleName = "boundaryPatch_" + hashIt(element_type)
     module = generator.load(
         includes=includes, typeName=element_type, moduleName=moduleName
@@ -56,3 +57,5 @@ def globalIndexFromGlobalPosition(basis, pos):
     pos = FieldVector(pos)
 
     return run("callGlobalIndexFromGlobalPosition", StringIO(runCode), basis, pos)
+
+

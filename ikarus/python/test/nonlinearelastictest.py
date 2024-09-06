@@ -6,11 +6,14 @@ import debug_info
 debug_info.setDebugFlags()
 
 import ikarus as iks
-from ikarus import finite_elements, utils, assembler
+from ikarus import finite_elements, utils, assembler, solvers
 import numpy as np
 import scipy as sp
 from scipy.optimize import minimize
-
+import spdlog
+logger = spdlog.ConsoleLogger("Test")
+logger.set_level(spdlog.LogLevel.DEBUG)
+iks.register_logger(logger.get_underlying_logger())
 import dune.grid
 import dune.functions
 
@@ -86,42 +89,100 @@ if __name__ == "__main__":
 
     assembler = iks.assembler.sparseFlatAssembler(fes, dirichletValues)
 
-    dRed = np.zeros(assembler.reducedSize())
-
-    lambdaLoad = iks.Scalar(3.0)
-
+    d = np.zeros(assembler.fullDOFsize())
     feReq = fes[0].createRequirement()
+    lambdaLoad = iks.Scalar(0.1)
+    feReq.insertParameter(lambdaLoad)
+
+    feReq.insertGlobalSolution(d)
+    assembler.bind(feReq)
+    assembler.bind(iks.AffordanceCollection.elastoStatics)
+    assembler.bind(iks.DBCOption.Reduced)
+
+    nonLinOp = iks.utils.makeNonLinearOperator(assembler)
+    nonLinOp.updateAll()
+    v= nonLinOp.value()
+    v2= nonLinOp.derivative()
+    v3 = nonLinOp.secondDerivative()
+    def updateFunction(x, y):
+        x[:]+=assembler.createFullVector(y)
+    solver=iks.solvers.TrustRegion(nonLinOp,"IncompleteCholesky",updateFunction)
+    nonLinOp2= solver.nonLinearOperator()
+    nonLinOp2.updateAll()
+    v= nonLinOp2.value()
+    v2= nonLinOp2.derivative()
+    v3 = nonLinOp2.secondDerivative()
+    solver.setup({"maxIter":100,"verbosity":5,"debug":1,"Delta0":1e-10,"corr_tol":1e-20})
+    info= solver.solve()
+    assert info
+    assert  info.iterations == 17
+
+    d[:] = np.zeros(assembler.fullDOFsize())
+    assembler.bind(iks.DBCOption.Full)
+    nonLinOp2 = iks.utils.makeNonLinearOperator(assembler)
+    solver2=iks.solvers.TrustRegion(nonLinOp2)
+    solver2.setup({"maxIter":100})
+    info=solver2.solve()
+    print(info)
+    assert info
+    assert info.iterations == 3
+    print(d)
+    d[:] = np.zeros(assembler.fullDOFsize())
+    assembler.bind(iks.DBCOption.Reduced)
+    nonLinOp3 = nonLinOp.subOperator(1,2)
+    newton= iks.solvers.NewtonRaphson(nonLinOp3,iks.SolverTypeTag.sd_UmfPackLU,updateFunction)
+    newton.setup({"maxIter":100})
+    info=newton.solve()
+    print(info)
+    assert info
+    assert info.iterations == 2
+    d[:] = np.zeros(assembler.fullDOFsize())
+    newtonWithFunc=iks.solvers.NewtonRaphsonWithSubsidiaryFunction(nonLinOp3,iks.SolverTypeTag.sd_UmfPackLU,updateFunction)
 
     def energy(dRedInput):
-        feReq = fes[0].createRequirement()
-        feReq.insertParameter(lambdaLoad)
-        dBig = assembler.createFullVector(dRedInput)
-        feReq.insertGlobalSolution(dBig)
-        feReq.globalSolution()
-        return assembler.scalar(feReq, iks.ScalarAffordance.mechanicalPotentialEnergy)
+        # global d
+        #d = assembler.createFullVector(dRedInput).copy()
+        d[:] = assembler.createFullVector(dRedInput)
+        #np.copyto(d, assembler.createFullVector(dRedInput))
+        #feReq.insertGlobalSolution(d)
+        return assembler.scalar()
 
     def gradient(dRedInput):
-        feReq = fes[0].createRequirement()
-        feReq.insertParameter(lambdaLoad)
-        dBig = assembler.createFullVector(dRedInput)
-        feReq.insertGlobalSolution(dBig)
-        return assembler.vector(
-            feReq, iks.VectorAffordance.forces, iks.DBCOption.Reduced
-        )
+        # global d
+        d[:] = assembler.createFullVector(dRedInput)
+
+        #np.copyto(d, assembler.createFullVector(dRedInput))
+        # d = assembler.createFullVector(dRedInput).copy()
+        #feReq.insertGlobalSolution(d)
+        # print(assembler.vector())
+        return assembler.vector()
 
     def hess(dRedInput):
-        feReq = fes[0].createRequirement()
-        feReq.insertParameter(lambdaLoad)
-        dBig = assembler.createFullVector(dRedInput)
-        feReq.insertGlobalSolution(dBig)
-        return assembler.matrix(
-            feReq, iks.MatrixAffordance.stiffness, iks.DBCOption.Reduced
-        ).todense()  # this is slow, but for this test we don't care
+        # global d
+        d[:] = assembler.createFullVector(dRedInput)
 
-    resultd = minimize(energy, x0=dRed, options={"disp": True}, tol=1e-14)
+        #np.copyto(d, assembler.createFullVector(dRedInput))
+        # d = assembler.createFullVector(dRedInput).copy()
+        #feReq.insertGlobalSolution(d)
+        # print(assembler.matrix())
+        return assembler.matrix().todense()  # this is slow, but for this test we don't care
+
+    dRed = np.zeros(assembler.reducedDOFsize())
+    d[:] = np.zeros(assembler.fullDOFsize())
+    print("Minize energy with scipy methods")
+    print("Step 1: Minimize with finite differences")
+    resultd = minimize(energy, x0=dRed, options={"disp": True}, tol=1e-5) # minimize with finite differences
+    print(d)
+    #assert resultd.success
+   # assert resultd.nit == 31
+    print("Step 2: Minimize with explicitly given gradient")
     resultd2 = minimize(
-        energy, x0=dRed, jac=gradient, options={"disp": True}, tol=1e-14
-    )
+        energy, x0=dRed, jac=gradient, options={"disp": True}, tol=1e-9
+    ) # minize with explicitly given gradient
+    assert resultd2.success
+    assert resultd2.nit == 34
+    print(resultd2)
+    print("Step 3: Minimize with explicitly given gradient and hessian")
     resultd3 = minimize(
         energy,
         method="trust-constr",
@@ -130,7 +191,13 @@ if __name__ == "__main__":
         hess=hess,
         options={"disp": True},
     )
+    print(d)
+    assert resultd3.success
+    assert resultd3.nit == 13
+    print("Step 4: Find root of gradient with explicitly given gradient and hessian")
     resultd4 = sp.optimize.root(gradient, jac=hess, x0=dRed, tol=1e-10)
+    assert resultd4.success
+    assert np.linalg.norm(resultd4.fun) <1e-13
 
     assert np.allclose(resultd.x, resultd2.x, atol=1e-6)
     assert np.allclose(resultd3.x, resultd4.x)

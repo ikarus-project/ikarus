@@ -52,7 +52,7 @@ void registerFlatAssembler(pybind11::handle scope, pybind11::class_<Assembler, o
              * the user can pass native python lists here, see
              * https://pybind11.readthedocs.io/en/stable/advanced/cast/stl.html */
             FEContainer fesV = fes.template cast<FEContainer>();
-            return new Assembler(std::move(fesV), dirichletValues);
+            return std::make_shared<Assembler>(std::move(fesV), dirichletValues);
           }),
           pybind11::keep_alive<1, 3>());
 
@@ -103,7 +103,8 @@ void registerFlatAssembler(pybind11::handle scope, pybind11::class_<Assembler, o
       "createFullVector",
       [](Assembler& self, Eigen::Ref<const Eigen::VectorXd> redVec) { return self.createFullVector(redVec); },
       pybind11::return_value_policy::move);
-  cls.def("reducedSize", [](Assembler& self) { return self.reducedSize(); }, pybind11::return_value_policy::copy);
+  cls.def("reducedDOFsize", [](Assembler& self) { return self.reducedSize(); }, pybind11::return_value_policy::copy);
+  cls.def("fullDOFsize", [](Assembler& self) { return self.size(); }, pybind11::return_value_policy::copy);
   cls.def("bind", [](Assembler& self, const FERequirementType& req, AffordanceCollectionType affordance,
                      DBCOption dbcOption = DBCOption::Full) { return self.bind(req, affordance, dbcOption); });
   cls.def("bind", [](Assembler& self, const FERequirementType& req) { return self.bind(req); });

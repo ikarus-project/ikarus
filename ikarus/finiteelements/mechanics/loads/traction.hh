@@ -7,6 +7,8 @@
 #include <dune/localfefunctions/derivativetransformators.hh>
 #include <dune/localfefunctions/meta.hh>
 
+#include <Eigen/Dense>
+
 #include <ikarus/finiteelements/ferequirements.hh>
 
 namespace Ikarus {

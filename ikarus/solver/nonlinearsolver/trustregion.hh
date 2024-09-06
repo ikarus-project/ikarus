@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include "solversettings.hh"
+
 #include <iosfwd>
 
 #include <dune/common/float_cmp.hh>
@@ -19,7 +21,6 @@
 #include <ikarus/linearalgebra/truncatedconjugategradient.hh>
 #include <ikarus/solver/nonlinearsolver/solverinfos.hh>
 #include <ikarus/utils/defaultfunctions.hh>
-#include <ikarus/utils/linearalgebrahelper.hh>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observermessages.hh>
 #include <ikarus/utils/traits.hh>
@@ -37,24 +38,24 @@ enum class PreConditioner
   DiagonalPreconditioner
 };
 
-struct TRSettings
-{
-  int verbosity    = 5;                                       ///< Verbosity level.
-  double maxtime   = std::numeric_limits<double>::infinity(); ///< Maximum allowable time for solving.
-  int minIter      = 3;                                       ///< Minimum number of iterations.
-  int maxIter      = 1000;                                    ///< Maximum number of iterations.
-  int debug        = 0;                                       ///< Debugging flag.
-  double grad_tol  = 1e-6;                                    ///< Gradient tolerance.
-  double corr_tol  = 1e-6;                                    ///< Correction tolerance.
-  double rho_prime = 0.01;                                    ///< Rho prime value.
-  bool useRand     = false;                                   ///< Flag for using random correction predictor.
-  double rho_reg   = 1e6;                                     ///< Regularization value for rho.
-  double Delta_bar = std::numeric_limits<double>::infinity(); ///< Maximum trust region radius.
-  double Delta0    = 10;                                      ///< Initial trust region radius.
-};
+#define TRSETTINGS_FIELDS(MACRONAME)                                                                         \
+  MACRONAME(verbosity, int, 5, "Verbosity level.")                                                           \
+  MACRONAME(maxtime, double, std::numeric_limits<double>::infinity(), "Maximum allowable time for solving.") \
+  MACRONAME(minIter, int, 3, "Minimum number of iterations.")                                                \
+  MACRONAME(maxIter, int, 1000, "Maximum number of iterations.")                                             \
+  MACRONAME(debug, int, 0, "Debugging flag.")                                                                \
+  MACRONAME(grad_tol, double, 1e-6, "Gradient tolerance.")                                                   \
+  MACRONAME(corr_tol, double, 1e-6, "Correction tolerance.")                                                 \
+  MACRONAME(rho_prime, double, 0.01, "Rho prime value.")                                                     \
+  MACRONAME(useRand, bool, false, "Flag for using random correction predictor.")                             \
+  MACRONAME(rho_reg, double, 1e6, "Regularization value for rho.")                                           \
+  MACRONAME(Delta_bar, double, std::numeric_limits<double>::infinity(), "Maximum trust region radius.")      \
+  MACRONAME(Delta0, double, 10, "Initial trust region radius.")
+
+SOLVERSETTINGS(TrustRegionSettings, TRSETTINGS_FIELDS)
 
 /**
- * \struct TrustRegionSettings
+ * \struct TrustRegionConfig
  * \brief Configuration settings for the TrustRegion solver.
  */
 
@@ -66,7 +67,7 @@ struct TrustRegionConfig
 
   using UpdateFunction = UF;
 
-  TRSettings parameters;
+  TrustRegionSettings parameters;
   static constexpr PreConditioner preConditionerType = preConditioner;
   UF updateFunction;
   template <typename UF2>
@@ -168,11 +169,11 @@ template <typename NLO, PreConditioner preConditioner, typename UF>
 class TrustRegion : public IObservable<NonLinearSolverMessages>
 {
 public:
-  using Settings  = TRSettings;                               ///< Type of the settings for the TrustRegion solver
+  using Settings  = TrustRegionSettings;                               ///< Type of the settings for the TrustRegion solver
   using ValueType = typename NLO::template ParameterValue<0>; ///< Type of the parameter vector of
                                                               ///< the nonlinear operator
-  using CorrectionType = typename NLO::DerivativeType;        ///< Type of the correction of x += deltaX.
-  using UpdateFunction = UF;                                  ///< Type of the update function.
+  using CorrectionType = typename NLO::template FunctionReturnType<1>; ///< Type of the correction of x += deltaX.
+  using UpdateFunction = UF;                                           ///< Type of the update function.
 
   using NonLinearOperator = NLO; ///< Type of the non-linear operator
 
@@ -233,14 +234,15 @@ public:
     xOld_           = x;
     stats_.gradNorm = norm(gradient());
     if constexpr (not std::is_same_v<SolutionType, NoPredictor>)
-      updateFunction(x, dxPredictor);
+      updateFunction_(x, dxPredictor);
     truncatedConjugateGradient_.analyzePattern(hessian());
 
     innerInfo_.Delta = settings_.Delta0;
-    spdlog::info(
+    if (settings_.verbosity >= 1)
+   { spdlog::info(
         "        | iter | inner_i |   rho |   energy | energy_p | energy_inc |  norm(g) |    Delta | norm(corr) | "
         "InnerBreakReason");
-    spdlog::info("{:-^143}", "-");
+    spdlog::info("{:-^143}", "-");}
     while (not stoppingCriterion()) {
       this->notify(NonLinearSolverMessages::ITERATION_STARTED);
       if (settings_.useRand) {
@@ -372,8 +374,7 @@ public:
 
       stats_.outerIter++;
 
-      if (settings_.verbosity == 1)
-        logState();
+      logState();
 
       info_.randomPredictionString = "";
 
@@ -400,6 +401,7 @@ public:
 
     solverInformation.iterations   = stats_.outerIter;
     solverInformation.residualNorm = stats_.gradNorm;
+    solverInformation.correctionNorm = stats_.etaNorm;
     if (solverInformation.success)
       this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, solverInformation.iterations);
     return solverInformation;
@@ -412,6 +414,7 @@ public:
 
 private:
   void logState() const {
+    if (settings_.verbosity >= 2)
     spdlog::info(
         "{:>3s} {:>3s} {:>6d} {:>9d}  {:>6.2f}  {:>9.2e}  {:>9.2e}  {:>11.2e}  {:>9.2e}  {:>9.2e}  {:>11.2e}   "
         "{:<73}",
@@ -421,6 +424,7 @@ private:
   }
 
   void logFinalState() {
+    if (settings_.verbosity >= 1)
     spdlog::info("{:>3s} {:>3s} {:>6d} {:>9d}  {: ^6}  {: ^9}  {: ^9}  {: ^11}  {:>9.2e}  {: ^9}  {: ^11}   {:<73}",
                  info_.accstr, info_.trstr, stats_.outerIter, innerInfo_.numInnerIter, " ", " ", " ", " ",
                  stats_.gradNorm, " ", " ", info_.stopReasonString + info_.cauchystr + info_.randomPredictionString);
@@ -447,7 +451,7 @@ private:
       logFinalState();
       spdlog::info("CONVERGENCE:  Energy: {:1.16e}    norm(correction): {:1.16e}", nonLinearOperator().value(),
                    stats_.etaNorm);
-      stream << "Displacement norm tolerance reached;  = " << settings_.corr_tol << "." << std::endl;
+      stream << "Displacement norm tolerance reached  = " << settings_.corr_tol << "." << std::endl;
 
       info_.reasonString = stream.str();
       info_.stop         = StopReason::correctionNormTolReached;

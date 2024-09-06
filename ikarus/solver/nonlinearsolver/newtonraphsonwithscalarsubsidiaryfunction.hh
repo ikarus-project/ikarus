@@ -7,11 +7,11 @@
  */
 
 #pragma once
+#include "solversettings.hh"
 
-#include <iosfwd>
 #include <utility>
 
-#include "ikarus/assembler/dirichletbcenforcement.hh"
+#include <ikarus/solver/linearsolver/linearsolver.hh>
 #include <ikarus/controlroutines/pathfollowingfunctions.hh>
 #include <ikarus/solver/nonlinearsolver/solverinfos.hh>
 #include <ikarus/utils/concepts.hh>
@@ -23,11 +23,13 @@ namespace Ikarus {
 template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
 class NewtonRaphsonWithSubsidiaryFunction;
 
-struct NewtonRaphsonWithSubsidiaryFunctionSettings
-{
-  double tol{1e-8};
-  int maxIter{20};
-};
+#define NRWSFSETTINGS_FIELDS(MACRONAME)                      \
+  MACRONAME(res_tol, double, 1e-8, "Residual tolerance.")                   \
+  MACRONAME(maxIter, int, 20, "Maximum number of iterations.")
+
+SOLVERSETTINGS(NewtonRaphsonWithSubsidiaryFunctionSettings, NRWSFSETTINGS_FIELDS)
+
+
 
 /**
  * \struct NewtonRaphsonWithSubsidiaryFunctionConfig
@@ -107,12 +109,14 @@ public:
   using Settings = NewtonRaphsonWithSubsidiaryFunctionSettings;
   ///< Compile-time boolean indicating if the linear solver satisfies the non-linear solver concept
   static constexpr bool isLinearSolver =
-      Ikarus::Concepts::LinearSolverCheck<LS, typename NLO::DerivativeType, typename NLO::ValueType>;
+      Ikarus::Concepts::LinearSolverCheck<LS, typename NLO::template FunctionReturnType<1>, typename NLO::ValueType>;
 
   ///< Type representing the parameter vector of the nonlinear operator.
   using ValueType = typename NLO::template ParameterValue<0>;
+    using CorrectionType = typename NLO::ValueType; ///< Type of the correction of x += deltaX.
   ///< Type representing the update function.
-  using UpdateFunctionType = UF;
+  using UpdateFunction = UF;
+   using LinearSolver = LS;
   using NonLinearOperator  = NLO; ///< Type of the non-linear operator
 
   /**
@@ -151,6 +155,7 @@ public:
    * \param subsidiaryArgs Additional arguments for the subsidiary function.
    * \param dxPredictor Predictor for the solution increment (default is NoPredictor).
    * \return Information about the solution process.
+     \see PathFollowing
    */
   template <typename SolutionType = NoPredictor, typename SubsidiaryType>
   requires std::is_same_v<SolutionType, NoPredictor> ||
@@ -202,7 +207,7 @@ public:
       linearSolver_.analyzePattern(Ax);
 
     /// Iterative solving scheme
-    while (rNorm > settings_.tol && iter < settings_.maxIter) {
+    while (rNorm > settings_.res_tol && iter < settings_.maxIter) {
       this->notify(NonLinearSolverMessages::ITERATION_STARTED);
 
       /// Two-step solving procedure

@@ -75,7 +75,7 @@ void registerAssemblerManipulator(pybind11::handle scope, pybind11::class_<Assem
 
   using UnderlyingAssembler = typename AssemblerManipulator::WrappedAssembler;
 
-  cls.def(pybind11::init([](const UnderlyingAssembler& as) { return new AssemblerManipulator(as); }));
+  cls.def(pybind11::init([](const UnderlyingAssembler& as) { return std::make_shared<AssemblerManipulator>(as); }));
 
   using NewArgs = std::tuple<
       ScalarWrapper<std::reference_wrapper<typename AssemblerManipulator::ScalarType>>,

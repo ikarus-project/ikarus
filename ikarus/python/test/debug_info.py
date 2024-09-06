@@ -10,7 +10,7 @@ os.environ["DUNE_SAVE_BUILD"] = "terminal"
 
 def setDebugFlags():
     def apply_debug_flags():
-        generator.setFlags("-g ", noChecks=False)
+        generator.setFlags("-g -DPYBIND11_DETAILED_ERROR_MESSAGES", noChecks=False)
 
     # Check if the environment variable is set
     build_type = os.environ.get("IKARUS_PYTHON_TEST_BUILD_TYPE_OVERRIDE")
