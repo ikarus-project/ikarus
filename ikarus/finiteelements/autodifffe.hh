@@ -178,7 +178,7 @@ private:
       Eigen::VectorXdual dx(this->localView().size());
       dx.setZero();
       autodiff::dual e;
-      auto f = [this, &req, affordance](auto& x) {
+      auto f = [ &req, affordance](auto& x) {
         return Mixin::template calculateScalarImpl<autodiff::dual>(req, scalarAffordance(affordance), x);
       };
       gradient(f, autodiff::wrt(dx), at(dx), e, g);

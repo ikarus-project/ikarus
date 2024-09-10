@@ -72,7 +72,7 @@ protected:
   auto calculateScalarImpl(
       const Requirement& par, ScalarAffordance affordance,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const -> ST {
-                if(affordance!= ScalarAffordance::potentialenergy)
+                if(affordance!= ScalarAffordance::potentialEnergy)
          DUNE_THROW(Dune::NotImplemented, "Your required affordance is not implemented. Affordance: "<< toString(affordance));
     if (not neumannBoundary_ and not neumannBoundaryLoad_)
       return 0.0;
