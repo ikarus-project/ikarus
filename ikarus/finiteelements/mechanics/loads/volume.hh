@@ -62,7 +62,7 @@ public:
 protected:
   template <template <typename, int, int> class RT>
   requires Dune::AlwaysFalse<RT<double, 1, 1>>::value
-  auto calculateAtImpl(const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local,
+  auto calculateAtImpl(const Requirement&, const Dune::FieldVector<double, Traits::mydim>&,
                        Dune::PriorityTag<0>) const {}
 
   template <typename ST>
@@ -108,8 +108,8 @@ protected:
 
   template <typename ST>
   void calculateMatrixImpl(
-      const Requirement& par, MatrixAffordance, typename Traits::template MatrixType<> K,
-      const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const {}
+      const Requirement& par, MatrixAffordance, typename Traits::template MatrixType<>,
+      const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>&  = std::nullopt) const {}
 
 private:
   std::function<Eigen::Vector<double, worldDim>(const Dune::FieldVector<double, worldDim>&, const double&)> volumeLoad_;

@@ -56,7 +56,7 @@ public:
   void update(MessageType message, int val) {
     checkMessageType(message);
     updateImpl(message, val);
-  };
+  }
 
   /**
    * \brief Update method for receiving notifications with a message and a string value.
@@ -66,7 +66,7 @@ public:
   void update(MessageType message, const std::string& val) {
     checkMessageType(message);
     updateImpl(message, val);
-  };
+  }
 
   /**
    * \brief Update method for receiving notifications with a message and two values (integer and double).
@@ -77,7 +77,7 @@ public:
   void update(MessageType message, int val1, double val2) {
     checkMessageType(message);
     updateImpl(message, val1, val2);
-  };
+  }
 
   /**
    * \brief Update method for receiving notifications with a message, an integer value, and a string value.
@@ -88,7 +88,7 @@ public:
   void update(MessageType message, int val1, const std::string& val2) {
     checkMessageType(message);
     updateImpl(message, val1, val2);
-  };
+  }
 
   /**
    * \brief Update method for receiving notifications with a message and an Eigen::VectorXd.
@@ -101,12 +101,12 @@ public:
   }
 
 protected:
-  virtual void updateImpl([[maybe_unused]] MessageType message) {};
-  virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] double val) {};
-  virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] int val) {};
-  virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] const std::string& val) {};
-  virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] int val1, const std::string& val2) {};
-  virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] int val1, double val2) {};
+  virtual void updateImpl([[maybe_unused]] MessageType message) {}
+  virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] double val) {}
+  virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] int val) {}
+  virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] const std::string& val) {}
+  virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] int val1, [[maybe_unused]] const std::string& val2) {}
+  virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] int val1, [[maybe_unused]] double val2) {}
   virtual void updateImpl([[maybe_unused]] MessageType message, [[maybe_unused]] const Eigen::VectorXd& vec) {}
 
 private:

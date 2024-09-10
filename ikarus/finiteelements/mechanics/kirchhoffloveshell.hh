@@ -243,7 +243,6 @@ protected:
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     const auto uFunction = displacementFunction(par, dx);
-    const auto& lambda   = par.parameter();
     const auto geo       = underlying().localView().element().geometry();
 
     for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
@@ -288,7 +287,6 @@ protected:
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     const auto uFunction = displacementFunction(par, dx);
-    const auto& lambda   = par.parameter();
     const auto geo       = underlying().localView().element().geometry();
 
     // Internal forces
@@ -321,7 +319,6 @@ protected:
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     const auto uFunction = displacementFunction(par, dx);
-    const auto& lambda   = par.parameter();
     ST energy            = 0.0;
 
     const auto geo = underlying().localView().element().geometry();

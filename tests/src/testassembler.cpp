@@ -82,7 +82,7 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
     int centerNode = 1; // number of nodes at the center ( = pos)
     if (Ikarus::Concepts::LagrangeNodeOfOrder<ChildType, 1> and ref == 0) {
       t.checkThrow<Dune::InvalidStateException>(
-          [&]() { auto fixIndices = utils::globalIndexFromGlobalPosition(basis.flat(), pos); },
+          [&]() { [[maybe_unused]] auto fixIndices = utils::globalIndexFromGlobalPosition(basis.flat(), pos); },
           "globalIndexFromGlobalPosition should have failed for order = 1 and ref = 0 as no node exists at "
           "the center.");
       centerNode = 0;
