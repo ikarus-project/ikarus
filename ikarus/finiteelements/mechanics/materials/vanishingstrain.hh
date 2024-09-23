@@ -38,15 +38,15 @@ struct VanishingStrain : public Material<VanishingStrain<strainIndexPair, MI>>
   static constexpr auto fixedVoigtIndices = createFixedVoigtIndices(fixedPairs); ///< Fixed Voigt indices.
   static constexpr auto freeStrains       = freeVoigtIndices.size();             ///< Number of free strains.
 
-  static constexpr auto strainTag          = Underlying::strainTag;          ///< Strain tag.
-  static constexpr auto stressTag          = Underlying::stressTag;          ///< Stress tag.
-  static constexpr auto tangentModuliTag   = Underlying::tangentModuliTag;   ///< Tangent moduli tag.
-  static constexpr bool energyAcceptsVoigt = Underlying::energyAcceptsVoigt; ///< Energy accepts Voigt notation.
-  static constexpr bool stressToVoigt      = true;                           ///< Stress to Voigt notation.
-  static constexpr bool stressAcceptsVoigt = true;                           ///< Stress accepts Voigt notation.
-  static constexpr bool moduliToVoigt      = true;                           ///< Moduli to Voigt notation.
-  static constexpr bool moduliAcceptsVoigt = true;                           ///< Moduli accepts Voigt notation.
-  static constexpr double derivativeFactor = Underlying::derivativeFactor;   ///< Derivative factor.
+  static constexpr auto strainTag              = Underlying::strainTag;            ///< Strain tag.
+  static constexpr auto stressTag              = Underlying::stressTag;            ///< Stress tag.
+  static constexpr auto tangentModuliTag       = Underlying::tangentModuliTag;     ///< Tangent moduli tag.
+  static constexpr bool energyAcceptsVoigt     = Underlying::energyAcceptsVoigt;   ///< Energy accepts Voigt notation.
+  static constexpr bool stressToVoigt          = true;                             ///< Stress to Voigt notation.
+  static constexpr bool stressAcceptsVoigt     = true;                             ///< Stress accepts Voigt notation.
+  static constexpr bool moduliToVoigt          = true;                             ///< Moduli to Voigt notation.
+  static constexpr bool moduliAcceptsVoigt     = true;                             ///< Moduli accepts Voigt notation.
+  static constexpr double derivativeFactorImpl = Underlying::derivativeFactorImpl; ///< Derivative factor.
 
   /**
    * \brief Constructor for VanishingStrain.

@@ -81,7 +81,7 @@ struct Material
   using MaterialImpl = MI; ///< Type of material implementation
 
   /**
-   * \brief Static constant for determining if the material has vanishing stress components (is reduced).
+   * \brief Static constant for determining if the material has vanishing stress or strain components (is reduced).
    */
   static constexpr bool isReduced = traits::isSpecializationNonTypeAndTypes<VanishingStress, MaterialImpl>::value or
                                     traits::isSpecializationNonTypeAndTypes<VanishingStrain, MaterialImpl>::value;
@@ -112,6 +112,14 @@ struct Material
    * \return Material parameter.
    */
   [[nodiscard]] auto materialParameters() const { return impl().materialParametersImpl(); }
+
+  /**
+   * \brief This factor denotes the differences between the returned stresses and moduli and the passed strain
+   * \details For neoHooke the inserted quantity is $C$ the Green-Lagrangian strain tensor, the function relation
+   * between the energy and the stresses is $S = 1 \dfrac{\partial\psi(E)}{\partial E}$. This factor is the pre factor,
+   * which is the difference to the actual derivative, which is written here
+   */
+  static constexpr double derivativeFactor = MI::derivativeFactorImpl;
 
   /**
    * \brief Return the stored potential energy of the material.

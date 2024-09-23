@@ -203,6 +203,28 @@ auto testPlaneStrainAgainstPlaneStress(const double tol = 1e-10) {
       << matTangentPlaneStress << "\n Diff:\n"
       << matTangentPlaneStrain - matTangentPlaneStress << " with tol: " << tol;
 
+  // Sanity check, for nu != 0 the quantities should differ
+  matPar         = {.lambda = 1000, .mu = 50}; // nu = 0
+  mat            = MaterialImpl{matPar};
+  planeStrainMat = planeStrain(mat);
+  planeStressMat = planeStress(mat);
+
+  energies = std::array<double, 2>{planeStrainMat.template storedEnergy<strainTag>(e),
+                                   planeStressMat.template storedEnergy<strainTag>(e)};
+
+  t.check(not Dune::FloatCmp::eq(energies[0], energies[1], tol))
+      << "Energies for plane strain and plane stress should not be the same but are"
+      << "\n"
+      << energies[0] << " and " << energies[1] << " with tol: " << tol;
+
+  stressPlaneStrain = planeStrainMat.template stresses<strainTag>(e);
+  stressPlaneStress = planeStressMat.template stresses<strainTag>(e);
+
+  t.check(not isApproxSame(stressPlaneStrain, stressPlaneStress, tol))
+      << "Stresses for plane strain and plane stress should not be the same but are"
+      << "\n"
+      << stressPlaneStrain << "\nand\n " << stressPlaneStress << " with tol: " << tol;
+
   return t;
 }
 

@@ -49,7 +49,7 @@ struct NeoHookeT : public Material<NeoHookeT<ST>>
   static constexpr bool stressAcceptsVoigt = false;
   static constexpr bool moduliToVoigt      = false;
   static constexpr bool moduliAcceptsVoigt = false;
-  static constexpr double derivativeFactor = 2;
+  static constexpr double derivativeFactorImpl = 2;
 
   [[nodiscard]] constexpr static std::string nameImpl() noexcept { return "NeoHooke"; }
 
@@ -77,7 +77,7 @@ struct NeoHookeT : public Material<NeoHookeT<ST>>
     if constexpr (!Concepts::EigenVector<Derived>) {
       const auto traceC  = C.trace();
       const auto logdetF = log(sqrt(C.determinant()));
-      return (lambdaAndmu_.mu / 2.0 * (traceC - 3 - 2 * logdetF) + lambdaAndmu_.lambda / 2.0 * logdetF * logdetF);
+      return lambdaAndmu_.mu / 2.0 * (traceC - 3 - 2 * logdetF) + lambdaAndmu_.lambda / 2.0 * logdetF * logdetF;
     } else
       static_assert(!Concepts::EigenVector<Derived>,
                     "NeoHooke energy can only be called with a matrix and not a vector in Voigt notation");

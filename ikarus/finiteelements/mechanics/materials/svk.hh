@@ -49,11 +49,8 @@ struct StVenantKirchhoffT : public Material<StVenantKirchhoffT<ST>>
   static constexpr bool stressAcceptsVoigt = true;
   static constexpr bool moduliToVoigt      = true;
   static constexpr bool moduliAcceptsVoigt = true;
-  // this factor denotes the differences between the returned stresses and moduli and the passed strain
-  // for neoHooke the inserted quantity is C the Green-Lagrangian strain tensor,
-  // the function relation between the energy and the stresses is S = 1\partial \psi(E)/ \partial E.
-  // This factor is pre factor, which is the difference to the actual derivative is written here
-  static constexpr double derivativeFactor = 1;
+    static constexpr double derivativeFactorImpl = 1;
+
 
   [[nodiscard]] constexpr static std::string nameImpl() { return "StVenantKirchhoff"; }
 

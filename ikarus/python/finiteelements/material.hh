@@ -59,7 +59,7 @@ namespace Impl {
     auto converter =
         convertLameConstants(T{kwargs[param1.c_str()].cast<double>(), kwargs[param2.c_str()].cast<double>()});
 
-    // This is necessary as the converter cannnot convert to a parameter already present due to compile-time constraints
+    // This is necessary as the converter can't convert to a parameter already present due to compile-time constraints
     double lamesFirst = [&]() {
       if constexpr (requires { converter.toLamesFirstParameter(); })
         return converter.toLamesFirstParameter();
@@ -85,21 +85,22 @@ namespace Impl {
       {{"K", "Lambda"}, [](const auto& kw){ return convertMaterialParameters<BulkModulusAndLamesFirstParameter>(kw, "K", "Lambda"); }},
       {{"Lambda", "mu"}, [](const auto& kw){ return LamesFirstParameterAndShearModulus{kw["Lambda"].template cast<double>(), kw["mu"].template cast<double>()}; }}
     };
-    // clang-format off
+    // clang-format on
 
-  if (kwargs.size() != 2)
-    throw std::runtime_error("The number of material parameters passed to the material should be 2");
+    if (kwargs.size() != 2)
+      DUNE_THROW(Dune::IOError, "The number of material parameters passed to the material should be 2");
 
-  for (const auto& conversion : conversionMap) {
-    if (kwargs.contains(conversion.first.first) && kwargs.contains(conversion.first.second)) {
-      return conversion.second(kwargs);
+    for (const auto& conversion : conversionMap) {
+      if (kwargs.contains(conversion.first.first) && kwargs.contains(conversion.first.second)) {
+        return conversion.second(kwargs);
+      }
     }
-  }
-  DUNE_THROW(Dune::IOError,
+
+    DUNE_THROW(Dune::IOError,
                "No suitable combination of material parameters found, valid combinations are: (E, nu), (E, mu), (E, "
                "K), (E, Lambda), (K, Lambda), (Lambda, nu)");
-}
-}
+  }
+} // namespace Impl
 template <class Material, size_t vecSize, class... options>
 void registerMaterial(pybind11::handle scope, pybind11::class_<Material, options...> cls) {
   using pybind11::operator""_a;

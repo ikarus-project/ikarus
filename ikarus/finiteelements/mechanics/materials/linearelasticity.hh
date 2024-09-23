@@ -51,7 +51,7 @@ struct LinearElasticityT : Material<LinearElasticityT<ST>>
   static constexpr bool stressAcceptsVoigt = Base::stressAcceptsVoigt;
   static constexpr bool moduliToVoigt      = Base::moduliToVoigt;
   static constexpr bool moduliAcceptsVoigt = Base::moduliAcceptsVoigt;
-  static constexpr double derivativeFactor = 1;
+  static constexpr double derivativeFactorImpl = Base::derivativeFactorImpl;
 
   [[nodiscard]] constexpr static std::string nameImpl() noexcept { return "LinearElasticity"; }
 
