@@ -230,12 +230,12 @@ auto toVoigt(const Eigen::Matrix<ST, size, size, Options, maxSize, maxSize>& E, 
   auto EVoigt            = [&]() {
     if constexpr (isFixedSized) {
       Eigen::Vector<ST, (size * (size + 1)) / 2> EVoigt;
-      EVoigt.template segment<size>(0) = E.diagonal();
+      EVoigt.template head<size>() = E.diagonal();
       return EVoigt;
     } else {
-      Eigen::VectorX<ST> EVoigt;
+      Eigen::Matrix<ST, Eigen::Dynamic, 1, Options, 6, 1> EVoigt;
       EVoigt.resize((inputSize * (inputSize + 1)) / 2);
-      EVoigt.template head<Eigen::Dynamic>(inputSize) = E.diagonal();
+      EVoigt.template head(inputSize) = E.diagonal();
       return EVoigt;
     }
   }();
@@ -282,9 +282,9 @@ auto fromVoigt(const Eigen::Matrix<ST, size, 1, Options, maxSize, 1>& EVoigt, bo
       E.diagonal() = EVoigt.template head<matrixSize>();
       return E;
     } else {
-      Eigen::Matrix<ST, Eigen::Dynamic, Eigen::Dynamic> E;
+      Eigen::Matrix<ST, Eigen::Dynamic, Eigen::Dynamic, Options, 3, 3> E;
       E.resize(matrixSize, matrixSize);
-      E.diagonal() = EVoigt.template head<Eigen::Dynamic>(matrixSize);
+      E.diagonal() = EVoigt.template head(matrixSize);
       return E;
     }
   }();
