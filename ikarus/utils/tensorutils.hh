@@ -300,24 +300,6 @@ auto fromVoigt(const Eigen::Matrix<ST, size, 1, Options, maxSize, 1>& EVoigt, bo
   return E;
 }
 
-// template <typename ST, int size>
-// requires(size == 1 or size == 3 or size == 6)
-// auto fromVoigt(const Eigen::Vector<ST, size>& EVoigt, bool isStrain = true) {
-//   constexpr int matrixSize = (-1 + ct_sqrt(1 + 8 * size)) / 2;
-//   Eigen::Matrix<ST, matrixSize, matrixSize> E;
-//   E.diagonal() = EVoigt.template head<matrixSize>();
-
-// const ST possibleStrainFactor = isStrain ? 0.5 : 1.0;
-// if constexpr (matrixSize == 2)
-//   E(0, 1) = E(1, 0) = EVoigt(2) * possibleStrainFactor;
-// else if constexpr (matrixSize == 3) {
-//   E(2, 1) = E(1, 2) = EVoigt(matrixSize) * possibleStrainFactor;
-//   E(2, 0) = E(0, 2) = EVoigt(matrixSize + 1) * possibleStrainFactor;
-//   E(1, 0) = E(0, 1) = EVoigt(matrixSize + 2) * possibleStrainFactor;
-// }
-// return E;
-// }
-
 /**
  * \brief Converts a Voigt notation index to matrix indices.
  *  \ingroup tensor
