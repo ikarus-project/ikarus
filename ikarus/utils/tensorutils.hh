@@ -219,19 +219,33 @@ Eigen::Matrix<ScalarType, 6, 6> toVoigt(const Eigen::TensorFixedSize<ScalarType,
  * calculations. If isStrain is true, the off-diagonal components are multiplied by 2, providing the correct Voigt
  * notation for symmetric strain tensors.
  */
-template <typename ST, int size, int Options>
-requires(size > 0 and size <= 3)
-auto toVoigt(const Eigen::Matrix<ST, size, size, Options, size, size>& E, bool isStrain = true) {
-  Eigen::Vector<ST, (size * (size + 1)) / 2> EVoigt;
-  EVoigt.template segment<size>(0) = E.diagonal();
 
+template <typename ST, int size, int Options, int maxSize>
+requires((size > 0 and size <= 3) or (maxSize > 0 and maxSize <= 3 and size == Eigen::Dynamic))
+auto toVoigt(const Eigen::Matrix<ST, size, size, Options, maxSize, maxSize>& E, bool isStrain = true) {
+  constexpr bool isFixedSized   = (size != Eigen::Dynamic);
   const ST possibleStrainFactor = isStrain ? 2.0 : 1.0;
-  if constexpr (size == 2)
+
+  const size_t inputSize = isFixedSized ? size : E.rows();
+  auto EVoigt            = [&]() {
+    if constexpr (isFixedSized) {
+      Eigen::Vector<ST, (size * (size + 1)) / 2> EVoigt;
+      EVoigt.template segment<size>(0) = E.diagonal();
+      return EVoigt;
+    } else {
+      Eigen::VectorX<ST> EVoigt;
+      EVoigt.resize((inputSize * (inputSize + 1)) / 2);
+      EVoigt.template head<Eigen::Dynamic>(inputSize) = E.diagonal();
+      return EVoigt;
+    }
+  }();
+
+  if (inputSize == 2)
     EVoigt(2) = E(0, 1) * possibleStrainFactor;
-  else if constexpr (size == 3) {
-    EVoigt(size)     = E(1, 2) * possibleStrainFactor;
-    EVoigt(size + 1) = E(0, 2) * possibleStrainFactor;
-    EVoigt(size + 2) = E(0, 1) * possibleStrainFactor;
+  else if (inputSize == 3) {
+    EVoigt(inputSize)     = E(1, 2) * possibleStrainFactor;
+    EVoigt(inputSize + 1) = E(0, 2) * possibleStrainFactor;
+    EVoigt(inputSize + 2) = E(0, 1) * possibleStrainFactor;
   }
   return EVoigt;
 }
@@ -251,23 +265,58 @@ auto toVoigt(const Eigen::Matrix<ST, size, size, Options, size, size>& E, bool i
  *
  * The function requires that the size of the Voigt notation vector is valid (1, 3, or 6).
  */
-template <typename ST, int size>
-requires(size == 1 or size == 3 or size == 6)
-auto fromVoigt(const Eigen::Vector<ST, size>& EVoigt, bool isStrain = true) {
-  constexpr int matrixSize = (-1 + ct_sqrt(1 + 8 * size)) / 2;
-  Eigen::Matrix<ST, matrixSize, matrixSize> E;
-  E.diagonal() = EVoigt.template head<matrixSize>();
-
+template <typename ST, int size, int Options, int maxSize>
+requires((size == 1 or size == 3 or size == 6) or
+         ((maxSize == 1 or maxSize == 3 or maxSize == 6) and size == Eigen::Dynamic))
+auto fromVoigt(const Eigen::Matrix<ST, size, 1, Options, maxSize, 1>& EVoigt, bool isStrain = true) {
+  constexpr bool isFixedSized   = (size != Eigen::Dynamic);
   const ST possibleStrainFactor = isStrain ? 0.5 : 1.0;
-  if constexpr (matrixSize == 2)
+
+  const size_t inputSize = isFixedSized ? size : EVoigt.size();
+  const size_t matrixSize =
+      isFixedSized ? (-1 + ct_sqrt(1 + 8 * size)) / 2 : (-1 + static_cast<int>(std::sqrt(1 + 8 * inputSize))) / 2;
+
+  auto E = [&]() {
+    if constexpr (isFixedSized) {
+      Eigen::Matrix<ST, matrixSize, matrixSize> E;
+      E.diagonal() = EVoigt.template head<matrixSize>();
+      return E;
+    } else {
+      Eigen::Matrix<ST, Eigen::Dynamic, Eigen::Dynamic> E;
+      E.resize(matrixSize, matrixSize);
+      E.diagonal() = EVoigt.template head<Eigen::Dynamic>(matrixSize);
+      return E;
+    }
+  }();
+
+  if (matrixSize == 2) {
     E(0, 1) = E(1, 0) = EVoigt(2) * possibleStrainFactor;
-  else if constexpr (matrixSize == 3) {
+  } else if (matrixSize == 3) {
     E(2, 1) = E(1, 2) = EVoigt(matrixSize) * possibleStrainFactor;
     E(2, 0) = E(0, 2) = EVoigt(matrixSize + 1) * possibleStrainFactor;
     E(1, 0) = E(0, 1) = EVoigt(matrixSize + 2) * possibleStrainFactor;
   }
+
   return E;
 }
+
+// template <typename ST, int size>
+// requires(size == 1 or size == 3 or size == 6)
+// auto fromVoigt(const Eigen::Vector<ST, size>& EVoigt, bool isStrain = true) {
+//   constexpr int matrixSize = (-1 + ct_sqrt(1 + 8 * size)) / 2;
+//   Eigen::Matrix<ST, matrixSize, matrixSize> E;
+//   E.diagonal() = EVoigt.template head<matrixSize>();
+
+// const ST possibleStrainFactor = isStrain ? 0.5 : 1.0;
+// if constexpr (matrixSize == 2)
+//   E(0, 1) = E(1, 0) = EVoigt(2) * possibleStrainFactor;
+// else if constexpr (matrixSize == 3) {
+//   E(2, 1) = E(1, 2) = EVoigt(matrixSize) * possibleStrainFactor;
+//   E(2, 0) = E(0, 2) = EVoigt(matrixSize + 1) * possibleStrainFactor;
+//   E(1, 0) = E(0, 1) = EVoigt(matrixSize + 2) * possibleStrainFactor;
+// }
+// return E;
+// }
 
 /**
  * \brief Converts a Voigt notation index to matrix indices.
@@ -346,12 +395,12 @@ Eigen::Matrix3d calcTransformationMatrix2D(const Geometry& geometry) {
   auto J21  = jaco(1, 0);
   auto J22  = jaco(1, 1);
 
-  Eigen::Matrix3d T0;
-  // clang-format off
-        T0 <<      J11 * J11, J12 * J12,                   J11 * J12,
-                J21 * J21, J22 * J22,                   J21 * J22,
-                2.0 * J11 * J21, 2.0 * J12 * J22, J21 * J12 + J11 * J22;
-  // clang-format on
+  Eigen::Matrix3d T0{
+      {      J11 * J11,       J12 * J12,             J11 * J12},
+      {      J21 * J21,       J22 * J22,             J21 * J22},
+      {2.0 * J11 * J21, 2.0 * J12 * J22, J21 * J12 + J11 * J22}
+  };
+
   return T0.inverse() * detJ0;
 }
 
@@ -384,14 +433,15 @@ Eigen::Matrix<double, 6, 6> calcTransformationMatrix3D(const Geometry& geometry)
   auto J32  = jaco(2, 1);
   auto J33  = jaco(2, 2);
 
-  Eigen::Matrix<double, 6, 6> T0;
   // clang-format off
-        T0 <<      J11 * J11,       J12 * J12,       J13 * J13,             J11 * J12,             J11 * J13,             J12 * J13,
-                J21 * J21,       J22 * J22,       J23 * J23,             J21 * J22,             J21 * J23,             J22 * J23,
-                J31 * J31,       J32 * J32,       J33 * J33,             J31 * J32,             J31 * J33,             J32 * J33,
-                2.0 * J11 * J21, 2.0 * J12 * J22, 2.0 * J13 * J23, J11 * J22 + J21 * J12, J11 * J23 + J21 * J13, J12 * J23 + J22 * J13,
-                2.0 * J11 * J31, 2.0 * J12 * J32, 2.0 * J13 * J33, J11 * J32 + J31 * J12, J11 * J33 + J31 * J13, J12 * J33 + J32 * J13,
-                2.0 * J31 * J21, 2.0 * J32 * J22, 2.0 * J33 * J23, J31 * J22 + J21 * J32, J31 * J23 + J21 * J33, J32 * J23 + J22 * J33;
+  Eigen::Matrix<double, 6, 6> T0  {
+    {J11 * J11,       J12 * J12,       J13 * J13,             J11 * J12,             J11 * J13,             J12 * J13},
+    {J21 * J21,       J22 * J22,       J23 * J23,             J21 * J22,             J21 * J23,             J22 * J23},
+    {J31 * J31,       J32 * J32,       J33 * J33,             J31 * J32,             J31 * J33,             J32 * J33},
+    {2.0 * J11 * J21, 2.0 * J12 * J22, 2.0 * J13 * J23, J11 * J22 + J21 * J12, J11 * J23 + J21 * J13, J12 * J23 + J22 * J13},
+    {2.0 * J11 * J31, 2.0 * J12 * J32, 2.0 * J13 * J33, J11 * J32 + J31 * J12, J11 * J33 + J31 * J13, J12 * J33 + J32 * J13},
+    {2.0 * J31 * J21, 2.0 * J32 * J22, 2.0 * J33 * J23, J31 * J22 + J21 * J32, J31 * J23 + J21 * J33, J32 * J23 + J22 * J33}
+  };
   // clang-format on
 
   return T0.inverse() * detJ0;

@@ -130,7 +130,7 @@ private:
   Underlying matImpl_; ///< The underlying material model.
 
   /**
-   * \brief Reduces ths strain components to statisfy the vanishing strain condition
+   * \brief Reduces the strain components to satisfy the vanishing strain condition
    * \tparam Derived The derived type of the input matrix
    * \param Eraw The input strain matrix
    * \return Eigen::Matrix3<ScalarType> The reduced strain matrix

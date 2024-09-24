@@ -305,6 +305,29 @@ def checkStrainTransformation():
     assert np.allclose(gl, gl2)
 
 
+def checkVoigtTransformations():
+    # Check Voigt transformations for 2D
+    glVoigt = [1.2, 1.1, 0.1]
+    glTensor = utils.fromVoigt(glVoigt)
+
+    assert np.allclose(utils.toVoigt(glTensor), glVoigt)
+    assert np.allclose(utils.fromVoigt(glVoigt), glTensor)
+
+    # Check Voigt transformations for 1D
+    glVoigt = [1.2]
+    glTensor = utils.fromVoigt(glVoigt)
+
+    assert np.allclose(utils.toVoigt(glTensor), glVoigt)
+    assert np.allclose(utils.fromVoigt(glVoigt), glTensor)
+
+    # Check Voigt transformations for 3D
+    glVoigt = [1.2, 1.1, 0.9, 0.1, 0.2, 0.2]
+    glTensor = utils.fromVoigt(glVoigt)
+
+    assert np.allclose(utils.toVoigt(glTensor), glVoigt)
+    assert np.allclose(utils.fromVoigt(glVoigt), glTensor)
+
+
 if __name__ == "__main__":
     strain = np.array([1.2, 1.1, 0.9, 0.1, 0.2, 0.2])
     checkWithStrain(strain)
@@ -322,6 +345,7 @@ if __name__ == "__main__":
     checkWithStrain(strain)
 
     checkStrainTransformation()
+    checkVoigtTransformations()
 
     # Check different constructors (no physical meaning)
     svk = iks.materials.StVenantKirchhoff(E=1000, mu=500)
