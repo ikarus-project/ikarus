@@ -7,8 +7,6 @@
  * \ingroup  materials
  */
 
-// SPDX-License-Identifier: LGPL-3.0-or-later
-
 #pragma once
 
 #include "vanishinghelpers.hh"
@@ -69,7 +67,7 @@ struct VanishingStrain : public Material<VanishingStrain<strainIndexPair, MI>>
   MaterialParameters materialParametersImpl() const { return matImpl_.materialParametersImpl(); }
 
   /**
-   * \brief Computes the stored energy for the PlaneStrain material.
+   * \brief Computes the stored energy for the VanishingStrain material.
    * \tparam Derived The derived type of the input matrix.
    * \param Eraw The strain mesasure
    * \return ScalarType The stored energy.
@@ -81,7 +79,7 @@ struct VanishingStrain : public Material<VanishingStrain<strainIndexPair, MI>>
   }
 
   /**
-   * \brief Computes the strains for the PlaneStrain material.
+   * \brief Computes the strains for the VanishingStrain material.
    * \tparam voigt A boolean indicating whether to return strains in Voigt notation.
    * \tparam Derived The derived type of the input matrix.
    * \param Eraw The Green-Lagrangian strain.
@@ -101,7 +99,7 @@ struct VanishingStrain : public Material<VanishingStrain<strainIndexPair, MI>>
   }
 
   /**
-   * \brief Computes the tangent moduli for the PlaneStrain material.
+   * \brief Computes the tangent moduli for the VanishingStrain material.
    * \tparam voigt A boolean indicating whether to return tangent moduli in Voigt notation.
    * \tparam Derived The derived type of the input matrix.
    * \param E The strain measure.
@@ -120,17 +118,23 @@ struct VanishingStrain : public Material<VanishingStrain<strainIndexPair, MI>>
   /**
    * \brief Rebinds the material to a different scalar type.
    * \tparam ScalarTypeOther The target scalar type.
-   * \return PlaneStrain The rebound PlaneStrain material.
+   * \return VanishingStrain The rebound VanishingStrain material.
    */
   template <typename ScalarTypeOther>
   auto rebind() const {
     auto reboundMatImpl = matImpl_.template rebind<ScalarTypeOther>();
-    return PlaneStrain<decltype(reboundMatImpl)>(reboundMatImpl);
+    return VanishingStrain<strainIndexPair, decltype(reboundMatImpl)>(reboundMatImpl);
   }
 
 private:
   Underlying matImpl_; ///< The underlying material model.
 
+  /**
+   * \brief Reduces ths strain components to statisfy the vanishing strain condition
+   * \tparam Derived The derived type of the input matrix
+   * \param Eraw The input strain matrix
+   * \return Eigen::Matrix3<ScalarType> The reduced strain matrix
+   */
   template <typename Derived>
   auto reduceStrain(const Eigen::MatrixBase<Derived>& Eraw) const {
     if constexpr (strainTag == StrainTags::linear or strainTag == StrainTags::greenLagrangian) {
@@ -144,7 +148,9 @@ private:
       return transformStrain<StrainTags::greenLagrangian, strainTag>(Egl).derived();
     }
   }
-
+  /**
+   * \brief Set the fixed strain component to zero
+   */
   inline void setStrainsToZero(auto& E) const {
     for (auto [i, j] : fixedPairs) {
       E(i, j) = 0;
@@ -154,7 +160,7 @@ private:
 };
 
 /**
- * \brief Factory function to create a PlaneStrain material with specified strain indices.
+ * \brief Factory function to create a VanishingStrain material with specified strain indices.
  * \tparam matrixIndexPair The array of MatrixIndexPair representing fixed strain components.
  * \tparam MaterialImpl The underlying material model.
  * \param mat The underlying material model.
@@ -167,10 +173,16 @@ auto makeVanishingStrain(MaterialImpl mat) {
 }
 
 /**
- * \brief Factory function to create a PlaneStrain material for plane strain conditions.
+ * \brief Factory function to create a VanishingStrain material for plane strain conditions.
+ * \details The output is as follows for the stress and material tangent (in Voigt notation):
+ * \f[  \BS(\BE) \rightarrow \begin{bmatrix}
+ *   S_{11} \\ S_{22} \\ S_{12}
+ * \end{bmatrix}, \quad \BBC(\BE) \rightarrow  \begin{bmatrix}
+ *   C_{11} & C_{12} & C_{13} \\ C_{21} & C_{22} & C_{23} \\ C_{31} & C_{32} & C_{33}
+ * \end{bmatrix} \f]
  * \tparam MaterialImpl The underlying material model.
  * \param mat The underlying material model.
- * \return PlaneStrain The created PlaneStrain material for plane strain case.
+ * \return VanishingStrain The created VanishingStrain material for plane strain case.
  */
 template <typename MaterialImpl>
 auto planeStrain(const MaterialImpl& mat) {

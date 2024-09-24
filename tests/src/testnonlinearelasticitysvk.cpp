@@ -58,6 +58,17 @@ int main(int argc, char** argv) {
         skills(Ikarus::nonLinearElastic(planeStressMat), volumeLoad<2>(vL), neumannBoundaryLoad(&neumannBoundary, nBL)),
         Ikarus::AffordanceCollections::elastoStatics));
   }
+  {
+    auto grid     = createUGGridFromCorners<2>(CornerDistortionFlag::randomlyDistorted);
+    auto gridView = grid->leafGridView();
+    /// We artificially apply a Neumann load on the complete boundary
+    Dune::BitSetVector<1> neumannVertices(gridView.size(2), true);
+    BoundaryPatch neumannBoundary(gridView, neumannVertices);
+    t.subTest(checkFESByAutoDiff(
+        gridView, power<2>(lagrange<1>()),
+        skills(Ikarus::nonLinearElastic(planeStrainMat), volumeLoad<2>(vL), neumannBoundaryLoad(&neumannBoundary, nBL)),
+        Ikarus::AffordanceCollections::elastoStatics));
+  }
 
   {
     auto grid     = createUGGridFromCorners<3>(CornerDistortionFlag::randomlyDistorted);

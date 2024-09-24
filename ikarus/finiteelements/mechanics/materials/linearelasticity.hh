@@ -43,14 +43,14 @@ struct LinearElasticityT : Material<LinearElasticityT<ST>>
   using StressMatrix                  = StrainMatrix;
   using MaterialParameters            = typename Base::MaterialParameters;
 
-  static constexpr auto strainTag          = StrainTags::linear;
-  static constexpr auto stressTag          = StressTags::linear;
-  static constexpr auto tangentModuliTag   = TangentModuliTags::Material;
-  static constexpr bool energyAcceptsVoigt = Base::energyAcceptsVoigt;
-  static constexpr bool stressToVoigt      = Base::stressToVoigt;
-  static constexpr bool stressAcceptsVoigt = Base::stressAcceptsVoigt;
-  static constexpr bool moduliToVoigt      = Base::moduliToVoigt;
-  static constexpr bool moduliAcceptsVoigt = Base::moduliAcceptsVoigt;
+  static constexpr auto strainTag              = StrainTags::linear;
+  static constexpr auto stressTag              = StressTags::linear;
+  static constexpr auto tangentModuliTag       = TangentModuliTags::Material;
+  static constexpr bool energyAcceptsVoigt     = Base::energyAcceptsVoigt;
+  static constexpr bool stressToVoigt          = Base::stressToVoigt;
+  static constexpr bool stressAcceptsVoigt     = Base::stressAcceptsVoigt;
+  static constexpr bool moduliToVoigt          = Base::moduliToVoigt;
+  static constexpr bool moduliAcceptsVoigt     = Base::moduliAcceptsVoigt;
   static constexpr double derivativeFactorImpl = Base::derivativeFactorImpl;
 
   [[nodiscard]] constexpr static std::string nameImpl() noexcept { return "LinearElasticity"; }

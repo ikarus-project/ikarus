@@ -41,16 +41,15 @@ struct StVenantKirchhoffT : public Material<StVenantKirchhoffT<ST>>
   using StressMatrix                  = StrainMatrix;
   using MaterialParameters            = LamesFirstParameterAndShearModulus;
 
-  static constexpr auto strainTag          = StrainTags::greenLagrangian;
-  static constexpr auto stressTag          = StressTags::PK2;
-  static constexpr auto tangentModuliTag   = TangentModuliTags::Material;
-  static constexpr bool energyAcceptsVoigt = true;
-  static constexpr bool stressToVoigt      = true;
-  static constexpr bool stressAcceptsVoigt = true;
-  static constexpr bool moduliToVoigt      = true;
-  static constexpr bool moduliAcceptsVoigt = true;
-    static constexpr double derivativeFactorImpl = 1;
-
+  static constexpr auto strainTag              = StrainTags::greenLagrangian;
+  static constexpr auto stressTag              = StressTags::PK2;
+  static constexpr auto tangentModuliTag       = TangentModuliTags::Material;
+  static constexpr bool energyAcceptsVoigt     = true;
+  static constexpr bool stressToVoigt          = true;
+  static constexpr bool stressAcceptsVoigt     = true;
+  static constexpr bool moduliToVoigt          = true;
+  static constexpr bool moduliAcceptsVoigt     = true;
+  static constexpr double derivativeFactorImpl = 1;
 
   [[nodiscard]] constexpr static std::string nameImpl() { return "StVenantKirchhoff"; }
 

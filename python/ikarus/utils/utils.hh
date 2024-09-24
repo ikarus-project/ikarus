@@ -16,7 +16,7 @@ void addBindingsToUtils() {
 
   /**
    * \brief Converts a square 1x1, 2x2 or 3x3 matrix to a Voigt notation vector.
-   *  \ingroup tensor
+   * \ingroup utils
    * \param E Input matrix of size (size x size).
    * \param isStrain Flag indicating whether the conversion is for strain (true) or not (false) (default is true)..
    * \return  Vector with components in Voigt notation vector.
@@ -54,11 +54,11 @@ void addBindingsToUtils() {
 
   /**
    * \brief Converts a vector given in Voigt notation to a matrix.
-   *  \ingroup tensor
+   * \ingroup utils
    * \param EVoigt Voigt notation vector.
    * \param isStrain Flag indicating whether the vector represents a strain (default is true).
    * \return Matrix corresponding to the vector in Voigt notation.
-   *  \details
+   * \details
    * This function converts a vector given in Voigt notation to the corresponding matrix. The conversion depends on the
    * size The parameter `isStrain` is used to determine the conversion factor for off-diagonal components, which need to
    * be divided by 2 in the matrix representation if the quantity is a strain tensor.
