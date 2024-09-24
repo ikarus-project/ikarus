@@ -79,7 +79,7 @@ struct VanishingStrain : public Material<VanishingStrain<strainIndexPair, MI>>
   }
 
   /**
-   * \brief Computes the strains for the VanishingStrain material.
+   * \brief Computes the stresses for the VanishingStrain material.
    * \tparam voigt A boolean indicating whether to return strains in Voigt notation.
    * \tparam Derived The derived type of the input matrix.
    * \param Eraw The Green-Lagrangian strain.
