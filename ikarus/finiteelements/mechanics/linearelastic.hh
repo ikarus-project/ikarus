@@ -31,6 +31,7 @@ class LinearElastic;
 
 /**
  * \brief A PreFE struct for linear elastic elements.
+ * \tparam MAT Type of the material.
  */
 template <Concepts::GeometricallyLinearMaterial MAT>
 struct LinearElasticPre
@@ -258,7 +259,8 @@ protected:
 
 /**
  * \brief A helper function to create a linear elastic pre finite element.
- * \param mat Material parameters for the linear elastic element.
+ * \tparam MAT Type of the material.
+ * \param mat Material parameters for the non-linear elastic element.
  * \return A linear elastic pre finite element.
  */
 template <typename MAT>
