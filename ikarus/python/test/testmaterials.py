@@ -328,6 +328,24 @@ def checkVoigtTransformations():
     assert np.allclose(utils.fromVoigt(glVoigt), glTensor)
 
 
+def checkMaterialConstructors():
+    # Check different constructors (no physical meaning)
+    iks.materials.StVenantKirchhoff(E=1000, mu=500)
+    iks.materials.StVenantKirchhoff(E=1000, K=500)
+    iks.materials.StVenantKirchhoff(E=1000, Lambda=500)
+    iks.materials.StVenantKirchhoff(K=1000, Lambda=500)
+    iks.materials.StVenantKirchhoff(Lambda=1000, mu=500)
+
+    svk1 = iks.materials.StVenantKirchhoff(E=1000, nu=0.3)
+    svk2 = iks.materials.StVenantKirchhoff(nu=0.3, E=1000)
+
+    strain = np.array([1.2, 1.1, 0.9, 0.1, 0.2, 0.2])
+    s1 = svk1.stresses(materials.StrainTags.greenLagrangian, strain)
+    s2 = svk2.stresses(materials.StrainTags.greenLagrangian, strain)
+
+    assert np.allclose(s1, s2)
+
+
 if __name__ == "__main__":
     strain = np.array([1.2, 1.1, 0.9, 0.1, 0.2, 0.2])
     checkWithStrain(strain)
@@ -346,10 +364,4 @@ if __name__ == "__main__":
 
     checkStrainTransformation()
     checkVoigtTransformations()
-
-    # Check different constructors (no physical meaning)
-    svk = iks.materials.StVenantKirchhoff(E=1000, mu=500)
-    svk = iks.materials.StVenantKirchhoff(E=1000, K=500)
-    svk = iks.materials.StVenantKirchhoff(E=1000, Lambda=500)
-    svk = iks.materials.StVenantKirchhoff(K=1000, Lambda=500)
-    svk = iks.materials.StVenantKirchhoff(Lambda=1000, mu=500)
+    checkMaterialConstructors()

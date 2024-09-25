@@ -77,7 +77,7 @@ namespace Impl {
 
   Ikarus::LamesFirstParameterAndShearModulus extractMaterialParameters(const pybind11::kwargs& kwargs) {
     // clang-format off
-    static const std::map<std::pair<std::string, std::string>, std::function<LamesFirstParameterAndShearModulus(const pybind11::kwargs&)>> conversionMap = {
+    static const std::map<std::array<std::string, 2>, std::function<LamesFirstParameterAndShearModulus(const pybind11::kwargs&)>> conversionMap = {
       {{"E", "nu"}, [](const auto& kw){ return convertMaterialParameters<YoungsModulusAndPoissonsRatio>(kw, "E", "nu"); }},
       {{"E", "mu"}, [](const auto& kw){ return convertMaterialParameters<YoungsModulusAndShearModulus>(kw, "E", "mu"); }},
       {{"E", "K"}, [](const auto& kw){ return convertMaterialParameters<YoungsModulusAndBulkModulus>(kw, "E", "K"); }},
@@ -90,9 +90,10 @@ namespace Impl {
     if (kwargs.size() != 2)
       DUNE_THROW(Dune::IOError, "The number of material parameters passed to the material should be 2");
 
-    for (const auto& conversion : conversionMap) {
-      if (kwargs.contains(conversion.first.first) && kwargs.contains(conversion.first.second)) {
-        return conversion.second(kwargs);
+    for (const auto& [materialParameters, parameterConverter] : conversionMap) {
+      const auto [firstPar, secondPar] = materialParameters;
+      if (kwargs.contains(firstPar) && kwargs.contains(secondPar)) {
+        return parameterConverter(kwargs);
       }
     }
 
