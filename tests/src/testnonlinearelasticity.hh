@@ -287,3 +287,34 @@ auto SingleElementTest(const Material& mat) {
   }
   return t;
 }
+
+template <int gridDim, typename MAT, typename TestSuiteType>
+void autoDiffTest(TestSuiteType& t, const MAT& mat, const std::string& testName = "") {
+  using namespace Ikarus;
+  using namespace Dune::Functions::BasisFactory;
+  auto vL = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
+    Eigen::Vector<typename VectorType::field_type, VectorType::dimension> fExt;
+    fExt.setZero();
+    fExt[1] = 2 * lamb;
+    return fExt;
+  };
+
+  auto nBL = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
+    Eigen::Vector<typename VectorType::field_type, VectorType::dimension> fExt;
+    fExt.setZero();
+    fExt[0] = lamb / 40;
+    return fExt;
+  };
+
+  auto grid     = createUGGridFromCorners<gridDim>(CornerDistortionFlag::randomlyDistorted);
+  auto gridView = grid->leafGridView();
+
+  /// We artificially apply a Neumann load on the complete boundary
+  Dune::BitSetVector<1> neumannVertices(gridView.size(gridDim), true);
+  BoundaryPatch neumannBoundary(gridView, neumannVertices);
+
+  t.subTest(checkFESByAutoDiff(
+      gridView, power<gridDim>(lagrange<1>()),
+      skills(Ikarus::nonLinearElastic(mat), volumeLoad<gridDim>(vL), neumannBoundaryLoad(&neumannBoundary, nBL)),
+      Ikarus::AffordanceCollections::elastoStatics, testName));
+}

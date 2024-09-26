@@ -3,7 +3,6 @@
 
 #include <config.h>
 
-#include "checkfebyautodiff.hh"
 #include "testcommon.hh"
 #include "testnonlinearelasticity.hh"
 
@@ -13,39 +12,30 @@ using Dune::TestSuite;
 
 int main(int argc, char** argv) {
   using namespace Ikarus;
-  using namespace Dune::Functions::BasisFactory;
   Ikarus::init(argc, argv);
-  TestSuite t;
+  TestSuite t("NonLinearElastic + StVenantKirchhoff Test");
 
   auto matParameter1 = toLamesFirstParameterAndShearModulus({.emodul = 1000, .nu = 0.3});
   auto matParameter2 = toLamesFirstParameterAndShearModulus({.emodul = 1000, .nu = 0.0});
 
   StVenantKirchhoff matSVK1(matParameter1);
   StVenantKirchhoff matSVK2(matParameter2);
-  auto planeStressMat = planeStress(matSVK2, 1e-8);
+  auto planeStressMat1 = planeStress(matSVK1, 1e-8);
+  auto planeStressMat2 = planeStress(matSVK2, 1e-8);
   auto planeStrainMat = planeStrain(matSVK1);
 
   t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Alu>(matSVK1));
   t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Yasp>(matSVK1));
   t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::IgaSurfaceIn2D>(matSVK1));
-  t.subTest(GreenLagrangeStrainTest<2>(planeStressMat));
+  t.subTest(GreenLagrangeStrainTest<2>(planeStressMat1));
   t.subTest(GreenLagrangeStrainTest<2>(planeStrainMat));
-  t.subTest(GreenLagrangeStrainTest<3>(matSVK2));
-  t.subTest(SingleElementTest(planeStressMat));
+  t.subTest(GreenLagrangeStrainTest<3>(matSVK1));
+  t.subTest(SingleElementTest(planeStressMat2));
 
-  auto vL = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
-    Eigen::Vector<typename VectorType::field_type, VectorType::dimension> fExt;
-    fExt.setZero();
-    fExt[1] = 2 * lamb;
-    return fExt;
-  };
-
-  auto nBL = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
-    Eigen::Vector<typename VectorType::field_type, VectorType::dimension> fExt;
-    fExt.setZero();
-    fExt[0] = lamb / 40;
-    return fExt;
-  };
+  autoDiffTest<2>(t, planeStressMat1, " nu != 0");
+  autoDiffTest<2>(t, planeStressMat2, " nu = 0");
+  autoDiffTest<3>(t, matSVK1, " nu != 0");
+  autoDiffTest<3>(t, matSVK2, " nu = 0");
 
   {
     auto grid     = createUGGridFromCorners<2>(CornerDistortionFlag::randomlyDistorted);
@@ -55,32 +45,8 @@ int main(int argc, char** argv) {
     BoundaryPatch neumannBoundary(gridView, neumannVertices);
     t.subTest(checkFESByAutoDiff(
         gridView, power<2>(lagrange<1>()),
-        skills(Ikarus::nonLinearElastic(planeStressMat), volumeLoad<2>(vL), neumannBoundaryLoad(&neumannBoundary, nBL)),
         Ikarus::AffordanceCollections::elastoStatics));
-  }
-  {
-    auto grid     = createUGGridFromCorners<2>(CornerDistortionFlag::randomlyDistorted);
-    auto gridView = grid->leafGridView();
-    /// We artificially apply a Neumann load on the complete boundary
-    Dune::BitSetVector<1> neumannVertices(gridView.size(2), true);
-    BoundaryPatch neumannBoundary(gridView, neumannVertices);
-    t.subTest(checkFESByAutoDiff(
-        gridView, power<2>(lagrange<1>()),
         skills(Ikarus::nonLinearElastic(planeStrainMat), volumeLoad<2>(vL), neumannBoundaryLoad(&neumannBoundary, nBL)),
-        Ikarus::AffordanceCollections::elastoStatics));
   }
-
-  {
-    auto grid     = createUGGridFromCorners<3>(CornerDistortionFlag::randomlyDistorted);
-    auto gridView = grid->leafGridView();
-    /// We artificially apply a Neumann load on the complete boundary
-    Dune::BitSetVector<1> neumannVertices(gridView.size(3), true);
-    BoundaryPatch neumannBoundary(gridView, neumannVertices);
-    t.subTest(checkFESByAutoDiff(
-        gridView, power<3>(lagrange<1>()),
-        skills(Ikarus::nonLinearElastic(matSVK1), volumeLoad<3>(vL), neumannBoundaryLoad(&neumannBoundary, nBL)),
-        Ikarus::AffordanceCollections::elastoStatics));
-  }
-
   return t.exit();
 }

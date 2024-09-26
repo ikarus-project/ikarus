@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
+
+#include "testhelpers.hh"
+
 #include <dune/common/float_cmp.hh>
 #include <dune/common/test/testsuite.hh>
 
@@ -11,19 +14,17 @@
 #include <ikarus/finiteelements/fefactory.hh>
 #include <ikarus/utils/basis.hh>
 
-template <typename GridView, typename PreBasis, typename Skills, typename AffordanceColl>
-auto checkFESByAutoDiff(const GridView& gridView, const PreBasis& pb, Skills&& skills, AffordanceColl affordance) {
-  auto basis = Ikarus::makeBasis(gridView, pb);
-  Eigen::VectorXd d;
-  d.setRandom(basis.flat().dimension());
+template <typename GridView, typename BasisHandler, typename Skills, typename AffordanceColl, typename VectorType>
+auto checkFESByAutoDiffImpl(const GridView& gridView, const BasisHandler& basis, Skills&& skills,
+                            AffordanceColl affordance, VectorType& d, const std::string& messageIfFailed = "") {
   double lambda = 7.3;
-
-  auto fe  = Ikarus::makeFE(basis, std::forward<Skills>(skills));
-  using FE = decltype(fe);
+  auto fe       = Ikarus::makeFE(basis, std::forward<Skills>(skills));
+  using FE      = decltype(fe);
 
   auto req = typename FE::Requirement();
   req.insertGlobalSolution(d).insertParameter(lambda);
-  Dune::TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() by Automatic Differentiation");
+  Dune::TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() by Automatic Differentiation" +
+                    messageIfFailed);
   for (auto element : elements(gridView)) {
     auto localView = basis.flat().localView();
     localView.bind(element);
@@ -51,7 +52,7 @@ auto checkFESByAutoDiff(const GridView& gridView, const PreBasis& pb, Skills&& s
     calculateVector(fe, req, affordance.vectorAffordance(), R);
     calculateVector(feAutoDiff, req, affordance.vectorAffordance(), RAutoDiff);
 
-    t.check(K.isApprox(KAutoDiff, tol),
+    t.check(isApproxSame(K, KAutoDiff, tol),
             "Mismatch between the stiffness matrices obtained from explicit implementation and the one based on "
             "automatic differentiation for " +
                 feClassName)
@@ -60,7 +61,7 @@ auto checkFESByAutoDiff(const GridView& gridView, const PreBasis& pb, Skills&& s
         << KAutoDiff << "\nThe difference is\n"
         << (K - KAutoDiff);
 
-    t.check(R.isApprox(RAutoDiff, tol),
+    t.check(isApproxSame(R, RAutoDiff, tol),
             "Mismatch between the residual vectors obtained from explicit implementation and the one based on "
             "automatic differentiation for " +
                 feClassName)
@@ -74,5 +75,18 @@ auto checkFESByAutoDiff(const GridView& gridView, const PreBasis& pb, Skills&& s
                 feClassName);
   }
 
+  return t;
+}
+
+template <typename GridView, typename PreBasis, typename Skills, typename AffordanceColl>
+auto checkFESByAutoDiff(const GridView& gridView, const PreBasis& pb, Skills&& skills, AffordanceColl affordance,
+                        const std::string& testName = "") {
+  Dune::TestSuite t("AutoDiff Test" + testName);
+  auto basis = Ikarus::makeBasis(gridView, pb);
+  Eigen::VectorXd d;
+  d.setZero(basis.flat().dimension());
+  t.subTest(checkFESByAutoDiffImpl(gridView, basis, skills, affordance, d, " Zero Displacements"));
+  d.setRandom(basis.flat().dimension());
+  t.subTest(checkFESByAutoDiffImpl(gridView, basis, skills, affordance, d, " Non-zero Displacements"));
   return t;
 }

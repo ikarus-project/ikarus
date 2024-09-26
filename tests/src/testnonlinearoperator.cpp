@@ -23,6 +23,8 @@ template <typename SolutionType, typename SolutionTypeExpected, typename NewtonR
 auto checkNewtonRaphson(NewtonRaphson& nr, SolutionType& x, double tolerance, int maxIter, int iterExpected,
                         const SolutionTypeExpected& xExpected, const auto& x_Predictor) {
   TestSuite t("checkNewtonRaphson");
+  t.checkThrow<Dune::InvalidStateException>([&]() { nr.setup({tolerance, maxIter, maxIter + 1}); },
+                                            "NewtonRaphson setup should fail if minIter > maxIter");
   nr.setup({tolerance, maxIter});
   const auto solverInfo = nr.solve(x_Predictor);
 
