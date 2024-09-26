@@ -140,6 +140,7 @@ public:
    * \return The material tangent matrix.
    */
   auto materialTangent() const {
+    // Since that material is independant of the strains, a zero strain is passed here
     return mat_.template tangentModuli<StrainTags::linear, true>(Eigen::Vector<double, 6>::Zero());
   }
 
