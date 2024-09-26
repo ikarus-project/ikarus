@@ -26,18 +26,21 @@
 
 namespace Ikarus {
 
-template <typename PreFE, typename FE>
+template <typename PreFE, typename FE, typename PRE>
 class LinearElastic;
 
 /**
  * \brief A PreFE struct for linear elastic elements.
+ * \tparam MAT Type of the material.
  */
+template <Concepts::GeometricallyLinearMaterial MAT>
 struct LinearElasticPre
 {
-  YoungsModulusAndPoissonsRatio material;
+  using Material = MAT;
+  MAT material;
 
   template <typename PreFE, typename FE>
-  using Skill = LinearElastic<PreFE, FE>;
+  using Skill = LinearElastic<PreFE, FE, LinearElasticPre>;
 };
 
 /**
@@ -48,7 +51,7 @@ struct LinearElasticPre
  * \tparam PreFE The type of the  pre finite element.
  * \tparam FE The type of the finite element.
  */
-template <typename PreFE, typename FE>
+template <typename PreFE, typename FE, typename PRE>
 class LinearElastic : public ResultTypeBase<ResultTypes::linearStress>
 {
 public:
@@ -61,7 +64,8 @@ public:
   using Geometry  = typename Traits::Geometry;
   using GridView  = typename Traits::GridView;
   using Element   = typename Traits::Element;
-  using Pre       = LinearElasticPre;
+  using Material  = PRE::Material;
+  using Pre       = PRE;
 
   static constexpr int myDim = Traits::mydim;
   using LocalBasisType       = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
@@ -115,7 +119,8 @@ public:
     return uFunction;
   }
   /**
-   * \brief Gets the strain function for the given Requirement and optional displacement vector.
+   * \brief Gets the strain function for the given Requirement and optional di
+   splacement vector.
    *
    * \tparam ScalarType The scalar type for the strain vector.
    * \param par The Requirement object.
@@ -135,10 +140,8 @@ public:
    * \return The material tangent matrix.
    */
   auto materialTangent() const {
-    if constexpr (myDim == 2)
-      return planeStressLinearElasticMaterialTangent(mat_.emodul, mat_.nu);
-    else if constexpr (myDim == 3)
-      return linearElasticMaterialTangent3D(mat_.emodul, mat_.nu);
+    // Since that material is independent of the strains, a zero strain is passed here
+    return mat_.template tangentModuli<StrainTags::linear, true>(Eigen::Vector<double, 6>::Zero());
   }
 
   /**
@@ -187,7 +190,7 @@ private:
 
   std::shared_ptr<const Geometry> geo_;
   Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType>> localBasis_;
-  YoungsModulusAndPoissonsRatio mat_;
+  Material mat_;
   size_t numberOfNodes_{0};
   int order_{};
 
@@ -257,11 +260,13 @@ protected:
 
 /**
  * \brief A helper function to create a linear elastic pre finite element.
- * \param mat Material parameters for the linear elastic element.
+ * \tparam MAT Type of the material.
+ * \param mat Material parameters for the non-linear elastic element.
  * \return A linear elastic pre finite element.
  */
-auto linearElastic(const YoungsModulusAndPoissonsRatio& mat) {
-  LinearElasticPre pre(mat);
+template <typename MAT>
+auto linearElastic(const MAT& mat) {
+  LinearElasticPre<MAT> pre(mat);
 
   return pre;
 }

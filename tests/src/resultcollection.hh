@@ -8,6 +8,10 @@
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/utils/functionhelper.hh>
 
+template <typename Material>
+constexpr bool isPlaneStress =
+    (Ikarus::traits::isSpecializationNonTypeAndTypes<Ikarus::VanishingStress, Material>::value);
+
 inline auto linearStressResultsOfSquare = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
   constexpr int vertices   = 4;
   constexpr int quantities = 3;
@@ -15,11 +19,19 @@ inline auto linearStressResultsOfSquare = []<typename NOP, typename FE>(NOP& non
   Eigen::Matrix<double, vertices, quantities> expectedStress;
   if constexpr (requires { fe.setEASType(4); }) {
     fe.setEASType(4);
-    expectedStress << 1214.28571429, 1214.28571429, 384.61538462, 1214.28571429, 214.28571429, 384.61538462,
-        214.28571429, 1214.28571429, 384.61538462, 214.28571429, 214.28571429, 384.61538462;
+    if (isPlaneStress<typename FE::Material>)
+      expectedStress << 1214.28571429, 1214.28571429, 384.61538462, 1214.28571429, 214.28571429, 384.61538462,
+          214.28571429, 1214.28571429, 384.61538462, 214.28571429, 214.28571429, 384.61538462;
+    else
+      expectedStress << 1510.98901099, 1510.98901099, 384.61538462, 1510.98901099, 412.08791209, 384.61538462,
+          412.08791209, 1510.98901099, 384.61538462, 412.08791209, 412.08791209, 384.61538462;
   } else {
-    expectedStress << 1428.57142857, 1428.57142857, 769.23076923, 1098.90109890, 329.67032967, 384.61538462,
-        329.67032967, 1098.90109890, 384.61538462, 0, 0, 0;
+    if (isPlaneStress<typename FE::Material>)
+      expectedStress << 1428.57142857, 1428.57142857, 769.23076923, 1098.90109890, 329.67032967, 384.61538462,
+          329.67032967, 1098.90109890, 384.61538462, 0, 0, 0;
+    else
+      expectedStress << 1923.07692308, 1923.07692308, 769.23076923, 1346.15384615, 576.92307692, 384.61538462,
+          576.92307692, 1346.15384615, 384.61538462, 0, 0, 0;
   }
 
   auto& displacement = nonLinearOperator.firstParameter();
@@ -34,7 +46,10 @@ inline auto linearVonMisesResultsOfSquare = []<typename NOP, typename FE>(NOP& n
   constexpr int vertices   = 4;
   constexpr int quantities = 1;
 
-  const Eigen::Matrix<double, vertices, quantities> expectedStress{1953.44932249, 1182.27663689, 1182.27663689, 0};
+  const auto expectedStress =
+      isPlaneStress<typename FE::Material>
+          ? Eigen::Matrix<double, vertices, quantities>{1953.44932249, 1182.27663689, 1182.27663689, 0}
+          : Eigen::Matrix<double, vertices, quantities>{2339.52405011, 1346.15384615, 1346.15384615, 0};
 
   auto& displacement = nonLinearOperator.firstParameter();
   displacement << 0, 0, 1, 1, 1, 1, 1, 1;
@@ -48,11 +63,18 @@ inline auto linearPrincipalStressResultsOfSquare = []<typename NOP, typename FE>
   constexpr int vertices   = 4;
   constexpr int quantities = 2;
 
-  const Eigen::Matrix<double, vertices, quantities> expectedStress{
+  const auto expectedStress = isPlaneStress<typename FE::Material>
+   ? Eigen::Matrix<double, vertices, quantities>{
       {2197.80219780, 659.34065934},
       {1258.21400751, 170.35742107},
       {1258.21400751, 170.35742107},
       {            0,            0}
+  } 
+  : Eigen::Matrix<double, vertices, quantities>{
+    {2692.30769231, 1153.84615385},
+    {1505.46675476, 417.61016832},
+    {1505.46675476, 417.61016832},
+    {0, 0}
   };
 
   auto& displacement = nonLinearOperator.firstParameter();
@@ -129,7 +151,10 @@ inline auto linearStressResultsOfTriangle = []<typename NOP, typename FE>(NOP& n
   constexpr int quantities = 3;
 
   Eigen::Matrix<double, vertices, quantities> expectedStress;
-  expectedStress.rowwise() = Eigen::Matrix<double, 1, quantities>{2197.80219780, 659.34065934, 384.61538462};
+  if (isPlaneStress<typename FE::Material>)
+    expectedStress.rowwise() = Eigen::Matrix<double, 1, quantities>{2197.80219780, 659.34065934, 384.61538462};
+  else
+    expectedStress.rowwise() = Eigen::Matrix<double, 1, quantities>{2692.30769231, 1153.84615385, 384.61538462};
 
   auto& displacement = nonLinearOperator.firstParameter();
   displacement << 0, 0, 2, 0, 1, 0;

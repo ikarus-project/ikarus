@@ -43,7 +43,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
     - Python:
         - Bindings for Enums can now be done conveniently with the `ENUM_BINDINGS` macro.
         - The finite element functions `calculateMatrix`, `calculateVector`, and `calculateScalar` now directly accept the affordances.
-        - The assembler bindings now also accept affordances and `DBCOption`, and they are also renamed to simply `matrix`, `vector`
+        - The assembler bindings now also accept affordances and `DBCOption`, and they are also renamed  to simply `matrix`, `vector`
           and `scalar`.
         - The assemblers also export the binding functions to bind the assemblers.
 - Added a new class `AssemblerManipulator` that wraps an existing assembler
@@ -55,6 +55,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 - Add a truss element ([#302](https://github.com/ikarus-project/ikarus/pull/302))
 - Add an About Ikarus page in the documentation ([#291](https://github.com/ikarus-project/ikarus/pull/291))
 - Add new class `Vtk::Writer`, which implements some convenience methods over the existing `dune-vtk` module ([#309](https://github.com/ikarus-project/ikarus/pull/309))
+- Add `VanishingStrain` material (useful for example for plane strain case), also refactor the constructor of `LinearElastic` to take any linear material law ([#317](https://github.com/ikarus-project/ikarus/pull/317))
 
 ## Release v0.4 (Ganymede)
 

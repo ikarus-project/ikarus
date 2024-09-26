@@ -60,9 +60,12 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
       return fext;
     };
 
-    auto sk = skills(linearElastic({100, 0.1}), volumeLoad<2>(vL));
+    auto linMat = Ikarus::LinearElasticity(Ikarus::toLamesFirstParameterAndShearModulus({.emodul = 100, .nu = 0.2}));
+    auto sk     = skills(linearElastic(planeStress(linMat)), volumeLoad<2>(vL));
 
     using FEType = decltype(makeFE(basis, sk));
+    std::cout << Dune::className<FEType>() << std::endl;
+
     std::vector<FEType> fes;
     for (auto&& ge : elements(gridView)) {
       fes.emplace_back(makeFE(basis, sk));

@@ -20,6 +20,7 @@
 #include <Eigen/Sparse>
 
 #include "ikarus/assembler/dirichletbcenforcement.hh"
+#include "ikarus/finiteelements/mechanics/materials/tags.hh"
 #include <ikarus/utils/traits.hh>
 
 namespace Eigen {
@@ -28,7 +29,7 @@ struct EigenBase;
 }
 
 namespace Ikarus {
-template <auto stressIndexPair, typename MaterialImpl>
+template <auto matrixIndexPair, typename MaterialImpl>
 struct VanishingStress;
 
 template <typename Derived>
@@ -427,7 +428,7 @@ namespace Concepts {
       if constexpr (traits::isSpecialization<MaterialToCheck, Material>::value)
         return true;
 
-      if constexpr (traits::isSpecializationNonTypeAndTypes<VanishingStress, Material>::value) {
+      if constexpr (Material::isReduced) {
         if constexpr (traits::isSpecialization<MaterialToCheck, typename Material::Underlying>::value) {
           return true;
         } else {
@@ -437,6 +438,7 @@ namespace Concepts {
         return false;
     }
   } // namespace Impl
+
   /**
    * \concept IsMaterial
    * \brief Concept defining the requirements for a material type.
@@ -461,6 +463,15 @@ namespace Concepts {
       { toString(t) } -> std::same_as<std::string>; // The toString function
     };
   } // namespace Impl
+
+  /**
+   * \concept GeometricallyLinearMaterial
+   * \brief Concepts defining the requirements for a material to be geometrically linear
+   * This is the case when the corresponding strainTag is linear.
+   * \tparam MAT the material implementation
+   */
+  template <typename MAT>
+  concept GeometricallyLinearMaterial = MAT::strainTag == StrainTags::linear;
 
   /**
    * \concept ResultType

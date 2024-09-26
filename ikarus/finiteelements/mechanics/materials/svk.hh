@@ -35,33 +35,35 @@ namespace Ikarus {
 template <typename ST>
 struct StVenantKirchhoffT : public Material<StVenantKirchhoffT<ST>>
 {
-  [[nodiscard]] constexpr std::string nameImpl() const { return "StVenantKirchhoff"; }
+  using ScalarType                    = ST;
+  static constexpr int worldDimension = 3;
+  using StrainMatrix                  = Eigen::Matrix<ScalarType, worldDimension, worldDimension>;
+  using StressMatrix                  = StrainMatrix;
+  using MaterialParameters            = LamesFirstParameterAndShearModulus;
+
+  static constexpr auto strainTag              = StrainTags::greenLagrangian;
+  static constexpr auto stressTag              = StressTags::PK2;
+  static constexpr auto tangentModuliTag       = TangentModuliTags::Material;
+  static constexpr bool energyAcceptsVoigt     = true;
+  static constexpr bool stressToVoigt          = true;
+  static constexpr bool stressAcceptsVoigt     = true;
+  static constexpr bool moduliToVoigt          = true;
+  static constexpr bool moduliAcceptsVoigt     = true;
+  static constexpr double derivativeFactorImpl = 1;
+
+  [[nodiscard]] constexpr static std::string nameImpl() { return "StVenantKirchhoff"; }
 
   /**
    * \brief Constructor for StVenantKirchhoffT.
    * \param mpt The material parameters (Lamé's first parameter and shear modulus).
    */
-  explicit StVenantKirchhoffT(const LamesFirstParameterAndShearModulus& mpt)
+  explicit StVenantKirchhoffT(const MaterialParameters& mpt)
       : materialParameter_{mpt} {}
 
-  using ScalarType                    = ST;
-  static constexpr int worldDimension = 3;
-  using StrainMatrix                  = Eigen::Matrix<ScalarType, worldDimension, worldDimension>;
-  using StressMatrix                  = StrainMatrix;
-
-  static constexpr auto strainTag          = StrainTags::greenLagrangian;
-  static constexpr auto stressTag          = StressTags::PK2;
-  static constexpr auto tangentModuliTag   = TangentModuliTags::Material;
-  static constexpr bool energyAcceptsVoigt = true;
-  static constexpr bool stressToVoigt      = true;
-  static constexpr bool stressAcceptsVoigt = true;
-  static constexpr bool moduliToVoigt      = true;
-  static constexpr bool moduliAcceptsVoigt = true;
-  // this factor denotes the differences between the returned stresses and moduli and the passed strain
-  // for neoHooke the inserted quantity is C the Green-Lagrangian strain tensor,
-  // the function relation between the energy and the stresses is S = 1\partial \psi(E)/ \partial E.
-  // This factor is pre factor, which is the difference to the actual derivative is written here
-  static constexpr double derivativeFactor = 1;
+  /**
+   * \brief Returns the material parameters stored in the material
+   */
+  MaterialParameters materialParametersImpl() const { return materialParameter_; }
 
   /**
    * \brief Computes the stored energy in the Saint Venant-Kirchhoff material model.
@@ -168,7 +170,7 @@ struct StVenantKirchhoffT : public Material<StVenantKirchhoffT<ST>>
   }
 
 private:
-  LamesFirstParameterAndShearModulus materialParameter_;
+  MaterialParameters materialParameter_;
 };
 
 /**

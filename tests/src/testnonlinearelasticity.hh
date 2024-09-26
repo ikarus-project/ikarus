@@ -3,8 +3,8 @@
 
 #include <config.h>
 
+#include "resultcollection.hh"
 #include "testcommon.hh"
-#include "testhelpers.hh"
 
 #include <dune/common/test/testsuite.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
@@ -197,8 +197,19 @@ auto GreenLagrangeStrainTest(const Material& mat) {
   auto element = gridView.template begin<0>();
   auto nDOF    = basis.flat().size();
 
-  auto fe   = makeFE(basis, skills(nonLinearElastic(mat)));
-  auto feLE = makeFE(basis, skills(Ikarus::linearElastic({.emodul = 1000, .nu = 0.0})));
+  auto fe     = makeFE(basis, skills(nonLinearElastic(mat)));
+  auto linMat = [&]() {
+    auto linMat = Ikarus::LinearElasticity{mat.materialParameters()};
+    if constexpr (gridDim == 3)
+      return linMat;
+    else {
+      if constexpr (isPlaneStress<Material>)
+        return Ikarus::planeStress(linMat);
+      else
+        return Ikarus::planeStrain(linMat);
+    }
+  }();
+  auto feLE = makeFE(basis, skills(Ikarus::linearElastic(linMat)));
   fe.bind(*element);
   feLE.bind(*element);
   Eigen::VectorXd d;
@@ -215,9 +226,14 @@ auto GreenLagrangeStrainTest(const Material& mat) {
   calculateMatrix(fe, req, Ikarus::MatrixAffordance::stiffness, K);
   calculateMatrix(feLE, reqLE, Ikarus::MatrixAffordance::stiffness, KLE);
 
-  t.check(K.isApprox(KLE, tol),
+  t.check(isApproxSame(K, KLE, tol),
           "Mismatch between linear and non-linear stiffness matrix for zero displacements with gridDim = " +
-              std::to_string(gridDim));
+              std::to_string(gridDim))
+      << "\n"
+      << K << "\nand \n"
+      << KLE << "\n Diff:\n"
+      << K - KLE;
+
   return t;
 }
 

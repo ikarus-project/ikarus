@@ -29,13 +29,19 @@ struct DummyProblem
                                                   Dune::Functions::LagrangePreBasis<GridView, 1>, 2ul>;
   using Basis    = Ikarus::BasisHandler<PreBasis>;
 
+  using Material = typename Ikarus::VanishingStress<std::array<Ikarus::Impl::MatrixIndexPair, 3ul>{
+                                                        {Ikarus::Impl::MatrixIndexPair{2ul, 1ul},
+                                                         Ikarus::Impl::MatrixIndexPair{2ul, 0ul},
+                                                         Ikarus::Impl::MatrixIndexPair{2ul, 2ul}}
+  },
+                                                    Ikarus::LinearElasticityT<double>>;
   using LinearElastic =
-      Ikarus::FE<Ikarus::PreFE<Basis>, Ikarus::LinearElasticPre::Skill, Ikarus::VolumeLoadPre<2>::Skill>;
+      Ikarus::FE<Ikarus::PreFE<Basis>, Ikarus::LinearElasticPre<Material>::Skill, Ikarus::VolumeLoadPre<2>::Skill>;
 
   using SparseAssmblerT =
       Ikarus::SparseFlatAssembler<std::vector<LinearElastic>&, Ikarus::DirichletValues<typename Basis::FlatBasis>>;
 
-  // YASPGrid needs an int, structuresgridfactory an unsigned int haha
+  // YASPGrid needs an int, structuresgridfactory an unsigned int
   explicit DummyProblem(
       const std::array<std::conditional_t<useYASP, int, unsigned int>, 2>& elementsPerDirection = {10, 10})
       : grid_([&]() {
@@ -61,8 +67,10 @@ struct DummyProblem
                 if (std::abs(intersection.geometry().center()[1]) < 1e-8)
                   dirichletFlags[localView.index(localIndex)] = true;
               });
-          auto vL      = []([[maybe_unused]] auto& globalCoord, auto& lamb) { return Eigen::Vector2d{0, -1}; };
-          auto skills_ = Ikarus::skills(Ikarus::linearElastic({.emodul = 100, .nu = 0.2}), Ikarus::volumeLoad<2>(vL));
+          auto vL = []([[maybe_unused]] auto& globalCoord, auto& lamb) { return Eigen::Vector2d{0, -1}; };
+          auto linMat =
+              Ikarus::LinearElasticity(Ikarus::toLamesFirstParameterAndShearModulus({.emodul = 100, .nu = 0.2}));
+          auto skills_ = Ikarus::skills(Ikarus::linearElastic(Ikarus::planeStress(linMat)), Ikarus::volumeLoad<2>(vL));
           std::vector<LinearElastic> fes;
 
           for (auto&& element : elements(gridView_)) {

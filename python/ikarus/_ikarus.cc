@@ -4,7 +4,9 @@
 #include <config.h>
 
 #include "io/io.hh"
+#include "materials/materials.hh"
 #include "pythonhelpers.hh"
+#include "utils/utils.hh"
 
 #include <dune/common/float_cmp.hh>
 #include <dune/python/common/typeregistry.hh>
@@ -14,8 +16,6 @@
 
 #include <ikarus/assembler/dirichletbcenforcement.hh>
 #include <ikarus/finiteelements/ferequirements.hh>
-#include <ikarus/finiteelements/mechanics/materials.hh>
-#include <ikarus/python/finiteelements/material.hh>
 #include <ikarus/python/finiteelements/scalarwrapper.hh>
 #include <ikarus/solver/linearsolver/linearsolver.hh>
 
@@ -99,16 +99,8 @@ PYBIND11_MODULE(_ikarus, m) {
   registerScalarWrapper<std::reference_wrapper<double>>(m, "ScalarRef",
                                                         "ScalarWrapper<std::reference_wrapper<double>>");
 
-  auto materials = m.def_submodule("materials", "This is the submodule for materials in Ikarus");
+  addMaterialsSubModule(m);
 
-  pybind11::class_<LinearElasticity> linElastic(materials, "LinearElasticity");
-  Ikarus::Python::registerLinearElasticity(materials, linElastic);
-
-  pybind11::class_<StVenantKirchhoff> svk(materials, "StVenantKirchhoff");
-  Ikarus::Python::registerStVenantKirchhoff(materials, svk);
-
-  pybind11::class_<NeoHooke> nh(materials, "NeoHooke");
-  Ikarus::Python::registerNeoHooke(materials, nh);
-
+  addBindingsToUtils();
   addBindingsToIO();
 }

@@ -35,29 +35,35 @@ namespace Ikarus {
 template <typename ST>
 struct NeoHookeT : public Material<NeoHookeT<ST>>
 {
-  [[nodiscard]] constexpr std::string nameImpl() const noexcept { return "NeoHooke"; }
+  using ScalarType                    = ST;
+  static constexpr int worldDimension = 3;
+  using StrainMatrix                  = Eigen::Matrix<ScalarType, worldDimension, worldDimension>;
+  using StressMatrix                  = StrainMatrix;
+  using MaterialParameters            = LamesFirstParameterAndShearModulus;
+
+  static constexpr auto strainTag              = StrainTags::rightCauchyGreenTensor;
+  static constexpr auto stressTag              = StressTags::PK2;
+  static constexpr auto tangentModuliTag       = TangentModuliTags::Material;
+  static constexpr bool energyAcceptsVoigt     = false;
+  static constexpr bool stressToVoigt          = false;
+  static constexpr bool stressAcceptsVoigt     = false;
+  static constexpr bool moduliToVoigt          = false;
+  static constexpr bool moduliAcceptsVoigt     = false;
+  static constexpr double derivativeFactorImpl = 2;
+
+  [[nodiscard]] constexpr static std::string nameImpl() noexcept { return "NeoHooke"; }
 
   /**
    * \brief Constructor for NeoHookeT.
    * \param mpt The Lame's parameters (first parameter and shear modulus).
    */
-  explicit NeoHookeT(const LamesFirstParameterAndShearModulus& mpt)
-      : lambdaAndmu_{mpt} {}
+  explicit NeoHookeT(const MaterialParameters& mpt)
+      : materialParameter_{mpt} {}
 
-  using ScalarType                    = ST;
-  static constexpr int worldDimension = 3;
-  using StrainMatrix                  = Eigen::Matrix<ScalarType, worldDimension, worldDimension>;
-  using StressMatrix                  = StrainMatrix;
-
-  static constexpr auto strainTag          = StrainTags::rightCauchyGreenTensor;
-  static constexpr auto stressTag          = StressTags::PK2;
-  static constexpr auto tangentModuliTag   = TangentModuliTags::Material;
-  static constexpr bool energyAcceptsVoigt = false;
-  static constexpr bool stressToVoigt      = false;
-  static constexpr bool stressAcceptsVoigt = false;
-  static constexpr bool moduliToVoigt      = false;
-  static constexpr bool moduliAcceptsVoigt = false;
-  static constexpr double derivativeFactor = 2;
+  /**
+   * \brief Returns the material parameters stored in the material
+   */
+  MaterialParameters materialParametersImpl() const { return materialParameter_; }
 
   /**
    * \brief Computes the stored energy in the Neo-Hookean material model.
@@ -71,7 +77,8 @@ struct NeoHookeT : public Material<NeoHookeT<ST>>
     if constexpr (!Concepts::EigenVector<Derived>) {
       const auto traceC  = C.trace();
       const auto logdetF = log(sqrt(C.determinant()));
-      return lambdaAndmu_.mu / 2.0 * (traceC - 3 - 2 * logdetF) + lambdaAndmu_.lambda / 2.0 * logdetF * logdetF;
+      return materialParameter_.mu / 2.0 * (traceC - 3 - 2 * logdetF) +
+             materialParameter_.lambda / 2.0 * logdetF * logdetF;
     } else
       static_assert(!Concepts::EigenVector<Derived>,
                     "NeoHooke energy can only be called with a matrix and not a vector in Voigt notation");
@@ -91,7 +98,8 @@ struct NeoHookeT : public Material<NeoHookeT<ST>>
       if constexpr (!Concepts::EigenVector<Derived>) {
         const auto logdetF = log(sqrt(C.determinant()));
         const auto invC    = C.inverse().eval();
-        return (lambdaAndmu_.mu * (StrainMatrix::Identity() - invC) + lambdaAndmu_.lambda * logdetF * invC).eval();
+        return (materialParameter_.mu * (StrainMatrix::Identity() - invC) + materialParameter_.lambda * logdetF * invC)
+            .eval();
       } else
         static_assert(!Concepts::EigenVector<Derived>,
                       "NeoHooke can only be called with a matrix and not a vector in Voigt notation");
@@ -115,8 +123,9 @@ struct NeoHookeT : public Material<NeoHookeT<ST>>
       const auto CTinv   = tensorView(invC, std::array<Eigen::Index, 2>({3, 3}));
       static_assert(Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<3, 3>>::NumIndices == 2);
       Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<3, 3, 3, 3>> moduli =
-          (lambdaAndmu_.lambda * dyadic(CTinv, CTinv) +
-           2 * (lambdaAndmu_.mu - lambdaAndmu_.lambda * logdetF) * symTwoSlots(fourthOrderIKJL(invC, invC), {2, 3}))
+          (materialParameter_.lambda * dyadic(CTinv, CTinv) +
+           2 * (materialParameter_.mu - materialParameter_.lambda * logdetF) *
+               symTwoSlots(fourthOrderIKJL(invC, invC), {2, 3}))
               .eval();
       return moduli;
     } else
@@ -130,11 +139,11 @@ struct NeoHookeT : public Material<NeoHookeT<ST>>
    */
   template <typename STO>
   auto rebind() const {
-    return NeoHookeT<STO>(lambdaAndmu_);
+    return NeoHookeT<STO>(materialParameter_);
   }
 
 private:
-  LamesFirstParameterAndShearModulus lambdaAndmu_;
+  MaterialParameters materialParameter_;
 };
 
 /**

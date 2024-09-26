@@ -33,7 +33,8 @@ void registerNonLinearElasticPre(pybind11::handle scope, pybind11::class_<NonLin
  */
 template <class LinearElasticPre, class... options>
 void registerLinearElasticPre(pybind11::handle scope, pybind11::class_<LinearElasticPre, options...> cls) {
-  cls.def(pybind11::init([](double emod, double nu) { return new LinearElasticPre({emod, nu}); }));
+  using Material = typename LinearElasticPre::Material;
+  cls.def(pybind11::init([](const Material& mat) { return new LinearElasticPre(mat); }));
 }
 
 /**

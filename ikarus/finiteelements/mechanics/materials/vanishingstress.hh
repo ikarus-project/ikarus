@@ -7,9 +7,9 @@
  * \ingroup  materials
  */
 
-// SPDX-License-Identifier: LGPL-3.0-or-later
-
 #pragma once
+
+#include "vanishinghelpers.hh"
 
 #include <ikarus/finiteelements/mechanics/materials/interface.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
@@ -18,85 +18,17 @@
 
 namespace Ikarus {
 
-namespace Impl {
-
-  /**
-   * \brief Represents a pair of stress matrix indices (row and column).
-   */
-  struct StressIndexPair
-  {
-    Eigen::Index row; ///< Row index.
-    Eigen::Index col; ///< Column index.
-  };
-
-  /**
-   * \brief Helper function to create an array of free Voigt indices.
-   * \tparam size The size of the fixed pairs array.
-   * \param fixed An array of StressIndexPair representing fixed indices.
-   * \return std::array<size_t, 6 - size> The array of free Voigt indices.
-   */
-  template <size_t size>
-  consteval auto createfreeVoigtIndices(const std::array<StressIndexPair, size>& fixed) {
-    std::array<size_t, 6 - size> res{};
-    std::array<size_t, size> voigtFixedIndices;
-    std::ranges::transform(fixed, voigtFixedIndices.begin(), [](auto pair) { return toVoigt(pair.row, pair.col); });
-    std::ranges::sort(voigtFixedIndices);
-    std::ranges::set_difference(std::ranges::iota_view(size_t(0), size_t(6)), voigtFixedIndices, res.begin());
-    std::ranges::sort(res);
-    return res;
-  }
-
-  /**
-   * \brief Helper function to create an array of fixed Voigt indices.
-   * \tparam size The size of the fixed pairs array.
-   * \param fixed An array of StressIndexPair representing fixed indices.
-   * \return std::array<size_t, size> The array of fixed Voigt indices.
-   */
-  template <size_t size>
-  consteval auto createFixedVoigtIndices(const std::array<StressIndexPair, size>& fixed) {
-    std::array<size_t, size> fixedIndices;
-    std::ranges::transform(fixed, fixedIndices.begin(), [](auto pair) { return toVoigt(pair.row, pair.col); });
-    std::ranges::sort(fixedIndices);
-    return fixedIndices;
-  }
-
-  /**
-   * \brief Helper function to count the number of diagonal indices in the fixed pairs array.
-   * \tparam size The size of the fixed pairs array.
-   * \param fixed An array of StressIndexPair representing fixed indices.
-   * \return constexpr size_t The number of diagonal indices.
-   */
-  template <size_t size>
-  constexpr size_t countDiagonalIndices(const std::array<StressIndexPair, size>& fixed) {
-    size_t count = 0;
-    for (auto v : fixed) {
-      if (v.col == v.row)
-        ++count;
-    }
-    return count;
-  }
-
-} // namespace Impl
-
 /**
  * \brief VanishingStress material model that enforces stress components to be zero.
  * \ingroup materials
- * \tparam stressIndexPair An array of StressIndexPair representing fixed stress components.
+ * \tparam stressIndexPair An array of MatrixIndexPair representing fixed stress components.
  * \tparam MI The underlying material model.
  */
 template <auto stressIndexPair, typename MI>
 struct VanishingStress : public Material<VanishingStress<stressIndexPair, MI>>
 {
-  /**
-   * \brief Constructor for VanishingStress.
-   * \param mat The underlying material model.
-   * \param tol Tolerance for stress reduction.
-   */
-  explicit VanishingStress(MI mat, typename MI::ScalarType tol = 1e-12)
-      : matImpl_{mat},
-        tol_{tol} {}
-
-  using Underlying = MI; ///< The underlying material type.
+  using Underlying         = MI; ///< The underlying material type.
+  using MaterialParameters = typename Underlying::MaterialParameters;
 
   static constexpr auto fixedPairs        = stressIndexPair;                     ///< Array of fixed stress components.
   static constexpr auto freeVoigtIndices  = createfreeVoigtIndices(fixedPairs);  ///< Free Voigt indices.
@@ -106,23 +38,37 @@ struct VanishingStress : public Material<VanishingStress<stressIndexPair, MI>>
   static constexpr auto freeStrains = freeVoigtIndices.size();         ///< Number of free strains.
   using ScalarType                  = typename Underlying::ScalarType; ///< Scalar type.
 
-  [[nodiscard]] constexpr std::string nameImpl() const noexcept {
-    auto matName = matImpl_.name() + "_Vanishing(";
+  static constexpr auto strainTag              = Underlying::strainTag;            ///< Strain tag.
+  static constexpr auto stressTag              = Underlying::stressTag;            ///< Stress tag.
+  static constexpr auto tangentModuliTag       = Underlying::tangentModuliTag;     ///< Tangent moduli tag.
+  static constexpr bool energyAcceptsVoigt     = Underlying::energyAcceptsVoigt;   ///< Energy accepts Voigt notation.
+  static constexpr bool stressToVoigt          = true;                             ///< Stress to Voigt notation.
+  static constexpr bool stressAcceptsVoigt     = true;                             ///< Stress accepts Voigt notation.
+  static constexpr bool moduliToVoigt          = true;                             ///< Moduli to Voigt notation.
+  static constexpr bool moduliAcceptsVoigt     = true;                             ///< Moduli accepts Voigt notation.
+  static constexpr double derivativeFactorImpl = Underlying::derivativeFactorImpl; ///< Derivative factor.
+
+  /**
+   * \brief Constructor for VanishingStress.
+   * \param mat The underlying material model.
+   * \param tol Tolerance for stress reduction.
+   */
+  explicit VanishingStress(MI mat, typename MI::ScalarType tol = 1e-12)
+      : matImpl_{mat},
+        tol_{tol} {}
+
+  [[nodiscard]] constexpr static std::string nameImpl() noexcept {
+    auto matName = MI::name() + "_VanishingStress(";
     for (auto p : fixedPairs)
       matName += "(" + std::to_string(p.row) + std::to_string(p.col) + ")";
     matName += ")";
     return matName;
   }
 
-  static constexpr auto strainTag          = Underlying::strainTag;          ///< Strain tag.
-  static constexpr auto stressTag          = Underlying::stressTag;          ///< Stress tag.
-  static constexpr auto tangentModuliTag   = Underlying::tangentModuliTag;   ///< Tangent moduli tag.
-  static constexpr bool energyAcceptsVoigt = Underlying::energyAcceptsVoigt; ///< Energy accepts Voigt notation.
-  static constexpr bool stressToVoigt      = true;                           ///< Stress to Voigt notation.
-  static constexpr bool stressAcceptsVoigt = true;                           ///< Stress accepts Voigt notation.
-  static constexpr bool moduliToVoigt      = true;                           ///< Moduli to Voigt notation.
-  static constexpr bool moduliAcceptsVoigt = true;                           ///< Moduli accepts Voigt notation.
-  static constexpr double derivativeFactor = 1;                              ///< Derivative factor.
+  /**
+   * \brief Returns the material parameters stored in the material
+   */
+  MaterialParameters materialParametersImpl() const { return matImpl_.materialParametersImpl(); }
 
   /**
    * \brief Computes the stored energy for the VanishingStress material.
@@ -184,20 +130,6 @@ struct VanishingStress : public Material<VanishingStress<stressIndexPair, MI>>
 
 private:
   /**
-   * \brief Converts the input strain matrix to the appropriate form for stress reduction.
-   * \tparam Derived The derived type of the input matrix.
-   * \param E The input strain matrix.
-   * \return decltype(auto) The converted strain matrix.
-   */
-  template <typename Derived>
-  decltype(auto) maybeFromVoigt(const Eigen::MatrixBase<Derived>& E) const {
-    if constexpr (Concepts::EigenVector<Derived>) { // receiving vector means Voigt notation
-      return fromVoigt(E.derived(), true);
-    } else
-      return E.derived();
-  }
-
-  /**
    * \brief Initializes unknown strains based on fixed indices.
    * \tparam Derived The derived type of the input matrix.
    * \param E The input strain matrix.
@@ -224,7 +156,7 @@ private:
    */
   template <typename Derived>
   auto reduceStress(const Eigen::MatrixBase<Derived>& Eraw) const {
-    auto E = maybeFromVoigt(Eraw);
+    auto E = Impl::maybeFromVoigt(Eraw);
     initUnknownStrains(E);
 
     std::array<size_t, fixedDiagonalVoigtIndicesSize> fixedDiagonalVoigtIndices;
@@ -274,13 +206,13 @@ private:
 
 /**
  * \brief Factory function to create a VanishingStress material with specified stress indices.
- * \tparam stressIndexPair The array of StressIndexPair representing fixed stress components.
+ * \tparam matrixIndexPair The array of MatrixIndexPair representing fixed stress components.
  * \tparam MaterialImpl The underlying material model.
  * \param mat The underlying material model.
  * \param p_tol Tolerance for stress reduction.
  * \return VanishingStress The created VanishingStress material.
  */
-template <Impl::StressIndexPair... stressIndexPair, typename MaterialImpl>
+template <Impl::MatrixIndexPair... stressIndexPair, typename MaterialImpl>
 auto makeVanishingStress(MaterialImpl mat, typename MaterialImpl::ScalarType p_tol = 1e-12) {
   return VanishingStress<std::to_array({stressIndexPair...}), MaterialImpl>(mat, p_tol);
 }
@@ -294,7 +226,7 @@ auto makeVanishingStress(MaterialImpl mat, typename MaterialImpl::ScalarType p_t
  */
 template <typename MaterialImpl>
 auto planeStress(const MaterialImpl& mat, typename MaterialImpl::ScalarType tol = 1e-8) {
-  return makeVanishingStress<Impl::StressIndexPair{2, 1}, Impl::StressIndexPair{2, 0}, Impl::StressIndexPair{2, 2}>(
+  return makeVanishingStress<Impl::MatrixIndexPair{2, 1}, Impl::MatrixIndexPair{2, 0}, Impl::MatrixIndexPair{2, 2}>(
       mat, tol);
 }
 
@@ -308,7 +240,7 @@ auto planeStress(const MaterialImpl& mat, typename MaterialImpl::ScalarType tol 
  */
 template <typename MaterialImpl>
 auto shellMaterial(const MaterialImpl& mat, typename MaterialImpl::ScalarType tol = 1e-8) {
-  return makeVanishingStress<Impl::StressIndexPair{2, 2}>(mat, tol);
+  return makeVanishingStress<Impl::MatrixIndexPair{2, 2}>(mat, tol);
 }
 
 /**
@@ -321,6 +253,6 @@ auto shellMaterial(const MaterialImpl& mat, typename MaterialImpl::ScalarType to
  */
 template <typename MaterialImpl>
 auto beamMaterial(const MaterialImpl& mat, typename MaterialImpl::ScalarType tol = 1e-8) {
-  return makeVanishingStress<Impl::StressIndexPair{1, 1}, Impl::StressIndexPair{2, 2}>(mat, tol);
+  return makeVanishingStress<Impl::MatrixIndexPair{1, 1}, Impl::MatrixIndexPair{2, 2}>(mat, tol);
 }
 } // namespace Ikarus
