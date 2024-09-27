@@ -3,6 +3,7 @@
 
 #include <config.h>
 
+#include "checkfebyautodiff.hh"
 #include "resultcollection.hh"
 #include "testcommon.hh"
 

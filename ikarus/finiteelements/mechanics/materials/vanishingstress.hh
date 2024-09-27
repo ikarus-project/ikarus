@@ -14,6 +14,7 @@
 #include <ikarus/finiteelements/mechanics/materials/interface.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
+#include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/nonlinearoperator.hh>
 
 namespace Ikarus {
@@ -37,7 +38,7 @@ struct VanishingStress : public Material<VanishingStress<stressIndexPair, MI>>
       countDiagonalIndices(fixedPairs);                                ///< Number of fixed diagonal indices.
   static constexpr auto freeStrains = freeVoigtIndices.size();         ///< Number of free strains.
   using ScalarType                  = typename Underlying::ScalarType; ///< Scalar type.
-  static constexpr bool isAutoDiff  = not std::is_floating_point_v<ScalarType>;
+  static constexpr bool isAutoDiff  = Concepts::AutodiffScalar<ScalarType>;
 
   static constexpr auto strainTag              = Underlying::strainTag;            ///< Strain tag.
   static constexpr auto stressTag              = Underlying::stressTag;            ///< Stress tag.

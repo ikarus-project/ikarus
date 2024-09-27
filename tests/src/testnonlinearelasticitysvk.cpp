@@ -22,31 +22,22 @@ int main(int argc, char** argv) {
   StVenantKirchhoff matSVK2(matParameter2);
   auto planeStressMat1 = planeStress(matSVK1, 1e-8);
   auto planeStressMat2 = planeStress(matSVK2, 1e-8);
-  auto planeStrainMat = planeStrain(matSVK1);
+  auto planeStrainMat  = planeStrain(matSVK1);
 
   t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Alu>(matSVK1));
   t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Yasp>(matSVK1));
   t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::IgaSurfaceIn2D>(matSVK1));
   t.subTest(GreenLagrangeStrainTest<2>(planeStressMat1));
+  t.subTest(GreenLagrangeStrainTest<2>(planeStressMat2));
   t.subTest(GreenLagrangeStrainTest<2>(planeStrainMat));
   t.subTest(GreenLagrangeStrainTest<3>(matSVK1));
   t.subTest(SingleElementTest(planeStressMat2));
 
   autoDiffTest<2>(t, planeStressMat1, " nu != 0");
   autoDiffTest<2>(t, planeStressMat2, " nu = 0");
+  autoDiffTest<2>(t, planeStrainMat, " nu != 0");
   autoDiffTest<3>(t, matSVK1, " nu != 0");
   autoDiffTest<3>(t, matSVK2, " nu = 0");
 
-  {
-    auto grid     = createUGGridFromCorners<2>(CornerDistortionFlag::randomlyDistorted);
-    auto gridView = grid->leafGridView();
-    /// We artificially apply a Neumann load on the complete boundary
-    Dune::BitSetVector<1> neumannVertices(gridView.size(2), true);
-    BoundaryPatch neumannBoundary(gridView, neumannVertices);
-    t.subTest(checkFESByAutoDiff(
-        gridView, power<2>(lagrange<1>()),
-        Ikarus::AffordanceCollections::elastoStatics));
-        skills(Ikarus::nonLinearElastic(planeStrainMat), volumeLoad<2>(vL), neumannBoundaryLoad(&neumannBoundary, nBL)),
-  }
   return t.exit();
 }
