@@ -152,12 +152,11 @@ public:
    */
   template <typename ScalarType, int strainDim, bool voigt = true>
   auto materialTangent(const Eigen::Vector<ScalarType, strainDim>& strain) const {
-    if constexpr (std::is_same_v<ScalarType, double>)
-      return mat_.template tangentModuli<strainType, voigt>(strain);
-    else {
+    if constexpr (Concepts::AutodiffScalar<ScalarType>) {
       decltype(auto) matAD = mat_.template rebind<ScalarType>();
       return matAD.template tangentModuli<strainType, voigt>(strain);
-    }
+    } else
+      return mat_.template tangentModuli<strainType, voigt>(strain);
   }
 
   /**
@@ -170,12 +169,11 @@ public:
    */
   template <typename ScalarType, int strainDim>
   auto getInternalEnergy(const Eigen::Vector<ScalarType, strainDim>& strain) const {
-    if constexpr (std::is_same_v<ScalarType, double>)
-      return mat_.template storedEnergy<strainType>(strain);
-    else {
+    if constexpr (Concepts::AutodiffScalar<ScalarType>) {
       decltype(auto) matAD = mat_.template rebind<ScalarType>();
       return matAD.template storedEnergy<strainType>(strain);
-    }
+    } else
+      return mat_.template storedEnergy<strainType>(strain);
   }
 
   /**
@@ -189,12 +187,11 @@ public:
    */
   template <typename ScalarType, int strainDim, bool voigt = true>
   auto getStress(const Eigen::Vector<ScalarType, strainDim>& strain) const {
-    if constexpr (std::is_same_v<ScalarType, double>)
-      return mat_.template stresses<strainType, voigt>(strain);
-    else {
+    if constexpr (Concepts::AutodiffScalar<ScalarType>) {
       decltype(auto) matAD = mat_.template rebind<ScalarType>();
       return matAD.template stresses<strainType, voigt>(strain);
-    }
+    } else
+      return mat_.template stresses<strainType, voigt>(strain);
   }
 
   const Geometry& geometry() const { return *geo_; }
