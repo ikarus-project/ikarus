@@ -25,6 +25,7 @@ struct NRSettings
 {
   double tol{1e-8};
   int maxIter{20};
+  int minIter{0};
 };
 
 /**
@@ -131,7 +132,12 @@ public:
    * \brief Set up the solver with the given settings.
    * \param settings Newton-Raphson settings.
    */
-  void setup(const Settings& settings) { settings_ = settings; }
+  void setup(const Settings& settings) {
+    if (settings.minIter > settings.maxIter)
+      DUNE_THROW(Dune::InvalidStateException,
+                 "Minimum number of iterations cannot be greater than maximum number of iterations");
+    settings_ = settings;
+  }
 
 #ifndef DOXYGEN
   struct NoPredictor
@@ -164,7 +170,7 @@ public:
     int iter{0};
     if constexpr (isLinearSolver)
       linearSolver_.analyzePattern(Ax);
-    while (rNorm > settings_.tol && iter < settings_.maxIter) {
+    while ((rNorm > settings_.tol && iter < settings_.maxIter) or iter < settings_.minIter) {
       this->notify(NonLinearSolverMessages::ITERATION_STARTED);
       if constexpr (isLinearSolver) {
         linearSolver_.factorize(Ax);

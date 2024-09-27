@@ -19,6 +19,8 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
+#include <autodiff/forward/dual/dual.hpp>
+
 #include "ikarus/assembler/dirichletbcenforcement.hh"
 #include "ikarus/finiteelements/mechanics/materials/tags.hh"
 #include <ikarus/utils/traits.hh>
@@ -583,6 +585,27 @@ namespace Concepts {
 
     { g.grid() };
   };
+
+  namespace Impl {
+    template <typename T>
+    struct is_dual : std::false_type
+    {
+    };
+
+    // Specialization for Dual<T, U>: this will be true for Dual types
+    template <typename T, typename U>
+    struct is_dual<autodiff::detail::Dual<T, U>> : std::true_type
+    {
+    };
+  } // namespace Impl
+
+  /**
+  \concept AutodiffScalar
+  \brief Concept to check if the underlying scalar type is a dual type.
+  \tparam T The scalar type to be checked if it is a dual type.
+  */
+  template <typename T>
+  concept AutodiffScalar = Impl::is_dual<T>::value;
 
 } // namespace Concepts
 } // namespace Ikarus

@@ -14,6 +14,7 @@
 #include <ikarus/finiteelements/mechanics/materials/interface.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
+#include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/nonlinearoperator.hh>
 
 namespace Ikarus {
@@ -37,6 +38,7 @@ struct VanishingStress : public Material<VanishingStress<stressIndexPair, MI>>
       countDiagonalIndices(fixedPairs);                                ///< Number of fixed diagonal indices.
   static constexpr auto freeStrains = freeVoigtIndices.size();         ///< Number of free strains.
   using ScalarType                  = typename Underlying::ScalarType; ///< Scalar type.
+  static constexpr bool isAutoDiff  = Concepts::AutodiffScalar<ScalarType>;
 
   static constexpr auto strainTag              = Underlying::strainTag;            ///< Strain tag.
   static constexpr auto stressTag              = Underlying::stressTag;            ///< Stress tag.
@@ -185,10 +187,13 @@ private:
         E(indexPair[0], indexPair[1]) += ecomps(ri++);
       }
     };
+
+    int minIter = isAutoDiff ? 1 : 0;
     // THE CTAD is broken for designated initializers in clang 16, when we drop support this can be simplified
     NewtonRaphsonConfig<decltype(linearSolver), decltype(updateFunction)> nrs{
-        .parameters = {.tol = tol_, .maxIter = 100},
-          .linearSolver = linearSolver, .updateFunction = updateFunction
+        .parameters     = {.tol = tol_, .maxIter = 100, .minIter = minIter},
+        .linearSolver   = linearSolver,
+        .updateFunction = updateFunction
     };
 
     auto nr = createNonlinearSolver(std::move(nrs), nonOp);
