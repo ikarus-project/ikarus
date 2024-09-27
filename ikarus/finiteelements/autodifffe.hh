@@ -129,7 +129,7 @@ private:
       Eigen::VectorXdual dx(this->localView().size());
       Eigen::VectorXdual g(this->localView().size());
       dx.setZero();
-      auto f = [this, &req, affordance, &g](auto& x) -> auto& {
+      auto f = [ &req, affordance, &g](auto& x) -> auto& {
         // Since req is const as a function argument, we can not make this lambda capture by mutable reference
         // But we have to do this since for efficiency reason we reuse the g vector
         // therefore, the only remaining option is to cast the const away from g
@@ -178,7 +178,7 @@ private:
       Eigen::VectorXdual dx(this->localView().size());
       dx.setZero();
       autodiff::dual e;
-      auto f = [this, &req, affordance](auto& x) {
+      auto f = [ &req, affordance](auto& x) {
         return Mixin::template calculateScalarImpl<autodiff::dual>(req, scalarAffordance(affordance), x);
       };
       gradient(f, autodiff::wrt(dx), at(dx), e, g);

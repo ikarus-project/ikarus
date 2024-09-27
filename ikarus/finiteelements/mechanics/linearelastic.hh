@@ -199,6 +199,8 @@ protected:
   void calculateMatrixImpl(
       const Requirement& par, const MatrixAffordance& affordance, typename Traits::template MatrixType<> K,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
+        if(affordance!= MatrixAffordance::stiffness)
+         DUNE_THROW(Dune::NotImplemented, "Your required affordance is not implemented. Affordance: "<< toString(affordance));
     const auto eps = strainFunction(par, dx);
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
@@ -222,7 +224,6 @@ protected:
                                std::nullopt) const -> ScalarType {
     const auto uFunction = displacementFunction(par, dx);
     const auto eps       = strainFunction(par, dx);
-    const auto& lambda   = par.parameter();
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
 

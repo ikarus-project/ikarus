@@ -34,8 +34,8 @@ struct NoOp
    * \tparam NLO The nonlinear operator type.
    */
   template <typename NLO>
-  void operator()(const NonLinearSolverInformation& solverInfo, SubsidiaryArgs& subsidiaryArgs,
-                  const NLO& nonLinearOperator) {}
+  void operator()(const NonLinearSolverInformation& , SubsidiaryArgs&,
+                  const NLO& ) {}
 
   /**
    * \brief Get the target iterations.
@@ -74,7 +74,7 @@ struct IterationBased
    */
   template <typename NLO>
   void operator()(const NonLinearSolverInformation& solverInfo, SubsidiaryArgs& subsidiaryArgs,
-                  const NLO& nonLinearOperator) {
+                  const NLO& ) {
     if (subsidiaryArgs.currentStep == 0)
       return;
     if (targetIterations_ == 0)
