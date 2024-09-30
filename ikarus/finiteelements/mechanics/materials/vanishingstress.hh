@@ -170,12 +170,12 @@ private:
 
     auto f = [&](auto&) {
       auto S = matImpl_.template stresses<Underlying::strainTag, true>(E);
-      S.array() += tol_;
+      S.array() += 1e-14; // to circumvent division-by-zero in NewtonRaphson method while using AutoDiff when rx=0
       return S(fixedDiagonalVoigtIndices).eval();
     };
     auto df = [&](auto&) {
       auto moduli = (matImpl_.template tangentModuli<Underlying::strainTag, true>(E)).eval();
-      moduli.array() += tol_;
+      moduli.array() += 1e-14; // to circumvent division-by-zero in NewtonRaphson method while using AutoDiff when rx=0
       return (moduli(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices) / Underlying::derivativeFactor).eval();
     };
 
