@@ -9,8 +9,9 @@
 #include <ikarus/utils/init.hh>
 
 using Dune::TestSuite;
-
+#include <cfenv>
 int main(int argc, char** argv) {
+  feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);
   using namespace Ikarus;
   Ikarus::init(argc, argv);
   TestSuite t("NonLinearElastic + NeoHooke Test");
