@@ -59,7 +59,6 @@ struct NonLinearOperatorFactory
       };
       return NonLinearOperator(functions(std::move(energyFunction), std::move(residualFunction), std::move(KFunction)),
                                parameter(req.globalSolution(), req.parameter()), assemblerPtr);
-
     } else
       return NonLinearOperator(functions(std::move(residualFunction), std::move(KFunction)),
                                parameter(req.globalSolution(), req.parameter()), assemblerPtr);
