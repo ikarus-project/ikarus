@@ -212,6 +212,6 @@ private:
     hessian(f, autodiff::wrt(dx), at(dx), g, h);
   }
 
-  void updateStateImpl(const Requirement& /* par */, const typename Traits::template VectorType<>& /* correction */) {}
+  void updateStateImpl(const Requirement& /* par */, typename Traits::template VectorTypeConst<> /* correction */) {}
 };
 } // namespace Ikarus

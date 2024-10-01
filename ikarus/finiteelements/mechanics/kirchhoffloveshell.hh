@@ -170,7 +170,8 @@ public:
     DUNE_THROW(Dune::NotImplemented, "No results are implemented");
   }
 
-  void updateStateImpl(const Requirement& /* par */, const typename Traits::template VectorType<>& /* correction */) {}
+  template <typename ST = double>
+  void updateStateImpl(const Requirement& /* par */, typename Traits::template VectorTypeConst<> /* correction */) {}
 
 private:
   //> CRTP
