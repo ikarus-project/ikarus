@@ -10,6 +10,7 @@
 
 #include <limits>
 #include <memory>
+#include <ikarus/utils/concepts.hh>
 
 namespace Ikarus {
 /**
@@ -34,9 +35,10 @@ struct NonLinearSolverInformation
 
 template <typename Assembler, typename VectorType>
 void updateStates(std::shared_ptr<Assembler>& assembler, const VectorType& correction) {
+  if constexpr (Concepts::FlatAssembler<Assembler>){
   auto fes = assembler.finiteElements();
   auto req = assembler.requirement();
   for (auto& fe : fes)
-    updateState(fe, req, correction);
+    updateState(fe, req, correction);}
 }
 } // namespace Ikarus
