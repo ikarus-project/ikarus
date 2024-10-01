@@ -143,7 +143,6 @@ protected:
       const Requirement&, MatrixAffordance, typename Traits::template MatrixType<>,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& = std::nullopt) const {}
 
-  template <typename ST = double>
   void updateStateImpl(const Requirement& /* par */, typename Traits::template VectorTypeConst<> /* correction */) {}
 
 private:

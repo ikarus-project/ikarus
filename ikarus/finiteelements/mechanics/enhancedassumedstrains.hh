@@ -155,8 +155,8 @@ protected:
    *
    * \param par The Requirement object.
    */
-  template <typename ScalarType = double>
   void updateStateImpl(const Requirement& par, typename Traits::template VectorTypeConst<> correction) {
+    using ScalarType = Traits::ctype;
     if (isDisplacementBased())
       return;
     const auto& Rtilde      = calculateRtilde<ScalarType>(par);

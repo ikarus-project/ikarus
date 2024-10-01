@@ -170,7 +170,6 @@ public:
     DUNE_THROW(Dune::NotImplemented, "No results are implemented");
   }
 
-  template <typename ST = double>
   void updateStateImpl(const Requirement& /* par */, typename Traits::template VectorTypeConst<> /* correction */) {}
 
 private:

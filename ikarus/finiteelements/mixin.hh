@@ -266,7 +266,7 @@ public:
   template <typename ScalarType>
   requires implementsUpdateStateImpl
   void updateStateImpl(const Requirement& par, typename Traits::template VectorTypeConst<> correction) {
-    (Skills<PreFE, typename PreFE::template FE<Skills...>>::template updateStateImpl<ScalarType>(par, correction), ...);
+    (Skills<PreFE, typename PreFE::template FE<Skills...>>::updateStateImpl(par, correction), ...);
   }
 
 protected:
