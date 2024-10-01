@@ -186,6 +186,8 @@ public:
       return RTWrapper{(C * epsVoigt).eval()};
     }
   }
+
+  template <typename ScalarType = double>
   void updateStateImpl(const Requirement& /* par */, typename Traits::template VectorTypeConst<> /* correction */) {}
 
 private:

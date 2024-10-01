@@ -221,6 +221,7 @@ protected:
     force += E * A * Egl * L * dEdu;
   }
 
+  template <typename ScalarType = double>
   void updateStateImpl(const Requirement& /* par */, typename Traits::template VectorTypeConst<> /* correction */) {}
 };
 
