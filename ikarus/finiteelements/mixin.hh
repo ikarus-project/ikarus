@@ -127,7 +127,8 @@ public:
    * \param req The Requirement object specifying the requirements for the calculation.
    * \param force The vector to store the calculated result.
    */
-  friend void updateState(FEMixin& self, const Requirement& req,  typename Traits::template VectorTypeConst<>  correction) {
+  friend void updateState(FEMixin& self, const Requirement& req,
+                          typename Traits::template VectorTypeConst<> correction) {
     self.template updateStateImpl<double>(req, correction);
   }
 
@@ -255,24 +256,18 @@ public:
      ...);
   }
 
-
 private:
   static constexpr bool implementsUpdateStateImpl =
-      (requires(FEMixin m, const Requirement& par,  typename Traits::template VectorTypeConst<>  correction) {
+      (requires(FEMixin m, const Requirement& par, typename Traits::template VectorTypeConst<> correction) {
         m.Skills<PreFE, typename PreFE::template FE<Skills...>>::updateStateImpl(par, correction);
-      } ||
-       ...);
+      } || ...);
 
 public:
-  
   template <typename ScalarType>
   requires implementsUpdateStateImpl
-  void updateStateImpl(
-      const Requirement& par, typename Traits::template VectorTypeConst<>  correction) {
-    (Skills<PreFE, typename PreFE::template FE<Skills...>>::template updateStateImpl<ScalarType>(par, correction),
-     ...);
+  void updateStateImpl(const Requirement& par, typename Traits::template VectorTypeConst<> correction) {
+    (Skills<PreFE, typename PreFE::template FE<Skills...>>::template updateStateImpl<ScalarType>(par, correction), ...);
   }
-
 
 protected:
   /**

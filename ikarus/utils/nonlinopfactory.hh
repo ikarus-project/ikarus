@@ -57,7 +57,8 @@ struct NonLinearOperatorFactory
 
         return assembler->scalar(req, affordances.scalarAffordance());
       };
-      return NonLinearOperator(assemblerPtr, functions(std::move(energyFunction), std::move(residualFunction), std::move(KFunction)),
+      return NonLinearOperator(assemblerPtr,
+                               functions(std::move(energyFunction), std::move(residualFunction), std::move(KFunction)),
                                parameter(req.globalSolution(), req.parameter()));
 
     } else

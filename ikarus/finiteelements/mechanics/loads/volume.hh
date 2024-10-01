@@ -110,7 +110,7 @@ protected:
   void calculateMatrixImpl(
       const Requirement& par, MatrixAffordance, typename Traits::template MatrixType<> K,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const {}
-  
+
   template <typename ST = double>
   void updateStateImpl(const Requirement& /* par */, typename Traits::template VectorTypeConst<> /* correction */) {}
 

@@ -365,12 +365,10 @@ public:
   }
   /**
    * \brief Returns a reference to the assembler
-   * 
+   *
    * \return auto& reference to std::shared_ptr<Assembler>
    */
-  auto& assembler() {
-    return assembler_; 
-  }
+  auto& assembler() { return assembler_; }
 
 private:
   using FunctionReturnValuesWrapper = std::tuple<std::conditional_t<

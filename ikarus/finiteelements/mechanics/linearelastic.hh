@@ -188,7 +188,6 @@ public:
   }
   void updateStateImpl(const Requirement& /* par */, typename Traits::template VectorTypeConst<> /* correction */) {}
 
-
 private:
   //> CRTP
   const auto& underlying() const { return static_cast<const FE&>(*this); }

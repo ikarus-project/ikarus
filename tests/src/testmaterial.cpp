@@ -119,7 +119,7 @@ auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-13) {
     return (mat.template tangentModuli<strainTag>(xv) * strainDerivativeFactor * strainDerivativeFactor).eval();
   };
 
-  auto nonLinOp    = Ikarus::NonLinearOperator(functions(f, df, ddf), parameter(ev));
+  auto nonLinOp    = Ikarus::NonLinearOperator(Impl::noAssembler(), functions(f, df, ddf), parameter(ev));
   auto subNonLinOp = nonLinOp.template subOperator<1, 2>();
 
   t.check(utils::checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}))
