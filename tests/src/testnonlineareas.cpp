@@ -43,7 +43,7 @@ auto nonlinearEASAutoDiffTest(const GV& gridView, const MAT& mat, const BH& basi
     const double tol = 1e-10;
 
     fe.bind(element);
-    fe.updateState(req, d); // here d = correction vector (DeltaD)
+    updateState(fe, req, d); // here d = correction vector (DeltaD)
 
     const std::string feClassName = Dune::className(fe);
 

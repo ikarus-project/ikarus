@@ -121,6 +121,17 @@ public:
   }
 
   /**
+   * \brief Calculate the vector associated with the given Requirement.
+   *
+   * \tparam ScalarType The scalar type for the calculation.
+   * \param req The Requirement object specifying the requirements for the calculation.
+   * \param force The vector to store the calculated result.
+   */
+  friend void updateState(const FEMixin& self, const Requirement& req, const Eigen::VectorXd& correction) {
+    self.template updateStateImpl<double>(req, correction);
+  }
+
+  /**
    * \brief Calculate the matrix associated with the given Requirement.
    *
    * \tparam ScalarType The scalar type for the calculation.
@@ -242,6 +253,27 @@ public:
     (Skills<PreFE, typename PreFE::template FE<Skills...>>::template calculateMatrixImpl<ScalarType>(par, affordance, K,
                                                                                                      dx),
      ...);
+  }
+
+private:
+  static constexpr bool implementsUpdateStateImpl =
+      (requires(FEMixin m, const Requirement& par, const Eigen::VectorXd& correction) {
+        m.Skills<PreFE, typename PreFE::template FE<Skills...>>::updateStateImpl(par, correction);
+      } || ...);
+
+public:
+  /**
+   * @brief Calculate the vector for each skill
+   *
+   * @tparam ScalarType The scalar type for the calculation.
+   * @param par The Requirement object specifying the requirements for the calculation.
+   * @param force The vector to store the calculated result.
+   * @param dx Optional vector used in the calculation.
+   */
+  template <typename ScalarType = double>
+  requires implementsUpdateStateImpl
+  void updateStateImpl(const Requirement& par, const Eigen::VectorXd& correction) const {
+    (Skills<PreFE, typename PreFE::template FE<Skills...>>::template updateStateImpl<ScalarType>(par, correction), ...);
   }
 
 protected:

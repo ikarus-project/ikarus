@@ -140,14 +140,13 @@ public:
     initializeState();
   }
 
-  /**
-   * \brief Initializes the internal parameter alpha_ based on the number of EAS parameters.
-   */
-  void initializeState() {
-    if (isDisplacementBased())
-      return;
-    alpha_.resize(numberOfEASParameters());
-    alpha_.setZero();
+  const auto& alpha() const { return alpha_; }
+
+protected:
+  void bindImpl() {
+    assert(underlying().localView().bound());
+    easVariant_.bind(underlying().localView().element().geometry());
+    initializeState();
   }
 
   /**
@@ -157,7 +156,7 @@ public:
    * \param par The Requirement object.
    */
   template <typename ScalarType = double>
-  void updateState(const Requirement& par, const Eigen::VectorXd& correction_) {
+  void updateStateImpl(const Requirement& par, const Eigen::VectorXd& correction_) {
     if (isDisplacementBased())
       return;
     const auto& Rtilde      = calculateRtilde<ScalarType>(par);
@@ -181,15 +180,6 @@ public:
     };
 
     easVariant_(correctAlpha);
-  }
-
-  const auto& alpha() const { return alpha_; }
-
-protected:
-  void bindImpl() {
-    assert(underlying().localView().bound());
-    easVariant_.bind(underlying().localView().element().geometry());
-    initializeState();
   }
 
   inline void easApplicabilityCheck() const {
@@ -305,6 +295,16 @@ private:
   //> CRTP
   const auto& underlying() const { return static_cast<const FE&>(*this); }
   auto& underlying() { return static_cast<FE&>(*this); }
+
+  /**
+   * \brief Initializes the internal parameter alpha_ based on the number of EAS parameters.
+   */
+  void initializeState() {
+    if (isDisplacementBased())
+      return;
+    alpha_.resize(numberOfEASParameters());
+    alpha_.setZero();
+  }
 
   template <typename ScalarType, int enhancedStrainSize>
   void calculateDAndLMatrix(

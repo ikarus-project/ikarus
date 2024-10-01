@@ -28,4 +28,12 @@ struct NonLinearSolverInformation
   double correctionNorm{std::numeric_limits<double>::infinity()};
   int iterations{-1};
 };
+
+template <typename Assembler, typename VectorType>
+void updateStates(const Assembler& assembler, const VectorType& correction) {
+  auto fes = assembler.finiteElements();
+  auto req = assembler.requirement();
+  for (auto& fe : fes)
+    updateState(fe, req, correction);
+}
 } // namespace Ikarus

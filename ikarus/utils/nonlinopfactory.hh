@@ -49,16 +49,21 @@ struct NonLinearOperatorFactory
 
     assert(req.populated() && " Before you calls this method you have to pass populated fe requirements");
     if constexpr (affordances.hasScalarAffordance) {
-      [[maybe_unused]] auto energyFunction = [assembler = assemblerPtr, affordances](
-                                                 typename FERequirement::SolutionVectorType& globalSol,
-                                                 typename FERequirement::ParameterType& parameter) -> auto& {
-        FERequirement req;
-        req.insertGlobalSolution(globalSol).insertParameter(parameter);
+      if constexpr (affordances.scalarAffordance() != ScalarAffordance::noAffordance) {
+        [[maybe_unused]] auto energyFunction = [assembler = assemblerPtr, affordances](
+                                                   typename FERequirement::SolutionVectorType& globalSol,
+                                                   typename FERequirement::ParameterType& parameter) -> auto& {
+          FERequirement req;
+          req.insertGlobalSolution(globalSol).insertParameter(parameter);
 
-        return assembler->scalar(req, affordances.scalarAffordance());
-      };
-      return NonLinearOperator(functions(std::move(energyFunction), std::move(residualFunction), std::move(KFunction)),
-                               parameter(req.globalSolution(), req.parameter()));
+          return assembler->scalar(req, affordances.scalarAffordance());
+        };
+        return NonLinearOperator(
+            functions(std::move(energyFunction), std::move(residualFunction), std::move(KFunction)),
+            parameter(req.globalSolution(), req.parameter()));
+      } else
+        return NonLinearOperator(functions(std::move(residualFunction), std::move(KFunction)),
+                                 parameter(req.globalSolution(), req.parameter()));
     } else
       return NonLinearOperator(functions(std::move(residualFunction), std::move(KFunction)),
                                parameter(req.globalSolution(), req.parameter()));
