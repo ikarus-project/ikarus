@@ -47,25 +47,21 @@ struct NonLinearOperatorFactory
       return assembler->vector(req, affordances.vectorAffordance(), dbcOption);
     };
 
-    assert(req.populated() && " Before you calls this method you have to pass populated fe requirements");
+    assert(req.populated() && "Before you call this method you have to pass populated fe requirements");
     if constexpr (affordances.hasScalarAffordance) {
-      if constexpr (affordances.scalarAffordance() != ScalarAffordance::noAffordance) {
-        [[maybe_unused]] auto energyFunction = [assembler = assemblerPtr, affordances](
-                                                   typename FERequirement::SolutionVectorType& globalSol,
-                                                   typename FERequirement::ParameterType& parameter) -> auto& {
-          FERequirement req;
-          req.insertGlobalSolution(globalSol).insertParameter(parameter);
+      [[maybe_unused]] auto energyFunction = [assembler = assemblerPtr, affordances](
+                                                 typename FERequirement::SolutionVectorType& globalSol,
+                                                 typename FERequirement::ParameterType& parameter) -> auto& {
+        FERequirement req;
+        req.insertGlobalSolution(globalSol).insertParameter(parameter);
 
-          return assembler->scalar(req, affordances.scalarAffordance());
-        };
-        return NonLinearOperator(
-            functions(std::move(energyFunction), std::move(residualFunction), std::move(KFunction)),
-            parameter(req.globalSolution(), req.parameter()));
-      } else
-        return NonLinearOperator(functions(std::move(residualFunction), std::move(KFunction)),
-                                 parameter(req.globalSolution(), req.parameter()));
+        return assembler->scalar(req, affordances.scalarAffordance());
+      };
+      return NonLinearOperator(assemblerPtr, functions(std::move(energyFunction), std::move(residualFunction), std::move(KFunction)),
+                               parameter(req.globalSolution(), req.parameter()));
+
     } else
-      return NonLinearOperator(functions(std::move(residualFunction), std::move(KFunction)),
+      return NonLinearOperator(assemblerPtr, functions(std::move(residualFunction), std::move(KFunction)),
                                parameter(req.globalSolution(), req.parameter()));
   }
 

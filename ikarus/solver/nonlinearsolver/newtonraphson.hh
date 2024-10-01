@@ -182,7 +182,7 @@ public:
         dNorm       = norm(correction_);
         updateFunction_(x, correction_);
       }
-      updateStates(assembler, correction_);
+      updateStates(nonLinearOperator().assembler(), correction_);
       this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, static_cast<double>(dNorm));
       this->notify(NonLinearSolverMessages::SOLUTION_CHANGED);
       nonLinearOperator().updateAll();

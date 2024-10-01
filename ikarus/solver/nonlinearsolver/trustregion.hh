@@ -379,6 +379,7 @@ public:
 
       if (info_.acceptProposal) {
         stats_.energy = stats_.energyProposal;
+        updateStates(nonLinearOperator().assembler(), eta_);
         nonLinearOperator_.updateAll();
         xOld_ = x;
         this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, stats_.etaNorm);
@@ -388,6 +389,7 @@ public:
         x = xOld_;
         eta_.setZero();
       }
+      updateStates(nonLinearOperator().assembler(), eta_);
       nonLinearOperator_.updateAll();
       stats_.gradNorm = gradient().norm();
       this->notify(NonLinearSolverMessages::ITERATION_ENDED);

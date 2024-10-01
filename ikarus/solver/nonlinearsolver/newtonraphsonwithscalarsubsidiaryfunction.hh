@@ -225,7 +225,7 @@ public:
 
       updateFunction_(x, deltaD);
       updateFunction_(subsidiaryArgs.DD, deltaD);
-      updateStates(assembler, deltaD);
+      updateStates(nonLinearOperator().assembler(), deltaD);
 
       lambda += deltalambda;
       subsidiaryArgs.Dlambda += deltalambda;

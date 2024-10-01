@@ -326,6 +326,8 @@ protected:
       }
     }
   }
+
+  void updateStateImpl(const Requirement& /* par */, const typename Traits::template VectorType<>& /* correction */) {}
 };
 
 /**

@@ -8,6 +8,9 @@
 
 #pragma once
 
+#include <limits>
+#include <memory>
+
 namespace Ikarus {
 /**
  * \brief Information about the result of a non-linear solver.
@@ -30,7 +33,7 @@ struct NonLinearSolverInformation
 };
 
 template <typename Assembler, typename VectorType>
-void updateStates(const Assembler& assembler, const VectorType& correction) {
+void updateStates(std::shared_ptr<Assembler>& assembler, const VectorType& correction) {
   auto fes = assembler.finiteElements();
   auto req = assembler.requirement();
   for (auto& fe : fes)

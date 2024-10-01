@@ -156,12 +156,12 @@ protected:
    * \param par The Requirement object.
    */
   template <typename ScalarType = double>
-  void updateStateImpl(const Requirement& par, const Eigen::VectorXd& correction_) {
+  void updateStateImpl(const Requirement& par, const typename Traits::template VectorType<>& correction) {
     if (isDisplacementBased())
       return;
     const auto& Rtilde      = calculateRtilde<ScalarType>(par);
     const auto localdxBlock = Ikarus::FEHelper::localSolutionBlockVector<Traits, Eigen::VectorXd, double>(
-        correction_, underlying().localView());
+        correction, underlying().localView());
     const auto localdx = Dune::viewAsFlatEigenVector(localdxBlock);
 
     decltype(auto) LMat = [this]() -> decltype(auto) {
