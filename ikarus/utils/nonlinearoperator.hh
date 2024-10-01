@@ -18,6 +18,10 @@
 namespace Ikarus {
 
 namespace Impl {
+
+  struct NoAssembler
+  {
+  };
   /**
    * \brief Helper function to apply a function and remove reference wrappers.
    *
@@ -152,12 +156,12 @@ auto initResults(const std::tuple<DerivativeArgs...>& derivativesFunctions,
  * \tparam TypeListOne The type list for the first set of functions.
  * \tparam TypeListTwo The type list for the second set of functions.
  */
-template <typename Assembler, typename TypeListOne, typename TypeListTwo>
+template <typename TypeListOne, typename TypeListTwo, typename Assembler = Impl::NoAssembler>
 class NonLinearOperator
 {
 public:
-  NonLinearOperator(std::shared_ptr<Assembler> as, [[maybe_unused]] const TypeListOne& derivativesFunctions,
-                    [[maybe_unused]] const TypeListTwo& args) {
+  NonLinearOperator([[maybe_unused]] const TypeListOne& derivativesFunctions, [[maybe_unused]] const TypeListTwo& args,
+                    std::shared_ptr<Assembler> as = std::shared_ptr<Assembler>{}) {
     static_assert(!sizeof(TypeListOne),
                   "This type should not be instantiated. check that your arguments satisfies the template below");
   }
@@ -170,8 +174,8 @@ public:
  * \tparam DerivativeArgs The types of derivative arguments.
  * \tparam ParameterArgs The types of parameter arguments.
  */
-template <typename Assembler, typename... DerivativeArgs, typename... ParameterArgs>
-class NonLinearOperator<Assembler, Impl::Functions<DerivativeArgs...>, Impl::Parameter<ParameterArgs...>>
+template <typename... DerivativeArgs, typename... ParameterArgs, typename Assembler>
+class NonLinearOperator<Impl::Functions<DerivativeArgs...>, Impl::Parameter<ParameterArgs...>, Assembler>
 {
 public:
   using FunctionReturnValues =
@@ -210,9 +214,9 @@ public:
    */
   template <typename U = void>
   requires(not std::is_rvalue_reference_v<DerivativeArgs> and ...)
-  explicit NonLinearOperator(std::shared_ptr<Assembler> as,
-                             const Impl::Functions<DerivativeArgs...>& derivativesFunctions,
-                             const Impl::Parameter<ParameterArgs...>& parameterI)
+  explicit NonLinearOperator(const Impl::Functions<DerivativeArgs...>& derivativesFunctions,
+                             const Impl::Parameter<ParameterArgs...>& parameterI,
+                             std::shared_ptr<Assembler> as = std::shared_ptr<Assembler>{})
       : derivatives_{derivativesFunctions.args},
         args_{parameterI.args},
         derivativesEvaluated_(initResults(derivatives_, args_)),
@@ -225,11 +229,12 @@ public:
    * \param parameterI The Parameter object for parameter arguments.
    */
   template <typename Funcs>
-  explicit NonLinearOperator(std::shared_ptr<Assembler>, const Funcs& derivativesFunctions,
-                             const Impl::Parameter<ParameterArgs...>& parameterI)
+  explicit NonLinearOperator(const Funcs& derivativesFunctions, const Impl::Parameter<ParameterArgs...>& parameterI,
+                             std::shared_ptr<Assembler> as = std::shared_ptr<Assembler>{})
       : derivatives_{derivativesFunctions.args},
         args_{parameterI.args},
-        derivativesEvaluated_(initResults(derivatives_, args_)) {}
+        derivativesEvaluated_(initResults(derivatives_, args_)),
+        assembler_{as} {}
 
   /**
    * \brief Updates all functions.
@@ -357,9 +362,9 @@ public:
   auto subOperator() {
     auto derivatives = derivatives_;
     auto fs = functions([&derivatives]() -> decltype(auto) { return std::get<Derivatives>(derivatives); }()...);
-    Ikarus::NonLinearOperator<Assembler, Impl::Functions<std::tuple_element_t<Derivatives, decltype(derivatives_)>...>,
-                              Impl::Parameter<ParameterArgs...>>
-        subOp(assembler_, std::move(fs), Impl::applyAndRemoveReferenceWrapper(parameter<ParameterArgs...>, args_));
+    Ikarus::NonLinearOperator<Impl::Functions<std::tuple_element_t<Derivatives, decltype(derivatives_)>...>,
+                              Impl::Parameter<ParameterArgs...>, Assembler>
+        subOp(std::move(fs), Impl::applyAndRemoveReferenceWrapper(parameter<ParameterArgs...>, args_), assembler_);
 
     return subOp;
   }
@@ -389,16 +394,14 @@ private:
   std::shared_ptr<Assembler> assembler_;
 };
 
-namespace Impl {
-  struct NoAssembler
-  {
-  };
-  auto noAssembler() { return std::make_shared<Impl::NoAssembler>(Impl::NoAssembler{}); }
-} // namespace Impl
+template <typename... DerivativeArgs, typename... ParameterArgs>
+NonLinearOperator(const Impl::Functions<DerivativeArgs&&...>& a, const Impl::Parameter<ParameterArgs...>& b)
+    -> NonLinearOperator<Impl::Functions<DerivativeArgs...>, Impl::Parameter<ParameterArgs...>>;
 
 template <typename AS, typename... DerivativeArgs, typename... ParameterArgs>
-requires(Ikarus::Concepts::FlatAssembler<AS> or std::same_as<AS, Impl::NoAssembler>)
-NonLinearOperator(std::shared_ptr<AS>, const Impl::Functions<DerivativeArgs&&...>& a,
-                  const Impl::Parameter<ParameterArgs...>& b)
-    -> NonLinearOperator<AS, Impl::Functions<DerivativeArgs...>, Impl::Parameter<ParameterArgs...>>;
+requires(Ikarus::Concepts::FlatAssembler<AS>)
+NonLinearOperator(const Impl::Functions<DerivativeArgs&&...>& a, const Impl::Parameter<ParameterArgs...>& b,
+                  std::shared_ptr<AS>)
+    -> NonLinearOperator<Impl::Functions<DerivativeArgs...>, Impl::Parameter<ParameterArgs...>, AS>;
+
 } // namespace Ikarus

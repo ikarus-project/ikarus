@@ -178,7 +178,7 @@ private:
     };
 
     auto Er    = E(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices).eval().template cast<ScalarType>();
-    auto nonOp = Ikarus::NonLinearOperator(Impl::noAssembler(), functions(f, df), parameter(Er));
+    auto nonOp = Ikarus::NonLinearOperator(functions(f, df), parameter(Er));
 
     auto linearSolver   = [](auto& r, auto& A) { return (A.inverse() * r).eval(); };
     auto updateFunction = [&](auto& /* Ex33 */, auto& ecomps) {

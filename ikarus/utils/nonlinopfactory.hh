@@ -57,13 +57,12 @@ struct NonLinearOperatorFactory
 
         return assembler->scalar(req, affordances.scalarAffordance());
       };
-      return NonLinearOperator(assemblerPtr,
-                               functions(std::move(energyFunction), std::move(residualFunction), std::move(KFunction)),
-                               parameter(req.globalSolution(), req.parameter()));
+      return NonLinearOperator(functions(std::move(energyFunction), std::move(residualFunction), std::move(KFunction)),
+                               parameter(req.globalSolution(), req.parameter()), assemblerPtr);
 
     } else
       return NonLinearOperator(assemblerPtr, functions(std::move(residualFunction), std::move(KFunction)),
-                               parameter(req.globalSolution(), req.parameter()));
+                               parameter(req.globalSolution(), req.parameter()), assemblerPtr);
   }
 
   template <typename Assembler>
