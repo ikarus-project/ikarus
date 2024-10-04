@@ -168,14 +168,17 @@ private:
         fixedDiagonalVoigtIndices[ri++] = i;
     }
 
-    auto f = [&](auto&) {
+    auto f = [&, perturb{true}](auto&) mutable {
       auto S = matImpl_.template stresses<Underlying::strainTag, true>(E);
-      S.array() += 1e-14; // to circumvent division-by-zero in NewtonRaphson method while using AutoDiff when rx=0
-      return S(fixedDiagonalVoigtIndices).eval();
+      if (perturb) {
+        S.array() += 1e-15; // to circumvent division-by-zero in a nonlinear solver while using AutoDiff when rx=0
+        perturb = false;
+        return S(fixedDiagonalVoigtIndices).eval();
+      } else
+        return S(fixedDiagonalVoigtIndices).eval();
     };
     auto df = [&](auto&) {
       auto moduli = (matImpl_.template tangentModuli<Underlying::strainTag, true>(E)).eval();
-      moduli.array() += 1e-14; // to circumvent division-by-zero in NewtonRaphson method while using AutoDiff when rx=0
       return (moduli(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices) / Underlying::derivativeFactor).eval();
     };
 
