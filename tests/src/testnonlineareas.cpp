@@ -7,20 +7,113 @@
 #include "testcommon.hh"
 
 #include <dune/common/test/testsuite.hh>
-#include <dune/fufem/boundarypatch.hh>
+#include <dune/functions/functionspacebases/basistags.hh>
+#include <dune/functions/functionspacebases/boundarydofs.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 
+#include <Eigen/Core>
+
+#include <ikarus/assembler/assemblermanipulatorfuser.hh>
+#include <ikarus/assembler/simpleassemblers.hh>
+#include <ikarus/controlroutines/loadcontrol.hh>
 #include <ikarus/finiteelements/autodifffe.hh>
 #include <ikarus/finiteelements/fefactory.hh>
 #include <ikarus/finiteelements/mechanics/enhancedassumedstrains.hh>
 #include <ikarus/finiteelements/mechanics/materials.hh>
 #include <ikarus/finiteelements/mechanics/nonlinearelastic.hh>
+#include <ikarus/solver/linearsolver/linearsolver.hh>
+#include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
+#include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
 #include <ikarus/utils/basis.hh>
+#include <ikarus/utils/dirichletvalues.hh>
+#include <ikarus/utils/functionhelper.hh>
 #include <ikarus/utils/init.hh>
+#include <ikarus/utils/nonlinearoperator.hh>
+#include <ikarus/utils/nonlinopfactory.hh>
+#include <ikarus/utils/observer/controllogger.hh>
+#include <ikarus/utils/observer/controlvtkwriter.hh>
+#include <ikarus/utils/observer/nonlinearsolverlogger.hh>
 
 using namespace Ikarus;
 using Dune::TestSuite;
+
+template <typename MAT>
+auto cantileverBeamTest(const MAT& mat) {
+  TestSuite t("Cantilever Beam for Nonlinear EAS element (Q1E4)");
+  constexpr int gridDim = 2;
+  using Grid            = Dune::YaspGrid<gridDim>;
+  const double L        = 10;
+  const double h        = 2;
+
+  Dune::FieldVector<double, gridDim> bbox       = {L, h};
+  std::array<int, gridDim> elementsPerDirection = {10, 1};
+  auto grid                                     = std::make_shared<Grid>(bbox, elementsPerDirection);
+  auto gridView                                 = grid->leafGridView();
+  using namespace Dune::Functions::BasisFactory;
+  auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<1>(), FlatInterleaved()));
+
+  auto reducedMat = planeStress(mat, 1e-8);
+  auto sk         = skills(nonLinearElastic(reducedMat), eas(4));
+  using FEType    = decltype(makeFE(basis, sk));
+  std::vector<FEType> fes;
+
+  for (auto&& ge : elements(gridView)) {
+    fes.emplace_back(makeFE(basis, sk));
+    fes.back().bind(ge);
+  }
+
+  auto basisP = std::make_shared<const decltype(basis)>(basis);
+  Ikarus::DirichletValues dirichletValues(basisP->flat());
+
+  // fix left edge (x=0)
+  dirichletValues.fixBoundaryDOFs([&](auto& dirichletFlags, auto&& localIndex, auto&& localView, auto&& intersection) {
+    if (std::abs(intersection.geometry().center()[0]) < 1e-8)
+      dirichletFlags[localView.index(localIndex)] = true;
+  });
+
+  using SparseAssembler = SparseFlatAssembler<decltype(fes), decltype(dirichletValues)>;
+  SparseAssembler sparseFlatAssembler(fes, dirichletValues);
+  auto sparseAssemblerAM = makeAssemblerManipulator(sparseFlatAssembler);
+
+  Eigen::VectorXd d;
+  d.setZero(basis.flat().size());
+  double lambda = 0.0;
+
+  auto req = typename FEType::Requirement(d, lambda);
+
+  sparseAssemblerAM->bind(req, Ikarus::AffordanceCollections::elastoStatics, DBCOption::Full);
+
+  // Apply constant point load at the top right corner
+  Dune::FieldVector<double, gridDim> topRightPos{L, h};
+  const auto globalIndices = utils::globalIndexFromGlobalPosition(basis.flat(), topRightPos);
+  auto pointLoad           = [&](const auto&, const auto& par, auto, auto, Eigen::VectorXd& vec) -> void {
+    auto loadFactor = par.parameter();
+    vec[globalIndices[1]] -= loadFactor * 1.0;
+  };
+  sparseAssemblerAM->bind(pointLoad);
+
+  auto linSolver = LinearSolver(SolverTypeTag::sd_UmfPackLU);
+
+  auto nrConfig                = Ikarus::NewtonRaphsonConfig<decltype(linSolver)>{.linearSolver = linSolver};
+  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
+  auto pathFollowingObserver   = std::make_shared<ControlLogger>();
+  auto vtkWriter =
+      std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(basis.flat(), d);
+  vtkWriter->setFileNamePrefix("CantileverNonlinearEAS");
+  vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 2);
+  NonlinearSolverFactory nrFactory(nrConfig);
+  auto nr = nrFactory.create(sparseAssemblerAM);
+  auto lc = LoadControl(nr, 10, {0, 1});
+  nr->subscribeAll(nonLinearSolverObserver);
+  lc.subscribeAll({pathFollowingObserver, vtkWriter});
+
+  const auto controlInfo = lc.run();
+
+  t.check(controlInfo.success);
+
+  return t;
+}
 
 template <int gridDim, typename TestSuitType, typename MAT>
 void easAutoDiffTest(const TestSuitType& t, const MAT& mat) {
@@ -50,5 +143,6 @@ int main(int argc, char** argv) {
   auto reducedMat = planeStress(matSVK);
   easAutoDiffTest<2>(t, reducedMat);
   easAutoDiffTest<3>(t, matSVK);
+  t.subTest(cantileverBeamTest(matSVK));
   return t.exit();
 }
