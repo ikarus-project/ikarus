@@ -20,11 +20,11 @@
 #include <ikarus/utils/init.hh>
 
 using namespace Ikarus;
-using namespace Dune::Indices;
 using Dune::TestSuite;
 
 template <int gridDim, typename TestSuitType, typename MAT>
 void easAutoDiffTest(const TestSuitType& t, const MAT& mat) {
+  using namespace Dune::Functions::BasisFactory;
   std::array<int, (gridDim == 2) ? 4 : 3> easParameters;
   if constexpr (gridDim == 2)
     easParameters = {0, 4, 5, 7};
@@ -34,9 +34,6 @@ void easAutoDiffTest(const TestSuitType& t, const MAT& mat) {
   auto grid = createUGGridFromCorners<gridDim>(CornerDistortionFlag::randomlyDistorted);
   grid->globalRefine(2);
   auto gridView = grid->leafGridView();
-
-  using namespace Dune::Functions::BasisFactory;
-  auto basis = Ikarus::makeBasis(gridView, power<gridDim>(lagrange<1>()));
 
   for (const int numberOfEASParameters : easParameters) {
     auto sk = skills(nonLinearElastic(mat), eas(numberOfEASParameters));

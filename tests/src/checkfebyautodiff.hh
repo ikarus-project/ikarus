@@ -42,6 +42,10 @@ auto checkFESByAutoDiffImpl(const GridView& gridView, const BasisHandler& basis,
     K.setZero(nDOF, nDOF);
     KAutoDiff.setZero(nDOF, nDOF);
 
+    Eigen::VectorXd R, RAutoDiff;
+    R.setZero(nDOF);
+    RAutoDiff.setZero(nDOF);
+
     calculateMatrix(fe, req, affordance.matrixAffordance(), K);
     calculateMatrix(feAutoDiff, req, affordance.matrixAffordance(), KAutoDiff);
 
@@ -67,11 +71,7 @@ auto checkFESByAutoDiffImpl(const GridView& gridView, const BasisHandler& basis,
 
       if (fe.numberOfEASParameters() != 0) {
         t.checkThrow<Dune::NotImplemented>(
-            [&]() {
-              Eigen::VectorXd RAutoDiff;
-              RAutoDiff.setZero(nDOF);
-              calculateVector(feAutoDiff, req, affordance.vectorAffordance(), RAutoDiff);
-            },
+            [&]() { calculateVector(feAutoDiff, req, affordance.vectorAffordance(), RAutoDiff); },
             "calculateVector with AutoDiff should throw a Dune::NotImplemented");
 
         t.checkThrow<Dune::NotImplemented>(
@@ -79,10 +79,6 @@ auto checkFESByAutoDiffImpl(const GridView& gridView, const BasisHandler& basis,
             "calculateScalar with AutoDiff should throw a Dune::NotImplemented");
       }
     } else {
-      Eigen::VectorXd R, RAutoDiff;
-      R.setZero(nDOF);
-      RAutoDiff.setZero(nDOF);
-
       calculateVector(fe, req, affordance.vectorAffordance(), R);
       calculateVector(feAutoDiff, req, affordance.vectorAffordance(), RAutoDiff);
       t.check(isApproxSame(R, RAutoDiff, tol),
