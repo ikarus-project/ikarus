@@ -157,6 +157,8 @@ protected:
   /**
    * \brief Updates the internal state variable alpha_ at the end of an iteration
    * when NonLinearSolverMessages::SOLUTION_UPDATED is notified by the non-linear solver.
+   * See \cite bischoffShearDeformableShell1997b and \cite klinkelGeometricalNonlinearBrick1997 for implementation
+   * details.
    *
    * \param par The Requirement object.
    * \param correction The correction in displacement (DeltaD) vector passed based on which the internal state variable
