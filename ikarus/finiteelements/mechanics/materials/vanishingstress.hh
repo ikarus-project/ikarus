@@ -170,7 +170,6 @@ private:
 
     auto f = [&](auto&) {
       auto S = matImpl_.template stresses<Underlying::strainTag, true>(E);
-      S.array() += 1e-14; // to circumvent division-by-zero in NewtonRaphson method while using AutoDiff when rx=0
       return S(fixedDiagonalVoigtIndices).eval();
     };
     auto df = [&](auto&) {
@@ -189,7 +188,7 @@ private:
       }
     };
 
-    int minIter = isAutoDiff ? 1 : 0;
+    int minIter = isAutoDiff ? 3 : 0;
     // THE CTAD is broken for designated initializers in clang 16, when we drop support this can be simplified
     NewtonRaphsonConfig<decltype(linearSolver), decltype(updateFunction)> nrs{
         .parameters     = {.tol = tol_, .maxIter = 100, .minIter = minIter},
