@@ -66,7 +66,8 @@ SPDX-License-Identifier: LGPL-3.0-or-later
         - `updateStates()` is called by nonlinear solvers during every iteration, whenever the correction vector is updated.
     - `NonLinearOperator` now has an additional template argument, `Assembler`.
         - It stores a shared pointer to the underlying assembler.
-        - This helps the nonlinear solvers to have access to the underlying assembler, which in turn provides the finite element container to update the state variables.
+        - This helps the nonlinear solvers to have access to the underlying assembler,
+          which in turn provides the finite element container to update the state variables.
 
 ## Release v0.4 (Ganymede)
 
