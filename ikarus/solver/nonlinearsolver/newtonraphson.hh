@@ -9,6 +9,7 @@
 #pragma once
 
 #include <ikarus/solver/linearsolver/linearsolver.hh>
+#include <ikarus/solver/nonlinearsolver/helperfunctions.hh>
 #include <ikarus/solver/nonlinearsolver/solverinfos.hh>
 #include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/defaultfunctions.hh>

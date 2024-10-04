@@ -3,15 +3,12 @@
 
 /**
  * \file solverinfos.hh
- * \brief Implementation of the Newton-Raphson method for solving nonlinear equations.
+ * \brief Implementation of the solver information returned by the nonlinear solvers.
  */
 
 #pragma once
 
 #include <limits>
-#include <memory>
-
-#include <ikarus/utils/concepts.hh>
 
 namespace Ikarus {
 /**
@@ -33,16 +30,4 @@ struct NonLinearSolverInformation
   double correctionNorm{std::numeric_limits<double>::infinity()};
   int iterations{-1};
 };
-
-template <typename Assembler>
-void updateStates(std::shared_ptr<Assembler>& assembler, const auto& correction) {
-  if constexpr (Concepts::FlatAssembler<Assembler>) {
-    auto fes = assembler->finiteElements();
-    auto req = assembler->requirement();
-    for (auto& fe : fes) {
-      // const auto corr = std::remove_cvref_t<decltype(fe)>::Traits::template VectorType<>(correction);
-      updateState(fe, req, correction);
-    }
-  }
-}
 } // namespace Ikarus
