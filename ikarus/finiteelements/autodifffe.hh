@@ -211,7 +211,5 @@ private:
     auto f = [&](auto& x) { return Mixin::calculateScalarImpl(req, scalarAffordance(affordanceV), x); };
     hessian(f, autodiff::wrt(dx), at(dx), g, h);
   }
-
-  void updateStateImpl(const Requirement& /* par */, typename Traits::template VectorTypeConst<> /* correction */) {}
 };
 } // namespace Ikarus

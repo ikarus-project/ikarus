@@ -154,6 +154,15 @@ public:
     return [&]([[maybe_unused]] auto gp) { return materialTangent(); };
   }
 
+  /**
+   * \brief Get the stress for the given strain.
+   *
+   * \tparam ScalarType The scalar type for the material and strain.
+   * \tparam strainDim The dimension of the strain vector.
+   * \tparam voigt A boolean indicating whether to use the Voigt notation for stress.
+   * \param strain The strain vector.
+   * \return The stress vector calculated using the material's stresses function.
+   */
   template <typename ScalarType, int strainDim, bool voigt = true>
   auto getStress(const Eigen::Vector<ScalarType, strainDim>& strain) const {
     return (materialTangent() * strain).eval();
@@ -187,8 +196,6 @@ public:
     }
   }
 
-  void updateStateImpl(const Requirement& /* par */, typename Traits::template VectorTypeConst<> /* correction */) {}
-
 private:
   //> CRTP
   const auto& underlying() const { return static_cast<const FE&>(*this); }
@@ -201,6 +208,8 @@ private:
   int order_{};
 
 protected:
+  void updateStateImpl(const Requirement& /* par */, typename Traits::template VectorTypeConst<> /* correction */) {}
+
   template <typename ScalarType>
   void calculateMatrixImpl(
       const Requirement& par, const MatrixAffordance& affordance, typename Traits::template MatrixType<> K,

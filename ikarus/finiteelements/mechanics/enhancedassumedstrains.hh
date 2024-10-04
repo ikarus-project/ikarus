@@ -140,6 +140,11 @@ public:
     initializeState();
   }
 
+  /**
+   * \brief Gets the internal state variable alpha for the EAS element.
+   *
+   * \return Internal state variable (alpha).
+   */
   const auto& alpha() const { return alpha_; }
 
 protected:
@@ -150,10 +155,12 @@ protected:
   }
 
   /**
-   * \brief Updates the internal parameter alpha_ at the end of an iteration
+   * \brief Updates the internal state variable alpha_ at the end of an iteration
    * when NonLinearSolverMessages::SOLUTION_UPDATED is notified by the non-linear solver.
    *
    * \param par The Requirement object.
+   * \param correction The correction in displacement (DeltaD) vector passed based on which the internal state variable
+   * alpha is to be updated.
    */
   void updateStateImpl(const Requirement& par, typename Traits::template VectorTypeConst<> correction) {
     using ScalarType = Traits::ctype;
@@ -297,7 +304,7 @@ private:
   auto& underlying() { return static_cast<FE&>(*this); }
 
   /**
-   * \brief Initializes the internal parameter alpha_ based on the number of EAS parameters.
+   * \brief Initializes the internal state variable alpha_ based on the number of EAS parameters.
    */
   void initializeState() {
     if (isDisplacementBased())

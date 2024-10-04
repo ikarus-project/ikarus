@@ -170,8 +170,6 @@ public:
     DUNE_THROW(Dune::NotImplemented, "No results are implemented");
   }
 
-  void updateStateImpl(const Requirement& /* par */, typename Traits::template VectorTypeConst<> /* correction */) {}
-
 private:
   //> CRTP
   const auto& underlying() const { return static_cast<const FE&>(*this); }
@@ -235,6 +233,8 @@ protected:
     kin.kappaV    = BV - bV;
     return kin;
   }
+
+  void updateStateImpl(const Requirement& /* par */, typename Traits::template VectorTypeConst<> /* correction */) {}
 
   template <typename ST>
   void calculateMatrixImpl(

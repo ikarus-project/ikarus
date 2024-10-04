@@ -155,6 +155,7 @@ auto initResults(const std::tuple<DerivativeArgs...>& derivativesFunctions,
  * \ingroup utils
  * \tparam TypeListOne The type list for the first set of functions.
  * \tparam TypeListTwo The type list for the second set of functions.
+ * \tparam Assembler Type of the underlying assembler.
  */
 template <typename TypeListOne, typename TypeListTwo, typename Assembler = Impl::NoAssembler>
 class NonLinearOperator
@@ -173,6 +174,7 @@ public:
  *
  * \tparam DerivativeArgs The types of derivative arguments.
  * \tparam ParameterArgs The types of parameter arguments.
+ * \tparam Assembler Type of the underlying assembler.
  */
 template <typename... DerivativeArgs, typename... ParameterArgs, typename Assembler>
 class NonLinearOperator<Impl::Functions<DerivativeArgs...>, Impl::Parameter<ParameterArgs...>, Assembler>
@@ -211,6 +213,7 @@ public:
    *
    * \param derivativesFunctions The Functions object for derivative arguments.
    * \param parameterI The Parameter object for parameter arguments.
+   * \param as Shared pointer to the underlying assembler.
    */
   template <typename U = void>
   requires(not std::is_rvalue_reference_v<DerivativeArgs> and ...)
@@ -227,6 +230,7 @@ public:
    *
    * \param derivativesFunctions The Functions object for derivative arguments.
    * \param parameterI The Parameter object for parameter arguments.
+   * \param as Shared pointer to the underlying assembler.
    */
   template <typename Funcs>
   explicit NonLinearOperator(const Funcs& derivativesFunctions, const Impl::Parameter<ParameterArgs...>& parameterI,

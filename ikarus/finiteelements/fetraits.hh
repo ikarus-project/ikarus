@@ -80,7 +80,7 @@ struct FETraits
   using VectorType =
       std::conditional_t<useEigenRef, Eigen::Ref<Eigen::VectorX<ScalarType>>, Eigen::VectorX<ScalarType>&>;
 
-  /** \brief Type of the vector passed to calculateVector */
+  /** \brief Type of the vector passed to updateState */
   template <typename ScalarType = ctype>
   using VectorTypeConst =
       std::conditional_t<useEigenRef, const Eigen::Ref<Eigen::VectorX<ScalarType>>, const Eigen::VectorX<ScalarType>&>;

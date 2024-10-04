@@ -121,11 +121,11 @@ public:
   }
 
   /**
-   * \brief Calculate the vector associated with the given Requirement.
+   * \brief Update the state variables related to a particular skill.
    *
-   * \tparam ScalarType The scalar type for the calculation.
-   * \param req The Requirement object specifying the requirements for the calculation.
-   * \param force The vector to store the calculated result.
+   * \param req The Requirement object specifying the requirements for the update itself.
+   * \param force A correction vector (for example, the displacement increment) based on which the state variables are
+   * to be updated.
    */
   friend void updateState(FEMixin& self, const Requirement& req,
                           typename Traits::template VectorTypeConst<> correction) {
