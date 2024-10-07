@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
 
   autoDiffTest<2>(t, planeStressMat1, " nu != 0");
   autoDiffTest<2>(t, planeStressMat2, " nu = 0");
-  // autoDiffTest<3>(t, matNH1, " nu != 0");
-  // autoDiffTest<3>(t, matNH2, " nu = 0");
+  autoDiffTest<3>(t, matNH1, " nu != 0");
+  autoDiffTest<3>(t, matNH2, " nu = 0");
   return t.exit();
 }
