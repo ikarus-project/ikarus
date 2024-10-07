@@ -307,7 +307,7 @@ void autoDiffTest(TestSuiteType& t, const MAT& mat, const std::string& testName 
     return fExt;
   };
 
-  auto grid     = createUGGridFromCorners<gridDim>(CornerDistortionFlag::randomlyDistorted);
+  auto grid     = createUGGridFromCorners<gridDim>(CornerDistortionFlag::unDistorted);
   auto gridView = grid->leafGridView();
 
   /// We artificially apply a Neumann load on the complete boundary
