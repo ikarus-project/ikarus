@@ -5,6 +5,7 @@
 
 #include "checkfebyautodiff.hh"
 #include "testcommon.hh"
+#include "testhelpers.hh"
 
 #include <dune/common/test/testsuite.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
@@ -39,7 +40,7 @@ using namespace Ikarus;
 using Dune::TestSuite;
 
 template <typename MAT>
-auto cantileverBeamTest(const MAT& mat) {
+auto cantileverBeamTest(const MAT& reducedMat) {
   TestSuite t("Cantilever Beam for Nonlinear EAS element (Q1E4)");
   constexpr int gridDim = 2;
   using Grid            = Dune::YaspGrid<gridDim>;
@@ -53,9 +54,8 @@ auto cantileverBeamTest(const MAT& mat) {
   using namespace Dune::Functions::BasisFactory;
   auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<1>(), FlatInterleaved()));
 
-  auto reducedMat = planeStress(mat, 1e-8);
-  auto sk         = skills(nonLinearElastic(reducedMat), eas(4));
-  using FEType    = decltype(makeFE(basis, sk));
+  auto sk      = skills(nonLinearElastic(reducedMat), eas(4));
+  using FEType = decltype(makeFE(basis, sk));
   std::vector<FEType> fes;
 
   for (auto&& ge : elements(gridView)) {
@@ -89,28 +89,41 @@ auto cantileverBeamTest(const MAT& mat) {
   const auto globalIndices = utils::globalIndexFromGlobalPosition(basis.flat(), topRightPos);
   auto pointLoad           = [&](const auto&, const auto& par, auto, auto, Eigen::VectorXd& vec) -> void {
     auto loadFactor = par.parameter();
-    vec[globalIndices[1]] -= loadFactor * 1.0;
+    vec[globalIndices[1]] -= -loadFactor * 1.0;
   };
   sparseAssemblerAM->bind(pointLoad);
 
   auto linSolver = LinearSolver(SolverTypeTag::sd_UmfPackLU);
 
-  auto nrConfig                = Ikarus::NewtonRaphsonConfig<decltype(linSolver)>{.linearSolver = linSolver};
+  AffordanceCollection elastoStaticsNoScalar(VectorAffordance::forces, MatrixAffordance::stiffness);
+
+  auto nonOp = NonLinearOperatorFactory::op(sparseAssemblerAM, elastoStaticsNoScalar, sparseAssemblerAM->dBCOption());
+
+  constexpr double tol = 1e-10;
+
+  auto nrConfig =
+      Ikarus::NewtonRaphsonConfig<decltype(linSolver)>{.parameters = {.tol = tol}, .linearSolver = linSolver};
   auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
   auto pathFollowingObserver   = std::make_shared<ControlLogger>();
   auto vtkWriter =
       std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(basis.flat(), d);
   vtkWriter->setFileNamePrefix("CantileverNonlinearEAS");
   vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 2);
-  NonlinearSolverFactory nrFactory(nrConfig);
-  auto nr = nrFactory.create(sparseAssemblerAM);
-  auto lc = LoadControl(nr, 10, {0, 1});
+  auto nr = createNonlinearSolver(nrConfig, nonOp);
+  auto lc = LoadControl(nr, 20, {0, 1});
   nr->subscribeAll(nonLinearSolverObserver);
   lc.subscribeAll({pathFollowingObserver, vtkWriter});
 
   const auto controlInfo = lc.run();
 
+  double expectedLambda  = 1.0;
+  double expectedMaxDisp = 4.459851990227056; // abs(maxDisp) in ANSYS APDL = 4.48777
+
   t.check(controlInfo.success);
+  const auto maxDisp = std::ranges::max(d.cwiseAbs());
+
+  checkScalars(t, maxDisp, expectedMaxDisp, " Max. displacement", tol);
+  checkScalars(t, lambda, expectedLambda, " Load factor", tol);
 
   return t;
 }
@@ -140,9 +153,9 @@ int main(int argc, char** argv) {
   Dune::TestSuite t("Nonlinear EAS Test");
   auto matParameter = toLamesFirstParameterAndShearModulus({.emodul = 100.0, .nu = 0.3});
   StVenantKirchhoff matSVK(matParameter);
-  auto reducedMat = planeStress(matSVK);
+  auto reducedMat = planeStrain(matSVK);
   easAutoDiffTest<2>(t, reducedMat);
   easAutoDiffTest<3>(t, matSVK);
-  t.subTest(cantileverBeamTest(matSVK));
+  t.subTest(cantileverBeamTest(reducedMat));
   return t.exit();
 }
