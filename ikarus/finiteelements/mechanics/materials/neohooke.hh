@@ -72,11 +72,16 @@ struct NeoHookeT : public Material<NeoHookeT<ST>>
    * \return ScalarType The stored energy.
    */
   template <typename Derived>
-  ScalarType storedEnergyImpl(const Eigen::MatrixBase<Derived>& C) const noexcept {
+  ScalarType storedEnergyImpl(const Eigen::MatrixBase<Derived>& C) const {
     static_assert(Concepts::EigenMatrixOrVoigtNotation3<Derived>);
     if constexpr (!Concepts::EigenVector<Derived>) {
-      const auto traceC  = C.trace();
-      const auto logdetF = log(sqrt(C.determinant()));
+      const auto traceC = C.trace();
+      const auto detC   = C.determinant();
+      if (Dune::FloatCmp::lt(static_cast<double>(detC), 0.0, 1e-10))
+        DUNE_THROW(Dune::MathError,
+                   "Determinant of right Cauchy Green tensor C must be greater than or equal to zero. detC = " +
+                       std::to_string(static_cast<double>(detC)));
+      const auto logdetF = log(sqrt(detC));
       return materialParameter_.mu / 2.0 * (traceC - 3 - 2 * logdetF) +
              materialParameter_.lambda / 2.0 * logdetF * logdetF;
     } else
@@ -96,7 +101,12 @@ struct NeoHookeT : public Material<NeoHookeT<ST>>
     static_assert(Concepts::EigenMatrixOrVoigtNotation3<Derived>);
     if constexpr (!voigt) {
       if constexpr (!Concepts::EigenVector<Derived>) {
-        const auto logdetF = log(sqrt(C.determinant()));
+        const auto detC = C.determinant();
+        if (Dune::FloatCmp::lt(static_cast<double>(detC), 0.0, 1e-10))
+          DUNE_THROW(Dune::MathError,
+                     "Determinant of right Cauchy Green tensor C must be greater than or equal to zero. detC = " +
+                         std::to_string(static_cast<double>(detC)));
+        const auto logdetF = log(sqrt(detC));
         const auto invC    = C.inverse().eval();
         return (materialParameter_.mu * (StrainMatrix::Identity() - invC) + materialParameter_.lambda * logdetF * invC)
             .eval();
@@ -118,8 +128,13 @@ struct NeoHookeT : public Material<NeoHookeT<ST>>
   auto tangentModuliImpl(const Eigen::MatrixBase<Derived>& C) const {
     static_assert(Concepts::EigenMatrixOrVoigtNotation3<Derived>);
     if constexpr (!voigt) {
-      const auto invC    = C.inverse().eval();
-      const auto logdetF = log(sqrt(C.determinant()));
+      const auto invC = C.inverse().eval();
+      const auto detC = C.determinant();
+      if (Dune::FloatCmp::lt(static_cast<double>(detC), 0.0, 1e-10))
+        DUNE_THROW(Dune::MathError,
+                   "Determinant of right Cauchy Green tensor C must be greater than or equal to zero. detC = " +
+                       std::to_string(static_cast<double>(detC)));
+      const auto logdetF = log(sqrt(detC));
       const auto CTinv   = tensorView(invC, std::array<Eigen::Index, 2>({3, 3}));
       static_assert(Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<3, 3>>::NumIndices == 2);
       Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<3, 3, 3, 3>> moduli =
