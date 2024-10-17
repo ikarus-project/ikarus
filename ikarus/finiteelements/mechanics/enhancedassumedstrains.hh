@@ -18,6 +18,7 @@
   #include <ikarus/finiteelements/ferequirements.hh>
   #include <ikarus/finiteelements/mechanics/easvariants.hh>
   #include <ikarus/finiteelements/mixin.hh>
+  #include <ikarus/utils/concepts.hh>
 
 namespace Ikarus {
 
@@ -165,10 +166,10 @@ protected:
       return;
 
     decltype(auto) LMat = [this]() -> decltype(auto) {
-      if constexpr (std::is_same_v<ScalarType, double>)
-        return [this]() -> Eigen::MatrixXd& { return L_; }();
-      else
+      if constexpr (Concepts::AutodiffScalar<ScalarType>)
         return Eigen::MatrixX<ScalarType>{};
+      else
+        return [this]() -> Eigen::MatrixXd& { return L_; }();
     }();
 
     auto calculateMatrixContribution = [&]<typename EAST>(const EAST& easFunction) {
@@ -208,10 +209,10 @@ protected:
       calculateDAndLMatrix(easFunction, par, D, L_);
 
       decltype(auto) LMat = [this]() -> decltype(auto) {
-        if constexpr (std::is_same_v<ScalarType, double>)
-          return [this]() -> Eigen::MatrixXd& { return L_; }();
-        else
+        if constexpr (Concepts::AutodiffScalar<ScalarType>)
           return Eigen::MatrixX<ScalarType>{};
+        else
+          return [this]() -> Eigen::MatrixXd& { return L_; }();
       }();
       const auto disp  = Dune::viewAsFlatEigenVector(uFunction.coefficientsRef());
       const auto alpha = (-D.inverse() * L_ * disp).eval();

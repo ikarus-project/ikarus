@@ -290,7 +290,7 @@ auto SingleElementTest(const Material& mat) {
 }
 
 template <int gridDim, typename MAT, typename TestSuiteType>
-void autoDiffTest(TestSuiteType& t, const MAT& mat, const std::string& testName = "") {
+void autoDiffTest(TestSuiteType& t, const MAT& mat, const std::string& testName = "", double tol = 1e-10) {
   using namespace Ikarus;
   using namespace Dune::Functions::BasisFactory;
   auto vL = []<typename VectorType>([[maybe_unused]] const VectorType& globalCoord, auto& lamb) {
@@ -317,5 +317,5 @@ void autoDiffTest(TestSuiteType& t, const MAT& mat, const std::string& testName 
   t.subTest(checkFESByAutoDiff(
       gridView, power<gridDim>(lagrange<1>()),
       skills(Ikarus::nonLinearElastic(mat), volumeLoad<gridDim>(vL), neumannBoundaryLoad(&neumannBoundary, nBL)),
-      Ikarus::AffordanceCollections::elastoStatics, testName));
+      Ikarus::AffordanceCollections::elastoStatics, testName, tol));
 }

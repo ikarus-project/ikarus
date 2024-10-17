@@ -16,7 +16,8 @@
 
 template <typename GridView, typename BasisHandler, typename Skills, typename AffordanceColl, typename VectorType>
 auto checkFESByAutoDiffImpl(const GridView& gridView, const BasisHandler& basis, Skills&& skills,
-                            AffordanceColl affordance, VectorType& d, const std::string& messageIfFailed = "") {
+                            AffordanceColl affordance, VectorType& d, const std::string& messageIfFailed = "",
+                            double tol = 1e-10) {
   double lambda = 7.3;
   auto fe       = Ikarus::makeFE(basis, std::forward<Skills>(skills));
   using FE      = decltype(fe);
@@ -28,8 +29,7 @@ auto checkFESByAutoDiffImpl(const GridView& gridView, const BasisHandler& basis,
   for (auto element : elements(gridView)) {
     auto localView = basis.flat().localView();
     localView.bind(element);
-    auto nDOF        = localView.size();
-    const double tol = 1e-10;
+    auto nDOF = localView.size();
 
     fe.bind(element);
 
@@ -80,13 +80,14 @@ auto checkFESByAutoDiffImpl(const GridView& gridView, const BasisHandler& basis,
 
 template <typename GridView, typename PreBasis, typename Skills, typename AffordanceColl>
 auto checkFESByAutoDiff(const GridView& gridView, const PreBasis& pb, Skills&& skills, AffordanceColl affordance,
-                        const std::string& testName = "") {
+                        const std::string& testName = "", double tol = 1e-10) {
   Dune::TestSuite t("AutoDiff Test" + testName);
   auto basis = Ikarus::makeBasis(gridView, pb);
   Eigen::VectorXd d;
   d.setZero(basis.flat().dimension());
-  t.subTest(checkFESByAutoDiffImpl(gridView, basis, skills, affordance, d, " Zero Displacements"));
+  t.subTest(checkFESByAutoDiffImpl(gridView, basis, skills, affordance, d, " Zero Displacements", tol));
   d.setRandom(basis.flat().dimension());
-  t.subTest(checkFESByAutoDiffImpl(gridView, basis, skills, affordance, d, " Non-zero Displacements"));
+  d *= 0.2; // to avoid a negative determinant of deformation gradient
+  t.subTest(checkFESByAutoDiffImpl(gridView, basis, skills, affordance, d, " Non-zero Displacements", tol));
   return t;
 }

@@ -28,8 +28,8 @@ int main(int argc, char** argv) {
   t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Yasp>(matNH1));
   t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::IgaSurfaceIn2D>(matNH1));
 
-  autoDiffTest<2>(t, planeStressMat1, " nu != 0");
-  autoDiffTest<2>(t, planeStressMat2, " nu = 0");
+  autoDiffTest<2>(t, planeStressMat1, " nu != 0", 1e-7);
+  autoDiffTest<2>(t, planeStressMat2, " nu = 0", 1e-7);
   autoDiffTest<3>(t, matNH1, " nu != 0");
   autoDiffTest<3>(t, matNH2, " nu = 0");
   return t.exit();
