@@ -78,7 +78,7 @@ struct NeoHookeT : public Material<NeoHookeT<ST>>
       const auto traceC = C.trace();
       const auto detC   = C.determinant();
       if (Dune::FloatCmp::lt(static_cast<double>(detC), 0.0, 1e-10))
-        DUNE_THROW(Dune::MathError,
+        DUNE_THROW(Dune::InvalidStateException,
                    "Determinant of right Cauchy Green tensor C must be greater than or equal to zero. detC = " +
                        std::to_string(static_cast<double>(detC)));
       const auto logdetF = log(sqrt(detC));
@@ -103,7 +103,7 @@ struct NeoHookeT : public Material<NeoHookeT<ST>>
       if constexpr (!Concepts::EigenVector<Derived>) {
         const auto detC = C.determinant();
         if (Dune::FloatCmp::lt(static_cast<double>(detC), 0.0, 1e-10))
-          DUNE_THROW(Dune::MathError,
+          DUNE_THROW(Dune::InvalidStateException,
                      "Determinant of right Cauchy Green tensor C must be greater than or equal to zero. detC = " +
                          std::to_string(static_cast<double>(detC)));
         const auto logdetF = log(sqrt(detC));
@@ -131,7 +131,7 @@ struct NeoHookeT : public Material<NeoHookeT<ST>>
       const auto invC = C.inverse().eval();
       const auto detC = C.determinant();
       if (Dune::FloatCmp::lt(static_cast<double>(detC), 0.0, 1e-10))
-        DUNE_THROW(Dune::MathError,
+        DUNE_THROW(Dune::InvalidStateException,
                    "Determinant of right Cauchy Green tensor C must be greater than or equal to zero. detC = " +
                        std::to_string(static_cast<double>(detC)));
       const auto logdetF = log(sqrt(detC));

@@ -236,17 +236,17 @@ auto checkThrowNeoHooke(const MAT& matNH) {
   Eigen::Vector3d E;
   E << 2.045327969583023, 0.05875570522766141, 0.3423966429644326;
 
-  t.checkThrow<Dune::MathError>(
+  t.checkThrow<Dune::InvalidStateException>(
       [&]() {
         const auto moduli = (planeStress(matNH, 1e-8).template tangentModuli<StrainTags::greenLagrangian, true>(E));
       },
       "Neo-Hooke test (tangentModuli) should have failed with negative detC for the given E");
 
-  t.checkThrow<Dune::MathError>(
+  t.checkThrow<Dune::InvalidStateException>(
       [&]() { const auto stress = (planeStress(matNH, 1e-8).template stresses<StrainTags::greenLagrangian, true>(E)); },
       "Neo-Hooke test (stresses) should have failed with negative detC for the given E");
 
-  t.checkThrow<Dune::MathError>(
+  t.checkThrow<Dune::InvalidStateException>(
       [&]() { const auto energy = (planeStress(matNH, 1e-8).template storedEnergy<StrainTags::greenLagrangian>(E)); },
       "Neo-Hooke test (stresses) should have failed with negative detC for the given E");
   return t;
