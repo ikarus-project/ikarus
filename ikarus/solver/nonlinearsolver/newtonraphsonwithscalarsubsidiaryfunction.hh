@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * \file newtonraphson.hh
- * \brief Implementation of the Newton-Raphson method for solving nonlinear equations.
+ * \file newtonraphsonwithscalarsubsidiaryfunction.hh
+ * \brief Implementation of the Newton-Raphson method for solving nonlinear equations with an additional subsidiary
+ * function.
  */
 
 #pragma once

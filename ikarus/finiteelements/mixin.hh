@@ -94,6 +94,9 @@ public:
   using LocalView               = typename Traits::LocalView;
   static constexpr int worldDim = Traits::worlddim;
 
+  template <StrainTags ES>
+  static constexpr bool hasEAS = hasSkill<EnhancedAssumedStrainsPre<ES>::template Skill>();
+
   /**
    * \brief Create a Requirement object.
    *

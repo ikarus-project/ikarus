@@ -184,11 +184,9 @@ public:
         linearSolver_.factorize(Ax);
         linearSolver_.solve(correction_, -rx);
         dNorm = correction_.norm();
-        updateFunction_(x, correction_);
       } else {
         correction_ = -linearSolver_(rx, Ax);
         dNorm       = norm(correction_);
-        updateFunction_(x, correction_);
       }
       this->notify(CORRECTIONNORM_UPDATED, static_cast<double>(dNorm));
       this->notify(SOLUTION_CHANGED);
