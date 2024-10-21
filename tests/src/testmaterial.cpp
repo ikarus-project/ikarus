@@ -228,6 +228,29 @@ auto testPlaneStrainAgainstPlaneStress(const double tol = 1e-10) {
   return t;
 }
 
+template <typename MAT>
+auto checkThrowNeoHooke(const MAT& matNH) {
+  static_assert(std::is_same_v<MAT, NeoHookeT<double>>,
+                "checkThrowNeoHooke is only implemented for Neo-Hooke material law.");
+  TestSuite t("NeoHooke Test - Checks the throw message for negative determinant of C");
+  Eigen::Vector3d E;
+  E << 2.045327969583023, 0.05875570522766141, 0.3423966429644326;
+  auto reducedMat = planeStress(matNH, 1e-8);
+
+  t.checkThrow<Dune::InvalidStateException>(
+      [&]() { const auto moduli = (reducedMat.template tangentModuli<StrainTags::greenLagrangian, true>(E)); },
+      "Neo-Hooke test (tangentModuli) should have failed with negative detC for the given E");
+
+  t.checkThrow<Dune::InvalidStateException>(
+      [&]() { const auto stress = (reducedMat.template stresses<StrainTags::greenLagrangian, true>(E)); },
+      "Neo-Hooke test (stresses) should have failed with negative detC for the given E");
+
+  t.checkThrow<Dune::InvalidStateException>(
+      [&]() { const auto energy = (reducedMat.template storedEnergy<StrainTags::greenLagrangian>(E)); },
+      "Neo-Hooke test (stresses) should have failed with negative detC for the given E");
+  return t;
+}
+
 int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t;
@@ -239,6 +262,7 @@ int main(int argc, char** argv) {
 
   auto nh = NeoHooke(matPar);
   t.subTest(testMaterial(nh));
+  t.subTest(checkThrowNeoHooke(nh));
 
   auto le = LinearElasticity(matPar);
   t.subTest(testMaterial(le));
