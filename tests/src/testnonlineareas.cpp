@@ -153,9 +153,16 @@ int main(int argc, char** argv) {
   Dune::TestSuite t("Nonlinear EAS Test");
   auto matParameter = toLamesFirstParameterAndShearModulus({.emodul = 100.0, .nu = 0.3});
   StVenantKirchhoff matSVK(matParameter);
-  auto reducedMat = planeStrain(matSVK);
-  easAutoDiffTest<2>(t, reducedMat);
+  NeoHooke matNH(matParameter);
+  auto reducedMatSVK = planeStrain(matSVK);
+  auto reducedMatNH  = planeStrain(matNH);
+
+  easAutoDiffTest<2>(t, reducedMatSVK);
   easAutoDiffTest<3>(t, matSVK);
-  t.subTest(cantileverBeamTest(reducedMat));
+
+  easAutoDiffTest<2>(t, reducedMatNH);
+  easAutoDiffTest<3>(t, matNH);
+
+  t.subTest(cantileverBeamTest(reducedMatSVK));
   return t.exit();
 }

@@ -16,7 +16,7 @@
 
 template <typename GridView, typename BasisHandler, typename Skills, typename AffordanceColl, typename VectorType>
 auto checkFESByAutoDiffImpl(const GridView& gridView, const BasisHandler& basis, Skills&& skills,
-                            AffordanceColl affordance, VectorType& d, const std::string& messageIfFailed = "",
+                            AffordanceColl affordance, VectorType& d, const std::string& testName = "",
                             double tol = 1e-10) {
   double lambda = 7.3;
   auto fe       = Ikarus::makeFE(basis, std::forward<Skills>(skills));
