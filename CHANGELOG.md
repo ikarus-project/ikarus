@@ -61,6 +61,18 @@ SPDX-License-Identifier: LGPL-3.0-or-later
     - the signature of the `operator()` of the result evaluator changed to also include the finite element and the evaluation position.
     - `UserFunction` are now passed directly to the `ResultFunction` and not as a template argument.
     - `Vtk::Writer` now also accepts a `UserFunction` in the `addResult()` function.
+- Refactor EAS to handle NonLinearElastic ([#325](https://github.com/ikarus-project/ikarus/pull/325))
+    - `updateState()` function is added to `mixin.hh`, which can be used to update the internal state variables of the skills.
+        - `updateStateImpl()` now has to be implemented by every skill.
+        - For EAS, `updateStateImpl()` is used to update the internal variable `alpha` in a nonlinear analysis.
+    - Missing functions like `getStress` and `materialTangentFunction` are added to `LinearElastic` and `NonLinearElastic`, respectively.
+    - A `helperfunctions.hh` file is added that contains the helper functions used by the nonlinear solvers.
+        - This contains the function `updateStates()` that calls the `updateState()` function for every finite element.
+        - `updateStates()` is called by nonlinear solvers during every iteration, whenever the correction vector is updated.
+    - `NonLinearOperator` now has an additional template argument, `Assembler`.
+        - It stores a shared pointer to the underlying assembler.
+        - This helps the nonlinear solvers to have access to the underlying assembler,
+          which in turn provides the finite element container to update the state variables.
 
 ## Release v0.4 (Ganymede)
 
