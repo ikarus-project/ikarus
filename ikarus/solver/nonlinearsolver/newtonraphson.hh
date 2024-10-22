@@ -42,9 +42,9 @@ struct NewtonRaphsonConfig
   UF updateFunction;
 
   template <typename UF2>
-  auto rebindUpdateFunction(UF2&& updateFunction) const {
+  auto rebindUpdateFunction(UF2&& updateFunction2) const {
     NewtonRaphsonConfig<LS, UF2> settings{
-        .parameters = parameters, .linearSolver = linearSolver, .updateFunction = std::forward<UF2>(updateFunction)};
+        .parameters = parameters, .linearSolver = linearSolver, .updateFunction = std::forward<UF2>(updateFunction2)};
     return settings;
   }
 
@@ -63,8 +63,7 @@ struct NewtonRaphsonConfig
 template <typename NLO, typename NRConfig>
 requires traits::isSpecialization<NewtonRaphsonConfig, std::remove_cvref_t<NRConfig>>::value
 auto createNonlinearSolver(NRConfig&& config, NLO&& nonLinearOperator) {
-  using LS           = std::remove_cvref_t<NRConfig>::LinearSolver;
-  using UF           = std::remove_cvref_t<NRConfig>::UpdateFunction;
+
   auto solverFactory = []<class NLO2, class LS2, class UF2>(NLO2&& nlo2, LS2&& ls, UF2&& uf) {
     return std::make_shared<
         NewtonRaphson<std::remove_cvref_t<NLO2>, std::remove_cvref_t<LS2>, std::remove_cvref_t<UF2>>>(
@@ -82,7 +81,6 @@ auto createNonlinearSolver(NRConfig&& config, NLO&& nonLinearOperator) {
                   "The number of derivatives in the nonlinear operator have to be more than 1");
     auto solver = solverFactory(nonLinearOperator, std::forward<NRConfig>(config).linearSolver,
                                 std::forward<NRConfig>(config).updateFunction);
-    ;
 
     solver->setup(std::forward<NRConfig>(config).parameters);
     return solver;

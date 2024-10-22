@@ -324,7 +324,6 @@ public:
    */
   PMHelper::ConstReturnType parameter() const {
     return parameter_.value();
-    ;
   }
 
   /**

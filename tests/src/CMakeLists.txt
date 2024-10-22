@@ -107,11 +107,14 @@ foreach(programSourceFile ${programSourceFiles})
   target_link_libraries(${programName} PUBLIC ${PYTHON_LIBRARIES})
 
   target_compile_options(${programName} PUBLIC -ftemplate-backtrace-limit=0)
+  message(STATUS "BEFORE WARNINGS ${ENABLE_WARNINGS}")
   if(ENABLE_WARNINGS)
+    message(STATUS "ENABLE WARNINGS")
     target_compile_options(
       ${programName}
       PUBLIC -Wall
              -Wextra
+             -Werror
              -Wshadow
              -pedantic
              -Wnon-virtual-dtor
@@ -121,6 +124,7 @@ foreach(programSourceFile ${programSourceFiles})
              -Wno-sign-conversion
              -Wno-c++20-extensions
              -Wno-shorten-64-to-32
+             -Wno-missing-prototypes
     )
 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
