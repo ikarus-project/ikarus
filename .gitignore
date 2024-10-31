@@ -3,6 +3,7 @@
 
 /.devcontainer
 docker-compose.yml
+.clangd
 
 /build*
 /.vscode
@@ -19,6 +20,7 @@ cmake-build-relwithdebinfo/
 docs/website/drawio-exporter
 *.pyc
 .cache/
+
 
 ikarus/python/test/setpath.py
 python/pyikarus.egg-info/
