@@ -21,7 +21,6 @@ docs/website/drawio-exporter
 *.pyc
 .cache/
 
-
 ikarus/python/test/setpath.py
 python/pyikarus.egg-info/
 dist/
