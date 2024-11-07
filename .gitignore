@@ -3,6 +3,7 @@
 
 /.devcontainer
 docker-compose.yml
+.clangd
 
 /build*
 /.vscode
