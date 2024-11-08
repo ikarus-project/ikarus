@@ -15,3 +15,4 @@
 #include <ikarus/finiteelements/mechanics/materials/tags.hh>
 #include <ikarus/finiteelements/mechanics/materials/vanishingstrain.hh>
 #include <ikarus/finiteelements/mechanics/materials/vanishingstress.hh>
+#include <ikarus/finiteelements/mechanics/materials/mueslimaterial.hh>
