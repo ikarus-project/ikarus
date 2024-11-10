@@ -9,42 +9,28 @@
 
 #pragma once
 
-#include <ikarus/finiteelements/mechanics/materials/interface.hh>
-#include <ikarus/utils/tensorutils.hh>
+#include <muesli/muesli.h>
 
 #include <Eigen/Eigen>
 
+#include <ikarus/finiteelements/mechanics/materials/interface.hh>
+#include <ikarus/finiteelements/mechanics/materials/muesli/mueslihelpers.hh>
+#include <ikarus/utils/tensorutils.hh>
 
-namespace Ikarus {
+namespace Ikarus::Materials {
 
-/**
- * \brief Implementation of the Neo-Hookean material model.
-* \ingroup materials
-*  The energy is computed as
-*  \f[ \psi(\BC) = \frac{\mu}{2} (\tr \BC-3- 2 \log \sqrt{\det \BC}) + \frac{\lambda}{2} (\log \sqrt{\det \BC})^2 ,\f]
-* where \f$ \BC \f$ denotes the right Cauchy-Green strain tensor.
-*
-*  The second Piola-Kirchhoff stresses are computed as
-*      \f[ \BS(\BC) =\fracpt{\psi(\BC)}{\BC} = \mu (\BI-\BC^{-1}) + \lambda \log \sqrt{\det \BC}  \BC^{-1},\f]
-*
-* and the material tangent moduli are computed as
-*      \f[ \BBC(\BC) =\fracpt{^2\psi(\BC)}{\BC^2} =  \lambda \BC^{-1} \otimes  \BC^{-1} + 2 (\mu- \lambda \log
-\sqrt{\det \BC} ) \CI,\f]
-*      where \f$ \CI_{IJKL} =  \frac{1}{2}({(\BC^{-1})}^{IK}{(\BC^{-1})}^{JL}+{(\BC^{-1})}^{IL} {(\BC^{-1})}^{JK}).\f$
-*
-*  \remark See \cite bonet2008nonlinear, Section 6.4.3 for a discussion of this material
- * \tparam ST The scalar type for the strains and stresses,....
- */
-template <typename ST>
-struct MuesliT : public Material<MuesliT<ST>>
+template <typename FM>
+requires(std::is_base_of_v<muesli::finiteStrainMaterial, FM>)
+struct MuesliFinite : public Material<MuesliFinite<FM>>
 {
-  using ScalarType                    = ST;
+  using MaterialModel                 = FM;
+  using ScalarType                    = double;
   static constexpr int worldDimension = 3;
   using StrainMatrix                  = Eigen::Matrix<ScalarType, worldDimension, worldDimension>;
   using StressMatrix                  = StrainMatrix;
-  using MaterialParameters            = LamesFirstParameterAndShearModulus;
+  using MaterialParameters            = Muesli::MaterialProperties;
 
-  static constexpr auto strainTag              = StrainTags::rightCauchyGreenTensor;
+  static constexpr auto strainTag              = StrainTags::deformationGradient;
   static constexpr auto stressTag              = StressTags::PK2;
   static constexpr auto tangentModuliTag       = TangentModuliTags::Material;
   static constexpr bool energyAcceptsVoigt     = false;
@@ -56,12 +42,25 @@ struct MuesliT : public Material<MuesliT<ST>>
 
   [[nodiscard]] constexpr static std::string nameImpl() noexcept { return "Muesli"; }
 
+  template <typename MPT>
+  requires(std::same_as<MPT, YoungsModulusAndPoissonsRatio> or std::same_as<MPT, LamesFirstParameterAndShearModulus>)
+  explicit MuesliFinite(const MPT& mpt, bool regularized = false)
+      : materialParameter_{Muesli::propertiesFromIkarusMaterialParameters(mpt, regularized)},
+        material_{Dune::className<FM>(), materialParameter_},
+        mp_{material_.createMaterialPoint()} {}
+
   /**
    * \brief Constructor for MuesliT.
    * \param mpt The Lame's parameters (first parameter and shear modulus).
    */
-  explicit MuesliT(const MaterialParameters& mpt)
-      : materialParameter_{mpt} {}
+  explicit MuesliFinite(const MaterialParameters& mpt, bool regularized = false)
+      : materialParameter_{mpt},
+        material_{Dune::className<FM>(), mpt},
+        mp_{material_.createMaterialPoint()} {
+    // Make sure that materialParameter_ is regualrized
+    if (regularized)
+      materialParameter_.insert({"subtype regularized", 0});
+  }
 
   /**
    * \brief Returns the material parameters stored in the material
@@ -78,12 +77,11 @@ struct MuesliT : public Material<MuesliT<ST>>
   ScalarType storedEnergyImpl(const Eigen::MatrixBase<Derived>& C) const {
     static_assert(Concepts::EigenMatrixOrVoigtNotation3<Derived>);
     if constexpr (!Concepts::EigenVector<Derived>) {
-      const auto traceC = C.trace();
-      const auto detC   = C.determinant();
-      checkPositiveDetC(detC);
-      const auto logdetF = log(sqrt(detC));
-      return materialParameter_.mu / 2.0 * (traceC - 3 - 2 * logdetF) +
-             materialParameter_.lambda / 2.0 * logdetF * logdetF;
+      istensor strain = istensor(C(0, 0), C(1, 1), C(2, 2), C(1, 2), C(2, 0), C(0, 1));
+
+      mp_->updateCurrentState(0.0, strain);
+      return mp_->storedEnergy();
+
     } else
       static_assert(!Concepts::EigenVector<Derived>,
                     "Muesli energy can only be called with a matrix and not a vector in Voigt notation");
@@ -101,12 +99,19 @@ struct MuesliT : public Material<MuesliT<ST>>
     static_assert(Concepts::EigenMatrixOrVoigtNotation3<Derived>);
     if constexpr (!voigt) {
       if constexpr (!Concepts::EigenVector<Derived>) {
-        const auto detC = C.determinant();
-        checkPositiveDetC(detC);
-        const auto logdetF = log(sqrt(detC));
-        const auto invC    = C.inverse().eval();
-        return (materialParameter_.mu * (StrainMatrix::Identity() - invC) + materialParameter_.lambda * logdetF * invC)
-            .eval();
+        istensor strain = istensor(C(0, 0), C(1, 1), C(2, 2), C(1, 2), C(2, 0), C(0, 1));
+
+        mp_->updateCurrentState(0.0, strain);
+
+        auto stress = istensor();
+        mp_->secondPiolaKirchhoffStress(stress);
+
+        auto S = Eigen::Matrix<double, 3, 3>{};
+        for (auto i : Dune::range(3))
+          for (auto j : Dune::range(3))
+            S(i, j) = stress(i, j);
+        return S;
+
       } else
         static_assert(!Concepts::EigenVector<Derived>,
                       "Muesli can only be called with a matrix and not a vector in Voigt notation");
@@ -125,46 +130,46 @@ struct MuesliT : public Material<MuesliT<ST>>
   auto tangentModuliImpl(const Eigen::MatrixBase<Derived>& C) const {
     static_assert(Concepts::EigenMatrixOrVoigtNotation3<Derived>);
     if constexpr (!voigt) {
-      const auto invC = C.inverse().eval();
-      const auto detC = C.determinant();
-      checkPositiveDetC(detC);
-      const auto logdetF = log(sqrt(detC));
-      const auto CTinv   = tensorView(invC, std::array<Eigen::Index, 2>({3, 3}));
-      static_assert(Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<3, 3>>::NumIndices == 2);
-      Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<3, 3, 3, 3>> moduli =
-          (materialParameter_.lambda * dyadic(CTinv, CTinv) +
-           2 * (materialParameter_.mu - materialParameter_.lambda * logdetF) *
-               symTwoSlots(fourthOrderIKJL(invC, invC), {2, 3}))
-              .eval();
+      istensor strain = istensor(C(0, 0), C(1, 1), C(2, 2), C(1, 2), C(2, 0), C(0, 1));
+
+      mp_->updateCurrentState(0.0, strain);
+
+      Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<3, 3, 3, 3>> moduli{};
+      moduli.setZero();
+
+      auto tangent = itensor4();
+      mp_->convectedTangent(tangent);
+
+      for (auto i : Dune::range(3))
+        for (auto j : Dune::range(3))
+          for (auto k : Dune::range(3))
+            for (auto l : Dune::range(3))
+              moduli(i, j, k, l) = tangent(i, j, k, l);
+
       return moduli;
     } else
       static_assert(voigt == false, "Muesli does not support returning tangent moduli in Voigt notation");
   }
 
-  /**
-   * \brief Rebinds the material to a different scalar type.
-   * \tparam STO The target scalar type.
-   * \return MuesliT<ScalarTypeOther> The rebound Muesli material.
-   */
-  template <typename STO>
-  auto rebind() const {
-    return MuesliT<STO>(materialParameter_);
-  }
+  auto& material() const { return material_; }
+
+  ~MuesliFinite() { delete mp_; }
 
 private:
   MaterialParameters materialParameter_;
+  MaterialModel material_;
+  muesli::finiteStrainMP* mp_;
 
-  void checkPositiveDetC(ScalarType detC) const {
-    if (Dune::FloatCmp::le(static_cast<double>(detC), 0.0, 1e-10))
-      DUNE_THROW(Dune::InvalidStateException,
-                 "Determinant of right Cauchy Green tensor C must be greater than zero. detC = " +
-                     std::to_string(static_cast<double>(detC)));
-  }
+  // auto initializeMaterialProperties(const MaterialParameters& mpt, bool regularized) -> muesli::materialProperties {
+  //   auto mpm = muesli::materialProperties{};
+  //   mpm.insert({"lambda", mpt.lambda});
+  //   mpm.insert({"mu", mpt.mu});
+
+  // if (regularized)
+  //   mpm.insert({"subtype regularized", 0});
+
+  // return mpm;
+  // }
 };
 
-/**
- * \brief Alias for MuesliT with double as the default scalar type.
- */
-using Muesli = MuesliT<double>;
-
-} // namespace Ikarus
+} // namespace Ikarus::Materials
