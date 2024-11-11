@@ -71,9 +71,9 @@ public:
   using LocalBasisType = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
 
   static constexpr int myDim       = Traits::mydim;
-  static constexpr bool hasEAS     = FE::hasEAS;
   static constexpr auto strainType = StrainTags::linear;
   static constexpr auto stressType = StressTags::linear;
+  static constexpr bool hasEAS     = FE::template hasEAS<strainType>;
 
   /**
    * \brief Constructor for the LinearElastic class.
@@ -203,6 +203,8 @@ public:
   auto calculateAtImpl(const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<1>) const {
     using RTWrapper = ResultWrapper<RT<typename Traits::ctype, myDim, Traits::worlddim>, ResultShape::Vector>;
+    if (hasEASSkill())
+      return RTWrapper{};
     if constexpr (isSameResultType<RT, ResultTypes::linearStress>) {
       const auto eps = strainFunction(req);
       auto epsVoigt  = eps.evaluate(local, Dune::on(Dune::DerivativeDirections::gridElement));
@@ -294,7 +296,8 @@ public:
   }
 
 protected:
-  void updateStateImpl(const Requirement& /* par */, typename Traits::template VectorTypeConst<> /* correction */) {}
+  void updateStateImpl(const Requirement& /* par */,
+                       typename Traits::template VectorTypeConst<> /* correction */) const {}
 
   template <typename ScalarType>
   void calculateMatrixImpl(

@@ -60,6 +60,9 @@ auto checkFESByAutoDiffImpl(const GridView& gridView, const BasisHandler& basis,
         << KAutoDiff << "\nThe difference is\n"
         << (K - KAutoDiff);
 
+    checkSymmetricMatrix(t, K, tol, "K");
+    checkSymmetricMatrix(t, KAutoDiff, tol, "KAutoDiff");
+
     if constexpr (requires { fe.numberOfEASParameters(); }) {
       t.check(fe.numberOfEASParameters() == feAutoDiff.realFE().numberOfEASParameters())
           << "Number of EAS parameters for FE(" << fe.numberOfEASParameters()
