@@ -11,7 +11,7 @@ namespace Ikarus::Materials::Muesli {
 
 // Alias for Muesli materials
 
-using LinearElasticity = muesli::elasticAnisotropicMaterial;
+using LinearElasticity = muesli::elasticIsotropicMaterial;
 using SVK              = muesli::svkMaterial;
 using NeoHooke         = muesli::neohookeanMaterial;
 using MooneyRivlin     = muesli::mooneyMaterial;

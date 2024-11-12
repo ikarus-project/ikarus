@@ -40,7 +40,7 @@ struct MuesliFinite : public Material<MuesliFinite<FM>>
   static constexpr bool moduliAcceptsVoigt     = false;
   static constexpr double derivativeFactorImpl = 2;
 
-  [[nodiscard]] constexpr static std::string nameImpl() noexcept { return "Muesli"; }
+  [[nodiscard]] constexpr static std::string nameImpl() noexcept { return "Muesli: " + Dune::className<FM>(); }
 
   template <typename MPT>
   requires(std::same_as<MPT, YoungsModulusAndPoissonsRatio> or std::same_as<MPT, LamesFirstParameterAndShearModulus>)
@@ -155,21 +155,15 @@ struct MuesliFinite : public Material<MuesliFinite<FM>>
 
   ~MuesliFinite() { delete mp_; }
 
+  MuesliFinite(const MuesliFinite& other)
+      : materialParameter_{other.materialParameter_},
+        material_{Dune::className<FM>(), materialParameter_},
+        mp_{material_.createMaterialPoint()} {}
+
 private:
   MaterialParameters materialParameter_;
   MaterialModel material_;
   muesli::finiteStrainMP* mp_;
-
-  // auto initializeMaterialProperties(const MaterialParameters& mpt, bool regularized) -> muesli::materialProperties {
-  //   auto mpm = muesli::materialProperties{};
-  //   mpm.insert({"lambda", mpt.lambda});
-  //   mpm.insert({"mu", mpt.mu});
-
-  // if (regularized)
-  //   mpm.insert({"subtype regularized", 0});
-
-  // return mpm;
-  // }
 };
 
 } // namespace Ikarus::Materials

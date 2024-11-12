@@ -149,9 +149,16 @@ struct MuesliElastic : public Material<MuesliElastic<SM>>
 
   ~MuesliElastic() { delete mp_; }
 
+  MuesliElastic(const MuesliElastic& other)
+      : materialParameter_{other.materialParameter_},
+        material_{Dune::className<SM>(), materialParameter_},
+        mp_{material_.createMaterialPoint()} {}
+
+  // TODO Assignement and move
+
 private:
   MaterialParameters materialParameter_;
-  muesli::elasticIsotropicMaterial material_;
+  MaterialModel material_;
   muesli::smallStrainMP* mp_;
 };
 
