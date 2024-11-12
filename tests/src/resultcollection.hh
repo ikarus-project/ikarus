@@ -6,6 +6,7 @@
 #include <Eigen/Core>
 
 #include <ikarus/finiteelements/ferequirements.hh>
+#include <ikarus/finiteelements/mechanics/materials/vanishingstress.hh>
 #include <ikarus/utils/functionhelper.hh>
 
 namespace Testing {
@@ -13,7 +14,7 @@ namespace Testing {
 constexpr double NaN = std::numeric_limits<double>::signaling_NaN();
 template <typename Material>
 constexpr bool isPlaneStress =
-    (Ikarus::traits::isSpecializationNonTypeAndTypes<Ikarus::VanishingStress, Material>::value);
+    (Ikarus::traits::isSpecializationNonTypeAndTypes<Ikarus::Materials::VanishingStress, Material>::value);
 
 static Eigen::Vector<double, 8> displacementsForSquare({0, 0, 1, 1, 1, 1, 1, 1});
 static Eigen::Vector<double, 24> displacementsForCube({0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0,
