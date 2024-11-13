@@ -38,29 +38,18 @@ struct MuesliFinite : public Material<MuesliFinite<FM>>
   static constexpr bool stressAcceptsVoigt     = false;
   static constexpr bool moduliToVoigt          = false;
   static constexpr bool moduliAcceptsVoigt     = false;
-  static constexpr double derivativeFactorImpl = 2;
+  static constexpr double derivativeFactorImpl = 1;
 
   [[nodiscard]] constexpr static std::string nameImpl() noexcept { return "Muesli: " + Dune::className<FM>(); }
-
-  template <typename MPT>
-  requires(std::same_as<MPT, YoungsModulusAndPoissonsRatio> or std::same_as<MPT, LamesFirstParameterAndShearModulus>)
-  explicit MuesliFinite(const MPT& mpt, bool regularized = false)
-      : materialParameter_{Muesli::propertiesFromIkarusMaterialParameters(mpt, regularized)},
-        material_{Dune::className<FM>(), materialParameter_},
-        mp_{material_.createMaterialPoint()} {}
 
   /**
    * \brief Constructor for MuesliT.
    * \param mpt The Lame's parameters (first parameter and shear modulus).
    */
-  explicit MuesliFinite(const MaterialParameters& mpt, bool regularized = false)
+  explicit MuesliFinite(const MaterialParameters& mpt)
       : materialParameter_{mpt},
         material_{Dune::className<FM>(), mpt},
-        mp_{material_.createMaterialPoint()} {
-    // Make sure that materialParameter_ is regualrized
-    if (regularized)
-      materialParameter_.insert({"subtype regularized", 0});
-  }
+        mp_{material_.createMaterialPoint()} {}
 
   /**
    * \brief Returns the material parameters stored in the material

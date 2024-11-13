@@ -19,7 +19,7 @@
 
 namespace Ikarus::Materials {
 
-template <typename SM = Muesli::LinearElasticity>
+template <typename SM = muesli::elasticIsotropicMaterial>
 requires(std::is_base_of_v<muesli::smallStrainMaterial, SM>)
 struct MuesliElastic : public Material<MuesliElastic<SM>>
 {

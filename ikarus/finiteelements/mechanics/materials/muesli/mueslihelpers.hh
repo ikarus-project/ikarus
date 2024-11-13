@@ -9,37 +9,23 @@
 
 namespace Ikarus::Materials::Muesli {
 
-// Alias for Muesli materials
-
-using LinearElasticity = muesli::elasticIsotropicMaterial;
-using SVK              = muesli::svkMaterial;
-using NeoHooke         = muesli::neohookeanMaterial;
-using MooneyRivlin     = muesli::mooneyMaterial;
-using Yeoh             = muesli::yeohMaterial;
-using ArrudaBoyce      = muesli::arrudaboyceMaterial;
-
 // Alias for Muesli material properties
 using MaterialProperties = muesli::materialProperties;
 
-inline MaterialProperties propertiesFromIkarusMaterialParameters(const LamesFirstParameterAndShearModulus& mpt,
-                                                                 bool regularized = false) {
+inline MaterialProperties propertiesFromIkarusMaterialParameters(const LamesFirstParameterAndShearModulus& mpt) {
   auto mpm = muesli::materialProperties{};
   mpm.insert({"lambda", mpt.lambda});
   mpm.insert({"mu", mpt.mu});
-  if (regularized)
-    mpm.insert({"subtype regularized", 0});
 
   return mpm;
 }
 
-inline MaterialProperties propertiesFromIkarusMaterialParameters(const YoungsModulusAndPoissonsRatio& mpt,
-                                                                 bool regularized = false) {
+inline void addRegularizedTag(MaterialProperties& mpm) { mpm.insert({"subtype regularized", 0}); }
+
+inline MaterialProperties propertiesFromIkarusMaterialParameters(const YoungsModulusAndPoissonsRatio& mpt) {
   auto mpm = muesli::materialProperties{};
   mpm.insert({"young", mpt.emodul});
   mpm.insert({"poisson", mpt.nu});
-
-  if (regularized)
-    mpm.insert({"subtype regularized", 0});
 
   return mpm;
 }
