@@ -40,7 +40,7 @@ struct MuesliFinite : public Material<MuesliFinite<FM>>
   static constexpr bool moduliAcceptsVoigt     = false;
   static constexpr double derivativeFactorImpl = 1;
 
-  [[nodiscard]] constexpr static std::string nameImpl() noexcept { return "Muesli: " + Dune::className<FM>(); }
+  [[nodiscard]] constexpr static std::string nameImpl() noexcept { return "MuesliFinite: " + Dune::className<FM>(); }
 
   /**
    * \brief Constructor for MuesliT.
@@ -142,7 +142,7 @@ struct MuesliFinite : public Material<MuesliFinite<FM>>
 
   auto& material() const { return material_; }
 
-  ~MuesliFinite() { delete mp_; }
+  bool assertMP() const { return mp_.get() != NULL; }
 
   MuesliFinite(const MuesliFinite& other)
       : materialParameter_{other.materialParameter_},
@@ -152,7 +152,7 @@ struct MuesliFinite : public Material<MuesliFinite<FM>>
 private:
   MaterialParameters materialParameter_;
   MaterialModel material_;
-  muesli::finiteStrainMP* mp_;
+  std::unique_ptr<muesli::finiteStrainMP> mp_;
 };
 
 } // namespace Ikarus::Materials

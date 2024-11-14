@@ -43,4 +43,5 @@ auto makeSVK(const MPT& mpt) {
   return MuesliFinite<Muesli::StVenantKirchhoff>(muesliParameters);
 }
 
+
 } // namespace Ikarus::Materials::Muesli

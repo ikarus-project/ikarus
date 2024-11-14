@@ -147,7 +147,9 @@ struct MuesliElastic : public Material<MuesliElastic<SM>>
       static_assert(voigt == false, "Muesli does not support returning tangent moduli in Voigt notation");
   }
 
-  ~MuesliElastic() { delete mp_; }
+  auto& material() const { return material_; }
+
+  bool assertMP() const { return mp_.get() != NULL; }
 
   MuesliElastic(const MuesliElastic& other)
       : materialParameter_{other.materialParameter_},
@@ -159,7 +161,7 @@ struct MuesliElastic : public Material<MuesliElastic<SM>>
 private:
   MaterialParameters materialParameter_;
   MaterialModel material_;
-  muesli::smallStrainMP* mp_;
+  std::unique_ptr<muesli::smallStrainMP> mp_;
 };
 
 } // namespace Ikarus::Materials
