@@ -12,6 +12,7 @@
 #include <dune/common/tuplevector.hh>
 
 #include <ikarus/finiteelements/fetraits.hh>
+#include <ikarus/finiteelements/mechanics/enhancedassumedstrains.hh>
 
 namespace Ikarus {
 /**
@@ -90,6 +91,9 @@ public:
   using LocalView               = typename Traits::LocalView;
   static constexpr int worldDim = Traits::worlddim;
 
+  template <StrainTags ES>
+  static constexpr bool hasEAS = hasSkill<EnhancedAssumedStrainsPre<ES>::template Skill>();
+
   /**
    * @brief Create a Requirement object.
    *
@@ -118,6 +122,18 @@ public:
   friend void calculateVector(const FEMixin& self, const Requirement& req, VectorAffordance affordance,
                               typename Traits::template VectorType<> force) {
     self.template calculateVectorImpl<double>(req, affordance, force);
+  }
+
+  /**
+   * \brief Update the state variables related to a particular skill.
+   *
+   * \param req The Requirement object specifying the requirements for the update itself.
+   * \param force A correction vector (for example, the displacement increment) based on which the state variables are
+   * to be updated.
+   */
+  friend void updateState(FEMixin& self, const Requirement& req,
+                          typename Traits::template VectorTypeConst<> correction) {
+    self.template updateStateImpl<double>(req, correction);
   }
 
   /**
@@ -242,6 +258,19 @@ public:
     (Skills<PreFE, typename PreFE::template FE<Skills...>>::template calculateMatrixImpl<ScalarType>(par, affordance, K,
                                                                                                      dx),
      ...);
+  }
+
+private:
+  static constexpr bool implementsUpdateStateImpl =
+      (requires(FEMixin m, const Requirement& par, typename Traits::template VectorTypeConst<> correction) {
+        m.Skills<PreFE, typename PreFE::template FE<Skills...>>::updateStateImpl(par, correction);
+      } || ...);
+
+public:
+  template <typename ScalarType>
+  requires implementsUpdateStateImpl
+  void updateStateImpl(const Requirement& par, typename Traits::template VectorTypeConst<> correction) const {
+    (Skills<PreFE, typename PreFE::template FE<Skills...>>::updateStateImpl(par, correction), ...);
   }
 
 protected:
