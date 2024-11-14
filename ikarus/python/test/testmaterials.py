@@ -331,6 +331,7 @@ def checkVoigtTransformations():
 def checkMaterialConstructors():
     # Check different constructors (no physical meaning)
     iks.materials.StVenantKirchhoff(E=1000, mu=500)
+    iks.materials.StVenantKirchhoff(E=1000, nu=0.3)
     iks.materials.StVenantKirchhoff(E=1000, K=500)
     iks.materials.StVenantKirchhoff(E=1000, Lambda=500)
     iks.materials.StVenantKirchhoff(K=1000, Lambda=500)
@@ -365,3 +366,10 @@ if __name__ == "__main__":
     checkStrainTransformation()
     checkVoigtTransformations()
     checkMaterialConstructors()
+
+    mm1 = materials.muesliMaterial(materials.MuesliElastic.LinearElasticity, E=100, nu=0.2)
+    mm2 = materials.muesliMaterial(materials.MuesliFinite.StVenantKirchhoff, E=100, Lambda=500)
+
+
+    print(mm1.name)
+    mm1.materialDescription()

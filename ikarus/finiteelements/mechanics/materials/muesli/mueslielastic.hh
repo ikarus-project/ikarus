@@ -156,7 +156,6 @@ struct MuesliElastic : public Material<MuesliElastic<SM>>
         material_{Dune::className<SM>(), materialParameter_},
         mp_{material_.createMaterialPoint()} {}
 
-  // TODO Assignement and move
 
 private:
   MaterialParameters materialParameter_;

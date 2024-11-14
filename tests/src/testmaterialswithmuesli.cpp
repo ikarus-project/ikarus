@@ -81,6 +81,7 @@ auto checkConstructors(Muesli::MaterialProperties matPar) {
   t.check(mm2.assertMP()) << testLocation();
   t.check(mm3.assertMP()) << testLocation();
 
+  // std::cout << Dune::className<MAT>();
   return t;
 }
 
