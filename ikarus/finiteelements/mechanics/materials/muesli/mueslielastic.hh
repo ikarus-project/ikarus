@@ -17,11 +17,11 @@
 #include <ikarus/finiteelements/mechanics/materials/muesli/mueslihelpers.hh>
 #include <ikarus/utils/tensorutils.hh>
 
-namespace Ikarus::Materials {
+namespace Ikarus::Materials::Muesli {
 
 template <typename SM = muesli::elasticIsotropicMaterial>
 requires(std::is_base_of_v<muesli::smallStrainMaterial, SM>)
-struct MuesliElastic : public Material<MuesliElastic<SM>>
+struct SmallStrain : public Material<SmallStrain<SM>>
 {
   using MaterialModel                 = SM;
   using ScalarType                    = double;
@@ -40,7 +40,9 @@ struct MuesliElastic : public Material<MuesliElastic<SM>>
   static constexpr bool moduliAcceptsVoigt     = false;
   static constexpr double derivativeFactorImpl = 1;
 
-  [[nodiscard]] constexpr static std::string nameImpl() noexcept { return "Muesli: " + Dune::className<SM>(); }
+  [[nodiscard]] constexpr static std::string nameImpl() noexcept {
+    return "Muesli_SmallStrain: " + Dune::className<SM>();
+  }
 
   /**
    * \brief Constructor for MuesliT.
@@ -48,12 +50,12 @@ struct MuesliElastic : public Material<MuesliElastic<SM>>
    */
   template <typename MPT>
   requires(std::same_as<MPT, YoungsModulusAndPoissonsRatio> or std::same_as<MPT, LamesFirstParameterAndShearModulus>)
-  explicit MuesliElastic(const MPT& mpt)
+  explicit SmallStrain(const MPT& mpt)
       : materialParameter_{Muesli::propertiesFromIkarusMaterialParameters(mpt)},
         material_{Dune::className<SM>(), materialParameter_},
         mp_{material_.createMaterialPoint()} {}
 
-  explicit MuesliElastic(const MaterialParameters& mpt)
+  explicit SmallStrain(const MaterialParameters& mpt)
       : materialParameter_{mpt},
         material_{Dune::className<SM>(), mpt},
         mp_{material_.createMaterialPoint()} {}
@@ -70,14 +72,11 @@ struct MuesliElastic : public Material<MuesliElastic<SM>>
    * \return ScalarType The stored energy.
    */
   template <typename Derived>
-  ScalarType storedEnergyImpl(const Eigen::MatrixBase<Derived>& C) const {
+  ScalarType storedEnergyImpl(const Eigen::MatrixBase<Derived>& E) const {
     static_assert(Concepts::EigenMatrixOrVoigtNotation3<Derived>);
     if constexpr (!Concepts::EigenVector<Derived>) {
-      istensor strain = istensor(C(0, 0), C(1, 1), C(2, 2), C(1, 2), C(2, 0), C(0, 1));
-
-      mp_->updateCurrentState(0.0, strain);
+      updateState(E);
       return mp_->storedEnergy();
-
     } else
       static_assert(!Concepts::EigenVector<Derived>,
                     "Muesli energy can only be called with a matrix and not a vector in Voigt notation");
@@ -87,7 +86,7 @@ struct MuesliElastic : public Material<MuesliElastic<SM>>
    * \brief Computes the stresses in the Neo-Hookean material model.
    * \tparam voigt A boolean indicating whether to return stresses in Voigt notation.
    * \tparam Derived The derived type of the input matrix.
-   * \param C The right Cauchy-Green tensor.
+   * \param E The right Cauchy-Green tensor.
    * \return StressMatrix The stresses.
    */
   template <bool voigt, typename Derived>
@@ -95,19 +94,9 @@ struct MuesliElastic : public Material<MuesliElastic<SM>>
     static_assert(Concepts::EigenMatrixOrVoigtNotation3<Derived>);
     if constexpr (!voigt) {
       if constexpr (!Concepts::EigenVector<Derived>) {
-        istensor strain = istensor(C(0, 0), C(1, 1), C(2, 2), C(1, 2), C(2, 0), C(0, 1));
-
-        mp_->updateCurrentState(0.0, strain);
-
-        auto stress = istensor();
-        mp_->stress(stress);
-
-        auto S = Eigen::Matrix<double, 3, 3>{};
-        for (auto i : Dune::range(3))
-          for (auto j : Dune::range(3))
-            S(i, j) = stress(i, j);
-        return S;
-
+        updateState(C);
+        mp_->stress(stress_);
+        return Muesli::toMatrix<ScalarType>(stress_);
       } else
         static_assert(!Concepts::EigenVector<Derived>,
                       "Muesli can only be called with a matrix and not a vector in Voigt notation");
@@ -119,30 +108,20 @@ struct MuesliElastic : public Material<MuesliElastic<SM>>
    * \brief Computes the tangent moduli in the Neo-Hookean material model.
    * \tparam voigt A boolean indicating whether to return tangent moduli in Voigt notation.
    * \tparam Derived The derived type of the input matrix.
-   * \param C The right Cauchy-Green tensor.
+   * \param E The right Cauchy-Green tensor.
    * \return Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<3, 3, 3, 3>> The tangent moduli.
    */
   template <bool voigt, typename Derived>
-  auto tangentModuliImpl(const Eigen::MatrixBase<Derived>& C) const {
+  auto tangentModuliImpl(const Eigen::MatrixBase<Derived>& E) const {
     static_assert(Concepts::EigenMatrixOrVoigtNotation3<Derived>);
     if constexpr (!voigt) {
-      istensor strain = istensor(C(0, 0), C(1, 1), C(2, 2), C(1, 2), C(2, 0), C(0, 1));
-
-      mp_->updateCurrentState(0.0, strain);
-
-      Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<3, 3, 3, 3>> moduli{};
-      moduli.setZero();
-
-      auto tangent = itensor4();
-      mp_->tangentTensor(tangent);
-
-      for (auto i : Dune::range(3))
-        for (auto j : Dune::range(3))
-          for (auto k : Dune::range(3))
-            for (auto l : Dune::range(3))
-              moduli(i, j, k, l) = tangent(i, j, k, l);
-
-      return moduli;
+      if constexpr (!Concepts::EigenVector<Derived>) {
+        updateState(E);
+        mp_->tangentTensor(tangentModuli_);
+        return Muesli::toTensor<ScalarType>(tangentModuli_);
+      } else
+        static_assert(!Concepts::EigenVector<Derived>,
+                      "Muesli can only be called with a matrix and not a vector in Voigt notation");
     } else
       static_assert(voigt == false, "Muesli does not support returning tangent moduli in Voigt notation");
   }
@@ -151,16 +130,25 @@ struct MuesliElastic : public Material<MuesliElastic<SM>>
 
   bool assertMP() const { return mp_.get() != NULL; }
 
-  MuesliElastic(const MuesliElastic& other)
+  SmallStrain(const SmallStrain& other)
       : materialParameter_{other.materialParameter_},
         material_{Dune::className<SM>(), materialParameter_},
         mp_{material_.createMaterialPoint()} {}
-
 
 private:
   MaterialParameters materialParameter_;
   MaterialModel material_;
   std::unique_ptr<muesli::smallStrainMP> mp_;
+
+  mutable istensor strain_{};
+  mutable istensor stress_{};
+  mutable itensor4 tangentModuli_{};
+
+  template <typename Derived>
+  void updateState(const Eigen::MatrixBase<Derived>& E) const {
+    Muesli::toistensor(strain_, E);
+    mp_->updateCurrentState(0.0, strain_);
+  }
 };
 
 } // namespace Ikarus::Materials

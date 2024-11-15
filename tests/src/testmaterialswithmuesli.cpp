@@ -96,7 +96,7 @@ int main(int argc, char** argv) {
   auto matProp = Muesli::propertiesFromIkarusMaterialParameters(matPar);
 
   auto lin  = LinearElasticity(matPar);
-  auto linm = MuesliElastic(matPar);
+  auto linm = Muesli::SmallStrain(matPar);
 
   t.subTest(testMaterials<StrainTags::linear>(linm, lin));
 
@@ -122,9 +122,13 @@ int main(int argc, char** argv) {
   auto nhplaneStressm = planeStress(nhm);
   t.subTest(testMaterials<StrainTags::rightCauchyGreenTensor>(nhplaneStressm, nhplaneStress));
 
-  t.subTest(checkConstructors<MuesliFinite<Muesli::NeoHooke>>(matProp));
-  t.subTest(checkConstructors<MuesliFinite<Muesli::StVenantKirchhoff>>(matProp));
-  t.subTest(checkConstructors<MuesliElastic<Muesli::LinearElasticity>>(matProp));
+  t.subTest(checkConstructors<Muesli::FiniteStrain<Muesli::NeoHooke>>(matProp));
+  t.subTest(checkConstructors<Muesli::FiniteStrain<Muesli::StVenantKirchhoff>>(matProp));
+  t.subTest(checkConstructors<Muesli::SmallStrain<Muesli::LinearElasticity>>(matProp));
+
+  Muesli::makeNeoHooke(YoungsModulusAndBulkModulus{1000, 500});
+  Muesli::makeNeoHooke(YoungsModulusAndPoissonsRatio{1000, 0.2});
+  Muesli::makeSVK(YoungsModulusAndLamesFirstParameter{1000, 500});
 
   return t.exit();
 }

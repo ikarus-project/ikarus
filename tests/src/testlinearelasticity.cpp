@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
     return Ikarus::linearElastic(lin);
   };
   auto linearElasticFunc3D_Muesli = [](const Ikarus::YoungsModulusAndPoissonsRatio& parameter) {
-    Ikarus::Materials::MuesliElastic<> lin(parameter);
+    auto lin = Ikarus::Materials::Muesli::makeLinearElasticity(parameter);
     return Ikarus::linearElastic(lin);
   };
   auto linearElasticFuncPlaneStress = [](const Ikarus::YoungsModulusAndPoissonsRatio& parameter) {

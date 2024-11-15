@@ -28,20 +28,57 @@ using Yeoh              = muesli::yeohMaterial;
 using ArrudaBoyce       = muesli::arrudaboyceMaterial;
 
 template <typename MPT>
-requires(std::same_as<MPT, YoungsModulusAndPoissonsRatio> or std::same_as<MPT, LamesFirstParameterAndShearModulus>)
+auto makeLinearElasticity(const MPT& mpt) {
+  auto muesliParameters = propertiesFromIkarusMaterialParameters(mpt);
+  return SmallStrain<>(muesliParameters);
+}
+
+template <typename MPT>
 auto makeNeoHooke(const MPT& mpt, bool useDeviatoricStretches = false) {
   auto muesliParameters = propertiesFromIkarusMaterialParameters(mpt);
   if (useDeviatoricStretches)
     addRegularizedTag(muesliParameters);
-  return MuesliFinite<Muesli::NeoHooke>(muesliParameters);
+  return FiniteStrain<Muesli::NeoHooke>(muesliParameters);
 }
 
 template <typename MPT>
-requires(std::same_as<MPT, YoungsModulusAndPoissonsRatio> or std::same_as<MPT, LamesFirstParameterAndShearModulus>)
 auto makeSVK(const MPT& mpt) {
   auto muesliParameters = propertiesFromIkarusMaterialParameters(mpt);
-  return MuesliFinite<Muesli::StVenantKirchhoff>(muesliParameters);
+  return FiniteStrain<Muesli::StVenantKirchhoff>(muesliParameters);
 }
 
+template <typename MPT>
+auto makeArrudaBoyce(double C1, double lambda_m, double bulkModulus, bool compressible = false) {
+  auto muesliParameters = muesli::materialProperties{};
+  muesliParameters.insert({"c1", C1});
+  muesliParameters.insert({"lambdam", lambda_m});
+  muesliParameters.insert({"bulk", bulkModulus});
+  if (compressible)
+    addCompressibleTag(muesliParameters);
+  return FiniteStrain<Muesli::ArrudaBoyce>(muesliParameters);
+}
+
+template <typename MPT>
+auto makeYeoh(std::array<double, 3> c, double bulkModulus, bool compressible = false) {
+  auto muesliParameters = muesli::materialProperties{};
+  muesliParameters.insert({"c1", c[0]});
+  muesliParameters.insert({"c2", c[1]});
+  muesliParameters.insert({"c3", c[2]});
+  muesliParameters.insert({"bulk", bulkModulus});
+  if (compressible)
+    addCompressibleTag(muesliParameters);
+  return FiniteStrain<Muesli::Yeoh>(muesliParameters);
+}
+
+template <typename MPT>
+auto makeMooneyRivlin(std::array<double, 3> alpha, bool incompressible = false) {
+  auto muesliParameters = muesli::materialProperties{};
+  muesliParameters.insert({"alpha0", alpha[0]});
+  muesliParameters.insert({"alpha1", alpha[1]});
+  muesliParameters.insert({"alpha2", alpha[2]});
+  if (incompressible)
+    addIncompressibleTag(muesliParameters);
+  return FiniteStrain<Muesli::Yeoh>(muesliParameters);
+}
 
 } // namespace Ikarus::Materials::Muesli

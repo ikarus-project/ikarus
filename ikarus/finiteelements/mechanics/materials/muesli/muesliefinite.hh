@@ -17,11 +17,11 @@
 #include <ikarus/finiteelements/mechanics/materials/muesli/mueslihelpers.hh>
 #include <ikarus/utils/tensorutils.hh>
 
-namespace Ikarus::Materials {
+namespace Ikarus::Materials::Muesli {
 
 template <typename FM>
 requires(std::is_base_of_v<muesli::finiteStrainMaterial, FM>)
-struct MuesliFinite : public Material<MuesliFinite<FM>>
+struct FiniteStrain : public Material<FiniteStrain<FM>>
 {
   using MaterialModel                 = FM;
   using ScalarType                    = double;
@@ -30,7 +30,7 @@ struct MuesliFinite : public Material<MuesliFinite<FM>>
   using StressMatrix                  = StrainMatrix;
   using MaterialParameters            = Muesli::MaterialProperties;
 
-  static constexpr auto strainTag              = StrainTags::deformationGradient;
+  static constexpr auto strainTag              = StrainTags::rightCauchyGreenTensor;
   static constexpr auto stressTag              = StressTags::PK2;
   static constexpr auto tangentModuliTag       = TangentModuliTags::Material;
   static constexpr bool energyAcceptsVoigt     = false;
@@ -40,13 +40,15 @@ struct MuesliFinite : public Material<MuesliFinite<FM>>
   static constexpr bool moduliAcceptsVoigt     = false;
   static constexpr double derivativeFactorImpl = 1;
 
-  [[nodiscard]] constexpr static std::string nameImpl() noexcept { return "MuesliFinite: " + Dune::className<FM>(); }
+  [[nodiscard]] constexpr static std::string nameImpl() noexcept {
+    return "Muesli_FiniteStrain: " + Dune::className<FM>();
+  }
 
   /**
    * \brief Constructor for MuesliT.
    * \param mpt The Lame's parameters (first parameter and shear modulus).
    */
-  explicit MuesliFinite(const MaterialParameters& mpt)
+  explicit FiniteStrain(const MaterialParameters& mpt)
       : materialParameter_{mpt},
         material_{Dune::className<FM>(), mpt},
         mp_{material_.createMaterialPoint()} {}
@@ -66,9 +68,7 @@ struct MuesliFinite : public Material<MuesliFinite<FM>>
   ScalarType storedEnergyImpl(const Eigen::MatrixBase<Derived>& C) const {
     static_assert(Concepts::EigenMatrixOrVoigtNotation3<Derived>);
     if constexpr (!Concepts::EigenVector<Derived>) {
-      istensor strain = istensor(C(0, 0), C(1, 1), C(2, 2), C(1, 2), C(2, 0), C(0, 1));
-
-      mp_->updateCurrentState(0.0, strain);
+      updateState(C);
       return mp_->storedEnergy();
 
     } else
@@ -88,19 +88,9 @@ struct MuesliFinite : public Material<MuesliFinite<FM>>
     static_assert(Concepts::EigenMatrixOrVoigtNotation3<Derived>);
     if constexpr (!voigt) {
       if constexpr (!Concepts::EigenVector<Derived>) {
-        istensor strain = istensor(C(0, 0), C(1, 1), C(2, 2), C(1, 2), C(2, 0), C(0, 1));
-
-        mp_->updateCurrentState(0.0, strain);
-
-        auto stress = istensor();
-        mp_->secondPiolaKirchhoffStress(stress);
-
-        auto S = Eigen::Matrix<double, 3, 3>{};
-        for (auto i : Dune::range(3))
-          for (auto j : Dune::range(3))
-            S(i, j) = stress(i, j);
-        return S;
-
+        updateState(C);
+        mp_->secondPiolaKirchhoffStress(stress_);
+        return Muesli::toMatrix<ScalarType>(stress_);
       } else
         static_assert(!Concepts::EigenVector<Derived>,
                       "Muesli can only be called with a matrix and not a vector in Voigt notation");
@@ -119,23 +109,14 @@ struct MuesliFinite : public Material<MuesliFinite<FM>>
   auto tangentModuliImpl(const Eigen::MatrixBase<Derived>& C) const {
     static_assert(Concepts::EigenMatrixOrVoigtNotation3<Derived>);
     if constexpr (!voigt) {
-      istensor strain = istensor(C(0, 0), C(1, 1), C(2, 2), C(1, 2), C(2, 0), C(0, 1));
+      if constexpr (!Concepts::EigenVector<Derived>) {
+        updateState(C);
 
-      mp_->updateCurrentState(0.0, strain);
-
-      Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<3, 3, 3, 3>> moduli{};
-      moduli.setZero();
-
-      auto tangent = itensor4();
-      mp_->convectedTangent(tangent);
-
-      for (auto i : Dune::range(3))
-        for (auto j : Dune::range(3))
-          for (auto k : Dune::range(3))
-            for (auto l : Dune::range(3))
-              moduli(i, j, k, l) = tangent(i, j, k, l);
-
-      return moduli;
+        mp_->convectedTangent(tangentModuli_);
+        return Muesli::toTensor<ScalarType>(tangentModuli_);
+      } else
+        static_assert(!Concepts::EigenVector<Derived>,
+                      "Muesli can only be called with a matrix and not a vector in Voigt notation");
     } else
       static_assert(voigt == false, "Muesli does not support returning tangent moduli in Voigt notation");
   }
@@ -144,7 +125,7 @@ struct MuesliFinite : public Material<MuesliFinite<FM>>
 
   bool assertMP() const { return mp_.get() != NULL; }
 
-  MuesliFinite(const MuesliFinite& other)
+  FiniteStrain(const FiniteStrain& other)
       : materialParameter_{other.materialParameter_},
         material_{Dune::className<FM>(), materialParameter_},
         mp_{material_.createMaterialPoint()} {}
@@ -153,6 +134,16 @@ private:
   MaterialParameters materialParameter_;
   MaterialModel material_;
   std::unique_ptr<muesli::finiteStrainMP> mp_;
+
+  mutable istensor strain_{};
+  mutable istensor stress_{};
+  mutable itensor4 tangentModuli_{};
+
+  template <typename Derived>
+  void updateState(const Eigen::MatrixBase<Derived>& C) const {
+    Muesli::toistensor(strain_, transformStrain<strainTag, StrainTags::deformationGradient>(C));
+    mp_->updateCurrentState(0.0, strain_);
+  }
 };
 
 } // namespace Ikarus::Materials

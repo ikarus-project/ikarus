@@ -303,7 +303,7 @@ int main(int argc, char** argv) {
   auto nhRed8 = makeVanishingStrain<Impl::MatrixIndexPair{1, 1}, Impl::MatrixIndexPair{2, 2}>(nh);
   t.subTest(testMaterial(nhRed8));
 
-  auto muesliLin = Materials::MuesliElastic(matPar);
+  auto muesliLin = Materials::Muesli::makeLinearElasticity(matPar);
   t.subTest(testMaterial(muesliLin));
 
   auto muesliSVK = Materials::Muesli::makeSVK(matPar);
@@ -314,6 +314,7 @@ int main(int argc, char** argv) {
 
   auto muesliNeoHookeReg = Materials::Muesli::makeNeoHooke(matPar, true);
   t.subTest(testMaterial(muesliNeoHookeReg));
+
 
   t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::linear, LinearElasticity>());
   t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::greenLagrangian, StVenantKirchhoff>());
