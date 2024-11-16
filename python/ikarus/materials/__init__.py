@@ -12,9 +12,9 @@ from enum import Enum
 from typing import Union
 
 # The list of supported dataCollectors
-MuesliElastic = Enum("MuesliElastic", ["LinearElasticity"])
-MuesliFinite = Enum(
-    "MuesliFinite",
+MuesliSmallStrain = Enum("MuesliSmallStrain", ["LinearElasticity"])
+MuesliFiniteStrain = Enum(
+    "MuesliFiniteStrain",
     [
         "StVenantKirchhoff",
         "NeoHooke",
@@ -25,11 +25,11 @@ MuesliFinite = Enum(
 )
 
 
-def muesliMaterial(materialTag: Union[MuesliElastic, MuesliFinite], **kwargs):
-    assert  isinstance(materialTag, MuesliElastic) or isinstance(materialTag, MuesliFinite)
+def muesliMaterial(materialTag: Union[MuesliSmallStrain, MuesliFiniteStrain], **kwargs):
+    assert  isinstance(materialTag, MuesliSmallStrain) or isinstance(materialTag, MuesliFiniteStrain)
 
     materialTagSplitted = str(materialTag).split(".")
-    wrappertype = materialTagSplitted[0]
+    wrappertype = "Muesli::SmallStrain" if isinstance(materialTag, MuesliSmallStrain) else "Muesli::FiniteStrain"
     materialtype = f"Ikarus::Materials::Muesli::{materialTagSplitted[1]}"
 
     includes = []

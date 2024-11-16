@@ -47,30 +47,30 @@ auto makeSVK(const MPT& mpt) {
   return FiniteStrain<Muesli::StVenantKirchhoff>(muesliParameters);
 }
 
-template <typename MPT>
-auto makeArrudaBoyce(double C1, double lambda_m, double bulkModulus, bool compressible = false) {
+
+auto makeArrudaBoyce(double C1, double lambda_m, double K, bool compressible = true) {
   auto muesliParameters = muesli::materialProperties{};
   muesliParameters.insert({"c1", C1});
   muesliParameters.insert({"lambdam", lambda_m});
-  muesliParameters.insert({"bulk", bulkModulus});
+  muesliParameters.insert({"bulk", K});
   if (compressible)
     addCompressibleTag(muesliParameters);
   return FiniteStrain<Muesli::ArrudaBoyce>(muesliParameters);
 }
 
-template <typename MPT>
-auto makeYeoh(std::array<double, 3> c, double bulkModulus, bool compressible = false) {
+
+auto makeYeoh(std::array<double, 3> C, double K, bool compressible = true) {
   auto muesliParameters = muesli::materialProperties{};
-  muesliParameters.insert({"c1", c[0]});
-  muesliParameters.insert({"c2", c[1]});
-  muesliParameters.insert({"c3", c[2]});
-  muesliParameters.insert({"bulk", bulkModulus});
+  muesliParameters.insert({"c1", C[0]});
+  muesliParameters.insert({"c2", C[1]});
+  muesliParameters.insert({"c3", C[2]});
+  muesliParameters.insert({"bulk", K});
   if (compressible)
     addCompressibleTag(muesliParameters);
   return FiniteStrain<Muesli::Yeoh>(muesliParameters);
 }
 
-template <typename MPT>
+
 auto makeMooneyRivlin(std::array<double, 3> alpha, bool incompressible = false) {
   auto muesliParameters = muesli::materialProperties{};
   muesliParameters.insert({"alpha0", alpha[0]});
@@ -78,7 +78,7 @@ auto makeMooneyRivlin(std::array<double, 3> alpha, bool incompressible = false) 
   muesliParameters.insert({"alpha2", alpha[2]});
   if (incompressible)
     addIncompressibleTag(muesliParameters);
-  return FiniteStrain<Muesli::Yeoh>(muesliParameters);
+  return FiniteStrain<Muesli::MooneyRivlin>(muesliParameters);
 }
 
 } // namespace Ikarus::Materials::Muesli
