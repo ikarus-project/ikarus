@@ -71,10 +71,10 @@ auto vtkWriterTest() {
   writer.addResult<Ikarus::ResultTypes::linearStress>(); // Defaults to pointData
   writer.addResultFunction(Ikarus::makeResultFunction<Ikarus::ResultTypes::linearStress>(sparseAssembler), asCellData);
 
-  writer.addInterpolation(D_Glob, basis.flat(), "displacement", asPointData);
+  writer.addInterpolation(std::move(D_Glob), basis.flat(), "displacement", asPointData);
 
   auto subspaceBasis = Dune::Functions::subspaceBasis(basis.flat(), Dune::index_constant<0>());
-  writer.addInterpolation(D_Glob, subspaceBasis, "displacement_u", asCellAndPointData);
+  writer.addInterpolation(std::move(D_Glob), subspaceBasis, "displacement_u", asCellAndPointData);
 
   writer.addPointData(
       Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis.flat(), D_Glob),
