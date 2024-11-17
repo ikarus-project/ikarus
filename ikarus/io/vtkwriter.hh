@@ -166,7 +166,9 @@ public:
    \param dataTag The data tag.
    */
   template <typename Basis, typename R>
-  void addInterpolation(R&& vals, const Basis& basis, const std::string& name, DataTag dataTag = DataTag::asPointData) {
+  void addInterpolation(R&& vals, const Basis& basis, const std::string& name, DataTag dataTag = DataTag::asPointData)
+  requires(std::is_rvalue_reference_v<decltype(vals)>)
+  {
     using Container = Impl::ResultContainer_t<Basis>;
 
     auto gridFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<Container>(basis, std::forward<R>(vals));

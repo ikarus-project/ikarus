@@ -213,6 +213,10 @@ protected:
   void calculateMatrixImpl(
       const Requirement& par, const MatrixAffordance& affordance, typename Traits::template MatrixType<> K,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
+    if (affordance == MatrixAffordance::mass) {
+      calculateMassImpl<ScalarType>(par, affordance, K);
+      return;
+    }
     const auto eps = strainFunction(par, dx);
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
@@ -228,6 +232,29 @@ protected:
         }
       }
     }
+  }
+
+  template <typename ScalarType>
+  void calculateMassImpl(const Requirement& par, const MatrixAffordance& affordance,
+                         typename Traits::template MatrixType<> M) const {
+    double rho = 1.0;
+    using namespace Dune;
+
+    for (const auto& [gpIndex, gp] : localBasis_.viewOverIntegrationPoints()) {
+      const auto intElement = geo_->integrationElement(gp.position()) * gp.weight();
+      auto& N               = localBasis_.evaluateFunction(gpIndex);
+      auto Mij              = (rho * N * N.transpose() * intElement).eval();
+
+      for (size_t i = 0; i < numberOfNodes_; ++i) {
+        for (size_t j = i; j < numberOfNodes_; ++j) {
+          Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<myDim>()), [&](auto k) {
+            auto& basis = underlying().localView().tree().child(k);
+            M(basis.localIndex(i), basis.localIndex(j)) += Mij(i, j);
+          });
+        }
+      }
+    }
+    M.template triangularView<Eigen::StrictlyLower>() = M.transpose();
   }
 
   template <typename ScalarType>
