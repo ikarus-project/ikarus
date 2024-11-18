@@ -203,7 +203,10 @@ auto scalarAffordance(VectorAffordance affordanceV) {
 namespace AffordanceCollections {
   inline constexpr AffordanceCollection elastoStatics(ScalarAffordance::mechanicalPotentialEnergy,
                                                       VectorAffordance::forces, MatrixAffordance::stiffness);
-}
+  constexpr Ikarus::AffordanceCollection dynamics(Ikarus::ScalarAffordance::noAffordance,
+                                                        Ikarus::VectorAffordance::noAffordance,
+                                                        Ikarus::MatrixAffordance::mass);
+} // namespace AffordanceCollections
 
 namespace Impl {
   template <typename T>
