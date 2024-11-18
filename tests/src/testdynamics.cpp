@@ -87,9 +87,8 @@ static auto dynamicsTest() {
   auto assM = Ikarus::makeSparseFlatAssembler(fes, dirichletValues);
   auto assK = Ikarus::makeSparseFlatAssembler(fes, dirichletValues);
 
-  constexpr Ikarus::AffordanceCollection elastoDynamics(
-      Ikarus::ScalarAffordance::noAffordance, Ikarus::VectorAffordance::noAffordance, Ikarus::MatrixAffordance::mass);
-  assM->bind(req, elastoDynamics, Ikarus::DBCOption::Reduced);
+
+  assM->bind(req, Ikarus::AffordanceCollections::dynamics, Ikarus::DBCOption::Reduced);
   assK->bind(req, Ikarus::AffordanceCollections::elastoStatics, Ikarus::DBCOption::Reduced);
 
   auto& K = assK->matrix();
