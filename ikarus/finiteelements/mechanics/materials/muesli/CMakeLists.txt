@@ -5,5 +5,7 @@
 install(
   FILES muesliefinite.hh
         mueslielastic.hh
+        mueslimaterials.hh
+        mueslihelpers.hh
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/finiteelements/mechanics/materials/muesli
 )
