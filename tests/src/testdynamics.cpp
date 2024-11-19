@@ -84,16 +84,6 @@ static auto dynamicsTest() {
 
   auto assMLumped = Ikarus::Dynamics::makeLumpedFlatAssembler(assM);
 
-  static_assert(Ikarus::Concepts::SparseEigenMatrix<decltype(assM)::element_type::MatrixType>);
-
-  // auto& Mlumped = assMLumped->matrix();
-  // auto Mlumped2 = assMLumped->matrix();
-  // auto Mlumped2 = assMLumped->matrix(Ikarus::DBCOption::Reduced);
-
-  // std::cout << "Size of M: " << M.rows() << std::endl;
-  // std::cout << "Size of Klumped: " << Mlumped.rows() << std::endl;
-  // std::cout << "Size of nnz: " << Mlumped.nonZeros() << std::endl;
-
   int nev = 10; // number of requested eigenvalues
   using Ikarus::Dynamics::EigenSolverTypeTag;
 
