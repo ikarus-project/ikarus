@@ -88,6 +88,7 @@ public:
   using WrappedAssembler::dBCOption;
   using WrappedAssembler::estimateOfConnectivity;
   using WrappedAssembler::gridView;
+  using WrappedAssembler::basis;
   using WrappedAssembler::isConstrained;
   using WrappedAssembler::reducedSize;
   using WrappedAssembler::requirement;
@@ -179,6 +180,7 @@ public:
   using WrappedAssembler::dBCOption;
   using WrappedAssembler::estimateOfConnectivity;
   using WrappedAssembler::gridView;
+  using WrappedAssembler::basis;
   using WrappedAssembler::isConstrained;
   using WrappedAssembler::reducedSize;
   using WrappedAssembler::requirement;
@@ -289,6 +291,7 @@ public:
   using WrappedAssembler::dBCOption;
   using WrappedAssembler::estimateOfConnectivity;
   using WrappedAssembler::gridView;
+  using WrappedAssembler::basis;
   using WrappedAssembler::isConstrained;
   using WrappedAssembler::reducedSize;
   using WrappedAssembler::requirement;
