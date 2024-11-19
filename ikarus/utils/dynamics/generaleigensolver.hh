@@ -26,16 +26,16 @@ namespace Ikarus::Dynamics {
 MAKE_ENUM(EigenSolverTypeTag, Spectra, Eigen);
 MAKE_ENUM(MatrixTypeTag, Dense, Sparse);
 
-template <EigenSolverTypeTag SolverType, MatrixTypeTag matrixType, typename ScalarType>
+template <EigenSolverTypeTag SolverType, MatrixTypeTag matrixType, typename ScalarType = double>
 struct GeneralSymEigenSolver
 {
 };
 /**
- * \brief 
- * 
- * \tparam matrixType 
+ * \brief
+ *
+ * \tparam matrixType
  * \tparam ST
- * \ingroup Dynamics 
+ * \ingroup Dynamics
  */
 template <MatrixTypeTag matrixType, typename ST>
 struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, matrixType, ST>
@@ -51,14 +51,7 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, matrixType, ST>
 
   using SolverType = Spectra::SymGEigsSolver<ProductType, CholeskyType, Spectra::GEigsMode::Cholesky>;
 
-  /**
-   * \brief
-   *
-   * \tparam MATA
-   * \tparam MATB
-   */
-  template <typename MATA, typename MATB>
-  requires(std::convertible_to<MATA, MatrixType>, std::convertible_to<MATB, MatrixType>)
+  template <Concepts::SparseEigenMatrix MATA, Concepts::SparseEigenMatrix MATB>
   GeneralSymEigenSolver(MATA&& A, MATB&& B, Eigen::Index nev)
       : nev_(nev),
         aOP_(std::forward<MATA>(A)),
@@ -95,11 +88,11 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, matrixType, ST>
   /**
    * \brief Returns the eigenvalues of the gerneral eigenvalue problem
    *
-   * \param angularFrequency if true, obtained eigenvalues are returned square-rooted
+   * \param angularFrequency if true, obtained eigenvalues are square-rooted
    * \return Eigen::VectorXd vector of eigenvalues
    */
-  Eigen::VectorXd eigenvalues(bool angularFrequency = false) {
-    computeIfNeeded();
+  Eigen::VectorXd eigenvalues(bool angularFrequency = false) const {
+    assertCompute();
     if (angularFrequency)
       return solver_.eigenvalues().array().sqrt().eval();
     return solver_.eigenvalues();
@@ -111,8 +104,8 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, matrixType, ST>
    * \param _nev optionally specify how many eigenvectors are requested
    * \return auto matrix with the eigevectors as columns
    */
-  auto eigenvectors(std::optional<Eigen::Index> _nev = std::nullopt) {
-    computeIfNeeded();
+  auto eigenvectors(std::optional<Eigen::Index> _nev = std::nullopt) const {
+    assertCompute();
     return solver_.eigenvectors(_nev.value_or(nev_));
   }
 
@@ -123,9 +116,9 @@ private:
   SolverType solver_;
   bool computed_{};
 
-  void computeIfNeeded() {
+  void assertCompute() const {
     if (not computed_)
-      compute();
+      DUNE_THROW(Dune::IOError, "Eigenvalues and -vectors not yet computed, please call compute() first");
   }
 };
 
@@ -133,5 +126,15 @@ template <MatrixTypeTag matrixType, typename ST>
 struct GeneralSymEigenSolver<EigenSolverTypeTag::Eigen, matrixType, ST>
 {
 };
+
+template <EigenSolverTypeTag tag, Concepts::FlatAssembler AS1, Concepts::FlatAssembler AS2>
+requires(std::same_as<typename AS1::MatrixType, typename AS2::MatrixType>)
+auto makeGeneralSymEigenSolver(const std::shared_ptr<AS1>& as1, const std::shared_ptr<AS2> as2, Eigen::Index nev) {
+  constexpr auto isSparse = Concepts::SparseEigenMatrix<typename AS1::MatrixType>;
+  using ScalarType        = typename AS1::MatrixType::Scalar;
+  using SolverType        = std::conditional_t<isSparse, GeneralSymEigenSolver<tag, MatrixTypeTag::Sparse, ScalarType>,
+                                               GeneralSymEigenSolver<tag, MatrixTypeTag::Sparse, ScalarType>>;
+  return SolverType{as1, as2, nev};
+}
 
 } // namespace Ikarus::Dynamics

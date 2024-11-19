@@ -4,6 +4,7 @@
 
 #include "tests/src/testhelpers.hh"
 
+#include <concepts>
 #include <vector>
 
 #include <dune/common/float_cmp.hh>
@@ -19,14 +20,6 @@
 #include <dune/localfefunctions/eigenDuneTransformations.hh>
 #include <dune/vtk/datacollectors/discontinuousdatacollector.hh>
 
-#include <autodiff/forward/real/eigen.hpp>
-
-#include <Spectra/MatOp/SparseCholesky.h>
-#include <Spectra/MatOp/SparseGenMatProd.h>
-#include <Spectra/SymEigsSolver.h>
-#include <Spectra/SymGEigsSolver.h>
-
-#include <ikarus/assembler/assemblermanipulatorfuser.hh>
 #include <ikarus/assembler/simpleassemblers.hh>
 #include <ikarus/finiteelements/fefactory.hh>
 #include <ikarus/finiteelements/mechanics/linearelastic.hh>
@@ -36,8 +29,7 @@
 #include <ikarus/io/vtkwriter.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/dirichletvalues.hh>
-#include <ikarus/utils/dynamics/generaleigensolver.hh>
-#include <ikarus/utils/dynamics/masslumping.hh>
+#include <ikarus/utils/dynamics/dynamics.hh>
 #include <ikarus/utils/init.hh>
 
 using Dune::TestSuite;
@@ -87,28 +79,28 @@ static auto dynamicsTest() {
   auto assM = Ikarus::makeSparseFlatAssembler(fes, dirichletValues);
   auto assK = Ikarus::makeSparseFlatAssembler(fes, dirichletValues);
 
-
   assM->bind(req, Ikarus::AffordanceCollections::dynamics, Ikarus::DBCOption::Reduced);
   assK->bind(req, Ikarus::AffordanceCollections::elastoStatics, Ikarus::DBCOption::Reduced);
 
-  auto& K = assK->matrix();
-  auto& M = assM->matrix();
+  auto assMLumped = Ikarus::Dynamics::makeLumpedFlatAssembler(assM);
 
-  auto assMLumped = Ikarus::Dynamics::sparseLumpedAssembler(assM);
+  static_assert(Ikarus::Concepts::SparseEigenMatrix<decltype(assM)::element_type::MatrixType>);
 
-  // auto Mlumped = assMLumped->matrix();
+  // auto& Mlumped = assMLumped->matrix();
+  // auto Mlumped2 = assMLumped->matrix();
+  // auto Mlumped2 = assMLumped->matrix(Ikarus::DBCOption::Reduced);
 
   // std::cout << "Size of M: " << M.rows() << std::endl;
   // std::cout << "Size of Klumped: " << Mlumped.rows() << std::endl;
   // std::cout << "Size of nnz: " << Mlumped.nonZeros() << std::endl;
 
   int nev = 10; // number of requested eigenvalues
+  using Ikarus::Dynamics::EigenSolverTypeTag;
 
-  auto solver = Ikarus::Dynamics::GeneralSymEigenSolver<Ikarus::Dynamics::EigenSolverTypeTag::Spectra,
-                                                        Ikarus::Dynamics::MatrixTypeTag::Sparse, double>{K, M, nev};
-
+  auto solver  = Ikarus::Dynamics::makeGeneralSymEigenSolver<EigenSolverTypeTag::Spectra>(assK, assM, nev);
   bool success = solver.compute();
   std::cout << "Success: " << std::boolalpha << success << std::endl;
+
   auto eigenvectors = solver.eigenvectors();
   auto eigenvalues  = solver.eigenvalues(true);
 
@@ -121,9 +113,8 @@ static auto dynamicsTest() {
 
   std::cout << "Angular frequencies found (n=" << nev << "):\n" << eigenvalues << std::endl;
 
-  auto solver2 = Ikarus::Dynamics::GeneralSymEigenSolver<Ikarus::Dynamics::EigenSolverTypeTag::Spectra,
-                                                         Ikarus::Dynamics::MatrixTypeTag::Sparse, double>{
-      assK, assMLumped, nev};
+  auto solver2 = Ikarus::Dynamics::makeGeneralSymEigenSolver<EigenSolverTypeTag::Spectra>(assK, assMLumped, nev);
+  solver2.compute();
 
   auto eigenvalues2 = solver2.eigenvalues(true);
   std::cout << "Angular frequencies found (n=" << nev << "):\n" << eigenvalues2 << std::endl;

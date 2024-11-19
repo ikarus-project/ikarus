@@ -357,10 +357,18 @@ namespace Concepts {
   /**
    * \concept EigenMatrix
    * \brief Concept defining the requirements for Eigen matrices. This also includes Eigen vectors
-   * \tparam M Type representing an Eigen vector.
+   * \tparam M Type representing an Eigen matrix.
    */
   template <typename M>
   concept EigenMatrix = traits::isSpecializationTypeAndNonTypes<Eigen::Matrix, M>::value;
+
+  /**
+   * \concept SparseEigenMatrix
+   * \brief Concept defining the requirements for sparse Eigen matrices.
+   * \tparam M Type representing an Eigen matrix.
+   */
+  template <typename M>
+  concept SparseEigenMatrix = traits::isSpecializationTypeNonTypeAndType<Eigen::SparseMatrix, M>::value;
 
 #define MAKE_EIGEN_FIXED_VECTOR_CONCEPT(Size) \
   template <typename V>                       \
