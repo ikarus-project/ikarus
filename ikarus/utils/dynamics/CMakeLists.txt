@@ -3,7 +3,7 @@
 
 # install headers
 install(
-  FILES generaleigensolver
+  FILES generaleigensolver.hh dynamics.hh
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/utils/dynamics
 )
 

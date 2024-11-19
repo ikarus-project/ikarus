@@ -153,10 +153,10 @@ typename SparseFlatAssembler<B, FEC>::MatrixType& SparseFlatAssembler<B, FEC>::g
 template <typename B, typename FEC>
 typename SparseFlatAssembler<B, FEC>::MatrixType& SparseFlatAssembler<B, FEC>::getReducedMatrixImpl(
     const FERequirement& feRequirements, MatrixAffordance affordance) {
-  if (not sparsePreProcessorReduced_) {
+  // if (not sparsePreProcessorReduced_) {
     preProcessSparseMatrixReduced(spMatReduced_);
     sparsePreProcessorReduced_ = true;
-  }
+  // }
   spMatReduced_.coeffs().setZero();
   Eigen::MatrixXd A;
   std::vector<GlobalIndex> dofs;
