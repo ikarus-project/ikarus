@@ -110,6 +110,10 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, matrixType, ST>
     return solver_.eigenvectors(_nev.value_or(nev_));
   }
 
+  Eigen::Index nev() const {
+    return nev_;
+  }
+
 private:
   Eigen::Index nev_;
   ProductType aOP_;

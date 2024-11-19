@@ -71,8 +71,6 @@ static auto dynamicsTest() {
   m.setZero();
   fe.calculateMatrixImpl<double>(req, Ikarus::MatrixAffordance::mass, m);
 
-  // std::cout << "m\n" << m << std::endl;
-
   auto dirichletValues = Ikarus::DirichletValues(basis.flat());
   dirichletValues.fixBoundaryDOFs([](auto& dirichFlags, auto&& indexGlobal) { dirichFlags[indexGlobal] = true; });
 
@@ -94,13 +92,7 @@ static auto dynamicsTest() {
   auto eigenvectors = solver.eigenvectors();
   auto eigenvalues  = solver.eigenvalues(true);
 
-  auto writer = Ikarus::Vtk::Writer(assM);
-  for (auto i : Dune::range(nev)) {
-    auto evG = assK->createFullVector(eigenvectors.col(i));
-    writer.addInterpolation(std::move(evG), basis.flat(), "EF " + std::to_string(i));
-  }
-  writer.write("eigenformen");
-
+  
   std::cout << "Angular frequencies found (n=" << nev << "):\n" << eigenvalues << std::endl;
 
   auto solver2 = Ikarus::Dynamics::makeGeneralSymEigenSolver<EigenSolverTypeTag::Spectra>(assK, assMLumped, nev);
@@ -108,6 +100,8 @@ static auto dynamicsTest() {
 
   auto eigenvalues2 = solver2.eigenvalues(true);
   std::cout << "Angular frequencies found (n=" << nev << "):\n" << eigenvalues2 << std::endl;
+
+  Ikarus::Dynamics::writeEigenformsToVTK(solver2, assM, "eigenforms");
 
   // t.check(isApproxSame(eigenvectors2, eigenvectors, 1e-10));
 
