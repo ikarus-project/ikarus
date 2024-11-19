@@ -51,7 +51,8 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, matrixType, ST>
 
   using SolverType = Spectra::SymGEigsSolver<ProductType, CholeskyType, Spectra::GEigsMode::Cholesky>;
 
-  template <Concepts::SparseEigenMatrix MATA, Concepts::SparseEigenMatrix MATB>
+  template <typename  MATA, typename MATB>
+  requires (Concepts::SparseEigenMatrix<std::remove_cvref_t<MATA>>)
   GeneralSymEigenSolver(MATA&& A, MATB&& B, Eigen::Index nev)
       : nev_(nev),
         aOP_(std::forward<MATA>(A)),

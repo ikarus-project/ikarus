@@ -143,6 +143,7 @@ struct MatrixManipulator
   using MatrixType = typename Assembler::MatrixType;
   using Interface  = MatrixAssembler<WrappedAssembler, typename Assembler::FEContainer,
                                      typename Assembler::DirichletValuesType, typename Assembler::MatrixType>;
+
   friend Interface;
   using FunctionType =
       std::function<void(const Assembler&, const FERequirement&, MatrixAffordance, DBCOption, MatrixType&)>;
@@ -162,21 +163,36 @@ struct MatrixManipulator
 
 protected:
   MatrixType& getRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance) {
-    MatrixType& mat = underlying().base_getRawMatrixImpl(feRequirements, affordance);
+    MatrixType& mat = [&]() -> MatrixType& {
+      if constexpr (requires { underlying().base_getRawMatrixImpl(feRequirements, affordance, true); })
+        return underlying().base_getRawMatrixImpl(feRequirements, affordance, true);
+      else
+        return underlying().base_getRawMatrixImpl(feRequirements, affordance);
+    }();
     for (const auto& mf : mfs)
       mf(underlying().base(), feRequirements, affordance, DBCOption::Raw, mat);
     return mat;
   }
 
   MatrixType& getMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance) {
-    MatrixType& mat = underlying().base_getMatrixImpl(feRequirements, affordance);
+    MatrixType& mat = [&]() -> MatrixType& {
+      if constexpr (requires { underlying().base_getMatrixImpl(feRequirements, affordance, true); })
+        return underlying().base_getMatrixImpl(feRequirements, affordance, true);
+      else
+        return underlying().base_getMatrixImpl(feRequirements, affordance);
+    }();
     for (const auto& mf : mfs)
       mf(underlying().base(), feRequirements, affordance, DBCOption::Full, mat);
     return mat;
   }
 
   MatrixType& getReducedMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance) {
-    MatrixType& mat = underlying().base_getReducedMatrixImpl(feRequirements, affordance);
+    MatrixType& mat = [&]() -> MatrixType& {
+      if constexpr (requires { underlying().base_getReducedMatrixImpl(feRequirements, affordance, true); })
+        return underlying().base_getReducedMatrixImpl(feRequirements, affordance, true);
+      else
+        return underlying().base_getReducedMatrixImpl(feRequirements, affordance);
+    }();
     for (const auto& mf : mfs)
       mf(underlying().base(), feRequirements, affordance, DBCOption::Reduced, mat);
     return mat;
