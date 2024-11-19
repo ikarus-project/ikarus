@@ -61,7 +61,7 @@ auto makeLumpedFlatAssembler(const std::shared_ptr<AS>& assembler) {
   return lumpedAssembler;
 }
 
-template <typename Eigensolver, Concepts::FlatAssembler Assembler>
+template <Concepts::EigenValueSolver Eigensolver, Concepts::FlatAssembler Assembler>
 void writeEigenformsToVTK(const Eigensolver& solver, std::shared_ptr<Assembler> assembler, const std::string& filename,
                           std::optional<Eigen::Index> nev_ = std::nullopt) {
   auto nev          = nev_.value_or(solver.nev());
