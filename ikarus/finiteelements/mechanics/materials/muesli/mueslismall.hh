@@ -24,6 +24,7 @@ namespace Ikarus::Materials::Muesli {
  * derived from muesli::elasticIsotropicMaterial. It models the Ikarus material interface.
  *
  * \tparam SM muesli material model implementation
+ * \remark Please cite \cite portillo_muesli_2017 if you use any materials from the muesli library
  */
 template <typename SM = muesli::elasticIsotropicMaterial>
 requires(std::is_base_of_v<muesli::smallStrainMaterial, SM>)
@@ -136,7 +137,7 @@ struct SmallStrain : public Material<SmallStrain<SM>>
 
   /**
    * \brief Returns the underlying muesli material implementation
-   * \return auto& reference to the musli material
+   * \return auto& reference to the muesli material
    */
   auto& material() const { return material_; }
 

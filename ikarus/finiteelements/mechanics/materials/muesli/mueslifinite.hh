@@ -19,6 +19,13 @@
 
 namespace Ikarus::Materials::Muesli {
 
+/**
+ * \brief Wrapper class for finite strain materials from the muesli library. It can be templated with all materials
+ * derived from muesli::finiteStrainMaterial. It models the Ikarus material interface.
+ *
+ * \tparam FM muesli material model implementation
+ * \remark Please cite \cite portillo_muesli_2017 if you use any materials from the muesli library
+ */
 template <typename FM>
 requires(std::is_base_of_v<muesli::finiteStrainMaterial, FM>)
 struct FiniteStrain : public Material<FiniteStrain<FM>>
@@ -121,7 +128,7 @@ struct FiniteStrain : public Material<FiniteStrain<FM>>
 
   /**
    * \brief Returns the underlying muesli material implementation
-   * \return auto& reference to the musli material
+   * \return auto& reference to the muesli material
    */
   auto& material() const { return material_; }
 
