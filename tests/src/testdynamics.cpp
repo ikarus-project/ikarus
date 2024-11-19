@@ -41,7 +41,7 @@ static auto dynamicsTest() {
   const double Lx                         = 4.0;
   const double Ly                         = 4.0;
   Dune::FieldVector<double, 2> bbox       = {Lx, Ly};
-  std::array<int, 2> elementsPerDirection = {8, 8};
+  std::array<int, 2> elementsPerDirection = {4, 4};
   auto grid                               = std::make_shared<Grid>(bbox, elementsPerDirection);
 
   auto gridView = grid->leafGridView();
@@ -77,6 +77,9 @@ static auto dynamicsTest() {
   auto assM = Ikarus::makeSparseFlatAssembler(fes, dirichletValues);
   auto assK = Ikarus::makeSparseFlatAssembler(fes, dirichletValues);
 
+  auto assMD = Ikarus::makeDenseFlatAssembler(fes, dirichletValues);
+  auto assKD = Ikarus::makeDenseFlatAssembler(fes, dirichletValues);
+
   assM->bind(req, Ikarus::AffordanceCollections::dynamics, Ikarus::DBCOption::Reduced);
   assK->bind(req, Ikarus::AffordanceCollections::elastoStatics, Ikarus::DBCOption::Reduced);
 
@@ -90,7 +93,7 @@ static auto dynamicsTest() {
   std::cout << "Success: " << std::boolalpha << success << std::endl;
 
   auto eigenvectors = solver.eigenvectors();
-  auto eigenvalues  = solver.eigenvalues(true);
+  auto eigenvalues  = solver.eigenvalues();
 
   
   std::cout << "Angular frequencies found (n=" << nev << "):\n" << eigenvalues << std::endl;
@@ -98,12 +101,16 @@ static auto dynamicsTest() {
   auto solver2 = Ikarus::Dynamics::makeGeneralSymEigenSolver<EigenSolverTypeTag::Spectra>(assK, assMLumped, nev);
   solver2.compute();
 
-  auto eigenvalues2 = solver2.eigenvalues(true);
+  auto eigenvalues2 = solver2.eigenvalues();
   std::cout << "Angular frequencies found (n=" << nev << "):\n" << eigenvalues2 << std::endl;
 
   Ikarus::Dynamics::writeEigenformsToVTK(solver2, assM, "eigenforms");
 
-  // t.check(isApproxSame(eigenvectors2, eigenvectors, 1e-10));
+  // auto solver3 = Ikarus::Dynamics::makeGeneralSymEigenSolver<EigenSolverTypeTag::Eigen>(assKD, assMD);
+  // solver3.compute();
+  // auto eigenvalues3 = solver3.eigenvalues(true);
+
+  // t.check(isApproxSame(eigenvalues2, eigenvalues3, 1e-10));
 
   return t;
 }
