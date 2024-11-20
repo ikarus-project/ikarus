@@ -61,6 +61,21 @@ SPDX-License-Identifier: LGPL-3.0-or-later
     - the signature of the `operator()` of the result evaluator changed to also include the finite element and the evaluation position.
     - `UserFunction` are now passed directly to the `ResultFunction` and not as a template argument.
     - `Vtk::Writer` now also accepts a `UserFunction` in the `addResult()` function.
+- Add hyperelastic and AutoDiff-based material models ([#333](https://github.com/ikarus-project/ikarus/pull/333))
+    - The `Hyperelastic` class takes in its deviatoric and volumetric parts separately as arguments.
+        - This class serves as a general interface for hyperelastic material models.
+        - It also performs the necessary transformations from principal to Cartesian coordinate systems,
+          thereby enabling the deviatoric and volumetric parts to only implement the energy and its derivatives.
+    - The `Deviatoric` and `Volumetric` classes in turn accept a deviatoric and a volumetric function, respectively.
+        - They serve as an interface that processes the derivatives implemented by the respective functions and
+          forwards it to the `Hyperelastic` class.
+        - The different deviatoric functions implemented are Arruda-Boyce, Blatz-Ko, Gent, Invariant-based,
+          and Ogden models.
+        - The invariant-based model is a general model and can be used to create other material models,
+          for example, Mooney-Rivlin and Yeoh models.
+        - Eleven different volumetric functions are included.
+    - An AutoDiff-based material model is included mainly to test these hyperelastic material models.
+    - All materials are now in a separate namespace, `Ikarus::Materials`.
 
 ## Release v0.4 (Ganymede)
 
