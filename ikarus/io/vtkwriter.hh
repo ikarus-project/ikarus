@@ -157,18 +157,16 @@ public:
    *
    * \tparam Container Type of the container used by the gridfunction. This can be deduced for power basis and
    * scalarbasis, otherwise define a Dune::FieldVector<ctype, dim> yourself \n
-   * This only works properly with scalar, power and scalar subspacebasis at the moment. If you need more granular
+   * \remark This only works properly with scalar, power and scalar subspacebasis at the moment. If you need more granular
    * control over your output format, create the gridFunction yourself and add it with `writer.addPointData(gridFuntion,
-   * fieldInfo)` manually
+   * fieldInfo)` manually.
    \param vals Coefficient vector to be interpolated.
    \param basis The underlying basis, can be a subspacebasis
    \param name Name of the field.
    \param dataTag The data tag.
    */
   template <typename Basis, typename R>
-  void addInterpolation(R&& vals, const Basis& basis, const std::string& name, DataTag dataTag = DataTag::asPointData)
-  requires(std::is_rvalue_reference_v<decltype(vals)>)
-  {
+  void addInterpolation(R&& vals, const Basis& basis, const std::string& name, DataTag dataTag = DataTag::asPointData) {
     using Container = Impl::ResultContainer_t<Basis>;
 
     auto gridFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<Container>(basis, std::forward<R>(vals));
