@@ -88,6 +88,9 @@ static auto dynamicsTest() {
 
   auto assMLumped = Ikarus::Dynamics::makeLumpedFlatAssembler(assM);
 
+  auto mat1 = assMLumped->matrix();
+  auto mat2 = assMLumped->matrix();
+
   int nev = 10; // number of requested eigenvalues
   using Ikarus::Dynamics::EigenSolverTypeTag;
 
@@ -98,7 +101,6 @@ static auto dynamicsTest() {
   auto eigenvectors = solver.eigenvectors();
   auto eigenvalues  = solver.eigenvalues();
 
-  
   std::cout << "Angular frequencies found (n=" << nev << "):\n" << eigenvalues.array().sqrt() << std::endl;
 
   auto solver2 = Ikarus::Dynamics::PartialSparseGeneralSymEigenSolver(assK, assMLumped, nev);

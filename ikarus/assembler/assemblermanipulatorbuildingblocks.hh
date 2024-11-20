@@ -164,7 +164,7 @@ struct MatrixManipulator
 protected:
   MatrixType& getRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance) {
     MatrixType& mat = [&]() -> MatrixType& {
-      if constexpr (requires { underlying().base_getRawMatrixImpl(feRequirements, affordance, true); })
+      if constexpr (Assembler::isSparse)
         return underlying().base_getRawMatrixImpl(feRequirements, affordance, true);
       else
         return underlying().base_getRawMatrixImpl(feRequirements, affordance);
@@ -176,7 +176,7 @@ protected:
 
   MatrixType& getMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance) {
     MatrixType& mat = [&]() -> MatrixType& {
-      if constexpr (requires { underlying().base_getMatrixImpl(feRequirements, affordance, true); })
+      if constexpr (Assembler::isSparse)
         return underlying().base_getMatrixImpl(feRequirements, affordance, true);
       else
         return underlying().base_getMatrixImpl(feRequirements, affordance);
@@ -188,7 +188,7 @@ protected:
 
   MatrixType& getReducedMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance) {
     MatrixType& mat = [&]() -> MatrixType& {
-      if constexpr (requires { underlying().base_getReducedMatrixImpl(feRequirements, affordance, true); })
+      if constexpr (Assembler::isSparse)
         return underlying().base_getReducedMatrixImpl(feRequirements, affordance, true);
       else
         return underlying().base_getReducedMatrixImpl(feRequirements, affordance);
