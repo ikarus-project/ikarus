@@ -159,6 +159,9 @@ protected:
   void calculateMatrixImpl(
       const Requirement& par, const MatrixAffordance& affordance, typename Traits::template MatrixType<> K,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
+    if (affordance == MatrixAffordance::mass) {
+      return;
+    }
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     easApplicabilityCheck();

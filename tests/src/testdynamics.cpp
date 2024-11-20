@@ -41,7 +41,7 @@ static auto dynamicsTest() {
   const double Lx                         = 4.0;
   const double Ly                         = 4.0;
   Dune::FieldVector<double, 2> bbox       = {Lx, Ly};
-  std::array<int, 2> elementsPerDirection = {6, 6};
+  std::array<int, 2> elementsPerDirection = {4, 4};
   auto grid                               = std::make_shared<Grid>(bbox, elementsPerDirection);
 
   auto gridView = grid->leafGridView();
@@ -91,7 +91,7 @@ static auto dynamicsTest() {
   auto mat1 = assMLumped->matrix();
   auto mat2 = assMLumped->matrix();
 
-  int nev = 10; // number of requested eigenvalues
+  int nev = 50; // number of requested eigenvalues
   using Ikarus::Dynamics::EigenSolverTypeTag;
 
   auto solver  = Ikarus::Dynamics::PartialSparseGeneralSymEigenSolver(assK, assM, nev);
@@ -110,6 +110,8 @@ static auto dynamicsTest() {
   std::cout << "Angular frequencies found (n=" << nev << "):\n" << eigenvalues2.array().sqrt() << std::endl;
 
   Ikarus::Dynamics::writeEigenformsToVTK(solver2, assM, "eigenforms");
+  Ikarus::Dynamics::writeEigenformsToPVD(solver, assM, "eigenforms_full");
+  // Ikarus::Dynamics::writeEigenformsToPVD(solver2, assM, "eigenforms_lumped");
 
   auto solver3 = Ikarus::Dynamics::makeGeneralSymEigenSolver<EigenSolverTypeTag::Eigen>(assKD, assMD);
   solver3.compute();
@@ -127,7 +129,8 @@ static auto dynamicsTest() {
   t.check(isApproxSame(eigenvalues5, eigenvalues4, 1e-10));
   t.check(isApproxSame(eigenvalues4.head(nev).eval(), eigenvalues, 1e-10));
 
-  Ikarus::Dynamics::writeEigenformsToVTK(solver4, assM, "eigenforms_all");
+  Ikarus::Dynamics::writeEigenformsToVTK(solver4, assM, "eigenforms_vtk");
+  Ikarus::Dynamics::writeEigenformsToPVD(solver4, assM, "eigenforms_pvd");
 
   static_assert(Ikarus::Concepts::EigenValueSolver<decltype(solver)>);
   static_assert(Ikarus::Concepts::EigenValueSolver<decltype(solver2)>);
@@ -138,9 +141,13 @@ static auto dynamicsTest() {
   return t;
 }
 
+
+
+
 int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t;
+
 
   t.subTest(dynamicsTest());
   return t.exit();
