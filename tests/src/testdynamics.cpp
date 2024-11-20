@@ -41,7 +41,7 @@ static auto dynamicsTest() {
   const double Lx                         = 4.0;
   const double Ly                         = 4.0;
   Dune::FieldVector<double, 2> bbox       = {Lx, Ly};
-  std::array<int, 2> elementsPerDirection = {4, 4};
+  std::array<int, 2> elementsPerDirection = {6, 6};
   auto grid                               = std::make_shared<Grid>(bbox, elementsPerDirection);
 
   auto gridView = grid->leafGridView();
@@ -83,12 +83,15 @@ static auto dynamicsTest() {
   assM->bind(req, Ikarus::AffordanceCollections::dynamics, Ikarus::DBCOption::Reduced);
   assK->bind(req, Ikarus::AffordanceCollections::elastoStatics, Ikarus::DBCOption::Reduced);
 
+  assMD->bind(req, Ikarus::AffordanceCollections::dynamics, Ikarus::DBCOption::Reduced);
+  assKD->bind(req, Ikarus::AffordanceCollections::elastoStatics, Ikarus::DBCOption::Reduced);
+
   auto assMLumped = Ikarus::Dynamics::makeLumpedFlatAssembler(assM);
 
   int nev = 10; // number of requested eigenvalues
   using Ikarus::Dynamics::EigenSolverTypeTag;
 
-  auto solver  = Ikarus::Dynamics::makeGeneralSymEigenSolver<EigenSolverTypeTag::Spectra>(assK, assM, nev);
+  auto solver  = Ikarus::Dynamics::PartialSparseGeneralSymEigenSolver(assK, assM, nev);
   bool success = solver.compute();
   std::cout << "Success: " << std::boolalpha << success << std::endl;
 
@@ -96,21 +99,39 @@ static auto dynamicsTest() {
   auto eigenvalues  = solver.eigenvalues();
 
   
-  std::cout << "Angular frequencies found (n=" << nev << "):\n" << eigenvalues << std::endl;
+  std::cout << "Angular frequencies found (n=" << nev << "):\n" << eigenvalues.array().sqrt() << std::endl;
 
-  auto solver2 = Ikarus::Dynamics::makeGeneralSymEigenSolver<EigenSolverTypeTag::Spectra>(assK, assMLumped, nev);
+  auto solver2 = Ikarus::Dynamics::PartialSparseGeneralSymEigenSolver(assK, assMLumped, nev);
   solver2.compute();
 
   auto eigenvalues2 = solver2.eigenvalues();
-  std::cout << "Angular frequencies found (n=" << nev << "):\n" << eigenvalues2 << std::endl;
+  std::cout << "Angular frequencies found (n=" << nev << "):\n" << eigenvalues2.array().sqrt() << std::endl;
 
   Ikarus::Dynamics::writeEigenformsToVTK(solver2, assM, "eigenforms");
 
-  // auto solver3 = Ikarus::Dynamics::makeGeneralSymEigenSolver<EigenSolverTypeTag::Eigen>(assKD, assMD);
-  // solver3.compute();
-  // auto eigenvalues3 = solver3.eigenvalues(true);
+  auto solver3 = Ikarus::Dynamics::makeGeneralSymEigenSolver<EigenSolverTypeTag::Eigen>(assKD, assMD);
+  solver3.compute();
+  auto eigenvalues3 = solver3.eigenvalues();
 
-  // t.check(isApproxSame(eigenvalues2, eigenvalues3, 1e-10));
+  auto solver4 = Ikarus::Dynamics::makeGeneralSymEigenSolver<EigenSolverTypeTag::Spectra>(assK, assM);
+  solver4.compute();
+  auto eigenvalues4 = solver4.eigenvalues();
+
+  auto solver5= Ikarus::Dynamics::makeGeneralSymEigenSolver<EigenSolverTypeTag::Spectra>(assKD, assMD);
+  solver5.compute();
+  auto eigenvalues5 = solver5.eigenvalues();
+
+  t.check(isApproxSame(eigenvalues3, eigenvalues4, 1e-10));
+  t.check(isApproxSame(eigenvalues5, eigenvalues4, 1e-10));
+  t.check(isApproxSame(eigenvalues4.head(nev).eval(), eigenvalues, 1e-10));
+
+  Ikarus::Dynamics::writeEigenformsToVTK(solver4, assM, "eigenforms_all");
+
+  static_assert(Ikarus::Concepts::EigenValueSolver<decltype(solver)>);
+  static_assert(Ikarus::Concepts::EigenValueSolver<decltype(solver2)>);
+  static_assert(Ikarus::Concepts::EigenValueSolver<decltype(solver3)>);
+  static_assert(Ikarus::Concepts::EigenValueSolver<decltype(solver4)>);
+  static_assert(Ikarus::Concepts::EigenValueSolver<decltype(solver5)>);
 
   return t;
 }

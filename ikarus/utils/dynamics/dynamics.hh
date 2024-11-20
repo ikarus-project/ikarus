@@ -73,7 +73,7 @@ void writeEigenformsToVTK(const Eigensolver& solver, std::shared_ptr<Assembler> 
     auto evG = assembler->createFullVector(eigenvectors.col(i));
     writer.addInterpolation(std::move(evG), basis, "EF " + std::to_string(i));
   }
-  writer.write("eigenformen");
+  writer.write(filename);
 }
 
 } // namespace Ikarus::Dynamics
