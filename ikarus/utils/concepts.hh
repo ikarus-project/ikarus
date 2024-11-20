@@ -615,5 +615,20 @@ namespace Concepts {
   template <typename T>
   concept AutodiffScalar = Impl::is_dual<T>::value;
 
+  /**
+   * \brief Concept representing an eigenvalue solver interface
+   *
+   * \concept EigenValueSolver
+   * A type ES satisfies EigenValueSolver if it provides the neccesary member functions and type
+   */
+  template <typename ES>
+  concept EigenValueSolver = requires(ES es) {
+    typename ES::MatrixType;
+    typename ES::ScalarType;
+    { es.compute() } -> std::same_as<bool>;
+    { es.eigenvalues() } -> std::convertible_to<Eigen::VectorX<typename ES::ScalarType>>;
+    { es.eigenvectors() } -> std::convertible_to<Eigen::MatrixX<typename ES::ScalarType>>;
+  };
+
 } // namespace Concepts
 } // namespace Ikarus

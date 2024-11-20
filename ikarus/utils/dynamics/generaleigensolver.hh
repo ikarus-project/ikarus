@@ -22,15 +22,6 @@
 #include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/makeenum.hh>
 
-namespace Ikarus::Concepts {
-template <typename ES>
-concept EigenValueSolver = requires(ES es) {
-  typename ES::MatrixType;
-  { es.compute() } -> std::same_as<bool>;
-  { es.eigenvalues() };
-  { es.eigenvectors() };
-};
-} // namespace Ikarus::Concepts
 
 namespace Ikarus::Dynamics {
 
@@ -49,7 +40,7 @@ struct GeneralSymEigenSolver
  * \ingroup Dynamics
  */
 template <MatrixTypeTag matrixType, typename ST>
-struct GeneralFullSpectrumSymEigenSolver
+struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, matrixType, ST>
 {
   using ScalarType              = ST;
   static constexpr bool isDense = matrixType == MatrixTypeTag::Dense;
@@ -63,7 +54,8 @@ struct GeneralFullSpectrumSymEigenSolver
   using SolverType = Spectra::SymGEigsSolver<ProductType, CholeskyType, Spectra::GEigsMode::Cholesky>;
 
   template <typename MATA, typename MATB>
-  GeneralFullSpectrumSymEigenSolver(MATA&& A, MATB&& B)
+  requires(std::convertible_to<MATA, MatrixType> and std::convertible_to<MATB, MatrixType>)
+  GeneralSymEigenSolver(MATA&& A, MATB&& B)
       : nev_(A.rows()),
         nevsPartition_(static_cast<Eigen::Index>(std::ceil(nev_ / 2)),
                        static_cast<Eigen::Index>(nev_ - std::ceil(nev_ / 2))),
@@ -78,9 +70,8 @@ struct GeneralFullSpectrumSymEigenSolver
   }
 
   template <Concepts::FlatAssembler AssemblerA, Concepts::FlatAssembler AssemblerB>
-  GeneralFullSpectrumSymEigenSolver(const std::shared_ptr<AssemblerA> assemblerA,
-                                    const std::shared_ptr<AssemblerB>& assemblerB, Eigen::Index nev)
-      : GeneralFullSpectrumSymEigenSolver(assemblerA->matrix(), assemblerB->matrix(), nev) {
+  GeneralSymEigenSolver(const std::shared_ptr<AssemblerA>& assemblerA, const std::shared_ptr<AssemblerB>& assemblerB)
+      : GeneralSymEigenSolver(assemblerA->matrix(), assemblerB->matrix()) {
     if (not(assemblerA->dBCOption() == DBCOption::Reduced && assemblerB->dBCOption() == DBCOption::Reduced))
       DUNE_THROW(Dune::IOError, "GeneralSymEigenSolver: The passed assembler should both have DBCOption::Reduced");
   }
@@ -119,8 +110,6 @@ struct GeneralFullSpectrumSymEigenSolver
    */
   auto& eigenvalues() const {
     assertCompute();
-    // if (angularFrequency)
-    //   return solver_.eigenvalues().array().sqrt().eval();
     return eigenvalues_;
   }
 
@@ -156,101 +145,11 @@ private:
   }
 };
 
-template <MatrixTypeTag matrixType, typename ST>
-struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, matrixType, ST>
+template <typename ST>
+struct GeneralSymEigenSolver<EigenSolverTypeTag::Eigen, MatrixTypeTag::Dense, ST>
 {
-  using ScalarType              = ST;
-  static constexpr bool isDense = matrixType == MatrixTypeTag::Dense;
-
-  using MatrixType = std::conditional_t<isDense, Eigen::MatrixX<ScalarType>, Eigen::SparseMatrix<ScalarType>>;
-  using ProductType =
-      std::conditional_t<isDense, Spectra::DenseSymMatProd<ScalarType>, Spectra::SparseSymMatProd<ScalarType>>;
-  using CholeskyType =
-      std::conditional_t<isDense, Spectra::DenseCholesky<ScalarType>, Spectra::SparseCholesky<ScalarType>>;
-
-  using SolverType = Spectra::SymGEigsSolver<ProductType, CholeskyType, Spectra::GEigsMode::Cholesky>;
-
-  template <typename MATA, typename MATB>
-  requires(Concepts::SparseEigenMatrix<std::remove_cvref_t<MATA>>)
-  GeneralSymEigenSolver(MATA&& A, MATB&& B, Eigen::Index nev)
-      : nev_(nev),
-        aOP_(std::forward<MATA>(A)),
-        bOP_(std::forward<MATB>(B)),
-        solver_(aOP_, bOP_, nev, 2 * nev <= A.cols() ? 2 * nev : A.cols()) {
-    if (A.cols() != B.cols())
-      DUNE_THROW(Dune::IOError, "GeneralSymEigenSolver: The passed matrices should have the same size");
-  }
-
-  template <Concepts::FlatAssembler AssemblerA, Concepts::FlatAssembler AssemblerB>
-  GeneralSymEigenSolver(const std::shared_ptr<AssemblerA> assemblerA, const std::shared_ptr<AssemblerB>& assemblerB,
-                        Eigen::Index nev)
-      : GeneralSymEigenSolver(assemblerA->matrix(), assemblerB->matrix(), nev) {
-    if (not(assemblerA->dBCOption() == DBCOption::Reduced && assemblerB->dBCOption() == DBCOption::Reduced))
-      DUNE_THROW(Dune::IOError, "GeneralSymEigenSolver: The passed assembler should both have DBCOption::Reduced");
-  }
-
-  /**
-   * \brief Starts the computation of the eigenvalue solver
-   *
-   * \param tolerance given tolerance for iterative eigenvalue solving (default: 1e-10)
-   * \param maxit givenn maximum iterations for eigenvalue solving (default 1000)
-   * \return true solving was successfull
-   * \return false solving was not successfull
-   */
-  bool compute(ScalarType tolerance = 1e-10, Eigen::Index maxit = 1000) {
-    solver_.init();
-    solver_.compute(Spectra::SortRule::SmallestAlge, 1000, 1e-10, Spectra::SortRule::SmallestAlge);
-
-    computed_ = solver_.info() == Spectra::CompInfo::Successful;
-    return computed_;
-  }
-
-  /**
-   * \brief Returns the eigenvalues of the gerneral eigenvalue problem
-   *
-   * \param angularFrequency if true, obtained eigenvalues are square-rooted
-   * \return Eigen::VectorXd vector of eigenvalues
-   */
-  Eigen::VectorXd eigenvalues(bool angularFrequency = false) const {
-    assertCompute();
-    if (angularFrequency)
-      return solver_.eigenvalues().array().sqrt().eval();
-    return solver_.eigenvalues();
-  }
-
-  /**
-   * \brief Returns the eigenvectors of the gerneral eigenvalue problem
-   *
-   * \param _nev optionally specify how many eigenvectors are requested
-   * \return auto matrix with the eigevectors as columns
-   */
-  auto eigenvectors(std::optional<Eigen::Index> _nev = std::nullopt) const {
-    assertCompute();
-    return solver_.eigenvectors(_nev.value_or(nev_));
-  }
-
-  Eigen::Index nev() const { return nev_; }
-
-private:
-  Eigen::Index nev_;
-  ProductType aOP_;
-  CholeskyType bOP_;
-  SolverType solver_;
-  bool computed_{};
-
-  void assertCompute() const {
-    if (not computed_)
-      DUNE_THROW(Dune::IOError, "Eigenvalues and -vectors not yet computed, please call compute() first");
-  }
-};
-
-template <MatrixTypeTag matrixType, typename ST>
-struct GeneralSymEigenSolver<EigenSolverTypeTag::Eigen, matrixType, ST>
-{
-  using ScalarType              = ST;
-  static constexpr bool isDense = matrixType == MatrixTypeTag::Dense;
-
-  using MatrixType = std::conditional_t<isDense, Eigen::MatrixX<ScalarType>, Eigen::SparseMatrix<ScalarType>>;
+  using ScalarType = ST;
+  using MatrixType = Eigen::MatrixX<ScalarType>;
   using SolverType = Eigen::GeneralizedSelfAdjointEigenSolver<MatrixType>;
 
   template <typename MATA, typename MATB>
@@ -279,19 +178,17 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Eigen, matrixType, ST>
    */
   bool compute(int options = Eigen::ComputeEigenvectors) {
     solver_.compute(matA_, matB_, options);
+    computed_ = true;
     return true; // SelfAdjointEigenSolver will always be successfull if prerequisits are met
   }
 
   /**
    * \brief Returns the eigenvalues of the gerneral eigenvalue problem
    *
-   * \param angularFrequency if true, obtained eigenvalues are square-rooted
-   * \return Vector of eigenvalues
+   * \return Reference to the vector of eigenvalues
    */
-  auto eigenvalues(bool angularFrequency = false) const -> typename SolverType::RealVectorType {
+  auto& eigenvalues() const {
     assertCompute();
-    if (angularFrequency)
-      return solver_.eigenvalues().array().sqrt().eval();
     return solver_.eigenvalues();
   }
 
@@ -321,18 +218,6 @@ private:
 template <EigenSolverTypeTag tag, Concepts::FlatAssembler AS1, Concepts::FlatAssembler AS2>
 requires(std::same_as<typename AS1::MatrixType, typename AS2::MatrixType> &&
          not(tag == EigenSolverTypeTag::Eigen && Concepts::SparseEigenMatrix<typename AS1::MatrixType>))
-auto makeGeneralSymEigenSolver(const std::shared_ptr<AS1>& as1, const std::shared_ptr<AS2> as2, Eigen::Index nev) {
-  constexpr auto isSparse = Concepts::SparseEigenMatrix<typename AS1::MatrixType>;
-  using ScalarType        = typename AS1::MatrixType::Scalar;
-  using SolverType        = std::conditional_t<isSparse, GeneralSymEigenSolver<tag, MatrixTypeTag::Sparse, ScalarType>,
-                                               GeneralSymEigenSolver<tag, MatrixTypeTag::Dense, ScalarType>>;
-
-  return SolverType{as1, as2, nev};
-}
-
-template <EigenSolverTypeTag tag, Concepts::FlatAssembler AS1, Concepts::FlatAssembler AS2>
-requires(std::same_as<typename AS1::MatrixType, typename AS2::MatrixType> && tag == EigenSolverTypeTag::Eigen &&
-         Concepts::EigenMatrix<typename AS1::MatrixType>)
 auto makeGeneralSymEigenSolver(const std::shared_ptr<AS1>& as1, const std::shared_ptr<AS2> as2) {
   constexpr auto isSparse = Concepts::SparseEigenMatrix<typename AS1::MatrixType>;
   using ScalarType        = typename AS1::MatrixType::Scalar;
@@ -342,14 +227,103 @@ auto makeGeneralSymEigenSolver(const std::shared_ptr<AS1>& as1, const std::share
   return SolverType{as1, as2};
 }
 
+template <typename ST>
+struct PartialSparseGeneralSymEigenSolver
+{
+  using ScalarType              = ST;
+  static constexpr bool isDense = false;
+
+  using MatrixType = std::conditional_t<isDense, Eigen::MatrixX<ScalarType>, Eigen::SparseMatrix<ScalarType>>;
+  using ProductType =
+      std::conditional_t<isDense, Spectra::DenseSymMatProd<ScalarType>, Spectra::SparseSymMatProd<ScalarType>>;
+  using CholeskyType =
+      std::conditional_t<isDense, Spectra::DenseCholesky<ScalarType>, Spectra::SparseCholesky<ScalarType>>;
+
+  using SolverType = Spectra::SymGEigsSolver<ProductType, CholeskyType, Spectra::GEigsMode::Cholesky>;
+
+  template <typename MATA, typename MATB>
+  requires(Concepts::SparseEigenMatrix<std::remove_cvref_t<MATA>>)
+  PartialSparseGeneralSymEigenSolver(MATA&& A, MATB&& B, Eigen::Index nev)
+      : nev_(nev),
+        aOP_(std::forward<MATA>(A)),
+        bOP_(std::forward<MATB>(B)),
+        solver_(aOP_, bOP_, nev, 2 * nev <= A.cols() ? 2 * nev : A.cols()) {
+    if (A.cols() != B.cols())
+      DUNE_THROW(Dune::IOError, "GeneralSymEigenSolver: The passed matrices should have the same size");
+  }
+
+  template <Concepts::FlatAssembler AssemblerA, Concepts::FlatAssembler AssemblerB>
+  PartialSparseGeneralSymEigenSolver(const std::shared_ptr<AssemblerA> assemblerA,
+                                     const std::shared_ptr<AssemblerB>& assemblerB, Eigen::Index nev)
+      : PartialSparseGeneralSymEigenSolver(assemblerA->matrix(), assemblerB->matrix(), nev) {
+    if (not(assemblerA->dBCOption() == DBCOption::Reduced && assemblerB->dBCOption() == DBCOption::Reduced))
+      DUNE_THROW(Dune::IOError, "GeneralSymEigenSolver: The passed assembler should both have DBCOption::Reduced");
+  }
+
+  /**
+   * \brief Starts the computation of the eigenvalue solver
+   *
+   * \param tolerance given tolerance for iterative eigenvalue solving (default: 1e-10)
+   * \param maxit givenn maximum iterations for eigenvalue solving (default 1000)
+   * \return true solving was successfull
+   * \return false solving was not successfull
+   */
+  bool compute(ScalarType tolerance = 1e-10, Eigen::Index maxit = 1000) {
+    solver_.init();
+    solver_.compute(Spectra::SortRule::SmallestAlge, 1000, 1e-10, Spectra::SortRule::SmallestAlge);
+
+    computed_ = solver_.info() == Spectra::CompInfo::Successful;
+    return computed_;
+  }
+
+  /**
+   * \brief Returns the eigenvalues of the gerneral eigenvalue problem
+   *
+   * \return Eigen::VectorXd vector of eigenvalues
+   */
+  Eigen::VectorXd eigenvalues() const {
+    assertCompute();
+    return solver_.eigenvalues();
+  }
+
+  /**
+   * \brief Returns the eigenvectors of the gerneral eigenvalue problem
+   *
+   * \param _nev optionally specify how many eigenvectors are requested
+   * \return auto matrix with the eigevectors as columns
+   */
+  auto eigenvectors(std::optional<Eigen::Index> _nev = std::nullopt) const {
+    assertCompute();
+    return solver_.eigenvectors(_nev.value_or(nev_));
+  }
+
+  Eigen::Index nev() const { return nev_; }
+
+private:
+  Eigen::Index nev_;
+  ProductType aOP_;
+  CholeskyType bOP_;
+  SolverType solver_;
+
+  bool computed_{};
+
+  void assertCompute() const {
+    if (not computed_)
+      DUNE_THROW(Dune::IOError, "Eigenvalues and -vectors not yet computed, please call compute() first");
+  }
+};
+
 template <Concepts::FlatAssembler AS1, Concepts::FlatAssembler AS2>
-auto makeFullSpectrumGeneralSymEigenSolver(const std::shared_ptr<AS1>& as1, const std::shared_ptr<AS2> as2) {
-  constexpr auto isSparse = Concepts::SparseEigenMatrix<typename AS1::MatrixType>;
-  using ScalarType        = typename AS1::MatrixType::Scalar;
-  using SolverType = std::conditional_t<isSparse, GeneralFullSpectrumSymEigenSolver<MatrixTypeTag::Sparse, ScalarType>,
-                                        GeneralFullSpectrumSymEigenSolver<MatrixTypeTag::Dense, ScalarType>>;
+requires(Concepts::SparseEigenMatrix<typename AS1::MatrixType> && Concepts::SparseEigenMatrix<typename AS2::MatrixType>)
+auto makePartialGeneralSymEigenSolver(const std::shared_ptr<AS1>& as1, const std::shared_ptr<AS2> as2) {
+  using ScalarType = typename AS1::MatrixType::Scalar;
+  using SolverType = PartialSparseGeneralSymEigenSolver<ScalarType>;
 
   return SolverType{as1, as2};
 }
 
+template <Concepts::FlatAssembler AS1, Concepts::FlatAssembler AS2>
+requires(Concepts::SparseEigenMatrix<typename AS1::MatrixType> && Concepts::SparseEigenMatrix<typename AS2::MatrixType>)
+PartialSparseGeneralSymEigenSolver(std::shared_ptr<AS1> as1, std::shared_ptr<AS2> as2,
+                                   int nev) -> PartialSparseGeneralSymEigenSolver<typename AS1::MatrixType::Scalar>;
 } // namespace Ikarus::Dynamics
