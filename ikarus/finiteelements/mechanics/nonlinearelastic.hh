@@ -248,6 +248,10 @@ protected:
   void calculateMatrixImpl(
       const Requirement& par, const MatrixAffordance& affordance, typename Traits::template MatrixType<> K,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
+    if (affordance == MatrixAffordance::mass) {
+      calculateMassImpl<ScalarType>(par, affordance, K);
+      return;
+    }
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     const auto uFunction = displacementFunction(par, dx);
@@ -267,6 +271,19 @@ protected:
           K.template block<myDim, myDim>(i * myDim, j * myDim) += (bopI.transpose() * C * bopJ + kgIJ) * intElement;
         }
       }
+    }
+  }
+
+  template <typename ScalarType>
+  void calculateMassImpl(const Requirement& par, const MatrixAffordance& affordance,
+                         typename Traits::template MatrixType<> M) const {
+    double rho = 1.0;
+    for (const auto& [gpIndex, gp] : localBasis_.viewOverIntegrationPoints()) {
+      const auto intElement = geo_->integrationElement(gp.position()) * gp.weight();
+      auto& N               = localBasis_.evaluateFunction(gpIndex);
+      auto Mij              = (rho * N * N.transpose() * intElement).eval();
+
+      FEHelper::subspaceEntriesToElementEntries<myDim>(Mij, M, underlying().localView().tree());
     }
   }
 

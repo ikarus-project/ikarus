@@ -2,8 +2,4 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 # install headers
-install(
-  FILES dynamics.hh
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/utils/dynamics
-)
-
+install(FILES generaleigensolver.hh DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/solver/eigenvaluesolver)

@@ -51,11 +51,11 @@ auto vtkWriterTest() {
 
   DummyProblem<Grid> testCase{};
 
-  auto& gridView       = testCase.gridView();
-  auto sparseAssembler = testCase.sparseAssembler();
-  auto& req            = testCase.requirement();
-  auto& basis          = testCase.basis();
-  auto& D_Glob         = req.globalSolution();
+  auto& gridView        = testCase.gridView();
+  auto& sparseAssembler = testCase.sparseAssembler();
+  auto& req             = testCase.requirement();
+  auto& basis           = testCase.basis();
+  auto D_Glob           = req.globalSolution();
 
   // Tests
   Dune::Vtk::DiscontinuousDataCollector dc{gridView};
@@ -73,10 +73,10 @@ auto vtkWriterTest() {
   writer.addResult<Ikarus::ResultTypes::linearStress>(asPointData, Ikarus::ResultEvaluators::VonMises{});
   writer.addResultFunction(Ikarus::makeResultFunction<Ikarus::ResultTypes::linearStress>(sparseAssembler), asCellData);
 
-  writer.addInterpolation(std::move(D_Glob), basis.flat(), "displacement", asPointData);
+  writer.addInterpolation(D_Glob, basis.flat(), "displacement", asPointData);
 
   auto subspaceBasis = Dune::Functions::subspaceBasis(basis.flat(), Dune::index_constant<0>());
-  writer.addInterpolation(std::move(D_Glob), subspaceBasis, "displacement_u", asCellAndPointData);
+  writer.addInterpolation(D_Glob, subspaceBasis, "displacement_u", asCellAndPointData);
 
   writer.addPointData(
       Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis.flat(), D_Glob),

@@ -22,30 +22,22 @@
 #include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/makeenum.hh>
 
-
-namespace Ikarus::Dynamics {
+namespace Ikarus {
 
 MAKE_ENUM(EigenSolverTypeTag, Spectra, Eigen);
-MAKE_ENUM(MatrixTypeTag, Dense, Sparse);
 
-template <EigenSolverTypeTag SolverType, MatrixTypeTag matrixType, typename ScalarType = double>
+template <EigenSolverTypeTag SolverType, Concepts::DenseOrSparseEigenMatrix MT>
 struct GeneralSymEigenSolver
 {
 };
-/**
- * \brief
- *
- * \tparam matrixType
- * \tparam ST
- * \ingroup Dynamics
- */
-template <MatrixTypeTag matrixType, typename ST>
-struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, matrixType, ST>
-{
-  using ScalarType              = ST;
-  static constexpr bool isDense = matrixType == MatrixTypeTag::Dense;
 
-  using MatrixType = std::conditional_t<isDense, Eigen::MatrixX<ScalarType>, Eigen::SparseMatrix<ScalarType>>;
+template <Concepts::DenseOrSparseEigenMatrix MT>
+struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, MT>
+{
+  using ScalarType              = typename MT::Scalar;
+  static constexpr bool isDense = Concepts::EigenMatrix<MT>;
+
+  using MatrixType = MT;
   using ProductType =
       std::conditional_t<isDense, Spectra::DenseSymMatProd<ScalarType>, Spectra::SparseSymMatProd<ScalarType>>;
   using CholeskyType =
@@ -54,7 +46,7 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, matrixType, ST>
   using SolverType = Spectra::SymGEigsSolver<ProductType, CholeskyType, Spectra::GEigsMode::Cholesky>;
 
   template <typename MATA, typename MATB>
-  requires(std::convertible_to<MATA, MatrixType> and std::convertible_to<MATB, MatrixType>)
+  requires(Concepts::DenseOrSparseEigenMatrix<std::remove_cvref_t<MATA>>)
   GeneralSymEigenSolver(MATA&& A, MATB&& B)
       : nev_(A.rows()),
         nevsPartition_(static_cast<Eigen::Index>(std::ceil(nev_ / 2)),
@@ -145,14 +137,15 @@ private:
   }
 };
 
-template <typename ST>
-struct GeneralSymEigenSolver<EigenSolverTypeTag::Eigen, MatrixTypeTag::Dense, ST>
+template <Concepts::EigenMatrix MT>
+struct GeneralSymEigenSolver<EigenSolverTypeTag::Eigen, MT>
 {
-  using ScalarType = ST;
-  using MatrixType = Eigen::MatrixX<ScalarType>;
+  using ScalarType = typename MT::Scalar;
+  using MatrixType = MT;
   using SolverType = Eigen::GeneralizedSelfAdjointEigenSolver<MatrixType>;
 
   template <typename MATA, typename MATB>
+  requires(Concepts::EigenMatrix<std::remove_cvref_t<MATA>>)
   GeneralSymEigenSolver(MATA&& A, MATB&& B)
       : matA_(A),
         matB_(B),
@@ -219,21 +212,21 @@ template <EigenSolverTypeTag tag, Concepts::FlatAssembler AS1, Concepts::FlatAss
 requires(std::same_as<typename AS1::MatrixType, typename AS2::MatrixType> &&
          not(tag == EigenSolverTypeTag::Eigen && Concepts::SparseEigenMatrix<typename AS1::MatrixType>))
 auto makeGeneralSymEigenSolver(const std::shared_ptr<AS1>& as1, const std::shared_ptr<AS2> as2) {
-  constexpr auto isSparse = Concepts::SparseEigenMatrix<typename AS1::MatrixType>;
-  using ScalarType        = typename AS1::MatrixType::Scalar;
-  using SolverType        = std::conditional_t<isSparse, GeneralSymEigenSolver<tag, MatrixTypeTag::Sparse, ScalarType>,
-                                               GeneralSymEigenSolver<tag, MatrixTypeTag::Dense, ScalarType>>;
+  using MatrixType        = typename AS1::MatrixType;
+  constexpr auto isSparse = Concepts::SparseEigenMatrix<MatrixType>;
+  using SolverType =
+      std::conditional_t<isSparse, GeneralSymEigenSolver<tag, MatrixType>, GeneralSymEigenSolver<tag, MatrixType>>;
 
   return SolverType{as1, as2};
 }
 
-template <typename ST>
-struct PartialSparseGeneralSymEigenSolver
+template <Concepts::DenseOrSparseEigenMatrix MT>
+struct PartialGeneralSymEigenSolver
 {
-  using ScalarType              = ST;
-  static constexpr bool isDense = false;
+  using ScalarType              = typename MT::Scalar;
+  static constexpr bool isDense = Concepts::EigenMatrix<MT>;
 
-  using MatrixType = std::conditional_t<isDense, Eigen::MatrixX<ScalarType>, Eigen::SparseMatrix<ScalarType>>;
+  using MatrixType = MT;
   using ProductType =
       std::conditional_t<isDense, Spectra::DenseSymMatProd<ScalarType>, Spectra::SparseSymMatProd<ScalarType>>;
   using CholeskyType =
@@ -242,8 +235,8 @@ struct PartialSparseGeneralSymEigenSolver
   using SolverType = Spectra::SymGEigsSolver<ProductType, CholeskyType, Spectra::GEigsMode::Cholesky>;
 
   template <typename MATA, typename MATB>
-  requires(Concepts::SparseEigenMatrix<std::remove_cvref_t<MATA>>)
-  PartialSparseGeneralSymEigenSolver(MATA&& A, MATB&& B, Eigen::Index nev)
+  requires(Concepts::DenseOrSparseEigenMatrix<std::remove_cvref_t<MATA>>)
+  PartialGeneralSymEigenSolver(MATA&& A, MATB&& B, Eigen::Index nev)
       : nev_(nev),
         aOP_(std::forward<MATA>(A)),
         bOP_(std::forward<MATB>(B)),
@@ -253,9 +246,9 @@ struct PartialSparseGeneralSymEigenSolver
   }
 
   template <Concepts::FlatAssembler AssemblerA, Concepts::FlatAssembler AssemblerB>
-  PartialSparseGeneralSymEigenSolver(const std::shared_ptr<AssemblerA> assemblerA,
-                                     const std::shared_ptr<AssemblerB>& assemblerB, Eigen::Index nev)
-      : PartialSparseGeneralSymEigenSolver(assemblerA->matrix(), assemblerB->matrix(), nev) {
+  PartialGeneralSymEigenSolver(const std::shared_ptr<AssemblerA>& assemblerA,
+                               const std::shared_ptr<AssemblerB>& assemblerB, Eigen::Index nev)
+      : PartialGeneralSymEigenSolver(assemblerA->matrix(), assemblerB->matrix(), nev) {
     if (not(assemblerA->dBCOption() == DBCOption::Reduced && assemblerB->dBCOption() == DBCOption::Reduced))
       DUNE_THROW(Dune::IOError, "GeneralSymEigenSolver: The passed assembler should both have DBCOption::Reduced");
   }
@@ -314,16 +307,15 @@ private:
 };
 
 template <Concepts::FlatAssembler AS1, Concepts::FlatAssembler AS2>
-requires(Concepts::SparseEigenMatrix<typename AS1::MatrixType> && Concepts::SparseEigenMatrix<typename AS2::MatrixType>)
 auto makePartialGeneralSymEigenSolver(const std::shared_ptr<AS1>& as1, const std::shared_ptr<AS2> as2) {
+  using MatrixType = typename AS1::MatrixType;
   using ScalarType = typename AS1::MatrixType::Scalar;
-  using SolverType = PartialSparseGeneralSymEigenSolver<ScalarType>;
+  using SolverType = PartialGeneralSymEigenSolver<MatrixType>;
 
   return SolverType{as1, as2};
 }
 
 template <Concepts::FlatAssembler AS1, Concepts::FlatAssembler AS2>
-requires(Concepts::SparseEigenMatrix<typename AS1::MatrixType> && Concepts::SparseEigenMatrix<typename AS2::MatrixType>)
-PartialSparseGeneralSymEigenSolver(std::shared_ptr<AS1> as1, std::shared_ptr<AS2> as2,
-                                   int nev) -> PartialSparseGeneralSymEigenSolver<typename AS1::MatrixType::Scalar>;
-} // namespace Ikarus::Dynamics
+PartialGeneralSymEigenSolver(std::shared_ptr<AS1> as1, std::shared_ptr<AS2> as2,
+                             int nev) -> PartialGeneralSymEigenSolver<typename AS1::MatrixType>;
+} // namespace Ikarus

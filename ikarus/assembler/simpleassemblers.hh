@@ -125,6 +125,8 @@ public:
   using typename Base::VectorType;
   using typename MatrixAssembler<SparseFlatAssembler, FEC, DV, Eigen::SparseMatrix<double>>::MatrixType;
 
+  static constexpr bool isSparse = true;
+
 private:
   void assembleRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance, MatrixType& assemblyMat);
 
@@ -207,6 +209,8 @@ public:
   using typename Base::ScalarType;
   using typename Base::VectorType;
   using typename MatrixAssembler<DenseFlatAssembler, FEC, DV, Eigen::MatrixXd>::MatrixType;
+
+  static constexpr bool isSparse = false;
 
 private:
   void assembleRawMatrixImpl(const FERequirement& feRequirements, MatrixAffordance affordance, MatrixType& assemblyMat);
