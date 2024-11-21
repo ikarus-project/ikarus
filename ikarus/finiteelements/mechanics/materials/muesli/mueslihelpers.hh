@@ -39,22 +39,12 @@ inline MaterialProperties propertiesFromIkarusMaterialParameters(const MPT& mpt)
 }
 
 /**
- * \brief adds a tag to the muesli materialproperties that the material model should use regularized stretches (i.e.
- * deviatoric principal stretchs), applicable to NeoHooke material model
+ * \brief adds a specific tag to the muesli materialproperties, thic can be used for example to add the `regularized`
+ * tag for Neo-Hooke or the `compressible` tag for Yeoh and Arruda-Boyce
  */
-inline void addRegularizedTag(MaterialProperties& mpm) { mpm.insert({"subtype regularized", 0}); }
-
-/**
- * \brief adds a tag to the muesli materialproperties that the material model should be compressible, applicable to
- * ArrudaBoyce and Yeoh material model
- */
-inline void addCompressibleTag(MaterialProperties& mpm) { mpm.insert({"compressible", 0}); }
-
-/**
- * \brief adds a tag to the muesli materialproperties that the material model should be incompressible, applicable to
- * MooneyRivlin material model
- */
-inline void addIncompressibleTag(MaterialProperties& mpm) { mpm.insert({"incompressible", 0}); }
+inline void addTag(MaterialProperties& mpm, const std::string& tagName, double tagValue = 0) {
+  mpm.insert({tagName, tagValue});
+}
 
 /**
  * \brief Converts the entries of a Eigen::Matrix to a provided muesli::tensor (symmetric 2nd order tensor)

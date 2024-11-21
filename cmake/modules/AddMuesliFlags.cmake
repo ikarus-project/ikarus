@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 # set HAVE_MUESLI for config.h
-set(HAVE_MUESLI TARGET muesli)
+set(HAVE_MUESLI ${Muesli_FOUND})
 
 # register all muesli related flags
 if(HAVE_MUESLI)
