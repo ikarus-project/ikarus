@@ -51,8 +51,8 @@ struct FiniteStrain : public Material<FiniteStrain<FM>>
   [[nodiscard]] constexpr static std::string nameImpl() noexcept { return "FiniteStrain: " + materialName<FM>(); }
 
   /**
-   * \brief Constructor for FiniteStrain muesli materials
-   * \param mpt Muesli materialproperties
+   * \brief Constructor for finite strain muesli materials.
+   * \param mpt Muesli materialproperties.
    */
   explicit FiniteStrain(const MaterialParameters& mpt)
       : materialParameter_{mpt},
@@ -128,13 +128,13 @@ struct FiniteStrain : public Material<FiniteStrain<FM>>
   }
 
   /**
-   * \brief Returns the underlying muesli material implementation
-   * \return auto& reference to the muesli material
+   * \brief Returns the underlying muesli material implementation.
+   * \return auto& reference to the muesli material.
    */
   auto& material() const { return material_; }
 
   /**
-   * \brief asserts that the materialpoint pointer is not null
+   * \brief asserts that the materialpoint pointer is not null.
    */
   bool assertMP() const { return mp_.get() != NULL; }
 

@@ -47,11 +47,11 @@ struct SmallStrain : public Material<SmallStrain<SM>>
   static constexpr bool moduliAcceptsVoigt     = false;
   static constexpr double derivativeFactorImpl = 1;
 
-  [[nodiscard]] constexpr static std::string nameImpl() noexcept { return "Muesli_SmallStrain: " + materialName<SM>(); }
+  [[nodiscard]] constexpr static std::string nameImpl() noexcept { return "SmallStrain: " + materialName<SM>(); }
 
   /**
-   * \brief Constructor for SmallStrain muesli materials (only activated for isotropic linear elasticity).
-   * \param mpt Arbitrary Material Parameter tuple defined in physicshelper.hh
+   * \brief Constructor for small strain muesli materials (only activated for isotropic linear elasticity).
+   * \param mpt Arbitrary Material Parameter tuple defined in \file physicshelper.hh.
    */
   template <Concepts::MPTuple MPT>
   requires(std::same_as<MaterialModel, muesli::elasticIsotropicMaterial>)
@@ -61,8 +61,8 @@ struct SmallStrain : public Material<SmallStrain<SM>>
         mp_{material_.createMaterialPoint()} {}
 
   /**
-   * \brief CConstructor for SmallStrain muesli materials
-   * \param mpt Muesli materialproperties
+   * \brief Constructor for small strain muesli materials.
+   * \param mpt Muesli materialproperties.
    */
   explicit SmallStrain(const MaterialParameters& mpt)
       : materialParameter_{mpt},
@@ -75,7 +75,7 @@ struct SmallStrain : public Material<SmallStrain<SM>>
   MaterialParameters materialParametersImpl() const { return materialParameter_; }
 
   /**
-   * \brief Computes the stored energy in the Neo-Hookean material model.
+   * \brief Computes the stored energy in the Muesli small strain material model.
    * \tparam Derived The derived type of the input matrix.
    * \param E The linear strain tensor.
    * \return ScalarType The stored energy.
@@ -92,18 +92,18 @@ struct SmallStrain : public Material<SmallStrain<SM>>
   }
 
   /**
-   * \brief Computes the stresses in the Neo-Hookean material model.
+   * \brief Computes the stresses in the Muesli small strain material model.
    * \tparam voigt A boolean indicating whether to return stresses in Voigt notation.
    * \tparam Derived The derived type of the input matrix.
    * \param E The linear strain tensor.
    * \return StressMatrix The stresses.
    */
   template <bool voigt, typename Derived>
-  auto stressesImpl(const Eigen::MatrixBase<Derived>& C) const {
+  auto stressesImpl(const Eigen::MatrixBase<Derived>& E) const {
     static_assert(Concepts::EigenMatrixOrVoigtNotation3<Derived>);
     if constexpr (!voigt) {
       if constexpr (!Concepts::EigenVector<Derived>) {
-        updateState(C);
+        updateState(E);
         mp_->stress(stress_);
         return Muesli::toMatrix(stress_);
       } else
@@ -114,7 +114,7 @@ struct SmallStrain : public Material<SmallStrain<SM>>
   }
 
   /**
-   * \brief Computes the tangent moduli in the Neo-Hookean material model.
+   * \brief Computes the tangent moduli in the Muesli small strain material model.
    * \tparam voigt A boolean indicating whether to return tangent moduli in Voigt notation.
    * \tparam Derived The derived type of the input matrix.
    * \param E The linear strain tensor.
