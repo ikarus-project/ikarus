@@ -303,6 +303,14 @@ int main(int argc, char** argv) {
   auto nhRed8 = makeVanishingStrain<Impl::MatrixIndexPair{1, 1}, Impl::MatrixIndexPair{2, 2}>(nh);
   t.subTest(testMaterial(nhRed8));
 
+  t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::linear, LinearElasticity>());
+  t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::greenLagrangian, StVenantKirchhoff>());
+  t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::rightCauchyGreenTensor, NeoHooke>());
+
+  // Muesli
+  auto K  = convertLameConstants(matPar).toBulkModulus();
+  auto mu = convertLameConstants(matPar).toShearModulus();
+
   auto muesliLin = Materials::Muesli::makeLinearElasticity(matPar);
   t.subTest(testMaterial(muesliLin));
 
@@ -315,9 +323,20 @@ int main(int argc, char** argv) {
   auto muesliNeoHookeReg = Materials::Muesli::makeNeoHooke(matPar, true);
   t.subTest(testMaterial(muesliNeoHookeReg));
 
-  t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::linear, LinearElasticity>());
-  t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::greenLagrangian, StVenantKirchhoff>());
-  t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::rightCauchyGreenTensor, NeoHooke>());
+  auto muesliMR = Materials::Muesli::makeMooneyRivlin({K, mu / 2, mu / 2});
+  t.subTest(testMaterial(muesliMR));
+
+  auto muesliYeoh = Materials::Muesli::makeYeoh({mu / 2, mu / 6, mu / 3}, K);
+  t.subTest(testMaterial(muesliYeoh));
+
+  auto muesliAB = Materials::Muesli::makeArrudaBoyce(mu, 0.85, K);
+  t.subTest(testMaterial(muesliAB));
+
+  auto muesliSVKPlaneStrain = planeStrain(muesliSVK);
+  t.subTest(testMaterial(muesliSVKPlaneStrain));
+
+  auto muesliNHPlaneStress = planeStrain(muesliNeoHooke);
+  t.subTest(testMaterial(muesliNHPlaneStress));
 
   return t.exit();
 }
