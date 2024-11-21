@@ -15,43 +15,35 @@
 #include <ikarus/assembler/assemblermanipulatorfuser.hh>
 #include <ikarus/io/vtkwriter.hh>
 #include <ikarus/utils/concepts.hh>
-#include <ikarus/utils/dynamics/generaleigensolver.hh>
 #include <ikarus/utils/makeenum.hh>
 
 namespace Ikarus::Dynamics {
 
-namespace Impl {
-  inline auto lumpingSparseImpl = []<typename ScalarType>(Eigen::SparseMatrix<ScalarType>& mat) -> void {
-    for (auto i : Dune::range(mat.rows())) {
-      auto sum           = mat.row(i).sum();
-      mat.coeffRef(i, i) = sum;
-    }
-    // Deletes all entries expect for main diagonal (entries are really getting deleted)
-    mat.prune([](int i, int j, auto) { return i == j; });
-  };
+namespace Impl { // namespace Impl
 
-  inline auto lumpingDenseImpl = []<typename ScalarType>(Eigen::MatrixX<ScalarType>& mat) -> void {
-    for (auto i : Dune::range(mat.rows())) {
-      auto sum  = mat.row(i).sum();
-      mat(i, i) = sum;
-    }
-    mat = mat.diagonal().asDiagonal();
-  };
+  template <typename ScalarType = double>
+  inline auto lumpingSparse() {
+    return [](const auto&, const auto&, auto, auto, Eigen::SparseMatrix<ScalarType>& mat) {
+      for (auto i : Dune::range(mat.rows())) {
+        auto sum           = mat.row(i).sum();
+        mat.coeffRef(i, i) = sum;
+      }
+      // Deletes all entries expect for main diagonal (entries are really getting deleted)
+      mat.prune([](int i, int j, auto) { return i == j; });
+    };
+  }
 
+  template <typename ScalarType = double>
+  inline auto lumpingDense() {
+    return [](const auto&, const auto&, auto, auto, Eigen::MatrixX<ScalarType>& mat) {
+      for (auto i : Dune::range(mat.rows())) {
+        auto sum  = mat.row(i).sum();
+        mat(i, i) = sum;
+      }
+      mat = mat.diagonal().asDiagonal();
+    };
+  };
 } // namespace Impl
-
-template <typename ScalarType = double>
-inline auto lumpingSparse() {
-  return [](const auto&, const auto&, auto, auto, Eigen::SparseMatrix<ScalarType>& mat) {
-    return Impl::lumpingSparseImpl(mat);
-  };
-}
-
-template <typename ScalarType = double>
-inline auto lumpingDense() {
-  return
-      [](const auto&, const auto&, auto, auto, Eigen::MatrixX<ScalarType>& mat) { return Impl::lumpingDenseImpl(mat); };
-}
 
 template <Concepts::FlatAssembler AS>
 auto makeLumpedFlatAssembler(const std::shared_ptr<AS>& assembler) {
@@ -59,9 +51,9 @@ auto makeLumpedFlatAssembler(const std::shared_ptr<AS>& assembler) {
   using ScalarType        = typename AS::MatrixType::Scalar;
   auto lumpedAssembler    = makeAssemblerManipulator(*assembler);
   if constexpr (isSparse)
-    lumpedAssembler->bind(lumpingSparse<ScalarType>());
+    lumpedAssembler->bind(Impl::lumpingSparse<ScalarType>());
   else
-    lumpedAssembler->bind(lumpingDense<ScalarType>());
+    lumpedAssembler->bind(Impl::lumpingDense<ScalarType>());
   return lumpedAssembler;
 }
 
