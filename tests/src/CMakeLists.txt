@@ -39,6 +39,7 @@ set(programSourceFiles
     testtruss.cpp
     testvtkwriter.cpp
     testdynamics.cpp
+    testeigenvaluesolver.cpp
 )
 
 set(TEST_DEPENDING_ON_LOCALFEFUNCTIONS

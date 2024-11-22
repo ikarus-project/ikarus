@@ -28,7 +28,7 @@ namespace Impl { // namespace Impl
         auto sum           = mat.row(i).sum();
         mat.coeffRef(i, i) = sum;
       }
-      // Deletes all entries expect for main diagonal (entries are really getting deleted)
+      // Deletes all entries expect for main diagonal (entriese are really getting deleted)
       mat.prune([](int i, int j, auto) { return i == j; });
     };
   }
