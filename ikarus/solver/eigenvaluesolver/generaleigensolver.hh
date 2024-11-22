@@ -108,12 +108,22 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, MT>
   /**
    * \brief Returns the eigenvectors of the gerneral eigenvalue problem
    *
-   * \param _nev optionally specify how many eigenvectors are requested
    * \return auto matrix with the eigevectors as columns
    */
   auto& eigenvectors() const {
     assertCompute();
     return eigenvectors_;
+  }
+
+  /**
+   * \brief Returns the normalized eigenvectors of the gerneral eigenvalue problem
+   *
+   * \return auto matrix with the eigevectors as columns
+   */
+  auto normalizedEigenvectors() const {
+    auto eigenvecs = eigenvectors();
+    eigenvecs.colwise().normalize();
+    return eigenvecs;
   }
 
   Eigen::Index nev() const { return nev_; }
@@ -194,6 +204,17 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Eigen, MT>
   auto& eigenvectors() const {
     assertCompute();
     return solver_.eigenvectors();
+  }
+
+  /**
+   * \brief Returns the normalized eigenvectors of the gerneral eigenvalue problem
+   *
+   * \return auto matrix with the eigevectors as columns
+   */
+  auto normalizedEigenvectors() const {
+    auto eigenvecs = eigenvectors();
+    eigenvecs.colwise().normalize();
+    return eigenvecs;
   }
 
 private:
@@ -288,6 +309,18 @@ struct PartialGeneralSymEigenSolver
   auto eigenvectors(std::optional<Eigen::Index> _nev = std::nullopt) const {
     assertCompute();
     return solver_.eigenvectors(_nev.value_or(nev_));
+  }
+
+  /**
+   * \brief Returns the normalized eigenvectors of the gerneral eigenvalue problem
+   *
+   * \param _nev optionally specify how many eigenvectors are requested
+   * \return auto matrix with the eigevectors as columns
+   */
+  auto normalizedEigenvectors(std::optional<Eigen::Index> _nev = std::nullopt) const {
+    Eigen::MatrixXd eigenvecs = eigenvectors(_nev);
+    eigenvecs.colwise().normalize();
+    return eigenvecs;
   }
 
   Eigen::Index nev() const { return nev_; }
