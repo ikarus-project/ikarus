@@ -49,6 +49,9 @@ struct ScalarManipulator
   void bind(F&& f) {
     sfs.emplace_back(std::forward<F>(f));
   }
+
+  void unbindAllScalarFunctions() { sfs.clear(); }
+
   std::vector<FunctionType> sfs;
 
 protected:
@@ -97,6 +100,9 @@ struct VectorManipulator
   void bind(F&& f) {
     vfs.emplace_back(std::forward<F>(f));
   }
+
+  void unbindAllVectorFunctions() { vfs.clear(); }
+
   std::vector<FunctionType> vfs;
 
 protected:
@@ -159,6 +165,9 @@ struct MatrixManipulator
   void bind(F&& f) {
     mfs.emplace_back(std::forward<F>(f));
   }
+
+  void unbindAllMatrixFunctions() { mfs.clear(); }
+
   std::vector<FunctionType> mfs;
 
 protected:
