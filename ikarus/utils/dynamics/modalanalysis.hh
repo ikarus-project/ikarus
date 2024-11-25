@@ -63,14 +63,18 @@ struct ModalAnalysis
 
   const Eigen::VectorXd& eigenvalues() const { return solver_->eigenvalues(); }
 
-  void plotModalSpectrum() {
+  void plotModalSpectrum(bool normalizeNodeNumber = false) {
     using namespace matplot;
-    auto freq = naturalFrequencies();
+    auto freq = angularFrequencies();
     std::vector<double> frequencies(freq.data(), freq.data() + freq.size());
 
     auto modeNumbersView =
-        std::ranges::iota_view{1ul, frequencies.size() + 1} |
-        std::ranges::views::transform([&](size_t i) { return static_cast<double>(i) / frequencies.size(); });
+        std::ranges::iota_view{1ul, frequencies.size() + 1} | std::ranges::views::transform([&](size_t i) {
+          if (normalizeNodeNumber)
+            return static_cast<double>(i) / frequencies.size();
+          return static_cast<double>(i);
+        });
+
     std::vector modeNumbers(modeNumbersView.begin(), modeNumbersView.end());
 
     auto fig = figure(true);
