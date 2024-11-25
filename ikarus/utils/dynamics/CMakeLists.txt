@@ -3,7 +3,7 @@
 
 # install headers
 install(
-  FILES dynamics.hh
+  FILES dynamicshelpers.hh lumpingschemes.hh modalanalysis.hh
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/utils/dynamics
 )
 

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * \file dynamics.hh
- * \brief Helper for
+ * \file dynamicshelpers.hh
+ * \brief Helper for Dynamic related things
  */
 
 #pragma once
@@ -15,50 +15,22 @@
 #include <ikarus/assembler/assemblermanipulatorfuser.hh>
 #include <ikarus/io/vtkwriter.hh>
 #include <ikarus/utils/concepts.hh>
+#include <ikarus/utils/dynamics/lumpingschemes.hh>
 #include <ikarus/utils/makeenum.hh>
 
 namespace Ikarus::Dynamics {
-
-namespace Impl { // namespace Impl
-
-  template <typename ScalarType = double>
-  inline auto lumpingSparse() {
-    return [](const auto&, const auto&, auto, auto, Eigen::SparseMatrix<ScalarType>& mat) {
-      for (auto i : Dune::range(mat.rows())) {
-        auto sum           = mat.row(i).sum();
-        mat.coeffRef(i, i) = sum;
-      }
-      // Deletes all entries expect for main diagonal (entriese are really getting deleted)
-      mat.prune([](int i, int j, auto) { return i == j; });
-    };
-  }
-
-  template <typename ScalarType = double>
-  inline auto lumpingDense() {
-    return [](const auto&, const auto&, auto, auto, Eigen::MatrixX<ScalarType>& mat) {
-      for (auto i : Dune::range(mat.rows())) {
-        auto sum  = mat.row(i).sum();
-        mat(i, i) = sum;
-      }
-      mat = mat.diagonal().asDiagonal();
-    };
-  };
-} // namespace Impl
 
 template <Concepts::FlatAssembler AS>
 auto makeLumpedFlatAssembler(const std::shared_ptr<AS>& assembler) {
   constexpr auto isSparse = Concepts::SparseEigenMatrix<typename AS::MatrixType>;
   using ScalarType        = typename AS::MatrixType::Scalar;
   auto lumpedAssembler    = makeAssemblerManipulator(*assembler);
-  if constexpr (isSparse)
-    lumpedAssembler->bind(Impl::lumpingSparse<ScalarType>());
-  else
-    lumpedAssembler->bind(Impl::lumpingDense<ScalarType>());
+  lumpedAssembler->bind(LumpingSchemes::RowSumLumping{});
   return lumpedAssembler;
 }
 
 template <Concepts::EigenValueSolver Eigensolver, Concepts::FlatAssembler Assembler>
-void writeEigenformsToVTK(const Eigensolver& solver, std::shared_ptr<Assembler> assembler, const std::string& filename,
+void writeEigenmodesToVTK(const Eigensolver& solver, std::shared_ptr<Assembler> assembler, const std::string& filename,
                           std::optional<Eigen::Index> nev_ = std::nullopt) {
   auto nev          = nev_.value_or(solver.nev());
   auto eigenvectors = solver.eigenvectors();
@@ -73,7 +45,7 @@ void writeEigenformsToVTK(const Eigensolver& solver, std::shared_ptr<Assembler> 
 }
 
 template <Concepts::EigenValueSolver Eigensolver, Concepts::FlatAssembler Assembler>
-void writeEigenformsToPVD(const Eigensolver& solver, std::shared_ptr<Assembler> assembler, const std::string& filename,
+void writeEigenmodesToPVD(const Eigensolver& solver, std::shared_ptr<Assembler> assembler, const std::string& filename,
                           std::optional<Eigen::Index> nev_ = std::nullopt) {
   auto nev          = nev_.value_or(solver.nev());
   auto eigenvectors = solver.eigenvectors();

@@ -19,9 +19,12 @@
 #include <ikarus/io/vtkwriter.hh>
 #include <ikarus/solver/eigenvaluesolver/generaleigensolver.hh>
 #include <ikarus/utils/concepts.hh>
+#include <ikarus/utils/dynamics/dynamicshelpers.hh>
 #include <ikarus/utils/makeenum.hh>
 
 namespace Ikarus::Dynamics {
+
+MAKE_ENUM(ModalAnalysisResultType, squaredAngularFrequency, angularFrequency, naturalFrequency);
 
 template <typename FEC, typename DV>
 struct ModalAnalysis
@@ -57,29 +60,50 @@ struct ModalAnalysis
     return solver_->compute();
   }
 
-  Eigen::VectorXd angularFrequencies() { return eigenvalues().cwiseSqrt().eval(); }
+  Eigen::VectorXd angularFrequencies() {
+    assertCompute();
+    return squaredAngularFrequencies().cwiseSqrt().eval();
+  }
 
-  Eigen::VectorXd naturalFrequencies() { return angularFrequencies() / (2 * std::numbers::pi); }
+  Eigen::VectorXd naturalFrequencies() {
+    assertCompute();
+    return angularFrequencies() / (2 * std::numbers::pi);
+  }
 
-  const Eigen::VectorXd& eigenvalues() const { return solver_->eigenvalues(); }
+  const Eigen::VectorXd& squaredAngularFrequencies() const {
+    assertCompute();
+    return solver_->eigenvalues();
+  }
 
-  void plotModalSpectrum(bool normalizeNodeNumber = false) {
+  auto frequencies(ModalAnalysisResultType rt) {
+    if (rt == ModalAnalysisResultType::angularFrequency)
+      return angularFrequencies();
+    if (rt == ModalAnalysisResultType::naturalFrequency)
+      return naturalFrequencies();
+    if (rt == ModalAnalysisResultType::squaredAngularFrequency)
+      return squaredAngularFrequencies();
+    DUNE_THROW(Dune::NotImplemented, "Requested result not implemented");
+  }
+
+  const Eigen::MatrixXd& eigenmodes() const { return solver_->eigenvectors(); }
+
+  void plotModalSpectrum(ModalAnalysisResultType resultType = ModalAnalysisResultType::angularFrequency,
+                         bool normalizeModeNumber           = false) {
+    assertCompute();
     using namespace matplot;
-    auto freq = angularFrequencies();
-    std::vector<double> frequencies(freq.data(), freq.data() + freq.size());
+    auto freq = frequencies(resultType);
 
-    auto modeNumbersView =
-        std::ranges::iota_view{1ul, frequencies.size() + 1} | std::ranges::views::transform([&](size_t i) {
-          if (normalizeNodeNumber)
-            return static_cast<double>(i) / frequencies.size();
-          return static_cast<double>(i);
-        });
+    auto modeNumbersView = std::ranges::iota_view{1l, nev() + 1} | std::ranges::views::transform([&](auto i) {
+                             if (normalizeModeNumber)
+                               return static_cast<double>(i) / nev();
+                             return static_cast<double>(i);
+                           });
 
-    std::vector modeNumbers(modeNumbersView.begin(), modeNumbersView.end());
+    std::vector<double> modeNumbers(modeNumbersView.begin(), modeNumbersView.end());
 
     auto fig = figure(true);
     auto ax  = fig->add_axes();
-    ax->plot(modeNumbers, frequencies)->line_width(1).color("b");
+    ax->plot(modeNumbers, freq)->line_width(1).color("b");
     ax->xlabel("Mode Number");
     ax->ylabel("Frequency (Hz)");
     ax->title("Modal Analysis Spectrum");
@@ -89,6 +113,13 @@ struct ModalAnalysis
     matplot::show();
   }
 
+  void writeEigenModes(const std::string& filename, std::optional<Eigen::Index> nev_ = std::nullopt) const {
+    assertCompute();
+    writeEigenmodesToPVD(solver_.value(), stiffAssembler_, filename, nev_);
+  }
+
+  auto nev() const { return solver_->nev(); }
+
 private:
   std::shared_ptr<Assembler> stiffAssembler_;
   std::shared_ptr<Assembler> massAssembler_;
@@ -96,6 +127,11 @@ private:
   FERequirement req_{};
   typename FERequirement::SolutionVectorType d_;
   std::optional<Solver> solver_{};
+
+  void assertCompute() const {
+    if (not solver_)
+      DUNE_THROW(Dune::IOError, "Eigenvalues and -vectors not yet computed, please call compute() first");
+  }
 };
 
 template <typename FEC, typename DV>
