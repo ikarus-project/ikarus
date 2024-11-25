@@ -49,8 +49,8 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, MT>
   requires(Concepts::DenseOrSparseEigenMatrix<std::remove_cvref_t<MATA>>)
   GeneralSymEigenSolver(MATA&& A, MATB&& B)
       : nev_(A.rows()),
-        nevsPartition_(static_cast<Eigen::Index>(std::ceil(nev_ / 2)),
-                       static_cast<Eigen::Index>(nev_ - std::ceil(nev_ / 2))),
+        nevsPartition_(static_cast<Eigen::Index>(std::ceil(static_cast<double>(nev_) / 2)),
+                       static_cast<Eigen::Index>(nev_ - std::ceil(static_cast<double>(nev_) / 2))),
         aOP_(std::forward<MATA>(A)),
         bOP_(std::forward<MATB>(B)),
         solverSmallest_(aOP_, bOP_, nevsPartition_.first, nevsPartition_.second * 2),
