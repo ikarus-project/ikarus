@@ -128,45 +128,4 @@ void globalIndices(const FiniteElement& fe, std::vector<typename FiniteElement::
   globalIndicesFromLocalView(fe.localView(), globalIndices);
 }
 
-/**
- * \brief Maps the entries from the localMatrix of the size \f$ n_s \f$ by \f$ n_s \f$ (where \f$ n_s \f$ is the number
- of
- * coefficiets of a subspace basis) to the local index in the element matrix.
- *
- * \tparam TreePaths type of the indices used to obtain the subspacebasis which corresponds to the localMatrix, can be a
- * `index_constant`, an integer, or a `Dune::TypeTree::HybridTree` (one or more are accepted corresponding to the
- * localMatrix)
- * \param localMatrix the localMatrix containing the entries that are beeing mapped.
- * \param elementMatrix the elementMatrix where the entries are beeing mapped to.
- * \param globalBasis the global basis, from where we obtain the subspacebasis.
- * \param tps the paths to the subspacebasis'.
- */
-template <typename... TreePaths>
-void subspaceEntriesToElementEntries(const auto& localMatrix, auto& elementMatrix, const auto& globalBasis,
-                                     TreePaths&&... tps) {
-  auto treePathTuple = Dune::TupleVector(std::forward<TreePaths>(tps)...);
-  for (size_t i = 0; i < localMatrix.rows(); ++i) {
-    for (size_t j = 0; j < localMatrix.cols(); ++j) {
-      Dune::Hybrid::forEach(treePathTuple, [&](const auto& treePath) {
-        auto basis = globalBasis.child(treePath);
-        elementMatrix(basis.localIndex(i), basis.localIndex(j)) += localMatrix(i, j);
-      });
-    }
-  }
-}
-
-/**
- * \brief Forwards the indices for powerbasis to obtain the children to subspaceEntriesToElementEntries()
- *
- * \tparam nEnd index from the last child + 1
- * \tparam nStart optionnally define a starting index
- * \details see Documentation for subspaceEntriesToElementEntries()
- */
-template <int nEnd, int nStart = 0>
-void subspaceEntriesToElementEntries(const auto& localMatrix, auto& elementMatrix, const auto& globalBasis) {
-  Dune::Hybrid::forEach(
-      Dune::Hybrid::integralRange(Dune::index_constant<nStart>(), Dune::index_constant<nEnd>()),
-      [&](const auto i) { subspaceEntriesToElementEntries(localMatrix, elementMatrix, globalBasis, i); });
-}
-
 } // namespace Ikarus::FEHelper

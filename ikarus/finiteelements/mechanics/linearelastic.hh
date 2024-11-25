@@ -240,10 +240,18 @@ protected:
     double rho = 1.0;
     for (const auto& [gpIndex, gp] : localBasis_.viewOverIntegrationPoints()) {
       const auto intElement = geo_->integrationElement(gp.position()) * gp.weight();
-      auto& N               = localBasis_.evaluateFunction(gpIndex);
-      auto Mij              = (rho * N * N.transpose() * intElement).eval();
+      auto& N = localBasis_.evaluateFunction(gpIndex);
 
-      FEHelper::subspaceEntriesToElementEntries<myDim>(Mij, M, underlying().localView().tree());
+      auto nopI = Eigen::Matrix<double, myDim, myDim>::Zero().eval();
+      auto nopJ = Eigen::Matrix<double, myDim, myDim>::Zero().eval();
+
+      for (size_t i = 0; i < numberOfNodes_; ++i) {
+        nopI.diagonal().setConstant(N[i]);
+        for (size_t j = 0; j < numberOfNodes_; ++j) {
+          nopJ.diagonal().setConstant(N[j]);
+          M.template block<myDim, myDim>(i * myDim, j * myDim) += nopI.transpose() * rho * nopJ * intElement;
+        }
+      }
     }
   }
 
