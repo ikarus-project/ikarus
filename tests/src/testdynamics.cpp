@@ -30,6 +30,8 @@
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/dynamics/dynamics.hh>
+#include <ikarus/utils/dynamics/lumpingschemes.hh>
+#include <ikarus/utils/dynamics/modalanalysis.hh>
 #include <ikarus/utils/init.hh>
 
 using Dune::TestSuite;
@@ -41,7 +43,7 @@ static auto dynamicsTest() {
   const double Lx                         = 4.0;
   const double Ly                         = 4.0;
   Dune::FieldVector<double, 2> bbox       = {Lx, Ly};
-  std::array<int, 2> elementsPerDirection = {4, 4};
+  std::array<int, 2> elementsPerDirection = {16, 16};
   auto grid                               = std::make_shared<Grid>(bbox, elementsPerDirection);
 
   auto gridView = grid->leafGridView();
@@ -60,83 +62,18 @@ static auto dynamicsTest() {
     fes.back().bind(element);
   }
 
-  auto& fe = fes[0];
-  auto req = FEType::Requirement();
-
-  typename FEType::Requirement::SolutionVectorType d;
-  d.setZero(basis.flat().size());
-  req.insertGlobalSolution(d);
-
-  Eigen::MatrixX<double> m(8, 8);
-  m.setZero();
-  fe.calculateMatrixImpl<double>(req, Ikarus::MatrixAffordance::mass, m);
-
+  
   auto dirichletValues = Ikarus::DirichletValues(basis.flat());
   dirichletValues.fixBoundaryDOFs([](auto& dirichFlags, auto&& indexGlobal) { dirichFlags[indexGlobal] = true; });
 
-  auto assM = Ikarus::makeSparseFlatAssembler(fes, dirichletValues);
-  auto assK = Ikarus::makeSparseFlatAssembler(fes, dirichletValues);
+  auto mA = Ikarus::Dynamics::ModalAnalysis(fes, dirichletValues);
+  mA.registerLumpingScheme<Ikarus::Dynamics::LumpingSchemes::RowSumLumping>();
+  mA.compute();
 
-  auto assMD = Ikarus::makeDenseFlatAssembler(fes, dirichletValues);
-  auto assKD = Ikarus::makeDenseFlatAssembler(fes, dirichletValues);
+  auto frequencies = mA.angularFrequencies();
+  std::cout << "Angular frequencies \n" << frequencies << std::endl;
 
-  assM->bind(req, Ikarus::AffordanceCollections::dynamics, Ikarus::DBCOption::Reduced);
-  assK->bind(req, Ikarus::AffordanceCollections::elastoStatics, Ikarus::DBCOption::Reduced);
-
-  assMD->bind(req, Ikarus::AffordanceCollections::dynamics, Ikarus::DBCOption::Reduced);
-  assKD->bind(req, Ikarus::AffordanceCollections::elastoStatics, Ikarus::DBCOption::Reduced);
-
-  auto assMLumped = Ikarus::Dynamics::makeLumpedFlatAssembler(assM);
-
-  auto mat1 = assMLumped->matrix();
-  auto mat2 = assMLumped->matrix();
-
-  int nev = 10; // number of requested eigenvalues
-  using Ikarus::EigenSolverTypeTag;
-
-  auto solver  = Ikarus::PartialGeneralSymEigenSolver(assK, assM, nev);
-  bool success = solver.compute();
-  std::cout << "Success: " << std::boolalpha << success << std::endl;
-
-  auto eigenvectors = solver.eigenvectors();
-  auto eigenvalues  = solver.eigenvalues();
-
-  std::cout << "Angular frequencies found (n=" << nev << "):\n" << eigenvalues.array().sqrt() << std::endl;
-
-  auto solver2 = Ikarus::PartialGeneralSymEigenSolver(assK, assMLumped, nev);
-  solver2.compute();
-
-  auto eigenvalues2 = solver2.eigenvalues();
-  std::cout << "Angular frequencies found (n=" << nev << "):\n" << eigenvalues2.array().sqrt() << std::endl;
-
-  Ikarus::Dynamics::writeEigenformsToVTK(solver2, assM, "eigenforms");
-  Ikarus::Dynamics::writeEigenformsToPVD(solver, assM, "eigenforms_full");
-  // Ikarus::Dynamics::writeEigenformsToPVD(solver2, assM, "eigenforms_lumped");
-
-  auto solver3 = Ikarus::makeGeneralSymEigenSolver<EigenSolverTypeTag::Eigen>(assKD, assMD);
-  solver3.compute();
-  auto eigenvalues3 = solver3.eigenvalues();
-
-  auto solver4 = Ikarus::makeGeneralSymEigenSolver<EigenSolverTypeTag::Spectra>(assK, assM);
-  solver4.compute();
-  auto eigenvalues4 = solver4.eigenvalues();
-
-  auto solver5 = Ikarus::makeGeneralSymEigenSolver<EigenSolverTypeTag::Spectra>(assKD, assMD);
-  solver5.compute();
-  auto eigenvalues5 = solver5.eigenvalues();
-
-  t.check(isApproxSame(eigenvalues3, eigenvalues4, 1e-10));
-  t.check(isApproxSame(eigenvalues5, eigenvalues4, 1e-10));
-  t.check(isApproxSame(eigenvalues4.head(nev).eval(), eigenvalues, 1e-10));
-
-  Ikarus::Dynamics::writeEigenformsToVTK(solver4, assM, "eigenforms_vtk");
-  Ikarus::Dynamics::writeEigenformsToPVD(solver4, assM, "eigenforms_pvd");
-
-  static_assert(Ikarus::Concepts::EigenValueSolver<decltype(solver)>);
-  static_assert(Ikarus::Concepts::EigenValueSolver<decltype(solver2)>);
-  static_assert(Ikarus::Concepts::EigenValueSolver<decltype(solver3)>);
-  static_assert(Ikarus::Concepts::EigenValueSolver<decltype(solver4)>);
-  static_assert(Ikarus::Concepts::EigenValueSolver<decltype(solver5)>);
+  mA.plotModalSpectrum();
 
   return t;
 }
