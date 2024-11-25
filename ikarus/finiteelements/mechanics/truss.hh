@@ -26,8 +26,9 @@ class Truss;
  */
 struct TrussPre
 {
-  double E; // Young's modulus
-  double A; // Cross-section area
+  double E;            // Young's modulus
+  double A;            // Cross-section area
+  double density{1.0}; // Density
 
   template <typename PreFE, typename FE>
   using Skill = Truss<PreFE, FE>;
@@ -85,8 +86,9 @@ public:
    * \param pre The pre fe
    */
   explicit Truss(const Pre& pre)
-      : E{pre.E},
-        A{pre.A} {}
+      : E_{pre.E},
+        A_{pre.A},
+        density_{pre.density} {}
 
   /**
    * \brief Gets the displacement for the given Requirement and optional displacement vector.
@@ -157,6 +159,26 @@ public:
     return kin;
   }
 
+  /**
+   * \brief Computes the length fo the truss and the coordinate transformation matrix T for the undeformed configuration
+   *
+   * \return std::pair of length, and T
+   */
+  auto computeLengthAndTransformationMatrix() const {
+    auto& ele           = underlying().localView().element();
+    const auto X1       = Dune::toEigen(ele.geometry().corner(0));
+    const auto X2       = Dune::toEigen(ele.geometry().corner(1));
+    const auto A1       = X2 - X1;
+    const auto L        = A1.norm();
+    const auto A1normed = A1 / L;
+
+    auto T = Eigen::Matrix<typename std::remove_cvref_t<decltype(L)>, 2, worldDim * 2>::Zero().eval();
+    T.template block<1, worldDim>(0, 0)        = A1normed;
+    T.template block<1, worldDim>(1, worldDim) = A1normed;
+
+    return std::make_pair(L, T);
+  }
+
 public:
   /**
    * \brief Calculates a requested result at a specific local position.
@@ -175,15 +197,15 @@ public:
     using RTWrapper                            = ResultWrapper<RT<double, myDim, myDim>, ResultShape::Vector>;
     const auto [L, l, Elin, Egl, dEdu, ddEddu] = computeStrain(req);
     if constexpr (isSameResultType<RT, ResultTypes::cauchyAxialForce>) {
-      auto N = Eigen::Vector<double, 1>{E * A * Egl * l / L}; // Axial force in deformed configuration
+      auto N = Eigen::Vector<double, 1>{E_ * A_ * Egl * l / L}; // Axial force in deformed configuration
       return RTWrapper{N};
     }
     if constexpr (isSameResultType<RT, ResultTypes::PK2AxialForce>) {
-      auto N = Eigen::Vector<double, 1>{E * A * Egl}; // Axial force in undeformed configuration
+      auto N = Eigen::Vector<double, 1>{E_ * A_ * Egl}; // Axial force in undeformed configuration
       return RTWrapper{N};
     }
     if constexpr (isSameResultType<RT, ResultTypes::linearAxialForce>) {
-      auto N = Eigen::Vector<double, 1>{E * A * Elin};
+      auto N = Eigen::Vector<double, 1>{E_ * A_ * Elin};
       return RTWrapper{N};
     }
   }
@@ -193,16 +215,28 @@ private:
   const auto& underlying() const { return static_cast<const FE&>(*this); }
   auto& underlying() { return static_cast<FE&>(*this); }
 
-  double E;
-  double A;
+  double E_;
+  double A_;
+  double density_{1.0};
 
 protected:
   template <typename ScalarType>
   void calculateMatrixImpl(
       const Requirement& par, const MatrixAffordance& affordance, typename Traits::template MatrixType<> K,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
-    const auto [L, l, Elin, Egl, dEdu, ddEddu] = computeStrain(par, dx);
-    K += E * A * L * (dEdu * dEdu.transpose() + ddEddu * Egl);
+    if (affordance == MatrixAffordance::stiffness) {
+      const auto [L, l, Elin, Egl, dEdu, ddEddu] = computeStrain(par, dx);
+      K += E_ * A_ * L * (dEdu * dEdu.transpose() + ddEddu * Egl);
+    } else if (affordance == MatrixAffordance::mass) {
+      Eigen::Matrix<ScalarType, 2, 2> mLoc{
+          {2, 1},
+          {1, 2}
+      };
+      auto [l, T] = computeLengthAndTransformationMatrix();
+      mLoc *= (density_ * A_ * l) / 6.0;
+      K += T.transpose() * mLoc * T;
+    } else
+      DUNE_THROW(Dune::NotImplemented, "MatrixAffordance not implemented: " + toString(affordance));
   }
 
   template <typename ScalarType>
@@ -210,7 +244,7 @@ protected:
                            const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx =
                                std::nullopt) const -> ScalarType {
     const auto [L, l, Elin, Egl, dEdu, ddEddu] = computeStrain(par, dx);
-    return 0.5 * E * A * L * Egl * Egl;
+    return 0.5 * E_ * A_ * L * Egl * Egl;
   }
 
   template <typename ScalarType>
@@ -218,7 +252,7 @@ protected:
       const Requirement& par, VectorAffordance affordance, typename Traits::template VectorType<ScalarType> force,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
     const auto [L, l, Elin, Egl, dEdu, ddEddu] = computeStrain(par, dx);
-    force += E * A * Egl * L * dEdu;
+    force += E_ * A_ * Egl * L * dEdu;
   }
 };
 
@@ -226,10 +260,11 @@ protected:
  * \brief A helper function to create a truss pre finite element.
  * \param E Young's modulus of the truss member
  * \param A Cross section area of the truss member
+ * \param density Density of truss member (defaults to 1.0)
  * \return A truss pre finite element.
  */
-inline auto truss(const double E, const double A) {
-  TrussPre pre(E, A);
+inline auto truss(const double E, const double A, double density = 1.0) {
+  TrussPre pre(E, A, density);
 
   return pre;
 }

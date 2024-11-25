@@ -29,7 +29,6 @@
 #include <ikarus/solver/eigenvaluesolver/generaleigensolver.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/dirichletvalues.hh>
-#include <ikarus/utils/dynamics/dynamics.hh>
 #include <ikarus/utils/init.hh>
 
 using Dune::TestSuite;

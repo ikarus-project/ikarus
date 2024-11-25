@@ -38,6 +38,7 @@ struct LinearElasticPre
 {
   using Material = MAT;
   MAT material;
+  double density{1.0};
 
   template <typename PreFE, typename FE>
   using Skill = LinearElastic<PreFE, FE, LinearElasticPre>;
@@ -75,7 +76,8 @@ public:
    * \param pre The pre fe
    */
   explicit LinearElastic(const Pre& pre)
-      : mat_{pre.material} {}
+      : mat_{pre.material},
+        density_{pre.density} {}
 
 protected:
   /**
@@ -205,6 +207,7 @@ private:
   std::shared_ptr<const Geometry> geo_;
   Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType>> localBasis_;
   Material mat_;
+  double density_{1.0};
   size_t numberOfNodes_{0};
   int order_{};
 
@@ -237,10 +240,9 @@ protected:
   template <typename ScalarType>
   void calculateMassImpl(const Requirement& par, const MatrixAffordance& affordance,
                          typename Traits::template MatrixType<> M) const {
-    double rho = 1.0;
     for (const auto& [gpIndex, gp] : localBasis_.viewOverIntegrationPoints()) {
       const auto intElement = geo_->integrationElement(gp.position()) * gp.weight();
-      auto& N = localBasis_.evaluateFunction(gpIndex);
+      auto& N               = localBasis_.evaluateFunction(gpIndex);
 
       auto nopI = Eigen::Matrix<double, myDim, myDim>::Zero().eval();
       auto nopJ = Eigen::Matrix<double, myDim, myDim>::Zero().eval();
@@ -249,7 +251,7 @@ protected:
         nopI.diagonal().setConstant(N[i]);
         for (size_t j = 0; j < numberOfNodes_; ++j) {
           nopJ.diagonal().setConstant(N[j]);
-          M.template block<myDim, myDim>(i * myDim, j * myDim) += nopI.transpose() * rho * nopJ * intElement;
+          M.template block<myDim, myDim>(i * myDim, j * myDim) += nopI.transpose() * density_ * nopJ * intElement;
         }
       }
     }
@@ -300,12 +302,13 @@ protected:
 /**
  * \brief A helper function to create a linear elastic pre finite element.
  * \tparam MAT Type of the material.
- * \param mat Material parameters for the non-linear elastic element.
+ * \param mat Material parameters for the linear elastic element.
+ * \param density Density of linear elastic element (defaults to 1.0)
  * \return A linear elastic pre finite element.
  */
 template <typename MAT>
-auto linearElastic(const MAT& mat) {
-  LinearElasticPre<MAT> pre(mat);
+auto linearElastic(const MAT& mat, double density = 1.0) {
+  LinearElasticPre<MAT> pre(mat, density);
 
   return pre;
 }

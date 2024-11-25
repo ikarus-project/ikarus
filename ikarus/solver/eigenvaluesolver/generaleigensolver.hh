@@ -37,11 +37,11 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, MT>
   using ScalarType              = typename MT::Scalar;
   static constexpr bool isDense = Concepts::EigenMatrix<MT>;
 
-  using MatrixType = MT;
-  using ProductType =
-      std::conditional_t<isDense, Spectra::DenseSymMatProd<ScalarType>, Spectra::SparseSymMatProd<ScalarType>>;
-  using CholeskyType =
-      std::conditional_t<isDense, Spectra::DenseCholesky<ScalarType>, Spectra::SparseCholesky<ScalarType>>;
+  using MatrixType   = MT;
+  using ProductType  = std::conditional_t<isDense, Spectra::DenseSymMatProd<ScalarType>,
+                                          Spectra::SparseSymMatProd<ScalarType>>;
+  using CholeskyType = std::conditional_t<isDense, Spectra::DenseCholesky<ScalarType>,
+                                          Spectra::SparseCholesky<ScalarType>>;
 
   using SolverType = Spectra::SymGEigsSolver<ProductType, CholeskyType, Spectra::GEigsMode::Cholesky>;
 

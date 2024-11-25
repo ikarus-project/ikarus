@@ -29,7 +29,6 @@
 #include <ikarus/solver/eigenvaluesolver/generaleigensolver.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/dirichletvalues.hh>
-#include <ikarus/utils/dynamics/dynamics.hh>
 #include <ikarus/utils/dynamics/lumpingschemes.hh>
 #include <ikarus/utils/dynamics/modalanalysis.hh>
 #include <ikarus/utils/init.hh>
@@ -43,7 +42,7 @@ static auto dynamicsTest() {
   const double Lx                         = 4.0;
   const double Ly                         = 4.0;
   Dune::FieldVector<double, 2> bbox       = {Lx, Ly};
-  std::array<int, 2> elementsPerDirection = {16, 16};
+  std::array<int, 2> elementsPerDirection = {5, 5};
   auto grid                               = std::make_shared<Grid>(bbox, elementsPerDirection);
 
   auto gridView = grid->leafGridView();
@@ -62,18 +61,23 @@ static auto dynamicsTest() {
     fes.back().bind(element);
   }
 
-  
   auto dirichletValues = Ikarus::DirichletValues(basis.flat());
   dirichletValues.fixBoundaryDOFs([](auto& dirichFlags, auto&& indexGlobal) { dirichFlags[indexGlobal] = true; });
 
   auto mA = Ikarus::Dynamics::ModalAnalysis(fes, dirichletValues);
-  mA.registerLumpingScheme<Ikarus::Dynamics::LumpingSchemes::RowSumLumping>();
   mA.compute();
 
   auto frequencies = mA.angularFrequencies();
-  std::cout << "Angular frequencies \n" << frequencies << std::endl;
 
-  mA.plotModalSpectrum();
+  mA.registerLumpingScheme<Ikarus::Dynamics::LumpingSchemes::RowSumLumping>();
+  mA.compute();
+
+  auto frequenciesLumped = mA.angularFrequencies();
+
+  t.check(frequencies.sum() > frequenciesLumped.sum());
+
+  // mA.plotModalSpectrum();
+  mA.writeEigenModes("eigenforms", 20);
 
   return t;
 }

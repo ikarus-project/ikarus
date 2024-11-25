@@ -19,27 +19,40 @@
 #include <ikarus/io/vtkwriter.hh>
 #include <ikarus/solver/eigenvaluesolver/generaleigensolver.hh>
 #include <ikarus/utils/concepts.hh>
+#include <ikarus/utils/dynamics/dynamicshelpers.hh>
 #include <ikarus/utils/makeenum.hh>
 
 namespace Ikarus::Dynamics {
+
+MAKE_ENUM(ModalAnalysisResultType, squaredAngularFrequency, angularFrequency, naturalFrequency);
 
 template <typename FEC, typename DV>
 struct ModalAnalysis
 {
   using Assembler     = SparseFlatAssembler<FEC, DV>;
+  using MatrixType    = typename Assembler::MatrixType;
   using FERequirement = typename Assembler::FERequirement;
+  using FEContainer   = FEC;
+
+  // static_assert(MatrixType::IsRowMajor, "Rowmajor");
+
   using LumpedAssembler =
       AssemblerManipulator<Assembler, Ikarus::Impl::AssemblerInterfaceHelper<ScalarAssembler, ScalarManipulator>,
                            Ikarus::Impl::AssemblerInterfaceHelper<VectorAssembler, VectorManipulator>,
                            Ikarus::Impl::AssemblerInterfaceHelper<MatrixAssembler, MatrixManipulator>>;
-  using Solver = GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, Eigen::SparseMatrix<double>>;
+  using Solver = GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, MatrixType>;
 
   template <typename FES>
   ModalAnalysis(FES&& fes, const DV& dv)
-      : stiffAssembler_(makeSparseFlatAssembler(std::forward<FES>(fes), dv)),
-        massAssembler_(makeSparseFlatAssembler(std::forward<FES>(fes), dv)) {
-    d_.setZero(dv.basis().size());
-    req_.insertGlobalSolution(d_);
+      : fes_(std::forward<FES>(fes)),
+        d_(dv.basis().size()),
+        dRef_(d_),
+        stiffAssembler_(std::make_shared<Assembler>(fes_, dv)),
+        massAssembler_(std::make_shared<Assembler>(fes_, dv)) {
+    if constexpr (std::remove_cvref_t<decltype(fes.front())>::Traits::useEigenRef)
+      req_.insertGlobalSolution(dRef_);
+    else
+      req_.insertGlobalSolution(d_);
 
     stiffAssembler_->bind(req_, Ikarus::AffordanceCollections::elastoStatics, Ikarus::DBCOption::Reduced);
     massAssembler_->bind(req_, Ikarus::AffordanceCollections::dynamics, Ikarus::DBCOption::Reduced);
@@ -57,29 +70,50 @@ struct ModalAnalysis
     return solver_->compute();
   }
 
-  Eigen::VectorXd angularFrequencies() { return eigenvalues().cwiseSqrt().eval(); }
+  Eigen::VectorXd angularFrequencies() {
+    assertCompute();
+    return squaredAngularFrequencies().cwiseSqrt().eval();
+  }
 
-  Eigen::VectorXd naturalFrequencies() { return angularFrequencies() / (2 * std::numbers::pi); }
+  Eigen::VectorXd naturalFrequencies() {
+    assertCompute();
+    return angularFrequencies() / (2 * std::numbers::pi);
+  }
 
-  const Eigen::VectorXd& eigenvalues() const { return solver_->eigenvalues(); }
+  const Eigen::VectorXd& squaredAngularFrequencies() const {
+    assertCompute();
+    return solver_->eigenvalues();
+  }
 
-  void plotModalSpectrum(bool normalizeNodeNumber = false) {
+  auto frequencies(ModalAnalysisResultType rt) {
+    if (rt == ModalAnalysisResultType::angularFrequency)
+      return angularFrequencies();
+    if (rt == ModalAnalysisResultType::naturalFrequency)
+      return naturalFrequencies();
+    if (rt == ModalAnalysisResultType::squaredAngularFrequency)
+      return squaredAngularFrequencies();
+    DUNE_THROW(Dune::NotImplemented, "Requested result not implemented");
+  }
+
+  const Eigen::MatrixXd& eigenmodes() const { return solver_->eigenvectors(); }
+
+  void plotModalSpectrum(ModalAnalysisResultType resultType = ModalAnalysisResultType::angularFrequency,
+                         bool normalizeModeNumber           = false) {
+    assertCompute();
     using namespace matplot;
-    auto freq = angularFrequencies();
-    std::vector<double> frequencies(freq.data(), freq.data() + freq.size());
+    auto freq = frequencies(resultType);
 
-    auto modeNumbersView =
-        std::ranges::iota_view{1ul, frequencies.size() + 1} | std::ranges::views::transform([&](size_t i) {
-          if (normalizeNodeNumber)
-            return static_cast<double>(i) / frequencies.size();
-          return static_cast<double>(i);
-        });
+    auto modeNumbersView = std::ranges::iota_view{1l, nev() + 1} | std::ranges::views::transform([&](auto i) {
+                             if (normalizeModeNumber)
+                               return static_cast<double>(i) / nev();
+                             return static_cast<double>(i);
+                           });
 
-    std::vector modeNumbers(modeNumbersView.begin(), modeNumbersView.end());
+    std::vector<double> modeNumbers(modeNumbersView.begin(), modeNumbersView.end());
 
     auto fig = figure(true);
     auto ax  = fig->add_axes();
-    ax->plot(modeNumbers, frequencies)->line_width(1).color("b");
+    ax->plot(modeNumbers, freq)->line_width(1).color("b");
     ax->xlabel("Mode Number");
     ax->ylabel("Frequency (Hz)");
     ax->title("Modal Analysis Spectrum");
@@ -89,13 +123,28 @@ struct ModalAnalysis
     matplot::show();
   }
 
+  void writeEigenModes(const std::string& filename, std::optional<Eigen::Index> nev_ = std::nullopt) const {
+    assertCompute();
+    writeEigenmodesToPVD(solver_.value(), stiffAssembler_, filename, nev_);
+  }
+
+  auto nev() const { return solver_->nev(); }
+
 private:
+  FEContainer fes_;
+  FERequirement req_{};
+  Eigen::VectorXd d_;
+  Eigen::Ref<Eigen::VectorXd> dRef_;
   std::shared_ptr<Assembler> stiffAssembler_;
   std::shared_ptr<Assembler> massAssembler_;
   std::shared_ptr<LumpedAssembler> lumpedMassAssembler_;
-  FERequirement req_{};
-  typename FERequirement::SolutionVectorType d_;
+
   std::optional<Solver> solver_{};
+
+  void assertCompute() const {
+    if (not solver_)
+      DUNE_THROW(Dune::IOError, "Eigenvalues and -vectors not yet computed, please call compute() first");
+  }
 };
 
 template <typename FEC, typename DV>

@@ -204,8 +204,8 @@ namespace AffordanceCollections {
   inline constexpr AffordanceCollection elastoStatics(ScalarAffordance::mechanicalPotentialEnergy,
                                                       VectorAffordance::forces, MatrixAffordance::stiffness);
   constexpr Ikarus::AffordanceCollection dynamics(Ikarus::ScalarAffordance::noAffordance,
-                                                        Ikarus::VectorAffordance::noAffordance,
-                                                        Ikarus::MatrixAffordance::mass);
+                                                  Ikarus::VectorAffordance::noAffordance,
+                                                  Ikarus::MatrixAffordance::mass);
 } // namespace AffordanceCollections
 
 namespace Impl {
