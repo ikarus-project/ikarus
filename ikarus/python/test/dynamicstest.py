@@ -22,13 +22,8 @@ from dirichletvaluetest import makeGrid
 
 class DynamicsTest(unittest.TestCase):
     def setUp(self):
-        reader = (
-            dune.grid.reader.gmsh,
-            os.path.join(os.path.dirname(__file__), "auxiliaryfiles/quad2d.msh"),
-        )
-
-        self.grid = dune.grid.ugGrid(reader, dimgrid=2)
-        self.grid.hierarchicalGrid.globalRefine(1)
+        self.grid = makeGrid()
+        self.grid.hierarchicalGrid.globalRefine(3)
 
         basis = iks.basis(
             self.grid, dune.functions.Power(dune.functions.Lagrange(order=1), 2, layout="interleaved")

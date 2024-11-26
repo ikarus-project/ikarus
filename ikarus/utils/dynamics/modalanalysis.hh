@@ -31,6 +31,8 @@ struct ModalAnalysis
 {
   using Assembler     = SparseFlatAssembler<FEC, DV>;
   using FERequirement = typename Assembler::FERequirement;
+  using FEContainer = std::remove_cvref_t<FEC>;
+
   using LumpedAssembler =
       AssemblerManipulator<Assembler, Ikarus::Impl::AssemblerInterfaceHelper<ScalarAssembler, ScalarManipulator>,
                            Ikarus::Impl::AssemblerInterfaceHelper<VectorAssembler, VectorManipulator>,
@@ -39,10 +41,14 @@ struct ModalAnalysis
 
   template <typename FES>
   ModalAnalysis(FES&& fes, const DV& dv)
-      : stiffAssembler_(makeSparseFlatAssembler(std::forward<FES>(fes), dv)),
+      : d_(dv.basis().size()),
+        dRef_(d_),
+        stiffAssembler_(makeSparseFlatAssembler(std::forward<FES>(fes), dv)),
         massAssembler_(makeSparseFlatAssembler(std::forward<FES>(fes), dv)) {
-    d_.setZero(dv.basis().size());
-    req_.insertGlobalSolution(d_);
+    if constexpr (std::remove_cvref_t<decltype(fes.front())>::Traits::useEigenRef)
+      req_.insertGlobalSolution(dRef_);
+    else
+      req_.insertGlobalSolution(d_);
 
     stiffAssembler_->bind(req_, Ikarus::AffordanceCollections::elastoStatics, Ikarus::DBCOption::Reduced);
     massAssembler_->bind(req_, Ikarus::AffordanceCollections::dynamics, Ikarus::DBCOption::Reduced);
@@ -121,11 +127,13 @@ struct ModalAnalysis
   auto nev() const { return solver_->nev(); }
 
 private:
+  FERequirement req_{};
+  Eigen::VectorXd d_;
+  Eigen::Ref<Eigen::VectorXd> dRef_;
   std::shared_ptr<Assembler> stiffAssembler_;
   std::shared_ptr<Assembler> massAssembler_;
   std::shared_ptr<LumpedAssembler> lumpedMassAssembler_;
-  FERequirement req_{};
-  typename FERequirement::SolutionVectorType d_;
+
   std::optional<Solver> solver_{};
 
   void assertCompute() const {
@@ -137,4 +145,6 @@ private:
 template <typename FEC, typename DV>
 ModalAnalysis(FEC&&, const DV&) -> ModalAnalysis<FEC, DV>;
 
+template <typename FEC, typename DV>
+ModalAnalysis(const FEC&, const DV&) -> ModalAnalysis<FEC, DV>;
 } // namespace Ikarus::Dynamics
