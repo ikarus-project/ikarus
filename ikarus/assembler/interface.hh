@@ -93,7 +93,7 @@ public:
    * \return Reference to the dirichlet value object.
    */
   const auto& dirichletValues() const { return Dune::resolveRef(dirichletValues_); }
- 
+
   /**
    * \brief Returns the basis object
    * \return Reference to the basis

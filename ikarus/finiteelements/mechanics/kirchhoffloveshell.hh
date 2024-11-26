@@ -31,6 +31,7 @@ struct KirchhoffLoveShellPre
 {
   YoungsModulusAndPoissonsRatio material;
   double thickness;
+  double density{1.0};
 
   template <typename PreFE, typename FE>
   using Skill = KirchhoffLoveShell<PreFE, FE>;
@@ -99,7 +100,8 @@ public:
    */
   KirchhoffLoveShell(const Pre& pre)
       : mat_{pre.material},
-        thickness_{pre.thickness} {}
+        thickness_{pre.thickness},
+        density_{pre.density} {}
 
 protected:
   /**
@@ -179,6 +181,7 @@ private:
   // DefaultMembraneStrain membraneStrain_;
   YoungsModulusAndPoissonsRatio mat_;
   double thickness_;
+  double density_{1.0};
 
   size_t numberOfNodes_{0};
   int order_{};
@@ -238,6 +241,10 @@ protected:
   void calculateMatrixImpl(
       const Requirement& par, const MatrixAffordance& affordance, typename Traits::template MatrixType<ST> K,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const {
+    if (affordance == MatrixAffordance::mass) {
+      calculateMassImpl<ST>(par, affordance, K);
+      return;
+    }
     if (affordance != MatrixAffordance::stiffness)
       DUNE_THROW(Dune::NotImplemented, "MatrixAffordance not implemented: " + toString(affordance));
     using namespace Dune::DerivativeDirections;
@@ -277,6 +284,29 @@ protected:
       }
     }
     K.template triangularView<Eigen::StrictlyLower>() = K.transpose();
+  }
+
+  template <typename ScalarType>
+  void calculateMassImpl(const Requirement& par, const MatrixAffordance& affordance,
+                         typename Traits::template MatrixType<> M) const {
+    const auto geo = underlying().localView().element().geometry();
+
+    for (const auto& [gpIndex, gp] : localBasis_.viewOverIntegrationPoints()) {
+      const auto intElement = geo.integrationElement(gp.position()) * gp.weight();
+      auto& N               = localBasis_.evaluateFunction(gpIndex);
+
+      auto nopI = Eigen::Matrix<double, worldDim, worldDim>::Zero().eval();
+      auto nopJ = Eigen::Matrix<double, worldDim, worldDim>::Zero().eval();
+
+      for (size_t i = 0; i < numberOfNodes_; ++i) {
+        nopI.diagonal().setConstant(N[i]);
+        for (size_t j = 0; j < numberOfNodes_; ++j) {
+          nopJ.diagonal().setConstant(N[j]);
+          M.template block<worldDim, worldDim>(i * worldDim, j * worldDim) +=
+              nopI.transpose() * density_ * nopJ * intElement;
+        }
+      }
+    }
   }
 
   template <typename ST>
@@ -428,13 +458,14 @@ protected:
 
 /**
  * \brief A struct containing information about the Youngs Modulus,
- * Poisson's ratio and the thickness for the Kirchhoff-Love shell element.
+ * Poisson's ratio, thickness and the density (defaults so 1.0) for the Kirchhoff-Love shell element.
  */
 struct KlArgs
 {
   double youngs_modulus;
   double nu;
   double thickness;
+  double density{1.0};
 };
 
 /**
@@ -443,7 +474,7 @@ struct KlArgs
  * \return A Kirchhoff-Love shell pre finite element.
  */
 auto kirchhoffLoveShell(const KlArgs& args) {
-  KirchhoffLoveShellPre pre({.emodul = args.youngs_modulus, .nu = args.nu}, args.thickness);
+  KirchhoffLoveShellPre pre({.emodul = args.youngs_modulus, .nu = args.nu}, args.thickness, args.density);
 
   return pre;
 }
