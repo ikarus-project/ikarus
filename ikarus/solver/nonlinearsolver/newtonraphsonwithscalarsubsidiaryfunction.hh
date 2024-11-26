@@ -8,11 +8,11 @@
 
 #pragma once
 
-#include <iosfwd>
 #include <utility>
 
-#include "ikarus/assembler/dirichletbcenforcement.hh"
+#include <ikarus/assembler/dirichletbcenforcement.hh>
 #include <ikarus/controlroutines/pathfollowingfunctions.hh>
+#include <ikarus/solver/nonlinearsolver/convergencecriteria.hh>
 #include <ikarus/solver/nonlinearsolver/solverinfos.hh>
 #include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/observer/observer.hh>
@@ -20,7 +20,8 @@
 
 namespace Ikarus {
 
-template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
+template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault,
+          typename CC = ConvergenceCriteria::ResiduumNorm>
 class NewtonRaphsonWithSubsidiaryFunction;
 
 struct NewtonRaphsonWithSubsidiaryFunctionSettings
@@ -33,19 +34,24 @@ struct NewtonRaphsonWithSubsidiaryFunctionSettings
  * \struct NewtonRaphsonWithSubsidiaryFunctionConfig
  * \brief Settings for the Newton-Raphson solver with subsidiary function.
  */
-template <typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
+template <typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault,
+          typename CC = ConvergenceCriteria::ResiduumNorm>
 struct NewtonRaphsonWithSubsidiaryFunctionConfig
 {
-  using LinearSolver   = LS;
-  using UpdateFunction = UF;
+  using LinearSolver         = LS;
+  using UpdateFunction       = UF;
+  using ConvergenceCriterion = CC;
   NewtonRaphsonWithSubsidiaryFunctionSettings parameters;
   LS linearSolver;
   UF updateFunction;
+  CC convergenceCriterion;
 
   template <typename UF2>
   auto rebindUpdateFunction(UF2&& updateFunction) const {
-    NewtonRaphsonWithSubsidiaryFunctionConfig<LS, UF2> settings{
-        .parameters = parameters, .linearSolver = linearSolver, .updateFunction = std::forward<UF2>(updateFunction)};
+    NewtonRaphsonWithSubsidiaryFunctionConfig<LS, UF2> settings{.parameters     = parameters,
+                                                                .linearSolver   = linearSolver,
+                                                                .updateFunction = std::forward<UF2>(updateFunction),
+                                                                .convergenceCriterion = convergenceCriterion};
     return settings;
   }
 
@@ -66,23 +72,24 @@ requires traits::isSpecialization<NewtonRaphsonWithSubsidiaryFunctionConfig, std
 auto createNonlinearSolver(NRConfig&& config, NLO&& nonLinearOperator) {
   using LS           = std::remove_cvref_t<NRConfig>::LinearSolver;
   using UF           = std::remove_cvref_t<NRConfig>::UpdateFunction;
-  auto solverFactory = []<class NLO2, class LS2, class UF2>(NLO2&& nlo2, LS2&& ls, UF2&& uf) {
+  using CC           = std::remove_cvref_t<NRConfig>::ConvergenceCriterion;
+  auto solverFactory = []<class NLO2, class LS2, class UF2, class CC2>(NLO2&& nlo2, LS2&& ls, UF2&& uf, CC2&& cc) {
     return std::make_shared<NewtonRaphsonWithSubsidiaryFunction<std::remove_cvref_t<NLO2>, std::remove_cvref_t<LS2>,
-                                                                std::remove_cvref_t<UF2>>>(nlo2, std::forward<LS2>(ls),
-                                                                                           std::forward<UF2>(uf));
+                                                                std::remove_cvref_t<UF2>, std::remove_cvref_t<CC2>>>(
+        nlo2, std::forward<LS2>(ls), std::forward<UF2>(uf), cc);
   };
 
   if constexpr (std::remove_cvref_t<NLO>::numberOfFunctions == 3) {
     auto solver =
         solverFactory(nonLinearOperator.template subOperator<1, 2>(), std::forward<NRConfig>(config).linearSolver,
-                      std::forward<NRConfig>(config).updateFunction);
+                      std::forward<NRConfig>(config).updateFunction, config.convergenceCriterion);
     solver->setup(config.parameters);
     return solver;
   } else {
     static_assert(std::remove_cvref_t<NLO>::numberOfFunctions > 1,
                   "The number of derivatives in the nonlinear operator have to be more than 1");
     auto solver = solverFactory(nonLinearOperator, std::forward<NRConfig>(config).linearSolver,
-                                std::forward<NRConfig>(config).updateFunction);
+                                std::forward<NRConfig>(config).updateFunction, config.convergenceCriterion);
     ;
 
     solver->setup(std::forward<NRConfig>(config).parameters);
@@ -100,7 +107,7 @@ auto createNonlinearSolver(NRConfig&& config, NLO&& nonLinearOperator) {
  * \tparam LS Type of the linear solver used internally (default is SolverDefault).
  * \tparam UF Type of the update function (default is UpdateDefault).
  */
-template <typename NLO, typename LS, typename UF>
+template <typename NLO, typename LS, typename UF, typename CC>
 class NewtonRaphsonWithSubsidiaryFunction : public IObservable<NonLinearSolverMessages>
 {
 public:
@@ -112,8 +119,9 @@ public:
   ///< Type representing the parameter vector of the nonlinear operator.
   using ValueType = typename NLO::template ParameterValue<0>;
   ///< Type representing the update function.
-  using UpdateFunctionType = UF;
-  using NonLinearOperator  = NLO; ///< Type of the non-linear operator
+  using UpdateFunctionType   = UF;
+  using NonLinearOperator    = NLO; ///< Type of the non-linear operator
+  using ConvergenceCriterion = CC;
 
   /**
    * \brief Constructor for NewtonRaphsonWithSubsidiaryFunction.
@@ -124,10 +132,11 @@ public:
    */
   template <typename LS2 = LS, typename UF2 = UF>
   explicit NewtonRaphsonWithSubsidiaryFunction(const NLO& nonLinearOperator, LS2&& linearSolver = {},
-                                               UF2&& updateFunction = {})
+                                               UF2&& updateFunction = {}, CC convergenceCriterion = {})
       : nonLinearOperator_{nonLinearOperator},
         linearSolver_{std::forward<LS2>(linearSolver)},
-        updateFunction_{std::forward<UF2>(updateFunction)} {}
+        updateFunction_{std::forward<UF2>(updateFunction)},
+        convergenceCriterion_{convergenceCriterion} {}
 
   /**
    * \brief Setup the Newton-Raphson solver with subsidiary function.
@@ -202,7 +211,7 @@ public:
       linearSolver_.analyzePattern(Ax);
 
     /// Iterative solving scheme
-    while (rNorm > settings_.tol && iter < settings_.maxIter) {
+    while (not(convergenceCriterion_(nonLinearOperator(), settings_, deltaD)) && iter < settings_.maxIter) {
       this->notify(NonLinearSolverMessages::ITERATION_STARTED);
 
       /// Two-step solving procedure
@@ -263,6 +272,7 @@ private:
   LS linearSolver_;
   UF updateFunction_;
   Settings settings_;
+  CC convergenceCriterion_;
 };
 /**
  * \brief Function to create a NewtonRaphson with subsidiary function solver instance.

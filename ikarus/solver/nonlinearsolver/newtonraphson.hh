@@ -9,6 +9,7 @@
 #pragma once
 
 #include <ikarus/solver/linearsolver/linearsolver.hh>
+#include <ikarus/solver/nonlinearsolver/convergencecriteria.hh>
 #include <ikarus/solver/nonlinearsolver/solverinfos.hh>
 #include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/defaultfunctions.hh>
@@ -18,7 +19,8 @@
 
 namespace Ikarus {
 
-template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
+template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault,
+          typename CC = ConvergenceCriteria::ResiduumNorm>
 class NewtonRaphson;
 
 struct NRSettings
@@ -32,19 +34,24 @@ struct NRSettings
  * \struct NewtonRaphsonConfig
  * \brief Config for the Newton-Raphson solver.
  */
-template <typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
+template <typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault,
+          typename CC = ConvergenceCriteria::ResiduumNorm>
 struct NewtonRaphsonConfig
 {
-  using LinearSolver   = LS;
-  using UpdateFunction = UF;
+  using LinearSolver         = LS;
+  using UpdateFunction       = UF;
+  using ConvergenceCriterion = CC;
   NRSettings parameters;
   LS linearSolver;
   UF updateFunction;
+  CC convergenceCriterion;
 
   template <typename UF2>
   auto rebindUpdateFunction(UF2&& updateFunction) const {
-    NewtonRaphsonConfig<LS, UF2> settings{
-        .parameters = parameters, .linearSolver = linearSolver, .updateFunction = std::forward<UF2>(updateFunction)};
+    NewtonRaphsonConfig<LS, UF2> settings{.parameters           = parameters,
+                                          .linearSolver         = linearSolver,
+                                          .updateFunction       = std::forward<UF2>(updateFunction),
+                                          .convergenceCriterion = convergenceCriterion};
     return settings;
   }
 
@@ -65,23 +72,24 @@ requires traits::isSpecialization<NewtonRaphsonConfig, std::remove_cvref_t<NRCon
 auto createNonlinearSolver(NRConfig&& config, NLO&& nonLinearOperator) {
   using LS           = std::remove_cvref_t<NRConfig>::LinearSolver;
   using UF           = std::remove_cvref_t<NRConfig>::UpdateFunction;
-  auto solverFactory = []<class NLO2, class LS2, class UF2>(NLO2&& nlo2, LS2&& ls, UF2&& uf) {
-    return std::make_shared<
-        NewtonRaphson<std::remove_cvref_t<NLO2>, std::remove_cvref_t<LS2>, std::remove_cvref_t<UF2>>>(
-        nlo2, std::forward<LS2>(ls), std::forward<UF2>(uf));
+  using CC           = std::remove_cvref_t<NRConfig>::ConvergenceCriterion;
+  auto solverFactory = []<class NLO2, class LS2, class UF2, class CC2>(NLO2&& nlo2, LS2&& ls, UF2&& uf, CC2&& cc) {
+    return std::make_shared<NewtonRaphson<std::remove_cvref_t<NLO2>, std::remove_cvref_t<LS2>, std::remove_cvref_t<UF2>,
+                                          std::remove_cvref_t<CC2>>>(nlo2, std::forward<LS2>(ls), std::forward<UF2>(uf),
+                                                                     cc);
   };
 
   if constexpr (std::remove_cvref_t<NLO>::numberOfFunctions == 3) {
     auto solver =
         solverFactory(nonLinearOperator.template subOperator<1, 2>(), std::forward<NRConfig>(config).linearSolver,
-                      std::forward<NRConfig>(config).updateFunction);
+                      std::forward<NRConfig>(config).updateFunction, config.convergenceCriterion);
     solver->setup(config.parameters);
     return solver;
   } else {
     static_assert(std::remove_cvref_t<NLO>::numberOfFunctions > 1,
                   "The number of derivatives in the nonlinear operator have to be more than 1");
     auto solver = solverFactory(nonLinearOperator, std::forward<NRConfig>(config).linearSolver,
-                                std::forward<NRConfig>(config).updateFunction);
+                                std::forward<NRConfig>(config).updateFunction, config.convergenceCriterion);
     ;
 
     solver->setup(std::forward<NRConfig>(config).parameters);
@@ -98,7 +106,7 @@ auto createNonlinearSolver(NRConfig&& config, NLO&& nonLinearOperator) {
  * \relates makeNewtonRaphson
  * \ingroup solvers
  */
-template <typename NLO, typename LS, typename UF>
+template <typename NLO, typename LS, typename UF, typename CC>
 class NewtonRaphson : public IObservable<NonLinearSolverMessages>
 {
 public:
@@ -110,8 +118,9 @@ public:
   ///< Type representing the parameter vector of the nonlinear operator.
   using ValueType = typename NLO::template ParameterValue<0>;
 
-  using UpdateFunction    = UF;  ///< Type representing the update function.
-  using NonLinearOperator = NLO; ///< Type of the non-linear operator
+  using UpdateFunction       = UF;  ///< Type representing the update function.
+  using NonLinearOperator    = NLO; ///< Type of the non-linear operator
+  using ConvergenceCriterion = CC;
 
   /**
    * \brief Constructor for NewtonRaphson.
@@ -120,10 +129,12 @@ public:
    * \param updateFunction Update function (default is UpdateDefault).
    */
   template <typename LS2 = LS, typename UF2 = UF>
-  explicit NewtonRaphson(const NonLinearOperator& nonLinearOperator, LS2&& linearSolver = {}, UF2&& updateFunction = {})
+  explicit NewtonRaphson(const NonLinearOperator& nonLinearOperator, LS2&& linearSolver = {}, UF2&& updateFunction = {},
+                         CC convergenceCriterion = {})
       : nonLinearOperator_{nonLinearOperator},
         linearSolver_{std::forward<LS2>(linearSolver)},
-        updateFunction_{std::forward<UF2>(updateFunction)} {
+        updateFunction_{std::forward<UF2>(updateFunction)},
+        convergenceCriterion_{convergenceCriterion} {
     if constexpr (std::is_same_v<typename NonLinearOperator::ValueType, Eigen::VectorXd>)
       correction_.setZero(this->nonLinearOperator().value().size());
   }
@@ -170,7 +181,8 @@ public:
     int iter{0};
     if constexpr (isLinearSolver)
       linearSolver_.analyzePattern(Ax);
-    while ((rNorm > settings_.tol && iter < settings_.maxIter) or iter < settings_.minIter) {
+    while ((not(convergenceCriterion_(nonLinearOperator(), settings_, correction_)) && iter < settings_.maxIter) or
+           iter < settings_.minIter) {
       this->notify(NonLinearSolverMessages::ITERATION_STARTED);
       if constexpr (isLinearSolver) {
         linearSolver_.factorize(Ax);
@@ -212,6 +224,7 @@ private:
   LS linearSolver_;
   UpdateFunction updateFunction_;
   Settings settings_;
+  CC convergenceCriterion_;
 };
 
 /**
