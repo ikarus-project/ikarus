@@ -61,6 +61,7 @@ if __name__ == "__main__":
 
     lambdaLoad = iks.Scalar(1.0)
     thickness = 0.1
+    density = 100
 
     def vL(x, lambdaVal):
         return np.array([0, 0, 2 * thickness**3 * lambdaVal])
@@ -68,7 +69,7 @@ if __name__ == "__main__":
     vLoad = iks.finite_elements.volumeLoad3D(vL)
 
     klShell = iks.finite_elements.kirchhoffLoveShell(
-        youngs_modulus=1000, nu=0.0, thickness=thickness
+        youngs_modulus=1000, nu=0.0, thickness=thickness, density=density
     )
 
     fes = []
