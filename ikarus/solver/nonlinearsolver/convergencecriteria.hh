@@ -26,10 +26,12 @@ struct ResiduumNorm
    * \param solverSettings The nonlinear solver settings.
    * \param corectionVector The correction vector used to update the solution.
    */
-  template <typename NLO, typename NSS, typename CV = std::remove_cvref_t<decltype(NLO::firstParameter())>>
-  bool operator()(NLO& nonLinearOperator, const NSS& solverSettings,
+  template <typename NLO, typename NSS, typename CV>
+  bool operator()(const std::shared_ptr<NLO>& nonLinearOperator, const NSS& solverSettings,
                   [[maybe_unused]] const CV& correctionVector) const {
-    const auto& rx = nonLinearOperator.value();
+    static_assert(std::is_same_v<CV, std::remove_cvref_t<decltype(nonLinearOperator->firstParameter())>>,
+                  "CV type does not match nonLinearOperator->firstParameter()");
+    const auto& rx = nonLinearOperator->value();
     auto rNorm     = norm(rx);
     return Dune::FloatCmp::le(static_cast<double>(rNorm), solverSettings.tol);
   }
@@ -47,9 +49,11 @@ struct CorrectionNorm
    * \param solverSettings The nonlinear solver settings.
    * \param corectionVector The correction vector used to update the solution.
    */
-  template <typename NLO, typename NSS, typename CV = std::remove_cvref_t<decltype(NLO::firstParameter())>>
-  bool operator()(NLO& nonLinearOperator, const NSS& solverSettings,
+  template <typename NLO, typename NSS, typename CV>
+  bool operator()(const std::shared_ptr<NLO>& nonLinearOperator, const NSS& solverSettings,
                   [[maybe_unused]] const CV& correctionVector) const {
+    static_assert(std::is_same_v<CV, std::remove_cvref_t<decltype(nonLinearOperator->firstParameter())>>,
+                  "CV type does not match nonLinearOperator->firstParameter()");
     auto dNorm = norm(correctionVector);
     return Dune::FloatCmp::le(static_cast<double>(dNorm), solverSettings.tol);
   }
@@ -72,10 +76,12 @@ struct MaximumSolution
    * \param solverSettings The nonlinear solver settings.
    * \param corectionVector The correction vector used to update the solution.
    */
-  template <typename NLO, typename NSS, typename CV = std::remove_cvref_t<decltype(NLO::firstParameter())>>
-  bool operator()(NLO& nonLinearOperator, const NSS& solverSettings,
+  template <typename NLO, typename NSS, typename CV>
+  bool operator()(const std::shared_ptr<NLO>& nonLinearOperator, const NSS& solverSettings,
                   [[maybe_unused]] const CV& correctionVector) const {
-    const auto& sol = nonLinearOperator.firstParameter();
+    static_assert(std::is_same_v<CV, std::remove_cvref_t<decltype(nonLinearOperator->firstParameter())>>,
+                  "CV type does not match nonLinearOperator->firstParameter()");
+    const auto& sol = nonLinearOperator->firstParameter();
     auto maxSol     = max(sol);
     return Dune::FloatCmp::le(static_cast<double>(std::abs(maxSol - maxSol_)), solverSettings.tol);
   }

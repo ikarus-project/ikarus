@@ -181,7 +181,8 @@ public:
     int iter{0};
     if constexpr (isLinearSolver)
       linearSolver_.analyzePattern(Ax);
-    while ((not(convergenceCriterion_(nonLinearOperator(), settings_, correction_)) && iter < settings_.maxIter) or
+    while ((not(convergenceCriterion_(std::make_shared<NLO>(nonLinearOperator()), settings_, correction_)) &&
+            iter < settings_.maxIter) or
            iter < settings_.minIter) {
       this->notify(NonLinearSolverMessages::ITERATION_STARTED);
       if constexpr (isLinearSolver) {
