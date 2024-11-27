@@ -30,21 +30,25 @@ template <typename FEC, typename DV>
 struct ModalAnalysis
 {
   using Assembler     = SparseFlatAssembler<FEC, DV>;
+  using MatrixType    = typename Assembler::MatrixType;
   using FERequirement = typename Assembler::FERequirement;
-  using FEContainer = std::remove_cvref_t<FEC>;
+  using FEContainer   = FEC;
+
+  // static_assert(MatrixType::IsRowMajor, "Rowmajor");
 
   using LumpedAssembler =
       AssemblerManipulator<Assembler, Ikarus::Impl::AssemblerInterfaceHelper<ScalarAssembler, ScalarManipulator>,
                            Ikarus::Impl::AssemblerInterfaceHelper<VectorAssembler, VectorManipulator>,
                            Ikarus::Impl::AssemblerInterfaceHelper<MatrixAssembler, MatrixManipulator>>;
-  using Solver = GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, Eigen::SparseMatrix<double>>;
+  using Solver = GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, MatrixType>;
 
   template <typename FES>
   ModalAnalysis(FES&& fes, const DV& dv)
-      : d_(dv.basis().size()),
+      : fes_(std::forward<FES>(fes)),
+        d_(dv.basis().size()),
         dRef_(d_),
-        stiffAssembler_(makeSparseFlatAssembler(std::forward<FES>(fes), dv)),
-        massAssembler_(makeSparseFlatAssembler(std::forward<FES>(fes), dv)) {
+        stiffAssembler_(std::make_shared<Assembler>(fes_, dv)),
+        massAssembler_(std::make_shared<Assembler>(fes_, dv)) {
     if constexpr (std::remove_cvref_t<decltype(fes.front())>::Traits::useEigenRef)
       req_.insertGlobalSolution(dRef_);
     else
@@ -127,6 +131,7 @@ struct ModalAnalysis
   auto nev() const { return solver_->nev(); }
 
 private:
+  FEContainer fes_;
   FERequirement req_{};
   Eigen::VectorXd d_;
   Eigen::Ref<Eigen::VectorXd> dRef_;
@@ -145,6 +150,4 @@ private:
 template <typename FEC, typename DV>
 ModalAnalysis(FEC&&, const DV&) -> ModalAnalysis<FEC, DV>;
 
-template <typename FEC, typename DV>
-ModalAnalysis(const FEC&, const DV&) -> ModalAnalysis<FEC, DV>;
 } // namespace Ikarus::Dynamics

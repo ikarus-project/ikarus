@@ -9,6 +9,8 @@
 #include <dune/python/pybind11/pybind11.h>
 #include <dune/python/pybind11/stl.h>
 
+#define EIGEN_DEFAULT_TO_ROW_MAJOR 1
+
 namespace Ikarus::Python {
 
 template <class ModalAnalysis, class... options>
