@@ -211,8 +211,7 @@ public:
       linearSolver_.analyzePattern(Ax);
 
     /// Iterative solving scheme
-    while (not(convergenceCriterion_(std::make_shared<NLO>(nonLinearOperator()), settings_, deltaD)) &&
-           iter < settings_.maxIter) {
+    while (not(convergenceCriterion_(nonLinearOperator(), settings_, deltaD)) && iter < settings_.maxIter) {
       this->notify(NonLinearSolverMessages::ITERATION_STARTED);
 
       /// Two-step solving procedure
