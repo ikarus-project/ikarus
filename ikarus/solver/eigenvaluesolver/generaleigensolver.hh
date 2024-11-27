@@ -116,7 +116,6 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, MT>
     return eigenvectors_;
   }
 
-
   Eigen::Index nev() const { return nev_; }
 
 private:
@@ -148,13 +147,11 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Eigen, MT>
   template <typename MATA, typename MATB>
   requires(Concepts::EigenMatrix<std::remove_cvref_t<MATA>>)
   GeneralSymEigenSolver(MATA&& A, MATB&& B)
-      : matA_(A),
-        matB_(B),
+      : matA_(std::forward<MATA>(A)),
+        matB_(std::forward<MATB>(B)),
         solver_(A.size()) {
     if (A.cols() != B.cols())
       DUNE_THROW(Dune::IOError, "GeneralSymEigenSolver: The passed matrices should have the same size");
-    std::cout << A << std::endl;
-    std::cout << B << std::endl;
   }
 
   template <Concepts::FlatAssembler AssemblerA, Concepts::FlatAssembler AssemblerB>
@@ -198,7 +195,6 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Eigen, MT>
     assertCompute();
     return solver_.eigenvectors();
   }
-
 
 private:
   MatrixType matA_;
@@ -293,7 +289,6 @@ struct PartialGeneralSymEigenSolver
     assertCompute();
     return solver_.eigenvectors(_nev.value_or(nev_));
   }
-
 
   Eigen::Index nev() const { return nev_; }
 

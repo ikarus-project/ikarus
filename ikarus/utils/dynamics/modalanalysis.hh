@@ -130,12 +130,8 @@ struct ModalAnalysis
 
   auto nev() const { return solver_->nev(); }
 
-  auto& stiffnessAssembler() const {
-    return stiffAssembler_;
-  }
-  auto& massAssembler() const {
-    return lumpedMassAssembler_;
-  }
+  auto& stiffnessAssembler() const { return stiffAssembler_; }
+  auto& massAssembler() const { return lumpedMassAssembler_; }
 
 private:
   FEContainer fes_;

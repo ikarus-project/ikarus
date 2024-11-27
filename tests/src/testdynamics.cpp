@@ -72,7 +72,7 @@ static auto dynamicsTest() {
   mA.registerLumpingScheme<Ikarus::Dynamics::LumpingSchemes::RowSumLumping>();
   mA.compute();
 
-  auto frequenciesLumped = mA.angularFrequencies();
+  auto frequenciesLumped  = mA.angularFrequencies();
   auto frequenciesLumped2 = mA.frequencies(Ikarus::Dynamics::ModalAnalysisResultType::angularFrequency);
 
   t.check(isApproxSame(frequenciesLumped, frequenciesLumped2, 1e-16));
