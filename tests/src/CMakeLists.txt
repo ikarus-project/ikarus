@@ -38,7 +38,7 @@ set(programSourceFiles
     testresultfunction.cpp
     testtruss.cpp
     testvtkwriter.cpp
-    testdynamics.cpp
+    testmodalanalysis.cpp
     testeigenvaluesolver.cpp
 )
 
@@ -53,6 +53,8 @@ set(TEST_DEPENDING_ON_LOCALFEFUNCTIONS
     testnonlinearelasticitysvk
     testadaptivestepsizing
     testresultfunction.cpp
+    testmodalanalysis.cpp
+    testvtkwriter.cpp
 )
 # Compile only tests
 dune_add_test(

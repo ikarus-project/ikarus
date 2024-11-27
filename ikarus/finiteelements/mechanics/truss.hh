@@ -160,7 +160,7 @@ public:
   }
 
   /**
-   * \brief Computes the length fo the truss and the coordinate transformation matrix T for the undeformed configuration
+   * \brief Computes the length of the truss and the coordinate transformation matrix T for the undeformed configuration
    *
    * \return std::pair of length, and T
    */
@@ -227,7 +227,7 @@ protected:
     if (affordance == MatrixAffordance::stiffness) {
       const auto [L, l, Elin, Egl, dEdu, ddEddu] = computeStrain(par, dx);
       K += E_ * A_ * L * (dEdu * dEdu.transpose() + ddEddu * Egl);
-    } else if (affordance == MatrixAffordance::mass) {
+    } else if (affordance == MatrixAffordance::linearMass) {
       Eigen::Matrix<ScalarType, 2, 2> mLoc{
           {2, 1},
           {1, 2}

@@ -8,35 +8,24 @@
 
 #include <dune/common/float_cmp.hh>
 #include <dune/common/test/testsuite.hh>
-#include <dune/fufem/dunepython.hh>
-#include <dune/functions/functionspacebases/basistags.hh>
-#include <dune/functions/functionspacebases/boundarydofs.hh>
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
-#include <dune/grid/uggrid.hh>
 #include <dune/grid/yaspgrid.hh>
-#include <dune/localfefunctions/eigenDuneTransformations.hh>
-#include <dune/vtk/datacollectors/discontinuousdatacollector.hh>
 
 #include <ikarus/assembler/simpleassemblers.hh>
 #include <ikarus/finiteelements/fefactory.hh>
 #include <ikarus/finiteelements/mechanics/linearelastic.hh>
-#include <ikarus/finiteelements/mechanics/loads/volume.hh>
 #include <ikarus/finiteelements/mixin.hh>
-#include <ikarus/io/resultfunction.hh>
-#include <ikarus/io/vtkwriter.hh>
-#include <ikarus/solver/eigenvaluesolver/generaleigensolver.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/dirichletvalues.hh>
-#include <ikarus/utils/dynamics/lumpingschemes.hh>
-#include <ikarus/utils/dynamics/modalanalysis.hh>
 #include <ikarus/utils/init.hh>
+#include <ikarus/utils/modalanalysis/modalanalysis.hh>
 
 using Dune::TestSuite;
 
-static auto dynamicsTest() {
-  TestSuite t("DynamicsTest");
+static auto modalAnalysisTest() {
+  TestSuite t("ModalAnalysis test");
   using Grid = Dune::YaspGrid<2>;
 
   const double Lx                         = 4.0;
@@ -50,9 +39,8 @@ static auto dynamicsTest() {
   using namespace Dune::Functions::BasisFactory;
   auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<1>()));
 
-  auto vL      = []([[maybe_unused]] auto& globalCoord, auto& lamb) { return Eigen::Vector2d{0, -1}; };
   auto linMat  = Ikarus::LinearElasticity(Ikarus::toLamesFirstParameterAndShearModulus({.emodul = 100, .nu = 0.2}));
-  auto skills_ = Ikarus::skills(Ikarus::linearElastic(Ikarus::planeStress(linMat)), Ikarus::volumeLoad<2>(vL));
+  auto skills_ = Ikarus::skills(Ikarus::linearElastic(Ikarus::planeStress(linMat)));
 
   using FEType = decltype(Ikarus::makeFE(basis, skills_));
   std::vector<FEType> fes;
@@ -64,20 +52,38 @@ static auto dynamicsTest() {
   auto dirichletValues = Ikarus::DirichletValues(basis.flat());
   dirichletValues.fixBoundaryDOFs([](auto& dirichFlags, auto&& indexGlobal) { dirichFlags[indexGlobal] = true; });
 
-  auto mA = Ikarus::Dynamics::ModalAnalysis(fes, dirichletValues);
+  auto mA = Ikarus::Dynamics::ModalAnalysis(std::move(fes), dirichletValues);
   mA.compute();
 
   auto frequencies = mA.angularFrequencies();
 
-  mA.registerLumpingScheme<Ikarus::Dynamics::LumpingSchemes::RowSumLumping>();
+  mA.bindLumpingScheme<Ikarus::Dynamics::LumpingSchemes::RowSumLumping>();
   mA.compute();
 
   auto frequenciesLumped = mA.angularFrequencies();
+  t.check(frequencies.sum() > frequenciesLumped.sum()) << testLocation();
 
-  t.check(frequencies.sum() > frequenciesLumped.sum());
+  mA.unBindLumpingScheme();
+  mA.compute();
+  auto frequencies2 = mA.angularFrequencies();
+  t.check(isApproxSame(frequencies, frequencies2, 1e-14)) << testLocation();
 
-  // mA.plotModalSpectrum();
   mA.writeEigenModes("eigenforms", 20);
+
+  auto req = FEType::Requirement();
+  typename FEType::Requirement::SolutionVectorType d;
+  d.setZero(basis.flat().size());
+  req.insertGlobalSolution(d);
+
+  auto massAssembler = Ikarus::makeSparseFlatAssembler(fes, dirichletValues);
+  massAssembler->bind(req, Ikarus::AffordanceCollections::dynamics, Ikarus::DBCOption::Reduced);
+  auto lumpedAssembler = Ikarus::Dynamics::makeLumpedFlatAssembler(massAssembler);
+
+  auto M       = massAssembler->matrix();
+  auto MLumped = lumpedAssembler->matrix();
+
+  t.check(MLumped.nonZeros() == massAssembler->reducedSize()) << testLocation();
+  t.check(MLumped.coeff(0, 0) == M.row(0).sum()) << testLocation();
 
   return t;
 }
@@ -86,6 +92,6 @@ int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t;
 
-  t.subTest(dynamicsTest());
+  t.subTest(modalAnalysisTest());
   return t.exit();
 }

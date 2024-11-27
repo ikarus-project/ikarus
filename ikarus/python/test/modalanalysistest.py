@@ -2,19 +2,17 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 import debug_info
+
 debug_info.setDebugFlags()
 
-import math
-
 import ikarus as iks
-from ikarus import finite_elements, assembler, io, utils
+from ikarus import finite_elements, utils
 
 import numpy as np
 
 import dune.grid
 import dune.functions
 
-import os
 import unittest
 
 from dirichletvaluetest import makeGrid
@@ -23,10 +21,12 @@ from dirichletvaluetest import makeGrid
 class DynamicsTest(unittest.TestCase):
     def setUp(self):
         self.grid = makeGrid()
-        # self.grid.hierarchicalGrid.globalRefine(1)
 
         basis = iks.basis(
-            self.grid, dune.functions.Power(dune.functions.Lagrange(order=1), 2, layout="interleaved")
+            self.grid,
+            dune.functions.Power(
+                dune.functions.Lagrange(order=1), 2, layout="interleaved"
+            ),
         )
         self.flatBasis = basis.flat()
 
@@ -40,17 +40,27 @@ class DynamicsTest(unittest.TestCase):
         self.dirichletValues = iks.dirichletValues(self.flatBasis)
 
         def fixLeftHandEdge(vec, localIndex, localView, intersection):
-            # if intersection.geometry.center[0] < 1e-8:
+            if intersection.geometry.center[0] < 1e-8:
                 vec[localView.index(localIndex)] = True
 
         self.dirichletValues.fixBoundaryDOFs(fixLeftHandEdge)
 
     def test(self):
-        mA = utils.modalAnalysis(self.fes, self.dirichletValues)    
+        mA = utils.modalAnalysis(self.fes, self.dirichletValues)
         mA.compute()
+        frequencies = mA.angularFrequencies()
 
-        #frequencies = mA.angularFrequencies()
-        # print(frequencies)
+        mA.bindLumpingScheme()
+        mA.compute()
+        frequenciesLumped = mA.angularFrequencies()
+
+        self.assertTrue(np.all(frequencies >= frequenciesLumped))
+
+        mA.unBindLumpingScheme()
+        mA.compute()
+        frequenciesNotLumpedAnymore = mA.angularFrequencies()
+
+        self.assertTrue(np.isclose(frequencies, frequenciesNotLumpedAnymore).all())
 
 
 if __name__ == "__main__":

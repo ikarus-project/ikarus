@@ -372,7 +372,7 @@ namespace Concepts {
 
   /**
    * \concept DenseOrSparseEigenMatrix
-   * \brief Concept defining the requirements for sparse ot dense Eigen matrices.
+   * \brief Concept defining the requirements for sparse or dense Eigen matrices.
    * \tparam M Type representing a dense or sparse Eigen matrix.
    */
   template <typename M>
@@ -627,7 +627,7 @@ namespace Concepts {
    * \brief Concept representing an eigenvalue solver interface
    *
    * \concept EigenValueSolver
-   * A type ES satisfies EigenValueSolver if it provides the neccesary member functions and type
+   * A type ES satisfies EigenValueSolver if it provides the necessary member functions and type
    */
   template <typename ES>
   concept EigenValueSolver = requires(ES es) {

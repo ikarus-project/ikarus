@@ -180,7 +180,13 @@ def kirchhoffLoveShell(youngs_modulus: float, nu, thickness, density: float = 1.
     includes = ["ikarus/finiteelements/mechanics/kirchhoffloveshell.hh"]
     element_type = "Ikarus::KirchhoffLoveShellPre"
     return registerPreElement(
-        "KirchhoffLoveShellPre", includes, element_type, youngs_modulus, nu, thickness, density
+        "KirchhoffLoveShellPre",
+        includes,
+        element_type,
+        youngs_modulus,
+        nu,
+        thickness,
+        density,
     )
 
 

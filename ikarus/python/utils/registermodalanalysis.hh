@@ -9,7 +9,7 @@
 #include <dune/python/pybind11/pybind11.h>
 #include <dune/python/pybind11/stl.h>
 
-#define EIGEN_DEFAULT_TO_ROW_MAJOR 1
+#include <ikarus/utils/modalanalysis/lumpingschemes.hh>
 
 namespace Ikarus::Python {
 
@@ -27,13 +27,19 @@ void registerModalAnalysis(pybind11::handle scope, pybind11::class_<ModalAnalysi
           }),
           pybind11::keep_alive<1, 3>());
 
-  cls.def("compute", &ModalAnalysis::compute, pybind11::return_value_policy::copy);
+  cls.def("compute", &ModalAnalysis::compute, pybind11::return_value_policy::copy, pybind11::arg("tolerance") = 1e-10,
+          pybind11::arg("maxit") = 1000);
   cls.def("angularFrequencies", &ModalAnalysis::angularFrequencies, pybind11::return_value_policy::copy);
   cls.def("naturalFrequencies", &ModalAnalysis::naturalFrequencies, pybind11::return_value_policy::copy);
   cls.def("squaredAngularFrequencies", &ModalAnalysis::squaredAngularFrequencies, pybind11::return_value_policy::copy);
   cls.def("eigenmodes", &ModalAnalysis::eigenmodes, pybind11::return_value_policy::copy);
-  cls.def("nev", &ModalAnalysis::nev);
-  // cls.def()
+  cls.def_property_readonly("nev", &ModalAnalysis::nev);
+  cls.def("writeEigenModes", &ModalAnalysis::writeEigenModes, pybind11::arg("filename"),
+          pybind11::arg("nev") = std::nullopt);
+
+  cls.def("bindLumpingScheme",
+          [](ModalAnalysis& self) { self.template bindLumpingScheme<Dynamics::LumpingSchemes::RowSumLumping>(); });
+  cls.def("unBindLumpingScheme", &ModalAnalysis::unBindLumpingScheme);
 }
 
 } // namespace Ikarus::Python

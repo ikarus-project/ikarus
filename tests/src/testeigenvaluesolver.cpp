@@ -8,25 +8,17 @@
 
 #include <dune/common/float_cmp.hh>
 #include <dune/common/test/testsuite.hh>
-#include <dune/fufem/dunepython.hh>
-#include <dune/functions/functionspacebases/basistags.hh>
-#include <dune/functions/functionspacebases/boundarydofs.hh>
-#include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/grid/uggrid.hh>
 #include <dune/grid/yaspgrid.hh>
-#include <dune/localfefunctions/eigenDuneTransformations.hh>
-#include <dune/vtk/datacollectors/discontinuousdatacollector.hh>
 
 #include <ikarus/assembler/simpleassemblers.hh>
 #include <ikarus/finiteelements/fefactory.hh>
 #include <ikarus/finiteelements/mechanics/linearelastic.hh>
 #include <ikarus/finiteelements/mechanics/loads/volume.hh>
 #include <ikarus/finiteelements/mixin.hh>
-#include <ikarus/io/resultfunction.hh>
-#include <ikarus/io/vtkwriter.hh>
-#include <ikarus/solver/eigenvaluesolver/generaleigensolver.hh>
+#include <ikarus/solver/eigenvaluesolver/generalizedeigensolver.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/init.hh>
@@ -34,35 +26,45 @@
 using Dune::TestSuite;
 
 template <Ikarus::Concepts::EigenValueSolver SOL1, Ikarus::Concepts::EigenValueSolver SOL2>
-auto testSolversAgainstEachOther(const SOL1& solver1, const SOL2& solver2,
-                                 std::optional<Eigen::Index> nev_ = std::nullopt) {
-  TestSuite t("Test " + Dune::className<SOL1>() + ", " + Dune::className<SOL2>());
-  auto eigenvalues1  = solver1.eigenvalues();
-  auto eigenvectors1 = solver1.normalizedEigenvectors().cwiseAbs().eval();
-
-  auto eigenvalues2  = solver2.eigenvalues();
-  auto eigenvectors2 = solver2.normalizedEigenvectors().cwiseAbs().eval();
+auto testEigenValues(const SOL1& solver1, const SOL2& solver2, std::optional<Eigen::Index> nev_ = std::nullopt) {
+  TestSuite t("Test Eigenvalues" + Dune::className<SOL1>() + ", " + Dune::className<SOL2>());
+  auto eigenvalues1 = solver1.eigenvalues();
+  auto eigenvalues2 = solver2.eigenvalues();
 
   if (not nev_.has_value()) {
-    t.check(isApproxSame(eigenvalues1, eigenvalues2, 1e-10)) << testLocation();
-    t.check(isApproxSame(eigenvectors1, eigenvectors2, 1e-10)) << testLocation();
+    t.check(isApproxSame(eigenvalues1, eigenvalues2, 1e-10)) << testLocation() << "\n"
+                                                             << eigenvalues1 << "\n\n"
+                                                             << eigenvalues2;
   } else {
     t.check(isApproxSame(eigenvalues1.head(*nev_).eval(), eigenvalues2.head(*nev_).eval(), 1e-10))
         << testLocation() << "\n"
         << eigenvalues1.head(*nev_).eval() << "\n\n"
         << eigenvalues2.head(*nev_).eval();
-    ;
-    t.check(isApproxSame(eigenvectors1.leftCols(*nev_).eval(), eigenvectors2.leftCols(*nev_).eval(), 1e-10))
-        << testLocation() << "\n"
-        << eigenvectors1.leftCols(*nev_).eval() << "\n\n"
-        << eigenvectors2.leftCols(*nev_).eval();
   }
 
   return t;
 }
 
-static auto testRealWorldProblem() {
-  TestSuite t("EigenvalueTest");
+// as1 corresponds to solver1, which is tested against solver2
+template <Ikarus::Concepts::EigenValueSolver SOL1, Ikarus::Concepts::EigenValueSolver SOL2,
+          Ikarus::Concepts::FlatAssembler AS1>
+auto testEigenVectors(const SOL1& solver1, const SOL2& solver2, std::shared_ptr<AS1> as1) {
+  TestSuite t("Test Eigenvalues " + Dune::className<SOL1>() + ", " + Dune::className<SOL2>());
+
+  Eigen::MatrixXd K = as1->matrix();
+
+  Eigen::MatrixXd evecs = solver1.eigenvectors();
+  Eigen::VectorXd evals = solver2.eigenvalues();
+
+  Eigen::VectorXd T = (evecs.transpose() * K * evecs).diagonal();
+
+  t.check(isApproxSame(T, evals, 1e-10)) << testLocation() << "\n" << T << "\n\n" << evals;
+
+  return t;
+}
+
+auto testRealWorldProblem() {
+  TestSuite t("RealWorldProblem");
   using Grid = Dune::YaspGrid<2>;
 
   const double Lx                         = 4.0;
@@ -87,9 +89,7 @@ static auto testRealWorldProblem() {
     fes.back().bind(element);
   }
 
-  auto& fe = fes[0];
   auto req = FEType::Requirement();
-
   typename FEType::Requirement::SolutionVectorType d;
   d.setZero(basis.flat().size());
   req.insertGlobalSolution(d);
@@ -110,32 +110,80 @@ static auto testRealWorldProblem() {
   assKD->bind(req, Ikarus::AffordanceCollections::elastoStatics, Ikarus::DBCOption::Reduced);
 
   int nev = 10; // number of requested eigenvalues
-  using Ikarus::EigenSolverTypeTag;
+  using Ikarus::EigenValueSolverType;
 
-  auto solver = Ikarus::PartialGeneralSymEigenSolver(assK, assM, nev);
-  t.checkThrow([&]() { solver.eigenvalues(); }) << testLocation();
-  bool success = solver.compute();
+  auto partialSolver = Ikarus::PartialGeneralizedSymEigenSolver(assK, assM, nev);
+  t.checkThrow([&]() { partialSolver.eigenvalues(); }) << testLocation();
+  bool success = partialSolver.compute();
   t.check(success) << testLocation();
 
-  auto solver3 = Ikarus::makeGeneralSymEigenSolver<EigenSolverTypeTag::Eigen>(assKD, assMD);
-  solver3.compute();
+  auto solver1 = Ikarus::makeGeneralizedSymEigenSolver<EigenValueSolverType::Eigen>(assKD, assMD);
+  t.check(solver1.compute()) << testLocation();
 
-  auto solver4 = Ikarus::makeGeneralSymEigenSolver<EigenSolverTypeTag::Spectra>(assK, assM);
-  solver4.compute();
+  auto solver2 = Ikarus::makeGeneralizedSymEigenSolver<EigenValueSolverType::Spectra>(assK, assM);
+  t.check(solver2.compute()) << testLocation();
 
-  auto solver5 = Ikarus::makeGeneralSymEigenSolver<EigenSolverTypeTag::Spectra>(assKD, assMD);
-  solver5.compute();
+  auto solver3 = Ikarus::makeGeneralizedSymEigenSolver<EigenValueSolverType::Spectra>(assKD, assMD);
+  t.check(solver3.compute()) << testLocation();
 
-  t.subTest(testSolversAgainstEachOther(solver, solver3, nev));
-  t.subTest(testSolversAgainstEachOther(solver, solver4, nev));
-  t.subTest(testSolversAgainstEachOther(solver, solver5, nev));
-  t.subTest(testSolversAgainstEachOther(solver3, solver4));
-  t.subTest(testSolversAgainstEachOther(solver4, solver5));
+  t.subTest(testEigenVectors(solver2, solver3, assK));
+  t.subTest(testEigenVectors(solver3, solver2, assKD));
+  t.subTest(testEigenVectors(solver1, solver2, assKD));
+  t.subTest(testEigenVectors(solver2, solver1, assK));
 
-  static_assert(Ikarus::Concepts::EigenValueSolver<decltype(solver)>);
+  t.subTest(testEigenValues(partialSolver, solver1, nev));
+  t.subTest(testEigenValues(partialSolver, solver2, nev));
+  t.subTest(testEigenValues(partialSolver, solver3, nev));
+  t.subTest(testEigenValues(solver1, solver2));
+  t.subTest(testEigenValues(solver1, solver3));
+  t.subTest(testEigenValues(solver2, solver3));
+
+  static_assert(Ikarus::Concepts::EigenValueSolver<decltype(partialSolver)>);
+  static_assert(Ikarus::Concepts::EigenValueSolver<decltype(solver1)>);
+  static_assert(Ikarus::Concepts::EigenValueSolver<decltype(solver2)>);
   static_assert(Ikarus::Concepts::EigenValueSolver<decltype(solver3)>);
-  static_assert(Ikarus::Concepts::EigenValueSolver<decltype(solver4)>);
-  static_assert(Ikarus::Concepts::EigenValueSolver<decltype(solver5)>);
+
+  auto testMatrix1 = Eigen::MatrixX<double>::Random(10, 10).eval();
+  auto testMatrix2 = Eigen::MatrixX<double>::Random(9, 9).eval();
+  auto testMatrix3 = Eigen::MatrixX<double>::Random(9, 10).eval();
+
+  auto sparseTestMatrix1 = Eigen::SparseMatrix<double>(testMatrix1.sparseView());
+  auto sparseTestMatrix2 = Eigen::SparseMatrix<double>(testMatrix2.sparseView());
+  auto sparseTestMatrix3 = Eigen::SparseMatrix<double>(testMatrix3.sparseView());
+
+  t.checkThrow([&]() {
+    Ikarus::GeneralizedSymEigenSolver<EigenValueSolverType::Spectra, Eigen::SparseMatrix<double>>(sparseTestMatrix1,
+                                                                                                  sparseTestMatrix2);
+  }) << testLocation();
+  t.checkThrow([&]() {
+    Ikarus::GeneralizedSymEigenSolver<EigenValueSolverType::Spectra, Eigen::SparseMatrix<double>>(sparseTestMatrix2,
+                                                                                                  sparseTestMatrix1);
+  }) << testLocation();
+  t.checkThrow([&]() {
+    Ikarus::GeneralizedSymEigenSolver<EigenValueSolverType::Spectra, Eigen::SparseMatrix<double>>(sparseTestMatrix3,
+                                                                                                  sparseTestMatrix1);
+  }) << testLocation();
+
+  t.checkThrow([&]() {
+    Ikarus::GeneralizedSymEigenSolver<EigenValueSolverType::Eigen, Eigen::MatrixX<double>>(testMatrix1, testMatrix2);
+  }) << testLocation();
+  t.checkThrow([&]() {
+    Ikarus::GeneralizedSymEigenSolver<EigenValueSolverType::Spectra, Eigen::MatrixX<double>>(testMatrix2, testMatrix1);
+  }) << testLocation();
+  t.checkThrow([&]() {
+    Ikarus::GeneralizedSymEigenSolver<EigenValueSolverType::Spectra, Eigen::MatrixX<double>>(testMatrix3, testMatrix1);
+  }) << testLocation();
+
+  t.checkThrow([&]() { Ikarus::PartialGeneralizedSymEigenSolver<Eigen::MatrixX<double>>(testMatrix1, testMatrix2, 7); })
+      << testLocation();
+  t.checkThrow([&]() { Ikarus::PartialGeneralizedSymEigenSolver<Eigen::MatrixX<double>>(testMatrix2, testMatrix1, 7); })
+      << testLocation();
+  t.checkThrow([&]() { Ikarus::PartialGeneralizedSymEigenSolver<Eigen::MatrixX<double>>(testMatrix3, testMatrix1, 7); })
+      << testLocation();
+
+  t.checkThrow([&]() {
+    Ikarus::PartialGeneralizedSymEigenSolver<Eigen::MatrixX<double>>(testMatrix1, testMatrix1, 15);
+  }) << testLocation();
 
   return t;
 }
