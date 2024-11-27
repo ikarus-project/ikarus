@@ -64,7 +64,7 @@ static auto dynamicsTest() {
   auto dirichletValues = Ikarus::DirichletValues(basis.flat());
   dirichletValues.fixBoundaryDOFs([](auto& dirichFlags, auto&& indexGlobal) { dirichFlags[indexGlobal] = true; });
 
-  auto mA = Ikarus::Dynamics::ModalAnalysis(fes, dirichletValues);
+  auto mA = Ikarus::Dynamics::ModalAnalysis(std::move(fes), dirichletValues);
   mA.compute();
 
   auto frequencies = mA.angularFrequencies();
@@ -73,6 +73,9 @@ static auto dynamicsTest() {
   mA.compute();
 
   auto frequenciesLumped = mA.angularFrequencies();
+  auto frequenciesLumped2 = mA.frequencies(Ikarus::Dynamics::ModalAnalysisResultType::angularFrequency);
+
+  t.check(isApproxSame(frequenciesLumped, frequenciesLumped2, 1e-16));
 
   t.check(frequencies.sum() > frequenciesLumped.sum());
 
