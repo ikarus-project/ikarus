@@ -8,24 +8,16 @@
 
 #include <dune/common/float_cmp.hh>
 #include <dune/common/test/testsuite.hh>
-#include <dune/fufem/dunepython.hh>
-#include <dune/functions/functionspacebases/basistags.hh>
-#include <dune/functions/functionspacebases/boundarydofs.hh>
-#include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/grid/uggrid.hh>
 #include <dune/grid/yaspgrid.hh>
-#include <dune/localfefunctions/eigenDuneTransformations.hh>
-#include <dune/vtk/datacollectors/discontinuousdatacollector.hh>
 
 #include <ikarus/assembler/simpleassemblers.hh>
 #include <ikarus/finiteelements/fefactory.hh>
 #include <ikarus/finiteelements/mechanics/linearelastic.hh>
 #include <ikarus/finiteelements/mechanics/loads/volume.hh>
 #include <ikarus/finiteelements/mixin.hh>
-#include <ikarus/io/resultfunction.hh>
-#include <ikarus/io/vtkwriter.hh>
 #include <ikarus/solver/eigenvaluesolver/generaleigensolver.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/dirichletvalues.hh>

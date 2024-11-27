@@ -15,8 +15,8 @@
 #include <ikarus/assembler/assemblermanipulatorfuser.hh>
 #include <ikarus/io/vtkwriter.hh>
 #include <ikarus/utils/concepts.hh>
-#include <ikarus/utils/dynamics/lumpingschemes.hh>
 #include <ikarus/utils/makeenum.hh>
+#include <ikarus/utils/modalanalysis/lumpingschemes.hh>
 
 namespace Ikarus::Dynamics {
 
@@ -39,29 +39,36 @@ void writeEigenmodesToVTK(const Eigensolver& solver, std::shared_ptr<Assembler> 
   auto writer = Ikarus::Vtk::Writer(assembler);
   for (auto i : Dune::range(nev)) {
     auto evG = assembler->createFullVector(eigenvectors.col(i));
-    writer.addInterpolation(std::move(evG), basis, "EF " + std::to_string(i));
+    writer.addInterpolation(std::move(evG), basis, "Eigenmode " + std::to_string(i));
   }
   writer.write(filename);
 }
 
-template <Concepts::EigenValueSolver Eigensolver, Concepts::FlatAssembler Assembler>
-void writeEigenmodesToPVD(const Eigensolver& solver, std::shared_ptr<Assembler> assembler, const std::string& filename,
-                          std::optional<Eigen::Index> nev_ = std::nullopt) {
-  auto nev          = nev_.value_or(solver.nev());
-  auto eigenvectors = solver.eigenvectors();
-  auto basis        = assembler->basis();
+template <typename Derived, Concepts::FlatAssembler Assembler>
+void writeEigenmodesAsTimeSeries(const Eigen::MatrixBase<Derived>& eigenvectors, std::shared_ptr<Assembler> assembler,
+                          const std::string& filename) {
+  auto nev   = eigenvectors.cols();
+  auto basis = assembler->basis();
 
   auto writer    = std::make_shared<decltype(Ikarus::Vtk::Writer(assembler))>(Ikarus::Vtk::Writer(assembler));
   auto pvdWriter = Dune::Vtk::PvdWriter(writer);
 
   Eigen::VectorXd evG(assembler->size());
-  writer->addInterpolation(evG, basis, "EF");
+  writer->addInterpolation(evG, basis, "Eigenmode");
 
   for (auto i : Dune::range(nev)) {
     evG = assembler->createFullVector(eigenvectors.col(i));
     pvdWriter.writeTimestep(i, filename, "data", false);
   }
   pvdWriter.write(filename);
+}
+
+template <Concepts::EigenValueSolver Eigensolver, Concepts::FlatAssembler Assembler>
+void writeEigenmodesAsTimeSeries(const Eigensolver& solver, std::shared_ptr<Assembler> assembler, const std::string& filename,
+                          std::optional<Eigen::Index> nev_ = std::nullopt) {
+  auto nev          = nev_.value_or(solver.nev());
+  auto eigenvectors = solver.eigenvectors();
+  writeEigenmodesAsTimeSeries(eigenvectors, assembler, filename);
 }
 
 } // namespace Ikarus::Dynamics

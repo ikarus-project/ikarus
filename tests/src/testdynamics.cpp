@@ -8,29 +8,18 @@
 
 #include <dune/common/float_cmp.hh>
 #include <dune/common/test/testsuite.hh>
-#include <dune/fufem/dunepython.hh>
-#include <dune/functions/functionspacebases/basistags.hh>
-#include <dune/functions/functionspacebases/boundarydofs.hh>
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
-#include <dune/grid/uggrid.hh>
 #include <dune/grid/yaspgrid.hh>
-#include <dune/localfefunctions/eigenDuneTransformations.hh>
-#include <dune/vtk/datacollectors/discontinuousdatacollector.hh>
 
 #include <ikarus/assembler/simpleassemblers.hh>
 #include <ikarus/finiteelements/fefactory.hh>
 #include <ikarus/finiteelements/mechanics/linearelastic.hh>
-#include <ikarus/finiteelements/mechanics/loads/volume.hh>
 #include <ikarus/finiteelements/mixin.hh>
-#include <ikarus/io/resultfunction.hh>
-#include <ikarus/io/vtkwriter.hh>
-#include <ikarus/solver/eigenvaluesolver/generaleigensolver.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/dirichletvalues.hh>
-#include <ikarus/utils/dynamics/lumpingschemes.hh>
-#include <ikarus/utils/dynamics/modalanalysis.hh>
+#include <ikarus/utils/modalanalysis/modalanalysis.hh>
 #include <ikarus/utils/init.hh>
 
 using Dune::TestSuite;
@@ -50,9 +39,8 @@ static auto dynamicsTest() {
   using namespace Dune::Functions::BasisFactory;
   auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<1>()));
 
-  auto vL      = []([[maybe_unused]] auto& globalCoord, auto& lamb) { return Eigen::Vector2d{0, -1}; };
   auto linMat  = Ikarus::LinearElasticity(Ikarus::toLamesFirstParameterAndShearModulus({.emodul = 100, .nu = 0.2}));
-  auto skills_ = Ikarus::skills(Ikarus::linearElastic(Ikarus::planeStress(linMat)), Ikarus::volumeLoad<2>(vL));
+  auto skills_ = Ikarus::skills(Ikarus::linearElastic(Ikarus::planeStress(linMat)));
 
   using FEType = decltype(Ikarus::makeFE(basis, skills_));
   std::vector<FEType> fes;
@@ -74,12 +62,10 @@ static auto dynamicsTest() {
 
   auto frequenciesLumped  = mA.angularFrequencies();
   auto frequenciesLumped2 = mA.frequencies(Ikarus::Dynamics::ModalAnalysisResultType::angularFrequency);
-
   t.check(isApproxSame(frequenciesLumped, frequenciesLumped2, 1e-16));
 
   t.check(frequencies.sum() > frequenciesLumped.sum());
 
-  // mA.plotModalSpectrum();
   mA.writeEigenModes("eigenforms", 20);
 
   return t;

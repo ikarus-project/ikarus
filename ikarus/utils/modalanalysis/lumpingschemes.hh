@@ -7,15 +7,9 @@
  */
 
 #pragma once
-#include <dune/vtk/pvdwriter.hh>
-
+#include <dune/common/rangeutilities.hh>
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
-
-#include <ikarus/assembler/assemblermanipulatorfuser.hh>
-#include <ikarus/io/vtkwriter.hh>
-#include <ikarus/utils/concepts.hh>
-#include <ikarus/utils/makeenum.hh>
 
 namespace Ikarus::Dynamics::LumpingSchemes {
 

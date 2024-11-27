@@ -19,12 +19,12 @@
 #include <ikarus/io/vtkwriter.hh>
 #include <ikarus/solver/eigenvaluesolver/generaleigensolver.hh>
 #include <ikarus/utils/concepts.hh>
-#include <ikarus/utils/dynamics/dynamicshelpers.hh>
-#include <ikarus/utils/makeenum.hh>
+#include <ikarus/utils/modalanalysis/lumpingschemes.hh>
+#include <ikarus/utils/modalanalysis/modalanalysishelper.hh>
+#include <ikarus/utils/modalanalysis/tags.hh>
 
 namespace Ikarus::Dynamics {
 
-MAKE_ENUM(ModalAnalysisResultType, squaredAngularFrequency, angularFrequency, naturalFrequency);
 
 template <typename FEC, typename DV>
 struct ModalAnalysis
@@ -33,8 +33,6 @@ struct ModalAnalysis
   using MatrixType    = typename Assembler::MatrixType;
   using FERequirement = typename Assembler::FERequirement;
   using FEContainer   = FEC;
-
-  // static_assert(MatrixType::IsRowMajor, "Rowmajor");
 
   using LumpedAssembler =
       AssemblerManipulator<Assembler, Ikarus::Impl::AssemblerInterfaceHelper<ScalarAssembler, ScalarManipulator>,
@@ -125,7 +123,7 @@ struct ModalAnalysis
 
   void writeEigenModes(const std::string& filename, std::optional<Eigen::Index> nev_ = std::nullopt) const {
     assertCompute();
-    writeEigenmodesToPVD(solver_.value(), stiffAssembler_, filename, nev_);
+    writeEigenmodesAsTimeSeries(solver_.value(), stiffAssembler_, filename, nev_);
   }
 
   auto nev() const { return solver_->nev(); }
