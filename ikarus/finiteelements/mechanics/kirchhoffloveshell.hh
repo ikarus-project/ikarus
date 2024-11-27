@@ -241,7 +241,7 @@ protected:
   void calculateMatrixImpl(
       const Requirement& par, const MatrixAffordance& affordance, typename Traits::template MatrixType<ST> K,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const {
-    if (affordance == MatrixAffordance::mass) {
+    if (affordance == MatrixAffordance::linearMass) {
       calculateMassImpl<ST>(par, affordance, K);
       return;
     }

@@ -37,11 +37,11 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, MT>
   using ScalarType              = typename MT::Scalar;
   static constexpr bool isDense = Concepts::EigenMatrix<MT>;
 
-  using MatrixType   = MT;
-  using ProductType  = std::conditional_t<isDense, Spectra::DenseSymMatProd<ScalarType>,
-                                          Spectra::SparseSymMatProd<ScalarType>>;
-  using CholeskyType = std::conditional_t<isDense, Spectra::DenseCholesky<ScalarType>,
-                                          Spectra::SparseCholesky<ScalarType>>;
+  using MatrixType = MT;
+  using ProductType =
+      std::conditional_t<isDense, Spectra::DenseSymMatProd<ScalarType>, Spectra::SparseSymMatProd<ScalarType>>;
+  using CholeskyType =
+      std::conditional_t<isDense, Spectra::DenseCholesky<ScalarType>, Spectra::SparseCholesky<ScalarType>>;
 
   using SolverType = Spectra::SymGEigsSolver<ProductType, CholeskyType, Spectra::GEigsMode::Cholesky>;
 
@@ -53,12 +53,13 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, MT>
                        static_cast<Eigen::Index>(nev_ - std::ceil(static_cast<double>(nev_) / 2))),
         aOP_(std::forward<MATA>(A)),
         bOP_(std::forward<MATB>(B)),
-        solverSmallest_(aOP_, bOP_, nevsPartition_.first, nevsPartition_.second * 2),
+        solverSmallest_(aOP_, bOP_, nevsPartition_.first, std::min(nevsPartition_.second * 2, nev_)),
         solverGreatest_(aOP_, bOP_, nevsPartition_.second, nevsPartition_.second * 2) {
     if (A.cols() != B.cols())
       DUNE_THROW(Dune::IOError, "GeneralSymEigenSolver: The passed matrices should have the same size");
     eigenvalues_.resize(nev_);
     eigenvectors_.resize(A.rows(), nev_);
+    assert(nevsPartition_.first + nevsPartition_.second == nev_);
   }
 
   template <Concepts::FlatAssembler AssemblerA, Concepts::FlatAssembler AssemblerB>
@@ -80,13 +81,13 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, MT>
     solverSmallest_.init();
     solverSmallest_.compute(Spectra::SortRule::SmallestAlge, 1000, 1e-10, Spectra::SortRule::SmallestAlge);
 
+    eigenvalues_.head(nevsPartition_.first)      = solverSmallest_.eigenvalues();
+    eigenvectors_.leftCols(nevsPartition_.first) = solverSmallest_.eigenvectors();
+
     solverGreatest_.init();
     solverGreatest_.compute(Spectra::SortRule::LargestAlge, 1000, 1e-10, Spectra::SortRule::SmallestAlge);
 
-    eigenvalues_.head(nevsPartition_.first)  = solverSmallest_.eigenvalues();
-    eigenvalues_.tail(nevsPartition_.second) = solverGreatest_.eigenvalues();
-
-    eigenvectors_.leftCols(nevsPartition_.first)   = solverSmallest_.eigenvectors();
+    eigenvalues_.tail(nevsPartition_.second)       = solverGreatest_.eigenvalues();
     eigenvectors_.rightCols(nevsPartition_.second) = solverGreatest_.eigenvectors();
 
     computed_ = solverSmallest_.info() == Spectra::CompInfo::Successful and
@@ -115,16 +116,6 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, MT>
     return eigenvectors_;
   }
 
-  /**
-   * \brief Returns the normalized eigenvectors of the gerneral eigenvalue problem
-   *
-   * \return auto matrix with the eigevectors as columns
-   */
-  auto normalizedEigenvectors() const {
-    auto eigenvecs = eigenvectors();
-    eigenvecs.colwise().normalize();
-    return eigenvecs;
-  }
 
   Eigen::Index nev() const { return nev_; }
 
@@ -162,6 +153,8 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Eigen, MT>
         solver_(A.size()) {
     if (A.cols() != B.cols())
       DUNE_THROW(Dune::IOError, "GeneralSymEigenSolver: The passed matrices should have the same size");
+    std::cout << A << std::endl;
+    std::cout << B << std::endl;
   }
 
   template <Concepts::FlatAssembler AssemblerA, Concepts::FlatAssembler AssemblerB>
@@ -206,16 +199,6 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Eigen, MT>
     return solver_.eigenvectors();
   }
 
-  /**
-   * \brief Returns the normalized eigenvectors of the gerneral eigenvalue problem
-   *
-   * \return auto matrix with the eigevectors as columns
-   */
-  auto normalizedEigenvectors() const {
-    auto eigenvecs = eigenvectors();
-    eigenvecs.colwise().normalize();
-    return eigenvecs;
-  }
 
 private:
   MatrixType matA_;
@@ -311,17 +294,6 @@ struct PartialGeneralSymEigenSolver
     return solver_.eigenvectors(_nev.value_or(nev_));
   }
 
-  /**
-   * \brief Returns the normalized eigenvectors of the gerneral eigenvalue problem
-   *
-   * \param _nev optionally specify how many eigenvectors are requested
-   * \return auto matrix with the eigevectors as columns
-   */
-  auto normalizedEigenvectors(std::optional<Eigen::Index> _nev = std::nullopt) const {
-    Eigen::MatrixXd eigenvecs = eigenvectors(_nev);
-    eigenvecs.colwise().normalize();
-    return eigenvecs;
-  }
 
   Eigen::Index nev() const { return nev_; }
 

@@ -157,7 +157,7 @@ static auto NonLinearKLShellLoadControlTR() {
   Eigen::MatrixXd M;
   auto& fe = fes.front();
   M.setZero(fe.size(), fe.size());
-  fe.calculateMatrixImpl<double>(req, MatrixAffordance::mass, M);
+  fe.calculateMatrixImpl<double>(req, MatrixAffordance::linearMass, M);
 
   // All entries of diagonal should be greater than zero
   t.check((M.diagonal().array() > 0).all());

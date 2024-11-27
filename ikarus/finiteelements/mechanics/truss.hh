@@ -227,7 +227,7 @@ protected:
     if (affordance == MatrixAffordance::stiffness) {
       const auto [L, l, Elin, Egl, dEdu, ddEddu] = computeStrain(par, dx);
       K += E_ * A_ * L * (dEdu * dEdu.transpose() + ddEddu * Egl);
-    } else if (affordance == MatrixAffordance::mass) {
+    } else if (affordance == MatrixAffordance::linearMass) {
       Eigen::Matrix<ScalarType, 2, 2> mLoc{
           {2, 1},
           {1, 2}

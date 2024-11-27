@@ -114,7 +114,7 @@ static auto vonMisesTrussTest() {
   // Test mass matrix
   Eigen::MatrixXd me0;
   me0.setZero(4, 4);
-  calculateMatrix(fes[0], req, MatrixAffordance::mass, me0);
+  calculateMatrix(fes[0], req, MatrixAffordance::linearMass, me0);
   Eigen::Matrix<double, 4, 4> mBar;
   mBar.setZero();
   mBar(0, 0) = mBar(2, 2) = 2.0;
