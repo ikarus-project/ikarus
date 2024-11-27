@@ -210,8 +210,12 @@ public:
     if constexpr (isLinearSolver)
       linearSolver_.analyzePattern(Ax);
 
+    Eigen::VectorXd correction_(deltaD.size() + 1);
+    correction_ << deltaD, 0.0;
+
     /// Iterative solving scheme
-    while (not(convergenceCriterion_(nonLinearOperator(), settings_, deltaD)) && iter < settings_.maxIter) {
+    while (not(convergenceCriterion_(nonLinearOperator(), settings_, correction_, subsidiaryArgs)) &&
+           iter < settings_.maxIter) {
       this->notify(NonLinearSolverMessages::ITERATION_STARTED);
 
       /// Two-step solving procedure
@@ -238,7 +242,9 @@ public:
       lambda += deltalambda;
       subsidiaryArgs.Dlambda += deltalambda;
 
-      dNorm = sqrt(deltaD.dot(deltaD) + deltalambda * deltalambda);
+      correction_ << deltaD, deltalambda;
+
+      dNorm = norm(correction_);
       nonLinearOperator().updateAll();
       rNorm = sqrt(rx.dot(rx) + subsidiaryArgs.f * subsidiaryArgs.f);
 
