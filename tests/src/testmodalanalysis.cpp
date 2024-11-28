@@ -24,8 +24,8 @@
 
 using Dune::TestSuite;
 
-static auto dynamicsTest() {
-  TestSuite t("DynamicsTest");
+static auto modalAnalysisTest() {
+  TestSuite t("ModalAnalysis test");
   using Grid = Dune::YaspGrid<2>;
 
   const double Lx                         = 4.0;
@@ -92,6 +92,6 @@ int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t;
 
-  t.subTest(dynamicsTest());
+  t.subTest(modalAnalysisTest());
   return t.exit();
 }

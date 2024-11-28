@@ -77,7 +77,7 @@ struct GeneralSymEigenSolver<EigenValueSolverType::Spectra, MT>
         bOP_(std::forward<MATB>(B)),
         solverSmallest_(aOP_, bOP_, nevsPartition_.first, std::min(nevsPartition_.second * 2, nev_)),
         solverGreatest_(aOP_, bOP_, nevsPartition_.second, nevsPartition_.second * 2) {
-    if (A.cols() != B.cols())
+    if ((A.cols() != B.cols()) or (A.rows() != B.rows()) or (A.cols() != B.cols()))
       DUNE_THROW(Dune::IOError, "GeneralSymEigenSolver: The passed matrices should have the same size");
     eigenvalues_.resize(nev_);
     eigenvectors_.resize(A.rows(), nev_);
@@ -185,7 +185,7 @@ struct GeneralSymEigenSolver<EigenValueSolverType::Eigen, MT>
       : matA_(std::forward<MATA>(A)),
         matB_(std::forward<MATB>(B)),
         solver_(A.size()) {
-    if (A.cols() != B.cols())
+    if ((A.cols() != B.cols()) or (A.rows() != B.rows()) or (A.cols() != B.cols()))
       DUNE_THROW(Dune::IOError, "GeneralSymEigenSolver: The passed matrices should have the same size");
   }
 
@@ -281,7 +281,7 @@ struct PartialGeneralSymEigenSolver
         aOP_(std::forward<MATA>(A)),
         bOP_(std::forward<MATB>(B)),
         solver_(aOP_, bOP_, nev, 2 * nev <= A.cols() ? 2 * nev : A.cols()) {
-    if (A.cols() != B.cols())
+    if ((A.cols() != B.cols()) or (A.rows() != B.rows()) or (A.cols() != B.cols()))
       DUNE_THROW(Dune::IOError, "GeneralSymEigenSolver: The passed matrices should have the same size");
   }
 
