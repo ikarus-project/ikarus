@@ -17,11 +17,12 @@
 
 namespace Ikarus::Materials::Muesli {
 
-// Alias for Muesli materials
+// Alias for small strain Muesli materials
 using LinearElasticity            = muesli::elasticIsotropicMaterial;
 using LinearAnisotropicElasticity = muesli::elasticAnisotropicMaterial;
 using LinearOrthotropicElasticity = muesli::elasticOrthotropicMaterial;
 
+// Alias for finite strain Muesli materials
 using StVenantKirchhoff = muesli::svkMaterial;
 using NeoHooke          = muesli::neohookeanMaterial;
 using MooneyRivlin      = muesli::mooneyMaterial;
@@ -29,28 +30,28 @@ using Yeoh              = muesli::yeohMaterial;
 using ArrudaBoyce       = muesli::arrudaboyceMaterial;
 
 /**
- * \brief Constructs a muesli linear isotropic elastic material model based on muesli::elasticIsotropicMaterial
+ * \brief Constructs a muesli linear isotropic elastic material model based on muesli::elasticIsotropicMaterial.
  *
- * \tparam MPT the type of the Ikarus material parameters
- * \param mpt the Ikarus material parameters
- * \return auto the constructed material
+ * \tparam MPT the type of the Ikarus material parameters.
+ * \param mpt the Ikarus material parameters.
+ * \return auto the constructed material properties.
  */
-template <typename MPT>
-auto makeLinearElasticity(const MPT& mpt) {
+template <Concepts::MPTuple MPT>
+inline auto makeLinearElasticity(const MPT& mpt) {
   auto muesliParameters = propertiesFromIkarusMaterialParameters(mpt);
   return SmallStrain<Muesli::LinearElasticity>(muesliParameters);
 }
 
 /**
- * \brief Constructs a muesli NeoHooke material model based on muesli::neohookeanMaterial
+ * \brief Constructs a muesli NeoHooke material model based on muesli::neohookeanMaterial.
  *
- * \tparam MPT the type of the Ikarus material parameters
- * \param mpt the Ikarus material parameters
- * \param useDeviatoricStretches tells the material to use deviatoric principal stretches
- * \return auto the constructed material
+ * \tparam MPT the type of the Ikarus material parameters.
+ * \param mpt the Ikarus material parameters.
+ * \param useDeviatoricStretches tells the material to use deviatoric principal stretches.
+ * \return auto the constructed material.
  */
-template <typename MPT>
-auto makeNeoHooke(const MPT& mpt, bool useDeviatoricStretches = false) {
+template <Concepts::MPTuple MPT>
+inline auto makeNeoHooke(const MPT& mpt, bool useDeviatoricStretches = false) {
   auto muesliParameters = propertiesFromIkarusMaterialParameters(mpt);
   if (useDeviatoricStretches)
     addTag(muesliParameters, "subtype regularized");
@@ -58,26 +59,26 @@ auto makeNeoHooke(const MPT& mpt, bool useDeviatoricStretches = false) {
 }
 
 /**
- * \brief Constructs a muesli StVenantKirchhoff material model based on muesli::svkMaterial
+ * \brief Constructs a muesli StVenantKirchhoff material model based on muesli::svkMaterial.
  *
- * \tparam MPT the type of the Ikarus material parameters
- * \param mpt the Ikarus material parameters
- * \return auto the constructed material
+ * \tparam MPT the type of the Ikarus material parameters.
+ * \param mpt the Ikarus material parameters.
+ * \return auto the constructed material.
  */
-template <typename MPT>
-auto makeSVK(const MPT& mpt) {
+template <Concepts::MPTuple MPT>
+inline auto makeSVK(const MPT& mpt) {
   auto muesliParameters = propertiesFromIkarusMaterialParameters(mpt);
   return FiniteStrain<Muesli::StVenantKirchhoff>(muesliParameters);
 }
 
 /**
- * \brief Constructs a muesli ArrudaBoyce material model based on muesli::arrudaboyceMaterial
+ * \brief Constructs a muesli ArrudaBoyce material model based on muesli::arrudaboyceMaterial.
  *
- * \param C1 C1 parameter
- * \param lambda_m lambda_m parameter
- * \param K the bulk modulus
- * \param compressible tells the material to use the compressible version of ArrudaBoyce
- * \return auto the constructed material
+ * \param C1 C1 parameter.
+ * \param lambda_m lambda_m parameter.
+ * \param K the bulk modulus.
+ * \param compressible tells the material to use the compressible version of ArrudaBoyce.
+ * \return auto the constructed material.
  */
 inline auto makeArrudaBoyce(double C1, double lambda_m, double K, bool compressible = true) {
   auto muesliParameters = muesli::materialProperties{};
@@ -90,12 +91,12 @@ inline auto makeArrudaBoyce(double C1, double lambda_m, double K, bool compressi
 }
 
 /**
- * \brief Constructs a muesli Yeoh material model based on muesli::yeohMaterial
+ * \brief Constructs a muesli Yeoh material model based on muesli::yeohMaterial.
  *
- * \param C c1, c2, c3 parameters in a std::array
- * \param K the bzlk modolus
- * \param compressible tells the material to use the compressible version of Yeoh
- * \return auto the constructed material
+ * \param C c1, c2, c3 parameters in a std::array.
+ * \param K the bzlk modolus.
+ * \param compressible tells the material to use the compressible version of Yeoh.
+ * \return auto the constructed material.
  */
 inline auto makeYeoh(std::array<double, 3> C, double K, bool compressible = true) {
   auto muesliParameters = muesli::materialProperties{};
@@ -109,11 +110,11 @@ inline auto makeYeoh(std::array<double, 3> C, double K, bool compressible = true
 }
 
 /**
- * \brief Constructs a muesli MooneyRivlin material model based on muesli::mooneyMaterial
+ * \brief Constructs a muesli MooneyRivlin material model based on muesli::mooneyMaterial.
  *
- * \param alpha alpha0, alpha1, alpha2 parameters in a std::array, where alpha0 is the bulk modulus
- * \param incompressible tells the material to use the incompressible version of MooneyRivlin
- * \return auto the constructed material
+ * \param alpha alpha0, alpha1, alpha2 parameters in a std::array, where alpha0 is the bulk modulus.
+ * \param incompressible tells the material to use the incompressible version of MooneyRivlin.
+ * \return auto the constructed material.
  */
 inline auto makeMooneyRivlin(std::array<double, 3> alpha, bool incompressible = false) {
   auto muesliParameters = muesli::materialProperties{};

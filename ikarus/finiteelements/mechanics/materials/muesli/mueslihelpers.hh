@@ -13,6 +13,12 @@
   #include <ikarus/utils/tensorutils.hh>
 
 namespace Ikarus::Concepts {
+/**
+ * \concept MuesliMaterialImplementation
+ * \brief Concept to check weather a type is a Mueli material implementation
+ *
+ * \tparam MAT the material type
+ */
 template <typename MAT>
 concept MuesliMaterialImplementation = requires { std::is_base_of_v<muesli::material, MAT>; };
 } // namespace Ikarus::Concepts
@@ -23,11 +29,11 @@ namespace Ikarus::Materials::Muesli {
 using MaterialProperties = muesli::materialProperties;
 
 /**
- * \brief converts Ikarus material parameters to Muesli material properties
+ * \brief converts Ikarus material parameters to Muesli material properties.
  *
- * \tparam MPT the type of the Ikarus material parameters
- * \param mpt the Ikarus material parameters
- * \return MaterialProperties meusli material properties with the Lambd and mu set
+ * \tparam MPT the type of the Ikarus material parameters.
+ * \param mpt the Ikarus material parameters.
+ * \return MaterialProperties meusli material properties with the Lambda and mu set
  */
 template <Concepts::MPTuple MPT>
 inline MaterialProperties propertiesFromIkarusMaterialParameters(const MPT& mpt) {
@@ -42,18 +48,18 @@ inline MaterialProperties propertiesFromIkarusMaterialParameters(const MPT& mpt)
 
 /**
  * \brief adds a specific tag to the muesli materialproperties, thic can be used for example to add the `regularized`
- * tag for Neo-Hooke or the `compressible` tag for Yeoh and Arruda-Boyce
+ * tag for Neo-Hooke or the `compressible` tag for Yeoh and Arruda-Boyce.
  */
 inline void addTag(MaterialProperties& mpm, const std::string& tagName, double tagValue = 0) {
   mpm.insert({tagName, tagValue});
 }
 
 /**
- * \brief Converts the entries of a Eigen::Matrix to a provided muesli::tensor (symmetric 2nd order tensor)
+ * \brief Converts the entries of a Eigen::Matrix to a provided muesli::tensor (symmetric 2nd order tensor).
  *
- * \tparam Derived the derived Eigen::Matrix type
- * \param it provided istensor
- * \param C the Eigen::Matrix that is to be converted
+ * \tparam Derived the derived Eigen::Matrix type.
+ * \param it provided istensor.
+ * \param C the Eigen::Matrix that is to be converted.
  */
 template <typename Derived>
 inline void toistensor(istensor& it, const Eigen::MatrixBase<Derived>& C) {
@@ -61,12 +67,12 @@ inline void toistensor(istensor& it, const Eigen::MatrixBase<Derived>& C) {
 }
 
 /**
- * \brief Converts a provided muesli::istensor (symmetric 2nd order tensor) to a Eigen::Matrix
+ * \brief Converts a provided muesli::istensor (symmetric 2nd order tensor) to a Eigen::Matrix.
  *
- * \tparam ScalarType the ScalarType (defaults to double)
- * \tparam dim the dimension (defaults to 3)
- * \param it provided istensor
- * \return Eigen::Matrix<ScalarType, dim, dim> converted matrix
+ * \tparam ScalarType the ScalarType (defaults to double).
+ * \tparam dim the dimension (defaults to 3).
+ * \param it provided istensor.
+ * \return Eigen::Matrix<ScalarType, dim, dim> converted matrix.
  */
 template <typename ScalarType = double, int dim = 3>
 inline Eigen::Matrix<ScalarType, dim, dim> toMatrix(const istensor& it) {
@@ -78,12 +84,12 @@ inline Eigen::Matrix<ScalarType, dim, dim> toMatrix(const istensor& it) {
 }
 
 /**
- * \brief Converts a provided muesli::istensor4 (symmetric 4th order tensor) to a Eigen::TensorFixedSize
+ * \brief Converts a provided muesli::istensor4 (symmetric 4th order tensor) to a Eigen::TensorFixedSize.
  *
- * \tparam ScalarType the ScalaType (defaults to double)
- * \tparam dim the dimension (defaults to 3)
- * \param it provided istensor
- * \return Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<dim, dim, dim, dim>> converted tensor
+ * \tparam ScalarType the ScalaType (defaults to double).
+ * \tparam dim the dimension (defaults to 3).
+ * \param it provided istensor.
+ * \return Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<dim, dim, dim, dim>> converted tensor.
  */
 template <typename ScalarType = double, std::size_t dim = 3>
 inline auto toTensor(const itensor4& it) -> Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<dim, dim, dim, dim>> {
@@ -98,6 +104,12 @@ inline auto toTensor(const itensor4& it) -> Eigen::TensorFixedSize<ScalarType, E
   return moduli;
 }
 
+/**
+ * \brief Gernerates the name of the Muesli material from the class name.
+ *
+ * \tparam MAT type of the Muesli material implementation.
+ * \return constexpr std::string the name of the material.
+ */
 template <Concepts::MuesliMaterialImplementation MAT>
 constexpr std::string materialName() {
   std::string matName = Dune::className<MAT>();
