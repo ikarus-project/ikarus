@@ -3,5 +3,5 @@
 
 # install headers
 install(FILES modalanalysishelper.hh lumpingschemes.hh modalanalysis.hh
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/utils/dynamics
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/utils/modalanalysis
 )
