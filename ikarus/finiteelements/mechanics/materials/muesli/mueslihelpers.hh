@@ -105,7 +105,7 @@ inline auto toTensor(const itensor4& it) -> Eigen::TensorFixedSize<ScalarType, E
 }
 
 /**
- * \brief Gernerates the name of the Muesli material from the class name.
+ * \brief Generates the name of the Muesli material from the class name.
  *
  * \tparam MAT type of the Muesli material implementation.
  * \return constexpr std::string the name of the material.
