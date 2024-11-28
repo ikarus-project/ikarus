@@ -17,7 +17,7 @@
 #include <ikarus/assembler/assemblermanipulatorfuser.hh>
 #include <ikarus/assembler/simpleassemblers.hh>
 #include <ikarus/io/vtkwriter.hh>
-#include <ikarus/solver/eigenvaluesolver/generaleigensolver.hh>
+#include <ikarus/solver/eigenvaluesolver/generalizedeigensolver.hh>
 #include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/modalanalysis/lumpingschemes.hh>
 #include <ikarus/utils/modalanalysis/modalanalysishelper.hh>
@@ -44,7 +44,7 @@ struct ModalAnalysis
       AssemblerManipulator<Assembler, Ikarus::Impl::AssemblerInterfaceHelper<ScalarAssembler, ScalarManipulator>,
                            Ikarus::Impl::AssemblerInterfaceHelper<VectorAssembler, VectorManipulator>,
                            Ikarus::Impl::AssemblerInterfaceHelper<MatrixAssembler, MatrixManipulator>>;
-  using Solver = GeneralSymEigenSolver<EigenValueSolverType::Spectra, MatrixType>;
+  using Solver = GeneralizedSymEigenSolver<EigenValueSolverType::Spectra, MatrixType>;
 
   /**
    * \brief Construct a new Modal Analysis object

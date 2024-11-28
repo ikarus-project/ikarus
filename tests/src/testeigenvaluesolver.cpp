@@ -18,7 +18,7 @@
 #include <ikarus/finiteelements/mechanics/linearelastic.hh>
 #include <ikarus/finiteelements/mechanics/loads/volume.hh>
 #include <ikarus/finiteelements/mixin.hh>
-#include <ikarus/solver/eigenvaluesolver/generaleigensolver.hh>
+#include <ikarus/solver/eigenvaluesolver/generalizedeigensolver.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/init.hh>
@@ -112,18 +112,18 @@ auto testRealWorldProblem() {
   int nev = 10; // number of requested eigenvalues
   using Ikarus::EigenValueSolverType;
 
-  auto partialSolver = Ikarus::PartialGeneralSymEigenSolver(assK, assM, nev);
+  auto partialSolver = Ikarus::PartialGeneralizedSymEigenSolver(assK, assM, nev);
   t.checkThrow([&]() { partialSolver.eigenvalues(); }) << testLocation();
   bool success = partialSolver.compute();
   t.check(success) << testLocation();
 
-  auto solver1 = Ikarus::makeGeneralSymEigenSolver<EigenValueSolverType::Eigen>(assKD, assMD);
+  auto solver1 = Ikarus::makeGeneralizedSymEigenSolver<EigenValueSolverType::Eigen>(assKD, assMD);
   t.check(solver1.compute()) << testLocation();
 
-  auto solver2 = Ikarus::makeGeneralSymEigenSolver<EigenValueSolverType::Spectra>(assK, assM);
+  auto solver2 = Ikarus::makeGeneralizedSymEigenSolver<EigenValueSolverType::Spectra>(assK, assM);
   t.check(solver2.compute()) << testLocation();
 
-  auto solver3 = Ikarus::makeGeneralSymEigenSolver<EigenValueSolverType::Spectra>(assKD, assMD);
+  auto solver3 = Ikarus::makeGeneralizedSymEigenSolver<EigenValueSolverType::Spectra>(assKD, assMD);
   t.check(solver3.compute()) << testLocation();
 
   t.subTest(testEigenVectors(solver2, solver3, assK));
@@ -152,37 +152,38 @@ auto testRealWorldProblem() {
   auto sparseTestMatrix3 = Eigen::SparseMatrix<double>(testMatrix3.sparseView());
 
   t.checkThrow([&]() {
-    Ikarus::GeneralSymEigenSolver<EigenValueSolverType::Spectra, Eigen::SparseMatrix<double>>(sparseTestMatrix1,
-                                                                                              sparseTestMatrix2);
+    Ikarus::GeneralizedSymEigenSolver<EigenValueSolverType::Spectra, Eigen::SparseMatrix<double>>(sparseTestMatrix1,
+                                                                                                  sparseTestMatrix2);
   }) << testLocation();
   t.checkThrow([&]() {
-    Ikarus::GeneralSymEigenSolver<EigenValueSolverType::Spectra, Eigen::SparseMatrix<double>>(sparseTestMatrix2,
-                                                                                              sparseTestMatrix1);
+    Ikarus::GeneralizedSymEigenSolver<EigenValueSolverType::Spectra, Eigen::SparseMatrix<double>>(sparseTestMatrix2,
+                                                                                                  sparseTestMatrix1);
   }) << testLocation();
   t.checkThrow([&]() {
-    Ikarus::GeneralSymEigenSolver<EigenValueSolverType::Spectra, Eigen::SparseMatrix<double>>(sparseTestMatrix3,
-                                                                                              sparseTestMatrix1);
+    Ikarus::GeneralizedSymEigenSolver<EigenValueSolverType::Spectra, Eigen::SparseMatrix<double>>(sparseTestMatrix3,
+                                                                                                  sparseTestMatrix1);
   }) << testLocation();
 
   t.checkThrow([&]() {
-    Ikarus::GeneralSymEigenSolver<EigenValueSolverType::Eigen, Eigen::MatrixX<double>>(testMatrix1, testMatrix2);
+    Ikarus::GeneralizedSymEigenSolver<EigenValueSolverType::Eigen, Eigen::MatrixX<double>>(testMatrix1, testMatrix2);
   }) << testLocation();
   t.checkThrow([&]() {
-    Ikarus::GeneralSymEigenSolver<EigenValueSolverType::Spectra, Eigen::MatrixX<double>>(testMatrix2, testMatrix1);
+    Ikarus::GeneralizedSymEigenSolver<EigenValueSolverType::Spectra, Eigen::MatrixX<double>>(testMatrix2, testMatrix1);
   }) << testLocation();
   t.checkThrow([&]() {
-    Ikarus::GeneralSymEigenSolver<EigenValueSolverType::Spectra, Eigen::MatrixX<double>>(testMatrix3, testMatrix1);
+    Ikarus::GeneralizedSymEigenSolver<EigenValueSolverType::Spectra, Eigen::MatrixX<double>>(testMatrix3, testMatrix1);
   }) << testLocation();
 
-  t.checkThrow([&]() { Ikarus::PartialGeneralSymEigenSolver<Eigen::MatrixX<double>>(testMatrix1, testMatrix2, 7); })
+  t.checkThrow([&]() { Ikarus::PartialGeneralizedSymEigenSolver<Eigen::MatrixX<double>>(testMatrix1, testMatrix2, 7); })
       << testLocation();
-  t.checkThrow([&]() { Ikarus::PartialGeneralSymEigenSolver<Eigen::MatrixX<double>>(testMatrix2, testMatrix1, 7); })
+  t.checkThrow([&]() { Ikarus::PartialGeneralizedSymEigenSolver<Eigen::MatrixX<double>>(testMatrix2, testMatrix1, 7); })
       << testLocation();
-  t.checkThrow([&]() { Ikarus::PartialGeneralSymEigenSolver<Eigen::MatrixX<double>>(testMatrix3, testMatrix1, 7); })
+  t.checkThrow([&]() { Ikarus::PartialGeneralizedSymEigenSolver<Eigen::MatrixX<double>>(testMatrix3, testMatrix1, 7); })
       << testLocation();
 
-  t.checkThrow([&]() { Ikarus::PartialGeneralSymEigenSolver<Eigen::MatrixX<double>>(testMatrix1, testMatrix1, 15); })
-      << testLocation();
+  t.checkThrow([&]() {
+    Ikarus::PartialGeneralizedSymEigenSolver<Eigen::MatrixX<double>>(testMatrix1, testMatrix1, 15);
+  }) << testLocation();
 
   return t;
 }
