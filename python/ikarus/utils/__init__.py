@@ -74,7 +74,7 @@ def modalAnalysis(fes, dirichletValues):
     includes += ["ikarus/utils/modalanalysis/modalanalysis.hh"]
     includes += fes[0].cppIncludes  # include header of finite element
     includes += dirichletValues.cppIncludes
-    includes += ["ikarus/python/utils/registerModalAnalysis.hh"]
+    includes += ["ikarus/python/utils/registermodalanalysis.hh"]
     moduleName = "ModalAnalysis_" + hashIt(element_type)
     module = generator.load(
         includes=includes,
@@ -83,4 +83,3 @@ def modalAnalysis(fes, dirichletValues):
         # holder="std::shared_ptr",
     )
     return module.ModalAnalysis(fes, dirichletValues)
-
