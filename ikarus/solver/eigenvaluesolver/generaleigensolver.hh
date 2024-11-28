@@ -32,9 +32,14 @@ struct GeneralSymEigenSolver
 };
 
 /**
- * \brief
+ * \brief This class implements a wrapper to the Spectra generalized eigen solver for real symmetric matrices, i.e. to
+ * solve \f$ Ax = \lambda Bx\f$, where A is symmetric and B is positive definite. It calculates the full spectrum of
+ * eigenvalues.
+ * \details Under the hood it uses the Spectra::SymGEigsSolver with Cholesky decomposition for B. As this class can only
+ * compute up to \f$ n-1 \f$ smallest or greatest eigenvalues, we use two different solvers for the n/2 smallest and n/2
+ * greatest eigenvalues. The matrices are shared throughout the solvers so no extra copy is being made.
  *
- * \tparam MT
+ * \tparam MT the used Matrix Type, can be a sparse or dense Eigen::Matrix
  */
 template <Concepts::DenseOrSparseEigenMatrix MT>
 struct GeneralSymEigenSolver<EigenValueSolverType::Spectra, MT>
@@ -156,6 +161,13 @@ private:
   }
 };
 
+/**
+ * \brief This class implements a wrapper to the Eigen generalized eigen solver for real symmetric matrices, i.e. to
+ * solve \f$ Ax = \lambda Bx\f$, where A is symmetric and B is positive definite. A and B have to be dense matrices.
+ * \details Under the hood it uses the Eigen::GeneralizedSelfAdjointEigenSolver
+ *
+ * \tparam MT the used Matrix Type, can be a dense Eigen::Matrix
+ */
 template <Concepts::EigenMatrix MT>
 struct GeneralSymEigenSolver<EigenValueSolverType::Eigen, MT>
 {
@@ -236,6 +248,14 @@ auto makeGeneralSymEigenSolver(const std::shared_ptr<AS1>& as1, const std::share
   return SolverType{as1, as2};
 }
 
+/**
+ * \brief This class implements a wrapper to the Spectra generalized eigen solver for real symmetric matrices, i.e. to
+ * solve \f$ Ax = \lambda Bx\f$, where A is symmetric and B is positive definite. It calculates a selection of
+ * eigenvalues. At most \f$ n - 1 \f$, where \f$ n \f$ is the rows/cols of the matrices.
+ * \details Under the hood it uses the Spectra::SymGEigsSolver with Cholesky decomposition for B
+ *
+ * \tparam MT the used Matrix Type, can be a sparse or dense Eigen::Matrix
+ */
 template <Concepts::DenseOrSparseEigenMatrix MT>
 struct PartialGeneralSymEigenSolver
 {
@@ -269,12 +289,16 @@ struct PartialGeneralSymEigenSolver
   /**
    * \brief Starts the computation of the eigenvalue solver
    *
-   * \param tolerance given tolerance for iterative eigenvalue solving (default: 1e-10)
-   * \param maxit givenn maximum iterations for eigenvalue solving (default: 1000)
-   * \return true solving was successful
-   * \return false solving was not successful
+   * \param selection defines which n eigenvalues should be returned (i.e. smallest or greatesst).
+   * \param sortRule defines how these eigenvalues should be sorted.
+   * \param tolerance given tolerance for iterative eigenvalue solving (default: 1e-10).
+   * \param maxit givenn maximum iterations for eigenvalue solving (default: 1000).
+   * \return true solving was successful.
+   * \return false solving was not successful.
    */
-  bool compute(ScalarType tolerance = 1e-10, Eigen::Index maxit = 1000) {
+  bool compute(Spectra::SortRule selection = Spectra::SortRule::SmallestAlge,
+               Spectra::SortRule sortRule = Spectra::SortRule::SmallestAlge, ScalarType tolerance = 1e-10,
+               Eigen::Index maxit = 1000) {
     solver_.init();
     solver_.compute(Spectra::SortRule::SmallestAlge, 1000, 1e-10, Spectra::SortRule::SmallestAlge);
 
