@@ -26,9 +26,9 @@
 namespace Ikarus::Dynamics {
 
 /**
- * \brief Opinionated wrapper class for GeneralSymEigenSolver suited for modal analyis
+ * \brief Opinionated wrapper class for GeneralSymEigenSolver suited for modal analysis
  *
- * \tparam FEC the type of containner for finite elements
+ * \tparam FEC the type of container for finite elements
  * \tparam DV the type of the DirichletValues
  */
 template <typename FEC, typename DV>
@@ -44,7 +44,7 @@ struct ModalAnalysis
       AssemblerManipulator<Assembler, Ikarus::Impl::AssemblerInterfaceHelper<ScalarAssembler, ScalarManipulator>,
                            Ikarus::Impl::AssemblerInterfaceHelper<VectorAssembler, VectorManipulator>,
                            Ikarus::Impl::AssemblerInterfaceHelper<MatrixAssembler, MatrixManipulator>>;
-  using Solver = GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, MatrixType>;
+  using Solver = GeneralSymEigenSolver<EigenValueSolverType::Spectra, MatrixType>;
 
   /**
    * \brief Construct a new Modal Analysis object
@@ -76,11 +76,11 @@ struct ModalAnalysis
    * It resets already bound matrix manipulation functions.
    *
    * \tparam LumpingScheme The type of the lumping scheme, for example one found at \file
-   * ikarus/utils/modalanalysis/lumpingschemes.hh.s \param ls the instantiated LumpingScheme (pass either by value or by
-   * template definition).
+   * ikarus/utils/modalanalysis/lumpingschemes.hh.s
+   * \param ls the instantiated LumpingScheme object (pass either by value or by template definition).
    */
   template <typename LumpingScheme>
-  void bindLumpingScheme(LumpingScheme ls = LumpingScheme{}) {
+  void bindLumpingScheme(LumpingScheme ls = {}) {
     lumpedMassAssembler_->unbindAllMatrixFunctions();
     lumpedMassAssembler_->bind(ls);
   }
@@ -91,17 +91,17 @@ struct ModalAnalysis
    * \brief Starts the computation of the eigenvalue solver
    *
    * \param tolerance given tolerance for iterative eigenvalue solving (default: 1e-10)
-   * \param maxit givenn maximum iterations for eigenvalue solving (default 1000)
-   * \return true solving was successfull
-   * \return false solving was not successfull
+   * \param maxit givenn maximum iterations for eigenvalue solving (default: 1000)
+   * \return true solving was successful
+   * \return false solving was not successful
    */
   bool compute(ScalarType tolerance = 1e-10, Eigen::Index maxit = 1000) {
     solver_.emplace(stiffAssembler_, lumpedMassAssembler_);
-    return solver_->compute();
+    return solver_->compute(tolerance, maxit);
   }
 
   /**
-   * \brief Returns the angular frequncies as \f$ \omega  = \sqrt{\lambda} \f$, with \f$ \lambda \f$: eigenvalues from
+   * \brief Returns the angular frequencies as \f$ \omega  = \sqrt{\lambda} \f$, with \f$ \lambda \f$: eigenvalues from
    * the eigenvalue solver
    */
   Eigen::VectorXd angularFrequencies() {
@@ -110,7 +110,7 @@ struct ModalAnalysis
   }
 
   /**
-   * \brief Returns the angular frequncies as \f$ f  = \dfrac{\omega}{2\pi} \f$, with \f$ \omega \f$: angular frequency
+   * \brief Returns the angular frequencies as \f$ f  = \dfrac{\omega}{2\pi} \f$, with \f$ \omega \f$: angular frequency
    */
   Eigen::VectorXd naturalFrequencies() {
     assertCompute();
@@ -118,7 +118,7 @@ struct ModalAnalysis
   }
 
   /**
-   * \brief Returns the angular frequncies as \f$ \omega^2  = \lambda \f$, with \f$ \lambda \f$: eigenvalues from
+   * \brief Returns the angular frequencies as \f$ \omega^2  = \lambda \f$, with \f$ \lambda \f$: eigenvalues from
    * the eigenvalue solver
    */
   const Eigen::VectorXd& squaredAngularFrequencies() const {
@@ -127,7 +127,7 @@ struct ModalAnalysis
   }
 
   /**
-   * \brief Returns the eigenmodes (eigenvectors) of the gerneral eigenvalue problem
+   * \brief Returns the eigenmodes (eigenvectors) of the general eigenvalue problem
    *
    * \return auto matrix with the eigevectors as columns
    */
@@ -182,7 +182,7 @@ struct ModalAnalysis
   /** \brief Returns a const reference to the assembler of the stiffness matrix */
   auto& stiffnessAssembler() const { return stiffAssembler_; }
 
-  /** \brief Returns a const reference to the assembler of the (potentialy lumped) mass matrix */
+  /** \brief Returns a const reference to the assembler of the (potentially lumped) mass matrix */
   auto& massAssembler() const { return lumpedMassAssembler_; }
 
 private:
@@ -202,7 +202,7 @@ private:
   }
 
   /**
-   * \brief Returns one of the above results accoding to a a specified result type
+   * \brief Returns one of the above results according to a a specified result type
    *
    * \param rt specified result type of the modal analysis
    */

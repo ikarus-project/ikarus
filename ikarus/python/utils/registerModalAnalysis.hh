@@ -34,7 +34,8 @@ void registerModalAnalysis(pybind11::handle scope, pybind11::class_<ModalAnalysi
   cls.def("squaredAngularFrequencies", &ModalAnalysis::squaredAngularFrequencies, pybind11::return_value_policy::copy);
   cls.def("eigenmodes", &ModalAnalysis::eigenmodes, pybind11::return_value_policy::copy);
   cls.def_property_readonly("nev", &ModalAnalysis::nev);
-  cls.def("writeEigenModes", &ModalAnalysis::writeEigenModes, pybind11::arg("filename"), pybind11::arg("nev") = std::nullopt);
+  cls.def("writeEigenModes", &ModalAnalysis::writeEigenModes, pybind11::arg("filename"),
+          pybind11::arg("nev") = std::nullopt);
 
   cls.def("bindLumpingScheme",
           [](ModalAnalysis& self) { self.template bindLumpingScheme<Dynamics::LumpingSchemes::RowSumLumping>(); });

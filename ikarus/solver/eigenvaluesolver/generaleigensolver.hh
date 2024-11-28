@@ -24,15 +24,20 @@
 
 namespace Ikarus {
 
-MAKE_ENUM(EigenSolverTypeTag, Spectra, Eigen);
+MAKE_ENUM(EigenValueSolverType, Spectra, Eigen);
 
-template <EigenSolverTypeTag SolverType, Concepts::DenseOrSparseEigenMatrix MT>
+template <EigenValueSolverType SolverType, Concepts::DenseOrSparseEigenMatrix MT>
 struct GeneralSymEigenSolver
 {
 };
 
+/**
+ * \brief
+ *
+ * \tparam MT
+ */
 template <Concepts::DenseOrSparseEigenMatrix MT>
-struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, MT>
+struct GeneralSymEigenSolver<EigenValueSolverType::Spectra, MT>
 {
   using ScalarType              = typename MT::Scalar;
   static constexpr bool isDense = Concepts::EigenMatrix<MT>;
@@ -45,6 +50,14 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, MT>
 
   using SolverType = Spectra::SymGEigsSolver<ProductType, CholeskyType, Spectra::GEigsMode::Cholesky>;
 
+  /**
+   * \brief Construct a new General Sym Eigen Solver object.
+   *
+   * \tparam MATA deduced type of passed matrix A.
+   * \tparam MATB deduced type of passed matrix B.
+   * \param A matrix A.
+   * \param B matrix B.
+   */
   template <typename MATA, typename MATB>
   requires(Concepts::DenseOrSparseEigenMatrix<std::remove_cvref_t<MATA>>)
   GeneralSymEigenSolver(MATA&& A, MATB&& B)
@@ -62,6 +75,14 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, MT>
     assert(nevsPartition_.first + nevsPartition_.second == nev_);
   }
 
+  /**
+   * \brief Construct a new General Sym Eigen Solver object.
+   *
+   * \tparam AssemblerA the type of the assembler for matrix A.
+   * \tparam AssemblerB the type of the assembler for matrix B.
+   * \param assemblerA assembler for matrix A.
+   * \param assemblerB assembler for matrix B.
+   */
   template <Concepts::FlatAssembler AssemblerA, Concepts::FlatAssembler AssemblerB>
   GeneralSymEigenSolver(const std::shared_ptr<AssemblerA>& assemblerA, const std::shared_ptr<AssemblerB>& assemblerB)
       : GeneralSymEigenSolver(assemblerA->matrix(), assemblerB->matrix()) {}
@@ -70,9 +91,9 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, MT>
    * \brief Starts the computation of the eigenvalue solver
    *
    * \param tolerance given tolerance for iterative eigenvalue solving (default: 1e-10)
-   * \param maxit givenn maximum iterations for eigenvalue solving (default 1000)
-   * \return true solving was successfull
-   * \return false solving was not successfull
+   * \param maxit givenn maximum iterations for eigenvalue solving (default: 1000)
+   * \return true solving was successful
+   * \return false solving was not successful
    */
   bool compute(ScalarType tolerance = 1e-10, Eigen::Index maxit = 1000) {
     solverSmallest_.init();
@@ -94,7 +115,7 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, MT>
   }
 
   /**
-   * \brief Returns the eigenvalues of the gerneral eigenvalue problem
+   * \brief Returns the eigenvalues of the general eigenvalue problem
    *
    * \return Eigen::VectorXd vector of eigenvalues
    */
@@ -104,7 +125,7 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, MT>
   }
 
   /**
-   * \brief Returns the eigenvectors of the gerneral eigenvalue problem
+   * \brief Returns the eigenvectors of the general eigenvalue problem
    *
    * \return auto matrix with the eigevectors as columns
    */
@@ -136,7 +157,7 @@ private:
 };
 
 template <Concepts::EigenMatrix MT>
-struct GeneralSymEigenSolver<EigenSolverTypeTag::Eigen, MT>
+struct GeneralSymEigenSolver<EigenValueSolverType::Eigen, MT>
 {
   using ScalarType = typename MT::Scalar;
   using MatrixType = MT;
@@ -161,17 +182,17 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Eigen, MT>
    *
    * \param options defaults to Eigen::ComputeEigenvectors, can be set to Eigen::EigenvaluesOnly, accessing eigenvectors
    * in that case will results in an error
-   * \return true solving was successfull
-   * \return false solving was not successfull
+   * \return true solving was successful
+   * \return false solving was not successful
    */
   bool compute(int options = Eigen::ComputeEigenvectors) {
     solver_.compute(matA_, matB_, options);
     computed_ = true;
-    return true; // SelfAdjointEigenSolver will always be successfull if prerequisits are met
+    return true; // SelfAdjointEigenSolver will always be successful if prerequisites are met
   }
 
   /**
-   * \brief Returns the eigenvalues of the gerneral eigenvalue problem
+   * \brief Returns the eigenvalues of the general eigenvalue problem
    *
    * \return Reference to the vector of eigenvalues
    */
@@ -181,7 +202,7 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Eigen, MT>
   }
 
   /**
-   * \brief Returns the eigenvectors of the gerneral eigenvalue problem
+   * \brief Returns the eigenvectors of the general eigenvalue problem
    *
    * \param _nev optionally specify how many eigenvectors are requested
    * \return Reference to the matrix with the eigevectors as columns
@@ -203,9 +224,9 @@ private:
   }
 };
 
-template <EigenSolverTypeTag tag, Concepts::FlatAssembler AS1, Concepts::FlatAssembler AS2>
+template <EigenValueSolverType tag, Concepts::FlatAssembler AS1, Concepts::FlatAssembler AS2>
 requires(std::same_as<typename AS1::MatrixType, typename AS2::MatrixType> &&
-         not(tag == EigenSolverTypeTag::Eigen && Concepts::SparseEigenMatrix<typename AS1::MatrixType>))
+         not(tag == EigenValueSolverType::Eigen && Concepts::SparseEigenMatrix<typename AS1::MatrixType>))
 auto makeGeneralSymEigenSolver(const std::shared_ptr<AS1>& as1, const std::shared_ptr<AS2> as2) {
   using MatrixType        = typename AS1::MatrixType;
   constexpr auto isSparse = Concepts::SparseEigenMatrix<MatrixType>;
@@ -249,9 +270,9 @@ struct PartialGeneralSymEigenSolver
    * \brief Starts the computation of the eigenvalue solver
    *
    * \param tolerance given tolerance for iterative eigenvalue solving (default: 1e-10)
-   * \param maxit givenn maximum iterations for eigenvalue solving (default 1000)
-   * \return true solving was successfull
-   * \return false solving was not successfull
+   * \param maxit givenn maximum iterations for eigenvalue solving (default: 1000)
+   * \return true solving was successful
+   * \return false solving was not successful
    */
   bool compute(ScalarType tolerance = 1e-10, Eigen::Index maxit = 1000) {
     solver_.init();
@@ -262,7 +283,7 @@ struct PartialGeneralSymEigenSolver
   }
 
   /**
-   * \brief Returns the eigenvalues of the gerneral eigenvalue problem
+   * \brief Returns the eigenvalues of the general eigenvalue problem
    *
    * \return Eigen::VectorXd vector of eigenvalues
    */
@@ -272,7 +293,7 @@ struct PartialGeneralSymEigenSolver
   }
 
   /**
-   * \brief Returns the eigenvectors of the gerneral eigenvalue problem
+   * \brief Returns the eigenvectors of the general eigenvalue problem
    *
    * \param _nev optionally specify how many eigenvectors are requested
    * \return auto matrix with the eigevectors as columns

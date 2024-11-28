@@ -64,6 +64,7 @@ static auto dynamicsTest() {
   t.check(frequencies.sum() > frequenciesLumped.sum()) << testLocation();
 
   mA.unBindLumpingScheme();
+  mA.compute();
   auto frequencies2 = mA.angularFrequencies();
   t.check(isApproxSame(frequencies, frequencies2, 1e-14)) << testLocation();
 

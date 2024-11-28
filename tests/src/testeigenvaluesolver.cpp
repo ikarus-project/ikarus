@@ -32,7 +32,9 @@ auto testEigenValues(const SOL1& solver1, const SOL2& solver2, std::optional<Eig
   auto eigenvalues2 = solver2.eigenvalues();
 
   if (not nev_.has_value()) {
-    t.check(isApproxSame(eigenvalues1, eigenvalues2, 1e-10)) << testLocation();
+    t.check(isApproxSame(eigenvalues1, eigenvalues2, 1e-10)) << testLocation() << "\n"
+                                                             << eigenvalues1 << "\n\n"
+                                                             << eigenvalues2;
   } else {
     t.check(isApproxSame(eigenvalues1.head(*nev_).eval(), eigenvalues2.head(*nev_).eval(), 1e-10))
         << testLocation() << "\n"
@@ -108,20 +110,20 @@ auto testRealWorldProblem() {
   assKD->bind(req, Ikarus::AffordanceCollections::elastoStatics, Ikarus::DBCOption::Reduced);
 
   int nev = 10; // number of requested eigenvalues
-  using Ikarus::EigenSolverTypeTag;
+  using Ikarus::EigenValueSolverType;
 
   auto partialSolver = Ikarus::PartialGeneralSymEigenSolver(assK, assM, nev);
   t.checkThrow([&]() { partialSolver.eigenvalues(); }) << testLocation();
   bool success = partialSolver.compute();
   t.check(success) << testLocation();
 
-  auto solver1 = Ikarus::makeGeneralSymEigenSolver<EigenSolverTypeTag::Eigen>(assKD, assMD);
+  auto solver1 = Ikarus::makeGeneralSymEigenSolver<EigenValueSolverType::Eigen>(assKD, assMD);
   t.check(solver1.compute()) << testLocation();
 
-  auto solver2 = Ikarus::makeGeneralSymEigenSolver<EigenSolverTypeTag::Spectra>(assK, assM);
+  auto solver2 = Ikarus::makeGeneralSymEigenSolver<EigenValueSolverType::Spectra>(assK, assM);
   t.check(solver2.compute()) << testLocation();
 
-  auto solver3 = Ikarus::makeGeneralSymEigenSolver<EigenSolverTypeTag::Spectra>(assKD, assMD);
+  auto solver3 = Ikarus::makeGeneralSymEigenSolver<EigenValueSolverType::Spectra>(assKD, assMD);
   t.check(solver3.compute()) << testLocation();
 
   t.subTest(testEigenVectors(solver2, solver3, assK));

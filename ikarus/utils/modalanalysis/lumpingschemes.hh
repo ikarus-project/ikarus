@@ -8,6 +8,7 @@
 
 #pragma once
 #include <dune/common/rangeutilities.hh>
+
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
 

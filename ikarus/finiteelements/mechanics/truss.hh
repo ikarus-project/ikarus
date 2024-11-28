@@ -160,7 +160,7 @@ public:
   }
 
   /**
-   * \brief Computes the length fo the truss and the coordinate transformation matrix T for the undeformed configuration
+   * \brief Computes the length of the truss and the coordinate transformation matrix T for the undeformed configuration
    *
    * \return std::pair of length, and T
    */
