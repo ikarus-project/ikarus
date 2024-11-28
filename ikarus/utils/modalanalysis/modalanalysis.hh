@@ -25,12 +25,18 @@
 
 namespace Ikarus::Dynamics {
 
-
+/**
+ * \brief Opinionated wrapper class for GeneralSymEigenSolver suited for modal analyis
+ *
+ * \tparam FEC the type of containner for finite elements
+ * \tparam DV the type of the DirichletValues
+ */
 template <typename FEC, typename DV>
 struct ModalAnalysis
 {
-  using Assembler     = SparseFlatAssembler<FEC, DV>;
+  using Assembler     = SparseFlatAssembler<FEC&, DV>;
   using MatrixType    = typename Assembler::MatrixType;
+  using ScalarType    = typename MatrixType::Scalar;
   using FERequirement = typename Assembler::FERequirement;
   using FEContainer   = FEC;
 
@@ -40,6 +46,13 @@ struct ModalAnalysis
                            Ikarus::Impl::AssemblerInterfaceHelper<MatrixAssembler, MatrixManipulator>>;
   using Solver = GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, MatrixType>;
 
+  /**
+   * \brief Construct a new Modal Analysis object
+   *
+   * \tparam FES deduced type of the container of the finite elements passed to the constructor
+   * \param fes the container of the finite elements
+   * \param dv the DirichletValues
+   */
   template <typename FES>
   ModalAnalysis(FES&& fes, const DV& dv)
       : fes_(std::forward<FES>(fes)),
@@ -57,44 +70,75 @@ struct ModalAnalysis
     lumpedMassAssembler_ = makeAssemblerManipulator(*massAssembler_);
   }
 
+  /**
+   * \brief Binds a lumping scheme for the mass matrix. The Lumping scheme should have an operator () and modify the
+   * matrix mat. For details see already existing lumping schemes at \file ikarus/utils/modalanalysis/lumpingschemes.hh.
+   * It resets already bound matrix manipulation functions.
+   *
+   * \tparam LumpingScheme The type of the lumping scheme, for example one found at \file
+   * ikarus/utils/modalanalysis/lumpingschemes.hh.s \param ls the instantiated LumpingScheme (pass either by value or by
+   * template definition).
+   */
   template <typename LumpingScheme>
-  void registerLumpingScheme(LumpingScheme ls = LumpingScheme{}) {
+  void bindLumpingScheme(LumpingScheme ls = LumpingScheme{}) {
     lumpedMassAssembler_->unbindAllMatrixFunctions();
     lumpedMassAssembler_->bind(ls);
   }
 
-  bool compute() {
+  void unBindLumpingScheme() { lumpedMassAssembler_->unbindAllMatrixFunctions(); }
+
+  /**
+   * \brief Starts the computation of the eigenvalue solver
+   *
+   * \param tolerance given tolerance for iterative eigenvalue solving (default: 1e-10)
+   * \param maxit givenn maximum iterations for eigenvalue solving (default 1000)
+   * \return true solving was successfull
+   * \return false solving was not successfull
+   */
+  bool compute(ScalarType tolerance = 1e-10, Eigen::Index maxit = 1000) {
     solver_.emplace(stiffAssembler_, lumpedMassAssembler_);
     return solver_->compute();
   }
 
+  /**
+   * \brief Returns the angular frequncies as \f$ \omega  = \sqrt{\lambda} \f$, with \f$ \lambda \f$: eigenvalues from
+   * the eigenvalue solver
+   */
   Eigen::VectorXd angularFrequencies() {
     assertCompute();
     return squaredAngularFrequencies().cwiseSqrt().eval();
   }
 
+  /**
+   * \brief Returns the angular frequncies as \f$ f  = \dfrac{\omega}{2\pi} \f$, with \f$ \omega \f$: angular frequency
+   */
   Eigen::VectorXd naturalFrequencies() {
     assertCompute();
     return angularFrequencies() / (2 * std::numbers::pi);
   }
 
+  /**
+   * \brief Returns the angular frequncies as \f$ \omega^2  = \lambda \f$, with \f$ \lambda \f$: eigenvalues from
+   * the eigenvalue solver
+   */
   const Eigen::VectorXd& squaredAngularFrequencies() const {
     assertCompute();
     return solver_->eigenvalues();
   }
 
-  auto frequencies(ModalAnalysisResultType rt) {
-    if (rt == ModalAnalysisResultType::angularFrequency)
-      return angularFrequencies();
-    if (rt == ModalAnalysisResultType::naturalFrequency)
-      return naturalFrequencies();
-    if (rt == ModalAnalysisResultType::squaredAngularFrequency)
-      return squaredAngularFrequencies();
-    DUNE_THROW(Dune::NotImplemented, "Requested result not implemented");
-  }
-
+  /**
+   * \brief Returns the eigenmodes (eigenvectors) of the gerneral eigenvalue problem
+   *
+   * \return auto matrix with the eigevectors as columns
+   */
   const Eigen::MatrixXd& eigenmodes() const { return solver_->eigenvectors(); }
 
+  /**
+   * \brief Plots the spectrum of the specified result (defaults to angular frequency) using matplot++.
+   *
+   * \param resultType specified result type of the modal analysis
+   * \param normalizeModeNumber
+   */
   void plotModalSpectrum(ModalAnalysisResultType resultType = ModalAnalysisResultType::angularFrequency,
                          bool normalizeModeNumber           = false) {
     assertCompute();
@@ -113,22 +157,32 @@ struct ModalAnalysis
     auto ax  = fig->add_axes();
     ax->plot(modeNumbers, freq)->line_width(1).color("b");
     ax->xlabel("Mode Number");
-    ax->ylabel("Frequency (Hz)");
-    ax->title("Modal Analysis Spectrum");
+    ax->ylabel(toString(resultType));
+    ax->title("Modal Spectrum");
     ax->grid(true);
 
     // Show the figure
     matplot::show();
   }
 
+  /**
+   * \brief Writes the first nev_ eigenmodes to a paraview collection file.
+   *
+   * \param filename filename of the file.
+   * \param nev_ optionally specify how many eigenmodes should be written out, defaults to all.
+   */
   void writeEigenModes(const std::string& filename, std::optional<Eigen::Index> nev_ = std::nullopt) const {
     assertCompute();
     writeEigenmodesAsTimeSeries(solver_.value(), stiffAssembler_, filename, nev_);
   }
 
+  /** \brief Returns the number of eigenvalues of the problem */
   auto nev() const { return solver_->nev(); }
 
+  /** \brief Returns a const reference to the assembler of the stiffness matrix */
   auto& stiffnessAssembler() const { return stiffAssembler_; }
+
+  /** \brief Returns a const reference to the assembler of the (potentialy lumped) mass matrix */
   auto& massAssembler() const { return lumpedMassAssembler_; }
 
 private:
@@ -146,9 +200,26 @@ private:
     if (not solver_)
       DUNE_THROW(Dune::IOError, "Eigenvalues and -vectors not yet computed, please call compute() first");
   }
+
+  /**
+   * \brief Returns one of the above results accoding to a a specified result type
+   *
+   * \param rt specified result type of the modal analysis
+   */
+  auto frequencies(ModalAnalysisResultType rt) {
+    if (rt == ModalAnalysisResultType::angularFrequency)
+      return angularFrequencies();
+    if (rt == ModalAnalysisResultType::naturalFrequency)
+      return naturalFrequencies();
+    if (rt == ModalAnalysisResultType::squaredAngularFrequency)
+      return squaredAngularFrequencies();
+    DUNE_THROW(Dune::NotImplemented, "Requested result not implemented");
+  }
 };
 
+#ifndef DOXYGEN
 template <typename FEC, typename DV>
 ModalAnalysis(FEC&&, const DV&) -> ModalAnalysis<FEC, DV>;
+#endif
 
 } // namespace Ikarus::Dynamics

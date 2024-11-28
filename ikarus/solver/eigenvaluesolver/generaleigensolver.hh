@@ -64,10 +64,7 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, MT>
 
   template <Concepts::FlatAssembler AssemblerA, Concepts::FlatAssembler AssemblerB>
   GeneralSymEigenSolver(const std::shared_ptr<AssemblerA>& assemblerA, const std::shared_ptr<AssemblerB>& assemblerB)
-      : GeneralSymEigenSolver(assemblerA->matrix(), assemblerB->matrix()) {
-    if (not(assemblerA->dBCOption() == DBCOption::Reduced && assemblerB->dBCOption() == DBCOption::Reduced))
-      DUNE_THROW(Dune::IOError, "GeneralSymEigenSolver: The passed assembler should both have DBCOption::Reduced");
-  }
+      : GeneralSymEigenSolver(assemblerA->matrix(), assemblerB->matrix()) {}
 
   /**
    * \brief Starts the computation of the eigenvalue solver
@@ -116,6 +113,7 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Spectra, MT>
     return eigenvectors_;
   }
 
+  /** \brief Returns the number of eigenvalues of the problem */
   Eigen::Index nev() const { return nev_; }
 
 private:
@@ -156,10 +154,7 @@ struct GeneralSymEigenSolver<EigenSolverTypeTag::Eigen, MT>
 
   template <Concepts::FlatAssembler AssemblerA, Concepts::FlatAssembler AssemblerB>
   GeneralSymEigenSolver(const std::shared_ptr<AssemblerA> assemblerA, const std::shared_ptr<AssemblerB>& assemblerB)
-      : GeneralSymEigenSolver(assemblerA->matrix(), assemblerB->matrix()) {
-    if (not(assemblerA->dBCOption() == DBCOption::Reduced && assemblerB->dBCOption() == DBCOption::Reduced))
-      DUNE_THROW(Dune::IOError, "GeneralSymEigenSolver: The passed assembler should both have DBCOption::Reduced");
-  }
+      : GeneralSymEigenSolver(assemblerA->matrix(), assemblerB->matrix()) {}
 
   /**
    * \brief Starts the computation of the eigenvalue solver
@@ -248,10 +243,7 @@ struct PartialGeneralSymEigenSolver
   template <Concepts::FlatAssembler AssemblerA, Concepts::FlatAssembler AssemblerB>
   PartialGeneralSymEigenSolver(const std::shared_ptr<AssemblerA>& assemblerA,
                                const std::shared_ptr<AssemblerB>& assemblerB, Eigen::Index nev)
-      : PartialGeneralSymEigenSolver(assemblerA->matrix(), assemblerB->matrix(), nev) {
-    if (not(assemblerA->dBCOption() == DBCOption::Reduced && assemblerB->dBCOption() == DBCOption::Reduced))
-      DUNE_THROW(Dune::IOError, "GeneralSymEigenSolver: The passed assembler should both have DBCOption::Reduced");
-  }
+      : PartialGeneralSymEigenSolver(assemblerA->matrix(), assemblerB->matrix(), nev) {}
 
   /**
    * \brief Starts the computation of the eigenvalue solver
@@ -315,7 +307,9 @@ auto makePartialGeneralSymEigenSolver(const std::shared_ptr<AS1>& as1, const std
   return SolverType{as1, as2};
 }
 
+#ifndef DOXYGEN
 template <Concepts::FlatAssembler AS1, Concepts::FlatAssembler AS2>
 PartialGeneralSymEigenSolver(std::shared_ptr<AS1> as1, std::shared_ptr<AS2> as2,
                              int nev) -> PartialGeneralSymEigenSolver<typename AS1::MatrixType>;
+#endif
 } // namespace Ikarus

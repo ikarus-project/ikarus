@@ -20,12 +20,12 @@
 
 namespace Ikarus::Dynamics {
 
-template <Concepts::FlatAssembler AS>
+template <Concepts::FlatAssembler AS, typename LumpingScheme = LumpingSchemes::RowSumLumping>
 auto makeLumpedFlatAssembler(const std::shared_ptr<AS>& assembler) {
   constexpr auto isSparse = Concepts::SparseEigenMatrix<typename AS::MatrixType>;
   using ScalarType        = typename AS::MatrixType::Scalar;
   auto lumpedAssembler    = makeAssemblerManipulator(*assembler);
-  lumpedAssembler->bind(LumpingSchemes::RowSumLumping{});
+  lumpedAssembler->bind(LumpingScheme{});
   return lumpedAssembler;
 }
 
@@ -46,7 +46,7 @@ void writeEigenmodesToVTK(const Eigensolver& solver, std::shared_ptr<Assembler> 
 
 template <typename Derived, Concepts::FlatAssembler Assembler>
 void writeEigenmodesAsTimeSeries(const Eigen::MatrixBase<Derived>& eigenvectors, std::shared_ptr<Assembler> assembler,
-                          const std::string& filename) {
+                                 const std::string& filename) {
   auto nev   = eigenvectors.cols();
   auto basis = assembler->basis();
 
@@ -58,14 +58,14 @@ void writeEigenmodesAsTimeSeries(const Eigen::MatrixBase<Derived>& eigenvectors,
 
   for (auto i : Dune::range(nev)) {
     evG = assembler->createFullVector(eigenvectors.col(i));
-    pvdWriter.writeTimestep(i, filename, "data", false);
+    pvdWriter.writeTimestep(i + 1, filename, "data", false);
   }
   pvdWriter.write(filename);
 }
 
 template <Concepts::EigenValueSolver Eigensolver, Concepts::FlatAssembler Assembler>
-void writeEigenmodesAsTimeSeries(const Eigensolver& solver, std::shared_ptr<Assembler> assembler, const std::string& filename,
-                          std::optional<Eigen::Index> nev_ = std::nullopt) {
+void writeEigenmodesAsTimeSeries(const Eigensolver& solver, std::shared_ptr<Assembler> assembler,
+                                 const std::string& filename, std::optional<Eigen::Index> nev_ = std::nullopt) {
   auto nev          = nev_.value_or(solver.nev());
   auto eigenvectors = solver.eigenvectors();
   writeEigenmodesAsTimeSeries(eigenvectors, assembler, filename);

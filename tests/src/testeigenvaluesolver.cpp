@@ -43,14 +43,13 @@ auto testEigenValues(const SOL1& solver1, const SOL2& solver2, std::optional<Eig
   return t;
 }
 
-// as1 and as2 correspond to solver1, which is tested against solver2
+// as1 corresponds to solver1, which is tested against solver2
 template <Ikarus::Concepts::EigenValueSolver SOL1, Ikarus::Concepts::EigenValueSolver SOL2,
-          Ikarus::Concepts::FlatAssembler AS1, Ikarus::Concepts::FlatAssembler AS2>
-auto testEigenVectors(const SOL1& solver1, const SOL2& solver2, std::shared_ptr<AS1> as1, std::shared_ptr<AS2> as2) {
+          Ikarus::Concepts::FlatAssembler AS1>
+auto testEigenVectors(const SOL1& solver1, const SOL2& solver2, std::shared_ptr<AS1> as1) {
   TestSuite t("Test Eigenvalues " + Dune::className<SOL1>() + ", " + Dune::className<SOL2>());
 
   Eigen::MatrixXd K = as1->matrix();
-  Eigen::MatrixXd M = as2->matrix();
 
   Eigen::MatrixXd evecs = solver1.eigenvectors();
   Eigen::VectorXd evals = solver2.eigenvalues();
@@ -125,10 +124,10 @@ auto testRealWorldProblem() {
   auto solver3 = Ikarus::makeGeneralSymEigenSolver<EigenSolverTypeTag::Spectra>(assKD, assMD);
   t.check(solver3.compute()) << testLocation();
 
-  t.subTest(testEigenVectors(solver2, solver3, assK, assM));
-  t.subTest(testEigenVectors(solver3, solver2, assKD, assMD));
-  t.subTest(testEigenVectors(solver1, solver2, assKD, assMD));
-  t.subTest(testEigenVectors(solver2, solver1, assK, assM));
+  t.subTest(testEigenVectors(solver2, solver3, assK));
+  t.subTest(testEigenVectors(solver3, solver2, assKD));
+  t.subTest(testEigenVectors(solver1, solver2, assKD));
+  t.subTest(testEigenVectors(solver2, solver1, assK));
 
   t.subTest(testEigenValues(partialSolver, solver1, nev));
   t.subTest(testEigenValues(partialSolver, solver2, nev));

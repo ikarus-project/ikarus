@@ -19,8 +19,8 @@
 #include <ikarus/finiteelements/mixin.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/dirichletvalues.hh>
-#include <ikarus/utils/modalanalysis/modalanalysis.hh>
 #include <ikarus/utils/init.hh>
+#include <ikarus/utils/modalanalysis/modalanalysis.hh>
 
 using Dune::TestSuite;
 
@@ -57,16 +57,32 @@ static auto dynamicsTest() {
 
   auto frequencies = mA.angularFrequencies();
 
-  mA.registerLumpingScheme<Ikarus::Dynamics::LumpingSchemes::RowSumLumping>();
+  mA.bindLumpingScheme<Ikarus::Dynamics::LumpingSchemes::RowSumLumping>();
   mA.compute();
 
-  auto frequenciesLumped  = mA.angularFrequencies();
-  auto frequenciesLumped2 = mA.frequencies(Ikarus::Dynamics::ModalAnalysisResultType::angularFrequency);
-  t.check(isApproxSame(frequenciesLumped, frequenciesLumped2, 1e-16));
+  auto frequenciesLumped = mA.angularFrequencies();
+  t.check(frequencies.sum() > frequenciesLumped.sum()) << testLocation();
 
-  t.check(frequencies.sum() > frequenciesLumped.sum());
+  mA.unBindLumpingScheme();
+  auto frequencies2 = mA.angularFrequencies();
+  t.check(isApproxSame(frequencies, frequencies2, 1e-14)) << testLocation();
 
   mA.writeEigenModes("eigenforms", 20);
+
+  auto req = FEType::Requirement();
+  typename FEType::Requirement::SolutionVectorType d;
+  d.setZero(basis.flat().size());
+  req.insertGlobalSolution(d);
+
+  auto massAssembler = Ikarus::makeSparseFlatAssembler(fes, dirichletValues);
+  massAssembler->bind(req, Ikarus::AffordanceCollections::dynamics, Ikarus::DBCOption::Reduced);
+  auto lumpedAssembler = Ikarus::Dynamics::makeLumpedFlatAssembler(massAssembler);
+
+  auto M       = massAssembler->matrix();
+  auto MLumped = lumpedAssembler->matrix();
+
+  t.check(MLumped.nonZeros() == massAssembler->reducedSize()) << testLocation();
+  t.check(MLumped.coeff(0, 0) == M.row(0).sum()) << testLocation();
 
   return t;
 }
