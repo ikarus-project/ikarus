@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * \file dynamicshelpers.hh
- * \brief Helper for Dynamic related things
+ * \file modalanalysishelper.hh
+ * \brief Helper for modal analysis related things
  */
 
 #pragma once

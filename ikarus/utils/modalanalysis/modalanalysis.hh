@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * \file dynamics.hh
- * \brief Helper for
+ * \file modalanalysis.hh
+ * \brief Implementation of modal analysis
  */
 
 #pragma once
@@ -26,7 +26,7 @@
 namespace Ikarus::Dynamics {
 
 /**
- * \brief Opinionated wrapper class for GeneralSymEigenSolver suited for modal analysis
+ * \brief Opinionated wrapper class for GeneralizedSymEigenSolver suited for modal analysis
  *
  * \tparam FEC the type of container for finite elements
  * \tparam DV the type of the DirichletValues
@@ -85,6 +85,9 @@ struct ModalAnalysis
     lumpedMassAssembler_->bind(ls);
   }
 
+  /**
+   * \brief Unbinds a former bound lumpingscheme.
+   */
   void unBindLumpingScheme() { lumpedMassAssembler_->unbindAllMatrixFunctions(); }
 
   /**

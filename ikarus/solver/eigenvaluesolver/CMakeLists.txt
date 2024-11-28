@@ -3,5 +3,5 @@
 
 # install headers
 install(FILES generalizedeigensolver.hh
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/solver/generalizedeigensolver.hh
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/solver/eigenvaluesolver
 )
