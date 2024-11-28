@@ -10,7 +10,9 @@
 #include <Eigen/Eigenvalues>
 
 #include <ikarus/finiteelements/mechanics/materials.hh>
-#include <ikarus/finiteelements/mechanics/materials/muesli/mueslimaterials.hh>
+#if ENABLE_MUESLI
+  #include <ikarus/finiteelements/mechanics/materials/muesli/mueslimaterials.hh>
+#endif
 #include <ikarus/finiteelements/physicshelper.hh>
 #include <ikarus/utils/functionsanitychecks.hh>
 #include <ikarus/utils/init.hh>
@@ -307,6 +309,7 @@ int main(int argc, char** argv) {
   t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::greenLagrangian, StVenantKirchhoff>());
   t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::rightCauchyGreenTensor, NeoHooke>());
 
+#if ENABLE_MUESLI
   // Muesli
   auto K  = convertLameConstants(matPar).toBulkModulus();
   auto mu = convertLameConstants(matPar).toShearModulus();
@@ -337,6 +340,6 @@ int main(int argc, char** argv) {
 
   auto muesliNHPlaneStress = planeStrain(muesliNeoHooke);
   t.subTest(testMaterial(muesliNHPlaneStress));
-
+#endif
   return t.exit();
 }

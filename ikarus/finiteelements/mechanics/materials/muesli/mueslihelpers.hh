@@ -3,12 +3,14 @@
 
 #pragma once
 
-#include <muesli/muesli.h>
+#if ENABLE_MUESLI
 
-#include <dune/common/hybridutilities.hh>
+  #include <muesli/muesli.h>
 
-#include <ikarus/finiteelements/physicshelper.hh>
-#include <ikarus/utils/tensorutils.hh>
+  #include <dune/common/hybridutilities.hh>
+
+  #include <ikarus/finiteelements/physicshelper.hh>
+  #include <ikarus/utils/tensorutils.hh>
 
 namespace Ikarus::Concepts {
 template <typename MAT>
@@ -112,3 +114,7 @@ constexpr std::string materialName() {
 }
 
 } // namespace Ikarus::Materials::Muesli
+
+#else
+  #error Muesli materials depends on the Muesli library, which is not included
+#endif

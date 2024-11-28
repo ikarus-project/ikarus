@@ -9,20 +9,22 @@
 
 #pragma once
 
-#include <muesli/muesli.h>
+#if ENABLE_MUESLI
 
-#include <Eigen/Eigen>
+  #include <muesli/muesli.h>
 
-#include <ikarus/finiteelements/mechanics/materials/interface.hh>
-#include <ikarus/finiteelements/mechanics/materials/muesli/mueslihelpers.hh>
-#include <ikarus/utils/tensorutils.hh>
+  #include <Eigen/Eigen>
+
+  #include <ikarus/finiteelements/mechanics/materials/interface.hh>
+  #include <ikarus/finiteelements/mechanics/materials/muesli/mueslihelpers.hh>
+  #include <ikarus/utils/tensorutils.hh>
 
 namespace Ikarus::Materials::Muesli {
 
 /**
  * \brief Wrapper class for finite strain materials from the muesli library. It can be templated with all materials
- * derived from muesli::finiteStrainMaterial. It adheres to the Ikarus material interface. See \file
- * ikarus/finiteelements/mechanics/materials/interface.hh.
+ * derived from muesli::finiteStrainMaterial. It adheres to the Ikarus material interface. See
+ * \file ikarus/finiteelements/mechanics/materials/interface.hh.
  *
  * \tparam FM muesli material model implementation
  * \remark Please cite \cite portillo_muesli_2017 if you use any materials from the muesli library
@@ -160,3 +162,6 @@ private:
 };
 
 } // namespace Ikarus::Materials::Muesli
+#else
+  #error Muesli materials depends on the Muesli library, which is not included
+#endif

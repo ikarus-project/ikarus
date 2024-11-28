@@ -9,9 +9,11 @@
 
 #pragma once
 
-#include <ikarus/finiteelements/mechanics/materials/muesli/mueslifinite.hh>
-#include <ikarus/finiteelements/mechanics/materials/muesli/mueslihelpers.hh>
-#include <ikarus/finiteelements/mechanics/materials/muesli/mueslismall.hh>
+#if ENABLE_MUESLI
+
+  #include <ikarus/finiteelements/mechanics/materials/muesli/mueslifinite.hh>
+  #include <ikarus/finiteelements/mechanics/materials/muesli/mueslihelpers.hh>
+  #include <ikarus/finiteelements/mechanics/materials/muesli/mueslismall.hh>
 
 namespace Ikarus::Materials::Muesli {
 
@@ -124,3 +126,7 @@ inline auto makeMooneyRivlin(std::array<double, 3> alpha, bool incompressible = 
 }
 
 } // namespace Ikarus::Materials::Muesli
+
+#else
+  #error Muesli materials depends on the Muesli library, which is not included
+#endif

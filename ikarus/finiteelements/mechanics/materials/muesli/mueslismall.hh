@@ -9,13 +9,15 @@
 
 #pragma once
 
-#include <muesli/muesli.h>
+#if ENABLE_MUESLI
 
-#include <Eigen/Eigen>
+  #include <muesli/muesli.h>
 
-#include <ikarus/finiteelements/mechanics/materials/interface.hh>
-#include <ikarus/finiteelements/mechanics/materials/muesli/mueslihelpers.hh>
-#include <ikarus/utils/tensorutils.hh>
+  #include <Eigen/Eigen>
+
+  #include <ikarus/finiteelements/mechanics/materials/interface.hh>
+  #include <ikarus/finiteelements/mechanics/materials/muesli/mueslihelpers.hh>
+  #include <ikarus/utils/tensorutils.hh>
 
 namespace Ikarus::Materials::Muesli {
 
@@ -168,3 +170,7 @@ private:
 };
 
 } // namespace Ikarus::Materials::Muesli
+
+#else
+  #error Muesli materials depends on the Muesli library, which is not included
+#endif
