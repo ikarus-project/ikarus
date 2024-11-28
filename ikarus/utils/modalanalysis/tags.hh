@@ -10,6 +10,9 @@
 
 namespace Ikarus::Dynamics {
 
+/**
+ * \brief A strongly typed enum class representing the type of result of a modal analysis
+ */
 MAKE_ENUM(ModalAnalysisResultType, squaredAngularFrequency, angularFrequency, naturalFrequency);
 
-}
+} // namespace Ikarus::Dynamics

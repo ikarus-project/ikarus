@@ -24,6 +24,10 @@
 
 namespace Ikarus {
 
+/**
+ * \brief Construct a new make enum object
+ *
+ */
 MAKE_ENUM(EigenValueSolverType, Spectra, Eigen);
 
 template <EigenValueSolverType SolverType, Concepts::DenseOrSparseEigenMatrix MT>
