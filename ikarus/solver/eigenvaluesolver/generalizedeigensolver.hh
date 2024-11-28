@@ -93,7 +93,8 @@ struct GeneralizedSymEigenSolver<EigenValueSolverType::Spectra, MT>
    * \param assemblerB assembler for matrix B.
    */
   template <Concepts::FlatAssembler AssemblerA, Concepts::FlatAssembler AssemblerB>
-  GeneralizedSymEigenSolver(const std::shared_ptr<AssemblerA>& assemblerA, const std::shared_ptr<AssemblerB>& assemblerB)
+  GeneralizedSymEigenSolver(const std::shared_ptr<AssemblerA>& assemblerA,
+                            const std::shared_ptr<AssemblerB>& assemblerB)
       : GeneralizedSymEigenSolver(assemblerA->matrix(), assemblerB->matrix()) {}
 
   /**
@@ -246,8 +247,8 @@ requires(std::same_as<typename AS1::MatrixType, typename AS2::MatrixType> &&
 auto makeGeneralizedSymEigenSolver(const std::shared_ptr<AS1>& as1, const std::shared_ptr<AS2> as2) {
   using MatrixType        = typename AS1::MatrixType;
   constexpr auto isSparse = Concepts::SparseEigenMatrix<MatrixType>;
-  using SolverType =
-      std::conditional_t<isSparse, GeneralizedSymEigenSolver<tag, MatrixType>, GeneralizedSymEigenSolver<tag, MatrixType>>;
+  using SolverType        = std::conditional_t<isSparse, GeneralizedSymEigenSolver<tag, MatrixType>,
+                                               GeneralizedSymEigenSolver<tag, MatrixType>>;
 
   return SolverType{as1, as2};
 }
@@ -287,7 +288,7 @@ struct PartialGeneralizedSymEigenSolver
 
   template <Concepts::FlatAssembler AssemblerA, Concepts::FlatAssembler AssemblerB>
   PartialGeneralizedSymEigenSolver(const std::shared_ptr<AssemblerA>& assemblerA,
-                               const std::shared_ptr<AssemblerB>& assemblerB, Eigen::Index nev)
+                                   const std::shared_ptr<AssemblerB>& assemblerB, Eigen::Index nev)
       : PartialGeneralizedSymEigenSolver(assemblerA->matrix(), assemblerB->matrix(), nev) {}
 
   /**
@@ -359,6 +360,6 @@ auto makePartialGeneralizedSymEigenSolver(const std::shared_ptr<AS1>& as1, const
 #ifndef DOXYGEN
 template <Concepts::FlatAssembler AS1, Concepts::FlatAssembler AS2>
 PartialGeneralizedSymEigenSolver(std::shared_ptr<AS1> as1, std::shared_ptr<AS2> as2,
-                             int nev) -> PartialGeneralizedSymEigenSolver<typename AS1::MatrixType>;
+                                 int nev) -> PartialGeneralizedSymEigenSolver<typename AS1::MatrixType>;
 #endif
 } // namespace Ikarus

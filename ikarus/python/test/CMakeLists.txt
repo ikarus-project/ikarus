@@ -69,9 +69,9 @@ dune_python_add_test(
 
 dune_python_add_test(
   NAME
-  dynamicstest
+  modalanalysistest
   SCRIPT
-  dynamicstest.py
+  modalanalysistest.py
   WORKING_DIRECTORY
   ${CMAKE_CURRENT_SOURCE_DIR}
   LABELS
