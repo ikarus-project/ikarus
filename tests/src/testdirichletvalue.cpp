@@ -120,11 +120,11 @@ static auto dirichletBCTest() {
 
   auto sum        = [](const auto& container_) { return std::accumulate(container_.begin(), container_.end(), 0); };
   auto manual_sum = [](const auto& dv) {
-    int sum = 0;
+    int sumInternal = 0;
     for (auto i : Dune::range(dv.size()))
       if (dv.isConstrained(i))
-        ++sum;
-    return sum;
+        ++sumInternal;
+    return sumInternal;
   };
 
   // Test container
@@ -247,7 +247,7 @@ static auto dirichletBCTest() {
     const auto& fe = localView.tree().child(0).finiteElement();
     std::vector<Dune::FieldVector<double, 2>> nodalPos;
     Ikarus::utils::obtainLagrangeGlobalNodePositions(localView, nodalPos);
-    for (int i = 0; i < fe.size(); i++)
+    for (size_t i = 0; i < fe.size(); i++)
       if ((std::abs(nodalPos[i][0]) < tol) or (std::abs(nodalPos[i][0] - Lx) < tol) or
           (std::abs(nodalPos[i][1]) < tol) or (std::abs(nodalPos[i][1] - Ly) < tol))
         for (auto fixedDirection = 0; fixedDirection < 2; ++fixedDirection) {
