@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include <config.h>
 
+#include "tests/src/dummyproblem.hh"
 #include "tests/src/testhelpers.hh"
-
-#include <vector>
 
 #include <dune/common/float_cmp.hh>
 #include <dune/common/test/testsuite.hh>
@@ -25,34 +24,14 @@
 using Dune::TestSuite;
 
 static auto modalAnalysisTest() {
-  TestSuite t("ModalAnalysis test");
+  TestSuite t("ModalAnalysis Test");
   using Grid = Dune::YaspGrid<2>;
 
-  const double Lx                         = 4.0;
-  const double Ly                         = 4.0;
-  Dune::FieldVector<double, 2> bbox       = {Lx, Ly};
-  std::array<int, 2> elementsPerDirection = {5, 5};
-  auto grid                               = std::make_shared<Grid>(bbox, elementsPerDirection);
-
-  auto gridView = grid->leafGridView();
-
-  using namespace Dune::Functions::BasisFactory;
-  auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<1>()));
-
-  auto linMat  = Ikarus::LinearElasticity(Ikarus::toLamesFirstParameterAndShearModulus({.emodul = 100, .nu = 0.2}));
-  auto skills_ = Ikarus::skills(Ikarus::linearElastic(Ikarus::planeStress(linMat)));
-
-  using FEType = decltype(Ikarus::makeFE(basis, skills_));
-  std::vector<FEType> fes;
-  for (auto&& element : elements(gridView)) {
-    fes.emplace_back(Ikarus::makeFE(basis, skills_));
-    fes.back().bind(element);
-  }
-
-  auto dirichletValues = Ikarus::DirichletValues(basis.flat());
-  dirichletValues.fixBoundaryDOFs([](auto& dirichFlags, auto&& indexGlobal) { dirichFlags[indexGlobal] = true; });
-
-  auto mA = Ikarus::Dynamics::ModalAnalysis(std::move(fes), dirichletValues);
+  DummyProblem<Grid, true> testCase({5, 5});
+  auto& req             = testCase.requirement();
+  auto& fes             = testCase.finiteElements();
+  auto& dirichletValues = testCase.dirichletValues();
+  auto mA               = Ikarus::Dynamics::ModalAnalysis(std::move(fes), dirichletValues);
   mA.compute();
 
   auto frequencies = mA.angularFrequencies();
@@ -70,13 +49,8 @@ static auto modalAnalysisTest() {
 
   mA.writeEigenModes("eigenforms", 20);
 
-  auto req = FEType::Requirement();
-  typename FEType::Requirement::SolutionVectorType d;
-  d.setZero(basis.flat().size());
-  req.insertGlobalSolution(d);
-
   auto massAssembler = Ikarus::makeSparseFlatAssembler(fes, dirichletValues);
-  massAssembler->bind(req, Ikarus::AffordanceCollections::dynamics, Ikarus::DBCOption::Reduced);
+  massAssembler->bind(req, Ikarus::AffordanceCollections::modalAnalysis, Ikarus::DBCOption::Reduced);
   auto lumpedAssembler = Ikarus::Dynamics::makeLumpedFlatAssembler(massAssembler);
 
   auto M       = massAssembler->matrix();

@@ -32,7 +32,7 @@ class DynamicsTest(unittest.TestCase):
 
         self.fes = []
         linMat = iks.materials.LinearElasticity(E=1000, nu=0.2).asPlaneStrain()
-        linElastic = finite_elements.linearElastic(linMat)
+        linElastic = finite_elements.linearElastic(linMat, density=100)
         for e in self.grid.elements:
             self.fes.append(finite_elements.makeFE(basis, linElastic))
             self.fes[-1].bind(e)

@@ -15,7 +15,7 @@
 namespace Ikarus::Dynamics::LumpingSchemes {
 
 /**
- * \brief Implements a row-sum lumping schemes for assemblermanipulator. Works with dense and sprase matrices.
+ * \brief Implements the operator() for a row-sum lumping scheme that can be passed to the assemblermanipulator to lump the already assembled global mass matrix.
  */
 struct RowSumLumping
 {

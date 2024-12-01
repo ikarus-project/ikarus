@@ -290,6 +290,7 @@ protected:
   void calculateMassImpl(const Requirement& par, const MatrixAffordance& affordance,
                          typename Traits::template MatrixType<> M) const {
     const auto geo = underlying().localView().element().geometry();
+    const auto rhoT = thickness_ * density_;
 
     for (const auto& [gpIndex, gp] : localBasis_.viewOverIntegrationPoints()) {
       const auto intElement = geo.integrationElement(gp.position()) * gp.weight();
@@ -303,7 +304,7 @@ protected:
         for (size_t j = 0; j < numberOfNodes_; ++j) {
           nopJ.diagonal().setConstant(N[j]);
           M.template block<worldDim, worldDim>(i * worldDim, j * worldDim) +=
-              nopI.transpose() * density_ * nopJ * intElement;
+              nopI.transpose() * rhoT * nopJ * intElement;
         }
       }
     }

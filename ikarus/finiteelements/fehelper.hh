@@ -127,5 +127,4 @@ template <typename FiniteElement>
 void globalIndices(const FiniteElement& fe, std::vector<typename FiniteElement::LocalView::MultiIndex>& globalIndices) {
   globalIndicesFromLocalView(fe.localView(), globalIndices);
 }
-
 } // namespace Ikarus::FEHelper
