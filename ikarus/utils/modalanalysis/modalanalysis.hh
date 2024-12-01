@@ -66,7 +66,7 @@ struct ModalAnalysis
       req_.insertGlobalSolution(d_);
 
     stiffAssembler_->bind(req_, Ikarus::AffordanceCollections::elastoStatics, Ikarus::DBCOption::Reduced);
-    massAssembler_->bind(req_, Ikarus::AffordanceCollections::dynamics, Ikarus::DBCOption::Reduced);
+    massAssembler_->bind(req_, Ikarus::AffordanceCollections::modalAnalysis, Ikarus::DBCOption::Reduced);
     lumpedMassAssembler_ = makeAssemblerManipulator(*massAssembler_);
   }
 
@@ -76,7 +76,7 @@ struct ModalAnalysis
    * It resets already bound matrix manipulation functions.
    *
    * \tparam LumpingScheme The type of the lumping scheme, for example one found at \file
-   * ikarus/utils/modalanalysis/lumpingschemes.hh.s
+   * ikarus/utils/modalanalysis/lumpingschemes.hh.
    * \param ls the instantiated LumpingScheme object (pass either by value or by template definition).
    */
   template <typename LumpingScheme>

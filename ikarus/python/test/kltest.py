@@ -69,7 +69,7 @@ if __name__ == "__main__":
     vLoad = iks.finite_elements.volumeLoad3D(vL)
 
     klShell = iks.finite_elements.kirchhoffLoveShell(
-        youngs_modulus=1000, nu=0.0, thickness=thickness, density=density
+        youngs_modulus=1000, nu=0.0, thickness=thickness
     )
 
     fes = []

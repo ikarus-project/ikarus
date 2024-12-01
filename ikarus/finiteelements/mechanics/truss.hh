@@ -74,6 +74,7 @@ public:
   struct KinematicVariables
   {
     double L;                  ///< Length of the reference geometry
+    Eigen::VectorXd A1;        ///< Length of the reference geometry as vector
     ST l;                      ///< Length of the deformed geometry
     ST Elin;                   ///< Linear strain
     ST Egl;                    ///< Green-Lagrange strain
@@ -136,8 +137,9 @@ public:
     const double Lsquared = A1.squaredNorm();
     const ST lsquared     = (x2 - x1).squaredNorm();
 
-    kin.L = sqrt(Lsquared);
-    kin.l = sqrt(lsquared);
+    kin.L  = sqrt(Lsquared);
+    kin.l  = sqrt(lsquared);
+    kin.A1 = A1;
 
     // Linear strain
     kin.Elin = (kin.l - kin.L) / kin.L;
@@ -164,12 +166,8 @@ public:
    *
    * \return std::pair of length, and T
    */
-  auto computeLengthAndTransformationMatrix() const {
-    auto& ele           = underlying().localView().element();
-    const auto X1       = Dune::toEigen(ele.geometry().corner(0));
-    const auto X2       = Dune::toEigen(ele.geometry().corner(1));
-    const auto A1       = X2 - X1;
-    const auto L        = A1.norm();
+  auto computeLengthAndTransformationMatrix(const Requirement& par) const {
+    const auto [L, A1, l, Elin, Egl, dEdu, ddEddu] = computeStrain(par);
     const auto A1normed = A1 / L;
 
     auto T = Eigen::Matrix<typename std::remove_cvref_t<decltype(L)>, 2, worldDim * 2>::Zero().eval();
@@ -194,8 +192,8 @@ public:
   requires(supportsResultType<RT>())
   auto calculateAtImpl(const Requirement& req, [[maybe_unused]] const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<0>) const {
-    using RTWrapper                            = ResultWrapper<RT<double, myDim, myDim>, ResultShape::Vector>;
-    const auto [L, l, Elin, Egl, dEdu, ddEddu] = computeStrain(req);
+    using RTWrapper                               = ResultWrapper<RT<double, myDim, myDim>, ResultShape::Vector>;
+    const auto [L, _, l, Elin, Egl, dEdu, ddEddu] = computeStrain(req);
     if constexpr (isSameResultType<RT, ResultTypes::cauchyAxialForce>) {
       auto N = Eigen::Vector<double, 1>{E_ * A_ * Egl * l / L}; // Axial force in deformed configuration
       return RTWrapper{N};
@@ -225,14 +223,14 @@ protected:
       const Requirement& par, const MatrixAffordance& affordance, typename Traits::template MatrixType<> K,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
     if (affordance == MatrixAffordance::stiffness) {
-      const auto [L, l, Elin, Egl, dEdu, ddEddu] = computeStrain(par, dx);
+      const auto [L, _, l, Elin, Egl, dEdu, ddEddu] = computeStrain(par, dx);
       K += E_ * A_ * L * (dEdu * dEdu.transpose() + ddEddu * Egl);
     } else if (affordance == MatrixAffordance::linearMass) {
       Eigen::Matrix<ScalarType, 2, 2> mLoc{
           {2, 1},
           {1, 2}
       };
-      auto [l, T] = computeLengthAndTransformationMatrix();
+      auto [l, T] = computeLengthAndTransformationMatrix(par);
       mLoc *= (density_ * A_ * l) / 6.0;
       K += T.transpose() * mLoc * T;
     } else
@@ -243,7 +241,7 @@ protected:
   auto calculateScalarImpl(const Requirement& par, ScalarAffordance affordance,
                            const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx =
                                std::nullopt) const -> ScalarType {
-    const auto [L, l, Elin, Egl, dEdu, ddEddu] = computeStrain(par, dx);
+    const auto [L, l, _, Elin, Egl, dEdu, ddEddu] = computeStrain(par, dx);
     return 0.5 * E_ * A_ * L * Egl * Egl;
   }
 
@@ -251,7 +249,7 @@ protected:
   void calculateVectorImpl(
       const Requirement& par, VectorAffordance affordance, typename Traits::template VectorType<ScalarType> force,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
-    const auto [L, l, Elin, Egl, dEdu, ddEddu] = computeStrain(par, dx);
+    const auto [L, l, _, Elin, Egl, dEdu, ddEddu] = computeStrain(par, dx);
     force += E_ * A_ * Egl * L * dEdu;
   }
 };

@@ -159,13 +159,10 @@ protected:
   void calculateMatrixImpl(
       const Requirement& par, const MatrixAffordance& affordance, typename Traits::template MatrixType<> K,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
-    if (affordance == MatrixAffordance::linearMass) {
-      return;
-    }
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     easApplicabilityCheck();
-    if (isDisplacementBased())
+    if (isDisplacementBased() or affordance != MatrixAffordance::stiffness)
       return;
 
     decltype(auto) LMat = [this]() -> decltype(auto) {

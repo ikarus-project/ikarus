@@ -3,7 +3,7 @@
 
 /**
  * \file generalizedeigensolver.hh
- * \brief Helper for dune-functions
+ * \brief Implementation of wrapper classes for solving a generalized eigenvalue problem
  */
 
 #pragma once
@@ -26,7 +26,6 @@ namespace Ikarus {
 
 /**
  * \brief Construct a new make enum object
- *
  */
 MAKE_ENUM(EigenValueSolverType, Spectra, Eigen);
 
@@ -191,7 +190,7 @@ struct GeneralizedSymEigenSolver<EigenValueSolverType::Eigen, MT>
   }
 
   template <Concepts::FlatAssembler AssemblerA, Concepts::FlatAssembler AssemblerB>
-  GeneralizedSymEigenSolver(const std::shared_ptr<AssemblerA> assemblerA, const std::shared_ptr<AssemblerB>& assemblerB)
+  GeneralizedSymEigenSolver(const std::shared_ptr<AssemblerA>& assemblerA, const std::shared_ptr<AssemblerB>& assemblerB)
       : GeneralizedSymEigenSolver(assemblerA->matrix(), assemblerB->matrix()) {}
 
   /**
@@ -305,7 +304,7 @@ struct PartialGeneralizedSymEigenSolver
                Spectra::SortRule sortRule = Spectra::SortRule::SmallestAlge, ScalarType tolerance = 1e-10,
                Eigen::Index maxit = 1000) {
     solver_.init();
-    solver_.compute(Spectra::SortRule::SmallestAlge, 1000, 1e-10, Spectra::SortRule::SmallestAlge);
+    solver_.compute(selection, tolerance, maxit, sortRule);
 
     computed_ = solver_.info() == Spectra::CompInfo::Successful;
     return computed_;
