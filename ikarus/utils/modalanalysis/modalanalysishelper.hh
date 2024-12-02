@@ -73,7 +73,7 @@ void writeEigenmodesToVTK(const Eigensolver& solver, std::shared_ptr<Assembler> 
  * \tparam Assembler type of the assembler
  * \param eigenvectors the eigenvectors in a matrix, where the columns represent the eigenmodes.
  * \param assembler the assembler, which provides the gridview and the finite elements.
- * \param filename the filname of the vtk file
+ * \param filename the filename of the vtk file
  */
 template <typename Derived, Concepts::FlatAssembler Assembler>
 void writeEigenmodesAsTimeSeries(const Eigen::MatrixBase<Derived>& eigenvectors, std::shared_ptr<Assembler> assembler,
@@ -96,14 +96,14 @@ void writeEigenmodesAsTimeSeries(const Eigen::MatrixBase<Derived>& eigenvectors,
 
 /**
  * \brief Writes the first nev_ províded eigenmodes from an eigenvalue solver to a paraview collection file
- * (*.pvd). Each mode is hereby written into a seperate vtk file and the eigenmodes can then be seen as a timeseries
- * through the pvd file, which aggrevates the sepeerate vtk files.
+ * (*.pvd). Each mode is hereby written into a separate vtk file and the eigenmodes can then be seen as a timeseries
+ * through the pvd file, which aggravates the separate vtk files.
  *
  * \tparam Eigensolver type of the eigenvalue solver
  * \tparam Assembler type of the assembler
  * \param solver the eigenvalue solver, which provides eigenvectors
  * \param assembler the assembler, which provides the gridview and the finite elements.
- * \param filename the filname of the vtk file
+ * \param filename the filename of the vtk file
  * \param nev_  optionally specify how many eigenmodes should be written out, defaults to all.
  */
 template <Concepts::EigenValueSolver Eigensolver, Concepts::FlatAssembler Assembler>
