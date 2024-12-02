@@ -248,13 +248,15 @@ struct GeneralizedSymEigenSolver<EigenValueSolverType::Eigen, MT>
   /**
    * \brief Returns the eigenvectors of the generalized eigenvalue problem
    *
-   * \param _nev optionally specify how many eigenvectors are requested
    * \return Reference to the matrix with the eigevectors as columns
    */
   auto& eigenvectors() const {
     assertCompute();
     return solver_.eigenvectors();
   }
+
+  /** \brief Returns the number of eigenvalues of the problem */
+  Eigen::Index nev() const { return matA_.rows(); }
 
 private:
   MatrixType matA_;
