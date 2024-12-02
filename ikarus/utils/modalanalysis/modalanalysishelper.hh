@@ -14,6 +14,7 @@
 
 #include <ikarus/assembler/assemblermanipulatorfuser.hh>
 #include <ikarus/io/vtkwriter.hh>
+#include <ikarus/solver/eigenvaluesolver/generalizedeigensolver.hh>
 #include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/makeenum.hh>
 #include <ikarus/utils/modalanalysis/lumpingschemes.hh>
@@ -51,6 +52,7 @@ auto makeLumpedFlatAssembler(const std::shared_ptr<AS>& assembler) {
 template <Concepts::EigenValueSolver Eigensolver, Concepts::FlatAssembler Assembler>
 void writeEigenmodesToVTK(const Eigensolver& solver, std::shared_ptr<Assembler> assembler, const std::string& filename,
                           std::optional<Eigen::Index> nev_ = std::nullopt) {
+  Impl::assertNev(nev_, solver.nev());
   auto nev          = nev_.value_or(solver.nev());
   auto eigenvectors = solver.eigenvectors();
   auto basis        = assembler->basis();
@@ -107,8 +109,9 @@ void writeEigenmodesAsTimeSeries(const Eigen::MatrixBase<Derived>& eigenvectors,
 template <Concepts::EigenValueSolver Eigensolver, Concepts::FlatAssembler Assembler>
 void writeEigenmodesAsTimeSeries(const Eigensolver& solver, std::shared_ptr<Assembler> assembler,
                                  const std::string& filename, std::optional<Eigen::Index> nev_ = std::nullopt) {
+  Impl::assertNev(nev_, solver.nev());
   auto nev          = nev_.value_or(solver.nev());
-  auto eigenvectors = solver.eigenvectors();
+  auto eigenvectors = solver.eigenvectors().leftCols(nev).eval();
   writeEigenmodesAsTimeSeries(eigenvectors, assembler, filename);
 }
 

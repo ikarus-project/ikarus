@@ -98,9 +98,9 @@ struct ModalAnalysis
    * \return true solving was successful
    * \return false solving was not successful
    */
-  bool compute(ScalarType tolerance = 1e-10, Eigen::Index maxit = 1000) {
+  bool compute(Eigen::Index maxit = 1000, ScalarType tolerance = 1e-10) {
     solver_.emplace(stiffAssembler_, lumpedMassAssembler_);
-    return solver_->compute(tolerance, maxit);
+    return solver_->compute(maxit, tolerance);
   }
 
   /**
@@ -174,9 +174,10 @@ struct ModalAnalysis
    * \param filename filename of the output pvd file.
    * \param nev_ optionally specify how many eigenmodes should be written out, defaults to all.
    */
-  void writeEigenModes(const std::string& filename, std::optional<Eigen::Index> nev_ = std::nullopt) const {
+  void writeEigenModes(const std::string& filename, std::optional<Eigen::Index> _nev = std::nullopt) const {
     assertCompute();
-    writeEigenmodesAsTimeSeries(solver_.value(), stiffAssembler_, filename, nev_);
+    Impl::assertNev(_nev, nev());
+    writeEigenmodesAsTimeSeries(solver_.value(), stiffAssembler_, filename, _nev);
   }
 
   /** \brief Returns the number of eigenvalues of the problem */

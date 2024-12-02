@@ -24,6 +24,13 @@
 
 namespace Ikarus {
 
+namespace Impl {
+  void assertNev(std::optional<Eigen::Index> nev, Eigen::Index nevMax) {
+    if (nev.has_value() and nev.value() > nevMax)
+      DUNE_THROW(Dune::InvalidStateException, "You can not ask for more eigenvalues or eigenvectors then calculated.");
+  }
+} // namespace Impl
+
 /**
  * \brief A strongly typed enum class representing the type of solver to use for the eigenvalue problem
  */
@@ -101,7 +108,7 @@ struct GeneralizedSymEigenSolver<EigenValueSolverType::Spectra, MT>
    * \brief Starts the computation of the eigenvalue solver
    *
    * \param tolerance given tolerance for iterative eigenvalue solving (default: 1e-10)
-   * \param maxit givenn maximum iterations for eigenvalue solving (default: 1000)
+   * \param maxit given maximum iterations for eigenvalue solving (default: 1000)
    * \return true solving was successful
    * \return false solving was not successful
    */
@@ -109,17 +116,19 @@ struct GeneralizedSymEigenSolver<EigenValueSolverType::Spectra, MT>
     solverSmallest_.init();
     solverSmallest_.compute(Spectra::SortRule::SmallestAlge, maxit, tolerance, Spectra::SortRule::SmallestAlge);
 
-    eigenvalues_.head(nevsPartition_.first)      = solverSmallest_.eigenvalues();
-    eigenvectors_.leftCols(nevsPartition_.first) = solverSmallest_.eigenvectors();
-
     solverGreatest_.init();
     solverGreatest_.compute(Spectra::SortRule::LargestAlge, maxit, tolerance, Spectra::SortRule::SmallestAlge);
 
-    eigenvalues_.tail(nevsPartition_.second)       = solverGreatest_.eigenvalues();
-    eigenvectors_.rightCols(nevsPartition_.second) = solverGreatest_.eigenvectors();
-
     computed_ = solverSmallest_.info() == Spectra::CompInfo::Successful and
                 solverGreatest_.info() == Spectra::CompInfo::Successful;
+    if (not computed_)
+      return false;
+
+    eigenvalues_.head(nevsPartition_.first)      = solverSmallest_.eigenvalues();
+    eigenvectors_.leftCols(nevsPartition_.first) = solverSmallest_.eigenvectors();
+
+    eigenvalues_.tail(nevsPartition_.second)       = solverGreatest_.eigenvalues();
+    eigenvectors_.rightCols(nevsPartition_.second) = solverGreatest_.eigenvectors();
 
     return computed_;
   }
@@ -375,6 +384,7 @@ struct PartialGeneralizedSymEigenSolver
    * \return auto matrix with the eigevectors as columns
    */
   auto eigenvectors(std::optional<Eigen::Index> _nev = std::nullopt) const {
+    Impl::assertNev(_nev, nev_);
     assertCompute();
     return solver_.eigenvectors(_nev.value_or(nev_));
   }

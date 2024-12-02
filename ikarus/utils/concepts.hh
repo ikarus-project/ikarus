@@ -636,6 +636,7 @@ namespace Concepts {
     { es.compute() } -> std::same_as<bool>;
     { es.eigenvalues() } -> std::convertible_to<Eigen::VectorX<typename ES::ScalarType>>;
     { es.eigenvectors() } -> std::convertible_to<Eigen::MatrixX<typename ES::ScalarType>>;
+    { es.nev() } -> std::convertible_to<int>;
   };
 
 } // namespace Concepts
