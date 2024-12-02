@@ -46,7 +46,7 @@ auto makeLumpedFlatAssembler(const std::shared_ptr<AS>& assembler) {
  * \tparam Assembler type of the assembler
  * \param solver the eigenvalue solver, which provides eigenvectors
  * \param assembler the assembler, which provides the gridview and the finite elements.
- * \param filename the filname of the vtk file
+ * \param filename Name of the output vtk file
  * \param nev_  optionally specify how many eigenmodes should be written out, defaults to all.
  */
 template <Concepts::EigenValueSolver Eigensolver, Concepts::FlatAssembler Assembler>

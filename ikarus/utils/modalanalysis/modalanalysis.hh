@@ -80,13 +80,18 @@ struct ModalAnalysis
    * \param ls the instantiated LumpingScheme object (pass either by value or by template definition).
    */
   template <typename LumpingScheme>
+  requires(
+      std::is_invocable_v<LumpingScheme, Assembler, const FERequirement&, MatrixAffordance, DBCOption, MatrixType&>)
   void bindLumpingScheme(LumpingScheme ls = {}) {
-    lumpedMassAssembler_->unbindAllMatrixFunctions();
+    unBindLumpingScheme();
     lumpedMassAssembler_->bind(ls);
   }
 
   /**
    * \brief Unbinds a former bound lumpingscheme.
+   * \remark What this method is actually doing is to remove all bound functions, as we have no way to keep track of the
+   * applied lumping scheme. In this case however this does not have any unwanted side effects, as the assembler is only
+   * used inside the class.
    */
   void unBindLumpingScheme() { lumpedMassAssembler_->unbindAllMatrixFunctions(); }
 
@@ -171,7 +176,7 @@ struct ModalAnalysis
   /**
    * \brief Writes the first nev_ eigenmodes to a paraview collection file (*.pvd).
    *
-   * \param filename filename of the output pvd file.
+   * \param filename filename Name of the output pvd file.
    * \param nev_ optionally specify how many eigenmodes should be written out, defaults to all.
    */
   void writeEigenModes(const std::string& filename, std::optional<Eigen::Index> _nev = std::nullopt) const {

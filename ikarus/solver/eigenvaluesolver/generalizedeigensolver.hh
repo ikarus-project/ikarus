@@ -24,13 +24,6 @@
 
 namespace Ikarus {
 
-namespace Impl {
-  void assertNev(std::optional<Eigen::Index> nev, Eigen::Index nevMax) {
-    if (nev.has_value() and nev.value() > nevMax)
-      DUNE_THROW(Dune::InvalidStateException, "You can not ask for more eigenvalues or eigenvectors then calculated.");
-  }
-} // namespace Impl
-
 /**
  * \brief A strongly typed enum class representing the type of solver to use for the eigenvalue problem
  */
@@ -293,6 +286,13 @@ auto makeGeneralizedSymEigenSolver(const std::shared_ptr<AssemblerA>& assemblerA
 
   return SolverType{assemblerA, assemblerB};
 }
+
+namespace Impl {
+  void assertNev(std::optional<Eigen::Index> nev, Eigen::Index nevMax) {
+    if (nev.has_value() and nev.value() > nevMax)
+      DUNE_THROW(Dune::InvalidStateException, "You can not ask for more eigenvalues or eigenvectors then calculated.");
+  }
+} // namespace Impl
 
 /**
  * \brief This class implements a wrapper to the Spectra generalized eigen solver for sqaure real symmetric matrices,
