@@ -289,7 +289,7 @@ protected:
   template <typename ScalarType>
   void calculateMassImpl(const Requirement& par, const MatrixAffordance& affordance,
                          typename Traits::template MatrixType<> M) const {
-    const auto geo = underlying().localView().element().geometry();
+    const auto geo  = underlying().localView().element().geometry();
     const auto rhoT = thickness_ * density_;
 
     for (const auto& [gpIndex, gp] : localBasis_.viewOverIntegrationPoints()) {

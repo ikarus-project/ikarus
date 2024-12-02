@@ -43,7 +43,8 @@ struct DummyProblem
 
   // YASPGrid needs an int, structuresgridfactory an unsigned int
   explicit DummyProblem(
-      const std::array<std::conditional_t<useYASP, int, unsigned int>, 2>& elementsPerDirection = {10, 10}, double Lx = 4.0, double Ly = 4.0)
+      const std::array<std::conditional_t<useYASP, int, unsigned int>, 2>& elementsPerDirection = {10, 10},
+      double Lx = 4.0, double Ly = 4.0)
       : grid_([&]() {
           const Dune::FieldVector<double, 2> bbox = {Lx, Ly};
 

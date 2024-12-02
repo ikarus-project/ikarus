@@ -121,7 +121,6 @@ auto testEigenSolvers() {
   return t;
 }
 
-
 auto checkThrows() {
   TestSuite t;
   using Ikarus::EigenValueSolverType;
