@@ -203,9 +203,9 @@ auto scalarAffordance(VectorAffordance affordanceV) {
 namespace AffordanceCollections {
   inline constexpr AffordanceCollection elastoStatics(ScalarAffordance::mechanicalPotentialEnergy,
                                                       VectorAffordance::forces, MatrixAffordance::stiffness);
-  constexpr Ikarus::AffordanceCollection modalAnalysis(Ikarus::ScalarAffordance::noAffordance,
-                                                  Ikarus::VectorAffordance::noAffordance,
-                                                  Ikarus::MatrixAffordance::linearMass);
+  inline constexpr Ikarus::AffordanceCollection modalAnalysis(Ikarus::ScalarAffordance::noAffordance,
+                                                              Ikarus::VectorAffordance::noAffordance,
+                                                              Ikarus::MatrixAffordance::linearMass);
 } // namespace AffordanceCollections
 
 namespace Impl {

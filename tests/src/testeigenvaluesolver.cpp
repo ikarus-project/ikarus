@@ -118,6 +118,14 @@ auto testEigenSolvers() {
   static_assert(Ikarus::Concepts::EigenValueSolver<decltype(solver2)>);
   static_assert(Ikarus::Concepts::EigenValueSolver<decltype(solver3)>);
 
+  return t;
+}
+
+
+auto checkThrows() {
+  TestSuite t;
+  using Ikarus::EigenValueSolverType;
+
   auto testMatrix1 = Eigen::MatrixX<double>::Random(10, 10).eval();
   auto testMatrix2 = Eigen::MatrixX<double>::Random(9, 9).eval();
   auto testMatrix3 = Eigen::MatrixX<double>::Random(9, 10).eval();
@@ -168,5 +176,7 @@ int main(int argc, char** argv) {
   TestSuite t;
 
   t.subTest(testEigenSolvers());
+  t.subTest(checkThrows());
+
   return t.exit();
 }

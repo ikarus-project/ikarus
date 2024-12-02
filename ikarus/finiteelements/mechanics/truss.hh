@@ -26,9 +26,9 @@ class Truss;
  */
 struct TrussPre
 {
-  double E;            // Young's modulus
-  double A;            // Cross-section area
-  double density{1.0}; // Density
+  double E;       // Young's modulus
+  double A;       // Cross-section area
+  double density; // Density
 
   template <typename PreFE, typename FE>
   using Skill = Truss<PreFE, FE>;
@@ -168,7 +168,7 @@ public:
    */
   auto computeLengthAndTransformationMatrix(const Requirement& par) const {
     const auto [L, A1, l, Elin, Egl, dEdu, ddEddu] = computeStrain(par);
-    const auto A1normed = A1 / L;
+    const auto A1normed                            = A1 / L;
 
     auto T = Eigen::Matrix<typename std::remove_cvref_t<decltype(L)>, 2, worldDim * 2>::Zero().eval();
     T.template block<1, worldDim>(0, 0)        = A1normed;
@@ -215,7 +215,7 @@ private:
 
   double E_;
   double A_;
-  double density_{1.0};
+  double density_;
 
 protected:
   template <typename ScalarType>

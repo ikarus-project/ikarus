@@ -42,7 +42,7 @@ struct NonLinearElasticPre
 {
   using Material = MAT;
   MAT material;
-  double density{1.0};
+  double density;
 
   template <typename PreFE, typename FE>
   using Skill = NonLinearElastic<PreFE, FE, NonLinearElasticPre>;
@@ -235,7 +235,7 @@ private:
   std::shared_ptr<const Geometry> geo_;
   Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType>> localBasis_;
   Material mat_;
-  double density_{1.0};
+  double density_;
   size_t numberOfNodes_{0};
   int order_{};
 

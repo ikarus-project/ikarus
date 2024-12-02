@@ -139,8 +139,8 @@ struct ModalAnalysis
   /**
    * \brief Plots the spectrum of the specified result (defaults to angular frequency) using matplot++.
    *
-   * \param resultType specified result type of the modal analysis
-   * \param normalizeModeNumber
+   * \param resultType specified result type of the modal analysis.
+   * \param normalizeModeNumber if true normalizes the output spectrum to [0, 1].
    */
   void plotModalSpectrum(ModalAnalysisResultType resultType = ModalAnalysisResultType::angularFrequency,
                          bool normalizeModeNumber           = false) {
@@ -169,9 +169,9 @@ struct ModalAnalysis
   }
 
   /**
-   * \brief Writes the first nev_ eigenmodes to a paraview collection file.
+   * \brief Writes the first nev_ eigenmodes to a paraview collection file (*.pvd).
    *
-   * \param filename filename of the file.
+   * \param filename filename of the output pvd file.
    * \param nev_ optionally specify how many eigenmodes should be written out, defaults to all.
    */
   void writeEigenModes(const std::string& filename, std::optional<Eigen::Index> nev_ = std::nullopt) const {

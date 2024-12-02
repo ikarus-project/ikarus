@@ -25,7 +25,7 @@
 namespace Ikarus {
 
 /**
- * \brief Construct a new make enum object
+ * \brief A strongly typed enum class representing the type of solver to use for the eigenvalue problem
  */
 MAKE_ENUM(EigenValueSolverType, Spectra, Eigen);
 
@@ -35,12 +35,12 @@ struct GeneralizedSymEigenSolver
 };
 
 /**
- * \brief This class implements a wrapper to the Spectra generalized eigen solver for real symmetric matrices, i.e. to
- * solve \f$ Ax = \lambda Bx\f$, where A is symmetric and B is positive definite. It calculates the full spectrum of
- * eigenvalues.
- * \details Under the hood it uses the Spectra::SymGEigsSolver with Cholesky decomposition for B. As this class can only
- * compute up to \f$ n-1 \f$ smallest or greatest eigenvalues, we use two different solvers for the n/2 smallest and n/2
- * greatest eigenvalues. The matrices are shared throughout the solvers so no extra copy is being made.
+ * \brief This class implements a wrapper to the Spectra generalized eigen solver for sqaure real symmetric matrices,
+ * i.e. to solve \f$ Ax = \lambda Bx\f$, where A is symmetric and B is positive definite. It calculates the full
+ * spectrum of eigenvalues. \details Under the hood it uses the Spectra::SymGEigsSolver with Cholesky decomposition for
+ * B. As this class can only compute up to \f$ n-1 \f$ smallest or greatest eigenvalues, we use two different solvers
+ * for the n/2 smallest and n/2 greatest eigenvalues. The matrices are shared throughout the solvers so no extra copy is
+ * being made.
  *
  * \tparam MT the used Matrix Type, can be a sparse or dense Eigen::Matrix
  */
@@ -59,12 +59,12 @@ struct GeneralizedSymEigenSolver<EigenValueSolverType::Spectra, MT>
   using SolverType = Spectra::SymGEigsSolver<ProductType, CholeskyType, Spectra::GEigsMode::Cholesky>;
 
   /**
-   * \brief Construct a new General Sym Eigen Solver object.
+   * \brief Construct a new GeneralizedSymEigenSolver object.
    *
-   * \tparam MATA deduced type of passed matrix A.
-   * \tparam MATB deduced type of passed matrix B.
-   * \param A matrix A.
-   * \param B matrix B.
+   * \tparam MATA the deduced type of the matrix A
+   * \tparam MATB the deduced type of the matrix B
+   * \param A the matrix A
+   * \param B the matrix B
    */
   template <typename MATA, typename MATB>
   requires(Concepts::DenseOrSparseEigenMatrix<std::remove_cvref_t<MATA>>)
@@ -76,15 +76,16 @@ struct GeneralizedSymEigenSolver<EigenValueSolverType::Spectra, MT>
         bOP_(std::forward<MATB>(B)),
         solverSmallest_(aOP_, bOP_, nevsPartition_.first, std::min(nevsPartition_.second * 2, nev_)),
         solverGreatest_(aOP_, bOP_, nevsPartition_.second, nevsPartition_.second * 2) {
-    if ((A.cols() != B.cols()) or (A.rows() != B.rows()) or (A.cols() != B.cols()))
-      DUNE_THROW(Dune::IOError, "GeneralizedSymEigenSolver: The passed matrices should have the same size");
+    if ((A.cols() != B.cols()) or (A.rows() != B.rows()) or (A.cols() != A.rows()))
+      DUNE_THROW(Dune::InvalidStateException,
+                 "GeneralizedSymEigenSolver: The passed matrices should have the same size");
     eigenvalues_.resize(nev_);
     eigenvectors_.resize(A.rows(), nev_);
     assert(nevsPartition_.first + nevsPartition_.second == nev_);
   }
 
   /**
-   * \brief Construct a new General Sym Eigen Solver object.
+   * \brief Construct a new GeneralSymEigenSolver object.
    *
    * \tparam AssemblerA the type of the assembler for matrix A.
    * \tparam AssemblerB the type of the assembler for matrix B.
@@ -104,15 +105,15 @@ struct GeneralizedSymEigenSolver<EigenValueSolverType::Spectra, MT>
    * \return true solving was successful
    * \return false solving was not successful
    */
-  bool compute(ScalarType tolerance = 1e-10, Eigen::Index maxit = 1000) {
+  bool compute(Eigen::Index maxit = 1000, ScalarType tolerance = 1e-10) {
     solverSmallest_.init();
-    solverSmallest_.compute(Spectra::SortRule::SmallestAlge, 1000, 1e-10, Spectra::SortRule::SmallestAlge);
+    solverSmallest_.compute(Spectra::SortRule::SmallestAlge, maxit, tolerance, Spectra::SortRule::SmallestAlge);
 
     eigenvalues_.head(nevsPartition_.first)      = solverSmallest_.eigenvalues();
     eigenvectors_.leftCols(nevsPartition_.first) = solverSmallest_.eigenvectors();
 
     solverGreatest_.init();
-    solverGreatest_.compute(Spectra::SortRule::LargestAlge, 1000, 1e-10, Spectra::SortRule::SmallestAlge);
+    solverGreatest_.compute(Spectra::SortRule::LargestAlge, maxit, tolerance, Spectra::SortRule::SmallestAlge);
 
     eigenvalues_.tail(nevsPartition_.second)       = solverGreatest_.eigenvalues();
     eigenvectors_.rightCols(nevsPartition_.second) = solverGreatest_.eigenvectors();
@@ -161,13 +162,13 @@ private:
 
   void assertCompute() const {
     if (not computed_)
-      DUNE_THROW(Dune::IOError, "Eigenvalues and -vectors not yet computed, please call compute() first");
+      DUNE_THROW(Dune::InvalidStateException, "Eigenvalues and -vectors not yet computed, please call compute() first");
   }
 };
 
 /**
- * \brief This class implements a wrapper to the Eigen generalized eigen solver for real symmetric matrices, i.e. to
- * solve \f$ Ax = \lambda Bx\f$, where A is symmetric and B is positive definite. A and B have to be dense matrices.
+ * \brief This class implements a wrapper to the Eigen generalized eigen solver for sqaure real symmetric matrices, i.e.
+ * to solve \f$ Ax = \lambda Bx\f$, where A is symmetric and B is positive definite. A and B have to be dense matrices.
  * \details Under the hood it uses the Eigen::GeneralizedSelfAdjointEigenSolver
  *
  * \tparam MT the used Matrix Type, can be a dense Eigen::Matrix
@@ -179,18 +180,36 @@ struct GeneralizedSymEigenSolver<EigenValueSolverType::Eigen, MT>
   using MatrixType = MT;
   using SolverType = Eigen::GeneralizedSelfAdjointEigenSolver<MatrixType>;
 
+  /**
+   * \brief Construct a new GeneralizedSymEigenSolver object.
+   *
+   * \tparam MATA the deduced type of the matrix A
+   * \tparam MATB the deduced type of the matrix B
+   * \param A the matrix A
+   * \param B the matrix B
+   */
   template <typename MATA, typename MATB>
   requires(Concepts::EigenMatrix<std::remove_cvref_t<MATA>>)
   GeneralizedSymEigenSolver(MATA&& A, MATB&& B)
       : matA_(std::forward<MATA>(A)),
         matB_(std::forward<MATB>(B)),
         solver_(A.size()) {
-    if ((A.cols() != B.cols()) or (A.rows() != B.rows()) or (A.cols() != B.cols()))
-      DUNE_THROW(Dune::IOError, "GeneralizedSymEigenSolver: The passed matrices should have the same size");
+    if ((A.cols() != B.cols()) or (A.rows() != B.rows()) or (A.cols() != A.rows()))
+      DUNE_THROW(Dune::InvalidStateException,
+                 "GeneralizedSymEigenSolver: The passed matrices should have the same size");
   }
 
+  /**
+   * \brief Construct a new GeneralSymEigenSolver object.
+   *
+   * \tparam AssemblerA the type of the assembler for matrix A.
+   * \tparam AssemblerB the type of the assembler for matrix B.
+   * \param assemblerA assembler for matrix A.
+   * \param assemblerB assembler for matrix B.
+   */
   template <Concepts::FlatAssembler AssemblerA, Concepts::FlatAssembler AssemblerB>
-  GeneralizedSymEigenSolver(const std::shared_ptr<AssemblerA>& assemblerA, const std::shared_ptr<AssemblerB>& assemblerB)
+  GeneralizedSymEigenSolver(const std::shared_ptr<AssemblerA>& assemblerA,
+                            const std::shared_ptr<AssemblerB>& assemblerB)
       : GeneralizedSymEigenSolver(assemblerA->matrix(), assemblerB->matrix()) {}
 
   /**
@@ -203,8 +222,8 @@ struct GeneralizedSymEigenSolver<EigenValueSolverType::Eigen, MT>
    */
   bool compute(int options = Eigen::ComputeEigenvectors) {
     solver_.compute(matA_, matB_, options);
-    computed_ = true;
-    return true; // SelfAdjointEigenSolver will always be successful if prerequisites are met
+    computed_ = true; // SelfAdjointEigenSolver will always be successful if prerequisites are met
+    return computed_;
   }
 
   /**
@@ -236,26 +255,38 @@ private:
 
   void assertCompute() const {
     if (not computed_)
-      DUNE_THROW(Dune::IOError, "Eigenvalues and -vectors not yet computed, please call compute() first");
+      DUNE_THROW(Dune::InvalidStateException, "Eigenvalues and -vectors not yet computed, please call compute() first");
   }
 };
 
-template <EigenValueSolverType tag, Concepts::FlatAssembler AS1, Concepts::FlatAssembler AS2>
-requires(std::same_as<typename AS1::MatrixType, typename AS2::MatrixType> &&
-         not(tag == EigenValueSolverType::Eigen && Concepts::SparseEigenMatrix<typename AS1::MatrixType>))
-auto makeGeneralizedSymEigenSolver(const std::shared_ptr<AS1>& as1, const std::shared_ptr<AS2> as2) {
-  using MatrixType        = typename AS1::MatrixType;
+/**
+ * \brief Factory function to create a GeneralizedSymEigenSolver for a specific backend (Eigen or Spectra) with provided
+ * assemblers for both quantities.
+ *
+ * \tparam tag EigenValueSolverType indicating the solver backend.
+ * \tparam AssemblerA the type of the assembler for matrix A.
+ * \tparam AssemblerB the type of the assembler for matrix B.
+ * \param assemblerA assembler for matrix A.
+ * \param assemblerB assembler for matrix B.
+ * \return PartialGeneralizedSymEigenSolver The created solver
+ */
+template <EigenValueSolverType tag, Concepts::FlatAssembler AssemblerA, Concepts::FlatAssembler AssemblerB>
+requires(std::same_as<typename AssemblerA::MatrixType, typename AssemblerB::MatrixType> &&
+         not(tag == EigenValueSolverType::Eigen && Concepts::SparseEigenMatrix<typename AssemblerA::MatrixType>))
+auto makeGeneralizedSymEigenSolver(const std::shared_ptr<AssemblerA>& assemblerA,
+                                   const std::shared_ptr<AssemblerB> assemblerB) {
+  using MatrixType        = typename AssemblerA::MatrixType;
   constexpr auto isSparse = Concepts::SparseEigenMatrix<MatrixType>;
   using SolverType        = std::conditional_t<isSparse, GeneralizedSymEigenSolver<tag, MatrixType>,
                                                GeneralizedSymEigenSolver<tag, MatrixType>>;
 
-  return SolverType{as1, as2};
+  return SolverType{assemblerA, assemblerB};
 }
 
 /**
- * \brief This class implements a wrapper to the Spectra generalized eigen solver for real symmetric matrices, i.e. to
- * solve \f$ Ax = \lambda Bx\f$, where A is symmetric and B is positive definite. It calculates a selection of
- * eigenvalues. At most \f$ n - 1 \f$, where \f$ n \f$ is the rows/cols of the matrices.
+ * \brief This class implements a wrapper to the Spectra generalized eigen solver for sqaure real symmetric matrices,
+ * i.e. to solve \f$ Ax = \lambda Bx\f$, where A is symmetric and B is positive definite. It calculates a selection of
+ * eigenvalues. At most \f$ n - 1 \f$, where \f$ n \f$ is the number of rows/cols of the matrices.
  * \details Under the hood it uses the Spectra::SymGEigsSolver with Cholesky decomposition for B
  *
  * \tparam MT the used Matrix Type, can be a sparse or dense Eigen::Matrix
@@ -274,6 +305,14 @@ struct PartialGeneralizedSymEigenSolver
 
   using SolverType = Spectra::SymGEigsSolver<ProductType, CholeskyType, Spectra::GEigsMode::Cholesky>;
 
+  /**
+   * \brief Construct a new PartialGeneralizedSymEigenSolver object.
+   *
+   * \tparam MATA the deduced type of the matrix A
+   * \tparam MATB the deduced type of the matrix B
+   * \param A the matrix A
+   * \param B the matrix B
+   */
   template <typename MATA, typename MATB>
   requires(Concepts::DenseOrSparseEigenMatrix<std::remove_cvref_t<MATA>>)
   PartialGeneralizedSymEigenSolver(MATA&& A, MATB&& B, Eigen::Index nev)
@@ -281,10 +320,19 @@ struct PartialGeneralizedSymEigenSolver
         aOP_(std::forward<MATA>(A)),
         bOP_(std::forward<MATB>(B)),
         solver_(aOP_, bOP_, nev, 2 * nev <= A.cols() ? 2 * nev : A.cols()) {
-    if ((A.cols() != B.cols()) or (A.rows() != B.rows()) or (A.cols() != B.cols()))
-      DUNE_THROW(Dune::IOError, "PartialGeneralizedSymEigenSolver: The passed matrices should have the same size");
+    if ((A.cols() != B.cols()) or (A.rows() != B.rows()) or (A.cols() != A.rows()))
+      DUNE_THROW(Dune::InvalidStateException,
+                 "PartialGeneralizedSymEigenSolver: The passed matrices should have the same size");
   }
 
+  /**
+   * \brief Construct a new PartialGeneralizedSymEigenSolver object.
+   *
+   * \tparam AssemblerA the type of the assembler for matrix A.
+   * \tparam AssemblerB the type of the assembler for matrix B.
+   * \param assemblerA assembler for matrix A.
+   * \param assemblerB assembler for matrix B.
+   */
   template <Concepts::FlatAssembler AssemblerA, Concepts::FlatAssembler AssemblerB>
   PartialGeneralizedSymEigenSolver(const std::shared_ptr<AssemblerA>& assemblerA,
                                    const std::shared_ptr<AssemblerB>& assemblerB, Eigen::Index nev)
@@ -301,10 +349,10 @@ struct PartialGeneralizedSymEigenSolver
    * \return false solving was not successful.
    */
   bool compute(Spectra::SortRule selection = Spectra::SortRule::SmallestAlge,
-               Spectra::SortRule sortRule = Spectra::SortRule::SmallestAlge, ScalarType tolerance = 1e-10,
-               Eigen::Index maxit = 1000) {
+               Spectra::SortRule sortRule = Spectra::SortRule::SmallestAlge, Eigen::Index maxit = 1000,
+               ScalarType tolerance = 1e-10) {
     solver_.init();
-    solver_.compute(selection, tolerance, maxit, sortRule);
+    solver_.compute(selection, maxit, tolerance, sortRule);
 
     computed_ = solver_.info() == Spectra::CompInfo::Successful;
     return computed_;
@@ -343,22 +391,34 @@ private:
 
   void assertCompute() const {
     if (not computed_)
-      DUNE_THROW(Dune::IOError, "Eigenvalues and -vectors not yet computed, please call compute() first");
+      DUNE_THROW(Dune::InvalidStateException, "Eigenvalues and -vectors not yet computed, please call compute() first");
   }
 };
 
-template <Concepts::FlatAssembler AS1, Concepts::FlatAssembler AS2>
-auto makePartialGeneralizedSymEigenSolver(const std::shared_ptr<AS1>& as1, const std::shared_ptr<AS2> as2) {
-  using MatrixType = typename AS1::MatrixType;
-  using ScalarType = typename AS1::MatrixType::Scalar;
+/**
+ * \brief Factory function to create a PartialGeneralizedSymEigenSolver with provided assemblers for both quantities
+ *
+ * \tparam AssemblerA the type of the assembler for matrix A.
+ * \tparam AssemblerB the type of the assembler for matrix B.
+ * \param assemblerA assembler for matrix A.
+ * \param assemblerB assembler for matrix B.
+ * \return PartialGeneralizedSymEigenSolver The created solver
+ */
+template <Concepts::FlatAssembler AssemblerA, Concepts::FlatAssembler AssemblerB>
+requires(std::same_as<typename AssemblerA::MatrixType, typename AssemblerB::MatrixType>)
+auto makePartialGeneralizedSymEigenSolver(const std::shared_ptr<AssemblerA>& assemblerA,
+                                          const std::shared_ptr<AssemblerB> assemblerB) {
+  using MatrixType = typename AssemblerA::MatrixType;
+  using ScalarType = typename AssemblerA::MatrixType::Scalar;
   using SolverType = PartialGeneralizedSymEigenSolver<MatrixType>;
 
-  return SolverType{as1, as2};
+  return SolverType{assemblerA, assemblerB};
 }
 
 #ifndef DOXYGEN
-template <Concepts::FlatAssembler AS1, Concepts::FlatAssembler AS2>
-PartialGeneralizedSymEigenSolver(std::shared_ptr<AS1> as1, std::shared_ptr<AS2> as2,
-                                 int nev) -> PartialGeneralizedSymEigenSolver<typename AS1::MatrixType>;
+template <Concepts::FlatAssembler AssemblerA, Concepts::FlatAssembler AssemblerB>
+requires(std::same_as<typename AssemblerA::MatrixType, typename AssemblerB::MatrixType>)
+PartialGeneralizedSymEigenSolver(std::shared_ptr<AssemblerA> as1, std::shared_ptr<AssemblerB> as2,
+                                 int nev) -> PartialGeneralizedSymEigenSolver<typename AssemblerA::MatrixType>;
 #endif
 } // namespace Ikarus

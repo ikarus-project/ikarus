@@ -31,7 +31,7 @@ struct KirchhoffLoveShellPre
 {
   YoungsModulusAndPoissonsRatio material;
   double thickness;
-  double density{1.0};
+  double density;
 
   template <typename PreFE, typename FE>
   using Skill = KirchhoffLoveShell<PreFE, FE>;
@@ -181,7 +181,7 @@ private:
   // DefaultMembraneStrain membraneStrain_;
   YoungsModulusAndPoissonsRatio mat_;
   double thickness_;
-  double density_{1.0};
+  double density_;
 
   size_t numberOfNodes_{0};
   int order_{};

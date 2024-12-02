@@ -20,15 +20,34 @@
 
 namespace Ikarus::Dynamics {
 
+/**
+ * \brief Factory function to create a lumped mass Assembler from an underlying assembler. You can provide a
+ * lumpingscheme similar to those found at \file ikarus/utils/modalanalysis/lumpingschemes.hh. Defaults to row-sum
+ * lumping.
+ *
+ * \tparam AS type of the underlying assembler
+ * \tparam LumpingScheme type of the lumping scheme, defaults to row-sum lumping
+ * \param assembler the underlying assembler
+ * \return auto Assembler Manipulator for mass lumping.
+ */
 template <Concepts::FlatAssembler AS, typename LumpingScheme = LumpingSchemes::RowSumLumping>
 auto makeLumpedFlatAssembler(const std::shared_ptr<AS>& assembler) {
-  constexpr auto isSparse = Concepts::SparseEigenMatrix<typename AS::MatrixType>;
-  using ScalarType        = typename AS::MatrixType::Scalar;
-  auto lumpedAssembler    = makeAssemblerManipulator(*assembler);
+  auto lumpedAssembler = makeAssemblerManipulator(*assembler);
   lumpedAssembler->bind(LumpingScheme{});
   return lumpedAssembler;
 }
 
+/**
+ * \brief Writes the first nev_ províded eigenmodes from an eigenvalue solver to a vtk file. Each mode is hereby a
+ * separate vector quantity.
+ *
+ * \tparam Eigensolver type of the eigenvalue solver
+ * \tparam Assembler type of the assembler
+ * \param solver the eigenvalue solver, which provides eigenvectors
+ * \param assembler the assembler, which provides the gridview and the finite elements.
+ * \param filename the filname of the vtk file
+ * \param nev_  optionally specify how many eigenmodes should be written out, defaults to all.
+ */
 template <Concepts::EigenValueSolver Eigensolver, Concepts::FlatAssembler Assembler>
 void writeEigenmodesToVTK(const Eigensolver& solver, std::shared_ptr<Assembler> assembler, const std::string& filename,
                           std::optional<Eigen::Index> nev_ = std::nullopt) {
@@ -44,6 +63,16 @@ void writeEigenmodesToVTK(const Eigensolver& solver, std::shared_ptr<Assembler> 
   writer.write(filename);
 }
 
+/**
+ * \brief
+ *
+ * \tparam Derived Writes the first nev_ províded eigenmodesin a column-matrix to a paraview collection file
+ * (*.pvd). Each mode is hereby a separate vector quantity.
+ * \tparam Assembler type of the assembler
+ * \param eigenvectors the eigenvectors in a matrix, where the columns represent the eigenmodes.
+ * \param assembler the assembler, which provides the gridview and the finite elements.
+ * \param filename the filname of the vtk file
+ */
 template <typename Derived, Concepts::FlatAssembler Assembler>
 void writeEigenmodesAsTimeSeries(const Eigen::MatrixBase<Derived>& eigenvectors, std::shared_ptr<Assembler> assembler,
                                  const std::string& filename) {
@@ -63,6 +92,18 @@ void writeEigenmodesAsTimeSeries(const Eigen::MatrixBase<Derived>& eigenvectors,
   pvdWriter.write(filename);
 }
 
+/**
+ * \brief Writes the first nev_ províded eigenmodes from an eigenvalue solver to a paraview collection file
+ * (*.pvd). Each mode is hereby written into a seperate vtk file and the eigenmodes can then be seen as a timeseries
+ * through the pvd file, which aggrevates the sepeerate vtk files.
+ *
+ * \tparam Eigensolver type of the eigenvalue solver
+ * \tparam Assembler type of the assembler
+ * \param solver the eigenvalue solver, which provides eigenvectors
+ * \param assembler the assembler, which provides the gridview and the finite elements.
+ * \param filename the filname of the vtk file
+ * \param nev_  optionally specify how many eigenmodes should be written out, defaults to all.
+ */
 template <Concepts::EigenValueSolver Eigensolver, Concepts::FlatAssembler Assembler>
 void writeEigenmodesAsTimeSeries(const Eigensolver& solver, std::shared_ptr<Assembler> assembler,
                                  const std::string& filename, std::optional<Eigen::Index> nev_ = std::nullopt) {
