@@ -89,8 +89,10 @@ auto testEigenSolvers() {
 
   auto partialSolver = Ikarus::PartialGeneralizedSymEigenSolver(assK, assM, nev);
   t.checkThrow([&]() { partialSolver.eigenvalues(); }) << testLocation();
-  bool success = partialSolver.compute();
-  t.check(success) << testLocation();
+  t.check(partialSolver.compute()) << testLocation();
+
+  auto partialSolverDense = Ikarus::PartialGeneralizedSymEigenSolver(assKD, assMD, nev);
+  t.check(partialSolverDense.compute()) << testLocation();
 
   auto solver1 = Ikarus::makeGeneralizedSymEigenSolver<EigenValueSolverType::Eigen>(assKD, assMD);
   t.check(solver1.compute()) << testLocation();
@@ -112,11 +114,38 @@ auto testEigenSolvers() {
   t.subTest(testEigenValues(solver1, solver2));
   t.subTest(testEigenValues(solver1, solver3));
   t.subTest(testEigenValues(solver2, solver3));
+  t.subTest(testEigenValues(partialSolver, partialSolverDense));
 
   static_assert(Ikarus::Concepts::EigenValueSolver<decltype(partialSolver)>);
   static_assert(Ikarus::Concepts::EigenValueSolver<decltype(solver1)>);
   static_assert(Ikarus::Concepts::EigenValueSolver<decltype(solver2)>);
   static_assert(Ikarus::Concepts::EigenValueSolver<decltype(solver3)>);
+
+  auto partialIdentitySolver1 = Ikarus::makePartialIdentitySymEigenSolver(assK, 10);
+  auto partialIdentitySolver2 = Ikarus::makePartialIdentitySymEigenSolver(assKD, 10);
+
+  t.check(partialIdentitySolver1.compute()) << testLocation();
+  t.check(partialIdentitySolver2.compute()) << testLocation();
+
+  t.subTest(testEigenValues(partialIdentitySolver1, partialIdentitySolver2));
+
+  auto solver1Identity = Ikarus::makeGeneralizedSymEigenSolver<EigenValueSolverType::Eigen>(assKD, assMD);
+  t.check(solver1Identity.compute()) << testLocation();
+
+  auto solver2Identity = Ikarus::makeGeneralizedSymEigenSolver<EigenValueSolverType::Spectra>(assK, assM);
+  t.check(solver2Identity.compute()) << testLocation();
+
+  auto solver3Identity = Ikarus::makeGeneralizedSymEigenSolver<EigenValueSolverType::Spectra>(assKD, assMD);
+  t.check(solver3Identity.compute()) << testLocation();
+
+  t.subTest(testEigenVectors(solver2Identity, solver3Identity, assK));
+  t.subTest(testEigenVectors(solver3Identity, solver2Identity, assKD));
+  t.subTest(testEigenVectors(solver1, solver2Identity, assKD));
+  t.subTest(testEigenVectors(solver2Identity, solver1Identity, assK));
+
+  t.subTest(testEigenValues(solver1Identity, solver2Identity));
+  t.subTest(testEigenValues(solver1Identity, solver3Identity));
+  t.subTest(testEigenValues(solver2Identity, solver3Identity));
 
   return t;
 }

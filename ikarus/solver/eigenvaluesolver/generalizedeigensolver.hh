@@ -35,7 +35,7 @@ struct GeneralizedSymEigenSolver
 };
 
 /**
- * \brief This class implements a wrapper to the Spectra generalized eigen solver for sqaure real symmetric matrices,
+ * \brief This class implements a wrapper to the Spectra generalized eigen solver for square real symmetric matrices,
  * i.e. to solve \f$ Ax = \lambda Bx\f$, where A is symmetric and B is positive definite. It calculates the full
  * spectrum of eigenvalues. \details Under the hood it uses the Spectra::SymGEigsSolver with Cholesky decomposition for
  * B. As this class can only compute up to \f$ n-1 \f$ smallest or greatest eigenvalues, we use two different solvers
@@ -169,7 +169,7 @@ private:
 };
 
 /**
- * \brief This class implements a wrapper to the Eigen generalized eigen solver for sqaure real symmetric matrices, i.e.
+ * \brief This class implements a wrapper to the Eigen generalized eigen solver for square real symmetric matrices, i.e.
  * to solve \f$ Ax = \lambda Bx\f$, where A is symmetric and B is positive definite. A and B have to be dense matrices.
  * \details Under the hood it uses the Eigen::GeneralizedSelfAdjointEigenSolver
  *
@@ -287,6 +287,38 @@ auto makeGeneralizedSymEigenSolver(const std::shared_ptr<AssemblerA>& assemblerA
   return SolverType{assemblerA, assemblerB};
 }
 
+/**
+ * \brief Factory function to create a GeneralizedSymEigenSolver with a provided matrix and an identity matrix.
+ *
+ * \tparam MATA the deduced type of the provided matrix A
+ * \param A the provided matrix A
+ */
+template <EigenValueSolverType tag, typename MATA>
+requires(Concepts::DenseOrSparseEigenMatrix<std::remove_cvref_t<MATA>>)
+auto makeIdentitySymEigenSolver(MATA&& A) {
+  using MatrixType        = std::remove_cvref_t<MATA>;
+  constexpr auto isSparse = Concepts::SparseEigenMatrix<MatrixType>;
+
+  MatrixType I = MatrixType(A.rows(), A.cols());
+  I.setIdentity();
+
+  using SolverType = std::conditional_t<isSparse, GeneralizedSymEigenSolver<tag, MatrixType>,
+                                        GeneralizedSymEigenSolver<tag, MatrixType>>;
+  return SolverType{std::forward<MATA>(A), I};
+}
+
+/**
+ * \brief Factory function to create a GeneralizedSymEigenSolver with a provided matrix from an assembler and an
+ * identity matrix.
+ *
+ * \tparam AssemblerA the type of the assembler for matrix A.
+ * \param assemblerA assembler for matrix A.
+ */
+template <Concepts::FlatAssembler AssemblerA>
+auto makeIdentitySymEigenSolver(const std::shared_ptr<AssemblerA>& assemblerA) {
+  return makeIdentitySymEigenSolver(assemblerA->matrix());
+}
+
 namespace Impl {
   void assertNev(std::optional<Eigen::Index> nev, Eigen::Index nevMax) {
     if (nev.has_value() and nev.value() > nevMax)
@@ -295,7 +327,7 @@ namespace Impl {
 } // namespace Impl
 
 /**
- * \brief This class implements a wrapper to the Spectra generalized eigen solver for sqaure real symmetric matrices,
+ * \brief This class implements a wrapper to the Spectra generalized eigen solver for square real symmetric matrices,
  * i.e. to solve \f$ Ax = \lambda Bx\f$, where A is symmetric and B is positive definite. It calculates a selection of
  * eigenvalues. At most \f$ n - 1 \f$, where \f$ n \f$ is the number of rows/cols of the matrices.
  * \details Under the hood it uses the Spectra::SymGEigsSolver with Cholesky decomposition for B
@@ -419,18 +451,45 @@ private:
 template <Concepts::FlatAssembler AssemblerA, Concepts::FlatAssembler AssemblerB>
 requires(std::same_as<typename AssemblerA::MatrixType, typename AssemblerB::MatrixType>)
 auto makePartialGeneralizedSymEigenSolver(const std::shared_ptr<AssemblerA>& assemblerA,
-                                          const std::shared_ptr<AssemblerB> assemblerB) {
+                                          const std::shared_ptr<AssemblerB> assemblerB, Eigen::Index nev) {
   using MatrixType = typename AssemblerA::MatrixType;
-  using ScalarType = typename AssemblerA::MatrixType::Scalar;
   using SolverType = PartialGeneralizedSymEigenSolver<MatrixType>;
+  return SolverType{assemblerA, assemblerB, nev};
+}
 
-  return SolverType{assemblerA, assemblerB};
+/**
+ * \brief Factory function to create a PartialGeneralizedSymEigenSolver with a provided matrix and an identity matrix.
+ *
+ * \tparam MATA the deduced type of the provided matrix A
+ * \param A the provided matrix A
+ */
+template <typename MATA>
+requires(Concepts::DenseOrSparseEigenMatrix<std::remove_cvref_t<MATA>>)
+auto makePartialIdentitySymEigenSolver(MATA&& A, Eigen::Index nev) {
+  using MatrixType = std::remove_cvref_t<MATA>;
+  MatrixType I     = MatrixType(A.rows(), A.cols());
+  I.setIdentity();
+
+  using SolverType = PartialGeneralizedSymEigenSolver<MatrixType>;
+  return SolverType{std::forward<MATA>(A), I, nev};
+}
+
+/**
+ * \brief Factory function to create a PartialGeneralizedSymEigenSolver with a provided matrix from an assembler and an
+ * identity matrix.
+ *
+ * \tparam AssemblerA the type of the assembler for matrix A.
+ * \param assemblerA assembler for matrix A.
+ */
+template <Concepts::FlatAssembler AssemblerA>
+auto makePartialIdentitySymEigenSolver(const std::shared_ptr<AssemblerA>& assemblerA, Eigen::Index nev) {
+  return makePartialIdentitySymEigenSolver(assemblerA->matrix(), nev);
 }
 
 #ifndef DOXYGEN
 template <Concepts::FlatAssembler AssemblerA, Concepts::FlatAssembler AssemblerB>
 requires(std::same_as<typename AssemblerA::MatrixType, typename AssemblerB::MatrixType>)
 PartialGeneralizedSymEigenSolver(std::shared_ptr<AssemblerA> as1, std::shared_ptr<AssemblerB> as2,
-                                 int nev) -> PartialGeneralizedSymEigenSolver<typename AssemblerA::MatrixType>;
+                                 Eigen::Index nev) -> PartialGeneralizedSymEigenSolver<typename AssemblerA::MatrixType>;
 #endif
 } // namespace Ikarus
