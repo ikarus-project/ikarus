@@ -50,6 +50,7 @@ struct ScalarManipulator
     sfs.emplace_back(std::forward<F>(f));
   }
 
+  /** \brief A helper function to remove all added scalar manipulator functions. */
   void unbindAllScalarFunctions() { sfs.clear(); }
 
   std::vector<FunctionType> sfs;
@@ -101,6 +102,7 @@ struct VectorManipulator
     vfs.emplace_back(std::forward<F>(f));
   }
 
+  /** \brief A helper function to remove all added vector manipulator functions. */
   void unbindAllVectorFunctions() { vfs.clear(); }
 
   std::vector<FunctionType> vfs;
@@ -166,6 +168,7 @@ struct MatrixManipulator
     mfs.emplace_back(std::forward<F>(f));
   }
 
+  /** \brief A helper function to remove all added matrix manipulator functions. */
   void unbindAllMatrixFunctions() { mfs.clear(); }
 
   std::vector<FunctionType> mfs;
