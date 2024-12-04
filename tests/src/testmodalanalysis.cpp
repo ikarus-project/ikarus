@@ -42,7 +42,7 @@ static auto modalAnalysisTest() {
   auto frequenciesLumped = mA.angularFrequencies();
   t.check(frequencies.sum() > frequenciesLumped.sum()) << testLocation();
 
-  mA.unBindLumpingScheme();
+  mA.unBindLumpingSchemes();
   mA.compute();
   auto frequencies2 = mA.angularFrequencies();
   t.check(isApproxSame(frequencies, frequencies2, 1e-14)) << testLocation();

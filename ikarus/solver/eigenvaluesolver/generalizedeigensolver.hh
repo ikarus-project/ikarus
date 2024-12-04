@@ -37,7 +37,8 @@ struct GeneralizedSymEigenSolver
 /**
  * \brief This class implements a wrapper to the Spectra generalized eigen solver for square real symmetric matrices,
  * i.e. to solve \f$ Ax = \lambda Bx\f$, where A is symmetric and B is positive definite. It calculates the full
- * spectrum of eigenvalues. \details Under the hood it uses the Spectra::SymGEigsSolver with Cholesky decomposition for
+ * spectrum of eigenvalues.
+ * \details Under the hood it uses the Spectra::SymGEigsSolver with Cholesky decomposition for
  * B. As this class can only compute up to \f$ n-1 \f$ smallest or greatest eigenvalues, we use two different solvers
  * for the n/2 smallest and n/2 greatest eigenvalues. The matrices are shared throughout the solvers so no extra copy is
  * being made.
@@ -289,6 +290,8 @@ auto makeGeneralizedSymEigenSolver(const std::shared_ptr<AssemblerA>& assemblerA
 
 /**
  * \brief Factory function to create a GeneralizedSymEigenSolver with a provided matrix and an identity matrix.
+ * \remark This has some overhead compared to just using the non-generalized versions of the solvers directly, due to
+ * the decomposition of the second matrix.
  *
  * \tparam MATA the deduced type of the provided matrix A
  * \param A the provided matrix A
