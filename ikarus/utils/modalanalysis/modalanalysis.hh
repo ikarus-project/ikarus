@@ -88,7 +88,7 @@ struct ModalAnalysis
 
   /**
    * \brief Unbinds all former bound lumpingscheme.
-   * \remark We have no way to keep track of the applied lumping schemes, therfore we can only unbind all priviously
+   * \remark We have no way to keep track of the applied lumping schemes, therefore we can only unbind all previously
    * bound matrix manipulator functions. In this case however this does not have any unwanted side effects, as the
    * assembler is only used inside the class.p
    */
