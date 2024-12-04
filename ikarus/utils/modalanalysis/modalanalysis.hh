@@ -83,17 +83,16 @@ struct ModalAnalysis
   requires(
       std::is_invocable_v<LumpingScheme, Assembler, const FERequirement&, MatrixAffordance, DBCOption, MatrixType&>)
   void bindLumpingScheme(LumpingScheme ls = {}) {
-    unBindLumpingScheme();
     lumpedMassAssembler_->bind(ls);
   }
 
   /**
-   * \brief Unbinds a former bound lumpingscheme.
-   * \remark What this method is actually doing is to remove all bound functions, as we have no way to keep track of the
-   * applied lumping scheme. In this case however this does not have any unwanted side effects, as the assembler is only
-   * used inside the class.
+   * \brief Unbinds all former bound lumpingscheme.
+   * \remark We have no way to keep track of the applied lumping schemes, therfore we can only unbind all priviously
+   * bound matrix manipulator functions. In this case however this does not have any unwanted side effects, as the
+   * assembler is only used inside the class.p
    */
-  void unBindLumpingScheme() { lumpedMassAssembler_->unbindAllMatrixFunctions(); }
+  void unBindLumpingSchemes() { lumpedMassAssembler_->unbindAllMatrixFunctions(); }
 
   /**
    * \brief Starts the computation of the eigenvalue solver

@@ -37,9 +37,10 @@ void registerModalAnalysis(pybind11::handle scope, pybind11::class_<ModalAnalysi
   cls.def("writeEigenModes", &ModalAnalysis::writeEigenModes, pybind11::arg("filename"),
           pybind11::arg("nev") = std::nullopt);
 
+  // For now, only row-sum-lumping is possible through the python bindings.
   cls.def("bindLumpingScheme",
           [](ModalAnalysis& self) { self.template bindLumpingScheme<Dynamics::LumpingSchemes::RowSumLumping>(); });
-  cls.def("unBindLumpingScheme", &ModalAnalysis::unBindLumpingScheme);
+  cls.def("unBindLumpingScheme", &ModalAnalysis::unBindLumpingSchemes);
 }
 
 } // namespace Ikarus::Python
