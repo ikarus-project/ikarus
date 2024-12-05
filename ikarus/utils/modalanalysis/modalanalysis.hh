@@ -21,9 +21,13 @@
 #include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/modalanalysis/lumpingschemes.hh>
 #include <ikarus/utils/modalanalysis/modalanalysishelper.hh>
-#include <ikarus/utils/modalanalysis/tags.hh>
 
 namespace Ikarus::Dynamics {
+
+/**
+ * \brief A strongly typed enum class representing the type of result of a modal analysis
+ */
+MAKE_ENUM(ModalAnalysisResultType, squaredAngularFrequency, angularFrequency, naturalFrequency);
 
 /**
  * \brief Opinionated wrapper class for GeneralizedSymEigenSolver suited for modal analysis
