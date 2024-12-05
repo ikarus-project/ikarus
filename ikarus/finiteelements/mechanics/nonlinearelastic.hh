@@ -42,6 +42,7 @@ struct NonLinearElasticPre
 {
   using Material = MAT;
   MAT material;
+  double density;
 
   template <typename PreFE, typename FE>
   using Skill = NonLinearElastic<PreFE, FE, NonLinearElasticPre>;
@@ -82,7 +83,8 @@ public:
    * \param pre The pre fe
    */
   explicit NonLinearElastic(const Pre& pre)
-      : mat_{pre.material} {}
+      : mat_{pre.material},
+        density_{pre.density} {}
 
 protected:
   /**
@@ -219,6 +221,7 @@ private:
   std::shared_ptr<const Geometry> geo_;
   Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType>> localBasis_;
   Material mat_;
+  double density_;
   size_t numberOfNodes_{0};
   int order_{};
 
@@ -242,6 +245,10 @@ protected:
   void calculateMatrixImpl(
       const Requirement& par, const MatrixAffordance& affordance, typename Traits::template MatrixType<> K,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ScalarType>>>& dx = std::nullopt) const {
+    if (affordance == MatrixAffordance::linearMass) {
+      calculateMassImpl<ScalarType>(par, affordance, K);
+      return;
+    }
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     const auto uFunction = displacementFunction(par, dx);
@@ -259,6 +266,26 @@ protected:
           const auto bopJ = eps.evaluateDerivative(gpIndex, wrt(coeff(j)), on(gridElement));
           const auto kgIJ = eps.evaluateDerivative(gpIndex, wrt(coeff(i, j)), along(stresses), on(gridElement));
           K.template block<myDim, myDim>(i * myDim, j * myDim) += (bopI.transpose() * C * bopJ + kgIJ) * intElement;
+        }
+      }
+    }
+  }
+
+  template <typename ScalarType>
+  void calculateMassImpl(const Requirement& par, const MatrixAffordance& affordance,
+                         typename Traits::template MatrixType<> M) const {
+    for (const auto& [gpIndex, gp] : localBasis_.viewOverIntegrationPoints()) {
+      const auto intElement = geo_->integrationElement(gp.position()) * gp.weight();
+      auto& N               = localBasis_.evaluateFunction(gpIndex);
+
+      auto nopI = Eigen::Matrix<double, myDim, myDim>::Zero().eval();
+      auto nopJ = Eigen::Matrix<double, myDim, myDim>::Zero().eval();
+
+      for (size_t i = 0; i < numberOfNodes_; ++i) {
+        nopI.diagonal().setConstant(N[i]);
+        for (size_t j = 0; j < numberOfNodes_; ++j) {
+          nopJ.diagonal().setConstant(N[j]);
+          M.template block<myDim, myDim>(i * myDim, j * myDim) += nopI.transpose() * density_ * nopJ * intElement;
         }
       }
     }
@@ -309,11 +336,12 @@ protected:
  * \brief A helper function to create a non-linear elastic pre finite element.
  * \tparam MAT Type of the material.
  * \param mat Material parameters for the non-linear elastic element.
+ * \param density Density of non-linear elastic element (defaults to 1.0)
  * \return A non-linear elastic pre finite element.
  */
 template <typename MAT>
-auto nonLinearElastic(const MAT& mat) {
-  NonLinearElasticPre<MAT> pre(mat);
+auto nonLinearElastic(const MAT& mat, double density = 1.0) {
+  NonLinearElasticPre<MAT> pre(mat, density);
 
   return pre;
 }
