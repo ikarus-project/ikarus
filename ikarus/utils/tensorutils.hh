@@ -50,6 +50,22 @@ auto dyadic(const auto& A_ij, const auto& B_kl) {
 }
 
 /**
+ * \brief Computes the dyadic product of two first order Tensors (here: Eigen::Vector).
+ * \details The components of the result read  \f[ A_{ij} = a_{i}b_{j}. \f]
+ * \ingroup tensor
+ * \param a_i First tensor.
+ * \param b_j Second tensor.
+ * \return  Resulting tensor after the dyadic product
+ */
+template <typename ST_, int size, bool asTensor = true>
+auto dyadic(const Eigen::Vector<ST_, size>& a, const Eigen::Vector<ST_, size>& b) {
+  if constexpr (asTensor)
+    return tensorView((a * b.transpose()).eval(), std::array<Eigen::Index, 2>({size, size}));
+  else
+    return (a * b.transpose()).eval();
+}
+
+/**
  * \brief Generates a symmetric identity fourth-order tensor.
  * \ingroup tensor
  * \tparam ScalarType Type of the elements in the tensor.
@@ -148,6 +164,34 @@ auto symTwoSlots(const Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<dim, dim,
   std::iota(shuffleSlot.begin(), shuffleSlot.end(), 0);    // create 0,1,2,3 array
   std::swap(shuffleSlot[slots[0]], shuffleSlot[slots[1]]); // swap  the given slots
   return (0.5 * (t + t.shuffle(shuffleSlot))).eval();
+}
+
+// TODO can potentially be removed or rewritten for pure tensors
+/**
+ * \brief Computes the double contraction of a 4th order tensor and a second order input tensor (here Eigen::Matrix)
+ *  \ingroup tensor
+ * \details The components of the result read  \f[ \BC_{ij} = A_{ijkl}B_{kl}  \f]
+ * \tparam ScalarType
+ * \tparam dim
+ * \param A Eigen::TensorFixedSize
+ * \param B Eigen::Matrix B
+ * \return Eigen::Matrix
+ */
+template <typename ScalarType, std::integral auto dim1, std::integral auto dim2>
+requires(dim1 == dim2)
+auto doubleContraction(const Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<dim1, dim1, dim1, dim1>>& A,
+                       const Eigen::Matrix<ScalarType, dim2, dim2>& B) {
+  static constexpr int dim = dim1;
+  Eigen::Matrix<ScalarType, dim, dim> C;
+  C.setZero();
+
+  for (int i = 0; i < dim; ++i)
+    for (int j = 0; j < dim; ++j)
+      for (int k = 0; k < dim; ++k)
+        for (int l = 0; l < dim; ++l)
+          C(i, j) += A(i, j, k, l) * B(k, l);
+
+  return C;
 }
 
 /**
