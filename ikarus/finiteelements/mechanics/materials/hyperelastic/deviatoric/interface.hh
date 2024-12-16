@@ -81,8 +81,7 @@ struct Deviatoric
 
     // Compute the principal PK2 stresses by dividing by the stretches
     StressMatrix S;
-    for (const auto k : dimensionRange())
-      S[k] = dWdLambda[k] / lambda[k];
+    S = dWdLambda.array() / lambda.array();
 
     return S;
   }
