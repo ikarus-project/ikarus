@@ -23,10 +23,7 @@ template <typename MAT>
 concept MuesliMaterialImplementation = requires { std::is_base_of_v<muesli::material, MAT>; };
 } // namespace Ikarus::Concepts
 
-namespace Ikarus::Materials::Muesli {
-
-// Alias for Muesli material properties
-using MaterialProperties = muesli::materialProperties;
+namespace Ikarus::Materials {
 
 /**
  * \brief converts Ikarus material parameters to Muesli material properties.
@@ -36,7 +33,7 @@ using MaterialProperties = muesli::materialProperties;
  * \return MaterialProperties meusli material properties with the Lambda and mu set
  */
 template <Concepts::MPTuple MPT>
-inline MaterialProperties propertiesFromIkarusMaterialParameters(const MPT& mpt) {
+inline muesli::materialProperties propertiesFromIkarusMaterialParameters(const MPT& mpt) {
   auto converter = convertLameConstants(mpt);
 
   auto mpm = muesli::materialProperties{};
@@ -50,7 +47,7 @@ inline MaterialProperties propertiesFromIkarusMaterialParameters(const MPT& mpt)
  * \brief adds a specific tag to the muesli materialproperties, thic can be used for example to add the `regularized`
  * tag for Neo-Hooke or the `compressible` tag for Yeoh and Arruda-Boyce.
  */
-inline void addTag(MaterialProperties& mpm, const std::string& tagName, double tagValue = 0) {
+inline void addTag(muesli::materialProperties& mpm, const std::string& tagName, double tagValue = 0) {
   mpm.insert({tagName, tagValue});
 }
 
@@ -125,7 +122,7 @@ constexpr std::string materialName() {
   return matName;
 }
 
-} // namespace Ikarus::Materials::Muesli
+} // namespace Ikarus::Materials
 
 #else
   #error Muesli materials depends on the Muesli library, which is not included
