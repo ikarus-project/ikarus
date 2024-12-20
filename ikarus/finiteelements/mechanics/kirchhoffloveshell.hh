@@ -16,6 +16,7 @@
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/finiteelements/feresulttypes.hh>
 #include <ikarus/finiteelements/mechanics/loads.hh>
+#include <ikarus/finiteelements/mechanics/massmatrix.hh>
 #include <ikarus/finiteelements/mechanics/membranestrains.hh>
 #include <ikarus/finiteelements/physicshelper.hh>
 #include <ikarus/utils/linearalgebrahelper.hh>
@@ -294,19 +295,8 @@ protected:
 
     for (const auto& [gpIndex, gp] : localBasis_.viewOverIntegrationPoints()) {
       const auto intElement = geo.integrationElement(gp.position()) * gp.weight();
-      auto& N               = localBasis_.evaluateFunction(gpIndex);
-
-      auto nopI = Eigen::Matrix<double, worldDim, worldDim>::Zero().eval();
-      auto nopJ = Eigen::Matrix<double, worldDim, worldDim>::Zero().eval();
-
-      for (size_t i = 0; i < numberOfNodes_; ++i) {
-        nopI.diagonal().setConstant(N[i]);
-        for (size_t j = 0; j < numberOfNodes_; ++j) {
-          nopJ.diagonal().setConstant(N[j]);
-          M.template block<worldDim, worldDim>(i * worldDim, j * worldDim) +=
-              nopI.transpose() * rhoT * nopJ * intElement;
-        }
-      }
+      const auto& N         = localBasis_.evaluateFunction(gpIndex);
+      evaluateKroneckerProduct<worldDim>(intElement, N, rhoT, M);
     }
   }
 
