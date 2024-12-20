@@ -33,6 +33,7 @@
 #include <ikarus/finiteelements/mechanics/linearelastic.hh>
 #include <ikarus/finiteelements/mechanics/loads/volume.hh>
 #include <ikarus/finiteelements/mixin.hh>
+#include <ikarus/io/resultevaluators.hh>
 #include <ikarus/io/resultfunction.hh>
 #include <ikarus/io/vtkwriter.hh>
 #include <ikarus/utils/basis.hh>
@@ -69,6 +70,7 @@ auto vtkWriterTest() {
   writer.setFormat(Dune::Vtk::FormatTypes::ASCII);
 
   writer.addResult<Ikarus::ResultTypes::linearStress>(); // Defaults to pointData
+  writer.addResult<Ikarus::ResultTypes::linearStress>(asPointData, Ikarus::ResultEvaluators::VonMises{});
   writer.addResultFunction(Ikarus::makeResultFunction<Ikarus::ResultTypes::linearStress>(sparseAssembler), asCellData);
 
   writer.addInterpolation(D_Glob, basis.flat(), "displacement", asPointData);
@@ -101,7 +103,7 @@ auto vtkWriterTest() {
   t.check(stressDataCell.numComponents() == 3)
       << testLocation() << "Num components should be 3, but is " << stressDataCell.numComponents();
   t.check(stressDataCell.dataType() == Dune::Vtk::DataTypes::FLOAT64)
-      << testLocation() << "Precision is should be float64";
+      << testLocation() << "Precision should be float64";
 
   // Writing out as a vector does always seem to yield 3 (or potentially more) entries
   auto displacementData = reader.getPointData("displacement");

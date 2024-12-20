@@ -147,7 +147,7 @@ to further process our results. For example, we can use `ResultEvaluators::VonMi
 
 ```cpp
   auto vonMisesFunction
-      = Ikarus::makeResultFunction<ResultType::PK2Stress, ResultEvaluators::VonMises>(assembler);
+      = Ikarus::makeResultFunction<ResultType::PK2Stress>(assembler, ResultEvaluators::VonMises{});
 ```
 
 ## Takeaways

@@ -121,7 +121,7 @@ public:
    * \param dataTag The data tag (defaults to DataTag::asPointData).
    */
   template <typename RF>
-  void addResultFunction(RF&& resultFunction, DataTag dataTag) {
+  void addResultFunction(RF&& resultFunction, DataTag dataTag = DataTag::asPointData) {
     if (dataTag == DataTag::asCellData or dataTag == DataTag::asCellAndPointData)
       Base::addCellData(std::forward<RF>(resultFunction));
     if (dataTag == DataTag::asPointData or dataTag == DataTag::asCellAndPointData)
@@ -134,10 +134,10 @@ public:
    * \tparam RT Result type template.
    * \param dataTag The data tag (defaults to DataTag::asPointData).
    */
-  template <template <typename, int, int> class RT>
+  template <template <typename, int, int> class RT, typename UserFunction = Ikarus::Impl::DefaultUserFunction>
   requires(Concepts::ResultType<RT>)
-  void addResult(DataTag dataTag = DataTag::asPointData) {
-    auto resFunction = makeResultVtkFunction<RT>(assembler_);
+  void addResult(DataTag dataTag = DataTag::asPointData, UserFunction&& userFunction = {}) {
+    auto resFunction = makeResultVtkFunction<RT>(assembler_, std::forward<UserFunction>(userFunction));
     addResultFunction(std::move(resFunction), dataTag);
   }
 

@@ -9,6 +9,8 @@
 
 #include <dune/common/float_cmp.hh>
 
+#include <Eigen/Core>
+
 namespace Eigen {
 template <typename Derived>
 struct EigenBase;
@@ -17,7 +19,7 @@ struct EigenBase;
 template <typename Derived, typename OtherDerived>
 requires(std::convertible_to<Derived, const Eigen::EigenBase<Derived>&> and
          std::convertible_to<OtherDerived, const Eigen::EigenBase<OtherDerived>&>)
-bool isApproxSame(const Derived& val, const OtherDerived& other, double prec) {
+bool isApproxSameImpl(const Derived& val, const OtherDerived& other, double prec) {
   if constexpr (requires {
                   val.isApprox(other, prec);
                   (val - other).isMuchSmallerThan(1, prec);
@@ -27,6 +29,30 @@ bool isApproxSame(const Derived& val, const OtherDerived& other, double prec) {
     return val.isApprox(other, prec);
   else // Eigen::DiagonalMatrix branch
     return val.diagonal().isApprox(other.diagonal(), prec) or (val.diagonal() - other.diagonal()).isZero(prec);
+}
+
+template <typename Derived, typename OtherDerived>
+requires(std::convertible_to<Derived, const Eigen::EigenBase<Derived>&> and
+         std::convertible_to<OtherDerived, const Eigen::EigenBase<OtherDerived>&>)
+bool isApproxSame(const Derived& val, const OtherDerived& other, double prec, bool ignoreNaNs = true) {
+  if constexpr (requires { val.array(); } and requires { other.array(); }) {
+    if (ignoreNaNs) {
+      auto nansInActual   = val.array().isNaN().eval();
+      auto nansInExpected = other.array().isNaN().eval();
+
+      if ((nansInActual == nansInExpected).all()) // Checks if expected and actual have the same NaN pattern
+      {
+        // Since NaN==NaN is false, we have to skip these entries when we
+        // compare expected and actual
+        auto eWithZerosForNaN = nansInExpected.select(0.0, val);
+        auto aWithZerosForNaN = nansInActual.select(0.0, other);
+        return isApproxSameImpl(eWithZerosForNaN, aWithZerosForNaN, prec);
+      }
+      return false;
+    } else
+      return isApproxSameImpl(val, other, prec);
+  } else
+    return isApproxSameImpl(val, other, prec);
 }
 
 template <typename TestSuiteType, typename ScalarType>
@@ -62,4 +88,9 @@ void checkSolverInfos(TestSuiteType& t, const std::vector<int>& expectedIteratio
 
 inline auto testLocation(std::source_location loc = std::source_location::current()) {
   return loc.function_name() + std::string("(L ") + std::to_string(loc.line()) + "): ";
+}
+
+template <typename Derived>
+void replaceNaNWithZero(Eigen::MatrixBase<Derived>& val) {
+  val = val.unaryExpr([](double x) { return std::isnan(x) ? 0.0 : x; });
 }
