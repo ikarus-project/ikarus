@@ -9,7 +9,6 @@ file(
   CONFIGURE_DEPENDS *.cpp
 )
 
-
 dune_enable_all_packages()
 dune_add_library(
   ${PROJECT_NAME}

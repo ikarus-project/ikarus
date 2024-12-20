@@ -30,7 +30,9 @@
 #include <ikarus/finiteelements/autodifffe.hh>
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/finiteelements/feresulttypes.hh>
+#include <ikarus/io/resultevaluators.hh>
 #include <ikarus/io/resultfunction.hh>
+#include <ikarus/io/vtkwriter.hh>
 #include <ikarus/utils/eigendunetransformations.hh>
 #include <ikarus/utils/functionsanitychecks.hh>
 #include <ikarus/utils/linearalgebrahelper.hh>
@@ -300,11 +302,13 @@ template <template <typename, int, int> class RT, bool vectorizedResult = true>
 
 template <template <typename, int, int> class resType, typename ResultEvaluator>
 [[nodiscard]] auto checkResultFunction(auto& /*nonLinearOperator*/, auto& fe, const auto& feRequirements,
-                                       const auto& expectedResult, const auto& evaluationPositions,
+                                       auto& expectedResult, const auto& evaluationPositions,
+                                       ResultEvaluator&& resultEvaluator  = {},
                                        const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Result Function Test" + Dune::className(fe));
 
   using FiniteElement = std::remove_reference_t<decltype(fe)>;
+  auto mat            = fe.material();
   auto& element       = fe.gridElement();
   auto gridView       = fe.localView().globalBasis().gridView();
   std::vector<FiniteElement> fes{fe};
@@ -317,7 +321,9 @@ template <template <typename, int, int> class resType, typename ResultEvaluator>
   sparseAssembler->bind(feRequirements);
   sparseAssembler->bind(Ikarus::DBCOption::Full);
 
-  auto vtkResultFunction   = Ikarus::makeResultVtkFunction<resType, ResultEvaluator>(sparseAssembler);
+  auto vtkResultFunction =
+      Ikarus::makeResultVtkFunction<resType>(sparseAssembler, std::forward<ResultEvaluator>(resultEvaluator));
+
   auto localResultFunction = localFunction(vtkResultFunction);
   localResultFunction.bind(element);
 
@@ -327,8 +333,10 @@ template <template <typename, int, int> class resType, typename ResultEvaluator>
       computedResults(i, j) = result[j];
     ++i;
   }
+
   const bool isResultCorrect = isApproxSame(computedResults, expectedResult, 1e-8);
   t.check(isResultCorrect) << "Computed Result for " << Ikarus::toString<resType>()
+                           << "ResultEvaluator: " << Dune::className<ResultEvaluator>()
                            << " is not the same as expected result:\n"
                            << "It is:\n"
                            << computedResults << "\nBut should be:\n"
@@ -341,11 +349,17 @@ template <template <typename, int, int> class resType, typename ResultEvaluator>
   vtkWriter.write("Vtk_VtkWriter_resultfunction_" + vtkResultFunction.name() + "_" +
                   std::to_string(FiniteElement::myDim) + std::to_string(element.geometry().type().id()));
 
-  Dune::VTKWriter<decltype(gridView)> vtkWriter2(gridView);
-  auto resultFunction = Ikarus::makeResultFunction<resType, ResultEvaluator>(sparseAssembler);
+  auto vtkWriter2 = Ikarus::Vtk::Writer(sparseAssembler);
+  vtkWriter2.addResultFunction(vtkResultFunction, Ikarus::Vtk::DataTag::asCellData);
+  vtkWriter2.write("ikarus_vtkwriter_resultfunction_" + vtkResultFunction.name() + "_" +
+                   std::to_string(FiniteElement::myDim) + std::to_string(element.geometry().type().id()));
 
-  vtkWriter2.addVertexData(resultFunction);
-  vtkWriter2.write("native_vtkwriter_resultfunction_" + resultFunction->name() + "_" +
+  Dune::VTKWriter<decltype(gridView)> vtkWriter3(gridView);
+  auto resultFunction =
+      Ikarus::makeResultFunction<resType>(sparseAssembler, std::forward<ResultEvaluator>(resultEvaluator));
+
+  vtkWriter3.addVertexData(resultFunction);
+  vtkWriter3.write("native_vtkwriter_resultfunction_" + resultFunction->name() + "_" +
                    std::to_string(FiniteElement::myDim) + std::to_string(element.geometry().type().id()));
 
   return t;

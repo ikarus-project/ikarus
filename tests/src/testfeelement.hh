@@ -145,10 +145,11 @@ inline auto checkJacobianFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe,
 };
 
 template <template <typename, int, int> class RT, typename ResultEvaluator = Ikarus::Impl::DefaultUserFunction>
-auto checkResultFunctionFunctorFactory(const auto& resultCollectionFunction) {
+auto checkResultFunctionFunctorFactory(const auto& resultCollectionFunction, ResultEvaluator&& resultEvaluator = {}) {
   return [&](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req, [[maybe_unused]] auto& affordance) {
     auto [feRequirements, expectedStress, positions] = resultCollectionFunction(nonLinOp, fe);
-    return checkResultFunction<RT, ResultEvaluator>(nonLinOp, fe, feRequirements, expectedStress, positions);
+    return checkResultFunction<RT, ResultEvaluator>(nonLinOp, fe, feRequirements, expectedStress, positions,
+                                                    std::forward<ResultEvaluator>(resultEvaluator), "");
   };
 }
 

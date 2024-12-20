@@ -34,7 +34,10 @@ using Dune::TestSuite;
 
 struct OwnResultFunction
 {
-  double operator()(const auto& resultArray, [[maybe_unused]] int /* comp */) const { return 7; }
+  double operator()(const auto& resultArray, [[maybe_unused]] const auto& pos, [[maybe_unused]] const auto& fe,
+                    [[maybe_unused]] const int comp) const {
+    return 7;
+  }
   static std::string name() { return "Seven"; }
   static int ncomps() { return 1; }
 };
@@ -157,22 +160,27 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction));
 
   auto resultFunction2 =
-      makeResultFunction<ResultTypes::PK2Stress, ResultEvaluators::PrincipalStress<2>>(sparseAssembler);
+      makeResultFunction<ResultTypes::PK2Stress>(sparseAssembler, ResultEvaluators::PrincipalStress<2>{});
   t.check(resultFunction2->name() == "PrincipalStress")
       << "Test resultName: " << resultFunction2->name() << "should be PrincipalStress";
 
   t.check(resultFunction2->ncomps() == 2) << "Test result comps: " << resultFunction2->ncomps() << "should be 2";
   vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction2));
 
-  auto resultFunction3 = makeResultFunction<ResultTypes::PK2Stress, ResultEvaluators::VonMises>(sparseAssembler);
+  auto resultFunction3 = makeResultFunction<ResultTypes::PK2Stress>(sparseAssembler, ResultEvaluators::VonMises{});
   t.check(resultFunction3->name() == "VonMises")
-      << "Test resultName: " << resultFunction2->name() << "should be VonMises";
-  t.check(resultFunction3->ncomps() == 1) << "Test result comps: " << resultFunction2->ncomps() << "should be 1";
+      << "Test resultName: " << resultFunction3->name() << "should be VonMises";
+  t.check(resultFunction3->ncomps() == 1) << "Test result comps: " << resultFunction3->ncomps() << "should be 1";
   vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction3));
 
-  auto resultFunction4 = makeResultVtkFunction<ResultTypes::PK2Stress, OwnResultFunction>(sparseAssembler);
+  auto resultFunction4 = makeResultVtkFunction<ResultTypes::PK2Stress>(sparseAssembler, OwnResultFunction{});
   vtkWriter2.addPointData(resultFunction4);
   vtkWriter2.write("EndResult" + Dune::className<Grid>());
+
+  auto resultFunction5 = makeResultFunction<ResultTypes::PK2StressFull>(sparseAssembler);
+  t.check(resultFunction5->name() == "PK2StressFull")
+      << "Test resultName: " << resultFunction5->name() << "should be PK2StressFull";
+  t.check(resultFunction5->ncomps() == 6) << "Test result comps: " << resultFunction5->ncomps() << "should be 6";
 
   nonLinOp.template update<1>();
   t.check(controlInfo.success, "Successful result");
@@ -204,7 +212,7 @@ auto GreenLagrangeStrainTest(const Material& mat) {
     if constexpr (gridDim == 3)
       return linMat;
     else {
-      if constexpr (isPlaneStress<Material>)
+      if constexpr (Testing::isPlaneStress<Material>)
         return Ikarus::planeStress(linMat);
       else
         return Ikarus::planeStrain(linMat);
