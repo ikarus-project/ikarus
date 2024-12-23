@@ -22,6 +22,7 @@ namespace Ikarus {
 namespace Impl {
   struct DefaultUserFunction
   {
+    constexpr static std::string name() { return "DefaultUserFunction"; }
   };
 } // namespace Impl
 
@@ -117,18 +118,18 @@ public:
 
   /**
    * \brief Constructor for ResultFunction.
-   * \details
-   * Constructs a ResultFunction object with given finite elements, ferequirements
    *
    * \param assembler shared pointer to the underlying assembler (provides the finite elements and the requested
    * results)
    * \param prec (optional) specify the used precision (only has an effect when using resultfunciton with
    * Dune::VTK::VTKWriter)
    */
-  ResultFunction(std::shared_ptr<Assembler> assembler, Dune::VTK::Precision prec = Dune::VTK::Precision::float64)
+  template <typename... Args>
+  ResultFunction(std::shared_ptr<Assembler> assembler, Dune::VTK::Precision prec = Dune::VTK::Precision::float64,
+                 Args&&... args)
       : assembler_(assembler),
         prec_{prec},
-        userFunction_{UserFunction{}} {}
+        userFunction_{UserFunction{std::forward<Args>(args)...}} {}
 
 private:
   double evaluateComponent(int eleID, const Dune::FieldVector<ctype, griddim>& local, int comp) const {
@@ -154,8 +155,7 @@ private:
 /**
  * \brief Function to create a ResultFunction as a shared_ptr
  * \details
- * Constructs a ResultFunction object with given finite elements, ferequirements as shared_ptr to be used with
- * the native Dune VTKWriter
+ * Constructs a ResultFunction object with given assembler as shared_ptr to be used with the native Dune VTKWriter
  *
  * \param assembler shared pointer to the underlying assembler (provides the finite elements and the requested results)
  * \tparam AS type of the assembler
@@ -163,16 +163,18 @@ private:
  * \tparam RT requested result type
  * \tparam UserFunction Type of the user-defined function for custom result evaluation (default is DefaultUserFunction)
  */
-template <template <typename, int, int> class RT, typename UserFunction = Impl::DefaultUserFunction, typename AS>
-auto makeResultFunction(std::shared_ptr<AS> assembler, Dune::VTK::Precision prec = Dune::VTK::Precision::float64) {
-  return std::make_shared<ResultFunction<AS, RT, UserFunction>>(assembler, prec);
+template <template <typename, int, int> class RT, typename UserFunction = Impl::DefaultUserFunction,
+          Concepts::FlatAssembler AS, typename... Args>
+auto makeResultFunction(std::shared_ptr<AS> assembler, Dune::VTK::Precision prec = Dune::VTK::Precision::float64,
+                        Args&&... args) {
+  return std::make_shared<ResultFunction<AS, RT, UserFunction>>(assembler, prec, std::forward<Args>(args)...);
 }
 
 /**
  * \brief Function to create a ResultFunction as a gridfunction that can be used with dune-vtk
  * \details
- * Constructs a ResultFunction object with given finite elements, ferequirements as a VTK::Function to be used with
- * dune-vtk It is possible to construct a localFunction from this as follows
+ * Constructs a ResultFunction object with given assembler as a VTK::Function to be used withdune-vtk It is possible to
+ * construct a localFunction from this as follows
  * \code
  * auto localResultFunction = localFunction(vtkResultFunction);
  * localResultFunction.bind(element);
@@ -183,9 +185,11 @@ auto makeResultFunction(std::shared_ptr<AS> assembler, Dune::VTK::Precision prec
  * \tparam UserFunction Type of the user-defined function for custom result evaluation (default is
  * DefaultUserFunction)
  */
-template <template <typename, int, int> class RT, typename UserFunction = Impl::DefaultUserFunction, typename AS>
-auto makeResultVtkFunction(std::shared_ptr<AS> assembler) {
-  return Dune::Vtk::Function<typename AS::GridView>(std::make_shared<ResultFunction<AS, RT, UserFunction>>(assembler));
+template <template <typename, int, int> class RT, typename UserFunction = Impl::DefaultUserFunction,
+          Concepts::FlatAssembler AS, typename... Args>
+auto makeResultVtkFunction(std::shared_ptr<AS> assembler, Args&&... args) {
+  return Dune::Vtk::Function<typename AS::GridView>(std::make_shared<ResultFunction<AS, RT, UserFunction>>(
+      assembler, Dune::VTK::Precision::float64, std::forward<Args>(args)...));
 }
 
 } // namespace Ikarus
