@@ -53,13 +53,13 @@ struct VonMises
    * \brief Get the name of the result type (VonMises)
    * \return String representing the name
    */
-  static std::string name() { return "VonMises"; }
+  constexpr static std::string name() { return "VonMises"; }
 
   /**
    * \brief Get the number of components in the result (always 1 for VonMises)
    * \return Number of components
    */
-  static int ncomps() { return 1; }
+  constexpr static int ncomps() { return 1; }
 };
 
 /**
@@ -79,8 +79,9 @@ struct HydrostaticStress
    */
   template <typename R>
   double operator()(const R& resultArray, [[maybe_unused]] const int comp) const {
-    static constexpr int dim = R::CompileTimeTraits::RowsAtCompileTime;
-    const auto sigma         = fromVoigt(resultArray, false);
+    static constexpr int size = R::CompileTimeTraits::RowsAtCompileTime;
+    const auto sigma          = fromVoigt(resultArray, false);
+    constexpr static int dim  = std::remove_cvref_t<decltype(sigma)>::CompileTimeTraits::RowsAtCompileTime;
     return 1.0 / dim * sigma.trace();
   }
 
@@ -88,13 +89,13 @@ struct HydrostaticStress
    * \brief Get the name of the result type (VonMises)
    * \return String representing the name
    */
-  static std::string name() { return "HydrostaticStress"; }
+  constexpr static std::string name() { return "HydrostaticStress"; }
 
   /**
    * \brief Get the number of components in the result (always 1 for VonMises)
    * \return Number of components
    */
-  static int ncomps() { return 1; }
+  constexpr static int ncomps() { return 1; }
 };
 
 /**
@@ -124,13 +125,13 @@ struct PrincipalStress
    * \brief Get the name of the result type (PrincipalStress)
    * \return String representing the name
    */
-  static std::string name() { return "PrincipalStress"; }
+  constexpr static std::string name() { return "PrincipalStress"; }
 
   /**
    * \brief Get the number of components in the result
    * \return Number of components
    */
-  static int ncomps() { return dim; }
+  constexpr static int ncomps() { return dim; }
 };
 
 /**
@@ -158,20 +159,22 @@ struct Triaxiality
    * \brief Get the name of the result type (PrincipalStress)
    * \return String representing the name
    */
-  static std::string name() { return "Triaxiality"; }
+  constexpr static std::string name() { return "Triaxiality"; }
 
   /**
    * \brief Get the number of components in the result
    * \return Number of components
    */
-  static int ncomps() { return 1; }
+  constexpr static int ncomps() { return 1; }
 };
 
-template <typename ResultEvaluator>
+template <typename RE>
 struct PlaneStrainWrapper
 {
-  template <typename RE>
-  PlaneStrainWrapper(RE&& resultEvaluator, double nu)
+  using Underlying = RE;
+
+  template <typename RE_>
+  PlaneStrainWrapper(RE_&& resultEvaluator, double nu)
       : underlying_(std::forward<RE>(resultEvaluator)),
         nu_(nu) {}
 
@@ -181,7 +184,7 @@ struct PlaneStrainWrapper
     auto sigZ                     = nu_ * (resultArray[0] + resultArray[1]);
     auto enlargedResultArray      = Eigen::Vector<double, 6>::Zero().eval();
     enlargedResultArray.head<2>() = resultArray.template head<2>();
-    enlargedResultArray[3]        = sigZ;
+    enlargedResultArray[2]        = sigZ;
     enlargedResultArray[5]        = resultArray[2];
 
     return underlying_(enlargedResultArray, comp);
@@ -190,16 +193,16 @@ struct PlaneStrainWrapper
    * \brief Get the name of the result type (PrincipalStress)
    * \return String representing the name
    */
-  static std::string name() { return ResultEvaluator::name(); }
+  constexpr static std::string name() { return Underlying::name(); }
 
   /**
    * \brief Get the number of components in the result
    * \return Number of components
    */
-  static int ncomps() { ResultEvaluator::ncomps(); }
+  constexpr static int ncomps() { return Underlying::ncomps(); }
 
 private:
-  ResultEvaluator underlying_;
+  Underlying underlying_;
   double nu_;
 };
 
