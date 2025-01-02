@@ -114,7 +114,7 @@ struct Shape
   int cols;
 };
 
-auto testRTs() {
+static auto testRTs() {
   static_assert(Concepts::ResultType<Res1>);
   static_assert(Concepts::ResultType<Res2>);
   static_assert(Concepts::ResultType<Res3>);

@@ -37,6 +37,7 @@
  * \param type The name of the enum class.
  * \param ... Enumerators to be included between BEGIN and END.
  */
+
 #define MAKE_ENUM(type, ...)                \
   enum class type                           \
   {                                         \
@@ -46,11 +47,14 @@
   };                                        \
   constexpr std::string toString(type _e) { \
     using enum type;                        \
+    _Pragma("clang diagnostic push")  \
+    _Pragma("clang diagnostic ignored \"-Wswitch-default\"")  \
     switch (_e) {                           \
       ENUM_CASE(BEGIN)                      \
       FOR_EACH(ENUM_CASE, __VA_ARGS__)      \
       ENUM_CASE(END)                        \
     }                                       \
+    _Pragma("clang diagnostic pop") \
     __builtin_unreachable();                \
   }
 

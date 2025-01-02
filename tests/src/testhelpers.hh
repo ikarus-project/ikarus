@@ -50,7 +50,7 @@ void checkScalars(TestSuiteType& t, const ScalarType val, const ScalarType expec
 
 template <typename TestSuiteType, typename ControlInformation>
 void checkSolverInfos(TestSuiteType& t, const std::vector<int>& expectedIterations,
-                      const ControlInformation& controlInfo, const int loadSteps,
+                      const ControlInformation& controlInfo, const size_t loadSteps,
                       const std::string& messageIfFailed = "") {
   for (size_t i = 0U; i < loadSteps; ++i) {
     t.check(expectedIterations[i] == controlInfo.solverInfos[i].iterations)

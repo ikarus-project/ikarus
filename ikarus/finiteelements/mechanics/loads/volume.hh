@@ -62,13 +62,15 @@ public:
 protected:
   template <template <typename, int, int> class RT>
   requires Dune::AlwaysFalse<RT<double, 1, 1>>::value
-  auto calculateAtImpl(const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local,
+  auto calculateAtImpl(const Requirement&, const Dune::FieldVector<double, Traits::mydim>&,
                        Dune::PriorityTag<0>) const {}
 
   template <typename ST>
   auto calculateScalarImpl(
       const Requirement& par, ScalarAffordance affordance,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const -> ST {
+                        if(affordance!= ScalarAffordance::potentialEnergy)
+         DUNE_THROW(Dune::NotImplemented, "Your required affordance is not implemented. Affordance: "<< toString(affordance));
     if (not volumeLoad_)
       return 0.0;
     ST energy            = 0.0;
@@ -88,6 +90,8 @@ protected:
   void calculateVectorImpl(
       const Requirement& par, VectorAffordance affordance, typename Traits::template VectorType<ST> force,
       const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const {
+                                if(affordance!= VectorAffordance::forces)
+         DUNE_THROW(Dune::NotImplemented, "Your required affordance is not implemented. Affordance: "<< toString(affordance));
     if (not volumeLoad_)
       return;
     using namespace Dune::DerivativeDirections;
@@ -108,8 +112,11 @@ protected:
 
   template <typename ST>
   void calculateMatrixImpl(
-      const Requirement& par, MatrixAffordance, typename Traits::template MatrixType<> K,
-      const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) const {}
+      const Requirement&, MatrixAffordance affordance, typename Traits::template MatrixType<>,
+      const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>&  = std::nullopt) const {
+                                        if(affordance!= MatrixAffordance::stiffness)
+         DUNE_THROW(Dune::NotImplemented, "Your required affordance is not implemented. Affordance: "<< toString(affordance));
+      }
 
 private:
   std::function<Eigen::Vector<double, worldDim>(const Dune::FieldVector<double, worldDim>&, const double&)> volumeLoad_;
