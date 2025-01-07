@@ -204,22 +204,22 @@ void registerMuesliMaterial(pybind11::handle scope, pybind11::class_<MuesliMater
   Ikarus::Python::registerMaterial<MuesliMaterial, 6, false>(scope, cls);
 
   cls.def(pybind11::init([](const pybind11::kwargs& kwargs) {
-    if constexpr (std::same_as<typename MuesliMaterial::MaterialModel, Materials::Muesli::NeoHooke> or
-                  std::same_as<typename MuesliMaterial::MaterialModel, Materials::Muesli::StVenantKirchhoff> or
-                  std::same_as<typename MuesliMaterial::MaterialModel, Materials::Muesli::LinearElasticity>) {
+    if constexpr (std::same_as<typename MuesliMaterial::MaterialModel, muesli::neohookeanMaterial> or
+                  std::same_as<typename MuesliMaterial::MaterialModel, muesli::svkMaterial> or
+                  std::same_as<typename MuesliMaterial::MaterialModel, muesli::elasticIsotropicMaterial>) {
       auto matParameter     = Impl::extractMaterialParameters(kwargs);
-      auto muesliParameters = Ikarus::Materials::Muesli::propertiesFromIkarusMaterialParameters(matParameter);
+      auto muesliParameters = Ikarus::Materials::propertiesFromIkarusMaterialParameters(matParameter);
       return new MuesliMaterial(muesliParameters);
-    } else if constexpr (std::same_as<typename MuesliMaterial::MaterialModel, Materials::Muesli::ArrudaBoyce>) {
+    } else if constexpr (std::same_as<typename MuesliMaterial::MaterialModel, muesli::arrudaboyceMaterial>) {
       bool compressible = kwargs.contains("compressible") ? kwargs["compressible"].cast<bool>() : true;
-      return Materials::Muesli::makeArrudaBoyce(kwargs["C1"].cast<double>(), kwargs["lambda_m"].cast<double>(),
-                                                kwargs["K"].cast<double>(), true);
-    } else if constexpr (std::same_as<typename MuesliMaterial::MaterialModel, Materials::Muesli::Yeoh>) {
+      return Materials::makeMuesliArrudaBoyce(kwargs["C1"].cast<double>(), kwargs["lambda_m"].cast<double>(),
+                                              kwargs["K"].cast<double>(), true);
+    } else if constexpr (std::same_as<typename MuesliMaterial::MaterialModel, muesli::yeohMaterial>) {
       bool compressible = kwargs.contains("compressible") ? kwargs["compressible"].cast<bool>() : true;
-      return Materials::Muesli::makeYeoh(kwargs["C"].cast<std::array<double, 3>>(), kwargs["K"].cast<double>(), true);
-    } else if constexpr (std::same_as<typename MuesliMaterial::MaterialModel, Materials::Muesli::MooneyRivlin>) {
+      return Materials::makeMuesliYeoh(kwargs["C"].cast<std::array<double, 3>>(), kwargs["K"].cast<double>(), true);
+    } else if constexpr (std::same_as<typename MuesliMaterial::MaterialModel, muesli::mooneyMaterial>) {
       bool incompressible = kwargs.contains("incompressible") ? kwargs["incompressible"].cast<bool>() : false;
-      return Materials::Muesli::makeMooneyRivlin(kwargs["alpha"].cast<std::array<double, 3>>(), incompressible);
+      return Materials::makeMooneyRivlin(kwargs["alpha"].cast<std::array<double, 3>>(), incompressible);
     } else {
       DUNE_THROW(Dune::NotImplemented, "No known constructor for the specified Muesli material mode");
     }
