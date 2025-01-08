@@ -15,7 +15,9 @@
 #include <dune/python/pybind11/stl.h>
 
 #include <ikarus/finiteelements/mechanics/materials.hh>
-#include <ikarus/finiteelements/mechanics/materials/muesli/mueslimaterials.hh>
+#if ENABLE_MUESLI
+  #include <ikarus/finiteelements/mechanics/materials/muesli/mueslimaterials.hh>
+#endif
 #include <ikarus/utils/concepts.hh>
 
 #define MAKE_MaterialFunction(clsName, materialName, functionname, vecSize)                                    \
@@ -199,6 +201,8 @@ MAKE_MATERIAL_REGISTERY_FUNCTION(LinearElasticity, 6);
 MAKE_MATERIAL_REGISTERY_FUNCTION(StVenantKirchhoff, 6);
 MAKE_MATERIAL_REGISTERY_FUNCTION(NeoHooke, 6);
 
+#if ENABLE_MUESLI
+
 template <class MuesliMaterial, class... options>
 void registerMuesliMaterial(pybind11::handle scope, pybind11::class_<MuesliMaterial, options...> cls) {
   Ikarus::Python::registerMaterial<MuesliMaterial, 6, false>(scope, cls);
@@ -227,5 +231,6 @@ void registerMuesliMaterial(pybind11::handle scope, pybind11::class_<MuesliMater
 
   cls.def("printDescription", [](MuesliMaterial& self) { self.material().print(std::cout); });
 }
+#endif
 
 } // namespace Ikarus::Python

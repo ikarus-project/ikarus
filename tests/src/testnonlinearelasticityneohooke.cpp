@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
 
   NeoHooke matNH1(matParameter1);
   NeoHooke matNH2(matParameter2);
-  auto matNH1M = Materials::Muesli::makeMuesliNeoHooke(matParameter1, false);
+  auto matNH1M = Materials::makeMuesliNeoHooke(matParameter1, false);
 
   auto planeStressMat1 = planeStress(matNH1, 1e-8);
   auto planeStressMat2 = planeStress(matNH2, 1e-8);
