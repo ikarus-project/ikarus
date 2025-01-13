@@ -29,9 +29,7 @@ def muesliMaterial(materialTag: Union[MuesliSmallStrain, MuesliFiniteStrain], **
 
     materialTagSplitted = str(materialTag).split(".")
     wrappertype = (
-        "SmallStrain"
-        if isinstance(materialTag, MuesliSmallStrain)
-        else "FiniteStrain"
+        "SmallStrain" if isinstance(materialTag, MuesliSmallStrain) else "FiniteStrain"
     )
     materialtype = f"muesli::{materialTagSplitted[1]}"
 
