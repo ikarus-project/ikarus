@@ -338,7 +338,7 @@ int main(int argc, char** argv) {
   auto muesliSVKPlaneStrain = planeStrain(muesliSVK);
   t.subTest(testMaterial(muesliSVKPlaneStrain));
 
-  auto muesliNHPlaneStress = planeStrain(muesliNeoHooke);
+  auto muesliNHPlaneStress = planeStress(muesliNeoHooke, 1e-12);
   t.subTest(testMaterial(muesliNHPlaneStress));
 #endif
   return t.exit();
