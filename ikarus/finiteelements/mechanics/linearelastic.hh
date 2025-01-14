@@ -78,6 +78,9 @@ public:
   static constexpr auto stressType = StressTags::linear;
   static constexpr bool hasEAS     = FE::template hasEAS<strainType>;
 
+  template <template <typename, int, int> class RT>
+  using RTWrapperType = ResultWrapper<RT<typename Traits::ctype, myDim, Traits::worlddim>, ResultShape::Vector>;
+
   /**
    * \brief Constructor for the LinearElastic class.
    * \param pre The pre fe
@@ -196,9 +199,9 @@ public:
   requires(supportsResultType<RT>())
   auto resultFunction() const {
     return [&]<int strainDim>(const Eigen::Vector<double, strainDim>& strainInVoigt) {
-      using RTWrapper = ResultWrapper<RT<typename Traits::ctype, myDim, Traits::worlddim>, ResultShape::Vector>;
+      // using RTWrapper = ResultWrapper<RT<typename Traits::ctype, myDim, Traits::worlddim>, ResultShape::Vector>;
       if constexpr (isSameResultType<RT, ResultTypes::linearStress>) {
-        return RTWrapper{stress(strainInVoigt)};
+        return RTWrapperType<RT>{stress(strainInVoigt)};
       }
     };
   }
@@ -216,7 +219,7 @@ public:
   auto calculateAtImpl(const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<1>) const {
     if constexpr (hasEAS)
-      return;
+      return RTWrapperType<RT>{};
     const auto rFunction = resultFunction<RT>();
     const auto eps       = strainFunction(req);
     auto epsVoigt        = eps.evaluate(local, Dune::on(Dune::DerivativeDirections::gridElement));

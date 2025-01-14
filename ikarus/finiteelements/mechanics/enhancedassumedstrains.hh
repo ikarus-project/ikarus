@@ -66,6 +66,9 @@ public:
   template <typename ST>
   using VectorXOptRef = std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>;
 
+  template <template <typename, int, int> class RT>
+  using RTWrapperType = ResultWrapper<RT<typename Traits::ctype, Traits::mydim, Traits::worlddim>, ResultShape::Vector>;
+
   /**
    * \brief Constructor for Enhanced Assumed Strains elements.
    * \param pre The pre finite element
@@ -108,15 +111,16 @@ public:
    * \tparam RT The type representing the requested result.
    */
   template <template <typename, int, int> class RT>
+  requires(supportsResultType<RT>())
   auto calculateAtImpl(const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<2>) const {
     auto strainFunction  = underlying().strainFunction(req);
     const auto ufunc     = underlying().displacementFunction(req);
     const auto rFunction = underlying().template resultFunction<RT>();
     auto disp            = Dune::viewAsFlatEigenVector(ufunc.coefficientsRef());
+
     if constexpr (isSameResultType<RT, ResultTypes::linearStress>) {
-      using RTWrapper = ResultWrapper<RT<typename Traits::ctype, Traits::mydim, Traits::worlddim>, ResultShape::Vector>;
-      RTWrapper resultWrapper;
+      RTWrapperType<RT> resultWrapper{};
       auto calculateAtContribution = [&]<typename EAST>(const EAST& easFunction) {
         if constexpr (EAST::enhancedStrainSize != 0) { // compile-time check
           typename EAST::DType D;
@@ -128,8 +132,6 @@ public:
       };
       easVariant_(calculateAtContribution);
       return resultWrapper;
-    } else {
-      DUNE_THROW(Dune::NotImplemented, "EAS method is not implemented to compute the requested result type.");
     }
   }
 
