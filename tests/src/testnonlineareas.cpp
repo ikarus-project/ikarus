@@ -158,11 +158,11 @@ int main(int argc, char** argv) {
   auto reducedMatSVK = planeStrain(matSVK);
   auto reducedMatNH  = planeStrain(matNH);
 
-  // easAutoDiffTest<2>(t, reducedMatSVK);
-  // easAutoDiffTest<3>(t, matSVK);
+  easAutoDiffTest<2>(t, reducedMatSVK);
+  easAutoDiffTest<3>(t, matSVK);
 
-  // easAutoDiffTest<2>(t, reducedMatNH);
-  // easAutoDiffTest<3>(t, matNH);
+  easAutoDiffTest<2>(t, reducedMatNH);
+  easAutoDiffTest<3>(t, matNH);
 
   t.subTest(cantileverBeamTest(reducedMatSVK));
   t.subTest(cantileverBeamTest(reducedMatNH));
