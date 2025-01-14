@@ -282,6 +282,4 @@ struct ResultTypeBase
   using SupportedResultTypes = std::tuple<decltype(makeRT<ResultTypes>())...>;
 };
 
-
-
 } // namespace Ikarus

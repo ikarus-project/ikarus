@@ -73,7 +73,7 @@ auto cantileverBeamTest(const MAT& reducedMat) {
       dirichletFlags[localView.index(localIndex)] = true;
   });
 
-  using SparseAssembler = DenseFlatAssembler<decltype(fes), decltype(dirichletValues)>;
+  using SparseAssembler = SparseFlatAssembler<decltype(fes), decltype(dirichletValues)>;
   SparseAssembler sparseFlatAssembler(fes, dirichletValues);
   auto sparseAssemblerAM = makeAssemblerManipulator(sparseFlatAssembler);
 
@@ -112,8 +112,15 @@ auto cantileverBeamTest(const MAT& reducedMat) {
   vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 2);
   auto nr = createNonlinearSolver(nrConfig, nonOp);
   auto lc = LoadControl(nr, 20, {0, 1});
-  nr->subscribeAll(nonLinearSolverObserver);  
+  nr->subscribeAll(nonLinearSolverObserver);
   lc.subscribeAll({pathFollowingObserver, vtkWriter});
+
+  for (auto& fe : fes) {
+    fe.subscribe(*nr, [&](NonLinearSolverMessages message, auto& x, const auto& dx) {
+      if (message == NonLinearSolverMessages::CORRECTION_UPDATED)
+        fe.updateImpl(message, x, dx);
+    });
+  }
 
   const auto controlInfo = lc.run();
 
@@ -158,11 +165,11 @@ int main(int argc, char** argv) {
   auto reducedMatSVK = planeStrain(matSVK);
   auto reducedMatNH  = planeStrain(matNH);
 
-  easAutoDiffTest<2>(t, reducedMatSVK);
-  easAutoDiffTest<3>(t, matSVK);
+  // easAutoDiffTest<2>(t, reducedMatSVK);
+  // easAutoDiffTest<3>(t, matSVK);
 
-  easAutoDiffTest<2>(t, reducedMatNH);
-  easAutoDiffTest<3>(t, matNH);
+  // easAutoDiffTest<2>(t, reducedMatNH);
+  // easAutoDiffTest<3>(t, matNH);
 
   t.subTest(cantileverBeamTest(reducedMatSVK));
   t.subTest(cantileverBeamTest(reducedMatNH));

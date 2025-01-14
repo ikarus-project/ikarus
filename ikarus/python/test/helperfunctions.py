@@ -1,11 +1,12 @@
 import numpy as np
 import scipy as sp
 from scipy.optimize import minimize
+from ikarus import NonLinearSolverMessages
 
 
 def updateAllElements(fes, req, dx):
     for fe in fes:
-        fe.updateState(req, dx)
+        fe.updateState(NonLinearSolverMessages.CORRECTION_UPDATED, req, dx)
 
 
 def solveWithSciPyMinimize(energyFun, x0, jacFun=None, hessFun=None, callBackFun=None):
