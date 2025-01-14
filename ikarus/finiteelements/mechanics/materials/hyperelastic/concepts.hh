@@ -53,47 +53,4 @@ concept VolumetricFunction = requires(VF vf, const typename VF::JType& j) {
   { vf.name() } -> std::convertible_to<std::string>;
 };
 
-/**
- * \concept DeviatoricPart
- * \brief Concept to check if the underlying type corresponds to the deviatoric part of a hyperelastic material model.
- * \tparam Type of the deviatoric part of a hyperelastic material model.
- *
- */
-template <typename DP>
-concept DeviatoricPart = requires(DP dp, const typename DP::PrincipalStretches& lambda) {
-  typename DP::DeviatoricFunction;
-  typename DP::ScalarType;
-  typename DP::PrincipalStretches;
-  typename DP::MaterialParameters;
-
-  typename DP::StressMatrix;
-  typename DP::MaterialTensor;
-
-  { DP::name() } -> std::convertible_to<std::string>;
-
-  { dp.storedEnergy(lambda) } -> std::same_as<typename DP::ScalarType>;
-  { dp.stresses(lambda) } -> std::same_as<typename DP::StressMatrix>;
-  { dp.tangentModuli(lambda) } -> std::same_as<typename DP::MaterialTensor>;
-};
-
-/**
- * \concept VolumetricPart
- * \brief Concept to check if the underlying type corresponds to the volumetric part of a hyperelastic material model.
- * \tparam Type of the volumetric part of a hyperelastic material model.
- *
- */
-template <typename VP>
-concept VolumetricPart = requires(VP vp, const typename VP::JType& j) {
-  typename VP::VolumetricFunction;
-  typename VP::ScalarType;
-  typename VP::JType;
-  typename VP::MaterialParameter;
-
-  { VP::name() } -> std::convertible_to<std::string>;
-
-  { vp.storedEnergy(j) } -> std::same_as<typename VP::ScalarType>;
-  { vp.firstDerivative(j) } -> std::same_as<typename VP::ScalarType>;
-  { vp.secondDerivative(j) } -> std::same_as<typename VP::ScalarType>;
-};
-
 } // namespace Ikarus::Concepts

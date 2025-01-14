@@ -10,6 +10,7 @@
 #pragma once
 
 #include <ikarus/finiteelements/mechanics/materials/hyperelastic/concepts.hh>
+#include <ikarus/finiteelements/mechanics/materials/hyperelastic/deviatoric/interface.hh>
 #include <ikarus/finiteelements/mechanics/materials/hyperelastic/volumetric/volumetricfunctions.hh>
 #include <ikarus/finiteelements/mechanics/materials/interface.hh>
 #include <ikarus/finiteelements/mechanics/materials/materialhelpers.hh>
@@ -30,9 +31,8 @@ template <typename DEV, typename VOL = NoVolumetricPart>
 requires(std::same_as<typename DEV::ScalarType, typename VOL::ScalarType>)
 struct Hyperelastic : public Material<Hyperelastic<DEV, VOL>>
 {
-  // Checking concepts here results in better compiler error messages because of CRTP
-  static_assert(Concepts::DeviatoricPart<DEV>);
-  static_assert(Concepts::VolumetricPart<VOL>);
+  static_assert(std::is_same_v<DEV, Deviatoric<typename DEV::DeviatoricFunction>>);
+  static_assert(std::is_same_v<VOL, Volumetric<typename VOL::VolumetricFunction>>);
 
   using ScalarType                        = typename DEV::ScalarType;
   static constexpr bool hasVolumetricPart = not std::same_as<VOL, NoVolumetricPart>;
