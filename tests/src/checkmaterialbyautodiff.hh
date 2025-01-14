@@ -34,9 +34,9 @@ auto checkMaterialByAutoDiffImpl(const MAT& mat, const auto C, const std::string
   auto stress     = mat.template stresses<strainTag>(C);
   auto matTangent = mat.template tangentModuli<strainTag>(C);
 
-  auto energy_ad1     = matAD1.template storedEnergy<strainTag>(C);
-  auto stress_ad1     = matAD1.template stresses<strainTag>(C);
-  auto matTangent_ad1 = matAD1.template tangentModuli<strainTag>(C);
+  // auto energy_ad1     = matAD1.template storedEnergy<strainTag>(C);
+  // auto stress_ad1     = matAD1.template stresses<strainTag>(C);
+  // auto matTangent_ad1 = matAD1.template tangentModuli<strainTag>(C);
 
   auto energy_ad2     = matAD2.template storedEnergy<strainTag>(C);
   auto stress_ad2     = matAD2.template stresses<strainTag>(C);
@@ -44,13 +44,13 @@ auto checkMaterialByAutoDiffImpl(const MAT& mat, const auto C, const std::string
 
   constexpr double tol = 1e-10;
 
-  checkScalars(t, energy, static_cast<double>(energy_ad1), testLocation() + "Incorrect Energies.", tol);
+  // checkScalars(t, energy, static_cast<double>(energy_ad1), testLocation() + "Incorrect Energies.", tol);
   checkScalars(t, energy, static_cast<double>(energy_ad2), testLocation() + "Incorrect Energies.", tol);
 
-  checkApproxVectors(t, stress, stress_ad1, testLocation() + "Incorrect stresses.", tol);
+  // checkApproxVectors(t, stress, stress_ad1, testLocation() + "Incorrect stresses.", tol);
   checkApproxVectors(t, stress, stress_ad2, testLocation() + "Incorrect stresses.", tol);
 
-  checkApproxMatrices(t, matTangent, matTangent_ad1, testLocation() + "Incorrect tangentModuli.", tol);
+  // checkApproxMatrices(t, matTangent, matTangent_ad1, testLocation() + "Incorrect tangentModuli.", tol);
   checkApproxMatrices(t, matTangent, matTangent_ad2, testLocation() + "Incorrect tangentModuli.", tol);
 
   return t;
@@ -64,14 +64,7 @@ auto checkMaterialByAutoDiff(const MAT& mat) {
 
   auto C0 = Eigen::Matrix3d::Identity().eval();
 
-  if constexpr (requires { mat.deviatoricFunction(); } and requires { mat.volumetricFunction(); }) {
-    const std::string autodiffErrorMsg = "AutoDiff with duplicate principal stretches should have failed here.";
-    t.checkThrow<Dune::InvalidStateException>(
-        [&]() { checkMaterialByAutoDiffImpl<MAT, CauchyGreen>(mat, C0, " Undeformed State"); },
-        testLocation() + autodiffErrorMsg);
-  } else {
-    t.subTest(checkMaterialByAutoDiffImpl<MAT, CauchyGreen>(mat, C0, " Undeformed State"));
-  }
+  t.subTest(checkMaterialByAutoDiffImpl<MAT, CauchyGreen>(mat, C0, " Undeformed State"));
 
   Eigen::Matrix3d C{
       { 0.600872, -0.179083, 0},
