@@ -111,16 +111,9 @@ auto cantileverBeamTest(const MAT& reducedMat) {
   vtkWriter->setFileNamePrefix("CantileverNonlinearEAS");
   vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 2);
   auto nr = createNonlinearSolver(nrConfig, nonOp);
-  auto lc = LoadControl(nr, 20, {0, 1});
+  auto lc = LoadControl(nr, 20, {0, 1}, sparseAssemblerAM);
   nr->subscribeAll(nonLinearSolverObserver);
   lc.subscribeAll({pathFollowingObserver, vtkWriter});
-
-  for (auto& fe : fes) {
-    fe.subscribe(*nr, [&](NonLinearSolverMessages message, auto& x, const auto& dx) {
-      if (message == NonLinearSolverMessages::CORRECTION_UPDATED)
-        fe.updateImpl(message, x, dx);
-    });
-  }
 
   const auto controlInfo = lc.run();
 
