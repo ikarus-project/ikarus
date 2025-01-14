@@ -9,6 +9,9 @@
 
 #pragma once
 
+#include <autodiff/forward/dual/dual.hpp>
+#include <autodiff/forward/dual/eigen.hpp>
+
 #include <ikarus/finiteelements/mechanics/materials/hyperelastic/concepts.hh>
 #include <ikarus/finiteelements/mechanics/materials/hyperelastic/deviatoric/interface.hh>
 #include <ikarus/finiteelements/mechanics/materials/hyperelastic/volumetric/volumetricfunctions.hh>
@@ -36,6 +39,7 @@ struct Hyperelastic : public Material<Hyperelastic<DEV, VOL>>
 
   using ScalarType                        = typename DEV::ScalarType;
   static constexpr bool hasVolumetricPart = not std::same_as<VOL, NoVolumetricPart>;
+  static constexpr bool isAutoDiff        = Concepts::AutodiffScalar<ScalarType>;
 
   static constexpr int dim = 3;
   using StrainMatrix       = Eigen::Matrix<ScalarType, dim, dim>;
@@ -51,11 +55,11 @@ struct Hyperelastic : public Material<Hyperelastic<DEV, VOL>>
   static constexpr auto strainTag              = StrainTags::rightCauchyGreenTensor;
   static constexpr auto stressTag              = StressTags::PK2;
   static constexpr auto tangentModuliTag       = TangentModuliTags::Material;
-  static constexpr bool energyAcceptsVoigt     = true;
+  static constexpr bool energyAcceptsVoigt     = false;
   static constexpr bool stressToVoigt          = false;
-  static constexpr bool stressAcceptsVoigt     = true;
+  static constexpr bool stressAcceptsVoigt     = false;
   static constexpr bool moduliToVoigt          = false;
-  static constexpr bool moduliAcceptsVoigt     = true;
+  static constexpr bool moduliAcceptsVoigt     = false;
   static constexpr double derivativeFactorImpl = 2;
 
   [[nodiscard]] constexpr static std::string nameImpl() noexcept {
@@ -103,7 +107,7 @@ struct Hyperelastic : public Material<Hyperelastic<DEV, VOL>>
     const auto lambdas = principalStretches(C, Eigen::EigenvaluesOnly).first;
     auto J             = detF(lambdas);
 
-    return dev_.storedEnergy(lambdas) + vol_.storedEnergy(J);
+    return deviatoricEnergy(C, lambdas) + vol_.storedEnergy(J);
   }
 
   /**
@@ -166,7 +170,7 @@ private:
   DEV dev_;
   VOL vol_;
 
-  inline auto dimensionRange() const { return Dune::range(dim); }
+  inline static constexpr auto dimensionRange() { return Dune::range(dim); }
 
   StressMatrix transformDeviatoricStresses(const typename DEV::StressMatrix& principalStress,
                                            const Eigen::Matrix<ScalarType, 3, 3>& N) const {
@@ -227,6 +231,58 @@ private:
       return detC;
     }
     return 0.0;
+  }
+
+  // Unpack the derivatives from the result of an @ref eval call into an array.
+  template <typename D, typename F>
+  auto forEach(const Eigen::MatrixBase<D>& result, F&& f) const {
+    auto& r = result.derived();
+    return r.unaryExpr(f);
+  }
+
+  /** \brief A helper function to compute the deviatoric part of the energy.
+   *
+   * \details While using AutoDiff, if the eigenvalues (principal stretches) of C are degenerated, the derivative have
+   * certain singularities. This is circumvented here by explicitly updating the derivatives.
+   *
+   * \tparam Derived The underlying Eigen type.
+   * \tparam Type of the principal stretches.
+   *
+   */
+  template <typename Derived, typename PrincipalStretches>
+  auto deviatoricEnergy(const Eigen::MatrixBase<Derived>& C, const PrincipalStretches& lambdas) const {
+    if constexpr (std::is_same_v<ScalarType, double>) {
+      return dev_.storedEnergy(lambdas);
+    } else if constexpr (std::is_same_v<ScalarType, autodiff::dual>) {
+      autodiff::dual2nd e;
+      Derived Cd = C.derived();
+      auto realC = autodiff::derivative<0>(Cd);
+      auto dualC = autodiff::derivative<1>(Cd);
+      e.val      = dev_.storedEnergy(lambdas);
+      e.grad     = (dev_.stresses(realC).transpose() / 2 * dualC).eval().trace();
+      return e;
+    } else if constexpr (std::is_same_v<ScalarType, autodiff::dual2nd>) {
+      autodiff::dual2nd e;
+      Derived Cd         = C.derived();
+      const auto realC   = autodiff::derivative<0>(Cd);
+      const auto dualC   = (forEach(Cd, [](auto& v) { return v.grad.val; }).eval());
+      const auto dualC2  = (forEach(Cd, [](auto& v) { return v.val.grad; }).eval());
+      e.val              = dev_.storedEnergy(lambdas);
+      e.grad.val         = (dev_.stresses(realC).transpose() / 2 * dualC).eval().trace();
+      e.val.grad         = e.grad.val;
+      const auto Cmoduli = dev_.tangentModuli(realC);
+
+      Eigen::array<Eigen::IndexPair<Eigen::Index>, 2> double_contraction  = {Eigen::IndexPair<Eigen::Index>(2, 0),
+                                                                             Eigen::IndexPair<Eigen::Index>(3, 1)};
+      Eigen::array<Eigen::IndexPair<Eigen::Index>, 2> double_contraction2 = {Eigen::IndexPair<Eigen::Index>(0, 0),
+                                                                             Eigen::IndexPair<Eigen::Index>(1, 1)};
+      const auto tCdual                  = tensorView(dualC, std::array<Eigen::Index, 2>({3, 3}));
+      const auto tCdualT                 = tensorView(dualC2, std::array<Eigen::Index, 2>({3, 3}));
+      const auto prod                    = Cmoduli.contract(tCdual, double_contraction);
+      const Eigen::Tensor<double, 0> res = tCdualT.contract(prod, double_contraction2);
+      e.grad.grad                        = res(0) / 4.0; // extracting value of zero order tensor
+      return e;
+    }
   }
 };
 
