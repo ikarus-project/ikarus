@@ -51,6 +51,8 @@ struct EnhancedAssumedStrainsPre
  */
 template <typename PreFE, typename FE, StrainTags ES>
 class EnhancedAssumedStrains
+    : public std::conditional_t<ES == StrainTags::linear, ResultTypeBase<ResultTypes::linearStress>,
+                                ResultTypeBase<ResultTypes::PK2Stress>>
 {
 public:
   using Traits = PreFE::Traits;
@@ -114,12 +116,12 @@ public:
   requires(supportsResultType<RT>())
   auto calculateAtImpl(const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<2>) const {
-    auto strainFunction  = underlying().strainFunction(req);
-    const auto ufunc     = underlying().displacementFunction(req);
-    const auto rFunction = underlying().template resultFunction<RT>();
-    auto disp            = Dune::viewAsFlatEigenVector(ufunc.coefficientsRef());
+    if constexpr (isSameResultType<RT, ResultTypes::linearStress> or isSameResultType<RT, ResultTypes::PK2Stress>) {
+      auto strainFunction  = underlying().strainFunction(req);
+      const auto ufunc     = underlying().displacementFunction(req);
+      const auto rFunction = underlying().template resultFunction<RT>();
+      auto disp            = Dune::viewAsFlatEigenVector(ufunc.coefficientsRef());
 
-    if constexpr (isSameResultType<RT, ResultTypes::linearStress>) {
       RTWrapperType<RT> resultWrapper{};
       auto calculateAtContribution = [&]<typename EAST>(const EAST& easFunction) {
         if constexpr (EAST::enhancedStrainSize != 0) { // compile-time check
@@ -174,7 +176,6 @@ protected:
                        const std::remove_reference_t<typename Traits::template VectorType<>>& correction) const {
     using ScalarType = Traits::ctype;
     easApplicabilityCheck();
-
     auto correctAlpha = [&]<typename EAST>(const EAST& easFunction) {
       if constexpr (EAST::enhancedStrainSize != 0) { // compile-time check
         const auto& Rtilde      = calculateRtilde<ScalarType>(par);
