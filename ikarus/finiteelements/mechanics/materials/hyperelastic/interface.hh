@@ -107,7 +107,7 @@ struct Hyperelastic : public Material<Hyperelastic<DEV, VOL>>
     const auto lambdas = principalStretches(C, Eigen::EigenvaluesOnly).first;
     auto J             = detF(lambdas);
 
-    return deviatoricEnergy(C, lambdas) + vol_.storedEnergy(J);
+    return deviatoricEnergy(C) + vol_.storedEnergy(J);
   }
 
   /**
@@ -242,24 +242,23 @@ private:
 
   /** \brief A helper function to compute the deviatoric part of the energy.
    *
-   * \details While using AutoDiff, if the eigenvalues (principal stretches) of C are degenerated, the derivative have
-   * certain singularities. This is circumvented here by explicitly updating the derivatives.
-   *
-   * \tparam Derived The underlying Eigen type.
-   * \tparam Type of the principal stretches.
+   * \details While using AutoDiff, if the eigenvalues (principal stretches) of C are degenerated, the derivative can
+   * have certain singularities. This is circumvented here by explicitly updating the derivatives.
    *
    */
-  template <typename Derived, typename PrincipalStretches>
-  auto deviatoricEnergy(const Eigen::MatrixBase<Derived>& C, const PrincipalStretches& lambdas) const {
+  template <typename Derived>
+  auto deviatoricEnergy(const Eigen::MatrixBase<Derived>& C) const {
     if constexpr (std::is_same_v<ScalarType, double>) {
+      auto [lambdas, N] = principalStretches(C);
       return dev_.storedEnergy(lambdas);
     } else if constexpr (std::is_same_v<ScalarType, autodiff::dual>) {
       autodiff::dual2nd e;
-      Derived Cd = C.derived();
-      auto realC = autodiff::derivative<0>(Cd);
-      auto dualC = autodiff::derivative<1>(Cd);
-      e.val      = dev_.storedEnergy(lambdas);
-      e.grad     = (dev_.stresses(realC).transpose() / 2 * dualC).eval().trace();
+      Derived Cd        = C.derived();
+      auto realC        = autodiff::derivative<0>(Cd);
+      auto dualC        = autodiff::derivative<1>(Cd);
+      auto [lambdas, N] = principalStretches(realC);
+      e.val             = dev_.storedEnergy(lambdas);
+      e.grad            = (transformDeviatoricStresses(dev_.stresses(lambdas), N).transpose() / 2 * dualC).trace();
       return e;
     } else if constexpr (std::is_same_v<ScalarType, autodiff::dual2nd>) {
       autodiff::dual2nd e;
@@ -267,10 +266,11 @@ private:
       const auto realC   = autodiff::derivative<0>(Cd);
       const auto dualC   = (forEach(Cd, [](auto& v) { return v.grad.val; }).eval());
       const auto dualC2  = (forEach(Cd, [](auto& v) { return v.val.grad; }).eval());
+      auto [lambdas, N]  = principalStretches(realC);
       e.val              = dev_.storedEnergy(lambdas);
-      e.grad.val         = (dev_.stresses(realC).transpose() / 2 * dualC).eval().trace();
+      e.grad.val         = (transformDeviatoricStresses(dev_.stresses(lambdas), N).transpose() / 2 * dualC).trace();
       e.val.grad         = e.grad.val;
-      const auto Cmoduli = dev_.tangentModuli(realC);
+      const auto Cmoduli = transformDeviatoricTangentModuli(dev_.tangentModuli(lambdas), N);
 
       Eigen::array<Eigen::IndexPair<Eigen::Index>, 2> double_contraction  = {Eigen::IndexPair<Eigen::Index>(2, 0),
                                                                              Eigen::IndexPair<Eigen::Index>(3, 1)};
