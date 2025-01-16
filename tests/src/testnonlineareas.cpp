@@ -104,7 +104,6 @@ auto cantileverBeamTest(const MAT& reducedMat) {
 
   auto nrConfig =
       Ikarus::NewtonRaphsonConfig<decltype(linSolver)>{.parameters = {.tol = tol}, .linearSolver = linSolver};
-  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
   auto pathFollowingObserver   = std::make_shared<ControlLogger>();
   auto vtkWriter =
       std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(basis.flat(), d);
@@ -112,8 +111,11 @@ auto cantileverBeamTest(const MAT& reducedMat) {
   vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 2);
   auto nr = createNonlinearSolver(nrConfig, nonOp);
   auto lc = LoadControl(nr, 20, {0, 1}, sparseAssemblerAM);
-  nr->subscribeAll(nonLinearSolverObserver);
+  // nr->subscribeAll(nonLinearSolverObserver);
   lc.subscribeAll({pathFollowingObserver, vtkWriter});
+
+  auto nonLinearSolverObserver = NonLinearSolverLogger(nr);
+
 
   const auto controlInfo = lc.run();
 
