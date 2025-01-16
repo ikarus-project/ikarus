@@ -113,7 +113,7 @@ public:
    * \tparam RT The type representing the requested result.
    */
   template <template <typename, int, int> class RT>
-  requires(supportsResultType<RT>())
+  requires(EnhancedAssumedStrains::template supportsResultType<RT>())
   auto calculateAtImpl(const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<2>) const {
     if constexpr (isSameResultType<RT, ResultTypes::linearStress> or isSameResultType<RT, ResultTypes::PK2Stress>) {
