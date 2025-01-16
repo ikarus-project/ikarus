@@ -140,7 +140,7 @@ def linElasticTest(easBool):
     forces = nonLinOp.value()
     with np.printoptions(precision=3, suppress=True):
         assert np.allclose(KsparseA.data, Ksparse.data, atol=1e-6) ,"The "+("EAS" if easBool else "") + f" sparse Matrix \
-            from assembler\n {KsparseA.todense()}\n  not equal to sparse matrix from non linear operator: \n {Ksparse.todense()} \
+from assembler\n {KsparseA.todense()}\n  not equal to sparse matrix from non linear operator: \n {Ksparse.todense()} \
         \nDifference\n {KsparseA.todense()-Ksparse.todense()} \n"
         assert np.allclose(forcesA, forces, atol=1e-6), f"Forces not equal {forcesA}\n\n {forces}"
 

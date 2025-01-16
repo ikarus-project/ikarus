@@ -31,12 +31,11 @@ namespace Ikarus {
  * \enum PreConditioner
  * \brief Enumeration of available preconditioners for the trust region solver.
  */
-enum class PreConditioner
-{
+MAKE_ENUM(PreConditioner,
   IncompleteCholesky,
   IdentityPreconditioner,
   DiagonalPreconditioner
-};
+)
 
 #define TRSETTINGS_FIELDS(MACRONAME)                                                                         \
   MACRONAME(verbosity, int, 5, "Verbosity level.")                                                           \

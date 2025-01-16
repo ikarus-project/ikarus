@@ -188,12 +188,12 @@ public:
     lambda           = lambdaDummy;
     x                = DDummy;
 
-    Eigen::MatrixX2<double> residual2d, sol2d;
+    Eigen::MatrixX2<typename std::remove_cvref_t<decltype(nonLinearOperator().value())>::Scalar> residual2d, sol2d;
     nonLinearOperator().updateAll();
     const auto& rx = nonLinearOperator().value();
     const auto& Ax = nonLinearOperator().derivative();
 
-    Eigen::VectorXd deltaD;
+    std::remove_cvref_t<decltype(rx)> deltaD;
     deltaD.resizeLike(rx);
     deltaD.setZero();
 

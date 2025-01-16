@@ -11,6 +11,7 @@ import numpy as np
 import scipy as sp
 from scipy.optimize import minimize
 import spdlog
+
 logger = spdlog.ConsoleLogger("Test")
 logger.set_level(spdlog.LogLevel.DEBUG)
 iks.register_logger(logger.get_underlying_logger())
@@ -101,84 +102,81 @@ if __name__ == "__main__":
 
     nonLinOp = iks.utils.makeNonLinearOperator(assembler)
     nonLinOp.updateAll()
-    v= nonLinOp.value()
-    v2= nonLinOp.derivative()
+    v = nonLinOp.value()
+    v2 = nonLinOp.derivative()
     v3 = nonLinOp.secondDerivative()
+
     def updateFunction(x, y):
-        x[:]+=assembler.createFullVector(y)
-    solver=iks.solvers.TrustRegion(nonLinOp,"IncompleteCholesky",updateFunction)
-    nonLinOp2= solver.nonLinearOperator()
+        x[:] += assembler.createFullVector(y)
+
+    solver = iks.solvers.TrustRegion(nonLinOp, solvers.PreConditioner.IncompleteCholesky, updateFunction)
+    nonLinOp2 = solver.nonLinearOperator()
     nonLinOp2.updateAll()
-    v= nonLinOp2.value()
-    v2= nonLinOp2.derivative()
+    v = nonLinOp2.value()
+    v2 = nonLinOp2.derivative()
     v3 = nonLinOp2.secondDerivative()
-    solver.setup({"maxIter":100,"verbosity":5,"debug":1,"Delta0":1e-10,"corr_tol":1e-20})
-    info= solver.solve()
+    solver.setup(
+        {"maxIter": 100, "verbosity": 5, "debug": 1, "Delta0": 1e-10, "corr_tol": 1e-20}
+    )
+    info = solver.solve()
     assert info
-    assert  info.iterations == 17
+    assert info.iterations == 17
 
     d[:] = np.zeros(assembler.fullDOFsize())
     assembler.bind(iks.DBCOption.Full)
     nonLinOp2 = iks.utils.makeNonLinearOperator(assembler)
-    solver2=iks.solvers.TrustRegion(nonLinOp2)
-    solver2.setup({"maxIter":100})
-    info=solver2.solve()
+    solver2 = iks.solvers.TrustRegion(nonLinOp2)
+    solver2.setup({"maxIter": 100})
+    info = solver2.solve()
     print(info)
     assert info
     assert info.iterations == 3
     print(d)
     d[:] = np.zeros(assembler.fullDOFsize())
     assembler.bind(iks.DBCOption.Reduced)
-    nonLinOp3 = nonLinOp.subOperator(1,2)
-    newton= iks.solvers.NewtonRaphson(nonLinOp3,iks.SolverTypeTag.sd_UmfPackLU,updateFunction)
-    newton.setup({"maxIter":100})
-    info=newton.solve()
+    nonLinOp3 = nonLinOp.subOperator(1, 2)
+    newton = iks.solvers.NewtonRaphson(
+        nonLinOp3, iks.SolverTypeTag.sd_UmfPackLU, updateFunction
+    )
+    newton.setup({"maxIter": 100})
+    info = newton.solve()
     print(info)
-    assert info
+
+    assert info # info implicitly convertible to bool
     assert info.iterations == 2
     d[:] = np.zeros(assembler.fullDOFsize())
-    newtonWithFunc=iks.solvers.NewtonRaphsonWithSubsidiaryFunction(nonLinOp3,iks.SolverTypeTag.sd_UmfPackLU,updateFunction)
+    newtonWithFunc = iks.solvers.NewtonRaphsonWithSubsidiaryFunction(
+        nonLinOp3, iks.SolverTypeTag.sd_UmfPackLU, updateFunction
+    )
 
     def energy(dRedInput):
-        # global d
-        #d = assembler.createFullVector(dRedInput).copy()
         d[:] = assembler.createFullVector(dRedInput)
-        #np.copyto(d, assembler.createFullVector(dRedInput))
-        #feReq.insertGlobalSolution(d)
         return assembler.scalar()
 
     def gradient(dRedInput):
-        # global d
         d[:] = assembler.createFullVector(dRedInput)
-
-        #np.copyto(d, assembler.createFullVector(dRedInput))
-        # d = assembler.createFullVector(dRedInput).copy()
-        #feReq.insertGlobalSolution(d)
-        # print(assembler.vector())
         return assembler.vector()
 
     def hess(dRedInput):
-        # global d
         d[:] = assembler.createFullVector(dRedInput)
-
-        #np.copyto(d, assembler.createFullVector(dRedInput))
-        # d = assembler.createFullVector(dRedInput).copy()
-        #feReq.insertGlobalSolution(d)
-        # print(assembler.matrix())
-        return assembler.matrix().todense()  # this is slow, but for this test we don't care
+        return (
+            assembler.matrix().todense()
+        )  # this is slow, but for this test we don't care
 
     dRed = np.zeros(assembler.reducedDOFsize())
     d[:] = np.zeros(assembler.fullDOFsize())
     print("Minize energy with scipy methods")
     print("Step 1: Minimize with finite differences")
-    resultd = minimize(energy, x0=dRed, options={"disp": True}, tol=1e-5) # minimize with finite differences
+    resultd = minimize(
+        energy, x0=dRed, options={"disp": True}, tol=1e-5
+    )  # minimize with finite differences
     print(d)
-    #assert resultd.success
-   # assert resultd.nit == 31
+    # assert resultd.success
+    # assert resultd.nit == 31
     print("Step 2: Minimize with explicitly given gradient")
     resultd2 = minimize(
         energy, x0=dRed, jac=gradient, options={"disp": True}, tol=1e-9
-    ) # minize with explicitly given gradient
+    )  # minize with explicitly given gradient
     assert resultd2.success
     assert resultd2.nit == 34
     print(resultd2)
@@ -197,7 +195,7 @@ if __name__ == "__main__":
     print("Step 4: Find root of gradient with explicitly given gradient and hessian")
     resultd4 = sp.optimize.root(gradient, jac=hess, x0=dRed, tol=1e-10)
     assert resultd4.success
-    assert np.linalg.norm(resultd4.fun) <1e-13
+    assert np.linalg.norm(resultd4.fun) < 1e-13
 
     assert np.allclose(resultd.x, resultd2.x, atol=1e-6)
     assert np.allclose(resultd3.x, resultd4.x)

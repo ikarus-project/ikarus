@@ -20,7 +20,7 @@ namespace Ikarus::Python {
  * @param scope Python handle to the module or class scope.
  * @param cls The pybind11 class to register.
  */
-template <class NR, class... options>
+template <class  NR, class... options>
 void registerNewtonRaphson(pybind11::handle scope, pybind11::class_<NR, options...> cls) {
   namespace py = pybind11;
 

@@ -114,7 +114,7 @@ PYBIND11_MODULE(_ikarus, m) {
   Ikarus::Python::registerNeoHooke(materials, nh);
 
   Ikarus::Python::addBindingsToIO();
-  Ikarus::Python::registerSolverInformation();
+Ikarus::Python::addBindingsToSolver();
 
   pybind11::class_<Ikarus::utils::UpdateDefault> ud(m, "UpdateDefault");
 
@@ -122,5 +122,7 @@ PYBIND11_MODULE(_ikarus, m) {
     spdlog::register_logger(logger);
     spdlog::set_default_logger(logger);}
     );
+
+
 
 }

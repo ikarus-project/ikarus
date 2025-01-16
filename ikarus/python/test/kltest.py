@@ -102,7 +102,7 @@ if __name__ == "__main__":
 
     maxiter = 100
     abs_tolerance = 1e-8
-    d = np.zeros(assembler.reducedSize())
+    d = np.zeros(assembler.reducedDOFsize())
     for k in range(maxiter):
         R, K = gradAndhess(d)
         r_norm = norm(R)
