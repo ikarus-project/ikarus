@@ -9,6 +9,8 @@ file(
   CONFIGURE_DEPENDS *.cpp
 )
 
+
+dune_enable_all_packages()
 dune_add_library(
   ${PROJECT_NAME}
   ${sources}
@@ -20,7 +22,7 @@ dune_add_library(
   ${DUNE_LIBS}
 )
 target_link_dune_default_libraries(${PROJECT_NAME})
-
+dune_default_include_directories(${PROJECT_NAME} PUBLIC)
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 
 add_subdirectory(assembler)

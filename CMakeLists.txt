@@ -15,7 +15,9 @@ project(
   LANGUAGES C CXX
 )
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_definitions(-DDUNE_LOCALFEFUNCTIONS_USE_EIGEN=1)
+add_definitions(-DDUNE_DISABLE_PYTHON_DEPRECATION_WARNINGS=1)
 add_definitions(-DCMAKE_DISABLE_FIND_PACKAGE_Vc=1)
 add_definitions(-DCMAKE_DISABLE_FIND_PACKAGE_LATEX=1)
 add_definitions(-DBUILD_SHARED_LIBS=1)
@@ -25,8 +27,8 @@ find_package(dune-common REQUIRED EXCLUDE_FROM_ALL)
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules" ${dune-common_MODULE_PATH})
 include(DuneMacros)
 
+dune_policy(SET DP_DEFAULT_INCLUDE_DIRS NEW)
 dune_project()
-dune_enable_all_packages()
 
 add_subdirectory(ikarus)
 add_subdirectory(cmake)
