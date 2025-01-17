@@ -116,7 +116,6 @@ auto cantileverBeamTest(const MAT& reducedMat) {
 
   auto nonLinearSolverObserver = NonLinearSolverLogger(nr);
 
-
   const auto controlInfo = lc.run();
 
   double expectedLambda = 1.0;
