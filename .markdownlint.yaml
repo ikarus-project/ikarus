@@ -1,6 +1,8 @@
+# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-License-Identifier: CC0-1.0
 
 default: true
-#see for rules https://github.com/DavidAnson/markdownlint/blob/main/schema/.markdownlint.yaml
+# see for rules https://github.com/DavidAnson/markdownlint/blob/main/schema/.markdownlint.yaml
 # MD013/line-length - Line length
 MD013:
   line_length: 250
