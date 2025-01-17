@@ -101,7 +101,7 @@ concept FEAffordance = std::is_same_v<std::remove_cvref_t<T>, ScalarAffordance> 
  */
 template <FEAffordance... Affordances>
 requires(sizeof...(Affordances) <= 3)
-struct AffordanceCollection : public std::tuple<Affordances...>
+struct AffordanceCollection : std::tuple<Affordances...>
 {
   using Base = std::tuple<Affordances...>;
 

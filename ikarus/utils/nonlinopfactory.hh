@@ -214,23 +214,25 @@ private:
     constexpr std::array<bool, 3> provide{provideScalar, provideVector, provideMatrix};
     auto funcs2 =
         Dune::filter([&](auto i) constexpr { return std::bool_constant<provide[i]>{}; }, std::make_index_sequence<3>{});
+    static_assert(Dune::Hybrid::elementAt(funcs2,Dune::Indices::_0)==1);
+    static_assert(Dune::Hybrid::elementAt(funcs2,Dune::Indices::_1)==2);
     static_assert(funcs2.size() == provideScalar + provideVector + provideMatrix);
 
     assert(req.populated() && " Before you calls this method you have to pass populated fe requirements");
 
     auto dummyLambda= [&]<size_t index>(std::integral_constant<size_t,index>) {
-
+      static_assert(index==2 or index==1 or index==0);
       auto lambda = [assemblerPtr,&req,affordances,dbcOption](typename FERequirement::SolutionVectorType& globalSol,
                                 typename FERequirement::ParameterType& parameter)  {
-        FERequirement req;
-        req.insertGlobalSolution(globalSol).insertParameter(parameter);
+        FERequirement req2;
+        req2.insertGlobalSolution(globalSol).insertParameter(parameter);
 
         if constexpr (index == 0)
-          return assemblerPtr->scalar(req, affordances.scalarAffordance());
+          return assemblerPtr->scalar(req2, affordances.scalarAffordance());
         else if constexpr (index == 1)
-          return assemblerPtr->vector(req, affordances.vectorAffordance(), dbcOption);
+          return assemblerPtr->vector(req2, affordances.vectorAffordance(), dbcOption);
         else if constexpr (index == 2)
-          return assemblerPtr->matrix(req, affordances.matrixAffordance(), dbcOption);
+          return assemblerPtr->matrix(req2, affordances.matrixAffordance(), dbcOption);
       };
       return std::function(lambda);
 
