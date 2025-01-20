@@ -87,10 +87,10 @@ public:
   using WrappedAssembler::constraintsBelow;
   using WrappedAssembler::dBCOption;
   using WrappedAssembler::estimateOfConnectivity;
+  using WrappedAssembler::finiteElements;
   using WrappedAssembler::gridView;
   using WrappedAssembler::isConstrained;
   using WrappedAssembler::reducedSize;
-  using WrappedAssembler::finiteElements;
   using WrappedAssembler::requirement;
   using WrappedAssembler::size;
 
@@ -179,10 +179,10 @@ public:
   using WrappedAssembler::constraintsBelow;
   using WrappedAssembler::dBCOption;
   using WrappedAssembler::estimateOfConnectivity;
+  using WrappedAssembler::finiteElements;
   using WrappedAssembler::gridView;
   using WrappedAssembler::isConstrained;
   using WrappedAssembler::reducedSize;
-  using WrappedAssembler::finiteElements;
   using WrappedAssembler::requirement;
   using WrappedAssembler::size;
 
@@ -290,10 +290,10 @@ public:
   using WrappedAssembler::constraintsBelow;
   using WrappedAssembler::dBCOption;
   using WrappedAssembler::estimateOfConnectivity;
+  using WrappedAssembler::finiteElements;
   using WrappedAssembler::gridView;
   using WrappedAssembler::isConstrained;
   using WrappedAssembler::reducedSize;
-  using WrappedAssembler::finiteElements;
   using WrappedAssembler::requirement;
   using WrappedAssembler::size;
 

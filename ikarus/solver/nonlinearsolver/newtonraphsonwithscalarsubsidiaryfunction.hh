@@ -11,7 +11,6 @@
 #include <iosfwd>
 #include <utility>
 
-#include "ikarus/assembler/dirichletbcenforcement.hh"
 #include <ikarus/controlroutines/pathfollowingfunctions.hh>
 #include <ikarus/solver/nonlinearsolver/nonlinearsolverbase.hh>
 #include <ikarus/solver/nonlinearsolver/solverinfos.hh>
@@ -223,8 +222,6 @@ public:
       const double deltalambda = (-subsidiaryArgs.f - subsidiaryArgs.dfdDD.dot(sol2d.col(0))) /
                                  (subsidiaryArgs.dfdDD.dot(sol2d.col(1)) + subsidiaryArgs.dfdDlambda);
       deltaD = sol2d.col(0) + deltalambda * sol2d.col(1);
-
-      this->notifyListeners(NonLinearSolverMessages::CORRECTION_UPDATED, x, deltaD);
 
       updateFunction_(x, deltaD);
       updateFunction_(subsidiaryArgs.DD, deltaD);

@@ -120,8 +120,7 @@ static auto vonMisesTrussTest() {
   auto nr = nrFactory.create(denseFlatAssembler);
 
   /// Create Observer to write information of the non-linear solver
-  auto nonLinearSolverObserver = NonLinearSolverLogger();
-  auto nonLinOp                = Ikarus::NonLinearOperatorFactory::op(denseFlatAssembler);
+  auto nonLinOp = Ikarus::NonLinearOperatorFactory::op(denseFlatAssembler);
 
   t.check(utils::checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << "Check gradient failed";
@@ -145,7 +144,9 @@ static auto vonMisesTrussTest() {
   vtkWriter.setFileNamePrefix("vonMisesTruss");
 
   /// Create loadcontrol
-  auto lc = LoadControl(nr, loadSteps, {0, 0.5});
+  auto lc                      = LoadControl(nr, loadSteps, {0, 0.5});
+  auto nonLinearSolverObserver = NonLinearSolverLogger();
+
   nonLinearSolverObserver.subscribeTo(lc.nonlinearSolver());
   vtkWriter.subscribeTo(lc);
   lvkObserver.subscribeTo(lc);
@@ -286,9 +287,9 @@ auto trussAutoDiffTest() {
 int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t("TrussTest");
-  // t.subTest(trussAutoDiffTest<2, Grids::OneDFoamGridIn2D>());
-  // t.subTest(trussAutoDiffTest<3, Grids::OneDFoamGridIn3D>());
+  t.subTest(trussAutoDiffTest<2, Grids::OneDFoamGridIn2D>());
+  t.subTest(trussAutoDiffTest<3, Grids::OneDFoamGridIn3D>());
   t.subTest(vonMisesTrussTest());
-  // t.subTest(truss3dTest());
+  t.subTest(truss3dTest());
   return t.exit();
 }
