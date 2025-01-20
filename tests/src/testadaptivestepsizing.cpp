@@ -181,7 +181,7 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   vtkWriter.subscribeTo(crWoSS);
   // crWoSS.unSubscribeAll(vtkWriter);
   pathFollowingObserver.subscribeTo(crWSS);
-  
+
   // crWSS.subscribe(ControlMessages::SOLUTION_CHANGED, vtkWriter);
 
   const std::string& message1 = " --> " + pft.name() + " with default adaptive step sizing";

@@ -90,6 +90,7 @@ public:
   using WrappedAssembler::gridView;
   using WrappedAssembler::isConstrained;
   using WrappedAssembler::reducedSize;
+  using WrappedAssembler::finiteElements;
   using WrappedAssembler::requirement;
   using WrappedAssembler::size;
 
@@ -181,6 +182,7 @@ public:
   using WrappedAssembler::gridView;
   using WrappedAssembler::isConstrained;
   using WrappedAssembler::reducedSize;
+  using WrappedAssembler::finiteElements;
   using WrappedAssembler::requirement;
   using WrappedAssembler::size;
 
@@ -291,6 +293,7 @@ public:
   using WrappedAssembler::gridView;
   using WrappedAssembler::isConstrained;
   using WrappedAssembler::reducedSize;
+  using WrappedAssembler::finiteElements;
   using WrappedAssembler::requirement;
   using WrappedAssembler::size;
 

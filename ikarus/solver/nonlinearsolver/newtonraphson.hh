@@ -186,7 +186,7 @@ public:
         updateFunction_(x, correction_);
       }
 
-      this->notifyListeners(CORRECTION_UPDATED, x, correction_);
+      // this->notifyListeners(CORRECTION_UPDATED, x, correction_);
       updateFunction_(x, correction_);
       this->notifyListeners(CORRECTIONNORM_UPDATED, static_cast<double>(dNorm));
       this->notifyListeners(SOLUTION_CHANGED);

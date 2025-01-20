@@ -39,12 +39,13 @@ struct FEMixin : public Listener, Skills<PreFE, typename PreFE::template FE<Skil
             std::forward<typename Skills<PreFE, typename PreFE::template FE<Skills...>>::Pre>(skillsArgs))... {}
 
   template <typename BC>
-  auto listenTo(BC& bc) {
+  auto subscribeTo(BC& bc) {
     this->subscribe(bc, [&](NonLinearSolverMessages message, Eigen::VectorXd& x,
                             const std::remove_reference_t<typename Traits::template VectorType<>>& dx) {
       if (message == NonLinearSolverMessages::CORRECTION_UPDATED)
         this->updateImpl(message, x, dx);
     });
+    return *this;
   }
 
   /**

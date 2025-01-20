@@ -7,8 +7,8 @@
  */
 
 #pragma once
-#include <ikarus/utils/listener/listener.hh>
 #include <ikarus/utils/broadcaster/broadcastermessages.hh>
+#include <ikarus/utils/listener/listener.hh>
 
 namespace Ikarus {
 /**
