@@ -154,8 +154,8 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   dass.setTargetIterations(targetIterations);
 
   /// control routine with and without step sizing
-  auto crWSS  = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft, dass);
-  auto crWoSS = Ikarus::PathFollowing(nr2, loadSteps, stepSize, pft, nass);
+  auto crWSS  = Ikarus::PathFollowing(nr, loadSteps, stepSize, sparseAssembler, pft, dass);
+  auto crWoSS = Ikarus::PathFollowing(nr2, loadSteps, stepSize, sparseAssembler, pft, nass);
 
   auto nonLinearSolverObserver =
       NonLinearSolverLogger().subscribeTo(crWSS.nonlinearSolver()).subscribeTo(crWoSS.nonlinearSolver());
@@ -178,8 +178,10 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   vtkWriter.subscribeTo(crWoSS);
 
   pathFollowingObserver.subscribeTo(crWoSS);
+  vtkWriter.subscribeTo(crWoSS);
   // crWoSS.unSubscribeAll(vtkWriter);
   pathFollowingObserver.subscribeTo(crWSS);
+  
   // crWSS.subscribe(ControlMessages::SOLUTION_CHANGED, vtkWriter);
 
   const std::string& message1 = " --> " + pft.name() + " with default adaptive step sizing";
