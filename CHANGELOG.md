@@ -61,6 +61,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
     - the signature of the `operator()` of the result evaluator changed to also include the finite element and the evaluation position.
     - `UserFunction` are now passed directly to the `ResultFunction` and not as a template argument.
     - `Vtk::Writer` now also accepts a `UserFunction` in the `addResult()` function.
+- Add a `ModalAnalysis` class to facilitate modal analysis and implement linear mass matrices for all elements. This also includes wrappers for solving the generalized eigenvalue problem with sparse and dense matrices with Eigen and Spectra
 
 ## Release v0.4 (Ganymede)
 
