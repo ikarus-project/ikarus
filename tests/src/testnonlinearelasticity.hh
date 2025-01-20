@@ -213,7 +213,7 @@ auto GreenLagrangeStrainTest(const Material& mat) {
       return linMat;
     else {
       if constexpr (Testing::isPlaneStress<Material>)
-        return Ikarus::planeStress(linMat);
+        return Ikarus::Materials::planeStress(linMat);
       else
         return Ikarus::Materials::planeStrain(linMat);
     }
