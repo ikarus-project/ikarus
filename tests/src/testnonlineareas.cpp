@@ -30,11 +30,11 @@
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/functionhelper.hh>
 #include <ikarus/utils/init.hh>
-#include <ikarus/utils/nonlinearoperator.hh>
-#include <ikarus/utils/nonlinopfactory.hh>
 #include <ikarus/utils/listener/controllogger.hh>
 #include <ikarus/utils/listener/controlvtkwriter.hh>
 #include <ikarus/utils/listener/nonlinearsolverlogger.hh>
+#include <ikarus/utils/nonlinearoperator.hh>
+#include <ikarus/utils/nonlinopfactory.hh>
 
 using namespace Ikarus;
 using Dune::TestSuite;

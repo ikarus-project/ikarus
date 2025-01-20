@@ -19,8 +19,8 @@
 #include <Eigen/Core>
 
 #include <ikarus/finiteelements/feresulttypes.hh>
-#include <ikarus/utils/makeenum.hh>
 #include <ikarus/utils/broadcaster/broadcastermessages.hh>
+#include <ikarus/utils/makeenum.hh>
 
 namespace Ikarus {
 // clang-format off

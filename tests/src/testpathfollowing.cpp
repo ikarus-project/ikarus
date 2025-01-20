@@ -12,9 +12,9 @@
 
 #include <ikarus/controlroutines/pathfollowing.hh>
 #include <ikarus/utils/init.hh>
-#include <ikarus/utils/nonlinearoperator.hh>
 #include <ikarus/utils/listener/controllogger.hh>
 #include <ikarus/utils/listener/nonlinearsolverlogger.hh>
+#include <ikarus/utils/nonlinearoperator.hh>
 
 using namespace Ikarus::Concepts;
 using Dune::TestSuite;
@@ -162,10 +162,10 @@ int main(int argc, char** argv) {
   double stepSize = 0.1;
   int loadSteps   = 5;
 
-  //t.subTest(simple2DOperatorArcLengthTest(nonLinOp, stepSize, loadSteps));
-  //t.subTest(simple2DOperatorArcLengthTestAsDefault(nonLinOp, stepSize, loadSteps));
+  // t.subTest(simple2DOperatorArcLengthTest(nonLinOp, stepSize, loadSteps));
+  // t.subTest(simple2DOperatorArcLengthTestAsDefault(nonLinOp, stepSize, loadSteps));
   t.subTest(simple2DOperatorLoadControlTest(nonLinOp, stepSize, loadSteps));
-  //t.subTest(simple2DOperatorDisplacementControlTest(nonLinOp, stepSize, loadSteps));
+  // t.subTest(simple2DOperatorDisplacementControlTest(nonLinOp, stepSize, loadSteps));
 
   return t.exit();
 }
