@@ -106,12 +106,10 @@ struct AutoDiffMAT : public RealMAT
 
       auto f = [&](const auto& x) { return mat_ad.template storedEnergy<tag>(x); };
 
-      auto dx = Eigen::Vector<autodiff::dual, nVoigtIndices>{};
-
-      dx = toVoigt(E.derived());
+      Eigen::Vector<autodiff::dual, nVoigtIndices> dx = toVoigt(E.derived());
       autodiff::dual e;
+      Eigen::Vector<double, nVoigtIndices> g;
 
-      auto g = Eigen::Vector<double, nVoigtIndices>{};
       gradient(f, autodiff::wrt(dx), autodiff::at(dx), e, g);
 
       return (derivativeFactorImpl * g).eval();

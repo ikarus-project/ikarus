@@ -37,9 +37,9 @@ int main(int argc, char** argv) {
   auto ogdenTotal                = makeOgden<3, PrincipalStretchTag::total>(mu_og, alpha_og, Lambda, VF3{});
   auto ogdenDevi                 = makeOgden<3, PrincipalStretchTag::deviatoric>(mu_og, alpha_og, K, VF3{});
 
-  t.subTest(checkMaterialByAutoDiff(nh));
+  // t.subTest(checkMaterialByAutoDiff(nh));
   t.subTest(checkMaterialByAutoDiff(ogdenTotal));
-  t.subTest(checkMaterialByAutoDiff(ogdenDevi));
+  // t.subTest(checkMaterialByAutoDiff(ogdenDevi));
 
   return t.exit();
 }

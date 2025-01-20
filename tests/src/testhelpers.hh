@@ -70,7 +70,7 @@ void checkApproxMatrices(TestSuiteType& t, const MatrixType& mat1, const MatrixT
 template <typename TestSuiteType, typename VectorType>
 void checkApproxVectors(TestSuiteType& t, const VectorType& vec1, const VectorType& vec2,
                         const std::string& messageIfFailed = "", double tol = 1e-10) {
-  t.check(isApproxSame(vec1, vec2, tol)) << messageIfFailed << " vec1 is\t" << vec1.transpose() << "\n vec2 is\t"
+  t.check(isApproxSame(vec1, vec2, tol)) << messageIfFailed << " vec1 is\n" << vec1.transpose() << "\n vec2 is\n"
                                          << vec2.transpose() << "\nThe difference is\n"
                                          << (vec1 - vec2).transpose();
 }
