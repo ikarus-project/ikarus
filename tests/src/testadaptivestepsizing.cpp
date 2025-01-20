@@ -25,9 +25,9 @@
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/nonlinearoperator.hh>
 #include <ikarus/utils/nonlinopfactory.hh>
-#include <ikarus/utils/observer/controllogger.hh>
-#include <ikarus/utils/observer/controlvtkwriter.hh>
-#include <ikarus/utils/observer/nonlinearsolverlogger.hh>
+#include <ikarus/utils/listener/controllogger.hh>
+#include <ikarus/utils/listener/controlvtkwriter.hh>
+#include <ikarus/utils/listener/nonlinearsolverlogger.hh>
 
 using Dune::TestSuite;
 
@@ -161,6 +161,7 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
       NonLinearSolverLogger().subscribeTo(crWSS.nonlinearSolver()).subscribeTo(crWoSS.nonlinearSolver());
   auto pathFollowingObserver = ControlLogger();
 
+ // TODO We lost this functionaly, we could of course reenable it somewhere
   // t.checkThrow<Dune::InvalidStateException>(
   //     [&]() { nonLinearSolverObserver->update(Ikarus::NonLinearSolverMessages::BEGIN); },
   //     "nonLinearSolverObserver should have failed for the BEGIN message");

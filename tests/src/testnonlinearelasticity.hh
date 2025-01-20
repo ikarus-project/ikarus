@@ -28,7 +28,7 @@
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/nonlinearoperator.hh>
 #include <ikarus/utils/nonlinopfactory.hh>
-#include <ikarus/utils/observer/controlvtkwriter.hh>
+#include <ikarus/utils/listener/controlvtkwriter.hh>
 
 using Dune::TestSuite;
 

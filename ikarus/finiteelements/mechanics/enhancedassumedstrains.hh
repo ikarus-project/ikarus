@@ -19,7 +19,7 @@
   #include <ikarus/finiteelements/mechanics/easvariants.hh>
   #include <ikarus/finiteelements/mixin.hh>
   #include <ikarus/utils/concepts.hh>
-  #include <ikarus/utils/observer/broadcastermessages.hh>
+  #include <ikarus/utils/broadcaster/broadcastermessages.hh>
 
 namespace Ikarus {
 

@@ -17,7 +17,7 @@
 #include <ikarus/solver/nonlinearsolver/newtonraphsonwithscalarsubsidiaryfunction.hh>
 #include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
 #include <ikarus/utils/nonlinopfactory.hh>
-#include <ikarus/utils/observer/broadcastermessages.hh>
+#include <ikarus/utils/broadcaster/broadcastermessages.hh>
 
 namespace Ikarus {
 

@@ -24,9 +24,9 @@
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/init.hh>
-#include <ikarus/utils/observer/controlvtkwriter.hh>
-#include <ikarus/utils/observer/genericlistener.hh>
-#include <ikarus/utils/observer/nonlinearsolverlogger.hh>
+#include <ikarus/utils/listener/controlvtkwriter.hh>
+#include <ikarus/utils/listener/genericlistener.hh>
+#include <ikarus/utils/listener/nonlinearsolverlogger.hh>
 
 using namespace Ikarus;
 using Dune::TestSuite;

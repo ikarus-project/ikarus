@@ -13,8 +13,8 @@
 
 #include <ikarus/finiteelements/fetraits.hh>
 #include <ikarus/finiteelements/mechanics/enhancedassumedstrains.hh>
-#include <ikarus/utils/broadcaster/listener.hh>
-#include <ikarus/utils/observer/broadcastermessages.hh>
+#include <ikarus/utils/listener/listener.hh>
+#include <ikarus/utils/broadcaster/broadcastermessages.hh>
 
 namespace Ikarus {
 /**
