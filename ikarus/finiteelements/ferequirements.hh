@@ -19,7 +19,6 @@
 #include <Eigen/Core>
 
 #include <ikarus/finiteelements/feresulttypes.hh>
-#include <ikarus/utils/broadcaster/broadcastermessages.hh>
 #include <ikarus/utils/makeenum.hh>
 
 namespace Ikarus {
@@ -358,14 +357,6 @@ private:
 
 public:
   using type = FERequirements<sol, para, typeEigen, PM>;
-};
-
-template <NonLinearSolverMessages... Messages>
-struct FEListenerBase
-{
-  constexpr bool wantsToObserve(NonLinearSolverMessages message) const {
-    return ((message == Messages) || ...); // Fold expression over ||
-  }
 };
 
 } // namespace Ikarus

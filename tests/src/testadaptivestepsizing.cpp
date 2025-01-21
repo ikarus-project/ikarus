@@ -179,6 +179,8 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
 
   pathFollowingObserver.subscribeTo(crWoSS);
   vtkWriter.subscribeTo(crWoSS);
+
+  // TODO How to unregister?
   // crWoSS.unSubscribeAll(vtkWriter);
   pathFollowingObserver.subscribeTo(crWSS);
 

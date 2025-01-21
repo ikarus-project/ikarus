@@ -58,11 +58,11 @@ public:
         }, "The last parameter (load factor) must be assignable and incrementable with a double!");
 
     // register FEs to listen to NR messages
-    // if constexpr (not std::is_same_v<Assembler, Impl::NoAssembler>) {
-    //   for (auto& fe : assembler->finiteElements()) {
-    //     fe.subscribeTo(nonLinearSolver_);
-    //   };
-    // }
+    if constexpr (not std::is_same_v<Assembler, Impl::NoAssembler>)
+      for (auto& fe : assembler->finiteElements()) {
+        fe.template subscribeTo<NonLinearSolverMessages>(nonLinearSolver_);
+        fe.template subscribeTo<ControlMessages>(*this);
+      }
   }
 
   /**
