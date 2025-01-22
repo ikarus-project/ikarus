@@ -10,5 +10,6 @@ install(
         adaptivestepsizing.hh
         controlinfos.hh
         pathfollowingfunctions.hh
+        controlroutinebase.hh
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/controlroutines
 )
