@@ -373,26 +373,9 @@ private:
     if constexpr (not Concepts::AutodiffScalar<typename Derived::Scalar>) {
       auto [lambdas, N] = principalStretches(C);
       auto J            = detF(lambdas);
-      return vol_.storedEnergy(J);
+      return transformVolumetricStresses(vol_.firstDerivative(J), C, J);
     } else if constexpr (std::is_same_v<ScalarType, autodiff::dual>) {
       autodiff::dual e;
-      auto Cvec     = toVoigt(C.derived());
-      auto realCVec = autodiff::derivative<0>(Cvec);
-      auto realC    = fromVoigt(autodiff::derivative<0>(Cvec));
-      auto dualCVec = autodiff::derivative<1>(Cvec);
-
-      auto [lambdas, N] = principalStretches(realCVec);
-      auto J            = detF(lambdas);
-
-      auto realVol = vol_.template rebind<double>();
-      auto realMat = rebind<double>();
-
-      e.val  = realVol.storedEnergy(J);
-      e.grad = (transformVolumetricStresses(realVol.firstDerivative(J), realC, J).transpose() / 2 * fromVoigt(dualCVec))
-                   .trace();
-      return e;
-    } else if constexpr (std::is_same_v<ScalarType, autodiff::dual2nd>) {
-      autodiff::dual2nd e;
       auto Cvec           = toVoigt(C.derived());
       const auto realCVec = derivative<0>(Cvec);
       auto realC          = fromVoigt(autodiff::derivative<0>(Cvec));
@@ -403,10 +386,8 @@ private:
 
       auto realVol = vol_.template rebind<double>();
       auto realMat = rebind<double>();
-      e.val        = realVol.storedEnergy(J);
+      e.val        = transformVolumetricStresses(vol_.firstDerivative(J), C, J);
 
-      e.grad.val = (transformVolumetricStresses(realVol.firstDerivative(J), realC, J).transpose() / 2 * dualC).trace();
-      e.val.grad = e.grad.val;
       const auto Cmoduli =
           transformVolumetricTangentModuli(realVol.firstDerivative(J), realVol.secondDerivative(J), realC, J);
 
@@ -418,7 +399,7 @@ private:
       const auto tCdualT                 = tensorView(dualC2, std::array<Eigen::Index, 2>({3, 3}));
       const auto prod                    = Cmoduli.contract(tCdual, double_contraction);
       const Eigen::Tensor<double, 0> res = tCdualT.contract(prod, double_contraction2);
-      e.grad.grad                        = res(0) / 4.0; // extracting value of zero order tensor
+      e.grad                             = res(0) / 4.0; // extracting value of zero order tensor
 
       return e;
     } else

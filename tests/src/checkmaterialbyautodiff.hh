@@ -30,27 +30,27 @@ auto checkMaterialByAutoDiffImpl(const MAT& mat, const auto C, const std::string
   const auto matAD1 = AutoDiffMAT<MAT, true>(mat);
   const auto matAD2 = AutoDiffMAT<MAT, true, true>(mat);
 
-  double energy = mat.template storedEnergy<strainTag>(C);
-  auto stress   = mat.template stresses<strainTag>(C);
+  double energy   = mat.template storedEnergy<strainTag>(C);
+  auto stress     = mat.template stresses<strainTag>(C);
   auto matTangent = mat.template tangentModuli<strainTag>(C);
 
-  // auto energy_ad1     = matAD1.template storedEnergy<strainTag>(C);
-  // auto stress_ad1 = matAD1.template stresses<strainTag>(C);
-  // auto matTangent_ad1 = matAD1.template tangentModuli<strainTag>(C);
+  auto energy_ad1     = matAD1.template storedEnergy<strainTag>(C);
+  auto stress_ad1     = matAD1.template stresses<strainTag>(C);
+  auto matTangent_ad1 = matAD1.template tangentModuli<strainTag>(C);
 
-  auto energy_ad2 = matAD2.template storedEnergy<strainTag>(C);
+  auto energy_ad2     = matAD2.template storedEnergy<strainTag>(C);
   auto stress_ad2     = matAD2.template stresses<strainTag>(C);
   auto matTangent_ad2 = matAD2.template tangentModuli<strainTag>(C);
 
   constexpr double tol = 1e-10;
 
-  // checkScalars(t, energy, static_cast<double>(energy_ad1), testLocation() + "Incorrect Energies.", tol);
-  // checkScalars(t, energy, static_cast<double>(energy_ad2), testLocation() + "Incorrect Energies.", tol);
+  checkScalars(t, energy, static_cast<double>(energy_ad1), testLocation() + "Incorrect Energies.", tol);
+  checkScalars(t, energy, static_cast<double>(energy_ad2), testLocation() + "Incorrect Energies.", tol);
 
-  // checkApproxVectors(t, stress, stress_ad1, testLocation() + "Incorrect stresses.", tol);
+  checkApproxVectors(t, stress, stress_ad1, testLocation() + "Incorrect stresses.", tol);
   checkApproxVectors(t, stress, stress_ad2, testLocation() + "Incorrect stresses.", tol);
 
-  // checkApproxMatrices(t, matTangent, matTangent_ad1, testLocation() + "Incorrect tangentModuli.", tol);
+  checkApproxMatrices(t, matTangent, matTangent_ad1, testLocation() + "Incorrect tangentModuli.", tol);
   checkApproxMatrices(t, matTangent, matTangent_ad2, testLocation() + "Incorrect tangentModuli.", tol);
 
   return t;
