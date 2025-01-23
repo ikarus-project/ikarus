@@ -30,9 +30,6 @@ namespace Ikarus::Materials {
 template <Concepts::VolumetricFunction VF>
 struct Volumetric
 {
-  using ScalarType = typename VF::ScalarType;
-  using JType      = typename VF::JType;
-
   using VolumetricFunction = VF;
   using MaterialParameter  = double;
 
@@ -61,36 +58,37 @@ struct Volumetric
    * \brief Computes stored energy of the volumetric function.
    *
    * \param J determinant of the deformation gradient \f$ J = \det\BF \f$.
-   * \return ScalarType energy.
+   * \tparam ST the scalartype of J
+   * \return ST energy.
    */
-  ScalarType storedEnergy(const JType& J) const { return matPar_ * volumetricFunction_.storedEnergyImpl(J); };
+  template <typename ST>
+  ST storedEnergy(const ST& J) const {
+    return matPar_ * volumetricFunction_.storedEnergyImpl(J);
+  };
 
   /**
    * \brief Computes the first derivatives of the energy of the volumetric function w.r.t \f$ J \f$.
    *
    * \param J determinant of the deformation gradient \f$ J = \det\BF \f$.
-   * \return ScalarType energy.
+   * \tparam ST the scalartype of J
+   * \return ST first derivative of the energy.
    */
-  ScalarType firstDerivative(const JType& J) const { return matPar_ * volumetricFunction_.firstDerivativeImpl(J); }
+  template <typename ST>
+  ST firstDerivative(const ST& J) const {
+    return matPar_ * volumetricFunction_.firstDerivativeImpl(J);
+  }
 
   /**
    * \brief Computes the second derivatives of the energy of the volumetric function w.r.t \f$ J \f$.
    *
    * \param J determinant of the deformation gradient \f$ J = \det\BF \f$.
-   * \return ScalarType energy.
+   * \tparam ST the scalartype of J
+   * \return ST second derivative of the energy.
    */
-  ScalarType secondDerivative(const JType& J) const { return matPar_ * volumetricFunction_.secondDerivativeImpl(J); };
-
-  /**
-   * \brief Rebinds the material to a different scalar type.
-   * \tparam STO The target scalar type.
-   * \return The rebound volumetric part.
-   */
-  template <typename STO>
-  auto rebind() const {
-    auto reboundVF = volumetricFunction_.template rebind<STO>();
-    return Volumetric<decltype(reboundVF)>(matPar_, reboundVF);
-  }
+  template <typename ST>
+  ST secondDerivative(const ST& J) const {
+    return matPar_ * volumetricFunction_.secondDerivativeImpl(J);
+  };
 
 private:
   MaterialParameter matPar_;

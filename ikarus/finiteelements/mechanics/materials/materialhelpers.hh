@@ -125,7 +125,7 @@ auto principalStretches(const Eigen::MatrixBase<Derived>& C, int options = Eigen
   auto& eigenvalues  = eigensolver.eigenvalues();
   auto& eigenvectors = options == Eigen::ComputeEigenvectors ? eigensolver.eigenvectors() : Derived::Zero();
 
-  auto principalStretches = eigenvalues.array().sqrt().eval();
+  std::remove_cvref_t<decltype(eigenvalues)> principalStretches = eigenvalues.array().sqrt().eval();
   return std::make_pair(principalStretches, eigenvectors);
 }
 

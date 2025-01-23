@@ -33,7 +33,7 @@ namespace Ikarus::Materials {
  *
  * \return A hyperelastic material model.
  */
-template <int n, PrincipalStretchTag tag, typename VolumetricFunction = VF0T<double>>
+template <int n, PrincipalStretchTag tag, typename VolumetricFunction = VF0>
 inline auto makeOgden(const typename Ogden<n, tag>::MaterialParameters& mu,
                       const typename Ogden<n, tag>::MaterialExponents alpha, double K = 0.0,
                       const VolumetricFunction& vf = VolumetricFunction{}) {

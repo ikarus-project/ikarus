@@ -23,21 +23,22 @@ namespace Ikarus::Concepts {
  *
  */
 template <typename DF>
-concept DeviatoricFunction = requires(DF dm, const typename DF::PrincipalStretches& lambda) {
+concept DeviatoricFunction = requires(DF dm, const typename DF::template PrincipalStretches<>& lambda) {
   typename DF::ScalarType;
-  typename DF::PrincipalStretches;
 
-  typename DF::FirstDerivative;
-  typename DF::SecondDerivative;
+  typename DF::template PrincipalStretches<>;
+  typename DF::template FirstDerivative<>;
+  typename DF::template SecondDerivative<>;
+
   typename DF::MaterialParameters;
 
-  requires Concepts::EigenVector<typename DF::FirstDerivative>;
-  requires Concepts::EigenMatrix<typename DF::SecondDerivative>;
-  requires std::is_same_v<typename DF::PrincipalStretches, typename DF::FirstDerivative>;
+  requires Concepts::EigenVector<typename DF::template FirstDerivative<>>;
+  requires Concepts::EigenMatrix<typename DF::template SecondDerivative<>>;
+  requires std::is_same_v<typename DF::template PrincipalStretches<>, typename DF::template FirstDerivative<>>;
 
   { dm.storedEnergyImpl(lambda) } -> std::same_as<typename DF::ScalarType>;
-  { dm.firstDerivativeImpl(lambda) } -> std::same_as<typename DF::FirstDerivative>;
-  { dm.secondDerivativeImpl(lambda) } -> std::same_as<typename DF::SecondDerivative>;
+  { dm.firstDerivativeImpl(lambda) } -> std::same_as<typename DF::template FirstDerivative<>>;
+  { dm.secondDerivativeImpl(lambda) } -> std::same_as<typename DF::template SecondDerivative<>>;
   { dm.materialParametersImpl() } -> std::same_as<typename DF::MaterialParameters>;
   { dm.name() } -> std::convertible_to<std::string>;
 };
@@ -49,15 +50,10 @@ concept DeviatoricFunction = requires(DF dm, const typename DF::PrincipalStretch
  *
  */
 template <typename VF>
-concept VolumetricFunction = requires(VF vf, const typename VF::JType& j) {
-  typename VF::ScalarType;
-  typename VF::JType;
-
-  requires std::is_same_v<typename VF::ScalarType, typename VF::JType>;
-
-  { vf.storedEnergyImpl(j) } -> std::same_as<typename VF::ScalarType>;
-  { vf.firstDerivativeImpl(j) } -> std::same_as<typename VF::ScalarType>;
-  { vf.secondDerivativeImpl(j) } -> std::same_as<typename VF::ScalarType>;
+concept VolumetricFunction = requires(VF vf, const double& j) {
+  { vf.storedEnergyImpl(j) } -> std::same_as<double>;
+  { vf.firstDerivativeImpl(j) } -> std::same_as<double>;
+  { vf.secondDerivativeImpl(j) } -> std::same_as<double>;
   { vf.name() } -> std::convertible_to<std::string>;
 };
 

@@ -22,8 +22,8 @@ template <DeformationType def>
 auto OgdenTotalResults() {
   using DEV                                          = Ogden<3, PrincipalStretchTag::total>;
   using ST                                           = typename DEV::ScalarType;
-  using FD                                           = typename DEV::FirstDerivative;
-  using SD                                           = typename DEV::SecondDerivative;
+  using FD                                           = typename DEV::template FirstDerivative<>;
+  using SD                                           = typename DEV::template SecondDerivative<>;
   auto [energy, firstDerivatives, secondDerivatives] = initializeMaterialResults<ST, FD, SD>();
 
   if constexpr (def == DeformationType::UniaxialTensile) {
@@ -53,8 +53,8 @@ template <DeformationType def>
 auto OgdenDeviatoricResults() {
   using DEV                                          = Ogden<3, PrincipalStretchTag::deviatoric>;
   using ST                                           = typename DEV::ScalarType;
-  using FD                                           = typename DEV::FirstDerivative;
-  using SD                                           = typename DEV::SecondDerivative;
+  using FD                                           = typename DEV::template FirstDerivative<>;
+  using SD                                           = typename DEV::template SecondDerivative<>;
   auto [energy, firstDerivatives, secondDerivatives] = initializeMaterialResults<ST, FD, SD>();
 
   if constexpr (def == DeformationType::UniaxialTensile) {
