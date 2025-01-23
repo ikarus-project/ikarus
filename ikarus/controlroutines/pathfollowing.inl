@@ -15,9 +15,8 @@
 #include <ikarus/controlroutines/controlinfos.hh>
 #include <ikarus/controlroutines/pathfollowingfunctions.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphsonwithscalarsubsidiaryfunction.hh>
+#include <ikarus/utils/broadcaster/broadcastermessages.hh>
 #include <ikarus/utils/nonlinearoperator.hh>
-#include <ikarus/utils/observer/observer.hh>
-#include <ikarus/utils/observer/observermessages.hh>
 
 namespace Ikarus {
 
@@ -26,47 +25,44 @@ requires(Impl::checkPathFollowingTemplates<NLS, PF, ASS>())
 ControlInformation PathFollowing<NLS, PF, ASS>::run() {
   ControlInformation info;
   auto& nonOp = nonLinearSolver_->nonLinearOperator();
-  this->notify(ControlMessages::CONTROL_STARTED, pathFollowingType_.name());
+  this->notifyListeners(ControlMessages::CONTROL_STARTED, pathFollowingType_.name());
 
-  SubsidiaryArgs subsidiaryArgs;
-
-  info.totalIterations    = 0;
-  subsidiaryArgs.stepSize = stepSize_;
-  subsidiaryArgs.DD.resizeLike(nonOp.firstParameter());
-  subsidiaryArgs.DD.setZero();
+  info.totalIterations = 0;
+  subsidiaryArgs_.setZero(nonOp.firstParameter());
+  subsidiaryArgs_.stepSize = stepSize_;
 
   /// Initializing solver
-  this->notify(ControlMessages::STEP_STARTED, 0, subsidiaryArgs.stepSize);
-  pathFollowingType_.initialPrediction(nonOp, subsidiaryArgs);
-  auto solverInfo = nonLinearSolver_->solve(pathFollowingType_, subsidiaryArgs);
+  this->notifyListeners(ControlMessages::STEP_STARTED, 0, subsidiaryArgs_.stepSize);
+  pathFollowingType_.initialPrediction(nonOp, subsidiaryArgs_);
+  auto solverInfo = nonLinearSolver_->solve(pathFollowingType_, subsidiaryArgs_);
   info.solverInfos.push_back(solverInfo);
   info.totalIterations += solverInfo.iterations;
   if (not solverInfo.success)
     return info;
-  this->notify(ControlMessages::SOLUTION_CHANGED);
-  this->notify(ControlMessages::STEP_ENDED);
+  this->notifyListeners(ControlMessages::SOLUTION_CHANGED);
+  this->notifyListeners(ControlMessages::STEP_ENDED);
 
   /// Calculate predictor for a particular step
   for (int ls = 1; ls < steps_; ++ls) {
-    subsidiaryArgs.currentStep = ls;
+    subsidiaryArgs_.currentStep = ls;
 
-    adaptiveStepSizing_(solverInfo, subsidiaryArgs, nonOp);
+    adaptiveStepSizing_(solverInfo, subsidiaryArgs_, nonOp);
 
-    this->notify(ControlMessages::STEP_STARTED, subsidiaryArgs.currentStep, subsidiaryArgs.stepSize);
+    this->notifyListeners(ControlMessages::STEP_STARTED, subsidiaryArgs_.currentStep, subsidiaryArgs_.stepSize);
 
-    pathFollowingType_.intermediatePrediction(nonOp, subsidiaryArgs);
+    pathFollowingType_.intermediatePrediction(nonOp, subsidiaryArgs_);
 
-    solverInfo = nonLinearSolver_->solve(pathFollowingType_, subsidiaryArgs);
+    solverInfo = nonLinearSolver_->solve(pathFollowingType_, subsidiaryArgs_);
 
     info.solverInfos.push_back(solverInfo);
     info.totalIterations += solverInfo.iterations;
     if (not solverInfo.success)
       return info;
-    this->notify(ControlMessages::SOLUTION_CHANGED);
-    this->notify(ControlMessages::STEP_ENDED);
+    this->notifyListeners(ControlMessages::SOLUTION_CHANGED);
+    this->notifyListeners(ControlMessages::STEP_ENDED);
   }
 
-  this->notify(ControlMessages::CONTROL_ENDED, info.totalIterations, pathFollowingType_.name());
+  this->notifyListeners(ControlMessages::CONTROL_ENDED, info.totalIterations, pathFollowingType_.name());
   info.success = true;
   return info;
 }
