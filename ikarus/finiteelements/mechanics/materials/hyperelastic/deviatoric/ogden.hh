@@ -36,19 +36,23 @@ namespace Ikarus::Materials {
  * \tparam n Number of ogden parameters
  * \tparam tag Type of principal stretch quantity, either total stretches or deviatoric stretches
  */
-template <typename ST, int n, PrincipalStretchTag tag>
+template <typename ST_, int n, PrincipalStretchTag tag>
 struct OgdenT
 {
-  using ScalarType         = ST;
-  using PrincipalStretches = Eigen::Vector<ScalarType, 3>;
+  using ScalarType = ST_;
+
+  template <typename ST = ScalarType>
+  using PrincipalStretches = Eigen::Vector<ST, 3>;
 
   static constexpr PrincipalStretchTag stretchTag = tag;
   static constexpr int numMatParameters           = n;
   static constexpr int dim                        = 3;
   static constexpr bool usesDeviatoricStretches   = stretchTag == PrincipalStretchTag::deviatoric;
 
-  using FirstDerivative  = Eigen::Vector<ScalarType, dim>;
-  using SecondDerivative = Eigen::Matrix<ScalarType, dim, dim>;
+  template <typename ST = ScalarType>
+  using FirstDerivative = Eigen::Vector<ST, dim>;
+  template <typename ST = ScalarType>
+  using SecondDerivative = Eigen::Matrix<ST, dim, dim>;
 
   using MaterialParameters = std::array<double, numMatParameters>;
   using MaterialExponents  = std::array<double, numMatParameters>;
@@ -81,13 +85,16 @@ struct OgdenT
    * \brief Computes the stored energy in the Ogden material model.
    *
    * \param lambda principal stretches
+   * \tparam ST the scalartype of the principal stretches
    * \return ScalarType
    */
-  ScalarType storedEnergyImpl(const PrincipalStretches& lambda) const {
+
+  template <typename ST>
+  auto storedEnergyImpl(const PrincipalStretches<ST>& lambda) const {
     auto& mu    = materialParameters_;
     auto& alpha = materialExponents_;
 
-    ScalarType energy{};
+    ST energy{};
 
     if constexpr (usesDeviatoricStretches) {
       auto lambdaBar = Impl::deviatoricStretches(lambda);
@@ -112,22 +119,25 @@ struct OgdenT
    * \brief Computes the first derivative of the stored energy function w.r.t. the total principal stretches.
    *
    * \param lambda principal stretches
+   * \tparam ST the scalartype of the principal stretches
    * \return ScalarType
    */
-  FirstDerivative firstDerivativeImpl(const PrincipalStretches& lambda) const {
+
+  template <typename ST>
+  auto firstDerivativeImpl(const PrincipalStretches<ST>& lambda) const {
     auto& mu       = materialParameters_;
     auto& alpha    = materialExponents_;
-    auto dWdLambda = FirstDerivative::Zero().eval();
+    auto dWdLambda = FirstDerivative<ST>::Zero().eval();
 
     if constexpr (usesDeviatoricStretches) {
       auto lambdaBar = Impl::deviatoricStretches(lambda);
 
-      auto dWdLambdaBar = FirstDerivative::Zero().eval();
+      auto dWdLambdaBar = FirstDerivative<ST>::Zero().eval();
       for (const auto j : parameterRange())
         for (const auto k : dimensionRange())
           dWdLambdaBar[k] += mu[j] * (pow(lambdaBar[k], alpha[j] - 1));
 
-      ScalarType sumLambdaBar{0.0};
+      ST sumLambdaBar{0.0};
       for (const auto b : dimensionRange())
         sumLambdaBar += lambdaBar[b] * dWdLambdaBar[b];
 
@@ -146,12 +156,15 @@ struct OgdenT
    * \brief Computes the second derivatives of the stored energy function w.r.t. the total principal stretches.
    *
    * \param lambda principal stretches
+   * \tparam ST the scalartype of the principal stretches
    * \return ScalarType
    */
-  SecondDerivative secondDerivativeImpl(const PrincipalStretches& lambda) const {
+
+  template <typename ST>
+  auto secondDerivativeImpl(const PrincipalStretches<ST>& lambda) const {
     auto& mu    = materialParameters_;
     auto& alpha = materialExponents_;
-    auto dS     = SecondDerivative::Zero().eval();
+    auto dS     = SecondDerivative<ST>::Zero().eval();
 
     if constexpr (usesDeviatoricStretches) {
       const auto lambdaBar = Impl::deviatoricStretches(lambda);
@@ -161,14 +174,14 @@ struct OgdenT
         for (const auto b : dimensionRange()) {
           if (a == b) {
             for (const auto p : parameterRange()) {
-              ScalarType sumC{0.0};
+              ST sumC{0.0};
               for (auto c : dimensionRange())
                 sumC += pow(lambdaBar[c], alpha[p]);
               dS(a, b) += mu[p] * alpha[p] * ((1.0 / 3.0) * pow(lambdaBar[a], alpha[p]) + (1.0 / 9.0) * sumC);
             }
           } else {
             for (const auto p : parameterRange()) {
-              ScalarType sumC{0.0};
+              ST sumC{0.0};
               for (auto c : dimensionRange())
                 sumC += pow(lambdaBar[c], alpha[p]);
               dS(a, b) +=

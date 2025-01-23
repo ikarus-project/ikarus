@@ -34,19 +34,26 @@ namespace Ikarus::Materials {
 template <Concepts::DeviatoricFunction DF>
 struct Deviatoric
 {
-  using ScalarType         = typename DF::ScalarType;
-  using PrincipalStretches = typename DF::PrincipalStretches;
+  using ScalarType = typename DF::ScalarType;
+
+  template <typename ST = ScalarType>
+  using PrincipalStretches = typename DF::template PrincipalStretches<ST>;
   using MaterialParameters = typename DF::MaterialParameters;
 
   using DeviatoricFunction = DF;
 
-  using FirstDerivative  = typename DF::FirstDerivative;
-  using SecondDerivative = typename DF::SecondDerivative;
+  template <typename ST = ScalarType>
+  using FirstDerivative = typename DF::template FirstDerivative<ST>;
+  template <typename ST = ScalarType>
+  using SecondDerivative = typename DF::template SecondDerivative<ST>;
 
   static constexpr int dim = 3;
 
-  using StressMatrix   = Eigen::Vector<ScalarType, dim>;
-  using MaterialTensor = Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<3, 3, 3, 3>>;
+  template <typename ST = ScalarType>
+  using StressMatrix = Eigen::Vector<ST, dim>;
+
+  template <typename ST = ScalarType>
+  using MaterialTensor = Eigen::TensorFixedSize<ST, Eigen::Sizes<dim, dim, dim, dim>>;
 
   [[nodiscard]] constexpr static std::string name() noexcept { return "Deviatoric function: " + DF::name(); }
 
@@ -62,9 +69,12 @@ struct Deviatoric
    * \brief Returns the stored energy obtained from the deviatoric function.
    *
    * \param lambdas the principal stretches.
+   * \tparam ST the scalartype of the principal stretches
    * \return ScalarType the energy.
    */
-  ScalarType storedEnergy(const PrincipalStretches& lambda) const {
+
+  template <typename ST>
+  ST storedEnergy(const PrincipalStretches<ST>& lambda) const {
     return deviatoricFunction_.storedEnergyImpl(lambda);
   };
 
@@ -72,28 +82,31 @@ struct Deviatoric
    * \brief Returns the principal PK2 stresses obtained from the first derivative of the deviatoric function.
    *
    * \param lambda the principal stretches.
+   * \tparam ST the scalartype of the principal stretches
    * \return StressMatrix the stresses in principal strains coordinate system.
    */
-  StressMatrix stresses(const PrincipalStretches& lambda) const {
+  template <typename ST>
+  StressMatrix<ST> stresses(const PrincipalStretches<ST>& lambda) const {
     auto dWdLambda = deviatoricFunction_.firstDerivativeImpl(lambda);
     // Compute the principal PK2 stresses by dividing by the stretches
-    StressMatrix S;
-    S = dWdLambda.array() / lambda.array();
 
-    return S;
+    return (dWdLambda.array() / lambda.array()).eval();
   }
 
   /**
    * \brief Returns the material tangent modulus obtained from the second derivative of the deviatoric function.
    *
    * \param lambda the principal stretches.
+   * \tparam ST the scalartype of the principal stretches
    * \return MaterialTensor the tangentModuli in principal strains coordinate system.
    */
-  MaterialTensor tangentModuli(const PrincipalStretches& lambda) const {
+
+  template <typename ST>
+  MaterialTensor<ST> tangentModuli(const PrincipalStretches<ST>& lambda) const {
     auto S  = stresses(lambda);
     auto dS = deviatoricFunction_.secondDerivativeImpl(lambda);
 
-    auto L = MaterialTensor{};
+    auto L = MaterialTensor<ST>{};
     L.setZero();
 
     for (const auto i : dimensionRange())

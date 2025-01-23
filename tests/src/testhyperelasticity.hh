@@ -96,9 +96,9 @@ auto testVolumetricFunctions() {
   TestSuite t("Test volumetric functions by AD");
 
   auto checkFirstAndSecondDerivativeOfEnergy = [&]<typename VF>(const VF& vf) {
-    auto vf_ad          = vf.template rebind<autodiff::dual2nd>();
+    // auto vf_ad          = vf.template rebind<autodiff::dual2nd>();
     autodiff::dual2nd x = J;
-    auto f              = [&](const auto& xloc) { return vf_ad.storedEnergyImpl(xloc); };
+    auto f              = [&](const auto& xloc) { return vf.storedEnergyImpl(xloc); };
     auto derivs         = derivatives(f, autodiff::wrt(x), autodiff::at(x));
     auto uprime         = vf.firstDerivativeImpl(J);
     auto uprimeprime    = vf.secondDerivativeImpl(J);
@@ -108,9 +108,9 @@ auto testVolumetricFunctions() {
   };
 
   auto checkFirstDerivativeOfFirstDerivative = [&]<typename VF>(const VF& vf) {
-    auto vf_ad          = vf.template rebind<autodiff::dual>();
+    // auto vf_ad          = vf.template rebind<autodiff::dual>();
     autodiff::dual x    = J;
-    auto f              = [&](const auto& xloc) { return vf_ad.firstDerivativeImpl(xloc); };
+    auto f              = [&](const auto& xloc) { return vf.firstDerivativeImpl(xloc); };
     auto uprimeprime_ad = derivative(f, autodiff::wrt(x), autodiff::at(x));
     auto uprimeprime    = vf.secondDerivativeImpl(J);
 
@@ -208,11 +208,11 @@ auto testMaterialResult(const DEV& dev) {
   auto C = Materials::Impl::maybeFromVoigt(deformation.rightCauchyGreen<def>(lambda));
   Eigen::SelfAdjointEigenSolver<decltype(C)> eigensolver{};
   eigensolver.compute(C, Eigen::EigenvaluesOnly);
-  auto& principalStretches = eigensolver.eigenvalues().array().sqrt().eval();
-  auto W                   = dev.storedEnergyImpl(principalStretches);
-  auto dWdLambda           = dev.firstDerivativeImpl(principalStretches);
-  auto ddWdLambda          = dev.secondDerivativeImpl(principalStretches);
-  constexpr double tol     = 1e-14;
+  Eigen::Vector<double, 3> principalStretches = eigensolver.eigenvalues().array().sqrt().eval();
+  auto W                                      = dev.storedEnergyImpl(principalStretches);
+  auto dWdLambda                              = dev.firstDerivativeImpl(principalStretches);
+  auto ddWdLambda                             = dev.secondDerivativeImpl(principalStretches);
+  constexpr double tol                        = 1e-14;
 
   checkScalars(t, W, energyEx, testLocation() + dev.name() + ": Incorrect Energies.", tol);
   checkApproxVectors(t, dWdLambda, firstDerivativesEx, testLocation() + dev.name() + ": Incorrect first derivatives.",

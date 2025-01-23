@@ -24,14 +24,13 @@ namespace Ikarus::Materials {
 /**
  * \brief Implementation of a general Hyperelastic Material material model.
  * \details \f$\Psi(\BC) = \hat{\Psi}(\la_1, \la_2, \la_3) + U(J)\f$ with \f$\hat{\Psi}\f$ being the
- *deviatoric part of the strain energy function and \f$ U(J) \f$ being the volumetric part. After calling the underlying
- *deviatoric and volumetric function, the transformation to cartesian coordinate system is implemented in this
- *interface.
+ * deviatoric part of the strain energy function and \f$ U(J) \f$ being the volumetric part. After calling the
+ * underlying deviatoric and volumetric function, the transformation to cartesian coordinate system is implemented in
+ * this interface.
  *
  * \ingroup materials
  */
 template <typename DEV, typename VOL = NoVolumetricPart>
-requires(std::same_as<typename DEV::ScalarType, typename VOL::ScalarType>)
 struct Hyperelastic : public Material<Hyperelastic<DEV, VOL>>
 {
   static_assert(std::is_same_v<DEV, Deviatoric<typename DEV::DeviatoricFunction>>);
@@ -44,7 +43,7 @@ struct Hyperelastic : public Material<Hyperelastic<DEV, VOL>>
   static constexpr int dim = 3;
   using StrainMatrix       = Eigen::Matrix<ScalarType, dim, dim>;
   using StressMatrix       = StrainMatrix;
-  using MaterialTensor     = Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<3, 3, 3, 3>>;
+  using MaterialTensor     = Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<dim, dim, dim, dim>>;
 
   using MaterialParametersDEV = typename DEV::MaterialParameters;
   using MaterialParametersVOL = typename VOL::MaterialParameter;
@@ -109,11 +108,7 @@ struct Hyperelastic : public Material<Hyperelastic<DEV, VOL>>
     // Workaround to avoid the usage of degenerated principal stretches while using AutoDiff
     ScalarType J = isAutoDiff ? sqrt(C.derived().eval().determinant()) : detF(lambdas);
 
-    const auto devEnergy =
-        isAutoDiff ? deviatoricEnergy(C)
-                   : dev_.storedEnergy(lambdas); // avoid duplicate computation of principal stretches for performance
-
-    return devEnergy + vol_.storedEnergy(J);
+    return deviatoricEnergy(C, lambdas) + vol_.storedEnergy(J);
   }
 
   /**
@@ -132,10 +127,7 @@ struct Hyperelastic : public Material<Hyperelastic<DEV, VOL>>
       // Workaround to avoid the usage of degenerated principal stretches while using AutoDiff
       ScalarType J = isAutoDiff ? sqrt(C.derived().eval().determinant()) : detF(lambdas);
 
-      const auto Sdev = isAutoDiff ? deviatoricStress(C)
-                                   : transformDeviatoricStresses(
-                                         dev_.stresses(lambdas),
-                                         N); // avoid duplicate computation of principal stretches for performance
+      const auto Sdev = deviatoricStress(C, lambdas, N);
       const auto Svol = transformVolumetricStresses(vol_.firstDerivative(J), C, J);
 
       return Sdev + Svol;
@@ -148,7 +140,7 @@ struct Hyperelastic : public Material<Hyperelastic<DEV, VOL>>
    * \tparam voigt A boolean indicating whether to return tangent moduli in Voigt notation.
    * \tparam Derived The derived type of the input matrix.
    * \param C The right Cauchy-Green tensor.
-   * \return Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<3, 3, 3, 3>> The tangent moduli.
+   * \return MaterialTensor The tangent moduli.
    */
   template <bool voigt, typename Derived>
   MaterialTensor tangentModuliImpl(const Eigen::MatrixBase<Derived>& C) const {
@@ -175,8 +167,7 @@ struct Hyperelastic : public Material<Hyperelastic<DEV, VOL>>
   template <typename STO>
   auto rebind() const {
     auto reboundDEV = dev_.template rebind<STO>();
-    auto reboundVOL = vol_.template rebind<STO>();
-    return Hyperelastic<decltype(reboundDEV), decltype(reboundVOL)>(reboundDEV, reboundVOL);
+    return Hyperelastic<decltype(reboundDEV), VOL>(reboundDEV, vol_);
   }
 
 private:
@@ -186,20 +177,20 @@ private:
   inline static constexpr auto dimensionRange() { return Dune::range(dim); }
 
   template <typename ST>
-  Eigen::Matrix<ST, 3, 3> transformDeviatoricStresses(const Eigen::Matrix<ST, 3, 1>& principalStress,
-                                                      const Eigen::Matrix<ST, 3, 3>& N) const {
+  Eigen::Matrix<ST, dim, dim> transformDeviatoricStresses(const Eigen::Vector<ST, dim>& principalStress,
+                                                          const Eigen::Matrix<ST, dim, dim>& N) const {
     return (N * principalStress.asDiagonal() * N.transpose()).eval();
   }
 
   template <typename ST>
-  Eigen::Matrix<ST, 3, 3> transformVolumetricStresses(ST Uprime, const auto& C, ST J) const {
+  Eigen::Matrix<ST, dim, dim> transformVolumetricStresses(ST Uprime, const auto& C, ST J) const {
     return J * Uprime * C.inverse();
   }
 
   template <typename ST>
-  auto transformDeviatoricTangentModuli(const Eigen::TensorFixedSize<ST, Eigen::Sizes<3, 3, 3, 3>>& L,
-                                        const Eigen::Matrix<ST, 3, 3>& N) const {
-    Eigen::TensorFixedSize<ST, Eigen::Sizes<3, 3, 3, 3>> moduli{};
+  auto transformDeviatoricTangentModuli(const Eigen::TensorFixedSize<ST, Eigen::Sizes<dim, dim, dim, dim>>& L,
+                                        const Eigen::Matrix<ST, dim, dim>& N) const {
+    Eigen::TensorFixedSize<ST, Eigen::Sizes<dim, dim, dim, dim>> moduli{};
     moduli.setZero();
 
     for (const auto i : dimensionRange())
@@ -242,7 +233,7 @@ private:
   }
 
   template <typename ST>
-  auto detF(const Eigen::Array<ST, 3, 1>& lambda) const -> ST {
+  auto detF(const Eigen::Vector<ST, 3>& lambda) const -> ST {
     const auto detC = Impl::determinantFromPrincipalValues<ST>(lambda);
     Impl::checkPositiveDet(detC);
     return detC;
@@ -261,11 +252,11 @@ private:
    * have certain singularities. This is circumvented here by explicitly updating the derivatives.
    *
    */
-  template <typename Derived>
-  auto deviatoricEnergy(const Eigen::MatrixBase<Derived>& C) const {
-    if constexpr (not Concepts::AutodiffScalar<typename Derived::Scalar>) {
-      auto [lambdas, N] = principalStretches(C);
-      return dev_.storedEnergy(lambdas);
+  template <typename Derived, typename ST>
+  requires(std::same_as<typename Derived::Scalar, ST>)
+  auto deviatoricEnergy(const Eigen::MatrixBase<Derived>& C, const Eigen::Vector<ST, 3>& lambdasST) const {
+    if constexpr (not Concepts::AutodiffScalar<ST>) {
+      return dev_.storedEnergy(lambdasST);
     } else if constexpr (std::is_same_v<ScalarType, autodiff::dual>) {
       autodiff::dual e;
       auto Cvec     = toVoigt(C.derived());
@@ -274,11 +265,8 @@ private:
 
       auto [lambdas, N] = principalStretches(realCVec);
 
-      auto realDev = dev_.template rebind<double>();
-
-      e.val = realDev.storedEnergy(lambdas);
-      e.grad =
-          (transformDeviatoricStresses(realDev.stresses(lambdas), N).transpose() / 2 * fromVoigt(dualCVec)).trace();
+      e.val  = dev_.storedEnergy(lambdas);
+      e.grad = (transformDeviatoricStresses(dev_.stresses(lambdas), N).transpose() / 2 * fromVoigt(dualCVec)).trace();
       return e;
     } else if constexpr (std::is_same_v<ScalarType, autodiff::dual2nd>) {
       autodiff::dual2nd e;
@@ -288,13 +276,11 @@ private:
       const auto dualC2   = fromVoigt(forEach(Cvec, [](auto& v) { return v.val.grad; }).eval());
       auto [lambdas, N]   = principalStretches(realCVec);
 
-      auto realDev = dev_.template rebind<double>();
-      e.val        = realDev.storedEnergy(lambdas);
+      e.val      = dev_.storedEnergy(lambdas);
+      e.grad.val = (transformDeviatoricStresses(dev_.stresses(lambdas), N).transpose() / 2 * dualC).trace();
+      e.val.grad = e.grad.val;
 
-      e.grad.val         = (transformDeviatoricStresses(realDev.stresses(lambdas), N).transpose() / 2 * dualC).trace();
-      e.val.grad         = e.grad.val;
-      const auto Cmoduli = transformDeviatoricTangentModuli(realDev.tangentModuli(lambdas), N);
-
+      const auto Cmoduli = transformDeviatoricTangentModuli(dev_.tangentModuli(lambdas), N);
       Eigen::array<Eigen::IndexPair<Eigen::Index>, 2> double_contraction  = {Eigen::IndexPair<Eigen::Index>(2, 0),
                                                                              Eigen::IndexPair<Eigen::Index>(3, 1)};
       Eigen::array<Eigen::IndexPair<Eigen::Index>, 2> double_contraction2 = {Eigen::IndexPair<Eigen::Index>(0, 0),
@@ -310,17 +296,19 @@ private:
       static_assert(Dune::AlwaysFalse<Derived>::value, "No fitting ScalarType.");
   }
 
-  /** \brief A helper function to compute the deviatoric part of the stresses.
+  /**
+   * \brief A helper function to compute the deviatoric part of the stresses.
    *
    * \details While using AutoDiff, if the eigenvalues (principal stretches) of C are degenerated, the derivative can
    * have certain singularities. This is circumvented here by explicitly updating the derivatives.
    *
    */
-  template <typename Derived>
-  auto deviatoricStress(const Eigen::MatrixBase<Derived>& C) const {
+  template <typename Derived, typename ST>
+  requires(std::same_as<typename Derived::Scalar, ST>)
+  auto deviatoricStress(const Eigen::MatrixBase<Derived>& C, const Eigen::Vector<ST, dim>& lambdasST,
+                        Eigen::Matrix<ST, dim, dim> NST) const {
     if constexpr (not Concepts::AutodiffScalar<typename Derived::Scalar>) {
-      auto [lambdas, N] = principalStretches(C);
-      return transformDeviatoricStresses(dev_.stresses(lambdas), N);
+      return transformDeviatoricStresses(dev_.stresses(lambdasST), NST);
     } else if constexpr (std::is_same_v<ScalarType, autodiff::dual>) {
       constexpr int nVoigtIndices = 6;
       Eigen::Vector<autodiff::dual, nVoigtIndices> g;
@@ -330,12 +318,11 @@ private:
       auto dualC          = fromVoigt(forEach(Cvec, [](const auto& v) { return v.grad; }).eval());
       auto [lambdas, N]   = principalStretches(realC);
 
-      auto realDev       = dev_.template rebind<double>();
-      const auto Cmoduli = toVoigt(transformDeviatoricTangentModuli(realDev.tangentModuli(lambdas), N));
+      const auto Cmoduli = toVoigt(transformDeviatoricTangentModuli(dev_.tangentModuli(lambdas), N));
       for (int i = 0; i < nVoigtIndices; ++i) {
         Eigen::Vector<double, nVoigtIndices> contraction = Cmoduli * toVoigt(dualC);
         contraction.topRows<3>() /= 2.0;
-        g[i].val  = toVoigt(transformDeviatoricStresses(realDev.stresses(lambdas), N))[i];
+        g[i].val  = toVoigt(transformDeviatoricStresses(dev_.stresses(lambdas), N))[i];
         g[i].grad = contraction[i];
       }
 
