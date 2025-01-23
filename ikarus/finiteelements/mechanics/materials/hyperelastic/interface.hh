@@ -109,7 +109,11 @@ struct Hyperelastic : public Material<Hyperelastic<DEV, VOL>>
     // Workaround to avoid the usage of degenerated principal stretches while using AutoDiff
     ScalarType J = isAutoDiff ? sqrt(C.derived().eval().determinant()) : detF(lambdas);
 
-    return deviatoricEnergy(C) + vol_.storedEnergy(J);
+    const auto devEnergy =
+        isAutoDiff ? deviatoricEnergy(C)
+                   : dev_.storedEnergy(lambdas); // avoid duplicate computation of principal stretches for performance
+
+    return devEnergy + vol_.storedEnergy(J);
   }
 
   /**
@@ -128,7 +132,10 @@ struct Hyperelastic : public Material<Hyperelastic<DEV, VOL>>
       // Workaround to avoid the usage of degenerated principal stretches while using AutoDiff
       ScalarType J = isAutoDiff ? sqrt(C.derived().eval().determinant()) : detF(lambdas);
 
-      auto Sdev       = deviatoricStress(C);
+      const auto Sdev = isAutoDiff ? deviatoricStress(C)
+                                   : transformDeviatoricStresses(
+                                         dev_.stresses(lambdas),
+                                         N); // avoid duplicate computation of principal stretches for performance
       const auto Svol = transformVolumetricStresses(vol_.firstDerivative(J), C, J);
 
       return Sdev + Svol;
