@@ -96,7 +96,6 @@ auto testVolumetricFunctions() {
   TestSuite t("Test volumetric functions by AD");
 
   auto checkFirstAndSecondDerivativeOfEnergy = [&]<typename VF>(const VF& vf) {
-    // auto vf_ad          = vf.template rebind<autodiff::dual2nd>();
     autodiff::dual2nd x = J;
     auto f              = [&](const auto& xloc) { return vf.storedEnergyImpl(xloc); };
     auto derivs         = derivatives(f, autodiff::wrt(x), autodiff::at(x));
@@ -108,7 +107,6 @@ auto testVolumetricFunctions() {
   };
 
   auto checkFirstDerivativeOfFirstDerivative = [&]<typename VF>(const VF& vf) {
-    // auto vf_ad          = vf.template rebind<autodiff::dual>();
     autodiff::dual x    = J;
     auto f              = [&](const auto& xloc) { return vf.firstDerivativeImpl(xloc); };
     auto uprimeprime_ad = derivative(f, autodiff::wrt(x), autodiff::at(x));
