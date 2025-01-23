@@ -333,23 +333,15 @@ private:
       auto dualC          = fromVoigt(forEach(Cvec, [](const auto& v) { return v.grad; }).eval());
       auto [lambdas, N]   = principalStretches(realC);
 
-      auto realDev = dev_.template rebind<double>();
+      auto realDev       = dev_.template rebind<double>();
+      const auto Cmoduli = toVoigt(transformDeviatoricTangentModuli(realDev.tangentModuli(lambdas), N));
+      for (int i = 0; i < nVoigtIndices; ++i) {
+        Eigen::Vector<double, nVoigtIndices> contraction = Cmoduli * toVoigt(dualC);
+        contraction.topRows<3>() /= 2.0;
+        g[i].val  = toVoigt(transformDeviatoricStresses(realDev.stresses(lambdas), N))[i];
+        g[i].grad = contraction[i];
+      }
 
-      for (int i = 0; i < nVoigtIndices; ++i)
-        g[i].val = toVoigt(transformDeviatoricStresses(realDev.stresses(lambdas), N))[i];
-
-      const auto Cmoduli = transformDeviatoricTangentModuli(realDev.tangentModuli(lambdas), N);
-
-      Eigen::array<Eigen::IndexPair<Eigen::Index>, 2> double_contraction  = {Eigen::IndexPair<Eigen::Index>(2, 0),
-                                                                             Eigen::IndexPair<Eigen::Index>(3, 1)};
-      Eigen::array<Eigen::IndexPair<Eigen::Index>, 2> double_contraction2 = {Eigen::IndexPair<Eigen::Index>(0, 0),
-                                                                             Eigen::IndexPair<Eigen::Index>(1, 1)};
-      const auto tCdual                  = tensorView(dualC, std::array<Eigen::Index, 2>({3, 3}));
-      const auto tCdualT                 = tensorView(dualC, std::array<Eigen::Index, 2>({3, 3}));
-      const auto prod                    = Cmoduli.contract(tCdual, double_contraction);
-      const Eigen::Tensor<double, 0> res = tCdualT.contract(prod, double_contraction2);
-      for (int i = 0; i < g.size(); ++i)
-        g[i].grad = res(0) / 4.0; // extracting value of zero order tensor
       return fromVoigt(g);
     } else
       static_assert(Dune::AlwaysFalse<Derived>::value, "No fitting ScalarType.");
