@@ -234,7 +234,7 @@ int main(int argc, char** argv) {
   NonlinearSolverFactory nrFactory(nrConfig);
   auto nr       = nrFactory.create(sparseFlatAssembler);
   auto nonLinOp = Ikarus::NonLinearOperatorFactory::op(sparseFlatAssembler);
-  auto lc       = LoadControl(nr, 1, {0.0, 1.0}, sparseFlatAssembler);
+  auto lc       = ControlRoutineFactory(LoadControlConfig(1, {0.0, 1.0})).create(nr, sparseFlatAssembler);
 
   lc.notifyListeners(Ikarus::ControlMessages::CONTROL_STARTED);
   checkMatrixAndVector(10, testLocation());
