@@ -243,12 +243,9 @@ private:
 
   template <typename ST>
   auto detF(const Eigen::Array<ST, 3, 1>& lambda) const -> ST {
-    if constexpr (hasVolumetricPart) {
-      const auto detC = Impl::determinantFromPrincipalValues<ST>(lambda);
-      Impl::checkPositiveDet(detC);
-      return detC;
-    }
-    return 0.0;
+    const auto detC = Impl::determinantFromPrincipalValues<ST>(lambda);
+    Impl::checkPositiveDet(detC);
+    return detC;
   }
 
   // Unpack the derivatives from the result of an @ref eval call into an array.
