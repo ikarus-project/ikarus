@@ -12,6 +12,8 @@
 #include <concepts>
 #include <string>
 
+#include <ikarus/utils/concepts.hh>
+
 namespace Ikarus::Concepts {
 
 /**
@@ -28,6 +30,10 @@ concept DeviatoricFunction = requires(DF dm, const typename DF::PrincipalStretch
   typename DF::FirstDerivative;
   typename DF::SecondDerivative;
   typename DF::MaterialParameters;
+
+  requires Concepts::EigenVector<typename DF::FirstDerivative>;
+  requires Concepts::EigenMatrix<typename DF::SecondDerivative>;
+  requires std::is_same_v<typename DF::PrincipalStretches, typename DF::FirstDerivative>;
 
   { dm.storedEnergyImpl(lambda) } -> std::same_as<typename DF::ScalarType>;
   { dm.firstDerivativeImpl(lambda) } -> std::same_as<typename DF::FirstDerivative>;
@@ -46,6 +52,8 @@ template <typename VF>
 concept VolumetricFunction = requires(VF vf, const typename VF::JType& j) {
   typename VF::ScalarType;
   typename VF::JType;
+
+  requires std::is_same_v<typename VF::ScalarType, typename VF::JType>;
 
   { vf.storedEnergyImpl(j) } -> std::same_as<typename VF::ScalarType>;
   { vf.firstDerivativeImpl(j) } -> std::same_as<typename VF::ScalarType>;
