@@ -105,12 +105,11 @@ struct Hyperelastic : public Material<Hyperelastic<DEV, VOL>>
     static_assert(Concepts::EigenMatrixOrVoigtNotation3<Derived>);
 
     const auto lambdas = principalStretches(C, Eigen::EigenvaluesOnly).first;
-    auto J             = detF(lambdas);
 
-    auto devEnergy = deviatoricEnergy(C);
-    auto volEnergy = volumetricEnergy(C);
+    // Workaround to avoid the usage of degenerated principal stretches while using AutoDiff
+    ScalarType J = isAutoDiff ? sqrt(C.derived().eval().determinant()) : detF(lambdas);
 
-    return devEnergy + volEnergy;
+    return deviatoricEnergy(C) + vol_.storedEnergy(J);
   }
 
   /**
@@ -125,11 +124,12 @@ struct Hyperelastic : public Material<Hyperelastic<DEV, VOL>>
     static_assert(Concepts::EigenMatrixOrVoigtNotation3<Derived>);
     if constexpr (!voigt) {
       const auto [lambdas, N] = principalStretches(C);
-      auto J                  = detF(lambdas);
 
-      auto Sdev = transformDeviatoricStresses(dev_.stresses(lambdas), N);
-      // const auto Svol = transformVolumetricStresses(vol_.firstDerivative(J), C, J);
-      auto Svol = volumetricStress(C);
+      // Workaround to avoid the usage of degenerated principal stretches while using AutoDiff
+      ScalarType J = isAutoDiff ? sqrt(C.derived().eval().determinant()) : detF(lambdas);
+
+      auto Sdev       = deviatoricStress(C);
+      const auto Svol = transformVolumetricStresses(vol_.firstDerivative(J), C, J);
 
       return Sdev + Svol;
     } else
@@ -148,7 +148,9 @@ struct Hyperelastic : public Material<Hyperelastic<DEV, VOL>>
     static_assert(Concepts::EigenMatrixOrVoigtNotation3<Derived>);
     if constexpr (!voigt) {
       const auto [lambdas, N] = principalStretches(C);
-      auto J                  = detF(lambdas);
+
+      // Workaround to avoid the usage of degenerated principal stretches while using AutoDiff
+      ScalarType J = isAutoDiff ? sqrt(C.derived().eval().determinant()) : detF(lambdas);
 
       const auto moduliDev = transformDeviatoricTangentModuli(dev_.tangentModuli(lambdas), N);
       const auto moduliVol = transformVolumetricTangentModuli(vol_.firstDerivative(J), vol_.secondDerivative(J), C, J);
@@ -269,7 +271,6 @@ private:
       auto [lambdas, N] = principalStretches(realCVec);
 
       auto realDev = dev_.template rebind<double>();
-      auto realMat = rebind<double>();
 
       e.val = realDev.storedEnergy(lambdas);
       e.grad =
@@ -284,7 +285,6 @@ private:
       auto [lambdas, N]   = principalStretches(realCVec);
 
       auto realDev = dev_.template rebind<double>();
-      auto realMat = rebind<double>();
       e.val        = realDev.storedEnergy(lambdas);
 
       e.grad.val         = (transformDeviatoricStresses(realDev.stresses(lambdas), N).transpose() / 2 * dualC).trace();
@@ -303,96 +303,35 @@ private:
 
       return e;
     } else
-      static_assert(Dune::AlwaysFalse<Derived>::value, "No fitting ScalarType");
+      static_assert(Dune::AlwaysFalse<Derived>::value, "No fitting ScalarType.");
   }
 
-  /** \brief A helper function to compute the volumetric part of the energy.
+  /** \brief A helper function to compute the deviatoric part of the stresses.
    *
    * \details While using AutoDiff, if the eigenvalues (principal stretches) of C are degenerated, the derivative can
    * have certain singularities. This is circumvented here by explicitly updating the derivatives.
    *
    */
   template <typename Derived>
-  auto volumetricEnergy(const Eigen::MatrixBase<Derived>& C) const {
+  auto deviatoricStress(const Eigen::MatrixBase<Derived>& C) const {
     if constexpr (not Concepts::AutodiffScalar<typename Derived::Scalar>) {
       auto [lambdas, N] = principalStretches(C);
-      auto J            = detF(lambdas);
-      return vol_.storedEnergy(J);
-    } else if constexpr (std::is_same_v<ScalarType, autodiff::dual>) {
-      autodiff::dual e;
-      auto Cvec     = toVoigt(C.derived());
-      auto realCVec = autodiff::derivative<0>(Cvec);
-      auto realC    = fromVoigt(autodiff::derivative<0>(Cvec));
-      auto dualCVec = autodiff::derivative<1>(Cvec);
-
-      auto [lambdas, N] = principalStretches(realCVec);
-      auto J            = detF(lambdas);
-
-      auto realVol = vol_.template rebind<double>();
-      auto realMat = rebind<double>();
-
-      e.val  = realVol.storedEnergy(J);
-      e.grad = (transformVolumetricStresses(realVol.firstDerivative(J), realC, J).transpose() / 2 * fromVoigt(dualCVec))
-                   .trace();
-      return e;
-    } else if constexpr (std::is_same_v<ScalarType, autodiff::dual2nd>) {
-      autodiff::dual2nd e;
-      auto Cvec           = toVoigt(C.derived());
-      const auto realCVec = derivative<0>(Cvec);
-      auto realC          = fromVoigt(autodiff::derivative<0>(Cvec));
-      const auto dualC    = fromVoigt(forEach(Cvec, [](auto& v) { return v.grad.val; }).eval());
-      const auto dualC2   = fromVoigt(forEach(Cvec, [](auto& v) { return v.val.grad; }).eval());
-      auto [lambdas, N]   = principalStretches(realCVec);
-      auto J              = detF(lambdas);
-
-      auto realVol = vol_.template rebind<double>();
-      auto realMat = rebind<double>();
-      e.val        = realVol.storedEnergy(J);
-
-      e.grad.val = (transformVolumetricStresses(realVol.firstDerivative(J), realC, J).transpose() / 2 * dualC).trace();
-      e.val.grad = e.grad.val;
-      const auto Cmoduli =
-          transformVolumetricTangentModuli(realVol.firstDerivative(J), realVol.secondDerivative(J), realC, J);
-
-      Eigen::array<Eigen::IndexPair<Eigen::Index>, 2> double_contraction  = {Eigen::IndexPair<Eigen::Index>(2, 0),
-                                                                             Eigen::IndexPair<Eigen::Index>(3, 1)};
-      Eigen::array<Eigen::IndexPair<Eigen::Index>, 2> double_contraction2 = {Eigen::IndexPair<Eigen::Index>(0, 0),
-                                                                             Eigen::IndexPair<Eigen::Index>(1, 1)};
-      const auto tCdual                  = tensorView(dualC, std::array<Eigen::Index, 2>({3, 3}));
-      const auto tCdualT                 = tensorView(dualC2, std::array<Eigen::Index, 2>({3, 3}));
-      const auto prod                    = Cmoduli.contract(tCdual, double_contraction);
-      const Eigen::Tensor<double, 0> res = tCdualT.contract(prod, double_contraction2);
-      e.grad.grad                        = res(0) / 4.0; // extracting value of zero order tensor
-
-      return e;
-    } else
-      static_assert(Dune::AlwaysFalse<Derived>::value, "No fitting ScalarType");
-  }
-
-  template <typename Derived>
-  auto volumetricStress(const Eigen::MatrixBase<Derived>& C) const {
-    if constexpr (not Concepts::AutodiffScalar<typename Derived::Scalar>) {
-      auto [lambdas, N] = principalStretches(C);
-      auto J            = detF(lambdas);
-      return transformVolumetricStresses(vol_.firstDerivative(J), C, J);
+      return transformDeviatoricStresses(dev_.stresses(lambdas), N);
     } else if constexpr (std::is_same_v<ScalarType, autodiff::dual>) {
       constexpr int nVoigtIndices = 6;
       Eigen::Vector<autodiff::dual, nVoigtIndices> g;
       auto Cvec           = toVoigt(C.derived());
       const auto realCVec = derivative<0>(Cvec);
       auto realC          = fromVoigt(realCVec);
-      auto dualC          = fromVoigt(forEach(Cvec, [](const auto& v) { return v; }).eval());
+      auto dualC          = fromVoigt(forEach(Cvec, [](const auto& v) { return v.grad; }).eval());
       auto [lambdas, N]   = principalStretches(realC);
-      auto J              = detF(lambdas);
 
-      auto realVol = vol_.template rebind<double>();
-      auto realMat = rebind<double>();
+      auto realDev = dev_.template rebind<double>();
 
       for (int i = 0; i < nVoigtIndices; ++i)
-        g[i].val = toVoigt(transformVolumetricStresses(realVol.firstDerivative(J), realC, J))[i];
+        g[i].val = toVoigt(transformDeviatoricStresses(realDev.stresses(lambdas), N))[i];
 
-      const auto Cmoduli =
-          transformVolumetricTangentModuli(realVol.firstDerivative(J), realVol.secondDerivative(J), realC, J);
+      const auto Cmoduli = transformDeviatoricTangentModuli(realDev.tangentModuli(lambdas), N);
 
       Eigen::array<Eigen::IndexPair<Eigen::Index>, 2> double_contraction  = {Eigen::IndexPair<Eigen::Index>(2, 0),
                                                                              Eigen::IndexPair<Eigen::Index>(3, 1)};
@@ -402,13 +341,11 @@ private:
       const auto tCdualT                 = tensorView(dualC, std::array<Eigen::Index, 2>({3, 3}));
       const auto prod                    = Cmoduli.contract(tCdual, double_contraction);
       const Eigen::Tensor<double, 0> res = tCdualT.contract(prod, double_contraction2);
-      for (int i = 0; i < g.size(); ++i) {
+      for (int i = 0; i < g.size(); ++i)
         g[i].grad = res(0) / 4.0; // extracting value of zero order tensor
-      }
-
       return fromVoigt(g);
     } else
-      static_assert(Dune::AlwaysFalse<Derived>::value, "No fitting ScalarType");
+      static_assert(Dune::AlwaysFalse<Derived>::value, "No fitting ScalarType.");
   }
 };
 
