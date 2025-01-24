@@ -257,7 +257,7 @@ private:
   auto deviatoricEnergy(const Eigen::MatrixBase<Derived>& C, const Eigen::Vector<ST, 3>& lambdasST) const {
     if constexpr (not Concepts::AutodiffScalar<ST>) {
       return dev_.storedEnergy(lambdasST);
-    } else if constexpr (std::is_same_v<ScalarType, autodiff::dual>) {
+    } else if constexpr (std::is_same_v<ST, autodiff::dual>) {
       autodiff::dual e;
       auto Cvec     = toVoigt(C.derived());
       auto realCVec = autodiff::derivative<0>(Cvec);
@@ -268,7 +268,7 @@ private:
       e.val  = dev_.storedEnergy(lambdas);
       e.grad = (transformDeviatoricStresses(dev_.stresses(lambdas), N).transpose() / 2 * fromVoigt(dualCVec)).trace();
       return e;
-    } else if constexpr (std::is_same_v<ScalarType, autodiff::dual2nd>) {
+    } else if constexpr (std::is_same_v<ST, autodiff::dual2nd>) {
       autodiff::dual2nd e;
       auto Cvec           = toVoigt(C.derived());
       const auto realCVec = derivative<0>(Cvec);
@@ -307,9 +307,9 @@ private:
   requires(std::same_as<typename Derived::Scalar, ST>)
   auto deviatoricStress(const Eigen::MatrixBase<Derived>& C, const Eigen::Vector<ST, dim>& lambdasST,
                         Eigen::Matrix<ST, dim, dim> NST) const {
-    if constexpr (not Concepts::AutodiffScalar<typename Derived::Scalar>) {
+    if constexpr (not Concepts::AutodiffScalar<ST>) {
       return transformDeviatoricStresses(dev_.stresses(lambdasST), NST);
-    } else if constexpr (std::is_same_v<ScalarType, autodiff::dual>) {
+    } else if constexpr (std::is_same_v<ST, autodiff::dual>) {
       constexpr int nVoigtIndices = 6;
       Eigen::Vector<autodiff::dual, nVoigtIndices> g;
       auto Cvec           = toVoigt(C.derived());
