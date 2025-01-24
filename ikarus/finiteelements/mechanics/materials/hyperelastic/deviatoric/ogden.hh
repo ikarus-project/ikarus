@@ -124,7 +124,7 @@ struct OgdenT
 
     if constexpr (usesDeviatoricStretches) {
       auto lambdaBar    = Impl::deviatoricStretches(lambda);
-      auto dWdLambdaBar = Eigen::Array<ST, 3, 1>::Zero(lambdaBar.size()).eval();
+      auto dWdLambdaBar = Eigen::Array<ST, dim, 1>::Zero().eval();
 
       for (const auto j : parameterRange())
         dWdLambdaBar += mu[j] * lambdaBar.array().pow(alpha[j] - 1);
@@ -156,7 +156,7 @@ struct OgdenT
       const auto lambdaBar = Impl::deviatoricStretches(lambda);
       const auto dWdLambda = firstDerivativeImpl(lambda);
 
-      auto lambdaBarPowSum = Eigen::Array<ST, 3, 1>::Zero(parameterRange().size()).eval();
+      auto lambdaBarPowSum = Eigen::Array<ST, dim, 1>::Zero().eval();
       for (const auto p : parameterRange())
         lambdaBarPowSum[p] = lambdaBar.array().pow(alpha[p]).sum();
 
