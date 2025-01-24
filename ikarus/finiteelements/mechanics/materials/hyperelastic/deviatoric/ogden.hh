@@ -98,19 +98,12 @@ struct OgdenT
 
     if constexpr (usesDeviatoricStretches) {
       auto lambdaBar = Impl::deviatoricStretches(lambda);
-
       for (auto i : parameterRange())
-        energy += mu[i] / alpha[i] *
-                  (pow(lambdaBar[0], alpha[i]) + pow(lambdaBar[1], alpha[i]) + pow(lambdaBar[2], alpha[i]) - 3);
-
+        energy += mu[i] / alpha[i] * (lambdaBar.array().pow(alpha[i]).sum() - 3);
     } else {
       auto J = lambda[0] * lambda[1] * lambda[2];
-
-      for (auto i : parameterRange()) {
-        energy +=
-            mu[i] / alpha[i] * (pow(lambda[0], alpha[i]) + pow(lambda[1], alpha[i]) + pow(lambda[2], alpha[i]) - 3) -
-            mu[i] * log(J);
-      }
+      for (auto i : parameterRange())
+        energy += mu[i] / alpha[i] * (lambda.array().pow(alpha[i]).sum() - 3) - mu[i] * log(J);
     }
     return energy;
   }
@@ -130,25 +123,18 @@ struct OgdenT
     auto dWdLambda = FirstDerivative<ST>::Zero().eval();
 
     if constexpr (usesDeviatoricStretches) {
-      auto lambdaBar = Impl::deviatoricStretches(lambda);
+      auto lambdaBar    = Impl::deviatoricStretches(lambda);
+      auto dWdLambdaBar = Eigen::Array<ST, 3, 1>::Zero(lambdaBar.size()).eval();
 
-      auto dWdLambdaBar = FirstDerivative<ST>::Zero().eval();
       for (const auto j : parameterRange())
-        for (const auto k : dimensionRange())
-          dWdLambdaBar[k] += mu[j] * (pow(lambdaBar[k], alpha[j] - 1));
+        dWdLambdaBar += mu[j] * lambdaBar.array().pow(alpha[j] - 1);
 
-      ST sumLambdaBar{0.0};
-      for (const auto b : dimensionRange())
-        sumLambdaBar += lambdaBar[b] * dWdLambdaBar[b];
-
-      for (const auto i : dimensionRange())
-        dWdLambda[i] = (lambdaBar[i] * dWdLambdaBar[i] - (1.0 / 3.0) * sumLambdaBar) / lambda[i];
-
-    } else {
+      ST sumLambdaBar = (lambdaBar.array() * dWdLambdaBar).sum();
+      dWdLambda       = (lambdaBar.array() * dWdLambdaBar - (1.0 / 3.0) * sumLambdaBar) / lambda.array();
+    } else
       for (const auto j : parameterRange())
-        for (const auto k : dimensionRange())
-          dWdLambda[k] += (mu[j] * (pow(lambda[k], alpha[j]) - 1)) / lambda[k];
-    }
+        dWdLambda.array() += (mu[j] * (lambda.array().pow(alpha[j]) - 1)) / lambda.array();
+
     return dWdLambda;
   }
 
@@ -170,37 +156,33 @@ struct OgdenT
       const auto lambdaBar = Impl::deviatoricStretches(lambda);
       const auto dWdLambda = firstDerivativeImpl(lambda);
 
+      auto lambdaBarPowSum = Eigen::Array<ST, 3, 1>::Zero(parameterRange().size()).eval();
+      for (const auto p : parameterRange())
+        lambdaBarPowSum[p] = lambdaBar.array().pow(alpha[p]).sum();
+
       for (const auto a : dimensionRange()) {
         for (const auto b : dimensionRange()) {
-          if (a == b) {
-            for (const auto p : parameterRange()) {
-              ST sumC{0.0};
-              for (auto c : dimensionRange())
-                sumC += pow(lambdaBar[c], alpha[p]);
-              dS(a, b) += mu[p] * alpha[p] * ((1.0 / 3.0) * pow(lambdaBar[a], alpha[p]) + (1.0 / 9.0) * sumC);
-            }
-          } else {
-            for (const auto p : parameterRange()) {
-              ST sumC{0.0};
-              for (auto c : dimensionRange())
-                sumC += pow(lambdaBar[c], alpha[p]);
-              dS(a, b) +=
-                  mu[p] * alpha[p] *
-                  (-(1.0 / 3.0) * (pow(lambdaBar[a], alpha[p]) + pow(lambdaBar[b], alpha[p])) + (1.0 / 9.0) * sumC);
-            }
-          }
+          if (a == b)
+            for (const auto p : parameterRange())
+              dS(a, b) += mu[p] * alpha[p] * (1.0 / 3.0 * pow(lambdaBar[a], alpha[p]) + 1.0 / 9.0 * lambdaBarPowSum[p]);
+
+          else
+            for (const auto p : parameterRange())
+              dS(a, b) += mu[p] * alpha[p] *
+                          (-(1.0 / 3.0) * (pow(lambdaBar[a], alpha[p]) + pow(lambdaBar[b], alpha[p])) +
+                           1.0 / 9.0 * lambdaBarPowSum[p]);
 
           dS(a, b) *= 1.0 / (lambda[a] * lambda[b]);
-
           if (a == b)
             dS(a, b) -= (2.0 / lambda[a]) * dWdLambda[a];
         }
       }
     } else {
-      for (const auto j : parameterRange())
-        for (const auto k : dimensionRange())
-          dS(k, k) += (-2 * (mu[j] * (pow(lambda[k], alpha[j]) - 1)) + (mu[j] * pow(lambda[k], alpha[j]) * alpha[j])) /
-                      pow(lambda[k], 2);
+      for (const auto j : parameterRange()) {
+        dS.diagonal().array() +=
+            (-2 * mu[j] * (lambda.array().pow(alpha[j]) - 1) + mu[j] * lambda.array().pow(alpha[j]) * alpha[j]) /
+            lambda.array().square();
+      }
     }
     return dS;
   }

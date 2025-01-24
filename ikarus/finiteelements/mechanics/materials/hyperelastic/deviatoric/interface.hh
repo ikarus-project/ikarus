@@ -88,8 +88,6 @@ struct Deviatoric
   template <typename ST>
   StressMatrix<ST> stresses(const PrincipalStretches<ST>& lambda) const {
     auto dWdLambda = deviatoricFunction_.firstDerivativeImpl(lambda);
-    // Compute the principal PK2 stresses by dividing by the stretches
-
     return (dWdLambda.array() / lambda.array()).eval();
   }
 
@@ -113,13 +111,14 @@ struct Deviatoric
       for (const auto k : dimensionRange())
         L(i, i, k, k) = 1.0 / (lambda(i) * lambda(k)) * dS(i, k);
 
+    Eigen::ArrayXd lambdaSquared = lambda.array().square();
     for (const auto i : dimensionRange())
       for (const auto k : dimensionRange())
         if (i != k) {
           if (Dune::FloatCmp::eq(lambda(i), lambda(k), 1e-8))
             L(i, k, i, k) = 0.5 * (L(i, i, i, i) - L(i, i, k, k));
           else
-            L(i, k, i, k) += (S(i) - S(k)) / (pow(lambda(i), 2) - pow(lambda(k), 2));
+            L(i, k, i, k) += (S(i) - S(k)) / (lambdaSquared(i) - lambdaSquared(k));
         }
 
     return L;
