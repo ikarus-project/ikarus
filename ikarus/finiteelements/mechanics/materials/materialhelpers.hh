@@ -154,12 +154,7 @@ inline Vector deviatoricStretches(const Vector& lambda) {
   using ScalarType = typename Vector::Scalar;
   ScalarType J     = determinantFromPrincipalValues<ScalarType>(lambda);
   ScalarType Jmod  = pow(J, -1.0 / 3.0);
-
-  auto lambdaBar = Vector::Zero().eval();
-  for (auto i : Dune::range(3))
-    lambdaBar[i] = Jmod * lambda[i];
-
-  return lambdaBar;
+  return Jmod * lambda;
 }
 
 /**
@@ -175,7 +170,7 @@ inline Vector invariants(const Vector& lambda) {
   auto lambdaSquared = lambda.array().square();
   auto invariants    = Vector::Zero().eval();
 
-  invariants[0] = std::accumulate(lambdaSquared.begin(), lambdaSquared.end(), ScalarType{0.0});
+  invariants[0] = lambdaSquared.sum();
   invariants[1] =
       lambdaSquared[0] * lambdaSquared[1] + lambdaSquared[1] * lambdaSquared[2] + lambdaSquared[0] * lambdaSquared[2];
   invariants[2] = determinantFromPrincipalValues<ScalarType>(lambdaSquared);

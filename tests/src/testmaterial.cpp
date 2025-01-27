@@ -289,10 +289,10 @@ int main(int argc, char** argv) {
   std::array<double, 3> mu_og2    = {2.0 * mu / 3.0, mu / 6.0, mu / 6.0};
   std::array<double, 3> alpha_og2 = {1.23, 0.59, 0.18};
 
-  auto ogden     = makeOgden<1, PrincipalStretchTag::total>(mu_og, alpha_og, lambda, VF3{});
-  auto ogden2    = makeOgden<3, PrincipalStretchTag::total>(mu_og2, alpha_og2, lambda, VF2{});
-  auto ogdenDev  = makeOgden<1, PrincipalStretchTag::deviatoric>(mu_og, alpha_og, K, VF3{});
-  auto ogdenDev2 = makeOgden<3, PrincipalStretchTag::deviatoric>(mu_og2, alpha_og2, K, VF2{});
+  auto ogden     = makeOgden<1, PrincipalStretchTags::total>(mu_og, alpha_og, lambda, VF3{});
+  auto ogden2    = makeOgden<3, PrincipalStretchTags::total>(mu_og2, alpha_og2, lambda, VF2{});
+  auto ogdenDev  = makeOgden<1, PrincipalStretchTags::deviatoric>(mu_og, alpha_og, K, VF3{});
+  auto ogdenDev2 = makeOgden<3, PrincipalStretchTags::deviatoric>(mu_og2, alpha_og2, K, VF2{});
 
   t.subTest(testMaterial(ogden));
   t.subTest(testMaterial(ogden2));

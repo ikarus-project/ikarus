@@ -239,13 +239,6 @@ private:
     return detC;
   }
 
-  // Unpack the derivatives from the result of an @ref eval call into an array.
-  template <typename D, typename F>
-  auto forEach(const Eigen::MatrixBase<D>& result, F&& f) const {
-    auto& r = result.derived();
-    return r.unaryExpr(f);
-  }
-
   /** \brief A helper function to compute the deviatoric part of the energy.
    *
    * \details While using AutoDiff, if the eigenvalues (principal stretches) of C are degenerated, the derivative can
@@ -272,8 +265,8 @@ private:
       autodiff::dual2nd e;
       auto Cvec           = toVoigt(C.derived());
       const auto realCVec = derivative<0>(Cvec);
-      const auto dualC    = fromVoigt(forEach(Cvec, [](auto& v) { return v.grad.val; }).eval());
-      const auto dualC2   = fromVoigt(forEach(Cvec, [](auto& v) { return v.val.grad; }).eval());
+      const auto dualC    = fromVoigt(Cvec.unaryExpr([](auto& v) { return v.grad.val; }).eval());
+      const auto dualC2   = fromVoigt(Cvec.unaryExpr([](auto& v) { return v.val.grad; }).eval());
       auto [lambdas, N]   = principalStretches(realCVec);
 
       e.val      = dev_.storedEnergy(lambdas);
@@ -315,15 +308,17 @@ private:
       auto Cvec           = toVoigt(C.derived());
       const auto realCVec = derivative<0>(Cvec);
       auto realC          = fromVoigt(realCVec);
-      auto dualC          = fromVoigt(forEach(Cvec, [](const auto& v) { return v.grad; }).eval());
+      auto dualC          = fromVoigt(Cvec.unaryExpr([](const auto& v) { return v.grad; }).eval());
       auto [lambdas, N]   = principalStretches(realC);
 
-      const auto Cmoduli = toVoigt(transformDeviatoricTangentModuli(dev_.tangentModuli(lambdas), N));
+      const auto stresses = toVoigt(transformDeviatoricStresses(dev_.stresses(lambdas), N));
+      const auto Cmoduli  = toVoigt(transformDeviatoricTangentModuli(dev_.tangentModuli(lambdas), N));
+      Eigen::Vector<double, nVoigtIndices> stressDirectionalDerivatrive = Cmoduli * toVoigt(dualC);
+      stressDirectionalDerivatrive.topRows<3>() /= 2.0;
+
       for (int i = 0; i < nVoigtIndices; ++i) {
-        Eigen::Vector<double, nVoigtIndices> contraction = Cmoduli * toVoigt(dualC);
-        contraction.topRows<3>() /= 2.0;
-        g[i].val  = toVoigt(transformDeviatoricStresses(dev_.stresses(lambdas), N))[i];
-        g[i].grad = contraction[i];
+        g[i].val  = stresses[i];
+        g[i].grad = stressDirectionalDerivatrive[i];
       }
 
       return fromVoigt(g);
