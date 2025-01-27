@@ -104,9 +104,7 @@ struct Hyperelastic : public Material<Hyperelastic<DEV, VOL>>
     static_assert(Concepts::EigenMatrixOrVoigtNotation3<Derived>);
 
     const auto lambdas = principalStretches(C, Eigen::EigenvaluesOnly).first;
-
-    // Workaround to avoid the usage of degenerated principal stretches while using AutoDiff
-    auto J = detF(C, lambdas);
+    auto J             = detF(C, lambdas);
 
     return deviatoricEnergy(C, lambdas) + vol_.storedEnergy(J);
   }
@@ -123,10 +121,7 @@ struct Hyperelastic : public Material<Hyperelastic<DEV, VOL>>
     static_assert(Concepts::EigenMatrixOrVoigtNotation3<Derived>);
     if constexpr (!voigt) {
       const auto [lambdas, N] = principalStretches(C);
-
-      // Workaround to avoid the usage of degenerated principal stretches while using AutoDiff
-      // ScalarType J = isAutoDiff ? sqrt(C.derived().eval().determinant()) : detF(lambdas);
-      auto J = detF(C, lambdas);
+      auto J                  = detF(C, lambdas);
 
       const auto Sdev = deviatoricStress(C, lambdas, N);
       const auto Svol = transformVolumetricStresses(vol_.firstDerivative(J), C, J);
@@ -148,9 +143,7 @@ struct Hyperelastic : public Material<Hyperelastic<DEV, VOL>>
     static_assert(Concepts::EigenMatrixOrVoigtNotation3<Derived>);
     if constexpr (!voigt) {
       const auto [lambdas, N] = principalStretches(C);
-
-      // Workaround to avoid the usage of degenerated principal stretches while using AutoDiff
-      auto J = detF(C, lambdas);
+      auto J                  = detF(C, lambdas);
 
       const auto moduliDev = transformDeviatoricTangentModuli(dev_.tangentModuli(lambdas), N);
       const auto moduliVol = transformVolumetricTangentModuli(vol_.firstDerivative(J), vol_.secondDerivative(J), C, J);
