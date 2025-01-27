@@ -101,9 +101,10 @@ struct OgdenT
       for (auto i : parameterRange())
         energy += mu[i] / alpha[i] * (lambdaBar.array().pow(alpha[i]).sum() - 3);
     } else {
-      auto J = lambda[0] * lambda[1] * lambda[2];
+      auto J    = lambda[0] * lambda[1] * lambda[2];
+      auto logJ = log(J);
       for (auto i : parameterRange())
-        energy += mu[i] / alpha[i] * (lambda.array().pow(alpha[i]).sum() - 3) - mu[i] * log(J);
+        energy += mu[i] / alpha[i] * (lambda.array().pow(alpha[i]).sum() - 3) - mu[i] * logJ;
     }
     return energy;
   }

@@ -106,7 +106,7 @@ struct Hyperelastic : public Material<Hyperelastic<DEV, VOL>>
     const auto lambdas = principalStretches(C, Eigen::EigenvaluesOnly).first;
 
     // Workaround to avoid the usage of degenerated principal stretches while using AutoDiff
-    ScalarType J = isAutoDiff ? sqrt(C.derived().eval().determinant()) : detF(lambdas);
+    auto J = detF(C, lambdas);
 
     return deviatoricEnergy(C, lambdas) + vol_.storedEnergy(J);
   }
@@ -125,7 +125,8 @@ struct Hyperelastic : public Material<Hyperelastic<DEV, VOL>>
       const auto [lambdas, N] = principalStretches(C);
 
       // Workaround to avoid the usage of degenerated principal stretches while using AutoDiff
-      ScalarType J = isAutoDiff ? sqrt(C.derived().eval().determinant()) : detF(lambdas);
+      // ScalarType J = isAutoDiff ? sqrt(C.derived().eval().determinant()) : detF(lambdas);
+      auto J = detF(C, lambdas);
 
       const auto Sdev = deviatoricStress(C, lambdas, N);
       const auto Svol = transformVolumetricStresses(vol_.firstDerivative(J), C, J);
@@ -149,7 +150,7 @@ struct Hyperelastic : public Material<Hyperelastic<DEV, VOL>>
       const auto [lambdas, N] = principalStretches(C);
 
       // Workaround to avoid the usage of degenerated principal stretches while using AutoDiff
-      ScalarType J = isAutoDiff ? sqrt(C.derived().eval().determinant()) : detF(lambdas);
+      auto J = detF(C, lambdas);
 
       const auto moduliDev = transformDeviatoricTangentModuli(dev_.tangentModuli(lambdas), N);
       const auto moduliVol = transformVolumetricTangentModuli(vol_.firstDerivative(J), vol_.secondDerivative(J), C, J);
@@ -232,11 +233,16 @@ private:
     return Impl::principalStretches<typename Derived::Scalar>(C, options);
   }
 
-  template <typename ST>
-  auto detF(const Eigen::Vector<ST, 3>& lambda) const -> ST {
-    const auto detC = Impl::determinantFromPrincipalValues<ST>(lambda);
-    Impl::checkPositiveDet(detC);
-    return detC;
+  template <typename Derived, typename ST>
+  ST detF(const Eigen::MatrixBase<Derived>& C, const Eigen::Vector<ST, 3>& lambda) const {
+    if constexpr (isAutoDiff) {
+      const auto detC = sqrt(C.derived().eval().determinant());
+      return detC;
+    } else {
+      const auto detC = Impl::determinantFromPrincipalValues(lambda);
+      Impl::checkPositiveDet(detC);
+      return detC;
+    }
   }
 
   /** \brief A helper function to compute the deviatoric part of the energy.
