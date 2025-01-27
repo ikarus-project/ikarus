@@ -148,8 +148,8 @@ auto recoverNeoHookeTest() {
   std::array<double, 1> mu_og    = {mu};
   std::array<double, 1> alpha_og = {2.0};
 
-  auto nhFromogdenTotal = makeOgden<1, PrincipalStretchTag::total>(mu_og, alpha_og, Lambda, VF3{});
-  auto nhFromogdenDevi  = makeOgden<1, PrincipalStretchTag::deviatoric>(mu_og, alpha_og);
+  auto nhFromogdenTotal = makeOgden<1, PrincipalStretchTags::total>(mu_og, alpha_og, Lambda, VF3{});
+  auto nhFromogdenDevi  = makeOgden<1, PrincipalStretchTags::deviatoric>(mu_og, alpha_og);
   auto nh               = NeoHooke(toLamesFirstParameterAndShearModulus(matPar));
 
   auto deformation     = Deformations{};
@@ -188,9 +188,9 @@ auto recoverNeoHookeTest() {
 
 template <Concepts::DeviatoricFunction DEV, DeformationType def>
 auto materialResults() {
-  if constexpr (std::is_same_v<DEV, OgdenT<double, 3, PrincipalStretchTag::total>>) {
+  if constexpr (std::is_same_v<DEV, OgdenT<double, 3, PrincipalStretchTags::total>>) {
     return OgdenTotalResults<def>();
-  } else if constexpr (std::is_same_v<DEV, OgdenT<double, 3, PrincipalStretchTag::deviatoric>>) {
+  } else if constexpr (std::is_same_v<DEV, OgdenT<double, 3, PrincipalStretchTags::deviatoric>>) {
     return OgdenDeviatoricResults<def>();
   } else
     static_assert(Dune::AlwaysFalse<DEV>::value, "The requested deviatoric function is not implemented.");
@@ -232,8 +232,8 @@ auto testMaterialResults() {
   std::array<double, 3> mu_og    = {2.0 * mu / 3.0, mu / 6.0, mu / 6.0};
   std::array<double, 3> alpha_og = {1.23, 0.59, 0.18};
 
-  auto ogdenTotal = Ogden<3, PrincipalStretchTag::total>(mu_og, alpha_og);
-  auto ogdenDevi  = Ogden<3, PrincipalStretchTag::deviatoric>(mu_og, alpha_og);
+  auto ogdenTotal = Ogden<3, PrincipalStretchTags::total>(mu_og, alpha_og);
+  auto ogdenDevi  = Ogden<3, PrincipalStretchTags::deviatoric>(mu_og, alpha_og);
 
   auto checkForDeformationType = [&]<DeformationType def>() {
     t.subTest(testMaterialResult<def>(ogdenTotal));

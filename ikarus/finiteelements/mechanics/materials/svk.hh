@@ -145,7 +145,7 @@ struct StVenantKirchhoffT : public Material<StVenantKirchhoffT<ST>>
    * moduli.
    */
   template <bool voigt, typename Derived>
-  auto tangentModuliImpl([[maybe_unused]] const Eigen::MatrixBase<Derived>& /* E */) const {
+  auto tangentModuliImpl(const Eigen::MatrixBase<Derived>& /* E */) const {
     static_assert(Concepts::EigenMatrixOrVoigtNotation3<Derived>);
     if constexpr (!voigt) {
       MaterialTensor moduli;

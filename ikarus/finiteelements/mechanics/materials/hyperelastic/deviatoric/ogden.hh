@@ -36,7 +36,7 @@ namespace Ikarus::Materials {
  * \tparam n Number of ogden parameters
  * \tparam tag Type of principal stretch quantity, either total stretches or deviatoric stretches
  */
-template <typename ST_, int n, PrincipalStretchTag tag>
+template <typename ST_, int n, PrincipalStretchTags tag>
 struct OgdenT
 {
   using ScalarType = ST_;
@@ -44,10 +44,10 @@ struct OgdenT
   template <typename ST = ScalarType>
   using PrincipalStretches = Eigen::Vector<ST, 3>;
 
-  static constexpr PrincipalStretchTag stretchTag = tag;
-  static constexpr int numMatParameters           = n;
-  static constexpr int dim                        = 3;
-  static constexpr bool usesDeviatoricStretches   = stretchTag == PrincipalStretchTag::deviatoric;
+  static constexpr PrincipalStretchTags stretchTag = tag;
+  static constexpr int numMatParameters            = n;
+  static constexpr int dim                         = 3;
+  static constexpr bool usesDeviatoricStretches    = stretchTag == PrincipalStretchTags::deviatoric;
 
   template <typename ST = ScalarType>
   using FirstDerivative = Eigen::Vector<ST, dim>;
@@ -129,8 +129,8 @@ struct OgdenT
       for (const auto j : parameterRange())
         dWdLambdaBar += mu[j] * lambdaBar.array().pow(alpha[j] - 1);
 
-      ST sumLambdaBar = (lambdaBar.array() * dWdLambdaBar).sum();
-      dWdLambda       = (lambdaBar.array() * dWdLambdaBar - (1.0 / 3.0) * sumLambdaBar) / lambda.array();
+      const ST sumLambdaBar = (lambdaBar.array() * dWdLambdaBar).sum();
+      dWdLambda             = (lambdaBar.array() * dWdLambdaBar - (1.0 / 3.0) * sumLambdaBar) / lambda.array();
     } else
       for (const auto j : parameterRange())
         dWdLambda.array() += (mu[j] * (lambda.array().pow(alpha[j]) - 1)) / lambda.array();
@@ -208,7 +208,7 @@ private:
 /**
  * \brief Alias for OgdenT with double as the default scalar type.
  */
-template <int n, PrincipalStretchTag tag>
+template <int n, PrincipalStretchTags tag>
 using Ogden = OgdenT<double, n, tag>;
 
 } // namespace Ikarus::Materials

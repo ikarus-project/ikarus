@@ -20,7 +20,7 @@ auto initializeMaterialResults() {
 
 template <DeformationType def>
 auto OgdenTotalResults() {
-  using DEV                                          = Ogden<3, PrincipalStretchTag::total>;
+  using DEV                                          = Ogden<3, PrincipalStretchTags::total>;
   using ST                                           = typename DEV::ScalarType;
   using FD                                           = typename DEV::template FirstDerivative<>;
   using SD                                           = typename DEV::template SecondDerivative<>;
@@ -51,7 +51,7 @@ auto OgdenTotalResults() {
 
 template <DeformationType def>
 auto OgdenDeviatoricResults() {
-  using DEV                                          = Ogden<3, PrincipalStretchTag::deviatoric>;
+  using DEV                                          = Ogden<3, PrincipalStretchTags::deviatoric>;
   using ST                                           = typename DEV::ScalarType;
   using FD                                           = typename DEV::template FirstDerivative<>;
   using SD                                           = typename DEV::template SecondDerivative<>;

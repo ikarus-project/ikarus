@@ -23,7 +23,7 @@ namespace Ikarus::Materials {
  * model.
  *
  * \tparam n Number of Ogden material parameters.
- * \tparam PrincipalStretchTag Type of the principal stretches, either total or deviatoric.
+ * \tparam PrincipalStretchTags Type of the principal stretches, either total or deviatoric.
  * \tparam VolumetricFunction Type of the volumetric function.
  *
  * \param mu The shear parameters (mu_i).
@@ -33,7 +33,7 @@ namespace Ikarus::Materials {
  *
  * \return A hyperelastic material model.
  */
-template <int n, PrincipalStretchTag tag, typename VolumetricFunction = VF0>
+template <int n, PrincipalStretchTags tag, typename VolumetricFunction = VF0>
 inline auto makeOgden(const typename Ogden<n, tag>::MaterialParameters& mu,
                       const typename Ogden<n, tag>::MaterialExponents alpha, double K = 0.0,
                       const VolumetricFunction& vf = VolumetricFunction{}) {
