@@ -113,11 +113,7 @@ template <typename ScalarType, typename Derived>
 auto principalStretches(const Eigen::MatrixBase<Derived>& C, int options = Eigen::ComputeEigenvectors) {
   Eigen::SelfAdjointEigenSolver<Derived> eigensolver{};
 
-  // For AD we use the direct method which uses a closed form calculation, but has less accuracy
-  if constexpr (Concepts::AutodiffScalar<ScalarType>)
-    eigensolver.computeDirect(C, options);
-  else
-    eigensolver.compute(C, options);
+  eigensolver.compute(C, options);
 
   if (eigensolver.info() != Eigen::Success)
     DUNE_THROW(Dune::MathError, "Failed to compute eigenvalues and eigenvectors of C.");
