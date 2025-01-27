@@ -4,6 +4,7 @@
 #include <config.h>
 
 #include "testhelpers.hh"
+#include "testhyperelasticity.hh"
 
 #include <dune/common/test/testsuite.hh>
 
@@ -62,16 +63,16 @@ auto checkMaterialByAutoDiff(const MAT& mat) {
 
   constexpr StrainTags CauchyGreen = StrainTags::rightCauchyGreenTensor;
 
-  auto C0 = Eigen::Matrix3d::Identity().eval();
-
-  t.subTest(checkMaterialByAutoDiffImpl<MAT, CauchyGreen>(mat, C0, " Undeformed State"));
-
-  Eigen::Matrix3d C{
-      { 0.600872, -0.179083, 0},
-      {-0.179083,  0.859121, 0},
-      {        0,         0, 1}
+  auto checkMaterialByAutoDiffFunc = [&]<DeformationType def>() {
+    auto deformation = Deformations{};
+    auto c           = deformation.rightCauchyGreen<def>(1.37);
+    t.subTest(checkMaterialByAutoDiffImpl<MAT, CauchyGreen>(mat, c, toString(def)));
   };
 
-  t.subTest(checkMaterialByAutoDiffImpl<MAT, CauchyGreen>(mat, C, " Deformed State"));
+  checkMaterialByAutoDiffFunc.template operator()<DeformationType::Undeformed>();
+  checkMaterialByAutoDiffFunc.template operator()<DeformationType::UniaxialTensile>();
+  checkMaterialByAutoDiffFunc.template operator()<DeformationType::BiaxialTensile>();
+  checkMaterialByAutoDiffFunc.template operator()<DeformationType::PureShear>();
+  checkMaterialByAutoDiffFunc.template operator()<DeformationType::Random>();
   return t;
 }
