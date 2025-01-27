@@ -1,10 +1,10 @@
 # Copyright holders
 
-- 2021-2024 Alexander Müller
-- 2022-2024 Tarun Kumar Mitruka Vinod Kumar Mitruka
-- 2022      Tobias Willmann
-- 2023-2024 Henrik Jakob
+- 2021-2025 Alexander Müller
+- 2022-2025 Tarun Kumar Mitruka Vinod Kumar Mitruka
+- 2023-2025 Henrik Jakob
 - 2023-2024 Anika Strauss
+- 2022      Tobias Willmann
 
 We use [REUSE software](https://reuse.software/) to manage our licenses.
 All licenses reside in the folder `LICENSES`.
