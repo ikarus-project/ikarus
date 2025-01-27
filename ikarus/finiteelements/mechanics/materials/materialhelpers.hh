@@ -128,14 +128,13 @@ auto principalStretches(const Eigen::MatrixBase<Derived>& C, int options = Eigen
 /**
  * \brief Computes the determinant of a matrix through its principal values (i.e. eigenvalues).
  *
- * \tparam ScalarType The Scalartype used for multiplication.
- * \tparam Container A container type.
+ * \tparam Vector the type of the vector of principal stretches
  * \param principalValues the principal values.
- * \return ScalarType the determinant.
+ * \return auto The determinant.
  */
-template <typename ScalarType, typename Container>
-inline ScalarType determinantFromPrincipalValues(const Container& principalValues) {
-  return std::accumulate(principalValues.begin(), principalValues.end(), ScalarType{1.0}, std::multiplies());
+template <Concepts::EigenVector3 Vector>
+inline Vector::Scalar determinantFromPrincipalValues(const Vector& principalValues) {
+  return principalValues.prod();
 }
 
 /**
@@ -148,7 +147,7 @@ inline ScalarType determinantFromPrincipalValues(const Container& principalValue
 template <Concepts::EigenVector3 Vector>
 inline Vector deviatoricStretches(const Vector& lambda) {
   using ScalarType = typename Vector::Scalar;
-  ScalarType J     = determinantFromPrincipalValues<ScalarType>(lambda);
+  ScalarType J     = determinantFromPrincipalValues(lambda);
   ScalarType Jmod  = pow(J, -1.0 / 3.0);
   return Jmod * lambda;
 }
@@ -169,7 +168,7 @@ inline Vector invariants(const Vector& lambda) {
   invariants[0] = lambdaSquared.sum();
   invariants[1] =
       lambdaSquared[0] * lambdaSquared[1] + lambdaSquared[1] * lambdaSquared[2] + lambdaSquared[0] * lambdaSquared[2];
-  invariants[2] = determinantFromPrincipalValues<ScalarType>(lambdaSquared);
+  invariants[2] = determinantFromPrincipalValues(lambdaSquared);
 
   return invariants;
 }
