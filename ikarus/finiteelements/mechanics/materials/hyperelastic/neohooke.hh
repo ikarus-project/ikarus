@@ -80,7 +80,7 @@ struct NeoHookeT : public Material<NeoHookeT<ST>>
     if constexpr (!Concepts::EigenVector<Derived>) {
       const auto traceC = C.trace();
       const auto detC   = C.determinant();
-      Impl::checkPositiveDet(detC);
+      Impl::checkPositiveAndAbort(detC);
       const auto logdetF = log(sqrt(detC));
       return materialParameter_.mu / 2.0 * (traceC - 3 - 2 * logdetF) +
              materialParameter_.lambda / 2.0 * logdetF * logdetF;
@@ -102,7 +102,7 @@ struct NeoHookeT : public Material<NeoHookeT<ST>>
     if constexpr (!voigt) {
       if constexpr (!Concepts::EigenVector<Derived>) {
         const auto detC = C.determinant();
-        Impl::checkPositiveDet(detC);
+        Impl::checkPositiveAndAbort(detC);
         const auto logdetF = log(sqrt(detC));
         const auto invC    = C.inverse().eval();
         return (materialParameter_.mu * (StrainMatrix::Identity() - invC) + materialParameter_.lambda * logdetF * invC)
@@ -127,7 +127,7 @@ struct NeoHookeT : public Material<NeoHookeT<ST>>
     if constexpr (!voigt) {
       const auto invC = C.inverse().eval();
       const auto detC = C.determinant();
-      Impl::checkPositiveDet(detC);
+      Impl::checkPositiveAndAbort(detC);
       const auto logdetF = log(sqrt(detC));
       const auto CTinv   = tensorView(invC, std::array<Eigen::Index, 2>({3, 3}));
 

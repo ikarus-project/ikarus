@@ -57,12 +57,9 @@ auto dyadic(const auto& A_ij, const auto& B_kl) {
  * \param b_j Second tensor.
  * \return  Resulting tensor after the dyadic product
  */
-template <typename ST_, int size, bool asTensor = true>
-auto dyadic(const Eigen::Vector<ST_, size>& a, const Eigen::Vector<ST_, size>& b) {
-  if constexpr (asTensor)
-    return tensorView((a * b.transpose()).eval(), std::array<Eigen::Index, 2>({size, size}));
-  else
-    return (a * b.transpose()).eval();
+template <typename ST, int size>
+auto dyadic(const Eigen::Vector<ST, size>& a, const Eigen::Vector<ST, size>& b) {
+  return (a * b.transpose()).eval();
 }
 
 /**

@@ -186,19 +186,20 @@ private:
                                         const Eigen::Matrix<ST, dim, dim>& N) const {
     Eigen::TensorFixedSize<ST, Eigen::Sizes<dim, dim, dim, dim>> moduli{};
     moduli.setZero();
+    auto indexList = std::array<Eigen::Index, 2>({dim, dim});
 
     for (const auto i : dimensionRange())
       for (const auto k : dimensionRange()) {
         // First term: L[i, i, k, k] * ((N[i] ⊗ N[i]) ⊗ (N[k] ⊗ N[k]))
-        auto NiNi = dyadic(N.col(i).eval(), N.col(i).eval());
-        auto NkNk = dyadic(N.col(k).eval(), N.col(k).eval());
+        auto NiNi = tensorView(dyadic(N.col(i).eval(), N.col(i).eval()), indexList);
+        auto NkNk = tensorView(dyadic(N.col(k).eval(), N.col(k).eval()), indexList);
 
         moduli += L(i, i, k, k) * dyadic(NiNi, NkNk);
 
         // Second term (only if i != k): L[i, k, i, k] * (N[i] ⊗ N[k] ⊗ (N[i] ⊗ N[k] + N[k] ⊗ N[i]))
         if (i != k) {
-          auto NiNk = dyadic(N.col(i).eval(), N.col(k).eval());
-          auto NkNi = dyadic(N.col(k).eval(), N.col(i).eval());
+          auto NiNk = tensorView(dyadic(N.col(i).eval(), N.col(k).eval()), indexList);
+          auto NkNi = tensorView(dyadic(N.col(k).eval(), N.col(i).eval()), indexList);
 
           moduli += L(i, k, i, k) * dyadic(NiNk, NiNk + NkNi);
         }
@@ -233,7 +234,7 @@ private:
       return detC;
     } else {
       const auto detC = Impl::determinantFromPrincipalValues(lambda);
-      Impl::checkPositiveDet(detC);
+      Impl::checkPositiveAndAbort(detC);
       return detC;
     }
   }

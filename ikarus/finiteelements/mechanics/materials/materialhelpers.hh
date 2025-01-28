@@ -92,11 +92,12 @@ decltype(auto) maybeFromVoigt(const Eigen::MatrixBase<Derived>& E) {
 }
 
 template <typename ScalarType>
-void checkPositiveDet(ScalarType det) {
-  if (Dune::FloatCmp::le(static_cast<double>(det), 0.0, 1e-10))
-    DUNE_THROW(Dune::InvalidStateException,
-               "Determinant of right Cauchy Green tensor C must be greater than zero. detC = " +
-                   std::to_string(static_cast<double>(det)));
+void checkPositiveAndAbort(ScalarType det) {
+  if (Dune::FloatCmp::le(static_cast<double>(det), 0.0, 1e-10)) {
+    std::cerr << "Determinant of right Cauchy Green tensor C must be greater than zero. detC = " +
+                     std::to_string(static_cast<double>(det));
+    abort();
+  }
 }
 
 /**
@@ -138,7 +139,8 @@ inline Vector::Scalar determinantFromPrincipalValues(const Vector& principalValu
 }
 
 /**
- * \brief Computes the deviatoric part of the principal stretches as \f$ \bar{\lambda_i} = \lambda_i^{-\frac{1}{3}} \f$
+ * \brief Computes the deviatoric part of the principal stretches as \f$ \bar{\lambda_i} = \lambda_i^{-\frac{1}{3}}
+ * \f$
  *
  * \tparam Vector the type of the vector of principal stretches
  * \param lambda the total principal stretches
