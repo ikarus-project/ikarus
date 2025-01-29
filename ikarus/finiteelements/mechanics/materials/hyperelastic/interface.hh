@@ -227,6 +227,16 @@ private:
     return Impl::principalStretches<typename Derived::Scalar>(C, options);
   }
 
+  /**
+   * \brief A helper function to determine the determinant of the deformation gradient F.
+   *
+   * \details According to https://eigen.tuxfamily.org/dox/Tridiagonalization_8h_source.html (line 477), which is used
+   * while computing the eigenvalues to obtain the prinipal stretches, if the (2,0) entry of a matrix is zero, an early
+   * exit is performed. Even though this doesn't affect the results in the case of doubles, using an autodiff type leads
+   * to problems as information is lost. Alternatively, using `computeDirect()` to compute the eigenvalues leads to NaNs
+   * as sqrt of zero is being taken. Therefore, if autodiff is used, the determinant is computed explicitly from the
+   * right Cauchy-Green tensor C.
+   */
   template <typename Derived, typename ST>
   ST detF(const Eigen::MatrixBase<Derived>& C, const Eigen::Vector<ST, 3>& lambda) const {
     if constexpr (isAutoDiff) {
