@@ -40,6 +40,7 @@ struct LinearElasticityT : Material<LinearElasticityT<ST>>
   static constexpr int dim = Base::dim;
   using StrainMatrix       = typename Base::StrainMatrix;
   using StressMatrix       = StrainMatrix;
+  using MaterialTensor     = typename Base::MaterialTensor;
 
   using MaterialParameters = typename Base::MaterialParameters;
 

@@ -30,6 +30,10 @@ struct VanishingStress : public Material<VanishingStress<stressIndexPair, MI>>
 {
   using Underlying         = MI; ///< The underlying material type.
   using MaterialParameters = typename Underlying::MaterialParameters;
+  using StrainMatrix       = typename Underlying::StrainMatrix;
+  using StressMatrix       = typename Underlying::StressMatrix;
+  using MaterialTensor     = typename Underlying::MaterialTensor;
+  static constexpr int dim = Underlying::dim;
 
   static constexpr auto fixedPairs        = stressIndexPair; ///< Array of fixed stress components.
   static constexpr auto freeVoigtIndices  = Impl::createfreeVoigtIndices(fixedPairs);  ///< Free Voigt indices.
