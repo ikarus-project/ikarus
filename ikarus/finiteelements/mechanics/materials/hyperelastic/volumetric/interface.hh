@@ -45,9 +45,10 @@ struct Volumetric
    *
    * \param vf the volumetric function
    */
-  Volumetric(MaterialParameter matPar, const VF vf)
+  template <typename VFF>
+  Volumetric(MaterialParameter matPar, VFF&& vf)
       : matPar_{matPar},
-        volumetricFunction_{vf} {}
+        volumetricFunction_{std::forward<VFF>(vf)} {}
 
   /**
    * \brief Returns the material parameters stored in the deviatoric part of the material.
@@ -94,4 +95,10 @@ private:
   MaterialParameter matPar_;
   VF volumetricFunction_;
 };
+
+#ifndef DOXYGEN
+template <typename VF>
+Volumetric(double, VF&&) -> Volumetric<std::remove_cvref_t<VF>>;
+#endif
+
 } // namespace Ikarus::Materials
