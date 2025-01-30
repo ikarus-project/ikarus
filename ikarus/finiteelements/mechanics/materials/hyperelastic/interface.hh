@@ -244,7 +244,7 @@ private:
       return detC;
     } else {
       const auto detC = Impl::determinantFromPrincipalValues(lambda);
-      Impl::checkPositiveAndAbort(detC);
+      Impl::checkPositiveOrAbort(detC);
       return detC;
     }
   }
@@ -262,32 +262,32 @@ private:
       return dev_.storedEnergy(lambdasST);
     } else if constexpr (std::is_same_v<ST, autodiff::dual>) {
       autodiff::dual e;
-      auto Cvec     = toVoigt(C.derived());
-      auto realCVec = autodiff::derivative<0>(Cvec);
-      auto dualCVec = autodiff::derivative<1>(Cvec);
+      const auto Cvec     = toVoigt(C.derived());
+      const auto realCVec = autodiff::derivative<0>(Cvec);
+      const auto dualCVec = autodiff::derivative<1>(Cvec);
 
-      auto [lambdas, N] = principalStretches(realCVec);
+      const auto [lambdas, N] = principalStretches(realCVec);
 
       e.val  = dev_.storedEnergy(lambdas);
       e.grad = (transformDeviatoricStresses(dev_.stresses(lambdas), N).transpose() / 2 * fromVoigt(dualCVec)).trace();
       return e;
     } else if constexpr (std::is_same_v<ST, autodiff::dual2nd>) {
       autodiff::dual2nd e;
-      auto Cvec           = toVoigt(C.derived());
-      const auto realCVec = derivative<0>(Cvec);
-      const auto dualC    = fromVoigt(Cvec.unaryExpr([](auto& v) { return v.grad.val; }).eval());
-      const auto dualC2   = fromVoigt(Cvec.unaryExpr([](auto& v) { return v.val.grad; }).eval());
-      auto [lambdas, N]   = principalStretches(realCVec);
+      const auto Cvec         = toVoigt(C.derived());
+      const auto realCVec     = derivative<0>(Cvec);
+      const auto dualC        = fromVoigt(Cvec.unaryExpr([](auto& v) { return v.grad.val; }).eval());
+      const auto dualC2       = fromVoigt(Cvec.unaryExpr([](auto& v) { return v.val.grad; }).eval());
+      const auto [lambdas, N] = principalStretches(realCVec);
 
       e.val      = dev_.storedEnergy(lambdas);
       e.grad.val = (transformDeviatoricStresses(dev_.stresses(lambdas), N).transpose() / 2 * dualC).trace();
       e.val.grad = e.grad.val;
 
       const auto Cmoduli = transformDeviatoricTangentModuli(dev_.tangentModuli(lambdas), N);
-      Eigen::array<Eigen::IndexPair<Eigen::Index>, 2> double_contraction  = {Eigen::IndexPair<Eigen::Index>(2, 0),
-                                                                             Eigen::IndexPair<Eigen::Index>(3, 1)};
-      Eigen::array<Eigen::IndexPair<Eigen::Index>, 2> double_contraction2 = {Eigen::IndexPair<Eigen::Index>(0, 0),
-                                                                             Eigen::IndexPair<Eigen::Index>(1, 1)};
+      const Eigen::array<Eigen::IndexPair<Eigen::Index>, 2> double_contraction  = {Eigen::IndexPair<Eigen::Index>(2, 0),
+                                                                                   Eigen::IndexPair<Eigen::Index>(3, 1)};
+      const Eigen::array<Eigen::IndexPair<Eigen::Index>, 2> double_contraction2 = {
+          Eigen::IndexPair<Eigen::Index>(0, 0), Eigen::IndexPair<Eigen::Index>(1, 1)};
       const auto tCdual                  = tensorView(dualC, std::array<Eigen::Index, 2>({3, 3}));
       const auto tCdualT                 = tensorView(dualC2, std::array<Eigen::Index, 2>({3, 3}));
       const auto prod                    = Cmoduli.contract(tCdual, double_contraction);
@@ -315,11 +315,11 @@ private:
     } else if constexpr (std::is_same_v<ST, autodiff::dual>) {
       constexpr int nVoigtIndices = 6;
       Eigen::Vector<autodiff::dual, nVoigtIndices> g;
-      auto Cvec           = toVoigt(C.derived());
-      const auto realCVec = derivative<0>(Cvec);
-      auto realC          = fromVoigt(realCVec);
-      auto dualC          = fromVoigt(Cvec.unaryExpr([](const auto& v) { return v.grad; }).eval());
-      auto [lambdas, N]   = principalStretches(realC);
+      const auto Cvec         = toVoigt(C.derived());
+      const auto realCVec     = derivative<0>(Cvec);
+      const auto realC        = fromVoigt(realCVec);
+      const auto dualC        = fromVoigt(Cvec.unaryExpr([](const auto& v) { return v.grad; }).eval());
+      const auto [lambdas, N] = principalStretches(realC);
 
       const auto stresses = toVoigt(transformDeviatoricStresses(dev_.stresses(lambdas), N));
       const auto Cmoduli  = toVoigt(transformDeviatoricTangentModuli(dev_.tangentModuli(lambdas), N));

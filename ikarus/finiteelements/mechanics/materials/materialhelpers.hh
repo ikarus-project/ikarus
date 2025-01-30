@@ -92,7 +92,7 @@ decltype(auto) maybeFromVoigt(const Eigen::MatrixBase<Derived>& E) {
 }
 
 template <typename ScalarType>
-void checkPositiveAndAbort(ScalarType det) {
+void checkPositiveOrAbort(ScalarType det) {
   if (Dune::FloatCmp::le(static_cast<double>(det), 0.0, 1e-10)) {
     std::cerr << "Determinant of right Cauchy Green tensor C must be greater than zero. detC = " +
                      std::to_string(static_cast<double>(det));
@@ -122,7 +122,7 @@ auto principalStretches(const Eigen::MatrixBase<Derived>& C, int options = Eigen
   auto& eigenvalues  = eigensolver.eigenvalues();
   auto& eigenvectors = options == Eigen::ComputeEigenvectors ? eigensolver.eigenvectors() : Derived::Zero();
 
-  std::remove_cvref_t<decltype(eigenvalues)> principalStretches = eigenvalues.array().sqrt().eval();
+  auto principalStretches = eigenvalues.cwiseSqrt().eval();
   return std::make_pair(principalStretches, eigenvectors);
 }
 
