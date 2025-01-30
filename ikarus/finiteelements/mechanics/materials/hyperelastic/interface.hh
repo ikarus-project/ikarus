@@ -71,7 +71,7 @@ struct Hyperelastic : public Material<Hyperelastic<DEV, VOL>>
   explicit Hyperelastic(const DEV& dev)
   requires(not hasVolumetricPart)
       : dev_{dev},
-        vol_(NoVolumetricPart{MaterialParametersVOL{}, {}}) {}
+        vol_(VOL{MaterialParametersVOL{}, typename VOL::VolumetricFunction{}}) {}
 
   Hyperelastic(const DEV& dev, const VOL& vol)
       : dev_(dev),
