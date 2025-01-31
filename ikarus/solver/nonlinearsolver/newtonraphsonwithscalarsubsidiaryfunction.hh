@@ -11,12 +11,12 @@
 #include <iosfwd>
 #include <utility>
 
-#include "ikarus/assembler/dirichletbcenforcement.hh"
 #include <ikarus/controlroutines/pathfollowingfunctions.hh>
+#include <ikarus/solver/nonlinearsolver/nonlinearsolverbase.hh>
 #include <ikarus/solver/nonlinearsolver/solverinfos.hh>
+#include <ikarus/utils/broadcaster/broadcaster.hh>
+#include <ikarus/utils/broadcaster/broadcastermessages.hh>
 #include <ikarus/utils/concepts.hh>
-#include <ikarus/utils/observer/observer.hh>
-#include <ikarus/utils/observer/observermessages.hh>
 
 namespace Ikarus {
 
@@ -101,7 +101,7 @@ auto createNonlinearSolver(NRConfig&& config, NLO&& nonLinearOperator) {
  * \tparam UF Type of the update function (default is UpdateDefault).
  */
 template <typename NLO, typename LS, typename UF>
-class NewtonRaphsonWithSubsidiaryFunction : public IObservable<NonLinearSolverMessages>
+class NewtonRaphsonWithSubsidiaryFunction : public NonlinearSolverBase<NLO>
 {
 public:
   using Settings = NewtonRaphsonWithSubsidiaryFunctionSettings;
@@ -160,7 +160,9 @@ public:
       "it was successful")]] NonLinearSolverInformation
   solve(SubsidiaryType&& subsidiaryFunction, SubsidiaryArgs& subsidiaryArgs,
         const SolutionType& dxPredictor = NoPredictor{}) {
-    this->notify(NonLinearSolverMessages::INIT);
+    using enum NonLinearSolverMessages;
+
+    this->notify(INIT);
 
     /// Initializations
     Ikarus::NonLinearSolverInformation solverInformation;
@@ -203,7 +205,7 @@ public:
 
     /// Iterative solving scheme
     while (rNorm > settings_.tol && iter < settings_.maxIter) {
-      this->notify(NonLinearSolverMessages::ITERATION_STARTED);
+      this->notify(ITERATION_STARTED);
 
       /// Two-step solving procedure
       residual2d.resize(rx.rows(), 2);
@@ -223,6 +225,8 @@ public:
                                  (subsidiaryArgs.dfdDD.dot(sol2d.col(1)) + subsidiaryArgs.dfdDlambda);
       deltaD = sol2d.col(0) + deltalambda * sol2d.col(1);
 
+      this->notify(CORRECTION_UPDATED, x, deltaD);
+
       updateFunction_(x, deltaD);
       updateFunction_(subsidiaryArgs.DD, deltaD);
 
@@ -233,10 +237,10 @@ public:
       nonLinearOperator().updateAll();
       rNorm = sqrt(rx.dot(rx) + subsidiaryArgs.f * subsidiaryArgs.f);
 
-      this->notify(NonLinearSolverMessages::SOLUTION_CHANGED, static_cast<double>(lambda));
-      this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, static_cast<double>(dNorm));
-      this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, static_cast<double>(rNorm));
-      this->notify(NonLinearSolverMessages::ITERATION_ENDED);
+      this->notify(SOLUTION_CHANGED, static_cast<double>(lambda));
+      this->notify(CORRECTIONNORM_UPDATED, static_cast<double>(dNorm));
+      this->notify(RESIDUALNORM_UPDATED, static_cast<double>(rNorm));
+      this->notify(ITERATION_ENDED);
 
       ++iter;
     }
@@ -247,7 +251,7 @@ public:
     solverInformation.residualNorm   = rNorm;
     solverInformation.correctionNorm = dNorm;
     if (solverInformation.success)
-      this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, iter);
+      this->notify(FINISHED_SUCESSFULLY, iter);
 
     return solverInformation;
   }
