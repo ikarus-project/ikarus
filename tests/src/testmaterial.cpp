@@ -258,6 +258,9 @@ int main(int argc, char** argv) {
   auto mu     = matPar.mu;
   auto lambda = matPar.lambda;
 
+  auto bk = makeBlatzKo(mu);
+  t.subTest(testMaterial(bk));
+
   // Material parameters (example values)
   std::array<double, 1> mu_og    = {mu};
   std::array<double, 1> alpha_og = {2.0};
@@ -275,11 +278,23 @@ int main(int argc, char** argv) {
   t.subTest(testMaterial(ogdenDev));
   t.subTest(testMaterial(ogdenDev2));
 
+  auto mr   = makeMooneyRivlin({mu / 2.0, mu / 2.0});
+  auto yeoh = makeYeoh({mu / 2.0, mu / 6.0, mu / 3.0});
+  auto ab   = makeArrudaBoyce({mu, 0.85});
+  auto gent = makeGent({mu, 2.5});
+
+  t.subTest(testMaterial(mr));
+  t.subTest(testMaterial(yeoh));
+  t.subTest(testMaterial(ab));
+  t.subTest(testMaterial(gent));
+
   auto psOgden  = planeStrain(ogden);
   auto pstOgden = planeStress(ogden2);
+  auto psmr     = planeStrain(mr);
 
   t.subTest(testMaterial(psOgden));
   t.subTest(testMaterial(pstOgden));
+  t.subTest(testMaterial(psmr));
 
   return t.exit();
 }

@@ -32,7 +32,7 @@ namespace Ikarus::Materials {
  {\bar{\la_3}}^{\al_n} - 3) }. \f]
  *
  * \remark See \cite bergstromMechanicsSolidPolymers2015 for details on this material.
- * \tparam ST The underlying scalar type.
+ * \tparam ST_ The underlying scalar type.
  * \tparam n Number of ogden parameters
  * \tparam tag Type of principal stretch quantity, either total stretches or deviatoric stretches
  */
