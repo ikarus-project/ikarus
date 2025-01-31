@@ -15,6 +15,9 @@
 #include <dune/python/pybind11/stl.h>
 
 #include <ikarus/finiteelements/mechanics/materials.hh>
+#if ENABLE_MUESLI
+  #include <ikarus/finiteelements/mechanics/materials/muesli/mueslimaterials.hh>
+#endif
 #include <ikarus/utils/concepts.hh>
 
 #define MAKE_MaterialFunction(clsName, materialName, functionname, vecSize)                                    \
@@ -211,4 +214,37 @@ void registerMaterial(pybind11::handle scope, pybind11::class_<Material, options
 MAKE_MATERIAL_REGISTRY_FUNCTION(LinearElasticity, 6);
 MAKE_MATERIAL_REGISTRY_FUNCTION(StVenantKirchhoff, 6);
 MAKE_MATERIAL_REGISTRY_FUNCTION(NeoHooke, 6);
+
+#if ENABLE_MUESLI
+
+template <class MuesliMaterial, class... options>
+void registerMuesliMaterial(pybind11::handle scope, pybind11::class_<MuesliMaterial, options...> cls) {
+  Ikarus::Python::registerMaterial<MuesliMaterial, 6, false>(scope, cls);
+
+  cls.def(pybind11::init([](const pybind11::kwargs& kwargs) {
+    if constexpr (std::same_as<typename MuesliMaterial::MaterialModel, muesli::neohookeanMaterial> or
+                  std::same_as<typename MuesliMaterial::MaterialModel, muesli::svkMaterial> or
+                  std::same_as<typename MuesliMaterial::MaterialModel, muesli::elasticIsotropicMaterial>) {
+      auto matParameter     = Impl::extractMaterialParameters(kwargs);
+      auto muesliParameters = Ikarus::Materials::propertiesFromIkarusMaterialParameters(matParameter);
+      return new MuesliMaterial(muesliParameters);
+    } else if constexpr (std::same_as<typename MuesliMaterial::MaterialModel, muesli::arrudaboyceMaterial>) {
+      bool compressible = kwargs.contains("compressible") ? kwargs["compressible"].cast<bool>() : true;
+      return Materials::makeMuesliArrudaBoyce(kwargs["C1"].cast<double>(), kwargs["lambda_m"].cast<double>(),
+                                              kwargs["K"].cast<double>(), true);
+    } else if constexpr (std::same_as<typename MuesliMaterial::MaterialModel, muesli::yeohMaterial>) {
+      bool compressible = kwargs.contains("compressible") ? kwargs["compressible"].cast<bool>() : true;
+      return Materials::makeMuesliYeoh(kwargs["C"].cast<std::array<double, 3>>(), kwargs["K"].cast<double>(), true);
+    } else if constexpr (std::same_as<typename MuesliMaterial::MaterialModel, muesli::mooneyMaterial>) {
+      bool incompressible = kwargs.contains("incompressible") ? kwargs["incompressible"].cast<bool>() : false;
+      return Materials::makeMooneyRivlin(kwargs["alpha"].cast<std::array<double, 3>>(), incompressible);
+    } else {
+      DUNE_THROW(Dune::NotImplemented, "No known constructor for the specified Muesli material mode");
+    }
+  }));
+
+  cls.def("printDescription", [](MuesliMaterial& self) { self.material().print(std::cout); });
+}
+#endif
+
 } // namespace Ikarus::Python
