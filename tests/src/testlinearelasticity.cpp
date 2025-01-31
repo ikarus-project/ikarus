@@ -27,6 +27,8 @@ int main(int argc, char** argv) {
   TestSuite t("LinearElasticity");
 
   using namespace Dune::Functions::BasisFactory;
+  using namespace Ikarus::Materials;
+
   auto firstOrderLagrangePrePower2Basis         = power<2>(lagrange<1>(), FlatInterleaved());
   auto secondOrderLagrangePrePower2Basis        = power<2>(lagrange<2>(), FlatInterleaved());
   auto firstOrderLagrangePrePower3Basis         = power<3>(lagrange<1>(), FlatInterleaved());
@@ -36,19 +38,19 @@ int main(int argc, char** argv) {
   constexpr auto unDistorted                    = CornerDistortionFlag::unDistorted;
 
   // Test cube 2D
-  auto linearElasticFunc3D = [](const YoungsModulusAndPoissonsRatio& parameter) {
-    LinearElasticity lin(toLamesFirstParameterAndShearModulus(parameter));
-    return linearElastic(lin);
+  auto linearElasticFunc3D = [](const Ikarus::YoungsModulusAndPoissonsRatio& parameter) {
+    LinearElasticity lin(Ikarus::toLamesFirstParameterAndShearModulus(parameter));
+    return Ikarus::linearElastic(lin);
   };
-  auto linearElasticFuncPlaneStress = [](const YoungsModulusAndPoissonsRatio& parameter) {
-    LinearElasticity lin(toLamesFirstParameterAndShearModulus(parameter));
+  auto linearElasticFuncPlaneStress = [](const Ikarus::YoungsModulusAndPoissonsRatio& parameter) {
+    LinearElasticity lin(Ikarus::toLamesFirstParameterAndShearModulus(parameter));
     auto linPS = planeStress(lin);
-    return linearElastic(linPS);
+    return Ikarus::linearElastic(linPS);
   };
-  auto linearElasticFuncPlaneStrain = [](const YoungsModulusAndPoissonsRatio& parameter) {
-    LinearElasticity lin(toLamesFirstParameterAndShearModulus(parameter));
+  auto linearElasticFuncPlaneStrain = [](const Ikarus::YoungsModulusAndPoissonsRatio& parameter) {
+    LinearElasticity lin(Ikarus::toLamesFirstParameterAndShearModulus(parameter));
     auto linPS = planeStrain(lin);
-    return linearElastic(linPS);
+    return Ikarus::linearElastic(linPS);
   };
 
   // Plane stress
