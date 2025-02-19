@@ -113,17 +113,14 @@ struct GentT
   template <typename ST = ScalarType>
   FirstDerivative<ST> firstDerivativeImpl(const PrincipalStretches<ST>& lambda) const {
     const Invariants<ST>& invariants = Impl::invariants(lambda);
-    auto dWdLambda                   = FirstDerivative<ST>::Zero().eval();
-
-    const auto& devInvariants = DeviatoricInvariants<PrincipalStretches<ST>>(lambda);
-    const auto W1             = devInvariants.value()[0];
-    const auto& dW1dLambda    = devInvariants.firstDerivative().first;
-    const auto mu             = matPar_.mu;
-    const auto Jm             = matPar_.Jm;
+    const auto& devInvariants        = DeviatoricInvariants<PrincipalStretches<ST>>(lambda);
+    const auto W1                    = devInvariants.value()[0];
+    const auto& dW1dLambda           = devInvariants.firstDerivative().first;
+    const auto mu                    = matPar_.mu;
+    const auto Jm                    = matPar_.Jm;
     checkJm(W1);
 
-    for (const auto k : dimensionRange())
-      dWdLambda[k] += (mu * dW1dLambda[k] * Jm) / (2.0 * (Jm - W1) + 6.0);
+    FirstDerivative<ST> dWdLambda = (mu * dW1dLambda * Jm) / (2.0 * (Jm - W1) + 6.0);
 
     return dWdLambda;
   }

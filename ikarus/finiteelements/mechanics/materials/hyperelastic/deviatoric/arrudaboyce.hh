@@ -19,8 +19,8 @@ namespace Ikarus {
 ///< Structure representing material parameters for the Arrudy-Boyce material model.
 struct ArrudaBoyceMatParameters
 {
-  double mu_;      ///< Denotes the shear modulus.
-  double lambdaM_; ///< Denotes the maximum (fully extended) stretch that a molecule is exposed to.
+  double mu;      ///< Denotes the shear modulus.
+  double lambdaM; ///< Denotes the maximum (fully extended) stretch that a molecule is exposed to.
 };
 } // namespace Ikarus
 
@@ -100,13 +100,13 @@ struct ArrudaBoyceT
     ST energy{0.0};
     const auto& devInvariants = DeviatoricInvariants<PrincipalStretches<ST>>(lambda);
     const auto W1             = devInvariants.value()[0];
-    const auto mu_            = matPar_.mu_;
-    const auto lambdaM_       = matPar_.lambdaM_;
-    const auto beta           = 1 / pow(lambdaM_, 2.0);
+    const auto mu             = matPar_.mu;
+    const auto lambdaM        = matPar_.lambdaM;
+    const auto beta           = 1 / pow(lambdaM, 2.0);
 
     for (const auto i : parameterRange())
       energy += alphas_[i] * pow(beta, i) * (pow(W1, i + 1) - pow(3, i + 1));
-    energy *= mu_;
+    energy *= mu;
 
     return energy;
   }
@@ -126,13 +126,13 @@ struct ArrudaBoyceT
     const auto& devInvariants = DeviatoricInvariants<PrincipalStretches<ST>>(lambda);
     const auto W1             = devInvariants.value()[0];
     const auto& dW1dLambda    = devInvariants.firstDerivative().first;
-    const auto mu_            = matPar_.mu_;
-    const auto lambdaM_       = matPar_.lambdaM_;
-    const auto beta           = 1 / pow(lambdaM_, 2.0);
+    const auto mu             = matPar_.mu;
+    const auto lambdaM        = matPar_.lambdaM;
+    const auto beta           = 1 / pow(lambdaM, 2.0);
 
     for (const auto j : parameterRange())
       for (const auto k : dimensionRange())
-        dWdLambda[k] += mu_ * alphas_[j] * pow(beta, j) * pow(W1, j) * dW1dLambda[k] * (j + 1);
+        dWdLambda[k] += mu * alphas_[j] * pow(beta, j) * pow(W1, j) * dW1dLambda[k] * (j + 1);
 
     return dWdLambda;
   }
@@ -153,20 +153,18 @@ struct ArrudaBoyceT
     const auto W1             = devInvariants.value()[0];
     const auto& dW1dLambda    = devInvariants.firstDerivative().first;
     const auto& ddW1dLambda   = devInvariants.secondDerivative().first;
-    const auto mu_            = matPar_.mu_;
-    const auto lambdaM_       = matPar_.lambdaM_;
-    const auto beta           = 1 / pow(lambdaM_, 2.0);
+    const auto mu             = matPar_.mu;
+    const auto lambdaM        = matPar_.lambdaM;
+    const auto beta           = 1 / pow(lambdaM, 2.0);
 
-    for (const auto p : parameterRange())
-      for (const auto i : dimensionRange())
-        for (const auto j : dimensionRange()) {
-          auto factor1 = mu_ * alphas_[p] * pow(beta, p);
-          auto factor2 = pow(W1, p) * ddW1dLambda(i, j) * (p + 1);
-          auto factor3 = pow(W1, p - 1) * dW1dLambda[i] * dW1dLambda[j] * p * (p + 1);
-          dS(i, j) += factor1 * (factor2 + factor3);
-          if (i == j)
-            dS(i, j) -= (1.0 / lambda[i]) * factor1 * pow(W1, p) * dW1dLambda[i] * (p + 1);
-        }
+    const auto dW1dLambdaDyad = dyadic(dW1dLambda, dW1dLambda);
+    for (const auto p : parameterRange()) {
+      const auto factor1 = mu * alphas_[p] * pow(beta, p);
+      const auto factor2 = pow(W1, p) * ddW1dLambda * (p + 1);
+      const auto factor3 = pow(W1, p - 1) * dW1dLambdaDyad * p * (p + 1);
+      dS += factor1 * (factor2 + factor3);
+      dS.diagonal() -= (dW1dLambda.array() / lambda.array() * factor1 * pow(W1, p) * (p + 1)).matrix();
+    }
 
     return dS;
   }

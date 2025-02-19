@@ -64,12 +64,10 @@ struct DeviatoricInvariants
    */
   auto firstDerivative() const {
     const Invariants& invariants            = Impl::invariants(lambda_);
-    auto dW1dLambda                         = FirstDerivative::Zero().eval();
-    auto dW2dLambda                         = FirstDerivative::Zero().eval();
     auto [I1, I2, I3, I3Pow1by3, I3Pow2by3] = computeInvariants(invariants);
 
-    dW1dLambda = 2.0 * (3.0 * lambda_.cwisePow(2).array() - I1) / (3.0 * lambda_.array() * I3Pow1by3);
-    dW2dLambda =
+    FirstDerivative dW1dLambda = 2.0 * (3.0 * lambda_.cwisePow(2).array() - I1) / (3.0 * lambda_.array() * I3Pow1by3);
+    FirstDerivative dW2dLambda =
         -2.0 * (3.0 * I3 * lambda_.cwisePow(2).cwiseInverse().array() - I2) / (3.0 * lambda_.array() * I3Pow2by3);
 
     return std::make_pair(dW1dLambda, dW2dLambda);

@@ -125,8 +125,8 @@ struct InvariantBasedT
 
     for (const auto p : parameterRange())
       for (const auto k : dimensionRange()) {
-        auto W1pm1p = safeMultiply<ST>(pow(W1, pex[p] - 1.0), pex[p]);
-        auto W2qm1q = safeMultiply<ST>(pow(W2, qex[p] - 1.0), qex[p]);
+        auto W1pm1p = powerAndMultiply<ST>(W1, pex[p] - 1.0, pex[p]);
+        auto W2qm1q = powerAndMultiply<ST>(W2, qex[p] - 1.0, qex[p]);
         dWdLambda[k] +=
             mu[p] * ((W1pm1p * pow(W2, qex[p]) * dW1dLambda[k]) + (pow(W1, pex[p]) * W2qm1q * dW2dLambda[k]));
       }
@@ -159,10 +159,10 @@ struct InvariantBasedT
     for (const auto p : parameterRange())
       for (const auto i : dimensionRange())
         for (const auto j : dimensionRange()) {
-          auto W1pm1p       = safeMultiply<ST>(pow(W1, pex[p] - 1.0), pex[p]);
-          auto W2qm1q       = safeMultiply<ST>(pow(W2, qex[p] - 1.0), qex[p]);
-          auto W1pm2pp      = safeMultiply<ST>(pow(W1, pex[p] - 2.0), pex[p] * (pex[p] - 1.0));
-          auto W2qm2qq      = safeMultiply<ST>(pow(W2, qex[p] - 2.0), qex[p] * (qex[p] - 1.0));
+          auto W1pm1p       = powerAndMultiply<ST>(W1, pex[p] - 1.0, pex[p]);
+          auto W2qm1q       = powerAndMultiply<ST>(W2, qex[p] - 1.0, qex[p]);
+          auto W1pm2pp      = powerAndMultiply<ST>(W1, pex[p] - 2.0, pex[p] * (pex[p] - 1.0));
+          auto W2qm2qq      = powerAndMultiply<ST>(W2, qex[p] - 2.0, qex[p] * (qex[p] - 1.0));
           auto dW1W2dlambda = dW1dLambda[i] * dW2dLambda[j] + dW1dLambda[j] * dW2dLambda[i];
           auto factor1      = (W2qm1q * dW1W2dlambda + pow(W2, qex[p]) * ddW1dLambda(i, j)) * W1pm1p * mu[p];
           auto factor2      = W2qm1q * ddW2dLambda(i, j) * pow(W1, pex[p]) * mu[p];
@@ -214,7 +214,7 @@ private:
   }
 
   /**
-   * \brief A function to safely multiply infinity times zero and return zero instead of nan.
+   * \brief A function that computes \f$ x^p * m \f$.
    *
    * \details In the undeformed configuration, all principal stretches are equal to one. In this scenario, the
    * deviatoric invariants W1 and W2 are zero. For any positive integer n, 0^{-n} is inf. Multiplying this with 0.0
@@ -224,18 +224,19 @@ private:
    *
    * \param x First number to be multiplied.
    * \param y Second number to be multiplied.
-   * \return ScalarType Either 0.0 or x * y.
+   * \return ScalarType Either 0.0 or \f$ x^p * m \f$.
    */
-  template <typename ST = ScalarType>
-  ST safeMultiply(ST x, ST y) const {
-    auto checkInfinityTimeZero = [](double val1, double val2) -> bool {
-      constexpr double tol = 1e-14;
-      return ((std::isinf(val1) && Dune::FloatCmp::eq(val2, 0.0, tol)) ||
-              (std::isinf(val2) && Dune::FloatCmp::eq(val1, 0.0, tol)));
-    };
-
-    // static_cast needed if Concepts::AutodiffScalar<ST>
-    return checkInfinityTimeZero(static_cast<double>(x), static_cast<double>(y)) ? ST{0.0} : x * y;
+  template <typename ST>
+  ST powerAndMultiply(ST x, int p, int m) const {
+    if (m == 0)
+      return 0; // anything multiplied with 0 is 0
+    if (p == 0)
+      return m; // x^0 * m = 1 * m = m
+    const double epsilon = std::numeric_limits<double>::epsilon();
+    if (std::abs(x) < epsilon and p < 0)
+      return std::numeric_limits<double>::signaling_NaN();
+    double result = std::pow(x, p) * m;
+    return static_cast<ST>(result);
   }
 
   /** \brief check that: \f$ \lnot (q_i = 0 \land p_i = 0) \forall i \f$ */
