@@ -222,8 +222,9 @@ private:
    *
    * \remark If inf is multiplied with any other number apart from zero, nan is returned.
    *
-   * \param x First number to be multiplied.
-   * \param y Second number to be multiplied.
+   * \param x Base number.
+   * \param p Exponent to which the base number is raised.
+   * \param m Scalar number to be multiplied to \f$ x^p \f$.
    * \return ScalarType Either 0.0 or \f$ x^p * m \f$.
    */
   template <typename ST>
