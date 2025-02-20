@@ -122,7 +122,7 @@ bool checkJacobian(
   auto gradF = derivative(nonLinOp);
   const auto e = nonLinOp(x);
   decltype(auto) g = gradF(x);
-  using UpdateType =std::remove_cvref_t<decltype(g.col(0).eval())>;
+  using UpdateType =std::remove_cvref_t<decltype(g.col(0).transpose().eval().transpose().eval())>;
 
   UpdateType b;
   b.resizeLike(g.col(0));

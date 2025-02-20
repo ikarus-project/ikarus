@@ -20,7 +20,7 @@ ControlInformation LoadControl<NLS>::run(Domain& x) {
           x.parameter() += 0.0;
         }, "The last parameter (load factor) must be assignable and incrementable with a double!");
   ControlInformation info({false});
-  auto& nonOp = nonLinearSolver_->nonLinearOperator();
+  auto& nonOp = nonLinearSolver_->residual();
   this->notify(ControlMessages::CONTROL_STARTED, static_cast<std::string>(this->name()));
   auto& loadParameter = x.parameter();
 

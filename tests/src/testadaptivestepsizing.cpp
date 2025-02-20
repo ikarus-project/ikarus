@@ -196,7 +196,7 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
 
   d.setZero();
   lambda = 0.0;
-  const auto controlInfoWSS = crWSS.run();
+  const auto controlInfoWSS = crWSS.run(req);
   const double tolDisp      = 1e-13;
   const double tolLoad      = 1e-12;
   checkScalars(t, std::ranges::max(d), expectedResults[0][0], message1 + " <Max Displacement>", tolDisp);
