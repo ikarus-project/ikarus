@@ -89,15 +89,13 @@ struct InvariantBasedT
   ST storedEnergyImpl(const PrincipalStretches<ST>& lambda) const {
     const Invariants<ST>& invariants = Impl::invariants(lambda);
     ST energy{0.0};
-    const auto& pex           = exponents<ST>(pex_);
-    const auto& qex           = exponents<ST>(qex_);
     const auto& devInvariants = DeviatoricInvariants<PrincipalStretches<ST>>(lambda);
     auto [W1, W2]             = devInvariants.value();
     W1 -= 3.0;
     W2 -= 3.0;
 
     for (const auto i : parameterRange())
-      energy += matParameters_[i] * pow(W1, pex[i]) * pow(W2, qex[i]);
+      energy += matParameters_[i] * pow(W1, pex_[i]) * pow(W2, qex_[i]);
 
     return energy;
   }
@@ -115,8 +113,6 @@ struct InvariantBasedT
     auto dWdLambda                   = FirstDerivative<ST>::Zero().eval();
 
     const auto& mu            = matParameters_;
-    const auto& pex           = exponents<ST>(pex_);
-    const auto& qex           = exponents<ST>(qex_);
     const auto& devInvariants = DeviatoricInvariants<PrincipalStretches<ST>>(lambda);
     auto [W1, W2]             = devInvariants.value();
     W1 -= 3.0;
@@ -125,10 +121,10 @@ struct InvariantBasedT
 
     for (const auto p : parameterRange())
       for (const auto k : dimensionRange()) {
-        auto W1pm1p = powerAndMultiply<ST>(W1, pex[p] - 1.0, pex[p]);
-        auto W2qm1q = powerAndMultiply<ST>(W2, qex[p] - 1.0, qex[p]);
+        auto W1pm1p = powerAndMultiply<ST>(W1, pex_[p] - 1.0, pex_[p]);
+        auto W2qm1q = powerAndMultiply<ST>(W2, qex_[p] - 1.0, qex_[p]);
         dWdLambda[k] +=
-            mu[p] * ((W1pm1p * pow(W2, qex[p]) * dW1dLambda[k]) + (pow(W1, pex[p]) * W2qm1q * dW2dLambda[k]));
+            mu[p] * ((W1pm1p * pow(W2, qex_[p]) * dW1dLambda[k]) + (pow(W1, pex_[p]) * W2qm1q * dW2dLambda[k]));
       }
 
     return dWdLambda;
@@ -147,8 +143,6 @@ struct InvariantBasedT
     auto dS                          = SecondDerivative<ST>::Zero().eval();
 
     const auto& mu            = matParameters_;
-    const auto& pex           = exponents<ST>(pex_);
-    const auto& qex           = exponents<ST>(qex_);
     const auto& devInvariants = DeviatoricInvariants<PrincipalStretches<ST>>(lambda);
     auto [W1, W2]             = devInvariants.value();
     W1 -= 3.0;
@@ -159,19 +153,19 @@ struct InvariantBasedT
     for (const auto p : parameterRange())
       for (const auto i : dimensionRange())
         for (const auto j : dimensionRange()) {
-          auto W1pm1p       = powerAndMultiply<ST>(W1, pex[p] - 1.0, pex[p]);
-          auto W2qm1q       = powerAndMultiply<ST>(W2, qex[p] - 1.0, qex[p]);
-          auto W1pm2pp      = powerAndMultiply<ST>(W1, pex[p] - 2.0, pex[p] * (pex[p] - 1.0));
-          auto W2qm2qq      = powerAndMultiply<ST>(W2, qex[p] - 2.0, qex[p] * (qex[p] - 1.0));
+          auto W1pm1p       = powerAndMultiply<ST>(W1, pex_[p] - 1.0, pex_[p]);
+          auto W2qm1q       = powerAndMultiply<ST>(W2, qex_[p] - 1.0, qex_[p]);
+          auto W1pm2pp      = powerAndMultiply<ST>(W1, pex_[p] - 2.0, pex_[p] * (pex_[p] - 1.0));
+          auto W2qm2qq      = powerAndMultiply<ST>(W2, qex_[p] - 2.0, qex_[p] * (qex_[p] - 1.0));
           auto dW1W2dlambda = dW1dLambda[i] * dW2dLambda[j] + dW1dLambda[j] * dW2dLambda[i];
-          auto factor1      = (W2qm1q * dW1W2dlambda + pow(W2, qex[p]) * ddW1dLambda(i, j)) * W1pm1p * mu[p];
-          auto factor2      = W2qm1q * ddW2dLambda(i, j) * pow(W1, pex[p]) * mu[p];
-          auto factor3      = W1pm2pp * pow(W2, qex[p]) * dW1dLambda[i] * dW1dLambda[j] * mu[p];
-          auto factor4      = W2qm2qq * pow(W1, pex[p]) * dW2dLambda[i] * dW2dLambda[j] * mu[p];
+          auto factor1      = (W2qm1q * dW1W2dlambda + pow(W2, qex_[p]) * ddW1dLambda(i, j)) * W1pm1p * mu[p];
+          auto factor2      = W2qm1q * ddW2dLambda(i, j) * pow(W1, pex_[p]) * mu[p];
+          auto factor3      = W1pm2pp * pow(W2, qex_[p]) * dW1dLambda[i] * dW1dLambda[j] * mu[p];
+          auto factor4      = W2qm2qq * pow(W1, pex_[p]) * dW2dLambda[i] * dW2dLambda[j] * mu[p];
           dS(i, j) += factor1 + factor2 + factor3 + factor4;
           if (i == j) {
             auto factor5 =
-                mu[p] * (W1pm1p * pow(W2, qex[p]) * dW1dLambda[i] + pow(W1, pex[p]) * W2qm1q * dW2dLambda[i]);
+                mu[p] * (W1pm1p * pow(W2, qex_[p]) * dW1dLambda[i] + pow(W1, pex_[p]) * W2qm1q * dW2dLambda[i]);
             dS(i, j) -= (1.0 / lambda[i]) * factor5;
           }
         }
@@ -195,24 +189,6 @@ private:
   inline static constexpr auto parameterRange() { return Dune::range(numMatParameters); }
   inline static constexpr auto dimensionRange() { return Dune::range(dim); }
 
-  /** \brief A function to transform the underlying type of the exponents to ScalarType.
-   *
-   * \details If Concepts::AutodiffScalar<ScalarType> is true, then the pow function returns zero instead of one, if
-   * a certain base is raised to an exponent of zero. Hence this transformation is necessary.
-   * \param exp_ An array of exponents of type std::size_t.
-   * \return An array of exponents of type \tparam ScalarType if Concepts::AutodiffScalar<ScalarType> is true, else the
-   * given \param exp_ is returned..
-   */
-  template <typename ST = ScalarType>
-  decltype(auto) exponents(const Exponents& exp_) const {
-    if constexpr (Concepts::AutodiffScalar<ST>) {
-      std::array<ST, numMatParameters> transformedExp_{};
-      std::ranges::transform(exp_, transformedExp_.begin(), [](std::size_t x) { return static_cast<ST>(x); });
-      return transformedExp_;
-    } else
-      return exp_;
-  }
-
   /**
    * \brief A function that computes \f$ x^p * m \f$.
    *
@@ -234,8 +210,7 @@ private:
     if (p == 0)
       return m; // x^0 * m = 1 * m = m
     const double epsilon = std::numeric_limits<double>::epsilon();
-    if (std::abs(x) < epsilon and p < 0)
-      return std::numeric_limits<double>::signaling_NaN();
+    assert(not(std::abs(x) < epsilon and p < 0) && "Raising zero to a negative power results in NaN.");
     return std::pow(x, p) * m;
   }
 
