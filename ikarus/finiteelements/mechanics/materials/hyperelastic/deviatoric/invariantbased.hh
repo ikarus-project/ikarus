@@ -236,8 +236,7 @@ private:
     const double epsilon = std::numeric_limits<double>::epsilon();
     if (std::abs(x) < epsilon and p < 0)
       return std::numeric_limits<double>::signaling_NaN();
-    double result = std::pow(x, p) * m;
-    return static_cast<ST>(result);
+    return std::pow(x, p) * m;
   }
 
   /** \brief check that: \f$ \lnot (q_i = 0 \land p_i = 0) \forall i \f$ */
